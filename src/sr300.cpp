@@ -69,11 +69,11 @@ namespace rsimpl
         throw std::runtime_error("Interface not found!");
     }
 
-    std::vector<std::shared_ptr<rs_device_info>> pick_sr300_devices(
+    std::vector<std::shared_ptr<device_info>> pick_sr300_devices(
         std::vector<uvc::uvc_device_info>& uvc)
     {
         std::vector<uvc::uvc_device_info> chosen;
-        std::vector<std::shared_ptr<rs_device_info>> results;
+        std::vector<std::shared_ptr<device_info>> results;
         
         auto right_pid = filter_by_product(uvc, 0x0aa5);
         auto group_devices = group_by_unique_id(right_pid);
@@ -86,8 +86,7 @@ namespace rsimpl
                 auto color = get_mi(group, 0);
                 auto depth = get_mi(group, 2);
                 
-                std::shared_ptr<rs_device_info> info(
-                    new sr300_info(color, depth));
+                auto info = std::make_shared<sr300_info>(color, depth);
                 chosen.push_back(color);
                 chosen.push_back(depth);
                 results.push_back(info);

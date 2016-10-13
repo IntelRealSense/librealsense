@@ -71,6 +71,7 @@ namespace rsimpl
         virtual unsigned long long get_frame_counter(const subdevice_mode & mode, const void * frame) const = 0;
     };
 
+    class device;
 
     namespace motion_module
     {
@@ -158,8 +159,6 @@ namespace rsimpl
         std::atomic<uint32_t> max_publish_list_size;
         const rs_stream_lock* _owner;
     };
-
-    class device;
 
     class endpoint
     {
@@ -307,26 +306,3 @@ namespace rsimpl
         std::map<std::string, rsimpl::output_type> _guid_to_output;
     };
 }
-
-struct rs_device_info
-{
-    virtual std::shared_ptr<rsimpl::device> create(const rsimpl::uvc::backend& backend) const = 0;
-    virtual rs_device_info* clone() const = 0;
-
-    virtual ~rs_device_info() = default;
-};
-
-struct rs_stream_profile_list
-{
-    std::vector<rsimpl::stream_profile> list;
-};
-
-struct rs_stream_lock
-{
-    std::shared_ptr<rsimpl::streaming_lock> lock;
-};
-
-struct rs_device
-{
-    std::shared_ptr<rsimpl::device> device;
-};

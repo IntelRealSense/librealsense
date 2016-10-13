@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "device.h"
+#include "context.h"
 #include "backend.h"
 #include "ivcam-private.h"
 
@@ -13,13 +14,14 @@ namespace rsimpl
 {
     class sr300_camera;
     
-    struct sr300_info : rs_device_info
+    class sr300_info : public device_info
     {
-        std::shared_ptr<rsimpl::device> create(const rsimpl::uvc::backend& backend) const override;
+    public:
+        std::shared_ptr<device> create(const uvc::backend& backend) const override;
 
-        rs_device_info* clone() const override
+        std::shared_ptr<device_info> clone() const override
         {
-            return new sr300_info(*this);
+            return std::make_shared<sr300_info>(*this);
         }
 
         sr300_info(uvc::uvc_device_info color,
@@ -30,7 +32,7 @@ namespace rsimpl
         uvc::uvc_device_info _depth;
     };
 
-    std::vector<std::shared_ptr<rs_device_info>> pick_sr300_devices(std::vector<uvc::uvc_device_info>& uvc);
+    std::vector<std::shared_ptr<device_info>> pick_sr300_devices(std::vector<uvc::uvc_device_info>& uvc);
 
     class sr300_camera final : public device
     {

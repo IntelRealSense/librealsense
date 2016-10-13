@@ -5,18 +5,29 @@
 
 #include "types.h"
 #include "backend.h"
+#include <vector>
 
-struct rs_device_info_list
+namespace rsimpl
 {
-    std::vector<std::shared_ptr<rs_device_info>> list;
-};
+    class device;
 
-struct rs_context
-{
-    rs_context();
+    class device_info
+    {
+    public:
+        virtual std::shared_ptr<device> create(const uvc::backend& backend) const = 0;
+        virtual std::shared_ptr<device_info> clone() const = 0;
 
-    rs_device_info_list* query_devices() const;
-    const rsimpl::uvc::backend& get_backend() const { return *_backend; }
-private:
-    std::shared_ptr<rsimpl::uvc::backend> _backend;
-};
+        virtual ~device_info() = default;
+    };
+
+    class context
+    {
+    public:
+        context();
+
+        std::vector<std::shared_ptr<device_info>> query_devices() const;
+        const uvc::backend& get_backend() const { return *_backend; }
+    private:
+        std::shared_ptr<uvc::backend> _backend;
+    };
+}

@@ -41,23 +41,24 @@ constexpr std::array<char const, N1+N2-1> concat(char const (&a1)[N1], char cons
 
 constexpr auto rs_api_version = concat("VERSION: ",RS_API_VERSION_STR);
 
-#else    // manual version tracking is required
-static const std::string rs_api_version("VERSION: Not Applicable");
 #endif
 
-rs_context::rs_context()
-    : _backend(rsimpl::uvc::create_backend())
+namespace rsimpl
 {
-}
+    context::context()
+        : _backend(uvc::create_backend())
+    {
+    }
 
-rs_device_info_list* rs_context::query_devices() const
-{
-    std::vector<std::shared_ptr<rs_device_info>> list;
+    std::vector<std::shared_ptr<device_info>> context::query_devices() const
+    {
+        std::vector<std::shared_ptr<device_info>> list;
 
-    auto uvc_devices = _backend->query_uvc_devices();
+        auto uvc_devices = _backend->query_uvc_devices();
 
-    auto sr300_devices = rsimpl::pick_sr300_devices(uvc_devices);
-    for (auto& dev : sr300_devices) list.push_back(dev);
+        auto sr300_devices = pick_sr300_devices(uvc_devices);
+        for (auto& dev : sr300_devices) list.push_back(dev);
 
-    return new rs_device_info_list { list };
+        return list;
+    }
 }

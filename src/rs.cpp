@@ -20,6 +20,38 @@ struct rs_error
     std::string args;
 };
 
+struct rs_device_info
+{
+    std::shared_ptr<rsimpl::device_info> info;
+};
+
+struct rs_stream_profile_list
+{
+    std::vector<rsimpl::stream_profile> list;
+};
+
+struct rs_stream_lock
+{
+    std::shared_ptr<rsimpl::streaming_lock> lock;
+};
+
+struct rs_device
+{
+    std::shared_ptr<rsimpl::device> device;
+};
+
+struct rs_device_info_list
+{
+    std::vector<std::shared_ptr<rsimpl::device_info>> list;
+};
+
+struct rs_context
+{
+    rs_context() : ctx() {}
+
+    rsimpl::context ctx;
+};
+
 // This facility allows for translation of exceptions to rs_error structs at the API boundary
 namespace rsimpl
 {
@@ -112,7 +144,7 @@ catch(...) {}
 rs_device_info_list* rs_query_devices(const rs_context* context, rs_error** error) try
 {
     VALIDATE_NOT_NULL(context);
-    return context->query_devices();
+    return new rs_device_info_list{ context->ctx.query_devices() };
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, context)
 
@@ -134,7 +166,7 @@ rs_device_info* rs_get_device_info(const rs_device_info_list* info_list, int ind
 {
     VALIDATE_NOT_NULL(info_list);
     VALIDATE_RANGE(index, 0, info_list->list.size() - 1);
-    return info_list->list[index]->clone();
+    return new rs_device_info{ info_list->list[index]->clone() };
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, info_list, index)
 
@@ -149,7 +181,7 @@ rs_device* rs_create_device(const rs_context* context, const rs_device_info* inf
 {
     VALIDATE_NOT_NULL(context);
     VALIDATE_NOT_NULL(info);
-    return new rs_device{ info->create(context->get_backend()) };
+    return new rs_device{ info->info->create(context->ctx.get_backend()) };
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, context, info)
 
