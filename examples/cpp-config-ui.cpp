@@ -560,7 +560,7 @@ int main(int argc, char * argv[])
     };
     std::map<rs::stream, resolution> resolutions;
 
-    int req_fps = 30;
+	std::vector<int> req_fps = { 30, 30, 30, 30, 60, 30 };
     struct w_h { int width, height; };
     std::vector<rs::format> formats = { rs::format::z16,    rs::format::rgb8,   rs::format::y8,         rs::format::y8,        rs::format::raw8,    rs::format::any };
     std::vector<w_h>        wh      = { { 0,0 },            { 640,480 },        { 0,0 },                { 0,0 },               { 640,480 },         {0,0}};
@@ -598,7 +598,7 @@ int main(int argc, char * argv[])
         {
             if (dev->supports((rs::capabilities)stream))
             {
-                dev->enable_stream((rs::stream)stream, wh[stream].width, wh[stream].height, formats[stream], req_fps);
+                dev->enable_stream((rs::stream)stream, wh[stream].width, wh[stream].height, formats[stream], req_fps[stream]);
                 resolutions[(rs::stream)stream] = { dev->get_stream_width((rs::stream)stream), dev->get_stream_height((rs::stream)stream), formats[stream] };
             }
         }
@@ -733,11 +733,11 @@ int main(int argc, char * argv[])
                             else
                                 enable = dev->is_stream_enabled(s);
 
-                            enable_stream(dev, i, formats[i], wh[i].width, wh[i].height, req_fps, enable, stream_name);
+                            enable_stream(dev, i, formats[i], wh[i].width, wh[i].height, req_fps[i], enable, stream_name);
 
                             if (!is_callback_set || g.checkbox({ w - 260, y, w - 240, y + 20 }, enable))
                             {
-                                enable_stream(dev, i, formats[i], wh[i].width, wh[i].height, req_fps, enable, stream_name);
+                                enable_stream(dev, i, formats[i], wh[i].width, wh[i].height, req_fps[i], enable, stream_name);
 
                                 if (enable)
                                 {

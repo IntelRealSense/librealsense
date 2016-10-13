@@ -8,9 +8,45 @@
 #include "archive.h"
 #include <atomic>
 #include "timestamps.h"
+#include <chrono>
 
 namespace rsimpl
 {
+    class fps_calc
+    {
+    public:
+        fps_calc(unsigned long long in_number_of_frames_to_sampling, int expected_fps)
+            : number_of_frames_to_sampling(in_number_of_frames_to_sampling),
+            frame_counter(0),
+            actual_fps(expected_fps)
+        {
+            time_samples.reserve(10000);
+        }
+        double calc_fps(std::chrono::time_point<std::chrono::system_clock>& now_time)
+        {
+            ++frame_counter;
+            if (frame_counter == number_of_frames_to_sampling || frame_counter == 1)
+            {
+                time_samples.push_back(now_time);
+                if (time_samples.size() == 2)
+                {
+                    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(time_samples[1] - time_samples[0]).count();
+                    actual_fps = ((double)frame_counter / duration) * 1000.;
+                    frame_counter = 0;
+                    time_samples.clear();
+                }
+            }
+
+            return actual_fps;
+        }
+
+    private:
+        double actual_fps;
+        unsigned long long number_of_frames_to_sampling;
+        unsigned long long frame_counter;
+        std::vector<std::chrono::time_point<std::chrono::system_clock>> time_samples;
+    };
+
     class syncronizing_archive : public frame_archive
     {
     private:
