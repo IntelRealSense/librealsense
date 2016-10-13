@@ -291,7 +291,7 @@ double frame_archive::frame::get_frame_metadata(rs_frame_metadata frame_metadata
 
 bool frame_archive::frame::supports_frame_metadata(rs_frame_metadata frame_metadata) const
 {
-    for (auto & md : additional_data.supported_metadata_vector) if (md == frame_metadata) return true;
+    for (auto & md : *additional_data.supported_metadata_vector) if (md == frame_metadata) return true;
     return false;
 }
 
