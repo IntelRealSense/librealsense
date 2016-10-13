@@ -734,6 +734,26 @@ namespace rsimpl
 
     class fisheye_timestamp_reader : public frame_timestamp_reader
     {
+        int get_embedded_frame_counter(const void * frame) const
+        {
+            int embedded_frame_counter = 0;
+            firmware_version firmware(fw_version);
+            if (firmware >= firmware_version("1.27.2.90")) // Frame counter is exposed at first LSB bit in first 4-pixels from version 1.27.2.90
+            {
+                auto data = static_cast<const char*>(frame);
+
+                for (int i = 0, j = 0; i < 4; ++i, ++j)
+                    embedded_frame_counter |= ((data[i] & 0x01) << j);
+            }
+            else if (firmware < firmware_version("1.27.2.90")) // Frame counter is exposed by the 4 LSB bits of the first pixel from all versions under 1.27.2.90
+            {
+                embedded_frame_counter = reinterpret_cast<byte_wrapping&>(*((unsigned char*)frame)).lsb;
+            }
+
+            return embedded_frame_counter;
+        }
+
+        std::string fw_version;
         std::mutex mutex;
         int fps;
         unsigned last_fisheye_counter;
@@ -742,7 +762,7 @@ namespace rsimpl
         mutable bool validate;
 
     public:
-        fisheye_timestamp_reader(int max_fps) : fps(max_fps), last_fisheye_counter(0), timestamp_wraparound(1, std::numeric_limits<uint32_t>::max()), frame_counter_wraparound(0, std::numeric_limits<uint32_t>::max()), validate(true){}
+        fisheye_timestamp_reader(int max_fps, const char* fw_ver) : fps(max_fps), last_fisheye_counter(0), timestamp_wraparound(1, std::numeric_limits<uint32_t>::max()), frame_counter_wraparound(0, std::numeric_limits<uint32_t>::max()), validate(true), fw_version(fw_ver){}
 
         bool validate_frame(const subdevice_mode & /*mode*/, const void * frame) override
         {
@@ -750,7 +770,7 @@ namespace rsimpl
                 return true;
 
             bool sts;
-            auto pixel_lsb = reinterpret_cast<byte_wrapping&>(*((unsigned char*)frame)).lsb;
+            auto pixel_lsb = get_embedded_frame_counter(frame);
             if ((sts = (pixel_lsb != 0)))
                 validate = false;
 
@@ -767,7 +787,7 @@ namespace rsimpl
             std::lock_guard<std::mutex> guard(mutex);
 
             auto last_counter_lsb = reinterpret_cast<byte_wrapping&>(last_fisheye_counter).lsb;
-            auto pixel_lsb = reinterpret_cast<byte_wrapping&>(*((unsigned char*)frame)).lsb;
+            auto pixel_lsb = get_embedded_frame_counter(frame);
             if (last_counter_lsb == pixel_lsb)
                 return last_fisheye_counter;
 
@@ -877,7 +897,7 @@ namespace rsimpl
             break;
         case SUB_DEVICE_FISHEYE:
             if (stream_fisheye.is_enabled())
-                return std::make_shared<fisheye_timestamp_reader>(stream_fisheye.get_framerate());
+                return std::make_shared<fisheye_timestamp_reader>(stream_fisheye.get_framerate(), get_camera_info(RS_CAMERA_INFO_ADAPTER_BOARD_FIRMWARE_VERSION));
             break;
         case SUB_DEVICE_COLOR:
             if (stream_color.is_enabled())

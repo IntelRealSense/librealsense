@@ -1,6 +1,9 @@
 bin/
 lib/
 
+# CMake
+build/
+
 # XCode
 .DS_Store
 *.pbxuser

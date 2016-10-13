@@ -421,7 +421,6 @@ namespace rsimpl
         return intrinsic;
     }
 
-   
 
     std::shared_ptr<rs_device> make_zr300_device(std::shared_ptr<uvc::device> device)
     {
@@ -480,10 +479,13 @@ namespace rsimpl
             if (info.camera_info.find(RS_CAMERA_INFO_ADAPTER_BOARD_FIRMWARE_VERSION) != info.camera_info.end())
             {
                 firmware_version ver(info.camera_info[RS_CAMERA_INFO_ADAPTER_BOARD_FIRMWARE_VERSION]);
-                if (ver >= firmware_version("1.25.0.0") && ver < firmware_version("1.27.2.0"))
+                if (ver >= firmware_version("1.25.0.0") && ver < firmware_version("1.27.2.90"))
                     info.options.push_back({ RS_OPTION_FISHEYE_EXPOSURE,                40, 331, 1,  40 });
-                else if (ver >= firmware_version("1.27.2.0"))
-                    info.options.push_back({ RS_OPTION_FISHEYE_EXPOSURE,                3,  200, 1,  100 });
+                else if (ver >= firmware_version("1.27.2.90"))
+                {
+                    info.supported_metadata_vector.push_back(RS_FRAME_METADATA_ACTUAL_EXPOSURE);
+                    info.options.push_back({ RS_OPTION_FISHEYE_EXPOSURE,                2,  320, 1,  4 });
+                }
             }
 
             info.options.push_back({ RS_OPTION_FISHEYE_GAIN,                            0,  0,   0,  0  });
@@ -632,11 +634,24 @@ namespace rsimpl
                 auto frame_sts = try_pop_front_data(&frame_ref);
                 lk.unlock();
 
-                rs_option options[] = { RS_OPTION_FISHEYE_EXPOSURE, RS_OPTION_FISHEYE_GAIN };
                 double values[2] = {};
                 unsigned long long frame_counter;
                 try {
-                    device->get_options(options, 2, values);
+                    if (frame_ref->supports_frame_metadata(RS_FRAME_METADATA_ACTUAL_EXPOSURE))
+                    {
+                        double gain[1] = {};
+                        rs_option options[] = { RS_OPTION_FISHEYE_GAIN };
+                        device->get_options(options, 1, gain);
+                        values[0] = frame_ref->get_frame_metadata(RS_FRAME_METADATA_ACTUAL_EXPOSURE);
+                        values[1] = gain[0];
+                    }
+                    else
+                    {
+                        rs_option options[] = { RS_OPTION_FISHEYE_EXPOSURE, RS_OPTION_FISHEYE_GAIN };
+                        device->get_options(options, 2, values);
+                    }
+
+                    values[0] /= 10.; // Fisheye exposure value by extension control is in units of 10 mSec
                     frame_counter = device->get_frame_counter_by_usb_cmd();
                     push_back_exp_and_cnt(exposure_and_frame_counter(values[0], frame_counter));
                 }
@@ -648,14 +663,13 @@ namespace rsimpl
                     double exp_by_frame_cnt;
                     auto exp_and_cnt_sts = try_get_exp_by_frame_cnt(exp_by_frame_cnt, frame_counter);
 
-                    auto exposure_value = static_cast<float>((exp_and_cnt_sts)? exp_by_frame_cnt : values[0] / 10.);
+                    auto exposure_value = static_cast<float>((exp_and_cnt_sts)? exp_by_frame_cnt : values[0]);
                     auto gain_value = static_cast<float>(values[1]);
 
                     bool sts = auto_exposure_algo.analyze_image(frame_ref);
                     if (sts)
                     {
                         bool modify_exposure, modify_gain;
-                        LOG_DEBUG("Algo input exposure: " << exposure_value * 10.);
                         auto_exposure_algo.modify_exposure(exposure_value, modify_exposure, gain_value, modify_gain);
 
                         if (modify_exposure)
@@ -801,7 +815,6 @@ namespace rsimpl
     void auto_exposure_algorithm::modify_exposure(float& exposure_value, bool& exp_modified, float& gain_value, bool& gain_modified)
     {
         float total_exposure = exposure * gain;
-        float prev_exposure = exposure;
         LOG_DEBUG("TotalExposure " << total_exposure << ", target_exposure " << target_exposure);
         if (fabs(target_exposure - total_exposure) > eps)
         {

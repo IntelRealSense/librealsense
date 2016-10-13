@@ -702,16 +702,16 @@ int main(int argc, char * argv[])
                 {
                     if (g.button({ w - 260, y, w - 20, y + 24 }, "Start Capture"))
                     {
-                        if (is_any_stream_enable(dev))
-                        {
-                            running = true;
-                            dev->start();
-                        }
-
                         if (has_motion_module && motion_tracking_enable)
                         {
                             running = true;
                             dev->start(rs::source::motion_data);
+                        }
+
+                        if (is_any_stream_enable(dev))
+                        {
+                            running = true;
+                            dev->start();
                         }
                     }
                 }

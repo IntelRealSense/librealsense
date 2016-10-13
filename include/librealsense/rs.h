@@ -9,8 +9,8 @@ extern "C" {
 #endif
 
 #define RS_API_MAJOR_VERSION    1
-#define RS_API_MINOR_VERSION    9
-#define RS_API_PATCH_VERSION    8
+#define RS_API_MINOR_VERSION    11
+#define RS_API_PATCH_VERSION    0
 
 #define STRINGIFY(arg) #arg
 #define VAR_ARG_STRING(arg) STRINGIFY(arg)
@@ -19,6 +19,12 @@ extern "C" {
 #define RS_API_VERSION  (((RS_API_MAJOR_VERSION) * 10000) + ((RS_API_MINOR_VERSION) * 100) + (RS_API_PATCH_VERSION))
 /* Return version in "X.Y.Z" format */
 #define RS_API_VERSION_STR (VAR_ARG_STRING(RS_API_MAJOR_VERSION.RS_API_MINOR_VERSION.RS_API_PATCH_VERSION))
+
+typedef enum rs_frame_metadata
+{
+    RS_FRAME_METADATA_ACTUAL_EXPOSURE,
+    RS_FRAME_METADATA_COUNT
+} rs_frame_metadata;
 
 /* rs_capabilities defines the full set of functionality that a RealSense device might provide
    to check what functionality is supported by a particular device at runtime call dev->supports(capability) */
@@ -707,6 +713,20 @@ int rs_supports(rs_device * device, rs_capabilities capability, rs_error ** erro
 */
 int rs_supports_camera_info(rs_device * device, rs_camera_info info_param, rs_error ** error);
 
+/**
+* retrive metadata from safe frame handle, returned from detach, clone_ref or from frame callback
+* \param[in] stream  the stream whose latest frame we are interested in
+* \param[in] frame_metadata  the rs_frame_metadata whose latest frame we are interested in
+* \return            the metadata value
+*/
+double rs_get_detached_frame_metadata(const rs_frame_ref * frame, rs_frame_metadata frame_metadata, rs_error ** error);
+
+/**
+* determine device metadata
+* \param[in] metadata  the metadata to check for support
+* \return                true if device has this metadata
+*/
+int rs_supports_frame_metadata(const rs_frame_ref * frame, rs_frame_metadata frame_metadata, rs_error ** error);
 
 /**
  * retrieve the time at which the latest frame on a stream was captured
