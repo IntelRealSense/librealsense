@@ -492,6 +492,7 @@
 					"$(SRCROOT)/../include/**",
 					"$(SRCROOT)/../third_party/libuvc/include",
 					/usr/local/include,
+					"/usr/local/include/libusb-1.0",
 					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
 				);
 				LIBRARY_SEARCH_PATHS = (
@@ -518,6 +519,7 @@
 					"$(SRCROOT)/../include/**",
 					"$(SRCROOT)/../third_party/libuvc/include",
 					/usr/local/include,
+					"/usr/local/include/libusb-1.0",
 					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
 				);
 				LIBRARY_SEARCH_PATHS = (
