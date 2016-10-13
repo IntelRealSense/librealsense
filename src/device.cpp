@@ -357,10 +357,12 @@ void rs_device_base::start_video_streaming()
             streams.push_back(output.first);
         }     
 
+        auto supported_metadata_vector = std::make_shared<std::vector<rs_frame_metadata>>(config.info.supported_metadata_vector);
+
         std::shared_ptr<drops_status> frame_drops_status(new drops_status{});
         // Initialize the subdevice and set it to the selected mode
         set_subdevice_mode(*device, mode_selection.mode.subdevice, mode_selection.mode.native_dims.x, mode_selection.mode.native_dims.y, mode_selection.mode.pf.fourcc, mode_selection.mode.fps, 
-            [this, mode_selection, archive, timestamp_reader, streams, capture_start_time, frame_drops_status](const void * frame, std::function<void()> continuation) mutable
+            [this, mode_selection, archive, timestamp_reader, streams, capture_start_time, frame_drops_status, supported_metadata_vector](const void * frame, std::function<void()> continuation) mutable
         {
             auto now = std::chrono::system_clock::now().time_since_epoch();
             auto sys_time = std::chrono::duration_cast<std::chrono::milliseconds>(now).count();
@@ -429,7 +431,7 @@ void rs_device_base::start_video_streaming()
                     output.second,
                     output.first,
                     mode_selection.pad_crop,
-                    config.info.supported_metadata_vector,
+                    supported_metadata_vector,
                     exposure_value[0]);
 
                 // Obtain buffers for unpacking the frame
