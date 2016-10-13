@@ -11,11 +11,11 @@
 
 namespace rsimpl
 {
-    struct sr300_camera;
+    class sr300_camera;
     
     struct sr300_info : rs_device_info
     {
-        rs_device* create(const rsimpl::uvc::backend& backend) const override;
+        std::shared_ptr<rsimpl::device> create(const rsimpl::uvc::backend& backend) const override;
 
         rs_device_info* clone() const override
         {
@@ -32,8 +32,9 @@ namespace rsimpl
 
     std::vector<std::shared_ptr<rs_device_info>> pick_sr300_devices(std::vector<uvc::uvc_device_info>& uvc);
 
-    struct sr300_camera final : rs_device
+    class sr300_camera final : public device
     {
+    public:
         sr300_camera(const uvc::backend& backend,
               const uvc::uvc_device_info& color,
               const uvc::uvc_device_info& depth)
@@ -50,7 +51,6 @@ namespace rsimpl
             // map formats, based on FW spec
             map_output(RS_FORMAT_Z16, RS_STREAM_DEPTH, "{5A564E49-2D90-4A58-920B-773F1F2C556B}");
         }
-
     private:
 
     };

@@ -149,7 +149,7 @@ rs_device* rs_create_device(const rs_context* context, const rs_device_info* inf
 {
     VALIDATE_NOT_NULL(context);
     VALIDATE_NOT_NULL(info);
-    return info->create(context->get_backend());
+    return new rs_device{ info->create(context->get_backend()) };
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, context, info)
 
@@ -164,7 +164,7 @@ int rs_is_subdevice_supported(const rs_device* device, rs_subdevice subdevice, r
 {
     VALIDATE_NOT_NULL(device);
     VALIDATE_ENUM(subdevice);
-    return device->supports(subdevice) ? 1 : 0;
+    return device->device->supports(subdevice) ? 1 : 0;
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, device, subdevice)
 
@@ -172,7 +172,7 @@ rs_stream_profile_list* rs_get_supported_profiles(rs_device* device, rs_subdevic
 {
     VALIDATE_NOT_NULL(device);
     VALIDATE_ENUM(subdevice);
-    return new rs_stream_profile_list{ device->get_endpoint(subdevice).get_stream_profiles() };
+    return new rs_stream_profile_list{ device->device->get_endpoint(subdevice).get_stream_profiles() };
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, device, subdevice)
 
@@ -215,7 +215,7 @@ rs_stream_lock* rs_open_subdevice(rs_device* device, rs_subdevice subdevice,
 {
     std::vector<rsimpl::stream_profile> request;
     request.push_back({ stream, width, height, fps, format });
-    auto result = new rs_stream_lock{ device->get_endpoint(subdevice).configure(request) };
+    auto result = new rs_stream_lock{ device->device->get_endpoint(subdevice).configure(request) };
     result->lock->set_owner(result);
     return result;
 }

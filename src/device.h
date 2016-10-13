@@ -10,6 +10,10 @@
 #include <memory>
 #include <vector>
 
+namespace rs{
+    class device;
+}
+
 namespace rsimpl
 {
     
@@ -155,6 +159,8 @@ namespace rsimpl
         const rs_stream_lock* _owner;
     };
 
+    class device;
+
     class endpoint
     {
     public:
@@ -169,16 +175,16 @@ namespace rsimpl
     class uvc_endpoint : public endpoint
     {
     public:
-        uvc_endpoint(std::shared_ptr<uvc::uvc_device> device,
-                     rs_device* owner)
-            : _device(std::move(device)), _owner(owner) {}
+        uvc_endpoint(std::shared_ptr<uvc::uvc_device> uvc_device,
+                     device* owner)
+            : _device(std::move(uvc_device)), _owner(owner) {}
 
         std::vector<stream_profile> get_stream_profiles() override;
 
         std::shared_ptr<rsimpl::streaming_lock> configure(
             const std::vector<stream_profile>& request) override;
 
-        const rs_device& get_device() const { return *_owner; }
+        const device& get_device() const { return *_owner; }
 
         void register_xu(uvc::extension_unit xu)
         {
@@ -235,18 +241,76 @@ namespace rsimpl
         };
 
         std::shared_ptr<uvc::uvc_device> _device;
-        rs_device* _owner;
+        device* _owner;
         int _user_count = 0;
         std::mutex _power_lock;
         std::mutex _configure_lock;
         std::vector<uvc::stream_profile> _configuration;
         std::vector<uvc::extension_unit> _xus;
     };
+
+    class device
+    {
+    public:
+        device()
+        {
+            _endpoints.resize(RS_SUBDEVICE_COUNT);
+            map_output(RS_FORMAT_YUYV, RS_STREAM_COLOR, "{32595559-0000-0010-8000-00AA00389B71}");
+        }
+
+        virtual ~device() = default;
+
+        bool supports(rs_subdevice subdevice) const
+        {
+            return _endpoints[subdevice].get() != nullptr;
+        }
+
+        rsimpl::endpoint& get_endpoint(rs_subdevice sub) { return *_endpoints[sub]; }
+
+        bool supports_guid(const std::string& guid) const
+        {
+            auto it = _guid_to_output.find(guid);
+            return it != _guid_to_output.end();
+        }
+
+        rsimpl::output_type guid_to_format(const std::string& guid) const
+        {
+            auto it = _guid_to_output.find(guid);
+            return it->second;
+        }
+
+        std::string format_to_guid(rs_stream stream, rs_format format) const
+        {
+            for (auto& kvp : _guid_to_output)
+            {
+                if (kvp.second.format == format && kvp.second.stream == stream)
+                {
+                    return kvp.first;
+                }
+            }
+            throw std::runtime_error("Requested stream format is not supported by this device!");
+        }
+
+    protected:
+        void assign_endpoint(rs_subdevice subdevice,
+            std::shared_ptr<rsimpl::endpoint> endpoint)
+        {
+            _endpoints[subdevice] = std::move(endpoint);
+        }
+
+        void map_output(rs_format format, rs_stream stream, const std::string& guid)
+        {
+            _guid_to_output[guid] = { stream, format };
+        }
+    private:
+        std::vector<std::shared_ptr<rsimpl::endpoint>> _endpoints;
+        std::map<std::string, rsimpl::output_type> _guid_to_output;
+    };
 }
 
 struct rs_device_info
 {
-    virtual rs_device* create(const rsimpl::uvc::backend& backend) const = 0;
+    virtual std::shared_ptr<rsimpl::device> create(const rsimpl::uvc::backend& backend) const = 0;
     virtual rs_device_info* clone() const = 0;
 
     virtual ~rs_device_info() = default;
@@ -264,57 +328,5 @@ struct rs_stream_lock
 
 struct rs_device
 {
-    rs_device()
-    {
-        _endpoints.resize(RS_SUBDEVICE_COUNT);
-        map_output(RS_FORMAT_YUYV, RS_STREAM_COLOR, "{32595559-0000-0010-8000-00AA00389B71}");
-    }
-
-    virtual ~rs_device() = default;
-
-    bool supports(rs_subdevice subdevice) const
-    {
-        return _endpoints[subdevice].get() != nullptr;
-    }
-
-    rsimpl::endpoint& get_endpoint(rs_subdevice sub) { return *_endpoints[sub]; }
-
-    bool supports_guid(const std::string& guid) const
-    {
-        auto it = _guid_to_output.find(guid);
-        return it != _guid_to_output.end();
-    }
-
-    rsimpl::output_type guid_to_format(const std::string& guid) const
-    {
-        auto it = _guid_to_output.find(guid);
-        return it->second;
-    }
-
-    std::string format_to_guid(rs_stream stream, rs_format format) const
-    {
-        for (auto& kvp : _guid_to_output)
-        {
-            if (kvp.second.format == format && kvp.second.stream == stream)
-            {
-                return kvp.first;
-            }
-        }
-        throw std::runtime_error("Requested stream format is not supported by this device!");
-    }
-
-protected:
-    void assign_endpoint(rs_subdevice subdevice,
-                         std::shared_ptr<rsimpl::endpoint> endpoint)
-    {
-        _endpoints[subdevice] = std::move(endpoint);
-    }
-
-    void map_output(rs_format format, rs_stream stream, const std::string& guid)
-    {
-        _guid_to_output[guid] = { stream, format };
-    }
-private:
-    std::vector<std::shared_ptr<rsimpl::endpoint>> _endpoints;
-    std::map<std::string, rsimpl::output_type> _guid_to_output;
+    std::shared_ptr<rsimpl::device> device;
 };
