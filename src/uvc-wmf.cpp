@@ -935,7 +935,7 @@ namespace rsimpl
                     check("IMFMediaType::GetGUID", media_type->GetGUID(MF_MT_SUBTYPE, &subtype));
                     uint32_t device_fourcc = reinterpret_cast<const big_endian<uint32_t> &>(subtype.Data1);
 
-                    if (device_fourcc != fourcc && fourcc_map.count(device_fourcc) && fourcc != fourcc_map.at(device_fourcc))
+                    if (!((device_fourcc == fourcc) || ((fourcc_map.count(device_fourcc) && (fourcc == fourcc_map.at(device_fourcc))))))
                         continue;
 
                     check("MFGetAttributeRatio", MFGetAttributeRatio(media_type, MF_MT_FRAME_RATE, &uvc_fps_num, &uvc_fps_denom));
