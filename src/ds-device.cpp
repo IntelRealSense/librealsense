@@ -716,11 +716,8 @@ namespace rsimpl
             return true;
         }
 
-        double get_frame_timestamp(const subdevice_mode & mode, const void * frame, double /*fps*/) override
+        double get_frame_timestamp(const subdevice_mode & mode, const void * frame, double /*actual_fps*/) override
         {
-          //auto frame_number = 0;
-         
-          //frame_number = get_dinghy(mode, frame).frameCount; // All other formats can use the frame number in the dinghy row
           auto new_ts = timestamp_wraparound.fix(last_timestamp + 1000. / fps);
           last_timestamp = new_ts;
           return new_ts;
@@ -852,7 +849,7 @@ namespace rsimpl
             return frame_counter_wraparound.fix(frame_number);
         }
 
-        double get_frame_timestamp(const subdevice_mode & mode, const void * frame, double /*fps*/) override
+        double get_frame_timestamp(const subdevice_mode & mode, const void * frame, double /*actual_fps*/) override
         {
             auto new_ts = timestamp_wraparound.fix(last_timestamp + 1000. / fps);
             last_timestamp = new_ts;
@@ -871,7 +868,7 @@ namespace rsimpl
         serial_timestamp_generator(int fps) : fps(fps), serial_frame_number(), last_timestamp(0), timestamp_wraparound(0, std::numeric_limits<uint32_t>::max()), frame_counter_wraparound(0, std::numeric_limits<uint32_t>::max()) {}
 
         bool validate_frame(const subdevice_mode & /*mode*/, const void * /*frame*/) override { return true; }
-        double get_frame_timestamp(const subdevice_mode &, const void *, double /*fps*/) override
+        double get_frame_timestamp(const subdevice_mode &, const void *, double /*actual_fps*/) override
         {
             auto new_ts = timestamp_wraparound.fix(last_timestamp + 1000. / fps);
             last_timestamp = new_ts;

@@ -23,7 +23,7 @@ extern "C" {
 typedef enum rs_frame_metadata
 {
     RS_FRAME_METADATA_ACTUAL_EXPOSURE,
-	RS_FRAME_METADATA_ACTUAL_FPS,
+    RS_FRAME_METADATA_ACTUAL_FPS,
     RS_FRAME_METADATA_COUNT
 } rs_frame_metadata;
 

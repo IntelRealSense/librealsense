@@ -19,7 +19,7 @@ namespace rs
     enum class frame_metadata
     {
         actual_exposure,
-		actual_fps
+        actual_fps
     };
 
     enum class capabilities : int32_t
