@@ -755,7 +755,7 @@ namespace rsimpl
 
         std::string fw_version;
         std::mutex mutex;
-		int configured_fps;
+        int configured_fps;
         unsigned last_fisheye_counter;
         double last_fisheye_timestamp;
         wraparound_mechanism<double> timestamp_wraparound;
@@ -763,9 +763,9 @@ namespace rsimpl
         mutable bool validate;
 
     public:
-		fisheye_timestamp_reader(int in_configured_fps, const char* fw_ver) : configured_fps(in_configured_fps), last_fisheye_timestamp(0), last_fisheye_counter(0), timestamp_wraparound(1, std::numeric_limits<uint32_t>::max()), frame_counter_wraparound(0, std::numeric_limits<uint32_t>::max()), validate(true), fw_version(fw_ver){}
+        fisheye_timestamp_reader(int in_configured_fps, const char* fw_ver) : configured_fps(in_configured_fps), last_fisheye_timestamp(0), last_fisheye_counter(0), timestamp_wraparound(1, std::numeric_limits<uint32_t>::max()), frame_counter_wraparound(0, std::numeric_limits<uint32_t>::max()), validate(true), fw_version(fw_ver){}
 
-		bool validate_frame(const subdevice_mode & /*mode*/, const void * frame) override
+        bool validate_frame(const subdevice_mode & /*mode*/, const void * frame) override
         {
             if (!validate)
                 return true;
