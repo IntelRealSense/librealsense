@@ -10,6 +10,20 @@
 
 namespace rsimpl {
 namespace ivcam {
+    // IVCAM depth XU identifiers
+    const uint8_t IVCAM_DEPTH_LASER_POWER = 1;
+    const uint8_t IVCAM_DEPTH_ACCURACY = 2;
+    const uint8_t IVCAM_DEPTH_MOTION_RANGE = 3;
+    const uint8_t IVCAM_DEPTH_ERROR = 4;
+    const uint8_t IVCAM_DEPTH_FILTER_OPTION = 5;
+    const uint8_t IVCAM_DEPTH_CONFIDENCE_THRESH = 6;
+    const uint8_t IVCAM_DEPTH_DYNAMIC_FPS = 7; // Only available on IVCAM 1.0 / F200
+
+                                               // IVCAM color XU identifiers
+    const uint8_t IVCAM_COLOR_EXPOSURE_PRIORITY = 1;
+    const uint8_t IVCAM_COLOR_AUTO_FLICKER = 2;
+    const uint8_t IVCAM_COLOR_ERROR = 3;
+    const uint8_t IVCAM_COLOR_EXPOSURE_GRANULAR = 4;
 
     const uvc::extension_unit depth_xu{ 1, 6, 1, { 0xA55751A1, 0xF3C5, 0x4A5E, { 0x8D, 0x5A, 0x68, 0x54, 0xB8, 0xFA, 0x27, 0x16 } } };
 

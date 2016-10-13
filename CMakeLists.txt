@@ -129,6 +129,10 @@ if(WIN32)
 		include/librealsense/rscore.hpp
 		CMake/realsense.def
 		)
+		
+	source_group("Source Files\\API" FILES 
+		src/rs.cpp
+		)
 
 	source_group("Source Files\\Devices" FILES 
 		src/ds5.cpp

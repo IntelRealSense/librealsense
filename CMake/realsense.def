@@ -42,6 +42,10 @@ EXPORTS
     rs_get_frame_stream_type
     rs_release_frame
 
+    rs_get_subdevice_option
+    rs_set_subdevice_option
+    rs_supports_subdevice_option
+
     rs_get_failed_function
     rs_get_failed_args
     rs_get_error_message

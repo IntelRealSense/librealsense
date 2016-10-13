@@ -24,6 +24,9 @@ int main() try
         {
             std::cout << format.stream << " " << format.format << " " << format.width << "x" << format.height << " " << format.fps << std::endl;
 
+            auto exp = dev.color().get_option(RS_OPTION_COLOR_EXPOSURE);
+            auto mvr = dev.depth().get_option(RS_OPTION_F200_MOTION_RANGE);
+
             std::cout << "starting streaming " << std::endl;
             auto streaming = dev.color().open(format);
 
@@ -47,7 +50,7 @@ int main() try
 
     return EXIT_SUCCESS;
 }
-catch(const rs::error & e)
+catch(const error & e)
 {
     std::cerr << "RealSense error calling " << e.get_failed_function() << "(" << e.get_failed_args() << "):\n    " << e.what() << std::endl;
     return EXIT_FAILURE;

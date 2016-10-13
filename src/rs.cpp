@@ -260,6 +260,33 @@ void rs_release_streaming_lock(rs_stream_lock* lock) try
 }
 catch (...) {}
 
+float rs_get_subdevice_option(const rs_device* device, rs_subdevice subdevice, rs_option option, rs_error** error) try
+{
+    VALIDATE_NOT_NULL(device);
+    VALIDATE_ENUM(subdevice);
+    VALIDATE_ENUM(option);
+    return device->device->get_option(subdevice, option).query();
+}
+HANDLE_EXCEPTIONS_AND_RETURN(0.0f, device, subdevice, option)
+
+void rs_set_subdevice_option(const rs_device* device, rs_subdevice subdevice, rs_option option, float value, rs_error** error) try
+{
+    VALIDATE_NOT_NULL(device);
+    VALIDATE_ENUM(subdevice);
+    VALIDATE_ENUM(option);
+    device->device->get_option(subdevice, option).set(value);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, device, subdevice, option, value)
+
+int rs_supports_subdevice_option(const rs_device* device, rs_subdevice subdevice, rs_option option, rs_error** error) try
+{
+    VALIDATE_NOT_NULL(device);
+    VALIDATE_ENUM(subdevice);
+    VALIDATE_ENUM(option);
+    return device->device->supports_option(subdevice, option);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(0, device, subdevice, option)
+
 /*int rs_get_device_count(const rs_context * context, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(context);

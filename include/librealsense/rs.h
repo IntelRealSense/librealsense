@@ -329,17 +329,12 @@ typedef struct rs_device rs_device;
 typedef struct rs_error rs_error;
 typedef struct rs_stream_lock rs_stream_lock;
 typedef struct rs_stream_profile_list rs_stream_profile_list;
-
-typedef struct rs_frameset rs_frameset;
 typedef struct rs_frame_ref rs_frame_ref;
-typedef struct rs_motion_callback rs_motion_callback;
+
 typedef struct rs_frame_callback rs_frame_callback;
-typedef struct rs_timestamp_callback rs_timestamp_callback;
 typedef struct rs_log_callback rs_log_callback;
 
 typedef void (*rs_frame_callback_ptr)(const rs_stream_lock*, rs_frame_ref*, void*);
-typedef void (*rs_motion_callback_ptr)(rs_device*, rs_motion_data, void*);
-typedef void (*rs_timestamp_callback_ptr)(rs_device*, rs_timestamp_data, void*);
 typedef void (*rs_log_callback_ptr)(rs_log_severity min_severity, const char* message, void* user);
 
 rs_context* rs_create_context(int api_version, rs_error** error);
@@ -382,6 +377,10 @@ int rs_get_frame_bits_per_pixel(const rs_frame_ref * frame, rs_error ** error);
 rs_format rs_get_frame_format(const rs_frame_ref * frame, rs_error ** error);
 rs_stream rs_get_frame_stream_type(const rs_frame_ref * frameset, rs_error ** error);
 void rs_release_frame(const rs_stream_lock* lock, rs_frame_ref * frame);
+
+float rs_get_subdevice_option(const rs_device* device, rs_subdevice subdevice, rs_option option, rs_error** error);
+void rs_set_subdevice_option(const rs_device* device, rs_subdevice subdevice, rs_option option, float value, rs_error** error);
+int rs_supports_subdevice_option(const rs_device* device, rs_subdevice subdevice, rs_option option, rs_error** error);
 
 /**
 * retrieve the API version from the source code. Evaluate that the value is conformant to the established policies

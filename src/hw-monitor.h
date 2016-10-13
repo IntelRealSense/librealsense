@@ -37,20 +37,7 @@
 //const uint16_t  HW_MONITOR_COMMAND_SIZE         = 1000;
 //const uint16_t  HW_MONITOR_BUFFER_SIZE          = 1024;
 //
-//// IVCAM depth XU identifiers
-//const uint8_t IVCAM_DEPTH_LASER_POWER           = 1;
-//const uint8_t IVCAM_DEPTH_ACCURACY              = 2;
-//const uint8_t IVCAM_DEPTH_MOTION_RANGE          = 3;
-//const uint8_t IVCAM_DEPTH_ERROR                 = 4;
-//const uint8_t IVCAM_DEPTH_FILTER_OPTION         = 5;
-//const uint8_t IVCAM_DEPTH_CONFIDENCE_THRESH     = 6;
-//const uint8_t IVCAM_DEPTH_DYNAMIC_FPS           = 7; // Only available on IVCAM 1.0 / F200
-//
-//// IVCAM color XU identifiers
-//const uint8_t IVCAM_COLOR_EXPOSURE_PRIORITY     = 1;
-//const uint8_t IVCAM_COLOR_AUTO_FLICKER          = 2;
-//const uint8_t IVCAM_COLOR_ERROR                 = 3;
-//const uint8_t IVCAM_COLOR_EXPOSURE_GRANULAR     = 4;
+
 //
 //namespace rsimpl
 //{

@@ -16,8 +16,6 @@ namespace rs{
 
 namespace rsimpl
 {
-    
-
     // This class is used to buffer up several writes to a structure-valued XU control, and send the entire structure all at once
     // Additionally, it will ensure that any fields not set in a given struct will retain their original values
     template<class T, class R, class W> struct struct_interface
@@ -73,11 +71,11 @@ namespace rsimpl
 
     class device;
 
-    namespace motion_module
-    {
-        struct motion_module_parser;
-    }
-    struct cam_mode { int2 dims; std::vector<int> fps; };
+    //namespace motion_module
+    //{
+    //    struct motion_module_parser;
+    //}
+    //struct cam_mode { int2 dims; std::vector<int> fps; };
 
     struct stream_profile
     {
@@ -180,7 +178,7 @@ namespace rsimpl
 
         std::vector<stream_profile> get_stream_profiles() override;
 
-        std::shared_ptr<rsimpl::streaming_lock> configure(
+        std::shared_ptr<streaming_lock> configure(
             const std::vector<stream_profile>& request) override;
 
         const device& get_device() const { return *_owner; }
@@ -188,6 +186,14 @@ namespace rsimpl
         void register_xu(uvc::extension_unit xu)
         {
             _xus.push_back(std::move(xu));
+        }
+
+        template<class T>
+        auto invoke_powered(T action) 
+            -> decltype(action(*static_cast<uvc::uvc_device*>(nullptr)))
+        {
+            power on(this);
+            return action(*_device);
         }
 
         void stop_streaming();
@@ -248,6 +254,126 @@ namespace rsimpl
         std::vector<uvc::extension_unit> _xus;
     };
 
+    struct option_range
+    {
+        float min;
+        float max;
+        float step;
+        float def;
+    };
+
+    class option
+    {
+    public:
+        virtual void set(float value) = 0;
+        virtual float query() const = 0;
+        virtual option_range get_range() const = 0;
+        virtual bool is_enabled() const = 0;
+
+        virtual ~option() = default;
+    };
+
+    class uvc_pu_option : public option
+    {
+    public:
+        void set(float value) override
+        {
+            _ep.invoke_powered(
+                [this, value](uvc::uvc_device& dev)
+                {
+                    dev.set_pu(_id, static_cast<int>(value));
+                });
+        }
+        float query() const override
+        {
+            return static_cast<float>(_ep.invoke_powered(
+                [this](uvc::uvc_device& dev)
+                {
+                    return dev.get_pu(_id);
+                }));
+        }
+        option_range get_range() const override
+        {
+            auto uvc_range = _ep.invoke_powered(
+                [this](uvc::uvc_device& dev)
+                {
+                    return dev.get_pu_range(_id);
+                });
+            option_range result;
+            result.min  = static_cast<float>(uvc_range.min);
+            result.max  = static_cast<float>(uvc_range.max);
+            result.def  = static_cast<float>(uvc_range.def);
+            result.step = static_cast<float>(uvc_range.step);
+            return result;
+        }
+        bool is_enabled() const override
+        {
+            return true;
+        }
+
+        uvc_pu_option(uvc_endpoint& ep, rs_option id)
+            : _ep(ep), _id(id)
+        {
+        }
+
+    private:
+        uvc_endpoint& _ep;
+        rs_option _id;
+    };
+
+    template<typename T>
+    class uvc_xu_option : public option
+    {
+    public:
+        void set(float value) override
+        {
+            _ep.invoke_powered(
+                [this, value](uvc::uvc_device& dev)
+                {
+                    T t = static_cast<T>(value);
+                    dev.set_xu(_xu, _id, &t, sizeof(T));
+                });
+        }
+        float query() const override
+        {
+            return static_cast<float>(_ep.invoke_powered(
+                [this](uvc::uvc_device& dev)
+                {
+                    T t;
+                    dev.set_xu(_xu, _id, &t, sizeof(T));
+                    return static_cast<float>(t);
+                }));
+        }
+        option_range get_range() const override
+        {
+            auto uvc_range = _ep.invoke_powered(
+                [this](uvc::uvc_device& dev)
+                {
+                    return dev.get_xu_range(_xu, _id);
+                });
+            option_range result;
+            result.min = static_cast<float>(uvc_range.min);
+            result.max = static_cast<float>(uvc_range.max);
+            result.def = static_cast<float>(uvc_range.def);
+            result.step = static_cast<float>(uvc_range.step);
+            return result;
+        }
+        bool is_enabled() const override
+        {
+            return true;
+        }
+
+        uvc_xu_option(uvc_endpoint& ep, uvc::extension_unit xu, int id)
+            : _ep(ep), _xu(xu), _id(id)
+        {
+        }
+
+    private:
+        uvc_endpoint& _ep;
+        uvc::extension_unit _xu;
+        int _id;
+    };
+
     class device
     {
     public:
@@ -264,7 +390,7 @@ namespace rsimpl
             return _endpoints[subdevice].get() != nullptr;
         }
 
-        rsimpl::endpoint& get_endpoint(rs_subdevice sub) { return *_endpoints[sub]; }
+        endpoint& get_endpoint(rs_subdevice sub) { return *_endpoints[sub]; }
 
         bool supports_guid(const std::string& guid) const
         {
@@ -272,7 +398,7 @@ namespace rsimpl
             return it != _guid_to_output.end();
         }
 
-        rsimpl::output_type guid_to_format(const std::string& guid) const
+        output_type guid_to_format(const std::string& guid) const
         {
             auto it = _guid_to_output.find(guid);
             return it->second;
@@ -290,9 +416,29 @@ namespace rsimpl
             throw std::runtime_error("Requested stream format is not supported by this device!");
         }
 
+        option& get_option(rs_subdevice subdevice, rs_option id)
+        {
+            auto it = _options.find(std::make_pair(subdevice, id));
+            if (it == _options.end())
+            {
+                throw std::runtime_error(to_string() 
+                    << "Subdevice " << rs_subdevice_to_string(subdevice) 
+                    << " does not support option " 
+                    << rs_option_to_string(id) << "!");
+            }
+            return *it->second;
+        }
+
+        bool supports_option(rs_subdevice subdevice, rs_option id)
+        {
+            auto it = _options.find(std::make_pair(subdevice, id));
+            if (it == _options.end()) return false;
+            return it->second->is_enabled();
+        }
+
     protected:
         void assign_endpoint(rs_subdevice subdevice,
-            std::shared_ptr<rsimpl::endpoint> endpoint)
+            std::shared_ptr<endpoint> endpoint)
         {
             _endpoints[subdevice] = std::move(endpoint);
         }
@@ -301,8 +447,24 @@ namespace rsimpl
         {
             _guid_to_output[guid] = { stream, format };
         }
+
+        uvc_endpoint& get_uvc_endpoint(rs_subdevice sub)
+        {
+            return static_cast<uvc_endpoint&>(*_endpoints[sub]);
+        }
+
+        void register_option(rs_option id, rs_subdevice subdevice, std::shared_ptr<option> option)
+        {
+            _options[std::make_pair(subdevice, id)] = std::move(option);
+        }
+
+        void register_pu(rs_subdevice subdevice, rs_option id)
+        {
+            register_option(id, subdevice, std::make_shared<uvc_pu_option>(get_uvc_endpoint(subdevice), id));
+        }
     private:
-        std::vector<std::shared_ptr<rsimpl::endpoint>> _endpoints;
-        std::map<std::string, rsimpl::output_type> _guid_to_output;
+        std::vector<std::shared_ptr<endpoint>> _endpoints;
+        std::map<std::pair<rs_subdevice, rs_option>, std::shared_ptr<option>> _options;
+        std::map<std::string, output_type> _guid_to_output;
     };
 }

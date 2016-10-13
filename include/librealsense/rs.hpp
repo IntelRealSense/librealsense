@@ -185,7 +185,7 @@ namespace rs
             return r;;
         }
 
-        rs_stream get_stream_type()
+        rs_stream get_stream_type() const
         {
             rs_error * e = nullptr;
             auto s = rs_get_frame_stream_type(frame_ref, &e);
@@ -251,6 +251,29 @@ namespace rs
             error::handle(e);
 
             return streaming_lock(lock);
+        }
+
+        float get_option(rs_option option) const
+        {
+            rs_error* e = nullptr;
+            auto res = rs_get_subdevice_option(_dev, _index, option, &e);
+            error::handle(e);
+            return res;
+        }
+
+        void set_option(rs_option option, float value) const
+        {
+            rs_error* e = nullptr;
+            rs_set_subdevice_option(_dev, _index, option, value, &e);
+            error::handle(e);
+        }
+
+        bool supports(rs_option option) const
+        {
+            rs_error* e = nullptr;
+            auto res = rs_supports_subdevice_option(_dev, _index, option, &e);
+            error::handle(e);
+            return res;
         }
 
         std::vector<stream_profile> get_stream_profiles() const
@@ -394,48 +417,38 @@ namespace rs
     inline std::ostream & operator << (std::ostream & o, rs_subdevice evt) { return o << rs_subdevice_to_string(evt); }
 
 
-    enum class log_severity : int32_t
-    {
-        debug = 0, // Detailed information about ordinary operations
-        info = 1, // Terse information about ordinary operations
-        warn = 2, // Indication of possible failure
-        error = 3, // Indication of definite failure
-        fatal = 4, // Indication of unrecoverable failure
-        none = 5, // No logging will occur
-    };
-
     class log_callback : public rs_log_callback
     {
-        std::function<void(log_severity, const char *)> on_event_function;
+        std::function<void(rs_log_severity, const char *)> on_event_function;
     public:
-        explicit log_callback(std::function<void(log_severity, const char *)> on_event) : on_event_function(on_event) {}
+        explicit log_callback(std::function<void(rs_log_severity, const char *)> on_event) : on_event_function(on_event) {}
 
         void on_event(rs_log_severity severity, const char * message) override
         {
-            on_event_function((log_severity)severity, message);
+            on_event_function(static_cast<rs_log_severity>(severity), message);
         }
 
         void release() override { delete this; }
     };
 
-    inline void log_to_console(log_severity min_severity)
+    inline void log_to_console(rs_log_severity min_severity)
     {
         rs_error * e = nullptr;
-        rs_log_to_console((rs_log_severity)min_severity, &e);
+        rs_log_to_console(min_severity, &e);
         error::handle(e);
     }
 
-    inline void log_to_file(log_severity min_severity, const char * file_path)
+    inline void log_to_file(rs_log_severity min_severity, const char * file_path)
     {
         rs_error * e = nullptr;
-        rs_log_to_file((rs_log_severity)min_severity, file_path, &e);
+        rs_log_to_file(min_severity, file_path, &e);
         error::handle(e);
     }
 
-    inline void log_to_callback(log_severity min_severity, std::function<void(log_severity, const char *)> callback)
+    inline void log_to_callback(rs_log_severity min_severity, std::function<void(rs_log_severity, const char *)> callback)
     {
         rs_error * e = nullptr;
-        rs_log_to_callback_cpp((rs_log_severity)min_severity, new log_callback(callback), &e);
+        rs_log_to_callback_cpp(min_severity, new log_callback(callback), &e);
         error::handle(e);
     }
 };
