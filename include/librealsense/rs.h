@@ -360,27 +360,30 @@ void rs_delete_profiles_list(rs_stream_profile_list* list);
 rs_stream_lock* rs_open_subdevice(rs_device* device, rs_subdevice subdevice, rs_stream stream, int width, int height, int fps, rs_format format, rs_error** error);
 void rs_release_streaming_lock(rs_stream_lock* lock);
 
-void rs_play(rs_stream_lock* lock, rs_frame_callback_ptr on_frame, void * user, rs_error ** error);
-void rs_play_cpp(rs_stream_lock* lock, rs_frame_callback * callback, rs_error ** error);
-void rs_stop(rs_stream_lock* lock, rs_error ** error);
+void rs_play(rs_stream_lock* lock, rs_frame_callback_ptr on_frame, void* user, rs_error** error);
+void rs_play_cpp(rs_stream_lock* lock, rs_frame_callback* callback, rs_error** error);
+void rs_stop(rs_stream_lock* lock, rs_error** error);
 
-double rs_get_frame_metadata(const rs_frame_ref * frame, rs_frame_metadata frame_metadata, rs_error ** error);
-int rs_supports_frame_metadata(const rs_frame_ref * frame, rs_frame_metadata frame_metadata, rs_error ** error);
-double rs_get_frame_timestamp(const rs_frame_ref * frame, rs_error ** error);
-rs_timestamp_domain rs_get_frame_timestamp_domain(const rs_frame_ref * frameset, rs_error ** error);
-unsigned long long rs_get_frame_number(const rs_frame_ref * frame, rs_error ** error);
-const void * rs_get_frame_data(const rs_frame_ref * frame, rs_error ** error);
-int rs_get_frame_width(const rs_frame_ref * frame, rs_error ** error);
-int rs_get_frame_height(const rs_frame_ref * frame, rs_error ** error);
-int rs_get_frame_stride_in_bytes(const rs_frame_ref * frame, rs_error ** error);
-int rs_get_frame_bits_per_pixel(const rs_frame_ref * frame, rs_error ** error);
-rs_format rs_get_frame_format(const rs_frame_ref * frame, rs_error ** error);
-rs_stream rs_get_frame_stream_type(const rs_frame_ref * frameset, rs_error ** error);
-void rs_release_frame(const rs_stream_lock* lock, rs_frame_ref * frame);
+double rs_get_frame_metadata(const rs_frame_ref* frame, rs_frame_metadata frame_metadata, rs_error** error);
+int rs_supports_frame_metadata(const rs_frame_ref* frame, rs_frame_metadata frame_metadata, rs_error** error);
+double rs_get_frame_timestamp(const rs_frame_ref* frame, rs_error** error);
+rs_timestamp_domain rs_get_frame_timestamp_domain(const rs_frame_ref* frameset, rs_error** error);
+unsigned long long rs_get_frame_number(const rs_frame_ref* frame, rs_error** error);
+const void* rs_get_frame_data(const rs_frame_ref* frame, rs_error** error);
+int rs_get_frame_width(const rs_frame_ref* frame, rs_error** error);
+int rs_get_frame_height(const rs_frame_ref* frame, rs_error** error);
+int rs_get_frame_stride_in_bytes(const rs_frame_ref* frame, rs_error** error);
+int rs_get_frame_bits_per_pixel(const rs_frame_ref* frame, rs_error** error);
+rs_format rs_get_frame_format(const rs_frame_ref* frame, rs_error** error);
+rs_stream rs_get_frame_stream_type(const rs_frame_ref* frameset, rs_error** error);
+void rs_release_frame(const rs_stream_lock* lock, rs_frame_ref* frame);
 
 float rs_get_subdevice_option(const rs_device* device, rs_subdevice subdevice, rs_option option, rs_error** error);
 void rs_set_subdevice_option(const rs_device* device, rs_subdevice subdevice, rs_option option, float value, rs_error** error);
 int rs_supports_subdevice_option(const rs_device* device, rs_subdevice subdevice, rs_option option, rs_error** error);
+
+const char* rs_get_camera_info(const rs_device* device, rs_camera_info info, rs_error** error);
+int rs_supports_camera_info(const rs_device* device, rs_camera_info info, rs_error** error);
 
 /**
 * retrieve the API version from the source code. Evaluate that the value is conformant to the established policies

@@ -46,6 +46,9 @@ EXPORTS
     rs_set_subdevice_option
     rs_supports_subdevice_option
 
+    rs_get_camera_info
+    rs_supports_camera_info
+
     rs_get_failed_function
     rs_get_failed_args
     rs_get_error_message

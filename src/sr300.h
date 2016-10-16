@@ -42,8 +42,6 @@ namespace rsimpl
     class sr300_camera final : public device
     {
     public:
-
-
         sr300_camera(const uvc::backend& backend,
               const uvc::uvc_device_info& color,
               const uvc::uvc_device_info& depth,
@@ -51,6 +49,12 @@ namespace rsimpl
             : _hw_monitor(backend.create_usb_device(hwm_device))
         {
             using namespace ivcam;
+
+            auto fw_version = get_firmware_version_string();
+            auto serial = get_module_serial_string();
+            enable_timestamp(true, true);
+
+            register_device("Intel RealSense SR300", fw_version, serial);
 
             // create uvc-endpoint from backend uvc-device
             auto color_ep = std::make_shared<uvc_endpoint>(backend.create_uvc_device(color), this);
@@ -82,6 +86,15 @@ namespace rsimpl
             register_depth_xu(RS_OPTION_F200_MOTION_RANGE,         IVCAM_DEPTH_MOTION_RANGE);
             register_depth_xu(RS_OPTION_F200_CONFIDENCE_THRESHOLD, IVCAM_DEPTH_CONFIDENCE_THRESH);
             register_depth_xu(RS_OPTION_F200_FILTER_OPTION,        IVCAM_DEPTH_FILTER_OPTION);
+
+            auto c = get_calibration();
+            pose depth_to_color = { 
+                transpose(reinterpret_cast<const float3x3 &>(c.Rt)), 
+                          reinterpret_cast<const float3 &>(c.Tt) * 0.001f 
+            }; 
+            set_pose(RS_SUBDEVICE_DEPTH, inverse(depth_to_color));
+            set_pose(RS_SUBDEVICE_COLOR, { { { 1,0,0 },{ 0,1,0 },{ 0,0,1 } },{ 0,0,0 } });
+            set_depth_scale((c.Rmax / 0xFFFF) * 0.001f);
         }
     private:
         hw_monitor _hw_monitor;
@@ -101,7 +114,7 @@ namespace rsimpl
 
         void get_gvd(size_t sz, char * gvd, uint8_t gvd_cmd = ivcam::fw_cmd::GVD) const;
         std::string get_firmware_version_string(int gvd_cmd = static_cast<int>(ivcam::fw_cmd::GVD), int offset = 0) const;
-        std::string get_module_serial_string(int offset) const;
+        std::string get_module_serial_string() const;
 
         void force_hardware_reset() const;
         void enable_timestamp(bool colorEnable, bool depthEnable) const;
@@ -110,7 +123,7 @@ namespace rsimpl
             int16_t maxLaser, int16_t startLaser,
             int16_t ARUpperTH, int16_t ARLowerTH) const;
 
-        ivcam::camera_calib_params read_calibration() const;
+        ivcam::camera_calib_params get_calibration() const;
     };
 }
 

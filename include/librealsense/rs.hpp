@@ -273,7 +273,7 @@ namespace rs
             rs_error* e = nullptr;
             auto res = rs_supports_subdevice_option(_dev, _index, option, &e);
             error::handle(e);
-            return res;
+            return res > 0;
         }
 
         std::vector<stream_profile> get_stream_profiles() const
@@ -333,6 +333,21 @@ namespace rs
         subdevice& color() { return get_subdevice(RS_SUBDEVICE_COLOR); }
         subdevice& depth() { return get_subdevice(RS_SUBDEVICE_DEPTH); }
 
+        bool supports(rs_camera_info info) const
+        {
+            rs_error* e = nullptr;
+            auto is_supported = rs_supports_camera_info(_dev.get(), info, &e);
+            error::handle(e);
+            return is_supported > 0;
+        }
+
+        const char* get_camera_info(rs_camera_info info) const
+        {
+            rs_error* e = nullptr;
+            auto result = rs_get_camera_info(_dev.get(), info, &e);
+            error::handle(e);
+            return result;
+        }
 
     private:
         friend context;

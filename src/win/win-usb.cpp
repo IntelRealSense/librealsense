@@ -141,9 +141,6 @@ namespace rsimpl
                 throw winapi_error("Failed to clean-up SetupDiDestroyDeviceInfoList.");
             }
 
-            if(retVec.size() == 0)
-                throw std::runtime_error("Camera not connected!");
-
             return retVec;
         }
 

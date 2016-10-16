@@ -191,29 +191,21 @@ namespace rsimpl
     {
         std::vector<char> gvd(1024);
         get_gvd(1024, gvd.data(), gvd_cmd);
-        char fws[8];
+        uint8_t fws[8];
         memcpy(fws, gvd.data() + offset, 8); // offset 0
-        return to_string() << fws[3] << "." << fws[2] << "." << fws[1] << "." << fws[0];
+        return to_string() << static_cast<int>(fws[3]) << "." << static_cast<int>(fws[2]) 
+                           << "." << static_cast<int>(fws[1]) << "." << static_cast<int>(fws[0]);
     }
 
-    std::string sr300_camera::get_module_serial_string(int offset) const
+    std::string sr300_camera::get_module_serial_string() const
     {
         std::vector<char> gvd(1024);
         get_gvd(1024, gvd.data());
         unsigned char ss[8];
-        memcpy(ss, gvd.data() + offset, 8);
+        memcpy(ss, gvd.data() + 132, 8);
         char formattedBuffer[64];
-        if (offset == 96)
-        {
-            sprintf(formattedBuffer, "%02X%02X%02X%02X%02X%02X", ss[0], ss[1], ss[2], ss[3], ss[4], ss[5]);
-            return std::string(formattedBuffer);
-        }
-        if (offset == 132)
-        {
-            sprintf(formattedBuffer, "%02X%02X%02X%02X%02X%-2X", ss[0], ss[1], ss[2], ss[3], ss[4], ss[5]);
-            return std::string(formattedBuffer);
-        }
-        throw std::runtime_error("Invalid serial number offset!");
+        sprintf(formattedBuffer, "%02X%02X%02X%02X%02X%-2X", ss[0], ss[1], ss[2], ss[3], ss[4], ss[5]);
+        return std::string(formattedBuffer);
     }
 
     void sr300_camera::force_hardware_reset() const
@@ -283,7 +275,7 @@ namespace rsimpl
         TakeFromRAM = 2
     };
 
-    ivcam::camera_calib_params sr300_camera::read_calibration() const
+    ivcam::camera_calib_params sr300_camera::get_calibration() const
     {
         command command(ivcam::fw_cmd::GetCalibrationTable);
         command.param1 = static_cast<uint32_t>(cam_data_source::TakeFromRAM);

@@ -18,6 +18,16 @@ int main() try
     {
         auto dev = ctx.create(info);
 
+        for (auto i = 0; i < RS_CAMERA_INFO_COUNT; i++)
+        {
+            auto camera_info = static_cast<rs_camera_info>(i);
+            if (dev.supports(camera_info))
+            {
+                std::cout << rs_camera_info_to_string(camera_info) 
+                          << ": " << dev.get_camera_info(camera_info) << std::endl;
+            }
+        }
+
         auto& color = dev.color();
         auto color_formats = color.get_stream_profiles();
         for (auto format : color_formats)

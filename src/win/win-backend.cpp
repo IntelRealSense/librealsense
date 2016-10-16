@@ -59,24 +59,33 @@ namespace rsimpl
             return std::make_shared<winusb_bulk_transfer>(info);
         }
 
-        std::vector<usb_device_info> wmf_backend::query_usb_devices(const std::string& interface_id) const
+        std::vector<usb_device_info> wmf_backend::query_usb_devices() const
         {
+            const std::vector<std::string> usb_interfaces = {
+                "{175695CD-30D9-4F87-8BE3-5A8270F49A31}",
+                "{08090549-CE78-41DC-A0FB-1BD66694BB0C}"
+            };
+
             std::vector<usb_device_info> result;
-            for (auto&& id : usb_enumerate::query_by_interface(interface_id, "", ""))
+            for (auto&& interface_id : usb_interfaces)
             {
-                std::string path(id.begin(), id.end());
-                int vid, pid, mi; std::string unique_id;
-                if (!parse_usb_path(vid, pid, mi, unique_id, path)) continue;
+                for (auto&& id : usb_enumerate::query_by_interface(interface_id, "", ""))
+                {
+                    std::string path(id.begin(), id.end());
+                    int vid, pid, mi; std::string unique_id;
+                    if (!parse_usb_path(vid, pid, mi, unique_id, path)) continue;
 
-                usb_device_info info;
-                info.id = id;
-                info.vid = vid;
-                info.pid = pid;
-                info.unique_id = unique_id;
-                info.mi = mi;
+                    usb_device_info info;
+                    info.id = id;
+                    info.vid = vid;
+                    info.pid = pid;
+                    info.unique_id = unique_id;
+                    info.mi = mi;
 
-                result.push_back(info);
+                    result.push_back(info);
+                }
             }
+            
             return result;
         }
     }

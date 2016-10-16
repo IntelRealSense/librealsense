@@ -16,50 +16,6 @@ namespace rs{
 
 namespace rsimpl
 {
-    // This class is used to buffer up several writes to a structure-valued XU control, and send the entire structure all at once
-    // Additionally, it will ensure that any fields not set in a given struct will retain their original values
-    template<class T, class R, class W> struct struct_interface
-    {
-        T struct_;
-        R reader;
-        W writer;
-        bool active;
-
-        struct_interface(R r, W w) : reader(r), writer(w), active(false) {}
-
-        void activate() { if (!active) { struct_ = reader(); active = true; } }
-        template<class U> double get(U T::* field) { activate(); return static_cast<double>(struct_.*field); }
-        template<class U, class V> void set(U T::* field, V value) { activate(); struct_.*field = static_cast<U>(value); }
-        void commit() { if (active) writer(struct_); }
-    };
-
-    template<class T, class R, class W> struct_interface<T, R, W> make_struct_interface(R r, W w) { return{ r,w }; }
-
-    template <typename T>
-    class wraparound_mechanism
-    {
-    public:
-        wraparound_mechanism(T min_value, T max_value)
-            : max_number(max_value - min_value + 1), last_number(min_value), num_of_wraparounds(0)
-        {}
-
-        T fix(T number)
-        {
-            if ((number + (num_of_wraparounds*max_number)) < last_number)
-                ++num_of_wraparounds;
-
-
-            number += (num_of_wraparounds*max_number);
-            last_number = number;
-            return number;
-        }
-
-    private:
-        T max_number;
-        T last_number;
-        unsigned long long num_of_wraparounds;
-    };
-
     struct frame_timestamp_reader
     {
         virtual ~frame_timestamp_reader() = default;
@@ -70,12 +26,6 @@ namespace rsimpl
     };
 
     class device;
-
-    //namespace motion_module
-    //{
-    //    struct motion_module_parser;
-    //}
-    //struct cam_mode { int2 dims; std::vector<int> fps; };
 
     struct stream_profile
     {
@@ -358,10 +308,7 @@ namespace rsimpl
             result.step = static_cast<float>(uvc_range.step);
             return result;
         }
-        bool is_enabled() const override
-        {
-            return true;
-        }
+        bool is_enabled() const override { return true; }
 
         uvc_xu_option(uvc_endpoint& ep, uvc::extension_unit xu, int id)
             : _ep(ep), _xu(xu), _id(id)
@@ -436,6 +383,19 @@ namespace rsimpl
             return it->second->is_enabled();
         }
 
+        const std::string& get_info(rs_camera_info info) const
+        {
+            auto it = _static_info.camera_info.find(info);
+            if (it == _static_info.camera_info.end())
+                throw std::runtime_error("Selected camera info is not supported for this camera!");
+            return it->second;
+        }
+
+        bool supports_info(rs_camera_info info) const
+        {
+            auto it = _static_info.camera_info.find(info);
+            return it != _static_info.camera_info.end();
+        }
     protected:
         void assign_endpoint(rs_subdevice subdevice,
             std::shared_ptr<endpoint> endpoint)
@@ -462,9 +422,31 @@ namespace rsimpl
         {
             register_option(id, subdevice, std::make_shared<uvc_pu_option>(get_uvc_endpoint(subdevice), id));
         }
+
+        void register_device(std::string name, std::string fw_version, std::string serial)
+        {
+            _static_info.camera_info[RS_CAMERA_INFO_DEVICE_NAME] = name;
+            _static_info.camera_info[RS_CAMERA_INFO_CAMERA_FIRMWARE_VERSION] = fw_version;
+            _static_info.camera_info[RS_CAMERA_INFO_DEVICE_SERIAL_NUMBER] = serial;
+        }
+
+        void set_pose(rs_subdevice subdevice, pose p)
+        {
+            _static_info.subdevice_poses[subdevice] = p;
+        }
+        void declare_capability(supported_capability cap)
+        {
+            _static_info.capabilities_vector.push_back(cap);
+        }
+        void set_depth_scale(float scale)
+        {
+            _static_info.nominal_depth_scale = scale;
+        }
+
     private:
         std::vector<std::shared_ptr<endpoint>> _endpoints;
         std::map<std::pair<rs_subdevice, rs_option>, std::shared_ptr<option>> _options;
         std::map<std::string, output_type> _guid_to_output;
+        static_device_info _static_info;
     };
 }

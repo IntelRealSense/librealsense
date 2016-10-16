@@ -17,9 +17,7 @@
 #include <vector>                           // For vector
 #include <sstream>                          // For ostringstream
 #include <mutex>                            // For mutex, unique_lock
-#include <condition_variable>               // For condition_variable
 #include <memory>                           // For unique_ptr
-#include <atomic>
 #include <map>          
 #include <algorithm>
 
@@ -69,7 +67,7 @@ namespace rsimpl
     void log_to_console(rs_log_severity min_severity);
     void log_to_file(rs_log_severity min_severity, const char * file_path);
     void log_to_callback(rs_log_severity min_severity, rs_log_callback * callback);
-    void log_to_callback(rs_log_severity min_severity, void(*on_log)(rs_log_severity min_severity, const char * message, void * user), void * user);
+    void log_to_callback(rs_log_severity min_severity, void(*on_log)(rs_log_severity, const char*, void*), void* user);
     rs_log_severity get_minimum_severity();
 
 #define LOG(SEVERITY, ...) do { if(static_cast<int>(SEVERITY) >= rsimpl::get_minimum_severity()) { std::ostringstream ss; ss << __VA_ARGS__; rsimpl::log(SEVERITY, ss.str()); } } while(false)
@@ -166,41 +164,6 @@ namespace rsimpl
         std::vector<int> pad_crop_options;      // Acceptable padding/cropping values
     };
 
-    struct stream_request
-    {
-        bool enabled;
-        int width, height;
-        rs_format format;
-        int fps;
-        rs_output_buffer_format output_format;
-
-        bool contradict(stream_request req) const;
-        bool is_filled() const;
-    };
-
-    struct interstream_rule // Requires a.*field + delta == b.*field OR a.*field + delta2 == b.*field
-    {
-        rs_stream a, b;
-        int stream_request::* field;
-        int delta, delta2;
-        rs_stream bigger;       // if this equals to a or b, this stream must have field value bigger then the other stream
-        bool divides, divides2; // divides = a must divide b; divides2 = b must divide a
-        bool same_format;
-    };
-
-    struct supported_option
-    {
-        rs_option option;
-        double min, max, step, def;
-    };
-
-    struct data_polling_request
-    {
-        bool        enabled;
-        
-        data_polling_request(): enabled(false) {};
-    };
-
     class firmware_version
     {
         int                 m_major, m_minor, m_patch, m_build;
@@ -244,7 +207,7 @@ namespace rsimpl
         bool operator<(const firmware_version& other) const { return !(*this == other) && (*this <= other); }
         bool operator>=(const firmware_version& other) const { return (*this == other) || (*this > other); }
 
-        bool is_between(const firmware_version& from, const firmware_version& until)
+        bool is_between(const firmware_version& from, const firmware_version& until) const
         {
             return (from <= *this) && (*this <= until);
         }
@@ -257,80 +220,74 @@ namespace rsimpl
 
     struct supported_capability
     {
-        rs_capabilities     capability;
+        rs_stream           capability;
         firmware_version    from;
         firmware_version    until;
         rs_camera_info      firmware_type;
 
-        supported_capability(rs_capabilities capability, firmware_version from, firmware_version until, rs_camera_info firmware_type = RS_CAMERA_INFO_CAMERA_FIRMWARE_VERSION)
+        supported_capability(rs_stream capability, firmware_version from, 
+            firmware_version until, rs_camera_info firmware_type = RS_CAMERA_INFO_CAMERA_FIRMWARE_VERSION)
             : capability(capability), from(from), until(until), firmware_type(firmware_type) {}
-        
-        supported_capability(rs_capabilities capability) 
+
+        explicit supported_capability(rs_stream capability)
             : capability(capability), from(), until(), firmware_type(RS_CAMERA_INFO_CAMERA_FIRMWARE_VERSION) {}
+    };
+
+    // This class is used to buffer up several writes to a structure-valued XU control, and send the entire structure all at once
+    // Additionally, it will ensure that any fields not set in a given struct will retain their original values
+    template<class T, class R, class W> struct struct_interface
+    {
+        T struct_;
+        R reader;
+        W writer;
+        bool active;
+
+        struct_interface(R r, W w) : reader(r), writer(w), active(false) {}
+
+        void activate() { if (!active) { struct_ = reader(); active = true; } }
+        template<class U> double get(U T::* field) { activate(); return static_cast<double>(struct_.*field); }
+        template<class U, class V> void set(U T::* field, V value) { activate(); struct_.*field = static_cast<U>(value); }
+        void commit() { if (active) writer(struct_); }
+    };
+
+    template<class T, class R, class W> struct_interface<T, R, W> make_struct_interface(R r, W w) { return{ r,w }; }
+
+    template <typename T>
+    class wraparound_mechanism
+    {
+    public:
+        wraparound_mechanism(T min_value, T max_value)
+            : max_number(max_value - min_value + 1), last_number(min_value), num_of_wraparounds(0)
+        {}
+
+        T fix(T number)
+        {
+            if ((number + (num_of_wraparounds*max_number)) < last_number)
+                ++num_of_wraparounds;
+
+
+            number += (num_of_wraparounds*max_number);
+            last_number = number;
+            return number;
+        }
+
+    private:
+        T max_number;
+        T last_number;
+        unsigned long long num_of_wraparounds;
     };
 
     struct static_device_info
     {
-        std::string name;                                                   // Model name of the camera
-        int stream_subdevices[RS_STREAM_NATIVE_COUNT];                      // Which subdevice is used to support each stream, or -1 if stream is unavailable
-        int data_subdevices[RS_STREAM_NATIVE_COUNT];                        // Specify whether the subdevice supports events pipe in addition to streaming, -1 if data channels are unavailable
         std::vector<subdevice_mode> subdevice_modes;                        // A list of available modes each subdevice can be put into
-        std::vector<interstream_rule> interstream_rules;                    // Rules which constrain the set of available modes
-        stream_request presets[RS_STREAM_NATIVE_COUNT][RS_PRESET_COUNT];    // Presets available for each stream
-        std::vector<supported_option> options;
-        pose stream_poses[RS_STREAM_NATIVE_COUNT];                          // Static pose of each camera on the device
-        int num_libuvc_transfer_buffers;                                    // Number of transfer buffers to use in LibUVC backend
-        std::string firmware_version;                                       // Firmware version string
-        std::string serial;                                                 // Serial number of the camera (from USB or from SPI memory)
+        pose subdevice_poses[RS_SUBDEVICE_COUNT];                           // Static pose of each camera on the device
         float nominal_depth_scale;                                          // Default scale
-        std::vector<supported_capability> capabilities_vector;
         std::vector<rs_frame_metadata> supported_metadata_vector;
         std::map<rs_camera_info, std::string> camera_info;
-
-        static_device_info();
-    };
-
-    //////////////////////////////////
-    // Runtime device configuration //
-    //////////////////////////////////
-
-    struct subdevice_mode_selection
-    {
-        subdevice_mode mode;                    // The streaming mode in which to place the hardware
-        int pad_crop;                           // The number of pixels of padding (positive values) or cropping (negative values) to apply to all four edges of the image
-        size_t unpacker_index;                  // The specific unpacker used to unpack the encoded format into the desired output formats
-        rs_output_buffer_format output_format = RS_OUTPUT_BUFFER_FORMAT_CONTINUOUS; // The output buffer format.
-
-        subdevice_mode_selection() : mode({}), pad_crop(), unpacker_index(), output_format(RS_OUTPUT_BUFFER_FORMAT_CONTINUOUS){}
-        subdevice_mode_selection(const subdevice_mode & mode, int pad_crop, int unpacker_index) : mode(mode), pad_crop(pad_crop), unpacker_index(unpacker_index){}
-
-        const pixel_format_unpacker & get_unpacker() const {
-            if ((size_t)unpacker_index < mode.pf.unpackers.size())
-                return mode.pf.unpackers[unpacker_index];
-            throw std::runtime_error("failed to fetch an unpakcer, most likely because enable_stream was not called!");
-        }
-        const std::vector<std::pair<rs_stream, rs_format>> & get_outputs() const { return get_unpacker().outputs; }
-        int get_width() const { return mode.native_intrinsics.width + pad_crop * 2; }
-        int get_height() const { return mode.native_intrinsics.height + pad_crop * 2; }
-        int get_framerate() const { return mode.fps; }
-        int get_stride_x() const { return requires_processing() ? get_width() : mode.native_dims.x; }
-        int get_stride_y() const { return requires_processing() ? get_height() : mode.native_dims.y; }
-        size_t get_image_size(rs_stream stream) const;
-        bool provides_stream(rs_stream stream) const { return get_unpacker().provides_stream(stream); }
-        rs_format get_format(rs_stream stream) const { return get_unpacker().get_format(stream); }
-        void set_output_buffer_format(const rs_output_buffer_format in_output_format);
-
-        void unpack(byte * const dest[], const byte * source) const;
-        int get_unpacked_width() const;
-        int get_unpacked_height() const;
-
-        bool requires_processing() const { return (output_format == RS_OUTPUT_BUFFER_FORMAT_CONTINUOUS) || (mode.pf.unpackers[unpacker_index].requires_processing); }
-
+        std::vector<supported_capability> capabilities_vector;
     };
 
     typedef void(*frame_callback_function_ptr)(const rs_stream_lock * lock, rs_frame_ref * frame, void * user);
-    typedef void(*motion_callback_function_ptr)(rs_device * dev, rs_motion_data data, void * user);
-    typedef void(*timestamp_callback_function_ptr)(rs_device * dev, rs_timestamp_data data, void * user);
     typedef void(*log_callback_function_ptr)(rs_log_severity severity, const char * message, void * user);
 
     class frame_callback : public rs_frame_callback
@@ -342,7 +299,7 @@ namespace rsimpl
         frame_callback() : frame_callback(nullptr, nullptr, nullptr) {}
         frame_callback(rs_stream_lock * lock, frame_callback_function_ptr on_frame, void * user) : fptr(on_frame), user(user), lock(lock) {}
 
-        operator bool() { return fptr != nullptr; }
+        operator bool() const { return fptr != nullptr; }
         void on_frame (const rs_stream_lock * lock, rs_frame_ref * frame) override { 
             if (fptr)
             {
@@ -355,53 +312,7 @@ namespace rsimpl
         void release() override { delete this; }
     };
 
-    class motion_events_callback : public rs_motion_callback
-    {
-        motion_callback_function_ptr fptr;
-        void        * user;
-        rs_device   * device;
-    public:
-        motion_events_callback() : motion_events_callback(nullptr, nullptr, nullptr) {}
-        motion_events_callback(rs_device * dev, motion_callback_function_ptr fptr, void * user) : fptr(fptr), user(user), device(dev) {}
-
-        operator bool() { return fptr != nullptr; }
-
-        void on_event(rs_motion_data data) override
-        {
-            if (fptr)
-            {
-                try { fptr(device, data, user); } catch (...)
-                {
-                    LOG_ERROR("Received an execption from motion events callback!");
-                }
-            }
-        }
-
-        void release() override { }
-    };
-
-    class timestamp_events_callback : public rs_timestamp_callback
-    {
-        timestamp_callback_function_ptr fptr;
-        void        * user;
-        rs_device   * device;
-    public:
-        timestamp_events_callback() : timestamp_events_callback(nullptr, nullptr, nullptr) {}
-        timestamp_events_callback(rs_device * dev, timestamp_callback_function_ptr fptr, void * user) : fptr(fptr), user(user), device(dev) {}
-
-        operator bool() { return fptr != nullptr; }
-        void on_event(rs_timestamp_data data) override {
-            if (fptr)
-            {
-                try { fptr(device, data, user); } catch (...) 
-                {
-                    LOG_ERROR("Received an execption from timestamp events callback!");
-                }
-            }
-        }
-        void release() override { }
-    };
-
+    
     class log_callback : public rs_log_callback
     {
         log_callback_function_ptr fptr;
@@ -410,7 +321,7 @@ namespace rsimpl
         log_callback() : log_callback(nullptr, nullptr) {}
         log_callback(log_callback_function_ptr fptr, void * user) : fptr(fptr), user(user) {}
 
-        operator bool() { return fptr != nullptr; }
+        operator bool() const { return fptr != nullptr; }
 
         void on_event(rs_log_severity severity, const char * message) override
         {
@@ -428,8 +339,6 @@ namespace rsimpl
     };
 
     typedef std::unique_ptr<rs_log_callback, void(*)(rs_log_callback*)> log_callback_ptr;
-    typedef std::unique_ptr<rs_motion_callback, void(*)(rs_motion_callback*)> motion_callback_ptr;
-    typedef std::unique_ptr<rs_timestamp_callback, void(*)(rs_timestamp_callback*)> timestamp_callback_ptr;
     typedef std::unique_ptr<rs_frame_callback, void(*)(rs_frame_callback*)> frame_callback_ptr;
 
     /*struct device_config
@@ -463,13 +372,15 @@ namespace rsimpl
 
     inline rs_intrinsics pad_crop_intrinsics(const rs_intrinsics & i, int pad_crop)
     {
-        return{ i.width + pad_crop * 2, i.height + pad_crop * 2, i.ppx + pad_crop, i.ppy + pad_crop, i.fx, i.fy, i.model, {i.coeffs[0], i.coeffs[1], i.coeffs[2], i.coeffs[3], i.coeffs[4]} };
+        return{ i.width + pad_crop * 2, i.height + pad_crop * 2, i.ppx + pad_crop, i.ppy + pad_crop, 
+            i.fx, i.fy, i.model, {i.coeffs[0], i.coeffs[1], i.coeffs[2], i.coeffs[3], i.coeffs[4]} };
     }
 
     inline rs_intrinsics scale_intrinsics(const rs_intrinsics & i, int width, int height)
     {
-        const float sx = (float)width / i.width, sy = (float)height / i.height;
-        return{ width, height, i.ppx*sx, i.ppy*sy, i.fx*sx, i.fy*sy, i.model, {i.coeffs[0], i.coeffs[1], i.coeffs[2], i.coeffs[3], i.coeffs[4]} };
+        const float sx = static_cast<float>(width) / i.width, sy = static_cast<float>(height) / i.height;
+        return{ width, height, i.ppx*sx, i.ppy*sy, i.fx*sx, i.fy*sy, i.model, 
+                {i.coeffs[0], i.coeffs[1], i.coeffs[2], i.coeffs[3], i.coeffs[4]} };
     }
 
     inline bool operator == (const rs_intrinsics & a, const rs_intrinsics & b) { return std::memcmp(&a, &b, sizeof(a)) == 0; }
@@ -638,23 +549,6 @@ namespace rsimpl
     float3x3 calc_rodrigues_matrix(const std::vector<double> rot);
     // Auxillary function that calculates standard 32bit CRC code. used in verificaiton
     uint32_t calc_crc32(uint8_t *buf, size_t bufsize);
-
-    enum class cameras : int{
-        f200,
-        sr300,
-        r200,
-        lr200,
-        zr300,
-        ds5
-    };
-
-    static const std::map<cameras, const char*> camera_official_name = {{cameras::f200,  "Intel RealSense F200" },
-                                                                        {cameras::sr300, "Intel RealSense SR300"},
-                                                                        {cameras::r200,  "Intel RealSense R200" },
-                                                                        {cameras::lr200, "Intel RealSense LR200"},
-                                                                        {cameras::zr300, "Intel RealSense ZR300"},
-                                                                        {cameras::ds5,   "Intel RealSense RS400"}};
-
 }
 
 #endif

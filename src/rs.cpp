@@ -287,6 +287,22 @@ int rs_supports_subdevice_option(const rs_device* device, rs_subdevice subdevice
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, device, subdevice, option)
 
+const char* rs_get_camera_info(const rs_device* device, rs_camera_info info, rs_error** error) try
+{
+    VALIDATE_NOT_NULL(device);
+    VALIDATE_ENUM(info);
+    return device->device->get_info(info).c_str();
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, device, info)
+
+int rs_supports_camera_info(const rs_device* device, rs_camera_info info, rs_error** error) try
+{
+    VALIDATE_NOT_NULL(device);
+    VALIDATE_ENUM(info);
+    return device->device->supports_info(info);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(false, device, info)
+
 /*int rs_get_device_count(const rs_context * context, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(context);
