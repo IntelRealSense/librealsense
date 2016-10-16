@@ -28,7 +28,8 @@ namespace rsimpl
         typedef std::function<void(const uvc_device_info&, IMFActivate*)> 
                 enumeration_callback;
 
-        class wmf_uvc_device : public std::enable_shared_from_this<wmf_uvc_device>, public uvc_device
+        class wmf_uvc_device : public std::enable_shared_from_this<wmf_uvc_device>, 
+                               public uvc_device
         {
         public:
             wmf_uvc_device(const uvc_device_info& info, std::shared_ptr<const wmf_backend> backend);
@@ -53,6 +54,9 @@ namespace rsimpl
             void set_pu(rs_option opt, int value) override;
             control_range get_pu_range(rs_option opt) const override;
 
+            void lock() const override { _systemwide_lock.lock(); }
+            void unlock() const override { _systemwide_lock.unlock(); }
+
         private:
             friend class source_reader_callback;
 
@@ -74,12 +78,14 @@ namespace rsimpl
             CComPtr<IAMVideoProcAmp>                _video_proc = nullptr;
             std::map<int, CComPtr<IKsControl>>      _ks_controls;
 
-            manual_reset_event                        _is_flushed;
+            manual_reset_event                      _is_flushed;
 
             std::vector<profile_and_callback>       _streams;
             std::mutex                              _streams_mutex;
 
             std::shared_ptr<const wmf_backend>      _backend;
+
+            named_mutex                             _systemwide_lock;
         };
     }
 }

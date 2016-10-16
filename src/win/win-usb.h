@@ -8,41 +8,12 @@
 #include <winusb.h>
 #include <SetupAPI.h>
 
-#define WAIT_FOR_MUTEX_TIME_OUT  (5000)
 #define HW_MONITOR_BUFFER_SIZE   (1024)
 
 namespace rsimpl
 {
     namespace uvc
     {
-        enum create_and_open_status
-        {
-            Mutex_Succeed,
-            Mutex_TotalFailure,
-            Mutex_AlreadyExist
-        };
-
-        class named_mutex
-        {
-        public:
-            named_mutex(const char* id, unsigned timeout);
-            ~named_mutex();
-            bool try_lock() const;
-            void lock() const { acquire(); }
-            void unlock() const { release(); }
-
-        private:
-            create_and_open_status create_named_mutex(const char* camID);
-            create_and_open_status open_named_mutex(const char* camID);
-            void update_id(const char* id);
-            void acquire() const;
-            void release() const;
-            void close();
-
-            unsigned _timeout;
-            HANDLE _winusb_mutex;
-        };
-
         enum class pipe_direction
         {
             InPipe,

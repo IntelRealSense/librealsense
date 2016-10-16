@@ -55,8 +55,9 @@ namespace rsimpl
         std::vector<std::shared_ptr<device_info>> list;
 
         auto uvc_devices = _backend->query_uvc_devices();
+        auto usb_devices = _backend->query_usb_devices("{175695CD-30D9-4F87-8BE3-5A8270F49A31}");
 
-        auto sr300_devices = pick_sr300_devices(uvc_devices);
+        auto sr300_devices = pick_sr300_devices(uvc_devices, usb_devices);
         for (auto& dev : sr300_devices) list.push_back(dev);
 
         return list;

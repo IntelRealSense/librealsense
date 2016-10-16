@@ -15,6 +15,12 @@
 #include <usbioctl.h>
 #include <SetupAPI.h>
 #include <comdef.h>
+#include <atlstr.h>
+#include <Windows.h>
+#include <SetupAPI.h>
+#include <string>
+#include <regex>
+#include <Sddl.h>
 
 #pragma comment(lib, "cfgmgr32.lib")
 #pragma comment(lib, "setupapi.lib")
@@ -24,6 +30,8 @@ DEFINE_GUID(GUID_DEVINTERFACE_USB_DEVICE, 0xA5DCBF10L, 0x6530, 0x11D2, 0x90, 0x1
     0xC0, 0x4F, 0xB9, 0x51, 0xED);
 DEFINE_GUID(GUID_DEVINTERFACE_IMAGE, 0x6bdd1fc6L, 0x810f, 0x11d0, 0xbe, 0xc7, 0x08, 0x00, \
     0x2b, 0xe2, 0x09, 0x2f);
+
+#define CREATE_MUTEX_RETRY_NUM  (5)
 
 namespace rsimpl
 {
@@ -500,6 +508,212 @@ namespace rsimpl
         auto_reset_event::auto_reset_event()
             : event_base(CreateEvent(nullptr, FALSE, FALSE, nullptr))
         {}
+
+        PSECURITY_DESCRIPTOR make_allow_all_security_descriptor(void)
+        {
+            WCHAR *pszStringSecurityDescriptor;
+            pszStringSecurityDescriptor = L"D:(A;;GA;;;WD)(A;;GA;;;AN)S:(ML;;NW;;;ME)";
+            PSECURITY_DESCRIPTOR pSecDesc;
+            if (!ConvertStringSecurityDescriptorToSecurityDescriptor(
+                pszStringSecurityDescriptor, SDDL_REVISION_1, &pSecDesc, nullptr))
+                return nullptr;
+
+            return pSecDesc;
+        }
+
+        named_mutex::named_mutex(const char* id, unsigned timeout)
+            : _timeout(timeout),
+            _winusb_mutex(nullptr)
+        {
+            update_id(id);
+        }
+
+        create_and_open_status named_mutex::create_named_mutex(const char* camID)
+        {
+            CString lstr;
+            CString IDstr(camID);
+            // IVCAM_DLL string is left in librealsense to allow safe
+            // interoperability with existing tools like DCM
+            lstr.Format(L"Global\\IVCAM_DLL_WINUSB_MUTEX%s", IDstr);
+            auto pSecDesc = make_allow_all_security_descriptor();
+            if (pSecDesc)
+            {
+                SECURITY_ATTRIBUTES SecAttr;
+                SecAttr.nLength = sizeof(SECURITY_ATTRIBUTES);
+                SecAttr.lpSecurityDescriptor = pSecDesc;
+                SecAttr.bInheritHandle = FALSE;
+
+                _winusb_mutex = CreateMutex(
+                    &SecAttr,
+                    FALSE,
+                    lstr);
+                LocalFree(pSecDesc);
+            }
+            //CreateMutex failed
+            if (_winusb_mutex == nullptr)
+            {
+                return Mutex_TotalFailure;
+            }
+            else if (GetLastError() == ERROR_ALREADY_EXISTS)
+            {
+                return Mutex_AlreadyExist;
+            }
+            return Mutex_Succeed;
+        }
+
+        create_and_open_status named_mutex::open_named_mutex(const char* camID)
+        {
+            CString lstr;
+            CString IDstr(camID);
+            // IVCAM_DLL string is left in librealsense to allow safe
+            // interoperability with existing tools like DCM
+            lstr.Format(L"Global\\IVCAM_DLL_WINUSB_MUTEX%s", IDstr.GetString());
+
+            _winusb_mutex = OpenMutex(
+                MUTEX_ALL_ACCESS,            // request full access
+                FALSE,                       // handle not inheritable
+                lstr);  // object name
+
+            if (_winusb_mutex == nullptr)
+            {
+                return Mutex_TotalFailure;
+            }
+            return Mutex_Succeed;
+        }
+
+        void named_mutex::update_id(const char* camID)
+        {
+            auto stsCreateMutex = Mutex_Succeed;
+            auto stsOpenMutex = Mutex_Succeed;
+
+            if (_winusb_mutex == nullptr)
+            {
+
+                for (int i = 0; i < CREATE_MUTEX_RETRY_NUM; i++)
+                {
+                    stsCreateMutex = create_named_mutex(camID);
+
+                    switch (stsCreateMutex)
+                    {
+                    case Mutex_Succeed: return;
+                    case Mutex_TotalFailure:
+                        throw std::runtime_error("CreateNamedMutex returned Mutex_TotalFailure");
+                    case Mutex_AlreadyExist:
+                    {
+                        stsOpenMutex = open_named_mutex(camID);
+
+                        //if OpenMutex failed retry to create the mutex 
+                        //it can caused by termination of the process that created the mutex
+                        if (stsOpenMutex == Mutex_TotalFailure)
+                        {
+                            // do nothing
+                        }
+                        else if (stsOpenMutex == Mutex_Succeed)
+                        {
+                            return;
+                        }
+                        else
+                        {
+                            throw std::runtime_error("OpenNamedMutex returned error " + stsOpenMutex);
+                        }
+                    }
+                    default:
+                        break;
+                    };
+                }
+                throw std::runtime_error("Open mutex failed!");
+            }
+            //Mutex is already exist this mean that
+            //the mutex already opened by this process and the method called again after connect event. 
+            else
+            {
+                for (auto i = 0; i < CREATE_MUTEX_RETRY_NUM; i++)
+                {
+                    auto tempMutex = _winusb_mutex;
+                    stsCreateMutex = create_named_mutex(camID);
+
+                    switch (stsCreateMutex)
+                    {
+                        //if creation succeed this mean that new camera connected
+                        //and we need to close the old mutex
+                    case Mutex_Succeed:
+                    {
+                        auto res = CloseHandle(tempMutex);
+                        if (!res)
+                        {
+                            throw std::runtime_error("CloseHandle failed");
+                        }
+                        return;
+                    }
+                    case Mutex_TotalFailure:
+                    {
+                        throw std::runtime_error("CreateNamedMutex returned Mutex_TotalFailure");
+                    }
+                    //Mutex already created by:
+                    // 1. This process - which mean the same camera connected.
+                    // 2. Other process created the mutex.
+                    case Mutex_AlreadyExist:
+                    {
+                        stsOpenMutex = open_named_mutex(camID);
+
+                        if (stsOpenMutex == Mutex_TotalFailure)
+                        {
+                            continue;
+                        }
+                        else if (stsOpenMutex == Mutex_Succeed)
+                        {
+                            return;
+                        }
+                        else
+                        {
+                            throw std::runtime_error("OpenNamedMutex failed with error " + stsOpenMutex);
+                        }
+                    }
+                    default:
+                        break;
+                    }
+                }
+
+                throw std::runtime_error("Open mutex failed!");
+            }
+        }
+
+        bool named_mutex::try_lock() const
+        {
+            return (WaitForSingleObject(_winusb_mutex, _timeout) == WAIT_TIMEOUT) ? false : true;
+        }
+
+        void named_mutex::acquire() const
+        {
+            if (!try_lock())
+            {
+                throw std::runtime_error("Aquire failed!");
+            }
+        }
+
+        void named_mutex::release() const
+        {
+            auto sts = ReleaseMutex(_winusb_mutex);
+            if (!sts)
+            {
+                throw std::runtime_error("Failed to release winUsb named Mutex! LastError: " + GetLastError());
+            }
+        }
+
+        named_mutex::~named_mutex()
+        {
+            close();
+        }
+
+        void named_mutex::close()
+        {
+            if (_winusb_mutex != nullptr)
+            {
+                CloseHandle(_winusb_mutex);
+                _winusb_mutex = nullptr;
+            }
+        }
+
     }
 }
 

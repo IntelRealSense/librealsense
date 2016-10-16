@@ -62,9 +62,20 @@ namespace rsimpl
         std::vector<usb_device_info> wmf_backend::query_usb_devices(const std::string& interface_id) const
         {
             std::vector<usb_device_info> result;
-            for (auto& id : usb_enumerate::query_by_interface(interface_id, "", ""))
+            for (auto&& id : usb_enumerate::query_by_interface(interface_id, "", ""))
             {
-                result.push_back({ id });
+                std::string path(id.begin(), id.end());
+                int vid, pid, mi; std::string unique_id;
+                if (!parse_usb_path(vid, pid, mi, unique_id, path)) continue;
+
+                usb_device_info info;
+                info.id = id;
+                info.vid = vid;
+                info.pid = pid;
+                info.unique_id = unique_id;
+                info.mi = mi;
+
+                result.push_back(info);
             }
             return result;
         }

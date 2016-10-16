@@ -13,27 +13,6 @@
 //
 //namespace rsimpl
 //{
-//    rs_intrinsics MakeDepthIntrinsics(const ivcam::camera_calib_params & c, const int2 & dims)
-//    {
-//        return{ dims.x, dims.y, (c.Kc[0][2] * 0.5f + 0.5f) * dims.x, (c.Kc[1][2] * 0.5f + 0.5f) * dims.y, c.Kc[0][0] * 0.5f * dims.x, c.Kc[1][1] * 0.5f * dims.y,
-//            RS_DISTORTION_INVERSE_BROWN_CONRADY, {c.Invdistc[0], c.Invdistc[1], c.Invdistc[2], c.Invdistc[3], c.Invdistc[4]} };
-//    }
-//
-//    rs_intrinsics MakeColorIntrinsics(const ivcam::camera_calib_params & c, const int2 & dims)
-//    {
-//        rs_intrinsics intrin = { dims.x, dims.y, c.Kt[0][2] * 0.5f + 0.5f, c.Kt[1][2] * 0.5f + 0.5f, c.Kt[0][0] * 0.5f, c.Kt[1][1] * 0.5f, RS_DISTORTION_NONE, {} };
-//        if (dims.x * 3 == dims.y * 4) // If using a 4:3 aspect ratio, adjust intrinsics (defaults to 16:9)
-//        {
-//            intrin.fx *= 4.0f / 3;
-//            intrin.ppx *= 4.0f / 3;
-//            intrin.ppx -= 1.0f / 6;
-//        }
-//        intrin.fx *= dims.x;
-//        intrin.fy *= dims.y;
-//        intrin.ppx *= dims.x;
-//        intrin.ppy *= dims.y;
-//        return intrin;
-//    }
 //
 //    void update_supported_options(uvc::device& dev,
 //        const uvc::extension_unit depth_xu,

@@ -2,25 +2,27 @@
 // Copyright(c) 2016 Intel Corporation. All Rights Reserved.
 
 #include "sr300.h"
+#include "hw-monitor.h"
 
 namespace rsimpl
 {
     std::shared_ptr<rsimpl::device> sr300_info::create(const uvc::backend& backend) const
     {
-        return std::make_shared<sr300_camera>(backend, _color, _depth);
+        return std::make_shared<sr300_camera>(backend, _color, _depth, _hwm);
     }
 
-    sr300_info::sr300_info(uvc::uvc_device_info color, 
-                           uvc::uvc_device_info depth)
-        : _color(std::move(color)), 
-          _depth(std::move(depth))
+    sr300_info::sr300_info(uvc::uvc_device_info color,
+        uvc::uvc_device_info depth, uvc::usb_device_info hwm)
+        : _color(std::move(color)),
+          _depth(std::move(depth)),
+          _hwm(std::move(hwm))
     {
     }
 
     std::vector<uvc::uvc_device_info> filter_by_product(const std::vector<uvc::uvc_device_info>& devices, uint32_t pid)
     {
         std::vector<uvc::uvc_device_info> result;
-        for (auto& info : devices)
+        for (auto&& info : devices)
         {
             if (info.pid == pid) result.push_back(info);
         }
@@ -30,12 +32,12 @@ namespace rsimpl
     std::vector<std::vector<uvc::uvc_device_info>> group_by_unique_id(const std::vector<uvc::uvc_device_info>& devices)
     {
         std::map<std::string, std::vector<uvc::uvc_device_info>> map;
-        for (auto& info : devices)
+        for (auto&& info : devices)
         {
             map[info.unique_id].push_back(info);
         }
         std::vector<std::vector<uvc::uvc_device_info>> result;
-        for (auto& kvp : map)
+        for (auto&& kvp : map)
         {
             result.push_back(kvp.second);
         }
@@ -53,7 +55,7 @@ namespace rsimpl
 
     bool mi_present(const std::vector<uvc::uvc_device_info>& devices, uint32_t mi)
     {
-        for (auto& info : devices)
+        for (auto&& info : devices)
         {
             if (info.mi == mi) return true;
         }
@@ -62,19 +64,37 @@ namespace rsimpl
 
     uvc::uvc_device_info get_mi(const std::vector<uvc::uvc_device_info>& devices, uint32_t mi)
     {
-        for (auto& info : devices)
+        for (auto&& info : devices)
         {
             if (info.mi == mi) return info;
         }
         throw std::runtime_error("Interface not found!");
     }
 
+    bool try_fetch_usb_device(std::vector<uvc::usb_device_info>& devices,
+        const uvc::uvc_device_info& info, uvc::usb_device_info& result)
+    {
+        for (auto it = devices.begin(); it != devices.end(); ++it)
+        {
+            if (it->pid == info.pid &&
+                it->vid == info.vid &&
+                it->unique_id == info.unique_id)
+            {
+                result = *it;
+                devices.erase(it);
+                return true;
+            }
+        }
+        return false;
+    }
+
     std::vector<std::shared_ptr<device_info>> pick_sr300_devices(
-        std::vector<uvc::uvc_device_info>& uvc)
+        std::vector<uvc::uvc_device_info>& uvc,
+        std::vector<uvc::usb_device_info>& usb)
     {
         std::vector<uvc::uvc_device_info> chosen;
         std::vector<std::shared_ptr<device_info>> results;
-        
+
         auto right_pid = filter_by_product(uvc, 0x0aa5);
         auto group_devices = group_by_unique_id(right_pid);
         for (auto& group : group_devices)
@@ -85,20 +105,193 @@ namespace rsimpl
             {
                 auto color = get_mi(group, 0);
                 auto depth = get_mi(group, 2);
-                
-                auto info = std::make_shared<sr300_info>(color, depth);
-                chosen.push_back(color);
-                chosen.push_back(depth);
-                results.push_back(info);
+                uvc::usb_device_info hwm;
+
+                if (try_fetch_usb_device(usb, color, hwm) && hwm.mi == 4)
+                {
+                    auto info = std::make_shared<sr300_info>(color, depth, hwm);
+                    chosen.push_back(color);
+                    chosen.push_back(depth);
+                    results.push_back(info);
+                }
+                else
+                {
+                    //TODO: Log
+                }
             }
             else
             {
-                // LOG
+                // TODO: LOG
             }
         }
 
         trim_device_list(uvc, chosen);
         return results;
+    }
+
+
+    rs_intrinsics sr300_camera::make_depth_intrinsics(const ivcam::camera_calib_params & c, const int2 & dims)
+    {
+        return{ dims.x, dims.y, (c.Kc[0][2] * 0.5f + 0.5f) * dims.x, 
+            (c.Kc[1][2] * 0.5f + 0.5f) * dims.y, 
+            c.Kc[0][0] * 0.5f * dims.x, 
+            c.Kc[1][1] * 0.5f * dims.y,
+            RS_DISTORTION_INVERSE_BROWN_CONRADY,
+            { c.Invdistc[0], c.Invdistc[1], c.Invdistc[2], 
+              c.Invdistc[3], c.Invdistc[4] } };
+    }
+
+    rs_intrinsics sr300_camera::make_color_intrinsics(const ivcam::camera_calib_params & c, const int2 & dims)
+    {
+        rs_intrinsics intrin = { dims.x, dims.y, c.Kt[0][2] * 0.5f + 0.5f, 
+            c.Kt[1][2] * 0.5f + 0.5f, c.Kt[0][0] * 0.5f, 
+            c.Kt[1][1] * 0.5f, RS_DISTORTION_NONE,{} };
+
+        if (dims.x * 3 == dims.y * 4) // If using a 4:3 aspect ratio, adjust intrinsics (defaults to 16:9)
+        {
+            intrin.fx *= 4.0f / 3;
+            intrin.ppx *= 4.0f / 3;
+            intrin.ppx -= 1.0f / 6;
+        }
+
+        intrin.fx *= dims.x;
+        intrin.fy *= dims.y;
+        intrin.ppx *= dims.x;
+        intrin.ppy *= dims.y;
+
+        return intrin;
+    }
+
+    float sr300_camera::read_mems_temp() const
+    {
+        command command(ivcam::fw_cmd::GetMEMSTemp);
+        auto data = _hw_monitor.send(command);
+        auto t = *reinterpret_cast<int32_t *>(data.data());
+        return static_cast<float>(t) / 100;
+    }
+
+    int sr300_camera::read_ir_temp() const
+    {
+        command command(ivcam::fw_cmd::GetIRTemp);
+        auto data = _hw_monitor.send(command);
+        return static_cast<int8_t>(data[0]);
+    }
+
+    // "Get Version and Date"
+    // Reference: Commands.xml in IVCAM_DLL
+    void sr300_camera::get_gvd(size_t sz, char* gvd, uint8_t gvd_cmd) const
+    {
+        command command(gvd_cmd);
+        auto data = _hw_monitor.send(command);
+        auto minSize = std::min(sz, data.size());
+        memcpy(gvd, data.data(), minSize);
+    }
+
+    std::string sr300_camera::get_firmware_version_string(int gvd_cmd, int offset) const
+    {
+        std::vector<char> gvd(1024);
+        get_gvd(1024, gvd.data(), gvd_cmd);
+        char fws[8];
+        memcpy(fws, gvd.data() + offset, 8); // offset 0
+        return to_string() << fws[3] << "." << fws[2] << "." << fws[1] << "." << fws[0];
+    }
+
+    std::string sr300_camera::get_module_serial_string(int offset) const
+    {
+        std::vector<char> gvd(1024);
+        get_gvd(1024, gvd.data());
+        unsigned char ss[8];
+        memcpy(ss, gvd.data() + offset, 8);
+        char formattedBuffer[64];
+        if (offset == 96)
+        {
+            sprintf(formattedBuffer, "%02X%02X%02X%02X%02X%02X", ss[0], ss[1], ss[2], ss[3], ss[4], ss[5]);
+            return std::string(formattedBuffer);
+        }
+        if (offset == 132)
+        {
+            sprintf(formattedBuffer, "%02X%02X%02X%02X%02X%-2X", ss[0], ss[1], ss[2], ss[3], ss[4], ss[5]);
+            return std::string(formattedBuffer);
+        }
+        throw std::runtime_error("Invalid serial number offset!");
+    }
+
+    void sr300_camera::force_hardware_reset() const
+    {
+        command cmd(ivcam::fw_cmd::HWReset);
+        cmd.require_response = false;
+        _hw_monitor.send(cmd);
+    }
+
+    void sr300_camera::enable_timestamp(bool colorEnable, bool depthEnable) const
+    {
+        command cmd(ivcam::fw_cmd::TimeStampEnable);
+        cmd.param1 = depthEnable ? 1 : 0;
+        cmd.param2 = colorEnable ? 1 : 0;
+        _hw_monitor.send(cmd);
+    }
+
+    void sr300_camera::set_auto_range(int enableMvR, int16_t minMvR, int16_t maxMvR,
+        int16_t startMvR, int enableLaser, int16_t minLaser, int16_t maxLaser,
+        int16_t startLaser, int16_t ARUpperTH, int16_t ARLowerTH) const
+    {
+        command cmd(ivcam::fw_cmd::SetAutoRange);
+        cmd.param1 = enableMvR;
+        cmd.param2 = enableLaser;
+
+        std::vector<uint16_t> data;
+        data.resize(6);
+        data[0] = minMvR;
+        data[1] = maxMvR;
+        data[2] = startMvR;
+        data[3] = minLaser;
+        data[4] = maxLaser;
+        data[5] = startLaser;
+
+        if (ARUpperTH != -1)
+        {
+            data.push_back(ARUpperTH);
+        }
+
+        if (ARLowerTH != -1)
+        {
+            data.push_back(ARLowerTH);
+        }
+
+        cmd.data.resize(sizeof(uint16_t) * data.size());
+        memcpy(cmd.data.data(), data.data(), cmd.data.size());
+
+        _hw_monitor.send(cmd);
+    }
+
+    struct sr300_raw_calibration
+    {
+        uint16_t tableVersion;
+        uint16_t tableID;
+        uint32_t dataSize;
+        uint32_t reserved;
+        int crc;
+        ivcam::camera_calib_params CalibrationParameters;
+        uint8_t reserved_1[176];
+        uint8_t reserved21[148];
+    };
+
+    enum class cam_data_source : uint32_t
+    {
+        TakeFromRO = 0,
+        TakeFromRW = 1,
+        TakeFromRAM = 2
+    };
+
+    ivcam::camera_calib_params sr300_camera::read_calibration() const
+    {
+        command command(ivcam::fw_cmd::GetCalibrationTable);
+        command.param1 = static_cast<uint32_t>(cam_data_source::TakeFromRAM);
+        auto data = _hw_monitor.send(command);
+
+        sr300_raw_calibration rawCalib;
+        memcpy(&rawCalib, data.data(), std::min(sizeof(rawCalib), data.size()));
+        return rawCalib.CalibrationParameters;
     }
 }
 
@@ -162,15 +355,15 @@ namespace rsimpl
 //        {
 //            for(auto fps : m.fps)
 //            {
-//                info.subdevice_modes.push_back({1, m.dims, pf_sr300_invi, fps, MakeDepthIntrinsics(c, m.dims), {}, {0}});
+//                info.subdevice_modes.push_back({1, m.dims, pf_sr300_invi, fps, make_depth_intrinsics(c, m.dims), {}, {0}});
 //            }
 //        }
 //        for(auto & m : sr300_depth_modes)
 //        {
 //            for(auto fps : m.fps)
 //            {
-//                info.subdevice_modes.push_back({1, m.dims, pf_invz, fps, MakeDepthIntrinsics(c, m.dims), {}, {0}});
-//                info.subdevice_modes.push_back({1, m.dims, pf_sr300_inzi, fps, MakeDepthIntrinsics(c, m.dims), {}, {0}});
+//                info.subdevice_modes.push_back({1, m.dims, pf_invz, fps, make_depth_intrinsics(c, m.dims), {}, {0}});
+//                info.subdevice_modes.push_back({1, m.dims, pf_sr300_inzi, fps, make_depth_intrinsics(c, m.dims), {}, {0}});
 //            }
 //        }
 //

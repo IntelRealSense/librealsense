@@ -22,6 +22,17 @@ namespace rsimpl
         struct guid { uint32_t data1; uint16_t data2, data3; uint8_t data4[8]; };
         struct extension_unit { int subdevice, unit, node; guid id; };
 
+        class command_transfer
+        {
+        public:
+            virtual std::vector<uint8_t> send_receive(
+                const std::vector<uint8_t>& data,
+                int timeout_ms = 5000,
+                bool require_response = true) = 0;
+
+            virtual ~command_transfer() = default;
+        };
+
         struct control_range
         {
             int min;
@@ -80,6 +91,11 @@ namespace rsimpl
         struct usb_device_info
         {
             std::wstring id;
+
+            uint32_t vid;
+            uint32_t pid;
+            uint32_t mi;
+            std::string unique_id;
         };
 
         class uvc_device
@@ -103,6 +119,9 @@ namespace rsimpl
             virtual const uvc_device_info& get_info() const = 0;
 
             virtual std::vector<stream_profile> get_profiles() const = 0;
+
+            virtual void lock() const = 0;
+            virtual void unlock() const = 0;
 
             virtual ~uvc_device() = default;
         };
@@ -135,7 +154,7 @@ namespace rsimpl
             }
             void set_xu(const extension_unit& xu, uint8_t ctrl, void * data, int len) override
             {
-                for (int i = 0; i<20; ++i)
+                for (auto i = 0; i<20; ++i)
                 {
                     try { _dev->set_xu(xu, ctrl, data, len); return; }
                     catch (...) { std::this_thread::sleep_for(std::chrono::milliseconds(50)); }
@@ -144,7 +163,7 @@ namespace rsimpl
             }
             void get_xu(const extension_unit& xu, uint8_t ctrl, void * data, int len) const override
             {
-                for (int i = 0; i<20; ++i)
+                for (auto i = 0; i<20; ++i)
                 {
                     try { _dev->get_xu(xu, ctrl, data, len); return; }
                     catch (...) { std::this_thread::sleep_for(std::chrono::milliseconds(50)); }
@@ -157,7 +176,7 @@ namespace rsimpl
             }
             int get_pu(rs_option opt) const override
             {
-                for (int i = 0; i<20; ++i)
+                for (auto i = 0; i<20; ++i)
                 {
                     try { return _dev->get_pu(opt); }
                     catch (...) { std::this_thread::sleep_for(std::chrono::milliseconds(50)); }
@@ -166,7 +185,7 @@ namespace rsimpl
             }
             void set_pu(rs_option opt, int value) override
             {
-                for (int i = 0; i<20; ++i)
+                for (auto i = 0; i<20; ++i)
                 {
                     try { _dev->set_pu(opt, value); return; }
                     catch (...) { std::this_thread::sleep_for(std::chrono::milliseconds(50)); }
@@ -186,18 +205,17 @@ namespace rsimpl
                 return _dev->get_profiles();
             }
 
+            void lock() const override { _dev->lock(); }
+            void unlock() const override { _dev->unlock(); }
+
         private:
             std::shared_ptr<uvc_device> _dev;
         };
 
-        class usb_device
+        class usb_device : public command_transfer
         {
         public:
-            virtual std::vector<uint8_t> send_receive(
-                const std::vector<uint8_t>& data, 
-                int timeout_ms = 5000,
-                bool require_response = true) = 0;
-            virtual ~usb_device() = default;
+            // interupt endpoint and any additional USB specific stuff
         };
 
         class backend

@@ -9,6 +9,7 @@
 #include "context.h"
 #include "backend.h"
 #include "ivcam-private.h"
+#include "hw-monitor.h"
 
 namespace rsimpl
 {
@@ -25,14 +26,18 @@ namespace rsimpl
         }
 
         sr300_info(uvc::uvc_device_info color,
-                   uvc::uvc_device_info depth);
+                   uvc::uvc_device_info depth,
+                   uvc::usb_device_info hwm);
 
     private:
         uvc::uvc_device_info _color;
         uvc::uvc_device_info _depth;
+        uvc::usb_device_info _hwm;
     };
 
-    std::vector<std::shared_ptr<device_info>> pick_sr300_devices(std::vector<uvc::uvc_device_info>& uvc);
+    std::vector<std::shared_ptr<device_info>> pick_sr300_devices(
+        std::vector<uvc::uvc_device_info>& uvc, 
+        std::vector<uvc::usb_device_info>& usb);
 
     class sr300_camera final : public device
     {
@@ -41,7 +46,9 @@ namespace rsimpl
 
         sr300_camera(const uvc::backend& backend,
               const uvc::uvc_device_info& color,
-              const uvc::uvc_device_info& depth)
+              const uvc::uvc_device_info& depth,
+              const uvc::usb_device_info& hwm_device)
+            : _hw_monitor(backend.create_usb_device(hwm_device))
         {
             using namespace ivcam;
 
@@ -77,6 +84,7 @@ namespace rsimpl
             register_depth_xu(RS_OPTION_F200_FILTER_OPTION,        IVCAM_DEPTH_FILTER_OPTION);
         }
     private:
+        hw_monitor _hw_monitor;
 
         void register_depth_xu(rs_option opt, uint8_t id)
         {
@@ -85,6 +93,24 @@ namespace rsimpl
                     get_uvc_endpoint(RS_SUBDEVICE_DEPTH),
                     ivcam::depth_xu, id));
         }
+
+        static rs_intrinsics make_depth_intrinsics(const ivcam::camera_calib_params& c, const int2& dims);
+        static rs_intrinsics make_color_intrinsics(const ivcam::camera_calib_params& c, const int2& dims);
+        float read_mems_temp() const;
+        int read_ir_temp() const;
+
+        void get_gvd(size_t sz, char * gvd, uint8_t gvd_cmd = ivcam::fw_cmd::GVD) const;
+        std::string get_firmware_version_string(int gvd_cmd = static_cast<int>(ivcam::fw_cmd::GVD), int offset = 0) const;
+        std::string get_module_serial_string(int offset) const;
+
+        void force_hardware_reset() const;
+        void enable_timestamp(bool colorEnable, bool depthEnable) const;
+        void set_auto_range(int enableMvR, int16_t minMvR, int16_t maxMvR, 
+            int16_t startMvR, int enableLaser, int16_t minLaser, 
+            int16_t maxLaser, int16_t startLaser,
+            int16_t ARUpperTH, int16_t ARLowerTH) const;
+
+        ivcam::camera_calib_params read_calibration() const;
     };
 }
 

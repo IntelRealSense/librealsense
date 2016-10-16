@@ -10,7 +10,7 @@
 //
 //namespace rsimpl
 //{
-//    rs_intrinsics MakeDepthIntrinsics(const ivcam::camera_calib_params & c, const int2 & dims);
+//    rs_intrinsics make_depth_intrinsics(const ivcam::camera_calib_params & c, const int2 & dims);
 //    rs_intrinsics MakeColorIntrinsics(const ivcam::camera_calib_params & c, const int2 & dims);
 //    void update_supported_options(uvc::device& dev,
 //        const uvc::extension_unit depth_xu,
