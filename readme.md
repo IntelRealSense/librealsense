@@ -47,6 +47,7 @@ A comprehensive suite of sample and tutorial applications are provided in the `/
   * [Camera Spec Sheet](./doc/camera_specs.md) - A brief overview of R200, F200 and SR300
   * [Developer Notes](./doc/dev_log.md) - Several informal notes gathered during internal releases
   * [Stream Formats](./doc/supported_video_formats.pdf) - A list of available stream resolutions and pixel formats provided by the supported devices.
+  * [Branching and Releases](./doc/branching.md) - Overview of live branches and major releases
 
 ## Functionality
 
