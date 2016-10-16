@@ -74,7 +74,7 @@ namespace rsimpl
             CComPtr<IAMVideoProcAmp>                _video_proc = nullptr;
             std::map<int, CComPtr<IKsControl>>      _ks_controls;
 
-            HANDLE                                  _is_flushed = nullptr;
+            manual_reset_event                        _is_flushed;
 
             std::vector<profile_and_callback>       _streams;
             std::mutex                              _streams_mutex;

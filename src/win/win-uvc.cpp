@@ -110,7 +110,7 @@ namespace rsimpl
                 auto owner = _owner.lock();
                 if (owner)
                 {
-                    SetEvent(owner->_is_flushed);
+                    owner->_is_flushed.set();
                 }
                 return S_OK;
             }
@@ -569,12 +569,10 @@ namespace rsimpl
             return results;
         }
 
-        wmf_uvc_device::wmf_uvc_device(const uvc_device_info& info, 
+        wmf_uvc_device::wmf_uvc_device(const uvc_device_info& info,
                                        std::shared_ptr<const wmf_backend> backend)
-            : _info(info), _backend(backend)
+            : _info(info), _is_flushed(), _backend(std::move(backend))
         {
-            _is_flushed = CreateEvent(nullptr, FALSE, FALSE, nullptr);
-
             if (!is_connected(info))
             {
                 throw std::runtime_error("Camera not connected!");
@@ -586,8 +584,6 @@ namespace rsimpl
             try {
                 flush(MF_SOURCE_READER_ALL_STREAMS);
                 wmf_uvc_device::set_power_state(D3);
-
-                CloseHandle(_is_flushed);
             }
             catch (...)
             {
@@ -714,7 +710,7 @@ namespace rsimpl
                 if (_reader != nullptr)
                 {
                     CHECK_HR(_reader->Flush(sIndex));
-                    WaitForSingleObject(_is_flushed, INFINITE);
+                    _is_flushed.wait(INFINITE);
                 }
             }
         }

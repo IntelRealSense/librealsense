@@ -425,6 +425,81 @@ namespace rsimpl
             }
             throw std::exception("could not find camera in windows device tree");
         }
+
+#define MAX_HANDLES 64
+
+        event_base::event_base(HANDLE handle)
+            :_handle(handle)
+        {}
+
+        event_base::~event_base()
+        {
+            if (_handle != nullptr)
+            {
+                CloseHandle(_handle);
+                _handle = nullptr;
+            }
+        }
+
+        bool event_base::set()
+        {
+            if (_handle == nullptr) return false;
+            SetEvent(_handle);
+            return true;
+        }
+
+        bool event_base::wait(DWORD timeout) const
+        {
+            if (_handle == nullptr) return false;
+
+            return WaitForSingleObject(_handle, timeout) == WAIT_OBJECT_0; // Return true only if object was signaled
+        }
+
+        event_base* event_base::wait(const std::vector<event_base*>& events, bool waitAll, int timeout)
+        {
+            if (events.size() > MAX_HANDLES) return nullptr; // WaitForMultipleObjects doesn't support waiting on more then 64 handles
+
+            HANDLE handles[MAX_HANDLES];
+            auto i = 0;
+            for (auto& evnt : events)
+            {
+                handles[i] = evnt->get_handle();
+                ++i;
+            }
+            auto res = WaitForMultipleObjects(static_cast<DWORD>(events.size()), handles, waitAll, timeout);
+            if (res >= WAIT_OBJECT_0 && res < WAIT_OBJECT_0 + events.size())
+            {
+                return events[res - WAIT_OBJECT_0];
+            }
+            else
+            {
+                return nullptr;
+            }
+        }
+
+        event_base* event_base::wait_all(const std::vector<event_base*>& events, int timeout)
+        {
+            return wait(events, true, timeout);
+        }
+
+        event_base* event_base::wait_any(const std::vector<event_base*>& events, int timeout)
+        {
+            return wait(events, false, timeout);
+        }
+
+        bool manual_reset_event::reset() const
+        {
+            if (_handle == nullptr) return false;
+            return ResetEvent(_handle) != 0;
+        }
+
+        manual_reset_event::manual_reset_event()
+            :event_base(CreateEvent(nullptr, FALSE, FALSE, nullptr))
+        {}
+
+        auto_reset_event::auto_reset_event()
+            : event_base(CreateEvent(nullptr, FALSE, FALSE, nullptr))
+        {}
     }
 }
 

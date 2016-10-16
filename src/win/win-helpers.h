@@ -22,5 +22,45 @@ namespace rsimpl
         bool parse_usb_path(int & vid, int & pid, int & mi, std::string & unique_id, const std::string & path);
 
         std::string get_usb_port_id(int device_vid, int device_pid, const std::string& device_uid);
+
+        class event_base
+        {
+        public:
+            virtual ~event_base();
+            virtual bool set();
+            virtual bool wait(DWORD timeout) const;
+
+            static event_base* wait(const std::vector<event_base*>& events, bool waitAll, int timeout);
+            static event_base* wait_any(const std::vector<event_base*>& events, int timeout);
+            static event_base* wait_all(const std::vector<event_base*>& events, int timeout);
+
+            HANDLE get_handle() const { return _handle; }
+
+        protected:
+            explicit event_base(HANDLE handle);
+
+            HANDLE _handle;
+
+        private:
+            event_base() = delete;
+
+            // Disallow copy:
+            event_base(const event_base&) = delete;
+            event_base& operator=(const event_base&) = delete;
+        };
+
+        class auto_reset_event : public event_base
+        {
+        public:
+            auto_reset_event();
+        };
+
+        class manual_reset_event : public event_base
+        {
+        public:
+            manual_reset_event();
+
+            bool reset() const;
+        };
     }
 }

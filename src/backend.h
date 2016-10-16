@@ -79,7 +79,7 @@ namespace rsimpl
 
         struct usb_device_info
         {
-            
+            std::wstring id;
         };
 
         class uvc_device
@@ -193,7 +193,11 @@ namespace rsimpl
         class usb_device
         {
         public:
-
+            virtual std::vector<uint8_t> send_receive(
+                const std::vector<uint8_t>& data, 
+                int timeout_ms = 5000,
+                bool require_response = true) = 0;
+            virtual ~usb_device() = default;
         };
 
         class backend
@@ -201,6 +205,9 @@ namespace rsimpl
         public:
             virtual std::shared_ptr<uvc_device> create_uvc_device(uvc_device_info info) const = 0;
             virtual std::vector<uvc_device_info> query_uvc_devices() const = 0;
+
+            virtual std::shared_ptr<usb_device> create_usb_device(usb_device_info info) const = 0;
+            virtual std::vector<usb_device_info> query_usb_devices(const std::string& interface_id) const = 0;
 
             virtual ~backend() = default;
         };

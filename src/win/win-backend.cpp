@@ -11,6 +11,8 @@
 
 #include <mfapi.h>
 
+#include "win-usb.h"
+
 namespace rsimpl
 {
     namespace uvc
@@ -50,6 +52,21 @@ namespace rsimpl
             wmf_uvc_device::foreach_uvc_device(action);
 
             return devices;
+        }
+
+        std::shared_ptr<usb_device> wmf_backend::create_usb_device(usb_device_info info) const
+        {
+            return std::make_shared<winusb_bulk_transfer>(info);
+        }
+
+        std::vector<usb_device_info> wmf_backend::query_usb_devices(const std::string& interface_id) const
+        {
+            std::vector<usb_device_info> result;
+            for (auto& id : usb_enumerate::query_by_interface(interface_id, "", ""))
+            {
+                result.push_back({ id });
+            }
+            return result;
         }
     }
 }

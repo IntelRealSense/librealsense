@@ -106,21 +106,25 @@ if(WIN32)
 	list(APPEND REALSENSE_CPP 
 		src/win/win-helpers.cpp
 		src/win/win-uvc.cpp
+		src/win/win-usb.cpp
 		src/win/win-backend.cpp)
 		
 	source_group("Source Files\\Backend" FILES 
 		src/win/win-helpers.cpp
 		src/win/win-uvc.cpp
+		src/win/win-usb.cpp
 		src/win/win-backend.cpp)
 		
 	list(APPEND REALSENSE_HPP 
 		src/win/win-helpers.h
 		src/win/win-uvc.h
+		src/win/win-usb.h
 		src/win/win-backend.h)
 		
 	source_group("Header Files\\Backend" FILES 
 		src/win/win-helpers.h
 		src/win/win-uvc.h
+		src/win/win-usb.h
 		src/win/win-backend.h)
 		
 	source_group("Header Files\\API" FILES 
