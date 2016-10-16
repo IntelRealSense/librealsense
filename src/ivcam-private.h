@@ -6,7 +6,6 @@
 #define LIBREALSENSE_IV_PRIVATE_H
 
 #include "backend.h"
-#include <mutex>
 
 namespace rsimpl {
     namespace ivcam {
@@ -54,21 +53,21 @@ namespace rsimpl {
             int     uniqueNumber;           //Should be 0xCAFECAFE in Calibration version 1 or later. In calibration version 0 this is zero.
             int16_t TableValidation;
             int16_t TableVersion;
-            ivcam::camera_calib_params CalibrationParameters;
+            camera_calib_params CalibrationParameters;
         };
 
         struct cam_auto_range_request
         {
-            int enableMvR;          // Send as IVCAMCommand::Param1
-            int enableLaser;        // Send as IVCAMCommand::Param2
-            int16_t minMvR;         // Copy into IVCAMCommand::data
-            int16_t maxMvR;         // "
-            int16_t startMvR;       // "
-            int16_t minLaser;       // "
-            int16_t maxLaser;       // "
-            int16_t startLaser;     // "
-            uint16_t ARUpperTh;     // Copy into IVCAMCommand::data if not -1
-            uint16_t ARLowerTh;     // "
+            int enableMvR = 1;          // Send as IVCAMCommand::Param1
+            int enableLaser = 1;        // Send as IVCAMCommand::Param2
+            int16_t minMvR = 180;       // Copy into IVCAMCommand::data
+            int16_t maxMvR = 605;       // "
+            int16_t startMvR = 303;     // "
+            int16_t minLaser = 2;       // "
+            int16_t maxLaser = 16;      // "
+            int16_t startLaser = -1;    // "
+            uint16_t ARUpperTh = 1250;  // Copy into IVCAMCommand::data if not -1
+            uint16_t ARLowerTh = 650;   // "
         };
 
         enum fw_cmd : uint8_t
@@ -97,85 +96,7 @@ namespace rsimpl {
             GetPowerGearState = 0xFF
         };
 
-        enum class FirmwareError : int32_t
-        {
-            FW_ACTIVE = 0,
-            FW_MSAFE_S1_ERR,
-            FW_I2C_SAFE_ERR,
-            FW_FLASH_SAFE_ERR,
-            FW_I2C_CFG_ERR,
-            FW_I2C_EV_ERR,
-            FW_HUMIDITY_ERR,
-            FW_MSAFE_S0_ERR,
-            FW_LD_ERR,
-            FW_PI_ERR,
-            FW_PJCLK_ERR,
-            FW_OAC_ERR,
-            FW_LIGURIA_TEMPERATURE_ERR,
-            FW_CONTINUE_SAFE_ERROR,
-            FW_FORZA_HUNG,
-            FW_FORZA_CONTINUES_HUNG,
-            FW_PJ_EYESAFETY_CHKRHARD,
-            FW_MIPI_PCAM_ERR,
-            FW_MIPI_TCAM_ERR,
-            FW_SYNC_DISABLED,
-            FW_MIPI_PCAM_SVR_ERR,
-            FW_MIPI_TCAM_SVR_ERR,
-            FW_MIPI_PCAM_FRAME_SIZE_ERR,
-            FW_MIPI_TCAM_FRAME_SIZE_ERR,
-            FW_MIPI_PCAM_FRAME_RESPONSE_ERR,
-            FW_MIPI_TCAM_FRAME_RESPONSE_ERR,
-            FW_USB_PCAM_THROTTLED_ERR,
-            FW_USB_TCAM_THROTTLED_ERR,
-            FW_USB_PCAM_QOS_WAR,
-            FW_USB_TCAM_QOS_WAR,
-            FW_USB_PCAM_OVERFLOW,
-            FW_USB_TCAM_OVERFLOW,
-            FW_Flash_OEM_SECTOR,
-            FW_Flash_CALIBRATION_RW,
-            FW_Flash_IR_CALIBRATION,
-            FW_Flash_RGB_CALIBRATION,
-            FW_Flash_THERMAL_LOOP_CONFIGURATION,
-            FW_Flash_REALTEK,
-            FW_RGB_ISP_BOOT_FAILED,
-            FW_PRIVACY_RGB_OFF,
-            FW_PRIVACY_DEPTH_OFF,
-            FW_COUNT_ERROR
-        };
-
-        // Claim USB interface used for device
-        /*void claim_ivcam_interface(uvc::device & device);
-
-        // Read device state
-        size_t prepare_usb_command(uint8_t * request, size_t & requestSize, uint32_t op, uint32_t p1 = 0, uint32_t p2 = 0, uint32_t p3 = 0, uint32_t p4 = 0, uint8_t * data = 0, size_t dataLength = 0);
-        void get_gvd(uvc::device & device, std::timed_mutex & mutex, size_t sz, char * gvd, uint8_t gvd_cmd = fw_cmd::GVD);
-        void get_firmware_version_string(uvc::device & device, std::timed_mutex & mutex, std::string & version, int gvd_cmd = (int)fw_cmd::GVD, int offset = 0);
-        void get_module_serial_string(uvc::device & device, std::timed_mutex & mutex, std::string & serial, int offset);
-
-        // Modify device state
-        void force_hardware_reset(uvc::device & device, std::timed_mutex & mutex);
-        void enable_timestamp(uvc::device & device, std::timed_mutex & mutex, bool colorEnable, bool depthEnable);
-        void set_auto_range(uvc::device & device, std::timed_mutex & mutex, int enableMvR, int16_t minMvR, int16_t maxMvR, int16_t startMvR, int enableLaser, int16_t minLaser, int16_t maxLaser, int16_t startLaser, int16_t ARUpperTH, int16_t ARLowerTH);
-
-        // XU read/write
-        void get_laser_power(const uvc::device & device, uint8_t & laser_power);
-        void set_laser_power(uvc::device & device, uint8_t laser_power);
-        void get_accuracy(const uvc::device & device, uint8_t & accuracy);
-        void set_accuracy(uvc::device & device, uint8_t accuracy);
-        void get_motion_range(const uvc::device & device, uint8_t & motion_range);
-        void set_motion_range(uvc::device & device, uint8_t motion_range);
-        void get_filter_option(const uvc::device & device, uint8_t & filter_option);
-        void set_filter_option(uvc::device & device, uint8_t filter_option);
-        void get_confidence_threshold(const uvc::device & device, uint8_t & conf_thresh);
-        void set_confidence_threshold(uvc::device & device, uint8_t conf_thresh);*/
-
     } // rsimpl::ivcam
-
-    namespace sr300
-    {
-        // Read calibration or device state
-        //ivcam::camera_calib_params read_sr300_calibration(uvc::device & device, std::timed_mutex & mutex);
-    } // rsimpl::sr300_camera
 } // namespace rsimpl
 
 #endif  // IV_PRIVATE_H

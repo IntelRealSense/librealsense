@@ -250,7 +250,11 @@ namespace rsimpl
         void commit() { if (active) writer(struct_); }
     };
 
-    template<class T, class R, class W> struct_interface<T, R, W> make_struct_interface(R r, W w) { return{ r,w }; }
+    template<class T, class R, class W> 
+    std::shared_ptr<struct_interface<T, R, W>> make_struct_interface(R r, W w)
+    {
+        return std::make_shared<struct_interface<T, R, W>>(r, w);
+    }
 
     template <typename T>
     class wraparound_mechanism

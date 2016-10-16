@@ -223,31 +223,29 @@ namespace rsimpl
         _hw_monitor.send(cmd);
     }
 
-    void sr300_camera::set_auto_range(int enableMvR, int16_t minMvR, int16_t maxMvR,
-        int16_t startMvR, int enableLaser, int16_t minLaser, int16_t maxLaser,
-        int16_t startLaser, int16_t ARUpperTH, int16_t ARLowerTH) const
+    void sr300_camera::set_auto_range(const ivcam::cam_auto_range_request& c) const
     {
         command cmd(ivcam::fw_cmd::SetAutoRange);
-        cmd.param1 = enableMvR;
-        cmd.param2 = enableLaser;
+        cmd.param1 = c.enableMvR;
+        cmd.param2 = c.enableLaser;
 
         std::vector<uint16_t> data;
         data.resize(6);
-        data[0] = minMvR;
-        data[1] = maxMvR;
-        data[2] = startMvR;
-        data[3] = minLaser;
-        data[4] = maxLaser;
-        data[5] = startLaser;
+        data[0] = c.minMvR;
+        data[1] = c.maxMvR;
+        data[2] = c.startMvR;
+        data[3] = c.minLaser;
+        data[4] = c.maxLaser;
+        data[5] = c.startLaser;
 
-        if (ARUpperTH != -1)
+        if (c.ARUpperTh != -1)
         {
-            data.push_back(ARUpperTH);
+            data.push_back(c.ARUpperTh);
         }
 
-        if (ARLowerTH != -1)
+        if (c.ARLowerTh != -1)
         {
-            data.push_back(ARLowerTH);
+            data.push_back(c.ARLowerTh);
         }
 
         cmd.data.resize(sizeof(uint16_t) * data.size());

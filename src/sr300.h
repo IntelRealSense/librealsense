@@ -87,6 +87,8 @@ namespace rsimpl
             register_depth_xu(RS_OPTION_F200_CONFIDENCE_THRESHOLD, IVCAM_DEPTH_CONFIDENCE_THRESH);
             register_depth_xu(RS_OPTION_F200_FILTER_OPTION,        IVCAM_DEPTH_FILTER_OPTION);
 
+            register_autorange_options();
+
             auto c = get_calibration();
             pose depth_to_color = { 
                 transpose(reinterpret_cast<const float3x3 &>(c.Rt)), 
@@ -107,6 +109,22 @@ namespace rsimpl
                     ivcam::depth_xu, id));
         }
 
+        void register_autorange_options()
+        {
+            auto arr = std::make_shared<ivcam::cam_auto_range_request>();
+            auto arr_reader_writer = make_struct_interface<ivcam::cam_auto_range_request>(
+                [arr]() { return *arr; },
+                [arr, this](ivcam::cam_auto_range_request r) {
+                set_auto_range(r);
+                *arr = r;
+            });
+            register_option(RS_OPTION_SR300_AUTO_RANGE_ENABLE_MOTION_VERSUS_RANGE, RS_SUBDEVICE_DEPTH,
+                make_field_option(arr_reader_writer, &ivcam::cam_auto_range_request::enableMvR, { 0, 2, 1, 1 }));
+            register_option(RS_OPTION_SR300_AUTO_RANGE_ENABLE_LASER, RS_SUBDEVICE_DEPTH,
+                make_field_option(arr_reader_writer, &ivcam::cam_auto_range_request::enableLaser, { 0, 1, 1, 1 }));
+            // etc..
+        }
+
         static rs_intrinsics make_depth_intrinsics(const ivcam::camera_calib_params& c, const int2& dims);
         static rs_intrinsics make_color_intrinsics(const ivcam::camera_calib_params& c, const int2& dims);
         float read_mems_temp() const;
@@ -118,10 +136,7 @@ namespace rsimpl
 
         void force_hardware_reset() const;
         void enable_timestamp(bool colorEnable, bool depthEnable) const;
-        void set_auto_range(int enableMvR, int16_t minMvR, int16_t maxMvR, 
-            int16_t startMvR, int enableLaser, int16_t minLaser, 
-            int16_t maxLaser, int16_t startLaser,
-            int16_t ARUpperTH, int16_t ARLowerTH) const;
+        void set_auto_range(const ivcam::cam_auto_range_request& c) const;
 
         ivcam::camera_calib_params get_calibration() const;
     };

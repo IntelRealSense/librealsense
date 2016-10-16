@@ -322,6 +322,45 @@ namespace rsimpl
         int _id;
     };
 
+    template<class T, class R, class W, class U>
+    class struct_feild_option : public option
+    {
+    public:
+        void set(float value) override
+        {
+            _struct_interface->set(_field, value);
+        }
+        float query() const override
+        {
+            return _struct_interface->get(_field);
+        }
+        option_range get_range() const override
+        {
+            return _range;
+        }
+        bool is_enabled() const override { return true; }
+
+        explicit struct_feild_option(std::shared_ptr<struct_interface<T, R, W>> struct_interface,
+                                     U T::* field, option_range range)
+            : _struct_interface(struct_interface), _range(range), _field(field)
+        {
+        }
+
+    private:
+        std::shared_ptr<struct_interface<T, R, W>> _struct_interface;
+        option_range _range;
+        U T::* _field;
+    };
+
+    template<class T, class R, class W, class U>
+    std::shared_ptr<struct_feild_option<T, R, W, U>> make_field_option(
+        std::shared_ptr<struct_interface<T, R, W>> struct_interface,
+        U T::* field, option_range range)
+    {
+        return std::make_shared<struct_feild_option<T, R, W, U>>
+            (struct_interface, field, range);
+    }
+
     class command_transfer_over_xu : public uvc::command_transfer
     {
     public:
