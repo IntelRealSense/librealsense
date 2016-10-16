@@ -9,6 +9,7 @@
 #include <chrono>
 #include <memory>
 #include <vector>
+#include "hw-monitor.h"
 
 namespace rs{
     class device;
@@ -319,6 +320,37 @@ namespace rsimpl
         uvc_endpoint& _ep;
         uvc::extension_unit _xu;
         int _id;
+    };
+
+    class command_transfer_over_xu : public uvc::command_transfer
+    {
+    public:
+        std::vector<uint8_t> send_receive(const std::vector<uint8_t>& data, int, bool require_response) override
+        {
+            return _uvc.invoke_powered([this, &data, require_response]
+            (uvc::uvc_device& dev)
+            {
+                std::vector<uint8_t> result;
+                std::lock_guard<uvc::uvc_device> lock(dev);
+                dev.set_xu(_xu, _ctrl, data.data(), static_cast<int>(data.size()));
+                if (require_response)
+                {
+                    result.resize(IVCAM_MONITOR_MAX_BUFFER_SIZE);
+                    dev.get_xu(_xu, _ctrl, result.data(), static_cast<int>(result.size()));
+                }
+                return result;
+            });
+        }
+
+        command_transfer_over_xu(uvc_endpoint& uvc, 
+                             uvc::extension_unit xu, uint8_t ctrl)
+            : _uvc(uvc), _xu(std::move(xu)), _ctrl(ctrl)
+        {}
+
+    private:
+        uvc_endpoint&       _uvc;
+        uvc::extension_unit _xu;
+        uint8_t             _ctrl;
     };
 
     class device

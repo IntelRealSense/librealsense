@@ -46,8 +46,8 @@ namespace rsimpl
             static void foreach_uvc_device(enumeration_callback action);
 
             void init_xu(const extension_unit& xu) override;
-            void set_xu(const extension_unit& xu, uint8_t ctrl, void * data, int len) override;
-            void get_xu(const extension_unit& xu, uint8_t ctrl, void * data, int len) const override;
+            void set_xu(const extension_unit& xu, uint8_t ctrl, const uint8_t* data, int len) override;
+            void get_xu(const extension_unit& xu, uint8_t ctrl, uint8_t* data, int len) const override;
             control_range get_xu_range(const extension_unit& xu, uint8_t ctrl) const override;
 
             int get_pu(rs_option opt) const override;

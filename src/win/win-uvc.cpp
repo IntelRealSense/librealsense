@@ -165,7 +165,7 @@ namespace rsimpl
             _ks_controls[xu.node] = ks_control;
         }
 
-        void wmf_uvc_device::set_xu(const extension_unit& xu, uint8_t ctrl, void* data, int len)
+        void wmf_uvc_device::set_xu(const extension_unit& xu, uint8_t ctrl, const uint8_t* data, int len)
         {
             auto ks_control = get_ks_control(xu);
 
@@ -177,10 +177,11 @@ namespace rsimpl
             node.NodeId = xu.node;
 
             ULONG bytes_received = 0;
-            CHECK_HR(ks_control->KsProperty(reinterpret_cast<PKSPROPERTY>(&node), sizeof(KSP_NODE), data, len, &bytes_received));
+            CHECK_HR(ks_control->KsProperty(reinterpret_cast<PKSPROPERTY>(&node), 
+                sizeof(KSP_NODE), (void*)data, len, &bytes_received));
         }
 
-        void wmf_uvc_device::get_xu(const extension_unit& xu, uint8_t ctrl, void* data, int len) const
+        void wmf_uvc_device::get_xu(const extension_unit& xu, uint8_t ctrl, uint8_t* data, int len) const
         {
             auto ks_control = get_ks_control(xu);
 
@@ -192,7 +193,8 @@ namespace rsimpl
             node.NodeId = xu.node;
 
             ULONG bytes_received = 0;
-            CHECK_HR(ks_control->KsProperty(reinterpret_cast<PKSPROPERTY>(&node), sizeof(node), data, len, &bytes_received));
+            CHECK_HR(ks_control->KsProperty(reinterpret_cast<PKSPROPERTY>(&node), 
+                sizeof(node), data, len, &bytes_received));
             if (bytes_received != len) 
                 throw std::runtime_error("XU read did not return enough data");
         }
