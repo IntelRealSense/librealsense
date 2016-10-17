@@ -16,10 +16,54 @@
 #include "concurrency.hpp"
 #include <atomic>
 #include <map>
+#include <sstream>
 
 
 #pragma comment(lib, "opengl32.lib")
 
+struct option_metadata
+{
+    rs::option_range range;
+    bool supported = false;
+    float value = 0.0f;
+    const char* label = "";
+
+    bool is_checkbox() const
+    {
+        return range.max == 1.0f &&
+            range.min == 0.0f &&
+            range.step == 1.0f;
+    }
+};
+
+std::map<rs_subdevice, std::map<rs_option, option_metadata>> init_device_options(rs::device& dev)
+{
+    std::map<rs_subdevice, std::map<rs_option, option_metadata>> options_metadata;
+    for (auto j = 0; j < RS_SUBDEVICE_COUNT; j++)
+    {
+        auto subdevice = static_cast<rs_subdevice>(j);
+        auto&& endpoint = dev.get_subdevice(subdevice);
+
+        for (auto i = 0; i < RS_OPTION_COUNT; i++)
+        {
+            try
+            {
+                option_metadata metadata;
+                auto opt = static_cast<rs_option>(i);
+                metadata.label = rs_option_to_string(opt);
+                metadata.supported = endpoint.supports(opt);
+                if (metadata.supported)
+                {
+                    metadata.range = endpoint.get_option_range(opt);
+                    metadata.value = endpoint.get_option(opt);
+                }
+                options_metadata[subdevice][opt] = metadata;
+            }
+            catch (...) {}
+        }
+    }
+    return options_metadata;
+}
 
 int main(int, char**) try
 {
@@ -33,16 +77,19 @@ int main(int, char**) try
     ImVec4 clear_color = ImColor(0, 0, 0);
 
     rs::context ctx;
+    auto device_index = 0;
     auto list = ctx.query_devices();
-    auto dev = ctx.create(list[0]);
-
-    struct option_metadata
+    auto dev = ctx.create(list[device_index]);
+    std::vector<std::string> device_names;
+    for (auto&& l : list)
     {
-        rs::option_range range;
-        bool supported;
-        float value;
-        const char* label;
-    };
+        auto d = ctx.create(l);
+        auto name = d.get_camera_info(RS_CAMERA_INFO_DEVICE_NAME);
+        auto serial = d.get_camera_info(RS_CAMERA_INFO_DEVICE_SERIAL_NUMBER);
+        std::stringstream ss;
+        ss << name << " Sn#" << serial;
+        device_names.push_back(ss.str());
+    }
 
     std::map<rs_subdevice, std::map<rs_option, option_metadata>> options_metadata;
     for (auto j = 0; j < RS_SUBDEVICE_COUNT; j++)
@@ -75,11 +122,41 @@ int main(int, char**) try
         glfwPollEvents();
         ImGui_ImplGlfw_NewFrame();
 
+        auto y = 0;
+
+        ImGui::SetNextWindowPos({ 700, (float)y });
+        ImGui::Begin("Device Selection");
+        std::vector<const char*> device_names_chars;
+        for (auto&& name : device_names)
+        {
+            device_names_chars.push_back(name.c_str());
+        }
+        if (ImGui::Combo("", &device_index, device_names_chars.data(), device_names.size()))
+        {
+            dev = ctx.create(list[device_index]);
+        }
+
+        for (auto i = 0; i < RS_CAMERA_INFO_COUNT; i++)
+        {
+            auto info = static_cast<rs_camera_info>(i);
+            if (dev.supports(info))
+            {
+                std::stringstream ss;
+                ss << rs_camera_info_to_string(info) << ": " << dev.get_camera_info(info);
+                auto line = ss.str();
+                ImGui::Text(line.c_str());
+            }
+        }
+
+        y += ImGui::GetWindowSize().y;
+        ImGui::End();
+
         for (auto j = 0; j < RS_SUBDEVICE_COUNT; j++)
         {
             auto subdevice = static_cast<rs_subdevice>(j);
             auto&& endpoint = dev.get_subdevice(subdevice);
 
+            ImGui::SetNextWindowPos({ 700, (float)y });
             ImGui::Begin(rs_subdevice_to_string(subdevice));
             for (auto i = 0; i < RS_OPTION_COUNT; i++)
             {
@@ -88,15 +165,29 @@ int main(int, char**) try
 
                 if (metadata.supported)
                 {
-                    if (ImGui::SliderFloat(metadata.label, &metadata.value, 
-                        metadata.range.min, metadata.range.max))
+                    if (metadata.is_checkbox())
                     {
-                        // TODO: Round to step?
-                        dev.color().set_option(opt, metadata.value);
+                        auto value = metadata.value > 0.0f;
+                        if (ImGui::Checkbox(metadata.label, &value))
+                        {
+                            metadata.value = value ? 1.0f : 0.0f;
+                            endpoint.set_option(opt, metadata.value);
+                        }
+                    }
+                    else
+                    {
+                        ImGui::Text(metadata.label);
+                        if (ImGui::SliderFloat("", &metadata.value,
+                            metadata.range.min, metadata.range.max))
+                        {
+                            // TODO: Round to step?
+                            endpoint.set_option(opt, metadata.value);
+                        }
                     }
                 }
             }
             
+            y += ImGui::GetWindowSize().y;
             ImGui::End();
         }
 

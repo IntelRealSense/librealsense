@@ -50,16 +50,21 @@ namespace rsimpl
         {
             using namespace ivcam;
 
-            auto fw_version = get_firmware_version_string();
-            auto serial = get_module_serial_string();
-            enable_timestamp(true, true);
-
-            register_device("Intel RealSense SR300", fw_version, serial);
-
             // create uvc-endpoint from backend uvc-device
             auto color_ep = std::make_shared<uvc_endpoint>(backend.create_uvc_device(color), this);
             auto depth_ep = std::make_shared<uvc_endpoint>(backend.create_uvc_device(depth), this);
             depth_ep->register_xu(depth_xu); // make sure the XU is initialized everytime we power the camera
+
+            auto fw_version = get_firmware_version_string();
+            auto serial = get_module_serial_string();
+            auto location = depth_ep->invoke_powered([](uvc::uvc_device& dev)
+            {
+                return dev.get_device_location();
+            });
+            enable_timestamp(true, true);
+
+
+            register_device("Intel RealSense SR300", fw_version, serial, location);
 
             // map subdevice to endpoint
             assign_endpoint(RS_SUBDEVICE_COLOR, color_ep);

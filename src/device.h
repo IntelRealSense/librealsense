@@ -291,7 +291,7 @@ namespace rsimpl
                 [this](uvc::uvc_device& dev)
                 {
                     T t;
-                    dev.set_xu(_xu, _id, reinterpret_cast<uint8_t*>(&t), sizeof(T));
+                    dev.get_xu(_xu, _id, reinterpret_cast<uint8_t*>(&t), sizeof(T));
                     return static_cast<float>(t);
                 }));
         }
@@ -494,11 +494,12 @@ namespace rsimpl
             register_option(id, subdevice, std::make_shared<uvc_pu_option>(get_uvc_endpoint(subdevice), id));
         }
 
-        void register_device(std::string name, std::string fw_version, std::string serial)
+        void register_device(std::string name, std::string fw_version, std::string serial, std::string location)
         {
-            _static_info.camera_info[RS_CAMERA_INFO_DEVICE_NAME] = name;
-            _static_info.camera_info[RS_CAMERA_INFO_CAMERA_FIRMWARE_VERSION] = fw_version;
-            _static_info.camera_info[RS_CAMERA_INFO_DEVICE_SERIAL_NUMBER] = serial;
+            _static_info.camera_info[RS_CAMERA_INFO_DEVICE_NAME] = std::move(name);
+            _static_info.camera_info[RS_CAMERA_INFO_CAMERA_FIRMWARE_VERSION] = std::move(fw_version);
+            _static_info.camera_info[RS_CAMERA_INFO_DEVICE_SERIAL_NUMBER] = std::move(serial);
+            _static_info.camera_info[RS_CAMERA_INFO_DEVICE_LOCATION] = std::move(location);
         }
 
         void set_pose(rs_subdevice subdevice, pose p)

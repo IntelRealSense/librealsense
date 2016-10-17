@@ -57,6 +57,8 @@ namespace rsimpl
             void lock() const override { _systemwide_lock.lock(); }
             void unlock() const override { _systemwide_lock.unlock(); }
 
+            std::string get_device_location() const override { return _location; }
+
         private:
             friend class source_reader_callback;
 
@@ -86,6 +88,7 @@ namespace rsimpl
             std::shared_ptr<const wmf_backend>      _backend;
 
             named_mutex                             _systemwide_lock;
+            std::string                             _location;
         };
     }
 }

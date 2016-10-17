@@ -574,12 +574,18 @@ namespace rsimpl
         wmf_uvc_device::wmf_uvc_device(const uvc_device_info& info,
                                        std::shared_ptr<const wmf_backend> backend)
             : _info(info), _is_flushed(), _backend(std::move(backend)),
-              _systemwide_lock(info.unique_id.c_str(), WAIT_FOR_MUTEX_TIME_OUT)
+              _systemwide_lock(info.unique_id.c_str(), WAIT_FOR_MUTEX_TIME_OUT),
+              _location("")
         {
             if (!is_connected(info))
             {
                 throw std::runtime_error("Camera not connected!");
             }
+            try
+            {
+                _location = get_usb_port_id(info.vid, info.pid, info.unique_id);
+            }
+            catch(...){}
         }
 
         wmf_uvc_device::~wmf_uvc_device()

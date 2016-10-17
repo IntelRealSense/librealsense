@@ -123,6 +123,8 @@ namespace rsimpl
             virtual void lock() const = 0;
             virtual void unlock() const = 0;
 
+            virtual std::string get_device_location() const = 0;
+
             virtual ~uvc_device() = default;
         };
 
@@ -203,6 +205,10 @@ namespace rsimpl
             std::vector<stream_profile> get_profiles() const override
             {
                 return _dev->get_profiles();
+            }
+            std::string get_device_location() const override
+            {
+                return _dev->get_device_location();
             }
 
             void lock() const override { _dev->lock(); }
