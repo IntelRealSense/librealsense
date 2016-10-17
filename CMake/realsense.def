@@ -45,6 +45,7 @@ EXPORTS
     rs_get_subdevice_option
     rs_set_subdevice_option
     rs_supports_subdevice_option
+    rs_get_subdevice_option_range
 
     rs_get_camera_info
     rs_supports_camera_info

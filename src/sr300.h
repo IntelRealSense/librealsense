@@ -81,11 +81,11 @@ namespace rsimpl
             register_pu(RS_SUBDEVICE_COLOR, RS_OPTION_COLOR_ENABLE_AUTO_EXPOSURE);
             register_pu(RS_SUBDEVICE_COLOR, RS_OPTION_COLOR_ENABLE_AUTO_WHITE_BALANCE);
 
-            register_depth_xu(RS_OPTION_F200_LASER_POWER,          IVCAM_DEPTH_LASER_POWER);
-            register_depth_xu(RS_OPTION_F200_ACCURACY,             IVCAM_DEPTH_ACCURACY);
-            register_depth_xu(RS_OPTION_F200_MOTION_RANGE,         IVCAM_DEPTH_MOTION_RANGE);
-            register_depth_xu(RS_OPTION_F200_CONFIDENCE_THRESHOLD, IVCAM_DEPTH_CONFIDENCE_THRESH);
-            register_depth_xu(RS_OPTION_F200_FILTER_OPTION,        IVCAM_DEPTH_FILTER_OPTION);
+            register_depth_xu<uint8_t>(RS_OPTION_F200_LASER_POWER,          IVCAM_DEPTH_LASER_POWER);
+            register_depth_xu<uint8_t>(RS_OPTION_F200_ACCURACY,             IVCAM_DEPTH_ACCURACY);
+            register_depth_xu<uint8_t>(RS_OPTION_F200_MOTION_RANGE,         IVCAM_DEPTH_MOTION_RANGE);
+            register_depth_xu<uint8_t>(RS_OPTION_F200_CONFIDENCE_THRESHOLD, IVCAM_DEPTH_CONFIDENCE_THRESH);
+            register_depth_xu<uint8_t>(RS_OPTION_F200_FILTER_OPTION,        IVCAM_DEPTH_FILTER_OPTION);
 
             register_autorange_options();
 
@@ -101,10 +101,11 @@ namespace rsimpl
     private:
         hw_monitor _hw_monitor;
 
+        template<class T>
         void register_depth_xu(rs_option opt, uint8_t id)
         {
             register_option(opt, RS_SUBDEVICE_DEPTH,
-                std::make_shared<uvc_xu_option<uint8_t>>(
+                std::make_shared<uvc_xu_option<T>>(
                     get_uvc_endpoint(RS_SUBDEVICE_DEPTH),
                     ivcam::depth_xu, id));
         }

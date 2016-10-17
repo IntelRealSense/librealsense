@@ -287,6 +287,24 @@ int rs_supports_subdevice_option(const rs_device* device, rs_subdevice subdevice
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, device, subdevice, option)
 
+void rs_get_subdevice_option_range(const rs_device* device, rs_subdevice subdevice, rs_option option, 
+    float* min, float* max, float* step, float* def, rs_error** error) try
+{
+    VALIDATE_NOT_NULL(device);
+    VALIDATE_ENUM(subdevice);
+    VALIDATE_ENUM(option);
+    VALIDATE_NOT_NULL(min);
+    VALIDATE_NOT_NULL(max);
+    VALIDATE_NOT_NULL(step);
+    VALIDATE_NOT_NULL(def);
+    auto range = device->device->get_option(subdevice, option).get_range();
+    *min = range.min;
+    *max = range.max;
+    *def = range.def;
+    *step = range.step;
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, device, subdevice, option, min, max, step, def);
+
 const char* rs_get_camera_info(const rs_device* device, rs_camera_info info, rs_error** error) try
 {
     VALIDATE_NOT_NULL(device);

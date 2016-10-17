@@ -13,7 +13,7 @@ namespace rsimpl
 {
     namespace uvc
     {
-        void check(const char * call, HRESULT hr, bool to_throw = true);
+        bool check(const char * call, HRESULT hr, bool to_throw = true);
 #define CHECK_HR(x) check(#x, x);
 #define LOG_HR(x) check(#x, x, false);
 

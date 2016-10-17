@@ -282,7 +282,7 @@ namespace rsimpl
                 [this, value](uvc::uvc_device& dev)
                 {
                     T t = static_cast<T>(value);
-                    dev.set_xu(_xu, _id, &t, sizeof(T));
+                    dev.set_xu(_xu, _id, reinterpret_cast<uint8_t*>(&t), sizeof(T));
                 });
         }
         float query() const override
@@ -291,7 +291,7 @@ namespace rsimpl
                 [this](uvc::uvc_device& dev)
                 {
                     T t;
-                    dev.set_xu(_xu, _id, &t, sizeof(T));
+                    dev.set_xu(_xu, _id, reinterpret_cast<uint8_t*>(&t), sizeof(T));
                     return static_cast<float>(t);
                 }));
         }

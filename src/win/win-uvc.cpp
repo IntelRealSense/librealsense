@@ -473,10 +473,10 @@ namespace rsimpl
                         CHECK_HR(_activate->ActivateObject(IID_IMFMediaSource, reinterpret_cast<void **>(&_source)));
                         CHECK_HR(MFCreateSourceReaderFromMediaSource(_source, _reader_attrs, &_reader));
 
-                        CHECK_HR(_source->QueryInterface(__uuidof(IAMCameraControl), 
-                                                         reinterpret_cast<void **>(&_camera_control.p)));
-                        CHECK_HR(_source->QueryInterface(__uuidof(IAMVideoProcAmp), 
-                                                         reinterpret_cast<void **>(&_video_proc.p)));
+                        _source->QueryInterface(__uuidof(IAMCameraControl), 
+                                                reinterpret_cast<void **>(&_camera_control.p));
+                        _source->QueryInterface(__uuidof(IAMVideoProcAmp), 
+                                                reinterpret_cast<void **>(&_video_proc.p));
 
                         UINT32 streamIndex;
                         CHECK_HR(_device_attrs->GetCount(&streamIndex));

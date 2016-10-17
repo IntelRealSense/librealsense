@@ -46,13 +46,15 @@ namespace rsimpl
             return ss.str();
         }
 
-        void check(const char * call, HRESULT hr, bool to_throw)
+        bool check(const char * call, HRESULT hr, bool to_throw)
         {
             if (FAILED(hr))
             {
                 if (to_throw) throw std::runtime_error(to_string() << call << "(...) returned " << hr_to_string(hr));
                 // TODO: Log 
+                return false;
             }
+            return true;
         }
 
         std::string win_to_utf(const WCHAR * s)

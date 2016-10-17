@@ -233,6 +233,14 @@ namespace rs
         std::shared_ptr<rs_stream_lock> _lock;
     };
 
+    struct option_range
+    {
+        float min;
+        float max;
+        float def;
+        float step;
+    };
+
     class subdevice
     {
     public:
@@ -259,6 +267,16 @@ namespace rs
             auto res = rs_get_subdevice_option(_dev, _index, option, &e);
             error::handle(e);
             return res;
+        }
+
+        option_range get_option_range(rs_option option) const
+        {
+            option_range result;
+            rs_error* e = nullptr;
+            rs_get_subdevice_option_range(_dev, _index, option,
+                &result.min, &result.max, &result.step, &result.def, &e);
+            error::handle(e);
+            return result;
         }
 
         void set_option(rs_option option, float value) const

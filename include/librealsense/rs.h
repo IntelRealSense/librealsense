@@ -381,6 +381,7 @@ void rs_release_frame(const rs_stream_lock* lock, rs_frame_ref* frame);
 float rs_get_subdevice_option(const rs_device* device, rs_subdevice subdevice, rs_option option, rs_error** error);
 void rs_set_subdevice_option(const rs_device* device, rs_subdevice subdevice, rs_option option, float value, rs_error** error);
 int rs_supports_subdevice_option(const rs_device* device, rs_subdevice subdevice, rs_option option, rs_error** error);
+void rs_get_subdevice_option_range(const rs_device* device, rs_subdevice subdevice, rs_option option, float* min, float* max, float* step, float* def, rs_error** error);
 
 const char* rs_get_camera_info(const rs_device* device, rs_camera_info info, rs_error** error);
 int rs_supports_camera_info(const rs_device* device, rs_camera_info info, rs_error** error);
