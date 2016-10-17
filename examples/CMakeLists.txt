@@ -128,9 +128,9 @@ set_target_properties (cpp-capture PROPERTIES
     FOLDER Examples
 )
 
-add_executable(cpp-config-ui cpp-config-ui.cpp)
+add_executable(cpp-config-ui cpp-config-ui.cpp third_party/imgui/imgui.cpp third_party/imgui/imgui_impl_glfw.cpp)
 target_link_libraries(cpp-config-ui ${DEPENDENCIES})
-
+include_directories(cpp-config-ui third_party/imgui)
 
 set_target_properties (cpp-config-ui PROPERTIES
     FOLDER Applications
