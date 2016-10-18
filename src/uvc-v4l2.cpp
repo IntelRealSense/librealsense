@@ -91,8 +91,8 @@ namespace rsimpl
 
             ~v4l_usb_device()
             {
-                libusb_exit(_usb_context);
                 if(_usb_device) libusb_unref_device(_usb_device);
+                libusb_exit(_usb_context);
             }
 
             static void foreach_usb_device(libusb_context* usb_context, std::function<void(
@@ -271,6 +271,27 @@ namespace rsimpl
                     }
                 }
                 closedir(dir);
+            }
+
+            static uint32_t get_cid(rs_option option)
+            {
+                switch(option)
+                {
+                case RS_OPTION_COLOR_BACKLIGHT_COMPENSATION: return V4L2_CID_BACKLIGHT_COMPENSATION;
+                case RS_OPTION_COLOR_BRIGHTNESS: return V4L2_CID_BRIGHTNESS;
+                case RS_OPTION_COLOR_CONTRAST: return V4L2_CID_CONTRAST;
+                case RS_OPTION_COLOR_EXPOSURE: return V4L2_CID_EXPOSURE_ABSOLUTE; // Is this actually valid? I'm getting a lot of VIDIOC error 22s...
+                case RS_OPTION_COLOR_GAIN: return V4L2_CID_GAIN;
+                case RS_OPTION_COLOR_GAMMA: return V4L2_CID_GAMMA;
+                case RS_OPTION_COLOR_HUE: return V4L2_CID_HUE;
+                case RS_OPTION_COLOR_SATURATION: return V4L2_CID_SATURATION;
+                case RS_OPTION_COLOR_SHARPNESS: return V4L2_CID_SHARPNESS;
+                case RS_OPTION_COLOR_WHITE_BALANCE: return V4L2_CID_WHITE_BALANCE_TEMPERATURE;
+                case RS_OPTION_COLOR_ENABLE_AUTO_EXPOSURE: return V4L2_CID_EXPOSURE_AUTO; // Automatic gain/exposure control
+                case RS_OPTION_COLOR_ENABLE_AUTO_WHITE_BALANCE: return V4L2_CID_AUTO_WHITE_BALANCE;
+                case RS_OPTION_FISHEYE_GAIN: return V4L2_CID_GAIN;
+                default: throw std::runtime_error(to_string() << "no v4l2 cid for option " << option);
+                }
             }
 
             power_state _state;
@@ -497,11 +518,116 @@ namespace rsimpl
                                           static_cast<uint16_t>(size), const_cast<uint8_t *>(data)};
                 if(xioctl(_fd, UVCIOC_CTRL_QUERY, &q) < 0) throw_error("UVCIOC_CTRL_QUERY:UVC_GET_CUR");
             }
-            control_range get_xu_range(const extension_unit& xu, uint8_t ctrl) const override {}
+            control_range get_xu_range(const extension_unit& xu, uint8_t control) const override
+            {
+                control_range result;
 
-            int get_pu(rs_option opt) const override { return 0; }
-            void set_pu(rs_option opt, int value) override {}
-            control_range get_pu_range(rs_option opt) const override {}
+                __u16 size = 0;
+                __u8 value = 0; // all of the real sense extended controls are one byte,
+                                // checking return value for UVC_GET_LEN and allocating
+                                // appropriately might be better
+                __u8 * data = (__u8 *)&value;
+                struct uvc_xu_control_query xquery;
+                memset(&xquery, 0, sizeof(xquery));
+                xquery.query = UVC_GET_LEN;
+                xquery.size = 2; // size seems to always be 2 for the LEN query, but
+                                 //doesn't seem to be documented. Use result for size
+                                 //in all future queries of the same control number
+                xquery.selector = control;
+                xquery.unit = xu.unit;
+                xquery.data = (__u8 *)&size;
+
+                if(-1 == ioctl(_fd,UVCIOC_CTRL_QUERY,&xquery)){
+                    throw std::runtime_error(to_string() << " ioctl failed on UVC_GET_LEN");
+                }
+
+                xquery.query = UVC_GET_MIN;
+                xquery.size = size;
+                xquery.selector = control;
+                xquery.unit = xu.unit;
+                xquery.data = data;
+                if(-1 == ioctl(_fd,UVCIOC_CTRL_QUERY,&xquery)){
+                    throw std::runtime_error(to_string() << " ioctl failed on UVC_GET_MIN");
+                }
+                result.min = value;
+
+                xquery.query = UVC_GET_MAX;
+                xquery.size = size;
+                xquery.selector = control;
+                xquery.unit = xu.unit;
+                xquery.data = data;
+                if(-1 == ioctl(_fd,UVCIOC_CTRL_QUERY,&xquery)){
+                    throw std::runtime_error(to_string() << " ioctl failed on UVC_GET_MAX");
+                }
+                result.max = value;
+
+                xquery.query = UVC_GET_DEF;
+                xquery.size = size;
+                xquery.selector = control;
+                xquery.unit = xu.unit;
+                xquery.data = data;
+                if(-1 == ioctl(_fd,UVCIOC_CTRL_QUERY,&xquery)){
+                    throw std::runtime_error(to_string() << " ioctl failed on UVC_GET_DEF");
+                }
+                result.def = value;
+
+                xquery.query = UVC_GET_RES;
+                xquery.size = size;
+                xquery.selector = control;
+                xquery.unit = xu.unit;
+                xquery.data = data;
+                if(-1 == ioctl(_fd,UVCIOC_CTRL_QUERY,&xquery)){
+                    throw std::runtime_error(to_string() << " ioctl failed on UVC_GET_CUR");
+                }
+                result.step = value;
+
+                return result;
+            }
+
+            int get_pu(rs_option opt) const override
+            {
+                struct v4l2_control control = {get_cid(opt), 0};
+                if (xioctl(_fd, VIDIOC_G_CTRL, &control) < 0) throw_error("VIDIOC_G_CTRL");
+                if (RS_OPTION_COLOR_ENABLE_AUTO_EXPOSURE==opt)  { control.value = (V4L2_EXPOSURE_MANUAL==control.value) ? 0 : 1; }
+                return control.value;
+            }
+            void set_pu(rs_option opt, int value) override
+            {
+                struct v4l2_control control = {get_cid(opt), value};
+                if (RS_OPTION_COLOR_ENABLE_AUTO_EXPOSURE==opt) { control.value = value ? V4L2_EXPOSURE_APERTURE_PRIORITY : V4L2_EXPOSURE_MANUAL; }
+                if (xioctl(_fd, VIDIOC_S_CTRL, &control) < 0) throw_error("VIDIOC_S_CTRL");
+            }
+            control_range get_pu_range(rs_option option) const override
+            {
+                control_range range;
+
+                // Auto controls range is trimed to {0,1} range
+                if(option >= RS_OPTION_COLOR_ENABLE_AUTO_EXPOSURE && option <= RS_OPTION_COLOR_ENABLE_AUTO_WHITE_BALANCE)
+                {
+                    range.min  = 0;
+                    range.max  = 1;
+                    range.step = 1;
+                    range.def  = 1;
+                    return range;
+                }
+
+                struct v4l2_queryctrl query = {};
+                query.id = get_cid(option);
+                if (xioctl(_fd, VIDIOC_QUERYCTRL, &query) < 0)
+                {
+                    // Some controls (exposure, auto exposure, auto hue) do not seem to work on V4L2
+                    // Instead of throwing an error, return an empty range. This will cause this control to be omitted on our UI sample.
+                    // TODO: Figure out what can be done about these options and make this work
+                    query.minimum = query.maximum = 0;
+                }
+
+                range.min  = query.minimum;
+                range.max  = query.maximum;
+                range.step = query.step;
+                range.def  = query.default_value;
+
+                return range;
+            }
 
             const uvc_device_info& get_info() const override
             {
@@ -522,7 +648,8 @@ namespace rsimpl
         public:
             std::shared_ptr<uvc_device> create_uvc_device(uvc_device_info info) const override
             {
-                return std::make_shared<v4l_uvc_device>(info);
+                return std::make_shared<uvc::retry_controls_work_around>(
+                        std::make_shared<v4l_uvc_device>(info));
             }
             std::vector<uvc_device_info> query_uvc_devices() const override
             {
@@ -772,27 +899,6 @@ namespace rsimpl
         void stop_data_acquisition(device & device)
         {
             device.stop_data_acquisition();
-        }
-
-        static uint32_t get_cid(rs_option option)
-        {
-            switch(option)
-            {
-            case RS_OPTION_COLOR_BACKLIGHT_COMPENSATION: return V4L2_CID_BACKLIGHT_COMPENSATION;
-            case RS_OPTION_COLOR_BRIGHTNESS: return V4L2_CID_BRIGHTNESS;
-            case RS_OPTION_COLOR_CONTRAST: return V4L2_CID_CONTRAST;
-            case RS_OPTION_COLOR_EXPOSURE: return V4L2_CID_EXPOSURE_ABSOLUTE; // Is this actually valid? I'm getting a lot of VIDIOC error 22s...
-            case RS_OPTION_COLOR_GAIN: return V4L2_CID_GAIN;
-            case RS_OPTION_COLOR_GAMMA: return V4L2_CID_GAMMA;
-            case RS_OPTION_COLOR_HUE: return V4L2_CID_HUE;
-            case RS_OPTION_COLOR_SATURATION: return V4L2_CID_SATURATION;
-            case RS_OPTION_COLOR_SHARPNESS: return V4L2_CID_SHARPNESS;
-            case RS_OPTION_COLOR_WHITE_BALANCE: return V4L2_CID_WHITE_BALANCE_TEMPERATURE;
-            case RS_OPTION_COLOR_ENABLE_AUTO_EXPOSURE: return V4L2_CID_EXPOSURE_AUTO; // Automatic gain/exposure control
-            case RS_OPTION_COLOR_ENABLE_AUTO_WHITE_BALANCE: return V4L2_CID_AUTO_WHITE_BALANCE;
-            case RS_OPTION_FISHEYE_GAIN: return V4L2_CID_GAIN;
-            default: throw std::runtime_error(to_string() << "no v4l2 cid for option " << option);
-            }
         }
 
         void set_pu_control(device & device, int subdevice, rs_option option, int value)
