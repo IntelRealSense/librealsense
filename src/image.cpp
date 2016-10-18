@@ -449,6 +449,9 @@ namespace rsimpl
         memcpy(dest[0], in, count*2);
     }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wmultichar"
+#pragma GCC diagnostic ignored "-Wfour-char-constants"
     //////////////////////////
     // Native pixel formats //
     //////////////////////////
@@ -475,6 +478,7 @@ namespace rsimpl
                                                                 { true,  &unpack_y16_from_y16_10,           { { RS_STREAM_INFRARED, RS_FORMAT_Y16 } } } } };
     const native_pixel_format pf_sr300_inzi = { 'INZI', 2, 2,{  { true,  &unpack_z16_y8_from_sr300_inzi,    { { RS_STREAM_DEPTH,    RS_FORMAT_Z16 },{ RS_STREAM_INFRARED, RS_FORMAT_Y8 } } },
                                                                 { true,  &unpack_z16_y16_from_sr300_inzi,   { { RS_STREAM_DEPTH,    RS_FORMAT_Z16 },{ RS_STREAM_INFRARED, RS_FORMAT_Y16 } } } } };
+#pragma GCC diagnostic pop
 
     //////////////////
     // Deprojection //
