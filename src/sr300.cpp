@@ -76,11 +76,10 @@ namespace rsimpl
     {
         for (auto it = devices.begin(); it != devices.end(); ++it)
         {
-            if (it->pid == info.pid &&
-                it->vid == info.vid &&
-                it->unique_id == info.unique_id)
+            if (it->unique_id == info.unique_id)
             {
                 result = *it;
+                result.mi = 4;
                 devices.erase(it);
                 return true;
             }
@@ -107,7 +106,7 @@ namespace rsimpl
                 auto depth = get_mi(group, 2);
                 uvc::usb_device_info hwm;
 
-                if (try_fetch_usb_device(usb, color, hwm) && hwm.mi == 4)
+                if (try_fetch_usb_device(usb, color, hwm))
                 {
                     auto info = std::make_shared<sr300_info>(color, depth, hwm);
                     chosen.push_back(color);

@@ -70,17 +70,38 @@ namespace rsimpl
         class v4l_usb_device : public usb_device
         {
         public:
-            v4l_usb_device(const usb_device_info& info) {}
-
-            static void foreach_usb_device(std::function<void(const usb_device_info&)> action)
+            v4l_usb_device(const usb_device_info& info)
             {
-                libusb_context * usb_context;
-                int status = libusb_init(&usb_context);
+                int status = libusb_init(&_usb_context);
                 if(status < 0) throw std::runtime_error(to_string() << "libusb_init(...) returned " << libusb_error_name(status));
 
+                std::vector<usb_device_info> results;
+                v4l_usb_device::foreach_usb_device(_usb_context,
+                [&results, info, this](const usb_device_info& i, libusb_device* dev)
+                {
+                    if (i.unique_id == info.unique_id)
+                    {
+                        _usb_device = dev;
+                        libusb_ref_device(dev);
+                    }
+                });
+
+                _mi = info.mi;
+            }
+
+            ~v4l_usb_device()
+            {
+                libusb_exit(_usb_context);
+                if(_usb_device) libusb_unref_device(_usb_device);
+            }
+
+            static void foreach_usb_device(libusb_context* usb_context, std::function<void(
+                                                                const usb_device_info&,
+                                                                libusb_device*)> action)
+            {
                 // Obtain libusb_device_handle for each device
                 libusb_device ** list;
-                status = libusb_get_device_list(usb_context, &list);
+                int status = libusb_get_device_list(usb_context, &list);
                 if(status < 0) throw std::runtime_error(to_string() << "libusb_get_device_list(...) returned " << libusb_error_name(status));
                 for(int i=0; list[i]; ++i)
                 {
@@ -97,11 +118,10 @@ namespace rsimpl
                         std::stringstream ss;
                         ss << busnum << "/" << devnum << "/" << parent_devnum;
                         info.unique_id = ss.str();
-                        action(info);
+                        action(info, usb_device);
                     }
                 }
                 libusb_free_device_list(list, 1);
-                libusb_exit(usb_context);
             }
 
             std::vector<uint8_t> send_receive(
@@ -109,8 +129,38 @@ namespace rsimpl
                 int timeout_ms = 5000,
                 bool require_response = true) override
             {
-                return std::vector<uint8_t>();
+                libusb_device_handle* usb_handle;
+                int status = libusb_open(_usb_device, &usb_handle);
+                if(status < 0) throw std::runtime_error(to_string() << "libusb_open(...) returned " << libusb_error_name(status));
+
+                status = libusb_claim_interface(usb_handle, _mi);
+                if(status < 0) throw std::runtime_error(to_string() << "libusb_claim_interface(...) returned " << libusb_error_name(status));
+
+                int actual_length;
+                status = libusb_bulk_transfer(usb_handle, 1, const_cast<uint8_t*>(data.data()), data.size(), &actual_length, timeout_ms);
+                if(status < 0) throw std::runtime_error(to_string() << "libusb_bulk_transfer(...) returned " << libusb_error_name(status));
+
+                std::vector<uint8_t> result;
+
+                std::this_thread::sleep_for(std::chrono::milliseconds(20));
+
+                if (require_response)
+                {
+                    result.resize(1024);
+                    status = libusb_bulk_transfer(usb_handle, 0x81, const_cast<uint8_t*>(result.data()), result.size(), &actual_length, timeout_ms);
+                    if(status < 0) throw std::runtime_error(to_string() << "libusb_bulk_transfer(...) returned " << libusb_error_name(status));
+                    result.resize(actual_length);
+                }
+
+                libusb_close(usb_handle);
+
+                return result;
             }
+
+        private:
+            libusb_context* _usb_context;
+            libusb_device* _usb_device;
+            int _mi;
         };
 
         class v4l_uvc_device : public uvc_device
@@ -163,13 +213,15 @@ namespace rsimpl
                         int vid, pid, mi;
                         int busnum, devnum, parent_devnum;
 
+                        auto dev_name = "/dev/" + name;
+
                         struct stat st;
-                        if(stat(name.c_str(), &st) < 0)
+                        if(stat(dev_name.c_str(), &st) < 0)
                         {
-                            std::ostringstream ss; ss << "Cannot identify '" << name << "': " << errno << ", " << strerror(errno);
+                            std::ostringstream ss; ss << "Cannot identify '" << dev_name << "': " << errno << ", " << strerror(errno);
                             throw std::runtime_error(ss.str());
                         }
-                        if(!S_ISCHR(st.st_mode)) throw std::runtime_error(name + " is no device");
+                        if(!S_ISCHR(st.st_mode)) throw std::runtime_error(dev_name + " is no device");
 
                         // Search directory and up to three parent directories to find busnum/devnum
                         std::ostringstream ss; ss << "/sys/dev/char/" << major(st.st_rdev) << ":" << minor(st.st_rdev) << "/device/";
@@ -211,7 +263,7 @@ namespace rsimpl
                         ss.str("");
                         ss << busnum << "/" << devnum << "/" << parent_devnum;
                         info.unique_id = ss.str();
-                        action(info, name);
+                        action(info, dev_name);
                     }
                     catch(const std::exception & e)
                     {
@@ -489,12 +541,18 @@ namespace rsimpl
             }
             std::vector<usb_device_info> query_usb_devices() const override
             {
+                libusb_context * usb_context;
+                int status = libusb_init(&usb_context);
+                if(status < 0) throw std::runtime_error(to_string() << "libusb_init(...) returned " << libusb_error_name(status));
+
                 std::vector<usb_device_info> results;
-                v4l_usb_device::foreach_usb_device(
-                [&results](const usb_device_info& i)
+                v4l_usb_device::foreach_usb_device(usb_context,
+                [&results](const usb_device_info& i, libusb_device* dev)
                 {
                     results.push_back(i);
                 });
+                libusb_exit(usb_context);
+
                 return results;
             }
         };
