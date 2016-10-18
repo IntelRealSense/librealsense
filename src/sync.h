@@ -16,35 +16,36 @@ namespace rsimpl
     {
     public:
         fps_calc(unsigned long long in_number_of_frames_to_sampling, int expected_fps)
-            : number_of_frames_to_sampling(in_number_of_frames_to_sampling),
-            frame_counter(0),
-            actual_fps(expected_fps)
+            : _number_of_frames_to_sample(in_number_of_frames_to_sampling),
+            _frame_counter(0),
+            _actual_fps(expected_fps)
         {
-            time_samples.reserve(10000);
+            _time_samples.reserve(2);
         }
         double calc_fps(std::chrono::time_point<std::chrono::system_clock>& now_time)
         {
-            ++frame_counter;
-            if (frame_counter == number_of_frames_to_sampling || frame_counter == 1)
+            ++_frame_counter;
+            if (_frame_counter == _number_of_frames_to_sample || _frame_counter == 1)
             {
-                time_samples.push_back(now_time);
-                if (time_samples.size() == 2)
+                _time_samples.push_back(now_time);
+                if (_time_samples.size() == 2)
                 {
-                    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(time_samples[1] - time_samples[0]).count();
-                    actual_fps = ((double)frame_counter / duration) * 1000.;
-                    frame_counter = 0;
-                    time_samples.clear();
+                    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(
+                        _time_samples[1] - _time_samples[0]).count();
+                    _actual_fps = ((double)_frame_counter / duration) * 1000.;
+                    _frame_counter = 0;
+                    _time_samples.clear();
                 }
             }
 
-            return actual_fps;
+            return _actual_fps;
         }
 
     private:
-        double actual_fps;
-        unsigned long long number_of_frames_to_sampling;
-        unsigned long long frame_counter;
-        std::vector<std::chrono::time_point<std::chrono::system_clock>> time_samples;
+        double _actual_fps;
+        unsigned long long _number_of_frames_to_sample;
+        unsigned long long _frame_counter;
+        std::vector<std::chrono::time_point<std::chrono::system_clock>> _time_samples;
     };
 
     class syncronizing_archive : public frame_archive

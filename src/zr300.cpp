@@ -484,10 +484,11 @@ namespace rsimpl
                 else if (ver >= firmware_version("1.27.2.90"))
                 {
                     info.supported_metadata_vector.push_back(RS_FRAME_METADATA_ACTUAL_EXPOSURE);
-                    info.supported_metadata_vector.push_back(RS_FRAME_METADATA_ACTUAL_FPS);
                     info.options.push_back({ RS_OPTION_FISHEYE_EXPOSURE,                2,  320, 1,  4 });
                 }
             }
+
+            info.supported_metadata_vector.push_back(RS_FRAME_METADATA_ACTUAL_FPS);
 
             info.options.push_back({ RS_OPTION_FISHEYE_GAIN,                            0,  0,   0,  0  });
             info.options.push_back({ RS_OPTION_FISHEYE_STROBE,                          0,  1,   1,  0  });
