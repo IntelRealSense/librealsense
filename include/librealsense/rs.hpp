@@ -486,6 +486,6 @@ namespace rs
         rs_log_to_callback_cpp(min_severity, new log_callback(callback), &e);
         error::handle(e);
     }
-};
+}
 
 #endif // LIBREALSENSE_RS2_HPP

@@ -225,7 +225,7 @@ void rs_get_profile(const rs_stream_profile_list* list, int index, rs_stream* st
     *fps = list->list[index].fps;
     *format = list->list[index].format;
 }
-HANDLE_EXCEPTIONS_AND_RETURN(, list, index, width, height, fps, format);
+HANDLE_EXCEPTIONS_AND_RETURN(, list, index, width, height, fps, format)
 
 int rs_get_profile_list_size(const rs_stream_profile_list* list, rs_error** error) try
 {
@@ -303,7 +303,7 @@ void rs_get_subdevice_option_range(const rs_device* device, rs_subdevice subdevi
     *def = range.def;
     *step = range.step;
 }
-HANDLE_EXCEPTIONS_AND_RETURN(, device, subdevice, option, min, max, step, def);
+HANDLE_EXCEPTIONS_AND_RETURN(, device, subdevice, option, min, max, step, def)
 
 const char* rs_get_camera_info(const rs_device* device, rs_camera_info info, rs_error** error) try
 {
