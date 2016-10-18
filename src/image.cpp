@@ -7,7 +7,6 @@
 #include <cstring> // For memcpy
 #include <cmath>
 #include <algorithm>
-
 #ifdef __SSSE3__
 #include <tmmintrin.h> // For SSE3 intrinsic used in unpack_yuy2_sse
 #endif

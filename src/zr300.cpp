@@ -488,6 +488,8 @@ namespace rsimpl
                 }
             }
 
+            info.supported_metadata_vector.push_back(RS_FRAME_METADATA_ACTUAL_FPS);
+
             info.options.push_back({ RS_OPTION_FISHEYE_GAIN,                            0,  0,   0,  0  });
             info.options.push_back({ RS_OPTION_FISHEYE_STROBE,                          0,  1,   1,  0  });
             info.options.push_back({ RS_OPTION_FISHEYE_EXTERNAL_TRIGGER,                0,  1,   1,  0  });
