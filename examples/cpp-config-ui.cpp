@@ -21,12 +21,24 @@
 
 #pragma comment(lib, "opengl32.lib")
 
+bool is_integer(float f)
+{
+    return abs(f - floor(f)) < 0.001f;
+}
+
 struct option_metadata
 {
     rs::option_range range;
     bool supported = false;
     float value = 0.0f;
-    const char* label = "";
+    std::string label = "";
+    std::string id = "";
+
+    bool is_integers() const
+    {
+        return is_integer(range.min) && is_integer(range.max) &&
+               is_integer(range.def) && is_integer(range.step);
+    }
 
     bool is_checkbox() const
     {
@@ -50,7 +62,13 @@ std::map<rs_subdevice, std::map<rs_option, option_metadata>> init_device_options
             {
                 option_metadata metadata;
                 auto opt = static_cast<rs_option>(i);
+
+                std::stringstream ss;
+                ss << rs_subdevice_to_string(subdevice) << "/" << rs_option_to_string(opt);
+                metadata.id = ss.str();
+
                 metadata.label = rs_option_to_string(opt);
+
                 metadata.supported = endpoint.supports(opt);
                 if (metadata.supported)
                 {
@@ -91,105 +109,129 @@ int main(int, char**) try
         device_names.push_back(ss.str());
     }
 
-    std::map<rs_subdevice, std::map<rs_option, option_metadata>> options_metadata;
-    for (auto j = 0; j < RS_SUBDEVICE_COUNT; j++)
-    {
-        auto subdevice = static_cast<rs_subdevice>(j);
-        auto&& endpoint = dev.get_subdevice(subdevice);
-
-        for (auto i = 0; i < RS_OPTION_COUNT; i++)
-        {
-            try
-            {
-                option_metadata metadata;
-                auto opt = static_cast<rs_option>(i);
-                metadata.label = rs_option_to_string(opt);
-                metadata.supported = endpoint.supports(opt);
-                if (metadata.supported)
-                {
-                    metadata.range = endpoint.get_option_range(opt);
-                    metadata.value = endpoint.get_option(opt);
-                }
-                options_metadata[subdevice][opt] = metadata;
-            }
-            catch (...) {}
-        }
-    }
+    auto options_metadata = init_device_options(dev);
 
 
     while (!glfwWindowShouldClose(window))
     {
         glfwPollEvents();
+        int w, h;
+        glfwGetWindowSize(window, &w, &h);
+
         ImGui_ImplGlfw_NewFrame();
 
-        auto y = 0;
+        auto flags = ImGuiWindowFlags_NoResize | 
+                     ImGuiWindowFlags_NoMove | 
+                     ImGuiWindowFlags_NoCollapse;
 
-        ImGui::SetNextWindowPos({ 700, (float)y });
-        ImGui::Begin("Device Selection");
-        std::vector<const char*> device_names_chars;
-        for (auto&& name : device_names)
-        {
-            device_names_chars.push_back(name.c_str());
-        }
-        if (ImGui::Combo("", &device_index, device_names_chars.data(), device_names.size()))
-        {
-            dev = ctx.create(list[device_index]);
-        }
+        ImGui::SetNextWindowPos({ static_cast<float>(w) - 300, 0 });
+        ImGui::SetNextWindowSize({ 300, static_cast<float>(h) });
+        ImGui::Begin("Camera Control Panel", nullptr, flags);
 
-        for (auto i = 0; i < RS_CAMERA_INFO_COUNT; i++)
+        ImGui::Text("Viewer FPS: %.1f ", ImGui::GetIO().Framerate);
+
+        if (ImGui::CollapsingHeader("Device Details", nullptr, true, true))
         {
-            auto info = static_cast<rs_camera_info>(i);
-            if (dev.supports(info))
+            std::vector<const char*> device_names_chars;
+            for (auto&& name : device_names)
             {
-                std::stringstream ss;
-                ss << rs_camera_info_to_string(info) << ": " << dev.get_camera_info(info);
-                auto line = ss.str();
-                ImGui::Text(line.c_str());
+                device_names_chars.push_back(name.c_str());
+            }
+            ImGui::PushItemWidth(-1);
+            if (ImGui::Combo("", &device_index, device_names_chars.data(), device_names.size()))
+            {
+                dev = ctx.create(list[device_index]);
+                options_metadata = init_device_options(dev);
+            }
+            ImGui::PopItemWidth();
+
+            for (auto i = 0; i < RS_CAMERA_INFO_COUNT; i++)
+            {
+                auto info = static_cast<rs_camera_info>(i);
+                if (dev.supports(info))
+                {
+                    std::stringstream ss;
+                    ss << rs_camera_info_to_string(info) << ":";
+                    auto line = ss.str();
+                    ImGui::PushStyleColor(ImGuiCol_Text, { 1.0f, 1.0f, 1.0f, 0.5f });
+                    ImGui::Text(line.c_str());
+                    ImGui::PopStyleColor();
+
+                    ImGui::SameLine();
+                    auto value = dev.get_camera_info(info);
+                    ImGui::Text(value);
+
+                    if (ImGui::IsItemHovered())
+                    {
+                        ImGui::SetTooltip(value);
+                    }
+                }
             }
         }
-
-        y += ImGui::GetWindowSize().y;
-        ImGui::End();
+       
 
         for (auto j = 0; j < RS_SUBDEVICE_COUNT; j++)
         {
             auto subdevice = static_cast<rs_subdevice>(j);
             auto&& endpoint = dev.get_subdevice(subdevice);
 
-            ImGui::SetNextWindowPos({ 700, (float)y });
-            ImGui::Begin(rs_subdevice_to_string(subdevice));
-            for (auto i = 0; i < RS_OPTION_COUNT; i++)
+            if (ImGui::CollapsingHeader(rs_subdevice_to_string(subdevice), nullptr, true, true))
             {
-                auto opt = static_cast<rs_option>(i);
-                auto&& metadata = options_metadata[subdevice][opt];
-
-                if (metadata.supported)
+                for (auto i = 0; i < RS_OPTION_COUNT; i++)
                 {
-                    if (metadata.is_checkbox())
+                    auto opt = static_cast<rs_option>(i);
+                    auto&& metadata = options_metadata[subdevice][opt];
+
+                    if (metadata.supported)
                     {
-                        auto value = metadata.value > 0.0f;
-                        if (ImGui::Checkbox(metadata.label, &value))
+                        if (metadata.is_checkbox())
                         {
-                            metadata.value = value ? 1.0f : 0.0f;
-                            endpoint.set_option(opt, metadata.value);
+                            auto value = metadata.value > 0.0f;
+                            if (ImGui::Checkbox(metadata.label.c_str(), &value))
+                            {
+                                metadata.value = value ? 1.0f : 0.0f;
+                                endpoint.set_option(opt, metadata.value);
+                            }
                         }
-                    }
-                    else
-                    {
-                        ImGui::Text(metadata.label);
-                        if (ImGui::SliderFloat("", &metadata.value,
-                            metadata.range.min, metadata.range.max))
+                        else
                         {
-                            // TODO: Round to step?
-                            endpoint.set_option(opt, metadata.value);
+                            std::stringstream ss;
+                            ss << metadata.label << ":";
+                            ImGui::Text(ss.str().c_str());
+                            ImGui::PushItemWidth(-1);
+
+                            if (metadata.is_integers())
+                            {
+                                int value = metadata.value;
+                                if (ImGui::SliderInt(metadata.id.c_str(), &value,
+                                    metadata.range.min, metadata.range.max))
+                                {
+                                    // TODO: Round to step?
+                                    metadata.value = value;
+                                    endpoint.set_option(opt, metadata.value);
+                                }
+                            }
+                            else
+                            {
+                                if (ImGui::SliderFloat(metadata.id.c_str(), &metadata.value,
+                                                       metadata.range.min, metadata.range.max))
+                                {
+                                    // TODO: Round to step?
+                                    endpoint.set_option(opt, metadata.value);
+                                }
+                            }
+                            ImGui::PopItemWidth();
+                        }
+                        if (ImGui::IsItemHovered())
+                        {
+                            ImGui::SetTooltip(metadata.id.c_str());
                         }
                     }
                 }
             }
-            
-            y += ImGui::GetWindowSize().y;
-            ImGui::End();
         }
+
+        ImGui::End();
 
         // Rendering
         glViewport(0, 0, 
