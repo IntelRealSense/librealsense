@@ -942,7 +942,9 @@ void _uvc_populate_frame(uvc_stream_handle_t *strmh) {
   frame->width = frame_desc->wWidth;
   frame->height = frame_desc->wHeight;
   
+#pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wmultichar"
+#pragma GCC diagnostic ignored "-Wfour-char-constants"
   switch (frame->fourcc) {
   case '2YUY': /* YUY2 */
     frame->step = frame->width * 2;
