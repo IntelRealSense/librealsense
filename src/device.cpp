@@ -742,7 +742,7 @@ std::shared_ptr<rsimpl::streaming_lock> uvc_endpoint::configure(
     const std::vector<stream_profile>& request)
 {
     std::lock_guard<std::mutex> lock(_configure_lock);
-    std::shared_ptr<streaming_lock> streaming(new streaming_lock(this));
+    std::shared_ptr<uvc_streaming_lock> streaming(new uvc_streaming_lock(this));
 
     std::vector<uvc::stream_profile> hardware_profiles;
     for (auto& profile : request)
@@ -760,7 +760,7 @@ std::shared_ptr<rsimpl::streaming_lock> uvc_endpoint::configure(
     _configuration = hardware_profiles; // commit to this set of profiles
     for (auto& profile : hardware_profiles)
     {
-        std::weak_ptr<streaming_lock> stream_ptr(streaming);
+        std::weak_ptr<uvc_streaming_lock> stream_ptr(streaming);
         _device->play(profile, [stream_ptr](uvc::stream_profile p, uvc::frame_object f)
         {
             auto stream = stream_ptr.lock();

@@ -43,7 +43,7 @@ namespace rsimpl
 {
     namespace uvc
     {
-        static void throw_error(const char * s)
+        /*static void throw_error(const char * s)
         {
             std::ostringstream ss;
             ss << s << " error " << errno << ", " << strerror(errno);
@@ -351,8 +351,8 @@ namespace rsimpl
             static void poll_interrupts(libusb_device_handle *handle, const std::vector<subdevice *> & subdevices, uint16_t timeout)
             {
                 static const unsigned short interrupt_buf_size = 0x400;
-                uint8_t buffer[interrupt_buf_size];                       /* 64 byte transfer buffer  - dedicated channel*/
-                int num_bytes             = 0;                           /* Actual bytes transferred. */
+                uint8_t buffer[interrupt_buf_size];
+                int num_bytes             = 0;
 
                 // TODO - replace hard-coded values : 0x82 and 1000
                 int res = libusb_interrupt_transfer(handle, 0x84, buffer, interrupt_buf_size, &num_bytes, timeout);
@@ -505,7 +505,7 @@ namespace rsimpl
             device.subdevices[xu.subdevice]->set_control(xu, ctrl, data, len);
         }
 
-        void claim_interface(device & device, const guid & /*interface_guid*/, int interface_number)
+        void claim_interface(device & device, const guid & , int interface_number)
         {
             if(!device.usb_handle)
             {
@@ -546,7 +546,7 @@ namespace rsimpl
             device.subdevices[subdevice_index]->set_data_channel_cfg(callback);
         }
 
-        void start_streaming(device & device, int /*num_transfer_bufs*/)
+        void start_streaming(device & device, int )
         {
             device.start_streaming();
         }
@@ -632,16 +632,16 @@ namespace rsimpl
         void get_extension_control_range(const device & device, const extension_unit & xu, char control, int * min, int * max, int * step, int * def)
         {
             __u16 size = 0;
-            __u8 value = 0; /* all of the real sense extended controls are one byte,
-                            checking return value for UVC_GET_LEN and allocating
-                            appropriately might be better */
+            __u8 value = 0; // all of the real sense extended controls are one byte,
+                            // checking return value for UVC_GET_LEN and allocating
+                            // appropriately might be better
             __u8 * data = (__u8 *)&value;
             struct uvc_xu_control_query xquery;
             memset(&xquery, 0, sizeof(xquery));
             xquery.query = UVC_GET_LEN;
-            xquery.size = 2; /* size seems to always be 2 for the LEN query, but
-                             doesn't seem to be documented. Use result for size
-                             in all future queries of the same control number */
+            xquery.size = 2; // size seems to always be 2 for the LEN query, but
+                             //doesn't seem to be documented. Use result for size
+                             //in all future queries of the same control number
             xquery.selector = control;
             xquery.unit = xu.unit;
             xquery.data = (__u8 *)&size;
@@ -864,7 +864,7 @@ namespace rsimpl
             libusb_free_device_list(list, 1);
 
             return devices;
-        }
+        }*/
     }
 }
 
