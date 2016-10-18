@@ -20,6 +20,7 @@
 #include <memory>                           // For unique_ptr
 #include <map>          
 #include <algorithm>
+#include <condition_variable>
 
 const uint8_t RS_STREAM_NATIVE_COUNT    = 5;
 const int RS_USER_QUEUE_SIZE = 20;

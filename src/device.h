@@ -182,10 +182,10 @@ namespace rsimpl
             uvc_endpoint* _owner;
         };
 
-        class streaming_lock : public rsimpl::streaming_lock
+        class uvc_streaming_lock : public rsimpl::streaming_lock
         {
         public:
-            explicit streaming_lock(uvc_endpoint* owner)
+            explicit uvc_streaming_lock(uvc_endpoint* owner)
                 : _owner(owner), _power(owner)
             {
             }

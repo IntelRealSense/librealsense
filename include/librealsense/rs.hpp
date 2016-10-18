@@ -11,6 +11,8 @@
 #include <vector>
 #include <memory>
 #include <functional>
+#include <exception>
+#include <ostream>
 
 namespace rs
 {
@@ -340,7 +342,7 @@ namespace rs
         {
             if (sub < _subdevices.size() && _subdevices[sub].get()) 
                 return *_subdevices[sub];
-            throw std::exception("Requested subdevice is not supported!");
+            throw std::runtime_error("Requested subdevice is not supported!");
         }
 
         bool supports(rs_subdevice sub) const
@@ -484,6 +486,6 @@ namespace rs
         rs_log_to_callback_cpp(min_severity, new log_callback(callback), &e);
         error::handle(e);
     }
-};
+}
 
 #endif // LIBREALSENSE_RS2_HPP
