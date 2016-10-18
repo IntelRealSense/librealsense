@@ -88,7 +88,7 @@ int main(int, char**) try
     if (!glfwInit())
         exit(1);
 
-    auto window = glfwCreateWindow(1280, 720, "config-ui", nullptr, nullptr);
+    auto window = glfwCreateWindow(1280, 720, "librealsense - config-ui", nullptr, nullptr);
     glfwMakeContextCurrent(window);
     ImGui_ImplGlfw_Init(window, true);
 
@@ -126,7 +126,7 @@ int main(int, char**) try
 
         ImGui::SetNextWindowPos({ static_cast<float>(w) - 300, 0 });
         ImGui::SetNextWindowSize({ 300, static_cast<float>(h) });
-        ImGui::Begin("Camera Control Panel", nullptr, flags);
+        ImGui::Begin("Control Panel", nullptr, flags);
 
         ImGui::Text("Viewer FPS: %.1f ", ImGui::GetIO().Framerate);
 
