@@ -74,9 +74,9 @@ namespace rsimpl
             _archive.release_frame_ref(frame);
         }
 
-        rs_frame_ref* alloc_frame(rs_stream stream, frame_additional_data additional_data)
+        rs_frame_ref* alloc_frame(uint8_t* data, size_t size, frame_additional_data additional_data)
         {
-            auto frame = _archive.alloc_frame(stream, additional_data, false);
+            auto frame = _archive.alloc_frame(data, size, additional_data, true);
             return _archive.track_frame(frame);
         }
 

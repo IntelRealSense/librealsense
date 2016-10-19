@@ -777,19 +777,19 @@ std::shared_ptr<rsimpl::streaming_lock> uvc_endpoint::configure(
                     0,
                     0,
                     sys_time,
-                    p.width,
-                    p.height,
+                    640,
+                    480,
                     0,
-                    p.width,
-                    p.height,
-                    1,
+                    640*2,
+                    480,
+                    16,
                     output.format,
                     output.stream,
                     0,
                     supported_metadata,
                     0);
 
-                auto frame_ref = stream->alloc_frame(output.stream, additional_data);
+                auto frame_ref = stream->alloc_frame((uint8_t*)f.pixels, 640*480*2, additional_data);
                 stream->invoke_callback(frame_ref);
             }
         });

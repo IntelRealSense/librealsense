@@ -212,7 +212,7 @@ namespace rsimpl
         }
 
         // Frame callback thread API
-        frame alloc_frame(const size_t size, const frame_additional_data& additional_data, bool requires_memory);
+        frame alloc_frame(uint8_t* data, const size_t size, const frame_additional_data& additional_data, bool requires_memory);
         rs_frame_ref * track_frame(frame& f);
         void log_frame_callback_end(frame* frame) const;
 

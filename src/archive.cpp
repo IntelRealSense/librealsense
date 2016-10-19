@@ -53,7 +53,7 @@ rs_frame_ref* frame_archive::clone_frame(rs_frame_ref* frameset)
 }
 
 // Allocate a new frame in the backbuffer, potentially recycling a buffer from the freelist
-frame frame_archive::alloc_frame(const size_t size, const frame_additional_data& additional_data, bool requires_memory)
+frame frame_archive::alloc_frame(uint8_t* data, const size_t size, const frame_additional_data& additional_data, bool requires_memory)
 {
     frame backbuffer;
     //const size_t size = modes[stream].get_image_size(stream);
@@ -84,7 +84,9 @@ frame frame_archive::alloc_frame(const size_t size, const frame_additional_data&
     
     if (requires_memory)
     {
-        backbuffer.data.resize(size); // TODO: Allow users to provide a custom allocator for frame buffers
+        backbuffer.data.resize(size*4); // TODO: Allow users to provide a custom allocator for frame buffers
+        memcpy(backbuffer.data.data(), data, size);
+        //memset(backbuffer.data.data(), 200, size);
     }
     backbuffer.update_owner(this);
     backbuffer.additional_data = additional_data;

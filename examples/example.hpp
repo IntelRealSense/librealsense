@@ -14,7 +14,7 @@ inline void make_depth_histogram(uint8_t rgb_image[640*480*3], const uint16_t de
 
     for(int i = 0; i < width*height; ++i) ++histogram[depth_image[i]];
     for(int i = 2; i < 0x10000; ++i) histogram[i] += histogram[i-1]; // Build a cumulative histogram for the indices in [1,0xFFFF]
-    for(int i = 0; i < width*height; ++i)
+    for(int i = 0; i < 640*480; ++i)
     {
         if(uint16_t d = depth_image[i])
         {
@@ -70,46 +70,46 @@ public:
 
     GLuint get_gl_handle() const { return texture; }
 
-    void upload(const void * data, int width, int height, rs::format format, int stride = 0)
+    void upload(const void * data, int width, int height, rs_format format, int stride = 0)
     {
         // If the frame timestamp has changed since the last time show(...) was called, re-upload the texture
         if(!texture) glGenTextures(1, &texture);
         glBindTexture(GL_TEXTURE_2D, texture);
         stride = stride == 0 ? width : stride;
-        glPixelStorei(GL_UNPACK_ROW_LENGTH, stride);
+        //glPixelStorei(GL_UNPACK_ROW_LENGTH, stride);
         switch(format)
         {
-        case rs::format::any:
+        case RS_FORMAT_ANY:
         throw std::runtime_error("not a valid format");
-        case rs::format::z16:
-        case rs::format::disparity16:
-            rgb.resize(stride * height * 3);
-            make_depth_histogram(rgb.data(), reinterpret_cast<const uint16_t *>(data), stride, height);
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, stride, height, 0, GL_RGB, GL_UNSIGNED_BYTE, rgb.data());
+        case RS_FORMAT_Z16:
+        case RS_FORMAT_DISPARITY16:
+            rgb.resize(640 * 480 * 4);
+            make_depth_histogram(rgb.data(), reinterpret_cast<const uint16_t *>(data), width, height);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 640, 480, 0, GL_RGB, GL_UNSIGNED_BYTE, rgb.data());
             
             break;
-        case rs::format::xyz32f:
+        case RS_FORMAT_XYZ32F:
             glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_FLOAT, data);
             break;
-        case rs::format::yuyv: // Display YUYV by showing the luminance channel and packing chrominance into ignored alpha channel
+        case RS_FORMAT_YUYV: // Display YUYV by showing the luminance channel and packing chrominance into ignored alpha channel
             glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, data);
             break;
-        case rs::format::rgb8: case rs::format::bgr8: // Display both RGB and BGR by interpreting them RGB, to show the flipped byte ordering. Obviously, GL_BGR could be used on OpenGL 1.2+
+        case RS_FORMAT_RGB8: RS_FORMAT_BGR8: // Display both RGB and BGR by interpreting them RGB, to show the flipped byte ordering. Obviously, GL_BGR could be used on OpenGL 1.2+
             glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
             break;
-        case rs::format::rgba8: case rs::format::bgra8: // Display both RGBA and BGRA by interpreting them RGBA, to show the flipped byte ordering. Obviously, GL_BGRA could be used on OpenGL 1.2+
+        case RS_FORMAT_BGRA8: RS_FORMAT_BGRA8: // Display both RGBA and BGRA by interpreting them RGBA, to show the flipped byte ordering. Obviously, GL_BGRA could be used on OpenGL 1.2+
             glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
             break;
-        case rs::format::y8:
+        case RS_FORMAT_Y8:
             glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB,  width, height, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, data);
             break;
-        case rs::format::y16:
+        case RS_FORMAT_Y16:
             glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_LUMINANCE, GL_UNSIGNED_SHORT, data);
             break;
-        case rs::format::raw8:
+        case RS_FORMAT_RAW8:
             glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE, width, height, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, data);
             break;
-        case rs::format::raw10:
+        case RS_FORMAT_RAW10:
             {
                 // Visualize Raw10 by performing a naive downsample. Each 2x2 block contains one red pixel, two green pixels, and one blue pixel, so combine them into a single RGB triple.
                 rgb.clear(); rgb.resize(width/2 * height/2 * 3);
@@ -139,33 +139,12 @@ public:
         glBindTexture(GL_TEXTURE_2D, 0);
     }
 
-    void upload(rs::device & dev, rs::stream stream)
-    {
-        if (stream <= rs::stream::fisheye)
-            assert(dev.is_stream_enabled(stream));
-
-        const double timestamp = dev.get_frame_timestamp(stream);
-        if(timestamp != last_timestamp)
-        {
-            upload(dev.get_frame_data(stream), dev.get_stream_width(stream), dev.get_stream_height(stream), dev.get_stream_format(stream));
-            last_timestamp = timestamp;
-
-            ++num_frames;
-            if(timestamp >= next_time)
-            {
-                fps = num_frames;
-                num_frames = 0;
-                next_time += 1000;
-            }
-        }
-    }
-
     void upload(rs::frame& frame)
     {
         const double timestamp = frame.get_timestamp();
-        if(timestamp != last_timestamp)
+        //if(timestamp != last_timestamp)
         {
-            upload(frame.get_data(), frame.get_width(), frame.get_height(), frame.get_format(), (frame.get_stride() * 8) / frame.get_bpp());
+            upload(frame.get_data(), frame.get_width(), frame.get_height(), frame.get_format(), (frame.get_stride_in_bytes() * 8) / frame.get_bits_per_pixel());
             last_timestamp = timestamp;
 
             ++num_frames;
@@ -178,18 +157,34 @@ public:
         }
     }
 
-    void show(float rx, float ry, float rw, float rh) const
+    void show(float rx, float ry, float rw, float rh, float alpha) const
     {
+
+
+        glEnable(GL_BLEND);
+
+        glBlendFunc(GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA);
+        glBegin(GL_QUADS);
+        glColor4f(1.0f, 1.0f, 1.0f, 1 - alpha);
+        glVertex2f(rx, ry);
+        glVertex2f(rx + rw, ry);
+        glVertex2f(rx + rw, ry + rh);
+        glVertex2f(rx, ry + rh);
+        glEnd();
+
         glBindTexture(GL_TEXTURE_2D, texture);
         glEnable(GL_TEXTURE_2D);
         glBegin(GL_QUADS);
-        glTexCoord2f(0, 0); glVertex2f(rx,    ry   );
-        glTexCoord2f(1, 0); glVertex2f(rx+rw, ry   );
-        glTexCoord2f(1, 1); glVertex2f(rx+rw, ry+rh);
-        glTexCoord2f(0, 1); glVertex2f(rx,    ry+rh);
+        glTexCoord2f(0, 0); glVertex2f(rx, ry);
+        glTexCoord2f(1, 0); glVertex2f(rx + rw, ry);
+        glTexCoord2f(1, 1); glVertex2f(rx + rw, ry + rh);
+        glTexCoord2f(0, 1); glVertex2f(rx, ry + rh);
         glEnd();
         glDisable(GL_TEXTURE_2D);
         glBindTexture(GL_TEXTURE_2D, 0);
+
+
+        glDisable(GL_BLEND);
     }
 
     void print(int x, int y, const char * text)
@@ -202,13 +197,11 @@ public:
         glDisableClientState(GL_VERTEX_ARRAY);
     }
 
-    void show(rs::device & dev, rs::stream stream, int rx, int ry, int rw, int rh)
+    void show(rs::frame& frame, int rx, int ry, int rw, int rh)
     {
-        if((stream <= rs::stream::fisheye) && (!dev.is_stream_enabled(stream))) return;
-
-        upload(dev, stream);
+        upload(frame);
         
-        int width = dev.get_stream_width(stream), height = dev.get_stream_height(stream);
+        int width = frame.get_width(), height = frame.get_height();
         float h = (float)rh, w = (float)rh * width / height;
         if(w > rw)
         {
@@ -217,28 +210,15 @@ public:
             h *= scale;
         }
 
-        show(rx + (rw - w)/2, ry + (rh - h)/2, w, h);
-        std::ostringstream ss; ss << stream << ": " << width << " x " << height << " " << dev.get_stream_format(stream) << " (" << fps << "/" << dev.get_stream_framerate(stream) << ")" << ", F#: " << dev.get_frame_number(stream);
-        glColor3f(0,0,0);
-        draw_text(rx+9, ry+17, ss.str().c_str());
-        glColor3f(1,1,1);
-        draw_text(rx+8, ry+16, ss.str().c_str());
+        show(rx + (rw - w)/2, ry + (rh - h)/2, w, h, 1.0f);
+        //std::ostringstream ss; ss << stream << ": " << width << " x " << height << " " << dev.get_stream_format(stream) << " (" << fps << "/" << dev.get_stream_framerate(stream) << ")" << ", F#: " << dev.get_frame_number(stream);
+        //glColor3f(0,0,0);
+        //draw_text(rx+9, ry+17, ss.str().c_str());
+        //glColor3f(1,1,1);
+        //draw_text(rx+8, ry+16, ss.str().c_str());
     }
 
-    void show(rs::stream stream, rs::format format, int stream_framerate, unsigned long long frame_number, double timestamp, int rx, int ry, int rw, int rh, int width, int height)
-    {
-        show(rx, ry, rw, rh, width, height);
-        if (frame_number != 0)
-        {
-            std::ostringstream ss; ss << stream << ": " << width << " x " << height << " " << format << " (" << fps << "/" << stream_framerate << ")" << ", F#: " << frame_number << ", TS: " << timestamp;
-            glColor3f(0,0,0);
-            draw_text(rx+9, ry+17, ss.str().c_str());
-            glColor3f(1,1,1);
-            draw_text(rx+8, ry+16, ss.str().c_str());
-        }
-    }
-
-    void show(int rx, int ry, int rw, int rh, int width, int height)
+    void show(int rx, int ry, int rw, int rh, int width, int height, float alpha)
     {
         float h = (float)rh, w = (float)rh * width / height;
         if (w > rw)
@@ -248,30 +228,7 @@ public:
             h *= scale;
         }
 
-        show(rx + (rw - w) / 2, ry + (rh - h) / 2, w, h);
-    }
-
-    void show(const void * data, int width, int height, rs::format format, const std::string & caption, int rx, int ry, int rw, int rh)
-    {
-        if(!data) return;
-
-        upload(data, width, height, format);
-        
-        float h = (float)rh, w = (float)rh * width / height;
-        if(w > rw)
-        {
-            float scale = rw/w;
-            w *= scale;
-            h *= scale;
-        }
-
-        show(rx + (rw - w)/2, ry + (rh - h)/2, w, h);
-
-        std::ostringstream ss; ss << caption << ": " << width << " x " << height << " " << format;
-        glColor3f(0,0,0);
-        draw_text(rx+9, ry+17, ss.str().c_str());
-        glColor3f(1,1,1);
-        draw_text(rx+8, ry+16, ss.str().c_str());
+        show(rx + (rw - w) / 2, ry + (rh - h) / 2, w, h, alpha);
     }
 };
 
