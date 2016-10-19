@@ -240,6 +240,9 @@ public:
             _old_layout = _layout;
             _layout = l;
         }
+
+        if (_old_layout.size() == 0 && l.size() == 1) return l;
+
         auto diff = now - _transition_start_time;
         auto ms = duration_cast<milliseconds>(diff).count();
         auto t = (ms > 100) ? 1.0f : sqrt(ms / 100.0f);
@@ -248,6 +251,14 @@ public:
         for (auto&& kvp : l)
         {
             auto stream = kvp.first;
+            if (_old_layout.find(stream) == _old_layout.end())
+            {
+                _old_layout[stream] = rect{
+                    _layout[stream].x + _layout[stream].w / 2,
+                    _layout[stream].y + _layout[stream].h / 2,
+                    0, 0
+                };
+            }
             rect res{
                 _layout[stream].x * t + _old_layout[stream].x * (1 - t),
                 _layout[stream].y * t + _old_layout[stream].y * (1 - t),
