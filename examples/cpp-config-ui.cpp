@@ -536,7 +536,9 @@ int main(int, char**) try
     for (auto i = 0; i < RS_SUBDEVICE_COUNT; i++)
     {
         auto subdevice = static_cast<rs_subdevice>(i);
+
         model._queues[subdevice].clear();
+        model._streams[subdevice].reset();
     }
 
     // Cleanup
