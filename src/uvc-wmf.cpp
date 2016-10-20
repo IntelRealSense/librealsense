@@ -65,10 +65,11 @@ namespace rsimpl
         const auto FISHEYE_HWMONITOR_INTERFACE = 2;
         const uvc::guid FISHEYE_WIN_USB_DEVICE_GUID = { 0xC0B55A29, 0xD7B6, 0x436E, { 0xA6, 0xEF, 0x2E, 0x76, 0xED, 0x0A, 0xBC, 0xA5 } };
         // Translation of user-provided fourcc code into device supported one:           Note the Big-Endian notation
-                                                                                         /* host => librealsense     */
-        const std::map<uint32_t, uint32_t> fourcc_map = { { 0x59382020, 0x47524559 },    /* 'GREY' => 'Y8  ' */
-                                                          { 0x52573130, 0x70524141 },    /* 'pRAA' => 'RW10'.*/
+                                                                                         /* Device => Host     */
+        const std::map<uint32_t, uint32_t> fourcc_map = { { 0x59382020, 0x47524559 },    /* 'GREY' => 'Y8  '   */
+                                                          { 0x52573130, 0x70524141 },    /* 'pRAA' => 'RW10'  .*/
                                                           { 0x32000000, 0x47524559 },    /* 'GREY' => 'L8  '   */
+                                                          { 0x59555932, 0x59555956 },    /* 'YUY2' => 'YUYV'   */
                                                           { 0x50000000, 0x5a313620 } };  /* 'Z16' => 'D16 '    */
 
         static std::string win_to_utf(const WCHAR * s)
