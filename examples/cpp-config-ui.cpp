@@ -26,7 +26,14 @@ bool is_integer(float f)
     return abs(f - floor(f)) < 0.001f;
 }
 
-struct option_metadata
+struct to_string
+{
+    std::ostringstream ss;
+    template<class T> to_string & operator << (const T & val) { ss << val; return *this; }
+    operator std::string() const { return ss.str(); }
+};
+
+struct option_model
 {
     rs::option_range range;
     bool supported = false;
@@ -62,6 +69,106 @@ std::vector<const char*> get_string_pointers(const std::vector<std::string>& vec
     return res;
 }
 
+class subdevice_model
+{
+public:
+    subdevice_model(rs_subdevice subdevice, rs::subdevice* endpoint)
+        : subdevice(subdevice), endpoint(endpoint)
+    {
+        for (auto i = 0; i < RS_OPTION_COUNT; i++)
+        {
+            try
+            {
+                option_model metadata;
+                auto opt = static_cast<rs_option>(i);
+
+                std::stringstream ss;
+                ss << rs_subdevice_to_string(subdevice) << "/" << rs_option_to_string(opt);
+                metadata.id = ss.str();
+
+                metadata.label = rs_option_to_string(opt);
+
+                metadata.supported = endpoint->supports(opt);
+                if (metadata.supported)
+                {
+                    metadata.range = endpoint->get_option_range(opt);
+                    metadata.value = endpoint->get_option(opt);
+                }
+                options_metadata[opt] = metadata;
+            }
+            catch (...) {}
+        }
+
+        for (auto&& profile : endpoint->get_stream_profiles())
+        {
+            std::stringstream res;
+            res << profile.width << " x " << profile.height;
+            width_values.push_back(profile.width);
+            height_values.push_back(profile.height);
+            push_back_if_not_exists(resolutions, res.str());
+            std::stringstream fps;
+            fps << profile.fps;
+            fps_values.push_back(profile.fps);
+            push_back_if_not_exists(fpses, fps.str());
+            std::string format = rs_format_to_string(profile.format);
+            push_back_if_not_exists(formats, format);
+            format_values.push_back(profile.format);
+
+            profiles.push_back(profile);
+        }
+    }
+
+
+    rs::stream_profile get_selected_profile()
+    {
+        auto width = width_values[selected_res_id];
+        auto height = height_values[selected_res_id];
+        auto fps = fps_values[selected_fps_id];
+        auto format = format_values[selected_format_id];
+
+        for (auto&& p : profiles)
+        {
+            if (p.width == width && p.height == height && p.fps == fps && p.format == format)
+                return p;
+        }
+        throw std::runtime_error("Profile not supported!");
+    }
+
+    rs_subdevice subdevice;
+    rs::subdevice* endpoint;
+
+    std::map<rs_option, option_model> options_metadata;
+    std::vector<std::string> resolutions;
+    std::vector<std::string> fpses;
+    std::vector<std::string> formats;
+
+    int selected_res_id = 0;
+    int selected_fps_id = 0;
+    int selected_format_id = 0;
+
+    std::vector<int> width_values;
+    std::vector<int> height_values;
+    std::vector<int> fps_values;
+    std::vector<rs_format> format_values;
+    std::shared_ptr<rs::streaming_lock> streams;
+
+    std::vector<rs::stream_profile> profiles;
+
+    single_consumer_queue<rs::frame> queues;
+};
+
+struct rect
+{
+    int x, y;
+    int w, h;
+
+    bool operator==(const rect& other) const
+    {
+        return x == other.x && y == other.y && w == other.w && h == other.h;
+    }
+};
+typedef std::map<rs_stream, rect> streams_layout;
+
 class device_model
 {
 public:
@@ -72,76 +179,17 @@ public:
             auto subdevice = static_cast<rs_subdevice>(j);
             auto&& endpoint = dev.get_subdevice(subdevice);
 
-            for (auto i = 0; i < RS_OPTION_COUNT; i++)
-            {
-                try
-                {
-                    option_metadata metadata;
-                    auto opt = static_cast<rs_option>(i);
-
-                    std::stringstream ss;
-                    ss << rs_subdevice_to_string(subdevice) << "/" << rs_option_to_string(opt);
-                    metadata.id = ss.str();
-
-                    metadata.label = rs_option_to_string(opt);
-
-                    metadata.supported = endpoint.supports(opt);
-                    if (metadata.supported)
-                    {
-                        metadata.range = endpoint.get_option_range(opt);
-                        metadata.value = endpoint.get_option(opt);
-                    }
-                    _options_metadata[subdevice][opt] = metadata;
-                }
-                catch (...) {}
-            }
-        }
-
-        for (auto j = 0; j < RS_SUBDEVICE_COUNT; j++)
-        {
-            auto subdevice = static_cast<rs_subdevice>(j);
-            auto&& endpoint = dev.get_subdevice(subdevice);
-
-            for (auto&& profile : endpoint.get_stream_profiles())
-            {
-                std::stringstream res;
-                res << profile.width << " x " << profile.height;
-                _width_values[subdevice].push_back(profile.width);
-                _height_values[subdevice].push_back(profile.height);
-                push_back_if_not_exists(_resolutions[subdevice], res.str());
-                std::stringstream fps;
-                fps << profile.fps;
-                _fps_values[subdevice].push_back(profile.fps);
-                push_back_if_not_exists(_fpses[subdevice], fps.str());
-                std::string format = rs_format_to_string(profile.format);
-                push_back_if_not_exists(_formats[subdevice], format);
-                _format_values[subdevice].push_back(profile.format);
-
-                _profiles[subdevice].push_back(profile);
-            }
+            auto model = std::make_shared<subdevice_model>(subdevice, &endpoint);
+            subdevices.push_back(model);
         }
     }
 
-    rs::stream_profile get_selected_profile(rs_subdevice sub)
-    {
-        auto width = _width_values[sub][_selected_res_id[sub]];
-        auto height = _height_values[sub][_selected_res_id[sub]];
-        auto fps = _fps_values[sub][_selected_fps_id[sub]];
-        auto format = _format_values[sub][_selected_format_id[sub]];
-
-        for (auto&& p : _profiles[sub])
-        {
-            if (p.width == width && p.height == height && p.fps == fps && p.format == format)
-                return p;
-        }
-        throw std::runtime_error("Profile not supported!");
-    }
 
     bool is_stream_visible(rs_stream s)
     {
         using namespace std::chrono;
         auto now = high_resolution_clock::now();
-        auto diff = now - _steam_last_frame[s];
+        auto diff = now - steam_last_frame[s];
         auto ms = duration_cast<milliseconds>(diff).count();
         return (ms <= _frame_timeout + _min_timeout);
     }
@@ -150,7 +198,7 @@ public:
     {
         using namespace std::chrono;
         auto now = high_resolution_clock::now();
-        auto diff = now - _steam_last_frame[s];
+        auto diff = now - steam_last_frame[s];
         auto ms = duration_cast<milliseconds>(diff).count();
         if (ms > _frame_timeout + _min_timeout)
         {
@@ -162,17 +210,6 @@ public:
         }
         return 1.0f - pow((ms - _min_timeout) / _frame_timeout, 2);
     }
-
-    struct rect
-    {
-        int x, y;
-        int w, h;
-
-        bool operator==(const rect& other) const
-        {
-            return x == other.x && y == other.y && w == other.w && h == other.h;
-        }
-    };
 
     std::map<rs_stream, rect> calc_layout(int x0, int y0, int width, int height)
     {
@@ -205,31 +242,12 @@ public:
         return get_interpolated_layout(results);
     }
 
+    std::vector<std::shared_ptr<subdevice_model>> subdevices;
+    std::map<rs_stream, texture_buffer> stream_buffers;
+    std::map<rs_stream, std::pair<int, int>> stream_size;
+    std::map<rs_stream, std::chrono::high_resolution_clock::time_point> steam_last_frame;
 
-    float _frame_timeout = 700.0f;
-    float _min_timeout = 90.0f;
-    std::map<rs_subdevice, std::map<rs_option, option_metadata>> _options_metadata;
-    std::map<rs_subdevice, std::vector<std::string>> _resolutions;
-    std::map<rs_subdevice, std::vector<std::string>> _fpses;
-    std::map<rs_subdevice, std::vector<std::string>> _formats;
-
-    std::map<rs_subdevice, int> _selected_res_id;
-    std::map<rs_subdevice, int> _selected_fps_id;
-    std::map<rs_subdevice, int> _selected_format_id;
-
-    std::map<rs_subdevice, std::vector<int>> _width_values;
-    std::map<rs_subdevice, std::vector<int>> _height_values;
-    std::map<rs_subdevice, std::vector<int>> _fps_values;
-    std::map<rs_subdevice, std::vector<rs_format>> _format_values;
-    std::map<rs_subdevice, std::shared_ptr<rs::streaming_lock>> _streams;
-
-    std::map<rs_subdevice, std::vector<rs::stream_profile>> _profiles;
-
-    std::map<rs_subdevice, single_consumer_queue<rs::frame>> _queues;
-    std::map<rs_stream, rect> _layout;
-    std::map<rs_stream, rect> _old_layout;
-    std::chrono::high_resolution_clock::time_point _transition_start_time;
-
+private:
     std::map<rs_stream, rect> get_interpolated_layout(const std::map<rs_stream, rect>& l)
     {
         using namespace std::chrono;
@@ -271,9 +289,12 @@ public:
         return results;
     }
 
-    std::map<rs_stream, texture_buffer> _stream_buffers;
-    std::map<rs_stream, std::pair<int, int>> _stream_size;
-    std::map<rs_stream, std::chrono::high_resolution_clock::time_point> _steam_last_frame;
+    float _frame_timeout = 700.0f;
+    float _min_timeout = 90.0f;
+
+    streams_layout _layout;
+    streams_layout _old_layout;
+    std::chrono::high_resolution_clock::time_point _transition_start_time;
 };
 
 int main(int, char**) try
@@ -303,6 +324,7 @@ int main(int, char**) try
     }
 
     auto model = device_model(dev);
+    std::string label;
 
     while (!glfwWindowShouldClose(window))
     {
@@ -359,68 +381,59 @@ int main(int, char**) try
         
         if (ImGui::CollapsingHeader("Streaming", nullptr, true, true))
         {
-            for (auto j = 0; j < RS_SUBDEVICE_COUNT; j++)
+            for (auto&& sub : model.subdevices)
             {
-                auto subdevice = static_cast<rs_subdevice>(j);
-                auto&& endpoint = dev.get_subdevice(subdevice);
-
-                std::stringstream label;
-                label << rs_subdevice_to_string(subdevice) << " profile:";
-                if (ImGui::CollapsingHeader(label.str().c_str(), nullptr, true, true))
+                label = to_string() << rs_subdevice_to_string(sub->subdevice);
+                if (ImGui::CollapsingHeader(label.c_str(), nullptr, true, true))
                 {
-                    auto res_chars = get_string_pointers(model._resolutions[subdevice]);
-                    auto fps_chars = get_string_pointers(model._fpses[subdevice]);
-                    auto formats_chars = get_string_pointers(model._formats[subdevice]);
+                    auto res_chars = get_string_pointers(sub->resolutions);
+                    auto fps_chars = get_string_pointers(sub->fpses);
+                    auto formats_chars = get_string_pointers(sub->formats);
 
                     ImGui::Text("Resolution:");
                     ImGui::SameLine();
                     ImGui::PushItemWidth(-1);
-                    std::stringstream label;
-                    label << rs_subdevice_to_string(subdevice) << " resolution";
-                    ImGui::Combo(label.str().c_str(), &model._selected_res_id[subdevice], res_chars.data(), res_chars.size());
+                    label = to_string() << rs_subdevice_to_string(sub->subdevice) << " resolution";
+                    ImGui::Combo(label.c_str(), &sub->selected_res_id, res_chars.data(), res_chars.size());
                     ImGui::PopItemWidth();
 
                     ImGui::Text("FPS:");
                     ImGui::SameLine();
                     ImGui::PushItemWidth(-1);
-                    label.str("");
-                    label << rs_subdevice_to_string(subdevice) << " fps";
-                    ImGui::Combo(label.str().c_str() , &model._selected_fps_id[subdevice], fps_chars.data(), fps_chars.size());
+                    label = to_string() << rs_subdevice_to_string(sub->subdevice) << " fps";
+                    ImGui::Combo(label.c_str() , &sub->selected_fps_id, fps_chars.data(), fps_chars.size());
                     ImGui::PopItemWidth();
 
                     ImGui::Text("Format:");
                     ImGui::SameLine();
                     ImGui::PushItemWidth(-1);
-                    label.str("");
-                    label << rs_subdevice_to_string(subdevice) << " format";
-                    ImGui::Combo(label.str().c_str(), &model._selected_format_id[subdevice], formats_chars.data(), formats_chars.size());
+                    label = to_string() << rs_subdevice_to_string(sub->subdevice) << " format";
+                    ImGui::Combo(label.c_str(), &sub->selected_format_id, formats_chars.data(), formats_chars.size());
                     ImGui::PopItemWidth();
 
-                    if (!model._streams[subdevice].get())
+                    if (!sub->streams.get())
                     {
-                        std::stringstream label;
-                        label << "Play " << rs_subdevice_to_string(subdevice);
-                        if (ImGui::Button(label.str().c_str()))
+                        label = to_string() << "Play " << rs_subdevice_to_string(sub->subdevice);
+                        if (ImGui::Button(label.c_str()))
                         {
-                            auto profile = model.get_selected_profile(subdevice);
-                            model._streams[subdevice] = std::make_shared<rs::streaming_lock>(endpoint.open(profile));
-                            model._streams[subdevice]->play(
-                                [&model, subdevice](rs::frame f)
+                            auto profile = sub->get_selected_profile();
+                            sub->streams = std::make_shared<rs::streaming_lock>(sub->endpoint->open(profile));
+                            sub->streams->play(
+                                [sub](rs::frame f)
                             {
-                                if (model._queues[subdevice].size() < 2)
-                                    model._queues[subdevice].enqueue(std::move(f));
+                                if (sub->queues.size() < 2)
+                                    sub->queues.enqueue(std::move(f));
                             });
                         }
                     }
                     else
                     {
-                        std::stringstream label;
-                        label << "Stop " << rs_subdevice_to_string(subdevice);
-                        if (ImGui::Button(label.str().c_str()))
+                        label = to_string() << "Stop " << rs_subdevice_to_string(sub->subdevice);
+                        if (ImGui::Button(label.c_str()))
                         {
-                            model._queues[subdevice].clear();
-                            model._streams[subdevice]->stop();
-                            model._streams[subdevice].reset();
+                            sub->queues.clear();
+                            sub->streams->stop();
+                            sub->streams.reset();
                         }
                     }
                 }
@@ -429,19 +442,15 @@ int main(int, char**) try
 
         if (ImGui::CollapsingHeader("Controls", nullptr, true, true))
         {
-            for (auto j = 0; j < RS_SUBDEVICE_COUNT; j++)
+            for (auto&& sub : model.subdevices)
             {
-                auto subdevice = static_cast<rs_subdevice>(j);
-                auto&& endpoint = dev.get_subdevice(subdevice);
-
-                std::stringstream label;
-                label << rs_subdevice_to_string(subdevice) << " options:";
-                if (ImGui::CollapsingHeader(label.str().c_str(), nullptr, true, false))
+                label = to_string() << rs_subdevice_to_string(sub->subdevice) << " options:";
+                if (ImGui::CollapsingHeader(label.c_str(), nullptr, true, false))
                 {
                     for (auto i = 0; i < RS_OPTION_COUNT; i++)
                     {
                         auto opt = static_cast<rs_option>(i);
-                        auto&& metadata = model._options_metadata[subdevice][opt];
+                        auto&& metadata = sub->options_metadata[opt];
 
                         if (metadata.supported)
                         {
@@ -451,7 +460,7 @@ int main(int, char**) try
                                 if (ImGui::Checkbox(metadata.label.c_str(), &value))
                                 {
                                     metadata.value = value ? 1.0f : 0.0f;
-                                    endpoint.set_option(opt, metadata.value);
+                                    sub->endpoint->set_option(opt, metadata.value);
                                 }
                             }
                             else
@@ -469,7 +478,7 @@ int main(int, char**) try
                                     {
                                         // TODO: Round to step?
                                         metadata.value = value;
-                                        endpoint.set_option(opt, metadata.value);
+                                        sub->endpoint->set_option(opt, metadata.value);
                                     }
                                 }
                                 else
@@ -478,7 +487,7 @@ int main(int, char**) try
                                         metadata.range.min, metadata.range.max))
                                     {
                                         // TODO: Round to step?
-                                        endpoint.set_option(opt, metadata.value);
+                                        sub->endpoint->set_option(opt, metadata.value);
                                     }
                                 }
                                 ImGui::PopItemWidth();
@@ -506,15 +515,14 @@ int main(int, char**) try
         glLoadIdentity();
         glOrtho(0, w, h, 0, -1, +1);
 
-        for (auto i = 0; i < RS_SUBDEVICE_COUNT; i++)
+        for (auto&& sub : model.subdevices)
         {
-            auto subdevice = static_cast<rs_subdevice>(i);
             rs::frame f;
-            if (model._queues[subdevice].try_dequeue(&f))
+            if (sub->queues.try_dequeue(&f))
             {
-                model._stream_buffers[f.get_stream_type()].upload(f);
-                model._steam_last_frame[f.get_stream_type()] = std::chrono::high_resolution_clock::now();
-                model._stream_size[f.get_stream_type()] = std::make_pair<int, int>(f.get_width(), f.get_height());
+                model.stream_buffers[f.get_stream_type()].upload(f);
+                model.steam_last_frame[f.get_stream_type()] = std::chrono::high_resolution_clock::now();
+                model.stream_size[f.get_stream_type()] = std::make_pair<int, int>(f.get_width(), f.get_height());
             }
            
         }
@@ -522,9 +530,9 @@ int main(int, char**) try
         auto layout = model.calc_layout(300, 0, w - 300, h);
         for(auto kvp : layout)
         {
-            model._stream_buffers[kvp.first].show(kvp.second.x, kvp.second.y, kvp.second.w, kvp.second.h,
-                model._stream_size[kvp.first].first,
-                model._stream_size[kvp.first].second,
+            model.stream_buffers[kvp.first].show(kvp.second.x, kvp.second.y, kvp.second.w, kvp.second.h,
+                model.stream_size[kvp.first].first,
+                model.stream_size[kvp.first].second,
                 model.get_stream_alpha(kvp.first));
         }
 
@@ -533,12 +541,10 @@ int main(int, char**) try
         glfwSwapBuffers(window);
     }
 
-    for (auto i = 0; i < RS_SUBDEVICE_COUNT; i++)
+    for (auto&& sub : model.subdevices)
     {
-        auto subdevice = static_cast<rs_subdevice>(i);
-
-        model._queues[subdevice].clear();
-        model._streams[subdevice].reset();
+        sub->queues.clear();
+        sub->streams.reset();
     }
 
     // Cleanup
