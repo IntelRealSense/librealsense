@@ -408,10 +408,10 @@ namespace rs
         /// retrieve the current value of a single frame_metadata
         /// \param[in] frame_metadata  the frame_metadata whose value should be retrieved
         /// \return            the value of the frame_metadata
-        double get_frame_metadata(rs_frame_metadata frame_metadata) const
+        double get_frame_metadata(rs::frame_metadata frame_metadata) const
         {
             rs_error * e = nullptr;
-            auto r = rs_get_detached_frame_metadata(frame_ref, frame_metadata, &e);
+            auto r = rs_get_detached_frame_metadata(frame_ref, (rs_frame_metadata)frame_metadata, &e);
             error::handle(e);
             return r;
         }
