@@ -313,6 +313,9 @@ int main(int, char**) try
     auto list = ctx.query_devices();
     auto dev = ctx.create(list[device_index]);
     std::vector<std::string> device_names;
+    auto had_errors = false;
+    std::string error_message;
+
     for (auto&& l : list)
     {
         auto d = ctx.create(l);
@@ -350,6 +353,12 @@ int main(int, char**) try
             ImGui::PushItemWidth(-1);
             if (ImGui::Combo("", &device_index, device_names_chars.data(), device_names.size()))
             {
+                for (auto&& sub : model.subdevices)
+                {
+                    sub->queues.clear();
+                    sub->streams.reset();
+                }
+
                 dev = ctx.create(list[device_index]);
                 model = device_model(dev);
             }
@@ -470,25 +479,34 @@ int main(int, char**) try
                                 ImGui::Text(ss.str().c_str());
                                 ImGui::PushItemWidth(-1);
 
-                                if (metadata.is_integers())
+                                try
                                 {
-                                    int value = metadata.value;
-                                    if (ImGui::SliderInt(metadata.id.c_str(), &value,
-                                        metadata.range.min, metadata.range.max))
+                                    if (metadata.is_integers())
                                     {
-                                        // TODO: Round to step?
-                                        metadata.value = value;
-                                        sub->endpoint->set_option(opt, metadata.value);
+                                        int value = metadata.value;
+                                        if (ImGui::SliderInt(metadata.id.c_str(), &value,
+                                            metadata.range.min, metadata.range.max))
+                                        {
+                                            // TODO: Round to step?
+                                            metadata.value = value;
+                                            sub->endpoint->set_option(opt, metadata.value);
+                                        }
+                                    }
+                                    else
+                                    {
+                                        if (ImGui::SliderFloat(metadata.id.c_str(), &metadata.value,
+                                            metadata.range.min, metadata.range.max))
+                                        {
+                                            // TODO: Round to step?
+                                            sub->endpoint->set_option(opt, metadata.value);
+                                        }
                                     }
                                 }
-                                else
+                                catch (const rs::error& e)
                                 {
-                                    if (ImGui::SliderFloat(metadata.id.c_str(), &metadata.value,
-                                        metadata.range.min, metadata.range.max))
-                                    {
-                                        // TODO: Round to step?
-                                        sub->endpoint->set_option(opt, metadata.value);
-                                    }
+                                    had_errors = true;
+                                    error_message = to_string() << e.get_failed_function() << "(" 
+                                        << e.get_failed_args() << "):\n" << e.what();
                                 }
                                 ImGui::PopItemWidth();
                             }
@@ -502,7 +520,86 @@ int main(int, char**) try
             }
         }
 
+        if (had_errors)
+            ImGui::OpenPopup("Oops, something went wrong!");
+        if (ImGui::BeginPopupModal("Oops, something went wrong!", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+        {
+            ImGui::Text("RealSense error calling:");
+            ImGui::InputTextMultiline("error", (char*)error_message.c_str(), 
+                error_message.size(), {500,100}, ImGuiInputTextFlags_AutoSelectAll);
+            ImGui::Separator();
+
+            if (ImGui::Button("OK", ImVec2(120, 0)))
+            {
+                had_errors = false;
+                ImGui::CloseCurrentPopup();
+            }
+
+            ImGui::EndPopup();
+        }
+
         ImGui::End();
+
+        for (auto&& sub : model.subdevices)
+        {
+            rs::frame f;
+            if (sub->queues.try_dequeue(&f))
+            {
+                model.stream_buffers[f.get_stream_type()].upload(f);
+                model.steam_last_frame[f.get_stream_type()] = std::chrono::high_resolution_clock::now();
+                model.stream_size[f.get_stream_type()] = std::make_pair<int, int>(f.get_width(), f.get_height());
+            }
+
+        }
+
+        auto layout = model.calc_layout(300, 0, w - 300, h);
+
+        for (auto kvp : layout)
+        {
+            model.stream_buffers[kvp.first].show(kvp.second.x, kvp.second.y, kvp.second.w, kvp.second.h,
+                model.stream_size[kvp.first].first,
+                model.stream_size[kvp.first].second,
+                model.get_stream_alpha(kvp.first));
+
+            // Ugly - to fix:
+            float h1 = (float)kvp.second.w, w1 = (float)kvp.second.h * model.stream_size[kvp.first].first / model.stream_size[kvp.first].second;
+            if (w1 > kvp.second.w)
+            {
+                float scale = kvp.second.w / w1;
+                w1 *= scale;
+                h1 *= scale;
+            }
+            auto x0 = kvp.second.x + (kvp.second.w - w1) / 2;
+            auto y0 = kvp.second.y + (kvp.second.w - h1) / 2;
+
+            flags = ImGuiWindowFlags_NoResize |
+                ImGuiWindowFlags_NoMove |
+                ImGuiWindowFlags_NoCollapse |
+                ImGuiWindowFlags_NoTitleBar;
+            
+            ImGui::PushStyleColor(ImGuiCol_WindowBg, { 0, 0, 0, 0 });
+            ImGui::SetNextWindowPos({ (float)x0, (float)y0 });
+            ImGui::SetNextWindowSize({ (float)w1, (float)h1 });
+            label = to_string() << "Stream of " << rs_stream_to_string(kvp.first);
+            ImGui::Begin(label.c_str(), nullptr, flags);
+            
+            label = to_string() << rs_stream_to_string(kvp.first) << " " 
+                << model.stream_size[kvp.first].first << "x" << model.stream_size[kvp.first].second;
+            ImGui::Text(label.c_str());
+            ImGui::End();
+            ImGui::PopStyleColor();
+        }
+
+
+
+        //auto flags = ImGuiWindowFlags_NoResize | 
+        //             ImGuiWindowFlags_NoMove | 
+        //             ImGuiWindowFlags_NoCollapse;
+
+        //ImGui::SetNextWindowPos({ 0, 0 });
+        //ImGui::SetNextWindowSize({ 300, static_cast<float>(h) });
+        //ImGui::Begin("Control Panel", nullptr, flags);
+        //ImGui::End();
 
         // Rendering
         glViewport(0, 0, 
@@ -515,19 +612,7 @@ int main(int, char**) try
         glLoadIdentity();
         glOrtho(0, w, h, 0, -1, +1);
 
-        for (auto&& sub : model.subdevices)
-        {
-            rs::frame f;
-            if (sub->queues.try_dequeue(&f))
-            {
-                model.stream_buffers[f.get_stream_type()].upload(f);
-                model.steam_last_frame[f.get_stream_type()] = std::chrono::high_resolution_clock::now();
-                model.stream_size[f.get_stream_type()] = std::make_pair<int, int>(f.get_width(), f.get_height());
-            }
-           
-        }
-
-        auto layout = model.calc_layout(300, 0, w - 300, h);
+        
         for(auto kvp : layout)
         {
             model.stream_buffers[kvp.first].show(kvp.second.x, kvp.second.y, kvp.second.w, kvp.second.h,

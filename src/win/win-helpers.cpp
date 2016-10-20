@@ -50,7 +50,7 @@ namespace rsimpl
         {
             if (FAILED(hr))
             {
-                if (to_throw) throw std::runtime_error(to_string() << call << "(...) returned " << hr_to_string(hr));
+                if (to_throw) throw std::runtime_error(to_string() << call << " returned:\n" << hr_to_string(hr));
                 // TODO: Log 
                 return false;
             }

@@ -151,7 +151,7 @@ namespace rsimpl
     private:
         void acquire_power()
         {
-            std::lock_guard<std::mutex> lock(_power_lock);
+            //std::lock_guard<std::mutex> lock(_power_lock);
             if (!_user_count) 
             {
                 _device->set_power_state(uvc::D0);
@@ -161,7 +161,7 @@ namespace rsimpl
         }
         void release_power()
         {
-            std::lock_guard<std::mutex> lock(_power_lock);
+            //std::lock_guard<std::mutex> lock(_power_lock);
             _user_count--;
             if (!_user_count) _device->set_power_state(uvc::D3);
         }
@@ -199,8 +199,8 @@ namespace rsimpl
         std::shared_ptr<uvc::uvc_device> _device;
         device* _owner;
         int _user_count = 0;
-        std::mutex _power_lock;
-        std::mutex _configure_lock;
+        //std::mutex _power_lock;
+        //std::mutex _configure_lock;
         std::vector<uvc::stream_profile> _configuration;
         std::vector<uvc::extension_unit> _xus;
     };
