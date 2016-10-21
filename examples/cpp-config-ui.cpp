@@ -33,18 +33,88 @@ struct to_string
     operator std::string() const { return ss.str(); }
 };
 
-struct option_model
+std::string error_to_string(const rs::error& e)
 {
+    return to_string() << e.get_failed_function() << "("
+        << e.get_failed_args() << "):\n" << e.what();
+}
+
+class option_model
+{
+public:
+    rs_option opt;
     rs::option_range range;
     bool supported = false;
     float value = 0.0f;
     std::string label = "";
     std::string id = "";
 
-    bool is_integers() const
+    void draw(rs::subdevice& dev, std::string& error_message)
+    {
+        if (supported)
+        {
+            if (is_checkbox())
+            {
+                auto bool_value = value > 0.0f;
+                if (ImGui::Checkbox(label.c_str(), &bool_value))
+                {
+                    value = bool_value ? 1.0f : 0.0f;
+                    try
+                    {
+                        dev.set_option(opt, value);
+                    }
+                    catch (const rs::error& e)
+                    {
+                        error_message = error_to_string(e);
+                    }
+                }
+            }
+            else
+            {
+                std::string txt = to_string() << label << ":";
+                ImGui::Text(txt.c_str());
+                ImGui::PushItemWidth(-1);
+
+                try
+                {
+                    if (is_all_integers())
+                    {
+                        int int_value = value;
+                        if (ImGui::SliderInt(id.c_str(), &int_value,
+                            range.min, range.max))
+                        {
+                            // TODO: Round to step?
+                            value = int_value;
+                            dev.set_option(opt, value);
+                        }
+                    }
+                    else
+                    {
+                        if (ImGui::SliderFloat(id.c_str(), &value,
+                            range.min, range.max))
+                        {
+                            dev.set_option(opt, value);
+                        }
+                    }
+                }
+                catch (const rs::error& e)
+                {
+                    error_message = error_to_string(e);
+                }
+                ImGui::PopItemWidth();
+            }
+            if (ImGui::IsItemHovered())
+            {
+                ImGui::SetTooltip(id.c_str());
+            }
+        }
+    }
+
+private:
+    bool is_all_integers() const
     {
         return is_integer(range.min) && is_integer(range.max) &&
-               is_integer(range.def) && is_integer(range.step);
+            is_integer(range.def) && is_integer(range.step);
     }
 
     bool is_checkbox() const
@@ -72,49 +142,62 @@ std::vector<const char*> get_string_pointers(const std::vector<std::string>& vec
 class subdevice_model
 {
 public:
-    subdevice_model(rs_subdevice subdevice, rs::subdevice* endpoint)
+    subdevice_model(rs_subdevice subdevice, rs::subdevice* endpoint, std::string& error_message)
         : subdevice(subdevice), endpoint(endpoint)
     {
         for (auto i = 0; i < RS_OPTION_COUNT; i++)
         {
-            try
+            option_model metadata;
+            auto opt = static_cast<rs_option>(i);
+
+            std::stringstream ss;
+            ss << rs_subdevice_to_string(subdevice) << "/" << rs_option_to_string(opt);
+            metadata.id = ss.str();
+
+            metadata.label = rs_option_to_string(opt);
+
+            metadata.supported = endpoint->supports(opt);
+            if (metadata.supported)
             {
-                option_model metadata;
-                auto opt = static_cast<rs_option>(i);
-
-                std::stringstream ss;
-                ss << rs_subdevice_to_string(subdevice) << "/" << rs_option_to_string(opt);
-                metadata.id = ss.str();
-
-                metadata.label = rs_option_to_string(opt);
-
-                metadata.supported = endpoint->supports(opt);
-                if (metadata.supported)
+                try
                 {
                     metadata.range = endpoint->get_option_range(opt);
                     metadata.value = endpoint->get_option(opt);
                 }
-                options_metadata[opt] = metadata;
+                catch (const rs::error& e)
+                {
+                    metadata.range = { 0, 1, 0, 0 };
+                    metadata.value = 0;
+                    error_message = error_to_string(e);
+                }
             }
-            catch (...) {}
+            options_metadata[opt] = metadata;
         }
 
-        for (auto&& profile : endpoint->get_stream_profiles())
+        try
         {
-            std::stringstream res;
-            res << profile.width << " x " << profile.height;
-            width_values.push_back(profile.width);
-            height_values.push_back(profile.height);
-            push_back_if_not_exists(resolutions, res.str());
-            std::stringstream fps;
-            fps << profile.fps;
-            fps_values.push_back(profile.fps);
-            push_back_if_not_exists(fpses, fps.str());
-            std::string format = rs_format_to_string(profile.format);
-            push_back_if_not_exists(formats, format);
-            format_values.push_back(profile.format);
+            auto uvc_profiles = endpoint->get_stream_profiles();
+            for (auto&& profile : uvc_profiles)
+            {
+                std::stringstream res;
+                res << profile.width << " x " << profile.height;
+                width_values.push_back(profile.width);
+                height_values.push_back(profile.height);
+                push_back_if_not_exists(resolutions, res.str());
+                std::stringstream fps;
+                fps << profile.fps;
+                fps_values.push_back(profile.fps);
+                push_back_if_not_exists(fpses, fps.str());
+                std::string format = rs_format_to_string(profile.format);
+                push_back_if_not_exists(formats, format);
+                format_values.push_back(profile.format);
 
-            profiles.push_back(profile);
+                profiles.push_back(profile);
+            }
+        }
+        catch (const rs::error& e)
+        {
+            error_message = error_to_string(e);
         }
     }
 
@@ -157,14 +240,61 @@ public:
     single_consumer_queue<rs::frame> queues;
 };
 
+float clamp(float x, float min, float max)
+{
+    return std::max(std::min(max, x), min);
+}
+
+float smoothstep(float x, float min, float max)
+{
+    x = clamp((x - min) / (max - min), 0.0, 1.0);
+    return x*x*(3 - 2 * x);
+}
+
+float lerp(float a, float b, float t)
+{
+    return b * t + a * (1 - t);
+}
+
+struct float2
+{
+    float x, y;
+};
 struct rect
 {
-    int x, y;
-    int w, h;
+    float x, y;
+    float w, h;
 
     bool operator==(const rect& other) const
     {
         return x == other.x && y == other.y && w == other.w && h == other.h;
+    }
+
+    rect center() const
+    {
+        return{ x + w / 2, y + h / 2, 0, 0 };
+    }
+
+    rect lerp(float t, const rect& other) const
+    {
+        return{
+            ::lerp(x, other.x, t), ::lerp(y, other.y, t),
+            ::lerp(w, other.w, t), ::lerp(h, other.h, t),
+        };
+    }
+
+    rect adjust_ratio(float2 size) const
+    {
+        auto h1 = w, w1 = h * size.x / size.y;
+        if (w1 > w)
+        {
+            auto scale = w / w1;
+            w1 *= scale;
+            h1 *= scale;
+        }
+        auto x0 = x + (w - w1) / 2;
+        auto y0 = y + (w - h1) / 2;
+        return{ x0, y0, w1, h1 };
     }
 };
 typedef std::map<rs_stream, rect> streams_layout;
@@ -172,14 +302,14 @@ typedef std::map<rs_stream, rect> streams_layout;
 class device_model
 {
 public:
-    explicit device_model(rs::device& dev)
+    explicit device_model(rs::device& dev, std::string& error_message)
     {
         for (auto j = 0; j < RS_SUBDEVICE_COUNT; j++)
         {
             auto subdevice = static_cast<rs_subdevice>(j);
             auto&& endpoint = dev.get_subdevice(subdevice);
 
-            auto model = std::make_shared<subdevice_model>(subdevice, &endpoint);
+            auto model = std::make_shared<subdevice_model>(subdevice, &endpoint, error_message);
             subdevices.push_back(model);
         }
     }
@@ -191,7 +321,7 @@ public:
         auto now = high_resolution_clock::now();
         auto diff = now - steam_last_frame[s];
         auto ms = duration_cast<milliseconds>(diff).count();
-        return (ms <= _frame_timeout + _min_timeout);
+        return ms <= _frame_timeout + _min_timeout;
     }
 
     float get_stream_alpha(rs_stream s)
@@ -200,15 +330,8 @@ public:
         auto now = high_resolution_clock::now();
         auto diff = now - steam_last_frame[s];
         auto ms = duration_cast<milliseconds>(diff).count();
-        if (ms > _frame_timeout + _min_timeout)
-        {
-            return 0.0f;
-        }
-        if (ms < _min_timeout)
-        {
-            return 1.0f;
-        }
-        return 1.0f - pow((ms - _min_timeout) / _frame_timeout, 2);
+        auto t = smoothstep(ms, _min_timeout, _min_timeout + _frame_timeout);
+        return 1.0f - t;
     }
 
     std::map<rs_stream, rect> calc_layout(int x0, int y0, int width, int height)
@@ -226,14 +349,17 @@ public:
         auto factor = floor(sqrt(active_streams.size()));
         auto complement = ceil(active_streams.size() / factor);
 
+        auto cell_width = width / complement;
+        auto cell_height = height / factor;
+
         std::map<rs_stream, rect> results;
         auto i = 0;
         for (auto x = 0; x < complement; x++)
         {
             for (auto y = 0; y < factor; y++)
             {
-                rect r = { x0 + x * (width / complement), y0 + y * (height / factor),
-                              (width / complement), (height / factor) };
+                rect r = { x0 + x * cell_width, y0 + y * cell_height,
+                                    cell_width, cell_height };
                 if (i == active_streams.size()) return results;
                 results[active_streams[i]] = r;
                 i++;
@@ -244,7 +370,7 @@ public:
 
     std::vector<std::shared_ptr<subdevice_model>> subdevices;
     std::map<rs_stream, texture_buffer> stream_buffers;
-    std::map<rs_stream, std::pair<int, int>> stream_size;
+    std::map<rs_stream, float2> stream_size;
     std::map<rs_stream, std::chrono::high_resolution_clock::time_point> steam_last_frame;
 
 private:
@@ -252,7 +378,7 @@ private:
     {
         using namespace std::chrono;
         auto now = high_resolution_clock::now();
-        if (l != _layout)
+        if (l != _layout) // detect layout change
         {
             _transition_start_time = now;
             _old_layout = _layout;
@@ -263,7 +389,7 @@ private:
 
         auto diff = now - _transition_start_time;
         auto ms = duration_cast<milliseconds>(diff).count();
-        auto t = (ms > 100) ? 1.0f : sqrt(ms / 100.0f);
+        auto t = smoothstep(ms, 0, 100);
 
         std::map<rs_stream, rect> results;
         for (auto&& kvp : l)
@@ -271,21 +397,11 @@ private:
             auto stream = kvp.first;
             if (_old_layout.find(stream) == _old_layout.end())
             {
-                _old_layout[stream] = rect{
-                    _layout[stream].x + _layout[stream].w / 2,
-                    _layout[stream].y + _layout[stream].h / 2,
-                    0, 0
-                };
+                _old_layout[stream] = _layout[stream].center();
             }
-            rect res{
-                _layout[stream].x * t + _old_layout[stream].x * (1 - t),
-                _layout[stream].y * t + _old_layout[stream].y * (1 - t),
-                _layout[stream].w * t + _old_layout[stream].w * (1 - t),
-                _layout[stream].h * t + _old_layout[stream].h * (1 - t),
-            };
-            results[stream] = res;
+            results[stream] = _old_layout[stream].lerp(t, _layout[stream]);
         }
-        
+
         return results;
     }
 
@@ -313,20 +429,18 @@ int main(int, char**) try
     auto list = ctx.query_devices();
     auto dev = ctx.create(list[device_index]);
     std::vector<std::string> device_names;
-    auto had_errors = false;
-    std::string error_message;
+
+    std::string error_message = "";
 
     for (auto&& l : list)
     {
         auto d = ctx.create(l);
         auto name = d.get_camera_info(RS_CAMERA_INFO_DEVICE_NAME);
         auto serial = d.get_camera_info(RS_CAMERA_INFO_DEVICE_SERIAL_NUMBER);
-        std::stringstream ss;
-        ss << name << " Sn#" << serial;
-        device_names.push_back(ss.str());
+        device_names.push_back(to_string() << name << " Sn#" << serial);
     }
 
-    auto model = device_model(dev);
+    auto model = device_model(dev, error_message);
     std::string label;
 
     while (!glfwWindowShouldClose(window))
@@ -337,9 +451,9 @@ int main(int, char**) try
 
         ImGui_ImplGlfw_NewFrame();
 
-        auto flags = ImGuiWindowFlags_NoResize | 
-                     ImGuiWindowFlags_NoMove | 
-                     ImGuiWindowFlags_NoCollapse;
+        auto flags = ImGuiWindowFlags_NoResize |
+            ImGuiWindowFlags_NoMove |
+            ImGuiWindowFlags_NoCollapse;
 
         ImGui::SetNextWindowPos({ 0, 0 });
         ImGui::SetNextWindowSize({ 300, static_cast<float>(h) });
@@ -360,7 +474,7 @@ int main(int, char**) try
                 }
 
                 dev = ctx.create(list[device_index]);
-                model = device_model(dev);
+                model = device_model(dev, error_message);
             }
             ImGui::PopItemWidth();
 
@@ -387,7 +501,7 @@ int main(int, char**) try
                 }
             }
         }
-        
+
         if (ImGui::CollapsingHeader("Streaming", nullptr, true, true))
         {
             for (auto&& sub : model.subdevices)
@@ -410,7 +524,7 @@ int main(int, char**) try
                     ImGui::SameLine();
                     ImGui::PushItemWidth(-1);
                     label = to_string() << rs_subdevice_to_string(sub->subdevice) << " fps";
-                    ImGui::Combo(label.c_str() , &sub->selected_fps_id, fps_chars.data(), fps_chars.size());
+                    ImGui::Combo(label.c_str(), &sub->selected_fps_id, fps_chars.data(), fps_chars.size());
                     ImGui::PopItemWidth();
 
                     ImGui::Text("Format:");
@@ -460,78 +574,24 @@ int main(int, char**) try
                     {
                         auto opt = static_cast<rs_option>(i);
                         auto&& metadata = sub->options_metadata[opt];
-
-                        if (metadata.supported)
-                        {
-                            if (metadata.is_checkbox())
-                            {
-                                auto value = metadata.value > 0.0f;
-                                if (ImGui::Checkbox(metadata.label.c_str(), &value))
-                                {
-                                    metadata.value = value ? 1.0f : 0.0f;
-                                    sub->endpoint->set_option(opt, metadata.value);
-                                }
-                            }
-                            else
-                            {
-                                std::stringstream ss;
-                                ss << metadata.label << ":";
-                                ImGui::Text(ss.str().c_str());
-                                ImGui::PushItemWidth(-1);
-
-                                try
-                                {
-                                    if (metadata.is_integers())
-                                    {
-                                        int value = metadata.value;
-                                        if (ImGui::SliderInt(metadata.id.c_str(), &value,
-                                            metadata.range.min, metadata.range.max))
-                                        {
-                                            // TODO: Round to step?
-                                            metadata.value = value;
-                                            sub->endpoint->set_option(opt, metadata.value);
-                                        }
-                                    }
-                                    else
-                                    {
-                                        if (ImGui::SliderFloat(metadata.id.c_str(), &metadata.value,
-                                            metadata.range.min, metadata.range.max))
-                                        {
-                                            // TODO: Round to step?
-                                            sub->endpoint->set_option(opt, metadata.value);
-                                        }
-                                    }
-                                }
-                                catch (const rs::error& e)
-                                {
-                                    had_errors = true;
-                                    error_message = to_string() << e.get_failed_function() << "(" 
-                                        << e.get_failed_args() << "):\n" << e.what();
-                                }
-                                ImGui::PopItemWidth();
-                            }
-                            if (ImGui::IsItemHovered())
-                            {
-                                ImGui::SetTooltip(metadata.id.c_str());
-                            }
-                        }
+                        metadata.draw(*sub->endpoint, error_message);
                     }
                 }
             }
         }
 
-        if (had_errors)
+        if (error_message != "")
             ImGui::OpenPopup("Oops, something went wrong!");
         if (ImGui::BeginPopupModal("Oops, something went wrong!", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
         {
             ImGui::Text("RealSense error calling:");
-            ImGui::InputTextMultiline("error", (char*)error_message.c_str(), 
-                error_message.size(), {500,100}, ImGuiInputTextFlags_AutoSelectAll);
+            ImGui::InputTextMultiline("error", const_cast<char*>(error_message.c_str()),
+                error_message.size(), { 500,100 }, ImGuiInputTextFlags_AutoSelectAll);
             ImGui::Separator();
 
             if (ImGui::Button("OK", ImVec2(120, 0)))
             {
-                had_errors = false;
+                error_message = "";
                 ImGui::CloseCurrentPopup();
             }
 
@@ -547,63 +607,15 @@ int main(int, char**) try
             {
                 model.stream_buffers[f.get_stream_type()].upload(f);
                 model.steam_last_frame[f.get_stream_type()] = std::chrono::high_resolution_clock::now();
-                model.stream_size[f.get_stream_type()] = std::make_pair<int, int>(f.get_width(), f.get_height());
+                model.stream_size[f.get_stream_type()] = { static_cast<float>(f.get_width()), 
+                                                           static_cast<float>(f.get_height()) };
             }
 
         }
-
-        auto layout = model.calc_layout(300, 0, w - 300, h);
-
-        for (auto kvp : layout)
-        {
-            model.stream_buffers[kvp.first].show(kvp.second.x, kvp.second.y, kvp.second.w, kvp.second.h,
-                model.stream_size[kvp.first].first,
-                model.stream_size[kvp.first].second,
-                model.get_stream_alpha(kvp.first));
-
-            // Ugly - to fix:
-            float h1 = (float)kvp.second.w, w1 = (float)kvp.second.h * model.stream_size[kvp.first].first / model.stream_size[kvp.first].second;
-            if (w1 > kvp.second.w)
-            {
-                float scale = kvp.second.w / w1;
-                w1 *= scale;
-                h1 *= scale;
-            }
-            auto x0 = kvp.second.x + (kvp.second.w - w1) / 2;
-            auto y0 = kvp.second.y + (kvp.second.w - h1) / 2;
-
-            flags = ImGuiWindowFlags_NoResize |
-                ImGuiWindowFlags_NoMove |
-                ImGuiWindowFlags_NoCollapse |
-                ImGuiWindowFlags_NoTitleBar;
-            
-            ImGui::PushStyleColor(ImGuiCol_WindowBg, { 0, 0, 0, 0 });
-            ImGui::SetNextWindowPos({ (float)x0, (float)y0 });
-            ImGui::SetNextWindowSize({ (float)w1, (float)h1 });
-            label = to_string() << "Stream of " << rs_stream_to_string(kvp.first);
-            ImGui::Begin(label.c_str(), nullptr, flags);
-            
-            label = to_string() << rs_stream_to_string(kvp.first) << " " 
-                << model.stream_size[kvp.first].first << "x" << model.stream_size[kvp.first].second;
-            ImGui::Text(label.c_str());
-            ImGui::End();
-            ImGui::PopStyleColor();
-        }
-
-
-
-        //auto flags = ImGuiWindowFlags_NoResize | 
-        //             ImGuiWindowFlags_NoMove | 
-        //             ImGuiWindowFlags_NoCollapse;
-
-        //ImGui::SetNextWindowPos({ 0, 0 });
-        //ImGui::SetNextWindowSize({ 300, static_cast<float>(h) });
-        //ImGui::Begin("Control Panel", nullptr, flags);
-        //ImGui::End();
 
         // Rendering
-        glViewport(0, 0, 
-            static_cast<int>(ImGui::GetIO().DisplaySize.x), 
+        glViewport(0, 0,
+            static_cast<int>(ImGui::GetIO().DisplaySize.x),
             static_cast<int>(ImGui::GetIO().DisplaySize.y));
         glClearColor(clear_color.x, clear_color.y, clear_color.z, clear_color.w);
         glClear(GL_COLOR_BUFFER_BIT);
@@ -612,13 +624,37 @@ int main(int, char**) try
         glLoadIdentity();
         glOrtho(0, w, h, 0, -1, +1);
 
-        
-        for(auto kvp : layout)
+        auto layout = model.calc_layout(300, 0, w - 300, h);
+
+        for (auto kvp : layout)
         {
-            model.stream_buffers[kvp.first].show(kvp.second.x, kvp.second.y, kvp.second.w, kvp.second.h,
-                model.stream_size[kvp.first].first,
-                model.stream_size[kvp.first].second,
+            auto&& view_rect = kvp.second;
+            auto stream = kvp.first;
+            auto&& stream_size = model.stream_size[stream];
+
+            model.stream_buffers[stream].show(view_rect.x, view_rect.y, view_rect.w, view_rect.h,
+                stream_size.x,
+                stream_size.y,
                 model.get_stream_alpha(kvp.first));
+
+            auto stream_rect = view_rect.adjust_ratio(model.stream_size[kvp.first]);
+
+            flags = ImGuiWindowFlags_NoResize |
+                ImGuiWindowFlags_NoMove |
+                ImGuiWindowFlags_NoCollapse |
+                ImGuiWindowFlags_NoTitleBar;
+
+            ImGui::PushStyleColor(ImGuiCol_WindowBg, { 0, 0, 0, 0 });
+            ImGui::SetNextWindowPos({ stream_rect.x, stream_rect.y });
+            ImGui::SetNextWindowSize({ stream_rect.w, stream_rect.h });
+            label = to_string() << "Stream of " << rs_stream_to_string(kvp.first);
+            ImGui::Begin(label.c_str(), nullptr, flags);
+
+            label = to_string() << rs_stream_to_string(kvp.first) << " "
+                << stream_size.x << "x" << stream_size.y;
+            ImGui::Text(label.c_str());
+            ImGui::End();
+            ImGui::PopStyleColor();
         }
 
         ImGui::Render();
