@@ -43,17 +43,10 @@ currentdir=$(pwd)
 if [ ${workdir} = ${currentdir} ]
 then
     echo ""
-    echo "ERROR: Could not download kernel sources."
-    echo "       Ensure the 'deb-src' entry for your kernel is uncommented"
-    echo "       in /etc/apt/sources.list or /etc/apt/sources.list.d/*"
-    echo "       then update APT before retrying this package:"
-    echo "           sudo apt-get update"
+    echo "ERROR: Could not download the required kernel sources to install RealSense camera support."
     echo ""
-    echo "       wget -O enable_kernel_sources.sh http://tinyurl.com/zaukmdq"
-    echo "       bash ./enable_kernel_sources.sh"
-    echo ""
-    # See: http://askubuntu.com/questions/496549/error-you-must-put-some-source-uris-in-your-sources-list"
-    echo "       See: http://tinyurl.com/pxbtvh5"
+    echo "       To resolve, please follow the installation directions at:"
+    echo "           http://wiki.ros.org/librealsense#Installation_Prerequisites"
     echo ""
     exit 86
 fi
