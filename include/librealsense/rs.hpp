@@ -251,11 +251,45 @@ namespace rs
             rs_error* e = nullptr;
             std::shared_ptr<rs_stream_lock> lock(
                 rs_open_subdevice(_dev, _index, 
-                    profile.stream, 
-                    profile.width,
-                    profile.height,
-                    profile.fps,
-                    profile.format,
+                    &profile.stream, 
+                    &profile.width,
+                    &profile.height,
+                    &profile.fps,
+                    &profile.format,
+                    1,
+                    &e),
+                rs_release_streaming_lock);
+            error::handle(e);
+
+            return streaming_lock(lock);
+        }
+
+        streaming_lock open(const std::vector<stream_profile>& profiles) const
+        {
+            rs_error* e = nullptr;
+
+            std::vector<rs_format> formats;
+            std::vector<int> widths;
+            std::vector<int> heights;
+            std::vector<int> fpss;
+            std::vector<rs_stream> streams;
+            for (auto& p : profiles)
+            {
+                formats.push_back(p.format);
+                widths.push_back(p.width);
+                heights.push_back(p.height);
+                fpss.push_back(p.fps);
+                streams.push_back(p.stream);
+            }
+
+            std::shared_ptr<rs_stream_lock> lock(
+                rs_open_subdevice(_dev, _index,
+                    streams.data(),
+                    widths.data(),
+                    heights.data(),
+                    fpss.data(),
+                    formats.data(),
+                    profiles.size(),
                     &e),
                 rs_release_streaming_lock);
             error::handle(e);

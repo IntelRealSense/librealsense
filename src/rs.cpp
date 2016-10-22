@@ -241,12 +241,23 @@ void rs_delete_profiles_list(rs_stream_profile_list* list) try
 }
 catch (...) {}
 
-rs_stream_lock* rs_open_subdevice(rs_device* device, rs_subdevice subdevice, 
-    rs_stream stream, int width, int height, int fps, 
-    rs_format format, rs_error** error) try
+rs_stream_lock* rs_open_subdevice(rs_device* device, rs_subdevice subdevice,
+    const rs_stream* stream, const int* width, const int* height, const int* fps, const rs_format* format, int count, rs_error** error) try
 {
+    VALIDATE_NOT_NULL(device);
+    VALIDATE_ENUM(subdevice);
+    VALIDATE_NOT_NULL(stream);
+    VALIDATE_NOT_NULL(width);
+    VALIDATE_NOT_NULL(height);
+    VALIDATE_NOT_NULL(fps);
+    VALIDATE_NOT_NULL(format);
+
     std::vector<rsimpl::stream_request> request;
-    request.push_back({ stream, (uint32_t)width, (uint32_t)height, (uint32_t)fps, format });
+    for (auto i = 0; i < count; i++)
+    {
+        request.push_back({ stream[i], (uint32_t)width[i], 
+                            (uint32_t)height[i], (uint32_t)fps[i], format[i] });
+    }
     auto result = new rs_stream_lock{ device->device->get_endpoint(subdevice).configure(request) };
     result->lock->set_owner(result);
     return result;

@@ -150,36 +150,43 @@ namespace rsimpl
             while (!requests.empty() && !_pixel_formats.empty())
             {
                 auto max = 0;
-                auto max_elem = &_pixel_formats[0];
+                auto best_pf = &_pixel_formats[0];
+                auto best_unpacker = &_pixel_formats[0].unpackers[0];
                 for (auto&& pf : _pixel_formats)
                 {
-                    auto count = std::count_if(begin(requests), end(requests), 
-                        [&pf](const stream_request& r) { return pf.satisfies(r); });
-                    if (count > max && pf.plane_count == count)
+                    for (auto&& unpacker : pf.unpackers)
                     {
-                        max = count;
-                        max_elem = &pf;
+                        auto count = static_cast<int>(std::count_if(begin(requests), end(requests),
+                            [&unpacker](const stream_request& r)
+                        {
+                            return unpacker.satisfies(r);
+                        }));
+                        if (count > max && unpacker.outputs.size() == count)
+                        {
+                            max = count;
+                            best_pf = &pf;
+                            best_unpacker = &unpacker;
+                        }
                     }
                 }
 
                 if (max == 0) break;
 
                 requests.erase(std::remove_if(begin(requests), end(requests),
-                    [max_elem, &results](const stream_request& r)
+                    [best_unpacker, best_pf, &results](const stream_request& r)
                 {
-                    if (max_elem->satisfies(r))
+                    if (best_unpacker->satisfies(r))
                     {
                         request_mapping mapping;
-                        mapping.request = r;
-                        mapping.profile = { r.width, r.height, r.fps, max_elem->fourcc };
-                        mapping.unpacker = max_elem->find_unpacker(r);
-                        mapping.pf = max_elem;
+                        mapping.profile = { r.width, r.height, r.fps, best_pf->fourcc };
+                        mapping.unpacker = best_unpacker;
+                        mapping.pf = best_pf;
 
                         results.insert(mapping);
                         return true;
                     }
                     return false;
-                }));
+                }), end(requests));
             }
 
             if (requests.empty()) return{ begin(results), end(results) };

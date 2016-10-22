@@ -358,7 +358,8 @@ void rs_get_profile(const rs_stream_profile_list* list, int index, rs_stream* st
 int rs_get_profile_list_size(const rs_stream_profile_list* list, rs_error** error);
 void rs_delete_profiles_list(rs_stream_profile_list* list);
 
-rs_stream_lock* rs_open_subdevice(rs_device* device, rs_subdevice subdevice, rs_stream stream, int width, int height, int fps, rs_format format, rs_error** error);
+rs_stream_lock* rs_open_subdevice(rs_device* device, rs_subdevice subdevice, 
+    const rs_stream* stream, const int* width, const int* height, const int* fps, const rs_format* format, int count, rs_error** error);
 void rs_release_streaming_lock(rs_stream_lock* lock);
 
 void rs_play(rs_stream_lock* lock, rs_frame_callback_ptr on_frame, void* user, rs_error** error);

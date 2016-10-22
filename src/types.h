@@ -154,6 +154,12 @@ namespace rsimpl
         void(*unpack)(byte * const dest[], const byte * source, int count);
         std::vector<std::pair<rs_stream, rs_format>> outputs;
 
+        bool satisfies(const stream_request& request) const
+        {
+            return provides_stream(request.stream) &&
+                   get_format(request.stream) == request.format;
+        }
+
         bool provides_stream(rs_stream stream) const { for (auto & o : outputs) if (o.first == stream) return true; return false; }
         rs_format get_format(rs_stream stream) const { for (auto & o : outputs) if (o.first == stream) return o.second; throw std::logic_error("missing output"); }
     };
@@ -165,30 +171,11 @@ namespace rsimpl
         size_t bytes_per_pixel;
         std::vector<pixel_format_unpacker> unpackers;
 
-        bool satisfies(const stream_request& request)
-        {
-            return find_unpacker(request) != nullptr;
-        }
-
-        pixel_format_unpacker* find_unpacker(const stream_request& request)
-        {
-            for (auto&& unpacker : unpackers)
-            {
-                if (unpacker.provides_stream(request.stream) &&
-                    unpacker.get_format(request.stream) == request.format)
-                {
-                    return &unpacker;
-                }
-            }
-            return nullptr;
-        }
-
         size_t get_image_size(int width, int height) const { return width * height * plane_count * bytes_per_pixel; }
     };
 
     struct request_mapping
     {
-        stream_request request;
         uvc::stream_profile profile;
         native_pixel_format* pf;
         pixel_format_unpacker* unpacker;
@@ -197,7 +184,7 @@ namespace rsimpl
     inline bool operator==(const request_mapping& a,
         const request_mapping& b)
     {
-        return (a.profile == b.profile) && (a.request == b.request) && (a.pf == b.pf) && (a.unpacker == b.unpacker);
+        return (a.profile == b.profile) && (a.pf == b.pf) && (a.unpacker == b.unpacker);
     }
 
     ////////////////////////
@@ -728,7 +715,6 @@ namespace std {
             using std::hash;
 
             return (hash<rsimpl::uvc::stream_profile>()(k.profile))
-                ^ (hash<rsimpl::stream_request>()(k.request))
                 ^ (hash<rsimpl::pixel_format_unpacker*>()(k.unpacker))
                 ^ (hash<rsimpl::native_pixel_format*>()(k.pf));
         }

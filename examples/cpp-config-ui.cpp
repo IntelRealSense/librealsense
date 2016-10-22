@@ -256,63 +256,6 @@ public:
     single_consumer_queue<rs::frame> queues;
 };
 
-float clamp(float x, float min, float max)
-{
-    return std::max(std::min(max, x), min);
-}
-
-float smoothstep(float x, float min, float max)
-{
-    x = clamp((x - min) / (max - min), 0.0, 1.0);
-    return x*x*(3 - 2 * x);
-}
-
-float lerp(float a, float b, float t)
-{
-    return b * t + a * (1 - t);
-}
-
-struct float2
-{
-    float x, y;
-};
-struct rect
-{
-    float x, y;
-    float w, h;
-
-    bool operator==(const rect& other) const
-    {
-        return x == other.x && y == other.y && w == other.w && h == other.h;
-    }
-
-    rect center() const
-    {
-        return{ x + w / 2, y + h / 2, 0, 0 };
-    }
-
-    rect lerp(float t, const rect& other) const
-    {
-        return{
-            ::lerp(x, other.x, t), ::lerp(y, other.y, t),
-            ::lerp(w, other.w, t), ::lerp(h, other.h, t),
-        };
-    }
-
-    rect adjust_ratio(float2 size) const
-    {
-        auto h1 = w, w1 = h * size.x / size.y;
-        if (w1 > w)
-        {
-            auto scale = w / w1;
-            w1 *= scale;
-            h1 *= scale;
-        }
-        auto x0 = x + (w - w1) / 2;
-        auto y0 = y + (w - h1) / 2;
-        return{ x0, y0, w1, h1 };
-    }
-};
 typedef std::map<rs_stream, rect> streams_layout;
 
 class device_model
@@ -363,21 +306,22 @@ public:
             }
         }
 
-        auto factor = floor(sqrt(active_streams.size()));
+        auto factor = ceil(sqrt(active_streams.size()));
         auto complement = ceil(active_streams.size() / factor);
 
-        auto cell_width = static_cast<float>(width / complement);
-        auto cell_height = static_cast<float>(height / factor);
+        auto cell_width = static_cast<float>(width / factor);
+        auto cell_height = static_cast<float>(height / complement);
 
         std::map<rs_stream, rect> results;
         auto i = 0;
-        for (auto x = 0; x < complement; x++)
+        for (auto x = 0; x < factor; x++)
         {
-            for (auto y = 0; y < factor; y++)
+            for (auto y = 0; y < complement; y++)
             {
+                if (i == active_streams.size()) break;
+
                 rect r = { x0 + x * cell_width, y0 + y * cell_height,
                                     cell_width, cell_height };
-                if (i == active_streams.size()) return results;
                 results[active_streams[i]] = r;
                 i++;
             }
@@ -402,7 +346,7 @@ private:
             _layout = l;
         }
 
-        if (_old_layout.size() == 0 && l.size() == 1) return l;
+        //if (_old_layout.size() == 0 && l.size() == 1) return l;
 
         auto diff = now - _transition_start_time;
         auto ms = duration_cast<milliseconds>(diff).count();
@@ -534,16 +478,18 @@ int main(int, char**) try
                     ImGui::SameLine();
                     ImGui::PushItemWidth(-1);
                     label = to_string() << rs_subdevice_to_string(sub->subdevice) << " resolution";
-                    ImGui::Combo(label.c_str(), &sub->selected_res_id, res_chars.data(), 
-                        static_cast<int>(res_chars.size()));
+                    if (sub->streams.get()) ImGui::Text(res_chars[sub->selected_res_id]);
+                    else ImGui::Combo(label.c_str(), &sub->selected_res_id, res_chars.data(), 
+                                      static_cast<int>(res_chars.size()));
                     ImGui::PopItemWidth();
 
                     ImGui::Text("FPS:");
                     ImGui::SameLine();
                     ImGui::PushItemWidth(-1);
                     label = to_string() << rs_subdevice_to_string(sub->subdevice) << " fps";
-                    ImGui::Combo(label.c_str(), &sub->selected_fps_id, fps_chars.data(), 
-                        static_cast<int>(fps_chars.size()));
+                    if (sub->streams.get()) ImGui::Text(fps_chars[sub->selected_fps_id]);
+                    else ImGui::Combo(label.c_str(), &sub->selected_fps_id, fps_chars.data(), 
+                                      static_cast<int>(fps_chars.size()));
                     ImGui::PopItemWidth();
 
                     auto live_streams = 0;
@@ -561,47 +507,63 @@ int main(int, char**) try
                         if (live_streams > 1)
                         {
                             label = to_string() << rs_stream_to_string(stream) << " format:";
-                            ImGui::Checkbox(label.c_str(), &sub->stream_enabled[stream]);
+                            if (sub->streams.get()) ImGui::Text(label.c_str());
+                            else ImGui::Checkbox(label.c_str(), &sub->stream_enabled[stream]);
                         }
                         else
                         {
                             label = to_string() << "Format:";
                             ImGui::Text(label.c_str());
                         }
+
                         ImGui::SameLine();
-                        ImGui::PushItemWidth(-1);
-                        label = to_string() << rs_subdevice_to_string(sub->subdevice) 
-                            << " " << rs_stream_to_string(stream) << " format";
-                        ImGui::Combo(label.c_str(), &sub->selected_format_id[stream], formats_chars.data(),
-                            static_cast<int>(formats_chars.size()));
-                        ImGui::PopItemWidth();
+                        if (sub->stream_enabled[stream])
+                        {
+                            ImGui::PushItemWidth(-1);
+                            label = to_string() << rs_subdevice_to_string(sub->subdevice)
+                                << " " << rs_stream_to_string(stream) << " format";
+                            if (sub->streams.get()) ImGui::Text(formats_chars[sub->selected_format_id[stream]]);
+                            else ImGui::Combo(label.c_str(), &sub->selected_format_id[stream], formats_chars.data(),
+                                static_cast<int>(formats_chars.size()));
+                            ImGui::PopItemWidth();
+                        }
+                        else
+                        {
+                            ImGui::Text("N/A");
+                        }
                     }
 
-
-                    if (!sub->streams.get())
+                    try
                     {
-                        label = to_string() << "Play " << rs_subdevice_to_string(sub->subdevice);
-                        if (ImGui::Button(label.c_str()))
+                        if (!sub->streams.get())
                         {
-                            auto profiles = sub->get_selected_profiles();
-                            //sub->streams = std::make_shared<rs::streaming_lock>(sub->endpoint->open(profiles));
-                            /*sub->streams->play(
-                                [sub](rs::frame f)
+                            label = to_string() << "Play " << rs_subdevice_to_string(sub->subdevice);
+                            if (ImGui::Button(label.c_str()))
                             {
-                                if (sub->queues.size() < 2)
-                                    sub->queues.enqueue(std::move(f));
-                            });*/
+                                auto profiles = sub->get_selected_profiles();
+                                sub->streams = std::make_shared<rs::streaming_lock>(sub->endpoint->open(profiles));
+                                sub->streams->play(
+                                    [sub](rs::frame f)
+                                {
+                                    if (sub->queues.size() < 3)
+                                        sub->queues.enqueue(std::move(f));
+                                });
+                            }
+                        }
+                        else
+                        {
+                            label = to_string() << "Stop " << rs_subdevice_to_string(sub->subdevice);
+                            if (ImGui::Button(label.c_str()))
+                            {
+                                sub->queues.clear();
+                                sub->streams->stop();
+                                sub->streams.reset();
+                            }
                         }
                     }
-                    else
+                    catch(const rs::error& e)
                     {
-                        label = to_string() << "Stop " << rs_subdevice_to_string(sub->subdevice);
-                        if (ImGui::Button(label.c_str()))
-                        {
-                            sub->queues.clear();
-                            sub->streams->stop();
-                            sub->streams.reset();
-                        }
+                        error_message = error_to_string(e);
                     }
                 }
             }
@@ -675,13 +637,9 @@ int main(int, char**) try
             auto&& view_rect = kvp.second;
             auto stream = kvp.first;
             auto&& stream_size = model.stream_size[stream];
-
-            model.stream_buffers[stream].show(view_rect.x, view_rect.y, view_rect.w, view_rect.h,
-                stream_size.x,
-                stream_size.y,
-                model.get_stream_alpha(kvp.first));
-
             auto stream_rect = view_rect.adjust_ratio(model.stream_size[kvp.first]);
+
+            model.stream_buffers[stream].show(stream_rect, model.get_stream_alpha(kvp.first));
 
             flags = ImGuiWindowFlags_NoResize |
                 ImGuiWindowFlags_NoMove |

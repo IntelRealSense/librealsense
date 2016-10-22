@@ -4,53 +4,91 @@
 #define GLFW_INCLUDE_GLU
 #include <GLFW/glfw3.h>
 
-#include <sstream>
 #include <vector>
+#include <algorithm>
 
-inline void make_depth_histogram(uint8_t rgb_image[640*480*3], const uint16_t depth_image[], int width, int height)
+inline void make_depth_histogram(uint8_t rgb_image[640 * 480 * 3], const uint16_t depth_image[], int width, int height)
 {
     static uint32_t histogram[0x10000];
     memset(histogram, 0, sizeof(histogram));
 
-    for(int i = 0; i < width*height; ++i) ++histogram[depth_image[i]];
-    for(int i = 2; i < 0x10000; ++i) histogram[i] += histogram[i-1]; // Build a cumulative histogram for the indices in [1,0xFFFF]
-    for(int i = 0; i < 640*480; ++i)
+    for (int i = 0; i < width*height; ++i) ++histogram[depth_image[i]];
+    for (int i = 2; i < 0x10000; ++i) histogram[i] += histogram[i - 1]; // Build a cumulative histogram for the indices in [1,0xFFFF]
+    for (int i = 0; i < width*height; ++i)
     {
-        if(uint16_t d = depth_image[i])
+        if (uint16_t d = depth_image[i])
         {
             int f = histogram[d] * 255 / histogram[0xFFFF]; // 0-255 based on histogram location
-            rgb_image[i*3 + 0] = 255 - f;
-            rgb_image[i*3 + 1] = 0;
-            rgb_image[i*3 + 2] = f;
+            rgb_image[i * 3 + 0] = 255 - f;
+            rgb_image[i * 3 + 1] = 0;
+            rgb_image[i * 3 + 2] = f;
         }
         else
         {
-            rgb_image[i*3 + 0] = 20;
-            rgb_image[i*3 + 1] = 5;
-            rgb_image[i*3 + 2] = 0;
+            rgb_image[i * 3 + 0] = 20;
+            rgb_image[i * 3 + 1] = 5;
+            rgb_image[i * 3 + 2] = 0;
         }
     }
 }
 
-//////////////////////////////
-// Simple font loading code //
-//////////////////////////////
 
-#include "third_party/stb_easy_font.h"
-
-inline int get_text_width(const char * text)
+inline float clamp(float x, float min, float max)
 {
-    return stb_easy_font_width((char *)text);
+    return std::max(std::min(max, x), min);
 }
 
-inline void draw_text(int x, int y, const char * text)
+inline float smoothstep(float x, float min, float max)
 {
-    std::vector<char> buffer(60000); // ~300 chars
-    glEnableClientState(GL_VERTEX_ARRAY);
-    glVertexPointer(2, GL_FLOAT, 16, buffer.data());
-    glDrawArrays(GL_QUADS, 0, 4*stb_easy_font_print((float)x, (float)(y-7), (char *)text, nullptr, buffer.data(), (int)buffer.size()));
-    glDisableClientState(GL_VERTEX_ARRAY);
+    x = clamp((x - min) / (max - min), 0.0, 1.0);
+    return x*x*(3 - 2 * x);
 }
+
+inline float lerp(float a, float b, float t)
+{
+    return b * t + a * (1 - t);
+}
+
+struct float2
+{
+    float x, y;
+};
+struct rect
+{
+    float x, y;
+    float w, h;
+
+    bool operator==(const rect& other) const
+    {
+        return x == other.x && y == other.y && w == other.w && h == other.h;
+    }
+
+    rect center() const
+    {
+        return{ x + w / 2, y + h / 2, 0, 0 };
+    }
+
+    rect lerp(float t, const rect& other) const
+    {
+        return{
+            ::lerp(x, other.x, t), ::lerp(y, other.y, t),
+            ::lerp(w, other.w, t), ::lerp(h, other.h, t),
+        };
+    }
+
+    rect adjust_ratio(float2 size) const
+    {
+        auto H = static_cast<float>(h), W = static_cast<float>(h) * size.x / size.y;
+        if (W > w)
+        {
+            auto scale = w / W;
+            W *= scale;
+            H *= scale;
+        }
+
+        return{ x + (w - W) / 2, y + (h - H) / 2, W, H };
+    }
+};
 
 ////////////////////////
 // Image display code //
@@ -157,78 +195,31 @@ public:
         }
     }
 
-    void show(float rx, float ry, float rw, float rh, float alpha) const
+    void show(const rect& r, float alpha) const
     {
-
-
         glEnable(GL_BLEND);
 
         glBlendFunc(GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA);
         glBegin(GL_QUADS);
         glColor4f(1.0f, 1.0f, 1.0f, 1 - alpha);
-        glVertex2f(rx, ry);
-        glVertex2f(rx + rw, ry);
-        glVertex2f(rx + rw, ry + rh);
-        glVertex2f(rx, ry + rh);
+        glVertex2f(r.x, r.y);
+        glVertex2f(r.x + r.w, r.y);
+        glVertex2f(r.x + r.w, r.y + r.h);
+        glVertex2f(r.x, r.y + r.h);
         glEnd();
 
         glBindTexture(GL_TEXTURE_2D, texture);
         glEnable(GL_TEXTURE_2D);
         glBegin(GL_QUADS);
-        glTexCoord2f(0, 0); glVertex2f(rx, ry);
-        glTexCoord2f(1, 0); glVertex2f(rx + rw, ry);
-        glTexCoord2f(1, 1); glVertex2f(rx + rw, ry + rh);
-        glTexCoord2f(0, 1); glVertex2f(rx, ry + rh);
+        glTexCoord2f(0, 0); glVertex2f(r.x, r.y);
+        glTexCoord2f(1, 0); glVertex2f(r.x + r.w, r.y);
+        glTexCoord2f(1, 1); glVertex2f(r.x + r.w, r.y + r.h);
+        glTexCoord2f(0, 1); glVertex2f(r.x, r.y + r.h);
         glEnd();
         glDisable(GL_TEXTURE_2D);
         glBindTexture(GL_TEXTURE_2D, 0);
 
-
         glDisable(GL_BLEND);
-    }
-
-    void print(int x, int y, const char * text)
-    {
-        std::vector<char> buffer(20000); // ~100 chars
-
-        glEnableClientState(GL_VERTEX_ARRAY);
-        glVertexPointer(2, GL_FLOAT, 16, buffer.data());
-        glDrawArrays(GL_QUADS, 0, 4 * stb_easy_font_print((float)x, (float)y, (char *)text, nullptr, buffer.data(), (int)buffer.size()));
-        glDisableClientState(GL_VERTEX_ARRAY);
-    }
-
-    void show(rs::frame& frame, int rx, int ry, int rw, int rh)
-    {
-        upload(frame);
-
-        int width = frame.get_width(), height = frame.get_height();
-        float h = (float)rh, w = (float)rh * width / height;
-        if (w > rw)
-        {
-            float scale = rw / w;
-            w *= scale;
-            h *= scale;
-        }
-
-        show(rx + (rw - w) / 2, ry + (rh - h) / 2, w, h, 1.0f);
-        //std::ostringstream ss; ss << stream << ": " << width << " x " << height << " " << dev.get_stream_format(stream) << " (" << fps << "/" << dev.get_stream_framerate(stream) << ")" << ", F#: " << dev.get_frame_number(stream);
-        //glColor3f(0,0,0);
-        //draw_text(rx+9, ry+17, ss.str().c_str());
-        //glColor3f(1,1,1);
-        //draw_text(rx+8, ry+16, ss.str().c_str());
-    }
-
-    void show(int rx, int ry, int rw, int rh, int width, int height, float alpha)
-    {
-        float h = (float)rh, w = (float)rh * width / height;
-        if (w > rw)
-        {
-            float scale = rw / w;
-            w *= scale;
-            h *= scale;
-        }
-
-        show(rx + (rw - w) / 2, ry + (rh - h) / 2, w, h, alpha);
     }
 };
 

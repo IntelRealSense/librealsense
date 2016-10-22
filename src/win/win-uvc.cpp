@@ -631,8 +631,8 @@ namespace rsimpl
                     uint32_t device_fourcc = reinterpret_cast<const big_endian<uint32_t> &>(subtype.Data1);
 
                     if (device_fourcc != profile.format &&
-                        fourcc_map.count(device_fourcc) &&
-                        profile.format != fourcc_map.at(device_fourcc))
+                        (fourcc_map.count(device_fourcc) == 0 ||
+                         profile.format != fourcc_map.at(device_fourcc)))
                         continue;
 
                     unsigned int width;
