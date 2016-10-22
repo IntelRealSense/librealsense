@@ -17,62 +17,23 @@ namespace rsimpl
     class streaming_lock
     {
     public:
-        streaming_lock()
-            : _is_streaming(false), 
-              _callback(nullptr, [](rs_frame_callback*){}), 
-              _archive(&max_publish_list_size), _owner(nullptr)
-        {
-            
-        }
+        streaming_lock();
 
         void set_owner(const rs_stream_lock* owner) { _owner = owner; }
 
-        void play(frame_callback_ptr callback)
-        {
-            std::lock_guard<std::mutex> lock(_callback_mutex);
-            _callback = std::move(callback);
-            _is_streaming = true;
-        }
+        void play(frame_callback_ptr callback);
 
-        void stop()
-        {
-            _is_streaming = false;
-            flush();
-            std::lock_guard<std::mutex> lock(_callback_mutex);
-            _callback.reset();
-        }
+        void stop();
 
-        void release_frame(rs_frame_ref* frame)
-        {
-            _archive.release_frame_ref(frame);
-        }
+        void release_frame(rs_frame_ref* frame);
 
-        rs_frame_ref* alloc_frame(size_t size, frame_additional_data additional_data)
-        {
-            auto frame = _archive.alloc_frame(size, additional_data, true);
-            return _archive.track_frame(frame);
-        }
+        rs_frame_ref* alloc_frame(size_t size, frame_additional_data additional_data);
 
-        void invoke_callback(rs_frame_ref* frame_ref) const
-        {
-            if (frame_ref)
-            {
-                frame_ref->update_frame_callback_start_ts(std::chrono::high_resolution_clock::now());
-                //frame_ref->log_callback_start(capture_start_time);
-                //on_before_callback(streams[i], frame_ref, archive);
-                _callback->on_frame(_owner, frame_ref);
-            }
-        }
+        void invoke_callback(rs_frame_ref* frame_ref) const;
 
-        void flush()
-        {
-            _archive.flush();
-        }
+        void flush();
 
-        virtual ~streaming_lock()
-        {
-            stop();
-        }
+        virtual ~streaming_lock();
 
         bool is_streaming() const { return _is_streaming; }
 
@@ -90,37 +51,7 @@ namespace rsimpl
     public:
         virtual std::vector<uvc::stream_profile> get_stream_profiles() = 0;
 
-        std::vector<stream_request> get_principal_requests()
-        {
-            std::unordered_set<stream_request> results;
-
-            auto profiles = get_stream_profiles();
-            for (auto&& p : profiles)
-            {
-                native_pixel_format pf;
-                if (try_get_pf(p, pf))
-                {
-                    for (auto&& unpacker : pf.unpackers)
-                    {
-                        for (auto&& output : unpacker.outputs)
-                        {
-                            results.insert({ output.first, p.width, p.height, p.fps, output.second });
-                        }
-                    }
-                }
-                else
-                {
-                    LOG_WARNING("Unsupported pixel-format " << p.format);
-                }
-            }
-
-            std::vector<stream_request> res{ begin(results), end(results) };
-            std::sort(res.begin(), res.end(), [](const stream_request& a, const stream_request& b)
-            {
-                return a.width > b.width;
-            });
-            return res;
-        }
+        std::vector<stream_request> get_principal_requests();
 
         virtual std::shared_ptr<streaming_lock> configure(
             const std::vector<stream_request>& requests) = 0;
@@ -134,71 +65,9 @@ namespace rsimpl
 
     protected:
 
-        bool try_get_pf(const uvc::stream_profile& p, native_pixel_format& result) const
-        {
-            auto it = std::find_if(begin(_pixel_formats), end(_pixel_formats),
-                [&p](const native_pixel_format& pf)
-            {
-                return pf.fourcc == p.format;
-            });
-            if (it != end(_pixel_formats))
-            {
-                result = *it;
-                return true;
-            }
-            return false;
-        }
+        bool try_get_pf(const uvc::stream_profile& p, native_pixel_format& result) const;
 
-        std::vector<request_mapping> resolve_requests(std::vector<stream_request> requests)
-        {
-            std::unordered_set<request_mapping> results;
-
-            while (!requests.empty() && !_pixel_formats.empty())
-            {
-                auto max = 0;
-                auto best_pf = &_pixel_formats[0];
-                auto best_unpacker = &_pixel_formats[0].unpackers[0];
-                for (auto&& pf : _pixel_formats)
-                {
-                    for (auto&& unpacker : pf.unpackers)
-                    {
-                        auto count = static_cast<int>(std::count_if(begin(requests), end(requests),
-                            [&unpacker](const stream_request& r)
-                        {
-                            return unpacker.satisfies(r);
-                        }));
-                        if (count > max && unpacker.outputs.size() == count)
-                        {
-                            max = count;
-                            best_pf = &pf;
-                            best_unpacker = &unpacker;
-                        }
-                    }
-                }
-
-                if (max == 0) break;
-
-                requests.erase(std::remove_if(begin(requests), end(requests),
-                    [best_unpacker, best_pf, &results](const stream_request& r)
-                {
-                    if (best_unpacker->satisfies(r))
-                    {
-                        request_mapping mapping;
-                        mapping.profile = { r.width, r.height, r.fps, best_pf->fourcc };
-                        mapping.unpacker = best_unpacker;
-                        mapping.pf = best_pf;
-
-                        results.insert(mapping);
-                        return true;
-                    }
-                    return false;
-                }), end(requests));
-            }
-
-            if (requests.empty()) return{ begin(results), end(results) };
-
-            throw std::runtime_error("Subdevice unable to satisfy stream requests!");
-        }
+        std::vector<request_mapping> resolve_requests(std::vector<stream_request> requests);
 
     private:
         std::vector<native_pixel_format> _pixel_formats;
@@ -230,22 +99,9 @@ namespace rsimpl
 
         void stop_streaming();
     private:
-        void acquire_power()
-        {
-            std::lock_guard<std::mutex> lock(_power_lock);
-            if (!_user_count) 
-            {
-                _device->set_power_state(uvc::D0);
-                for (auto& xu : _xus) _device->init_xu(xu);
-            }
-            _user_count++;
-        }
-        void release_power()
-        {
-            std::lock_guard<std::mutex> lock(_power_lock);
-            _user_count--;
-            if (!_user_count) _device->set_power_state(uvc::D3);
-        }
+        void acquire_power();
+
+        void release_power();
 
         struct power
         {
