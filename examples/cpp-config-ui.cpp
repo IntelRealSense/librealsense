@@ -144,7 +144,7 @@ class subdevice_model
 {
 public:
     subdevice_model(rs_subdevice subdevice, rs::subdevice* endpoint, std::string& error_message)
-        : subdevice(subdevice), endpoint(endpoint)
+        : subdevice(subdevice), endpoint(endpoint), allow_new_frames(true)
     {
         for (auto i = 0; i < RS_OPTION_COUNT; i++)
         {
@@ -154,6 +154,7 @@ public:
             std::stringstream ss;
             ss << rs_subdevice_to_string(subdevice) << "/" << rs_option_to_string(opt);
             metadata.id = ss.str();
+            metadata.opt = opt;
 
             metadata.label = rs_option_to_string(opt);
 
@@ -233,6 +234,25 @@ public:
         return results;
     }
 
+    void stop()
+    {
+        allow_new_frames = false;
+        queues.clear();
+        if (current_stream) current_stream->stop();
+        current_stream.reset();
+    }
+
+    void play(const std::vector<rs::stream_profile>& profiles)
+    {
+        current_stream = std::make_shared<rs::streaming_lock>(endpoint->open(profiles));
+        current_stream->play(
+            [this](rs::frame f)
+        {
+            if (allow_new_frames && queues.size() < 3)
+                queues.enqueue(std::move(f));
+        });
+        allow_new_frames = true;
+    }
     rs_subdevice subdevice;
     rs::subdevice* endpoint;
 
@@ -249,7 +269,8 @@ public:
     std::vector<std::pair<int, int>> res_values;
     std::vector<int> fps_values;
     std::map<rs_stream, std::vector<rs_format>> format_values;
-    std::shared_ptr<rs::streaming_lock> streams;
+    std::shared_ptr<rs::streaming_lock> current_stream;
+    std::atomic<bool> allow_new_frames;
 
     std::vector<rs::stream_profile> profiles;
 
@@ -332,6 +353,7 @@ public:
     std::vector<std::shared_ptr<subdevice_model>> subdevices;
     std::map<rs_stream, texture_buffer> stream_buffers;
     std::map<rs_stream, float2> stream_size;
+    std::map<rs_stream, rs_format> stream_format;
     std::map<rs_stream, std::chrono::high_resolution_clock::time_point> steam_last_frame;
 
 private:
@@ -431,8 +453,7 @@ int main(int, char**) try
             {
                 for (auto&& sub : model.subdevices)
                 {
-                    sub->queues.clear();
-                    sub->streams.reset();
+                    sub->stop();
                 }
 
                 dev = ctx.create(list[device_index]);
@@ -478,7 +499,7 @@ int main(int, char**) try
                     ImGui::SameLine();
                     ImGui::PushItemWidth(-1);
                     label = to_string() << rs_subdevice_to_string(sub->subdevice) << " resolution";
-                    if (sub->streams.get()) ImGui::Text(res_chars[sub->selected_res_id]);
+                    if (sub->current_stream.get()) ImGui::Text(res_chars[sub->selected_res_id]);
                     else ImGui::Combo(label.c_str(), &sub->selected_res_id, res_chars.data(), 
                                       static_cast<int>(res_chars.size()));
                     ImGui::PopItemWidth();
@@ -487,7 +508,7 @@ int main(int, char**) try
                     ImGui::SameLine();
                     ImGui::PushItemWidth(-1);
                     label = to_string() << rs_subdevice_to_string(sub->subdevice) << " fps";
-                    if (sub->streams.get()) ImGui::Text(fps_chars[sub->selected_fps_id]);
+                    if (sub->current_stream.get()) ImGui::Text(fps_chars[sub->selected_fps_id]);
                     else ImGui::Combo(label.c_str(), &sub->selected_fps_id, fps_chars.data(), 
                                       static_cast<int>(fps_chars.size()));
                     ImGui::PopItemWidth();
@@ -507,7 +528,7 @@ int main(int, char**) try
                         if (live_streams > 1)
                         {
                             label = to_string() << rs_stream_to_string(stream) << " format:";
-                            if (sub->streams.get()) ImGui::Text(label.c_str());
+                            if (sub->current_stream.get()) ImGui::Text(label.c_str());
                             else ImGui::Checkbox(label.c_str(), &sub->stream_enabled[stream]);
                         }
                         else
@@ -522,7 +543,7 @@ int main(int, char**) try
                             ImGui::PushItemWidth(-1);
                             label = to_string() << rs_subdevice_to_string(sub->subdevice)
                                 << " " << rs_stream_to_string(stream) << " format";
-                            if (sub->streams.get()) ImGui::Text(formats_chars[sub->selected_format_id[stream]]);
+                            if (sub->current_stream.get()) ImGui::Text(formats_chars[sub->selected_format_id[stream]]);
                             else ImGui::Combo(label.c_str(), &sub->selected_format_id[stream], formats_chars.data(),
                                 static_cast<int>(formats_chars.size()));
                             ImGui::PopItemWidth();
@@ -535,19 +556,12 @@ int main(int, char**) try
 
                     try
                     {
-                        if (!sub->streams.get())
+                        if (!sub->current_stream.get())
                         {
                             label = to_string() << "Play " << rs_subdevice_to_string(sub->subdevice);
                             if (ImGui::Button(label.c_str()))
                             {
-                                auto profiles = sub->get_selected_profiles();
-                                sub->streams = std::make_shared<rs::streaming_lock>(sub->endpoint->open(profiles));
-                                sub->streams->play(
-                                    [sub](rs::frame f)
-                                {
-                                    if (sub->queues.size() < 3)
-                                        sub->queues.enqueue(std::move(f));
-                                });
+                                sub->play(sub->get_selected_profiles());
                             }
                         }
                         else
@@ -555,9 +569,7 @@ int main(int, char**) try
                             label = to_string() << "Stop " << rs_subdevice_to_string(sub->subdevice);
                             if (ImGui::Button(label.c_str()))
                             {
-                                sub->queues.clear();
-                                sub->streams->stop();
-                                sub->streams.reset();
+                                sub->stop();
                             }
                         }
                     }
@@ -615,6 +627,7 @@ int main(int, char**) try
                 model.steam_last_frame[f.get_stream_type()] = std::chrono::high_resolution_clock::now();
                 model.stream_size[f.get_stream_type()] = { static_cast<float>(f.get_width()),
                                                            static_cast<float>(f.get_height()) };
+                model.stream_format[f.get_stream_type()] = f.get_format();
             }
 
         }
@@ -653,7 +666,8 @@ int main(int, char**) try
             ImGui::Begin(label.c_str(), nullptr, flags);
 
             label = to_string() << rs_stream_to_string(kvp.first) << " "
-                << stream_size.x << "x" << stream_size.y;
+                << stream_size.x << "x" << stream_size.y << ", " 
+                << rs_format_to_string(model.stream_format[stream]);
             ImGui::Text(label.c_str());
             ImGui::End();
             ImGui::PopStyleColor();
@@ -666,8 +680,7 @@ int main(int, char**) try
 
     for (auto&& sub : model.subdevices)
     {
-        sub->queues.clear();
-        sub->streams.reset();
+        sub->stop();
     }
 
     // Cleanup

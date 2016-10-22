@@ -22,7 +22,7 @@ namespace rsimpl
         streaming_lock()
             : _callback(nullptr, [](rs_frame_callback*){}), 
               _archive(&max_publish_list_size), 
-              _owner(nullptr)
+              _owner(nullptr), _is_streaming(false)
         {
             
         }
@@ -33,10 +33,12 @@ namespace rsimpl
         {
             std::lock_guard<std::mutex> lock(_callback_mutex);
             _callback = std::move(callback);
+            _is_streaming = true;
         }
 
         void stop()
         {
+            _is_streaming = false;
             flush();
             std::lock_guard<std::mutex> lock(_callback_mutex);
             _callback.reset();
@@ -74,7 +76,10 @@ namespace rsimpl
             stop();
         }
 
+        bool is_streaming() const { return _is_streaming; }
+
     private:
+        std::atomic<bool> _is_streaming;
         std::mutex _callback_mutex;
         frame_callback_ptr _callback;
         frame_archive _archive;
@@ -86,7 +91,6 @@ namespace rsimpl
     {
     public:
         virtual std::vector<uvc::stream_profile> get_stream_profiles() = 0;
-
 
         std::vector<stream_request> get_principal_requests()
         {
@@ -128,9 +132,13 @@ namespace rsimpl
             _pixel_formats.push_back(pf);
         }
 
+        virtual ~endpoint() = default;
+
+    protected:
+
         bool try_get_pf(const uvc::stream_profile& p, native_pixel_format& result) const
         {
-            auto it = std::find_if(begin(_pixel_formats), end(_pixel_formats), 
+            auto it = std::find_if(begin(_pixel_formats), end(_pixel_formats),
                 [&p](const native_pixel_format& pf)
             {
                 return pf.fourcc == p.format;
@@ -194,8 +202,6 @@ namespace rsimpl
             throw std::runtime_error("Subdevice unable to satisfy stream requests!");
         }
 
-        virtual ~endpoint() = default;
-
     private:
         std::vector<native_pixel_format> _pixel_formats;
     };
@@ -228,7 +234,7 @@ namespace rsimpl
     private:
         void acquire_power()
         {
-            //std::lock_guard<std::mutex> lock(_power_lock);
+            std::lock_guard<std::mutex> lock(_power_lock);
             if (!_user_count) 
             {
                 _device->set_power_state(uvc::D0);
@@ -238,7 +244,7 @@ namespace rsimpl
         }
         void release_power()
         {
-            //std::lock_guard<std::mutex> lock(_power_lock);
+            std::lock_guard<std::mutex> lock(_power_lock);
             _user_count--;
             if (!_user_count) _device->set_power_state(uvc::D3);
         }
@@ -274,10 +280,9 @@ namespace rsimpl
         };
 
         std::shared_ptr<uvc::uvc_device> _device;
-        //device* _owner;
         int _user_count = 0;
-        //std::mutex _power_lock;
-        //std::mutex _configure_lock;
+        std::mutex _power_lock;
+        std::mutex _configure_lock;
         std::vector<uvc::stream_profile> _configuration;
         std::vector<uvc::extension_unit> _xus;
     };

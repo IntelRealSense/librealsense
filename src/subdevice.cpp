@@ -18,7 +18,7 @@ std::vector<uvc::stream_profile> uvc_endpoint::get_stream_profiles()
 std::shared_ptr<streaming_lock> uvc_endpoint::configure(
     const std::vector<stream_request>& requests)
 {
-    //std::lock_guard<std::mutex> lock(_configure_lock);
+    std::lock_guard<std::mutex> lock(_configure_lock);
     std::shared_ptr<uvc_streaming_lock> streaming(new uvc_streaming_lock(this));
     power on(this);
 
@@ -32,7 +32,7 @@ std::shared_ptr<streaming_lock> uvc_endpoint::configure(
             auto&& unpacker = *mode.unpacker;
 
             auto stream = stream_ptr.lock();
-            if (stream)
+            if (stream && stream->is_streaming())
             {
                 auto now = std::chrono::system_clock::now().time_since_epoch();
                 auto sys_time = std::chrono::duration_cast<std::chrono::milliseconds>(now).count();
@@ -100,6 +100,7 @@ std::shared_ptr<streaming_lock> uvc_endpoint::configure(
 
                 // Unpack the frame
                 //if (requires_processing)
+                if (dest.size() > 0)
                 {
                     unpacker.unpack(dest.data(), reinterpret_cast<const byte *>(f.pixels), width * height);
                 }
@@ -126,7 +127,7 @@ std::shared_ptr<streaming_lock> uvc_endpoint::configure(
 
 void uvc_endpoint::stop_streaming()
 {
-    //std::lock_guard<std::mutex> lock(_configure_lock);
+    std::lock_guard<std::mutex> lock(_configure_lock);
     for (auto& profile : _configuration)
     {
         _device->stop(profile);
