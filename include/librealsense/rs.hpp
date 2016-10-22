@@ -35,17 +35,6 @@ namespace rs
     class device;
     class subdevice;
 
-    class device_info
-    {
-    public:
-
-    private:
-        friend context;
-        explicit device_info(std::shared_ptr<rs_device_info> info) : _info(info) {}
-        
-        std::shared_ptr<rs_device_info> _info;
-    };
-
     struct stream_profile
     {
         rs_stream stream;
@@ -213,10 +202,10 @@ namespace rs
     class streaming_lock
     {
     public:
-        void play(std::function<void(frame)> callback) const
+        void start(std::function<void(frame)> callback) const
         {
             rs_error * e = nullptr;
-            rs_play_cpp(_lock.get(), new frame_callback(callback), &e);
+            rs_start_cpp(_lock.get(), new frame_callback(callback), &e);
             error::handle(e);
         }
 
@@ -435,41 +424,30 @@ namespace rs
             error::handle(e);
         }
 
-        std::vector<device_info> query_devices() const
+        std::vector<device> query_devices() const
         {
             rs_error* e = nullptr;
-            std::shared_ptr<rs_device_info_list> list(
+            std::shared_ptr<rs_device_list> list(
                 rs_query_devices(_context.get(), &e),
-                rs_delete_device_info_list);
+                rs_delete_device_list);
             error::handle(e);
 
             auto size = rs_get_device_list_size(list.get(), &e);
             error::handle(e);
 
-            std::vector<device_info> results;
+            std::vector<device> results;
             for (auto i = 0; i < size; i++)
             {
-                std::shared_ptr<rs_device_info> info(
-                    rs_get_device_info(list.get(), i, &e),
-                    rs_delete_device_info);
+                std::shared_ptr<rs_device> dev(
+                    rs_create_device(list.get(), i, &e),
+                    rs_delete_device);
                 error::handle(e);
 
-                device_info rs_info(info);
-                results.push_back(rs_info);
+                device rs_dev(dev);
+                results.push_back(rs_dev);
             }
 
             return results;
-        }
-
-        device create(const device_info& info) const
-        {
-            rs_error* e = nullptr;
-            std::shared_ptr<rs_device> dev(
-                rs_create_device(_context.get(), info._info.get(), &e),
-                rs_delete_device);
-            error::handle(e);
-            device result(dev);
-            return result;
         }
 
     private:

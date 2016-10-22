@@ -39,16 +39,15 @@ struct rs_device
     std::shared_ptr<rsimpl::device> device;
 };
 
-struct rs_device_info_list
-{
-    std::vector<std::shared_ptr<rsimpl::device_info>> list;
-};
-
 struct rs_context
 {
-    rs_context() : ctx() {}
+    std::shared_ptr<rsimpl::context> ctx;
+};
 
-    rsimpl::context ctx;
+struct rs_device_list
+{
+    std::shared_ptr<rsimpl::context> ctx;
+    std::vector<std::shared_ptr<rsimpl::device_info>> list;
 };
 
 // This facility allows for translation of exceptions to rs_error structs at the API boundary
@@ -129,7 +128,7 @@ rs_context * rs_create_context(int api_version, rs_error ** error) try
             report_version_mismatch(runtime_api_version, api_version);
     }
 
-    return new rs_context();
+    return new rs_context{ std::make_shared<rsimpl::context>() };
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, api_version)
 
@@ -140,49 +139,34 @@ void rs_delete_context(rs_context * context) try
 }
 catch(...) {}
 
-rs_device_info_list* rs_query_devices(const rs_context* context, rs_error** error) try
+rs_device_list* rs_query_devices(const rs_context* context, rs_error** error) try
 {
     VALIDATE_NOT_NULL(context);
-    return new rs_device_info_list{ context->ctx.query_devices() };
+    return new rs_device_list{ context->ctx, context->ctx->query_devices() };
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, context)
 
-int rs_get_device_list_size(const rs_device_info_list* info_list, rs_error** error) try
+int rs_get_device_list_size(const rs_device_list* list, rs_error** error) try
 {
-    VALIDATE_NOT_NULL(info_list);
-    return static_cast<int>(info_list->list.size());
+    VALIDATE_NOT_NULL(list);
+    return static_cast<int>(list->list.size());
 }
-HANDLE_EXCEPTIONS_AND_RETURN(0, info_list)
+HANDLE_EXCEPTIONS_AND_RETURN(0, list)
 
-void rs_delete_device_info_list(rs_device_info_list* info_list) try
+void rs_delete_device_list(rs_device_list* list) try
 {
-    VALIDATE_NOT_NULL(info_list);
-    delete info_list;
+    VALIDATE_NOT_NULL(list);
+    delete list;
 }
 catch (...) {}
 
-rs_device_info* rs_get_device_info(const rs_device_info_list* info_list, int index, rs_error** error) try
+rs_device* rs_create_device(const rs_device_list* list, int index, rs_error** error) try
 {
-    VALIDATE_NOT_NULL(info_list);
-    VALIDATE_RANGE(index, 0, info_list->list.size() - 1);
-    return new rs_device_info{ info_list->list[index]->clone() };
+    VALIDATE_NOT_NULL(list);
+    VALIDATE_RANGE(index, 0, list->list.size() - 1);
+    return new rs_device{ list->list[index]->create(list->ctx->get_backend()) };
 }
-HANDLE_EXCEPTIONS_AND_RETURN(nullptr, info_list, index)
-
-void rs_delete_device_info(rs_device_info* info_list) try
-{
-    VALIDATE_NOT_NULL(info_list);
-    delete info_list;
-}
-catch (...) {}
-
-rs_device* rs_create_device(const rs_context* context, const rs_device_info* info, rs_error** error) try
-{
-    VALIDATE_NOT_NULL(context);
-    VALIDATE_NOT_NULL(info);
-    return new rs_device{ info->info->create(context->ctx.get_backend()) };
-}
-HANDLE_EXCEPTIONS_AND_RETURN(nullptr, context, info)
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, list, index)
 
 void rs_delete_device(rs_device* device) try
 {
@@ -525,7 +509,7 @@ void rs_get_motion_intrinsics(const rs_device * device, rs_motion_intrinsics * i
 HANDLE_EXCEPTIONS_AND_RETURN(, device, intrinsic)
 */
 
-void rs_play(rs_stream_lock* lock, rs_frame_callback_ptr on_frame, void * user, rs_error ** error) try
+void rs_start(rs_stream_lock* lock, rs_frame_callback_ptr on_frame, void * user, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(lock);
     VALIDATE_NOT_NULL(on_frame);
@@ -536,7 +520,7 @@ void rs_play(rs_stream_lock* lock, rs_frame_callback_ptr on_frame, void * user, 
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, lock, on_frame, user)
 
-void rs_play_cpp(rs_stream_lock* lock, rs_frame_callback * callback, rs_error ** error) try
+void rs_start_cpp(rs_stream_lock* lock, rs_frame_callback * callback, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(lock);
     VALIDATE_NOT_NULL(callback);

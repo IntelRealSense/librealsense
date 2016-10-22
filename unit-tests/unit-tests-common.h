@@ -349,7 +349,7 @@ inline void test_frame_callback(rs_device * device, std::initializer_list<stream
         data.duration_per_stream[mode.stream].first_frame_to_capture = (uint32_t)(data.duration_per_stream[mode.stream].actual_frames_to_receive*0.1);   // Skip the first 10% of frames
         data.duration_per_stream[mode.stream].frames_to_capture = data.duration_per_stream[mode.stream].actual_frames_to_receive - data.duration_per_stream[mode.stream].first_frame_to_capture;
         REQUIRE( rs_is_stream_enabled(device, mode.stream, require_no_error()) == 1 );
-        rs_play(device, mode.stream, frame_callback, &data, require_no_error());
+        rs_start(device, mode.stream, frame_callback, &data, require_no_error());
     }
 
     rs_start_device(device, require_no_error());

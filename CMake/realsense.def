@@ -6,10 +6,7 @@ EXPORTS
     
     rs_query_devices
     rs_get_device_list_size
-    rs_delete_device_info_list
-
-    rs_get_device_info
-    rs_delete_device_info
+    rs_delete_device_list
 
     rs_create_device
     rs_delete_device
@@ -24,8 +21,8 @@ EXPORTS
     rs_open_subdevice
     rs_release_streaming_lock
 
-    rs_play
-    rs_play_cpp
+    rs_start
+    rs_start_cpp
     rs_stop
 
     rs_get_frame_metadata

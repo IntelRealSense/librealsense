@@ -190,8 +190,7 @@ typedef struct rs_extrinsics
 
 
 typedef struct rs_context rs_context;
-typedef struct rs_device_info rs_device_info;
-typedef struct rs_device_info_list rs_device_info_list;
+typedef struct rs_device_list rs_device_list;
 typedef struct rs_device rs_device;
 typedef struct rs_error rs_error;
 typedef struct rs_stream_lock rs_stream_lock;
@@ -207,14 +206,11 @@ typedef void (*rs_log_callback_ptr)(rs_log_severity min_severity, const char* me
 rs_context* rs_create_context(int api_version, rs_error** error);
 void rs_delete_context(rs_context* context);
 
-rs_device_info_list* rs_query_devices(const rs_context* context, rs_error** error);
-int rs_get_device_list_size(const rs_device_info_list* info_list, rs_error** error);
-void rs_delete_device_info_list(rs_device_info_list* info_list);
+rs_device_list* rs_query_devices(const rs_context* context, rs_error** error);
+int rs_get_device_list_size(const rs_device_list* info_list, rs_error** error);
+void rs_delete_device_list(rs_device_list* info_list);
 
-rs_device_info* rs_get_device_info(const rs_device_info_list* info_list, int index, rs_error** error);
-void rs_delete_device_info(rs_device_info* info_list);
-
-rs_device* rs_create_device(const rs_context* context, const rs_device_info* info, rs_error** error);
+rs_device* rs_create_device(const rs_device_list* list, int index, rs_error** error);
 void rs_delete_device(rs_device* device);
 
 int rs_is_subdevice_supported(const rs_device* device, rs_subdevice subdevice, rs_error** error);
@@ -228,8 +224,8 @@ rs_stream_lock* rs_open_subdevice(rs_device* device, rs_subdevice subdevice,
     const rs_stream* stream, const int* width, const int* height, const int* fps, const rs_format* format, int count, rs_error** error);
 void rs_release_streaming_lock(rs_stream_lock* lock);
 
-void rs_play(rs_stream_lock* lock, rs_frame_callback_ptr on_frame, void* user, rs_error** error);
-void rs_play_cpp(rs_stream_lock* lock, rs_frame_callback* callback, rs_error** error);
+void rs_start(rs_stream_lock* lock, rs_frame_callback_ptr on_frame, void* user, rs_error** error);
+void rs_start_cpp(rs_stream_lock* lock, rs_frame_callback* callback, rs_error** error);
 void rs_stop(rs_stream_lock* lock, rs_error** error);
 
 double rs_get_frame_metadata(const rs_frame_ref* frame, rs_frame_metadata frame_metadata, rs_error** error);

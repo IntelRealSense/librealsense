@@ -245,7 +245,7 @@ public:
     void play(const std::vector<rs::stream_profile>& profiles)
     {
         current_stream = std::make_shared<rs::streaming_lock>(endpoint->open(profiles));
-        current_stream->play(
+        current_stream->start(
             [this](rs::frame f)
         {
             if (allow_new_frames && queues.size() < 3)
@@ -411,14 +411,14 @@ int main(int, char**) try
     rs::context ctx;
     auto device_index = 0;
     auto list = ctx.query_devices();
-    auto dev = ctx.create(list[device_index]);
+    auto dev = list[device_index];
     std::vector<std::string> device_names;
 
     std::string error_message = "";
 
     for (auto&& l : list)
     {
-        auto d = ctx.create(l);
+        auto d = list[device_index];
         auto name = d.get_camera_info(RS_CAMERA_INFO_DEVICE_NAME);
         auto serial = d.get_camera_info(RS_CAMERA_INFO_DEVICE_SERIAL_NUMBER);
         device_names.push_back(to_string() << name << " Sn#" << serial);
@@ -457,7 +457,7 @@ int main(int, char**) try
                     sub->stop();
                 }
 
-                dev = ctx.create(list[device_index]);
+                dev = list[device_index];
                 model = device_model(dev, error_message);
             }
             ImGui::PopItemWidth();
