@@ -11,6 +11,8 @@
 #include <strmif.h>
 #include <Ks.h>
 #include <ksproxy.h>
+#include <unordered_map>
+#include <mutex>
 
 namespace rsimpl
 {
@@ -78,7 +80,7 @@ namespace rsimpl
 
             CComPtr<IAMCameraControl>               _camera_control = nullptr;
             CComPtr<IAMVideoProcAmp>                _video_proc = nullptr;
-            std::map<int, CComPtr<IKsControl>>      _ks_controls;
+            std::unordered_map<int, CComPtr<IKsControl>>      _ks_controls;
 
             manual_reset_event                      _is_flushed;
 

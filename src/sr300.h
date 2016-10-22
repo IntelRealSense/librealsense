@@ -10,6 +10,7 @@
 #include "backend.h"
 #include "ivcam-private.h"
 #include "hw-monitor.h"
+#include "image.h"
 
 namespace rsimpl
 {
@@ -51,9 +52,13 @@ namespace rsimpl
             using namespace ivcam;
 
             // create uvc-endpoint from backend uvc-device
-            auto color_ep = std::make_shared<uvc_endpoint>(backend.create_uvc_device(color), this);
-            auto depth_ep = std::make_shared<uvc_endpoint>(backend.create_uvc_device(depth), this);
+            auto color_ep = std::make_shared<uvc_endpoint>(backend.create_uvc_device(color));
+            auto depth_ep = std::make_shared<uvc_endpoint>(backend.create_uvc_device(depth));
             depth_ep->register_xu(depth_xu); // make sure the XU is initialized everytime we power the camera
+            depth_ep->register_pixel_format(pf_invz);
+            depth_ep->register_pixel_format(pf_sr300_inzi);
+            depth_ep->register_pixel_format(pf_sr300_invi);
+            color_ep->register_pixel_format(pf_yuy2);
 
             auto fw_version = get_firmware_version_string();
             auto serial = get_module_serial_string();
@@ -69,9 +74,6 @@ namespace rsimpl
             // map subdevice to endpoint
             assign_endpoint(RS_SUBDEVICE_COLOR, color_ep);
             assign_endpoint(RS_SUBDEVICE_DEPTH, depth_ep);
-
-            // map formats, based on FW spec
-            map_output(RS_FORMAT_Z16, RS_STREAM_DEPTH, "{5A564E49-2D90-4A58-920B-773F1F2C556B}");
 
             register_pu(RS_SUBDEVICE_COLOR, RS_OPTION_COLOR_BACKLIGHT_COMPENSATION);
             register_pu(RS_SUBDEVICE_COLOR, RS_OPTION_COLOR_BRIGHTNESS);
@@ -103,6 +105,7 @@ namespace rsimpl
             set_pose(RS_SUBDEVICE_COLOR, { { { 1,0,0 },{ 0,1,0 },{ 0,0,1 } },{ 0,0,0 } });
             set_depth_scale((c.Rmax / 0xFFFF) * 0.001f);
         }
+
     private:
         hw_monitor _hw_monitor;
 

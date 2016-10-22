@@ -8,11 +8,13 @@
 #endif
 
 #include "win-uvc.h"
+#include "../types.h"
 
 #include "Shlwapi.h"
 #include <Windows.h>
 #include "mfapi.h"
 #include <vidcap.h>
+
 
 #pragma comment(lib, "Shlwapi.lib")
 #pragma comment(lib, "mf.lib")
@@ -29,10 +31,19 @@ namespace rsimpl
 {
     namespace uvc
     {
+        // we are using standard fourcc codes to represent formats, while MF is using GUIDs
+        // occasionally there is a mismatch between the code and the guid data
+        const std::unordered_map<uint32_t, uint32_t> fourcc_map = {
+            { 0x59382020, 0x47524559 },    /* 'GREY' => 'Y8  ' */
+            { 0x52573130, 0x70524141 },    /* 'pRAA' => 'RW10'.*/
+            { 0x32000000, 0x47524559 },    /* 'GREY' => 'L8  '   */
+            { 0x50000000, 0x5a313620 }     /* 'Z16' => 'D16 '    */
+        };
+
         class source_reader_callback : public IMFSourceReaderCallback
         {
         public:
-            explicit source_reader_callback(std::weak_ptr<wmf_uvc_device> owner) 
+            explicit source_reader_callback(std::weak_ptr<wmf_uvc_device> owner)
                 : _owner(owner)
             {
             }
@@ -63,11 +74,11 @@ namespace rsimpl
                 return count;
             }
 
-            STDMETHODIMP OnReadSample(HRESULT /*hrStatus*/, 
-                                      DWORD dwStreamIndex, 
-                                      DWORD /*dwStreamFlags*/, 
-                                      LONGLONG /*llTimestamp*/, 
-                                      IMFSample *sample) override
+            STDMETHODIMP OnReadSample(HRESULT /*hrStatus*/,
+                DWORD dwStreamIndex,
+                DWORD /*dwStreamFlags*/,
+                LONGLONG /*llTimestamp*/,
+                IMFSample *sample) override
             {
                 auto owner = _owner.lock();
                 if (owner)
@@ -101,7 +112,7 @@ namespace rsimpl
                         }
                     }
                 }
-                
+
                 return S_OK;
             };
             STDMETHODIMP OnEvent(DWORD /*sidx*/, IMFMediaEvent* /*event*/) override { return S_OK; }
@@ -141,25 +152,25 @@ namespace rsimpl
         {
             // Attempt to retrieve IKsControl
             CComPtr<IKsTopologyInfo> ks_topology_info = nullptr;
-            CHECK_HR(_source->QueryInterface(__uuidof(IKsTopologyInfo), 
-                     reinterpret_cast<void **>(&ks_topology_info)));
+            CHECK_HR(_source->QueryInterface(__uuidof(IKsTopologyInfo),
+                reinterpret_cast<void **>(&ks_topology_info)));
 
             GUID node_type;
             CHECK_HR(ks_topology_info->get_NodeType(xu.node, &node_type));
-            const GUID KSNODETYPE_DEV_SPECIFIC_LOCAL{ 
+            const GUID KSNODETYPE_DEV_SPECIFIC_LOCAL{
                 0x941C7AC0L, 0xC559, 0x11D0,
-                { 0x8A, 0x2B, 0x00, 0xA0, 0xC9, 0x25, 0x5A, 0xC1 } 
+                { 0x8A, 0x2B, 0x00, 0xA0, 0xC9, 0x25, 0x5A, 0xC1 }
             };
-            if (node_type != KSNODETYPE_DEV_SPECIFIC_LOCAL) 
-                throw std::runtime_error(to_string() << 
+            if (node_type != KSNODETYPE_DEV_SPECIFIC_LOCAL)
+                throw std::runtime_error(to_string() <<
                     "Invalid extension unit node ID: " << xu.node);
 
             CComPtr<IUnknown> unknown;
-            CHECK_HR(ks_topology_info->CreateNodeInstance(xu.node, IID_IUnknown, 
+            CHECK_HR(ks_topology_info->CreateNodeInstance(xu.node, IID_IUnknown,
                 reinterpret_cast<LPVOID *>(&unknown)));
 
             CComPtr<IKsControl> ks_control;
-            CHECK_HR(unknown->QueryInterface(__uuidof(IKsControl), 
+            CHECK_HR(unknown->QueryInterface(__uuidof(IKsControl),
                 reinterpret_cast<void **>(&ks_control)));
             LOG_INFO("Obtained KS control node " << xu.node);
             _ks_controls[xu.node] = ks_control;
@@ -177,7 +188,7 @@ namespace rsimpl
             node.NodeId = xu.node;
 
             ULONG bytes_received = 0;
-            CHECK_HR(ks_control->KsProperty(reinterpret_cast<PKSPROPERTY>(&node), 
+            CHECK_HR(ks_control->KsProperty(reinterpret_cast<PKSPROPERTY>(&node),
                 sizeof(KSP_NODE), (void*)data, len, &bytes_received));
         }
 
@@ -193,9 +204,9 @@ namespace rsimpl
             node.NodeId = xu.node;
 
             ULONG bytes_received = 0;
-            CHECK_HR(ks_control->KsProperty(reinterpret_cast<PKSPROPERTY>(&node), 
+            CHECK_HR(ks_control->KsProperty(reinterpret_cast<PKSPROPERTY>(&node),
                 sizeof(node), data, len, &bytes_received));
-            if (bytes_received != len) 
+            if (bytes_received != len)
                 throw std::runtime_error("XU read did not return enough data");
         }
 
@@ -367,7 +378,7 @@ namespace rsimpl
         control_range wmf_uvc_device::get_pu_range(rs_option opt) const
         {
             control_range result;
-            if (opt == RS_OPTION_COLOR_ENABLE_AUTO_EXPOSURE || 
+            if (opt == RS_OPTION_COLOR_ENABLE_AUTO_EXPOSURE ||
                 opt == RS_OPTION_COLOR_ENABLE_AUTO_WHITE_BALANCE)
             {
                 result.min = 0;
@@ -414,7 +425,7 @@ namespace rsimpl
             UINT32 numDevices;
             CHECK_HR(MFEnumDeviceSources(pAttributes, &ppDevices, &numDevices));
 
-            for (UINT32 i = 0; i<numDevices; ++i)
+            for (UINT32 i = 0; i < numDevices; ++i)
             {
                 CComPtr<IMFActivate> pDevice;
                 *&pDevice = ppDevices[i];
@@ -436,7 +447,7 @@ namespace rsimpl
                 {
                     action(info, ppDevices[i]);
                 }
-                catch(...)
+                catch (...)
                 {
                     // TODO
                 }
@@ -449,8 +460,8 @@ namespace rsimpl
         {
             if (_power_state != D0 && state == D0)
             {
-                foreach_uvc_device([this](const uvc_device_info& i, 
-                                          IMFActivate* device)
+                foreach_uvc_device([this](const uvc_device_info& i,
+                    IMFActivate* device)
                 {
                     if (i == _info && device)
                     {
@@ -467,16 +478,16 @@ namespace rsimpl
                         CHECK_HR(MFCreateAttributes(&_reader_attrs, 2));
                         CHECK_HR(_reader_attrs->SetUINT32(MF_SOURCE_READER_DISCONNECT_MEDIASOURCE_ON_SHUTDOWN, FALSE));
                         CHECK_HR(_reader_attrs->SetUnknown(MF_SOURCE_READER_ASYNC_CALLBACK,
-                                                           static_cast<IUnknown*>(_callback)));
+                            static_cast<IUnknown*>(_callback)));
 
                         CHECK_HR(_reader_attrs->SetUINT32(MF_READWRITE_ENABLE_HARDWARE_TRANSFORMS, TRUE));
                         CHECK_HR(_activate->ActivateObject(IID_IMFMediaSource, reinterpret_cast<void **>(&_source)));
                         CHECK_HR(MFCreateSourceReaderFromMediaSource(_source, _reader_attrs, &_reader));
 
-                        _source->QueryInterface(__uuidof(IAMCameraControl), 
-                                                reinterpret_cast<void **>(&_camera_control.p));
-                        _source->QueryInterface(__uuidof(IAMVideoProcAmp), 
-                                                reinterpret_cast<void **>(&_video_proc.p));
+                        _source->QueryInterface(__uuidof(IAMCameraControl),
+                            reinterpret_cast<void **>(&_camera_control.p));
+                        _source->QueryInterface(__uuidof(IAMVideoProcAmp),
+                            reinterpret_cast<void **>(&_video_proc.p));
 
                         UINT32 streamIndex;
                         CHECK_HR(_device_attrs->GetCount(&streamIndex));
@@ -545,26 +556,22 @@ namespace rsimpl
                     CHECK_HR(MFGetAttributeRatio(pMediaType, MF_MT_FRAME_RATE_RANGE_MIN, &frameRateMin.numerator, &frameRateMin.denominator));
                     CHECK_HR(MFGetAttributeRatio(pMediaType, MF_MT_FRAME_RATE_RANGE_MAX, &frameRateMax.numerator, &frameRateMax.denominator));
 
-                    if (static_cast<float>(frameRateMax.numerator) / frameRateMax.denominator < 
+                    if (static_cast<float>(frameRateMax.numerator) / frameRateMax.denominator <
                         static_cast<float>(frameRateMin.numerator) / frameRateMin.denominator)
                     {
                         std::swap(frameRateMax, frameRateMin);
                     }
                     int currFps = frameRateMax.numerator / frameRateMax.denominator;
 
-                    OLECHAR* bstrGuid;
-                    CHECK_HR(StringFromCLSID(subtype, &bstrGuid));
-                    char ch[260];
-                    auto DefChar = ' ';
-                    WideCharToMultiByte(CP_ACP, 0, bstrGuid, -1, ch, 260, &DefChar, nullptr);
-
-                    std::string format(ch);
+                    uint32_t device_fourcc = reinterpret_cast<const big_endian<uint32_t> &>(subtype.Data1);
+                    if (fourcc_map.count(device_fourcc))
+                        device_fourcc = fourcc_map.at(device_fourcc);
 
                     stream_profile sp;
                     sp.width = width;
                     sp.height = height;
                     sp.fps = currFps;
-                    sp.format = format;
+                    sp.format = device_fourcc;
                     results.push_back(sp);
                 }
             }
@@ -572,10 +579,10 @@ namespace rsimpl
         }
 
         wmf_uvc_device::wmf_uvc_device(const uvc_device_info& info,
-                                       std::shared_ptr<const wmf_backend> backend)
+            std::shared_ptr<const wmf_backend> backend)
             : _info(info), _is_flushed(), _backend(std::move(backend)),
-              _systemwide_lock(info.unique_id.c_str(), WAIT_FOR_MUTEX_TIME_OUT),
-              _location("")
+            _systemwide_lock(info.unique_id.c_str(), WAIT_FOR_MUTEX_TIME_OUT),
+            _location("")
         {
             if (!is_connected(info))
             {
@@ -585,7 +592,7 @@ namespace rsimpl
             {
                 _location = get_usb_port_id(info.vid, info.pid, info.unique_id);
             }
-            catch(...){}
+            catch (...) {}
         }
 
         wmf_uvc_device::~wmf_uvc_device()
@@ -604,10 +611,6 @@ namespace rsimpl
         {
             check_connection();
 
-            GUID formatGuid;
-            std::wstring formatWStr(profile.format.begin(), profile.format.end());
-            CHECK_HR(CLSIDFromString(formatWStr.c_str(), static_cast<LPCLSID>(&formatGuid)));
-
             set_power_state(D0);
 
             CComPtr<IMFMediaType> pMediaType = nullptr;
@@ -625,6 +628,13 @@ namespace rsimpl
                     GUID subtype;
                     CHECK_HR(pMediaType->GetGUID(MF_MT_SUBTYPE, &subtype));
 
+                    uint32_t device_fourcc = reinterpret_cast<const big_endian<uint32_t> &>(subtype.Data1);
+
+                    if (device_fourcc != profile.format &&
+                        fourcc_map.count(device_fourcc) &&
+                        profile.format != fourcc_map.at(device_fourcc))
+                        continue;
+
                     unsigned int width;
                     unsigned int height;
 
@@ -641,11 +651,11 @@ namespace rsimpl
                     CHECK_HR(MFGetAttributeRatio(pMediaType, MF_MT_FRAME_RATE_RANGE_MIN, &frameRateMin.numerator, &frameRateMin.denominator));
                     CHECK_HR(MFGetAttributeRatio(pMediaType, MF_MT_FRAME_RATE_RANGE_MAX, &frameRateMax.numerator, &frameRateMax.denominator));
 
-                    if ((width == profile.width) && (height == profile.height)) 
+                    if ((width == profile.width) && (height == profile.height))
                     {
                         if (frameRateMax.denominator && frameRateMin.denominator)
                         {
-                            if (static_cast<float>(frameRateMax.numerator) / frameRateMax.denominator < 
+                            if (static_cast<float>(frameRateMax.numerator) / frameRateMax.denominator <
                                 static_cast<float>(frameRateMin.numerator) / frameRateMin.denominator)
                             {
                                 std::swap(frameRateMax, frameRateMin);
@@ -653,34 +663,31 @@ namespace rsimpl
                             int currFps = frameRateMax.numerator / frameRateMax.denominator;
                             if (currFps == int(profile.fps))
                             {
-                                if (subtype == formatGuid)
+                                hr = _reader->SetCurrentMediaType(sIndex, nullptr, pMediaType);
+
+                                if (SUCCEEDED(hr) && pMediaType)
                                 {
-                                    hr = _reader->SetCurrentMediaType(sIndex, nullptr, pMediaType);
-
-                                    if (SUCCEEDED(hr) && pMediaType)
+                                    for (unsigned int i = 0; i < _streams.size(); ++i)
                                     {
-                                        for (unsigned int i = 0; i < _streams.size(); ++i)
-                                        {
-                                            if (sIndex == i || (_streams[i].callback))
-                                                continue;
+                                        if (sIndex == i || (_streams[i].callback))
+                                            continue;
 
-                                            _reader->SetStreamSelection(i, FALSE);
-                                        }
-
-                                        CHECK_HR(_reader->SetStreamSelection(sIndex, TRUE));
-
-                                        {
-                                            std::lock_guard<std::mutex> lock(_streams_mutex);
-                                            if (_streams[sIndex].callback)
-                                                throw std::runtime_error("Camera already streaming via this stream index!");
-
-                                            _streams[sIndex].profile = profile;
-                                            _streams[sIndex].callback = callback;
-                                        }
-
-                                        CHECK_HR(_reader->ReadSample(sIndex, 0, nullptr, nullptr, nullptr, nullptr));
-                                        return;
+                                        _reader->SetStreamSelection(i, FALSE);
                                     }
+
+                                    CHECK_HR(_reader->SetStreamSelection(sIndex, TRUE));
+
+                                    {
+                                        std::lock_guard<std::mutex> lock(_streams_mutex);
+                                        if (_streams[sIndex].callback)
+                                            throw std::runtime_error("Camera already streaming via this stream index!");
+
+                                        _streams[sIndex].profile = profile;
+                                        _streams[sIndex].callback = callback;
+                                    }
+
+                                    CHECK_HR(_reader->ReadSample(sIndex, 0, nullptr, nullptr, nullptr, nullptr));
+                                    return;
                                 }
                             }
                         }
@@ -694,18 +701,18 @@ namespace rsimpl
         {
             check_connection();
 
-            auto elem = std::find_if(_streams.begin(), _streams.end(), 
-            [&](const profile_and_callback& pac) {
+            auto elem = std::find_if(_streams.begin(), _streams.end(),
+                [&](const profile_and_callback& pac) {
                 return (pac.profile == profile && (pac.callback));
             });
 
             if (elem == _streams.end())
                 throw std::runtime_error("Camera not streaming!");
-            
+
             flush(int(elem - _streams.begin()));
 
             elem->callback = nullptr;
-            elem->profile.format = "";
+            elem->profile.format = 0;
             elem->profile.fps = 0;
             elem->profile.width = 0;
             elem->profile.height = 0;

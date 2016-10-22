@@ -27,7 +27,7 @@ struct rs_device_info
 
 struct rs_stream_profile_list
 {
-    std::vector<rsimpl::stream_profile> list;
+    std::vector<rsimpl::stream_request> list;
 };
 
 struct rs_stream_lock
@@ -106,7 +106,7 @@ void report_version_mismatch(int runtime, int compiletime)
 
 rs_context * rs_create_context(int api_version, rs_error ** error) try
 {
-    int runtime_api_version = rs_get_api_version(error);
+    auto runtime_api_version = rs_get_api_version(error);
     if (*error) throw std::runtime_error(rs_get_error_message(*error));
 
     if ((runtime_api_version < 10) || (api_version < 10))
@@ -204,7 +204,7 @@ rs_stream_profile_list* rs_get_supported_profiles(rs_device* device, rs_subdevic
 {
     VALIDATE_NOT_NULL(device);
     VALIDATE_ENUM(subdevice);
-    return new rs_stream_profile_list{ device->device->get_endpoint(subdevice).get_stream_profiles() };
+    return new rs_stream_profile_list{ device->device->get_endpoint(subdevice).get_principal_requests() };
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, device, subdevice)
 
@@ -245,8 +245,8 @@ rs_stream_lock* rs_open_subdevice(rs_device* device, rs_subdevice subdevice,
     rs_stream stream, int width, int height, int fps, 
     rs_format format, rs_error** error) try
 {
-    std::vector<rsimpl::stream_profile> request;
-    request.push_back({ stream, width, height, fps, format });
+    std::vector<rsimpl::stream_request> request;
+    request.push_back({ stream, (uint32_t)width, (uint32_t)height, (uint32_t)fps, format });
     auto result = new rs_stream_lock{ device->device->get_endpoint(subdevice).configure(request) };
     result->lock->set_owner(result);
     return result;

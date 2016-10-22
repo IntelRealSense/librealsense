@@ -54,6 +54,8 @@ set(REALSENSE_CPP
     src/archive.cpp
     src/context.cpp
     src/device.cpp
+	src/subdevice.cpp
+	src/option.cpp
     src/hw-monitor.cpp
     src/image.cpp
     src/ivcam-private.cpp
@@ -74,6 +76,10 @@ set(REALSENSE_CPP
 	src/ds5t.cpp
 	src/ds5d.cpp
 	src/ds5-private.cpp
+	src/win/win-helpers.cpp
+	src/win/win-uvc.cpp
+	src/win/win-usb.cpp
+	src/win/win-backend.cpp
 )
 
 set(REALSENSE_HPP
@@ -84,6 +90,8 @@ set(REALSENSE_HPP
     src/archive.h
     src/context.h
     src/device.h
+	src/subdevice.h
+	src/option.h
     src/hw-monitor.h
     src/image.h
     src/ivcam-private.h
@@ -100,27 +108,19 @@ set(REALSENSE_HPP
 	src/ds5t.h
 	src/ds5d.h
 	src/ds5-private.h
+	src/win/win-helpers.h
+	src/win/win-uvc.h
+	src/win/win-usb.h
+	src/win/win-backend.h
 )
 
 if(WIN32)
-	list(APPEND REALSENSE_CPP 
-		src/win/win-helpers.cpp
-		src/win/win-uvc.cpp
-		src/win/win-usb.cpp
-		src/win/win-backend.cpp)
-		
 	source_group("Source Files\\Backend" FILES 
 		src/win/win-helpers.cpp
 		src/win/win-uvc.cpp
 		src/win/win-usb.cpp
 		src/win/win-backend.cpp)
-		
-	list(APPEND REALSENSE_HPP 
-		src/win/win-helpers.h
-		src/win/win-uvc.h
-		src/win/win-usb.h
-		src/win/win-backend.h)
-		
+
 	source_group("Header Files\\Backend" FILES 
 		src/win/win-helpers.h
 		src/win/win-uvc.h

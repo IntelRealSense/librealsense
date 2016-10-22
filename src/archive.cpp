@@ -53,7 +53,7 @@ rs_frame_ref* frame_archive::clone_frame(rs_frame_ref* frameset)
 }
 
 // Allocate a new frame in the backbuffer, potentially recycling a buffer from the freelist
-frame frame_archive::alloc_frame(uint8_t* data, const size_t size, const frame_additional_data& additional_data, bool requires_memory)
+frame frame_archive::alloc_frame(const size_t size, const frame_additional_data& additional_data, bool requires_memory)
 {
     frame backbuffer;
     //const size_t size = modes[stream].get_image_size(stream);
@@ -84,9 +84,7 @@ frame frame_archive::alloc_frame(uint8_t* data, const size_t size, const frame_a
     
     if (requires_memory)
     {
-        backbuffer.data.resize(size*4); // TODO: Allow users to provide a custom allocator for frame buffers
-        memcpy(backbuffer.data.data(), data, size);
-        //memset(backbuffer.data.data(), 200, size);
+        backbuffer.data.resize(size); // TODO: Allow users to provide a custom allocator for frame buffers
     }
     backbuffer.update_owner(this);
     backbuffer.additional_data = additional_data;
@@ -214,21 +212,11 @@ void rs_frame_ref::update_frame_callback_start_ts(std::chrono::high_resolution_c
 
 double frame::get_frame_metadata(rs_frame_metadata frame_metadata) const
 {
-    if (!supports_frame_metadata(frame_metadata))
-        throw std::logic_error("unsupported metadata type");
-
-    switch (frame_metadata)
-    {
-        case RS_FRAME_METADATA_ACTUAL_EXPOSURE:
-            return additional_data.exposure_value;
-        default:
-            throw std::logic_error("unsupported metadata type");
-    }
+    throw std::logic_error("unsupported metadata type");
 }
 
 bool frame::supports_frame_metadata(rs_frame_metadata frame_metadata) const
 {
-    for (auto & md : additional_data.supported_metadata_vector) if (md == frame_metadata) return true;
     return false;
 }
 
@@ -239,10 +227,10 @@ const byte* frame::get_frame_data() const
     if (on_release.get_data())
     {
         frame_data = static_cast<const byte*>(on_release.get_data());
-        if (additional_data.pad < 0)
+        /*if (additional_data.pad < 0)
         {
             frame_data += static_cast<int>(additional_data.stride_x *additional_data.bpp*(-additional_data.pad) + (-additional_data.pad)*additional_data.bpp);
-        }
+        }*/
     }
 
     return frame_data;
@@ -275,7 +263,7 @@ int frame::get_width() const
 
 int frame::get_height() const
 {
-    return additional_data.stride_y ? std::min(additional_data.height, additional_data.stride_y) : additional_data.height;
+    return additional_data.height;
 }
 
 int frame::get_framerate() const
@@ -285,7 +273,7 @@ int frame::get_framerate() const
 
 int frame::get_stride() const
 {
-    return (additional_data.stride_x * additional_data.bpp) / 8;
+    return (additional_data.stride * additional_data.bpp) / 8;
 }
 
 int frame::get_bpp() const

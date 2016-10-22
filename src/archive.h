@@ -15,42 +15,34 @@ namespace rsimpl
 struct frame_additional_data
 {
     double timestamp = 0;
-    double exposure_value = 0;
     unsigned long long frame_number = 0;
     long long system_time = 0;
     int width = 0;
     int height = 0;
     int fps = 0;
-    int stride_x = 0;
-    int stride_y = 0;
+    int stride = 0;
     int bpp = 1;
     rs_format format = RS_FORMAT_ANY;
     rs_stream stream_type = RS_STREAM_COUNT;
     rs_timestamp_domain timestamp_domain = RS_TIMESTAMP_DOMAIN_CAMERA;
-    int pad = 0;
-    std::vector<rs_frame_metadata> supported_metadata_vector;
     std::chrono::high_resolution_clock::time_point frame_callback_started{};
 
     frame_additional_data() {};
 
     frame_additional_data(double in_timestamp, unsigned long long in_frame_number, long long in_system_time,
         int in_width, int in_height, int in_fps,
-        int in_stride_x, int in_stride_y, int in_bpp,
-        const rs_format in_format, rs_stream in_stream_type, int in_pad, std::vector<rs_frame_metadata> in_supported_metadata_vector, double in_exposure_value)
+        int in_stride, int in_bpp,
+        const rs_format in_format, rs_stream in_stream_type)
         : timestamp(in_timestamp),
-          exposure_value(in_exposure_value),
           frame_number(in_frame_number),
           system_time(in_system_time),
           width(in_width),
           height(in_height),
           fps(in_fps),
-          stride_x(in_stride_x),
-          stride_y(in_stride_y),
+          stride(in_stride),
           bpp(in_bpp),
           format(in_format),
-          stream_type(in_stream_type),
-          pad(in_pad),
-          supported_metadata_vector(in_supported_metadata_vector) {}
+          stream_type(in_stream_type) {}
 };
 
 // Define a movable but explicitly noncopyable buffer type to hold our frame data
@@ -212,7 +204,7 @@ namespace rsimpl
         }
 
         // Frame callback thread API
-        frame alloc_frame(uint8_t* data, const size_t size, const frame_additional_data& additional_data, bool requires_memory);
+        frame alloc_frame(const size_t size, const frame_additional_data& additional_data, bool requires_memory);
         rs_frame_ref * track_frame(frame& f);
         void log_frame_callback_end(frame* frame) const;
 

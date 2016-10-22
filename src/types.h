@@ -21,6 +21,7 @@
 #include <map>          
 #include <algorithm>
 #include <condition_variable>
+#include "backend.h"
 
 const uint8_t RS_STREAM_NATIVE_COUNT    = 5;
 const int RS_USER_QUEUE_SIZE = 20;
@@ -129,6 +130,24 @@ namespace rsimpl
     // Pixel formats //
     ///////////////////
 
+    struct stream_request
+    {
+        rs_stream stream;
+        uint32_t width, height, fps;
+        rs_format format;
+    };
+
+
+    inline bool operator==(const stream_request& a,
+        const stream_request& b)
+    {
+        return (a.width == b.width) &&
+            (a.height == b.height) &&
+            (a.fps == b.fps) &&
+            (a.format == b.format) &&
+            (a.stream == b.stream);
+    }
+
     struct pixel_format_unpacker
     {
         bool requires_processing;
@@ -146,24 +165,139 @@ namespace rsimpl
         size_t bytes_per_pixel;
         std::vector<pixel_format_unpacker> unpackers;
 
-        size_t get_image_size(int width, int height) const { return width * height * plane_count * bytes_per_pixel; }
+        bool satisfies(const stream_request& request)
+        {
+            return find_unpacker(request) != nullptr;
+        }
 
+        pixel_format_unpacker* find_unpacker(const stream_request& request)
+        {
+            for (auto&& unpacker : unpackers)
+            {
+                if (unpacker.provides_stream(request.stream) &&
+                    unpacker.get_format(request.stream) == request.format)
+                {
+                    return &unpacker;
+                }
+            }
+            return nullptr;
+        }
+
+        size_t get_image_size(int width, int height) const { return width * height * plane_count * bytes_per_pixel; }
     };
+
+    struct request_mapping
+    {
+        stream_request request;
+        uvc::stream_profile profile;
+        native_pixel_format* pf;
+        pixel_format_unpacker* unpacker;
+    };
+
+    inline bool operator==(const request_mapping& a,
+        const request_mapping& b)
+    {
+        return (a.profile == b.profile) && (a.request == b.request) && (a.pf == b.pf) && (a.unpacker == b.unpacker);
+    }
 
     ////////////////////////
     // Static camera info //
     ////////////////////////
 
-    struct subdevice_mode
-    {
-        int subdevice;                          // 0, 1, 2, etc...
-        int2 native_dims;                       // Resolution advertised over UVC
-        native_pixel_format pf;                 // Pixel format advertised over UVC
-        int fps;                                // Framerate advertised over UVC
-        rs_intrinsics native_intrinsics;        // Intrinsics structure corresponding to the content of image (Note: width,height may be subset of native_dims)
-        std::vector<rs_intrinsics> rect_modes;  // Potential intrinsics of image after being rectified in software by librealsense
-        std::vector<int> pad_crop_options;      // Acceptable padding/cropping values
-    };
+    //struct subdevice_mode
+    //{
+    //    int2 native_dims;                       // Resolution advertised over UVC
+    //    native_pixel_format pf;                 // Pixel format advertised over UVC
+    //    int fps;                                // Framerate advertised over UVC
+    //    rs_intrinsics native_intrinsics;        // Intrinsics structure corresponding to the content of image (Note: width,height may be subset of native_dims)
+    //    std::vector<rs_intrinsics> rect_modes;  // Potential intrinsics of image after being rectified in software by librealsense
+    //    std::vector<int> pad_crop_options;      // Acceptable padding/cropping values
+    //};
+
+    //struct stream_request
+    //{
+    //    bool enabled;
+    //    rs_stream stream;
+    //    int width, height;
+    //    rs_format format;
+    //    int fps;
+    //    rs_output_buffer_format output_format;
+
+    //    bool contradict(stream_request req) const;
+    //    bool is_filled() const;
+    //};
+
+    //struct interstream_rule
+    //{
+    //    rs_stream a, b;
+    //    int stream_request::* field;
+    //    int delta, delta2;
+    //    rs_stream bigger;       // if this equals to a or b, this stream must have field value bigger then the other stream
+    //    bool divides, divides2; // divides = a must divide b; divides2 = b must divide a
+    //    bool same_format;
+    //};
+
+    //struct subdevice_mode_selection
+    //{
+    //    subdevice_mode mode;                    // The streaming mode in which to place the hardware
+    //    int pad_crop;                           // The number of pixels of padding (positive values) or cropping (negative values) to apply to all four edges of the image
+    //    size_t unpacker_index;                  // The specific unpacker used to unpack the encoded format into the desired output formats
+    //    rs_output_buffer_format output_format = RS_OUTPUT_BUFFER_FORMAT_CONTINUOUS; // The output buffer format.
+
+    //    subdevice_mode_selection() : mode({}), pad_crop(), unpacker_index(), output_format(RS_OUTPUT_BUFFER_FORMAT_CONTINUOUS) {}
+    //    subdevice_mode_selection(const subdevice_mode & mode, int pad_crop, int unpacker_index) : mode(mode), pad_crop(pad_crop), unpacker_index(unpacker_index) {}
+
+    //    const pixel_format_unpacker & get_unpacker() const {
+    //        if ((size_t)unpacker_index < mode.pf.unpackers.size())
+    //            return mode.pf.unpackers[unpacker_index];
+    //        throw std::runtime_error("failed to fetch an unpakcer, most likely because enable_stream was not called!");
+    //    }
+    //    const std::vector<std::pair<rs_stream, rs_format>> & get_outputs() const { return get_unpacker().outputs; }
+    //    int get_width() const { return mode.native_intrinsics.width + pad_crop * 2; }
+    //    int get_height() const { return mode.native_intrinsics.height + pad_crop * 2; }
+    //    int get_framerate() const { return mode.fps; }
+    //    int get_stride_x() const { return requires_processing() ? get_width() : mode.native_dims.x; }
+    //    int get_stride_y() const { return requires_processing() ? get_height() : mode.native_dims.y; }
+    //    size_t get_image_size(rs_stream stream) const;
+    //    bool provides_stream(rs_stream stream) const { return get_unpacker().provides_stream(stream); }
+    //    rs_format get_format(rs_stream stream) const { return get_unpacker().get_format(stream); }
+    //    void set_output_buffer_format(const rs_output_buffer_format in_output_format);
+
+    //    void unpack(byte * const dest[], const byte * source) const;
+    //    int get_unpacked_width() const;
+    //    int get_unpacked_height() const;
+
+    //    bool requires_processing() const { return (output_format == RS_OUTPUT_BUFFER_FORMAT_CONTINUOUS) || (mode.pf.unpackers[unpacker_index].requires_processing); }
+
+    //};
+
+    class device;
+
+    //class device_config
+    //{
+    //    stream_request requests[RS_STREAM_NATIVE_COUNT]; // Modified by enable/disable_stream calls
+    //    const device& dev;
+    //    std::vector<subdevice_mode> subdevice_modes;
+
+    //    subdevice_mode_selection select_mode(const stream_request(&requests)[RS_STREAM_NATIVE_COUNT], int subdevice_index) const;
+    //    bool all_requests_filled(const stream_request(&original_requests)[RS_STREAM_NATIVE_COUNT]) const;
+    //    bool find_valid_combination(stream_request(&output_requests)[RS_STREAM_NATIVE_COUNT], std::vector<stream_request> stream_requests[RS_STREAM_NATIVE_COUNT]) const;
+    //    bool fill_requests(stream_request(&requests)[RS_STREAM_NATIVE_COUNT]) const;
+    //    void get_all_possible_requestes(std::vector<stream_request>(&stream_requests)[RS_STREAM_NATIVE_COUNT]) const;
+    //    std::vector<subdevice_mode_selection> select_modes(const stream_request(&requests)[RS_STREAM_NATIVE_COUNT]) const;
+    //    bool validate_requests(stream_request(&requests)[RS_STREAM_NATIVE_COUNT], bool throw_exception = false) const;
+
+    //public:
+    //    std::vector<subdevice_mode_selection> select_modes() const { return select_modes(requests); }
+
+    //    explicit device_config(device& dev)
+    //        : dev(dev)
+    //    {
+    //        for (auto & req : requests) req = stream_request();
+    //    }
+
+
+    //};
 
     class firmware_version
     {
@@ -284,7 +418,6 @@ namespace rsimpl
 
     struct static_device_info
     {
-        std::vector<subdevice_mode> subdevice_modes;                        // A list of available modes each subdevice can be put into
         pose subdevice_poses[RS_SUBDEVICE_COUNT];                           // Static pose of each camera on the device
         float nominal_depth_scale;                                          // Default scale
         std::vector<rs_frame_metadata> supported_metadata_vector;
@@ -554,6 +687,52 @@ namespace rsimpl
     float3x3 calc_rodrigues_matrix(const std::vector<double> rot);
     // Auxillary function that calculates standard 32bit CRC code. used in verificaiton
     uint32_t calc_crc32(uint8_t *buf, size_t bufsize);
+}
+
+namespace std {
+
+    template <>
+    struct hash<rsimpl::stream_request>
+    {
+        size_t operator()(const rsimpl::stream_request& k) const
+        {
+            using std::hash;
+
+            return (hash<uint32_t>()(k.height))
+                ^ (hash<uint32_t>()(k.width))
+                ^ (hash<uint32_t>()(k.fps))
+                ^ (hash<uint32_t>()(k.format))
+                ^ (hash<uint32_t>()(k.stream));
+        }
+    };
+
+    template <>
+    struct hash<rsimpl::uvc::stream_profile>
+    {
+        size_t operator()(const rsimpl::uvc::stream_profile& k) const
+        {
+            using std::hash;
+
+            return (hash<uint32_t>()(k.height))
+                ^ (hash<uint32_t>()(k.width))
+                ^ (hash<uint32_t>()(k.fps))
+                ^ (hash<uint32_t>()(k.format));
+        }
+    };
+
+    template <>
+    struct hash<rsimpl::request_mapping>
+    {
+        size_t operator()(const rsimpl::request_mapping& k) const
+        {
+            using std::hash;
+
+            return (hash<rsimpl::uvc::stream_profile>()(k.profile))
+                ^ (hash<rsimpl::stream_request>()(k.request))
+                ^ (hash<rsimpl::pixel_format_unpacker*>()(k.unpacker))
+                ^ (hash<rsimpl::native_pixel_format*>()(k.pf));
+        }
+    };
 }
 
 #endif

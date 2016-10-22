@@ -5,11 +5,12 @@
 #ifndef LIBREALSENSE_BACKEND_H
 #define LIBREALSENSE_BACKEND_H
 
-#include "types.h"
+#include "../include/librealsense/rs.h"     // Inherit all type definitions in the public API
 
 #include <memory>       // For shared_ptr
 #include <functional>   // For function
 #include <thread>       // For this_thread::sleep_for
+#include <vector>
 
 const uint16_t VID_INTEL_CAMERA     = 0x8086;
 const uint16_t ZR300_CX3_PID        = 0x0acb;
@@ -52,7 +53,7 @@ namespace rsimpl
             uint32_t width;
             uint32_t height;
             uint32_t fps;
-            std::string format;
+            uint32_t format;
         };
 
         inline bool operator==(const stream_profile& a,

@@ -13,6 +13,8 @@
 #include <Sddl.h>
 #include <string>
 #include <regex>
+#include <sstream>
+#include <mutex>
 
 #pragma comment(lib, "winusb.lib")
 
