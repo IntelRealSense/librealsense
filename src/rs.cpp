@@ -789,6 +789,24 @@ void rs_release_frame(const rs_stream_lock * lock, rs_frame_ref * frame) try
 }
 catch (...) {}
 
+const char* rs_get_subdevice_option_description(const rs_device* device, rs_subdevice subdevice, rs_option option, rs_error ** error) try
+{
+    VALIDATE_NOT_NULL(device);
+    VALIDATE_ENUM(subdevice);
+    VALIDATE_ENUM(option);
+    return device->device->get_option(subdevice, option).get_description();
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, device, subdevice, option)
+
+const char* rs_get_subdevice_option_value_description(const rs_device* device, rs_subdevice subdevice, rs_option option, float value, rs_error ** error) try
+{
+    VALIDATE_NOT_NULL(device);
+    VALIDATE_ENUM(subdevice);
+    VALIDATE_ENUM(option);
+    return device->device->get_option(subdevice, option).get_value_description(value);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, device, subdevice, option, value)
+
 /*const char * rs_get_stream_name(rs_stream stream, rs_error ** error) try
 {
     VALIDATE_ENUM(stream);
@@ -965,6 +983,7 @@ const char * rs_distortion_to_string(rs_distortion distortion) { return rsimpl::
 const char * rs_option_to_string(rs_option option) { return rsimpl::get_string(option); }
 const char * rs_camera_info_to_string(rs_camera_info info) { return rsimpl::get_string(info); }
 const char * rs_timestamp_domain_to_string(rs_timestamp_domain info){ return rsimpl::get_string(info); }
+const char * rs_visual_preset_to_string(rs_visual_preset preset) { return rsimpl::get_string(preset); }
 
 const char * rs_subdevice_to_string(rs_subdevice subdevice) { return rsimpl::get_string(subdevice); }
 

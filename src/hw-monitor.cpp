@@ -121,7 +121,7 @@ namespace rsimpl
         if (opCodeAsUint32 != opCodeXmit)
         {
             throw std::runtime_error(to_string() << "OpCodes do not match! Sent " 
-                << opCodeXmit << " but received " << opCodeAsUint32 << "!");
+                << opCodeXmit << " but received " << static_cast<int>(opCodeAsUint32) << "!");
         }
 
         return std::vector<uint8_t>(newCommand.receivedCommandData,

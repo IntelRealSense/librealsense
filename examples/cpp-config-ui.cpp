@@ -44,12 +44,14 @@ class option_model
 public:
     rs_option opt;
     rs::option_range range;
+    rs::subdevice* endpoint;
+    bool* invalidate_flag;
     bool supported = false;
     float value = 0.0f;
     std::string label = "";
     std::string id = "";
 
-    void draw(rs::subdevice& dev, std::string& error_message)
+    void draw(std::string& error_message)
     {
         if (supported)
         {
@@ -61,7 +63,8 @@ public:
                     value = bool_value ? 1.0f : 0.0f;
                     try
                     {
-                        dev.set_option(opt, value);
+                        endpoint->set_option(opt, value);
+                        *invalidate_flag = true;
                     }
                     catch (const rs::error& e)
                     {
@@ -77,7 +80,24 @@ public:
 
                 try
                 {
-                    if (is_all_integers())
+                    if (is_enum())
+                    {
+                        std::vector<const char*> labels;
+                        auto selected = 0, counter = 0;
+                        for (auto i = range.min; i < range.max; i += range.step, counter++)
+                        {
+                            if (abs(i - value) < 0.001f) selected = counter;
+                            labels.push_back(endpoint->get_option_value_description(opt, i));
+                        }
+                        if (ImGui::Combo(id.c_str(), &selected, labels.data(), 
+                            static_cast<int>(labels.size())))
+                        {
+                            value = range.min + range.step * selected;
+                            endpoint->set_option(opt, value);
+                            *invalidate_flag = true;
+                        }
+                    }
+                    else if (is_all_integers())
                     {
                         auto int_value = static_cast<int>(value);
                         if (ImGui::SliderInt(id.c_str(), &int_value,
@@ -86,7 +106,8 @@ public:
                         {
                             // TODO: Round to step?
                             value = static_cast<float>(int_value);
-                            dev.set_option(opt, value);
+                            endpoint->set_option(opt, value);
+                            *invalidate_flag = true;
                         }
                     }
                     else
@@ -94,7 +115,7 @@ public:
                         if (ImGui::SliderFloat(id.c_str(), &value,
                             range.min, range.max))
                         {
-                            dev.set_option(opt, value);
+                            endpoint->set_option(opt, value);
                         }
                     }
                 }
@@ -104,18 +125,42 @@ public:
                 }
                 ImGui::PopItemWidth();
             }
-            if (ImGui::IsItemHovered())
+
+            auto desc = endpoint->get_option_description(opt);
+            if (ImGui::IsItemHovered() && desc)
             {
-                ImGui::SetTooltip(id.c_str());
+                ImGui::SetTooltip(desc);
             }
         }
     }
 
+    void update(std::string& error_message)
+    {
+        try
+        {
+            if (endpoint->supports(opt))
+                value = endpoint->get_option(opt);
+        }
+        catch (const rs::error& e)
+        {
+            error_message = error_to_string(e);
+        }
+    }
 private:
     bool is_all_integers() const
     {
         return is_integer(range.min) && is_integer(range.max) &&
             is_integer(range.def) && is_integer(range.step);
+    }
+
+    bool is_enum() const
+    {
+        for (auto i = range.min; i < range.max; i += range.step)
+        {
+            if (endpoint->get_option_value_description(opt, i) == nullptr)
+                return false;
+        }
+        return true;
     }
 
     bool is_checkbox() const
@@ -155,8 +200,10 @@ public:
             ss << rs_subdevice_to_string(subdevice) << "/" << rs_option_to_string(opt);
             metadata.id = ss.str();
             metadata.opt = opt;
+            metadata.endpoint = endpoint;
 
             metadata.label = rs_option_to_string(opt);
+            metadata.invalidate_flag = &options_invalidated;
 
             metadata.supported = endpoint->supports(opt);
             if (metadata.supported)
@@ -209,7 +256,6 @@ public:
         }
     }
 
-
     std::vector<rs::stream_profile> get_selected_profiles()
     {
         std::vector<rs::stream_profile> results;
@@ -253,6 +299,21 @@ public:
         });
         allow_new_frames = true;
     }
+
+    void update(std::string& error_message)
+    {
+        if (options_invalidated)
+        {
+            next_option = 0;
+            options_invalidated = false;
+        }
+        if (next_option < RS_OPTION_COUNT)
+        {
+            options_metadata[static_cast<rs_option>(next_option)].update(error_message);
+            next_option++;
+        }
+    }
+
     rs_subdevice subdevice;
     rs::subdevice* endpoint;
 
@@ -275,6 +336,8 @@ public:
     std::vector<rs::stream_profile> profiles;
 
     single_consumer_queue<rs::frame> queues;
+    bool options_invalidated = false;
+    int next_option = RS_OPTION_COUNT;
 };
 
 typedef std::map<rs_stream, rect> streams_layout;
@@ -593,10 +656,15 @@ int main(int, char**) try
                     {
                         auto opt = static_cast<rs_option>(i);
                         auto&& metadata = sub->options_metadata[opt];
-                        metadata.draw(*sub->endpoint, error_message);
+                        metadata.draw(error_message);
                     }
                 }
             }
+        }
+
+        for (auto&& sub : model.subdevices)
+        {
+            sub->update(error_message);
         }
 
         if (error_message != "")
@@ -630,7 +698,6 @@ int main(int, char**) try
                                                            static_cast<float>(f.get_height()) };
                 model.stream_format[f.get_stream_type()] = f.get_format();
             }
-
         }
 
         // Rendering

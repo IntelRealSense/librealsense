@@ -319,6 +319,22 @@ namespace rs
             return res > 0;
         }
 
+        const char* get_option_description(rs_option option) const
+        {
+            rs_error* e = nullptr;
+            auto res = rs_get_subdevice_option_description(_dev, _index, option, &e);
+            error::handle(e);
+            return res;
+        }
+
+        const char* get_option_value_description(rs_option option, float val) const
+        {
+            rs_error* e = nullptr;
+            auto res = rs_get_subdevice_option_value_description(_dev, _index, option, val, &e);
+            error::handle(e);
+            return res;
+        }
+
         std::vector<stream_profile> get_stream_profiles() const
         {
             std::vector<stream_profile> results;

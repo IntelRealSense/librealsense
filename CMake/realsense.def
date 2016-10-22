@@ -43,6 +43,8 @@ EXPORTS
     rs_set_subdevice_option
     rs_supports_subdevice_option
     rs_get_subdevice_option_range
+    rs_get_subdevice_option_description
+    rs_get_subdevice_option_value_description
 
     rs_get_camera_info
     rs_supports_camera_info
@@ -60,6 +62,7 @@ EXPORTS
     rs_camera_info_to_string
     rs_timestamp_domain_to_string
     rs_subdevice_to_string
+    rs_visual_preset_to_string
 
     rs_log_to_console
     rs_log_to_file

@@ -58,16 +58,16 @@ namespace rsimpl {
 
         struct cam_auto_range_request
         {
-            int enableMvR = 1;          // Send as IVCAMCommand::Param1
-            int enableLaser = 1;        // Send as IVCAMCommand::Param2
-            int16_t minMvR = 180;       // Copy into IVCAMCommand::data
-            int16_t maxMvR = 605;       // "
-            int16_t startMvR = 303;     // "
-            int16_t minLaser = 2;       // "
-            int16_t maxLaser = 16;      // "
-            int16_t startLaser = -1;    // "
-            uint16_t ARUpperTh = 1250;  // Copy into IVCAMCommand::data if not -1
-            uint16_t ARLowerTh = 650;   // "
+            int enableMvR;  
+            int enableLaser;
+            int minMvR;     
+            int maxMvR;     
+            int startMvR;   
+            int minLaser;   
+            int maxLaser;   
+            int startLaser; 
+            int ARUpperTh;  
+            int ARLowerTh;  
         };
 
         enum fw_cmd : uint8_t

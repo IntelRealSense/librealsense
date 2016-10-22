@@ -15,7 +15,7 @@
 namespace rsimpl
 {
     class sr300_camera;
-    
+
     class sr300_info : public device_info
     {
     public:
@@ -27,8 +27,8 @@ namespace rsimpl
         }
 
         sr300_info(uvc::uvc_device_info color,
-                   uvc::uvc_device_info depth,
-                   uvc::usb_device_info hwm);
+            uvc::uvc_device_info depth,
+            uvc::usb_device_info hwm);
 
     private:
         uvc::uvc_device_info _color;
@@ -37,16 +37,48 @@ namespace rsimpl
     };
 
     std::vector<std::shared_ptr<device_info>> pick_sr300_devices(
-        std::vector<uvc::uvc_device_info>& uvc, 
+        std::vector<uvc::uvc_device_info>& uvc,
         std::vector<uvc::usb_device_info>& usb);
 
     class sr300_camera final : public device
     {
     public:
+        class preset_option : public option
+        {
+        public:
+            void set(float value) override { 
+                _owner.rs_apply_ivcam_preset(value);
+                last_value = value;
+            }
+            float query() const override { return last_value; }
+            option_range get_range() const override
+            {
+                return{ 0, RS_VISUAL_PRESET_COUNT, 1, RS_VISUAL_PRESET_DEFAULT };
+            }
+            bool is_enabled() const override { return true; }
+
+            const char* get_description() const override
+            {
+                return "Recommended sets of options optimized for different visual use-cases";
+            }
+            const char* get_value_description(float val) const override
+            {
+                return rs_visual_preset_to_string(
+                    static_cast<rs_visual_preset>(
+                        static_cast<int>(val)));
+            }
+
+            explicit preset_option(sr300_camera& owner) : _owner(owner) {}
+
+        private:
+            float last_value = RS_VISUAL_PRESET_DEFAULT;
+            sr300_camera& _owner;
+        };
+
         sr300_camera(const uvc::backend& backend,
-              const uvc::uvc_device_info& color,
-              const uvc::uvc_device_info& depth,
-              const uvc::usb_device_info& hwm_device)
+            const uvc::uvc_device_info& color,
+            const uvc::uvc_device_info& depth,
+            const uvc::usb_device_info& hwm_device)
             : _hw_monitor(backend.create_usb_device(hwm_device))
         {
             using namespace ivcam;
@@ -88,34 +120,107 @@ namespace rsimpl
             register_pu(RS_SUBDEVICE_COLOR, RS_OPTION_ENABLE_AUTO_EXPOSURE);
             register_pu(RS_SUBDEVICE_COLOR, RS_OPTION_ENABLE_AUTO_WHITE_BALANCE);
 
-            register_depth_xu<uint8_t>(RS_OPTION_LASER_POWER,          IVCAM_DEPTH_LASER_POWER);
-            register_depth_xu<uint8_t>(RS_OPTION_ACCURACY,             IVCAM_DEPTH_ACCURACY);
-            register_depth_xu<uint8_t>(RS_OPTION_MOTION_RANGE,         IVCAM_DEPTH_MOTION_RANGE);
-            register_depth_xu<uint8_t>(RS_OPTION_CONFIDENCE_THRESHOLD, IVCAM_DEPTH_CONFIDENCE_THRESH);
-            register_depth_xu<uint8_t>(RS_OPTION_FILTER_OPTION,        IVCAM_DEPTH_FILTER_OPTION);
+            register_depth_xu<uint8_t>(RS_OPTION_LASER_POWER, IVCAM_DEPTH_LASER_POWER,
+                "Power of the SR300 projector, with 0 meaning projector off");
+            register_depth_xu<uint8_t>(RS_OPTION_ACCURACY, IVCAM_DEPTH_ACCURACY,
+                "Set the number of patterns projected per frame.\nThe higher the accuracy value the more patterns projected.\nIncreasing the number of patterns help to achieve better accuracy.\nNote that this control is affecting the Depth FPS");
+            register_depth_xu<uint8_t>(RS_OPTION_MOTION_RANGE, IVCAM_DEPTH_MOTION_RANGE,
+                "Motion vs. Range trade-off, with lower values allowing for better motion\nsensitivity and higher values allowing for better depth range");
+            register_depth_xu<uint8_t>(RS_OPTION_CONFIDENCE_THRESHOLD, IVCAM_DEPTH_CONFIDENCE_THRESH,
+                "The confidence level threshold used by the Depth algorithm pipe to set whether\na pixel will get a valid range or will be marked with invalid range");
+            register_depth_xu<uint8_t>(RS_OPTION_FILTER_OPTION, IVCAM_DEPTH_FILTER_OPTION,
+                "Set the filter to apply to each depth frame.\nEach one of the filter is optimized per the application requirements");
 
             register_autorange_options();
 
+            register_option(RS_OPTION_VISUAL_PRESET, RS_SUBDEVICE_DEPTH, std::make_shared<preset_option>(*this));
+
             auto c = get_calibration();
-            pose depth_to_color = { 
-                transpose(reinterpret_cast<const float3x3 &>(c.Rt)), 
-                          reinterpret_cast<const float3 &>(c.Tt) * 0.001f 
-            }; 
+            pose depth_to_color = {
+                transpose(reinterpret_cast<const float3x3 &>(c.Rt)),
+                          reinterpret_cast<const float3 &>(c.Tt) * 0.001f
+            };
             set_pose(RS_SUBDEVICE_DEPTH, inverse(depth_to_color));
             set_pose(RS_SUBDEVICE_COLOR, { { { 1,0,0 },{ 0,1,0 },{ 0,0,1 } },{ 0,0,0 } });
             set_depth_scale((c.Rmax / 0xFFFF) * 0.001f);
+        }
+
+        void rs_apply_ivcam_preset(int preset)
+        {
+            const auto DEPTH_CONTROLS = 5;
+            const rs_option arr_options[DEPTH_CONTROLS] = {
+                RS_OPTION_LASER_POWER,
+                RS_OPTION_ACCURACY,
+                RS_OPTION_FILTER_OPTION,
+                RS_OPTION_CONFIDENCE_THRESHOLD,
+                RS_OPTION_MOTION_RANGE
+            };
+
+            const ivcam::cam_auto_range_request ar_requests[RS_VISUAL_PRESET_COUNT] =
+            {
+                { 1,     1, 180,  303,  180,   2,  16,  -1, 1000, 450 }, /* ShortRange                */
+                { 1,     0, 303,  605,  303,  -1,  -1,  -1, 1250, 975 }, /* LongRange                 */
+                { 0,     0,  -1,   -1,   -1,  -1,  -1,  -1,   -1,  -1 }, /* BackgroundSegmentation    */
+                { 1,     1, 100,  179,  100,   2,  16,  -1, 1000, 450 }, /* GestureRecognition        */
+                { 0,     1,  -1,   -1,   -1,   2,  16,  16, 1000, 450 }, /* ObjectScanning            */
+                { 0,     0,  -1,   -1,   -1,  -1,  -1,  -1,   -1,  -1 }, /* FaceAnalytics             */
+                { 2,     0,  40, 1600,  800,  -1,  -1,  -1,   -1,  -1 }, /* FaceLogin                 */
+                { 1,     1, 100,  179,  179,   2,  16,  -1, 1000, 450 }, /* GRCursor                  */
+                { 0,     0,  -1,   -1,   -1,  -1,  -1,  -1,   -1,  -1 }, /* Default                   */
+                { 1,     1, 180,  605,  303,   2,  16,  -1, 1250, 650 }, /* MidRange                  */
+                { 2,     0,  40, 1600,  800,  -1,  -1,  -1,   -1,  -1 }, /* IROnly                    */
+            };
+
+            const double arr_values[RS_VISUAL_PRESET_COUNT][DEPTH_CONTROLS] = {
+                { 1,  1,  5,  1, -1 }, /* ShortRange                */
+                { 1,  1,  7,  0, -1 }, /* LongRange                 */
+                { 16,  1,  6,  2, 22 }, /* BackgroundSegmentation    */
+                { 1,  1,  6,  3, -1 }, /* GestureRecognition        */
+                { 1,  1,  3,  1,  9 }, /* ObjectScanning            */
+                { 16,  1,  5,  1, 22 }, /* FaceAnalytics             */
+                { 1, -1, -1, -1, -1 }, /* FaceLogin                 */
+                { 1,  1,  6,  1, -1 }, /* GRCursor                  */
+                { 16,  1,  5,  3,  9 }, /* Default                   */
+                { 1,  1,  5,  1, -1 }, /* MidRange                  */
+                { 1, -1, -1, -1, -1 }  /* IROnly                    */
+            };
+
+            // The Default preset is handled differntly from all the rest,
+            // When the user applies the Default preset the camera is expected to return to
+            // Default values of depth options:
+            if (preset == RS_VISUAL_PRESET_DEFAULT)
+            {
+                for (auto opt : arr_options)
+                {
+                    auto&& o = get_option(RS_SUBDEVICE_DEPTH, opt);
+                    o.set(o.get_range().def);
+                }
+            }
+            else
+            {
+                for (auto i = 0; i < DEPTH_CONTROLS; i++)
+                {
+                    if (arr_values[preset][i] >= 0)
+                    {
+                        auto&& o = get_option(RS_SUBDEVICE_DEPTH, arr_options[i]);
+                        o.set(arr_values[preset][i]);
+                    }
+                }
+                //if (arr_values[preset][0] == 1)
+                    //set_auto_range(ar_requests[preset]);
+            }
         }
 
     private:
         hw_monitor _hw_monitor;
 
         template<class T>
-        void register_depth_xu(rs_option opt, uint8_t id)
+        void register_depth_xu(rs_option opt, uint8_t id, std::string desc)
         {
             register_option(opt, RS_SUBDEVICE_DEPTH,
                 std::make_shared<uvc_xu_option<T>>(
                     get_uvc_endpoint(RS_SUBDEVICE_DEPTH),
-                    ivcam::depth_xu, id));
+                    ivcam::depth_xu, id, std::move(desc)));
         }
 
         void register_autorange_options()

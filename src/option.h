@@ -29,6 +29,9 @@ namespace rsimpl
         virtual option_range get_range() const = 0;
         virtual bool is_enabled() const = 0;
 
+        virtual const char* get_description() const = 0;
+        virtual const char* get_value_description(float) const { return nullptr; }
+
         virtual ~option() = default;
     };
 
@@ -75,6 +78,25 @@ namespace rsimpl
         {
         }
 
+        const char* get_description() const override
+        {
+            switch(_id)
+            {
+            case RS_OPTION_BACKLIGHT_COMPENSATION: return "Enable / disable backlight compensation";
+            case RS_OPTION_BRIGHTNESS: return "UVC image brightness";
+            case RS_OPTION_CONTRAST: return "UVC image contrast";
+            case RS_OPTION_EXPOSURE: return "Controls exposure time of color camera. Setting any value will disable auto exposure";
+            case RS_OPTION_GAIN: return "UVC image gain";
+            case RS_OPTION_GAMMA: return "UVC image gamma setting";
+            case RS_OPTION_HUE: return "UVC image hue";
+            case RS_OPTION_SATURATION: return "UVC image saturation setting";
+            case RS_OPTION_SHARPNESS: return "UVC image sharpness setting";
+            case RS_OPTION_WHITE_BALANCE: return "Controls white balance of color image. Setting any value will disable auto white balance";
+            case RS_OPTION_ENABLE_AUTO_EXPOSURE: return "Enable / disable auto-exposure";
+            case RS_OPTION_ENABLE_AUTO_WHITE_BALANCE: return "Enable / disable auto-white-balance";
+            default: return rs_option_to_string(_id);
+            }
+        }
     private:
         uvc_endpoint& _ep;
         rs_option _id;
@@ -119,15 +141,21 @@ namespace rsimpl
         }
         bool is_enabled() const override { return true; }
 
-        uvc_xu_option(uvc_endpoint& ep, uvc::extension_unit xu, int id)
-            : _ep(ep), _xu(xu), _id(id)
+        uvc_xu_option(uvc_endpoint& ep, uvc::extension_unit xu, int id, std::string description)
+            : _ep(ep), _xu(xu), _id(id), _desciption(std::move(description))
         {
+        }
+
+        const char* get_description() const override
+        {
+            return _desciption.c_str();
         }
 
     private:
         uvc_endpoint& _ep;
         uvc::extension_unit _xu;
         int _id;
+        std::string _desciption;
     };
 
     template<class T, class R, class W, class U>
@@ -152,6 +180,11 @@ namespace rsimpl
                                      U T::* field, option_range range)
             : _struct_interface(struct_interface), _range(range), _field(field)
         {
+        }
+
+        const char* get_description() const override
+        {
+            return nullptr;
         }
 
     private:

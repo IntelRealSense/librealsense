@@ -73,21 +73,21 @@ typedef enum rs_distortion
     RS_DISTORTION_COUNT                 ,
 } rs_distortion;
 
-typedef enum rs_ivcam_preset
+typedef enum rs_visual_preset
 {
-    RS_IVCAM_PRESET_SHORT_RANGE             ,
-    RS_IVCAM_PRESET_LONG_RANGE              ,
-    RS_IVCAM_PRESET_BACKGROUND_SEGMENTATION ,
-    RS_IVCAM_PRESET_GESTURE_RECOGNITION     ,
-    RS_IVCAM_PRESET_OBJECT_SCANNING         ,
-    RS_IVCAM_PRESET_FACE_ANALYTICS          ,
-    RS_IVCAM_PRESET_FACE_LOGIN              ,
-    RS_IVCAM_PRESET_GR_CURSOR               ,
-    RS_IVCAM_PRESET_DEFAULT                 ,
-    RS_IVCAM_PRESET_MID_RANGE               ,
-    RS_IVCAM_PRESET_IR_ONLY                 ,
-    RS_IVCAM_PRESET_COUNT
-} rs_ivcam_preset;
+    RS_VISUAL_PRESET_SHORT_RANGE             ,
+    RS_VISUAL_PRESET_LONG_RANGE              ,
+    RS_VISUAL_PRESET_BACKGROUND_SEGMENTATION ,
+    RS_VISUAL_PRESET_GESTURE_RECOGNITION     ,
+    RS_VISUAL_PRESET_OBJECT_SCANNING         ,
+    RS_VISUAL_PRESET_FACE_ANALYTICS          ,
+    RS_VISUAL_PRESET_FACE_LOGIN              ,
+    RS_VISUAL_PRESET_GR_CURSOR               ,
+    RS_VISUAL_PRESET_DEFAULT                 ,
+    RS_VISUAL_PRESET_MID_RANGE               ,
+    RS_VISUAL_PRESET_IR_ONLY                 ,
+    RS_VISUAL_PRESET_COUNT
+} rs_visual_preset;
 
 typedef enum rs_option
 {
@@ -103,6 +103,7 @@ typedef enum rs_option
     RS_OPTION_WHITE_BALANCE                              , /**< Controls white balance of color image. Setting any value will disable auto white balance*/
     RS_OPTION_ENABLE_AUTO_EXPOSURE                       , /**< Enable / disable color image auto-exposure*/
     RS_OPTION_ENABLE_AUTO_WHITE_BALANCE                  , /**< Enable / disable color image auto-white-balance*/
+    RS_OPTION_VISUAL_PRESET                              , /**< Provide access to several recommend sets of option presets for the depth camera */
     RS_OPTION_LASER_POWER                                , /**< Power of the F200 / SR300 projector, with 0 meaning projector off*/
     RS_OPTION_ACCURACY                                   , /**< Set the number of patterns projected per frame. The higher the accuracy value the more patterns projected. Increasing the number of patterns help to achieve better accuracy. Note that this control is affecting the Depth FPS */
     RS_OPTION_MOTION_RANGE                               , /**< Motion vs. Range trade-off, with lower values allowing for better motion sensitivity and higher values allowing for better depth range*/
@@ -246,6 +247,8 @@ float rs_get_subdevice_option(const rs_device* device, rs_subdevice subdevice, r
 void rs_set_subdevice_option(const rs_device* device, rs_subdevice subdevice, rs_option option, float value, rs_error** error);
 int rs_supports_subdevice_option(const rs_device* device, rs_subdevice subdevice, rs_option option, rs_error** error);
 void rs_get_subdevice_option_range(const rs_device* device, rs_subdevice subdevice, rs_option option, float* min, float* max, float* step, float* def, rs_error** error);
+const char* rs_get_subdevice_option_description(const rs_device* device, rs_subdevice subdevice, rs_option option, rs_error ** error);
+const char* rs_get_subdevice_option_value_description(const rs_device* device, rs_subdevice subdevice, rs_option option, float value, rs_error ** error);
 
 const char* rs_get_camera_info(const rs_device* device, rs_camera_info info, rs_error** error);
 int rs_supports_camera_info(const rs_device* device, rs_camera_info info, rs_error** error);
@@ -272,7 +275,7 @@ const char * rs_camera_info_to_string(rs_camera_info info);
 const char * rs_camera_info_to_string(rs_camera_info info);
 const char * rs_timestamp_domain_to_string(rs_timestamp_domain info);
 const char * rs_subdevice_to_string  (rs_subdevice subdevice);
-
+const char * rs_visual_preset_to_string  (rs_visual_preset preset);
 
 void rs_log_to_console(rs_log_severity min_severity, rs_error ** error);
 void rs_log_to_file(rs_log_severity min_severity, const char * file_path, rs_error ** error);

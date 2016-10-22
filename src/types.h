@@ -94,6 +94,7 @@ namespace rsimpl
     RS_ENUM_HELPERS(rs_camera_info, CAMERA_INFO)
     RS_ENUM_HELPERS(rs_timestamp_domain, TIMESTAMP_DOMAIN)
     RS_ENUM_HELPERS(rs_subdevice, SUBDEVICE)
+    RS_ENUM_HELPERS(rs_visual_preset, VISUAL_PRESET)
     #undef RS_ENUM_HELPERS
 
     ////////////////////////////////////////////

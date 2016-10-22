@@ -44,6 +44,27 @@ namespace rsimpl
         #undef CASE
     }
 
+    const char * get_string(rs_visual_preset value)
+    {
+        #define CASE(X) case RS_VISUAL_PRESET_##X: return #X;
+        switch (value)
+        {
+            CASE(SHORT_RANGE)
+            CASE(LONG_RANGE)
+            CASE(BACKGROUND_SEGMENTATION)
+            CASE(GESTURE_RECOGNITION)
+            CASE(OBJECT_SCANNING)
+            CASE(FACE_ANALYTICS)
+            CASE(FACE_LOGIN)
+            CASE(GR_CURSOR)
+            CASE(DEFAULT)
+            CASE(MID_RANGE)
+            CASE(IR_ONLY)
+        default: assert(!is_valid(value)); return unknown;
+        }
+        #undef CASE
+    }
+
     const char * get_string(rs_option value)
     {
         #define CASE(X) case RS_OPTION_##X: return #X;
@@ -68,6 +89,7 @@ namespace rsimpl
         CASE(CONFIDENCE_THRESHOLD)
         CASE(FRAMES_QUEUE_SIZE)
         CASE(HARDWARE_LOGGER_ENABLED)
+        CASE(VISUAL_PRESET)
         CASE(TOTAL_FRAME_DROPS)
         CASE(EMITTER_ENABLED)
         default: assert(!is_valid(value)); return unknown;
