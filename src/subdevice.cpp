@@ -2,8 +2,6 @@
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
 #include "device.h"
-#include "sync.h"
-#include "motion-module.h"
 #include "image.h"
 #include <array>
 

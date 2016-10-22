@@ -287,6 +287,7 @@ public:
         for (auto j = 0; j < RS_SUBDEVICE_COUNT; j++)
         {
             auto subdevice = static_cast<rs_subdevice>(j);
+            if (!dev.supports(subdevice)) continue;
             auto&& endpoint = dev.get_subdevice(subdevice);
 
             auto model = std::make_shared<subdevice_model>(subdevice, &endpoint, error_message);
@@ -581,7 +582,7 @@ int main(int, char**) try
             }
         }
 
-        if (ImGui::CollapsingHeader("Controls", nullptr, true, true))
+        if (ImGui::CollapsingHeader("Control", nullptr, true, true))
         {
             for (auto&& sub : model.subdevices)
             {

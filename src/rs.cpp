@@ -6,7 +6,6 @@
 
 #include "context.h"
 #include "device.h"
-#include "sync.h"
 #include "archive.h"
 
 ////////////////////////
@@ -980,11 +979,6 @@ const char * rs_format_to_string(rs_format format) { return rsimpl::get_string(f
 const char * rs_preset_to_string(rs_preset preset) { return rsimpl::get_string(preset); }
 const char * rs_distortion_to_string(rs_distortion distortion) { return rsimpl::get_string(distortion); }
 const char * rs_option_to_string(rs_option option) { return rsimpl::get_string(option); }
-const char * rs_capabilities_to_string(rs_capabilities capability) { return rsimpl::get_string(capability); }
-const char * rs_source_to_string(rs_source source)   { return rsimpl::get_string(source); }
-const char * rs_event_to_string(rs_event_source event)   { return rsimpl::get_string(event); }
-
-const char * rs_blob_type_to_string(rs_blob_type type) { return rsimpl::get_string(type); }
 const char * rs_camera_info_to_string(rs_camera_info info) { return rsimpl::get_string(info); }
 const char * rs_timestamp_domain_to_string(rs_timestamp_domain info){ return rsimpl::get_string(info); }
 

@@ -289,7 +289,7 @@ namespace rs
                     heights.data(),
                     fpss.data(),
                     formats.data(),
-                    profiles.size(),
+                    static_cast<int>(profiles.size()),
                     &e),
                 rs_release_streaming_lock);
             error::handle(e);
@@ -481,8 +481,6 @@ namespace rs
     inline std::ostream & operator << (std::ostream & o, rs_preset preset) { return o << rs_preset_to_string(preset); }
     inline std::ostream & operator << (std::ostream & o, rs_distortion distortion) { return o << rs_distortion_to_string(distortion); }
     inline std::ostream & operator << (std::ostream & o, rs_option option) { return o << rs_option_to_string(option); }
-    inline std::ostream & operator << (std::ostream & o, rs_capabilities capability) { return o << rs_capabilities_to_string(capability); }
-    inline std::ostream & operator << (std::ostream & o, rs_source src) { return o << rs_source_to_string(src); }
     inline std::ostream & operator << (std::ostream & o, rs_subdevice evt) { return o << rs_subdevice_to_string(evt); }
 
 

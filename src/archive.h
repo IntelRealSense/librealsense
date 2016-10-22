@@ -5,7 +5,6 @@
 
 #include "types.h"
 #include <atomic>
-#include "timestamps.h"
 
 namespace rsimpl
 {
@@ -46,7 +45,7 @@ struct frame_additional_data
 };
 
 // Define a movable but explicitly noncopyable buffer type to hold our frame data
-struct frame : rsimpl::frame_interface
+struct frame
 {
 private:
     // TODO: check boost::intrusive_ptr or an alternative
@@ -80,15 +79,15 @@ public:
 
     ~frame() { on_release.reset(); }
 
-    double get_frame_metadata(rs_frame_metadata frame_metadata) const override;
-    bool supports_frame_metadata(rs_frame_metadata frame_metadata) const override;
+    double get_frame_metadata(rs_frame_metadata frame_metadata) const;
+    bool supports_frame_metadata(rs_frame_metadata frame_metadata) const;
     const rsimpl::byte* get_frame_data() const;
     double get_frame_timestamp() const;
     rs_timestamp_domain get_frame_timestamp_domain() const;
-    void set_timestamp(double new_ts) override { additional_data.timestamp = new_ts; }
-    unsigned long long get_frame_number() const override;
+    void set_timestamp(double new_ts) { additional_data.timestamp = new_ts; }
+    unsigned long long get_frame_number() const;
 
-    void set_timestamp_domain(rs_timestamp_domain timestamp_domain) override 
+    void set_timestamp_domain(rs_timestamp_domain timestamp_domain) 
     { 
         additional_data.timestamp_domain = timestamp_domain; 
     }
@@ -100,7 +99,7 @@ public:
     int get_stride() const;
     int get_bpp() const;
     rs_format get_format() const;
-    rs_stream get_stream_type() const override;
+    rs_stream get_stream_type() const;
 
     std::chrono::high_resolution_clock::time_point get_frame_callback_start_time_point() const;
     void update_frame_callback_start_ts(std::chrono::high_resolution_clock::time_point ts);

@@ -4,7 +4,6 @@
 #pragma once
 
 #include "backend.h"
-#include "stream.h"
 #include "archive.h"
 #include <chrono>
 #include <memory>

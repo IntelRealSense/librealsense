@@ -75,24 +75,24 @@ namespace rsimpl
             assign_endpoint(RS_SUBDEVICE_COLOR, color_ep);
             assign_endpoint(RS_SUBDEVICE_DEPTH, depth_ep);
 
-            register_pu(RS_SUBDEVICE_COLOR, RS_OPTION_COLOR_BACKLIGHT_COMPENSATION);
-            register_pu(RS_SUBDEVICE_COLOR, RS_OPTION_COLOR_BRIGHTNESS);
-            register_pu(RS_SUBDEVICE_COLOR, RS_OPTION_COLOR_CONTRAST);
-            register_pu(RS_SUBDEVICE_COLOR, RS_OPTION_COLOR_EXPOSURE);
-            register_pu(RS_SUBDEVICE_COLOR, RS_OPTION_COLOR_GAIN);
-            register_pu(RS_SUBDEVICE_COLOR, RS_OPTION_COLOR_GAMMA);
-            register_pu(RS_SUBDEVICE_COLOR, RS_OPTION_COLOR_HUE);
-            register_pu(RS_SUBDEVICE_COLOR, RS_OPTION_COLOR_SATURATION);
-            register_pu(RS_SUBDEVICE_COLOR, RS_OPTION_COLOR_SHARPNESS);
-            register_pu(RS_SUBDEVICE_COLOR, RS_OPTION_COLOR_WHITE_BALANCE);
-            register_pu(RS_SUBDEVICE_COLOR, RS_OPTION_COLOR_ENABLE_AUTO_EXPOSURE);
-            register_pu(RS_SUBDEVICE_COLOR, RS_OPTION_COLOR_ENABLE_AUTO_WHITE_BALANCE);
+            register_pu(RS_SUBDEVICE_COLOR, RS_OPTION_BACKLIGHT_COMPENSATION);
+            register_pu(RS_SUBDEVICE_COLOR, RS_OPTION_BRIGHTNESS);
+            register_pu(RS_SUBDEVICE_COLOR, RS_OPTION_CONTRAST);
+            register_pu(RS_SUBDEVICE_COLOR, RS_OPTION_EXPOSURE);
+            register_pu(RS_SUBDEVICE_COLOR, RS_OPTION_GAIN);
+            register_pu(RS_SUBDEVICE_COLOR, RS_OPTION_GAMMA);
+            register_pu(RS_SUBDEVICE_COLOR, RS_OPTION_HUE);
+            register_pu(RS_SUBDEVICE_COLOR, RS_OPTION_SATURATION);
+            register_pu(RS_SUBDEVICE_COLOR, RS_OPTION_SHARPNESS);
+            register_pu(RS_SUBDEVICE_COLOR, RS_OPTION_WHITE_BALANCE);
+            register_pu(RS_SUBDEVICE_COLOR, RS_OPTION_ENABLE_AUTO_EXPOSURE);
+            register_pu(RS_SUBDEVICE_COLOR, RS_OPTION_ENABLE_AUTO_WHITE_BALANCE);
 
-            register_depth_xu<uint8_t>(RS_OPTION_F200_LASER_POWER,          IVCAM_DEPTH_LASER_POWER);
-            register_depth_xu<uint8_t>(RS_OPTION_F200_ACCURACY,             IVCAM_DEPTH_ACCURACY);
-            register_depth_xu<uint8_t>(RS_OPTION_F200_MOTION_RANGE,         IVCAM_DEPTH_MOTION_RANGE);
-            register_depth_xu<uint8_t>(RS_OPTION_F200_CONFIDENCE_THRESHOLD, IVCAM_DEPTH_CONFIDENCE_THRESH);
-            register_depth_xu<uint8_t>(RS_OPTION_F200_FILTER_OPTION,        IVCAM_DEPTH_FILTER_OPTION);
+            register_depth_xu<uint8_t>(RS_OPTION_LASER_POWER,          IVCAM_DEPTH_LASER_POWER);
+            register_depth_xu<uint8_t>(RS_OPTION_ACCURACY,             IVCAM_DEPTH_ACCURACY);
+            register_depth_xu<uint8_t>(RS_OPTION_MOTION_RANGE,         IVCAM_DEPTH_MOTION_RANGE);
+            register_depth_xu<uint8_t>(RS_OPTION_CONFIDENCE_THRESHOLD, IVCAM_DEPTH_CONFIDENCE_THRESH);
+            register_depth_xu<uint8_t>(RS_OPTION_FILTER_OPTION,        IVCAM_DEPTH_FILTER_OPTION);
 
             register_autorange_options();
 
@@ -127,10 +127,10 @@ namespace rsimpl
                 set_auto_range(r);
                 *arr = r;
             });
-            register_option(RS_OPTION_SR300_AUTO_RANGE_ENABLE_MOTION_VERSUS_RANGE, RS_SUBDEVICE_DEPTH,
-                make_field_option(arr_reader_writer, &ivcam::cam_auto_range_request::enableMvR, { 0, 2, 1, 1 }));
-            register_option(RS_OPTION_SR300_AUTO_RANGE_ENABLE_LASER, RS_SUBDEVICE_DEPTH,
-                make_field_option(arr_reader_writer, &ivcam::cam_auto_range_request::enableLaser, { 0, 1, 1, 1 }));
+            //register_option(RS_OPTION_SR300_AUTO_RANGE_ENABLE_MOTION_VERSUS_RANGE, RS_SUBDEVICE_DEPTH,
+            //    make_field_option(arr_reader_writer, &ivcam::cam_auto_range_request::enableMvR, { 0, 2, 1, 1 }));
+            //register_option(RS_OPTION_SR300_AUTO_RANGE_ENABLE_LASER, RS_SUBDEVICE_DEPTH,
+            //    make_field_option(arr_reader_writer, &ivcam::cam_auto_range_request::enableLaser, { 0, 1, 1, 1 }));
             // etc..
         }
 

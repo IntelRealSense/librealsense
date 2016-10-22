@@ -289,28 +289,27 @@ namespace rsimpl
 
         struct pu_control { rs_option option; long property; bool enable_auto; };
         static const pu_control pu_controls[] = {
-            { RS_OPTION_COLOR_BACKLIGHT_COMPENSATION, VideoProcAmp_BacklightCompensation },
-            { RS_OPTION_COLOR_BRIGHTNESS, VideoProcAmp_Brightness },
-            { RS_OPTION_COLOR_CONTRAST, VideoProcAmp_Contrast },
-            { RS_OPTION_COLOR_GAIN, VideoProcAmp_Gain },
-            { RS_OPTION_COLOR_GAMMA, VideoProcAmp_Gamma },
-            { RS_OPTION_COLOR_HUE, VideoProcAmp_Hue },
-            { RS_OPTION_COLOR_SATURATION, VideoProcAmp_Saturation },
-            { RS_OPTION_COLOR_SHARPNESS, VideoProcAmp_Sharpness },
-            { RS_OPTION_COLOR_WHITE_BALANCE, VideoProcAmp_WhiteBalance },
-            { RS_OPTION_COLOR_ENABLE_AUTO_WHITE_BALANCE, VideoProcAmp_WhiteBalance, true },
-            { RS_OPTION_FISHEYE_GAIN, VideoProcAmp_Gain }
+            { RS_OPTION_BACKLIGHT_COMPENSATION, VideoProcAmp_BacklightCompensation },
+            { RS_OPTION_BRIGHTNESS, VideoProcAmp_Brightness },
+            { RS_OPTION_CONTRAST, VideoProcAmp_Contrast },
+            { RS_OPTION_GAIN, VideoProcAmp_Gain },
+            { RS_OPTION_GAMMA, VideoProcAmp_Gamma },
+            { RS_OPTION_HUE, VideoProcAmp_Hue },
+            { RS_OPTION_SATURATION, VideoProcAmp_Saturation },
+            { RS_OPTION_SHARPNESS, VideoProcAmp_Sharpness },
+            { RS_OPTION_WHITE_BALANCE, VideoProcAmp_WhiteBalance },
+            { RS_OPTION_ENABLE_AUTO_WHITE_BALANCE, VideoProcAmp_WhiteBalance, true },
         };
 
         int wmf_uvc_device::get_pu(rs_option opt) const
         {
             long value = 0, flags = 0;
-            if (opt == RS_OPTION_COLOR_EXPOSURE)
+            if (opt == RS_OPTION_EXPOSURE)
             {
                 CHECK_HR(_camera_control->Get(CameraControl_Exposure, &value, &flags));
                 return value;
             }
-            if (opt == RS_OPTION_COLOR_ENABLE_AUTO_EXPOSURE)
+            if (opt == RS_OPTION_ENABLE_AUTO_EXPOSURE)
             {
                 CHECK_HR(_camera_control->Get(CameraControl_Exposure, &value, &flags));
                 return flags == CameraControl_Flags_Auto;
@@ -329,12 +328,12 @@ namespace rsimpl
 
         void wmf_uvc_device::set_pu(rs_option opt, int value)
         {
-            if (opt == RS_OPTION_COLOR_EXPOSURE)
+            if (opt == RS_OPTION_EXPOSURE)
             {
                 CHECK_HR(_camera_control->Set(CameraControl_Exposure, static_cast<int>(value), CameraControl_Flags_Manual));
                 return;
             }
-            if (opt == RS_OPTION_COLOR_ENABLE_AUTO_EXPOSURE)
+            if (opt == RS_OPTION_ENABLE_AUTO_EXPOSURE)
             {
                 if (value)
                 {
@@ -378,8 +377,8 @@ namespace rsimpl
         control_range wmf_uvc_device::get_pu_range(rs_option opt) const
         {
             control_range result;
-            if (opt == RS_OPTION_COLOR_ENABLE_AUTO_EXPOSURE ||
-                opt == RS_OPTION_COLOR_ENABLE_AUTO_WHITE_BALANCE)
+            if (opt == RS_OPTION_ENABLE_AUTO_EXPOSURE ||
+                opt == RS_OPTION_ENABLE_AUTO_WHITE_BALANCE)
             {
                 result.min = 0;
                 result.max = 1;
@@ -389,7 +388,7 @@ namespace rsimpl
             }
 
             long minVal = 0, maxVal = 0, steppingDelta = 0, defVal = 0, capsFlag = 0;
-            if (opt == RS_OPTION_COLOR_EXPOSURE)
+            if (opt == RS_OPTION_EXPOSURE)
             {
                 CHECK_HR(_camera_control->GetRange(CameraControl_Exposure, &minVal, &maxVal, &steppingDelta, &defVal, &capsFlag));
                 result.min = minVal;

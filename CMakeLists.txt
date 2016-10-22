@@ -61,12 +61,8 @@ set(REALSENSE_CPP
     src/ivcam-private.cpp
     src/ivcam-device.cpp
     src/log.cpp
-    src/motion-module.cpp
     src/rs.cpp
     src/sr300.cpp
-    src/stream.cpp
-    src/sync.cpp
-    src/timestamps.cpp
     src/types.cpp
     src/uvc-v4l2.cpp
     src/backend.cpp
@@ -96,10 +92,6 @@ set(REALSENSE_HPP
     src/image.h
     src/ivcam-private.h
     src/ivcam-device.h
-    src/motion-module.h
-    src/stream.h
-    src/sync.h
-    src/timestamps.h
     src/types.h
     src/backend.h
 	src/sr300.h

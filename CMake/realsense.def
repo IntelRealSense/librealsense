@@ -60,10 +60,6 @@ EXPORTS
     rs_preset_to_string
     rs_distortion_to_string
     rs_option_to_string
-    rs_capabilities_to_string
-    rs_source_to_string
-    rs_event_to_string
-    rs_blob_type_to_string
     rs_camera_info_to_string
     rs_timestamp_domain_to_string
     rs_subdevice_to_string

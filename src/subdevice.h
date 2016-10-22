@@ -4,13 +4,11 @@
 #pragma once
 
 #include "backend.h"
-#include "stream.h"
 #include "archive.h"
 #include <chrono>
 #include <memory>
 #include <vector>
 #include <unordered_set>
-#include "hw-monitor.h"
 
 namespace rsimpl
 {
@@ -20,9 +18,9 @@ namespace rsimpl
     {
     public:
         streaming_lock()
-            : _callback(nullptr, [](rs_frame_callback*){}), 
-              _archive(&max_publish_list_size), 
-              _owner(nullptr), _is_streaming(false)
+            : _is_streaming(false), 
+              _callback(nullptr, [](rs_frame_callback*){}), 
+              _archive(&max_publish_list_size), _owner(nullptr)
         {
             
         }
