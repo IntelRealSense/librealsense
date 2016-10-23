@@ -82,8 +82,10 @@ set(REALSENSE_HPP
 	include/librealsense/rs.hpp
 	include/librealsense/rs.h
 	include/librealsense/rscore.hpp
+	include/librealsense/rsutil.h
 
     src/archive.h
+	src/concurrency.h
     src/context.h
     src/device.h
 	src/subdevice.h
@@ -123,6 +125,7 @@ if(WIN32)
 		include/librealsense/rs.hpp
 		include/librealsense/rs.h
 		include/librealsense/rscore.hpp
+		include/librealsense/rsutil.h
 		CMake/realsense.def
 		)
 		
@@ -160,8 +163,9 @@ if(WIN32)
     set(BACKEND RS_USE_WMF_BACKEND)
     set(REALSENSE_DEF CMake/realsense.def)
     # Makes VS15 find the DLL when trying to run examples/tests
-    set (CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
-    set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
+    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
+    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
+	add_definitions(-D__SSSE3__)
 	
 	set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 elseif(APPLE)

@@ -194,25 +194,33 @@ typedef struct rs_context rs_context;
 typedef struct rs_device_list rs_device_list;
 typedef struct rs_device rs_device;
 typedef struct rs_error rs_error;
-typedef struct rs_stream_lock rs_stream_lock;
+typedef struct rs_active_stream rs_active_stream;
 typedef struct rs_stream_profile_list rs_stream_profile_list;
-typedef struct rs_frame_ref rs_frame_ref;
+typedef struct rs_frame rs_frame;
+typedef struct rs_frame_queue rs_frame_queue;
 
 typedef struct rs_frame_callback rs_frame_callback;
 typedef struct rs_log_callback rs_log_callback;
 
-typedef void (*rs_frame_callback_ptr)(const rs_stream_lock*, rs_frame_ref*, void*);
+typedef void (*rs_frame_callback_ptr)(const rs_active_stream*, rs_frame*, void*);
 typedef void (*rs_log_callback_ptr)(rs_log_severity min_severity, const char* message, void* user);
 
 rs_context* rs_create_context(int api_version, rs_error** error);
 void rs_delete_context(rs_context* context);
 
 rs_device_list* rs_query_devices(const rs_context* context, rs_error** error);
-int rs_get_device_list_size(const rs_device_list* info_list, rs_error** error);
+int rs_get_device_count(const rs_device_list* info_list, rs_error** error);
 void rs_delete_device_list(rs_device_list* info_list);
 
 rs_device* rs_create_device(const rs_device_list* list, int index, rs_error** error);
 void rs_delete_device(rs_device* device);
+
+/**
+* retrieve mapping between the units of the depth image and meters
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return            depth in meters corresponding to a depth value of 1
+*/
+float rs_get_device_depth_scale(const rs_device * device, rs_error ** error);
 
 int rs_is_subdevice_supported(const rs_device* device, rs_subdevice subdevice, rs_error** error);
 
@@ -221,27 +229,27 @@ void rs_get_profile(const rs_stream_profile_list* list, int index, rs_stream* st
 int rs_get_profile_list_size(const rs_stream_profile_list* list, rs_error** error);
 void rs_delete_profiles_list(rs_stream_profile_list* list);
 
-rs_stream_lock* rs_open_subdevice(rs_device* device, rs_subdevice subdevice, 
+rs_active_stream* rs_open_subdevice(rs_device* device, rs_subdevice subdevice, 
     const rs_stream* stream, const int* width, const int* height, const int* fps, const rs_format* format, int count, rs_error** error);
-void rs_release_streaming_lock(rs_stream_lock* lock);
+void rs_release_streaming_lock(rs_active_stream* lock);
 
-void rs_start(rs_stream_lock* lock, rs_frame_callback_ptr on_frame, void* user, rs_error** error);
-void rs_start_cpp(rs_stream_lock* lock, rs_frame_callback* callback, rs_error** error);
-void rs_stop(rs_stream_lock* lock, rs_error** error);
+void rs_start(rs_active_stream* lock, rs_frame_callback_ptr on_frame, void* user, rs_error** error);
+void rs_start_cpp(rs_active_stream* lock, rs_frame_callback* callback, rs_error** error);
+void rs_stop(rs_active_stream* lock, rs_error** error);
 
-double rs_get_frame_metadata(const rs_frame_ref* frame, rs_frame_metadata frame_metadata, rs_error** error);
-int rs_supports_frame_metadata(const rs_frame_ref* frame, rs_frame_metadata frame_metadata, rs_error** error);
-double rs_get_frame_timestamp(const rs_frame_ref* frame, rs_error** error);
-rs_timestamp_domain rs_get_frame_timestamp_domain(const rs_frame_ref* frameset, rs_error** error);
-unsigned long long rs_get_frame_number(const rs_frame_ref* frame, rs_error** error);
-const void* rs_get_frame_data(const rs_frame_ref* frame, rs_error** error);
-int rs_get_frame_width(const rs_frame_ref* frame, rs_error** error);
-int rs_get_frame_height(const rs_frame_ref* frame, rs_error** error);
-int rs_get_frame_stride_in_bytes(const rs_frame_ref* frame, rs_error** error);
-int rs_get_frame_bits_per_pixel(const rs_frame_ref* frame, rs_error** error);
-rs_format rs_get_frame_format(const rs_frame_ref* frame, rs_error** error);
-rs_stream rs_get_frame_stream_type(const rs_frame_ref* frameset, rs_error** error);
-void rs_release_frame(const rs_stream_lock* lock, rs_frame_ref* frame);
+double rs_get_frame_metadata(const rs_frame* frame, rs_frame_metadata frame_metadata, rs_error** error);
+int rs_supports_frame_metadata(const rs_frame* frame, rs_frame_metadata frame_metadata, rs_error** error);
+double rs_get_frame_timestamp(const rs_frame* frame, rs_error** error);
+rs_timestamp_domain rs_get_frame_timestamp_domain(const rs_frame* frameset, rs_error** error);
+unsigned long long rs_get_frame_number(const rs_frame* frame, rs_error** error);
+const void* rs_get_frame_data(const rs_frame* frame, rs_error** error);
+int rs_get_frame_width(const rs_frame* frame, rs_error** error);
+int rs_get_frame_height(const rs_frame* frame, rs_error** error);
+int rs_get_frame_stride_in_bytes(const rs_frame* frame, rs_error** error);
+int rs_get_frame_bits_per_pixel(const rs_frame* frame, rs_error** error);
+rs_format rs_get_frame_format(const rs_frame* frame, rs_error** error);
+rs_stream rs_get_frame_stream_type(const rs_frame* frameset, rs_error** error);
+void rs_release_frame(const rs_active_stream* lock, rs_frame* frame);
 
 float rs_get_subdevice_option(const rs_device* device, rs_subdevice subdevice, rs_option option, rs_error** error);
 void rs_set_subdevice_option(const rs_device* device, rs_subdevice subdevice, rs_option option, float value, rs_error** error);
@@ -252,6 +260,13 @@ const char* rs_get_subdevice_option_value_description(const rs_device* device, r
 
 const char* rs_get_camera_info(const rs_device* device, rs_camera_info info, rs_error** error);
 int rs_supports_camera_info(const rs_device* device, rs_camera_info info, rs_error** error);
+
+rs_frame_queue* rs_create_frame_queue(int capacity, rs_error** error);
+void rs_delete_frame_queue(rs_frame_queue* queue);
+rs_frame* rs_wait_for_frame(rs_frame_queue* queue, const rs_active_stream** output_stream, rs_error** error);
+int rs_poll_for_frame(rs_frame_queue* queue, rs_frame** output_frame, const rs_active_stream** output_stream, rs_error** error);
+void rs_enqueue_frame(const rs_active_stream* sender, rs_frame* frame, void* queue);
+void rs_flush_queue(rs_frame_queue* queue, rs_error** error);
 
 /**
 * retrieve the API version from the source code. Evaluate that the value is conformant to the established policies

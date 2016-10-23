@@ -19,17 +19,17 @@ namespace rsimpl
     public:
         streaming_lock();
 
-        void set_owner(const rs_stream_lock* owner) { _owner = owner; }
+        void set_owner(const rs_active_stream* owner) { _owner = owner; }
 
         void play(frame_callback_ptr callback);
 
         void stop();
 
-        void release_frame(rs_frame_ref* frame);
+        void release_frame(rs_frame* frame);
 
-        rs_frame_ref* alloc_frame(size_t size, frame_additional_data additional_data);
+        rs_frame* alloc_frame(size_t size, frame_additional_data additional_data);
 
-        void invoke_callback(rs_frame_ref* frame_ref) const;
+        void invoke_callback(rs_frame* frame_ref) const;
 
         void flush();
 
@@ -43,7 +43,7 @@ namespace rsimpl
         frame_callback_ptr _callback;
         frame_archive _archive;
         std::atomic<uint32_t> max_publish_list_size;
-        const rs_stream_lock* _owner;
+        const rs_active_stream* _owner;
     };
 
     class endpoint

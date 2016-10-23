@@ -8,7 +8,7 @@
 
 struct rs_frame_callback
 {
-    virtual void                            on_frame(const rs_stream_lock * lock, rs_frame_ref * f) = 0;
+    virtual void                            on_frame(const rs_active_stream * lock, rs_frame * f) = 0;
     virtual void                            release() = 0;
     virtual                                 ~rs_frame_callback() {}
 };

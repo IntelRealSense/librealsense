@@ -5,8 +5,6 @@
 #include <GLFW/glfw3.h>
 #include <imgui.h>
 #include "imgui_impl_glfw.h"
-#include "concurrency.hpp"
-
 
 #include <cstdarg>
 #include <thread>
@@ -189,7 +187,7 @@ class subdevice_model
 {
 public:
     subdevice_model(rs_subdevice subdevice, rs::subdevice* endpoint, std::string& error_message)
-        : subdevice(subdevice), endpoint(endpoint), allow_new_frames(true)
+        : subdevice(subdevice), endpoint(endpoint), allow_new_frames(true), queues(5)
     {
         for (auto i = 0; i < RS_OPTION_COUNT; i++)
         {
@@ -283,20 +281,15 @@ public:
     void stop()
     {
         allow_new_frames = false;
-        queues.clear();
+        queues.flush();
         if (current_stream) current_stream->stop();
         current_stream.reset();
     }
 
     void play(const std::vector<rs::stream_profile>& profiles)
     {
-        current_stream = std::make_shared<rs::streaming_lock>(endpoint->open(profiles));
-        current_stream->start(
-            [this](rs::frame f)
-        {
-            if (allow_new_frames && queues.size() < 3)
-                queues.enqueue(std::move(f));
-        });
+        current_stream = std::make_shared<rs::active_stream>(endpoint->open(profiles));
+        current_stream->start(queues);
         allow_new_frames = true;
     }
 
@@ -330,12 +323,12 @@ public:
     std::vector<std::pair<int, int>> res_values;
     std::vector<int> fps_values;
     std::map<rs_stream, std::vector<rs_format>> format_values;
-    std::shared_ptr<rs::streaming_lock> current_stream;
+    std::shared_ptr<rs::active_stream> current_stream;
     std::atomic<bool> allow_new_frames;
 
     std::vector<rs::stream_profile> profiles;
 
-    single_consumer_queue<rs::frame> queues;
+    rs::frame_queue queues;
     bool options_invalidated = false;
     int next_option = RS_OPTION_COUNT;
 };
@@ -690,7 +683,7 @@ int main(int, char**) try
         for (auto&& sub : model.subdevices)
         {
             rs::frame f;
-            if (sub->queues.try_dequeue(&f))
+            if (sub->queues.poll_for_frame(&f))
             {
                 model.stream_buffers[f.get_stream_type()].upload(f);
                 model.steam_last_frame[f.get_stream_type()] = std::chrono::high_resolution_clock::now();

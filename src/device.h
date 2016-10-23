@@ -32,7 +32,7 @@ namespace rsimpl
         const std::string& get_info(rs_camera_info info) const;
 
         bool supports_info(rs_camera_info info) const;
-
+        float get_depth_scale() const { return _static_info.nominal_depth_scale; }
     protected:
         void assign_endpoint(rs_subdevice subdevice,
                              std::shared_ptr<endpoint> endpoint);

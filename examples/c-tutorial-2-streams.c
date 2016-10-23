@@ -31,30 +31,43 @@ int main()
     /* Create a context object. This object owns the handles to all connected realsense devices. */
     rs_context * ctx = rs_create_context(RS_API_VERSION, &e);
     check_error();
-    printf("There are %d connected RealSense devices.\n", rs_get_device_count(ctx, &e));
+    rs_device_list * devices = rs_query_devices(ctx, &e);
+    printf("There are %d connected RealSense devices.\n", rs_get_device_count(devices, &e));
     check_error();
-    if(rs_get_device_count(ctx, &e) == 0) return EXIT_FAILURE;
+    if(rs_get_device_count(devices, &e) == 0) return EXIT_FAILURE;
 
     /* This tutorial will access only a single device, but it is trivial to extend to multiple devices */
-    rs_device * dev = rs_get_device(ctx, 0, &e);
+    rs_device * dev = rs_create_device(devices, 1, &e);
     check_error();
-    printf("\nUsing device 0, an %s\n", rs_get_device_name(dev, &e));
+    printf("\nUsing device 0, an %s\n", rs_get_camera_info(dev, RS_CAMERA_INFO_DEVICE_NAME, &e));
     check_error();
-    printf("    Serial number: %s\n", rs_get_device_serial(dev, &e));
+    printf("    Serial number: %s\n", rs_get_camera_info(dev, RS_CAMERA_INFO_DEVICE_SERIAL_NUMBER, &e));
     check_error();
-    printf("    Firmware version: %s\n", rs_get_device_firmware_version(dev, &e));
+    printf("    Firmware version: %s\n", rs_get_camera_info(dev, RS_CAMERA_INFO_CAMERA_FIRMWARE_VERSION, &e));
     check_error();
 
-    /* Configure all streams to run at VGA resolution at 60 frames per second */
-    rs_enable_stream(dev, RS_STREAM_DEPTH, 640, 480, RS_FORMAT_Z16, 60, &e);
+    rs_format streams[3] = { RS_STREAM_COLOR, RS_STREAM_DEPTH, RS_STREAM_INFRARED };
+    int widths[3] = { 640, 640, 640 };
+    int heights[3] = { 480, 480, 480 };
+    int fpss[3] = { 30, 30, 30 };
+    rs_format formats[3] = { RS_FORMAT_BGR8, RS_FORMAT_Z16, RS_FORMAT_Y8 };
+
+    rs_active_stream * color_stream = rs_open_subdevice(dev, RS_SUBDEVICE_COLOR, streams, widths, heights, fpss, formats, 1, &e);
     check_error();
-    rs_enable_stream(dev, RS_STREAM_COLOR, 640, 480, RS_FORMAT_RGB8, 60, &e);
+    rs_active_stream * depth_stream = rs_open_subdevice(dev, RS_SUBDEVICE_DEPTH, streams+1, widths+1, heights+1, fpss+1, formats+1, 2, &e);
     check_error();
-    rs_enable_stream(dev, RS_STREAM_INFRARED, 640, 480, RS_FORMAT_Y8, 60, &e);
+
+    rs_frame_queue * queue = rs_create_frame_queue(10, &e);
     check_error();
-    rs_enable_stream(dev, RS_STREAM_INFRARED2, 640, 480, RS_FORMAT_Y8, 60, NULL); /* Pass NULL to ignore errors */
-    rs_start_device(dev, &e);
+
+    rs_start(color_stream, rs_enqueue_frame, queue, &e);
     check_error();
+    rs_start(depth_stream, rs_enqueue_frame, queue, &e);
+    check_error();
+
+    rs_frame* frontbuffer[RS_STREAM_COUNT];
+    rs_active_stream* owners[RS_STREAM_COUNT];
+    for (int i = 0; i < RS_STREAM_COUNT; i++) frontbuffer[i] = NULL;
 
     /* Open a GLFW window to display our output */
     glfwInit();
@@ -64,39 +77,68 @@ int main()
     {
         /* Wait for new frame data */
         glfwPollEvents();
-        rs_wait_for_frames(dev, &e);
+        rs_active_stream * owner;
+        rs_frame* frame = rs_wait_for_frame(queue, &owner, &e);
         check_error();
+
+        rs_stream stream_type = rs_get_frame_stream_type(frame, &e);
+        check_error();
+        if (frontbuffer[stream_type])
+        {
+            rs_release_frame(owners[stream_type], frontbuffer[stream_type]);
+        }
+        frontbuffer[stream_type] = frame;
+        owners[stream_type] = owner;
 
         glClear(GL_COLOR_BUFFER_BIT);
         glPixelZoom(1, -1);
 
-        /* Display depth data by linearly mapping depth between 0 and 2 meters to the red channel */
-        glRasterPos2f(-1, 1);
-        glPixelTransferf(GL_RED_SCALE, 0xFFFF * rs_get_device_depth_scale(dev, &e) / 2.0f);
-        check_error();
-        glDrawPixels(640, 480, GL_RED, GL_UNSIGNED_SHORT, rs_get_frame_data(dev, RS_STREAM_DEPTH, &e));
-        check_error();
-        glPixelTransferf(GL_RED_SCALE, 1.0f);
-
-        /* Display color image as RGB triples */
-        glRasterPos2f(0, 1);
-        glDrawPixels(640, 480, GL_RGB, GL_UNSIGNED_BYTE, rs_get_frame_data(dev, RS_STREAM_COLOR, &e));
-        check_error();
-
-        /* Display infrared image by mapping IR intensity to visible luminance */
-        glRasterPos2f(-1, 0);
-        glDrawPixels(640, 480, GL_LUMINANCE, GL_UNSIGNED_BYTE, rs_get_frame_data(dev, RS_STREAM_INFRARED, &e));
-        check_error();
-
-        /* Display second infrared image by mapping IR intensity to visible luminance */
-        if(rs_is_stream_enabled(dev, RS_STREAM_INFRARED2, NULL))
+        if (frontbuffer[RS_STREAM_DEPTH])
         {
-            glRasterPos2f(0, 0);
-            glDrawPixels(640, 480, GL_LUMINANCE, GL_UNSIGNED_BYTE, rs_get_frame_data(dev, RS_STREAM_INFRARED2, &e));
+            /* Display depth data by linearly mapping depth between 0 and 2 meters to the red channel */
+            glRasterPos2f(-1, 1);
+            glPixelTransferf(GL_RED_SCALE, 0xFFFF * rs_get_device_depth_scale(dev, &e) / 2.0f);
+            check_error();
+            glDrawPixels(640, 480, GL_RED, GL_UNSIGNED_SHORT, rs_get_frame_data(frontbuffer[RS_STREAM_DEPTH], &e));
+            check_error();
+            glPixelTransferf(GL_RED_SCALE, 1.0f);
+        }
+
+        if (frontbuffer[RS_STREAM_COLOR])
+        {
+            /* Display color image as RGB triples */
+            glRasterPos2f(0, 1);
+            glDrawPixels(640, 480, GL_RGB, GL_UNSIGNED_BYTE, rs_get_frame_data(frontbuffer[RS_STREAM_COLOR], &e));
+            check_error();
+        }
+
+        if (frontbuffer[RS_STREAM_INFRARED])
+        {
+            /* Display infrared image by mapping IR intensity to visible luminance */
+            glRasterPos2f(-1, 0);
+            glDrawPixels(640, 480, GL_LUMINANCE, GL_UNSIGNED_BYTE, rs_get_frame_data(frontbuffer[RS_STREAM_INFRARED], &e));
+            check_error();
         }
 
         glfwSwapBuffers(win);
     }
+
+    for (int i = 0; i < RS_STREAM_COUNT; i++)
+    {
+        if (frontbuffer[i])
+        {
+            rs_release_frame(owners[i], frontbuffer[i]);
+        }
+    }
+
+    rs_flush_queue(queue, &e);
+    check_error();
+    rs_release_streaming_lock(color_stream);
+    rs_release_streaming_lock(depth_stream);
+    rs_delete_device(dev);
+    rs_delete_device_list(devices);
+    rs_delete_frame_queue(queue);
+    rs_delete_context(ctx);
     
     return EXIT_SUCCESS;
 }

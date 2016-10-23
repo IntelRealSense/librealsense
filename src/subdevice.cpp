@@ -29,18 +29,18 @@ void streaming_lock::stop()
     _callback.reset();
 }
 
-void streaming_lock::release_frame(rs_frame_ref* frame)
+void streaming_lock::release_frame(rs_frame* frame)
 {
     _archive.release_frame_ref(frame);
 }
 
-rs_frame_ref* streaming_lock::alloc_frame(size_t size, frame_additional_data additional_data)
+rs_frame* streaming_lock::alloc_frame(size_t size, frame_additional_data additional_data)
 {
     auto frame = _archive.alloc_frame(size, additional_data, true);
     return _archive.track_frame(frame);
 }
 
-void streaming_lock::invoke_callback(rs_frame_ref* frame_ref) const
+void streaming_lock::invoke_callback(rs_frame* frame_ref) const
 {
     if (frame_ref)
     {
@@ -204,7 +204,7 @@ std::shared_ptr<streaming_lock> uvc_endpoint::configure(
                 auto fps = mode.profile.fps;
 
                 std::vector<byte *> dest;
-                std::vector<rs_frame_ref*> refs;
+                std::vector<rs_frame*> refs;
 
                 //auto stride_x = mode_selection.get_stride_x();
                 //auto stride_y = mode_selection.get_stride_y();

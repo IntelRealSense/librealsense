@@ -112,37 +112,37 @@ public:
     void disable_continuation() { on_release.reset(); }
 };
 
-struct rs_frame_ref // esentially an intrusive shared_ptr<frame>
+struct rs_frame // esentially an intrusive shared_ptr<frame>
 {
-    rs_frame_ref() : frame_ptr(nullptr) {}
+    rs_frame() : frame_ptr(nullptr) {}
 
-    explicit rs_frame_ref(frame* frame) : frame_ptr(frame)
+    explicit rs_frame(frame* frame) : frame_ptr(frame)
     {
         if (frame) frame->acquire();
     }
 
-    rs_frame_ref(const rs_frame_ref& other) : frame_ptr(other.frame_ptr)
+    rs_frame(const rs_frame& other) : frame_ptr(other.frame_ptr)
     {
         if (frame_ptr) frame_ptr->acquire();
     }
 
-    rs_frame_ref(rs_frame_ref&& other) : frame_ptr(other.frame_ptr)
+    rs_frame(rs_frame&& other) : frame_ptr(other.frame_ptr)
     {
         other.frame_ptr = nullptr;
     }
 
-    rs_frame_ref& operator =(rs_frame_ref other)
+    rs_frame& operator =(rs_frame other)
     {
         swap(other);
         return *this;
     }
 
-    ~rs_frame_ref()
+    ~rs_frame()
     {
         if (frame_ptr) frame_ptr->release();
     }
 
-    void swap(rs_frame_ref& other)
+    void swap(rs_frame& other)
     {
         std::swap(frame_ptr, other.frame_ptr);
     }
@@ -182,7 +182,7 @@ namespace rsimpl
         std::atomic<uint32_t>* max_frame_queue_size;
         std::atomic<uint32_t> published_frames_count;
         small_heap<frame, RS_USER_QUEUE_SIZE> published_frames;
-        small_heap<rs_frame_ref, RS_USER_QUEUE_SIZE> detached_refs;
+        small_heap<rs_frame, RS_USER_QUEUE_SIZE> detached_refs;
 
         std::vector<frame> freelist; // return frames here
         std::recursive_mutex mutex;
@@ -196,15 +196,15 @@ namespace rsimpl
         void unpublish_frame(frame * frame);
         frame * publish_frame(frame && frame);
 
-        rs_frame_ref * clone_frame(rs_frame_ref * frameset);
-        void release_frame_ref(rs_frame_ref * ref)
+        rs_frame * clone_frame(rs_frame * frameset);
+        void release_frame_ref(rs_frame * ref)
         {
             detached_refs.deallocate(ref);
         }
 
         // Frame callback thread API
         frame alloc_frame(const size_t size, const frame_additional_data& additional_data, bool requires_memory);
-        rs_frame_ref * track_frame(frame& f);
+        rs_frame * track_frame(frame& f);
         void log_frame_callback_end(frame* frame) const;
 
         void flush();

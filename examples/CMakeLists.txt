@@ -60,9 +60,25 @@ set_target_properties (cpp-config-ui PROPERTIES
     FOLDER Applications
 )
 
+add_executable(cpp-tutorial-2-streams cpp-tutorial-2-streams.cpp)
+target_link_libraries(cpp-tutorial-2-streams ${DEPENDENCIES})
+
+set_target_properties (cpp-tutorial-2-streams PROPERTIES
+    FOLDER Examples
+)
+
+add_executable(c-tutorial-2-streams c-tutorial-2-streams.c)
+target_link_libraries(c-tutorial-2-streams ${DEPENDENCIES})
+
+set_target_properties (c-tutorial-2-streams PROPERTIES
+    FOLDER Examples
+)
+
 install(
     TARGETS
     cpp-config-ui
+	c-tutorial-2-streams
+	cpp-tutorial-2-streams
 
     RUNTIME DESTINATION
     ${CMAKE_INSTALL_PREFIX}/bin

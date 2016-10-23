@@ -408,20 +408,20 @@ namespace rsimpl
         std::vector<supported_capability> capabilities_vector;
     };
 
-    typedef void(*frame_callback_function_ptr)(const rs_stream_lock * lock, rs_frame_ref * frame, void * user);
+    typedef void(*frame_callback_function_ptr)(const rs_active_stream * lock, rs_frame * frame, void * user);
     typedef void(*log_callback_function_ptr)(rs_log_severity severity, const char * message, void * user);
 
     class frame_callback : public rs_frame_callback
     {
         frame_callback_function_ptr fptr;
         void * user;
-        const rs_stream_lock * lock;
+        const rs_active_stream * lock;
     public:
         frame_callback() : frame_callback(nullptr, nullptr, nullptr) {}
-        frame_callback(rs_stream_lock * lock, frame_callback_function_ptr on_frame, void * user) : fptr(on_frame), user(user), lock(lock) {}
+        frame_callback(rs_active_stream * lock, frame_callback_function_ptr on_frame, void * user) : fptr(on_frame), user(user), lock(lock) {}
 
         operator bool() const { return fptr != nullptr; }
-        void on_frame (const rs_stream_lock * lock, rs_frame_ref * frame) override { 
+        void on_frame (const rs_active_stream * lock, rs_frame * frame) override { 
             if (fptr)
             {
                 try { fptr(lock, frame, user); } catch (...) 

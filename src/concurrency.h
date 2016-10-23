@@ -10,17 +10,26 @@
 template<class T>
 class single_consumer_queue
 {
-    std::queue<T> q;
+    std::deque<T> q;
     std::mutex mutex;
     std::condition_variable cv;
+    unsigned int cap;
+    bool accepting = true;
 
 public:
-    single_consumer_queue<T>() : q(), mutex(), cv() {}
+    explicit single_consumer_queue<T>(unsigned int cap) 
+        : q(), mutex(), cv(), cap(cap) {}
 
-    void enqueue(T item)
+    void enqueue(T&& item)
     {
         std::unique_lock<std::mutex> lock(mutex);
-        q.push(std::move(item));
+        if (accepting) {
+            q.push_back(std::move(item));
+            if (q.size() >= cap)
+            {
+                q.pop_front();
+            }
+        }
         lock.unlock();
         cv.notify_one(); 
     }
@@ -28,54 +37,44 @@ public:
     T dequeue()
     {
         std::unique_lock<std::mutex> lock(mutex);
+        accepting = true;
         const auto ready = [this]() { return !q.empty(); };
         if (!ready() && !cv.wait_for(lock, std::chrono::seconds(5), ready)) throw std::runtime_error("Timeout waiting for queued items!");
         auto item = std::move(q.front());
-        q.pop();
+        q.pop_front();
         return std::move(item);
     }
 
     bool try_dequeue(T* item)
     {
         std::unique_lock<std::mutex> lock(mutex);
+        accepting = true;
         if(q.size()>0)
         {
             auto val = std::move(q.front());
-            q.pop();
+            q.pop_front();
             *item = std::move(val);
             return true;
         }
         return false;
     }
 
-    void clear()
+    void flush()
     {
         std::unique_lock<std::mutex> lock(mutex);
+        accepting = false;
         while (q.size() > 0)
         {
             const auto ready = [this]() { return !q.empty(); };
             if (!ready() && !cv.wait_for(lock, std::chrono::seconds(5), ready)) throw std::runtime_error("Timeout waiting for queued items!");
             auto item = std::move(q.front());
-            q.pop();
+            q.pop_front();
         }
-        
-        
     }
+
     size_t size()
     {
         std::unique_lock<std::mutex> lock(mutex); 
         return q.size();
     }
 };
-
-inline bool any_costumers_alive(const std::vector<bool>& running)
-{
-    for (auto is_running : running)
-    {
-        if (is_running)
-        {
-            return true;
-        }
-    }
-    return false;
-}

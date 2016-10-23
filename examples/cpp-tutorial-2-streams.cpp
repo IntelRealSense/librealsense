@@ -16,35 +16,27 @@ int main() try
 {
     // Create a context object. This object owns the handles to all connected realsense devices.
     rs::context ctx;
-    printf("There are %d connected RealSense devices.\n", ctx.get_device_count());
-    if(ctx.get_device_count() == 0) return EXIT_FAILURE;
+    auto connected_devices = ctx.query_devices();
+    printf("There are %llu connected RealSense devices.\n", connected_devices.size());
+    if(connected_devices.size() == 0) return EXIT_FAILURE;
 
     // This tutorial will access only a single device, but it is trivial to extend to multiple devices
-    rs::device * dev = ctx.get_device(0);
-    printf("\nUsing device 0, an %s\n", dev->get_name());
-    printf("    Serial number: %s\n", dev->get_serial());
-    printf("    Firmware version: %s\n", dev->get_firmware_version());
+    auto dev = connected_devices[0];
+    printf("\nUsing device 0, an %s\n", dev.get_camera_info(RS_CAMERA_INFO_DEVICE_NAME));
+    printf("    Serial number: %s\n", dev.get_camera_info(RS_CAMERA_INFO_DEVICE_SERIAL_NUMBER));
+    printf("    Firmware version: %s\n", dev.get_camera_info(RS_CAMERA_INFO_CAMERA_FIRMWARE_VERSION));
 
-    std::vector<rs::stream> supported_streams;
+    std::vector<rs_stream> supported_streams = { RS_STREAM_DEPTH, RS_STREAM_INFRARED, RS_STREAM_COLOR };
 
-    for (int i=(int)rs::capabilities::depth; i <=(int)rs::capabilities::depth; i++)
-        if (dev->supports((rs::capabilities)i))
-            supported_streams.push_back((rs::stream)i);
+    auto depth_stream = dev.depth().open({ { RS_STREAM_DEPTH, 640, 480, 30, RS_FORMAT_Z16 },
+                                           { RS_STREAM_INFRARED, 640, 480, 30, RS_FORMAT_Y8 } });
+    auto color_stream = dev.color().open(  { RS_STREAM_COLOR, 640, 480, 30, RS_FORMAT_RGB8 });
 
-    // Configure all supported streams to run at 30 frames per second
-    for (auto & stream : supported_streams)
-    {
-        switch (stream)
-        {
-            case rs::stream::depth: dev->enable_stream(stream, 640, 480, rs::format::z16, 30); break;
-            case rs::stream::color: dev->enable_stream(stream, 640, 480, rs::format::rgb8, 30); break;
-            case rs::stream::infrared: dev->enable_stream(stream, 640, 480, rs::format::y8, 30); break;
-            case rs::stream::infrared2: dev->enable_stream(stream, 640, 480, rs::format::y8, 30); break;
-            default : break;    // This demo will display native streams only
-        }
-    }
+    rs::frame_queue queue(10);
+    rs::frame frontbuffer[RS_STREAM_COUNT];
 
-    dev->start();
+    depth_stream.start(queue);
+    color_stream.start(queue);
 
     // Open a GLFW window to display our output
     glfwInit();
@@ -55,39 +47,41 @@ int main() try
     {
         // Wait for new frame data
         glfwPollEvents();
-        dev->wait_for_frames();
+
+        auto frame = queue.wait_for_frame();
+        auto stream_type = frame.get_stream_type();
+        frontbuffer[stream_type] = std::move(frame);
 
         glClear(GL_COLOR_BUFFER_BIT);
         glPixelZoom(1, -1);
 
         for (auto & stream : supported_streams)
         {
+            if (frontbuffer[stream])
             switch (stream)
             {
-                case rs::stream::depth: // Display depth data by linearly mapping depth between 0 and 2 meters to the red channel
+                case RS_STREAM_DEPTH: // Display depth data by linearly mapping depth between 0 and 2 meters to the red channel
                     glRasterPos2f(-1, 1);
-                    glPixelTransferf(GL_RED_SCALE, 0xFFFF * dev->get_depth_scale() / 2.0f);
-                    glDrawPixels(640, 480, GL_RED, GL_UNSIGNED_SHORT, dev->get_frame_data(rs::stream::depth));
+                    glPixelTransferf(GL_RED_SCALE, 0xFFFF * dev.get_depth_scale() / 2.0f);
+                    glDrawPixels(640, 480, GL_RED, GL_UNSIGNED_SHORT, frontbuffer[stream].get_data());
                     glPixelTransferf(GL_RED_SCALE, 1.0f);
                 break;
-                case rs::stream::color: // Display color image as RGB triples
+                case RS_STREAM_COLOR: // Display color image as RGB triples
                     glRasterPos2f(0, 1);
-                    glDrawPixels(640, 480, GL_RGB, GL_UNSIGNED_BYTE, dev->get_frame_data(rs::stream::color));
+                    glDrawPixels(640, 480, GL_RGB, GL_UNSIGNED_BYTE, frontbuffer[stream].get_data());
                 break;
-                case rs::stream::infrared: // Display infrared image by mapping IR intensity to visible luminance
+                case RS_STREAM_INFRARED: // Display infrared image by mapping IR intensity to visible luminance
                     glRasterPos2f(-1, 0);
-                    glDrawPixels(640, 480, GL_LUMINANCE, GL_UNSIGNED_BYTE, dev->get_frame_data(rs::stream::infrared));
+                    glDrawPixels(640, 480, GL_LUMINANCE, GL_UNSIGNED_BYTE, frontbuffer[stream].get_data());
                 break;
-                case rs::stream::infrared2: // Display second infrared image by mapping IR intensity to visible luminance
-                    glRasterPos2f(0, 0);
-                    glDrawPixels(640, 480, GL_LUMINANCE, GL_UNSIGNED_BYTE, dev->get_frame_data(rs::stream::infrared2));
-                break;
-                default : break;    // This demo will display native streams only
+                default: break;    // This demo will display native streams only
             }
         }
 
         glfwSwapBuffers(win);
     }
+
+    queue.flush();
 
     return EXIT_SUCCESS;
 }

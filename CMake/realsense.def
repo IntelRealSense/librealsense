@@ -5,11 +5,12 @@ EXPORTS
     rs_delete_context
     
     rs_query_devices
-    rs_get_device_list_size
+    rs_get_device_count
     rs_delete_device_list
 
     rs_create_device
     rs_delete_device
+    rs_get_device_depth_scale
 
     rs_is_subdevice_supported
 
@@ -48,6 +49,14 @@ EXPORTS
 
     rs_get_camera_info
     rs_supports_camera_info
+
+    rs_create_frame_queue
+    rs_delete_frame_queue
+    rs_wait_for_frame
+    rs_poll_for_frame
+    rs_enqueue_frame
+    rs_flush_queue
+
 
     rs_get_failed_function
     rs_get_failed_args
