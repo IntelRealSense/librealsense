@@ -13,39 +13,42 @@ int main() try
 {
     // Create a context object. This object owns the handles to all connected realsense devices.
     rs::context ctx;
-    printf("There are %d connected RealSense devices.\n", ctx.get_device_count());
-    if(ctx.get_device_count() == 0) return EXIT_FAILURE;
+    auto devices = ctx.query_devices();
+    printf("There are %llu connected RealSense devices.\n", devices.size());
+    if(devices.size() == 0) return EXIT_FAILURE;
 
     // This tutorial will access only a single device, but it is trivial to extend to multiple devices
-    rs::device * dev = ctx.get_device(0);
-    printf("\nUsing device 0, an %s\n", dev->get_name());
-    printf("    Serial number: %s\n", dev->get_serial());
-    printf("    Firmware version: %s\n", dev->get_firmware_version());
+    auto dev = devices[0];
+    printf("\nUsing device 0, an %s\n", dev.get_camera_info(RS_CAMERA_INFO_DEVICE_NAME));
+    printf("    Serial number: %s\n", dev.get_camera_info(RS_CAMERA_INFO_DEVICE_SERIAL_NUMBER));
+    printf("    Firmware version: %s\n", dev.get_camera_info(RS_CAMERA_INFO_CAMERA_FIRMWARE_VERSION));
 
     // Configure depth to run at VGA resolution at 30 frames per second
-    dev->enable_stream(rs::stream::depth, 640, 480, rs::format::z16, 30);
+    auto stream = dev.depth().open({ RS_STREAM_DEPTH, 640, 480, 30, RS_FORMAT_Z16 });
 
-    dev->start();
+    // Configure frame queue of size one and start streaming into it
+    rs::frame_queue queue(1);
+    stream.start(queue);
 
     // Determine depth value corresponding to one meter
-    const uint16_t one_meter = static_cast<uint16_t>(1.0f / dev->get_depth_scale());
+    const auto one_meter = static_cast<uint16_t>(1.0f / dev.get_depth_scale());
 
     while(true)
     {
         // This call waits until a new coherent set of frames is available on a device
         // Calls to get_frame_data(...) and get_frame_timestamp(...) on a device will return stable values until wait_for_frames(...) is called
-        dev->wait_for_frames();
+        auto frame = queue.wait_for_frame();
 
         // Retrieve depth data, which was previously configured as a 640 x 480 image of 16-bit depth values
-        const uint16_t * depth_frame = reinterpret_cast<const uint16_t *>(dev->get_frame_data(rs::stream::depth));
+        auto depth_frame = reinterpret_cast<const uint16_t *>(frame.get_data());
 
         // Print a simple text-based representation of the image, by breaking it into 10x20 pixel regions and and approximating the coverage of pixels within one meter
         char buffer[(640/10+1)*(480/20)+1];
-        char * out = buffer;
+        auto out = buffer;
         int coverage[64] = {};
-        for(int y=0; y<480; ++y)
+        for(auto y=0; y<480; ++y)
         {
-            for(int x=0; x<640; ++x)
+            for(auto x=0; x<640; ++x)
             {
                 int depth = *depth_frame++;
                 if(depth > 0 && depth < one_meter) ++coverage[x/10];
@@ -53,7 +56,7 @@ int main() try
 
             if(y%20 == 19)
             {
-                for(int & c : coverage)
+                for(auto& c : coverage)
                 {
                     *out++ = " .:nhBXWW"[c/25];
                     c = 0;

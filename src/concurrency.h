@@ -25,7 +25,7 @@ public:
         std::unique_lock<std::mutex> lock(mutex);
         if (accepting) {
             q.push_back(std::move(item));
-            if (q.size() >= cap)
+            if (q.size() > cap)
             {
                 q.pop_front();
             }

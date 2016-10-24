@@ -60,19 +60,35 @@ set_target_properties (cpp-config-ui PROPERTIES
     FOLDER Examples
 )
 
-add_executable(cpp-tutorial-2-streams cpp-tutorial-2-streams.cpp)
-target_link_libraries(cpp-tutorial-2-streams ${DEPENDENCIES})
-
-set_target_properties (cpp-tutorial-2-streams PROPERTIES
-    FOLDER Examples
-)
+# C Tutorials
+add_executable(c-tutorial-1-depth c-tutorial-1-depth.c)
+target_link_libraries(c-tutorial-1-depth ${DEPENDENCIES})
 
 add_executable(c-tutorial-2-streams c-tutorial-2-streams.c)
 target_link_libraries(c-tutorial-2-streams ${DEPENDENCIES})
 
-set_target_properties (c-tutorial-2-streams PROPERTIES
-    FOLDER Examples
+# C++ Tutorials
+add_executable(cpp-tutorial-1-depth cpp-tutorial-1-depth.cpp)
+target_link_libraries(cpp-tutorial-1-depth ${DEPENDENCIES})
+
+add_executable(cpp-tutorial-2-streams cpp-tutorial-2-streams.cpp)
+target_link_libraries(cpp-tutorial-2-streams ${DEPENDENCIES})
+
+set_target_properties (cpp-tutorial-2-streams PROPERTIES
+    FOLDER "C++ Tutorials"
 )
+set_target_properties (cpp-tutorial-1-depth PROPERTIES
+    FOLDER "C++ Tutorials"
+)
+
+set_target_properties (c-tutorial-2-streams PROPERTIES
+    FOLDER "C Tutorials"
+)
+set_target_properties (c-tutorial-1-depth PROPERTIES
+    FOLDER "C Tutorials"
+)
+
+
 
 add_executable(cpp-enumerate-devices cpp-enumerate-devices.cpp)
 target_link_libraries(cpp-enumerate-devices ${DEPENDENCIES})
@@ -85,6 +101,9 @@ set_target_properties (cpp-enumerate-devices PROPERTIES
 install(
     TARGETS
     cpp-config-ui
+	
+	c-tutorial-1-depth
+	cpp-tutorial-1-depth
 	c-tutorial-2-streams
 	cpp-tutorial-2-streams
 	
