@@ -52,12 +52,12 @@ else()
     include_directories(${GLFW_INCLUDE_DIR})
 endif()
 
-add_executable(cpp-config-ui cpp-config-ui.cpp third_party/imgui/imgui.cpp third_party/imgui/imgui_impl_glfw.cpp)
+add_executable(cpp-config-ui cpp-config-ui.cpp third_party/imgui/imgui.cpp third_party/imgui/imgui_impl_glfw.cpp example.hpp)
 target_link_libraries(cpp-config-ui ${DEPENDENCIES})
 include_directories(cpp-config-ui third_party/imgui)
 
 set_target_properties (cpp-config-ui PROPERTIES
-    FOLDER Applications
+    FOLDER Examples
 )
 
 add_executable(cpp-tutorial-2-streams cpp-tutorial-2-streams.cpp)
@@ -74,11 +74,21 @@ set_target_properties (c-tutorial-2-streams PROPERTIES
     FOLDER Examples
 )
 
+add_executable(cpp-enumerate-devices cpp-enumerate-devices.cpp)
+target_link_libraries(cpp-enumerate-devices ${DEPENDENCIES})
+include_directories(cpp-config-ui third_party/tclap/include)
+
+set_target_properties (cpp-enumerate-devices PROPERTIES
+    FOLDER Examples
+)
+
 install(
     TARGETS
     cpp-config-ui
 	c-tutorial-2-streams
 	cpp-tutorial-2-streams
+	
+	cpp-enumerate-devices
 
     RUNTIME DESTINATION
     ${CMAKE_INSTALL_PREFIX}/bin

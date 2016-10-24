@@ -39,6 +39,7 @@ namespace rsimpl
         {
         CASE(DEPTH)
         CASE(COLOR)
+        CASE(FISHEYE)
         default: assert(!is_valid(value)); return unknown;
         }
         #undef CASE

@@ -537,14 +537,6 @@ namespace rs
         std::shared_ptr<rs_frame_queue> _queue;
     };
 
-    inline std::ostream & operator << (std::ostream & o, rs_stream stream) { return o << rs_stream_to_string(stream); }
-    inline std::ostream & operator << (std::ostream & o, rs_format format) { return o << rs_format_to_string(format); }
-    inline std::ostream & operator << (std::ostream & o, rs_preset preset) { return o << rs_preset_to_string(preset); }
-    inline std::ostream & operator << (std::ostream & o, rs_distortion distortion) { return o << rs_distortion_to_string(distortion); }
-    inline std::ostream & operator << (std::ostream & o, rs_option option) { return o << rs_option_to_string(option); }
-    inline std::ostream & operator << (std::ostream & o, rs_subdevice evt) { return o << rs_subdevice_to_string(evt); }
-
-
     class log_callback : public rs_log_callback
     {
         std::function<void(rs_log_severity, const char *)> on_event_function;
@@ -581,4 +573,11 @@ namespace rs
     }
 }
 
-#endif // LIBREALSENSE_RS2_HPP
+inline std::ostream & operator << (std::ostream & o, rs_stream stream) { return o << rs_stream_to_string(stream); }
+inline std::ostream & operator << (std::ostream & o, rs_format format) { return o << rs_format_to_string(format); }
+inline std::ostream & operator << (std::ostream & o, rs_preset preset) { return o << rs_preset_to_string(preset); }
+inline std::ostream & operator << (std::ostream & o, rs_distortion distortion) { return o << rs_distortion_to_string(distortion); }
+inline std::ostream & operator << (std::ostream & o, rs_option option) { return o << rs_option_to_string(option); }
+inline std::ostream & operator << (std::ostream & o, rs_subdevice evt) { return o << rs_subdevice_to_string(evt); }
+
+#endif // LIBREALSENSE_RS_HPP
