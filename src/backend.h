@@ -67,6 +67,7 @@ namespace rsimpl
 
         struct frame_object
         {
+            int size;
             const void * pixels;
         };
 

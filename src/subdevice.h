@@ -23,7 +23,7 @@ namespace rsimpl
 
         void play(frame_callback_ptr callback);
 
-        void stop();
+        virtual void stop();
 
         void release_frame(rs_frame* frame);
 
@@ -119,12 +119,18 @@ namespace rsimpl
             uvc_endpoint* _owner;
         };
 
-        class uvc_streaming_lock : public rsimpl::streaming_lock
+        class uvc_streaming_lock : public streaming_lock
         {
         public:
             explicit uvc_streaming_lock(uvc_endpoint* owner)
                 : _owner(owner), _power(owner)
             {
+            }
+
+            void stop() override 
+            {
+                streaming_lock::stop();
+                _owner->stop_streaming();
             }
 
             const uvc_endpoint& get_endpoint() const { return *_owner; }

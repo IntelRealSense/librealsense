@@ -8,6 +8,7 @@
 #include <mutex>
 #include <chrono>
 #include <atomic>
+#include <map>
 
 namespace rsimpl
 {
@@ -35,7 +36,8 @@ namespace rsimpl
             uvc_get_xu,
             uvc_stream_profiles,
             uvc_play,
-            uvc_stop
+            uvc_stop,
+            uvc_frame
         };
 
         struct call
@@ -140,6 +142,7 @@ namespace rsimpl
             }
 
             call& find_call(call_type t, int entity_id);
+            call* cycle_calls(call_type call_type, int id);
 
         private:
             std::vector<call> calls;
@@ -150,8 +153,8 @@ namespace rsimpl
             std::mutex _mutex;
             std::chrono::high_resolution_clock::time_point start_time;
 
-            int cursor;
-
+            std::map<int, int> _cursors;
+            std::map<int, int> _cycles;
         };
 
         class record_uvc_device : public uvc_device
@@ -237,11 +240,18 @@ namespace rsimpl
             std::string get_device_location() const override;
 
             explicit playback_uvc_device(std::shared_ptr<recording> rec,
-                int id) : _rec(rec), _entity_id(id) {}
+                                         int id);
+
+            void callback_thread();
+            ~playback_uvc_device();
 
         private:
             std::shared_ptr<recording> _rec;
             int _entity_id;
+            std::thread _callback_thread;
+            std::atomic<bool> _alive;
+            std::vector<std::pair<stream_profile, frame_callback>> _callbacks;
+            std::mutex _callback_mutex;
         };
 
 
@@ -267,7 +277,6 @@ namespace rsimpl
             std::vector<usb_device_info> query_usb_devices() const override;
 
             explicit playback_backend(const char* filename);
-
         private:
             std::shared_ptr<recording> _rec;
         };

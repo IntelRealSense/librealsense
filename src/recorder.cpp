@@ -4,6 +4,7 @@
 #include "recorder.h"
 #include <fstream>
 #include "sql.h"
+#include <algorithm>
 
 using namespace std;
 using namespace sql;
@@ -47,7 +48,7 @@ namespace rsimpl
         }
 
 
-        recording::recording(): cursor(0)
+        recording::recording()
         {
             start_time = chrono::high_resolution_clock::now();
         }
@@ -233,19 +234,45 @@ namespace rsimpl
             lock_guard<mutex> lock(_mutex);
             for (auto i = 1; i <= calls.size(); i++)
             {
-                const auto idx = (cursor + i) % calls.size();
+                const auto idx = (_cursors[entity_id] + i) % calls.size();
                 if (calls[idx].type == t && calls[idx].entity_id == entity_id)
                 {
-                    cursor = idx;
-                    return calls[cursor];
+                    _cursors[entity_id] = _cycles[entity_id] = idx;
+                    return calls[idx];
                 }
             }
             throw runtime_error("The recording is missing the part you are trying to playback!");
         }
 
+        call* recording::cycle_calls(call_type t, int id)
+        {
+            lock_guard<mutex> lock(_mutex);
+            for (auto i = 1; i <= calls.size(); i++)
+            {
+                const auto idx = (_cycles[id] + i) % calls.size();
+                if (calls[idx].type == t && calls[idx].entity_id == id)
+                {
+                    _cycles[id] = idx;
+                    return &calls[idx];
+                }
+                if (calls[idx].type != t && calls[idx].entity_id == id)
+                {
+                    _cycles[id] = _cursors[id];
+                    return nullptr;
+                }
+            }
+            return nullptr;
+        }
+
         void record_uvc_device::play(stream_profile profile, frame_callback callback)
         {
-            _source->play(profile, callback);
+            _source->play(profile, [this, callback](stream_profile p, frame_object f)
+            {
+                auto&& c = _rec->add_call(_entity_id, call_type::uvc_frame);
+                c.param1 = _rec->save_blob(&p, sizeof(p));
+                c.param2 = _rec->save_blob(f.pixels, f.size);
+                callback(p, f);
+            });
             vector<stream_profile> ps{ profile };
             _rec->save_stream_profiles(ps, _entity_id, call_type::uvc_play);
         }
@@ -341,7 +368,7 @@ namespace rsimpl
             return res;
         }
 
-        std::vector<stream_profile> record_uvc_device::get_profiles() const
+        vector<stream_profile> record_uvc_device::get_profiles() const
         {
             auto devices = _source->get_profiles();
             _rec->save_stream_profiles(devices, _entity_id, call_type::uvc_stream_profiles);
@@ -453,6 +480,12 @@ namespace rsimpl
         {
         }
 
+        playback_uvc_device::~playback_uvc_device()
+        {
+            _alive = false;
+            _callback_thread.join();
+        }
+
         void record_backend::save_to_file(const char* filename) const
         {
             _rec->save(filename);
@@ -460,19 +493,36 @@ namespace rsimpl
 
         void playback_uvc_device::play(stream_profile profile, frame_callback callback)
         {
+            lock_guard<mutex> lock(_callback_mutex);
             auto stored = _rec->load_stream_profiles(_entity_id, call_type::uvc_play);
-            std::vector<stream_profile> input{ profile };
+            vector<stream_profile> input{ profile };
             if (input != stored)
                 throw runtime_error("Recording history mismatch!");
 
+            auto it = std::remove_if(begin(_callbacks), end(_callbacks),
+                [&profile](const pair<stream_profile, frame_callback>& pair)
+            {
+                return pair.first == profile;
+            });
+            _callbacks.erase(it, end(_callbacks));
+
+            _callbacks.push_back({ profile, callback });
         }
 
         void playback_uvc_device::stop(stream_profile profile)
         {
+            lock_guard<mutex> lock(_callback_mutex);
             auto stored = _rec->load_stream_profiles(_entity_id, call_type::uvc_stop);
-            std::vector<stream_profile> input{ profile };
+            vector<stream_profile> input{ profile };
             if (input != stored)
                 throw runtime_error("Recording history mismatch!");
+
+            auto it = std::remove_if(begin(_callbacks), end(_callbacks), 
+                [&profile](const pair<stream_profile, frame_callback>& pair)
+            {
+                return pair.first == profile;
+            });
+            _callbacks.erase(it, end(_callbacks));
         }
 
         void playback_uvc_device::set_power_state(power_state state)
@@ -554,7 +604,7 @@ namespace rsimpl
             return res;
         }
 
-        std::vector<stream_profile> playback_uvc_device::get_profiles() const
+        vector<stream_profile> playback_uvc_device::get_profiles() const
         {
             return _rec->load_stream_profiles(_entity_id, call_type::uvc_stream_profiles);
         }
@@ -575,12 +625,46 @@ namespace rsimpl
             return c.inline_string;
         }
 
+        playback_uvc_device::playback_uvc_device(shared_ptr<recording> rec, int id)
+            :   _rec(rec), _entity_id(id),
+                _callback_thread([this]() { callback_thread(); }),
+                _alive(true)
+        {
+            
+        }
+
         vector<uint8_t> playback_usb_device::send_receive(const vector<uint8_t>& data, int timeout_ms, bool require_response)
         {
             auto&& c = _rec->find_call(call_type::send_command, _entity_id);
             if (c.param3 != timeout_ms || c.param4 != require_response || _rec->load_blob(c.param1) != data)
                 throw runtime_error("Recording history mismatch!");
             return _rec->load_blob(c.param2);
+        }
+
+        void playback_uvc_device::callback_thread()
+        {
+            while (_alive)
+            {
+                auto c_ptr = _rec->cycle_calls(call_type::uvc_frame, _entity_id);
+                if (c_ptr)
+                {
+                    auto profile_blob = _rec->load_blob(c_ptr->param1);
+                    stream_profile p;
+                    memcpy(&p, profile_blob.data(), sizeof(p));
+                    lock_guard<mutex> lock(_callback_mutex);
+                    for (auto&& pair : _callbacks)
+                    {
+                        if (p == pair.first)
+                        {
+                            auto frame_blob = _rec->load_blob(c_ptr->param2);
+                            frame_object fo{ frame_blob.size(), frame_blob.data() };
+                            pair.second(p, fo);
+                            break;
+                        }
+                    }
+                }
+                this_thread::sleep_for(chrono::milliseconds(50));
+            }
         }
     }
 }
