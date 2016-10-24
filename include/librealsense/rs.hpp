@@ -557,17 +557,10 @@ namespace rs
         error::handle(e);
     }
 
-    inline void log_to_file(rs_log_severity min_severity, const char * file_path)
+    inline void log_to_file(rs_log_severity min_severity, const char * file_path = nullptr)
     {
         rs_error * e = nullptr;
         rs_log_to_file(min_severity, file_path, &e);
-        error::handle(e);
-    }
-
-    inline void log_to_callback(rs_log_severity min_severity, std::function<void(rs_log_severity, const char *)> callback)
-    {
-        rs_error * e = nullptr;
-        rs_log_to_callback_cpp(min_severity, new log_callback(callback), &e);
         error::handle(e);
     }
 }

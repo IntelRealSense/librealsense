@@ -455,6 +455,9 @@ private:
 
 int main(int, char**) try
 {
+    rs::log_to_console(RS_LOG_SEVERITY_WARN);
+    rs::log_to_file(RS_LOG_SEVERITY_DEBUG);
+
     if (!glfwInit())
         exit(1);
 

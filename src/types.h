@@ -23,7 +23,11 @@
 #include <condition_variable>
 #include "backend.h"
 
-const uint8_t RS_STREAM_NATIVE_COUNT    = 5;
+#define ELPP_THREAD_SAFE
+#define NOMINMAX
+#include "../third_party/easyloggingpp/src/easylogging++.h"
+
+const uint8_t RS_STREAM_NATIVE_COUNT = 5;
 const int RS_USER_QUEUE_SIZE = 20;
 const int RS_MAX_EVENT_QUEUE_SIZE = 500;
 const int RS_MAX_EVENT_TINE_OUT = 10;
@@ -37,9 +41,6 @@ namespace rsimpl
     ///////////////////////////////////
     // Utility types for general use //
     ///////////////////////////////////
-
-    typedef uint8_t byte;
-
     struct to_string
     {
         std::ostringstream ss;
@@ -65,19 +66,14 @@ namespace rsimpl
     // Logging mechanism //
     ///////////////////////
 
-    void log(rs_log_severity severity, const std::string & message);
     void log_to_console(rs_log_severity min_severity);
     void log_to_file(rs_log_severity min_severity, const char * file_path);
-    void log_to_callback(rs_log_severity min_severity, rs_log_callback * callback);
-    void log_to_callback(rs_log_severity min_severity, void(*on_log)(rs_log_severity, const char*, void*), void* user);
-    rs_log_severity get_minimum_severity();
 
-#define LOG(SEVERITY, ...) do { if(static_cast<int>(SEVERITY) >= rsimpl::get_minimum_severity()) { std::ostringstream ss; ss << __VA_ARGS__; rsimpl::log(SEVERITY, ss.str()); } } while(false)
-#define LOG_DEBUG(...)   LOG(RS_LOG_SEVERITY_DEBUG, __VA_ARGS__)
-#define LOG_INFO(...)    LOG(RS_LOG_SEVERITY_INFO,  __VA_ARGS__)
-#define LOG_WARNING(...) LOG(RS_LOG_SEVERITY_WARN,  __VA_ARGS__)
-#define LOG_ERROR(...)   LOG(RS_LOG_SEVERITY_ERROR, __VA_ARGS__)
-#define LOG_FATAL(...)   LOG(RS_LOG_SEVERITY_FATAL, __VA_ARGS__)
+#define LOG_DEBUG(...)   do { CLOG(DEBUG   ,"librealsense") << __VA_ARGS__; } while(false)
+#define LOG_INFO(...)    do { CLOG(INFO    ,"librealsense") << __VA_ARGS__; } while(false)
+#define LOG_WARNING(...) do { CLOG(WARNING ,"librealsense") << __VA_ARGS__; } while(false)
+#define LOG_ERROR(...)   do { CLOG(ERROR   ,"librealsense") << __VA_ARGS__; } while(false)
+#define LOG_FATAL(...)   do { CLOG(FATAL   ,"librealsense") << __VA_ARGS__; } while(false)
 
     /////////////////////////////
     // Enumerated type support //

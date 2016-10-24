@@ -81,7 +81,11 @@ std::vector<stream_request> endpoint::get_principal_requests()
         }
         else
         {
-            LOG_WARNING("Unsupported pixel-format " << p.format);
+            uint32_t device_fourcc = reinterpret_cast<const big_endian<uint32_t>&>(p.format);
+            char fourcc[sizeof(device_fourcc)+1];
+            memcpy(fourcc, &device_fourcc, sizeof(device_fourcc));
+            fourcc[sizeof(device_fourcc)] = 0;
+            LOG_WARNING("Unsupported pixel-format " << fourcc);
         }
     }
 

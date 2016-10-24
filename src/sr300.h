@@ -47,7 +47,7 @@ namespace rsimpl
         {
         public:
             void set(float value) override { 
-                _owner.rs_apply_ivcam_preset(value);
+                _owner.rs_apply_ivcam_preset(static_cast<int>(value));
                 last_value = value;
             }
             float query() const override { return last_value; }
@@ -171,7 +171,7 @@ namespace rsimpl
                 { 2,     0,  40, 1600,  800,  -1,  -1,  -1,   -1,  -1 }, /* IROnly                    */
             };
 
-            const double arr_values[RS_VISUAL_PRESET_COUNT][DEPTH_CONTROLS] = {
+            const float arr_values[RS_VISUAL_PRESET_COUNT][DEPTH_CONTROLS] = {
                 { 1,  1,  5,  1, -1 }, /* ShortRange                */
                 { 1,  1,  7,  0, -1 }, /* LongRange                 */
                 { 16,  1,  6,  2, 22 }, /* BackgroundSegmentation    */

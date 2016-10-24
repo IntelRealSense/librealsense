@@ -76,7 +76,5 @@ EXPORTS
 
     rs_log_to_console
     rs_log_to_file
-    rs_log_to_callback
-    rs_log_to_callback_cpp
 
     rs_get_api_version

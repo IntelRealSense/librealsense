@@ -81,7 +81,7 @@ namespace rsimpl
                 IMFSample *sample) override
             {
                 auto owner = _owner.lock();
-                if (owner)
+                if (owner && owner->_reader)
                 {
                     LOG_HR(owner->_reader->ReadSample(0xFFFFFFFC, 0, nullptr, nullptr, nullptr, nullptr));
 
@@ -532,7 +532,7 @@ namespace rsimpl
                     auto hr = _reader->GetNativeMediaType(sIndex, k, &pMediaType.p);
                     if (FAILED(hr) || pMediaType == nullptr)
                     {
-                        LOG_HR(hr);
+                        check("_reader->GetNativeMediaType(sIndex, k, &pMediaType.p)", hr, false);
                         break;
                     }
 
@@ -620,7 +620,7 @@ namespace rsimpl
                     auto hr = _reader->GetNativeMediaType(sIndex, k, &pMediaType.p);
                     if (FAILED(hr) || pMediaType == nullptr)
                     {
-                        LOG_HR(hr);
+                        check("_reader->GetNativeMediaType(sIndex, k, &pMediaType.p)", hr, false);
                         break;
                     }
 

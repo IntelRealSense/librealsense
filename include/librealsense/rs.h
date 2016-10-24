@@ -295,8 +295,6 @@ const char * rs_visual_preset_to_string  (rs_visual_preset preset);
 
 void rs_log_to_console(rs_log_severity min_severity, rs_error ** error);
 void rs_log_to_file(rs_log_severity min_severity, const char * file_path, rs_error ** error);
-void rs_log_to_callback_cpp(rs_log_severity min_severity, rs_log_callback * callback, rs_error ** error);
-void rs_log_to_callback(rs_log_severity min_severity, rs_log_callback_ptr on_log, void * user, rs_error ** error);
 
 #ifdef __cplusplus
 }

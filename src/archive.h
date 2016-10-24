@@ -54,7 +54,7 @@ private:
     rsimpl::frame_continuation on_release;
 
 public:
-    std::vector<rsimpl::byte> data;
+    std::vector<byte> data;
     frame_additional_data additional_data;
 
     explicit frame() : ref_count(0), owner(nullptr), on_release() {}
@@ -81,7 +81,7 @@ public:
 
     double get_frame_metadata(rs_frame_metadata frame_metadata) const;
     bool supports_frame_metadata(rs_frame_metadata frame_metadata) const;
-    const rsimpl::byte* get_frame_data() const;
+    const byte* get_frame_data() const;
     double get_frame_timestamp() const;
     rs_timestamp_domain get_frame_timestamp_domain() const;
     void set_timestamp(double new_ts) { additional_data.timestamp = new_ts; }
@@ -154,7 +154,7 @@ struct rs_frame // esentially an intrusive shared_ptr<frame>
 
     double get_frame_metadata(rs_frame_metadata frame_metadata) const;
     bool supports_frame_metadata(rs_frame_metadata frame_metadata) const;
-    const rsimpl::byte* get_frame_data() const;
+    const byte* get_frame_data() const;
     double get_frame_timestamp() const;
     unsigned long long get_frame_number() const;
     long long get_frame_system_time() const;

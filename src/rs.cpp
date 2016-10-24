@@ -401,20 +401,6 @@ void rs_stop(rs_active_stream* lock, rs_error ** error) try
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, lock)
 
-void rs_log_to_callback(rs_log_severity min_severity, rs_log_callback_ptr on_log, void * user, rs_error ** error) try
-{
-    VALIDATE_NOT_NULL(on_log);
-    rsimpl::log_to_callback(min_severity, on_log, user);
-}
-HANDLE_EXCEPTIONS_AND_RETURN(, min_severity, on_log, user)
-
-void rs_log_to_callback_cpp(rs_log_severity min_severity, rs_log_callback * callback, rs_error ** error) try
-{
-    VALIDATE_NOT_NULL(callback);
-    rsimpl::log_to_callback(min_severity, callback);
-}
-HANDLE_EXCEPTIONS_AND_RETURN(, min_severity, callback)
-
 double rs_get_frame_metadata(const rs_frame * frame, rs_frame_metadata frame_metadata, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(frame);
