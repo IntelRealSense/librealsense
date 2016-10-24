@@ -46,15 +46,15 @@ int main()
     printf("    Firmware version: %s\n", rs_get_camera_info(dev, RS_CAMERA_INFO_CAMERA_FIRMWARE_VERSION, &e));
     check_error();
 
-    rs_format streams[3] = { RS_STREAM_COLOR, RS_STREAM_DEPTH, RS_STREAM_INFRARED };
+    rs_stream streams[3] = { RS_STREAM_COLOR, RS_STREAM_DEPTH, RS_STREAM_INFRARED };
     int widths[3] = { 640, 640, 640 };
     int heights[3] = { 480, 480, 480 };
     int fpss[3] = { 30, 30, 30 };
     rs_format formats[3] = { RS_FORMAT_BGR8, RS_FORMAT_Z16, RS_FORMAT_Y8 };
 
-    rs_active_stream * color_stream = rs_open_subdevice(dev, RS_SUBDEVICE_COLOR, streams, widths, heights, fpss, formats, 1, &e);
+    rs_active_stream * color_stream = rs_open_many(dev, RS_SUBDEVICE_COLOR, streams, widths, heights, fpss, formats, 1, &e);
     check_error();
-    rs_active_stream * depth_stream = rs_open_subdevice(dev, RS_SUBDEVICE_DEPTH, streams+1, widths+1, heights+1, fpss+1, formats+1, 2, &e);
+    rs_active_stream * depth_stream = rs_open_many(dev, RS_SUBDEVICE_DEPTH, streams+1, widths+1, heights+1, fpss+1, formats+1, 2, &e);
     check_error();
 
     rs_frame_queue * queue = rs_create_frame_queue(10, &e);
@@ -133,8 +133,8 @@ int main()
 
     rs_flush_queue(queue, &e);
     check_error();
-    rs_release_streaming_lock(color_stream);
-    rs_release_streaming_lock(depth_stream);
+    rs_close(color_stream);
+    rs_close(depth_stream);
     rs_delete_device(dev);
     rs_delete_device_list(devices);
     rs_delete_frame_queue(queue);

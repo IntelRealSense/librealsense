@@ -265,8 +265,26 @@ void rs_delete_profiles_list(rs_stream_profile_list* list) try
 }
 NOEXCEPT_RETURN(, list)
 
-rs_active_stream* rs_open_subdevice(rs_device* device, rs_subdevice subdevice,
-    const rs_stream* stream, const int* width, const int* height, const int* fps, const rs_format* format, int count, rs_error** error) try
+rs_active_stream* rs_open(rs_device* device, rs_subdevice subdevice, 
+    rs_stream stream, int width, int height, int fps, rs_format format, rs_error** error) try
+{
+    VALIDATE_NOT_NULL(device);
+    VALIDATE_ENUM(subdevice);
+    VALIDATE_ENUM(format);
+    VALIDATE_ENUM(stream);
+
+    std::vector<rsimpl::stream_request> request;
+    request.push_back({ stream, static_cast<uint32_t>(width),
+            static_cast<uint32_t>(height), static_cast<uint32_t>(fps), format });
+    auto result = new rs_active_stream{ device->device->get_endpoint(subdevice).configure(request) };
+    result->lock->set_owner(result);
+    return result;
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, device, subdevice, stream, width, height, fps, format)
+
+rs_active_stream* rs_open_many(rs_device* device, rs_subdevice subdevice,
+    const rs_stream* stream, const int* width, const int* height, const int* fps, 
+    const rs_format* format, int count, rs_error** error) try
 {
     VALIDATE_NOT_NULL(device);
     VALIDATE_ENUM(subdevice);
@@ -279,8 +297,8 @@ rs_active_stream* rs_open_subdevice(rs_device* device, rs_subdevice subdevice,
     std::vector<rsimpl::stream_request> request;
     for (auto i = 0; i < count; i++)
     {
-        request.push_back({ stream[i], (uint32_t)width[i], 
-                            (uint32_t)height[i], (uint32_t)fps[i], format[i] });
+        request.push_back({ stream[i], static_cast<uint32_t>(width[i]), 
+                            static_cast<uint32_t>(height[i]), static_cast<uint32_t>(fps[i]), format[i] });
     }
     auto result = new rs_active_stream{ device->device->get_endpoint(subdevice).configure(request) };
     result->lock->set_owner(result);
@@ -288,7 +306,7 @@ rs_active_stream* rs_open_subdevice(rs_device* device, rs_subdevice subdevice,
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, device, subdevice, stream, width, height, fps, format)
 
-void rs_release_streaming_lock(rs_active_stream* lock) try
+void rs_close(rs_active_stream* lock) try
 {
     VALIDATE_NOT_NULL(lock);
     delete lock;

@@ -19,8 +19,9 @@ EXPORTS
     rs_get_profile_list_size
     rs_delete_profiles_list
 
-    rs_open_subdevice
-    rs_release_streaming_lock
+    rs_open
+    rs_open_many
+    rs_close
 
     rs_start
     rs_start_cpp

@@ -245,15 +245,14 @@ namespace rs
         {
             rs_error* e = nullptr;
             std::shared_ptr<rs_active_stream> lock(
-                rs_open_subdevice(_dev, _index, 
-                    &profile.stream, 
-                    &profile.width,
-                    &profile.height,
-                    &profile.fps,
-                    &profile.format,
-                    1,
+                rs_open(_dev, _index, 
+                    profile.stream, 
+                    profile.width,
+                    profile.height,
+                    profile.fps,
+                    profile.format,
                     &e),
-                rs_release_streaming_lock);
+                rs_close);
             error::handle(e);
 
             return active_stream(lock);
@@ -278,7 +277,7 @@ namespace rs
             }
 
             std::shared_ptr<rs_active_stream> lock(
-                rs_open_subdevice(_dev, _index,
+                rs_open_many(_dev, _index,
                     streams.data(),
                     widths.data(),
                     heights.data(),
@@ -286,7 +285,7 @@ namespace rs
                     formats.data(),
                     static_cast<int>(profiles.size()),
                     &e),
-                rs_release_streaming_lock);
+                rs_close);
             error::handle(e);
 
             return active_stream(lock);

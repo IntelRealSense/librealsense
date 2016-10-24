@@ -43,11 +43,9 @@ int main()
     printf("    Firmware version: %s\n", rs_get_camera_info(dev, RS_CAMERA_INFO_CAMERA_FIRMWARE_VERSION, &e));
     check_error();
 
-    rs_stream stream_type = RS_STREAM_DEPTH;
-    rs_format format = RS_FORMAT_Z16;
-    int width = 640, height = 480, fps = 30;
     /* Configure depth to run at VGA resolution at 30 frames per second */
-    rs_active_stream * stream = rs_open_subdevice(dev, RS_SUBDEVICE_DEPTH, &stream_type, &width, &height, &fps, &format, 1, &e);
+    int width = 640, height = 480;
+    rs_active_stream * stream = rs_open(dev, RS_SUBDEVICE_DEPTH, RS_STREAM_DEPTH, width, height, 30, RS_FORMAT_Z16, &e);
     check_error();
 
     rs_frame_queue * queue = rs_create_frame_queue(1, &e);
@@ -114,7 +112,7 @@ int main()
     rs_stop(stream, &e);
     check_error();
 
-    rs_release_streaming_lock(stream);
+    rs_close(stream);
     rs_delete_device(dev);
     rs_delete_frame_queue(queue);
     rs_delete_device_list(devices);
