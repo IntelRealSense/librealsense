@@ -76,6 +76,9 @@ set(REALSENSE_CPP
 	src/win/win-uvc.cpp
 	src/win/win-usb.cpp
 	src/win/win-backend.cpp
+	
+	third_party/sqlite/sqlite3.h
+	src/sql.h
 )
 
 set(REALSENSE_HPP
@@ -106,6 +109,9 @@ set(REALSENSE_HPP
 	src/win/win-uvc.h
 	src/win/win-usb.h
 	src/win/win-backend.h
+	
+	third_party/sqlite/sqlite3.c
+	src/sql.cpp
 )
 
 if(WIN32)
@@ -113,13 +119,17 @@ if(WIN32)
 		src/win/win-helpers.cpp
 		src/win/win-uvc.cpp
 		src/win/win-usb.cpp
-		src/win/win-backend.cpp)
+		src/win/win-backend.cpp
+		src/uvc-v4l2.cpp
+		src/backend.cpp
+		src/verify.c)
 
 	source_group("Header Files\\Backend" FILES 
 		src/win/win-helpers.h
 		src/win/win-uvc.h
 		src/win/win-usb.h
-		src/win/win-backend.h)
+		src/win/win-backend.h
+		src/backend.h)
 		
 	source_group("Header Files\\API" FILES 
 		include/librealsense/rs.hpp
@@ -129,8 +139,18 @@ if(WIN32)
 		CMake/realsense.def
 		)
 		
+	source_group("Header Files\\Recorder" FILES 
+		third_party/sqlite/sqlite3.h
+		src/sql.h
+		)
+		
 	source_group("Source Files\\API" FILES 
 		src/rs.cpp
+		)
+		
+	source_group("Source Files\\Recorder" FILES 
+		third_party/sqlite/sqlite3.c
+		src/sql.cpp
 		)
 
 	source_group("Source Files\\Devices" FILES 
