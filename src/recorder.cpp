@@ -14,8 +14,8 @@ const char* CONFIG_CREATE = "CREATE TABLE rs_config(key TEXT PRIMARY KEY, value 
 const char* CONFIG_INSERT = "INSERT OR REPLACE INTO rs_config(key, value) VALUES(?, ?)";
 const char* API_VERSION_KEY = "api_version";
 
-const char* CALLS_CREATE = "CREATE TABLE rs_calls(type NUMBER, timestamp NUMBER, entity_id NUMBER, param1 NUMBER, param2 NUMBER, param3 NUMBER, param4 NUMBER)";
-const char* CALLS_INSERT = "INSERT INTO rs_calls(type, timestamp, entity_id, param1, param2, param3, param4) VALUES(?, ?, ?, ?, ?, ?, ?)";
+const char* CALLS_CREATE = "CREATE TABLE rs_calls(type NUMBER, timestamp NUMBER, entity_id NUMBER, txt TEXT, param1 NUMBER, param2 NUMBER, param3 NUMBER, param4 NUMBER)";
+const char* CALLS_INSERT = "INSERT INTO rs_calls(type, timestamp, entity_id, txt, param1, param2, param3, param4) VALUES(?, ?, ?, ?, ?, ?, ?, ?)";
 const char* CALLS_SELECT_ALL = "SELECT * FROM rs_calls";
 
 const char* DEVICE_INFO_CREATE = "CREATE TABLE rs_device_info(type NUMBER, id TEXT, uid TEXT, pid NUMBER, vid NUMBER, mi NUMBER)";
@@ -25,6 +25,10 @@ const char* DEVICE_INFO_INSERT = "INSERT INTO rs_device_info(type, id, uid, pid,
 const char* BLOBS_CREATE = "CREATE TABLE rs_blobs(data BLOB)";
 const char* BLOBS_INSERT = "INSERT INTO rs_blobs(data) VALUES(?)";
 const char* BLOBS_SELECT_ALL = "SELECT * FROM rs_blobs";
+
+const char* PROFILES_CREATE = "CREATE TABLE rs_profile(width NUMBER, height NUMBER, fps NUMBER, fourcc NUMBER)";
+const char* PROFILES_INSERT = "INSERT INTO rs_profile(width, height, fps, fourcc) VALUES(?,?,?,?)";
+const char* PROFILES_SELECT_ALL = "SELECT * FROM rs_profile";
 
 namespace rsimpl
 {
@@ -58,6 +62,7 @@ namespace rsimpl
             c.execute(CALLS_CREATE);
             c.execute(DEVICE_INFO_CREATE);
             c.execute(BLOBS_CREATE);
+            c.execute(PROFILES_CREATE);
 
             {
                 statement insert(c, CONFIG_INSERT);
@@ -72,10 +77,11 @@ namespace rsimpl
                 insert.bind(1, static_cast<int>(cl.type));
                 insert.bind(2, cl.timestamp);
                 insert.bind(3, cl.entity_id);
-                insert.bind(4, cl.param1);
-                insert.bind(5, cl.param2);
-                insert.bind(6, cl.param3);
-                insert.bind(7, cl.param4);
+                insert.bind(4, cl.inline_string.c_str());
+                insert.bind(5, cl.param1);
+                insert.bind(6, cl.param2);
+                insert.bind(7, cl.param3);
+                insert.bind(8, cl.param4);
                 insert();
             }
 
@@ -101,6 +107,16 @@ namespace rsimpl
                 insert.bind(4, usb_info.pid);
                 insert.bind(5, usb_info.vid);
                 insert.bind(6, usb_info.mi);
+                insert();
+            }
+
+            for (auto&& profile : stream_profiles)
+            {
+                statement insert(c, PROFILES_INSERT);
+                insert.bind(1, profile.width);
+                insert.bind(2, profile.height);
+                insert.bind(3, profile.fps);
+                insert.bind(4, profile.format);
                 insert();
             }
 
@@ -141,10 +157,11 @@ namespace rsimpl
                 cl.type = static_cast<call_type>(row[0].get_int());
                 cl.timestamp = row[1].get_int();
                 cl.entity_id = row[2].get_int();
-                cl.param1 = row[3].get_int();
-                cl.param2 = row[4].get_int();
-                cl.param3 = row[5].get_int();
-                cl.param4 = row[6].get_int();
+                cl.inline_string = row[3].get_string();
+                cl.param1 = row[4].get_int();
+                cl.param2 = row[5].get_int();
+                cl.param3 = row[6].get_int();
+                cl.param4 = row[7].get_int();
                 result->calls.push_back(cl);
             }
 
@@ -173,6 +190,17 @@ namespace rsimpl
                 }
             }
 
+            statement select_profiles(c, PROFILES_SELECT_ALL);
+            for (auto&& row : select_profiles)
+            {
+                stream_profile p;
+                p.width = row[0].get_int();
+                p.height = row[1].get_int();
+                p.fps = row[2].get_int();
+                p.format = row[3].get_int();
+                result->stream_profiles.push_back(p);
+            }
+
             statement select_blobs(c, BLOBS_SELECT_ALL);
             for (auto&& row : select_blobs)
             {
@@ -182,7 +210,7 @@ namespace rsimpl
             return result;
         }
 
-        int recording::save_blob(void* ptr, unsigned size)
+        int recording::save_blob(const void* ptr, unsigned size)
         {
             lock_guard<mutex> lock(_mutex);
             vector<uint8_t> holder;
@@ -215,6 +243,133 @@ namespace rsimpl
             throw runtime_error("The recording is missing the part you are trying to playback!");
         }
 
+        void record_uvc_device::play(stream_profile profile, frame_callback callback)
+        {
+            _source->play(profile, callback);
+            vector<stream_profile> ps{ profile };
+            _rec->save_stream_profiles(ps, _entity_id, call_type::uvc_play);
+        }
+
+        void record_uvc_device::stop(stream_profile profile)
+        {
+            _source->stop(profile);
+            vector<stream_profile> ps{ profile };
+            _rec->save_stream_profiles(ps, _entity_id, call_type::uvc_stop);
+        }
+
+        void record_uvc_device::set_power_state(power_state state)
+        {
+            _source->set_power_state(state);
+
+            auto&& c = _rec->add_call(_entity_id, call_type::uvc_set_power_state);
+            c.param1 = state;
+        }
+
+        power_state record_uvc_device::get_power_state() const
+        {
+            auto res = _source->get_power_state();
+
+            auto&& c = _rec->add_call(_entity_id, call_type::uvc_get_power_state);
+            c.param1 = res;
+
+            return res;
+        }
+
+        void record_uvc_device::init_xu(const extension_unit& xu)
+        {
+            _source->init_xu(xu);
+            _rec->add_call(_entity_id, call_type::uvc_init_xu);
+        }
+
+        void record_uvc_device::set_xu(const extension_unit& xu, uint8_t ctrl, const uint8_t* data, int len)
+        {
+            _source->set_xu(xu, ctrl, data, len);
+
+            auto&& c = _rec->add_call(_entity_id, call_type::uvc_set_xu);
+            c.param1 = ctrl;
+            c.param2 = _rec->save_blob(data, len);
+        }
+
+        void record_uvc_device::get_xu(const extension_unit& xu, uint8_t ctrl, uint8_t* data, int len) const
+        {
+            _source->get_xu(xu, ctrl, data, len);
+
+            auto&& c = _rec->add_call(_entity_id, call_type::uvc_get_xu);
+            c.param1 = ctrl;
+            c.param2 = _rec->save_blob(data, len);
+        }
+
+        control_range record_uvc_device::get_xu_range(const extension_unit& xu, uint8_t ctrl) const
+        {
+            auto res = _source->get_xu_range(xu, ctrl);
+
+            auto&& c = _rec->add_call(_entity_id, call_type::uvc_get_xu_range);
+            c.param1 = ctrl;
+            c.param2 = _rec->save_blob(&res, sizeof(res));
+
+            return res;
+        }
+
+        int record_uvc_device::get_pu(rs_option opt) const
+        {
+            auto res = _source->get_pu(opt);
+
+            auto&& c = _rec->add_call(_entity_id, call_type::uvc_get_pu);
+            c.param1 = opt;
+            c.param2 = res;
+
+            return res;
+        }
+
+        void record_uvc_device::set_pu(rs_option opt, int value)
+        {
+            _source->set_pu(opt, value);
+
+            auto&& c = _rec->add_call(_entity_id, call_type::uvc_set_pu);
+            c.param1 = opt;
+            c.param2 = value;
+        }
+
+        control_range record_uvc_device::get_pu_range(rs_option opt) const
+        {
+            auto res = _source->get_pu_range(opt);
+
+            auto&& c = _rec->add_call(_entity_id, call_type::uvc_get_pu_range);
+            c.param1 = opt;
+            c.param2 = _rec->save_blob(&res, sizeof(res));
+
+            return res;
+        }
+
+        std::vector<stream_profile> record_uvc_device::get_profiles() const
+        {
+            auto devices = _source->get_profiles();
+            _rec->save_stream_profiles(devices, _entity_id, call_type::uvc_stream_profiles);
+            return devices;
+        }
+
+        void record_uvc_device::lock() const
+        {
+            _source->lock();
+            _rec->add_call(_entity_id, call_type::uvc_lock);
+        }
+
+        void record_uvc_device::unlock() const
+        {
+            _source->lock();
+            _rec->add_call(_entity_id, call_type::uvc_unlock);
+        }
+
+        string record_uvc_device::get_device_location() const
+        {
+            auto result = _source->get_device_location();
+
+            auto&& c = _rec->add_call(_entity_id, call_type::uvc_get_location);
+            c.inline_string = result;
+
+            return result;
+        }
+
         vector<uint8_t> record_usb_device::send_receive(const vector<uint8_t>& data, int timeout_ms, bool require_response)
         {
             auto result = _source->send_receive(data, timeout_ms, require_response);
@@ -230,7 +385,13 @@ namespace rsimpl
 
         shared_ptr<uvc_device> record_backend::create_uvc_device(uvc_device_info info) const
         {
-            return nullptr;
+            auto dev = _source->create_uvc_device(info);
+
+            auto id = _entity_count.fetch_add(1);
+            auto&& c = _rec->add_call(0, call_type::create_uvc_device);
+            c.param1 = id;
+
+            return make_shared<record_uvc_device>(_rec, dev, id);
         }
 
         vector<uvc_device_info> record_backend::query_uvc_devices() const
@@ -265,7 +426,9 @@ namespace rsimpl
 
         shared_ptr<uvc_device> playback_backend::create_uvc_device(uvc_device_info info) const
         {
-            return nullptr;
+            auto&& c = _rec->find_call(call_type::create_uvc_device, 0);
+
+            return make_shared<playback_uvc_device>(_rec, c.param1);
         }
 
         vector<uvc_device_info> playback_backend::query_uvc_devices() const
@@ -295,7 +458,124 @@ namespace rsimpl
             _rec->save(filename);
         }
 
-        std::vector<uint8_t> playback_usb_device::send_receive(const std::vector<uint8_t>& data, int timeout_ms, bool require_response)
+        void playback_uvc_device::play(stream_profile profile, frame_callback callback)
+        {
+            auto stored = _rec->load_stream_profiles(_entity_id, call_type::uvc_play);
+            std::vector<stream_profile> input{ profile };
+            if (input != stored)
+                throw runtime_error("Recording history mismatch!");
+
+        }
+
+        void playback_uvc_device::stop(stream_profile profile)
+        {
+            auto stored = _rec->load_stream_profiles(_entity_id, call_type::uvc_stop);
+            std::vector<stream_profile> input{ profile };
+            if (input != stored)
+                throw runtime_error("Recording history mismatch!");
+        }
+
+        void playback_uvc_device::set_power_state(power_state state)
+        {
+            auto&& c = _rec->find_call(call_type::uvc_set_power_state, _entity_id);
+            if (c.param1 != state)
+                throw runtime_error("Recording history mismatch!");
+        }
+
+        power_state playback_uvc_device::get_power_state() const
+        {
+            auto&& c = _rec->find_call(call_type::uvc_set_power_state, _entity_id);
+            return static_cast<power_state>(c.param1);
+        }
+
+        void playback_uvc_device::init_xu(const extension_unit& xu)
+        {
+            _rec->find_call(call_type::uvc_init_xu, _entity_id);
+        }
+
+        void playback_uvc_device::set_xu(const extension_unit& xu, uint8_t ctrl, const uint8_t* data, int len)
+        {
+            auto&& c = _rec->find_call(call_type::uvc_set_xu, _entity_id);
+            if (c.param1 != ctrl)
+                throw runtime_error("Recording history mismatch!");
+            auto stored_data = _rec->load_blob(c.param2);
+            vector<uint8_t> in_data(data, data + len);
+            if (stored_data != in_data)
+                throw runtime_error("Recording history mismatch!");
+        }
+
+        void playback_uvc_device::get_xu(const extension_unit& xu, uint8_t ctrl, uint8_t* data, int len) const
+        {
+            auto&& c = _rec->find_call(call_type::uvc_get_xu, _entity_id);
+            if (c.param1 != ctrl)
+                throw runtime_error("Recording history mismatch!");
+            auto stored_data = _rec->load_blob(c.param2);
+            if (stored_data.size() != len)
+                throw runtime_error("Recording history mismatch!");
+            memcpy(data, stored_data.data(), len);
+        }
+
+        control_range playback_uvc_device::get_xu_range(const extension_unit& xu, uint8_t ctrl) const
+        {
+            control_range res;
+            auto&& c = _rec->find_call(call_type::uvc_get_xu_range, _entity_id);
+
+            if (c.param1 != ctrl)
+                throw runtime_error("Recording history mismatch!");
+            
+            auto range = _rec->load_blob(c.param2);
+            memcpy(&res, range.data(), range.size());
+            return res;
+        }
+
+        int playback_uvc_device::get_pu(rs_option opt) const
+        {
+            auto&& c = _rec->find_call(call_type::uvc_get_pu, _entity_id);
+            if (c.param1 != opt)
+                throw runtime_error("Recording history mismatch!");
+            return c.param2;
+        }
+
+        void playback_uvc_device::set_pu(rs_option opt, int value)
+        {
+            auto&& c = _rec->find_call(call_type::uvc_set_pu, _entity_id);
+            if (c.param1 != opt && c.param2 != value)
+                throw runtime_error("Recording history mismatch!");
+        }
+
+        control_range playback_uvc_device::get_pu_range(rs_option opt) const
+        {
+            control_range res;
+            auto&& c = _rec->find_call(call_type::uvc_get_pu_range, _entity_id);
+            if (c.param1 != opt)
+                throw runtime_error("Recording history mismatch!");
+            auto range = _rec->load_blob(c.param2);
+            memcpy(&res, range.data(), range.size());
+            return res;
+        }
+
+        std::vector<stream_profile> playback_uvc_device::get_profiles() const
+        {
+            return _rec->load_stream_profiles(_entity_id, call_type::uvc_stream_profiles);
+        }
+
+        void playback_uvc_device::lock() const
+        {
+            _rec->find_call(call_type::uvc_lock, _entity_id);
+        }
+
+        void playback_uvc_device::unlock() const
+        {
+            _rec->find_call(call_type::uvc_unlock, _entity_id);
+        }
+
+        string playback_uvc_device::get_device_location() const
+        {
+            auto&& c = _rec->find_call(call_type::uvc_get_location, _entity_id);
+            return c.inline_string;
+        }
+
+        vector<uint8_t> playback_usb_device::send_receive(const vector<uint8_t>& data, int timeout_ms, bool require_response)
         {
             auto&& c = _rec->find_call(call_type::send_command, _entity_id);
             if (c.param3 != timeout_ms || c.param4 != require_response || _rec->load_blob(c.param1) != data)

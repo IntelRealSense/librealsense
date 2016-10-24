@@ -42,7 +42,6 @@ namespace rsimpl
             void set_power_state(power_state state) override;
             power_state get_power_state() const override { return _power_state; }
             std::vector<stream_profile> get_profiles() const override;
-            const uvc_device_info& get_info() const override { return _info; }
 
             static bool is_connected(const uvc_device_info& info);
             static void foreach_uvc_device(enumeration_callback action);

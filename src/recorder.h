@@ -20,18 +20,35 @@ namespace rsimpl
             query_usb_devices,
             send_command,
             create_usb_device,
+            create_uvc_device,
+            uvc_get_location,
+            uvc_set_power_state,
+            uvc_get_power_state,
+            uvc_lock,
+            uvc_unlock,
+            uvc_get_pu,
+            uvc_set_pu,
+            uvc_get_pu_range,
+            uvc_get_xu_range,
+            uvc_init_xu,
+            uvc_set_xu,
+            uvc_get_xu,
+            uvc_stream_profiles,
+            uvc_play,
+            uvc_stop
         };
 
         struct call
         {
+            call_type type = call_type::none;
+            int timestamp = 0;
+            int entity_id = 0;
+            std::string inline_string;
+
             int param1 = 0;
             int param2 = 0;
             int param3 = 0; 
             int param4 = 0;
-
-            call_type type = call_type::none;
-            int timestamp = 0;
-            int entity_id = 0;
         };
 
         class recording
@@ -42,7 +59,7 @@ namespace rsimpl
             void save(const char* filename) const;
             static std::shared_ptr<recording> load(const char* filename);
 
-            int save_blob(void* ptr, unsigned int size);
+            int save_blob(const void* ptr, unsigned int size);
 
             int get_timestamp() const;
 
@@ -94,6 +111,17 @@ namespace rsimpl
                 save_list(list, uvc_device_infos, call_type::query_uvc_devices, 0);
             }
 
+            void save_stream_profiles(std::vector<stream_profile> list, int id, call_type type)
+            {
+                save_list(list, stream_profiles, type, id);
+            }
+
+            std::vector<stream_profile> load_stream_profiles(int id, call_type type)
+            {
+                auto&& c = find_call(type, id);
+                return load_list(stream_profiles, c);
+            }
+
             std::vector<usb_device_info> load_usb_device_info_list()
             {
                 auto&& c = find_call(call_type::query_usb_devices, 0);
@@ -118,11 +146,42 @@ namespace rsimpl
             std::vector<std::vector<uint8_t>> blobs;
             std::vector<uvc_device_info> uvc_device_infos;
             std::vector<usb_device_info> usb_device_infos;
+            std::vector<stream_profile> stream_profiles;
             std::mutex _mutex;
             std::chrono::high_resolution_clock::time_point start_time;
 
             int cursor;
 
+        };
+
+        class record_uvc_device : public uvc_device
+        {
+        public:
+            void play(stream_profile profile, frame_callback callback) override;
+            void stop(stream_profile profile) override;
+            void set_power_state(power_state state) override;
+            power_state get_power_state() const override;
+            void init_xu(const extension_unit& xu) override;
+            void set_xu(const extension_unit& xu, uint8_t ctrl, const uint8_t* data, int len) override;
+            void get_xu(const extension_unit& xu, uint8_t ctrl, uint8_t* data, int len) const override;
+            control_range get_xu_range(const extension_unit& xu, uint8_t ctrl) const override;
+            int get_pu(rs_option opt) const override;
+            void set_pu(rs_option opt, int value) override;
+            control_range get_pu_range(rs_option opt) const override;
+            std::vector<stream_profile> get_profiles() const override;
+            void lock() const override;
+            void unlock() const override;
+            std::string get_device_location() const override;
+
+            explicit record_uvc_device(std::shared_ptr<recording> rec,
+                std::shared_ptr<uvc_device> source,
+                int id)
+                : _rec(rec), _source(source), _entity_id(id) {}
+
+        private:
+            std::shared_ptr<recording> _rec;
+            std::shared_ptr<uvc_device> _source;
+            int _entity_id;
         };
 
         class record_usb_device : public usb_device
@@ -158,6 +217,34 @@ namespace rsimpl
             mutable std::atomic<int> _entity_count = 1;
         };
 
+        class playback_uvc_device : public uvc_device
+        {
+        public:
+            void play(stream_profile profile, frame_callback callback) override;
+            void stop(stream_profile profile) override;
+            void set_power_state(power_state state) override;
+            power_state get_power_state() const override;
+            void init_xu(const extension_unit& xu) override;
+            void set_xu(const extension_unit& xu, uint8_t ctrl, const uint8_t* data, int len) override;
+            void get_xu(const extension_unit& xu, uint8_t ctrl, uint8_t* data, int len) const override;
+            control_range get_xu_range(const extension_unit& xu, uint8_t ctrl) const override;
+            int get_pu(rs_option opt) const override;
+            void set_pu(rs_option opt, int value) override;
+            control_range get_pu_range(rs_option opt) const override;
+            std::vector<stream_profile> get_profiles() const override;
+            void lock() const override;
+            void unlock() const override;
+            std::string get_device_location() const override;
+
+            explicit playback_uvc_device(std::shared_ptr<recording> rec,
+                int id) : _rec(rec), _entity_id(id) {}
+
+        private:
+            std::shared_ptr<recording> _rec;
+            int _entity_id;
+        };
+
+
         class playback_usb_device : public usb_device
         {
         public:
@@ -168,7 +255,6 @@ namespace rsimpl
 
         private:
             std::shared_ptr<recording> _rec;
-            std::shared_ptr<usb_device> _source;
             int _entity_id;
         };
 

@@ -117,8 +117,6 @@ namespace rsimpl
             virtual void set_pu(rs_option opt, int value) = 0;
             virtual control_range get_pu_range(rs_option opt) const = 0;
 
-            virtual const uvc_device_info& get_info() const = 0;
-
             virtual std::vector<stream_profile> get_profiles() const = 0;
 
             virtual void lock() const = 0;
@@ -198,10 +196,6 @@ namespace rsimpl
             control_range get_pu_range(rs_option opt) const override
             {
                 return _dev->get_pu_range(opt);
-            }
-            const uvc_device_info& get_info() const override
-            {
-                return _dev->get_info();
             }
             std::vector<stream_profile> get_profiles() const override
             {

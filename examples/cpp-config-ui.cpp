@@ -468,6 +468,8 @@ int main(int, char**) try
     ImVec4 clear_color = ImColor(10, 0, 0);
 
     rs::context ctx;
+    //rs::recording_context ctx("config-ui.db");
+    //rs::mock_context ctx("config-ui.db");
     auto device_index = 0;
     auto list = ctx.query_devices();
     auto dev = list[device_index];

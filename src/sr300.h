@@ -94,10 +94,10 @@ namespace rsimpl
 
             auto fw_version = get_firmware_version_string();
             auto serial = get_module_serial_string();
-            /*auto location = depth_ep->invoke_powered([](uvc::uvc_device& dev)
+            auto location = depth_ep->invoke_powered([](uvc::uvc_device& dev)
             {
                 return dev.get_device_location();
-            });*/
+            });
             enable_timestamp(true, true);
 
 
