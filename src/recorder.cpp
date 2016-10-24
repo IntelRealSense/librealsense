@@ -5,6 +5,7 @@
 #include <fstream>
 #include "sql.h"
 #include <algorithm>
+#include "types.h"
 
 using namespace std;
 using namespace sql;
@@ -47,6 +48,89 @@ namespace rsimpl
             return f.good();
         }
 
+        int dist(uint32_t x, uint32_t y)
+        {
+            union {
+                uint32_t block;
+                uint8_t bytes[4];
+            } xu;
+            union {
+                uint32_t block;
+                uint8_t bytes[4];
+            } yu;
+            xu.block = x;
+            yu.block = y;
+            auto diff_sum = 0;
+            for (auto i = 0; i < 4; i++)
+            {
+                auto dist = abs(xu.bytes[i] - yu.bytes[i]);
+                diff_sum += dist * dist;
+            }
+            return diff_sum;
+
+            //short dist = 0;
+            //char val = x^y;
+            //while (val)
+            //{
+            //    ++dist;
+            //    val &= val - 1;
+            //}
+            //return dist;
+        }
+
+        vector<uint8_t> rle_decompress(const vector<uint8_t>& input)
+        {
+            vector<uint8_t> results;
+            for (auto i = 0; i < input.size(); i += 5)
+            {
+                union {
+                    uint32_t block;
+                    uint8_t bytes[4];
+                } curr_block;
+
+                curr_block.block = *reinterpret_cast<const uint32_t*>(input.data() + i);
+                auto len = input[i + 4];
+                for (auto j = 0; j < len * 4; j++)
+                {
+                    results.push_back(curr_block.bytes[j % 4]);
+                }
+            }
+            return results;
+        }
+
+        vector<uint8_t> rle_compress(const vector<uint8_t>& input)
+        {
+            vector<uint8_t> results;
+            union {
+                uint32_t block;
+                uint8_t bytes[4];
+            } curr_block;
+            curr_block.block = *reinterpret_cast<const uint32_t*>(input.data());
+            uint8_t length = 0;
+            for (auto i = 0; i < input.size(); i+=4)
+            {
+                auto block = *reinterpret_cast<const uint32_t*>(input.data() + i);
+                if (dist(block, curr_block.block) < 1000 && length < 16)
+                {
+                    length++;
+                }
+                else
+                {
+                    for (auto j = 0; j < 4; j++)
+                        results.push_back(curr_block.bytes[j]);
+                    results.push_back(length);
+                    curr_block.block = block;
+                    length = 1;
+                }
+            }
+            if (length)
+            {
+                for (auto j = 0; j < 4; j++)
+                    results.push_back(curr_block.bytes[j]);
+                results.push_back(length);
+            }
+            return results;
+        }
 
         recording::recording()
         {
@@ -58,6 +142,7 @@ namespace rsimpl
             if (file_exists(filename)) 
                 throw runtime_error("Can't save over existing recording!");
             connection c(filename);
+            LOG_WARNING("Saving recording to file, don't close the application");
 
             c.execute(CONFIG_CREATE);
             c.execute(CALLS_CREATE);
@@ -270,7 +355,10 @@ namespace rsimpl
             {
                 auto&& c = _rec->add_call(_entity_id, call_type::uvc_frame);
                 c.param1 = _rec->save_blob(&p, sizeof(p));
-                c.param2 = _rec->save_blob(f.pixels, f.size);
+                vector<uint8_t> frame((uint8_t*)f.pixels, 
+                                      (uint8_t*)f.pixels + f.size);
+                auto compressed = rle_compress(frame);
+                c.param2 = _rec->save_blob(compressed.data(), compressed.size());
                 callback(p, f);
             });
             vector<stream_profile> ps{ profile };
@@ -656,7 +744,7 @@ namespace rsimpl
                     {
                         if (p == pair.first)
                         {
-                            auto frame_blob = _rec->load_blob(c_ptr->param2);
+                            auto frame_blob = rle_decompress(_rec->load_blob(c_ptr->param2));
                             frame_object fo{ frame_blob.size(), frame_blob.data() };
                             pair.second(p, fo);
                             break;
