@@ -91,12 +91,12 @@ namespace sql
 
             column_value(statement* owner, int column) : m_owner(owner), m_column(column) {}
 
-            friend class statement::row_value;
+            friend class row_value;
         public:
-            operator std::string() { return m_owner->get_string(m_column); }
-            operator int() { return m_owner->get_int(m_column); }
-            operator bool() { return m_owner->get_int(m_column) != 0; }
-            operator std::vector<uint8_t>() { return m_owner->get_blob(m_column); }
+            std::string get_string() const { return m_owner->get_string(m_column); }
+            int get_int() const { return m_owner->get_int(m_column); }
+            int get_bool() const { return m_owner->get_int(m_column) != 0; }
+            std::vector<uint8_t> get_blob() const { return m_owner->get_blob(m_column); }
         };
 
         class row_value
@@ -106,14 +106,13 @@ namespace sql
             row_value(statement* owner, bool bad) : m_owner(owner), m_bad(bad) {}
             void assert_good() const;
 
-            friend class statement::iterator;
+            friend class iterator;
         public:
-            column_value operator[](int column) { assert_good(); return column_value(m_owner, column); }
-
-            operator std::string() { assert_good(); return m_owner->get_string(); }
-            operator int() { assert_good(); return m_owner->get_int(); }
-            operator std::vector<uint8_t>() { assert_good(); return m_owner->get_blob(); }
-            operator bool() { assert_good(); return m_owner->get_int() != 0; }
+            column_value operator[](int column) const
+            {
+                assert_good(); 
+                return column_value(m_owner, column);
+            }
         };
 
         class iterator

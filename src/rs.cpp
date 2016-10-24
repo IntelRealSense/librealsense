@@ -143,10 +143,11 @@ void report_version_mismatch(int runtime, int compiletime)
         << api_version_to_string(compiletime) << "! Make sure correct version of the library is installed (make install)");
 }
 
-rs_context * rs_create_context(int api_version, rs_error ** error) try
+void verify_version_compatibility(int api_version)
 {
-    auto runtime_api_version = rs_get_api_version(error);
-    if (*error) throw std::runtime_error(rs_get_error_message(*error));
+    rs_error* error = nullptr;
+    auto runtime_api_version = rs_get_api_version(&error);
+    if (error) throw std::runtime_error(rs_get_error_message(error));
 
     if ((runtime_api_version < 10) || (api_version < 10))
     {
@@ -155,7 +156,7 @@ rs_context * rs_create_context(int api_version, rs_error ** error) try
             report_version_mismatch(runtime_api_version, api_version);
     }
     else if ((major(runtime_api_version) == 1 && minor(runtime_api_version) <= 9)
-          || (major(api_version) == 1 && minor(api_version) <= 9))
+        || (major(api_version) == 1 && minor(api_version) <= 9))
     {
         // when dealing with version < 1.10.0, API breaking changes are still possible without minor version change, require exact match
         if (api_version != runtime_api_version)
@@ -165,11 +166,16 @@ rs_context * rs_create_context(int api_version, rs_error ** error) try
     {
         // starting with 1.10.0, versions with same patch are compatible
         if ((major(api_version) != major(runtime_api_version))
-         || (minor(api_version) != minor(runtime_api_version)))
+            || (minor(api_version) != minor(runtime_api_version)))
             report_version_mismatch(runtime_api_version, api_version);
     }
+}
 
-    return new rs_context{ std::make_shared<rsimpl::context>() };
+rs_context * rs_create_context(int api_version, rs_error ** error) try
+{
+    verify_version_compatibility(api_version);
+    
+    return new rs_context{ std::make_shared<rsimpl::context>(rsimpl::backend_type::standard, nullptr) };
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, api_version)
 
@@ -592,6 +598,28 @@ int rs_get_api_version(rs_error ** error) try
     return RS_API_VERSION;
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, RS_API_MAJOR_VERSION, RS_API_MINOR_VERSION, RS_API_PATCH_VERSION)
+
+rs_context* rs_create_recording_context(int api_version, rs_error** error) try
+{
+    verify_version_compatibility(api_version);
+
+    return new rs_context{ std::make_shared<rsimpl::context>(rsimpl::backend_type::record, nullptr) };
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, api_version)
+
+void rs_save_recording_to_file(const rs_context* ctx, const char* filename, rs_error** error) try
+{
+    ctx->ctx->save_to(filename);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, ctx, filename)
+
+rs_context* rs_create_mock_context(int api_version, const char* filename, rs_error** error) try
+{
+    verify_version_compatibility(api_version);
+
+    return new rs_context{ std::make_shared<rsimpl::context>(rsimpl::backend_type::playback, filename) };
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, api_version, filename)
 
 void rs_free_error(rs_error * error) { if (error) delete error; }
 const char * rs_get_failed_function(const rs_error * error) { return error ? error->function : nullptr; }

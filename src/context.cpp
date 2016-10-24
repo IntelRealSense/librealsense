@@ -11,7 +11,7 @@
 #include "ds5t.h"
 #include "backend.h"
 #include "context.h"
-
+#include "recorder.h"
 
 #define constexpr_support 1
 
@@ -45,9 +45,34 @@ constexpr auto rs_api_version = concat("VERSION: ",RS_API_VERSION_STR);
 
 namespace rsimpl
 {
-    context::context()
-        : _backend(uvc::create_backend())
+    context::context(backend_type type, const char* filename)
+        : _type(type)
     {
+        switch(type)
+        {
+        case backend_type::standard:
+            _backend = uvc::create_backend();
+            break;
+        case backend_type::record:
+            _backend = std::make_shared<uvc::record_backend>(uvc::create_backend());
+            break;
+        case backend_type::playback: 
+            _backend = std::make_shared<uvc::playback_backend>(filename);
+            break;
+        default: throw std::runtime_error("Undefined backend type!");
+        }
+    }
+
+    void context::save_to(const char* filename) const
+    {
+        if (_type == backend_type::record)
+        {
+            static_cast<uvc::record_backend*>(_backend.get())->save_to_file(filename);
+        }
+        else
+        {
+            throw std::runtime_error("Can't save history to file without creating recording context!");
+        }
     }
 
     std::vector<std::shared_ptr<device_info>> context::query_devices() const

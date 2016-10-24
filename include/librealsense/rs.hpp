@@ -478,8 +478,53 @@ namespace rs
             return results;
         }
 
-    private:
+    protected:
         std::shared_ptr<rs_context> _context;
+    };
+
+    class recording_context : public context
+    {
+    public:
+        explicit recording_context(const char* filename)
+            : _filename(filename)
+        {
+            rs_error* e = nullptr;
+            _context = std::shared_ptr<rs_context>(
+                rs_create_recording_context(RS_API_VERSION, &e),
+                rs_delete_context);
+            error::handle(e);
+        }
+
+        void save() const
+        {
+            rs_error* e = nullptr;
+            rs_save_recording_to_file(_context.get(), _filename.c_str(), &e);
+            error::handle(e);
+        }
+
+        ~recording_context()
+        {
+            save();
+        }
+
+        recording_context() = delete;
+    private:
+        std::string _filename;
+    };
+
+    class mock_context : public context
+    {
+    public:
+        explicit mock_context(const char* filename)
+        {
+            rs_error* e = nullptr;
+            _context = std::shared_ptr<rs_context>(
+                rs_create_mock_context(RS_API_VERSION, filename, &e),
+                rs_delete_context);
+            error::handle(e);
+        }
+
+        mock_context() = delete;
     };
 
     class frame_queue
@@ -534,20 +579,6 @@ namespace rs
 
     private:
         std::shared_ptr<rs_frame_queue> _queue;
-    };
-
-    class log_callback : public rs_log_callback
-    {
-        std::function<void(rs_log_severity, const char *)> on_event_function;
-    public:
-        explicit log_callback(std::function<void(rs_log_severity, const char *)> on_event) : on_event_function(on_event) {}
-
-        void on_event(rs_log_severity severity, const char * message) override
-        {
-            on_event_function(static_cast<rs_log_severity>(severity), message);
-        }
-
-        void release() override { delete this; }
     };
 
     inline void log_to_console(rs_log_severity min_severity)

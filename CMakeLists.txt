@@ -79,6 +79,7 @@ set(REALSENSE_CPP
 	
 	third_party/sqlite/sqlite3.h
 	src/sql.h
+	src/recorder.h
 )
 
 set(REALSENSE_HPP
@@ -112,6 +113,7 @@ set(REALSENSE_HPP
 	
 	third_party/sqlite/sqlite3.c
 	src/sql.cpp
+	src/recorder.cpp
 )
 
 if(WIN32)
@@ -142,6 +144,7 @@ if(WIN32)
 	source_group("Header Files\\Recorder" FILES 
 		third_party/sqlite/sqlite3.h
 		src/sql.h
+		src/recorder.h
 		)
 		
 	source_group("Source Files\\API" FILES 
@@ -151,6 +154,7 @@ if(WIN32)
 	source_group("Source Files\\Recorder" FILES 
 		third_party/sqlite/sqlite3.c
 		src/sql.cpp
+		src/recorder.cpp
 		)
 
 	source_group("Source Files\\Devices" FILES 

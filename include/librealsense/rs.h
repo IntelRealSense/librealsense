@@ -269,6 +269,10 @@ int rs_poll_for_frame(rs_frame_queue* queue, rs_frame** output_frame, const rs_a
 void rs_enqueue_frame(const rs_active_stream* sender, rs_frame* frame, void* queue);
 void rs_flush_queue(rs_frame_queue* queue, rs_error** error);
 
+rs_context* rs_create_recording_context(int api_version, rs_error** error);
+void rs_save_recording_to_file(const rs_context* ctx, const char* filename, rs_error** error);
+rs_context* rs_create_mock_context(int api_version, const char* filename, rs_error** error);
+
 /**
 * retrieve the API version from the source code. Evaluate that the value is conformant to the established policies
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored

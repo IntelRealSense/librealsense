@@ -48,7 +48,7 @@ namespace sql
         statement stmt(*this, "SELECT COUNT(name) FROM sqlite_master WHERE type=? AND name=?");
         stmt.bind(1, "table");
         stmt.bind(2, name);
-        return stmt();
+        return stmt()[0].get_bool();
     }
 
     statement::statement(const connection& conn, const char * sql)
