@@ -104,16 +104,16 @@ obj obj/libuvc lib bin:
 
 # Rules for building the sample programs
 bin/c-%: examples/c-%.c lib/librealsense.so | bin
-	$(CC) $< $(REALSENSE_FLAGS) $(GLFW3_FLAGS) -o $@
+	$(CC) $< $(REALSENSE_FLAGS) $(GLFW3_FLAGS) $(LDFLAGS) -o $@
 
 bin/cpp-%: examples/cpp-%.cpp lib/librealsense.so | bin
-	$(CXX) $< -std=c++11 $(REALSENSE_FLAGS) $(GLFW3_FLAGS) -o $@
+	$(CXX) $< -std=c++11 $(REALSENSE_FLAGS) $(GLFW3_FLAGS) $(LDFLAGS) -o $@
 
 # Rules for building the library itself
 # DEB_LDFLAGS are set for debian builds to:
 # -fPIC -soname,librealsense.so.1 -Wl,-Bsymbolic-functions -Wl,-z,relro
 lib/librealsense.so: $(OBJECTS) | lib
-	$(CXX) -std=c++11 $(DEB_LDFLAGS)  -shared $(OBJECTS) $(LIBUSB_FLAGS) -o $@
+	$(CXX) -std=c++11 $(DEB_LDFLAGS)  -shared $(OBJECTS) $(LIBUSB_FLAGS) $(LDFLAGS) -o $@
 
 lib/librealsense.a: $(OBJECTS) | lib
 	ar rvs $@ `find obj/ -name "*.o"`
@@ -137,4 +137,4 @@ obj/verify.o: src/verify.c | obj
 all-tests: F200-live-test LR200-live-test R200-live-test SR300-live-test ZR300-live-test offline-test
 
 %-test: unit-tests/* lib/librealsense.so
-	$(CXX) unit-tests/*.cpp -std=c++11 -o bin/tests/$@ -D$(if $(findstring live,$@),LIVE_TEST,OFFLINE_TEST) -D$(firstword $(subst -, ,$@))_TEST -DMAKEFILE $(REALSENSE_FLAGS)
+	$(CXX) unit-tests/*.cpp -std=c++11 -o bin/tests/$@ -D$(if $(findstring live,$@),LIVE_TEST,OFFLINE_TEST) -D$(firstword $(subst -, ,$@))_TEST -DMAKEFILE $(REALSENSE_FLAGS) $(LDFLAGS)
