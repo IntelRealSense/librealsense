@@ -48,7 +48,7 @@ namespace rsimpl
             return f.good();
         }
 
-        int dist(uint32_t x, uint32_t y)
+        int compression_algorithm::dist(uint32_t x, uint32_t y) const
         {
             union {
                 uint32_t block;
@@ -78,7 +78,7 @@ namespace rsimpl
             //return dist;
         }
 
-        vector<uint8_t> rle_decompress(const vector<uint8_t>& input)
+        vector<uint8_t> compression_algorithm::decode(const vector<uint8_t>& input) const
         {
             vector<uint8_t> results;
             for (auto i = 0; i < input.size(); i += 5)
@@ -98,7 +98,7 @@ namespace rsimpl
             return results;
         }
 
-        vector<uint8_t> rle_compress(const vector<uint8_t>& input)
+        vector<uint8_t> compression_algorithm::encode(const vector<uint8_t>& input) const
         {
             vector<uint8_t> results;
             union {
@@ -107,10 +107,10 @@ namespace rsimpl
             } curr_block;
             curr_block.block = *reinterpret_cast<const uint32_t*>(input.data());
             uint8_t length = 0;
-            for (auto i = 0; i < input.size(); i+=4)
+            for (auto i = 0; i < input.size(); i += 4)
             {
                 auto block = *reinterpret_cast<const uint32_t*>(input.data() + i);
-                if (dist(block, curr_block.block) < 1000 && length < 16)
+                if (dist(block, curr_block.block) < min_dist && length < max_length)
                 {
                     length++;
                 }
@@ -357,9 +357,13 @@ namespace rsimpl
                 c.param1 = _rec->save_blob(&p, sizeof(p));
                 vector<uint8_t> frame((uint8_t*)f.pixels, 
                                       (uint8_t*)f.pixels + f.size);
-                auto compressed = rle_compress(frame);
+                auto compressed = _compression.encode(frame);
                 c.param2 = _rec->save_blob(compressed.data(), compressed.size());
-                callback(p, f);
+                c.param4 = compressed.size();
+                c.param3 = _save_frames ? 0 : 1;
+                auto dec = _compression.decode(compressed);
+                frame_object fo{ dec.size(), dec.data() };
+                callback(p, fo);
             });
             vector<stream_profile> ps{ profile };
             _rec->save_stream_profiles(ps, _entity_id, call_type::uvc_play);
@@ -744,7 +748,15 @@ namespace rsimpl
                     {
                         if (p == pair.first)
                         {
-                            auto frame_blob = rle_decompress(_rec->load_blob(c_ptr->param2));
+                            vector<uint8_t> frame_blob;
+                            if (c_ptr->param3 == 1) // frame was not saved
+                            {
+                                frame_blob = vector<uint8_t>(c_ptr->param4, 0);
+                            }
+                            else // frame was saved
+                            {
+                                frame_blob = _compression.decode(_rec->load_blob(c_ptr->param2));
+                            }
                             frame_object fo{ frame_blob.size(), frame_blob.data() };
                             pair.second(p, fo);
                             break;

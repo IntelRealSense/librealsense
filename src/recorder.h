@@ -40,6 +40,19 @@ namespace rsimpl
             uvc_frame
         };
 
+        class compression_algorithm
+        {
+        public:
+            int dist(uint32_t x, uint32_t y) const;
+
+            std::vector<uint8_t> decode(const std::vector<uint8_t>& input) const;
+
+            std::vector<uint8_t> encode(const std::vector<uint8_t>& input) const;
+
+            int min_dist = 1000;
+            int max_length = 8;
+        };
+
         struct call
         {
             call_type type = call_type::none;
@@ -185,6 +198,8 @@ namespace rsimpl
             std::shared_ptr<recording> _rec;
             std::shared_ptr<uvc_device> _source;
             int _entity_id;
+            compression_algorithm _compression;
+            int _save_frames = true;
         };
 
         class record_usb_device : public usb_device
@@ -252,6 +267,7 @@ namespace rsimpl
             std::atomic<bool> _alive;
             std::vector<std::pair<stream_profile, frame_callback>> _callbacks;
             std::mutex _callback_mutex;
+            compression_algorithm _compression;
         };
 
 
