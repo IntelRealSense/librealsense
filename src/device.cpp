@@ -15,7 +15,7 @@
 using namespace rsimpl;
 using namespace rsimpl::motion_module;
 
-const int NUMBER_OF_FRAMES_TO_SAMPLE = 25;
+const int NUMBER_OF_FRAMES_TO_SAMPLE = 5;
 
 const int MAX_FRAME_QUEUE_SIZE = 20;
 const int MAX_EVENT_QUEUE_SIZE = 500;
