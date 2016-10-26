@@ -127,4 +127,5 @@ namespace rsimpl
         return std::vector<uint8_t>(newCommand.receivedCommandData,
             newCommand.receivedCommandData + newCommand.receivedCommandDataLength);
     }
+
 }

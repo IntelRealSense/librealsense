@@ -134,3 +134,94 @@
 //    }
 //
 //} // namespace rsimpl::ds5
+
+// License: Apache 2.0. See LICENSE file in root directory.
+// Copyright(c) 2016 Intel Corporation. All Rights Reserved.
+
+#include "ds5.h"
+#include "hw-monitor.h"
+
+namespace rsimpl
+{
+    std::shared_ptr<rsimpl::device> ds5_info::create(const uvc::backend& backend) const
+    {
+        return std::make_shared<ds5_camera>(backend, _depth, _hwm);
+    }
+
+    ds5_info::ds5_info(uvc::uvc_device_info depth, uvc::usb_device_info hwm)
+        : _depth(std::move(depth)),
+        _hwm(std::move(hwm))
+    {
+    }
+
+    std::vector<std::shared_ptr<device_info>> pick_ds5_devices(
+        std::vector<uvc::uvc_device_info>& uvc,
+        std::vector<uvc::usb_device_info>& usb)
+    {
+        std::vector<uvc::uvc_device_info> chosen;
+        std::vector<std::shared_ptr<device_info>> results;
+
+        auto right_pid = filter_by_product(uvc, 0x0ad1);
+        auto group_devices = group_by_unique_id(right_pid);
+        for (auto& group : group_devices)
+        {
+            if (group.size() == 1 &&
+                mi_present(group, 0))
+            {
+                auto depth = get_mi(group, 0);
+                uvc::usb_device_info hwm;
+
+                if (ds::try_fetch_usb_device(usb, depth, hwm))
+                {
+                    auto info = std::make_shared<ds5_info>(depth, hwm);
+                    chosen.push_back(depth);
+                    results.push_back(info);
+                }
+                else
+                {
+                    //TODO: Log
+                }
+            }
+            else
+            {
+                // TODO: LOG
+            }
+        }
+
+        trim_device_list(uvc, chosen);
+
+        return results;
+    }
+
+
+    // "Get Version and Date"
+    // Reference: Commands.xml in IVCAM_DLL
+    void ds5_camera::get_gvd(size_t sz, char* gvd, uint8_t gvd_cmd) const
+    {
+        command command(gvd_cmd);
+        auto data = _hw_monitor.send(command);
+        auto minSize = std::min(sz, data.size());
+        memcpy(gvd, data.data(), minSize);
+    }
+
+    std::string ds5_camera::get_firmware_version_string(int gvd_cmd, int offset) const
+    {
+        std::vector<char> gvd(1024);
+        get_gvd(1024, gvd.data(), gvd_cmd);
+        uint8_t fws[8];
+        memcpy(fws, gvd.data() + offset, 8); // offset 12
+        return to_string() << static_cast<int>(fws[3]) << "." << static_cast<int>(fws[2])
+            << "." << static_cast<int>(fws[1]) << "." << static_cast<int>(fws[0]);
+    }
+
+    std::string ds5_camera::get_module_serial_string() const
+    {
+        std::vector<char> gvd(1024);
+        get_gvd(1024, gvd.data());
+        unsigned char ss[8];
+        memcpy(ss, gvd.data() + 48, 8);
+        char formattedBuffer[64];
+        sprintf(formattedBuffer, "%02X%02X%02X%02X%02X%-2X", ss[0], ss[1], ss[2], ss[3], ss[4], ss[5]);
+        return std::string(formattedBuffer);
+    }
+}

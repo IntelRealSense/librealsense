@@ -19,74 +19,6 @@ namespace rsimpl
     {
     }
 
-    std::vector<uvc::uvc_device_info> filter_by_product(const std::vector<uvc::uvc_device_info>& devices, uint32_t pid)
-    {
-        std::vector<uvc::uvc_device_info> result;
-        for (auto&& info : devices)
-        {
-            if (info.pid == pid) result.push_back(info);
-        }
-        return result;
-    }
-
-    std::vector<std::vector<uvc::uvc_device_info>> group_by_unique_id(const std::vector<uvc::uvc_device_info>& devices)
-    {
-        std::map<std::string, std::vector<uvc::uvc_device_info>> map;
-        for (auto&& info : devices)
-        {
-            map[info.unique_id].push_back(info);
-        }
-        std::vector<std::vector<uvc::uvc_device_info>> result;
-        for (auto&& kvp : map)
-        {
-            result.push_back(kvp.second);
-        }
-        return result;
-    }
-
-    void trim_device_list(std::vector<uvc::uvc_device_info>& devices, const std::vector<uvc::uvc_device_info>& chosen)
-    {
-        auto was_chosen = [&chosen](const uvc::uvc_device_info& info)
-        {
-            return find(chosen.begin(), chosen.end(), info) == chosen.end();
-        };
-        devices.erase(std::remove_if(devices.begin(), devices.end(), was_chosen), devices.end());
-    }
-
-    bool mi_present(const std::vector<uvc::uvc_device_info>& devices, uint32_t mi)
-    {
-        for (auto&& info : devices)
-        {
-            if (info.mi == mi) return true;
-        }
-        return false;
-    }
-
-    uvc::uvc_device_info get_mi(const std::vector<uvc::uvc_device_info>& devices, uint32_t mi)
-    {
-        for (auto&& info : devices)
-        {
-            if (info.mi == mi) return info;
-        }
-        throw std::runtime_error("Interface not found!");
-    }
-
-    bool try_fetch_usb_device(std::vector<uvc::usb_device_info>& devices,
-        const uvc::uvc_device_info& info, uvc::usb_device_info& result)
-    {
-        for (auto it = devices.begin(); it != devices.end(); ++it)
-        {
-            if (it->unique_id == info.unique_id)
-            {
-                result = *it;
-                result.mi = 4;
-                devices.erase(it);
-                return true;
-            }
-        }
-        return false;
-    }
-
     std::vector<std::shared_ptr<device_info>> pick_sr300_devices(
         std::vector<uvc::uvc_device_info>& uvc,
         std::vector<uvc::usb_device_info>& usb)
@@ -106,7 +38,7 @@ namespace rsimpl
                 auto depth = get_mi(group, 2);
                 uvc::usb_device_info hwm;
 
-                if (try_fetch_usb_device(usb, color, hwm))
+                if (ivcam::try_fetch_usb_device(usb, color, hwm))
                 {
                     auto info = std::make_shared<sr300_info>(color, depth, hwm);
                     chosen.push_back(color);
@@ -125,6 +57,7 @@ namespace rsimpl
         }
 
         trim_device_list(uvc, chosen);
+
         return results;
     }
 

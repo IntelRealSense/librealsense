@@ -414,9 +414,9 @@ namespace rsimpl
             c.param2 = _rec->save_blob(data, len);
         }
 
-        control_range record_uvc_device::get_xu_range(const extension_unit& xu, uint8_t ctrl) const
+        control_range record_uvc_device::get_xu_range(const extension_unit& xu, uint8_t ctrl, int len) const
         {
-            auto res = _source->get_xu_range(xu, ctrl);
+            auto res = _source->get_xu_range(xu, ctrl, len);
 
             auto&& c = _rec->add_call(_entity_id, call_type::uvc_get_xu_range);
             c.param1 = ctrl;
@@ -653,7 +653,7 @@ namespace rsimpl
             memcpy(data, stored_data.data(), len);
         }
 
-        control_range playback_uvc_device::get_xu_range(const extension_unit& xu, uint8_t ctrl) const
+        control_range playback_uvc_device::get_xu_range(const extension_unit& xu, uint8_t ctrl, int len) const
         {
             control_range res;
             auto&& c = _rec->find_call(call_type::uvc_get_xu_range, _entity_id);

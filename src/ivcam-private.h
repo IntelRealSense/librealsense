@@ -96,6 +96,22 @@ namespace rsimpl {
             GetPowerGearState = 0xFF
         };
 
+        static bool try_fetch_usb_device(std::vector<uvc::usb_device_info>& devices,
+            const uvc::uvc_device_info& info, uvc::usb_device_info& result)
+        {
+            for (auto it = devices.begin(); it != devices.end(); ++it)
+            {
+                if (it->unique_id == info.unique_id)
+                {
+                    result = *it;
+                    result.mi = 4;
+                    devices.erase(it);
+                    return true;
+                }
+            }
+            return false;
+        }
+
     } // rsimpl::ivcam
 } // namespace rsimpl
 

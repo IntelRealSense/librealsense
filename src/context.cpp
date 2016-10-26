@@ -6,6 +6,7 @@
 #include <string>
 
 #include "sr300.h"
+#include "ds5.h"
 #include "ds5d.h"
 #include "ds5c.h"
 #include "ds5t.h"
@@ -84,6 +85,9 @@ namespace rsimpl
 
         auto sr300_devices = pick_sr300_devices(uvc_devices, usb_devices);
         for (auto& dev : sr300_devices) list.push_back(dev);
+
+        auto ds5_devices = pick_ds5_devices(uvc_devices, usb_devices);
+        for (auto& dev : ds5_devices) list.push_back(dev);
 
         return list;
     }

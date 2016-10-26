@@ -518,7 +518,7 @@ namespace rsimpl
                                           static_cast<uint16_t>(size), const_cast<uint8_t *>(data)};
                 if(xioctl(_fd, UVCIOC_CTRL_QUERY, &q) < 0) throw_error("UVCIOC_CTRL_QUERY:UVC_GET_CUR");
             }
-            control_range get_xu_range(const extension_unit& xu, uint8_t control) const override
+            control_range get_xu_range(const extension_unit& xu, uint8_t control, int len) const override
             {
                 control_range result;
 
