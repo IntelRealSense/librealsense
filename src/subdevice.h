@@ -68,8 +68,11 @@ namespace rsimpl
         bool try_get_pf(const uvc::stream_profile& p, native_pixel_format& result) const;
 
         std::vector<request_mapping> resolve_requests(std::vector<stream_request> requests);
-
+ 
     private:
+
+		bool auto_complete_request(std::vector<stream_request>& requests);
+
         std::vector<native_pixel_format> _pixel_formats;
     };
 

@@ -127,6 +127,11 @@ namespace rsimpl
         rs_stream stream;
         uint32_t width, height, fps;
         rs_format format;
+
+        bool match(const stream_request& other) const;
+        bool contradicts(const std::vector<stream_request>& requests) const;
+
+        bool has_wildcards() const;
     };
 
 
@@ -149,7 +154,7 @@ namespace rsimpl
         bool satisfies(const stream_request& request) const
         {
             return provides_stream(request.stream) &&
-                   get_format(request.stream) == request.format;
+                get_format(request.stream) == request.format;
         }
 
         bool provides_stream(rs_stream stream) const { for (auto & o : outputs) if (o.first == stream) return true; return false; }

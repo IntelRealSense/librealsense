@@ -28,6 +28,7 @@ typedef enum rs_frame_metadata
 
 typedef enum rs_stream
 {
+    RS_STREAM_ANY,
     RS_STREAM_DEPTH,
     RS_STREAM_COLOR,
     RS_STREAM_INFRARED,
