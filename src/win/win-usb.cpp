@@ -95,7 +95,7 @@ namespace rsimpl
         }
 
         std::vector<std::wstring> usb_enumerate::query_by_interface(const std::string& guidStr, 
-            const std::string& vid, const std::string& pid) noexcept(false)
+            const std::string& vid, const std::string& pid)
         {
             GUID guid;
             std::wstring guidWStr(guidStr.begin(), guidStr.end());
@@ -229,7 +229,7 @@ namespace rsimpl
             init_winusb_pipe();
         }
 
-        usb_interface::~usb_interface() noexcept(false)
+        usb_interface::~usb_interface()
         {
             try {
                 release();

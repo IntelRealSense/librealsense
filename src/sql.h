@@ -2,6 +2,7 @@
 
 #include <string>
 #include <vector>
+#include <stdint.h>
 
 struct sqlite3;
 struct sqlite3_stmt;

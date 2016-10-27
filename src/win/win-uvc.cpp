@@ -40,96 +40,87 @@ namespace rsimpl
             { 0x50000000, 0x5a313620 }     /* 'Z16' => 'D16 '    */
         };
 
-        class source_reader_callback : public IMFSourceReaderCallback
+
+        STDMETHODIMP source_reader_callback::QueryInterface(REFIID iid, void** ppv)
         {
-        public:
-            explicit source_reader_callback(std::weak_ptr<wmf_uvc_device> owner)
-                : _owner(owner)
-            {
-            }
-
-            virtual ~source_reader_callback(void) {};
-
-            STDMETHODIMP QueryInterface(REFIID iid, void** ppv) override
-            {
 #pragma warning( push )
 #pragma warning(disable : 4838)
-                static const QITAB qit[] =
-                {
-                    QITABENT(source_reader_callback, IMFSourceReaderCallback),
-                    { nullptr },
-                };
-                return QISearch(this, qit, iid, ppv);
-#pragma warning( pop )
-            };
-
-            STDMETHODIMP_(ULONG) AddRef() override { return InterlockedIncrement(&_refCount); }
-
-            STDMETHODIMP_(ULONG) Release() override {
-                ULONG count = InterlockedDecrement(&_refCount);
-                if (count <= 0)
-                {
-                    delete this;
-                }
-                return count;
-            }
-
-            STDMETHODIMP OnReadSample(HRESULT /*hrStatus*/,
-                DWORD dwStreamIndex,
-                DWORD /*dwStreamFlags*/,
-                LONGLONG /*llTimestamp*/,
-                IMFSample *sample) override
+            static const QITAB qit[] =
             {
-                auto owner = _owner.lock();
-                if (owner && owner->_reader)
+                QITABENT(source_reader_callback, IMFSourceReaderCallback),
+                { nullptr },
+            };
+            return QISearch(this, qit, iid, ppv);
+#pragma warning( pop )
+        };
+
+        STDMETHODIMP_(ULONG) source_reader_callback::AddRef() { return InterlockedIncrement(&_refCount); }
+
+        STDMETHODIMP_(ULONG) source_reader_callback::Release()  {
+            ULONG count = InterlockedDecrement(&_refCount);
+            if (count <= 0)
+            {
+                delete this;
+            }
+            return count;
+        }
+
+        STDMETHODIMP source_reader_callback::OnReadSample(HRESULT /*hrStatus*/,
+            DWORD dwStreamIndex,
+            DWORD /*dwStreamFlags*/,
+            LONGLONG /*llTimestamp*/,
+            IMFSample *sample) 
+        {
+            auto owner = _owner.lock();
+            if (owner && owner->_reader)
+            {
+                LOG_HR(owner->_reader->ReadSample(0xFFFFFFFC, 0, nullptr, nullptr, nullptr, nullptr));
+
+                if (sample)
                 {
-                    LOG_HR(owner->_reader->ReadSample(0xFFFFFFFC, 0, nullptr, nullptr, nullptr, nullptr));
-
-                    if (sample)
+                    CComPtr<IMFMediaBuffer> buffer = nullptr;
+                    if (SUCCEEDED(sample->GetBufferByIndex(0, &buffer)))
                     {
-                        CComPtr<IMFMediaBuffer> buffer = nullptr;
-                        if (SUCCEEDED(sample->GetBufferByIndex(0, &buffer)))
+                        byte* byte_buffer;
+                        DWORD max_length, current_length;
+                        if (SUCCEEDED(buffer->Lock(&byte_buffer, &max_length, &current_length)))
                         {
-                            byte* byte_buffer;
-                            DWORD max_length, current_length;
-                            if (SUCCEEDED(buffer->Lock(&byte_buffer, &max_length, &current_length)))
+                            try
                             {
-                                try
-                                {
-                                    auto& stream = owner->_streams[dwStreamIndex];
-                                    std::lock_guard<std::mutex> lock(owner->_streams_mutex);
-                                    auto profile = stream.profile;
-                                    frame_object f{ current_length, byte_buffer };
-                                    stream.callback(profile, f);
-                                }
-                                catch (...)
-                                {
-                                    // TODO: log
-                                }
-
-                                buffer->Unlock();
+                                auto& stream = owner->_streams[dwStreamIndex];
+                                std::lock_guard<std::mutex> lock(owner->_streams_mutex);
+                                auto profile = stream.profile;
+                                frame_object f{ current_length, byte_buffer };
+                                stream.callback(profile, f);
                             }
+                            catch (...)
+                            {
+                                // TODO: log
+                            }
+
+                            buffer->Unlock();
                         }
                     }
                 }
-
-                return S_OK;
-            };
-            STDMETHODIMP OnEvent(DWORD /*sidx*/, IMFMediaEvent* /*event*/) override { return S_OK; }
-            STDMETHODIMP OnFlush(DWORD) override
-            {
-                auto owner = _owner.lock();
-                if (owner)
-                {
-                    owner->_is_flushed.set();
-                }
-                return S_OK;
             }
 
-        private:
-            std::weak_ptr<wmf_uvc_device> _owner;
-            long _refCount = 0;
+            return S_OK;
         };
+        STDMETHODIMP source_reader_callback::OnEvent(DWORD /*sidx*/, IMFMediaEvent* /*event*/) { return S_OK; }
+        STDMETHODIMP source_reader_callback::OnFlush(DWORD)
+        {
+            auto owner = _owner.lock();
+            if (owner)
+            {
+                owner->_is_flushed.set();
+            }
+            return S_OK;
+        }
+
+
+
+
+
 
         bool wmf_uvc_device::is_connected(const uvc_device_info& info)
         {

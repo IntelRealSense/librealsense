@@ -228,7 +228,7 @@ public:
             {
                 std::stringstream res;
                 res << profile.width << " x " << profile.height;
-                push_back_if_not_exists(res_values, { profile.width, profile.height });
+				push_back_if_not_exists(res_values, std::pair<int, int>(profile.width, profile.height));
                 push_back_if_not_exists(resolutions, res.str());
                 std::stringstream fps;
                 fps << profile.fps;
@@ -239,12 +239,20 @@ public:
                 push_back_if_not_exists(formats[profile.stream], format);
                 push_back_if_not_exists(format_values[profile.stream], profile.format);
 
-                if (!std::any_of(stream_enabled.begin(), stream_enabled.end(), 
-                    [](auto&& it) { return it.second; }))
+                auto any_stream_enabled = false;
+                for (auto it : stream_enabled)
+                {
+                    if (it.second)
+                    {
+                        any_stream_enabled = true;
+                        break;
+                    }                       
+                }
+                if (!any_stream_enabled)
                 {
                     stream_enabled[profile.stream] = true;
                 }
-
+                
                 profiles.push_back(profile);
             }
         }
