@@ -63,10 +63,10 @@ A comprehensive suite of sample and tutorial applications are provided in the `/
 1. RealSense R200 (Firmware 1.0.72.06 and up)
 2. RealSense F200 (Firmware 2.60.0.0 and up)
 3. RealSense SR300 (Firmware 3.10.10.0 and up)
-4. RealSense LR200 (Firmware 2.0.71.18 and up)
+4. RealSense LR200 (Firmware 2.0.71.20 and up)
 5. [RealSense ZR300](https://newsroom.intel.com/chip-shots/intel-announces-tools-realsense-technology-development/)
-  * Camera Firmware 2.0.71.18 and up
-  * USB Adapter Board Firmware 1.27.0.0 and up
+  * Camera Firmware 2.0.71.20 and up
+  * USB Adapter Board Firmware 1.28.0.0 and up
   * Motion Module Firmware 1.23.0.0 and up
 
 ## Compatible Platforms
