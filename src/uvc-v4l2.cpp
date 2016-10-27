@@ -340,9 +340,11 @@ namespace rsimpl
                     fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
                     fmt.fmt.pix.width       = profile.width;
                     fmt.fmt.pix.height      = profile.height;
-                    fmt.fmt.pix.pixelformat = profile.format;
+                    fmt.fmt.pix.pixelformat = (const big_endian<int> &)profile.format;
                     fmt.fmt.pix.field       = V4L2_FIELD_NONE;
                     if(xioctl(_fd, VIDIOC_S_FMT, &fmt) < 0) throw_error("VIDIOC_S_FMT");
+
+                    LOG_INFO("Trying to configure fourcc " << fourcc_to_string(fmt.fmt.pix.pixelformat));
 
                     v4l2_streamparm parm = {};
                     parm.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
@@ -435,6 +437,15 @@ namespace rsimpl
 
                     _callback = nullptr;
                 }
+            }
+
+            std::string fourcc_to_string(uint32_t id) const
+            {
+                uint32_t device_fourcc = id;
+                char fourcc_buff[sizeof(device_fourcc)+1];
+                memcpy(fourcc_buff, &device_fourcc, sizeof(device_fourcc));
+                fourcc_buff[sizeof(device_fourcc)] = 0;
+                return fourcc_buff;
             }
 
             void poll()
@@ -675,16 +686,10 @@ namespace rsimpl
                             ss <<  match[1];
                             int id;
                             ss >> std::hex >> id;
-                            std::cout << id <<"\n";
-
                             fourcc = (const big_endian<int> &)id;
 
-                            uint32_t device_fourcc = id;
-                            char fourcc[sizeof(device_fourcc)+1];
-                            memcpy(fourcc, &device_fourcc, sizeof(device_fourcc));
-                            fourcc[sizeof(device_fourcc)] = 0;
-
-                            std::cout << fourcc << "\n";
+                            auto format_str = fourcc_to_string(id);
+                            LOG_WARNING("Pixel format " << pixel_format.description << " likely requires patch for fourcc code " << format_str << "!");
                         }
                     }
 
