@@ -24,7 +24,7 @@ namespace rsimpl
         {
         public:
             explicit usb_interface(HANDLE& deviceHandle);
-            ~usb_interface() noexcept(false);
+            ~usb_interface();
 
             void wait_for_async_op(OVERLAPPED &hOvl, ULONG &lengthTransferred, DWORD TimeOut, pipe_direction pipeDirection, bool* isExitOnTimeout) const;
             bool wait_for_async_op_interrupt(OVERLAPPED &hOvl, ULONG &lengthTransferred) const;

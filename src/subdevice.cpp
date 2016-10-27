@@ -9,6 +9,7 @@ using namespace rsimpl;
 
 streaming_lock::streaming_lock(): _is_streaming(false), 
                                   _callback(nullptr, [](rs_frame_callback*){}), 
+                                  max_publish_list_size(16),
                                   _archive(&max_publish_list_size), _owner(nullptr)
 {
             
