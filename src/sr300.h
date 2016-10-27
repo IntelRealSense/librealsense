@@ -92,8 +92,8 @@ namespace rsimpl
             depth_ep->register_pixel_format(pf_sr300_invi);
             color_ep->register_pixel_format(pf_yuy2);
 
-            auto fw_version = get_firmware_version_string();
-            auto serial = get_module_serial_string();
+            auto fw_version = _hw_monitor.get_firmware_version_string(GVD, gvd_fw_version_offset);
+            auto serial = _hw_monitor.get_module_serial_string(GVD);
             auto location = depth_ep->invoke_powered([](uvc::uvc_device& dev)
             {
                 return dev.get_device_location();
@@ -243,10 +243,6 @@ namespace rsimpl
         static rs_intrinsics make_color_intrinsics(const ivcam::camera_calib_params& c, const int2& dims);
         float read_mems_temp() const;
         int read_ir_temp() const;
-
-        void get_gvd(size_t sz, char * gvd, uint8_t gvd_cmd = ivcam::fw_cmd::GVD) const;
-        std::string get_firmware_version_string(int gvd_cmd = static_cast<int>(ivcam::fw_cmd::GVD), int offset = 0) const;
-        std::string get_module_serial_string() const;
 
         void force_hardware_reset() const;
         void enable_timestamp(bool colorEnable, bool depthEnable) const;

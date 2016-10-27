@@ -26,7 +26,7 @@ namespace rsimpl
         std::vector<uvc::uvc_device_info> chosen;
         std::vector<std::shared_ptr<device_info>> results;
 
-        auto right_pid = filter_by_product(uvc, 0x0aa5);
+        auto right_pid = filter_by_product(uvc, SR300_PID);
         auto group_devices = group_by_unique_id(right_pid);
         for (auto& group : group_devices)
         {
@@ -107,37 +107,6 @@ namespace rsimpl
         command command(ivcam::fw_cmd::GetIRTemp);
         auto data = _hw_monitor.send(command);
         return static_cast<int8_t>(data[0]);
-    }
-
-    // "Get Version and Date"
-    // Reference: Commands.xml in IVCAM_DLL
-    void sr300_camera::get_gvd(size_t sz, char* gvd, uint8_t gvd_cmd) const
-    {
-        command command(gvd_cmd);
-        auto data = _hw_monitor.send(command);
-        auto minSize = std::min(sz, data.size());
-        memcpy(gvd, data.data(), minSize);
-    }
-
-    std::string sr300_camera::get_firmware_version_string(int gvd_cmd, int offset) const
-    {
-        std::vector<char> gvd(1024);
-        get_gvd(1024, gvd.data(), gvd_cmd);
-        uint8_t fws[8];
-        memcpy(fws, gvd.data() + offset, 8); // offset 0
-        return to_string() << static_cast<int>(fws[3]) << "." << static_cast<int>(fws[2]) 
-                           << "." << static_cast<int>(fws[1]) << "." << static_cast<int>(fws[0]);
-    }
-
-    std::string sr300_camera::get_module_serial_string() const
-    {
-        std::vector<char> gvd(1024);
-        get_gvd(1024, gvd.data());
-        unsigned char ss[8];
-        memcpy(ss, gvd.data() + 132, 8);
-        char formattedBuffer[64];
-        sprintf(formattedBuffer, "%02X%02X%02X%02X%02X%-2X", ss[0], ss[1], ss[2], ss[3], ss[4], ss[5]);
-        return std::string(formattedBuffer);
     }
 
     void sr300_camera::force_hardware_reset() const

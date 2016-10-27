@@ -24,6 +24,8 @@ namespace rsimpl {
         const uint8_t IVCAM_COLOR_ERROR = 3;
         const uint8_t IVCAM_COLOR_EXPOSURE_GRANULAR = 4;
 
+        const int gvd_fw_version_offset = 0;
+
         const uvc::extension_unit depth_xu { 1, 6, 1, 
             { 0xA55751A1, 0xF3C5, 0x4A5E, { 0x8D, 0x5A, 0x68, 0x54, 0xB8, 0xFA, 0x27, 0x16 } } };
 

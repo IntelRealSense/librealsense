@@ -90,8 +90,8 @@ namespace rsimpl
             depth_ep->register_pixel_format(pf_yuyvl); // Left Only
             depth_ep->register_pixel_format(pf_y12i); // L+R - Calibration not rectified
 
-            auto fw_version = get_firmware_version_string();
-            auto serial = get_module_serial_string();
+            auto fw_version = _hw_monitor.get_firmware_version_string(GVD, gvd_fw_version_offset);
+            auto serial = _hw_monitor.get_module_serial_string(GVD);
             auto location = depth_ep->invoke_powered([](uvc::uvc_device& dev)
             {
                 return dev.get_device_location();
@@ -122,10 +122,6 @@ namespace rsimpl
                     get_uvc_endpoint(RS_SUBDEVICE_DEPTH),
                     ds::depth_xu, id, std::move(desc)));
         }
-
-        void get_gvd(size_t sz, char * gvd, uint8_t gvd_cmd = ds::fw_cmd::GVD) const;
-        std::string get_firmware_version_string(int gvd_cmd = static_cast<int>(ds::fw_cmd::GVD), int offset = 12) const;
-        std::string get_module_serial_string() const;
     };
 }
 #endif

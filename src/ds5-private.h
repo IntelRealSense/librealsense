@@ -12,6 +12,8 @@ namespace rsimpl {
         const uint8_t DS5_DEPTH_LASER_POWER = 2;
         const uint8_t DS5_EXPOSURE = 3;
 
+        const int gvd_fw_version_offset = 12;
+
         const uvc::extension_unit depth_xu = { 0, 3, 2,
         { 0xC9606CCB, 0x594C, 0x4D25,{ 0xaf, 0x47, 0xcc, 0xc4, 0x96, 0x43, 0x59, 0x95 } } };
 
