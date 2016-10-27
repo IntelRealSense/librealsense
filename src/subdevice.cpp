@@ -4,6 +4,7 @@
 #include "device.h"
 #include "image.h"
 #include <array>
+#include <set>
 
 using namespace rsimpl;
 
@@ -66,6 +67,8 @@ std::vector<stream_request> endpoint::get_principal_requests()
 {
     std::unordered_set<stream_request> results;
 
+    std::set<std::string> unutilized_formats;
+
     auto profiles = get_stream_profiles();
     for (auto&& p : profiles)
     {
@@ -86,8 +89,13 @@ std::vector<stream_request> endpoint::get_principal_requests()
             char fourcc[sizeof(device_fourcc)+1];
             memcpy(fourcc, &device_fourcc, sizeof(device_fourcc));
             fourcc[sizeof(device_fourcc)] = 0;
-            LOG_WARNING("Unsupported pixel-format " << fourcc);
+            unutilized_formats.insert(fourcc);
         }
+    }
+
+    for (auto&& fourcc : unutilized_formats)
+    {
+        LOG_WARNING("Unutilized format " << fourcc << "!");
     }
 
     std::vector<stream_request> res{ begin(results), end(results) };

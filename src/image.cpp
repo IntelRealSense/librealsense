@@ -476,11 +476,18 @@ namespace rsimpl
     const native_pixel_format pf_sr300_inzi = { 'INZI', 2, 2,{  { true,  &unpack_z16_y8_from_sr300_inzi,    { { RS_STREAM_DEPTH,    RS_FORMAT_Z16 },{ RS_STREAM_INFRARED, RS_FORMAT_Y8 } } },
                                                                 { true,  &unpack_z16_y16_from_sr300_inzi,   { { RS_STREAM_DEPTH,    RS_FORMAT_Z16 },{ RS_STREAM_INFRARED, RS_FORMAT_Y16 } } } } };
 
-    const native_pixel_format pf_yuyvl      = { 'YUY2', 1, 2,{  { true,  &unpack_yuy2<RS_FORMAT_RGB8 >,    { { RS_STREAM_INFRARED, RS_FORMAT_RGB8 },{ RS_STREAM_INFRARED2, RS_FORMAT_RGB8 } } },
+    const native_pixel_format pf_yuyvl      = { 'YUY2', 1, 2,{  { true,  &unpack_yuy2<RS_FORMAT_RGB8 >,     { { RS_STREAM_INFRARED, RS_FORMAT_RGB8 },{ RS_STREAM_INFRARED2, RS_FORMAT_RGB8 } } },
                                                                 { false, &copy_pixels<2>,                   { { RS_STREAM_INFRARED, RS_FORMAT_YUYV },{ RS_STREAM_INFRARED2, RS_FORMAT_YUYV } } },
                                                                 { true,  &unpack_yuy2<RS_FORMAT_RGBA8>,     { { RS_STREAM_INFRARED, RS_FORMAT_RGBA8},{ RS_STREAM_INFRARED2, RS_FORMAT_RGBA8 } } },
                                                                 { true,  &unpack_yuy2<RS_FORMAT_BGR8 >,     { { RS_STREAM_INFRARED, RS_FORMAT_BGR8 },{ RS_STREAM_INFRARED2, RS_FORMAT_BGR8 } } },
                                                                 { true,  &unpack_yuy2<RS_FORMAT_BGRA8>,     { { RS_STREAM_INFRARED, RS_FORMAT_BGRA8},{ RS_STREAM_INFRARED2, RS_FORMAT_BGRA8 } } } } };
+
+    const native_pixel_format pf_yuyv       = { 'YUYV', 1, 2,{  { true,  &unpack_yuy2<RS_FORMAT_RGB8 >,     { { RS_STREAM_COLOR,    RS_FORMAT_RGB8 } } },
+                                                                { false, &copy_pixels<2>,                   { { RS_STREAM_COLOR,    RS_FORMAT_YUYV } } },
+                                                                { true,  &unpack_yuy2<RS_FORMAT_RGBA8>,     { { RS_STREAM_COLOR,    RS_FORMAT_RGBA8 } } },
+                                                                { true,  &unpack_yuy2<RS_FORMAT_BGR8 >,     { { RS_STREAM_COLOR,    RS_FORMAT_BGR8 } } },
+                                                                { true,  &unpack_yuy2<RS_FORMAT_BGRA8>,     { { RS_STREAM_COLOR,    RS_FORMAT_BGRA8 } } } } };
+
 }
 
 #pragma pack(pop)

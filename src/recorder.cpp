@@ -540,7 +540,7 @@ namespace rsimpl
         }
 
         record_backend::record_backend(shared_ptr<backend> source)
-            : _source(source), _rec(make_shared<recording>()),
+            : _source(source), _rec(make_shared<recording>()), _entity_count(1)
               _compression(make_shared<compression_algorithm>())
         {
         }

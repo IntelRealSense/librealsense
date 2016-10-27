@@ -235,7 +235,7 @@ namespace rsimpl
         private:
             std::shared_ptr<backend> _source;
             std::shared_ptr<recording> _rec;
-            mutable std::atomic<int> _entity_count = 1;
+            mutable std::atomic<int> _entity_count;
             std::shared_ptr<compression_algorithm> _compression;
         };
 
