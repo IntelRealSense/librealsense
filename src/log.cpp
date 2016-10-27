@@ -64,9 +64,11 @@ namespace rsimpl
 
         logger_type() : callback(nullptr, [](rs_log_callback*) {})
         {
-            auto t = time(nullptr); char buffer[20] = {}; const tm* time = localtime(&t);
-            if (nullptr != time)
-                strftime(buffer, sizeof(buffer), "%Y-%m-%d-%H_%M_%S", time);
+            auto t = time(nullptr); char buffer[20] = {};
+            tm time;
+            localtime_s(&time, &t);
+            if (nullptr != &time)
+                strftime(buffer, sizeof(buffer), "%Y-%m-%d-%H_%M_%S", &time);
             filename = to_string() << buffer << ".log";
 
             configure();

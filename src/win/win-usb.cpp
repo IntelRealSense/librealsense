@@ -236,7 +236,7 @@ namespace rsimpl
             }
             catch (...)
             {
-
+                // TODO: Write to log
             }
         }
 

@@ -134,3 +134,65 @@
 //    }
 //
 //} // namespace rsimpl::ds5
+
+// License: Apache 2.0. See LICENSE file in root directory.
+// Copyright(c) 2016 Intel Corporation. All Rights Reserved.
+
+#include "ds5.h"
+
+namespace rsimpl
+{
+    std::shared_ptr<rsimpl::device> ds5_info::create(const uvc::backend& backend) const
+    {
+        return std::make_shared<ds5_camera>(backend, _depth, _hwm);
+    }
+
+    ds5_info::ds5_info(uvc::uvc_device_info depth, uvc::usb_device_info hwm)
+        : _depth(std::move(depth)),
+        _hwm(std::move(hwm))
+    {
+    }
+
+    std::vector<std::shared_ptr<device_info>> pick_ds5_devices(
+        std::vector<uvc::uvc_device_info>& uvc,
+        std::vector<uvc::usb_device_info>& usb)
+    {
+        std::vector<uvc::uvc_device_info> chosen;
+        std::vector<std::shared_ptr<device_info>> results;
+
+        auto right_pid = filter_by_product(uvc, DS5_PID);
+        auto group_devices = group_by_unique_id(right_pid);
+        for (auto& group : group_devices)
+        {
+            if (group.size() == 1 &&
+                mi_present(group, 0))
+            {
+                auto depth = get_mi(group, 0);
+                uvc::usb_device_info hwm;
+
+                if (ds::try_fetch_usb_device(usb, depth, hwm))
+                {
+                    auto info = std::make_shared<ds5_info>(depth, hwm);
+                    chosen.push_back(depth);
+                    results.push_back(info);
+                }
+                else
+                {
+                    //TODO: Log
+                }
+            }
+            else
+            {
+                // TODO: LOG
+            }
+        }
+
+        trim_device_list(uvc, chosen);
+
+        return results;
+    }
+
+
+    // "Get Version and Date"
+    // Reference: Commands.xml in IVCAM_DLL
+}

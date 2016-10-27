@@ -112,7 +112,7 @@ namespace rsimpl
             virtual void init_xu(const extension_unit& xu) = 0;
             virtual void set_xu(const extension_unit& xu, uint8_t ctrl, const uint8_t* data, int len) = 0;
             virtual void get_xu(const extension_unit& xu, uint8_t ctrl, uint8_t* data, int len) const = 0;
-            virtual control_range get_xu_range(const extension_unit& xu, uint8_t ctrl) const = 0;
+            virtual control_range get_xu_range(const extension_unit& xu, uint8_t ctrl, int len) const = 0;
 
             virtual int get_pu(rs_option opt) const = 0;
             virtual void set_pu(rs_option opt, int value) = 0;
@@ -172,9 +172,9 @@ namespace rsimpl
                 }
                 _dev->get_xu(xu, ctrl, data, len);
             }
-            control_range get_xu_range(const extension_unit& xu, uint8_t ctrl) const override
+            control_range get_xu_range(const extension_unit& xu, uint8_t ctrl, int len) const override
             {
-                return _dev->get_xu_range(xu, ctrl);
+                return _dev->get_xu_range(xu, ctrl, len);
             }
             int get_pu(rs_option opt) const override
             {

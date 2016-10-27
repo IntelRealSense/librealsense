@@ -201,9 +201,67 @@ namespace rsimpl
                 throw std::runtime_error("XU read did not return enough data");
         }
 
-        control_range wmf_uvc_device::get_xu_range(const extension_unit& xu, uint8_t ctrl) const
+        void ReadFromBuffer(control_range& cfg, BYTE* buffer, int length)
         {
-            control_range result;
+            BYTE* next_struct = buffer;
+
+            PKSPROPERTY_DESCRIPTION pDesc = reinterpret_cast<PKSPROPERTY_DESCRIPTION>(next_struct);
+            next_struct += sizeof(KSPROPERTY_DESCRIPTION);
+
+            if (pDesc->MembersListCount < 1)
+                throw std::exception("no data ksprop");
+
+            PKSPROPERTY_MEMBERSHEADER pHeader = reinterpret_cast<PKSPROPERTY_MEMBERSHEADER>(next_struct);
+            next_struct += sizeof(KSPROPERTY_MEMBERSHEADER);
+
+            if (pHeader->MembersCount < 1)
+                throw std::exception("no data ksprop");
+
+            switch (pHeader->MembersFlags)
+            {
+                /* member flag is not set correctly in current IvCam Implementation */
+            case KSPROPERTY_MEMBER_RANGES:
+            case KSPROPERTY_MEMBER_STEPPEDRANGES:
+            {
+                if (pDesc->DescriptionSize < sizeof(KSPROPERTY_DESCRIPTION) + sizeof(KSPROPERTY_MEMBERSHEADER) + 3 * sizeof(UCHAR))
+                {
+                    throw std::exception("no data ksprop");
+                }
+
+                auto pStruct = next_struct;
+                memcpy_s(&cfg.step, length, pStruct, length);
+                pStruct += length;
+                memcpy_s(&cfg.min, length, pStruct, length);
+                pStruct += length;
+                memcpy_s(&cfg.max, length, pStruct, length);
+                return;
+            }
+            case KSPROPERTY_MEMBER_VALUES:
+            {
+                /*
+                *	we don't yet support reading a list of values, only min-max.
+                *   so we only support reading default value from a list
+                */
+
+                if (pHeader->Flags == KSPROPERTY_MEMBER_FLAG_DEFAULT && pHeader->MembersCount == 1)
+                {
+                    if (pDesc->DescriptionSize < sizeof(KSPROPERTY_DESCRIPTION) + sizeof(KSPROPERTY_MEMBERSHEADER) + sizeof(UCHAR))
+                    {
+                        throw std::exception("no data ksprop");
+                    }
+
+                    memcpy_s(&cfg.def, length, next_struct, length);
+                }
+                return;
+            }
+            default:
+                throw  std::exception("unsupported");
+            }
+        }
+
+        control_range wmf_uvc_device::get_xu_range(const extension_unit& xu, uint8_t ctrl, int len) const
+        {
+            control_range result = {};
             auto ks_control = get_ks_control(xu);
 
             /* get step, min and max values*/
@@ -235,14 +293,7 @@ namespace rsimpl
 
             if (bytes_received != size) { throw  std::runtime_error("wrong data"); }
 
-            auto pRangeValues = buffer.data() + sizeof(KSPROPERTY_MEMBERSHEADER) + sizeof(KSPROPERTY_DESCRIPTION);
-
-            result.step = static_cast<int>(*pRangeValues);
-            pRangeValues++;
-            result.min = static_cast<int>(*pRangeValues);
-            pRangeValues++;
-            result.max = static_cast<int>(*pRangeValues);
-
+            ReadFromBuffer(result, buffer.data(), len);
 
             /* get def value*/
             memset(&node, 0, sizeof(KSP_NODE));
@@ -272,9 +323,8 @@ namespace rsimpl
 
             if (bytes_received != size) { throw  std::runtime_error("wrong data"); }
 
-            pRangeValues = buffer.data() + sizeof(KSPROPERTY_MEMBERSHEADER) + sizeof(KSPROPERTY_DESCRIPTION);
+            ReadFromBuffer(result, buffer.data(), len);
 
-            result.def = static_cast<int>(*pRangeValues);
             return result;
         }
 

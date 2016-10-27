@@ -19,74 +19,6 @@ namespace rsimpl
     {
     }
 
-    std::vector<uvc::uvc_device_info> filter_by_product(const std::vector<uvc::uvc_device_info>& devices, uint32_t pid)
-    {
-        std::vector<uvc::uvc_device_info> result;
-        for (auto&& info : devices)
-        {
-            if (info.pid == pid) result.push_back(info);
-        }
-        return result;
-    }
-
-    std::vector<std::vector<uvc::uvc_device_info>> group_by_unique_id(const std::vector<uvc::uvc_device_info>& devices)
-    {
-        std::map<std::string, std::vector<uvc::uvc_device_info>> map;
-        for (auto&& info : devices)
-        {
-            map[info.unique_id].push_back(info);
-        }
-        std::vector<std::vector<uvc::uvc_device_info>> result;
-        for (auto&& kvp : map)
-        {
-            result.push_back(kvp.second);
-        }
-        return result;
-    }
-
-    void trim_device_list(std::vector<uvc::uvc_device_info>& devices, const std::vector<uvc::uvc_device_info>& chosen)
-    {
-        auto was_chosen = [&chosen](const uvc::uvc_device_info& info)
-        {
-            return find(chosen.begin(), chosen.end(), info) == chosen.end();
-        };
-        devices.erase(std::remove_if(devices.begin(), devices.end(), was_chosen), devices.end());
-    }
-
-    bool mi_present(const std::vector<uvc::uvc_device_info>& devices, uint32_t mi)
-    {
-        for (auto&& info : devices)
-        {
-            if (info.mi == mi) return true;
-        }
-        return false;
-    }
-
-    uvc::uvc_device_info get_mi(const std::vector<uvc::uvc_device_info>& devices, uint32_t mi)
-    {
-        for (auto&& info : devices)
-        {
-            if (info.mi == mi) return info;
-        }
-        throw std::runtime_error("Interface not found!");
-    }
-
-    bool try_fetch_usb_device(std::vector<uvc::usb_device_info>& devices,
-        const uvc::uvc_device_info& info, uvc::usb_device_info& result)
-    {
-        for (auto it = devices.begin(); it != devices.end(); ++it)
-        {
-            if (it->unique_id == info.unique_id)
-            {
-                result = *it;
-                result.mi = 4;
-                devices.erase(it);
-                return true;
-            }
-        }
-        return false;
-    }
-
     std::vector<std::shared_ptr<device_info>> pick_sr300_devices(
         std::vector<uvc::uvc_device_info>& uvc,
         std::vector<uvc::usb_device_info>& usb)
@@ -94,7 +26,7 @@ namespace rsimpl
         std::vector<uvc::uvc_device_info> chosen;
         std::vector<std::shared_ptr<device_info>> results;
 
-        auto right_pid = filter_by_product(uvc, 0x0aa5);
+        auto right_pid = filter_by_product(uvc, SR300_PID);
         auto group_devices = group_by_unique_id(right_pid);
         for (auto& group : group_devices)
         {
@@ -106,7 +38,7 @@ namespace rsimpl
                 auto depth = get_mi(group, 2);
                 uvc::usb_device_info hwm;
 
-                if (try_fetch_usb_device(usb, color, hwm))
+                if (ivcam::try_fetch_usb_device(usb, color, hwm))
                 {
                     auto info = std::make_shared<sr300_info>(color, depth, hwm);
                     chosen.push_back(color);
@@ -125,6 +57,7 @@ namespace rsimpl
         }
 
         trim_device_list(uvc, chosen);
+
         return results;
     }
 
@@ -174,37 +107,6 @@ namespace rsimpl
         command command(ivcam::fw_cmd::GetIRTemp);
         auto data = _hw_monitor.send(command);
         return static_cast<int8_t>(data[0]);
-    }
-
-    // "Get Version and Date"
-    // Reference: Commands.xml in IVCAM_DLL
-    void sr300_camera::get_gvd(size_t sz, char* gvd, uint8_t gvd_cmd) const
-    {
-        command command(gvd_cmd);
-        auto data = _hw_monitor.send(command);
-        auto minSize = std::min(sz, data.size());
-        memcpy(gvd, data.data(), minSize);
-    }
-
-    std::string sr300_camera::get_firmware_version_string(int gvd_cmd, int offset) const
-    {
-        std::vector<char> gvd(1024);
-        get_gvd(1024, gvd.data(), gvd_cmd);
-        uint8_t fws[8];
-        memcpy(fws, gvd.data() + offset, 8); // offset 0
-        return to_string() << static_cast<int>(fws[3]) << "." << static_cast<int>(fws[2]) 
-                           << "." << static_cast<int>(fws[1]) << "." << static_cast<int>(fws[0]);
-    }
-
-    std::string sr300_camera::get_module_serial_string() const
-    {
-        std::vector<char> gvd(1024);
-        get_gvd(1024, gvd.data());
-        unsigned char ss[8];
-        memcpy(ss, gvd.data() + 132, 8);
-        char formattedBuffer[64];
-        sprintf(formattedBuffer, "%02X%02X%02X%02X%02X%-2X", ss[0], ss[1], ss[2], ss[3], ss[4], ss[5]);
-        return std::string(formattedBuffer);
     }
 
     void sr300_camera::force_hardware_reset() const

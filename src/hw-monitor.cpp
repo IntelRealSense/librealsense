@@ -2,6 +2,7 @@
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 #include "hw-monitor.h"
 #include "types.h"
+#include <iomanip>
 
 namespace rsimpl
 {
@@ -126,5 +127,40 @@ namespace rsimpl
 
         return std::vector<uint8_t>(newCommand.receivedCommandData,
             newCommand.receivedCommandData + newCommand.receivedCommandDataLength);
+    }
+
+    void hw_monitor::get_gvd(size_t sz, char* gvd, uint8_t gvd_cmd) const
+    {
+        command command(gvd_cmd);
+        auto data = send(command);
+        auto minSize = std::min(sz, data.size());
+        memcpy(gvd, data.data(), minSize);
+    }
+
+    std::string hw_monitor::get_firmware_version_string(int gvd_cmd, int offset) const
+    {
+        std::vector<char> gvd(1024);
+        get_gvd(1024, gvd.data(), gvd_cmd);
+        uint8_t fws[8];
+        memcpy(fws, gvd.data() + offset, 8);
+        return to_string() << static_cast<int>(fws[3]) << "." << static_cast<int>(fws[2])
+            << "." << static_cast<int>(fws[1]) << "." << static_cast<int>(fws[0]);
+    }
+
+    std::string hw_monitor::get_module_serial_string(uint8_t gvd_cmd) const
+    {
+        std::vector<char> gvd(1024);
+        get_gvd(1024, gvd.data(), gvd_cmd);
+        unsigned char ss[8];
+        memcpy(ss, gvd.data() + 48, 8);
+        std::stringstream formattedBuffer;
+        formattedBuffer << std::setfill('0') << std::setw(2) << std::hex << static_cast<int>(ss[0]) <<
+            std::setfill('0') << std::setw(2) << std::hex << static_cast<int>(ss[1]) <<
+            std::setfill('0') << std::setw(2) << std::hex << static_cast<int>(ss[2]) <<
+            std::setfill('0') << std::setw(2) << std::hex << static_cast<int>(ss[3]) <<
+            std::setfill('0') << std::setw(2) << std::hex << static_cast<int>(ss[4]) <<
+            std::setfill('0') << std::setw(2) << std::hex << static_cast<int>(ss[5]);
+
+        return formattedBuffer.str();
     }
 }

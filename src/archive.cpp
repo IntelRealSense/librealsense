@@ -1,5 +1,4 @@
 #include "archive.h"
-#include <algorithm>
 
 using namespace rsimpl;
 

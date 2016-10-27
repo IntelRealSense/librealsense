@@ -88,7 +88,7 @@ namespace rsimpl
             auto uvc_range = _ep.invoke_powered(
                 [this](uvc::uvc_device& dev)
                 {
-                    return dev.get_xu_range(_xu, _id);
+                    return dev.get_xu_range(_xu, _id, sizeof(T));
                 });
             option_range result;
             result.min = static_cast<float>(uvc_range.min);

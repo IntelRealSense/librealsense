@@ -82,7 +82,7 @@ public:
                     {
                         std::vector<const char*> labels;
                         auto selected = 0, counter = 0;
-                        for (auto i = range.min; i < range.max; i += range.step, counter++)
+                        for (auto i = range.min; i <= range.max; i += range.step, counter++)
                         {
                             if (abs(i - value) < 0.001f) selected = counter;
                             labels.push_back(endpoint->get_option_value_description(opt, i));
@@ -153,7 +153,7 @@ private:
 
     bool is_enum() const
     {
-        for (auto i = range.min; i < range.max; i += range.step)
+        for (auto i = range.min; i <= range.max; i += range.step)
         {
             if (endpoint->get_option_value_description(opt, i) == nullptr)
                 return false;

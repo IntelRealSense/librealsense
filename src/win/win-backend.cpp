@@ -25,8 +25,14 @@ namespace rsimpl
 
         wmf_backend::~wmf_backend()
         {
-            MFShutdown();
-            CoUninitialize();
+            try {
+                MFShutdown();
+                CoUninitialize();
+            }
+            catch(...)
+            {
+                // TODO: Write to log
+            }
         }
 
         std::shared_ptr<uvc_device> wmf_backend::create_uvc_device(uvc_device_info info) const

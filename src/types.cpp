@@ -2,13 +2,8 @@
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
 #include "types.h"
-#include "image.h"
 #include "device.h"
 
-#include <cstring>
-#include <algorithm>
-#include <array>
-#include <deque>
 #include <algorithm>
 #include <iomanip>
 #include <numeric>

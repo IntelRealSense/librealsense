@@ -40,4 +40,59 @@ namespace rsimpl
         std::shared_ptr<uvc::backend> _backend;
         backend_type _type;
     };
+
+    static std::vector<uvc::uvc_device_info> filter_by_product(const std::vector<uvc::uvc_device_info>& devices, uint32_t pid)
+    {
+        std::vector<uvc::uvc_device_info> result;
+        for (auto&& info : devices)
+        {
+            if (info.pid == pid) result.push_back(info);
+        }
+        return result;
+    }
+
+    static std::vector<std::vector<uvc::uvc_device_info>> group_by_unique_id(const std::vector<uvc::uvc_device_info>& devices)
+    {
+        std::map<std::string, std::vector<uvc::uvc_device_info>> map;
+        for (auto&& info : devices)
+        {
+            map[info.unique_id].push_back(info);
+        }
+        std::vector<std::vector<uvc::uvc_device_info>> result;
+        for (auto&& kvp : map)
+        {
+            result.push_back(kvp.second);
+        }
+        return result;
+    }
+
+    static void trim_device_list(std::vector<uvc::uvc_device_info>& devices, const std::vector<uvc::uvc_device_info>& chosen)
+    {
+        if (chosen.empty())
+            return;
+
+        auto was_chosen = [&chosen](const uvc::uvc_device_info& info)
+        {
+            return find(chosen.begin(), chosen.end(), info) == chosen.end();
+        };
+        devices.erase(std::remove_if(devices.begin(), devices.end(), was_chosen), devices.end());
+    }
+
+    static bool mi_present(const std::vector<uvc::uvc_device_info>& devices, uint32_t mi)
+    {
+        for (auto&& info : devices)
+        {
+            if (info.mi == mi) return true;
+        }
+        return false;
+    }
+
+    static uvc::uvc_device_info get_mi(const std::vector<uvc::uvc_device_info>& devices, uint32_t mi)
+    {
+        for (auto&& info : devices)
+        {
+            if (info.mi == mi) return info;
+        }
+        throw std::runtime_error("Interface not found!");
+    }
 }
