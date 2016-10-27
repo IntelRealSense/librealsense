@@ -8,12 +8,12 @@
 
 using namespace rsimpl;
 
-streaming_lock::streaming_lock(): _is_streaming(false), 
-                                  _callback(nullptr, [](rs_frame_callback*){}), 
+streaming_lock::streaming_lock() : _is_streaming(false),
+_callback(nullptr, [](rs_frame_callback*) {}),
                                   max_publish_list_size(16),
-                                  _archive(&max_publish_list_size), _owner(nullptr)
+_archive(&max_publish_list_size), _owner(nullptr)
 {
-            
+
 }
 
 void streaming_lock::play(frame_callback_ptr callback)
@@ -86,7 +86,7 @@ std::vector<stream_request> endpoint::get_principal_requests()
         else
         {
             uint32_t device_fourcc = reinterpret_cast<const big_endian<uint32_t>&>(p.format);
-            char fourcc[sizeof(device_fourcc)+1];
+            char fourcc[sizeof(device_fourcc) + 1];
             memcpy(fourcc, &device_fourcc, sizeof(device_fourcc));
             fourcc[sizeof(device_fourcc)] = 0;
             unutilized_formats.insert(fourcc);
@@ -100,19 +100,19 @@ std::vector<stream_request> endpoint::get_principal_requests()
 
     std::vector<stream_request> res{ begin(results), end(results) };
     std::sort(res.begin(), res.end(), [](const stream_request& a, const stream_request& b)
-              {
-                  return a.width > b.width;
-              });
+    {
+        return a.width > b.width;
+    });
     return res;
 }
 
 bool endpoint::try_get_pf(const uvc::stream_profile& p, native_pixel_format& result) const
 {
     auto it = std::find_if(begin(_pixel_formats), end(_pixel_formats),
-                           [&p](const native_pixel_format& pf)
-                           {
-                               return pf.fourcc == p.format;
-                           });
+        [&p](const native_pixel_format& pf)
+    {
+        return pf.fourcc == p.format;
+    });
     if (it != end(_pixel_formats))
     {
         result = *it;
@@ -121,8 +121,14 @@ bool endpoint::try_get_pf(const uvc::stream_profile& p, native_pixel_format& res
     return false;
 }
 
+
 std::vector<request_mapping> endpoint::resolve_requests(std::vector<stream_request> requests)
 {
+    if (!auto_complete_request(requests))
+    {
+        throw std::runtime_error("Subdevice could not auto complete requests!");
+    }
+
     std::unordered_set<request_mapping> results;
 
     while (!requests.empty() && !_pixel_formats.empty())
@@ -135,10 +141,10 @@ std::vector<request_mapping> endpoint::resolve_requests(std::vector<stream_reque
             for (auto&& unpacker : pf.unpackers)
             {
                 auto count = static_cast<int>(std::count_if(begin(requests), end(requests),
-                                                            [&unpacker](const stream_request& r)
-                                                            {
-                                                                return unpacker.satisfies(r);
-                                                            }));
+                    [&unpacker](stream_request& r)
+                {
+                    return unpacker.satisfies(r);
+                }));
                 if (count > max && unpacker.outputs.size() == count)
                 {
                     max = count;
@@ -151,26 +157,46 @@ std::vector<request_mapping> endpoint::resolve_requests(std::vector<stream_reque
         if (max == 0) break;
 
         requests.erase(std::remove_if(begin(requests), end(requests),
-                                      [best_unpacker, best_pf, &results](const stream_request& r)
-                                      {
-                                          if (best_unpacker->satisfies(r))
-                                          {
-                                              request_mapping mapping;
-                                              mapping.profile = { r.width, r.height, r.fps, best_pf->fourcc };
-                                              mapping.unpacker = best_unpacker;
-                                              mapping.pf = best_pf;
+            [best_unpacker, best_pf, &results, this](stream_request& r)
+        {
 
-                                              results.insert(mapping);
-                                              return true;
-                                          }
-                                          return false;
-                                      }), end(requests));
+            if (best_unpacker->satisfies(r))
+            {
+                request_mapping mapping;
+                mapping.profile = { r.width, r.height, r.fps, best_pf->fourcc };
+                mapping.unpacker = best_unpacker;
+                mapping.pf = best_pf;
+
+                results.insert(mapping);
+                return true;
+            }
+            return false;
+        }), end(requests));
     }
 
     if (requests.empty()) return{ begin(results), end(results) };
 
     throw std::runtime_error("Subdevice unable to satisfy stream requests!");
 }
+
+bool rsimpl::endpoint::auto_complete_request(std::vector<stream_request>& requests)
+{
+    for (stream_request& request : requests)
+    {
+        for (auto&& req : get_principal_requests())
+        {
+            if (req.match(request) && !req.contradicts(requests))
+            {
+                request = req;
+                break;
+            }
+        }
+
+        if (request.has_wildcards()) throw std::runtime_error("Subdevice auto complete the stream requests!");
+    }
+    return true;
+}
+
 
 std::vector<uvc::stream_profile> uvc_endpoint::get_stream_profiles()
 {
@@ -301,7 +327,7 @@ void uvc_endpoint::stop_streaming()
 void uvc_endpoint::acquire_power()
 {
     std::lock_guard<std::mutex> lock(_power_lock);
-    if (!_user_count) 
+    if (!_user_count)
     {
         _device->set_power_state(uvc::D0);
         for (auto& xu : _xus) _device->init_xu(xu);
