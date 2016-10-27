@@ -93,6 +93,7 @@ namespace rsimpl
             depth_ep->register_pixel_format(pf_sr300_inzi);
             depth_ep->register_pixel_format(pf_sr300_invi);
             color_ep->register_pixel_format(pf_yuy2);
+            color_ep->register_pixel_format(pf_yuyv);
 
             auto fw_version = _hw_monitor.get_firmware_version_string(GVD, gvd_fw_version_offset);
             auto serial = _hw_monitor.get_module_serial_string(GVD);

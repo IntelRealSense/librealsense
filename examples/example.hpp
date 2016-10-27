@@ -6,6 +6,7 @@
 
 #include <vector>
 #include <algorithm>
+#include <cstring>
 
 inline void make_depth_histogram(uint8_t rgb_image[640 * 480 * 3], const uint16_t depth_image[], int width, int height)
 {

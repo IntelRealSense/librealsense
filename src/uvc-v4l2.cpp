@@ -4,6 +4,7 @@
 #ifdef RS_USE_V4L2_BACKEND
 
 #include "backend.h"
+#include "types.h"
 
 #include <cassert>
 #include <cstdlib>
@@ -20,6 +21,7 @@
 #include <utility> // for pair
 #include <chrono>
 #include <thread>
+#include <atomic>
 
 #include <dirent.h>
 #include <fcntl.h>
@@ -277,34 +279,27 @@ namespace rsimpl
             {
                 switch(option)
                 {
-                case RS_OPTION_COLOR_BACKLIGHT_COMPENSATION: return V4L2_CID_BACKLIGHT_COMPENSATION;
-                case RS_OPTION_COLOR_BRIGHTNESS: return V4L2_CID_BRIGHTNESS;
-                case RS_OPTION_COLOR_CONTRAST: return V4L2_CID_CONTRAST;
-                case RS_OPTION_COLOR_EXPOSURE: return V4L2_CID_EXPOSURE_ABSOLUTE; // Is this actually valid? I'm getting a lot of VIDIOC error 22s...
-                case RS_OPTION_COLOR_GAIN: return V4L2_CID_GAIN;
-                case RS_OPTION_COLOR_GAMMA: return V4L2_CID_GAMMA;
-                case RS_OPTION_COLOR_HUE: return V4L2_CID_HUE;
-                case RS_OPTION_COLOR_SATURATION: return V4L2_CID_SATURATION;
-                case RS_OPTION_COLOR_SHARPNESS: return V4L2_CID_SHARPNESS;
-                case RS_OPTION_COLOR_WHITE_BALANCE: return V4L2_CID_WHITE_BALANCE_TEMPERATURE;
-                case RS_OPTION_COLOR_ENABLE_AUTO_EXPOSURE: return V4L2_CID_EXPOSURE_AUTO; // Automatic gain/exposure control
-                case RS_OPTION_COLOR_ENABLE_AUTO_WHITE_BALANCE: return V4L2_CID_AUTO_WHITE_BALANCE;
-                case RS_OPTION_FISHEYE_GAIN: return V4L2_CID_GAIN;
+                case RS_OPTION_BACKLIGHT_COMPENSATION: return V4L2_CID_BACKLIGHT_COMPENSATION;
+                case RS_OPTION_BRIGHTNESS: return V4L2_CID_BRIGHTNESS;
+                case RS_OPTION_CONTRAST: return V4L2_CID_CONTRAST;
+                case RS_OPTION_EXPOSURE: return V4L2_CID_EXPOSURE_ABSOLUTE; // Is this actually valid? I'm getting a lot of VIDIOC error 22s...
+                case RS_OPTION_GAIN: return V4L2_CID_GAIN;
+                case RS_OPTION_GAMMA: return V4L2_CID_GAMMA;
+                case RS_OPTION_HUE: return V4L2_CID_HUE;
+                case RS_OPTION_SATURATION: return V4L2_CID_SATURATION;
+                case RS_OPTION_SHARPNESS: return V4L2_CID_SHARPNESS;
+                case RS_OPTION_WHITE_BALANCE: return V4L2_CID_WHITE_BALANCE_TEMPERATURE;
+                case RS_OPTION_ENABLE_AUTO_EXPOSURE: return V4L2_CID_EXPOSURE_AUTO; // Automatic gain/exposure control
+                case RS_OPTION_ENABLE_AUTO_WHITE_BALANCE: return V4L2_CID_AUTO_WHITE_BALANCE;
                 default: throw std::runtime_error(to_string() << "no v4l2 cid for option " << option);
                 }
             }
 
-            power_state _state;
-            std::string _name;
-            uvc_device_info _info;
-            int         _fd;
-            std::vector<buffer> _buffers;
-            stream_profile _profile;
-            frame_callback _callback;
-            bool _is_capturing = false;
-
             v4l_uvc_device(const uvc_device_info& info)
-                : _name(""), _info()
+                : _name(""), _info(),
+                  _is_capturing(false),
+                  _is_alive(true),
+                  _thread(nullptr)
             {
                 foreach_uvc_device([&info, this](const uvc_device_info& i, const std::string& name)
                 {
@@ -315,11 +310,28 @@ namespace rsimpl
                     }
                 });
                 if (_name == "") throw std::runtime_error("device is no longer connected!");
+
+
+            }
+
+            void capture_loop()
+            {
+                while(_is_capturing)
+                {
+                    poll();
+                    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+                }
+            }
+
+            ~v4l_uvc_device()
+            {
+                _is_capturing = false;
+                if (_thread) _thread->join();
             }
 
             void play(stream_profile profile, frame_callback callback) override
             {
-                if(!_is_capturing)
+                if(!_is_capturing && !_callback)
                 {
                     _profile = profile;
                     _callback = callback;
@@ -328,9 +340,11 @@ namespace rsimpl
                     fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
                     fmt.fmt.pix.width       = profile.width;
                     fmt.fmt.pix.height      = profile.height;
-                    fmt.fmt.pix.pixelformat = 0; //TODO:fix
+                    fmt.fmt.pix.pixelformat = (const big_endian<int> &)profile.format;
                     fmt.fmt.pix.field       = V4L2_FIELD_NONE;
                     if(xioctl(_fd, VIDIOC_S_FMT, &fmt) < 0) throw_error("VIDIOC_S_FMT");
+
+                    LOG_INFO("Trying to configure fourcc " << fourcc_to_string(fmt.fmt.pix.pixelformat));
 
                     v4l2_streamparm parm = {};
                     parm.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
@@ -389,6 +403,7 @@ namespace rsimpl
                     if(xioctl(_fd, VIDIOC_STREAMON, &type) < 0) throw_error("VIDIOC_STREAMON");
 
                     _is_capturing = true;
+                    _thread = std::unique_ptr<std::thread>(new std::thread([this](){ capture_loop(); }));
                 }
             }
 
@@ -396,6 +411,10 @@ namespace rsimpl
             {
                 if(_is_capturing)
                 {
+                    _is_capturing = false;
+                    _thread->join();
+                    _thread.reset();
+
                     // Stop streamining
                     v4l2_buf_type type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
                     if(xioctl(_fd, VIDIOC_STREAMOFF, &type) < 0) warn_error("VIDIOC_STREAMOFF");
@@ -417,20 +436,24 @@ namespace rsimpl
                     }
 
                     _callback = nullptr;
-                    _is_capturing = false;
                 }
+            }
+
+            std::string fourcc_to_string(uint32_t id) const
+            {
+                uint32_t device_fourcc = id;
+                char fourcc_buff[sizeof(device_fourcc)+1];
+                memcpy(fourcc_buff, &device_fourcc, sizeof(device_fourcc));
+                fourcc_buff[sizeof(device_fourcc)] = 0;
+                return fourcc_buff;
             }
 
             void poll()
             {
-                /*int max_fd = 0;
+                int max_fd = _fd;
                 fd_set fds;
                 FD_ZERO(&fds);
-                for(auto * sub : subdevices)
-                {
-                    FD_SET(sub->fd, &fds);
-                    max_fd = std::max(max_fd, sub->fd);
-                }
+                FD_SET(_fd, &fds);
 
                 struct timeval tv = {0,10000};
                 if(select(max_fd + 1, &fds, NULL, NULL, &tv) < 0)
@@ -444,17 +467,19 @@ namespace rsimpl
                     v4l2_buffer buf = {};
                     buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
                     buf.memory = V4L2_MEMORY_MMAP;
-                    if(xioctl(fd, VIDIOC_DQBUF, &buf) < 0)
+                    if(xioctl(_fd, VIDIOC_DQBUF, &buf) < 0)
                     {
                         if(errno == EAGAIN) return;
                         throw_error("VIDIOC_DQBUF");
                     }
 
-                    sub->callback(sub->buffers[buf.index].start,
-                            [sub, buf]() mutable {
-                                if(xioctl(sub->fd, VIDIOC_QBUF, &buf) < 0) throw_error("VIDIOC_QBUF");
-                            });
-                }*/
+                    frame_object fo { (int)_buffers[buf.index].length,
+                                      _buffers[buf.index].start };
+
+                    _callback(_profile, fo);
+
+                    if(xioctl(_fd, VIDIOC_QBUF, &buf) < 0) throw_error("VIDIOC_QBUF");
+                }
             }
 
             void set_power_state(power_state state) override
@@ -588,21 +613,23 @@ namespace rsimpl
             {
                 struct v4l2_control control = {get_cid(opt), 0};
                 if (xioctl(_fd, VIDIOC_G_CTRL, &control) < 0) throw_error("VIDIOC_G_CTRL");
-                if (RS_OPTION_COLOR_ENABLE_AUTO_EXPOSURE==opt)  { control.value = (V4L2_EXPOSURE_MANUAL==control.value) ? 0 : 1; }
+                if (RS_OPTION_ENABLE_AUTO_EXPOSURE==opt)  { control.value = (V4L2_EXPOSURE_MANUAL==control.value) ? 0 : 1; }
                 return control.value;
             }
+
             void set_pu(rs_option opt, int value) override
             {
                 struct v4l2_control control = {get_cid(opt), value};
-                if (RS_OPTION_COLOR_ENABLE_AUTO_EXPOSURE==opt) { control.value = value ? V4L2_EXPOSURE_APERTURE_PRIORITY : V4L2_EXPOSURE_MANUAL; }
+                if (RS_OPTION_ENABLE_AUTO_EXPOSURE==opt) { control.value = value ? V4L2_EXPOSURE_APERTURE_PRIORITY : V4L2_EXPOSURE_MANUAL; }
                 if (xioctl(_fd, VIDIOC_S_CTRL, &control) < 0) throw_error("VIDIOC_S_CTRL");
             }
+
             control_range get_pu_range(rs_option option) const override
             {
                 control_range range;
 
                 // Auto controls range is trimed to {0,1} range
-                if(option >= RS_OPTION_COLOR_ENABLE_AUTO_EXPOSURE && option <= RS_OPTION_COLOR_ENABLE_AUTO_WHITE_BALANCE)
+                if(option >= RS_OPTION_ENABLE_AUTO_EXPOSURE && option <= RS_OPTION_ENABLE_AUTO_WHITE_BALANCE)
                 {
                     range.min  = 0;
                     range.max  = 1;
@@ -629,18 +656,95 @@ namespace rsimpl
                 return range;
             }
 
-            const uvc_device_info& get_info() const override
+            std::vector<stream_profile> get_profiles() const override
             {
-                return _info;
-            }
 
-            std::vector<stream_profile> get_profiles() const override {}
+                std::vector<stream_profile> results;
+
+                // Retrieve the caps one by one, first get pixel format, then sizes, then
+                // frame rates. See http://linuxtv.org/downloads/v4l-dvb-apis for reference.
+                v4l2_fmtdesc pixel_format = {};
+                pixel_format.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+                while (ioctl(_fd, VIDIOC_ENUM_FMT, &pixel_format) == 0)
+                {
+                    v4l2_frmsizeenum frame_size = {};
+                    frame_size.pixel_format = pixel_format.pixelformat;
+
+                    uint32_t fourcc = (const big_endian<int> &)pixel_format.pixelformat;
+
+                    if (pixel_format.pixelformat == 0)
+                    {
+                        LOG_WARNING("Unknown pixel-format " << pixel_format.description << "!");
+
+                        const std::string s(to_string() << "!" << pixel_format.description);
+                        std::regex rgx("!([0-9a-f]+)-.*");
+                        std::smatch match;
+
+                        if (std::regex_search(s.begin(), s.end(), match, rgx))
+                        {
+                            std::stringstream ss;
+                            ss <<  match[1];
+                            int id;
+                            ss >> std::hex >> id;
+                            fourcc = (const big_endian<int> &)id;
+
+                            auto format_str = fourcc_to_string(id);
+                            LOG_WARNING("Pixel format " << pixel_format.description << " likely requires patch for fourcc code " << format_str << "!");
+                        }
+                    }
+
+                    while (ioctl(_fd, VIDIOC_ENUM_FRAMESIZES, &frame_size) == 0)
+                    {
+                        v4l2_frmivalenum frame_interval = {};
+                        frame_interval.pixel_format = pixel_format.pixelformat;
+                        frame_interval.width = frame_size.discrete.width;
+                        frame_interval.height = frame_size.discrete.height;
+                        while (ioctl(_fd, VIDIOC_ENUM_FRAMEINTERVALS, &frame_interval) == 0)
+                        {
+                            if (frame_interval.type == V4L2_FRMIVAL_TYPE_DISCRETE)
+                            {
+                                if (frame_interval.discrete.numerator != 0)
+                                {
+                                    auto fps =
+                                        static_cast<float>(frame_interval.discrete.denominator) /
+                                        static_cast<float>(frame_interval.discrete.numerator);
+
+                                    stream_profile p;
+                                    p.format = fourcc;
+                                    p.width = frame_size.discrete.width;
+                                    p.height = frame_size.discrete.height;
+                                    p.fps = fps;
+                                    results.push_back(p);
+                                }
+                            }
+
+                            ++frame_interval.index;
+                        }
+
+                         ++frame_size.index;
+                    }
+
+                    ++pixel_format.index;
+                }
+                return results;
+            }
 
             void lock() const override {}
             void unlock() const override {}
 
             std::string get_device_location() const override { return ""; }
 
+        private:
+            power_state _state;
+            std::string _name;
+            uvc_device_info _info;
+            int _fd;
+            std::vector<buffer> _buffers;
+            stream_profile _profile;
+            frame_callback _callback;
+            std::atomic<bool> _is_capturing;
+            std::atomic<bool> _is_alive;
+            std::unique_ptr<std::thread> _thread;
         };
 
         class v4l_backend : public backend

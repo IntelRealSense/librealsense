@@ -239,11 +239,12 @@ public:
                 push_back_if_not_exists(formats[profile.stream], format);
                 push_back_if_not_exists(format_values[profile.stream], profile.format);
 
-                if (!std::any_of(stream_enabled.begin(), stream_enabled.end(), 
-                    [](auto&& it) { return it.second; }))
+                bool any = false;
+                for (auto&& kvp : stream_enabled)
                 {
-                    stream_enabled[profile.stream] = true;
+                    if (stream_enabled[profile.stream]) any = true;
                 }
+                if (!any) stream_enabled[profile.stream] = true;
 
                 profiles.push_back(profile);
             }
@@ -469,7 +470,7 @@ int main(int, char**) try
 
     rs::context ctx;
     //rs::recording_context ctx("config-ui.db");
-    //rs::mock_context ctx("config-ui.db");
+    //rs::mock_context ctx("/media/local_admin/MULTIBOOT/hq_colorexp_depth_preset.db");
     auto device_index = 0;
     auto list = ctx.query_devices();
     auto dev = list[device_index];
