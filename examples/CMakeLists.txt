@@ -88,7 +88,21 @@ set_target_properties (c-tutorial-1-depth PROPERTIES
     FOLDER "C Tutorials"
 )
 
+add_executable(cpp-capture cpp-capture.cpp)
+target_link_libraries(cpp-capture ${DEPENDENCIES})
+include_directories(cpp-capture third_party/tclap/include)
 
+set_target_properties (cpp-capture PROPERTIES
+    FOLDER "Examples"
+)
+
+add_executable(cpp-headless cpp-headless.cpp)
+target_link_libraries(cpp-headless ${DEPENDENCIES})
+include_directories(cpp-headless third_party/tclap/include)
+
+set_target_properties (cpp-headless PROPERTIES
+    FOLDER "Examples"
+)
 
 add_executable(cpp-enumerate-devices cpp-enumerate-devices.cpp)
 target_link_libraries(cpp-enumerate-devices ${DEPENDENCIES})
@@ -98,9 +112,23 @@ set_target_properties (cpp-enumerate-devices PROPERTIES
     FOLDER Examples
 )
 
+add_executable(cpp-multicam cpp-multicam.cpp)
+target_link_libraries(cpp-multicam ${DEPENDENCIES})
+
+set_target_properties (cpp-multicam PROPERTIES
+    FOLDER Examples
+)
+
+
+add_executable(cpp-pointcloud cpp-pointcloud.cpp)
+target_link_libraries(cpp-pointcloud ${DEPENDENCIES})
+
+set_target_properties (cpp-pointcloud PROPERTIES
+    FOLDER Examples
+)
+
 install(
     TARGETS
-    cpp-config-ui
 	
 	c-tutorial-1-depth
 	cpp-tutorial-1-depth
@@ -108,6 +136,11 @@ install(
 	cpp-tutorial-2-streams
 	
 	cpp-enumerate-devices
+	cpp-config-ui
+	cpp-capture
+	cpp-headless
+	cpp-multicam
+	cpp-pointcloud
 
     RUNTIME DESTINATION
     ${CMAKE_INSTALL_PREFIX}/bin

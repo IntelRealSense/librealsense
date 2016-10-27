@@ -49,8 +49,10 @@ namespace rsimpl
 
             std::vector<uint8_t> encode(const std::vector<uint8_t>& input) const;
 
-            int min_dist = 1000;
-            int max_length = 8;
+            int min_dist = 110;
+            int max_length = 32;
+            bool save_frames = true;
+            float effect = 0.0f;
         };
 
         struct call
@@ -191,15 +193,15 @@ namespace rsimpl
 
             explicit record_uvc_device(std::shared_ptr<recording> rec,
                 std::shared_ptr<uvc_device> source,
+                std::shared_ptr<compression_algorithm> compression,
                 int id)
-                : _rec(rec), _source(source), _entity_id(id) {}
+                : _rec(rec), _source(source), _compression(compression), _entity_id(id) {}
 
         private:
             std::shared_ptr<recording> _rec;
             std::shared_ptr<uvc_device> _source;
             int _entity_id;
-            compression_algorithm _compression;
-            int _save_frames = true;
+            std::shared_ptr<compression_algorithm> _compression;
         };
 
         class record_usb_device : public usb_device
@@ -229,10 +231,12 @@ namespace rsimpl
             explicit record_backend(std::shared_ptr<backend> source);
 
             void save_to_file(const char* filename) const;
+            void apply_settings(float quality, float length, float* effect, bool save_frames);
         private:
             std::shared_ptr<backend> _source;
             std::shared_ptr<recording> _rec;
             mutable std::atomic<int> _entity_count = 1;
+            std::shared_ptr<compression_algorithm> _compression;
         };
 
         class playback_uvc_device : public uvc_device

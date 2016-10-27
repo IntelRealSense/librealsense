@@ -357,11 +357,12 @@ namespace rsimpl
                 c.param1 = _rec->save_blob(&p, sizeof(p));
                 vector<uint8_t> frame((uint8_t*)f.pixels, 
                                       (uint8_t*)f.pixels + f.size);
-                auto compressed = _compression.encode(frame);
+                auto compressed = _compression->encode(frame);
                 c.param2 = _rec->save_blob(compressed.data(), compressed.size());
                 c.param4 = compressed.size();
-                c.param3 = _save_frames ? 0 : 1;
-                auto dec = _compression.decode(compressed);
+                c.param3 = _compression->save_frames ? 0 : 1;
+                auto dec = _compression->decode(compressed);
+                _compression->effect = (100.0f * compressed.size()) / frame.size();
                 frame_object fo{ dec.size(), dec.data() };
                 callback(p, fo);
             });
@@ -510,7 +511,7 @@ namespace rsimpl
             auto&& c = _rec->add_call(0, call_type::create_uvc_device);
             c.param1 = id;
 
-            return make_shared<record_uvc_device>(_rec, dev, id);
+            return make_shared<record_uvc_device>(_rec, dev, _compression, id);
         }
 
         vector<uvc_device_info> record_backend::query_uvc_devices() const
@@ -539,7 +540,8 @@ namespace rsimpl
         }
 
         record_backend::record_backend(shared_ptr<backend> source)
-            : _source(source), _rec(make_shared<recording>())
+            : _source(source), _rec(make_shared<recording>()),
+              _compression(make_shared<compression_algorithm>())
         {
         }
 
@@ -581,6 +583,14 @@ namespace rsimpl
         void record_backend::save_to_file(const char* filename) const
         {
             _rec->save(filename);
+        }
+
+        void record_backend::apply_settings(float quality, float length, float* effect, bool save_frames)
+        {
+            _compression->max_length = length;
+            _compression->min_dist = quality;
+            _compression->save_frames = save_frames;
+            *effect = _compression->effect;
         }
 
         void playback_uvc_device::play(stream_profile profile, frame_callback callback)
@@ -626,7 +636,7 @@ namespace rsimpl
 
         power_state playback_uvc_device::get_power_state() const
         {
-            auto&& c = _rec->find_call(call_type::uvc_set_power_state, _entity_id);
+            auto&& c = _rec->find_call(call_type::uvc_get_power_state, _entity_id);
             return static_cast<power_state>(c.param1);
         }
 
