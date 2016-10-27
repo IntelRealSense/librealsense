@@ -139,7 +139,6 @@
 // Copyright(c) 2016 Intel Corporation. All Rights Reserved.
 
 #include "ds5.h"
-#include "hw-monitor.h"
 
 namespace rsimpl
 {

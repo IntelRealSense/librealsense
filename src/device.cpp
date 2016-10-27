@@ -2,12 +2,7 @@
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
 #include "device.h"
-#include "hw-monitor.h"
 #include "image.h"
-
-#include <array>
-#include <algorithm>
-#include <sstream>
 
 using namespace rsimpl;
 

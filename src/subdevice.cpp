@@ -58,7 +58,13 @@ void streaming_lock::flush()
 
 streaming_lock::~streaming_lock()
 {
-    stop();
+    try {
+        streaming_lock::stop();
+    }
+    catch (...)
+    {
+        // TODO: Write to Log
+    }
 }
 
 std::vector<stream_request> endpoint::get_principal_requests()
@@ -200,8 +206,6 @@ std::shared_ptr<streaming_lock> uvc_endpoint::configure(
                 //auto timestamp = timestamp_reader->get_frame_timestamp(mode_selection.mode, frame);
                 //auto frame_counter = timestamp_reader->get_frame_counter(mode_selection.mode, frame);
                 //auto received_time = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - capture_start_time).count();
-
-                auto requires_processing = unpacker.requires_processing;
 
                 auto width = mode.profile.width;
                 auto height = mode.profile.height;

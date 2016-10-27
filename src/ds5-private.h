@@ -11,6 +11,7 @@ namespace rsimpl {
         const uint8_t DS5_HWMONITOR             = 1;
         const uint8_t DS5_DEPTH_EMITTER_ENABLED = 2;
         const uint8_t DS5_EXPOSURE              = 3;
+        const uint8_t DS5_LASER_POWER           = 4;
 
         const int gvd_fw_version_offset = 12;
 
