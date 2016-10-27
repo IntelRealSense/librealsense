@@ -14,6 +14,8 @@
 
 namespace rsimpl
 {
+    const uint16_t SR300_PID = 0x0aa5;
+
     class sr300_camera;
 
     class sr300_info : public device_info

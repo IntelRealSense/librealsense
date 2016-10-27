@@ -48,6 +48,8 @@
 
 namespace rsimpl
 {
+    const uint16_t DS5_PID = 0x0ad1;
+
     class ds5_camera;
 
     class ds5_info : public device_info
@@ -75,6 +77,59 @@ namespace rsimpl
     class ds5_camera final : public device
     {
     public:
+        class emitter_option : public option
+        {
+        public:
+            void set(float value) override {
+                _emitter_option->set(value);
+            }
+            float query() const override {
+                return _emitter_option->query();
+            }
+            option_range get_range() const override
+            {
+                return _emitter_option->get_range();
+            }
+            bool is_enabled() const override { return true; }
+
+            const char* get_description() const override
+            {
+                return _emitter_option->get_description();
+            }
+            const char* get_value_description(float val) const override
+            {
+                switch (static_cast<int>(val))
+                {
+                    case 0:
+                    {
+                        return "Off";
+                    }
+                    case 1:
+                    {
+                        return "On";
+                    }
+                    case 2:
+                    {
+                        return "Auto";
+                    }
+                    default:
+                        throw std::runtime_error("value not found");
+                }
+            }
+
+            explicit emitter_option(ds5_camera& owner) :
+            _owner(owner),
+            _emitter_option(std::make_shared<uvc_xu_option<uint8_t>>(
+                    _owner.get_uvc_endpoint(RS_SUBDEVICE_DEPTH),
+                    ds::depth_xu, ds::DS5_DEPTH_EMITTER_ENABLED,
+                    "Power of the DS5 projector, 0 meaning projector off, 1 meaning projector off, 2 meaning projector in auto mode"))
+            {}
+
+        private:
+            ds5_camera& _owner;
+            std::shared_ptr<uvc_xu_option<uint8_t>> _emitter_option;
+        };
+
         ds5_camera(const uvc::backend& backend,
             const uvc::uvc_device_info& depth,
             const uvc::usb_device_info& hwm_device)
@@ -101,10 +156,8 @@ namespace rsimpl
 
             // map subdevice to endpoint
             assign_endpoint(RS_SUBDEVICE_DEPTH, depth_ep);
-
             register_pu(RS_SUBDEVICE_DEPTH, RS_OPTION_GAIN);
-            register_depth_xu<uint8_t>(RS_OPTION_LASER_POWER, DS5_DEPTH_LASER_POWER,
-                "Power of the DS5 projector, with 0 meaning projector off");
+            register_option(RS_OPTION_EMITTER_ENABLED, RS_SUBDEVICE_DEPTH, std::make_shared<emitter_option>(*this));
 
             register_depth_xu<uint16_t>(RS_OPTION_EXPOSURE, DS5_EXPOSURE,
                 "DS5 Exposure");

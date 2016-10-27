@@ -15,8 +15,6 @@
 const uint16_t VID_INTEL_CAMERA     = 0x8086;
 const uint16_t ZR300_CX3_PID        = 0x0acb;
 const uint16_t ZR300_FISHEYE_PID    = 0x0ad0;
-const uint16_t SR300_PID            = 0x0aa5;
-const uint16_t DS5_PID              = 0x0ad1;
 
 namespace rsimpl
 {

@@ -8,9 +8,9 @@
 namespace rsimpl {
     namespace ds {
         // DS5 depth XU identifiers
-        const uint8_t DS5_HWMONITOR = 1;
-        const uint8_t DS5_DEPTH_LASER_POWER = 2;
-        const uint8_t DS5_EXPOSURE = 3;
+        const uint8_t DS5_HWMONITOR             = 1;
+        const uint8_t DS5_DEPTH_EMITTER_ENABLED = 2;
+        const uint8_t DS5_EXPOSURE              = 3;
 
         const int gvd_fw_version_offset = 12;
 
