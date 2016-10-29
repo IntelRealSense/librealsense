@@ -29,7 +29,7 @@ function update_apt_listfile {
   if [ -s ${apt_tmp} ]
   then
     echo "Updating ${apt_list} ..."
-    sudo cp -a ${apt_list} ${apt_list}.backup
+    sudo cp -a ${apt_list} ${apt_list}.save
     sudo cp -a ${apt_list_src} ${apt_list}
     sudo chown root.root ${apt_list}
     sudo rm -f ${apt_list_src}
