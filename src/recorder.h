@@ -87,9 +87,9 @@ namespace rsimpl
                 call c;
                 c.type = type;
                 c.entity_id = entity_id;
-                c.param1 = target.size();
+                c.param1 = static_cast<int>(target.size());
                 for (auto&& i : list) target.push_back(i);
-                c.param2 = target.size();
+                c.param2 = static_cast<int>(target.size());
 
                 c.timestamp = get_timestamp();
                 calls.push_back(c);
@@ -231,7 +231,7 @@ namespace rsimpl
             explicit record_backend(std::shared_ptr<backend> source);
 
             void save_to_file(const char* filename) const;
-            void apply_settings(float quality, float length, float* effect, bool save_frames);
+            void apply_settings(float quality, float length, float* effect, bool save_frames) const;
         private:
             std::shared_ptr<backend> _source;
             std::shared_ptr<recording> _rec;

@@ -56,14 +56,6 @@ typedef enum rs_format
     RS_FORMAT_COUNT
 } rs_format;
 
-typedef enum rs_preset
-{
-    RS_PRESET_BEST_QUALITY,
-    RS_PRESET_LARGEST_IMAGE,
-    RS_PRESET_HIGHEST_FRAMERATE,
-    RS_PRESET_COUNT
-} rs_preset;
-
 typedef enum rs_distortion
 {
     RS_DISTORTION_NONE                  , /**< Rectilinear images, no distortion compensation required */
@@ -203,7 +195,7 @@ typedef struct rs_frame_queue rs_frame_queue;
 typedef struct rs_frame_callback rs_frame_callback;
 typedef struct rs_log_callback rs_log_callback;
 
-typedef void (*rs_frame_callback_ptr)(const rs_active_stream*, rs_frame*, void*);
+typedef void (*rs_frame_callback_ptr)(rs_frame*, void*);
 typedef void (*rs_log_callback_ptr)(rs_log_severity min_severity, const char* message, void* user);
 
 rs_context* rs_create_context(int api_version, rs_error** error);
@@ -251,7 +243,8 @@ int rs_get_frame_stride_in_bytes(const rs_frame* frame, rs_error** error);
 int rs_get_frame_bits_per_pixel(const rs_frame* frame, rs_error** error);
 rs_format rs_get_frame_format(const rs_frame* frame, rs_error** error);
 rs_stream rs_get_frame_stream_type(const rs_frame* frameset, rs_error** error);
-void rs_release_frame(const rs_active_stream* lock, rs_frame* frame);
+rs_frame* rs_clone_frame_ref(rs_frame* frame, rs_error ** error);
+void rs_release_frame(rs_frame* frame);
 
 float rs_get_subdevice_option(const rs_device* device, rs_subdevice subdevice, rs_option option, rs_error** error);
 void rs_set_subdevice_option(const rs_device* device, rs_subdevice subdevice, rs_option option, float value, rs_error** error);
@@ -265,9 +258,9 @@ int rs_supports_camera_info(const rs_device* device, rs_camera_info info, rs_err
 
 rs_frame_queue* rs_create_frame_queue(int capacity, rs_error** error);
 void rs_delete_frame_queue(rs_frame_queue* queue);
-rs_frame* rs_wait_for_frame(rs_frame_queue* queue, const rs_active_stream** output_stream, rs_error** error);
-int rs_poll_for_frame(rs_frame_queue* queue, rs_frame** output_frame, const rs_active_stream** output_stream, rs_error** error);
-void rs_enqueue_frame(const rs_active_stream* sender, rs_frame* frame, void* queue);
+rs_frame* rs_wait_for_frame(rs_frame_queue* queue, rs_error** error);
+int rs_poll_for_frame(rs_frame_queue* queue, rs_frame** output_frame, rs_error** error);
+void rs_enqueue_frame(rs_frame* frame, void* queue);
 void rs_flush_queue(rs_frame_queue* queue, rs_error** error);
 
 rs_context* rs_create_recording_context(int api_version, rs_error** error);
@@ -289,7 +282,6 @@ void         rs_free_error           (rs_error * error);
 
 const char * rs_stream_to_string     (rs_stream stream);
 const char * rs_format_to_string     (rs_format format);
-const char * rs_preset_to_string     (rs_preset preset);
 const char * rs_distortion_to_string (rs_distortion distortion);
 const char * rs_option_to_string     (rs_option option);
 const char * rs_camera_info_to_string(rs_camera_info info);

@@ -43,6 +43,7 @@ EXPORTS
     rs_get_frame_format
     rs_get_frame_stream_type
     rs_release_frame
+    rs_clone_frame_ref
 
     rs_get_subdevice_option
     rs_set_subdevice_option
@@ -69,7 +70,6 @@ EXPORTS
 
     rs_stream_to_string
     rs_format_to_string
-    rs_preset_to_string
     rs_distortion_to_string
     rs_option_to_string
     rs_camera_info_to_string

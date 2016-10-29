@@ -8,10 +8,11 @@
 
 using namespace rsimpl;
 
-streaming_lock::streaming_lock() : _is_streaming(false),
-_callback(nullptr, [](rs_frame_callback*) {}),
-                                  max_publish_list_size(16),
-_archive(&max_publish_list_size), _owner(nullptr)
+streaming_lock::streaming_lock() 
+    : _is_streaming(false),
+      _callback(nullptr, [](rs_frame_callback*) {}),
+      _archive(std::make_shared<frame_archive>(&_max_publish_list_size)),
+      _max_publish_list_size(16), _owner(nullptr)
 {
 
 }
@@ -31,31 +32,31 @@ void streaming_lock::stop()
     _callback.reset();
 }
 
-void streaming_lock::release_frame(rs_frame* frame)
+rs_frame* streaming_lock::alloc_frame(size_t size, frame_additional_data additional_data) const
 {
-    _archive.release_frame_ref(frame);
-}
-
-rs_frame* streaming_lock::alloc_frame(size_t size, frame_additional_data additional_data)
-{
-    auto frame = _archive.alloc_frame(size, additional_data, true);
-    return _archive.track_frame(frame);
+    auto frame = _archive->alloc_frame(size, additional_data, true);
+    return _archive->track_frame(frame);
 }
 
 void streaming_lock::invoke_callback(rs_frame* frame_ref) const
 {
     if (frame_ref)
     {
-        frame_ref->update_frame_callback_start_ts(std::chrono::high_resolution_clock::now());
-        //frame_ref->log_callback_start(capture_start_time);
-        //on_before_callback(streams[i], frame_ref, archive);
-        _callback->on_frame(_owner, frame_ref);
+        auto callback = _archive->begin_callback();
+        try
+        {
+            _callback->on_frame(frame_ref);
+        }
+        catch(...)
+        {
+            LOG_ERROR("Exception was thrown during user callback!");
+        }
     }
 }
 
-void streaming_lock::flush()
+void streaming_lock::flush() const
 {
-    _archive.flush();
+    _archive->flush();
 }
 
 streaming_lock::~streaming_lock()
@@ -206,7 +207,7 @@ bool rsimpl::endpoint::auto_complete_request(std::vector<stream_request>& reques
 
 std::vector<uvc::stream_profile> uvc_endpoint::get_stream_profiles()
 {
-    power on(this);
+    power on(shared_from_this());
     return _device->get_profiles();
 }
 
@@ -214,24 +215,27 @@ std::shared_ptr<streaming_lock> uvc_endpoint::configure(
     const std::vector<stream_request>& requests)
 {
     std::lock_guard<std::mutex> lock(_configure_lock);
-    std::shared_ptr<uvc_streaming_lock> streaming(new uvc_streaming_lock(this));
-    power on(this);
+    std::shared_ptr<uvc_streaming_lock> streaming(new uvc_streaming_lock(shared_from_this()));
+    power on(shared_from_this());
 
     auto mapping = resolve_requests(requests);
 
     for (auto& mode : mapping)
     {
+        using namespace std::chrono;
+
         std::weak_ptr<uvc_streaming_lock> stream_ptr(streaming);
-        _device->play(mode.profile, [stream_ptr, mode](uvc::stream_profile p, uvc::frame_object f)
+
+        auto start = high_resolution_clock::now();
+        auto frame_number = 0;
+        _device->play(mode.profile, 
+            [stream_ptr, mode, start, frame_number](uvc::stream_profile p, uvc::frame_object f) mutable
         {
             auto&& unpacker = *mode.unpacker;
 
             auto stream = stream_ptr.lock();
             if (stream && stream->is_streaming())
             {
-                auto now = std::chrono::system_clock::now().time_since_epoch();
-                auto sys_time = std::chrono::duration_cast<std::chrono::milliseconds>(now).count();
-
                 frame_continuation release_and_enqueue([]() {}, f.pixels);
 
                 // Ignore any frames which appear corrupted or invalid
@@ -248,6 +252,10 @@ std::shared_ptr<streaming_lock> uvc_endpoint::configure(
 
                 std::vector<byte *> dest;
                 std::vector<rs_frame*> refs;
+
+                auto now = high_resolution_clock::now();
+                auto ms = duration_cast<milliseconds>(now - start);
+                auto timestamp = static_cast<double>(ms.count());
 
                 //auto stride_x = mode_selection.get_stride_x();
                 //auto stride_y = mode_selection.get_stride_y();
@@ -269,9 +277,9 @@ std::shared_ptr<streaming_lock> uvc_endpoint::configure(
                 for (auto&& output : unpacker.outputs)
                 {
                     auto bpp = get_image_bpp(output.second);
-                    frame_additional_data additional_data(0,
-                        0,
-                        sys_time,
+                    frame_additional_data additional_data(timestamp,
+                        frame_number++,
+                        timestamp,
                         width,
                         height,
                         fps,
@@ -284,7 +292,7 @@ std::shared_ptr<streaming_lock> uvc_endpoint::configure(
                     if (frame_ref)
                     {
                         refs.push_back(frame_ref);
-                        dest.push_back(const_cast<byte*>(frame_ref->get_frame_data()));
+                        dest.push_back(const_cast<byte*>(frame_ref->get()->get_frame_data()));
                     }
 
                     // Obtain buffers for unpacking the frame
@@ -301,14 +309,6 @@ std::shared_ptr<streaming_lock> uvc_endpoint::configure(
                 // If any frame callbacks were specified, dispatch them now
                 for (auto&& pref : refs)
                 {
-                    //if (!requires_processing)
-                    //{
-                    //    archive->attach_continuation(streams[i], std::move(release_and_enqueue));
-                    //}
-
-                    //auto frame_ref = archive->track_frame(streams[i]);
-                    pref->update_frame_callback_start_ts(std::chrono::high_resolution_clock::now());
-                    //frame_ref->log_callback_start(capture_start_time);
                     stream->invoke_callback(pref);
                 }
             }

@@ -120,13 +120,6 @@ set_target_properties (cpp-multicam PROPERTIES
 )
 
 
-add_executable(cpp-pointcloud cpp-pointcloud.cpp)
-target_link_libraries(cpp-pointcloud ${DEPENDENCIES})
-
-set_target_properties (cpp-pointcloud PROPERTIES
-    FOLDER Examples
-)
-
 install(
     TARGETS
 	
@@ -140,7 +133,6 @@ install(
 	cpp-capture
 	cpp-headless
 	cpp-multicam
-	cpp-pointcloud
 
     RUNTIME DESTINATION
     ${CMAKE_INSTALL_PREFIX}/bin

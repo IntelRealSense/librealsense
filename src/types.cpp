@@ -118,19 +118,6 @@ namespace rsimpl
         #undef CASE
     }
 
-    const char * get_string(rs_preset value)
-    {
-        #define CASE(X) case RS_PRESET_##X: return #X;
-        switch(value)
-        {
-        CASE(BEST_QUALITY)
-        CASE(LARGEST_IMAGE)
-        CASE(HIGHEST_FRAMERATE)
-        default: assert(!is_valid(value)); return unknown;
-        }
-        #undef CASE
-    }
-
     const char * get_string(rs_distortion value)
     {
         #define CASE(X) case RS_DISTORTION_##X: return #X;

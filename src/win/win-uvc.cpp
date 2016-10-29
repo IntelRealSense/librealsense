@@ -90,7 +90,7 @@ namespace rsimpl
                                 auto& stream = owner->_streams[dwStreamIndex];
                                 std::lock_guard<std::mutex> lock(owner->_streams_mutex);
                                 auto profile = stream.profile;
-                                frame_object f{ current_length, byte_buffer };
+                                frame_object f{ static_cast<int>(current_length), byte_buffer };
                                 stream.callback(profile, f);
                             }
                             catch (...)

@@ -86,7 +86,6 @@ namespace rsimpl
         inline std::ostream & operator << (std::ostream & out, TYPE value) { if(is_valid(value)) return out << get_string(value); else return out << (int)value; }
     RS_ENUM_HELPERS(rs_stream, STREAM)
     RS_ENUM_HELPERS(rs_format, FORMAT)
-    RS_ENUM_HELPERS(rs_preset, PRESET)
     RS_ENUM_HELPERS(rs_distortion, DISTORTION)
     RS_ENUM_HELPERS(rs_option, OPTION)
     RS_ENUM_HELPERS(rs_camera_info, CAMERA_INFO)
@@ -411,55 +410,27 @@ namespace rsimpl
         std::vector<supported_capability> capabilities_vector;
     };
 
-    typedef void(*frame_callback_function_ptr)(const rs_active_stream * lock, rs_frame * frame, void * user);
-    typedef void(*log_callback_function_ptr)(rs_log_severity severity, const char * message, void * user);
+    typedef void(*frame_callback_function_ptr)(rs_frame * frame, void * user);
 
     class frame_callback : public rs_frame_callback
     {
         frame_callback_function_ptr fptr;
         void * user;
-        const rs_active_stream * lock;
     public:
         frame_callback() : frame_callback(nullptr, nullptr, nullptr) {}
-        frame_callback(rs_active_stream * lock, frame_callback_function_ptr on_frame, void * user) : fptr(on_frame), user(user), lock(lock) {}
+        frame_callback(rs_active_stream * lock, frame_callback_function_ptr on_frame, void * user) : fptr(on_frame), user(user) {}
 
         operator bool() const { return fptr != nullptr; }
-        void on_frame (const rs_active_stream * lock, rs_frame * frame) override { 
+        void on_frame (rs_frame * frame) override { 
             if (fptr)
             {
-                try { fptr(lock, frame, user); } catch (...) 
+                try { fptr(frame, user); } catch (...) 
                 {
                     LOG_ERROR("Received an execption from frame callback!");
                 }
             }
         }
         void release() override { delete this; }
-    };
-
-    
-    class log_callback : public rs_log_callback
-    {
-        log_callback_function_ptr fptr;
-        void        * user;
-    public:
-        log_callback() : log_callback(nullptr, nullptr) {}
-        log_callback(log_callback_function_ptr fptr, void * user) : fptr(fptr), user(user) {}
-
-        operator bool() const { return fptr != nullptr; }
-
-        void on_event(rs_log_severity severity, const char * message) override
-        {
-            if (fptr)
-            {
-                try { fptr(severity, message, user); }
-                catch (...)
-                {
-                    LOG_ERROR("Received an execption from log callback!");
-                }
-            }
-        }
-
-        void release() override { }
     };
 
     typedef std::unique_ptr<rs_log_callback, void(*)(rs_log_callback*)> log_callback_ptr;
@@ -558,6 +529,7 @@ namespace rsimpl
                 throw std::runtime_error("Trying to return item to a heap that didn't allocate it!");
             }
             auto i = item - buffer;
+            auto old_value = std::move(buffer[i]);
             buffer[i] = std::move(T());
             
             {
@@ -586,13 +558,16 @@ namespace rsimpl
 
             const auto ready = [this]()
             {
-                return size == 0;
+                return is_empty();
             };
             if (!ready() && !cv.wait_for(lock, std::chrono::hours(1000), ready)) // for some reason passing std::chrono::duration::max makes it return instantly
             {
                 throw std::runtime_error("Could not flush one of the user controlled objects!");
             }
         }
+
+        bool is_empty() const { return size == 0; }
+        int get_size() const { return size; }
     };
 
     class frame_continuation

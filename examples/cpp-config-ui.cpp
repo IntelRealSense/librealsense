@@ -248,11 +248,7 @@ public:
                         break;
                     }                       
                 }
-                if (!any_stream_enabled)
-                {
-                    if (stream_enabled[profile.stream]) any = true;
-                }
-                if (!any) stream_enabled[profile.stream] = true;
+                if (!any_stream_enabled) stream_enabled[profile.stream] = true;
                 
                 profiles.push_back(profile);
             }
@@ -477,8 +473,8 @@ int main(int, char**) try
     ImVec4 clear_color = ImColor(10, 0, 0);
 
     rs::context ctx;
-    //rs::recording_context ctx("config-ui.db");
-    //rs::mock_context ctx("/media/local_admin/MULTIBOOT/hq_colorexp_depth_preset.db");
+    //rs::recording_context ctx("config-ui1.db");
+    //rs::mock_context ctx("hq_colorexp_depth_preset.db");
     auto device_index = 0;
     auto list = ctx.query_devices();
     auto dev = list[device_index];
@@ -725,9 +721,9 @@ int main(int, char**) try
             auto&& view_rect = kvp.second;
             auto stream = kvp.first;
             auto&& stream_size = model.stream_size[stream];
-            auto stream_rect = view_rect.adjust_ratio(model.stream_size[kvp.first]);
+            auto stream_rect = view_rect.adjust_ratio(stream_size);
 
-            model.stream_buffers[stream].show(stream_rect, model.get_stream_alpha(kvp.first));
+            model.stream_buffers[stream].show(stream_rect, model.get_stream_alpha(stream));
 
             flags = ImGuiWindowFlags_NoResize |
                 ImGuiWindowFlags_NoMove |
@@ -737,10 +733,10 @@ int main(int, char**) try
             ImGui::PushStyleColor(ImGuiCol_WindowBg, { 0, 0, 0, 0 });
             ImGui::SetNextWindowPos({ stream_rect.x, stream_rect.y });
             ImGui::SetNextWindowSize({ stream_rect.w, stream_rect.h });
-            label = to_string() << "Stream of " << rs_stream_to_string(kvp.first);
+            label = to_string() << "Stream of " << rs_stream_to_string(stream);
             ImGui::Begin(label.c_str(), nullptr, flags);
 
-            label = to_string() << rs_stream_to_string(kvp.first) << " "
+            label = to_string() << rs_stream_to_string(stream) << " "
                 << stream_size.x << "x" << stream_size.y << ", " 
                 << rs_format_to_string(model.stream_format[stream]);
             ImGui::Text(label.c_str());

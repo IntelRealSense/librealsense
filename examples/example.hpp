@@ -8,16 +8,16 @@
 #include <algorithm>
 #include <cstring>
 
-inline void make_depth_histogram(uint8_t rgb_image[640 * 480 * 3], const uint16_t depth_image[], int width, int height)
+inline void make_depth_histogram(uint8_t rgb_image[], const uint16_t depth_image[], int width, int height)
 {
     static uint32_t histogram[0x10000];
     memset(histogram, 0, sizeof(histogram));
 
-    for (int i = 0; i < width*height; ++i) ++histogram[depth_image[i]];
-    for (int i = 2; i < 0x10000; ++i) histogram[i] += histogram[i - 1]; // Build a cumulative histogram for the indices in [1,0xFFFF]
-    for (int i = 0; i < width*height; ++i)
+    for (auto i = 0; i < width*height; ++i) ++histogram[depth_image[i]];
+    for (auto i = 2; i < 0x10000; ++i) histogram[i] += histogram[i - 1]; // Build a cumulative histogram for the indices in [1,0xFFFF]
+    for (auto i = 0; i < width*height; ++i)
     {
-        if (uint16_t d = depth_image[i])
+        if (auto d = depth_image[i])
         {
             int f = histogram[d] * 255 / histogram[0xFFFF]; // 0-255 based on histogram location
             rgb_image[i * 3 + 0] = 255 - f;
@@ -98,14 +98,10 @@ struct rect
 class texture_buffer
 {
     GLuint texture;
-    double last_timestamp;
     std::vector<uint8_t> rgb;
 
-    int fps, num_frames;
-    double next_time;
-
 public:
-    texture_buffer() : texture(), last_timestamp(-1), fps(), num_frames(), next_time(1000) {}
+    texture_buffer() : texture() {}
 
     GLuint get_gl_handle() const { return texture; }
 
@@ -153,9 +149,9 @@ public:
                 // Visualize Raw10 by performing a naive downsample. Each 2x2 block contains one red pixel, two green pixels, and one blue pixel, so combine them into a single RGB triple.
                 rgb.clear(); rgb.resize(width/2 * height/2 * 3);
                 auto out = rgb.data(); auto in0 = reinterpret_cast<const uint8_t *>(data), in1 = in0 + width*5/4;
-                for(int y=0; y<height; y+=2)
+                for(auto y=0; y<height; y+=2)
                 {
-                    for(int x=0; x<width; x+=4)
+                    for(auto x=0; x<width; x+=4)
                     {
                         *out++ = in0[0]; *out++ = (in0[1] + in1[0]) / 2; *out++ = in1[1]; // RGRG -> RGB RGB
                         *out++ = in0[2]; *out++ = (in0[3] + in1[2]) / 2; *out++ = in1[3]; // GBGB
@@ -180,23 +176,11 @@ public:
 
     void upload(rs::frame& frame)
     {
-        const double timestamp = frame.get_timestamp();
-        //if(timestamp != last_timestamp)
-        {
-            upload(frame.get_data(), frame.get_width(), frame.get_height(), frame.get_format(), (frame.get_stride_in_bytes() * 8) / frame.get_bits_per_pixel());
-            last_timestamp = timestamp;
-
-            ++num_frames;
-            if(timestamp >= next_time)
-            {
-                fps = num_frames;
-                num_frames = 0;
-                next_time += 1000;
-            }
-        }
+        upload(frame.get_data(), frame.get_width(), frame.get_height(), frame.get_format(), 
+            (frame.get_stride_in_bytes() * 8) / frame.get_bits_per_pixel());
     }
 
-    void show(const rect& r, float alpha) const
+    void show(const rect& r, float alpha = 1.0f) const
     {
         glEnable(GL_BLEND);
 

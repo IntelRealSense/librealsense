@@ -4,7 +4,9 @@ using namespace rsimpl;
 
 frame_archive::frame_archive(std::atomic<uint32_t>* in_max_frame_queue_size, 
                              std::chrono::high_resolution_clock::time_point capture_started)
-    : max_frame_queue_size(in_max_frame_queue_size), mutex(), capture_started(capture_started)
+    : max_frame_queue_size(in_max_frame_queue_size), 
+      mutex(), capture_started(capture_started),
+      recycle_frames(true)
 {
     published_frames_count = 0;
 }
@@ -13,15 +15,19 @@ void frame_archive::unpublish_frame(frame* frame)
 {
     if (frame)
     {
-        log_frame_callback_end(frame);
-        std::lock_guard<std::recursive_mutex> lock(mutex);
+        //log_frame_callback_end(frame);
+        std::unique_lock<std::recursive_mutex> lock(mutex);
 
         if (is_valid(frame->get_stream_type()))
             --published_frames_count;
 
-        freelist.push_back(std::move(*frame));
+        if (recycle_frames)
+        {
+            freelist.push_back(std::move(*frame));
+        }
+        lock.unlock();
+
         published_frames.deallocate(frame);
-       
     }
 }
 
@@ -41,14 +47,19 @@ frame* frame_archive::publish_frame(frame&& frame)
     return new_frame;
 }
 
-rs_frame* frame_archive::clone_frame(rs_frame* frameset)
+rs_frame* frame_archive::clone_frame(rs_frame* frame)
 {
     auto new_ref = detached_refs.allocate();
     if (new_ref)
     {
-        *new_ref = *frameset;
+        *new_ref = *frame;
     }
     return new_ref;
+}
+
+void frame_archive::release_frame_ref(rs_frame* ref)
+{
+    detached_refs.deallocate(ref);
 }
 
 // Allocate a new frame in the backbuffer, potentially recycling a buffer from the freelist
@@ -85,7 +96,6 @@ frame frame_archive::alloc_frame(const size_t size, const frame_additional_data&
     {
         backbuffer.data.resize(size); // TODO: Allow users to provide a custom allocator for frame buffers
     }
-    backbuffer.update_owner(this);
     backbuffer.additional_data = additional_data;
     return backbuffer;
 }
@@ -94,7 +104,7 @@ rs_frame* frame_archive::track_frame(frame& f)
 {
     std::unique_lock<std::recursive_mutex> lock(mutex);
 
-    auto published_frame = f.publish();
+    auto published_frame = f.publish(shared_from_this());
     if (published_frame)
     {
         rs_frame new_ref(published_frame); // allocate new frame_ref to ref-counter the now published frame
@@ -108,10 +118,34 @@ void frame_archive::flush()
 {
     published_frames.stop_allocation();
     detached_refs.stop_allocation();
+    callback_inflight.stop_allocation();
+    recycle_frames = false;
 
+    auto callbacks_inflight = callback_inflight.get_size();
+    if (callbacks_inflight > 0)
+    {
+        LOG_WARNING(callbacks_inflight << " callbacks are still running on some other threads. Waiting until all callbacks return...");
+    }
     // wait until user is done with all the stuff he chose to borrow
-    detached_refs.wait_until_empty();
-    published_frames.wait_until_empty();
+    callback_inflight.wait_until_empty();
+    freelist.clear();
+    pending_frames = published_frames.get_size();
+    if (pending_frames > 0)
+    {
+        LOG_WARNING("The user was holding on to " 
+            << pending_frames << " frames after stream 0x" 
+            << std::hex << this << " stopped");
+    }
+    // frames and their frame refs are not flushed, by design
+}
+
+frame_archive::~frame_archive()
+{
+    if (pending_frames > 0)
+    {
+        LOG_WARNING("All frames from stream 0x"
+            << std::hex << this << " are now released by the user");
+    }
 }
 
 void frame::release()
@@ -124,89 +158,10 @@ void frame::release()
     }
 }
 
-frame* frame::publish()
+frame* frame::publish(std::shared_ptr<frame_archive> new_owner)
 {
+    owner = new_owner;
     return owner->publish_frame(std::move(*this));
-}
-
-double rs_frame::get_frame_metadata(rs_frame_metadata frame_metadata) const
-{
-    return frame_ptr ? frame_ptr->get_frame_metadata(frame_metadata) : 0;
-}
-
-bool rs_frame::supports_frame_metadata(rs_frame_metadata frame_metadata) const
-{
-    return frame_ptr ? frame_ptr->supports_frame_metadata(frame_metadata) : 0;
-}
-
-const byte* rs_frame::get_frame_data() const
-{
-    return frame_ptr ? frame_ptr->get_frame_data() : nullptr;
-}
-
-double rs_frame::get_frame_timestamp() const
-{
-    return frame_ptr ? frame_ptr->get_frame_timestamp(): 0;
-}
-
-unsigned long long rs_frame::get_frame_number() const
-{
-    return frame_ptr ? frame_ptr->get_frame_number() : 0;
-}
-
-long long rs_frame::get_frame_system_time() const
-{
-    return frame_ptr ? frame_ptr->get_frame_system_time() : 0;
-}
-
-rs_timestamp_domain rs_frame::get_frame_timestamp_domain() const
-{
-    return frame_ptr ? frame_ptr->get_frame_timestamp_domain() : RS_TIMESTAMP_DOMAIN_COUNT;
-}
-
-int rs_frame::get_frame_width() const
-{
-    return frame_ptr ? frame_ptr->get_width() : 0;
-}
-
-int rs_frame::get_frame_height() const
-{
-    return frame_ptr ? frame_ptr->get_height() : 0;
-}
-
-int rs_frame::get_frame_framerate() const
-{
-    return frame_ptr ? frame_ptr->get_framerate() : 0;
-}
-
-int rs_frame::get_frame_stride() const
-{
-    return frame_ptr ? frame_ptr->get_stride() : 0;
-}
-
-int rs_frame::get_frame_bpp() const
-{
-    return frame_ptr ? frame_ptr->get_bpp() : 0;
-}
-
-rs_format rs_frame::get_frame_format() const
-{
-    return frame_ptr ? frame_ptr->get_format() : RS_FORMAT_COUNT;
-}
-
-rs_stream rs_frame::get_stream_type() const
-{
-    return frame_ptr ? frame_ptr->get_stream_type() : RS_STREAM_COUNT;
-}
-
-std::chrono::high_resolution_clock::time_point rs_frame::get_frame_callback_start_time_point() const
-{
-    return frame_ptr ? frame_ptr->get_frame_callback_start_time_point() :  std::chrono::high_resolution_clock::now();
-}
-
-void rs_frame::update_frame_callback_start_ts(std::chrono::high_resolution_clock::time_point ts) const
-{
-    frame_ptr->update_frame_callback_start_ts(ts);
 }
 
 double frame::get_frame_metadata(rs_frame_metadata frame_metadata) const
@@ -221,7 +176,7 @@ bool frame::supports_frame_metadata(rs_frame_metadata frame_metadata) const
 
 const byte* frame::get_frame_data() const
 {
-	const byte* frame_data = data.data();;
+    const byte* frame_data = data.data();;
 
     if (on_release.get_data())
     {
@@ -320,5 +275,5 @@ void rs_frame::log_callback_start(std::chrono::high_resolution_clock::time_point
 {
     auto callback_start_time = std::chrono::high_resolution_clock::now();
     auto ts = std::chrono::duration_cast<std::chrono::milliseconds>(callback_start_time - capture_start_time).count();
-    LOG_DEBUG("CallbackStarted," << rsimpl::get_string(get_stream_type()) << "," << get_frame_number() << ",DispatchedAt," << ts);
+    LOG_DEBUG("CallbackStarted," << rsimpl::get_string(get()->get_stream_type()) << "," << get()->get_frame_number() << ",DispatchedAt," << ts);
 }

@@ -72,7 +72,7 @@ int main()
     while (1)
     {
         /* This call waits until a new coherent set of frames is available on a device */
-        rs_frame * frame = rs_wait_for_frame(queue, NULL, &e);
+        rs_frame * frame = rs_wait_for_frame(queue, &e);
         check_error();
 
         /* Retrieve depth data, configured as 16-bit depth values */
@@ -103,7 +103,7 @@ int main()
         *out++ = 0;
         printf("\n%s", buffer);
 
-        rs_release_frame(stream, frame);
+        rs_release_frame(frame);
     }
 
     rs_flush_queue(queue, &e);
