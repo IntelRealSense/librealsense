@@ -107,7 +107,7 @@ void timestamp_corrector::update_source_id(rs_event_source& source_id, const rs_
     }
 }
 
-void timestamp_corrector::correct_timestamp(frame_interface& frame, rs_stream stream)
+bool timestamp_corrector::correct_timestamp(frame_interface& frame, rs_stream stream)
 {
     unique_lock<mutex> lock(mtx);
 
@@ -125,4 +125,5 @@ void timestamp_corrector::correct_timestamp(frame_interface& frame, rs_stream st
         frame.set_timestamp_domain(RS_TIMESTAMP_DOMAIN_MICROCONTROLLER);
     }
     lock.unlock();
+    return res;
 }

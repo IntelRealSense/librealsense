@@ -16,7 +16,7 @@ LIBS += -pthread
 SOURCES += ../examples/cpp-capture.cpp
 HEADERS += ../examples/example.hpp
 
-LIBS += -L$$DESTDIR/ -lrealsense
+LIBS += -L$$DESTDIR/ -lrealsense -L/usr/local/lib/motion -linfra -lmotionautoexposure -lmotionHAL -lmultirealsense -lslimAPI -ltbbmalloc -ltbb
 
 PRE_TARGETDEPS += $$DESTDIR/librealsense.a
 

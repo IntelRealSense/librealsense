@@ -63,7 +63,7 @@ namespace rsimpl
 
         void flush() override;
 
-        void correct_timestamp(rs_stream stream);
+        bool correct_timestamp(rs_stream stream);
         void on_timestamp(rs_timestamp_data data);
 
     };

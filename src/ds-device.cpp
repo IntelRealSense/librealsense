@@ -895,9 +895,10 @@ namespace rsimpl
             if (stream_infrared2.is_enabled())
                 return std::make_shared<dinghy_timestamp_reader>(stream_infrared2.get_framerate());
             break;
+            //#TODO Majd fix this
         case SUB_DEVICE_FISHEYE:
             if (stream_fisheye.is_enabled())
-                return std::make_shared<fisheye_timestamp_reader>(stream_fisheye.get_framerate(), get_camera_info(RS_CAMERA_INFO_ADAPTER_BOARD_FIRMWARE_VERSION));
+                return std::make_shared<dinghy_timestamp_reader>(30);
             break;
         case SUB_DEVICE_COLOR:
             if (stream_color.is_enabled())

@@ -87,7 +87,14 @@ frame_archive::frame_ref* frame_archive::clone_frame(frame_ref* frameset)
 // Allocate a new frame in the backbuffer, potentially recycling a buffer from the freelist
 byte * frame_archive::alloc_frame(rs_stream stream, const frame_additional_data& additional_data, bool requires_memory)
 {
-    const size_t size = modes[stream].get_image_size(stream);
+    size_t size;
+    if(stream == RS_STREAM_FISHEYE) {
+        size = 307200;
+    } else {
+
+        size = modes[stream].get_image_size(stream);
+    }
+    //const size_t size =307200; //TODO: majd//= modes[stream].get_image_size(stream);
     {
         std::lock_guard<std::recursive_mutex> guard(mutex);
 

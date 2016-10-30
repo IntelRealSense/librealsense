@@ -12,6 +12,8 @@ endif
 
 LIBUSB_FLAGS := `pkg-config --cflags --libs libusb-1.0`
 
+MOTION_FLAGS := -linfra -lmotionautoexposure -lmotionHAL -lmultirealsense -lslimAPI -ltbbmalloc -ltbb
+
 CFLAGS := -std=c11 -D_BSD_SOURCE -fPIC -pedantic -g -DRS_USE_$(BACKEND)_BACKEND $(LIBUSB_FLAGS)
 CXXFLAGS := -std=c++11 -fPIC -pedantic -Ofast -Wall -Wextra
 # Replace -Wno-unknown-pragmas with -fopenmp to multithread image.cpp
@@ -100,7 +102,7 @@ bin/cpp-%: examples/cpp-%.cpp lib/librealsense.so | bin
 
 # Rules for building the library itself
 lib/librealsense.so: $(OBJECTS) | lib
-	$(CXX) -std=c++11 -shared $(OBJECTS) $(LIBUSB_FLAGS) -o $@
+	$(CXX) -std=c++11 -L/usr/local/lib/motion -shared $(OBJECTS) $(LIBUSB_FLAGS) $(MOTION_FLAGS)  -o $@
 
 lib/librealsense.a: $(OBJECTS) | lib
 	ar rvs $@ `find obj/ -name "*.o"`

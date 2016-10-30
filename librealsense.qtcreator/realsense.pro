@@ -8,7 +8,7 @@ INCLUDEPATH += ../include
 
 CONFIG += link_pkgconfig
 PKGCONFIG += libusb-1.0
-LIBS += -pthread
+LIBS += -pthread -L/usr/local/lib/motion/ -linfra -lmotionautoexposure -lmotionHAL -lmultirealsense -lslimAPI -ltbbmalloc -ltbb
 
 QMAKE_CXXFLAGS += -std=c++11 -fPIC -pedantic -mssse3 -g
 QMAKE_CXXFLAGS += -Wno-missing-field-initializers -Wno-switch -Wno-multichar

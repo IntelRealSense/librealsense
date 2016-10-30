@@ -41,7 +41,7 @@ namespace rsimpl
     public:
         virtual ~timestamp_corrector_interface() {}
         virtual void on_timestamp(rs_timestamp_data data) = 0;
-        virtual void correct_timestamp(frame_interface& frame, rs_stream stream) = 0;
+        virtual bool correct_timestamp(frame_interface& frame, rs_stream stream) = 0;
         virtual void release() = 0;
     };
 
@@ -51,7 +51,7 @@ namespace rsimpl
         timestamp_corrector(std::atomic<uint32_t>* event_queue_size, std::atomic<uint32_t>* events_timeout);
         ~timestamp_corrector() override;
         void on_timestamp(rs_timestamp_data data) override;
-        void correct_timestamp(frame_interface& frame, rs_stream stream) override;
+        bool correct_timestamp(frame_interface& frame, rs_stream stream) override;
         void release() override  {delete this;}
 
     private:

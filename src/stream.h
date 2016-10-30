@@ -30,7 +30,7 @@ namespace rsimpl
     class frame_archive;
     class syncronizing_archive;
 
-    struct native_stream final : public stream_interface
+    struct native_stream  : public stream_interface
     {
         const device_config &                   config;
         
@@ -48,8 +48,8 @@ namespace rsimpl
         subdevice_mode_selection                get_mode() const;
         rs_intrinsics                           get_intrinsics() const override;
         rs_intrinsics                           get_rectified_intrinsics() const override;
-        rs_format                               get_format() const override { return get_mode().get_format(stream); }
-        int                                     get_framerate() const override { return get_mode().get_framerate(); }
+        virtual rs_format                       get_format() const override { return get_mode().get_format(stream); }
+        virtual int                             get_framerate() const override { return get_mode().get_framerate(); }
 
         double                                  get_frame_metadata(rs_frame_metadata frame_metadata) const override;
         bool                                    supports_frame_metadata(rs_frame_metadata frame_metadata) const override;
@@ -60,6 +60,17 @@ namespace rsimpl
 
         int                                     get_frame_stride() const override;
         int                                     get_frame_bpp() const override;
+    };
+
+    class fisheye_stream final: public native_stream {
+    public:
+                                                fisheye_stream(device_config & config, rs_stream stream, calibration_validator in_validator) : native_stream(config,stream,in_validator) {}
+
+
+        rs_format                               get_format() const override { return RS_FORMAT_Y8; }
+        int                                     get_framerate() const override { return 30; }
+
+
     };
 
     class point_stream final : public stream_interface

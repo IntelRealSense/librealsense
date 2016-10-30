@@ -386,12 +386,14 @@ namespace rsimpl
             std::thread data_channel_thread;
             volatile bool stop;
             volatile bool data_stop;
+            //TODO: majd
+            bool is_fisheye_present;
 
             libusb_device * usb_device;
             libusb_device_handle * usb_handle;
             std::vector<int> claimed_interfaces;
 
-            device(std::shared_ptr<context> parent) : parent(parent), stop(), data_stop(), usb_device(), usb_handle() {}
+            device(std::shared_ptr<context> parent) : parent(parent), stop(), data_stop(), usb_device(), usb_handle(),is_fisheye_present(false) {}
             ~device()
             {
                 stop_streaming();
@@ -488,7 +490,7 @@ namespace rsimpl
 
         int get_vendor_id(const device & device) { return device.subdevices[0]->get_vid(); }
         int get_product_id(const device & device) { return device.subdevices[0]->get_pid(); }
-
+        bool is_fisheye_present(const device & device) { return device.is_fisheye_present ; }
         std::string get_usb_port_id(const device & device)
         {
             std::string usb_port = std::to_string(libusb_get_bus_number(device.usb_device)) + "-" +
@@ -818,7 +820,13 @@ namespace rsimpl
                 }
             }
 
-
+            //TODO: majd, check whether MM is present 1st
+            for (auto & dev : devices) {
+                if(!dev)
+                    continue;
+                dev->is_fisheye_present = true;
+            } 
+                
             // Obtain libusb_device_handle for each device
             libusb_device ** list;
             int status = libusb_get_device_list(context->usb_context, &list);

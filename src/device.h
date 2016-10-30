@@ -10,9 +10,16 @@
 #include <chrono>
 #include <memory>
 #include <vector>
+#include <motion/MotionAPI-slim.h>
 
 namespace rsimpl
 {
+    	typedef struct{
+        uint8_t* data;
+        int slot;
+        bool pending_free;
+    } FisheyeFrameHolder;	 
+    
     // This class is used to buffer up several writes to a structure-valued XU control, and send the entire structure all at once
     // Additionally, it will ensure that any fields not set in a given struct will retain their original values
     template<class T, class R, class W> struct struct_interface
@@ -71,14 +78,16 @@ namespace rsimpl
     }
 }
 
-struct rs_device_base : rs_device
+struct rs_device_base : rs_device,  motion::MotionDeviceListner
 {
-private:
+protected:
     const std::shared_ptr<rsimpl::uvc::device>  device;
 protected:
     rsimpl::device_config                       config;
-private:
-    rsimpl::native_stream                       depth, color, infrared, infrared2, fisheye;
+    bool                                        data_acquisition_active;
+protected:
+    rsimpl::native_stream                       depth, color, infrared, infrared2;
+    rsimpl::fisheye_stream                      fisheye;
     rsimpl::point_stream                        points;
     rsimpl::rectified_stream                    rect_color;
     rsimpl::aligned_stream                      color_to_depth, depth_to_color, depth_to_rect_color, infrared2_to_depth, depth_to_infrared2;
@@ -86,7 +95,7 @@ private:
     rsimpl::stream_interface *                  streams[RS_STREAM_COUNT];
 
     bool                                        capturing;
-    bool                                        data_acquisition_active;
+
     std::chrono::high_resolution_clock::time_point capture_started;
     std::atomic<uint32_t>                       max_publish_list_size;
     std::atomic<uint32_t>                       event_queue_size;
@@ -102,7 +111,7 @@ protected:
     const rsimpl::uvc::device &                 get_device() const { return *device; }
     rsimpl::uvc::device &                       get_device() { return *device; }
 
-    virtual void                                start_video_streaming();
+    virtual void                                start_video_streaming(bool is_mipi = false);
     virtual void                                stop_video_streaming();
     virtual void                                start_motion_tracking();
     virtual void                                stop_motion_tracking();
@@ -111,6 +120,7 @@ protected:
     virtual void                                on_before_callback(rs_stream, rs_frame_ref *, std::shared_ptr<rsimpl::frame_archive>) { }
 
     bool                                        motion_module_ready;
+    bool                                        fisheye_started = false;
     std::atomic<bool>                           keep_fw_logger_alive;
     
     std::atomic<int>                            frames_drops_counter;
@@ -146,7 +156,7 @@ public:
 
     virtual void                                start(rs_source source) override;
     virtual void                                stop(rs_source source) override;
-
+    virtual void                                initialize_motion();
     virtual void                                start_fw_logger(char fw_log_op_code, int grab_rate_in_ms, std::timed_mutex& mutex) override;
     virtual void                                stop_fw_logger() override;
 
@@ -175,6 +185,15 @@ public:
     static void                                 update_device_info(rsimpl::static_device_info& info);
 
     const char *                                get_option_description(rs_option option) const override;
+    protected:
+
+    motion::MotionDevice* motion_device;
+    
+    void sensorCallback(motion::MotionSensorFrame* frame, int numFrames);
+    void fisheyeCallback(motion::MotionFisheyeFrame* frame);
+    void timestampCallback(motion::MotionTimestampFrame *frame) ;
+    void notifyCallback(uint32_t status, uint8_t *buf, uint32_t size) ;
+    virtual void enable_fisheye_stream();
 };
 
 #endif

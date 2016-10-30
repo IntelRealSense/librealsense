@@ -17,7 +17,7 @@ using namespace rsimpl::motion_module;
 
 const int MAX_FRAME_QUEUE_SIZE = 20;
 const int MAX_EVENT_QUEUE_SIZE = 500;
-const int MAX_EVENT_TINE_OUT   = 10;
+const int MAX_EVENT_TINE_OUT   = 12;
 
 rs_device_base::rs_device_base(std::shared_ptr<rsimpl::uvc::device> device, const rsimpl::static_device_info & info, calibration_validator validator) : device(device), config(info),
     depth(config, RS_STREAM_DEPTH, validator), color(config, RS_STREAM_COLOR, validator), infrared(config, RS_STREAM_INFRARED, validator), infrared2(config, RS_STREAM_INFRARED2, validator), fisheye(config, RS_STREAM_FISHEYE, validator),
@@ -71,10 +71,11 @@ const char* rs_device_base::get_camera_info(rs_camera_info info) const
 void rs_device_base::enable_stream(rs_stream stream, int width, int height, rs_format format, int fps, rs_output_buffer_format output)
 {
     if(capturing) throw std::runtime_error("streams cannot be reconfigured after having called rs_start_device()");
-    if(config.info.stream_subdevices[stream] == -1) throw std::runtime_error("unsupported stream");
+    if(config.info.stream_subdevices[stream] == -1) throw std::runtime_error("unsupported stream: " + stream);
 
     config.requests[stream] = { true, width, height, format, fps, output };
     for(auto & s : native_streams) s->archive.reset(); // Changing stream configuration invalidates the current stream info
+
 }
 
 void rs_device_base::enable_stream_preset(rs_stream stream, rs_preset preset)
@@ -84,6 +85,11 @@ void rs_device_base::enable_stream_preset(rs_stream stream, rs_preset preset)
 
     config.requests[stream] = config.info.presets[stream][preset];
     for(auto & s : native_streams) s->archive.reset(); // Changing stream configuration invalidates the current stream info
+
+}
+
+void rs_device_base::enable_fisheye_stream() {
+
 }
 
 rs_motion_intrinsics rs_device_base::get_motion_intrinsics() const
@@ -215,6 +221,7 @@ void rs_device_base::set_timestamp_callback(rs_timestamp_callback* callback)
 
 void rs_device_base::start(rs_source source)
 {
+    initialize_motion();
     if (source == RS_SOURCE_MOTION_TRACKING)
     {
         if (supports(RS_CAPABILITIES_MOTION_EVENTS))
@@ -242,6 +249,7 @@ void rs_device_base::stop(rs_source source)
     if (source == RS_SOURCE_VIDEO)
     {
         stop_video_streaming();
+        //stop(RS_SOURCE_MOTION_TRACKING);
     }
     else if (source == RS_SOURCE_MOTION_TRACKING)
     {
@@ -324,7 +332,7 @@ struct drops_status
     unsigned long long prev_frame_counter = 0;
 };
 
-void rs_device_base::start_video_streaming()
+void rs_device_base::start_video_streaming(bool is_mipi)
 {
     if(capturing) throw std::runtime_error("cannot restart device without first stopping device");
 
@@ -332,8 +340,14 @@ void rs_device_base::start_video_streaming()
     auto selected_modes = config.select_modes();
     auto archive = std::make_shared<syncronizing_archive>(selected_modes, select_key_stream(selected_modes), &max_publish_list_size, &event_queue_size, &events_timeout, capture_start_time);
 
-    for(auto & s : native_streams) s->archive.reset(); // Starting capture invalidates the current stream info, if any exists from previous capture
-
+    for(auto & s : native_streams) {
+        //#TODO: majd check if needed?
+        if (s->get_stream_type() == RS_STREAM_FISHEYE) {
+            s->archive = archive;
+            continue;
+        }
+        s->archive.reset(); // Starting capture invalidates the current stream info, if any exists from previous capture
+    }
     auto timestamp_readers = create_frame_timestamp_readers();
 
     // Satisfy stream_requests as necessary for each subdevice, calling set_mode and
@@ -436,10 +450,14 @@ void rs_device_base::start_video_streaming()
                 dest.push_back(archive->alloc_frame(output.first, additional_data, requires_processing));
 
 
-                if (motion_module_ready) // try to correct timestamp only if motion module is enabled
-                {
-                    archive->correct_timestamp(output.first);
-                }
+              // if (motion_module_ready) // try to correct timestamp only if motion module is enabled
+                //{
+                    if(!archive->correct_timestamp(output.first)) {
+                       // archive->release_frame_ref(archive->track_frame(output.first));
+                       //  return;
+                    }
+
+                //}
             }
             // Unpack the frame
             if (requires_processing)
@@ -607,7 +625,12 @@ bool rs_device_base::supports(rs_capabilities capability) const
         if (supported.capability == capability)
         {
             found = true;
-
+            //TODO: majd
+            if(capability == RS_CAPABILITIES_MOTION_EVENTS)
+                break;
+            if(capability == RS_CAPABILITIES_FISH_EYE)
+                return true;
+            //;//std::cout << "Supports 2" << std::endl;
             firmware_version firmware(get_camera_info(supported.firmware_type));
             if (!firmware.is_between(supported.from, supported.until)) // unsupported due to versioning constraint
             {
@@ -708,3 +731,112 @@ const char * rs_device_base::get_usb_port_id() const
     if (usb_port_id == "") usb_port_id = rsimpl::uvc::get_usb_port_id(*device);
     return usb_port_id.c_str();
 }
+
+
+
+ void rs_device_base::sensorCallback(motion::MotionSensorFrame* frame, int numFrames) {
+       // ;//std::cout << "Got sensorCallback!" << std::endl;
+       static int gyro_frame_count = 0;
+       static int accel_frame_count = 0;
+       if(!data_acquisition_active)
+            return;
+    if (config.data_request.enabled)
+    {
+        // TODO -replace hard-coded value 3 which stands for fisheye subdevice   
+
+        rs_timestamp_data imu_timestamp;
+        imu_timestamp.timestamp = frame->header.timestamp/1000.0;
+        imu_timestamp.source_id = (frame->header.type == motion::MOTION_SOURCE_GYRO ? RS_EVENT_IMU_GYRO : RS_EVENT_IMU_ACCEL);
+        imu_timestamp.frame_number = (frame->header.type == motion::MOTION_SOURCE_GYRO ? gyro_frame_count++ : accel_frame_count++);;
+        
+        rs_motion_data imu_data ;
+        imu_data.timestamp_data = imu_timestamp;
+        imu_data.is_valid = 1;
+        imu_data.axes[0] = frame->x;
+        imu_data.axes[1] = frame->y;
+        imu_data.axes[2] = frame->z;
+        
+
+        config.motion_callback->on_event(imu_data);
+
+        /* // Handle Timestamp packets
+        if (config.timestamp_callback)
+        {
+        for (int i = 0; i < entry.non_imu_entries_num; i++)
+        {
+        auto tse = entry.non_imu_packets[i];
+        if (archive)
+        archive->on_timestamp(tse);
+
+        config.timestamp_callback->on_event(entry.non_imu_packets[i]);
+        }
+        }*/
+
+
+    }
+    
+ }   
+void rs_device_base::initialize_motion() {
+
+
+}
+
+void rs_device_base::fisheyeCallback(motion::MotionFisheyeFrame* frame) {
+       static int64_t frameCount = 1;
+      // std::cout << "fisheyeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee" << std::endl;
+    if(!fisheye_started) {
+        motion_device->returnFisheyeBuffer(frame);
+        return;
+    }
+        frame_archive::frame_additional_data additional_data( frame->header.timestamp/1000.0,
+            frameCount++,
+            0,
+            frame->width,
+            frame->height,
+            30,
+            frame->width,
+            0,
+            1,
+            RS_FORMAT_Y8,
+            RS_STREAM_FISHEYE,
+            0,
+            config.info.supported_metadata_vector,
+            0);
+
+       
+       // std::cout << "Got fisheyeCallback! 1   " <<  frame->width << "," << frame->height << std::endl;
+        byte* frameData = archive->alloc_frame(RS_STREAM_FISHEYE, additional_data, true); // Sergey: this allocates object for the frame
+
+        memcpy(frameData,frame->data,frame->width*frame->height);
+
+        motion_device->returnFisheyeBuffer(frame);
+
+        if (config.callbacks[RS_STREAM_FISHEYE])
+        {
+            auto frame_ref = archive->track_frame(RS_STREAM_FISHEYE);
+            if (frame_ref)
+            {
+                 frame_ref->update_frame_callback_start_ts(std::chrono::high_resolution_clock::now());
+                 frame_ref->log_callback_start(std::chrono::high_resolution_clock::now());
+                on_before_callback(RS_STREAM_FISHEYE, frame_ref, archive);
+                (*config.callbacks[RS_STREAM_FISHEYE])->on_frame(this, frame_ref);
+            }
+        }
+        else
+        {
+            // Commit the frame to the archive
+            archive->commit_frame(RS_STREAM_FISHEYE);
+        }
+    }
+    void rs_device_base::timestampCallback(motion::MotionTimestampFrame *frame)  {
+        ;//std::cout << "Got timestamp: " << frame->header.type << std::endl;
+        if(frame->header.type == motion::MOTION_SOURCE_DEPTH) {
+            if(frame->header.seq < 6)
+                    return;
+            archive->on_timestamp({frame->header.timestamp/1000.0,RS_EVENT_IMU_DEPTH_CAM,frame->header.seq-4});
+           // std::cout << "depth2 timestamp: " << frame->header.seq << "\t" << std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count() << "\t" << frame->header.timestamp << std::endl;
+        }
+    }
+    void rs_device_base::notifyCallback(uint32_t status, uint8_t *buf, uint32_t size) {
+    }
+    

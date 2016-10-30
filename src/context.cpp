@@ -9,6 +9,7 @@
 #include "f200.h"
 #include "sr300.h"
 #include "zr300.h"
+#include "lr200_mm.h"
 #include "uvc.h"
 #include "context.h"
 
@@ -67,7 +68,15 @@ rs_context_base::rs_context_base()
         switch(get_product_id(*device))
         {
             case R200_PRODUCT_ID:  rs_dev = rsimpl::make_r200_device(device); break;
-            case LR200_PRODUCT_ID: rs_dev = rsimpl::make_lr200_device(device); break;
+            case LR200_PRODUCT_ID: 
+
+                if (is_fisheye_present(*device)) {
+                    //TODO: create MM module
+                    rs_dev = rsimpl::make_lr200_mm_device(device);
+                } else {
+                    rs_dev = rsimpl::make_lr200_device(device); 
+                }
+                break;
             case ZR300_PRODUCT_ID: rs_dev = rsimpl::make_zr300_device(device); break;
             case F200_PRODUCT_ID:  rs_dev = rsimpl::make_f200_device(device); break;
             case SR300_PRODUCT_ID: rs_dev = rsimpl::make_sr300_device(device); break;
