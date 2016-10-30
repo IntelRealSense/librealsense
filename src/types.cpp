@@ -23,6 +23,8 @@ namespace rsimpl
         CASE(INFRARED)
         CASE(INFRARED2)
         CASE(FISHEYE)
+        CASE(GYRO)
+        CASE(ACCEL)
         default: assert(!is_valid(value)); return unknown;
         }
         #undef CASE
@@ -36,6 +38,7 @@ namespace rsimpl
         CASE(DEPTH)
         CASE(COLOR)
         CASE(FISHEYE)
+        CASE(MOTION)
         default: assert(!is_valid(value)); return unknown;
         }
         #undef CASE
