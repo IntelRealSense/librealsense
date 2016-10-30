@@ -661,16 +661,23 @@ namespace rsimpl
         r200,
         lr200,
         zr300,
-        ds5
+        rs400,          // DS5p PSR
+        rs410,          // DS5a ASR
+        rs420,          // DS5r Rolling Shutter
+        rs430,          // DS5w Wide Angle
+        rs450,          // DS5t /w Motion Module
     };
 
-    static const std::map<cameras, const char*> camera_official_name = {{cameras::f200,  "Intel RealSense F200" },
-                                                                        {cameras::sr300, "Intel RealSense SR300"},
-                                                                        {cameras::r200,  "Intel RealSense R200" },
-                                                                        {cameras::lr200, "Intel RealSense LR200"},
-                                                                        {cameras::zr300, "Intel RealSense ZR300"},
-                                                                        {cameras::ds5,   "Intel RealSense RS400"}};
-
+    static const std::map<cameras, const char*> camera_official_name = { {cameras::f200,  "Intel RealSense F200"},
+                                                                         {cameras::sr300, "Intel RealSense SR300"},
+                                                                         {cameras::r200,  "Intel RealSense R200" },
+                                                                         {cameras::lr200, "Intel RealSense LR200"},
+                                                                         {cameras::zr300, "Intel RealSense ZR300"},
+                                                                         {cameras::rs400, "Intel RealSense RS400p"},
+                                                                         {cameras::rs410, "Intel RealSense RS410a"},
+                                                                         { cameras::rs420, "Intel RealSense RS420r"},
+                                                                         { cameras::rs430, "Intel RealSense RS430w"},
+                                                                         { cameras::rs450, "Intel RealSense RS450t"} };
 }
 
 #endif

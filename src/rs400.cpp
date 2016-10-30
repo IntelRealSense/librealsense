@@ -4,10 +4,10 @@
 
 #include "image.h"
 #include "ds-private.h"
-#include "ds5-private.h"
-#include "ds5d.h"
+#include "rs4xx-private.h"
+#include "rs400.h"
 
-using namespace rsimpl::ds5;
+using namespace rsimpl::rs4xx;
 namespace rsimpl
 {
 
@@ -49,12 +49,12 @@ namespace rsimpl
         // Populate miscellaneous information about the device
         info.name = dev_name;
         std::timed_mutex mutex;
-        ds5::get_string_of_gvd_field(*device, mutex, info.serial, ds5::asic_module_serial_offset);
-        ds5::get_string_of_gvd_field(*device, mutex, info.firmware_version, ds5::fw_version_offset);
-        ds5::ds5_calibration calib = {};
+        rs4xx::get_string_of_gvd_field(*device, mutex, info.serial, rs4xx::asic_module_serial_offset);
+        rs4xx::get_string_of_gvd_field(*device, mutex, info.firmware_version, rs4xx::fw_version_offset);
+        rs4xx::ds5_calibration calib = {};
         try
         {
-            ds5::read_calibration(*device, mutex, calib);
+            rs4xx::read_calibration(*device, mutex, calib);
         }
         catch (const std::runtime_error &e)
         {
@@ -134,7 +134,7 @@ namespace rsimpl
             info.presets[RS_STREAM_INFRARED2][i] = {true, 1280, 720, RS_FORMAT_Y16, 30};
         }
 
-        info.options.push_back({ RS_OPTION_RS400_LASER_POWER, 0, 1, 1, 0 });
+        info.options.push_back({ RS_OPTION_RS4XX_PROJECTOR_MODE, 0, 2, 1, 0 });   // 0 – off, 1 – on, 2- auto
         info.options.push_back({ RS_OPTION_COLOR_GAIN });
         info.options.push_back({ RS_OPTION_R200_LR_EXPOSURE, 40, 1660, 1, 100 });
         info.options.push_back({ RS_OPTION_HARDWARE_LOGGER_ENABLED, 0, 1, 1, 0 });
@@ -160,14 +160,9 @@ namespace rsimpl
         return info;
     }
 
-    ds5d_camera::ds5d_camera(std::shared_ptr<uvc::device> device, const static_device_info & info, bool is_active) :
-        ds5_camera(device, info),
-        has_emitter(is_active)
-    {
+    rs400_camera::rs400_camera(std::shared_ptr<uvc::device> device, const static_device_info & info) : rs4xx_camera(device, info){ }
 
-    }
-
-    void ds5d_camera::set_options(const rs_option options[], size_t count, const double values[])
+    void rs400_camera::set_options(const rs_option options[], size_t count, const double values[])
     {
         std::vector<rs_option>  base_opt;
         std::vector<double>     base_opt_val;
@@ -186,8 +181,8 @@ namespace rsimpl
 
             switch (options[i])
             {
-            case RS_OPTION_RS400_LASER_POWER:       ds5::set_laser_power(get_device(), static_cast<uint8_t>(values[i])); break;
-            case RS_OPTION_R200_LR_EXPOSURE:        ds5::set_lr_exposure(get_device(), static_cast<uint16_t>(values[i])); break;
+            case RS_OPTION_RS4XX_PROJECTOR_MODE:    rs4xx::set_laser_power_mode(get_device(), static_cast<uint8_t>(values[i])); break;
+            case RS_OPTION_R200_LR_EXPOSURE:        rs4xx::set_lr_exposure(get_device(), static_cast<uint16_t>(values[i])); break;
             case RS_OPTION_HARDWARE_LOGGER_ENABLED: set_fw_logger_option(values[i]); break;
 
             default: base_opt.push_back(options[i]); base_opt_val.push_back(values[i]); break;
@@ -196,10 +191,10 @@ namespace rsimpl
 
         //Handle common options
         if (base_opt.size())
-            ds5_camera::set_options(base_opt.data(), base_opt.size(), base_opt_val.data());
+            rs4xx_camera::set_options(base_opt.data(), base_opt.size(), base_opt_val.data());
     }
 
-    void ds5d_camera::get_options(const rs_option options[], size_t count, double values[])
+    void rs400_camera::get_options(const rs_option options[], size_t count, double values[])
     {
         std::vector<rs_option>  base_opt;
         std::vector<double>     base_opt_val;
@@ -218,7 +213,7 @@ namespace rsimpl
 
             switch (options[i])
             {
-                case RS_OPTION_R200_LR_EXPOSURE:        values[i] = ds5::get_lr_exposure(get_device()); break;
+                case RS_OPTION_R200_LR_EXPOSURE:        values[i] = rs4xx::get_lr_exposure(get_device()); break;
                 case RS_OPTION_HARDWARE_LOGGER_ENABLED: values[i] = get_fw_logger_option(); break;
 
                 default: base_opt.push_back(options[i]); base_opt_val.push_back(values[i]); break;
@@ -229,7 +224,7 @@ namespace rsimpl
         if (base_opt.size())
         {
             base_opt_val.resize(base_opt.size());
-            ds5_camera::get_options(base_opt.data(), base_opt.size(), base_opt_val.data());
+            rs4xx_camera::get_options(base_opt.data(), base_opt.size(), base_opt_val.data());
         }
 
         // Merge the local data with values obtained by base class
@@ -237,7 +232,7 @@ namespace rsimpl
             values[i] = base_opt_val[i];
     }
 
-    bool ds5d_camera::supports_option(rs_option option) const
+    bool rs400_camera::supports_option(rs_option option) const
     {
         // No standard RGB controls, except for GAIN that is used for LR Gain
         if (uvc::is_pu_control(option))
@@ -246,7 +241,7 @@ namespace rsimpl
             return rs_device_base::supports_option(option);
     }
 
-    void ds5d_camera::get_option_range(rs_option option, double & min, double & max, double & step, double & def)
+    void rs400_camera::get_option_range(rs_option option, double & min, double & max, double & step, double & def)
     {
         if (option == RS_OPTION_COLOR_GAIN)
         {
@@ -262,25 +257,25 @@ namespace rsimpl
             rs_device_base::get_option_range(option, min, max, step, def);
     }
 
-    std::shared_ptr<rs_device> make_ds5d_active_device(std::shared_ptr<uvc::device> device)
+    std::shared_ptr<rs_device> make_rs410_device(std::shared_ptr<uvc::device> device)
     {
-        LOG_INFO("Connecting to " << camera_official_name.at(cameras::ds5) << " Active");
+        LOG_INFO("Connecting to " << camera_official_name.at(cameras::rs410));
 
-        ds5::claim_ds5_monitor_interface(*device);
+        rs4xx::claim_ds5_monitor_interface(*device);
 
-        return std::make_shared<ds5d_camera>(device, get_ds5d_info(device, camera_official_name.at(cameras::ds5) + std::string(" Active")), true);
+        return std::make_shared<rs400_camera>(device, get_ds5d_info(device, camera_official_name.at(cameras::rs410)));
     }
 
-    std::shared_ptr<rs_device> make_ds5d_passive_device(std::shared_ptr<uvc::device> device)
+    std::shared_ptr<rs_device> make_rs400_device(std::shared_ptr<uvc::device> device)
     {
-        LOG_INFO("Connecting to " << camera_official_name.at(cameras::ds5) << " Passive");
+        LOG_INFO("Connecting to " << camera_official_name.at(cameras::rs400));
 
-        ds5::claim_ds5_monitor_interface(*device);
+        rs4xx::claim_ds5_monitor_interface(*device);
 
-        return std::make_shared<ds5d_camera>(device, get_ds5d_info(device, camera_official_name.at(cameras::ds5) + std::string(" Passive")), false);
+        return std::make_shared<rs400_camera>(device, get_ds5d_info(device, camera_official_name.at(cameras::rs400)));
     }
 
-    void ds5d_camera::set_fw_logger_option(double value)
+    void rs400_camera::set_fw_logger_option(double value)
     {
         if (value >= 1)
         {
@@ -294,7 +289,7 @@ namespace rsimpl
         }
     }
 
-    unsigned ds5d_camera::get_fw_logger_option()
+    unsigned rs400_camera::get_fw_logger_option()
     {
         return rs_device_base::keep_fw_logger_alive;
     }

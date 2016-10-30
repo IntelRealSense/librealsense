@@ -2,13 +2,13 @@
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
 #pragma once
-#ifndef LIBREALSENSE_DS5D_H
-#define LIBREALSENSE_DS5D_H
+#ifndef LIBREALSENSE_RS400_H
+#define LIBREALSENSE_RS400_H
 
-#include "ds5.h"
+#include "rs4xx.h"
 
-#define DS5_PSR_PRODUCT_ID 0x0ad1
-#define DS5_ASR_PRODUCT_ID 0x0ad2
+#define RS400_PRODUCT_ID 0x0ad1
+#define RS410_PRODUCT_ID 0x0ad2
 
 namespace rsimpl
 {
@@ -23,12 +23,12 @@ namespace rsimpl
         GLD         = 0x0f,     // Get logger data
     };
 
-    class ds5d_camera final : public ds5_camera
+    class rs400_camera : public rs4xx_camera
     {
 
     public:
-        ds5d_camera(std::shared_ptr<uvc::device> device, const static_device_info & info, bool has_emitter);
-        ~ds5d_camera() {};
+        rs400_camera(std::shared_ptr<uvc::device> device, const static_device_info & info);
+        ~rs400_camera() {};
 
         void set_options(const rs_option options[], size_t count, const double values[]) override;
         void get_options(const rs_option options[], size_t count, double values[]) override;
@@ -39,12 +39,25 @@ namespace rsimpl
         unsigned get_fw_logger_option();
 
     private:
-        bool has_emitter;
         std::timed_mutex usbMutex;
     };
 
-    std::shared_ptr<rs_device> make_ds5d_active_device(std::shared_ptr<uvc::device> device);
-    std::shared_ptr<rs_device> make_ds5d_passive_device(std::shared_ptr<uvc::device> device);
+    class rs410_camera final : public rs400_camera
+    {
+
+    public:
+        rs410_camera(std::shared_ptr<uvc::device> device, const static_device_info & info);
+        ~rs410_camera() {};
+
+        //void set_options(const rs_option options[], size_t count, const double values[]) override;
+        //void get_options(const rs_option options[], size_t count, double values[]) override;
+        //bool supports_option(rs_option option) const override;
+        //void get_option_range(rs_option option, double & min, double & max, double & step, double & def) override;
+
+    };
+
+    std::shared_ptr<rs_device> make_rs410_device(std::shared_ptr<uvc::device> device);
+    std::shared_ptr<rs_device> make_rs400_device(std::shared_ptr<uvc::device> device);
 }
 
 #endif

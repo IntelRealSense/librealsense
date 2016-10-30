@@ -2,20 +2,20 @@
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
 #pragma once
-#ifndef LIBREALSENSE_DS5_H
-#define LIBREALSENSE_DS5_H
+#ifndef LIBREALSENSE_RS4XX_H
+#define LIBREALSENSE_RS4XX_H
 
 #include "device.h"
 
 namespace rsimpl
 {
-    // This is a base class for the various SKUs of the DS5 camera
-    class ds5_camera : public rs_device_base
+    // This is a base class for the various SKUs of the RSXX line of devices
+    class rs4xx_camera : public rs_device_base
     {
 
     public:
-        ds5_camera(std::shared_ptr<uvc::device> device, const static_device_info & info);
-        ~ds5_camera() {};
+        rs4xx_camera(std::shared_ptr<uvc::device> device, const static_device_info & info);
+        ~rs4xx_camera() {};
 
         void set_options(const rs_option options[], size_t count, const double values[]) override;
         void get_options(const rs_option options[], size_t count, double values[]) override;

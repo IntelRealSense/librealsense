@@ -594,7 +594,8 @@ const char * rs_device_base::get_option_description(rs_option option) const
     case RS_OPTION_FISHEYE_AUTO_EXPOSURE_SKIP_FRAMES               : return "In Fisheye auto-exposure sample every given number of frames";
     case RS_OPTION_HARDWARE_LOGGER_ENABLED                         : return "Enables / disables fetching diagnostic information from hardware (and writting the results to log)";
     case RS_OPTION_TOTAL_FRAME_DROPS                               : return "Total number of detected frame drops from all streams";
-    case RS_OPTION_RS400_LASER_POWER                               : return "Toggle RS400-series Projector Power, 0 = Power Off";
+    case RS_OPTION_RS4XX_PROJECTOR_MODE                            : return "Toggle RS4XX Projector modes: 0 – off, 1 – on, 2- auto";
+    case RS_OPTION_RS4XX_PROJECTOR_PWR                             : return "RS4XX Projector pwer in milli-watt";
     default: return rs_option_to_string(option);
     }
 }

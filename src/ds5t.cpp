@@ -2,7 +2,7 @@
 // Copyright(c) 2016 Intel Corporation. All Rights Reserved.
 
 #include "image.h"
-#include "ds5-private.h"
+#include "rs4xx-private.h"
 #include "ds5t.h"
 
 namespace rsimpl
@@ -45,10 +45,10 @@ namespace rsimpl
         static_device_info info;
 
         // Populate miscellaneous info about device
-        info.name = { camera_official_name.at(cameras::ds5) + std::string(" Tracking")};
+        info.name = { camera_official_name.at(cameras::rs450)};
         std::timed_mutex mutex;
-        ds5::get_string_of_gvd_field(*device, mutex, info.serial, ds5::fw_version_offset);
-        ds5::get_string_of_gvd_field(*device, mutex, info.firmware_version, ds5::asic_module_serial_offset);
+        rs4xx::get_string_of_gvd_field(*device, mutex, info.serial, rs4xx::fw_version_offset);
+        rs4xx::get_string_of_gvd_field(*device, mutex, info.firmware_version, rs4xx::asic_module_serial_offset);
 
         info.nominal_depth_scale = 0.001f;
 
@@ -113,8 +113,8 @@ namespace rsimpl
         return info;
     }
 
-    ds5t_camera::ds5t_camera(std::shared_ptr<uvc::device> device, const static_device_info & info) :
-        ds5_camera(device, info)
+    rs450t_camera::rs450t_camera(std::shared_ptr<uvc::device> device, const static_device_info & info) :
+        rs4xx_camera(device, info)
     {
 
     }
@@ -124,7 +124,7 @@ namespace rsimpl
         return (option == RS_OPTION_FISHEYE_GAIN);
     }
 
-    void ds5t_camera::set_options(const rs_option options[], size_t count, const double values[])
+    void rs450t_camera::set_options(const rs_option options[], size_t count, const double values[])
     {
         for (size_t i = 0; i < count; ++i)
         {
@@ -134,10 +134,10 @@ namespace rsimpl
             }
         }
 
-        ds5_camera::set_options(options, count, values);
+        rs4xx_camera::set_options(options, count, values);
     }
 
-    void ds5t_camera::get_options(const rs_option options[], size_t count, double values[])
+    void rs450t_camera::get_options(const rs_option options[], size_t count, double values[])
     {
         auto & dev = get_device();
 
@@ -149,10 +149,10 @@ namespace rsimpl
             }
         }
 
-        ds5_camera::get_options(options, count, values);
+        rs4xx_camera::get_options(options, count, values);
     }
 
-    rs_stream ds5t_camera::select_key_stream(const std::vector<rsimpl::subdevice_mode_selection> & /*selected_modes*/)
+    rs_stream rs450t_camera::select_key_stream(const std::vector<rsimpl::subdevice_mode_selection> & /*selected_modes*/)
     {
         // DS5t may have a different behaviour here. This is a placeholder
         throw std::runtime_error(to_string() << __FUNCTION__ << " is not implemented");
@@ -160,12 +160,12 @@ namespace rsimpl
 
     std::shared_ptr<rs_device> make_ds5t_device(std::shared_ptr<uvc::device> device)
     {
-        LOG_INFO("Connecting to " << camera_official_name.at(cameras::ds5) << " Tracking");
+        LOG_INFO("Connecting to " << camera_official_name.at(cameras::rs450));
 
-        ds5::claim_ds5_monitor_interface(*device);
-        ds5::claim_ds5_motion_module_interface(*device);
+        rs4xx::claim_ds5_monitor_interface(*device);
+        rs4xx::claim_ds5_motion_module_interface(*device);
 
-        return std::make_shared<ds5t_camera>(device, get_ds5t_info(device));
+        return std::make_shared<rs450t_camera>(device, get_ds5t_info(device));
     }
 
 } // namespace rsimpl::ds5t

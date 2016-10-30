@@ -197,7 +197,8 @@ typedef enum rs_option
     RS_OPTION_FRAMES_QUEUE_SIZE                               , /**< Number of frames the user is allowed to keep per stream. Trying to hold-on to more frames will cause frame-drops.*/
     RS_OPTION_HARDWARE_LOGGER_ENABLED                         , /**< Enable / disable fetching log data from the device */
     RS_OPTION_TOTAL_FRAME_DROPS                               , /**< Total number of detected frame drops from all streams */
-    RS_OPTION_RS400_LASER_POWER                               , /**< RS400 Emitter enabled */
+    RS_OPTION_RS4XX_PROJECTOR_MODE                            , /**< RS400 Emitter mode */
+    RS_OPTION_RS4XX_PROJECTOR_PWR                             , /**< RS400 Emitter power in milli-watt */
     RS_OPTION_COUNT                                           ,
 
 } rs_option;

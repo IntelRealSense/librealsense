@@ -5,7 +5,7 @@
 #ifndef LIBREALSENSE_DS5C_H
 #define LIBREALSENSE_DS5C_H
 
-#include "ds5.h"
+#include "rs4xx.h"
 
 #define DS5_ASRC_PRODUCT_ID 0x0ad3
 #define DS5_AWGC_PRODUCT_ID 0x0ad4
@@ -15,7 +15,7 @@ namespace rsimpl
     // This class represent DS5 variants that generate depth data and RGB images. There are 2 variants:
     // (1) DS5 ASRC: Uses the OV2241 sensor that has a rolling shutter
     // (2) DS5 AWGC: Uses the OV9282 sensor that has a global shutter. This variant also has wide FOV
-    class ds5c_camera final : public ds5_camera
+    class ds5c_camera final : public rs4xx_camera
     {
 
     public:

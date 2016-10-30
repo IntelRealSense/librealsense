@@ -6,15 +6,15 @@
 #include "types.h"
 #include "hw-monitor.h"
 #include "ds-private.h"
-#include "ds5-private.h"
+#include "rs4xx-private.h"
 
 #define stringify( name ) # name "\t"
 
 using namespace rsimpl::hw_monitor;
-using namespace rsimpl::ds5;
+using namespace rsimpl::rs4xx;
 
 namespace rsimpl {
-namespace ds5 {
+namespace rs4xx {
 
     const uvc::extension_unit depth_xu = { 0, 3, 2, { 0xC9606CCB, 0x594C, 0x4D25,{ 0xaf, 0x47, 0xcc, 0xc4, 0x96, 0x43, 0x59, 0x95 } } };
     const uvc::guid DS5_WIN_USB_DEVICE_GUID = { 0x08090549, 0xCE78, 0x41DC,{ 0xA0, 0xFB, 0x1B, 0xD6, 0x66, 0x94, 0xBB, 0x0C } };
@@ -220,7 +220,7 @@ namespace ds5 {
         {
             if (raw_data.size() != sizeof(coefficients_table))
             {
-                std::stringstream ss; ss << "DS5 Coefficients table read error, actual size is " << raw_data.size() << " while expecting " << sizeof(coefficients_table) << " bytes";
+                std::stringstream ss; ss << "RS4XX Coefficients table read error, actual size is " << raw_data.size() << " while expecting " << sizeof(coefficients_table) << " bytes";
                 std::string str(ss.str().c_str());
                 LOG_ERROR(str);
                 throw std::runtime_error(str);
@@ -232,7 +232,7 @@ namespace ds5 {
             // verify the parsed table
             if (table->header.crc32 != calc_crc32(raw_data.data() + sizeof(table_header), raw_data.size() - sizeof(table_header)))
             {
-                std::string str("DS5 Coefficients table CRC error, parsing aborted");
+                std::string str("RS4XX Coefficients table CRC error, parsing aborted");
                 LOG_ERROR(str);
                 throw std::runtime_error(str);
             }
@@ -323,14 +323,24 @@ namespace ds5 {
         }
     }
 
-    void get_laser_power(const uvc::device & device, uint8_t & laser_power)
+    void get_laser_power_mode(const uvc::device & device, uint8_t & laser_power)
     {
-        ds::xu_read(device, depth_xu, ds::control::ds5_lsr_power, &laser_power, sizeof(uint8_t));
+        ds::xu_read(device, depth_xu, ds::control::ds5_lsr_power_mode, &laser_power, sizeof(uint8_t));
     }
 
-    void set_laser_power(uvc::device & device, uint8_t laser_power)
+    void set_laser_power_mode(uvc::device & device, uint8_t laser_power)
     {
-        ds::xu_write(device, depth_xu, ds::control::ds5_lsr_power, &laser_power, sizeof(uint8_t));
+        ds::xu_write(device, depth_xu, ds::control::ds5_lsr_power_mode, &laser_power, sizeof(uint8_t));
+    }
+
+    void get_laser_power_mw(const uvc::device & device, uint16_t & laser_power_mw)      // mw stands for milli-watt
+    {
+        ds::xu_read(device, depth_xu, ds::control::ds5_lsr_power_mw, &laser_power_mw, sizeof(uint16_t));
+    }
+
+    void set_laser_power_mw(uvc::device & device, uint16_t laser_power_mw)
+    {
+        ds::xu_write(device, depth_xu, ds::control::ds5_lsr_power_mw, &laser_power_mw, sizeof(uint16_t));
     }
 
     void set_lr_exposure(uvc::device & device, uint16_t exposure)

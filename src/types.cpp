@@ -164,7 +164,8 @@ namespace rsimpl
         CASE(FRAMES_QUEUE_SIZE)
         CASE(HARDWARE_LOGGER_ENABLED)
         CASE(TOTAL_FRAME_DROPS)
-        CASE(RS400_LASER_POWER)
+        CASE(RS4XX_PROJECTOR_MODE)
+        CASE(RS4XX_PROJECTOR_PWR)
         default: assert(!is_valid(value)); return unknown;
         }
         #undef CASE

@@ -5,11 +5,11 @@
 #ifndef LIBREALSENSE_DS5_PRIVATE_H
 #define LIBREALSENSE_DS5_PRIVATE_H
 
-#include "uvc.h"
 #include <mutex>
+#include "uvc.h"
 
 namespace rsimpl {
-    namespace ds5 {
+    namespace rs4xx {
 
     const int gvd_size = 1024;
 
@@ -109,8 +109,10 @@ namespace rsimpl {
     void read_calibration(uvc::device & dev, std::timed_mutex & mutex, ds5_calibration& calib);
 
     // XU read/write
-    void get_laser_power(const uvc::device & device, uint8_t & laser_power);
-    void set_laser_power(uvc::device & device, uint8_t laser_power);
+    void get_laser_power_mode(const uvc::device & device, uint8_t & laser_power);
+    void set_laser_power_mode(uvc::device & device, uint8_t laser_power);
+    void get_laser_power_mw(const uvc::device & device, uint16_t & laser_power);        // mw stands for milli-watt
+    void set_laser_power_mw(uvc::device & device, uint16_t laser_power);
     void set_lr_exposure(uvc::device & device, uint16_t exposure);
     uint16_t get_lr_exposure(const uvc::device & device);
 
