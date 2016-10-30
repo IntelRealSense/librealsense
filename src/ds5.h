@@ -62,11 +62,11 @@ namespace rsimpl
             return std::make_shared<ds5_info>(*this);
         }
 
-        ds5_info(uvc::uvc_device_info depth,
+        ds5_info(std::vector<uvc::uvc_device_info> depth,
             uvc::usb_device_info hwm);
 
     private:
-        uvc::uvc_device_info _depth;
+        std::vector<uvc::uvc_device_info> _depth;
         uvc::usb_device_info _hwm;
     };
 
@@ -131,18 +131,22 @@ namespace rsimpl
         };
 
         ds5_camera(const uvc::backend& backend,
-            const uvc::uvc_device_info& depth,
+            const std::vector<uvc::uvc_device_info>& depth,
             const uvc::usb_device_info& hwm_device)
             : _hw_monitor(backend.create_usb_device(hwm_device))
         {
             using namespace ds;
 
             // create uvc-endpoint from backend uvc-device
-            auto depth_ep = std::make_shared<uvc_endpoint>(backend.create_uvc_device(depth));
+            for(auto& element : depth)
+            {
+                _devices.push_back(backend.create_uvc_device(element));
+            }
+            auto depth_ep = std::make_shared<uvc_endpoint>(std::make_shared<uvc::multi_pins_uvc_device>(_devices));
             depth_ep->register_xu(depth_xu); // make sure the XU is initialized everytime we power the camera
             depth_ep->register_pixel_format(pf_z16); // Depth
             depth_ep->register_pixel_format(pf_y8); // Left Only - Luminance
-            depth_ep->register_pixel_format(pf_yuyvl); // Left Only
+            depth_ep->register_pixel_format(pf_yuyv); // Left Only
             depth_ep->register_pixel_format(pf_y12i); // L+R - Calibration not rectified
 
             auto fw_version = _hw_monitor.get_firmware_version_string(GVD, gvd_fw_version_offset);
@@ -163,11 +167,14 @@ namespace rsimpl
             register_depth_xu<uint16_t>(RS_OPTION_EXPOSURE, DS5_EXPOSURE, "DS5 Exposure");
             register_depth_xu<uint16_t>(RS_OPTION_LASER_POWER, DS5_LASER_POWER,
                 "Manual laser power. applicable only in on mode");
+
+            register_pu(RS_SUBDEVICE_DEPTH, RS_OPTION_ENABLE_AUTO_EXPOSURE);
         }
 
 
     private:
         hw_monitor _hw_monitor;
+        std::vector<std::shared_ptr<uvc::uvc_device>> _devices;
 
         template<class T>
         void register_depth_xu(rs_option opt, uint8_t id, std::string desc)

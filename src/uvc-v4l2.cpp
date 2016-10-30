@@ -262,6 +262,7 @@ namespace rsimpl
                         info.pid = pid;
                         info.vid = vid;
                         info.mi = mi;
+                        info.id = dev_name;
                         ss.str("");
                         ss << busnum << "/" << devnum << "/" << parent_devnum;
                         info.unique_id = ss.str();
@@ -691,6 +692,10 @@ namespace rsimpl
                             auto format_str = fourcc_to_string(id);
                             LOG_WARNING("Pixel format " << pixel_format.description << " likely requires patch for fourcc code " << format_str << "!");
                         }
+                    }
+                    else
+                    {
+                        LOG_WARNING("Recognized pixel-format " << pixel_format.description << "!");
                     }
 
                     while (ioctl(_fd, VIDIOC_ENUM_FRAMESIZES, &frame_size) == 0)
