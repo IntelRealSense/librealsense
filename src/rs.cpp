@@ -582,6 +582,16 @@ void rs_flush_queue(rs_frame_queue* queue, rs_error** error) try
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, queue)
 
+void rs_get_device_extrinsics(const rs_device * device, rs_subdevice from, rs_subdevice to, rs_extrinsics * extrin, rs_error ** error) try
+{
+    VALIDATE_NOT_NULL(device);
+    VALIDATE_ENUM(from);
+    VALIDATE_ENUM(to);
+    VALIDATE_NOT_NULL(extrin);
+    *extrin = device->device->get_extrinsics(from, to);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, device, from, to, extrin)
+
 float rs_get_device_depth_scale(const rs_device * device, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(device);

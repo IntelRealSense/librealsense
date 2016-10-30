@@ -13,6 +13,7 @@ EXPORTS
 
     rs_create_device
     rs_delete_device
+    rs_get_device_extrinsics
     rs_get_device_depth_scale
 
     rs_is_subdevice_supported

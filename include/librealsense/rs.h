@@ -248,6 +248,8 @@ rs_device* rs_create_device(const rs_device_list* list, int index, rs_error** er
 */
 void rs_delete_device(rs_device* device);
 
+void rs_get_device_extrinsics(const rs_device * device, rs_subdevice from, rs_subdevice to, rs_extrinsics * extrin, rs_error ** error);
+
 /**
 * retrieve mapping between the units of the depth image and meters
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored

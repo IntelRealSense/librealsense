@@ -90,7 +90,7 @@ int main(int argc, char * argv[]) try
     texture_buffer color_tex;
     const uint16_t * depth;
 
-    const rs::extrinsics extrin = ;// extrinsics depth->color
+    const rs::extrinsics extrin = dev.get_extrinsics(RS_SUBDEVICE_DEPTH, RS_SUBDEVICE_COLOR);
     const rs::intrinsics depth_intrin = ;// depth intrinsics
     const rs::intrinsics color_intrin = ;// color intrinsics
 
