@@ -58,11 +58,11 @@ namespace rsimpl
         }
         catch (const std::runtime_error &e)
         {
-            LOG_ERROR("DS5 Calibraion reading failed: " << e.what() << " proceed with no intrinsic/extrinsic");
+            LOG_ERROR(dev_name <<" Calibraion reading failed: " << e.what() << " proceed with no intrinsic/extrinsic");
         }
         catch (...)
         {
-            LOG_ERROR("DS5 Calibraion reading and parsing failed, proceed with no intrinsic/extrinsic");
+            LOG_ERROR(dev_name <<" Calibraion reading and parsing failed, proceed with no intrinsic/extrinsic");
         }
         info.nominal_depth_scale = 0.001f;
 
