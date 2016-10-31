@@ -9,118 +9,93 @@
 // It can be useful for debugging an embedded system with no display.
 
 #include <librealsense/rs.hpp>
+#include <librealsense/rsutil.hpp>
+#include "example.hpp"
 
 #include <cstdio>
 #include <stdint.h>
 #include <vector>
-#include <map>
 #include <limits>
 #include <iostream>
 
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "third_party/stb_image_write.h"
-
-void normalize_depth_to_rgb(uint8_t rgb_image[], const uint16_t depth_image[], int width, int height)
-{
-    for (int i = 0; i < width * height; ++i)
-    {
-        if (auto d = depth_image[i])
-        {
-            uint8_t v = d * 255 / std::numeric_limits<uint16_t>::max();
-            rgb_image[i*3 + 0] = 255 - v;
-            rgb_image[i*3 + 1] = 255 - v;
-            rgb_image[i*3 + 2] = 255 - v;
-        }
-        else
-        {
-            rgb_image[i*3 + 0] = 0;
-            rgb_image[i*3 + 1] = 0;
-            rgb_image[i*3 + 2] = 0;
-        }
-    }
-}
-
-std::map<rs::stream,int> components_map =
-{
-    { rs::stream::depth,     3  },      // RGB
-    { rs::stream::color,     3  },
-    { rs::stream::infrared , 1  },      // Monochromatic
-    { rs::stream::infrared2, 1  },
-    { rs::stream::fisheye,   1  }
-};
-
-struct stream_record
-{
-    stream_record(void): frame_data(nullptr) {};
-    stream_record(rs::stream value): stream(value), frame_data(nullptr) {};
-    ~stream_record() { frame_data = nullptr;}
-    rs::stream          stream;
-    rs::intrinsics      intrinsics;
-    unsigned char   *   frame_data;
-};
-
+#include <sstream>
 
 int main() try
 {
-    rs::log_to_console(rs::log_severity::warn);
+    rs::log_to_console(RS_LOG_SEVERITY_WARN);
     //rs::log_to_file(rs::log_severity::debug, "librealsense.log");
 
     rs::context ctx;
-    printf("There are %d connected RealSense devices.\n", ctx.get_device_count());
-    if(ctx.get_device_count() == 0) return EXIT_FAILURE;
+    auto list = ctx.query_devices();
+    printf("There are %llu connected RealSense devices.\n", list.size());
+    if(list.size() == 0) return EXIT_FAILURE;
 
-    rs::device * dev = ctx.get_device(0);
-    printf("\nUsing device 0, an %s\n", dev->get_name());
-    printf("    Serial number: %s\n", dev->get_serial());
-    printf("    Firmware version: %s\n", dev->get_firmware_version());
+    auto dev = list[0];
+    printf("\nUsing device 0, an %s\n", dev.get_camera_info(RS_CAMERA_INFO_DEVICE_NAME));
+    printf("    Serial number: %s\n", dev.get_camera_info(RS_CAMERA_INFO_DEVICE_SERIAL_NUMBER));
+    printf("    Firmware version: %s\n", dev.get_camera_info(RS_CAMERA_INFO_CAMERA_FIRMWARE_VERSION));
 
-    std::vector<stream_record> supported_streams;
+    rs::util::config config;
+    config.enable_all(rs::preset::best_quality);
+    auto stream = config.open(dev);
 
-    for (int i=(int)rs::capabilities::depth; i <=(int)rs::capabilities::fish_eye; i++)
-        if (dev->supports((rs::capabilities)i))
-            supported_streams.push_back(stream_record((rs::stream)i));
-
-    for (auto & stream_record : supported_streams)
-        dev->enable_stream(stream_record.stream, rs::preset::best_quality);
-
+    rs::util::syncer sync;
     /* activate video streaming */
-    dev->start();
-
-    /* retrieve actual frame size for each enabled stream*/
-    for (auto & stream_record : supported_streams)
-        stream_record.intrinsics = dev->get_stream_intrinsics(stream_record.stream);
+    stream.start(sync);
 
     /* Capture 30 frames to give autoexposure, etc. a chance to settle */
-    for (int i = 0; i < 30; ++i) dev->wait_for_frames();
+    for (auto i = 0; i < 30; ++i) sync.wait_for_frames();
 
     /* Retrieve data from all the enabled streams */
-    for (auto & stream_record : supported_streams)
-        stream_record.frame_data = const_cast<uint8_t *>((const uint8_t*)dev->get_frame_data(stream_record.stream));
-
-    /* Transform Depth range map into color map */
-    stream_record depth = supported_streams[(int)rs::stream::depth];
-    std::vector<uint8_t> coloredDepth(depth.intrinsics.width * depth.intrinsics.height * components_map[depth.stream]);
-
-    /* Encode depth data into color image */
-    normalize_depth_to_rgb(coloredDepth.data(), (const uint16_t *)depth.frame_data, depth.intrinsics.width, depth.intrinsics.height);
-
-    /* Update captured data */
-    supported_streams[(int)rs::stream::depth].frame_data = coloredDepth.data();
+    std::map<rs_stream, rs::frame> frames_by_stream;
+    for (auto&& frame : sync.wait_for_frames())
+    {
+        auto stream_type = frame.get_stream_type();
+        frames_by_stream[stream_type] = std::move(frame);
+    }
 
     /* Store captured frames into current directory */
-    for (auto & captured : supported_streams)
+    for (auto&& kvp : frames_by_stream)
     {
-        std::stringstream ss;
-        ss << "cpp-headless-output-" << captured.stream << ".png";
+        auto stream_type = kvp.first;
+        auto& frame = kvp.second;
 
-        std::cout << "Writing " << ss.str().data() << ", " << captured.intrinsics.width << " x " << captured.intrinsics.height << " pixels"   << std::endl;
+        std::stringstream ss;
+        ss << "cpp-headless-output-" << stream_type << ".png";
+
+        std::cout << "Writing " << ss.str().data() << ", " << frame.get_width() << " x " << frame.get_height() << " pixels"   << std::endl;
+
+        auto pixels = frame.get_data();
+        auto bpp = frame.get_bytes_per_pixel();
+        std::vector<uint8_t> coloredDepth;
+
+        // Create nice color image from depth data
+        if (stream_type == RS_STREAM_DEPTH)
+        {
+            /* Transform Depth range map into color map */
+            auto& depth = frames_by_stream[RS_STREAM_DEPTH];
+            const auto depth_size = depth.get_width() * depth.get_height() * 3;
+            coloredDepth.resize(depth_size);
+
+            /* Encode depth data into color image */
+            make_depth_histogram(coloredDepth.data(), 
+                static_cast<const uint16_t*>(depth.get_data()), 
+                depth.get_width(), depth.get_height());
+
+            pixels = coloredDepth.data();
+            bpp = 3;
+        }
 
         stbi_write_png(ss.str().data(),
-            captured.intrinsics.width,captured.intrinsics.height,
-            components_map[captured.stream],
-            captured.frame_data,
-            captured.intrinsics.width * components_map[captured.stream] );
+            frame.get_width(), frame.get_height(),
+            bpp,
+            pixels,
+            frame.get_width() * bpp );
     }
+
+    frames_by_stream.clear();
 
     printf("wrote frames to current working directory.\n");
     return EXIT_SUCCESS;

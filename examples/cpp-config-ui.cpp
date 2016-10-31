@@ -223,12 +223,12 @@ public:
 
         try
         {
-            auto uvc_profiles = endpoint->get_stream_profiles();
+            auto uvc_profiles = endpoint->get_stream_modes();
             for (auto&& profile : uvc_profiles)
             {
                 std::stringstream res;
                 res << profile.width << " x " << profile.height;
-                push_back_if_not_exists(res_values, { profile.width, profile.height });
+				push_back_if_not_exists(res_values, std::pair<int, int>(profile.width, profile.height));
                 push_back_if_not_exists(resolutions, res.str());
                 std::stringstream fps;
                 fps << profile.fps;
@@ -239,13 +239,17 @@ public:
                 push_back_if_not_exists(formats[profile.stream], format);
                 push_back_if_not_exists(format_values[profile.stream], profile.format);
 
-                bool any = false;
-                for (auto&& kvp : stream_enabled)
+                auto any_stream_enabled = false;
+                for (auto it : stream_enabled)
                 {
-                    if (stream_enabled[profile.stream]) any = true;
+                    if (it.second)
+                    {
+                        any_stream_enabled = true;
+                        break;
+                    }                       
                 }
-                if (!any) stream_enabled[profile.stream] = true;
-
+                if (!any_stream_enabled) stream_enabled[profile.stream] = true;
+                
                 profiles.push_back(profile);
             }
         }
@@ -289,7 +293,7 @@ public:
 
     void play(const std::vector<rs::stream_profile>& profiles)
     {
-        current_stream = std::make_shared<rs::active_stream>(endpoint->open(profiles));
+        current_stream = std::make_shared<rs::streaming_lock>(endpoint->open(profiles));
         current_stream->start(queues);
         allow_new_frames = true;
     }
@@ -324,7 +328,7 @@ public:
     std::vector<std::pair<int, int>> res_values;
     std::vector<int> fps_values;
     std::map<rs_stream, std::vector<rs_format>> format_values;
-    std::shared_ptr<rs::active_stream> current_stream;
+    std::shared_ptr<rs::streaming_lock> current_stream;
     std::atomic<bool> allow_new_frames;
 
     std::vector<rs::stream_profile> profiles;
@@ -469,8 +473,8 @@ int main(int, char**) try
     ImVec4 clear_color = ImColor(10, 0, 0);
 
     rs::context ctx;
-    //rs::recording_context ctx("config-ui.db");
-    //rs::mock_context ctx("/media/local_admin/MULTIBOOT/hq_colorexp_depth_preset.db");
+    //rs::recording_context ctx("config-ui1.db");
+    //rs::mock_context ctx("hq_colorexp_depth_preset.db");
     auto device_index = 0;
     auto list = ctx.query_devices();
     auto dev = list[device_index];
@@ -717,9 +721,9 @@ int main(int, char**) try
             auto&& view_rect = kvp.second;
             auto stream = kvp.first;
             auto&& stream_size = model.stream_size[stream];
-            auto stream_rect = view_rect.adjust_ratio(model.stream_size[kvp.first]);
+            auto stream_rect = view_rect.adjust_ratio(stream_size);
 
-            model.stream_buffers[stream].show(stream_rect, model.get_stream_alpha(kvp.first));
+            model.stream_buffers[stream].show(stream_rect, model.get_stream_alpha(stream));
 
             flags = ImGuiWindowFlags_NoResize |
                 ImGuiWindowFlags_NoMove |
@@ -729,10 +733,10 @@ int main(int, char**) try
             ImGui::PushStyleColor(ImGuiCol_WindowBg, { 0, 0, 0, 0 });
             ImGui::SetNextWindowPos({ stream_rect.x, stream_rect.y });
             ImGui::SetNextWindowSize({ stream_rect.w, stream_rect.h });
-            label = to_string() << "Stream of " << rs_stream_to_string(kvp.first);
+            label = to_string() << "Stream of " << rs_stream_to_string(stream);
             ImGui::Begin(label.c_str(), nullptr, flags);
 
-            label = to_string() << rs_stream_to_string(kvp.first) << " "
+            label = to_string() << rs_stream_to_string(stream) << " "
                 << stream_size.x << "x" << stream_size.y << ", " 
                 << rs_format_to_string(model.stream_format[stream]);
             ImGui::Text(label.c_str());

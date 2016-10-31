@@ -87,6 +87,7 @@ set(REALSENSE_HPP
 	include/librealsense/rs.h
 	include/librealsense/rscore.hpp
 	include/librealsense/rsutil.h
+	include/librealsense/rsutil.hpp
 
     src/archive.h
 	src/concurrency.h
@@ -138,6 +139,7 @@ if(WIN32)
 		include/librealsense/rs.h
 		include/librealsense/rscore.hpp
 		include/librealsense/rsutil.h
+		include/librealsense/rsutil.hpp
 		CMake/realsense.def
 		)
 		

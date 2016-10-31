@@ -45,7 +45,7 @@ int main()
 
     /* Configure depth to run at VGA resolution at 30 frames per second */
     int width = 640, height = 480;
-    rs_active_stream * stream = rs_open(dev, RS_SUBDEVICE_DEPTH, RS_STREAM_DEPTH, width, height, 30, RS_FORMAT_Z16, &e);
+    rs_streaming_lock * stream = rs_open(dev, RS_SUBDEVICE_DEPTH, RS_STREAM_DEPTH, width, height, 30, RS_FORMAT_Z16, &e);
     check_error();
 
     rs_frame_queue * queue = rs_create_frame_queue(1, &e);
@@ -72,7 +72,7 @@ int main()
     while (1)
     {
         /* This call waits until a new coherent set of frames is available on a device */
-        rs_frame * frame = rs_wait_for_frame(queue, NULL, &e);
+        rs_frame * frame = rs_wait_for_frame(queue, &e);
         check_error();
 
         /* Retrieve depth data, configured as 16-bit depth values */
@@ -103,7 +103,7 @@ int main()
         *out++ = 0;
         printf("\n%s", buffer);
 
-        rs_release_frame(stream, frame);
+        rs_release_frame(frame);
     }
 
     rs_flush_queue(queue, &e);

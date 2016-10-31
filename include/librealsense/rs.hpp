@@ -13,6 +13,11 @@
 #include <functional>
 #include <exception>
 #include <ostream>
+#include <iostream>
+
+namespace rsimpl{
+    struct float3;
+}
 
 namespace rs
 {
@@ -46,17 +51,14 @@ namespace rs
 
     class frame
     {
-        const rs_active_stream * lock;
         rs_frame * frame_ref;
-
         frame(const frame &) = delete;
-
     public:
         friend class frame_queue;
 
-        frame() : lock(nullptr), frame_ref(nullptr) {}
-        frame(const rs_active_stream * lock, rs_frame * frame_ref) : lock(lock), frame_ref(frame_ref) {}
-        frame(frame&& other) : lock(other.lock), frame_ref(other.frame_ref) { other.frame_ref = nullptr; }
+        frame() : frame_ref(nullptr) {}
+        frame(rs_frame * frame_ref) : frame_ref(frame_ref) {}
+        frame(frame&& other) : frame_ref(other.frame_ref) { other.frame_ref = nullptr; }
         frame& operator=(frame other)
         {
             swap(other);
@@ -64,15 +66,14 @@ namespace rs
         }
         void swap(frame& other)
         {
-            std::swap(lock, other.lock);
             std::swap(frame_ref, other.frame_ref);
         }
 
         ~frame()
         {
-            if (lock && frame_ref)
+            if (frame_ref)
             {
-                rs_release_frame(lock, frame_ref);
+                rs_release_frame(frame_ref);
             }
         }
 
@@ -172,6 +173,8 @@ namespace rs
             return r;
         }
 
+        int get_bytes_per_pixel() const { return get_bits_per_pixel() / 8; }
+
         rs_format get_format() const
         {
             rs_error * e = nullptr;
@@ -187,6 +190,16 @@ namespace rs
             error::handle(e);
             return s;
         }
+
+        bool try_clone_ref(frame* result) const
+        {
+            rs_error * e = nullptr;
+            auto s = rs_clone_frame_ref(frame_ref, &e);
+            error::handle(e);
+            if (!s) return false;
+            *result = frame(s);
+            return true;
+        }
     };
 
     template<class T>
@@ -196,15 +209,15 @@ namespace rs
     public:
         explicit frame_callback(T on_frame) : on_frame_function(on_frame) {}
 
-        void on_frame(const rs_active_stream *device, rs_frame * fref) override
+        void on_frame(rs_frame * fref) override
         {
-            on_frame_function(std::move(frame(device, fref)));
+            on_frame_function({ fref });
         }
 
         void release() override { delete this; }
     };
 
-    class active_stream
+    class streaming_lock
     {
     public:
         template<class T>
@@ -224,10 +237,10 @@ namespace rs
 
     private:
         friend subdevice;
-        explicit active_stream(std::shared_ptr<rs_active_stream> lock)
+        explicit streaming_lock(std::shared_ptr<rs_streaming_lock> lock)
             : _lock(std::move(lock)) {}
 
-        std::shared_ptr<rs_active_stream> _lock;
+        std::shared_ptr<rs_streaming_lock> _lock;
     };
 
     struct option_range
@@ -241,10 +254,12 @@ namespace rs
     class subdevice
     {
     public:
-        active_stream open(const stream_profile& profile) const
+        operator rs_subdevice() const { return _index; }
+
+        streaming_lock open(const stream_profile& profile) const
         {
             rs_error* e = nullptr;
-            std::shared_ptr<rs_active_stream> lock(
+            std::shared_ptr<rs_streaming_lock> lock(
                 rs_open(_dev, _index, 
                     profile.stream, 
                     profile.width,
@@ -255,10 +270,10 @@ namespace rs
                 rs_close);
             error::handle(e);
 
-            return active_stream(lock);
+            return streaming_lock(lock);
         }
 
-        active_stream open(const std::vector<stream_profile>& profiles) const
+        streaming_lock open(const std::vector<stream_profile>& profiles) const
         {
             rs_error* e = nullptr;
 
@@ -276,7 +291,7 @@ namespace rs
                 streams.push_back(p.stream);
             }
 
-            std::shared_ptr<rs_active_stream> lock(
+            std::shared_ptr<rs_streaming_lock> lock(
                 rs_open_many(_dev, _index,
                     streams.data(),
                     widths.data(),
@@ -288,7 +303,7 @@ namespace rs
                 rs_close);
             error::handle(e);
 
-            return active_stream(lock);
+            return streaming_lock(lock);
         }
 
         float get_option(rs_option option) const
@@ -340,23 +355,23 @@ namespace rs
             return res;
         }
 
-        std::vector<stream_profile> get_stream_profiles() const
+        std::vector<stream_profile> get_stream_modes() const
         {
             std::vector<stream_profile> results;
 
             rs_error* e = nullptr;
-            std::shared_ptr<rs_stream_profile_list> list(
-                rs_get_supported_profiles(_dev, _index, &e),
-                rs_delete_profiles_list);
+            std::shared_ptr<rs_stream_modes_list> list(
+                rs_get_stream_modes(_dev, _index, &e),
+                rs_delete_modes_list);
             error::handle(e);
 
-            auto size = rs_get_profile_list_size(list.get(), &e);
+            auto size = rs_get_modes_count(list.get(), &e);
             error::handle(e);
             
             for (auto i = 0; i < size; i++)
             {
                 stream_profile profile;
-                rs_get_profile(list.get(), i, 
+                rs_get_stream_mode(list.get(), i, 
                     &profile.stream,
                     &profile.width,
                     &profile.height,
@@ -396,6 +411,8 @@ namespace rs
 
         subdevice& color() { return get_subdevice(RS_SUBDEVICE_COLOR); }
         subdevice& depth() { return get_subdevice(RS_SUBDEVICE_DEPTH); }
+        subdevice& fisheye() { return get_subdevice(RS_SUBDEVICE_FISHEYE); }
+        subdevice& motion() { return get_subdevice(RS_SUBDEVICE_MOTION); }
 
         bool supports(rs_camera_info info) const
         {
@@ -439,6 +456,38 @@ namespace rs
         std::shared_ptr<rs_device> _dev;
         std::vector<std::shared_ptr<subdevice>> _subdevices;
     };
+
+    class subdevice_iterator
+    {
+    public:
+        subdevice_iterator(device dev, rs_subdevice idx)
+            : _idx(idx), _dev(dev) {}
+
+        subdevice_iterator& operator++()
+        {
+            do
+            {
+                _idx = static_cast<rs_subdevice>(static_cast<int>(_idx) + 1);
+            } while (_idx != RS_SUBDEVICE_COUNT && !_dev.supports(_idx));
+            return *this;
+        }
+
+        subdevice& operator*() { return _dev.get_subdevice(_idx); }
+        bool operator==(const subdevice_iterator& other) const 
+        { 
+            return _idx == other._idx; 
+        }
+        bool operator!=(const subdevice_iterator& other) const
+        {
+            return _idx != other._idx;
+        }
+    private:
+        rs_subdevice _idx;
+        device _dev;
+    };
+
+    inline subdevice_iterator begin(device dev) { return{ dev, RS_SUBDEVICE_COLOR }; }
+    inline subdevice_iterator end(device dev) { return{ dev, RS_SUBDEVICE_COUNT }; }
 
     class context
     {
@@ -539,6 +588,13 @@ namespace rs
             error::handle(e);
         }
 
+        frame_queue() : frame_queue(1) {}
+
+        ~frame_queue()
+        {
+            flush();
+        }
+
         void flush() const
         {
             rs_error* e = nullptr;
@@ -548,27 +604,25 @@ namespace rs
 
         void enqueue(frame f) const
         {
-            rs_enqueue_frame(f.lock, f.frame_ref, _queue.get()); // noexcept
+            rs_enqueue_frame(f.frame_ref, _queue.get()); // noexcept
             f.frame_ref = nullptr; // frame has been essentially moved from
         }
 
         frame wait_for_frame() const
         {
             rs_error* e = nullptr;
-            const rs_active_stream* stream = nullptr;
-            auto frame_ref = rs_wait_for_frame(_queue.get(), &stream, &e);
+            auto frame_ref = rs_wait_for_frame(_queue.get(), &e);
             error::handle(e);
-            return{ stream, frame_ref };
+            return{ frame_ref };
         }
 
         bool poll_for_frame(frame* f) const
         {
             rs_error* e = nullptr;
             rs_frame* frame_ref = nullptr;
-            const rs_active_stream* stream = nullptr;
-            auto res = rs_poll_for_frame(_queue.get(), &frame_ref, &stream, &e);
+            auto res = rs_poll_for_frame(_queue.get(), &frame_ref, &e);
             error::handle(e);
-            if (res) *f = { stream, frame_ref };
+            if (res) *f = { frame_ref };
             return res > 0;
         }
 
@@ -598,7 +652,6 @@ namespace rs
 
 inline std::ostream & operator << (std::ostream & o, rs_stream stream) { return o << rs_stream_to_string(stream); }
 inline std::ostream & operator << (std::ostream & o, rs_format format) { return o << rs_format_to_string(format); }
-inline std::ostream & operator << (std::ostream & o, rs_preset preset) { return o << rs_preset_to_string(preset); }
 inline std::ostream & operator << (std::ostream & o, rs_distortion distortion) { return o << rs_distortion_to_string(distortion); }
 inline std::ostream & operator << (std::ostream & o, rs_option option) { return o << rs_option_to_string(option); }
 inline std::ostream & operator << (std::ostream & o, rs_subdevice evt) { return o << rs_subdevice_to_string(evt); }

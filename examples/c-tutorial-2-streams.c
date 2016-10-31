@@ -50,11 +50,11 @@ int main()
     int widths[3] = { 640, 640, 640 };
     int heights[3] = { 480, 480, 480 };
     int fpss[3] = { 30, 30, 30 };
-    rs_format formats[3] = { RS_FORMAT_BGR8, RS_FORMAT_Z16, RS_FORMAT_Y8 };
+    rs_format formats[3] = { RS_FORMAT_RGB8, RS_FORMAT_Z16, RS_FORMAT_Y8 };
 
-    rs_active_stream * color_stream = rs_open_many(dev, RS_SUBDEVICE_COLOR, streams, widths, heights, fpss, formats, 1, &e);
+    rs_streaming_lock * color_stream = rs_open_many(dev, RS_SUBDEVICE_COLOR, streams, widths, heights, fpss, formats, 1, &e);
     check_error();
-    rs_active_stream * depth_stream = rs_open_many(dev, RS_SUBDEVICE_DEPTH, streams+1, widths+1, heights+1, fpss+1, formats+1, 2, &e);
+    rs_streaming_lock * depth_stream = rs_open_many(dev, RS_SUBDEVICE_DEPTH, streams+1, widths+1, heights+1, fpss+1, formats+1, 2, &e);
     check_error();
 
     rs_frame_queue * queue = rs_create_frame_queue(10, &e);
@@ -66,7 +66,6 @@ int main()
     check_error();
 
     rs_frame* frontbuffer[RS_STREAM_COUNT];
-    rs_active_stream* owners[RS_STREAM_COUNT];
     for (int i = 0; i < RS_STREAM_COUNT; i++) frontbuffer[i] = NULL;
 
     /* Open a GLFW window to display our output */
@@ -77,18 +76,21 @@ int main()
     {
         /* Wait for new frame data */
         glfwPollEvents();
-        rs_active_stream * owner;
-        rs_frame* frame = rs_wait_for_frame(queue, &owner, &e);
-        check_error();
-
-        rs_stream stream_type = rs_get_frame_stream_type(frame, &e);
-        check_error();
-        if (frontbuffer[stream_type])
+        rs_frame* frame;
+        
+        while (rs_poll_for_frame(queue, &frame, &e))
         {
-            rs_release_frame(owners[stream_type], frontbuffer[stream_type]);
+            check_error();
+
+            rs_stream stream_type = rs_get_frame_stream_type(frame, &e);
+            check_error();
+
+            if (frontbuffer[stream_type])
+            {
+                rs_release_frame(frontbuffer[stream_type]);
+            }
+            frontbuffer[stream_type] = frame;
         }
-        frontbuffer[stream_type] = frame;
-        owners[stream_type] = owner;
 
         glClear(GL_COLOR_BUFFER_BIT);
         glPixelZoom(1, -1);
@@ -127,7 +129,7 @@ int main()
     {
         if (frontbuffer[i])
         {
-            rs_release_frame(owners[i], frontbuffer[i]);
+            rs_release_frame(frontbuffer[i]);
         }
     }
 

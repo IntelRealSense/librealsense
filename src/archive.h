@@ -50,7 +50,7 @@ struct frame
 private:
     // TODO: check boost::intrusive_ptr or an alternative
     std::atomic<int> ref_count; // the reference count is on how many times this placeholder has been observed (not lifetime, not content)
-    rsimpl::frame_archive * owner; // pointer to the owner to be returned to by last observe
+    std::shared_ptr<rsimpl::frame_archive> owner; // pointer to the owner to be returned to by last observe
     rsimpl::frame_continuation on_release;
 
 public:
@@ -58,15 +58,15 @@ public:
     frame_additional_data additional_data;
 
     explicit frame() : ref_count(0), owner(nullptr), on_release() {}
-    frame(const frame & r) = delete;
-    frame(frame && r)
+    frame(const frame& r) = delete;
+    frame(frame&& r)
         : ref_count(r.ref_count.exchange(0)),
-        owner(r.owner), on_release()
+          owner(r.owner), on_release()
     {
-        *this = std::move(r); // TODO: This is not very safe, refactor later
+        *this = std::move(r);
     }
 
-    frame & operator=(const frame & r) = delete;
+    frame& operator=(const frame& r) = delete;
     frame& operator=(frame&& r)
     {
         data = move(r.data);
@@ -74,6 +74,7 @@ public:
         ref_count = r.ref_count.exchange(0);
         on_release = std::move(r.on_release);
         additional_data = std::move(r.additional_data);
+        r.owner.reset();
         return *this;
     }
 
@@ -106,32 +107,36 @@ public:
 
     void acquire() { ref_count.fetch_add(1); }
     void release();
-    frame* publish();
-    void update_owner(rsimpl::frame_archive * new_owner) { owner = new_owner; }
+    frame* publish(std::shared_ptr<rsimpl::frame_archive> new_owner);
     void attach_continuation(rsimpl::frame_continuation&& continuation) { on_release = std::move(continuation); }
     void disable_continuation() { on_release.reset(); }
+
+    rsimpl::frame_archive* get_owner() const { return owner.get(); }
 };
 
 struct rs_frame // esentially an intrusive shared_ptr<frame>
 {
     rs_frame() : frame_ptr(nullptr) {}
 
-    explicit rs_frame(frame* frame) : frame_ptr(frame)
+    explicit rs_frame(frame* frame)
+        : frame_ptr(frame)
     {
         if (frame) frame->acquire();
     }
 
-    rs_frame(const rs_frame& other) : frame_ptr(other.frame_ptr)
+    rs_frame(const rs_frame& other) 
+        : frame_ptr(other.frame_ptr)
     {
         if (frame_ptr) frame_ptr->acquire();
     }
 
-    rs_frame(rs_frame&& other) : frame_ptr(other.frame_ptr)
+    rs_frame(rs_frame&& other) 
+        : frame_ptr(other.frame_ptr)
     {
         other.frame_ptr = nullptr;
     }
 
-    rs_frame& operator =(rs_frame other)
+    rs_frame& operator=(rs_frame other)
     {
         swap(other);
         return *this;
@@ -147,44 +152,65 @@ struct rs_frame // esentially an intrusive shared_ptr<frame>
         std::swap(frame_ptr, other.frame_ptr);
     }
 
-    void disable_continuation()
+    void disable_continuation() const
     {
         if (frame_ptr) frame_ptr->disable_continuation();
     }
 
-    double get_frame_metadata(rs_frame_metadata frame_metadata) const;
-    bool supports_frame_metadata(rs_frame_metadata frame_metadata) const;
-    const byte* get_frame_data() const;
-    double get_frame_timestamp() const;
-    unsigned long long get_frame_number() const;
-    long long get_frame_system_time() const;
-    rs_timestamp_domain get_frame_timestamp_domain() const;
-    int get_frame_width() const;
-    int get_frame_height() const;
-    int get_frame_framerate() const;
-    int get_frame_stride() const;
-    int get_frame_bpp() const;
-    rs_format get_frame_format() const;
-    rs_stream get_stream_type() const;
-    std::chrono::high_resolution_clock::time_point get_frame_callback_start_time_point() const;
-    void update_frame_callback_start_ts(std::chrono::high_resolution_clock::time_point ts) const;
+    frame* get() const { return frame_ptr; }
+
     void log_callback_start(std::chrono::high_resolution_clock::time_point capture_start_time) const;
 
 private:
-    frame * frame_ptr;
+    frame * frame_ptr = nullptr;
+};
+
+struct callback_invokation
+{
+    std::chrono::high_resolution_clock::time_point started;
+    std::chrono::high_resolution_clock::time_point ended;
+};
+
+typedef rsimpl::small_heap<callback_invokation, 1> callbacks_heap;
+
+struct callback_invokation_holder
+{
+    callback_invokation_holder(const callback_invokation_holder&) = delete;
+    callback_invokation_holder& operator=(const callback_invokation_holder&) = delete;
+
+    callback_invokation_holder(callback_invokation_holder&& other)
+        : invokation(other.invokation), owner(other.owner)
+    {
+        other.invokation = nullptr;
+    }
+
+    callback_invokation_holder(callback_invokation* invokation, callbacks_heap& owner)
+        : invokation(invokation), owner(owner)
+    { }
+
+    ~callback_invokation_holder()
+    {
+        if (invokation) owner.deallocate(invokation);
+    }
+private:
+    callback_invokation* invokation;
+    callbacks_heap& owner;
 };
 
 namespace rsimpl
 {
     // Defines general frames storage model
-    class frame_archive
+    class frame_archive : public std::enable_shared_from_this<frame_archive>
     {        
         std::atomic<uint32_t>* max_frame_queue_size;
         std::atomic<uint32_t> published_frames_count;
         small_heap<frame, RS_USER_QUEUE_SIZE> published_frames;
         small_heap<rs_frame, RS_USER_QUEUE_SIZE> detached_refs;
+        callbacks_heap callback_inflight;
 
         std::vector<frame> freelist; // return frames here
+        std::atomic<bool> recycle_frames;
+        int pending_frames = 0;
         std::recursive_mutex mutex;
         std::chrono::high_resolution_clock::time_point capture_started;
 
@@ -193,20 +219,24 @@ namespace rsimpl
                                std::chrono::high_resolution_clock::time_point capture_started 
                                     = std::chrono::high_resolution_clock::now());
 
-        void unpublish_frame(frame * frame);
-        frame * publish_frame(frame && frame);
-
-        rs_frame * clone_frame(rs_frame * frameset);
-        void release_frame_ref(rs_frame * ref)
+        callback_invokation_holder begin_callback()
         {
-            detached_refs.deallocate(ref);
+            return{ callback_inflight.allocate(), callback_inflight };
         }
+
+        void unpublish_frame(frame* frame);
+        frame* publish_frame(frame&& frame);
+
+        rs_frame* clone_frame(rs_frame* frameset);
+        void release_frame_ref(rs_frame* ref);
 
         // Frame callback thread API
         frame alloc_frame(const size_t size, const frame_additional_data& additional_data, bool requires_memory);
-        rs_frame * track_frame(frame& f);
+        rs_frame* track_frame(frame& f);
         void log_frame_callback_end(frame* frame) const;
 
         void flush();
+
+        ~frame_archive();
     };
 }

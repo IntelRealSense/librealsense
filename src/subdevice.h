@@ -19,19 +19,17 @@ namespace rsimpl
     public:
         streaming_lock();
 
-        void set_owner(const rs_active_stream* owner) { _owner = owner; }
+        void set_owner(const rs_streaming_lock* owner) { _owner = owner; }
 
         void play(frame_callback_ptr callback);
 
         virtual void stop();
 
-        void release_frame(rs_frame* frame);
-
-        rs_frame* alloc_frame(size_t size, frame_additional_data additional_data);
+        rs_frame* alloc_frame(size_t size, frame_additional_data additional_data) const;
 
         void invoke_callback(rs_frame* frame_ref) const;
 
-        void flush();
+        void flush() const;
 
         virtual ~streaming_lock();
 
@@ -41,9 +39,9 @@ namespace rsimpl
         std::atomic<bool> _is_streaming;
         std::mutex _callback_mutex;
         frame_callback_ptr _callback;
-        frame_archive _archive;
-        std::atomic<uint32_t> max_publish_list_size;
-        const rs_active_stream* _owner;
+        std::shared_ptr<frame_archive> _archive;
+        std::atomic<uint32_t> _max_publish_list_size;
+        const rs_streaming_lock* _owner;
     };
 
     class endpoint
@@ -68,12 +66,15 @@ namespace rsimpl
         bool try_get_pf(const uvc::stream_profile& p, native_pixel_format& result) const;
 
         std::vector<request_mapping> resolve_requests(std::vector<stream_request> requests);
-
+ 
     private:
+
+		bool auto_complete_request(std::vector<stream_request>& requests);
+
         std::vector<native_pixel_format> _pixel_formats;
     };
 
-    class uvc_endpoint : public endpoint
+    class uvc_endpoint : public endpoint, public std::enable_shared_from_this<uvc_endpoint>
     {
     public:
         explicit uvc_endpoint(std::shared_ptr<uvc::uvc_device> uvc_device)
@@ -93,7 +94,7 @@ namespace rsimpl
         auto invoke_powered(T action) 
             -> decltype(action(*static_cast<uvc::uvc_device*>(nullptr)))
         {
-            power on(this);
+            power on(shared_from_this());
             return action(*_device);
         }
 
@@ -105,24 +106,26 @@ namespace rsimpl
 
         struct power
         {
-            explicit power(uvc_endpoint* owner)
+            explicit power(std::weak_ptr<uvc_endpoint> owner)
                 : _owner(owner)
             {
-                _owner->acquire_power();
+                auto strong = _owner.lock();
+                if (strong) strong->acquire_power();
             }
 
             ~power()
             {
-                _owner->release_power();
+                auto strong = _owner.lock();
+                if (strong) strong->release_power();
             }
         private:
-            uvc_endpoint* _owner;
+            std::weak_ptr<uvc_endpoint> _owner;
         };
 
         class uvc_streaming_lock : public streaming_lock
         {
         public:
-            explicit uvc_streaming_lock(uvc_endpoint* owner)
+            explicit uvc_streaming_lock(std::weak_ptr<uvc_endpoint> owner)
                 : _owner(owner), _power(owner)
             {
             }
@@ -130,12 +133,11 @@ namespace rsimpl
             void stop() override 
             {
                 streaming_lock::stop();
-                _owner->stop_streaming();
+                auto strong = _owner.lock();
+                if (strong) strong->stop_streaming();
             }
-
-            const uvc_endpoint& get_endpoint() const { return *_owner; }
         private:
-            uvc_endpoint* _owner;
+            std::weak_ptr<uvc_endpoint> _owner;
             power _power;
         };
 
