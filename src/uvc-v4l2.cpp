@@ -549,7 +549,7 @@ namespace rsimpl
                 control_range result;
 
                 __u16 size = 0;
-                __u8 value = 0; // all of the real sense extended controls are one byte,
+                __u16 value = 0; // all of the real sense extended controls are one byte,
                                 // checking return value for UVC_GET_LEN and allocating
                                 // appropriately might be better
                 __u8 * data = (__u8 *)&value;

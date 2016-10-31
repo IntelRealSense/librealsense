@@ -168,7 +168,7 @@ namespace rsimpl
             register_depth_xu<uint16_t>(RS_OPTION_LASER_POWER, DS5_LASER_POWER,
                 "Manual laser power. applicable only in on mode");
 
-            register_pu(RS_SUBDEVICE_DEPTH, RS_OPTION_ENABLE_AUTO_EXPOSURE);
+            //register_pu(RS_SUBDEVICE_DEPTH, RS_OPTION_ENABLE_AUTO_EXPOSURE);
         }
 
 
