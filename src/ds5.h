@@ -48,7 +48,7 @@
 
 namespace rsimpl
 {
-    const uint16_t DS5_PID = 0x0ad1;
+    const uint16_t DS5_PID = 0x0ad2;
 
     class ds5_camera;
 
@@ -147,6 +147,7 @@ namespace rsimpl
             depth_ep->register_pixel_format(pf_z16); // Depth
             depth_ep->register_pixel_format(pf_y8); // Left Only - Luminance
             depth_ep->register_pixel_format(pf_yuyv); // Left Only
+            depth_ep->register_pixel_format(pf_yuyvl); // Color from Depth
             depth_ep->register_pixel_format(pf_y12i); // L+R - Calibration not rectified
 
             auto fw_version = _hw_monitor.get_firmware_version_string(GVD, gvd_fw_version_offset);
@@ -167,8 +168,6 @@ namespace rsimpl
             register_depth_xu<uint16_t>(RS_OPTION_EXPOSURE, DS5_EXPOSURE, "DS5 Exposure");
             register_depth_xu<uint16_t>(RS_OPTION_LASER_POWER, DS5_LASER_POWER,
                 "Manual laser power. applicable only in on mode");
-
-            //register_pu(RS_SUBDEVICE_DEPTH, RS_OPTION_ENABLE_AUTO_EXPOSURE);
         }
 
 
