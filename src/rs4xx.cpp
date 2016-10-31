@@ -29,13 +29,13 @@ namespace rsimpl
 
             switch (options[i])
             {
-            case RS_OPTION_RS4XX_PROJECTOR_MODE:  rs4xx::set_laser_power_mode(get_device(), static_cast<uint8_t>(values[i]));break;
-            case RS_OPTION_R200_LR_EXPOSURE:        rs4xx::set_lr_exposure(get_device(), static_cast<uint16_t>(values[i])); break;
+                case RS_OPTION_R200_LR_EXPOSURE:        rs4xx::set_lr_exposure(get_device(), static_cast<uint16_t>(values[i])); break;
+                case RS_OPTION_HARDWARE_LOGGER_ENABLED: set_fw_logger_option(values[i]); break;
 
-            default:
-                LOG_WARNING("Set " << options[i] << " for " << get_name() << " is not supported");
-                throw std::logic_error("Option unsupported");
-                break;
+                default:
+                    LOG_WARNING("Set " << options[i] << " for " << get_name() << " is not supported");
+                    throw std::logic_error("Option unsupported");
+                    break;
             }
         }
     }
@@ -49,10 +49,11 @@ namespace rsimpl
             if (uvc::is_pu_control(options[i]))
                 throw std::logic_error(to_string() << __FUNCTION__ << " Option " << options[i] << " must be processed by a concrete class");
 
-            uint16_t val = 0;
             switch (options[i])
             {
-                case RS_OPTION_RS4XX_PROJECTOR_MODE:  values[i] = static_cast<double>(rs4xx::get_laser_power_mode(get_device())); break;
+
+                case RS_OPTION_HARDWARE_LOGGER_ENABLED: values[i] = static_cast<double>(get_fw_logger_option()); break;
+                case RS_OPTION_R200_LR_EXPOSURE:        values[i] = static_cast<double>(rs4xx::get_lr_exposure(get_device())); break;
 
                 default:
                     LOG_WARNING("Get " << options[i] << " for " << get_name() << " is not supported");
@@ -60,6 +61,25 @@ namespace rsimpl
                     break;
             }
         }
+    }
+
+    void rs4xx_camera::set_fw_logger_option(double value)
+    {
+        if (value >= 1)
+        {
+            if (!rs_device_base::keep_fw_logger_alive)
+                rs_device_base::start_fw_logger(char(rs4xx_command::GLD), 100, usbMutex);
+        }
+        else
+        {
+            if (rs_device_base::keep_fw_logger_alive)
+                rs_device_base::stop_fw_logger();
+        }
+    }
+
+    unsigned rs4xx_camera::get_fw_logger_option()
+    {
+        return rs_device_base::keep_fw_logger_alive;
     }
 
     void rs4xx_camera::on_before_start(const std::vector<subdevice_mode_selection> & /*selected_modes*/)

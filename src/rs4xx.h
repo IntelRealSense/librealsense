@@ -9,6 +9,12 @@
 
 namespace rsimpl
 {
+    enum class rs4xx_command : uint32_t
+    {
+        GVD         = 0x10,     // Get Version and Date
+        GLD         = 0x0f,     // Get logger data
+    };
+
     // This is a base class for the various SKUs of the RSXX line of devices
     class rs4xx_camera : public rs_device_base
     {
@@ -24,6 +30,11 @@ namespace rsimpl
         rs_stream select_key_stream(const std::vector<rsimpl::subdevice_mode_selection> & selected_modes) override;
         std::vector<std::shared_ptr<rsimpl::frame_timestamp_reader>> create_frame_timestamp_readers() const override;
 
+        void set_fw_logger_option(double value);
+        unsigned get_fw_logger_option();
+
+    private:
+        std::timed_mutex usbMutex;
     };
 }
 

@@ -227,7 +227,7 @@ namespace rs4xx {
                 throw std::runtime_error(str);
             }
             coefficients_table *table = reinterpret_cast<coefficients_table *>(raw_data.data());
-            LOG_DEBUG("DS5 Coefficients table: version [mjr.mnr]: 0x" << std::hex  << std::setfill('0') << std::setw(4) << table->header.version << std::dec
+            LOG_DEBUG("RS4XX Coefficients table: version [mjr.mnr]: 0x" << std::hex  << std::setfill('0') << std::setw(4) << table->header.version << std::dec
                 << ", type " << table->header.table_type          << ", size "    << table->header.table_size
                 << ", CRC: " << std::hex << table->header.crc32);
             // verify the parsed table
@@ -329,21 +329,36 @@ namespace rs4xx {
         for (auto p : options)
         {
             int min{}, max{}, step{}, def{};
-            get_extension_control_range(dev, depth_xu, p.second, &min, &max, &step, &def);
-            auto so = std::find_if(supported_options.begin(), supported_options.end(), [&p](supported_option& val) { return val.option == p.first; });
-            // Update XU options range from HW
-            if (so != supported_options.end())
+            try
             {
-                so->min = min;
-                so->max = max;
-                so->step = step;
-                so->def = def;
+                get_extension_control_range(dev, depth_xu, p.second, &min, &max, &step, &def);
+
+                auto so = std::find_if(supported_options.begin(), supported_options.end(), [&p](supported_option& val) { return val.option == p.first; });
+                // Update XU options range from HW
+                if (so != supported_options.end())
+                {
+                    so->min = min;
+                    so->max = max;
+                    so->step = step;
+                    so->def = def;
+                }
+                else
+                    throw std::logic_error(to_string() << "Required option " << rs_option_to_string(p.first) << "is not registered correctly");
             }
-            else
-                throw std::logic_error(to_string() << "Required option " << rs_option_to_string(p.first) << "is not registered correctly");
+            catch (const std::runtime_error &e)
+            {
+                LOG_ERROR(e.what());
+            }
+            catch (const std::logic_error &e)
+            {
+                LOG_ERROR(e.what());
+            }
+            catch (...)
+            {
+                LOG_ERROR("Retrieving extended control range failed");
+            }
         }
     }
-
 
     uint8_t get_laser_power_mode(const uvc::device & device)
     {

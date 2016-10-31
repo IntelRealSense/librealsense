@@ -167,7 +167,7 @@ namespace rsimpl
         static_device_info info = get_rs400_info(device, dev_name);
 
         // Additional options and controls supported by ASR over PSR skew
-        info.options.push_back({ RS_OPTION_RS4XX_PROJECTOR_MODE, 0, 2, 1, 0 });   // 0 – off, 1 – on, 2- auto
+        info.options.push_back({ RS_OPTION_RS4XX_PROJECTOR_MODE, 0, 2, 1, 0 });     // 0 - off, 1 - on, 2 - auto
         info.options.push_back({ RS_OPTION_RS4XX_PROJECTOR_PWR, 0, 300, 30, 0 });   // Projector power in milli-watt
         info.xu_options.push_back({ RS_OPTION_RS4XX_PROJECTOR_MODE, static_cast<uint8_t>(ds::control::rs4xx_lsr_power_mode) });
         info.xu_options.push_back({ RS_OPTION_RS4XX_PROJECTOR_PWR, static_cast<uint8_t>(ds::control::rs4xx_lsr_power_mw) });
@@ -199,9 +199,6 @@ namespace rsimpl
 
             switch (options[i])
             {
-            case RS_OPTION_R200_LR_EXPOSURE:        rs4xx::set_lr_exposure(get_device(), static_cast<uint16_t>(values[i])); break;
-            case RS_OPTION_HARDWARE_LOGGER_ENABLED: set_fw_logger_option(values[i]); break;
-
             default: base_opt.push_back(options[i]); base_opt_val.push_back(values[i]); break;
             }
         }
@@ -230,9 +227,6 @@ namespace rsimpl
 
             switch (options[i])
             {
-                case RS_OPTION_R200_LR_EXPOSURE:        values[i] = rs4xx::get_lr_exposure(get_device()); break;
-                case RS_OPTION_HARDWARE_LOGGER_ENABLED: values[i] = get_fw_logger_option(); break;
-
                 default: base_opt.push_back(options[i]); base_opt_val.push_back(values[i]); break;
             }
         }
@@ -274,25 +268,6 @@ namespace rsimpl
             rs_device_base::get_option_range(option, min, max, step, def);
     }
 
-    void rs400_camera::set_fw_logger_option(double value)
-    {
-        if (value >= 1)
-        {
-            if (!rs_device_base::keep_fw_logger_alive)
-                rs_device_base::start_fw_logger(char(ds5d_command::GLD), 100, usbMutex);
-        }
-        else
-        {
-            if (rs_device_base::keep_fw_logger_alive)
-                rs_device_base::stop_fw_logger();
-        }
-    }
-
-    unsigned rs400_camera::get_fw_logger_option()
-    {
-        return rs_device_base::keep_fw_logger_alive;
-    }
-
     rs410_camera::rs410_camera(std::shared_ptr<uvc::device> device, const static_device_info & info) : rs400_camera(device, info) { }
 
     void rs410_camera::set_options(const rs_option options[], size_t count, const double values[])
@@ -302,7 +277,6 @@ namespace rsimpl
 
         for (size_t i = 0; i<count; ++i)
         {
-
             switch (options[i])
             {
             case RS_OPTION_RS4XX_PROJECTOR_MODE:    rs4xx::set_laser_power_mode(get_device(), static_cast<uint8_t>(values[i])); break;
