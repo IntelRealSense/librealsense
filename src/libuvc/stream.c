@@ -944,7 +944,9 @@ void _uvc_populate_frame(uvc_stream_handle_t *strmh) {
   
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wmultichar"
+#ifdef __APPLE__
 #pragma GCC diagnostic ignored "-Wfour-char-constants"
+#endif
   switch (frame->fourcc) {
   case '2YUY': /* YUY2 */
     frame->step = frame->width * 2;

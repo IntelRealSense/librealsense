@@ -42,7 +42,7 @@ constexpr std::array<char const, N1+N2-1> concat(char const (&a1)[N1], char cons
 constexpr auto rs_api_version = concat("VERSION: ",RS_API_VERSION_STR);
 
 #else    // manual version tracking is required
-static const std::string rs_api_version("VERSION: 1.9.6");
+static const std::string rs_api_version("VERSION: 1.11.1");
 
 #endif
 

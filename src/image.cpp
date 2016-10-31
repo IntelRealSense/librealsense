@@ -450,7 +450,9 @@ namespace rsimpl
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wmultichar"
+#ifdef __APPLE
 #pragma GCC diagnostic ignored "-Wfour-char-constants"
+#endif
     //////////////////////////
     // Native pixel formats //
     //////////////////////////
