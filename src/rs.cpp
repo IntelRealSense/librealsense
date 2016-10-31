@@ -229,15 +229,15 @@ int rs_is_subdevice_supported(const rs_device* device, rs_subdevice subdevice, r
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, device, subdevice)
 
-rs_stream_profile_list* rs_get_supported_profiles(rs_device* device, rs_subdevice subdevice, rs_error** error) try
+rs_stream_modes_list* rs_get_stream_modes(rs_device* device, rs_subdevice subdevice, rs_error** error) try
 {
     VALIDATE_NOT_NULL(device);
     VALIDATE_ENUM(subdevice);
-    return new rs_stream_profile_list{ device->device->get_endpoint(subdevice).get_principal_requests() };
+    return new rs_stream_modes_list{ device->device->get_endpoint(subdevice).get_principal_requests() };
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, device, subdevice)
 
-void rs_get_profile(const rs_stream_profile_list* list, int index, rs_stream* stream, int* width, int* height, int* fps, rs_format* format, rs_error** error) try
+void rs_get_stream_mode(const rs_stream_modes_list* list, int index, rs_stream* stream, int* width, int* height, int* fps, rs_format* format, rs_error** error) try
 {
     VALIDATE_NOT_NULL(list);
     VALIDATE_RANGE(index, 0, list->list.size() - 1);
@@ -256,21 +256,21 @@ void rs_get_profile(const rs_stream_profile_list* list, int index, rs_stream* st
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, list, index, width, height, fps, format)
 
-int rs_get_profile_list_size(const rs_stream_profile_list* list, rs_error** error) try
+int rs_get_modes_count(const rs_stream_modes_list* list, rs_error** error) try
 {
     VALIDATE_NOT_NULL(list);
     return static_cast<int>(list->list.size());
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, list)
 
-void rs_delete_profiles_list(rs_stream_profile_list* list) try
+void rs_delete_modes_list(rs_stream_modes_list* list) try
 {
     VALIDATE_NOT_NULL(list);
     delete list;
 }
 NOEXCEPT_RETURN(, list)
 
-rs_active_stream* rs_open(rs_device* device, rs_subdevice subdevice, 
+rs_streaming_lock* rs_open(rs_device* device, rs_subdevice subdevice, 
     rs_stream stream, int width, int height, int fps, rs_format format, rs_error** error) try
 {
     VALIDATE_NOT_NULL(device);
@@ -281,13 +281,13 @@ rs_active_stream* rs_open(rs_device* device, rs_subdevice subdevice,
     std::vector<rsimpl::stream_request> request;
     request.push_back({ stream, static_cast<uint32_t>(width),
             static_cast<uint32_t>(height), static_cast<uint32_t>(fps), format });
-    auto result = new rs_active_stream{ device->device->get_endpoint(subdevice).configure(request) };
+    auto result = new rs_streaming_lock{ device->device->get_endpoint(subdevice).configure(request) };
     result->lock->set_owner(result);
     return result;
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, device, subdevice, stream, width, height, fps, format)
 
-rs_active_stream* rs_open_many(rs_device* device, rs_subdevice subdevice,
+rs_streaming_lock* rs_open_many(rs_device* device, rs_subdevice subdevice,
     const rs_stream* stream, const int* width, const int* height, const int* fps, 
     const rs_format* format, int count, rs_error** error) try
 {
@@ -305,13 +305,13 @@ rs_active_stream* rs_open_many(rs_device* device, rs_subdevice subdevice,
         request.push_back({ stream[i], static_cast<uint32_t>(width[i]), 
                             static_cast<uint32_t>(height[i]), static_cast<uint32_t>(fps[i]), format[i] });
     }
-    auto result = new rs_active_stream{ device->device->get_endpoint(subdevice).configure(request) };
+    auto result = new rs_streaming_lock{ device->device->get_endpoint(subdevice).configure(request) };
     result->lock->set_owner(result);
     return result;
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, device, subdevice, stream, width, height, fps, format)
 
-void rs_close(rs_active_stream* lock) try
+void rs_close(rs_streaming_lock* lock) try
 {
     VALIDATE_NOT_NULL(lock);
     delete lock;
@@ -380,7 +380,7 @@ int rs_supports_camera_info(const rs_device* device, rs_camera_info info, rs_err
 HANDLE_EXCEPTIONS_AND_RETURN(false, device, info)
 
 
-void rs_start(rs_active_stream* lock, rs_frame_callback_ptr on_frame, void * user, rs_error ** error) try
+void rs_start(rs_streaming_lock* lock, rs_frame_callback_ptr on_frame, void * user, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(lock);
     VALIDATE_NOT_NULL(on_frame);
@@ -391,7 +391,7 @@ void rs_start(rs_active_stream* lock, rs_frame_callback_ptr on_frame, void * use
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, lock, on_frame, user)
 
-void rs_start_cpp(rs_active_stream* lock, rs_frame_callback * callback, rs_error ** error) try
+void rs_start_cpp(rs_streaming_lock* lock, rs_frame_callback * callback, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(lock);
     VALIDATE_NOT_NULL(callback);
@@ -399,7 +399,7 @@ void rs_start_cpp(rs_active_stream* lock, rs_frame_callback * callback, rs_error
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, lock, callback)
 
-void rs_stop(rs_active_stream* lock, rs_error ** error) try
+void rs_stop(rs_streaming_lock* lock, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(lock);
     lock->lock->stop();

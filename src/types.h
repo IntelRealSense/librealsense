@@ -418,7 +418,7 @@ namespace rsimpl
         void * user;
     public:
         frame_callback() : frame_callback(nullptr, nullptr, nullptr) {}
-        frame_callback(rs_active_stream * lock, frame_callback_function_ptr on_frame, void * user) : fptr(on_frame), user(user) {}
+        frame_callback(rs_streaming_lock * lock, frame_callback_function_ptr on_frame, void * user) : fptr(on_frame), user(user) {}
 
         operator bool() const { return fptr != nullptr; }
         void on_frame (rs_frame * frame) override { 

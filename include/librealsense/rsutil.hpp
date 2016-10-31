@@ -26,7 +26,7 @@ namespace rs
         class multistream
         {
         public:
-            explicit multistream(std::vector<active_stream> streams)
+            explicit multistream(std::vector<streaming_lock> streams)
                 : streams(std::move(streams)) {}
 
             template<class T>
@@ -41,7 +41,7 @@ namespace rs
             }
 
         private:
-            std::vector<active_stream> streams;
+            std::vector<streaming_lock> streams;
         };
 
         class config
@@ -82,12 +82,12 @@ namespace rs
             multistream open(device dev)
             {
                 std::vector<rs_stream> satisfied_streams;
-                std::vector<active_stream> results;
+                std::vector<streaming_lock> results;
 
                 for (auto&& sub : dev)
                 {
                     std::vector<stream_profile> targets;
-                    auto profiles = sub.get_stream_profiles();
+                    auto profiles = sub.get_stream_modes();
 
                     for (auto&& kvp : _requests)
                     {

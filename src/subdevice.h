@@ -19,7 +19,7 @@ namespace rsimpl
     public:
         streaming_lock();
 
-        void set_owner(const rs_active_stream* owner) { _owner = owner; }
+        void set_owner(const rs_streaming_lock* owner) { _owner = owner; }
 
         void play(frame_callback_ptr callback);
 
@@ -41,7 +41,7 @@ namespace rsimpl
         frame_callback_ptr _callback;
         std::shared_ptr<frame_archive> _archive;
         std::atomic<uint32_t> _max_publish_list_size;
-        const rs_active_stream* _owner;
+        const rs_streaming_lock* _owner;
     };
 
     class endpoint

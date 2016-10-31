@@ -223,7 +223,7 @@ public:
 
         try
         {
-            auto uvc_profiles = endpoint->get_stream_profiles();
+            auto uvc_profiles = endpoint->get_stream_modes();
             for (auto&& profile : uvc_profiles)
             {
                 std::stringstream res;
@@ -293,7 +293,7 @@ public:
 
     void play(const std::vector<rs::stream_profile>& profiles)
     {
-        current_stream = std::make_shared<rs::active_stream>(endpoint->open(profiles));
+        current_stream = std::make_shared<rs::streaming_lock>(endpoint->open(profiles));
         current_stream->start(queues);
         allow_new_frames = true;
     }
@@ -328,7 +328,7 @@ public:
     std::vector<std::pair<int, int>> res_values;
     std::vector<int> fps_values;
     std::map<rs_stream, std::vector<rs_format>> format_values;
-    std::shared_ptr<rs::active_stream> current_stream;
+    std::shared_ptr<rs::streaming_lock> current_stream;
     std::atomic<bool> allow_new_frames;
 
     std::vector<rs::stream_profile> profiles;

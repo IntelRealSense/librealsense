@@ -189,8 +189,8 @@ typedef struct rs_context rs_context;
 typedef struct rs_device_list rs_device_list;
 typedef struct rs_device rs_device;
 typedef struct rs_error rs_error;
-typedef struct rs_active_stream rs_active_stream;
-typedef struct rs_stream_profile_list rs_stream_profile_list;
+typedef struct rs_active_stream rs_streaming_lock;
+typedef struct rs_stream_profile_list rs_stream_modes_list;
 typedef struct rs_frame rs_frame;
 typedef struct rs_frame_queue rs_frame_queue;
 
@@ -271,7 +271,7 @@ int rs_is_subdevice_supported(const rs_device* device, rs_subdevice subdevice, r
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return            list of stream profiles that given subdevice can provide, should be released by rs_delete_profiles_list
 */
-rs_stream_profile_list* rs_get_supported_profiles(rs_device* device, rs_subdevice subdevice, rs_error** error);
+rs_stream_modes_list* rs_get_stream_modes(rs_device* device, rs_subdevice subdevice, rs_error** error);
 
 /**
 * determine the properties of a specific streaming mode
@@ -284,7 +284,7 @@ rs_stream_profile_list* rs_get_supported_profiles(rs_device* device, rs_subdevic
 * \param[out] format     the pixel format of a frame image
 * \param[out] error      if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 */
-void rs_get_profile(const rs_stream_profile_list* list, int index, rs_stream* stream, int* width, int* height, int* fps, rs_format* format, rs_error** error);
+void rs_get_stream_mode(const rs_stream_modes_list* list, int index, rs_stream* stream, int* width, int* height, int* fps, rs_format* format, rs_error** error);
 
 /**
 * get the number of supported stream profiles
@@ -292,13 +292,13 @@ void rs_get_profile(const rs_stream_profile_list* list, int index, rs_stream* st
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return number of supported subdevice profiles
 */
-int rs_get_profile_list_size(const rs_stream_profile_list* list, rs_error** error);
+int rs_get_modes_count(const rs_stream_modes_list* list, rs_error** error);
 
 /**
 * delete stream profiles list
 * \param[in] list        the list of supported profiles returned by rs_get_supported_profiles
 */
-void rs_delete_profiles_list(rs_stream_profile_list* list);
+void rs_delete_modes_list(rs_stream_modes_list* list);
 
 /**
 * open subdevice for exclusive access, by commiting to a configuration
@@ -312,7 +312,7 @@ void rs_delete_profiles_list(rs_stream_profile_list* list);
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return exclusive lock to be used for streaming, should be released by rs_close
 */
-rs_active_stream* rs_open(rs_device* device, rs_subdevice subdevice, rs_stream stream, int width, int height, int fps, rs_format format, rs_error** error);
+rs_streaming_lock* rs_open(rs_device* device, rs_subdevice subdevice, rs_stream stream, int width, int height, int fps, rs_format format, rs_error** error);
 
 /**
 * open subdevice for exclusive access, by commiting to composite configuration, specifying one or more stream profiles
@@ -328,14 +328,14 @@ rs_active_stream* rs_open(rs_device* device, rs_subdevice subdevice, rs_stream s
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return exclusive lock to be used for streaming, should be released by rs_close
 */
-rs_active_stream* rs_open_many(rs_device* device, rs_subdevice subdevice, 
+rs_streaming_lock* rs_open_many(rs_device* device, rs_subdevice subdevice, 
     const rs_stream* stream, const int* width, const int* height, const int* fps, const rs_format* format, int count, rs_error** error);
 
 /**
 * release streaming lock and stop any streaming from specified subdevice
 * \param[in] lock the streaming object returned from rs_open or rs_open_many
 */
-void rs_close(rs_active_stream* lock);
+void rs_close(rs_streaming_lock* lock);
 
 /**
 * start streaming from specified configured device
@@ -344,7 +344,7 @@ void rs_close(rs_active_stream* lock);
 * \param[in] user auxilary data the user wishes to receive together with every frame callback
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 */
-void rs_start(rs_active_stream* lock, rs_frame_callback_ptr on_frame, void* user, rs_error** error);
+void rs_start(rs_streaming_lock* lock, rs_frame_callback_ptr on_frame, void* user, rs_error** error);
 
 /**
 * start streaming from specified configured device
@@ -352,14 +352,14 @@ void rs_start(rs_active_stream* lock, rs_frame_callback_ptr on_frame, void* user
 * \param[in] callback callback object created from c++ application. ownership over the callback object is moved into the relevant streaming lock
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 */
-void rs_start_cpp(rs_active_stream* lock, rs_frame_callback* callback, rs_error** error);
+void rs_start_cpp(rs_streaming_lock* lock, rs_frame_callback* callback, rs_error** error);
 
 /**
 * stops streaming from specified configured device
 * \param[in] lock the streaming object returned from rs_open or rs_open_many
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 */
-void rs_stop(rs_active_stream* lock, rs_error** error);
+void rs_stop(rs_streaming_lock* lock, rs_error** error);
 
 /**
 * retrive metadata from frame handle

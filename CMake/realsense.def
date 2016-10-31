@@ -17,10 +17,10 @@ EXPORTS
 
     rs_is_subdevice_supported
 
-    rs_get_supported_profiles
-    rs_get_profile
-    rs_get_profile_list_size
-    rs_delete_profiles_list
+    rs_get_stream_modes
+    rs_get_stream_mode
+    rs_get_modes_count
+    rs_delete_modes_list
 
     rs_open
     rs_open_many

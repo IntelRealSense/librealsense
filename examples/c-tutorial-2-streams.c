@@ -52,9 +52,9 @@ int main()
     int fpss[3] = { 30, 30, 30 };
     rs_format formats[3] = { RS_FORMAT_RGB8, RS_FORMAT_Z16, RS_FORMAT_Y8 };
 
-    rs_active_stream * color_stream = rs_open_many(dev, RS_SUBDEVICE_COLOR, streams, widths, heights, fpss, formats, 1, &e);
+    rs_streaming_lock * color_stream = rs_open_many(dev, RS_SUBDEVICE_COLOR, streams, widths, heights, fpss, formats, 1, &e);
     check_error();
-    rs_active_stream * depth_stream = rs_open_many(dev, RS_SUBDEVICE_DEPTH, streams+1, widths+1, heights+1, fpss+1, formats+1, 2, &e);
+    rs_streaming_lock * depth_stream = rs_open_many(dev, RS_SUBDEVICE_DEPTH, streams+1, widths+1, heights+1, fpss+1, formats+1, 2, &e);
     check_error();
 
     rs_frame_queue * queue = rs_create_frame_queue(10, &e);

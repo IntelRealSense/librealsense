@@ -15,6 +15,10 @@
 #include <ostream>
 #include <iostream>
 
+namespace rsimpl{
+    struct float3;
+}
+
 namespace rs
 {
     class error : public std::runtime_error
@@ -213,7 +217,7 @@ namespace rs
         void release() override { delete this; }
     };
 
-    class active_stream
+    class streaming_lock
     {
     public:
         template<class T>
@@ -233,10 +237,10 @@ namespace rs
 
     private:
         friend subdevice;
-        explicit active_stream(std::shared_ptr<rs_active_stream> lock)
+        explicit streaming_lock(std::shared_ptr<rs_streaming_lock> lock)
             : _lock(std::move(lock)) {}
 
-        std::shared_ptr<rs_active_stream> _lock;
+        std::shared_ptr<rs_streaming_lock> _lock;
     };
 
     struct option_range
@@ -252,10 +256,10 @@ namespace rs
     public:
         operator rs_subdevice() const { return _index; }
 
-        active_stream open(const stream_profile& profile) const
+        streaming_lock open(const stream_profile& profile) const
         {
             rs_error* e = nullptr;
-            std::shared_ptr<rs_active_stream> lock(
+            std::shared_ptr<rs_streaming_lock> lock(
                 rs_open(_dev, _index, 
                     profile.stream, 
                     profile.width,
@@ -266,10 +270,10 @@ namespace rs
                 rs_close);
             error::handle(e);
 
-            return active_stream(lock);
+            return streaming_lock(lock);
         }
 
-        active_stream open(const std::vector<stream_profile>& profiles) const
+        streaming_lock open(const std::vector<stream_profile>& profiles) const
         {
             rs_error* e = nullptr;
 
@@ -287,7 +291,7 @@ namespace rs
                 streams.push_back(p.stream);
             }
 
-            std::shared_ptr<rs_active_stream> lock(
+            std::shared_ptr<rs_streaming_lock> lock(
                 rs_open_many(_dev, _index,
                     streams.data(),
                     widths.data(),
@@ -299,7 +303,7 @@ namespace rs
                 rs_close);
             error::handle(e);
 
-            return active_stream(lock);
+            return streaming_lock(lock);
         }
 
         float get_option(rs_option option) const
@@ -351,23 +355,23 @@ namespace rs
             return res;
         }
 
-        std::vector<stream_profile> get_stream_profiles() const
+        std::vector<stream_profile> get_stream_modes() const
         {
             std::vector<stream_profile> results;
 
             rs_error* e = nullptr;
-            std::shared_ptr<rs_stream_profile_list> list(
-                rs_get_supported_profiles(_dev, _index, &e),
-                rs_delete_profiles_list);
+            std::shared_ptr<rs_stream_modes_list> list(
+                rs_get_stream_modes(_dev, _index, &e),
+                rs_delete_modes_list);
             error::handle(e);
 
-            auto size = rs_get_profile_list_size(list.get(), &e);
+            auto size = rs_get_modes_count(list.get(), &e);
             error::handle(e);
             
             for (auto i = 0; i < size; i++)
             {
                 stream_profile profile;
-                rs_get_profile(list.get(), i, 
+                rs_get_stream_mode(list.get(), i, 
                     &profile.stream,
                     &profile.width,
                     &profile.height,
@@ -407,6 +411,8 @@ namespace rs
 
         subdevice& color() { return get_subdevice(RS_SUBDEVICE_COLOR); }
         subdevice& depth() { return get_subdevice(RS_SUBDEVICE_DEPTH); }
+        subdevice& fisheye() { return get_subdevice(RS_SUBDEVICE_FISHEYE); }
+        subdevice& motion() { return get_subdevice(RS_SUBDEVICE_MOTION); }
 
         bool supports(rs_camera_info info) const
         {
