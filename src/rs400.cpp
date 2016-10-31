@@ -42,9 +42,9 @@ namespace rsimpl
         {{ 424, 240}, {15,30}},
     };
 
-    static static_device_info get_ds5d_info(std::shared_ptr<uvc::device> device, std::string dev_name)
+    static static_device_info get_rs400_info(std::shared_ptr<uvc::device> device, std::string dev_name)
     {
-        static_device_info info;
+        static_device_info info{};
 
         // Populate miscellaneous information about the device
         info.name = dev_name;
@@ -134,15 +134,14 @@ namespace rsimpl
             info.presets[RS_STREAM_INFRARED2][i] = {true, 1280, 720, RS_FORMAT_Y16, 30};
         }
 
-        info.options.push_back({ RS_OPTION_RS4XX_PROJECTOR_MODE, 0, 2, 1, 0 });   // 0 – off, 1 – on, 2- auto
         info.options.push_back({ RS_OPTION_COLOR_GAIN });
         info.options.push_back({ RS_OPTION_R200_LR_EXPOSURE, 40, 1660, 1, 100 });
         info.options.push_back({ RS_OPTION_HARDWARE_LOGGER_ENABLED, 0, 1, 1, 0 });
+        info.xu_options.push_back({RS_OPTION_R200_LR_EXPOSURE, static_cast<uint8_t>(ds::control::rs4xx_lr_exposure)});
 
         rsimpl::pose depth_to_infrared2 = { transpose((const float3x3 &)calib.depth_extrinsic.rotation), (const float3 &)calib.depth_extrinsic.translation * 0.001f }; // convert mm to m
         info.stream_poses[RS_STREAM_DEPTH] = info.stream_poses[RS_STREAM_INFRARED] = { { { 1,0,0 },{ 0,1,0 },{ 0,0,1 } },{ 0,0,0 } };
         info.stream_poses[RS_STREAM_INFRARED2] = depth_to_infrared2;
-
 
         // Set up interstream rules for left/right/z images
         for(auto ir : {RS_STREAM_INFRARED, RS_STREAM_INFRARED2})
@@ -156,6 +155,25 @@ namespace rsimpl
         info.interstream_rules.push_back({ RS_STREAM_INFRARED, RS_STREAM_INFRARED2, &stream_request::width, 0, 0, RS_STREAM_COUNT, false, false, false });
         info.interstream_rules.push_back({ RS_STREAM_INFRARED, RS_STREAM_INFRARED2, &stream_request::height, 0, 0, RS_STREAM_COUNT, false, false, false });
         //info.interstream_rules.push_back({ RS_STREAM_INFRARED, RS_STREAM_INFRARED2, nullptr, 0, 0, RS_STREAM_COUNT, false, false, true });
+
+        // Update hard-coded XU parameters with info retrieved from device
+        rs4xx::update_supported_options(*device, info.xu_options, info.options);
+
+        return info;
+    }
+
+    static static_device_info get_rs410_info(std::shared_ptr<uvc::device> device, std::string dev_name)
+    {
+        static_device_info info = get_rs400_info(device, dev_name);
+
+        // Additional options and controls supported by ASR over PSR skew
+        info.options.push_back({ RS_OPTION_RS4XX_PROJECTOR_MODE, 0, 2, 1, 0 });   // 0 – off, 1 – on, 2- auto
+        info.options.push_back({ RS_OPTION_RS4XX_PROJECTOR_PWR, 0, 300, 30, 0 });   // Projector power in milli-watt
+        info.xu_options.push_back({ RS_OPTION_RS4XX_PROJECTOR_MODE, static_cast<uint8_t>(ds::control::rs4xx_lsr_power_mode) });
+        info.xu_options.push_back({ RS_OPTION_RS4XX_PROJECTOR_PWR, static_cast<uint8_t>(ds::control::rs4xx_lsr_power_mw) });
+
+        // Update hard-coded XU parameters with info retrieved from device
+        rs4xx::update_supported_options(*device, info.xu_options, info.options);
 
         return info;
     }
@@ -181,7 +199,6 @@ namespace rsimpl
 
             switch (options[i])
             {
-            case RS_OPTION_RS4XX_PROJECTOR_MODE:    rs4xx::set_laser_power_mode(get_device(), static_cast<uint8_t>(values[i])); break;
             case RS_OPTION_R200_LR_EXPOSURE:        rs4xx::set_lr_exposure(get_device(), static_cast<uint16_t>(values[i])); break;
             case RS_OPTION_HARDWARE_LOGGER_ENABLED: set_fw_logger_option(values[i]); break;
 
@@ -257,24 +274,6 @@ namespace rsimpl
             rs_device_base::get_option_range(option, min, max, step, def);
     }
 
-    std::shared_ptr<rs_device> make_rs410_device(std::shared_ptr<uvc::device> device)
-    {
-        LOG_INFO("Connecting to " << camera_official_name.at(cameras::rs410));
-
-        rs4xx::claim_ds5_monitor_interface(*device);
-
-        return std::make_shared<rs400_camera>(device, get_ds5d_info(device, camera_official_name.at(cameras::rs410)));
-    }
-
-    std::shared_ptr<rs_device> make_rs400_device(std::shared_ptr<uvc::device> device)
-    {
-        LOG_INFO("Connecting to " << camera_official_name.at(cameras::rs400));
-
-        rs4xx::claim_ds5_monitor_interface(*device);
-
-        return std::make_shared<rs400_camera>(device, get_ds5d_info(device, camera_official_name.at(cameras::rs400)));
-    }
-
     void rs400_camera::set_fw_logger_option(double value)
     {
         if (value >= 1)
@@ -294,4 +293,75 @@ namespace rsimpl
         return rs_device_base::keep_fw_logger_alive;
     }
 
+    rs410_camera::rs410_camera(std::shared_ptr<uvc::device> device, const static_device_info & info) : rs400_camera(device, info) { }
+
+    void rs410_camera::set_options(const rs_option options[], size_t count, const double values[])
+    {
+        std::vector<rs_option>  base_opt;
+        std::vector<double>     base_opt_val;
+
+        for (size_t i = 0; i<count; ++i)
+        {
+
+            switch (options[i])
+            {
+            case RS_OPTION_RS4XX_PROJECTOR_MODE:    rs4xx::set_laser_power_mode(get_device(), static_cast<uint8_t>(values[i])); break;
+            case RS_OPTION_RS4XX_PROJECTOR_PWR:     rs4xx::set_laser_power_mw(get_device(), static_cast<uint16_t>(values[i])); break;
+
+            default: base_opt.push_back(options[i]); base_opt_val.push_back(values[i]); break;
+            }
+        }
+
+        //Handle common options
+        if (base_opt.size())
+            rs400_camera::set_options(base_opt.data(), base_opt.size(), base_opt_val.data());
+    }
+
+    void rs410_camera::get_options(const rs_option options[], size_t count, double values[])
+    {
+        std::vector<rs_option>  base_opt;
+        std::vector<double>     base_opt_val;
+
+        for (size_t i = 0; i<count; ++i)
+        {
+            LOG_INFO("Reading option " << options[i]);
+
+            switch (options[i])
+            {
+            case RS_OPTION_RS4XX_PROJECTOR_MODE:    values[i] = rs4xx::get_laser_power_mode(get_device()); break;
+            case RS_OPTION_RS4XX_PROJECTOR_PWR:     values[i] = rs4xx::get_laser_power_mw(get_device()); break;
+
+            default: base_opt.push_back(options[i]); base_opt_val.push_back(values[i]); break;
+            }
+        }
+
+        // Retrieve common options
+        if (base_opt.size())
+        {
+            base_opt_val.resize(base_opt.size());
+            rs400_camera::get_options(base_opt.data(), base_opt.size(), base_opt_val.data());
+        }
+
+        // Merge the local data with values obtained by base class
+        for (size_t i = 0; i< base_opt.size(); i++)
+            values[i] = base_opt_val[i];
+    }
+
+    std::shared_ptr<rs_device> make_rs410_device(std::shared_ptr<uvc::device> device)
+    {
+        LOG_INFO("Connecting to " << camera_official_name.at(cameras::rs410));
+
+        rs4xx::claim_ds5_monitor_interface(*device);
+
+        return std::make_shared<rs410_camera>(device, get_rs410_info(device, camera_official_name.at(cameras::rs410)));
+    }
+
+    std::shared_ptr<rs_device> make_rs400_device(std::shared_ptr<uvc::device> device)
+    {
+        LOG_INFO("Connecting to " << camera_official_name.at(cameras::rs400));
+
+        rs4xx::claim_ds5_monitor_interface(*device);
+
+        return std::make_shared<rs400_camera>(device, get_rs400_info(device, camera_official_name.at(cameras::rs400)));
+    }
 } // namespace rsimpl::ds5d

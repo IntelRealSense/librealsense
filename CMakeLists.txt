@@ -54,7 +54,9 @@ set(REALSENSE_CPP
     src/archive.cpp
     src/context.cpp
     src/device.cpp
-    src/ds-device.cpp
+	src/ds-device.cpp
+    src/ds5c.cpp
+	src/ds5t.cpp
     src/ds-private.cpp
     src/f200.cpp
     src/hw-monitor.cpp
@@ -65,6 +67,9 @@ set(REALSENSE_CPP
     src/motion-module.cpp
     src/r200.cpp
     src/rs.cpp
+	src/rs4xx.cpp
+	src/rs4xx-private.cpp
+	src/rs400.cpp
     src/sr300.cpp
     src/stream.cpp
     src/sync.cpp
@@ -83,6 +88,8 @@ set(REALSENSE_HPP
     src/context.h
     src/device.h
     src/ds-device.h
+	src/ds5c.h
+	src/ds5t.h
     src/ds-private.h
     src/f200.h
     src/hw-monitor.h
@@ -91,6 +98,9 @@ set(REALSENSE_HPP
     src/ivcam-device.h
     src/motion-module.h
     src/r200.h
+	src/rs4xx.h
+	src/rs4xx-private.h
+	src/rs400.h
     src/sr300.h
     src/stream.h
     src/sync.h
@@ -133,6 +143,7 @@ if(UNIX)
     pkg_search_module(LIBUSB1 REQUIRED libusb-1.0)
     if(LIBUSB1_FOUND)
       include_directories(SYSTEM ${LIBUSB1_INCLUDE_DIRS})
+      link_directories(${LIBUSB1_LIBRARY_DIRS})
     else()
       message( FATAL_ERROR "Failed to find libusb-1.0" )
     endif(LIBUSB1_FOUND)
@@ -154,6 +165,9 @@ if(UNIX)
     endif(${MACHINE} MATCHES "arm-linux-gnueabihf")
 endif()
 
+# Set CMAKE_INSTALL_* if not defined
+include(GNUInstallDirs)
+
 option(BUILD_SHARED_LIBS "Build shared library" ON)
 if(BUILD_SHARED_LIBS)
     add_library(realsense SHARED ${REALSENSE_CPP} ${REALSENSE_HPP} ${REALSENSE_DEF})
@@ -165,11 +179,11 @@ endif()
 target_include_directories(realsense PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include/ ${LIBUSB1_INCLUDE_DIRS})
 
 install( TARGETS realsense
-    RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/bin
-    LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
-    ARCHIVE DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
 )
-install(DIRECTORY ${PROJECT_SOURCE_DIR}/include/librealsense DESTINATION ${CMAKE_INSTALL_PREFIX}/include)
+install(DIRECTORY ${PROJECT_SOURCE_DIR}/include/librealsense DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 
 option(BUILD_EXAMPLES "Build realsense examples." OFF)
 if(BUILD_EXAMPLES)

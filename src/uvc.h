@@ -14,7 +14,12 @@
 const uint16_t VID_INTEL_CAMERA     = 0x8086;
 const uint16_t ZR300_CX3_PID        = 0x0acb;
 const uint16_t ZR300_FISHEYE_PID    = 0x0ad0;
-const uint16_t DS5_PSR_PID          = 0x0ad1;
+const uint16_t RS400P_PID           = 0x0ad1;
+const uint16_t RS410A_PID           = 0x0ad2;
+const uint16_t RS420R_PID           = 0x0ad3;
+const uint16_t RS430C_PID           = 0x0ad4;
+const uint16_t RS450T_PID           = 0x0ad4;
+static const std::vector<std::uint16_t> rs4xx_skews_pid = { RS400P_PID, RS410A_PID, RS420R_PID, RS430C_PID, RS450T_PID };
 
 namespace rsimpl
 {

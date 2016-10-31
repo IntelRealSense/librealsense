@@ -277,6 +277,7 @@ namespace rsimpl
         std::vector<interstream_rule> interstream_rules;                    // Rules which constrain the set of available modes
         stream_request presets[RS_STREAM_NATIVE_COUNT][RS_PRESET_COUNT];    // Presets available for each stream
         std::vector<supported_option> options;
+        std::vector<std::pair<rs_option, uint8_t> > xu_options;             // Mapping between XU and the supported option
         pose stream_poses[RS_STREAM_NATIVE_COUNT];                          // Static pose of each camera on the device
         int num_libuvc_transfer_buffers;                                    // Number of transfer buffers to use in LibUVC backend
         std::string firmware_version;                                       // Firmware version string

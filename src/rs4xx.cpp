@@ -49,10 +49,10 @@ namespace rsimpl
             if (uvc::is_pu_control(options[i]))
                 throw std::logic_error(to_string() << __FUNCTION__ << " Option " << options[i] << " must be processed by a concrete class");
 
-            uint8_t val = 0;
+            uint16_t val = 0;
             switch (options[i])
             {
-                case RS_OPTION_RS4XX_PROJECTOR_MODE:  rs4xx::get_laser_power_mode(get_device(), val); values[i] = val; break;
+                case RS_OPTION_RS4XX_PROJECTOR_MODE:  values[i] = static_cast<double>(rs4xx::get_laser_power_mode(get_device())); break;
 
                 default:
                     LOG_WARNING("Get " << options[i] << " for " << get_name() << " is not supported");

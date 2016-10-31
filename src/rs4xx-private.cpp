@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <iomanip>
+#include <algorithm>
 #include "types.h"
 #include "hw-monitor.h"
 #include "ds-private.h"
@@ -17,7 +18,7 @@ namespace rsimpl {
 namespace rs4xx {
 
     const uvc::extension_unit depth_xu = { 0, 3, 2, { 0xC9606CCB, 0x594C, 0x4D25,{ 0xaf, 0x47, 0xcc, 0xc4, 0x96, 0x43, 0x59, 0x95 } } };
-    const uvc::guid DS5_WIN_USB_DEVICE_GUID = { 0x08090549, 0xCE78, 0x41DC,{ 0xA0, 0xFB, 0x1B, 0xD6, 0x66, 0x94, 0xBB, 0x0C } };
+    const uvc::guid RS4XX_WIN_USB_DEVICE_GUID = { 0x08090549, 0xCE78, 0x41DC,{ 0xA0, 0xFB, 0x1B, 0xD6, 0x66, 0x94, 0xBB, 0x0C } };
 
     enum fw_cmd : uint8_t
     {
@@ -131,7 +132,7 @@ namespace rs4xx {
 
     void claim_ds5_monitor_interface(uvc::device & device)
     {
-        claim_interface(device, DS5_WIN_USB_DEVICE_GUID, DS5_MONITOR_INTERFACE);
+        claim_interface(device, RS4XX_WIN_USB_DEVICE_GUID, DS5_MONITOR_INTERFACE);
     }
 
     void claim_ds5_motion_module_interface(uvc::device & device)
@@ -318,39 +319,60 @@ namespace rs4xx {
             }
             catch (...)
             {
-                LOG_ERROR("Reading DS5 Calibration failed, table " << id);
+                LOG_ERROR("Reading RS4XX Calibration failed, table " << id);
             }
         }
     }
 
-    void get_laser_power_mode(const uvc::device & device, uint8_t & laser_power)
+    void update_supported_options(uvc::device& dev, const std::vector <std::pair<rs_option, uint8_t>>& options, std::vector<supported_option>& supported_options)
     {
-        ds::xu_read(device, depth_xu, ds::control::ds5_lsr_power_mode, &laser_power, sizeof(uint8_t));
+        for (auto p : options)
+        {
+            int min{}, max{}, step{}, def{};
+            get_extension_control_range(dev, depth_xu, p.second, &min, &max, &step, &def);
+            auto so = std::find_if(supported_options.begin(), supported_options.end(), [&p](supported_option& val) { return val.option == p.first; });
+            // Update XU options range from HW
+            if (so != supported_options.end())
+            {
+                so->min = min;
+                so->max = max;
+                so->step = step;
+                so->def = def;
+            }
+            else
+                throw std::logic_error(to_string() << "Required option " << rs_option_to_string(p.first) << "is not registered correctly");
+        }
     }
 
-    void set_laser_power_mode(uvc::device & device, uint8_t laser_power)
+
+    uint8_t get_laser_power_mode(const uvc::device & device)
     {
-        ds::xu_write(device, depth_xu, ds::control::ds5_lsr_power_mode, &laser_power, sizeof(uint8_t));
+        return ds::xu_read<uint8_t >(device, depth_xu, ds::control::rs4xx_lsr_power_mode);
     }
 
-    void get_laser_power_mw(const uvc::device & device, uint16_t & laser_power_mw)      // mw stands for milli-watt
+    void set_laser_power_mode(uvc::device & device, uint8_t laser_pwr_mode)
     {
-        ds::xu_read(device, depth_xu, ds::control::ds5_lsr_power_mw, &laser_power_mw, sizeof(uint16_t));
+        ds::xu_write(device, depth_xu, ds::control::rs4xx_lsr_power_mode, &laser_pwr_mode, sizeof(uint8_t));
+    }
+
+    uint16_t get_laser_power_mw(const uvc::device & device)      // mw stands for milli-watt
+    {
+        return ds::xu_read<uint16_t >(device, depth_xu, ds::control::rs4xx_lsr_power_mw);
     }
 
     void set_laser_power_mw(uvc::device & device, uint16_t laser_power_mw)
     {
-        ds::xu_write(device, depth_xu, ds::control::ds5_lsr_power_mw, &laser_power_mw, sizeof(uint16_t));
+        ds::xu_write(device, depth_xu, ds::control::rs4xx_lsr_power_mw, &laser_power_mw, sizeof(uint16_t));
     }
 
     void set_lr_exposure(uvc::device & device, uint16_t exposure)
     {
-        ds::xu_write(device, depth_xu, ds::control::ds5_lr_exposure, exposure);
+        ds::xu_write(device, depth_xu, ds::control::rs4xx_lr_exposure, exposure);
     }
 
     uint16_t get_lr_exposure(const uvc::device & device)
     {
-        return ds::xu_read<uint16_t >(device, depth_xu, ds::control::ds5_lr_exposure);
+        return ds::xu_read<uint16_t >(device, depth_xu, ds::control::rs4xx_lr_exposure);
     }
-} // namespace rsimpl::ds5
+} // namespace rsimpl::rs4xx
 } // namespace rsimpl

@@ -49,8 +49,8 @@ namespace rsimpl
         rs410_camera(std::shared_ptr<uvc::device> device, const static_device_info & info);
         ~rs410_camera() {};
 
-        //void set_options(const rs_option options[], size_t count, const double values[]) override;
-        //void get_options(const rs_option options[], size_t count, double values[]) override;
+        void set_options(const rs_option options[], size_t count, const double values[]) override;
+        void get_options(const rs_option options[], size_t count, double values[]) override;
         //bool supports_option(rs_option option) const override;
         //void get_option_range(rs_option option, double & min, double & max, double & step, double & def) override;
 
