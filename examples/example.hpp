@@ -75,17 +75,17 @@ public:
         // If the frame timestamp has changed since the last time show(...) was called, re-upload the texture
         if(!texture) glGenTextures(1, &texture);
         glBindTexture(GL_TEXTURE_2D, texture);
-        stride = stride == 0 ? width : stride;
-        glPixelStorei(GL_UNPACK_ROW_LENGTH, stride);
+        stride = (stride == 0) ? width : stride;
+        glPixelStorei(GL_UNPACK_ROW_LENGTH, width);
         switch(format)
         {
         case rs::format::any:
         throw std::runtime_error("not a valid format");
         case rs::format::z16:
         case rs::format::disparity16:
-            rgb.resize(stride * height * 3);
-            make_depth_histogram(rgb.data(), reinterpret_cast<const uint16_t *>(data), stride, height);
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, stride, height, 0, GL_RGB, GL_UNSIGNED_BYTE, rgb.data());
+            rgb.resize(width * height * 3);
+            make_depth_histogram(rgb.data(), reinterpret_cast<const uint16_t *>(data), width, height);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, rgb.data());
             
             break;
         case rs::format::xyz32f:
@@ -165,7 +165,7 @@ public:
         const double timestamp = frame.get_timestamp();
         if(timestamp != last_timestamp)
         {
-            upload(frame.get_data(), frame.get_width(), frame.get_height(), frame.get_format(), (frame.get_stride() * 8) / frame.get_bpp());
+            upload(frame.get_data(), frame.get_width(), frame.get_height(), frame.get_format(), frame.get_stride());
             last_timestamp = timestamp;
 
             ++num_frames;

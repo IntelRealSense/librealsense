@@ -114,14 +114,14 @@ namespace rsimpl
         CASE(F200_FILTER_OPTION)
         CASE(F200_CONFIDENCE_THRESHOLD)
         CASE(F200_DYNAMIC_FPS)
-        CASE(SR300_AUTO_RANGE_ENABLE_MOTION_VERSUS_RANGE) 
-        CASE(SR300_AUTO_RANGE_ENABLE_LASER)               
-        CASE(SR300_AUTO_RANGE_MIN_MOTION_VERSUS_RANGE)    
-        CASE(SR300_AUTO_RANGE_MAX_MOTION_VERSUS_RANGE)    
-        CASE(SR300_AUTO_RANGE_START_MOTION_VERSUS_RANGE)  
-        CASE(SR300_AUTO_RANGE_MIN_LASER)                  
-        CASE(SR300_AUTO_RANGE_MAX_LASER)                  
-        CASE(SR300_AUTO_RANGE_START_LASER)                
+        CASE(SR300_AUTO_RANGE_ENABLE_MOTION_VERSUS_RANGE)
+        CASE(SR300_AUTO_RANGE_ENABLE_LASER)
+        CASE(SR300_AUTO_RANGE_MIN_MOTION_VERSUS_RANGE)
+        CASE(SR300_AUTO_RANGE_MAX_MOTION_VERSUS_RANGE)
+        CASE(SR300_AUTO_RANGE_START_MOTION_VERSUS_RANGE)
+        CASE(SR300_AUTO_RANGE_MIN_LASER)
+        CASE(SR300_AUTO_RANGE_MAX_LASER)
+        CASE(SR300_AUTO_RANGE_START_LASER)
         CASE(SR300_AUTO_RANGE_UPPER_THRESHOLD) 
         CASE(SR300_AUTO_RANGE_LOWER_THRESHOLD)
         CASE(R200_LR_AUTO_EXPOSURE_ENABLED)
@@ -134,22 +134,22 @@ namespace rsimpl
         CASE(R200_DISPARITY_MULTIPLIER)
         CASE(R200_DISPARITY_SHIFT)
         CASE(R200_AUTO_EXPOSURE_MEAN_INTENSITY_SET_POINT)
-        CASE(R200_AUTO_EXPOSURE_BRIGHT_RATIO_SET_POINT)  
-        CASE(R200_AUTO_EXPOSURE_KP_GAIN)                 
-        CASE(R200_AUTO_EXPOSURE_KP_EXPOSURE)             
-        CASE(R200_AUTO_EXPOSURE_KP_DARK_THRESHOLD)       
-        CASE(R200_AUTO_EXPOSURE_TOP_EDGE)       
-        CASE(R200_AUTO_EXPOSURE_BOTTOM_EDGE)    
-        CASE(R200_AUTO_EXPOSURE_LEFT_EDGE)      
-        CASE(R200_AUTO_EXPOSURE_RIGHT_EDGE)     
-        CASE(R200_DEPTH_CONTROL_ESTIMATE_MEDIAN_DECREMENT)   
-        CASE(R200_DEPTH_CONTROL_ESTIMATE_MEDIAN_INCREMENT)   
-        CASE(R200_DEPTH_CONTROL_MEDIAN_THRESHOLD)            
-        CASE(R200_DEPTH_CONTROL_SCORE_MINIMUM_THRESHOLD)     
-        CASE(R200_DEPTH_CONTROL_SCORE_MAXIMUM_THRESHOLD)     
-        CASE(R200_DEPTH_CONTROL_TEXTURE_COUNT_THRESHOLD)     
+        CASE(R200_AUTO_EXPOSURE_BRIGHT_RATIO_SET_POINT)
+        CASE(R200_AUTO_EXPOSURE_KP_GAIN)
+        CASE(R200_AUTO_EXPOSURE_KP_EXPOSURE)
+        CASE(R200_AUTO_EXPOSURE_KP_DARK_THRESHOLD)
+        CASE(R200_AUTO_EXPOSURE_TOP_EDGE)
+        CASE(R200_AUTO_EXPOSURE_BOTTOM_EDGE)
+        CASE(R200_AUTO_EXPOSURE_LEFT_EDGE)
+        CASE(R200_AUTO_EXPOSURE_RIGHT_EDGE)
+        CASE(R200_DEPTH_CONTROL_ESTIMATE_MEDIAN_DECREMENT)
+        CASE(R200_DEPTH_CONTROL_ESTIMATE_MEDIAN_INCREMENT)
+        CASE(R200_DEPTH_CONTROL_MEDIAN_THRESHOLD)
+        CASE(R200_DEPTH_CONTROL_SCORE_MINIMUM_THRESHOLD)
+        CASE(R200_DEPTH_CONTROL_SCORE_MAXIMUM_THRESHOLD)
+        CASE(R200_DEPTH_CONTROL_TEXTURE_COUNT_THRESHOLD)
         CASE(R200_DEPTH_CONTROL_TEXTURE_DIFFERENCE_THRESHOLD)
-        CASE(R200_DEPTH_CONTROL_SECOND_PEAK_THRESHOLD)       
+        CASE(R200_DEPTH_CONTROL_SECOND_PEAK_THRESHOLD)
         CASE(R200_DEPTH_CONTROL_NEIGHBOR_THRESHOLD)
         CASE(R200_DEPTH_CONTROL_LR_THRESHOLD)
         CASE(FISHEYE_EXPOSURE)
@@ -164,7 +164,8 @@ namespace rsimpl
         CASE(FRAMES_QUEUE_SIZE)
         CASE(HARDWARE_LOGGER_ENABLED)
         CASE(TOTAL_FRAME_DROPS)
-        CASE(RS400_LASER_POWER)
+        CASE(RS4XX_PROJECTOR_MODE)
+        CASE(RS4XX_PROJECTOR_PWR)
         default: assert(!is_valid(value)); return unknown;
         }
         #undef CASE
@@ -540,7 +541,6 @@ namespace rsimpl
             // Skip modes that apply to other subdevices
             if(subdevice_mode.subdevice != subdevice_index) continue;
 
-           
             for(auto pad_crop : subdevice_mode.pad_crop_options)
             {
                 for(auto & unpacker : subdevice_mode.pf.unpackers)
@@ -552,7 +552,7 @@ namespace rsimpl
                     for(auto & output : unpacker.outputs)
                     {
                         const auto & req = requests[output.first];
-                        
+
                         selection.set_output_buffer_format(req.output_format);
                         if(req.enabled && (req.width == selection.get_width() )
                                        && (req.height == selection.get_height())

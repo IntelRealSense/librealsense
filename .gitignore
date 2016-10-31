@@ -51,3 +51,4 @@ librealsense-log.txt
 *.vsp
 *.bak
 *.bin
+*.tlog

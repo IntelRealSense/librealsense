@@ -76,19 +76,19 @@
     <ClCompile Include="..\..\src\motion-module.cpp">
       <Filter>sources</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ds5.cpp">
-      <Filter>sources</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ds5-private.cpp">
-      <Filter>sources</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\ds5c.cpp">
       <Filter>sources</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ds5d.cpp">
+    <ClCompile Include="..\..\src\ds5t.cpp">
       <Filter>sources</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ds5t.cpp">
+    <ClCompile Include="..\..\src\rs400.cpp">
+      <Filter>sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\rs4xx.cpp">
+      <Filter>sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\rs4xx-private.cpp">
       <Filter>sources</Filter>
     </ClCompile>
   </ItemGroup>
@@ -162,19 +162,19 @@
     <ClInclude Include="..\..\src\motion-module.h">
       <Filter>sources</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ds5.h">
-      <Filter>sources</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ds5-private.h">
-      <Filter>sources</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\ds5c.h">
       <Filter>sources</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ds5d.h">
+    <ClInclude Include="..\..\src\ds5t.h">
       <Filter>sources</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ds5t.h">
+    <ClInclude Include="..\..\src\rs400.h">
+      <Filter>sources</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\rs4xx-private.h">
+      <Filter>sources</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\rs4xx.h">
       <Filter>sources</Filter>
     </ClInclude>
   </ItemGroup>

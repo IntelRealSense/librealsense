@@ -14,8 +14,6 @@
 #include <usbioctl.h>
 #include <sstream>
 
-#include "uvc.h"
-
 #include <Shlwapi.h>        // For QISearch, etc.
 #include <mfapi.h>          // For MFStartup, etc.
 #include <mfidl.h>          // For MF_DEVSOURCE_*, etc.
@@ -53,6 +51,8 @@
 
 #include <strsafe.h>
 
+#include "uvc.h"
+
 DEFINE_GUID(GUID_DEVINTERFACE_USB_DEVICE, 0xA5DCBF10L, 0x6530, 0x11D2, 0x90, 0x1F, 0x00, \
     0xC0, 0x4F, 0xB9, 0x51, 0xED);
 DEFINE_GUID(GUID_DEVINTERFACE_IMAGE, 0x6bdd1fc6L, 0x810f, 0x11d0, 0xbe, 0xc7, 0x08, 0x00, \
@@ -65,10 +65,11 @@ namespace rsimpl
         const auto FISHEYE_HWMONITOR_INTERFACE = 2;
         const uvc::guid FISHEYE_WIN_USB_DEVICE_GUID = { 0xC0B55A29, 0xD7B6, 0x436E, { 0xA6, 0xEF, 0x2E, 0x76, 0xED, 0x0A, 0xBC, 0xA5 } };
         // Translation of user-provided fourcc code into device supported one:           Note the Big-Endian notation
-                                                                                         /* host => librealsense     */
-        const std::map<uint32_t, uint32_t> fourcc_map = { { 0x59382020, 0x47524559 },    /* 'GREY' => 'Y8  ' */
-                                                          { 0x52573130, 0x70524141 },    /* 'pRAA' => 'RW10'.*/
+                                                                                         /* Device => Host     */
+        const std::map<uint32_t, uint32_t> fourcc_map = { { 0x59382020, 0x47524559 },    /* 'GREY' => 'Y8  '   */
+                                                          { 0x52573130, 0x70524141 },    /* 'pRAA' => 'RW10'  .*/
                                                           { 0x32000000, 0x47524559 },    /* 'GREY' => 'L8  '   */
+                                                          { 0x59555932, 0x59555956 },    /* 'YUY2' => 'YUYV'   */
                                                           { 0x50000000, 0x5a313620 } };  /* 'Z16' => 'D16 '    */
 
         static std::string win_to_utf(const WCHAR * s)
@@ -482,8 +483,8 @@ namespace rsimpl
             subdevice& subscript_operator(size_t index) const
             {
                 auto& sub = subdevices[index];
-                if (sub.vid == VID_INTEL_CAMERA && sub.pid == DS5_PSR_PID && subdevices.size() > 1
-                    && ((subdevices[0].mf_source_reader != nullptr) ^ (subdevices[1].mf_source_reader != nullptr)))
+                if ((sub.vid == VID_INTEL_CAMERA) && (std::any_of(rs4xx_skews_pid.begin(), rs4xx_skews_pid.end(), [&sub](uint16_t pid){ return (sub.pid == pid); }))
+                    && (subdevices.size() > 1) && ((subdevices[0].mf_source_reader != nullptr) ^ (subdevices[1].mf_source_reader != nullptr)))
                 {
                     if (subdevices[0].mf_source_reader)
                     {
@@ -935,7 +936,7 @@ namespace rsimpl
                     check("IMFMediaType::GetGUID", media_type->GetGUID(MF_MT_SUBTYPE, &subtype));
                     uint32_t device_fourcc = reinterpret_cast<const big_endian<uint32_t> &>(subtype.Data1);
 
-                    if (device_fourcc != fourcc && fourcc_map.count(device_fourcc) && fourcc != fourcc_map.at(device_fourcc))
+                    if (!((device_fourcc == fourcc) || ((fourcc_map.count(device_fourcc) && (fourcc == fourcc_map.at(device_fourcc))))))
                         continue;
 
                     check("MFGetAttributeRatio", MFGetAttributeRatio(media_type, MF_MT_FRAME_RATE, &uvc_fps_num, &uvc_fps_denom));
@@ -1076,7 +1077,7 @@ namespace rsimpl
             throw std::runtime_error("unsupported control");
         }
 
-        void get_extension_control_range(const device & device, const extension_unit & xu, char control , int * min, int * max, int * step, int * def)
+        void get_extension_control_range(const device & device, const extension_unit & xu, char control, int * min, int * max, int * step, int * def)
         {
             auto ks_control = const_cast<uvc::device &>(device).get_ks_control(xu);
 
@@ -1098,7 +1099,7 @@ namespace rsimpl
                 &bytes_received));
 
             unsigned long size = description.DescriptionSize;
-            std::vector<BYTE> buffer((long)size);
+            std::vector<BYTE> buffer(size);
 
             check("IKsControl::KsProperty", ks_control->KsProperty(
                 (PKSPROPERTY)&node,
@@ -1109,14 +1110,15 @@ namespace rsimpl
 
             if (bytes_received != size) { throw  std::runtime_error("wrong data"); }
 
-            BYTE * pRangeValues = buffer.data() + sizeof(KSPROPERTY_MEMBERSHEADER) + sizeof(KSPROPERTY_DESCRIPTION);
+            // We need to retrieve the size of step/min/max properties dynamically
+            uint8_t field_size = static_cast<uint8_t>((size - (sizeof(KSPROPERTY_MEMBERSHEADER) + sizeof(KSPROPERTY_DESCRIPTION))) / 3);
+            uint8_t * pRangeValues = buffer.data() + sizeof(KSPROPERTY_MEMBERSHEADER) + sizeof(KSPROPERTY_DESCRIPTION);
 
-            *step = (int)*pRangeValues;
-            pRangeValues++;
-            *min = (int)*pRangeValues;
-            pRangeValues++;
-            *max = (int)*pRangeValues;
-
+            for (auto p : { step, min, max })
+            {
+                memcpy(p, pRangeValues, field_size);
+                pRangeValues += field_size;
+            }
 
             /* get def value*/
             memset(&node, 0, sizeof(KSP_NODE));
@@ -1148,7 +1150,7 @@ namespace rsimpl
 
             pRangeValues = buffer.data() + sizeof(KSPROPERTY_MEMBERSHEADER) + sizeof(KSPROPERTY_DESCRIPTION);
 
-            *def = (int)*pRangeValues;
+            memcpy(def, pRangeValues, field_size);
         }
 
         int get_pu_control(const device & device, int subdevice, rs_option option)
@@ -1166,7 +1168,7 @@ namespace rsimpl
             if(option == RS_OPTION_COLOR_ENABLE_AUTO_EXPOSURE)
             {
                 check("IAMCameraControl::Get", sub.am_camera_control->Get(CameraControl_Exposure, &value, &flags));
-                return flags == CameraControl_Flags_Auto;          
+                return flags == CameraControl_Flags_Auto;
             }
             for(auto & pu : pu_controls)
             {
@@ -1248,7 +1250,7 @@ namespace rsimpl
                 dev->subdevices[subdevice_index].vid = vid;
                 dev->subdevices[subdevice_index].pid = pid;
 
-                if (vid == VID_INTEL_CAMERA && pid == DS5_PSR_PID) // Duplicate DS5 subdevice
+                if (vid == VID_INTEL_CAMERA && (std::any_of(rs4xx_skews_pid.begin(), rs4xx_skews_pid.end(), [&pid](uint16_t val) { return (pid == val); }))) // Duplicate DS5 subdevice
                 {
                     dev->subdevices[0].reader_callback->subdevice_index_per_stream_index.insert(std::make_pair(1,1));
                     dev->subdevices.push_back(dev->subdevices[0]);

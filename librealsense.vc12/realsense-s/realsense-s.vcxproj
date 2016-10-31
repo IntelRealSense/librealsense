@@ -24,10 +24,7 @@
     <ClCompile Include="..\..\src\device.cpp" />
     <ClCompile Include="..\..\src\ds-device.cpp" />
     <ClCompile Include="..\..\src\ds-private.cpp" />
-    <ClCompile Include="..\..\src\ds5-private.cpp" />
-    <ClCompile Include="..\..\src\ds5.cpp" />
     <ClCompile Include="..\..\src\ds5c.cpp" />
-    <ClCompile Include="..\..\src\ds5d.cpp" />
     <ClCompile Include="..\..\src\ds5t.cpp" />
     <ClCompile Include="..\..\src\f200.cpp" />
     <ClCompile Include="..\..\src\hw-monitor.cpp" />
@@ -38,6 +35,9 @@
     <ClCompile Include="..\..\src\motion-module.cpp" />
     <ClCompile Include="..\..\src\r200.cpp" />
     <ClCompile Include="..\..\src\rs.cpp" />
+    <ClCompile Include="..\..\src\rs400.cpp" />
+    <ClCompile Include="..\..\src\rs4xx-private.cpp" />
+    <ClCompile Include="..\..\src\rs4xx.cpp" />
     <ClCompile Include="..\..\src\sr300.cpp" />
     <ClCompile Include="..\..\src\stream.cpp" />
     <ClCompile Include="..\..\src\sync.cpp" />
@@ -60,10 +60,7 @@
     <ClInclude Include="..\..\src\device.h" />
     <ClInclude Include="..\..\src\ds-device.h" />
     <ClInclude Include="..\..\src\ds-private.h" />
-    <ClInclude Include="..\..\src\ds5-private.h" />
-    <ClInclude Include="..\..\src\ds5.h" />
     <ClInclude Include="..\..\src\ds5c.h" />
-    <ClInclude Include="..\..\src\ds5d.h" />
     <ClInclude Include="..\..\src\ds5t.h" />
     <ClInclude Include="..\..\src\f200.h" />
     <ClInclude Include="..\..\src\hw-monitor.h" />
@@ -72,6 +69,9 @@
     <ClInclude Include="..\..\src\ivcam-private.h" />
     <ClInclude Include="..\..\src\motion-module.h" />
     <ClInclude Include="..\..\src\r200.h" />
+    <ClInclude Include="..\..\src\rs400.h" />
+    <ClInclude Include="..\..\src\rs4xx-private.h" />
+    <ClInclude Include="..\..\src\rs4xx.h" />
     <ClInclude Include="..\..\src\sr300.h" />
     <ClInclude Include="..\..\src\stream.h" />
     <ClInclude Include="..\..\src\sync.h" />

@@ -5,18 +5,18 @@
 #ifndef LIBREALSENSE_DS5_PRIVATE_H
 #define LIBREALSENSE_DS5_PRIVATE_H
 
-#include "uvc.h"
 #include <mutex>
+#include "uvc.h"
 
 namespace rsimpl {
-    namespace ds5 {
+    namespace rs4xx {
 
     const int gvd_size = 1024;
 
     enum gvd_offset_fields : int32_t // data were taken from CommandsDS5.xml
     {
         fw_version_offset = 12,
-        asic_module_serial_offset = 115
+        asic_module_serial_offset = 64
     };
 
     enum calibration_modules_id
@@ -103,16 +103,20 @@ namespace rsimpl {
     void claim_ds5_monitor_interface(uvc::device & device);
     void claim_ds5_motion_module_interface(uvc::device & device);
 
-    // Read device state
+    // Read and update device state
     void get_gvd_raw(uvc::device & device, std::timed_mutex & mutex, size_t sz, unsigned char * gvd);
     void get_string_of_gvd_field(uvc::device & device, std::timed_mutex & mutex, std::string & str, gvd_offset_fields offset);
     void read_calibration(uvc::device & dev, std::timed_mutex & mutex, ds5_calibration& calib);
+    void update_supported_options(uvc::device& dev, const std::vector <std::pair<rs_option, uint8_t>>& options, std::vector<supported_option>& supported_options);
+
 
     // XU read/write
-    void get_laser_power(const uvc::device & device, uint8_t & laser_power);
-    void set_laser_power(uvc::device & device, uint8_t laser_power);
-    void set_lr_exposure(uvc::device & device, uint16_t exposure);
-    uint16_t get_lr_exposure(const uvc::device & device);
+    uint8_t     get_laser_power_mode(const uvc::device & device);
+    void        set_laser_power_mode(uvc::device & device, uint8_t laser_pwr_mode);
+    uint16_t    get_laser_power_mw(const uvc::device & device);                     // mw stands for milli-watt
+    void        set_laser_power_mw(uvc::device & device, uint16_t laser_power);
+    void        set_lr_exposure(uvc::device & device, uint16_t exposure);
+    uint16_t    get_lr_exposure(const uvc::device & device);
 
 
 } //namespace rsimpl::ds5

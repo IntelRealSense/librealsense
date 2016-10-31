@@ -184,7 +184,7 @@ namespace rsimpl
 
             void get_control(const extension_unit & xu, uint8_t control, void * data, size_t size)
             {
-            uvc_xu_control_query q = {static_cast<uint8_t>(xu.unit), control, UVC_GET_CUR, static_cast<uint16_t>(size), reinterpret_cast<uint8_t *>(data)};
+             uvc_xu_control_query q = {static_cast<uint8_t>(xu.unit), control, UVC_GET_CUR, static_cast<uint16_t>(size), reinterpret_cast<uint8_t *>(data)};
                 if(xioctl(fd, UVCIOC_CTRL_QUERY, &q) < 0) throw_error("UVCIOC_CTRL_QUERY:UVC_GET_CUR");
             }
 
@@ -500,6 +500,7 @@ namespace rsimpl
         {
             device.subdevices[xu.subdevice]->get_control(xu, ctrl, data, len);
         }
+
         void set_control(device & device, const extension_unit & xu, uint8_t ctrl, void * data, int len)
         {
             device.subdevices[xu.subdevice]->set_control(xu, ctrl, data, len);
@@ -632,12 +633,13 @@ namespace rsimpl
         void get_extension_control_range(const device & device, const extension_unit & xu, char control, int * min, int * max, int * step, int * def)
         {
             __u16 size = 0;
-            __u8 value = 0; /* all of the real sense extended controls are one byte,
+            __u16 value = 0; /* Real sense extended controls are one or two-bytes long,
                             checking return value for UVC_GET_LEN and allocating
                             appropriately might be better */
             __u8 * data = (__u8 *)&value;
             struct uvc_xu_control_query xquery;
             memset(&xquery, 0, sizeof(xquery));
+
             xquery.query = UVC_GET_LEN;
             xquery.size = 2; /* size seems to always be 2 for the LEN query, but
                              doesn't seem to be documented. Use result for size

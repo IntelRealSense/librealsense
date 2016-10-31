@@ -84,19 +84,19 @@
     <ClCompile Include="..\..\src\ivcam-private.cpp">
       <Filter>src</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ds5.cpp">
-      <Filter>src</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ds5-private.cpp">
-      <Filter>src</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\ds5c.cpp">
       <Filter>src</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ds5d.cpp">
+    <ClCompile Include="..\..\src\ds5t.cpp">
       <Filter>src</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ds5t.cpp">
+    <ClCompile Include="..\..\src\rs400.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\rs4xx.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\rs4xx-private.cpp">
       <Filter>src</Filter>
     </ClCompile>
   </ItemGroup>
@@ -170,19 +170,19 @@
     <ClInclude Include="..\..\src\ivcam-private.h">
       <Filter>src</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ds5.h">
-      <Filter>src</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ds5-private.h">
-      <Filter>src</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\ds5c.h">
       <Filter>src</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ds5d.h">
+    <ClInclude Include="..\..\src\ds5t.h">
       <Filter>src</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ds5t.h">
+    <ClInclude Include="..\..\src\rs400.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\rs4xx.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\rs4xx-private.h">
       <Filter>src</Filter>
     </ClInclude>
   </ItemGroup>

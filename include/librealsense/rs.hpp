@@ -161,7 +161,8 @@ namespace rs
         frames_queue_size                               , /**< Number of frames the user is allowed to keep per stream. Trying to hold-on to more frames will cause frame-drops.*/
         hardware_logger_enabled                         , /**< Enable / disable fetching log data from the device */
         total_frame_drops                               , /**< Total number of detected frame drops from all streams*/
-        rs400_laser_power                               , /**< Enable / disable RealSense400 projector power */
+        rs4xx_projector_mode                             , /**< Toggle RealSense 4xx projector modes */
+        rs4xx_projector_pwr                              , /**< RealSense 4xx projector power in milliwatt */
     };
 
     enum class blob_type {

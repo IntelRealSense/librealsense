@@ -28,7 +28,12 @@ TEST_CASE("RS400 device supports all required options", "[live] [RS400]")
     const int device_count = rs_get_device_count(ctx, require_no_error());
     REQUIRE(device_count > 0);
 
-    const int supported_options[] = { RS_OPTION_COLOR_GAIN, RS_OPTION_R200_LR_EXPOSURE, RS_OPTION_RS400_LASER_POWER, RS_OPTION_HARDWARE_LOGGER_ENABLED };
+    const int supported_options[] = { 
+        RS_OPTION_COLOR_GAIN,
+        RS_OPTION_R200_LR_EXPOSURE,
+        RS_OPTION_RS4XX_PROJECTOR_MODE,
+        RS_OPTION_HARDWARE_LOGGER_ENABLED
+    };
 
     // For each device
     for (int i = 0; i < device_count; ++i)
@@ -71,7 +76,7 @@ TEST_CASE("RS400 XU Laser Power Control", "[live] [RS400]")
         REQUIRE(std::string::npos != name.find("Intel RealSense RS400"));
 
         double lsr_init_power = 0.;
-        rs::option opt = rs::option::rs400_laser_power;
+        rs::option opt = rs::option::rs4xx_projector_mode;
 
         dev->get_options(&opt, 1, &lsr_init_power);
         INFO("Initial laser power value obtained from hardware is " << lsr_init_power);

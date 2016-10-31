@@ -248,10 +248,10 @@ rs::motion_data m_gyro_data;
 rs::motion_data m_acc_data;
 
 struct w_h { int width, height; };
-std::vector<rs::stream> streams_names   = { rs::stream::depth,  rs::stream::color,  rs::stream::infrared,   rs::stream::infrared2, rs::stream::fisheye };
-std::vector<rs::format> formats         = { rs::format::z16,    rs::format::rgb8,   rs::format::y8,         rs::format::y8,        rs::format::raw8    };
-std::vector<w_h>        wh              = { { 640,480 },        { 640,480 },        { 0,0 },                { 0,0 },               { 640,480 }         };
-std::vector<int>        fps             = { 60,                 30,                  60,                    60,                     60                 };
+std::vector<rs::stream> streams_names   = { rs::stream::depth,  rs::stream::color,  rs::stream::infrared,   rs::stream::infrared2,  rs::stream::fisheye };
+std::vector<rs::format> formats         = { rs::format::z16,    rs::format::rgb8,   rs::format::y8,         rs::format::y8,         rs::format::raw8 };
+std::vector<w_h>        wh              = { { 640,480 },        { 640,480 },        { 0,0 },                { 0,0 },                { 640,480 } };
+std::vector<int>        fps             = { 30,                 30,                 30,                     30,                     30 };
 
 
 void on_motion_event(rs::motion_data entry)
@@ -410,6 +410,7 @@ static std::map<rs::option, std::vector<rs::option>> options_dependencies =
   { rs::option::r200_auto_exposure_top_edge, { rs::option::r200_auto_exposure_bottom_edge } },
   { rs::option::r200_auto_exposure_left_edge, { rs::option::r200_auto_exposure_right_edge } },
   { rs::option::r200_auto_exposure_right_edge, { rs::option::r200_auto_exposure_left_edge } },
+  { rs::option::rs4xx_projector_mode, { rs::option::rs4xx_projector_pwr } },
 };
 
 void update_related_options(rs::device& dev, rs::option opt, std::vector<option>& options)
@@ -719,16 +720,16 @@ int main(int argc, char * argv[])
                 {
                     if (g.button({ w - 260, y, w - 20, y + 24 }, "Start Capture"))
                     {
-                        if (has_motion_module && motion_tracking_enable)
-                        {
-                            running = true;
-                            dev->start(rs::source::motion_data);
-                        }
-
                         if (is_any_stream_enable(dev))
                         {
                             running = true;
                             dev->start();
+                        }
+
+                        if (has_motion_module && motion_tracking_enable)
+                        {
+                            running = true;
+                            dev->start(rs::source::motion_data);
                         }
                     }
                 }

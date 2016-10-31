@@ -5,17 +5,17 @@
 
 #include "image.h"
 #include "ds-private.h"
-#include "ds5.h"
-#include "ds5-private.h"
+#include "rs4xx-private.h"
+#include "rs4xx.h"
 
 namespace rsimpl
 {
-    ds5_camera::ds5_camera(std::shared_ptr<uvc::device> device, const static_device_info & info) :
+    rs4xx_camera::rs4xx_camera(std::shared_ptr<uvc::device> device, const static_device_info & info) :
         rs_device_base(device, info)
     {
     }
 
-    void ds5_camera::set_options(const rs_option options[], size_t count, const double values[])
+    void rs4xx_camera::set_options(const rs_option options[], size_t count, const double values[])
     {
         for (size_t i = 0; i<count; ++i)
         {
@@ -29,18 +29,18 @@ namespace rsimpl
 
             switch (options[i])
             {
-            case RS_OPTION_RS400_LASER_POWER:    ds5::set_laser_power(get_device(), static_cast<uint8_t>(values[i]));break;
-            case RS_OPTION_R200_LR_EXPOSURE:    ds5::set_lr_exposure(get_device(), static_cast<uint16_t>(values[i])); break;
+                case RS_OPTION_R200_LR_EXPOSURE:        rs4xx::set_lr_exposure(get_device(), static_cast<uint16_t>(values[i])); break;
+                case RS_OPTION_HARDWARE_LOGGER_ENABLED: set_fw_logger_option(values[i]); break;
 
-            default:
-                LOG_WARNING("Set " << options[i] << " for " << get_name() << " is not supported");
-                throw std::logic_error("Option unsupported");
-                break;
+                default:
+                    LOG_WARNING("Set " << options[i] << " for " << get_name() << " is not supported");
+                    throw std::logic_error("Option unsupported");
+                    break;
             }
         }
     }
 
-    void ds5_camera::get_options(const rs_option options[], size_t count, double values[])
+    void rs4xx_camera::get_options(const rs_option options[], size_t count, double values[])
     {
         for (size_t i = 0; i < count; ++i)
         {
@@ -49,10 +49,11 @@ namespace rsimpl
             if (uvc::is_pu_control(options[i]))
                 throw std::logic_error(to_string() << __FUNCTION__ << " Option " << options[i] << " must be processed by a concrete class");
 
-            uint8_t val = 0;
             switch (options[i])
             {
-                case RS_OPTION_RS400_LASER_POWER:           ds5::get_laser_power(get_device(), val); values[i] = val; break;
+
+                case RS_OPTION_HARDWARE_LOGGER_ENABLED: values[i] = static_cast<double>(get_fw_logger_option()); break;
+                case RS_OPTION_R200_LR_EXPOSURE:        values[i] = static_cast<double>(rs4xx::get_lr_exposure(get_device())); break;
 
                 default:
                     LOG_WARNING("Get " << options[i] << " for " << get_name() << " is not supported");
@@ -62,12 +63,31 @@ namespace rsimpl
         }
     }
 
-    void ds5_camera::on_before_start(const std::vector<subdevice_mode_selection> & /*selected_modes*/)
+    void rs4xx_camera::set_fw_logger_option(double value)
+    {
+        if (value >= 1)
+        {
+            if (!rs_device_base::keep_fw_logger_alive)
+                rs_device_base::start_fw_logger(char(rs4xx_command::GLD), 100, usbMutex);
+        }
+        else
+        {
+            if (rs_device_base::keep_fw_logger_alive)
+                rs_device_base::stop_fw_logger();
+        }
+    }
+
+    unsigned rs4xx_camera::get_fw_logger_option()
+    {
+        return rs_device_base::keep_fw_logger_alive;
+    }
+
+    void rs4xx_camera::on_before_start(const std::vector<subdevice_mode_selection> & /*selected_modes*/)
     {
 
     }
 
-    rs_stream ds5_camera::select_key_stream(const std::vector<rsimpl::subdevice_mode_selection> & selected_modes)
+    rs_stream rs4xx_camera::select_key_stream(const std::vector<rsimpl::subdevice_mode_selection> & selected_modes)
     {
         // DS5 may have a different behaviour here. This is a placeholder
         int fps[RS_STREAM_NATIVE_COUNT] = {}, max_fps = 0;
@@ -123,7 +143,7 @@ namespace rsimpl
         }
     };
 
-    std::vector<std::shared_ptr<rsimpl::frame_timestamp_reader>>  ds5_camera::create_frame_timestamp_readers() const
+    std::vector<std::shared_ptr<rsimpl::frame_timestamp_reader>>  rs4xx_camera::create_frame_timestamp_readers() const
     {
         return { 
             std::make_shared<ds5_timestamp_reader>(),
