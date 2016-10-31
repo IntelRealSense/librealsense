@@ -483,7 +483,7 @@ namespace rsimpl
             subdevice& subscript_operator(size_t index) const
             {
                 auto& sub = subdevices[index];
-                if ((sub.vid == VID_INTEL_CAMERA) && (std::any_of(rs4xx_skews_pid.begin(), rs4xx_skews_pid.end(), [&sub](auto pid){ return (sub.pid == pid); }))
+                if ((sub.vid == VID_INTEL_CAMERA) && (std::any_of(rs4xx_skews_pid.begin(), rs4xx_skews_pid.end(), [&sub](uint16_t pid){ return (sub.pid == pid); }))
                     && (subdevices.size() > 1) && ((subdevices[0].mf_source_reader != nullptr) ^ (subdevices[1].mf_source_reader != nullptr)))
                 {
                     if (subdevices[0].mf_source_reader)
@@ -1250,7 +1250,7 @@ namespace rsimpl
                 dev->subdevices[subdevice_index].vid = vid;
                 dev->subdevices[subdevice_index].pid = pid;
 
-                if (vid == VID_INTEL_CAMERA && (std::any_of(rs4xx_skews_pid.begin(), rs4xx_skews_pid.end(), [&pid](auto val) { return (pid == val); }))) // Duplicate DS5 subdevice
+                if (vid == VID_INTEL_CAMERA && (std::any_of(rs4xx_skews_pid.begin(), rs4xx_skews_pid.end(), [&pid](uint16_t val) { return (pid == val); }))) // Duplicate DS5 subdevice
                 {
                     dev->subdevices[0].reader_callback->subdevice_index_per_stream_index.insert(std::make_pair(1,1));
                     dev->subdevices.push_back(dev->subdevices[0]);
