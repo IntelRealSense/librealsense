@@ -875,6 +875,7 @@ const char * rs_blob_type_to_string  (rs_blob_type type);
 const char * rs_camera_info_to_string(rs_camera_info info);
 const char * rs_camera_info_to_string(rs_camera_info info);
 const char * rs_timestamp_domain_to_string(rs_timestamp_domain info);
+const char * rs_frame_metadata_to_string(rs_frame_metadata md);
 
 void rs_log_to_console(rs_log_severity min_severity, rs_error ** error);
 void rs_log_to_file(rs_log_severity min_severity, const char * file_path, rs_error ** error);
