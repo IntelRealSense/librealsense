@@ -26,6 +26,13 @@ struct rect
 };
 struct color { float r, g, b; };
 
+struct resolution
+{
+    int width;
+    int height;
+    rs::format format;
+};
+
 std::string find_and_replace(std::string source, std::string const& find, std::string const& replace)
 {
     for (std::string::size_type i = 0; (i = source.find(find, i)) != std::string::npos;)
@@ -250,9 +257,8 @@ rs::motion_data m_acc_data;
 struct w_h { int width, height; };
 std::vector<rs::stream> streams_names   = { rs::stream::depth,  rs::stream::color,  rs::stream::infrared,   rs::stream::infrared2,  rs::stream::fisheye };
 std::vector<rs::format> formats         = { rs::format::z16,    rs::format::rgb8,   rs::format::y8,         rs::format::y8,         rs::format::raw8 };
-std::vector<w_h>        wh              = { { 640,480 },        { 640,480 },        { 0,0 },                { 0,0 },                { 640,480 } };
+std::vector<w_h>        wh              = { { 640,480 },        { 640,480 },        { 640,480 },            { 640,480 },                { 640,480 } };
 std::vector<int>        fps             = { 30,                 30,                 30,                     30,                     30 };
-
 
 void on_motion_event(rs::motion_data entry)
 {
@@ -451,7 +457,7 @@ bool is_any_stream_enable(rs::device* dev)
 }
 
 bool motion_tracking_enable = true;
-void enable_stream(rs::device * dev, int stream, bool enable, std::stringstream& stream_name)
+void enable_stream(rs::device * dev, int stream, bool enable, std::stringstream& stream_name, std::map<rs::stream, resolution> & resolutions)
 {
     stream_name.str("");
     if (stream == RS_CAPABILITIES_MOTION_EVENTS)
@@ -478,7 +484,11 @@ void enable_stream(rs::device * dev, int stream, bool enable, std::stringstream&
         if (enable)
         {
             if (!dev->is_stream_enabled((rs::stream)stream))
+            {
                 dev->enable_stream((rs::stream)stream, wh[(int)stream].width, wh[(int)stream].height, formats[(int)stream], fps[(int)stream], rs::output_buffer_format::native);
+                resolutions[(rs::stream)stream].height = dev->get_stream_height((rs::stream)stream);
+                resolutions[(rs::stream)stream].width = dev->get_stream_width((rs::stream)stream);
+            }
         }
         else
         {
@@ -568,12 +578,7 @@ int main(int argc, char * argv[])
     single_consumer_queue<rs::frame> frames_queue[streams];
     std::vector<option> options;
     texture_buffer buffers[streams];
-    struct resolution
-    {
-        int width;
-        int height;
-        rs::format format;
-    };
+
     std::map<rs::stream, resolution> resolutions;
 
     try {
@@ -751,11 +756,11 @@ int main(int argc, char * argv[])
                             else
                                 enable = dev->is_stream_enabled(s);
 
-                            enable_stream(dev, i, enable, stream_name);
+                            enable_stream(dev, i, enable, stream_name, resolutions);
 
                             if (!is_callback_set || g.checkbox({ w - 260, y, w - 240, y + 20 }, enable))
                             {
-                                enable_stream(dev, i, enable, stream_name);
+                                enable_stream(dev, i, enable, stream_name, resolutions);
 
                                 if (enable)
                                 {
