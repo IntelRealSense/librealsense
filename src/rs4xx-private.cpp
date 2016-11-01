@@ -359,7 +359,9 @@ namespace rs4xx {
 
     void send_receive_raw_data(uvc::device & device, std::timed_mutex & mutex, rs_raw_buffer& buffer)
     {
-        hw_monitor::snd_rcv_raw_data(device, mutex, buffer.snd_buffer, buffer.snd_buffer_size, buffer.rcv_buffer, buffer.rcv_buffer_size);
+        size_t rcv_size=0;
+        hw_monitor::snd_rcv_raw_data(device, mutex, buffer.snd_buffer, buffer.snd_buffer_size, buffer.rcv_buffer, rcv_size);
+        buffer.rcv_buffer_size = rcv_size;
     }
 
     uint8_t get_laser_power_mode(const uvc::device & device)
