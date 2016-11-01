@@ -184,7 +184,6 @@ typedef struct rs_extrinsics
     float translation[3]; /* 3 element translation vector, in meters */
 } rs_extrinsics;
 
-
 typedef struct rs_context rs_context;
 typedef struct rs_device_list rs_device_list;
 typedef struct rs_device rs_device;
@@ -249,6 +248,8 @@ rs_device* rs_create_device(const rs_device_list* list, int index, rs_error** er
 void rs_delete_device(rs_device* device);
 
 void rs_get_device_extrinsics(const rs_device * device, rs_subdevice from, rs_subdevice to, rs_extrinsics * extrin, rs_error ** error);
+
+void rs_get_stream_intrinsics(const rs_device * device, rs_subdevice subdevice, rs_stream stream, int width, int height, int fps, rs_format format, rs_intrinsics * intrinsics, rs_error ** error);
 
 /**
 * retrieve mapping between the units of the depth image and meters

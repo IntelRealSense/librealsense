@@ -15,20 +15,9 @@
 #include <ostream>
 #include <iostream>
 
-namespace rsimpl{
-    struct float3;
-}
-
 namespace rs
 {
-    struct float3 { float x, y, z; };
-
-    struct extrinsics : rs_extrinsics
-    {
-        bool        is_identity() const { return (rotation[0] == 1) && (rotation[4] == 1) && (translation[0] == 0) && (translation[1] == 0) && (translation[2] == 0); }
-        float3      transform(const float3 & point) const { float3 p = {}; rs_transform_point_to_point(&p.x, this, &point.x); return p; }
-    };
-
+    
     class error : public std::runtime_error
     {
         std::string function, args;
@@ -438,13 +427,27 @@ namespace rs
             return result;
         }
 
-        extrinsics get_extrinsics(rs_subdevice from_subdevice, rs_subdevice to_subdevice) const
+        rs_extrinsics get_extrinsics(rs_subdevice from_subdevice, rs_subdevice to_subdevice) const
         {
             rs_error* e = nullptr;
-            extrinsics extrin;
+            rs_extrinsics extrin;
             rs_get_device_extrinsics(_dev.get(), from_subdevice, to_subdevice, &extrin, &e);
             error::handle(e);
             return extrin;
+        }
+
+        rs_intrinsics get_intrinsics(rs_subdevice subdevice, stream_profile profile) const
+        {
+            rs_error* e = nullptr;
+            rs_intrinsics intrinsics;
+            rs_get_stream_intrinsics(_dev.get(), subdevice, 
+                profile.stream,
+                profile.width,
+                profile.height,
+                profile.fps,
+                profile.format, &intrinsics, &e);
+            error::handle(e);
+            return intrinsics;
         }
 
         float get_depth_scale() const

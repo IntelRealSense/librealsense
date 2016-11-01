@@ -26,8 +26,8 @@ namespace rs
         class multistream
         {
         public:
-            explicit multistream(std::vector<streaming_lock> streams)
-                : streams(std::move(streams)) {}
+            explicit multistream(std::vector<streaming_lock> streams, std::map<rs_stream, rs_intrinsics> intrinsics)
+                : streams(std::move(streams)), intrinsics(std::move(intrinsics)) {}
 
             template<class T>
             void start(T callback)
@@ -40,8 +40,17 @@ namespace rs
                 for (auto&& stream : streams) stream.stop();
             }
 
+            rs_intrinsics get_intrinsics(rs_stream stream) try {
+                return intrinsics.at(stream);
+            }
+            catch (std::out_of_range)
+            {
+                throw std::exception("No such stream");
+            }
+
         private:
             std::vector<streaming_lock> streams;
+            std::map<rs_stream, rs_intrinsics> intrinsics;
         };
 
         class config
@@ -83,6 +92,7 @@ namespace rs
             {
                 std::vector<rs_stream> satisfied_streams;
                 std::vector<streaming_lock> results;
+                std::map<rs_stream, rs_intrinsics> intrinsics;
 
                 for (auto&& sub : dev)
                 {
@@ -136,9 +146,13 @@ namespace rs
                     }
 
                     if (targets.size() > 0)
+                    {
                         results.push_back(sub.open(targets));
+                        for (auto && target : targets)
+                            intrinsics.emplace(std::make_pair(target.stream, dev.get_intrinsics(sub, target)));
+                    }
                 }
-                return multistream(move(results));
+                return multistream(move(results), move(intrinsics));
             }
 
         private:
