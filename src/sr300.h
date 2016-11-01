@@ -214,6 +214,18 @@ namespace rsimpl
             }
         }
 
+        // NOTE: it is the user's responsibility to make sure the profile makes sense on the given subdevice. UB otherwise.
+        virtual rs_intrinsics get_intrinsics(rs_subdevice subdevice, stream_request profile) const override
+        {
+            if (!supports(subdevice)) throw std::runtime_error("Requested subdevice is unsupported.");
+            switch (subdevice) {
+                // was getting errors about uint32_t to int conversions. Because they originate as ints, this should be safe
+            case RS_SUBDEVICE_DEPTH: return make_depth_intrinsics(get_calibration(), { int(profile.width), int(profile.height) });
+            case RS_SUBDEVICE_COLOR: return make_color_intrinsics(get_calibration(), { int(profile.width), int(profile.height) });
+            default: throw std::exception("Not Implemented");
+            }
+        }
+
     private:
         hw_monitor _hw_monitor;
 
