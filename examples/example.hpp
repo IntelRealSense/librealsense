@@ -50,10 +50,16 @@ inline float lerp(float a, float b, float t)
     return b * t + a * (1 - t);
 }
 
+struct float3
+{
+    float x, y, z;
+};
+
 struct float2
 {
     float x, y;
 };
+
 struct rect
 {
     float x, y;
@@ -90,6 +96,21 @@ struct rect
         return{ x + (w - W) / 2, y + (h - H) / 2, W, H };
     }
 };
+
+//////////////////////////////
+// Simple font loading code //
+//////////////////////////////
+
+#include "third_party/stb_easy_font.h"
+
+inline void draw_text(int x, int y, const char * text)
+{
+    char buffer[60000]; // ~300 chars
+    glEnableClientState(GL_VERTEX_ARRAY);
+    glVertexPointer(2, GL_FLOAT, 16, buffer);
+    glDrawArrays(GL_QUADS, 0, 4 * stb_easy_font_print((float)x, (float)(y - 7), (char *)text, nullptr, buffer, sizeof(buffer)));
+    glDisableClientState(GL_VERTEX_ARRAY);
+}
 
 ////////////////////////
 // Image display code //

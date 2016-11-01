@@ -11,8 +11,8 @@
 #include <iostream>
 #include <algorithm>
 
-inline void glVertex(const rs::float3 & vertex) { glVertex3fv(&vertex.x); }
-inline void glTexCoord(const rs::float2 & tex_coord) { glTexCoord2fv(&tex_coord.x); }
+inline void glVertex(const float3 & vertex) { glVertex3fv(&vertex.x); }
+inline void glTexCoord(const float2 & tex_coord) { glTexCoord2fv(&tex_coord.x); }
 
 struct state { double yaw, pitch, lastX, lastY; bool ml; rs::device * dev; };
 
@@ -29,14 +29,19 @@ template<class MAP_DEPTH> void deproject_depth(float * points, const rs_intrinsi
     }
 }
 
-const rs::float3 * depth_to_points(std::vector<uint8_t> &image, const rs::intrinsics &depth_intrinsics, const uint16_t * depth_image, float depth_scale)
+const float3 * depth_to_points(std::vector<uint8_t> &image, const rs_intrinsics &depth_intrinsics, const uint16_t * depth_image, float depth_scale)
 {
     image.resize(depth_intrinsics.width * depth_intrinsics.height * 12);
 
     deproject_depth(reinterpret_cast<float *>(image.data()), depth_intrinsics, depth_image, [depth_scale](uint16_t z) { return depth_scale * z; });
 
-    return reinterpret_cast<rs::float3 *>(image.data());
+    return reinterpret_cast<float3 *>(image.data());
 }
+
+float3 transform(const rs_extrinsics *extrin, const float3 &point) { float3 p = {}; rs_transform_point_to_point(&p.x, extrin, &point.x); return p; }
+float2 project(const rs_intrinsics *intrin, const float3 & point) { float2 pixel = {}; rs_project_point_to_pixel(&pixel.x, intrin, &point.x); return pixel; }
+float2 pixel_to_texcoord(const rs_intrinsics *intrin, const float2 & pixel) { return{ (pixel.x + 0.5f) / intrin->width, (pixel.y + 0.5f) / intrin->height }; }
+float2 project_to_texcoord(const rs_intrinsics *intrin, const float3 & point) { return pixel_to_texcoord(intrin, project(intrin, point)); }
 
 int main(int argc, char * argv[]) try
 {
@@ -54,7 +59,7 @@ int main(int argc, char * argv[]) try
     config.enable_stream(RS_STREAM_DEPTH, rs::preset::best_quality);
     auto stream = config.open(dev);
     
-    state app_state = {0, 0, 0, 0, &dev};
+    state app_state = {0, 0, 0, 0, false, &dev};
     
     glfwInit();
     std::ostringstream ss; ss << "CPP Point Cloud Example (" << dev.get_camera_info(RS_CAMERA_INFO_DEVICE_NAME) << ")";
@@ -89,10 +94,10 @@ int main(int argc, char * argv[]) try
     glfwMakeContextCurrent(win);
     texture_buffer color_tex;
     const uint16_t * depth;
-
-    const rs::extrinsics extrin = dev.get_extrinsics(RS_SUBDEVICE_DEPTH, RS_SUBDEVICE_COLOR);
-    const rs::intrinsics depth_intrin = ;// depth intrinsics
-    const rs::intrinsics color_intrin = ;// color intrinsics
+    
+    const rs_extrinsics extrin = dev.get_extrinsics(RS_SUBDEVICE_DEPTH, RS_SUBDEVICE_COLOR);
+    const rs_intrinsics depth_intrin = stream.get_intrinsics(RS_STREAM_DEPTH);
+    const rs_intrinsics color_intrin = stream.get_intrinsics(RS_STREAM_COLOR);
 
     int frame_count = 0; float time = 0, fps = 0;
     auto t0 = std::chrono::high_resolution_clock::now();
@@ -156,7 +161,7 @@ int main(int argc, char * argv[]) try
                 if(points->z) //if(uint16_t d = *depth++)
                 {
                     //const rs::float3 point = depth_intrin.deproject({static_cast<float>(x),static_cast<float>(y)}, d*depth_scale);
-                    glTexCoord(color_intrin.project_to_texcoord(extrin.transform(*points)));
+                    glTexCoord(project_to_texcoord(&color_intrin, transform(&extrin, *points)));
                     glVertex(*points);
                 }
                 ++points;
