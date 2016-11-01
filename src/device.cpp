@@ -17,7 +17,7 @@ using namespace rsimpl::motion_module;
 
 const int MAX_FRAME_QUEUE_SIZE = 20;
 const int MAX_EVENT_QUEUE_SIZE = 500;
-const int MAX_EVENT_TINE_OUT   = 12;
+const int MAX_EVENT_TINE_OUT   = 11;
 
 rs_device_base::rs_device_base(std::shared_ptr<rsimpl::uvc::device> device, const rsimpl::static_device_info & info, calibration_validator validator) : device(device), config(info),
     depth(config, RS_STREAM_DEPTH, validator), color(config, RS_STREAM_COLOR, validator), infrared(config, RS_STREAM_INFRARED, validator), infrared2(config, RS_STREAM_INFRARED2, validator), fisheye(config, RS_STREAM_FISHEYE, validator),
@@ -448,13 +448,14 @@ void rs_device_base::start_video_streaming(bool is_mipi)
 
                 // Obtain buffers for unpacking the frame
                 dest.push_back(archive->alloc_frame(output.first, additional_data, requires_processing));
+                //std::cout << "timestamp: " << output.first << " " << frame_counter << "\t" << std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count() <<  std::endl;
 
 
               // if (motion_module_ready) // try to correct timestamp only if motion module is enabled
                 //{
                     if(!archive->correct_timestamp(output.first)) {
-                       // archive->release_frame_ref(archive->track_frame(output.first));
-                       //  return;
+                        archive->release_frame_ref(archive->track_frame(output.first));
+                        return;
                     }
 
                 //}
@@ -835,8 +836,8 @@ void rs_device_base::fisheyeCallback(motion::MotionFisheyeFrame* frame) {
         if(frame->header.type == motion::MOTION_SOURCE_DEPTH) {
             if(frame->header.seq < 6)
                     return;
-            archive->on_timestamp({frame->header.timestamp/1000.0,RS_EVENT_IMU_DEPTH_CAM,frame->header.seq-4});
-           // std::cout << "depth2 timestamp: " << frame->header.seq << "\t" << std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count() << "\t" << frame->header.timestamp << std::endl;
+            archive->on_timestamp({frame->header.timestamp/1000.0,RS_EVENT_IMU_DEPTH_CAM,frame->header.seq-2});
+            //std::cout << "depth2 timestamp: " << frame->header.seq << "\t" << std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count() << "\t" << frame->header.timestamp << std::endl;
         }
     }
     void rs_device_base::notifyCallback(uint32_t status, uint8_t *buf, uint32_t size) {

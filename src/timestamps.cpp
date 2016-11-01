@@ -1,7 +1,7 @@
 #include "timestamps.h"
 #include "sync.h"
 #include <algorithm>
-
+#include <iostream>
 using namespace rsimpl;
 using namespace std;
 
@@ -79,14 +79,15 @@ timestamp_corrector::~timestamp_corrector()
 
 void timestamp_corrector::on_timestamp(rs_timestamp_data data)
 {
-    lock_guard<mutex> lock(mtx);
+    unique_lock<mutex> lock(mtx);
 
     if (data_queue[data.source_id].size() <= *event_queue_size)
         data_queue[data.source_id].push_back_data(data);
     if (data_queue[data.source_id].size() > *event_queue_size)
         data_queue[data.source_id].pop_front_data();
-
-    cv.notify_one();
+    lock.unlock();
+    //std::cout << "received: " << data.frame_number << std::endl;
+    //cv.notify_one();
 }
 
 void timestamp_corrector::update_source_id(rs_event_source& source_id, const rs_stream stream)
@@ -109,21 +110,33 @@ void timestamp_corrector::update_source_id(rs_event_source& source_id, const rs_
 
 bool timestamp_corrector::correct_timestamp(frame_interface& frame, rs_stream stream)
 {
-    unique_lock<mutex> lock(mtx);
+
 
     bool res;
     rs_event_source source_id;
     update_source_id(source_id, stream);
-    if (!(res = data_queue[source_id].correct(frame)))
+
+
+    /*if (!(res = data_queue[source_id].correct(frame)))
     {
-        const auto ready = [&]() { return data_queue[source_id].correct(frame); };
-        res = cv.wait_for(lock, std::chrono::milliseconds(*events_timeout), ready);
+        const auto ready = [&]() { res =  data_queue[source_id].correct(frame); };
+        res = cv.wait_for(lock, std::chrono::milliseconds((*events_timeout)), ready);
+        cv.wait_for(lock,chrono::duration::milliseconds(*event_timeout));
+        cout << "got new res" << std::endl;
+
+    }*/
+    auto start_time = std::chrono::high_resolution_clock::now();
+    while (!res && std::chrono::duration_cast<chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start_time).count() < (*events_timeout)) {
+        unique_lock<mutex> lock(mtx);
+       // std::cout << "Searching for: " << frame.get_frame_number() << std::endl;
+        res = data_queue[source_id].correct(frame);
+        lock.unlock();
     }
 
     if (res)
     {
         frame.set_timestamp_domain(RS_TIMESTAMP_DOMAIN_MICROCONTROLLER);
     }
-    lock.unlock();
+   // lock.unlock();
     return res;
 }
