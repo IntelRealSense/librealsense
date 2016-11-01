@@ -314,12 +314,12 @@ namespace rsimpl
 
             void lock() const override 
             {
-                std::vector<std::shared_ptr<uvc_device>> locked_dev;
+                std::vector<uvc_device*> locked_dev;
                 try {
                     for (auto& elem : _dev)
                     {
                         elem->lock();
-                        locked_dev.push_back(elem);
+                        locked_dev.push_back(elem.get());
                     }
                 }
                 catch(...)

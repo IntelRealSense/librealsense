@@ -547,7 +547,6 @@ namespace rsimpl
             control_range get_xu_range(const extension_unit& xu, uint8_t control, int len) const override
             {
                 control_range result;
-
                 __u16 size = 0;
                 __u32 value = 0; // all of the real sense extended controls are up to 4 bytes
                                 // checking return value for UVC_GET_LEN and allocating
@@ -566,6 +565,8 @@ namespace rsimpl
                 if(-1 == ioctl(_fd,UVCIOC_CTRL_QUERY,&xquery)){
                     throw std::runtime_error(to_string() << " ioctl failed on UVC_GET_LEN");
                 }
+
+                assert(size<=4);
 
                 xquery.query = UVC_GET_MIN;
                 xquery.size = size;
