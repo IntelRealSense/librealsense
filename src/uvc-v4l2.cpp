@@ -735,7 +735,7 @@ namespace rsimpl
             std::string get_device_location() const override { return ""; }
 
         private:
-            power_state _state;
+            power_state _state = D3;
             std::string _name;
             uvc_device_info _info;
             int _fd;
