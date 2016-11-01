@@ -9,6 +9,7 @@
 
 #include <climits>
 #include <sstream>
+#include <vector>
 
 
 #define CATCH_CONFIG_MAIN
@@ -20,7 +21,7 @@
 //////////////////////////
 // Controls and Options //
 //////////////////////////
-TEST_CASE("RS400 device supports all required options", "[live] [RS400]")
+TEST_CASE("RS4XX device supports all required options", "[live] [RS4XX]")
 {
     rs::log_to_console(rs::log_severity::warn);
     // Require at least one device to be plugged in
@@ -28,26 +29,26 @@ TEST_CASE("RS400 device supports all required options", "[live] [RS400]")
     const int device_count = rs_get_device_count(ctx, require_no_error());
     REQUIRE(device_count > 0);
 
-    const int supported_options[] = { 
-        RS_OPTION_COLOR_GAIN,
-        RS_OPTION_R200_LR_EXPOSURE,
-        RS_OPTION_RS4XX_PROJECTOR_MODE,
-        RS_OPTION_HARDWARE_LOGGER_ENABLED
+    const std::map<std::string, std::vector<rs_option>> rs4xx_skew_options
+    {
+        { "Intel RealSense RS400p", { RS_OPTION_COLOR_GAIN, RS_OPTION_R200_LR_EXPOSURE, RS_OPTION_HARDWARE_LOGGER_ENABLED }},
+        { "Intel RealSense RS410a", { RS_OPTION_COLOR_GAIN, RS_OPTION_R200_LR_EXPOSURE, RS_OPTION_HARDWARE_LOGGER_ENABLED,
+                                      RS_OPTION_RS4XX_PROJECTOR_MODE, RS_OPTION_RS4XX_PROJECTOR_PWR }},
     };
 
     // For each device
     for (int i = 0; i < device_count; ++i)
     {
-        rs_device * dev = rs_get_device(ctx, 0, require_no_error());
+        rs_device * dev = rs_get_device(ctx, i, require_no_error());
         REQUIRE(dev != nullptr);
 
-        std::string name = dev->get_name();
-        REQUIRE(std::string::npos != name.find("Intel RealSense RS400"));
+        auto it = rs4xx_skew_options.find(dev->get_name());
+        REQUIRE(it != rs4xx_skew_options.end());
 
         for (size_t i = 0; i < RS_OPTION_COUNT; ++i)
         {
             INFO("Checking support for " << (rs::option)i);
-            if (std::find(std::begin(supported_options), std::end(supported_options), i) != std::end(supported_options))
+            if (std::find(it->second.begin(), it->second.end(), i) != it->second.end())
             {
                 REQUIRE(rs_device_supports_option(dev, (rs_option)i, require_no_error()) == 1);
             }
@@ -59,7 +60,7 @@ TEST_CASE("RS400 device supports all required options", "[live] [RS400]")
     }
 }
 
-TEST_CASE("RS400 XU Laser Power Control", "[live] [RS400]")
+TEST_CASE("RS410a XU Laser Power Mode", "[live] [RS410a]")
 {
     for (int i=0; i< 5; i++)
     {
@@ -73,39 +74,41 @@ TEST_CASE("RS400 XU Laser Power Control", "[live] [RS400]")
 
         std::string name = dev->get_name();
         INFO("Device name is " << name);
-        REQUIRE(std::string::npos != name.find("Intel RealSense RS400"));
-
-        double lsr_init_power = 0.;
-        rs::option opt = rs::option::rs4xx_projector_mode;
-
-        dev->get_options(&opt, 1, &lsr_init_power);
-        INFO("Initial laser power value obtained from hardware is " << lsr_init_power);
-        std::this_thread::sleep_for(std::chrono::milliseconds(20));
-
-        double set_val = 1., reset_val = 0., res = 0.;
-
-        for (uint8_t j = 0; j < 2; j++) // Laser power is On/Off toggle
+        CHECKED_ELSE(std::string::npos == name.find("Intel RealSense RS410a"))
         {
-            INFO("Set option iteration " << j);
-            dev->set_options(&opt, 1, &set_val);
-            std::this_thread::sleep_for(std::chrono::milliseconds(50));
-            dev->get_options(&opt, 1, &res);
-            std::this_thread::sleep_for(std::chrono::milliseconds(50));
-            REQUIRE(set_val == res);
 
-            dev->set_options(&opt, 1, &reset_val);
-            std::this_thread::sleep_for(std::chrono::milliseconds(50));
-            dev->get_options(&opt, 1, &res);
-            std::this_thread::sleep_for(std::chrono::milliseconds(50));
-            REQUIRE(reset_val == res);
+            double lsr_init_power = 0.;
+            rs::option opt = rs::option::rs4xx_projector_mode;
+
+            dev->get_options(&opt, 1, &lsr_init_power);
+            INFO("Initial laser power value obtained from hardware is " << lsr_init_power);
+            std::this_thread::sleep_for(std::chrono::milliseconds(20));
+
+            double set_val = 1., reset_val = 0., res = 0.;
+
+            for (uint8_t j = 0; j < 2; j++) // Laser power is On/Off toggle
+            {
+                INFO("Set option iteration " << j);
+                dev->set_options(&opt, 1, &set_val);
+                std::this_thread::sleep_for(std::chrono::milliseconds(50));
+                dev->get_options(&opt, 1, &res);
+                std::this_thread::sleep_for(std::chrono::milliseconds(50));
+                REQUIRE(set_val == res);
+
+                dev->set_options(&opt, 1, &reset_val);
+                std::this_thread::sleep_for(std::chrono::milliseconds(50));
+                dev->get_options(&opt, 1, &res);
+                std::this_thread::sleep_for(std::chrono::milliseconds(50));
+                REQUIRE(reset_val == res);
+            }
+
+            dev->set_options(&opt, 1, &lsr_init_power);
+            std::this_thread::sleep_for(std::chrono::milliseconds(200));
         }
-
-        dev->set_options(&opt, 1, &lsr_init_power);
-        std::this_thread::sleep_for(std::chrono::milliseconds(200));
     }
 }
 
-TEST_CASE("RS400 Manual Gain Control", "[live] [RS400]")
+TEST_CASE("RS4XX Manual Gain Control", "[live] [RS4XX]")
 {
     rs::context ctx;
     REQUIRE(ctx.get_device_count() == 1);
@@ -114,7 +117,7 @@ TEST_CASE("RS400 Manual Gain Control", "[live] [RS400]")
     REQUIRE(nullptr != dev);
 
     std::string name = dev->get_name();
-    REQUIRE(std::string::npos != name.find("Intel RealSense RS400"));
+    REQUIRE(std::string::npos != name.find("Intel RealSense RS4"));
 
     double set_val = 30., reset_val = 80., res = 0.;
 
@@ -145,7 +148,7 @@ TEST_CASE("RS400 Manual Gain Control", "[live] [RS400]")
     REQUIRE(gain_ctrl_init == res);
 }
 
-TEST_CASE("RS400 Manual Exposure Control", "[live] [RS400]")
+TEST_CASE("RS4XX Manual Exposure Control", "[live] [RS4XX]")
 {
     rs::context ctx;
     REQUIRE(ctx.get_device_count() == 1);
@@ -154,7 +157,7 @@ TEST_CASE("RS400 Manual Exposure Control", "[live] [RS400]")
     REQUIRE(nullptr != dev);
 
     std::string name = dev->get_name();
-    REQUIRE(std::string::npos != name.find("Intel RealSense RS400"));
+    REQUIRE(std::string::npos != name.find("Intel RealSense RS4"));
 
     double set_val = 1200., reset_val = 80., res = 0.;
 
@@ -185,10 +188,40 @@ TEST_CASE("RS400 Manual Exposure Control", "[live] [RS400]")
     REQUIRE(exposure_ctrl_init == res);
 }
 
+TEST_CASE("RS4XX Transmit Raw Data", "[live] [RS4XX]")
+{
+    rs::context ctx;
+    REQUIRE(ctx.get_device_count() == 1);
+
+    rs::device * dev = ctx.get_device(0);
+    REQUIRE(nullptr != dev);
+
+    std::string name = dev->get_name();
+    REQUIRE(std::string::npos != name.find("Intel RealSense RS4"));
+
+    // Initialize and preset raw buffer
+    rs_raw_buffer test_obj{};
+    for (int i = 0; i < 5; i++)
+    {
+        memset(&test_obj, 0, sizeof(rs_raw_buffer));
+
+        std::vector<uint8_t> out_data{ 0x1, 0x2, 0x3, 0x4, 0x5, 0x6 };
+        std::copy(out_data.begin(), out_data.end(), test_obj.snd_buffer);
+        test_obj.snd_buffer_size = out_data.size();
+
+        // Check send/receive raw data opaque binary buffer to exchange data with device
+        dev->transmit_raw_data(&test_obj);
+
+        REQUIRE(test_obj.snd_buffer_size != 0);
+        REQUIRE(test_obj.rcv_buffer_size > 0);
+        REQUIRE(test_obj.rcv_buffer_size <= RAW_BUFFER_SIZE);
+    }
+}
+
 ///////////////////////////////////
 // Calibration information tests //
 ///////////////////////////////////
-TEST_CASE("RS400 Extrinsics", "[live] [RS400]")
+TEST_CASE("RS4XX Extrinsics", "[live] [RS4XX]")
 {
     // Require at least one device to be plugged in
     safe_context ctx;
@@ -212,7 +245,7 @@ TEST_CASE("RS400 Extrinsics", "[live] [RS400]")
     }
 }
 
-TEST_CASE("RS400 Intrinsic", "[live] [DS-device]")
+TEST_CASE("RS4XX Intrinsic", "[live] [RS4XX]")
 {
     // Require at least one device to be plugged in
     safe_context ctx;
@@ -280,7 +313,7 @@ TEST_CASE("RS400 Intrinsic", "[live] [DS-device]")
     }
 }
 
-TEST_CASE("RS400 Streaming Formats", "[live] [RS400]")
+TEST_CASE("RS4XX Streaming Formats", "[live] [RS4XX]")
 {
     // Require only one device to be plugged in
     safe_context ctx;
@@ -291,7 +324,7 @@ TEST_CASE("RS400 Streaming Formats", "[live] [RS400]")
     REQUIRE(dev != nullptr);
 
     std::string name = dev->get_name();
-    REQUIRE(std::string::npos != name.find("Intel RealSense RS400"));
+    REQUIRE(std::string::npos != name.find("Intel RealSense RS4"));
 
     std::vector<std::pair<int, int>> resolutions = { {320,240},{424,240},{480,270},{640,360},{ 640,480 },{ 848,480 },{ 1280,720 } };
 

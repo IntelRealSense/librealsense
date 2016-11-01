@@ -310,5 +310,17 @@ namespace rsimpl
             memcpy(data, command.receivedCommandData, HW_MONITOR_BUFFER_SIZE);
             bytesReturned = command.receivedCommandDataLength;
         }
+
+        void snd_rcv_raw_data(uvc::device & device, std::timed_mutex & mutex, const uint8_t(&in_data)[HW_MONITOR_BUFFER_SIZE], const size_t in_data_size,
+            uint8_t(&out_data)[HW_MONITOR_BUFFER_SIZE], size_t & out_data_size)
+        {
+            if (in_data_size > HW_MONITOR_BUFFER_SIZE)
+                throw std::runtime_error(to_string() << "Cannot exchange raw data - send request size " << in_data_size  << "exceeds the permitted limit of " << HW_MONITOR_BUFFER_SIZE);
+
+            // Bypass hw monitor protocol and perform send/receive opaque blobs flow
+            uint32_t op{};
+            out_data_size = HW_MONITOR_BUFFER_SIZE; // max expected buffer size
+            execute_usb_command(device, mutex, const_cast<uint8_t*>(in_data), in_data_size, op, out_data, out_data_size);
+        }
     }
 }

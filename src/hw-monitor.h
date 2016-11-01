@@ -59,8 +59,6 @@ namespace rsimpl
 {
     namespace hw_monitor
     {
-
-
         struct hwmon_cmd
         {
             uint8_t     cmd;
@@ -92,7 +90,7 @@ namespace rsimpl
         
         void fill_usb_buffer(int opCodeNumber, int p1, int p2, int p3, int p4, uint8_t * data, int dataLength, uint8_t * bufferToSend, int & length);
 
-        void execute_usb_command(uvc::device & device, std::timed_mutex & mutex, uint8_t *out, size_t outSize, uint32_t & op, uint8_t * in, size_t & inSize);        
+        void execute_usb_command(uvc::device & device, std::timed_mutex & mutex, uint8_t *out, size_t outSize, uint32_t & op, uint8_t * in, size_t & inSize);
 
         void send_hw_monitor_command_over_usb(uvc::device & device, std::timed_mutex & mutex, hwmon_cmd_details & details);
         void send_hw_monitor_command_over_uvc_ext_ctrl(uvc::device & device, std::timed_mutex & mutex, hwmon_cmd_details & details, const rsimpl::uvc::extension_unit & xu, uint8_t ctrl);
@@ -107,6 +105,9 @@ namespace rsimpl
         void read_from_eeprom(int IRB_opcode, int IWB_opcode, uvc::device & device, unsigned int offset, int size, byte* data);
 
         void get_raw_data(uint8_t opcode, uvc::device & device, std::timed_mutex & mutex, uint8_t * data, size_t & bytesReturned);
+
+        void snd_rcv_raw_data(uvc::device & device, std::timed_mutex & mutex, const uint8_t (&in_data)[HW_MONITOR_BUFFER_SIZE], const size_t in_data_size,
+            uint8_t (&out_data)[HW_MONITOR_BUFFER_SIZE], size_t & out_data_size);
     }
 }
 

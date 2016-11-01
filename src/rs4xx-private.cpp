@@ -61,13 +61,13 @@ namespace rs4xx {
         imu_calibration,
         lens_shading,
         projector,
-        max_ds5_intrinsic_table
+        max_rs4xx_intrinsic_table
     };
 
     struct calibrations_header
     {
         table_header        toc_header;
-        table_link          toc[max_ds5_intrinsic_table];   // list of all data tables stored on flash
+        table_link          toc[max_rs4xx_intrinsic_table];   // list of all data tables stored on flash
     };
 
     enum m3_3_field
@@ -103,7 +103,7 @@ namespace rs4xx {
         float               baseline;                   //  the baseline between the cameras
         uint8_t             reserved1[88];
         uint32_t            brown_model;                // 0 - using DS distorion model, 1 - using Brown model
-        float4              rect_params[max_ds5_rect_resoluitons];
+        float4              rect_params[max_rs4xx_rect_resoluitons];
         uint8_t             reserved2[64];
     };
 
@@ -126,19 +126,19 @@ namespace rs4xx {
     };
 #pragma pack(pop)
 
-    const uint8_t DS5_MONITOR_INTERFACE                 = 0x3;
-    const uint8_t DS5_MOTION_MODULE_INTERRUPT_INTERFACE = 0x4;
+    const uint8_t RS4XX_MONITOR_INTERFACE                 = 0x3;
+    const uint8_t RS4XX_MOTION_MODULE_INTERRUPT_INTERFACE = 0x4;
 
 
-    void claim_ds5_monitor_interface(uvc::device & device)
+    void claim_rs4xx_monitor_interface(uvc::device & device)
     {
-        claim_interface(device, RS4XX_WIN_USB_DEVICE_GUID, DS5_MONITOR_INTERFACE);
+        claim_interface(device, RS4XX_WIN_USB_DEVICE_GUID, RS4XX_MONITOR_INTERFACE);
     }
 
-    void claim_ds5_motion_module_interface(uvc::device & device)
+    void claim_rs4xx_motion_module_interface(uvc::device & device)
     {
         const uvc::guid MOTION_MODULE_USB_DEVICE_GUID = {};
-        claim_aux_interface(device, MOTION_MODULE_USB_DEVICE_GUID, DS5_MOTION_MODULE_INTERRUPT_INTERFACE);
+        claim_aux_interface(device, MOTION_MODULE_USB_DEVICE_GUID, RS4XX_MOTION_MODULE_INTERRUPT_INTERFACE);
     }
 
     // "Get Version and Date"
@@ -148,25 +148,22 @@ namespace rs4xx {
         perform_and_send_monitor_command_over_usb_monitor(device, mutex, cmd);
 
         if (cmd.receivedCommandDataLength > sz)
-            LOG_WARNING("received command data length is greater than ds5 gvd_size");
+            LOG_WARNING("received command data length is greater than gvd_size");
 
         auto min_size = std::min(sz, cmd.receivedCommandDataLength);
         memcpy(gvd, cmd.receivedCommandData, min_size);
     }
 
-    void get_string_of_gvd_field(uvc::device & device, std::timed_mutex & mutex, std::string & str, gvd_offset_fields offset)
+    void get_string_of_gvd_field(uvc::device & device, std::timed_mutex & mutex, std::string & str, gvd_fields offset)
     {
-        if (offset > gvd_size)
-            throw std::logic_error("offset can't be greater than ds5 gvd_size");
-
-        std::vector<unsigned char> gvd(gvd_size);
-        get_gvd_raw(device, mutex, gvd_size, gvd.data());
-        unsigned char* gvd_pointer = gvd.data() + offset;
+        std::vector<unsigned char> gvd(static_cast<uint16_t>(gvd_fields::gvd_size));
+        get_gvd_raw(device, mutex, static_cast<uint16_t>(gvd_fields::gvd_size), gvd.data());
+        unsigned char* gvd_pointer = gvd.data() + static_cast<uint16_t>(offset);
         std::stringstream ss;
 
         switch (offset)
         {
-        case gvd_offset_fields::asic_module_serial_offset:
+        case gvd_fields::asic_module_serial_offset:
             ss << std::hex << std::setfill('0') << std::setw(2) << static_cast<int>(gvd_pointer[0]) <<
                               std::setfill('0') << std::setw(2) << static_cast<int>(gvd_pointer[1]) <<
                               std::setfill('0') << std::setw(2) << static_cast<int>(gvd_pointer[2]) <<
@@ -174,14 +171,14 @@ namespace rs4xx {
                               std::setfill('0') << std::setw(2) << static_cast<int>(gvd_pointer[4]) <<
                               std::setfill('0') << std::setw(2) << static_cast<int>(gvd_pointer[5]);
             break;
-        case gvd_offset_fields::fw_version_offset:
+        case gvd_fields::fw_version_offset:
             ss << static_cast<int>(gvd_pointer[3]) << "." <<
                   static_cast<int>(gvd_pointer[2]) << "." <<
                   static_cast<int>(gvd_pointer[1]) << "." <<
                   static_cast<int>(gvd_pointer[0]);
             break;
         default:
-            LOG_WARNING( "DS5 field at offset " << offset <<  " is not supported");
+            LOG_WARNING( "RS4XX field at offset " << static_cast<uint16_t>(offset) <<  " is not supported");
         }
         str = ss.str();
     }
@@ -213,7 +210,7 @@ namespace rs4xx {
     typedef float float_9[9];
     typedef float float_4[4];
 
-    void parse_calibration_table(ds5_calibration& calib, calibration_table_id table_id, std::vector<unsigned char> & raw_data)
+    void parse_calibration_table(rs4xx_calibration& calib, calibration_table_id table_id, std::vector<unsigned char> & raw_data)
     {
         switch (table_id)
         {
@@ -299,7 +296,7 @@ namespace rs4xx {
         calib.data_present[table_id] = true;
     }
 
-    void read_calibration(uvc::device & dev, std::timed_mutex & mutex, ds5_calibration& calib)
+    void read_calibration(uvc::device & dev, std::timed_mutex & mutex, rs4xx_calibration& calib)
     {
         std::vector<uint8_t> table_raw_data;
         std::vector<calibration_table_id> actual_list = { coefficients_table_id };
@@ -358,6 +355,11 @@ namespace rs4xx {
                 LOG_ERROR("Retrieving extended control range failed");
             }
         }
+    }
+
+    void send_receive_raw_data(uvc::device & device, std::timed_mutex & mutex, rs_raw_buffer& buffer)
+    {
+        hw_monitor::snd_rcv_raw_data(device, mutex, buffer.snd_buffer, buffer.snd_buffer_size, buffer.rcv_buffer, buffer.rcv_buffer_size);
     }
 
     uint8_t get_laser_power_mode(const uvc::device & device)

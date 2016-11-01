@@ -315,6 +315,18 @@ typedef struct rs_motion_data
     float               axes[3];    /* Three [x,y,z] axes; 16 bit data for Gyro [rad/sec], 12 bit for Accelerometer; 2's complement [m/sec^2]*/
 } rs_motion_data;
 
+#ifndef RAW_BUFFER_SIZE
+#define RAW_BUFFER_SIZE 1024    /* To be utilized exclusively by the maintenance API*/
+typedef struct rs_raw_buffer
+{
+    unsigned char snd_buffer[RAW_BUFFER_SIZE];     /* Raw data to be transmitted to device*/
+    unsigned char rcv_buffer[RAW_BUFFER_SIZE];     /* Data to be transmitted back to host from device*/
+    unsigned long long snd_buffer_size;            /* Actual buffer size to be sent to device*/
+    unsigned long long rcv_buffer_size;            /* Actual received buffer size*/
+} rs_raw_buffer;
+#else
+static_assert(false, "RAW_BUFFER_SIZE is defined elsewhere")
+#endif
 
 typedef struct rs_context rs_context;
 typedef struct rs_device rs_device;
@@ -848,6 +860,13 @@ rs_stream rs_get_detached_frame_stream_type(const rs_frame_ref * frameset, rs_er
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 */
 void rs_send_blob_to_device(rs_device * device, rs_blob_type type, void * data, unsigned int size, rs_error ** error);
+
+/**
+* send/receive opaque binary data to and from device. this API intended for OEM and maintenance
+* \param[in] raw_buf - user-allocated and initialized container for the transmitted/received data.
+* \param[out] error - if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+void rs_transmit_raw_data(rs_device * device, rs_raw_buffer * raw_buf, rs_error ** error);
 
 /**
 * retrieve the API version from the source code. Evaluate that the value is conformant to the established policies

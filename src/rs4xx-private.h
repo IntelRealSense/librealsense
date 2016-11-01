@@ -11,12 +11,11 @@
 namespace rsimpl {
     namespace rs4xx {
 
-    const int gvd_size = 1024;
-
-    enum gvd_offset_fields : int32_t // data were taken from CommandsDS5.xml
+    enum class gvd_fields : uint16_t // data were taken from CommandsDS5.xml
     {
-        fw_version_offset = 12,
-        asic_module_serial_offset = 64
+        fw_version_offset           = 12,
+        asic_module_serial_offset   = 64,
+        gvd_size                    = 1024
     };
 
     enum calibration_modules_id
@@ -57,7 +56,7 @@ namespace rsimpl {
         reserved_2,
         reserved_3,
         reserved_4,
-        max_ds5_rect_resoluitons
+        max_rs4xx_rect_resoluitons
     };
 
     static std::map< ds5_rect_resolutions, int2> resolutions_list = {
@@ -71,21 +70,21 @@ namespace rsimpl {
         { res_1920_1080,{ 1920, 1080 } },
     };
 
-    struct ds5_calibration
+    struct rs4xx_calibration
     {
         uint16_t        version;                        // major.minor
         rs_intrinsics   left_imager_intrinsic;
         rs_intrinsics   right_imager_intrinsic;
-        rs_intrinsics   depth_intrinsic[max_ds5_rect_resoluitons];
+        rs_intrinsics   depth_intrinsic[max_rs4xx_rect_resoluitons];
         rs_extrinsics   left_imager_extrinsic;
         rs_extrinsics   right_imager_extrinsic;
         rs_extrinsics   depth_extrinsic;
         std::map<calibration_table_id, bool> data_present;
 
-        ds5_calibration() : version(0), left_imager_intrinsic({}), right_imager_intrinsic({}),
+        rs4xx_calibration() : version(0), left_imager_intrinsic({}), right_imager_intrinsic({}),
             left_imager_extrinsic({}), right_imager_extrinsic({}), depth_extrinsic({})
         {
-            for (auto i = 0; i < max_ds5_rect_resoluitons; i++)
+            for (auto i = 0; i < max_rs4xx_rect_resoluitons; i++)
                 depth_intrinsic[i] = {};
             data_present.emplace(coefficients_table_id, false);
             data_present.emplace(depth_calibration_id, false);
@@ -100,14 +99,15 @@ namespace rsimpl {
     std::string read_firmware_version(uvc::device & device);
 
     // Claim USB interface used for device
-    void claim_ds5_monitor_interface(uvc::device & device);
-    void claim_ds5_motion_module_interface(uvc::device & device);
+    void claim_rs4xx_monitor_interface(uvc::device & device);
+    void claim_rs4xx_motion_module_interface(uvc::device & device);
 
     // Read and update device state
     void get_gvd_raw(uvc::device & device, std::timed_mutex & mutex, size_t sz, unsigned char * gvd);
-    void get_string_of_gvd_field(uvc::device & device, std::timed_mutex & mutex, std::string & str, gvd_offset_fields offset);
-    void read_calibration(uvc::device & dev, std::timed_mutex & mutex, ds5_calibration& calib);
+    void get_string_of_gvd_field(uvc::device & device, std::timed_mutex & mutex, std::string & str, gvd_fields offset);
+    void read_calibration(uvc::device & dev, std::timed_mutex & mutex, rs4xx_calibration& calib);
     void update_supported_options(uvc::device& dev, const std::vector <std::pair<rs_option, uint8_t>>& options, std::vector<supported_option>& supported_options);
+    void send_receive_raw_data(uvc::device & device, std::timed_mutex & mutex, rs_raw_buffer& buffer);
 
 
     // XU read/write

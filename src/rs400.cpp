@@ -11,7 +11,7 @@ using namespace rsimpl::rs4xx;
 namespace rsimpl
 {
 
-    static const cam_mode ds5d_depth_modes[] = {
+    static const cam_mode rs400_depth_modes[] = {
         {{1280, 720}, {6,15,30}},
         {{ 848, 480}, {6,15,30,60}},
         {{ 640, 480}, {6,15,30,60}},
@@ -21,7 +21,7 @@ namespace rsimpl
         {{ 320, 240}, {6,15,30,60,120}},
     };
 
-    static const cam_mode ds5d_ir_only_modes[] = {      /*  Left imager only */
+    static const cam_mode rs400_ir_only_modes[] = {      /*  Left imager only */
         {{1280, 720}, {6,15,30}},
         {{ 848, 480}, {6,15,30,60}},
         {{ 640, 480}, {6,15,30,60}},
@@ -31,7 +31,7 @@ namespace rsimpl
         {{ 320, 240}, {6,15,30,60,120}},
     };
 
-    static const cam_mode ds5d_lr_only_modes[] = {      /* Left&Right imagers, calibration */
+    static const cam_mode rs400_lr_only_modes[] = {      /* Left&Right imagers, calibration */
         {{1920,1080}, {15,30}},
         {{1280, 720}, {15,30}},
         {{ 960, 540}, {15,30}},
@@ -49,9 +49,9 @@ namespace rsimpl
         // Populate miscellaneous information about the device
         info.name = dev_name;
         std::timed_mutex mutex;
-        rs4xx::get_string_of_gvd_field(*device, mutex, info.serial, rs4xx::asic_module_serial_offset);
-        rs4xx::get_string_of_gvd_field(*device, mutex, info.firmware_version, rs4xx::fw_version_offset);
-        rs4xx::ds5_calibration calib = {};
+        rs4xx::get_string_of_gvd_field(*device, mutex, info.serial, gvd_fields::asic_module_serial_offset);
+        rs4xx::get_string_of_gvd_field(*device, mutex, info.firmware_version, gvd_fields::fw_version_offset);
+        rs4xx::rs4xx_calibration calib = {};
         try
         {
             rs4xx::read_calibration(*device, mutex, calib);
@@ -79,7 +79,7 @@ namespace rsimpl
         info.stream_subdevices[RS_STREAM_INFRARED] = 1;
         info.stream_subdevices[RS_STREAM_INFRARED2] = 1;
 
-        for(auto & m : ds5d_ir_only_modes)
+        for(auto & m : rs400_ir_only_modes)
         {
             auto intrinsic = rs_intrinsics{ m.dims.x, m.dims.y };
 
@@ -97,7 +97,7 @@ namespace rsimpl
         }
 
 
-        for(auto & m : ds5d_lr_only_modes)
+        for(auto & m : rs400_lr_only_modes)
         {
             calib.left_imager_intrinsic.width = m.dims.x;
             calib.left_imager_intrinsic.height = m.dims.y;
@@ -108,7 +108,7 @@ namespace rsimpl
 
         // Populate depth modes on subdevice 0
         info.stream_subdevices[RS_STREAM_DEPTH] = 0;
-        for(auto & m : ds5d_depth_modes)
+        for(auto & m : rs400_depth_modes)
         {
             for(auto fps : m.fps)
             {
@@ -197,10 +197,7 @@ namespace rsimpl
                     throw std::logic_error(to_string() << get_name() << " has no CCD sensor, the following is not supported: " << options[i]);
             }
 
-            switch (options[i])
-            {
-            default: base_opt.push_back(options[i]); base_opt_val.push_back(values[i]); break;
-            }
+            base_opt.push_back(options[i]); base_opt_val.push_back(values[i]); break;
         }
 
         //Handle common options
@@ -225,10 +222,7 @@ namespace rsimpl
                 }
             }
 
-            switch (options[i])
-            {
-                default: base_opt.push_back(options[i]); base_opt_val.push_back(values[i]); break;
-            }
+             base_opt.push_back(options[i]); base_opt_val.push_back(values[i]); break;
         }
 
         // Retrieve common options
@@ -325,7 +319,7 @@ namespace rsimpl
     {
         LOG_INFO("Connecting to " << camera_official_name.at(cameras::rs410));
 
-        rs4xx::claim_ds5_monitor_interface(*device);
+        rs4xx::claim_rs4xx_monitor_interface(*device);
 
         return std::make_shared<rs410_camera>(device, get_rs410_info(device, camera_official_name.at(cameras::rs410)));
     }
@@ -334,7 +328,7 @@ namespace rsimpl
     {
         LOG_INFO("Connecting to " << camera_official_name.at(cameras::rs400));
 
-        rs4xx::claim_ds5_monitor_interface(*device);
+        rs4xx::claim_rs4xx_monitor_interface(*device);
 
         return std::make_shared<rs400_camera>(device, get_rs400_info(device, camera_official_name.at(cameras::rs400)));
     }

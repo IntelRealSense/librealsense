@@ -42,7 +42,7 @@ namespace rsimpl
     {
         for (auto p : options)
         {
-            int min, max, step, def;
+            int min{}, max{}, step{}, def{};
             get_extension_control_range(dev, depth_xu, p.second, &min, &max, &step, &def);
             supported_option so;
             so.option = p.first;

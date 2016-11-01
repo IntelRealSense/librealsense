@@ -10,8 +10,6 @@
 #include "sr300.h"
 #include "zr300.h"
 #include "rs400.h"
-#include "ds5c.h"
-#include "ds5t.h"
 #include "uvc.h"
 #include "context.h"
 
@@ -74,11 +72,14 @@ rs_context_base::rs_context_base()
             case ZR300_PRODUCT_ID:      rs_dev = rsimpl::make_zr300_device(device); break;
             case F200_PRODUCT_ID:       rs_dev = rsimpl::make_f200_device(device); break;
             case SR300_PRODUCT_ID:      rs_dev = rsimpl::make_sr300_device(device); break;
-            case RS400_PRODUCT_ID:      rs_dev = rsimpl::make_rs400_device(device); break;
-            case RS410_PRODUCT_ID:      rs_dev = rsimpl::make_rs410_device(device); break;
-            case DS5_ASRC_PRODUCT_ID:   rs_dev = rsimpl::make_ds5c_rolling_device(device); break;
-            case DS5_AWGC_PRODUCT_ID:   rs_dev = rsimpl::make_ds5c_global_wide_device(device); break;
-            case DS5_AWGCT_PRODUCT_ID:  rs_dev = rsimpl::make_ds5t_device(device); break;
+            case RS400P_PID:            rs_dev = rsimpl::make_rs400_device(device); break;
+            case RS410A_PID:            rs_dev = rsimpl::make_rs410_device(device); break;
+            case RS420R_PID:
+            case RS430C_PID:
+            case RS450T_PID:
+                LOG_WARNING("Device type " << get_product_id(*device) << " is not supported in this Librealsense release ");
+                break;
+            default: break;
         }
 
         if (rs_dev && is_compatible(rs_dev))

@@ -1007,13 +1007,22 @@ namespace rs
             rs_send_blob_to_device((rs_device *)this, (rs_blob_type)type, data, (unsigned int)size, &e);
             error::handle(e);
         }
+
+        /// send and receive opaque data structure to and from device. Provision for OEM and maintenance procedures
+        /// \param[in] raw_buf  user - allocated and initialized container for the transmitted / received data
+        void transmit_raw_data(rs_raw_buffer * raw_buf)
+        {
+            rs_error * e = nullptr;
+            rs_transmit_raw_data((rs_device *)this, raw_buf, &e);
+            error::handle(e);
+        }
     };
 
     inline std::ostream & operator << (std::ostream & o, stream stream) { return o << rs_stream_to_string((rs_stream)stream); }
     inline std::ostream & operator << (std::ostream & o, format format) { return o << rs_format_to_string((rs_format)format); }
     inline std::ostream & operator << (std::ostream & o, preset preset) { return o << rs_preset_to_string((rs_preset)preset); }
     inline std::ostream & operator << (std::ostream & o, distortion distortion) { return o << rs_distortion_to_string((rs_distortion)distortion); }
-    inline std::ostream & operator << (std::ostream & o, option option) { return o << rs_option_to_string((rs_option)option); }    
+    inline std::ostream & operator << (std::ostream & o, option option) { return o << rs_option_to_string((rs_option)option); }
     inline std::ostream & operator << (std::ostream & o, capabilities capability) { return o << rs_capabilities_to_string((rs_capabilities)capability); }
     inline std::ostream & operator << (std::ostream & o, source src) { return o << rs_source_to_string((rs_source)src); }
     inline std::ostream & operator << (std::ostream & o, event evt) { return o << rs_event_to_string((rs_event_source)evt); }

@@ -78,6 +78,7 @@ EXPORTS
 
     rs_release_frame
     rs_send_blob_to_device
+    rs_transmit_raw_data
 
     rs_get_failed_function
     rs_get_failed_args

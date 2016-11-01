@@ -741,6 +741,21 @@ void rs_send_blob_to_device(rs_device * device, rs_blob_type type, void * data, 
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device, type, data, size)
 
+void rs_transmit_raw_data(rs_device * device, rs_raw_buffer * raw_buf, rs_error ** error) try
+{
+    VALIDATE_NOT_NULL(device);
+    VALIDATE_NOT_NULL(raw_buf);
+    auto lrs_device = dynamic_cast<rs_device_base*>(device);
+    if (lrs_device)
+    {
+        lrs_device->transmit_raw_data(*raw_buf);
+    }
+    else
+    {
+        throw std::runtime_error("transmitting raw data requires physical device");
+    }
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, device, raw_buf)
 
 void rs_free_error(rs_error * error) { if (error) delete error; }
 const char * rs_get_failed_function(const rs_error * error) { return error ? error->function : nullptr; }

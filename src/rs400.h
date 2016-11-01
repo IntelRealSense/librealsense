@@ -7,9 +7,6 @@
 
 #include "rs4xx.h"
 
-#define RS400_PRODUCT_ID 0x0ad1
-#define RS410_PRODUCT_ID 0x0ad2
-
 namespace rsimpl
 {
     // This class represent DS5 variants that generate only depth data. There are 2 variants:

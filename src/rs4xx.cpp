@@ -82,9 +82,13 @@ namespace rsimpl
         return rs_device_base::keep_fw_logger_alive;
     }
 
+    void rs4xx_camera::transmit_raw_data(rs_raw_buffer & buffer)
+    {
+        rs4xx::send_receive_raw_data(get_device(), usbMutex, buffer);
+    }
+
     void rs4xx_camera::on_before_start(const std::vector<subdevice_mode_selection> & /*selected_modes*/)
     {
-
     }
 
     rs_stream rs4xx_camera::select_key_stream(const std::vector<rsimpl::subdevice_mode_selection> & selected_modes)
