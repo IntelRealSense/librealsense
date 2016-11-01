@@ -542,8 +542,9 @@ const char* rs_get_subdevice_option_value_description(const rs_device* device, r
 /**
 * retrieve camera specific information, like versions of various internal componnents
 * \param[in] device     the RealSense device
-* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
-* \return            the requested camera info string, in a format specific to the device model
+* \param[in] info	    camera info type to retrieve
+* \param[out] error     if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return               the requested camera info string, in a format specific to the device model
 */
 const char* rs_get_camera_info(const rs_device* device, rs_camera_info info, rs_error** error);
 
@@ -610,13 +611,19 @@ void rs_flush_queue(rs_frame_queue* queue, rs_error** error);
 */
 rs_context* rs_create_recording_context(int api_version, rs_error** error);
 
-/* **** will be moved as a parameter of rs_create_recording_context */
+/**
+* saves all the operations recorded until the time of the call to the file that was passed as parameter
+* \param[in] ctx            device context
+* \[aram[in] filename       saved file name
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
 void rs_save_recording_to_file(const rs_context* ctx, const char* filename, rs_error** error);
 
 /**
 * create librealsense context that given a file will respond to calls exactly as the recording did
 * if the user calls a method that was either not called during recording or voilates causality of the recording error will be thrown
 * \param[in] api_version realsense API version as provided by RS_API_VERSION macro
+* \param[in] filename string representing the name of the file to record
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return            context object, should be released by rs_delete_context
 */
