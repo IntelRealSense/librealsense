@@ -173,7 +173,7 @@ namespace rsimpl
         motion_initialized = true;
 
         motion_device->start(profile);
-        enable_fisheye_stream();
+        //enable_fisheye_stream();
 
 
     }

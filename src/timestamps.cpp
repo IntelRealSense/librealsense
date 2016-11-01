@@ -2,6 +2,7 @@
 #include "sync.h"
 #include <algorithm>
 #include <iostream>
+#include <unistd.h>
 using namespace rsimpl;
 using namespace std;
 
@@ -54,7 +55,9 @@ size_t concurrent_queue::size()
 bool concurrent_queue::correct( frame_interface& frame)
 {
     lock_guard<mutex> lock(mtx);
+   // mtx.lock();
     
+   // std::cout << data_queue.size() << std::endl;
     auto it = find_if(data_queue.begin(), data_queue.end(),
                       [&](const rs_timestamp_data& element) {
         return ((frame.get_frame_number() == element.frame_number));
@@ -63,8 +66,10 @@ bool concurrent_queue::correct( frame_interface& frame)
     if (it != data_queue.end())
     {
         frame.set_timestamp(it->timestamp);
+       // mtx.unlock();
         return true;
     }
+    //mtx.unlock();
     return false;
 }
 
@@ -79,15 +84,16 @@ timestamp_corrector::~timestamp_corrector()
 
 void timestamp_corrector::on_timestamp(rs_timestamp_data data)
 {
-    unique_lock<mutex> lock(mtx);
-
+   // unique_lock<mutex> lock(mtx);
+    //mtx.lock();
     if (data_queue[data.source_id].size() <= *event_queue_size)
         data_queue[data.source_id].push_back_data(data);
     if (data_queue[data.source_id].size() > *event_queue_size)
         data_queue[data.source_id].pop_front_data();
-    lock.unlock();
-    //std::cout << "received: " << data.frame_number << std::endl;
-    //cv.notify_one();
+    // std::cout << "received: " << data.frame_number << std::endl;
+   // lock.unlock();
+   // cv.notify_one();
+  // mtx.unlock();
 }
 
 void timestamp_corrector::update_source_id(rs_event_source& source_id, const rs_stream stream)
@@ -125,18 +131,21 @@ bool timestamp_corrector::correct_timestamp(frame_interface& frame, rs_stream st
         cout << "got new res" << std::endl;
 
     }*/
+
     auto start_time = std::chrono::high_resolution_clock::now();
     while (!res && std::chrono::duration_cast<chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start_time).count() < (*events_timeout)) {
-        unique_lock<mutex> lock(mtx);
+       // unique_lock<mutex> lock(mtx);
+       // mtx.lock();
        // std::cout << "Searching for: " << frame.get_frame_number() << std::endl;
         res = data_queue[source_id].correct(frame);
-        lock.unlock();
+        //cv.wait_for(lock,std::chrono::milliseconds((*events_timeout)));
+        //mtx.unlock();
+       // usleep(1000);
     }
 
     if (res)
     {
         frame.set_timestamp_domain(RS_TIMESTAMP_DOMAIN_MICROCONTROLLER);
     }
-   // lock.unlock();
     return res;
 }
