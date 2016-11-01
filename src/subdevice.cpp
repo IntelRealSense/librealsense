@@ -45,7 +45,7 @@ void streaming_lock::invoke_callback(rs_frame* frame_ref) const
         auto callback = _archive->begin_callback();
         try
         {
-            _callback->on_frame(frame_ref);
+            if (_callback) _callback->on_frame(frame_ref);
         }
         catch(...)
         {

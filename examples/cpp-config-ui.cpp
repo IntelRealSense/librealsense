@@ -259,9 +259,10 @@ public:
         }
     }
 
-    std::vector<rs::stream_profile> get_selected_profiles()
+    bool is_selected_combination_supported()
     {
         std::vector<rs::stream_profile> results;
+
         for (auto i = 0; i < RS_STREAM_COUNT; i++)
         {
             auto stream = static_cast<rs_stream>(i);
@@ -279,7 +280,42 @@ public:
                 }
             }
         }
-        if (results.size() == 0) throw std::runtime_error("Profile not supported!");
+        return results.size() > 0;
+    }
+
+    std::vector<rs::stream_profile> get_selected_profiles()
+    {
+        std::vector<rs::stream_profile> results;
+
+        std::stringstream error_message;
+        error_message << "The profile ";
+
+        for (auto i = 0; i < RS_STREAM_COUNT; i++)
+        {
+            auto stream = static_cast<rs_stream>(i);
+            if (stream_enabled[stream])
+            {
+                auto width = res_values[selected_res_id].first;
+                auto height = res_values[selected_res_id].second;
+                auto fps = fps_values[selected_fps_id];
+                auto format = format_values[stream][selected_format_id[stream]];
+
+                error_message << "\n{" << rs_stream_to_string(stream) << ","
+                              << width << "x" << height << " at " << fps << "Hz, "
+                              << rs_format_to_string(format) << "} ";
+
+                for (auto&& p : profiles)
+                {
+                    if (p.width == width && p.height == height && p.fps == fps && p.format == format)
+                        results.push_back(p);
+                }
+            }
+        }
+        if (results.size() == 0)
+        {
+            error_message << " is unsupported!";
+            throw std::runtime_error(error_message.str());
+        }
         return results;
     }
 
@@ -458,6 +494,58 @@ private:
     std::chrono::high_resolution_clock::time_point _transition_start_time;
 };
 
+bool no_device_popup(GLFWwindow* window, const ImVec4& clear_color)
+{
+    while (!glfwWindowShouldClose(window))
+    {
+        glfwPollEvents();
+
+        int w, h;
+        glfwGetWindowSize(window, &w, &h);
+
+        ImGui_ImplGlfw_NewFrame();
+
+        // Rendering
+        glViewport(0, 0,
+            static_cast<int>(ImGui::GetIO().DisplaySize.x),
+            static_cast<int>(ImGui::GetIO().DisplaySize.y));
+        glClearColor(clear_color.x, clear_color.y, clear_color.z, clear_color.w);
+        glClear(GL_COLOR_BUFFER_BIT);
+
+        auto flags = ImGuiWindowFlags_NoResize |
+            ImGuiWindowFlags_NoMove |
+            ImGuiWindowFlags_NoCollapse;
+
+        ImGui::SetNextWindowPos({ 0, 0 });
+        ImGui::SetNextWindowSize({ static_cast<float>(w), static_cast<float>(h) });
+        ImGui::Begin("", nullptr, flags);
+
+        ImGui::OpenPopup("config-ui");
+        if (ImGui::BeginPopupModal("config-ui", nullptr,
+                                   ImGuiWindowFlags_AlwaysAutoResize))
+        {
+            ImGui::Text("No device detected. Is it plugged in?");
+            ImGui::Separator();
+
+            if (ImGui::Button("Retry", ImVec2(120, 0)))
+            {
+                return true;
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("Exit", ImVec2(120, 0)))
+            {
+                return false;
+            }
+
+            ImGui::EndPopup();
+        }
+
+        ImGui::End();
+        ImGui::Render();
+        glfwSwapBuffers(window);
+    }
+}
+
 int main(int, char**) try
 {
     rs::log_to_console(RS_LOG_SEVERITY_WARN);
@@ -477,6 +565,14 @@ int main(int, char**) try
     //rs::mock_context ctx("hq_colorexp_depth_preset.db");
     auto device_index = 0;
     auto list = ctx.query_devices();
+
+    while (list.size() == 0)
+    {
+        if (!no_device_popup(window, clear_color)) return EXIT_SUCCESS;
+
+        list = ctx.query_devices();
+    }
+
     auto dev = list[device_index];
     std::vector<std::string> device_names;
 
@@ -626,9 +722,17 @@ int main(int, char**) try
                         if (!sub->current_stream.get())
                         {
                             label = to_string() << "Play " << rs_subdevice_to_string(sub->subdevice);
-                            if (ImGui::Button(label.c_str()))
+
+                            if (sub->is_selected_combination_supported())
                             {
-                                sub->play(sub->get_selected_profiles());
+                                if (ImGui::Button(label.c_str()))
+                                {
+                                    sub->play(sub->get_selected_profiles());
+                                }
+                            }
+                            else
+                            {
+                                ImGui::TextDisabled(label.c_str());
                             }
                         }
                         else
@@ -643,6 +747,10 @@ int main(int, char**) try
                     catch(const rs::error& e)
                     {
                         error_message = error_to_string(e);
+                    }
+                    catch(const std::exception& e)
+                    {
+                        error_message = e.what();
                     }
                 }
             }
