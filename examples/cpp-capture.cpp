@@ -39,11 +39,11 @@ int main(int argc, char * argv[]) try
     for (int i = (int)rs::capabilities::depth; i <= (int)rs::capabilities::fish_eye; i++)
         if (dev.supports((rs::capabilities)i))
             supported_streams.push_back((rs::stream)i);
-
+    //supported_streams.push_back(rs::stream::fisheye);
+    //supported_streams.push_back(rs::stream::color);
     // Configure all supported streams to run at 30 frames per second
     for (auto & stream : supported_streams)
         dev.enable_stream(stream, rs::preset::best_quality);
-
     // Compute field of view for each enabled stream
     for (auto & stream : supported_streams)
     {

@@ -804,7 +804,7 @@ void rs_device_base::fisheyeCallback(motion::MotionFisheyeFrame* frame) {
             0);
 
        
-       // std::cout << "Got fisheyeCallback! 1   " <<  frame->width << "," << frame->height << std::endl;
+        //std::cout << "Got fisheyeCallback! 1   " <<  frame->width << "," << frame->height << std::endl;
         byte* frameData = archive->alloc_frame(RS_STREAM_FISHEYE, additional_data, true); // Sergey: this allocates object for the frame
 
         memcpy(frameData,frame->data,frame->width*frame->height);
@@ -827,6 +827,8 @@ void rs_device_base::fisheyeCallback(motion::MotionFisheyeFrame* frame) {
             // Commit the frame to the archive
             archive->commit_frame(RS_STREAM_FISHEYE);
         }
+
+
     }
     void rs_device_base::timestampCallback(motion::MotionTimestampFrame *frame)  {
         ;//std::cout << "Got timestamp: " << frame->header.type << std::endl;

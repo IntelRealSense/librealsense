@@ -133,6 +133,7 @@ namespace rsimpl
 
         if(motion_initialized)
             return;
+        motion_initialized = true;
         std::cout << "starting motion!" << std::endl;
         motion::MotionDeviceDescriptor mipiMotionDevice =
         {
@@ -177,6 +178,8 @@ namespace rsimpl
 
     }
     void lr200_mm_camera::enable_fisheye_stream() {
+        if(fisheye_started)
+                return;
         motion_device->startFisheyeCamera();
         fisheye_started = true;
     }

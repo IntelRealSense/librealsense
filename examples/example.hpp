@@ -6,6 +6,7 @@
 
 #include <sstream>
 #include <vector>
+#include <iostream>
 
 inline void make_depth_histogram(uint8_t rgb_image[640*480*3], const uint16_t depth_image[], int width, int height)
 {
@@ -77,6 +78,7 @@ public:
         glBindTexture(GL_TEXTURE_2D, texture);
         stride = stride == 0 ? width : stride;
         glPixelStorei(GL_UNPACK_ROW_LENGTH, stride);
+
         switch(format)
         {
         case rs::format::any:
@@ -157,6 +159,9 @@ public:
                 num_frames = 0;
                 next_time += 1000;
             }
+        } else if (stream == rs::stream::fisheye) {
+           //std::cout << "Stream timestamp: " << timestamp << std::endl;
+            // double timestamp = dev.get_frame_timestamp(stream);
         }
     }
 
@@ -219,9 +224,9 @@ public:
 
         show(rx + (rw - w)/2, ry + (rh - h)/2, w, h);
         std::ostringstream ss; ss << stream << ": " << width << " x " << height << " " << dev.get_stream_format(stream) << " (" << fps << "/" << dev.get_stream_framerate(stream) << ")" << ", F#: " << dev.get_frame_number(stream);
-        glColor3f(0,0,0);
+        glColor3f(255,255,255);
         draw_text(rx+9, ry+17, ss.str().c_str());
-        glColor3f(1,1,1);
+        glColor3f(255,255,255);
         draw_text(rx+8, ry+16, ss.str().c_str());
     }
 
@@ -231,9 +236,9 @@ public:
         if (frame_number != 0)
         {
             std::ostringstream ss; ss << stream << ": " << width << " x " << height << " " << format << " (" << fps << "/" << stream_framerate << ")" << ", F#: " << frame_number << ", TS: " << timestamp;
-            glColor3f(0,0,0);
+            glColor3f(255,255,255);
             draw_text(rx+9, ry+17, ss.str().c_str());
-            glColor3f(1,1,1);
+            glColor3f(255,255,255);
             draw_text(rx+8, ry+16, ss.str().c_str());
         }
     }

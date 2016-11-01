@@ -67,7 +67,7 @@ EXAMPLES += $(wildcard examples/*.cpp)
 EXAMPLES := $(addprefix bin/, $(notdir $(basename $(EXAMPLES))))
 
 # Aliases for convenience
-all: examples $(EXAMPLES) all-tests
+all: examples $(EXAMPLES) 
 
 install: lib/librealsense.so
 	install -m755 -d /usr/local/include/librealsense
@@ -123,7 +123,3 @@ obj/verify.o: src/verify.c | obj
 
 .PHONY: all-tests all clean
 
-all-tests: F200-live-test LR200-live-test R200-live-test SR300-live-test ZR300-live-test offline-test
-
-%-test: unit-tests/* lib/librealsense.so
-	$(CXX) unit-tests/*.cpp -std=c++11 -o bin/tests/$@ -D$(if $(findstring live,$@),LIVE_TEST,OFFLINE_TEST) -D$(firstword $(subst -, ,$@))_TEST -DMAKEFILE $(REALSENSE_FLAGS)

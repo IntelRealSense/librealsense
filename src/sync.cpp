@@ -15,7 +15,10 @@ syncronizing_archive::syncronizing_archive(const std::vector<subdevice_mode_sele
     // Enumerate all streams we need to keep synchronized with the key stream
     for(auto s : {RS_STREAM_DEPTH, RS_STREAM_INFRARED, RS_STREAM_INFRARED2, RS_STREAM_COLOR, RS_STREAM_FISHEYE})
     {
-        if(is_stream_enabled(s) && s != key_stream) other_streams.push_back(s);
+        if(is_stream_enabled(s) && s != key_stream) {
+            other_streams.push_back(s);
+        }
+        other_streams.push_back(RS_STREAM_FISHEYE);
     }
 
     // Allocate an empty image for each stream, and move it to the frontbuffer
