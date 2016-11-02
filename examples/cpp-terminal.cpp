@@ -59,10 +59,10 @@ void update_sections_data(uint8_t* raw_data, vector<section>& sections, const ma
                 auto size = snprintf(nullptr, 0, exception_str.c_str(), sec.name.c_str(), "ChangeSetVersion");
                 std::vector<char> buffer(size + 1);
                 snprintf(&buffer[0], buffer.size(), exception_str.c_str(), sec.name.c_str(), "ChangeSetVersion");
-                throw exception(buffer.data());
+                throw runtime_error(buffer.data());
             }
 
-            memcpy_s(&changeSetVersion, sec.size, data + sec.offset, sec.size);
+            memcpy(&changeSetVersion, data + sec.offset, sec.size);
             tempStr << static_cast<int>(changeSetVersion.Version_Major) <<
                 ((sec.size >= 2) ? ("." + to_string(static_cast<int>(changeSetVersion.Version_Minor))) : "") <<
                 ((sec.size >= 3) ? ("." + to_string(static_cast<int>(changeSetVersion.Version_Number))) : "") <<
@@ -77,10 +77,10 @@ void update_sections_data(uint8_t* raw_data, vector<section>& sections, const ma
                 auto size = snprintf(nullptr, 0, exception_str.c_str(), sec.name.c_str(), "MajorMinorVersion");
                 std::vector<char> buffer(size + 1);
                 snprintf(&buffer[0], buffer.size(), exception_str.c_str(), sec.name.c_str(), "MajorMinorVersion");
-                throw exception(buffer.data());
+                throw runtime_error(buffer.data());
             }
 
-            memcpy_s(&majorMinorVersion, sec.size, data + sec.offset, sec.size);
+            memcpy(&majorMinorVersion, data + sec.offset, sec.size);
             tempStr << static_cast<int>(majorMinorVersion.Version_Major) <<
                 ((sec.size >= 2) ? ("." + to_string(static_cast<int>(majorMinorVersion.Version_Minor))) : "");
         }
@@ -92,10 +92,10 @@ void update_sections_data(uint8_t* raw_data, vector<section>& sections, const ma
                 auto size = snprintf(nullptr, 0, exception_str.c_str(), sec.name.c_str(), "HexByte");
                 std::vector<char> buffer(size + 1);
                 snprintf(&buffer[0], buffer.size(), exception_str.c_str(), sec.name.c_str(), "HexByte");
-                throw exception(buffer.data());
+                throw runtime_error(buffer.data());
             }
 
-            memcpy_s(&hexByte, sec.size, data + sec.offset, sec.size);
+            memcpy(&hexByte, data + sec.offset, sec.size);
             tempStr << hexify(hexByte.Version4);
         }
         else if (format_type == "LiguriaVersion")
@@ -106,10 +106,10 @@ void update_sections_data(uint8_t* raw_data, vector<section>& sections, const ma
                 auto size = snprintf(nullptr, 0, exception_str.c_str(), sec.name.c_str(), "LiguriaVersion");
                 std::vector<char> buffer(size + 1);
                 snprintf(&buffer[0], buffer.size(), exception_str.c_str(), sec.name.c_str(), "LiguriaVersion");
-                throw exception(buffer.data());
+                throw runtime_error(buffer.data());
             }
 
-            memcpy_s(&liguriaVersion, sec.size, data + sec.offset, sec.size);
+            memcpy(&liguriaVersion, data + sec.offset, sec.size);
             tempStr << static_cast<int>(liguriaVersion.Version1) <<
                 ((sec.size >= 2) ? ("." + to_string(static_cast<int>(liguriaVersion.Version2))) : "");
         }
@@ -121,10 +121,10 @@ void update_sections_data(uint8_t* raw_data, vector<section>& sections, const ma
                 auto size = snprintf(nullptr, 0, exception_str.c_str(), sec.name.c_str(), "Bool");
                 std::vector<char> buffer(size + 1);
                 snprintf(&buffer[0], buffer.size(), exception_str.c_str(), sec.name.c_str(), "Bool");
-                throw exception(buffer.data());
+                throw runtime_error(buffer.data());
             }
 
-            memcpy_s(&BooL, sec.size, data + sec.offset, sec.size);
+            memcpy(&BooL, data + sec.offset, sec.size);
             tempStr << ((static_cast<int>(BooL.sts)) ? "TRUE" : "FALSE");
         }
         else if (format_type == "HwTypeNumber")
@@ -135,10 +135,10 @@ void update_sections_data(uint8_t* raw_data, vector<section>& sections, const ma
                 auto size = snprintf(nullptr, 0, exception_str.c_str(), sec.name.c_str(), "HwTypeNumber");
                 std::vector<char> buffer(size + 1);
                 snprintf(&buffer[0], buffer.size(), exception_str.c_str(), sec.name.c_str(), "HwTypeNumber");
-                throw exception(buffer.data());
+                throw runtime_error(buffer.data());
             }
 
-            memcpy_s(&hwTypeNumber, sec.size, data + sec.offset, sec.size);
+            memcpy(&hwTypeNumber, data + sec.offset, sec.size);
             tempStr << static_cast<int>(hwTypeNumber.num);
         }
         else if (format_type == "Ascii")
@@ -149,12 +149,12 @@ void update_sections_data(uint8_t* raw_data, vector<section>& sections, const ma
                 auto size = snprintf(nullptr, 0, exception_str.c_str(), sec.name.c_str(), "Ascii");
                 std::vector<char> buffer(size + 1);
                 snprintf(&buffer[0], buffer.size(), exception_str.c_str(), sec.name.c_str(), "Ascii");
-                throw exception(buffer.data());
+                throw runtime_error(buffer.data());
             }
 
-            memcpy_s(&ascii, sec.size, data + sec.offset, sec.size);
+            memcpy(&ascii, data + sec.offset, sec.size);
             char* temp = new char[sec.size + 1];
-            memcpy_s(temp, sec.size, ascii.value, sec.size);
+            memcpy(temp, ascii.value, sec.size);
             temp[sec.size] = '\0';
             tempStr << temp;
             delete[] temp;
@@ -167,10 +167,10 @@ void update_sections_data(uint8_t* raw_data, vector<section>& sections, const ma
                 auto size = snprintf(nullptr, 0, exception_str.c_str(), sec.name.c_str(), "DecByte");
                 std::vector<char> buffer(size + 1);
                 snprintf(&buffer[0], buffer.size(), exception_str.c_str(), sec.name.c_str(), "DecByte");
-                throw exception(buffer.data());
+                throw runtime_error(buffer.data());
             }
 
-            memcpy_s(&decByte, sec.size, data + sec.offset, sec.size);
+            memcpy(&decByte, data + sec.offset, sec.size);
             tempStr << static_cast<int>(decByte.version);
         }
         else if (format_type == "HexNumber")
@@ -181,10 +181,10 @@ void update_sections_data(uint8_t* raw_data, vector<section>& sections, const ma
                 auto size = snprintf(nullptr, 0, exception_str.c_str(), sec.name.c_str(), "HexNumber");
                 std::vector<char> buffer(size + 1);
                 snprintf(&buffer[0], buffer.size(), exception_str.c_str(), sec.name.c_str(), "HexNumber");
-                throw exception(buffer.data());
+                throw runtime_error(buffer.data());
             }
 
-            memcpy_s(&hexNumber, sec.size, data + sec.offset, sec.size);
+            memcpy(&hexNumber, data + sec.offset, sec.size);
             tempStr << hexify(hexNumber.number1) <<
                 ((sec.size >= 2) ? hexify(hexNumber.number2) : "") <<
                 ((sec.size >= 3) ? hexify(hexNumber.number3) : "") <<
@@ -198,10 +198,10 @@ void update_sections_data(uint8_t* raw_data, vector<section>& sections, const ma
                 auto size = snprintf(nullptr, 0, exception_str.c_str(), sec.name.c_str(), "HexNumber");
                 std::vector<char> buffer(size + 1);
                 snprintf(&buffer[0], buffer.size(), exception_str.c_str(), sec.name.c_str(), "HexNumber");
-                throw exception(buffer.data());
+                throw runtime_error(buffer.data());
             }
 
-            memcpy_s(&hexNumber, sec.size, data + sec.offset, sec.size);
+            memcpy(&hexNumber, data + sec.offset, sec.size);
             tempStr << hexify(hexNumber.number2) <<
                 ((sec.size >= 2) ? hexify(hexNumber.number1) : "");
         }
@@ -213,10 +213,10 @@ void update_sections_data(uint8_t* raw_data, vector<section>& sections, const ma
                 auto size = snprintf(nullptr, 0, exception_str.c_str(), sec.name.c_str(), "HexNumberReversed");
                 std::vector<char> buffer(size + 1);
                 snprintf(&buffer[0], buffer.size(), exception_str.c_str(), sec.name.c_str(), "HexNumberReversed");
-                throw exception(buffer.data());
+                throw runtime_error(buffer.data());
             }
 
-            memcpy_s(&hexNumberReversed, sec.size, data + sec.offset, sec.size);
+            memcpy(&hexNumberReversed, data + sec.offset, sec.size);
             tempStr << hexify(hexNumberReversed.number4) <<
                 ((sec.size >= 2) ? hexify(hexNumberReversed.number3) : "") <<
                 ((sec.size >= 3) ? hexify(hexNumberReversed.number2) : "") <<
@@ -230,10 +230,10 @@ void update_sections_data(uint8_t* raw_data, vector<section>& sections, const ma
                 auto size = snprintf(nullptr, 0, exception_str.c_str(), sec.name.c_str(), "BarCodeSerial12Char");
                 std::vector<char> buffer(size + 1);
                 snprintf(&buffer[0], buffer.size(), exception_str.c_str(), sec.name.c_str(), "BarCodeSerial12Char");
-                throw exception(buffer.data());
+                throw runtime_error(buffer.data());
             }
 
-            memcpy_s(&barCodeSerial12Char, sec.size, data + sec.offset, sec.size);
+            memcpy(&barCodeSerial12Char, data + sec.offset, sec.size);
             tempStr << hexify(barCodeSerial12Char.number1) <<
                 ((sec.size >= 2) ? hexify(barCodeSerial12Char.number2) : "") <<
                 ((sec.size >= 3) ? hexify(barCodeSerial12Char.number3) : "") <<
@@ -251,10 +251,10 @@ void update_sections_data(uint8_t* raw_data, vector<section>& sections, const ma
                 auto size = snprintf(nullptr, 0, exception_str.c_str(), sec.name.c_str(), "WideMajorMinorVersion");
                 std::vector<char> buffer(size + 1);
                 snprintf(&buffer[0], buffer.size(), exception_str.c_str(), sec.name.c_str(), "WideMajorMinorVersion");
-                throw exception(buffer.data());
+                throw runtime_error(buffer.data());
             }
 
-            memcpy_s(&wideMajorMinorVersion, sec.size, data + sec.offset, sec.size);
+            memcpy(&wideMajorMinorVersion, data + sec.offset, sec.size);
             tempStr << static_cast<int>(wideMajorMinorVersion.Version_Minor) <<
                 ((sec.size >= 2) ? ("." + to_string(static_cast<int>(wideMajorMinorVersion.Version_Major))) : "");
         }
@@ -266,10 +266,10 @@ void update_sections_data(uint8_t* raw_data, vector<section>& sections, const ma
                 auto size = snprintf(nullptr, 0, exception_str.c_str(), sec.name.c_str(), "DoubleNumber");
                 std::vector<char> buffer(size + 1);
                 snprintf(&buffer[0], buffer.size(), exception_str.c_str(), sec.name.c_str(), "DoubleNumber");
-                throw exception(buffer.data());
+                throw runtime_error(buffer.data());
             }
 
-            memcpy_s(&number, sec.size, data + sec.offset, sec.size);
+            memcpy(&number, data + sec.offset, sec.size);
             tempStr << std::setprecision(10) << number.number;
         }
 
@@ -298,10 +298,10 @@ void update_sections_data(uint8_t* raw_data, vector<section>& sections, const ma
 
         vector<uint8_t> rawData;
         if (sec.size == 0)
-            throw exception(string("Size of section " + sec.name + " is 0.").c_str());
+            throw runtime_error(string("Size of section " + sec.name + " is 0.").c_str());
 
         rawData.resize(sec.size);
-        memcpy_s(rawData.data(), sec.size, data + sec.offset, sec.size);
+        memcpy(rawData.data(), data + sec.offset, sec.size);
         sec.data = tempStr.str();
     }
 }
@@ -451,7 +451,7 @@ void encode_command(const command& xml_cmd_info, const vector<parameter_info>& p
     auto parameters = params;
 
     if (int(params.size()) < num_of_required_parameters)
-        throw exception("number of given parameters is less than required"); // TODO: consider to print the command info
+        throw runtime_error("number of given parameters is less than required"); // TODO: consider to print the command info
 
     auto format_length = Byte;
     if (is_cmd_writes_data)
@@ -542,7 +542,7 @@ void xml_mode(const string& line, const commands_xml& cmd_xml, rs::device& dev)
 
     auto it = cmd_xml.commands.find(command_str);
     if (it == cmd_xml.commands.end())
-        throw exception("Command not found!");
+        throw runtime_error("Command not found!");
 
     auto command = it->second;
 
@@ -551,7 +551,7 @@ void xml_mode(const string& line, const commands_xml& cmd_xml, rs::device& dev)
 
     stringstream ss;
     decode_raw_data(command, cmd_xml.custom_formatters, result.data(), result.size(), ss);
-    cout << ss.str() << endl;
+    cout << endl << ss.str() << endl;
 }
 
 void hex_mode(const string& line, rs::device& dev)
@@ -570,6 +570,7 @@ void hex_mode(const string& line, rs::device& dev)
 
     auto result = dev.debug().send_and_receive_raw_data(raw_data);
 
+    cout << endl;
     for (auto& elem : result)
         cout << setfill('0') << setw(2) << hex << static_cast<int>(elem) << " ";
 }
@@ -588,7 +589,7 @@ int main(int argc, char** argv) try
     //cmd.parse(argc, argv);
 
     // parse command.xml
-    rs::log_to_console(RS_LOG_SEVERITY_WARN);
+    rs::log_to_file(RS_LOG_SEVERITY_WARN, "librealsense.log");
     // Obtain a list of devices currently present on the system
     rs::context ctx;
     auto devices = ctx.query_devices();
@@ -602,7 +603,7 @@ int main(int argc, char** argv) try
     auto dev = devices.front(); // choose first device
 
     commands_xml cmd_xml;
-    auto sts = parse_xml_from_file("C:/Program Files/Intel/IPDev/bin/Release/CommandsDS5.xml", cmd_xml);
+    auto sts = parse_xml_from_file("./CommandsDS5.xml", cmd_xml);
     if (!sts)
     {
         cout << "XML file not found!\nMoving to hex console mode.\n\n";
@@ -612,8 +613,9 @@ int main(int argc, char** argv) try
     bool loop = true;
     while (loop)
     {
-        fflush(nullptr);
         cout << "\n\n#>";
+        fflush(nullptr);
+
         string line;
         getline(cin, line);
 

@@ -128,7 +128,7 @@ struct section {
     int offset, size;
 };
 
-struct read_data {
+struct data {
     std::vector<section> sections;
 };
 
@@ -158,7 +158,7 @@ struct command
     std::string i2c_reg_offset;
     std::string i2c_cmd_type;
 
-    read_data read_data;
+    data read_data;
     std::vector<parameter> parameters;
 };
 
@@ -232,12 +232,12 @@ inline unsigned int string_to_hex(std::string str)
 
 inline void parse_xml_from_memory(const char * content, commands_xml& cmd_xml)
 {
-    auto doc = std::make_unique<rapidxml::xml_document<>>();
+    auto doc = std::make_shared<rapidxml::xml_document<>>();
     doc->parse<0>(doc->allocate_string(content));
 
     auto node = doc->first_node("Commands");
     if (!node)
-        throw std::exception("Corrupted XML file");
+        throw std::logic_error("Corrupted XML file");
 
     for (auto NodeI = node->first_node(); NodeI; NodeI = NodeI->next_sibling())
     {
