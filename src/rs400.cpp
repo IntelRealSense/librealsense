@@ -93,24 +93,6 @@ namespace rsimpl
                 info.subdevice_modes.push_back({ 1, m.dims, pf_y12i, fps,{ m.dims.x, m.dims.y },{},{ 0 } });
         }
 
-        //// Populate depth modes on subdevice 0
-        //info.stream_subdevices[RS_STREAM_DEPTH] = 0;
-        //for(auto & m : rs400_depth_modes)
-        //{
-        //    for(auto fps : m.fps)
-        //    {
-        //        auto intrinsic = rs_intrinsics{ m.dims.x, m.dims.y };
-        //        if (calib.data_present[coefficients_table_id])
-        //        {
-        //            // Apply supported camera modes, select intrinsic from flash, if available; otherwise use default
-        //            auto it = std::find_if(resolutions_list.begin(), resolutions_list.end(), [m](std::pair<ds5_rect_resolutions, int2> res) { return ((m.dims.x == res.second.x) && (m.dims.y == res.second.y)); });
-        //            if (it != resolutions_list.end())
-        //                intrinsic = calib.depth_intrinsic[(*it).first];
-        //        }
-        //        info.subdevice_modes.push_back({0, m.dims, pf_z16, fps, intrinsic, {}, {0}});
-        //    }
-        //}
-
         // Populate the presets
         for(int i=0; i<RS_PRESET_COUNT; ++i)
         {

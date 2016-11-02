@@ -60,51 +60,62 @@ TEST_CASE("RS4XX device supports all required options", "[live] [RS4XX]")
     }
 }
 
-TEST_CASE("RS410a XU Laser Power Mode", "[live] [RS410a]")
+TEST_CASE("RS4XX XU Laser Power Mode and Power", "[live] [RS4XX]")
 {
-    for (int i=0; i< 5; i++)
+    rs::context ctx;
+    REQUIRE(ctx.get_device_count() == 1);
+
+    rs::device * dev = ctx.get_device(0);
+    REQUIRE(nullptr != dev);
+
+    std::string name = dev->get_name();
+    INFO("Device name is " << name);
+
+    double lsr_mode_init{}, lsr_power_init{}, min{}, max{}, step{}, def{};
+    rs::option opt_lsr_mode = rs::option::rs4xx_projector_mode;
+    rs::option opt_lsr_pwr = rs::option::rs4xx_projector_pwr;
+
+    if ((dev->supports_option(opt_lsr_mode)) && (dev->supports_option(opt_lsr_pwr)))
     {
-        INFO("CTX creation iteration " << i);
+        dev->get_options(&opt_lsr_mode, 1, &lsr_mode_init);
+        dev->get_options(&opt_lsr_pwr, 1, &lsr_power_init);
+        INFO("Initial laser mode is " << lsr_mode_init);
+        INFO("Initial laser power is " << lsr_power_init);
+        std::this_thread::sleep_for(std::chrono::milliseconds(20));
 
-        rs::context ctx;
-        REQUIRE(ctx.get_device_count() == 1);
+        // Test laser mode control
+        dev->get_option_range(opt_lsr_mode, min, max, step, def);
 
-        rs::device * dev = ctx.get_device(0);
-        REQUIRE(nullptr != dev);
-
-        std::string name = dev->get_name();
-        INFO("Device name is " << name);
-        CHECKED_ELSE(std::string::npos == name.find("Intel RealSense RS410a"))
+        double res = 0.;
+        for (uint8_t j = 0; j < 2; j++)
         {
-
-            double lsr_init_power = 0.;
-            rs::option opt = rs::option::rs4xx_projector_mode;
-
-            dev->get_options(&opt, 1, &lsr_init_power);
-            INFO("Initial laser power value obtained from hardware is " << lsr_init_power);
-            std::this_thread::sleep_for(std::chrono::milliseconds(20));
-
-            double set_val = 1., reset_val = 0., res = 0.;
-
-            for (uint8_t j = 0; j < 2; j++) // Laser power is On/Off toggle
+            INFO("Laser mode control test: iteration " << j);
+            for (double set_val = min; set_val <= max; set_val += step)
             {
-                INFO("Set option iteration " << j);
-                dev->set_options(&opt, 1, &set_val);
-                std::this_thread::sleep_for(std::chrono::milliseconds(50));
-                dev->get_options(&opt, 1, &res);
-                std::this_thread::sleep_for(std::chrono::milliseconds(50));
+                dev->set_options(&opt_lsr_mode, 1, &set_val);
+                std::this_thread::sleep_for(std::chrono::milliseconds(20));
+                dev->get_options(&opt_lsr_mode, 1, &res);
+                std::this_thread::sleep_for(std::chrono::milliseconds(20));
                 REQUIRE(set_val == res);
-
-                dev->set_options(&opt, 1, &reset_val);
-                std::this_thread::sleep_for(std::chrono::milliseconds(50));
-                dev->get_options(&opt, 1, &res);
-                std::this_thread::sleep_for(std::chrono::milliseconds(50));
-                REQUIRE(reset_val == res);
             }
-
-            dev->set_options(&opt, 1, &lsr_init_power);
-            std::this_thread::sleep_for(std::chrono::milliseconds(200));
         }
+
+        // Test laser power
+        // Switch to "laser manual" mode
+        double lsr_mode_manual = 1.;
+        dev->set_options(&opt_lsr_mode, 1, &lsr_mode_manual);
+        std::this_thread::sleep_for(std::chrono::milliseconds(50));
+        dev->get_option_range(opt_lsr_pwr, min, max, step, def);
+
+        for (double set_val = min; set_val <= max; set_val += step)
+        {
+            dev->set_options(&opt_lsr_pwr, 1, &set_val);
+            dev->get_options(&opt_lsr_pwr, 1, &res);
+            REQUIRE(set_val == res);
+        }
+
+        // Reset laser control to original state
+        dev->set_options(&opt_lsr_mode, 1, &lsr_mode_init);
     }
 }
 
