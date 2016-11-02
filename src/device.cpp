@@ -804,7 +804,7 @@ void rs_device_base::fisheyeCallback(motion::MotionFisheyeFrame* frame) {
             config.info.supported_metadata_vector,
             0);
 
-       
+        additional_data.timestamp_domain = RS_TIMESTAMP_DOMAIN_MICROCONTROLLER;
         //std::cout << "Got fisheyeCallback! 1   " <<  frame->width << "," << frame->height << std::endl;
         byte* frameData = archive->alloc_frame(RS_STREAM_FISHEYE, additional_data, true); // Sergey: this allocates object for the frame
 
