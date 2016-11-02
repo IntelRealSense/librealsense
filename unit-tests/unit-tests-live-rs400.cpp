@@ -201,19 +201,25 @@ TEST_CASE("RS4XX Transmit Raw Data", "[live] [RS4XX]")
 
     // Initialize and preset raw buffer
     rs_raw_buffer test_obj{};
-    for (int i = 0; i < 5; i++)
-    {
-        memset(&test_obj, 0, sizeof(rs_raw_buffer));
 
-        std::vector<uint8_t> out_data{ 0x1, 0x2, 0x3, 0x4, 0x5, 0x6 };
-        std::copy(out_data.begin(), out_data.end(), test_obj.snd_buffer);
-        test_obj.snd_buffer_size = out_data.size();
+    // List of test patterns for transmitting raw data. Represent "request buffer content -> response buffer size" structure
+    std::vector< std::pair<std::vector<uint8_t>, unsigned short>> snd_rcv_patterns{
+        { { 0x14, 0x0, 0xab, 0xcd, 0x10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 } , 216},      // GVD 
+        { { 0x14, 0x0, 0xab, 0xcd, 0x10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 } , 216 },     // GVD 
+    };
+
+    for (auto test_pattern : snd_rcv_patterns)
+    {
+        assert((test_pattern.first.size() > 0) && (test_pattern.first.size() <=RAW_BUFFER_SIZE));
+        assert((test_pattern.second >= 0) && (test_pattern.second <= RAW_BUFFER_SIZE));
+        memset(&test_obj, 0, sizeof(rs_raw_buffer));
+        std::copy(test_pattern.first.begin(), test_pattern.first.end(), test_obj.snd_buffer);
+        test_obj.snd_buffer_size = test_pattern.first.size();
 
         // Check send/receive raw data opaque binary buffer to exchange data with device
         dev->transmit_raw_data(&test_obj);
 
-        REQUIRE(test_obj.snd_buffer_size != 0);
-        REQUIRE(test_obj.rcv_buffer_size > 0);
+        REQUIRE(test_obj.rcv_buffer_size == test_pattern.second);
         REQUIRE(test_obj.rcv_buffer_size <= RAW_BUFFER_SIZE);
     }
 }
