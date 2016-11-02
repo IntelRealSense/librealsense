@@ -26,9 +26,7 @@
     <ClCompile Include="..\..\src\ds-device.cpp" />
     <ClCompile Include="..\..\src\rs4xx-private.cpp" />
     <ClCompile Include="..\..\src\rs4xx.cpp" />
-    <ClCompile Include="..\..\src\ds5c.cpp" />
     <ClCompile Include="..\..\src\rs400.cpp" />
-    <ClCompile Include="..\..\src\ds5t.cpp" />
     <ClCompile Include="..\..\src\f200.cpp" />
     <ClCompile Include="..\..\src\hw-monitor.cpp" />
     <ClCompile Include="..\..\src\image.cpp" />
@@ -62,9 +60,7 @@
     <ClInclude Include="..\..\src\ds-device.h" />
     <ClInclude Include="..\..\src\rs4xx-private.h" />
     <ClInclude Include="..\..\src\rs4xx.h" />
-    <ClInclude Include="..\..\src\ds5c.h" />
     <ClInclude Include="..\..\src\rs400.h" />
-    <ClInclude Include="..\..\src\ds5t.h" />
     <ClInclude Include="..\..\src\f200.h" />
     <ClInclude Include="..\..\src\hw-monitor.h" />
     <ClInclude Include="..\..\src\image.h" />

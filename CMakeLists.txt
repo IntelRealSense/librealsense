@@ -54,9 +54,7 @@ set(REALSENSE_CPP
     src/archive.cpp
     src/context.cpp
     src/device.cpp
-	src/ds-device.cpp
-    src/ds5c.cpp
-	src/ds5t.cpp
+	src/ds-device.cpp    
     src/ds-private.cpp
     src/f200.cpp
     src/hw-monitor.cpp
@@ -87,9 +85,7 @@ set(REALSENSE_HPP
     src/archive.h
     src/context.h
     src/device.h
-    src/ds-device.h
-	src/ds5c.h
-	src/ds5t.h
+    src/ds-device.h	
     src/ds-private.h
     src/f200.h
     src/hw-monitor.h
