@@ -120,6 +120,14 @@ set_target_properties (cpp-terminal PROPERTIES
     FOLDER Examples
 )
 
+add_executable(cpp-multicam cpp-multicam.cpp)
+target_link_libraries(cpp-multicam ${DEPENDENCIES})
+
+set_target_properties (cpp-multicam PROPERTIES
+    FOLDER Examples
+)
+
+
 install(
     TARGETS
 	

@@ -274,9 +274,36 @@ int rs_is_subdevice_supported(const rs_device* device, rs_subdevice subdevice, r
 */
 rs_stream_modes_list* rs_get_stream_modes(rs_device* device, rs_subdevice subdevice, rs_error** error);
 
+/**
+* send raw data to device
+* \param[in] device  input RealSense device
+* \param[in] raw_data_to_send   raw data to be send to device
+* \param[in] size_of_raw_data_to_send   size of raw_data_to_send
+* \param[out] error   if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return            rs_raw_data_buffer, should be released by rs_delete_raw_data
+*/
 rs_raw_data_buffer* rs_send_and_receive_raw_data(rs_device* device, void* raw_data_to_send, unsigned size_of_raw_data_to_send, rs_error** error);
-int rs_get_raw_data_size(const rs_raw_data_buffer* list, rs_error** error);
-void rs_delete_raw_data(rs_raw_data_buffer* list);
+
+/**
+* get the size of rs_raw_data_buffer
+* \param[in] buffer        pointer to rs_raw_data_buffer returned by rs_send_and_receive_raw_data
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return size of rs_raw_data_buffer
+*/
+int rs_get_raw_data_size(const rs_raw_data_buffer* buffer, rs_error** error);
+
+/**
+* delete rs_raw_data_buffer
+* \param[in] buffer        rs_raw_data_buffer returned by rs_send_and_receive_raw_data
+*/
+void rs_delete_raw_data(rs_raw_data_buffer* buffer);
+
+/**
+* retrieve char array from rs_raw_data_buffer
+* \param[in] buffer        rs_raw_data_buffer returned by rs_send_and_receive_raw_data
+* \param[out] error   if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return raw data
+*/
 const unsigned char* rs_get_raw_data(const rs_raw_data_buffer* buffer, rs_error** error);
 
 /**
