@@ -92,9 +92,17 @@ set_target_properties (c-tutorial-1-depth PROPERTIES
 
 add_executable(cpp-enumerate-devices cpp-enumerate-devices.cpp)
 target_link_libraries(cpp-enumerate-devices ${DEPENDENCIES})
-include_directories(cpp-config-ui third_party/tclap/include)
+include_directories(cpp-enumerate-devices third_party/tclap/include)
 
 set_target_properties (cpp-enumerate-devices PROPERTIES
+    FOLDER Examples
+)
+
+add_executable(cpp-terminal cpp-terminal.cpp)
+target_link_libraries(cpp-terminal ${DEPENDENCIES})
+include_directories(cpp-terminal third_party/tclap/include)
+
+set_target_properties (cpp-terminal PROPERTIES
     FOLDER Examples
 )
 
@@ -108,6 +116,7 @@ install(
 	cpp-tutorial-2-streams
 	
 	cpp-enumerate-devices
+	cpp-terminal
 
     RUNTIME DESTINATION
     ${CMAKE_INSTALL_PREFIX}/bin

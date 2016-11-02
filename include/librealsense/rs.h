@@ -196,6 +196,7 @@ typedef struct rs_device rs_device;
 typedef struct rs_error rs_error;
 typedef struct rs_active_stream rs_active_stream;
 typedef struct rs_stream_profile_list rs_stream_profile_list;
+typedef struct rs_raw_data_buffer rs_raw_data_buffer;
 typedef struct rs_frame rs_frame;
 typedef struct rs_frame_queue rs_frame_queue;
 
@@ -228,6 +229,11 @@ rs_stream_profile_list* rs_get_supported_profiles(rs_device* device, rs_subdevic
 void rs_get_profile(const rs_stream_profile_list* list, int index, rs_stream* stream, int* width, int* height, int* fps, rs_format* format, rs_error** error);
 int rs_get_profile_list_size(const rs_stream_profile_list* list, rs_error** error);
 void rs_delete_profiles_list(rs_stream_profile_list* list);
+
+rs_raw_data_buffer* rs_send_and_receive_raw_data(rs_device* device, void* raw_data_to_send, unsigned size_of_raw_data_to_send, rs_error** error);
+int rs_get_raw_data_size(const rs_raw_data_buffer* list, rs_error** error);
+void rs_delete_raw_data(rs_raw_data_buffer* list);
+const unsigned char* rs_get_raw_data(const rs_raw_data_buffer* buffer, rs_error** error);
 
 rs_active_stream* rs_open(rs_device* device, rs_subdevice subdevice, rs_stream stream, int width, int height, int fps, rs_format format, rs_error** error);
 rs_active_stream* rs_open_many(rs_device* device, rs_subdevice subdevice, 
