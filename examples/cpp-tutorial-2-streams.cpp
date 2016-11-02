@@ -28,29 +28,37 @@ int main() try
 
     std::vector<rs_stream> supported_streams = { RS_STREAM_DEPTH, RS_STREAM_INFRARED, RS_STREAM_COLOR };
 
+    // Configure the relevant subdevices of the RealSense camera
     auto depth_stream = dev.depth().open({ { RS_STREAM_DEPTH, 640, 480, 30, RS_FORMAT_Z16 },
                                            { RS_STREAM_INFRARED, 640, 480, 30, RS_FORMAT_Y8 } });
     auto color_stream = dev.color().open(  { RS_STREAM_COLOR, 640, 480, 30, RS_FORMAT_RGB8 });
 
-    rs::frame_queue queue(10);
+    // Create frame queue to pass new frames from the device to our application
+    rs::frame_queue queue(RS_STREAM_COUNT);
+    // Create a frame buffer to hold on to most up to date frame until a newer frame is available
     rs::frame frontbuffer[RS_STREAM_COUNT];
 
+    // Start the physical devices and specify our frame queue as the target
     depth_stream.start(queue);
     color_stream.start(queue);
 
     // Open a GLFW window to display our output
     glfwInit();
-    GLFWwindow * win = glfwCreateWindow(1280, 960, "librealsense tutorial #2", nullptr, nullptr);
+    auto win = glfwCreateWindow(1280, 960, "librealsense tutorial #2", nullptr, nullptr);
     glfwMakeContextCurrent(win);
 
     while(!glfwWindowShouldClose(win))
     {
-        // Wait for new frame data
         glfwPollEvents();
 
-        auto frame = queue.wait_for_frame();
-        auto stream_type = frame.get_stream_type();
-        frontbuffer[stream_type] = std::move(frame);
+        // Move new frames into the frame buffer
+        rs::frame frame;
+        while (queue.poll_for_frame(&frame))
+        {
+            auto stream_type = frame.get_stream_type();
+            // Override the last frame with the new one
+            frontbuffer[stream_type] = std::move(frame);
+        }
 
         glClear(GL_COLOR_BUFFER_BIT);
         glPixelZoom(1, -1);
@@ -81,7 +89,7 @@ int main() try
         glfwSwapBuffers(win);
     }
 
-    queue.flush();
+    printf("Finishing up");
 
     return EXIT_SUCCESS;
 }

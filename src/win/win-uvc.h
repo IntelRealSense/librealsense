@@ -18,7 +18,6 @@ namespace rsimpl
 {
     namespace uvc
     {
-        class source_reader_callback;
         class wmf_backend;
 
         struct profile_and_callback
@@ -91,5 +90,28 @@ namespace rsimpl
             named_mutex                             _systemwide_lock;
             std::string                             _location;
         };
+
+        class source_reader_callback : public IMFSourceReaderCallback
+        {
+        public:
+            explicit source_reader_callback(std::weak_ptr<wmf_uvc_device> owner) : _owner(owner)
+            {
+            };
+            virtual ~source_reader_callback() {};
+            STDMETHODIMP QueryInterface(REFIID iid, void** ppv) override;
+            STDMETHODIMP_(ULONG) AddRef() override;
+            STDMETHODIMP_(ULONG) Release() override;
+            STDMETHODIMP OnReadSample(HRESULT /*hrStatus*/,
+                DWORD dwStreamIndex,
+                DWORD /*dwStreamFlags*/,
+                LONGLONG /*llTimestamp*/,
+                IMFSample *sample) override;
+            STDMETHODIMP OnEvent(DWORD /*sidx*/, IMFMediaEvent* /*event*/) override;
+            STDMETHODIMP OnFlush(DWORD) override;
+        private:
+            std::weak_ptr<wmf_uvc_device> _owner;
+            long _refCount = 0;
+        };
+
     }
 }

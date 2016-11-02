@@ -302,7 +302,7 @@ namespace rsimpl
             vector<uint8_t> holder;
             holder.resize(size);
             memcpy(holder.data(), ptr, size);
-            int id = blobs.size();
+            auto id = static_cast<int>(blobs.size());
             blobs.push_back(holder);
             return id;
         }
@@ -311,7 +311,7 @@ namespace rsimpl
         {
             using namespace chrono;
             auto diff = high_resolution_clock::now() - start_time;
-            return duration_cast<milliseconds>(diff).count();
+            return static_cast<int>(duration_cast<milliseconds>(diff).count());
         }
 
         call& recording::find_call(call_type t, int entity_id)
@@ -319,7 +319,7 @@ namespace rsimpl
             lock_guard<mutex> lock(_mutex);
             for (auto i = 1; i <= calls.size(); i++)
             {
-                const auto idx = (_cursors[entity_id] + i) % calls.size();
+                const auto idx = (_cursors[entity_id] + i) % static_cast<int>(calls.size());
                 if (calls[idx].type == t && calls[idx].entity_id == entity_id)
                 {
                     _cursors[entity_id] = _cycles[entity_id] = idx;
@@ -334,7 +334,7 @@ namespace rsimpl
             lock_guard<mutex> lock(_mutex);
             for (auto i = 1; i <= calls.size(); i++)
             {
-                const auto idx = (_cycles[id] + i) % calls.size();
+                const auto idx = (_cycles[id] + i) % static_cast<int>(calls.size());
                 if (calls[idx].type == t && calls[idx].entity_id == id)
                 {
                     _cycles[id] = idx;
@@ -357,12 +357,13 @@ namespace rsimpl
                 c.param1 = _rec->save_blob(&p, sizeof(p));
                 vector<uint8_t> frame((uint8_t*)f.pixels, 
                                       (uint8_t*)f.pixels + f.size);
-                auto compressed = _compression.encode(frame);
-                c.param2 = _rec->save_blob(compressed.data(), compressed.size());
-                c.param4 = compressed.size();
-                c.param3 = _save_frames ? 0 : 1;
-                auto dec = _compression.decode(compressed);
-                frame_object fo{ dec.size(), dec.data() };
+                auto compressed = _compression->encode(frame);
+                c.param2 = _rec->save_blob(compressed.data(), static_cast<int>(compressed.size()));
+                c.param4 = static_cast<int>(compressed.size());
+                c.param3 = _compression->save_frames ? 0 : 1;
+                auto dec = _compression->decode(compressed);
+                _compression->effect = (100.0f * compressed.size()) / frame.size();
+                frame_object fo{ static_cast<int>(dec.size()), dec.data() };
                 callback(p, fo);
             });
             vector<stream_profile> ps{ profile };
@@ -494,8 +495,8 @@ namespace rsimpl
             auto result = _source->send_receive(data, timeout_ms, require_response);
 
             auto&& c = _rec->add_call(_entity_id, call_type::send_command);
-            c.param1 = _rec->save_blob((void*)data.data(), data.size());
-            c.param2 = _rec->save_blob((void*)result.data(), result.size());
+            c.param1 = _rec->save_blob((void*)data.data(), static_cast<int>(data.size()));
+            c.param2 = _rec->save_blob((void*)result.data(), static_cast<int>(result.size()));
             c.param3 = timeout_ms;
             c.param4 = require_response;
 
@@ -510,7 +511,7 @@ namespace rsimpl
             auto&& c = _rec->add_call(0, call_type::create_uvc_device);
             c.param1 = id;
 
-            return make_shared<record_uvc_device>(_rec, dev, id);
+            return make_shared<record_uvc_device>(_rec, dev, _compression, id);
         }
 
         vector<uvc_device_info> record_backend::query_uvc_devices() const
@@ -539,7 +540,8 @@ namespace rsimpl
         }
 
         record_backend::record_backend(shared_ptr<backend> source)
-            : _source(source), _rec(make_shared<recording>()), _entity_count(1)
+            : _source(source), _rec(make_shared<recording>()), _entity_count(1),
+              _compression(make_shared<compression_algorithm>())
         {
         }
 
@@ -626,7 +628,7 @@ namespace rsimpl
 
         power_state playback_uvc_device::get_power_state() const
         {
-            auto&& c = _rec->find_call(call_type::uvc_set_power_state, _entity_id);
+            auto&& c = _rec->find_call(call_type::uvc_get_power_state, _entity_id);
             return static_cast<power_state>(c.param1);
         }
 
@@ -728,7 +730,7 @@ namespace rsimpl
         vector<uint8_t> playback_usb_device::send_receive(const vector<uint8_t>& data, int timeout_ms, bool require_response)
         {
             auto&& c = _rec->find_call(call_type::send_command, _entity_id);
-            if (c.param3 != timeout_ms || c.param4 != require_response || _rec->load_blob(c.param1) != data)
+            if (c.param3 != timeout_ms || (c.param4 > 0) != require_response || _rec->load_blob(c.param1) != data)
                 throw runtime_error("Recording history mismatch!");
             return _rec->load_blob(c.param2);
         }
@@ -757,7 +759,7 @@ namespace rsimpl
                             {
                                 frame_blob = _compression.decode(_rec->load_blob(c_ptr->param2));
                             }
-                            frame_object fo{ frame_blob.size(), frame_blob.data() };
+                            frame_object fo{ static_cast<int>(frame_blob.size()), frame_blob.data() };
                             pair.second(p, fo);
                             break;
                         }

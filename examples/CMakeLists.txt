@@ -88,7 +88,21 @@ set_target_properties (c-tutorial-1-depth PROPERTIES
     FOLDER "C Tutorials"
 )
 
+add_executable(cpp-capture cpp-capture.cpp)
+target_link_libraries(cpp-capture ${DEPENDENCIES})
+include_directories(cpp-capture third_party/tclap/include)
 
+set_target_properties (cpp-capture PROPERTIES
+    FOLDER "Examples"
+)
+
+add_executable(cpp-headless cpp-headless.cpp)
+target_link_libraries(cpp-headless ${DEPENDENCIES})
+include_directories(cpp-headless third_party/tclap/include)
+
+set_target_properties (cpp-headless PROPERTIES
+    FOLDER "Examples"
+)
 
 add_executable(cpp-enumerate-devices cpp-enumerate-devices.cpp)
 target_link_libraries(cpp-enumerate-devices ${DEPENDENCIES})
@@ -108,7 +122,6 @@ set_target_properties (cpp-terminal PROPERTIES
 
 install(
     TARGETS
-    cpp-config-ui
 	
 	c-tutorial-1-depth
 	cpp-tutorial-1-depth
@@ -117,6 +130,10 @@ install(
 	
 	cpp-enumerate-devices
 	cpp-terminal
+	cpp-config-ui
+	cpp-capture
+	cpp-headless
+	cpp-multicam
 
     RUNTIME DESTINATION
     ${CMAKE_INSTALL_PREFIX}/bin

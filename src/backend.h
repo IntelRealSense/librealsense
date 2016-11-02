@@ -76,7 +76,7 @@ namespace rsimpl
 
         struct uvc_device_info
         {
-            std::string id = "";
+            std::string id = ""; // to distingwish between different pins of the same device
             uint32_t vid;
             uint32_t pid;
             uint32_t mi;
@@ -264,55 +264,35 @@ namespace rsimpl
 
             power_state get_power_state() const override
             {
-                return _dev[0]->get_power_state();
+                return _dev.front()->get_power_state();
             }
             void init_xu(const extension_unit& xu) override
             {
-                _dev[0]->init_xu(xu);
+                _dev.front()->init_xu(xu);
             }
             void set_xu(const extension_unit& xu, uint8_t ctrl, const uint8_t* data, int len) override
             {
-                for (auto i = 0; i<20; ++i)
-                {
-                    try { _dev[0]->set_xu(xu, ctrl, data, len); return; }
-                    catch (...) { std::this_thread::sleep_for(std::chrono::milliseconds(50)); }
-                }
-                _dev[0]->set_xu(xu, ctrl, data, len);
+                _dev.front()->set_xu(xu, ctrl, data, len);
             }
             void get_xu(const extension_unit& xu, uint8_t ctrl, uint8_t* data, int len) const override
             {
-                for (auto i = 0; i<20; ++i)
-                {
-                    try { _dev[0]->get_xu(xu, ctrl, data, len); return; }
-                    catch (...) { std::this_thread::sleep_for(std::chrono::milliseconds(50)); }
-                }
-                _dev[0]->get_xu(xu, ctrl, data, len);
+                _dev.front()->get_xu(xu, ctrl, data, len);
             }
             control_range get_xu_range(const extension_unit& xu, uint8_t ctrl, int len) const override
             {
-                return _dev[0]->get_xu_range(xu, ctrl, len);
+                return _dev.front()->get_xu_range(xu, ctrl, len);
             }
             int get_pu(rs_option opt) const override
             {
-                for (auto i = 0; i<20; ++i)
-                {
-                    try { return _dev[0]->get_pu(opt); }
-                    catch (...) { std::this_thread::sleep_for(std::chrono::milliseconds(50)); }
-                }
-                return _dev[0]->get_pu(opt);
+                return _dev.front()->get_pu(opt);
             }
             void set_pu(rs_option opt, int value) override
             {
-                for (auto i = 0; i<20; ++i)
-                {
-                    try { _dev[0]->set_pu(opt, value); return; }
-                    catch (...) { std::this_thread::sleep_for(std::chrono::milliseconds(50)); }
-                }
-                _dev[0]->set_pu(opt, value);
+                _dev.front()->set_pu(opt, value);
             }
             control_range get_pu_range(rs_option opt) const override
             {
-                return _dev[0]->get_pu_range(opt);
+                return _dev.front()->get_pu_range(opt);
             }
 
             std::vector<stream_profile> get_profiles() const override
@@ -321,38 +301,59 @@ namespace rsimpl
                 for (auto& elem : _dev)
                 {
                     auto pin_stream_profiles = elem->get_profiles();
-                    all_stream_profiles.insert(all_stream_profiles.end(), pin_stream_profiles.begin(), pin_stream_profiles.end());
+                    all_stream_profiles.insert(all_stream_profiles.end(),
+                        pin_stream_profiles.begin(), pin_stream_profiles.end());
                 }
                 return all_stream_profiles;
             }
 
             std::string get_device_location() const override
             {
-                return _dev[0]->get_device_location();
+                return _dev.front()->get_device_location();
             }
 
-            void lock() const override { _dev[0]->lock(); }
-            void unlock() const override { _dev[0]->unlock(); }
+            void lock() const override 
+            {
+                std::vector<uvc_device*> locked_dev;
+                try {
+                    for (auto& elem : _dev)
+                    {
+                        elem->lock();
+                        locked_dev.push_back(elem.get());
+                    }
+                }
+                catch(...)
+                {
+                    for (auto& elem : locked_dev)
+                    {
+                        elem->unlock();
+                    }
+                    throw;
+                }
+            }
+            void unlock() const override 
+            {
+                for (auto& elem : _dev)
+                {
+                    elem->unlock();
+                }
+            }
 
         private:
             unsigned get_dev_index_by_profiles(const stream_profile& profile) const
             {
-                unsigned dev_index;
-                for (dev_index = 0 ; dev_index < _dev.size() ; ++dev_index)
+                unsigned dev_index = 0;
+                for (auto& elem : _dev)
                 {
-                    auto pin_stream_profiles = _dev[dev_index]->get_profiles();
-
-                    auto it = std::find_if(pin_stream_profiles.begin(), pin_stream_profiles.end(),
-                                      [&](const stream_profile& element) {
-                        return (profile == element);
-                    });
-
+                    auto pin_stream_profiles = elem->get_profiles();
+                    auto it = find(pin_stream_profiles.begin(), pin_stream_profiles.end(), profile);
                     if (it != pin_stream_profiles.end())
                     {
-                        break;
+                        return dev_index;
                     }
+                    ++dev_index;
                 }
-                return dev_index;
+                throw std::runtime_error("profile not found");
             }
 
             std::vector<std::shared_ptr<uvc_device>> _dev;

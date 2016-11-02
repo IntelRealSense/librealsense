@@ -547,9 +547,8 @@ namespace rsimpl
             control_range get_xu_range(const extension_unit& xu, uint8_t control, int len) const override
             {
                 control_range result;
-
                 __u16 size = 0;
-                __u8 value = 0; // all of the real sense extended controls are one byte,
+                __u32 value = 0; // all of the real sense extended controls are up to 4 bytes
                                 // checking return value for UVC_GET_LEN and allocating
                                 // appropriately might be better
                 __u8 * data = (__u8 *)&value;
@@ -566,6 +565,8 @@ namespace rsimpl
                 if(-1 == ioctl(_fd,UVCIOC_CTRL_QUERY,&xquery)){
                     throw std::runtime_error(to_string() << " ioctl failed on UVC_GET_LEN");
                 }
+
+                assert(size<=4);
 
                 xquery.query = UVC_GET_MIN;
                 xquery.size = size;
@@ -695,7 +696,7 @@ namespace rsimpl
                     }
                     else
                     {
-                        LOG_WARNING("Recognized pixel-format " << pixel_format.description << "!");
+                        LOG_INFO("Recognized pixel-format " << pixel_format.description << "!");
                     }
 
                     while (ioctl(_fd, VIDIOC_ENUM_FRAMESIZES, &frame_size) == 0)
@@ -740,7 +741,7 @@ namespace rsimpl
             std::string get_device_location() const override { return ""; }
 
         private:
-            power_state _state;
+            power_state _state = D3;
             std::string _name;
             uvc_device_info _info;
             int _fd;
