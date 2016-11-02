@@ -216,7 +216,8 @@ TEST_CASE("RS4XX Transmit Raw Data", "[live] [RS4XX]")
     // List of test patterns for transmitting raw data. Represent "request buffer content -> response buffer size" structure
     std::vector< std::pair<std::vector<uint8_t>, unsigned short>> snd_rcv_patterns{
         { { 0x14, 0x0, 0xab, 0xcd, 0x10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 } , 216},      // GVD 
-        { { 0x14, 0x0, 0xab, 0xcd, 0x10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 } , 216 },     // GVD 
+        { { 0x14, 0x0, 0xab, 0xcd, 0x2d, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 } , 4 },     // UAME off
+        { { 0x14, 0x0, 0xab, 0xcd, 0x2d, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 } , 4 },     // UAME on
     };
 
     for (auto test_pattern : snd_rcv_patterns)
@@ -230,6 +231,7 @@ TEST_CASE("RS4XX Transmit Raw Data", "[live] [RS4XX]")
         // Check send/receive raw data opaque binary buffer to exchange data with device
         dev->transmit_raw_data(&test_obj);
 
+        REQUIRE(test_obj.rcv_buffer[0] == test_obj.snd_buffer[4]);
         REQUIRE(test_obj.rcv_buffer_size == test_pattern.second);
         REQUIRE(test_obj.rcv_buffer_size <= RAW_BUFFER_SIZE);
     }

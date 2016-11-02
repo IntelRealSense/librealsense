@@ -10,6 +10,7 @@
 
 namespace rsimpl
 {
+
     rs4xx_camera::rs4xx_camera(std::shared_ptr<uvc::device> device, const static_device_info & info) :
         rs_device_base(device, info)
     {
@@ -68,7 +69,7 @@ namespace rsimpl
         if (value >= 1)
         {
             if (!rs_device_base::keep_fw_logger_alive)
-                rs_device_base::start_fw_logger(char(rs4xx_command::GLD), 100, usbMutex);
+                rs_device_base::start_fw_logger(rs4xx::fw_cmd::GLD, 100, usbMutex);
         }
         else
         {
