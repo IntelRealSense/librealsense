@@ -18,109 +18,117 @@
 #pragma pack(push, 1)
 typedef struct
 {
-    uint8_t		Version_Revision;
-    uint8_t		Version_Number;
-    uint8_t		Version_Minor;
-    uint8_t		Version_Major;
-    int			Version_spare;
+    uint8_t     Version_Revision;
+    uint8_t     Version_Number;
+    uint8_t     Version_Minor;
+    uint8_t     Version_Major;
+    int         Version_spare;
 }ChangeSetVersion;
 
 typedef struct
 {
-    uint8_t		Version_Minor;
-    uint8_t		Version_Major;
-    uint8_t		Version_spare[2];
+    uint8_t     Version_Minor;
+    uint8_t     Version_Major;
+    uint8_t     Version_spare[2];
 }MajorMinorVersion;
 
 typedef struct
 {
-    uint8_t		Version1;
-    uint8_t		Version2;
-    uint8_t		Version3;
-    uint8_t		Version4;
+    uint8_t     Version1;
+    uint8_t     Version2;
+    uint8_t     Version3;
+    uint8_t     Version4;
 }HexByte;
 
 typedef struct
 {
-    uint8_t		Version2;
-    uint8_t		Version1;
-    uint8_t		Version_spare[2];
+    uint8_t     Version2;
+    uint8_t     Version1;
+    uint8_t     Version_spare[2];
 }LiguriaVersion;
 
 typedef struct
 {
-    uint8_t		sts;
+    uint8_t     sts;
 }Bool;
 
 typedef struct
 {
-    uint8_t		num;
+    uint8_t     num;
 }HwTypeNumber;
 
 typedef struct
 {
-    uint8_t		Version_Minor;
-    uint8_t		Version_Major;
-    uint8_t		Version_spare[2];
+    uint8_t     Version_Minor;
+    uint8_t     Version_Major;
+    uint8_t     Version_spare[2];
 }WideMajorMinorVersion;
 
 typedef struct
 {
-    uint8_t		value[32];
+    uint8_t     value[32];
 }Ascii;
 
 typedef struct
 {
-    uint8_t		version;
+    uint8_t     version;
 }DecByte;
 
 typedef struct
 {
-    uint8_t		number1;
-    uint8_t		number2;
-    uint8_t		number3;
-    uint8_t		number4;
+    uint8_t     number1;
+    uint8_t     number2;
+    uint8_t     number3;
+    uint8_t     number4;
 }HexNumber;
 
 typedef struct
 {
-    uint8_t		number1;
-    uint8_t		number2;
-    uint8_t		number3;
-    uint8_t		number4;
+    uint8_t     number1;
+    uint8_t     number2;
+    uint8_t     number3;
+    uint8_t     number4;
 }HexNumberReversed;
 
 typedef struct
 {
-    uint8_t		number1;
-    uint8_t		number2;
-    uint8_t		number3;
-    uint8_t		number4;
-    uint8_t		number5;
-    uint8_t		number6;
-    uint8_t		number7;
-    uint8_t		number8;
+    uint8_t     number1;
+    uint8_t     number2;
+    uint8_t     number3;
+    uint8_t     number4;
+    uint8_t     number5;
+    uint8_t     number6;
+    uint8_t     number7;
+    uint8_t     number8;
 }BarCodeSerial12Char;
 
 typedef struct
 {
-    double		number;
+    double      number;
 }DoubleNumber;
 #pragma pack(pop)
 
 struct parameter {
-    std::string name;
-    bool is_decimal;
-    bool is_reverse_bytes;
+    std::string name, data;
+    bool is_decimal, is_reverse_bytes;
     int format_length;
 
-    parameter() :
-        name(""),
-        format_length(2),
-        is_decimal(false),
-        is_reverse_bytes(false)
-    {
-    }
+    parameter(std::string in_name, std::string in_data,
+        bool in_is_decimal, bool in_is_reverse_bytes,
+            int in_format_length)
+    : name(in_name),
+      format_length(in_format_length),
+      is_decimal(in_is_decimal),
+      is_reverse_bytes(in_is_reverse_bytes),
+      data(in_data)
+    {}
+    parameter()
+    : name(""),
+      format_length(2),
+      is_decimal(false),
+      is_reverse_bytes(false),
+      data("")
+    {}
 };
 
 struct section {
@@ -160,6 +168,13 @@ struct command
 
     data read_data;
     std::vector<parameter> parameters;
+};
+
+// units of nibbles
+enum FormatSize {
+    Byte = 2,
+    Word = 4,
+    Double = 8
 };
 
 struct commands_xml

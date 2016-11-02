@@ -12,29 +12,6 @@
 
 using namespace std;
 
-struct parameter_info
-{
-    parameter_info()
-    : parameter(""),
-    is_decimal(false),
-    format_length(-1)
-    {}
-    parameter_info(string param, bool is_dec, int format_len)
-    : parameter(param),
-    is_decimal(is_dec),
-    format_length(format_len)
-    {}
-    string parameter;
-    bool is_decimal;
-    int format_length;
-};
-
-// units of nibbles
-enum FormatSize {
-    Byte = 2,
-    Word = 4,
-    Double = 8
-};
 
 enum application_mode
 {
@@ -306,8 +283,10 @@ void update_sections_data(uint8_t* raw_data, vector<section>& sections, const ma
     }
 }
 
-void decode_raw_data(const command& command, const map<string, custom_formatter>& custom_formatters, uint8_t* data, int dataSize, stringstream& _stringOutput)
+void decode_string_from_raw_data(const command& command, const map<string, custom_formatter>& custom_formatters, uint8_t* data, int dataSize, string& output)
 {
+    stringstream ss_output;
+    ss_output.str("");
     auto num_of_bytes_for_space = 1;
     auto num_of_bytes_for_new_line = 16;
     auto read_format = command.read_format;
@@ -337,47 +316,47 @@ void decode_raw_data(const command& command, const map<string, custom_formatter>
         {
             if (curr_address.size() == 1)
             {
-                auto tempCurrAddress = curr_address;
-                auto tempEndAddress = end_address;
-                auto tempBytesPerLine = bytes_per_line;
+                auto temp_curr_address = curr_address;
+                auto temp_end_address = end_address;
+                auto temp_bytes_per_line = bytes_per_line;
 
                 for (auto offset = 0; offset < dataSize; offset++)
                 {
-                    tempBytesPerLine++;
-                    if (tempBytesPerLine == num_of_bytes_for_new_line)
+                    temp_bytes_per_line++;
+                    if (temp_bytes_per_line == num_of_bytes_for_new_line)
                     {
 
-                        int nextAdd = stoi(tempCurrAddress) + num_of_bytes_for_new_line;
+                        int next_add = stoi(temp_curr_address) + num_of_bytes_for_new_line;
 
-                        if (nextAdd >= tempEndAddress)
+                        if (next_add >= temp_end_address)
                             break;
 
                         dec_to_hex.str("");
-                        dec_to_hex << std::hex << nextAdd;
-                        tempCurrAddress = dec_to_hex.str();
+                        dec_to_hex << std::hex << next_add;
+                        temp_curr_address = dec_to_hex.str();
 
-                        if (tempCurrAddress.size() == 1)
-                            tempCurrAddress.insert(0, "0");
+                        if (temp_curr_address.size() == 1)
+                            temp_curr_address.insert(0, "0");
 
-                        tempCurrAddress = to_string(nextAdd);
-                        tempBytesPerLine = 0;
+                        temp_curr_address = to_string(next_add);
+                        temp_bytes_per_line = 0;
                     }
                 }
 
 
                 num_of_zeros = int(dec_to_hex.str().length());
-                _stringOutput << "Address: 0x";
+                ss_output << "Address: 0x";
                 dec_to_hex.str("");
 
                 for (auto i = 1; i < num_of_zeros; i++)
                 {
-                    _stringOutput << "0";
+                    ss_output << "0";
                 }
             }
             else
-                _stringOutput << "Address: 0x";
+                ss_output << "Address: 0x";
 
-            _stringOutput << std::hex << stoi(curr_address) << " => ";
+            ss_output << std::hex << stoi(curr_address) << " => ";
         }
 
 
@@ -393,39 +372,39 @@ void decode_raw_data(const command& command, const map<string, custom_formatter>
                 reverse(buffer.begin(), buffer.end());
 
                 for (auto str : buffer)
-                    _stringOutput << str;
+                    ss_output << str;
 
                 buffer.clear();
 
                 if (bytes_per_line == num_of_bytes_for_new_line)
                 {
-                    auto nextAdd = stoi(curr_address) + num_of_bytes_for_new_line;
+                    auto next_add = stoi(curr_address) + num_of_bytes_for_new_line;
 
-                    if (nextAdd >= end_address)
+                    if (next_add >= end_address)
                         break;
 
                     dec_to_hex.str("");
-                    dec_to_hex << std::hex << nextAdd;
+                    dec_to_hex << std::hex << next_add;
                     curr_address = dec_to_hex.str();
 
                     auto putZeros = num_of_zeros - int(curr_address.size());
-                    _stringOutput << "\nAddress: 0x";
+                    ss_output << "\nAddress: 0x";
 
                     for (auto i = 0; i < putZeros; i++)
                     {
-                        _stringOutput << "0";
+                        ss_output << "0";
                     }
 
-                    _stringOutput << curr_address << " => ";
+                    ss_output << curr_address << " => ";
 
 
-                    curr_address = to_string(nextAdd);
+                    curr_address = to_string(next_add);
                     bytes_per_line = 0;
                 }
                 else
                 {
                     if ((offset + 1) < dataSize)
-                        _stringOutput << " ";
+                        ss_output << " ";
                 }
             }
         }
@@ -434,16 +413,19 @@ void decode_raw_data(const command& command, const map<string, custom_formatter>
     {
         auto sections = command.read_data.sections;
         update_sections_data(data, sections, custom_formatters);
-        unsigned maxLineLen = 0;
+        unsigned max_line_len = 0;
         for (auto& elem : sections)
-            maxLineLen = ((elem.name.size() > maxLineLen) ? unsigned(elem.name.size()) : maxLineLen);
+            max_line_len = ((elem.name.size() > max_line_len) ? unsigned(elem.name.size()) : max_line_len);
 
+        const int spaces = 3; // number of spaces between section name to section data
         for (auto& elem : sections)
-            _stringOutput << elem.name << ":" << setw((maxLineLen + 3) - elem.name.size() + elem.data.length()) << right << elem.data << endl;
+            ss_output << elem.name << ":" << setw((max_line_len + spaces) - elem.name.size() + elem.data.length()) << right << elem.data << endl;
     }
+
+    output = ss_output.str();
 }
 
-void encode_command(const command& xml_cmd_info, const vector<parameter_info>& params, vector<uint8_t>& raw_data)
+void encode_raw_data_command(const command& xml_cmd_info, const vector<parameter>& params, vector<uint8_t>& raw_data)
 {
     auto cmd_op_code = xml_cmd_info.op_code;
     auto num_of_required_parameters = xml_cmd_info.num_of_parameters;
@@ -474,7 +456,7 @@ void encode_command(const command& xml_cmd_info, const vector<parameter_info>& p
     {
         if (param_index < num_of_required_parameters)
         {
-            *reinterpret_cast<unsigned*>(write_ptr + cur_index) = stoul(params[param_index].parameter);
+            *reinterpret_cast<unsigned*>(write_ptr + cur_index) = stoul(params[param_index].data);
             cur_index += sizeof(unsigned);
         }
         else
@@ -492,22 +474,22 @@ void encode_command(const command& xml_cmd_info, const vector<parameter_info>& p
             switch (format_length)
             {
             case Byte:
-                *reinterpret_cast<uint8_t*>(write_ptr + cur_index) = static_cast<uint8_t>(stoul(params[j].parameter));
+                *reinterpret_cast<uint8_t*>(write_ptr + cur_index) = static_cast<uint8_t>(stoul(params[j].data));
                 cur_index += sizeof(uint8_t);
                 break;
 
             case Word:
-                *reinterpret_cast<short *>(write_ptr + cur_index) = static_cast<short>(stoul(params[j].parameter));
+                *reinterpret_cast<short *>(write_ptr + cur_index) = static_cast<short>(stoul(params[j].data));
                 cur_index += sizeof(short);
                 break;
 
             case Double:
-                *reinterpret_cast<unsigned *>(write_ptr + cur_index) = static_cast<unsigned>(stoul(params[j].parameter));
+                *reinterpret_cast<unsigned *>(write_ptr + cur_index) = static_cast<unsigned>(stoul(params[j].data));
                 cur_index += sizeof(unsigned);
                 break;
 
             default:
-                *reinterpret_cast<uint8_t*>(write_ptr + cur_index) = static_cast<uint8_t>(stoul(params[j].parameter));
+                *reinterpret_cast<uint8_t*>(write_ptr + cur_index) = static_cast<uint8_t>(stoul(params[j].data));
                 cur_index += sizeof(uint8_t);
                 break;
             }
@@ -521,16 +503,18 @@ void encode_command(const command& xml_cmd_info, const vector<parameter_info>& p
 vector<uint8_t> build_raw_command_data(const command& command, const string& line)
 {
     vector<string> params;
-    vector<parameter_info> vec_parameters;
+    vector<parameter> vec_parameters;
     for (auto param_index = 1; param_index < params.size() ; ++param_index)
     {
-        auto isDecimal = (param_index < int(command.parameters.size())) ? command.parameters[param_index].is_decimal : false;
-        auto formatLength = (param_index < int(command.parameters.size())) ? command.parameters[param_index].format_length : -1;
-        vec_parameters.push_back(parameter_info(params[param_index], isDecimal, formatLength));
+        auto name = command.parameters[param_index].name;
+        auto is_reverse_bytes = command.parameters[param_index].is_reverse_bytes;
+        auto is_decimal = (param_index < int(command.parameters.size())) ? command.parameters[param_index].is_decimal : false;
+        auto format_length = (param_index < int(command.parameters.size())) ? command.parameters[param_index].format_length : -1;
+        vec_parameters.push_back(parameter(name, params[param_index], is_decimal, is_reverse_bytes, format_length ));
     }
 
     vector<uint8_t> raw_data;
-    encode_command(command, vec_parameters, raw_data);
+    encode_raw_data_command(command, vec_parameters, raw_data);
     return raw_data;
 }
 
@@ -549,9 +533,9 @@ void xml_mode(const string& line, const commands_xml& cmd_xml, rs::device& dev)
     auto raw_data = build_raw_command_data(command, line);
     auto result = dev.debug().send_and_receive_raw_data(raw_data);
 
-    stringstream ss;
-    decode_raw_data(command, cmd_xml.custom_formatters, result.data(), result.size(), ss);
-    cout << endl << ss.str() << endl;
+    string data;
+    decode_string_from_raw_data(command, cmd_xml.custom_formatters, result.data(), result.size(), data);
+    cout << endl << data << endl;
 }
 
 void hex_mode(const string& line, rs::device& dev)
@@ -600,17 +584,17 @@ int main(int argc, char** argv) try
         printf("No device detected. Is it plugged in?\n");
         return EXIT_SUCCESS;
     }
-    auto dev = devices.front(); // choose first device
 
+    auto dev = devices.front(); // use first device
     commands_xml cmd_xml;
-    auto sts = parse_xml_from_file("./CommandsDS5.xml", cmd_xml);
+    auto sts = parse_xml_from_file("./CommandsDS5.xml", cmd_xml); // TODO: file name from prompt
     if (!sts)
     {
         cout << "XML file not found!\nMoving to hex console mode.\n\n";
         app_mode = hexa;
     }
 
-    bool loop = true;
+    auto loop = true;
     while (loop)
     {
         cout << "\n\n#>";
