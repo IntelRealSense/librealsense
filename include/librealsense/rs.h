@@ -39,6 +39,7 @@ typedef enum rs_capabilities
     RS_CAPABILITIES_MOTION_MODULE_FW_UPDATE , /**< provides method for upgrading motion module firmware */
     RS_CAPABILITIES_ADAPTER_BOARD           , /**< interanlly includes MIPI to USB adapter */
     RS_CAPABILITIES_ENUMERATION             , /**< provides enough basic functionality to be considered supported. this to catch at runtime various outdated engineering samples */
+    RS_CAPABILITIES_ADVANCED_MODE           , /**< indication for firmware operational mode*/
     RS_CAPABILITIES_COUNT                   , 
 } rs_capabilities;
 

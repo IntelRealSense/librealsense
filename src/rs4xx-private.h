@@ -117,7 +117,7 @@ namespace rsimpl {
     void read_calibration(uvc::device & dev, std::timed_mutex & mutex, rs4xx_calibration& calib);
     void update_supported_options(uvc::device& dev, const std::vector <std::pair<rs_option, uint8_t>>& options, std::vector<supported_option>& supported_options);
     void send_receive_raw_data(uvc::device & device, std::timed_mutex & mutex, rs_raw_buffer& buffer);
-    void get_advanced_mode(uvc::device & device, std::timed_mutex & mutex, uint8_t & mode);
+    bool is_advanced_mode(uvc::device & device, std::timed_mutex & mutex);
     void set_advanced_mode(uvc::device & device, std::timed_mutex & mutex, const uint8_t mode);
 
 

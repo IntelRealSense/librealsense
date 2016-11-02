@@ -199,6 +199,7 @@ namespace rsimpl
         CASE(MOTION_MODULE_FW_UPDATE)
         CASE(ADAPTER_BOARD)
         CASE(ENUMERATION)
+        CASE(ADVANCED_MODE)
         default: assert(!is_valid(value)); return unknown;
         }
         #undef CASE

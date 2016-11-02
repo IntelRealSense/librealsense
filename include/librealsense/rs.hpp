@@ -32,6 +32,7 @@ namespace rs
         motion_module_fw_update,
         adapter_board          ,
         enumeration            ,
+        advanced_mode          ,
     };
 
     enum class stream : int32_t
