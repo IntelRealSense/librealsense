@@ -394,7 +394,6 @@ namespace rsimpl
     {
         assert(n % 16 == 0); // All currently supported color resolutions are multiples of 16 pixels. Could easily extend support to other resolutions by copying final n<16 pixels into a zero-padded buffer and recursively calling self for final iteration.
 #ifdef __SSSE3__
-		static_assert(false, "SSE3-enhanced unpacking of UYVY is not implemented);
         auto src = reinterpret_cast<const __m128i *>(s);
         auto dst = reinterpret_cast<__m128i *>(d[0]);
         for (; n; n -= 16)
@@ -407,21 +406,13 @@ namespace rsimpl
             const __m128i n516 = _mm_set1_epi16(516 << 4);
             const __m128i evens_odds = _mm_setr_epi8(0, 2, 4, 6, 8, 10, 12, 14, 1, 3, 5, 7, 9, 11, 13, 15);
 
-            // Load 8 YUY2 pixels each into two 16-byte registers
+            // Load 8 UYVY pixels each into two 16-byte registers
             __m128i s0 = _mm_loadu_si128(src++);
             __m128i s1 = _mm_loadu_si128(src++);
 
-            if (FORMAT == RS_FORMAT_Y8)
-            {
-                // Align all Y components and output 16 pixels (16 bytes) at once
-                __m128i y0 = _mm_shuffle_epi8(s0, _mm_setr_epi8(1, 3, 5, 7, 9, 11, 13, 15, 0, 2, 4, 6, 8, 10, 12, 14));
-                __m128i y1 = _mm_shuffle_epi8(s1, _mm_setr_epi8(0, 2, 4, 6, 8, 10, 12, 14, 1, 3, 5, 7, 9, 11, 13, 15));
-                _mm_storeu_si128(dst++, _mm_alignr_epi8(y0, y1, 8));
-                continue;
-            }
 
             // Shuffle all Y components to the low order bytes of the register, and all U/V components to the high order bytes
-            const __m128i evens_odd1s_odd3s = _mm_setr_epi8(0, 2, 4, 6, 8, 10, 12, 14, 1, 5, 9, 13, 3, 7, 11, 15); // to get yyyyyyyyuuuuvvvv
+            const __m128i evens_odd1s_odd3s = _mm_setr_epi8(1, 3, 5, 7, 9, 11, 13, 15, 0, 4, 8, 12, 2, 6, 10, 14); // to get yyyyyyyyuuuuvvvv
             __m128i yyyyyyyyuuuuvvvv0 = _mm_shuffle_epi8(s0, evens_odd1s_odd3s);
             __m128i yyyyyyyyuuuuvvvv8 = _mm_shuffle_epi8(s1, evens_odd1s_odd3s);
 
@@ -429,13 +420,6 @@ namespace rsimpl
             __m128i y16__0_7 = _mm_unpacklo_epi8(yyyyyyyyuuuuvvvv0, zero);         // convert to 16 bit
             __m128i y16__8_F = _mm_unpacklo_epi8(yyyyyyyyuuuuvvvv8, zero);         // convert to 16 bit
 
-            if (FORMAT == RS_FORMAT_Y16)
-            {
-                // Output 16 pixels (32 bytes) at once
-                _mm_storeu_si128(dst++, _mm_slli_epi16(y16__0_7, 8));
-                _mm_storeu_si128(dst++, _mm_slli_epi16(y16__8_F, 8));
-                continue;
-            }
 
             // Retrieve all 16 U and V components as 16-bit values (8 components per register)
             __m128i uv = _mm_unpackhi_epi32(yyyyyyyyuuuuvvvv0, yyyyyyyyuuuuvvvv8); // uuuuuuuuvvvvvvvv
