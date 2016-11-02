@@ -77,7 +77,7 @@ namespace rsimpl
 
             for (auto fps : m.fps)
             {
-                for (auto pf : { pf_y8, pf_y8i, pf_yuyvl })
+                for (auto pf : { pf_y8, pf_y8i, pf_uyvyl })
                     info.subdevice_modes.push_back({ 1, m.dims, pf, fps, intrinsic, {}, {0} });
                 info.subdevice_modes.push_back({ 0, m.dims, pf_z16, fps, intrinsic,{},{ 0 } });
             }

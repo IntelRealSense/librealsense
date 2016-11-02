@@ -41,7 +41,7 @@ namespace rsimpl
     extern const native_pixel_format pf_f200_inzi;  // 16-bit Z + 8 bit IR per pixel
     extern const native_pixel_format pf_sr300_invi; // 16-bit IR image
     extern const native_pixel_format pf_sr300_inzi; // Planar 16-bit IR image followed by 16-bit Z image
-    extern const native_pixel_format pf_yuyvl;      // Y0 U Y1 V ordered chroma subsampled macropixel for Infrared stream
+    extern const native_pixel_format pf_uyvyl;      // U Y0 V Y1 ordered chroma subsampled macropixel for Infrared stream
 }
 
 #endif

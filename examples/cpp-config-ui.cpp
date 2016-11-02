@@ -256,8 +256,8 @@ rs::motion_data m_acc_data;
 
 struct w_h { int width, height; };
 std::vector<rs::stream> streams_names   = { rs::stream::depth,  rs::stream::color,  rs::stream::infrared,   rs::stream::infrared2,  rs::stream::fisheye };
-std::vector<rs::format> formats         = { rs::format::z16,    rs::format::rgb8,   rs::format::y8,         rs::format::y8,         rs::format::raw8 };
-std::vector<w_h>        wh              = { { 640,480 },        { 640,480 },        { 0,0 },                { 0,0 },                { 640,480 } };
+std::vector<rs::format> formats         = { rs::format::z16,    rs::format::rgb8,   rs::format::rgb8,         rs::format::y8,         rs::format::raw8 };
+std::vector<w_h>        wh              = { { 640,480 },        { 640,480 },        { 1280,720 },                { 0,0 },                { 640,480 } };
 std::vector<int>        fps             = { 30,                 30,                 30,                     30,                     30 };
 
 void on_motion_event(rs::motion_data entry)

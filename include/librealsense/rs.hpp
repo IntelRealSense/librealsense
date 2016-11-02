@@ -65,7 +65,8 @@ namespace rs
         y16         ,
         raw10       ,  ///< Four 10-bit luminance values encoded into a 5-byte macropixel
         raw16       ,  ///< Four 10-bit luminance filled in 16 bit pixel (6 bit unused)
-        raw8
+        raw8        ,
+        uyvy
     };
 
     enum class output_buffer_format : int32_t

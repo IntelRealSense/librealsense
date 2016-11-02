@@ -343,8 +343,8 @@ TEST_CASE("RS4XX Streaming Formats", "[live] [RS4XX]")
     std::string name = dev->get_name();
     REQUIRE(std::string::npos != name.find("Intel RealSense RS4"));
 
-	struct int2 { int x, y; };
-	struct cam_mode { int2 dims; std::vector<int> fps; };
+    struct int2 { int x, y; };
+    struct cam_mode { int2 dims; std::vector<int> fps; };
     static const cam_mode rs400_depth_ir_modes[] = {
         { { 1280, 720 },{ 6,15,30 } },
         { { 848, 480 },{ 6,15,30,60,120 } },
@@ -373,9 +373,9 @@ TEST_CASE("RS4XX Streaming Formats", "[live] [RS4XX]")
             INFO(ss.str().c_str());
             test_streaming(dev, { { RS_STREAM_INFRARED,  mode.dims.x,  mode.dims.y, RS_FORMAT_Y8, cur_fps } });
 
-            ss.str(""); ss << "Streaming IR Profile LYUY2 " << mode.dims.x << "X" << mode.dims.y << " at " << cur_fps << " fps";
+            ss.str(""); ss << "Streaming IR Profile UYVY " << mode.dims.x << "X" << mode.dims.y << " at " << cur_fps << " fps";
             INFO(ss.str().c_str());
-            test_streaming(dev, { { RS_STREAM_INFRARED,  mode.dims.x,  mode.dims.y, RS_FORMAT_YUYV, cur_fps } });
+            test_streaming(dev, { { RS_STREAM_INFRARED,  mode.dims.x,  mode.dims.y, RS_FORMAT_UYVY, cur_fps } });
 
             ss.str(""); ss << "Streaming IR Profile Y8I " << mode.dims.x << "X" << mode.dims.y << " at " << cur_fps << " fps";
             INFO(ss.str().c_str());
@@ -387,10 +387,10 @@ TEST_CASE("RS4XX Streaming Formats", "[live] [RS4XX]")
             test_streaming(dev, { { RS_STREAM_DEPTH,     mode.dims.x,  mode.dims.y, RS_FORMAT_Z16, cur_fps },
                                   { RS_STREAM_INFRARED,  mode.dims.x,  mode.dims.y, RS_FORMAT_Y8, cur_fps } });
 
-            ss.str(""); ss << "Streaming Depth + LYUY2 " << mode.dims.x << "X" << mode.dims.y << " at " << cur_fps << " fps";
+            ss.str(""); ss << "Streaming Depth + IR(UYVY) " << mode.dims.x << "X" << mode.dims.y << " at " << cur_fps << " fps";
             INFO(ss.str().c_str());
             test_streaming(dev, { { RS_STREAM_DEPTH,     mode.dims.x,  mode.dims.y, RS_FORMAT_Z16, cur_fps },
-                                  { RS_STREAM_INFRARED,  mode.dims.x,  mode.dims.y, RS_FORMAT_YUYV, cur_fps } });
+                                  { RS_STREAM_INFRARED,  mode.dims.x,  mode.dims.y, RS_FORMAT_UYVY, cur_fps } });
 
             ss.str(""); ss << "Streaming Depth + Y8I " << mode.dims.x << "X" << mode.dims.y << " at " << cur_fps << " fps";
             INFO(ss.str().c_str());
