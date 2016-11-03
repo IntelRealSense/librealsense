@@ -31,8 +31,8 @@ TEST_CASE("RS4XX device supports all required options", "[live] [RS4XX]")
 
     const std::map<std::string, std::vector<rs_option>> rs4xx_skew_options
     {
-        { "Intel RealSense RS400p", { RS_OPTION_COLOR_GAIN, RS_OPTION_CT_AUTO_EXPOSURE_MODE, RS_OPTION_CT_EXPOSURE_PRIORITY, RS_OPTION_R200_LR_EXPOSURE, RS_OPTION_HARDWARE_LOGGER_ENABLED }},
-        { "Intel RealSense RS410a", { RS_OPTION_COLOR_GAIN, RS_OPTION_CT_AUTO_EXPOSURE_MODE, RS_OPTION_CT_EXPOSURE_PRIORITY, RS_OPTION_R200_LR_EXPOSURE, RS_OPTION_HARDWARE_LOGGER_ENABLED,
+        { "Intel RealSense RS400p", { RS_OPTION_COLOR_GAIN, RS_OPTION_CT_AUTO_EXPOSURE_MODE, RS_OPTION_R200_LR_EXPOSURE, RS_OPTION_HARDWARE_LOGGER_ENABLED }},
+        { "Intel RealSense RS410a", { RS_OPTION_COLOR_GAIN, RS_OPTION_CT_AUTO_EXPOSURE_MODE, RS_OPTION_R200_LR_EXPOSURE, RS_OPTION_HARDWARE_LOGGER_ENABLED,
                                       RS_OPTION_RS4XX_PROJECTOR_MODE, RS_OPTION_RS4XX_PROJECTOR_PWR }},
     };
 
@@ -213,16 +213,22 @@ TEST_CASE("RS4XX Transmit Raw Data", "[live] [RS4XX]")
     // Initialize and preset raw buffer
     rs_raw_buffer test_obj{};
 
+    std::vector<uint8_t> uame_off{ 0x14, 0x0, 0xab, 0xcd, 0x2d, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+    std::vector<uint8_t> uame_on{ 0x14, 0x0, 0xab, 0xcd, 0x2d, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+    std::vector<uint8_t> gvd{ 0x14, 0x0, 0xab, 0xcd, 0x10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+    std::vector<uint8_t> hw_rst{ 0x14, 0x0, 0xab, 0xcd, 0x20, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+
     // List of test patterns for transmitting raw data. Represent "request buffer content -> response buffer size" structure
     std::vector< std::pair<std::vector<uint8_t>, unsigned short>> snd_rcv_patterns{
-        { { 0x14, 0x0, 0xab, 0xcd, 0x10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 } , 216},      // GVD 
-        { { 0x14, 0x0, 0xab, 0xcd, 0x2d, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 } , 4 },     // UAME off
-        { { 0x14, 0x0, 0xab, 0xcd, 0x2d, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 } , 4 },     // UAME on
+        { gvd, 216 },       // Input buffer - > Expected result buffer lenght
+        { uame_off, 4 },
+        { uame_on, 4 },
+        { hw_rst, 4 },
     };
 
     for (auto test_pattern : snd_rcv_patterns)
     {
-        assert((test_pattern.first.size() > 0) && (test_pattern.first.size() <=RAW_BUFFER_SIZE));
+        assert((test_pattern.first.size() > 0) && (test_pattern.first.size() <= RAW_BUFFER_SIZE));
         assert(test_pattern.second <= RAW_BUFFER_SIZE);
         memset(&test_obj, 0, sizeof(rs_raw_buffer));
         std::copy(test_pattern.first.begin(), test_pattern.first.end(), test_obj.snd_buffer);
@@ -235,7 +241,120 @@ TEST_CASE("RS4XX Transmit Raw Data", "[live] [RS4XX]")
         REQUIRE(test_obj.rcv_buffer_size == test_pattern.second);
         REQUIRE(test_obj.rcv_buffer_size <= RAW_BUFFER_SIZE);
     }
+
 }
+
+TEST_CASE("RS4XX Advanced Mode Verification", "[live] [RS4XX]")
+{
+    rs::context ctx;
+    REQUIRE(ctx.get_device_count() == 1);
+
+    rs::device * dev = ctx.get_device(0);
+    REQUIRE(nullptr != dev);
+
+    std::string name = dev->get_name();
+    REQUIRE(std::string::npos != name.find("Intel RealSense RS4"));
+
+    // Initialize and preset raw buffer
+    rs_raw_buffer test_obj{};
+
+    std::vector<uint8_t> uame_off{ 0x14, 0x0, 0xab, 0xcd, 0x2d, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+    std::vector<uint8_t> uame_on{ 0x14, 0x0, 0xab, 0xcd, 0x2d, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+    std::vector<uint8_t> gvd{ 0x14, 0x0, 0xab, 0xcd, 0x10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+    std::vector<uint8_t> hw_rst{ 0x14, 0x0, 0xab, 0xcd, 0x20, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+
+
+    SECTION("Restart with Advanced Mode")
+    {
+        // Enter advanced mode
+        memset(&test_obj, 0, sizeof(rs_raw_buffer));
+        std::copy(uame_on.begin(), uame_on.end(), test_obj.snd_buffer);
+        test_obj.snd_buffer_size = uame_on.size();
+
+        dev->transmit_raw_data(&test_obj);
+
+        // Reset FW to re-enumerate device
+        memset(&test_obj, 0, sizeof(rs_raw_buffer));
+        std::copy(hw_rst.begin(), hw_rst.end(), test_obj.snd_buffer);
+        test_obj.snd_buffer_size = hw_rst.size();
+        dev->transmit_raw_data(&test_obj);
+
+        // Wait for device to re-enumerate
+        std::this_thread::sleep_for(std::chrono::seconds(3));
+    }
+
+    SECTION("Select and try to activate advanced mode profile")
+    {
+        try
+        {
+            dev->enable_stream(rs::stream::infrared, 640, 480, rs::format::y8, 30);
+            dev->enable_stream(rs::stream::infrared2, 640, 480, rs::format::y8, 30);
+            dev->start();
+            std::this_thread::sleep_for(std::chrono::seconds(2));
+            dev->stop();
+            REQUIRE(true);  // the flow have reached the designed milestone
+            INFO("Test passed - advanced mode profiles are available, the way it should be");
+        }
+        catch (const std::runtime_error&)
+        {
+            FAIL("Test failed - advanced mode profiles are not available in Advanced mode");;
+        }
+    }
+
+    SECTION("Restart w/o Advanced Mode")
+    {
+        // De-activate advanced mode
+        memset(&test_obj, 0, sizeof(rs_raw_buffer));
+        std::copy(uame_off.begin(), uame_off.end(), test_obj.snd_buffer);
+        test_obj.snd_buffer_size = uame_off.size();
+
+        dev->transmit_raw_data(&test_obj);
+
+        // Reset FW to re-enumerate device
+        memset(&test_obj, 0, sizeof(rs_raw_buffer));
+        std::copy(hw_rst.begin(), hw_rst.end(), test_obj.snd_buffer);
+        test_obj.snd_buffer_size = hw_rst.size();
+        dev->transmit_raw_data(&test_obj);
+
+        // Wait for device to re-enumerate
+        std::this_thread::sleep_for(std::chrono::seconds(3));
+    }
+
+    SECTION("Advanced mode - Negative Test")
+    {
+        try
+        {
+            dev->enable_stream(rs::stream::infrared, 640, 480, rs::format::y8, 30);
+            dev->enable_stream(rs::stream::infrared2, 640, 480, rs::format::y8, 30);
+            dev->start();
+            FAIL("Test failed - advanced mode profile was enable when it shouldn't have");
+        }
+        catch (const std::runtime_error& )
+        {
+            REQUIRE(true); // The flow must reach this exception handler
+            INFO("Test passed - advanced mode profiles are not available, the way it should be");
+        }
+    }
+
+    SECTION("Revert to advanced Mode")
+    {
+        // Enter advanced mode
+        memset(&test_obj, 0, sizeof(rs_raw_buffer));
+        std::copy(uame_on.begin(), uame_on.end(), test_obj.snd_buffer);
+        test_obj.snd_buffer_size = uame_on.size();
+        dev->transmit_raw_data(&test_obj);
+
+        // Reset FW to re-enumerate device
+        memset(&test_obj, 0, sizeof(rs_raw_buffer));
+        std::copy(hw_rst.begin(), hw_rst.end(), test_obj.snd_buffer);
+        test_obj.snd_buffer_size = hw_rst.size();
+        dev->transmit_raw_data(&test_obj);
+
+        // Wait for device to re-enumerate
+        std::this_thread::sleep_for(std::chrono::seconds(3));
+    }
+}
+
 
 ///////////////////////////////////
 // Calibration information tests //
@@ -399,17 +518,6 @@ TEST_CASE("RS4XX Streaming Formats", "[live] [RS4XX]")
             test_streaming(dev, { { RS_STREAM_DEPTH,     mode.dims.x,  mode.dims.y, RS_FORMAT_Z16, cur_fps },
                                   { RS_STREAM_INFRARED,  mode.dims.x,  mode.dims.y, RS_FORMAT_Y8, cur_fps },
                                   { RS_STREAM_INFRARED2,  mode.dims.x,  mode.dims.y, RS_FORMAT_Y8, cur_fps } });
-        }
-    }
-
-    for (auto &res : resolutions)
-    {
-        for (auto fps : { 6,15,30,60,120 })
-        {
-            if (((res.second == 480) && (fps > 60)) || ((res.second == 720) && (fps > 30))) return;   // Skip unsupported modes
-            std::stringstream ss; ss << "Streaming Z16 " << res.first <<  "X" << res.second << " at " << fps << " fps";
-            INFO(ss.str().c_str());
-            test_streaming(dev, { { RS_STREAM_DEPTH, res.first, res.second, RS_FORMAT_Z16, fps } });
         }
     }
 }

@@ -573,7 +573,7 @@ namespace rsimpl
                     if(sub.mf_source_reader)
                     {
                         sub.reader_callback->on_start();
-                        for (int index = 0; index < sub.stream_index_vector.size(); ++index)
+                        for (size_t index = 0; index < sub.stream_index_vector.size(); ++index)
                         {
                             if (sub.stream_index_vector[index] == stream_index_status::configured)
                             {
