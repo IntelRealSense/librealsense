@@ -12,16 +12,17 @@ using namespace TCLAP;
 
 vector<uint8_t> build_raw_command_data(const command& command, const vector<string>& params)
 {
-    if (params.size() > command.parameters.size())
+    if (params.size() > command.parameters.size() && !command.is_cmd_write_data)
         throw runtime_error("Input string was not in a correct format!");
 
     vector<parameter> vec_parameters;
     for (auto param_index = 0; param_index < params.size() ; ++param_index)
     {
-        auto name = command.parameters[param_index].name;
-        auto is_reverse_bytes = command.parameters[param_index].is_reverse_bytes;
-        auto is_decimal = (param_index < int(command.parameters.size())) ? command.parameters[param_index].is_decimal : false;
-        auto format_length = (param_index < int(command.parameters.size())) ? command.parameters[param_index].format_length : -1;
+        bool is_there_write_data = param_index >= int(command.parameters.size());
+        auto name = (is_there_write_data)? "" : command.parameters[param_index].name;
+        auto is_reverse_bytes = (is_there_write_data)? false : command.parameters[param_index].is_reverse_bytes;
+        auto is_decimal = (is_there_write_data) ? false : command.parameters[param_index].is_decimal;
+        auto format_length = (is_there_write_data) ? -1 : command.parameters[param_index].format_length;
         vec_parameters.push_back(parameter(name, params[param_index], is_decimal, is_reverse_bytes, format_length ));
     }
 
