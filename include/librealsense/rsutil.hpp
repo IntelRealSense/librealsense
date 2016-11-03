@@ -77,8 +77,7 @@ namespace rs
             {
                 for (int i = RS_STREAM_DEPTH; i < RS_STREAM_COUNT; i++)
                 {
-                    enable_stream(static_cast<rs_stream>(i), 
-                        preset::best_quality);
+                    enable_stream(static_cast<rs_stream>(i), p);
                 }
             }
 
