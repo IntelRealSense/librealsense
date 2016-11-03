@@ -2,6 +2,7 @@
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
 #include <librealsense/rs.hpp>
+#include <librealsense/rsutil.hpp>
 #include "example.hpp"
 
 #include <chrono>
@@ -10,31 +11,58 @@
 #include <iostream>
 #include <algorithm>
 
-inline void glVertex(const rs::float3 & vertex) { glVertex3fv(&vertex.x); }
-inline void glTexCoord(const rs::float2 & tex_coord) { glTexCoord2fv(&tex_coord.x); }
+inline void glVertex(const float3 & vertex) { glVertex3fv(&vertex.x); }
+inline void glTexCoord(const float2 & tex_coord) { glTexCoord2fv(&tex_coord.x); }
 
-struct state { double yaw, pitch, lastX, lastY; bool ml; std::vector<rs::stream> tex_streams; int index; rs::device * dev; };
+struct state { double yaw, pitch, lastX, lastY; bool ml; rs::device * dev; };
+
+template<class MAP_DEPTH> void deproject_depth(float * points, const rs_intrinsics & intrin, const uint16_t * depth, MAP_DEPTH map_depth)
+{
+    for (int y = 0; y<intrin.height; ++y)
+    {
+        for (int x = 0; x<intrin.width; ++x)
+        {
+            const float pixel[] = { (float)x, (float)y };
+            rs_deproject_pixel_to_point(points, &intrin, pixel, map_depth(*depth++));
+            points += 3;
+        }
+    }
+}
+
+const float3 * depth_to_points(std::vector<uint8_t> &image, const rs_intrinsics &depth_intrinsics, const uint16_t * depth_image, float depth_scale)
+{
+    image.resize(depth_intrinsics.width * depth_intrinsics.height * 12);
+
+    deproject_depth(reinterpret_cast<float *>(image.data()), depth_intrinsics, depth_image, [depth_scale](uint16_t z) { return depth_scale * z; });
+
+    return reinterpret_cast<float3 *>(image.data());
+}
+
+float3 transform(const rs_extrinsics *extrin, const float3 &point) { float3 p = {}; rs_transform_point_to_point(&p.x, extrin, &point.x); return p; }
+float2 project(const rs_intrinsics *intrin, const float3 & point) { float2 pixel = {}; rs_project_point_to_pixel(&pixel.x, intrin, &point.x); return pixel; }
+float2 pixel_to_texcoord(const rs_intrinsics *intrin, const float2 & pixel) { return{ (pixel.x + 0.5f) / intrin->width, (pixel.y + 0.5f) / intrin->height }; }
+float2 project_to_texcoord(const rs_intrinsics *intrin, const float3 & point) { return pixel_to_texcoord(intrin, project(intrin, point)); }
 
 int main(int argc, char * argv[]) try
 {
-    rs::log_to_console(rs::log_severity::warn);
+    rs::log_to_console(RS_LOG_SEVERITY_WARN);
     //rs::log_to_file(rs::log_severity::debug, "librealsense.log");
 
     rs::context ctx;
-    if(ctx.get_device_count() == 0) throw std::runtime_error("No device detected. Is it plugged in?");
-    rs::device & dev = *ctx.get_device(0);
+    auto list = ctx.query_devices();
+    if (list.size() == 0) throw std::runtime_error("No device detected. Is it plugged in?");
+    auto dev = list[0];
 
-    dev.enable_stream(rs::stream::depth, rs::preset::best_quality);
-    dev.enable_stream(rs::stream::color, rs::preset::best_quality);
-    dev.enable_stream(rs::stream::infrared, rs::preset::best_quality);
-    try { dev.enable_stream(rs::stream::infrared2, rs::preset::best_quality); } catch(...) {}
-    dev.start();
+    // Configure all supported streams to run at 30 frames per second
+    rs::util::config config;
+    config.enable_stream(RS_STREAM_COLOR, rs::preset::best_quality);
+    config.enable_stream(RS_STREAM_DEPTH, rs::preset::best_quality);
+    auto stream = config.open(dev);
     
-    state app_state = {0, 0, 0, 0, false, {rs::stream::color, rs::stream::depth, rs::stream::infrared}, 0, &dev};
-    if(dev.is_stream_enabled(rs::stream::infrared2)) app_state.tex_streams.push_back(rs::stream::infrared2);
+    state app_state = {0, 0, 0, 0, false, &dev};
     
     glfwInit();
-    std::ostringstream ss; ss << "CPP Point Cloud Example (" << dev.get_name() << ")";
+    std::ostringstream ss; ss << "CPP Point Cloud Example (" << dev.get_camera_info(RS_CAMERA_INFO_DEVICE_NAME) << ")";
     GLFWwindow * win = glfwCreateWindow(640, 480, ss.str().c_str(), 0, 0);
     glfwSetWindowUserPointer(win, &app_state);
         
@@ -42,7 +70,6 @@ int main(int argc, char * argv[]) try
     {
         auto s = (state *)glfwGetWindowUserPointer(win);
         if(button == GLFW_MOUSE_BUTTON_LEFT) s->ml = action == GLFW_PRESS;
-        if(button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_PRESS) s->index = (s->index+1) % s->tex_streams.size();
     });
         
     glfwSetCursorPosCallback(win, [](GLFWwindow * win, double x, double y)
@@ -60,54 +87,42 @@ int main(int argc, char * argv[]) try
         s->lastX = x;
         s->lastY = y;
     });
-        
-    glfwSetKeyCallback(win, [](GLFWwindow * win, int key, int /*scancode*/, int action, int /*mods*/)
-    {
-        auto s = (state *)glfwGetWindowUserPointer(win);
-        if (action == GLFW_RELEASE)
-        {
-            if (key == GLFW_KEY_ESCAPE) glfwSetWindowShouldClose(win, 1);
-            else if (key == GLFW_KEY_F1)
-            {
-               if (!s->dev->is_streaming()) s->dev->start();
-            }
-            else if (key == GLFW_KEY_F2)
-            {
-               if (s->dev->is_streaming()) s->dev->stop();
-            }
-        }
-    });
+
+    rs::util::syncer syncer;
+    stream.start(syncer);
 
     glfwMakeContextCurrent(win);
-    texture_buffer tex;
+    texture_buffer color_tex;
+    const uint16_t * depth;
+    
+    const rs_extrinsics extrin = dev.get_extrinsics(RS_SUBDEVICE_DEPTH, RS_SUBDEVICE_COLOR);
+    const rs_intrinsics depth_intrin = stream.get_intrinsics(RS_STREAM_DEPTH);
+    const rs_intrinsics color_intrin = stream.get_intrinsics(RS_STREAM_COLOR);
 
-    int frames = 0; float time = 0, fps = 0;
+    int frame_count = 0; float time = 0, fps = 0;
     auto t0 = std::chrono::high_resolution_clock::now();
     while (!glfwWindowShouldClose(win))
     {
         glfwPollEvents();
-        if(dev.is_streaming()) dev.wait_for_frames();
+        auto frames = syncer.wait_for_frames();
 
         auto t1 = std::chrono::high_resolution_clock::now();
         time += std::chrono::duration<float>(t1-t0).count();
         t0 = t1;
-        ++frames;
+        ++frame_count;
         if(time > 0.5f)
         {
-            fps = frames / time;
-            frames = 0;
+            fps = frame_count / time;
+            frame_count = 0;
             time = 0;
         }
-
-        const rs::stream tex_stream = app_state.tex_streams[app_state.index];
-        const rs::extrinsics extrin = dev.get_extrinsics(rs::stream::depth, tex_stream);
-        const rs::intrinsics depth_intrin = dev.get_stream_intrinsics(rs::stream::depth);
-        const rs::intrinsics tex_intrin = dev.get_stream_intrinsics(tex_stream);
-        bool identical = depth_intrin == tex_intrin && extrin.is_identity();
-      
+     
         glPushAttrib(GL_ALL_ATTRIB_BITS);
 
-        tex.upload(dev, tex_stream);
+        for (auto&& frame : frames) {
+            if (frame.get_stream_type() == RS_STREAM_COLOR) color_tex.upload(frame);
+            if (frame.get_stream_type() == RS_STREAM_DEPTH) depth = reinterpret_cast<const uint16_t *>(frame.get_data());
+        }
 
         int width, height;
         glfwGetFramebufferSize(win, &width, &height);
@@ -131,20 +146,22 @@ int main(int argc, char * argv[]) try
         glPointSize((float)width/640);
         glEnable(GL_DEPTH_TEST);
         glEnable(GL_TEXTURE_2D);
-        glBindTexture(GL_TEXTURE_2D, tex.get_gl_handle());
+        glBindTexture(GL_TEXTURE_2D, color_tex.get_gl_handle());
         glBegin(GL_POINTS);
 
-        auto points = reinterpret_cast<const rs::float3 *>(dev.get_frame_data(rs::stream::points));
+        
+        std::vector<uint8_t> image;
+        auto points = depth_to_points(image, depth_intrin, depth, dev.get_depth_scale());
         //auto depth = reinterpret_cast<const uint16_t *>(dev.get_frame_data(rs::stream::depth));
         
-        for(int y=0; y<depth_intrin.height; ++y)
+        for (int y=0; y<depth_intrin.height; ++y)
         {
             for(int x=0; x<depth_intrin.width; ++x)
             {
                 if(points->z) //if(uint16_t d = *depth++)
                 {
                     //const rs::float3 point = depth_intrin.deproject({static_cast<float>(x),static_cast<float>(y)}, d*depth_scale);
-                    glTexCoord(identical ? tex_intrin.pixel_to_texcoord({static_cast<float>(x),static_cast<float>(y)}) : tex_intrin.project_to_texcoord(extrin.transform(*points)));
+                    glTexCoord(project_to_texcoord(&color_intrin, transform(&extrin, *points)));
                     glVertex(*points);
                 }
                 ++points;
@@ -161,10 +178,7 @@ int main(int argc, char * argv[]) try
         glPushMatrix();
         glOrtho(0, width, height, 0, -1, +1);
         
-        std::ostringstream ss; ss << dev.get_name() << " (" << app_state.tex_streams[app_state.index] << ")";
-        draw_text((width-get_text_width(ss.str().c_str()))/2, height-20, ss.str().c_str());
-
-        ss.str(""); ss << fps << " FPS";
+        std::ostringstream ss; ss << fps << " FPS";
         draw_text(20, 40, ss.str().c_str());
         glPopMatrix();
 

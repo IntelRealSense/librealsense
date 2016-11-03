@@ -582,6 +582,28 @@ void rs_flush_queue(rs_frame_queue* queue, rs_error** error) try
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, queue)
 
+void rs_get_device_extrinsics(const rs_device * device, rs_subdevice from, rs_subdevice to, rs_extrinsics * extrin, rs_error ** error) try
+{
+    VALIDATE_NOT_NULL(device);
+    VALIDATE_ENUM(from);
+    VALIDATE_ENUM(to);
+    VALIDATE_NOT_NULL(extrin);
+    *extrin = device->device->get_extrinsics(from, to);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, device, from, to, extrin)
+
+void rs_get_stream_intrinsics(const rs_device * device, rs_subdevice subdevice, rs_stream stream, int width, int height, int fps, rs_format format, rs_intrinsics * intrinsics, rs_error ** error) try
+{
+    VALIDATE_NOT_NULL(device);
+    VALIDATE_ENUM(subdevice);
+    VALIDATE_ENUM(stream);
+    VALIDATE_ENUM(format);
+    VALIDATE_NOT_NULL(intrinsics);
+    // cast because i've been getting errors. (int->uint32_t requires narrowing conversion)
+    *intrinsics = device->device->get_intrinsics(subdevice, {stream, uint32_t(width), uint32_t(height), uint32_t(fps), format});
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, device, subdevice, intrinsics)
+
 float rs_get_device_depth_scale(const rs_device * device, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(device);

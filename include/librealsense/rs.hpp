@@ -15,12 +15,9 @@
 #include <ostream>
 #include <iostream>
 
-namespace rsimpl{
-    struct float3;
-}
-
 namespace rs
 {
+    
     class error : public std::runtime_error
     {
         std::string function, args;
@@ -538,6 +535,29 @@ namespace rs
         * retrieve mapping between the units of the depth image and meters
         * \return            depth in meters corresponding to a depth value of 1
         */
+        rs_extrinsics get_extrinsics(rs_subdevice from_subdevice, rs_subdevice to_subdevice) const
+        {
+            rs_error* e = nullptr;
+            rs_extrinsics extrin;
+            rs_get_device_extrinsics(_dev.get(), from_subdevice, to_subdevice, &extrin, &e);
+            error::handle(e);
+            return extrin;
+        }
+
+        rs_intrinsics get_intrinsics(rs_subdevice subdevice, stream_profile profile) const
+        {
+            rs_error* e = nullptr;
+            rs_intrinsics intrinsics;
+            rs_get_stream_intrinsics(_dev.get(), subdevice, 
+                profile.stream,
+                profile.width,
+                profile.height,
+                profile.fps,
+                profile.format, &intrinsics, &e);
+            error::handle(e);
+            return intrinsics;
+        }
+
         float get_depth_scale() const
         {
             rs_error* e = nullptr;
@@ -545,6 +565,7 @@ namespace rs
             error::handle(e);
             return result;
         }
+
     private:
         friend context;
         explicit device(std::shared_ptr<rs_device> dev) : _dev(dev)
