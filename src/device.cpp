@@ -797,7 +797,7 @@ void rs_device_base::fisheyeCallback(motion::MotionFisheyeFrame* frame) {
             30,
             frame->width,
             0,
-            1,
+            8,
             RS_FORMAT_Y8,
             RS_STREAM_FISHEYE,
             0,
