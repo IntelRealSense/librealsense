@@ -280,23 +280,24 @@ TEST_CASE("RS4XX Advanced Mode Verification", "[live] [RS4XX]")
         dev->transmit_raw_data(&test_obj);
 
         // Wait for device to re-enumerate
-        std::this_thread::sleep_for(std::chrono::seconds(3));
+        std::this_thread::sleep_for(std::chrono::seconds(5));
     }
 
     SECTION("Select and try to activate advanced mode profile")
     {
         try
         {
-            dev->enable_stream(rs::stream::infrared, 640, 480, rs::format::y8, 30);
-            dev->enable_stream(rs::stream::infrared2, 640, 480, rs::format::y8, 30);
+            dev->enable_stream(rs::stream::infrared, 1280, 720, rs::format::y8, 30);
+            dev->enable_stream(rs::stream::infrared2,1280, 720, rs::format::y8, 30);
             dev->start();
             std::this_thread::sleep_for(std::chrono::seconds(2));
             dev->stop();
             REQUIRE(true);  // the flow have reached the designed milestone
             INFO("Test passed - advanced mode profiles are available, the way it should be");
         }
-        catch (const std::runtime_error&)
+        catch (const std::runtime_error& e)
         {
+            INFO(e.what());
             FAIL("Test failed - advanced mode profiles are not available in Advanced mode");;
         }
     }
@@ -317,16 +318,18 @@ TEST_CASE("RS4XX Advanced Mode Verification", "[live] [RS4XX]")
         dev->transmit_raw_data(&test_obj);
 
         // Wait for device to re-enumerate
-        std::this_thread::sleep_for(std::chrono::seconds(3));
+        std::this_thread::sleep_for(std::chrono::seconds(5));
     }
 
     SECTION("Advanced mode - Negative Test")
     {
         try
         {
-            dev->enable_stream(rs::stream::infrared, 640, 480, rs::format::y8, 30);
-            dev->enable_stream(rs::stream::infrared2, 640, 480, rs::format::y8, 30);
+            dev->enable_stream(rs::stream::infrared, 1920, 1080, rs::format::y8, 30);
+            dev->enable_stream(rs::stream::infrared2, 1920, 1080, rs::format::y8, 30);
             dev->start();
+            std::this_thread::sleep_for(std::chrono::seconds(2));
+            dev->stop();
             FAIL("Test failed - advanced mode profile was enable when it shouldn't have");
         }
         catch (const std::runtime_error& )
