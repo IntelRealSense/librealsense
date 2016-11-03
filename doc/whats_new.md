@@ -14,23 +14,24 @@ Demos:
 - cpp-config-ui
 
 Supported stream types:
-- Linux:
+- Linux and Windows:
     - Depth
-    - Infrared (Left)
+    - Left imager Infrared + UYVY
     - Depth + Infrared
-    - Calibration mode (Infrared Left + Right )
-    - Depth + Calibration
+    - Calibration profiles (Advanced Mode):
+      - L/R Infrared Full HD unrectified
+      - L/R Infrared rectified
 
-- Windows
-    - Depth only
-
-Extrinsic and Intrinsic API
-Control:
-- Laser Power
+Controls:
+- Project Mode
+- Projector Power
 - Manual Exposure
 - Manual Gain
 
+Extrinsic and Intrinsic API
+
+Camera Advanced Mode API
+
 ## Known Issues
-- Exposure Control set value updates with delay
 - Camera often fails when changing stream configuration on Linux. Requires physical reconnection
-- No Infrared streaming on Windows
+- Stopping multiple stream configuration takes about two seconds.
