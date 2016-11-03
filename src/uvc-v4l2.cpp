@@ -584,6 +584,9 @@ namespace rsimpl
             case RS_OPTION_COLOR_ENABLE_AUTO_EXPOSURE: return V4L2_CID_EXPOSURE_AUTO; // Automatic gain/exposure control
             case RS_OPTION_COLOR_ENABLE_AUTO_WHITE_BALANCE: return V4L2_CID_AUTO_WHITE_BALANCE;
             case RS_OPTION_FISHEYE_GAIN: return V4L2_CID_GAIN;
+            case RS_OPTION_CT_AUTO_EXPOSURE_MODE: return V4L2_CID_EXPOSURE_AUTO;
+            case RS_OPTION_CT_EXPOSURE_PRIORITY: return V4L2_CID_EXPOSURE_AUTO_PRIORITY;
+
             default: throw std::runtime_error(to_string() << "no v4l2 cid for option " << option);
             }
         }
@@ -591,7 +594,7 @@ namespace rsimpl
         void set_pu_control(device & device, int subdevice, rs_option option, int value)
         {
             struct v4l2_control control = {get_cid(option), value};
-            if (RS_OPTION_COLOR_ENABLE_AUTO_EXPOSURE==option) { control.value = value ? V4L2_EXPOSURE_APERTURE_PRIORITY : V4L2_EXPOSURE_MANUAL; }
+            if ((RS_OPTION_COLOR_ENABLE_AUTO_EXPOSURE==option) || (RS_OPTION_CT_AUTO_EXPOSURE_MODE == option)){ control.value = (value ? V4L2_EXPOSURE_APERTURE_PRIORITY : V4L2_EXPOSURE_MANUAL); }
             if (xioctl(device.subdevices[subdevice]->fd, VIDIOC_S_CTRL, &control) < 0) throw_error("VIDIOC_S_CTRL");
         }
 
@@ -599,14 +602,15 @@ namespace rsimpl
         {
             struct v4l2_control control = {get_cid(option), 0};
             if (xioctl(device.subdevices[subdevice]->fd, VIDIOC_G_CTRL, &control) < 0) throw_error("VIDIOC_G_CTRL");
-            if (RS_OPTION_COLOR_ENABLE_AUTO_EXPOSURE==option)  { control.value = (V4L2_EXPOSURE_MANUAL==control.value) ? 0 : 1; }
+            if ((RS_OPTION_COLOR_ENABLE_AUTO_EXPOSURE==option) || (RS_OPTION_CT_AUTO_EXPOSURE_MODE == option))  { control.value = (V4L2_EXPOSURE_MANUAL==control.value) ? 0 : 1; }
             return control.value;
         }
 
         void get_pu_control_range(const device & device, int subdevice, rs_option option, int * min, int * max, int * step, int * def)
         {
             // Auto controls range is trimed to {0,1} range
-            if(option >= RS_OPTION_COLOR_ENABLE_AUTO_EXPOSURE && option <= RS_OPTION_COLOR_ENABLE_AUTO_WHITE_BALANCE)
+            if((option >= RS_OPTION_COLOR_ENABLE_AUTO_EXPOSURE && option <= RS_OPTION_COLOR_ENABLE_AUTO_WHITE_BALANCE) ||
+                (option >= RS_OPTION_CT_AUTO_EXPOSURE_MODE && option <= RS_OPTION_CT_EXPOSURE_PRIORITY))
             {
                 if(min)  *min  = 0;
                 if(max)  *max  = 1;

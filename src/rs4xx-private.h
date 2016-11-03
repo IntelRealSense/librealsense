@@ -96,18 +96,29 @@ namespace rsimpl {
         };
     };
 
+    enum fw_cmd : uint8_t
+    {
+        GLD         = 0x0f,     // Get logger data
+        GVD         = 0x10,     // Get Version and Date
+        GETINTCAL   = 0x15,     // Read calibration table
+        RST         = 0x20,     // HW Reset
+        UAME        = 0x2d      // USB Advanced Mode Enable
+    };
+
     std::string read_firmware_version(uvc::device & device);
 
     // Claim USB interface used for device
     void claim_rs4xx_monitor_interface(uvc::device & device);
     void claim_rs4xx_motion_module_interface(uvc::device & device);
 
-    // Read and update device state
+    // Commands over HW Monitor channel
     void get_gvd_raw(uvc::device & device, std::timed_mutex & mutex, size_t sz, unsigned char * gvd);
     void get_string_of_gvd_field(uvc::device & device, std::timed_mutex & mutex, std::string & str, gvd_fields offset);
     void read_calibration(uvc::device & dev, std::timed_mutex & mutex, rs4xx_calibration& calib);
     void update_supported_options(uvc::device& dev, const std::vector <std::pair<rs_option, uint8_t>>& options, std::vector<supported_option>& supported_options);
     void send_receive_raw_data(uvc::device & device, std::timed_mutex & mutex, rs_raw_buffer& buffer);
+    bool is_advanced_mode(uvc::device & device, std::timed_mutex & mutex);
+    void set_advanced_mode(uvc::device & device, std::timed_mutex & mutex, const uint8_t mode);
 
 
     // XU read/write

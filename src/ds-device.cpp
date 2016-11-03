@@ -526,7 +526,7 @@ namespace rsimpl
         info.camera_info[RS_CAMERA_INFO_IMAGER_MODEL_NUMBER]    = to_string() << h.imager_model_number;
         info.camera_info[RS_CAMERA_INFO_CAMERA_TYPE]            = to_string() << h.prq_type;
         info.camera_info[RS_CAMERA_INFO_OEM_ID]                 = to_string() << h.oem_id;
-        info.camera_info[RS_CAMERA_INFO_MODULE_VERSION]         = to_string() << (int)h.module_version << "." << (int)h.module_major_version << "." << (int)h.module_minor_version << "." << (int)h.module_skew_version;
+        info.camera_info[RS_CAMERA_INFO_MODULE_VERSION]         = to_string() << (int)h.module_version << "." << (int)h.module_major_version << "." << (int)h.module_minor_version << "." << (int)h.module_sku_version;
         info.camera_info[RS_CAMERA_INFO_FOCUS_VALUE]            = to_string() << h.platform_camera_focus;
         info.camera_info[RS_CAMERA_INFO_CONTENT_VERSION]        = to_string() << h.camera_head_contents_version;
         info.camera_info[RS_CAMERA_INFO_LENS_TYPE]              = to_string() << h.lens_type;

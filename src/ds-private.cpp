@@ -316,7 +316,7 @@ namespace rsimpl {
             LOG_INFO("Revision number                     = " << head_content.module_revision_number);
             LOG_INFO("Camera head contents version        = " << head_content.camera_head_contents_version);
             if (head_content.camera_head_contents_version != ds_head_content::DS_HEADER_VERSION_NUMBER) LOG_WARNING("Camera head contents version != 12, data may be missing/incorrect");
-            LOG_INFO("Module version                      = " << (int)head_content.module_version << "." << (int)head_content.module_major_version << "." << (int)head_content.module_minor_version << "." << (int)head_content.module_skew_version);
+            LOG_INFO("Module version                      = " << (int)head_content.module_version << "." << (int)head_content.module_major_version << "." << (int)head_content.module_minor_version << "." << (int)head_content.module_sku_version);
             LOG_INFO("OEM ID                              = " << head_content.oem_id);
             LOG_INFO("Lens type for left/right imagers    = " << head_content.lens_type);
             LOG_INFO("Lens type for third imager          = " << head_content.lens_type_third_imager);

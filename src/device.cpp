@@ -56,7 +56,7 @@ bool rs_device_base::supports_option(rs_option option) const
 { 
     if(uvc::is_pu_control(option)) return true;
     for(auto & o : config.info.options) if(o.option == option) return true;
-    return false; 
+    return false;
 }
 
 const char* rs_device_base::get_camera_info(rs_camera_info info) const
@@ -596,6 +596,8 @@ const char * rs_device_base::get_option_description(rs_option option) const
     case RS_OPTION_TOTAL_FRAME_DROPS                               : return "Total number of detected frame drops from all streams";
     case RS_OPTION_RS4XX_PROJECTOR_MODE                            : return "Toggle RS4XX Projector modes: 0 - off, 1 - on, 2 - auto";
     case RS_OPTION_RS4XX_PROJECTOR_PWR                             : return "RS4XX Projector pwer in milli-watt";
+    case RS_OPTION_CT_AUTO_EXPOSURE_MODE                           : return "CT Auto Exposure on/off";
+    case RS_OPTION_CT_EXPOSURE_PRIORITY                            : return "CT Exposure Priority - constant fps/light dependent";
     default: return rs_option_to_string(option);
     }
 }

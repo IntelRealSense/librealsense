@@ -167,6 +167,8 @@ namespace rsimpl
         CASE(TOTAL_FRAME_DROPS)
         CASE(RS4XX_PROJECTOR_MODE)
         CASE(RS4XX_PROJECTOR_PWR)
+        CASE(CT_AUTO_EXPOSURE_MODE)
+        CASE(CT_EXPOSURE_PRIORITY)
         default: assert(!is_valid(value)); return unknown;
         }
         #undef CASE
@@ -199,6 +201,7 @@ namespace rsimpl
         CASE(MOTION_MODULE_FW_UPDATE)
         CASE(ADAPTER_BOARD)
         CASE(ENUMERATION)
+        CASE(ADVANCED_MODE)
         default: assert(!is_valid(value)); return unknown;
         }
         #undef CASE

@@ -20,12 +20,6 @@ namespace rs4xx {
     const uvc::extension_unit depth_xu = { 0, 3, 2, { 0xC9606CCB, 0x594C, 0x4D25,{ 0xaf, 0x47, 0xcc, 0xc4, 0x96, 0x43, 0x59, 0x95 } } };
     const uvc::guid RS4XX_WIN_USB_DEVICE_GUID = { 0x08090549, 0xCE78, 0x41DC,{ 0xA0, 0xFB, 0x1B, 0xD6, 0x66, 0x94, 0xBB, 0x0C } };
 
-    enum fw_cmd : uint8_t
-    {
-        GVD         = 0x10,
-        GETINTCAL   = 0x15,     // Read calibration table
-    };
-
 #pragma pack(push, 1)
 
     struct table_header
@@ -362,6 +356,22 @@ namespace rs4xx {
         size_t rcv_size=0;
         hw_monitor::snd_rcv_raw_data(device, mutex, buffer.snd_buffer, buffer.snd_buffer_size, buffer.rcv_buffer, rcv_size);
         buffer.rcv_buffer_size = rcv_size;
+    }
+
+    bool is_advanced_mode(uvc::device & device, std::timed_mutex & mutex)
+    {
+        return true;       // Provision for querying FW
+        //throw std::runtime_error(to_string() << __FUNCTION__ << " Not supported");
+        hwmon_cmd cmd(fw_cmd::UAME);
+        perform_and_send_monitor_command_over_usb_monitor(device, mutex, cmd);
+        return *reinterpret_cast<bool *>(cmd.receivedCommandData);
+    }
+
+    void set_advanced_mode(uvc::device & device, std::timed_mutex & mutex, const uint8_t mode)
+    {
+        hwmon_cmd cmd(fw_cmd::UAME);
+        cmd.Param1 = (mode != 0);
+        perform_and_send_monitor_command_over_usb_monitor(device, mutex, cmd);
     }
 
     uint8_t get_laser_power_mode(const uvc::device & device)

@@ -483,7 +483,7 @@ namespace rsimpl
             subdevice& subscript_operator(size_t index) const
             {
                 auto& sub = subdevices[index];
-                if ((sub.vid == VID_INTEL_CAMERA) && (std::any_of(rs4xx_skews_pid.begin(), rs4xx_skews_pid.end(), [&sub](uint16_t pid){ return (sub.pid == pid); }))
+                if ((sub.vid == VID_INTEL_CAMERA) && (std::any_of(rs4xx_sku_pid.begin(), rs4xx_sku_pid.end(), [&sub](uint16_t pid){ return (sub.pid == pid); }))
                     && (subdevices.size() > 1) && ((subdevices[0].mf_source_reader != nullptr) ^ (subdevices[1].mf_source_reader != nullptr)))
                 {
                     if (subdevices[0].mf_source_reader)
@@ -573,7 +573,7 @@ namespace rsimpl
                     if(sub.mf_source_reader)
                     {
                         sub.reader_callback->on_start();
-                        for (int index = 0; index < sub.stream_index_vector.size(); ++index)
+                        for (size_t index = 0; index < sub.stream_index_vector.size(); ++index)
                         {
                             if (sub.stream_index_vector[index] == stream_index_status::configured)
                             {
@@ -998,6 +998,12 @@ namespace rsimpl
             {RS_OPTION_FISHEYE_GAIN, VideoProcAmp_Gain}
         };
 
+        struct ct_control { rs_option option; long property; bool enable_auto; };
+        static const ct_control ct_controls[] = {
+            { RS_OPTION_CT_AUTO_EXPOSURE_MODE, CameraControl_Exposure },
+            //{ RS_OPTION_CT_EXPOSURE_PRIORITY, Undefined TBD?? },
+        };
+
         void set_pu_control(device & device, int subdevice, rs_option option, int value)
         {
             auto & sub = device.subdevices.get_subdevice_vector()[subdevice];
@@ -1007,17 +1013,18 @@ namespace rsimpl
                 check("IAMCameraControl::Set", sub.am_camera_control->Set(CameraControl_Exposure, static_cast<int>(value), CameraControl_Flags_Manual));
                 return;
             }
-            if(option == RS_OPTION_COLOR_ENABLE_AUTO_EXPOSURE)
+            if((option == RS_OPTION_COLOR_ENABLE_AUTO_EXPOSURE) || (option == RS_OPTION_CT_AUTO_EXPOSURE_MODE))
             {
-                if(value) check("IAMCameraControl::Set", sub.am_camera_control->Set(CameraControl_Exposure, 0, CameraControl_Flags_Auto));
+                if (value) check("IAMCameraControl::Set", sub.am_camera_control->Set(CameraControl_Exposure, 0, CameraControl_Flags_Auto));
                 else
                 {
-                    long min, max, step, def, caps;
+                    long min{}, max{}, step{}, def{}, caps{};
                     check("IAMCameraControl::GetRange", sub.am_camera_control->GetRange(CameraControl_Exposure, &min, &max, &step, &def, &caps));
                     check("IAMCameraControl::Set", sub.am_camera_control->Set(CameraControl_Exposure, def, CameraControl_Flags_Manual));
                 }
                 return;
             }
+
             for(auto & pu : pu_controls)
             {
                 if(option == pu.option)
@@ -1041,7 +1048,9 @@ namespace rsimpl
 
         void get_pu_control_range(const device & device, int subdevice, rs_option option, int * min, int * max, int * step, int * def)
         {
-            if(option >= RS_OPTION_COLOR_ENABLE_AUTO_EXPOSURE && option <= RS_OPTION_COLOR_ENABLE_AUTO_WHITE_BALANCE)
+            // Media Foundation fails to query Camera Terminal controls, along with PU controls
+            if((option >= RS_OPTION_COLOR_ENABLE_AUTO_EXPOSURE && option <= RS_OPTION_COLOR_ENABLE_AUTO_WHITE_BALANCE) ||
+                (option >= RS_OPTION_CT_AUTO_EXPOSURE_MODE && option <= RS_OPTION_CT_EXPOSURE_PRIORITY))
             {
                 if(min)  *min  = 0;
                 if(max)  *max  = 1;
@@ -1053,15 +1062,29 @@ namespace rsimpl
             auto& sub = device.subdevices[subdevice];
             const_cast<uvc::subdevice &>(sub).get_media_source();
             long minVal=0, maxVal=0, steppingDelta=0, defVal=0, capsFlag=0;
-            if (option == RS_OPTION_COLOR_EXPOSURE)
+            if ((option == RS_OPTION_COLOR_EXPOSURE))
             {
-                check("IAMCameraControl::Get", sub.am_camera_control->GetRange(CameraControl_Exposure, &minVal, &maxVal, &steppingDelta, &defVal, &capsFlag));
+                check("IAMCameraControl::GetRange", sub.am_camera_control->GetRange(CameraControl_Exposure, &minVal, &maxVal, &steppingDelta, &defVal, &capsFlag));
                 if (min)  *min = minVal;
                 if (max)  *max = maxVal;
                 if (step) *step = steppingDelta;
                 if (def)  *def = defVal;
                 return;
             }
+
+            for (auto & ct : ct_controls)
+            {
+                if (option == ct.option)
+                {
+                    check("IAMCameraControl::GetRange", sub.am_camera_control->GetRange(ct.property, &minVal, &maxVal, &steppingDelta, &defVal, &capsFlag));
+                    if (min)  *min = static_cast<int>(minVal);
+                    if (max)  *max = static_cast<int>(maxVal);
+                    if (step) *step = static_cast<int>(steppingDelta);
+                    if (def)  *def = static_cast<int>(defVal);
+                    return;
+                }
+            }
+
             for(auto & pu : pu_controls)
             {
                 if(option == pu.option)
@@ -1165,11 +1188,12 @@ namespace rsimpl
                 check("IAMCameraControl::Get", sub.am_camera_control->Get(CameraControl_Exposure, &value, &flags));
                 return value;
             }
-            if(option == RS_OPTION_COLOR_ENABLE_AUTO_EXPOSURE)
+            if((option == RS_OPTION_COLOR_ENABLE_AUTO_EXPOSURE) || (option == RS_OPTION_CT_AUTO_EXPOSURE_MODE))
             {
                 check("IAMCameraControl::Get", sub.am_camera_control->Get(CameraControl_Exposure, &value, &flags));
                 return flags == CameraControl_Flags_Auto;
             }
+
             for(auto & pu : pu_controls)
             {
                 if(option == pu.option)
@@ -1250,7 +1274,7 @@ namespace rsimpl
                 dev->subdevices[subdevice_index].vid = vid;
                 dev->subdevices[subdevice_index].pid = pid;
 
-                if (vid == VID_INTEL_CAMERA && (std::any_of(rs4xx_skews_pid.begin(), rs4xx_skews_pid.end(), [&pid](uint16_t val) { return (pid == val); }))) // Duplicate DS5 subdevice
+                if (vid == VID_INTEL_CAMERA && (std::any_of(rs4xx_sku_pid.begin(), rs4xx_sku_pid.end(), [&pid](uint16_t val) { return (pid == val); }))) // Duplicate DS5 subdevice
                 {
                     dev->subdevices[0].reader_callback->subdevice_index_per_stream_index.insert(std::make_pair(1,1));
                     dev->subdevices.push_back(dev->subdevices[0]);

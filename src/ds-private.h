@@ -182,7 +182,7 @@ namespace rsimpl
             uint8_t         module_version;
             uint8_t         module_major_version;
             uint8_t         module_minor_version;
-            uint8_t         module_skew_version;
+            uint8_t         module_sku_version;
             ds_lens_type    lens_type_third_imager;
             ds_oem_id       oem_id;
             ds_lens_coating_type lens_coating_type_third_imager;

@@ -69,7 +69,7 @@ A comprehensive suite of sample and tutorial applications are provided in the `/
   * Camera Firmware 2.0.71.18 and up
   * USB Adapter Board Firmware 1.27.0.0 and up
   * Motion Module Firmware 1.23.0.0 and up
-6. RealSense R400 (DS5 B0: Firmware 5.1.8.0)
+6. RealSense R400p/R410a (DS5 B0) Firmware 5.2.4.0 and up
 
 
 ## Compatible Platforms

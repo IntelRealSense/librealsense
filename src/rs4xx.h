@@ -9,11 +9,7 @@
 
 namespace rsimpl
 {
-    enum class rs4xx_command : uint32_t
-    {
-        GVD         = 0x10,     // Get Version and Date
-        GLD         = 0x0f,     // Get logger data
-    };
+
 
     // This is a base class for the various SKUs of the RSXX line of devices
     class rs4xx_camera : public rs_device_base

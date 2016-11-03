@@ -9,8 +9,8 @@ extern "C" {
 #endif
 
 #define RS_API_MAJOR_VERSION    2
-#define RS_API_MINOR_VERSION    1
-#define RS_API_PATCH_VERSION    2
+#define RS_API_MINOR_VERSION    2
+#define RS_API_PATCH_VERSION    0
 
 #define STRINGIFY(arg) #arg
 #define VAR_ARG_STRING(arg) STRINGIFY(arg)
@@ -39,6 +39,7 @@ typedef enum rs_capabilities
     RS_CAPABILITIES_MOTION_MODULE_FW_UPDATE , /**< provides method for upgrading motion module firmware */
     RS_CAPABILITIES_ADAPTER_BOARD           , /**< interanlly includes MIPI to USB adapter */
     RS_CAPABILITIES_ENUMERATION             , /**< provides enough basic functionality to be considered supported. this to catch at runtime various outdated engineering samples */
+    RS_CAPABILITIES_ADVANCED_MODE           , /**< indication for firmware operational mode*/
     RS_CAPABILITIES_COUNT                   , 
 } rs_capabilities;
 
@@ -200,6 +201,8 @@ typedef enum rs_option
     RS_OPTION_TOTAL_FRAME_DROPS                               , /**< Total number of detected frame drops from all streams */
     RS_OPTION_RS4XX_PROJECTOR_MODE                            , /**< RS400 Emitter mode */
     RS_OPTION_RS4XX_PROJECTOR_PWR                             , /**< RS400 Emitter power in milli-watt */
+    RS_OPTION_CT_AUTO_EXPOSURE_MODE                           , /**< Camera Terminal Control - Auto Exposure mode */
+    RS_OPTION_CT_EXPOSURE_PRIORITY                            , /**< Camera Terminal Control - Exposure Priority - constant fps/ light dependent */
     RS_OPTION_COUNT                                           ,
 
 } rs_option;

@@ -19,7 +19,7 @@ const uint16_t RS410A_PID           = 0x0ad2;
 const uint16_t RS420R_PID           = 0x0ad3;
 const uint16_t RS430C_PID           = 0x0ad4;
 const uint16_t RS450T_PID           = 0x0ad5;
-static const std::vector<std::uint16_t> rs4xx_skews_pid = { RS400P_PID, RS410A_PID, RS420R_PID, RS430C_PID, RS450T_PID };
+static const std::vector<std::uint16_t> rs4xx_sku_pid = { RS400P_PID, RS410A_PID, RS420R_PID, RS430C_PID, RS450T_PID };
 
 namespace rsimpl
 {
@@ -50,14 +50,15 @@ namespace rsimpl
 
         // Access CT (Camera Terminal) and PU (Processing Units) controls
         inline bool is_pu_control(rs_option option) { return option <= RS_OPTION_COLOR_ENABLE_AUTO_WHITE_BALANCE; }
+        inline bool is_ct_control(rs_option option) { return ((option >= RS_OPTION_CT_AUTO_EXPOSURE_MODE) && (option <= RS_OPTION_CT_EXPOSURE_PRIORITY)); }
         void get_pu_control_range(const device & device, int subdevice, rs_option option, int * min, int * max, int * step, int * def);
-        void get_extension_control_range(const device & device, const extension_unit & xu, char control, int * min, int * max, int * step, int * def);
         void set_pu_control(device & device, int subdevice, rs_option option, int value);
         int get_pu_control(const device & device, int subdevice, rs_option option);
 
         // Access XU controls
         void set_control(device & device, const extension_unit & xu, uint8_t ctrl, void * data, int len);
         void get_control(const device & device, const extension_unit & xu, uint8_t ctrl, void * data, int len);
+        void get_extension_control_range(const device & device, const extension_unit & xu, char control, int * min, int * max, int * step, int * def);
 
         // Control data channels
         typedef std::function<void(const unsigned char * data, const int size)> data_channel_callback;

@@ -34,6 +34,7 @@ namespace rsimpl
         std::timed_mutex mutex;
         rs4xx::get_string_of_gvd_field(*device, mutex, info.serial, gvd_fields::asic_module_serial_offset);
         rs4xx::get_string_of_gvd_field(*device, mutex, info.firmware_version, gvd_fields::fw_version_offset);
+        bool advanced_mode = rs4xx::is_advanced_mode(*device, mutex);
         rs4xx::rs4xx_calibration calib = {};
         try
         {
@@ -57,11 +58,16 @@ namespace rsimpl
         info.capabilities_vector.push_back(RS_CAPABILITIES_DEPTH);
         info.capabilities_vector.push_back(RS_CAPABILITIES_INFRARED);
         info.capabilities_vector.push_back(RS_CAPABILITIES_INFRARED2);
+        if (advanced_mode)  info.capabilities_vector.push_back(RS_CAPABILITIES_ADVANCED_MODE);
+
 
         // Populate Depth and IR modes on subdevices 0 and 1
         info.stream_subdevices[RS_STREAM_DEPTH] = 0;
         info.stream_subdevices[RS_STREAM_INFRARED] = 1;
         info.stream_subdevices[RS_STREAM_INFRARED2] = 1;
+
+        std::vector<native_pixel_format> supported_formats{ pf_y8, pf_uyvyl };
+        if (advanced_mode) supported_formats.push_back(pf_y8i);
 
         for(auto & m : rs400_depth_ir_modes)
         {
@@ -77,20 +83,23 @@ namespace rsimpl
 
             for (auto fps : m.fps)
             {
-                for (auto pf : { pf_y8, pf_y8i, pf_uyvyl })
+                for (auto pf : supported_formats)
                     info.subdevice_modes.push_back({ 1, m.dims, pf, fps, intrinsic, {}, {0} });
                 info.subdevice_modes.push_back({ 0, m.dims, pf_z16, fps, intrinsic,{},{ 0 } });
             }
         }
 
         // Unrectified calibration stream profiles
-        for(auto & m : rs400_calibration_modes)
+        if (advanced_mode)
         {
-            calib.left_imager_intrinsic.width = m.dims.x;
-            calib.left_imager_intrinsic.height = m.dims.y;
+            for (auto & m : rs400_calibration_modes)
+            {
+                calib.left_imager_intrinsic.width = m.dims.x;
+                calib.left_imager_intrinsic.height = m.dims.y;
 
-            for(auto fps : m.fps)
-                info.subdevice_modes.push_back({ 1, m.dims, pf_y12i, fps,{ m.dims.x, m.dims.y },{},{ 0 } });
+                for (auto fps : m.fps)
+                    info.subdevice_modes.push_back({ 1, m.dims, pf_y12i, fps,{ m.dims.x, m.dims.y },{},{ 0 } });
+            }
         }
 
         // Populate the presets
@@ -101,8 +110,10 @@ namespace rsimpl
             info.presets[RS_STREAM_INFRARED2][i] = {true, 1280, 720, RS_FORMAT_Y16, 30};
         }
 
-        info.options.push_back({ RS_OPTION_COLOR_GAIN });
-        info.options.push_back({ RS_OPTION_R200_LR_EXPOSURE, 40, 1660, 1, 100 });
+        info.options.push_back({ RS_OPTION_CT_AUTO_EXPOSURE_MODE });                // CT Auto-exposure on/off
+        //info.options.push_back({ RS_OPTION_CT_EXPOSURE_PRIORITY });               // Provisional
+        info.options.push_back({ RS_OPTION_COLOR_GAIN });                           // PU - Depth Manual Gain
+        info.options.push_back({ RS_OPTION_R200_LR_EXPOSURE, 0, 0, 0, 0 });         // XU - Depth Manual exposure. Range will be dynamically updated by querrying device
         info.options.push_back({ RS_OPTION_HARDWARE_LOGGER_ENABLED, 0, 1, 1, 0 });
         info.xu_options.push_back({RS_OPTION_R200_LR_EXPOSURE, static_cast<uint8_t>(ds::control::rs4xx_lr_exposure)});
 
@@ -133,7 +144,7 @@ namespace rsimpl
     {
         static_device_info info = get_rs400_info(device, dev_name);
 
-        // Additional options and controls supported by ASR over PSR skew
+        // Additional options and controls supported by ASR over PSR SKU
         info.options.push_back({ RS_OPTION_RS4XX_PROJECTOR_MODE, 0, 2, 1, 0 });     // 0 - off, 1 - on, 2 - auto
         info.options.push_back({ RS_OPTION_RS4XX_PROJECTOR_PWR, 0, 300, 30, 0 });   // Projector power in milli-watt
         info.xu_options.push_back({ RS_OPTION_RS4XX_PROJECTOR_MODE, static_cast<uint8_t>(ds::control::rs4xx_lsr_power_mode) });
@@ -154,17 +165,22 @@ namespace rsimpl
 
         for (size_t i = 0; i<count; ++i)
         {
+            if (uvc::is_ct_control(options[i]))
+            {
+                uvc::set_pu_control_with_retry(get_device(), 0, options[i], static_cast<int>(values[i])); continue;
+            }
+
             if (uvc::is_pu_control(options[i]))
             {
                 if (options[i]==RS_OPTION_COLOR_GAIN)
                 {
-                    uvc::set_pu_control_with_retry(get_device(), 0, options[i], static_cast<int>(values[i])); break;
+                    uvc::set_pu_control_with_retry(get_device(), 0, options[i], static_cast<int>(values[i])); continue;
                 }
                 else
                     throw std::logic_error(to_string() << get_name() << " has no CCD sensor, the following is not supported: " << options[i]);
             }
 
-            base_opt.push_back(options[i]); base_opt_val.push_back(values[i]); break;
+            base_opt.push_back(options[i]); base_opt_val.push_back(values[i]);
         }
 
         //Handle common options
@@ -181,6 +197,11 @@ namespace rsimpl
         {
             LOG_INFO("Reading option " << options[i]);
 
+            if (uvc::is_ct_control(options[i]))
+            {
+                values[i] = uvc::get_pu_control(get_device(), 0, options[i]);   continue;
+            }
+
             if (uvc::is_pu_control(options[i]))
             {
                 if (options[i] == RS_OPTION_COLOR_GAIN)
@@ -189,7 +210,7 @@ namespace rsimpl
                 }
             }
 
-             base_opt.push_back(options[i]); base_opt_val.push_back(values[i]); break;
+             base_opt.push_back(options[i]); base_opt_val.push_back(values[i]); continue;
         }
 
         // Retrieve common options
@@ -215,7 +236,7 @@ namespace rsimpl
 
     void rs400_camera::get_option_range(rs_option option, double & min, double & max, double & step, double & def)
     {
-        if (option == RS_OPTION_COLOR_GAIN)
+        if ((option == RS_OPTION_COLOR_GAIN) || (uvc::is_ct_control(option)))
         {
             int mn, mx, stp, df;
             uvc::get_pu_control_range(get_device(), config.info.stream_subdevices[RS_STREAM_DEPTH], option, &mn, &mx, &stp, &df);
