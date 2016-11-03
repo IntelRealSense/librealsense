@@ -390,7 +390,7 @@ void rs_device_base::start_video_streaming(bool is_mipi)
             auto frame_counter = timestamp_reader->get_frame_counter(mode_selection.mode, frame);
             auto recieved_time = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - capture_start_time).count();
             if(frame_counter == 0) {
-                std::cout << "Drop: " << drops++ << std::endl;
+                //std::cout << "Drop: " << drops++ << std::endl;
                 return;
             }
             auto requires_processing = mode_selection.requires_processing();
