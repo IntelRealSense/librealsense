@@ -7,6 +7,7 @@
 #include <sstream>
 #include <vector>
 #include <functional>
+#include <cstring>
 
 #include "third_party/rapidxml/rapidxml.hpp"
 #include "../src/hw-monitor.h"
