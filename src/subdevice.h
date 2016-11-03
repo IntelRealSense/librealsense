@@ -9,6 +9,7 @@
 #include <memory>
 #include <vector>
 #include <unordered_set>
+#include <atomic>
 
 namespace rsimpl
 {
@@ -29,7 +30,7 @@ namespace rsimpl
 
         void invoke_callback(rs_frame* frame_ref) const;
 
-        void flush() const;
+        void flush();
 
         virtual ~streaming_lock();
 
@@ -78,7 +79,7 @@ namespace rsimpl
     {
     public:
         explicit uvc_endpoint(std::shared_ptr<uvc::uvc_device> uvc_device)
-            : _device(std::move(uvc_device)) {}
+            : _device(std::move(uvc_device)), _user_count(0) {}
 
         std::vector<uvc::stream_profile> get_stream_profiles() override;
 
@@ -142,7 +143,7 @@ namespace rsimpl
         };
 
         std::shared_ptr<uvc::uvc_device> _device;
-        int _user_count = 0;
+        std::atomic<int> _user_count;
         std::mutex _power_lock;
         std::mutex _configure_lock;
         std::vector<uvc::stream_profile> _configuration;
