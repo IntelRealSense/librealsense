@@ -352,6 +352,7 @@ void rs_device_base::start_video_streaming(bool is_mipi)
 
     // Satisfy stream_requests as necessary for each subdevice, calling set_mode and
     // dispatching the uvc configuration for a requested stream to the hardware
+
     for(auto mode_selection : selected_modes)
     {
         assert(static_cast<size_t>(mode_selection.mode.subdevice) <= timestamp_readers.size());
@@ -378,7 +379,7 @@ void rs_device_base::start_video_streaming(bool is_mipi)
         {
             auto now = std::chrono::system_clock::now().time_since_epoch();
             auto sys_time = std::chrono::duration_cast<std::chrono::milliseconds>(now).count();
-
+            static int drops = 0;
             frame_continuation release_and_enqueue(continuation, frame);
 
             // Ignore any frames which appear corrupted or invalid
@@ -388,7 +389,10 @@ void rs_device_base::start_video_streaming(bool is_mipi)
             auto timestamp = timestamp_reader->get_frame_timestamp(mode_selection.mode, frame);
             auto frame_counter = timestamp_reader->get_frame_counter(mode_selection.mode, frame);
             auto recieved_time = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - capture_start_time).count();
-
+            if(frame_counter == 0) {
+                std::cout << "Drop: " << drops++ << std::endl;
+                return;
+            }
             auto requires_processing = mode_selection.requires_processing();
 
             double exposure_value[1] = {};

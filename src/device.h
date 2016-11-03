@@ -11,7 +11,7 @@
 #include <memory>
 #include <vector>
 #include <motion/MotionAPI-slim.h>
-
+#include <iostream>
 namespace rsimpl
 {
     	typedef struct{
@@ -49,12 +49,26 @@ namespace rsimpl
 
         T fix(T number)
         {
-            if (number > max_number-100 && (number + (num_of_wraparounds*max_number)) < last_number)
+            mtx.lock();
+            if(number > last_number+100) {
+                mtx.unlock();
+                return 0;
+            }
+            if (number > max_number-100 && (number + (num_of_wraparounds*max_number)) < last_number) {
                 ++num_of_wraparounds;
 
+            }
+
+            else if (number < last_number) {
+                std::cout << "Frame: " << number << ", prev: " << last_number << std::endl;
+                mtx.unlock();
+                return 0;
+            }
 
             number += (num_of_wraparounds*max_number);
+
             last_number = number;
+            mtx.unlock();
             return number;
         }
 
@@ -62,6 +76,7 @@ namespace rsimpl
         T max_number;
         T last_number;
         unsigned long long num_of_wraparounds;
+        std::mutex mtx;
     };
 
     struct frame_timestamp_reader

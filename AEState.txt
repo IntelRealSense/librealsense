@@ -1,13 +1,13 @@
 AutoExposure: Constructor v3
 
 AddImage: 
- AnalyzeImage Score: -0.129305
+ AnalyzeImage Score: -0.891952
 
  AnalyzeImage: DecreaseExposure
 
  AnalyzeImage: Modify
 
-TotalExposure 16.6653, TargetExposure 14.5104
+TotalExposure 16.6653, TargetExposure 1.80065
 
 HybridAutoExposure::DecreaseExposureGain: 8.33267 8.33333 2 2
 
@@ -21,13 +21,13 @@ ExposureModified: Exposure = 7.93587
  rounded to: 7.92667
 
 AddImage: 
- AnalyzeImage Score: -0.118278
+ AnalyzeImage Score: -0.823599
 
  AnalyzeImage: DecreaseExposure
 
  AnalyzeImage: Modify
 
-TotalExposure 15.8533, TargetExposure 13.9782
+TotalExposure 15.8533, TargetExposure 2.79655
 
  ModifyExposure: DecreaseExposureGain: 
  TargetExposure0 15.0984
@@ -37,13 +37,13 @@ ExposureModified: Exposure = 7.54921
  rounded to: 7.54
 
 AddImage: 
- AnalyzeImage Score: -0.107917
+ AnalyzeImage Score: -0.75285
 
  AnalyzeImage: DecreaseExposure
 
  AnalyzeImage: Modify
 
-TotalExposure 15.08, TargetExposure 13.4526
+TotalExposure 15.08, TargetExposure 3.72703
 
  ModifyExposure: DecreaseExposureGain: 
  TargetExposure0 14.3619
@@ -53,13 +53,13 @@ ExposureModified: Exposure = 7.18095
  rounded to: 7.17267
 
 AddImage: 
- AnalyzeImage Score: -0.0981835
+ AnalyzeImage Score: -0.687383
 
  AnalyzeImage: DecreaseExposure
 
  AnalyzeImage: Modify
 
-TotalExposure 14.3453, TargetExposure 12.9369
+TotalExposure 14.3453, TargetExposure 4.4846
 
  ModifyExposure: DecreaseExposureGain: 
  TargetExposure0 13.6622
@@ -69,13 +69,13 @@ ExposureModified: Exposure = 6.83111
  rounded to: 6.82467
 
 AddImage: 
- AnalyzeImage Score: -0.0889506
+ AnalyzeImage Score: -0.633641
 
  AnalyzeImage: DecreaseExposure
 
  AnalyzeImage: Modify
 
-TotalExposure 13.6493, TargetExposure 12.4352
+TotalExposure 13.6493, TargetExposure 5.00055
 
  ModifyExposure: DecreaseExposureGain: 
  TargetExposure0 12.9994
@@ -85,13 +85,13 @@ ExposureModified: Exposure = 6.49968
  rounded to: 6.496
 
 AddImage: 
- AnalyzeImage Score: -0.0800526
+ AnalyzeImage Score: -0.583617
 
  AnalyzeImage: DecreaseExposure
 
  AnalyzeImage: Modify
 
-TotalExposure 12.992, TargetExposure 11.952
+TotalExposure 12.992, TargetExposure 5.40964
 
  ModifyExposure: DecreaseExposureGain: 
  TargetExposure0 12.3733
@@ -101,13 +101,13 @@ ExposureModified: Exposure = 6.18667
  rounded to: 6.18667
 
 AddImage: 
- AnalyzeImage Score: -0.0718932
+ AnalyzeImage Score: -0.528129
 
  AnalyzeImage: DecreaseExposure
 
  AnalyzeImage: Modify
 
-TotalExposure 12.3733, TargetExposure 11.4838
+TotalExposure 12.3733, TargetExposure 5.83861
 
  ModifyExposure: DecreaseExposureGain: 
  TargetExposure0 11.7841
@@ -117,218 +117,1448 @@ ExposureModified: Exposure = 5.89206
  rounded to: 5.87733
 
 AddImage: 
- AnalyzeImage Score: -0.0637566
+ AnalyzeImage Score: -0.470964
 
  AnalyzeImage: DecreaseExposure
 
- AnalyzeImage: Don't Modify (Hysteresis): 11.0052 11.7547
+ AnalyzeImage: Modify
+
+TotalExposure 11.7547, TargetExposure 6.21864
+
+ ModifyExposure: DecreaseExposureGain: 
+ TargetExposure0 11.1949
+ Exposure 5.59746, Gain 2
+
+ExposureModified: Exposure = 5.59746
+ rounded to: 5.58733
+
+AddImage: 
+ AnalyzeImage Score: -0.416178
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Modify
+
+TotalExposure 11.1747, TargetExposure 6.52402
+
+ ModifyExposure: DecreaseExposureGain: 
+ TargetExposure0 10.6425
+ Exposure 5.32127, Gain 2
+
+ExposureModified: Exposure = 5.32127
+ rounded to: 5.31667
+
+AddImage: 
+ AnalyzeImage Score: -0.366152
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Modify
+
+TotalExposure 10.6333, TargetExposure 6.73991
+
+ ModifyExposure: DecreaseExposureGain: 
+ TargetExposure0 10.127
+ Exposure 5.06349, Gain 2
+
+ExposureModified: Exposure = 5.06349
+ rounded to: 5.046
+
+AddImage: 
+ AnalyzeImage Score: -0.325242
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Modify
+
+TotalExposure 10.092, TargetExposure 6.80966
+
+ ModifyExposure: DecreaseExposureGain: 
+ TargetExposure0 9.61143
+ Exposure 4.80571, Gain 2
+
+ExposureModified: Exposure = 4.80571
+ rounded to: 4.79467
+
+AddImage: 
+ AnalyzeImage Score: -0.295787
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Modify
+
+TotalExposure 9.58933, TargetExposure 6.75293
+
+ ModifyExposure: DecreaseExposureGain: 
+ TargetExposure0 9.1327
+ Exposure 4.56635, Gain 2
+
+ExposureModified: Exposure = 4.56635
+ rounded to: 4.56267
+
+AddImage: 
+ AnalyzeImage Score: -0.27302
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Modify
+
+TotalExposure 9.12533, TargetExposure 6.63393
+
+ ModifyExposure: DecreaseExposureGain: 
+ TargetExposure0 8.69079
+ Exposure 4.3454, Gain 2
+
+ExposureModified: Exposure = 4.3454
+ rounded to: 4.33067
+
+AddImage: 
+ AnalyzeImage Score: -0.251217
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Modify
+
+TotalExposure 8.66133, TargetExposure 6.48546
+
+ ModifyExposure: DecreaseExposureGain: 
+ TargetExposure0 8.24889
+ Exposure 4.12444, Gain 2
+
+ExposureModified: Exposure = 4.12444
+ rounded to: 4.118
+
+AddImage: 
+ AnalyzeImage Score: -0.2313
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Modify
+
+TotalExposure 8.236, TargetExposure 6.33102
+
+ ModifyExposure: DecreaseExposureGain: 
+ TargetExposure0 7.84381
+ Exposure 3.92191, Gain 2
+
+ExposureModified: Exposure = 3.92191
+ rounded to: 3.90533
+
+AddImage: 
+ AnalyzeImage Score: -0.211794
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Modify
+
+TotalExposure 7.81067, TargetExposure 6.15641
+
+ ModifyExposure: DecreaseExposureGain: 
+ TargetExposure0 7.43873
+ Exposure 3.71937, Gain 2
+
+ExposureModified: Exposure = 3.71937
+ rounded to: 3.712
+
+AddImage: 
+ AnalyzeImage Score: -0.193662
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Modify
+
+TotalExposure 7.424, TargetExposure 5.98625
+
+ ModifyExposure: DecreaseExposureGain: 
+ TargetExposure0 7.07048
+ Exposure 3.53524, Gain 2
+
+ExposureModified: Exposure = 3.53524
+ rounded to: 3.51867
+
+AddImage: 
+ AnalyzeImage Score: -0.173569
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Modify
+
+TotalExposure 7.03733, TargetExposure 5.81587
+
+ ModifyExposure: DecreaseExposureGain: 
+ TargetExposure0 6.70222
+ Exposure 3.35111, Gain 2
+
+ExposureModified: Exposure = 3.35111
+ rounded to: 3.34467
+
+AddImage: 
+ AnalyzeImage Score: -0.154052
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Modify
+
+TotalExposure 6.68933, TargetExposure 5.65883
+
+ ModifyExposure: DecreaseExposureGain: 
+ TargetExposure0 6.37079
+ Exposure 3.1854, Gain 2
+
+ExposureModified: Exposure = 3.1854
+ rounded to: 3.17067
+
+AddImage: 
+ AnalyzeImage Score: -0.134833
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Modify
+
+TotalExposure 6.34133, TargetExposure 5.48631
+
+ ModifyExposure: DecreaseExposureGain: 
+ TargetExposure0 6.03937
+ Exposure 3.01968, Gain 2
+
+ExposureModified: Exposure = 3.01968
+ rounded to: 3.016
+
+AddImage: 
+ AnalyzeImage Score: -0.117482
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Modify
+
+TotalExposure 6.032, TargetExposure 5.32335
+
+ ModifyExposure: DecreaseExposureGain: 
+ TargetExposure0 5.74476
+ Exposure 2.87238, Gain 2
+
+ExposureModified: Exposure = 2.87238
+ rounded to: 2.86133
+
+AddImage: 
+ AnalyzeImage Score: -0.0788526
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Modify
+
+TotalExposure 5.44476, TargetExposure 5.01543
+
+ ModifyExposure: DecreaseExposureGain: 
+ TargetExposure0 5.18549
+ Exposure 2.59274, Gain 2
+
+ExposureModified: Exposure = 2.59274
+ rounded to: 2.59067
+
+AddImage: 
+ AnalyzeImage Score: -0.0406266
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.68701 4.88549
 
 
 
 AddImage: 
- AnalyzeImage Score: -0.0639307
+ AnalyzeImage Score: -0.0403904
 
  AnalyzeImage: DecreaseExposure
 
- AnalyzeImage: Don't Modify (Hysteresis): 11.0032 11.7547
+ AnalyzeImage: Don't Modify (Hysteresis): 4.68816 4.88549
 
 
 
 AddImage: 
- AnalyzeImage Score: -0.0639925
+ AnalyzeImage Score: -0.0404713
 
  AnalyzeImage: DecreaseExposure
 
- AnalyzeImage: Don't Modify (Hysteresis): 11.0025 11.7547
+ AnalyzeImage: Don't Modify (Hysteresis): 4.68777 4.88549
 
 
 
 AddImage: 
- AnalyzeImage Score: -0.0640687
+ AnalyzeImage Score: -0.0404122
 
  AnalyzeImage: DecreaseExposure
 
- AnalyzeImage: Don't Modify (Hysteresis): 11.0016 11.7547
+ AnalyzeImage: Don't Modify (Hysteresis): 4.68805 4.88549
 
 
 
 AddImage: 
- AnalyzeImage Score: -0.0641063
+ AnalyzeImage Score: -0.0405797
 
  AnalyzeImage: DecreaseExposure
 
- AnalyzeImage: Don't Modify (Hysteresis): 11.0011 11.7547
+ AnalyzeImage: Don't Modify (Hysteresis): 4.68724 4.88549
 
 
 
 AddImage: 
- AnalyzeImage Score: -0.0642471
+ AnalyzeImage Score: -0.0407527
 
  AnalyzeImage: DecreaseExposure
 
- AnalyzeImage: Don't Modify (Hysteresis): 10.9995 11.7547
+ AnalyzeImage: Don't Modify (Hysteresis): 4.68639 4.88549
 
 
 
 AddImage: 
- AnalyzeImage Score: -0.0644021
+ AnalyzeImage Score: -0.041079
 
  AnalyzeImage: DecreaseExposure
 
- AnalyzeImage: Don't Modify (Hysteresis): 10.9976 11.7547
+ AnalyzeImage: Don't Modify (Hysteresis): 4.6848 4.88549
 
 
 
 AddImage: 
- AnalyzeImage Score: -0.0585568
+ AnalyzeImage Score: -0.0415008
 
  AnalyzeImage: DecreaseExposure
 
- AnalyzeImage: Don't Modify (Hysteresis): 11.0664 11.7547
+ AnalyzeImage: Don't Modify (Hysteresis): 4.68274 4.88549
 
 
 
 AddImage: 
- AnalyzeImage Score: -0.0463238
+ AnalyzeImage Score: -0.0418475
 
  AnalyzeImage: DecreaseExposure
 
- AnalyzeImage: Don't Modify (Hysteresis): 11.2101 11.7547
+ AnalyzeImage: Don't Modify (Hysteresis): 4.68104 4.88549
 
 
 
 AddImage: 
- AnalyzeImage Score: -0.0469595
+ AnalyzeImage Score: -0.0421928
 
  AnalyzeImage: DecreaseExposure
 
- AnalyzeImage: Don't Modify (Hysteresis): 11.2027 11.7547
+ AnalyzeImage: Don't Modify (Hysteresis): 4.67936 4.88549
 
 
 
 AddImage: 
- AnalyzeImage Score: -0.0435777
+ AnalyzeImage Score: -0.0424437
 
  AnalyzeImage: DecreaseExposure
 
- AnalyzeImage: Don't Modify (Hysteresis): 11.2424 11.7547
+ AnalyzeImage: Don't Modify (Hysteresis): 4.67813 4.88549
 
 
 
 AddImage: 
- AnalyzeImage Score: -0.0415422
+ AnalyzeImage Score: -0.0428093
 
  AnalyzeImage: DecreaseExposure
 
- AnalyzeImage: Don't Modify (Hysteresis): 11.2664 11.7547
+ AnalyzeImage: Don't Modify (Hysteresis): 4.67634 4.88549
 
 
 
 AddImage: 
- AnalyzeImage Score: -0.041141
+ AnalyzeImage Score: -0.0429128
 
  AnalyzeImage: DecreaseExposure
 
- AnalyzeImage: Don't Modify (Hysteresis): 11.2711 11.7547
+ AnalyzeImage: Don't Modify (Hysteresis): 4.67584 4.88549
 
 
 
 AddImage: 
- AnalyzeImage Score: -0.041102
+ AnalyzeImage Score: -0.0428839
 
  AnalyzeImage: DecreaseExposure
 
- AnalyzeImage: Don't Modify (Hysteresis): 11.2715 11.7547
+ AnalyzeImage: Don't Modify (Hysteresis): 4.67598 4.88549
 
 
 
 AddImage: 
- AnalyzeImage Score: -0.0410473
+ AnalyzeImage Score: -0.0428046
 
  AnalyzeImage: DecreaseExposure
 
- AnalyzeImage: Don't Modify (Hysteresis): 11.2722 11.7547
+ AnalyzeImage: Don't Modify (Hysteresis): 4.67637 4.88549
 
 
 
 AddImage: 
- AnalyzeImage Score: -0.0371243
+ AnalyzeImage Score: -0.0427385
 
  AnalyzeImage: DecreaseExposure
 
- AnalyzeImage: Don't Modify (Hysteresis): 11.3183 11.7547
+ AnalyzeImage: Don't Modify (Hysteresis): 4.67669 4.88549
 
 
 
 AddImage: 
- AnalyzeImage Score: -0.041751
+ AnalyzeImage Score: -0.0427064
 
  AnalyzeImage: DecreaseExposure
 
- AnalyzeImage: Don't Modify (Hysteresis): 11.2639 11.7547
+ AnalyzeImage: Don't Modify (Hysteresis): 4.67685 4.88549
 
 
 
 AddImage: 
- AnalyzeImage Score: -0.0418132
+ AnalyzeImage Score: -0.0422974
 
  AnalyzeImage: DecreaseExposure
 
- AnalyzeImage: Don't Modify (Hysteresis): 11.2632 11.7547
+ AnalyzeImage: Don't Modify (Hysteresis): 4.67884 4.88549
 
 
 
 AddImage: 
- AnalyzeImage Score: -0.0422303
+ AnalyzeImage Score: -0.0421045
 
  AnalyzeImage: DecreaseExposure
 
- AnalyzeImage: Don't Modify (Hysteresis): 11.2583 11.7547
+ AnalyzeImage: Don't Modify (Hysteresis): 4.67979 4.88549
 
 
 
 AddImage: 
- AnalyzeImage Score: -0.0428706
+ AnalyzeImage Score: -0.0417736
 
  AnalyzeImage: DecreaseExposure
 
- AnalyzeImage: Don't Modify (Hysteresis): 11.2507 11.7547
+ AnalyzeImage: Don't Modify (Hysteresis): 4.6814 4.88549
 
 
 
 AddImage: 
- AnalyzeImage Score: -0.0431891
+ AnalyzeImage Score: -0.0416497
 
  AnalyzeImage: DecreaseExposure
 
- AnalyzeImage: Don't Modify (Hysteresis): 11.247 11.7547
+ AnalyzeImage: Don't Modify (Hysteresis): 4.68201 4.88549
 
 
 
 AddImage: 
- AnalyzeImage Score: -0.0436052
+ AnalyzeImage Score: -0.0412678
 
  AnalyzeImage: DecreaseExposure
 
- AnalyzeImage: Don't Modify (Hysteresis): 11.2421 11.7547
+ AnalyzeImage: Don't Modify (Hysteresis): 4.68387 4.88549
 
 
 
 AddImage: 
- AnalyzeImage Score: -0.0437575
+ AnalyzeImage Score: -0.0410405
 
  AnalyzeImage: DecreaseExposure
 
- AnalyzeImage: Don't Modify (Hysteresis): 11.2403 11.7547
+ AnalyzeImage: Don't Modify (Hysteresis): 4.68499 4.88549
 
 
 
 AddImage: 
- AnalyzeImage Score: -0.044171
+ AnalyzeImage Score: -0.0408701
 
  AnalyzeImage: DecreaseExposure
 
- AnalyzeImage: Don't Modify (Hysteresis): 11.2355 11.7547
+ AnalyzeImage: Don't Modify (Hysteresis): 4.68582 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0408786
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.68578 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0411211
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.68459 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0412656
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.68389 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0416291
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.68211 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.041948
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.68055 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0421671
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.67948 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0424909
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.6779 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0427881
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.67645 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0429699
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.67556 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0429708
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.67555 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0430488
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.67517 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0432413
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.67423 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0430058
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.67538 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0430461
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.67519 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0428293
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.67625 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.042868
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.67606 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0426543
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.6771 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0427604
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.67658 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0427772
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.6765 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0427014
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.67687 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0426495
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.67712 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0425837
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.67745 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0424775
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.67796 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0426452
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.67715 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0428199
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.67629 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0428635
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.67608 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0429866
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.67548 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0432132
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.67437 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0434431
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.67325 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0435748
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.6726 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0438214
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.6714 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0440297
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.67038 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0439146
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.67094 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.044046
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.6703 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0440838
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.67012 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0440713
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.67018 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0437398
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.6718 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0437227
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.67188 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0436708
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.67213 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0432966
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.67396 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0433753
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.67358 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0431327
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.67476 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0430572
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.67513 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0428713
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.67604 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0429698
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.67556 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0428883
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.67596 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0430491
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.67517 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0432652
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.67412 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0435643
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.67266 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0439285
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.67088 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0442167
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66947 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0443714
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66871 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.044552
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66783 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0447163
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66703 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0447373
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66692 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0447805
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66671 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0446907
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66715 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0445549
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66782 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.044355
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66879 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0442273
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66942 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0441542
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66977 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0440035
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.67051 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0438096
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.67146 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0436979
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.672 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0435359
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.67279 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0433794
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.67356 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0432386
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.67425 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0432974
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.67396 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0433364
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.67377 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0435069
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.67294 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.043583
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.67256 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0439115
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.67096 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0441382
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66985 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0446427
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66739 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0448542
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66635 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0450472
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66541 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0451587
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66487 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0453699
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66383 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0453331
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66401 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0454538
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66342 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0451849
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66474 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.045066
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66532 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0449634
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66582 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0447279
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66697 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0446168
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66751 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0445193
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66799 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0444353
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.6684 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0441252
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66991 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0439485
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.67078 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0438827
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.6711 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0437434
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.67178 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0436503
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.67224 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0438712
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.67116 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0440611
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.67023 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0443789
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66868 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0445337
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66792 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0448124
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66656 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.045187
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66473 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0453275
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66404 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.045443
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66348 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0455032
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66318 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0456317
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66255 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0454608
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66339 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0454624
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66338 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0453346
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66401 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0453218
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66407 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0450833
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66523 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0449853
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66571 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0448702
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66628 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.044759
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66682 4.88549
 
 
 
@@ -337,945 +1567,2383 @@ AddImage:
 
  AnalyzeImage: DecreaseExposure
 
- AnalyzeImage: Don't Modify (Hysteresis): 11.232 11.7547
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66825 4.88549
 
 
 
 AddImage: 
- AnalyzeImage Score: -0.0448288
+ AnalyzeImage Score: -0.0443393
 
  AnalyzeImage: DecreaseExposure
 
- AnalyzeImage: Don't Modify (Hysteresis): 11.2277 11.7547
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66887 4.88549
 
 
 
 AddImage: 
- AnalyzeImage Score: -0.045298
+ AnalyzeImage Score: -0.0443106
 
  AnalyzeImage: DecreaseExposure
 
- AnalyzeImage: Don't Modify (Hysteresis): 11.2222 11.7547
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66901 4.88549
 
 
 
 AddImage: 
- AnalyzeImage Score: -0.0454581
+ AnalyzeImage Score: -0.0442207
 
  AnalyzeImage: DecreaseExposure
 
- AnalyzeImage: Don't Modify (Hysteresis): 11.2203 11.7547
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66945 4.88549
 
 
 
 AddImage: 
- AnalyzeImage Score: -0.0457148
+ AnalyzeImage Score: -0.0440837
 
  AnalyzeImage: DecreaseExposure
 
- AnalyzeImage: Don't Modify (Hysteresis): 11.2173 11.7547
+ AnalyzeImage: Don't Modify (Hysteresis): 4.67012 4.88549
 
 
 
 AddImage: 
- AnalyzeImage Score: -0.0531004
+ AnalyzeImage Score: -0.0440463
 
  AnalyzeImage: DecreaseExposure
 
- AnalyzeImage: Don't Modify (Hysteresis): 11.1305 11.7547
+ AnalyzeImage: Don't Modify (Hysteresis): 4.6703 4.88549
 
 
 
 AddImage: 
- AnalyzeImage Score: -0.0568964
+ AnalyzeImage Score: -0.0441685
 
  AnalyzeImage: DecreaseExposure
 
- AnalyzeImage: Don't Modify (Hysteresis): 11.0859 11.7547
+ AnalyzeImage: Don't Modify (Hysteresis): 4.6697 4.88549
 
 
 
 AddImage: 
- AnalyzeImage Score: -0.0661634
+ AnalyzeImage Score: -0.0444302
 
  AnalyzeImage: DecreaseExposure
 
- AnalyzeImage: Don't Modify (Hysteresis): 10.9769 11.7547
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66842 4.88549
 
 
 
 AddImage: 
- AnalyzeImage Score: -0.06653
+ AnalyzeImage Score: -0.0445107
 
  AnalyzeImage: DecreaseExposure
 
- AnalyzeImage: Don't Modify (Hysteresis): 10.9726 11.7547
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66803 4.88549
 
 
 
 AddImage: 
- AnalyzeImage Score: -0.0666073
+ AnalyzeImage Score: -0.0448355
 
  AnalyzeImage: DecreaseExposure
 
- AnalyzeImage: Don't Modify (Hysteresis): 10.9717 11.7547
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66644 4.88549
 
 
 
 AddImage: 
- AnalyzeImage Score: -0.0666737
+ AnalyzeImage Score: -0.0450163
 
  AnalyzeImage: DecreaseExposure
 
- AnalyzeImage: Don't Modify (Hysteresis): 10.9709 11.7547
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66556 4.88549
 
 
 
 AddImage: 
- AnalyzeImage Score: -0.0666759
+ AnalyzeImage Score: -0.0452102
 
  AnalyzeImage: DecreaseExposure
 
- AnalyzeImage: Don't Modify (Hysteresis): 10.9709 11.7547
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66461 4.88549
 
 
 
 AddImage: 
- AnalyzeImage Score: -0.0667629
+ AnalyzeImage Score: -0.0454381
 
  AnalyzeImage: DecreaseExposure
 
- AnalyzeImage: Don't Modify (Hysteresis): 10.9699 11.7547
+ AnalyzeImage: Don't Modify (Hysteresis): 4.6635 4.88549
 
 
 
 AddImage: 
- AnalyzeImage Score: -0.0668516
+ AnalyzeImage Score: -0.0455032
 
  AnalyzeImage: DecreaseExposure
 
- AnalyzeImage: Don't Modify (Hysteresis): 10.9688 11.7547
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66318 4.88549
 
 
 
 AddImage: 
- AnalyzeImage Score: -0.0669386
+ AnalyzeImage Score: -0.0455049
 
  AnalyzeImage: DecreaseExposure
 
- AnalyzeImage: Don't Modify (Hysteresis): 10.9678 11.7547
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66317 4.88549
 
 
 
 AddImage: 
- AnalyzeImage Score: -0.0669068
+ AnalyzeImage Score: -0.0457141
 
  AnalyzeImage: DecreaseExposure
 
- AnalyzeImage: Don't Modify (Hysteresis): 10.9682 11.7547
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66215 4.88549
 
 
 
 AddImage: 
- AnalyzeImage Score: -0.0669942
+ AnalyzeImage Score: -0.04555
 
  AnalyzeImage: DecreaseExposure
 
- AnalyzeImage: Don't Modify (Hysteresis): 10.9672 11.7547
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66295 4.88549
 
 
 
 AddImage: 
- AnalyzeImage Score: -0.0670265
+ AnalyzeImage Score: -0.0455741
 
  AnalyzeImage: DecreaseExposure
 
- AnalyzeImage: Don't Modify (Hysteresis): 10.9668 11.7547
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66284 4.88549
 
 
 
 AddImage: 
- AnalyzeImage Score: -0.0669842
+ AnalyzeImage Score: -0.0453279
 
  AnalyzeImage: DecreaseExposure
 
- AnalyzeImage: Don't Modify (Hysteresis): 10.9673 11.7547
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66404 4.88549
 
 
 
 AddImage: 
- AnalyzeImage Score: -0.0671774
+ AnalyzeImage Score: -0.0453112
 
  AnalyzeImage: DecreaseExposure
 
- AnalyzeImage: Don't Modify (Hysteresis): 10.965 11.7547
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66412 4.88549
 
 
 
 AddImage: 
- AnalyzeImage Score: -0.0671228
+ AnalyzeImage Score: -0.0450232
 
  AnalyzeImage: DecreaseExposure
 
- AnalyzeImage: Don't Modify (Hysteresis): 10.9657 11.7547
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66553 4.88549
 
 
 
 AddImage: 
- AnalyzeImage Score: -0.0672764
+ AnalyzeImage Score: -0.0448867
 
  AnalyzeImage: DecreaseExposure
 
- AnalyzeImage: Don't Modify (Hysteresis): 10.9639 11.7547
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66619 4.88549
 
 
 
 AddImage: 
- AnalyzeImage Score: -0.0672518
+ AnalyzeImage Score: -0.0447169
 
  AnalyzeImage: DecreaseExposure
 
- AnalyzeImage: Don't Modify (Hysteresis): 10.9641 11.7547
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66702 4.88549
 
 
 
 AddImage: 
- AnalyzeImage Score: -0.0674495
+ AnalyzeImage Score: -0.0445945
 
  AnalyzeImage: DecreaseExposure
 
- AnalyzeImage: Don't Modify (Hysteresis): 10.9618 11.7547
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66762 4.88549
 
 
 
 AddImage: 
- AnalyzeImage Score: -0.0673798
+ AnalyzeImage Score: -0.0444784
 
  AnalyzeImage: DecreaseExposure
 
- AnalyzeImage: Don't Modify (Hysteresis): 10.9626 11.7547
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66819 4.88549
 
 
 
 AddImage: 
- AnalyzeImage Score: -0.0674536
+ AnalyzeImage Score: -0.0443911
 
  AnalyzeImage: DecreaseExposure
 
- AnalyzeImage: Don't Modify (Hysteresis): 10.9618 11.7547
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66862 4.88549
 
 
 
 AddImage: 
- AnalyzeImage Score: -0.0675427
+ AnalyzeImage Score: -0.0444476
 
  AnalyzeImage: DecreaseExposure
 
- AnalyzeImage: Don't Modify (Hysteresis): 10.9607 11.7547
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66834 4.88549
 
 
 
 AddImage: 
- AnalyzeImage Score: -0.0674543
+ AnalyzeImage Score: -0.0444796
 
  AnalyzeImage: DecreaseExposure
 
- AnalyzeImage: Don't Modify (Hysteresis): 10.9618 11.7547
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66818 4.88549
 
 
 
 AddImage: 
- AnalyzeImage Score: -0.0674447
+ AnalyzeImage Score: -0.0445151
 
  AnalyzeImage: DecreaseExposure
 
- AnalyzeImage: Don't Modify (Hysteresis): 10.9619 11.7547
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66801 4.88549
 
 
 
 AddImage: 
- AnalyzeImage Score: -0.0675126
+ AnalyzeImage Score: -0.0447309
 
  AnalyzeImage: DecreaseExposure
 
- AnalyzeImage: Don't Modify (Hysteresis): 10.9611 11.7547
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66696 4.88549
 
 
 
 AddImage: 
- AnalyzeImage Score: -0.0675418
+ AnalyzeImage Score: -0.0450239
 
  AnalyzeImage: DecreaseExposure
 
- AnalyzeImage: Don't Modify (Hysteresis): 10.9607 11.7547
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66552 4.88549
 
 
 
 AddImage: 
- AnalyzeImage Score: -0.0676114
+ AnalyzeImage Score: -0.0451216
 
  AnalyzeImage: DecreaseExposure
 
- AnalyzeImage: Don't Modify (Hysteresis): 10.9599 11.7547
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66505 4.88549
 
 
 
 AddImage: 
- AnalyzeImage Score: -0.0675698
+ AnalyzeImage Score: -0.0454208
 
  AnalyzeImage: DecreaseExposure
 
- AnalyzeImage: Don't Modify (Hysteresis): 10.9604 11.7547
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66359 4.88549
 
 
 
 AddImage: 
- AnalyzeImage Score: -0.0676559
+ AnalyzeImage Score: -0.0456832
 
  AnalyzeImage: DecreaseExposure
 
- AnalyzeImage: Don't Modify (Hysteresis): 10.9594 11.7547
+ AnalyzeImage: Don't Modify (Hysteresis): 4.6623 4.88549
 
 
 
 AddImage: 
- AnalyzeImage Score: -0.0675587
+ AnalyzeImage Score: -0.0458206
 
  AnalyzeImage: DecreaseExposure
 
- AnalyzeImage: Don't Modify (Hysteresis): 10.9605 11.7547
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66163 4.88549
 
 
 
 AddImage: 
- AnalyzeImage Score: -0.0675346
+ AnalyzeImage Score: -0.0458547
 
  AnalyzeImage: DecreaseExposure
 
- AnalyzeImage: Don't Modify (Hysteresis): 10.9608 11.7547
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66147 4.88549
 
 
 
 AddImage: 
- AnalyzeImage Score: -0.06764
+ AnalyzeImage Score: -0.0459019
 
  AnalyzeImage: DecreaseExposure
 
- AnalyzeImage: Don't Modify (Hysteresis): 10.9596 11.7547
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66123 4.88549
 
 
 
 AddImage: 
- AnalyzeImage Score: -0.0675668
+ AnalyzeImage Score: -0.0459184
 
  AnalyzeImage: DecreaseExposure
 
- AnalyzeImage: Don't Modify (Hysteresis): 10.9604 11.7547
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66115 4.88549
 
 
 
 AddImage: 
- AnalyzeImage Score: -0.0675484
+ AnalyzeImage Score: -0.0457074
 
  AnalyzeImage: DecreaseExposure
 
- AnalyzeImage: Don't Modify (Hysteresis): 10.9607 11.7547
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66219 4.88549
 
 
 
 AddImage: 
- AnalyzeImage Score: -0.0675654
+ AnalyzeImage Score: -0.0456128
 
  AnalyzeImage: DecreaseExposure
 
- AnalyzeImage: Don't Modify (Hysteresis): 10.9605 11.7547
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66265 4.88549
 
 
 
 AddImage: 
- AnalyzeImage Score: -0.0675697
+ AnalyzeImage Score: -0.0454308
 
  AnalyzeImage: DecreaseExposure
 
- AnalyzeImage: Don't Modify (Hysteresis): 10.9604 11.7547
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66354 4.88549
 
 
 
 AddImage: 
- AnalyzeImage Score: -0.0675682
+ AnalyzeImage Score: -0.0452052
 
  AnalyzeImage: DecreaseExposure
 
- AnalyzeImage: Don't Modify (Hysteresis): 10.9604 11.7547
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66464 4.88549
 
 
 
 AddImage: 
- AnalyzeImage Score: -0.0675509
+ AnalyzeImage Score: -0.0450599
 
  AnalyzeImage: DecreaseExposure
 
- AnalyzeImage: Don't Modify (Hysteresis): 10.9606 11.7547
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66535 4.88549
 
 
 
 AddImage: 
- AnalyzeImage Score: -0.0674791
+ AnalyzeImage Score: -0.0449054
 
  AnalyzeImage: DecreaseExposure
 
- AnalyzeImage: Don't Modify (Hysteresis): 10.9615 11.7547
+ AnalyzeImage: Don't Modify (Hysteresis): 4.6661 4.88549
 
 
 
 AddImage: 
- AnalyzeImage Score: -0.0675556
+ AnalyzeImage Score: -0.0447084
 
  AnalyzeImage: DecreaseExposure
 
- AnalyzeImage: Don't Modify (Hysteresis): 10.9606 11.7547
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66707 4.88549
 
 
 
 AddImage: 
- AnalyzeImage Score: -0.0675671
+ AnalyzeImage Score: -0.0446553
 
  AnalyzeImage: DecreaseExposure
 
- AnalyzeImage: Don't Modify (Hysteresis): 10.9604 11.7547
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66733 4.88549
 
 
 
 AddImage: 
- AnalyzeImage Score: -0.0675157
+ AnalyzeImage Score: -0.044543
 
  AnalyzeImage: DecreaseExposure
 
- AnalyzeImage: Don't Modify (Hysteresis): 10.961 11.7547
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66787 4.88549
 
 
 
 AddImage: 
- AnalyzeImage Score: -0.0675019
+ AnalyzeImage Score: -0.044505
 
  AnalyzeImage: DecreaseExposure
 
- AnalyzeImage: Don't Modify (Hysteresis): 10.9612 11.7547
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66806 4.88549
 
 
 
 AddImage: 
- AnalyzeImage Score: -0.0674589
+ AnalyzeImage Score: -0.0446474
 
  AnalyzeImage: DecreaseExposure
 
- AnalyzeImage: Don't Modify (Hysteresis): 10.9617 11.7547
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66736 4.88549
 
 
 
 AddImage: 
- AnalyzeImage Score: -0.0674885
+ AnalyzeImage Score: -0.0448381
 
  AnalyzeImage: DecreaseExposure
 
- AnalyzeImage: Don't Modify (Hysteresis): 10.9614 11.7547
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66643 4.88549
 
 
 
 AddImage: 
- AnalyzeImage Score: -0.0674815
+ AnalyzeImage Score: -0.0448953
 
  AnalyzeImage: DecreaseExposure
 
- AnalyzeImage: Don't Modify (Hysteresis): 10.9614 11.7547
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66615 4.88549
 
 
 
 AddImage: 
- AnalyzeImage Score: -0.0675058
+ AnalyzeImage Score: -0.0453389
 
  AnalyzeImage: DecreaseExposure
 
- AnalyzeImage: Don't Modify (Hysteresis): 10.9612 11.7547
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66399 4.88549
 
 
 
 AddImage: 
- AnalyzeImage Score: -0.0674242
+ AnalyzeImage Score: -0.0454118
 
  AnalyzeImage: DecreaseExposure
 
- AnalyzeImage: Don't Modify (Hysteresis): 10.9621 11.7547
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66363 4.88549
 
 
 
 AddImage: 
- AnalyzeImage Score: -0.0674468
+ AnalyzeImage Score: -0.0457438
 
  AnalyzeImage: DecreaseExposure
 
- AnalyzeImage: Don't Modify (Hysteresis): 10.9619 11.7547
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66201 4.88549
 
 
 
 AddImage: 
- AnalyzeImage Score: -0.0674474
+ AnalyzeImage Score: -0.0457845
 
  AnalyzeImage: DecreaseExposure
 
- AnalyzeImage: Don't Modify (Hysteresis): 10.9618 11.7547
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66181 4.88549
 
 
 
 AddImage: 
- AnalyzeImage Score: -0.0674813
+ AnalyzeImage Score: -0.0457141
 
  AnalyzeImage: DecreaseExposure
 
- AnalyzeImage: Don't Modify (Hysteresis): 10.9614 11.7547
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66215 4.88549
 
 
 
 AddImage: 
- AnalyzeImage Score: -0.0673849
+ AnalyzeImage Score: -0.045786
 
  AnalyzeImage: DecreaseExposure
 
- AnalyzeImage: Don't Modify (Hysteresis): 10.9626 11.7547
+ AnalyzeImage: Don't Modify (Hysteresis): 4.6618 4.88549
 
 
 
 AddImage: 
- AnalyzeImage Score: -0.0674903
+ AnalyzeImage Score: -0.0457527
 
  AnalyzeImage: DecreaseExposure
 
- AnalyzeImage: Don't Modify (Hysteresis): 10.9613 11.7547
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66196 4.88549
 
 
 
 AddImage: 
- AnalyzeImage Score: -0.0674375
+ AnalyzeImage Score: -0.0458659
 
  AnalyzeImage: DecreaseExposure
 
- AnalyzeImage: Don't Modify (Hysteresis): 10.962 11.7547
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66141 4.88549
 
 
 
 AddImage: 
- AnalyzeImage Score: -0.0673953
+ AnalyzeImage Score: -0.0458429
 
  AnalyzeImage: DecreaseExposure
 
- AnalyzeImage: Don't Modify (Hysteresis): 10.9625 11.7547
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66152 4.88549
 
 
 
 AddImage: 
- AnalyzeImage Score: -0.0673714
+ AnalyzeImage Score: -0.04579
 
  AnalyzeImage: DecreaseExposure
 
- AnalyzeImage: Don't Modify (Hysteresis): 10.9627 11.7547
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66178 4.88549
 
 
 
 AddImage: 
- AnalyzeImage Score: -0.0673151
+ AnalyzeImage Score: -0.0456644
 
  AnalyzeImage: DecreaseExposure
 
- AnalyzeImage: Don't Modify (Hysteresis): 10.9634 11.7547
+ AnalyzeImage: Don't Modify (Hysteresis): 4.6624 4.88549
 
 
 
 AddImage: 
- AnalyzeImage Score: -0.0674513
+ AnalyzeImage Score: -0.0457021
 
  AnalyzeImage: DecreaseExposure
 
- AnalyzeImage: Don't Modify (Hysteresis): 10.9618 11.7547
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66221 4.88549
 
 
 
 AddImage: 
- AnalyzeImage Score: -0.0673525
+ AnalyzeImage Score: -0.0456458
 
  AnalyzeImage: DecreaseExposure
 
- AnalyzeImage: Don't Modify (Hysteresis): 10.963 11.7547
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66249 4.88549
 
 
 
 AddImage: 
- AnalyzeImage Score: -0.0672763
+ AnalyzeImage Score: -0.0453754
 
  AnalyzeImage: DecreaseExposure
 
- AnalyzeImage: Don't Modify (Hysteresis): 10.9639 11.7547
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66381 4.88549
 
 
 
 AddImage: 
- AnalyzeImage Score: -0.0672961
+ AnalyzeImage Score: -0.0452291
 
  AnalyzeImage: DecreaseExposure
 
- AnalyzeImage: Don't Modify (Hysteresis): 10.9636 11.7547
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66452 4.88549
 
 
 
 AddImage: 
- AnalyzeImage Score: -0.0672797
+ AnalyzeImage Score: -0.0450019
 
  AnalyzeImage: DecreaseExposure
 
- AnalyzeImage: Don't Modify (Hysteresis): 10.9638 11.7547
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66563 4.88549
 
 
 
 AddImage: 
- AnalyzeImage Score: -0.0672954
+ AnalyzeImage Score: -0.0446704
 
  AnalyzeImage: DecreaseExposure
 
- AnalyzeImage: Don't Modify (Hysteresis): 10.9636 11.7547
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66725 4.88549
 
 
 
 AddImage: 
- AnalyzeImage Score: -0.0673541
+ AnalyzeImage Score: -0.0444159
 
  AnalyzeImage: DecreaseExposure
 
- AnalyzeImage: Don't Modify (Hysteresis): 10.9629 11.7547
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66849 4.88549
 
 
 
 AddImage: 
- AnalyzeImage Score: -0.0672523
+ AnalyzeImage Score: -0.0442351
 
  AnalyzeImage: DecreaseExposure
 
- AnalyzeImage: Don't Modify (Hysteresis): 10.9641 11.7547
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66938 4.88549
 
 
 
 AddImage: 
- AnalyzeImage Score: -0.0671462
+ AnalyzeImage Score: -0.0438836
 
  AnalyzeImage: DecreaseExposure
 
- AnalyzeImage: Don't Modify (Hysteresis): 10.9654 11.7547
+ AnalyzeImage: Don't Modify (Hysteresis): 4.6711 4.88549
 
 
 
 AddImage: 
- AnalyzeImage Score: -0.0671406
+ AnalyzeImage Score: -0.0439382
 
  AnalyzeImage: DecreaseExposure
 
- AnalyzeImage: Don't Modify (Hysteresis): 10.9655 11.7547
+ AnalyzeImage: Don't Modify (Hysteresis): 4.67083 4.88549
 
 
 
 AddImage: 
- AnalyzeImage Score: -0.0671576
+ AnalyzeImage Score: -0.0437574
 
  AnalyzeImage: DecreaseExposure
 
- AnalyzeImage: Don't Modify (Hysteresis): 10.9653 11.7547
+ AnalyzeImage: Don't Modify (Hysteresis): 4.67171 4.88549
 
 
 
 AddImage: 
- AnalyzeImage Score: -0.0672243
+ AnalyzeImage Score: -0.043584
 
  AnalyzeImage: DecreaseExposure
 
- AnalyzeImage: Don't Modify (Hysteresis): 10.9645 11.7547
+ AnalyzeImage: Don't Modify (Hysteresis): 4.67256 4.88549
 
 
 
 AddImage: 
- AnalyzeImage Score: -0.0671083
+ AnalyzeImage Score: -0.0437639
 
  AnalyzeImage: DecreaseExposure
 
- AnalyzeImage: Don't Modify (Hysteresis): 10.9658 11.7547
+ AnalyzeImage: Don't Modify (Hysteresis): 4.67168 4.88549
 
 
 
 AddImage: 
- AnalyzeImage Score: -0.0670601
+ AnalyzeImage Score: -0.0438539
 
  AnalyzeImage: DecreaseExposure
 
- AnalyzeImage: Don't Modify (Hysteresis): 10.9664 11.7547
+ AnalyzeImage: Don't Modify (Hysteresis): 4.67124 4.88549
 
 
 
 AddImage: 
- AnalyzeImage Score: -0.0671746
+ AnalyzeImage Score: -0.0440689
 
  AnalyzeImage: DecreaseExposure
 
- AnalyzeImage: Don't Modify (Hysteresis): 10.9651 11.7547
+ AnalyzeImage: Don't Modify (Hysteresis): 4.67019 4.88549
 
 
 
 AddImage: 
- AnalyzeImage Score: -0.0670859
+ AnalyzeImage Score: -0.0442065
 
  AnalyzeImage: DecreaseExposure
 
- AnalyzeImage: Don't Modify (Hysteresis): 10.9661 11.7547
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66952 4.88549
 
 
 
 AddImage: 
- AnalyzeImage Score: -0.0671258
+ AnalyzeImage Score: -0.0444897
 
  AnalyzeImage: DecreaseExposure
 
- AnalyzeImage: Don't Modify (Hysteresis): 10.9656 11.7547
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66813 4.88549
 
 
 
 AddImage: 
- AnalyzeImage Score: -0.0670365
+ AnalyzeImage Score: -0.0448928
 
  AnalyzeImage: DecreaseExposure
 
- AnalyzeImage: Don't Modify (Hysteresis): 10.9667 11.7547
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66616 4.88549
 
 
 
 AddImage: 
- AnalyzeImage Score: -0.0670024
+ AnalyzeImage Score: -0.044989
 
  AnalyzeImage: DecreaseExposure
 
- AnalyzeImage: Don't Modify (Hysteresis): 10.9671 11.7547
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66569 4.88549
 
 
 
 AddImage: 
- AnalyzeImage Score: -0.0669108
+ AnalyzeImage Score: -0.0452529
 
  AnalyzeImage: DecreaseExposure
 
- AnalyzeImage: Don't Modify (Hysteresis): 10.9682 11.7547
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66441 4.88549
 
 
 
 AddImage: 
- AnalyzeImage Score: -0.0669795
+ AnalyzeImage Score: -0.04537
 
  AnalyzeImage: DecreaseExposure
 
- AnalyzeImage: Don't Modify (Hysteresis): 10.9673 11.7547
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66383 4.88549
 
 
 
 AddImage: 
- AnalyzeImage Score: -0.0670001
+ AnalyzeImage Score: -0.0455297
 
  AnalyzeImage: DecreaseExposure
 
- AnalyzeImage: Don't Modify (Hysteresis): 10.9671 11.7547
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66305 4.88549
 
 
 
 AddImage: 
- AnalyzeImage Score: -0.0668925
+ AnalyzeImage Score: -0.0454559
 
  AnalyzeImage: DecreaseExposure
 
- AnalyzeImage: Don't Modify (Hysteresis): 10.9684 11.7547
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66341 4.88549
 
 
 
 AddImage: 
- AnalyzeImage Score: -0.066827
+ AnalyzeImage Score: -0.0453516
 
  AnalyzeImage: DecreaseExposure
 
- AnalyzeImage: Don't Modify (Hysteresis): 10.9691 11.7547
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66392 4.88549
 
 
 
 AddImage: 
- AnalyzeImage Score: -0.0668627
+ AnalyzeImage Score: -0.0452811
 
  AnalyzeImage: DecreaseExposure
 
- AnalyzeImage: Don't Modify (Hysteresis): 10.9687 11.7547
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66427 4.88549
 
 
 
 AddImage: 
- AnalyzeImage Score: -0.0669234
+ AnalyzeImage Score: -0.0451684
 
  AnalyzeImage: DecreaseExposure
 
- AnalyzeImage: Don't Modify (Hysteresis): 10.968 11.7547
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66482 4.88549
 
 
 
 AddImage: 
- AnalyzeImage Score: -0.0668835
+ AnalyzeImage Score: -0.0449118
 
  AnalyzeImage: DecreaseExposure
 
- AnalyzeImage: Don't Modify (Hysteresis): 10.9685 11.7547
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66607 4.88549
 
 
 
 AddImage: 
- AnalyzeImage Score: -0.0668125
+ AnalyzeImage Score: -0.0447687
 
  AnalyzeImage: DecreaseExposure
 
- AnalyzeImage: Don't Modify (Hysteresis): 10.9693 11.7547
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66677 4.88549
 
 
 
 AddImage: 
- AnalyzeImage Score: -0.0668191
+ AnalyzeImage Score: -0.0445966
 
  AnalyzeImage: DecreaseExposure
 
- AnalyzeImage: Don't Modify (Hysteresis): 10.9692 11.7547
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66761 4.88549
 
 
 
 AddImage: 
- AnalyzeImage Score: -0.066732
+ AnalyzeImage Score: -0.0443758
 
  AnalyzeImage: DecreaseExposure
 
- AnalyzeImage: Don't Modify (Hysteresis): 10.9703 11.7547
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66869 4.88549
 
 
 
 AddImage: 
- AnalyzeImage Score: -0.066715
+ AnalyzeImage Score: -0.0441055
 
  AnalyzeImage: DecreaseExposure
 
- AnalyzeImage: Don't Modify (Hysteresis): 10.9705 11.7547
+ AnalyzeImage: Don't Modify (Hysteresis): 4.67001 4.88549
 
 
 
 AddImage: 
- AnalyzeImage Score: -0.066745
+ AnalyzeImage Score: -0.0440878
 
  AnalyzeImage: DecreaseExposure
 
- AnalyzeImage: Don't Modify (Hysteresis): 10.9701 11.7547
+ AnalyzeImage: Don't Modify (Hysteresis): 4.6701 4.88549
 
 
 
 AddImage: 
- AnalyzeImage Score: -0.0667477
+ AnalyzeImage Score: -0.0438435
 
  AnalyzeImage: DecreaseExposure
 
- AnalyzeImage: Don't Modify (Hysteresis): 10.9701 11.7547
+ AnalyzeImage: Don't Modify (Hysteresis): 4.67129 4.88549
 
 
 
 AddImage: 
- AnalyzeImage Score: -0.0665822
+ AnalyzeImage Score: -0.0436413
 
  AnalyzeImage: DecreaseExposure
 
- AnalyzeImage: Don't Modify (Hysteresis): 10.972 11.7547
+ AnalyzeImage: Don't Modify (Hysteresis): 4.67228 4.88549
 
 
 
 AddImage: 
- AnalyzeImage Score: -0.066612
+ AnalyzeImage Score: -0.0435068
 
  AnalyzeImage: DecreaseExposure
 
- AnalyzeImage: Don't Modify (Hysteresis): 10.9717 11.7547
+ AnalyzeImage: Don't Modify (Hysteresis): 4.67294 4.88549
 
 
 
 AddImage: 
- AnalyzeImage Score: -0.0665833
+ AnalyzeImage Score: -0.0434367
 
  AnalyzeImage: DecreaseExposure
 
- AnalyzeImage: Don't Modify (Hysteresis): 10.972 11.7547
+ AnalyzeImage: Don't Modify (Hysteresis): 4.67328 4.88549
 
 
 
 AddImage: 
- AnalyzeImage Score: -0.0665213
+ AnalyzeImage Score: -0.0434506
 
  AnalyzeImage: DecreaseExposure
 
- AnalyzeImage: Don't Modify (Hysteresis): 10.9727 11.7547
+ AnalyzeImage: Don't Modify (Hysteresis): 4.67321 4.88549
 
 
 
 AddImage: 
- AnalyzeImage Score: -0.0665811
+ AnalyzeImage Score: -0.0436427
 
  AnalyzeImage: DecreaseExposure
 
- AnalyzeImage: Don't Modify (Hysteresis): 10.972 11.7547
+ AnalyzeImage: Don't Modify (Hysteresis): 4.67227 4.88549
 
 
 
 AddImage: 
- AnalyzeImage Score: -0.0664845
+ AnalyzeImage Score: -0.0437774
 
  AnalyzeImage: DecreaseExposure
 
- AnalyzeImage: Don't Modify (Hysteresis): 10.9732 11.7547
+ AnalyzeImage: Don't Modify (Hysteresis): 4.67161 4.88549
 
 
 
 AddImage: 
- AnalyzeImage Score: -0.0665151
+ AnalyzeImage Score: -0.0439713
 
  AnalyzeImage: DecreaseExposure
 
- AnalyzeImage: Don't Modify (Hysteresis): 10.9728 11.7547
+ AnalyzeImage: Don't Modify (Hysteresis): 4.67067 4.88549
 
 
 
 AddImage: 
- AnalyzeImage Score: -0.0664801
+ AnalyzeImage Score: -0.044201
 
  AnalyzeImage: DecreaseExposure
 
- AnalyzeImage: Don't Modify (Hysteresis): 10.9732 11.7547
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66954 4.88549
 
 
 
 AddImage: 
- AnalyzeImage Score: -0.0664656
+ AnalyzeImage Score: -0.0444746
 
  AnalyzeImage: DecreaseExposure
 
- AnalyzeImage: Don't Modify (Hysteresis): 10.9734 11.7547
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66821 4.88549
 
 
 
 AddImage: 
- AnalyzeImage Score: -0.0664926
+ AnalyzeImage Score: -0.0446299
 
  AnalyzeImage: DecreaseExposure
 
- AnalyzeImage: Don't Modify (Hysteresis): 10.9731 11.7547
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66745 4.88549
 
 
 
-AutoExposure: Constructor v3
+AddImage: 
+ AnalyzeImage Score: -0.0448278
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66648 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.044906
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.6661 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.044982
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66573 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0449216
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66602 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0448662
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66629 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0447651
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66679 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0447359
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66693 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0445447
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66787 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0442822
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66915 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0440679
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.67019 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0440101
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.67048 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0437732
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.67163 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0435168
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.67289 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0433719
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.6736 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0432483
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.6742 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0430455
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.67519 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0432933
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.67398 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0433868
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.67352 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0436207
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.67238 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0438262
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.67138 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0442127
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66949 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0444089
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66853 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.044678
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66721 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0448987
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66614 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0450049
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66562 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0450753
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66527 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0452164
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66458 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0450595
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66535 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0449436
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66592 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0448853
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.6662 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0444992
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66809 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0443847
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66865 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0441345
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66987 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0439687
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.67068 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0437334
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.67183 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0434287
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.67332 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0433373
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.67376 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.043241
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.67423 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0431014
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.67492 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0432987
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.67395 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0435188
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.67288 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0436872
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.67205 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0439663
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.67069 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0444441
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66836 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0448438
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.6664 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.045178
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66477 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0452965
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66419 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0455895
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66276 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0457502
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66198 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0457237
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66211 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0458104
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66168 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0455143
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66313 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0454779
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66331 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0451779
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66477 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0449489
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66589 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0447327
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66695 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0444197
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66848 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0441173
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66995 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0440316
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.67037 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0436914
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.67203 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0435294
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.67283 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0437125
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.67193 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0438126
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.67144 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.044187
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66961 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0445057
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66806 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0449055
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.6661 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0452538
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.6644 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0456575
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66243 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0460228
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66064 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0461417
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66006 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0462694
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.65944 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0462847
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.65936 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0462166
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.6597 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0462431
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.65957 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0461079
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66023 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0457624
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66192 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0456157
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66263 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0452972
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66419 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0450772
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66526 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0448283
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66648 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0446772
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66722 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.044303
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66905 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0442997
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66906 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0442481
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66931 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0444267
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66844 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0445379
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.6679 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0448289
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66648 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.045199
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66467 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0457285
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66208 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0460749
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66039 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0464125
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.65874 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0466835
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.65742 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0468458
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.65662 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0468999
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.65636 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0470208
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.65577 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0470652
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.65555 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0469792
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.65597 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0467379
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.65715 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0466824
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.65742 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0463719
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.65894 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0462046
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.65976 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0459786
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66086 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0456823
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66231 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0454471
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66346 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0451676
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66482 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0449836
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66572 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0450219
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66553 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0449094
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66608 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0450384
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66545 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0451097
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66511 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0451349
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66498 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0451572
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66487 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0452827
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66426 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0452684
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66433 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0452621
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66436 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0451647
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66484 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0452555
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66439 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0451693
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66481 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0449679
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.6658 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.042505
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.67783 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0409924
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.68522 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0401807
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.68919 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.039409
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.69296 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.038346
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.69815 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0375114
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.70223 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0372079
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.70371 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0373334
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.7031 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0373855
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.70284 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0374483
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.70253 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0375763
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.70191 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0375483
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.70205 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0375774
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.7019 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0375127
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.70222 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0374089
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.70273 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0372975
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.70327 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0372015
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.70374 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.037294
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.70329 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0371202
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.70414 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0369578
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.70493 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0370142
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.70466 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0368156
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.70563 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0368788
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.70532 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0368172
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.70562 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0372929
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.70329 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.037967
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.7 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0391015
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.69446 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0409838
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.68526 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0427805
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.67648 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0428857
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.67597 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0428427
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.67618 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0431142
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.67485 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0436327
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.67232 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.043917
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.67093 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0443453
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66884 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0442597
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66926 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0444959
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.6681 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0442725
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.6692 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0441779
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66966 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0442431
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.66934 4.88549
+
+
+
+AddImage: 
+ AnalyzeImage Score: -0.0440373
+
+ AnalyzeImage: DecreaseExposure
+
+ AnalyzeImage: Don't Modify (Hysteresis): 4.67034 4.88549
+
+
 
