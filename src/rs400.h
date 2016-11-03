@@ -9,7 +9,7 @@
 
 namespace rsimpl
 {
-    // This classes represent RS4XX skews that generate depth only data. There are 2 variants:
+    // This classes represent RS4XX SKu that generate depth only data. There are 2 variants:
     // (1) DS5 PSR: Uses 2 RGB cameras (passive)
     // (2) DS5 ASR: Uses 2 IR cameras and an IR emitter (active)
     // The difference between the 2 variants is that DS4 ASR has extra controls for controlling the IR emitter

@@ -29,7 +29,7 @@ TEST_CASE("RS4XX device supports all required options", "[live] [RS4XX]")
     const int device_count = rs_get_device_count(ctx, require_no_error());
     REQUIRE(device_count > 0);
 
-    const std::map<std::string, std::vector<rs_option>> rs4xx_skew_options
+    const std::map<std::string, std::vector<rs_option>> rs4xx_sku_options
     {
         { "Intel RealSense RS400p", { RS_OPTION_COLOR_GAIN, RS_OPTION_CT_AUTO_EXPOSURE_MODE, RS_OPTION_R200_LR_EXPOSURE, RS_OPTION_HARDWARE_LOGGER_ENABLED }},
         { "Intel RealSense RS410a", { RS_OPTION_COLOR_GAIN, RS_OPTION_CT_AUTO_EXPOSURE_MODE, RS_OPTION_R200_LR_EXPOSURE, RS_OPTION_HARDWARE_LOGGER_ENABLED,
@@ -42,8 +42,8 @@ TEST_CASE("RS4XX device supports all required options", "[live] [RS4XX]")
         rs_device * dev = rs_get_device(ctx, i, require_no_error());
         REQUIRE(dev != nullptr);
 
-        auto it = rs4xx_skew_options.find(dev->get_name());
-        REQUIRE(it != rs4xx_skew_options.end());
+        auto it = rs4xx_sku_options.find(dev->get_name());
+        REQUIRE(it != rs4xx_sku_options.end());
 
         for (size_t i = 0; i < RS_OPTION_COUNT; ++i)
         {

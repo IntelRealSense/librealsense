@@ -144,7 +144,7 @@ namespace rsimpl
     {
         static_device_info info = get_rs400_info(device, dev_name);
 
-        // Additional options and controls supported by ASR over PSR skew
+        // Additional options and controls supported by ASR over PSR SKU
         info.options.push_back({ RS_OPTION_RS4XX_PROJECTOR_MODE, 0, 2, 1, 0 });     // 0 - off, 1 - on, 2 - auto
         info.options.push_back({ RS_OPTION_RS4XX_PROJECTOR_PWR, 0, 300, 30, 0 });   // Projector power in milli-watt
         info.xu_options.push_back({ RS_OPTION_RS4XX_PROJECTOR_MODE, static_cast<uint8_t>(ds::control::rs4xx_lsr_power_mode) });
