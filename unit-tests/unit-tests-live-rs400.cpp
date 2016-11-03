@@ -223,7 +223,7 @@ TEST_CASE("RS4XX Transmit Raw Data", "[live] [RS4XX]")
     for (auto test_pattern : snd_rcv_patterns)
     {
         assert((test_pattern.first.size() > 0) && (test_pattern.first.size() <=RAW_BUFFER_SIZE));
-        assert((test_pattern.second >= 0) && (test_pattern.second <= RAW_BUFFER_SIZE));
+        assert(test_pattern.second <= RAW_BUFFER_SIZE);
         memset(&test_obj, 0, sizeof(rs_raw_buffer));
         std::copy(test_pattern.first.begin(), test_pattern.first.end(), test_obj.snd_buffer);
         test_obj.snd_buffer_size = test_pattern.first.size();

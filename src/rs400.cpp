@@ -110,7 +110,7 @@ namespace rsimpl
             info.presets[RS_STREAM_INFRARED2][i] = {true, 1280, 720, RS_FORMAT_Y16, 30};
         }
 
-        info.options.push_back({ RS_OPTION_CT_AUTO_EXPOSURE_MODE });
+        info.options.push_back({ RS_OPTION_CT_AUTO_EXPOSURE_MODE });                // CT Auto-exposure on/off
         //info.options.push_back({ RS_OPTION_CT_EXPOSURE_PRIORITY });               // Provisional
         info.options.push_back({ RS_OPTION_COLOR_GAIN });                           // PU - Depth Manual Gain
         info.options.push_back({ RS_OPTION_R200_LR_EXPOSURE, 0, 0, 0, 0 });         // XU - Depth Manual exposure. Range will be dynamically updated by querrying device
