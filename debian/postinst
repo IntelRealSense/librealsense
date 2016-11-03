@@ -25,14 +25,14 @@ OLDHEADER="/usr/local/include/librealsense"
 OLDUDEV="/etc/udev/rules.d/99-realsense-libusb.rules"
 
 # Are we running in a Docker Environment?
-docker_cnt=$(awk -F/ '$2 == "docker"' /proc/1/cgroup  | wc -l)
-# docker_cnt > 0 we are in a docker environment
+docker_cnt=$(awk '$2 == "(1,"' /proc/1/sched  | wc -l)
+# docker_cnt == 0 we are in a docker environment
 
 case "$1" in
 
   configure)
     # Set FORCE_UDEV_IN_DOCKER to non-empty to override
-    if [ ${docker_cnt} -gt 0 -a -z "${FORCE_UDEV_IN_DOCKER}" ]
+    if [ ${docker_cnt} -eq 0 -a -z "${FORCE_UDEV_IN_DOCKER}" ]
     then
       echo "INFO: Docker environment not supported for udevadm; skipping."
     else
@@ -59,7 +59,7 @@ case "$1" in
     fi
 
     # Set FORCE_DKMS_IN_DOCKER to non-empty to override
-    if [ ${docker_cnt} -gt 0 -a -z "${FORCE_DKMS_IN_DOCKER}" ]
+    if [ ${docker_cnt} -eq 0 -a -z "${FORCE_DKMS_IN_DOCKER}" ]
     then
       echo "INFO: Docker environment not supported for DKMS; skipping."
     else
