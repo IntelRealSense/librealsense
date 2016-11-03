@@ -110,8 +110,10 @@ namespace rsimpl
             info.presets[RS_STREAM_INFRARED2][i] = {true, 1280, 720, RS_FORMAT_Y16, 30};
         }
 
-        info.options.push_back({ RS_OPTION_COLOR_GAIN });
-        info.options.push_back({ RS_OPTION_R200_LR_EXPOSURE, 0, 0, 0, 0 }); // XU range will be dynamically updated by querrying device
+        info.options.push_back({ RS_OPTION_CT_AUTO_EXPOSURE_MODE });
+        //info.options.push_back({ RS_OPTION_CT_EXPOSURE_PRIORITY });				// Evgeni TODO
+        info.options.push_back({ RS_OPTION_COLOR_GAIN });                                   // PU - Depth Manual Gain
+        info.options.push_back({ RS_OPTION_R200_LR_EXPOSURE, 0, 0, 0, 0 });                 // XU - Depth Manual exposure. Range will be dynamically updated by querrying device
         info.options.push_back({ RS_OPTION_HARDWARE_LOGGER_ENABLED, 0, 1, 1, 0 });
         info.xu_options.push_back({RS_OPTION_R200_LR_EXPOSURE, static_cast<uint8_t>(ds::control::rs4xx_lr_exposure)});
 
@@ -163,17 +165,22 @@ namespace rsimpl
 
         for (size_t i = 0; i<count; ++i)
         {
+            if (uvc::is_ct_control(options[i]))
+            {
+                uvc::set_pu_control_with_retry(get_device(), 0, options[i], static_cast<int>(values[i])); continue;
+            }
+
             if (uvc::is_pu_control(options[i]))
             {
                 if (options[i]==RS_OPTION_COLOR_GAIN)
                 {
-                    uvc::set_pu_control_with_retry(get_device(), 0, options[i], static_cast<int>(values[i])); break;
+                    uvc::set_pu_control_with_retry(get_device(), 0, options[i], static_cast<int>(values[i])); continue;
                 }
                 else
                     throw std::logic_error(to_string() << get_name() << " has no CCD sensor, the following is not supported: " << options[i]);
             }
 
-            base_opt.push_back(options[i]); base_opt_val.push_back(values[i]); break;
+            base_opt.push_back(options[i]); base_opt_val.push_back(values[i]);
         }
 
         //Handle common options
@@ -190,6 +197,11 @@ namespace rsimpl
         {
             LOG_INFO("Reading option " << options[i]);
 
+            if (uvc::is_ct_control(options[i]))
+            {
+                values[i] = uvc::get_pu_control(get_device(), 0, options[i]);   continue;
+            }
+
             if (uvc::is_pu_control(options[i]))
             {
                 if (options[i] == RS_OPTION_COLOR_GAIN)
@@ -198,7 +210,7 @@ namespace rsimpl
                 }
             }
 
-             base_opt.push_back(options[i]); base_opt_val.push_back(values[i]); break;
+             base_opt.push_back(options[i]); base_opt_val.push_back(values[i]); continue;
         }
 
         // Retrieve common options
@@ -224,7 +236,7 @@ namespace rsimpl
 
     void rs400_camera::get_option_range(rs_option option, double & min, double & max, double & step, double & def)
     {
-        if (option == RS_OPTION_COLOR_GAIN)
+        if ((option == RS_OPTION_COLOR_GAIN) || (uvc::is_ct_control(option)))
         {
             int mn, mx, stp, df;
             uvc::get_pu_control_range(get_device(), config.info.stream_subdevices[RS_STREAM_DEPTH], option, &mn, &mx, &stp, &df);

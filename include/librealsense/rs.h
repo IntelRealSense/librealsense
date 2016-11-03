@@ -201,6 +201,8 @@ typedef enum rs_option
     RS_OPTION_TOTAL_FRAME_DROPS                               , /**< Total number of detected frame drops from all streams */
     RS_OPTION_RS4XX_PROJECTOR_MODE                            , /**< RS400 Emitter mode */
     RS_OPTION_RS4XX_PROJECTOR_PWR                             , /**< RS400 Emitter power in milli-watt */
+    RS_OPTION_CT_AUTO_EXPOSURE_MODE                           , /**< Camera Terminal Control - Auto Exposure mode */
+    RS_OPTION_CT_EXPOSURE_PRIORITY                            , /**< Camera Terminal Control - Exposure Priority - constant fps/ light dependent */
     RS_OPTION_COUNT                                           ,
 
 } rs_option;

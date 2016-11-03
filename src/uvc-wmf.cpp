@@ -998,6 +998,12 @@ namespace rsimpl
             {RS_OPTION_FISHEYE_GAIN, VideoProcAmp_Gain}
         };
 
+        struct ct_control { rs_option option; long property; bool enable_auto; };
+        static const ct_control ct_controls[] = {
+            { RS_OPTION_CT_AUTO_EXPOSURE_MODE, CameraControl_Exposure },
+            { RS_OPTION_CT_EXPOSURE_PRIORITY, CameraControl_Iris },     // Evgeni - Undefined
+        };
+
         void set_pu_control(device & device, int subdevice, rs_option option, int value)
         {
             auto & sub = device.subdevices.get_subdevice_vector()[subdevice];
@@ -1053,15 +1059,29 @@ namespace rsimpl
             auto& sub = device.subdevices[subdevice];
             const_cast<uvc::subdevice &>(sub).get_media_source();
             long minVal=0, maxVal=0, steppingDelta=0, defVal=0, capsFlag=0;
-            if (option == RS_OPTION_COLOR_EXPOSURE)
+            if ((option == RS_OPTION_COLOR_EXPOSURE))
             {
-                check("IAMCameraControl::Get", sub.am_camera_control->GetRange(CameraControl_Exposure, &minVal, &maxVal, &steppingDelta, &defVal, &capsFlag));
+                check("IAMCameraControl::GetRange", sub.am_camera_control->GetRange(CameraControl_Exposure, &minVal, &maxVal, &steppingDelta, &defVal, &capsFlag));
                 if (min)  *min = minVal;
                 if (max)  *max = maxVal;
                 if (step) *step = steppingDelta;
                 if (def)  *def = defVal;
                 return;
             }
+
+            for (auto & ct : ct_controls)
+            {
+                if (option == ct.option)
+                {
+                    check("IAMCameraControl::GetRange", sub.am_camera_control->GetRange(ct.property, &minVal, &maxVal, &steppingDelta, &defVal, &capsFlag));
+                    if (min)  *min = static_cast<int>(minVal);
+                    if (max)  *max = static_cast<int>(maxVal);
+                    if (step) *step = static_cast<int>(steppingDelta);
+                    if (def)  *def = static_cast<int>(defVal);
+                    return;
+                }
+            }
+
             for(auto & pu : pu_controls)
             {
                 if(option == pu.option)
@@ -1170,6 +1190,16 @@ namespace rsimpl
                 check("IAMCameraControl::Get", sub.am_camera_control->Get(CameraControl_Exposure, &value, &flags));
                 return flags == CameraControl_Flags_Auto;
             }
+
+            for (auto & ct : ct_controls)
+            {
+                if (option == ct.option)
+                {
+                    check("IAMCameraControl::Get", sub.am_camera_control->Get(ct.property, &value, &flags));
+                    return value;
+                }
+            }
+
             for(auto & pu : pu_controls)
             {
                 if(option == pu.option)

@@ -50,14 +50,15 @@ namespace rsimpl
 
         // Access CT (Camera Terminal) and PU (Processing Units) controls
         inline bool is_pu_control(rs_option option) { return option <= RS_OPTION_COLOR_ENABLE_AUTO_WHITE_BALANCE; }
+        inline bool is_ct_control(rs_option option) { return ((option >= RS_OPTION_CT_AUTO_EXPOSURE_MODE) && (option <= RS_OPTION_CT_EXPOSURE_PRIORITY)); }
         void get_pu_control_range(const device & device, int subdevice, rs_option option, int * min, int * max, int * step, int * def);
-        void get_extension_control_range(const device & device, const extension_unit & xu, char control, int * min, int * max, int * step, int * def);
         void set_pu_control(device & device, int subdevice, rs_option option, int value);
         int get_pu_control(const device & device, int subdevice, rs_option option);
 
         // Access XU controls
         void set_control(device & device, const extension_unit & xu, uint8_t ctrl, void * data, int len);
         void get_control(const device & device, const extension_unit & xu, uint8_t ctrl, void * data, int len);
+        void get_extension_control_range(const device & device, const extension_unit & xu, char control, int * min, int * max, int * step, int * def);
 
         // Control data channels
         typedef std::function<void(const unsigned char * data, const int size)> data_channel_callback;

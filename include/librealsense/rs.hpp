@@ -165,6 +165,8 @@ namespace rs
         total_frame_drops                               , /**< Total number of detected frame drops from all streams*/
         rs4xx_projector_mode                             , /**< Toggle RealSense 4xx projector modes */
         rs4xx_projector_pwr                              , /**< RealSense 4xx projector power in milliwatt */
+        ct_auto_exposure_mode                            , /**< CT Control - Auto Exposure */
+        ct_exposure_priority                             , /**< CT Control - Exposure Priority*/
     };
 
     enum class blob_type {

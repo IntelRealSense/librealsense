@@ -417,6 +417,7 @@ static std::map<rs::option, std::vector<rs::option>> options_dependencies =
   { rs::option::r200_auto_exposure_left_edge, { rs::option::r200_auto_exposure_right_edge } },
   { rs::option::r200_auto_exposure_right_edge, { rs::option::r200_auto_exposure_left_edge } },
   { rs::option::rs4xx_projector_mode, { rs::option::rs4xx_projector_pwr } },
+  { rs::option::ct_auto_exposure_mode,{ rs::option::color_gain, rs::option::r200_lr_exposure } },
 };
 
 void update_related_options(rs::device& dev, rs::option opt, std::vector<option>& options)
