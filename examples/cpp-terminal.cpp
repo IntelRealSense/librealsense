@@ -42,6 +42,8 @@ void xml_mode(const string& line, const commands_xml& cmd_xml, rs::device& dev, 
         converter << hex << word;
         tokens.push_back(word);
     }
+    if (tokens.empty())
+        throw runtime_error("Wrong input!");
 
     auto command_str = tokens.front();
     auto it = cmd_xml.commands.find(command_str);
@@ -90,6 +92,8 @@ void hex_mode(const string& line, rs::device& dev)
         converter >> temp;
         raw_data.push_back(temp);
     }
+    if (raw_data.empty())
+        throw runtime_error("Wrong input!");
 
     auto result = dev.debug().send_and_receive_raw_data(raw_data);
 
