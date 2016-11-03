@@ -322,7 +322,7 @@ namespace rsimpl
         LOG_INFO("Connecting to Intel RealSense LR200 Motion");
 
         static_device_info info;
-        info.name = { "Intel RealSense LR200 Motion" };
+        info.name = { "Intel RealSense LR200M" };
         
         
         

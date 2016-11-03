@@ -49,7 +49,7 @@ namespace rsimpl
 
         T fix(T number)
         {
-            if ((number + (num_of_wraparounds*max_number)) < last_number)
+            if (number > max_number-100 && (number + (num_of_wraparounds*max_number)) < last_number)
                 ++num_of_wraparounds;
 
 

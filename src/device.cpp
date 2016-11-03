@@ -448,8 +448,7 @@ void rs_device_base::start_video_streaming(bool is_mipi)
 
                 // Obtain buffers for unpacking the frame
                 dest.push_back(archive->alloc_frame(output.first, additional_data, requires_processing));
-                //std::cout << "timestamp: " << output.first << " " << frame_counter << "\t" << std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count() <<  std::endl;
-
+                //std::cout << "timestamp: " << output.first << " " << frame_counter << std::endl;
 
               // if (motion_module_ready) // try to correct timestamp only if motion module is enabled
                 //{
