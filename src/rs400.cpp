@@ -111,9 +111,9 @@ namespace rsimpl
         }
 
         info.options.push_back({ RS_OPTION_CT_AUTO_EXPOSURE_MODE });
-        //info.options.push_back({ RS_OPTION_CT_EXPOSURE_PRIORITY });				// Evgeni TODO
-        info.options.push_back({ RS_OPTION_COLOR_GAIN });                                   // PU - Depth Manual Gain
-        info.options.push_back({ RS_OPTION_R200_LR_EXPOSURE, 0, 0, 0, 0 });                 // XU - Depth Manual exposure. Range will be dynamically updated by querrying device
+        //info.options.push_back({ RS_OPTION_CT_EXPOSURE_PRIORITY });               // Provisional
+        info.options.push_back({ RS_OPTION_COLOR_GAIN });                           // PU - Depth Manual Gain
+        info.options.push_back({ RS_OPTION_R200_LR_EXPOSURE, 0, 0, 0, 0 });         // XU - Depth Manual exposure. Range will be dynamically updated by querrying device
         info.options.push_back({ RS_OPTION_HARDWARE_LOGGER_ENABLED, 0, 1, 1, 0 });
         info.xu_options.push_back({RS_OPTION_R200_LR_EXPOSURE, static_cast<uint8_t>(ds::control::rs4xx_lr_exposure)});
 

@@ -1001,7 +1001,7 @@ namespace rsimpl
         struct ct_control { rs_option option; long property; bool enable_auto; };
         static const ct_control ct_controls[] = {
             { RS_OPTION_CT_AUTO_EXPOSURE_MODE, CameraControl_Exposure },
-            { RS_OPTION_CT_EXPOSURE_PRIORITY, CameraControl_Iris },     // Evgeni - Undefined
+            //{ RS_OPTION_CT_EXPOSURE_PRIORITY, Undefined TBD?? },
         };
 
         void set_pu_control(device & device, int subdevice, rs_option option, int value)
@@ -1013,17 +1013,18 @@ namespace rsimpl
                 check("IAMCameraControl::Set", sub.am_camera_control->Set(CameraControl_Exposure, static_cast<int>(value), CameraControl_Flags_Manual));
                 return;
             }
-            if(option == RS_OPTION_COLOR_ENABLE_AUTO_EXPOSURE)
+            if((option == RS_OPTION_COLOR_ENABLE_AUTO_EXPOSURE) || (option == RS_OPTION_CT_AUTO_EXPOSURE_MODE))
             {
-                if(value) check("IAMCameraControl::Set", sub.am_camera_control->Set(CameraControl_Exposure, 0, CameraControl_Flags_Auto));
+                if (value) check("IAMCameraControl::Set", sub.am_camera_control->Set(CameraControl_Exposure, 0, CameraControl_Flags_Auto));
                 else
                 {
-                    long min, max, step, def, caps;
+                    long min{}, max{}, step{}, def{}, caps{};
                     check("IAMCameraControl::GetRange", sub.am_camera_control->GetRange(CameraControl_Exposure, &min, &max, &step, &def, &caps));
                     check("IAMCameraControl::Set", sub.am_camera_control->Set(CameraControl_Exposure, def, CameraControl_Flags_Manual));
                 }
                 return;
             }
+
             for(auto & pu : pu_controls)
             {
                 if(option == pu.option)
@@ -1047,7 +1048,9 @@ namespace rsimpl
 
         void get_pu_control_range(const device & device, int subdevice, rs_option option, int * min, int * max, int * step, int * def)
         {
-            if(option >= RS_OPTION_COLOR_ENABLE_AUTO_EXPOSURE && option <= RS_OPTION_COLOR_ENABLE_AUTO_WHITE_BALANCE)
+            // Media Foundation fails to query Camera Terminal controls, along with PU controls
+            if((option >= RS_OPTION_COLOR_ENABLE_AUTO_EXPOSURE && option <= RS_OPTION_COLOR_ENABLE_AUTO_WHITE_BALANCE) ||
+                (option >= RS_OPTION_CT_AUTO_EXPOSURE_MODE && option <= RS_OPTION_CT_EXPOSURE_PRIORITY))
             {
                 if(min)  *min  = 0;
                 if(max)  *max  = 1;
@@ -1185,19 +1188,10 @@ namespace rsimpl
                 check("IAMCameraControl::Get", sub.am_camera_control->Get(CameraControl_Exposure, &value, &flags));
                 return value;
             }
-            if(option == RS_OPTION_COLOR_ENABLE_AUTO_EXPOSURE)
+            if((option == RS_OPTION_COLOR_ENABLE_AUTO_EXPOSURE) || (option == RS_OPTION_CT_AUTO_EXPOSURE_MODE))
             {
                 check("IAMCameraControl::Get", sub.am_camera_control->Get(CameraControl_Exposure, &value, &flags));
                 return flags == CameraControl_Flags_Auto;
-            }
-
-            for (auto & ct : ct_controls)
-            {
-                if (option == ct.option)
-                {
-                    check("IAMCameraControl::Get", sub.am_camera_control->Get(ct.property, &value, &flags));
-                    return value;
-                }
             }
 
             for(auto & pu : pu_controls)
