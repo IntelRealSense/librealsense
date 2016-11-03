@@ -805,7 +805,7 @@ void rs_device_base::fisheyeCallback(motion::MotionFisheyeFrame* frame) {
             RS_STREAM_FISHEYE,
             0,
             config.info.supported_metadata_vector,
-            0);
+            frame->exposure);
 
         additional_data.timestamp_domain = RS_TIMESTAMP_DOMAIN_MICROCONTROLLER;
         //std::cout << "Got fisheyeCallback! 1   " <<  frame->width << "," << frame->height << std::endl;
