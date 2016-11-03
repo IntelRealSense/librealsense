@@ -149,7 +149,8 @@ namespace rs
                     {
                         results.push_back(sub.open(targets));
                         for (auto && target : targets)
-                            intrinsics.emplace(std::make_pair(target.stream, dev.get_intrinsics(sub, target)));
+                            intrinsics.emplace(std::make_pair(target.stream,
+                                                              sub.get_intrinsics(target)));
                     }
                 }
                 return multistream(move(results), move(intrinsics));

@@ -476,6 +476,25 @@ namespace rs
             return results;
         }
 
+        /*
+         * retrive stream intrinsics
+         * \param[in] profile the stream profile to calculate the intrinsics for
+         * \return intrinsics object
+         */
+        rs_intrinsics get_intrinsics(stream_profile profile) const
+        {
+            rs_error* e = nullptr;
+            rs_intrinsics intrinsics;
+            rs_get_stream_intrinsics(_dev, _index,
+                profile.stream,
+                profile.width,
+                profile.height,
+                profile.fps,
+                profile.format, &intrinsics, &e);
+            error::handle(e);
+            return intrinsics;
+        }
+
     private:
         friend device;
         explicit subdevice(rs_device* dev, rs_subdevice index) 
@@ -531,10 +550,6 @@ namespace rs
             return result;
         }
 
-        /**
-        * retrieve mapping between the units of the depth image and meters
-        * \return            depth in meters corresponding to a depth value of 1
-        */
         rs_extrinsics get_extrinsics(rs_subdevice from_subdevice, rs_subdevice to_subdevice) const
         {
             rs_error* e = nullptr;
@@ -544,20 +559,10 @@ namespace rs
             return extrin;
         }
 
-        rs_intrinsics get_intrinsics(rs_subdevice subdevice, stream_profile profile) const
-        {
-            rs_error* e = nullptr;
-            rs_intrinsics intrinsics;
-            rs_get_stream_intrinsics(_dev.get(), subdevice, 
-                profile.stream,
-                profile.width,
-                profile.height,
-                profile.fps,
-                profile.format, &intrinsics, &e);
-            error::handle(e);
-            return intrinsics;
-        }
-
+        /**
+        * retrieve mapping between the units of the depth image and meters
+        * \return            depth in meters corresponding to a depth value of 1
+        */
         float get_depth_scale() const
         {
             rs_error* e = nullptr;
