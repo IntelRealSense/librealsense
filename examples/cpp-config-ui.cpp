@@ -228,7 +228,7 @@ public:
             {
                 std::stringstream res;
                 res << profile.width << " x " << profile.height;
-				push_back_if_not_exists(res_values, std::pair<int, int>(profile.width, profile.height));
+                push_back_if_not_exists(res_values, std::pair<int, int>(profile.width, profile.height));
                 push_back_if_not_exists(resolutions, res.str());
                 std::stringstream fps;
                 fps << profile.fps;
@@ -251,6 +251,27 @@ public:
                 if (!any_stream_enabled) stream_enabled[profile.stream] = true;
                 
                 profiles.push_back(profile);
+            }
+
+            // set default selections
+            int selection_index;
+            
+            get_default_selection_index(res_values, std::pair<int,int>(640,480), &selection_index);
+            selected_res_id = selection_index;
+            
+            get_default_selection_index(fps_values, 30, &selection_index);
+            selected_fps_id = selection_index;
+            
+            for (auto format_array : format_values)
+            {
+                for (auto format : { rs_format::RS_FORMAT_RGB8, rs_format::RS_FORMAT_Z16, rs_format::RS_FORMAT_Y8 } )
+                {                 
+                    if (get_default_selection_index(format_array.second, format, &selection_index))
+                    {
+                        selected_format_id[format_array.first] = selection_index;
+                        break;
+                    }                    
+                }
             }
         }
         catch (const rs::error& e)
@@ -346,6 +367,27 @@ public:
             options_metadata[static_cast<rs_option>(next_option)].update(error_message);
             next_option++;
         }
+    }
+
+    template<typename T>
+    bool get_default_selection_index(const std::vector<T>& values, const T & def, int* index /*std::function<int(const std::vector<T>&,T,int*)> compare = nullptr*/)
+    {     
+        auto max_default = values.begin();
+        for (auto it = values.begin(); it != values.end(); it++)
+        {
+            
+            if (*it == def)
+            {
+                *index = it - values.begin();
+                return true;
+            }
+            if (*max_default < *it)
+            {
+                max_default = it;
+            }
+        }
+        *index = max_default - values.begin();
+        return false;
     }
 
     rs_subdevice subdevice;
@@ -618,7 +660,7 @@ int main(int, char**) try
                 {
                     sub->stop();
                 }
-
+                
                 dev = list[device_index];
                 model = device_model(dev, error_message);
             }
@@ -657,13 +699,13 @@ int main(int, char**) try
                 {
                     auto res_chars = get_string_pointers(sub->resolutions);
                     auto fps_chars = get_string_pointers(sub->fpses);
-  
+
                     ImGui::Text("Resolution:");
                     ImGui::SameLine();
                     ImGui::PushItemWidth(-1);
                     label = to_string() << rs_subdevice_to_string(sub->subdevice) << " resolution";
                     if (sub->current_stream.get()) ImGui::Text(res_chars[sub->selected_res_id]);
-                    else ImGui::Combo(label.c_str(), &sub->selected_res_id, res_chars.data(), 
+                    else ImGui::Combo(label.c_str(), &sub->selected_res_id, res_chars.data(),
                                       static_cast<int>(res_chars.size()));
                     ImGui::PopItemWidth();
 
@@ -853,7 +895,6 @@ int main(int, char**) try
         }
 
         ImGui::Render();
-
         glfwSwapBuffers(window);
     }
 

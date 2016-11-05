@@ -83,9 +83,27 @@ void device::set_pose(rs_subdevice subdevice, pose p)
     _static_info.subdevice_poses[subdevice] = p;
 }
 
+pose device::get_pose(rs_subdevice subdevice) const {
+    return _static_info.subdevice_poses[subdevice];
+}
+
 void device::declare_capability(supported_capability cap)
 {
     _static_info.capabilities_vector.push_back(cap);
+}
+
+rs_extrinsics device::get_extrinsics(rs_subdevice from_subdevice, rs_subdevice to_subdevice)
+{
+    if (!supports(from_subdevice)) throw std::runtime_error("Requested from subdevice is unsupported.");
+    if (!supports(to_subdevice)) throw std::runtime_error("Requested to subdevice is unsupported.");
+
+    auto from = get_pose(from_subdevice), to = get_pose(to_subdevice);
+    if (from == to) return { {1,0,0,0,1,0,0,0,1}, {0,0,0} }; // identity transformation
+    auto transform = inverse(from) * to;
+    rs_extrinsics extrin;
+    (float3x3 &)extrin.rotation = transform.orientation;
+    (float3 &)extrin.translation = transform.position;
+    return extrin;
 }
 
 void device::set_depth_scale(float scale)

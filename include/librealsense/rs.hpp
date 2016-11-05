@@ -15,12 +15,9 @@
 #include <ostream>
 #include <iostream>
 
-namespace rsimpl{
-    struct float3;
-}
-
 namespace rs
 {
+    
     class error : public std::runtime_error
     {
         std::string function, args;
@@ -479,6 +476,25 @@ namespace rs
             return results;
         }
 
+        /*
+         * retrive stream intrinsics
+         * \param[in] profile the stream profile to calculate the intrinsics for
+         * \return intrinsics object
+         */
+        rs_intrinsics get_intrinsics(stream_profile profile) const
+        {
+            rs_error* e = nullptr;
+            rs_intrinsics intrinsics;
+            rs_get_stream_intrinsics(_dev, _index,
+                profile.stream,
+                profile.width,
+                profile.height,
+                profile.fps,
+                profile.format, &intrinsics, &e);
+            error::handle(e);
+            return intrinsics;
+        }
+
     private:
         friend device;
         explicit subdevice(rs_device* dev, rs_subdevice index) 
@@ -562,6 +578,15 @@ namespace rs
             auto result = rs_get_camera_info(_dev.get(), info, &e);
             error::handle(e);
             return result;
+        }
+
+        rs_extrinsics get_extrinsics(rs_subdevice from_subdevice, rs_subdevice to_subdevice) const
+        {
+            rs_error* e = nullptr;
+            rs_extrinsics extrin;
+            rs_get_device_extrinsics(_dev.get(), from_subdevice, to_subdevice, &extrin, &e);
+            error::handle(e);
+            return extrin;
         }
 
         /**

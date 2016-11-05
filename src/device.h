@@ -32,6 +32,12 @@ namespace rsimpl
         const std::string& get_info(rs_camera_info info) const;
 
         bool supports_info(rs_camera_info info) const;
+
+        rs_extrinsics get_extrinsics(rs_subdevice from, rs_subdevice to);
+
+        virtual rs_intrinsics get_intrinsics(rs_subdevice subdevice, stream_request profile) const
+        { throw std::runtime_error("Not Implemented"); };
+
         float get_depth_scale() const { return _static_info.nominal_depth_scale; }
 
         virtual std::vector<uint8_t> send_receive_raw_data(const std::vector<uint8_t>& input) { throw std::runtime_error(to_string() << __FUNCTION__ << " is not implemented"); }
@@ -48,6 +54,8 @@ namespace rsimpl
         void register_device(std::string name, std::string fw_version, std::string serial, std::string location);
 
         void set_pose(rs_subdevice subdevice, pose p);
+
+        pose get_pose(rs_subdevice subdevice) const;
 
         void declare_capability(supported_capability cap);
 
