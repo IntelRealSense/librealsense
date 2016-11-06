@@ -87,6 +87,11 @@ namespace rsimpl
         update_cmd_details(details, receivedCmdLen, outputBuffer);
     }
 
+    std::vector<uint8_t> hw_monitor::send(std::vector<uint8_t> data) const
+    {
+        return _command_transfer->send_receive(data);
+    }
+
     std::vector<uint8_t> hw_monitor::send(command cmd) const
     {
         hwmon_cmd newCommand(cmd);

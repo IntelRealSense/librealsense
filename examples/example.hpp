@@ -7,6 +7,11 @@
 #include <vector>
 #include <algorithm>
 #include <cstring>
+#include <ctype.h>
+#include <memory>
+#include <string>
+#include <sstream>
+
 
 inline void make_depth_histogram(uint8_t rgb_image[], const uint16_t depth_image[], int width, int height)
 {

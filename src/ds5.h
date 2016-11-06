@@ -162,6 +162,7 @@ namespace rsimpl
             // map subdevice to endpoint
             assign_endpoint(RS_SUBDEVICE_DEPTH, depth_ep);
             register_pu(RS_SUBDEVICE_DEPTH, RS_OPTION_GAIN);
+            register_pu(RS_SUBDEVICE_DEPTH, RS_OPTION_ENABLE_AUTO_EXPOSURE);
             register_option(RS_OPTION_EMITTER_ENABLED, RS_SUBDEVICE_DEPTH, std::make_shared<emitter_option>(*this));
             //DS5_LASER_POWER
 
@@ -170,6 +171,7 @@ namespace rsimpl
                 "Manual laser power. applicable only in on mode");
         }
 
+        std::vector<uint8_t> send_receive_raw_data(const std::vector<uint8_t>& input) override;
 
     private:
         hw_monitor _hw_monitor;

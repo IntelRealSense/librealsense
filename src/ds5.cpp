@@ -193,6 +193,10 @@ namespace rsimpl
         return results;
     }
 
+    std::vector<uint8_t> ds5_camera::send_receive_raw_data(const std::vector<uint8_t>& input)
+    {
+        return _hw_monitor.send(input);
+    }
 
     // "Get Version and Date"
     // Reference: Commands.xml in IVCAM_DLL
