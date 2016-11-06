@@ -118,7 +118,7 @@ namespace rsimpl
             T * operator -> () const { return p; }
 
             T ** operator & () { unref(); return &p; }
-            com_ptr & operator = (const com_ptr & r) { ref(r.p); return *this; }            
+            com_ptr & operator = (const com_ptr & r) { ref(r.p); return *this; }
         };
 
         std::vector<std::string> tokenize(std::string string, char separator)
@@ -225,7 +225,7 @@ namespace rsimpl
                 MFStartup(MF_VERSION, MFSTARTUP_NOSOCKET);
             }
             ~context()
-            {   
+            {
                 MFShutdown();
                 CoUninitialize();
             }
@@ -246,7 +246,7 @@ namespace rsimpl
 #pragma warning( push )
 #pragma warning( disable: 4838 )
             // Implement IUnknown
-            HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, void ** ppvObject) override 
+            HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, void ** ppvObject) override
             {
                 static const QITAB table[] = {QITABENT(reader_callback, IUnknown), QITABENT(reader_callback, IMFSourceReaderCallback), {0}};
                 return QISearch(this, table, riid, ppvObject);
@@ -254,8 +254,8 @@ namespace rsimpl
 #pragma warning( pop )
 
             ULONG STDMETHODCALLTYPE AddRef() override { return InterlockedIncrement(&ref_count); }
-            ULONG STDMETHODCALLTYPE Release() override 
-            { 
+            ULONG STDMETHODCALLTYPE Release() override
+            {
                 ULONG count = InterlockedDecrement(&ref_count);
                 if(count == 0) delete this;
                 return count;
@@ -578,7 +578,7 @@ namespace rsimpl
                             if (sub.stream_index_vector[index] == stream_index_status::configured)
                             {
                                 sub.stream_index_vector[index] = stream_index_status::streaming;
-                                check("IMFSourceReader::ReadSample", sub.mf_source_reader->ReadSample(index, 0, NULL, NULL, NULL, NULL));
+                                check("IMFSourceReader::ReadSample", sub.mf_source_reader->ReadSample(static_cast<DWORD>(index), 0, NULL, NULL, NULL, NULL));
                             }
                         }
                     }
@@ -631,10 +631,10 @@ namespace rsimpl
             com_ptr<IMFMediaSource> get_media_source(int subdevice_index)
             {
                 return subdevices[subdevice_index].get_media_source();
-            }           
+            }
 
             void open_win_usb(int vid, int pid, std::string unique_id, const guid & interface_guid, int interface_number) try
-            {    
+            {
                 static_assert(sizeof(guid) == sizeof(GUID), "struct packing error");
                 HDEVINFO device_info = SetupDiGetClassDevs((const GUID *)&interface_guid, nullptr, nullptr, DIGCF_PRESENT | DIGCF_DEVICEINTERFACE);
                 if (device_info == INVALID_HANDLE_VALUE) throw std::runtime_error("SetupDiGetClassDevs");
@@ -648,7 +648,7 @@ namespace rsimpl
                     {
                         if(GetLastError() == ERROR_NO_MORE_ITEMS) break;
                         continue;
-                    }                           
+                    }
 
                     // Allocate space for a detail data struct
                     unsigned long detail_data_size = 0;
@@ -673,7 +673,7 @@ namespace rsimpl
                     // Check if this is our device
                     int usb_vid, usb_pid, usb_mi; std::string usb_unique_id;
                     if(!parse_usb_path(usb_vid, usb_pid, usb_mi, usb_unique_id, win_to_utf(detail_data->DevicePath))) continue;
-                    if(usb_vid != vid || usb_pid != pid || usb_mi != interface_number || usb_unique_id != unique_id) continue;                    
+                    if(usb_vid != vid || usb_pid != pid || usb_mi != interface_number || usb_unique_id != unique_id) continue;
 
                     HANDLE* file_handle = nullptr;
                     WINUSB_INTERFACE_HANDLE* usb_handle = nullptr;
@@ -723,7 +723,7 @@ namespace rsimpl
                 auto result = false;
 
                 BOOL bRetVal = true;
-                
+
                 ULONG lengthTransferred;
 
                 bRetVal = WinUsb_ReadPipe(usb_interface_handle, endpoint, (PUCHAR)buffer, bufferLength, &lengthTransferred, NULL);
@@ -763,7 +763,7 @@ namespace rsimpl
             }
         };
 
-        HRESULT reader_callback::OnReadSample(HRESULT hrStatus, DWORD dwStreamIndex, DWORD dwStreamFlags, LONGLONG llTimestamp, IMFSample * sample) 
+        HRESULT reader_callback::OnReadSample(HRESULT hrStatus, DWORD dwStreamIndex, DWORD dwStreamFlags, LONGLONG llTimestamp, IMFSample * sample)
         {
             if(auto owner_ptr = owner.lock())
             {
@@ -802,7 +802,7 @@ namespace rsimpl
                     if (hr != S_OK) streaming = false;
                 }
             }
-            return S_OK; 
+            return S_OK;
         }
 
         ////////////
@@ -829,7 +829,7 @@ namespace rsimpl
         }
 
         void set_control(device & device, const extension_unit & xu, uint8_t ctrl, void *data, int len)
-        {        
+        {
             auto ks_control = device.get_ks_control(xu);
 
             KSP_NODE node;
@@ -838,7 +838,7 @@ namespace rsimpl
             node.Property.Id = ctrl;
             node.Property.Flags = KSPROPERTY_TYPE_SET | KSPROPERTY_TYPE_TOPOLOGY;
             node.NodeId = xu.node;
-                
+
             ULONG bytes_received = 0;
             check("IKsControl::KsProperty", ks_control->KsProperty((PKSPROPERTY)&node, sizeof(KSP_NODE), data, len, &bytes_received));
         }
@@ -861,7 +861,7 @@ namespace rsimpl
             {
                 device.usb_synchronous_write(endpoint, data, length, timeout);
             }
-            
+
             if(USB_ENDPOINT_DIRECTION_IN(endpoint))
             {
                 device.usb_synchronous_read(endpoint, data, length, actual_length, timeout);
@@ -966,7 +966,7 @@ namespace rsimpl
         }
 
         void set_subdevice_data_channel_handler(device & device, int subdevice_index, data_channel_callback callback)
-        {           
+        {
             device.subdevices[subdevice_index].set_data_channel_cfg(callback);
         }
 
@@ -1036,7 +1036,7 @@ namespace rsimpl
                         {
                             long min=0, max=0, step=0, def=0, caps=0;
                             check("IAMVideoProcAmp::GetRange", sub.am_video_proc_amp->GetRange(pu.property, &min, &max, &step, &def, &caps));
-                            check("IAMVideoProcAmp::Set", sub.am_video_proc_amp->Set(pu.property, def, VideoProcAmp_Flags_Manual));    
+                            check("IAMVideoProcAmp::Set", sub.am_video_proc_amp->Set(pu.property, def, VideoProcAmp_Flags_Manual));
                         }
                     }
                     else check("IAMVideoProcAmp::Set", sub.am_video_proc_amp->Set(pu.property, value, VideoProcAmp_Flags_Manual));
@@ -1231,7 +1231,7 @@ namespace rsimpl
             IMFAttributes * pAttributes = NULL;
             check("MFCreateAttributes", MFCreateAttributes(&pAttributes, 1));
             check("IMFAttributes::SetGUID", pAttributes->SetGUID(MF_DEVSOURCE_ATTRIBUTE_SOURCE_TYPE, MF_DEVSOURCE_ATTRIBUTE_SOURCE_TYPE_VIDCAP_GUID));
- 
+
             IMFActivate ** ppDevices;
             UINT32 numDevices;
             check("MFEnumDeviceSources", MFEnumDeviceSources(pAttributes, &ppDevices, &numDevices));
@@ -1420,8 +1420,8 @@ namespace rsimpl
 
             // build a device info represent all imaging devices.
             HDEVINFO device_info = SetupDiGetClassDevsEx((const GUID *)&GUID_DEVINTERFACE_IMAGE,
-                nullptr, 
-                nullptr, 
+                nullptr,
+                nullptr,
                 DIGCF_PRESENT,
                 nullptr,
                 nullptr,
@@ -1447,7 +1447,7 @@ namespace rsimpl
                     LOG_ERROR("CM_Get_Device_ID_Size failed");
                     return "";
                 }
-                
+
                 auto alloc = std::malloc(buf_size * sizeof(WCHAR) + sizeof(WCHAR));
                 if (!alloc) throw std::bad_alloc();
                 auto pInstID = std::shared_ptr<WCHAR>(reinterpret_cast<WCHAR *>(alloc), std::free);
@@ -1458,7 +1458,7 @@ namespace rsimpl
 
                 if (pInstID == nullptr) continue;
 
-                // Check if this is our device 
+                // Check if this is our device
                 int usb_vid, usb_pid, usb_mi; std::string usb_unique_id;
                 if (!parse_usb_path_from_device_id(usb_vid, usb_pid, usb_mi, usb_unique_id, std::string(win_to_utf(pInstID.get())))) continue;
                 if (usb_vid != device.vid || usb_pid != device.pid || /* usb_mi != device->mi || */ usb_unique_id != device.unique_id) continue;
@@ -1542,7 +1542,7 @@ namespace rsimpl
                 // recursively check all hubs, searching for composite device
                 std::wstringstream buf;
                 for (int i = 0;; i++)
-                { 
+                {
                     buf << "\\\\.\\HCD" << i;
                     std::wstring hcd = buf.str();
 
