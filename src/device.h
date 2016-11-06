@@ -40,6 +40,7 @@ namespace rsimpl
 
         float get_depth_scale() const { return _static_info.nominal_depth_scale; }
 
+        virtual std::vector<uint8_t> send_receive_raw_data(const std::vector<uint8_t>& input) { throw std::runtime_error(to_string() << __FUNCTION__ << " is not implemented"); }
     protected:
         void assign_endpoint(rs_subdevice subdevice,
                              std::shared_ptr<endpoint> endpoint);

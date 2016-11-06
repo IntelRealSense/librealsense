@@ -25,6 +25,11 @@ struct rs_device_info
     std::shared_ptr<rsimpl::device_info> info;
 };
 
+struct rs_raw_data_buffer
+{
+    std::vector<uint8_t> buffer;
+};
+
 struct rs_stream_profile_list
 {
     std::vector<rsimpl::stream_request> list;
@@ -269,6 +274,37 @@ void rs_delete_modes_list(rs_stream_modes_list* list) try
     delete list;
 }
 NOEXCEPT_RETURN(, list)
+
+rs_raw_data_buffer* rs_send_and_receive_raw_data(rs_device* device, void* raw_data_to_send, unsigned size_of_raw_data_to_send, rs_error** error) try
+{
+    VALIDATE_NOT_NULL(device);
+    auto raw_data_buffer = static_cast<uint8_t*>(raw_data_to_send);
+    std::vector<uint8_t> buffer_to_send(raw_data_buffer, raw_data_buffer + size_of_raw_data_to_send);
+    auto ret_data = device->device->send_receive_raw_data(buffer_to_send);
+    return new rs_raw_data_buffer{ ret_data };
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, device)
+
+const unsigned char* rs_get_raw_data(const rs_raw_data_buffer* buffer, rs_error** error) try
+{
+    VALIDATE_NOT_NULL(buffer);
+    return buffer->buffer.data();
+}
+HANDLE_EXCEPTIONS_AND_RETURN(0, buffer)
+
+int rs_get_raw_data_size(const rs_raw_data_buffer* buffer, rs_error** error) try
+{
+    VALIDATE_NOT_NULL(buffer);
+    return static_cast<int>(buffer->buffer.size());
+}
+HANDLE_EXCEPTIONS_AND_RETURN(0, buffer)
+
+void rs_delete_raw_data(rs_raw_data_buffer* buffer) try
+{
+    VALIDATE_NOT_NULL(buffer);
+    delete buffer;
+}
+NOEXCEPT_RETURN(, buffer)
 
 rs_streaming_lock* rs_open(rs_device* device, rs_subdevice subdevice, 
     rs_stream stream, int width, int height, int fps, rs_format format, rs_error** error) try

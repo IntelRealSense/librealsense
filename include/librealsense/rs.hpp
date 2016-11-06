@@ -504,6 +504,36 @@ namespace rs
         rs_subdevice _index;
     };
 
+    class advanced
+    {
+    public:
+        advanced(std::shared_ptr<rs_device> dev)
+            : _dev(dev)
+        {}
+        std::vector<uint8_t> send_and_receive_raw_data(const std::vector<uint8_t>& input) const
+        {
+            std::vector<uint8_t> results;
+
+            rs_error* e = nullptr;
+            std::shared_ptr<rs_raw_data_buffer> list(
+                rs_send_and_receive_raw_data(_dev.get(), (void*)input.data(), input.size(), &e),
+                rs_delete_raw_data);
+            error::handle(e);
+
+            auto size = rs_get_raw_data_size(list.get(), &e);
+            error::handle(e);
+
+            auto start = rs_get_raw_data(list.get(), &e);
+
+            results.insert(results.begin(), start, start + size);
+
+            return results;
+        }
+
+    private:
+        std::shared_ptr<rs_device> _dev;
+    };
+
     class device
     {
     public:
@@ -570,10 +600,10 @@ namespace rs
             error::handle(e);
             return result;
         }
-
+        advanced& debug() { return _debug; }
     private:
         friend context;
-        explicit device(std::shared_ptr<rs_device> dev) : _dev(dev)
+        explicit device(std::shared_ptr<rs_device> dev) : _dev(dev), _debug(dev)
         {
             _subdevices.resize(RS_SUBDEVICE_COUNT);
             for (auto i = 0; i < RS_SUBDEVICE_COUNT; i++)
@@ -588,6 +618,7 @@ namespace rs
         }
 
         std::shared_ptr<rs_device> _dev;
+        advanced _debug;
         std::vector<std::shared_ptr<subdevice>> _subdevices;
     };
 
