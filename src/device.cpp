@@ -749,7 +749,7 @@ const char * rs_device_base::get_usb_port_id() const
         // TODO -replace hard-coded value 3 which stands for fisheye subdevice   
 
         rs_timestamp_data imu_timestamp;
-        imu_timestamp.timestamp = frame->header.timestamp/1000.0;
+        imu_timestamp.timestamp = frame->header.timestamp/1000;
         imu_timestamp.source_id = (frame->header.type == motion::MOTION_SOURCE_GYRO ? RS_EVENT_IMU_GYRO : RS_EVENT_IMU_ACCEL);
         imu_timestamp.frame_number = (frame->header.type == motion::MOTION_SOURCE_GYRO ? gyro_frame_count++ : accel_frame_count++);;
         
@@ -792,7 +792,7 @@ void rs_device_base::fisheyeCallback(motion::MotionFisheyeFrame* frame) {
         motion_device->returnFisheyeBuffer(frame);
         return;
     }
-        frame_archive::frame_additional_data additional_data( frame->header.timestamp/1000.0,
+        frame_archive::frame_additional_data additional_data( frame->header.timestamp/1000,
             frameCount++,
             0,
             frame->width,
@@ -805,7 +805,7 @@ void rs_device_base::fisheyeCallback(motion::MotionFisheyeFrame* frame) {
             RS_STREAM_FISHEYE,
             0,
             config.info.supported_metadata_vector,
-            frame->exposure);
+            frame->exposure*1000);
 
         additional_data.timestamp_domain = RS_TIMESTAMP_DOMAIN_MICROCONTROLLER;
         //std::cout << "Got fisheyeCallback! 1   " <<  frame->width << "," << frame->height << std::endl;
