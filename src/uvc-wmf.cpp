@@ -276,16 +276,16 @@ namespace rsimpl
 
         struct subdevice
         {
-            com_ptr<reader_callback> reader_callback;
-            com_ptr<IMFActivate> mf_activate;
-            com_ptr<IMFMediaSource> mf_media_source;
-            com_ptr<IAMCameraControl> am_camera_control;
-            com_ptr<IAMVideoProcAmp> am_video_proc_amp;
+            com_ptr<reader_callback> reader_callback = nullptr;
+            com_ptr<IMFActivate> mf_activate = nullptr;
+            com_ptr<IMFMediaSource> mf_media_source = nullptr;
+            com_ptr<IAMCameraControl> am_camera_control = nullptr;
+            com_ptr<IAMVideoProcAmp> am_video_proc_amp = nullptr;
             std::map<int, com_ptr<IKsControl>> ks_controls;
-            com_ptr<IMFSourceReader> mf_source_reader;
+            com_ptr<IMFSourceReader> mf_source_reader = nullptr;
             video_channel_callback callback = nullptr;
             data_channel_callback  channel_data_callback = nullptr;
-            int vid, pid;
+            int vid{}, pid{};
             std::vector<stream_index_status> stream_index_vector;
 
             void set_data_channel_cfg(data_channel_callback callback)
