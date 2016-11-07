@@ -280,7 +280,7 @@ namespace rs
             rs_stop(_lock.get(), &e);
             error::handle(e);
         }
-
+        streaming_lock() : _lock(nullptr) {}
     private:
         friend subdevice;
         explicit streaming_lock(std::shared_ptr<rs_streaming_lock> lock)
