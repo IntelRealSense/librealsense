@@ -239,7 +239,7 @@ namespace rsimpl
             case KSPROPERTY_MEMBER_VALUES:
             {
                 /*
-                *	we don't yet support reading a list of values, only min-max.
+                *   we don't yet support reading a list of values, only min-max.
                 *   so we only support reading default value from a list
                 */
 

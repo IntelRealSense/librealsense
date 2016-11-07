@@ -4574,7 +4574,7 @@ static void SetWindowSize(ImGuiWindow* window, const ImVec2& size, ImGuiSetCond 
     // Set
     if (size.x > 0.0f)
     {
-		window->AutoFitFramesX = 0;
+        window->AutoFitFramesX = 0;
         window->SizeFull.x = size.x;
     }
     else
@@ -4584,7 +4584,7 @@ static void SetWindowSize(ImGuiWindow* window, const ImVec2& size, ImGuiSetCond 
     }
     if (size.y > 0.0f)
     {
-		window->AutoFitFramesY = 0;
+        window->AutoFitFramesY = 0;
         window->SizeFull.y = size.y;
     }
     else
@@ -7703,7 +7703,7 @@ bool ImGui::Combo(const char* label, int* current_item, bool (*items_getter)(voi
 
     const ImRect value_bb(frame_bb.Min, frame_bb.Max - ImVec2(arrow_size, 0.0f));
     RenderFrame(frame_bb.Min, frame_bb.Max, window->Color(ImGuiCol_FrameBg), true, style.FrameRounding);
-    RenderFrame(ImVec2(frame_bb.Max.x-arrow_size, frame_bb.Min.y), frame_bb.Max, window->Color(hovered ? ImGuiCol_ButtonHovered : ImGuiCol_Button), true, style.FrameRounding);	// FIXME-ROUNDING
+    RenderFrame(ImVec2(frame_bb.Max.x-arrow_size, frame_bb.Min.y), frame_bb.Max, window->Color(hovered ? ImGuiCol_ButtonHovered : ImGuiCol_Button), true, style.FrameRounding); // FIXME-ROUNDING
     RenderCollapseTriangle(ImVec2(frame_bb.Max.x-arrow_size, frame_bb.Min.y) + style.FramePadding, true);
 
     if (*current_item >= 0 && *current_item < items_count)
@@ -7729,7 +7729,7 @@ bool ImGui::Combo(const char* label, int* current_item, bool (*items_getter)(voi
             }
             else
             {
-            	FocusWindow(window);
+                FocusWindow(window);
                 ImGui::OpenPopup(label);
                 menu_toggled = true;
             }

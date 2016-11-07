@@ -578,7 +578,7 @@ const char* rs_get_subdevice_option_value_description(const rs_device* device, r
 /**
 * retrieve camera specific information, like versions of various internal componnents
 * \param[in] device     the RealSense device
-* \param[in] info	    camera info type to retrieve
+* \param[in] info       camera info type to retrieve
 * \param[out] error     if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return               the requested camera info string, in a format specific to the device model
 */

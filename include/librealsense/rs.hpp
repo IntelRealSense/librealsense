@@ -745,7 +745,7 @@ namespace rs
         /**
         * create librealsense context that given a file will respond to calls exactly as the recording did
         * if the user calls a method that was either not called during recording or voilates causality of the recording error will be thrown
-		* \param[in] filename string of the name of the file
+        * \param[in] filename string of the name of the file
         */
         explicit mock_context(const char* filename)
         {
@@ -765,7 +765,7 @@ namespace rs
         /**
         * create frame queue. frame queues are the simplest x-platform syncronization primitive provided by librealsense
         * to help developers who are not using async APIs
-		* param[in] capacity size of the frame queue
+        * param[in] capacity size of the frame queue
         */
         explicit frame_queue(unsigned int capacity)
         {
