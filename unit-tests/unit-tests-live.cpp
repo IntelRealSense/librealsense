@@ -291,4 +291,120 @@ TEST_CASE( "streaming modes sanity check", "[live]" )
     }
 }
 
+TEST_CASE("check option API", "[live][options]") {
+    // Require at least one device to be plugged in
+    rs::context ctx;
+    std::vector<rs::device> list;
+    REQUIRE_NOTHROW(list = ctx.query_devices());
+    REQUIRE(list.size() > 0);
+
+    // for each device
+    for (auto & dev : list) {
+        // for each subdevice
+        for (auto && subdevice : dev) {
+            // for each option
+            for (int i = 0; i < RS_OPTION_COUNT; ++i) {
+                rs_option opt = rs_option(i);
+                bool is_opt_supported;
+                REQUIRE_NOTHROW(is_opt_supported = subdevice.supports(opt));
+                
+
+                SECTION("Ranges are sane") {
+                    if (!is_opt_supported) {
+                        REQUIRE_THROWS_AS(subdevice.get_option_range(opt), rs::error);
+                    } else {
+                        rs::option_range range;
+                        REQUIRE_NOTHROW(range = subdevice.get_option_range(opt));
+
+                        // a couple sanity checks
+                        REQUIRE(range.min < range.max);
+                        REQUIRE(range.min + range.step <= range.max);
+                        REQUIRE(range.step > 0);
+                        REQUIRE(range.def <= range.max);
+                        REQUIRE(range.min <= range.def);
+
+                        // TODO: check that range.def == range.min + k*range.step for some k?
+                        // TODO: some sort of bounds checking against constants?
+                    }
+                }
+                SECTION("get_option returns a legal value") {
+                    if (!is_opt_supported) {
+                        REQUIRE_THROWS_AS(subdevice.get_option(opt), rs::error);
+                    } else {
+                        auto range = subdevice.get_option_range(opt);
+                        float value;
+                        REQUIRE_NOTHROW(value = subdevice.get_option(opt));
+
+                        // value in range. Do I need to account for epsilon in lt[e]/gt[e] comparisons?
+                        REQUIRE(value >= range.min);
+                        REQUIRE(value <= range.max);
+
+                        // value doesn't change between two gets (if no additional threads are calling set)
+                        REQUIRE(subdevice.get_option(opt) == Approx(value));
+
+                        // REQUIRE(value == Approx(range.def)); // Not sure if this is a reasonable check
+                        // TODO: make sure value == range.min + k*range.step for some k?
+                    }
+                }
+                SECTION("set opt doesn't like bad values") {
+                    auto range = subdevice.get_option_range(opt);
+                    if (!is_opt_supported) {
+                        REQUIRE_THROWS_AS(subdevice.set_option(opt, range.min), rs::error);
+                    } else {
+                        // minimum should work, as should maximum
+                        REQUIRE_NOTHROW(subdevice.set_option(opt, range.min));
+                        REQUIRE_NOTHROW(subdevice.set_option(opt, range.max));
+
+                        int n_steps = (range.max - range.min) / range.step;
+                        
+                        // check a few arbitrary points along the scale
+                        REQUIRE_NOTHROW(subdevice.set_option(opt, range.min + (1 % n_steps)*range.step));
+                        REQUIRE_NOTHROW(subdevice.set_option(opt, range.min + (11 % n_steps)*range.step));
+                        REQUIRE_NOTHROW(subdevice.set_option(opt, range.min + (111 % n_steps)*range.step));
+                        REQUIRE_NOTHROW(subdevice.set_option(opt, range.min + (1111 % n_steps)*range.step));
+
+                        // below min and above max shouldn't work
+                        REQUIRE_THROWS_AS(subdevice.set_option(opt, range.min - range.step), rs::error);
+                        REQUIRE_THROWS_AS(subdevice.set_option(opt, range.max + range.step), rs::error);
+
+                        // make sure requesting value in the range, but not a legal step doesn't work
+                        // TODO: maybe something for range.step < 1 ?
+                        for (int i = 1; i < range.step; i++) {
+                            CAPTURE(range.step);
+                            CAPTURE(i);
+                            REQUIRE_THROWS_AS(subdevice.set_option(opt, range.min + i), rs::error);
+                        }
+                    }
+                }
+                SECTION("check get/set sequencing works as expected") {
+                    if (!is_opt_supported) continue;
+                    auto range = subdevice.get_option_range(opt);
+                    
+                    // setting a valid value lets you get that value back
+                    subdevice.set_option(opt, range.min);
+                    REQUIRE(subdevice.get_option(opt) == Approx(range.min));
+
+                    // setting an invalid value returns the last set valid value.
+                    REQUIRE_THROWS(subdevice.set_option(opt, range.max + range.step));
+                    REQUIRE(subdevice.get_option(opt) == Approx(range.min));
+
+                    subdevice.set_option(opt, range.max);
+                    REQUIRE_THROWS(subdevice.set_option(opt, range.min - range.step));
+                    REQUIRE(subdevice.get_option(opt) == Approx(range.max));
+             
+                }
+                SECTION("get_description returns a non-empty, non-null string") {
+                    if (!is_opt_supported) {
+                        REQUIRE_THROWS_AS(subdevice.get_option_description(opt), rs::error);
+                    } else {
+                        REQUIRE(subdevice.get_option_description(opt) != nullptr);
+                        REQUIRE(std::string(subdevice.get_option_description(opt)) != std::string(""));
+                    }
+                }
+                // TODO: tests for get_option_value_description? possibly too open a function to have useful tests
+            }
+        }
+    }
+}
+
 #endif /* !defined(MAKEFILE) || ( defined(LIVE_TEST) ) */
