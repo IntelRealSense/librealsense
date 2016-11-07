@@ -8,7 +8,7 @@
 #include <iomanip>
 #include <numeric>
 
-#define unknown "UNKNOWN" 
+#define unknown "UNKNOWN"
 
 namespace rsimpl
 {
@@ -169,9 +169,9 @@ namespace rsimpl
         if (is_any) return "any";
 
         std::stringstream s;
-        s << std::setfill('0') << std::setw(2) << m_major << "." 
-            << std::setfill('0') << std::setw(2) << m_minor << "." 
-            << std::setfill('0') << std::setw(2) << m_patch << "." 
+        s << std::setfill('0') << std::setw(2) << m_major << "."
+            << std::setfill('0') << std::setw(2) << m_minor << "."
+            << std::setfill('0') << std::setw(2) << m_patch << "."
             << std::setfill('0') << std::setw(2) << m_build;
         return s.str();
     }

@@ -46,12 +46,12 @@ int main(int argc, char** argv) try
         {
             auto dev = devices[i];
 
-            cout << left << setw(30) << dev.get_camera_info(RS_CAMERA_INFO_DEVICE_NAME) 
+            cout << left << setw(30) << dev.get_camera_info(RS_CAMERA_INFO_DEVICE_NAME)
                          << setw(20) << dev.get_camera_info(RS_CAMERA_INFO_DEVICE_SERIAL_NUMBER)
                          << setw(20) << dev.get_camera_info(RS_CAMERA_INFO_CAMERA_FIRMWARE_VERSION)
                          << endl;
         }
-        
+
         return EXIT_SUCCESS;
     }
 
@@ -65,7 +65,7 @@ int main(int argc, char** argv) try
         {
             auto param = static_cast<rs_camera_info>(j);
             if (dev.supports(param))
-                cout << "    " << left << setw(20) << rs_camera_info_to_string(rs_camera_info(param)) 
+                cout << "    " << left << setw(20) << rs_camera_info_to_string(rs_camera_info(param))
                      << ": \t" << dev.get_camera_info(param) << endl;
         }
 

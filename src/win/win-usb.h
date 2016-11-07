@@ -80,7 +80,7 @@ namespace rsimpl
         public:
             std::vector<uint8_t> send_receive(
                 const std::vector<uint8_t>& data,
-                int timeout_ms = 5000, 
+                int timeout_ms = 5000,
                 bool require_response = true) override;
 
             explicit winusb_bulk_transfer(const usb_device_info& info);
