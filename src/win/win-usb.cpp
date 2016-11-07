@@ -284,7 +284,8 @@ namespace rsimpl
                 auto hResult = WaitForSingleObject(hOvl.hEvent, TimeOut);
                 if (hResult == WAIT_TIMEOUT)
                 {
-                    lengthTransferred = 0;	//WinUsb failure - reset winusb			
+                    lengthTransferred = 0;  //WinUsb failure - reset winusb
+
                     reset_pipe(pipe_direction::InPipe);
                     reset_pipe(pipe_direction::OutPipe);
                     *isExitOnTimeout = true;
@@ -375,7 +376,7 @@ namespace rsimpl
 
         void usb_interface::init_winusb_pipe()
         {
-            // initialize _dataInPipeID and _dataOutPipeID that will be used below.	
+            // initialize _dataInPipeID and _dataOutPipeID that will be used below.
             query_endpoints();
 
             if (_in_pipe_id != 0)

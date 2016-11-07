@@ -69,7 +69,7 @@ namespace rsimpl
  
     private:
 
-		bool auto_complete_request(std::vector<stream_request>& requests);
+        bool auto_complete_request(std::vector<stream_request>& requests);
 
         std::vector<native_pixel_format> _pixel_formats;
     };
