@@ -376,7 +376,7 @@ namespace rsimpl
 
         void usb_interface::init_winusb_pipe()
         {
-            // initialize _dataInPipeID and _dataOutPipeID that will be used below.
+            // initialize _dataInPipeID and _dataOutPipeID that will be used below. 
             query_endpoints();
 
             if (_in_pipe_id != 0)
