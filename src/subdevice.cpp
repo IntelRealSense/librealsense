@@ -220,6 +220,9 @@ std::shared_ptr<streaming_lock> uvc_endpoint::configure(
 
     auto mapping = resolve_requests(requests);
 
+    auto timestamp_readers = create_frame_timestamp_readers();
+    auto timestamp_reader = timestamp_readers[0];
+
     for (auto& mode : mapping)
     {
         using namespace std::chrono;
@@ -229,7 +232,7 @@ std::shared_ptr<streaming_lock> uvc_endpoint::configure(
         auto start = high_resolution_clock::now();
         auto frame_number = 0;
         _device->play(mode.profile, 
-            [stream_ptr, mode, start, frame_number](uvc::stream_profile p, uvc::frame_object f) mutable
+            [stream_ptr, mode, start, frame_number, timestamp_reader](uvc::stream_profile p, uvc::frame_object f) mutable
         {
             auto&& unpacker = *mode.unpacker;
 
@@ -239,11 +242,11 @@ std::shared_ptr<streaming_lock> uvc_endpoint::configure(
                 frame_continuation release_and_enqueue([]() {}, f.pixels);
 
                 // Ignore any frames which appear corrupted or invalid
-                //if (!timestamp_reader->validate_frame(mode_selection.mode, frame)) return;
+                if (!timestamp_reader->validate_frame(mode, f.pixels)) return;
 
                 // Determine the timestamp for this frame
-                //auto timestamp = timestamp_reader->get_frame_timestamp(mode_selection.mode, frame);
-                //auto frame_counter = timestamp_reader->get_frame_counter(mode_selection.mode, frame);
+                auto timestamp = timestamp_reader->get_frame_timestamp(mode, f.pixels);
+                auto frame_counter = timestamp_reader->get_frame_counter(mode, f.pixels);
                 //auto received_time = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - capture_start_time).count();
 
                 auto width = mode.profile.width;
@@ -255,7 +258,7 @@ std::shared_ptr<streaming_lock> uvc_endpoint::configure(
 
                 auto now = high_resolution_clock::now();
                 auto ms = duration_cast<milliseconds>(now - start);
-                auto timestamp = static_cast<double>(ms.count());
+                auto system_time = static_cast<double>(ms.count());
 
                 //auto stride_x = mode_selection.get_stride_x();
                 //auto stride_y = mode_selection.get_stride_y();
@@ -279,7 +282,7 @@ std::shared_ptr<streaming_lock> uvc_endpoint::configure(
                     auto bpp = get_image_bpp(output.second);
                     frame_additional_data additional_data(timestamp,
                         frame_number++,
-                        timestamp,
+                        system_time,
                         width,
                         height,
                         fps,

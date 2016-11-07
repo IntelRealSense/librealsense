@@ -77,8 +77,7 @@ namespace rs
             {
                 for (int i = RS_STREAM_DEPTH; i < RS_STREAM_COUNT; i++)
                 {
-                    enable_stream(static_cast<rs_stream>(i), 
-                        preset::best_quality);
+                    enable_stream(static_cast<rs_stream>(i), p);
                 }
             }
 
@@ -277,10 +276,18 @@ namespace rs
                     return impl->streams[impl->key_stream].queue.poll_for_frame(
                         &impl->streams[impl->key_stream].front);
                 };
-                if (!ready() && !impl->cv.wait_for(lock, chrono::milliseconds(timeout_ms), ready))
-                    throw runtime_error("Timeout waiting for frames.");
 
                 frameset result;
+
+                if (!ready())
+                {
+                    if (!impl->cv.wait_for(lock, chrono::milliseconds(timeout_ms), ready))
+                    {
+                        return result;
+                    }
+                }
+
+                
                 get_frameset(&result);
                 return result;
             }

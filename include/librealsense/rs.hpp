@@ -300,6 +300,7 @@ namespace rs
     class subdevice
     {
     public:
+        subdevice() : _dev(nullptr), _index(RS_SUBDEVICE_COLOR) {}
         operator rs_subdevice() const { return _index; }
 
         /**
