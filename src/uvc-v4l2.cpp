@@ -491,9 +491,15 @@ namespace rsimpl
 
         std::string get_usb_port_id(const device & device)
         {
-            std::string usb_port = std::to_string(libusb_get_bus_number(device.usb_device)) + "-" +
-                std::to_string(libusb_get_port_number(device.usb_device));
-            return usb_port;
+            auto usb_port = std::to_string(libusb_get_bus_number(device.usb_device));
+            std::string port_numbers = "";
+            auto parent = device.usb_device;
+            while (parent != nullptr)
+            {
+                port_numbers = "-" + std::to_string(libusb_get_port_number(parent)) + port_numbers;
+                parent = libusb_get_parent(parent);
+            }
+            return usb_port + port_numbers;
         }
 
         void get_control(const device & device, const extension_unit & xu, uint8_t ctrl, void * data, int len)
