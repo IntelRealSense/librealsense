@@ -17,7 +17,7 @@
 
 namespace rs
 {
-    
+
     class error : public std::runtime_error
     {
         std::string function, args;
@@ -66,14 +66,14 @@ namespace rs
             std::swap(frame_ref, other.frame_ref);
         }
 
-        /** 
-        * relases the frame handle 
+        /**
+        * relases the frame handle
         */
         ~frame()
         {
             if (frame_ref)
             {
-                rs_release_frame(frame_ref); 
+                rs_release_frame(frame_ref);
             }
         }
 
@@ -91,7 +91,7 @@ namespace rs
             return r;
         }
 
-        /* retrieve the timestamp domain 
+        /* retrieve the timestamp domain
         * \return            timestamp domain (clock name) for timestamp values
         */
         rs_timestamp_domain get_frame_timestamp_domain() const
@@ -176,7 +176,7 @@ namespace rs
 
         /**
         * retrive frame stride, meaning the actual line width in memory in bytes (not the logical image width)
-        * \return            stride in bytes 
+        * \return            stride in bytes
         */
         int get_stride_in_bytes() const
         {
@@ -214,7 +214,7 @@ namespace rs
 
         /**
         * retrive the origin stream type that produced the frame
-        * \return               stream type of the frame       
+        * \return               stream type of the frame
         */
         rs_stream get_stream_type() const
         {
@@ -258,7 +258,7 @@ namespace rs
     class streaming_lock
     {
     public:
-        
+
         /**
         * start streaming from specified configured device
         * \param[in] callback callback object created from c++ application. ownership over the callback object is moved into the relevant streaming lock
@@ -311,8 +311,8 @@ namespace rs
         {
             rs_error* e = nullptr;
             std::shared_ptr<rs_streaming_lock> lock(
-                rs_open(_dev, _index, 
-                    profile.stream, 
+                rs_open(_dev, _index,
+                    profile.stream,
                     profile.width,
                     profile.height,
                     profile.fps,
@@ -441,7 +441,7 @@ namespace rs
             error::handle(e);
             return res;
         }
-        
+
         /**
         * check if physical subdevice is supported
         * \return   list of stream profiles that given subdevice can provide, should be released by rs_delete_profiles_list
@@ -458,11 +458,11 @@ namespace rs
 
             auto size = rs_get_modes_count(list.get(), &e);
             error::handle(e);
-            
+
             for (auto i = 0; i < size; i++)
             {
                 stream_profile profile;
-                rs_get_stream_mode(list.get(), i, 
+                rs_get_stream_mode(list.get(), i,
                     &profile.stream,
                     &profile.width,
                     &profile.height,
@@ -497,7 +497,7 @@ namespace rs
 
     private:
         friend device;
-        explicit subdevice(rs_device* dev, rs_subdevice index) 
+        explicit subdevice(rs_device* dev, rs_subdevice index)
             : _dev(dev), _index(index) {}
 
         rs_device* _dev;
@@ -539,7 +539,7 @@ namespace rs
     public:
         subdevice& get_subdevice(rs_subdevice sub)
         {
-            if (sub < _subdevices.size() && _subdevices[sub].get()) 
+            if (sub < _subdevices.size() && _subdevices[sub].get())
                 return *_subdevices[sub];
             throw std::runtime_error("Requested subdevice is not supported!");
         }
@@ -638,9 +638,9 @@ namespace rs
         }
 
         subdevice& operator*() { return _dev.get_subdevice(_idx); }
-        bool operator==(const subdevice_iterator& other) const 
-        { 
-            return _idx == other._idx; 
+        bool operator==(const subdevice_iterator& other) const
+        {
+            return _idx == other._idx;
         }
         bool operator!=(const subdevice_iterator& other) const
         {
@@ -738,7 +738,7 @@ namespace rs
     private:
         std::string _filename;
     };
-    
+
     class mock_context : public context
     {
     public:

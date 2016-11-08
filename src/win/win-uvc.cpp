@@ -23,7 +23,7 @@
 #pragma comment(lib, "mfuuid.lib")
 
 
-#define type_guid  MF_DEVSOURCE_ATTRIBUTE_SOURCE_TYPE_VIDCAP_GUID 
+#define type_guid  MF_DEVSOURCE_ATTRIBUTE_SOURCE_TYPE_VIDCAP_GUID
 #define did_guid  MF_DEVSOURCE_ATTRIBUTE_SOURCE_TYPE_VIDCAP_SYMBOLIC_LINK
 
 
@@ -69,7 +69,7 @@ namespace rsimpl
             DWORD dwStreamIndex,
             DWORD /*dwStreamFlags*/,
             LONGLONG /*llTimestamp*/,
-            IMFSample *sample) 
+            IMFSample *sample)
         {
             auto owner = _owner.lock();
             if (owner && owner->_reader)
