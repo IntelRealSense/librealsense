@@ -702,6 +702,18 @@ int main(int argc, char * argv[])
                 {
                     if (g.button({ w - 260, y, w - 20, y + 24 }, "Start Capture"))
                     {
+                        std::vector<rs::stream> supported_streams;
+                        for (int i = (int)rs::capabilities::depth; i <= (int)rs::capabilities::fish_eye; i++)
+                            if (dev->supports((rs::capabilities)i))
+                                supported_streams.push_back((rs::stream)i);
+                        for (auto & stream : supported_streams)
+                        {
+                            if (!dev->is_stream_enabled(stream)) continue;
+                            auto intrin = dev->get_stream_intrinsics(stream);
+                            std::cout << "Capturing " << stream << " at " << intrin.width << " x " << intrin.height;
+                            std::cout << std::setprecision(1) << std::fixed << ", fov = " << intrin.hfov() << " x " << intrin.vfov() << ", distortion = " << intrin.model() << std::endl;
+                        }
+
                         if (has_motion_module && motion_tracking_enable)
                         {
                             running = true;
