@@ -27,17 +27,10 @@ else()
     list(APPEND DEPENDENCIES m ${LIBUSB1_LIBRARIES})
 endif()
 
-add_executable(SR300-live-test unit-tests-live.cpp unit-tests-live-sr300.cpp)
-target_link_libraries(SR300-live-test ${DEPENDENCIES})
+add_executable(live-test unit-tests-live.cpp unit-tests-main.cpp)
+target_link_libraries(live-test ${DEPENDENCIES})
 
-set_target_properties (SR300-live-test PROPERTIES
-    FOLDER "Unit-Tests"
-)
-
-add_executable(offline-test unit-tests-offline.cpp)
-target_link_libraries(offline-test ${DEPENDENCIES})
-
-set_target_properties (offline-test PROPERTIES
-    FOLDER "Unit-Tests"
+set_target_properties (live-test PROPERTIES
+	FOLDER "Unit-Tests"
 )
 
