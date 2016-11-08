@@ -106,6 +106,8 @@ int main(int argc, char * argv[]) try
         glfwPollEvents();
         auto frames = syncer.wait_for_frames();
 
+        if (frames.size() == 0) continue;
+
         auto t1 = std::chrono::high_resolution_clock::now();
         time += std::chrono::duration<float>(t1-t0).count();
         t0 = t1;

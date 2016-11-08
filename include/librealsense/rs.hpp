@@ -280,7 +280,7 @@ namespace rs
             rs_stop(_lock.get(), &e);
             error::handle(e);
         }
-
+        streaming_lock() : _lock(nullptr) {}
     private:
         friend subdevice;
         explicit streaming_lock(std::shared_ptr<rs_streaming_lock> lock)
@@ -300,6 +300,7 @@ namespace rs
     class subdevice
     {
     public:
+        subdevice() : _dev(nullptr), _index(RS_SUBDEVICE_COLOR) {}
         operator rs_subdevice() const { return _index; }
 
         /**
