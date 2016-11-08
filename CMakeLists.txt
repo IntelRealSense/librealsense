@@ -76,7 +76,7 @@ set(REALSENSE_CPP
     src/win/win-uvc.cpp
     src/win/win-usb.cpp
     src/win/win-backend.cpp
-    
+
     third_party/sqlite/sqlite3.h
     src/sql.h
     src/recorder.h
@@ -111,14 +111,14 @@ set(REALSENSE_HPP
     src/win/win-uvc.h
     src/win/win-usb.h
     src/win/win-backend.h
-    
+
     third_party/sqlite/sqlite3.c
     src/sql.cpp
     src/recorder.cpp
 )
 
 if(WIN32)
-    source_group("Source Files\\Backend" FILES 
+    source_group("Source Files\\Backend" FILES
         src/win/win-helpers.cpp
         src/win/win-uvc.cpp
         src/win/win-usb.cpp
@@ -127,14 +127,14 @@ if(WIN32)
         src/backend.cpp
         src/verify.c)
 
-    source_group("Header Files\\Backend" FILES 
+    source_group("Header Files\\Backend" FILES
         src/win/win-helpers.h
         src/win/win-uvc.h
         src/win/win-usb.h
         src/win/win-backend.h
         src/backend.h)
-        
-    source_group("Header Files\\API" FILES 
+
+    source_group("Header Files\\API" FILES
         include/librealsense/rs.hpp
         include/librealsense/rs.h
         include/librealsense/rscore.hpp
@@ -142,24 +142,24 @@ if(WIN32)
         include/librealsense/rsutil.hpp
         CMake/realsense.def
         )
-        
-    source_group("Header Files\\Recorder" FILES 
+
+    source_group("Header Files\\Recorder" FILES
         third_party/sqlite/sqlite3.h
         src/sql.h
         src/recorder.h
         )
-        
-    source_group("Source Files\\API" FILES 
+
+    source_group("Source Files\\API" FILES
         src/rs.cpp
         )
-        
-    source_group("Source Files\\Recorder" FILES 
+
+    source_group("Source Files\\Recorder" FILES
         third_party/sqlite/sqlite3.c
         src/sql.cpp
         src/recorder.cpp
         )
 
-    source_group("Source Files\\Devices" FILES 
+    source_group("Source Files\\Devices" FILES
         src/ds5.cpp
         src/ds5c.cpp
         src/ds5t.cpp
@@ -169,8 +169,8 @@ if(WIN32)
         src/ivcam-private.cpp
         src/ivcam-device.cpp
         )
-        
-    source_group("Header Files\\Devices" FILES 
+
+    source_group("Header Files\\Devices" FILES
         src/ds5.h
         src/ds5c.h
         src/ds5t.h
@@ -182,7 +182,7 @@ if(WIN32)
         )
 
 else()
-    
+
 endif()
 
 if(WIN32)
@@ -192,7 +192,7 @@ if(WIN32)
     set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
     set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
     add_definitions(-D__SSSE3__)
-    
+
     set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 elseif(APPLE)
     set(BACKEND RS_USE_LIBUVC_BACKEND)
