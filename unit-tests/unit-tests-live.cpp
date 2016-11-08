@@ -291,4 +291,242 @@ TEST_CASE( "streaming modes sanity check", "[live]" )
     }
 }
 
+TEST_CASE("check option API", "[live][options]") {
+    // Require at least one device to be plugged in
+    rs::context ctx;
+    std::vector<rs::device> list;
+    REQUIRE_NOTHROW(list = ctx.query_devices());
+    REQUIRE(list.size() > 0);
+
+    // for each device
+    for (auto & dev : list) {
+        // for each subdevice
+        for (auto && subdevice : dev) {
+            // for each option
+            for (int i = 0; i < RS_OPTION_COUNT; ++i) {
+                rs_option opt = rs_option(i);
+                bool is_opt_supported;
+                REQUIRE_NOTHROW(is_opt_supported = subdevice.supports(opt));
+                
+
+                SECTION("Ranges are sane") {
+                    if (!is_opt_supported) {
+                        REQUIRE_THROWS_AS(subdevice.get_option_range(opt), rs::error);
+                    } else {
+                        rs::option_range range;
+                        REQUIRE_NOTHROW(range = subdevice.get_option_range(opt));
+
+                        // a couple sanity checks
+                        REQUIRE(range.min < range.max);
+                        REQUIRE(range.min + range.step <= range.max);
+                        REQUIRE(range.step > 0);
+                        REQUIRE(range.def <= range.max);
+                        REQUIRE(range.min <= range.def);
+
+                        // TODO: check that range.def == range.min + k*range.step for some k?
+                        // TODO: some sort of bounds checking against constants?
+                    }
+                }
+                SECTION("get_option returns a legal value") {
+                    if (!is_opt_supported) {
+                        REQUIRE_THROWS_AS(subdevice.get_option(opt), rs::error);
+                    } else {
+                        auto range = subdevice.get_option_range(opt);
+                        float value;
+                        REQUIRE_NOTHROW(value = subdevice.get_option(opt));
+
+                        // value in range. Do I need to account for epsilon in lt[e]/gt[e] comparisons?
+                        REQUIRE(value >= range.min);
+                        REQUIRE(value <= range.max);
+
+                        // value doesn't change between two gets (if no additional threads are calling set)
+                        REQUIRE(subdevice.get_option(opt) == Approx(value));
+
+                        // REQUIRE(value == Approx(range.def)); // Not sure if this is a reasonable check
+                        // TODO: make sure value == range.min + k*range.step for some k?
+                    }
+                }
+                SECTION("set opt doesn't like bad values") {
+                    auto range = subdevice.get_option_range(opt);
+                    if (!is_opt_supported) {
+                        REQUIRE_THROWS_AS(subdevice.set_option(opt, range.min), rs::error);
+                    } else {
+                        // minimum should work, as should maximum
+                        REQUIRE_NOTHROW(subdevice.set_option(opt, range.min));
+                        REQUIRE_NOTHROW(subdevice.set_option(opt, range.max));
+
+                        int n_steps = (range.max - range.min) / range.step;
+                        
+                        // check a few arbitrary points along the scale
+                        REQUIRE_NOTHROW(subdevice.set_option(opt, range.min + (1 % n_steps)*range.step));
+                        REQUIRE_NOTHROW(subdevice.set_option(opt, range.min + (11 % n_steps)*range.step));
+                        REQUIRE_NOTHROW(subdevice.set_option(opt, range.min + (111 % n_steps)*range.step));
+                        REQUIRE_NOTHROW(subdevice.set_option(opt, range.min + (1111 % n_steps)*range.step));
+
+                        // below min and above max shouldn't work
+                        REQUIRE_THROWS_AS(subdevice.set_option(opt, range.min - range.step), rs::error);
+                        REQUIRE_THROWS_AS(subdevice.set_option(opt, range.max + range.step), rs::error);
+
+                        // make sure requesting value in the range, but not a legal step doesn't work
+                        // TODO: maybe something for range.step < 1 ?
+                        for (int i = 1; i < range.step; i++) {
+                            CAPTURE(range.step);
+                            CAPTURE(i);
+                            REQUIRE_THROWS_AS(subdevice.set_option(opt, range.min + i), rs::error);
+                        }
+                    }
+                }
+                SECTION("check get/set sequencing works as expected") {
+                    if (!is_opt_supported) continue;
+                    auto range = subdevice.get_option_range(opt);
+                    
+                    // setting a valid value lets you get that value back
+                    subdevice.set_option(opt, range.min);
+                    REQUIRE(subdevice.get_option(opt) == Approx(range.min));
+
+                    // setting an invalid value returns the last set valid value.
+                    REQUIRE_THROWS(subdevice.set_option(opt, range.max + range.step));
+                    REQUIRE(subdevice.get_option(opt) == Approx(range.min));
+
+                    subdevice.set_option(opt, range.max);
+                    REQUIRE_THROWS(subdevice.set_option(opt, range.min - range.step));
+                    REQUIRE(subdevice.get_option(opt) == Approx(range.max));
+             
+                }
+                SECTION("get_description returns a non-empty, non-null string") {
+                    if (!is_opt_supported) {
+                        REQUIRE_THROWS_AS(subdevice.get_option_description(opt), rs::error);
+                    } else {
+                        REQUIRE(subdevice.get_option_description(opt) != nullptr);
+                        REQUIRE(std::string(subdevice.get_option_description(opt)) != std::string(""));
+                    }
+                }
+                // TODO: tests for get_option_value_description? possibly too open a function to have useful tests
+            }
+        }
+    }
+}
+
+TEST_CASE("a single subdevice can only be opened once, different subdevices can be opened simultaneously", "[live][multicam]") {
+    // Require at least one device to be plugged in
+    rs::context ctx;
+    std::vector<rs::device> list;
+    REQUIRE_NOTHROW(list = ctx.query_devices());
+    REQUIRE(list.size() > 0);
+    SECTION("Single context") {
+        SECTION("subdevices on a single device") {
+            for (auto & dev : list) {
+                SECTION("opening the same subdevice multiple times") {
+                    for (auto && subdevice : dev) {
+                        auto modes = subdevice.get_stream_modes();
+                        REQUIRE(modes.size() > 0);
+                        rs::streaming_lock lock1, lock2;
+                        // "Stream profile not found!" error??
+                        REQUIRE_NOTHROW(lock1 = subdevice.open( modes[0] ));
+                        SECTION("same mode") {
+                            // selected, but not streaming
+                            REQUIRE_THROWS_AS(lock2 = subdevice.open({ modes[0] }), rs::error);
+
+                            // streaming
+                            REQUIRE_NOTHROW(lock1.start([](rs_frame * fref) {}));
+                            REQUIRE_THROWS_AS(lock2 = subdevice.open({ modes[0] }), rs::error);
+                        }
+                        SECTION("different modes") {
+                            if (modes.size() == 1) {
+                                WARN("device " << dev.get_camera_info(RS_CAMERA_INFO_DEVICE_NAME) << " S/N: " << dev.get_camera_info(RS_CAMERA_INFO_DEVICE_SERIAL_NUMBER) << " w/ FW v" << dev.get_camera_info(RS_CAMERA_INFO_CAMERA_FIRMWARE_VERSION) << ":");
+                                WARN("subdevice " << rs_subdevice(subdevice) << " has only 1 supported streaming mode. Skipping Same Subdevice, different modes test.");
+                            } else {
+                                // selected, but not streaming
+                                REQUIRE_THROWS_AS(lock2 = subdevice.open({ modes[1] }), rs::error);
+
+                                // streaming
+                                REQUIRE_NOTHROW(lock1.start([](rs_frame * fref) {}));
+                                REQUIRE_THROWS_AS(lock2 = subdevice.open({ modes[1] }), rs::error);
+                            }
+                        }
+                        REQUIRE_NOTHROW(lock1.stop());
+                    }
+                }
+                SECTION("opening different subdevices") {
+                    for (auto & subdevice1 : dev) {
+                        for (auto & subdevice2 : dev) {
+                            if (subdevice1 == subdevice2) continue;
+
+                            rs::streaming_lock lock1, lock2;
+                            CAPTURE(rs_subdevice(subdevice1));
+                            CAPTURE(rs_subdevice(subdevice2));
+
+                            // get first lock
+                            REQUIRE_NOTHROW(lock1 = subdevice1.open(subdevice1.get_stream_modes()[0]));
+                            
+                            // selected, but not streaming
+                            REQUIRE_NOTHROW(lock2 = subdevice2.open(subdevice2.get_stream_modes()[0]));
+                            REQUIRE_NOTHROW(lock2.start([](rs_frame * fref) {}));
+                            REQUIRE_NOTHROW(lock2.stop());
+
+                            // streaming
+                            REQUIRE_NOTHROW(lock1.start([](rs_frame * fref){}));
+                            REQUIRE_NOTHROW(lock2 = subdevice2.open(subdevice2.get_stream_modes()[0]));
+                            REQUIRE_NOTHROW(lock2.start([](rs_frame * fref) {}));
+                            // stop streaming in opposite order just to be sure that works too
+                            REQUIRE_NOTHROW(lock1.stop());
+                            REQUIRE_NOTHROW(lock2.stop());
+                        }
+                    }
+                }
+            }
+        }
+        SECTION("multiple devices") {
+            if (list.size() == 1) {
+                WARN("Only one device connected. Skipping multi-device test");
+            } else {
+                for (auto & dev1 : list) {
+                    for (auto & dev2 : list) {
+                        // couldn't think of a better way to compare the two...
+                        if (dev1.get_camera_info(RS_CAMERA_INFO_DEVICE_SERIAL_NUMBER)
+                            == dev2.get_camera_info(RS_CAMERA_INFO_DEVICE_SERIAL_NUMBER)
+                            )
+                            continue;
+                        rs::util::config config1, config2;
+                        config1.enable_all(rs::preset::best_quality);
+                        config2.enable_all(rs::preset::best_quality);
+
+                        rs::util::multistream streams1, streams2;
+                        REQUIRE_NOTHROW(streams1 = config1.open(dev1));
+                        REQUIRE_NOTHROW(streams2 = config2.open(dev2));
+
+                        REQUIRE_NOTHROW(streams1.start([](rs_frame * fref) {}));
+                        REQUIRE_NOTHROW(streams2.start([](rs_frame * fref) {}));
+                        REQUIRE_NOTHROW(streams1.stop());
+                        REQUIRE_NOTHROW(streams2.stop());
+                    }
+                }
+            }
+        }
+    }
+    SECTION("two contexts") {
+        rs::context ctx2;
+        std::vector<rs::device> list2;
+        REQUIRE_NOTHROW(list2 = ctx2.query_devices());
+        REQUIRE(list2.size() > 0);
+        SECTION("subdevices on a single device") {
+            auto dev1 = list[0];
+            for (auto & dev2 : list2) {
+                if (   dev1.get_camera_info(RS_CAMERA_INFO_DEVICE_SERIAL_NUMBER)
+                    != dev2.get_camera_info(RS_CAMERA_INFO_DEVICE_SERIAL_NUMBER)
+                   )
+                    continue;
+                SECTION("same subdevice") {
+                    // TODO: write test
+                }
+                SECTION("different subdevice") {
+                    // TODO: write test
+                }
+            }
+        }
+        SECTION("subdevices on separate devices") {
+            // TODO: write tests
+        }
+    }
+}
 #endif /* !defined(MAKEFILE) || ( defined(LIVE_TEST) ) */

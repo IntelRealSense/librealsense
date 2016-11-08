@@ -26,6 +26,7 @@ namespace rs
         class multistream
         {
         public:
+            multistream() : streams(), intrinsics() {}
             explicit multistream(std::vector<streaming_lock> streams, std::map<rs_stream, rs_intrinsics> intrinsics)
                 : streams(std::move(streams)), intrinsics(std::move(intrinsics)) {}
 
