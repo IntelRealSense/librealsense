@@ -16,7 +16,7 @@ The project requires two external dependencies, GLFW3 and libusb-1.0. The Cmake 
   * `sudo apt-get install libusb-1.0-0-dev pkg-config`
 3. glfw3 is not available in apt-get on Ubuntu 14.04. Use included installer script:
   * `scripts/install_glfw3.sh`
-  * For 16.04 you can install glfw3 via 'sudo apt-get install libglfw3-dev
+  * For 16.04 you can install glfw3 via `sudo apt-get install libglfw3-dev`
 4. We use QtCreator as an IDE for Linux development on Ubuntu
   * **Note:** QtCreator is presently configured to use the V4L2 backend by default
   * `sudo apt-get install qtcreator`
