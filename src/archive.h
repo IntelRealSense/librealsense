@@ -218,7 +218,7 @@ namespace rsimpl
         
 
     protected:
-        frame backbuffer[RS_STREAM_NATIVE_COUNT]; // recieve frame here
+        frame backbuffer[RS_STREAM_NATIVE_COUNT]; // receive frame here
         std::vector<frame> freelist; // return frames here
         std::recursive_mutex mutex;
         std::chrono::high_resolution_clock::time_point capture_started;

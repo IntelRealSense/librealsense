@@ -42,25 +42,26 @@ The project requires two external dependencies, GLFW3 and libusb-1.0. The Cmake 
   * `sudo cp config/99-realsense-libusb.rules /etc/udev/rules.d/`
   * `sudo udevadm control --reload-rules && udevadm trigger`
 3. Next, choose one of the following subheadings based on desired machine configuration / kernel version (and remember to complete step 4 after). **Note: ** Multi-camera support is currently NOT supported on 3.19.xx kernels. Please update to 4.4 stable. 
-  * **Updated 4.4 Stable Kernel**
-    * Run the following script to install necessary dependencies (GCC 4.9 compiler and openssl) and update kernel to v4.4-wily
-      * `./scripts/install_dependencies-4.4.sh`
-    * Run the following script to patch uvcvideo.ko
-      * `./scripts/patch-uvcvideo-4.4.sh v4.4-wily` (note the argument provided to this version of the script)
-      * This script involves shallow cloning the Linux source repository (~100mb), and may take a while
-  * **(OR) Kernel in 14.04.xx**
-    * Run the following script to patch uvcvideo.ko
-      * `./scripts/patch-uvcvideo-ubuntu-mainline.sh`
-    * (R200 Only with 3.19.xx Kernel) Install connectivity workaround. Note this script needs to be run from within the scripts folder:
-      * `cd scripts` 
-      * `./install-r200-udev-fix.sh`
-      * `cd ..`
-      * This udev fix is not necessary for kernels >= 4.2
-      * Use of 3.19.xx Kernel is not recommended. 
-  * **(OR) Kernel in 16.04.xx**
+  * **Ubuntu 14.04.[0-4]**
+    * **Update to 4.4 Stable Kernel**
+      * Run the following script to install necessary dependencies (GCC 4.9 compiler and openssl) and update kernel to v4.4-wily
+        * `./scripts/install_dependencies-4.4.sh`
+      * Run the following script to patch uvcvideo.ko
+        * `./scripts/patch-uvcvideo-4.4.sh v4.4-wily` (note the argument provided to this version of the script)
+        * This script involves shallow cloning the Linux source repository (~100mb), and may take a while
+    * **(OR) Keep 3.19.xx Kernel**
+      * Run the following script to patch uvcvideo.ko
+        * `./scripts/patch-uvcvideo-ubuntu-mainline.sh`
+      * (R200 Only with 3.19.xx Kernel) Install connectivity workaround. Note this script needs to be run from within the scripts folder:
+        * `cd scripts` 
+        * `./install-r200-udev-fix.sh`
+        * `cd ..`
+        * This udev fix is not necessary for kernels >= 4.2
+        * Use of 3.19.xx Kernel is not recommended. 
+  * **(OR) Ubuntu 14.04.5 or Ubuntu 16.04.xx (Kernel 4.4)**
     * `./scripts/patch-uvcvideo-16.04.simple.sh`
   * **(OR) Arch based distributions**
-    * You need to install the [base-devel](https://www.archlinux.org/groups/x86_64/base-devel/) package group. 
+    * You need to install the [base-devel](https://www.archlinux.org/groups/x86_64/base-devel/) and [linux-headers](https://www.archlinux.org/packages/core/x86_64/linux-headers/) package group.
 	* Then run the following script to patch the uvc module:
     * `./scripts/patch-arch.sh`
 4. Reload the uvcvideo driver
