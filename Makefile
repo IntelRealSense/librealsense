@@ -98,11 +98,11 @@ bin/c-%: examples/c-%.c lib/librealsense.so | bin
 	$(CC) $< $(REALSENSE_FLAGS) $(GLFW3_FLAGS) -o $@
 
 bin/cpp-%: examples/cpp-%.cpp lib/librealsense.so | bin
-	$(CXX) $< -std=c++11 $(REALSENSE_FLAGS) $(GLFW3_FLAGS) -o $@
+	$(CXX) $< -std=c++11 -L/usr/local/lib/motion/ $(REALSENSE_FLAGS) $(GLFW3_FLAGS) -o $@
 
 # Rules for building the library itself
 lib/librealsense.so: $(OBJECTS) | lib
-	$(CXX) -std=c++11 -L/usr/local/lib/motion -shared $(OBJECTS) $(LIBUSB_FLAGS) $(MOTION_FLAGS)  -o $@
+	$(CXX) -std=c++11 -L/usr/local/lib/motion/ -shared $(OBJECTS) $(LIBUSB_FLAGS) $(MOTION_FLAGS)  -o $@
 
 lib/librealsense.a: $(OBJECTS) | lib
 	ar rvs $@ `find obj/ -name "*.o"`
