@@ -329,6 +329,12 @@ namespace rsimpl
                 if (calls[idx].type == t && calls[idx].entity_id == entity_id)
                 {
                     _cursors[entity_id] = _cycles[entity_id] = idx;
+
+                    if (calls[idx].had_error)
+                    {
+                        throw std::runtime_error(calls[idx].inline_string);
+                    }
+
                     return calls[idx];
                 }
             }

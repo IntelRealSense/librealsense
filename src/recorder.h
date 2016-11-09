@@ -267,7 +267,28 @@ namespace rsimpl
                 -> decltype(t((recording*)nullptr, *((lookup_key*)nullptr)))
             {
                 std::lock_guard<std::mutex> lock(_rec_mutex);
-                return t(_rec.get(), { entity_id, type });
+                lookup_key k { entity_id, type };
+
+                try
+                {
+                    return t(_rec.get(), k);
+                }
+                catch (const std::exception& ex)
+                {
+                    auto&& c = _rec->add_call(k);
+                    c.had_error = true;
+                    c.inline_string = ex.what();
+
+                    throw;
+                }
+                catch (...)
+                {
+                    auto&& c = _rec->add_call(k);
+                    c.had_error = true;
+                    c.inline_string = "Unknown exception has occured!";
+
+                    throw;
+                }
             }
 
         private:
