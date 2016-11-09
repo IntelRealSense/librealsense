@@ -68,6 +68,12 @@ namespace rsimpl
             int param4 = 0;
         };
 
+        struct lookup_key
+        {
+            int entity_id;
+            call_type type;
+        };
+
         class recording
         {
         public:
@@ -95,12 +101,12 @@ namespace rsimpl
                 calls.push_back(c);
             }
 
-            call& add_call(int entity_id, call_type type)
+            call& add_call(lookup_key key)
             {
                 std::lock_guard<std::mutex> lock(_mutex);
                 call c;
-                c.type = type;
-                c.entity_id = entity_id;
+                c.type = key.type;
+                c.entity_id = key.entity_id;
                 c.timestamp = get_timestamp();
                 calls.push_back(c);
                 return calls[calls.size() - 1];
@@ -118,19 +124,19 @@ namespace rsimpl
                 return results;
             }
 
-            void save_usb_device_info_list(std::vector<usb_device_info> list)
+            void save_device_info_list(std::vector<uvc_device_info> list, lookup_key k)
             {
-                save_list(list, usb_device_infos, call_type::query_usb_devices, 0, usb_baseline);
+                save_list(list, uvc_device_infos, k.type, k.entity_id, usb_baseline);
             }
 
-            void save_uvc_device_info_list(std::vector<uvc_device_info> list)
+            void save_device_info_list(std::vector<usb_device_info> list, lookup_key k)
             {
-                save_list(list, uvc_device_infos, call_type::query_uvc_devices, 0, uvc_baseline);
+                save_list(list, usb_device_infos, k.type, k.entity_id, usb_baseline);
             }
 
-            void save_stream_profiles(std::vector<stream_profile> list, int id, call_type type)
+            void save_stream_profiles(std::vector<stream_profile> list, lookup_key key)
             {
-                save_list(list, stream_profiles, type, id, modes_baseline);
+                save_list(list, stream_profiles, key.type, key.entity_id, modes_baseline);
             }
 
             std::vector<stream_profile> load_stream_profiles(int id, call_type type)
@@ -255,11 +261,11 @@ namespace rsimpl
             void apply_settings(float quality, float length, float* effect, bool save_frames) const;
 
             template<class T>
-            auto try_record(T t) const
-                -> decltype(t((recording*)nullptr))
+            auto try_record(T t, int entity_id, call_type type) const
+                -> decltype(t((recording*)nullptr, *((lookup_key*)nullptr)))
             {
                 std::lock_guard<std::mutex> lock(_rec_mutex);
-                return t(_rec.get());
+                return t(_rec.get(), { entity_id, type });
             }
 
         private:

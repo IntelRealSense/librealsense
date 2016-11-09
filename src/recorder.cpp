@@ -357,9 +357,9 @@ namespace rsimpl
         {
             _source->play(profile, [this, callback](stream_profile p, frame_object f)
             {
-                _owner->try_record([this, callback, p, &f](recording* rec)
+                _owner->try_record([this, callback, p, &f](recording* rec, lookup_key k)
                 {
-                    auto&& c = rec->add_call(_entity_id, call_type::uvc_frame);
+                    auto&& c = rec->add_call(k);
                     c.param1 = rec->save_blob(&p, sizeof(p));
                     vector<uint8_t> frame((uint8_t*)f.pixels,
                         (uint8_t*)f.pixels + f.size);
@@ -370,239 +370,239 @@ namespace rsimpl
                     //auto dec = _compression->decode(compressed);
                     _compression->effect = (100.0f * compressed.size()) / frame.size();
                     callback(p, f);
-                });
+                }, _entity_id, call_type::uvc_frame);
             });
             vector<stream_profile> ps{ profile };
-            _owner->try_record([&](recording* rec)
+            _owner->try_record([&](recording* rec, lookup_key k)
             {
-                rec->save_stream_profiles(ps, _entity_id, call_type::uvc_play);
-            });
+                rec->save_stream_profiles(ps, k);
+            }, _entity_id, call_type::uvc_play);
         }
 
         void record_uvc_device::stop(stream_profile profile)
         {
-            _owner->try_record([&](recording* rec)
+            _owner->try_record([&](recording* rec, lookup_key k)
             {
                 _source->stop(profile);
                 vector<stream_profile> ps{ profile };
-                rec->save_stream_profiles(ps, _entity_id, call_type::uvc_stop);
-            });
+                rec->save_stream_profiles(ps, k);
+            }, _entity_id, call_type::uvc_stop);
         }
 
         void record_uvc_device::set_power_state(power_state state)
         {
-            _owner->try_record([&](recording* rec)
+            _owner->try_record([&](recording* rec, lookup_key k)
             {
                 _source->set_power_state(state);
 
-                auto&& c = rec->add_call(_entity_id, call_type::uvc_set_power_state);
+                auto&& c = rec->add_call(k);
                 c.param1 = state;
-            });
+            }, _entity_id, call_type::uvc_set_power_state);
         }
 
         power_state record_uvc_device::get_power_state() const
         {
-            return _owner->try_record([&](recording* rec)
+            return _owner->try_record([&](recording* rec, lookup_key k)
             {
                 auto res = _source->get_power_state();
 
-                auto&& c = rec->add_call(_entity_id, call_type::uvc_get_power_state);
+                auto&& c = rec->add_call(k);
                 c.param1 = res;
 
                 return res;
-            });
+            }, _entity_id, call_type::uvc_get_power_state);
         }
 
         void record_uvc_device::init_xu(const extension_unit& xu)
         {
-            _owner->try_record([&](recording* rec)
+            _owner->try_record([&](recording* rec, lookup_key k)
             {
                 _source->init_xu(xu);
-                rec->add_call(_entity_id, call_type::uvc_init_xu);
-            });
+                rec->add_call(k);
+            }, _entity_id, call_type::uvc_init_xu);
         }
 
         void record_uvc_device::set_xu(const extension_unit& xu, uint8_t ctrl, const uint8_t* data, int len)
         {
-            _owner->try_record([&](recording* rec)
+            _owner->try_record([&](recording* rec, lookup_key k)
             {
                 _source->set_xu(xu, ctrl, data, len);
 
-                auto&& c = rec->add_call(_entity_id, call_type::uvc_set_xu);
+                auto&& c = rec->add_call(k);
                 c.param1 = ctrl;
                 c.param2 = rec->save_blob(data, len);
-            });
+            }, _entity_id, call_type::uvc_set_xu);
         }
 
         void record_uvc_device::get_xu(const extension_unit& xu, uint8_t ctrl, uint8_t* data, int len) const
         {
-            _owner->try_record([&](recording* rec)
+            _owner->try_record([&](recording* rec, lookup_key k)
             {
                 _source->get_xu(xu, ctrl, data, len);
 
-                auto&& c = rec->add_call(_entity_id, call_type::uvc_get_xu);
+                auto&& c = rec->add_call(k);
                 c.param1 = ctrl;
                 c.param2 = rec->save_blob(data, len);
-            });
+            }, _entity_id, call_type::uvc_get_xu);
         }
 
         control_range record_uvc_device::get_xu_range(const extension_unit& xu, uint8_t ctrl, int len) const
         {
-            return _owner->try_record([&](recording* rec)
+            return _owner->try_record([&](recording* rec, lookup_key k)
             {
                 auto res = _source->get_xu_range(xu, ctrl, len);
 
-                auto&& c = rec->add_call(_entity_id, call_type::uvc_get_xu_range);
+                auto&& c = rec->add_call(k);
                 c.param1 = ctrl;
                 c.param2 = rec->save_blob(&res, sizeof(res));
 
                 return res;
-            });
+            }, _entity_id, call_type::uvc_get_xu_range);
         }
 
         int record_uvc_device::get_pu(rs_option opt) const
         {
-            return _owner->try_record([&](recording* rec)
+            return _owner->try_record([&](recording* rec, lookup_key k)
             {
                 auto res = _source->get_pu(opt);
 
-                auto&& c = rec->add_call(_entity_id, call_type::uvc_get_pu);
+                auto&& c = rec->add_call(k);
                 c.param1 = opt;
                 c.param2 = res;
 
                 return res;
-            });
+            }, _entity_id, call_type::uvc_get_pu);
         }
 
         void record_uvc_device::set_pu(rs_option opt, int value)
         {
-            _owner->try_record([&](recording* rec)
+            _owner->try_record([&](recording* rec, lookup_key k)
             {
                 _source->set_pu(opt, value);
 
-                auto&& c = rec->add_call(_entity_id, call_type::uvc_set_pu);
+                auto&& c = rec->add_call(k);
                 c.param1 = opt;
                 c.param2 = value;
-            });
+            }, _entity_id, call_type::uvc_set_pu);
         }
 
         control_range record_uvc_device::get_pu_range(rs_option opt) const
         {
-            return _owner->try_record([&](recording* rec)
+            return _owner->try_record([&](recording* rec, lookup_key k)
             {
                 auto res = _source->get_pu_range(opt);
 
-                auto&& c = rec->add_call(_entity_id, call_type::uvc_get_pu_range);
+                auto&& c = rec->add_call(k);
                 c.param1 = opt;
                 c.param2 = rec->save_blob(&res, sizeof(res));
 
                 return res;
-            });
+            }, _entity_id, call_type::uvc_get_pu_range);
         }
 
         vector<stream_profile> record_uvc_device::get_profiles() const
         {
-            return _owner->try_record([&](recording* rec)
+            return _owner->try_record([&](recording* rec, lookup_key k)
             {
                 auto devices = _source->get_profiles();
-                rec->save_stream_profiles(devices, _entity_id, call_type::uvc_stream_profiles);
+                rec->save_stream_profiles(devices, k);
                 return devices;
-            });
+            }, _entity_id, call_type::uvc_stream_profiles);
         }
 
         void record_uvc_device::lock() const
         {
-            _owner->try_record([&](recording* rec)
+            _owner->try_record([&](recording* rec, lookup_key k)
             {
                 _source->lock();
-                rec->add_call(_entity_id, call_type::uvc_lock);
-            });
+                rec->add_call(k);
+            }, _entity_id, call_type::uvc_lock);
         }
 
         void record_uvc_device::unlock() const
         {
-            _owner->try_record([&](recording* rec)
+            _owner->try_record([&](recording* rec, lookup_key k)
             {
                 _source->lock();
-                rec->add_call(_entity_id, call_type::uvc_unlock);
-            });
+                rec->add_call(k);
+            }, _entity_id, call_type::uvc_unlock);
         }
 
         string record_uvc_device::get_device_location() const
         {
-            return _owner->try_record([&](recording* rec)
+            return _owner->try_record([&](recording* rec, lookup_key k)
             {
                 auto result = _source->get_device_location();
 
-                auto&& c = rec->add_call(_entity_id, call_type::uvc_get_location);
+                auto&& c = rec->add_call(k);
                 c.inline_string = result;
 
                 return result;
-            });
+            }, _entity_id, call_type::uvc_get_location);
         }
 
         vector<uint8_t> record_usb_device::send_receive(const vector<uint8_t>& data, int timeout_ms, bool require_response)
         {
-            return _owner->try_record([&](recording* rec)
+            return _owner->try_record([&](recording* rec, lookup_key k)
             {
                 auto result = _source->send_receive(data, timeout_ms, require_response);
 
-                auto&& c = rec->add_call(_entity_id, call_type::send_command);
+                auto&& c = rec->add_call(k);
                 c.param1 = rec->save_blob((void*)data.data(), static_cast<int>(data.size()));
                 c.param2 = rec->save_blob((void*)result.data(), static_cast<int>(result.size()));
                 c.param3 = timeout_ms;
                 c.param4 = require_response;
 
                 return result;
-            });
+            }, _entity_id, call_type::send_command);
         }
 
         shared_ptr<uvc_device> record_backend::create_uvc_device(uvc_device_info info) const
         {
-            return try_record([&](recording* rec)
+            return try_record([&](recording* rec, lookup_key k)
             {
                 auto dev = _source->create_uvc_device(info);
 
                 auto id = _entity_count.fetch_add(1);
-                auto&& c = rec->add_call(0, call_type::create_uvc_device);
+                auto&& c = rec->add_call(k);
                 c.param1 = id;
 
                 return make_shared<record_uvc_device>(dev, _compression, id, this);
-            });
+            }, 0, call_type::create_uvc_device);
         }
 
         vector<uvc_device_info> record_backend::query_uvc_devices() const
         {
-            return try_record([&](recording* rec)
+            return try_record([&](recording* rec, lookup_key k)
             {
                 auto devices = _source->query_uvc_devices();
-                rec->save_uvc_device_info_list(devices);
+                rec->save_device_info_list(devices, k);
                 return devices;
-            });
+            }, 0, call_type::query_uvc_devices);
         }
 
         shared_ptr<usb_device> record_backend::create_usb_device(usb_device_info info) const
         {
-            return try_record([&](recording* rec)
+            return try_record([&](recording* rec, lookup_key k)
             {
                 auto dev = _source->create_usb_device(info);
 
                 auto id = _entity_count.fetch_add(1);
-                auto&& c = rec->add_call(0, call_type::create_usb_device);
+                auto&& c = rec->add_call(k);
                 c.param1 = id;
 
                 return make_shared<record_usb_device>(dev, id, this);
-            });
+            }, 0, call_type::create_usb_device);
         }
 
         vector<usb_device_info> record_backend::query_usb_devices() const
         {
-            return try_record([&](recording* rec)
+            return try_record([&](recording* rec, lookup_key k)
             {
                 auto devices = _source->query_usb_devices();
-                rec->save_usb_device_info_list(devices);
+                rec->save_device_info_list(devices, k);
                 return devices;
-            });
+            }, 0, call_type::query_usb_devices);
         }
 
         record_backend::record_backend(shared_ptr<backend> source, const char* filename)
