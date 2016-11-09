@@ -272,8 +272,8 @@ namespace rsimpl
 
             // build a device info represent all imaging devices.
             HDEVINFO device_info = SetupDiGetClassDevsEx(static_cast<const GUID *>(&GUID_DEVINTERFACE_IMAGE),
-                nullptr, 
-                nullptr, 
+                nullptr,
+                nullptr,
                 DIGCF_PRESENT,
                 nullptr,
                 nullptr,
@@ -299,11 +299,11 @@ namespace rsimpl
                     LOG_ERROR("CM_Get_Device_ID_Size failed");
                     return "";
                 }
-                
+
                 auto alloc = std::malloc(buf_size * sizeof(WCHAR) + sizeof(WCHAR));
                 if (!alloc) throw std::bad_alloc();
                 auto pInstID = std::shared_ptr<WCHAR>(reinterpret_cast<WCHAR *>(alloc), std::free);
-                if (CM_Get_Device_ID(devInfo.DevInst, pInstID.get(), buf_size * sizeof(WCHAR) + sizeof(WCHAR), 0) != CR_SUCCESS) 
+                if (CM_Get_Device_ID(devInfo.DevInst, pInstID.get(), buf_size * sizeof(WCHAR) + sizeof(WCHAR), 0) != CR_SUCCESS)
                 {
                     LOG_ERROR("CM_Get_Device_ID failed");
                     return "";
@@ -311,7 +311,7 @@ namespace rsimpl
 
                 if (pInstID == nullptr) continue;
 
-                // Check if this is our device 
+                // Check if this is our device
                 int usb_vid, usb_pid, usb_mi; std::string usb_unique_id;
                 if (!parse_usb_path_from_device_id(usb_vid, usb_pid, usb_mi, usb_unique_id, std::string(win_to_utf(pInstID.get())))) continue;
                 if (usb_vid != device_vid || usb_pid != device_pid || /* usb_mi != device->mi || */ usb_unique_id != device_uid) continue;
@@ -395,7 +395,7 @@ namespace rsimpl
                 // recursively check all hubs, searching for composite device
                 std::wstringstream buf;
                 for (int i = 0;; i++)
-                { 
+                {
                     buf << "\\\\.\\HCD" << i;
                     std::wstring hcd = buf.str();
 
@@ -605,7 +605,7 @@ namespace rsimpl
                     {
                         stsOpenMutex = open_named_mutex(camID);
 
-                        //if OpenMutex failed retry to create the mutex 
+                        //if OpenMutex failed retry to create the mutex
                         //it can caused by termination of the process that created the mutex
                         if (stsOpenMutex == Mutex_TotalFailure)
                         {
@@ -627,7 +627,7 @@ namespace rsimpl
                 throw std::runtime_error("Open mutex failed!");
             }
             //Mutex is already exist this mean that
-            //the mutex already opened by this process and the method called again after connect event. 
+            //the mutex already opened by this process and the method called again after connect event.
             else
             {
                 for (auto i = 0; i < CREATE_MUTEX_RETRY_NUM; i++)

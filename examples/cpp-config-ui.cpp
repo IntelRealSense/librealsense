@@ -87,7 +87,7 @@ public:
                             if (abs(i - value) < 0.001f) selected = counter;
                             labels.push_back(endpoint->get_option_value_description(opt, i));
                         }
-                        if (ImGui::Combo(id.c_str(), &selected, labels.data(), 
+                        if (ImGui::Combo(id.c_str(), &selected, labels.data(),
                             static_cast<int>(labels.size())))
                         {
                             value = range.min + range.step * selected;
@@ -246,31 +246,31 @@ public:
                     {
                         any_stream_enabled = true;
                         break;
-                    }                       
+                    }
                 }
                 if (!any_stream_enabled) stream_enabled[profile.stream] = true;
-                
+
                 profiles.push_back(profile);
             }
 
             // set default selections
             int selection_index;
-            
+
             get_default_selection_index(res_values, std::pair<int,int>(640,480), &selection_index);
             selected_res_id = selection_index;
-            
+
             get_default_selection_index(fps_values, 30, &selection_index);
             selected_fps_id = selection_index;
-            
+
             for (auto format_array : format_values)
             {
                 for (auto format : { rs_format::RS_FORMAT_RGB8, rs_format::RS_FORMAT_Z16, rs_format::RS_FORMAT_Y8 } )
-                {                 
+                {
                     if (get_default_selection_index(format_array.second, format, &selection_index))
                     {
                         selected_format_id[format_array.first] = selection_index;
                         break;
-                    }                    
+                    }
                 }
             }
         }
@@ -371,11 +371,11 @@ public:
 
     template<typename T>
     bool get_default_selection_index(const std::vector<T>& values, const T & def, int* index /*std::function<int(const std::vector<T>&,T,int*)> compare = nullptr*/)
-    {     
+    {
         auto max_default = values.begin();
         for (auto it = values.begin(); it != values.end(); it++)
         {
-            
+
             if (*it == def)
             {
                 *index = it - values.begin();
@@ -653,14 +653,14 @@ int main(int, char**) try
         {
             auto device_names_chars = get_string_pointers(device_names);
             ImGui::PushItemWidth(-1);
-            if (ImGui::Combo("", &device_index, device_names_chars.data(), 
+            if (ImGui::Combo("", &device_index, device_names_chars.data(),
                 static_cast<int>(device_names.size())))
             {
                 for (auto&& sub : model.subdevices)
                 {
                     sub->stop();
                 }
-                
+
                 dev = list[device_index];
                 model = device_model(dev, error_message);
             }
@@ -714,7 +714,7 @@ int main(int, char**) try
                     ImGui::PushItemWidth(-1);
                     label = to_string() << rs_subdevice_to_string(sub->subdevice) << " fps";
                     if (sub->current_stream.get()) ImGui::Text(fps_chars[sub->selected_fps_id]);
-                    else ImGui::Combo(label.c_str(), &sub->selected_fps_id, fps_chars.data(), 
+                    else ImGui::Combo(label.c_str(), &sub->selected_fps_id, fps_chars.data(),
                                       static_cast<int>(fps_chars.size()));
                     ImGui::PopItemWidth();
 
@@ -887,7 +887,7 @@ int main(int, char**) try
             ImGui::Begin(label.c_str(), nullptr, flags);
 
             label = to_string() << rs_stream_to_string(stream) << " "
-                << stream_size.x << "x" << stream_size.y << ", " 
+                << stream_size.x << "x" << stream_size.y << ", "
                 << rs_format_to_string(model.stream_format[stream]);
             ImGui::Text(label.c_str());
             ImGui::End();
