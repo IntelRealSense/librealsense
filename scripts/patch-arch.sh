@@ -41,7 +41,7 @@ cd $KERNEL_NAME
 echo "RealSense patch..."
 
 # Apply our RealSense specific patch
-patch -p1 < ../../realsense-camera-formats.patch
+patch -p1 < ../../realsense-camera-formats_arch.patch
 
 # Prepare to compile modules
 
