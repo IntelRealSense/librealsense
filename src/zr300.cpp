@@ -514,7 +514,7 @@ namespace rsimpl
         }
         else
         {
-            LOG_WARNING("Motion module capabilities were disabled due to failure to aquire intrinsic");
+            LOG_WARNING("Motion module capabilities were disabled due to failure to acquire intrinsic");
         }
 
         auto fisheye_intrinsics_validator = [fisheye_intrinsic, succeeded_to_read_fisheye_intrinsic](rs_stream stream)
