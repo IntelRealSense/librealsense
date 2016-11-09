@@ -26,7 +26,7 @@ namespace rsimpl
         std::vector<uvc::uvc_device_info> chosen;
         std::vector<std::shared_ptr<device_info>> results;
 
-        auto right_pid = filter_by_product(uvc, SR300_PID);
+        auto right_pid = filter_by_product(uvc, { SR300_PID });
         auto group_devices = group_by_unique_id(right_pid);
         for (auto& group : group_devices)
         {
@@ -64,19 +64,19 @@ namespace rsimpl
 
     rs_intrinsics sr300_camera::make_depth_intrinsics(const ivcam::camera_calib_params & c, const int2 & dims)
     {
-        return{ dims.x, dims.y, (c.Kc[0][2] * 0.5f + 0.5f) * dims.x, 
-            (c.Kc[1][2] * 0.5f + 0.5f) * dims.y, 
-            c.Kc[0][0] * 0.5f * dims.x, 
+        return{ dims.x, dims.y, (c.Kc[0][2] * 0.5f + 0.5f) * dims.x,
+            (c.Kc[1][2] * 0.5f + 0.5f) * dims.y,
+            c.Kc[0][0] * 0.5f * dims.x,
             c.Kc[1][1] * 0.5f * dims.y,
             RS_DISTORTION_INVERSE_BROWN_CONRADY,
-            { c.Invdistc[0], c.Invdistc[1], c.Invdistc[2], 
+            { c.Invdistc[0], c.Invdistc[1], c.Invdistc[2],
               c.Invdistc[3], c.Invdistc[4] } };
     }
 
     rs_intrinsics sr300_camera::make_color_intrinsics(const ivcam::camera_calib_params & c, const int2 & dims)
     {
-        rs_intrinsics intrin = { dims.x, dims.y, c.Kt[0][2] * 0.5f + 0.5f, 
-            c.Kt[1][2] * 0.5f + 0.5f, c.Kt[0][0] * 0.5f, 
+        rs_intrinsics intrin = { dims.x, dims.y, c.Kt[0][2] * 0.5f + 0.5f,
+            c.Kt[1][2] * 0.5f + 0.5f, c.Kt[0][0] * 0.5f,
             c.Kt[1][1] * 0.5f, RS_DISTORTION_NONE,{} };
 
         if (dims.x * 3 == dims.y * 4) // If using a 4:3 aspect ratio, adjust intrinsics (defaults to 16:9)
@@ -225,10 +225,10 @@ namespace rsimpl
 //    static static_device_info get_sr300_info(std::shared_ptr<uvc::device> /*device*/, const ivcam::camera_calib_params & c)
 //    {
 //        LOG_INFO("Connecting to " << camera_official_name.at(cameras::sr300_camera));
-//       
+//
 //        static_device_info info;
 //        info.name = camera_official_name.at(cameras::sr300_camera);
-//        
+//
 //        // Color modes on subdevice 0
 //        info.stream_subdevices[RS_STREAM_COLOR] = 0;
 //        for(auto & m : sr300_color_modes)
@@ -287,7 +287,7 @@ namespace rsimpl
 //        info.options.push_back({ RS_OPTION_F200_MOTION_RANGE,               0,  220,    1,      9   });
 //        info.options.push_back({ RS_OPTION_F200_FILTER_OPTION,              0,  7,      1,      5   });
 //        info.options.push_back({ RS_OPTION_F200_CONFIDENCE_THRESHOLD,       0,  15,     1,      3   });
-//        
+//
 //        rsimpl::pose depth_to_color = {transpose((const float3x3 &)c.Rt), (const float3 &)c.Tt * 0.001f}; // convert mm to m
 //        info.stream_poses[RS_STREAM_DEPTH] = info.stream_poses[RS_STREAM_INFRARED] = inverse(depth_to_color);
 //        info.stream_poses[RS_STREAM_COLOR] = {{{1,0,0},{0,1,0},{0,0,1}}, {0,0,0}};
@@ -357,7 +357,7 @@ namespace rsimpl
 //        {
 //            switch(options[i])
 //            {
-//            case RS_OPTION_SR300_AUTO_RANGE_ENABLE_MOTION_VERSUS_RANGE: arr_writer.set(&ivcam::cam_auto_range_request::enableMvR, values[i]); break; 
+//            case RS_OPTION_SR300_AUTO_RANGE_ENABLE_MOTION_VERSUS_RANGE: arr_writer.set(&ivcam::cam_auto_range_request::enableMvR, values[i]); break;
 //            case RS_OPTION_SR300_AUTO_RANGE_ENABLE_LASER:               arr_writer.set(&ivcam::cam_auto_range_request::enableLaser, values[i]); break;
 //            case RS_OPTION_SR300_AUTO_RANGE_MIN_MOTION_VERSUS_RANGE:    arr_writer.set(&ivcam::cam_auto_range_request::minMvR, values[i]); break;
 //            case RS_OPTION_SR300_AUTO_RANGE_MAX_MOTION_VERSUS_RANGE:    arr_writer.set(&ivcam::cam_auto_range_request::maxMvR, values[i]); break;
@@ -375,7 +375,7 @@ namespace rsimpl
 //        }
 //
 //        arr_writer.commit();
-//        
+//
 //        //Handle common options
 //        if (base_opt.size())
 //            iv_camera::set_options(base_opt.data(), base_opt.size(), base_opt_val.data());
@@ -389,7 +389,7 @@ namespace rsimpl
 //        std::vector<double>     base_opt_val;
 //
 //        auto arr_reader = make_struct_interface<ivcam::cam_auto_range_request>([this]() { return arr; }, [this](ivcam::cam_auto_range_request) {});
-//        
+//
 //        // Acquire SR300-specific options first
 //        for(size_t i=0; i<count; ++i)
 //        {
@@ -403,7 +403,7 @@ namespace rsimpl
 //
 //            switch(options[i])
 //            {
-//            case RS_OPTION_SR300_AUTO_RANGE_ENABLE_MOTION_VERSUS_RANGE: values[i] = arr_reader.get(&ivcam::cam_auto_range_request::enableMvR); break; 
+//            case RS_OPTION_SR300_AUTO_RANGE_ENABLE_MOTION_VERSUS_RANGE: values[i] = arr_reader.get(&ivcam::cam_auto_range_request::enableMvR); break;
 //            case RS_OPTION_SR300_AUTO_RANGE_ENABLE_LASER:               values[i] = arr_reader.get(&ivcam::cam_auto_range_request::enableLaser); break;
 //            case RS_OPTION_SR300_AUTO_RANGE_MIN_MOTION_VERSUS_RANGE:    values[i] = arr_reader.get(&ivcam::cam_auto_range_request::minMvR); break;
 //            case RS_OPTION_SR300_AUTO_RANGE_MAX_MOTION_VERSUS_RANGE:    values[i] = arr_reader.get(&ivcam::cam_auto_range_request::maxMvR); break;
@@ -451,7 +451,7 @@ namespace rsimpl
 //        //uvc::set_pu_control_with_retry(*device, 0, rs_option::RS_OPTION_COLOR_EXPOSURE, -6); // auto
 //
 //        auto info = get_sr300_info(device, calib);
-//        
+//
 //        ivcam::get_module_serial_string(*device, mutex, info.serial, 132);
 //        ivcam::get_firmware_version_string(*device, mutex, info.firmware_version);
 //
