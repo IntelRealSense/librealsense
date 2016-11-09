@@ -71,7 +71,7 @@ int main() try
                 rs::intrinsics intrin = dev->get_stream_intrinsics(strm);
 
                 // Show horizontal and vertical field of view, in degrees
-                std::cout << "\t" << std::setprecision(3) << intrin.hfov() << " x " << intrin.vfov() << " degrees\n";
+                std::cout << "\t" << std::setprecision(3) << intrin.hfov() << " x " << intrin.vfov() << " degrees, distortion = " << intrin.model() << std::endl;
             }
 
             // Some stream mode combinations are invalid, so disable this stream before moving on to the next one
