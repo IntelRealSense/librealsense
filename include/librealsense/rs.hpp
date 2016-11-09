@@ -713,31 +713,15 @@ namespace rs
         * \param[in] filename string representing the name of the file to record
         */
         explicit recording_context(const char* filename)
-            : _filename(filename)
         {
             rs_error* e = nullptr;
             _context = std::shared_ptr<rs_context>(
-                rs_create_recording_context(RS_API_VERSION, &e),
+                rs_create_recording_context(RS_API_VERSION, filename, &e),
                 rs_delete_context);
             error::handle(e);
         }
 
-        /* saves all the operations recorded until the time of the call to the file that was passed as parameter */
-        void save() const
-        {
-            rs_error* e = nullptr;
-            rs_save_recording_to_file(_context.get(), _filename.c_str(), &e);
-            error::handle(e);
-        }
-
-        ~recording_context()
-        {
-            save();
-        }
-
         recording_context() = delete;
-    private:
-        std::string _filename;
     };
     
     class mock_context : public context

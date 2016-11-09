@@ -53,24 +53,12 @@ namespace rsimpl
             _backend = uvc::create_backend();
             break;
         case backend_type::record:
-            _backend = std::make_shared<uvc::record_backend>(uvc::create_backend());
+            _backend = std::make_shared<uvc::record_backend>(uvc::create_backend(), filename);
             break;
         case backend_type::playback: 
             _backend = std::make_shared<uvc::playback_backend>(filename);
             break;
         default: throw std::runtime_error("Undefined backend type!");
-        }
-    }
-
-    void context::save_to(const char* filename) const
-    {
-        if (_type == backend_type::record)
-        {
-            static_cast<uvc::record_backend*>(_backend.get())->save_to_file(filename);
-        }
-        else
-        {
-            throw std::runtime_error("Can't save history to file without creating recording context!");
         }
     }
 

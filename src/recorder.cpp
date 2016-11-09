@@ -81,7 +81,7 @@ namespace rsimpl
         vector<uint8_t> compression_algorithm::decode(const vector<uint8_t>& input) const
         {
             vector<uint8_t> results;
-            for (auto i = 0; i < input.size(); i += 5)
+            for (auto i = 0; i < input.size() - 5; i += 5)
             {
                 union {
                     uint32_t block;
@@ -137,24 +137,28 @@ namespace rsimpl
             start_time = chrono::high_resolution_clock::now();
         }
 
-        void recording::save(const char* filename) const
+        void recording::save(const char* filename, bool append) const
         {
-            if (file_exists(filename)) 
+            if (!append && file_exists(filename))
                 throw runtime_error("Can't save over existing recording!");
+
             connection c(filename);
             LOG_WARNING("Saving recording to file, don't close the application");
 
-            c.execute(CONFIG_CREATE);
-            c.execute(CALLS_CREATE);
-            c.execute(DEVICE_INFO_CREATE);
-            c.execute(BLOBS_CREATE);
-            c.execute(PROFILES_CREATE);
-
+            if (!append)
             {
-                statement insert(c, CONFIG_INSERT);
-                insert.bind(1, API_VERSION_KEY);
-                insert.bind(2, RS_API_VERSION_STR);
-                insert();
+                c.execute(CONFIG_CREATE);
+                c.execute(CALLS_CREATE);
+                c.execute(DEVICE_INFO_CREATE);
+                c.execute(BLOBS_CREATE);
+                c.execute(PROFILES_CREATE);
+
+                {
+                    statement insert(c, CONFIG_INSERT);
+                    insert.bind(1, API_VERSION_KEY);
+                    insert.bind(2, RS_API_VERSION_STR);
+                    insert();
+                }
             }
 
             for (auto&& cl : calls)
@@ -304,7 +308,7 @@ namespace rsimpl
             memcpy(holder.data(), ptr, size);
             auto id = static_cast<int>(blobs.size());
             blobs.push_back(holder);
-            return id;
+            return id + blobs_baseline;
         }
 
         int recording::get_timestamp() const
@@ -353,196 +357,265 @@ namespace rsimpl
         {
             _source->play(profile, [this, callback](stream_profile p, frame_object f)
             {
-                auto&& c = _rec->add_call(_entity_id, call_type::uvc_frame);
-                c.param1 = _rec->save_blob(&p, sizeof(p));
-                vector<uint8_t> frame((uint8_t*)f.pixels, 
-                                      (uint8_t*)f.pixels + f.size);
-                auto compressed = _compression->encode(frame);
-                c.param2 = _rec->save_blob(compressed.data(), static_cast<int>(compressed.size()));
-                c.param4 = static_cast<int>(compressed.size());
-                c.param3 = _compression->save_frames ? 0 : 1;
-                auto dec = _compression->decode(compressed);
-                _compression->effect = (100.0f * compressed.size()) / frame.size();
-                frame_object fo{ static_cast<int>(dec.size()), dec.data() };
-                callback(p, fo);
+                _owner->try_record([this, callback, p, &f](recording* rec)
+                {
+                    auto&& c = rec->add_call(_entity_id, call_type::uvc_frame);
+                    c.param1 = rec->save_blob(&p, sizeof(p));
+                    vector<uint8_t> frame((uint8_t*)f.pixels,
+                        (uint8_t*)f.pixels + f.size);
+                    auto compressed = _compression->encode(frame);
+                    c.param2 = rec->save_blob(compressed.data(), static_cast<int>(compressed.size()));
+                    c.param4 = static_cast<int>(compressed.size());
+                    c.param3 = _compression->save_frames ? 0 : 1;
+                    //auto dec = _compression->decode(compressed);
+                    _compression->effect = (100.0f * compressed.size()) / frame.size();
+                    callback(p, f);
+                });
             });
             vector<stream_profile> ps{ profile };
-            _rec->save_stream_profiles(ps, _entity_id, call_type::uvc_play);
+            _owner->try_record([&](recording* rec)
+            {
+                rec->save_stream_profiles(ps, _entity_id, call_type::uvc_play);
+            });
         }
 
         void record_uvc_device::stop(stream_profile profile)
         {
-            _source->stop(profile);
-            vector<stream_profile> ps{ profile };
-            _rec->save_stream_profiles(ps, _entity_id, call_type::uvc_stop);
+            _owner->try_record([&](recording* rec)
+            {
+                _source->stop(profile);
+                vector<stream_profile> ps{ profile };
+                rec->save_stream_profiles(ps, _entity_id, call_type::uvc_stop);
+            });
         }
 
         void record_uvc_device::set_power_state(power_state state)
         {
-            _source->set_power_state(state);
+            _owner->try_record([&](recording* rec)
+            {
+                _source->set_power_state(state);
 
-            auto&& c = _rec->add_call(_entity_id, call_type::uvc_set_power_state);
-            c.param1 = state;
+                auto&& c = rec->add_call(_entity_id, call_type::uvc_set_power_state);
+                c.param1 = state;
+            });
         }
 
         power_state record_uvc_device::get_power_state() const
         {
-            auto res = _source->get_power_state();
+            return _owner->try_record([&](recording* rec)
+            {
+                auto res = _source->get_power_state();
 
-            auto&& c = _rec->add_call(_entity_id, call_type::uvc_get_power_state);
-            c.param1 = res;
+                auto&& c = rec->add_call(_entity_id, call_type::uvc_get_power_state);
+                c.param1 = res;
 
-            return res;
+                return res;
+            });
         }
 
         void record_uvc_device::init_xu(const extension_unit& xu)
         {
-            _source->init_xu(xu);
-            _rec->add_call(_entity_id, call_type::uvc_init_xu);
+            _owner->try_record([&](recording* rec)
+            {
+                _source->init_xu(xu);
+                rec->add_call(_entity_id, call_type::uvc_init_xu);
+            });
         }
 
         void record_uvc_device::set_xu(const extension_unit& xu, uint8_t ctrl, const uint8_t* data, int len)
         {
-            _source->set_xu(xu, ctrl, data, len);
+            _owner->try_record([&](recording* rec)
+            {
+                _source->set_xu(xu, ctrl, data, len);
 
-            auto&& c = _rec->add_call(_entity_id, call_type::uvc_set_xu);
-            c.param1 = ctrl;
-            c.param2 = _rec->save_blob(data, len);
+                auto&& c = rec->add_call(_entity_id, call_type::uvc_set_xu);
+                c.param1 = ctrl;
+                c.param2 = rec->save_blob(data, len);
+            });
         }
 
         void record_uvc_device::get_xu(const extension_unit& xu, uint8_t ctrl, uint8_t* data, int len) const
         {
-            _source->get_xu(xu, ctrl, data, len);
+            _owner->try_record([&](recording* rec)
+            {
+                _source->get_xu(xu, ctrl, data, len);
 
-            auto&& c = _rec->add_call(_entity_id, call_type::uvc_get_xu);
-            c.param1 = ctrl;
-            c.param2 = _rec->save_blob(data, len);
+                auto&& c = rec->add_call(_entity_id, call_type::uvc_get_xu);
+                c.param1 = ctrl;
+                c.param2 = rec->save_blob(data, len);
+            });
         }
 
         control_range record_uvc_device::get_xu_range(const extension_unit& xu, uint8_t ctrl, int len) const
         {
-            auto res = _source->get_xu_range(xu, ctrl, len);
+            return _owner->try_record([&](recording* rec)
+            {
+                auto res = _source->get_xu_range(xu, ctrl, len);
 
-            auto&& c = _rec->add_call(_entity_id, call_type::uvc_get_xu_range);
-            c.param1 = ctrl;
-            c.param2 = _rec->save_blob(&res, sizeof(res));
+                auto&& c = rec->add_call(_entity_id, call_type::uvc_get_xu_range);
+                c.param1 = ctrl;
+                c.param2 = rec->save_blob(&res, sizeof(res));
 
-            return res;
+                return res;
+            });
         }
 
         int record_uvc_device::get_pu(rs_option opt) const
         {
-            auto res = _source->get_pu(opt);
+            return _owner->try_record([&](recording* rec)
+            {
+                auto res = _source->get_pu(opt);
 
-            auto&& c = _rec->add_call(_entity_id, call_type::uvc_get_pu);
-            c.param1 = opt;
-            c.param2 = res;
+                auto&& c = rec->add_call(_entity_id, call_type::uvc_get_pu);
+                c.param1 = opt;
+                c.param2 = res;
 
-            return res;
+                return res;
+            });
         }
 
         void record_uvc_device::set_pu(rs_option opt, int value)
         {
-            _source->set_pu(opt, value);
+            _owner->try_record([&](recording* rec)
+            {
+                _source->set_pu(opt, value);
 
-            auto&& c = _rec->add_call(_entity_id, call_type::uvc_set_pu);
-            c.param1 = opt;
-            c.param2 = value;
+                auto&& c = rec->add_call(_entity_id, call_type::uvc_set_pu);
+                c.param1 = opt;
+                c.param2 = value;
+            });
         }
 
         control_range record_uvc_device::get_pu_range(rs_option opt) const
         {
-            auto res = _source->get_pu_range(opt);
+            return _owner->try_record([&](recording* rec)
+            {
+                auto res = _source->get_pu_range(opt);
 
-            auto&& c = _rec->add_call(_entity_id, call_type::uvc_get_pu_range);
-            c.param1 = opt;
-            c.param2 = _rec->save_blob(&res, sizeof(res));
+                auto&& c = rec->add_call(_entity_id, call_type::uvc_get_pu_range);
+                c.param1 = opt;
+                c.param2 = rec->save_blob(&res, sizeof(res));
 
-            return res;
+                return res;
+            });
         }
 
         vector<stream_profile> record_uvc_device::get_profiles() const
         {
-            auto devices = _source->get_profiles();
-            _rec->save_stream_profiles(devices, _entity_id, call_type::uvc_stream_profiles);
-            return devices;
+            return _owner->try_record([&](recording* rec)
+            {
+                auto devices = _source->get_profiles();
+                rec->save_stream_profiles(devices, _entity_id, call_type::uvc_stream_profiles);
+                return devices;
+            });
         }
 
         void record_uvc_device::lock() const
         {
-            _source->lock();
-            _rec->add_call(_entity_id, call_type::uvc_lock);
+            _owner->try_record([&](recording* rec)
+            {
+                _source->lock();
+                rec->add_call(_entity_id, call_type::uvc_lock);
+            });
         }
 
         void record_uvc_device::unlock() const
         {
-            _source->lock();
-            _rec->add_call(_entity_id, call_type::uvc_unlock);
+            _owner->try_record([&](recording* rec)
+            {
+                _source->lock();
+                rec->add_call(_entity_id, call_type::uvc_unlock);
+            });
         }
 
         string record_uvc_device::get_device_location() const
         {
-            auto result = _source->get_device_location();
+            return _owner->try_record([&](recording* rec)
+            {
+                auto result = _source->get_device_location();
 
-            auto&& c = _rec->add_call(_entity_id, call_type::uvc_get_location);
-            c.inline_string = result;
+                auto&& c = rec->add_call(_entity_id, call_type::uvc_get_location);
+                c.inline_string = result;
 
-            return result;
+                return result;
+            });
         }
 
         vector<uint8_t> record_usb_device::send_receive(const vector<uint8_t>& data, int timeout_ms, bool require_response)
         {
-            auto result = _source->send_receive(data, timeout_ms, require_response);
+            return _owner->try_record([&](recording* rec)
+            {
+                auto result = _source->send_receive(data, timeout_ms, require_response);
 
-            auto&& c = _rec->add_call(_entity_id, call_type::send_command);
-            c.param1 = _rec->save_blob((void*)data.data(), static_cast<int>(data.size()));
-            c.param2 = _rec->save_blob((void*)result.data(), static_cast<int>(result.size()));
-            c.param3 = timeout_ms;
-            c.param4 = require_response;
+                auto&& c = rec->add_call(_entity_id, call_type::send_command);
+                c.param1 = rec->save_blob((void*)data.data(), static_cast<int>(data.size()));
+                c.param2 = rec->save_blob((void*)result.data(), static_cast<int>(result.size()));
+                c.param3 = timeout_ms;
+                c.param4 = require_response;
 
-            return result;
+                return result;
+            });
         }
 
         shared_ptr<uvc_device> record_backend::create_uvc_device(uvc_device_info info) const
         {
-            auto dev = _source->create_uvc_device(info);
+            return try_record([&](recording* rec)
+            {
+                auto dev = _source->create_uvc_device(info);
 
-            auto id = _entity_count.fetch_add(1);
-            auto&& c = _rec->add_call(0, call_type::create_uvc_device);
-            c.param1 = id;
+                auto id = _entity_count.fetch_add(1);
+                auto&& c = rec->add_call(0, call_type::create_uvc_device);
+                c.param1 = id;
 
-            return make_shared<record_uvc_device>(_rec, dev, _compression, id);
+                return make_shared<record_uvc_device>(dev, _compression, id, this);
+            });
         }
 
         vector<uvc_device_info> record_backend::query_uvc_devices() const
         {
-            auto devices = _source->query_uvc_devices();
-            _rec->save_uvc_device_info_list(devices);
-            return devices;
+            return try_record([&](recording* rec)
+            {
+                auto devices = _source->query_uvc_devices();
+                rec->save_uvc_device_info_list(devices);
+                return devices;
+            });
         }
 
         shared_ptr<usb_device> record_backend::create_usb_device(usb_device_info info) const
         {
-            auto dev = _source->create_usb_device(info);
+            return try_record([&](recording* rec)
+            {
+                auto dev = _source->create_usb_device(info);
 
-            auto id = _entity_count.fetch_add(1);
-            auto&& c = _rec->add_call(0, call_type::create_usb_device);
-            c.param1 = id;
+                auto id = _entity_count.fetch_add(1);
+                auto&& c = rec->add_call(0, call_type::create_usb_device);
+                c.param1 = id;
 
-            return make_shared<record_usb_device>(_rec, dev, id);
+                return make_shared<record_usb_device>(dev, id, this);
+            });
         }
 
         vector<usb_device_info> record_backend::query_usb_devices() const
         {
-            auto devices = _source->query_usb_devices();
-            _rec->save_usb_device_info_list(devices);
-            return devices;
+            return try_record([&](recording* rec)
+            {
+                auto devices = _source->query_usb_devices();
+                rec->save_usb_device_info_list(devices);
+                return devices;
+            });
         }
 
-        record_backend::record_backend(shared_ptr<backend> source)
+        record_backend::record_backend(shared_ptr<backend> source, const char* filename)
             : _source(source), _rec(make_shared<recording>()), _entity_count(1),
-              _compression(make_shared<compression_algorithm>())
+            _compression(make_shared<compression_algorithm>()), _filename(filename),
+            _alive(true), _write_to_file([this]() { write_to_file(); })
         {
+        }
+
+        record_backend::~record_backend()
+        {
+            _alive = false;
+            _write_to_file.join();
         }
 
         shared_ptr<uvc_device> playback_backend::create_uvc_device(uvc_device_info info) const
@@ -580,9 +653,32 @@ namespace rsimpl
             _callback_thread.join();
         }
 
-        void record_backend::save_to_file(const char* filename) const
+        void record_backend::write_to_file()
         {
-            _rec->save(filename);
+            bool append = false;
+
+            while (_alive)
+            {
+                std::shared_ptr<recording> current;
+                {
+                    std::lock_guard<std::mutex> lock(_rec_mutex);
+                    current = _rec;
+                    _rec = std::make_shared<recording>();
+                    _rec->set_baselines(*current);
+                }
+                if (current->size() > 0)
+                {
+                    current->save(_filename.c_str(), append);
+                    append = true;
+                    LOG(INFO) << "Finished writing " << current->size() << " calls...";
+                }
+            }
+
+            if (_rec->size() > 0)
+            {
+                _rec->save(_filename.c_str(), append);
+                LOG(INFO) << "Finished writing " << _rec->size() << " calls...";
+            }
         }
 
         void playback_uvc_device::play(stream_profile profile, frame_callback callback)
@@ -611,7 +707,7 @@ namespace rsimpl
             if (input != stored)
                 throw runtime_error("Recording history mismatch!");
 
-            auto it = std::remove_if(begin(_callbacks), end(_callbacks), 
+            auto it = std::remove_if(begin(_callbacks), end(_callbacks),
                 [&profile](const pair<stream_profile, frame_callback>& pair)
             {
                 return pair.first == profile;
@@ -666,7 +762,7 @@ namespace rsimpl
 
             if (c.param1 != ctrl)
                 throw runtime_error("Recording history mismatch!");
-            
+
             auto range = _rec->load_blob(c.param2);
             memcpy(&res, range.data(), range.size());
             return res;
@@ -720,11 +816,11 @@ namespace rsimpl
         }
 
         playback_uvc_device::playback_uvc_device(shared_ptr<recording> rec, int id)
-            :   _rec(rec), _entity_id(id),
-                _callback_thread([this]() { callback_thread(); }),
-                _alive(true)
+            : _rec(rec), _entity_id(id),
+            _callback_thread([this]() { callback_thread(); }),
+            _alive(true)
         {
-            
+
         }
 
         vector<uint8_t> playback_usb_device::send_receive(const vector<uint8_t>& data, int timeout_ms, bool require_response)

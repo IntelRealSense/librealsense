@@ -4,7 +4,6 @@ EXPORTS
     rs_create_context
     rs_delete_context
     rs_create_recording_context
-    rs_save_recording_to_file
     rs_create_mock_context
     
     rs_query_devices
