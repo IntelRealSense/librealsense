@@ -66,6 +66,8 @@ namespace rsimpl
             int param2 = 0;
             int param3 = 0; 
             int param4 = 0;
+
+            bool had_error = false;
         };
 
         struct lookup_key

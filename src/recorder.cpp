@@ -16,8 +16,8 @@ const char* CONFIG_CREATE = "CREATE TABLE rs_config(key TEXT PRIMARY KEY, value 
 const char* CONFIG_INSERT = "INSERT OR REPLACE INTO rs_config(key, value) VALUES(?, ?)";
 const char* API_VERSION_KEY = "api_version";
 
-const char* CALLS_CREATE = "CREATE TABLE rs_calls(type NUMBER, timestamp NUMBER, entity_id NUMBER, txt TEXT, param1 NUMBER, param2 NUMBER, param3 NUMBER, param4 NUMBER)";
-const char* CALLS_INSERT = "INSERT INTO rs_calls(type, timestamp, entity_id, txt, param1, param2, param3, param4) VALUES(?, ?, ?, ?, ?, ?, ?, ?)";
+const char* CALLS_CREATE = "CREATE TABLE rs_calls(type NUMBER, timestamp NUMBER, entity_id NUMBER, txt TEXT, param1 NUMBER, param2 NUMBER, param3 NUMBER, param4 NUMBER, had_errors NUMBER)";
+const char* CALLS_INSERT = "INSERT INTO rs_calls(type, timestamp, entity_id, txt, param1, param2, param3, param4, had_errors) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)";
 const char* CALLS_SELECT_ALL = "SELECT * FROM rs_calls";
 
 const char* DEVICE_INFO_CREATE = "CREATE TABLE rs_device_info(type NUMBER, id TEXT, uid TEXT, pid NUMBER, vid NUMBER, mi NUMBER)";
@@ -172,6 +172,7 @@ namespace rsimpl
                 insert.bind(6, cl.param2);
                 insert.bind(7, cl.param3);
                 insert.bind(8, cl.param4);
+                insert.bind(9, cl.had_error ? 1 : 0);
                 insert();
             }
 
@@ -252,6 +253,7 @@ namespace rsimpl
                 cl.param2 = row[5].get_int();
                 cl.param3 = row[6].get_int();
                 cl.param4 = row[7].get_int();
+                cl.had_error = row[8].get_int() > 0;
                 result->calls.push_back(cl);
             }
 
