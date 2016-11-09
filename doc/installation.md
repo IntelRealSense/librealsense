@@ -61,7 +61,7 @@ The project requires two external dependencies, GLFW3 and libusb-1.0. The Cmake 
   * **(OR) Ubuntu 14.04.5 or Ubuntu 16.04.xx (Kernel 4.4)**
     * `./scripts/patch-uvcvideo-16.04.simple.sh`
   * **(OR) Arch based distributions**
-    * You need to install the [base-devel](https://www.archlinux.org/groups/x86_64/base-devel/) package group. 
+    * You need to install the [base-devel](https://www.archlinux.org/groups/x86_64/base-devel/) and [linux-headers](https://www.archlinux.org/packages/core/x86_64/linux-headers/) package group.
 	* Then run the following script to patch the uvc module:
     * `./scripts/patch-arch.sh`
 4. Reload the uvcvideo driver
