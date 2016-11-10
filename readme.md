@@ -1,7 +1,5 @@
 # Intel® RealSense™ Cross Platform API
 
-**DS5 B0 Development Branch** - [What's New?](./doc/whats_new.md)
-
 [ ![License] [license-image] ] [license]
 
 [release-image]: http://img.shields.io/badge/release-1.9.7-blue.svg?style=flat
@@ -12,10 +10,10 @@
 
 Platform | Build Status |
 -------- | ------------ |
-Linux and OS X | [![Build Status](https://travis-ci.org/IntelRealSense/librealsense.svg?branch=master)](https://travis-ci.org/IntelRealSense/librealsense)
-Windows | [![Build status](https://ci.appveyor.com/api/projects/status/y9f8qcebnb9v41y4?svg=true)](https://ci.appveyor.com/project/ddiakopoulos/librealsense)
+Linux and OS X | [![Build Status](https://travis-ci.org/IntelRealSense/librealsense.svg?branch=master)](https://travis-ci.org/IntelRealSense/librealsense) |
+Windows | [![Build status](https://ci.appveyor.com/api/projects/status/y9f8qcebnb9v41y4?svg=true)](https://ci.appveyor.com/project/ddiakopoulos/librealsense) |
 
-This project is a cross-platform library (Linux, Windows, Mac) for capturing data from the Intel® RealSense™ F200, SR300, R200, LR200 ZR300 and the RS400 cameras. This effort was initiated to better support researchers, creative coders, and app developers in domains such as robotics, virtual reality, and the internet of things. Several often-requested features of RealSense™ devices are implemented in this project, including multi-camera capture.
+This project is a cross-platform library (Linux, Windows, Mac) for capturing data from the Intel® RealSense™ SR300 and R400 cameras. 
 
 Developer kits containing the necessary hardware to use this library are available for purchase at [this link](http://click.intel.com/realsense.html). This project is separate from the production software stack available in the [Intel® RealSense™ SDK](https://software.intel.com/en-us/intel-realsense-sdk), namely that this library only encompasses camera capture functionality without additional computer vision algorithms.
 
@@ -35,7 +33,6 @@ The Intel® RealSense™ Cross Platform API is experimental and not an official 
   * [Linux](./doc/installation.md)
   * [Windows](./doc/installation_windows.md)
   * [Mac OS X](./doc/installation_osx.md)
-6. RealSense DS5
 
 ## Documentation
 
@@ -44,11 +41,12 @@ A comprehensive suite of sample and tutorial applications are provided in the `/
   * [C API](./include/librealsense/rs.h) - With doxygen-style API comments
   * To build documentation locally from sources, on Ubuntu run the following commands:
     * `sudo apt-get install doxygen`
-	* `cd doc/Doxygen_API`
-	* `doxygen Doxyfile`
+	* `doxygen doc/doxygen/doxyfile`
+  * [What's New?](./doc/whats_new.md)
   * [Projection APIs](./doc/projection.md) - A guide on coordinate systems, calibration information, and projection
   * [Camera Spec Sheet](./doc/camera_specs.md) - A brief overview of R200, F200 and SR300
   * [Developer Notes](./doc/dev_log.md) - Several informal notes gathered during internal releases
+  * [Stream Formats](./doc/supported_video_formats.pdf) - A list of available stream resolutions and pixel formats provided by the supported devices.
 
 ## Functionality
 
@@ -56,30 +54,21 @@ A comprehensive suite of sample and tutorial applications are provided in the `/
 2. Synthetic streams: rectified images, depth aligned to color and vice versa, etc.
 3. Intrinsic/extrinsic calibration information.
 4. Majority of hardware-specific functionality for individual camera generations (UVC XU controls).
-5. Multi-camera capture across heterogeneous camera architectures (e.g. mix R200 and F200 in same application)
-6. Motion-tracking sensors acquisition (ZR300 only)
+5. Multi-camera capture across heterogeneous camera architectures
+6. Motion-tracking sensors acquisition
 
 ## Compatible Devices
 
-1. RealSense R200 (Firmware 1.0.72.06 and up)
-2. RealSense F200 (Firmware 2.60.0.0 and up)
-3. RealSense SR300 (Firmware 3.10.10.0 and up)
-4. RealSense LR200 (Firmware 2.0.71.18 and up)
-5. [RealSense ZR300](https://newsroom.intel.com/chip-shots/intel-announces-tools-realsense-technology-development/)
-  * Camera Firmware 2.0.71.18 and up
-  * USB Adapter Board Firmware 1.27.0.0 and up
-  * Motion Module Firmware 1.23.0.0 and up
-6. RealSense R400 (DS5 B0: Firmware 5.1.8.0)
-
+1. RealSense SR300
+2. RealSense R400
 
 ## Compatible Platforms
 
 The library is written in standards-conforming C++11 and relies only on the C89 ABI for its public interface. It is developed and tested on the following platforms:
 
-1. Ubuntu 14.04 and 16.04 LTS (GCC 4.9 toolchain)
-2. Windows 10 (Visual Studio 2015 Update 2)
+1. Ubuntu 16.04 LTS (GCC 4.9 toolchain)
+2. Windows 10 (Visual Studio 2015 Update 3)
 3. Mac OS X 10.7+ (Clang toolchain)
-4. [Ostro](https://ostroproject.org/)
 
 ## Hardware Requirements
 Developer kits containing the necessary hardware to use this library are available for purchase at [this link](http://click.intel.com/realsense.html). In addition, several consumer tablets and laptops with integrated cameras may also function, such as the [HP Spectre x2 with R200](http://store.hp.com/us/en/ContentView?storeId=10151&langId=-1&catalogId=10051&eSpotName=new-detachable).

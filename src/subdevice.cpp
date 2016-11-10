@@ -131,6 +131,7 @@ bool endpoint::try_get_pf(const uvc::stream_profile& p, native_pixel_format& res
 
 std::vector<request_mapping> endpoint::resolve_requests(std::vector<stream_request> requests)
 {
+    // TODO: Move to rsutil.hpp
     if (!auto_complete_request(requests))
     {
         throw std::runtime_error("Subdevice could not auto complete requests!");

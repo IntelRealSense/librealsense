@@ -15,6 +15,8 @@
 #include <mutex>
 #include <condition_variable>
 #include <atomic>
+#include <vector>
+#include <fstream>
 
 // noexcept is not accepted by Visual Studio 2013 yet, but noexcept(false) is require on throwing destructors on gcc and clang
 // It is normally advisable not to throw in a destructor, however, this usage is safe for require_error/require_no_error because
@@ -29,6 +31,88 @@
 #define NOEXCEPT_FALSE noexcept(false)
 #endif
 
+class command_line_params
+{
+public:
+    command_line_params(int argc, char * const argv[])
+    {
+        for (auto i = 0; i < argc; i++)
+        {
+            _params.push_back(argv[i]);
+        }
+    }
+
+    char * const * get_argv() const { return _params.data(); }
+    char * get_argv(int i) const { return _params[i]; }
+    int get_argc() const { return _params.size(); }
+
+    static command_line_params& instance(int argc = 0, char * const argv[] = 0)
+    {
+        static command_line_params params(argc, argv);
+        return params;
+    }
+
+private:
+    std::vector<char*> _params;
+};
+
+inline bool file_exists(const char* filename)
+{
+    std::ifstream f(filename);
+    return f.good();
+}
+
+inline rs::context make_context(const char* id)
+{
+    static std::map<const char*, int> _counters;
+
+    _counters[id]++;
+
+    auto argc = command_line_params::instance().get_argc();
+    auto argv = command_line_params::instance().get_argv();
+
+    rs::context ctx;
+    std::string base_filename;
+    bool record = false;
+    bool playback = false;
+    for (auto i = 0; i < argc; i++)
+    {
+        std::string param(argv[i]);
+        if (param == "into")
+        {
+            i++;
+            if (i < argc)
+            {
+                base_filename = argv[i];
+                record = true;
+            }
+        }
+        else if (param == "from")
+        {
+            i++;
+            if (i < argc)
+            {
+                base_filename = argv[i];
+                playback = true;
+            }
+        }
+    }
+
+    std::stringstream ss;
+    ss << base_filename << "." << id << "." << _counters[id] << ".test";
+    auto filename = ss.str();
+
+    if (record)
+    {
+        ctx = rs::recording_context(filename);
+    }
+    else if (playback)
+    {
+        ctx = rs::mock_context(filename);
+    }
+    return ctx;
+}
+
 // Can be passed to rs_error ** parameters, requires that an error is indicated with the specific provided message
 class require_error
 {
@@ -36,7 +120,7 @@ class require_error
     bool validate_error_message;      // Messages content may vary , subject to backend selection
     rs_error * err;
 public:
-    require_error(std::string message,bool message_validation=true) : message(move(message)), validate_error_message(message_validation), err() {}
+    require_error(std::string message, bool message_validation = true) : message(move(message)), validate_error_message(message_validation), err() {}
     require_error(const require_error &) = delete;
     ~require_error() NOEXCEPT_FALSE
     {
@@ -58,8 +142,8 @@ class require_no_error
 public:
     require_no_error() : err() {}
     require_no_error(const require_error &) = delete;
-    ~require_no_error() NOEXCEPT_FALSE 
-    { 
+    ~require_no_error() NOEXCEPT_FALSE
+    {
         assert(!std::uncaught_exception());
         REQUIRE(rs_get_error_message(err) == rs_get_error_message(nullptr)); // Perform this check first. If an error WAS indicated, Catch will display it, making our debugging easier.
         REQUIRE(err == nullptr);
@@ -69,73 +153,73 @@ public:
 };
 
 // Compute dot product of a and b
-inline float dot_product(const float (& a)[3], const float (& b)[3])
-{ 
-    return a[0]*b[0] + a[1]*b[1] + a[2]*b[2]; 
+inline float dot_product(const float(&a)[3], const float(&b)[3])
+{
+    return a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
 }
 
 // Compute length of v
-inline float vector_length(const float (& v)[3])
-{ 
+inline float vector_length(const float(&v)[3])
+{
     return std::sqrt(dot_product(v, v));
 }
 
 // Require that r = cross(a, b)
-inline void require_cross_product(const float (& r)[3], const float (& a)[3], const float (& b)[3])
+inline void require_cross_product(const float(&r)[3], const float(&a)[3], const float(&b)[3])
 {
-    REQUIRE( r[0] == Approx(a[1]*b[2] - a[2]*b[1]) );
-    REQUIRE( r[1] == Approx(a[2]*b[0] - a[0]*b[2]) );
-    REQUIRE( r[2] == Approx(a[0]*b[1] - a[1]*b[0]) );
+    REQUIRE(r[0] == Approx(a[1] * b[2] - a[2] * b[1]));
+    REQUIRE(r[1] == Approx(a[2] * b[0] - a[0] * b[2]));
+    REQUIRE(r[2] == Approx(a[0] * b[1] - a[1] * b[0]));
 }
 
 // Require that vector is exactly the zero vector
-inline void require_zero_vector(const float (& vector)[3])
+inline void require_zero_vector(const float(&vector)[3])
 {
-    for(int i=1; i<3; ++i) REQUIRE( vector[i] == 0.0f );
+    for (int i = 1; i < 3; ++i) REQUIRE(vector[i] == 0.0f);
 }
 
 // Require that a == transpose(b)
-inline void require_transposed(const float (& a)[9], const float (& b)[9])
+inline void require_transposed(const float(&a)[9], const float(&b)[9])
 {
-    REQUIRE( a[0] == Approx(b[0]) );
-    REQUIRE( a[1] == Approx(b[3]) );
-    REQUIRE( a[2] == Approx(b[6]) );
-    REQUIRE( a[3] == Approx(b[1]) );
-    REQUIRE( a[4] == Approx(b[4]) );
-    REQUIRE( a[5] == Approx(b[7]) );
-    REQUIRE( a[6] == Approx(b[2]) );
-    REQUIRE( a[7] == Approx(b[5]) );
-    REQUIRE( a[8] == Approx(b[8]) );
+    REQUIRE(a[0] == Approx(b[0]));
+    REQUIRE(a[1] == Approx(b[3]));
+    REQUIRE(a[2] == Approx(b[6]));
+    REQUIRE(a[3] == Approx(b[1]));
+    REQUIRE(a[4] == Approx(b[4]));
+    REQUIRE(a[5] == Approx(b[7]));
+    REQUIRE(a[6] == Approx(b[2]));
+    REQUIRE(a[7] == Approx(b[5]));
+    REQUIRE(a[8] == Approx(b[8]));
 }
 
 // Require that matrix is an orthonormal 3x3 matrix
-inline void require_rotation_matrix(const float (& matrix)[9])
+inline void require_rotation_matrix(const float(&matrix)[9])
 {
-    const float row0[] = {matrix[0], matrix[3], matrix[6]};
-    const float row1[] = {matrix[1], matrix[4], matrix[7]};
-    const float row2[] = {matrix[2], matrix[5], matrix[8]};
-    REQUIRE( dot_product(row0, row0) == Approx(1) );
-    REQUIRE( dot_product(row1, row1) == Approx(1) );
-    REQUIRE( dot_product(row2, row2) == Approx(1) );
-    REQUIRE( dot_product(row0, row1) == Approx(0) );
-    REQUIRE( dot_product(row1, row2) == Approx(0) );
-    REQUIRE( dot_product(row2, row0) == Approx(0) );
+    const float row0[] = { matrix[0], matrix[3], matrix[6] };
+    const float row1[] = { matrix[1], matrix[4], matrix[7] };
+    const float row2[] = { matrix[2], matrix[5], matrix[8] };
+    REQUIRE(dot_product(row0, row0) == Approx(1));
+    REQUIRE(dot_product(row1, row1) == Approx(1));
+    REQUIRE(dot_product(row2, row2) == Approx(1));
+    REQUIRE(dot_product(row0, row1) == Approx(0));
+    REQUIRE(dot_product(row1, row2) == Approx(0));
+    REQUIRE(dot_product(row2, row0) == Approx(0));
     require_cross_product(row0, row1, row2);
     require_cross_product(row0, row1, row2);
-    require_cross_product(row0, row1, row2); 
+    require_cross_product(row0, row1, row2);
 }
 
 // Require that matrix is exactly the identity matrix
-inline void require_identity_matrix(const float (& matrix)[9])
+inline void require_identity_matrix(const float(&matrix)[9])
 {
-    static const float identity_matrix_3x3[] = {1,0,0, 0,1,0, 0,0,1};
-    for(int i=0; i<9; ++i) REQUIRE( matrix[i] == identity_matrix_3x3[i] );
+    static const float identity_matrix_3x3[] = { 1,0,0, 0,1,0, 0,0,1 };
+    for (int i = 0; i < 9; ++i) REQUIRE(matrix[i] == identity_matrix_3x3[i]);
 }
 
-struct test_duration{
+struct test_duration {
     bool is_start_time_initialized;
     bool is_end_time_initialized;
-    std::chrono::high_resolution_clock::time_point start_time , end_time;
+    std::chrono::high_resolution_clock::time_point start_time, end_time;
     uint32_t actual_frames_to_receive;
     uint32_t first_frame_to_capture;
     uint32_t frames_to_capture;
@@ -230,7 +314,7 @@ static std::mutex cb_mtx;
 static std::condition_variable cv;
 static std::atomic<bool> stop_streaming;
 static int done;
-struct user_data{
+struct user_data {
     std::map<rs_stream, test_duration> duration_per_stream;
     std::map<rs_stream, unsigned> number_of_frames_per_stream;
 };
@@ -290,8 +374,8 @@ inline void frame_callback(rs::device &dev, rs::frame frame, void * user)
         data->duration_per_stream[stream_type].is_start_time_initialized = true;
     }
 
-    REQUIRE( frame.get_data() != nullptr );
-    REQUIRE( frame.get_timestamp() >= 0 );
+    REQUIRE(frame.get_data() != nullptr);
+    REQUIRE(frame.get_timestamp() >= 0);
 }
 
 //inline void test_frame_callback(rs::device &device, std::initializer_list<rs::stream_profile>& modes, std::map<rs_stream, test_duration>& duration_per_stream)
@@ -372,33 +456,33 @@ inline void test_option(rs::device &device, rs_subdevice subdevice, rs_option op
     // Test reading the current value
     float first_value;
     REQUIRE_NOTHROW(first_value = subdev.get_option(option));
-    
+
 
     // check if first value is something sane (should be default?)
     rs::option_range range;
     REQUIRE_NOTHROW(range = subdev.get_option_range(option));
     REQUIRE(first_value >= range.min);
     REQUIRE(first_value <= range.max);
-    CHECK  (first_value == range.def);
+    CHECK(first_value == range.def);
 
     // Test setting good values, and that each value set can be subsequently get
-    for(auto value : good_values)
+    for (auto value : good_values)
     {
         REQUIRE_NOTHROW(subdev.set_option(option, value));
-        REQUIRE(subdev.get_option(option) == value );
+        REQUIRE(subdev.get_option(option) == value);
     }
 
     // Test setting bad values, and verify that they do not change the value of the option
     float last_good_value;
     REQUIRE_NOTHROW(last_good_value = subdev.get_option(option));
-    for(auto value : bad_values)
+    for (auto value : bad_values)
     {
         REQUIRE_THROWS_AS(subdev.set_option(option, value), rs::error);
-        REQUIRE(subdev.get_option(option) == last_good_value );
+        REQUIRE(subdev.get_option(option) == last_good_value);
     }
 
     // Test that we can reset the option to its original value
     REQUIRE_NOTHROW(subdev.set_option(option, first_value));
-    REQUIRE( subdev.get_option(option) == first_value );
+    REQUIRE(subdev.get_option(option) == first_value);
 }
 #endif

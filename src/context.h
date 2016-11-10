@@ -32,8 +32,6 @@ namespace rsimpl
     public:
         context(backend_type type, const char* filename);
 
-        void save_to(const char* filename) const;
-
         std::vector<std::shared_ptr<device_info>> query_devices() const;
         const uvc::backend& get_backend() const { return *_backend; }
     private:

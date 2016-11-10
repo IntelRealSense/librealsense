@@ -658,19 +658,13 @@ int rs_get_api_version(rs_error ** error) try
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, RS_API_MAJOR_VERSION, RS_API_MINOR_VERSION, RS_API_PATCH_VERSION)
 
-rs_context* rs_create_recording_context(int api_version, rs_error** error) try
+rs_context* rs_create_recording_context(int api_version, const char* filename, rs_error** error) try
 {
     verify_version_compatibility(api_version);
 
-    return new rs_context{ std::make_shared<rsimpl::context>(rsimpl::backend_type::record, nullptr) };
+    return new rs_context{ std::make_shared<rsimpl::context>(rsimpl::backend_type::record, filename) };
 }
-HANDLE_EXCEPTIONS_AND_RETURN(nullptr, api_version)
-
-void rs_save_recording_to_file(const rs_context* ctx, const char* filename, rs_error** error) try
-{
-    ctx->ctx->save_to(filename);
-}
-HANDLE_EXCEPTIONS_AND_RETURN(, ctx, filename)
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, api_version, filename)
 
 rs_context* rs_create_mock_context(int api_version, const char* filename, rs_error** error) try
 {
