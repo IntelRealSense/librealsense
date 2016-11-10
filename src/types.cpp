@@ -8,7 +8,7 @@
 #include <iomanip>
 #include <numeric>
 
-#define unknown "UNKNOWN" 
+#define unknown "UNKNOWN"
 
 namespace rsimpl
 {
@@ -169,9 +169,9 @@ namespace rsimpl
         if (is_any) return "any";
 
         std::stringstream s;
-        s << std::setfill('0') << std::setw(2) << m_major << "." 
-            << std::setfill('0') << std::setw(2) << m_minor << "." 
-            << std::setfill('0') << std::setw(2) << m_patch << "." 
+        s << std::setfill('0') << std::setw(2) << m_major << "."
+            << std::setfill('0') << std::setw(2) << m_minor << "."
+            << std::setfill('0') << std::setw(2) << m_patch << "."
             << std::setfill('0') << std::setw(2) << m_build;
         return s.str();
     }
@@ -310,54 +310,54 @@ namespace rsimpl
         return ~oldcrc32;
     }
 
-	bool stream_request::match(const stream_request& other) const
-	{
-		if (stream != rs_stream::RS_STREAM_ANY && other.stream != rs_stream::RS_STREAM_ANY && (stream != other.stream))
-		{
-			return false;
-		}
-		if (format != rs_format::RS_FORMAT_ANY && other.format != rs_format::RS_FORMAT_ANY && (format != other.format))
-		{
-			return false;
-		}
-		if (fps != 0 && other.fps != 0 && (fps != other.fps))
-		{
-			return false;
-		}
-		if (width != 0 && other.width != 0 && (width != other.width))
-		{
-			return false;
-		}
-		if (height != 0 && other.height != 0 && (height != other.height))
-		{
-			return false;
-		}
-		return true;
-	}
+    bool stream_request::match(const stream_request& other) const
+    {
+        if (stream != rs_stream::RS_STREAM_ANY && other.stream != rs_stream::RS_STREAM_ANY && (stream != other.stream))
+        {
+            return false;
+        }
+        if (format != rs_format::RS_FORMAT_ANY && other.format != rs_format::RS_FORMAT_ANY && (format != other.format))
+        {
+            return false;
+        }
+        if (fps != 0 && other.fps != 0 && (fps != other.fps))
+        {
+            return false;
+        }
+        if (width != 0 && other.width != 0 && (width != other.width))
+        {
+            return false;
+        }
+        if (height != 0 && other.height != 0 && (height != other.height))
+        {
+            return false;
+        }
+        return true;
+    }
 
-	bool stream_request::contradicts(const std::vector<stream_request>& requests) const
-	{
-		for (auto request : requests)
-		{
-			if (fps != 0 && request.fps != 0 && (fps != request.fps))
-			{
-				return true;
-			}
-			if (width != 0 && request.width != 0 && (width != request.width))
-			{
-				return true;
-			}
-			if (height != 0 && request.height != 0 && (height != request.height))
-			{
-				return true;
-			}
-		}
-		return false;
-	}
+    bool stream_request::contradicts(const std::vector<stream_request>& requests) const
+    {
+        for (auto request : requests)
+        {
+            if (fps != 0 && request.fps != 0 && (fps != request.fps))
+            {
+                return true;
+            }
+            if (width != 0 && request.width != 0 && (width != request.width))
+            {
+                return true;
+            }
+            if (height != 0 && request.height != 0 && (height != request.height))
+            {
+                return true;
+            }
+        }
+        return false;
+    }
 
-	bool stream_request::has_wildcards() const
-	{
-		return (fps == 0 || width == 0 || height == 0 || stream == rs_stream::RS_STREAM_ANY || format == rs_format::RS_FORMAT_ANY);
-	}
+    bool stream_request::has_wildcards() const
+    {
+        return (fps == 0 || width == 0 || height == 0 || stream == rs_stream::RS_STREAM_ANY || format == rs_format::RS_FORMAT_ANY);
+    }
 
 }

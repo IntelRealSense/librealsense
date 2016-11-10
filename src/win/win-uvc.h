@@ -26,7 +26,7 @@ namespace rsimpl
             frame_callback callback = nullptr;
         };
 
-        typedef std::function<void(const uvc_device_info&, IMFActivate*)> 
+        typedef std::function<void(const uvc_device_info&, IMFActivate*)>
                 enumeration_callback;
 
         class wmf_uvc_device : public std::enable_shared_from_this<wmf_uvc_device>, 

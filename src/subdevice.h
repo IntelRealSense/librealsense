@@ -66,10 +66,10 @@ namespace rsimpl
         bool try_get_pf(const uvc::stream_profile& p, native_pixel_format& result) const;
 
         std::vector<request_mapping> resolve_requests(std::vector<stream_request> requests);
- 
+
     private:
 
-		bool auto_complete_request(std::vector<stream_request>& requests);
+        bool auto_complete_request(std::vector<stream_request>& requests);
 
         std::vector<native_pixel_format> _pixel_formats;
     };
@@ -153,7 +153,7 @@ namespace rsimpl
         }
 
         template<class T>
-        auto invoke_powered(T action) 
+        auto invoke_powered(T action)
             -> decltype(action(*static_cast<uvc::uvc_device*>(nullptr)))
         {
             power on(shared_from_this());
@@ -192,7 +192,7 @@ namespace rsimpl
             {
             }
 
-            void stop() override 
+            void stop() override
             {
                 streaming_lock::stop();
                 auto strong = _owner.lock();

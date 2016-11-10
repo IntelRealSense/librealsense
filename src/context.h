@@ -39,12 +39,13 @@ namespace rsimpl
         backend_type _type;
     };
 
-    static std::vector<uvc::uvc_device_info> filter_by_product(const std::vector<uvc::uvc_device_info>& devices, uint32_t pid)
+    static std::vector<uvc::uvc_device_info> filter_by_product(const std::vector<uvc::uvc_device_info>& devices, const std::vector<uint16_t>& pid_list)
     {
         std::vector<uvc::uvc_device_info> result;
         for (auto&& info : devices)
         {
-            if (info.pid == pid) result.push_back(info);
+            if (pid_list.end() != std::find(pid_list.begin(), pid_list.end(), info.pid))
+                result.push_back(info);
         }
         return result;
     }
