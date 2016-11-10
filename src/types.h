@@ -64,6 +64,98 @@ namespace rsimpl
     };
 #pragma pack(pop)
 
+    template <class T>
+    class lazy
+    {
+    public:
+        lazy() : _init([]() { T t; return t; }) {}
+        lazy(std::function<T()> initializer) : _init(std::move(initializer)) {}
+
+        T& operator*()
+        {
+            return *operate();
+        }
+
+        const T& operator*() const
+        {
+            return *operate();
+        }
+
+        lazy(lazy&& other) noexcept
+        {
+            std::lock_guard<std::mutex> lock(other._mtx);
+            if (!other._was_init)
+            {
+                _init = move(other._init);
+                _was_init = false;
+            }
+            else
+            {
+                _init = move(other._init);
+                _was_init = true;
+                _ptr = move(other._ptr);
+            }
+        }
+
+        lazy& operator=(std::function<T()> func) noexcept
+        {
+            return *this = lazy<T>(std::move(func));
+        }
+
+        lazy& operator=(lazy&& other) noexcept
+        {
+            std::lock_guard<std::mutex> lock1(_mtx);
+            std::lock_guard<std::mutex> lock2(other._mtx);
+            if (!other._was_init)
+            {
+                _init = move(other._init);
+                _was_init = false;
+            }
+            else
+            {
+                _init = move(other._init);
+                _was_init = true;
+                _ptr = move(other._ptr);
+            }
+
+            return *this;
+        }
+
+    private:
+        T* operate() const
+        {
+            std::lock_guard<std::mutex> lock(_mtx);
+            if (!_was_init)
+            {
+                _ptr = std::make_unique<T>(_init());
+                _was_init = true;
+            }
+            return _ptr.get();
+        }
+
+        mutable std::mutex _mtx;
+        mutable bool _was_init = false;
+        std::function<T()> _init;
+        mutable std::unique_ptr<T> _ptr;
+    };
+
+    template<typename T, int sz>
+    int arr_size(T(&)[sz])
+    {
+        return sz;
+    }
+
+    template<typename T>
+    std::string array2str(T& data)
+    {
+        std::stringstream ss;
+        for (auto i = 0; i < arr_size(data); i++)
+            ss << " [" << i << "] = " << data[i] << "\t";
+        return ss.str();
+    }
+
+    typedef float float_4[4];
+
     ///////////////////////
     // Logging mechanism //
     ///////////////////////
@@ -647,7 +739,7 @@ namespace rsimpl
     ///////////////////////////////////////////
     float3x3 calc_rodrigues_matrix(const std::vector<double> rot);
     // Auxillary function that calculates standard 32bit CRC code. used in verificaiton
-    uint32_t calc_crc32(uint8_t *buf, size_t bufsize);
+    uint32_t calc_crc32(const uint8_t *buf, size_t bufsize);
 }
 
 namespace std {

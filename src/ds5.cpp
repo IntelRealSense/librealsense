@@ -198,6 +198,24 @@ namespace rsimpl
         return _hw_monitor.send(input);
     }
 
-    // "Get Version and Date"
-    // Reference: Commands.xml in IVCAM_DLL
+    rs_intrinsics ds5_camera::get_intrinsics(rs_subdevice subdevice, stream_request profile) const
+    {
+        if (!supports(subdevice)) throw std::runtime_error("Requested subdevice is unsupported.");
+
+        switch (subdevice) {
+        case RS_SUBDEVICE_DEPTH:
+            return get_intrinsic_by_resolution(
+                *_coefficients_table_raw,
+                ds::calibration_table_id::coefficients_table_id,
+                    profile.width, profile.height);
+        default:
+            throw std::runtime_error("Not Implemented");
+        }
+    }
+
+    std::vector<uint8_t> ds5_camera::get_raw_calibration_table(ds::calibration_table_id table_id) const
+    {
+        command cmd(ds::GETINTCAL, table_id);
+        return _hw_monitor.send(cmd);
+    }
 }

@@ -174,13 +174,17 @@ namespace rsimpl
             register_depth_xu<uint16_t>(RS_OPTION_EXPOSURE, DS5_EXPOSURE, "DS5 Exposure");
             register_depth_xu<uint16_t>(RS_OPTION_LASER_POWER, DS5_LASER_POWER,
                 "Manual laser power. applicable only in on mode");
+
+            _coefficients_table_raw = [this]() { return get_raw_calibration_table(coefficients_table_id); };
         }
 
         std::vector<uint8_t> send_receive_raw_data(const std::vector<uint8_t>& input) override;
+        rs_intrinsics get_intrinsics(rs_subdevice subdevice, stream_request profile) const override;
 
     private:
         hw_monitor _hw_monitor;
         std::vector<std::shared_ptr<uvc::uvc_device>> _devices;
+        lazy<std::vector<uint8_t>> _coefficients_table_raw;
 
         template<class T>
         void register_depth_xu(rs_option opt, uint8_t id, std::string desc)
@@ -190,6 +194,9 @@ namespace rsimpl
                     get_uvc_endpoint(RS_SUBDEVICE_DEPTH),
                     ds::depth_xu, id, std::move(desc)));
         }
+
+        std::vector<uint8_t> get_raw_calibration_table(ds::calibration_table_id table_id) const;
+
     };
 }
 #endif
