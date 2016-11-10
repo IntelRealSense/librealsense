@@ -4,7 +4,6 @@
 #pragma once
 
 #include "backend.h"
-#include "hw-monitor.h"
 #include "types.h"
 #include <map>
 
@@ -125,8 +124,7 @@ namespace rsimpl {
             throw std::runtime_error("resolution not found.");
         }
 
-        rs_intrinsics get_ds5_intrinsic_by_resolution(const std::vector<unsigned char> & raw_data, calibration_table_id table_id, uint32_t width, uint32_t height);
-        void get_ds5_table_raw_data(const hw_monitor& hw_mon, calibration_table_id table_id, std::vector<uint8_t>& table_raw_data);
+        rs_intrinsics get_intrinsic_by_resolution(const std::vector<unsigned char> & raw_data, calibration_table_id table_id, uint32_t width, uint32_t height);
 
         //static std::vector<uvc::uvc_device_info> filter_by_product(const std::vector<uvc::uvc_device_info>& devices, uint32_t pid)
         //{

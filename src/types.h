@@ -65,29 +65,23 @@ namespace rsimpl
 #pragma pack(pop)
 
     template <class T>
-    class Lazy
+    class lazy
     {
     public:
-        Lazy() {}
-        explicit Lazy(std::function<T()> initializer) : _init(initializer) {}
-
-        void update_func(std::function<T()> initializer) const
-        {
-            std::lock_guard<std::mutex> lock(_mtx);
-            _init = initializer;
-        }
-
-        T& operator()()
-        {
-            return *operate();
-        }
+        lazy() : _init([]() { T t; return t; }) {}
+        lazy(std::function<T()> initializer) : _init(std::move(initializer)) {}
 
         T& operator*()
         {
             return *operate();
         }
 
-        Lazy(Lazy&& other) noexcept
+        const T& operator*() const
+        {
+            return *operate();
+        }
+
+        lazy(lazy&& other) noexcept
         {
             std::lock_guard<std::mutex> lock(other._mtx);
             if (!other._was_init)
@@ -99,12 +93,36 @@ namespace rsimpl
             {
                 _init = move(other._init);
                 _was_init = true;
-                _ptr.reset(move(other._ptr));
+                _ptr = move(other._ptr);
             }
         }
 
+        lazy& operator=(std::function<T()> func) noexcept
+        {
+            return *this = lazy<T>(std::move(func));
+        }
+
+        lazy& operator=(lazy&& other) noexcept
+        {
+            std::lock_guard<std::mutex> lock1(_mtx);
+            std::lock_guard<std::mutex> lock2(other._mtx);
+            if (!other._was_init)
+            {
+                _init = move(other._init);
+                _was_init = false;
+            }
+            else
+            {
+                _init = move(other._init);
+                _was_init = true;
+                _ptr = move(other._ptr);
+            }
+
+            return *this;
+        }
+
     private:
-        T* operate()
+        T* operate() const
         {
             std::lock_guard<std::mutex> lock(_mtx);
             if (!_was_init)
@@ -117,9 +135,26 @@ namespace rsimpl
 
         mutable std::mutex _mtx;
         mutable bool _was_init = false;
-        mutable std::function<T()> _init;
+        std::function<T()> _init;
         mutable std::unique_ptr<T> _ptr;
     };
+
+    template<typename T, int sz>
+    int arr_size(T(&)[sz])
+    {
+        return sz;
+    }
+
+    template<typename T>
+    std::string array2str(T& data)
+    {
+        std::stringstream ss;
+        for (auto i = 0; i < arr_size(data); i++)
+            ss << " [" << i << "] = " << data[i] << "\t";
+        return ss.str();
+    }
+
+    typedef float float_4[4];
 
     ///////////////////////
     // Logging mechanism //

@@ -202,15 +202,20 @@ namespace rsimpl
     {
         if (!supports(subdevice)) throw std::runtime_error("Requested subdevice is unsupported.");
 
-        auto table_id = ds::calibration_table_id::coefficients_table_id;
-        std::vector<uint8_t> table_raw_data;
-        ds::ds5_calibration calib_data;
         switch (subdevice) {
         case RS_SUBDEVICE_DEPTH:
-            lazy_get_ds5_table_raw_data.update_func([&]() { get_ds5_table_raw_data(_hw_monitor, table_id, table_raw_data); return table_raw_data; });
-            table_raw_data = lazy_get_ds5_table_raw_data();
-            return get_ds5_intrinsic_by_resolution(table_raw_data, table_id, profile.width, profile.height);
-        default: throw std::runtime_error("Not Implemented");
+            return get_intrinsic_by_resolution(
+                *_coefficients_table_raw,
+                ds::calibration_table_id::coefficients_table_id,
+                    profile.width, profile.height);
+        default:
+            throw std::runtime_error("Not Implemented");
         }
+    }
+
+    std::vector<uint8_t> ds5_camera::get_raw_calibration_table(ds::calibration_table_id table_id) const
+    {
+        command cmd(ds::GETINTCAL, table_id);
+        return _hw_monitor.send(cmd);
     }
 }

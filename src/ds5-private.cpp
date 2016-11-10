@@ -6,35 +6,12 @@
 
 using namespace std;
 
-#define stringify( name ) # name "\t"
+#define intrinsics_string(res) #res << "\t" << array2str((float_4&)table->rect_params[res]) << endl
 
 namespace rsimpl {
     namespace ds {
 
-        void get_calibration_table_entry(const hw_monitor& hw_mon, calibration_table_id table_id, vector<uint8_t>& raw_data)
-        {
-            command cmd(GETINTCAL, table_id);
-            raw_data = hw_mon.send(cmd);
-        }
-
-        template<typename T, int sz>
-        int arr_size(T(&)[sz])
-        {
-            return sz;
-        }
-
-        template<typename T>
-        const string array2str(T& data)
-        {
-            stringstream ss;
-            for (int i = 0; i < arr_size(data); i++)
-                ss << " [" << i << "] = " << data[i] << "\t";
-            return string(ss.str().c_str());
-        }
-
-        typedef float float_4[4];
-
-        rs_intrinsics get_ds5_intrinsic_by_resolution(const vector<unsigned char> & raw_data, calibration_table_id table_id, uint32_t width, uint32_t height)
+        rs_intrinsics get_intrinsic_by_resolution(const vector<unsigned char> & raw_data, calibration_table_id table_id, uint32_t width, uint32_t height)
         {
             switch (table_id)
             {
@@ -42,8 +19,7 @@ namespace rsimpl {
             {
                 if (raw_data.size() != sizeof(coefficients_table))
                 {
-                    stringstream ss; ss << "DS5 Coefficients table read error, actual size is " << raw_data.size() << " while expecting " << sizeof(coefficients_table) << " bytes";
-                    string str(ss.str().c_str());
+                    string str = to_string() << "DS5 Coefficients table read error, actual size is " << raw_data.size() << " while expecting " << sizeof(coefficients_table) << " bytes";
                     LOG_ERROR(str);
                     throw runtime_error(str);
                 }
@@ -62,14 +38,14 @@ namespace rsimpl {
                 LOG_DEBUG(endl
                     << "baseline = " << table->baseline << " mm" << endl
                     << "Rect params:  \t fX\t\t fY\t\t ppX\t\t ppY \n"
-                    << stringify(res_1920_1080) << array2str((float_4&)table->rect_params[res_1920_1080]) << endl
-                    << stringify(res_1280_720) << array2str((float_4&)table->rect_params[res_1280_720]) << endl
-                    << stringify(res_640_480) << array2str((float_4&)table->rect_params[res_640_480]) << endl
-                    << stringify(res_848_480) << array2str((float_4&)table->rect_params[res_848_480]) << endl
-                    << stringify(res_424_240) << array2str((float_4&)table->rect_params[res_424_240]) << endl
-                    << stringify(res_640_360) << array2str((float_4&)table->rect_params[res_640_360]) << endl
-                    << stringify(res_320_240) << array2str((float_4&)table->rect_params[res_320_240]) << endl
-                    << stringify(res_480_270) << array2str((float_4&)table->rect_params[res_480_270]));
+                    << intrinsics_string(res_1920_1080)
+                    << intrinsics_string(res_1280_720)
+                    << intrinsics_string(res_640_480)
+                    << intrinsics_string(res_848_480)
+                    << intrinsics_string(res_424_240)
+                    << intrinsics_string(res_640_360)
+                    << intrinsics_string(res_320_240)
+                    << intrinsics_string(res_480_270));
 
                 auto resolution = width_height_to_ds5_rect_resolutions(width ,height);
                 rs_intrinsics intrinsics;
@@ -90,22 +66,5 @@ namespace rsimpl {
                 throw runtime_error(to_string() << "Parsing Calibration table type " << table_id << " is not supported");
             }
         }
-
-        void get_ds5_table_raw_data(const hw_monitor& hw_mon, calibration_table_id table_id, vector<uint8_t>& table_raw_data)
-        {
-            try
-            {
-                get_calibration_table_entry(hw_mon, table_id, table_raw_data);
-            }
-            catch (const runtime_error &e)
-            {
-                LOG_ERROR(e.what());
-            }
-            catch (...)
-            {
-                LOG_ERROR("Reading DS5 Calibration failed, table " << table_id);
-            }
-        }
-
     } // rsimpl::ds
 } // namespace rsimpl
