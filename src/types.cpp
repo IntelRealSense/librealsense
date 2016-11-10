@@ -253,6 +253,7 @@ namespace rsimpl
         CASE(CALIBRATION_DATE)
         CASE(PROGRAM_DATE)
         CASE(FOCUS_ALIGNMENT_DATE)
+        CASE(EMITTER_TYPE)
         CASE(FOCUS_VALUE)
         CASE(CONTENT_VERSION)
         CASE(ISP_FW_VERSION)
@@ -262,7 +263,7 @@ namespace rsimpl
         CASE(3RD_LENS_TYPE)
         CASE(3RD_LENS_COATING_TYPE)
         CASE(3RD_NOMINAL_BASELINE)
-        CASE(EMITTER_TYPE)
+        CASE(ADVANCED_MODE)
         default: assert(!is_valid(value)); return unknown;
         }
         #undef CASE

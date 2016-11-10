@@ -13,6 +13,7 @@ namespace rsimpl {
 
     enum class gvd_fields : uint16_t // data were taken from CommandsDS5.xml
     {
+        aume_mode_offset            = 5,
         fw_version_offset           = 12,
         asic_module_serial_offset   = 64,
         gvd_size                    = 1024

@@ -10,7 +10,7 @@ extern "C" {
 
 #define RS_API_MAJOR_VERSION    2
 #define RS_API_MINOR_VERSION    2
-#define RS_API_PATCH_VERSION    0
+#define RS_API_PATCH_VERSION    1
 
 #define STRINGIFY(arg) #arg
 #define VAR_ARG_STRING(arg) STRINGIFY(arg)
@@ -40,7 +40,7 @@ typedef enum rs_capabilities
     RS_CAPABILITIES_ADAPTER_BOARD           , /**< interanlly includes MIPI to USB adapter */
     RS_CAPABILITIES_ENUMERATION             , /**< provides enough basic functionality to be considered supported. this to catch at runtime various outdated engineering samples */
     RS_CAPABILITIES_ADVANCED_MODE           , /**< indication for firmware operational mode*/
-    RS_CAPABILITIES_COUNT                   , 
+    RS_CAPABILITIES_COUNT                   ,
 } rs_capabilities;
 
 typedef enum rs_stream
@@ -236,6 +236,7 @@ typedef enum rs_camera_info {
     RS_CAMERA_INFO_3RD_LENS_COATING_TYPE         ,
     RS_CAMERA_INFO_NOMINAL_BASELINE              ,
     RS_CAMERA_INFO_3RD_NOMINAL_BASELINE          ,
+    RS_CAMERA_INFO_ADVANCED_MODE                 ,
     RS_CAMERA_INFO_COUNT
 } rs_camera_info;
 
@@ -858,7 +859,7 @@ rs_format rs_get_detached_frame_format(const rs_frame_ref * frame, rs_error ** e
 rs_stream rs_get_detached_frame_stream_type(const rs_frame_ref * frameset, rs_error ** error);
 
 /**
-* send a blob of data to the device. at the moment only RS_BLOB_TYPE_MOTION_MODULE_FIRMWARE_UPDATE is support 
+* send a blob of data to the device. at the moment only RS_BLOB_TYPE_MOTION_MODULE_FIRMWARE_UPDATE is support
 * of the motiohn module.
 * \param[in] firmware data.
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored

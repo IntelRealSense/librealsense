@@ -53,6 +53,7 @@ namespace rsimpl
         info.camera_info[RS_CAMERA_INFO_CAMERA_FIRMWARE_VERSION] = info.firmware_version;
         info.camera_info[RS_CAMERA_INFO_DEVICE_SERIAL_NUMBER] = info.serial;
         info.camera_info[RS_CAMERA_INFO_DEVICE_NAME] = info.name;
+        info.camera_info[RS_CAMERA_INFO_ADVANCED_MODE] = advanced_mode ? "Enabled" : "Disabled";
 
         info.capabilities_vector.push_back(RS_CAPABILITIES_ENUMERATION);
         info.capabilities_vector.push_back(RS_CAPABILITIES_DEPTH);

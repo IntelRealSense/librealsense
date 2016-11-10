@@ -215,20 +215,20 @@ TEST_CASE("RS4XX Auto Exposure Control", "[live] [RS4XX]")
 
     dev->get_options(&opt, 1, &exposure_mode_init);
     INFO("Initial auto-exposure mode obtained from hardware is " << exposure_mode_init);
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    std::this_thread::sleep_for(std::chrono::milliseconds(50));
 
     dev->get_option_range(opt, min, max, step, def);
 
     dev->set_options(&opt, 1, &set_val);
     dev->get_options(&opt, 1, &res);
     REQUIRE(set_val == res);
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    std::this_thread::sleep_for(std::chrono::milliseconds(50));
 
     dev->set_options(&opt, 1, &reset_val);
     dev->get_options(&opt, 1, &res);
-    REQUIRE(set_val == res);
+    REQUIRE(reset_val == res);
 
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    std::this_thread::sleep_for(std::chrono::milliseconds(50));
     // Revert to original value
     dev->set_options(&opt, 1, &exposure_mode_init);
     dev->get_options(&opt, 1, &res);
@@ -300,7 +300,7 @@ TEST_CASE("RS4XX Advanced Mode Verification", "[live] [RS4XX]")
     std::vector<uint8_t> hw_rst{ 0x14, 0x0, 0xab, 0xcd, 0x20, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 
 
-    SECTION("Restart with Advanced Mode")
+    SECTION("Restart into Advanced Mode")
     {
         // Enter advanced mode
         memset(&test_obj, 0, sizeof(rs_raw_buffer));
@@ -323,6 +323,10 @@ TEST_CASE("RS4XX Advanced Mode Verification", "[live] [RS4XX]")
     {
         try
         {
+            // Direct verification
+            if (dev->supports(rs::camera_info::advanced_mode))
+                REQUIRE(std::string(dev->get_info(rs::camera_info::advanced_mode)) == std::string("Enabled"));
+            // Indirect verification
             dev->enable_stream(rs::stream::infrared, 1280, 720, rs::format::y8, 30);
             dev->enable_stream(rs::stream::infrared2,1280, 720, rs::format::y8, 30);
             dev->start();
@@ -338,7 +342,7 @@ TEST_CASE("RS4XX Advanced Mode Verification", "[live] [RS4XX]")
         }
     }
 
-    SECTION("Restart w/o Advanced Mode")
+    SECTION("Restart into Operational Mode")
     {
         // De-activate advanced mode
         memset(&test_obj, 0, sizeof(rs_raw_buffer));
@@ -361,6 +365,9 @@ TEST_CASE("RS4XX Advanced Mode Verification", "[live] [RS4XX]")
     {
         try
         {
+            // Direct verification
+            if (dev->supports(rs::camera_info::advanced_mode))
+                REQUIRE(std::string(dev->get_info(rs::camera_info::advanced_mode)) == std::string("Disabled"));
             dev->enable_stream(rs::stream::infrared, 1920, 1080, rs::format::y8, 30);
             dev->enable_stream(rs::stream::infrared2, 1920, 1080, rs::format::y8, 30);
             dev->start();
