@@ -212,6 +212,34 @@ namespace rsimpl
             {
                 if(!is_capturing)
                 {
+                    // Start capturing
+                    for(size_t i = 0; i < buffers.size(); ++i)
+                    {
+                        v4l2_buffer buf = {};
+                        buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+                        buf.memory = V4L2_MEMORY_MMAP;
+                        buf.index = i;
+                        if(xioctl(fd, VIDIOC_QBUF, &buf) < 0) throw_error("VIDIOC_QBUF");
+                    }
+
+                    v4l2_buf_type type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+                    for(int i=0; i<10; ++i)
+                    {
+                        if(xioctl(fd, VIDIOC_STREAMON, &type) < 0)
+                        {
+                            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+                        }
+                    }
+                    if(xioctl(fd, VIDIOC_STREAMON, &type) < 0) throw_error("VIDIOC_STREAMON");
+
+                    is_capturing = true;
+                }
+            }
+
+            void config_capture()
+            {
+                if(!is_capturing)
+                {
                     v4l2_format fmt = {};
                     fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
                     fmt.fmt.pix.width       = width;
@@ -255,28 +283,6 @@ namespace rsimpl
                         buffers[i].start = mmap(NULL, buf.length, PROT_READ | PROT_WRITE, MAP_SHARED, fd, buf.m.offset);
                         if(buffers[i].start == MAP_FAILED) throw_error("mmap");
                     }
-
-                    // Start capturing
-                    for(size_t i = 0; i < buffers.size(); ++i)
-                    {
-                        v4l2_buffer buf = {};
-                        buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-                        buf.memory = V4L2_MEMORY_MMAP;
-                        buf.index = i;
-                        if(xioctl(fd, VIDIOC_QBUF, &buf) < 0) throw_error("VIDIOC_QBUF");
-                    }
-
-                    v4l2_buf_type type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-                    for(int i=0; i<10; ++i)
-                    {
-                        if(xioctl(fd, VIDIOC_STREAMON, &type) < 0)
-                        {
-                            std::this_thread::sleep_for(std::chrono::milliseconds(100));
-                        }
-                    }
-                    if(xioctl(fd, VIDIOC_STREAMON, &type) < 0) throw_error("VIDIOC_STREAMON");
-
-                    is_capturing = true;
                 }
             }
 
@@ -423,9 +429,17 @@ namespace rsimpl
                 {
                     if(sub->callback)
                     {
-                        sub->start_capture();
+                        sub->config_capture();
                         subs.push_back(sub.get());
                     }                
+                }
+
+                for(auto & sub : subdevices)
+                {
+                    if(sub->callback)
+                    {
+                        sub->start_capture();
+                    }
                 }
 
                 thread = std::thread([this, subs]()
