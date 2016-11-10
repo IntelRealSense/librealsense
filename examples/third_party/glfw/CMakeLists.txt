@@ -32,10 +32,10 @@ set(GLFW3_HPP
 if(WIN32)
     add_definitions(-D_GLFW_USE_CONFIG_H)
     add_library(glfw3 STATIC ${GLFW3_CPP} ${GLFW3_HPP})
-	
-	set_target_properties (glfw3 PROPERTIES
-		FOLDER "3rd Party"
-	)
+
+    set_target_properties (glfw3 PROPERTIES
+        FOLDER "3rd Party"
+    )
 else()
     add_library(glfw3 ${GLFW3_CPP} ${GLFW3_HPP})
 endif()

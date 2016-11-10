@@ -364,7 +364,7 @@ rs_streaming_lock* rs_open(rs_device* device, rs_subdevice subdevice, rs_stream 
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return exclusive lock to be used for streaming, should be released by rs_close
 */
-rs_streaming_lock* rs_open_many(rs_device* device, rs_subdevice subdevice, 
+rs_streaming_lock* rs_open_many(rs_device* device, rs_subdevice subdevice,
     const rs_stream* stream, const int* width, const int* height, const int* fps, const rs_format* format, int count, rs_error** error);
 
 /**
@@ -423,7 +423,7 @@ double rs_get_frame_timestamp(const rs_frame* frame, rs_error** error);
 
 /**
 * retrive timestamp domain from frame handle. timestamps can only be comparable if they are in common domain
-* (for example, depth timestamp might come from system time while color timestamp might come from the device) 
+* (for example, depth timestamp might come from system time while color timestamp might come from the device)
 * this method is used to check if two timestamp values are comparable (generated from the same clock)
 * \param[in] frame      handle returned from a callback
 * \param[out] error     if non-null, receives any error that occurs during this call, otherwise, errors are ignored
@@ -565,7 +565,7 @@ void rs_get_subdevice_option_range(const rs_device* device, rs_subdevice subdevi
 const char* rs_get_subdevice_option_description(const rs_device* device, rs_subdevice subdevice, rs_option option, rs_error ** error);
 
 /**
-* get option value description (in case specific option value hold special meaning) 
+* get option value description (in case specific option value hold special meaning)
 * \param[in] device     the RealSense device
 * \param[in] subdevice  the subdevice index for the option
 * \param[in] option     option id to be checked
@@ -578,7 +578,7 @@ const char* rs_get_subdevice_option_value_description(const rs_device* device, r
 /**
 * retrieve camera specific information, like versions of various internal componnents
 * \param[in] device     the RealSense device
-* \param[in] info	    camera info type to retrieve
+* \param[in] info       camera info type to retrieve
 * \param[out] error     if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return               the requested camera info string, in a format specific to the device model
 */
@@ -608,7 +608,7 @@ rs_frame_queue* rs_create_frame_queue(int capacity, rs_error** error);
 */
 void rs_delete_frame_queue(rs_frame_queue* queue);
 
-/** 
+/**
 * wait until new frame becomes available in the queue and dequeue it
 * \param[in] queue the frame queue data structure
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
@@ -627,7 +627,7 @@ int rs_poll_for_frame(rs_frame_queue* queue, rs_frame** output_frame, rs_error**
 
 /**
 * enqueue new frame into a queue
-* \param[in] frame frame handle to enqueue (this operation passed ownership to the queue) 
+* \param[in] frame frame handle to enqueue (this operation passed ownership to the queue)
 * \param[in] queue the frame queue data structure
 */
 void rs_enqueue_frame(rs_frame* frame, void* queue);
