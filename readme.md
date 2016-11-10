@@ -15,7 +15,7 @@ Platform | Build Status |
 Linux and OS X | [![Build Status](https://travis-ci.org/IntelRealSense/librealsense.svg?branch=master)](https://travis-ci.org/IntelRealSense/librealsense)
 Windows | [![Build status](https://ci.appveyor.com/api/projects/status/y9f8qcebnb9v41y4?svg=true)](https://ci.appveyor.com/project/ddiakopoulos/librealsense)
 
-This project is a cross-platform library (Linux, Windows, Mac) for capturing data from the Intel® RealSense™ F200, SR300, R200, LR200 ZR300 and the RS400 cameras. This effort was initiated to better support researchers, creative coders, and app developers in domains such as robotics, virtual reality, and the internet of things. Several often-requested features of RealSense™ devices are implemented in this project, including multi-camera capture.
+This project is a cross-platform library (Linux, Windows, Mac) for capturing data from the Intel® RealSense™ F200, SR300, R200, LR200 ZR300 and the RS4XX cameras. This effort was initiated to better support researchers, creative coders, and app developers in domains such as robotics, virtual reality, and the internet of things. Several often-requested features of RealSense™ devices are implemented in this project, including multi-camera capture.
 
 Developer kits containing the necessary hardware to use this library are available for purchase at [this link](http://click.intel.com/realsense.html). This project is separate from the production software stack available in the [Intel® RealSense™ SDK](https://software.intel.com/en-us/intel-realsense-sdk), namely that this library only encompasses camera capture functionality without additional computer vision algorithms.
 
@@ -35,7 +35,7 @@ The Intel® RealSense™ Cross Platform API is experimental and not an official 
   * [Linux](./doc/installation.md)
   * [Windows](./doc/installation_windows.md)
   * [Mac OS X](./doc/installation_osx.md)
-6. RealSense DS5
+
 
 ## Documentation
 
@@ -69,7 +69,7 @@ A comprehensive suite of sample and tutorial applications are provided in the `/
   * Camera Firmware 2.0.71.18 and up
   * USB Adapter Board Firmware 1.27.0.0 and up
   * Motion Module Firmware 1.23.0.0 and up
-6. RealSense R400p/R410a (DS5 B0) Firmware 5.2.4.0 and up
+6. RealSense R400p/R410a (DS5 B0) Firmware 5.2.7.0 and up
 
 
 ## Compatible Platforms
@@ -77,7 +77,7 @@ A comprehensive suite of sample and tutorial applications are provided in the `/
 The library is written in standards-conforming C++11 and relies only on the C89 ABI for its public interface. It is developed and tested on the following platforms:
 
 1. Ubuntu 14.04 and 16.04 LTS (GCC 4.9 toolchain)
-2. Windows 10 (Visual Studio 2015 Update 2)
+2. Windows 8 (Visual Studio 2015 Update 2)
 3. Mac OS X 10.7+ (Clang toolchain)
 4. [Ostro](https://ostroproject.org/)
 
