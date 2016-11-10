@@ -302,7 +302,7 @@ namespace rsimpl
     };
 
     /// Calculate CRC code for arbitrary characters buffer
-    uint32_t calc_crc32(uint8_t *buf, size_t bufsize)
+    uint32_t calc_crc32(const uint8_t *buf, size_t bufsize)
     {
         uint32_t oldcrc32 = 0xFFFFFFFF;
         for (; bufsize; --bufsize, ++buf)

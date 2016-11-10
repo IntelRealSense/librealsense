@@ -64,6 +64,63 @@ namespace rsimpl
     };
 #pragma pack(pop)
 
+    template <class T>
+    class Lazy
+    {
+    public:
+        Lazy() {}
+        explicit Lazy(std::function<T()> initializer) : _init(initializer) {}
+
+        void update_func(std::function<T()> initializer) const
+        {
+            std::lock_guard<std::mutex> lock(_mtx);
+            _init = initializer;
+        }
+
+        T& operator()()
+        {
+            return *operate();
+        }
+
+        T& operator*()
+        {
+            return *operate();
+        }
+
+        Lazy(Lazy&& other) noexcept
+        {
+            std::lock_guard<std::mutex> lock(other._mtx);
+            if (!other._was_init)
+            {
+                _init = move(other._init);
+                _was_init = false;
+            }
+            else
+            {
+                _init = move(other._init);
+                _was_init = true;
+                _ptr.reset(move(other._ptr));
+            }
+        }
+
+    private:
+        T* operate()
+        {
+            std::lock_guard<std::mutex> lock(_mtx);
+            if (!_was_init)
+            {
+                _ptr = std::make_unique<T>(_init());
+                _was_init = true;
+            }
+            return _ptr.get();
+        }
+
+        mutable std::mutex _mtx;
+        mutable bool _was_init = false;
+        mutable std::function<T()> _init;
+        mutable std::unique_ptr<T> _ptr;
+    };
+
     ///////////////////////
     // Logging mechanism //
     ///////////////////////
@@ -647,7 +704,7 @@ namespace rsimpl
     ///////////////////////////////////////////
     float3x3 calc_rodrigues_matrix(const std::vector<double> rot);
     // Auxillary function that calculates standard 32bit CRC code. used in verificaiton
-    uint32_t calc_crc32(uint8_t *buf, size_t bufsize);
+    uint32_t calc_crc32(const uint8_t *buf, size_t bufsize);
 }
 
 namespace std {

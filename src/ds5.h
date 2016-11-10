@@ -172,10 +172,12 @@ namespace rsimpl
         }
 
         std::vector<uint8_t> send_receive_raw_data(const std::vector<uint8_t>& input) override;
+        rs_intrinsics get_intrinsics(rs_subdevice subdevice, stream_request profile) const override;
 
     private:
         hw_monitor _hw_monitor;
         std::vector<std::shared_ptr<uvc::uvc_device>> _devices;
+        mutable Lazy<std::vector<uint8_t>> lazy_get_ds5_table_raw_data;
 
         template<class T>
         void register_depth_xu(rs_option opt, uint8_t id, std::string desc)

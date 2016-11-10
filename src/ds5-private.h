@@ -4,6 +4,9 @@
 #pragma once
 
 #include "backend.h"
+#include "hw-monitor.h"
+#include "types.h"
+#include <map>
 
 namespace rsimpl {
     namespace ds {
@@ -21,7 +24,109 @@ namespace rsimpl {
         enum fw_cmd : uint8_t
         {
             GVD = 0x10,
+            GETINTCAL = 0x15,     // Read calibration table
         };
+
+        struct table_header
+        {
+            big_endian<uint16_t>    version;        // major.minor. Big-endian
+            uint16_t                table_type;     // ctCalibration
+            uint32_t                table_size;     // full size including: TOC header + TOC + actual tables
+            uint32_t                param;          // This field content is defined ny table type
+            uint32_t                crc32;          // crc of all the actual table data excluding header/CRC
+        };
+
+        enum ds5_rect_resolutions : unsigned short
+        {
+            res_1920_1080,
+            res_1280_720,
+            res_640_480,
+            res_848_480,
+            res_640_360,
+            res_424_240,
+            res_320_240,
+            res_480_270,
+            reserved_1,
+            reserved_2,
+            reserved_3,
+            reserved_4,
+            max_ds5_rect_resoluitons
+        };
+
+        struct coefficients_table
+        {
+            table_header        header;
+            float3x3            intrinsic_left;             //  left camera intrinsic data, normilized
+            float3x3            intrinsic_right;            //  right camera intrinsic data, normilized
+            float3x3            world2left_rot;             //  the inverse rotation of the left camera
+            float3x3            world2right_rot;            //  the inverse rotation of the right camera
+            float               baseline;                   //  the baseline between the cameras
+            uint8_t             reserved1[88];
+            uint32_t            brown_model;                // 0 - using DS distorion model, 1 - using Brown model
+            float4              rect_params[max_ds5_rect_resoluitons];
+            uint8_t             reserved2[64];
+        };
+
+        enum calibration_table_id
+        {
+            coefficients_table_id = 25,
+            depth_calibration_id = 31,
+            rgb_calibration_id = 32,
+            fisheye_calibration_id = 33,
+            imu_calibration_id = 34,
+            lens_shading_id = 35,
+            projector_id = 36
+        };
+
+        struct ds5_calibration
+        {
+            uint16_t        version;                        // major.minor
+            rs_intrinsics   left_imager_intrinsic;
+            rs_intrinsics   right_imager_intrinsic;
+            rs_intrinsics   depth_intrinsic[max_ds5_rect_resoluitons];
+            rs_extrinsics   left_imager_extrinsic;
+            rs_extrinsics   right_imager_extrinsic;
+            rs_extrinsics   depth_extrinsic;
+            std::map<calibration_table_id, bool> data_present;
+
+            ds5_calibration() : version(0), left_imager_intrinsic({}), right_imager_intrinsic({}),
+                left_imager_extrinsic({}), right_imager_extrinsic({}), depth_extrinsic({})
+            {
+                for (auto i = 0; i < max_ds5_rect_resoluitons; i++)
+                    depth_intrinsic[i] = {};
+                data_present.emplace(coefficients_table_id, false);
+                data_present.emplace(depth_calibration_id, false);
+                data_present.emplace(rgb_calibration_id, false);
+                data_present.emplace(fisheye_calibration_id, false);
+                data_present.emplace(imu_calibration_id, false);
+                data_present.emplace(lens_shading_id, false);
+                data_present.emplace(projector_id, false);
+            };
+        };
+
+        static std::map< ds5_rect_resolutions, int2> resolutions_list = {
+            { res_320_240,{ 320, 240 } },
+            { res_424_240,{ 424, 240 } },
+            { res_480_270,{ 480, 270 } },
+            { res_640_360,{ 640, 360 } },
+            { res_640_480,{ 640, 480 } },
+            { res_848_480,{ 848, 480 } },
+            { res_1280_720,{ 1280, 720 } },
+            { res_1920_1080,{ 1920, 1080 } },
+        };
+
+        inline ds5_rect_resolutions width_height_to_ds5_rect_resolutions(uint32_t width, uint32_t height)
+        {
+            for (auto& elem : resolutions_list)
+            {
+                if (elem.second.x == width && elem.second.y == height)
+                    return elem.first;
+            }
+            throw std::runtime_error("resolution not found.");
+        }
+
+        rs_intrinsics get_ds5_intrinsic_by_resolution(const std::vector<unsigned char> & raw_data, calibration_table_id table_id, uint32_t width, uint32_t height);
+        void get_ds5_table_raw_data(const hw_monitor& hw_mon, calibration_table_id table_id, std::vector<uint8_t>& table_raw_data);
 
         //static std::vector<uvc::uvc_device_info> filter_by_product(const std::vector<uvc::uvc_device_info>& devices, uint32_t pid)
         //{
@@ -94,5 +199,5 @@ namespace rsimpl {
             return false;
         }
 
-    } // rsimpl::ivcam
+    } // rsimpl::ds
 } // namespace rsimpl
