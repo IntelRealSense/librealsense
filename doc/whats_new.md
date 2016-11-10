@@ -10,17 +10,19 @@ This branch will provide continuous support for everyone for all new features as
 
 ## Enabled functionality
 Demos:
+- cpp-enumerate-devices
+- cpp-tutorial-1-depth
 - cpp-tutorial-2-streaming
 - cpp-config-ui
 
 Supported stream types:
 - Linux and Windows:
     - Depth
-    - Left imager Infrared + UYVY
-    - Depth + Infrared
+    - Left imager 8-bit Infrared (Y8 monochrome)/UYVY color stream
+    - Depth + Left (Y8/UYVY)
     - Calibration profiles (Advanced Mode):
-      - L/R Infrared Full HD unrectified
-      - L/R Infrared rectified
+      - L/R Infrared Full-HD 12bit; unrectified
+      - L/R Infrared 8-bit monochrome; rectified
 
 Controls:
 - Project Mode
@@ -33,5 +35,5 @@ Extrinsic and Intrinsic API
 Camera Advanced Mode API
 
 ## Known Issues
-- Camera often fails when changing stream configuration on Linux. Requires physical reconnection
-- Stopping multiple stream configuration takes about two seconds.
+- Streaming may fail when changing stream configuration on Linux. Requires physical reconnection
+- Stopping Depth+Infrared configuration on Windows takes about two seconds.
