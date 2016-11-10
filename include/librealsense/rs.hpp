@@ -712,11 +712,11 @@ namespace rs
         * create librealsense context that will try to record all operations over librealsense into a file
         * \param[in] filename string representing the name of the file to record
         */
-        explicit recording_context(const char* filename)
+        explicit recording_context(const std::string& filename)
         {
             rs_error* e = nullptr;
             _context = std::shared_ptr<rs_context>(
-                rs_create_recording_context(RS_API_VERSION, filename, &e),
+                rs_create_recording_context(RS_API_VERSION, filename.c_str(), &e),
                 rs_delete_context);
             error::handle(e);
         }
@@ -732,11 +732,11 @@ namespace rs
         * if the user calls a method that was either not called during recording or voilates causality of the recording error will be thrown
         * \param[in] filename string of the name of the file
         */
-        explicit mock_context(const char* filename)
+        explicit mock_context(const std::string& filename)
         {
             rs_error* e = nullptr;
             _context = std::shared_ptr<rs_context>(
-                rs_create_mock_context(RS_API_VERSION, filename, &e),
+                rs_create_mock_context(RS_API_VERSION, filename.c_str(), &e),
                 rs_delete_context);
             error::handle(e);
         }

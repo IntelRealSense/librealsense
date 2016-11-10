@@ -5,14 +5,12 @@
 // This set of tests is valid for any number and combination of RealSense cameras, including R200 and F200 //
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-#if !defined(MAKEFILE) || ( defined(LIVE_TEST) )
-
 #include "unit-tests-common.h"
 
 TEST_CASE( "Device metadata enumerates correctly", "[live]" )
 {
+    auto ctx = make_context(__FUNCTION__);
     // Require at least one device to be plugged in
-    rs::context ctx;
     std::vector<rs::device> list;
     REQUIRE_NOTHROW(list = ctx.query_devices());
     const int device_count = list.size();
@@ -22,7 +20,6 @@ TEST_CASE( "Device metadata enumerates correctly", "[live]" )
     for(int i=0; i<device_count; ++i)
     {
         rs::device dev = list[i];
-        //REQUIRE(dev != nullptr);
 
         SECTION( "supported device metadata strings are nonempty, unsupported ones throw" )
         {
@@ -41,8 +38,10 @@ TEST_CASE( "Device metadata enumerates correctly", "[live]" )
 ////////////////////////////////////////////////////////
 TEST_CASE("Start-Stop stream sequence", "[live]")
 {
+
+
     // Require at least one device to be plugged in
-    rs::context ctx;
+    auto ctx = make_context(__FUNCTION__);
     std::vector<rs::device> list;
     REQUIRE_NOTHROW(list = ctx.query_devices());
     const int device_count = list.size();
@@ -78,7 +77,7 @@ TEST_CASE("Start-Stop stream sequence", "[live]")
 TEST_CASE( "no extrinsic transformation between a stream and itself", "[live]" )
 {
     // Require at least one device to be plugged in
-    rs::context ctx;
+    auto ctx = make_context(__FUNCTION__);
     std::vector<rs::device> list;
     REQUIRE_NOTHROW(list = ctx.query_devices());
     const int device_count = list.size();
@@ -113,7 +112,7 @@ TEST_CASE( "no extrinsic transformation between a stream and itself", "[live]" )
 TEST_CASE( "extrinsic transformation between two streams is a rigid transform", "[live]" )
 {
     // Require at least one device to be plugged in
-    rs::context ctx;
+    auto ctx = make_context(__FUNCTION__);
     std::vector<rs::device> list;
     REQUIRE_NOTHROW(list = ctx.query_devices());
     const int device_count = list.size();
@@ -164,7 +163,7 @@ TEST_CASE( "extrinsic transformation between two streams is a rigid transform", 
 TEST_CASE( "extrinsic transformations are transitive", "[live]" )
 {
     // Require at least one device to be plugged in
-    rs::context ctx;
+    auto ctx = make_context(__FUNCTION__);
     std::vector<rs::device> list;
     REQUIRE_NOTHROW(list = ctx.query_devices());
     const int device_count = list.size();
@@ -228,7 +227,7 @@ TEST_CASE( "extrinsic transformations are transitive", "[live]" )
 TEST_CASE( "streaming modes sanity check", "[live]" )
 {
     // Require at least one device to be plugged in
-    rs::context ctx;
+    auto ctx = make_context(__FUNCTION__);
     std::vector<rs::device> list;
     REQUIRE_NOTHROW(list = ctx.query_devices());
     const int device_count = list.size();
@@ -291,9 +290,10 @@ TEST_CASE( "streaming modes sanity check", "[live]" )
     }
 }
 
-TEST_CASE("check option API", "[live][options]") {
+TEST_CASE("check option API", "[live][options]") 
+{
     // Require at least one device to be plugged in
-    rs::context ctx;
+    auto ctx = make_context(__FUNCTION__);
     std::vector<rs::device> list;
     REQUIRE_NOTHROW(list = ctx.query_devices());
     REQUIRE(list.size() > 0);
@@ -407,17 +407,23 @@ TEST_CASE("check option API", "[live][options]") {
     }
 }
 
-TEST_CASE("a single subdevice can only be opened once, different subdevices can be opened simultaneously", "[live][multicam]") {
+/*
+TEST_CASE("a single subdevice can only be opened once, different subdevices can be opened simultaneously", "[live][multicam]") 
+{
     // Require at least one device to be plugged in
-    rs::context ctx;
+    auto ctx = make_context(__FUNCTION__);
     std::vector<rs::device> list;
     REQUIRE_NOTHROW(list = ctx.query_devices());
     REQUIRE(list.size() > 0);
     SECTION("Single context") {
-        SECTION("subdevices on a single device") {
-            for (auto & dev : list) {
-                SECTION("opening the same subdevice multiple times") {
-                    for (auto && subdevice : dev) {
+        SECTION("subdevices on a single device") 
+        {
+            for (auto & dev : list) 
+            {
+                SECTION("opening the same subdevice multiple times") 
+                {
+                    for (auto && subdevice : dev) 
+                    {
                         auto modes = subdevice.get_stream_modes();
                         REQUIRE(modes.size() > 0);
                         rs::streaming_lock lock1, lock2;
@@ -504,8 +510,9 @@ TEST_CASE("a single subdevice can only be opened once, different subdevices can 
             }
         }
     }
-    SECTION("two contexts") {
-        rs::context ctx2;
+    SECTION("two contexts") 
+    {
+        auto ctx2 = make_context("two_contexts");
         std::vector<rs::device> list2;
         REQUIRE_NOTHROW(list2 = ctx2.query_devices());
         REQUIRE(list2.size() > 0);
@@ -529,4 +536,4 @@ TEST_CASE("a single subdevice can only be opened once, different subdevices can 
         }
     }
 }
-#endif /* !defined(MAKEFILE) || ( defined(LIVE_TEST) ) */
+*/
