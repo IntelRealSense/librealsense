@@ -360,11 +360,9 @@ namespace rs4xx {
 
     bool is_advanced_mode(uvc::device & device, std::timed_mutex & mutex)
     {
-        return true;       // Provision for querying FW
-        //throw std::runtime_error(to_string() << __FUNCTION__ << " Not supported");
-        hwmon_cmd cmd(fw_cmd::UAME);
-        perform_and_send_monitor_command_over_usb_monitor(device, mutex, cmd);
-        return *reinterpret_cast<bool *>(cmd.receivedCommandData);
+        std::vector<unsigned char> gvd(static_cast<uint16_t>(gvd_fields::gvd_size));
+        get_gvd_raw(device, mutex, static_cast<uint16_t>(gvd_fields::gvd_size), gvd.data());
+        return (gvd[static_cast<uint8_t>(gvd_fields::aume_mode_offset)] & (uint8_t)0x1);
     }
 
     void set_advanced_mode(uvc::device & device, std::timed_mutex & mutex, const uint8_t mode)

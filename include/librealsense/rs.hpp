@@ -196,7 +196,8 @@ namespace rs
         lens_coating_type             ,
         third_lens_coating_type       ,
         lens_nominal_baseline         ,
-        third_lens_nominal_baseline
+        third_lens_nominal_baseline   ,
+        advanced_mode
     };
 
     enum class source : uint8_t

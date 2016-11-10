@@ -73,7 +73,7 @@ namespace rsimpl
         void set_subdevice_mode(device & device, int subdevice_index, int width, int height, uint32_t fourcc, int fps, video_channel_callback callback);
         void start_streaming(device & device, int num_transfer_bufs);
         void stop_streaming(device & device);
-        
+
         // Access CT, PU, and XU controls, and retry if failure occurs
         inline void set_pu_control_with_retry(device & device, int subdevice, rs_option option, int value)
         {
@@ -86,36 +86,36 @@ namespace rsimpl
             }
             set_pu_control(device, subdevice, option, value);
         }
-        
+
         inline int get_pu_control_with_retry(const device & device, int subdevice, rs_option option)
         {
             // Try reading a control, if it fails, retry several times
-            for(int i=0; i<20; ++i)
+            for(int i=0; i<100; ++i)
             {
                 try { return get_pu_control(device, subdevice, option); }
-                catch(...) { std::this_thread::sleep_for(std::chrono::milliseconds(50)); }
+                catch(...) { std::this_thread::sleep_for(std::chrono::milliseconds(10)); }
             }
             return get_pu_control(device, subdevice, option);
         }
-        
+
         inline void set_control_with_retry(device & device, const extension_unit & xu, uint8_t ctrl, void * data, int len)
         {
             // Try writing a control, if it fails, retry several times
-            for(int i=0; i<20; ++i)
+            for(int i=0; i<100; ++i)
             {
                 try { set_control(device, xu, ctrl, data, len); return; }
-                catch(...) { std::this_thread::sleep_for(std::chrono::milliseconds(50)); }
+                catch(...) { std::this_thread::sleep_for(std::chrono::milliseconds(10)); }
             }
             set_control(device, xu, ctrl, data, len);
         }
-        
+
         inline void get_control_with_retry(const device & device, const extension_unit & xu, uint8_t ctrl, void * data, int len)
         {
             // Try reading a control, if it fails, retry several times
-            for(int i=0; i<20; ++i)
+            for(int i=0; i<100; ++i)
             {
                 try { get_control(device, xu, ctrl, data, len); return; }
-                catch(...) { std::this_thread::sleep_for(std::chrono::milliseconds(50)); }
+                catch(...) { std::this_thread::sleep_for(std::chrono::milliseconds(10)); }
             }
             get_control(device, xu, ctrl, data, len);
         }
