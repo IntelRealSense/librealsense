@@ -30,13 +30,15 @@ namespace rsimpl
     class context
     {
     public:
-        context(backend_type type, const char* filename);
+        context(backend_type type, 
+               const char* filename = nullptr, 
+               const char* section = nullptr, 
+               rs_recording_mode mode = RS_RECORDING_MODE_COUNT);
 
         std::vector<std::shared_ptr<device_info>> query_devices() const;
         const uvc::backend& get_backend() const { return *_backend; }
     private:
         std::shared_ptr<uvc::backend> _backend;
-        backend_type _type;
     };
 
     static std::vector<uvc::uvc_device_info> filter_by_product(const std::vector<uvc::uvc_device_info>& devices, const std::vector<uint16_t>& pid_list)

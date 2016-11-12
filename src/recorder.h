@@ -47,12 +47,10 @@ namespace rsimpl
 
             std::vector<uint8_t> decode(const std::vector<uint8_t>& input) const;
 
-            std::vector<uint8_t> encode(const std::vector<uint8_t>& input) const;
+            std::vector<uint8_t> encode(uint8_t* data, uint32_t size) const;
 
             int min_dist = 110;
             int max_length = 32;
-            bool save_frames = true;
-            float effect = 0.0f;
         };
 
         struct call
@@ -81,8 +79,8 @@ namespace rsimpl
         public:
             recording();
 
-            void save(const char* filename, bool append = false) const;
-            static std::shared_ptr<recording> load(const char* filename);
+            void save(const char* filename, const char* section, bool append = false) const;
+            static std::shared_ptr<recording> load(const char* filename, const char* section);
 
             int save_blob(const void* ptr, unsigned int size);
 
@@ -257,10 +255,13 @@ namespace rsimpl
             std::shared_ptr<usb_device> create_usb_device(usb_device_info info) const override;
             std::vector<usb_device_info> query_usb_devices() const override;
 
-            record_backend(std::shared_ptr<backend> source, const char* filename);
+            record_backend(std::shared_ptr<backend> source, 
+                           const char* filename,
+                           const char* section, 
+                           rs_recording_mode mode);
             ~record_backend();
 
-            void apply_settings(float quality, float length, float* effect, bool save_frames) const;
+            rs_recording_mode get_mode() const { return _mode; }
 
             template<class T>
             auto try_record(T t, int entity_id, call_type type) const
@@ -300,7 +301,9 @@ namespace rsimpl
             std::shared_ptr<recording> _rec;
             mutable std::atomic<int> _entity_count;
             std::string _filename;
+            std::string _section;
             std::shared_ptr<compression_algorithm> _compression;
+            rs_recording_mode _mode;
 
             std::atomic<bool> _alive;
             std::thread _write_to_file;
@@ -363,7 +366,7 @@ namespace rsimpl
             std::shared_ptr<usb_device> create_usb_device(usb_device_info info) const override;
             std::vector<usb_device_info> query_usb_devices() const override;
 
-            explicit playback_backend(const char* filename);
+            explicit playback_backend(const char* filename, const char* section);
         private:
             std::shared_ptr<recording> _rec;
         };

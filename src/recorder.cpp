@@ -11,26 +11,34 @@ using namespace std;
 using namespace sql;
 
 const char* CONFIG_TABLE = "rs_config";
-const char* CONFIG_QUERY = "SELECT value FROM rs_config WHERE key = ?";
-const char* CONFIG_CREATE = "CREATE TABLE rs_config(key TEXT PRIMARY KEY, value TEXT)";
-const char* CONFIG_INSERT = "INSERT OR REPLACE INTO rs_config(key, value) VALUES(?, ?)";
+const char* CONFIG_QUERY = "SELECT value FROM rs_config WHERE section = ? AND key = ?";
+const char* CONFIG_CREATE = "CREATE TABLE rs_config(section NUMBER, key TEXT, value TEXT)";
+const char* CONFIG_INSERT = "INSERT OR REPLACE INTO rs_config(section, key, value) VALUES(?, ?, ?)";
 const char* API_VERSION_KEY = "api_version";
+const char* CREATED_AT_KEY = "created_at";
 
-const char* CALLS_CREATE = "CREATE TABLE rs_calls(type NUMBER, timestamp NUMBER, entity_id NUMBER, txt TEXT, param1 NUMBER, param2 NUMBER, param3 NUMBER, param4 NUMBER, had_errors NUMBER)";
-const char* CALLS_INSERT = "INSERT INTO rs_calls(type, timestamp, entity_id, txt, param1, param2, param3, param4, had_errors) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)";
-const char* CALLS_SELECT_ALL = "SELECT * FROM rs_calls";
+const char* SECTIONS_TABLE = "rs_sections";
+const char* SECTIONS_SELECT_MAX_ID = "SELECT max(key) from rs_sections";
+const char* SECTIONS_CREATE = "CREATE TABLE rs_sections(key NUMBER PRIMARY KEY, name TEXT)";
+const char* SECTIONS_INSERT = "INSERT INTO rs_sections(key, name) VALUES (?, ?)";
+const char* SECTIONS_COUNT_BY_NAME = "SELECT COUNT(*) FROM rs_sections WHERE name = ?";
+const char* SECTIONS_FIND_BY_NAME = "SELECT key FROM rs_sections WHERE name = ?";
 
-const char* DEVICE_INFO_CREATE = "CREATE TABLE rs_device_info(type NUMBER, id TEXT, uid TEXT, pid NUMBER, vid NUMBER, mi NUMBER)";
-const char* DEVICE_INFO_SELECT_ALL = "SELECT * FROM rs_device_info";
-const char* DEVICE_INFO_INSERT = "INSERT INTO rs_device_info(type, id, uid, pid, vid, mi) VALUES(?, ?, ?, ?, ?, ?)";
+const char* CALLS_CREATE = "CREATE TABLE rs_calls(section NUMBER, type NUMBER, timestamp NUMBER, entity_id NUMBER, txt TEXT, param1 NUMBER, param2 NUMBER, param3 NUMBER, param4 NUMBER, had_errors NUMBER)";
+const char* CALLS_INSERT = "INSERT INTO rs_calls(section, type, timestamp, entity_id, txt, param1, param2, param3, param4, had_errors) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+const char* CALLS_SELECT_ALL = "SELECT * FROM rs_calls WHERE section = ?";
 
-const char* BLOBS_CREATE = "CREATE TABLE rs_blobs(data BLOB)";
-const char* BLOBS_INSERT = "INSERT INTO rs_blobs(data) VALUES(?)";
-const char* BLOBS_SELECT_ALL = "SELECT * FROM rs_blobs";
+const char* DEVICE_INFO_CREATE = "CREATE TABLE rs_device_info(section NUMBER, type NUMBER, id TEXT, uid TEXT, pid NUMBER, vid NUMBER, mi NUMBER)";
+const char* DEVICE_INFO_SELECT_ALL = "SELECT * FROM rs_device_info WHERE section = ?";
+const char* DEVICE_INFO_INSERT = "INSERT INTO rs_device_info(section, type, id, uid, pid, vid, mi) VALUES(?, ?, ?, ?, ?, ?, ?)";
 
-const char* PROFILES_CREATE = "CREATE TABLE rs_profile(width NUMBER, height NUMBER, fps NUMBER, fourcc NUMBER)";
-const char* PROFILES_INSERT = "INSERT INTO rs_profile(width, height, fps, fourcc) VALUES(?,?,?,?)";
-const char* PROFILES_SELECT_ALL = "SELECT * FROM rs_profile";
+const char* BLOBS_CREATE = "CREATE TABLE rs_blobs(section NUMBER, data BLOB)";
+const char* BLOBS_INSERT = "INSERT INTO rs_blobs(section, data) VALUES(?, ?)";
+const char* BLOBS_SELECT_ALL = "SELECT * FROM rs_blobs WHERE section = ?";
+
+const char* PROFILES_CREATE = "CREATE TABLE rs_profile(section NUMBER, width NUMBER, height NUMBER, fps NUMBER, fourcc NUMBER)";
+const char* PROFILES_INSERT = "INSERT INTO rs_profile(section, width, height, fps, fourcc) VALUES(?, ? ,? ,? ,?)";
+const char* PROFILES_SELECT_ALL = "SELECT * FROM rs_profile WHERE section = ?";
 
 namespace rsimpl
 {
@@ -41,12 +49,6 @@ namespace rsimpl
             uvc,
             usb
         };
-
-        inline bool file_exists(const char* filename)
-        {
-            ifstream f(filename);
-            return f.good();
-        }
 
         int compression_algorithm::dist(uint32_t x, uint32_t y) const
         {
@@ -67,21 +69,12 @@ namespace rsimpl
                 diff_sum += dist * dist;
             }
             return diff_sum;
-
-            //short dist = 0;
-            //char val = x^y;
-            //while (val)
-            //{
-            //    ++dist;
-            //    val &= val - 1;
-            //}
-            //return dist;
         }
 
         vector<uint8_t> compression_algorithm::decode(const vector<uint8_t>& input) const
         {
             vector<uint8_t> results;
-            for (auto i = 0; i < input.size() - 5; i += 5)
+            for (size_t i = 0; i < input.size() - 5; i += 5)
             {
                 union {
                     uint32_t block;
@@ -98,18 +91,18 @@ namespace rsimpl
             return results;
         }
 
-        vector<uint8_t> compression_algorithm::encode(const vector<uint8_t>& input) const
+        vector<uint8_t> compression_algorithm::encode(uint8_t* data, uint32_t size) const
         {
             vector<uint8_t> results;
             union {
                 uint32_t block;
                 uint8_t bytes[4];
             } curr_block;
-            curr_block.block = *reinterpret_cast<const uint32_t*>(input.data());
+            curr_block.block = *reinterpret_cast<const uint32_t*>(data);
             uint8_t length = 0;
-            for (auto i = 0; i < input.size(); i += 4)
+            for (size_t i = 0; i < size; i += 4)
             {
-                auto block = *reinterpret_cast<const uint32_t*>(input.data() + i);
+                auto block = *reinterpret_cast<const uint32_t*>(data + i);
                 if (dist(block, curr_block.block) < min_dist && length < max_length)
                 {
                     length++;
@@ -137,26 +130,81 @@ namespace rsimpl
             start_time = chrono::high_resolution_clock::now();
         }
 
-        void recording::save(const char* filename, bool append) const
+        void recording::save(const char* filename, const char* section, bool append) const
         {
-            if (!append && file_exists(filename))
-                throw runtime_error("Can't save over existing recording!");
-
             connection c(filename);
             LOG_WARNING("Saving recording to file, don't close the application");
 
-            if (!append)
+            if (!c.table_exists(CONFIG_TABLE))
             {
+                c.execute(SECTIONS_CREATE);
                 c.execute(CONFIG_CREATE);
                 c.execute(CALLS_CREATE);
                 c.execute(DEVICE_INFO_CREATE);
                 c.execute(BLOBS_CREATE);
                 c.execute(PROFILES_CREATE);
+            }
+
+            auto section_id = 0;
+
+            if (!append)
+            {
+                statement check_section_unique(c, SECTIONS_COUNT_BY_NAME);
+                check_section_unique.bind(1, section);
+                auto result = check_section_unique();
+                if (result[0].get_int() > 0)
+                {
+                    throw runtime_error("Can't save over existing section!");
+                }
+
+                {
+                    statement max_section_id(c, SECTIONS_SELECT_MAX_ID);
+                    auto result = max_section_id();
+                    section_id = result[0].get_int() + 1;
+                }
+
+                {
+                    statement create_section(c, SECTIONS_INSERT);
+                    create_section.bind(1, section_id);
+                    create_section.bind(2, section);
+                    create_section();
+                }
+            }
+            else
+            {
+                {
+                    statement check_section_exists(c, SECTIONS_COUNT_BY_NAME);
+                    check_section_exists.bind(1, section);
+                    auto result = check_section_exists();
+                    if (result[0].get_int() == 0)
+                    {
+                        throw runtime_error(to_string() << "Could not find section " << section << "!");
+                    }
+                }
+                {
+                    statement find_section_id(c, SECTIONS_FIND_BY_NAME);
+                    find_section_id.bind(1, section);
+                    auto result = find_section_id();
+                    section_id = result[0].get_int();
+                }
+            }
+
+            if (!append)
+            {
+                {
+                    statement insert(c, CONFIG_INSERT);
+                    insert.bind(1, section_id);
+                    insert.bind(2, API_VERSION_KEY);
+                    insert.bind(3, RS_API_VERSION_STR);
+                    insert();
+                }
 
                 {
                     statement insert(c, CONFIG_INSERT);
-                    insert.bind(1, API_VERSION_KEY);
-                    insert.bind(2, RS_API_VERSION_STR);
+                    insert.bind(1, section_id);
+                    insert.bind(2, CREATED_AT_KEY);
+                    auto datetime = datetime_string();
+                    insert.bind(3, datetime.c_str());
                     insert();
                 }
             }
@@ -164,62 +212,67 @@ namespace rsimpl
             for (auto&& cl : calls)
             {
                 statement insert(c, CALLS_INSERT);
-                insert.bind(1, static_cast<int>(cl.type));
-                insert.bind(2, cl.timestamp);
-                insert.bind(3, cl.entity_id);
-                insert.bind(4, cl.inline_string.c_str());
-                insert.bind(5, cl.param1);
-                insert.bind(6, cl.param2);
-                insert.bind(7, cl.param3);
-                insert.bind(8, cl.param4);
-                insert.bind(9, cl.had_error ? 1 : 0);
+                insert.bind(1, section_id);
+                insert.bind(2, static_cast<int>(cl.type));
+                insert.bind(3, cl.timestamp);
+                insert.bind(4, cl.entity_id);
+                insert.bind(5, cl.inline_string.c_str());
+                insert.bind(6, cl.param1);
+                insert.bind(7, cl.param2);
+                insert.bind(8, cl.param3);
+                insert.bind(9, cl.param4);
+                insert.bind(10, cl.had_error ? 1 : 0);
                 insert();
             }
 
             for (auto&& uvc_info : uvc_device_infos)
             {
                 statement insert(c, DEVICE_INFO_INSERT);
-                insert.bind(1, uvc);
-                insert.bind(2, "");
-                insert.bind(3, uvc_info.unique_id.c_str());
-                insert.bind(4, uvc_info.pid);
-                insert.bind(5, uvc_info.vid);
-                insert.bind(6, uvc_info.mi);
+                insert.bind(1, section_id);
+                insert.bind(2, uvc);
+                insert.bind(3, "");
+                insert.bind(4, uvc_info.unique_id.c_str());
+                insert.bind(5, uvc_info.pid);
+                insert.bind(6, uvc_info.vid);
+                insert.bind(7, uvc_info.mi);
                 insert();
             }
 
             for (auto&& usb_info : usb_device_infos)
             {
                 statement insert(c, DEVICE_INFO_INSERT);
-                insert.bind(1, usb);
+                insert.bind(1, section_id);
+                insert.bind(2, usb);
                 string id(usb_info.id.begin(), usb_info.id.end());
-                insert.bind(2, id.c_str());
-                insert.bind(3, usb_info.unique_id.c_str());
-                insert.bind(4, usb_info.pid);
-                insert.bind(5, usb_info.vid);
-                insert.bind(6, usb_info.mi);
+                insert.bind(3, id.c_str());
+                insert.bind(4, usb_info.unique_id.c_str());
+                insert.bind(5, usb_info.pid);
+                insert.bind(6, usb_info.vid);
+                insert.bind(7, usb_info.mi);
                 insert();
             }
 
             for (auto&& profile : stream_profiles)
             {
                 statement insert(c, PROFILES_INSERT);
-                insert.bind(1, profile.width);
-                insert.bind(2, profile.height);
-                insert.bind(3, profile.fps);
-                insert.bind(4, profile.format);
+                insert.bind(1, section_id);
+                insert.bind(2, profile.width);
+                insert.bind(3, profile.height);
+                insert.bind(4, profile.fps);
+                insert.bind(5, profile.format);
                 insert();
             }
 
             for (auto&& blob : blobs)
             {
                 statement insert(c, BLOBS_INSERT);
-                insert.bind(1, blob);
+                insert.bind(1, section_id);
+                insert.bind(2, blob);
                 insert();
             }
         }
 
-        shared_ptr<recording> recording::load(const char* filename)
+        shared_ptr<recording> recording::load(const char* filename, const char* section)
         {
             if (!file_exists(filename))
             {
@@ -235,68 +288,91 @@ namespace rsimpl
                 throw runtime_error("Invalid recording, missing config section!");
             }
 
-            statement select_magic(c, CONFIG_QUERY);
+            int section_id = 0;
+            {
+                statement check_section_exists(c, SECTIONS_COUNT_BY_NAME);
+                check_section_exists.bind(1, section);
+                auto result = check_section_exists();
+                if (result[0].get_int() == 0)
+                {
+                    throw runtime_error(to_string() << "Could not find section " << section << "!");
+                }
+            }
+            {
+                statement find_section_id(c, SECTIONS_FIND_BY_NAME);
+                find_section_id.bind(1, section);
+                auto result = find_section_id();
+                section_id = result[0].get_int();
+            }
 
-            statement select_api_version(c, CONFIG_QUERY);
-            select_api_version.bind(1, API_VERSION_KEY);
-            auto api_version = select_api_version()[0].get_string();
+            {
+                statement select_api_version(c, CONFIG_QUERY);
+                select_api_version.bind(1, section_id);
+                select_api_version.bind(2, API_VERSION_KEY);
+                auto api_version = select_api_version()[0].get_string();
+                LOG_WARNING("Loaded recording from API version " << api_version);
+            }
 
             statement select_calls(c, CALLS_SELECT_ALL);
+            select_calls.bind(1, section_id);
             for (auto&& row : select_calls)
             {
                 call cl;
-                cl.type = static_cast<call_type>(row[0].get_int());
-                cl.timestamp = row[1].get_int();
-                cl.entity_id = row[2].get_int();
-                cl.inline_string = row[3].get_string();
-                cl.param1 = row[4].get_int();
-                cl.param2 = row[5].get_int();
-                cl.param3 = row[6].get_int();
-                cl.param4 = row[7].get_int();
-                cl.had_error = row[8].get_int() > 0;
+                cl.type = static_cast<call_type>(row[1].get_int());
+                cl.timestamp = row[2].get_int();
+                cl.entity_id = row[3].get_int();
+                cl.inline_string = row[4].get_string();
+                cl.param1 = row[5].get_int();
+                cl.param2 = row[6].get_int();
+                cl.param3 = row[7].get_int();
+                cl.param4 = row[8].get_int();
+                cl.had_error = row[9].get_int() > 0;
                 result->calls.push_back(cl);
             }
 
             statement select_devices(c, DEVICE_INFO_SELECT_ALL);
+            select_devices.bind(1, section_id);
             for (auto&& row : select_devices)
             {
-                if (row[0].get_int() == usb)
+                if (row[1].get_int() == usb)
                 {
                     usb_device_info info;
-                    auto id = row[1].get_string();
+                    auto id = row[2].get_string();
                     info.id = wstring(id.begin(), id.end());
-                    info.unique_id = row[2].get_string();
-                    info.pid = row[3].get_int();
-                    info.vid = row[4].get_int();
-                    info.mi = row[5].get_int();
+                    info.unique_id = row[3].get_string();
+                    info.pid = row[4].get_int();
+                    info.vid = row[5].get_int();
+                    info.mi = row[6].get_int();
                     result->usb_device_infos.push_back(info);
                 }
                 else
                 {
                     uvc_device_info info;
-                    info.unique_id = row[2].get_string();
-                    info.pid = row[3].get_int();
-                    info.vid = row[4].get_int();
-                    info.mi = row[5].get_int();
+                    info.unique_id = row[3].get_string();
+                    info.pid = row[4].get_int();
+                    info.vid = row[5].get_int();
+                    info.mi = row[6].get_int();
                     result->uvc_device_infos.push_back(info);
                 }
             }
 
             statement select_profiles(c, PROFILES_SELECT_ALL);
+            select_profiles.bind(1, section_id);
             for (auto&& row : select_profiles)
             {
                 stream_profile p;
-                p.width = row[0].get_int();
-                p.height = row[1].get_int();
-                p.fps = row[2].get_int();
-                p.format = row[3].get_int();
+                p.width = row[1].get_int();
+                p.height = row[2].get_int();
+                p.fps = row[3].get_int();
+                p.format = row[4].get_int();
                 result->stream_profiles.push_back(p);
             }
 
             statement select_blobs(c, BLOBS_SELECT_ALL);
+            select_blobs.bind(1, section_id);
             for (auto&& row : select_blobs)
             {
-                result->blobs.push_back(row[0].get_blob());
+                result->blobs.push_back(row[1].get_blob());
             }
 
             return result;
@@ -323,7 +399,7 @@ namespace rsimpl
         call& recording::find_call(call_type t, int entity_id)
         {
             lock_guard<mutex> lock(_mutex);
-            for (auto i = 1; i <= calls.size(); i++)
+            for (size_t i = 1; i <= calls.size(); i++)
             {
                 const auto idx = (_cursors[entity_id] + i) % static_cast<int>(calls.size());
                 if (calls[idx].type == t && calls[idx].entity_id == entity_id)
@@ -344,7 +420,7 @@ namespace rsimpl
         call* recording::cycle_calls(call_type t, int id)
         {
             lock_guard<mutex> lock(_mutex);
-            for (auto i = 1; i <= calls.size(); i++)
+            for (size_t i = 1; i <= calls.size(); i++)
             {
                 const auto idx = (_cycles[id] + i) % static_cast<int>(calls.size());
                 if (calls[idx].type == t && calls[idx].entity_id == id)
@@ -369,14 +445,27 @@ namespace rsimpl
                 {
                     auto&& c = rec->add_call(k);
                     c.param1 = rec->save_blob(&p, sizeof(p));
-                    vector<uint8_t> frame((uint8_t*)f.pixels,
-                        (uint8_t*)f.pixels + f.size);
-                    auto compressed = _compression->encode(frame);
-                    c.param2 = rec->save_blob(compressed.data(), static_cast<int>(compressed.size()));
-                    c.param4 = static_cast<int>(compressed.size());
-                    c.param3 = _compression->save_frames ? 0 : 1;
-                    //auto dec = _compression->decode(compressed);
-                    _compression->effect = (100.0f * compressed.size()) / frame.size();
+
+                    if (_owner->get_mode() == RS_RECORDING_MODE_BEST_QUALITY)
+                    {
+                        c.param2 = rec->save_blob(f.pixels, static_cast<int>(f.size));
+                        c.param4 = static_cast<int>(f.size);
+                        c.param3 = 1;
+                    }
+                    else if (_owner->get_mode() == RS_RECORDING_MODE_BLANK_FRAMES)
+                    {
+                        c.param2 = -1;
+                        c.param4 = static_cast<int>(f.size);
+                        c.param3 = 0;
+                    }
+                    else
+                    {
+                        auto compressed = _compression->encode((uint8_t*)f.pixels, f.size);
+                        c.param2 = rec->save_blob(compressed.data(), static_cast<int>(compressed.size()));
+                        c.param4 = static_cast<int>(compressed.size());
+                        c.param3 = 1;
+                    }
+
                     callback(p, f);
                 }, _entity_id, call_type::uvc_frame);
             });
@@ -613,9 +702,12 @@ namespace rsimpl
             }, 0, call_type::query_usb_devices);
         }
 
-        record_backend::record_backend(shared_ptr<backend> source, const char* filename)
+        record_backend::record_backend(shared_ptr<backend> source,
+            const char* filename, const char* section,
+            rs_recording_mode mode)
             : _source(source), _rec(make_shared<recording>()), _entity_count(1),
-            _compression(make_shared<compression_algorithm>()), _filename(filename),
+            _compression(make_shared<compression_algorithm>()),
+            _filename(filename), _section(section), _mode(mode),
             _alive(true), _write_to_file([this]() { write_to_file(); })
         {
         }
@@ -650,8 +742,8 @@ namespace rsimpl
             return _rec->load_usb_device_info_list();
         }
 
-        playback_backend::playback_backend(const char* filename)
-            : _rec(recording::load(filename))
+        playback_backend::playback_backend(const char* filename, const char* section)
+            : _rec(recording::load(filename, section))
         {
         }
 
@@ -676,7 +768,7 @@ namespace rsimpl
                 }
                 if (current->size() > 0)
                 {
-                    current->save(_filename.c_str(), append);
+                    current->save(_filename.c_str(), _section.c_str(), append);
                     append = true;
                     LOG(INFO) << "Finished writing " << current->size() << " calls...";
                 }
@@ -684,7 +776,7 @@ namespace rsimpl
 
             if (_rec->size() > 0)
             {
-                _rec->save(_filename.c_str(), append);
+                _rec->save(_filename.c_str(), _section.c_str(), append);
                 LOG(INFO) << "Finished writing " << _rec->size() << " calls...";
             }
         }
