@@ -30,7 +30,7 @@ namespace rsimpl
     class context
     {
     public:
-        context(backend_type type, const char* filename);
+        context(backend_type type, const char* filename, const char* section);
 
         std::vector<std::shared_ptr<device_info>> query_devices() const;
         const uvc::backend& get_backend() const { return *_backend; }

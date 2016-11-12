@@ -643,20 +643,22 @@ void rs_flush_queue(rs_frame_queue* queue, rs_error** error);
 * create librealsense context that will try to record all operations over librealsense into a file
 * \param[in] api_version realsense API version as provided by RS_API_VERSION macro
 * \param[in] filename string representing the name of the file to record
+* \param[in] section  string representing the name of the section within existing recording
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return            context object, should be released by rs_delete_context
 */
-rs_context* rs_create_recording_context(int api_version, const char* filename, rs_error** error);
+rs_context* rs_create_recording_context(int api_version, const char* filename, const char* section, rs_error** error);
 
 /**
 * create librealsense context that given a file will respond to calls exactly as the recording did
 * if the user calls a method that was either not called during recording or voilates causality of the recording error will be thrown
 * \param[in] api_version realsense API version as provided by RS_API_VERSION macro
 * \param[in] filename string representing the name of the file to play back from
+* \param[in] section  string representing the name of the section within existing recording
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return            context object, should be released by rs_delete_context
 */
-rs_context* rs_create_mock_context(int api_version, const char* filename, rs_error** error);
+rs_context* rs_create_mock_context(int api_version, const char* filename, const char* section, rs_error** error);
 
 /**
 * retrieve the API version from the source code. Evaluate that the value is conformant to the established policies

@@ -185,104 +185,7 @@ namespace rsimpl
         return (a.profile == b.profile) && (a.pf == b.pf) && (a.unpacker == b.unpacker);
     }
 
-    ////////////////////////
-    // Static camera info //
-    ////////////////////////
-
-    //struct subdevice_mode
-    //{
-    //    int2 native_dims;                       // Resolution advertised over UVC
-    //    native_pixel_format pf;                 // Pixel format advertised over UVC
-    //    int fps;                                // Framerate advertised over UVC
-    //    rs_intrinsics native_intrinsics;        // Intrinsics structure corresponding to the content of image (Note: width,height may be subset of native_dims)
-    //    std::vector<rs_intrinsics> rect_modes;  // Potential intrinsics of image after being rectified in software by librealsense
-    //    std::vector<int> pad_crop_options;      // Acceptable padding/cropping values
-    //};
-
-    //struct stream_request
-    //{
-    //    bool enabled;
-    //    rs_stream stream;
-    //    int width, height;
-    //    rs_format format;
-    //    int fps;
-    //    rs_output_buffer_format output_format;
-
-    //    bool contradict(stream_request req) const;
-    //    bool is_filled() const;
-    //};
-
-    //struct interstream_rule
-    //{
-    //    rs_stream a, b;
-    //    int stream_request::* field;
-    //    int delta, delta2;
-    //    rs_stream bigger;       // if this equals to a or b, this stream must have field value bigger then the other stream
-    //    bool divides, divides2; // divides = a must divide b; divides2 = b must divide a
-    //    bool same_format;
-    //};
-
-    //struct subdevice_mode_selection
-    //{
-    //    subdevice_mode mode;                    // The streaming mode in which to place the hardware
-    //    int pad_crop;                           // The number of pixels of padding (positive values) or cropping (negative values) to apply to all four edges of the image
-    //    size_t unpacker_index;                  // The specific unpacker used to unpack the encoded format into the desired output formats
-    //    rs_output_buffer_format output_format = RS_OUTPUT_BUFFER_FORMAT_CONTINUOUS; // The output buffer format.
-
-    //    subdevice_mode_selection() : mode({}), pad_crop(), unpacker_index(), output_format(RS_OUTPUT_BUFFER_FORMAT_CONTINUOUS) {}
-    //    subdevice_mode_selection(const subdevice_mode & mode, int pad_crop, int unpacker_index) : mode(mode), pad_crop(pad_crop), unpacker_index(unpacker_index) {}
-
-    //    const pixel_format_unpacker & get_unpacker() const {
-    //        if ((size_t)unpacker_index < mode.pf.unpackers.size())
-    //            return mode.pf.unpackers[unpacker_index];
-    //        throw std::runtime_error("failed to fetch an unpakcer, most likely because enable_stream was not called!");
-    //    }
-    //    const std::vector<std::pair<rs_stream, rs_format>> & get_outputs() const { return get_unpacker().outputs; }
-    //    int get_width() const { return mode.native_intrinsics.width + pad_crop * 2; }
-    //    int get_height() const { return mode.native_intrinsics.height + pad_crop * 2; }
-    //    int get_framerate() const { return mode.fps; }
-    //    int get_stride_x() const { return requires_processing() ? get_width() : mode.native_dims.x; }
-    //    int get_stride_y() const { return requires_processing() ? get_height() : mode.native_dims.y; }
-    //    size_t get_image_size(rs_stream stream) const;
-    //    bool provides_stream(rs_stream stream) const { return get_unpacker().provides_stream(stream); }
-    //    rs_format get_format(rs_stream stream) const { return get_unpacker().get_format(stream); }
-    //    void set_output_buffer_format(const rs_output_buffer_format in_output_format);
-
-    //    void unpack(byte * const dest[], const byte * source) const;
-    //    int get_unpacked_width() const;
-    //    int get_unpacked_height() const;
-
-    //    bool requires_processing() const { return (output_format == RS_OUTPUT_BUFFER_FORMAT_CONTINUOUS) || (mode.pf.unpackers[unpacker_index].requires_processing); }
-
-    //};
-
     class device;
-
-    //class device_config
-    //{
-    //    stream_request requests[RS_STREAM_NATIVE_COUNT]; // Modified by enable/disable_stream calls
-    //    const device& dev;
-    //    std::vector<subdevice_mode> subdevice_modes;
-
-    //    subdevice_mode_selection select_mode(const stream_request(&requests)[RS_STREAM_NATIVE_COUNT], int subdevice_index) const;
-    //    bool all_requests_filled(const stream_request(&original_requests)[RS_STREAM_NATIVE_COUNT]) const;
-    //    bool find_valid_combination(stream_request(&output_requests)[RS_STREAM_NATIVE_COUNT], std::vector<stream_request> stream_requests[RS_STREAM_NATIVE_COUNT]) const;
-    //    bool fill_requests(stream_request(&requests)[RS_STREAM_NATIVE_COUNT]) const;
-    //    void get_all_possible_requestes(std::vector<stream_request>(&stream_requests)[RS_STREAM_NATIVE_COUNT]) const;
-    //    std::vector<subdevice_mode_selection> select_modes(const stream_request(&requests)[RS_STREAM_NATIVE_COUNT]) const;
-    //    bool validate_requests(stream_request(&requests)[RS_STREAM_NATIVE_COUNT], bool throw_exception = false) const;
-
-    //public:
-    //    std::vector<subdevice_mode_selection> select_modes() const { return select_modes(requests); }
-
-    //    explicit device_config(device& dev)
-    //        : dev(dev)
-    //    {
-    //        for (auto & req : requests) req = stream_request();
-    //    }
-
-
-    //};
 
     class firmware_version
     {
@@ -435,31 +338,6 @@ namespace rsimpl
 
     typedef std::unique_ptr<rs_log_callback, void(*)(rs_log_callback*)> log_callback_ptr;
     typedef std::unique_ptr<rs_frame_callback, void(*)(rs_frame_callback*)> frame_callback_ptr;
-
-    /*struct device_config
-    {
-        const static_device_info            info;
-        stream_request                      requests[RS_STREAM_NATIVE_COUNT];                       // Modified by enable/disable_stream calls
-        //frame_callback_ptr                  callbacks[RS_STREAM_NATIVE_COUNT];                      // Modified by set_frame_callback calls
-        data_polling_request                data_request;                                           // Modified by enable/disable_events calls
-        //motion_callback_ptr                 motion_callback{ nullptr, [](rs_motion_callback*){} };  // Modified by set_events_callback calls
-       // timestamp_callback_ptr              timestamp_callback{ nullptr, [](rs_timestamp_callback*){} };
-        float depth_scale;                                              // Scale of depth values
-
-        explicit device_config(const rsimpl::static_device_info & info) : info(info), depth_scale(info.nominal_depth_scale)
-        {
-            for (auto & req : requests) req = rsimpl::stream_request();
-        }
-
-        subdevice_mode_selection select_mode(const stream_request(&requests)[RS_STREAM_NATIVE_COUNT], int subdevice_index) const;
-        bool all_requests_filled(const stream_request(&original_requests)[RS_STREAM_NATIVE_COUNT]) const;
-        bool find_valid_combination(stream_request(&output_requests)[RS_STREAM_NATIVE_COUNT], std::vector<stream_request> stream_requests[RS_STREAM_NATIVE_COUNT]) const;
-        bool fill_requests(stream_request(&requests)[RS_STREAM_NATIVE_COUNT]) const;
-        void get_all_possible_requestes(std::vector<stream_request> (&stream_requests)[RS_STREAM_NATIVE_COUNT]) const;
-        std::vector<subdevice_mode_selection> select_modes(const stream_request(&requests)[RS_STREAM_NATIVE_COUNT]) const;
-        std::vector<subdevice_mode_selection> select_modes() const { return select_modes(requests); }
-        bool validate_requests(stream_request(&requests)[RS_STREAM_NATIVE_COUNT], bool throw_exception = false) const;
-    };*/
 
     ////////////////////////////////////////
     // Helper functions for library types //
@@ -641,6 +519,10 @@ namespace rsimpl
     {
         return std::find_if(data.begin(), data.end(), [](byte b){ return b!=0; }) != data.end();
     }
+
+    std::string datetime_string();
+
+    bool file_exists(const char* filename);
 
     ///////////////////////////////////////////
     // Extrinsic auxillary routines routines //

@@ -99,16 +99,16 @@ inline rs::context make_context(const char* id)
     }
 
     std::stringstream ss;
-    ss << base_filename << "." << id << "." << _counters[id] << ".test";
-    auto filename = ss.str();
+    ss << id << "." << _counters[id] << ".test";
+    auto section = ss.str();
 
     if (record)
     {
-        ctx = rs::recording_context(filename);
+        ctx = rs::recording_context(base_filename, section);
     }
     else if (playback)
     {
-        ctx = rs::mock_context(filename);
+        ctx = rs::mock_context(base_filename, section);
     }
     return ctx;
 }

@@ -81,8 +81,8 @@ namespace rsimpl
         public:
             recording();
 
-            void save(const char* filename, bool append = false) const;
-            static std::shared_ptr<recording> load(const char* filename);
+            void save(const char* filename, const char* section, bool append = false) const;
+            static std::shared_ptr<recording> load(const char* filename, const char* section);
 
             int save_blob(const void* ptr, unsigned int size);
 
@@ -257,7 +257,7 @@ namespace rsimpl
             std::shared_ptr<usb_device> create_usb_device(usb_device_info info) const override;
             std::vector<usb_device_info> query_usb_devices() const override;
 
-            record_backend(std::shared_ptr<backend> source, const char* filename);
+            record_backend(std::shared_ptr<backend> source, const char* filename, const char* section);
             ~record_backend();
 
             void apply_settings(float quality, float length, float* effect, bool save_frames) const;
@@ -300,6 +300,7 @@ namespace rsimpl
             std::shared_ptr<recording> _rec;
             mutable std::atomic<int> _entity_count;
             std::string _filename;
+            std::string _section;
             std::shared_ptr<compression_algorithm> _compression;
 
             std::atomic<bool> _alive;
@@ -363,7 +364,7 @@ namespace rsimpl
             std::shared_ptr<usb_device> create_usb_device(usb_device_info info) const override;
             std::vector<usb_device_info> query_usb_devices() const override;
 
-            explicit playback_backend(const char* filename);
+            explicit playback_backend(const char* filename, const char* section);
         private:
             std::shared_ptr<recording> _rec;
         };
