@@ -91,18 +91,18 @@ namespace rsimpl
             return results;
         }
 
-        vector<uint8_t> compression_algorithm::encode(const vector<uint8_t>& input) const
+        vector<uint8_t> compression_algorithm::encode(uint8_t* data, uint32_t size) const
         {
             vector<uint8_t> results;
             union {
                 uint32_t block;
                 uint8_t bytes[4];
             } curr_block;
-            curr_block.block = *reinterpret_cast<const uint32_t*>(input.data());
+            curr_block.block = *reinterpret_cast<const uint32_t*>(data);
             uint8_t length = 0;
-            for (size_t i = 0; i < input.size(); i += 4)
+            for (size_t i = 0; i < size; i += 4)
             {
-                auto block = *reinterpret_cast<const uint32_t*>(input.data() + i);
+                auto block = *reinterpret_cast<const uint32_t*>(data + i);
                 if (dist(block, curr_block.block) < min_dist && length < max_length)
                 {
                     length++;
@@ -445,14 +445,27 @@ namespace rsimpl
                 {
                     auto&& c = rec->add_call(k);
                     c.param1 = rec->save_blob(&p, sizeof(p));
-                    vector<uint8_t> frame((uint8_t*)f.pixels,
-                        (uint8_t*)f.pixels + f.size);
-                    auto compressed = _compression->encode(frame);
-                    c.param2 = rec->save_blob(compressed.data(), static_cast<int>(compressed.size()));
-                    c.param4 = static_cast<int>(compressed.size());
-                    c.param3 = _compression->save_frames ? 0 : 1;
-                    //auto dec = _compression->decode(compressed);
-                    _compression->effect = (100.0f * compressed.size()) / frame.size();
+
+                    if (_owner->get_mode() == RS_RECORDING_MODE_BEST_QUALITY)
+                    {
+                        c.param2 = rec->save_blob(f.pixels, static_cast<int>(f.size));
+                        c.param4 = static_cast<int>(f.size);
+                        c.param3 = 1;
+                    }
+                    else if (_owner->get_mode() == RS_RECORDING_MODE_BLANK_FRAMES)
+                    {
+                        c.param2 = -1;
+                        c.param4 = static_cast<int>(f.size);
+                        c.param3 = 0;
+                    }
+                    else
+                    {
+                        auto compressed = _compression->encode((uint8_t*)f.pixels, f.size);
+                        c.param2 = rec->save_blob(compressed.data(), static_cast<int>(compressed.size()));
+                        c.param4 = static_cast<int>(compressed.size());
+                        c.param3 = 1;
+                    }
+
                     callback(p, f);
                 }, _entity_id, call_type::uvc_frame);
             });
@@ -690,10 +703,11 @@ namespace rsimpl
         }
 
         record_backend::record_backend(shared_ptr<backend> source,
-            const char* filename, const char* section)
+            const char* filename, const char* section,
+            rs_recording_mode mode)
             : _source(source), _rec(make_shared<recording>()), _entity_count(1),
             _compression(make_shared<compression_algorithm>()),
-            _filename(filename), _section(section),
+            _filename(filename), _section(section), _mode(mode),
             _alive(true), _write_to_file([this]() { write_to_file(); })
         {
         }

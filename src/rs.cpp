@@ -179,7 +179,7 @@ rs_context * rs_create_context(int api_version, rs_error ** error) try
 {
     verify_version_compatibility(api_version);
     
-    return new rs_context{ std::make_shared<rsimpl::context>(rsimpl::backend_type::standard, nullptr, nullptr) };
+    return new rs_context{ std::make_shared<rsimpl::context>(rsimpl::backend_type::standard) };
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, api_version)
 
@@ -658,15 +658,15 @@ int rs_get_api_version(rs_error ** error) try
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, RS_API_MAJOR_VERSION, RS_API_MINOR_VERSION, RS_API_PATCH_VERSION)
 
-rs_context* rs_create_recording_context(int api_version, const char* filename, const char* section, rs_error** error) try
+rs_context* rs_create_recording_context(int api_version, const char* filename, const char* section, rs_recording_mode mode, rs_error** error) try
 {
     VALIDATE_NOT_NULL(filename);
     VALIDATE_NOT_NULL(section);
     verify_version_compatibility(api_version);
 
-    return new rs_context{ std::make_shared<rsimpl::context>(rsimpl::backend_type::record, filename, section) };
+    return new rs_context{ std::make_shared<rsimpl::context>(rsimpl::backend_type::record, filename, section, mode) };
 }
-HANDLE_EXCEPTIONS_AND_RETURN(nullptr, api_version, filename, section)
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, api_version, filename, section, mode)
 
 rs_context* rs_create_mock_context(int api_version, const char* filename, const char* section, rs_error** error) try
 {

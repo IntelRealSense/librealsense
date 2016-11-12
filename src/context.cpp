@@ -44,8 +44,10 @@ constexpr auto rs_api_version = concat("VERSION: ",RS_API_VERSION_STR);
 
 namespace rsimpl
 {
-    context::context(backend_type type, const char* filename, const char* section)
-        : _type(type)
+    context::context(backend_type type, 
+                     const char* filename, 
+                     const char* section, 
+                     rs_recording_mode mode)
     {
         switch(type)
         {
@@ -53,7 +55,7 @@ namespace rsimpl
             _backend = uvc::create_backend();
             break;
         case backend_type::record:
-            _backend = std::make_shared<uvc::record_backend>(uvc::create_backend(), filename, section);
+            _backend = std::make_shared<uvc::record_backend>(uvc::create_backend(), filename, section, mode);
             break;
         case backend_type::playback: 
             _backend = std::make_shared<uvc::playback_backend>(filename, section);

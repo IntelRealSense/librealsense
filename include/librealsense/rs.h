@@ -639,6 +639,18 @@ void rs_enqueue_frame(rs_frame* frame, void* queue);
 */
 void rs_flush_queue(rs_frame_queue* queue, rs_error** error);
 
+/*
+librealsense recorder is intended for validation purposes. 
+it supports three modes of operation:
+*/
+typedef enum rs_recording_mode
+{
+    RS_RECORDING_MODE_BLANK_FRAMES, /* frame metadata will be recorded, but pixel data will be replaced with zeros to save space */
+    RS_RECORDING_MODE_COMPRESSED,   /* frames will be encoded using a proprietary lossy encoding, aiming at x5 compression at some CPU expense */
+    RS_RECORDING_MODE_BEST_QUALITY, /* frames will not be compressed, but rather stored as-is. This gives best quality and low CPU overhead, but you might run out of memory */
+    RS_RECORDING_MODE_COUNT
+} rs_recording_mode;
+
 /**
 * create librealsense context that will try to record all operations over librealsense into a file
 * \param[in] api_version realsense API version as provided by RS_API_VERSION macro
@@ -647,7 +659,7 @@ void rs_flush_queue(rs_frame_queue* queue, rs_error** error);
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return            context object, should be released by rs_delete_context
 */
-rs_context* rs_create_recording_context(int api_version, const char* filename, const char* section, rs_error** error);
+rs_context* rs_create_recording_context(int api_version, const char* filename, const char* section, rs_recording_mode mode, rs_error** error);
 
 /**
 * create librealsense context that given a file will respond to calls exactly as the recording did

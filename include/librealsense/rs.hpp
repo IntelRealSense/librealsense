@@ -713,11 +713,12 @@ namespace rs
         * \param[in] filename string representing the name of the file to record
         */
         recording_context(const std::string& filename, 
-                          const std::string& section = "")
+                          const std::string& section = "",
+                          rs_recording_mode mode = RS_RECORDING_MODE_BEST_QUALITY)
         {
             rs_error* e = nullptr;
             _context = std::shared_ptr<rs_context>(
-                rs_create_recording_context(RS_API_VERSION, filename.c_str(), section.c_str(), &e),
+                rs_create_recording_context(RS_API_VERSION, filename.c_str(), section.c_str(), mode, &e),
                 rs_delete_context);
             error::handle(e);
         }

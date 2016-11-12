@@ -104,7 +104,7 @@ inline rs::context make_context(const char* id)
 
     if (record)
     {
-        ctx = rs::recording_context(base_filename, section);
+        ctx = rs::recording_context(base_filename, section, RS_RECORDING_MODE_BEST_QUALITY);
     }
     else if (playback)
     {
