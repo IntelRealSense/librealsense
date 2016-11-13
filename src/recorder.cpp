@@ -439,40 +439,42 @@ namespace rsimpl
 
         void record_uvc_device::play(stream_profile profile, frame_callback callback)
         {
-            _source->play(profile, [this, callback](stream_profile p, frame_object f)
+            _owner->try_record([this, callback, profile](recording* rec, lookup_key k)
             {
-                _owner->try_record([this, callback, p, &f](recording* rec, lookup_key k)
+                _source->play(profile, [this, callback](stream_profile p, frame_object f)
                 {
-                    auto&& c = rec->add_call(k);
-                    c.param1 = rec->save_blob(&p, sizeof(p));
+                    _owner->try_record([this, callback, p, &f](recording* rec, lookup_key k)
+                    {
+                        auto&& c = rec->add_call(k);
+                        c.param1 = rec->save_blob(&p, sizeof(p));
 
-                    if (_owner->get_mode() == RS_RECORDING_MODE_BEST_QUALITY)
-                    {
-                        c.param2 = rec->save_blob(f.pixels, static_cast<int>(f.size));
-                        c.param4 = static_cast<int>(f.size);
-                        c.param3 = 1;
-                    }
-                    else if (_owner->get_mode() == RS_RECORDING_MODE_BLANK_FRAMES)
-                    {
-                        c.param2 = -1;
-                        c.param4 = static_cast<int>(f.size);
-                        c.param3 = 0;
-                    }
-                    else
-                    {
-                        auto compressed = _compression->encode((uint8_t*)f.pixels, f.size);
-                        c.param2 = rec->save_blob(compressed.data(), static_cast<int>(compressed.size()));
-                        c.param4 = static_cast<int>(compressed.size());
-                        c.param3 = 1;
-                    }
+                        if (_owner->get_mode() == RS_RECORDING_MODE_BEST_QUALITY)
+                        {
+                            c.param2 = rec->save_blob(f.pixels, static_cast<int>(f.size));
+                            c.param4 = static_cast<int>(f.size);
+                            c.param3 = 1;
+                        }
+                        else if (_owner->get_mode() == RS_RECORDING_MODE_BLANK_FRAMES)
+                        {
+                            c.param2 = -1;
+                            c.param4 = static_cast<int>(f.size);
+                            c.param3 = 0;
+                        }
+                        else
+                        {
+                            auto compressed = _compression->encode((uint8_t*)f.pixels, f.size);
+                            c.param2 = rec->save_blob(compressed.data(), static_cast<int>(compressed.size()));
+                            c.param4 = static_cast<int>(compressed.size());
+                            c.param3 = 1;
+                        }
 
-                    callback(p, f);
-                }, _entity_id, call_type::uvc_frame);
-            });
-            vector<stream_profile> ps{ profile };
-            _owner->try_record([&](recording* rec, lookup_key k)
-            {
+                        callback(p, f);
+                    }, _entity_id, call_type::uvc_frame);
+                });
+
+                vector<stream_profile> ps{ profile };
                 rec->save_stream_profiles(ps, k);
+
             }, _entity_id, call_type::uvc_play);
         }
 
@@ -710,6 +712,7 @@ namespace rsimpl
             _filename(filename), _section(section), _mode(mode),
             _alive(true), _write_to_file([this]() { write_to_file(); })
         {
+            
         }
 
         record_backend::~record_backend()
