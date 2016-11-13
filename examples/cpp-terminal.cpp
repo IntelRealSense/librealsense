@@ -6,7 +6,7 @@
 
 #include "tclap/CmdLine.h"
 #include "parser.hpp"
-#include "../third_party/auto-complete/auto-complete.h"
+#include "third_party/auto-complete/auto-complete.h"
 #include <condition_variable>
 
 using namespace std;
