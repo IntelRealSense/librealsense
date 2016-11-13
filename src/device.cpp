@@ -352,7 +352,9 @@ void rs_device_base::start_video_streaming(bool is_mipi)
 
     // Satisfy stream_requests as necessary for each subdevice, calling set_mode and
     // dispatching the uvc configuration for a requested stream to the hardware
-
+    if  (config.requests[RS_STREAM_FISHEYE].enabled) {
+        enable_fisheye_stream();
+    }
     for(auto mode_selection : selected_modes)
     {
         assert(static_cast<size_t>(mode_selection.mode.subdevice) <= timestamp_readers.size());
@@ -740,8 +742,7 @@ const char * rs_device_base::get_usb_port_id() const
 
  void rs_device_base::sensorCallback(motion::MotionSensorFrame* frame, int numFrames) {
        // ;//std::cout << "Got sensorCallback!" << std::endl;
-       static int gyro_frame_count = 0;
-       static int accel_frame_count = 0;
+
        if(!data_acquisition_active)
             return;
     if (config.data_request.enabled)
@@ -749,9 +750,9 @@ const char * rs_device_base::get_usb_port_id() const
         // TODO -replace hard-coded value 3 which stands for fisheye subdevice   
 
         rs_timestamp_data imu_timestamp;
-        imu_timestamp.timestamp = frame->header.timestamp/1000;
+        imu_timestamp.timestamp = frame->header.timestamp;
         imu_timestamp.source_id = (frame->header.type == motion::MOTION_SOURCE_GYRO ? RS_EVENT_IMU_GYRO : RS_EVENT_IMU_ACCEL);
-        imu_timestamp.frame_number = (frame->header.type == motion::MOTION_SOURCE_GYRO ? gyro_frame_count++ : accel_frame_count++);;
+        imu_timestamp.frame_number = frame->header.seq;
         
         rs_motion_data imu_data ;
         imu_data.timestamp_data = imu_timestamp;
@@ -763,18 +764,6 @@ const char * rs_device_base::get_usb_port_id() const
 
         config.motion_callback->on_event(imu_data);
 
-        /* // Handle Timestamp packets
-        if (config.timestamp_callback)
-        {
-        for (int i = 0; i < entry.non_imu_entries_num; i++)
-        {
-        auto tse = entry.non_imu_packets[i];
-        if (archive)
-        archive->on_timestamp(tse);
-
-        config.timestamp_callback->on_event(entry.non_imu_packets[i]);
-        }
-        }*/
 
 
     }
@@ -792,7 +781,7 @@ void rs_device_base::fisheyeCallback(motion::MotionFisheyeFrame* frame) {
         motion_device->returnFisheyeBuffer(frame);
         return;
     }
-        frame_archive::frame_additional_data additional_data( frame->header.timestamp/1000,
+        frame_archive::frame_additional_data additional_data( frame->header.timestamp,
             frameCount++,
             0,
             frame->width,
@@ -805,9 +794,10 @@ void rs_device_base::fisheyeCallback(motion::MotionFisheyeFrame* frame) {
             RS_STREAM_FISHEYE,
             0,
             config.info.supported_metadata_vector,
-            frame->exposure*1000);
+            frame->exposure*1000.0);
 
         additional_data.timestamp_domain = RS_TIMESTAMP_DOMAIN_MICROCONTROLLER;
+        //std::cout <<"Timestamp: " << frame->header.timestamp << ", calculated: " << (uint64_t)(additional_data.timestamp) << std::endl;
         //std::cout << "Got fisheyeCallback! 1   " <<  frame->width << "," << frame->height << std::endl;
         byte* frameData = archive->alloc_frame(RS_STREAM_FISHEYE, additional_data, true); // Sergey: this allocates object for the frame
 
@@ -840,7 +830,7 @@ void rs_device_base::fisheyeCallback(motion::MotionFisheyeFrame* frame) {
             if(frame->header.seq < 5)
                 return;
             //std::cout << "timestamp: " << frame->header.seq-3 << std::endl;
-            archive->on_timestamp({frame->header.timestamp/1000.0,RS_EVENT_IMU_DEPTH_CAM,frame->header.seq-3});
+            archive->on_timestamp({frame->header.timestamp,RS_EVENT_IMU_DEPTH_CAM,frame->header.seq-3});
         }
     }
     void rs_device_base::notifyCallback(uint32_t status, uint8_t *buf, uint32_t size) {

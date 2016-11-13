@@ -190,9 +190,7 @@ namespace rsimpl
              initialize_motion();
         // }
         data_acquisition_active = true;
-        if  (config.requests[RS_STREAM_FISHEYE].enabled) {
-            enable_fisheye_stream();
-        }
+
        // motion_device->startFisheyeCamera();
         //fisheye_started = true;
 

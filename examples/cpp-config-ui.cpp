@@ -598,8 +598,11 @@ int main(int argc, char * argv[])
         {
             if (dev->supports((rs::capabilities)stream))
             {
-                dev->enable_stream((rs::stream)stream, wh[stream].width, wh[stream].height, formats[stream], req_fps);
-                resolutions[(rs::stream)stream] = { dev->get_stream_width((rs::stream)stream), dev->get_stream_height((rs::stream)stream), formats[stream] };
+
+                    dev->enable_stream((rs::stream)stream, wh[stream].width, wh[stream].height, formats[stream], req_fps);
+                    resolutions[(rs::stream)stream] = { dev->get_stream_width((rs::stream)stream), dev->get_stream_height((rs::stream)stream), formats[stream] };
+
+
             }
         }
 
