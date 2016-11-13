@@ -127,7 +127,7 @@ namespace rsimpl
             std::lock_guard<std::mutex> lock(_mtx);
             if (!_was_init)
             {
-                _ptr = std::make_shared<T>(_init());
+                _ptr = std::unique_ptr<T>(new T(_init()));
                 _was_init = true;
             }
             return _ptr.get();
@@ -136,7 +136,7 @@ namespace rsimpl
         mutable std::mutex _mtx;
         mutable bool _was_init = false;
         std::function<T()> _init;
-        mutable std::shared_ptr<T> _ptr;
+        mutable std::unique_ptr<T> _ptr;
     };
 
     template<typename T, int sz>
