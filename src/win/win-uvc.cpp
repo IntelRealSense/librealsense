@@ -536,6 +536,8 @@ namespace rsimpl
                         {
                             elem.callback = nullptr;
                         }
+
+                        CHECK_HR(_reader->SetStreamSelection(static_cast<DWORD>(MF_SOURCE_READER_ALL_STREAMS), TRUE));
                     }
                 });
 
@@ -563,8 +565,6 @@ namespace rsimpl
 
             if (get_power_state() != D0)
                 throw std::runtime_error("Device must be powered to query supported profiles!");
-
-            CHECK_HR(_reader->SetStreamSelection(static_cast<DWORD>(MF_SOURCE_READER_ALL_STREAMS), TRUE));
 
             for (unsigned int sIndex = 0; sIndex < _streams.size(); ++sIndex)
             {
@@ -728,6 +728,10 @@ namespace rsimpl
 
                                     CHECK_HR(_reader->ReadSample(sIndex, 0, nullptr, nullptr, nullptr, nullptr));
                                     return;
+                                }
+                                else
+                                {
+                                    throw std::runtime_error("Could not set Media Type. Device may be locked");
                                 }
                             }
                         }

@@ -652,7 +652,7 @@ namespace rs
         device _dev;
     };
 
-    inline subdevice_iterator begin(device dev) { return{ dev, RS_SUBDEVICE_COLOR }; }
+    inline subdevice_iterator begin(device dev) { return ++subdevice_iterator(dev, rs_subdevice(-1)); }
     inline subdevice_iterator end(device dev) { return{ dev, RS_SUBDEVICE_COUNT }; }
 
     /**
