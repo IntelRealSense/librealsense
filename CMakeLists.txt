@@ -77,6 +77,8 @@ set(REALSENSE_CPP
 	src/win/win-usb.cpp
 	src/win/win-backend.cpp
 	
+	third_party/auto-complete/auto-complete.cpp
+
 	third_party/sqlite/sqlite3.h
 	src/sql.h
 	src/recorder.h
@@ -112,6 +114,8 @@ set(REALSENSE_HPP
 	src/win/win-usb.h
 	src/win/win-backend.h
 	
+	third_party/auto-complete/auto-complete.h
+
 	third_party/sqlite/sqlite3.c
 	src/sql.cpp
 	src/recorder.cpp
