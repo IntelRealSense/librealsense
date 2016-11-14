@@ -5,14 +5,12 @@
 // This set of tests is valid for any number and combination of RealSense cameras, including R200 and F200 //
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-#if !defined(MAKEFILE) || ( defined(LIVE_TEST) )
-
 #include "unit-tests-common.h"
 
 TEST_CASE( "Device metadata enumerates correctly", "[live]" )
 {
+    auto ctx = make_context(__FUNCTION__);
     // Require at least one device to be plugged in
-    rs::context ctx;
     std::vector<rs::device> list;
     REQUIRE_NOTHROW(list = ctx.query_devices());
     const int device_count = list.size();
@@ -22,7 +20,6 @@ TEST_CASE( "Device metadata enumerates correctly", "[live]" )
     for(int i=0; i<device_count; ++i)
     {
         rs::device dev = list[i];
-        //REQUIRE(dev != nullptr);
 
         SECTION( "supported device metadata strings are nonempty, unsupported ones throw" )
         {
@@ -41,8 +38,10 @@ TEST_CASE( "Device metadata enumerates correctly", "[live]" )
 ////////////////////////////////////////////////////////
 TEST_CASE("Start-Stop stream sequence", "[live]")
 {
+
+
     // Require at least one device to be plugged in
-    rs::context ctx;
+    auto ctx = make_context(__FUNCTION__);
     std::vector<rs::device> list;
     REQUIRE_NOTHROW(list = ctx.query_devices());
     const int device_count = list.size();
@@ -78,7 +77,7 @@ TEST_CASE("Start-Stop stream sequence", "[live]")
 TEST_CASE( "no extrinsic transformation between a stream and itself", "[live]" )
 {
     // Require at least one device to be plugged in
-    rs::context ctx;
+    auto ctx = make_context(__FUNCTION__);
     std::vector<rs::device> list;
     REQUIRE_NOTHROW(list = ctx.query_devices());
     const int device_count = list.size();
@@ -113,7 +112,7 @@ TEST_CASE( "no extrinsic transformation between a stream and itself", "[live]" )
 TEST_CASE( "extrinsic transformation between two streams is a rigid transform", "[live]" )
 {
     // Require at least one device to be plugged in
-    rs::context ctx;
+    auto ctx = make_context(__FUNCTION__);
     std::vector<rs::device> list;
     REQUIRE_NOTHROW(list = ctx.query_devices());
     const int device_count = list.size();
@@ -164,7 +163,7 @@ TEST_CASE( "extrinsic transformation between two streams is a rigid transform", 
 TEST_CASE( "extrinsic transformations are transitive", "[live]" )
 {
     // Require at least one device to be plugged in
-    rs::context ctx;
+    auto ctx = make_context(__FUNCTION__);
     std::vector<rs::device> list;
     REQUIRE_NOTHROW(list = ctx.query_devices());
     const int device_count = list.size();
@@ -228,7 +227,7 @@ TEST_CASE( "extrinsic transformations are transitive", "[live]" )
 TEST_CASE( "streaming modes sanity check", "[live]" )
 {
     // Require at least one device to be plugged in
-    rs::context ctx;
+    auto ctx = make_context(__FUNCTION__);
     std::vector<rs::device> list;
     REQUIRE_NOTHROW(list = ctx.query_devices());
     const int device_count = list.size();
@@ -261,7 +260,8 @@ TEST_CASE( "streaming modes sanity check", "[live]" )
                     REQUIRE(profile.fps <= 300);
 
                     // require that we can start streaming this mode
-                    auto lock = subdevice.open({ profile }); // TODO: add default constructor to rs::streaming_lock for more coverage
+                    rs::streaming_lock lock;
+                    REQUIRE_NOTHROW(lock = subdevice.open({ profile }));
                     // TODO: make callback confirm stream format/dimensions/framerate
                     REQUIRE_NOTHROW(lock.start([](rs_frame * fref) {}));
 
@@ -291,9 +291,10 @@ TEST_CASE( "streaming modes sanity check", "[live]" )
     }
 }
 
-TEST_CASE("check option API", "[live][options]") {
+TEST_CASE("check option API", "[live][options]") 
+{
     // Require at least one device to be plugged in
-    rs::context ctx;
+    auto ctx = make_context(__FUNCTION__);
     std::vector<rs::device> list;
     REQUIRE_NOTHROW(list = ctx.query_devices());
     REQUIRE(list.size() > 0);
@@ -347,10 +348,11 @@ TEST_CASE("check option API", "[live][options]") {
                     }
                 }
                 SECTION("set opt doesn't like bad values") {
-                    auto range = subdevice.get_option_range(opt);
                     if (!is_opt_supported) {
-                        REQUIRE_THROWS_AS(subdevice.set_option(opt, range.min), rs::error);
+                        REQUIRE_THROWS_AS(subdevice.set_option(opt, 1), rs::error);
                     } else {
+                        auto range = subdevice.get_option_range(opt);
+
                         // minimum should work, as should maximum
                         REQUIRE_NOTHROW(subdevice.set_option(opt, range.min));
                         REQUIRE_NOTHROW(subdevice.set_option(opt, range.max));
@@ -407,21 +409,27 @@ TEST_CASE("check option API", "[live][options]") {
     }
 }
 
-TEST_CASE("a single subdevice can only be opened once, different subdevices can be opened simultaneously", "[live][multicam]") {
+TEST_CASE("a single subdevice can only be opened once, different subdevices can be opened simultaneously", "[live][multicam]") 
+{
     // Require at least one device to be plugged in
-    rs::context ctx;
+    auto ctx = make_context(__FUNCTION__);
     std::vector<rs::device> list;
     REQUIRE_NOTHROW(list = ctx.query_devices());
     REQUIRE(list.size() > 0);
     SECTION("Single context") {
-        SECTION("subdevices on a single device") {
-            for (auto & dev : list) {
-                SECTION("opening the same subdevice multiple times") {
-                    for (auto && subdevice : dev) {
+        SECTION("subdevices on a single device") 
+        {
+            for (auto & dev : list) 
+            {
+                SECTION("opening the same subdevice multiple times") 
+                {
+                    for (auto && subdevice : dev) 
+                    {
                         auto modes = subdevice.get_stream_modes();
                         REQUIRE(modes.size() > 0);
                         rs::streaming_lock lock1, lock2;
-                        // "Stream profile not found!" error??
+                        CAPTURE(rs_subdevice(subdevice));
+                        CAPTURE(modes[0].stream);
                         REQUIRE_NOTHROW(lock1 = subdevice.open( modes[0] ));
                         SECTION("same mode") {
                             // selected, but not streaming
@@ -452,7 +460,7 @@ TEST_CASE("a single subdevice can only be opened once, different subdevices can 
                         for (auto & subdevice2 : dev) {
                             if (subdevice1 == subdevice2) continue;
 
-                            rs::streaming_lock lock1, lock2;
+                            rs::streaming_lock lock1;
                             CAPTURE(rs_subdevice(subdevice1));
                             CAPTURE(rs_subdevice(subdevice2));
 
@@ -460,17 +468,24 @@ TEST_CASE("a single subdevice can only be opened once, different subdevices can 
                             REQUIRE_NOTHROW(lock1 = subdevice1.open(subdevice1.get_stream_modes()[0]));
                             
                             // selected, but not streaming
-                            REQUIRE_NOTHROW(lock2 = subdevice2.open(subdevice2.get_stream_modes()[0]));
-                            REQUIRE_NOTHROW(lock2.start([](rs_frame * fref) {}));
-                            REQUIRE_NOTHROW(lock2.stop());
+                            {
+                                rs::streaming_lock lock2;
+                                CAPTURE(subdevice2.get_stream_modes()[0].stream);
+                                REQUIRE_NOTHROW(lock2 = subdevice2.open(subdevice2.get_stream_modes()[0]));
+                                REQUIRE_NOTHROW(lock2.start([](rs_frame * fref) {}));
+                                REQUIRE_NOTHROW(lock2.stop());
+                            }
 
                             // streaming
-                            REQUIRE_NOTHROW(lock1.start([](rs_frame * fref){}));
-                            REQUIRE_NOTHROW(lock2 = subdevice2.open(subdevice2.get_stream_modes()[0]));
-                            REQUIRE_NOTHROW(lock2.start([](rs_frame * fref) {}));
-                            // stop streaming in opposite order just to be sure that works too
-                            REQUIRE_NOTHROW(lock1.stop());
-                            REQUIRE_NOTHROW(lock2.stop());
+                            {
+                                rs::streaming_lock lock2;
+                                REQUIRE_NOTHROW(lock1.start([](rs_frame * fref) {}));
+                                REQUIRE_NOTHROW(lock2 = subdevice2.open(subdevice2.get_stream_modes()[0]));
+                                REQUIRE_NOTHROW(lock2.start([](rs_frame * fref) {}));
+                                // stop streaming in opposite order just to be sure that works too
+                                REQUIRE_NOTHROW(lock1.stop());
+                                REQUIRE_NOTHROW(lock2.stop());
+                            }
                         }
                     }
                 }
@@ -504,8 +519,9 @@ TEST_CASE("a single subdevice can only be opened once, different subdevices can 
             }
         }
     }
-    SECTION("two contexts") {
-        rs::context ctx2;
+    SECTION("two contexts") 
+    {
+        auto ctx2 = make_context("two_contexts");
         std::vector<rs::device> list2;
         REQUIRE_NOTHROW(list2 = ctx2.query_devices());
         REQUIRE(list2.size() > 0);
@@ -529,4 +545,3 @@ TEST_CASE("a single subdevice can only be opened once, different subdevices can 
         }
     }
 }
-#endif /* !defined(MAKEFILE) || ( defined(LIVE_TEST) ) */

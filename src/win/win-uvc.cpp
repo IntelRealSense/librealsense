@@ -23,7 +23,7 @@
 #pragma comment(lib, "mfuuid.lib")
 
 
-#define type_guid  MF_DEVSOURCE_ATTRIBUTE_SOURCE_TYPE_VIDCAP_GUID 
+#define type_guid  MF_DEVSOURCE_ATTRIBUTE_SOURCE_TYPE_VIDCAP_GUID
 #define did_guid  MF_DEVSOURCE_ATTRIBUTE_SOURCE_TYPE_VIDCAP_SYMBOLIC_LINK
 
 
@@ -69,7 +69,7 @@ namespace rsimpl
             DWORD dwStreamIndex,
             DWORD /*dwStreamFlags*/,
             LONGLONG /*llTimestamp*/,
-            IMFSample *sample) 
+            IMFSample *sample)
         {
             auto owner = _owner.lock();
             if (owner && owner->_reader)
@@ -239,7 +239,7 @@ namespace rsimpl
             case KSPROPERTY_MEMBER_VALUES:
             {
                 /*
-                *	we don't yet support reading a list of values, only min-max.
+                *   we don't yet support reading a list of values, only min-max.
                 *   so we only support reading default value from a list
                 */
 
@@ -536,6 +536,8 @@ namespace rsimpl
                         {
                             elem.callback = nullptr;
                         }
+
+                        CHECK_HR(_reader->SetStreamSelection(static_cast<DWORD>(MF_SOURCE_READER_ALL_STREAMS), TRUE));
                     }
                 });
 
@@ -563,8 +565,6 @@ namespace rsimpl
 
             if (get_power_state() != D0)
                 throw std::runtime_error("Device must be powered to query supported profiles!");
-
-            CHECK_HR(_reader->SetStreamSelection(static_cast<DWORD>(MF_SOURCE_READER_ALL_STREAMS), TRUE));
 
             for (unsigned int sIndex = 0; sIndex < _streams.size(); ++sIndex)
             {
@@ -728,6 +728,10 @@ namespace rsimpl
 
                                     CHECK_HR(_reader->ReadSample(sIndex, 0, nullptr, nullptr, nullptr, nullptr));
                                     return;
+                                }
+                                else
+                                {
+                                    throw std::runtime_error("Could not set Media Type. Device may be locked");
                                 }
                             }
                         }

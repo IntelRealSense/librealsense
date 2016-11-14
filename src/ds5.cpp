@@ -125,7 +125,7 @@
 //
 //    std::vector<std::shared_ptr<rsimpl::frame_timestamp_reader>>  ds5_camera::create_frame_timestamp_readers() const
 //    {
-//        return { 
+//        return {
 //            std::make_shared<ds5_timestamp_reader>(),
 //            std::make_shared<ds5_timestamp_reader>(),
 //            std::make_shared<ds5_timestamp_reader>(),
@@ -161,8 +161,8 @@ namespace rsimpl
         std::vector<uvc::uvc_device_info> chosen;
         std::vector<std::shared_ptr<device_info>> results;
 
-        auto right_pid = filter_by_product(uvc, DS5_PID);
-        auto group_devices = group_by_unique_id(right_pid);
+        auto valid_pid = filter_by_product(uvc, rs4xx_sku_pid);
+        auto group_devices = group_by_unique_id(valid_pid);
         for (auto& group : group_devices)
         {
             // group variable contain more than one device

@@ -179,7 +179,7 @@ rs_context * rs_create_context(int api_version, rs_error ** error) try
 {
     verify_version_compatibility(api_version);
     
-    return new rs_context{ std::make_shared<rsimpl::context>(rsimpl::backend_type::standard, nullptr) };
+    return new rs_context{ std::make_shared<rsimpl::context>(rsimpl::backend_type::standard) };
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, api_version)
 
@@ -214,7 +214,7 @@ catch (...) {}
 rs_device* rs_create_device(const rs_device_list* list, int index, rs_error** error) try
 {
     VALIDATE_NOT_NULL(list);
-    VALIDATE_RANGE(index, 0, list->list.size() - 1);
+    VALIDATE_RANGE(index, 0, (int)list->list.size() - 1);
     return new rs_device{ list->list[index]->create(list->ctx->get_backend()) };
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, list, index)
@@ -245,7 +245,7 @@ HANDLE_EXCEPTIONS_AND_RETURN(nullptr, device, subdevice)
 void rs_get_stream_mode(const rs_stream_modes_list* list, int index, rs_stream* stream, int* width, int* height, int* fps, rs_format* format, rs_error** error) try
 {
     VALIDATE_NOT_NULL(list);
-    VALIDATE_RANGE(index, 0, list->list.size() - 1);
+    VALIDATE_RANGE(index, 0, (int)list->list.size() - 1);
 
     VALIDATE_NOT_NULL(stream);
     VALIDATE_NOT_NULL(width);
@@ -658,27 +658,25 @@ int rs_get_api_version(rs_error ** error) try
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, RS_API_MAJOR_VERSION, RS_API_MINOR_VERSION, RS_API_PATCH_VERSION)
 
-rs_context* rs_create_recording_context(int api_version, rs_error** error) try
+rs_context* rs_create_recording_context(int api_version, const char* filename, const char* section, rs_recording_mode mode, rs_error** error) try
 {
+    VALIDATE_NOT_NULL(filename);
+    VALIDATE_NOT_NULL(section);
     verify_version_compatibility(api_version);
 
-    return new rs_context{ std::make_shared<rsimpl::context>(rsimpl::backend_type::record, nullptr) };
+    return new rs_context{ std::make_shared<rsimpl::context>(rsimpl::backend_type::record, filename, section, mode) };
 }
-HANDLE_EXCEPTIONS_AND_RETURN(nullptr, api_version)
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, api_version, filename, section, mode)
 
-void rs_save_recording_to_file(const rs_context* ctx, const char* filename, rs_error** error) try
+rs_context* rs_create_mock_context(int api_version, const char* filename, const char* section, rs_error** error) try
 {
-    ctx->ctx->save_to(filename);
-}
-HANDLE_EXCEPTIONS_AND_RETURN(, ctx, filename)
-
-rs_context* rs_create_mock_context(int api_version, const char* filename, rs_error** error) try
-{
+    VALIDATE_NOT_NULL(filename);
+    VALIDATE_NOT_NULL(section);
     verify_version_compatibility(api_version);
 
-    return new rs_context{ std::make_shared<rsimpl::context>(rsimpl::backend_type::playback, filename) };
+    return new rs_context{ std::make_shared<rsimpl::context>(rsimpl::backend_type::playback, filename, section) };
 }
-HANDLE_EXCEPTIONS_AND_RETURN(nullptr, api_version, filename)
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, api_version, filename, section)
 
 void rs_free_error(rs_error * error) { if (error) delete error; }
 const char * rs_get_failed_function(const rs_error * error) { return error ? error->function : nullptr; }

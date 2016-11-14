@@ -54,8 +54,8 @@ set(REALSENSE_CPP
     src/archive.cpp
     src/context.cpp
     src/device.cpp
-	src/subdevice.cpp
-	src/option.cpp
+    src/subdevice.cpp
+    src/option.cpp
     src/hw-monitor.cpp
     src/image.cpp
     src/ivcam-private.cpp
@@ -67,122 +67,122 @@ set(REALSENSE_CPP
     src/uvc-v4l2.cpp
     src/backend.cpp
     src/verify.c
-	src/ds5.cpp
-	src/ds5c.cpp
-	src/ds5t.cpp
-	src/ds5d.cpp
-	src/ds5-private.cpp
-	src/win/win-helpers.cpp
-	src/win/win-uvc.cpp
-	src/win/win-usb.cpp
-	src/win/win-backend.cpp
+    src/ds5.cpp
+    src/ds5c.cpp
+    src/ds5t.cpp
+    src/ds5d.cpp
+    src/ds5-private.cpp
+    src/win/win-helpers.cpp
+    src/win/win-uvc.cpp
+    src/win/win-usb.cpp
+    src/win/win-backend.cpp
 
-	third_party/sqlite/sqlite3.h
-	src/sql.h
-	src/recorder.h
+    third_party/sqlite/sqlite3.h
+    src/sql.h
+    src/recorder.h
 )
 
 set(REALSENSE_HPP
-	include/librealsense/rs.hpp
-	include/librealsense/rs.h
-	include/librealsense/rscore.hpp
-	include/librealsense/rsutil.h
-	include/librealsense/rsutil.hpp
+    include/librealsense/rs.hpp
+    include/librealsense/rs.h
+    include/librealsense/rscore.hpp
+    include/librealsense/rsutil.h
+    include/librealsense/rsutil.hpp
 
     src/archive.h
-	src/concurrency.h
+    src/concurrency.h
     src/context.h
     src/device.h
-	src/subdevice.h
-	src/option.h
+    src/subdevice.h
+    src/option.h
     src/hw-monitor.h
     src/image.h
     src/ivcam-private.h
     src/ivcam-device.h
     src/types.h
     src/backend.h
-	src/sr300.h
-	src/ds5.h
-	src/ds5c.h
-	src/ds5t.h
-	src/ds5d.h
-	src/ds5-private.h
-	src/win/win-helpers.h
-	src/win/win-uvc.h
-	src/win/win-usb.h
-	src/win/win-backend.h
-	
-	third_party/sqlite/sqlite3.c
-	src/sql.cpp
-	src/recorder.cpp
+    src/sr300.h
+    src/ds5.h
+    src/ds5c.h
+    src/ds5t.h
+    src/ds5d.h
+    src/ds5-private.h
+    src/win/win-helpers.h
+    src/win/win-uvc.h
+    src/win/win-usb.h
+    src/win/win-backend.h
+
+    third_party/sqlite/sqlite3.c
+    src/sql.cpp
+    src/recorder.cpp
 )
 
 if(WIN32)
-	source_group("Source Files\\Backend" FILES 
-		src/win/win-helpers.cpp
-		src/win/win-uvc.cpp
-		src/win/win-usb.cpp
-		src/win/win-backend.cpp
-		src/uvc-v4l2.cpp
-		src/backend.cpp
-		src/verify.c)
+    source_group("Source Files\\Backend" FILES
+        src/win/win-helpers.cpp
+        src/win/win-uvc.cpp
+        src/win/win-usb.cpp
+        src/win/win-backend.cpp
+        src/uvc-v4l2.cpp
+        src/backend.cpp
+        src/verify.c)
 
-	source_group("Header Files\\Backend" FILES 
-		src/win/win-helpers.h
-		src/win/win-uvc.h
-		src/win/win-usb.h
-		src/win/win-backend.h
-		src/backend.h)
-		
-	source_group("Header Files\\API" FILES 
-		include/librealsense/rs.hpp
-		include/librealsense/rs.h
-		include/librealsense/rscore.hpp
-		include/librealsense/rsutil.h
-		include/librealsense/rsutil.hpp
-		CMake/realsense.def
-		)
-		
-	source_group("Header Files\\Recorder" FILES 
-		third_party/sqlite/sqlite3.h
-		src/sql.h
-		src/recorder.h
-		)
-		
-	source_group("Source Files\\API" FILES 
-		src/rs.cpp
-		)
-		
-	source_group("Source Files\\Recorder" FILES 
-		third_party/sqlite/sqlite3.c
-		src/sql.cpp
-		src/recorder.cpp
-		)
+    source_group("Header Files\\Backend" FILES
+        src/win/win-helpers.h
+        src/win/win-uvc.h
+        src/win/win-usb.h
+        src/win/win-backend.h
+        src/backend.h)
 
-	source_group("Source Files\\Devices" FILES 
-		src/ds5.cpp
-		src/ds5c.cpp
-		src/ds5t.cpp
-		src/ds5d.cpp
-		src/ds5-private.cpp
-		src/sr300.cpp
-		src/ivcam-private.cpp
-		src/ivcam-device.cpp
-		)
-		
-	source_group("Header Files\\Devices" FILES 
-		src/ds5.h
-		src/ds5c.h
-		src/ds5t.h
-		src/ds5d.h
-		src/ds5-private.h
-		src/sr300.h
-		src/ivcam-private.h
-		src/ivcam-device.h
-		)
+    source_group("Header Files\\API" FILES
+        include/librealsense/rs.hpp
+        include/librealsense/rs.h
+        include/librealsense/rscore.hpp
+        include/librealsense/rsutil.h
+        include/librealsense/rsutil.hpp
+        CMake/realsense.def
+        )
+
+    source_group("Header Files\\Recorder" FILES
+        third_party/sqlite/sqlite3.h
+        src/sql.h
+        src/recorder.h
+        )
+
+    source_group("Source Files\\API" FILES
+        src/rs.cpp
+        )
+
+    source_group("Source Files\\Recorder" FILES
+        third_party/sqlite/sqlite3.c
+        src/sql.cpp
+        src/recorder.cpp
+        )
+
+    source_group("Source Files\\Devices" FILES
+        src/ds5.cpp
+        src/ds5c.cpp
+        src/ds5t.cpp
+        src/ds5d.cpp
+        src/ds5-private.cpp
+        src/sr300.cpp
+        src/ivcam-private.cpp
+        src/ivcam-device.cpp
+        )
+
+    source_group("Header Files\\Devices" FILES
+        src/ds5.h
+        src/ds5c.h
+        src/ds5t.h
+        src/ds5d.h
+        src/ds5-private.h
+        src/sr300.h
+        src/ivcam-private.h
+        src/ivcam-device.h
+        )
 
 else()
-    
+
 endif()
 
 if(WIN32)
@@ -191,9 +191,9 @@ if(WIN32)
     # Makes VS15 find the DLL when trying to run examples/tests
     set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
     set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
-	add_definitions(-D__SSSE3__)
-	
-	set_property(GLOBAL PROPERTY USE_FOLDERS ON)
+    add_definitions(-D__SSSE3__)
+
+    set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 elseif(APPLE)
     set(BACKEND RS_USE_LIBUVC_BACKEND)
 else()

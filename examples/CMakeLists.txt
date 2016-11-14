@@ -142,19 +142,19 @@ set_target_properties (cpp-pointcloud PROPERTIES
 
 install(
     TARGETS
-	
-	c-tutorial-1-depth
-	cpp-tutorial-1-depth
-	c-tutorial-2-streams
-	cpp-tutorial-2-streams
-	
-	cpp-enumerate-devices
-	cpp-terminal
-	cpp-config-ui
-	cpp-capture
-	cpp-headless
-	cpp-multicam
-	cpp-pointcloud
+
+    c-tutorial-1-depth
+    cpp-tutorial-1-depth
+    c-tutorial-2-streams
+    cpp-tutorial-2-streams
+
+    cpp-enumerate-devices
+    cpp-terminal
+    cpp-config-ui
+    cpp-capture
+    cpp-headless
+    cpp-multicam
+    cpp-pointcloud
 
     RUNTIME DESTINATION
     ${CMAKE_INSTALL_PREFIX}/bin

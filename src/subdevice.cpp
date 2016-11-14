@@ -131,9 +131,16 @@ bool endpoint::try_get_pf(const uvc::stream_profile& p, native_pixel_format& res
 
 std::vector<request_mapping> endpoint::resolve_requests(std::vector<stream_request> requests)
 {
+    // TODO: Move to rsutil.hpp
     if (!auto_complete_request(requests))
     {
         throw std::runtime_error("Subdevice could not auto complete requests!");
+    }
+
+    std::vector<uint32_t> legal_4ccs;
+    for (auto mode : get_stream_profiles()) {
+        if (mode.fps == requests[0].fps && mode.height == requests[0].height && mode.width == requests[0].width)
+            legal_4ccs.push_back(mode.format);
     }
 
     std::unordered_set<request_mapping> results;
@@ -141,10 +148,12 @@ std::vector<request_mapping> endpoint::resolve_requests(std::vector<stream_reque
     while (!requests.empty() && !_pixel_formats.empty())
     {
         auto max = 0;
+        auto best_size = 0;
         auto best_pf = &_pixel_formats[0];
         auto best_unpacker = &_pixel_formats[0].unpackers[0];
         for (auto&& pf : _pixel_formats)
         {
+            if (std::none_of(begin(legal_4ccs), end(legal_4ccs), [&](const uint32_t fourcc) {return fourcc == pf.fourcc; })) continue;
             for (auto&& unpacker : pf.unpackers)
             {
                 auto count = static_cast<int>(std::count_if(begin(requests), end(requests),
@@ -152,9 +161,18 @@ std::vector<request_mapping> endpoint::resolve_requests(std::vector<stream_reque
                 {
                     return unpacker.satisfies(r);
                 }));
-                if (count > max && unpacker.outputs.size() == count)
+
+                // Here we check if the current pixel format / unpacker combination is better than the current best.
+                // We judge on two criteria. A: how many of the requested streams can we supply? B: how many total streams do we open?
+                // Optimally, we want to find a combination that supplies all the requested streams, and no additional streams.
+                if (
+                    count > max                                 // If the current combination supplies more streams, it is better.
+                    || (count == max                            // Alternatively, if it supplies the same number of streams,
+                        && unpacker.outputs.size() < best_size) // but this combination opens fewer total streams, it is also better
+                    )
                 {
                     max = count;
+                    best_size = unpacker.outputs.size();
                     best_pf = &pf;
                     best_unpacker = &unpacker;
                 }

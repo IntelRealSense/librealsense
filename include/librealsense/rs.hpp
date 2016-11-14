@@ -17,7 +17,7 @@
 
 namespace rs
 {
-    
+
     class error : public std::runtime_error
     {
         std::string function, args;
@@ -66,14 +66,14 @@ namespace rs
             std::swap(frame_ref, other.frame_ref);
         }
 
-        /** 
-        * relases the frame handle 
+        /**
+        * relases the frame handle
         */
         ~frame()
         {
             if (frame_ref)
             {
-                rs_release_frame(frame_ref); 
+                rs_release_frame(frame_ref);
             }
         }
 
@@ -91,7 +91,7 @@ namespace rs
             return r;
         }
 
-        /* retrieve the timestamp domain 
+        /* retrieve the timestamp domain
         * \return            timestamp domain (clock name) for timestamp values
         */
         rs_timestamp_domain get_frame_timestamp_domain() const
@@ -176,7 +176,7 @@ namespace rs
 
         /**
         * retrive frame stride, meaning the actual line width in memory in bytes (not the logical image width)
-        * \return            stride in bytes 
+        * \return            stride in bytes
         */
         int get_stride_in_bytes() const
         {
@@ -214,7 +214,7 @@ namespace rs
 
         /**
         * retrive the origin stream type that produced the frame
-        * \return               stream type of the frame       
+        * \return               stream type of the frame
         */
         rs_stream get_stream_type() const
         {
@@ -258,7 +258,7 @@ namespace rs
     class streaming_lock
     {
     public:
-        
+
         /**
         * start streaming from specified configured device
         * \param[in] callback callback object created from c++ application. ownership over the callback object is moved into the relevant streaming lock
@@ -312,8 +312,8 @@ namespace rs
         {
             rs_error* e = nullptr;
             std::shared_ptr<rs_streaming_lock> lock(
-                rs_open(_dev, _index, 
-                    profile.stream, 
+                rs_open(_dev, _index,
+                    profile.stream,
                     profile.width,
                     profile.height,
                     profile.fps,
@@ -442,7 +442,7 @@ namespace rs
             error::handle(e);
             return res;
         }
-        
+
         /**
         * check if physical subdevice is supported
         * \return   list of stream profiles that given subdevice can provide, should be released by rs_delete_profiles_list
@@ -459,11 +459,11 @@ namespace rs
 
             auto size = rs_get_modes_count(list.get(), &e);
             error::handle(e);
-            
+
             for (auto i = 0; i < size; i++)
             {
                 stream_profile profile;
-                rs_get_stream_mode(list.get(), i, 
+                rs_get_stream_mode(list.get(), i,
                     &profile.stream,
                     &profile.width,
                     &profile.height,
@@ -498,7 +498,7 @@ namespace rs
 
     private:
         friend device;
-        explicit subdevice(rs_device* dev, rs_subdevice index) 
+        explicit subdevice(rs_device* dev, rs_subdevice index)
             : _dev(dev), _index(index) {}
 
         rs_device* _dev;
@@ -540,7 +540,7 @@ namespace rs
     public:
         subdevice& get_subdevice(rs_subdevice sub)
         {
-            if (sub < _subdevices.size() && _subdevices[sub].get()) 
+            if (sub < _subdevices.size() && _subdevices[sub].get())
                 return *_subdevices[sub];
             throw std::runtime_error("Requested subdevice is not supported!");
         }
@@ -639,9 +639,9 @@ namespace rs
         }
 
         subdevice& operator*() { return _dev.get_subdevice(_idx); }
-        bool operator==(const subdevice_iterator& other) const 
-        { 
-            return _idx == other._idx; 
+        bool operator==(const subdevice_iterator& other) const
+        {
+            return _idx == other._idx;
         }
         bool operator!=(const subdevice_iterator& other) const
         {
@@ -652,7 +652,7 @@ namespace rs
         device _dev;
     };
 
-    inline subdevice_iterator begin(device dev) { return{ dev, RS_SUBDEVICE_COLOR }; }
+    inline subdevice_iterator begin(device dev) { return ++subdevice_iterator(dev, rs_subdevice(-1)); }
     inline subdevice_iterator end(device dev) { return{ dev, RS_SUBDEVICE_COUNT }; }
 
     /**
@@ -712,47 +712,34 @@ namespace rs
         * create librealsense context that will try to record all operations over librealsense into a file
         * \param[in] filename string representing the name of the file to record
         */
-        explicit recording_context(const char* filename)
-            : _filename(filename)
+        recording_context(const std::string& filename, 
+                          const std::string& section = "",
+                          rs_recording_mode mode = RS_RECORDING_MODE_BEST_QUALITY)
         {
             rs_error* e = nullptr;
             _context = std::shared_ptr<rs_context>(
-                rs_create_recording_context(RS_API_VERSION, &e),
+                rs_create_recording_context(RS_API_VERSION, filename.c_str(), section.c_str(), mode, &e),
                 rs_delete_context);
             error::handle(e);
         }
 
-        /* saves all the operations recorded until the time of the call to the file that was passed as parameter */
-        void save() const
-        {
-            rs_error* e = nullptr;
-            rs_save_recording_to_file(_context.get(), _filename.c_str(), &e);
-            error::handle(e);
-        }
-
-        ~recording_context()
-        {
-            save();
-        }
-
         recording_context() = delete;
-    private:
-        std::string _filename;
     };
-    
+
     class mock_context : public context
     {
     public:
         /**
         * create librealsense context that given a file will respond to calls exactly as the recording did
         * if the user calls a method that was either not called during recording or voilates causality of the recording error will be thrown
-		* \param[in] filename string of the name of the file
+        * \param[in] filename string of the name of the file
         */
-        explicit mock_context(const char* filename)
+        mock_context(const std::string& filename, 
+                     const std::string& section = "")
         {
             rs_error* e = nullptr;
             _context = std::shared_ptr<rs_context>(
-                rs_create_mock_context(RS_API_VERSION, filename, &e),
+                rs_create_mock_context(RS_API_VERSION, filename.c_str(), section.c_str(), &e),
                 rs_delete_context);
             error::handle(e);
         }
@@ -766,7 +753,7 @@ namespace rs
         /**
         * create frame queue. frame queues are the simplest x-platform syncronization primitive provided by librealsense
         * to help developers who are not using async APIs
-		* param[in] capacity size of the frame queue
+        * param[in] capacity size of the frame queue
         */
         explicit frame_queue(unsigned int capacity)
         {
