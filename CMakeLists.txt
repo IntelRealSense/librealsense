@@ -75,7 +75,7 @@ set(REALSENSE_CPP
 	src/win/win-helpers.cpp
 	src/win/win-uvc.cpp
 	src/win/win-usb.cpp
-	src/win/win-backend.cpp	
+	src/win/win-backend.cpp
 
 	third_party/sqlite/sqlite3.h
 	src/sql.h
