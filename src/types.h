@@ -127,7 +127,7 @@ namespace rsimpl
             std::lock_guard<std::mutex> lock(_mtx);
             if (!_was_init)
             {
-                _ptr = std::make_unique<T>(_init());
+                _ptr = std::unique_ptr<T>(new T(_init()));
                 _was_init = true;
             }
             return _ptr.get();
