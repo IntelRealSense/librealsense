@@ -48,12 +48,7 @@
 
 namespace rsimpl
 {
-    const uint16_t RS400P_PID = 0x0ad1; // PSR
-    const uint16_t RS410A_PID = 0x0ad2; // ASR
-    const uint16_t RS420R_PID = 0x0ad3; // ASRC
-    const uint16_t RS430C_PID = 0x0ad4; // AWG
-    const uint16_t RS450T_PID = 0x0ad5; // AWGT
-    static const std::vector<std::uint16_t> rs4xx_sku_pid = { RS400P_PID, RS410A_PID, RS420R_PID, RS430C_PID, RS450T_PID };
+    static const std::vector<std::uint16_t> rs4xx_sku_pid = { ds::RS400P_PID, ds::RS410A_PID, ds::RS420R_PID, ds::RS430C_PID, ds::RS450T_PID };
 
     class ds5_camera;
 
@@ -147,7 +142,7 @@ namespace rsimpl
             {
                 if (element.mi == 0) // mi 0 is relate to DS5 device
                     _devices.push_back(backend.create_uvc_device(element));
-                else if (element.mi == 3) // mi 3 is relate to Fisheye device
+                else if (element.pid == RS450T_PID && element.mi == 3) // mi 3 is relate to Fisheye device
                     fisheye_dev = backend.create_uvc_device(element);
             }
 
