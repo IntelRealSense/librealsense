@@ -7,7 +7,6 @@
 #include "tclap/CmdLine.h"
 #include "parser.hpp"
 #include "third_party/auto-complete/auto-complete.h"
-#include <condition_variable>
 
 using namespace std;
 using namespace TCLAP;
@@ -154,50 +153,30 @@ int main(int argc, char** argv) try
         cout << "Commands XML file not provided.\nyou still can send raw data to device in hexadecimal\nseparated by spaces (e.g. 5A 4B 3C).\n";
     }
 
-    string auto_comp_line;
-    bool new_auto_comp_line = false;
-    Dictionary dict;
-    AutoComplete auto_comp;
-    std::mutex mtx;
-    std::condition_variable cv;
+    dictionary dict;
+    auto_complete auto_comp;
     if (!is_application_in_hex_mode)
     {
         for (auto& elem : cmd_xml.commands)
-            dict.AddWord(elem.first);
+            dict.add_word(elem.first);
 
-        auto_comp.UpdateDictionary(dict);
-
-        std::vector<char> chars = {NEW_LINE};
-        auto_comp.RegisterOnKeyCallback(chars, [&](const char ch, const char* str, unsigned sizeOfArr){
-            if (ch == NEW_LINE)
-            {
-                {
-                    std::lock_guard<std::mutex> lk(mtx);
-                    auto_comp_line.resize(sizeOfArr);
-                    strcpy((char*)auto_comp_line.data(), str);
-                    new_auto_comp_line = true;
-                }
-                cv.notify_one();
-            }
-        });
-        auto_comp.Start();
+        auto_comp.update_dictionary(dict);
     }
 
     while (true)
     {
         cout << "\n\n#>";
         fflush(nullptr);
-        string line = auto_comp_line = "";
+        string line = "";
 
         if (!is_application_in_hex_mode)
         {
-            std::unique_lock<std::mutex> lk(mtx);
-            cv.wait(lk, [&]{ return new_auto_comp_line;});
-            line = auto_comp_line;
-            new_auto_comp_line = false;
+            line = auto_comp.get_line();
         }
         else
+        {
             getline(cin, line);
+        }
 
         try
         {

@@ -2,12 +2,9 @@
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
 #pragma once
-#include <thread>
 #include <set>
 #include <vector>
-#include <atomic>
 #include <functional>
-#include <mutex>
 #include <stdint.h>
 #if defined(WIN32)
     #include <conio.h>
@@ -26,23 +23,20 @@
     #define DOWN_ARROW_KEY {27, 91, 66}
 #endif
 
-class Dictionary
+class dictionary
 {
 public:
-    Dictionary() {}
-    void AddWord(const std::string& word);
-    bool RemoveWord(const std::string& word);
-    std::vector<std::string> Search(const std::string& word) const;
-    Dictionary(const Dictionary& obj)
+    dictionary() {}
+    void add_word(const std::string& word);
+    bool remove_word(const std::string& word);
+    std::vector<std::string> search(const std::string& word) const;
+    dictionary(const dictionary& obj)
     {
-        std::lock_guard<std::recursive_mutex> lock(obj._dictionaryMtx);
         _dictionary = obj._dictionary;
     }
 
-    Dictionary& operator=(const Dictionary& other) noexcept
+    dictionary& operator=(const dictionary& other) noexcept
     {
-        std::lock_guard<std::recursive_mutex> lock1(_dictionaryMtx);
-        std::lock_guard<std::recursive_mutex> lock2(other._dictionaryMtx);
         if (this != &other)
         {
             _dictionary = other._dictionary;
@@ -51,44 +45,31 @@ public:
     }
 
 private:
-    mutable std::recursive_mutex _dictionaryMtx;
     std::set<std::string> _dictionary;
 };
 
-typedef std::function<void(const char, const char*, unsigned)> Callback;
 
-class AutoComplete
+class auto_complete
 {
 public:
-    AutoComplete();
-    AutoComplete(const Dictionary& dictionary);
-    ~AutoComplete();
-    void UpdateDictionary(const Dictionary& dictionary);
-    void RegisterOnKeyCallback(const std::vector<char>& keys, Callback callback);
-    void UnregisterOnKeyCallback();
-    void Start();
-    void Stop();
+    auto_complete();
+    explicit auto_complete(const dictionary& dictionary);
+    std::string get_line();
+    void update_dictionary(const dictionary& dictionary);
 
 private:
-    void HandleSpecialKey(std::vector<uint8_t> chars);
+    void handle_special_key(std::vector<uint8_t> chars);
     char getch_nolock();
-    void Backspace(const int numOfBackspaces);
-    std::string CharsQueueToString() const;
-    std::string GetLastWord(const std::string& line) const;
+    void backspace(const int num_of_backspaces);
+    std::string chars_queue_to_string() const;
+    std::string get_last_word(const std::string& line) const;
 
-    std::vector<std::string> _historyWords;
-    unsigned _historyWordsIndex;
-    std::vector<char> _keys;
-    Callback _callback;
-    Dictionary _dictionary;
-    std::vector<char> _charsQueue;
-    int _numOfCharsInLine;
-    unsigned _tabIndex;
-    std::vector<std::string> _findsVec;
-    std::atomic<bool> _action;
-    std::recursive_mutex _startStopMtx;
-    std::recursive_mutex _regUnregMtx;
-    std::recursive_mutex _dictionaryMtx;
-    std::unique_ptr<std::thread> _thread;
-    bool _isFirstTimeUpArrow;
+    std::vector<std::string> _history_words;
+    unsigned _history_words_index;
+    dictionary _dictionary;
+    std::vector<char> _chars_queue;
+    int _num_of_chars_in_line;
+    unsigned _tab_index;
+    std::vector<std::string> _finds_vec;
+    bool _is_first_time_up_arrow;
 };
