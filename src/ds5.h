@@ -48,11 +48,11 @@
 
 namespace rsimpl
 {
-    const uint16_t RS400P_PID = 0x0ad1;
-    const uint16_t RS410A_PID = 0x0ad2;
-    const uint16_t RS420R_PID = 0x0ad3;
-    const uint16_t RS430C_PID = 0x0ad4;
-    const uint16_t RS450T_PID = 0x0ad5;
+    const uint16_t RS400P_PID = 0x0ad1; // PSR
+    const uint16_t RS410A_PID = 0x0ad2; // ASR
+    const uint16_t RS420R_PID = 0x0ad3; // ASRC
+    const uint16_t RS430C_PID = 0x0ad4; // AWG
+    const uint16_t RS450T_PID = 0x0ad5; // AWGT
     static const std::vector<std::uint16_t> rs4xx_sku_pid = { RS400P_PID, RS410A_PID, RS420R_PID, RS430C_PID, RS450T_PID };
 
     class ds5_camera;
@@ -136,17 +136,21 @@ namespace rsimpl
         };
 
         ds5_camera(const uvc::backend& backend,
-            const std::vector<uvc::uvc_device_info>& depth,
+            const std::vector<uvc::uvc_device_info>& dev_info,
             const uvc::usb_device_info& hwm_device)
             : _hw_monitor(backend.create_usb_device(hwm_device))
         {
             using namespace ds;
-
             // create uvc-endpoint from backend uvc-device
-            for(auto& element : depth)
+            std::shared_ptr<uvc::uvc_device> fisheye_dev;
+            for(auto& element : dev_info)
             {
-                _devices.push_back(backend.create_uvc_device(element));
+                if (element.mi == 0) // mi 0 is relate to DS5 device
+                    _devices.push_back(backend.create_uvc_device(element));
+                else if (element.mi == 3) // mi 3 is relate to Fisheye device
+                    fisheye_dev = backend.create_uvc_device(element);
             }
+
             auto depth_ep = std::make_shared<uvc_endpoint>(std::make_shared<uvc::multi_pins_uvc_device>(_devices));
             depth_ep->register_xu(depth_xu); // make sure the XU is initialized everytime we power the camera
             depth_ep->register_pixel_format(pf_z16); // Depth
@@ -168,14 +172,27 @@ namespace rsimpl
             assign_endpoint(RS_SUBDEVICE_DEPTH, depth_ep);
             register_pu(RS_SUBDEVICE_DEPTH, RS_OPTION_GAIN);
             register_pu(RS_SUBDEVICE_DEPTH, RS_OPTION_ENABLE_AUTO_EXPOSURE);
-            register_option(RS_OPTION_EMITTER_ENABLED, RS_SUBDEVICE_DEPTH, std::make_shared<emitter_option>(*this));
-            //DS5_LASER_POWER
-
             register_depth_xu<uint16_t>(RS_OPTION_EXPOSURE, DS5_EXPOSURE, "DS5 Exposure");
-            register_depth_xu<uint16_t>(RS_OPTION_LASER_POWER, DS5_LASER_POWER,
-                "Manual laser power. applicable only in on mode");
 
             _coefficients_table_raw = [this]() { return get_raw_calibration_table(coefficients_table_id); };
+
+            // TODO: These if conditions will be implemented as inheritance classes
+            auto pid = dev_info.front().pid;
+            if (pid == RS410A_PID || pid == RS450T_PID)
+            {
+                register_option(RS_OPTION_EMITTER_ENABLED, RS_SUBDEVICE_DEPTH, std::make_shared<emitter_option>(*this));
+                register_depth_xu<uint16_t>(RS_OPTION_LASER_POWER, DS5_LASER_POWER,
+                    "Manual laser power. applicable only in on mode");
+            }
+
+            if (pid == RS450T_PID)
+            {
+                assert(fisheye_dev);
+                auto fisheye_ep = std::make_shared<uvc_endpoint>(std::make_shared<uvc::retry_controls_work_around>(fisheye_dev));
+                fisheye_ep->register_xu(fisheye_xu); // make sure the XU is initialized everytime we power the camera
+                fisheye_ep->register_pixel_format(pf_raw8);
+                assign_endpoint(RS_SUBDEVICE_FISHEYE, fisheye_ep); // map subdevice to endpoint
+            }
         }
 
         std::vector<uint8_t> send_receive_raw_data(const std::vector<uint8_t>& input) override;
