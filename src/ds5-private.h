@@ -9,6 +9,12 @@
 
 namespace rsimpl {
     namespace ds {
+        const uint16_t RS400P_PID = 0x0ad1; // PSR
+        const uint16_t RS410A_PID = 0x0ad2; // ASR
+        const uint16_t RS420R_PID = 0x0ad3; // ASRC
+        const uint16_t RS430C_PID = 0x0ad4; // AWG
+        const uint16_t RS450T_PID = 0x0ad5; // AWGT
+
         // DS5 depth XU identifiers
         const uint8_t DS5_HWMONITOR             = 1;
         const uint8_t DS5_DEPTH_EMITTER_ENABLED = 2;
@@ -192,7 +198,24 @@ namespace rsimpl {
                 if (it->unique_id == info.unique_id)
                 {
                     result = *it;
-                    result.mi = 3;
+                    switch (info.pid)
+                    {
+                    case RS400P_PID:
+                    case RS430C_PID:
+                    case RS410A_PID:
+                        result.mi = 3;
+                        break;
+                    case RS420R_PID:
+                        throw std::runtime_error("not implemented.");
+                        break;
+                    case RS450T_PID:
+                        result.mi = 6;
+                        break;
+                    default:
+                        throw std::runtime_error("not implemented.");
+                        break;
+                    }
+
                     devices.erase(it);
                     return true;
                 }
