@@ -950,7 +950,7 @@ namespace rsimpl
                         if (p == pair.first)
                         {
                             vector<uint8_t> frame_blob;
-                            if (c_ptr->param3 == 1) // frame was not saved
+                            if (c_ptr->param3 == 0) // frame was not saved
                             {
                                 frame_blob = vector<uint8_t>(c_ptr->param4, 0);
                             }

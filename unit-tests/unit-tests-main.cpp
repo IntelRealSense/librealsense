@@ -20,6 +20,6 @@ int main(int argc, char* const argv[])
         }
     }
 
-    int result = Catch::Session().run(new_argvs.size(), new_argvs.data());
+    auto result = Catch::Session().run(new_argvs.size(), new_argvs.data());
     return result;
 }
