@@ -631,7 +631,7 @@ inline void decode_string_from_raw_data(const command& command, const std::map<s
                     curr_address = dec_to_hex.str();
 
                     auto putZeros = num_of_zeros - int(curr_address.size());
-                    ss_output << "\nAddress: 0x";
+                    ss_output << "\nOffset: 0x";
 
                     for (auto i = 0; i < putZeros; ++i)
                     {

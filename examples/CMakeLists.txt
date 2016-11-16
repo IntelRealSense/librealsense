@@ -111,9 +111,15 @@ set_target_properties (cpp-enumerate-devices PROPERTIES
     FOLDER Examples
 )
 
-add_executable(cpp-terminal cpp-terminal.cpp)
-target_link_libraries(cpp-terminal ${DEPENDENCIES})
-include_directories(cpp-terminal third_party/tclap/include)
+add_executable(cpp-terminal cpp-terminal.cpp third_party/auto-complete/auto-complete.cpp third_party/auto-complete/auto-complete.h)
+
+if(WIN32)
+    target_link_libraries(cpp-terminal ${DEPENDENCIES})
+else()
+    target_link_libraries(cpp-terminal -lpthread ${DEPENDENCIES})
+endif()
+
+include_directories(cpp-terminal third_party/tclap/include third_party/auto-complete)
 
 set_target_properties (cpp-terminal PROPERTIES
     FOLDER Examples
