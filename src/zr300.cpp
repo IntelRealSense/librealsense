@@ -678,6 +678,9 @@ namespace rsimpl
                         {
                             rs_option option[] = { RS_OPTION_FISHEYE_EXPOSURE };
                             double value[] = { exposure_value * 10. };
+                            if (value[0] < 1)
+                                value[0] = 1;
+
                             device->set_options(option, 1, value);
                         }
 
