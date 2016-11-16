@@ -7,7 +7,7 @@
 using namespace std;
 
 
-vector<string> dictionary::search(const string& word) const
+vector<string> auto_complete::search(const string& word) const
 {
     vector<string> finds;
 
@@ -33,28 +33,9 @@ vector<string> dictionary::search(const string& word) const
     return finds;
 }
 
-void dictionary::add_word(const string& word)
-{
-    _dictionary.insert(word);
-}
-
-bool dictionary::remove_word(const string& word)
-{
-    return (_dictionary.erase(word) > 0);
-}
-
-auto_complete::auto_complete()
-    : _history_words_index(0), _num_of_chars_in_line(0), _tab_index(0), _is_first_time_up_arrow(true)
+auto_complete::auto_complete(std::set<std::string> dictionary)
+    : _dictionary(dictionary), _history_words_index(0), _num_of_chars_in_line(0), _tab_index(0), _is_first_time_up_arrow(true)
 {}
-
-auto_complete::auto_complete(const dictionary& dictionary)
-    : _dictionary(dictionary) , _history_words_index(0), _num_of_chars_in_line(0), _tab_index(0), _is_first_time_up_arrow(true)
-{}
-
-void auto_complete::update_dictionary(const dictionary& dictionary)
-{
-    _dictionary = dictionary;
-}
 
 string auto_complete::chars_queue_to_string() const
 {
@@ -95,7 +76,7 @@ void auto_complete::backspace(const int num_of_backspaces)
     }
 }
 
-void auto_complete::handle_special_key(vector<uint8_t> chars)
+void auto_complete::handle_special_key(const vector<uint8_t>& chars)
 {
     auto up_arrow_key = vector<uint8_t>(UP_ARROW_KEY);
     auto down_arrow_key = vector<uint8_t>(DOWN_ARROW_KEY);
@@ -205,7 +186,7 @@ string auto_complete::get_line()
         {
             if (_finds_vec.empty())
             {
-                _finds_vec = _dictionary.search(get_last_word(chars_queue_to_string()));
+                _finds_vec = search(get_last_word(chars_queue_to_string()));
             }
 
 

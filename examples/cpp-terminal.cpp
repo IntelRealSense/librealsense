@@ -19,7 +19,7 @@ vector<uint8_t> build_raw_command_data(const command& command, const vector<stri
     vector<parameter> vec_parameters;
     for (auto param_index = 0; param_index < params.size() ; ++param_index)
     {
-        bool is_there_write_data = param_index >= int(command.parameters.size());
+        auto is_there_write_data = param_index >= int(command.parameters.size());
         auto name = (is_there_write_data)? "" : command.parameters[param_index].name;
         auto is_reverse_bytes = (is_there_write_data)? false : command.parameters[param_index].is_reverse_bytes;
         auto is_decimal = (is_there_write_data) ? false : command.parameters[param_index].is_decimal;
@@ -103,6 +103,17 @@ void hex_mode(const string& line, rs::device& dev)
         cout << setfill('0') << setw(2) << hex << static_cast<int>(elem) << " ";
 }
 
+auto_complete get_auto_complete_obj(bool is_application_in_hex_mode, const map<string, command>& commands_map)
+{
+    set<string> commands;
+    if (!is_application_in_hex_mode)
+    {
+        for (auto& elem : commands_map)
+            commands.insert(elem.first);
+    }
+    return auto_complete(commands);
+}
+
 int main(int argc, char** argv) try
 {
     CmdLine cmd("librealsense cpp-terminal example tool", ' ', RS_API_VERSION_STR);
@@ -153,15 +164,7 @@ int main(int argc, char** argv) try
         cout << "Commands XML file not provided.\nyou still can send raw data to device in hexadecimal\nseparated by spaces (e.g. 5A 4B 3C).\n";
     }
 
-    dictionary dict;
-    auto_complete auto_comp;
-    if (!is_application_in_hex_mode)
-    {
-        for (auto& elem : cmd_xml.commands)
-            dict.add_word(elem.first);
-
-        auto_comp.update_dictionary(dict);
-    }
+    auto auto_comp = get_auto_complete_obj(is_application_in_hex_mode, cmd_xml.commands);
 
     while (true)
     {
