@@ -3,6 +3,7 @@
 
 #include <librealsense/rs.hpp>
 #include <iostream>
+#include <fstream>
 
 #include "tclap/CmdLine.h"
 #include "parser.hpp"
@@ -114,17 +115,36 @@ auto_complete get_auto_complete_obj(bool is_application_in_hex_mode, const map<s
     return auto_complete(commands);
 }
 
+void read_hex_script_file(const string& full_file_path, vector<string>& hex_lines)
+{
+    ifstream myfile(full_file_path);
+    if (myfile.is_open())
+    {
+        string line;
+        while (getline(myfile, line))
+            hex_lines.push_back(line);
+
+        myfile.close();
+        return;
+    }
+    throw runtime_error("Script file not found!");
+}
+
 int main(int argc, char** argv) try
 {
     CmdLine cmd("librealsense cpp-terminal example tool", ' ', RS_API_VERSION_STR);
     ValueArg<string> xml_arg("l", "load", "Full file path of commands XML file", false, "", "Load commands XML file");
     ValueArg<int> device_id_arg("d", "deviceId", "Device ID could be obtain from cpp-enumerate-devices example", false, 0, "Select a device to work with");
+    ValueArg<string> hex_cmd_arg("s", "send", "Hexadecimal raw data", false, "", "Send hexadecimal raw data to device");
+    ValueArg<string> hex_script_arg("r", "raw", "Full file path of hexadecimal raw data script", false, "", "Send raw data line by line from script file");
     cmd.add(xml_arg);
     cmd.add(device_id_arg);
+    cmd.add(hex_cmd_arg);
+    cmd.add(hex_script_arg);
     cmd.parse(argc, argv);
 
     // parse command.xml
-    rs::log_to_file(RS_LOG_SEVERITY_WARN, "librealsense.log");
+    //rs::log_to_file(RS_LOG_SEVERITY_WARN, "librealsense.log");
     // Obtain a list of devices currently present on the system
     rs::context ctx;
     auto devices = ctx.query_devices();
@@ -143,6 +163,39 @@ int main(int argc, char** argv) try
     }
 
     auto dev = devices[device_id];
+    if (hex_cmd_arg.isSet())
+    {
+        auto line = hex_cmd_arg.getValue();
+        try
+        {
+            hex_mode(line, dev);
+        }
+        catch (const exception& ex)
+        {
+            cout << endl << ex.what() << endl;
+            return EXIT_FAILURE;
+        }
+        return EXIT_SUCCESS;
+    }
+
+    if (hex_script_arg.isSet())
+    {
+        try
+        {
+            vector<string> hex_lines;
+            read_hex_script_file(hex_script_arg.getValue(), hex_lines);
+
+            for (auto& elem : hex_lines)
+                hex_mode(elem, dev);
+        }
+        catch (const exception& ex)
+        {
+            cout << endl << ex.what() << endl;
+            return EXIT_FAILURE;
+        }
+        return EXIT_SUCCESS;
+    }
+
     auto is_application_in_hex_mode = true;
     auto xml_full_file_path = xml_arg.getValue();
     map<string, xml_parser_function> format_type_to_lambda;
