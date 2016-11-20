@@ -687,3 +687,33 @@ TEST_CASE("a single subdevice can only be opened once, different subdevices can 
         }
     }
 }
+
+TEST_CASE("All suggested profiles can be opened", "[live]") {
+    // Require at least one device to be plugged in
+    auto ctx = make_context(__FUNCTION__);
+    std::vector<rs::device> list;
+    REQUIRE_NOTHROW(list = ctx.query_devices());
+    REQUIRE(list.size() > 0);
+
+    for (auto & dev : list) {
+        for (auto && subdevice : dev) {
+            std::vector<rs::stream_profile> modes;
+            REQUIRE_NOTHROW(modes = subdevice.get_stream_modes());
+            REQUIRE(modes.size() > 0);
+            WARN(rs_subdevice(subdevice));
+            for (int i = 0; i < modes.size(); i+=1) {
+                //CAPTURE(rs_subdevice(subdevice));
+                CAPTURE(modes[i].format);
+                CAPTURE(modes[i].fps);
+                CAPTURE(modes[i].height);
+                CAPTURE(modes[i].width);
+                CAPTURE(modes[i].stream);
+
+                rs::streaming_lock lock;
+                REQUIRE_NOTHROW(lock = subdevice.open({ modes[i] }));
+                REQUIRE_NOTHROW(lock.start([](rs_frame * fref) {}));
+                REQUIRE_NOTHROW(lock.stop());
+            }
+        }
+    }
+}
