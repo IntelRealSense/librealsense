@@ -223,7 +223,7 @@ bool rsimpl::endpoint::auto_complete_request(std::vector<stream_request>& reques
 }
 
 
-std::vector<uvc::stream_profile> uvc_endpoint::get_stream_profiles()
+std::vector<uvc::stream_profile> uvc_endpoint::init_stream_profiles()
 {
     power on(shared_from_this());
     return _device->get_profiles();
