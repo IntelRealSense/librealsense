@@ -144,7 +144,7 @@ int main(int argc, char** argv) try
     cmd.parse(argc, argv);
 
     // parse command.xml
-    //rs::log_to_file(RS_LOG_SEVERITY_WARN, "librealsense.log");
+    rs::log_to_file(RS_LOG_SEVERITY_WARN, "librealsense.log");
     // Obtain a list of devices currently present on the system
     rs::context ctx;
     auto devices = ctx.query_devices();
