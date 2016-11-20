@@ -250,7 +250,7 @@ std::shared_ptr<streaming_lock> uvc_endpoint::configure(
         auto start = high_resolution_clock::now();
         auto frame_number = 0;
         _device->play(mode.profile, 
-            [stream_ptr, mode, start, frame_number, timestamp_reader](uvc::stream_profile p, uvc::frame_object f) mutable
+            [stream_ptr, mode, start, frame_number, timestamp_reader, requests](uvc::stream_profile p, uvc::frame_object f) mutable
         {
             auto&& unpacker = *mode.unpacker;
 
@@ -330,7 +330,12 @@ std::shared_ptr<streaming_lock> uvc_endpoint::configure(
                 // If any frame callbacks were specified, dispatch them now
                 for (auto&& pref : refs)
                 {
-                    stream->invoke_callback(pref);
+                    // all the streams the unpacker generates get here. If it matches one of the streams the user requested, dispatch it
+                    if (std::any_of(begin(requests), end(requests), [&pref](stream_request request) { return request.stream == pref->get()->get_stream_type(); }))
+                        stream->invoke_callback(pref);
+                    // otherwise, the stream is a garbage stream we were forced to open, and we simply deallocate the frame.
+                    else
+                        pref->get()->get_owner()->release_frame_ref(pref);
                 }
             }
         });
