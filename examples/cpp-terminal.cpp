@@ -152,7 +152,7 @@ int main(int argc, char** argv) try
     if (!device_count)
     {
         printf("No device detected. Is it plugged in?\n");
-        return EXIT_SUCCESS;
+        return EXIT_FAILURE;
     }
 
     auto device_id = device_id_arg.getValue();
