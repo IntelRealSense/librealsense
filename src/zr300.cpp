@@ -666,7 +666,7 @@ namespace rsimpl
                     auto exp_and_cnt_sts = try_get_exp_by_frame_cnt(exp_by_frame_cnt, frame_counter);
 
                     auto exposure_value = static_cast<float>((exp_and_cnt_sts)? exp_by_frame_cnt : values[0]);
-                    auto gain_value = static_cast<float>(values[1]);
+                    auto gain_value = static_cast<float>(2 + values[1] / 16.);
 
                     bool sts = auto_exposure_algo.analyze_image(frame_ref);
                     if (sts)
@@ -687,7 +687,7 @@ namespace rsimpl
                         if (modify_gain)
                         {
                             rs_option option[] = { RS_OPTION_FISHEYE_GAIN };
-                            double value[] = { gain_value };
+                            double value[] = { (gain_value-2) * 16. };
                             device->set_options(option, 1, value);
                         }
                     }
@@ -830,7 +830,7 @@ namespace rsimpl
                 float target_exposure0 = total_exposure * (1.0f + exposure_step);
 
                 target_exposure0 = std::min(target_exposure0, target_exposure);
-                increase_exposure_gain(target_exposure, target_exposure0, exposure, gain);
+                increase_exposure_gain(target_exposure0, target_exposure0, exposure, gain);
                 RoundingMode = rounding_mode_type::ceil;
                 LOG_DEBUG(" ModifyExposure: IncreaseExposureGain: ");
                 LOG_DEBUG(" target_exposure0 " << target_exposure0);
@@ -840,7 +840,7 @@ namespace rsimpl
                 float target_exposure0 = total_exposure / (1.0f + exposure_step);
 
                 target_exposure0 = std::max(target_exposure0, target_exposure);
-                decrease_exposure_gain(target_exposure, target_exposure0, exposure, gain);
+                decrease_exposure_gain(target_exposure0, target_exposure0, exposure, gain);
                 RoundingMode = rounding_mode_type::floor;
                 LOG_DEBUG(" ModifyExposure: DecreaseExposureGain: ");
                 LOG_DEBUG(" target_exposure0 " << target_exposure0);
@@ -977,12 +977,16 @@ namespace rsimpl
 
         for (int i = 1; i < 4; ++i)
         {
+            if (i * flicker_cycle >= maximal_exposure)
+            {
+                continue;
+            }
             float exposure1 = std::max(std::min(i * flicker_cycle, maximal_exposure), flicker_cycle);
             float gain1 = base_gain;
 
             if ((exposure1 * gain1) != target_exposure)
             {
-                std::min(std::max(target_exposure / exposure1, base_gain), gain_limit);
+                gain1 = std::min(std::max(target_exposure / exposure1, base_gain), gain_limit);
             }
             float score1 = fabs(target_exposure - exposure1 * gain1);
             exposure_gain_score.push_back(std::tuple<float, float, float>(score1, exposure1, gain1));
@@ -999,11 +1003,15 @@ namespace rsimpl
 
         for (int i = 1; i < 4; ++i)
         {
+            if (i * flicker_cycle >= maximal_exposure)
+            {
+                continue;
+            }
             float exposure1 = std::max(std::min(i * flicker_cycle, maximal_exposure), flicker_cycle);
             float gain1 = base_gain;
             if ((exposure1 * gain1) != target_exposure)
             {
-                std::min(std::max(target_exposure / exposure1, base_gain), gain_limit);
+                gain1 = std::min(std::max(target_exposure / exposure1, base_gain), gain_limit);
             }
             float score1 = fabs(target_exposure - exposure1 * gain1);
             exposure_gain_score.push_back(std::tuple<float, float, float>(score1, exposure1, gain1));
@@ -1068,8 +1076,8 @@ namespace rsimpl
     float auto_exposure_algorithm::gain_to_value(float gain, rounding_mode_type rounding_mode)
     {
 
-        if (gain < 2.0f) { return 2.0f; }
-        else if (gain > 32.0f) { return 32.0f; }
+        if (gain < base_gain) { return base_gain; }
+        else if (gain > 16.0f) { return 16.0f; }
         else {
             if (rounding_mode == rounding_mode_type::ceil) return std::ceil(gain * 8.0f) / 8.0f;
             else if (rounding_mode == rounding_mode_type::floor) return std::floor(gain * 8.0f) / 8.0f;
