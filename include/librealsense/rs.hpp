@@ -44,7 +44,46 @@ namespace rs
         int height;
         int fps;
         rs_format format;
+
+        bool match(const stream_profile& other) const
+        {
+            if (stream != rs_stream::RS_STREAM_ANY && other.stream != rs_stream::RS_STREAM_ANY && (stream != other.stream))
+                return false;
+            if (format != rs_format::RS_FORMAT_ANY && other.format != rs_format::RS_FORMAT_ANY && (format != other.format))
+                return false;
+            if (fps != 0 && other.fps != 0 && (fps != other.fps))
+                return false;
+            if (width != 0 && other.width != 0 && (width != other.width))
+                return false;
+            if (height != 0 && other.height != 0 && (height != other.height))
+                return false;
+            return true;
+        }
+
+        bool contradicts(const std::vector<stream_profile>& requests) const
+        {
+            for (auto request : requests)
+            {
+                if (fps != 0 && request.fps != 0 && (fps != request.fps))
+                    return true;
+                if (width != 0 && request.width != 0 && (width != request.width))
+                    return true;
+                if (height != 0 && request.height != 0 && (height != request.height))
+                    return true;
+            }
+            return false;
+        }
+
+        bool has_wildcards() const
+        {
+            return (fps == 0 || width == 0 || height == 0 || stream == rs_stream::RS_STREAM_ANY || format == rs_format::RS_FORMAT_ANY);
+        }
     };
+
+    inline bool operator==(const stream_profile& a, const stream_profile& b)
+    {
+        return (a.width == b.width) && (a.height == b.height) && (a.fps == b.fps) && (a.format == b.format) && (a.stream == b.stream);
+    }
 
     class frame
     {

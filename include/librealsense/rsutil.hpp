@@ -90,7 +90,7 @@ namespace rs
 
             multistream open(device dev)
             {
-                std::vector<rs_stream> satisfied_streams;
+                std::vector<rs_stream> satisfied_streams;   // don't send the same stream to multiple subdevices
                 std::vector<streaming_lock> results;
                 std::map<rs_stream, rs_intrinsics> intrinsics;
 
@@ -99,30 +99,32 @@ namespace rs
                     std::vector<stream_profile> targets;
                     auto profiles = sub.get_stream_modes();
 
+                    // deal with explicit requests
                     for (auto&& kvp : _requests)
                     {
                         if (find(begin(satisfied_streams),
                             end(satisfied_streams), kvp.first)
-                            != end(satisfied_streams)) continue;
+                            != end(satisfied_streams)) continue; // skip satisfied requests
 
-                        // can subdevice can satisfy the requested stream?
+                        // if any profile on the subdevice can supply this request, consider it satisfiable
                         if (std::any_of(begin(profiles), end(profiles),
                             [&kvp](const stream_profile& profile)
                             {
                                 return kvp.first == profile.stream;
                             }))
                         {
-                            targets.push_back(kvp.second);
-                            satisfied_streams.push_back(kvp.first);
+                            targets.push_back(kvp.second); // store that this request is going to this subdevice
+                            satisfied_streams.push_back(kvp.first); // mark stream as satisfied
                         }
                     }
 
+                    // deal with preset streams
                     std::vector<rs_format> prefered_formats = { RS_FORMAT_Z16, RS_FORMAT_Y8, RS_FORMAT_RGB8 };
                     for (auto&& kvp : _presets)
                     {
                         if (find(begin(satisfied_streams),
                             end(satisfied_streams), kvp.first)
-                            != end(satisfied_streams)) continue;
+                            != end(satisfied_streams)) continue; // skip if already satisified
 
                         stream_profile result;
                         switch(kvp.second)
@@ -138,6 +140,7 @@ namespace rs
                             break;
                         default: break;
                         }
+                        // RS_STREAM_COUNT signals subdevice can't handle this stream
                         if (result.stream != RS_STREAM_COUNT)
                         {
                             targets.push_back(result);
@@ -145,8 +148,9 @@ namespace rs
                         }
                     }
 
-                    if (targets.size() > 0)
+                    if (targets.size() > 0) // if subdevice is handling any streams
                     {
+                        auto_complete(targets, sub);
                         results.push_back(sub.open(targets));
                         for (auto && target : targets)
                             intrinsics.emplace(std::make_pair(target.stream,
@@ -234,6 +238,24 @@ namespace rs
                 }
 
                 return best_quality;
+            }
+
+            static void auto_complete(std::vector<stream_profile> &requests, subdevice &target)
+            {
+                auto candidates = target.get_stream_modes();
+                for (auto & request : requests)
+                {
+                    if (!request.has_wildcards()) continue;
+                    for (auto candidate : candidates)
+                    {
+                        if (candidate.match(request) && !candidate.contradicts(requests))
+                        {
+                            request = candidate;
+                            break;
+                        }
+                    }
+                    if (request.has_wildcards()) throw std::runtime_error(std::string("Couldn't autocomplete request for subdevice ") + rs_subdevice_to_string(target));
+                }
             }
 
             std::map<rs_stream, stream_profile> _requests;

@@ -131,12 +131,6 @@ bool endpoint::try_get_pf(const uvc::stream_profile& p, native_pixel_format& res
 
 std::vector<request_mapping> endpoint::resolve_requests(std::vector<stream_request> requests)
 {
-    // TODO: Move to rsutil.hpp
-    if (!auto_complete_request(requests))
-    {
-        throw std::runtime_error("Subdevice could not auto complete requests!");
-    }
-
     std::vector<uint32_t> legal_4ccs;
     for (auto mode : get_stream_profiles()) {
         if (mode.fps == requests[0].fps && mode.height == requests[0].height && mode.width == requests[0].width)
@@ -203,25 +197,6 @@ std::vector<request_mapping> endpoint::resolve_requests(std::vector<stream_reque
 
     throw std::runtime_error("Subdevice unable to satisfy stream requests!");
 }
-
-bool rsimpl::endpoint::auto_complete_request(std::vector<stream_request>& requests)
-{
-    for (stream_request& request : requests)
-    {
-        for (auto&& req : get_principal_requests())
-        {
-            if (req.match(request) && !req.contradicts(requests))
-            {
-                request = req;
-                break;
-            }
-        }
-
-        if (request.has_wildcards()) throw std::runtime_error("Subdevice auto complete the stream requests!");
-    }
-    return true;
-}
-
 
 std::vector<uvc::stream_profile> uvc_endpoint::init_stream_profiles()
 {
