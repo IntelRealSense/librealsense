@@ -21,6 +21,9 @@ namespace rsimpl {
         const uint8_t DS5_EXPOSURE              = 3;
         const uint8_t DS5_LASER_POWER           = 4;
 
+        // DS5 fisheye XU identifiers
+        const uint8_t FISHEYE_EXPOSURE = 1;
+
         const int gvd_fw_version_offset = 12;
 
         const uvc::extension_unit depth_xu = { 0, 3, 2,
