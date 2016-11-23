@@ -167,7 +167,7 @@ namespace rsimpl
             assign_endpoint(RS_SUBDEVICE_DEPTH, depth_ep);
             register_pu(RS_SUBDEVICE_DEPTH, RS_OPTION_GAIN);
             register_pu(RS_SUBDEVICE_DEPTH, RS_OPTION_ENABLE_AUTO_EXPOSURE);
-            register_depth_xu<uint16_t>(RS_OPTION_EXPOSURE, DS5_EXPOSURE, "DS5 Exposure");
+            register_xu<uint16_t>(RS_OPTION_EXPOSURE, DS5_EXPOSURE, RS_SUBDEVICE_DEPTH, depth_xu, "DS5 Exposure");
 
             _coefficients_table_raw = [this]() { return get_raw_calibration_table(coefficients_table_id); };
 
@@ -176,7 +176,7 @@ namespace rsimpl
             if (pid == RS410A_PID || pid == RS450T_PID)
             {
                 register_option(RS_OPTION_EMITTER_ENABLED, RS_SUBDEVICE_DEPTH, std::make_shared<emitter_option>(*this));
-                register_depth_xu<uint16_t>(RS_OPTION_LASER_POWER, DS5_LASER_POWER,
+                register_xu<uint16_t>(RS_OPTION_LASER_POWER, DS5_LASER_POWER, RS_SUBDEVICE_DEPTH, depth_xu,
                     "Manual laser power. applicable only in on mode");
             }
 
@@ -187,6 +187,8 @@ namespace rsimpl
                 fisheye_ep->register_xu(fisheye_xu); // make sure the XU is initialized everytime we power the camera
                 fisheye_ep->register_pixel_format(pf_raw8);
                 assign_endpoint(RS_SUBDEVICE_FISHEYE, fisheye_ep); // map subdevice to endpoint
+                register_pu(RS_SUBDEVICE_FISHEYE, RS_OPTION_GAIN);
+                register_xu<uint16_t>(RS_OPTION_EXPOSURE, FISHEYE_EXPOSURE, RS_SUBDEVICE_FISHEYE, fisheye_xu, "Fisheye Exposure");
             }
         }
 
@@ -199,12 +201,12 @@ namespace rsimpl
         lazy<std::vector<uint8_t>> _coefficients_table_raw;
 
         template<class T>
-        void register_depth_xu(rs_option opt, uint8_t id, std::string desc)
+        void register_xu(rs_option opt, uint8_t id, rs_subdevice subdevice, uvc::extension_unit xu, std::string desc)
         {
-            register_option(opt, RS_SUBDEVICE_DEPTH,
+            register_option(opt, subdevice,
                 std::make_shared<uvc_xu_option<T>>(
-                    get_uvc_endpoint(RS_SUBDEVICE_DEPTH),
-                    ds::depth_xu, id, std::move(desc)));
+                    get_uvc_endpoint(subdevice),
+                    xu, id, std::move(desc)));
         }
 
         std::vector<uint8_t> get_raw_calibration_table(ds::calibration_table_id table_id) const;

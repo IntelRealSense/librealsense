@@ -21,12 +21,15 @@ namespace rsimpl {
         const uint8_t DS5_EXPOSURE              = 3;
         const uint8_t DS5_LASER_POWER           = 4;
 
+        // DS5 fisheye XU identifiers
+        const uint8_t FISHEYE_EXPOSURE = 1;
+
         const int gvd_fw_version_offset = 12;
 
         const uvc::extension_unit depth_xu = { 0, 3, 2,
         { 0xC9606CCB, 0x594C, 0x4D25,{ 0xaf, 0x47, 0xcc, 0xc4, 0x96, 0x43, 0x59, 0x95 } } };
 
-        const uvc::extension_unit fisheye_xu = { 3, 3, 2,
+        const uvc::extension_unit fisheye_xu = { 3, 12, 2,
         { 0xf6c3c3d1, 0x5cde, 0x4477,{ 0xad, 0xf0, 0x41, 0x33, 0xf5, 0x8d, 0xa6, 0xf4 } } };
 
         enum fw_cmd : uint8_t
