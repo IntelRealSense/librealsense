@@ -93,6 +93,7 @@ std::vector<stream_request> endpoint::get_principal_requests()
         else
         {
             uint32_t device_fourcc = reinterpret_cast<const big_endian<uint32_t>&>(p.format);
+            LOG_WARNING("The requested fourcc " << device_fourcc << " is not supported by device!\n");
             char fourcc[sizeof(device_fourcc) + 1];
             memcpy(fourcc, &device_fourcc, sizeof(device_fourcc));
             fourcc[sizeof(device_fourcc)] = 0;
@@ -102,7 +103,13 @@ std::vector<stream_request> endpoint::get_principal_requests()
 
     for (auto&& fourcc : unutilized_formats)
     {
-        LOG_WARNING("Unutilized format " << fourcc << "!");
+        std::stringstream ss;
+        for (auto& elem : _pixel_formats)
+        {
+            char fourcc[sizeof(reinterpret_cast<const big_endian<uint32_t>&>(elem.fourcc)) + 1];
+            ss << fourcc << std::endl;
+        }
+        LOG_WARNING("Unutilized format " << fourcc << "!\nDevice supported formats:\n" << ss.str());
     }
 
     std::vector<stream_request> res{ begin(results), end(results) };

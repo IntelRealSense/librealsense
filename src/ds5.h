@@ -150,9 +150,10 @@ namespace rsimpl
             depth_ep->register_xu(depth_xu); // make sure the XU is initialized everytime we power the camera
             depth_ep->register_pixel_format(pf_z16); // Depth
             depth_ep->register_pixel_format(pf_y8); // Left Only - Luminance
-            depth_ep->register_pixel_format(pf_yuyv); // Left Only
-            depth_ep->register_pixel_format(pf_yuyvl); // Color from Depth
-            depth_ep->register_pixel_format(pf_y12i); // L+R - Calibration not rectified
+            depth_ep->register_pixel_format(pf_uyvyl); // Color from Depth
+            depth_ep->register_pixel_format(pf_y8i); // L+R ; TODO: allow only in Advanced mode
+            depth_ep->register_pixel_format(pf_y12i); // L+R - Calibration not rectified ; TODO: allow only in Advanced mode
+
 
             auto fw_version = _hw_monitor.get_firmware_version_string(GVD, gvd_fw_version_offset);
             auto serial = _hw_monitor.get_module_serial_string(GVD);
