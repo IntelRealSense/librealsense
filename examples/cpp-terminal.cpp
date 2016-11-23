@@ -3,9 +3,11 @@
 
 #include <librealsense/rs.hpp>
 #include <iostream>
+#include <fstream>
 
 #include "tclap/CmdLine.h"
 #include "parser.hpp"
+#include "third_party/auto-complete/auto-complete.h"
 
 using namespace std;
 using namespace TCLAP;
@@ -18,7 +20,7 @@ vector<uint8_t> build_raw_command_data(const command& command, const vector<stri
     vector<parameter> vec_parameters;
     for (auto param_index = 0; param_index < params.size() ; ++param_index)
     {
-        bool is_there_write_data = param_index >= int(command.parameters.size());
+        auto is_there_write_data = param_index >= int(command.parameters.size());
         auto name = (is_there_write_data)? "" : command.parameters[param_index].name;
         auto is_reverse_bytes = (is_there_write_data)? false : command.parameters[param_index].is_reverse_bytes;
         auto is_decimal = (is_there_write_data) ? false : command.parameters[param_index].is_decimal;
@@ -102,13 +104,43 @@ void hex_mode(const string& line, rs::device& dev)
         cout << setfill('0') << setw(2) << hex << static_cast<int>(elem) << " ";
 }
 
+auto_complete get_auto_complete_obj(bool is_application_in_hex_mode, const map<string, command>& commands_map)
+{
+    set<string> commands;
+    if (!is_application_in_hex_mode)
+    {
+        for (auto& elem : commands_map)
+            commands.insert(elem.first);
+    }
+    return auto_complete(commands);
+}
+
+void read_hex_script_file(const string& full_file_path, vector<string>& hex_lines)
+{
+    ifstream myfile(full_file_path);
+    if (myfile.is_open())
+    {
+        string line;
+        while (getline(myfile, line))
+            hex_lines.push_back(line);
+
+        myfile.close();
+        return;
+    }
+    throw runtime_error("Script file not found!");
+}
+
 int main(int argc, char** argv) try
 {
     CmdLine cmd("librealsense cpp-terminal example tool", ' ', RS_API_VERSION_STR);
     ValueArg<string> xml_arg("l", "load", "Full file path of commands XML file", false, "", "Load commands XML file");
     ValueArg<int> device_id_arg("d", "deviceId", "Device ID could be obtain from cpp-enumerate-devices example", false, 0, "Select a device to work with");
+    ValueArg<string> hex_cmd_arg("s", "send", "Hexadecimal raw data", false, "", "Send hexadecimal raw data to device");
+    ValueArg<string> hex_script_arg("r", "raw", "Full file path of hexadecimal raw data script", false, "", "Send raw data line by line from script file");
     cmd.add(xml_arg);
     cmd.add(device_id_arg);
+    cmd.add(hex_cmd_arg);
+    cmd.add(hex_script_arg);
     cmd.parse(argc, argv);
 
     // parse command.xml
@@ -120,7 +152,7 @@ int main(int argc, char** argv) try
     if (!device_count)
     {
         printf("No device detected. Is it plugged in?\n");
-        return EXIT_SUCCESS;
+        return EXIT_FAILURE;
     }
 
     auto device_id = device_id_arg.getValue();
@@ -131,6 +163,39 @@ int main(int argc, char** argv) try
     }
 
     auto dev = devices[device_id];
+    if (hex_cmd_arg.isSet())
+    {
+        auto line = hex_cmd_arg.getValue();
+        try
+        {
+            hex_mode(line, dev);
+        }
+        catch (const exception& ex)
+        {
+            cout << endl << ex.what() << endl;
+            return EXIT_FAILURE;
+        }
+        return EXIT_SUCCESS;
+    }
+
+    if (hex_script_arg.isSet())
+    {
+        try
+        {
+            vector<string> hex_lines;
+            read_hex_script_file(hex_script_arg.getValue(), hex_lines);
+
+            for (auto& elem : hex_lines)
+                hex_mode(elem, dev);
+        }
+        catch (const exception& ex)
+        {
+            cout << endl << ex.what() << endl;
+            return EXIT_FAILURE;
+        }
+        return EXIT_SUCCESS;
+    }
+
     auto is_application_in_hex_mode = true;
     auto xml_full_file_path = xml_arg.getValue();
     map<string, xml_parser_function> format_type_to_lambda;
@@ -152,13 +217,22 @@ int main(int argc, char** argv) try
         cout << "Commands XML file not provided.\nyou still can send raw data to device in hexadecimal\nseparated by spaces (e.g. 5A 4B 3C).\n";
     }
 
+    auto auto_comp = get_auto_complete_obj(is_application_in_hex_mode, cmd_xml.commands);
+
     while (true)
     {
         cout << "\n\n#>";
         fflush(nullptr);
+        string line = "";
 
-        string line;
-        getline(cin, line);
+        if (!is_application_in_hex_mode)
+        {
+            line = auto_comp.get_line();
+        }
+        else
+        {
+            getline(cin, line);
+        }
 
         try
         {

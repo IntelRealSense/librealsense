@@ -9,16 +9,28 @@
 
 namespace rsimpl {
     namespace ds {
+        const uint16_t RS400P_PID = 0x0ad1; // PSR
+        const uint16_t RS410A_PID = 0x0ad2; // ASR
+        const uint16_t RS420R_PID = 0x0ad3; // ASRC
+        const uint16_t RS430C_PID = 0x0ad4; // AWG
+        const uint16_t RS450T_PID = 0x0ad5; // AWGT
+
         // DS5 depth XU identifiers
         const uint8_t DS5_HWMONITOR             = 1;
         const uint8_t DS5_DEPTH_EMITTER_ENABLED = 2;
         const uint8_t DS5_EXPOSURE              = 3;
         const uint8_t DS5_LASER_POWER           = 4;
 
+        // DS5 fisheye XU identifiers
+        const uint8_t FISHEYE_EXPOSURE = 1;
+
         const int gvd_fw_version_offset = 12;
 
         const uvc::extension_unit depth_xu = { 0, 3, 2,
         { 0xC9606CCB, 0x594C, 0x4D25,{ 0xaf, 0x47, 0xcc, 0xc4, 0x96, 0x43, 0x59, 0x95 } } };
+
+        const uvc::extension_unit fisheye_xu = { 3, 12, 2,
+        { 0xf6c3c3d1, 0x5cde, 0x4477,{ 0xad, 0xf0, 0x41, 0x33, 0xf5, 0x8d, 0xa6, 0xf4 } } };
 
         enum fw_cmd : uint8_t
         {
@@ -189,7 +201,24 @@ namespace rsimpl {
                 if (it->unique_id == info.unique_id)
                 {
                     result = *it;
-                    result.mi = 3;
+                    switch (info.pid)
+                    {
+                    case RS400P_PID:
+                    case RS430C_PID:
+                    case RS410A_PID:
+                        result.mi = 3;
+                        break;
+                    case RS420R_PID:
+                        throw std::runtime_error("not implemented.");
+                        break;
+                    case RS450T_PID:
+                        result.mi = 6;
+                        break;
+                    default:
+                        throw std::runtime_error("not implemented.");
+                        break;
+                    }
+
                     devices.erase(it);
                     return true;
                 }

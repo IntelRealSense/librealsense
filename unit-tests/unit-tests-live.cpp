@@ -313,7 +313,9 @@ TEST_CASE("check option API", "[live][options]")
                 SECTION("Ranges are sane") {
                     if (!is_opt_supported) {
                         REQUIRE_THROWS_AS(subdevice.get_option_range(opt), rs::error);
-                    } else {
+                    }
+                    else
+                    {
                         rs::option_range range;
                         REQUIRE_NOTHROW(range = subdevice.get_option_range(opt));
 
@@ -331,7 +333,9 @@ TEST_CASE("check option API", "[live][options]")
                 SECTION("get_option returns a legal value") {
                     if (!is_opt_supported) {
                         REQUIRE_THROWS_AS(subdevice.get_option(opt), rs::error);
-                    } else {
+                    }
+                    else
+                    {
                         auto range = subdevice.get_option_range(opt);
                         float value;
                         REQUIRE_NOTHROW(value = subdevice.get_option(opt));
@@ -350,7 +354,9 @@ TEST_CASE("check option API", "[live][options]")
                 SECTION("set opt doesn't like bad values") {
                     if (!is_opt_supported) {
                         REQUIRE_THROWS_AS(subdevice.set_option(opt, 1), rs::error);
-                    } else {
+                    }
+                    else
+                    {
                         auto range = subdevice.get_option_range(opt);
 
                         // minimum should work, as should maximum
@@ -398,7 +404,9 @@ TEST_CASE("check option API", "[live][options]")
                 SECTION("get_description returns a non-empty, non-null string") {
                     if (!is_opt_supported) {
                         REQUIRE_THROWS_AS(subdevice.get_option_description(opt), rs::error);
-                    } else {
+                    }
+                    else
+                    {
                         REQUIRE(subdevice.get_option_description(opt) != nullptr);
                         REQUIRE(std::string(subdevice.get_option_description(opt)) != std::string(""));
                     }
@@ -443,7 +451,9 @@ TEST_CASE("a single subdevice can only be opened once, different subdevices can 
                             if (modes.size() == 1) {
                                 WARN("device " << dev.get_camera_info(RS_CAMERA_INFO_DEVICE_NAME) << " S/N: " << dev.get_camera_info(RS_CAMERA_INFO_DEVICE_SERIAL_NUMBER) << " w/ FW v" << dev.get_camera_info(RS_CAMERA_INFO_CAMERA_FIRMWARE_VERSION) << ":");
                                 WARN("subdevice " << rs_subdevice(subdevice) << " has only 1 supported streaming mode. Skipping Same Subdevice, different modes test.");
-                            } else {
+                            } 
+                            else
+                            {
                                 // selected, but not streaming
                                 REQUIRE_THROWS_AS(lock2 = subdevice.open({ modes[1] }), rs::error);
 
@@ -494,7 +504,9 @@ TEST_CASE("a single subdevice can only be opened once, different subdevices can 
         SECTION("multiple devices") {
             if (list.size() == 1) {
                 WARN("Only one device connected. Skipping multi-device test");
-            } else {
+            }
+            else
+            {
                 for (auto & dev1 : list) {
                     for (auto & dev2 : list) {
                         // couldn't think of a better way to compare the two...
@@ -524,24 +536,154 @@ TEST_CASE("a single subdevice can only be opened once, different subdevices can 
         auto ctx2 = make_context("two_contexts");
         std::vector<rs::device> list2;
         REQUIRE_NOTHROW(list2 = ctx2.query_devices());
-        REQUIRE(list2.size() > 0);
+        REQUIRE(list2.size() == list.size());
         SECTION("subdevices on a single device") {
-            auto dev1 = list[0];
-            for (auto & dev2 : list2) {
-                if (   dev1.get_camera_info(RS_CAMERA_INFO_DEVICE_SERIAL_NUMBER)
-                    != dev2.get_camera_info(RS_CAMERA_INFO_DEVICE_SERIAL_NUMBER)
-                   )
-                    continue;
-                SECTION("same subdevice") {
-                    // TODO: write test
-                }
-                SECTION("different subdevice") {
-                    // TODO: write test
+            for (auto & dev1 : list) {
+                for (auto & dev2 : list2) {
+                    if (dev1.get_camera_info(RS_CAMERA_INFO_DEVICE_SERIAL_NUMBER)
+                        != dev2.get_camera_info(RS_CAMERA_INFO_DEVICE_SERIAL_NUMBER)
+                        )
+                        continue;
+                    for (auto && sub1 : dev1) {
+                        for (auto && sub2 : dev2) {
+                            if (sub1 == sub2) {
+                                SECTION("same subdevice") {
+                                    // get modes
+                                    std::vector<rs::stream_profile> modes1, modes2;
+                                    REQUIRE_NOTHROW(modes1 = sub1.get_stream_modes());
+                                    REQUIRE_NOTHROW(modes2 = sub2.get_stream_modes());
+                                    REQUIRE(modes1.size() > 0);
+                                    REQUIRE(modes1.size() == modes2.size());
+                                    // require that the lists are the same (disregarding order)
+                                    for (auto profile : modes1) {
+                                        REQUIRE(std::any_of(begin(modes2), end(modes2), [&](const rs::stream_profile & p)
+                                        {
+                                            return profile.format == p.format && profile.fps == p.fps
+                                                && profile.height == p.height && profile.width == p.width
+                                                && profile.stream == p.stream;
+                                        }));
+                                    }
+
+                                    // grab first lock
+                                    CAPTURE(rs_subdevice(sub1));
+                                    CAPTURE(modes1[0].stream);
+                                    rs::streaming_lock lock1, lock2;
+                                    REQUIRE_NOTHROW(lock1 = sub1.open(modes1[0]));
+
+                                    SECTION("same mode") {
+                                        // selected, but not streaming
+                                        REQUIRE_THROWS_AS(lock2 = sub2.open({ modes1[0] }), rs::error);
+
+                                        // streaming
+                                        REQUIRE_NOTHROW(lock1.start([](rs_frame * fref) {}));
+                                        REQUIRE_THROWS_AS(lock2 = sub2.open({ modes1[0] }), rs::error);
+                                    }
+                                    SECTION("different modes") {
+                                        if (modes1.size() == 1) {
+                                            WARN("device " << dev1.get_camera_info(RS_CAMERA_INFO_DEVICE_NAME) << " S/N: " << dev1.get_camera_info(RS_CAMERA_INFO_DEVICE_SERIAL_NUMBER) << " w/ FW v" << dev1.get_camera_info(RS_CAMERA_INFO_CAMERA_FIRMWARE_VERSION) << ":");
+                                            WARN("subdevice " << rs_subdevice(sub1) << " has only 1 supported streaming mode. Skipping Same Subdevice, different modes test.");
+                                        }
+                                        else
+                                        {
+                                            // selected, but not streaming
+                                            REQUIRE_THROWS_AS(lock2 = sub2.open({ modes1[1] }), rs::error);
+
+                                            // streaming
+                                            REQUIRE_NOTHROW(lock1.start([](rs_frame * fref) {}));
+                                            REQUIRE_THROWS_AS(lock2 = sub2.open({ modes1[1] }), rs::error);
+                                        }
+                                    }
+                                    REQUIRE_NOTHROW(lock1.stop());
+                                }
+                            }
+                            else
+                            {
+                                SECTION("different subdevice") {
+                                    rs::streaming_lock lock1;
+                                    CAPTURE(rs_subdevice(sub1));
+                                    CAPTURE(rs_subdevice(sub2));
+
+                                    // get first lock
+                                    REQUIRE_NOTHROW(lock1 = sub1.open(sub1.get_stream_modes()[0]));
+
+                                    // selected, but not streaming
+                                    {
+                                        rs::streaming_lock lock2;
+                                        CAPTURE(sub2.get_stream_modes()[0].stream);
+                                        REQUIRE_NOTHROW(lock2 = sub2.open(sub2.get_stream_modes()[0]));
+                                        REQUIRE_NOTHROW(lock2.start([](rs_frame * fref) {}));
+                                        REQUIRE_NOTHROW(lock2.stop());
+                                    }
+
+                                    // streaming
+                                    {
+                                        rs::streaming_lock lock2;
+                                        REQUIRE_NOTHROW(lock1.start([](rs_frame * fref) {}));
+                                        REQUIRE_NOTHROW(lock2 = sub2.open(sub2.get_stream_modes()[0]));
+                                        REQUIRE_NOTHROW(lock2.start([](rs_frame * fref) {}));
+                                        // stop streaming in opposite order just to be sure that works too
+                                        REQUIRE_NOTHROW(lock1.stop());
+                                        REQUIRE_NOTHROW(lock2.stop());
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
         SECTION("subdevices on separate devices") {
-            // TODO: write tests
+            if (list.size() == 1) {
+                WARN("Only one device connected. Skipping multi-device test");
+            }
+            else
+            {
+                for (auto & dev1 : list) {
+                    for (auto & dev2 : list2) {
+                        if (dev1.get_camera_info(RS_CAMERA_INFO_DEVICE_SERIAL_NUMBER)
+                            == dev2.get_camera_info(RS_CAMERA_INFO_DEVICE_SERIAL_NUMBER)
+                            )
+                            continue;
+                        for (auto && sub1 : dev1) {
+                            for (auto && sub2 : dev2) {
+                                // get modes
+                                std::vector<rs::stream_profile> modes1, modes2;
+                                REQUIRE_NOTHROW(modes1 = sub1.get_stream_modes());
+                                REQUIRE_NOTHROW(modes2 = sub2.get_stream_modes());
+                                REQUIRE(modes1.size() > 0);
+                                REQUIRE(modes2.size() > 0);
+
+                                // grab first lock
+                                CAPTURE(rs_subdevice(sub1));
+                                CAPTURE(modes1[0].stream);
+                                rs::streaming_lock lock1;
+                                REQUIRE_NOTHROW(lock1 = sub1.open(modes1[0]));
+
+                                // try to acquire second lock
+
+                                // selected, but not streaming
+                                {
+                                    rs::streaming_lock lock2;
+                                    REQUIRE_NOTHROW(lock2 = sub2.open({ modes1[1] }));
+                                    REQUIRE_NOTHROW(lock2.start([](rs_frame * fref) {}));
+                                    REQUIRE_NOTHROW(lock2.stop());
+                                }
+
+                                // streaming
+                                {
+                                    rs::streaming_lock lock2;
+                                    REQUIRE_NOTHROW(lock1.start([](rs_frame * fref) {}));
+                                    REQUIRE_NOTHROW(lock2 = sub2.open({ modes1[1] }));
+                                    REQUIRE_NOTHROW(lock2.start([](rs_frame * fref) {}));
+                                    // stop streaming in opposite order just to be sure that works too
+                                    REQUIRE_NOTHROW(lock1.stop());
+                                    REQUIRE_NOTHROW(lock2.stop());
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 }

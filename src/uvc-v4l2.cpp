@@ -134,7 +134,6 @@ namespace rsimpl
                 libusb_device_handle* usb_handle;
                 int status = libusb_open(_usb_device, &usb_handle);
                 if(status < 0) throw std::runtime_error(to_string() << "libusb_open(...) returned " << libusb_error_name(status));
-
                 status = libusb_claim_interface(usb_handle, _mi);
                 if(status < 0) throw std::runtime_error(to_string() << "libusb_claim_interface(...) returned " << libusb_error_name(status));
 
@@ -144,7 +143,6 @@ namespace rsimpl
 
                 std::vector<uint8_t> result;
 
-                std::this_thread::sleep_for(std::chrono::milliseconds(20));
 
                 if (require_response)
                 {
