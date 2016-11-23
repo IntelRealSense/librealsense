@@ -697,7 +697,11 @@ inline void encode_raw_data_command(const command& xml_cmd_info, const std::vect
     {
         if (param_index < xml_cmd_info.num_of_parameters)
         {
-            *reinterpret_cast<unsigned*>(write_ptr + cur_index) = stoul(params[param_index].data);
+            unsigned decimal;
+            std::stringstream ss;
+            ss << params[param_index].data;
+            ss >> std::hex >> decimal;
+            *reinterpret_cast<unsigned*>(write_ptr + cur_index) = decimal;
             cur_index += sizeof(unsigned);
         }
         else
@@ -712,25 +716,29 @@ inline void encode_raw_data_command(const command& xml_cmd_info, const std::vect
     {
         for (auto j = xml_cmd_info.num_of_parameters; j < int(params.size()); ++j)
         {
+            unsigned decimal;
+            std::stringstream ss;
+            ss << params[j].data;
+            ss >> std::hex >> decimal;
             switch (format_length)
             {
             case Byte:
-                *reinterpret_cast<uint8_t*>(write_ptr + cur_index) = static_cast<uint8_t>(stoul(params[j].data));
+                *reinterpret_cast<uint8_t*>(write_ptr + cur_index) = static_cast<uint8_t>(decimal);
                 cur_index += sizeof(uint8_t);
                 break;
 
             case Word:
-                *reinterpret_cast<short *>(write_ptr + cur_index) = static_cast<short>(stoul(params[j].data));
+                *reinterpret_cast<short *>(write_ptr + cur_index) = static_cast<short>(decimal);
                 cur_index += sizeof(short);
                 break;
 
             case Double:
-                *reinterpret_cast<unsigned *>(write_ptr + cur_index) = static_cast<unsigned>(stoul(params[j].data));
+                *reinterpret_cast<unsigned *>(write_ptr + cur_index) = static_cast<unsigned>(decimal);
                 cur_index += sizeof(unsigned);
                 break;
 
             default:
-                *reinterpret_cast<uint8_t*>(write_ptr + cur_index) = static_cast<uint8_t>(stoul(params[j].data));
+                *reinterpret_cast<uint8_t*>(write_ptr + cur_index) = static_cast<uint8_t>(decimal);
                 cur_index += sizeof(uint8_t);
                 break;
             }
