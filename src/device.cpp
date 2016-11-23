@@ -757,8 +757,8 @@ const char * rs_device_base::get_usb_port_id() const
         rs_motion_data imu_data ;
         imu_data.timestamp_data = imu_timestamp;
         imu_data.is_valid = 1;
-        imu_data.axes[0] = frame->x;
-        imu_data.axes[1] = frame->y;
+        imu_data.axes[0] = frame->y;
+        imu_data.axes[1] = -frame->x;
         imu_data.axes[2] = frame->z;
         
 
