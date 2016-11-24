@@ -861,22 +861,27 @@ namespace rsimpl
     {
         int fps, serial_frame_number;
         double last_timestamp;
+        double ts_step;
         wraparound_mechanism<double> timestamp_wraparound;
         wraparound_mechanism<unsigned long long> frame_counter_wraparound;
 
     public:
-        serial_timestamp_generator(int fps) : fps(fps), serial_frame_number(), last_timestamp(0), timestamp_wraparound(0, std::numeric_limits<uint32_t>::max()), frame_counter_wraparound(0, std::numeric_limits<uint32_t>::max()) {}
+        serial_timestamp_generator(int fps) : fps(fps), serial_frame_number(), last_timestamp(0), timestamp_wraparound(0, std::numeric_limits<uint32_t>::max()), frame_counter_wraparound(0, std::numeric_limits<uint32_t>::max())
+        {
+            assert(fps > 0);
+            ts_step = 1000. / fps;
+        }
 
         bool validate_frame(const subdevice_mode & /*mode*/, const void * /*frame*/) override { return true; }
         double get_frame_timestamp(const subdevice_mode &, const void *, double /*actual_fps*/) override
         {
-            auto new_ts = timestamp_wraparound.fix(last_timestamp + 1000. / fps);
+            auto new_ts = timestamp_wraparound.fix(last_timestamp + ts_step);
             last_timestamp = new_ts;
             return new_ts;
         }
         unsigned long long get_frame_counter(const subdevice_mode &, const void *) override
         {
-            return frame_counter_wraparound.fix(serial_frame_number);
+            return frame_counter_wraparound.fix(++serial_frame_number);
         }
     };
 
@@ -909,10 +914,13 @@ namespace rsimpl
         case SUB_DEVICE_COLOR:
             if (stream_color.is_enabled())
             {
-                if (stream_depth.is_enabled() || stream_infrared.is_enabled() || stream_infrared2.is_enabled())
+                // W/A for DS4 issue: when running at Depth 60 & Color 30 it seems that the frame counter is being incremented on every
+                // depth frame (or ir/ir2). This means we need to reduce color frame number accordingly
+                // In addition, the frame number is embedded only in YUYV format
+                bool depth_streams_active = stream_depth.is_enabled() | stream_infrared.is_enabled() | stream_infrared2.is_enabled();
+
+                if (depth_streams_active && (stream_color.get_format() != rs_format::RS_FORMAT_RAW16))
                 {
-                    // W/A for DS4 issue: when running at Depth 60 & Color 30 it seems that the frame counter is being incremented on every
-                    // depth frame (or ir/ir2). This means we need to reduce color frame number accordingly
                     auto master_fps = stream_depth.is_enabled() ? stream_depth.get_framerate() : 0;
                     master_fps = stream_infrared.is_enabled() ? stream_infrared.get_framerate() : master_fps;
                     master_fps = stream_infrared2.is_enabled() ? stream_infrared2.get_framerate() : master_fps;
