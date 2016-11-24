@@ -32,7 +32,7 @@ namespace rsimpl
                 {
                     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(
                         _time_samples[1] - _time_samples[0]).count();
-                    _actual_fps = ((double)_frame_counter / duration) * 1000.;
+                    _actual_fps = (((double)_frame_counter - 1.) / duration) * 1000.;
                     _frame_counter = 0;
                     _time_samples.clear();
                 }
