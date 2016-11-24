@@ -497,7 +497,7 @@ namespace rsimpl
             info.options.push_back({ RS_OPTION_FISHEYE_AUTO_EXPOSURE_MODE,              0,  2,   1,  0  });
             info.options.push_back({ RS_OPTION_FISHEYE_AUTO_EXPOSURE_ANTIFLICKER_RATE,  50, 60,  10, 60 });
             info.options.push_back({ RS_OPTION_FISHEYE_AUTO_EXPOSURE_PIXEL_SAMPLE_RATE, 1,  3,   1,  1  });
-            info.options.push_back({ RS_OPTION_FISHEYE_AUTO_EXPOSURE_SKIP_FRAMES,       0,  3,   1,  2  });
+            info.options.push_back({ RS_OPTION_FISHEYE_AUTO_EXPOSURE_SKIP_FRAMES,       2,  3,   1,  2  });
             info.options.push_back({ RS_OPTION_HARDWARE_LOGGER_ENABLED,                 0,  1,   1,  0  });
         }
 
@@ -666,7 +666,7 @@ namespace rsimpl
                     auto exp_and_cnt_sts = try_get_exp_by_frame_cnt(exp_by_frame_cnt, frame_counter);
 
                     auto exposure_value = static_cast<float>((exp_and_cnt_sts)? exp_by_frame_cnt : values[0]);
-                    auto gain_value = static_cast<float>(2 + values[1] / 16.);
+                    auto gain_value = static_cast<float>(2 + (values[1]-15) / 8.);
 
                     bool sts = auto_exposure_algo.analyze_image(frame_ref);
                     if (sts)
@@ -687,7 +687,7 @@ namespace rsimpl
                         if (modify_gain)
                         {
                             rs_option option[] = { RS_OPTION_FISHEYE_GAIN };
-                            double value[] = { (gain_value-2) * 16. };
+                            double value[] = { (gain_value-2) * 8 +15. };
                             device->set_options(option, 1, value);
                         }
                     }
