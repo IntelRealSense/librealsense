@@ -86,14 +86,28 @@ namespace rsimpl
             using namespace ivcam;
 
             // create uvc-endpoint from backend uvc-device
-            auto color_ep = std::make_shared<uvc_endpoint>(backend.create_uvc_device(color));
             auto depth_ep = std::make_shared<uvc_endpoint>(backend.create_uvc_device(depth));
             depth_ep->register_xu(depth_xu); // make sure the XU is initialized everytime we power the camera
             depth_ep->register_pixel_format(pf_invz);
             depth_ep->register_pixel_format(pf_sr300_inzi);
             depth_ep->register_pixel_format(pf_sr300_invi);
+
+            auto color_ep = std::make_shared<uvc_endpoint>(backend.create_uvc_device(color));
             color_ep->register_pixel_format(pf_yuy2);
             color_ep->register_pixel_format(pf_yuyv);
+            
+            color_ep->register_pu(RS_OPTION_BACKLIGHT_COMPENSATION);
+            color_ep->register_pu(RS_OPTION_BRIGHTNESS);
+            color_ep->register_pu(RS_OPTION_CONTRAST);
+            color_ep->register_pu(RS_OPTION_EXPOSURE);
+            color_ep->register_pu(RS_OPTION_GAIN);
+            color_ep->register_pu(RS_OPTION_GAMMA);
+            color_ep->register_pu(RS_OPTION_HUE);
+            color_ep->register_pu(RS_OPTION_SATURATION);
+            color_ep->register_pu(RS_OPTION_SHARPNESS);
+            color_ep->register_pu(RS_OPTION_WHITE_BALANCE);
+            color_ep->register_pu(RS_OPTION_ENABLE_AUTO_EXPOSURE);
+            color_ep->register_pu(RS_OPTION_ENABLE_AUTO_WHITE_BALANCE);
 
             auto fw_version = _hw_monitor.get_firmware_version_string(GVD, gvd_fw_version_offset);
             auto serial = _hw_monitor.get_module_serial_string(GVD);
@@ -110,41 +124,28 @@ namespace rsimpl
             assign_endpoint(RS_SUBDEVICE_COLOR, color_ep);
             assign_endpoint(RS_SUBDEVICE_DEPTH, depth_ep);
 
-            register_pu(RS_SUBDEVICE_COLOR, RS_OPTION_BACKLIGHT_COMPENSATION);
-            register_pu(RS_SUBDEVICE_COLOR, RS_OPTION_BRIGHTNESS);
-            register_pu(RS_SUBDEVICE_COLOR, RS_OPTION_CONTRAST);
-            register_pu(RS_SUBDEVICE_COLOR, RS_OPTION_EXPOSURE);
-            register_pu(RS_SUBDEVICE_COLOR, RS_OPTION_GAIN);
-            register_pu(RS_SUBDEVICE_COLOR, RS_OPTION_GAMMA);
-            register_pu(RS_SUBDEVICE_COLOR, RS_OPTION_HUE);
-            register_pu(RS_SUBDEVICE_COLOR, RS_OPTION_SATURATION);
-            register_pu(RS_SUBDEVICE_COLOR, RS_OPTION_SHARPNESS);
-            register_pu(RS_SUBDEVICE_COLOR, RS_OPTION_WHITE_BALANCE);
-            register_pu(RS_SUBDEVICE_COLOR, RS_OPTION_ENABLE_AUTO_EXPOSURE);
-            register_pu(RS_SUBDEVICE_COLOR, RS_OPTION_ENABLE_AUTO_WHITE_BALANCE);
-
-            register_depth_xu<uint8_t>(RS_OPTION_LASER_POWER, IVCAM_DEPTH_LASER_POWER,
+            register_depth_xu<uint8_t>(*depth_ep, RS_OPTION_LASER_POWER, IVCAM_DEPTH_LASER_POWER,
                 "Power of the SR300 projector, with 0 meaning projector off");
-            register_depth_xu<uint8_t>(RS_OPTION_ACCURACY, IVCAM_DEPTH_ACCURACY,
+            register_depth_xu<uint8_t>(*depth_ep, RS_OPTION_ACCURACY, IVCAM_DEPTH_ACCURACY,
                 "Set the number of patterns projected per frame.\nThe higher the accuracy value the more patterns projected.\nIncreasing the number of patterns help to achieve better accuracy.\nNote that this control is affecting the Depth FPS");
-            register_depth_xu<uint8_t>(RS_OPTION_MOTION_RANGE, IVCAM_DEPTH_MOTION_RANGE,
+            register_depth_xu<uint8_t>(*depth_ep, RS_OPTION_MOTION_RANGE, IVCAM_DEPTH_MOTION_RANGE,
                 "Motion vs. Range trade-off, with lower values allowing for better motion\nsensitivity and higher values allowing for better depth range");
-            register_depth_xu<uint8_t>(RS_OPTION_CONFIDENCE_THRESHOLD, IVCAM_DEPTH_CONFIDENCE_THRESH,
+            register_depth_xu<uint8_t>(*depth_ep, RS_OPTION_CONFIDENCE_THRESHOLD, IVCAM_DEPTH_CONFIDENCE_THRESH,
                 "The confidence level threshold used by the Depth algorithm pipe to set whether\na pixel will get a valid range or will be marked with invalid range");
-            register_depth_xu<uint8_t>(RS_OPTION_FILTER_OPTION, IVCAM_DEPTH_FILTER_OPTION,
+            register_depth_xu<uint8_t>(*depth_ep, RS_OPTION_FILTER_OPTION, IVCAM_DEPTH_FILTER_OPTION,
                 "Set the filter to apply to each depth frame.\nEach one of the filter is optimized per the application requirements");
 
             register_autorange_options();
 
-            register_option(RS_OPTION_VISUAL_PRESET, RS_SUBDEVICE_DEPTH, std::make_shared<preset_option>(*this));
+            depth_ep->register_option(RS_OPTION_VISUAL_PRESET, std::make_shared<preset_option>(*this));
 
             auto c = get_calibration();
             pose depth_to_color = {
                 transpose(reinterpret_cast<const float3x3 &>(c.Rt)),
                           reinterpret_cast<const float3 &>(c.Tt) * 0.001f
             };
-            set_pose(RS_SUBDEVICE_DEPTH, inverse(depth_to_color));
-            set_pose(RS_SUBDEVICE_COLOR, { { { 1,0,0 },{ 0,1,0 },{ 0,0,1 } },{ 0,0,0 } });
+            depth_ep->set_pose(inverse(depth_to_color));
+            color_ep->set_pose({ { { 1,0,0 },{ 0,1,0 },{ 0,0,1 } },{ 0,0,0 } });
             set_depth_scale((c.Rmax / 0xFFFF) * 0.001f);
         }
 
@@ -230,12 +231,13 @@ namespace rsimpl
         hw_monitor _hw_monitor;
 
         template<class T>
-        void register_depth_xu(rs_option opt, uint8_t id, std::string desc)
+        void register_depth_xu(uvc_endpoint& depth, rs_option opt, uint8_t id, std::string desc)
         {
-            register_option(opt, RS_SUBDEVICE_DEPTH,
+            depth.register_option(opt, RS_SUBDEVICE_DEPTH,
                 std::make_shared<uvc_xu_option<T>>(
-                    get_uvc_endpoint(RS_SUBDEVICE_DEPTH),
-                    ivcam::depth_xu, id, std::move(desc)));
+                    depth,
+                    ivcam::depth_xu, 
+                    id, std::move(desc)));
         }
 
         void register_autorange_options()
@@ -266,37 +268,3 @@ namespace rsimpl
         ivcam::camera_calib_params get_calibration() const;
     };
 }
-
-
-//#ifndef LIBREALSENSE_SR300_H
-//#define LIBREALSENSE_SR300_H
-//
-//#include <atomic>
-//#include "ivcam-private.h"
-//#include "ivcam-device.h"
-//
-//#define SR300_PRODUCT_ID 0x0aa5
-//
-//namespace rsimpl
-//{
-//
-//    class sr300_camera final : public iv_camera
-//    {
-//        void set_fw_logger_option(double value);
-//        unsigned get_fw_logger_option();
-//
-//    public:
-//        sr300_camera(std::shared_ptr<uvc::device> device, const static_device_info & info, const ivcam::camera_calib_params & calib);
-//        ~sr300_camera() {};
-//
-//        void set_options(const rs_option options[], size_t count, const double values[]) override;
-//        void get_options(const rs_option options[], size_t count, double values[]) override;
-//
-//        virtual void start_fw_logger(char fw_log_op_code, int grab_rate_in_ms, std::timed_mutex& mutex) override;
-//        virtual void stop_fw_logger() override;
-//    };
-//
-//    std::shared_ptr<rs_device> make_sr300_device(std::shared_ptr<uvc::device> device);
-//}
-//
-//#endif

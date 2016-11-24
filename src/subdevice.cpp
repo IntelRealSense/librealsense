@@ -366,3 +366,44 @@ void uvc_endpoint::release_power()
     _user_count--;
     if (!_user_count) _device->set_power_state(uvc::D3);
 }
+
+option& endpoint::get_option(rs_option id)
+{
+    auto it = _options.find(id);
+    if (it == _options.end())
+    {
+        throw std::runtime_error(to_string() 
+            << "Device does not support option " 
+            << rs_option_to_string(id) << "!");
+    }
+    return *it->second;
+}
+
+const option& endpoint::get_option(rs_option id) const
+{
+    auto it = _options.find(id);
+    if (it == _options.end())
+    {
+        throw std::runtime_error(to_string() 
+            << "Device does not support option " 
+            << rs_option_to_string(id) << "!");
+    }
+    return *it->second;
+}
+
+bool endpoint::supports_option(rs_option id) const
+{
+    auto it = _options.find(id);
+    if (it == _options.end()) return false;
+    return it->second->is_enabled();
+}
+
+void endpoint::register_option(rs_option id, std::shared_ptr<option> option)
+{
+    _options[id] = std::move(option);
+}
+
+void uvc_endpoint::register_pu(rs_option id)
+{
+    register_option(id, std::make_shared<uvc_pu_option>(*this, id));
+}
