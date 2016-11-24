@@ -42,6 +42,12 @@ int main() try
     printf("    Serial number: %s\n", dev->get_serial());
     printf("    Firmware version: %s\n", dev->get_firmware_version());
 
+    if (!dev->supports(rs::capabilities::motion_events))
+    {
+        printf("This device does not support motion tracking!");
+        return EXIT_FAILURE;
+    }
+
     auto motion_callback = [](rs::motion_data entry)
     {
         auto now = std::chrono::system_clock::now().time_since_epoch();
