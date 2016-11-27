@@ -349,9 +349,14 @@ std::shared_ptr<streaming_lock> uvc_endpoint::configure(
                 }
             }
         });
+    }
+
+    _device->play();
+
+    for (auto& mode : mapping)
+    {
         _configuration.push_back(mode.profile);
     }
-    _device->play();
     return std::move(streaming);
 }
 
