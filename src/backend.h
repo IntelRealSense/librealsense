@@ -106,7 +106,8 @@ namespace rsimpl
         class uvc_device
         {
         public:
-            virtual void play(stream_profile profile, frame_callback callback) = 0;
+            virtual void probe_and_commit(stream_profile profile, frame_callback callback) = 0;
+            virtual void play() = 0;
             virtual void stop(stream_profile profile) = 0;
 
             virtual void set_power_state(power_state state) = 0;
@@ -137,9 +138,13 @@ namespace rsimpl
             explicit retry_controls_work_around(std::shared_ptr<uvc_device> dev)
                 : _dev(dev) {}
 
-            void play(stream_profile profile, frame_callback callback) override
+            void probe_and_commit(stream_profile profile, frame_callback callback) override
             {
-                _dev->play(profile, callback);
+                _dev->probe_and_commit(profile, callback);
+            }
+            void play() override
+            {
+                _dev->play();
             }
             void stop(stream_profile profile) override
             {
@@ -242,10 +247,18 @@ namespace rsimpl
                 :_dev(dev)
             {}
 
-            void play(stream_profile profile, frame_callback callback) override
+            void probe_and_commit(stream_profile profile, frame_callback callback) override
             {
                 auto dev_index = get_dev_index_by_profiles(profile);
-                _dev[dev_index]->play(profile, callback);
+                _dev[dev_index]->probe_and_commit(profile, callback);
+            }
+
+            void play() override
+            {
+                for (auto& elem : _dev)
+                {
+                    elem->play();
+                }
             }
 
             void stop(stream_profile profile) override

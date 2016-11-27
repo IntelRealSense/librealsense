@@ -73,12 +73,13 @@ streaming_lock::~streaming_lock()
 std::vector<stream_request> endpoint::get_principal_requests()
 {
     std::unordered_set<stream_request> results;
-
-    std::set<std::string> unutilized_formats;
+    std::set<uint32_t> unutilized_formats;
+    std::set<uint32_t> supported_formats;
 
     auto profiles = get_stream_profiles();
     for (auto&& p : profiles)
     {
+        supported_formats.insert(p.format);
         native_pixel_format pf;
         if (try_get_pf(p, pf))
         {
@@ -92,24 +93,31 @@ std::vector<stream_request> endpoint::get_principal_requests()
         }
         else
         {
-            uint32_t device_fourcc = reinterpret_cast<const big_endian<uint32_t>&>(p.format);
-            LOG_WARNING("The requested fourcc " << device_fourcc << " is not supported by device!\n");
-            char fourcc[sizeof(device_fourcc) + 1];
-            memcpy(fourcc, &device_fourcc, sizeof(device_fourcc));
-            fourcc[sizeof(device_fourcc)] = 0;
-            unutilized_formats.insert(fourcc);
+            unutilized_formats.insert(p.format);
         }
     }
 
-    for (auto&& fourcc : unutilized_formats)
+    for (auto& elem : unutilized_formats)
+    {
+        uint32_t device_fourcc = reinterpret_cast<const big_endian<uint32_t>&>(elem);
+        char fourcc[sizeof(device_fourcc) + 1];
+        memcpy(fourcc, &device_fourcc, sizeof(device_fourcc));
+        fourcc[sizeof(device_fourcc)] = 0;
+        LOG_WARNING("Unutilized format " << fourcc);
+    }
+
+    if (!unutilized_formats.empty())
     {
         std::stringstream ss;
-        for (auto& elem : _pixel_formats)
+        for (auto& elem : supported_formats)
         {
-            char fourcc[sizeof(reinterpret_cast<const big_endian<uint32_t>&>(elem.fourcc)) + 1];
+            uint32_t device_fourcc = reinterpret_cast<const big_endian<uint32_t>&>(elem);
+            char fourcc[sizeof(device_fourcc) + 1];
+            memcpy(fourcc, &device_fourcc, sizeof(device_fourcc));
+            fourcc[sizeof(device_fourcc)] = 0;
             ss << fourcc << std::endl;
         }
-        LOG_WARNING("Unutilized format " << fourcc << "!\nDevice supported formats:\n" << ss.str());
+        LOG_WARNING("\nDevice supported formats:\n" << ss.str());
     }
 
     std::vector<stream_request> res{ begin(results), end(results) };
@@ -256,7 +264,7 @@ std::shared_ptr<streaming_lock> uvc_endpoint::configure(
 
         auto start = high_resolution_clock::now();
         auto frame_number = 0;
-        _device->play(mode.profile, 
+        _device->probe_and_commit(mode.profile,
             [stream_ptr, mode, start, frame_number, timestamp_reader](uvc::stream_profile p, uvc::frame_object f) mutable
         {
             auto&& unpacker = *mode.unpacker;
@@ -341,8 +349,9 @@ std::shared_ptr<streaming_lock> uvc_endpoint::configure(
                 }
             }
         });
+        _configuration.push_back(mode.profile);
     }
-
+    _device->play();
     return std::move(streaming);
 }
 

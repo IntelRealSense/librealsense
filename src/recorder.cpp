@@ -437,11 +437,11 @@ namespace rsimpl
             return nullptr;
         }
 
-        void record_uvc_device::play(stream_profile profile, frame_callback callback)
+        void record_uvc_device::probe_and_commit(stream_profile profile, frame_callback callback)
         {
             _owner->try_record([this, callback, profile](recording* rec, lookup_key k)
             {
-                _source->play(profile, [this, callback](stream_profile p, frame_object f)
+                _source->probe_and_commit(profile, [this, callback](stream_profile p, frame_object f)
                 {
                     _owner->try_record([this, callback, p, &f](recording* rec, lookup_key k)
                     {
@@ -476,6 +476,11 @@ namespace rsimpl
                 rec->save_stream_profiles(ps, k);
 
             }, _entity_id, call_type::uvc_play);
+        }
+
+        void record_uvc_device::play()
+        {
+            _source->play();
         }
 
         void record_uvc_device::stop(stream_profile profile)
@@ -784,7 +789,7 @@ namespace rsimpl
             }
         }
 
-        void playback_uvc_device::play(stream_profile profile, frame_callback callback)
+        void playback_uvc_device::probe_and_commit(stream_profile profile, frame_callback callback)
         {
             lock_guard<mutex> lock(_callback_mutex);
             auto stored = _rec->load_stream_profiles(_entity_id, call_type::uvc_play);
@@ -798,8 +803,14 @@ namespace rsimpl
                 return pair.first == profile;
             });
             _callbacks.erase(it, end(_callbacks));
+            _profile = profile;
+            _callback = callback;
+        }
 
-            _callbacks.push_back({ profile, callback });
+        void playback_uvc_device::play()
+        {
+            lock_guard<mutex> lock(_callback_mutex);
+            _callbacks.push_back({ _profile, _callback });
         }
 
         void playback_uvc_device::stop(stream_profile profile)

@@ -74,7 +74,7 @@ namespace rsimpl
             auto owner = _owner.lock();
             if (owner && owner->_reader)
             {
-                LOG_HR(owner->_reader->ReadSample(0xFFFFFFFC, 0, nullptr, nullptr, nullptr, nullptr));
+                LOG_HR(owner->_reader->ReadSample(dwStreamIndex, 0, nullptr, nullptr, nullptr, nullptr));
 
                 if (sample)
                 {
@@ -647,12 +647,14 @@ namespace rsimpl
             }
         }
 
-        void wmf_uvc_device::play(stream_profile profile, frame_callback callback)
+        void wmf_uvc_device::probe_and_commit(stream_profile profile, frame_callback callback)
         {
-            check_connection();
+            _profiles.push_back(profile);
+            _frame_callbacks.push_back(callback);
+        }
 
-            set_power_state(D0);
-
+        void wmf_uvc_device::play_profile(stream_profile profile, frame_callback callback)
+        {
             CComPtr<IMFMediaType> pMediaType = nullptr;
             for (unsigned int sIndex = 0; sIndex < _streams.size(); ++sIndex)
             {
@@ -672,7 +674,7 @@ namespace rsimpl
 
                     if (device_fourcc != profile.format &&
                         (fourcc_map.count(device_fourcc) == 0 ||
-                         profile.format != fourcc_map.at(device_fourcc)))
+                            profile.format != fourcc_map.at(device_fourcc)))
                         continue;
 
                     unsigned int width;
@@ -741,6 +743,21 @@ namespace rsimpl
             throw std::runtime_error("Stream profile not found!");
         }
 
+        void wmf_uvc_device::play()
+        {
+            if (_profiles.empty())
+                throw std::runtime_error("Stream not configured");
+
+            check_connection();
+
+            set_power_state(D0);
+
+            for (int i = 0; i < _profiles.size(); ++i)
+            {
+                play_profile(_profiles[i], _frame_callbacks[i]);
+            }
+        }
+
         void wmf_uvc_device::stop(stream_profile profile)
         {
             check_connection();
@@ -750,16 +767,19 @@ namespace rsimpl
                 return (pac.profile == profile && (pac.callback));
             });
 
-            if (elem == _streams.end())
+            if (elem == _streams.end() && _frame_callbacks.empty())
                 throw std::runtime_error("Camera not streaming!");
 
-            flush(int(elem - _streams.begin()));
+            if (elem != _streams.end())
+                flush(int(elem - _streams.begin()));
 
             elem->callback = nullptr;
             elem->profile.format = 0;
             elem->profile.fps = 0;
             elem->profile.width = 0;
             elem->profile.height = 0;
+            _frame_callbacks.clear();
+            _profiles.clear();
         }
 
         // ReSharper disable once CppMemberFunctionMayBeConst
