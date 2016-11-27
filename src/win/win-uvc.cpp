@@ -74,7 +74,7 @@ namespace rsimpl
             auto owner = _owner.lock();
             if (owner && owner->_reader)
             {
-                LOG_HR(owner->_reader->ReadSample(0xFFFFFFFC, 0, nullptr, nullptr, nullptr, nullptr));
+                LOG_HR(owner->_reader->ReadSample(dwStreamIndex, 0, nullptr, nullptr, nullptr, nullptr));
 
                 if (sample)
                 {
@@ -573,7 +573,9 @@ namespace rsimpl
                     auto hr = _reader->GetNativeMediaType(sIndex, k, &pMediaType.p);
                     if (FAILED(hr) || pMediaType == nullptr)
                     {
-                        check("_reader->GetNativeMediaType(sIndex, k, &pMediaType.p)", hr, false);
+                        if (hr != 0xc00d36b9) // An object ran out of media types to suggest therefore the requested chain of streaming objects cannot be completed
+                            check("_reader->GetNativeMediaType(sIndex, k, &pMediaType.p)", hr, false);
+
                         break;
                     }
 
@@ -647,12 +649,14 @@ namespace rsimpl
             }
         }
 
-        void wmf_uvc_device::play(stream_profile profile, frame_callback callback)
+        void wmf_uvc_device::probe_and_commit(stream_profile profile, frame_callback callback)
         {
-            check_connection();
+            _profiles.push_back(profile);
+            _frame_callbacks.push_back(callback);
+        }
 
-            set_power_state(D0);
-
+        void wmf_uvc_device::play_profile(stream_profile profile, frame_callback callback)
+        {
             CComPtr<IMFMediaType> pMediaType = nullptr;
             for (unsigned int sIndex = 0; sIndex < _streams.size(); ++sIndex)
             {
@@ -661,7 +665,9 @@ namespace rsimpl
                     auto hr = _reader->GetNativeMediaType(sIndex, k, &pMediaType.p);
                     if (FAILED(hr) || pMediaType == nullptr)
                     {
-                        check("_reader->GetNativeMediaType(sIndex, k, &pMediaType.p)", hr, false);
+                        if (hr != 0xc00d36b9) // An object ran out of media types to suggest therefore the requested chain of streaming objects cannot be completed
+                            check("_reader->GetNativeMediaType(sIndex, k, &pMediaType.p)", hr, false);
+
                         break;
                     }
 
@@ -672,7 +678,7 @@ namespace rsimpl
 
                     if (device_fourcc != profile.format &&
                         (fourcc_map.count(device_fourcc) == 0 ||
-                         profile.format != fourcc_map.at(device_fourcc)))
+                            profile.format != fourcc_map.at(device_fourcc)))
                         continue;
 
                     unsigned int width;
@@ -739,6 +745,35 @@ namespace rsimpl
                 }
             }
             throw std::runtime_error("Stream profile not found!");
+
+        }
+
+        void wmf_uvc_device::play()
+        {
+
+            if (_profiles.empty())
+                throw std::runtime_error("Stream not configured");
+
+            check_connection();
+
+            set_power_state(D0);
+
+            try {
+                for (int i = 0; i < _profiles.size(); ++i)
+                {
+                    play_profile(_profiles[i], _frame_callbacks[i]);
+                }
+            }
+            catch (...)
+            {
+                for (auto& elem : _streams)
+                    if (elem.callback)
+                        stop(elem.profile);
+
+                _profiles.clear();
+                _frame_callbacks.clear();
+                throw;
+            }
         }
 
         void wmf_uvc_device::stop(stream_profile profile)
@@ -750,16 +785,25 @@ namespace rsimpl
                 return (pac.profile == profile && (pac.callback));
             });
 
-            if (elem == _streams.end())
+            if (elem == _streams.end() && _frame_callbacks.empty())
                 throw std::runtime_error("Camera not streaming!");
 
-            flush(int(elem - _streams.begin()));
+            if (elem != _streams.end())
+            {
+                flush(int(elem - _streams.begin()));
+                elem->callback = nullptr;
+                elem->profile.format = 0;
+                elem->profile.fps = 0;
+                elem->profile.width = 0;
+                elem->profile.height = 0;
+            }
 
-            elem->callback = nullptr;
-            elem->profile.format = 0;
-            elem->profile.fps = 0;
-            elem->profile.width = 0;
-            elem->profile.height = 0;
+            auto pos = std::find(_profiles.begin(), _profiles.end(), profile) - _profiles.begin();
+            if (pos != _profiles.size())
+            {
+                _profiles.erase(_profiles.begin() + pos);
+                _frame_callbacks.erase(_frame_callbacks.begin() + pos);
+            }
         }
 
         // ReSharper disable once CppMemberFunctionMayBeConst

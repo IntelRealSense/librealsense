@@ -118,6 +118,7 @@ namespace rsimpl
         CASE(RAW10)
         CASE(RAW16)
         CASE(RAW8)
+        CASE(UYVY)
         default: assert(!is_valid(value)); return unknown;
         }
         #undef CASE

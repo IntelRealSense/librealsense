@@ -135,6 +135,10 @@ namespace rsimpl
             }
 
 
+            depth_ep->register_pixel_format(pf_uyvyl); // Color from Depth
+            depth_ep->register_pixel_format(pf_y8i); // L+R ; TODO: allow only in Advanced mode
+            depth_ep->register_pixel_format(pf_y12i); // L+R - Calibration not rectified ; TODO: allow only in Advanced mode
+
 
             auto fw_version = _hw_monitor.get_firmware_version_string(GVD, gvd_fw_version_offset);
             auto serial = _hw_monitor.get_module_serial_string(GVD);
