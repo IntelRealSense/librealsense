@@ -3,6 +3,54 @@
 # ubuntu 16.04 LTS cmake version 3.5.1
 cmake_minimum_required(VERSION 2.8.3)
 
+macro(debug msg)
+    message(STATUS "DEBUG ${msg}")
+endmacro()
+
+macro(debugValue variableName)
+    debug("${variableName}=\${${variableName}}")
+endmacro()
+
+function(extract_version_property varName)	
+	file(READ ./include/librealsense/rs.h CURRENT_CONFIG)
+	debugValue(CURRENT_CONFIG)
+	STRING(REGEX MATCH "#define RS_API_MAJOR_VERSION" RS_API_MAJOR_VERSION ${CURRENT_CONFIG})
+	STRING(REGEX MATCH "#define RS_API_MINOR_VERSION" RS_API_MINOR_VERSION ${CURRENT_CONFIG})
+	debugValue(REALSENSE_VERSION_MAJOR)
+	debugValue(REALSENSE_VERSION_MINOR)
+#IF("#define USE_OPENGLES" STREQUAL "${GLES_IS_SET}")
+#	MESSAGE("GLES config!")
+#ELSE("#define USE_OPENGLES" STREQUAL "${GLES_IS_SET}")
+#	IF("#define USE_OPENGL" STREQUAL "${GL_IS_SET}")
+#		MESSAGE("GL config!")
+#	ELSE("#define USE_OPENGL" STREQUAL "${GL_IS_SET}")
+#		MESSAGE("Error! USE_GL or USE_GLES must be defined!")
+#	ENDIF("#define USE_OPENGL" STREQUAL "${GL_IS_SET}")
+#ENDIF("#define USE_OPENGLES" STREQUAL "${GLES_IS_SET}")
+	#file(STRINGS ./include/librealsense/rs.h RS_API_MAJOR REGEX '#define RS_API_MAJOR_VERSION')
+	#debugValue(RS_API_MAJOR_VERSION)
+	#set(${varName} ${A} PARENT_SCOPE)
+	#SET(${varName} ${${varName}}${${varName}} PARENT_SCOPE)
+	#debugValue(REALSENSE_VERSION_MAJOR)
+	#debugValue(${varName})
+endfunction()
+
+extract_version_property(REALSENSE_VERSION_MAJOR)
+#extract_version_property(REALSENSE_VERSION_MINOR '#define RS_API_MINOR')
+#extract_version_property(REALSENSE_VERSION_PATCH '#define RS_API_PATCH')
+
+#A=${cat ../include/librealsense/rs.h | grep ^'#define RS_API_MAJOR' | awk '{print $3}'}
+#set(REALSENSE_VERSION_MAJOR A)
+#message(STATUS "REALSENSE_VERSION_MAJOR = ${REALSENSE_VERSION_MAJOR})
+
+set(REALSENSE_VERSION_MAJOR 1)
+set(REALSENSE_VERSION_MINOR 11)
+set(REALSENSE_VERSION_PATCH 1)
+#set(REALSENSE_VERSION_MAJOR $(cat ../include/librealsense/rs.h | grep ^'#define RS_API_MAJOR' | awk '{print $3}'))
+#set(REALSENSE_VERSION_MINOR $(cat ../include/librealsense/rs.h | grep ^'#define RS_API_MINOR' | awk '{print $3}'))
+#set(REALSENSE_VERSION_PATCH $(cat ../include/librealsense/rs.h | grep ^'#define RS_API_PATCH' | awk '{print $3}'))
+set(REALSENSE_VERSION_STRING ${REALSENSE_VERSION_MAJOR}.${REALSENSE_VERSION_MINOR}.${REALSENSE_VERSION_PATCH})
+
 IF(DEFINED ENV{CMAKE_PREFIX_PATH})
   IF($ENV{CMAKE_PREFIX_PATH} MATCHES "/opt/ros")
     set(ROS_BUILD_TYPE TRUE)
@@ -174,6 +222,10 @@ install( TARGETS realsense
     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
 )
 install(DIRECTORY ${PROJECT_SOURCE_DIR}/include/librealsense DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+
+if(UNIX)
+	set_target_properties(${TARGETS} PROPERTIES VERSION "${REALSENSE_VERSION_STRING}" SOVERSION "${REALSENSE_VERSION_MAJOR}")
+endif()
 
 option(BUILD_EXAMPLES "Build realsense examples." OFF)
 if(BUILD_EXAMPLES)
