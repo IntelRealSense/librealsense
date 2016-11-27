@@ -114,6 +114,7 @@ typedef enum rs_option
 
 typedef enum rs_camera_info {
     RS_CAMERA_INFO_DEVICE_NAME                   ,
+    RS_CAMERA_INFO_MODULE_NAME                   ,
     RS_CAMERA_INFO_DEVICE_SERIAL_NUMBER          ,
     RS_CAMERA_INFO_CAMERA_FIRMWARE_VERSION       ,
     RS_CAMERA_INFO_DEVICE_LOCATION               ,
@@ -239,8 +240,15 @@ rs_device* rs_create_device(const rs_device_list* list, int index, rs_error** er
 */
 void rs_delete_device(rs_device* device);
 
+/**
+* get list of devices adjacent to a given device
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return            the list of devices, should be released by rs_delete_device_list
+*/
+rs_device_list* rs_query_adjacent_devices(const rs_device* device, rs_error** error);
+
 //TODO
-void rs_get_device_extrinsics(const rs_device * from, const rs_device * to, rs_extrinsics * extrin, rs_error ** error);
+void rs_get_extrinsics(const rs_device * from, const rs_device * to, rs_extrinsics * extrin, rs_error ** error);
 
 //TODO
 void rs_get_stream_intrinsics(const rs_device * device, rs_stream stream, int width, int height, int fps, rs_format format, rs_intrinsics * intrinsics, rs_error ** error);

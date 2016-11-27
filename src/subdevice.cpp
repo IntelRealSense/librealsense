@@ -398,6 +398,25 @@ bool endpoint::supports_option(rs_option id) const
     return it->second->is_enabled();
 }
 
+bool endpoint::supports_info(rs_camera_info info) const
+{
+    auto it = _camera_info.find(info);
+    return it != _camera_info.end();
+}
+
+void endpoint::register_info(rs_camera_info info, std::string val)
+{
+    _camera_info[info] = std::move(val);
+}
+
+const std::string& endpoint::get_info(rs_camera_info info) const
+{
+    auto it = _camera_info.find(info);
+    if (it == _camera_info.end())
+        throw std::runtime_error("Selected camera info is not supported for this camera!");
+    return it->second;
+}
+
 void endpoint::register_option(rs_option id, std::shared_ptr<option> option)
 {
     _options[id] = std::move(option);

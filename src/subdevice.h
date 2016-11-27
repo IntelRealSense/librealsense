@@ -68,6 +68,10 @@ namespace rsimpl
         void register_option(rs_option id, std::shared_ptr<option> option);
         bool supports_option(rs_option id) const;
 
+        const std::string& get_info(rs_camera_info info) const;
+        bool supports_info(rs_camera_info info) const;
+        void register_info(rs_camera_info info, std::string val);
+
         void set_pose(pose p) { _pose = std::move(p); }
         const pose& get_pose() const { return _pose; }
 
@@ -84,6 +88,7 @@ namespace rsimpl
         std::map<rs_option, std::shared_ptr<option>> _options;
         std::vector<native_pixel_format> _pixel_formats;
         pose _pose;
+        std::map<rs_camera_info, std::string> _camera_info;
     };
 
     struct frame_timestamp_reader

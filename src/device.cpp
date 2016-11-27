@@ -10,23 +10,10 @@ device::device()
 {
 }
 
-const std::string& device::get_info(rs_camera_info info) const
+int device::add_endpoint(std::shared_ptr<endpoint> endpoint, std::string name)
 {
-    auto it = _static_info.camera_info.find(info);
-    if (it == _static_info.camera_info.end())
-        throw std::runtime_error("Selected camera info is not supported for this camera!");
-    return it->second;
-}
-
-bool device::supports_info(rs_camera_info info) const
-{
-    auto it = _static_info.camera_info.find(info);
-    return it != _static_info.camera_info.end();
-}
-
-int device::add_endpoint(std::shared_ptr<endpoint> endpoint)
-{
-    _endpoints.push_back(std::move(endpoint));
+    endpoint->register_info(RS_CAMERA_INFO_MODULE_NAME, std::move(name));
+    _endpoints.push_back(endpoint);
     return _endpoints.size() - 1;
 }
 
@@ -43,6 +30,20 @@ void device::register_device(std::string name, std::string fw_version, std::stri
     _static_info.camera_info[RS_CAMERA_INFO_DEVICE_LOCATION] = std::move(location);
 }
 
+bool device::supports_info(rs_camera_info info) const
+{
+    auto it = _static_info.camera_info.find(info);
+    return it != _static_info.camera_info.end();
+}
+
+const std::string& device::get_info(rs_camera_info info) const
+{
+    auto it = _static_info.camera_info.find(info);
+    if (it == _static_info.camera_info.end())
+        throw std::runtime_error("Selected camera info is not supported for this camera!");
+    return it->second;
+}
+
 void device::declare_capability(supported_capability cap)
 {
     _static_info.capabilities_vector.push_back(cap);
@@ -50,7 +51,7 @@ void device::declare_capability(supported_capability cap)
 
 rs_extrinsics device::get_extrinsics(int from_subdevice, int to_subdevice)
 {
-    auto from = get_pose(from_subdevice), to = get_pose(to_subdevice);
+    auto from = get_endpoint(from_subdevice).get_pose(), to = get_endpoint(to_subdevice).get_pose();
     if (from == to) return { {1,0,0,0,1,0,0,0,1}, {0,0,0} }; // identity transformation
     auto transform = inverse(from) * to;
     rs_extrinsics extrin;

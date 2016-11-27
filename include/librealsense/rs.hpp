@@ -22,7 +22,7 @@ namespace rs
     {
         std::string function, args;
     public:
-        explicit error(rs_error * err) : std::runtime_error(rs_get_error_message(err))
+        explicit error(rs_error * err) : runtime_error(rs_get_error_message(err))
         {
             function = (nullptr != rs_get_failed_function(err)) ? rs_get_failed_function(err) : std::string();
             args = (nullptr != rs_get_failed_args(err)) ? rs_get_failed_args(err) : std::string();
@@ -35,7 +35,6 @@ namespace rs
 
     class context;
     class device;
-    class subdevice;
 
     struct stream_profile
     {
@@ -282,7 +281,7 @@ namespace rs
         }
         streaming_lock() : _lock(nullptr) {}
     private:
-        friend subdevice;
+        friend device;
         explicit streaming_lock(std::shared_ptr<rs_streaming_lock> lock)
             : _lock(std::move(lock)) {}
 
@@ -297,12 +296,39 @@ namespace rs
         float step;
     };
 
-    class subdevice
+    class advanced
     {
     public:
-        subdevice() : _dev(nullptr), _index(RS_SUBDEVICE_COLOR) {}
-        operator rs_subdevice() const { return _index; }
+        explicit advanced(std::shared_ptr<rs_device> dev)
+            : _dev(dev) {}
 
+        std::vector<uint8_t> send_and_receive_raw_data(const std::vector<uint8_t>& input) const
+        {
+            std::vector<uint8_t> results;
+
+            rs_error* e = nullptr;
+            std::shared_ptr<rs_raw_data_buffer> list(
+                rs_send_and_receive_raw_data(_dev.get(), (void*)input.data(), input.size(), &e),
+                rs_delete_raw_data);
+            error::handle(e);
+
+            auto size = rs_get_raw_data_size(list.get(), &e);
+            error::handle(e);
+
+            auto start = rs_get_raw_data(list.get(), &e);
+
+            results.insert(results.begin(), start, start + size);
+
+            return results;
+        }
+
+    private:
+        std::shared_ptr<rs_device> _dev;
+    };
+
+    class device
+    {
+    public:
         /**
         * open subdevice for exclusive access, by commiting to a configuration
         * \param[in] profile    configuration commited by the device
@@ -312,7 +338,7 @@ namespace rs
         {
             rs_error* e = nullptr;
             std::shared_ptr<rs_streaming_lock> lock(
-                rs_open(_dev, _index,
+                rs_open(_dev.get(),
                     profile.stream,
                     profile.width,
                     profile.height,
@@ -350,7 +376,7 @@ namespace rs
             }
 
             std::shared_ptr<rs_streaming_lock> lock(
-                rs_open_many(_dev, _index,
+                rs_open_many(_dev.get(),
                     streams.data(),
                     widths.data(),
                     heights.data(),
@@ -372,7 +398,7 @@ namespace rs
         float get_option(rs_option option) const
         {
             rs_error* e = nullptr;
-            auto res = rs_get_subdevice_option(_dev, _index, option, &e);
+            auto res = rs_get_option(_dev.get(), option, &e);
             error::handle(e);
             return res;
         }
@@ -385,7 +411,7 @@ namespace rs
         {
             option_range result;
             rs_error* e = nullptr;
-            rs_get_subdevice_option_range(_dev, _index, option,
+            rs_get_option_range(_dev.get(), option,
                 &result.min, &result.max, &result.step, &result.def, &e);
             error::handle(e);
             return result;
@@ -399,7 +425,7 @@ namespace rs
         void set_option(rs_option option, float value) const
         {
             rs_error* e = nullptr;
-            rs_set_subdevice_option(_dev, _index, option, value, &e);
+            rs_set_option(_dev.get(), option, value, &e);
             error::handle(e);
         }
 
@@ -411,7 +437,7 @@ namespace rs
         bool supports(rs_option option) const
         {
             rs_error* e = nullptr;
-            auto res = rs_supports_subdevice_option(_dev, _index, option, &e);
+            auto res = rs_supports_option(_dev.get(), option, &e);
             error::handle(e);
             return res > 0;
         }
@@ -424,7 +450,7 @@ namespace rs
         const char* get_option_description(rs_option option) const
         {
             rs_error* e = nullptr;
-            auto res = rs_get_subdevice_option_description(_dev, _index, option, &e);
+            auto res = rs_get_option_description(_dev.get(), option, &e);
             error::handle(e);
             return res;
         }
@@ -438,7 +464,7 @@ namespace rs
         const char* get_option_value_description(rs_option option, float val) const
         {
             rs_error* e = nullptr;
-            auto res = rs_get_subdevice_option_value_description(_dev, _index, option, val, &e);
+            auto res = rs_get_option_value_description(_dev.get(), option, val, &e);
             error::handle(e);
             return res;
         }
@@ -453,7 +479,7 @@ namespace rs
 
             rs_error* e = nullptr;
             std::shared_ptr<rs_stream_modes_list> list(
-                rs_get_stream_modes(_dev, _index, &e),
+                rs_get_stream_modes(_dev.get(), &e),
                 rs_delete_modes_list);
             error::handle(e);
 
@@ -478,15 +504,15 @@ namespace rs
         }
 
         /*
-         * retrive stream intrinsics
-         * \param[in] profile the stream profile to calculate the intrinsics for
-         * \return intrinsics object
-         */
+        * retrive stream intrinsics
+        * \param[in] profile the stream profile to calculate the intrinsics for
+        * \return intrinsics object
+        */
         rs_intrinsics get_intrinsics(stream_profile profile) const
         {
             rs_error* e = nullptr;
             rs_intrinsics intrinsics;
-            rs_get_stream_intrinsics(_dev, _index,
+            rs_get_stream_intrinsics(_dev.get(),
                 profile.stream,
                 profile.width,
                 profile.height,
@@ -495,65 +521,6 @@ namespace rs
             error::handle(e);
             return intrinsics;
         }
-
-    private:
-        friend device;
-        explicit subdevice(rs_device* dev, rs_subdevice index)
-            : _dev(dev), _index(index) {}
-
-        rs_device* _dev;
-        rs_subdevice _index;
-    };
-
-    class advanced
-    {
-    public:
-        advanced(std::shared_ptr<rs_device> dev)
-            : _dev(dev)
-        {}
-        std::vector<uint8_t> send_and_receive_raw_data(const std::vector<uint8_t>& input) const
-        {
-            std::vector<uint8_t> results;
-
-            rs_error* e = nullptr;
-            std::shared_ptr<rs_raw_data_buffer> list(
-                rs_send_and_receive_raw_data(_dev.get(), (void*)input.data(), input.size(), &e),
-                rs_delete_raw_data);
-            error::handle(e);
-
-            auto size = rs_get_raw_data_size(list.get(), &e);
-            error::handle(e);
-
-            auto start = rs_get_raw_data(list.get(), &e);
-
-            results.insert(results.begin(), start, start + size);
-
-            return results;
-        }
-
-    private:
-        std::shared_ptr<rs_device> _dev;
-    };
-
-    class device
-    {
-    public:
-        subdevice& get_subdevice(rs_subdevice sub)
-        {
-            if (sub < _subdevices.size() && _subdevices[sub].get())
-                return *_subdevices[sub];
-            throw std::runtime_error("Requested subdevice is not supported!");
-        }
-
-        bool supports(rs_subdevice sub) const
-        {
-            return sub < _subdevices.size() && _subdevices[sub].get();
-        }
-
-        subdevice& color() { return get_subdevice(RS_SUBDEVICE_COLOR); }
-        subdevice& depth() { return get_subdevice(RS_SUBDEVICE_DEPTH); }
-        subdevice& fisheye() { return get_subdevice(RS_SUBDEVICE_FISHEYE); }
-        subdevice& motion() { return get_subdevice(RS_SUBDEVICE_MOTION); }
 
         /**
         * check if specific camera info is supported
@@ -581,11 +548,41 @@ namespace rs
             return result;
         }
 
-        rs_extrinsics get_extrinsics(rs_subdevice from_subdevice, rs_subdevice to_subdevice) const
+        /**
+        * returns the list of adjacent devices, sharing the same physical parent composite device
+        * \return            the list of adjacent devices
+        */
+        std::vector<device> query_adjacent_devices() const
+        {
+            rs_error* e = nullptr;
+            std::shared_ptr<rs_device_list> list(
+                rs_query_adjacent_devices(_dev.get(), &e),
+                rs_delete_device_list);
+            error::handle(e);
+
+            auto size = rs_get_device_count(list.get(), &e);
+            error::handle(e);
+
+            std::vector<device> results;
+            for (auto i = 0; i < size; i++)
+            {
+                std::shared_ptr<rs_device> dev(
+                    rs_create_device(list.get(), i, &e),
+                    rs_delete_device);
+                error::handle(e);
+
+                device rs_dev(dev);
+                results.push_back(rs_dev);
+            }
+
+            return results;
+        }
+
+        rs_extrinsics get_extrinsics_to(const device& to_device) const
         {
             rs_error* e = nullptr;
             rs_extrinsics extrin;
-            rs_get_device_extrinsics(_dev.get(), from_subdevice, to_subdevice, &extrin, &e);
+            rs_get_extrinsics(_dev.get(), to_device._dev.get(), &extrin, &e);
             error::handle(e);
             return extrin;
         }
@@ -604,56 +601,16 @@ namespace rs
         advanced& debug() { return _debug; }
     private:
         friend context;
-        explicit device(std::shared_ptr<rs_device> dev) : _dev(dev), _debug(dev)
+
+        explicit device(std::shared_ptr<rs_device> dev) 
+            : _dev(dev), _debug(dev)
         {
-            _subdevices.resize(RS_SUBDEVICE_COUNT);
-            for (auto i = 0; i < RS_SUBDEVICE_COUNT; i++)
-            {
-                auto s = static_cast<rs_subdevice>(i);
-                rs_error* e = nullptr;
-                auto is_supported = rs_is_subdevice_supported(_dev.get(), s, &e);
-                error::handle(e);
-                if (is_supported) _subdevices[s].reset(new subdevice(_dev.get(), s));
-                else  _subdevices[s] = nullptr;
-            }
         }
 
         std::shared_ptr<rs_device> _dev;
+        std::shared_ptr<rs_context> _context;
         advanced _debug;
-        std::vector<std::shared_ptr<subdevice>> _subdevices;
     };
-
-    class subdevice_iterator
-    {
-    public:
-        subdevice_iterator(device dev, rs_subdevice idx)
-            : _idx(idx), _dev(dev) {}
-
-        subdevice_iterator& operator++()
-        {
-            do
-            {
-                _idx = static_cast<rs_subdevice>(static_cast<int>(_idx) + 1);
-            } while (_idx != RS_SUBDEVICE_COUNT && !_dev.supports(_idx));
-            return *this;
-        }
-
-        subdevice& operator*() { return _dev.get_subdevice(_idx); }
-        bool operator==(const subdevice_iterator& other) const
-        {
-            return _idx == other._idx;
-        }
-        bool operator!=(const subdevice_iterator& other) const
-        {
-            return _idx != other._idx;
-        }
-    private:
-        rs_subdevice _idx;
-        device _dev;
-    };
-
-    inline subdevice_iterator begin(device dev) { return ++subdevice_iterator(dev, rs_subdevice(-1)); }
-    inline subdevice_iterator end(device dev) { return{ dev, RS_SUBDEVICE_COUNT }; }
 
     /**
     * default librealsense context class
@@ -699,6 +656,15 @@ namespace rs
             }
 
             return results;
+        }
+
+        rs_extrinsics get_extrinsics(const device& from_device, const device& to_device) const
+        {
+            rs_error* e = nullptr;
+            rs_extrinsics extrin;
+            rs_get_extrinsics(from_device._dev.get(), to_device._dev.get(), &extrin, &e);
+            error::handle(e);
+            return extrin;
         }
 
     protected:
@@ -846,6 +812,5 @@ inline std::ostream & operator << (std::ostream & o, rs_stream stream) { return 
 inline std::ostream & operator << (std::ostream & o, rs_format format) { return o << rs_format_to_string(format); }
 inline std::ostream & operator << (std::ostream & o, rs_distortion distortion) { return o << rs_distortion_to_string(distortion); }
 inline std::ostream & operator << (std::ostream & o, rs_option option) { return o << rs_option_to_string(option); }
-inline std::ostream & operator << (std::ostream & o, rs_subdevice evt) { return o << rs_subdevice_to_string(evt); }
 
 #endif // LIBREALSENSE_RS_HPP

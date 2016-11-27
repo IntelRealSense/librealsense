@@ -20,24 +20,23 @@ int main(int argc, char * argv[]) try
     auto devices = ctx.query_devices();
     if(devices.size() == 0) throw std::runtime_error("No device detected. Is it plugged in?");
 
-    std::vector<rs::util::multistream> streams;
-    std::vector<rs::util::syncer> syncers;
+    std::vector<rs::streaming_lock> streams;
+    std::vector<rs::frame_queue> syncers;
 
     // Configure and start our devices
     for(auto&& dev : devices)
     {
         std::cout << "Starting " << dev.get_camera_info(RS_CAMERA_INFO_DEVICE_NAME) << "... ";
         rs::util::config config;
-        config.enable_stream(RS_STREAM_DEPTH, rs::preset::best_quality);
-        config.enable_stream(RS_STREAM_COLOR, rs::preset::best_quality);
-        streams.push_back(config.open(dev));
+        auto modes = dev.get_stream_modes();
+        streams.push_back(dev.open(modes[0]));
         syncers.emplace_back();
         streams.back().start(syncers.back());
         std::cout << "done." << std::endl;
     }
 
     // Depth and color
-    buffers.resize(devices.size() * 2);
+    buffers.resize(devices.size());
 
     // Open a GLFW window
     glfwInit();
@@ -49,7 +48,7 @@ int main(int argc, char * argv[]) try
     glfwGetWindowSize(win, &windowWidth, &windowHeight);
 
     // Does not account for correct aspect ratios
-    auto perTextureWidth = static_cast<float>(windowWidth / devices.size());
+    auto perTextureWidth = 2 * static_cast<float>(windowWidth / devices.size());
     auto perTextureHeight = 480.0f;
 
     while (!glfwWindowShouldClose(win))
@@ -68,23 +67,15 @@ int main(int argc, char * argv[]) try
         glOrtho(0, w, h, 0, -1, +1);
         glPixelZoom(1, -1);
         auto i = 0;
-        auto x = 0.0f;
 
         for(auto&& syncer : syncers)
         {
-            rs::util::frameset frames;
-            if (syncer.poll_for_frames(frames))
+            rs::frame frame;
+            if (syncer.poll_for_frame(&frame))
             {
-                auto j = i;
-                for (auto&& frame : frames)
-                {
-                    buffers[j++].upload(frame);
-                }
+                buffers[i].upload(frame);
             }
-            //const auto c = dev->get_stream_intrinsics(rs::stream::color), d = dev->get_stream_intrinsics(rs::stream::depth);
-            buffers[i++].show({ x, 0, perTextureWidth, perTextureHeight });
-            buffers[i++].show({ x, perTextureHeight, perTextureWidth, perTextureHeight });
-            x += perTextureWidth;
+            buffers[i++].show({ (i / 2) * perTextureWidth, (i % 2) * perTextureHeight, perTextureWidth, perTextureHeight });
         }
 
         glPopMatrix();

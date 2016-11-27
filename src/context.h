@@ -30,7 +30,7 @@ namespace rsimpl
     class context
     {
     public:
-        context(backend_type type, 
+        explicit context(backend_type type, 
                const char* filename = nullptr, 
                const char* section = nullptr, 
                rs_recording_mode mode = RS_RECORDING_MODE_COUNT);
@@ -95,5 +95,15 @@ namespace rsimpl
             if (info.mi == mi) return info;
         }
         throw std::runtime_error("Interface not found!");
+    }
+
+    static std::vector<uvc::uvc_device_info> filter_by_mi(const std::vector<uvc::uvc_device_info>& devices, uint32_t mi)
+    {
+        std::vector<uvc::uvc_device_info> results;
+        for (auto&& info : devices)
+        {
+            if (info.mi == mi) results.push_back(info);
+        }
+        return results;
     }
 }

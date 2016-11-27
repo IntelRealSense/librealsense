@@ -77,25 +77,13 @@ namespace rsimpl
             sr300_camera& _owner;
         };
 
-        sr300_camera(const uvc::backend& backend,
-            const uvc::uvc_device_info& color,
-            const uvc::uvc_device_info& depth,
-            const uvc::usb_device_info& hwm_device)
-            : _hw_monitor(backend.create_usb_device(hwm_device))
+        static std::shared_ptr<uvc_endpoint> create_color_device(const uvc::backend& backend, 
+                                                                 const uvc::uvc_device_info& color)
         {
-            using namespace ivcam;
-
-            // create uvc-endpoint from backend uvc-device
-            auto depth_ep = std::make_shared<uvc_endpoint>(backend.create_uvc_device(depth));
-            depth_ep->register_xu(depth_xu); // make sure the XU is initialized everytime we power the camera
-            depth_ep->register_pixel_format(pf_invz);
-            depth_ep->register_pixel_format(pf_sr300_inzi);
-            depth_ep->register_pixel_format(pf_sr300_invi);
-
             auto color_ep = std::make_shared<uvc_endpoint>(backend.create_uvc_device(color));
             color_ep->register_pixel_format(pf_yuy2);
             color_ep->register_pixel_format(pf_yuyv);
-            
+
             color_ep->register_pu(RS_OPTION_BACKLIGHT_COMPENSATION);
             color_ep->register_pu(RS_OPTION_BRIGHTNESS);
             color_ep->register_pu(RS_OPTION_CONTRAST);
@@ -109,20 +97,22 @@ namespace rsimpl
             color_ep->register_pu(RS_OPTION_ENABLE_AUTO_EXPOSURE);
             color_ep->register_pu(RS_OPTION_ENABLE_AUTO_WHITE_BALANCE);
 
-            auto fw_version = _hw_monitor.get_firmware_version_string(GVD, gvd_fw_version_offset);
-            auto serial = _hw_monitor.get_module_serial_string(GVD);
-            auto location = depth_ep->invoke_powered([](uvc::uvc_device& dev)
-            {
-                return dev.get_device_location();
-            });
-            enable_timestamp(true, true);
+            color_ep->set_pose({ { { 1,0,0 },{ 0,1,0 },{ 0,0,1 } },{ 0,0,0 } });
 
+            return color_ep;
+        }
 
-            register_device("Intel RealSense SR300", fw_version, serial, "");
+        std::shared_ptr<uvc_endpoint> create_depth_device(const uvc::backend& backend,
+                                                          const uvc::uvc_device_info& depth)
+        {
+            using namespace ivcam;
 
-            // map subdevice to endpoint
-            assign_endpoint(RS_SUBDEVICE_COLOR, color_ep);
-            assign_endpoint(RS_SUBDEVICE_DEPTH, depth_ep);
+            // create uvc-endpoint from backend uvc-device
+            auto depth_ep = std::make_shared<uvc_endpoint>(backend.create_uvc_device(depth));
+            depth_ep->register_xu(depth_xu); // make sure the XU is initialized everytime we power the camera
+            depth_ep->register_pixel_format(pf_invz);
+            depth_ep->register_pixel_format(pf_sr300_inzi);
+            depth_ep->register_pixel_format(pf_sr300_invi);
 
             register_depth_xu<uint8_t>(*depth_ep, RS_OPTION_LASER_POWER, IVCAM_DEPTH_LASER_POWER,
                 "Power of the SR300 projector, with 0 meaning projector off");
@@ -135,17 +125,45 @@ namespace rsimpl
             register_depth_xu<uint8_t>(*depth_ep, RS_OPTION_FILTER_OPTION, IVCAM_DEPTH_FILTER_OPTION,
                 "Set the filter to apply to each depth frame.\nEach one of the filter is optimized per the application requirements");
 
-            register_autorange_options();
-
             depth_ep->register_option(RS_OPTION_VISUAL_PRESET, std::make_shared<preset_option>(*this));
+
+            return depth_ep;
+        }
+
+        std::vector<uint8_t> send_receive_raw_data(const std::vector<uint8_t>& input) override
+        {
+            return _hw_monitor.send(input);
+        }
+
+        uvc_endpoint& get_depth_endpoint() { return static_cast<uvc_endpoint&>(get_endpoint(_depth_device_idx)); }
+
+        sr300_camera(const uvc::backend& backend,
+            const uvc::uvc_device_info& color,
+            const uvc::uvc_device_info& depth,
+            const uvc::usb_device_info& hwm_device)
+            : _hw_monitor(backend.create_usb_device(hwm_device)),
+              _depth_device_idx(add_endpoint(create_depth_device(backend, depth), "Color Camera")),
+              _color_device_idx(add_endpoint(create_color_device(backend, color), "Depth Camera"))
+        {
+            using namespace ivcam;
+
+            auto fw_version = _hw_monitor.get_firmware_version_string(GVD, gvd_fw_version_offset);
+            auto serial = _hw_monitor.get_module_serial_string(GVD);
+            auto location = get_depth_endpoint().invoke_powered([](uvc::uvc_device& dev)
+            {
+                return dev.get_device_location();
+            });
+            enable_timestamp(true, true);
+
+            register_device("Intel RealSense SR300", fw_version, serial, "");
+            register_autorange_options();
 
             auto c = get_calibration();
             pose depth_to_color = {
                 transpose(reinterpret_cast<const float3x3 &>(c.Rt)),
                           reinterpret_cast<const float3 &>(c.Tt) * 0.001f
             };
-            depth_ep->set_pose(inverse(depth_to_color));
-            color_ep->set_pose({ { { 1,0,0 },{ 0,1,0 },{ 0,0,1 } },{ 0,0,0 } });
+            get_depth_endpoint().set_pose(inverse(depth_to_color));
             set_depth_scale((c.Rmax / 0xFFFF) * 0.001f);
         }
 
@@ -196,7 +214,7 @@ namespace rsimpl
             {
                 for (auto opt : arr_options)
                 {
-                    auto&& o = get_option(RS_SUBDEVICE_DEPTH, opt);
+                    auto&& o = get_depth_endpoint().get_option(opt);
                     o.set(o.get_range().def);
                 }
             }
@@ -206,7 +224,7 @@ namespace rsimpl
                 {
                     if (arr_values[preset][i] >= 0)
                     {
-                        auto&& o = get_option(RS_SUBDEVICE_DEPTH, arr_options[i]);
+                        auto&& o = get_depth_endpoint().get_option(arr_options[i]);
                         o.set(arr_values[preset][i]);
                     }
                 }
@@ -216,24 +234,30 @@ namespace rsimpl
         }
 
         // NOTE: it is the user's responsibility to make sure the profile makes sense on the given subdevice. UB otherwise.
-        virtual rs_intrinsics get_intrinsics(rs_subdevice subdevice, stream_request profile) const override
+        virtual rs_intrinsics get_intrinsics(int subdevice, stream_request profile) const override
         {
-            if (!supports(subdevice)) throw std::runtime_error("Requested subdevice is unsupported.");
-            switch (subdevice) {
-                // was getting errors about uint32_t to int conversions. Because they originate as ints, this should be safe
-            case RS_SUBDEVICE_DEPTH: return make_depth_intrinsics(get_calibration(), { int(profile.width), int(profile.height) });
-            case RS_SUBDEVICE_COLOR: return make_color_intrinsics(get_calibration(), { int(profile.width), int(profile.height) });
-            default: throw std::runtime_error("Not Implemented");
-            }
+            if (subdevice >= get_endpoints_count()) 
+                throw std::runtime_error("Requested subdevice is not supported!");
+
+            if (subdevice == _color_device_idx) 
+                return make_color_intrinsics(get_calibration(), { int(profile.width), int(profile.height) });
+
+            if (subdevice == _depth_device_idx)
+                return make_depth_intrinsics(get_calibration(), { int(profile.width), int(profile.height) });
+
+            throw std::runtime_error("Not Implemented");
         }
 
     private:
         hw_monitor _hw_monitor;
+        const uint8_t _depth_device_idx;
+        const uint8_t _color_device_idx;
+        
 
         template<class T>
-        void register_depth_xu(uvc_endpoint& depth, rs_option opt, uint8_t id, std::string desc)
+        void register_depth_xu(uvc_endpoint& depth, rs_option opt, uint8_t id, std::string desc) const
         {
-            depth.register_option(opt, RS_SUBDEVICE_DEPTH,
+            depth.register_option(opt,
                 std::make_shared<uvc_xu_option<T>>(
                     depth,
                     ivcam::depth_xu, 
