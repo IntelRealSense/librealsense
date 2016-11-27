@@ -143,7 +143,6 @@ namespace rsimpl
 
                 std::vector<uint8_t> result;
 
-                std::this_thread::sleep_for(std::chrono::milliseconds(20));
 
                 if (require_response)
                 {

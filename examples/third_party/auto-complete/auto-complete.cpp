@@ -235,15 +235,8 @@ string auto_complete::get_line()
 
             if (str.compare(""))
             {
-                auto it = find_if(_history_words.begin(), _history_words.end(), [&](string element) -> bool {
-                    return (element.compare(str) == 0);
-                });
-
-                if (it == _history_words.end())
-                {
-                    _history_words.push_back(str);
-                    _history_words_index = int(_history_words.size()) - 1;
-                }
+                _history_words.push_back(str);
+                _history_words_index = int(_history_words.size()) - 1;
             }
             _is_first_time_up_arrow = true;
         }

@@ -95,7 +95,7 @@ int main(int argc, char * argv[]) try
     texture_buffer color_tex;
     const uint16_t * depth;
     
-    const rs_extrinsics extrin = dev.get_extrinsics(RS_SUBDEVICE_DEPTH, RS_SUBDEVICE_COLOR);
+    const rs_extrinsics extrin = stream.get_extrinsics(RS_STREAM_DEPTH, RS_STREAM_COLOR);
     const rs_intrinsics depth_intrin = stream.get_intrinsics(RS_STREAM_DEPTH);
     const rs_intrinsics color_intrin = stream.get_intrinsics(RS_STREAM_COLOR);
 
@@ -122,8 +122,10 @@ int main(int argc, char * argv[]) try
         glPushAttrib(GL_ALL_ATTRIB_BITS);
 
         for (auto&& frame : frames) {
-            if (frame.get_stream_type() == RS_STREAM_COLOR) color_tex.upload(frame);
-            if (frame.get_stream_type() == RS_STREAM_DEPTH) depth = reinterpret_cast<const uint16_t *>(frame.get_data());
+            if (frame.get_stream_type() == RS_STREAM_COLOR) 
+                color_tex.upload(frame);
+            if (frame.get_stream_type() == RS_STREAM_DEPTH) 
+                depth = reinterpret_cast<const uint16_t *>(frame.get_data());
         }
 
         int width, height;

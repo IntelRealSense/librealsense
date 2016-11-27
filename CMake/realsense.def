@@ -11,12 +11,11 @@ EXPORTS
     rs_delete_device_list
 
     rs_create_device
+    rs_query_adjacent_devices
     rs_delete_device
-    rs_get_device_extrinsics
+    rs_get_extrinsics
     rs_get_stream_intrinsics
     rs_get_device_depth_scale
-
-    rs_is_subdevice_supported
 
     rs_get_stream_modes
     rs_get_stream_mode
@@ -46,12 +45,12 @@ EXPORTS
     rs_release_frame
     rs_clone_frame_ref
 
-    rs_get_subdevice_option
-    rs_set_subdevice_option
-    rs_supports_subdevice_option
-    rs_get_subdevice_option_range
-    rs_get_subdevice_option_description
-    rs_get_subdevice_option_value_description
+    rs_get_option
+    rs_set_option
+    rs_supports_option
+    rs_get_option_range
+    rs_get_option_description
+    rs_get_option_value_description
 
     rs_send_and_receive_raw_data
     rs_get_raw_data_size
@@ -80,7 +79,6 @@ EXPORTS
     rs_option_to_string
     rs_camera_info_to_string
     rs_timestamp_domain_to_string
-    rs_subdevice_to_string
     rs_visual_preset_to_string
 
     rs_log_to_console

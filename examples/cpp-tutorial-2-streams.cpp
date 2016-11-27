@@ -29,9 +29,8 @@ int main() try
     std::vector<rs_stream> supported_streams = { RS_STREAM_DEPTH, RS_STREAM_INFRARED, RS_STREAM_COLOR };
 
     // Configure the relevant subdevices of the RealSense camera
-    auto depth_stream = dev.depth().open({ { RS_STREAM_DEPTH, 640, 480, 30, RS_FORMAT_Z16 },
-                                           { RS_STREAM_INFRARED, 640, 480, 30, RS_FORMAT_Y8 } });
-    auto color_stream = dev.color().open(  { RS_STREAM_COLOR, 640, 480, 30, RS_FORMAT_RGB8 });
+    auto depth_stream = dev.open({ { RS_STREAM_DEPTH, 640, 480, 30, RS_FORMAT_Z16 },
+                                   { RS_STREAM_INFRARED, 640, 480, 30, RS_FORMAT_Y8 } });
 
     // Create frame queue to pass new frames from the device to our application
     rs::frame_queue queue(RS_STREAM_COUNT);
@@ -40,11 +39,10 @@ int main() try
 
     // Start the physical devices and specify our frame queue as the target
     depth_stream.start(queue);
-    color_stream.start(queue);
 
     // Open a GLFW window to display our output
     glfwInit();
-    auto win = glfwCreateWindow(1280, 960, "librealsense tutorial #2", nullptr, nullptr);
+    auto win = glfwCreateWindow(640, 480 * 2, "librealsense tutorial #2", nullptr, nullptr);
     glfwMakeContextCurrent(win);
 
     while(!glfwWindowShouldClose(win))
@@ -73,10 +71,6 @@ int main() try
                     glPixelTransferf(GL_RED_SCALE, 0xFFFF * dev.get_depth_scale() / 2.0f);
                     glDrawPixels(640, 480, GL_RED, GL_UNSIGNED_SHORT, frontbuffer[stream].get_data());
                     glPixelTransferf(GL_RED_SCALE, 1.0f);
-                break;
-                case RS_STREAM_COLOR: // Display color image as RGB triples
-                    glRasterPos2f(0, 1);
-                    glDrawPixels(640, 480, GL_RGB, GL_UNSIGNED_BYTE, frontbuffer[stream].get_data());
                 break;
                 case RS_STREAM_INFRARED: // Display infrared image by mapping IR intensity to visible luminance
                     glRasterPos2f(-1, 0);
