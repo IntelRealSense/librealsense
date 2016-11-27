@@ -12,6 +12,7 @@
 #include <thread>       // For this_thread::sleep_for
 #include <vector>
 #include <algorithm>
+#include <set>
 
 const uint16_t VID_INTEL_CAMERA     = 0x8086;
 const uint16_t ZR300_CX3_PID        = 0x0acb;
@@ -250,14 +251,15 @@ namespace rsimpl
             void probe_and_commit(stream_profile profile, frame_callback callback) override
             {
                 auto dev_index = get_dev_index_by_profiles(profile);
+                _configured_indexes.insert(dev_index);
                 _dev[dev_index]->probe_and_commit(profile, callback);
             }
 
             void play() override
             {
-                for (auto& elem : _dev)
+                for (auto& elem : _configured_indexes)
                 {
-                    elem->play();
+                    _dev[elem]->play();
                 }
             }
 
@@ -265,6 +267,7 @@ namespace rsimpl
             {
                 auto dev_index = get_dev_index_by_profiles(profile);
                 _dev[dev_index]->stop(profile);
+                _configured_indexes.erase(dev_index);
             }
 
             void set_power_state(power_state state) override
@@ -370,6 +373,7 @@ namespace rsimpl
             }
 
             std::vector<std::shared_ptr<uvc_device>> _dev;
+            std::set<unsigned> _configured_indexes;
         };
 
         std::shared_ptr<backend> create_backend();

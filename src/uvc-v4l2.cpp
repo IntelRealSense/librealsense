@@ -329,7 +329,7 @@ namespace rsimpl
                 if (_thread) _thread->join();
             }
 
-            void play(stream_profile profile, frame_callback callback) override
+            void probe_and_commit(stream_profile profile, frame_callback callback) override
             {
                 if(!_is_capturing && !_callback)
                 {
@@ -381,7 +381,13 @@ namespace rsimpl
                         _buffers[i].start = mmap(NULL, buf.length, PROT_READ | PROT_WRITE, MAP_SHARED, _fd, buf.m.offset);
                         if(_buffers[i].start == MAP_FAILED) throw_error("mmap");
                     }
+                }
+            }
 
+            void play() override
+            {
+                if(!_is_capturing)
+                {
                     // Start capturing
                     for(size_t i = 0; i < _buffers.size(); ++i)
                     {
