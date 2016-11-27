@@ -599,6 +599,8 @@ namespace rs
             return result;
         }
         advanced& debug() { return _debug; }
+
+        device() : _dev(nullptr), _debug(nullptr) {}
     private:
         friend context;
 

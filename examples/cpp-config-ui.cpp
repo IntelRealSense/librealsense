@@ -42,7 +42,7 @@ class option_model
 public:
     rs_option opt;
     rs::option_range range;
-    rs::device* endpoint;
+    rs::device endpoint;
     bool* invalidate_flag;
     bool supported = false;
     float value = 0.0f;
@@ -61,7 +61,7 @@ public:
                     value = bool_value ? 1.0f : 0.0f;
                     try
                     {
-                        endpoint->set_option(opt, value);
+                        endpoint.set_option(opt, value);
                         *invalidate_flag = true;
                     }
                     catch (const rs::error& e)
@@ -85,13 +85,13 @@ public:
                         for (auto i = range.min; i <= range.max; i += range.step, counter++)
                         {
                             if (abs(i - value) < 0.001f) selected = counter;
-                            labels.push_back(endpoint->get_option_value_description(opt, i));
+                            labels.push_back(endpoint.get_option_value_description(opt, i));
                         }
                         if (ImGui::Combo(id.c_str(), &selected, labels.data(),
                             static_cast<int>(labels.size())))
                         {
                             value = range.min + range.step * selected;
-                            endpoint->set_option(opt, value);
+                            endpoint.set_option(opt, value);
                             *invalidate_flag = true;
                         }
                     }
@@ -104,7 +104,7 @@ public:
                         {
                             // TODO: Round to step?
                             value = static_cast<float>(int_value);
-                            endpoint->set_option(opt, value);
+                            endpoint.set_option(opt, value);
                             *invalidate_flag = true;
                         }
                     }
@@ -113,7 +113,7 @@ public:
                         if (ImGui::SliderFloat(id.c_str(), &value,
                             range.min, range.max))
                         {
-                            endpoint->set_option(opt, value);
+                            endpoint.set_option(opt, value);
                         }
                     }
                 }
@@ -124,7 +124,7 @@ public:
                 ImGui::PopItemWidth();
             }
 
-            auto desc = endpoint->get_option_description(opt);
+            auto desc = endpoint.get_option_description(opt);
             if (ImGui::IsItemHovered() && desc)
             {
                 ImGui::SetTooltip(desc);
@@ -136,8 +136,8 @@ public:
     {
         try
         {
-            if (endpoint->supports(opt))
-                value = endpoint->get_option(opt);
+            if (endpoint.supports(opt))
+                value = endpoint.get_option(opt);
         }
         catch (const rs::error& e)
         {
@@ -155,7 +155,7 @@ private:
     {
         for (auto i = range.min; i <= range.max; i += range.step)
         {
-            if (endpoint->get_option_value_description(opt, i) == nullptr)
+            if (endpoint.get_option_value_description(opt, i) == nullptr)
                 return false;
         }
         return true;
@@ -198,8 +198,7 @@ public:
             ss << dev.get_camera_info(RS_CAMERA_INFO_DEVICE_NAME) << "/" << rs_option_to_string(opt);
             metadata.id = ss.str();
             metadata.opt = opt;
-            metadata.endpoint = &dev;
-
+            metadata.endpoint = dev;
             metadata.label = rs_option_to_string(opt);
             metadata.invalidate_flag = &options_invalidated;
 
