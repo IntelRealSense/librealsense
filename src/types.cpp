@@ -46,20 +46,6 @@ namespace rsimpl
         #undef CASE
     }
 
-    const char * get_string(rs_subdevice value)
-    {
-        #define CASE(X) case RS_SUBDEVICE_##X: return #X;
-        switch(value)
-        {
-        CASE(DEPTH)
-        CASE(COLOR)
-        CASE(FISHEYE)
-        CASE(MOTION)
-        default: assert(!is_valid(value)); return unknown;
-        }
-        #undef CASE
-    }
-
     const char * get_string(rs_visual_preset value)
     {
         #define CASE(X) case RS_VISUAL_PRESET_##X: return #X;
@@ -132,6 +118,7 @@ namespace rsimpl
         CASE(RAW10)
         CASE(RAW16)
         CASE(RAW8)
+        CASE(UYVY)
         default: assert(!is_valid(value)); return unknown;
         }
         #undef CASE
@@ -159,6 +146,7 @@ namespace rsimpl
         switch(value)
         {
         CASE(DEVICE_NAME)
+        CASE(MODULE_NAME)
         CASE(DEVICE_SERIAL_NUMBER)
         CASE(CAMERA_FIRMWARE_VERSION)
         CASE(DEVICE_LOCATION)

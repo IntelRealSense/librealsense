@@ -194,7 +194,7 @@ namespace rsimpl {
         //}
 
         static bool try_fetch_usb_device(std::vector<uvc::usb_device_info>& devices,
-            const uvc::uvc_device_info& info, uvc::usb_device_info& result)
+                                         const uvc::uvc_device_info& info, uvc::usb_device_info& result)
         {
             for (auto it = devices.begin(); it != devices.end(); ++it)
             {

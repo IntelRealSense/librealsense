@@ -5,6 +5,8 @@
 
 #include "backend.h"
 #include "archive.h"
+#include "option.h"
+
 #include <chrono>
 #include <memory>
 #include <vector>
@@ -67,6 +69,18 @@ namespace rsimpl
 
         virtual ~endpoint() = default;
 
+        option& get_option(rs_option id);
+        const option& get_option(rs_option id) const;
+        void register_option(rs_option id, std::shared_ptr<option> option);
+        bool supports_option(rs_option id) const;
+
+        const std::string& get_info(rs_camera_info info) const;
+        bool supports_info(rs_camera_info info) const;
+        void register_info(rs_camera_info info, std::string val);
+
+        void set_pose(pose p) { _pose = std::move(p); }
+        const pose& get_pose() const { return _pose; }
+
     protected:
 
         bool try_get_pf(const uvc::stream_profile& p, native_pixel_format& result) const;
@@ -75,8 +89,11 @@ namespace rsimpl
 
     private:
 
+        std::map<rs_option, std::shared_ptr<option>> _options;
         std::vector<native_pixel_format> _pixel_formats;
         lazy<std::vector<uvc::stream_profile> > stream_profiles;
+        pose _pose;
+        std::map<rs_camera_info, std::string> _camera_info;
     };
 
     struct frame_timestamp_reader
@@ -164,6 +181,10 @@ namespace rsimpl
             power on(shared_from_this());
             return action(*_device);
         }
+
+
+        void register_pu(rs_option id);
+
 
         void stop_streaming();
     private:

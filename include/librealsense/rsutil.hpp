@@ -27,8 +27,12 @@ namespace rs
         {
         public:
             multistream() : streams(), intrinsics() {}
-            explicit multistream(std::vector<streaming_lock> streams, std::map<rs_stream, rs_intrinsics> intrinsics)
-                : streams(std::move(streams)), intrinsics(std::move(intrinsics)) {}
+            explicit multistream(std::vector<streaming_lock> streams, 
+                                 std::map<rs_stream, rs_intrinsics> intrinsics,
+                                 std::map<rs_stream, device> devices)
+                : streams(std::move(streams)), 
+                  intrinsics(std::move(intrinsics)),
+                  devices(std::move(devices)) {}
 
             template<class T>
             void start(T callback)
@@ -41,8 +45,18 @@ namespace rs
                 for (auto&& stream : streams) stream.stop();
             }
 
-            rs_intrinsics get_intrinsics(rs_stream stream) try {
+            rs_intrinsics get_intrinsics(rs_stream stream) try 
+            {
                 return intrinsics.at(stream);
+            }
+            catch (std::out_of_range)
+            {
+                throw std::runtime_error("No such stream");
+            }
+
+            rs_extrinsics get_extrinsics(rs_stream from, rs_stream to) const try
+            {
+                return devices.at(from).get_extrinsics_to(devices.at(to));
             }
             catch (std::out_of_range)
             {
@@ -52,6 +66,7 @@ namespace rs
         private:
             std::vector<streaming_lock> streams;
             std::map<rs_stream, rs_intrinsics> intrinsics;
+            std::map<rs_stream, device> devices;
         };
 
         class config
@@ -93,8 +108,9 @@ namespace rs
                 std::vector<rs_stream> satisfied_streams;   // don't send the same stream to multiple subdevices
                 std::vector<streaming_lock> results;
                 std::map<rs_stream, rs_intrinsics> intrinsics;
+                std::map<rs_stream, device> devices;
 
-                for (auto&& sub : dev)
+                for (auto&& sub : dev.query_adjacent_devices())
                 {
                     std::vector<stream_profile> targets;
                     auto profiles = sub.get_stream_modes();
@@ -153,11 +169,15 @@ namespace rs
                         auto_complete(targets, sub);
                         results.push_back(sub.open(targets));
                         for (auto && target : targets)
+                        {
                             intrinsics.emplace(std::make_pair(target.stream,
-                                                              sub.get_intrinsics(target)));
+                                sub.get_intrinsics(target)));
+                            devices.emplace(std::make_pair(target.stream, sub));
+                        }
+                            
                     }
                 }
-                return multistream(move(results), move(intrinsics));
+                return multistream(move(results), move(intrinsics), move(devices));
             }
 
         private:
@@ -240,7 +260,7 @@ namespace rs
                 return best_quality;
             }
 
-            static void auto_complete(std::vector<stream_profile> &requests, subdevice &target)
+            static void auto_complete(std::vector<stream_profile> &requests, device &target)
             {
                 auto candidates = target.get_stream_modes();
                 for (auto & request : requests)
@@ -254,7 +274,7 @@ namespace rs
                             break;
                         }
                     }
-                    if (request.has_wildcards()) throw std::runtime_error(std::string("Couldn't autocomplete request for subdevice ") + rs_subdevice_to_string(target));
+                    if (request.has_wildcards()) throw std::runtime_error(std::string("Couldn't autocomplete request for subdevice ") + target.get_camera_info(RS_CAMERA_INFO_MODULE_NAME));
                 }
             }
 

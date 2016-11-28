@@ -73,12 +73,13 @@ streaming_lock::~streaming_lock()
 std::vector<stream_profile> endpoint::get_principal_requests()
 {
     std::unordered_set<stream_profile> results;
-
-    std::set<std::string> unutilized_formats;
+    std::set<uint32_t> unutilized_formats;
+    std::set<uint32_t> supported_formats;
 
     auto profiles = get_stream_profiles();
     for (auto&& p : profiles)
     {
+        supported_formats.insert(p.format);
         native_pixel_format pf;
         if (try_get_pf(p, pf))
         {
@@ -92,17 +93,31 @@ std::vector<stream_profile> endpoint::get_principal_requests()
         }
         else
         {
-            uint32_t device_fourcc = reinterpret_cast<const big_endian<uint32_t>&>(p.format);
-            char fourcc[sizeof(device_fourcc) + 1];
-            memcpy(fourcc, &device_fourcc, sizeof(device_fourcc));
-            fourcc[sizeof(device_fourcc)] = 0;
-            unutilized_formats.insert(fourcc);
+            unutilized_formats.insert(p.format);
         }
     }
 
-    for (auto&& fourcc : unutilized_formats)
+    for (auto& elem : unutilized_formats)
     {
-        LOG_WARNING("Unutilized format " << fourcc << "!");
+        uint32_t device_fourcc = reinterpret_cast<const big_endian<uint32_t>&>(elem);
+        char fourcc[sizeof(device_fourcc) + 1];
+        memcpy(fourcc, &device_fourcc, sizeof(device_fourcc));
+        fourcc[sizeof(device_fourcc)] = 0;
+        LOG_WARNING("Unutilized format " << fourcc);
+    }
+
+    if (!unutilized_formats.empty())
+    {
+        std::stringstream ss;
+        for (auto& elem : supported_formats)
+        {
+            uint32_t device_fourcc = reinterpret_cast<const big_endian<uint32_t>&>(elem);
+            char fourcc[sizeof(device_fourcc) + 1];
+            memcpy(fourcc, &device_fourcc, sizeof(device_fourcc));
+            fourcc[sizeof(device_fourcc)] = 0;
+            ss << fourcc << std::endl;
+        }
+        LOG_WARNING("\nDevice supported formats:\n" << ss.str());
     }
 
     std::vector<stream_profile> res{ begin(results), end(results) };
@@ -224,7 +239,7 @@ std::shared_ptr<streaming_lock> uvc_endpoint::configure(
 
         auto start = high_resolution_clock::now();
         auto frame_number = 0;
-        _device->play(mode.profile, 
+        _device->probe_and_commit(mode.profile,
             [stream_ptr, mode, start, frame_number, timestamp_reader, requests](uvc::stream_profile p, uvc::frame_object f) mutable
         {
             auto&& unpacker = *mode.unpacker;
@@ -316,6 +331,12 @@ std::shared_ptr<streaming_lock> uvc_endpoint::configure(
         });
     }
 
+    _device->play();
+
+    for (auto& mode : mapping)
+    {
+        _configuration.push_back(mode.profile);
+    }
     return std::move(streaming);
 }
 
@@ -345,4 +366,64 @@ void uvc_endpoint::release_power()
     std::lock_guard<std::mutex> lock(_power_lock);
     _user_count--;
     if (!_user_count) _device->set_power_state(uvc::D3);
+}
+
+option& endpoint::get_option(rs_option id)
+{
+    auto it = _options.find(id);
+    if (it == _options.end())
+    {
+        throw std::runtime_error(to_string() 
+            << "Device does not support option " 
+            << rs_option_to_string(id) << "!");
+    }
+    return *it->second;
+}
+
+const option& endpoint::get_option(rs_option id) const
+{
+    auto it = _options.find(id);
+    if (it == _options.end())
+    {
+        throw std::runtime_error(to_string() 
+            << "Device does not support option " 
+            << rs_option_to_string(id) << "!");
+    }
+    return *it->second;
+}
+
+bool endpoint::supports_option(rs_option id) const
+{
+    auto it = _options.find(id);
+    if (it == _options.end()) return false;
+    return it->second->is_enabled();
+}
+
+bool endpoint::supports_info(rs_camera_info info) const
+{
+    auto it = _camera_info.find(info);
+    return it != _camera_info.end();
+}
+
+void endpoint::register_info(rs_camera_info info, std::string val)
+{
+    _camera_info[info] = std::move(val);
+}
+
+const std::string& endpoint::get_info(rs_camera_info info) const
+{
+    auto it = _camera_info.find(info);
+    if (it == _camera_info.end())
+        throw std::runtime_error("Selected camera info is not supported for this camera!");
+    return it->second;
+}
+
+void endpoint::register_option(rs_option id, std::shared_ptr<option> option)
+{
+    _options[id] = std::move(option);
+}
+
+void uvc_endpoint::register_pu(rs_option id)
+{
+    register_option(id, std::make_shared<uvc_pu_option>(*this, id));
 }

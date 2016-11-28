@@ -46,22 +46,18 @@ int main()
     printf("    Firmware version: %s\n", rs_get_camera_info(dev, RS_CAMERA_INFO_CAMERA_FIRMWARE_VERSION, &e));
     check_error();
 
-    rs_stream streams[3] = { RS_STREAM_COLOR, RS_STREAM_DEPTH, RS_STREAM_INFRARED };
-    int widths[3] = { 640, 640, 640 };
-    int heights[3] = { 480, 480, 480 };
-    int fpss[3] = { 30, 30, 30 };
-    rs_format formats[3] = { RS_FORMAT_RGB8, RS_FORMAT_Z16, RS_FORMAT_Y8 };
+    rs_stream streams[] = { RS_STREAM_DEPTH, RS_STREAM_INFRARED };
+    int widths[] = { 640, 640 };
+    int heights[] = { 480, 480 };
+    int fpss[] = { 30, 30 };
+    rs_format formats[] = { RS_FORMAT_Z16, RS_FORMAT_Y8 };
 
-    rs_streaming_lock * color_stream = rs_open_many(dev, RS_SUBDEVICE_COLOR, streams, widths, heights, fpss, formats, 1, &e);
-    check_error();
-    rs_streaming_lock * depth_stream = rs_open_many(dev, RS_SUBDEVICE_DEPTH, streams+1, widths+1, heights+1, fpss+1, formats+1, 2, &e);
+    rs_streaming_lock * depth_stream = rs_open_many(dev, streams, widths, heights, fpss, formats, 2, &e);
     check_error();
 
     rs_frame_queue * queue = rs_create_frame_queue(10, &e);
     check_error();
 
-    rs_start(color_stream, rs_enqueue_frame, queue, &e);
-    check_error();
     rs_start(depth_stream, rs_enqueue_frame, queue, &e);
     check_error();
 
@@ -70,7 +66,7 @@ int main()
 
     /* Open a GLFW window to display our output */
     glfwInit();
-    GLFWwindow * win = glfwCreateWindow(1280, 960, "librealsense tutorial #2", NULL, NULL);
+    GLFWwindow * win = glfwCreateWindow(640, 480 * 2, "librealsense tutorial #2", NULL, NULL);
     glfwMakeContextCurrent(win);
     while(!glfwWindowShouldClose(win))
     {
@@ -106,14 +102,6 @@ int main()
             glPixelTransferf(GL_RED_SCALE, 1.0f);
         }
 
-        if (frontbuffer[RS_STREAM_COLOR])
-        {
-            /* Display color image as RGB triples */
-            glRasterPos2f(0, 1);
-            glDrawPixels(640, 480, GL_RGB, GL_UNSIGNED_BYTE, rs_get_frame_data(frontbuffer[RS_STREAM_COLOR], &e));
-            check_error();
-        }
-
         if (frontbuffer[RS_STREAM_INFRARED])
         {
             /* Display infrared image by mapping IR intensity to visible luminance */
@@ -135,7 +123,6 @@ int main()
 
     rs_flush_queue(queue, &e);
     check_error();
-    rs_close(color_stream);
     rs_close(depth_stream);
     rs_delete_device(dev);
     rs_delete_device_list(devices);

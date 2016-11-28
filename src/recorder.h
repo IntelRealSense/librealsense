@@ -200,7 +200,8 @@ namespace rsimpl
         class record_uvc_device : public uvc_device
         {
         public:
-            void play(stream_profile profile, frame_callback callback) override;
+            void probe_and_commit(stream_profile profile, frame_callback callback) override;
+            void play() override;
             void stop(stream_profile profile) override;
             void set_power_state(power_state state) override;
             power_state get_power_state() const override;
@@ -312,7 +313,8 @@ namespace rsimpl
         class playback_uvc_device : public uvc_device
         {
         public:
-            void play(stream_profile profile, frame_callback callback) override;
+            void probe_and_commit(stream_profile profile, frame_callback callback) override;
+            void play() override;
             void stop(stream_profile profile) override;
             void set_power_state(power_state state) override;
             power_state get_power_state() const override;
@@ -342,6 +344,8 @@ namespace rsimpl
             std::vector<std::pair<stream_profile, frame_callback>> _callbacks;
             std::mutex _callback_mutex;
             compression_algorithm _compression;
+            stream_profile _profile;
+            frame_callback _callback;
         };
 
 
