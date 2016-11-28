@@ -478,12 +478,16 @@ namespace rsimpl
                 vector<stream_profile> ps{ profile };
                 rec->save_stream_profiles(ps, k);
 
-            }, _entity_id, call_type::uvc_play);
+            }, _entity_id, call_type::uvc_probe_commit);
         }
 
         void record_uvc_device::play()
         {
-            _source->play();
+            _owner->try_record([&](recording* rec, lookup_key k)
+            {
+                _source->play();
+                rec->add_call(k);
+            }, _entity_id, call_type::uvc_play);
         }
 
         void record_uvc_device::stop(stream_profile profile)
@@ -716,8 +720,8 @@ namespace rsimpl
             const char* filename, const char* section,
             rs_recording_mode mode)
             : _source(source), _rec(make_shared<recording>()), _entity_count(1),
-              _filename(filename),
-              _section(section), _compression(make_shared<compression_algorithm>()), _mode(mode)
+            _filename(filename),
+            _section(section), _compression(make_shared<compression_algorithm>()), _mode(mode)
         {
             write_to_file();
         }
@@ -789,7 +793,7 @@ namespace rsimpl
         void playback_uvc_device::probe_and_commit(stream_profile profile, frame_callback callback)
         {
             lock_guard<mutex> lock(_callback_mutex);
-            auto stored = _rec->load_stream_profiles(_entity_id, call_type::uvc_play);
+            auto stored = _rec->load_stream_profiles(_entity_id, call_type::uvc_probe_commit);
             vector<stream_profile> input{ profile };
             if (input != stored)
                 throw runtime_error("Recording history mismatch!");
@@ -800,14 +804,18 @@ namespace rsimpl
                 return pair.first == profile;
             });
             _callbacks.erase(it, end(_callbacks));
-            _profile = profile;
-            _callback = callback;
+            _commitments.push_back({ profile, callback });
         }
 
         void playback_uvc_device::play()
         {
             lock_guard<mutex> lock(_callback_mutex);
-            _callbacks.push_back({ _profile, _callback });
+
+            auto&& c = _rec->find_call(call_type::uvc_play, _entity_id);
+
+            for (auto&& pair : _commitments)
+                _callbacks.push_back(pair);
+            _commitments.clear();
         }
 
         void playback_uvc_device::stop(stream_profile profile)

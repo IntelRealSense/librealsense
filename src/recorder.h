@@ -35,6 +35,7 @@ namespace rsimpl
             uvc_set_xu,
             uvc_get_xu,
             uvc_stream_profiles,
+            uvc_probe_commit,
             uvc_play,
             uvc_stop,
             uvc_frame
@@ -303,6 +304,8 @@ namespace rsimpl
             rs_recording_mode _mode;
         };
 
+        typedef std::vector<std::pair<stream_profile, frame_callback>> configurations;
+
         class playback_uvc_device : public uvc_device
         {
         public:
@@ -334,11 +337,10 @@ namespace rsimpl
             int _entity_id;
             std::thread _callback_thread;
             std::atomic<bool> _alive;
-            std::vector<std::pair<stream_profile, frame_callback>> _callbacks;
+            configurations _callbacks;
+            configurations _commitments;
             std::mutex _callback_mutex;
             compression_algorithm _compression;
-            stream_profile _profile;
-            frame_callback _callback;
         };
 
 
