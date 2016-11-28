@@ -691,3 +691,93 @@ TEST_CASE("All suggested profiles can be opened", "[live]") {
         }
     }
 }
+
+class DummyDevice
+{
+public:
+    struct Streaming_lock_type {
+        bool result;
+
+        Streaming_lock_type(bool r) : result(r) {};
+        template<class T> void start(T callback) { REQUIRE(result == true); };
+    };
+
+    DummyDevice(std::vector<rs::stream_profile> modes) : modes(std::move(modes)), expected() {};
+    void set_expected(std::vector<rs::stream_profile> profiles) { expected = profiles; };
+
+    std::vector<DummyDevice> query_adjacent_devices() const { return{ *this }; }
+    std::vector<rs::stream_profile> get_stream_modes() const { return modes; };
+    bool open(std::vector<rs::stream_profile> profiles) const {
+        for (auto & profile : profiles) {
+            if (profile.has_wildcards()) return false;
+            if (std::none_of(begin(expected), end(expected), [&profile](const rs::stream_profile &p) {return p.match(profile); }))
+                return false;
+        }
+        return true;
+    }
+    rs_intrinsics get_intrinsics(rs::stream_profile profile) const {
+        return{ 0, 0, 0.0, 0.0, 0.0, 0.0, RS_DISTORTION_COUNT,{ 0.0, 0.0, 0.0, 0.0, 0.0 } };
+    }
+    const char * get_camera_info(rs_camera_info info) const {
+        switch (info) {
+        case RS_CAMERA_INFO_MODULE_NAME: return "Dummy Module";
+        default: return "";
+        }
+    }
+private:
+    std::vector<rs::stream_profile> modes, expected;
+};
+
+TEST_CASE("Auto-complete feature works", "[offline][rs::util::config]") {
+    // dummy device can provide the following profiles:
+    DummyDevice dev({ { RS_STREAM_DEPTH   , 480, 360, 30, RS_FORMAT_Z16 },
+                      { RS_STREAM_DEPTH   , 640, 480, 30, RS_FORMAT_Z16 },
+                      { RS_STREAM_DEPTH   , 640, 480, 60, RS_FORMAT_Z16 },
+                      { RS_STREAM_INFRARED, 640, 480, 30, RS_FORMAT_Y16 },
+                      { RS_STREAM_INFRARED, 480, 360, 60, RS_FORMAT_Y8  } });
+    rs::util::Config<DummyDevice> config;
+    
+    struct Test { 
+        std::vector<rs::stream_profile> given,       // We give these profiles to the config class
+                                        expected;    // pool of profiles the config class can return
+        bool                            should_fail; // whether or not the config class should succeed at completing the request
+    };
+    std::vector<Test> tests = {
+        // Test 0 (Depth always has RS_FORMAT_Z16)
+        { { { RS_STREAM_DEPTH   ,   0,   0,  0, RS_FORMAT_ANY } }, // given
+          { { RS_STREAM_DEPTH   ,   0,   0,  0, RS_FORMAT_Z16 } }, // expected
+          0 },                                                     // should_fail
+        // Test 1 (Only one profile for Depth @60fps)
+        { { { RS_STREAM_DEPTH   ,   0,   0, 60, RS_FORMAT_ANY } }, // given
+          { { RS_STREAM_DEPTH   , 640, 480, 60, RS_FORMAT_Z16 } }, // expected
+          0 },                                                     // should_fail
+        // Test 2 (Depth has two profiles @30fps, but Infrared locks in dimensions)
+        { { { RS_STREAM_DEPTH   ,   0,   0, 30, RS_FORMAT_ANY }, { RS_STREAM_INFRARED,   0,   0,  0, RS_FORMAT_ANY } }, // given
+          { { RS_STREAM_DEPTH   , 640, 480, 30, RS_FORMAT_Z16 }, { RS_STREAM_INFRARED, 640, 480, 30, RS_FORMAT_Y16 } }, // expected
+          0 },                                                                                                          // should_fail
+        // Test 3 (IR has only one profile with width = 480)
+        { { { RS_STREAM_INFRARED, 480,   0,  0, RS_FORMAT_ANY } }, // given
+          { { RS_STREAM_INFRARED, 480, 360, 60, RS_FORMAT_Y8  } }, // expected
+          0 }                                                      // should_fail
+    };
+
+    for (int i=0; i<tests.size(); ++i)
+    {
+        config.disable_all();
+        for (auto & profile : tests[i].given) {
+            config.enable_stream(profile.stream, profile.width, profile.height, profile.fps, profile.format);
+        }
+        dev.set_expected(tests[i].expected);
+        CAPTURE(i);
+        if (tests[i].should_fail) {
+            REQUIRE_THROWS_AS(config.open(dev), rs::error);
+        }
+        else
+        {
+            rs::util::Config<DummyDevice>::multistream results;
+            REQUIRE_NOTHROW(results = config.open(dev));
+            // REQUIRE()s are in here
+            results.start(0);
+        }
+    }
+}
