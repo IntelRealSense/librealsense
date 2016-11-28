@@ -83,6 +83,8 @@ namespace rsimpl
             std::unordered_map<int, CComPtr<IKsControl>>      _ks_controls;
 
             manual_reset_event                      _is_flushed;
+            manual_reset_event                      _has_started;
+            HRESULT                                 _readsample_result = S_OK;
 
             std::vector<profile_and_callback>       _streams;
             std::mutex                              _streams_mutex;
@@ -91,8 +93,9 @@ namespace rsimpl
 
             named_mutex                             _systemwide_lock;
             std::string                             _location;
-            std::vector<stream_profile> _profiles;
-            std::vector<frame_callback> _frame_callbacks;
+            std::vector<stream_profile>             _profiles;
+            std::vector<frame_callback>             _frame_callbacks;
+            bool                                    _streaming = false;
         };
 
         class source_reader_callback : public IMFSourceReaderCallback

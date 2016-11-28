@@ -152,12 +152,12 @@ namespace rsimpl
             << "." << static_cast<int>(fws[1]) << "." << static_cast<int>(fws[0]);
     }
 
-    std::string hw_monitor::get_module_serial_string(uint8_t gvd_cmd) const
+    std::string hw_monitor::get_module_serial_string(uint8_t gvd_cmd, uint32_t offset) const
     {
         std::vector<char> gvd(1024);
         get_gvd(1024, gvd.data(), gvd_cmd);
         unsigned char ss[8];
-        memcpy(ss, gvd.data() + 48, 8);
+        memcpy(ss, gvd.data() + offset, 8);
         std::stringstream formattedBuffer;
         formattedBuffer << std::setfill('0') << std::setw(2) << std::hex << static_cast<int>(ss[0]) <<
             std::setfill('0') << std::setw(2) << std::hex << static_cast<int>(ss[1]) <<

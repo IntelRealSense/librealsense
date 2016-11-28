@@ -614,6 +614,18 @@ namespace rs
         advanced _debug;
     };
 
+    inline bool operator==(const device& a, const device& b)
+    {
+        return (std::string(a.get_camera_info(RS_CAMERA_INFO_DEVICE_NAME)) == b.get_camera_info(RS_CAMERA_INFO_DEVICE_NAME)) &&
+               (std::string(a.get_camera_info(RS_CAMERA_INFO_MODULE_NAME)) == b.get_camera_info(RS_CAMERA_INFO_MODULE_NAME)) &&
+               (std::string(a.get_camera_info(RS_CAMERA_INFO_DEVICE_SERIAL_NUMBER)) == b.get_camera_info(RS_CAMERA_INFO_DEVICE_SERIAL_NUMBER));
+    }
+
+    inline bool operator!=(const device& a, const device& b)
+    {
+        return !(a == b);
+    }
+
     /**
     * default librealsense context class
     * includes realsense API version as provided by RS_API_VERSION macro

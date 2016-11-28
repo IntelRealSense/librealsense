@@ -66,7 +66,7 @@ namespace rsimpl
             return count;
         }
 
-        STDMETHODIMP source_reader_callback::OnReadSample(HRESULT /*hrStatus*/,
+        STDMETHODIMP source_reader_callback::OnReadSample(HRESULT hrStatus,
             DWORD dwStreamIndex,
             DWORD /*dwStreamFlags*/,
             LONGLONG /*llTimestamp*/,
@@ -75,6 +75,9 @@ namespace rsimpl
             auto owner = _owner.lock();
             if (owner && owner->_reader)
             {
+                if (FAILED(hrStatus)) owner->_readsample_result = hrStatus;
+                owner->_has_started.set();
+
                 LOG_HR(owner->_reader->ReadSample(dwStreamIndex, 0, nullptr, nullptr, nullptr, nullptr));
 
                 if (sample)
@@ -623,7 +626,7 @@ namespace rsimpl
 
         wmf_uvc_device::wmf_uvc_device(const uvc_device_info& info,
             std::shared_ptr<const wmf_backend> backend)
-            : _info(info), _is_flushed(), _backend(std::move(backend)),
+            : _info(info), _is_flushed(), _has_started(), _backend(std::move(backend)),
             _systemwide_lock(info.unique_id.c_str(), WAIT_FOR_MUTEX_TIME_OUT),
             _location("")
         {
@@ -652,6 +655,8 @@ namespace rsimpl
 
         void wmf_uvc_device::probe_and_commit(stream_profile profile, frame_callback callback)
         {
+            if (_streaming) throw std::runtime_error("Device is already streaming!");
+
             _profiles.push_back(profile);
             _frame_callbacks.push_back(callback);
         }
@@ -733,7 +738,19 @@ namespace rsimpl
                                         _streams[sIndex].callback = callback;
                                     }
 
+                                    _readsample_result = S_OK;
                                     CHECK_HR(_reader->ReadSample(sIndex, 0, nullptr, nullptr, nullptr, nullptr));
+
+                                    const auto timeout_ms = 5000;
+                                    if (_has_started.wait(timeout_ms))
+                                    {
+                                        check("_reader->ReadSample(...)", _readsample_result);
+                                    }
+                                    else
+                                    {
+                                        LOG_WARNING("First frame took more then " << timeout_ms << "ms to arrive!");
+                                    }
+
                                     return;
                                 }
                                 else
@@ -751,19 +768,22 @@ namespace rsimpl
 
         void wmf_uvc_device::play()
         {
-
             if (_profiles.empty())
                 throw std::runtime_error("Stream not configured");
 
+            if (_streaming) 
+                throw std::runtime_error("Device is already streaming!");
+
             check_connection();
 
-            set_power_state(D0);
-
-            try {
-                for (int i = 0; i < _profiles.size(); ++i)
+            try 
+            {
+                for (auto i = 0; i < _profiles.size(); ++i)
                 {
                     play_profile(_profiles[i], _frame_callbacks[i]);
                 }
+
+                _streaming = true;
             }
             catch (...)
             {
@@ -773,6 +793,7 @@ namespace rsimpl
 
                 _profiles.clear();
                 _frame_callbacks.clear();
+
                 throw;
             }
         }
@@ -805,6 +826,8 @@ namespace rsimpl
                 _profiles.erase(_profiles.begin() + pos);
                 _frame_callbacks.erase(_frame_callbacks.begin() + pos);
             }
+
+            _streaming = false;
         }
 
         // ReSharper disable once CppMemberFunctionMayBeConst
