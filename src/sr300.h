@@ -142,8 +142,8 @@ namespace rsimpl
             const uvc::uvc_device_info& depth,
             const uvc::usb_device_info& hwm_device)
             : _hw_monitor(backend.create_usb_device(hwm_device)),
-              _depth_device_idx(add_endpoint(create_depth_device(backend, depth), "Color Camera")),
-              _color_device_idx(add_endpoint(create_color_device(backend, color), "Depth Camera"))
+              _depth_device_idx(add_endpoint(create_depth_device(backend, depth), "Depth Camera")),
+              _color_device_idx(add_endpoint(create_color_device(backend, color), "Color Camera"))
         {
             using namespace ivcam;
 
