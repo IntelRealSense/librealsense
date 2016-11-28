@@ -5,7 +5,6 @@
 
 #include "backend.h"
 #include "archive.h"
-#include "option.h"
 
 #include <chrono>
 #include <memory>
@@ -15,6 +14,7 @@
 namespace rsimpl
 {
     class device;
+    class option;
 
     class streaming_lock
     {
