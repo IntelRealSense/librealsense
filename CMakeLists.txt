@@ -3,53 +3,39 @@
 # ubuntu 16.04 LTS cmake version 3.5.1
 cmake_minimum_required(VERSION 2.8.3)
 
-macro(debug msg)
-    message(STATUS "DEBUG ${msg}")
+macro(info msg)
+    message(STATUS "Info: ${msg}")
 endmacro()
 
-macro(debugValue variableName)
-    debug("${variableName}=\${${variableName}}")
+macro(infoValue variableName)
+    info("${variableName}=\${${variableName}}")
 endmacro()
 
-function(extract_version_property varName)	
-	file(READ ./include/librealsense/rs.h CURRENT_CONFIG)
-	debugValue(CURRENT_CONFIG)
-	STRING(REGEX MATCH "#define RS_API_MAJOR_VERSION" RS_API_MAJOR_VERSION ${CURRENT_CONFIG})
-	STRING(REGEX MATCH "#define RS_API_MINOR_VERSION" RS_API_MINOR_VERSION ${CURRENT_CONFIG})
-	debugValue(REALSENSE_VERSION_MAJOR)
-	debugValue(REALSENSE_VERSION_MINOR)
-#IF("#define USE_OPENGLES" STREQUAL "${GLES_IS_SET}")
-#	MESSAGE("GLES config!")
-#ELSE("#define USE_OPENGLES" STREQUAL "${GLES_IS_SET}")
-#	IF("#define USE_OPENGL" STREQUAL "${GL_IS_SET}")
-#		MESSAGE("GL config!")
-#	ELSE("#define USE_OPENGL" STREQUAL "${GL_IS_SET}")
-#		MESSAGE("Error! USE_GL or USE_GLES must be defined!")
-#	ENDIF("#define USE_OPENGL" STREQUAL "${GL_IS_SET}")
-#ENDIF("#define USE_OPENGLES" STREQUAL "${GLES_IS_SET}")
-	#file(STRINGS ./include/librealsense/rs.h RS_API_MAJOR REGEX '#define RS_API_MAJOR_VERSION')
-	#debugValue(RS_API_MAJOR_VERSION)
-	#set(${varName} ${A} PARENT_SCOPE)
-	#SET(${varName} ${${varName}}${${varName}} PARENT_SCOPE)
-	#debugValue(REALSENSE_VERSION_MAJOR)
-	#debugValue(${varName})
+##################################################################
+# Parse librealsense version and assign it to CMake variables    #
+# This function parses librealsense public API header file, rs.h #
+# and retrieves version numbers embedded in the source code.     #
+# Since the function relies on hard-coded variables, it is prone #
+# for failures should these code constants change                #
+##################################################################
+function(assign_version_property VER_COMPONENT)
+	file(STRINGS "./include/librealsense/rs.h" REALSENSE_VERSION_${VER_COMPONENT} REGEX "#define RS_API_${VER_COMPONENT}_VERSION")
+	separate_arguments(REALSENSE_VERSION_${VER_COMPONENT})
+	list(GET REALSENSE_VERSION_${VER_COMPONENT} -1 tmp)
+	if (tmp LESS 0)
+		message( FATAL_ERROR "Could not obtain valid Librealsense version ${VER_COMPONENT} component - actual value is ${tmp}" )
+	endif()
+	set(REALSENSE_VERSION_${VER_COMPONENT} ${tmp} PARENT_SCOPE)
 endfunction()
 
-extract_version_property(REALSENSE_VERSION_MAJOR)
-#extract_version_property(REALSENSE_VERSION_MINOR '#define RS_API_MINOR')
-#extract_version_property(REALSENSE_VERSION_PATCH '#define RS_API_PATCH')
-
-#A=${cat ../include/librealsense/rs.h | grep ^'#define RS_API_MAJOR' | awk '{print $3}'}
-#set(REALSENSE_VERSION_MAJOR A)
-#message(STATUS "REALSENSE_VERSION_MAJOR = ${REALSENSE_VERSION_MAJOR})
-
-set(REALSENSE_VERSION_MAJOR 1)
-set(REALSENSE_VERSION_MINOR 11)
-set(REALSENSE_VERSION_PATCH 1)
-#set(REALSENSE_VERSION_MAJOR $(cat ../include/librealsense/rs.h | grep ^'#define RS_API_MAJOR' | awk '{print $3}'))
-#set(REALSENSE_VERSION_MINOR $(cat ../include/librealsense/rs.h | grep ^'#define RS_API_MINOR' | awk '{print $3}'))
-#set(REALSENSE_VERSION_PATCH $(cat ../include/librealsense/rs.h | grep ^'#define RS_API_PATCH' | awk '{print $3}'))
+set(REALSENSE_VERSION_MAJOR -1)
+set(REALSENSE_VERSION_MINOR -1)
+set(REALSENSE_VERSION_PATCH -1)
+assign_version_property(MAJOR)
+assign_version_property(MINOR)
+assign_version_property(PATCH)
 set(REALSENSE_VERSION_STRING ${REALSENSE_VERSION_MAJOR}.${REALSENSE_VERSION_MINOR}.${REALSENSE_VERSION_PATCH})
+infoValue(REALSENSE_VERSION_STRING)
 
 IF(DEFINED ENV{CMAKE_PREFIX_PATH})
   IF($ENV{CMAKE_PREFIX_PATH} MATCHES "/opt/ros")
