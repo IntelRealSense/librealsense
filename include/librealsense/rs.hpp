@@ -640,6 +640,9 @@ namespace rs
         advanced& debug() { return _debug; }
 
         device() : _dev(nullptr), _debug(nullptr) {}
+
+        typedef streaming_lock Streaming_lock_type;
+
     private:
         friend context;
 

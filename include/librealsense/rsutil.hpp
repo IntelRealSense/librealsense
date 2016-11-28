@@ -23,56 +23,57 @@ namespace rs
 
     namespace util
     {
-        class multistream
+        template<class Dev = rs::device>
+        class Config
         {
         public:
-            multistream() : streams(), intrinsics() {}
-            explicit multistream(std::vector<streaming_lock> streams, 
-                                 std::map<rs_stream, rs_intrinsics> intrinsics,
-                                 std::map<rs_stream, device> devices)
-                : streams(std::move(streams)), 
-                  intrinsics(std::move(intrinsics)),
-                  devices(std::move(devices)) {}
-
-            template<class T>
-            void start(T callback)
+            class multistream
             {
-                for (auto&& stream : streams) stream.start(callback);
-            }
+            public:
+                multistream() : streams(), intrinsics() {}
+                explicit multistream(std::vector<typename Dev::Streaming_lock_type> streams,
+                    std::map<rs_stream, rs_intrinsics> intrinsics,
+                    std::map<rs_stream, Dev> devices)
+                    : streams(std::move(streams)),
+                    intrinsics(std::move(intrinsics)),
+                    devices(std::move(devices)) {}
 
-            void stop()
-            {
-                for (auto&& stream : streams) stream.stop();
-            }
+                template<class T>
+                void start(T callback)
+                {
+                    for (auto&& stream : streams) stream.start(callback);
+                }
 
-            rs_intrinsics get_intrinsics(rs_stream stream) try 
-            {
-                return intrinsics.at(stream);
-            }
-            catch (std::out_of_range)
-            {
-                throw std::runtime_error("No such stream");
-            }
+                void stop()
+                {
+                    for (auto&& stream : streams) stream.stop();
+                }
 
-            rs_extrinsics get_extrinsics(rs_stream from, rs_stream to) const try
-            {
-                return devices.at(from).get_extrinsics_to(devices.at(to));
-            }
-            catch (std::out_of_range)
-            {
-                throw std::runtime_error("No such stream");
-            }
+                rs_intrinsics get_intrinsics(rs_stream stream) try
+                {
+                    return intrinsics.at(stream);
+                }
+                catch (std::out_of_range)
+                {
+                    throw std::runtime_error("No such stream");
+                }
 
-        private:
-            std::vector<streaming_lock> streams;
-            std::map<rs_stream, rs_intrinsics> intrinsics;
-            std::map<rs_stream, device> devices;
-        };
+                rs_extrinsics get_extrinsics(rs_stream from, rs_stream to) const try
+                {
+                    return devices.at(from).get_extrinsics_to(devices.at(to));
+                }
+                catch (std::out_of_range)
+                {
+                    throw std::runtime_error("No such stream");
+                }
 
-        class config
-        {
-        public:
-            config() {}
+            private:
+                std::vector<typename Dev::Streaming_lock_type> streams;
+                std::map<rs_stream, rs_intrinsics> intrinsics;
+                std::map<rs_stream, Dev> devices;
+            };
+
+            Config() {}
 
             void enable_stream(rs_stream stream, int width, int height, int fps, rs_format format)
             {
@@ -103,12 +104,12 @@ namespace rs
                 _requests.clear();
             }
 
-            multistream open(device dev)
+            multistream open(Dev dev)
             {
                 std::vector<rs_stream> satisfied_streams;   // don't send the same stream to multiple subdevices
-                std::vector<streaming_lock> results;
+                std::vector<typename Dev::Streaming_lock_type> results;
                 std::map<rs_stream, rs_intrinsics> intrinsics;
-                std::map<rs_stream, device> devices;
+                std::map<rs_stream, Dev> devices;
 
                 for (auto&& sub : dev.query_adjacent_devices())
                 {
@@ -177,7 +178,7 @@ namespace rs
                             
                     }
                 }
-                return multistream(move(results), move(intrinsics), move(devices));
+                return multistream( move(results), move(intrinsics), move(devices) );
             }
 
         private:
@@ -260,7 +261,7 @@ namespace rs
                 return best_quality;
             }
 
-            static void auto_complete(std::vector<stream_profile> &requests, device &target)
+            static void auto_complete(std::vector<stream_profile> &requests, Dev &target)
             {
                 auto candidates = target.get_stream_modes();
                 for (auto & request : requests)
@@ -281,6 +282,8 @@ namespace rs
             std::map<rs_stream, stream_profile> _requests;
             std::map<rs_stream, preset> _presets;
         };
+
+        typedef Config<> config;
 
         typedef std::vector<frame> frameset;
 
