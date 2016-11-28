@@ -55,10 +55,10 @@ namespace rsimpl
             return *stream_profiles;
         }
 
-        std::vector<stream_request> get_principal_requests();
+        std::vector<stream_profile> get_principal_requests();
 
         virtual std::shared_ptr<streaming_lock> configure(
-            const std::vector<stream_request>& requests) = 0;
+            const std::vector<stream_profile>& requests) = 0;
 
         void register_pixel_format(native_pixel_format pf)
         {
@@ -71,7 +71,7 @@ namespace rsimpl
 
         bool try_get_pf(const uvc::stream_profile& p, native_pixel_format& result) const;
 
-        std::vector<request_mapping> resolve_requests(std::vector<stream_request> requests);
+        std::vector<request_mapping> resolve_requests(std::vector<stream_profile> requests);
 
     private:
 
@@ -144,7 +144,7 @@ namespace rsimpl
         std::vector<uvc::stream_profile> init_stream_profiles() override;
 
         std::shared_ptr<streaming_lock> configure(
-            const std::vector<stream_request>& requests) override;
+            const std::vector<stream_profile>& requests) override;
 
         void register_xu(uvc::extension_unit xu)
         {

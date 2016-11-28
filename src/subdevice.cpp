@@ -70,9 +70,9 @@ streaming_lock::~streaming_lock()
     }
 }
 
-std::vector<stream_request> endpoint::get_principal_requests()
+std::vector<stream_profile> endpoint::get_principal_requests()
 {
-    std::unordered_set<stream_request> results;
+    std::unordered_set<stream_profile> results;
 
     std::set<std::string> unutilized_formats;
 
@@ -105,8 +105,8 @@ std::vector<stream_request> endpoint::get_principal_requests()
         LOG_WARNING("Unutilized format " << fourcc << "!");
     }
 
-    std::vector<stream_request> res{ begin(results), end(results) };
-    std::sort(res.begin(), res.end(), [](const stream_request& a, const stream_request& b)
+    std::vector<stream_profile> res{ begin(results), end(results) };
+    std::sort(res.begin(), res.end(), [](const stream_profile& a, const stream_profile& b)
     {
         return a.width > b.width;
     });
@@ -129,7 +129,7 @@ bool endpoint::try_get_pf(const uvc::stream_profile& p, native_pixel_format& res
 }
 
 
-std::vector<request_mapping> endpoint::resolve_requests(std::vector<stream_request> requests)
+std::vector<request_mapping> endpoint::resolve_requests(std::vector<stream_profile> requests)
 {
     std::vector<uint32_t> legal_4ccs;
     for (auto mode : get_stream_profiles()) {
@@ -151,7 +151,7 @@ std::vector<request_mapping> endpoint::resolve_requests(std::vector<stream_reque
             for (auto&& unpacker : pf.unpackers)
             {
                 auto count = static_cast<int>(std::count_if(begin(requests), end(requests),
-                    [&unpacker](stream_request& r)
+                    [&unpacker](stream_profile& r)
                 {
                     return unpacker.satisfies(r);
                 }));
@@ -176,7 +176,7 @@ std::vector<request_mapping> endpoint::resolve_requests(std::vector<stream_reque
         if (max == 0) break;
 
         requests.erase(std::remove_if(begin(requests), end(requests),
-            [best_unpacker, best_pf, &results, this](stream_request& r)
+            [best_unpacker, best_pf, &results, this](stream_profile& r)
         {
 
             if (best_unpacker->satisfies(r))
@@ -205,7 +205,7 @@ std::vector<uvc::stream_profile> uvc_endpoint::init_stream_profiles()
 }
 
 std::shared_ptr<streaming_lock> uvc_endpoint::configure(
-    const std::vector<stream_request>& requests)
+    const std::vector<stream_profile>& requests)
 {
     std::lock_guard<std::mutex> lock(_configure_lock);
     std::shared_ptr<uvc_streaming_lock> streaming(new uvc_streaming_lock(shared_from_this()));
@@ -306,7 +306,7 @@ std::shared_ptr<streaming_lock> uvc_endpoint::configure(
                 for (auto&& pref : refs)
                 {
                     // all the streams the unpacker generates get here. If it matches one of the streams the user requested, dispatch it
-                    if (std::any_of(begin(requests), end(requests), [&pref](stream_request request) { return request.stream == pref->get()->get_stream_type(); }))
+                    if (std::any_of(begin(requests), end(requests), [&pref](stream_profile request) { return request.stream == pref->get()->get_stream_type(); }))
                         stream->invoke_callback(pref);
                     // otherwise, the stream is a garbage stream we were forced to open, and we simply deallocate the frame.
                     else

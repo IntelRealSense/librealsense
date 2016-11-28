@@ -193,7 +193,7 @@ namespace rsimpl
         }
 
         std::vector<uint8_t> send_receive_raw_data(const std::vector<uint8_t>& input) override;
-        rs_intrinsics get_intrinsics(rs_subdevice subdevice, stream_request profile) const override;
+        rs_intrinsics get_intrinsics(rs_subdevice subdevice, stream_profile profile) const override;
 
     private:
         hw_monitor _hw_monitor;

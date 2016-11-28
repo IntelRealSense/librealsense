@@ -32,7 +32,7 @@ struct rs_raw_data_buffer
 
 struct rs_stream_profile_list
 {
-    std::vector<rsimpl::stream_request> list;
+    std::vector<rsimpl::stream_profile> list;
 };
 
 struct rs_active_stream
@@ -314,7 +314,7 @@ rs_streaming_lock* rs_open(rs_device* device, rs_subdevice subdevice,
     VALIDATE_ENUM(format);
     VALIDATE_ENUM(stream);
 
-    std::vector<rsimpl::stream_request> request;
+    std::vector<rsimpl::stream_profile> request;
     request.push_back({ stream, static_cast<uint32_t>(width),
             static_cast<uint32_t>(height), static_cast<uint32_t>(fps), format });
     auto result = new rs_streaming_lock{ device->device->get_endpoint(subdevice).configure(request) };
@@ -335,7 +335,7 @@ rs_streaming_lock* rs_open_many(rs_device* device, rs_subdevice subdevice,
     VALIDATE_NOT_NULL(fps);
     VALIDATE_NOT_NULL(format);
 
-    std::vector<rsimpl::stream_request> request;
+    std::vector<rsimpl::stream_profile> request;
     for (auto i = 0; i < count; i++)
     {
         request.push_back({ stream[i], static_cast<uint32_t>(width[i]), 

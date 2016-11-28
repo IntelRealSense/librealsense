@@ -215,21 +215,16 @@ namespace rsimpl
     // Pixel formats //
     ///////////////////
 
-    struct stream_request
+    struct stream_profile
     {
         rs_stream stream;
         uint32_t width, height, fps;
         rs_format format;
-
-        bool match(const stream_request& other) const;
-        bool contradicts(const std::vector<stream_request>& requests) const;
-
-        bool has_wildcards() const;
     };
 
 
-    inline bool operator==(const stream_request& a,
-        const stream_request& b)
+    inline bool operator==(const stream_profile& a,
+        const stream_profile& b)
     {
         return (a.width == b.width) &&
             (a.height == b.height) &&
@@ -244,7 +239,7 @@ namespace rsimpl
         void(*unpack)(byte * const dest[], const byte * source, int count);
         std::vector<std::pair<rs_stream, rs_format>> outputs;
 
-        bool satisfies(const stream_request& request) const
+        bool satisfies(const stream_profile& request) const
         {
             return provides_stream(request.stream) &&
                 get_format(request.stream) == request.format;
@@ -627,9 +622,9 @@ namespace rsimpl
 namespace std {
 
     template <>
-    struct hash<rsimpl::stream_request>
+    struct hash<rsimpl::stream_profile>
     {
-        size_t operator()(const rsimpl::stream_request& k) const
+        size_t operator()(const rsimpl::stream_profile& k) const
         {
             using std::hash;
 

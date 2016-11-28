@@ -60,7 +60,7 @@ namespace rsimpl
         return _hw_monitor.send(input);
     }
 
-    rs_intrinsics ds5_camera::get_intrinsics(rs_subdevice subdevice, stream_request profile) const
+    rs_intrinsics ds5_camera::get_intrinsics(rs_subdevice subdevice, stream_profile profile) const
     {
         if (!supports(subdevice)) throw std::runtime_error("Requested subdevice is unsupported.");
 

@@ -215,7 +215,7 @@ namespace rsimpl
         }
 
         // NOTE: it is the user's responsibility to make sure the profile makes sense on the given subdevice. UB otherwise.
-        virtual rs_intrinsics get_intrinsics(rs_subdevice subdevice, stream_request profile) const override
+        virtual rs_intrinsics get_intrinsics(rs_subdevice subdevice, stream_profile profile) const override
         {
             if (!supports(subdevice)) throw std::runtime_error("Requested subdevice is unsupported.");
             switch (subdevice) {
