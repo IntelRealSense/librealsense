@@ -581,7 +581,7 @@ TEST_CASE("a single subdevice can only be opened once, different subdevices can 
                             rs::streaming_lock lock1;
 
                             // get first lock
-                            REQUIRE_NOTHROW(lock1 = dev1.open(dev2.get_stream_modes()[0]));
+                            REQUIRE_NOTHROW(lock1 = dev1.open(dev1.get_stream_modes()[0]));
 
                             // selected, but not streaming
                             {
@@ -643,7 +643,7 @@ TEST_CASE("a single subdevice can only be opened once, different subdevices can 
                         // selected, but not streaming
                         {
                             rs::streaming_lock lock2;
-                            REQUIRE_NOTHROW(lock2 = dev2.open({ modes1[0] }));
+                            REQUIRE_NOTHROW(lock2 = dev2.open({ modes2[0] }));
                             REQUIRE_NOTHROW(lock2.start([](rs_frame * fref) {}));
                             REQUIRE_NOTHROW(lock2.stop());
                         }
@@ -652,7 +652,7 @@ TEST_CASE("a single subdevice can only be opened once, different subdevices can 
                         {
                             rs::streaming_lock lock2;
                             REQUIRE_NOTHROW(lock1.start([](rs_frame * fref) {}));
-                            REQUIRE_NOTHROW(lock2 = dev2.open({ modes1[1] }));
+                            REQUIRE_NOTHROW(lock2 = dev2.open({ modes2[0] }));
                             REQUIRE_NOTHROW(lock2.start([](rs_frame * fref) {}));
                             // stop streaming in opposite order just to be sure that works too
                             REQUIRE_NOTHROW(lock1.stop());
