@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 #include <stdint.h>
+#include <functional>
 
 struct sqlite3;
 struct sqlite3_stmt;
@@ -147,11 +148,13 @@ namespace sql
 
         friend class statement;
     public:
-        connection(const char* filename);
+        explicit connection(const char* filename);
 
         void execute(const char * command) const;
 
         bool table_exists(const char* name) const;
+
+        void transaction(std::function<void()> transaction) const;
     };
 }
 

@@ -9,16 +9,22 @@ using namespace std;
 namespace sql
 {
     template<class T>
-    int do_with_retries(T action, int max_retries = 100)
+    int do_with_retries(T action, int max_retries = 1000)
     {
         int result;
-        int retries = 0;
+        auto retries = 0;
         do
         {
             result = action();
             if (result == SQLITE_BUSY)
-                std::this_thread::sleep_for(std::chrono::milliseconds(20));
+                std::this_thread::sleep_for(std::chrono::milliseconds(100));
         } while (result == SQLITE_BUSY && ++retries < max_retries);
+
+        if (result == SQLITE_BUSY)
+        {
+            result = SQLITE_BUSY;
+        }
+
         return result;
     }
 
@@ -64,6 +70,16 @@ namespace sql
         stmt.bind(1, "table");
         stmt.bind(2, name);
         return stmt()[0].get_bool();
+    }
+
+    void connection::transaction(std::function<void()> transaction) const
+    {
+        char* errorMessage;
+        sqlite3_exec(m_handle.get(), "BEGIN TRANSACTION", NULL, NULL, &errorMessage);
+
+        transaction();
+
+        sqlite3_exec(m_handle.get(), "COMMIT TRANSACTION", NULL, NULL, &errorMessage);
     }
 
     statement::statement(const connection& conn, const char * sql)

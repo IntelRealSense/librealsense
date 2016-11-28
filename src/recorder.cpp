@@ -209,67 +209,70 @@ namespace rsimpl
                 }
             }
 
-            for (auto&& cl : calls)
+            c.transaction([&]()
             {
-                statement insert(c, CALLS_INSERT);
-                insert.bind(1, section_id);
-                insert.bind(2, static_cast<int>(cl.type));
-                insert.bind(3, cl.timestamp);
-                insert.bind(4, cl.entity_id);
-                insert.bind(5, cl.inline_string.c_str());
-                insert.bind(6, cl.param1);
-                insert.bind(7, cl.param2);
-                insert.bind(8, cl.param3);
-                insert.bind(9, cl.param4);
-                insert.bind(10, cl.had_error ? 1 : 0);
-                insert();
-            }
+                for (auto&& cl : calls)
+                {
+                    statement insert(c, CALLS_INSERT);
+                    insert.bind(1, section_id);
+                    insert.bind(2, static_cast<int>(cl.type));
+                    insert.bind(3, cl.timestamp);
+                    insert.bind(4, cl.entity_id);
+                    insert.bind(5, cl.inline_string.c_str());
+                    insert.bind(6, cl.param1);
+                    insert.bind(7, cl.param2);
+                    insert.bind(8, cl.param3);
+                    insert.bind(9, cl.param4);
+                    insert.bind(10, cl.had_error ? 1 : 0);
+                    insert();
+                }
 
-            for (auto&& uvc_info : uvc_device_infos)
-            {
-                statement insert(c, DEVICE_INFO_INSERT);
-                insert.bind(1, section_id);
-                insert.bind(2, uvc);
-                insert.bind(3, "");
-                insert.bind(4, uvc_info.unique_id.c_str());
-                insert.bind(5, uvc_info.pid);
-                insert.bind(6, uvc_info.vid);
-                insert.bind(7, uvc_info.mi);
-                insert();
-            }
+                for (auto&& uvc_info : uvc_device_infos)
+                {
+                    statement insert(c, DEVICE_INFO_INSERT);
+                    insert.bind(1, section_id);
+                    insert.bind(2, device_type::uvc);
+                    insert.bind(3, "");
+                    insert.bind(4, uvc_info.unique_id.c_str());
+                    insert.bind(5, uvc_info.pid);
+                    insert.bind(6, uvc_info.vid);
+                    insert.bind(7, uvc_info.mi);
+                    insert();
+                }
 
-            for (auto&& usb_info : usb_device_infos)
-            {
-                statement insert(c, DEVICE_INFO_INSERT);
-                insert.bind(1, section_id);
-                insert.bind(2, usb);
-                string id(usb_info.id.begin(), usb_info.id.end());
-                insert.bind(3, id.c_str());
-                insert.bind(4, usb_info.unique_id.c_str());
-                insert.bind(5, usb_info.pid);
-                insert.bind(6, usb_info.vid);
-                insert.bind(7, usb_info.mi);
-                insert();
-            }
+                for (auto&& usb_info : usb_device_infos)
+                {
+                    statement insert(c, DEVICE_INFO_INSERT);
+                    insert.bind(1, section_id);
+                    insert.bind(2, device_type::usb);
+                    string id(usb_info.id.begin(), usb_info.id.end());
+                    insert.bind(3, id.c_str());
+                    insert.bind(4, usb_info.unique_id.c_str());
+                    insert.bind(5, usb_info.pid);
+                    insert.bind(6, usb_info.vid);
+                    insert.bind(7, usb_info.mi);
+                    insert();
+                }
 
-            for (auto&& profile : stream_profiles)
-            {
-                statement insert(c, PROFILES_INSERT);
-                insert.bind(1, section_id);
-                insert.bind(2, profile.width);
-                insert.bind(3, profile.height);
-                insert.bind(4, profile.fps);
-                insert.bind(5, profile.format);
-                insert();
-            }
+                for (auto&& profile : stream_profiles)
+                {
+                    statement insert(c, PROFILES_INSERT);
+                    insert.bind(1, section_id);
+                    insert.bind(2, profile.width);
+                    insert.bind(3, profile.height);
+                    insert.bind(4, profile.fps);
+                    insert.bind(5, profile.format);
+                    insert();
+                }
 
-            for (auto&& blob : blobs)
-            {
-                statement insert(c, BLOBS_INSERT);
-                insert.bind(1, section_id);
-                insert.bind(2, blob);
-                insert();
-            }
+                for (auto&& blob : blobs)
+                {
+                    statement insert(c, BLOBS_INSERT);
+                    insert.bind(1, section_id);
+                    insert.bind(2, blob);
+                    insert();
+                }
+            });
         }
 
         shared_ptr<recording> recording::load(const char* filename, const char* section)
@@ -443,14 +446,14 @@ namespace rsimpl
             {
                 _source->probe_and_commit(profile, [this, callback](stream_profile p, frame_object f)
                 {
-                    _owner->try_record([this, callback, p, &f](recording* rec, lookup_key k)
+                    _owner->try_record([this, callback, p, &f](recording* rec1, lookup_key key1)
                     {
-                        auto&& c = rec->add_call(k);
-                        c.param1 = rec->save_blob(&p, sizeof(p));
+                        auto&& c = rec1->add_call(key1);
+                        c.param1 = rec1->save_blob(&p, sizeof(p));
 
                         if (_owner->get_mode() == RS_RECORDING_MODE_BEST_QUALITY)
                         {
-                            c.param2 = rec->save_blob(f.pixels, static_cast<int>(f.size));
+                            c.param2 = rec1->save_blob(f.pixels, static_cast<int>(f.size));
                             c.param4 = static_cast<int>(f.size);
                             c.param3 = 1;
                         }
@@ -463,7 +466,7 @@ namespace rsimpl
                         else
                         {
                             auto compressed = _compression->encode((uint8_t*)f.pixels, f.size);
-                            c.param2 = rec->save_blob(compressed.data(), static_cast<int>(compressed.size()));
+                            c.param2 = rec1->save_blob(compressed.data(), static_cast<int>(compressed.size()));
                             c.param4 = static_cast<int>(compressed.size());
                             c.param3 = 1;
                         }
@@ -713,17 +716,15 @@ namespace rsimpl
             const char* filename, const char* section,
             rs_recording_mode mode)
             : _source(source), _rec(make_shared<recording>()), _entity_count(1),
-            _compression(make_shared<compression_algorithm>()),
-            _filename(filename), _section(section), _mode(mode),
-            _alive(true), _write_to_file([this]() { write_to_file(); })
+              _filename(filename),
+              _section(section), _compression(make_shared<compression_algorithm>()), _mode(mode)
         {
-            
+            write_to_file();
         }
 
         record_backend::~record_backend()
         {
-            _alive = false;
-            _write_to_file.join();
+            write_to_file();
         }
 
         shared_ptr<uvc_device> playback_backend::create_uvc_device(uvc_device_info info) const
@@ -763,23 +764,19 @@ namespace rsimpl
 
         void record_backend::write_to_file()
         {
-            bool append = false;
+            auto append = false;
 
-            while (_alive)
+            shared_ptr<recording> current;
             {
-                std::shared_ptr<recording> current;
-                {
-                    std::lock_guard<std::mutex> lock(_rec_mutex);
-                    current = _rec;
-                    _rec = std::make_shared<recording>();
-                    _rec->set_baselines(*current);
-                }
-                if (current->size() > 0)
-                {
-                    current->save(_filename.c_str(), _section.c_str(), append);
-                    append = true;
-                    LOG(INFO) << "Finished writing " << current->size() << " calls...";
-                }
+                current = _rec;
+                _rec = make_shared<recording>();
+                _rec->set_baselines(*current);
+            }
+            if (current->size() > 0)
+            {
+                current->save(_filename.c_str(), _section.c_str(), append);
+                append = true;
+                LOG(INFO) << "Finished writing " << current->size() << " calls...";
             }
 
             if (_rec->size() > 0)

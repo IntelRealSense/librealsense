@@ -65,7 +65,7 @@ namespace rsimpl
             return count;
         }
 
-        STDMETHODIMP source_reader_callback::OnReadSample(HRESULT /*hrStatus*/,
+        STDMETHODIMP source_reader_callback::OnReadSample(HRESULT hrStatus,
             DWORD dwStreamIndex,
             DWORD /*dwStreamFlags*/,
             LONGLONG /*llTimestamp*/,
@@ -74,6 +74,9 @@ namespace rsimpl
             auto owner = _owner.lock();
             if (owner && owner->_reader)
             {
+                if (FAILED(hrStatus)) owner->_readsample_result = hrStatus;
+                owner->_has_started.set();
+
                 LOG_HR(owner->_reader->ReadSample(dwStreamIndex, 0, nullptr, nullptr, nullptr, nullptr));
 
                 if (sample)
@@ -622,7 +625,7 @@ namespace rsimpl
 
         wmf_uvc_device::wmf_uvc_device(const uvc_device_info& info,
             std::shared_ptr<const wmf_backend> backend)
-            : _info(info), _is_flushed(), _backend(std::move(backend)),
+            : _info(info), _is_flushed(), _has_started(), _backend(std::move(backend)),
             _systemwide_lock(info.unique_id.c_str(), WAIT_FOR_MUTEX_TIME_OUT),
             _location("")
         {
@@ -734,7 +737,19 @@ namespace rsimpl
                                         _streams[sIndex].callback = callback;
                                     }
 
+                                    _readsample_result = S_OK;
                                     CHECK_HR(_reader->ReadSample(sIndex, 0, nullptr, nullptr, nullptr, nullptr));
+
+                                    const auto timeout_ms = 5000;
+                                    if (_has_started.wait(timeout_ms))
+                                    {
+                                        check("_reader->ReadSample(...)", _readsample_result);
+                                    }
+                                    else
+                                    {
+                                        LOG_WARNING("First frame took more then " << timeout_ms << "ms to arrive!");
+                                    }
+
                                     return;
                                 }
                                 else
