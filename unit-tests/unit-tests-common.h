@@ -448,19 +448,16 @@ inline void frame_callback(rs::device &dev, rs::frame frame, void * user)
 //    }
 //}
 
-inline void test_option(rs::device &device, rs_subdevice subdevice, rs_option option, std::initializer_list<int> good_values, std::initializer_list<int> bad_values)
+inline void test_option(rs::device &device, rs_option option, std::initializer_list<int> good_values, std::initializer_list<int> bad_values)
 {
-    rs::subdevice subdev;
-    REQUIRE_NOTHROW(subdev = device.get_subdevice(subdevice));
-
     // Test reading the current value
     float first_value;
-    REQUIRE_NOTHROW(first_value = subdev.get_option(option));
+    REQUIRE_NOTHROW(first_value = device.get_option(option));
 
 
     // check if first value is something sane (should be default?)
     rs::option_range range;
-    REQUIRE_NOTHROW(range = subdev.get_option_range(option));
+    REQUIRE_NOTHROW(range = device.get_option_range(option));
     REQUIRE(first_value >= range.min);
     REQUIRE(first_value <= range.max);
     CHECK(first_value == range.def);
@@ -468,21 +465,21 @@ inline void test_option(rs::device &device, rs_subdevice subdevice, rs_option op
     // Test setting good values, and that each value set can be subsequently get
     for (auto value : good_values)
     {
-        REQUIRE_NOTHROW(subdev.set_option(option, value));
-        REQUIRE(subdev.get_option(option) == value);
+        REQUIRE_NOTHROW(device.set_option(option, value));
+        REQUIRE(device.get_option(option) == value);
     }
 
     // Test setting bad values, and verify that they do not change the value of the option
     float last_good_value;
-    REQUIRE_NOTHROW(last_good_value = subdev.get_option(option));
+    REQUIRE_NOTHROW(last_good_value = device.get_option(option));
     for (auto value : bad_values)
     {
-        REQUIRE_THROWS_AS(subdev.set_option(option, value), rs::error);
-        REQUIRE(subdev.get_option(option) == last_good_value);
+        REQUIRE_THROWS_AS(device.set_option(option, value), rs::error);
+        REQUIRE(device.get_option(option) == last_good_value);
     }
 
     // Test that we can reset the option to its original value
-    REQUIRE_NOTHROW(subdev.set_option(option, first_value));
-    REQUIRE(subdev.get_option(option) == first_value);
+    REQUIRE_NOTHROW(device.set_option(option, first_value));
+    REQUIRE(device.get_option(option) == first_value);
 }
 #endif

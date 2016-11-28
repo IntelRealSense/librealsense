@@ -2,6 +2,7 @@
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
 #include "option.h"
+#include "subdevice.h"
 
 void rsimpl::uvc_pu_option::set(float value)
 {

@@ -20,11 +20,6 @@ struct rs_error
     std::string args;
 };
 
-struct rs_device_info
-{
-    std::shared_ptr<rsimpl::device_info> info;
-};
-
 struct rs_raw_data_buffer
 {
     std::vector<uint8_t> buffer;
@@ -42,7 +37,10 @@ struct rs_active_stream
 
 struct rs_device
 {
+    std::shared_ptr<rsimpl::context> ctx;
+    std::shared_ptr<rsimpl::device_info> info;
     std::shared_ptr<rsimpl::device> device;
+    unsigned int subdevice;
 };
 
 struct rs_context
@@ -53,7 +51,7 @@ struct rs_context
 struct rs_device_list
 {
     std::shared_ptr<rsimpl::context> ctx;
-    std::vector<std::shared_ptr<rsimpl::device_info>> list;
+    std::vector<rs_device> list;
 };
 
 struct frame_holder
@@ -193,9 +191,51 @@ NOEXCEPT_RETURN(, context)
 rs_device_list* rs_query_devices(const rs_context* context, rs_error** error) try
 {
     VALIDATE_NOT_NULL(context);
-    return new rs_device_list{ context->ctx, context->ctx->query_devices() };
+
+    std::vector<rs_device> results;
+    for (auto&& dev_info : context->ctx->query_devices())
+    {
+        try
+        {
+            auto dev = dev_info->create(context->ctx->get_backend());
+            for (unsigned int i = 0; i < dev->get_endpoints_count(); i++)
+            {
+                rs_device d{ context->ctx, dev_info, dev, i };
+                results.push_back(d);
+            }
+        }
+        catch (...)
+        {
+            LOG_WARNING("Could not open device!");
+        }
+    }
+
+    return new rs_device_list{ context->ctx, results };
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, context)
+
+rs_device_list* rs_query_adjacent_devices(const rs_device* device, rs_error** error) try
+{
+    VALIDATE_NOT_NULL(device);
+
+    std::vector<rs_device> results;
+    try
+    {
+        auto dev = device->device;
+        for (unsigned int i = 0; i < dev->get_endpoints_count(); i++)
+        {
+            rs_device d{ device->ctx, device->info, dev, i };
+            results.push_back(d);
+        }
+    }
+    catch (...)
+    {
+        LOG_WARNING("Could not open device!");
+    }
+
+    return new rs_device_list{ device->ctx, results };
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, device)
 
 int rs_get_device_count(const rs_device_list* list, rs_error** error) try
 {
@@ -215,7 +255,11 @@ rs_device* rs_create_device(const rs_device_list* list, int index, rs_error** er
 {
     VALIDATE_NOT_NULL(list);
     VALIDATE_RANGE(index, 0, (int)list->list.size() - 1);
-    return new rs_device{ list->list[index]->create(list->ctx->get_backend()) };
+    return new rs_device{ list->ctx,
+                          list->list[index].info, 
+                          list->list[index].device,
+                          list->list[index].subdevice
+                        };
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, list, index)
 
@@ -226,21 +270,12 @@ void rs_delete_device(rs_device* device) try
 }
 NOEXCEPT_RETURN(, device)
 
-int rs_is_subdevice_supported(const rs_device* device, rs_subdevice subdevice, rs_error** error) try
+rs_stream_modes_list* rs_get_stream_modes(rs_device* device, rs_error** error) try
 {
     VALIDATE_NOT_NULL(device);
-    VALIDATE_ENUM(subdevice);
-    return device->device->supports(subdevice) ? 1 : 0;
+    return new rs_stream_modes_list{ device->device->get_endpoint(device->subdevice).get_principal_requests() };
 }
-HANDLE_EXCEPTIONS_AND_RETURN(0, device, subdevice)
-
-rs_stream_modes_list* rs_get_stream_modes(rs_device* device, rs_subdevice subdevice, rs_error** error) try
-{
-    VALIDATE_NOT_NULL(device);
-    VALIDATE_ENUM(subdevice);
-    return new rs_stream_modes_list{ device->device->get_endpoint(subdevice).get_principal_requests() };
-}
-HANDLE_EXCEPTIONS_AND_RETURN(nullptr, device, subdevice)
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, device)
 
 void rs_get_stream_mode(const rs_stream_modes_list* list, int index, rs_stream* stream, int* width, int* height, int* fps, rs_format* format, rs_error** error) try
 {
@@ -306,29 +341,27 @@ void rs_delete_raw_data(rs_raw_data_buffer* buffer) try
 }
 NOEXCEPT_RETURN(, buffer)
 
-rs_streaming_lock* rs_open(rs_device* device, rs_subdevice subdevice, 
-    rs_stream stream, int width, int height, int fps, rs_format format, rs_error** error) try
+rs_streaming_lock* rs_open(rs_device* device, rs_stream stream, 
+    int width, int height, int fps, rs_format format, rs_error** error) try
 {
     VALIDATE_NOT_NULL(device);
-    VALIDATE_ENUM(subdevice);
     VALIDATE_ENUM(format);
     VALIDATE_ENUM(stream);
 
     std::vector<rsimpl::stream_request> request;
     request.push_back({ stream, static_cast<uint32_t>(width),
             static_cast<uint32_t>(height), static_cast<uint32_t>(fps), format });
-    auto result = new rs_streaming_lock{ device->device->get_endpoint(subdevice).configure(request) };
+    auto result = new rs_streaming_lock{ device->device->get_endpoint(device->subdevice).configure(request) };
     result->lock->set_owner(result);
     return result;
 }
-HANDLE_EXCEPTIONS_AND_RETURN(nullptr, device, subdevice, stream, width, height, fps, format)
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, device, stream, width, height, fps, format)
 
-rs_streaming_lock* rs_open_many(rs_device* device, rs_subdevice subdevice,
+rs_streaming_lock* rs_open_many(rs_device* device, 
     const rs_stream* stream, const int* width, const int* height, const int* fps, 
     const rs_format* format, int count, rs_error** error) try
 {
     VALIDATE_NOT_NULL(device);
-    VALIDATE_ENUM(subdevice);
     VALIDATE_NOT_NULL(stream);
     VALIDATE_NOT_NULL(width);
     VALIDATE_NOT_NULL(height);
@@ -341,11 +374,11 @@ rs_streaming_lock* rs_open_many(rs_device* device, rs_subdevice subdevice,
         request.push_back({ stream[i], static_cast<uint32_t>(width[i]), 
                             static_cast<uint32_t>(height[i]), static_cast<uint32_t>(fps[i]), format[i] });
     }
-    auto result = new rs_streaming_lock{ device->device->get_endpoint(subdevice).configure(request) };
+    auto result = new rs_streaming_lock{ device->device->get_endpoint(device->subdevice).configure(request) };
     result->lock->set_owner(result);
     return result;
 }
-HANDLE_EXCEPTIONS_AND_RETURN(nullptr, device, subdevice, stream, width, height, fps, format)
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, device, stream, width, height, fps, format)
 
 void rs_close(rs_streaming_lock* lock) try
 {
@@ -354,55 +387,55 @@ void rs_close(rs_streaming_lock* lock) try
 }
 NOEXCEPT_RETURN(, lock)
 
-float rs_get_subdevice_option(const rs_device* device, rs_subdevice subdevice, rs_option option, rs_error** error) try
+float rs_get_option(const rs_device* device, rs_option option, rs_error** error) try
 {
     VALIDATE_NOT_NULL(device);
-    VALIDATE_ENUM(subdevice);
     VALIDATE_ENUM(option);
-    return device->device->get_option(subdevice, option).query();
+    return device->device->get_endpoint(device->subdevice).get_option(option).query();
 }
-HANDLE_EXCEPTIONS_AND_RETURN(0.0f, device, subdevice, option)
+HANDLE_EXCEPTIONS_AND_RETURN(0.0f, device, option)
 
-void rs_set_subdevice_option(const rs_device* device, rs_subdevice subdevice, rs_option option, float value, rs_error** error) try
+void rs_set_option(const rs_device* device, rs_option option, float value, rs_error** error) try
 {
     VALIDATE_NOT_NULL(device);
-    VALIDATE_ENUM(subdevice);
     VALIDATE_ENUM(option);
-    device->device->get_option(subdevice, option).set(value);
+    device->device->get_endpoint(device->subdevice).get_option(option).set(value);
 }
-HANDLE_EXCEPTIONS_AND_RETURN(, device, subdevice, option, value)
+HANDLE_EXCEPTIONS_AND_RETURN(, device, option, value)
 
-int rs_supports_subdevice_option(const rs_device* device, rs_subdevice subdevice, rs_option option, rs_error** error) try
+int rs_supports_option(const rs_device* device, rs_option option, rs_error** error) try
 {
     VALIDATE_NOT_NULL(device);
-    VALIDATE_ENUM(subdevice);
     VALIDATE_ENUM(option);
-    return device->device->supports_option(subdevice, option);
+    return device->device->get_endpoint(device->subdevice).supports_option(option);
 }
-HANDLE_EXCEPTIONS_AND_RETURN(0, device, subdevice, option)
+HANDLE_EXCEPTIONS_AND_RETURN(0, device, option)
 
-void rs_get_subdevice_option_range(const rs_device* device, rs_subdevice subdevice, rs_option option, 
+void rs_get_option_range(const rs_device* device, rs_option option, 
     float* min, float* max, float* step, float* def, rs_error** error) try
 {
     VALIDATE_NOT_NULL(device);
-    VALIDATE_ENUM(subdevice);
     VALIDATE_ENUM(option);
     VALIDATE_NOT_NULL(min);
     VALIDATE_NOT_NULL(max);
     VALIDATE_NOT_NULL(step);
     VALIDATE_NOT_NULL(def);
-    auto range = device->device->get_option(subdevice, option).get_range();
+    auto range = device->device->get_endpoint(device->subdevice).get_option(option).get_range();
     *min = range.min;
     *max = range.max;
     *def = range.def;
     *step = range.step;
 }
-HANDLE_EXCEPTIONS_AND_RETURN(, device, subdevice, option, min, max, step, def)
+HANDLE_EXCEPTIONS_AND_RETURN(, device, option, min, max, step, def)
 
 const char* rs_get_camera_info(const rs_device* device, rs_camera_info info, rs_error** error) try
 {
     VALIDATE_NOT_NULL(device);
     VALIDATE_ENUM(info);
+    if (device->device->get_endpoint(device->subdevice).supports_info(info))
+    {
+        return device->device->get_endpoint(device->subdevice).get_info(info).c_str();
+    }
     return device->device->get_info(info).c_str();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, device, info)
@@ -411,7 +444,11 @@ int rs_supports_camera_info(const rs_device* device, rs_camera_info info, rs_err
 {
     VALIDATE_NOT_NULL(device);
     VALIDATE_ENUM(info);
-    return device->device->supports_info(info);
+    if (!device->device->get_endpoint(device->subdevice).supports_info(info))
+    {
+        return device->device->supports_info(info);
+    }
+    return true;
 }
 HANDLE_EXCEPTIONS_AND_RETURN(false, device, info)
 
@@ -535,14 +572,13 @@ void rs_release_frame(rs_frame * frame) try
 }
 NOEXCEPT_RETURN(, frame)
 
-const char* rs_get_subdevice_option_description(const rs_device* device, rs_subdevice subdevice, rs_option option, rs_error ** error) try
+const char* rs_get_option_description(const rs_device* device, rs_option option, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(device);
-    VALIDATE_ENUM(subdevice);
     VALIDATE_ENUM(option);
-    return device->device->get_option(subdevice, option).get_description();
+    return device->device->get_endpoint(device->subdevice).get_option(option).get_description();
 }
-HANDLE_EXCEPTIONS_AND_RETURN(nullptr, device, subdevice, option)
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, device, option)
 
 rs_frame* rs_clone_frame_ref(rs_frame* frame, rs_error ** error) try
 {
@@ -551,14 +587,13 @@ rs_frame* rs_clone_frame_ref(rs_frame* frame, rs_error ** error) try
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, frame)
 
-const char* rs_get_subdevice_option_value_description(const rs_device* device, rs_subdevice subdevice, rs_option option, float value, rs_error ** error) try
+const char* rs_get_option_value_description(const rs_device* device, rs_option option, float value, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(device);
-    VALIDATE_ENUM(subdevice);
     VALIDATE_ENUM(option);
-    return device->device->get_option(subdevice, option).get_value_description(value);
+    return device->device->get_endpoint(device->subdevice).get_option(option).get_value_description(value);
 }
-HANDLE_EXCEPTIONS_AND_RETURN(nullptr, device, subdevice, option, value)
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, device, option, value)
 
 rs_frame_queue* rs_create_frame_queue(int capacity, rs_error** error) try
 {
@@ -618,27 +653,29 @@ void rs_flush_queue(rs_frame_queue* queue, rs_error** error) try
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, queue)
 
-void rs_get_device_extrinsics(const rs_device * device, rs_subdevice from, rs_subdevice to, rs_extrinsics * extrin, rs_error ** error) try
+void rs_get_extrinsics(const rs_device * from, const rs_device * to, rs_extrinsics * extrin, rs_error ** error) try
 {
-    VALIDATE_NOT_NULL(device);
-    VALIDATE_ENUM(from);
-    VALIDATE_ENUM(to);
+    VALIDATE_NOT_NULL(from);
+    VALIDATE_NOT_NULL(to);
     VALIDATE_NOT_NULL(extrin);
-    *extrin = device->device->get_extrinsics(from, to);
-}
-HANDLE_EXCEPTIONS_AND_RETURN(, device, from, to, extrin)
 
-void rs_get_stream_intrinsics(const rs_device * device, rs_subdevice subdevice, rs_stream stream, int width, int height, int fps, rs_format format, rs_intrinsics * intrinsics, rs_error ** error) try
+    if (from->device != to->device) throw std::runtime_error("Extrinsics between the selected devices are unknown!");
+
+    *extrin = from->device->get_extrinsics(from->subdevice, to->subdevice);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, from, to, extrin)
+
+void rs_get_stream_intrinsics(const rs_device * device, rs_stream stream, int width, int height, int fps, 
+    rs_format format, rs_intrinsics * intrinsics, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(device);
-    VALIDATE_ENUM(subdevice);
     VALIDATE_ENUM(stream);
     VALIDATE_ENUM(format);
     VALIDATE_NOT_NULL(intrinsics);
     // cast because i've been getting errors. (int->uint32_t requires narrowing conversion)
-    *intrinsics = device->device->get_intrinsics(subdevice, {stream, uint32_t(width), uint32_t(height), uint32_t(fps), format});
+    *intrinsics = device->device->get_intrinsics(device->subdevice, {stream, uint32_t(width), uint32_t(height), uint32_t(fps), format});
 }
-HANDLE_EXCEPTIONS_AND_RETURN(, device, subdevice, intrinsics)
+HANDLE_EXCEPTIONS_AND_RETURN(, device, intrinsics)
 
 float rs_get_device_depth_scale(const rs_device * device, rs_error ** error) try
 {
@@ -691,8 +728,6 @@ const char * rs_option_to_string(rs_option option) { return rsimpl::get_string(o
 const char * rs_camera_info_to_string(rs_camera_info info) { return rsimpl::get_string(info); }
 const char * rs_timestamp_domain_to_string(rs_timestamp_domain info){ return rsimpl::get_string(info); }
 const char * rs_visual_preset_to_string(rs_visual_preset preset) { return rsimpl::get_string(preset); }
-
-const char * rs_subdevice_to_string(rs_subdevice subdevice) { return rsimpl::get_string(subdevice); }
 
 void rs_log_to_console(rs_log_severity min_severity, rs_error ** error) try
 {

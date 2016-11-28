@@ -36,7 +36,8 @@ namespace rsimpl
             wmf_uvc_device(const uvc_device_info& info, std::shared_ptr<const wmf_backend> backend);
             ~wmf_uvc_device();
 
-            void play(stream_profile profile, frame_callback callback) override;
+            void probe_and_commit(stream_profile profile, frame_callback callback) override;
+            void play() override;
             void stop(stream_profile profile) override;
             void set_power_state(power_state state) override;
             power_state get_power_state() const override { return _power_state; }
@@ -62,6 +63,7 @@ namespace rsimpl
         private:
             friend class source_reader_callback;
 
+            void play_profile(stream_profile profile, frame_callback callback);
             void flush(int sIndex);
             void check_connection() const;
             IKsControl* get_ks_control(const extension_unit& xu) const;
@@ -81,6 +83,8 @@ namespace rsimpl
             std::unordered_map<int, CComPtr<IKsControl>>      _ks_controls;
 
             manual_reset_event                      _is_flushed;
+            manual_reset_event                      _has_started;
+            HRESULT                                 _readsample_result = S_OK;
 
             std::vector<profile_and_callback>       _streams;
             std::mutex                              _streams_mutex;
@@ -89,6 +93,9 @@ namespace rsimpl
 
             named_mutex                             _systemwide_lock;
             std::string                             _location;
+            std::vector<stream_profile>             _profiles;
+            std::vector<frame_callback>             _frame_callbacks;
+            bool                                    _streaming = false;
         };
 
         class source_reader_callback : public IMFSourceReaderCallback

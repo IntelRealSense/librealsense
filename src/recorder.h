@@ -35,6 +35,7 @@ namespace rsimpl
             uvc_set_xu,
             uvc_get_xu,
             uvc_stream_profiles,
+            uvc_probe_commit,
             uvc_play,
             uvc_stop,
             uvc_frame
@@ -62,7 +63,7 @@ namespace rsimpl
 
             int param1 = 0;
             int param2 = 0;
-            int param3 = 0; 
+            int param3 = 0;
             int param4 = 0;
 
             bool had_error = false;
@@ -200,7 +201,8 @@ namespace rsimpl
         class record_uvc_device : public uvc_device
         {
         public:
-            void play(stream_profile profile, frame_callback callback) override;
+            void probe_and_commit(stream_profile profile, frame_callback callback) override;
+            void play() override;
             void stop(stream_profile profile) override;
             void set_power_state(power_state state) override;
             power_state get_power_state() const override;
@@ -220,8 +222,8 @@ namespace rsimpl
                 std::shared_ptr<uvc_device> source,
                 std::shared_ptr<compression_algorithm> compression,
                 int id, const record_backend* owner)
-                : _source(source), _compression(compression), 
-                  _entity_id(id), _owner(owner) {}
+                : _source(source), _compression(compression),
+                _entity_id(id), _owner(owner) {}
 
         private:
             std::shared_ptr<uvc_device> _source;
@@ -236,7 +238,7 @@ namespace rsimpl
             std::vector<uint8_t> send_receive(const std::vector<uint8_t>& data, int timeout_ms, bool require_response) override;
 
             record_usb_device(std::shared_ptr<usb_device> source,
-                              int id, const record_backend* owner) 
+                int id, const record_backend* owner)
                 : _source(source), _entity_id(id), _owner(owner) {}
 
         private:
@@ -244,8 +246,6 @@ namespace rsimpl
             int _entity_id;
             const record_backend* _owner;
         };
-
-
 
         class record_backend : public backend
         {
@@ -255,10 +255,10 @@ namespace rsimpl
             std::shared_ptr<usb_device> create_usb_device(usb_device_info info) const override;
             std::vector<usb_device_info> query_usb_devices() const override;
 
-            record_backend(std::shared_ptr<backend> source, 
-                           const char* filename,
-                           const char* section, 
-                           rs_recording_mode mode);
+            record_backend(std::shared_ptr<backend> source,
+                const char* filename,
+                const char* section,
+                rs_recording_mode mode);
             ~record_backend();
 
             rs_recording_mode get_mode() const { return _mode; }
@@ -267,8 +267,7 @@ namespace rsimpl
             auto try_record(T t, int entity_id, call_type type) const
                 -> decltype(t((recording*)nullptr, *((lookup_key*)nullptr)))
             {
-                std::lock_guard<std::mutex> lock(_rec_mutex);
-                lookup_key k { entity_id, type };
+                lookup_key k{ entity_id, type };
 
                 try
                 {
@@ -297,22 +296,21 @@ namespace rsimpl
 
             std::shared_ptr<backend> _source;
 
-            mutable std::mutex _rec_mutex;
             std::shared_ptr<recording> _rec;
             mutable std::atomic<int> _entity_count;
             std::string _filename;
             std::string _section;
             std::shared_ptr<compression_algorithm> _compression;
             rs_recording_mode _mode;
-
-            std::atomic<bool> _alive;
-            std::thread _write_to_file;
         };
+
+        typedef std::vector<std::pair<stream_profile, frame_callback>> configurations;
 
         class playback_uvc_device : public uvc_device
         {
         public:
-            void play(stream_profile profile, frame_callback callback) override;
+            void probe_and_commit(stream_profile profile, frame_callback callback) override;
+            void play() override;
             void stop(stream_profile profile) override;
             void set_power_state(power_state state) override;
             power_state get_power_state() const override;
@@ -329,7 +327,7 @@ namespace rsimpl
             std::string get_device_location() const override;
 
             explicit playback_uvc_device(std::shared_ptr<recording> rec,
-                                         int id);
+                int id);
 
             void callback_thread();
             ~playback_uvc_device();
@@ -339,7 +337,8 @@ namespace rsimpl
             int _entity_id;
             std::thread _callback_thread;
             std::atomic<bool> _alive;
-            std::vector<std::pair<stream_profile, frame_callback>> _callbacks;
+            configurations _callbacks;
+            configurations _commitments;
             std::mutex _callback_mutex;
             compression_algorithm _compression;
         };

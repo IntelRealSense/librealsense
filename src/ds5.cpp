@@ -60,19 +60,19 @@ namespace rsimpl
         return _hw_monitor.send(input);
     }
 
-    rs_intrinsics ds5_camera::get_intrinsics(rs_subdevice subdevice, stream_request profile) const
+    rs_intrinsics ds5_camera::get_intrinsics(int subdevice, stream_request profile) const
     {
-        if (!supports(subdevice)) throw std::runtime_error("Requested subdevice is unsupported.");
+        if (subdevice >= get_endpoints_count()) throw std::runtime_error("Requested subdevice is unsupported.");
 
-        switch (subdevice) {
-        case RS_SUBDEVICE_DEPTH:
+        if (subdevice == _depth_device_idx)
+        {
             return get_intrinsic_by_resolution(
                 *_coefficients_table_raw,
                 ds::calibration_table_id::coefficients_table_id,
-                    profile.width, profile.height);
-        default:
-            throw std::runtime_error("Not Implemented");
+                profile.width, profile.height);
         }
+
+        throw std::runtime_error("Not Implemented");
     }
 
     std::vector<uint8_t> ds5_camera::get_raw_calibration_table(ds::calibration_table_id table_id) const
