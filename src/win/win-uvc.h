@@ -91,8 +91,9 @@ namespace rsimpl
 
             named_mutex                             _systemwide_lock;
             std::string                             _location;
-            std::vector<stream_profile> _profiles;
-            std::vector<frame_callback> _frame_callbacks;
+            std::vector<stream_profile>             _profiles;
+            std::vector<frame_callback>             _frame_callbacks;
+            bool                                    _streaming = false;
         };
 
         class source_reader_callback : public IMFSourceReaderCallback

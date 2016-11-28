@@ -137,7 +137,7 @@ namespace rsimpl
             }
 
             auto fw_version = _hw_monitor.get_firmware_version_string(GVD, gvd_fw_version_offset);
-            auto serial = _hw_monitor.get_module_serial_string(GVD);
+            auto serial = _hw_monitor.get_module_serial_string(GVD, 48);
             auto location = get_depth_endpoint().invoke_powered([](uvc::uvc_device& dev)
             {
                 return dev.get_device_location();

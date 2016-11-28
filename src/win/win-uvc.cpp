@@ -651,6 +651,8 @@ namespace rsimpl
 
         void wmf_uvc_device::probe_and_commit(stream_profile profile, frame_callback callback)
         {
+            if (_streaming) throw std::runtime_error("Device is already streaming!");
+
             _profiles.push_back(profile);
             _frame_callbacks.push_back(callback);
         }
@@ -750,19 +752,22 @@ namespace rsimpl
 
         void wmf_uvc_device::play()
         {
-
             if (_profiles.empty())
                 throw std::runtime_error("Stream not configured");
 
+            if (_streaming) 
+                throw std::runtime_error("Device is already streaming!");
+
             check_connection();
 
-            set_power_state(D0);
-
-            try {
-                for (int i = 0; i < _profiles.size(); ++i)
+            try 
+            {
+                for (auto i = 0; i < _profiles.size(); ++i)
                 {
                     play_profile(_profiles[i], _frame_callbacks[i]);
                 }
+
+                _streaming = true;
             }
             catch (...)
             {
@@ -772,6 +777,7 @@ namespace rsimpl
 
                 _profiles.clear();
                 _frame_callbacks.clear();
+
                 throw;
             }
         }
@@ -804,6 +810,8 @@ namespace rsimpl
                 _profiles.erase(_profiles.begin() + pos);
                 _frame_callbacks.erase(_frame_callbacks.begin() + pos);
             }
+
+            _streaming = false;
         }
 
         // ReSharper disable once CppMemberFunctionMayBeConst
