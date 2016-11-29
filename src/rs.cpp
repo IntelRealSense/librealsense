@@ -74,8 +74,9 @@ void report_version_mismatch(int runtime, int compiletime)
 
 rs_context * rs_create_context(int api_version, rs_error ** error) try
 {
-    int runtime_api_version = rs_get_api_version(error);
-    if (*error) throw std::runtime_error(rs_get_error_message(*error));
+    rs_error * local_error = nullptr;
+    auto runtime_api_version = rs_get_api_version(&local_error);
+    if (local_error) throw std::runtime_error(rs_get_error_message(local_error));
 
     if ((runtime_api_version < 10) || (api_version < 10))
     {
