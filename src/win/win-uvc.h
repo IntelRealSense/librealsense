@@ -64,6 +64,7 @@ namespace rsimpl
             friend class source_reader_callback;
 
             void play_profile(stream_profile profile, frame_callback callback);
+            void stop_stream_cleanup(const stream_profile& profile, std::vector<profile_and_callback>::iterator& elem);
             void flush(int sIndex);
             void check_connection() const;
             IKsControl* get_ks_control(const extension_unit& xu) const;
