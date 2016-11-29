@@ -856,8 +856,13 @@ namespace rsimpl
                 if (_reader != nullptr)
                 {
                     auto sts = _reader->Flush(sIndex);
-                    if (sts == 0xc00d3704)
-                        throw std::runtime_error("Camera already streaming");
+                    if (sts != S_OK)
+                    {
+                        if (sts == 0xc00d3704)
+                            throw std::runtime_error("Camera already streaming");
+
+                        throw;
+                    }
 
                     _is_flushed.wait(INFINITE);
                 }
