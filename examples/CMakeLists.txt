@@ -133,7 +133,7 @@ install(
     cpp-stride
 
     RUNTIME DESTINATION
-    ${CMAKE_INSTALL_BINDIR}
+    ${INSTALL_BINDIR}
 )
 
 

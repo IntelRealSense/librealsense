@@ -178,12 +178,31 @@ IF (${ROS_BUILD_TYPE})
     install(DIRECTORY ${PROJECT_SOURCE_DIR}/include/${PROJECT_NAME}/
         DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION})
 ELSE()
-    install( TARGETS realsense
-        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    )
+	option(FLAVORS_DEBUG_POSTFIX "Add the _debug postfix to debug builds" OFF)
+	if(FLAVORS_DEBUG_POSTFIX)
+	  set (CMAKE_DEBUG_POSTFIX "_debug")        
+	endif()
 
+	set(INSTALL_BINDIR "${CMAKE_INSTALL_PREFIX}/bin")
+	set(INSTALL_LIBDIR "${CMAKE_INSTALL_PREFIX}/lib")
+	set(INSTALL_LIBDIR "${CMAKE_INSTALL_PREFIX}/lib")
+	option(FLAVORS_ARCH_SUBDIRS "Create subdirectories for each target architeture" OFF)
+	if(FLAVORS_ARCH_SUBDIRS)
+	  if(CMAKE_SIZEOF_VOID_P EQUAL 8)
+	    set(TARGET_ARCH x64)
+	  else()
+	    set(TARGET_ARCH x86)
+	  endif()
+	  set(INSTALL_BINDIR "${INSTALL_BINDIR}/${TARGET_ARCH}")
+	  set(INSTALL_LIBDIR "${INSTALL_LIBDIR}/${TARGET_ARCH}")
+	  set(INSTALL_LIBDIR "${INSTALL_LIBDIR}/")
+	endif()
+
+    install( TARGETS realsense
+        RUNTIME DESTINATION ${INSTALL_BINDIR}
+        LIBRARY DESTINATION ${INSTALL_LIBDIR}
+        ARCHIVE DESTINATION ${INSTALL_LIBDIR}
+    )
     install(DIRECTORY ${PROJECT_SOURCE_DIR}/include/librealsense DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 ENDIF()
 
@@ -221,3 +240,8 @@ endif(${ignore_count} GREATER 0)
 
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/cmake_uninstall.cmake" "${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake" IMMEDIATE @ONLY)
 add_custom_target(uninstall "${CMAKE_COMMAND}" -P "${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake")
+
+install(
+    FILES "${PROJECT_SOURCE_DIR}/cmake/librealsenseConfig.cmake" 
+    DESTINATION "lib/cmake/librealsense"
+)
