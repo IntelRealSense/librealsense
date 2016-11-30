@@ -809,11 +809,14 @@ namespace rs
             error::handle(e);
         }
 
-        ///// sets the callback for motion module event. provided callback will be called the instant new motion or timestamp event is available. 
-        ///// \param[in] stream             the stream 
-        ///// \param[in] motion_handler     frame callback to be invoke on every new motion event
-        ///// \param[in] timestamp_handler  frame callback to be invoke on every new timestamp event
-        ///// \return                       the framerate of the stream, in frames per second
+        /// sets the callback for motion module event. provided callback will be called the instant new motion or timestamp event is available. 
+        /// Note: rs_enable_motion_tracking  is responsible for activating the motion module on-board the device. One of the services it provides is producing shared and high-resolution timestamps for all component hooked-up to it. Usually, librealsense takes care of that and copies the timestamps to the relevant frames.
+        /// However, when the user has an external device(like a compass) and wishes to synchronize it precisely with image and motion stream he can connect the sensor to a GPIO avaialbe on some devices. Every time sensor will signal, the user will get a timestamp callback with a frame number, source ID and a timestamp.
+        /// This would allow advanced user to synchronize his compass events(presumably coming though I2C or some other method) with realsense data.
+        /// \param[in] stream             the stream 
+        /// \param[in] motion_handler     frame callback to be invoke on every new motion event
+        /// \param[in] timestamp_handler  frame callback to be invoke on every new timestamp event (can be left-out)
+        /// \return                       the framerate of the stream, in frames per second
         void enable_motion_tracking(std::function<void(motion_data)> motion_handler, std::function<void(timestamp_data)> timestamp_handler)
         {
             rs_error * e = nullptr;            
@@ -821,10 +824,10 @@ namespace rs
             error::handle(e);
         }
 
-        ///// sets the callback for motion module event. provided callback will be called the instant new motion event is available. 
-        ///// \param[in] stream             the stream 
-        ///// \param[in] motion_handler     frame callback to be invoke on every new motion event
-        ///// \return                       the framerate of the stream, in frames per second
+        /// sets the callback for motion module event. provided callback will be called the instant new motion event is available. 
+        /// \param[in] stream             the stream 
+        /// \param[in] motion_handler     frame callback to be invoke on every new motion event
+        /// \return                       the framerate of the stream, in frames per second
         void enable_motion_tracking(std::function<void(motion_data)> motion_handler)
         {
             rs_error * e = nullptr;            

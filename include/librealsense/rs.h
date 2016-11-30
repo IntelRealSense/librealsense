@@ -589,6 +589,9 @@ void rs_enable_motion_tracking(rs_device * device,
 
 /**
 * enable and configure motion-tracking data handlers
+* Note: rs_enable_motion_tracking is responsible for activating the motion module on-board the device. One of the services it provides is producing shared and high-resolution timestamps for all component hooked-up to it. Usually, librealsense takes care of that and copies the timestamps on the relevant frames.
+* However, when the user has an external device (like a compass) and wishes to synchronize it precisely with image and motion stream he can connect the sensor to a GPIO avaialbe on some devices. Every time sensor will signal, the user will get a timestamp callback with a frame number, source ID and a timestamp.
+* This would allow advanced user to synchronize his compass events (presumably coming though I2C or some other method) with realsense data.
 * (This variant is provided specifically to enable passing lambdas with capture lists safely into the library)
 * \param[in] motion_callback    user-defined routine to be invoked when a motion data arrives
 * \param[in] timestamp_callback user-defined routine to be invoked on timestamp
