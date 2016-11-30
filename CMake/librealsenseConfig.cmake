@@ -1,10 +1,8 @@
 # - Find librealsense
 # Find the LIBREALSENSE headers and libraries.
-#
-#  LIBREALSENSE_INCLUDE_DIRS - where to find rs.h
-#  LIBREALSENSE_LIBRARIES    - List of libraries when using LIBREALSENSE.
-#  LIBREALSENSE_FOUND        - True if LIBREALSENSE found.
-#
+# Set root directory of librealsense as ENVIRONMENT VARIABLE: LIBREALSENSE_DIR
+# Then use with find_package(librealsense) in your project
+
 
 #set target architeture variable 
 if(CMAKE_SIZEOF_VOID_P EQUAL 8)
@@ -59,11 +57,11 @@ find_package_handle_standard_args(LIBREALSENSE
 	LIBREALSENSE_LIBRARY_DEBUG
 	LIBREALSENSE_INCLUDE_DIR)
 
-if (LIBREALSENSE_FOUND AND NOT TARGET realsense)
+if (LIBREALSENSE_FOUND AND NOT TARGET librealsense)
 	message(STATUS "LIBREALSENSE_INCLUDE_DIR: ${LIBREALSENSE_INCLUDE_DIR} LIBREALSENSE_LIBRARY: ${LIBREALSENSE_LIBRARY}")	
-	add_library(realsense INTERFACE)
-	set_property(TARGET realsense PROPERTY INTERFACE_INCLUDE_DIRECTORIES ${LIBREALSENSE_INCLUDE_DIR})
-  	target_include_directories(realsense INTERFACE ${LIBREALSENSE_DIR}/include)  	
-  	target_link_libraries(realsense INTERFACE optimized ${LIBREALSENSE_LIBRARY} debug ${LIBREALSENSE_LIBRARY_DEBUG})
+	add_library(librealsense INTERFACE)
+	set_property(TARGET librealsense PROPERTY INTERFACE_INCLUDE_DIRECTORIES ${LIBREALSENSE_INCLUDE_DIR})
+  	target_include_directories(librealsense INTERFACE ${LIBREALSENSE_INCLUDE_DIR})  	
+  	target_link_libraries(librealsense INTERFACE optimized ${LIBREALSENSE_LIBRARY} debug ${LIBREALSENSE_LIBRARY_DEBUG})
 	mark_as_advanced(LIBREALSENSE_DIR LIBREALSENSE_LIBRARY LIBREALSENSE_INCLUDE_DIR)
 endif()

@@ -106,6 +106,10 @@ if(WIN32)
     # Makes VS15 find the DLL when trying to run examples/tests
     set (CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
     set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
+	option(FLAVORS_DEBUG_POSTFIX "Add the _debug postfix to debug builds" OFF)
+	if(FLAVORS_DEBUG_POSTFIX)
+    	set (CMAKE_DEBUG_POSTFIX "_debug")  
+    endif()
 elseif(APPLE)
     set(BACKEND RS_USE_LIBUVC_BACKEND)
 else()
@@ -178,10 +182,7 @@ IF (${ROS_BUILD_TYPE})
     install(DIRECTORY ${PROJECT_SOURCE_DIR}/include/${PROJECT_NAME}/
         DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION})
 ELSE()
-	option(FLAVORS_DEBUG_POSTFIX "Add the _debug postfix to debug builds" OFF)
-	if(FLAVORS_DEBUG_POSTFIX)
-	  set (CMAKE_DEBUG_POSTFIX "_debug")        
-	endif()
+
 
 	set(INSTALL_BINDIR "${CMAKE_INSTALL_PREFIX}/bin")
 	set(INSTALL_LIBDIR "${CMAKE_INSTALL_PREFIX}/lib")
