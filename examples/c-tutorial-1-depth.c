@@ -45,7 +45,7 @@ int main()
 
     /* Configure depth to run at VGA resolution at 30 frames per second */
     int width = 640, height = 480;
-    rs_streaming_lock * stream = rs_open(dev, RS_SUBDEVICE_DEPTH, RS_STREAM_DEPTH, width, height, 30, RS_FORMAT_Z16, &e);
+    rs_streaming_lock * stream = rs_open(dev, RS_STREAM_DEPTH, width, height, 30, RS_FORMAT_Z16, &e);
     check_error();
 
     rs_frame_queue * queue = rs_create_frame_queue(1, &e);

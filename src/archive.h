@@ -88,9 +88,9 @@ public:
     void set_timestamp(double new_ts) { additional_data.timestamp = new_ts; }
     unsigned long long get_frame_number() const;
 
-    void set_timestamp_domain(rs_timestamp_domain timestamp_domain) 
-    { 
-        additional_data.timestamp_domain = timestamp_domain; 
+    void set_timestamp_domain(rs_timestamp_domain timestamp_domain)
+    {
+        additional_data.timestamp_domain = timestamp_domain;
     }
 
     long long get_frame_system_time() const;
@@ -124,13 +124,13 @@ struct rs_frame // esentially an intrusive shared_ptr<frame>
         if (frame) frame->acquire();
     }
 
-    rs_frame(const rs_frame& other) 
+    rs_frame(const rs_frame& other)
         : frame_ptr(other.frame_ptr)
     {
         if (frame_ptr) frame_ptr->acquire();
     }
 
-    rs_frame(rs_frame&& other) 
+    rs_frame(rs_frame&& other)
         : frame_ptr(other.frame_ptr)
     {
         other.frame_ptr = nullptr;
@@ -201,7 +201,7 @@ namespace rsimpl
 {
     // Defines general frames storage model
     class frame_archive : public std::enable_shared_from_this<frame_archive>
-    {        
+    {
         std::atomic<uint32_t>* max_frame_queue_size;
         std::atomic<uint32_t> published_frames_count;
         small_heap<frame, RS_USER_QUEUE_SIZE> published_frames;
@@ -215,8 +215,8 @@ namespace rsimpl
         std::chrono::high_resolution_clock::time_point capture_started;
 
     public:
-        explicit frame_archive(std::atomic<uint32_t>* max_frame_queue_size, 
-                               std::chrono::high_resolution_clock::time_point capture_started 
+        explicit frame_archive(std::atomic<uint32_t>* max_frame_queue_size,
+                               std::chrono::high_resolution_clock::time_point capture_started
                                     = std::chrono::high_resolution_clock::now());
 
         callback_invokation_holder begin_callback()

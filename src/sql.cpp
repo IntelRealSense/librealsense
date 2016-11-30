@@ -2,14 +2,35 @@
 #include "../third_party/sqlite/sqlite3.h"
 #include <stdexcept>
 #include <cstring>
+#include <thread>
 
 using namespace std;
 
 namespace sql
 {
+    template<class T>
+    int do_with_retries(T action, int max_retries = 1000)
+    {
+        int result;
+        auto retries = 0;
+        do
+        {
+            result = action();
+            if (result == SQLITE_BUSY)
+                std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        } while (result == SQLITE_BUSY && ++retries < max_retries);
+
+        if (result == SQLITE_BUSY)
+        {
+            result = SQLITE_BUSY;
+        }
+
+        return result;
+    }
+
     void connection_handle_traits::close(ptr value)
     {
-        if (SQLITE_OK != sqlite3_close(value))
+        if (SQLITE_OK != do_with_retries([&]() { return sqlite3_close(value); }))
         {
             throw runtime_error(sqlite3_errmsg(value));
         }
@@ -17,7 +38,7 @@ namespace sql
 
     void statement_handle_traits::close(ptr value)
     {
-        if (SQLITE_OK != sqlite3_finalize(value))
+        if (SQLITE_OK != do_with_retries([&]() { return sqlite3_finalize(value); }))
         {
             throw runtime_error("cannot finalize statement");
         }
@@ -26,7 +47,7 @@ namespace sql
     connection::connection(const char* filename)
     {
         connection_handle handle;
-        auto const code = sqlite3_open(filename, handle.get_address());
+        auto const code = do_with_retries([&]() { return sqlite3_open(filename, handle.get_address()); });
         if (SQLITE_OK != code)
         {
             throw runtime_error(sqlite3_errmsg(handle.get()));
@@ -36,7 +57,7 @@ namespace sql
 
     void connection::execute(const char * command) const
     {
-        auto const code = sqlite3_exec(m_handle.get(), command, nullptr, nullptr, nullptr);
+        auto const code = do_with_retries([&]() { return sqlite3_exec(m_handle.get(), command, nullptr, nullptr, nullptr); });
         if (SQLITE_OK != code)
         {
             throw runtime_error(sqlite3_errmsg(m_handle.get()));
@@ -51,18 +72,32 @@ namespace sql
         return stmt()[0].get_bool();
     }
 
+    void connection::transaction(std::function<void()> transaction) const
+    {
+        char* errorMessage;
+        sqlite3_exec(m_handle.get(), "BEGIN TRANSACTION", NULL, NULL, &errorMessage);
+
+        transaction();
+
+        sqlite3_exec(m_handle.get(), "COMMIT TRANSACTION", NULL, NULL, &errorMessage);
+    }
+
     statement::statement(const connection& conn, const char * sql)
     {
-        auto const code = sqlite3_prepare_v2(conn.m_handle.get(), sql, strlen(sql), m_handle.get_address(), nullptr);
+        auto const code = do_with_retries([&]() {
+            return sqlite3_prepare_v2(conn.m_handle.get(), sql, strlen(sql), m_handle.get_address(), nullptr);
+        });
         if (SQLITE_OK != code)
         {
             throw runtime_error(sqlite3_errmsg(conn.m_handle.get()));
         }
     }
 
+
+
     bool statement::step() const
     {
-        auto const code = sqlite3_step(m_handle.get());
+        auto const code = do_with_retries([&]() { return sqlite3_step(m_handle.get()); });
 
         if (code == SQLITE_ROW) return true;
         if (code == SQLITE_DONE) return false;

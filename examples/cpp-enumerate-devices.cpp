@@ -38,20 +38,20 @@ int main(int argc, char** argv) try
     if (compact_view_arg.getValue())
     {
         cout << left << setw(30) << "Device Name"
-                     << setw(20) << "Serial Number"
-                     << setw(20) << "Firmware Version"
-                     << endl;
+            << setw(20) << "Serial Number"
+            << setw(20) << "Firmware Version"
+            << endl;
 
         for (auto i = 0; i < device_count; ++i)
         {
             auto dev = devices[i];
 
-            cout << left << setw(30) << dev.get_camera_info(RS_CAMERA_INFO_DEVICE_NAME) 
-                         << setw(20) << dev.get_camera_info(RS_CAMERA_INFO_DEVICE_SERIAL_NUMBER)
-                         << setw(20) << dev.get_camera_info(RS_CAMERA_INFO_CAMERA_FIRMWARE_VERSION)
-                         << endl;
+            cout << left << setw(30) << dev.get_camera_info(RS_CAMERA_INFO_DEVICE_NAME)
+                << setw(20) << dev.get_camera_info(RS_CAMERA_INFO_DEVICE_SERIAL_NUMBER)
+                << setw(20) << dev.get_camera_info(RS_CAMERA_INFO_CAMERA_FIRMWARE_VERSION)
+                << endl;
         }
-        
+
         return EXIT_SUCCESS;
     }
 
@@ -65,60 +65,51 @@ int main(int argc, char** argv) try
         {
             auto param = static_cast<rs_camera_info>(j);
             if (dev.supports(param))
-                cout << "    " << left << setw(20) << rs_camera_info_to_string(rs_camera_info(param)) 
-                     << ": \t" << dev.get_camera_info(param) << endl;
+                cout << "    " << left << setw(20) << rs_camera_info_to_string(rs_camera_info(param))
+                << ": \t" << dev.get_camera_info(param) << endl;
         }
 
         cout << endl;
 
-        for (auto s = 0; s < RS_SUBDEVICE_COUNT; s++)
+
+        if (show_options.getValue())
         {
-            auto subdevice = static_cast<rs_subdevice>(s);
-
-            if (!dev.supports(subdevice)) continue;
-
-            cout << " Subdevice " << rs_subdevice_to_string(subdevice) << endl;
-            // Show which options are supported by this device
-
-            if (show_options.getValue())
+            cout << setw(55) << " Supported options:" << setw(10) << "min" << setw(10)
+                << " max" << setw(6) << " step" << setw(10) << " default" << endl;
+            for (auto j = 0; j < RS_OPTION_COUNT; ++j)
             {
-                cout << setw(55) << " Supported options:" << setw(10) << "min" << setw(10)
-                    << " max" << setw(6) << " step" << setw(10) << " default" << endl;
-                for (auto j = 0; j < RS_OPTION_COUNT; ++j)
+                auto opt = static_cast<rs_option>(j);
+                if (dev.supports(opt))
                 {
-                    auto opt = static_cast<rs_option>(j);
-                    if (dev.get_subdevice(subdevice).supports(opt))
-                    {
-                        auto range = dev.get_subdevice(subdevice).get_option_range(opt);
-                        cout << "    " << left << setw(50) << opt << " : "
-                            << setw(5) << range.min << "... " << setw(12) << range.max
-                            << setw(6) << range.step << setw(10) << range.def << "\n";
-                    }
+                    auto range = dev.get_option_range(opt);
+                    cout << "    " << left << setw(50) << opt << " : "
+                        << setw(5) << range.min << "... " << setw(12) << range.max
+                        << setw(6) << range.step << setw(10) << range.def << "\n";
                 }
-
-                cout << endl;
             }
 
-            if (show_modes.getValue())
-            {
-                cout << setw(55) << " Supported modes:" << setw(10) << "stream" << setw(10)
-                    << " resolution" << setw(6) << " fps" << setw(10) << " format" << endl;
-                // Show which streams are supported by this device
-                for (auto&& profile : dev.get_subdevice(subdevice).get_stream_modes())
-                {
-                    cout << "    " << profile.stream << "\t  " << profile.width << "\tx "
-                        << profile.height << "\t@ " << profile.fps << "Hz\t" << profile.format << endl;
-
-                    // Show horizontal and vertical field of view, in degrees
-                    //std::cout << "\t" << std::setprecision(3) << intrin.hfov() << " x " << intrin.vfov() << " degrees\n";
-                }
-
-                cout << endl;
-            }
+            cout << endl;
         }
 
-        cout << endl;
+        if (show_modes.getValue())
+        {
+            cout << setw(55) << " Supported modes:" << setw(10) << "stream" << setw(10)
+                << " resolution" << setw(6) << " fps" << setw(10) << " format" << endl;
+            // Show which streams are supported by this device
+            for (auto&& profile : dev.get_stream_modes())
+            {
+                cout << "    " << profile.stream << "\t  " << profile.width << "\tx "
+                    << profile.height << "\t@ " << profile.fps << "Hz\t" << profile.format << endl;
+
+                // Show horizontal and vertical field of view, in degrees
+                //std::cout << "\t" << std::setprecision(3) << intrin.hfov() << " x " << intrin.vfov() << " degrees\n";
+            }
+
+            cout << endl;
+        }
     }
+
+    cout << endl;
 
     return EXIT_SUCCESS;
 }

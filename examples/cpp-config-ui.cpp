@@ -42,7 +42,7 @@ class option_model
 public:
     rs_option opt;
     rs::option_range range;
-    rs::subdevice* endpoint;
+    rs::device endpoint;
     bool* invalidate_flag;
     bool supported = false;
     float value = 0.0f;
@@ -61,7 +61,7 @@ public:
                     value = bool_value ? 1.0f : 0.0f;
                     try
                     {
-                        endpoint->set_option(opt, value);
+                        endpoint.set_option(opt, value);
                         *invalidate_flag = true;
                     }
                     catch (const rs::error& e)
@@ -85,13 +85,13 @@ public:
                         for (auto i = range.min; i <= range.max; i += range.step, counter++)
                         {
                             if (abs(i - value) < 0.001f) selected = counter;
-                            labels.push_back(endpoint->get_option_value_description(opt, i));
+                            labels.push_back(endpoint.get_option_value_description(opt, i));
                         }
-                        if (ImGui::Combo(id.c_str(), &selected, labels.data(), 
+                        if (ImGui::Combo(id.c_str(), &selected, labels.data(),
                             static_cast<int>(labels.size())))
                         {
                             value = range.min + range.step * selected;
-                            endpoint->set_option(opt, value);
+                            endpoint.set_option(opt, value);
                             *invalidate_flag = true;
                         }
                     }
@@ -104,7 +104,7 @@ public:
                         {
                             // TODO: Round to step?
                             value = static_cast<float>(int_value);
-                            endpoint->set_option(opt, value);
+                            endpoint.set_option(opt, value);
                             *invalidate_flag = true;
                         }
                     }
@@ -113,7 +113,7 @@ public:
                         if (ImGui::SliderFloat(id.c_str(), &value,
                             range.min, range.max))
                         {
-                            endpoint->set_option(opt, value);
+                            endpoint.set_option(opt, value);
                         }
                     }
                 }
@@ -124,7 +124,7 @@ public:
                 ImGui::PopItemWidth();
             }
 
-            auto desc = endpoint->get_option_description(opt);
+            auto desc = endpoint.get_option_description(opt);
             if (ImGui::IsItemHovered() && desc)
             {
                 ImGui::SetTooltip(desc);
@@ -136,8 +136,8 @@ public:
     {
         try
         {
-            if (endpoint->supports(opt))
-                value = endpoint->get_option(opt);
+            if (endpoint.supports(opt))
+                value = endpoint.get_option(opt);
         }
         catch (const rs::error& e)
         {
@@ -155,7 +155,7 @@ private:
     {
         for (auto i = range.min; i <= range.max; i += range.step)
         {
-            if (endpoint->get_option_value_description(opt, i) == nullptr)
+            if (endpoint.get_option_value_description(opt, i) == nullptr)
                 return false;
         }
         return true;
@@ -186,8 +186,8 @@ std::vector<const char*> get_string_pointers(const std::vector<std::string>& vec
 class subdevice_model
 {
 public:
-    subdevice_model(rs_subdevice subdevice, rs::subdevice* endpoint, std::string& error_message)
-        : subdevice(subdevice), endpoint(endpoint), allow_new_frames(true), queues(5)
+    subdevice_model(rs::device dev, std::string& error_message)
+        : dev(dev), allow_new_frames(true), queues(5)
     {
         for (auto i = 0; i < RS_OPTION_COUNT; i++)
         {
@@ -195,21 +195,20 @@ public:
             auto opt = static_cast<rs_option>(i);
 
             std::stringstream ss;
-            ss << rs_subdevice_to_string(subdevice) << "/" << rs_option_to_string(opt);
+            ss << dev.get_camera_info(RS_CAMERA_INFO_DEVICE_NAME) << "/" << rs_option_to_string(opt);
             metadata.id = ss.str();
             metadata.opt = opt;
-            metadata.endpoint = endpoint;
-
+            metadata.endpoint = dev;
             metadata.label = rs_option_to_string(opt);
             metadata.invalidate_flag = &options_invalidated;
 
-            metadata.supported = endpoint->supports(opt);
+            metadata.supported = dev.supports(opt);
             if (metadata.supported)
             {
                 try
                 {
-                    metadata.range = endpoint->get_option_range(opt);
-                    metadata.value = endpoint->get_option(opt);
+                    metadata.range = dev.get_option_range(opt);
+                    metadata.value = dev.get_option(opt);
                 }
                 catch (const rs::error& e)
                 {
@@ -223,7 +222,7 @@ public:
 
         try
         {
-            auto uvc_profiles = endpoint->get_stream_modes();
+            auto uvc_profiles = dev.get_stream_modes();
             for (auto&& profile : uvc_profiles)
             {
                 std::stringstream res;
@@ -246,31 +245,31 @@ public:
                     {
                         any_stream_enabled = true;
                         break;
-                    }                       
+                    }
                 }
                 if (!any_stream_enabled) stream_enabled[profile.stream] = true;
-                
+
                 profiles.push_back(profile);
             }
 
             // set default selections
             int selection_index;
-            
+
             get_default_selection_index(res_values, std::pair<int,int>(640,480), &selection_index);
             selected_res_id = selection_index;
-            
+
             get_default_selection_index(fps_values, 30, &selection_index);
             selected_fps_id = selection_index;
-            
+
             for (auto format_array : format_values)
             {
                 for (auto format : { rs_format::RS_FORMAT_RGB8, rs_format::RS_FORMAT_Z16, rs_format::RS_FORMAT_Y8 } )
-                {                 
+                {
                     if (get_default_selection_index(format_array.second, format, &selection_index))
                     {
                         selected_format_id[format_array.first] = selection_index;
                         break;
-                    }                    
+                    }
                 }
             }
         }
@@ -350,7 +349,7 @@ public:
 
     void play(const std::vector<rs::stream_profile>& profiles)
     {
-        current_stream = std::make_shared<rs::streaming_lock>(endpoint->open(profiles));
+        current_stream = std::make_shared<rs::streaming_lock>(dev.open(profiles));
         current_stream->start(queues);
         allow_new_frames = true;
     }
@@ -371,11 +370,11 @@ public:
 
     template<typename T>
     bool get_default_selection_index(const std::vector<T>& values, const T & def, int* index /*std::function<int(const std::vector<T>&,T,int*)> compare = nullptr*/)
-    {     
+    {
         auto max_default = values.begin();
         for (auto it = values.begin(); it != values.end(); it++)
         {
-            
+
             if (*it == def)
             {
                 *index = it - values.begin();
@@ -390,8 +389,7 @@ public:
         return false;
     }
 
-    rs_subdevice subdevice;
-    rs::subdevice* endpoint;
+    rs::device dev;
 
     std::map<rs_option, option_model> options_metadata;
     std::vector<std::string> resolutions;
@@ -423,13 +421,9 @@ class device_model
 public:
     explicit device_model(rs::device& dev, std::string& error_message)
     {
-        for (auto j = 0; j < RS_SUBDEVICE_COUNT; j++)
+        for (auto&& sub : dev.query_adjacent_devices())
         {
-            auto subdevice = static_cast<rs_subdevice>(j);
-            if (!dev.supports(subdevice)) continue;
-            auto&& endpoint = dev.get_subdevice(subdevice);
-
-            auto model = std::make_shared<subdevice_model>(subdevice, &endpoint, error_message);
+            auto model = std::make_shared<subdevice_model>(sub, error_message);
             subdevices.push_back(model);
         }
     }
@@ -653,14 +647,14 @@ int main(int, char**) try
         {
             auto device_names_chars = get_string_pointers(device_names);
             ImGui::PushItemWidth(-1);
-            if (ImGui::Combo("", &device_index, device_names_chars.data(), 
+            if (ImGui::Combo("", &device_index, device_names_chars.data(),
                 static_cast<int>(device_names.size())))
             {
                 for (auto&& sub : model.subdevices)
                 {
                     sub->stop();
                 }
-                
+
                 dev = list[device_index];
                 model = device_model(dev, error_message);
             }
@@ -694,7 +688,7 @@ int main(int, char**) try
         {
             for (auto&& sub : model.subdevices)
             {
-                label = to_string() << rs_subdevice_to_string(sub->subdevice);
+                label = to_string() << sub->dev.get_camera_info(RS_CAMERA_INFO_MODULE_NAME);
                 if (ImGui::CollapsingHeader(label.c_str(), nullptr, true, true))
                 {
                     auto res_chars = get_string_pointers(sub->resolutions);
@@ -703,7 +697,7 @@ int main(int, char**) try
                     ImGui::Text("Resolution:");
                     ImGui::SameLine();
                     ImGui::PushItemWidth(-1);
-                    label = to_string() << rs_subdevice_to_string(sub->subdevice) << " resolution";
+                    label = to_string() << sub->dev.get_camera_info(RS_CAMERA_INFO_DEVICE_NAME) << " resolution";
                     if (sub->current_stream.get()) ImGui::Text(res_chars[sub->selected_res_id]);
                     else ImGui::Combo(label.c_str(), &sub->selected_res_id, res_chars.data(),
                                       static_cast<int>(res_chars.size()));
@@ -712,9 +706,9 @@ int main(int, char**) try
                     ImGui::Text("FPS:");
                     ImGui::SameLine();
                     ImGui::PushItemWidth(-1);
-                    label = to_string() << rs_subdevice_to_string(sub->subdevice) << " fps";
+                    label = to_string() << sub->dev.get_camera_info(RS_CAMERA_INFO_MODULE_NAME) << " fps";
                     if (sub->current_stream.get()) ImGui::Text(fps_chars[sub->selected_fps_id]);
-                    else ImGui::Combo(label.c_str(), &sub->selected_fps_id, fps_chars.data(), 
+                    else ImGui::Combo(label.c_str(), &sub->selected_fps_id, fps_chars.data(),
                                       static_cast<int>(fps_chars.size()));
                     ImGui::PopItemWidth();
 
@@ -746,7 +740,7 @@ int main(int, char**) try
                         if (sub->stream_enabled[stream])
                         {
                             ImGui::PushItemWidth(-1);
-                            label = to_string() << rs_subdevice_to_string(sub->subdevice)
+                            label = to_string() << sub->dev.get_camera_info(RS_CAMERA_INFO_MODULE_NAME)
                                 << " " << rs_stream_to_string(stream) << " format";
                             if (sub->current_stream.get()) ImGui::Text(formats_chars[sub->selected_format_id[stream]]);
                             else ImGui::Combo(label.c_str(), &sub->selected_format_id[stream], formats_chars.data(),
@@ -763,7 +757,7 @@ int main(int, char**) try
                     {
                         if (!sub->current_stream.get())
                         {
-                            label = to_string() << "Play " << rs_subdevice_to_string(sub->subdevice);
+                            label = to_string() << "Play " << sub->dev.get_camera_info(RS_CAMERA_INFO_MODULE_NAME);
 
                             if (sub->is_selected_combination_supported())
                             {
@@ -779,7 +773,7 @@ int main(int, char**) try
                         }
                         else
                         {
-                            label = to_string() << "Stop " << rs_subdevice_to_string(sub->subdevice);
+                            label = to_string() << "Stop " << sub->dev.get_camera_info(RS_CAMERA_INFO_MODULE_NAME);
                             if (ImGui::Button(label.c_str()))
                             {
                                 sub->stop();
@@ -802,7 +796,7 @@ int main(int, char**) try
         {
             for (auto&& sub : model.subdevices)
             {
-                label = to_string() << rs_subdevice_to_string(sub->subdevice) << " options:";
+                label = to_string() << sub->dev.get_camera_info(RS_CAMERA_INFO_MODULE_NAME) << " options:";
                 if (ImGui::CollapsingHeader(label.c_str(), nullptr, true, false))
                 {
                     for (auto i = 0; i < RS_OPTION_COUNT; i++)
@@ -887,7 +881,7 @@ int main(int, char**) try
             ImGui::Begin(label.c_str(), nullptr, flags);
 
             label = to_string() << rs_stream_to_string(stream) << " "
-                << stream_size.x << "x" << stream_size.y << ", " 
+                << stream_size.x << "x" << stream_size.y << ", "
                 << rs_format_to_string(model.stream_format[stream]);
             ImGui::Text(label.c_str());
             ImGui::End();

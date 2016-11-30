@@ -14,6 +14,7 @@ include(CheckCXXCompilerFlag)
 CHECK_CXX_COMPILER_FLAG("-std=c++11" COMPILER_SUPPORTS_CXX11)
 CHECK_CXX_COMPILER_FLAG("-std=c++0x" COMPILER_SUPPORTS_CXX0X)
 if(COMPILER_SUPPORTS_CXX11)
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c11 -pthread")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 elseif(COMPILER_SUPPORTS_CXX0X)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
@@ -111,9 +112,15 @@ set_target_properties (cpp-enumerate-devices PROPERTIES
     FOLDER Examples
 )
 
-add_executable(cpp-terminal cpp-terminal.cpp)
-target_link_libraries(cpp-terminal ${DEPENDENCIES})
-include_directories(cpp-terminal third_party/tclap/include)
+add_executable(cpp-terminal cpp-terminal.cpp third_party/auto-complete/auto-complete.cpp third_party/auto-complete/auto-complete.h)
+
+if(WIN32)
+    target_link_libraries(cpp-terminal ${DEPENDENCIES})
+else()
+    target_link_libraries(cpp-terminal -lpthread ${DEPENDENCIES})
+endif()
+
+include_directories(cpp-terminal third_party/tclap/include third_party/auto-complete)
 
 set_target_properties (cpp-terminal PROPERTIES
     FOLDER Examples
@@ -136,19 +143,19 @@ set_target_properties (cpp-pointcloud PROPERTIES
 
 install(
     TARGETS
-	
-	c-tutorial-1-depth
-	cpp-tutorial-1-depth
-	c-tutorial-2-streams
-	cpp-tutorial-2-streams
-	
-	cpp-enumerate-devices
-	cpp-terminal
-	cpp-config-ui
-	cpp-capture
-	cpp-headless
-	cpp-multicam
-	cpp-pointcloud
+
+    c-tutorial-1-depth
+    cpp-tutorial-1-depth
+    c-tutorial-2-streams
+    cpp-tutorial-2-streams
+
+    cpp-enumerate-devices
+    cpp-terminal
+    cpp-config-ui
+    cpp-capture
+    cpp-headless
+    cpp-multicam
+    cpp-pointcloud
 
     RUNTIME DESTINATION
     ${CMAKE_INSTALL_PREFIX}/bin

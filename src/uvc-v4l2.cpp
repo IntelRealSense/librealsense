@@ -134,7 +134,6 @@ namespace rsimpl
                 libusb_device_handle* usb_handle;
                 int status = libusb_open(_usb_device, &usb_handle);
                 if(status < 0) throw std::runtime_error(to_string() << "libusb_open(...) returned " << libusb_error_name(status));
-
                 status = libusb_claim_interface(usb_handle, _mi);
                 if(status < 0) throw std::runtime_error(to_string() << "libusb_claim_interface(...) returned " << libusb_error_name(status));
 
@@ -144,7 +143,6 @@ namespace rsimpl
 
                 std::vector<uint8_t> result;
 
-                std::this_thread::sleep_for(std::chrono::milliseconds(20));
 
                 if (require_response)
                 {
@@ -330,7 +328,7 @@ namespace rsimpl
                 if (_thread) _thread->join();
             }
 
-            void play(stream_profile profile, frame_callback callback) override
+            void probe_and_commit(stream_profile profile, frame_callback callback) override
             {
                 if(!_is_capturing && !_callback)
                 {
@@ -382,7 +380,13 @@ namespace rsimpl
                         _buffers[i].start = mmap(NULL, buf.length, PROT_READ | PROT_WRITE, MAP_SHARED, _fd, buf.m.offset);
                         if(_buffers[i].start == MAP_FAILED) throw_error("mmap");
                     }
+                }
+            }
 
+            void play() override
+            {
+                if(!_is_capturing)
+                {
                     // Start capturing
                     for(size_t i = 0; i < _buffers.size(); ++i)
                     {

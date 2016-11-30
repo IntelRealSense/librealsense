@@ -5,35 +5,27 @@
 // This set of tests is valid for any number and combination of RealSense cameras, including R200 and F200 //
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-#if !defined(MAKEFILE) || ( defined(LIVE_TEST) )
-
 #include "unit-tests-common.h"
 
-TEST_CASE( "Device metadata enumerates correctly", "[live]" )
+TEST_CASE("Device metadata enumerates correctly", "[live]")
 {
+    auto ctx = make_context(__FUNCTION__);
     // Require at least one device to be plugged in
-    safe_context ctx;
-    const int device_count = rs_get_device_count(ctx, require_no_error());
+    std::vector<rs::device> list;
+    REQUIRE_NOTHROW(list = ctx.query_devices());
+    const int device_count = list.size();
     REQUIRE(device_count > 0);
 
     // For each device
-    for(int i=0; i<device_count; ++i)
+    for (auto&& dev : list)
     {
-        rs_device * dev = rs_get_device(ctx, 0, require_no_error());    
-        REQUIRE(dev != nullptr);
-
-        SECTION( "device metadata strings are nonempty" )
+        SECTION("supported device metadata strings are nonempty, unsupported ones throw")
         {
-            REQUIRE( rs_get_device_name(dev, require_no_error()) != nullptr );
-            REQUIRE( rs_get_device_serial(dev, require_no_error()) != nullptr );
-            REQUIRE( rs_get_device_firmware_version(dev, require_no_error()) != nullptr );
-        }
-
-        SECTION( "device supports standard picture options" )
-        {
-            for(int i=RS_OPTION_COLOR_BACKLIGHT_COMPENSATION; i<=RS_OPTION_COLOR_WHITE_BALANCE; ++i)
-            {
-                REQUIRE(rs_device_supports_option(dev, (rs_option)i, require_no_error()) == 1);
+            for (auto j = 0; j < RS_CAMERA_INFO_COUNT; ++j) {
+                auto is_supported = false;
+                REQUIRE_NOTHROW(is_supported = dev.supports(rs_camera_info(j)));
+                if (is_supported) REQUIRE(dev.get_camera_info(rs_camera_info(j)) != nullptr);
+                else REQUIRE_THROWS_AS(dev.get_camera_info(rs_camera_info(j)), rs::error);
             }
         }
     }
@@ -45,35 +37,29 @@ TEST_CASE( "Device metadata enumerates correctly", "[live]" )
 TEST_CASE("Start-Stop stream sequence", "[live]")
 {
     // Require at least one device to be plugged in
-    safe_context ctx;
-    const int device_count = rs_get_device_count(ctx, require_no_error());
+    auto ctx = make_context(__FUNCTION__);
+    std::vector<rs::device> list;
+    REQUIRE_NOTHROW(list = ctx.query_devices());
+    const int device_count = list.size();
     REQUIRE(device_count > 0);
 
-    std::vector<rs_stream> supported_streams;
+    rs::util::config config;
+    REQUIRE_NOTHROW(config.enable_all(rs::preset::best_quality));
 
     // For each device
-    for(int i=0; i<device_count; ++i)
+    for (auto&& dev : list)
     {
-        rs_device * dev = rs_get_device(ctx, 0, require_no_error());
-        REQUIRE(dev != nullptr);
-
-        for (int i = (int)rs_capabilities::RS_CAPABILITIES_DEPTH; i <= (int)rs_capabilities::RS_CAPABILITIES_FISH_EYE; i++)
-            if (rs_supports(dev,(rs_capabilities)i, require_no_error()))
-                supported_streams.push_back((rs_stream)i);
-
         // Configure all supported streams to run at 30 frames per second
-        for (auto & stream : supported_streams)
-            rs_enable_stream_preset(dev, stream, rs_preset::RS_PRESET_BEST_QUALITY, require_no_error());
+        auto streams = config.open(dev);
 
-        for (int i = 0; i< 5; i++)
+        for (auto i = 0; i < 5; i++)
         {
             // Test sequence
-            rs_start_device(dev, require_no_error());
-            rs_stop_device(dev, require_no_error());
+            REQUIRE_NOTHROW(streams.start([](rs_frame * fref) {}));
+            REQUIRE_NOTHROW(streams.stop());
         }
 
-        for (auto & stream : supported_streams)
-            rs_disable_stream(dev,stream,require_no_error());
+        config.disable_all();
     }
 }
 
@@ -81,345 +67,601 @@ TEST_CASE("Start-Stop stream sequence", "[live]")
 // Calibration information tests //
 ///////////////////////////////////
 
-TEST_CASE( "no extrinsic transformation between a stream and itself", "[live]" )
+TEST_CASE("no extrinsic transformation between a stream and itself", "[live]")
 {
     // Require at least one device to be plugged in
-    safe_context ctx;
-    const int device_count = rs_get_device_count(ctx, require_no_error());
+    auto ctx = make_context(__FUNCTION__);
+    std::vector<rs::device> list;
+    REQUIRE_NOTHROW(list = ctx.query_devices());
+    const int device_count = list.size();
     REQUIRE(device_count > 0);
 
     // For each device
-    for(int i=0; i<device_count; ++i)
+    for (auto&& dev : list)
     {
-        rs_device * dev = rs_get_device(ctx, 0, require_no_error());    
-        REQUIRE(dev != nullptr);
-
-        for(int j=0; j<RS_STREAM_COUNT; ++j)
-        {
-            rs_extrinsics extrin = {};
-            rs_error * e = nullptr;
-            rs_get_device_extrinsics(dev, (rs_stream)j, (rs_stream)j, &extrin, &e);
-            if (!e) // if device is not calibrated, rs_get_device_extrinsic has to return an error
-            {
-                require_identity_matrix(extrin.rotation);
-                require_zero_vector(extrin.translation);
-            }
+        rs_extrinsics extrin;
+        try {
+            extrin = ctx.get_extrinsics(dev, dev);
         }
+        catch (rs::error &e) {
+            // if device isn't calibrated, get_extrinsics must error out (according to old comment. Might not be true under new API)
+            WARN(e.what());
+            continue;
+        }
+
+        require_identity_matrix(extrin.rotation);
+        require_zero_vector(extrin.translation);
     }
 }
 
-TEST_CASE( "extrinsic transformation between two streams is a rigid transform", "[live]" )
+TEST_CASE("extrinsic transformation between two streams is a rigid transform", "[live]")
 {
     // Require at least one device to be plugged in
-    safe_context ctx;
-    const int device_count = rs_get_device_count(ctx, require_no_error());
+    auto ctx = make_context(__FUNCTION__);
+    std::vector<rs::device> list;
+    REQUIRE_NOTHROW(list = ctx.query_devices());
+    const int device_count = list.size();
     REQUIRE(device_count > 0);
 
     // For each device
-    for(int i=0; i<device_count; ++i)
+    for (int i = 0; i < device_count; ++i)
     {
-        rs_device * dev = rs_get_device(ctx, 0, require_no_error());    
-        REQUIRE(dev != nullptr);
+        auto dev = list[i];
+        auto adj_devices = dev.query_adjacent_devices();
+        //REQUIRE(dev != nullptr);
 
         // For every pair of streams
-        for(int j=0; j<RS_STREAM_COUNT; ++j)
+        for (auto j = 0; j < adj_devices.size(); ++j)
         {
-            const rs_stream stream_a = (rs_stream)j;
-
-            for(int k=j+1; k<RS_STREAM_COUNT; ++k)
+            for (int k = j + 1; k < adj_devices.size(); ++k)
             {
-                const rs_stream stream_b = (rs_stream)k;
-            
                 // Extrinsics from A to B should have an orthonormal 3x3 rotation matrix and a translation vector of magnitude less than 10cm
-                rs_extrinsics a_to_b = {};
+                rs_extrinsics a_to_b;
 
-                rs_error * e = nullptr;
-
-                rs_get_device_extrinsics(dev, stream_a, stream_b, &a_to_b, &e);
-
-                if (!e)
-                {
-                    require_rotation_matrix(a_to_b.rotation);
-                    REQUIRE( vector_length(a_to_b.translation) < 0.1f );
-
-                    // Extrinsics from B to A should be the inverse of extrinsics from A to B
-                    rs_extrinsics b_to_a = {};
-                    rs_get_device_extrinsics(dev, stream_b, stream_a, &b_to_a, require_no_error());
-                    require_transposed(a_to_b.rotation, b_to_a.rotation);
-                    REQUIRE( b_to_a.rotation[0] * a_to_b.translation[0] + b_to_a.rotation[3] * a_to_b.translation[1] + b_to_a.rotation[6] * a_to_b.translation[2] == Approx(-b_to_a.translation[0]) );
-                    REQUIRE( b_to_a.rotation[1] * a_to_b.translation[0] + b_to_a.rotation[4] * a_to_b.translation[1] + b_to_a.rotation[7] * a_to_b.translation[2] == Approx(-b_to_a.translation[1]) );
-                    REQUIRE( b_to_a.rotation[2] * a_to_b.translation[0] + b_to_a.rotation[5] * a_to_b.translation[1] + b_to_a.rotation[8] * a_to_b.translation[2] == Approx(-b_to_a.translation[2]) );
+                try {
+                    a_to_b = ctx.get_extrinsics(adj_devices[j], adj_devices[k]);
                 }
+                catch (rs::error &e) {
+                    WARN(e.what());
+                    continue;
+                }
+
+                require_rotation_matrix(a_to_b.rotation);
+                REQUIRE(vector_length(a_to_b.translation) < 0.1f);
+
+                // Extrinsics from B to A should be the inverse of extrinsics from A to B
+                rs_extrinsics b_to_a;
+                REQUIRE_NOTHROW(b_to_a = ctx.get_extrinsics(adj_devices[k], adj_devices[j]));
+
+                require_transposed(a_to_b.rotation, b_to_a.rotation);
+                REQUIRE(b_to_a.rotation[0] * a_to_b.translation[0] + b_to_a.rotation[3] * a_to_b.translation[1] + b_to_a.rotation[6] * a_to_b.translation[2] == Approx(-b_to_a.translation[0]));
+                REQUIRE(b_to_a.rotation[1] * a_to_b.translation[0] + b_to_a.rotation[4] * a_to_b.translation[1] + b_to_a.rotation[7] * a_to_b.translation[2] == Approx(-b_to_a.translation[1]));
+                REQUIRE(b_to_a.rotation[2] * a_to_b.translation[0] + b_to_a.rotation[5] * a_to_b.translation[1] + b_to_a.rotation[8] * a_to_b.translation[2] == Approx(-b_to_a.translation[2]));
             }
         }
     }
 }
 
-TEST_CASE( "extrinsic transformations are transitive", "[live]" )
+TEST_CASE("extrinsic transformations are transitive", "[live]")
 {
     // Require at least one device to be plugged in
-    safe_context ctx;
-    const int device_count = rs_get_device_count(ctx, require_no_error());
+    auto ctx = make_context(__FUNCTION__);
+    std::vector<rs::device> list;
+    REQUIRE_NOTHROW(list = ctx.query_devices());
+    const int device_count = list.size();
     REQUIRE(device_count > 0);
 
     // For each device
-    for(int i=0; i<device_count; ++i)
+    for (auto&& dev : list)
     {
-        rs_device * dev = rs_get_device(ctx, 0, require_no_error());    
-        REQUIRE(dev != nullptr);
+        auto adj_devices = dev.query_adjacent_devices();
 
-        // For every pair of streams
-        for(int a=0; a<RS_STREAM_COUNT; ++a)
+        // For every set of subdevices
+        for (auto a = 0; a < adj_devices.size(); ++a)
         {
-            for(int b=0; b<RS_STREAM_COUNT; ++b)
+            for (auto b = 0; b < adj_devices.size(); ++b)
             {
-                for(int c=0; c<RS_STREAM_COUNT; ++c)
+                for (auto c = 0; c < adj_devices.size(); ++c)
                 {
                     // Require that the composition of a_to_b and b_to_c is equal to a_to_c
                     rs_extrinsics a_to_b, b_to_c, a_to_c;
-                    rs_error * a_to_b_e = nullptr,* a_to_c_e = nullptr, * b_to_c_e = nullptr;
 
-                    rs_get_device_extrinsics(dev, (rs_stream)a, (rs_stream)b, &a_to_b, &a_to_b_e);
-                    rs_get_device_extrinsics(dev, (rs_stream)b, (rs_stream)c, &b_to_c, &b_to_c_e);
-                    rs_get_device_extrinsics(dev, (rs_stream)a, (rs_stream)c, &a_to_c, &a_to_c_e);
-
-                    if ((!a_to_b_e) && (!b_to_c_e) && (!a_to_c_e))
+                    try {
+                        a_to_b = ctx.get_extrinsics(adj_devices[a], adj_devices[b]);
+                        b_to_c = ctx.get_extrinsics(adj_devices[b], adj_devices[c]);
+                        a_to_c = ctx.get_extrinsics(adj_devices[a], adj_devices[c]);
+                    }
+                    catch (rs::error &e)
                     {
-                        // a_to_c.rotation == a_to_b.rotation * b_to_c.rotation
-                        REQUIRE( a_to_c.rotation[0] == Approx(a_to_b.rotation[0] * b_to_c.rotation[0] + a_to_b.rotation[3] * b_to_c.rotation[1] + a_to_b.rotation[6] * b_to_c.rotation[2]) );
-                        REQUIRE( a_to_c.rotation[2] == Approx(a_to_b.rotation[2] * b_to_c.rotation[0] + a_to_b.rotation[5] * b_to_c.rotation[1] + a_to_b.rotation[8] * b_to_c.rotation[2]) );
-                        REQUIRE( a_to_c.rotation[1] == Approx(a_to_b.rotation[1] * b_to_c.rotation[0] + a_to_b.rotation[4] * b_to_c.rotation[1] + a_to_b.rotation[7] * b_to_c.rotation[2]) );
-                        REQUIRE( a_to_c.rotation[3] == Approx(a_to_b.rotation[0] * b_to_c.rotation[3] + a_to_b.rotation[3] * b_to_c.rotation[4] + a_to_b.rotation[6] * b_to_c.rotation[5]) );
-                        REQUIRE( a_to_c.rotation[4] == Approx(a_to_b.rotation[1] * b_to_c.rotation[3] + a_to_b.rotation[4] * b_to_c.rotation[4] + a_to_b.rotation[7] * b_to_c.rotation[5]) );
-                        REQUIRE( a_to_c.rotation[5] == Approx(a_to_b.rotation[2] * b_to_c.rotation[3] + a_to_b.rotation[5] * b_to_c.rotation[4] + a_to_b.rotation[8] * b_to_c.rotation[5]) );
-                        REQUIRE( a_to_c.rotation[6] == Approx(a_to_b.rotation[0] * b_to_c.rotation[6] + a_to_b.rotation[3] * b_to_c.rotation[7] + a_to_b.rotation[6] * b_to_c.rotation[8]) );
-                        REQUIRE( a_to_c.rotation[7] == Approx(a_to_b.rotation[1] * b_to_c.rotation[6] + a_to_b.rotation[4] * b_to_c.rotation[7] + a_to_b.rotation[7] * b_to_c.rotation[8]) );
-                        REQUIRE( a_to_c.rotation[8] == Approx(a_to_b.rotation[2] * b_to_c.rotation[6] + a_to_b.rotation[5] * b_to_c.rotation[7] + a_to_b.rotation[8] * b_to_c.rotation[8]) );
+                        WARN(e.what());
+                        continue;
+                    }
 
-                        // a_to_c.translation = a_to_b.transform(b_to_c.translation)
-                        REQUIRE( a_to_c.translation[0] == Approx(a_to_b.rotation[0] * b_to_c.translation[0] + a_to_b.rotation[3] * b_to_c.translation[1] + a_to_b.rotation[6] * b_to_c.translation[2] + a_to_b.translation[0]) );
-                        REQUIRE( a_to_c.translation[1] == Approx(a_to_b.rotation[1] * b_to_c.translation[0] + a_to_b.rotation[4] * b_to_c.translation[1] + a_to_b.rotation[7] * b_to_c.translation[2] + a_to_b.translation[1]) );
-                        REQUIRE( a_to_c.translation[2] == Approx(a_to_b.rotation[2] * b_to_c.translation[0] + a_to_b.rotation[5] * b_to_c.translation[1] + a_to_b.rotation[8] * b_to_c.translation[2] + a_to_b.translation[2]) );
-                   }
+                    // a_to_c.rotation == a_to_b.rotation * b_to_c.rotation
+                    REQUIRE(a_to_c.rotation[0] == Approx(a_to_b.rotation[0] * b_to_c.rotation[0] + a_to_b.rotation[3] * b_to_c.rotation[1] + a_to_b.rotation[6] * b_to_c.rotation[2]));
+                    REQUIRE(a_to_c.rotation[2] == Approx(a_to_b.rotation[2] * b_to_c.rotation[0] + a_to_b.rotation[5] * b_to_c.rotation[1] + a_to_b.rotation[8] * b_to_c.rotation[2]));
+                    REQUIRE(a_to_c.rotation[1] == Approx(a_to_b.rotation[1] * b_to_c.rotation[0] + a_to_b.rotation[4] * b_to_c.rotation[1] + a_to_b.rotation[7] * b_to_c.rotation[2]));
+                    REQUIRE(a_to_c.rotation[3] == Approx(a_to_b.rotation[0] * b_to_c.rotation[3] + a_to_b.rotation[3] * b_to_c.rotation[4] + a_to_b.rotation[6] * b_to_c.rotation[5]));
+                    REQUIRE(a_to_c.rotation[4] == Approx(a_to_b.rotation[1] * b_to_c.rotation[3] + a_to_b.rotation[4] * b_to_c.rotation[4] + a_to_b.rotation[7] * b_to_c.rotation[5]));
+                    REQUIRE(a_to_c.rotation[5] == Approx(a_to_b.rotation[2] * b_to_c.rotation[3] + a_to_b.rotation[5] * b_to_c.rotation[4] + a_to_b.rotation[8] * b_to_c.rotation[5]));
+                    REQUIRE(a_to_c.rotation[6] == Approx(a_to_b.rotation[0] * b_to_c.rotation[6] + a_to_b.rotation[3] * b_to_c.rotation[7] + a_to_b.rotation[6] * b_to_c.rotation[8]));
+                    REQUIRE(a_to_c.rotation[7] == Approx(a_to_b.rotation[1] * b_to_c.rotation[6] + a_to_b.rotation[4] * b_to_c.rotation[7] + a_to_b.rotation[7] * b_to_c.rotation[8]));
+                    REQUIRE(a_to_c.rotation[8] == Approx(a_to_b.rotation[2] * b_to_c.rotation[6] + a_to_b.rotation[5] * b_to_c.rotation[7] + a_to_b.rotation[8] * b_to_c.rotation[8]));
+
+                    // a_to_c.translation = a_to_b.transform(b_to_c.translation)
+                    REQUIRE(a_to_c.translation[0] == Approx(a_to_b.rotation[0] * b_to_c.translation[0] + a_to_b.rotation[3] * b_to_c.translation[1] + a_to_b.rotation[6] * b_to_c.translation[2] + a_to_b.translation[0]));
+                    REQUIRE(a_to_c.translation[1] == Approx(a_to_b.rotation[1] * b_to_c.translation[0] + a_to_b.rotation[4] * b_to_c.translation[1] + a_to_b.rotation[7] * b_to_c.translation[2] + a_to_b.translation[1]));
+                    REQUIRE(a_to_c.translation[2] == Approx(a_to_b.rotation[2] * b_to_c.translation[0] + a_to_b.rotation[5] * b_to_c.translation[1] + a_to_b.rotation[8] * b_to_c.translation[2] + a_to_b.translation[2]));
                 }
             }
         }
     }
 }
 
-TEST_CASE( "aligned images have no extrinsic transformation from the image they are aligned to", "[live]" )
+// break up
+TEST_CASE("streaming modes sanity check", "[live]")
 {
     // Require at least one device to be plugged in
-    safe_context ctx;
-    const int device_count = rs_get_device_count(ctx, require_no_error());
+    auto ctx = make_context(__FUNCTION__);
+    std::vector<rs::device> list;
+    REQUIRE_NOTHROW(list = ctx.query_devices());
+    const int device_count = list.size();
     REQUIRE(device_count > 0);
 
     // For each device
-    for(int i=0; i<device_count; ++i)
+    for (auto&& dev : list)
     {
-        rs_device * dev = rs_get_device(ctx, 0, require_no_error());    
-        REQUIRE(dev != nullptr);
-        
-        // Require no TRANSLATION (but rotation is acceptable) between RECTIFIED_COLOR and COLOR (because they come from the same imager)
-        rs_extrinsics extrin = {};
-        rs_get_device_extrinsics(dev, RS_STREAM_RECTIFIED_COLOR, RS_STREAM_COLOR, &extrin, require_no_error());
-        require_zero_vector(extrin.translation);
+        // make sure they provide at least one streaming mode
+        std::vector<rs::stream_profile> stream_profiles;
+        REQUIRE_NOTHROW(stream_profiles = dev.get_stream_modes());
+        REQUIRE(stream_profiles.size() > 0);
 
-        // Require no extrinsic transformation between COLOR_ALIGNED_TO_DEPTH and DEPTH (because, by definition, they are aligned)
-        rs_get_device_extrinsics(dev, RS_STREAM_COLOR_ALIGNED_TO_DEPTH, RS_STREAM_DEPTH, &extrin, require_no_error());
-        require_identity_matrix(extrin.rotation);
-        require_zero_vector(extrin.translation);
+        // for each stream profile provided:
+        for (auto profile : stream_profiles) {
+            SECTION("check stream profile settings are sane") {
+                // require that the settings are sane
+                REQUIRE(profile.width >= 320);
+                REQUIRE(profile.width <= 1920);
+                REQUIRE(profile.height >= 180);
+                REQUIRE(profile.height <= 1080);
+                REQUIRE(profile.format > RS_FORMAT_ANY);
+                REQUIRE(profile.format < RS_FORMAT_COUNT);
+                REQUIRE(profile.fps >= 2);
+                REQUIRE(profile.fps <= 300);
 
-        // Require no extrinsic transformation between DEPTH_ALIGNED_TO_COLOR and COLOR (because, by definition, they are aligned)
-        rs_get_device_extrinsics(dev, RS_STREAM_DEPTH_ALIGNED_TO_COLOR, RS_STREAM_COLOR, &extrin, require_no_error());
-        require_identity_matrix(extrin.rotation);
-        require_zero_vector(extrin.translation);
-
-        // Require no extrinsic transformation between DEPTH_ALIGNED_TO_RECTIFIED_COLOR and RECTIFIED_COLOR (because, by definition, they are aligned)
-        rs_get_device_extrinsics(dev, RS_STREAM_DEPTH_ALIGNED_TO_RECTIFIED_COLOR, RS_STREAM_RECTIFIED_COLOR, &extrin, require_no_error());
-        require_identity_matrix(extrin.rotation);
-        require_zero_vector(extrin.translation);
-    }
-}
-
-TEST_CASE( "streaming mode intrinsics are sane", "[live]" )
-{
-    // Require at least one device to be plugged in
-    safe_context ctx;
-    const int device_count = rs_get_device_count(ctx, require_no_error());
-    REQUIRE(device_count > 0);
-
-    // For each device
-    for(int i=0; i<device_count; ++i)
-    {
-        rs_device * dev = rs_get_device(ctx, 0, require_no_error());    
-        REQUIRE(dev != nullptr);
-
-        // For each of the basic streams
-        for(auto stream : {RS_STREAM_DEPTH, RS_STREAM_COLOR, RS_STREAM_INFRARED})
-        {
-            // Require that there are modes for this stream
-            const int stream_mode_count = rs_get_stream_mode_count(dev, stream, require_no_error());
-            REQUIRE(stream_mode_count > 0);
-
-            // For each streaming mode
-            for(int j=0; j<stream_mode_count; ++j)
-            {
-                // Retrieve mode settings
-                int width = 0, height = 0, framerate = 0;
-                rs_format format = RS_FORMAT_ANY;
-                rs_get_stream_mode(dev, stream, j, &width, &height, &format, &framerate, require_no_error());
-
-                // Require that the mode settings are sane
-                REQUIRE( width >= 320 );
-                REQUIRE( width <= 1920 );
-                REQUIRE( height >= 180 );
-                REQUIRE( height <= 1080 );
-                REQUIRE( format > RS_FORMAT_ANY );
-                REQUIRE( format < RS_FORMAT_COUNT );
-                REQUIRE( framerate >= 2 );
-                REQUIRE( framerate <= 300 );
-
-                // Require that we can set the stream to this mode
-                rs_enable_stream(dev, stream, width, height, format, framerate, require_no_error());
-                REQUIRE(rs_is_stream_enabled(dev, stream, require_no_error()) == 1);
-                REQUIRE(rs_get_stream_format(dev, stream, require_no_error()) == format);
-                REQUIRE(rs_get_stream_framerate(dev, stream, require_no_error()) == framerate);
-
-                // Intrinsic width/height must match width/height of streaming mode we requested
-                rs_intrinsics intrin;
-                rs_get_stream_intrinsics(dev, stream, &intrin, require_no_error());
-                REQUIRE( intrin.width == width );
-                REQUIRE( intrin.height == height );
-
-                // Principal point must be within center 20% of image
-                REQUIRE( intrin.ppx > width * 0.4f );
-                REQUIRE( intrin.ppx < width * 0.6f );
-                REQUIRE( intrin.ppy > height * 0.4f );
-                REQUIRE( intrin.ppy < height * 0.6f );
-
-                // Focal length must be nonnegative (todo - Refine requirements based on known expected FOV)
-                REQUIRE( intrin.fx > 0.0f );
-                REQUIRE( intrin.fy > 0.0f );
+                // require that we can start streaming this mode
+                rs::streaming_lock lock;
+                REQUIRE_NOTHROW(lock = dev.open({ profile }));
+                // TODO: make callback confirm stream format/dimensions/framerate
+                REQUIRE_NOTHROW(lock.start([](rs_frame * fref) {}));
 
                 // Require that we can disable the stream afterwards
-                rs_disable_stream(dev, stream, require_no_error());
-                REQUIRE(rs_is_stream_enabled(dev, stream, require_no_error()) == 0);
+                REQUIRE_NOTHROW(lock.stop());
             }
+            SECTION("check stream intrinsics are sane") {
+                rs_intrinsics intrin;
+                REQUIRE_NOTHROW(intrin = dev.get_intrinsics(profile));
 
-            // Require that we cannot retrieve intrinsic/format/framerate when stream is disabled
-            REQUIRE(rs_is_stream_enabled(dev, stream, require_no_error()) == 0);
-            rs_intrinsics intrin;
-            rs_get_stream_intrinsics(dev, stream, &intrin, require_error(std::string("stream not enabled: ") + rs_stream_to_string(stream)));
-            rs_get_stream_format(dev, stream, require_error(std::string("stream not enabled: ") + rs_stream_to_string(stream)));
-            rs_get_stream_framerate(dev, stream, require_error(std::string("stream not enabled: ") + rs_stream_to_string(stream)));
+                // Intrinsic width/height must match width/height of streaming mode we requested
+                REQUIRE(intrin.width == profile.width);
+                REQUIRE(intrin.height == profile.height);
+
+                // Principal point must be within center 20% of image
+                REQUIRE(intrin.ppx > profile.width * 0.4f);
+                REQUIRE(intrin.ppx < profile.width * 0.6f);
+                REQUIRE(intrin.ppy > profile.height * 0.4f);
+                REQUIRE(intrin.ppy < profile.height * 0.6f);
+
+                // Focal length must be nonnegative (todo - Refine requirements based on known expected FOV)
+                REQUIRE(intrin.fx > 0.0f);
+                REQUIRE(intrin.fy > 0.0f);
+            }
         }
     }
 }
 
-//TEST_CASE( "synthetic streaming mode properties are correct", "[live]" )
-//{
-//    // Require at least one device to be plugged in
-//    safe_context ctx;
-//    const int device_count = rs_get_device_count(ctx, require_no_error());
-//    REQUIRE(device_count > 0);
-//
-//    // For each device
-//    for(int i=0; i<device_count; ++i)
-//    {
-//        rs_device * dev = rs_get_device(ctx, 0, require_no_error());    
-//        REQUIRE(dev != nullptr);
-//
-//        // For each combination of COLOR and DEPTH streaming modes
-//        const int color_mode_count = rs_get_stream_mode_count(dev, RS_STREAM_COLOR, require_no_error());
-//        const int depth_mode_count = rs_get_stream_mode_count(dev, RS_STREAM_DEPTH, require_no_error());
-//        for(int j=0; j<color_mode_count; ++j)
-//        {
-//            // Enable a COLOR mode and retrieve intrinsics
-//            int color_width = 0, color_height = 0, color_framerate = 0; rs_format color_format = RS_FORMAT_ANY;
-//            rs_get_stream_mode(dev, RS_STREAM_COLOR, j, &color_width, &color_height, &color_format, &color_framerate, require_no_error());
-//            rs_enable_stream(dev, RS_STREAM_COLOR, color_width, color_height, color_format, color_framerate, require_no_error());
-//
-//            rs_intrinsics color_intrin = {};
-//            rs_get_stream_intrinsics(dev, RS_STREAM_COLOR, &color_intrin, require_no_error());
-//
-//            // Validate that RECTIFIED_COLOR properties match size/format/framerate of COLOR, and have no distortion
-//            REQUIRE( rs_get_stream_format(dev, RS_STREAM_RECTIFIED_COLOR, require_no_error()) == color_format );
-//            REQUIRE( rs_get_stream_framerate(dev, RS_STREAM_RECTIFIED_COLOR, require_no_error()) == color_framerate );
-//
-//            rs_intrinsics rectified_color_intrin = {};
-//            rs_get_stream_intrinsics(dev, RS_STREAM_RECTIFIED_COLOR, &rectified_color_intrin, require_no_error());
-//            REQUIRE( rectified_color_intrin.width  == color_width  );
-//            REQUIRE( rectified_color_intrin.height == color_height );
-//            REQUIRE( rectified_color_intrin.ppx > color_width * 0.4f );
-//            REQUIRE( rectified_color_intrin.ppx < color_width * 0.6f );
-//            REQUIRE( rectified_color_intrin.ppy > color_height * 0.4f );
-//            REQUIRE( rectified_color_intrin.ppy < color_height * 0.6f );
-//            REQUIRE( rectified_color_intrin.fx > 0.0f );
-//            REQUIRE( rectified_color_intrin.fy > 0.0f );
-//            REQUIRE( rectified_color_intrin.model == RS_DISTORTION_NONE );
-//            for(int k=0; k<5; ++k) REQUIRE( rectified_color_intrin.coeffs[k] == 0.0f );
-//
-//            for(int k=0; k<depth_mode_count; ++k)
-//            {
-//                // Enable a DEPTH mode and retrieve intrinsics
-//                int depth_width = 0, depth_height = 0, depth_framerate = 0; rs_format depth_format = RS_FORMAT_ANY; 
-//                rs_get_stream_mode(dev, RS_STREAM_DEPTH, k, &depth_width, &depth_height, &depth_format, &depth_framerate, require_no_error());
-//                rs_enable_stream(dev, RS_STREAM_DEPTH, depth_width, depth_height, depth_format, color_framerate, require_no_error());
-//
-//                rs_intrinsics depth_intrin = {};
-//                rs_get_stream_intrinsics(dev, RS_STREAM_DEPTH, &depth_intrin, require_no_error());
-//
-//                // COLOR_ALIGNED_TO_DEPTH must have same format/framerate as COLOR
-//                REQUIRE( rs_get_stream_format(dev, RS_STREAM_COLOR_ALIGNED_TO_DEPTH, require_no_error()) == color_format );
-//                REQUIRE( rs_get_stream_framerate(dev, RS_STREAM_COLOR_ALIGNED_TO_DEPTH, require_no_error()) == color_framerate );
-//
-//                // COLOR_ALIGNED_TO_DEPTH must have same intrinsics as DEPTH
-//                rs_intrinsics color_aligned_to_depth_intrin = {};
-//                rs_get_stream_intrinsics(dev, RS_STREAM_COLOR_ALIGNED_TO_DEPTH, &color_aligned_to_depth_intrin, require_no_error());
-//                REQUIRE( color_aligned_to_depth_intrin.width  == depth_intrin.width  );
-//                REQUIRE( color_aligned_to_depth_intrin.height == depth_intrin.height );
-//                REQUIRE( color_aligned_to_depth_intrin.ppx    == depth_intrin.ppx    );
-//                REQUIRE( color_aligned_to_depth_intrin.ppy    == depth_intrin.ppy    );
-//                REQUIRE( color_aligned_to_depth_intrin.fx     == depth_intrin.fx     );
-//                REQUIRE( color_aligned_to_depth_intrin.fy     == depth_intrin.fy     );
-//                REQUIRE( color_aligned_to_depth_intrin.model  == depth_intrin.model  );
-//                for(int l=0; l<5; ++l) REQUIRE( color_aligned_to_depth_intrin.coeffs[l]  == depth_intrin.coeffs[l] );
-//
-//                // DEPTH_ALIGNED_TO_COLOR must have same format/framerate as DEPTH
-//                REQUIRE( rs_get_stream_format(dev, RS_STREAM_DEPTH_ALIGNED_TO_COLOR, require_no_error()) == depth_format );
-//                REQUIRE( rs_get_stream_framerate(dev, RS_STREAM_DEPTH_ALIGNED_TO_COLOR, require_no_error()) == color_framerate );
-//
-//                // DEPTH_ALIGNED_TO_COLOR must have same intrinsics as COLOR
-//                rs_intrinsics depth_aligned_to_color_intrin = {};
-//                rs_get_stream_intrinsics(dev, RS_STREAM_DEPTH_ALIGNED_TO_COLOR, &depth_aligned_to_color_intrin, require_no_error());
-//                REQUIRE( depth_aligned_to_color_intrin.width  == color_intrin.width  );
-//                REQUIRE( depth_aligned_to_color_intrin.height == color_intrin.height );
-//                REQUIRE( depth_aligned_to_color_intrin.ppx    == color_intrin.ppx    );
-//                REQUIRE( depth_aligned_to_color_intrin.ppy    == color_intrin.ppy    );
-//                REQUIRE( depth_aligned_to_color_intrin.fx     == color_intrin.fx     );
-//                REQUIRE( depth_aligned_to_color_intrin.fy     == color_intrin.fy     );
-//                REQUIRE( depth_aligned_to_color_intrin.model  == color_intrin.model  );
-//                for(int l=0; l<5; ++l) REQUIRE( depth_aligned_to_color_intrin.coeffs[l]  == color_intrin.coeffs[l] );
-//
-//                // DEPTH_ALIGNED_TO_RECTIFIED_COLOR must have same format/framerate as DEPTH
-//                REQUIRE( rs_get_stream_format(dev, RS_STREAM_DEPTH_ALIGNED_TO_RECTIFIED_COLOR, require_no_error()) == depth_format );
-//                REQUIRE( rs_get_stream_framerate(dev, RS_STREAM_DEPTH_ALIGNED_TO_RECTIFIED_COLOR, require_no_error()) == color_framerate );
-//
-//                // DEPTH_ALIGNED_TO_RECTIFIED_COLOR must have same intrinsics as RECTIFIED_COLOR
-//                rs_intrinsics depth_aligned_to_rectified_color_intrin = {};
-//                rs_get_stream_intrinsics(dev, RS_STREAM_DEPTH_ALIGNED_TO_RECTIFIED_COLOR, &depth_aligned_to_rectified_color_intrin, require_no_error());
-//                REQUIRE( depth_aligned_to_rectified_color_intrin.width  == rectified_color_intrin.width  );
-//                REQUIRE( depth_aligned_to_rectified_color_intrin.height == rectified_color_intrin.height );
-//                REQUIRE( depth_aligned_to_rectified_color_intrin.ppx    == rectified_color_intrin.ppx    );
-//                REQUIRE( depth_aligned_to_rectified_color_intrin.ppy    == rectified_color_intrin.ppy    );
-//                REQUIRE( depth_aligned_to_rectified_color_intrin.fx     == rectified_color_intrin.fx     );
-//                REQUIRE( depth_aligned_to_rectified_color_intrin.fy     == rectified_color_intrin.fy     );
-//                REQUIRE( depth_aligned_to_rectified_color_intrin.model  == rectified_color_intrin.model  );
-//                for(int l=0; l<5; ++l) REQUIRE( depth_aligned_to_rectified_color_intrin.coeffs[l]  == rectified_color_intrin.coeffs[l] );
-//            }
-//        }
-//    }
-//}
+TEST_CASE("check option API", "[live][options]")
+{
+    // Require at least one device to be plugged in
+    auto ctx = make_context(__FUNCTION__);
+    std::vector<rs::device> list;
+    REQUIRE_NOTHROW(list = ctx.query_devices());
+    REQUIRE(list.size() > 0);
 
-#endif /* !defined(MAKEFILE) || ( defined(LIVE_TEST) ) */
+    // for each device
+    for (auto&& dev : list)
+    {
+        // for each option
+        for (auto i = 0; i < RS_OPTION_COUNT; ++i) {
+            auto opt = rs_option(i);
+            bool is_opt_supported;
+            REQUIRE_NOTHROW(is_opt_supported = dev.supports(opt));
+
+
+            SECTION("Ranges are sane")
+            {
+                if (!is_opt_supported)
+                {
+                    REQUIRE_THROWS_AS(dev.get_option_range(opt), rs::error);
+                }
+                else
+                {
+                    rs::option_range range;
+                    REQUIRE_NOTHROW(range = dev.get_option_range(opt));
+
+                    // a couple sanity checks
+                    REQUIRE(range.min < range.max);
+                    REQUIRE(range.min + range.step <= range.max);
+                    REQUIRE(range.step > 0);
+                    REQUIRE(range.def <= range.max);
+                    REQUIRE(range.min <= range.def);
+
+                    // TODO: check that range.def == range.min + k*range.step for some k?
+                    // TODO: some sort of bounds checking against constants?
+                }
+            }
+            SECTION("get_option returns a legal value")
+            {
+                if (!is_opt_supported)
+                {
+                    REQUIRE_THROWS_AS(dev.get_option(opt), rs::error);
+                }
+                else
+                {
+                    auto range = dev.get_option_range(opt);
+                    float value;
+                    REQUIRE_NOTHROW(value = dev.get_option(opt));
+
+                    // value in range. Do I need to account for epsilon in lt[e]/gt[e] comparisons?
+                    REQUIRE(value >= range.min);
+                    REQUIRE(value <= range.max);
+
+                    // value doesn't change between two gets (if no additional threads are calling set)
+                    REQUIRE(dev.get_option(opt) == Approx(value));
+
+                    // REQUIRE(value == Approx(range.def)); // Not sure if this is a reasonable check
+                    // TODO: make sure value == range.min + k*range.step for some k?
+                }
+            }
+            SECTION("set opt doesn't like bad values") {
+                if (!is_opt_supported)
+                {
+                    REQUIRE_THROWS_AS(dev.set_option(opt, 1), rs::error);
+                }
+                else
+                {
+                    auto range = dev.get_option_range(opt);
+
+                    // minimum should work, as should maximum
+                    REQUIRE_NOTHROW(dev.set_option(opt, range.min));
+                    REQUIRE_NOTHROW(dev.set_option(opt, range.max));
+
+                    int n_steps = (range.max - range.min) / range.step;
+
+                    // check a few arbitrary points along the scale
+                    REQUIRE_NOTHROW(dev.set_option(opt, range.min + (1 % n_steps)*range.step));
+                    REQUIRE_NOTHROW(dev.set_option(opt, range.min + (11 % n_steps)*range.step));
+                    REQUIRE_NOTHROW(dev.set_option(opt, range.min + (111 % n_steps)*range.step));
+                    REQUIRE_NOTHROW(dev.set_option(opt, range.min + (1111 % n_steps)*range.step));
+
+                    // below min and above max shouldn't work
+                    REQUIRE_THROWS_AS(dev.set_option(opt, range.min - range.step), rs::error);
+                    REQUIRE_THROWS_AS(dev.set_option(opt, range.max + range.step), rs::error);
+
+                    // make sure requesting value in the range, but not a legal step doesn't work
+                    // TODO: maybe something for range.step < 1 ?
+                    for (auto j = 1; j < range.step; j++) {
+                        CAPTURE(range.step);
+                        CAPTURE(j);
+                        REQUIRE_THROWS_AS(dev.set_option(opt, range.min + j), rs::error);
+                    }
+                }
+            }
+            SECTION("check get/set sequencing works as expected") {
+                if (!is_opt_supported) continue;
+                auto range = dev.get_option_range(opt);
+
+                // setting a valid value lets you get that value back
+                dev.set_option(opt, range.min);
+                REQUIRE(dev.get_option(opt) == Approx(range.min));
+
+                // setting an invalid value returns the last set valid value.
+                REQUIRE_THROWS(dev.set_option(opt, range.max + range.step));
+                REQUIRE(dev.get_option(opt) == Approx(range.min));
+
+                dev.set_option(opt, range.max);
+                REQUIRE_THROWS(dev.set_option(opt, range.min - range.step));
+                REQUIRE(dev.get_option(opt) == Approx(range.max));
+
+            }
+            SECTION("get_description returns a non-empty, non-null string") {
+                if (!is_opt_supported) {
+                    REQUIRE_THROWS_AS(dev.get_option_description(opt), rs::error);
+                }
+                else
+                {
+                    REQUIRE(dev.get_option_description(opt) != nullptr);
+                    REQUIRE(std::string(dev.get_option_description(opt)) != std::string(""));
+                }
+            }
+            // TODO: tests for get_option_value_description? possibly too open a function to have useful tests
+        }
+    }
+}
+
+TEST_CASE("a single subdevice can only be opened once, different subdevices can be opened simultaneously", "[live][multicam]")
+{
+    // Require at least one device to be plugged in
+    auto ctx = make_context(__FUNCTION__);
+    std::vector<rs::device> list;
+    REQUIRE_NOTHROW(list = ctx.query_devices());
+    REQUIRE(list.size() > 0);
+
+    SECTION("Single context")
+    {
+        SECTION("subdevices on a single device")
+        {
+            for (auto & dev : list)
+            {
+                SECTION("opening the same subdevice multiple times")
+                {
+                    auto modes = dev.get_stream_modes();
+                    REQUIRE(modes.size() > 0);
+                    rs::streaming_lock lock1, lock2;
+                    CAPTURE(modes.front().stream);
+                    REQUIRE_NOTHROW(lock1 = dev.open(modes.front()));
+
+                    SECTION("same mode")
+                    {
+                        // selected, but not streaming
+                        REQUIRE_THROWS_AS(lock2 = dev.open({ modes.front() }), rs::error);
+
+                        // streaming
+                        REQUIRE_NOTHROW(lock1.start([](rs_frame * fref) {}));
+                        REQUIRE_THROWS_AS(lock2 = dev.open({ modes.front() }), rs::error);
+                    }
+
+                    SECTION("different modes") 
+                    {
+                        if (modes.size() == 1) 
+                        {
+                            WARN("device " << dev.get_camera_info(RS_CAMERA_INFO_DEVICE_NAME) << " S/N: " << dev.get_camera_info(RS_CAMERA_INFO_DEVICE_SERIAL_NUMBER) << " w/ FW v" << dev.get_camera_info(RS_CAMERA_INFO_CAMERA_FIRMWARE_VERSION) << ":");
+                            WARN("subdevice has only 1 supported streaming mode. Skipping Same Subdevice, different modes test.");
+                        }
+                        else
+                        {
+                            // selected, but not streaming
+                            REQUIRE_THROWS_AS(lock2 = dev.open({ modes[1] }), rs::error);
+
+                            // streaming
+                            REQUIRE_NOTHROW(lock1.start([](rs_frame * fref) {}));
+                            REQUIRE_THROWS_AS(lock2 = dev.open({ modes[1] }), rs::error);
+                        }
+                    }
+
+                    REQUIRE_NOTHROW(lock1.stop());
+                }
+                // TODO: Move
+                SECTION("opening different subdevices") {
+                    for (auto&& subdevice1 : dev.query_adjacent_devices()) 
+                    {
+                        for (auto&& subdevice2 : dev.query_adjacent_devices()) 
+                        {
+                            if (subdevice1 == subdevice2)
+                                continue;
+
+                            rs::streaming_lock lock1;
+
+                            // get first lock
+                            REQUIRE_NOTHROW(lock1 = subdevice1.open(subdevice1.get_stream_modes().front()));
+
+                            // selected, but not streaming
+                            {
+                                rs::streaming_lock lock2;
+                                CAPTURE(subdevice2.get_stream_modes().front().stream);
+                                REQUIRE_NOTHROW(lock2 = subdevice2.open(subdevice2.get_stream_modes().front()));
+                                REQUIRE_NOTHROW(lock2.start([](rs_frame * fref) {}));
+                                REQUIRE_NOTHROW(lock2.stop());
+                            }
+
+                            // streaming
+                            {
+                                rs::streaming_lock lock2;
+                                REQUIRE_NOTHROW(lock1.start([](rs_frame * fref) {}));
+                                REQUIRE_NOTHROW(lock2 = subdevice2.open(subdevice2.get_stream_modes().front()));
+                                REQUIRE_NOTHROW(lock2.start([](rs_frame * fref) {}));
+                                // stop streaming in opposite order just to be sure that works too
+                                REQUIRE_NOTHROW(lock1.stop());
+                                REQUIRE_NOTHROW(lock2.stop());
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        SECTION("multiple devices")
+        {
+            if (list.size() == 1)
+            {
+                WARN("Only one device connected. Skipping multi-device test");
+            }
+            else
+            {
+                for (auto & dev1 : list)
+                {
+                    for (auto & dev2 : list)
+                    {
+                        // couldn't think of a better way to compare the two...
+                        if (dev1 == dev2)
+                            continue;
+
+                        rs::streaming_lock streams1, streams2;
+                        REQUIRE_NOTHROW(streams1 = dev1.open(dev1.get_stream_modes().front()));
+                        REQUIRE_NOTHROW(streams2 = dev2.open(dev2.get_stream_modes().front()));
+
+                        REQUIRE_NOTHROW(streams1.start([](rs_frame * fref) {}));
+                        REQUIRE_NOTHROW(streams2.start([](rs_frame * fref) {}));
+                        REQUIRE_NOTHROW(streams1.stop());
+                        REQUIRE_NOTHROW(streams2.stop());
+                    }
+                }
+            }
+        }
+    }
+
+    SECTION("two contexts")
+    {
+        auto ctx2 = make_context("two_contexts");
+        std::vector<rs::device> list2;
+        REQUIRE_NOTHROW(list2 = ctx2.query_devices());
+        REQUIRE(list2.size() == list.size());
+        SECTION("subdevices on a single device") 
+        {
+            for (auto&& dev1 : list) 
+            {
+                for (auto&& dev2 : list2) 
+                {
+                    if (dev1 == dev2)
+                    {
+                        SECTION("same subdevice") {
+                            // get modes
+                            std::vector<rs::stream_profile> modes1, modes2;
+                            REQUIRE_NOTHROW(modes1 = dev1.get_stream_modes());
+                            REQUIRE_NOTHROW(modes2 = dev2.get_stream_modes());
+                            REQUIRE(modes1.size() > 0);
+                            REQUIRE(modes1.size() == modes2.size());
+                            // require that the lists are the same (disregarding order)
+                            for (auto profile : modes1) {
+                                REQUIRE(std::any_of(begin(modes2), end(modes2), [&](const rs::stream_profile & p)
+                                {
+                                    return profile.format == p.format && profile.fps == p.fps
+                                        && profile.height == p.height && profile.width == p.width
+                                        && profile.stream == p.stream;
+                                }));
+                            }
+
+                            // grab first lock
+                            CAPTURE(modes1.front().stream);
+                            rs::streaming_lock lock1, lock2;
+                            REQUIRE_NOTHROW(lock1 = dev1.open(modes1.front()));
+
+                            SECTION("same mode") 
+                            {
+                                // selected, but not streaming
+                                REQUIRE_THROWS_AS(lock2 = dev2.open({ modes1.front() }), rs::error);
+
+                                // streaming
+                                REQUIRE_NOTHROW(lock1.start([](rs_frame * fref) {}));
+                                REQUIRE_THROWS_AS(lock2 = dev2.open({ modes1.front() }), rs::error);
+                            }
+                            SECTION("different modes")
+                            {
+                                if (modes1.size() == 1)
+                                {
+                                    WARN("device " << dev1.get_camera_info(RS_CAMERA_INFO_DEVICE_NAME) << " S/N: " << dev1.get_camera_info(RS_CAMERA_INFO_DEVICE_SERIAL_NUMBER) << " w/ FW v" << dev1.get_camera_info(RS_CAMERA_INFO_CAMERA_FIRMWARE_VERSION) << ":");
+                                    WARN("Device has only 1 supported streaming mode. Skipping Same Subdevice, different modes test.");
+                                }
+                                else
+                                {
+                                    // selected, but not streaming
+                                    REQUIRE_THROWS_AS(lock2 = dev2.open({ modes1[1] }), rs::error);
+
+                                    // streaming
+                                    REQUIRE_NOTHROW(lock1.start([](rs_frame * fref) {}));
+                                    REQUIRE_THROWS_AS(lock2 = dev2.open({ modes1[1] }), rs::error);
+                                }
+                            }
+                            REQUIRE_NOTHROW(lock1.stop());
+                        }
+                    }
+                    else
+                    {
+                        SECTION("different subdevice")
+                        {
+                            rs::streaming_lock lock1;
+
+                            // get first lock
+                            REQUIRE_NOTHROW(lock1 = dev1.open(dev1.get_stream_modes().front()));
+
+                            // selected, but not streaming
+                            {
+                                rs::streaming_lock lock2;
+                                CAPTURE(dev2.get_stream_modes().front().stream);
+                                REQUIRE_NOTHROW(lock2 = dev2.open(dev2.get_stream_modes().front()));
+                                REQUIRE_NOTHROW(lock2.start([](rs_frame * fref) {}));
+                                REQUIRE_NOTHROW(lock2.stop());
+                            }
+
+                            // streaming
+                            {
+                                rs::streaming_lock lock2;
+                                REQUIRE_NOTHROW(lock1.start([](rs_frame * fref) {}));
+                                REQUIRE_NOTHROW(lock2 = dev2.open(dev2.get_stream_modes().front()));
+                                REQUIRE_NOTHROW(lock2.start([](rs_frame * fref) {}));
+                                // stop streaming in opposite order just to be sure that works too
+                                REQUIRE_NOTHROW(lock1.stop());
+                                REQUIRE_NOTHROW(lock2.stop());
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        SECTION("subdevices on separate devices") 
+        {
+            if (list.size() == 1) 
+            {
+                WARN("Only one device connected. Skipping multi-device test");
+            }
+            else
+            {
+                for (auto & dev1 : list) 
+                {
+                    for (auto & dev2 : list2) 
+                    {
+
+                        if (dev1 == dev2)
+                            continue;
+
+                        // get modes
+                        std::vector<rs::stream_profile> modes1, modes2;
+                        REQUIRE_NOTHROW(modes1 = dev1.get_stream_modes());
+                        REQUIRE_NOTHROW(modes2 = dev2.get_stream_modes());
+                        REQUIRE(modes1.size() > 0);
+                        REQUIRE(modes2.size() > 0);
+
+                        // grab first lock
+                        CAPTURE(modes1.front().stream);
+                        CAPTURE(dev1.get_camera_info(RS_CAMERA_INFO_DEVICE_NAME));
+                        CAPTURE(dev1.get_camera_info(RS_CAMERA_INFO_DEVICE_SERIAL_NUMBER));
+                        CAPTURE(dev2.get_camera_info(RS_CAMERA_INFO_DEVICE_NAME));
+                        CAPTURE(dev2.get_camera_info(RS_CAMERA_INFO_DEVICE_SERIAL_NUMBER));
+                        rs::streaming_lock lock1;
+                        REQUIRE_NOTHROW(lock1 = dev1.open(modes1.front()));
+
+                        // try to acquire second lock
+
+                        // selected, but not streaming
+                        {
+                            rs::streaming_lock lock2;
+                            REQUIRE_NOTHROW(lock2 = dev2.open({ modes2.front() }));
+                            REQUIRE_NOTHROW(lock2.start([](rs_frame * fref) {}));
+                            REQUIRE_NOTHROW(lock2.stop());
+                        }
+
+                        // streaming
+                        {
+                            rs::streaming_lock lock2;
+                            REQUIRE_NOTHROW(lock1.start([](rs_frame * fref) {}));
+                            REQUIRE_NOTHROW(lock2 = dev2.open({ modes2.front() }));
+                            REQUIRE_NOTHROW(lock2.start([](rs_frame * fref) {}));
+                            // stop streaming in opposite order just to be sure that works too
+                            REQUIRE_NOTHROW(lock1.stop());
+                            REQUIRE_NOTHROW(lock2.stop());
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

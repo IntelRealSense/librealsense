@@ -9,7 +9,7 @@ extern "C" {
 #endif
 
 #define RS_API_MAJOR_VERSION    2
-#define RS_API_MINOR_VERSION    2
+#define RS_API_MINOR_VERSION    3
 #define RS_API_PATCH_VERSION    0
 
 #define STRINGIFY(arg) #arg
@@ -20,11 +20,6 @@ extern "C" {
 /* Return version in "X.Y.Z" format */
 #define RS_API_VERSION_STR (VAR_ARG_STRING(RS_API_MAJOR_VERSION.RS_API_MINOR_VERSION.RS_API_PATCH_VERSION))
 
-typedef enum rs_frame_metadata
-{
-    RS_FRAME_METADATA_ACTUAL_EXPOSURE,
-    RS_FRAME_METADATA_COUNT
-} rs_frame_metadata;
 
 typedef enum rs_stream
 {
@@ -55,8 +50,15 @@ typedef enum rs_format
     RS_FORMAT_RAW10       , /**< Four 10-bit luminance values encoded into a 5-byte macropixel */
     RS_FORMAT_RAW16       ,
     RS_FORMAT_RAW8        ,
+    RS_FORMAT_UYVY        ,
     RS_FORMAT_COUNT
 } rs_format;
+
+typedef enum rs_frame_metadata
+{
+    RS_FRAME_METADATA_ACTUAL_EXPOSURE,
+    RS_FRAME_METADATA_COUNT
+} rs_frame_metadata;
 
 typedef enum rs_distortion
 {
@@ -109,11 +111,11 @@ typedef enum rs_option
     RS_OPTION_HARDWARE_LOGGER_ENABLED                    , /**< Enable / disable fetching log data from the device */
     RS_OPTION_TOTAL_FRAME_DROPS                          , /**< Total number of detected frame drops from all streams */
     RS_OPTION_COUNT                                      ,
-
 } rs_option;
 
 typedef enum rs_camera_info {
     RS_CAMERA_INFO_DEVICE_NAME                   ,
+    RS_CAMERA_INFO_MODULE_NAME                   ,
     RS_CAMERA_INFO_DEVICE_SERIAL_NUMBER          ,
     RS_CAMERA_INFO_CAMERA_FIRMWARE_VERSION       ,
     RS_CAMERA_INFO_DEVICE_LOCATION               ,
@@ -136,16 +138,7 @@ typedef enum rs_timestamp_domain
     RS_TIMESTAMP_DOMAIN_EXTERNAL,
     RS_TIMESTAMP_DOMAIN_SYSTEM,
     RS_TIMESTAMP_DOMAIN_COUNT
-}rs_timestamp_domain;
-
-typedef enum rs_subdevice
-{
-    RS_SUBDEVICE_COLOR,
-    RS_SUBDEVICE_DEPTH,
-    RS_SUBDEVICE_FISHEYE,
-    RS_SUBDEVICE_MOTION,
-    RS_SUBDEVICE_COUNT
-} rs_subdevice;
+} rs_timestamp_domain;
 
 typedef struct rs_intrinsics
 {
@@ -248,9 +241,18 @@ rs_device* rs_create_device(const rs_device_list* list, int index, rs_error** er
 */
 void rs_delete_device(rs_device* device);
 
-void rs_get_device_extrinsics(const rs_device * device, rs_subdevice from, rs_subdevice to, rs_extrinsics * extrin, rs_error ** error);
+/**
+* get list of devices adjacent to a given device
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return            the list of devices, should be released by rs_delete_device_list
+*/
+rs_device_list* rs_query_adjacent_devices(const rs_device* device, rs_error** error);
 
-void rs_get_stream_intrinsics(const rs_device * device, rs_subdevice subdevice, rs_stream stream, int width, int height, int fps, rs_format format, rs_intrinsics * intrinsics, rs_error ** error);
+//TODO
+void rs_get_extrinsics(const rs_device * from, const rs_device * to, rs_extrinsics * extrin, rs_error ** error);
+
+//TODO
+void rs_get_stream_intrinsics(const rs_device * device, rs_stream stream, int width, int height, int fps, rs_format format, rs_intrinsics * intrinsics, rs_error ** error);
 
 /**
 * retrieve mapping between the units of the depth image and meters
@@ -261,53 +263,11 @@ float rs_get_device_depth_scale(const rs_device * device, rs_error ** error);
 
 /**
 * check if physical subdevice is supported
-* \param[in] device  input RealSense device to check
-* \param[in] subdevice  type of subdevice
-* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
-* \return            true if device contains subdevice of a given type
-*/
-int rs_is_subdevice_supported(const rs_device* device, rs_subdevice subdevice, rs_error** error);
-
-/**
-* check if physical subdevice is supported
 * \param[in] device  input RealSense device
-* \param[in] subdevice subdevice to query
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return            list of stream profiles that given subdevice can provide, should be released by rs_delete_profiles_list
 */
-rs_stream_modes_list* rs_get_stream_modes(rs_device* device, rs_subdevice subdevice, rs_error** error);
-
-/**
-* send raw data to device
-* \param[in] device  input RealSense device
-* \param[in] raw_data_to_send   raw data to be send to device
-* \param[in] size_of_raw_data_to_send   size of raw_data_to_send
-* \param[out] error   if non-null, receives any error that occurs during this call, otherwise, errors are ignored
-* \return            rs_raw_data_buffer, should be released by rs_delete_raw_data
-*/
-rs_raw_data_buffer* rs_send_and_receive_raw_data(rs_device* device, void* raw_data_to_send, unsigned size_of_raw_data_to_send, rs_error** error);
-
-/**
-* get the size of rs_raw_data_buffer
-* \param[in] buffer        pointer to rs_raw_data_buffer returned by rs_send_and_receive_raw_data
-* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
-* \return size of rs_raw_data_buffer
-*/
-int rs_get_raw_data_size(const rs_raw_data_buffer* buffer, rs_error** error);
-
-/**
-* delete rs_raw_data_buffer
-* \param[in] buffer        rs_raw_data_buffer returned by rs_send_and_receive_raw_data
-*/
-void rs_delete_raw_data(rs_raw_data_buffer* buffer);
-
-/**
-* retrieve char array from rs_raw_data_buffer
-* \param[in] buffer        rs_raw_data_buffer returned by rs_send_and_receive_raw_data
-* \param[out] error   if non-null, receives any error that occurs during this call, otherwise, errors are ignored
-* \return raw data
-*/
-const unsigned char* rs_get_raw_data(const rs_raw_data_buffer* buffer, rs_error** error);
+rs_stream_modes_list* rs_get_stream_modes(rs_device* device, rs_error** error);
 
 /**
 * determine the properties of a specific streaming mode
@@ -339,7 +299,6 @@ void rs_delete_modes_list(rs_stream_modes_list* list);
 /**
 * open subdevice for exclusive access, by commiting to a configuration
 * \param[in] device relevant RealSense device
-* \param[in] subdevice subdevice index to open
 * \param[in] stream     the stream type
 * \param[in] width      the width of a frame image in pixels
 * \param[in] height     the height of a frame image in pixels
@@ -348,13 +307,12 @@ void rs_delete_modes_list(rs_stream_modes_list* list);
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return exclusive lock to be used for streaming, should be released by rs_close
 */
-rs_streaming_lock* rs_open(rs_device* device, rs_subdevice subdevice, rs_stream stream, int width, int height, int fps, rs_format format, rs_error** error);
+rs_streaming_lock* rs_open(rs_device* device, rs_stream stream, int width, int height, int fps, rs_format format, rs_error** error);
 
 /**
 * open subdevice for exclusive access, by commiting to composite configuration, specifying one or more stream profiles
 * this method should be used for interdendent streams, such as depth and infrared, that have to be configured together
 * \param[in] device relevant RealSense device
-* \param[in] subdevice subdevice index to open
 * \param[in] stream     the stream type
 * \param[in] width      the width of a frame image in pixels
 * \param[in] height     the height of a frame image in pixels
@@ -364,8 +322,8 @@ rs_streaming_lock* rs_open(rs_device* device, rs_subdevice subdevice, rs_stream 
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return exclusive lock to be used for streaming, should be released by rs_close
 */
-rs_streaming_lock* rs_open_many(rs_device* device, rs_subdevice subdevice, 
-    const rs_stream* stream, const int* width, const int* height, const int* fps, const rs_format* format, int count, rs_error** error);
+rs_streaming_lock* rs_open_many(rs_device* device, const rs_stream* stream, const int* width, 
+    const int* height, const int* fps, const rs_format* format, int count, rs_error** error);
 
 /**
 * release streaming lock and stop any streaming from specified subdevice
@@ -423,7 +381,7 @@ double rs_get_frame_timestamp(const rs_frame* frame, rs_error** error);
 
 /**
 * retrive timestamp domain from frame handle. timestamps can only be comparable if they are in common domain
-* (for example, depth timestamp might come from system time while color timestamp might come from the device) 
+* (for example, depth timestamp might come from system time while color timestamp might come from the device)
 * this method is used to check if two timestamp values are comparable (generated from the same clock)
 * \param[in] frame      handle returned from a callback
 * \param[out] error     if non-null, receives any error that occurs during this call, otherwise, errors are ignored
@@ -513,38 +471,34 @@ void rs_release_frame(rs_frame* frame);
 
 /**
 * read option value from the device
-* \param[in] device  the RealSense device
-* \param[in] subdevice the subdevice index for the option
+* \param[in] device   the RealSense device
 * \param[in] option   option id to be queried
 * \param[out] error   if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return value of the option
 */
-float rs_get_subdevice_option(const rs_device* device, rs_subdevice subdevice, rs_option option, rs_error** error);
+float rs_get_option(const rs_device* device, rs_option option, rs_error** error);
 
 /**
 * write new value to device option
 * \param[in] device     the RealSense device
-* \param[in] subdevice  the subdevice index for the option
 * \param[in] option     option id to be queried
 * \param[in] value      new value for the option
 * \param[out] error     if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 */
-void rs_set_subdevice_option(const rs_device* device, rs_subdevice subdevice, rs_option option, float value, rs_error** error);
+void rs_set_option(const rs_device* device, rs_option option, float value, rs_error** error);
 
 /**
 * check if particular option is supported by a subdevice
 * \param[in] device     the RealSense device
-* \param[in] subdevice  the subdevice index for the option
 * \param[in] option     option id to be checked
 * \param[out] error     if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return true if option is supported
 */
-int rs_supports_subdevice_option(const rs_device* device, rs_subdevice subdevice, rs_option option, rs_error** error);
+int rs_supports_option(const rs_device* device, rs_option option, rs_error** error);
 
 /**
 * retrieve the available range of values of a supported option
 * \param[in] device  the RealSense device
-* \param[in] subdevice the subdevice index for the option
 * \param[in] option  the option whose range should be queried
 * \param[out] min    the minimum value which will be accepted for this option
 * \param[out] max    the maximum value which will be accepted for this option
@@ -552,33 +506,31 @@ int rs_supports_subdevice_option(const rs_device* device, rs_subdevice subdevice
 * \param[out] def    the default value of the option
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 */
-void rs_get_subdevice_option_range(const rs_device* device, rs_subdevice subdevice, rs_option option, float* min, float* max, float* step, float* def, rs_error** error);
+void rs_get_option_range(const rs_device* device, rs_option option, float* min, float* max, float* step, float* def, rs_error** error);
 
 /**
 * get option description
 * \param[in] device     the RealSense device
-* \param[in] subdevice  the subdevice index for the option
 * \param[in] option     option id to be checked
 * \param[out] error     if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return human-readable option description
 */
-const char* rs_get_subdevice_option_description(const rs_device* device, rs_subdevice subdevice, rs_option option, rs_error ** error);
+const char* rs_get_option_description(const rs_device* device, rs_option option, rs_error ** error);
 
 /**
-* get option value description (in case specific option value hold special meaning) 
+* get option value description (in case specific option value hold special meaning)
 * \param[in] device     the RealSense device
-* \param[in] subdevice  the subdevice index for the option
 * \param[in] option     option id to be checked
 * \param[in] value      value of the option
 * \param[out] error     if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return human-readable description of a specific value of an option or null if no special meaning
 */
-const char* rs_get_subdevice_option_value_description(const rs_device* device, rs_subdevice subdevice, rs_option option, float value, rs_error ** error);
+const char* rs_get_option_value_description(const rs_device* device, rs_option option, float value, rs_error ** error);
 
 /**
 * retrieve camera specific information, like versions of various internal componnents
 * \param[in] device     the RealSense device
-* \param[in] info	    camera info type to retrieve
+* \param[in] info       camera info type to retrieve
 * \param[out] error     if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return               the requested camera info string, in a format specific to the device model
 */
@@ -608,7 +560,7 @@ rs_frame_queue* rs_create_frame_queue(int capacity, rs_error** error);
 */
 void rs_delete_frame_queue(rs_frame_queue* queue);
 
-/** 
+/**
 * wait until new frame becomes available in the queue and dequeue it
 * \param[in] queue the frame queue data structure
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
@@ -627,7 +579,7 @@ int rs_poll_for_frame(rs_frame_queue* queue, rs_frame** output_frame, rs_error**
 
 /**
 * enqueue new frame into a queue
-* \param[in] frame frame handle to enqueue (this operation passed ownership to the queue) 
+* \param[in] frame frame handle to enqueue (this operation passed ownership to the queue)
 * \param[in] queue the frame queue data structure
 */
 void rs_enqueue_frame(rs_frame* frame, void* queue);
@@ -640,30 +592,69 @@ void rs_enqueue_frame(rs_frame* frame, void* queue);
 void rs_flush_queue(rs_frame_queue* queue, rs_error** error);
 
 /**
+* send raw data to device
+* \param[in] device  input RealSense device
+* \param[in] raw_data_to_send   raw data to be send to device
+* \param[in] size_of_raw_data_to_send   size of raw_data_to_send
+* \param[out] error   if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return            rs_raw_data_buffer, should be released by rs_delete_raw_data
+*/
+rs_raw_data_buffer* rs_send_and_receive_raw_data(rs_device* device, void* raw_data_to_send, unsigned size_of_raw_data_to_send, rs_error** error);
+
+/**
+* get the size of rs_raw_data_buffer
+* \param[in] buffer        pointer to rs_raw_data_buffer returned by rs_send_and_receive_raw_data
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return size of rs_raw_data_buffer
+*/
+int rs_get_raw_data_size(const rs_raw_data_buffer* buffer, rs_error** error);
+
+/**
+* delete rs_raw_data_buffer
+* \param[in] buffer        rs_raw_data_buffer returned by rs_send_and_receive_raw_data
+*/
+void rs_delete_raw_data(rs_raw_data_buffer* buffer);
+
+/**
+* retrieve char array from rs_raw_data_buffer
+* \param[in] buffer        rs_raw_data_buffer returned by rs_send_and_receive_raw_data
+* \param[out] error   if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return raw data
+*/
+const unsigned char* rs_get_raw_data(const rs_raw_data_buffer* buffer, rs_error** error);
+
+/*
+librealsense recorder is intended for validation purposes. 
+it supports three modes of operation:
+*/
+typedef enum rs_recording_mode
+{
+    RS_RECORDING_MODE_BLANK_FRAMES, /* frame metadata will be recorded, but pixel data will be replaced with zeros to save space */
+    RS_RECORDING_MODE_COMPRESSED,   /* frames will be encoded using a proprietary lossy encoding, aiming at x5 compression at some CPU expense */
+    RS_RECORDING_MODE_BEST_QUALITY, /* frames will not be compressed, but rather stored as-is. This gives best quality and low CPU overhead, but you might run out of memory */
+    RS_RECORDING_MODE_COUNT
+} rs_recording_mode;
+
+/**
 * create librealsense context that will try to record all operations over librealsense into a file
 * \param[in] api_version realsense API version as provided by RS_API_VERSION macro
+* \param[in] filename string representing the name of the file to record
+* \param[in] section  string representing the name of the section within existing recording
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return            context object, should be released by rs_delete_context
 */
-rs_context* rs_create_recording_context(int api_version, rs_error** error);
-
-/**
-* saves all the operations recorded until the time of the call to the file that was passed as parameter
-* \param[in] ctx            device context
-* \[aram[in] filename       saved file name
-* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
-*/
-void rs_save_recording_to_file(const rs_context* ctx, const char* filename, rs_error** error);
+rs_context* rs_create_recording_context(int api_version, const char* filename, const char* section, rs_recording_mode mode, rs_error** error);
 
 /**
 * create librealsense context that given a file will respond to calls exactly as the recording did
 * if the user calls a method that was either not called during recording or voilates causality of the recording error will be thrown
 * \param[in] api_version realsense API version as provided by RS_API_VERSION macro
-* \param[in] filename string representing the name of the file to record
+* \param[in] filename string representing the name of the file to play back from
+* \param[in] section  string representing the name of the section within existing recording
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return            context object, should be released by rs_delete_context
 */
-rs_context* rs_create_mock_context(int api_version, const char* filename, rs_error** error);
+rs_context* rs_create_mock_context(int api_version, const char* filename, const char* section, rs_error** error);
 
 /**
 * retrieve the API version from the source code. Evaluate that the value is conformant to the established policies
@@ -685,7 +676,6 @@ const char * rs_option_to_string     (rs_option option);
 const char * rs_camera_info_to_string(rs_camera_info info);
 const char * rs_camera_info_to_string(rs_camera_info info);
 const char * rs_timestamp_domain_to_string(rs_timestamp_domain info);
-const char * rs_subdevice_to_string  (rs_subdevice subdevice);
 const char * rs_visual_preset_to_string  (rs_visual_preset preset);
 
 void rs_log_to_console(rs_log_severity min_severity, rs_error ** error);

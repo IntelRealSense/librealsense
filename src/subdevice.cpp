@@ -73,12 +73,13 @@ streaming_lock::~streaming_lock()
 std::vector<stream_request> endpoint::get_principal_requests()
 {
     std::unordered_set<stream_request> results;
-
-    std::set<std::string> unutilized_formats;
+    std::set<uint32_t> unutilized_formats;
+    std::set<uint32_t> supported_formats;
 
     auto profiles = get_stream_profiles();
     for (auto&& p : profiles)
     {
+        supported_formats.insert(p.format);
         native_pixel_format pf;
         if (try_get_pf(p, pf))
         {
@@ -92,17 +93,31 @@ std::vector<stream_request> endpoint::get_principal_requests()
         }
         else
         {
-            uint32_t device_fourcc = reinterpret_cast<const big_endian<uint32_t>&>(p.format);
-            char fourcc[sizeof(device_fourcc) + 1];
-            memcpy(fourcc, &device_fourcc, sizeof(device_fourcc));
-            fourcc[sizeof(device_fourcc)] = 0;
-            unutilized_formats.insert(fourcc);
+            unutilized_formats.insert(p.format);
         }
     }
 
-    for (auto&& fourcc : unutilized_formats)
+    for (auto& elem : unutilized_formats)
     {
-        LOG_WARNING("Unutilized format " << fourcc << "!");
+        uint32_t device_fourcc = reinterpret_cast<const big_endian<uint32_t>&>(elem);
+        char fourcc[sizeof(device_fourcc) + 1];
+        memcpy(fourcc, &device_fourcc, sizeof(device_fourcc));
+        fourcc[sizeof(device_fourcc)] = 0;
+        LOG_WARNING("Unutilized format " << fourcc);
+    }
+
+    if (!unutilized_formats.empty())
+    {
+        std::stringstream ss;
+        for (auto& elem : supported_formats)
+        {
+            uint32_t device_fourcc = reinterpret_cast<const big_endian<uint32_t>&>(elem);
+            char fourcc[sizeof(device_fourcc) + 1];
+            memcpy(fourcc, &device_fourcc, sizeof(device_fourcc));
+            fourcc[sizeof(device_fourcc)] = 0;
+            ss << fourcc << std::endl;
+        }
+        LOG_WARNING("\nDevice supported formats:\n" << ss.str());
     }
 
     std::vector<stream_request> res{ begin(results), end(results) };
@@ -131,9 +146,16 @@ bool endpoint::try_get_pf(const uvc::stream_profile& p, native_pixel_format& res
 
 std::vector<request_mapping> endpoint::resolve_requests(std::vector<stream_request> requests)
 {
+    // TODO: Move to rsutil.hpp
     if (!auto_complete_request(requests))
     {
         throw std::runtime_error("Subdevice could not auto complete requests!");
+    }
+
+    std::vector<uint32_t> legal_4ccs;
+    for (auto mode : get_stream_profiles()) {
+        if (mode.fps == requests[0].fps && mode.height == requests[0].height && mode.width == requests[0].width)
+            legal_4ccs.push_back(mode.format);
     }
 
     std::unordered_set<request_mapping> results;
@@ -141,10 +163,12 @@ std::vector<request_mapping> endpoint::resolve_requests(std::vector<stream_reque
     while (!requests.empty() && !_pixel_formats.empty())
     {
         auto max = 0;
+        auto best_size = 0;
         auto best_pf = &_pixel_formats[0];
         auto best_unpacker = &_pixel_formats[0].unpackers[0];
         for (auto&& pf : _pixel_formats)
         {
+            if (std::none_of(begin(legal_4ccs), end(legal_4ccs), [&](const uint32_t fourcc) {return fourcc == pf.fourcc; })) continue;
             for (auto&& unpacker : pf.unpackers)
             {
                 auto count = static_cast<int>(std::count_if(begin(requests), end(requests),
@@ -152,9 +176,18 @@ std::vector<request_mapping> endpoint::resolve_requests(std::vector<stream_reque
                 {
                     return unpacker.satisfies(r);
                 }));
-                if (count > max && unpacker.outputs.size() == count)
+
+                // Here we check if the current pixel format / unpacker combination is better than the current best.
+                // We judge on two criteria. A: how many of the requested streams can we supply? B: how many total streams do we open?
+                // Optimally, we want to find a combination that supplies all the requested streams, and no additional streams.
+                if (
+                    count > max                                 // If the current combination supplies more streams, it is better.
+                    || (count == max                            // Alternatively, if it supplies the same number of streams,
+                        && unpacker.outputs.size() < best_size) // but this combination opens fewer total streams, it is also better
+                    )
                 {
                     max = count;
+                    best_size = unpacker.outputs.size();
                     best_pf = &pf;
                     best_unpacker = &unpacker;
                 }
@@ -231,7 +264,7 @@ std::shared_ptr<streaming_lock> uvc_endpoint::configure(
 
         auto start = high_resolution_clock::now();
         auto frame_number = 0;
-        _device->play(mode.profile, 
+        _device->probe_and_commit(mode.profile,
             [stream_ptr, mode, start, frame_number, timestamp_reader](uvc::stream_profile p, uvc::frame_object f) mutable
         {
             auto&& unpacker = *mode.unpacker;
@@ -318,6 +351,12 @@ std::shared_ptr<streaming_lock> uvc_endpoint::configure(
         });
     }
 
+    _device->play();
+
+    for (auto& mode : mapping)
+    {
+        _configuration.push_back(mode.profile);
+    }
     return std::move(streaming);
 }
 
@@ -343,4 +382,64 @@ void uvc_endpoint::acquire_power()
 void uvc_endpoint::release_power()
 {
     if (_user_count.fetch_add(-1) == 1) _device->set_power_state(uvc::D3);
+}
+
+option& endpoint::get_option(rs_option id)
+{
+    auto it = _options.find(id);
+    if (it == _options.end())
+    {
+        throw std::runtime_error(to_string() 
+            << "Device does not support option " 
+            << rs_option_to_string(id) << "!");
+    }
+    return *it->second;
+}
+
+const option& endpoint::get_option(rs_option id) const
+{
+    auto it = _options.find(id);
+    if (it == _options.end())
+    {
+        throw std::runtime_error(to_string() 
+            << "Device does not support option " 
+            << rs_option_to_string(id) << "!");
+    }
+    return *it->second;
+}
+
+bool endpoint::supports_option(rs_option id) const
+{
+    auto it = _options.find(id);
+    if (it == _options.end()) return false;
+    return it->second->is_enabled();
+}
+
+bool endpoint::supports_info(rs_camera_info info) const
+{
+    auto it = _camera_info.find(info);
+    return it != _camera_info.end();
+}
+
+void endpoint::register_info(rs_camera_info info, std::string val)
+{
+    _camera_info[info] = std::move(val);
+}
+
+const std::string& endpoint::get_info(rs_camera_info info) const
+{
+    auto it = _camera_info.find(info);
+    if (it == _camera_info.end())
+        throw std::runtime_error("Selected camera info is not supported for this camera!");
+    return it->second;
+}
+
+void endpoint::register_option(rs_option id, std::shared_ptr<option> option)
+{
+    _options[id] = std::move(option);
+}
+
+void uvc_endpoint::register_pu(rs_option id)
+{
+    register_option(id, std::make_shared<uvc_pu_option>(*this, id));
 }

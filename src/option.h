@@ -5,11 +5,12 @@
 
 #include "backend.h"
 #include "archive.h"
+#include "hw-monitor.h"
+#include "subdevice.h"
+
 #include <chrono>
 #include <memory>
 #include <vector>
-#include "hw-monitor.h"
-#include "subdevice.h"
 
 namespace rsimpl
 {

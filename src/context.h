@@ -30,23 +30,24 @@ namespace rsimpl
     class context
     {
     public:
-        context(backend_type type, const char* filename);
-
-        void save_to(const char* filename) const;
+        explicit context(backend_type type, 
+               const char* filename = nullptr, 
+               const char* section = nullptr, 
+               rs_recording_mode mode = RS_RECORDING_MODE_COUNT);
 
         std::vector<std::shared_ptr<device_info>> query_devices() const;
         const uvc::backend& get_backend() const { return *_backend; }
     private:
         std::shared_ptr<uvc::backend> _backend;
-        backend_type _type;
     };
 
-    static std::vector<uvc::uvc_device_info> filter_by_product(const std::vector<uvc::uvc_device_info>& devices, uint32_t pid)
+    static std::vector<uvc::uvc_device_info> filter_by_product(const std::vector<uvc::uvc_device_info>& devices, const std::vector<uint16_t>& pid_list)
     {
         std::vector<uvc::uvc_device_info> result;
         for (auto&& info : devices)
         {
-            if (info.pid == pid) result.push_back(info);
+            if (pid_list.end() != std::find(pid_list.begin(), pid_list.end(), info.pid))
+                result.push_back(info);
         }
         return result;
     }
@@ -94,5 +95,15 @@ namespace rsimpl
             if (info.mi == mi) return info;
         }
         throw std::runtime_error("Interface not found!");
+    }
+
+    static std::vector<uvc::uvc_device_info> filter_by_mi(const std::vector<uvc::uvc_device_info>& devices, uint32_t mi)
+    {
+        std::vector<uvc::uvc_device_info> results;
+        for (auto&& info : devices)
+        {
+            if (info.mi == mi) results.push_back(info);
+        }
+        return results;
     }
 }
