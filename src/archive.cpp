@@ -128,7 +128,12 @@ void frame_archive::flush()
     }
     // wait until user is done with all the stuff he chose to borrow
     callback_inflight.wait_until_empty();
-    freelist.clear();
+
+    {
+        std::lock_guard<std::recursive_mutex> guard(mutex);
+        freelist.clear();
+    }
+
     pending_frames = published_frames.get_size();
     if (pending_frames > 0)
     {

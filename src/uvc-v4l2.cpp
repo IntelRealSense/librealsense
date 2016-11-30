@@ -332,9 +332,6 @@ namespace rsimpl
             {
                 if(!_is_capturing && !_callback)
                 {
-                    _profile = profile;
-                    _callback = callback;
-
                     v4l2_format fmt = {};
                     fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
                     fmt.fmt.pix.width       = profile.width;
@@ -380,6 +377,8 @@ namespace rsimpl
                         _buffers[i].start = mmap(NULL, buf.length, PROT_READ | PROT_WRITE, MAP_SHARED, _fd, buf.m.offset);
                         if(_buffers[i].start == MAP_FAILED) throw_error("mmap");
                     }
+                    _profile = profile;
+                    _callback = callback;
                 }
             }
 

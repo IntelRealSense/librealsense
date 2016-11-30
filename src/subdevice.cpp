@@ -330,6 +330,10 @@ std::shared_ptr<streaming_lock> uvc_endpoint::configure(
                         refs.push_back(frame_ref);
                         dest.push_back(const_cast<byte*>(frame_ref->get()->get_frame_data()));
                     }
+                    else
+                    {
+                        return;
+                    }
 
                     // Obtain buffers for unpacking the frame
                     //dest.push_back(archive->alloc_frame(output.first, additional_data, requires_processing));

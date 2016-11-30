@@ -245,7 +245,8 @@ namespace rs
                         end(prefered_formats), profile.format)
                         == end(prefered_formats)) continue;
 
-                    if (profile.width == 640 &&
+                    if (profile.stream == stream &&
+                        profile.width == 640 &&
                         profile.height == 480 &&
                         profile.fps == 30)
                     {
