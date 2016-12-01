@@ -186,7 +186,6 @@ ELSE()
 
 	set(INSTALL_BINDIR "${CMAKE_INSTALL_PREFIX}/bin")
 	set(INSTALL_LIBDIR "${CMAKE_INSTALL_PREFIX}/lib")
-	set(INSTALL_LIBDIR "${CMAKE_INSTALL_PREFIX}/lib")
 	option(FLAVORS_ARCH_SUBDIRS "Create subdirectories for each target architeture" OFF)
 	if(FLAVORS_ARCH_SUBDIRS)
 	  if(CMAKE_SIZEOF_VOID_P EQUAL 8)
@@ -196,7 +195,6 @@ ELSE()
 	  endif()
 	  set(INSTALL_BINDIR "${INSTALL_BINDIR}/${TARGET_ARCH}")
 	  set(INSTALL_LIBDIR "${INSTALL_LIBDIR}/${TARGET_ARCH}")
-	  set(INSTALL_LIBDIR "${INSTALL_LIBDIR}/")
 	endif()
 
     install( TARGETS realsense
