@@ -3,6 +3,11 @@
 # ubuntu 16.04 LTS cmake version 3.5.1
 cmake_minimum_required(VERSION 2.8.3)
 
+set(REALSENSE_VERSION_MAJOR 1)
+set(REALSENSE_VERSION_MINOR 11)
+set(REALSENSE_VERSION_PATCH 1)
+set(REALSENSE_VERSION_STRING ${REALSENSE_VERSION_MAJOR}.${REALSENSE_VERSION_MINOR}.${REALSENSE_VERSION_PATCH})
+
 IF(DEFINED ENV{CMAKE_PREFIX_PATH})
   IF($ENV{CMAKE_PREFIX_PATH} MATCHES "/opt/ros")
     set(ROS_BUILD_TYPE TRUE)
@@ -165,6 +170,8 @@ include(GNUInstallDirs)
 option(BUILD_SHARED_LIBS "Build shared library" ON)
 if(BUILD_SHARED_LIBS)
     add_library(realsense SHARED ${REALSENSE_CPP} ${REALSENSE_HPP} ${REALSENSE_DEF})
+    set_target_properties(realsense PROPERTIES VERSION ${REALSENSE_VERSION_STRING}
+                                    SOVERSION ${REALSENSE_VERSION_MAJOR})
     target_link_libraries(realsense ${LIBUSB1_LIBRARIES})
 else()
     add_library(realsense STATIC ${REALSENSE_CPP} ${REALSENSE_HPP})
