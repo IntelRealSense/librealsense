@@ -16,16 +16,16 @@ endmacro()
 # This function parses librealsense public API header file, rs.h #
 # and retrieves version numbers embedded in the source code.     #
 # Since the function relies on hard-coded variables, it is prone #
-# for failures should these code constants change                #
+# for failures should these constants be modified in future      #
 ##################################################################
 function(assign_version_property VER_COMPONENT)
-	file(STRINGS "./include/librealsense/rs.h" REALSENSE_VERSION_${VER_COMPONENT} REGEX "#define RS_API_${VER_COMPONENT}_VERSION")
-	separate_arguments(REALSENSE_VERSION_${VER_COMPONENT})
-	list(GET REALSENSE_VERSION_${VER_COMPONENT} -1 tmp)
-	if (tmp LESS 0)
-		message( FATAL_ERROR "Could not obtain valid Librealsense version ${VER_COMPONENT} component - actual value is ${tmp}" )
-	endif()
-	set(REALSENSE_VERSION_${VER_COMPONENT} ${tmp} PARENT_SCOPE)
+    file(STRINGS "./include/librealsense/rs.h" REALSENSE_VERSION_${VER_COMPONENT} REGEX "#define RS_API_${VER_COMPONENT}_VERSION")
+    separate_arguments(REALSENSE_VERSION_${VER_COMPONENT})
+    list(GET REALSENSE_VERSION_${VER_COMPONENT} -1 tmp)
+    if (tmp LESS 0)
+        message( FATAL_ERROR "Could not obtain valid Librealsense version ${VER_COMPONENT} component - actual value is ${tmp}" )
+    endif()
+    set(REALSENSE_VERSION_${VER_COMPONENT} ${tmp} PARENT_SCOPE)
 endfunction()
 
 set(REALSENSE_VERSION_MAJOR -1)
@@ -195,6 +195,8 @@ include(GNUInstallDirs)
 option(BUILD_SHARED_LIBS "Build shared library" ON)
 if(BUILD_SHARED_LIBS)
     add_library(realsense SHARED ${REALSENSE_CPP} ${REALSENSE_HPP} ${REALSENSE_DEF})
+    set_target_properties(${TARGETS} PROPERTIES VERSION ${REALSENSE_VERSION_STRING}
+                                    SOVERSION ${REALSENSE_VERSION_MAJOR})
     target_link_libraries(realsense ${LIBUSB1_LIBRARIES})
 else()
     add_library(realsense STATIC ${REALSENSE_CPP} ${REALSENSE_HPP})
@@ -202,16 +204,24 @@ endif()
 
 target_include_directories(realsense PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include/ ${LIBUSB1_INCLUDE_DIRS})
 
-install( TARGETS realsense
-    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-)
-install(DIRECTORY ${PROJECT_SOURCE_DIR}/include/librealsense DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+IF (${ROS_BUILD_TYPE})
+    install(TARGETS realsense
+        RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+        LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+        ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+    )
 
-if(UNIX)
-	set_target_properties(${TARGETS} PROPERTIES VERSION "${REALSENSE_VERSION_STRING}" SOVERSION "${REALSENSE_VERSION_MAJOR}")
-endif()
+    install(DIRECTORY ${PROJECT_SOURCE_DIR}/include/${PROJECT_NAME}/
+        DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION})
+ELSE()
+    install( TARGETS realsense
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    )
+
+    install(DIRECTORY ${PROJECT_SOURCE_DIR}/include/librealsense DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+ENDIF()
 
 option(BUILD_EXAMPLES "Build realsense examples." OFF)
 if(BUILD_EXAMPLES)
