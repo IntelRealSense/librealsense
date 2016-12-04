@@ -143,20 +143,28 @@ namespace rs
                             end(satisfied_streams), kvp.first)
                             != end(satisfied_streams)) continue; // skip if already satisified
 
-                        stream_profile result;
-                        switch(kvp.second)
+                        stream_profile result = { RS_STREAM_COUNT, 0, 0, 0, RS_FORMAT_ANY };
+                        switch (kvp.second)
                         {
                         case preset::best_quality:
-                            result = get_best_quality(kvp.first, prefered_formats, profiles);
+                            std::sort(begin(profiles), end(profiles), sort_best_quality);
                             break;
                         case preset::largest_image:
-                            result = get_largest_image(kvp.first, prefered_formats, profiles);
+                            std::sort(begin(profiles), end(profiles), sort_largest_image);
                             break;
                         case preset::highest_framerate:
-                            result = get_highest_fps(kvp.first, prefered_formats, profiles);
+                            std::sort(begin(profiles), end(profiles), sort_highest_framerate);
                             break;
-                        default: break;
+                        default: throw std::runtime_error("unknown preset selected");
                         }
+
+                        for (auto itr = profiles.rbegin(); itr != profiles.rend(); ++itr) {
+                            if (itr->stream == kvp.first) {
+                                result = *itr;
+                                break;
+                            }
+                        }
+
                         // RS_STREAM_COUNT signals subdevice can't handle this stream
                         if (result.stream != RS_STREAM_COUNT)
                         {
@@ -182,84 +190,19 @@ namespace rs
             }
 
         private:
-            stream_profile get_highest_fps(
-                rs_stream stream,
-                const std::vector<rs_format>& prefered_formats,
-                const std::vector<stream_profile>& profiles) const
-            {
-                stream_profile highest_fps{ RS_STREAM_COUNT, 0, 0, 0, RS_FORMAT_ANY };
-                auto max_fps = 0;
-
-                for (auto&& profile : profiles)
-                {
-                    if (stream != RS_STREAM_ANY &&
-                        stream != profile.stream) continue;
-
-                    if (find(begin(prefered_formats),
-                        end(prefered_formats), profile.format)
-                        == end(prefered_formats)) continue;
-
-                    if (max_fps < profile.fps)
-                    {
-                        max_fps = profile.fps;
-                        highest_fps = profile;
-                    }
-                }
-                return highest_fps;
+            static bool sort_highest_framerate(const stream_profile& lhs, const stream_profile &rhs) {
+                return lhs.fps < rhs.fps;
             }
 
-            stream_profile get_largest_image(
-                rs_stream stream,
-                const std::vector<rs_format>& prefered_formats,
-                const std::vector<stream_profile>& profiles) const
-            {
-                stream_profile largest_image{ RS_STREAM_COUNT, 0, 0, 0, RS_FORMAT_ANY };
-                auto max_size = 0;
-
-                for (auto&& profile : profiles)
-                {
-                    if (stream != RS_STREAM_ANY &&
-                        stream != profile.stream) continue;
-
-                    if (find(begin(prefered_formats),
-                        end(prefered_formats), profile.format)
-                        == end(prefered_formats)) continue;
-
-                    if (max_size < profile.width * profile.height)
-                    {
-                        max_size = profile.width * profile.height;
-                        largest_image = profile;
-                    }
-                }
-                return largest_image;
+            static bool sort_largest_image(const stream_profile& lhs, const stream_profile &rhs) {
+                return lhs.width*lhs.height < rhs.width*rhs.height;
             }
 
-            stream_profile get_best_quality(
-                rs_stream stream,
-                const std::vector<rs_format>& prefered_formats,
-                const std::vector<stream_profile>& profiles) const
-            {
-                stream_profile best_quality{ RS_STREAM_COUNT, 0, 0, 0, RS_FORMAT_ANY };
+            static bool sort_best_quality(const stream_profile& lhs, const stream_profile& rhs) {
+                return std::make_tuple((lhs.width == 640 && lhs.height == 480), (lhs.fps == 30), (lhs.format == RS_FORMAT_Y8), (lhs.format == RS_FORMAT_RGB8), int(lhs.format))
+                     < std::make_tuple((rhs.width == 640 && rhs.height == 480), (rhs.fps == 30), (rhs.format == RS_FORMAT_Y8), (rhs.format == RS_FORMAT_RGB8), int(rhs.format));
+                    
 
-                for (auto&& profile : profiles)
-                {
-                    if (stream != RS_STREAM_ANY &&
-                        stream != profile.stream) continue;
-
-                    if (find(begin(prefered_formats),
-                        end(prefered_formats), profile.format)
-                        == end(prefered_formats)) continue;
-
-                    if (profile.stream == stream &&
-                        profile.width == 640 &&
-                        profile.height == 480 &&
-                        profile.fps == 30)
-                    {
-                        best_quality = profile;
-                    }
-                }
-
-                return best_quality;
             }
 
             static void auto_complete(std::vector<stream_profile> &requests, Dev &target)
