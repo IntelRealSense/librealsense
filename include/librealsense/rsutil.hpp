@@ -111,7 +111,7 @@ namespace rs
                 std::map<rs_stream, rs_intrinsics> intrinsics;
                 std::map<rs_stream, Dev> devices;
 
-                for (auto&& sub : dev.list_adjacent_devices())
+                for (auto&& sub : dev.get_adjacent_devices())
                 {
                     std::vector<stream_profile> targets;
                     auto profiles = sub.get_stream_modes();

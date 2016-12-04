@@ -421,7 +421,7 @@ class device_model
 public:
     explicit device_model(rs::device& dev, std::string& error_message)
     {
-        for (auto&& sub : dev.list_adjacent_devices())
+        for (auto&& sub : dev.get_adjacent_devices())
         {
             auto model = std::make_shared<subdevice_model>(sub, error_message);
             subdevices.push_back(model);

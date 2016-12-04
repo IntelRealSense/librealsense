@@ -107,7 +107,7 @@ TEST_CASE("extrinsic transformation between two streams is a rigid transform", "
     for (int i = 0; i < device_count; ++i)
     {
         auto dev = list[i];
-        auto adj_devices = dev.list_adjacent_devices();
+        auto adj_devices = dev.get_adjacent_devices();
         //REQUIRE(dev != nullptr);
 
         // For every pair of streams
@@ -154,7 +154,7 @@ TEST_CASE("extrinsic transformations are transitive", "[live]")
     // For each device
     for (auto&& dev : list)
     {
-        auto adj_devices = dev.list_adjacent_devices();
+        auto adj_devices = dev.get_adjacent_devices();
 
         // For every set of subdevices
         for (auto a = 0; a < adj_devices.size(); ++a)
@@ -443,9 +443,9 @@ TEST_CASE("a single subdevice can only be opened once, different subdevices can 
                 }
                 // TODO: Move
                 SECTION("opening different subdevices") {
-                    for (auto&& subdevice1 : dev.list_adjacent_devices()) 
+                    for (auto&& subdevice1 : dev.get_adjacent_devices()) 
                     {
-                        for (auto&& subdevice2 : dev.list_adjacent_devices()) 
+                        for (auto&& subdevice2 : dev.get_adjacent_devices()) 
                         {
                             if (subdevice1 == subdevice2)
                                 continue;
@@ -706,7 +706,7 @@ public:
     DummyDevice(std::vector<rs::stream_profile> modes) : modes(std::move(modes)), expected() {};
     void set_expected(std::vector<rs::stream_profile> profiles) { expected = profiles; };
 
-    std::vector<DummyDevice> list_adjacent_devices() const { return{ *this }; }
+    std::vector<DummyDevice> get_adjacent_devices() const { return{ *this }; }
     std::vector<rs::stream_profile> get_stream_modes() const { return modes; };
     bool open(std::vector<rs::stream_profile> profiles) const {
         for (auto & profile : profiles) {
