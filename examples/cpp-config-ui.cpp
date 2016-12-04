@@ -195,7 +195,9 @@ public:
             auto opt = static_cast<rs_option>(i);
 
             std::stringstream ss;
-            ss << dev.get_camera_info(RS_CAMERA_INFO_DEVICE_NAME) << "/" << rs_option_to_string(opt);
+            ss << dev.get_camera_info(RS_CAMERA_INFO_DEVICE_NAME)
+               << "/" << dev.get_camera_info(RS_CAMERA_INFO_MODULE_NAME)
+               << "/" << rs_option_to_string(opt);
             metadata.id = ss.str();
             metadata.opt = opt;
             metadata.endpoint = dev;

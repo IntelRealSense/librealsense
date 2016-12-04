@@ -34,10 +34,11 @@ namespace rsimpl
         // we are using standard fourcc codes to represent formats, while MF is using GUIDs
         // occasionally there is a mismatch between the code and the guid data
         const std::unordered_map<uint32_t, uint32_t> fourcc_map = {
-            { 0x59382020, 0x47524559 },    /* 'GREY' => 'Y8  ' */
-            { 0x52573130, 0x70524141 },    /* 'pRAA' => 'RW10'.*/
-            { 0x32000000, 0x47524559 },    /* 'GREY' => 'L8  '   */
-            { 0x50000000, 0x5a313620 }     /* 'Z16' => 'D16 '    */
+            { 0x59382020, 0x47524559 },    /* 'GREY' from 'Y8  ' */
+            { 0x52573130, 0x70524141 },    /* 'pRAA' from 'RW10'.*/
+            { 0x32000000, 0x47524559 },    /* 'GREY' from 'L8  '   */
+            { 0x50000000, 0x5a313620 },    /* 'Z16'  from 'D16 '    */
+            { 0x52415738, 0x47524559 }     /* 'GREY' from 'RAW8 '    */
         };
 
 
@@ -797,21 +798,10 @@ namespace rsimpl
             }
         }
 
-        void wmf_uvc_device::stop(stream_profile profile)
+        void wmf_uvc_device::stop_stream_cleanup(const stream_profile& profile, std::vector<profile_and_callback>::iterator& elem)
         {
-            check_connection();
-
-            auto elem = std::find_if(_streams.begin(), _streams.end(),
-                [&](const profile_and_callback& pac) {
-                return (pac.profile == profile && (pac.callback));
-            });
-
-            if (elem == _streams.end() && _frame_callbacks.empty())
-                throw std::runtime_error("Camera not streaming!");
-
             if (elem != _streams.end())
             {
-                flush(int(elem - _streams.begin()));
                 elem->callback = nullptr;
                 elem->profile.format = 0;
                 elem->profile.fps = 0;
@@ -826,7 +816,36 @@ namespace rsimpl
                 _frame_callbacks.erase(_frame_callbacks.begin() + pos);
             }
 
-            _streaming = false;
+            if (_profiles.empty())
+                _streaming = false;
+
+            _has_started.reset();
+        }
+
+        void wmf_uvc_device::stop(stream_profile profile)
+        {
+            check_connection();
+
+            auto& elem = std::find_if(_streams.begin(), _streams.end(),
+                [&](const profile_and_callback& pac) {
+                return (pac.profile == profile && (pac.callback));
+            });
+
+            if (elem == _streams.end() && _frame_callbacks.empty())
+                throw std::runtime_error("Camera not streaming!");
+
+            if (elem != _streams.end())
+            {
+                try {
+                    flush(int(elem - _streams.begin()));
+                }
+                catch (...)
+                {
+                    stop_stream_cleanup(profile, elem); // TODO: move to RAII
+                    throw;
+                }
+            }
+            stop_stream_cleanup(profile, elem);
         }
 
         // ReSharper disable once CppMemberFunctionMayBeConst
@@ -836,7 +855,15 @@ namespace rsimpl
             {
                 if (_reader != nullptr)
                 {
-                    CHECK_HR(_reader->Flush(sIndex));
+                    auto sts = _reader->Flush(sIndex);
+                    if (sts != S_OK)
+                    {
+                        if (sts == 0xc00d3704)
+                            throw std::runtime_error("Camera already streaming");
+
+                        throw;
+                    }
+
                     _is_flushed.wait(INFINITE);
                 }
             }
