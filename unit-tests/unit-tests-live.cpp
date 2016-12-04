@@ -674,6 +674,7 @@ TEST_CASE("All suggested profiles can be opened", "[live]") {
     for (auto && subdevice : list) {
         std::vector<rs::stream_profile> modes;
         REQUIRE_NOTHROW(modes = subdevice.get_stream_modes());
+
         REQUIRE(modes.size() > 0);
         WARN(subdevice.get_camera_info(RS_CAMERA_INFO_MODULE_NAME));
         for (int i = 0; i < modes.size(); i+=1) {
@@ -728,37 +729,54 @@ private:
     std::vector<rs::stream_profile> modes, expected;
 };
 
-TEST_CASE("Auto-complete feature works", "[offline][rs::util::config][!mayfail]") {
+TEST_CASE("Auto-complete feature works", "[offline][rs::util::config]") {
     // dummy device can provide the following profiles:
-    DummyDevice dev({ { RS_STREAM_DEPTH   , 480, 360, 30, RS_FORMAT_Z16 },
-                      { RS_STREAM_DEPTH   , 640, 480, 30, RS_FORMAT_Z16 },
-                      { RS_STREAM_DEPTH   , 640, 480, 60, RS_FORMAT_Z16 },
-                      { RS_STREAM_INFRARED, 640, 480, 30, RS_FORMAT_Y16 },
-                      { RS_STREAM_INFRARED, 480, 360, 60, RS_FORMAT_Y8  } });
+    DummyDevice dev({ { RS_STREAM_DEPTH   , 640, 240,  10, RS_FORMAT_Z16 },
+                      { RS_STREAM_DEPTH   , 640, 240,  30, RS_FORMAT_Z16 },
+                      { RS_STREAM_DEPTH   , 640, 240, 110, RS_FORMAT_Z16 },
+                      { RS_STREAM_DEPTH   , 640, 480,  10, RS_FORMAT_Z16 },
+                      { RS_STREAM_DEPTH   , 640, 480,  30, RS_FORMAT_Z16 },
+                      { RS_STREAM_INFRARED, 640, 240,  10, RS_FORMAT_Y8  },
+                      { RS_STREAM_INFRARED, 640, 240,  30, RS_FORMAT_Y8  },
+                      { RS_STREAM_INFRARED, 640, 240, 110, RS_FORMAT_Y8  },
+                      { RS_STREAM_INFRARED, 640, 480,  10, RS_FORMAT_Y8  },
+                      { RS_STREAM_INFRARED, 640, 480,  30, RS_FORMAT_Y8  },
+                      { RS_STREAM_INFRARED, 640, 480, 200, RS_FORMAT_Y8  } });
     rs::util::Config<DummyDevice> config;
     
     struct Test { 
         std::vector<rs::stream_profile> given,       // We give these profiles to the config class
-                                        expected;    // pool of profiles the config class can return
-        bool                            should_fail; // whether or not the config class should succeed at completing the request
+                                        expected;    // pool of profiles the config class can return. Leave empty if auto-completer is expected to fail
     };
     std::vector<Test> tests = {
         // Test 0 (Depth always has RS_FORMAT_Z16)
-        { { { RS_STREAM_DEPTH   ,   0,   0,  0, RS_FORMAT_ANY } }, // given
-          { { RS_STREAM_DEPTH   ,   0,   0,  0, RS_FORMAT_Z16 } }, // expected
-          0 },                                                     // should_fail
-        // Test 1 (Only one profile for Depth @60fps)
-        { { { RS_STREAM_DEPTH   ,   0,   0, 60, RS_FORMAT_ANY } }, // given
-          { { RS_STREAM_DEPTH   , 640, 480, 60, RS_FORMAT_Z16 } }, // expected
-          0 },                                                     // should_fail
-        // Test 2 (Depth has two profiles @30fps, but Infrared locks in dimensions)
-        { { { RS_STREAM_DEPTH   ,   0,   0, 30, RS_FORMAT_ANY }, { RS_STREAM_INFRARED,   0,   0,  0, RS_FORMAT_ANY } }, // given
-          { { RS_STREAM_DEPTH   , 640, 480, 30, RS_FORMAT_Z16 }, { RS_STREAM_INFRARED, 640, 480, 30, RS_FORMAT_Y16 } }, // expected
-          0 },                                                                                                          // should_fail
-        // Test 3 (IR has only one profile with width = 480)
-        { { { RS_STREAM_INFRARED, 480,   0,  0, RS_FORMAT_ANY } }, // given
-          { { RS_STREAM_INFRARED, 480, 360, 60, RS_FORMAT_Y8  } }, // expected
-          0 }                                                      // should_fail
+        { { { RS_STREAM_DEPTH   ,   0,   0,   0, RS_FORMAT_ANY } },   // given
+          { { RS_STREAM_DEPTH   ,   0,   0,   0, RS_FORMAT_Z16 } } }, // expected
+        // Test 1 (IR always has RS_FORMAT_Y8)
+        { { { RS_STREAM_INFRARED,   0,   0,   0, RS_FORMAT_ANY } },   // given
+          { { RS_STREAM_INFRARED,   0,   0,   0, RS_FORMAT_Y8  } } }, // expected
+        // Test 2 (No 200 fps depth)
+        { { { RS_STREAM_DEPTH   ,   0,   0, 200, RS_FORMAT_ANY } },   // given
+          { } },                                                      // expected
+        // Test 3 (Can request 200 fps IR)
+        { { { RS_STREAM_INFRARED,   0,   0, 200, RS_FORMAT_ANY } },   // given
+          { { RS_STREAM_INFRARED,   0,   0, 200, RS_FORMAT_ANY } } }, // expected
+        // Test 4 (requesting IR@200fps + depth fails
+        { { { RS_STREAM_INFRARED,   0,   0, 200, RS_FORMAT_ANY }, { RS_STREAM_DEPTH   ,   0,   0,   0, RS_FORMAT_ANY } },   // given
+          { } },                                                                                                            // expected
+        // Test 5 (Can't do 640x480@110fps a)
+        { { { RS_STREAM_INFRARED, 640, 480, 110, RS_FORMAT_ANY } },   // given
+          { } },                                                      // expected
+        // Test 6 (Can't do 640x480@110fps b)
+        { { { RS_STREAM_DEPTH   , 640, 480,   0, RS_FORMAT_ANY }, { RS_STREAM_INFRARED,   0,   0, 110, RS_FORMAT_ANY } },   // given
+          { } },                                                                                                            // expected
+        // Test 7 (Pull extra details from second stream a)
+        { { { RS_STREAM_DEPTH   , 640, 480,   0, RS_FORMAT_ANY }, { RS_STREAM_INFRARED,   0,   0,  30, RS_FORMAT_ANY } },   // given
+          { { RS_STREAM_DEPTH   , 640, 480,  30, RS_FORMAT_ANY }, { RS_STREAM_INFRARED, 640, 480,  30, RS_FORMAT_ANY } } }, // expected
+        // Test 8 (Pull extra details from second stream b) [IR also supports 200, could fail if that gets selected]
+        { { { RS_STREAM_INFRARED, 640, 480,   0, RS_FORMAT_ANY }, { RS_STREAM_DEPTH   ,   0,   0,   0, RS_FORMAT_ANY } },   // given
+          { { RS_STREAM_INFRARED, 640, 480,  10, RS_FORMAT_ANY }, { RS_STREAM_INFRARED, 640, 480,  30, RS_FORMAT_ANY },     // expected - options for IR stream
+            { RS_STREAM_DEPTH   , 640, 480,  10, RS_FORMAT_ANY }, { RS_STREAM_DEPTH   , 640, 480,  30, RS_FORMAT_ANY } } }  // expected - options for depth stream
     };
 
     for (int i=0; i<tests.size(); ++i)
@@ -769,8 +787,8 @@ TEST_CASE("Auto-complete feature works", "[offline][rs::util::config][!mayfail]"
         }
         dev.set_expected(tests[i].expected);
         CAPTURE(i);
-        if (tests[i].should_fail) {
-            REQUIRE_THROWS_AS(config.open(dev), rs::error);
+        if (tests[i].expected.size() == 0) {
+            REQUIRE_THROWS_AS(config.open(dev), std::runtime_error);
         }
         else
         {
