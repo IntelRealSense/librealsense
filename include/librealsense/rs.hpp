@@ -591,7 +591,7 @@ namespace rs
         * returns the list of adjacent devices, sharing the same physical parent composite device
         * \return            the list of adjacent devices
         */
-        std::vector<device> query_adjacent_devices() const
+        std::vector<device> list_adjacent_devices() const
         {
             rs_error* e = nullptr;
             std::shared_ptr<rs_device_list> list(

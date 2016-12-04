@@ -55,7 +55,7 @@ namespace rs
                 }
                 catch (std::out_of_range)
                 {
-                    throw std::runtime_error("No such stream");
+                    throw std::runtime_error(std::string("config doesn't have intrinsics for stream ") + rs_stream_to_string(stream));
                 }
 
                 rs_extrinsics get_extrinsics(rs_stream from, rs_stream to) const try
@@ -64,7 +64,7 @@ namespace rs
                 }
                 catch (std::out_of_range)
                 {
-                    throw std::runtime_error("No such stream");
+                    throw std::runtime_error(std::string("config doesnt have extrinsics for ") + rs_stream_to_string(from) + "->" + rs_stream_to_string(to));
                 }
 
             private:
@@ -111,7 +111,7 @@ namespace rs
                 std::map<rs_stream, rs_intrinsics> intrinsics;
                 std::map<rs_stream, Dev> devices;
 
-                for (auto&& sub : dev.query_adjacent_devices())
+                for (auto&& sub : dev.list_adjacent_devices())
                 {
                     std::vector<stream_profile> targets;
                     auto profiles = sub.get_stream_modes();
