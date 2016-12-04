@@ -693,7 +693,7 @@ TEST_CASE("All suggested profiles can be opened", "[live]") {
     }
 }
 
-class DummyDevice
+class AC_Mock_Device
 {
 public:
     struct Streaming_lock_type {
@@ -703,10 +703,10 @@ public:
         template<class T> void start(T callback) { REQUIRE(result == true); };
     };
 
-    DummyDevice(std::vector<rs::stream_profile> modes) : modes(std::move(modes)), expected() {};
+    AC_Mock_Device(std::vector<rs::stream_profile> modes) : modes(std::move(modes)), expected() {};
     void set_expected(std::vector<rs::stream_profile> profiles) { expected = profiles; };
 
-    std::vector<DummyDevice> get_adjacent_devices() const { return{ *this }; }
+    std::vector<AC_Mock_Device> get_adjacent_devices() const { return{ *this }; }
     std::vector<rs::stream_profile> get_stream_modes() const { return modes; };
     bool open(std::vector<rs::stream_profile> profiles) const {
         for (auto & profile : profiles) {
@@ -731,7 +731,7 @@ private:
 
 TEST_CASE("Auto-complete feature works", "[offline][rs::util::config]") {
     // dummy device can provide the following profiles:
-    DummyDevice dev({ { RS_STREAM_DEPTH   , 640, 240,  10, RS_FORMAT_Z16 },
+    AC_Mock_Device dev({ { RS_STREAM_DEPTH   , 640, 240,  10, RS_FORMAT_Z16 },
                       { RS_STREAM_DEPTH   , 640, 240,  30, RS_FORMAT_Z16 },
                       { RS_STREAM_DEPTH   , 640, 240, 110, RS_FORMAT_Z16 },
                       { RS_STREAM_DEPTH   , 640, 480,  10, RS_FORMAT_Z16 },
@@ -742,7 +742,7 @@ TEST_CASE("Auto-complete feature works", "[offline][rs::util::config]") {
                       { RS_STREAM_INFRARED, 640, 480,  10, RS_FORMAT_Y8  },
                       { RS_STREAM_INFRARED, 640, 480,  30, RS_FORMAT_Y8  },
                       { RS_STREAM_INFRARED, 640, 480, 200, RS_FORMAT_Y8  } });
-    rs::util::Config<DummyDevice> config;
+    rs::util::Config<AC_Mock_Device> config;
     
     struct Test { 
         std::vector<rs::stream_profile> given,       // We give these profiles to the config class
@@ -792,7 +792,7 @@ TEST_CASE("Auto-complete feature works", "[offline][rs::util::config]") {
         }
         else
         {
-            rs::util::Config<DummyDevice>::multistream results;
+            rs::util::Config<AC_Mock_Device>::multistream results;
             REQUIRE_NOTHROW(results = config.open(dev));
             // REQUIRE()s are in here
             results.start(0);
