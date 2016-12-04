@@ -18,7 +18,7 @@ namespace rsimpl
     {
 
     public:
-        lr200_mm_camera(std::shared_ptr<uvc::device> device, const static_device_info & info);
+        lr200_mm_camera(std::shared_ptr<uvc::device> device, const static_device_info & info, motion_module_calibration in_fe_intrinsic);
         ~lr200_mm_camera() {};
 
         void get_option_range(rs_option option, double & min, double & max, double & step, double & def) override;

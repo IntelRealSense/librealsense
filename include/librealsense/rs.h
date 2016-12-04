@@ -40,6 +40,7 @@ typedef enum rs_capabilities
     RS_CAPABILITIES_ADAPTER_BOARD           , /**< interanlly includes MIPI to USB adapter */
     RS_CAPABILITIES_ENUMERATION             , /**< provides enough basic functionality to be considered supported. this to catch at runtime various outdated engineering samples */
     RS_CAPABILITIES_COUNT                   , 
+    RS_CAPABILITIES_MAX_ENUM = 0x7FFFFFFF
 } rs_capabilities;
 
 typedef enum rs_stream
@@ -56,7 +57,8 @@ typedef enum rs_stream
     RS_STREAM_DEPTH_ALIGNED_TO_COLOR           , /**< Synthetic stream containing depth data but sharing intrinsic of color stream */
     RS_STREAM_DEPTH_ALIGNED_TO_RECTIFIED_COLOR ,  /**< Synthetic stream containing depth data but sharing intrinsic of rectified color stream */
     RS_STREAM_DEPTH_ALIGNED_TO_INFRARED2       , /**< Synthetic stream containing depth data but sharing intrinsic of second viewpoint infrared stream */
-    RS_STREAM_COUNT
+    RS_STREAM_COUNT,
+    RS_STREAM_MAX_ENUM = 0x7FFFFFFF
 } rs_stream;
 
 typedef enum rs_format

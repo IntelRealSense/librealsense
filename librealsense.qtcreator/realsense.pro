@@ -7,9 +7,8 @@ CONFIG -= qt
 INCLUDEPATH += ../include
 
 CONFIG += link_pkgconfig
-PKGCONFIG += libusb-1.0
-LIBS += -pthread -L/usr/local/lib/motion/ -linfra -lmotionautoexposure -lmotionHAL -lmultirealsense -lslimAPI -ltbbmalloc -ltbb
-
+PKGCONFIG += libusb-1.0 RapidJSON
+LIBS += -pthread  -L/usr/local/lib/motion  -lmotionautoexposure -lmultirealsense -lslimAPI -linfra -lmotionHAL
 QMAKE_CXXFLAGS += -std=c++11 -fPIC -pedantic -mssse3 -g
 QMAKE_CXXFLAGS += -Wno-missing-field-initializers -Wno-switch -Wno-multichar
 QMAKE_CXXFLAGS += -D_FORTIFY_SOURCE=2 -fstack-protector-strong -Wformat -Wformat-security

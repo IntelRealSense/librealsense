@@ -16,6 +16,6 @@ LIBS += -pthread
 SOURCES += ../examples/cpp-config-ui.cpp
 HEADERS += ../examples/example.hpp
 
-LIBS += -L$$DESTDIR/ -lrealsense -L/usr/local/lib/motion -linfra -lmotionautoexposure -lmotionHAL -lmultirealsense -lslimAPI -ltbbmalloc -ltbb
+LIBS += -L$$DESTDIR/ $$DESTDIR/librealsense.a  -L/usr/local/lib/motion -lmultirealsense  -ltbbmalloc -ltbb -lmotionautoexposure -lmultirealsense -lslimAPI -linfra -lmotionHAL
 PRE_TARGETDEPS += $$DESTDIR/librealsense.a
 

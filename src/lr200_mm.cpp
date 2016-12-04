@@ -3,7 +3,11 @@
 
 #include "image.h"
 #include "lr200_mm.h"
+#include "rapidjson/document.h"
 #include <iostream>
+#include <fstream>
+#include <streambuf>
+
 using namespace rsimpl;
 using namespace rsimpl::ds;
 
@@ -11,8 +15,9 @@ namespace rsimpl
 {
      
 
-    lr200_mm_camera::lr200_mm_camera(std::shared_ptr<uvc::device> device, const static_device_info & info) 
-        : ds_device(device, info, calibration_validator())
+    lr200_mm_camera::lr200_mm_camera(std::shared_ptr<uvc::device> device, const static_device_info & info, motion_module_calibration in_fe_intrinsic)
+        : ds_device(device, info, calibration_validator()),
+          fe_intrinsic(in_fe_intrinsic)
     {
     }
 
@@ -312,6 +317,100 @@ namespace rsimpl
 
 
 
+     motion_module_calibration read_fisheye_intrinsic(std::string calibrationFile)
+     {
+
+        motion_module_calibration intrinsic;
+
+        std::ifstream cal("/intel/euclid/config/calibration.json");
+        std::string str((std::istreambuf_iterator<char>(cal)),std::istreambuf_iterator<char>());
+        const char *json = str.c_str();
+
+        rapidjson::Document d;
+        d.Parse(json);
+        const rapidjson::Value& cam = d["cameras"];
+        auto& fisheye = cam[0];
+        auto& center = fisheye["center_px"];
+        double cx = center[0].GetDouble();
+        double cy = center[1].GetDouble();
+        auto& focal_length = fisheye["focal_length_px"];
+        double fx = focal_length[0].GetDouble();
+        double fy = focal_length[1].GetDouble();
+
+        double distortion = fisheye["distortion"]["w"].GetDouble();
+
+        intrinsic.calib.fe_intrinsic.kf[0] = fx;
+        intrinsic.calib.fe_intrinsic.kf[1] = 0;
+        intrinsic.calib.fe_intrinsic.kf[2] = cx;
+        intrinsic.calib.fe_intrinsic.kf[3] = 0;
+        intrinsic.calib.fe_intrinsic.kf[4] = fy;
+        intrinsic.calib.fe_intrinsic.kf[5] = cy;
+        intrinsic.calib.fe_intrinsic.kf[6] = 0;
+        intrinsic.calib.fe_intrinsic.kf[7] = 0;
+        intrinsic.calib.fe_intrinsic.kf[8] = 1;
+        intrinsic.calib.fe_intrinsic.distf[0] = distortion;
+        intrinsic.calib.fe_intrinsic.distf[1] = intrinsic.calib.fe_intrinsic.distf[2]
+                = intrinsic.calib.fe_intrinsic.distf[3] =intrinsic.calib.fe_intrinsic.distf[4] = 0;
+
+        auto& imus = d["imus"];
+        {
+
+            auto& accel = imus[0]["accelerometer"];
+            auto& scale = accel["scale_and_alignment"];
+            auto& bias = accel["bias"];
+            auto& bias_var = accel["bias_variance"];
+            auto& noise_var = accel["noise_variance"];
+            intrinsic.calib.imu_intrinsic.acc_intrinsic.val[0][0] = scale[0].GetDouble();
+            intrinsic.calib.imu_intrinsic.acc_intrinsic.val[1][0] = scale[1].GetDouble();
+            intrinsic.calib.imu_intrinsic.acc_intrinsic.val[2][0] = scale[2].GetDouble();
+            intrinsic.calib.imu_intrinsic.acc_intrinsic.val[0][1] = scale[3].GetDouble();
+            intrinsic.calib.imu_intrinsic.acc_intrinsic.val[1][1] = scale[4].GetDouble();
+            intrinsic.calib.imu_intrinsic.acc_intrinsic.val[2][1] = scale[5].GetDouble();
+            intrinsic.calib.imu_intrinsic.acc_intrinsic.val[0][2] = scale[6].GetDouble();
+            intrinsic.calib.imu_intrinsic.acc_intrinsic.val[1][2] = scale[7].GetDouble();
+            intrinsic.calib.imu_intrinsic.acc_intrinsic.val[2][2] = scale[8].GetDouble();
+            intrinsic.calib.imu_intrinsic.acc_intrinsic.val[0][3] = bias[0].GetDouble();
+            intrinsic.calib.imu_intrinsic.acc_intrinsic.val[1][3] = bias[1].GetDouble();
+            intrinsic.calib.imu_intrinsic.acc_intrinsic.val[2][3] = bias[2].GetDouble();
+            intrinsic.calib.imu_intrinsic.acc_bias_variance[0] = bias_var[0].GetDouble();
+            intrinsic.calib.imu_intrinsic.acc_bias_variance[1] = bias_var[1].GetDouble();
+            intrinsic.calib.imu_intrinsic.acc_bias_variance[2] = bias_var[2].GetDouble();
+            intrinsic.calib.imu_intrinsic.acc_noise_variance[0] =
+                intrinsic.calib.imu_intrinsic.acc_noise_variance[1]=
+                    intrinsic.calib.imu_intrinsic.acc_noise_variance[2] = noise_var.GetDouble();
+
+
+        }
+        {
+            auto& gyro = imus[0]["gyroscope"];
+            auto& scale = gyro["scale_and_alignment"];
+            auto& bias = gyro["bias"];
+            auto& bias_var = gyro["bias_variance"];
+            auto& noise_var = gyro["noise_variance"];
+
+            intrinsic.calib.imu_intrinsic.gyro_intrinsic.val[0][0] = scale[0].GetDouble();
+            intrinsic.calib.imu_intrinsic.gyro_intrinsic.val[1][0] = scale[1].GetDouble();
+            intrinsic.calib.imu_intrinsic.gyro_intrinsic.val[2][0] = scale[2].GetDouble();
+            intrinsic.calib.imu_intrinsic.gyro_intrinsic.val[0][1] = scale[3].GetDouble();
+            intrinsic.calib.imu_intrinsic.gyro_intrinsic.val[1][1] = scale[4].GetDouble();
+            intrinsic.calib.imu_intrinsic.gyro_intrinsic.val[2][1] = scale[5].GetDouble();
+            intrinsic.calib.imu_intrinsic.gyro_intrinsic.val[0][2] = scale[6].GetDouble();
+            intrinsic.calib.imu_intrinsic.gyro_intrinsic.val[1][2] = scale[7].GetDouble();
+            intrinsic.calib.imu_intrinsic.gyro_intrinsic.val[2][2] = scale[8].GetDouble();
+            intrinsic.calib.imu_intrinsic.gyro_intrinsic.val[0][3] = bias[0].GetDouble();
+            intrinsic.calib.imu_intrinsic.gyro_intrinsic.val[1][3] = bias[1].GetDouble();
+            intrinsic.calib.imu_intrinsic.gyro_intrinsic.val[2][3] = bias[2].GetDouble();
+            intrinsic.calib.imu_intrinsic.gyro_bias_variance[0] = bias_var[0].GetDouble();
+            intrinsic.calib.imu_intrinsic.gyro_bias_variance[1] = bias_var[1].GetDouble();
+            intrinsic.calib.imu_intrinsic.gyro_bias_variance[2] = bias_var[2].GetDouble();
+            intrinsic.calib.imu_intrinsic.gyro_noise_variance[0] =
+                intrinsic.calib.imu_intrinsic.gyro_noise_variance[1]=
+                    intrinsic.calib.imu_intrinsic.gyro_noise_variance[2] = noise_var.GetDouble();
+
+        }
+        return intrinsic;
+     }
+
 
 
     std::shared_ptr<rs_device> make_lr200_mm_device(std::shared_ptr<uvc::device> device)
@@ -327,16 +426,17 @@ namespace rsimpl
         auto cam_info = ds::read_camera_info(*device);
         
         ds_device::set_common_ds_config(device, info, cam_info);
+        motion_module_calibration fisheye_intrinsic = read_fisheye_intrinsic("/intel/euclid/config/calibration.json");
 
         // lr200_mm provides Full HD raw 16 format as well for the color stream
-        info.subdevice_modes.push_back({ 2,{ 1920, 1080 }, pf_rw16, 30, cam_info.calibration.intrinsicsThird[0],{ cam_info.calibration.modesThird[0][0] },{ 0 } });
+        info.subdevice_modes.push_back({ 2,{ 1920, 1080 }, pf_rw16, 30,  fisheye_intrinsic.calib.fe_intrinsic,{ cam_info.calibration.modesThird[0][0] },{ 0 } });
         //MOTION:
         //info.capabilities_vector.push_back(RS_CAPABILITIES_MOTION_MODULE_FW_UPDATE);
 
         info.stream_subdevices[RS_STREAM_FISHEYE] = 3;
         info.presets[RS_STREAM_FISHEYE][RS_PRESET_BEST_QUALITY] =
         info.presets[RS_STREAM_FISHEYE][RS_PRESET_LARGEST_IMAGE] =
-        info.presets[RS_STREAM_FISHEYE][RS_PRESET_HIGHEST_FRAMERATE] = { true, 640, 480, RS_FORMAT_RAW8,   60 };
+        info.presets[RS_STREAM_FISHEYE][RS_PRESET_HIGHEST_FRAMERATE] = { true, 640, 480, RS_FORMAT_RAW8,   30 };
         //info.subdevice_modes.push_back({ 3, { 640, 480 }, pf_raw8, 30, rs_intrinsics, { /*TODO:ask if we need rect_modes*/ }, { 0 } });
         
         info.options.push_back({ RS_OPTION_FISHEYE_GAIN                                             });
@@ -353,7 +453,7 @@ namespace rsimpl
         info.capabilities_vector.push_back({ RS_CAPABILITIES_MOTION_EVENTS, { 1, 15, 5, 0 }, firmware_version::any(), RS_CAMERA_INFO_MOTION_MODULE_FIRMWARE_VERSION });
         info.camera_info[RS_CAMERA_INFO_MOTION_MODULE_FIRMWARE_VERSION] = "14.0.2";
         info.supported_metadata_vector.push_back(RS_FRAME_METADATA_ACTUAL_EXPOSURE);
-        return std::make_shared<lr200_mm_camera>(device, info);
+        return std::make_shared<lr200_mm_camera>(device, info,fisheye_intrinsic);
     }
     
 }
