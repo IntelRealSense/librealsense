@@ -34,6 +34,9 @@
 #include <linux/usb/video.h>
 #include <linux/uvcvideo.h>
 #include <linux/videodev2.h>
+#include <fts.h>
+#include <regex>
+#include <list>
 
 #pragma GCC diagnostic ignored "-Wpedantic"
 #include <libusb.h>
@@ -68,6 +71,411 @@ namespace rsimpl
 
         struct buffer { void * start; size_t length; };
 
+        // TODO: Change code convention
+        // a sensor Input data provided by the sensor callback.
+        class sensorInputData {
+        public:
+            sensorInputData() {}
+            sensorInputData(std::string name, int value) { input_name = name; data = value;}
+            void getData(int &input_data) { input_data = data;}
+            std::string get_name() const { return input_name; }
+        private:
+            std::string input_name;
+            int data;
+
+        };
+
+        // hold all captured inputs in a specific trigger.
+        class sensorInputs {
+        public:
+            // get a data for a specific named input.
+            bool getInputData(std::string input_name, sensorInputData &data) {
+                for (auto input: inputData) {
+                    if (input.get_name() == input_name) {
+                        data = input;
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+            // add input to the sensor inputs.
+            void add_input(std::string input_name, int value) {
+                inputData.push_front(sensorInputData(input_name,value));
+            }
+        private:
+            std::list<sensorInputData> inputData;
+        };
+
+        // callback interface which fired when a sensor data recieved.
+        class sensorCallback {
+        public:
+            virtual void sensor_data_recieved(sensorInputs data) = 0;
+        };
+
+        // manage an IIO input. or what is called a scan.
+        class hidInput {
+        public:
+            hidInput() {
+                enabled = false;
+            }
+
+            // initialize the input by reading the input parameters.
+            bool init( std::string iio_device_path, std::string input_name ) {
+                char buffer[1024];
+
+                device_path = iio_device_path;
+                std::string input_prefix = "in_";
+                // validate if input includes th "in_" prefix. if it is . remove it.
+                if ( input_name.substr(0,input_prefix.size()) == input_prefix) {
+                    input = input_name.substr(input_prefix.size(),input_name.size());
+                } else {
+                    input = input_name;
+                }
+
+                std::string input_suffix = "_en";
+                // check if input contains the "en" suffix, if it is . remove it.
+                if ( input.substr(input.size()-input_suffix.size(), input_suffix.size()) == input_suffix ) {
+                    input = input.substr(0,input.size()-input_suffix.size());
+                }
+
+                // read scan type.
+                std::ifstream device_type_file(device_path + "/scan_elements/in_" + input + "_type");
+                if (!device_type_file) {
+                    return false;
+                }
+                device_type_file.getline(buffer,sizeof(buffer));
+                type = std::string(buffer);
+
+                device_type_file.close();
+
+                // read scan index.
+                std::ifstream device_index_file(device_path + "/scan_elements/in_" + input + "_index");
+                if (!device_index_file) {
+                    return false;
+                }
+
+                device_index_file.getline(buffer,sizeof(buffer));
+                index = std::stoi(buffer);
+
+                device_index_file.close();
+
+                // read enable state.
+                std::ifstream device_enabled_file(device_path + "/scan_elements/in_" + input + "_en");
+                if (!device_enabled_file) {
+                    return false;
+                }
+
+                device_enabled_file.getline(buffer,sizeof(buffer));
+                enabled = (std::stoi(buffer) == 0) ? false : true;
+
+                device_enabled_file.close();
+                return true;
+            }
+
+            // enable scan input. doing so cause the input to be part of the data provided in the polling.
+            bool enable(bool is_enable) {
+                int input_data = is_enable ? 1 : 0;
+                // open the element requested and enable and disable.
+                std::ofstream iio_device_file(device_path + "/scan_elements/" + "in_" + input + "_en");
+
+                if (!iio_device_file.is_open()) {
+                    return false;
+                }
+                iio_device_file << input_data;
+                iio_device_file.close();
+
+                enabled = is_enable;
+
+                return true;
+            }
+
+            std::string get_name() const { return input; }
+            std::string get_type() const { return type; }
+            int get_index() const { return index; }
+            bool is_enabled() const { return enabled; }
+        private:
+            std::string input;
+            std::string device_path;
+            std::string type;
+            int index;
+            bool enabled;
+        };
+
+        // declare device sensor with all of its inputs.
+        class hidDevice {
+        public:
+            ~hidDevice() {
+
+                // clear inputs.
+                std::list<hidInput*>::iterator it = inputs.begin();
+
+                while ( it != inputs.end() ) {
+                    it = inputs.erase(it);
+                }
+            }
+
+            // initialize the device sensor. reading its name and all of its inputs.
+            bool init(int device_vid, int device_pid, int device_iio_num)
+            {
+                stop = false;
+                vid = device_vid;
+                pid = device_pid;
+                iio_device = device_iio_num;
+
+                std::ostringstream iio_device_path;
+                iio_device_path << "/sys/bus/iio/devices/iio:device" << iio_device;
+
+                std::ifstream iio_device_file(iio_device_path.str() + "/name");
+
+                // find iio_device in file system.
+                if (!iio_device_file.good()) {
+                    return false;
+                }
+
+                char name_buffer[256];
+                iio_device_file.getline(name_buffer,sizeof(name_buffer));
+                sensor_name = std::string(name_buffer);
+
+                iio_device_file.close();
+
+                // read all available input of the iio_device
+                read_device_inputs( iio_device_path.str() );
+                return true;
+            }
+
+            // return an input by name.
+            hidInput* get_input(std::string input_name) {
+                for (auto input : inputs) {
+                    if(input->get_name() == input_name) {
+                        return input;
+                    }
+                }
+
+                return NULL;
+            }
+
+            // start capturing and polling.
+            bool capture(sensorCallback *sensor_callback) {
+                int fp;
+                auto buf_len = 100;
+                char data[buf_len*16];
+
+                std::ostringstream iio_read_device_path;
+                iio_read_device_path << "/dev/iio:device" << iio_device;
+
+                std::string x = iio_read_device_path.str();
+                callback = sensor_callback;
+                // count number of enabled count elements and sort by their index.
+                create_channel_array();
+
+                if (!write_integer_to_param("buffer/length", buf_len)) {
+                    return false;
+                }
+                if (!write_integer_to_param("buffer/enable", 1)) {
+                    return false;
+                }
+
+                callback = sensor_callback;
+
+                //cout << iio_read_device_path.str() << endl;
+                std::ifstream iio_device_file(iio_read_device_path.str());
+
+                // find iio_device in file system.
+                if (!iio_device_file.good()) {
+                    write_integer_to_param("buffer/enable", 0);
+                    return false;
+                }
+
+                // each channel is 32 bit
+                int channel_size = channels.size()*4;
+                do {
+                    sensorInputs callback_data;
+                    iio_device_file.read(data, channel_size);
+                    int *data_p = (int*) data;
+                    int data_read = iio_device_file.gcount();
+                    int i =0;
+                    for( auto channel : channels) {
+                        callback_data.add_input(channel->get_name(), data_p[i]);
+                        i++;
+                    }
+                    callback->sensor_data_recieved(callback_data);
+                } while(!stop);
+
+                stop = false;
+                iio_device_file.close();
+            }
+
+            void stop_capture() {
+                write_integer_to_param("buffer/enable", 0);
+                callback = NULL;
+                stop = true;
+
+                channels.clear();
+            }
+            static bool sort_hids(hidInput* first, hidInput* second)
+            {
+                return (first->get_index() >= second->get_index());
+            }
+
+            bool create_channel_array() {
+                // build enabled channels.
+                for(auto input : inputs) {
+                    if (input->is_enabled())
+                    {
+                        channels.push_back(input);
+                    }
+                }
+
+                channels.sort(sort_hids);
+            }
+            std::list<hidInput*> get_inputs() { return inputs; }
+
+            std::string get_sensor_name() const { return sensor_name; }
+            //int get_iio_device() { return iio_device; };
+            sensorCallback *callback;
+            bool stop;
+        private:
+
+            // read the IIO device inputs.
+            bool read_device_inputs(std::string device_path) {
+                DIR *dir;
+                struct dirent *dir_ent;
+
+                std::string scan_elements_path = device_path + "/scan_elements";
+                // start enumerate the scan elemnts dir.
+                dir = opendir(scan_elements_path.c_str());
+                if (dir == NULL) {
+                    return false;
+                }
+
+                // verify file format. should include in_ (input) and _en (enable).
+                while ((dir_ent = readdir(dir)) != NULL) {
+                    if (dir_ent->d_type != DT_DIR) {
+                        std::string file(dir_ent->d_name);
+                        std::string prefix = "in_";
+                        std::string suffix = "_en";
+                        if (file.substr(0,prefix.size()) == prefix &&
+                            file.substr(file.size()-suffix.size(),suffix.size()) == suffix) {
+                            // initialize input.
+                            hidInput *new_input = new hidInput();
+                            if (!new_input->init(device_path, file))
+                            {
+                                // fail to initialize this input. continue to the next one.
+                                continue;
+                            }
+
+                            // push to input list.
+                            inputs.push_front(new_input);
+                        }
+
+                    }
+                }
+            }
+
+            // write an integer value to a iio param.
+            bool write_integer_to_param(std::string param,int value) {
+                std::ostringstream iio_device_path;
+                iio_device_path << "/sys/bus/iio/devices/iio:device" << iio_device << "/" << param;
+                auto str = iio_device_path.str();
+
+                std::ofstream iio_device_file(iio_device_path.str());
+
+                if (!iio_device_file.good()) {
+                    return false;
+                }
+
+                iio_device_file << value;
+
+                iio_device_file.close();
+
+                return true;
+            }
+            int vid;
+            int pid;
+            int iio_device;
+            std::string sensor_name;
+
+            std::list<hidInput*> inputs;
+            std::list<hidInput*> channels;
+
+        };
+
+        class v4l_hid_device : public hid_device
+        {
+        public:
+            v4l_hid_device(const hid_device_info& info)
+            {
+                _info.unique_id = "";
+                v4l_hid_device::foreach_hid_device([&](const hid_device_info& hid_dev_info, const std::string& iio_device){
+                    if (hid_dev_info.unique_id == info.unique_id)
+                    {
+                        _info = hid_dev_info;
+                        auto device = std::unique_ptr<hidDevice>(new hidDevice());
+                        if (device->init(std::stoul(hid_dev_info.vid, nullptr, 16),
+                                    std::stoul(hid_dev_info.pid, nullptr, 16),
+                                    std::stoul(iio_device, nullptr, 16)))
+                        {
+                            _hid_sensors.push_back(std::move(device));
+                        }
+                    }
+                });
+
+                if (_info.unique_id == "") throw std::runtime_error("hid device is no longer connected!");
+            }
+
+            ~v4l_hid_device()
+            {
+
+            }
+
+            static void foreach_hid_device(std::function<void(const hid_device_info&, const std::string&)> action)
+            {
+                const std::string root_path = "/sys/devices/pci0000:00";
+                // convert to vector because fts_name needs a char*.
+                std::vector<char> path(root_path.c_str(), root_path.c_str() + root_path.size() + 1);
+                char *paths[] = { path.data(), NULL };
+                // using FTS to read the directory structure of the root_path.
+                FTS *tree = fts_open(paths, FTS_NOCHDIR, 0);
+
+                if (!tree) {
+                    throw std::runtime_error(to_string() << "fts_open returned null!");
+                }
+
+                FTSENT *node;
+                while ((node = fts_read(tree))) {
+                    if (node->fts_level > 0 && node->fts_name[0] == '.')
+                        fts_set(tree, node, FTS_SKIP);
+                    else if (node->fts_info & FTS_F) {
+                        // for each iio:device , add to the device list. regex help identify device.
+                        if (std::regex_search (node->fts_path, std::regex("iio:device[\\d]/name$"))) {
+                            // validate device path and fetch device parameters.
+                            std::smatch m;
+                            auto device_path = std::string(node->fts_path);
+                            if (!std::regex_search(device_path, m, std::regex("/sys/devices/pci0000:00/.*(\\S{1})-(\\S{1}).*(\\S{4}):(\\S{4}):(\\S{4}).(\\S{4})/(.*)/iio:device(\\d{1,3})/name$")))
+                            {
+                                throw std::runtime_error(to_string() << "regex is not valid!");
+                            }
+
+                            hid_device_info hid_dev_info;
+                            // we are safe to get all parameters because regex is valid.
+                            hid_dev_info.busnum = std::string(m[1]);
+                            hid_dev_info.port_id = std::string(m[2]);
+                            hid_dev_info.vid = m[4];
+                            hid_dev_info.pid = m[5];
+                            hid_dev_info.unique_id = m[6];
+                            std::string iio_device = m[8];
+                            action(hid_dev_info, iio_device);
+                        }
+                    }
+                }
+                fts_close(tree);
+            }
+
+        private:
+            hid_device_info _info;
+            std::vector<std::unique_ptr<hidDevice>> _hid_sensors;
+        };
 
         class v4l_usb_device : public usb_device
         {
@@ -256,7 +664,16 @@ namespace rsimpl
                         if(!(std::ifstream("/sys/class/video4linux/" + name + "/device/bInterfaceNumber") >> std::hex >> mi))
                             throw std::runtime_error("Failed to read interface number");
 
+                        std::smatch m;
+                        std::string device_path(buff);
+                        if (!std::regex_search(device_path, m, std::regex(".*/devices/pci0000:00/.*(\\S{1})-(\\S{1}).*")))
+                        {
+                            throw std::runtime_error(to_string() << "regex is not valid!");
+                        }
+
                         uvc_device_info info;
+                        info.port_id = std::string(m[2]);
+                        info.busnum = std::to_string(busnum);
                         info.pid = pid;
                         info.vid = vid;
                         info.mi = mi;
@@ -792,6 +1209,27 @@ namespace rsimpl
                     results.push_back(i);
                 });
                 libusb_exit(usb_context);
+
+                return results;
+            }
+
+            std::shared_ptr<hid_device> create_hid_device(hid_device_info info) const override
+            {
+                return std::make_shared<v4l_hid_device>(info);
+            }
+
+            std::vector<hid_device_info> query_hid_devices() const override
+            {
+                std::map<std::string, hid_device_info> hid_device_info_map;
+                v4l_hid_device::foreach_hid_device([&](const hid_device_info& hid_dev_info, const std::string&){
+                    hid_device_info_map.insert(std::make_pair(hid_dev_info.unique_id, hid_dev_info));
+                });
+
+                std::vector<hid_device_info> results;
+                for (auto&& elem : hid_device_info_map)
+                {
+                    results.push_back(elem.second);
+                }
 
                 return results;
             }

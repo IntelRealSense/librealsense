@@ -147,6 +147,21 @@ namespace rsimpl
         }
     };
 
+    // TODO: inplement hid_endpoint
+    class hid_endpoint : public endpoint, public std::enable_shared_from_this<hid_endpoint>
+    {
+    public:
+        explicit hid_endpoint(std::shared_ptr<uvc::hid_device> hid_device) {}
+
+        std::vector<uvc::stream_profile> get_stream_profiles() override
+        {
+            return std::vector<uvc::stream_profile>{uvc::stream_profile{0, 0, 0, 0}};
+        };
+
+        std::shared_ptr<streaming_lock> configure(
+            const std::vector<stream_request>& requests) override {};
+    };
+
     class uvc_endpoint : public endpoint, public std::enable_shared_from_this<uvc_endpoint>
     {
     public:

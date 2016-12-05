@@ -78,6 +78,8 @@ namespace rsimpl
         struct uvc_device_info
         {
             std::string id = ""; // to distingwish between different pins of the same device
+            std::string port_id;
+            std::string busnum;
             uint32_t vid;
             uint32_t pid;
             uint32_t mi;
@@ -102,6 +104,21 @@ namespace rsimpl
             uint32_t pid;
             uint32_t mi;
             std::string unique_id;
+        };
+
+        struct hid_device_info
+        {
+            std::string port_id;
+            std::string busnum;
+            std::string vid;
+            std::string pid;
+            std::string unique_id;
+        };
+
+        class hid_device
+        {
+        public:
+
         };
 
         class uvc_device
@@ -237,6 +254,9 @@ namespace rsimpl
 
             virtual std::shared_ptr<usb_device> create_usb_device(usb_device_info info) const = 0;
             virtual std::vector<usb_device_info> query_usb_devices() const = 0;
+
+            virtual std::shared_ptr<hid_device> create_hid_device(hid_device_info info) const{}; // TODO: pure virtual
+            virtual std::vector<hid_device_info> query_hid_devices() const{}; // TODO: pure virtual
 
             virtual ~backend() = default;
         };

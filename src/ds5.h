@@ -29,16 +29,19 @@ namespace rsimpl
         }
 
         ds5_info(std::vector<uvc::uvc_device_info> depth,
-            uvc::usb_device_info hwm);
+            uvc::usb_device_info hwm,
+            std::vector<uvc::hid_device_info> hid);
 
     private:
         std::vector<uvc::uvc_device_info> _depth;
         uvc::usb_device_info _hwm;
+        std::vector<uvc::hid_device_info> _hid;
     };
 
     std::vector<std::shared_ptr<device_info>> pick_ds5_devices(
         std::vector<uvc::uvc_device_info>& uvc,
-        std::vector<uvc::usb_device_info>& usb);
+        std::vector<uvc::usb_device_info>& usb,
+        std::vector<uvc::hid_device_info>& hid);
 
     class ds5_camera final : public device
     {
@@ -72,6 +75,16 @@ namespace rsimpl
                                 "Power of the DS5 projector, 0 meaning projector off, 1 meaning projector off, 2 meaning projector in auto mode")
             {}
         };
+
+        std::shared_ptr<hid_endpoint> create_hid_device(const uvc::backend& backend,
+                                                        const std::vector<uvc::hid_device_info>& all_hid_infos)
+        {
+            using namespace ds;
+            // TODO: implement multiple hid devices
+            auto hid_ep = std::make_shared<hid_endpoint>(backend.create_hid_device(all_hid_infos[0]));
+            return hid_ep;
+
+        }
 
         std::shared_ptr<uvc_endpoint> create_depth_device(const uvc::backend& backend,
                                                           const std::vector<uvc::uvc_device_info>& all_device_infos)
@@ -117,12 +130,15 @@ namespace rsimpl
         }
 
         uvc_endpoint& get_depth_endpoint() { return static_cast<uvc_endpoint&>(get_endpoint(_depth_device_idx)); }
+        hid_endpoint& get_hid_endpoint() { return static_cast<hid_endpoint&>(get_endpoint(_hid_device_idx)); }
 
         ds5_camera(const uvc::backend& backend,
             const std::vector<uvc::uvc_device_info>& dev_info,
-            const uvc::usb_device_info& hwm_device)
+            const uvc::usb_device_info& hwm_device,
+            const std::vector<uvc::hid_device_info>& hid_info)
             : _hw_monitor(backend.create_usb_device(hwm_device)),
-              _depth_device_idx(add_endpoint(create_depth_device(backend, dev_info), "Stereo Module"))
+              _depth_device_idx(add_endpoint(create_depth_device(backend, dev_info), "Stereo Module")),
+              _hid_device_idx(add_endpoint(create_hid_device(backend, hid_info), "Hid"))
         {
             using namespace ds;
             // create uvc-endpoint from backend uvc-device
@@ -177,6 +193,7 @@ namespace rsimpl
         hw_monitor _hw_monitor;
         
         const uint8_t _depth_device_idx;
+        const uint8_t _hid_device_idx;
 
         lazy<std::vector<uint8_t>> _coefficients_table_raw;
 
