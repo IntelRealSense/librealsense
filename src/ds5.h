@@ -112,6 +112,7 @@ namespace rsimpl
                         DS5_LASER_POWER, "Manual laser power. applicable only in on mode"));
             }
 
+            depth_ep->set_pose({ { { 1,0,0 },{ 0,1,0 },{ 0,0,1 } },{ 0,0,0 } });
 
             return depth_ep;
         }
@@ -167,6 +168,8 @@ namespace rsimpl
                     std::make_shared<uvc_xu_option<uint16_t>>(*fisheye_ep,
                         fisheye_xu,
                         FISHEYE_EXPOSURE, "Fisheye Exposure")); // TODO: Update description
+
+                fisheye_ep->set_pose({ { { 1,0,0 },{ 0,1,0 },{ 0,0,1 } },{ 0,0,0 } });
             }
         }
 
