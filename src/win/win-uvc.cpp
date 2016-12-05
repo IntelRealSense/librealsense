@@ -636,7 +636,7 @@ namespace rsimpl
             }
             try
             {
-                _location = get_usb_port_id(info.vid, info.pid, info.unique_id);
+                //_location = get_usb_port_id(info.vid, info.pid, info.unique_id);
             }
             catch (...) {}
         }

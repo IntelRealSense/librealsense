@@ -107,7 +107,7 @@ TEST_CASE("extrinsic transformation between two streams is a rigid transform", "
     for (int i = 0; i < device_count; ++i)
     {
         auto dev = list[i];
-        auto adj_devices = dev.query_adjacent_devices();
+        auto adj_devices = dev.get_adjacent_devices();
         //REQUIRE(dev != nullptr);
 
         // For every pair of streams
@@ -154,7 +154,7 @@ TEST_CASE("extrinsic transformations are transitive", "[live]")
     // For each device
     for (auto&& dev : list)
     {
-        auto adj_devices = dev.query_adjacent_devices();
+        auto adj_devices = dev.get_adjacent_devices();
 
         // For every set of subdevices
         for (auto a = 0; a < adj_devices.size(); ++a)
@@ -443,9 +443,9 @@ TEST_CASE("a single subdevice can only be opened once, different subdevices can 
                 }
                 // TODO: Move
                 SECTION("opening different subdevices") {
-                    for (auto&& subdevice1 : dev.query_adjacent_devices()) 
+                    for (auto&& subdevice1 : dev.get_adjacent_devices()) 
                     {
-                        for (auto&& subdevice2 : dev.query_adjacent_devices()) 
+                        for (auto&& subdevice2 : dev.get_adjacent_devices()) 
                         {
                             if (subdevice1 == subdevice2)
                                 continue;
@@ -534,9 +534,7 @@ TEST_CASE("a single subdevice can only be opened once, different subdevices can 
                             for (auto profile : modes1) {
                                 REQUIRE(std::any_of(begin(modes2), end(modes2), [&](const rs::stream_profile & p)
                                 {
-                                    return profile.format == p.format && profile.fps == p.fps
-                                        && profile.height == p.height && profile.width == p.width
-                                        && profile.stream == p.stream;
+                                    return profile == p;
                                 }));
                             }
 
@@ -662,6 +660,142 @@ TEST_CASE("a single subdevice can only be opened once, different subdevices can 
                     }
                 }
             }
+        }
+    }
+}
+
+TEST_CASE("All suggested profiles can be opened", "[live]") {
+    // Require at least one device to be plugged in
+    auto ctx = make_context(__FUNCTION__);
+    std::vector<rs::device> list;
+    REQUIRE_NOTHROW(list = ctx.query_devices());
+    REQUIRE(list.size() > 0);
+
+    for (auto && subdevice : list) {
+        std::vector<rs::stream_profile> modes;
+        REQUIRE_NOTHROW(modes = subdevice.get_stream_modes());
+
+        REQUIRE(modes.size() > 0);
+        WARN(subdevice.get_camera_info(RS_CAMERA_INFO_MODULE_NAME));
+        for (int i = 0; i < modes.size(); i+=1) {
+            //CAPTURE(rs_subdevice(subdevice));
+            CAPTURE(modes[i].format);
+            CAPTURE(modes[i].fps);
+            CAPTURE(modes[i].height);
+            CAPTURE(modes[i].width);
+            CAPTURE(modes[i].stream);
+
+            rs::streaming_lock lock;
+            REQUIRE_NOTHROW(lock = subdevice.open({ modes[i] }));
+            REQUIRE_NOTHROW(lock.start([](rs_frame * fref) {}));
+            REQUIRE_NOTHROW(lock.stop());
+        }
+    }
+}
+
+class AC_Mock_Device
+{
+public:
+    struct Streaming_lock_type {
+        bool result;
+
+        Streaming_lock_type(bool r) : result(r) {};
+        template<class T> void start(T callback) { REQUIRE(result == true); };
+    };
+
+    AC_Mock_Device(std::vector<rs::stream_profile> modes) : modes(std::move(modes)), expected() {};
+    void set_expected(std::vector<rs::stream_profile> profiles) { expected = profiles; };
+
+    std::vector<AC_Mock_Device> get_adjacent_devices() const { return{ *this }; }
+    std::vector<rs::stream_profile> get_stream_modes() const { return modes; };
+    bool open(std::vector<rs::stream_profile> profiles) const {
+        for (auto & profile : profiles) {
+            if (profile.has_wildcards()) return false;
+            if (std::none_of(begin(expected), end(expected), [&profile](const rs::stream_profile &p) {return p.match(profile); }))
+                return false;
+        }
+        return true;
+    }
+    rs_intrinsics get_intrinsics(rs::stream_profile profile) const {
+        return{ 0, 0, 0.0, 0.0, 0.0, 0.0, RS_DISTORTION_COUNT,{ 0.0, 0.0, 0.0, 0.0, 0.0 } };
+    }
+    const char * get_camera_info(rs_camera_info info) const {
+        switch (info) {
+        case RS_CAMERA_INFO_MODULE_NAME: return "Dummy Module";
+        default: return "";
+        }
+    }
+private:
+    std::vector<rs::stream_profile> modes, expected;
+};
+
+TEST_CASE("Auto-complete feature works", "[offline][rs::util::config]") {
+    // dummy device can provide the following profiles:
+    AC_Mock_Device dev({ { RS_STREAM_DEPTH   , 640, 240,  10, RS_FORMAT_Z16 },
+                      { RS_STREAM_DEPTH   , 640, 240,  30, RS_FORMAT_Z16 },
+                      { RS_STREAM_DEPTH   , 640, 240, 110, RS_FORMAT_Z16 },
+                      { RS_STREAM_DEPTH   , 640, 480,  10, RS_FORMAT_Z16 },
+                      { RS_STREAM_DEPTH   , 640, 480,  30, RS_FORMAT_Z16 },
+                      { RS_STREAM_INFRARED, 640, 240,  10, RS_FORMAT_Y8  },
+                      { RS_STREAM_INFRARED, 640, 240,  30, RS_FORMAT_Y8  },
+                      { RS_STREAM_INFRARED, 640, 240, 110, RS_FORMAT_Y8  },
+                      { RS_STREAM_INFRARED, 640, 480,  10, RS_FORMAT_Y8  },
+                      { RS_STREAM_INFRARED, 640, 480,  30, RS_FORMAT_Y8  },
+                      { RS_STREAM_INFRARED, 640, 480, 200, RS_FORMAT_Y8  } });
+    rs::util::Config<AC_Mock_Device> config;
+    
+    struct Test { 
+        std::vector<rs::stream_profile> given,       // We give these profiles to the config class
+                                        expected;    // pool of profiles the config class can return. Leave empty if auto-completer is expected to fail
+    };
+    std::vector<Test> tests = {
+        // Test 0 (Depth always has RS_FORMAT_Z16)
+        { { { RS_STREAM_DEPTH   ,   0,   0,   0, RS_FORMAT_ANY } },   // given
+          { { RS_STREAM_DEPTH   ,   0,   0,   0, RS_FORMAT_Z16 } } }, // expected
+        // Test 1 (IR always has RS_FORMAT_Y8)
+        { { { RS_STREAM_INFRARED,   0,   0,   0, RS_FORMAT_ANY } },   // given
+          { { RS_STREAM_INFRARED,   0,   0,   0, RS_FORMAT_Y8  } } }, // expected
+        // Test 2 (No 200 fps depth)
+        { { { RS_STREAM_DEPTH   ,   0,   0, 200, RS_FORMAT_ANY } },   // given
+          { } },                                                      // expected
+        // Test 3 (Can request 200 fps IR)
+        { { { RS_STREAM_INFRARED,   0,   0, 200, RS_FORMAT_ANY } },   // given
+          { { RS_STREAM_INFRARED,   0,   0, 200, RS_FORMAT_ANY } } }, // expected
+        // Test 4 (requesting IR@200fps + depth fails
+        { { { RS_STREAM_INFRARED,   0,   0, 200, RS_FORMAT_ANY }, { RS_STREAM_DEPTH   ,   0,   0,   0, RS_FORMAT_ANY } },   // given
+          { } },                                                                                                            // expected
+        // Test 5 (Can't do 640x480@110fps a)
+        { { { RS_STREAM_INFRARED, 640, 480, 110, RS_FORMAT_ANY } },   // given
+          { } },                                                      // expected
+        // Test 6 (Can't do 640x480@110fps b)
+        { { { RS_STREAM_DEPTH   , 640, 480,   0, RS_FORMAT_ANY }, { RS_STREAM_INFRARED,   0,   0, 110, RS_FORMAT_ANY } },   // given
+          { } },                                                                                                            // expected
+        // Test 7 (Pull extra details from second stream a)
+        { { { RS_STREAM_DEPTH   , 640, 480,   0, RS_FORMAT_ANY }, { RS_STREAM_INFRARED,   0,   0,  30, RS_FORMAT_ANY } },   // given
+          { { RS_STREAM_DEPTH   , 640, 480,  30, RS_FORMAT_ANY }, { RS_STREAM_INFRARED, 640, 480,  30, RS_FORMAT_ANY } } }, // expected
+        // Test 8 (Pull extra details from second stream b) [IR also supports 200, could fail if that gets selected]
+        { { { RS_STREAM_INFRARED, 640, 480,   0, RS_FORMAT_ANY }, { RS_STREAM_DEPTH   ,   0,   0,   0, RS_FORMAT_ANY } },   // given
+          { { RS_STREAM_INFRARED, 640, 480,  10, RS_FORMAT_ANY }, { RS_STREAM_INFRARED, 640, 480,  30, RS_FORMAT_ANY },     // expected - options for IR stream
+            { RS_STREAM_DEPTH   , 640, 480,  10, RS_FORMAT_ANY }, { RS_STREAM_DEPTH   , 640, 480,  30, RS_FORMAT_ANY } } }  // expected - options for depth stream
+    };
+
+    for (int i=0; i<tests.size(); ++i)
+    {
+        config.disable_all();
+        for (auto & profile : tests[i].given) {
+            config.enable_stream(profile.stream, profile.width, profile.height, profile.fps, profile.format);
+        }
+        dev.set_expected(tests[i].expected);
+        CAPTURE(i);
+        if (tests[i].expected.size() == 0) {
+            REQUIRE_THROWS_AS(config.open(dev), std::runtime_error);
+        }
+        else
+        {
+            rs::util::Config<AC_Mock_Device>::multistream results;
+            REQUIRE_NOTHROW(results = config.open(dev));
+            // REQUIRE()s are in here
+            results.start(0);
         }
     }
 }

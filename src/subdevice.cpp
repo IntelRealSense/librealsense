@@ -70,9 +70,9 @@ streaming_lock::~streaming_lock()
     }
 }
 
-std::vector<stream_request> endpoint::get_principal_requests()
+std::vector<stream_profile> endpoint::get_principal_requests()
 {
-    std::unordered_set<stream_request> results;
+    std::unordered_set<stream_profile> results;
     std::set<uint32_t> unutilized_formats;
     std::set<uint32_t> supported_formats;
 
@@ -120,8 +120,8 @@ std::vector<stream_request> endpoint::get_principal_requests()
         LOG_WARNING("\nDevice supported formats:\n" << ss.str());
     }
 
-    std::vector<stream_request> res{ begin(results), end(results) };
-    std::sort(res.begin(), res.end(), [](const stream_request& a, const stream_request& b)
+    std::vector<stream_profile> res{ begin(results), end(results) };
+    std::sort(res.begin(), res.end(), [](const stream_profile& a, const stream_profile& b)
     {
         return a.width > b.width;
     });
@@ -144,14 +144,8 @@ bool endpoint::try_get_pf(const uvc::stream_profile& p, native_pixel_format& res
 }
 
 
-std::vector<request_mapping> endpoint::resolve_requests(std::vector<stream_request> requests)
+std::vector<request_mapping> endpoint::resolve_requests(std::vector<stream_profile> requests)
 {
-    // TODO: Move to rsutil.hpp
-    if (!auto_complete_request(requests))
-    {
-        throw std::runtime_error("Subdevice could not auto complete requests!");
-    }
-
     std::vector<uint32_t> legal_4ccs;
     for (auto mode : get_stream_profiles()) {
         if (mode.fps == requests[0].fps && mode.height == requests[0].height && mode.width == requests[0].width)
@@ -172,7 +166,7 @@ std::vector<request_mapping> endpoint::resolve_requests(std::vector<stream_reque
             for (auto&& unpacker : pf.unpackers)
             {
                 auto count = static_cast<int>(std::count_if(begin(requests), end(requests),
-                    [&unpacker](stream_request& r)
+                    [&unpacker](stream_profile& r)
                 {
                     return unpacker.satisfies(r);
                 }));
@@ -197,7 +191,7 @@ std::vector<request_mapping> endpoint::resolve_requests(std::vector<stream_reque
         if (max == 0) break;
 
         requests.erase(std::remove_if(begin(requests), end(requests),
-            [best_unpacker, best_pf, &results, this](stream_request& r)
+            [best_unpacker, best_pf, &results, this](stream_profile& r)
         {
 
             if (best_unpacker->satisfies(r))
@@ -219,33 +213,14 @@ std::vector<request_mapping> endpoint::resolve_requests(std::vector<stream_reque
     throw std::runtime_error("Subdevice unable to satisfy stream requests!");
 }
 
-bool rsimpl::endpoint::auto_complete_request(std::vector<stream_request>& requests)
-{
-    for (stream_request& request : requests)
-    {
-        for (auto&& req : get_principal_requests())
-        {
-            if (req.match(request) && !req.contradicts(requests))
-            {
-                request = req;
-                break;
-            }
-        }
-
-        if (request.has_wildcards()) throw std::runtime_error("Subdevice auto complete the stream requests!");
-    }
-    return true;
-}
-
-
-std::vector<uvc::stream_profile> uvc_endpoint::get_stream_profiles()
+std::vector<uvc::stream_profile> uvc_endpoint::init_stream_profiles()
 {
     power on(shared_from_this());
     return _device->get_profiles();
 }
 
 std::shared_ptr<streaming_lock> uvc_endpoint::configure(
-    const std::vector<stream_request>& requests)
+    const std::vector<stream_profile>& requests)
 {
     std::lock_guard<std::mutex> lock(_configure_lock);
     std::shared_ptr<uvc_streaming_lock> streaming(new uvc_streaming_lock(shared_from_this()));
@@ -265,7 +240,7 @@ std::shared_ptr<streaming_lock> uvc_endpoint::configure(
         auto start = high_resolution_clock::now();
         auto frame_number = 0;
         _device->probe_and_commit(mode.profile,
-            [stream_ptr, mode, start, frame_number, timestamp_reader](uvc::stream_profile p, uvc::frame_object f) mutable
+            [stream_ptr, mode, start, frame_number, timestamp_reader, requests](uvc::stream_profile p, uvc::frame_object f) mutable
         {
             auto&& unpacker = *mode.unpacker;
 
@@ -349,7 +324,14 @@ std::shared_ptr<streaming_lock> uvc_endpoint::configure(
                 // If any frame callbacks were specified, dispatch them now
                 for (auto&& pref : refs)
                 {
-                    stream->invoke_callback(pref);
+                    // all the streams the unpacker generates are handled here.
+                    // If it matches one of the streams the user requested, send it to the user.
+                    if (std::any_of(begin(requests), end(requests), [&pref](stream_profile request) { return request.stream == pref->get()->get_stream_type(); }))
+                        stream->invoke_callback(pref);
+                    // However, if this is an extra stream we had to open to properly satisty the user's request,
+                    // deallocate the frame and prevent the excess data from reaching the user.
+                    else
+                        pref->get()->get_owner()->release_frame_ref(pref);
                 }
             }
         });

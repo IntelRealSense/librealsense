@@ -50,12 +50,18 @@ namespace rsimpl
     class endpoint
     {
     public:
-        virtual std::vector<uvc::stream_profile> get_stream_profiles() = 0;
+        endpoint() : stream_profiles([this]() { return this->init_stream_profiles(); }) {}
 
-        std::vector<stream_request> get_principal_requests();
+        virtual std::vector<uvc::stream_profile> init_stream_profiles() = 0;
+        std::vector<uvc::stream_profile> get_stream_profiles()
+        {
+            return *stream_profiles;
+        }
+
+        std::vector<stream_profile> get_principal_requests();
 
         virtual std::shared_ptr<streaming_lock> configure(
-            const std::vector<stream_request>& requests) = 0;
+            const std::vector<stream_profile>& requests) = 0;
 
         void register_pixel_format(native_pixel_format pf)
         {
@@ -80,14 +86,13 @@ namespace rsimpl
 
         bool try_get_pf(const uvc::stream_profile& p, native_pixel_format& result) const;
 
-        std::vector<request_mapping> resolve_requests(std::vector<stream_request> requests);
+        std::vector<request_mapping> resolve_requests(std::vector<stream_profile> requests);
 
     private:
 
-        bool auto_complete_request(std::vector<stream_request>& requests);
-
         std::map<rs_option, std::shared_ptr<option>> _options;
         std::vector<native_pixel_format> _pixel_formats;
+        lazy<std::vector<uvc::stream_profile> > stream_profiles;
         pose _pose;
         std::map<rs_camera_info, std::string> _camera_info;
     };
@@ -154,10 +159,10 @@ namespace rsimpl
         explicit uvc_endpoint(std::shared_ptr<uvc::uvc_device> uvc_device)
             : _device(std::move(uvc_device)), _user_count(0) {}
 
-        std::vector<uvc::stream_profile> get_stream_profiles() override;
+        std::vector<uvc::stream_profile> init_stream_profiles() override;
 
         std::shared_ptr<streaming_lock> configure(
-            const std::vector<stream_request>& requests) override;
+            const std::vector<stream_profile>& requests) override;
 
         void register_xu(uvc::extension_unit xu)
         {
