@@ -408,6 +408,47 @@ namespace rsimpl
                     intrinsic.calib.imu_intrinsic.gyro_noise_variance[2] = noise_var.GetDouble();
 
         }
+
+        /* calculating extrinsics */
+         pose fisheye_to_world, imu_to_world,depth_to_world;
+        {
+            auto& T = fisheye["extrinsics"]["T"];
+            auto& W = fisheye["extrinsics"]["W"];
+            fisheye_to_world = pose { {W[0].GetDouble(), W[1].GetDouble(), W[2].GetDouble()},
+                        {T[0].GetDouble(),T[1].GetDouble(),T[2].GetDouble()} };
+        }
+        {
+            auto& T = imus[0]["extrinsics"]["T"];
+            auto& W = imus[0]["extrinsics"]["W"];
+            imu_to_world = pose { {W[0].GetDouble(), W[1].GetDouble(), W[2].GetDouble()},
+                        {T[0].GetDouble(),T[1].GetDouble(),T[2].GetDouble()} };
+        }
+
+        {
+            auto& depth = d["depths"][0];
+            auto& T = depth["extrinsics"]["T"];
+            auto& W = depth["extrinsics"]["W"];
+            depth_to_world = pose { {W[0].GetDouble(), W[1].GetDouble(), W[2].GetDouble()},
+                        {T[0].GetDouble(),T[1].GetDouble(),T[2].GetDouble()} };
+        }
+
+
+        pose fe_to_imu = fisheye_to_world * inverse(imu_to_world);
+        pose fe_to_depth = fisheye_to_world * inverse(depth_to_world);
+        pose depth_to_imu = depth_to_world * inverse(imu_to_world);
+        memcpy(intrinsic.calib.mm_extrinsic.fe_to_imu.rotation ,reinterpret_cast<float(&)[9]>(fe_to_imu.position),sizeof(float)*9);
+        memcpy(intrinsic.calib.mm_extrinsic.fe_to_imu.translation ,reinterpret_cast<float(&)[3]>(fe_to_imu.orientation),sizeof(float)*3);
+
+        memcpy(intrinsic.calib.mm_extrinsic.fe_to_depth.rotation , reinterpret_cast<float(&)[9]>(fe_to_depth.orientation),sizeof(float)*9);
+        memcpy(intrinsic.calib.mm_extrinsic.fe_to_depth.translation , reinterpret_cast<float(&)[3]>(fe_to_depth.position),sizeof(float)*3);
+
+        memcpy(intrinsic.calib.mm_extrinsic.depth_to_imu.rotation , reinterpret_cast<float(&)[9]>(depth_to_imu.orientation),sizeof(float)*9);
+        memcpy(intrinsic.calib.mm_extrinsic.depth_to_imu.translation ,reinterpret_cast<float(&)[3]>(depth_to_imu.position),sizeof(float)*3);
+
+        memcpy(intrinsic.calib.mm_extrinsic.rgb_to_imu.rotation,reinterpret_cast<float(&)[9]>(depth_to_imu.orientation),sizeof(float)*9);
+        memcpy(intrinsic.calib.mm_extrinsic.rgb_to_imu.translation , reinterpret_cast<float(&)[3]>(depth_to_imu.position),sizeof(float)*3);
+
+
         return intrinsic;
      }
 
