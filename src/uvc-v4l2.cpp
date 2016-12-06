@@ -338,7 +338,10 @@ namespace rsimpl
                     fmt.fmt.pix.height      = profile.height;
                     fmt.fmt.pix.pixelformat = (const big_endian<int> &)profile.format;
                     fmt.fmt.pix.field       = V4L2_FIELD_NONE;
-                    if(xioctl(_fd, VIDIOC_S_FMT, &fmt) < 0) throw_error("VIDIOC_S_FMT");
+                    if(xioctl(_fd, VIDIOC_S_FMT, &fmt) < 0)
+                    {
+                        throw_error("VIDIOC_S_FMT");
+                    }
 
                     LOG_INFO("Trying to configure fourcc " << fourcc_to_string(fmt.fmt.pix.pixelformat));
 
@@ -380,6 +383,10 @@ namespace rsimpl
                     _profile = profile;
                     _callback = callback;
                 }
+                else
+                {
+                    throw std::runtime_error("Device already streaming!");
+                }
             }
 
             void play() override
@@ -399,10 +406,11 @@ namespace rsimpl
                     v4l2_buf_type type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
                     for(int i=0; i<10; ++i)
                     {
-                        if(xioctl(_fd, VIDIOC_STREAMON, &type) < 0)
+                        if (xioctl(_fd, VIDIOC_STREAMON, &type) < 0)
                         {
                             std::this_thread::sleep_for(std::chrono::milliseconds(100));
                         }
+                        else break;
                     }
                     if(xioctl(_fd, VIDIOC_STREAMON, &type) < 0) throw_error("VIDIOC_STREAMON");
 
@@ -440,6 +448,9 @@ namespace rsimpl
                     }
 
                     _callback = nullptr;
+
+                    // TODO: Remove temporary w/a once firmware is stable enough
+                    //std::this_thread::sleep_for(std::chrono::milliseconds(100));
                 }
             }
 

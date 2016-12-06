@@ -54,7 +54,7 @@ void streaming_lock::invoke_callback(rs_frame* frame_ref) const
     }
 }
 
-void streaming_lock::flush() const
+void streaming_lock::flush()
 {
     _archive->flush();
 }
@@ -358,20 +358,16 @@ void uvc_endpoint::stop_streaming()
 
 void uvc_endpoint::acquire_power()
 {
-    std::lock_guard<std::mutex> lock(_power_lock);
-    if (!_user_count)
+    if (_user_count.fetch_add(1) == 0)
     {
         _device->set_power_state(uvc::D0);
         for (auto& xu : _xus) _device->init_xu(xu);
     }
-    _user_count++;
 }
 
 void uvc_endpoint::release_power()
 {
-    std::lock_guard<std::mutex> lock(_power_lock);
-    _user_count--;
-    if (!_user_count) _device->set_power_state(uvc::D3);
+    if (_user_count.fetch_add(-1) == 1) _device->set_power_state(uvc::D3);
 }
 
 option& endpoint::get_option(rs_option id)
