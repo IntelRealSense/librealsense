@@ -699,7 +699,8 @@ int main(int, char**) try
                     ImGui::Text("Resolution:");
                     ImGui::SameLine();
                     ImGui::PushItemWidth(-1);
-                    label = to_string() << sub->dev.get_camera_info(RS_CAMERA_INFO_DEVICE_NAME) << " resolution";
+                    label = to_string() << sub->dev.get_camera_info(RS_CAMERA_INFO_DEVICE_NAME)
+                                        << sub->dev.get_camera_info(RS_CAMERA_INFO_MODULE_NAME) << " resolution";
                     if (sub->current_stream.get()) ImGui::Text(res_chars[sub->selected_res_id]);
                     else ImGui::Combo(label.c_str(), &sub->selected_res_id, res_chars.data(),
                                       static_cast<int>(res_chars.size()));
@@ -708,7 +709,8 @@ int main(int, char**) try
                     ImGui::Text("FPS:");
                     ImGui::SameLine();
                     ImGui::PushItemWidth(-1);
-                    label = to_string() << sub->dev.get_camera_info(RS_CAMERA_INFO_MODULE_NAME) << " fps";
+                    label = to_string() << sub->dev.get_camera_info(RS_CAMERA_INFO_DEVICE_NAME)
+                                        << sub->dev.get_camera_info(RS_CAMERA_INFO_MODULE_NAME) << " fps";
                     if (sub->current_stream.get()) ImGui::Text(fps_chars[sub->selected_fps_id]);
                     else ImGui::Combo(label.c_str(), &sub->selected_fps_id, fps_chars.data(),
                                       static_cast<int>(fps_chars.size()));
@@ -742,8 +744,9 @@ int main(int, char**) try
                         if (sub->stream_enabled[stream])
                         {
                             ImGui::PushItemWidth(-1);
-                            label = to_string() << sub->dev.get_camera_info(RS_CAMERA_INFO_MODULE_NAME)
-                                << " " << rs_stream_to_string(stream) << " format";
+                            label = to_string() << sub->dev.get_camera_info(RS_CAMERA_INFO_DEVICE_NAME)
+                                                << sub->dev.get_camera_info(RS_CAMERA_INFO_MODULE_NAME)
+                                                << " " << rs_stream_to_string(stream) << " format";
                             if (sub->current_stream.get()) ImGui::Text(formats_chars[sub->selected_format_id[stream]]);
                             else ImGui::Combo(label.c_str(), &sub->selected_format_id[stream], formats_chars.data(),
                                 static_cast<int>(formats_chars.size()));
