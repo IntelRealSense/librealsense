@@ -77,7 +77,9 @@ all: examples $(EXAMPLES) all-tests
 install: lib/librealsense.so
 	install -m755 -d /usr/local/include/librealsense
 	cp -r include/librealsense/* /usr/local/include/librealsense
-	cp lib/librealsense.so* /usr/local/lib
+	cp lib/$(REALSENSE_LIBRARY_TARGET_NAME) /usr/local/lib
+	ln -s -f /usr/local/lib/$(REALSENSE_LIBRARY_TARGET_NAME) /usr/local/lib/$(REALSENSE_LIBRARY_SONAME)
+	ln -s -f /usr/local/lib/$(REALSENSE_LIBRARY_TARGET_NAME) /usr/local/lib/librealsense.so
 	ldconfig
 
 uninstall:
