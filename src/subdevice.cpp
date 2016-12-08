@@ -120,11 +120,16 @@ std::vector<stream_profile> endpoint::get_principal_requests()
         LOG_WARNING("\nDevice supported formats:\n" << ss.str());
     }
 
+    // Sort the results to make sure that the user will receive predictable deterministic output from the API
     std::vector<stream_profile> res{ begin(results), end(results) };
     std::sort(res.begin(), res.end(), [](const stream_profile& a, const stream_profile& b)
     {
-        return a.width > b.width;
+        auto at = std::make_tuple(a.stream, a.width, a.height, a.fps, a.format);
+        auto bt = std::make_tuple(b.stream, b.width, b.height, b.fps, b.format);
+
+        return at > bt;
     });
+
     return res;
 }
 
