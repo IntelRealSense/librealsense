@@ -22,6 +22,7 @@ const char* SECTIONS_SELECT_MAX_ID = "SELECT max(key) from rs_sections";
 const char* SECTIONS_CREATE = "CREATE TABLE rs_sections(key NUMBER PRIMARY KEY, name TEXT)";
 const char* SECTIONS_INSERT = "INSERT INTO rs_sections(key, name) VALUES (?, ?)";
 const char* SECTIONS_COUNT_BY_NAME = "SELECT COUNT(*) FROM rs_sections WHERE name = ?";
+const char* SECTIONS_COUNT_ALL = "SELECT COUNT(*) FROM rs_sections";
 const char* SECTIONS_FIND_BY_NAME = "SELECT key FROM rs_sections WHERE name = ?";
 
 const char* CALLS_CREATE = "CREATE TABLE rs_calls(section NUMBER, type NUMBER, timestamp NUMBER, entity_id NUMBER, txt TEXT, param1 NUMBER, param2 NUMBER, param3 NUMBER, param4 NUMBER, had_errors NUMBER)";
@@ -149,16 +150,18 @@ namespace rsimpl
 
             if (!append)
             {
-                statement check_section_unique(c, SECTIONS_COUNT_BY_NAME);
-                check_section_unique.bind(1, section);
-                auto result = check_section_unique();
-                if (result[0].get_int() > 0)
                 {
-                    throw runtime_error("Can't save over existing section!");
+                    statement check_section_unique(c, SECTIONS_COUNT_BY_NAME);
+                    check_section_unique.bind(1, section);
+                    auto result = check_section_unique();
+                    if (result[0].get_int() > 0)
+                    {
+                        throw runtime_error("Can't save over existing section!");
+                    }
                 }
 
                 {
-                    statement max_section_id(c, SECTIONS_SELECT_MAX_ID);
+                    statement max_section_id(c, SECTIONS_COUNT_ALL);
                     auto result = max_section_id();
                     section_id = result[0].get_int() + 1;
                 }
@@ -411,7 +414,7 @@ namespace rsimpl
 
                     if (calls[idx].had_error)
                     {
-                        throw std::runtime_error(calls[idx].inline_string);
+                        throw runtime_error(calls[idx].inline_string);
                     }
 
                     return calls[idx];
@@ -723,7 +726,7 @@ namespace rsimpl
             _filename(filename),
             _section(section), _compression(make_shared<compression_algorithm>()), _mode(mode)
         {
-            write_to_file();
+
         }
 
         record_backend::~record_backend()
@@ -758,6 +761,7 @@ namespace rsimpl
         playback_backend::playback_backend(const char* filename, const char* section)
             : _rec(recording::load(filename, section))
         {
+            LOG_WARNING("Starting section " << section);
         }
 
         playback_uvc_device::~playback_uvc_device()
@@ -768,26 +772,8 @@ namespace rsimpl
 
         void record_backend::write_to_file()
         {
-            auto append = false;
-
-            shared_ptr<recording> current;
-            {
-                current = _rec;
-                _rec = make_shared<recording>();
-                _rec->set_baselines(*current);
-            }
-            if (current->size() > 0)
-            {
-                current->save(_filename.c_str(), _section.c_str(), append);
-                append = true;
-                LOG(INFO) << "Finished writing " << current->size() << " calls...";
-            }
-
-            if (_rec->size() > 0)
-            {
-                _rec->save(_filename.c_str(), _section.c_str(), append);
-                LOG(INFO) << "Finished writing " << _rec->size() << " calls...";
-            }
+            _rec->save(_filename.c_str(), _section.c_str(), false);
+            LOG(INFO) << "Finished writing " << _rec->size() << " calls...";
         }
 
         void playback_uvc_device::probe_and_commit(stream_profile profile, frame_callback callback)
@@ -795,8 +781,8 @@ namespace rsimpl
             lock_guard<mutex> lock(_callback_mutex);
             auto stored = _rec->load_stream_profiles(_entity_id, call_type::uvc_probe_commit);
             vector<stream_profile> input{ profile };
-            //if (input != stored)
-                //throw runtime_error("Recording history mismatch!");
+            if (input != stored)
+                throw runtime_error("Recording history mismatch!");
 
             auto it = std::remove_if(begin(_callbacks), end(_callbacks),
                 [&profile](const pair<stream_profile, frame_callback>& pair)
@@ -823,8 +809,8 @@ namespace rsimpl
             lock_guard<mutex> lock(_callback_mutex);
             auto stored = _rec->load_stream_profiles(_entity_id, call_type::uvc_stop);
             vector<stream_profile> input{ profile };
-            //if (input != stored)
-            //    throw runtime_error("Recording history mismatch!");
+            if (input != stored)
+                throw runtime_error("Recording history mismatch!");
 
             auto it = std::remove_if(begin(_callbacks), end(_callbacks),
                 [&profile](const pair<stream_profile, frame_callback>& pair)

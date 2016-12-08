@@ -430,6 +430,10 @@ namespace rsimpl
                     // Stop streamining
                     v4l2_buf_type type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
                     if(xioctl(_fd, VIDIOC_STREAMOFF, &type) < 0) warn_error("VIDIOC_STREAMOFF");
+                }
+
+                if (_callback)
+                {
 
                     for(size_t i = 0; i < _buffers.size(); i++)
                     {
@@ -448,9 +452,6 @@ namespace rsimpl
                     }
 
                     _callback = nullptr;
-
-                    // TODO: Remove temporary w/a once firmware is stable enough
-                    //std::this_thread::sleep_for(std::chrono::milliseconds(100));
                 }
             }
 

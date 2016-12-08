@@ -120,11 +120,16 @@ std::vector<stream_profile> endpoint::get_principal_requests()
         LOG_WARNING("\nDevice supported formats:\n" << ss.str());
     }
 
+    // Sort the results to make sure that the user will receive predictable deterministic output from the API
     std::vector<stream_profile> res{ begin(results), end(results) };
     std::sort(res.begin(), res.end(), [](const stream_profile& a, const stream_profile& b)
     {
-        return a.width > b.width;
+        auto at = std::make_tuple(a.stream, a.width, a.height, a.fps, a.format);
+        auto bt = std::make_tuple(b.stream, b.width, b.height, b.fps, b.format);
+
+        return at > bt;
     });
+
     return res;
 }
 
@@ -231,110 +236,123 @@ std::shared_ptr<streaming_lock> uvc_endpoint::configure(
     auto timestamp_readers = create_frame_timestamp_readers();
     auto timestamp_reader = timestamp_readers[0];
 
+    std::vector<request_mapping> commited;
     for (auto& mode : mapping)
     {
-        using namespace std::chrono;
-
-        std::weak_ptr<uvc_streaming_lock> stream_ptr(streaming);
-
-        auto start = high_resolution_clock::now();
-        auto frame_number = 0;
-        _device->probe_and_commit(mode.profile,
-            [stream_ptr, mode, start, frame_number, timestamp_reader, requests](uvc::stream_profile p, uvc::frame_object f) mutable
+        try
         {
-            auto&& unpacker = *mode.unpacker;
+            using namespace std::chrono;
 
-            auto stream = stream_ptr.lock();
-            if (stream && stream->is_streaming())
+            std::weak_ptr<uvc_streaming_lock> stream_ptr(streaming);
+
+            auto start = high_resolution_clock::now();
+            auto frame_number = 0;
+            _device->probe_and_commit(mode.profile,
+                [stream_ptr, mode, start, frame_number, timestamp_reader, requests](uvc::stream_profile p, uvc::frame_object f) mutable
             {
-                frame_continuation release_and_enqueue([]() {}, f.pixels);
+                auto&& unpacker = *mode.unpacker;
 
-                // Ignore any frames which appear corrupted or invalid
-                if (!timestamp_reader->validate_frame(mode, f.pixels)) return;
-
-                // Determine the timestamp for this frame
-                auto timestamp = timestamp_reader->get_frame_timestamp(mode, f.pixels);
-                auto frame_counter = timestamp_reader->get_frame_counter(mode, f.pixels);
-                //auto received_time = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - capture_start_time).count();
-
-                auto width = mode.profile.width;
-                auto height = mode.profile.height;
-                auto fps = mode.profile.fps;
-
-                std::vector<byte *> dest;
-                std::vector<rs_frame*> refs;
-
-                auto now = high_resolution_clock::now();
-                auto ms = duration_cast<milliseconds>(now - start);
-                auto system_time = static_cast<double>(ms.count());
-
-                //auto stride_x = mode_selection.get_stride_x();
-                //auto stride_y = mode_selection.get_stride_y();
-                /*for (auto&& output : unpacker.outputs)
+                auto stream = stream_ptr.lock();
+                if (stream && stream->is_streaming())
                 {
-                    LOG_DEBUG("FrameAccepted, RecievedAt," << received_time
-                        << ", FWTS," << timestamp << ", DLLTS," << received_time << ", Type," << rsimpl::get_string(output.first) << ",HasPair,0,F#," << frame_counter);
-                }*/
+                    frame_continuation release_and_enqueue([]() {}, f.pixels);
 
-                //frame_drops_status->was_initialized = true;
+                    // Ignore any frames which appear corrupted or invalid
+                    if (!timestamp_reader->validate_frame(mode, f.pixels)) return;
 
-                // Not updating prev_frame_counter when first frame arrival
-                /*if (frame_drops_status->was_initialized)
-                {
-                    frames_drops_counter.fetch_add(int(frame_counter - frame_drops_status->prev_frame_counter - 1));
-                    frame_drops_status->prev_frame_counter = frame_counter;
-                }*/
+                    // Determine the timestamp for this frame
+                    auto timestamp = timestamp_reader->get_frame_timestamp(mode, f.pixels);
+                    auto frame_counter = timestamp_reader->get_frame_counter(mode, f.pixels);
+                    //auto received_time = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - capture_start_time).count();
 
-                for (auto&& output : unpacker.outputs)
-                {
-                    auto bpp = get_image_bpp(output.second);
-                    frame_additional_data additional_data(timestamp,
-                        frame_number++,
-                        system_time,
-                        width,
-                        height,
-                        fps,
-                        width,
-                        bpp,
-                        output.second,
-                        output.first);
+                    auto width = mode.profile.width;
+                    auto height = mode.profile.height;
+                    auto fps = mode.profile.fps;
 
-                    auto frame_ref = stream->alloc_frame(width * height * bpp / 8, additional_data);
-                    if (frame_ref)
+                    std::vector<byte *> dest;
+                    std::vector<rs_frame*> refs;
+
+                    auto now = high_resolution_clock::now();
+                    auto ms = duration_cast<milliseconds>(now - start);
+                    auto system_time = static_cast<double>(ms.count());
+
+                    //auto stride_x = mode_selection.get_stride_x();
+                    //auto stride_y = mode_selection.get_stride_y();
+                    /*for (auto&& output : unpacker.outputs)
                     {
-                        refs.push_back(frame_ref);
-                        dest.push_back(const_cast<byte*>(frame_ref->get()->get_frame_data()));
-                    }
-                    else
+                        LOG_DEBUG("FrameAccepted, RecievedAt," << received_time
+                            << ", FWTS," << timestamp << ", DLLTS," << received_time << ", Type," << rsimpl::get_string(output.first) << ",HasPair,0,F#," << frame_counter);
+                    }*/
+
+                    //frame_drops_status->was_initialized = true;
+
+                    // Not updating prev_frame_counter when first frame arrival
+                    /*if (frame_drops_status->was_initialized)
                     {
-                        return;
+                        frames_drops_counter.fetch_add(int(frame_counter - frame_drops_status->prev_frame_counter - 1));
+                        frame_drops_status->prev_frame_counter = frame_counter;
+                    }*/
+
+                    for (auto&& output : unpacker.outputs)
+                    {
+                        auto bpp = get_image_bpp(output.second);
+                        frame_additional_data additional_data(timestamp,
+                            frame_number++,
+                            system_time,
+                            width,
+                            height,
+                            fps,
+                            width,
+                            bpp,
+                            output.second,
+                            output.first);
+
+                        auto frame_ref = stream->alloc_frame(width * height * bpp / 8, additional_data);
+                        if (frame_ref)
+                        {
+                            refs.push_back(frame_ref);
+                            dest.push_back(const_cast<byte*>(frame_ref->get()->get_frame_data()));
+                        }
+                        else
+                        {
+                            return;
+                        }
+
+                        // Obtain buffers for unpacking the frame
+                        //dest.push_back(archive->alloc_frame(output.first, additional_data, requires_processing));
                     }
 
-                    // Obtain buffers for unpacking the frame
-                    //dest.push_back(archive->alloc_frame(output.first, additional_data, requires_processing));
-                }
+                    // Unpack the frame
+                    //if (requires_processing)
+                    if (dest.size() > 0)
+                    {
+                        unpacker.unpack(dest.data(), reinterpret_cast<const byte *>(f.pixels), width * height);
+                    }
 
-                // Unpack the frame
-                //if (requires_processing)
-                if (dest.size() > 0)
-                {
-                    unpacker.unpack(dest.data(), reinterpret_cast<const byte *>(f.pixels), width * height);
+                    // If any frame callbacks were specified, dispatch them now
+                    for (auto&& pref : refs)
+                    {
+                        // all the streams the unpacker generates are handled here.
+                        // If it matches one of the streams the user requested, send it to the user.
+                        if (std::any_of(begin(requests), end(requests), [&pref](stream_profile request) { return request.stream == pref->get()->get_stream_type(); }))
+                            stream->invoke_callback(pref);
+                        // However, if this is an extra stream we had to open to properly satisty the user's request,
+                        // deallocate the frame and prevent the excess data from reaching the user.
+                        else
+                            pref->get()->get_owner()->release_frame_ref(pref);
+                    }
                 }
-
-                // If any frame callbacks were specified, dispatch them now
-                for (auto&& pref : refs)
-                {
-                    // all the streams the unpacker generates are handled here.
-                    // If it matches one of the streams the user requested, send it to the user.
-                    if (std::any_of(begin(requests), end(requests), [&pref](stream_profile request) { return request.stream == pref->get()->get_stream_type(); }))
-                        stream->invoke_callback(pref);
-                    // However, if this is an extra stream we had to open to properly satisty the user's request,
-                    // deallocate the frame and prevent the excess data from reaching the user.
-                    else
-                        pref->get()->get_owner()->release_frame_ref(pref);
-                }
+            });
+        }
+        catch(...)
+        {
+            for (auto&& commited_mode : commited)
+            {
+                _device->stop(mode.profile);
             }
-        });
+            throw;
+        }
+        commited.push_back(mode);
     }
 
     _device->play();
