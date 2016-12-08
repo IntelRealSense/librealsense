@@ -795,8 +795,8 @@ namespace rsimpl
             lock_guard<mutex> lock(_callback_mutex);
             auto stored = _rec->load_stream_profiles(_entity_id, call_type::uvc_probe_commit);
             vector<stream_profile> input{ profile };
-            //if (input != stored)
-                //throw runtime_error("Recording history mismatch!");
+            if (input != stored)
+                throw runtime_error("Recording history mismatch!");
 
             auto it = std::remove_if(begin(_callbacks), end(_callbacks),
                 [&profile](const pair<stream_profile, frame_callback>& pair)
@@ -823,8 +823,8 @@ namespace rsimpl
             lock_guard<mutex> lock(_callback_mutex);
             auto stored = _rec->load_stream_profiles(_entity_id, call_type::uvc_stop);
             vector<stream_profile> input{ profile };
-            //if (input != stored)
-            //    throw runtime_error("Recording history mismatch!");
+            if (input != stored)
+                throw runtime_error("Recording history mismatch!");
 
             auto it = std::remove_if(begin(_callbacks), end(_callbacks),
                 [&profile](const pair<stream_profile, frame_callback>& pair)
