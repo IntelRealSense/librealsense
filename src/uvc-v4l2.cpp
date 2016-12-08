@@ -71,72 +71,46 @@ namespace rsimpl
 
         struct buffer { void * start; size_t length; };
 
-        // TODO: Change code convention
-        // a sensor Input data provided by the sensor callback.
-        class sensorInputData {
-        public:
-            sensorInputData() {}
-            sensorInputData(std::string name, int value) { input_name = name; data = value;}
-            void getData(int &input_data) { input_data = data;}
-            std::string get_name() const { return input_name; }
-        private:
-            std::string input_name;
-            int data;
-
-        };
-
         // hold all captured inputs in a specific trigger.
-        class sensorInputs {
+        class sensor_inputs {
         public:
-            // get a data for a specific named input.
-            bool getInputData(std::string input_name, sensorInputData &data) {
-                for (auto input: inputData) {
-                    if (input.get_name() == input_name) {
-                        data = input;
-                        return true;
-                    }
-                }
-
-                return false;
+            const std::list<callback_data>& get_input_data() const
+            {
+                return input_data;
             }
+
             // add input to the sensor inputs.
-            void add_input(std::string input_name, int value) {
-                inputData.push_front(sensorInputData(input_name,value));
+            void add_input(const hid_sensor& sensor, const hid_sensor_input& sensor_input, unsigned value) {
+                input_data.push_front(callback_data{sensor, sensor_input, value});
             }
         private:
-            std::list<sensorInputData> inputData;
-        };
-
-        // callback interface which fired when a sensor data recieved.
-        class sensorCallback {
-        public:
-            virtual void sensor_data_recieved(sensorInputs data) = 0;
+            std::list<callback_data> input_data;
         };
 
         // manage an IIO input. or what is called a scan.
-        class hidInput {
+        class hid_input {
         public:
-            hidInput() {
+            hid_input() {
                 enabled = false;
             }
 
             // initialize the input by reading the input parameters.
-            bool init( std::string iio_device_path, std::string input_name ) {
+            bool init(const std::string& iio_device_path, const std::string& input_name) {
                 char buffer[1024];
 
                 device_path = iio_device_path;
                 std::string input_prefix = "in_";
                 // validate if input includes th "in_" prefix. if it is . remove it.
-                if ( input_name.substr(0,input_prefix.size()) == input_prefix) {
-                    input = input_name.substr(input_prefix.size(),input_name.size());
+                if (input_name.substr(0,input_prefix.size()) == input_prefix) {
+                    input = input_name.substr(input_prefix.size(), input_name.size());
                 } else {
                     input = input_name;
                 }
 
                 std::string input_suffix = "_en";
                 // check if input contains the "en" suffix, if it is . remove it.
-                if ( input.substr(input.size()-input_suffix.size(), input_suffix.size()) == input_suffix ) {
-                    input = input.substr(0,input.size()-input_suffix.size());
+                if (input.substr(input.size()-input_suffix.size(), input_suffix.size()) == input_suffix) {
+                    input = input.substr(0, input.size()-input_suffix.size());
                 }
 
                 // read scan type.
@@ -144,7 +118,7 @@ namespace rsimpl
                 if (!device_type_file) {
                     return false;
                 }
-                device_type_file.getline(buffer,sizeof(buffer));
+                device_type_file.getline(buffer, sizeof(buffer));
                 type = std::string(buffer);
 
                 device_type_file.close();
@@ -155,7 +129,7 @@ namespace rsimpl
                     return false;
                 }
 
-                device_index_file.getline(buffer,sizeof(buffer));
+                device_index_file.getline(buffer, sizeof(buffer));
                 index = std::stoi(buffer);
 
                 device_index_file.close();
@@ -166,7 +140,7 @@ namespace rsimpl
                     return false;
                 }
 
-                device_enabled_file.getline(buffer,sizeof(buffer));
+                device_enabled_file.getline(buffer, sizeof(buffer));
                 enabled = (std::stoi(buffer) == 0) ? false : true;
 
                 device_enabled_file.close();
@@ -175,7 +149,7 @@ namespace rsimpl
 
             // enable scan input. doing so cause the input to be part of the data provided in the polling.
             bool enable(bool is_enable) {
-                int input_data = is_enable ? 1 : 0;
+                auto input_data = is_enable ? 1 : 0;
                 // open the element requested and enable and disable.
                 std::ofstream iio_device_file(device_path + "/scan_elements/" + "in_" + input + "_en");
 
@@ -203,22 +177,19 @@ namespace rsimpl
         };
 
         // declare device sensor with all of its inputs.
-        class hidDevice {
+        class hid_backend {
         public:
-            ~hidDevice() {
+            hid_backend() : capturing(false) {}
+            ~hid_backend() {
+                stop_capture();
 
                 // clear inputs.
-                std::list<hidInput*>::iterator it = inputs.begin();
-
-                while ( it != inputs.end() ) {
-                    it = inputs.erase(it);
-                }
+                inputs.clear();
             }
 
             // initialize the device sensor. reading its name and all of its inputs.
             bool init(int device_vid, int device_pid, int device_iio_num)
             {
-                stop = false;
                 vid = device_vid;
                 pid = device_pid;
                 iio_device = device_iio_num;
@@ -245,8 +216,8 @@ namespace rsimpl
             }
 
             // return an input by name.
-            hidInput* get_input(std::string input_name) {
-                for (auto input : inputs) {
+            hid_input* get_input(std::string input_name) {
+                for (auto& input : inputs) {
                     if(input->get_name() == input_name) {
                         return input;
                     }
@@ -256,71 +227,124 @@ namespace rsimpl
             }
 
             // start capturing and polling.
-            bool capture(sensorCallback *sensor_callback) {
-                int fp;
-                auto buf_len = 100;
-                char data[buf_len*16];
+            void capture(hid_callback sensor_callback) {
+                if (capturing)
+                    return;
 
+                auto buf_len = 100;
                 std::ostringstream iio_read_device_path;
                 iio_read_device_path << "/dev/iio:device" << iio_device;
 
-                std::string x = iio_read_device_path.str();
-                callback = sensor_callback;
                 // count number of enabled count elements and sort by their index.
                 create_channel_array();
 
                 if (!write_integer_to_param("buffer/length", buf_len)) {
-                    return false;
+                    throw std::runtime_error("write_integer_to_param failed!");
                 }
                 if (!write_integer_to_param("buffer/enable", 1)) {
-                    return false;
+                    throw std::runtime_error("write_integer_to_param failed!");
                 }
 
                 callback = sensor_callback;
 
                 //cout << iio_read_device_path.str() << endl;
-                std::ifstream iio_device_file(iio_read_device_path.str());
+                auto iio_read_device_path_str = iio_read_device_path.str();
+                std::ifstream iio_device_file(iio_read_device_path_str);
 
                 // find iio_device in file system.
                 if (!iio_device_file.good()) {
                     write_integer_to_param("buffer/enable", 0);
-                    return false;
+                    throw std::runtime_error("cant open iio_device_file!");
                 }
 
-                // each channel is 32 bit
-                int channel_size = channels.size()*4;
-                do {
-                    sensorInputs callback_data;
-                    iio_device_file.read(data, channel_size);
-                    int *data_p = (int*) data;
-                    int data_read = iio_device_file.gcount();
-                    int i =0;
-                    for( auto channel : channels) {
-                        callback_data.add_input(channel->get_name(), data_p[i]);
-                        i++;
-                    }
-                    callback->sensor_data_recieved(callback_data);
-                } while(!stop);
-
-                stop = false;
                 iio_device_file.close();
+
+                capturing = true;
+                hid_thread = std::unique_ptr<std::thread>(new std::thread([this, buf_len, iio_read_device_path_str](){
+                    int fd;
+                    const auto max_retries = 10;
+                    auto retries = 0;
+                    while(++retries < max_retries)
+                    {
+                        if ((fd = open(iio_read_device_path_str.c_str(), O_RDONLY | O_NONBLOCK)) > 0)
+                            break;
+
+                        LOG_WARNING("open() failed!");
+                        std::this_thread::sleep_for(std::chrono::milliseconds(5));
+                    }
+
+                    if (retries == max_retries)
+                    {
+                        LOG_ERROR("open() failed with all retries!");
+                        write_integer_to_param("buffer/enable", 0);
+                        callback = NULL;
+                        channels.clear();
+                        return;
+                    }
+
+                    do {
+                        // each channel is 32 bit
+                        auto channel_size = this->channels.size()*4;
+                        char data[buf_len*16] = {};
+                        sensor_inputs callback_data;
+                        fd_set fds;
+                        FD_ZERO(&fds);
+                        FD_SET(fd, &fds);
+
+                        struct timeval tv = {0,10000};
+                        if (select(fd + 1, &fds, NULL, NULL, &tv) < 0)
+                        {
+                            // TODO: write to log?
+                            continue;
+                        }
+
+                        if (FD_ISSET(fd, &fds))
+                        {
+                            read(fd, data, channel_size);
+                        }
+                        else
+                        {
+                            // TODO: write to log?
+                            continue;
+                        }
+
+                        auto *data_p = (int*) data;
+                        auto i = 0;
+                        for( auto channel : this->channels) {
+                            callback_data.add_input(hid_sensor{get_iio_device(), get_sensor_name()},
+                                                    hid_sensor_input{channel->get_index(),
+                                                    channel->get_name()}, data_p[i]);
+                            i++;
+                        }
+                        auto cb_data = callback_data.get_input_data();
+                        for (auto& elem : cb_data)
+                        {
+                            this->callback(elem);
+                        }
+
+                    } while(this->capturing);
+                    close(fd);
+                }));
             }
 
             void stop_capture() {
+                if (!capturing)
+                    return;
+
+                capturing = false;
+                hid_thread->join();
                 write_integer_to_param("buffer/enable", 0);
                 callback = NULL;
-                stop = true;
-
                 channels.clear();
             }
-            static bool sort_hids(hidInput* first, hidInput* second)
+            static bool sort_hids(hid_input* first, hid_input* second)
             {
                 return (first->get_index() >= second->get_index());
             }
 
             bool create_channel_array() {
                 // build enabled channels.
-                for(auto input : inputs) {
+                for(auto& input : inputs) {
                     if (input->is_enabled())
                     {
                         channels.push_back(input);
@@ -329,12 +353,13 @@ namespace rsimpl
 
                 channels.sort(sort_hids);
             }
-            std::list<hidInput*> get_inputs() { return inputs; }
+            std::list<hid_input*>& get_inputs() { return inputs; }
 
-            std::string get_sensor_name() const { return sensor_name; }
-            //int get_iio_device() { return iio_device; };
-            sensorCallback *callback;
-            bool stop;
+            const std::string& get_sensor_name() const { return sensor_name; }
+            int get_iio_device() const { return iio_device; }
+            hid_callback callback;
+            std::atomic<bool> capturing;
+            std::unique_ptr<std::thread> hid_thread;
         private:
 
             // read the IIO device inputs.
@@ -342,7 +367,7 @@ namespace rsimpl
                 DIR *dir;
                 struct dirent *dir_ent;
 
-                std::string scan_elements_path = device_path + "/scan_elements";
+                auto scan_elements_path = device_path + "/scan_elements";
                 // start enumerate the scan elemnts dir.
                 dir = opendir(scan_elements_path.c_str());
                 if (dir == NULL) {
@@ -358,7 +383,7 @@ namespace rsimpl
                         if (file.substr(0,prefix.size()) == prefix &&
                             file.substr(file.size()-suffix.size(),suffix.size()) == suffix) {
                             // initialize input.
-                            hidInput *new_input = new hidInput();
+                            auto* new_input = new hid_input();
                             if (!new_input->init(device_path, file))
                             {
                                 // fail to initialize this input. continue to the next one.
@@ -374,7 +399,7 @@ namespace rsimpl
             }
 
             // write an integer value to a iio param.
-            bool write_integer_to_param(std::string param,int value) {
+            bool write_integer_to_param(const std::string& param,int value) {
                 std::ostringstream iio_device_path;
                 iio_device_path << "/sys/bus/iio/devices/iio:device" << iio_device << "/" << param;
                 auto str = iio_device_path.str();
@@ -396,8 +421,8 @@ namespace rsimpl
             int iio_device;
             std::string sensor_name;
 
-            std::list<hidInput*> inputs;
-            std::list<hidInput*> channels;
+            std::list<hid_input*> inputs;
+            std::list<hid_input*> channels;
 
         };
 
@@ -405,13 +430,14 @@ namespace rsimpl
         {
         public:
             v4l_hid_device(const hid_device_info& info)
+                : capturing(false)
             {
                 _info.unique_id = "";
                 v4l_hid_device::foreach_hid_device([&](const hid_device_info& hid_dev_info, const std::string& iio_device){
                     if (hid_dev_info.unique_id == info.unique_id)
                     {
                         _info = hid_dev_info;
-                        auto device = std::unique_ptr<hidDevice>(new hidDevice());
+                        auto device = std::unique_ptr<hid_backend>(new hid_backend());
                         if (device->init(std::stoul(hid_dev_info.vid, nullptr, 16),
                                     std::stoul(hid_dev_info.pid, nullptr, 16),
                                     std::stoul(iio_device, nullptr, 16)))
@@ -426,7 +452,93 @@ namespace rsimpl
 
             ~v4l_hid_device()
             {
+                if (capturing)
+                {
+                    for (auto& elem : _streaming_sensors)
+                    {
+                        elem->stop_capture();
+                    }
+                    capturing = false;
+                }
+            }
 
+            std::vector<hid_sensor> get_sensors()
+            {
+                std::vector<hid_sensor> iio_sensors;
+                for (auto& elem : _hid_sensors)
+                {
+                    iio_sensors.push_back(hid_sensor{elem->get_iio_device(), elem->get_sensor_name()});
+                }
+                return iio_sensors;
+            }
+
+            std::vector<hid_sensor_input> get_sensor_inputs(int sensor_iio)
+            {
+                std::vector<hid_sensor_input> sensor_inputs;
+                for (auto& elem : _hid_sensors)
+                {
+                    if (elem->get_iio_device() == sensor_iio)
+                    {
+                        auto inputs = elem->get_inputs();
+                        for (auto input : inputs)
+                        {
+                            sensor_inputs.push_back(hid_sensor_input{input->get_index(), input->get_name()});
+                        }
+                    }
+                }
+                return sensor_inputs;
+            }
+
+            void start_capture(const std::vector<int>& sensor_iio, hid_callback callback)
+            {
+                if (capturing)
+                    throw std::runtime_error("Hid device is already capturing!");
+
+                for (auto& iio : sensor_iio)
+                {
+                    for (auto& sensor : _hid_sensors)
+                    {
+                        if (sensor->get_iio_device() == iio)
+                        {
+                            auto inputs = sensor->get_inputs();
+                            for (auto input : inputs)
+                            {
+                                input->enable(true);
+                                _streaming_sensors.push_back(sensor.get());
+                                break;
+                            }
+                        }
+                    }
+
+                    if (_streaming_sensors.empty())
+                        LOG_ERROR("iio_sensor " + std::to_string(iio) + " not found!");
+                }
+
+                for (auto& elem : _streaming_sensors)
+                {
+                    elem->capture(callback);
+                }
+                capturing = true;
+            }
+
+            void stop_capture()
+            {
+                if (!capturing)
+                    throw std::runtime_error("Hid device is not capturing!");
+
+                for (auto& sensor : _hid_sensors)
+                {
+                    auto inputs = sensor->get_inputs();
+                    for (auto input : inputs)
+                    {
+                        input->enable(false);
+                        sensor->stop_capture();
+                        break;
+                    }
+                }
+
+                _streaming_sensors.clear();
+                capturing = false;
             }
 
             static void foreach_hid_device(std::function<void(const hid_device_info&, const std::string&)> action)
@@ -459,11 +571,12 @@ namespace rsimpl
 
                             hid_device_info hid_dev_info;
                             // we are safe to get all parameters because regex is valid.
-                            hid_dev_info.busnum = std::string(m[1]);
-                            hid_dev_info.port_id = std::string(m[2]);
+                            auto busnum = std::string(m[1]);
+                            auto port_id = std::string(m[2]);
+                            hid_dev_info.unique_id = busnum + "/" + port_id;
                             hid_dev_info.vid = m[4];
                             hid_dev_info.pid = m[5];
-                            hid_dev_info.unique_id = m[6];
+                            hid_dev_info.id = m[6];
                             std::string iio_device = m[8];
                             action(hid_dev_info, iio_device);
                         }
@@ -474,7 +587,9 @@ namespace rsimpl
 
         private:
             hid_device_info _info;
-            std::vector<std::unique_ptr<hidDevice>> _hid_sensors;
+            std::vector<std::unique_ptr<hid_backend>> _hid_sensors;
+            std::vector<hid_backend*> _streaming_sensors;
+            std::atomic<bool> capturing;
         };
 
         class v4l_usb_device : public usb_device
@@ -505,6 +620,8 @@ namespace rsimpl
                 libusb_exit(_usb_context);
             }
 
+
+
             static void foreach_usb_device(libusb_context* usb_context, std::function<void(
                                                                 const usb_device_info&,
                                                                 libusb_device*)> action)
@@ -526,7 +643,7 @@ namespace rsimpl
 
                         usb_device_info info;
                         std::stringstream ss;
-                        ss << busnum << "/" << devnum << "/" << parent_devnum;
+                        ss << busnum << "/" << parent_devnum;
                         info.unique_id = ss.str();
                         action(info, usb_device);
                     }
@@ -672,14 +789,13 @@ namespace rsimpl
                         }
 
                         uvc_device_info info;
-                        info.port_id = std::string(m[2]);
-                        info.busnum = std::to_string(busnum);
+                        auto port_id = std::string(m[2]);
                         info.pid = pid;
                         info.vid = vid;
                         info.mi = mi;
                         info.id = dev_name;
                         ss.str("");
-                        ss << busnum << "/" << devnum << "/" << parent_devnum;
+                        ss << busnum << "/" << port_id;
                         info.unique_id = ss.str();
                         action(info, dev_name);
                     }

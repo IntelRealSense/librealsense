@@ -51,6 +51,7 @@ typedef enum rs_format
     RS_FORMAT_RAW16       ,
     RS_FORMAT_RAW8        ,
     RS_FORMAT_UYVY        ,
+    RS_FORMAT_MOTION_DATA ,
     RS_FORMAT_COUNT
 } rs_format;
 

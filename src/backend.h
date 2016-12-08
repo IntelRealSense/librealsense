@@ -13,6 +13,7 @@
 #include <vector>
 #include <algorithm>
 #include <set>
+#include <list>
 
 const uint16_t VID_INTEL_CAMERA     = 0x8086;
 const uint16_t ZR300_CX3_PID        = 0x0acb;
@@ -78,8 +79,6 @@ namespace rsimpl
         struct uvc_device_info
         {
             std::string id = ""; // to distingwish between different pins of the same device
-            std::string port_id;
-            std::string busnum;
             uint32_t vid;
             uint32_t pid;
             uint32_t mi;
@@ -108,17 +107,39 @@ namespace rsimpl
 
         struct hid_device_info
         {
-            std::string port_id;
-            std::string busnum;
+            std::string id;
             std::string vid;
             std::string pid;
             std::string unique_id;
         };
 
+        struct hid_sensor{
+            int iio;
+            std::string name;
+        };
+
+        struct hid_sensor_input
+        {
+            int index;
+            std::string name;
+        };
+
+        struct callback_data{
+            hid_sensor sensor;
+            hid_sensor_input sensor_input;
+            unsigned value;
+        };
+
+        typedef std::function<void(const callback_data&)> hid_callback;
+
         class hid_device
         {
         public:
-
+            virtual ~hid_device() = default;
+            virtual void stop_capture() = 0;
+            virtual void start_capture(const std::vector<int>& sensor_iio, hid_callback callback) = 0;
+            virtual std::vector<hid_sensor_input> get_sensor_inputs(int sensor_iio) = 0;
+            virtual std::vector<hid_sensor> get_sensors() = 0;
         };
 
         class uvc_device

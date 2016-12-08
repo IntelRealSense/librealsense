@@ -10,6 +10,7 @@
 #include <memory>
 #include <vector>
 #include <unordered_set>
+#include <limits.h>
 
 namespace rsimpl
 {
@@ -23,9 +24,9 @@ namespace rsimpl
 
         void set_owner(const rs_streaming_lock* owner) { _owner = owner; }
 
-        void play(frame_callback_ptr callback);
+        virtual void play(frame_callback_ptr callback) = 0;
 
-        virtual void stop();
+        virtual void stop() = 0;
 
         rs_frame* alloc_frame(size_t size, frame_additional_data additional_data) const;
 
@@ -33,17 +34,19 @@ namespace rsimpl
 
         void flush() const;
 
-        virtual ~streaming_lock();
+        virtual ~streaming_lock() {}
 
         bool is_streaming() const { return _is_streaming; }
 
     private:
-        std::atomic<bool> _is_streaming;
-        std::mutex _callback_mutex;
-        frame_callback_ptr _callback;
         std::shared_ptr<frame_archive> _archive;
         std::atomic<uint32_t> _max_publish_list_size;
         const rs_streaming_lock* _owner;
+
+    protected:
+        std::atomic<bool> _is_streaming;
+        std::mutex _callback_mutex;
+        frame_callback_ptr _callback;
     };
 
     class endpoint
@@ -51,7 +54,7 @@ namespace rsimpl
     public:
         virtual std::vector<uvc::stream_profile> get_stream_profiles() = 0;
 
-        std::vector<stream_request> get_principal_requests();
+        virtual std::vector<stream_request> get_principal_requests() = 0;
 
         virtual std::shared_ptr<streaming_lock> configure(
             const std::vector<stream_request>& requests) = 0;
@@ -147,19 +150,172 @@ namespace rsimpl
         }
     };
 
-    // TODO: inplement hid_endpoint
     class hid_endpoint : public endpoint, public std::enable_shared_from_this<hid_endpoint>
     {
     public:
-        explicit hid_endpoint(std::shared_ptr<uvc::hid_device> hid_device) {}
+        explicit hid_endpoint(std::shared_ptr<uvc::hid_device> hid_device)
+            : _hid_device(hid_device)
+        {}
 
         std::vector<uvc::stream_profile> get_stream_profiles() override
         {
-            return std::vector<uvc::stream_profile>{uvc::stream_profile{0, 0, 0, 0}};
-        };
+            std::vector<uvc::stream_profile> sp;
+            for (auto& elem : get_stream_requests())
+            {
+                sp.push_back(uvc::stream_profile{elem.width, elem.height, elem.fps, elem.format});
+            }
+
+            return sp;
+        }
+
+        std::vector<stream_request> get_principal_requests() override
+        {
+            return get_stream_requests();
+        }
 
         std::shared_ptr<streaming_lock> configure(
-            const std::vector<stream_request>& requests) override {};
+            const std::vector<stream_request>& requests) override
+        {
+            std::lock_guard<std::mutex> lock(_configure_lock);
+            for (auto& elem : requests)
+            {
+                _sensor_iio.push_back(rs_stream_to_sensor_iio(elem.stream));
+            }
+
+            std::shared_ptr<hid_streaming_lock> streaming(new hid_streaming_lock(shared_from_this()));
+            return std::move(streaming);
+        }
+
+        void start_streaming(streaming_lock* stream) // TODO: pass streaming_lock obj by weak_ptr
+        {
+            std::lock_guard<std::mutex> lock(_configure_lock);
+            _hid_device->start_capture(_sensor_iio, [stream, this](const uvc::callback_data& data){
+                if (!stream->is_streaming())
+                    return;
+
+                frame_additional_data additional_data;
+                auto stream_format = sensor_name_to_stream_format(data.sensor.name);
+                additional_data.format = stream_format.format;
+                additional_data.stream_type = stream_format.stream;
+                auto data_size = sizeof(data.value);
+                additional_data.width = data_size;
+                additional_data.height = 1;
+                auto frame = stream->alloc_frame(data_size, additional_data);
+
+                std::vector<byte> raw_data;
+                for (auto i = 0 ; i < sizeof(data.value); ++i)
+                {
+                    raw_data.push_back((data.value >> (CHAR_BIT * i)) & 0xff);
+                }
+
+                memcpy(frame->get()->data.data(), raw_data.data(), data_size);
+                stream->invoke_callback(frame);
+            });
+        }
+
+        void stop_streaming()
+        {
+            std::lock_guard<std::mutex> lock(_configure_lock);
+            _hid_device->stop_capture();
+            _sensor_iio.clear();
+        }
+
+        class hid_streaming_lock : public streaming_lock
+        {
+        public:
+            explicit hid_streaming_lock(std::weak_ptr<hid_endpoint> owner)
+                : _owner(owner)
+            {
+            }
+
+            void play(frame_callback_ptr callback) override
+            {
+                std::lock_guard<std::mutex> lock(_callback_mutex);
+                _callback = std::move(callback);
+                _is_streaming = true;
+                auto strong = _owner.lock();
+                if (strong) strong->start_streaming(this);
+            }
+
+            void stop() override
+            {
+                std::lock_guard<std::mutex> lock(_callback_mutex);
+                auto strong = _owner.lock();
+                if (strong) strong->stop_streaming();
+                flush();
+                _callback.reset();
+                _is_streaming = false;
+            }
+        private:
+            std::weak_ptr<hid_endpoint> _owner;
+        };
+
+    private:
+
+        struct stream_format{
+            rs_stream stream;
+            rs_format format;
+        };
+
+        const std::map<std::string, stream_format> sensor_name_and_stream_format =
+            {{std::string("gyro_3d"), {RS_STREAM_GYRO, RS_FORMAT_MOTION_DATA}},
+             {std::string("accel_3d"), {RS_STREAM_ACCEL, RS_FORMAT_MOTION_DATA}}};
+
+        std::shared_ptr<uvc::hid_device> _hid_device;
+        std::mutex _configure_lock;
+        std::vector<int> _sensor_iio;
+
+        std::vector<stream_request> get_stream_requests()
+        {
+            std::vector<stream_request> stream_requests;
+            for (auto& elem : _hid_device->get_sensors())
+            {
+                auto stream_format = sensor_name_to_stream_format(elem.name);
+                stream_requests.push_back({stream_format.stream,
+                                           0,
+                                           0,
+                                           0,
+                                           stream_format.format});
+            }
+
+            return stream_requests;
+        }
+
+        int rs_stream_to_sensor_iio(rs_stream stream)
+        {
+            for (auto& elem : sensor_name_and_stream_format)
+            {
+                if (stream == elem.second.stream)
+                    return get_iio_by_name(elem.first);
+            }
+            throw std::runtime_error("rs_stream not found!");
+        }
+
+        int get_iio_by_name(const std::string& name) const
+        {
+            auto sensors =_hid_device->get_sensors();
+            for (auto& elem : sensors)
+            {
+                if (!elem.name.compare(name))
+                    return elem.iio;
+            }
+            throw std::runtime_error("sensor_name not found!");
+        }
+
+        stream_format sensor_name_to_stream_format(const std::string& sensor_name) const
+        {
+            stream_format stream_and_format;
+            try{
+                stream_and_format = sensor_name_and_stream_format.at(sensor_name);
+            }
+            catch(...)
+            {
+                LOG_ERROR("format not found!");
+                throw;
+            }
+
+            return stream_and_format;
+        }
     };
 
     class uvc_endpoint : public endpoint, public std::enable_shared_from_this<uvc_endpoint>
@@ -169,6 +325,8 @@ namespace rsimpl
             : _device(std::move(uvc_device)) {}
 
         std::vector<uvc::stream_profile> get_stream_profiles() override;
+
+        std::vector<stream_request> get_principal_requests() override;
 
         std::shared_ptr<streaming_lock> configure(
             const std::vector<stream_request>& requests) override;
@@ -228,9 +386,19 @@ namespace rsimpl
             {
             }
 
+            void play(frame_callback_ptr callback) override
+            {
+                std::lock_guard<std::mutex> lock(_callback_mutex);
+                _callback = std::move(callback);
+                _is_streaming = true;
+            }
+
             void stop() override
             {
-                streaming_lock::stop();
+                _is_streaming = false;
+                flush();
+                std::lock_guard<std::mutex> lock(_callback_mutex);
+                _callback.reset();
                 auto strong = _owner.lock();
                 if (strong) strong->stop_streaming();
             }

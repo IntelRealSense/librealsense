@@ -27,7 +27,7 @@ namespace rsimpl
         std::vector<std::shared_ptr<device_info>> results;
 
         auto right_pid = filter_by_product(uvc, { SR300_PID });
-        auto group_devices = group_by_unique_id(right_pid);
+        auto group_devices = group_devices_by_unique_id(right_pid);
         for (auto& group : group_devices)
         {
             if (group.size() == 2 &&

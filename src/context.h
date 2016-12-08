@@ -52,18 +52,17 @@ namespace rsimpl
         return result;
     }
 
-    static std::vector<std::pair<std::vector<uvc::uvc_device_info>, std::vector<uvc::hid_device_info>>> group_by_busnum_and_port_id(const std::vector<std::vector<uvc::uvc_device_info>>& devices,
+    static std::vector<std::pair<std::vector<uvc::uvc_device_info>, std::vector<uvc::hid_device_info>>> group_devices_and_hids_by_unique_id(const std::vector<std::vector<uvc::uvc_device_info>>& devices,
                                                                                                                          const std::vector<uvc::hid_device_info>& hids)
     {
         std::vector<std::pair<std::vector<uvc::uvc_device_info>, std::vector<uvc::hid_device_info>>> results;
         for (auto&& dev : devices)
         {
             std::vector<uvc::hid_device_info> hid_group;
-            auto port_id = dev.front().port_id;
-            auto busnum = dev.front().busnum;
+            auto unique_id = dev.front().unique_id;
             for (auto&& hid : hids)
             {
-                if (hid.port_id == port_id && hid.busnum == busnum)
+                if (hid.unique_id == unique_id)
                     hid_group.push_back(hid);
             }
             results.push_back(std::make_pair(dev, hid_group));
@@ -71,7 +70,7 @@ namespace rsimpl
         return results;
     }
 
-    static std::vector<std::vector<uvc::uvc_device_info>> group_by_unique_id(const std::vector<uvc::uvc_device_info>& devices)
+    static std::vector<std::vector<uvc::uvc_device_info>> group_devices_by_unique_id(const std::vector<uvc::uvc_device_info>& devices)
     {
         std::map<std::string, std::vector<uvc::uvc_device_info>> map;
         for (auto&& info : devices)

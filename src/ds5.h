@@ -130,15 +130,13 @@ namespace rsimpl
         }
 
         uvc_endpoint& get_depth_endpoint() { return static_cast<uvc_endpoint&>(get_endpoint(_depth_device_idx)); }
-        hid_endpoint& get_hid_endpoint() { return static_cast<hid_endpoint&>(get_endpoint(_hid_device_idx)); }
 
         ds5_camera(const uvc::backend& backend,
             const std::vector<uvc::uvc_device_info>& dev_info,
             const uvc::usb_device_info& hwm_device,
             const std::vector<uvc::hid_device_info>& hid_info)
             : _hw_monitor(backend.create_usb_device(hwm_device)),
-              _depth_device_idx(add_endpoint(create_depth_device(backend, dev_info), "Stereo Module")),
-              _hid_device_idx(add_endpoint(create_hid_device(backend, hid_info), "Hid"))
+              _depth_device_idx(add_endpoint(create_depth_device(backend, dev_info), "Stereo Module"))
         {
             using namespace ds;
             // create uvc-endpoint from backend uvc-device
@@ -183,6 +181,8 @@ namespace rsimpl
                     std::make_shared<uvc_xu_option<uint16_t>>(*fisheye_ep,
                         fisheye_xu,
                         FISHEYE_EXPOSURE, "Fisheye Exposure")); // TODO: Update description
+
+                add_endpoint(create_hid_device(backend, hid_info), "Motion Module");
             }
         }
 
@@ -193,7 +193,6 @@ namespace rsimpl
         hw_monitor _hw_monitor;
         
         const uint8_t _depth_device_idx;
-        const uint8_t _hid_device_idx;
 
         lazy<std::vector<uint8_t>> _coefficients_table_raw;
 

@@ -111,7 +111,7 @@ rs_frame* frame_archive::track_frame(frame& f)
         return clone_frame(&new_ref);
     }
 
-    return nullptr;
+    return nullptr; // TODO: throw an exception
 }
 
 void frame_archive::flush()
