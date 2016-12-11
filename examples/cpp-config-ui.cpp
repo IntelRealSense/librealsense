@@ -328,7 +328,11 @@ public:
 
                 for (auto&& p : profiles)
                 {
-                    if (p.width == width && p.height == height && p.fps == fps && p.format == format)
+                    if (p.width == width &&
+                        p.height == height &&
+                        p.fps == fps &&
+                        p.format == format &&
+                        p.stream == stream)
                         results.push_back(p);
                 }
             }
