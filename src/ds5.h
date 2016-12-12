@@ -81,9 +81,9 @@ namespace rsimpl
         {
             using namespace ds;
             // TODO: implement multiple hid devices
+            assert(!all_hid_infos.empty());
             auto hid_ep = std::make_shared<hid_endpoint>(backend.create_hid_device(all_hid_infos[0]));
             return hid_ep;
-
         }
 
         std::shared_ptr<uvc_endpoint> create_depth_device(const uvc::backend& backend,

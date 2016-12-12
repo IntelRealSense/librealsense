@@ -479,7 +479,7 @@ std::vector<uvc::stream_profile> hid_endpoint::get_stream_profiles()
     std::vector<uvc::stream_profile> sp;
     for (auto& elem : get_stream_requests())
     {
-        sp.push_back(uvc::stream_profile{elem.width, elem.height, elem.fps, elem.format});
+        sp.push_back(uvc::stream_profile{elem.width, elem.height, elem.fps, uint32_t(elem.format)});
     }
 
     return sp;
