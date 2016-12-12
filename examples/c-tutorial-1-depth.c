@@ -45,12 +45,12 @@ int main()
 
     /* Configure depth to run at VGA resolution at 30 frames per second */
     int width = 640, height = 480;
-    rs_streaming_lock * stream = rs_open(dev, RS_STREAM_DEPTH, width, height, 30, RS_FORMAT_Z16, &e);
+    rs_open(dev, RS_STREAM_DEPTH, width, height, 30, RS_FORMAT_Z16, &e);
     check_error();
 
     rs_frame_queue * queue = rs_create_frame_queue(1, &e);
     check_error();
-    rs_start(stream, rs_enqueue_frame, queue, &e);
+    rs_start(dev, rs_enqueue_frame, queue, &e);
     check_error();
 
     /* Determine depth value corresponding to one meter */
@@ -109,10 +109,12 @@ int main()
     rs_flush_queue(queue, &e);
     check_error();
 
-    rs_stop(stream, &e);
+    rs_stop(dev, &e);
     check_error();
 
-    rs_close(stream);
+    rs_close(dev, &e);
+    check_error();
+
     rs_delete_device(dev);
     rs_delete_frame_queue(queue);
     rs_delete_device_list(devices);

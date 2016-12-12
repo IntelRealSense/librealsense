@@ -36,7 +36,7 @@ frame* frame_archive::publish_frame(frame&& frame)
     if (is_valid(frame.get_stream_type()) &&
         published_frames_count >= *max_frame_queue_size)
     {
-        return nullptr;
+        return nullptr; // TODO: exception/log
     }
     auto new_frame = published_frames.allocate();
     if (new_frame)
@@ -111,7 +111,7 @@ rs_frame* frame_archive::track_frame(frame& f)
         return clone_frame(&new_ref);
     }
 
-    return nullptr; // TODO: throw an exception
+    return nullptr; // TODO: exception/log
 }
 
 void frame_archive::flush()

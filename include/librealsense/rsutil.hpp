@@ -26,23 +26,25 @@ namespace rs
         class multistream
         {
         public:
-            multistream() : streams(), intrinsics() {}
-            explicit multistream(std::vector<streaming_lock> streams, 
+            multistream() : intrinsics() {}
+            explicit multistream(std::vector<device> results,
                                  std::map<rs_stream, rs_intrinsics> intrinsics,
                                  std::map<rs_stream, device> devices)
-                : streams(std::move(streams)), 
+                : results(std::move(results)),
                   intrinsics(std::move(intrinsics)),
                   devices(std::move(devices)) {}
 
             template<class T>
             void start(T callback)
             {
-                for (auto&& stream : streams) stream.start(callback);
+                for (auto&& dev : results)
+                    dev.start(callback);
             }
 
             void stop()
             {
-                for (auto&& stream : streams) stream.stop();
+                for (auto&& dev : results)
+                    dev.stop();
             }
 
             rs_intrinsics get_intrinsics(rs_stream stream) try 
@@ -64,9 +66,10 @@ namespace rs
             }
 
         private:
-            std::vector<streaming_lock> streams;
+            std::vector<device> streams;
             std::map<rs_stream, rs_intrinsics> intrinsics;
             std::map<rs_stream, device> devices;
+            std::vector<device> results;
         };
 
         class config
@@ -105,8 +108,8 @@ namespace rs
 
             multistream open(device dev)
             {
+                std::vector<device> results;
                 std::vector<rs_stream> satisfied_streams;
-                std::vector<streaming_lock> results;
                 std::map<rs_stream, rs_intrinsics> intrinsics;
                 std::map<rs_stream, device> devices;
 
@@ -163,7 +166,8 @@ namespace rs
 
                     if (targets.size() > 0)
                     {
-                        results.push_back(sub.open(targets));
+                        sub.open(targets);
+                        results.push_back(std::move(sub));
                         for (auto && target : targets)
                         {
                             intrinsics.emplace(std::make_pair(target.stream,

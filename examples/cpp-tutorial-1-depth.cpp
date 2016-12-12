@@ -24,11 +24,11 @@ int main() try
     printf("    Firmware version: %s\n", dev.get_camera_info(RS_CAMERA_INFO_CAMERA_FIRMWARE_VERSION));
 
     // Configure depth to run at VGA resolution at 30 frames per second
-    auto stream = dev.open({ RS_STREAM_DEPTH, 640, 480, 30, RS_FORMAT_Z16 });
+    dev.open({ RS_STREAM_DEPTH, 640, 480, 30, RS_FORMAT_Z16 });
 
     // Configure frame queue of size one and start streaming into it
     rs::frame_queue queue(1);
-    stream.start(queue);
+    dev.start(queue);
 
     // Determine depth value corresponding to one meter
     const auto one_meter = static_cast<uint16_t>(1.0f / dev.get_depth_scale());

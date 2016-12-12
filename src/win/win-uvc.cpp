@@ -832,7 +832,7 @@ namespace rsimpl
             });
 
             if (elem == _streams.end() && _frame_callbacks.empty())
-                throw std::runtime_error("Camera not streaming!");
+                throw std::runtime_error("Camera is not streaming!");
 
             if (elem != _streams.end())
             {

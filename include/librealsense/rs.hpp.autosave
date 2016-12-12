@@ -394,7 +394,7 @@ namespace rs
 
         /**
         * retrieve the available range of values of a supported option
-        * \return option  range containing minimum and maximum values, step and default value
+        * \return option  range struct, containing minimum, maximum, step and default values
         */
         option_range get_option_range(rs_option option) const
         {
