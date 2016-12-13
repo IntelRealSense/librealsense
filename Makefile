@@ -123,7 +123,7 @@ bin/cpp-%: examples/cpp-%.cpp lib/librealsense.so | bin
 # OSX substitute for ldconfig
 localize_lib_path=ldconfig -v -n .;
 ifeq ($(uname_S),Darwin)
-localize_lib_path=export DYLD_LIBRARY_PATH=.;
+localize_lib_path=export DYLD_LIBRARY_PATH=.:${DYLD_LIBRARY_PATH}
 endif
 
 # Rules for building the library itself
