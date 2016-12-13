@@ -636,7 +636,7 @@ namespace rsimpl
             }
             try
             {
-                _location = get_usb_port_id(info.vid, info.pid, info.unique_id);
+                //_location = get_usb_port_id(info.vid, info.pid, info.unique_id);
             }
             catch (...) {}
         }
@@ -644,7 +644,10 @@ namespace rsimpl
         wmf_uvc_device::~wmf_uvc_device()
         {
             try {
-                flush(MF_SOURCE_READER_ALL_STREAMS);
+                if (_streaming)
+                {
+                    flush(MF_SOURCE_READER_ALL_STREAMS);
+                }
                 wmf_uvc_device::set_power_state(D3);
             }
             catch (...)

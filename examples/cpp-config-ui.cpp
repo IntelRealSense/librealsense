@@ -328,7 +328,11 @@ public:
 
                 for (auto&& p : profiles)
                 {
-                    if (p.width == width && p.height == height && p.fps == fps && p.format == format && p.stream == stream)
+                    if (p.width == width &&
+                        p.height == height &&
+                        p.fps == fps &&
+                        p.format == format &&
+                        p.stream == stream)
                         results.push_back(p);
                 }
             }
@@ -347,13 +351,22 @@ public:
         streaming = false;
         queues.flush();
         dev.stop();
+        dev.close();
     }
 
     void play(const std::vector<rs::stream_profile>& profiles)
     {
         std::lock_guard<std::recursive_mutex> lock(mtx);
         dev.open(profiles);
-        dev.start(queues);
+        try {
+            dev.start(queues);
+        }
+        catch (...)
+        {
+            dev.close();
+            throw;
+        }
+
         streaming = true;
     }
 
@@ -424,7 +437,7 @@ class device_model
 public:
     explicit device_model(rs::device& dev, std::string& error_message)
     {
-        for (auto&& sub : dev.query_adjacent_devices())
+        for (auto&& sub : dev.get_adjacent_devices())
         {
             auto model = std::make_shared<subdevice_model>(sub, error_message);
             subdevices.push_back(model);
@@ -747,7 +760,7 @@ int main(int, char**) try
                             ImGui::PushItemWidth(-1);
                             label = to_string() << sub->dev.get_camera_info(RS_CAMERA_INFO_DEVICE_NAME)
                                                 << sub->dev.get_camera_info(RS_CAMERA_INFO_MODULE_NAME)
-                                << " " << rs_stream_to_string(stream) << " format";
+                                                << " " << rs_stream_to_string(stream) << " format";
                             if (sub->streaming) ImGui::Text(formats_chars[sub->selected_format_id[stream]]);
                             else ImGui::Combo(label.c_str(), &sub->selected_format_id[stream], formats_chars.data(),
                                 static_cast<int>(formats_chars.size()));

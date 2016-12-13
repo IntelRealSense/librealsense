@@ -34,7 +34,7 @@ namespace rsimpl
             }
         }
 
-        void configure() const
+        void open() const
         {
             el::Configurations defaultConf;
             defaultConf.setToDefault();
@@ -66,20 +66,20 @@ namespace rsimpl
         {
             filename = to_string() << datetime_string() << ".log";
 
-            configure();
+            open();
         }
 
         void log_to_console(rs_log_severity min_severity)
         {
             minimum_console_severity = min_severity;
-            configure();
+            open();
         }
 
         void log_to_file(rs_log_severity min_severity, const char * file_path)
         {
             minimum_file_severity = min_severity;
             if (file_path) filename = file_path;
-            configure();
+            open();
         }
     };
 

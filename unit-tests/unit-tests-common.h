@@ -213,7 +213,7 @@ inline void require_rotation_matrix(const float(&matrix)[9])
 inline void require_identity_matrix(const float(&matrix)[9])
 {
     static const float identity_matrix_3x3[] = { 1,0,0, 0,1,0, 0,0,1 };
-    for (int i = 0; i < 9; ++i) REQUIRE(matrix[i] == identity_matrix_3x3[i]);
+    for (int i = 0; i < 9; ++i) REQUIRE(matrix[i] == Approx(identity_matrix_3x3[i]));
 }
 
 struct test_duration {

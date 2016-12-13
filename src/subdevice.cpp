@@ -8,12 +8,6 @@
 
 using namespace rsimpl;
 
-endpoint::endpoint()
-    : _is_streaming(false),
-      _callback(nullptr, [](rs_frame_callback*) {}),
-      _max_publish_list_size(16)
-{}
-
 rs_frame* endpoint::alloc_frame(size_t size, frame_additional_data additional_data) const
 {
     auto frame = _archive->alloc_frame(size, additional_data, true);
@@ -58,14 +52,8 @@ bool endpoint::try_get_pf(const uvc::stream_profile& p, native_pixel_format& res
 }
 
 
-std::vector<request_mapping> endpoint::resolve_requests(std::vector<stream_request> requests)
+std::vector<request_mapping> endpoint::resolve_requests(std::vector<stream_profile> requests)
 {
-    // TODO: Move to rsutil.hpp
-    if (!auto_complete_request(requests))
-    {
-        throw std::runtime_error("Subdevice could not auto complete requests!");
-    }
-
     std::vector<uint32_t> legal_4ccs;
     for (auto mode : get_stream_profiles()) {
         if (mode.fps == requests[0].fps && mode.height == requests[0].height && mode.width == requests[0].width)
@@ -86,7 +74,7 @@ std::vector<request_mapping> endpoint::resolve_requests(std::vector<stream_reque
             for (auto&& unpacker : pf.unpackers)
             {
                 auto count = static_cast<int>(std::count_if(begin(requests), end(requests),
-                    [&unpacker](stream_request& r)
+                    [&unpacker](stream_profile& r)
                 {
                     return unpacker.satisfies(r);
                 }));
@@ -111,7 +99,7 @@ std::vector<request_mapping> endpoint::resolve_requests(std::vector<stream_reque
         if (max == 0) break;
 
         requests.erase(std::remove_if(begin(requests), end(requests),
-            [best_unpacker, best_pf, &results, this](stream_request& r)
+            [best_unpacker, best_pf, &results, this](stream_profile& r)
         {
 
             if (best_unpacker->satisfies(r))
@@ -133,24 +121,6 @@ std::vector<request_mapping> endpoint::resolve_requests(std::vector<stream_reque
     throw std::runtime_error("Subdevice unable to satisfy stream requests!");
 }
 
-bool rsimpl::endpoint::auto_complete_request(std::vector<stream_request>& requests)
-{
-    for (stream_request& request : requests)
-    {
-        for (auto&& req : get_principal_requests())
-        {
-            if (req.match(request) && !req.contradicts(requests))
-            {
-                request = req;
-                break;
-            }
-        }
-
-        if (request.has_wildcards()) throw std::runtime_error("Subdevice auto complete the stream requests!");
-    }
-    return true;
-}
-
 uvc_endpoint::~uvc_endpoint()
 {
     try
@@ -164,15 +134,15 @@ uvc_endpoint::~uvc_endpoint()
     }
 }
 
-std::vector<uvc::stream_profile> uvc_endpoint::get_stream_profiles()
+std::vector<uvc::stream_profile> uvc_endpoint::init_stream_profiles()
 {
     power on(shared_from_this());
     return _device->get_profiles();
 }
 
-std::vector<stream_request> uvc_endpoint::get_principal_requests()
+std::vector<stream_profile> uvc_endpoint::get_principal_requests()
 {
-    std::unordered_set<stream_request> results;
+    std::unordered_set<stream_profile> results;
     std::set<uint32_t> unutilized_formats;
     std::set<uint32_t> supported_formats;
 
@@ -191,7 +161,7 @@ std::vector<stream_request> uvc_endpoint::get_principal_requests()
                 }
             }
         }
-        else if (!pf.unpackers.empty())
+        else
         {
             unutilized_formats.insert(p.format);
         }
@@ -220,19 +190,26 @@ std::vector<stream_request> uvc_endpoint::get_principal_requests()
         LOG_WARNING("\nDevice supported formats:\n" << ss.str());
     }
 
-    std::vector<stream_request> res{ begin(results), end(results) };
-    std::sort(res.begin(), res.end(), [](const stream_request& a, const stream_request& b)
+    // Sort the results to make sure that the user will receive predictable deterministic output from the API
+    std::vector<stream_profile> res{ begin(results), end(results) };
+    std::sort(res.begin(), res.end(), [](const stream_profile& a, const stream_profile& b)
     {
-        return a.width > b.width;
+        auto at = std::make_tuple(a.stream, a.width, a.height, a.fps, a.format);
+        auto bt = std::make_tuple(b.stream, b.width, b.height, b.fps, b.format);
+
+        return at > bt;
     });
+
     return res;
 }
 
-void uvc_endpoint::configure(const std::vector<stream_request>& requests)
+void uvc_endpoint::open(const std::vector<stream_profile>& requests)
 {
     std::lock_guard<std::mutex> lock(_configure_lock);
     if (_is_streaming)
-        throw std::runtime_error("Device is already streaming!");
+        throw std::runtime_error("Device is streaming!");
+    else if (_is_opened)
+        throw std::runtime_error("Device is already opened!");
 
     auto on = std::unique_ptr<power>(new power(shared_from_this()));
     _archive = std::make_shared<frame_archive>(&_max_publish_list_size);
@@ -241,15 +218,18 @@ void uvc_endpoint::configure(const std::vector<stream_request>& requests)
     auto timestamp_readers = create_frame_timestamp_readers();
     auto timestamp_reader = timestamp_readers[0];
 
+    std::vector<request_mapping> commited;
     for (auto& mode : mapping)
     {
-        using namespace std::chrono;
-
-        auto start = high_resolution_clock::now();
-        auto frame_number = 0;
-        _device->probe_and_commit(mode.profile,
-            [this, mode, start, frame_number, timestamp_reader](uvc::stream_profile p, uvc::frame_object f) mutable
+        try
         {
+            using namespace std::chrono;
+
+            auto start = high_resolution_clock::now();
+            auto frame_number = 0;
+            _device->probe_and_commit(mode.profile,
+            [this, mode, start, frame_number, timestamp_reader, requests](uvc::stream_profile p, uvc::frame_object f) mutable
+            {
             if (!this->is_streaming())
                 return;
 
@@ -330,9 +310,26 @@ void uvc_endpoint::configure(const std::vector<stream_request>& requests)
             // If any frame callbacks were specified, dispatch them now
             for (auto&& pref : refs)
             {
-                this->invoke_callback(pref);
+                // all the streams the unpacker generates are handled here.
+                // If it matches one of the streams the user requested, send it to the user.
+                if (std::any_of(begin(requests), end(requests), [&pref](stream_profile request) { return request.stream == pref->get()->get_stream_type(); }))
+                    this->invoke_callback(pref);
+                // However, if this is an extra stream we had to open to properly satisty the user's request,
+                // deallocate the frame and prevent the excess data from reaching the user.
+                else
+                    pref->get()->get_owner()->release_frame_ref(pref);
+             }
+            });
+        }
+        catch(...)
+        {
+            for (auto&& commited_mode : commited)
+            {
+                _device->stop(mode.profile);
             }
-        });
+            throw;
+        }
+        commited.push_back(mode);
     }
 
     for (auto& mode : mapping)
@@ -340,6 +337,36 @@ void uvc_endpoint::configure(const std::vector<stream_request>& requests)
         _configuration.push_back(mode.profile);
     }
     _power = move(on);
+    _is_opened = true;
+
+    try {
+        _device->play();
+    }
+    catch (...)
+    {
+        for (auto& profile : _configuration)
+        {
+            try {
+                _device->stop(profile);
+            }
+            catch (...) {}
+        }
+        reset_streaming();
+        throw;
+    }
+}
+
+void uvc_endpoint::close()
+{
+    std::lock_guard<std::mutex> lock(_configure_lock);
+    if (_is_streaming)
+        throw std::runtime_error("Device is streaming!");
+    else if (!_is_opened)
+        throw std::runtime_error("Device was not opened!");
+
+    reset_streaming();
+    _power.reset();
+    _is_opened = false;
 }
 
 void uvc_endpoint::register_xu(uvc::extension_unit xu)
@@ -361,7 +388,6 @@ void uvc_endpoint::start_streaming(frame_callback_ptr callback)
 
     _callback = std::move(callback);
     _is_streaming = true;
-    _device->play();
 }
 
 void uvc_endpoint::stop_streaming()
@@ -375,30 +401,29 @@ void uvc_endpoint::stop_streaming()
     {
         _device->stop(profile);
     }
+    reset_streaming();
+}
 
+void uvc_endpoint::reset_streaming()
+{
     flush();
     _configuration.clear();
     _callback.reset();
     _archive.reset();
-    _power.reset();
 }
 
 void uvc_endpoint::acquire_power()
 {
-    std::lock_guard<std::mutex> lock(_power_lock);
-    if (!_user_count)
+    if (_user_count.fetch_add(1) == 0)
     {
         _device->set_power_state(uvc::D0);
         for (auto& xu : _xus) _device->init_xu(xu);
     }
-    _user_count++;
 }
 
 void uvc_endpoint::release_power()
 {
-    std::lock_guard<std::mutex> lock(_power_lock);
-    _user_count--;
-    if (!_user_count) _device->set_power_state(uvc::D3);
+    if (_user_count.fetch_add(-1) == 1) _device->set_power_state(uvc::D3);
 }
 
 option& endpoint::get_option(rs_option id)
@@ -467,6 +492,8 @@ hid_endpoint::~hid_endpoint()
     {
         if (_is_streaming)
             stop_streaming();
+
+        close();
     }
     catch(...)
     {
@@ -474,32 +501,47 @@ hid_endpoint::~hid_endpoint()
     }
 }
 
-std::vector<uvc::stream_profile> hid_endpoint::get_stream_profiles()
+std::vector<uvc::stream_profile> hid_endpoint::init_stream_profiles()
 {
-    std::vector<uvc::stream_profile> sp;
-    for (auto& elem : get_stream_requests())
+    std::vector<uvc::stream_profile> results;
+    for (auto& elem : get_device_profiles())
     {
-        sp.push_back(uvc::stream_profile{elem.width, elem.height, elem.fps, uint32_t(elem.format)});
+        results.push_back({elem.width, elem .height, elem .fps, uint32_t(elem .format)});
     }
-
-    return sp;
+    return results;
 }
 
-std::vector<stream_request> hid_endpoint::get_principal_requests()
+std::vector<stream_profile> hid_endpoint::get_principal_requests()
 {
-    return get_stream_requests();
+    return get_device_profiles();
 }
 
-void hid_endpoint::configure(const std::vector<stream_request>& requests)
+void hid_endpoint::open(const std::vector<stream_profile>& requests)
 {
     std::lock_guard<std::mutex> lock(_configure_lock);
     if (_is_streaming)
-        throw std::runtime_error("Device is already streaming!");
+        throw std::runtime_error("Device is streaming!");
+    else if (_is_opened)
+        throw std::runtime_error("Device is already opened!");
 
     for (auto& elem : requests)
     {
         _sensor_iio.push_back(rs_stream_to_sensor_iio(elem.stream));
     }
+    _is_opened = true;
+}
+
+void hid_endpoint::close()
+{
+    std::lock_guard<std::mutex> lock(_configure_lock);
+    if (_is_streaming)
+        throw std::runtime_error("Device is streaming!");
+    else if (!_is_opened)
+        throw std::runtime_error("Device was not opened!");
+
+    _sensor_iio.empty();
+    _is_opened = false;
+    // TODO: open/close hid device
 }
 
 void hid_endpoint::start_streaming(frame_callback_ptr callback)
@@ -507,6 +549,8 @@ void hid_endpoint::start_streaming(frame_callback_ptr callback)
     std::lock_guard<std::mutex> lock(_configure_lock);
     if (_is_streaming)
         throw std::runtime_error("Device is already streaming!");
+    else if(!_is_opened)
+        throw std::runtime_error("Device was not opened!");
 
     _archive = std::make_shared<frame_archive>(&_max_publish_list_size);
     _callback = std::move(callback);
@@ -549,13 +593,13 @@ void hid_endpoint::stop_streaming()
     _archive.reset();
 }
 
-std::vector<stream_request> hid_endpoint::get_stream_requests()
+std::vector<stream_profile> hid_endpoint::get_device_profiles()
 {
-    std::vector<stream_request> stream_requests;
+    std::vector<stream_profile> stream_requests;
     for (auto& elem : _hid_device->get_sensors())
     {
         auto stream_format = sensor_name_to_stream_format(elem.name);
-        stream_requests.push_back({stream_format.stream,
+        stream_requests.push_back({ stream_format.stream,
                                    0,
                                    0,
                                    0,

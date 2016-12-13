@@ -125,6 +125,7 @@ namespace rsimpl
                         DS5_LASER_POWER, "Manual laser power. applicable only in on mode"));
             }
 
+            depth_ep->set_pose({ { { 1,0,0 },{ 0,1,0 },{ 0,0,1 } },{ 0,0,0 } });
 
             return depth_ep;
         }
@@ -182,12 +183,14 @@ namespace rsimpl
                         fisheye_xu,
                         FISHEYE_EXPOSURE, "Fisheye Exposure")); // TODO: Update description
 
+                fisheye_ep->set_pose({ { { 1,0,0 },{ 0,1,0 },{ 0,0,1 } },{ 0,0,0 } });
+
                 add_endpoint(create_hid_device(backend, hid_info), "Motion Module");
             }
         }
 
         std::vector<uint8_t> send_receive_raw_data(const std::vector<uint8_t>& input) override;
-        rs_intrinsics get_intrinsics(int subdevice, stream_request profile) const override;
+        rs_intrinsics get_intrinsics(int subdevice, stream_profile profile) const override;
 
     private:
         hw_monitor _hw_monitor;

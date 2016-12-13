@@ -23,59 +23,60 @@ namespace rs
 
     namespace util
     {
-        class multistream
+        template<class Dev = rs::device>
+        class Config
         {
         public:
+            class multistream
+            {
+            public:
             multistream() : intrinsics() {}
-            explicit multistream(std::vector<device> results,
+            explicit multistream(std::vector<Dev> results,
                                  std::map<rs_stream, rs_intrinsics> intrinsics,
-                                 std::map<rs_stream, device> devices)
+                                 std::map<rs_stream, Dev> devices)
                 : results(std::move(results)),
-                  intrinsics(std::move(intrinsics)),
-                  devices(std::move(devices)) {}
+                    intrinsics(std::move(intrinsics)),
+                    devices(std::move(devices)) {}
 
-            template<class T>
-            void start(T callback)
-            {
-                for (auto&& dev : results)
-                    dev.start(callback);
-            }
+                template<class T>
+                void start(T callback)
+                {
+                    for (auto&& dev : results)
+                        dev.start(callback);
+                }
 
-            void stop()
-            {
-                for (auto&& dev : results)
-                    dev.stop();
-            }
+                void stop()
+                {
+                    for (auto&& dev : results)
+                        dev.stop();
+                }
 
-            rs_intrinsics get_intrinsics(rs_stream stream) try 
-            {
-                return intrinsics.at(stream);
-            }
-            catch (std::out_of_range)
-            {
-                throw std::runtime_error("No such stream");
-            }
+                rs_intrinsics get_intrinsics(rs_stream stream) try
+                {
+                    return intrinsics.at(stream);
+                }
+                catch (std::out_of_range)
+                {
+                    throw std::runtime_error(std::string("config doesn't have intrinsics for stream ") + rs_stream_to_string(stream));
+                }
 
-            rs_extrinsics get_extrinsics(rs_stream from, rs_stream to) const try
-            {
-                return devices.at(from).get_extrinsics_to(devices.at(to));
-            }
-            catch (std::out_of_range)
-            {
-                throw std::runtime_error("No such stream");
-            }
+                rs_extrinsics get_extrinsics(rs_stream from, rs_stream to) const try
+                {
+                    return devices.at(from).get_extrinsics_to(devices.at(to));
+                }
+                catch (std::out_of_range)
+                {
+                    throw std::runtime_error(std::string("config doesnt have extrinsics for ") + rs_stream_to_string(from) + "->" + rs_stream_to_string(to));
+                }
 
-        private:
-            std::vector<device> streams;
+            private:
+            std::vector<Dev> streams;
             std::map<rs_stream, rs_intrinsics> intrinsics;
-            std::map<rs_stream, device> devices;
-            std::vector<device> results;
-        };
+            std::map<rs_stream, Dev> devices;
+            std::vector<Dev> results;
+            };
 
-        class config
-        {
-        public:
-            config() {}
+            Config() {}
 
             void enable_stream(rs_stream stream, int width, int height, int fps, rs_format format)
             {
@@ -106,57 +107,70 @@ namespace rs
                 _requests.clear();
             }
 
-            multistream open(device dev)
+            // TODO: Add close method
+
+            multistream open(Dev dev)
             {
-                std::vector<device> results;
+                std::vector<Dev> results;
                 std::vector<rs_stream> satisfied_streams;
                 std::map<rs_stream, rs_intrinsics> intrinsics;
-                std::map<rs_stream, device> devices;
+                std::map<rs_stream, Dev> devices;
 
-                for (auto&& sub : dev.query_adjacent_devices())
+                for (auto&& sub : dev.get_adjacent_devices())
                 {
                     std::vector<stream_profile> targets;
                     auto profiles = sub.get_stream_modes();
 
+                    // deal with explicit requests
                     for (auto&& kvp : _requests)
                     {
                         if (find(begin(satisfied_streams),
                             end(satisfied_streams), kvp.first)
-                            != end(satisfied_streams)) continue;
+                            != end(satisfied_streams)) continue; // skip satisfied requests
 
-                        // can subdevice can satisfy the requested stream?
+                        // if any profile on the subdevice can supply this request, consider it satisfiable
                         if (std::any_of(begin(profiles), end(profiles),
                             [&kvp](const stream_profile& profile)
                             {
                                 return kvp.first == profile.stream;
                             }))
                         {
-                            targets.push_back(kvp.second);
-                            satisfied_streams.push_back(kvp.first);
+                            targets.push_back(kvp.second); // store that this request is going to this subdevice
+                            satisfied_streams.push_back(kvp.first); // mark stream as satisfied
                         }
                     }
 
+                    // deal with preset streams
                     std::vector<rs_format> prefered_formats = { RS_FORMAT_Z16, RS_FORMAT_Y8, RS_FORMAT_RGB8 };
                     for (auto&& kvp : _presets)
                     {
                         if (find(begin(satisfied_streams),
                             end(satisfied_streams), kvp.first)
-                            != end(satisfied_streams)) continue;
+                            != end(satisfied_streams)) continue; // skip if already satisified
 
-                        stream_profile result;
-                        switch(kvp.second)
+                        stream_profile result = { RS_STREAM_COUNT, 0, 0, 0, RS_FORMAT_ANY };
+                        switch (kvp.second)
                         {
                         case preset::best_quality:
-                            result = get_best_quality(kvp.first, prefered_formats, profiles);
+                            std::sort(begin(profiles), end(profiles), sort_best_quality);
                             break;
                         case preset::largest_image:
-                            result = get_largest_image(kvp.first, prefered_formats, profiles);
+                            std::sort(begin(profiles), end(profiles), sort_largest_image);
                             break;
                         case preset::highest_framerate:
-                            result = get_highest_fps(kvp.first, prefered_formats, profiles);
+                            std::sort(begin(profiles), end(profiles), sort_highest_framerate);
                             break;
-                        default: break;
+                        default: throw std::runtime_error("unknown preset selected");
                         }
+
+                        for (auto itr = profiles.rbegin(); itr != profiles.rend(); ++itr) {
+                            if (itr->stream == kvp.first) {
+                                result = *itr;
+                                break;
+                            }
+                        }
+
+                        // RS_STREAM_COUNT signals subdevice can't handle this stream
                         if (result.stream != RS_STREAM_COUNT)
                         {
                             targets.push_back(result);
@@ -164,106 +178,61 @@ namespace rs
                         }
                     }
 
-                    if (targets.size() > 0)
+                    if (targets.size() > 0) // if subdevice is handling any streams
                     {
-                        sub.open(targets);
-                        results.push_back(std::move(sub));
+                        auto_complete(targets, sub);
+                        sub.open(targets); // TODO: RAII device streaming
                         for (auto && target : targets)
                         {
                             intrinsics.emplace(std::make_pair(target.stream,
                                 sub.get_intrinsics(target)));
                             devices.emplace(std::make_pair(target.stream, sub));
                         }
-                            
+                        results.push_back(std::move(sub));
                     }
                 }
-                return multistream(move(results), move(intrinsics), move(devices));
+                return multistream( move(results), move(intrinsics), move(devices) );
             }
 
         private:
-            stream_profile get_highest_fps(
-                rs_stream stream,
-                const std::vector<rs_format>& prefered_formats,
-                const std::vector<stream_profile>& profiles) const
-            {
-                stream_profile highest_fps{ RS_STREAM_COUNT, 0, 0, 0, RS_FORMAT_ANY };
-                auto max_fps = 0;
-
-                for (auto&& profile : profiles)
-                {
-                    if (stream != RS_STREAM_ANY &&
-                        stream != profile.stream) continue;
-
-                    if (find(begin(prefered_formats),
-                        end(prefered_formats), profile.format)
-                        == end(prefered_formats)) continue;
-
-                    if (max_fps < profile.fps)
-                    {
-                        max_fps = profile.fps;
-                        highest_fps = profile;
-                    }
-                }
-                return highest_fps;
+            static bool sort_highest_framerate(const stream_profile& lhs, const stream_profile &rhs) {
+                return lhs.fps < rhs.fps;
             }
 
-            stream_profile get_largest_image(
-                rs_stream stream,
-                const std::vector<rs_format>& prefered_formats,
-                const std::vector<stream_profile>& profiles) const
-            {
-                stream_profile largest_image{ RS_STREAM_COUNT, 0, 0, 0, RS_FORMAT_ANY };
-                auto max_size = 0;
-
-                for (auto&& profile : profiles)
-                {
-                    if (stream != RS_STREAM_ANY &&
-                        stream != profile.stream) continue;
-
-                    if (find(begin(prefered_formats),
-                        end(prefered_formats), profile.format)
-                        == end(prefered_formats)) continue;
-
-                    if (max_size < profile.width * profile.height)
-                    {
-                        max_size = profile.width * profile.height;
-                        largest_image = profile;
-                    }
-                }
-                return largest_image;
+            static bool sort_largest_image(const stream_profile& lhs, const stream_profile &rhs) {
+                return lhs.width*lhs.height < rhs.width*rhs.height;
             }
 
-            stream_profile get_best_quality(
-                rs_stream stream,
-                const std::vector<rs_format>& prefered_formats,
-                const std::vector<stream_profile>& profiles) const
+            static bool sort_best_quality(const stream_profile& lhs, const stream_profile& rhs) {
+                return std::make_tuple((lhs.width == 640 && lhs.height == 480), (lhs.fps == 30), (lhs.format == RS_FORMAT_Y8), (lhs.format == RS_FORMAT_RGB8), int(lhs.format))
+                     < std::make_tuple((rhs.width == 640 && rhs.height == 480), (rhs.fps == 30), (rhs.format == RS_FORMAT_Y8), (rhs.format == RS_FORMAT_RGB8), int(rhs.format));
+                    
+
+            }
+
+            static void auto_complete(std::vector<stream_profile> &requests, Dev &target)
             {
-                stream_profile best_quality{ RS_STREAM_COUNT, 0, 0, 0, RS_FORMAT_ANY };
-
-                for (auto&& profile : profiles)
+                auto candidates = target.get_stream_modes();
+                for (auto & request : requests)
                 {
-                    if (stream != RS_STREAM_ANY &&
-                        stream != profile.stream) continue;
-
-                    if (find(begin(prefered_formats),
-                        end(prefered_formats), profile.format)
-                        == end(prefered_formats)) continue;
-
-                    if (profile.stream == stream &&
-                        profile.width == 640 &&
-                        profile.height == 480 &&
-                        profile.fps == 30)
+                    if (!request.has_wildcards()) continue;
+                    for (auto candidate : candidates)
                     {
-                        best_quality = profile;
+                        if (candidate.match(request) && !candidate.contradicts(requests))
+                        {
+                            request = candidate;
+                            break;
+                        }
                     }
+                    if (request.has_wildcards()) throw std::runtime_error(std::string("Couldn't autocomplete request for subdevice ") + target.get_camera_info(RS_CAMERA_INFO_MODULE_NAME));
                 }
-
-                return best_quality;
             }
 
             std::map<rs_stream, stream_profile> _requests;
             std::map<rs_stream, preset> _presets;
         };
+
+        typedef Config<> config;
 
         typedef std::vector<frame> frameset;
 

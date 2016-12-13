@@ -29,7 +29,7 @@ namespace rsimpl
 
         rs_extrinsics get_extrinsics(int from, int to);
 
-        virtual rs_intrinsics get_intrinsics(int subdevice, stream_request profile) const = 0;
+        virtual rs_intrinsics get_intrinsics(int subdevice, stream_profile profile) const = 0;
 
         float get_depth_scale() const { return _static_info.nominal_depth_scale; }
 

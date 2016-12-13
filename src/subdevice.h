@@ -11,6 +11,7 @@
 #include <vector>
 #include <unordered_set>
 #include <limits.h>
+#include <atomic>
 
 namespace rsimpl
 {
@@ -20,7 +21,18 @@ namespace rsimpl
     class endpoint
     {
     public:
-        endpoint();
+        endpoint() 
+            : _is_streaming(false),
+              _is_opened(false),
+              _callback(nullptr, [](rs_frame_callback*) {}),
+              _max_publish_list_size(16),
+              _stream_profiles([this]() { return this->init_stream_profiles(); }) {}
+
+        virtual std::vector<uvc::stream_profile> init_stream_profiles() = 0;
+        std::vector<uvc::stream_profile> get_stream_profiles()
+        {
+            return *_stream_profiles;
+        }
 
         virtual void start_streaming(frame_callback_ptr callback) = 0;
 
@@ -37,11 +49,9 @@ namespace rsimpl
             return _is_streaming;
         }
 
-        virtual std::vector<uvc::stream_profile> get_stream_profiles() = 0;
-
-        virtual std::vector<stream_request> get_principal_requests() = 0;
-
-        virtual void configure(const std::vector<stream_request>& requests) = 0;
+        virtual std::vector<stream_profile> get_principal_requests() = 0;
+        virtual void open(const std::vector<stream_profile>& requests) = 0;
+        virtual void close() = 0;
 
         void register_pixel_format(native_pixel_format pf)
         {
@@ -66,9 +76,10 @@ namespace rsimpl
 
         bool try_get_pf(const uvc::stream_profile& p, native_pixel_format& result) const;
 
-        std::vector<request_mapping> resolve_requests(std::vector<stream_request> requests);
+        std::vector<request_mapping> resolve_requests(std::vector<stream_profile> requests);
 
         std::atomic<bool> _is_streaming;
+        std::atomic<bool> _is_opened;
         std::mutex _callback_mutex;
         frame_callback_ptr _callback;
         std::shared_ptr<frame_archive> _archive;
@@ -76,10 +87,9 @@ namespace rsimpl
 
     private:
 
-        bool auto_complete_request(std::vector<stream_request>& requests);
-
         std::map<rs_option, std::shared_ptr<option>> _options;
         std::vector<native_pixel_format> _pixel_formats;
+        lazy<std::vector<uvc::stream_profile>> _stream_profiles;
         pose _pose;
         std::map<rs_camera_info, std::string> _camera_info;
     };
@@ -149,11 +159,11 @@ namespace rsimpl
 
         ~hid_endpoint();
 
-        std::vector<uvc::stream_profile> get_stream_profiles() override;
+        std::vector<stream_profile> get_principal_requests() override;
 
-        std::vector<stream_request> get_principal_requests() override;
+        void open(const std::vector<stream_profile>& requests) override;
 
-        void configure(const std::vector<stream_request>& requests) override;
+        void close() override;
 
         void start_streaming(frame_callback_ptr callback);
 
@@ -174,7 +184,9 @@ namespace rsimpl
         std::mutex _configure_lock;
         std::vector<int> _sensor_iio;
 
-        std::vector<stream_request> get_stream_requests();
+        std::vector<uvc::stream_profile> init_stream_profiles() override;
+
+        std::vector<stream_profile> get_device_profiles();
 
         int rs_stream_to_sensor_iio(rs_stream stream);
 
@@ -187,15 +199,15 @@ namespace rsimpl
     {
     public:
         explicit uvc_endpoint(std::shared_ptr<uvc::uvc_device> uvc_device)
-            : _device(std::move(uvc_device)) {}
+            : _device(std::move(uvc_device)), _user_count(0) {}
 
         ~uvc_endpoint();
 
-        std::vector<uvc::stream_profile> get_stream_profiles() override;
+        std::vector<stream_profile> get_principal_requests() override;
 
-        std::vector<stream_request> get_principal_requests() override;
+        void open(const std::vector<stream_profile>& requests) override;
 
-        void configure(const std::vector<stream_request>& requests) override;
+        void close() override;
 
         void register_xu(uvc::extension_unit xu);
 
@@ -216,9 +228,13 @@ namespace rsimpl
 
         void stop_streaming();
     private:
+        std::vector<uvc::stream_profile> init_stream_profiles() override;
+
         void acquire_power();
 
         void release_power();
+
+        void reset_streaming();
 
         struct power
         {
@@ -239,7 +255,7 @@ namespace rsimpl
         };
 
         std::shared_ptr<uvc::uvc_device> _device;
-        int _user_count = 0;
+        std::atomic<int> _user_count;
         std::mutex _power_lock;
         std::mutex _configure_lock;
         std::vector<uvc::stream_profile> _configuration;

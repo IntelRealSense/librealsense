@@ -27,7 +27,7 @@ struct rs_raw_data_buffer
 
 struct rs_stream_profile_list
 {
-    std::vector<rsimpl::stream_request> list;
+    std::vector<rsimpl::stream_profile> list;
 };
 
 struct rs_device
@@ -343,10 +343,10 @@ void rs_open(rs_device* device, rs_stream stream,
     VALIDATE_ENUM(format);
     VALIDATE_ENUM(stream);
 
-    std::vector<rsimpl::stream_request> request;
+    std::vector<rsimpl::stream_profile> request;
     request.push_back({ stream, static_cast<uint32_t>(width),
             static_cast<uint32_t>(height), static_cast<uint32_t>(fps), format });
-    device->device->get_endpoint(device->subdevice).configure(request);
+    device->device->get_endpoint(device->subdevice).open(request);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device, stream, width, height, fps, format)
 
@@ -361,20 +361,20 @@ void rs_open_many(rs_device* device,
     VALIDATE_NOT_NULL(fps);
     VALIDATE_NOT_NULL(format);
 
-    std::vector<rsimpl::stream_request> request;
+    std::vector<rsimpl::stream_profile> request;
     for (auto i = 0; i < count; i++)
     {
         request.push_back({ stream[i], static_cast<uint32_t>(width[i]), 
                             static_cast<uint32_t>(height[i]), static_cast<uint32_t>(fps[i]), format[i] });
     }
-    device->device->get_endpoint(device->subdevice).configure(request);
+    device->device->get_endpoint(device->subdevice).open(request);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device, stream, width, height, fps, format)
 
 void rs_close(const rs_device* device, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(device);
-    device->device->get_endpoint(device->subdevice).stop_streaming();
+    device->device->get_endpoint(device->subdevice).close();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device)
 
