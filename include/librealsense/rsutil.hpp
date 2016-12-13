@@ -38,6 +38,16 @@ namespace rs
                     intrinsics(std::move(intrinsics)),
                     devices(std::move(devices)) {}
 
+            ~multistream()
+            {
+                try{
+                    stop();
+                }
+                catch(...)
+                {
+
+                }
+            }
                 template<class T>
                 void start(T callback)
                 {
@@ -107,7 +117,10 @@ namespace rs
                 _requests.clear();
             }
 
-            // TODO: Add close method
+            void close(Dev dev)
+            {
+                dev.close();
+            }
 
             multistream open(Dev dev)
             {
@@ -181,7 +194,19 @@ namespace rs
                     if (targets.size() > 0) // if subdevice is handling any streams
                     {
                         auto_complete(targets, sub);
-                        sub.open(targets); // TODO: RAII device streaming
+
+                        try{
+                            sub.open(targets); // TODO: RAII device streaming
+                        }
+                        catch(...)
+                        {
+                            for (auto&& elem : results)
+                                elem.close();
+
+                            results.clear();
+                            throw;
+                        }
+
                         for (auto && target : targets)
                         {
                             intrinsics.emplace(std::make_pair(target.stream,
@@ -189,6 +214,7 @@ namespace rs
                             devices.emplace(std::make_pair(target.stream, sub));
                         }
                         results.push_back(std::move(sub));
+
                     }
                 }
                 return multistream( move(results), move(intrinsics), move(devices) );

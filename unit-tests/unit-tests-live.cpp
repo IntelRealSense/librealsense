@@ -726,6 +726,16 @@ public:
         REQUIRE(result == true);
     }
 
+    void stop() const
+    {
+        // TODO
+    }
+
+    void close() const
+    {
+        // TODO
+    }
+
 private:
     std::vector<rs::stream_profile> modes, expected;
     bool result;
@@ -798,6 +808,8 @@ TEST_CASE("Auto-complete feature works", "[offline][rs::util::config]") {
             REQUIRE_NOTHROW(results = config.open(dev));
             // REQUIRE()s are in here
             results.start(0);
+            results.stop();
+            REQUIRE_NOTHROW(config.open(dev));
         }
     }
 }

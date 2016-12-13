@@ -127,6 +127,9 @@ uvc_endpoint::~uvc_endpoint()
     {
         if (_is_streaming)
             stop_streaming();
+
+        if (_is_opened)
+            close();
     }
     catch(...)
     {
@@ -493,7 +496,8 @@ hid_endpoint::~hid_endpoint()
         if (_is_streaming)
             stop_streaming();
 
-        close();
+        if (_is_opened)
+            close();
     }
     catch(...)
     {
@@ -531,6 +535,7 @@ void hid_endpoint::open(const std::vector<stream_profile>& requests)
     _is_opened = true;
 }
 
+// TODO: lock device on open and unlock on close
 void hid_endpoint::close()
 {
     std::lock_guard<std::mutex> lock(_configure_lock);
@@ -541,7 +546,6 @@ void hid_endpoint::close()
 
     _sensor_iio.empty();
     _is_opened = false;
-    // TODO: open/close hid device
 }
 
 void hid_endpoint::start_streaming(frame_callback_ptr callback)
