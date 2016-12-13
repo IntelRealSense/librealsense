@@ -38,10 +38,14 @@ CXXFLAGS += -Wno-unused-function
 
 CXXFLAGS += -Wno-switch -Wno-multichar -DRS_USE_$(BACKEND)_BACKEND $(LIBUSB_FLAGS) 
 
+# soname support requires a dedicated flag on OSX
+SONAME_FLAG=-soname
+
 # Add specific include paths for OSX
 ifeq ($(uname_S),Darwin)
 CFLAGS   += -I/usr/local/include
 CXXFLAGS += -I/usr/local/include
+SONAME_FLAG=-install_name
 endif
 
 ifeq (arm-linux-gnueabihf,$(machine))
@@ -125,7 +129,7 @@ lib/librealsense.so: lib/${REALSENSE_LIBRARY_TARGET_NAME}
 # DEB_LDFLAGS are set for debian builds to:
 # -fPIC -soname,librealsense.so.1 -Wl,-Bsymbolic-functions -Wl,-z,relro
 lib/${REALSENSE_LIBRARY_TARGET_NAME}: $(OBJECTS) | lib
-	$(CXX) -std=c++11 $(DEB_LDFLAGS)  -shared $(OBJECTS) $(LIBUSB_FLAGS) -Wl,-soname,${REALSENSE_LIBRARY_SONAME} -o $@
+	$(CXX) -std=c++11 $(DEB_LDFLAGS)  -shared $(OBJECTS) $(LIBUSB_FLAGS) -Wl,$(SONAME_FLAG),${REALSENSE_LIBRARY_SONAME} -o $@
 
 lib/librealsense.a: $(OBJECTS) | lib
 	ar rvs $@ `find obj/ -name "*.o"`
