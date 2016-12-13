@@ -355,6 +355,7 @@ void uvc_endpoint::open(const std::vector<stream_profile>& requests)
             catch (...) {}
         }
         reset_streaming();
+        _is_opened = false;
         throw;
     }
 }
