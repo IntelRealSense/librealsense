@@ -1,3 +1,10 @@
+# Define version and soname
+REALSENSE_VERSION_MAJOR = 1
+REALSENSE_VERSION_MINOR = 11
+REALSENSE_VERSION_PATCH = 1
+REALSENSE_LIBRARY_SONAME = librealsense.so.${REALSENSE_VERSION_MAJOR}
+REALSENSE_LIBRARY_TARGET_NAME = librealsense.so.${REALSENSE_VERSION_MAJOR}.${REALSENSE_VERSION_MINOR}.${REALSENSE_VERSION_PATCH}
+
 # Detect OS and CPU
 uname_S := $(shell sh -c 'uname -s 2>/dev/null || echo not')
 machine := $(shell sh -c "$(CC) -dumpmachine || echo unknown")
@@ -86,7 +93,7 @@ install: lib/librealsense.so
 
 uninstall:
 	rm -rf $(DESTDIR)$(prefix)/include/librealsense
-	rm -f $(DESTDIR)$(prefix)/lib/librealsense.so
+	rm -f $(DESTDIR)$(prefix)/lib/librealsense.so*
 	$(LDCONFIG)
 
 clean:
@@ -110,10 +117,13 @@ bin/cpp-%: examples/cpp-%.cpp lib/librealsense.so | bin
 	$(CXX) $< -std=c++11 $(REALSENSE_FLAGS) $(GLFW3_FLAGS) $(LDFLAGS) -o $@
 
 # Rules for building the library itself
-# DEB_LDFLAGS are set for debian builds to:
-# -fPIC -soname,librealsense.so.1 -Wl,-Bsymbolic-functions -Wl,-z,relro
-lib/librealsense.so: $(OBJECTS) | lib
-	$(CXX) -std=c++11 $(DEB_LDFLAGS)  -shared $(OBJECTS) $(LIBUSB_FLAGS) $(LDFLAGS) -o $@
+lib/librealsense.so: lib/${REALSENSE_LIBRARY_TARGET_NAME}
+	cd lib; \
+	ldconfig -v -n .; \
+	ln -s ${REALSENSE_LIBRARY_SONAME} librealsense.so
+
+lib/${REALSENSE_LIBRARY_TARGET_NAME}: $(OBJECTS) | lib
+	$(CXX) -std=c++11 -shared $(OBJECTS) $(LIBUSB_FLAGS) -Wl,-soname,${REALSENSE_LIBRARY_SONAME} -o $@
 
 lib/librealsense.a: $(OBJECTS) | lib
 	ar rvs $@ `find obj/ -name "*.o"`

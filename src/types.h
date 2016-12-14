@@ -620,7 +620,7 @@ namespace rsimpl
 
     };
 
-    // this class is a convinience wrapper for intrinsics / extrinsics validation methods
+    // this class is a convenience wrapper for intrinsics / extrinsics validation methods
     class calibration_validator 
     {
     public:

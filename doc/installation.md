@@ -16,7 +16,7 @@ The project requires two external dependencies, GLFW3 and libusb-1.0. The Cmake 
   * `sudo apt-get install libusb-1.0-0-dev pkg-config`
 3. glfw3 is not available in apt-get on Ubuntu 14.04. Use included installer script:
   * `scripts/install_glfw3.sh`
-  * For 16.04 you can install glfw3 via 'sudo apt-get install libglfw3-dev
+  * For 16.04 you can install glfw3 via `sudo apt-get install libglfw3-dev`
 4. We use QtCreator as an IDE for Linux development on Ubuntu
   * **Note:** QtCreator is presently configured to use the V4L2 backend by default
   * `sudo apt-get install qtcreator`
@@ -61,7 +61,7 @@ The project requires two external dependencies, GLFW3 and libusb-1.0. The Cmake 
   * **(OR) Ubuntu 14.04.5 or Ubuntu 16.04.xx (Kernel 4.4)**
     * `./scripts/patch-uvcvideo-16.04.simple.sh`
   * **(OR) Arch based distributions**
-    * You need to install the [base-devel](https://www.archlinux.org/groups/x86_64/base-devel/) package group. 
+    * You need to install the [base-devel](https://www.archlinux.org/groups/x86_64/base-devel/) and [linux-headers](https://www.archlinux.org/packages/core/x86_64/linux-headers/) package group.
 	* Then run the following script to patch the uvc module:
     * `./scripts/patch-arch.sh`
 4. Reload the uvcvideo driver

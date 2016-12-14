@@ -59,7 +59,7 @@ void motion_module_control::enter_state(mm_state new_state)
             set_control(mm_events_output, false);
             set_control(mm_video_output, false);
             set_control(mm_video_output, true); // L -shape adapter board
-            std::this_thread::sleep_for(std::chrono::milliseconds(300)); // Added delay between MM power on and MM start commands to be sure that the MM will be ready untill start polling events. 
+            std::this_thread::sleep_for(std::chrono::milliseconds(300)); // Added delay between MM power on and MM start commands to be sure that the MM will be ready until start polling events.
             set_control(mm_events_output, true);
         }
         break;
@@ -71,7 +71,7 @@ void motion_module_control::enter_state(mm_state new_state)
         }
         if (mm_full_load == new_state)
         {
-            std::this_thread::sleep_for(std::chrono::milliseconds(300)); // Added delay between MM power on and MM start commands to be sure that the MM will be ready untill start polling events. 
+            std::this_thread::sleep_for(std::chrono::milliseconds(300)); // Added delay between MM power on and MM start commands to be sure that the MM will be ready until start polling events.
             set_control(mm_events_output, true);
         }
         if (mm_eventing == new_state)
@@ -131,7 +131,7 @@ void motion_module_control::set_control(mm_request request, bool on)
     hw_monitor::hwmon_cmd cmd((uint8_t)cmd_opcode);
     cmd.Param1 = (on) ? 1 : 0;
 
-    // Motion module will always use the auxillary USB handle (1) for
+    // Motion module will always use the auxiliary USB handle (1) for
     perform_and_send_monitor_command(*device_handle, usbMutex, cmd);
 }
 
@@ -235,7 +235,7 @@ void motion_module_control::write_firmware(uint8_t *data, int size)
         payload_be = (payload_length >> 8) & 0xFF;
         payload_be |= (payload_length << 8) & 0xFF00;
 
-        // packet require op_code of 0x6. cant find documentation for that.
+        // packet require op_code of 0x6. can't find documentation for that.
         packet.address = image_address_be;
         packet.op_code = 0x6;
         packet.length = payload_be;
