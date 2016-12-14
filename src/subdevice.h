@@ -155,7 +155,13 @@ namespace rsimpl
     public:
         explicit hid_endpoint(std::shared_ptr<uvc::hid_device> hid_device)
             : _hid_device(hid_device)
-        {}
+        {
+            _hid_device->open();
+            for (auto& elem : _hid_device->get_sensors())
+                _hid_sensors.push_back(elem);
+
+            _hid_device->close();
+        }
 
         ~hid_endpoint();
 
@@ -182,7 +188,8 @@ namespace rsimpl
 
         std::shared_ptr<uvc::hid_device> _hid_device;
         std::mutex _configure_lock;
-        std::vector<int> _sensor_iio;
+        std::vector<int> _configured_sensor_iio;
+        std::vector<uvc::hid_sensor> _hid_sensors;
 
         std::vector<uvc::stream_profile> init_stream_profiles() override;
 

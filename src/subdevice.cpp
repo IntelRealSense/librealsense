@@ -529,9 +529,10 @@ void hid_endpoint::open(const std::vector<stream_profile>& requests)
     else if (_is_opened)
         throw std::runtime_error("Device is already opened!");
 
+    _hid_device->open();
     for (auto& elem : requests)
     {
-        _sensor_iio.push_back(rs_stream_to_sensor_iio(elem.stream));
+        _configured_sensor_iio.push_back(rs_stream_to_sensor_iio(elem.stream));
     }
     _is_opened = true;
 }
@@ -545,7 +546,8 @@ void hid_endpoint::close()
     else if (!_is_opened)
         throw std::runtime_error("Device was not opened!");
 
-    _sensor_iio.empty();
+    _hid_device->close();
+    _configured_sensor_iio.clear();
     _is_opened = false;
 }
 
@@ -559,29 +561,23 @@ void hid_endpoint::start_streaming(frame_callback_ptr callback)
 
     _archive = std::make_shared<frame_archive>(&_max_publish_list_size);
     _callback = std::move(callback);
-    _is_streaming = true;
-    _hid_device->start_capture(_sensor_iio, [this](const uvc::callback_data& data){
+    _hid_device->start_capture(_configured_sensor_iio, [this](const uvc::callback_data& data){
         if (!this->is_streaming())
             return;
 
         frame_additional_data additional_data;
+        auto data_size = sizeof(data.value);
         auto stream_format = sensor_name_to_stream_format(data.sensor.name);
         additional_data.format = stream_format.format;
         additional_data.stream_type = stream_format.stream;
-        auto data_size = sizeof(data.value);
         additional_data.width = data_size;
         additional_data.height = 1;
         auto frame = this->alloc_frame(data_size, additional_data);
-
-        std::vector<byte> raw_data;
-        for (auto i = 0 ; i < sizeof(data.value); ++i)
-        {
-            raw_data.push_back((data.value >> (CHAR_BIT * i)) & 0xff);
-        }
-
-        memcpy(frame->get()->data.data(), raw_data.data(), data_size);
+        memcpy(frame->get()->data.data(), &data.value, data_size);
         this->invoke_callback(frame);
     });
+
+    _is_streaming = true;
 }
 
 void hid_endpoint::stop_streaming()
@@ -590,10 +586,11 @@ void hid_endpoint::stop_streaming()
     if (!_is_streaming)
         throw std::runtime_error("Device is not streaming!");
 
-    _is_streaming = false;
+
     _hid_device->stop_capture();
+    _is_streaming = false;
     flush();
-    _sensor_iio.clear();
+    _configured_sensor_iio.clear();
     _callback.reset();
     _archive.reset();
 }
@@ -601,7 +598,7 @@ void hid_endpoint::stop_streaming()
 std::vector<stream_profile> hid_endpoint::get_device_profiles()
 {
     std::vector<stream_profile> stream_requests;
-    for (auto& elem : _hid_device->get_sensors())
+    for (auto& elem : _hid_sensors)
     {
         auto stream_format = sensor_name_to_stream_format(elem.name);
         stream_requests.push_back({ stream_format.stream,
@@ -626,8 +623,7 @@ int hid_endpoint::rs_stream_to_sensor_iio(rs_stream stream)
 
 int hid_endpoint::get_iio_by_name(const std::string& name) const
 {
-    auto sensors =_hid_device->get_sensors();
-    for (auto& elem : sensors)
+    for (auto& elem : _hid_sensors)
     {
         if (!elem.name.compare(name))
             return elem.iio;

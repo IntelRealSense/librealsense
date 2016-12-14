@@ -227,13 +227,24 @@ namespace rsimpl
             }
 
             // start capturing and polling.
-            void capture(hid_callback sensor_callback) {
+            void start_capture(hid_callback sensor_callback) {
                 if (capturing)
                     return;
 
                 auto buf_len = 100;
                 std::ostringstream iio_read_device_path;
                 iio_read_device_path << "/dev/iio:device" << iio_device;
+
+                //cout << iio_read_device_path.str() << endl;
+                auto iio_read_device_path_str = iio_read_device_path.str();
+                std::ifstream iio_device_file(iio_read_device_path_str);
+
+                // find iio_device in file system.
+                if (!iio_device_file.good()) {
+                    throw std::runtime_error("cant open iio_device_file!");
+                }
+
+                iio_device_file.close();
 
                 // count number of enabled count elements and sort by their index.
                 create_channel_array();
@@ -246,19 +257,6 @@ namespace rsimpl
                 }
 
                 callback = sensor_callback;
-
-                //cout << iio_read_device_path.str() << endl;
-                auto iio_read_device_path_str = iio_read_device_path.str();
-                std::ifstream iio_device_file(iio_read_device_path_str);
-
-                // find iio_device in file system.
-                if (!iio_device_file.good()) {
-                    write_integer_to_param("buffer/enable", 0);
-                    throw std::runtime_error("cant open iio_device_file!");
-                }
-
-                iio_device_file.close();
-
                 capturing = true;
                 hid_thread = std::unique_ptr<std::thread>(new std::thread([this, buf_len, iio_read_device_path_str](){
                     int fd;
@@ -353,13 +351,13 @@ namespace rsimpl
 
                 channels.sort(sort_hids);
             }
+
             std::list<hid_input*>& get_inputs() { return inputs; }
 
             const std::string& get_sensor_name() const { return sensor_name; }
+
             int get_iio_device() const { return iio_device; }
-            hid_callback callback;
-            std::atomic<bool> capturing;
-            std::unique_ptr<std::thread> hid_thread;
+
         private:
 
             // read the IIO device inputs.
@@ -423,27 +421,22 @@ namespace rsimpl
 
             std::list<hid_input*> inputs;
             std::list<hid_input*> channels;
-
+            hid_callback callback;
+            std::atomic<bool> capturing;
+            std::unique_ptr<std::thread> hid_thread;
         };
 
         class v4l_hid_device : public hid_device
         {
         public:
             v4l_hid_device(const hid_device_info& info)
-                : capturing(false)
             {
                 _info.unique_id = "";
                 v4l_hid_device::foreach_hid_device([&](const hid_device_info& hid_dev_info, const std::string& iio_device){
                     if (hid_dev_info.unique_id == info.unique_id)
                     {
-                        _info = hid_dev_info;
-                        auto device = std::unique_ptr<hid_backend>(new hid_backend());
-                        if (device->init(std::stoul(hid_dev_info.vid, nullptr, 16),
-                                    std::stoul(hid_dev_info.pid, nullptr, 16),
-                                    std::stoul(iio_device, nullptr, 16)))
-                        {
-                            _hid_sensors.push_back(std::move(device));
-                        }
+                        _info = info;
+                        iio_devices.push_back(iio_device);
                     }
                 });
 
@@ -452,14 +445,42 @@ namespace rsimpl
 
             ~v4l_hid_device()
             {
-                if (capturing)
+                for (auto& elem : _streaming_sensors)
                 {
-                    for (auto& elem : _streaming_sensors)
-                    {
-                        elem->stop_capture();
-                    }
-                    capturing = false;
+                    elem->stop_capture();
                 }
+            }
+
+            void open()
+            {
+                for (auto& iio_device : iio_devices)
+                {
+                    auto device = std::unique_ptr<hid_backend>(new hid_backend());
+                    if (device->init(std::stoul(_info.vid, nullptr, 16),
+                                     std::stoul(_info.pid, nullptr, 16),
+                                     std::stoul(iio_device, nullptr, 16)))
+                    {
+                        _hid_sensors.push_back(std::move(device));
+                    }
+                    else
+                    {
+                        for (auto& hid_sensor : _hid_sensors)
+                        {
+                            hid_sensor.reset();
+                        }
+                        _hid_sensors.clear();
+                        throw std::runtime_error("Hid device is busy!");
+                    }
+                }
+            }
+
+            void close()
+            {
+                for (auto& hid_sensor : _hid_sensors)
+                {
+                    hid_sensor.reset();
+                }
+                _hid_sensors.clear();
             }
 
             std::vector<hid_sensor> get_sensors()
@@ -491,9 +512,6 @@ namespace rsimpl
 
             void start_capture(const std::vector<int>& sensor_iio, hid_callback callback)
             {
-                if (capturing)
-                    throw std::runtime_error("Hid device is already capturing!");
-
                 for (auto& iio : sensor_iio)
                 {
                     for (auto& sensor : _hid_sensors)
@@ -514,18 +532,26 @@ namespace rsimpl
                         LOG_ERROR("iio_sensor " + std::to_string(iio) + " not found!");
                 }
 
+                std::vector<hid_backend*> captured_sensors;
+                try{
                 for (auto& elem : _streaming_sensors)
                 {
-                    elem->capture(callback);
+                    elem->start_capture(callback);
+                    captured_sensors.push_back(elem);
                 }
-                capturing = true;
+                }
+                catch(...)
+                {
+                    for (auto& elem : captured_sensors)
+                        elem->stop_capture();
+
+                    _streaming_sensors.clear();
+                    throw;
+                }
             }
 
             void stop_capture()
             {
-                if (!capturing)
-                    throw std::runtime_error("Hid device is not capturing!");
-
                 for (auto& sensor : _hid_sensors)
                 {
                     auto inputs = sensor->get_inputs();
@@ -538,7 +564,6 @@ namespace rsimpl
                 }
 
                 _streaming_sensors.clear();
-                capturing = false;
             }
 
             static void foreach_hid_device(std::function<void(const hid_device_info&, const std::string&)> action)
@@ -587,9 +612,9 @@ namespace rsimpl
 
         private:
             hid_device_info _info;
+            std::vector<std::string> iio_devices;
             std::vector<std::unique_ptr<hid_backend>> _hid_sensors;
             std::vector<hid_backend*> _streaming_sensors;
-            std::atomic<bool> capturing;
         };
 
         class v4l_usb_device : public usb_device
