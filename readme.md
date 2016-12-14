@@ -65,16 +65,16 @@ A comprehensive suite of sample and tutorial applications are provided in the `/
 3. RealSense SR300 (Firmware 3.10.10.0 and up)
 4. RealSense LR200 (Firmware 2.0.71.20 and up)
 5. [RealSense ZR300](https://newsroom.intel.com/chip-shots/intel-announces-tools-realsense-technology-development/)
-  * Camera Firmware 2.0.71.20 and up
+  * Camera Firmware 2.0.71.26 and up
   * USB Adapter Board Firmware 1.28.0.0 and up
-  * Motion Module Firmware 1.23.0.0 and up
+  * Motion Module Firmware 1.25.0.0 and up
 
 ## Compatible Platforms
 
 The library is written in standards-conforming C++11 and relies only on the C89 ABI for its public interface. It is developed and tested on the following platforms:
 
 1. Ubuntu 14.04 and 16.04 LTS (GCC 4.9 toolchain)
-2. Windows 10 (Visual Studio 2015 Update 2)
+2. Windows 8.1 and Windows 10 (Visual Studio 2015 Update 2)
 3. Mac OS X 10.7+ (Clang toolchain)
 4. [Ostro](https://ostroproject.org/)
 
