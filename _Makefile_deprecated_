@@ -92,7 +92,7 @@ all: examples $(EXAMPLES) all-tests
 install: lib/librealsense.so
 	install -m755 -d $(DESTDIR)$(prefix)/include/librealsense
 	install -m644 -D -t $(DESTDIR)$(prefix)/include/librealsense include/librealsense/*
-	install -m644 -D -t $(DESTDIR)$(prefix)/lib lib/*
+	cp -d lib/librealsense.so* $(DESTDIR)$(prefix)/lib
 	$(LDCONFIG)
 
 uninstall:
