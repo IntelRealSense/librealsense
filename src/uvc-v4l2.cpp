@@ -8,6 +8,7 @@
 #include <cassert>
 #include <cstdlib>
 #include <cstdio>
+#include <sstream>
 #include <cstring>
 
 #include <algorithm>
@@ -491,9 +492,20 @@ namespace rsimpl
 
         std::string get_usb_port_id(const device & device)
         {
-            std::string usb_port = std::to_string(libusb_get_bus_number(device.usb_device)) + "-" +
-                std::to_string(libusb_get_port_number(device.usb_device));
-            return usb_port;
+            std::string usb_bus = std::to_string(libusb_get_bus_number(device.usb_device));
+
+            // As per the USB 3.0 specs, the current maximum limit for the depth is 7.
+            const int max_usb_depth = 8;
+            uint8_t usb_ports[max_usb_depth];
+            std::stringstream port_path;
+            int port_count = libusb_get_port_numbers(device.usb_device, usb_ports, max_usb_depth);
+
+            for (size_t i = 0; i < port_count; ++i)
+            {
+                port_path << "-" << std::to_string(usb_ports[i]);
+            }
+
+            return usb_bus + port_path.str();
         }
 
         void get_control(const device & device, const extension_unit & xu, uint8_t ctrl, void * data, int len)
