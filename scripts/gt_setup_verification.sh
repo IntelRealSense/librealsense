@@ -15,7 +15,7 @@ then
 fi
 
 #
-echo -e "Checking connected devices... \n"
+echo -e "\e[4m\nConnected UVC Devices: \n\e[0m"
 
 #Verify that the camera is properly registered with USB driver
 if [ -c /dev/video0 ]; then
@@ -29,9 +29,9 @@ fi
 DS=$(lsusb | grep -i "8086:0ad0" | wc -l)
 FE=$(lsusb | grep -i "8086:0acb" | wc -l)
 if [ "${DS}" -eq 0 ] && [ "${FE}" -eq 0 ]; then
-	echo -e "\e[31m\n\nError\e[0m: No ZR300 cameras were found"
-	echo -e "Make sure that the device is firmly connected \
-to USB3 port and rerun the script...\e[0m"
+	echo -e "\e[31m\nError\e[0m: No ZR300 cameras were found,"
+	echo -e "Make sure that the device is firmly connected\
+ to USB3 port and rerun the script...\e[0m\n"
 	exit 1;
 else	
 	echo -e "\nZR300 Camera was found - \e[32mOk\e[0m"
@@ -48,10 +48,6 @@ do
     echo "${devices_array[i]} :" >> ./streaming_format.txt    
     v4l2-ctl --list-formats-ext -d ${devices_array[i]} | grep -B1 "Name" >> ./$$.txt
 done
-
-#Extract all active streaming profiles that appear unrecognized
-UNPATCHED=$(egrep -o '[[:alnum:]]{1,8}-[[:alnum:]]{1,4}-[[:alnum:]]{1,4}-[[:alnum:]]{1,4}-[[:alnum:]]{1,5}' ./$$.txt)
-unpatched_formats=(${UNPATCHED// / })
 
 echo -e "\e[4m\nVerify formats required by ZR300 Camera\e[0m: \n"
 RECOGNIZED_PATCHED_FORMATS=$(egrep '\(Y8I|Y12I|Y16|Z16|GREY|YUYV\)' \
@@ -76,13 +72,19 @@ do
 	fi
 done
 
+#Find all available streaming profiles that appear unrecognized
+if [ $(egrep -o '[[:alnum:]]{1,8}-[[:alnum:]]{1,4}-[[:alnum:]]{1,4}-[[:alnum:]]{1,4}-[[:alnum:]]{1,5}' ./$$.txt | wc -l) -ne 0 ];
+then
+	unknown_formats=$(egrep -o '[[:alnum:]]{1,8}-[[:alnum:]]{1,4}-[[:alnum:]]{1,4}-[[:alnum:]]{1,4}-[[:alnum:]]{1,5}' ./$$.txt | wc -l)
+	unknown_fmt_list=(${unpatched_formats// / })
+	echo -e "\e[4m\nUnrecognized formats\e[0m: \n"
+	for i in "${!unknown_fmt_list[@]}"
+	do
+		echo -e "\e[31m ${unknown_fmt_list[i]}\e[0m "
+	done
+fi
 rm -f ./$$.txt
 
-echo -e "\e[4m\nUnrecognized formats\e[0m: \n"
-for i in "${!unpatched_formats[@]}"
-do
-	echo -e "\e[31m ${unpatched_formats[i]}\e[0m "		
-done
 
 if [ "${fmt_patch_in_place}" -eq 0 ]; then
 	echo -e "\e[31m\n\n\nThe formats patch has not been applied correctly!\e[0m \n"
