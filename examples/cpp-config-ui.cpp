@@ -560,7 +560,7 @@ int main(int argc, char * argv[])
     };
     std::map<rs::stream, resolution> resolutions;
 
-    int req_fps = 30;
+    int req_fps = 60;
     struct w_h { int width, height; };
     std::vector<rs::format> formats = { rs::format::z16,    rs::format::rgb8,   rs::format::y8,         rs::format::y8,        rs::format::raw8,    rs::format::any };
     std::vector<w_h>        wh      = { { 0,0 },            { 640,480 },        { 0,0 },                { 0,0 },               { 640,480 },         {0,0}};
