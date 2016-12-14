@@ -3,10 +3,39 @@
 # ubuntu 16.04 LTS cmake version 3.5.1
 cmake_minimum_required(VERSION 2.8.3)
 
-set(REALSENSE_VERSION_MAJOR 1)
-set(REALSENSE_VERSION_MINOR 11)
-set(REALSENSE_VERSION_PATCH 1)
+macro(info msg)
+    message(STATUS "Info: ${msg}")
+endmacro()
+
+macro(infoValue variableName)
+    info("${variableName}=\${${variableName}}")
+endmacro()
+
+##################################################################
+# Parse librealsense version and assign it to CMake variables    #
+# This function parses librealsense public API header file, rs.h #
+# and retrieves version numbers embedded in the source code.     #
+# Since the function relies on hard-coded variables, it is prone #
+# for failures should these constants be modified in future      #
+##################################################################
+function(assign_version_property VER_COMPONENT)
+    file(STRINGS "./include/librealsense/rs.h" REALSENSE_VERSION_${VER_COMPONENT} REGEX "#define RS_API_${VER_COMPONENT}_VERSION")
+    separate_arguments(REALSENSE_VERSION_${VER_COMPONENT})
+    list(GET REALSENSE_VERSION_${VER_COMPONENT} -1 tmp)
+    if (tmp LESS 0)
+        message( FATAL_ERROR "Could not obtain valid Librealsense version ${VER_COMPONENT} component - actual value is ${tmp}" )
+    endif()
+    set(REALSENSE_VERSION_${VER_COMPONENT} ${tmp} PARENT_SCOPE)
+endfunction()
+
+set(REALSENSE_VERSION_MAJOR -1)
+set(REALSENSE_VERSION_MINOR -1)
+set(REALSENSE_VERSION_PATCH -1)
+assign_version_property(MAJOR)
+assign_version_property(MINOR)
+assign_version_property(PATCH)
 set(REALSENSE_VERSION_STRING ${REALSENSE_VERSION_MAJOR}.${REALSENSE_VERSION_MINOR}.${REALSENSE_VERSION_PATCH})
+infoValue(REALSENSE_VERSION_STRING)
 
 IF(DEFINED ENV{CMAKE_PREFIX_PATH})
   IF($ENV{CMAKE_PREFIX_PATH} MATCHES "/opt/ros")
@@ -135,6 +164,7 @@ if(UNIX)
     )
 
     find_package(PkgConfig REQUIRED)
+    find_package (Threads REQUIRED)
     pkg_search_module(LIBUSB1 REQUIRED libusb-1.0)
     if(LIBUSB1_FOUND)
       include_directories(SYSTEM ${LIBUSB1_INCLUDE_DIRS})
@@ -143,8 +173,8 @@ if(UNIX)
       message( FATAL_ERROR "Failed to find libusb-1.0" )
     endif(LIBUSB1_FOUND)
 
-    set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -fPIC -pedantic -D_BSD_SOURCE")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC -pedantic -Ofast -Wno-missing-field-initializers")
+    set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -fPIC -pedantic -g -D_BSD_SOURCE")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC -pedantic -g -Ofast -Wno-missing-field-initializers")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-switch -Wno-multichar")
 
     execute_process(COMMAND ${CMAKE_C_COMPILER} -dumpmachine OUTPUT_VARIABLE MACHINE)
@@ -168,7 +198,7 @@ if(BUILD_SHARED_LIBS)
     add_library(realsense SHARED ${REALSENSE_CPP} ${REALSENSE_HPP} ${REALSENSE_DEF})
     set_target_properties(realsense PROPERTIES VERSION ${REALSENSE_VERSION_STRING}
                                     SOVERSION ${REALSENSE_VERSION_MAJOR})
-    target_link_libraries(realsense ${LIBUSB1_LIBRARIES})
+    target_link_libraries(realsense ${LIBUSB1_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
 else()
     add_library(realsense STATIC ${REALSENSE_CPP} ${REALSENSE_HPP})
 endif()
