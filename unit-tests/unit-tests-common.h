@@ -31,6 +31,18 @@
 #define NOEXCEPT_FALSE noexcept(false)
 #endif
 
+static std::string space_to_underscore(const std::string& text) {
+    const std::string from = " ";
+    const std::string to = "__";
+    auto temp = text;
+    size_t start_pos = 0;
+    while ((start_pos = temp.find(from, start_pos)) != std::string::npos) {
+        temp.replace(start_pos, from.size(), to);
+        start_pos += to.size();
+    }
+    return temp;
+}
+
 class command_line_params
 {
 public:
@@ -64,7 +76,7 @@ inline bool file_exists(const char* filename)
 
 inline rs::context make_context(const char* id)
 {
-    static std::map<const char*, int> _counters;
+    static std::map<std::string, int> _counters;
 
     _counters[id]++;
 

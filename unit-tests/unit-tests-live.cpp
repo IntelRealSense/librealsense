@@ -9,7 +9,7 @@
 
 TEST_CASE("Device metadata enumerates correctly", "[live]")
 {
-    auto ctx = make_context(__FUNCTION__);
+    auto ctx = make_context(space_to_underscore(Catch::getCurrentContext().getResultCapture()->getCurrentTestName()).c_str());
     // Require at least one device to be plugged in
     std::vector<rs::device> list;
     REQUIRE_NOTHROW(list = ctx.query_devices());
@@ -37,7 +37,7 @@ TEST_CASE("Device metadata enumerates correctly", "[live]")
 TEST_CASE("Start-Stop stream sequence", "[live]")
 {
     // Require at least one device to be plugged in
-    auto ctx = make_context(__FUNCTION__);
+    auto ctx = make_context(space_to_underscore(Catch::getCurrentContext().getResultCapture()->getCurrentTestName()).c_str());
     std::vector<rs::device> list;
     REQUIRE_NOTHROW(list = ctx.query_devices());
     const int device_count = list.size();
@@ -70,7 +70,7 @@ TEST_CASE("Start-Stop stream sequence", "[live]")
 TEST_CASE("no extrinsic transformation between a stream and itself", "[live]")
 {
     // Require at least one device to be plugged in
-    auto ctx = make_context(__FUNCTION__);
+    auto ctx = make_context(space_to_underscore(Catch::getCurrentContext().getResultCapture()->getCurrentTestName()).c_str());
     std::vector<rs::device> list;
     REQUIRE_NOTHROW(list = ctx.query_devices());
     const int device_count = list.size();
@@ -97,7 +97,7 @@ TEST_CASE("no extrinsic transformation between a stream and itself", "[live]")
 TEST_CASE("extrinsic transformation between two streams is a rigid transform", "[live]")
 {
     // Require at least one device to be plugged in
-    auto ctx = make_context(__FUNCTION__);
+    auto ctx = make_context(space_to_underscore(Catch::getCurrentContext().getResultCapture()->getCurrentTestName()).c_str());
     std::vector<rs::device> list;
     REQUIRE_NOTHROW(list = ctx.query_devices());
     const int device_count = list.size();
@@ -145,7 +145,7 @@ TEST_CASE("extrinsic transformation between two streams is a rigid transform", "
 TEST_CASE("extrinsic transformations are transitive", "[live]")
 {
     // Require at least one device to be plugged in
-    auto ctx = make_context(__FUNCTION__);
+    auto ctx = make_context(space_to_underscore(Catch::getCurrentContext().getResultCapture()->getCurrentTestName()).c_str());
     std::vector<rs::device> list;
     REQUIRE_NOTHROW(list = ctx.query_devices());
     const int device_count = list.size();
@@ -202,7 +202,7 @@ TEST_CASE("extrinsic transformations are transitive", "[live]")
 TEST_CASE("streaming modes sanity check", "[live]")
 {
     // Require at least one device to be plugged in
-    auto ctx = make_context(__FUNCTION__);
+    auto ctx = make_context(space_to_underscore(Catch::getCurrentContext().getResultCapture()->getCurrentTestName()).c_str());
     std::vector<rs::device> list;
     REQUIRE_NOTHROW(list = ctx.query_devices());
     const int device_count = list.size();
@@ -236,6 +236,7 @@ TEST_CASE("streaming modes sanity check", "[live]")
 
                 // Require that we can disable the stream afterwards
                 REQUIRE_NOTHROW(dev.stop());
+                REQUIRE_NOTHROW(dev.close());
             }
             SECTION("check stream intrinsics are sane") {
                 rs_intrinsics intrin;
@@ -262,7 +263,7 @@ TEST_CASE("streaming modes sanity check", "[live]")
 TEST_CASE("check option API", "[live][options]")
 {
     // Require at least one device to be plugged in
-    auto ctx = make_context(__FUNCTION__);
+    auto ctx = make_context(space_to_underscore(Catch::getCurrentContext().getResultCapture()->getCurrentTestName()).c_str());
     std::vector<rs::device> list;
     REQUIRE_NOTHROW(list = ctx.query_devices());
     REQUIRE(list.size() > 0);
@@ -391,7 +392,7 @@ TEST_CASE("check option API", "[live][options]")
 TEST_CASE("a single subdevice can only be opened once, different subdevices can be opened simultaneously", "[live][multicam]")
 {
     // Require at least one device to be plugged in
-    auto ctx = make_context(__FUNCTION__);
+    auto ctx = make_context(space_to_underscore(Catch::getCurrentContext().getResultCapture()->getCurrentTestName()).c_str());
     std::vector<rs::device> list;
     REQUIRE_NOTHROW(list = ctx.query_devices());
     REQUIRE(list.size() > 0);
@@ -666,7 +667,7 @@ TEST_CASE("a single subdevice can only be opened once, different subdevices can 
 
 TEST_CASE("All suggested profiles can be opened", "[live]") {
     // Require at least one device to be plugged in
-    auto ctx = make_context(__FUNCTION__);
+    auto ctx = make_context(space_to_underscore(Catch::getCurrentContext().getResultCapture()->getCurrentTestName()).c_str());
     std::vector<rs::device> list;
     REQUIRE_NOTHROW(list = ctx.query_devices());
     REQUIRE(list.size() > 0);
