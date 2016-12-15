@@ -469,7 +469,14 @@ bool endpoint::supports_info(rs_camera_info info) const
 
 void endpoint::register_info(rs_camera_info info, std::string val)
 {
-    _camera_info[info] = std::move(val);
+    if (supports_info(info) && (get_info(info) != val)) // Append existing infos
+    {
+        _camera_info[info] += "\n" + std::move(val);
+    }
+    else
+    {
+        _camera_info[info] = std::move(val);
+    }
 }
 
 const std::string& endpoint::get_info(rs_camera_info info) const

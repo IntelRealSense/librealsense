@@ -34,13 +34,15 @@ int main()
     if (rs_get_device_count(devices, &e) == 0) return EXIT_FAILURE;
 
     /* This tutorial will access only a single device, but it is trivial to extend to multiple devices */
-    rs_device * dev = rs_create_device(devices, 1, &e);
+    rs_device * dev = rs_create_device(devices, 0, &e);
     check_error();
     printf("\nUsing device 0, an %s\n", rs_get_camera_info(dev, RS_CAMERA_INFO_DEVICE_NAME, &e));
     check_error();
     printf("    Serial number: %s\n", rs_get_camera_info(dev, RS_CAMERA_INFO_DEVICE_SERIAL_NUMBER, &e));
     check_error();
     printf("    Firmware version: %s\n", rs_get_camera_info(dev, RS_CAMERA_INFO_CAMERA_FIRMWARE_VERSION, &e));
+    check_error();
+    printf("    Device Location: %s\n", rs_get_camera_info(dev, RS_CAMERA_INFO_DEVICE_LOCATION, &e));
     check_error();
 
     /* Configure depth to run at VGA resolution at 30 frames per second */

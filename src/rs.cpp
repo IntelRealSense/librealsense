@@ -427,7 +427,7 @@ const char* rs_get_camera_info(const rs_device* device, rs_camera_info info, rs_
     {
         return device->device->get_endpoint(device->subdevice).get_info(info).c_str();
     }
-    return device->device->get_info(info).c_str();
+    throw std::runtime_error("info not supported!");
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, device, info)
 
@@ -435,11 +435,7 @@ int rs_supports_camera_info(const rs_device* device, rs_camera_info info, rs_err
 {
     VALIDATE_NOT_NULL(device);
     VALIDATE_ENUM(info);
-    if (!device->device->get_endpoint(device->subdevice).supports_info(info))
-    {
-        return device->device->supports_info(info);
-    }
-    return true;
+    return device->device->get_endpoint(device->subdevice).supports_info(info);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(false, device, info)
 

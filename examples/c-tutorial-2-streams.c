@@ -45,6 +45,8 @@ int main()
     check_error();
     printf("    Firmware version: %s\n", rs_get_camera_info(dev, RS_CAMERA_INFO_CAMERA_FIRMWARE_VERSION, &e));
     check_error();
+    printf("    Device Location: %s\n", rs_get_camera_info(dev, RS_CAMERA_INFO_DEVICE_LOCATION, &e));
+    check_error();
 
     rs_stream streams[] = { RS_STREAM_DEPTH, RS_STREAM_INFRARED };
     int widths[] = { 640, 640 };

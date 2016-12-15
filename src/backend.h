@@ -83,6 +83,7 @@ namespace rsimpl
             uint32_t pid;
             uint32_t mi;
             std::string unique_id;
+            std::string device_path;
         };
 
         inline bool operator==(const uvc_device_info& a, 
@@ -92,7 +93,8 @@ namespace rsimpl
                    (a.pid == b.pid) &&
                    (a.mi == b.mi) &&
                    (a.unique_id == b.unique_id) &&
-                   (a.id == b.id);
+                   (a.id == b.id) &&
+                   (a.device_path == b.device_path);
         }
 
         struct usb_device_info
@@ -111,6 +113,7 @@ namespace rsimpl
             std::string vid;
             std::string pid;
             std::string unique_id;
+            std::string device_path;
         };
 
         struct hid_sensor{

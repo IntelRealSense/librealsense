@@ -38,15 +38,12 @@ namespace rsimpl
             throw std::runtime_error(to_string() << __FUNCTION__ << " is not implemented for this device!"); 
         }
 
-        const std::string& get_info(rs_camera_info info) const;
-        bool supports_info(rs_camera_info info) const;
-    
     protected:
-        int add_endpoint(std::shared_ptr<endpoint> endpoint, std::string name);
+        int add_endpoint(std::shared_ptr<endpoint> endpoint);
 
         uvc_endpoint& get_uvc_endpoint(int subdevice);
 
-        void register_device(std::string name, std::string fw_version, std::string serial, std::string location);
+        void register_endpoint_info(int sub, std::map<rs_camera_info, std::string> camera_info);
 
         void declare_capability(supported_capability cap);
 

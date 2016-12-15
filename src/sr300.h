@@ -142,20 +142,30 @@ namespace rsimpl
             const uvc::uvc_device_info& depth,
             const uvc::usb_device_info& hwm_device)
             : _hw_monitor(backend.create_usb_device(hwm_device)),
-              _depth_device_idx(add_endpoint(create_depth_device(backend, depth), "Depth Camera")),
-              _color_device_idx(add_endpoint(create_color_device(backend, color), "Color Camera"))
+              _depth_device_idx(add_endpoint(create_depth_device(backend, depth))),
+              _color_device_idx(add_endpoint(create_color_device(backend, color)))
         {
             using namespace ivcam;
+            static const char* device_name = "Intel RealSense SR300";
 
             auto fw_version = _hw_monitor.get_firmware_version_string(GVD, gvd_fw_version_offset);
             auto serial = _hw_monitor.get_module_serial_string(GVD, 132);
-            auto location = get_depth_endpoint().invoke_powered([](uvc::uvc_device& dev)
-            {
-                return dev.get_device_location();
-            });
             enable_timestamp(true, true);
 
-            register_device("Intel RealSense SR300", fw_version, serial, "");
+            std::map<rs_camera_info, std::string> depth_camera_info = {{RS_CAMERA_INFO_DEVICE_NAME, device_name},
+                                                                       {RS_CAMERA_INFO_MODULE_NAME, "Depth Camera"},
+                                                                       {RS_CAMERA_INFO_DEVICE_SERIAL_NUMBER, serial},
+                                                                       {RS_CAMERA_INFO_CAMERA_FIRMWARE_VERSION, fw_version},
+                                                                       {RS_CAMERA_INFO_DEVICE_LOCATION, depth.device_path}};
+            register_endpoint_info(_depth_device_idx, depth_camera_info);
+
+            std::map<rs_camera_info, std::string> color_camera_info = {{RS_CAMERA_INFO_DEVICE_NAME, device_name},
+                                                                       {RS_CAMERA_INFO_MODULE_NAME, "Color Camera"},
+                                                                       {RS_CAMERA_INFO_DEVICE_SERIAL_NUMBER, serial},
+                                                                       {RS_CAMERA_INFO_CAMERA_FIRMWARE_VERSION, fw_version},
+                                                                       {RS_CAMERA_INFO_DEVICE_LOCATION, color.device_path}};
+            register_endpoint_info(_color_device_idx, color_camera_info);
+
             register_autorange_options();
 
             auto c = get_calibration();

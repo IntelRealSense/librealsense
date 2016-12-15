@@ -10,38 +10,23 @@ device::device()
 {
 }
 
-int device::add_endpoint(std::shared_ptr<endpoint> endpoint, std::string name)
+int device::add_endpoint(std::shared_ptr<endpoint> endpoint)
 {
-    endpoint->register_info(RS_CAMERA_INFO_MODULE_NAME, std::move(name));
     _endpoints.push_back(endpoint);
     return _endpoints.size() - 1;
+}
+
+void device::register_endpoint_info(int sub, std::map<rs_camera_info, std::string> camera_info)
+{
+    for (auto& elem : camera_info)
+    {
+        get_uvc_endpoint(sub).register_info(elem.first, std::move(elem.second));
+    }
 }
 
 uvc_endpoint& device::get_uvc_endpoint(int sub)
 {
     return static_cast<uvc_endpoint&>(*_endpoints[sub]);
-}
-
-void device::register_device(std::string name, std::string fw_version, std::string serial, std::string location)
-{
-    _static_info.camera_info[RS_CAMERA_INFO_DEVICE_NAME] = std::move(name);
-    _static_info.camera_info[RS_CAMERA_INFO_CAMERA_FIRMWARE_VERSION] = std::move(fw_version);
-    _static_info.camera_info[RS_CAMERA_INFO_DEVICE_SERIAL_NUMBER] = std::move(serial);
-    _static_info.camera_info[RS_CAMERA_INFO_DEVICE_LOCATION] = std::move(location);
-}
-
-bool device::supports_info(rs_camera_info info) const
-{
-    auto it = _static_info.camera_info.find(info);
-    return it != _static_info.camera_info.end();
-}
-
-const std::string& device::get_info(rs_camera_info info) const
-{
-    auto it = _static_info.camera_info.find(info);
-    if (it == _static_info.camera_info.end())
-        throw std::runtime_error("Selected camera info is not supported for this camera!");
-    return it->second;
 }
 
 void device::declare_capability(supported_capability cap)

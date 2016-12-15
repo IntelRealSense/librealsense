@@ -348,6 +348,9 @@ public:
     void stop()
     {
         std::lock_guard<std::recursive_mutex> lock(mtx);
+        if (!streaming)
+            return;
+
         streaming = false;
         queues.flush();
         dev.stop();
@@ -357,6 +360,9 @@ public:
     void play(const std::vector<rs::stream_profile>& profiles)
     {
         std::lock_guard<std::recursive_mutex> lock(mtx);
+        if (streaming)
+            return;
+
         dev.open(profiles);
         try {
             dev.start(queues);

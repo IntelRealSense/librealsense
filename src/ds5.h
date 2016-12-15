@@ -137,55 +137,73 @@ namespace rsimpl
             const uvc::usb_device_info& hwm_device,
             const std::vector<uvc::hid_device_info>& hid_info)
             : _hw_monitor(backend.create_usb_device(hwm_device)),
-              _depth_device_idx(add_endpoint(create_depth_device(backend, dev_info), "Stereo Module"))
+              _depth_device_idx(add_endpoint(create_depth_device(backend, dev_info)))
         {
             using namespace ds;
-            // create uvc-endpoint from backend uvc-device
-            std::shared_ptr<uvc::uvc_device> fisheye_dev;
-            std::vector<std::shared_ptr<uvc::uvc_device>> devices;
-            for(auto& element : dev_info)
-            {
-                if (element.mi == 0) // mi 0 is relate to DS5 device
-                    devices.push_back(backend.create_uvc_device(element));
-                else if (element.pid == RS450T_PID && element.mi == 3) // mi 3 is relate to Fisheye device
-                    fisheye_dev = backend.create_uvc_device(element);
-            }
-
-            auto fw_version = _hw_monitor.get_firmware_version_string(GVD, gvd_fw_version_offset);
-            auto serial = _hw_monitor.get_module_serial_string(GVD, 48);
-            auto location = get_depth_endpoint().invoke_powered([](uvc::uvc_device& dev)
-            {
-                return dev.get_device_location();
-            });
-
-            register_device("Intel RealSense DS5", fw_version, serial, "");
-
 
             _coefficients_table_raw = [this]() { return get_raw_calibration_table(coefficients_table_id); };
+
+            static const char* device_name = "Intel RealSense DS5";
+            auto fw_version = _hw_monitor.get_firmware_version_string(GVD, gvd_fw_version_offset);
+            auto serial = _hw_monitor.get_module_serial_string(GVD, 48);
 
             // TODO: These if conditions will be implemented as inheritance classes
             auto pid = dev_info.front().pid;
 
+            std::shared_ptr<uvc_endpoint> fisheye_ep;
+            int fe_index;
             if (pid == RS450T_PID)
             {
                 auto fisheye_infos = filter_by_mi(dev_info, 3);
                 if (fisheye_infos.size() != 1)
                     throw std::runtime_error("RS450 model is expected to include a single fish-eye device!");
 
-                auto fisheye_ep = std::make_shared<uvc_endpoint>(backend.create_uvc_device(fisheye_infos.front()));
+                fisheye_ep = std::make_shared<uvc_endpoint>(backend.create_uvc_device(fisheye_infos.front()));
                 fisheye_ep->register_xu(fisheye_xu); // make sure the XU is initialized everytime we power the camera
                 fisheye_ep->register_pixel_format(pf_raw8);
-                add_endpoint(fisheye_ep, "Fisheye Camera");
                 fisheye_ep->register_pu(RS_OPTION_GAIN);
-
                 fisheye_ep->register_option(RS_OPTION_EXPOSURE,
                     std::make_shared<uvc_xu_option<uint16_t>>(*fisheye_ep,
                         fisheye_xu,
                         FISHEYE_EXPOSURE, "Fisheye Exposure")); // TODO: Update description
 
+                // Add fisheye endpoint
+                fe_index = add_endpoint(fisheye_ep);
                 fisheye_ep->set_pose({ { { 1,0,0 },{ 0,1,0 },{ 0,0,1 } },{ 0,0,0 } });
 
-                add_endpoint(create_hid_device(backend, hid_info), "Motion Module");
+                // Add hid endpoint
+                auto hid_index = add_endpoint(create_hid_device(backend, hid_info));
+                std::map<rs_camera_info, std::string> camera_info = {{RS_CAMERA_INFO_DEVICE_NAME, device_name},
+                                                                     {RS_CAMERA_INFO_MODULE_NAME, "Motion Module"},
+                                                                     {RS_CAMERA_INFO_DEVICE_SERIAL_NUMBER, serial},
+                                                                     {RS_CAMERA_INFO_CAMERA_FIRMWARE_VERSION, fw_version},
+                                                                     {RS_CAMERA_INFO_DEVICE_LOCATION, hid_info.front().device_path}};
+                register_endpoint_info(hid_index, camera_info);
+            }
+
+            set_depth_scale(0.001f);
+
+            // Register endpoint info
+            for(auto& element : dev_info)
+            {
+                if (element.mi == 0) // mi 0 is relate to DS5 device
+                {
+                    std::map<rs_camera_info, std::string> camera_info = {{RS_CAMERA_INFO_DEVICE_NAME, device_name},
+                                                                         {RS_CAMERA_INFO_MODULE_NAME, "Stereo Module"},
+                                                                         {RS_CAMERA_INFO_DEVICE_SERIAL_NUMBER, serial},
+                                                                         {RS_CAMERA_INFO_CAMERA_FIRMWARE_VERSION, fw_version},
+                                                                         {RS_CAMERA_INFO_DEVICE_LOCATION, element.device_path}};
+                    register_endpoint_info(_depth_device_idx, camera_info);
+                }
+                else if (fisheye_ep && element.pid == RS450T_PID && element.mi == 3) // mi 3 is relate to Fisheye device
+                {
+                    std::map<rs_camera_info, std::string> camera_info = {{RS_CAMERA_INFO_DEVICE_NAME, device_name},
+                                                                         {RS_CAMERA_INFO_MODULE_NAME, "Fisheye Camera"},
+                                                                         {RS_CAMERA_INFO_DEVICE_SERIAL_NUMBER, serial},
+                                                                         {RS_CAMERA_INFO_CAMERA_FIRMWARE_VERSION, fw_version},
+                                                                         {RS_CAMERA_INFO_DEVICE_LOCATION, element.device_path}};
+                    register_endpoint_info(fe_index, camera_info);
+                }
             }
         }
 

@@ -60,7 +60,7 @@ int main(int argc, char** argv) try
         auto dev = devices[i];
 
         // Show which options are supported by this device
-        cout << " Camera info: \n";
+        cout << " Device info: \n";
         for (auto j = 0; j < RS_CAMERA_INFO_COUNT; ++j)
         {
             auto param = static_cast<rs_camera_info>(j);

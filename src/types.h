@@ -394,7 +394,6 @@ namespace rsimpl
     {
         float nominal_depth_scale;                                          // Default scale
         std::vector<rs_frame_metadata> supported_metadata_vector;
-        std::map<rs_camera_info, std::string> camera_info;
         std::vector<supported_capability> capabilities_vector;
     };
 
