@@ -11,8 +11,6 @@
 #include <iostream>
 #include <algorithm>
 #include <iomanip>
-#include <mutex>
-#include <atomic>
 #include <map>
 #include <sstream>
 
@@ -347,10 +345,6 @@ public:
 
     void stop()
     {
-        std::lock_guard<std::recursive_mutex> lock(mtx);
-        if (!streaming)
-            return;
-
         streaming = false;
         queues.flush();
         dev.stop();
@@ -359,10 +353,6 @@ public:
 
     void play(const std::vector<rs::stream_profile>& profiles)
     {
-        std::lock_guard<std::recursive_mutex> lock(mtx);
-        if (streaming)
-            return;
-
         dev.open(profiles);
         try {
             dev.start(queues);
@@ -426,14 +416,13 @@ public:
     std::vector<std::pair<int, int>> res_values;
     std::vector<int> fps_values;
     std::map<rs_stream, std::vector<rs_format>> format_values;
-    std::atomic<bool> streaming;
-    std::recursive_mutex mtx;
 
     std::vector<rs::stream_profile> profiles;
 
     rs::frame_queue queues;
     bool options_invalidated = false;
     int next_option = RS_OPTION_COUNT;
+    bool streaming;
 };
 
 typedef std::map<rs_stream, rect> streams_layout;
@@ -674,7 +663,8 @@ int main(int, char**) try
             {
                 for (auto&& sub : model.subdevices)
                 {
-                    sub->stop();
+                    if (sub->streaming)
+                        sub->stop();
                 }
 
                 dev = list[device_index];

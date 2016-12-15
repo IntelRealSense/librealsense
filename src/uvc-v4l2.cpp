@@ -71,6 +71,44 @@ namespace rsimpl
 
         struct buffer { void * start; size_t length; };
 
+        static std::string get_usb_port_id(libusb_device* usb_device)
+        {
+            std::string usb_bus = std::to_string(libusb_get_bus_number(usb_device));
+
+            // As per the USB 3.0 specs, the current maximum limit for the depth is 7.
+            const int max_usb_depth = 8;
+            uint8_t usb_ports[max_usb_depth];
+            std::stringstream port_path;
+            int port_count = libusb_get_port_numbers(usb_device, usb_ports, max_usb_depth);
+
+            for (size_t i = 0; i < port_count; ++i)
+            {
+                port_path << "-" << std::to_string(usb_ports[i]);
+            }
+
+            return usb_bus + port_path.str();
+        }
+
+        static void get_usb_port_id_from_vid_pid(uint16_t vid, uint16_t pid, std::string& usb_port_id)
+        {
+            libusb_context * usb_context;
+            int status = libusb_init(&usb_context);
+            if(status < 0) throw std::runtime_error(to_string() << "libusb_init(...) returned " << libusb_error_name(status));
+
+            auto usb_dev_handle  = libusb_open_device_with_vid_pid(usb_context, vid, pid);
+            if(!usb_dev_handle)
+            {
+                libusb_exit(usb_context);
+                throw std::runtime_error(to_string() << "libusb_open_device_with_vid_pid(...)");
+            }
+
+            auto usb_device = libusb_get_device(usb_dev_handle);
+            if(!usb_device) throw std::runtime_error(to_string() << "libusb_get_device(...)");
+            libusb_close(usb_dev_handle);
+            libusb_exit(usb_context);
+            usb_port_id = get_usb_port_id(usb_device);
+        }
+
         // hold all captured inputs in a specific trigger.
         class sensor_inputs {
         public:
@@ -598,9 +636,16 @@ namespace rsimpl
                             // we are safe to get all parameters because regex is valid.
                             auto busnum = std::string(m[1]);
                             auto port_id = std::string(m[2]);
-                            hid_dev_info.unique_id = busnum + "/" + port_id;
                             hid_dev_info.vid = m[4];
                             hid_dev_info.pid = m[5];
+
+                            std::stringstream ss_vid(hid_dev_info.vid);
+                            std::stringstream ss_pid(hid_dev_info.pid);
+                            unsigned long long vid, pid;
+                            ss_vid >> std::hex >> vid;
+                            ss_pid >> std::hex >> pid;
+
+                            get_usb_port_id_from_vid_pid(vid, pid, hid_dev_info.unique_id);
                             hid_dev_info.id = m[6];
                             hid_dev_info.device_path = device_path;
                             std::string iio_device = m[8];
@@ -647,6 +692,10 @@ namespace rsimpl
             }
 
 
+            static std::string get_usb_port_id_from_usb_device(libusb_device* usb_device)
+            {
+                return get_usb_port_id(usb_device);
+            }
 
             static void foreach_usb_device(libusb_context* usb_context, std::function<void(
                                                                 const usb_device_info&,
@@ -659,18 +708,12 @@ namespace rsimpl
                 for(int i=0; list[i]; ++i)
                 {
                     libusb_device * usb_device = list[i];
-                    int busnum = libusb_get_bus_number(usb_device);
-                    int devnum = libusb_get_device_address(usb_device);
-
                     auto parent_device = libusb_get_parent(usb_device);
                     if (parent_device)
                     {
-                        int parent_devnum = libusb_get_device_address(libusb_get_parent(usb_device));
-
                         usb_device_info info;
                         std::stringstream ss;
-                        ss << busnum << "/" << parent_devnum;
-                        info.unique_id = ss.str();
+                        info.unique_id = get_usb_port_id(usb_device);
                         action(info, usb_device);
                     }
                 }
@@ -805,23 +848,13 @@ namespace rsimpl
                         if(!(std::ifstream("/sys/class/video4linux/" + name + "/device/bInterfaceNumber") >> std::hex >> mi))
                             throw std::runtime_error("Failed to read interface number");
 
-                        std::smatch m;
-                        std::string device_path(buff);
-                        if (!std::regex_search(device_path, m, std::regex(".*/devices/pci0000:00/.*(\\S{1})-(\\S{1}).*")))
-                        {
-                            throw std::runtime_error(to_string() << "regex is not valid!");
-                        }
-
                         uvc_device_info info;
-                        auto port_id = std::string(m[2]);
                         info.pid = pid;
                         info.vid = vid;
                         info.mi = mi;
                         info.id = dev_name;
-                        info.device_path = device_path;
-                        ss.str("");
-                        ss << busnum << "/" << port_id;
-                        info.unique_id = ss.str();
+                        info.device_path = std::string(buff);;
+                        get_usb_port_id_from_vid_pid(vid, pid, info.unique_id);
                         action(info, dev_name);
                     }
                     catch(const std::exception & e)
