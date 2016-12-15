@@ -10,37 +10,25 @@
 #include <fstream>
 #include <sstream>
 #include "tclap/CmdLine.h"
-
+#include <condition_variable>
+#include <set>
 
 //using namespace std;
 using namespace TCLAP;
 
-const int MAX_FRAMES_NUMBER = 100;
-const int NUM_OF_STREAMS = 9;
+int MAX_FRAMES_NUMBER = 100;
 
-#define FROM_STRING(T,S,x)  for (int i = RS_##T##_ANY; i < RS_##T##_COUNT; i++) \
-                            {\
-                                if (rs_##S##_to_string((rs_##S##)i) == x)\
-                                    return (rs_##S##)i;\
-                            }\
-                            return RS_##T##_ANY\
+const unsigned int NUM_OF_STREAMS = (int)RS_STREAM_COUNT;
 
 struct frame_data
 {
     unsigned long long frame_number;
     double ts;
     long long arrival_time;
+    rs_timestamp_domain domain;
     rs_stream strean_type;
 };
 
-rs_stream from_string_to_stream(std::string t)
-{
-    FROM_STRING(STREAM, stream, t);
-}
-rs_format from_string_to_format(std::string f)
-{
-    FROM_STRING(FORMAT, format, f);
-}
 std::string toUpperCase(std::string s)
 {
     char it[10];
@@ -58,25 +46,96 @@ std::string toUpperCase(std::string s)
     return std::string(it);
 }
 
+bool valid_number(int &i, char const *s, int base = 0)
+{
+    char *end;
+    long  l;
+    errno = 0;
+    l = strtol(s, &end, base);
+    if (*s == '\0' || *end != '\0') {
+        return false;
+    }
+    i = l;
+    return true;
+}
+
+void valid_format(std::string str, rs_format& format)
+{
+    for (int i = RS_FORMAT_ANY; i < RS_FORMAT_COUNT; i++)
+    {
+        if (rs_format_to_string((rs_format)i) == str)
+        {
+            format = (rs_format)i;
+            return;
+        }
+    }
+    std::string e = " Invalid format - " + str + "\n";
+    throw std::exception(e.c_str());
+}
+
+void valid_stream_type(std::string str, rs_stream& type)
+{
+    for (int i = RS_STREAM_ANY; i < RS_STREAM_COUNT; i++)
+    {
+        if (rs_stream_to_string((rs_stream)i) == str)
+        {
+            type = (rs_stream)i;
+            return;
+        }
+    }
+    std::string e = " Invalid stream type " + str + "\n";
+    throw std::exception(e.c_str());
+    
+}
+
+void valid_fps(std::string str, int& fps)
+{
+    std::set<int> valid_fps({ 10, 30, 60 });
+    if (!valid_number(fps, str.c_str()) || valid_fps.find(fps) == valid_fps.end())
+    {
+        std::string error = "Invalid FPS parameter - " + str + "\n";
+        throw std::exception(error.c_str());
+    }
+}
+
+void valid_resolution(std::string w_str, std::string h_str, int& width, int& height)
+{
+    if (!valid_number(width, w_str.c_str()) || !valid_number(height, h_str.c_str()))
+    {
+        std::string e = " Invalid Resolution Input: width =  " + w_str + ", height = " + h_str + "\n";
+        throw std::exception(e.c_str());
+    }
+    // validate resolution against spec
+}
+
+void valid_configuration(std::vector<std::string> row, rs_stream& type, int& width, int& height, rs_format& format, int& fps)
+{
+    valid_stream_type(toUpperCase(row[0]), type);
+    valid_resolution(row[1], row[2], width, height);
+    valid_fps(row[3], fps);
+    valid_format(row[4], format);
+}
+
+
 std::string get_log_level_string(rs_log_severity lvl)
 {
-    #define CASE(X) case RS_LOG_SEVERITY_##X: return #X;
+#define CASE(X) case RS_LOG_SEVERITY_##X: return #X;
     switch (lvl)
-        {
-            CASE(DEBUG)
+    {
+        CASE(DEBUG)
             CASE(NONE)
             CASE(WARN)
             CASE(ERROR)
             CASE(FATAL)
             CASE(INFO)
-        }
-    #undef CASE
+    }
+#undef CASE
     return "";
 }
 rs_log_severity get_log_level(std::string str_lvl)
 {
     rs_log_severity lvl;
-    for (int level = 0; level< (int)RS_LOG_SEVERITY_COUNT; level++)
+    for (int level = 0; level < (int)RS_LOG_SEVERITY_COUNT; level++)
     {
         lvl = (rs_log_severity)level;
         if (get_log_level_string(lvl) == str_lvl)
@@ -85,22 +144,21 @@ rs_log_severity get_log_level(std::string str_lvl)
     return RS_LOG_SEVERITY_COUNT;
 }
 
-rs::util::config configure_stream(bool is_file_set, std::string fn = "")
+rs::util::config configure_stream(bool is_file_set, bool& is_valid, std::string fn = "")
 {
     rs::util::config config;
 
     if (!is_file_set)
     {
         config.enable_all(rs::preset::best_quality);
-        std::cout << "Warning - No .csv configure file was passed, All streams are enabled by default.\n";
-        std::cout << "To configure stream from a .csv file, specify file full path.\n";
-        std::cout << "Verify stream requests are in the next format ([*] = cell):\n";
-        std::cout << "[Stream Type] [Width] [Height] [FPS] [Format]\n";
+        std::cout << " Warning - No .csv configure file was passed, All streams are enabled by default.\n";
+        std::cout << " To configure stream from a .csv file, specify file full path.\n";
+        std::cout << " Verify stream requests are in the next format -\n";
+        std::cout << " [Stream Type] [Width] [Height] [FPS] [Format]\n";
         return config;
     }
 
-    std::ifstream file("C:\\Users\\nircohen\\Desktop\\config.csv");
-    //std::ifstream file(fn);
+    std::ifstream file(fn);
     
     std::string line;
     while (getline(file, line))
@@ -115,13 +173,12 @@ rs::util::config configure_stream(bool is_file_set, std::string fn = "")
             row.push_back(substr);
         }
 
-        auto stream_type = from_string_to_stream(toUpperCase(row[0]));
-        auto width = stoi(row[1]);
-        auto height = stoi(row[2]);
-        auto fps = stoi(row[3]);
-        auto format = from_string_to_format(row[4]);
+        rs_stream stream_type;
+        rs_format format;
+        int width, height, fps;
 
-        // Configure
+        // correctness check
+        valid_configuration(row, stream_type, width, height, format, fps);
         config.enable_stream(stream_type, width, height, fps, format);
     }
 
@@ -150,14 +207,14 @@ void save_data_to_file(std::list<frame_data> buffer[], std::string filename = ".
 
 int main(int argc, char** argv) try
 {
-
+    
     // Parse command line arguments
     CmdLine cmd("librealsense cpp-data-collect example tool", ' ');
-    ValueArg<int>         timeout    ("t", "Timeout",            "max amount of time to receive frames",                false, 10, "");
-    ValueArg<std::string> max_frames ("m", "MaxFrames_Number",   "maximun number of frames data to receive",            false, "", "");
-    ValueArg<std::string> filename   ("f", "FullFilePath",       "the file which the data will be saved to",            false, "", "");
-    ValueArg<std::string> config_file("c", "ConfigurationFile",  "Specify file path with the requested configuration",  false, "", "");
-    ValueArg<std::string> log_level  ("l", "LogLevel",           "Specify requested logging level",                     false, "", "");
+    ValueArg<int> timeout            ("t", "Timeout",            "max amount of time to receive frames",                false, 10,  "");
+    ValueArg<int> max_frames         ("m", "MaxFrames_Number",   "maximun number of frames data to receive",            false, 100, "");
+    ValueArg<std::string> filename   ("f", "FullFilePath",       "the file which the data will be saved to",            false, "",  "");
+    ValueArg<std::string> config_file("c", "ConfigurationFile",  "Specify file path with the requested configuration",  false, "",  "");
+    ValueArg<std::string> log_level  ("l", "LogLevel",           "Specify requested logging level for librealsense",    false, "",  "");
     
     cmd.add(timeout);
     cmd.add(max_frames);
@@ -170,9 +227,12 @@ int main(int argc, char** argv) try
     if (log_level.isSet())
     {
         rs_error * e = nullptr;
-        rs_log_to_console(get_log_level(log_level.getValue()), &e);
-        // Add log to file
+        auto lvl = get_log_level(log_level.getValue());
+        rs_log_to_console(lvl, &e);
     }
+
+    if (max_frames.isSet())
+        MAX_FRAMES_NUMBER = max_frames.getValue();
 
 
     rs::context ctx;
@@ -182,14 +242,18 @@ int main(int argc, char** argv) try
     auto dev = list.front();
  
     // configure Streams
+    bool is_valid_config;
     auto is_file_set = filename.isSet();
-    auto config = is_file_set ? configure_stream(true, config_file.getValue()) : configure_stream(false);
-    auto stream = config.open(dev);
+ 
+    auto config = is_file_set ? configure_stream(true, is_valid_config, config_file.getValue()) : configure_stream(false, is_valid_config);
+    auto camera = config.open(dev);
 
     std::list<frame_data> buffer[NUM_OF_STREAMS];
-    auto start_time = std::chrono::high_resolution_clock::now();;
+    auto start_time = std::chrono::high_resolution_clock::now();
 
-    stream.start([&buffer, &start_time](rs::frame f)
+    std::condition_variable cv;
+
+    camera.start([&buffer, &start_time](rs::frame f)
     {
         auto arrival_time = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start_time);
 
@@ -197,6 +261,7 @@ int main(int argc, char** argv) try
         data.frame_number = f.get_frame_number();
         data.strean_type = f.get_stream_type();
         data.ts = f.get_timestamp();
+        data.domain = f.get_frame_timestamp_domain();
         data.arrival_time = arrival_time.count();
 
         if (buffer[(int)data.strean_type].size() < MAX_FRAMES_NUMBER)
@@ -205,9 +270,12 @@ int main(int argc, char** argv) try
 
     std::this_thread::sleep_for(std::chrono::seconds(timeout.getValue()));
    
-    stream.stop();
+    camera.stop();
    
-    save_data_to_file(buffer);
+    if (filename.isSet())
+        save_data_to_file(buffer, filename.getValue());
+    else
+        save_data_to_file(buffer);
 
     return EXIT_SUCCESS;
 }
