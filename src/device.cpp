@@ -15,6 +15,8 @@
 using namespace rsimpl;
 using namespace rsimpl::motion_module;
 
+const int NUMBER_OF_FRAMES_TO_SAMPLE = 5;
+
 const int MAX_FRAME_QUEUE_SIZE = 20;
 const int MAX_EVENT_QUEUE_SIZE = 500;
 const int MAX_EVENT_TINE_OUT   = 10;
@@ -357,21 +359,26 @@ void rs_device_base::start_video_streaming()
             streams.push_back(output.first);
         }     
 
+        auto supported_metadata_vector = std::make_shared<std::vector<rs_frame_metadata>>(config.info.supported_metadata_vector);
+
+        auto actual_fps_calc = std::make_shared<fps_calc>(NUMBER_OF_FRAMES_TO_SAMPLE, mode_selection.get_framerate());
         std::shared_ptr<drops_status> frame_drops_status(new drops_status{});
         // Initialize the subdevice and set it to the selected mode
         set_subdevice_mode(*device, mode_selection.mode.subdevice, mode_selection.mode.native_dims.x, mode_selection.mode.native_dims.y, mode_selection.mode.pf.fourcc, mode_selection.mode.fps, 
-            [this, mode_selection, archive, timestamp_reader, streams, capture_start_time, frame_drops_status](const void * frame, std::function<void()> continuation) mutable
+            [this, mode_selection, archive, timestamp_reader, streams, capture_start_time, frame_drops_status, actual_fps_calc, supported_metadata_vector](const void * frame, std::function<void()> continuation) mutable
         {
-            auto now = std::chrono::system_clock::now().time_since_epoch();
-            auto sys_time = std::chrono::duration_cast<std::chrono::milliseconds>(now).count();
+            auto now = std::chrono::system_clock::now();
+            auto sys_time = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count();
 
             frame_continuation release_and_enqueue(continuation, frame);
 
             // Ignore any frames which appear corrupted or invalid
             if (!timestamp_reader->validate_frame(mode_selection.mode, frame)) return;
+            
+            auto actual_fps = actual_fps_calc->calc_fps(now);
 
             // Determine the timestamp for this frame
-            auto timestamp = timestamp_reader->get_frame_timestamp(mode_selection.mode, frame);
+            auto timestamp = timestamp_reader->get_frame_timestamp(mode_selection.mode, frame, actual_fps);
             auto frame_counter = timestamp_reader->get_frame_counter(mode_selection.mode, frame);
             auto recieved_time = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - capture_start_time).count();
 
@@ -429,8 +436,9 @@ void rs_device_base::start_video_streaming()
                     output.second,
                     output.first,
                     mode_selection.pad_crop,
-                    config.info.supported_metadata_vector,
-                    exposure_value[0]);
+                    supported_metadata_vector,
+                    exposure_value[0],
+                    actual_fps);
 
                 // Obtain buffers for unpacking the frame
                 dest.push_back(archive->alloc_frame(output.first, additional_data, requires_processing));

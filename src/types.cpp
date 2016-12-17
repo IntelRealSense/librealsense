@@ -260,6 +260,18 @@ namespace rsimpl
         #undef CASE
     }
 
+    const char * get_string(rs_frame_metadata value)
+    {
+        #define CASE(X) case RS_FRAME_METADATA_##X: return #X;
+        switch (value)
+        {
+        CASE(ACTUAL_EXPOSURE)
+        CASE(ACTUAL_FPS)
+        default: assert(!is_valid(value)); return unknown;
+        }
+        #undef CASE
+    }
+
     const char * get_string(rs_timestamp_domain value)
     {
         #define CASE(X) case RS_TIMESTAMP_DOMAIN_##X: return #X;

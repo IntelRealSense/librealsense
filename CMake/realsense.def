@@ -95,6 +95,7 @@ EXPORTS
     rs_blob_type_to_string  
     rs_camera_info_to_string
     rs_timestamp_domain_to_string
+    rs_frame_metadata_to_string
     rs_log_to_console
     rs_log_to_file
     rs_log_to_callback

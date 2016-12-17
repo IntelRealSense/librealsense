@@ -488,6 +488,8 @@ namespace rsimpl
                 }
             }
 
+            info.supported_metadata_vector.push_back(RS_FRAME_METADATA_ACTUAL_FPS);
+
             info.options.push_back({ RS_OPTION_FISHEYE_GAIN,                            0,  0,   0,  0  });
             info.options.push_back({ RS_OPTION_FISHEYE_STROBE,                          0,  1,   1,  0  });
             info.options.push_back({ RS_OPTION_FISHEYE_EXTERNAL_TRIGGER,                0,  1,   1,  0  });
@@ -495,7 +497,7 @@ namespace rsimpl
             info.options.push_back({ RS_OPTION_FISHEYE_AUTO_EXPOSURE_MODE,              0,  2,   1,  0  });
             info.options.push_back({ RS_OPTION_FISHEYE_AUTO_EXPOSURE_ANTIFLICKER_RATE,  50, 60,  10, 60 });
             info.options.push_back({ RS_OPTION_FISHEYE_AUTO_EXPOSURE_PIXEL_SAMPLE_RATE, 1,  3,   1,  1  });
-            info.options.push_back({ RS_OPTION_FISHEYE_AUTO_EXPOSURE_SKIP_FRAMES,       0,  3,   1,  2  });
+            info.options.push_back({ RS_OPTION_FISHEYE_AUTO_EXPOSURE_SKIP_FRAMES,       2,  3,   1,  2  });
             info.options.push_back({ RS_OPTION_HARDWARE_LOGGER_ENABLED,                 0,  1,   1,  0  });
         }
 
@@ -664,7 +666,7 @@ namespace rsimpl
                     auto exp_and_cnt_sts = try_get_exp_by_frame_cnt(exp_by_frame_cnt, frame_counter);
 
                     auto exposure_value = static_cast<float>((exp_and_cnt_sts)? exp_by_frame_cnt : values[0]);
-                    auto gain_value = static_cast<float>(values[1]);
+                    auto gain_value = static_cast<float>(2 + (values[1]-15) / 8.);
 
                     bool sts = auto_exposure_algo.analyze_image(frame_ref);
                     if (sts)
@@ -676,13 +678,16 @@ namespace rsimpl
                         {
                             rs_option option[] = { RS_OPTION_FISHEYE_EXPOSURE };
                             double value[] = { exposure_value * 10. };
+                            if (value[0] < 1)
+                                value[0] = 1;
+
                             device->set_options(option, 1, value);
                         }
 
                         if (modify_gain)
                         {
                             rs_option option[] = { RS_OPTION_FISHEYE_GAIN };
-                            double value[] = { gain_value };
+                            double value[] = { (gain_value-2) * 8 +15. };
                             device->set_options(option, 1, value);
                         }
                     }
@@ -825,7 +830,7 @@ namespace rsimpl
                 float target_exposure0 = total_exposure * (1.0f + exposure_step);
 
                 target_exposure0 = std::min(target_exposure0, target_exposure);
-                increase_exposure_gain(target_exposure, target_exposure0, exposure, gain);
+                increase_exposure_gain(target_exposure0, target_exposure0, exposure, gain);
                 RoundingMode = rounding_mode_type::ceil;
                 LOG_DEBUG(" ModifyExposure: IncreaseExposureGain: ");
                 LOG_DEBUG(" target_exposure0 " << target_exposure0);
@@ -835,7 +840,7 @@ namespace rsimpl
                 float target_exposure0 = total_exposure / (1.0f + exposure_step);
 
                 target_exposure0 = std::max(target_exposure0, target_exposure);
-                decrease_exposure_gain(target_exposure, target_exposure0, exposure, gain);
+                decrease_exposure_gain(target_exposure0, target_exposure0, exposure, gain);
                 RoundingMode = rounding_mode_type::floor;
                 LOG_DEBUG(" ModifyExposure: DecreaseExposureGain: ");
                 LOG_DEBUG(" target_exposure0 " << target_exposure0);
@@ -972,12 +977,16 @@ namespace rsimpl
 
         for (int i = 1; i < 4; ++i)
         {
+            if (i * flicker_cycle >= maximal_exposure)
+            {
+                continue;
+            }
             float exposure1 = std::max(std::min(i * flicker_cycle, maximal_exposure), flicker_cycle);
             float gain1 = base_gain;
 
             if ((exposure1 * gain1) != target_exposure)
             {
-                std::min(std::max(target_exposure / exposure1, base_gain), gain_limit);
+                gain1 = std::min(std::max(target_exposure / exposure1, base_gain), gain_limit);
             }
             float score1 = fabs(target_exposure - exposure1 * gain1);
             exposure_gain_score.push_back(std::tuple<float, float, float>(score1, exposure1, gain1));
@@ -994,11 +1003,15 @@ namespace rsimpl
 
         for (int i = 1; i < 4; ++i)
         {
+            if (i * flicker_cycle >= maximal_exposure)
+            {
+                continue;
+            }
             float exposure1 = std::max(std::min(i * flicker_cycle, maximal_exposure), flicker_cycle);
             float gain1 = base_gain;
             if ((exposure1 * gain1) != target_exposure)
             {
-                std::min(std::max(target_exposure / exposure1, base_gain), gain_limit);
+                gain1 = std::min(std::max(target_exposure / exposure1, base_gain), gain_limit);
             }
             float score1 = fabs(target_exposure - exposure1 * gain1);
             exposure_gain_score.push_back(std::tuple<float, float, float>(score1, exposure1, gain1));
@@ -1063,8 +1076,8 @@ namespace rsimpl
     float auto_exposure_algorithm::gain_to_value(float gain, rounding_mode_type rounding_mode)
     {
 
-        if (gain < 2.0f) { return 2.0f; }
-        else if (gain > 32.0f) { return 32.0f; }
+        if (gain < base_gain) { return base_gain; }
+        else if (gain > 16.0f) { return 16.0f; }
         else {
             if (rounding_mode == rounding_mode_type::ceil) return std::ceil(gain * 8.0f) / 8.0f;
             else if (rounding_mode == rounding_mode_type::floor) return std::floor(gain * 8.0f) / 8.0f;
