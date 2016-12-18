@@ -140,8 +140,8 @@ namespace sql
     }
 
     statement::row_value statement::iterator::operator*() const
-    { 
-        return row_value(m_owner, m_end); 
+    {
+        return row_value(m_owner, m_end);
     }
 
     void statement::row_value::assert_good() const
