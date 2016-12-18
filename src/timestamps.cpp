@@ -7,6 +7,11 @@ using namespace rsimpl;
 using namespace std;
 
 
+concurrent_queue::concurrent_queue() {
+    for (int i =0; i < RS_STREAM_COUNT; i++) {
+        latest_timestamps[i] = -1;
+    }
+}
 
 void concurrent_queue::push_back_data(rs_timestamp_data data)
 {
@@ -55,21 +60,23 @@ size_t concurrent_queue::size()
 bool concurrent_queue::correct( frame_interface& frame)
 {
     lock_guard<mutex> lock(mtx);
-   // mtx.lock();
-    
-   // std::cout << data_queue.size() << std::endl;
+
     auto it = find_if(data_queue.begin(), data_queue.end(),
                       [&](const rs_timestamp_data& element) {
         return ((frame.get_frame_number() == element.frame_number));
     });
 
+
     if (it != data_queue.end())
     {
-        frame.set_timestamp(it->timestamp);
-       // mtx.unlock();
+        if(latest_timestamps[frame.get_stream_type()] != -1 && it->timestamp < latest_timestamps[frame.get_stream_type()]) {
+            return false;
+        }
+        double ts = it->timestamp;
+        frame.set_timestamp(ts);
+        latest_timestamps[frame.get_stream_type()] = ts;
         return true;
     }
-    //mtx.unlock();
     return false;
 }
 
@@ -84,16 +91,13 @@ timestamp_corrector::~timestamp_corrector()
 
 void timestamp_corrector::on_timestamp(rs_timestamp_data data)
 {
-   // unique_lock<mutex> lock(mtx);
-    //mtx.lock();
-    if (data_queue[data.source_id].size() <= *event_queue_size)
+    lock_guard<mutex> lock(mtx);
+    if (data_queue[data.source_id].size() <= event_queue_size->load())
         data_queue[data.source_id].push_back_data(data);
-    if (data_queue[data.source_id].size() > *event_queue_size)
+    if (data_queue[data.source_id].size() > event_queue_size->load())
         data_queue[data.source_id].pop_front_data();
-    // std::cout << "received: " << data.frame_number << std::endl;
-   // lock.unlock();
-   // cv.notify_one();
-  // mtx.unlock();
+
+
 }
 
 void timestamp_corrector::update_source_id(rs_event_source& source_id, const rs_stream stream)
@@ -133,16 +137,18 @@ bool timestamp_corrector::correct_timestamp(frame_interface& frame, rs_stream st
     }*/
 
     auto start_time = std::chrono::high_resolution_clock::now();
+   // unique_lock<mutex> lock(mtx);
     while (!res && std::chrono::duration_cast<chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start_time).count() < (*events_timeout)) {
-       // unique_lock<mutex> lock(mtx);
-       // mtx.lock();
+
+       // lock.lock();
        // std::cout << "Searching for: " << frame.get_frame_number() << std::endl;
         res = data_queue[source_id].correct(frame);
         //cv.wait_for(lock,std::chrono::milliseconds((*events_timeout)));
-        //mtx.unlock();
+       //
+       // lock.unlock();
        // usleep(1000);
     }
-
+    //lock.unlock();
     if (res)
     {
         frame.set_timestamp_domain(RS_TIMESTAMP_DOMAIN_MICROCONTROLLER);

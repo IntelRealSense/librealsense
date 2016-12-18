@@ -25,6 +25,7 @@ namespace rsimpl
 
     class concurrent_queue{
     public:
+        concurrent_queue();
         void    push_back_data(rs_timestamp_data data);
         bool    pop_front_data();
         bool    erase(rs_timestamp_data data);
@@ -34,6 +35,8 @@ namespace rsimpl
         private:
         std::deque<rs_timestamp_data> data_queue;
         std::mutex mtx;
+        double latest_timestamps[RS_STREAM_COUNT];
+
 
     };
 
@@ -53,6 +56,7 @@ namespace rsimpl
         void on_timestamp(rs_timestamp_data data) override;
         bool correct_timestamp(frame_interface& frame, rs_stream stream) override;
         void release() override  {delete this;}
+
 
     private:
         void update_source_id(rs_event_source& source_id, const rs_stream stream);
