@@ -487,6 +487,7 @@ namespace rsimpl
                 info.pid = pid;
                 info.unique_id = unique_id;
                 info.mi = mi;
+                info.device_path = name;
                 try
                 {
                     action(info, ppDevices[i]);
