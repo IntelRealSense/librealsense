@@ -144,7 +144,7 @@ public:
         throw std::runtime_error("not a valid format");
         case RS_FORMAT_Z16:
         case RS_FORMAT_DISPARITY16:
-            rgb.resize(640 * 480 * 4);
+            rgb.resize(width * height * 4);
             make_depth_histogram(rgb.data(), reinterpret_cast<const uint16_t *>(data), width, height);
             glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 640, 480, 0, GL_RGB, GL_UNSIGNED_BYTE, rgb.data());
             
