@@ -7,6 +7,7 @@
 #include <iostream>
 #include <fstream>
 #include <streambuf>
+#include <motion/MotionDeviceDescriptor.h>
 
 using namespace rsimpl;
 using namespace rsimpl::ds;
@@ -140,15 +141,9 @@ namespace rsimpl
             return;
         motion_initialized = true;
         std::cout << "starting motion!" << std::endl;
-        motion::MotionDeviceDescriptor mipiMotionDevice =
-        {
-            0, //unique id
-            0, //imu id
-            3, //fisheye id
-            0
-        };
+
         motion::MotionDeviceManager *deviceManager = motion::MotionDeviceManager::instance();
-        deviceManager->AddMotionDeviceDescriptor(mipiMotionDevice);
+        deviceManager->AddMotionDeviceDescriptor(motion::motionDevices[0]);
 
         motion_device = deviceManager->connect(this,0);
 
