@@ -175,7 +175,7 @@ namespace rsimpl
                 start_time = other.start_time;
             }
 
-            int size() const { return calls.size(); }
+            size_t size() const { return calls.size(); }
 
         private:
             std::vector<call> calls;

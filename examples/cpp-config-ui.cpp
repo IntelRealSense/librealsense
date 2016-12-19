@@ -389,7 +389,7 @@ public:
 
             if (*it == def)
             {
-                *index = it - values.begin();
+                *index = (int)(it - values.begin());
                 return true;
             }
             if (*max_default < *it)
@@ -397,7 +397,7 @@ public:
                 max_default = it;
             }
         }
-        *index = max_default - values.begin();
+        *index = (int)(max_default - values.begin());
         return false;
     }
 
@@ -590,7 +590,9 @@ bool no_device_popup(GLFWwindow* window, const ImVec4& clear_color)
         ImGui::End();
         ImGui::Render();
         glfwSwapBuffers(window);
+        return true;
     }
+    return false;
 }
 
 int main(int, char**) try

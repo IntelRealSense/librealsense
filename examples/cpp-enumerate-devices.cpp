@@ -28,7 +28,7 @@ int main(int argc, char** argv) try
     // Obtain a list of devices currently present on the system
     rs::context ctx;
     auto devices = ctx.query_devices();
-    int device_count = devices.size();
+    size_t device_count = devices.size();
     if (!device_count)
     {
         printf("No device detected. Is it plugged in?\n");
@@ -52,6 +52,10 @@ int main(int argc, char** argv) try
                 << endl;
         }
 
+        if (show_options.getValue() || show_modes.getValue())
+            cout << "\n\nNote:  \"-s\" option is not compatible with the other flags specified,"
+                 << " all the additional options are skipped" << std::endl;
+
         return EXIT_SUCCESS;
     }
 
@@ -70,7 +74,6 @@ int main(int argc, char** argv) try
         }
 
         cout << endl;
-
 
         if (show_options.getValue())
         {
