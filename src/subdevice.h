@@ -29,7 +29,7 @@ namespace rsimpl
               _stream_profiles([this]() { return this->init_stream_profiles(); }) {}
 
         virtual std::vector<uvc::stream_profile> init_stream_profiles() = 0;
-        std::vector<uvc::stream_profile> get_stream_profiles()
+        const std::vector<uvc::stream_profile>& get_stream_profiles() const
         {
             return *_stream_profiles;
         }
@@ -67,7 +67,7 @@ namespace rsimpl
 
         const std::string& get_info(rs_camera_info info) const;
         bool supports_info(rs_camera_info info) const;
-        void register_info(rs_camera_info info, std::string val);
+        void register_info(rs_camera_info info, const std::string& val);
 
         void set_pose(pose p) { _pose = std::move(p); }
         const pose& get_pose() const { return _pose; }
@@ -195,7 +195,7 @@ namespace rsimpl
 
         std::vector<stream_profile> get_device_profiles();
 
-        int rs_stream_to_sensor_iio(rs_stream stream);
+        int rs_stream_to_sensor_iio(rs_stream stream) const;
 
         int get_iio_by_name(const std::string& name) const;
 

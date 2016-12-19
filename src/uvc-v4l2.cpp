@@ -128,9 +128,13 @@ namespace rsimpl
         // manage an IIO input. or what is called a scan.
         class hid_input {
         public:
-            hid_input() {
-                enabled = false;
-            }
+            hid_input()
+                : input(""),
+                  device_path(""),
+                  type(""),
+                  index(-1),
+                  enabled(false)
+            {}
 
             // initialize the input by reading the input parameters.
             bool init(const std::string& iio_device_path, const std::string& input_name) {
@@ -217,7 +221,14 @@ namespace rsimpl
         // declare device sensor with all of its inputs.
         class hid_backend {
         public:
-            hid_backend() : capturing(false) {}
+            hid_backend()
+                : vid(0),
+                  pid(0),
+                  iio_device(-1),
+                  sensor_name(""),
+                  callback(nullptr),
+                  capturing(false)
+            {}
             ~hid_backend() {
                 stop_capture();
 
@@ -269,7 +280,6 @@ namespace rsimpl
                 if (capturing)
                     return;
 
-                auto buf_len = 100;
                 std::ostringstream iio_read_device_path;
                 iio_read_device_path << "/dev/iio:device" << iio_device;
 
@@ -279,7 +289,7 @@ namespace rsimpl
 
                 // find iio_device in file system.
                 if (!iio_device_file.good()) {
-                    throw std::runtime_error("cant open iio_device_file!");
+                    throw std::runtime_error("iio hid device is busy or not found!");
                 }
 
                 iio_device_file.close();
@@ -297,7 +307,7 @@ namespace rsimpl
                 callback = sensor_callback;
                 capturing = true;
                 hid_thread = std::unique_ptr<std::thread>(new std::thread([this, buf_len, iio_read_device_path_str](){
-                    int fd;
+                    int fd = 0;
                     const auto max_retries = 10;
                     auto retries = 0;
                     while(++retries < max_retries)
@@ -309,7 +319,7 @@ namespace rsimpl
                         std::this_thread::sleep_for(std::chrono::milliseconds(5));
                     }
 
-                    if (retries == max_retries)
+                    if ((retries == max_retries) && (fd <= 0))
                     {
                         LOG_ERROR("open() failed with all retries!");
                         write_integer_to_param("buffer/enable", 0);
@@ -346,7 +356,7 @@ namespace rsimpl
 
                         auto *data_p = (int*) data;
                         auto i = 0;
-                        for( auto channel : this->channels) {
+                        for(auto& channel : this->channels) {
                             callback_data.add_input(hid_sensor{get_iio_device(), get_sensor_name()},
                                                     hid_sensor_input{channel->get_index(),
                                                     channel->get_name()}, data_p[i]);
@@ -400,7 +410,7 @@ namespace rsimpl
 
             // read the IIO device inputs.
             bool read_device_inputs(std::string device_path) {
-                DIR *dir;
+                DIR *dir = nullptr;
                 struct dirent *dir_ent;
 
                 auto scan_elements_path = device_path + "/scan_elements";
@@ -434,7 +444,7 @@ namespace rsimpl
                 }
             }
 
-            // write an integer value to a iio param.
+            // configure hid device via fd
             bool write_integer_to_param(const std::string& param,int value) {
                 std::ostringstream iio_device_path;
                 iio_device_path << "/sys/bus/iio/devices/iio:device" << iio_device << "/" << param;
@@ -452,6 +462,8 @@ namespace rsimpl
 
                 return true;
             }
+
+            static const int buf_len = 100;
             int vid;
             int pid;
             int iio_device;
@@ -629,7 +641,7 @@ namespace rsimpl
                             auto device_path = std::string(node->fts_path);
                             if (!std::regex_search(device_path, m, std::regex("/sys/devices/pci0000:00/.*(\\S{1})-(\\S{1}).*(\\S{4}):(\\S{4}):(\\S{4}).(\\S{4})/(.*)/iio:device(\\d{1,3})/name$")))
                             {
-                                throw std::runtime_error(to_string() << "regex is not valid!");
+                                throw std::runtime_error(to_string() << "HID enumeration failed. couldn't parse iio hid device path, regex is not valid!");
                             }
 
                             hid_device_info hid_dev_info;
@@ -853,7 +865,7 @@ namespace rsimpl
                         info.vid = vid;
                         info.mi = mi;
                         info.id = dev_name;
-                        info.device_path = std::string(buff);;
+                        info.device_path = std::string(buff);
                         get_usb_port_id_from_vid_pid(vid, pid, info.unique_id);
                         action(info, dev_name);
                     }

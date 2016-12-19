@@ -350,7 +350,7 @@ void rs_open(rs_device* device, rs_stream stream,
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device, stream, width, height, fps, format)
 
-void rs_open_many(rs_device* device,
+void rs_open_multiple(rs_device* device,
     const rs_stream* stream, const int* width, const int* height, const int* fps, 
     const rs_format* format, int count, rs_error** error) try
 {
@@ -427,7 +427,7 @@ const char* rs_get_camera_info(const rs_device* device, rs_camera_info info, rs_
     {
         return device->device->get_endpoint(device->subdevice).get_info(info).c_str();
     }
-    throw std::runtime_error("info not supported!");
+    throw std::runtime_error(rsimpl::to_string() << "info " << rs_camera_info_to_string(info) << " not supported by subdevice " << device->subdevice);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, device, info)
 

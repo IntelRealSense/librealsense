@@ -247,7 +247,7 @@ namespace rs
             rs_error * e = nullptr;
             auto r = rs_get_frame_format(frame_ref, &e);
             error::handle(e);
-            return r;;
+            return r;
         }
 
         /**
@@ -374,7 +374,7 @@ namespace rs
                 streams.push_back(p.stream);
             }
 
-            rs_open_many(_dev.get(),
+            rs_open_multiple(_dev.get(),
                 streams.data(),
                 widths.data(),
                 heights.data(),

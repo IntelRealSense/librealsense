@@ -54,7 +54,7 @@ int main()
     int fpss[] = { 30, 30 };
     rs_format formats[] = { RS_FORMAT_Z16, RS_FORMAT_Y8 };
 
-    rs_open_many(dev, streams, widths, heights, fpss, formats, 2, &e);
+    rs_open_multiple(dev, streams, widths, heights, fpss, formats, 2, &e);
     check_error();
 
     rs_frame_queue * queue = rs_create_frame_queue(10, &e);

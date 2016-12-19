@@ -153,7 +153,7 @@ std::vector<stream_profile> uvc_endpoint::get_principal_requests()
     for (auto&& p : profiles)
     {
         supported_formats.insert(p.format);
-        native_pixel_format pf;
+        native_pixel_format pf{};
         if (try_get_pf(p, pf))
         {
             for (auto&& unpacker : pf.unpackers)
@@ -210,9 +210,9 @@ void uvc_endpoint::open(const std::vector<stream_profile>& requests)
 {
     std::lock_guard<std::mutex> lock(_configure_lock);
     if (_is_streaming)
-        throw std::runtime_error("Device is streaming!");
+        throw std::runtime_error("open(...) failed. UVC device is streaming!");
     else if (_is_opened)
-        throw std::runtime_error("Device is already opened!");
+        throw std::runtime_error("open(...) failed. Hid device is already opened!");
 
     auto on = std::unique_ptr<power>(new power(shared_from_this()));
     _archive = std::make_shared<frame_archive>(&_max_publish_list_size);
@@ -364,9 +364,9 @@ void uvc_endpoint::close()
 {
     std::lock_guard<std::mutex> lock(_configure_lock);
     if (_is_streaming)
-        throw std::runtime_error("Device is streaming!");
+        throw std::runtime_error("close() failed. UVC device is streaming!");
     else if (!_is_opened)
-        throw std::runtime_error("Device was not opened!");
+        throw std::runtime_error("close() failed. UVC device was not opened!");
 
     reset_streaming();
     _power.reset();
@@ -388,7 +388,7 @@ void uvc_endpoint::start_streaming(frame_callback_ptr callback)
 {
     std::lock_guard<std::mutex> lock(_configure_lock);
     if (_is_streaming)
-        throw std::runtime_error("Device is already streaming!");
+        throw std::runtime_error("start_streaming(...) failed. UVC device is already streaming!");
 
     _callback = std::move(callback);
     _is_streaming = true;
@@ -398,7 +398,7 @@ void uvc_endpoint::stop_streaming()
 {
     std::lock_guard<std::mutex> lock(_configure_lock);
     if (!_is_streaming)
-        throw std::runtime_error("Device is not streaming!");
+        throw std::runtime_error("stop_streaming() failed. UVC device is not streaming!");
 
     _is_streaming = false;
     for (auto& profile : _configuration)
@@ -467,7 +467,7 @@ bool endpoint::supports_info(rs_camera_info info) const
     return it != _camera_info.end();
 }
 
-void endpoint::register_info(rs_camera_info info, std::string val)
+void endpoint::register_info(rs_camera_info info, const std::string& val)
 {
     if (supports_info(info) && (get_info(info) != val)) // Append existing infos
     {
@@ -532,9 +532,9 @@ void hid_endpoint::open(const std::vector<stream_profile>& requests)
 {
     std::lock_guard<std::mutex> lock(_configure_lock);
     if (_is_streaming)
-        throw std::runtime_error("Device is streaming!");
+        throw std::runtime_error("open(...) failed. Hid device is streaming!");
     else if (_is_opened)
-        throw std::runtime_error("Device is already opened!");
+        throw std::runtime_error("Hid device is already opened!");
 
     _hid_device->open();
     for (auto& elem : requests)
@@ -544,14 +544,13 @@ void hid_endpoint::open(const std::vector<stream_profile>& requests)
     _is_opened = true;
 }
 
-// TODO: lock device on open and unlock on close
 void hid_endpoint::close()
 {
     std::lock_guard<std::mutex> lock(_configure_lock);
     if (_is_streaming)
-        throw std::runtime_error("Device is streaming!");
+        throw std::runtime_error("close() failed. Hid device is streaming!");
     else if (!_is_opened)
-        throw std::runtime_error("Device was not opened!");
+        throw std::runtime_error("close() failed. Hid device was not opened!");
 
     _hid_device->close();
     _configured_sensor_iio.clear();
@@ -562,9 +561,9 @@ void hid_endpoint::start_streaming(frame_callback_ptr callback)
 {
     std::lock_guard<std::mutex> lock(_configure_lock);
     if (_is_streaming)
-        throw std::runtime_error("Device is already streaming!");
+        throw std::runtime_error("start_streaming(...) failed. Hid device is already streaming!");
     else if(!_is_opened)
-        throw std::runtime_error("Device was not opened!");
+        throw std::runtime_error("start_streaming(...) failed. Hid device was not opened!");
 
     _archive = std::make_shared<frame_archive>(&_max_publish_list_size);
     _callback = std::move(callback);
@@ -591,7 +590,7 @@ void hid_endpoint::stop_streaming()
 {
     std::lock_guard<std::mutex> lock(_configure_lock);
     if (!_is_streaming)
-        throw std::runtime_error("Device is not streaming!");
+        throw std::runtime_error("stop_streaming() failed. Hid device is not streaming!");
 
 
     _hid_device->stop_capture();
@@ -618,7 +617,7 @@ std::vector<stream_profile> hid_endpoint::get_device_profiles()
     return stream_requests;
 }
 
-int hid_endpoint::rs_stream_to_sensor_iio(rs_stream stream)
+int hid_endpoint::rs_stream_to_sensor_iio(rs_stream stream) const
 {
     for (auto& elem : sensor_name_and_stream_format)
     {
@@ -646,7 +645,7 @@ hid_endpoint::stream_format hid_endpoint::sensor_name_to_stream_format(const std
     }
     catch(std::out_of_range)
     {
-        throw std::runtime_error("format not found!");
+        throw std::runtime_error(to_string() << "format of sensor name " << sensor_name << " not found!");
     }
 
     return stream_and_format;

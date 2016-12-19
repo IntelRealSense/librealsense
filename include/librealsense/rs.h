@@ -320,7 +320,7 @@ void rs_open(rs_device* device, rs_stream stream, int width, int height, int fps
 * \param[in] count      number of simultenous stream profiles to configure
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 */
-void rs_open_many(rs_device* device, const rs_stream* stream, const int* width,
+void rs_open_multiple(rs_device* device, const rs_stream* stream, const int* width,
     const int* height, const int* fps, const rs_format* format, int count, rs_error** error);
 
 /**

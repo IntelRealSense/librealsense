@@ -181,7 +181,7 @@ bool frame::supports_frame_metadata(rs_frame_metadata frame_metadata) const
 
 const byte* frame::get_frame_data() const
 {
-    const byte* frame_data = data.data();;
+    const byte* frame_data = data.data();
 
     if (on_release.get_data())
     {

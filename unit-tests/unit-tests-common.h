@@ -31,7 +31,7 @@
 #define NOEXCEPT_FALSE noexcept(false)
 #endif
 
-static std::string space_to_underscore(const std::string& text) {
+inline std::string space_to_underscore(const std::string& text) {
     const std::string from = " ";
     const std::string to = "__";
     auto temp = text;
