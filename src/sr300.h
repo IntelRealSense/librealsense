@@ -80,7 +80,8 @@ namespace rsimpl
         static std::shared_ptr<uvc_endpoint> create_color_device(const uvc::backend& backend, 
                                                                  const uvc::uvc_device_info& color)
         {
-            auto color_ep = std::make_shared<uvc_endpoint>(backend.create_uvc_device(color));
+            auto color_ep = std::make_shared<uvc_endpoint>(backend.create_uvc_device(color),
+                                                           std::unique_ptr<frame_timestamp_reader>(new rolling_timestamp_reader()));
             color_ep->register_pixel_format(pf_yuy2);
             color_ep->register_pixel_format(pf_yuyv);
 
@@ -108,7 +109,8 @@ namespace rsimpl
             using namespace ivcam;
 
             // create uvc-endpoint from backend uvc-device
-            auto depth_ep = std::make_shared<uvc_endpoint>(backend.create_uvc_device(depth));
+            auto depth_ep = std::make_shared<uvc_endpoint>(backend.create_uvc_device(depth),
+                                                           std::unique_ptr<frame_timestamp_reader>(new rolling_timestamp_reader()));
             depth_ep->register_xu(depth_xu); // make sure the XU is initialized everytime we power the camera
             depth_ep->register_pixel_format(pf_invz);
             depth_ep->register_pixel_format(pf_sr300_inzi);

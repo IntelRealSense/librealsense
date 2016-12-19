@@ -99,6 +99,7 @@ namespace rsimpl
         virtual bool validate_frame(const request_mapping & mode, const void * frame) const = 0;
         virtual double get_frame_timestamp(const request_mapping& mode, const void * frame) = 0;
         virtual unsigned long long get_frame_counter(const request_mapping& mode, const void * frame) const = 0;
+        virtual void reset() = 0;
     };
 
     // TODO: This may need to be modified for thread safety
@@ -107,9 +108,17 @@ namespace rsimpl
         bool started;
         int64_t total;
         int last_timestamp;
-        mutable int64_t counter = 0;
+        mutable int64_t counter;
     public:
-        rolling_timestamp_reader() : started(), total() {}
+        rolling_timestamp_reader() : started(false), total(0), last_timestamp(0), counter(0) {}
+
+        void reset() override
+        {
+            started = false;
+            total = 0;
+            last_timestamp = 0;
+            counter = 0;
+        }
 
         bool validate_frame(const request_mapping& mode, const void * frame) const override
         {
@@ -205,8 +214,12 @@ namespace rsimpl
     class uvc_endpoint : public endpoint, public std::enable_shared_from_this<uvc_endpoint>
     {
     public:
-        explicit uvc_endpoint(std::shared_ptr<uvc::uvc_device> uvc_device)
-            : _device(std::move(uvc_device)), _user_count(0) {}
+        explicit uvc_endpoint(std::shared_ptr<uvc::uvc_device> uvc_device,
+                              std::unique_ptr<frame_timestamp_reader> timestamp_reader)
+            : _device(std::move(uvc_device)),
+              _user_count(0),
+              _timestamp_reader(std::move(timestamp_reader))
+        {}
 
         ~uvc_endpoint();
 
@@ -217,8 +230,6 @@ namespace rsimpl
         void close() override;
 
         void register_xu(uvc::extension_unit xu);
-
-        std::vector<std::shared_ptr<frame_timestamp_reader>> create_frame_timestamp_readers() const;
 
         template<class T>
         auto invoke_powered(T action)
@@ -268,5 +279,6 @@ namespace rsimpl
         std::vector<uvc::stream_profile> _configuration;
         std::vector<uvc::extension_unit> _xus;
         std::unique_ptr<power> _power;
+        std::unique_ptr<frame_timestamp_reader> _timestamp_reader;
     };
 }

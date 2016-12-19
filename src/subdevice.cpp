@@ -218,8 +218,7 @@ void uvc_endpoint::open(const std::vector<stream_profile>& requests)
     _archive = std::make_shared<frame_archive>(&_max_publish_list_size);
     auto mapping = resolve_requests(requests);
 
-    auto timestamp_readers = create_frame_timestamp_readers();
-    auto timestamp_reader = timestamp_readers[0];
+    auto timestamp_reader = _timestamp_reader.get();
 
     std::vector<request_mapping> commited;
     for (auto& mode : mapping)
@@ -229,9 +228,8 @@ void uvc_endpoint::open(const std::vector<stream_profile>& requests)
             using namespace std::chrono;
 
             auto start = high_resolution_clock::now();
-            auto frame_number = 0;
             _device->probe_and_commit(mode.profile,
-            [this, mode, start, frame_number, timestamp_reader, requests](uvc::stream_profile p, uvc::frame_object f) mutable
+            [this, mode, start, timestamp_reader, requests](uvc::stream_profile p, uvc::frame_object f) mutable
             {
             if (!this->is_streaming())
                 return;
@@ -278,7 +276,7 @@ void uvc_endpoint::open(const std::vector<stream_profile>& requests)
             {
                 auto bpp = get_image_bpp(output.second);
                 frame_additional_data additional_data(timestamp,
-                    frame_number++,
+                    frame_counter,
                     system_time,
                     width,
                     height,
@@ -378,12 +376,6 @@ void uvc_endpoint::register_xu(uvc::extension_unit xu)
     _xus.push_back(std::move(xu));
 }
 
-std::vector<std::shared_ptr<frame_timestamp_reader>> uvc_endpoint::create_frame_timestamp_readers() const
-{
-    auto the_reader = std::make_shared<rolling_timestamp_reader>(); // single shared timestamp reader for all subdevices
-    return{ the_reader, the_reader };                               // clone the reference for color and depth
-}
-
 void uvc_endpoint::start_streaming(frame_callback_ptr callback)
 {
     std::lock_guard<std::mutex> lock(_configure_lock);
@@ -414,6 +406,7 @@ void uvc_endpoint::reset_streaming()
     _configuration.clear();
     _callback.reset();
     _archive.reset();
+    _timestamp_reader->reset();
 }
 
 void uvc_endpoint::acquire_power()
