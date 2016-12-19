@@ -23,7 +23,7 @@ EXPORTS
     rs_delete_modes_list
 
     rs_open
-    rs_open_many
+    rs_open_multiple
     rs_close
 
     rs_start
