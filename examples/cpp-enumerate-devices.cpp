@@ -28,7 +28,7 @@ int main(int argc, char** argv) try
     // Obtain a list of devices currently present on the system
     rs::context ctx;
     auto devices = ctx.query_devices();
-    int device_count = devices.size();
+    size_t device_count = devices.size();
     if (!device_count)
     {
         printf("No device detected. Is it plugged in?\n");
