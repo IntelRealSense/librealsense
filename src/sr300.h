@@ -18,6 +18,63 @@ namespace rsimpl
 
     class sr300_camera;
 
+    // TODO: This may need to be modified for thread safety
+    class sr300_timestamp_reader : public frame_timestamp_reader
+    {
+        bool started;
+        int64_t total;
+        int last_timestamp;
+        mutable int64_t counter;
+    public:
+        sr300_timestamp_reader() : started(false), total(0), last_timestamp(0), counter(0) {}
+
+        void reset() override
+        {
+            started = false;
+            total = 0;
+            last_timestamp = 0;
+            counter = 0;
+        }
+
+        bool validate_frame(const request_mapping& mode, const void * frame) const override
+        {
+            // Validate that at least one byte of the image is nonzero
+            for (const uint8_t * it = (const uint8_t *)frame, *end = it + mode.pf->get_image_size(mode.profile.width, mode.profile.height); it != end; ++it)
+            {
+                if (*it)
+                {
+                    return true;
+                }
+            }
+
+            // F200 and SR300 can sometimes produce empty frames shortly after starting, ignore them
+            //LOG_INFO("Subdevice " << mode.subdevice << " produced empty frame");
+            return false;
+        }
+
+        double get_frame_timestamp(const request_mapping& /*mode*/, const void * frame) override
+        {
+            // Timestamps are encoded within the first 32 bits of the image
+            int rolling_timestamp = *reinterpret_cast<const int32_t *>(frame);
+
+            if (!started)
+            {
+                last_timestamp = rolling_timestamp;
+                started = true;
+            }
+
+            const int delta = rolling_timestamp - last_timestamp; // NOTE: Relies on undefined behavior: signed int wraparound
+            last_timestamp = rolling_timestamp;
+            total += delta;
+            const int timestamp = static_cast<int>(total / 100000);
+            return timestamp;
+        }
+        unsigned long long get_frame_counter(const request_mapping & /*mode*/, const void * /*frame*/) const override
+        {
+            return ++counter;
+        }
+    };
+
     class sr300_info : public device_info
     {
     public:
@@ -81,7 +138,7 @@ namespace rsimpl
                                                                  const uvc::uvc_device_info& color)
         {
             auto color_ep = std::make_shared<uvc_endpoint>(backend.create_uvc_device(color),
-                                                           std::unique_ptr<frame_timestamp_reader>(new rolling_timestamp_reader()));
+                                                           std::unique_ptr<frame_timestamp_reader>(new sr300_timestamp_reader()));
             color_ep->register_pixel_format(pf_yuy2);
             color_ep->register_pixel_format(pf_yuyv);
 
@@ -110,7 +167,7 @@ namespace rsimpl
 
             // create uvc-endpoint from backend uvc-device
             auto depth_ep = std::make_shared<uvc_endpoint>(backend.create_uvc_device(depth),
-                                                           std::unique_ptr<frame_timestamp_reader>(new rolling_timestamp_reader()));
+                                                           std::unique_ptr<frame_timestamp_reader>(new sr300_timestamp_reader()));
             depth_ep->register_xu(depth_xu); // make sure the XU is initialized everytime we power the camera
             depth_ep->register_pixel_format(pf_invz);
             depth_ep->register_pixel_format(pf_sr300_inzi);

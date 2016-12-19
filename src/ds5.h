@@ -18,6 +18,49 @@ namespace rsimpl
 
     class ds5_camera;
 
+    // TODO: This may need to be modified for thread safety
+    class ds5_timestamp_reader : public frame_timestamp_reader
+    {
+        bool started;
+        int64_t total;
+        int last_timestamp;
+        mutable int64_t counter;
+    public:
+        ds5_timestamp_reader() : started(false), total(0), last_timestamp(0), counter(0) {}
+
+        void reset() override
+        {
+            started = false;
+            total = 0;
+            last_timestamp = 0;
+            counter = 0;
+        }
+
+        bool validate_frame(const request_mapping& mode, const void * frame) const override
+        {
+            // Validate that at least one byte of the image is nonzero
+            for (const uint8_t * it = (const uint8_t *)frame, *end = it + mode.pf->get_image_size(mode.profile.width, mode.profile.height); it != end; ++it)
+            {
+                if (*it)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        double get_frame_timestamp(const request_mapping& /*mode*/, const void * frame) override
+        {
+            return 0;
+        }
+
+        unsigned long long get_frame_counter(const request_mapping & /*mode*/, const void * /*frame*/) const override
+        {
+            return ++counter;
+        }
+    };
+
     class ds5_info : public device_info
     {
     public:
@@ -96,7 +139,7 @@ namespace rsimpl
                 depth_devices.push_back(backend.create_uvc_device(info));
 
             auto depth_ep = std::make_shared<uvc_endpoint>(std::make_shared<uvc::multi_pins_uvc_device>(depth_devices),
-                                                           std::unique_ptr<frame_timestamp_reader>(new rolling_timestamp_reader()));
+                                                           std::unique_ptr<frame_timestamp_reader>(new ds5_timestamp_reader()));
             depth_ep->register_xu(depth_xu); // make sure the XU is initialized everytime we power the camera
             depth_ep->register_pixel_format(pf_z16); // Depth
             depth_ep->register_pixel_format(pf_y8); // Left Only - Luminance
@@ -160,7 +203,7 @@ namespace rsimpl
                     throw std::runtime_error("RS450 model is expected to include a single fish-eye device!");
 
                 fisheye_ep = std::make_shared<uvc_endpoint>(backend.create_uvc_device(fisheye_infos.front()),
-                                                            std::unique_ptr<frame_timestamp_reader>(new rolling_timestamp_reader()));
+                                                            std::unique_ptr<frame_timestamp_reader>(new ds5_timestamp_reader()));
                 fisheye_ep->register_xu(fisheye_xu); // make sure the XU is initialized everytime we power the camera
                 fisheye_ep->register_pixel_format(pf_raw8);
                 fisheye_ep->register_pu(RS_OPTION_GAIN);

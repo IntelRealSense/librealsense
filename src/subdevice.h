@@ -102,63 +102,6 @@ namespace rsimpl
         virtual void reset() = 0;
     };
 
-    // TODO: This may need to be modified for thread safety
-    class rolling_timestamp_reader : public frame_timestamp_reader
-    {
-        bool started;
-        int64_t total;
-        int last_timestamp;
-        mutable int64_t counter;
-    public:
-        rolling_timestamp_reader() : started(false), total(0), last_timestamp(0), counter(0) {}
-
-        void reset() override
-        {
-            started = false;
-            total = 0;
-            last_timestamp = 0;
-            counter = 0;
-        }
-
-        bool validate_frame(const request_mapping& mode, const void * frame) const override
-        {
-            // Validate that at least one byte of the image is nonzero
-            for (const uint8_t * it = (const uint8_t *)frame, *end = it + mode.pf->get_image_size(mode.profile.width, mode.profile.height); it != end; ++it)
-            {
-                if (*it)
-                {
-                    return true;
-                }
-            }
-
-            // F200 and SR300 can sometimes produce empty frames shortly after starting, ignore them
-            //LOG_INFO("Subdevice " << mode.subdevice << " produced empty frame");
-            return false;
-        }
-
-        double get_frame_timestamp(const request_mapping& /*mode*/, const void * frame) override
-        {
-            // Timestamps are encoded within the first 32 bits of the image
-            int rolling_timestamp = *reinterpret_cast<const int32_t *>(frame);
-
-            if (!started)
-            {
-                last_timestamp = rolling_timestamp;
-                started = true;
-            }
-
-            const int delta = rolling_timestamp - last_timestamp; // NOTE: Relies on undefined behavior: signed int wraparound
-            last_timestamp = rolling_timestamp;
-            total += delta;
-            const int timestamp = static_cast<int>(total / 100000);
-            return timestamp;
-        }
-        unsigned long long get_frame_counter(const request_mapping & /*mode*/, const void * /*frame*/) const override
-        {
-            return ++counter;
-        }
-    };
-
     class hid_endpoint : public endpoint, public std::enable_shared_from_this<hid_endpoint>
     {
     public:
