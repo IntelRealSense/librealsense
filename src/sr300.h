@@ -204,20 +204,20 @@ namespace rsimpl
             };
 
             const float arr_values[RS_VISUAL_PRESET_COUNT][DEPTH_CONTROLS] = {
-                { 1,  1,  5,  1, -1 }, /* ShortRange                */
-                { 1,  1,  7,  0, -1 }, /* LongRange                 */
-                { 16,  1,  6,  2, 22 }, /* BackgroundSegmentation    */
-                { 1,  1,  6,  3, -1 }, /* GestureRecognition        */
-                { 1,  1,  3,  1,  9 }, /* ObjectScanning            */
-                { 16,  1,  5,  1, 22 }, /* FaceAnalytics             */
-                { 1, -1, -1, -1, -1 }, /* FaceLogin                 */
-                { 1,  1,  6,  1, -1 }, /* GRCursor                  */
-                { 16,  1,  5,  3,  9 }, /* Default                   */
-                { 1,  1,  5,  1, -1 }, /* MidRange                  */
-                { 1, -1, -1, -1, -1 }  /* IROnly                    */
+                { 1,    1,   5,   1,  -1 }, /* ShortRange                */
+                { 1,    1,   7,   0,  -1 }, /* LongRange                 */
+                { 16,   1,   6,   2,  22 }, /* BackgroundSegmentation    */
+                { 1,    1,   6,   3,  -1 }, /* GestureRecognition        */
+                { 1,    1,   3,   1,   9 }, /* ObjectScanning            */
+                { 16,   1,   5,   1,  22 }, /* FaceAnalytics             */
+                { 1,   -1,  -1,  -1,  -1 }, /* FaceLogin                 */
+                { 1,    1,   6,   1,  -1 }, /* GRCursor                  */
+                { 16,   1,   5,   3,   9 }, /* Default                   */
+                { 1,    1,   5,   1,  -1 }, /* MidRange                  */
+                { 1,   -1,  -1,  -1, - 1 }  /* IROnly                    */
             };
 
-            // The Default preset is handled differntly from all the rest,
+            // The Default preset is handled differently from all the rest,
             // When the user applies the Default preset the camera is expected to return to
             // Default values of depth options:
             if (preset == RS_VISUAL_PRESET_DEFAULT)
@@ -255,7 +255,7 @@ namespace rsimpl
             if (subdevice == _depth_device_idx)
                 return make_depth_intrinsics(get_calibration(), { int(profile.width), int(profile.height) });
 
-            throw std::runtime_error("Not Implemented");
+            throw std::runtime_error(to_string() << "Intrinsic is not implemented for subdevice num " << subdevice);
         }
 
     private:

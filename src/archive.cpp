@@ -138,7 +138,7 @@ void frame_archive::flush()
     if (pending_frames > 0)
     {
         LOG_WARNING("The user was holding on to " 
-            << pending_frames << " frames after stream 0x" 
+            << std::dec << pending_frames << " frames after stream 0x"
             << std::hex << this << " stopped");
     }
     // frames and their frame refs are not flushed, by design

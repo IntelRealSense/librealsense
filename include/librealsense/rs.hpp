@@ -313,7 +313,7 @@ namespace rs
 
             rs_error* e = nullptr;
             std::shared_ptr<rs_raw_data_buffer> list(
-                rs_send_and_receive_raw_data(_dev.get(), (void*)input.data(), input.size(), &e),
+                rs_send_and_receive_raw_data(_dev.get(), (void*)input.data(), (uint32_t)input.size(), &e),
                 rs_delete_raw_data);
             error::handle(e);
 
