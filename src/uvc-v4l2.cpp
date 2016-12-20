@@ -104,9 +104,10 @@ namespace rsimpl
 
             auto usb_device = libusb_get_device(usb_dev_handle);
             if(!usb_device) throw std::runtime_error(to_string() << "libusb_get_device(...)");
+
+            usb_port_id = get_usb_port_id(usb_device);
             libusb_close(usb_dev_handle);
             libusb_exit(usb_context);
-            usb_port_id = get_usb_port_id(usb_device);
         }
 
         // hold all captured inputs in a specific trigger.
