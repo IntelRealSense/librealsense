@@ -30,23 +30,35 @@ namespace rs
             class multistream
             {
             public:
-                multistream() : streams(), intrinsics() {}
-                explicit multistream(std::vector<typename Dev::Streaming_lock_type> streams,
-                    std::map<rs_stream, rs_intrinsics> intrinsics,
-                    std::map<rs_stream, Dev> devices)
-                    : streams(std::move(streams)),
+            multistream() : intrinsics() {}
+            explicit multistream(std::vector<Dev> results,
+                                 std::map<rs_stream, rs_intrinsics> intrinsics,
+                                 std::map<rs_stream, Dev> devices)
+                : results(std::move(results)),
                     intrinsics(std::move(intrinsics)),
                     devices(std::move(devices)) {}
 
+            ~multistream()
+            {
+                try{
+                    stop();
+                }
+                catch(...)
+                {
+
+                }
+            }
                 template<class T>
                 void start(T callback)
                 {
-                    for (auto&& stream : streams) stream.start(callback);
+                    for (auto&& dev : results)
+                        dev.start(callback);
                 }
 
                 void stop()
                 {
-                    for (auto&& stream : streams) stream.stop();
+                    for (auto&& dev : results)
+                        dev.stop();
                 }
 
                 rs_intrinsics get_intrinsics(rs_stream stream) try
@@ -68,9 +80,10 @@ namespace rs
                 }
 
             private:
-                std::vector<typename Dev::Streaming_lock_type> streams;
-                std::map<rs_stream, rs_intrinsics> intrinsics;
-                std::map<rs_stream, Dev> devices;
+            std::vector<Dev> streams;
+            std::map<rs_stream, rs_intrinsics> intrinsics;
+            std::map<rs_stream, Dev> devices;
+            std::vector<Dev> results;
             };
 
             Config() {}
@@ -104,10 +117,15 @@ namespace rs
                 _requests.clear();
             }
 
+            void close(Dev dev)
+            {
+                dev.close();
+            }
+
             multistream open(Dev dev)
             {
-                std::vector<rs_stream> satisfied_streams;   // don't send the same stream to multiple subdevices
-                std::vector<typename Dev::Streaming_lock_type> results;
+                std::vector<Dev> results;
+                std::vector<rs_stream> satisfied_streams;
                 std::map<rs_stream, rs_intrinsics> intrinsics;
                 std::map<rs_stream, Dev> devices;
 
@@ -176,14 +194,27 @@ namespace rs
                     if (targets.size() > 0) // if subdevice is handling any streams
                     {
                         auto_complete(targets, sub);
-                        results.push_back(sub.open(targets));
+
+                        try{
+                            sub.open(targets); // TODO: RAII device streaming
+                        }
+                        catch(...)
+                        {
+                            for (auto&& elem : results)
+                                elem.close();
+
+                            results.clear();
+                            throw;
+                        }
+
                         for (auto && target : targets)
                         {
                             intrinsics.emplace(std::make_pair(target.stream,
                                 sub.get_intrinsics(target)));
                             devices.emplace(std::make_pair(target.stream, sub));
                         }
-                            
+                        results.push_back(std::move(sub));
+
                     }
                 }
                 return multistream( move(results), move(intrinsics), move(devices) );

@@ -29,8 +29,8 @@ int main() try
     std::vector<rs_stream> supported_streams = { RS_STREAM_DEPTH, RS_STREAM_INFRARED, RS_STREAM_COLOR };
 
     // Configure the relevant subdevices of the RealSense camera
-    auto depth_stream = dev.open({ { RS_STREAM_DEPTH, 640, 480, 30, RS_FORMAT_Z16 },
-                                   { RS_STREAM_INFRARED, 640, 480, 30, RS_FORMAT_Y8 } });
+    dev.open({ { RS_STREAM_DEPTH, 640, 480, 30, RS_FORMAT_Z16 },
+               { RS_STREAM_INFRARED, 640, 480, 30, RS_FORMAT_Y8 } });
 
     // Create frame queue to pass new frames from the device to our application
     rs::frame_queue queue(RS_STREAM_COUNT);
@@ -38,7 +38,7 @@ int main() try
     rs::frame frontbuffer[RS_STREAM_COUNT];
 
     // Start the physical devices and specify our frame queue as the target
-    depth_stream.start(queue);
+    dev.start(queue);
 
     // Open a GLFW window to display our output
     glfwInit();

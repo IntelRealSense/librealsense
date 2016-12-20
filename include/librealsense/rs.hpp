@@ -247,7 +247,7 @@ namespace rs
             rs_error * e = nullptr;
             auto r = rs_get_frame_format(frame_ref, &e);
             error::handle(e);
-            return r;;
+            return r;
         }
 
         /**
@@ -293,40 +293,6 @@ namespace rs
         void release() override { delete this; }
     };
 
-    class streaming_lock
-    {
-    public:
-
-        /**
-        * start streaming from specified configured device
-        * \param[in] callback callback object created from c++ application. ownership over the callback object is moved into the relevant streaming lock
-        */
-        template<class T>
-        void start(T callback) const
-        {
-            rs_error * e = nullptr;
-            rs_start_cpp(_lock.get(), new frame_callback<T>(std::move(callback)), &e);
-            error::handle(e);
-        }
-
-        /**
-        * stops streaming from specified configured device
-        */
-        void stop() const
-        {
-            rs_error * e = nullptr;
-            rs_stop(_lock.get(), &e);
-            error::handle(e);
-        }
-        streaming_lock() : _lock(nullptr) {}
-    private:
-        friend device;
-        explicit streaming_lock(std::shared_ptr<rs_streaming_lock> lock)
-            : _lock(std::move(lock)) {}
-
-        std::shared_ptr<rs_streaming_lock> _lock;
-    };
-
     struct option_range
     {
         float min;
@@ -347,7 +313,7 @@ namespace rs
 
             rs_error* e = nullptr;
             std::shared_ptr<rs_raw_data_buffer> list(
-                rs_send_and_receive_raw_data(_dev.get(), (void*)input.data(), input.size(), &e),
+                rs_send_and_receive_raw_data(_dev.get(), (void*)input.data(), (uint32_t)input.size(), &e),
                 rs_delete_raw_data);
             error::handle(e);
 
@@ -371,32 +337,26 @@ namespace rs
         /**
         * open subdevice for exclusive access, by commiting to a configuration
         * \param[in] profile    configuration commited by the device
-        * \return               exclusive lock to be used for streaming
         */
-        streaming_lock open(const stream_profile& profile) const
+        void open(const stream_profile& profile) const
         {
             rs_error* e = nullptr;
-            std::shared_ptr<rs_streaming_lock> lock(
-                rs_open(_dev.get(),
-                    profile.stream,
-                    profile.width,
-                    profile.height,
-                    profile.fps,
-                    profile.format,
-                    &e),
-                rs_close);
+            rs_open(_dev.get(),
+                profile.stream,
+                profile.width,
+                profile.height,
+                profile.fps,
+                profile.format,
+                &e);
             error::handle(e);
-
-            return streaming_lock(lock);
         }
 
         /**
         * open subdevice for exclusive access, by commiting to composite configuration, specifying one or more stream profiles
         * this method should be used for interdendent streams, such as depth and infrared, that have to be configured together
-        * \param[in] vector of configurations to be commited by the device
-        * \return exclusive lock to be used for streaming
+        * \param[in] profiles   vector of configurations to be commited by the device
         */
-        streaming_lock open(const std::vector<stream_profile>& profiles) const
+        void open(const std::vector<stream_profile>& profiles) const
         {
             rs_error* e = nullptr;
 
@@ -414,19 +374,48 @@ namespace rs
                 streams.push_back(p.stream);
             }
 
-            std::shared_ptr<rs_streaming_lock> lock(
-                rs_open_many(_dev.get(),
-                    streams.data(),
-                    widths.data(),
-                    heights.data(),
-                    fpss.data(),
-                    formats.data(),
-                    static_cast<int>(profiles.size()),
-                    &e),
-                rs_close);
+            rs_open_multiple(_dev.get(),
+                streams.data(),
+                widths.data(),
+                heights.data(),
+                fpss.data(),
+                formats.data(),
+                static_cast<int>(profiles.size()),
+                &e);
             error::handle(e);
+        }
 
-            return streaming_lock(lock);
+        /**
+        * close subdevice for exclusive access
+        * this method should be used for releasing device resource
+        */
+        void close() const
+        {
+            rs_error* e = nullptr;
+            rs_close(_dev.get(), &e);
+            error::handle(e);
+        }
+
+        /**
+        * start streaming
+        * \param[in] callback   stream callback
+        */
+        template<class T>
+        void start(T callback) const
+        {
+            rs_error * e = nullptr;
+            rs_start_cpp(_dev.get(), new frame_callback<T>(std::move(callback)), &e);
+            error::handle(e);
+        }
+
+        /**
+        * stop streaming
+        */
+        void stop() const
+        {
+            rs_error * e = nullptr;
+            rs_stop(_dev.get(), &e);
+            error::handle(e);
         }
 
         /**
@@ -444,7 +433,7 @@ namespace rs
 
         /**
         * retrieve the available range of values of a supported option
-        * \return option range containing minimum and maximum values, step and default value
+        * \return option  range containing minimum and maximum values, step and default value
         */
         option_range get_option_range(rs_option option) const
         {
@@ -640,9 +629,6 @@ namespace rs
         advanced& debug() { return _debug; }
 
         device() : _dev(nullptr), _debug(nullptr) {}
-
-        typedef streaming_lock Streaming_lock_type;
-
     private:
         friend context;
 

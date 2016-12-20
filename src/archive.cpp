@@ -36,7 +36,7 @@ frame* frame_archive::publish_frame(frame&& frame)
     if (is_valid(frame.get_stream_type()) &&
         published_frames_count >= *max_frame_queue_size)
     {
-        return nullptr;
+        return nullptr; // TODO: exception/log
     }
     auto new_frame = published_frames.allocate();
     if (new_frame)
@@ -111,7 +111,7 @@ rs_frame* frame_archive::track_frame(frame& f)
         return clone_frame(&new_ref);
     }
 
-    return nullptr;
+    return nullptr; // TODO: exception/log
 }
 
 void frame_archive::flush()
@@ -138,7 +138,7 @@ void frame_archive::flush()
     if (pending_frames > 0)
     {
         LOG_WARNING("The user was holding on to " 
-            << pending_frames << " frames after stream 0x" 
+            << std::dec << pending_frames << " frames after stream 0x"
             << std::hex << this << " stopped");
     }
     // frames and their frame refs are not flushed, by design
@@ -181,7 +181,7 @@ bool frame::supports_frame_metadata(rs_frame_metadata frame_metadata) const
 
 const byte* frame::get_frame_data() const
 {
-    const byte* frame_data = data.data();;
+    const byte* frame_data = data.data();
 
     if (on_release.get_data())
     {

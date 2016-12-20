@@ -20,7 +20,6 @@ int main(int argc, char * argv[]) try
     auto devices = ctx.query_devices();
     if(devices.size() == 0) throw std::runtime_error("No device detected. Is it plugged in?");
 
-    std::vector<rs::streaming_lock> streams;
     std::vector<rs::frame_queue> syncers;
 
     // Configure and start our devices
@@ -29,9 +28,9 @@ int main(int argc, char * argv[]) try
         std::cout << "Starting " << dev.get_camera_info(RS_CAMERA_INFO_DEVICE_NAME) << "... ";
         rs::util::config config;
         auto modes = dev.get_stream_modes();
-        streams.push_back(dev.open(modes[0]));
+        dev.open(modes[0]);
         syncers.emplace_back();
-        streams.back().start(syncers.back());
+        dev.start(syncers.back());
         std::cout << "done." << std::endl;
     }
 

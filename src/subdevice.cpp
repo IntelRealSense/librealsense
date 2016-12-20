@@ -8,37 +8,13 @@
 
 using namespace rsimpl;
 
-streaming_lock::streaming_lock() 
-    : _is_streaming(false),
-      _callback(nullptr, [](rs_frame_callback*) {}),
-      _archive(std::make_shared<frame_archive>(&_max_publish_list_size)),
-      _max_publish_list_size(16), _owner(nullptr)
-{
-
-}
-
-void streaming_lock::play(frame_callback_ptr callback)
-{
-    std::lock_guard<std::mutex> lock(_callback_mutex);
-    _callback = std::move(callback);
-    _is_streaming = true;
-}
-
-void streaming_lock::stop()
-{
-    _is_streaming = false;
-    flush();
-    std::lock_guard<std::mutex> lock(_callback_mutex);
-    _callback.reset();
-}
-
-rs_frame* streaming_lock::alloc_frame(size_t size, frame_additional_data additional_data) const
+rs_frame* endpoint::alloc_frame(size_t size, frame_additional_data additional_data) const
 {
     auto frame = _archive->alloc_frame(size, additional_data, true);
     return _archive->track_frame(frame);
 }
 
-void streaming_lock::invoke_callback(rs_frame* frame_ref) const
+void endpoint::invoke_callback(rs_frame* frame_ref) const
 {
     if (frame_ref)
     {
@@ -54,83 +30,10 @@ void streaming_lock::invoke_callback(rs_frame* frame_ref) const
     }
 }
 
-void streaming_lock::flush()
+void endpoint::flush() const
 {
-    _archive->flush();
-}
-
-streaming_lock::~streaming_lock()
-{
-    try {
-        streaming_lock::stop();
-    }
-    catch (...)
-    {
-        // TODO: Write to Log
-    }
-}
-
-std::vector<stream_profile> endpoint::get_principal_requests()
-{
-    std::unordered_set<stream_profile> results;
-    std::set<uint32_t> unutilized_formats;
-    std::set<uint32_t> supported_formats;
-
-    auto profiles = get_stream_profiles();
-    for (auto&& p : profiles)
-    {
-        supported_formats.insert(p.format);
-        native_pixel_format pf;
-        if (try_get_pf(p, pf))
-        {
-            for (auto&& unpacker : pf.unpackers)
-            {
-                for (auto&& output : unpacker.outputs)
-                {
-                    results.insert({ output.first, p.width, p.height, p.fps, output.second });
-                }
-            }
-        }
-        else
-        {
-            unutilized_formats.insert(p.format);
-        }
-    }
-
-    for (auto& elem : unutilized_formats)
-    {
-        uint32_t device_fourcc = reinterpret_cast<const big_endian<uint32_t>&>(elem);
-        char fourcc[sizeof(device_fourcc) + 1];
-        memcpy(fourcc, &device_fourcc, sizeof(device_fourcc));
-        fourcc[sizeof(device_fourcc)] = 0;
-        LOG_WARNING("Unutilized format " << fourcc);
-    }
-
-    if (!unutilized_formats.empty())
-    {
-        std::stringstream ss;
-        for (auto& elem : supported_formats)
-        {
-            uint32_t device_fourcc = reinterpret_cast<const big_endian<uint32_t>&>(elem);
-            char fourcc[sizeof(device_fourcc) + 1];
-            memcpy(fourcc, &device_fourcc, sizeof(device_fourcc));
-            fourcc[sizeof(device_fourcc)] = 0;
-            ss << fourcc << std::endl;
-        }
-        LOG_WARNING("\nDevice supported formats:\n" << ss.str());
-    }
-
-    // Sort the results to make sure that the user will receive predictable deterministic output from the API
-    std::vector<stream_profile> res{ begin(results), end(results) };
-    std::sort(res.begin(), res.end(), [](const stream_profile& a, const stream_profile& b)
-    {
-        auto at = std::make_tuple(a.stream, a.width, a.height, a.fps, a.format);
-        auto bt = std::make_tuple(b.stream, b.width, b.height, b.fps, b.format);
-
-        return at > bt;
-    });
-
-    return res;
+    if (_archive.get())
+        _archive->flush();
 }
 
 bool endpoint::try_get_pf(const uvc::stream_profile& p, native_pixel_format& result) const
@@ -218,23 +121,104 @@ std::vector<request_mapping> endpoint::resolve_requests(std::vector<stream_profi
     throw std::runtime_error("Subdevice unable to satisfy stream requests!");
 }
 
+uvc_endpoint::~uvc_endpoint()
+{
+    try
+    {
+        if (_is_streaming)
+            stop_streaming();
+
+        if (_is_opened)
+            close();
+    }
+    catch(...)
+    {
+        LOG_ERROR("An error has occurred while stop_streaming()!");
+    }
+}
+
 std::vector<uvc::stream_profile> uvc_endpoint::init_stream_profiles()
 {
     power on(shared_from_this());
     return _device->get_profiles();
 }
 
-std::shared_ptr<streaming_lock> uvc_endpoint::configure(
-    const std::vector<stream_profile>& requests)
+std::vector<stream_profile> uvc_endpoint::get_principal_requests()
+{
+    std::unordered_set<stream_profile> results;
+    std::set<uint32_t> unutilized_formats;
+    std::set<uint32_t> supported_formats;
+
+    auto profiles = get_stream_profiles();
+    for (auto&& p : profiles)
+    {
+        supported_formats.insert(p.format);
+        native_pixel_format pf{};
+        if (try_get_pf(p, pf))
+        {
+            for (auto&& unpacker : pf.unpackers)
+            {
+                for (auto&& output : unpacker.outputs)
+                {
+                    results.insert({ output.first, p.width, p.height, p.fps, output.second });
+                }
+            }
+        }
+        else
+        {
+            unutilized_formats.insert(p.format);
+        }
+    }
+
+    for (auto& elem : unutilized_formats)
+    {
+        uint32_t device_fourcc = reinterpret_cast<const big_endian<uint32_t>&>(elem);
+        char fourcc[sizeof(device_fourcc) + 1];
+        memcpy(fourcc, &device_fourcc, sizeof(device_fourcc));
+        fourcc[sizeof(device_fourcc)] = 0;
+        LOG_WARNING("Unutilized format " << fourcc);
+    }
+
+    if (!unutilized_formats.empty())
+    {
+        std::stringstream ss;
+        for (auto& elem : supported_formats)
+        {
+            uint32_t device_fourcc = reinterpret_cast<const big_endian<uint32_t>&>(elem);
+            char fourcc[sizeof(device_fourcc) + 1];
+            memcpy(fourcc, &device_fourcc, sizeof(device_fourcc));
+            fourcc[sizeof(device_fourcc)] = 0;
+            ss << fourcc << std::endl;
+        }
+        LOG_WARNING("\nDevice supported formats:\n" << ss.str());
+    }
+
+    // Sort the results to make sure that the user will receive predictable deterministic output from the API
+    std::vector<stream_profile> res{ begin(results), end(results) };
+    std::sort(res.begin(), res.end(), [](const stream_profile& a, const stream_profile& b)
+    {
+        auto at = std::make_tuple(a.stream, a.width, a.height, a.fps, a.format);
+        auto bt = std::make_tuple(b.stream, b.width, b.height, b.fps, b.format);
+
+        return at > bt;
+    });
+
+    return res;
+}
+
+void uvc_endpoint::open(const std::vector<stream_profile>& requests)
 {
     std::lock_guard<std::mutex> lock(_configure_lock);
-    std::shared_ptr<uvc_streaming_lock> streaming(new uvc_streaming_lock(shared_from_this()));
-    power on(shared_from_this());
+    if (_is_streaming)
+        throw std::runtime_error("open(...) failed. UVC device is streaming!");
+    else if (_is_opened)
+        throw std::runtime_error("open(...) failed. Hid device is already opened!");
 
+    auto on = std::unique_ptr<power>(new power(shared_from_this()));
+    _archive = std::make_shared<frame_archive>(&_max_publish_list_size);
     auto mapping = resolve_requests(requests);
 
-    auto timestamp_readers = create_frame_timestamp_readers();
-    auto timestamp_reader = timestamp_readers[0];
+    auto timestamp_reader = _timestamp_reader.get();
 
     std::vector<request_mapping> commited;
     for (auto& mode : mapping)
@@ -243,105 +227,99 @@ std::shared_ptr<streaming_lock> uvc_endpoint::configure(
         {
             using namespace std::chrono;
 
-            std::weak_ptr<uvc_streaming_lock> stream_ptr(streaming);
-
             auto start = high_resolution_clock::now();
-            auto frame_number = 0;
             _device->probe_and_commit(mode.profile,
-                [stream_ptr, mode, start, frame_number, timestamp_reader, requests](uvc::stream_profile p, uvc::frame_object f) mutable
+            [this, mode, start, timestamp_reader, requests](uvc::stream_profile p, uvc::frame_object f) mutable
             {
-                auto&& unpacker = *mode.unpacker;
+            if (!this->is_streaming())
+                return;
 
-                auto stream = stream_ptr.lock();
-                if (stream && stream->is_streaming())
+            frame_continuation release_and_enqueue([]() {}, f.pixels);
+
+            // Ignore any frames which appear corrupted or invalid
+            if (!timestamp_reader->validate_frame(mode, f.pixels)) return;
+
+            // Determine the timestamp for this frame
+            auto timestamp = timestamp_reader->get_frame_timestamp(mode, f.pixels);
+            auto frame_counter = timestamp_reader->get_frame_counter(mode, f.pixels);
+            //auto received_time = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - capture_start_time).count();
+
+            auto width = mode.profile.width;
+            auto height = mode.profile.height;
+            auto fps = mode.profile.fps;
+
+            std::vector<byte *> dest;
+            std::vector<rs_frame*> refs;
+
+            auto now = high_resolution_clock::now();
+            auto ms = duration_cast<milliseconds>(now - start);
+            auto system_time = static_cast<double>(ms.count());
+
+            //auto stride_x = mode_selection.get_stride_x();
+            //auto stride_y = mode_selection.get_stride_y();
+            /*for (auto&& output : unpacker.outputs)
+            {
+                LOG_DEBUG("FrameAccepted, RecievedAt," << received_time
+                    << ", FWTS," << timestamp << ", DLLTS," << received_time << ", Type," << rsimpl::get_string(output.first) << ",HasPair,0,F#," << frame_counter);
+            }*/
+
+            //frame_drops_status->was_initialized = true;
+
+            // Not updating prev_frame_counter when first frame arrival
+            /*if (frame_drops_status->was_initialized)
+            {
+                frames_drops_counter.fetch_add(int(frame_counter - frame_drops_status->prev_frame_counter - 1));
+                frame_drops_status->prev_frame_counter = frame_counter;
+            }*/
+            auto&& unpacker = *mode.unpacker;
+            for (auto&& output : unpacker.outputs)
+            {
+                auto bpp = get_image_bpp(output.second);
+                frame_additional_data additional_data(timestamp,
+                    frame_counter,
+                    system_time,
+                    width,
+                    height,
+                    fps,
+                    width,
+                    bpp,
+                    output.second,
+                    output.first);
+
+                auto frame_ref = this->alloc_frame(width * height * bpp / 8, additional_data);
+                if (frame_ref)
                 {
-                    frame_continuation release_and_enqueue([]() {}, f.pixels);
-
-                    // Ignore any frames which appear corrupted or invalid
-                    if (!timestamp_reader->validate_frame(mode, f.pixels)) return;
-
-                    // Determine the timestamp for this frame
-                    auto timestamp = timestamp_reader->get_frame_timestamp(mode, f.pixels);
-                    auto frame_counter = timestamp_reader->get_frame_counter(mode, f.pixels);
-                    //auto received_time = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - capture_start_time).count();
-
-                    auto width = mode.profile.width;
-                    auto height = mode.profile.height;
-                    auto fps = mode.profile.fps;
-
-                    std::vector<byte *> dest;
-                    std::vector<rs_frame*> refs;
-
-                    auto now = high_resolution_clock::now();
-                    auto ms = duration_cast<milliseconds>(now - start);
-                    auto system_time = static_cast<double>(ms.count());
-
-                    //auto stride_x = mode_selection.get_stride_x();
-                    //auto stride_y = mode_selection.get_stride_y();
-                    /*for (auto&& output : unpacker.outputs)
-                    {
-                        LOG_DEBUG("FrameAccepted, RecievedAt," << received_time
-                            << ", FWTS," << timestamp << ", DLLTS," << received_time << ", Type," << rsimpl::get_string(output.first) << ",HasPair,0,F#," << frame_counter);
-                    }*/
-
-                    //frame_drops_status->was_initialized = true;
-
-                    // Not updating prev_frame_counter when first frame arrival
-                    /*if (frame_drops_status->was_initialized)
-                    {
-                        frames_drops_counter.fetch_add(int(frame_counter - frame_drops_status->prev_frame_counter - 1));
-                        frame_drops_status->prev_frame_counter = frame_counter;
-                    }*/
-
-                    for (auto&& output : unpacker.outputs)
-                    {
-                        auto bpp = get_image_bpp(output.second);
-                        frame_additional_data additional_data(timestamp,
-                            frame_number++,
-                            system_time,
-                            width,
-                            height,
-                            fps,
-                            width,
-                            bpp,
-                            output.second,
-                            output.first);
-
-                        auto frame_ref = stream->alloc_frame(width * height * bpp / 8, additional_data);
-                        if (frame_ref)
-                        {
-                            refs.push_back(frame_ref);
-                            dest.push_back(const_cast<byte*>(frame_ref->get()->get_frame_data()));
-                        }
-                        else
-                        {
-                            return;
-                        }
-
-                        // Obtain buffers for unpacking the frame
-                        //dest.push_back(archive->alloc_frame(output.first, additional_data, requires_processing));
-                    }
-
-                    // Unpack the frame
-                    //if (requires_processing)
-                    if (dest.size() > 0)
-                    {
-                        unpacker.unpack(dest.data(), reinterpret_cast<const byte *>(f.pixels), width * height);
-                    }
-
-                    // If any frame callbacks were specified, dispatch them now
-                    for (auto&& pref : refs)
-                    {
-                        // all the streams the unpacker generates are handled here.
-                        // If it matches one of the streams the user requested, send it to the user.
-                        if (std::any_of(begin(requests), end(requests), [&pref](stream_profile request) { return request.stream == pref->get()->get_stream_type(); }))
-                            stream->invoke_callback(pref);
-                        // However, if this is an extra stream we had to open to properly satisty the user's request,
-                        // deallocate the frame and prevent the excess data from reaching the user.
-                        else
-                            pref->get()->get_owner()->release_frame_ref(pref);
-                    }
+                    refs.push_back(frame_ref);
+                    dest.push_back(const_cast<byte*>(frame_ref->get()->get_frame_data()));
                 }
+                else
+                {
+                    return;
+                }
+
+                // Obtain buffers for unpacking the frame
+                //dest.push_back(archive->alloc_frame(output.first, additional_data, requires_processing));
+            }
+
+            // Unpack the frame
+            //if (requires_processing)
+            if (dest.size() > 0)
+            {
+                unpacker.unpack(dest.data(), reinterpret_cast<const byte *>(f.pixels), width * height);
+            }
+
+            // If any frame callbacks were specified, dispatch them now
+            for (auto&& pref : refs)
+            {
+                // all the streams the unpacker generates are handled here.
+                // If it matches one of the streams the user requested, send it to the user.
+                if (std::any_of(begin(requests), end(requests), [&pref](stream_profile request) { return request.stream == pref->get()->get_stream_type(); }))
+                    this->invoke_callback(pref);
+                // However, if this is an extra stream we had to open to properly satisty the user's request,
+                // deallocate the frame and prevent the excess data from reaching the user.
+                else
+                    pref->get()->get_owner()->release_frame_ref(pref);
+             }
             });
         }
         catch(...)
@@ -355,23 +333,80 @@ std::shared_ptr<streaming_lock> uvc_endpoint::configure(
         commited.push_back(mode);
     }
 
-    _device->play();
-
     for (auto& mode : mapping)
     {
         _configuration.push_back(mode.profile);
     }
-    return std::move(streaming);
+    _power = move(on);
+    _is_opened = true;
+
+    try {
+        _device->play();
+    }
+    catch (...)
+    {
+        for (auto& profile : _configuration)
+        {
+            try {
+                _device->stop(profile);
+            }
+            catch (...) {}
+        }
+        reset_streaming();
+        _is_opened = false;
+        throw;
+    }
+}
+
+void uvc_endpoint::close()
+{
+    std::lock_guard<std::mutex> lock(_configure_lock);
+    if (_is_streaming)
+        throw std::runtime_error("close() failed. UVC device is streaming!");
+    else if (!_is_opened)
+        throw std::runtime_error("close() failed. UVC device was not opened!");
+
+    reset_streaming();
+    _power.reset();
+    _is_opened = false;
+}
+
+void uvc_endpoint::register_xu(uvc::extension_unit xu)
+{
+    _xus.push_back(std::move(xu));
+}
+
+void uvc_endpoint::start_streaming(frame_callback_ptr callback)
+{
+    std::lock_guard<std::mutex> lock(_configure_lock);
+    if (_is_streaming)
+        throw std::runtime_error("start_streaming(...) failed. UVC device is already streaming!");
+
+    _callback = std::move(callback);
+    _is_streaming = true;
 }
 
 void uvc_endpoint::stop_streaming()
 {
     std::lock_guard<std::mutex> lock(_configure_lock);
+    if (!_is_streaming)
+        throw std::runtime_error("stop_streaming() failed. UVC device is not streaming!");
+
+    _is_streaming = false;
     for (auto& profile : _configuration)
     {
         _device->stop(profile);
     }
+    reset_streaming();
+}
+
+void uvc_endpoint::reset_streaming()
+{
+    flush();
     _configuration.clear();
+    _callback.reset();
+    _archive.reset();
+    _timestamp_reader->reset();
 }
 
 void uvc_endpoint::acquire_power()
@@ -425,9 +460,16 @@ bool endpoint::supports_info(rs_camera_info info) const
     return it != _camera_info.end();
 }
 
-void endpoint::register_info(rs_camera_info info, std::string val)
+void endpoint::register_info(rs_camera_info info, const std::string& val)
 {
-    _camera_info[info] = std::move(val);
+    if (supports_info(info) && (get_info(info) != val)) // Append existing infos
+    {
+        _camera_info[info] += "\n" + std::move(val);
+    }
+    else
+    {
+        _camera_info[info] = std::move(val);
+    }
 }
 
 const std::string& endpoint::get_info(rs_camera_info info) const
@@ -446,4 +488,158 @@ void endpoint::register_option(rs_option id, std::shared_ptr<option> option)
 void uvc_endpoint::register_pu(rs_option id)
 {
     register_option(id, std::make_shared<uvc_pu_option>(*this, id));
+}
+
+hid_endpoint::~hid_endpoint()
+{
+    try
+    {
+        if (_is_streaming)
+            stop_streaming();
+
+        if (_is_opened)
+            close();
+    }
+    catch(...)
+    {
+        LOG_ERROR("An error has occurred while stop_streaming()!");
+    }
+}
+
+std::vector<uvc::stream_profile> hid_endpoint::init_stream_profiles()
+{
+    std::vector<uvc::stream_profile> results;
+    for (auto& elem : get_device_profiles())
+    {
+        results.push_back({elem.width, elem .height, elem .fps, uint32_t(elem .format)});
+    }
+    return results;
+}
+
+std::vector<stream_profile> hid_endpoint::get_principal_requests()
+{
+    return get_device_profiles();
+}
+
+void hid_endpoint::open(const std::vector<stream_profile>& requests)
+{
+    std::lock_guard<std::mutex> lock(_configure_lock);
+    if (_is_streaming)
+        throw std::runtime_error("open(...) failed. Hid device is streaming!");
+    else if (_is_opened)
+        throw std::runtime_error("Hid device is already opened!");
+
+    _hid_device->open();
+    for (auto& elem : requests)
+    {
+        _configured_sensor_iio.push_back(rs_stream_to_sensor_iio(elem.stream));
+    }
+    _is_opened = true;
+}
+
+void hid_endpoint::close()
+{
+    std::lock_guard<std::mutex> lock(_configure_lock);
+    if (_is_streaming)
+        throw std::runtime_error("close() failed. Hid device is streaming!");
+    else if (!_is_opened)
+        throw std::runtime_error("close() failed. Hid device was not opened!");
+
+    _hid_device->close();
+    _configured_sensor_iio.clear();
+    _is_opened = false;
+}
+
+void hid_endpoint::start_streaming(frame_callback_ptr callback)
+{
+    std::lock_guard<std::mutex> lock(_configure_lock);
+    if (_is_streaming)
+        throw std::runtime_error("start_streaming(...) failed. Hid device is already streaming!");
+    else if(!_is_opened)
+        throw std::runtime_error("start_streaming(...) failed. Hid device was not opened!");
+
+    _archive = std::make_shared<frame_archive>(&_max_publish_list_size);
+    _callback = std::move(callback);
+    _hid_device->start_capture(_configured_sensor_iio, [this](const uvc::callback_data& data){
+        if (!this->is_streaming())
+            return;
+
+        frame_additional_data additional_data;
+        auto data_size = sizeof(data.value);
+        auto stream_format = sensor_name_to_stream_format(data.sensor.name);
+        additional_data.format = stream_format.format;
+        additional_data.stream_type = stream_format.stream;
+        additional_data.width = data_size;
+        additional_data.height = 1;
+        auto frame = this->alloc_frame(data_size, additional_data);
+        memcpy(frame->get()->data.data(), &data.value, data_size);
+        this->invoke_callback(frame);
+    });
+
+    _is_streaming = true;
+}
+
+void hid_endpoint::stop_streaming()
+{
+    std::lock_guard<std::mutex> lock(_configure_lock);
+    if (!_is_streaming)
+        throw std::runtime_error("stop_streaming() failed. Hid device is not streaming!");
+
+
+    _hid_device->stop_capture();
+    _is_streaming = false;
+    flush();
+    _configured_sensor_iio.clear();
+    _callback.reset();
+    _archive.reset();
+}
+
+std::vector<stream_profile> hid_endpoint::get_device_profiles()
+{
+    std::vector<stream_profile> stream_requests;
+    for (auto& elem : _hid_sensors)
+    {
+        auto stream_format = sensor_name_to_stream_format(elem.name);
+        stream_requests.push_back({ stream_format.stream,
+                                   0,
+                                   0,
+                                   0,
+                                   stream_format.format});
+    }
+
+    return stream_requests;
+}
+
+int hid_endpoint::rs_stream_to_sensor_iio(rs_stream stream) const
+{
+    for (auto& elem : sensor_name_and_stream_format)
+    {
+        if (stream == elem.second.stream)
+            return get_iio_by_name(elem.first);
+    }
+    throw std::runtime_error("rs_stream not found!");
+}
+
+int hid_endpoint::get_iio_by_name(const std::string& name) const
+{
+    for (auto& elem : _hid_sensors)
+    {
+        if (!elem.name.compare(name))
+            return elem.iio;
+    }
+    throw std::runtime_error("sensor_name not found!");
+}
+
+hid_endpoint::stream_format hid_endpoint::sensor_name_to_stream_format(const std::string& sensor_name) const
+{
+    stream_format stream_and_format;
+    try{
+        stream_and_format = sensor_name_and_stream_format.at(sensor_name);
+    }
+    catch(std::out_of_range)
+    {
+        throw std::runtime_error(to_string() << "format of sensor name " << sensor_name << " not found!");
+    }
+
+    return stream_and_format;
 }

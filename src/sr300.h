@@ -18,6 +18,63 @@ namespace rsimpl
 
     class sr300_camera;
 
+    // TODO: This may need to be modified for thread safety
+    class sr300_timestamp_reader : public frame_timestamp_reader
+    {
+        bool started;
+        int64_t total;
+        int last_timestamp;
+        mutable int64_t counter;
+    public:
+        sr300_timestamp_reader() : started(false), total(0), last_timestamp(0), counter(0) {}
+
+        void reset() override
+        {
+            started = false;
+            total = 0;
+            last_timestamp = 0;
+            counter = 0;
+        }
+
+        bool validate_frame(const request_mapping& mode, const void * frame) const override
+        {
+            // Validate that at least one byte of the image is nonzero
+            for (const uint8_t * it = (const uint8_t *)frame, *end = it + mode.pf->get_image_size(mode.profile.width, mode.profile.height); it != end; ++it)
+            {
+                if (*it)
+                {
+                    return true;
+                }
+            }
+
+            // F200 and SR300 can sometimes produce empty frames shortly after starting, ignore them
+            //LOG_INFO("Subdevice " << mode.subdevice << " produced empty frame");
+            return false;
+        }
+
+        double get_frame_timestamp(const request_mapping& /*mode*/, const void * frame) override
+        {
+            // Timestamps are encoded within the first 32 bits of the image
+            int rolling_timestamp = *reinterpret_cast<const int32_t *>(frame);
+
+            if (!started)
+            {
+                last_timestamp = rolling_timestamp;
+                started = true;
+            }
+
+            const int delta = rolling_timestamp - last_timestamp; // NOTE: Relies on undefined behavior: signed int wraparound
+            last_timestamp = rolling_timestamp;
+            total += delta;
+            const int timestamp = static_cast<int>(total / 100000);
+            return timestamp;
+        }
+        unsigned long long get_frame_counter(const request_mapping & /*mode*/, const void * /*frame*/) const override
+        {
+            return ++counter;
+        }
+    };
+
     class sr300_info : public device_info
     {
     public:
@@ -80,7 +137,8 @@ namespace rsimpl
         static std::shared_ptr<uvc_endpoint> create_color_device(const uvc::backend& backend, 
                                                                  const uvc::uvc_device_info& color)
         {
-            auto color_ep = std::make_shared<uvc_endpoint>(backend.create_uvc_device(color));
+            auto color_ep = std::make_shared<uvc_endpoint>(backend.create_uvc_device(color),
+                                                           std::unique_ptr<frame_timestamp_reader>(new sr300_timestamp_reader()));
             color_ep->register_pixel_format(pf_yuy2);
             color_ep->register_pixel_format(pf_yuyv);
 
@@ -108,7 +166,8 @@ namespace rsimpl
             using namespace ivcam;
 
             // create uvc-endpoint from backend uvc-device
-            auto depth_ep = std::make_shared<uvc_endpoint>(backend.create_uvc_device(depth));
+            auto depth_ep = std::make_shared<uvc_endpoint>(backend.create_uvc_device(depth),
+                                                           std::unique_ptr<frame_timestamp_reader>(new sr300_timestamp_reader()));
             depth_ep->register_xu(depth_xu); // make sure the XU is initialized everytime we power the camera
             depth_ep->register_pixel_format(pf_invz);
             depth_ep->register_pixel_format(pf_sr300_inzi);
@@ -142,20 +201,30 @@ namespace rsimpl
             const uvc::uvc_device_info& depth,
             const uvc::usb_device_info& hwm_device)
             : _hw_monitor(backend.create_usb_device(hwm_device)),
-              _depth_device_idx(add_endpoint(create_depth_device(backend, depth), "Depth Camera")),
-              _color_device_idx(add_endpoint(create_color_device(backend, color), "Color Camera"))
+              _depth_device_idx(add_endpoint(create_depth_device(backend, depth))),
+              _color_device_idx(add_endpoint(create_color_device(backend, color)))
         {
             using namespace ivcam;
+            static const char* device_name = "Intel RealSense SR300";
 
             auto fw_version = _hw_monitor.get_firmware_version_string(GVD, gvd_fw_version_offset);
             auto serial = _hw_monitor.get_module_serial_string(GVD, 132);
-            auto location = get_depth_endpoint().invoke_powered([](uvc::uvc_device& dev)
-            {
-                return dev.get_device_location();
-            });
             enable_timestamp(true, true);
 
-            register_device("Intel RealSense SR300", fw_version, serial, "");
+            std::map<rs_camera_info, std::string> depth_camera_info = {{RS_CAMERA_INFO_DEVICE_NAME, device_name},
+                                                                       {RS_CAMERA_INFO_MODULE_NAME, "Depth Camera"},
+                                                                       {RS_CAMERA_INFO_DEVICE_SERIAL_NUMBER, serial},
+                                                                       {RS_CAMERA_INFO_CAMERA_FIRMWARE_VERSION, fw_version},
+                                                                       {RS_CAMERA_INFO_DEVICE_LOCATION, depth.device_path}};
+            register_endpoint_info(_depth_device_idx, depth_camera_info);
+
+            std::map<rs_camera_info, std::string> color_camera_info = {{RS_CAMERA_INFO_DEVICE_NAME, device_name},
+                                                                       {RS_CAMERA_INFO_MODULE_NAME, "Color Camera"},
+                                                                       {RS_CAMERA_INFO_DEVICE_SERIAL_NUMBER, serial},
+                                                                       {RS_CAMERA_INFO_CAMERA_FIRMWARE_VERSION, fw_version},
+                                                                       {RS_CAMERA_INFO_DEVICE_LOCATION, color.device_path}};
+            register_endpoint_info(_color_device_idx, color_camera_info);
+
             register_autorange_options();
 
             auto c = get_calibration();
@@ -194,20 +263,20 @@ namespace rsimpl
             };
 
             const float arr_values[RS_VISUAL_PRESET_COUNT][DEPTH_CONTROLS] = {
-                { 1,  1,  5,  1, -1 }, /* ShortRange                */
-                { 1,  1,  7,  0, -1 }, /* LongRange                 */
-                { 16,  1,  6,  2, 22 }, /* BackgroundSegmentation    */
-                { 1,  1,  6,  3, -1 }, /* GestureRecognition        */
-                { 1,  1,  3,  1,  9 }, /* ObjectScanning            */
-                { 16,  1,  5,  1, 22 }, /* FaceAnalytics             */
-                { 1, -1, -1, -1, -1 }, /* FaceLogin                 */
-                { 1,  1,  6,  1, -1 }, /* GRCursor                  */
-                { 16,  1,  5,  3,  9 }, /* Default                   */
-                { 1,  1,  5,  1, -1 }, /* MidRange                  */
-                { 1, -1, -1, -1, -1 }  /* IROnly                    */
+                { 1,    1,   5,   1,  -1 }, /* ShortRange                */
+                { 1,    1,   7,   0,  -1 }, /* LongRange                 */
+                { 16,   1,   6,   2,  22 }, /* BackgroundSegmentation    */
+                { 1,    1,   6,   3,  -1 }, /* GestureRecognition        */
+                { 1,    1,   3,   1,   9 }, /* ObjectScanning            */
+                { 16,   1,   5,   1,  22 }, /* FaceAnalytics             */
+                { 1,   -1,  -1,  -1,  -1 }, /* FaceLogin                 */
+                { 1,    1,   6,   1,  -1 }, /* GRCursor                  */
+                { 16,   1,   5,   3,   9 }, /* Default                   */
+                { 1,    1,   5,   1,  -1 }, /* MidRange                  */
+                { 1,   -1,  -1,  -1, - 1 }  /* IROnly                    */
             };
 
-            // The Default preset is handled differntly from all the rest,
+            // The Default preset is handled differently from all the rest,
             // When the user applies the Default preset the camera is expected to return to
             // Default values of depth options:
             if (preset == RS_VISUAL_PRESET_DEFAULT)
@@ -245,7 +314,7 @@ namespace rsimpl
             if (subdevice == _depth_device_idx)
                 return make_depth_intrinsics(get_calibration(), { int(profile.width), int(profile.height) });
 
-            throw std::runtime_error("Not Implemented");
+            throw std::runtime_error(to_string() << "Intrinsic is not implemented for subdevice num " << subdevice);
         }
 
     private:

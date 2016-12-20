@@ -11,8 +11,6 @@
 #include <iostream>
 #include <algorithm>
 #include <iomanip>
-#include <mutex>
-#include <atomic>
 #include <map>
 #include <sstream>
 
@@ -187,7 +185,7 @@ class subdevice_model
 {
 public:
     subdevice_model(rs::device dev, std::string& error_message)
-        : dev(dev), allow_new_frames(true), queues(5)
+        : dev(dev), streaming(false), queues(5)
     {
         for (auto i = 0; i < RS_OPTION_COUNT; i++)
         {
@@ -347,17 +345,25 @@ public:
 
     void stop()
     {
-        allow_new_frames = false;
+        streaming = false;
         queues.flush();
-        if (current_stream) current_stream->stop();
-        current_stream.reset();
+        dev.stop();
+        dev.close();
     }
 
     void play(const std::vector<rs::stream_profile>& profiles)
     {
-        current_stream = std::make_shared<rs::streaming_lock>(dev.open(profiles));
-        current_stream->start(queues);
-        allow_new_frames = true;
+        dev.open(profiles);
+        try {
+            dev.start(queues);
+        }
+        catch (...)
+        {
+            dev.close();
+            throw;
+        }
+
+        streaming = true;
     }
 
     void update(std::string& error_message)
@@ -383,7 +389,7 @@ public:
 
             if (*it == def)
             {
-                *index = it - values.begin();
+                *index = (int)(it - values.begin());
                 return true;
             }
             if (*max_default < *it)
@@ -391,7 +397,7 @@ public:
                 max_default = it;
             }
         }
-        *index = max_default - values.begin();
+        *index = (int)(max_default - values.begin());
         return false;
     }
 
@@ -410,14 +416,13 @@ public:
     std::vector<std::pair<int, int>> res_values;
     std::vector<int> fps_values;
     std::map<rs_stream, std::vector<rs_format>> format_values;
-    std::shared_ptr<rs::streaming_lock> current_stream;
-    std::atomic<bool> allow_new_frames;
 
     std::vector<rs::stream_profile> profiles;
 
     rs::frame_queue queues;
     bool options_invalidated = false;
     int next_option = RS_OPTION_COUNT;
+    bool streaming;
 };
 
 typedef std::map<rs_stream, rect> streams_layout;
@@ -586,6 +591,7 @@ bool no_device_popup(GLFWwindow* window, const ImVec4& clear_color)
         ImGui::Render();
         glfwSwapBuffers(window);
     }
+    return false;
 }
 
 int main(int, char**) try
@@ -658,7 +664,8 @@ int main(int, char**) try
             {
                 for (auto&& sub : model.subdevices)
                 {
-                    sub->stop();
+                    if (sub->streaming)
+                        sub->stop();
                 }
 
                 dev = list[device_index];
@@ -705,7 +712,7 @@ int main(int, char**) try
                     ImGui::PushItemWidth(-1);
                     label = to_string() << sub->dev.get_camera_info(RS_CAMERA_INFO_DEVICE_NAME)
                                         << sub->dev.get_camera_info(RS_CAMERA_INFO_MODULE_NAME) << " resolution";
-                    if (sub->current_stream.get()) ImGui::Text(res_chars[sub->selected_res_id]);
+                    if (sub->streaming) ImGui::Text(res_chars[sub->selected_res_id]);
                     else ImGui::Combo(label.c_str(), &sub->selected_res_id, res_chars.data(),
                                       static_cast<int>(res_chars.size()));
                     ImGui::PopItemWidth();
@@ -715,7 +722,7 @@ int main(int, char**) try
                     ImGui::PushItemWidth(-1);
                     label = to_string() << sub->dev.get_camera_info(RS_CAMERA_INFO_DEVICE_NAME)
                                         << sub->dev.get_camera_info(RS_CAMERA_INFO_MODULE_NAME) << " fps";
-                    if (sub->current_stream.get()) ImGui::Text(fps_chars[sub->selected_fps_id]);
+                    if (sub->streaming) ImGui::Text(fps_chars[sub->selected_fps_id]);
                     else ImGui::Combo(label.c_str(), &sub->selected_fps_id, fps_chars.data(),
                                       static_cast<int>(fps_chars.size()));
                     ImGui::PopItemWidth();
@@ -735,7 +742,7 @@ int main(int, char**) try
                         if (live_streams > 1)
                         {
                             label = to_string() << rs_stream_to_string(stream) << " format:";
-                            if (sub->current_stream.get()) ImGui::Text(label.c_str());
+                            if (sub->streaming) ImGui::Text(label.c_str());
                             else ImGui::Checkbox(label.c_str(), &sub->stream_enabled[stream]);
                         }
                         else
@@ -751,7 +758,7 @@ int main(int, char**) try
                             label = to_string() << sub->dev.get_camera_info(RS_CAMERA_INFO_DEVICE_NAME)
                                                 << sub->dev.get_camera_info(RS_CAMERA_INFO_MODULE_NAME)
                                                 << " " << rs_stream_to_string(stream) << " format";
-                            if (sub->current_stream.get()) ImGui::Text(formats_chars[sub->selected_format_id[stream]]);
+                            if (sub->streaming) ImGui::Text(formats_chars[sub->selected_format_id[stream]]);
                             else ImGui::Combo(label.c_str(), &sub->selected_format_id[stream], formats_chars.data(),
                                 static_cast<int>(formats_chars.size()));
                             ImGui::PopItemWidth();
@@ -764,7 +771,7 @@ int main(int, char**) try
 
                     try
                     {
-                        if (!sub->current_stream.get())
+                        if (!sub->streaming)
                         {
                             label = to_string() << "Play " << sub->dev.get_camera_info(RS_CAMERA_INFO_MODULE_NAME);
 
@@ -903,7 +910,8 @@ int main(int, char**) try
 
     for (auto&& sub : model.subdevices)
     {
-        sub->stop();
+        if (sub->streaming)
+            sub->stop();
     }
 
     // Cleanup

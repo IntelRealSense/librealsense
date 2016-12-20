@@ -34,6 +34,9 @@
 #include <linux/usb/video.h>
 #include <linux/uvcvideo.h>
 #include <linux/videodev2.h>
+#include <fts.h>
+#include <regex>
+#include <list>
 
 #pragma GCC diagnostic ignored "-Wpedantic"
 #include <libusb.h>
@@ -68,6 +71,610 @@ namespace rsimpl
 
         struct buffer { void * start; size_t length; };
 
+        static std::string get_usb_port_id(libusb_device* usb_device)
+        {
+            std::string usb_bus = std::to_string(libusb_get_bus_number(usb_device));
+
+            // As per the USB 3.0 specs, the current maximum limit for the depth is 7.
+            const int max_usb_depth = 8;
+            uint8_t usb_ports[max_usb_depth];
+            std::stringstream port_path;
+            int port_count = libusb_get_port_numbers(usb_device, usb_ports, max_usb_depth);
+
+            for (size_t i = 0; i < port_count; ++i)
+            {
+                port_path << "-" << std::to_string(usb_ports[i]);
+            }
+
+            return usb_bus + port_path.str();
+        }
+
+        static void get_usb_port_id_from_vid_pid(uint16_t vid, uint16_t pid, std::string& usb_port_id)
+        {
+            libusb_context * usb_context;
+            int status = libusb_init(&usb_context);
+            if(status < 0) throw std::runtime_error(to_string() << "libusb_init(...) returned " << libusb_error_name(status));
+
+            auto usb_dev_handle  = libusb_open_device_with_vid_pid(usb_context, vid, pid);
+            if(!usb_dev_handle)
+            {
+                libusb_exit(usb_context);
+                throw std::runtime_error(to_string() << "libusb_open_device_with_vid_pid(...)");
+            }
+
+            auto usb_device = libusb_get_device(usb_dev_handle);
+            if(!usb_device) throw std::runtime_error(to_string() << "libusb_get_device(...)");
+
+            usb_port_id = get_usb_port_id(usb_device);
+            libusb_close(usb_dev_handle);
+            libusb_exit(usb_context);
+        }
+
+        // hold all captured inputs in a specific trigger.
+        class sensor_inputs {
+        public:
+            const std::list<callback_data>& get_input_data() const
+            {
+                return input_data;
+            }
+
+            // add input to the sensor inputs.
+            void add_input(const hid_sensor& sensor, const hid_sensor_input& sensor_input, unsigned value) {
+                input_data.push_front(callback_data{sensor, sensor_input, value});
+            }
+        private:
+            std::list<callback_data> input_data;
+        };
+
+        // manage an IIO input. or what is called a scan.
+        class hid_input {
+        public:
+            hid_input()
+                : input(""),
+                  device_path(""),
+                  type(""),
+                  index(-1),
+                  enabled(false)
+            {}
+
+            // initialize the input by reading the input parameters.
+            bool init(const std::string& iio_device_path, const std::string& input_name) {
+                char buffer[1024];
+
+                device_path = iio_device_path;
+                std::string input_prefix = "in_";
+                // validate if input includes th "in_" prefix. if it is . remove it.
+                if (input_name.substr(0,input_prefix.size()) == input_prefix) {
+                    input = input_name.substr(input_prefix.size(), input_name.size());
+                } else {
+                    input = input_name;
+                }
+
+                std::string input_suffix = "_en";
+                // check if input contains the "en" suffix, if it is . remove it.
+                if (input.substr(input.size()-input_suffix.size(), input_suffix.size()) == input_suffix) {
+                    input = input.substr(0, input.size()-input_suffix.size());
+                }
+
+                // read scan type.
+                std::ifstream device_type_file(device_path + "/scan_elements/in_" + input + "_type");
+                if (!device_type_file) {
+                    return false;
+                }
+                device_type_file.getline(buffer, sizeof(buffer));
+                type = std::string(buffer);
+
+                device_type_file.close();
+
+                // read scan index.
+                std::ifstream device_index_file(device_path + "/scan_elements/in_" + input + "_index");
+                if (!device_index_file) {
+                    return false;
+                }
+
+                device_index_file.getline(buffer, sizeof(buffer));
+                index = std::stoi(buffer);
+
+                device_index_file.close();
+
+                // read enable state.
+                std::ifstream device_enabled_file(device_path + "/scan_elements/in_" + input + "_en");
+                if (!device_enabled_file) {
+                    return false;
+                }
+
+                device_enabled_file.getline(buffer, sizeof(buffer));
+                enabled = (std::stoi(buffer) == 0) ? false : true;
+
+                device_enabled_file.close();
+                return true;
+            }
+
+            // enable scan input. doing so cause the input to be part of the data provided in the polling.
+            bool enable(bool is_enable) {
+                auto input_data = is_enable ? 1 : 0;
+                // open the element requested and enable and disable.
+                std::ofstream iio_device_file(device_path + "/scan_elements/" + "in_" + input + "_en");
+
+                if (!iio_device_file.is_open()) {
+                    return false;
+                }
+                iio_device_file << input_data;
+                iio_device_file.close();
+
+                enabled = is_enable;
+
+                return true;
+            }
+
+            std::string get_name() const { return input; }
+            std::string get_type() const { return type; }
+            int get_index() const { return index; }
+            bool is_enabled() const { return enabled; }
+        private:
+            std::string input;
+            std::string device_path;
+            std::string type;
+            int index;
+            bool enabled;
+        };
+
+        // declare device sensor with all of its inputs.
+        class hid_backend {
+        public:
+            hid_backend()
+                : vid(0),
+                  pid(0),
+                  iio_device(-1),
+                  sensor_name(""),
+                  callback(nullptr),
+                  capturing(false)
+            {}
+            ~hid_backend() {
+                stop_capture();
+
+                // clear inputs.
+                inputs.clear();
+            }
+
+            // initialize the device sensor. reading its name and all of its inputs.
+            bool init(int device_vid, int device_pid, int device_iio_num)
+            {
+                vid = device_vid;
+                pid = device_pid;
+                iio_device = device_iio_num;
+
+                std::ostringstream iio_device_path;
+                iio_device_path << "/sys/bus/iio/devices/iio:device" << iio_device;
+
+                std::ifstream iio_device_file(iio_device_path.str() + "/name");
+
+                // find iio_device in file system.
+                if (!iio_device_file.good()) {
+                    return false;
+                }
+
+                char name_buffer[256];
+                iio_device_file.getline(name_buffer,sizeof(name_buffer));
+                sensor_name = std::string(name_buffer);
+
+                iio_device_file.close();
+
+                // read all available input of the iio_device
+                read_device_inputs( iio_device_path.str() );
+                return true;
+            }
+
+            // return an input by name.
+            hid_input* get_input(std::string input_name) {
+                for (auto& input : inputs) {
+                    if(input->get_name() == input_name) {
+                        return input;
+                    }
+                }
+
+                return NULL;
+            }
+
+            // start capturing and polling.
+            void start_capture(hid_callback sensor_callback) {
+                if (capturing)
+                    return;
+
+                std::ostringstream iio_read_device_path;
+                iio_read_device_path << "/dev/iio:device" << iio_device;
+
+                //cout << iio_read_device_path.str() << endl;
+                auto iio_read_device_path_str = iio_read_device_path.str();
+                std::ifstream iio_device_file(iio_read_device_path_str);
+
+                // find iio_device in file system.
+                if (!iio_device_file.good()) {
+                    throw std::runtime_error("iio hid device is busy or not found!");
+                }
+
+                iio_device_file.close();
+
+                // count number of enabled count elements and sort by their index.
+                create_channel_array();
+
+                if (!write_integer_to_param("buffer/length", buf_len)) {
+                    throw std::runtime_error("write_integer_to_param failed!");
+                }
+                if (!write_integer_to_param("buffer/enable", 1)) {
+                    throw std::runtime_error("write_integer_to_param failed!");
+                }
+
+                callback = sensor_callback;
+                capturing = true;
+                hid_thread = std::unique_ptr<std::thread>(new std::thread([this, buf_len, iio_read_device_path_str](){
+                    int fd = 0;
+                    const auto max_retries = 10;
+                    auto retries = 0;
+                    while(++retries < max_retries)
+                    {
+                        if ((fd = open(iio_read_device_path_str.c_str(), O_RDONLY | O_NONBLOCK)) > 0)
+                            break;
+
+                        LOG_WARNING("open() failed!");
+                        std::this_thread::sleep_for(std::chrono::milliseconds(5));
+                    }
+
+                    if ((retries == max_retries) && (fd <= 0))
+                    {
+                        LOG_ERROR("open() failed with all retries!");
+                        write_integer_to_param("buffer/enable", 0);
+                        callback = NULL;
+                        channels.clear();
+                        return;
+                    }
+
+                    do {
+                        // each channel is 32 bit
+                        auto channel_size = this->channels.size()*4;
+                        char data[buf_len*16] = {};
+                        sensor_inputs callback_data;
+                        fd_set fds;
+                        FD_ZERO(&fds);
+                        FD_SET(fd, &fds);
+
+                        struct timeval tv = {0,10000};
+                        if (select(fd + 1, &fds, NULL, NULL, &tv) < 0)
+                        {
+                            // TODO: write to log?
+                            continue;
+                        }
+
+                        if (FD_ISSET(fd, &fds))
+                        {
+                            read(fd, data, channel_size);
+                        }
+                        else
+                        {
+                            // TODO: write to log?
+                            continue;
+                        }
+
+                        auto *data_p = (int*) data;
+                        auto i = 0;
+                        for(auto& channel : this->channels) {
+                            callback_data.add_input(hid_sensor{get_iio_device(), get_sensor_name()},
+                                                    hid_sensor_input{channel->get_index(),
+                                                    channel->get_name()}, data_p[i]);
+                            i++;
+                        }
+                        auto cb_data = callback_data.get_input_data();
+                        for (auto& elem : cb_data)
+                        {
+                            this->callback(elem);
+                        }
+
+                    } while(this->capturing);
+                    close(fd);
+                }));
+            }
+
+            void stop_capture() {
+                if (!capturing)
+                    return;
+
+                capturing = false;
+                hid_thread->join();
+                write_integer_to_param("buffer/enable", 0);
+                callback = NULL;
+                channels.clear();
+            }
+            static bool sort_hids(hid_input* first, hid_input* second)
+            {
+                return (first->get_index() >= second->get_index());
+            }
+
+            bool create_channel_array() {
+                // build enabled channels.
+                for(auto& input : inputs) {
+                    if (input->is_enabled())
+                    {
+                        channels.push_back(input);
+                    }
+                }
+
+                channels.sort(sort_hids);
+            }
+
+            std::list<hid_input*>& get_inputs() { return inputs; }
+
+            const std::string& get_sensor_name() const { return sensor_name; }
+
+            int get_iio_device() const { return iio_device; }
+
+        private:
+
+            // read the IIO device inputs.
+            bool read_device_inputs(std::string device_path) {
+                DIR *dir = nullptr;
+                struct dirent *dir_ent;
+
+                auto scan_elements_path = device_path + "/scan_elements";
+                // start enumerate the scan elemnts dir.
+                dir = opendir(scan_elements_path.c_str());
+                if (dir == NULL) {
+                    return false;
+                }
+
+                // verify file format. should include in_ (input) and _en (enable).
+                while ((dir_ent = readdir(dir)) != NULL) {
+                    if (dir_ent->d_type != DT_DIR) {
+                        std::string file(dir_ent->d_name);
+                        std::string prefix = "in_";
+                        std::string suffix = "_en";
+                        if (file.substr(0,prefix.size()) == prefix &&
+                            file.substr(file.size()-suffix.size(),suffix.size()) == suffix) {
+                            // initialize input.
+                            auto* new_input = new hid_input();
+                            if (!new_input->init(device_path, file))
+                            {
+                                // fail to initialize this input. continue to the next one.
+                                continue;
+                            }
+
+                            // push to input list.
+                            inputs.push_front(new_input);
+                        }
+
+                    }
+                }
+            }
+
+            // configure hid device via fd
+            bool write_integer_to_param(const std::string& param,int value) {
+                std::ostringstream iio_device_path;
+                iio_device_path << "/sys/bus/iio/devices/iio:device" << iio_device << "/" << param;
+                auto str = iio_device_path.str();
+
+                std::ofstream iio_device_file(iio_device_path.str());
+
+                if (!iio_device_file.good()) {
+                    return false;
+                }
+
+                iio_device_file << value;
+
+                iio_device_file.close();
+
+                return true;
+            }
+
+            static const int buf_len = 100;
+            int vid;
+            int pid;
+            int iio_device;
+            std::string sensor_name;
+
+            std::list<hid_input*> inputs;
+            std::list<hid_input*> channels;
+            hid_callback callback;
+            std::atomic<bool> capturing;
+            std::unique_ptr<std::thread> hid_thread;
+        };
+
+        class v4l_hid_device : public hid_device
+        {
+        public:
+            v4l_hid_device(const hid_device_info& info)
+            {
+                _info.unique_id = "";
+                v4l_hid_device::foreach_hid_device([&](const hid_device_info& hid_dev_info, const std::string& iio_device){
+                    if (hid_dev_info.unique_id == info.unique_id)
+                    {
+                        _info = info;
+                        iio_devices.push_back(iio_device);
+                    }
+                });
+
+                if (_info.unique_id == "") throw std::runtime_error("hid device is no longer connected!");
+            }
+
+            ~v4l_hid_device()
+            {
+                for (auto& elem : _streaming_sensors)
+                {
+                    elem->stop_capture();
+                }
+            }
+
+            void open()
+            {
+                for (auto& iio_device : iio_devices)
+                {
+                    auto device = std::unique_ptr<hid_backend>(new hid_backend());
+                    if (device->init(std::stoul(_info.vid, nullptr, 16),
+                                     std::stoul(_info.pid, nullptr, 16),
+                                     std::stoul(iio_device, nullptr, 16)))
+                    {
+                        _hid_sensors.push_back(std::move(device));
+                    }
+                    else
+                    {
+                        for (auto& hid_sensor : _hid_sensors)
+                        {
+                            hid_sensor.reset();
+                        }
+                        _hid_sensors.clear();
+                        throw std::runtime_error("Hid device is busy!");
+                    }
+                }
+            }
+
+            void close()
+            {
+                for (auto& hid_sensor : _hid_sensors)
+                {
+                    hid_sensor.reset();
+                }
+                _hid_sensors.clear();
+            }
+
+            std::vector<hid_sensor> get_sensors()
+            {
+                std::vector<hid_sensor> iio_sensors;
+                for (auto& elem : _hid_sensors)
+                {
+                    iio_sensors.push_back(hid_sensor{elem->get_iio_device(), elem->get_sensor_name()});
+                }
+                return iio_sensors;
+            }
+
+            std::vector<hid_sensor_input> get_sensor_inputs(int sensor_iio)
+            {
+                std::vector<hid_sensor_input> sensor_inputs;
+                for (auto& elem : _hid_sensors)
+                {
+                    if (elem->get_iio_device() == sensor_iio)
+                    {
+                        auto inputs = elem->get_inputs();
+                        for (auto input : inputs)
+                        {
+                            sensor_inputs.push_back(hid_sensor_input{input->get_index(), input->get_name()});
+                        }
+                    }
+                }
+                return sensor_inputs;
+            }
+
+            void start_capture(const std::vector<int>& sensor_iio, hid_callback callback)
+            {
+                for (auto& iio : sensor_iio)
+                {
+                    for (auto& sensor : _hid_sensors)
+                    {
+                        if (sensor->get_iio_device() == iio)
+                        {
+                            auto inputs = sensor->get_inputs();
+                            for (auto input : inputs)
+                            {
+                                input->enable(true);
+                                _streaming_sensors.push_back(sensor.get());
+                                break;
+                            }
+                        }
+                    }
+
+                    if (_streaming_sensors.empty())
+                        LOG_ERROR("iio_sensor " + std::to_string(iio) + " not found!");
+                }
+
+                std::vector<hid_backend*> captured_sensors;
+                try{
+                for (auto& elem : _streaming_sensors)
+                {
+                    elem->start_capture(callback);
+                    captured_sensors.push_back(elem);
+                }
+                }
+                catch(...)
+                {
+                    for (auto& elem : captured_sensors)
+                        elem->stop_capture();
+
+                    _streaming_sensors.clear();
+                    throw;
+                }
+            }
+
+            void stop_capture()
+            {
+                for (auto& sensor : _hid_sensors)
+                {
+                    auto inputs = sensor->get_inputs();
+                    for (auto input : inputs)
+                    {
+                        input->enable(false);
+                        sensor->stop_capture();
+                        break;
+                    }
+                }
+
+                _streaming_sensors.clear();
+            }
+
+            static void foreach_hid_device(std::function<void(const hid_device_info&, const std::string&)> action)
+            {
+                const std::string root_path = "/sys/devices/pci0000:00";
+                // convert to vector because fts_name needs a char*.
+                std::vector<char> path(root_path.c_str(), root_path.c_str() + root_path.size() + 1);
+                char *paths[] = { path.data(), NULL };
+                // using FTS to read the directory structure of the root_path.
+                FTS *tree = fts_open(paths, FTS_NOCHDIR, 0);
+
+                if (!tree) {
+                    throw std::runtime_error(to_string() << "fts_open returned null!");
+                }
+
+                FTSENT *node;
+                while ((node = fts_read(tree))) {
+                    if (node->fts_level > 0 && node->fts_name[0] == '.')
+                        fts_set(tree, node, FTS_SKIP);
+                    else if (node->fts_info & FTS_F) {
+                        // for each iio:device , add to the device list. regex help identify device.
+                        if (std::regex_search (node->fts_path, std::regex("iio:device[\\d]/name$"))) {
+                            // validate device path and fetch device parameters.
+                            std::smatch m;
+                            auto device_path = std::string(node->fts_path);
+                            if (!std::regex_search(device_path, m, std::regex("/sys/devices/pci0000:00/.*(\\S{1})-(\\S{1}).*(\\S{4}):(\\S{4}):(\\S{4}).(\\S{4})/(.*)/iio:device(\\d{1,3})/name$")))
+                            {
+                                throw std::runtime_error(to_string() << "HID enumeration failed. couldn't parse iio hid device path, regex is not valid!");
+                            }
+
+                            hid_device_info hid_dev_info;
+                            // we are safe to get all parameters because regex is valid.
+                            auto busnum = std::string(m[1]);
+                            auto port_id = std::string(m[2]);
+                            hid_dev_info.vid = m[4];
+                            hid_dev_info.pid = m[5];
+
+                            std::stringstream ss_vid(hid_dev_info.vid);
+                            std::stringstream ss_pid(hid_dev_info.pid);
+                            unsigned long long vid, pid;
+                            ss_vid >> std::hex >> vid;
+                            ss_pid >> std::hex >> pid;
+
+                            get_usb_port_id_from_vid_pid(vid, pid, hid_dev_info.unique_id);
+                            hid_dev_info.id = m[6];
+                            hid_dev_info.device_path = device_path;
+                            std::string iio_device = m[8];
+                            action(hid_dev_info, iio_device);
+                        }
+                    }
+                }
+                fts_close(tree);
+            }
+
+        private:
+            hid_device_info _info;
+            std::vector<std::string> iio_devices;
+            std::vector<std::unique_ptr<hid_backend>> _hid_sensors;
+            std::vector<hid_backend*> _streaming_sensors;
+        };
 
         class v4l_usb_device : public usb_device
         {
@@ -97,6 +704,12 @@ namespace rsimpl
                 libusb_exit(_usb_context);
             }
 
+
+            static std::string get_usb_port_id_from_usb_device(libusb_device* usb_device)
+            {
+                return get_usb_port_id(usb_device);
+            }
+
             static void foreach_usb_device(libusb_context* usb_context, std::function<void(
                                                                 const usb_device_info&,
                                                                 libusb_device*)> action)
@@ -108,18 +721,12 @@ namespace rsimpl
                 for(int i=0; list[i]; ++i)
                 {
                     libusb_device * usb_device = list[i];
-                    int busnum = libusb_get_bus_number(usb_device);
-                    int devnum = libusb_get_device_address(usb_device);
-
                     auto parent_device = libusb_get_parent(usb_device);
                     if (parent_device)
                     {
-                        int parent_devnum = libusb_get_device_address(libusb_get_parent(usb_device));
-
                         usb_device_info info;
                         std::stringstream ss;
-                        ss << busnum << "/" << devnum << "/" << parent_devnum;
-                        info.unique_id = ss.str();
+                        info.unique_id = get_usb_port_id(usb_device);
                         action(info, usb_device);
                     }
                 }
@@ -198,11 +805,9 @@ namespace rsimpl
 
                     // Resolve a pathname to ignore virtual video devices
                     std::string path = "/sys/class/video4linux/" + name;
-                    char buff[PATH_MAX];
-                    ssize_t len = ::readlink(path.c_str(), buff, sizeof(buff)-1);
-                    if (len != -1)
+                    char buff[PATH_MAX] = {0};
+                    if (realpath(path.c_str(), buff) != NULL)
                     {
-                        buff[len] = '\0';
                         std::string real_path = std::string(buff);
                         if (real_path.find("virtual") != std::string::npos)
                             continue;
@@ -261,9 +866,8 @@ namespace rsimpl
                         info.vid = vid;
                         info.mi = mi;
                         info.id = dev_name;
-                        ss.str("");
-                        ss << busnum << "/" << devnum << "/" << parent_devnum;
-                        info.unique_id = ss.str();
+                        info.device_path = std::string(buff);
+                        get_usb_port_id_from_vid_pid(vid, pid, info.unique_id);
                         action(info, dev_name);
                     }
                     catch(const std::exception & e)
@@ -306,6 +910,7 @@ namespace rsimpl
                     {
                         _name = name;
                         _info = i;
+                        _device_path = i.device_path;
                     }
                 });
                 if (_name == "") throw std::runtime_error("device is no longer connected!");
@@ -753,11 +1358,12 @@ namespace rsimpl
             void lock() const override {}
             void unlock() const override {}
 
-            std::string get_device_location() const override { return ""; }
+            std::string get_device_location() const override { return _device_path; }
 
         private:
             power_state _state = D3;
             std::string _name;
+            std::string _device_path;
             uvc_device_info _info;
             int _fd;
             std::vector<buffer> _buffers;
@@ -807,6 +1413,27 @@ namespace rsimpl
 
                 return results;
             }
+
+            std::shared_ptr<hid_device> create_hid_device(hid_device_info info) const override
+            {
+                return std::make_shared<v4l_hid_device>(info);
+            }
+
+            std::vector<hid_device_info> query_hid_devices() const override
+            {
+                std::map<std::string, hid_device_info> hid_device_info_map;
+                v4l_hid_device::foreach_hid_device([&](const hid_device_info& hid_dev_info, const std::string&){
+                    hid_device_info_map.insert(std::make_pair(hid_dev_info.unique_id, hid_dev_info));
+                });
+
+                std::vector<hid_device_info> results;
+                for (auto&& elem : hid_device_info_map)
+                {
+                    results.push_back(elem.second);
+                }
+
+                return results;
+            }
         };
 
         std::shared_ptr<backend> create_backend()
@@ -814,496 +1441,6 @@ namespace rsimpl
             return std::make_shared<v4l_backend>();
         }
 
-
-
-        /*
-
-        struct context
-        {
-            libusb_context * usb_context;
-
-            context()
-            {
-                int status = libusb_init(&usb_context);
-                if(status < 0) throw std::runtime_error(to_string() << "libusb_init(...) returned " << libusb_error_name(status));
-            }
-            ~context()
-            {
-                libusb_exit(usb_context);
-            }
-        };
-
-        struct subdevice
-        {
-
-        };
-
-        struct device
-        {
-            const std::shared_ptr<context> parent;
-            std::vector<std::unique_ptr<subdevice>> subdevices;
-            std::thread thread;
-            std::thread data_channel_thread;
-            volatile bool stop;
-            volatile bool data_stop;
-
-            libusb_device * usb_device;
-            libusb_device_handle * usb_handle;
-            std::vector<int> claimed_interfaces;
-
-            device(std::shared_ptr<context> parent) : parent(parent), stop(), data_stop(), usb_device(), usb_handle() {}
-            ~device()
-            {
-                stop_streaming();
-
-                for(auto interface_number : claimed_interfaces)
-                {
-                    int status = libusb_release_interface(usb_handle, interface_number);
-                    if(status < 0) LOG_ERROR("libusb_release_interface(...) returned " << libusb_error_name(status));
-                }
-
-                if(usb_handle) libusb_close(usb_handle);
-                if(usb_device) libusb_unref_device(usb_device);
-            }
-
-            bool has_mi(int mi) const
-            {
-                for(auto & sub : subdevices)
-                {
-                    if(sub->get_mi() == mi) return true;
-                }
-                return false;
-            }
-
-            void start_streaming()
-            {
-                std::vector<subdevice *> subs;
-
-                for(auto & sub : subdevices)
-                {
-                    if(sub->callback)
-                    {
-                        sub->start_capture();
-                        subs.push_back(sub.get());
-                    }                
-                }
-
-                thread = std::thread([this, subs]()
-                {
-                    while(!stop) subdevice::poll(subs);
-                });
-            }
-
-            void stop_streaming()
-            {
-                if(thread.joinable())
-                {
-                    stop = true;
-                    thread.join();
-                    stop = false;
-
-                    for(auto & sub : subdevices) sub->stop_capture();
-                }                
-            }
-
-            void start_data_acquisition()
-            {
-                std::vector<subdevice *> data_channel_subs;
-                for (auto & sub : subdevices)
-                {                   
-                    if (sub->channel_data_callback)
-                    {                        
-                        data_channel_subs.push_back(sub.get());
-                    }
-                }
-                
-                // Motion events polling pipe
-                if (claimed_interfaces.size())
-                {
-                    data_channel_thread = std::thread([this, data_channel_subs]()
-                    {
-                        // Polling 100ms timeout
-                        while (!data_stop)
-                        {
-                            subdevice::poll_interrupts(this->usb_handle, data_channel_subs, 100);
-                        }
-                    });
-                }
-            }
-
-            void stop_data_acquisition()
-            {
-                if (data_channel_thread.joinable())
-                {
-                    data_stop = true;
-                    data_channel_thread.join();
-                    data_stop = false;
-                }
-            }
-        };
-
-        ////////////
-        // device //
-        ////////////
-
-        int get_vendor_id(const device & device) { return device.subdevices[0]->get_vid(); }
-        int get_product_id(const device & device) { return device.subdevices[0]->get_pid(); }
-
-        std::string get_usb_port_id(const device & device)
-        {
-            std::string usb_port = std::to_string(libusb_get_bus_number(device.usb_device)) + "-" +
-                std::to_string(libusb_get_port_number(device.usb_device));
-            return usb_port;
-        }
-
-        void get_control(const device & device, const extension_unit & xu, uint8_t ctrl, void * data, int len)
-        {
-            device.subdevices[xu.subdevice]->get_control(xu, ctrl, data, len);
-        }
-        void set_control(device & device, const extension_unit & xu, uint8_t ctrl, void * data, int len)
-        {
-            device.subdevices[xu.subdevice]->set_control(xu, ctrl, data, len);
-        }
-
-        void claim_interface(device & device, const guid & , int interface_number)
-        {
-            if(!device.usb_handle)
-            {
-                int status = libusb_open(device.usb_device, &device.usb_handle);
-                if(status < 0) throw std::runtime_error(to_string() << "libusb_open(...) returned " << libusb_error_name(status));
-            }
-
-            int status = libusb_claim_interface(device.usb_handle, interface_number);
-            if(status < 0) throw std::runtime_error(to_string() << "libusb_claim_interface(...) returned " << libusb_error_name(status));
-            device.claimed_interfaces.push_back(interface_number);
-        }
-        void claim_aux_interface(device & device, const guid & interface_guid, int interface_number)
-        {
-            claim_interface(device, interface_guid, interface_number);
-        }
-
-        void bulk_transfer(device & device, unsigned char endpoint, void * data, int length, int *actual_length, unsigned int timeout)
-        {
-            if(!device.usb_handle) throw std::logic_error("called uvc::bulk_transfer before uvc::claim_interface");
-            int status = libusb_bulk_transfer(device.usb_handle, endpoint, (unsigned char *)data, length, actual_length, timeout);
-            if(status < 0) throw std::runtime_error(to_string() << "libusb_bulk_transfer(...) returned " << libusb_error_name(status));
-        }
-
-        void interrupt_transfer(device & device, unsigned char endpoint, void * data, int length, int *actual_length, unsigned int timeout)
-        {
-            if(!device.usb_handle) throw std::logic_error("called uvc::interrupt_transfer before uvc::claim_interface");
-            int status = libusb_interrupt_transfer(device.usb_handle, endpoint, (unsigned char *)data, length, actual_length, timeout);
-            if(status < 0) throw std::runtime_error(to_string() << "libusb_interrupt_transfer(...) returned " << libusb_error_name(status));
-        }
-
-        void set_subdevice_mode(device & device, int subdevice_index, int width, int height, uint32_t fourcc, int fps, video_channel_callback callback)
-        {
-            device.subdevices[subdevice_index]->set_format(width, height, (const big_endian<int> &)fourcc, fps, callback);
-        }
-
-        void set_subdevice_data_channel_handler(device & device, int subdevice_index, data_channel_callback callback)
-        {
-            device.subdevices[subdevice_index]->set_data_channel_cfg(callback);
-        }
-
-        void start_streaming(device & device, int )
-        {
-            device.start_streaming();
-        }
-
-        void stop_streaming(device & device)
-        {
-            device.stop_streaming();
-        }       
-
-        void start_data_acquisition(device & device)
-        {
-            device.start_data_acquisition();
-        }
-
-        void stop_data_acquisition(device & device)
-        {
-            device.stop_data_acquisition();
-        }
-
-        void set_pu_control(device & device, int subdevice, rs_option option, int value)
-        {
-            struct v4l2_control control = {get_cid(option), value};
-            if (RS_OPTION_COLOR_ENABLE_AUTO_EXPOSURE==option) { control.value = value ? V4L2_EXPOSURE_APERTURE_PRIORITY : V4L2_EXPOSURE_MANUAL; }
-            if (xioctl(device.subdevices[subdevice]->fd, VIDIOC_S_CTRL, &control) < 0) throw_error("VIDIOC_S_CTRL");
-        }
-
-        int get_pu_control(const device & device, int subdevice, rs_option option)
-        {
-            struct v4l2_control control = {get_cid(option), 0};
-            if (xioctl(device.subdevices[subdevice]->fd, VIDIOC_G_CTRL, &control) < 0) throw_error("VIDIOC_G_CTRL");
-            if (RS_OPTION_COLOR_ENABLE_AUTO_EXPOSURE==option)  { control.value = (V4L2_EXPOSURE_MANUAL==control.value) ? 0 : 1; }
-            return control.value;
-        }
-
-        void get_pu_control_range(const device & device, int subdevice, rs_option option, int * min, int * max, int * step, int * def)
-        {
-            // Auto controls range is trimed to {0,1} range
-            if(option >= RS_OPTION_COLOR_ENABLE_AUTO_EXPOSURE && option <= RS_OPTION_COLOR_ENABLE_AUTO_WHITE_BALANCE)
-            {
-                if(min)  *min  = 0;
-                if(max)  *max  = 1;
-                if(step) *step = 1;
-                if(def)  *def  = 1;
-                return;
-            }
-
-            struct v4l2_queryctrl query = {};
-            query.id = get_cid(option);
-            if (xioctl(device.subdevices[subdevice]->fd, VIDIOC_QUERYCTRL, &query) < 0)
-            {
-                // Some controls (exposure, auto exposure, auto hue) do not seem to work on V4L2
-                // Instead of throwing an error, return an empty range. This will cause this control to be omitted on our UI sample.
-                // TODO: Figure out what can be done about these options and make this work
-                query.minimum = query.maximum = 0;
-            }
-            if(min)  *min  = query.minimum;
-            if(max)  *max  = query.maximum;
-            if(step) *step = query.step;
-            if(def)  *def  = query.default_value;
-        }
-
-        void get_extension_control_range(const device & device, const extension_unit & xu, char control, int * min, int * max, int * step, int * def)
-        {
-            __u16 size = 0;
-            __u8 value = 0; // all of the real sense extended controls are one byte,
-                            // checking return value for UVC_GET_LEN and allocating
-                            // appropriately might be better
-            __u8 * data = (__u8 *)&value;
-            struct uvc_xu_control_query xquery;
-            memset(&xquery, 0, sizeof(xquery));
-            xquery.query = UVC_GET_LEN;
-            xquery.size = 2; // size seems to always be 2 for the LEN query, but
-                             //doesn't seem to be documented. Use result for size
-                             //in all future queries of the same control number
-            xquery.selector = control;
-            xquery.unit = xu.unit;
-            xquery.data = (__u8 *)&size;
-
-            if(-1 == ioctl(device.subdevices[xu.subdevice]->fd,UVCIOC_CTRL_QUERY,&xquery)){
-                throw std::runtime_error(to_string() << " ioctl failed on UVC_GET_LEN");
-            }
-
-            xquery.query = UVC_GET_MIN;
-            xquery.size = size;
-            xquery.selector = control;
-            xquery.unit = xu.unit;
-            xquery.data = data;
-            if(-1 == ioctl(device.subdevices[xu.subdevice]->fd,UVCIOC_CTRL_QUERY,&xquery)){
-                throw std::runtime_error(to_string() << " ioctl failed on UVC_GET_MIN");
-            }
-            *min = value;
-
-            xquery.query = UVC_GET_MAX;
-            xquery.size = size;
-            xquery.selector = control;
-            xquery.unit = xu.unit;
-            xquery.data = data;
-            if(-1 == ioctl(device.subdevices[xu.subdevice]->fd,UVCIOC_CTRL_QUERY,&xquery)){
-                throw std::runtime_error(to_string() << " ioctl failed on UVC_GET_MAX");
-            }
-            *max = value;
-
-            xquery.query = UVC_GET_DEF;
-            xquery.size = size;
-            xquery.selector = control;
-            xquery.unit = xu.unit;
-            xquery.data = data;
-            if(-1 == ioctl(device.subdevices[xu.subdevice]->fd,UVCIOC_CTRL_QUERY,&xquery)){
-                throw std::runtime_error(to_string() << " ioctl failed on UVC_GET_DEF");
-            }
-            *def = value;
-
-            xquery.query = UVC_GET_RES;
-            xquery.size = size;
-            xquery.selector = control;
-            xquery.unit = xu.unit;
-            xquery.data = data;
-            if(-1 == ioctl(device.subdevices[xu.subdevice]->fd,UVCIOC_CTRL_QUERY,&xquery)){
-                throw std::runtime_error(to_string() << " ioctl failed on UVC_GET_CUR");
-            }
-            *step = value;
-
-        }
-        /////////////
-        // context //
-        /////////////
-
-        std::shared_ptr<context> create_context()
-        {
-            return std::make_shared<context>();
-        }
-
-        bool is_device_connected(device & device, int vid, int pid)
-        {
-            for (auto& sub : device.subdevices)
-            {
-                if (sub->vid == vid && sub->pid == pid)
-                    return true;
-            }
-
-            return false;
-        }
-
-        std::vector<std::shared_ptr<device>> query_devices(std::shared_ptr<context> context)
-        {
-            // Check if the uvcvideo kernel module is loaded
-            std::ifstream modules("/proc/modules");
-            std::string modulesline;
-            std::regex regex("uvcvideo.* - Live.*");
-            std::smatch match;
-            bool module_found = false;
-
-
-            while(std::getline(modules,modulesline) && !module_found)
-            {
-                module_found = std::regex_match(modulesline, match, regex);
-            }
-
-            if(!module_found)
-            {
-                throw std::runtime_error("uvcvideo kernel module is not loaded");
-            }
-
-
-            // Enumerate all subdevices present on the system
-            std::vector<std::unique_ptr<subdevice>> subdevices;
-            DIR * dir = opendir("/sys/class/video4linux");
-            if(!dir) throw std::runtime_error("Cannot access /sys/class/video4linux");
-            while (dirent * entry = readdir(dir))
-            {
-                std::string name = entry->d_name;
-                if(name == "." || name == "..") continue;
-
-                // Resolve a pathname to ignore virtual video devices
-                std::string path = "/sys/class/video4linux/" + name;
-                char buff[PATH_MAX];
-                ssize_t len = ::readlink(path.c_str(), buff, sizeof(buff)-1);
-                if (len != -1) 
-                {
-                    buff[len] = '\0';
-                    std::string real_path = std::string(buff);
-                    if (real_path.find("virtual") != std::string::npos)
-                        continue;
-                }
-
-                try
-                {
-                    std::unique_ptr<subdevice> sub(new subdevice(name));
-                    subdevices.push_back(move(sub));
-                }
-                catch(const std::exception & e)
-                {
-                    LOG_INFO("Not a USB video device: " << e.what());
-                }
-            }
-            closedir(dir);
-
-            // Note: Subdevices of a given device may not be contiguous. We can test our grouping/sorting logic by calling random_shuffle.
-            // std::random_shuffle(begin(subdevices), end(subdevices));
-
-            // Group subdevices by busnum/devnum
-            std::vector<std::shared_ptr<device>> devices;
-            for(auto & sub : subdevices)
-            {
-                bool is_new_device = true;
-                for(auto & dev : devices)
-                {
-                    if(sub->busnum == dev->subdevices[0]->busnum && sub->devnum == dev->subdevices[0]->devnum)
-                    {
-                        dev->subdevices.push_back(move(sub));
-                        is_new_device = false;
-                        break;
-                    }
-                }
-                if(is_new_device)
-                {
-                    if (sub->vid == VID_INTEL_CAMERA && sub->pid == ZR300_FISHEYE_PID)  // avoid inserting fisheye camera as a device
-                        continue;
-                    devices.push_back(std::make_shared<device>(context));
-                    devices.back()->subdevices.push_back(move(sub));
-                }
-            }
-
-            // Sort subdevices within each device by multiple-interface index
-            for(auto & dev : devices)
-            {
-                std::sort(begin(dev->subdevices), end(dev->subdevices), [](const std::unique_ptr<subdevice> & a, const std::unique_ptr<subdevice> & b)
-                {
-                    return a->mi < b->mi;
-                });
-            }
-
-
-            // Insert fisheye camera as subDevice of ZR300
-            for(auto & sub : subdevices)
-            {
-                if (!sub)
-                    continue;
-
-                for(auto & dev : devices)
-                {
-                    if (dev->subdevices[0]->vid == VID_INTEL_CAMERA && dev->subdevices[0]->pid == ZR300_CX3_PID && 
-                        sub->vid == VID_INTEL_CAMERA && sub->pid == ZR300_FISHEYE_PID && dev->subdevices[0]->parent_devnum == sub->parent_devnum)
-                    {
-                        dev->subdevices.push_back(move(sub));
-                        break;
-                    }
-                }
-            }
-
-
-            // Obtain libusb_device_handle for each device
-            libusb_device ** list;
-            int status = libusb_get_device_list(context->usb_context, &list);
-            if(status < 0) throw std::runtime_error(to_string() << "libusb_get_device_list(...) returned " << libusb_error_name(status));
-            for(int i=0; list[i]; ++i)
-            {
-                libusb_device * usb_device = list[i];
-                int busnum = libusb_get_bus_number(usb_device);
-                int devnum = libusb_get_device_address(usb_device);
-
-                // Look for a video device whose busnum/devnum matches this USB device
-                for(auto & dev : devices)
-                {
-                    if (dev->subdevices.size() >=4)      // Make sure that four subdevices present
-                    {
-                        auto parent_device = libusb_get_parent(usb_device);
-                        if (parent_device)
-                        {
-                            int parent_devnum = libusb_get_device_address(libusb_get_parent(usb_device));
-
-                            // First, handle the special case of FishEye
-                            bool bFishEyeDevice = ((busnum == dev->subdevices[3]->busnum) && (parent_devnum == dev->subdevices[3]->parent_devnum));
-                            if(bFishEyeDevice && !dev->usb_device)
-                            {
-                                dev->usb_device = usb_device;
-                                libusb_ref_device(usb_device);
-                                break;
-                            }
-                        }
-                    }
-
-                    if(busnum == dev->subdevices[0]->busnum && devnum == dev->subdevices[0]->devnum)
-                    {
-                        if (!dev->usb_device) // do not override previous configuration
-                        {
-                            dev->usb_device = usb_device;
-                            libusb_ref_device(usb_device);
-                            break;
-                        }
-                    }                    
-                }
-            }
-            libusb_free_device_list(list, 1);
-
-            return devices;
-        }*/
     }
 }
 

@@ -51,6 +51,7 @@ typedef enum rs_format
     RS_FORMAT_RAW16       ,
     RS_FORMAT_RAW8        ,
     RS_FORMAT_UYVY        ,
+    RS_FORMAT_MOTION_DATA ,
     RS_FORMAT_COUNT
 } rs_format;
 
@@ -181,7 +182,6 @@ typedef struct rs_context rs_context;
 typedef struct rs_device_list rs_device_list;
 typedef struct rs_device rs_device;
 typedef struct rs_error rs_error;
-typedef struct rs_active_stream rs_streaming_lock;
 typedef struct rs_stream_profile_list rs_stream_modes_list;
 typedef struct rs_raw_data_buffer rs_raw_data_buffer;
 typedef struct rs_frame rs_frame;
@@ -305,9 +305,8 @@ void rs_delete_modes_list(rs_stream_modes_list* list);
 * \param[in] fps  the number of frames which will be streamed per second
 * \param[in] format     the pixel format of a frame image
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
-* \return exclusive lock to be used for streaming, should be released by rs_close
 */
-rs_streaming_lock* rs_open(rs_device* device, rs_stream stream, int width, int height, int fps, rs_format format, rs_error** error);
+void rs_open(rs_device* device, rs_stream stream, int width, int height, int fps, rs_format format, rs_error** error);
 
 /**
 * open subdevice for exclusive access, by commiting to composite configuration, specifying one or more stream profiles
@@ -320,40 +319,40 @@ rs_streaming_lock* rs_open(rs_device* device, rs_stream stream, int width, int h
 * \param[in] format     the pixel format of a frame image
 * \param[in] count      number of simultenous stream profiles to configure
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
-* \return exclusive lock to be used for streaming, should be released by rs_close
 */
-rs_streaming_lock* rs_open_many(rs_device* device, const rs_stream* stream, const int* width, 
+void rs_open_multiple(rs_device* device, const rs_stream* stream, const int* width,
     const int* height, const int* fps, const rs_format* format, int count, rs_error** error);
 
 /**
-* release streaming lock and stop any streaming from specified subdevice
-* \param[in] lock the streaming object returned from rs_open or rs_open_many
+* stop any streaming from specified subdevice
+* \param[in] device     RealSense device
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 */
-void rs_close(rs_streaming_lock* lock);
+void rs_close(const rs_device* device, rs_error** error);
 
 /**
 * start streaming from specified configured device
-* \param[in] lock the streaming object returned from rs_open or rs_open_many
+* \param[in] device  RealSense device
 * \param[in] on_frame function pointer to register as per-frame callback
 * \param[in] user auxilary data the user wishes to receive together with every frame callback
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 */
-void rs_start(rs_streaming_lock* lock, rs_frame_callback_ptr on_frame, void* user, rs_error** error);
+void rs_start(const rs_device* device, rs_frame_callback_ptr on_frame, void* user, rs_error** error);
 
 /**
 * start streaming from specified configured device
-* \param[in] lock the streaming object returned from rs_open or rs_open_many
+* \param[in] device  RealSense device
 * \param[in] callback callback object created from c++ application. ownership over the callback object is moved into the relevant streaming lock
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 */
-void rs_start_cpp(rs_streaming_lock* lock, rs_frame_callback* callback, rs_error** error);
+void rs_start_cpp(const rs_device* device, rs_frame_callback* callback, rs_error** error);
 
 /**
 * stops streaming from specified configured device
-* \param[in] lock the streaming object returned from rs_open or rs_open_many
+* \param[in] device  RealSense device
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 */
-void rs_stop(rs_streaming_lock* lock, rs_error** error);
+void rs_stop(const rs_device* device, rs_error** error);
 
 /**
 * retrive metadata from frame handle

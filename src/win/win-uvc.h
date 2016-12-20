@@ -68,6 +68,8 @@ namespace rsimpl
             void flush(int sIndex);
             void check_connection() const;
             IKsControl* get_ks_control(const extension_unit& xu) const;
+            std::vector<std::pair<stream_profile, int>> get_stream_profiles_and_indexes() const;
+            int get_stream_index_by_profile(const stream_profile& profile) const;
 
             const uvc_device_info                   _info;
             power_state                             _power_state = D3;

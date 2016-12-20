@@ -30,11 +30,6 @@ struct rs_stream_profile_list
     std::vector<rsimpl::stream_profile> list;
 };
 
-struct rs_active_stream
-{
-    std::shared_ptr<rsimpl::streaming_lock> lock;
-};
-
 struct rs_device
 {
     std::shared_ptr<rsimpl::context> ctx;
@@ -341,7 +336,7 @@ void rs_delete_raw_data(rs_raw_data_buffer* buffer) try
 }
 NOEXCEPT_RETURN(, buffer)
 
-rs_streaming_lock* rs_open(rs_device* device, rs_stream stream, 
+void rs_open(rs_device* device, rs_stream stream,
     int width, int height, int fps, rs_format format, rs_error** error) try
 {
     VALIDATE_NOT_NULL(device);
@@ -351,13 +346,11 @@ rs_streaming_lock* rs_open(rs_device* device, rs_stream stream,
     std::vector<rsimpl::stream_profile> request;
     request.push_back({ stream, static_cast<uint32_t>(width),
             static_cast<uint32_t>(height), static_cast<uint32_t>(fps), format });
-    auto result = new rs_streaming_lock{ device->device->get_endpoint(device->subdevice).configure(request) };
-    result->lock->set_owner(result);
-    return result;
+    device->device->get_endpoint(device->subdevice).open(request);
 }
-HANDLE_EXCEPTIONS_AND_RETURN(nullptr, device, stream, width, height, fps, format)
+HANDLE_EXCEPTIONS_AND_RETURN(, device, stream, width, height, fps, format)
 
-rs_streaming_lock* rs_open_many(rs_device* device, 
+void rs_open_multiple(rs_device* device,
     const rs_stream* stream, const int* width, const int* height, const int* fps, 
     const rs_format* format, int count, rs_error** error) try
 {
@@ -374,18 +367,16 @@ rs_streaming_lock* rs_open_many(rs_device* device,
         request.push_back({ stream[i], static_cast<uint32_t>(width[i]), 
                             static_cast<uint32_t>(height[i]), static_cast<uint32_t>(fps[i]), format[i] });
     }
-    auto result = new rs_streaming_lock{ device->device->get_endpoint(device->subdevice).configure(request) };
-    result->lock->set_owner(result);
-    return result;
+    device->device->get_endpoint(device->subdevice).open(request);
 }
-HANDLE_EXCEPTIONS_AND_RETURN(nullptr, device, stream, width, height, fps, format)
+HANDLE_EXCEPTIONS_AND_RETURN(, device, stream, width, height, fps, format)
 
-void rs_close(rs_streaming_lock* lock) try
+void rs_close(const rs_device* device, rs_error ** error) try
 {
-    VALIDATE_NOT_NULL(lock);
-    delete lock;
+    VALIDATE_NOT_NULL(device);
+    device->device->get_endpoint(device->subdevice).close();
 }
-NOEXCEPT_RETURN(, lock)
+HANDLE_EXCEPTIONS_AND_RETURN(, device)
 
 float rs_get_option(const rs_device* device, rs_option option, rs_error** error) try
 {
@@ -436,7 +427,7 @@ const char* rs_get_camera_info(const rs_device* device, rs_camera_info info, rs_
     {
         return device->device->get_endpoint(device->subdevice).get_info(info).c_str();
     }
-    return device->device->get_info(info).c_str();
+    throw std::runtime_error(rsimpl::to_string() << "info " << rs_camera_info_to_string(info) << " not supported by subdevice " << device->subdevice);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, device, info)
 
@@ -444,40 +435,36 @@ int rs_supports_camera_info(const rs_device* device, rs_camera_info info, rs_err
 {
     VALIDATE_NOT_NULL(device);
     VALIDATE_ENUM(info);
-    if (!device->device->get_endpoint(device->subdevice).supports_info(info))
-    {
-        return device->device->supports_info(info);
-    }
-    return true;
+    return device->device->get_endpoint(device->subdevice).supports_info(info);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(false, device, info)
 
 
-void rs_start(rs_streaming_lock* lock, rs_frame_callback_ptr on_frame, void * user, rs_error ** error) try
+void rs_start(const rs_device* device, rs_frame_callback_ptr on_frame, void * user, rs_error ** error) try
 {
-    VALIDATE_NOT_NULL(lock);
+    VALIDATE_NOT_NULL(device);
     VALIDATE_NOT_NULL(on_frame);
     rsimpl::frame_callback_ptr callback(
-        new rsimpl::frame_callback(lock, on_frame, user), 
+        new rsimpl::frame_callback(device, on_frame, user),
         [](rs_frame_callback* p) { delete p; });
-    lock->lock->play(std::move(callback));
+    device->device->get_endpoint(device->subdevice).start_streaming(std::move(callback));
 }
-HANDLE_EXCEPTIONS_AND_RETURN(, lock, on_frame, user)
+HANDLE_EXCEPTIONS_AND_RETURN(, device, on_frame, user)
 
-void rs_start_cpp(rs_streaming_lock* lock, rs_frame_callback * callback, rs_error ** error) try
+void rs_start_cpp(const rs_device* device, rs_frame_callback * callback, rs_error ** error) try
 {
-    VALIDATE_NOT_NULL(lock);
+    VALIDATE_NOT_NULL(device);
     VALIDATE_NOT_NULL(callback);
-    lock->lock->play({ callback, [](rs_frame_callback* p) { p->release(); } });
+    device->device->get_endpoint(device->subdevice).start_streaming({ callback, [](rs_frame_callback* p) { p->release(); } });
 }
-HANDLE_EXCEPTIONS_AND_RETURN(, lock, callback)
+HANDLE_EXCEPTIONS_AND_RETURN(, device, callback)
 
-void rs_stop(rs_streaming_lock* lock, rs_error ** error) try
+void rs_stop(const rs_device* device, rs_error ** error) try
 {
-    VALIDATE_NOT_NULL(lock);
-    lock->lock->stop();
+    VALIDATE_NOT_NULL(device);
+    device->device->get_endpoint(device->subdevice).stop_streaming();
 }
-HANDLE_EXCEPTIONS_AND_RETURN(, lock)
+HANDLE_EXCEPTIONS_AND_RETURN(, device)
 
 double rs_get_frame_metadata(const rs_frame * frame, rs_frame_metadata frame_metadata, rs_error ** error) try
 {

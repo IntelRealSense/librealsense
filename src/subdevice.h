@@ -10,6 +10,7 @@
 #include <memory>
 #include <vector>
 #include <unordered_set>
+#include <limits.h>
 #include <atomic>
 
 namespace rsimpl
@@ -17,51 +18,40 @@ namespace rsimpl
     class device;
     class option;
 
-    class streaming_lock
+    class endpoint
     {
     public:
-        streaming_lock();
+        endpoint() 
+            : _is_streaming(false),
+              _is_opened(false),
+              _callback(nullptr, [](rs_frame_callback*) {}),
+              _max_publish_list_size(16),
+              _stream_profiles([this]() { return this->init_stream_profiles(); }) {}
 
-        void set_owner(const rs_streaming_lock* owner) { _owner = owner; }
+        virtual std::vector<uvc::stream_profile> init_stream_profiles() = 0;
+        const std::vector<uvc::stream_profile>& get_stream_profiles() const
+        {
+            return *_stream_profiles;
+        }
 
-        void play(frame_callback_ptr callback);
+        virtual void start_streaming(frame_callback_ptr callback) = 0;
 
-        virtual void stop();
+        virtual void stop_streaming() = 0;
 
         rs_frame* alloc_frame(size_t size, frame_additional_data additional_data) const;
 
         void invoke_callback(rs_frame* frame_ref) const;
 
-        void flush();
+        void flush() const;
 
-        virtual ~streaming_lock();
-
-        bool is_streaming() const { return _is_streaming; }
-
-    private:
-        std::atomic<bool> _is_streaming;
-        std::mutex _callback_mutex;
-        frame_callback_ptr _callback;
-        std::shared_ptr<frame_archive> _archive;
-        std::atomic<uint32_t> _max_publish_list_size;
-        const rs_streaming_lock* _owner;
-    };
-
-    class endpoint
-    {
-    public:
-        endpoint() : stream_profiles([this]() { return this->init_stream_profiles(); }) {}
-
-        virtual std::vector<uvc::stream_profile> init_stream_profiles() = 0;
-        std::vector<uvc::stream_profile> get_stream_profiles()
+        bool is_streaming() const
         {
-            return *stream_profiles;
+            return _is_streaming;
         }
 
-        std::vector<stream_profile> get_principal_requests();
-
-        virtual std::shared_ptr<streaming_lock> configure(
-            const std::vector<stream_profile>& requests) = 0;
+        virtual std::vector<stream_profile> get_principal_requests() = 0;
+        virtual void open(const std::vector<stream_profile>& requests) = 0;
+        virtual void close() = 0;
 
         void register_pixel_format(native_pixel_format pf)
         {
@@ -77,7 +67,7 @@ namespace rsimpl
 
         const std::string& get_info(rs_camera_info info) const;
         bool supports_info(rs_camera_info info) const;
-        void register_info(rs_camera_info info, std::string val);
+        void register_info(rs_camera_info info, const std::string& val);
 
         void set_pose(pose p) { _pose = std::move(p); }
         const pose& get_pose() const { return _pose; }
@@ -88,11 +78,18 @@ namespace rsimpl
 
         std::vector<request_mapping> resolve_requests(std::vector<stream_profile> requests);
 
+        std::atomic<bool> _is_streaming;
+        std::atomic<bool> _is_opened;
+        std::mutex _callback_mutex;
+        frame_callback_ptr _callback;
+        std::shared_ptr<frame_archive> _archive;
+        std::atomic<uint32_t> _max_publish_list_size;
+
     private:
 
         std::map<rs_option, std::shared_ptr<option>> _options;
         std::vector<native_pixel_format> _pixel_formats;
-        lazy<std::vector<uvc::stream_profile> > stream_profiles;
+        lazy<std::vector<uvc::stream_profile>> _stream_profiles;
         pose _pose;
         std::map<rs_camera_info, std::string> _camera_info;
     };
@@ -102,78 +99,80 @@ namespace rsimpl
         virtual bool validate_frame(const request_mapping & mode, const void * frame) const = 0;
         virtual double get_frame_timestamp(const request_mapping& mode, const void * frame) = 0;
         virtual unsigned long long get_frame_counter(const request_mapping& mode, const void * frame) const = 0;
+        virtual void reset() = 0;
     };
 
-    // TODO: This may need to be modified for thread safety
-    class rolling_timestamp_reader : public frame_timestamp_reader
+    class hid_endpoint : public endpoint, public std::enable_shared_from_this<hid_endpoint>
     {
-        bool started;
-        int64_t total;
-        int last_timestamp;
-        mutable int64_t counter = 0;
     public:
-        rolling_timestamp_reader() : started(), total() {}
-
-        bool validate_frame(const request_mapping& mode, const void * frame) const override
+        explicit hid_endpoint(std::shared_ptr<uvc::hid_device> hid_device)
+            : _hid_device(hid_device)
         {
-            // Validate that at least one byte of the image is nonzero
-            for (const uint8_t * it = (const uint8_t *)frame, *end = it + mode.pf->get_image_size(mode.profile.width, mode.profile.height); it != end; ++it)
-            {
-                if (*it)
-                {
-                    return true;
-                }
-            }
+            _hid_device->open();
+            for (auto& elem : _hid_device->get_sensors())
+                _hid_sensors.push_back(elem);
 
-            // F200 and SR300 can sometimes produce empty frames shortly after starting, ignore them
-            //LOG_INFO("Subdevice " << mode.subdevice << " produced empty frame");
-            return false;
+            _hid_device->close();
         }
 
-        double get_frame_timestamp(const request_mapping& /*mode*/, const void * frame) override
-        {
-            // Timestamps are encoded within the first 32 bits of the image
-            int rolling_timestamp = *reinterpret_cast<const int32_t *>(frame);
+        ~hid_endpoint();
 
-            if (!started)
-            {
-                last_timestamp = rolling_timestamp;
-                started = true;
-            }
+        std::vector<stream_profile> get_principal_requests() override;
 
-            const int delta = rolling_timestamp - last_timestamp; // NOTE: Relies on undefined behavior: signed int wraparound
-            last_timestamp = rolling_timestamp;
-            total += delta;
-            const int timestamp = static_cast<int>(total / 100000);
-            return timestamp;
-        }
-        unsigned long long get_frame_counter(const request_mapping & /*mode*/, const void * /*frame*/) const override
-        {
-            return ++counter;
-        }
+        void open(const std::vector<stream_profile>& requests) override;
+
+        void close() override;
+
+        void start_streaming(frame_callback_ptr callback);
+
+        void stop_streaming();
+
+    private:
+
+        struct stream_format{
+            rs_stream stream;
+            rs_format format;
+        };
+
+        const std::map<std::string, stream_format> sensor_name_and_stream_format =
+            {{std::string("gyro_3d"), {RS_STREAM_GYRO, RS_FORMAT_MOTION_DATA}},
+             {std::string("accel_3d"), {RS_STREAM_ACCEL, RS_FORMAT_MOTION_DATA}}};
+
+        std::shared_ptr<uvc::hid_device> _hid_device;
+        std::mutex _configure_lock;
+        std::vector<int> _configured_sensor_iio;
+        std::vector<uvc::hid_sensor> _hid_sensors;
+
+        std::vector<uvc::stream_profile> init_stream_profiles() override;
+
+        std::vector<stream_profile> get_device_profiles();
+
+        int rs_stream_to_sensor_iio(rs_stream stream) const;
+
+        int get_iio_by_name(const std::string& name) const;
+
+        stream_format sensor_name_to_stream_format(const std::string& sensor_name) const;
     };
 
     class uvc_endpoint : public endpoint, public std::enable_shared_from_this<uvc_endpoint>
     {
     public:
-        explicit uvc_endpoint(std::shared_ptr<uvc::uvc_device> uvc_device)
-            : _device(std::move(uvc_device)), _user_count(0) {}
+        explicit uvc_endpoint(std::shared_ptr<uvc::uvc_device> uvc_device,
+                              std::unique_ptr<frame_timestamp_reader> timestamp_reader)
+            : _device(std::move(uvc_device)),
+              _user_count(0),
+              _timestamp_reader(std::move(timestamp_reader))
+        {}
 
-        std::vector<uvc::stream_profile> init_stream_profiles() override;
+        ~uvc_endpoint();
 
-        std::shared_ptr<streaming_lock> configure(
-            const std::vector<stream_profile>& requests) override;
+        std::vector<stream_profile> get_principal_requests() override;
 
-        void register_xu(uvc::extension_unit xu)
-        {
-            _xus.push_back(std::move(xu));
-        }
+        void open(const std::vector<stream_profile>& requests) override;
 
-        std::vector<std::shared_ptr<frame_timestamp_reader>> create_frame_timestamp_readers() const
-        {
-            auto the_reader = std::make_shared<rolling_timestamp_reader>(); // single shared timestamp reader for all subdevices
-            return{ the_reader, the_reader };                               // clone the reference for color and depth
-        }
+        void close() override;
+
+        void register_xu(uvc::extension_unit xu);
 
         template<class T>
         auto invoke_powered(T action)
@@ -186,12 +185,17 @@ namespace rsimpl
 
         void register_pu(rs_option id);
 
+        void start_streaming(frame_callback_ptr callback);
 
         void stop_streaming();
     private:
+        std::vector<uvc::stream_profile> init_stream_profiles() override;
+
         void acquire_power();
 
         void release_power();
+
+        void reset_streaming();
 
         struct power
         {
@@ -211,30 +215,13 @@ namespace rsimpl
             std::weak_ptr<uvc_endpoint> _owner;
         };
 
-        class uvc_streaming_lock : public streaming_lock
-        {
-        public:
-            explicit uvc_streaming_lock(std::weak_ptr<uvc_endpoint> owner)
-                : _owner(owner), _power(owner)
-            {
-            }
-
-            void stop() override
-            {
-                streaming_lock::stop();
-                auto strong = _owner.lock();
-                if (strong) strong->stop_streaming();
-            }
-        private:
-            std::weak_ptr<uvc_endpoint> _owner;
-            power _power;
-        };
-
         std::shared_ptr<uvc::uvc_device> _device;
         std::atomic<int> _user_count;
         std::mutex _power_lock;
         std::mutex _configure_lock;
         std::vector<uvc::stream_profile> _configuration;
         std::vector<uvc::extension_unit> _xus;
+        std::unique_ptr<power> _power;
+        std::unique_ptr<frame_timestamp_reader> _timestamp_reader;
     };
 }

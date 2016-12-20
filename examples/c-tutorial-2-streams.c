@@ -45,6 +45,8 @@ int main()
     check_error();
     printf("    Firmware version: %s\n", rs_get_camera_info(dev, RS_CAMERA_INFO_CAMERA_FIRMWARE_VERSION, &e));
     check_error();
+    printf("    Device Location: %s\n", rs_get_camera_info(dev, RS_CAMERA_INFO_DEVICE_LOCATION, &e));
+    check_error();
 
     rs_stream streams[] = { RS_STREAM_DEPTH, RS_STREAM_INFRARED };
     int widths[] = { 640, 640 };
@@ -52,13 +54,13 @@ int main()
     int fpss[] = { 30, 30 };
     rs_format formats[] = { RS_FORMAT_Z16, RS_FORMAT_Y8 };
 
-    rs_streaming_lock * depth_stream = rs_open_many(dev, streams, widths, heights, fpss, formats, 2, &e);
+    rs_open_multiple(dev, streams, widths, heights, fpss, formats, 2, &e);
     check_error();
 
     rs_frame_queue * queue = rs_create_frame_queue(10, &e);
     check_error();
 
-    rs_start(depth_stream, rs_enqueue_frame, queue, &e);
+    rs_start(dev, rs_enqueue_frame, queue, &e);
     check_error();
 
     rs_frame* frontbuffer[RS_STREAM_COUNT];
@@ -123,7 +125,8 @@ int main()
 
     rs_flush_queue(queue, &e);
     check_error();
-    rs_close(depth_stream);
+    rs_close(dev, &e);
+    check_error();
     rs_delete_device(dev);
     rs_delete_device_list(devices);
     rs_delete_frame_queue(queue);

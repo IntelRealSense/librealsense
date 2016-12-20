@@ -394,7 +394,6 @@ namespace rsimpl
     {
         float nominal_depth_scale;                                          // Default scale
         std::vector<rs_frame_metadata> supported_metadata_vector;
-        std::map<rs_camera_info, std::string> camera_info;
         std::vector<supported_capability> capabilities_vector;
     };
 
@@ -406,7 +405,8 @@ namespace rsimpl
         void * user;
     public:
         frame_callback() : frame_callback(nullptr, nullptr, nullptr) {}
-        frame_callback(rs_streaming_lock * lock, frame_callback_function_ptr on_frame, void * user) : fptr(on_frame), user(user) {}
+        // TODO: why constructor gets rs_device pointer?
+        frame_callback(const rs_device* device, frame_callback_function_ptr on_frame, void * user) : fptr(on_frame), user(user) {}
 
         operator bool() const { return fptr != nullptr; }
         void on_frame (rs_frame * frame) override { 
