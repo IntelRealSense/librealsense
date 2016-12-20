@@ -590,7 +590,6 @@ bool no_device_popup(GLFWwindow* window, const ImVec4& clear_color)
         ImGui::End();
         ImGui::Render();
         glfwSwapBuffers(window);
-        return true;
     }
     return false;
 }
