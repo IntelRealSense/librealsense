@@ -45,46 +45,39 @@ int parse_number(char const *s, int base = 0)
     return i;
 }
 
-void parse_format(const std::string str, rs_format& format)
+rs_format parse_format(const std::string str)
 {
     for (int i = RS_FORMAT_ANY; i < RS_FORMAT_COUNT; i++)
     {
         if (rs_format_to_string((rs_format)i) == str)
         {
-            format = (rs_format)i;
-            return;
+            return (rs_format)i;
         }
     }
     throw std::exception((std::string("Invalid format - ") + str + std::string("\n")).c_str());
 }
 
-void parse_stream_type(const std::string str, rs_stream& type)
+rs_stream parse_stream_type(const std::string str)
 {
     for (int i = RS_STREAM_ANY; i < RS_STREAM_COUNT; i++)
     {
         if (rs_stream_to_string((rs_stream)i) == str)
         {
-            type = (rs_stream)i;
-            return;
+            return (rs_stream)i;
         }
     }
     throw std::exception((std::string("Invalid stream type - ") + str + std::string("\n")).c_str());
 }
 
-void parse_fps(const std::string str, int& fps)
+int parse_fps(const std::string str)
 {
     std::set<int> valid_fps({ 10, 15, 30, 60, 90, 100, 200 });
-    fps = parse_number(str.c_str());
+    auto fps = parse_number(str.c_str());
     if (valid_fps.find(fps) == valid_fps.end())
     {
         throw std::exception( (std::string("Invalid FPS parameter - ") + str + std::string("\n")).c_str());
     }
-}
-
-void parse_resolution(const std::string w_str, std::string h_str, int& width, int& height)
-{
-    width = parse_number(w_str.c_str());
-    height = parse_number(h_str.c_str());
+    return fps;
 }
 
 void parse_configuration(const std::vector<std::string> row, rs_stream& type, int& width, int& height, rs_format& format, int& fps)
@@ -93,10 +86,11 @@ void parse_configuration(const std::vector<std::string> row, rs_stream& type, in
     auto stream_type_str = row[STREAM_TYPE];
     std::transform(stream_type_str.begin(), stream_type_str.end(), stream_type_str.begin(), std::ptr_fun<int, int>(std::toupper));
 
-    parse_stream_type(stream_type_str, type);
-    parse_resolution(row[RES_WIDTH], row[RES_HEIGHT], width, height);
-    parse_fps(row[FPS], fps);
-    parse_format(row[FORMAT], format);
+    type    = parse_stream_type(stream_type_str);
+    width   = parse_number(row[RES_WIDTH].c_str());
+    height  = parse_number(row[RES_HEIGHT].c_str());
+    fps     = parse_fps(row[FPS]);
+    format  = parse_format(row[FORMAT]);
 }
 
 rs::util::config configure_stream(bool is_file_set, bool& is_valid, std::string fn = "")
