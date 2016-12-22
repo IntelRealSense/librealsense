@@ -31,16 +31,18 @@ struct frame_data
 
 enum Config_Params { STREAM_TYPE = 0, RES_WIDTH, RES_HEIGHT, FPS, FORMAT };
 
-bool parse_number(int &i, char const *s, int base = 0)
+int parse_number(char const *s, int base = 0)
 {
     char c;
     std::stringstream ss(s);
+    int i;
     ss >> i;
+    
     if (ss.fail() || ss.get(c)) 
     {
-        return false;
+        throw std::exception(std::string(std::string("Invalid numeric input - ") + s + std::string("\n")).c_str());
     }
-    return true;
+    return i;
 }
 
 void parse_format(const std::string str, rs_format& format)
@@ -53,8 +55,7 @@ void parse_format(const std::string str, rs_format& format)
             return;
         }
     }
-    std::string e = " Invalid format - " + str + "\n";
-    throw std::exception(e.c_str());
+    throw std::exception((std::string("Invalid format - ") + str + std::string("\n")).c_str());
 }
 
 void parse_stream_type(const std::string str, rs_stream& type)
@@ -67,27 +68,23 @@ void parse_stream_type(const std::string str, rs_stream& type)
             return;
         }
     }
-    std::string e = " Invalid stream type " + str + "\n";
-    throw std::exception(e.c_str());    
+    throw std::exception((std::string("Invalid stream type - ") + str + std::string("\n")).c_str());
 }
 
 void parse_fps(const std::string str, int& fps)
 {
-    std::set<int> valid_fps({ 10, 30, 60 });
-    if (!parse_number(fps, str.c_str()) || valid_fps.find(fps) == valid_fps.end())
+    std::set<int> valid_fps({ 10, 15, 30, 60, 90, 100, 200 });
+    fps = parse_number(str.c_str());
+    if (valid_fps.find(fps) == valid_fps.end())
     {
-        std::string error = "Invalid FPS parameter - " + str + "\n";
-        throw std::exception(error.c_str());
+        throw std::exception( (std::string("Invalid FPS parameter - ") + str + std::string("\n")).c_str());
     }
 }
 
 void parse_resolution(const std::string w_str, std::string h_str, int& width, int& height)
 {
-    if (!parse_number(width, w_str.c_str()) || !parse_number(height, h_str.c_str()))
-    {
-        std::string e = " Invalid Resolution Input: width =  " + w_str + ", height = " + h_str + "\n";
-        throw std::exception(e.c_str());
-    }
+    width = parse_number(w_str.c_str());
+    height = parse_number(h_str.c_str());
 }
 
 void parse_configuration(const std::vector<std::string> row, rs_stream& type, int& width, int& height, rs_format& format, int& fps)
@@ -100,34 +97,6 @@ void parse_configuration(const std::vector<std::string> row, rs_stream& type, in
     parse_resolution(row[RES_WIDTH], row[RES_HEIGHT], width, height);
     parse_fps(row[FPS], fps);
     parse_format(row[FORMAT], format);
-}
-
-
-std::string get_log_level_string(rs_log_severity lvl)
-{
-#define CASE(X) case RS_LOG_SEVERITY_##X: return #X;
-    switch (lvl)
-    {
-        CASE(DEBUG)
-            CASE(NONE)
-            CASE(WARN)
-            CASE(ERROR)
-            CASE(FATAL)
-            CASE(INFO)
-    }
-#undef CASE
-    return "";
-}
-rs_log_severity get_log_level(std::string str_lvl)
-{
-    rs_log_severity lvl;
-    for (int level = 0; level < (int)RS_LOG_SEVERITY_COUNT; level++)
-    {
-        lvl = (rs_log_severity)level;
-        if (get_log_level_string(lvl) == str_lvl)
-            return lvl;
-    }
-    return RS_LOG_SEVERITY_COUNT;
 }
 
 rs::util::config configure_stream(bool is_file_set, bool& is_valid, std::string fn = "")
@@ -204,16 +173,6 @@ int main(int argc, char** argv) try
     cmd.add(filename);
     cmd.add(config_file);
     cmd.parse(argc, argv);
-
-    //ValueArg<std::string> log_level  ("l", "LogLevel",           "Specify requested logging level for librealsense",    false, "",  "");
-    //cmd.add(log_level);
-    //// Set console log level
-    //if (log_level.isSet())
-    //{
-    //    rs_error * e = nullptr;
-    //    auto lvl = get_log_level(log_level.getValue());
-    //    rs_log_to_console(lvl, &e);
-    //}
 
     if (max_frames.isSet())
         MAX_FRAMES_NUMBER = max_frames.getValue();

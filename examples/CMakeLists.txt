@@ -161,7 +161,7 @@ install(
     cpp-terminal
     cpp-config-ui
     cpp-capture
-	cpp-data-collect
+    cpp-data-collect
     cpp-headless
     cpp-multicam
     cpp-pointcloud
