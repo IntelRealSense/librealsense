@@ -21,7 +21,7 @@ namespace rsimpl
     class endpoint
     {
     public:
-        endpoint() 
+        endpoint()
             : _is_streaming(false),
               _is_opened(false),
               _callback(nullptr, [](rs_frame_callback*) {}),
