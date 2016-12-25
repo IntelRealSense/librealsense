@@ -133,7 +133,13 @@ namespace rsimpl
             unsigned value;
         };
 
-        typedef std::function<void(const callback_data&)> hid_callback;
+        struct sensor_data
+        {
+            hid_sensor sensor;
+            std::vector<uint8_t> data;
+        };
+
+        typedef std::function<void(const sensor_data&)> hid_callback;
 
         class hid_device
         {
