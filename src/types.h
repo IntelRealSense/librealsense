@@ -24,10 +24,6 @@
 #include <algorithm>
 
 const uint8_t RS_STREAM_NATIVE_COUNT    = 5;
-const int RS_USER_QUEUE_SIZE = 20;
-const int RS_MAX_EVENT_QUEUE_SIZE = 500;
-const int RS_MAX_EVENT_TINE_OUT = 10;
-
 
 namespace rsimpl
 {

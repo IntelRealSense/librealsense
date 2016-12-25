@@ -18,13 +18,17 @@ using namespace rsimpl::motion_module;
 const int NUMBER_OF_FRAMES_TO_SAMPLE = 5;
 
 const int MAX_FRAME_QUEUE_SIZE = 20;
-const int MAX_EVENT_QUEUE_SIZE = 500;
-const int MAX_EVENT_TINE_OUT   = 10;
+
+// Timestamp syncronization settings:
+const int MAX_EVENT_QUEUE_SIZE = 500;  // Max number of timestamp events to keep for all streams
+const int MAX_EVENT_TIME_OUT   = 20;   // Max timeout in milliseconds that a frame can wait for its corresponding timestamp event
+// Usually timestamp events arrive much faster then frames, but due to USB arbitration the QoS isn’t guaranteed. 
+// RS_MAX_EVENT_TIME_OUT controls how much time the user is willing to wait before "giving-up" on a particular frame
 
 rs_device_base::rs_device_base(std::shared_ptr<rsimpl::uvc::device> device, const rsimpl::static_device_info & info, calibration_validator validator) : device(device), config(info),
     depth(config, RS_STREAM_DEPTH, validator), color(config, RS_STREAM_COLOR, validator), infrared(config, RS_STREAM_INFRARED, validator), infrared2(config, RS_STREAM_INFRARED2, validator), fisheye(config, RS_STREAM_FISHEYE, validator),
     points(depth), rect_color(color), color_to_depth(color, depth), depth_to_color(depth, color), depth_to_rect_color(depth, rect_color), infrared2_to_depth(infrared2,depth), depth_to_infrared2(depth,infrared2),
-    capturing(false), data_acquisition_active(false), max_publish_list_size(MAX_FRAME_QUEUE_SIZE), event_queue_size(MAX_EVENT_QUEUE_SIZE), events_timeout(MAX_EVENT_TINE_OUT),
+    capturing(false), data_acquisition_active(false), max_publish_list_size(MAX_FRAME_QUEUE_SIZE), event_queue_size(MAX_EVENT_QUEUE_SIZE), events_timeout(MAX_EVENT_TIME_OUT),
     usb_port_id(""), motion_module_ready(false), keep_fw_logger_alive(false), frames_drops_counter(0)
 {
     streams[RS_STREAM_DEPTH    ] = native_streams[RS_STREAM_DEPTH]     = &depth;
