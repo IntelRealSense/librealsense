@@ -237,7 +237,11 @@ void uvc_endpoint::open(const std::vector<stream_profile>& requests)
             frame_continuation release_and_enqueue([]() {}, f.pixels);
 
             // Ignore any frames which appear corrupted or invalid
-            if (!timestamp_reader->validate_frame(mode, f.pixels)) return;
+            if (!timestamp_reader->validate_frame(mode, f.pixels))
+            {
+                LOG_DEBUG("Dropped frame. frame is corrupted or invalid.");
+                return;
+            }
 
             // Determine the timestamp for this frame
             auto timestamp = timestamp_reader->get_frame_timestamp(mode, f.pixels);
@@ -294,6 +298,7 @@ void uvc_endpoint::open(const std::vector<stream_profile>& requests)
                 }
                 else
                 {
+                    LOG_DEBUG("Dropped frame. alloc_frame(...) returned nullptr");
                     return;
                 }
 
@@ -572,6 +577,12 @@ void hid_endpoint::start_streaming(frame_callback_ptr callback)
         additional_data.width = data_size;
         additional_data.height = 1;
         auto frame = this->alloc_frame(data_size, additional_data);
+        if (!frame)
+        {
+            LOG_DEBUG("Dropped frame. alloc_frame(...) returned nullptr");
+            return;
+        }
+
         memcpy(frame->get()->data.data(), &data.value, data_size);
         this->invoke_callback(frame);
     });

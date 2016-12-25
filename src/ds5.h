@@ -21,19 +21,28 @@ namespace rsimpl
     // TODO: This may need to be modified for thread safety
     class ds5_timestamp_reader : public frame_timestamp_reader
     {
-        bool started;
-        int64_t total;
-        int last_timestamp;
-        mutable int64_t counter;
+        static const int pins = 2;
+        std::vector<bool> started;
+        std::vector<int64_t> total;
+        std::vector<int> last_timestamp;
+        mutable std::vector<int64_t> counter;
     public:
-        ds5_timestamp_reader() : started(false), total(0), last_timestamp(0), counter(0) {}
+        ds5_timestamp_reader()
+            : started(pins), total(pins),
+              last_timestamp(pins), counter(pins)
+        {
+            reset();
+        }
 
         void reset() override
         {
-            started = false;
-            total = 0;
-            last_timestamp = 0;
-            counter = 0;
+            for (auto i = 0; i < pins; ++i)
+            {
+                started[i] = false;
+                total[i] = 0;
+                last_timestamp[i] = 0;
+                counter[i] = 0;
+            }
         }
 
         bool validate_frame(const request_mapping& mode, const void * frame) const override
@@ -52,12 +61,17 @@ namespace rsimpl
 
         double get_frame_timestamp(const request_mapping& /*mode*/, const void * frame) override
         {
+            // TODO: generate timestamp
             return 0;
         }
 
-        unsigned long long get_frame_counter(const request_mapping & /*mode*/, const void * /*frame*/) const override
+        unsigned long long get_frame_counter(const request_mapping & mode, const void * /*frame*/) const override
         {
-            return ++counter;
+            int pin_index = 0;
+            if (mode.pf->fourcc == 0x5a313620) // Z16
+                pin_index = 1;
+
+            return ++counter[pin_index];
         }
     };
 
