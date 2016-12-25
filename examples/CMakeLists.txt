@@ -96,6 +96,14 @@ set_target_properties (cpp-capture PROPERTIES
     FOLDER "Examples"
 )
 
+add_executable(cpp-data-collect cpp-data-collect.cpp)
+target_link_libraries(cpp-data-collect ${DEPENDENCIES})
+include_directories(cpp-data-collect third_party/tclap/include)
+set_target_properties (cpp-data-collect PROPERTIES
+    FOLDER "Examples"
+)
+
+
 add_executable(cpp-headless cpp-headless.cpp)
 target_link_libraries(cpp-headless ${DEPENDENCIES})
 include_directories(cpp-headless third_party/tclap/include)
@@ -153,6 +161,7 @@ install(
     cpp-terminal
     cpp-config-ui
     cpp-capture
+    cpp-data-collect
     cpp-headless
     cpp-multicam
     cpp-pointcloud

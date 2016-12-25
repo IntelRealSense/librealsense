@@ -185,8 +185,13 @@ class subdevice_model
 {
 public:
     subdevice_model(rs::device dev, std::string& error_message)
-        : dev(dev), streaming(false), queues(5)
+        : dev(dev), streaming(false), queues(RS_STREAM_COUNT)
     {
+        for (auto& elem : queues)
+        {
+            elem = std::unique_ptr<rs::frame_queue>(new rs::frame_queue(5));
+        }
+
         for (auto i = 0; i < RS_OPTION_COUNT; i++)
         {
             option_model metadata;
@@ -346,7 +351,10 @@ public:
     void stop()
     {
         streaming = false;
-        queues.flush();
+
+        for (auto& elem : queues)
+            elem->flush();
+
         dev.stop();
         dev.close();
     }
@@ -355,7 +363,10 @@ public:
     {
         dev.open(profiles);
         try {
-            dev.start(queues);
+            dev.start([&](rs::frame f){
+                auto stream_type = f.get_stream_type();
+                queues[(int)stream_type]->enqueue(std::move(f));
+            });
         }
         catch (...)
         {
@@ -419,7 +430,7 @@ public:
 
     std::vector<rs::stream_profile> profiles;
 
-    rs::frame_queue queues;
+    std::vector<std::unique_ptr<rs::frame_queue>> queues;
     bool options_invalidated = false;
     int next_option = RS_OPTION_COUNT;
     bool streaming;
@@ -852,15 +863,19 @@ int main(int, char**) try
 
         for (auto&& sub : model.subdevices)
         {
-            rs::frame f;
-            if (sub->queues.poll_for_frame(&f))
+            for (auto& queue : sub->queues)
             {
-                model.stream_buffers[f.get_stream_type()].upload(f);
-                model.steam_last_frame[f.get_stream_type()] = std::chrono::high_resolution_clock::now();
-                model.stream_size[f.get_stream_type()] = { static_cast<float>(f.get_width()),
-                                                           static_cast<float>(f.get_height()) };
-                model.stream_format[f.get_stream_type()] = f.get_format();
+                rs::frame f;
+                if (queue->poll_for_frame(&f))
+                {
+                    model.stream_buffers[f.get_stream_type()].upload(f);
+                    model.steam_last_frame[f.get_stream_type()] = std::chrono::high_resolution_clock::now();
+                    model.stream_size[f.get_stream_type()] = { static_cast<float>(f.get_width()),
+                                                               static_cast<float>(f.get_height()) };
+                    model.stream_format[f.get_stream_type()] = f.get_format();
+                }
             }
+
         }
 
         // Rendering

@@ -2,9 +2,9 @@
 
 using namespace rsimpl;
 
-frame_archive::frame_archive(std::atomic<uint32_t>* in_max_frame_queue_size, 
+frame_archive::frame_archive(std::atomic<uint32_t>* in_max_frame_queue_size,
                              std::chrono::high_resolution_clock::time_point capture_started)
-    : max_frame_queue_size(in_max_frame_queue_size), 
+    : max_frame_queue_size(in_max_frame_queue_size),
       mutex(), capture_started(capture_started),
       recycle_frames(true)
 {
@@ -36,7 +36,8 @@ frame* frame_archive::publish_frame(frame&& frame)
     if (is_valid(frame.get_stream_type()) &&
         published_frames_count >= *max_frame_queue_size)
     {
-        return nullptr; // TODO: exception/log
+        LOG_DEBUG("stream_type is invalid OR user didn't release frame resource.");
+        return nullptr;
     }
     auto new_frame = published_frames.allocate();
     if (new_frame)
@@ -91,7 +92,7 @@ frame frame_archive::alloc_frame(const size_t size, const frame_additional_data&
             else ++it;
         }
     }
-    
+
     if (requires_memory)
     {
         backbuffer.data.resize(size); // TODO: Allow users to provide a custom allocator for frame buffers
@@ -111,7 +112,8 @@ rs_frame* frame_archive::track_frame(frame& f)
         return clone_frame(&new_ref);
     }
 
-    return nullptr; // TODO: exception/log
+    LOG_DEBUG("publish(...) failed");
+    return nullptr;
 }
 
 void frame_archive::flush()
@@ -137,7 +139,7 @@ void frame_archive::flush()
     pending_frames = published_frames.get_size();
     if (pending_frames > 0)
     {
-        LOG_WARNING("The user was holding on to " 
+        LOG_WARNING("The user was holding on to "
             << std::dec << pending_frames << " frames after stream 0x"
             << std::hex << this << " stopped");
     }
