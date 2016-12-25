@@ -24,6 +24,13 @@
 #include <algorithm>
 
 const uint8_t RS_STREAM_NATIVE_COUNT    = 5;
+const int RS_USER_QUEUE_SIZE = 20;
+
+// Timestamp syncronization settings:
+const int RS_MAX_EVENT_QUEUE_SIZE = 500;  // Max number of timestamp events to keep for all streams
+const int RS_MAX_EVENT_TIME_OUT = 20;     // Max timeout in milliseconds that a frame can wait for its corresponding timestamp event
+// Usually timestamp events arrive much faster then frames, but due to USB arbitration the QoS isn’t guaranteed. 
+// RS_MAX_EVENT_TIME_OUT controls how much time the user is willing to wait before "giving-up" on a particular frame
 
 namespace rsimpl
 {
