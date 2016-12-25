@@ -40,7 +40,7 @@ int parse_number(char const *s, int base = 0)
     
     if (ss.fail() || ss.get(c)) 
     {
-        throw std::exception(std::string(std::string("Invalid numeric input - ") + s + std::string("\n")).c_str());
+        throw std::runtime_error(std::string(std::string("Invalid numeric input - ") + s + std::string("\n")));
     }
     return i;
 }
@@ -54,7 +54,7 @@ rs_format parse_format(const std::string str)
             return (rs_format)i;
         }
     }
-    throw std::exception((std::string("Invalid format - ") + str + std::string("\n")).c_str());
+    throw std::runtime_error((std::string("Invalid format - ") + str + std::string("\n")).c_str());
 }
 
 rs_stream parse_stream_type(const std::string str)
@@ -66,7 +66,7 @@ rs_stream parse_stream_type(const std::string str)
             return (rs_stream)i;
         }
     }
-    throw std::exception((std::string("Invalid stream type - ") + str + std::string("\n")).c_str());
+    throw std::runtime_error((std::string("Invalid stream type - ") + str + std::string("\n")).c_str());
 }
 
 int parse_fps(const std::string str)
@@ -75,7 +75,7 @@ int parse_fps(const std::string str)
     auto fps = parse_number(str.c_str());
     if (valid_fps.find(fps) == valid_fps.end())
     {
-        throw std::exception( (std::string("Invalid FPS parameter - ") + str + std::string("\n")).c_str());
+        throw std::runtime_error( (std::string("Invalid FPS parameter - ") + str + std::string("\n")).c_str());
     }
     return fps;
 }
