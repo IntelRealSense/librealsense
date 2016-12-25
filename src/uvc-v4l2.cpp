@@ -331,7 +331,8 @@ namespace rsimpl
 
                     do {
                         // each channel is 32 bit
-                        auto channel_size = this->channels.size()*4;
+                        const unsigned channel_size = 4;
+                        auto data_size = this->channels.size()*channel_size;
                         char data[buf_len*16] = {};
                         sensor_inputs callback_data;
                         fd_set fds;
@@ -347,7 +348,7 @@ namespace rsimpl
 
                         if (FD_ISSET(fd, &fds))
                         {
-                            read(fd, data, channel_size);
+                            read(fd, data, data_size);
                         }
                         else
                         {
@@ -364,10 +365,19 @@ namespace rsimpl
                             i++;
                         }
                         auto cb_data = callback_data.get_input_data();
+                        sensor_data sens_data;
+                        sens_data.sensor = cb_data.front().sensor;
+                        sens_data.data.resize(data_size);
+
+                        auto offset = 0;
                         for (auto& elem : cb_data)
                         {
-                            this->callback(elem);
+                            memcpy(sens_data.data.data() + offset*channel_size,
+                                   &(elem.value), channel_size);
+                            ++offset;
                         }
+
+                        this->callback(sens_data);
 
                     } while(this->capturing);
                     close(fd);
@@ -574,7 +584,6 @@ namespace rsimpl
                             {
                                 input->enable(true);
                                 _streaming_sensors.push_back(sensor.get());
-                                break;
                             }
                         }
                     }

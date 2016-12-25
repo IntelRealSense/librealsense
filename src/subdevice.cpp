@@ -565,13 +565,13 @@ void hid_endpoint::start_streaming(frame_callback_ptr callback)
 
     _archive = std::make_shared<frame_archive>(&_max_publish_list_size);
     _callback = std::move(callback);
-    _hid_device->start_capture(_configured_sensor_iio, [this](const uvc::callback_data& data){
+    _hid_device->start_capture(_configured_sensor_iio, [this](const uvc::sensor_data& sensor_data){
         if (!this->is_streaming())
             return;
 
         frame_additional_data additional_data;
-        auto data_size = sizeof(data.value);
-        auto stream_format = sensor_name_to_stream_format(data.sensor.name);
+        auto data_size = sensor_data.data.size();
+        auto stream_format = sensor_name_to_stream_format(sensor_data.sensor.name);
         additional_data.format = stream_format.format;
         additional_data.stream_type = stream_format.stream;
         additional_data.width = data_size;
@@ -583,7 +583,7 @@ void hid_endpoint::start_streaming(frame_callback_ptr callback)
             return;
         }
 
-        memcpy(frame->get()->data.data(), &data.value, data_size);
+        memcpy(frame->get()->data.data(), sensor_data.data.data(), data_size);
         this->invoke_callback(frame);
     });
 
