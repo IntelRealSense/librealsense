@@ -97,7 +97,7 @@ namespace rsimpl
     float sr300_camera::read_mems_temp() const
     {
         command command(ivcam::fw_cmd::GetMEMSTemp);
-        auto data = _hw_monitor.send(command);
+        auto data = _hw_monitor->send(command);
         auto t = *reinterpret_cast<int32_t *>(data.data());
         return static_cast<float>(t) / 100;
     }
@@ -105,7 +105,7 @@ namespace rsimpl
     int sr300_camera::read_ir_temp() const
     {
         command command(ivcam::fw_cmd::GetIRTemp);
-        auto data = _hw_monitor.send(command);
+        auto data = _hw_monitor->send(command);
         return static_cast<int8_t>(data[0]);
     }
 
@@ -113,7 +113,7 @@ namespace rsimpl
     {
         command cmd(ivcam::fw_cmd::HWReset);
         cmd.require_response = false;
-        _hw_monitor.send(cmd);
+        _hw_monitor->send(cmd);
     }
 
     void sr300_camera::enable_timestamp(bool colorEnable, bool depthEnable) const
@@ -121,7 +121,7 @@ namespace rsimpl
         command cmd(ivcam::fw_cmd::TimeStampEnable);
         cmd.param1 = depthEnable ? 1 : 0;
         cmd.param2 = colorEnable ? 1 : 0;
-        _hw_monitor.send(cmd);
+        _hw_monitor->send(cmd);
     }
 
     void sr300_camera::set_auto_range(const ivcam::cam_auto_range_request& c) const
@@ -152,7 +152,7 @@ namespace rsimpl
         cmd.data.resize(sizeof(uint16_t) * data.size());
         memcpy(cmd.data.data(), data.data(), cmd.data.size());
 
-        _hw_monitor.send(cmd);
+        _hw_monitor->send(cmd);
     }
 
     struct sr300_raw_calibration
@@ -178,7 +178,7 @@ namespace rsimpl
     {
         command command(ivcam::fw_cmd::GetCalibrationTable);
         command.param1 = static_cast<uint32_t>(cam_data_source::TakeFromRAM);
-        auto data = _hw_monitor.send(command);
+        auto data = _hw_monitor->send(command);
 
         sr300_raw_calibration rawCalib;
         memcpy(&rawCalib, data.data(), std::min(sizeof(rawCalib), data.size()));

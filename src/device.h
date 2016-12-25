@@ -52,5 +52,7 @@ namespace rsimpl
     private:
         std::vector<std::shared_ptr<endpoint>> _endpoints;
         static_device_info _static_info;
+        std::atomic<bool> _keep_fw_logger_alive;
+        std::unique_ptr<std::thread> _fw_logger_thread;
     };
 }

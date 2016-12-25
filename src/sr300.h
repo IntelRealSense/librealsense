@@ -186,12 +186,15 @@ namespace rsimpl
 
             depth_ep->register_option(RS_OPTION_VISUAL_PRESET, std::make_shared<preset_option>(*this));
 
+            depth_ep->register_option(RS_OPTION_ENABLE_FW_LOGGER,
+                std::make_shared<fw_logger_option>(_hw_monitor, ivcam::fw_cmd::GLD, 100, "SR300 FW Logger"));
+
             return depth_ep;
         }
 
         std::vector<uint8_t> send_receive_raw_data(const std::vector<uint8_t>& input) override
         {
-            return _hw_monitor.send(input);
+            return _hw_monitor->send(input);
         }
 
         uvc_endpoint& get_depth_endpoint() { return static_cast<uvc_endpoint&>(get_endpoint(_depth_device_idx)); }
@@ -200,15 +203,15 @@ namespace rsimpl
             const uvc::uvc_device_info& color,
             const uvc::uvc_device_info& depth,
             const uvc::usb_device_info& hwm_device)
-            : _hw_monitor(backend.create_usb_device(hwm_device)),
+            : _hw_monitor(std::make_shared<hw_monitor>(backend.create_usb_device(hwm_device))),
               _depth_device_idx(add_endpoint(create_depth_device(backend, depth))),
               _color_device_idx(add_endpoint(create_color_device(backend, color)))
         {
             using namespace ivcam;
             static const char* device_name = "Intel RealSense SR300";
 
-            auto fw_version = _hw_monitor.get_firmware_version_string(GVD, gvd_fw_version_offset);
-            auto serial = _hw_monitor.get_module_serial_string(GVD, 132);
+            auto fw_version = _hw_monitor->get_firmware_version_string(GVD, gvd_fw_version_offset);
+            auto serial = _hw_monitor->get_module_serial_string(GVD, 132);
             enable_timestamp(true, true);
 
             std::map<rs_camera_info, std::string> depth_camera_info = {{RS_CAMERA_INFO_DEVICE_NAME, device_name},
@@ -318,7 +321,7 @@ namespace rsimpl
         }
 
     private:
-        hw_monitor _hw_monitor;
+        std::shared_ptr<hw_monitor> _hw_monitor;
         const uint8_t _depth_device_idx;
         const uint8_t _color_device_idx;
         
