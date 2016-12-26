@@ -34,8 +34,9 @@ namespace rsimpl {
 
         enum fw_cmd : uint8_t
         {
-            GVD = 0x10,
+            GVD = 0x10,           // camera details
             GETINTCAL = 0x15,     // Read calibration table
+            GLD = 0x0f            // FW logs
         };
 
         struct table_header

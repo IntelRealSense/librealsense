@@ -171,6 +171,9 @@ namespace rsimpl
                     depth_xu,
                     DS5_EXPOSURE, "DS5 Exposure")); // TODO: Update description
 
+            depth_ep->register_option(RS_OPTION_ENABLE_FW_LOGGER,
+                std::make_shared<fw_logger_option>(_hw_monitor, ds::fw_cmd::GLD, 100, "DS5 FW Logger"));
+
             // TODO: These if conditions will be implemented as inheritance classes
             auto pid = all_device_infos.front().pid;
             if (pid == RS410A_PID || pid == RS450T_PID)
@@ -194,7 +197,7 @@ namespace rsimpl
             const std::vector<uvc::uvc_device_info>& dev_info,
             const uvc::usb_device_info& hwm_device,
             const std::vector<uvc::hid_device_info>& hid_info)
-            : _hw_monitor(backend.create_usb_device(hwm_device)),
+            : _hw_monitor(std::make_shared<hw_monitor>(backend.create_usb_device(hwm_device))),
               _depth_device_idx(add_endpoint(create_depth_device(backend, dev_info)))
         {
             using namespace ds;
@@ -202,8 +205,8 @@ namespace rsimpl
             _coefficients_table_raw = [this]() { return get_raw_calibration_table(coefficients_table_id); };
 
             static const char* device_name = "Intel RealSense DS5";
-            auto fw_version = _hw_monitor.get_firmware_version_string(GVD, gvd_fw_version_offset);
-            auto serial = _hw_monitor.get_module_serial_string(GVD, 48);
+            auto fw_version = _hw_monitor->get_firmware_version_string(GVD, gvd_fw_version_offset);
+            auto serial = _hw_monitor->get_module_serial_string(GVD, 48);
 
             // TODO: These if conditions will be implemented as inheritance classes
             auto pid = dev_info.front().pid;
@@ -270,7 +273,7 @@ namespace rsimpl
         rs_intrinsics get_intrinsics(int subdevice, stream_profile profile) const override;
 
     private:
-        hw_monitor _hw_monitor;
+        std::shared_ptr<hw_monitor> _hw_monitor;
         
         const uint8_t _depth_device_idx;
 

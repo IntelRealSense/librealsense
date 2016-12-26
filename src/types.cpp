@@ -94,6 +94,7 @@ namespace rsimpl
         CASE(VISUAL_PRESET)
         CASE(TOTAL_FRAME_DROPS)
         CASE(EMITTER_ENABLED)
+        CASE(ENABLE_FW_LOGGER)
         default: assert(!is_valid(value)); return unknown;
         }
         #undef CASE

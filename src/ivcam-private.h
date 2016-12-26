@@ -95,7 +95,8 @@ namespace rsimpl {
             AutoRangeSetParamsforDebug = 0xb3,
             UpdateCalib = 0xBC,
             BIST = 0xFF,
-            GetPowerGearState = 0xFF
+            GetPowerGearState = 0xFF,
+            GLD = 0x35
         };
 
         static bool try_fetch_usb_device(std::vector<uvc::usb_device_info>& devices,

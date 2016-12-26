@@ -61,7 +61,7 @@ namespace rsimpl
 
     std::vector<uint8_t> ds5_camera::send_receive_raw_data(const std::vector<uint8_t>& input)
     {
-        return _hw_monitor.send(input);
+        return _hw_monitor->send(input);
     }
 
     rs_intrinsics ds5_camera::get_intrinsics(int subdevice, stream_profile profile) const
@@ -82,6 +82,6 @@ namespace rsimpl
     std::vector<uint8_t> ds5_camera::get_raw_calibration_table(ds::calibration_table_id table_id) const
     {
         command cmd(ds::GETINTCAL, table_id);
-        return _hw_monitor.send(cmd);
+        return _hw_monitor->send(cmd);
     }
 }
