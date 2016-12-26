@@ -48,6 +48,66 @@ namespace rsimpl
 {
     namespace uvc
     {
+        class named_mutex
+        {
+        public:
+            named_mutex(const std::string& device_path, unsigned timeout)
+                : _device_path(device_path),
+                  _timeout(timeout) // TODO: try to lock with timeout
+            {
+                create_named_mutex(_device_path);
+            }
+
+            void lock() { aquire(); }
+            void unlock() { release(); }
+
+            bool try_lock()
+            {
+                auto ret = lockf(_fildes, F_TLOCK, 0);
+                if (ret != 0)
+                    return false;
+
+                return true;
+            }
+
+            ~named_mutex()
+            {
+                destroy_named_mutex();
+            }
+
+        private:
+            void aquire()
+            {
+                auto ret = lockf(_fildes, F_LOCK, 0);
+                if (ret != 0)
+                    throw std::runtime_error(std::string("Aquire failed"));
+            }
+
+            void release()
+            {
+                auto ret = lockf(_fildes, F_ULOCK, 0);
+                if (ret != 0)
+                    throw std::runtime_error(std::string("lockf(...) failed with error " + ret));
+            }
+
+            void create_named_mutex(const std::string& cam_id)
+            {
+                _fildes = open(cam_id.c_str(), O_RDWR);
+                if (-1 == _fildes)
+                    throw std::runtime_error(std::string("open(...) failed with error " + _fildes));
+            }
+
+            void destroy_named_mutex()
+            {
+                auto ret = close(_fildes);
+                if (0 != ret)
+                    throw std::runtime_error(std::string("close(...) failed with error " + ret));
+            }
+
+            std::string _device_path;
+            unsigned _timeout;
+            int _fildes;
+        };
         static void throw_error(const char * s)
         {
             std::ostringstream ss;
@@ -685,10 +745,54 @@ namespace rsimpl
             std::vector<hid_backend*> _streaming_sensors;
         };
 
+        inline std::string get_dev_path_by_vid_pid(int vid, int pid)
+        {
+            DIR * dir = opendir("/sys/class/video4linux");
+            if(!dir) throw std::runtime_error("Cannot access /sys/class/video4linux");
+            std::string dev_name{};
+            while (dirent * entry = readdir(dir))
+            {
+                std::string name = entry->d_name;
+                if(name == "." || name == "..") continue;
+
+                // Resolve a pathname to ignore virtual video devices
+                std::string path = "/sys/class/video4linux/" + name;
+                char buff[PATH_MAX] = {0};
+                if (realpath(path.c_str(), buff) != NULL)
+                {
+                    std::string real_path = std::string(buff);
+                    if (real_path.find("virtual") != std::string::npos)
+                        continue;
+                }
+
+                    int dev_vid, dev_pid;
+                    std::string modalias;
+                    if(!(std::ifstream("/sys/class/video4linux/" + name + "/device/modalias") >> modalias))
+                        throw std::runtime_error("Failed to read modalias");
+                    if(!(std::istringstream(modalias.substr(5,4)) >> std::hex >> dev_vid))
+                        throw std::runtime_error("Failed to read vendor ID");
+                    if(!(std::istringstream(modalias.substr(10,4)) >> std::hex >> dev_pid))
+                        throw std::runtime_error("Failed to read product ID");
+
+                    if (vid == dev_vid && pid == dev_pid)
+                    {
+                        dev_name = "/dev/" + name;
+                        break;
+                    }
+
+            }
+
+            if (dev_name.empty())
+                throw std::runtime_error("Device not found!");
+
+            return dev_name;
+        }
+
         class v4l_usb_device : public usb_device
         {
         public:
             v4l_usb_device(const usb_device_info& info)
+                : _named_mtx(get_dev_path_by_vid_pid(info.vid, info.pid), 5000)
             {
                 int status = libusb_init(&_usb_context);
                 if(status < 0) throw std::runtime_error(to_string() << "libusb_init(...) returned " << libusb_error_name(status));
@@ -730,12 +834,18 @@ namespace rsimpl
                 for(int i=0; list[i]; ++i)
                 {
                     libusb_device * usb_device = list[i];
+                    libusb_device_descriptor desc = {0};
+                    status = libusb_get_device_descriptor(usb_device, &desc);
+                    if(status < 0) throw std::runtime_error(to_string() << "libusb_get_device_descriptor(...) returned " << libusb_error_name(status));
+
                     auto parent_device = libusb_get_parent(usb_device);
                     if (parent_device)
                     {
-                        usb_device_info info;
+                        usb_device_info info{};
                         std::stringstream ss;
                         info.unique_id = get_usb_port_id(usb_device);
+                        info.vid = desc.idVendor;
+                        info.pid = desc.idProduct;
                         action(info, usb_device);
                     }
                 }
@@ -747,6 +857,7 @@ namespace rsimpl
                 int timeout_ms = 5000,
                 bool require_response = true) override
             {
+                _named_mtx.lock(); // TODO: RAII
                 libusb_device_handle* usb_handle;
                 int status = libusb_open(_usb_device, &usb_handle);
                 if(status < 0) throw std::runtime_error(to_string() << "libusb_open(...) returned " << libusb_error_name(status));
@@ -770,6 +881,7 @@ namespace rsimpl
 
                 libusb_close(usb_handle);
 
+                _named_mtx.unlock();
                 return result;
             }
 
@@ -777,6 +889,7 @@ namespace rsimpl
             libusb_context* _usb_context;
             libusb_device* _usb_device;
             int _mi;
+            named_mutex _named_mtx;
         };
 
         class v4l_uvc_device : public uvc_device
