@@ -240,3 +240,21 @@ inline void draw_depth_histogram(const uint16_t depth_image[], int width, int he
     make_depth_histogram(rgb_image, depth_image, width, height);
     glDrawPixels(width, height, GL_RGB, GL_UNSIGNED_BYTE, rgb_image);
 }
+
+inline bool is_integer(float f)
+{
+    return abs(f - floor(f)) < 0.001f;
+}
+
+struct to_string
+{
+    std::ostringstream ss;
+    template<class T> to_string & operator << (const T & val) { ss << val; return *this; }
+    operator std::string() const { return ss.str(); }
+};
+
+inline std::string error_to_string(const rs::error& e)
+{
+    return to_string() << e.get_failed_function() << "("
+        << e.get_failed_args() << "):\n" << e.what();
+}

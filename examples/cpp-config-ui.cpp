@@ -17,23 +17,7 @@
 
 #pragma comment(lib, "opengl32.lib")
 
-bool is_integer(float f)
-{
-    return abs(f - floor(f)) < 0.001f;
-}
 
-struct to_string
-{
-    std::ostringstream ss;
-    template<class T> to_string & operator << (const T & val) { ss << val; return *this; }
-    operator std::string() const { return ss.str(); }
-};
-
-std::string error_to_string(const rs::error& e)
-{
-    return to_string() << e.get_failed_function() << "("
-        << e.get_failed_args() << "):\n" << e.what();
-}
 
 class option_model
 {
@@ -483,26 +467,41 @@ public:
             }
         }
 
-        auto factor = ceil(sqrt(active_streams.size()));
-        auto complement = ceil(active_streams.size() / factor);
-
-        auto cell_width = static_cast<float>(width / factor);
-        auto cell_height = static_cast<float>(height / complement);
+        if (fullscreen)
+        {
+            auto it = std::find(begin(active_streams), end(active_streams), selected_stream);
+            if (it == end(active_streams)) fullscreen = false;
+        }
 
         std::map<rs_stream, rect> results;
-        auto i = 0;
-        for (auto x = 0; x < factor; x++)
-        {
-            for (auto y = 0; y < complement; y++)
-            {
-                if (i == active_streams.size()) break;
 
-                rect r = { x0 + x * cell_width, y0 + y * cell_height,
-                                    cell_width, cell_height };
-                results[active_streams[i]] = r;
-                i++;
+        if (fullscreen)
+        {
+            results[selected_stream] = { x0, y0, width, height };
+        }
+        else
+        {
+            auto factor = ceil(sqrt(active_streams.size()));
+            auto complement = ceil(active_streams.size() / factor);
+
+            auto cell_width = static_cast<float>(width / factor);
+            auto cell_height = static_cast<float>(height / complement);
+
+            auto i = 0;
+            for (auto x = 0; x < factor; x++)
+            {
+                for (auto y = 0; y < complement; y++)
+                {
+                    if (i == active_streams.size()) break;
+
+                    rect r = { x0 + x * cell_width, y0 + y * cell_height,
+                        cell_width, cell_height };
+                    results[active_streams[i]] = r;
+                    i++;
+                }
             }
         }
+
         return get_interpolated_layout(results);
     }
 
@@ -511,6 +510,9 @@ public:
     std::map<rs_stream, float2> stream_size;
     std::map<rs_stream, rs_format> stream_format;
     std::map<rs_stream, std::chrono::high_resolution_clock::time_point> steam_last_frame;
+
+    bool fullscreen = false;
+    rs_stream selected_stream = RS_STREAM_ANY;
 
 private:
     std::map<rs_stream, rect> get_interpolated_layout(const std::map<rs_stream, rect>& l)
@@ -668,6 +670,7 @@ int main(int, char**) try
 
         if (ImGui::CollapsingHeader("Device Details", nullptr, true, true))
         {
+            // Draw a combo-box with the list of connected devices
             auto device_names_chars = get_string_pointers(device_names);
             ImGui::PushItemWidth(-1);
             if (ImGui::Combo("", &device_index, device_names_chars.data(),
@@ -861,6 +864,7 @@ int main(int, char**) try
 
         ImGui::End();
 
+        // Fetch frames from queue
         for (auto&& sub : model.subdevices)
         {
             for (auto& queue : sub->queues)
@@ -914,7 +918,27 @@ int main(int, char**) try
             label = to_string() << rs_stream_to_string(stream) << " "
                 << stream_size.x << "x" << stream_size.y << ", "
                 << rs_format_to_string(model.stream_format[stream]);
-            ImGui::Text(label.c_str());
+
+            if (layout.size() > 1 && !model.fullscreen)
+            {
+                ImGui::Text(label.c_str());
+                ImGui::SameLine(ImGui::GetWindowWidth() - 30);
+                if (ImGui::Button("[ ]", { 26, 20 }))
+                {
+                    model.fullscreen = true;
+                    model.selected_stream = stream;
+                }
+            } 
+            else if (model.fullscreen)
+            {
+                ImGui::Text(label.c_str());
+                ImGui::SameLine(ImGui::GetWindowWidth() - 30);
+                if (ImGui::Button("[-]", { 26, 20 }))
+                {
+                    model.fullscreen = false;
+                }
+            }
+
             ImGui::End();
             ImGui::PopStyleColor();
         }
