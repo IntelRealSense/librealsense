@@ -191,9 +191,6 @@ namespace rsimpl
 
             depth_ep->register_option(RS_OPTION_VISUAL_PRESET, std::make_shared<preset_option>(*this));
 
-            depth_ep->register_option(RS_OPTION_ENABLE_FW_LOGGER,
-                std::make_shared<fw_logger_option>(_hw_monitor, ivcam::fw_cmd::GLD, 100, "SR300 FW Logger"));
-
             return depth_ep;
         }
 
@@ -214,6 +211,9 @@ namespace rsimpl
         {
             using namespace ivcam;
             static const char* device_name = "Intel RealSense SR300";
+
+            get_depth_endpoint().register_option(RS_OPTION_ENABLE_FW_LOGGER,
+                std::make_shared<fw_logger_option>(_hw_monitor, ivcam::fw_cmd::GLD, 100, "SR300 FW Logger"));
 
             auto fw_version = _hw_monitor->get_firmware_version_string(GVD, gvd_fw_version_offset);
             auto serial = _hw_monitor->get_module_serial_string(GVD, 132);

@@ -173,9 +173,6 @@ namespace rsimpl
                     depth_xu,
                     DS5_EXPOSURE, "DS5 Exposure")); // TODO: Update description
 
-            depth_ep->register_option(RS_OPTION_ENABLE_FW_LOGGER,
-                std::make_shared<fw_logger_option>(_hw_monitor, ds::fw_cmd::GLD, 100, "DS5 FW Logger"));
-
             // TODO: These if conditions will be implemented as inheritance classes
             auto pid = all_device_infos.front().pid;
             if (pid == RS410A_PID || pid == RS450T_PID)
@@ -209,9 +206,12 @@ namespace rsimpl
             static const char* device_name = "Intel RealSense DS5";
             auto fw_version = _hw_monitor->get_firmware_version_string(GVD, gvd_fw_version_offset);
             auto serial = _hw_monitor->get_module_serial_string(GVD, 48);
+
+            auto& depth_ep = get_depth_endpoint();
+            depth_ep.register_option(RS_OPTION_ENABLE_FW_LOGGER,
+                std::make_shared<fw_logger_option>(_hw_monitor, ds::fw_cmd::GLD, 100, "DS5 FW Logger"));
             if (is_camera_in_advanced_mode())
             {
-                auto& depth_ep = get_depth_endpoint();
                 depth_ep.register_pixel_format(pf_y8i); // L+R
                 depth_ep.register_pixel_format(pf_y12i); // L+R - Calibration not rectified
             }
@@ -284,7 +284,6 @@ namespace rsimpl
         bool is_camera_in_advanced_mode() const;
 
         const uint8_t _depth_device_idx;
-
         std::shared_ptr<hw_monitor> _hw_monitor;
 
 
