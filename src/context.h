@@ -101,7 +101,8 @@ namespace rsimpl
     {
         for (auto&& info : devices)
         {
-            if (info.mi == mi) return true;
+            if (info.mi == mi)
+                return true;
         }
         return false;
     }
@@ -110,7 +111,8 @@ namespace rsimpl
     {
         for (auto&& info : devices)
         {
-            if (info.mi == mi) return info;
+            if (info.mi == mi)
+                return info;
         }
         throw std::runtime_error("Interface not found!");
     }
@@ -120,7 +122,8 @@ namespace rsimpl
         std::vector<uvc::uvc_device_info> results;
         for (auto&& info : devices)
         {
-            if (info.mi == mi) results.push_back(info);
+            if (info.mi == mi)
+                results.push_back(info);
         }
         return results;
     }

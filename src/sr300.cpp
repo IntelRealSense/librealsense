@@ -47,12 +47,12 @@ namespace rsimpl
                 }
                 else
                 {
-                    //TODO: Log
+                    LOG_WARNING("try_fetch_usb_device(...) failed.");
                 }
             }
             else
             {
-                // TODO: LOG
+                LOG_WARNING("SR300 group_devices is empty.");
             }
         }
 
@@ -60,7 +60,6 @@ namespace rsimpl
 
         return results;
     }
-
 
     rs_intrinsics sr300_camera::make_depth_intrinsics(const ivcam::camera_calib_params & c, const int2 & dims)
     {

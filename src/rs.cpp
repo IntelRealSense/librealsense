@@ -144,7 +144,8 @@ void verify_version_compatibility(int api_version)
 {
     rs_error* error = nullptr;
     auto runtime_api_version = rs_get_api_version(&error);
-    if (error) throw std::runtime_error(rs_get_error_message(error));
+    if (error)
+        throw std::runtime_error(rs_get_error_message(error));
 
     if ((runtime_api_version < 10) || (api_version < 10))
     {
@@ -445,7 +446,7 @@ void rs_start(const rs_device* device, rs_frame_callback_ptr on_frame, void * us
     VALIDATE_NOT_NULL(device);
     VALIDATE_NOT_NULL(on_frame);
     rsimpl::frame_callback_ptr callback(
-        new rsimpl::frame_callback(device, on_frame, user),
+        new rsimpl::frame_callback(on_frame, user),
         [](rs_frame_callback* p) { delete p; });
     device->device->get_endpoint(device->subdevice).start_streaming(std::move(callback));
 }
@@ -646,7 +647,8 @@ void rs_get_extrinsics(const rs_device * from, const rs_device * to, rs_extrinsi
     VALIDATE_NOT_NULL(to);
     VALIDATE_NOT_NULL(extrin);
 
-    if (from->device != to->device) throw std::runtime_error("Extrinsics between the selected devices are unknown!");
+    if (from->device != to->device)
+        throw std::runtime_error("Extrinsics between the selected devices are unknown!");
 
     *extrin = from->device->get_extrinsics(from->subdevice, to->subdevice);
 }

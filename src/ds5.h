@@ -11,6 +11,7 @@
 #include "ds5-private.h"
 #include "hw-monitor.h"
 #include "image.h"
+#include <mutex>
 
 namespace rsimpl
 {
@@ -18,7 +19,6 @@ namespace rsimpl
 
     class ds5_camera;
 
-    // TODO: This may need to be modified for thread safety
     class ds5_timestamp_reader : public frame_timestamp_reader
     {
         static const int pins = 2;
@@ -26,6 +26,7 @@ namespace rsimpl
         std::vector<int64_t> total;
         std::vector<int> last_timestamp;
         mutable std::vector<int64_t> counter;
+        mutable std::recursive_mutex _mtx;
     public:
         ds5_timestamp_reader()
             : started(pins), total(pins),
@@ -36,6 +37,7 @@ namespace rsimpl
 
         void reset() override
         {
+            std::lock_guard<std::recursive_mutex> lock(_mtx);
             for (auto i = 0; i < pins; ++i)
             {
                 started[i] = false;
@@ -47,6 +49,7 @@ namespace rsimpl
 
         bool validate_frame(const request_mapping& mode, const void * frame) const override
         {
+            std::lock_guard<std::recursive_mutex> lock(_mtx);
             // Validate that at least one byte of the image is nonzero
             for (const uint8_t * it = (const uint8_t *)frame, *end = it + mode.pf->get_image_size(mode.profile.width, mode.profile.height); it != end; ++it)
             {
@@ -61,12 +64,14 @@ namespace rsimpl
 
         double get_frame_timestamp(const request_mapping& /*mode*/, const void * frame) override
         {
+            std::lock_guard<std::recursive_mutex> lock(_mtx);
             // TODO: generate timestamp
             return 0;
         }
 
         unsigned long long get_frame_counter(const request_mapping & mode, const void * /*frame*/) const override
         {
+            std::lock_guard<std::recursive_mutex> lock(_mtx);
             int pin_index = 0;
             if (mode.pf->fourcc == 0x5a313620) // Z16
                 pin_index = 1;
@@ -159,9 +164,6 @@ namespace rsimpl
             depth_ep->register_pixel_format(pf_y8); // Left Only - Luminance
             depth_ep->register_pixel_format(pf_yuyv); // Left Only
             depth_ep->register_pixel_format(pf_uyvyl); // Color from Depth
-            depth_ep->register_pixel_format(pf_y8i); // L+R ; TODO: allow only in Advanced mode
-            depth_ep->register_pixel_format(pf_y12i); // L+R - Calibration not rectified ; TODO: allow only in Advanced mode
-
 
             depth_ep->register_pu(RS_OPTION_GAIN);
             depth_ep->register_pu(RS_OPTION_ENABLE_AUTO_EXPOSURE);
@@ -197,8 +199,8 @@ namespace rsimpl
             const std::vector<uvc::uvc_device_info>& dev_info,
             const uvc::usb_device_info& hwm_device,
             const std::vector<uvc::hid_device_info>& hid_info)
-            : _hw_monitor(std::make_shared<hw_monitor>(backend.create_usb_device(hwm_device))),
-              _depth_device_idx(add_endpoint(create_depth_device(backend, dev_info)))
+            : _depth_device_idx(add_endpoint(create_depth_device(backend, dev_info))),
+              _hw_monitor(std::make_shared<hw_monitor>(std::make_shared<locked_transfer>(backend.create_usb_device(hwm_device), get_depth_endpoint())))
         {
             using namespace ds;
 
@@ -207,6 +209,12 @@ namespace rsimpl
             static const char* device_name = "Intel RealSense DS5";
             auto fw_version = _hw_monitor->get_firmware_version_string(GVD, gvd_fw_version_offset);
             auto serial = _hw_monitor->get_module_serial_string(GVD, 48);
+            if (is_camera_in_advanced_mode())
+            {
+                auto& depth_ep = get_depth_endpoint();
+                depth_ep.register_pixel_format(pf_y8i); // L+R
+                depth_ep.register_pixel_format(pf_y12i); // L+R - Calibration not rectified
+            }
 
             // TODO: These if conditions will be implemented as inheritance classes
             auto pid = dev_info.front().pid;
@@ -273,9 +281,12 @@ namespace rsimpl
         rs_intrinsics get_intrinsics(int subdevice, stream_profile profile) const override;
 
     private:
-        std::shared_ptr<hw_monitor> _hw_monitor;
-        
+        bool is_camera_in_advanced_mode() const;
+
         const uint8_t _depth_device_idx;
+
+        std::shared_ptr<hw_monitor> _hw_monitor;
+
 
         lazy<std::vector<uint8_t>> _coefficients_table_raw;
 

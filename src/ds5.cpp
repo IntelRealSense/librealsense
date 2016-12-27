@@ -45,12 +45,12 @@ namespace rsimpl
                 }
                 else
                 {
-                    //TODO: Log
+                    LOG_WARNING("try_fetch_usb_device(...) failed.");
                 }
             }
             else
             {
-                // TODO: LOG
+                LOG_WARNING("DS5 group_devices is empty.");
             }
         }
 
@@ -66,7 +66,8 @@ namespace rsimpl
 
     rs_intrinsics ds5_camera::get_intrinsics(int subdevice, stream_profile profile) const
     {
-        if (subdevice >= get_endpoints_count()) throw std::runtime_error("Requested subdevice is unsupported.");
+        if (subdevice >= get_endpoints_count())
+            throw std::runtime_error("Requested subdevice is unsupported.");
 
         if (subdevice == _depth_device_idx)
         {
@@ -77,6 +78,17 @@ namespace rsimpl
         }
 
         throw std::runtime_error("Not Implemented");
+    }
+
+    bool ds5_camera::is_camera_in_advanced_mode() const
+    {
+        command cmd(ds::UAMG);
+        assert(_hw_monitor);
+        auto ret = _hw_monitor->send(cmd);
+        if (ret.empty())
+            throw std::runtime_error("command result is empty!");
+
+        return bool(ret.front());
     }
 
     std::vector<uint8_t> ds5_camera::get_raw_calibration_table(ds::calibration_table_id table_id) const

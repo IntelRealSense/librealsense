@@ -146,7 +146,8 @@ namespace sql
 
     void statement::row_value::assert_good() const
     {
-        if (m_bad) throw runtime_error("query returned zero results");
+        if (m_bad)
+            throw runtime_error("query returned zero results");
     }
 }
 

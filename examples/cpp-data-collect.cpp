@@ -175,7 +175,9 @@ int main(int argc, char** argv) try
     rs::context ctx;
     
     auto list = ctx.query_devices();
-    if (list.size() == 0) throw std::runtime_error("No device detected. Is it plugged in?");
+    if (list.size() == 0)
+        throw std::runtime_error("No device detected. Is it plugged in?");
+
     auto dev = list.front();
  
     // configure Streams

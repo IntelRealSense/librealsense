@@ -28,9 +28,19 @@ namespace rs
             args = (nullptr != rs_get_failed_args(err)) ? rs_get_failed_args(err) : std::string();
             rs_free_error(err);
         }
-        const std::string & get_failed_function() const { return function; }
-        const std::string & get_failed_args() const { return args; }
-        static void handle(rs_error * e) { if (e) throw error(e); }
+        const std::string & get_failed_function() const
+        {
+            return function;
+        }
+        const std::string & get_failed_args() const
+        {
+            return args;
+        }
+        static void handle(rs_error * e)
+        {
+            if (e)
+                throw error(e);
+        }
     };
 
     class context;

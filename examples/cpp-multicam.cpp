@@ -18,7 +18,8 @@ int main(int argc, char * argv[]) try
 
     rs::context ctx;
     auto devices = ctx.query_devices();
-    if(devices.size() == 0) throw std::runtime_error("No device detected. Is it plugged in?");
+    if(devices.size() == 0)
+        throw std::runtime_error("No device detected. Is it plugged in?");
 
     std::vector<rs::frame_queue> syncers;
 

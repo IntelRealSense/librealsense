@@ -412,7 +412,8 @@ namespace rsimpl
         void usb_interface::reset_interrupt_pipe() const
         {
             auto sts = WinUsb_ResetPipe(_interface_handle, _interrupt_pipe_id);
-            if (!sts) throw winapi_error("WinUsb_ResetPipe failed!");
+            if (!sts)
+                throw winapi_error("WinUsb_ResetPipe failed!");
         }
 
         void usb_interface::reset_pipe(pipe_direction pipeDirection) const
@@ -427,7 +428,8 @@ namespace rsimpl
             {
                 sts = WinUsb_ResetPipe(_interface_handle, _out_pipe_id);
             }
-            if (!sts) throw winapi_error("WinUsb_ResetPipe failed!");
+            if (!sts)
+                throw winapi_error("WinUsb_ResetPipe failed!");
         }
 
         winapi_error::winapi_error(const char* message)

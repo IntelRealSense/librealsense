@@ -24,6 +24,7 @@ namespace rsimpl
         unsigned int get_endpoints_count() const { return static_cast<unsigned int>(_endpoints.size()); }
         endpoint& get_endpoint(int subdevice)
         {
+            assert(!_endpoints.empty());
             return *_endpoints[subdevice];
         }
 

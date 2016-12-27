@@ -50,7 +50,9 @@ int main(int argc, char * argv[]) try
 
     rs::context ctx;
     auto list = ctx.query_devices();
-    if (list.size() == 0) throw std::runtime_error("No device detected. Is it plugged in?");
+    if (list.size() == 0)
+        throw std::runtime_error("No device detected. Is it plugged in?");
+
     auto dev = list[0];
 
     // Configure all supported streams to run at 30 frames per second
@@ -106,7 +108,8 @@ int main(int argc, char * argv[]) try
         glfwPollEvents();
         auto frames = syncer.wait_for_frames();
 
-        if (frames.size() == 0) continue;
+        if (frames.size() == 0)
+            continue;
 
         auto t1 = std::chrono::high_resolution_clock::now();
         time += std::chrono::duration<float>(t1-t0).count();
@@ -122,9 +125,9 @@ int main(int argc, char * argv[]) try
         glPushAttrib(GL_ALL_ATTRIB_BITS);
 
         for (auto&& frame : frames) {
-            if (frame.get_stream_type() == RS_STREAM_COLOR) 
+            if (frame.get_stream_type() == RS_STREAM_COLOR)
                 color_tex.upload(frame);
-            if (frame.get_stream_type() == RS_STREAM_DEPTH) 
+            if (frame.get_stream_type() == RS_STREAM_DEPTH)
                 depth = reinterpret_cast<const uint16_t *>(frame.get_data());
         }
 

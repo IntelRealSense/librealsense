@@ -34,7 +34,8 @@ int main()
     rs_device_list * devices = rs_query_devices(ctx, &e);
     printf("There are %d connected RealSense devices.\n", rs_get_device_count(devices, &e));
     check_error();
-    if(rs_get_device_count(devices, &e) == 0) return EXIT_FAILURE;
+    if(rs_get_device_count(devices, &e) == 0)
+        return EXIT_FAILURE;
 
     /* This tutorial will access only a single device, but it is trivial to extend to multiple devices */
     rs_device * dev = rs_create_device(devices, 0, &e);
@@ -64,7 +65,8 @@ int main()
     check_error();
 
     rs_frame* frontbuffer[RS_STREAM_COUNT];
-    for (int i = 0; i < RS_STREAM_COUNT; i++) frontbuffer[i] = NULL;
+    for (int i = 0; i < RS_STREAM_COUNT; i++)
+        frontbuffer[i] = NULL;
 
     /* Open a GLFW window to display our output */
     glfwInit();

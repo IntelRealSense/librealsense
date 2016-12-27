@@ -3,7 +3,8 @@
 
 #pragma once
 
-#include "backend.h"
+#include "subdevice.h"
+#include <mutex>
 
 const uint8_t   IV_COMMAND_FIRMWARE_UPDATE_MODE = 0x01;
 const uint8_t   IV_COMMAND_GET_CALIBRATION_DATA = 0x02;
@@ -41,6 +42,34 @@ const uint16_t  HW_MONITOR_BUFFER_SIZE          = 1024;
 namespace rsimpl
 {
     class uvc_endpoint;
+
+    class locked_transfer
+    {
+    public:
+        locked_transfer(std::shared_ptr<uvc::command_transfer> command_transfer, uvc_endpoint& uvc_ep)
+            :_command_transfer(command_transfer),
+             _uvc_endpoint(uvc_ep)
+        {}
+
+        std::vector<uint8_t> send_receive(
+            const std::vector<uint8_t>& data,
+            int timeout_ms = 5000,
+            bool require_response = true)
+        {
+            std::lock_guard<std::recursive_mutex> lock(_local_mtx);
+            return _uvc_endpoint.invoke_powered([&]
+                (uvc::uvc_device& dev)
+                {
+                    std::lock_guard<uvc::uvc_device> lock(dev);
+                    return _command_transfer->send_receive(data, timeout_ms, require_response);
+                });
+        }
+
+    private:
+        std::shared_ptr<uvc::command_transfer> _command_transfer;
+        uvc_endpoint& _uvc_endpoint;
+        std::recursive_mutex _local_mtx;
+    };
 
     struct command
     {
@@ -124,10 +153,10 @@ namespace rsimpl
         static void update_cmd_details(hwmon_cmd_details& details, size_t receivedCmdLen, unsigned char* outputBuffer);
         void send_hw_monitor_command(hwmon_cmd_details& details) const;
 
-        std::shared_ptr<uvc::command_transfer> _command_transfer;
+        std::shared_ptr<locked_transfer> _locked_transfer;
     public:
-        explicit hw_monitor(std::shared_ptr<uvc::command_transfer> command_transfer)
-            : _command_transfer(std::move(command_transfer))
+        explicit hw_monitor(std::shared_ptr<locked_transfer> locked_transfer)
+            : _locked_transfer(std::move(locked_transfer))
         {}
 
         std::vector<uint8_t> send(std::vector<uint8_t> data) const;

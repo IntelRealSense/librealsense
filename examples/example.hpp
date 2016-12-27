@@ -134,7 +134,9 @@ public:
     void upload(const void * data, int width, int height, rs_format format, int stride = 0)
     {
         // If the frame timestamp has changed since the last time show(...) was called, re-upload the texture
-        if(!texture) glGenTextures(1, &texture);
+        if(!texture)
+            glGenTextures(1, &texture);
+
         glBindTexture(GL_TEXTURE_2D, texture);
         stride = stride == 0 ? width : stride;
         //glPixelStorei(GL_UNPACK_ROW_LENGTH, stride);

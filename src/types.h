@@ -404,9 +404,8 @@ namespace rsimpl
         frame_callback_function_ptr fptr;
         void * user;
     public:
-        frame_callback() : frame_callback(nullptr, nullptr, nullptr) {}
-        // TODO: why constructor gets rs_device pointer?
-        frame_callback(const rs_device* device, frame_callback_function_ptr on_frame, void * user) : fptr(on_frame), user(user) {}
+        frame_callback() : frame_callback(nullptr, nullptr) {}
+        frame_callback(frame_callback_function_ptr on_frame, void * user) : fptr(on_frame), user(user) {}
 
         operator bool() const { return fptr != nullptr; }
         void on_frame (rs_frame * frame) override { 

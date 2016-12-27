@@ -39,7 +39,9 @@ public:
         std::unique_lock<std::mutex> lock(mutex);
         accepting = true;
         const auto ready = [this]() { return !q.empty(); };
-        if (!ready() && !cv.wait_for(lock, std::chrono::seconds(5), ready)) throw std::runtime_error("Timeout waiting for queued items!");
+        if (!ready() && !cv.wait_for(lock, std::chrono::seconds(5), ready))
+            throw std::runtime_error("Timeout waiting for queued items!");
+
         auto item = std::move(q.front());
         q.pop_front();
         return std::move(item);
@@ -66,7 +68,9 @@ public:
         while (q.size() > 0)
         {
             const auto ready = [this]() { return !q.empty(); };
-            if (!ready() && !cv.wait_for(lock, std::chrono::seconds(5), ready)) throw std::runtime_error("Timeout waiting for queued items!");
+            if (!ready() && !cv.wait_for(lock, std::chrono::seconds(5), ready))
+                throw std::runtime_error("Timeout waiting for queued items!");
+
             auto item = std::move(q.front());
             q.pop_front();
         }

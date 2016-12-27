@@ -43,7 +43,7 @@ namespace rsimpl
     void hw_monitor::execute_usb_command(uint8_t *out, size_t outSize, uint32_t & op, uint8_t * in, size_t & inSize) const
     {
         std::vector<uint8_t> out_vec(out, out + outSize);
-        auto res = _command_transfer->send_receive(out_vec);
+        auto res = _locked_transfer->send_receive(out_vec);
 
         // read
         if (in && inSize)
@@ -55,7 +55,9 @@ namespace rsimpl
                 throw std::runtime_error("Out buffer is greater than max buffer size!");
 
             op = *reinterpret_cast<uint32_t *>(res.data());
-            if (res.size() > static_cast<int>(inSize)) throw std::runtime_error("bulk transfer failed - user buffer too small");
+            if (res.size() > static_cast<int>(inSize))
+                throw std::runtime_error("bulk transfer failed - user buffer too small");
+
             inSize = res.size();
             memcpy(in, res.data(), inSize);
         }
@@ -67,7 +69,8 @@ namespace rsimpl
 
         if (details.oneDirection) return;
 
-        if (details.receivedCommandDataLength < 4) throw std::runtime_error("received incomplete response to usb command");
+        if (details.receivedCommandDataLength < 4)
+            throw std::runtime_error("received incomplete response to usb command");
 
         details.receivedCommandDataLength -= 4;
         memcpy(details.receivedOpcode, outputBuffer, 4);
@@ -89,7 +92,7 @@ namespace rsimpl
 
     std::vector<uint8_t> hw_monitor::send(std::vector<uint8_t> data) const
     {
-        return _command_transfer->send_receive(data);
+        return _locked_transfer->send_receive(data);
     }
 
     std::vector<uint8_t> hw_monitor::send(command cmd) const

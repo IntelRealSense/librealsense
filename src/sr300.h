@@ -11,6 +11,7 @@
 #include "ivcam-private.h"
 #include "hw-monitor.h"
 #include "image.h"
+#include <mutex>
 
 namespace rsimpl
 {
@@ -18,18 +19,19 @@ namespace rsimpl
 
     class sr300_camera;
 
-    // TODO: This may need to be modified for thread safety
     class sr300_timestamp_reader : public frame_timestamp_reader
     {
         bool started;
         int64_t total;
         int last_timestamp;
         mutable int64_t counter;
+        mutable std::recursive_mutex _mtx;
     public:
         sr300_timestamp_reader() : started(false), total(0), last_timestamp(0), counter(0) {}
 
         void reset() override
         {
+            std::lock_guard<std::recursive_mutex> lock(_mtx);
             started = false;
             total = 0;
             last_timestamp = 0;
@@ -38,6 +40,7 @@ namespace rsimpl
 
         bool validate_frame(const request_mapping& mode, const void * frame) const override
         {
+            std::lock_guard<std::recursive_mutex> lock(_mtx);
             // Validate that at least one byte of the image is nonzero
             for (const uint8_t * it = (const uint8_t *)frame, *end = it + mode.pf->get_image_size(mode.profile.width, mode.profile.height); it != end; ++it)
             {
@@ -54,6 +57,7 @@ namespace rsimpl
 
         double get_frame_timestamp(const request_mapping& /*mode*/, const void * frame) override
         {
+            std::lock_guard<std::recursive_mutex> lock(_mtx);
             // Timestamps are encoded within the first 32 bits of the image
             int rolling_timestamp = *reinterpret_cast<const int32_t *>(frame);
 
@@ -71,6 +75,7 @@ namespace rsimpl
         }
         unsigned long long get_frame_counter(const request_mapping & /*mode*/, const void * /*frame*/) const override
         {
+            std::lock_guard<std::recursive_mutex> lock(_mtx);
             return ++counter;
         }
     };
@@ -203,9 +208,9 @@ namespace rsimpl
             const uvc::uvc_device_info& color,
             const uvc::uvc_device_info& depth,
             const uvc::usb_device_info& hwm_device)
-            : _hw_monitor(std::make_shared<hw_monitor>(backend.create_usb_device(hwm_device))),
-              _depth_device_idx(add_endpoint(create_depth_device(backend, depth))),
-              _color_device_idx(add_endpoint(create_color_device(backend, color)))
+            : _depth_device_idx(add_endpoint(create_depth_device(backend, depth))),
+              _color_device_idx(add_endpoint(create_color_device(backend, color))),
+              _hw_monitor(std::make_shared<hw_monitor>(std::make_shared<locked_transfer>(backend.create_usb_device(hwm_device), get_depth_endpoint())))
         {
             using namespace ivcam;
             static const char* device_name = "Intel RealSense SR300";
@@ -321,10 +326,9 @@ namespace rsimpl
         }
 
     private:
-        std::shared_ptr<hw_monitor> _hw_monitor;
         const uint8_t _depth_device_idx;
         const uint8_t _color_device_idx;
-        
+        std::shared_ptr<hw_monitor> _hw_monitor;
 
         template<class T>
         void register_depth_xu(uvc_endpoint& depth, rs_option opt, uint8_t id, std::string desc) const
