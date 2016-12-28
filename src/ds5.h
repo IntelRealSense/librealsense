@@ -223,6 +223,7 @@ namespace rsimpl
                                                             std::unique_ptr<frame_timestamp_reader>(new ds5_timestamp_reader()));
                 fisheye_ep->register_xu(fisheye_xu); // make sure the XU is initialized everytime we power the camera
                 fisheye_ep->register_pixel_format(pf_raw8);
+                fisheye_ep->register_pixel_format(pf_fe_raw8_unpatched_kernel); // W/O for unpatched kernel
                 fisheye_ep->register_pu(RS_OPTION_GAIN);
                 fisheye_ep->register_option(RS_OPTION_EXPOSURE,
                     std::make_shared<uvc_xu_option<uint16_t>>(*fisheye_ep,
