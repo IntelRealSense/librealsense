@@ -176,7 +176,7 @@ namespace rsimpl
 
             // TODO: These if conditions will be implemented as inheritance classes
             auto pid = all_device_infos.front().pid;
-            if (pid == RS410A_PID || pid == RS450T_PID)
+            if (pid == RS410A_PID || pid == RS450T_PID || pid == RS430C_PID)
             {
                 depth_ep->register_option(RS_OPTION_EMITTER_ENABLED, std::make_shared<emitter_option>(*depth_ep));
 

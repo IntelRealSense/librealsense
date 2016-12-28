@@ -66,7 +66,7 @@ int main(int argc, char * argv[]) try
 
             auto stream_type = frame.get_stream_type();
             buffers[stream_type].upload(frame);
-            buffers[stream_type].show({ row_id * tile_w, col_id * tile_h, tile_w, tile_h });
+            buffers[stream_type].show({ row_id * tile_w, col_id * tile_h, tile_w, tile_h }, 1);
 
             index++;
         }

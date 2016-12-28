@@ -80,7 +80,7 @@ int main(int argc, char * argv[]) try
             {
                 buffers[i].upload(frame);
             }
-            buffers[i++].show({ (i / 2) * perTextureWidth, (i % 2) * perTextureHeight, perTextureWidth, perTextureHeight });
+            buffers[i++].show({ (i / 2) * perTextureWidth, (i % 2) * perTextureHeight, perTextureWidth, perTextureHeight }, 1);
         }
 
         glPopMatrix();

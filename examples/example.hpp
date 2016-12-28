@@ -219,8 +219,14 @@ public:
         glEnd();
     }
 
-    void draw_gyro_texture(float x, float y, float z)
+    void draw_gyro_texture(const void * data)
     {
+        const static float gyro_range   = 1000.f;                   // Preconfigured angular velocity range [-1000...1000] Deg_C/Sec
+        const static float gyro_transform_factor = float((gyro_range * M_PI) / (180.f * 32767.f));
+        auto shrt = (short*)data;
+        auto x = static_cast<float>(shrt[0]) * gyro_transform_factor;
+        auto y = static_cast<float>(shrt[1]) * gyro_transform_factor;
+        auto z = static_cast<float>(shrt[2]) * gyro_transform_factor;
         glViewport(0, 0, 1024, 1024);
         glClearColor(0,0,0,1);
         glClear(GL_COLOR_BUFFER_BIT);
@@ -254,17 +260,61 @@ public:
         glEnd();
 
         glCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 0, 0, 1024, 1024, 0);
-
     }
 
-    void upload(const void * data, int width, int height, rs_format format, int stride = 0)
+    void draw_accel_texture(const void * data)
+    {
+        const static float gravity = 9.80665f; // Standard Gravitation Acceleration
+        const static float accel_range = 4.f;                       // Accelerometer is preset to [-4...+4]g range
+        const static float accelerator_transform_factor = float(gravity * accel_range / 2048.f);
+
+        auto shrt = (short*)data;
+        auto x = static_cast<float>(shrt[0]) * accelerator_transform_factor;
+        auto y = static_cast<float>(shrt[1]) * accelerator_transform_factor;
+        auto z = static_cast<float>(shrt[2]) * accelerator_transform_factor;
+        glViewport(0, 0, 1024, 1024);
+        glClearColor(0,0,0,1);
+        glClear(GL_COLOR_BUFFER_BIT);
+
+        glMatrixMode(GL_PROJECTION);                        // Select The Projection Matrix
+        glLoadIdentity();                                   // Reset The Projection Matrix
+
+        glOrtho(-2.8, 2.8, -2.4, 2.4, -7, 7);
+
+        glRotatef(-25, 1.0f, 0.0f, 0.0f);
+
+        glTranslatef(0, 0.33f, -1.f);
+
+        float normal = (1 / std::sqrt(x*x + y*y + z*z));
+
+
+        glRotatef(-45, 0.0f, 1.0f, 0.0f);
+
+        DrawAxis();
+        DrawCyrcle(1, 0, 0, 0, 1, 0);
+        DrawCyrcle(0, 1, 0, 0, 0, 1);
+        DrawCyrcle(1, 0, 0, 0, 0, 1);
+
+
+        auto vectorWidth = 5;
+        glLineWidth(vectorWidth);
+        glBegin(GL_LINES);
+        glColor3f(1.0f, 1.0f, 1.0f);
+        glVertex3f(0.0f, 0.0f, 0.0f);
+        glVertex3f(normal *x, normal *y, normal *z);
+        glEnd();
+
+        glCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 0, 0, 1024, 1024, 0);
+    }
+
+    void upload(const void * data, int width, int height, rs_format format, int stride = 0, rs_stream stream = RS_STREAM_ANY)
     {
         // If the frame timestamp has changed since the last time show(...) was called, re-upload the texture
         if(!texture) glGenTextures(1, &texture);
         glBindTexture(GL_TEXTURE_2D, texture);
-        auto f = (float*)data;
         stride = stride == 0 ? width : stride;
         //glPixelStorei(GL_UNPACK_ROW_LENGTH, stride);
+
         switch(format)
         {
         case RS_FORMAT_ANY:
@@ -289,12 +339,25 @@ public:
             glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
             break;
         case RS_FORMAT_Y8:
-            draw_gyro_texture(f[0], f[1], f[2]);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, data);
+            break;
+        case RS_FORMAT_MOTION_DATA:
+            switch (stream) {
+            case RS_STREAM_GYRO:
+                draw_gyro_texture(data);
+                break;
+            case RS_STREAM_ACCEL:
+                draw_accel_texture(data);
+                break;
+            default:
+                throw std::runtime_error("Motion data stream not found!");
+                break;
+            }
             break;
         case RS_FORMAT_Y16:
             glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_LUMINANCE, GL_UNSIGNED_SHORT, data);
             break;
-        case RS_FORMAT_RAW8: case RS_FORMAT_MOTION_DATA:
+        case RS_FORMAT_RAW8:
             glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE, width, height, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, data);
             break;
         case RS_FORMAT_RAW10:
@@ -330,7 +393,7 @@ public:
     void upload(rs::frame& frame)
     {
         upload(frame.get_data(), frame.get_width(), frame.get_height(), frame.get_format(), 
-            (frame.get_stride_in_bytes() * 8) / frame.get_bits_per_pixel());
+            (frame.get_stride_in_bytes() * 8) / frame.get_bits_per_pixel(), frame.get_stream_type());
     }
 
     void show(const rect& r, float alpha) const
