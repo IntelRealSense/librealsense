@@ -11,7 +11,7 @@
 #include <memory>
 #include <string>
 #include <sstream>
-
+#include <iomanip>
 
 inline void make_depth_histogram(uint8_t rgb_image[], const uint16_t depth_image[], int width, int height)
 {
@@ -129,15 +129,210 @@ class texture_buffer
 public:
     texture_buffer() : texture() {}
 
+
     GLuint get_gl_handle() const { return texture; }
 
-    void upload(const void * data, int width, int height, rs_format format, int stride = 0)
+    void draw_axis()
+    {
+
+        // Traingles For X axis
+        glBegin(GL_TRIANGLES);
+        glColor3f(1.0f, 0.0f, 0.0f);
+        glVertex3f(1.1f, 0.0f, 0.0f);
+        glVertex3f(1.0f, 0.05f, 0.0f);
+        glVertex3f(1.0f, -0.05f, 0.0f);
+        glEnd();
+
+        // Traingles For Y axis
+        glBegin(GL_TRIANGLES);
+        glColor3f(0.0f, 1.0f, 0.0f);
+        glVertex3f(0.0f, -1.1f, 0.0f);
+        glVertex3f(0.0f, -1.0f, 0.05f);
+        glVertex3f(0.0f, -1.0f, -0.05f);
+        glEnd();
+        glBegin(GL_TRIANGLES);
+        glColor3f(0.0f, 1.0f, 0.0f);
+        glVertex3f(0.0f, -1.1f, 0.0f);
+        glVertex3f(0.05f, -1.0f, 0.0f);
+        glVertex3f(-0.05f, -1.0f, 0.0f);
+        glEnd();
+
+        // Traingles For Z axis
+        glBegin(GL_TRIANGLES);
+        glColor3f(0.0f, 0.0f, 1.0f);
+        glVertex3f(0.0f, 0.0f, 1.1f);
+        glVertex3f(0.0f, 0.05f, 1.0f);
+        glVertex3f(0.0f, -0.05f, 1.0f);
+        glEnd();
+
+        auto axisWidth = 4;
+        glLineWidth(axisWidth);
+
+        // Drawing Axis
+        glBegin(GL_LINES);
+        // X axis - Red
+        glColor3f(1.0f, 0.0f, 0.0f);
+        glVertex3f(0.0f, 0.0f, 0.0f);
+        glVertex3f(1.0f, 0.0f, 0.0f);
+
+        // Y axis - Green
+        glColor3f(0.0f, 1.0f, 0.0f);
+        glVertex3f(0.0f, 0.0f, 0.0f);
+        glVertex3f(0.0f, -1.0f, 0.0f);
+
+        // Z axis - White
+        glColor3f(0.0f, 0.0f, 1.0f);
+        glVertex3f(0.0f, 0.0f, 0.0f);
+        glVertex3f(0.0f, 0.0f, 1.0f);
+        glEnd();
+    }
+
+    void draw_cyrcle(float xx, float xy, float xz, float yx, float yy, float yz)
+    {
+        const auto N = 50;
+        glColor3f(0.5f, 0.5f, 0.5f);
+        glLineWidth(2);
+        glBegin(GL_LINE_STRIP);
+
+
+        for (int i = 0; i <= N; i++)
+        {
+            const double theta = (2 * M_PI / N) * i;
+            const auto cost = cos(theta);
+            const auto sint = sin(theta);
+            glVertex3f(
+                1.1 * (xx * cost + yx * sint),
+                1.1 * (xy * cost + yy * sint),
+                1.1 * (xz * cost + yz * sint)
+                );
+        }
+
+        glEnd();
+    }
+
+    void multiply_vector_by_matrix(GLfloat vec[], GLfloat mat[], GLfloat* result)
+    {
+        const auto N = 4;
+        for (int i = 0; i < N; i++)
+        {
+            result[i] = 0;
+            for (int j = 0; j < N; j++)
+            {
+                result[i] += vec[j] * mat[N*j + i];
+            }
+        }
+        return;
+    }
+
+    void print_coords_in_3d(float x, float y, float z, GLfloat model[], GLfloat proj[], bool center_text)
+    {
+        auto pitch = (center_text) ? 2 : 1;
+        GLfloat vec[4] = { x / pitch , y / pitch, z / pitch, 0 };
+        float result1[4];
+        float result[4];
+
+        multiply_vector_by_matrix(vec, model, result1);
+        multiply_vector_by_matrix(result1, proj, result);
+
+        const auto canvas_size = 230;
+        const auto presicion = 3;
+        const auto norm = (1 / std::sqrt(x*x + y*y + z*z));
+
+        std::ostringstream s;
+        if (center_text)
+        {
+            s << std::setprecision(presicion) << (1.0f / norm);
+        }
+        else
+        {
+            s << "(" << std::setprecision(presicion) << x << "," << std::setprecision(presicion) << y << "," << std::setprecision(presicion) << z << ")";
+        }
+
+        auto w = (center_text) ? stb_easy_font_width((char*)s.str().c_str()) : 0;
+        glColor3f(1.0f, 1.0f, 1.0f);
+        draw_text(canvas_size * norm *result[0] - w / 2, canvas_size * norm *result[1], s.str().c_str());
+    }
+
+    void draw_motion_data(float x, float y, float z)
+    {
+        glViewport(0, 0, 1024, 1024);
+        glClearColor(0,0,0,1);
+        glClear(GL_COLOR_BUFFER_BIT);
+
+        glMatrixMode(GL_PROJECTION);
+        glLoadIdentity();
+
+        glOrtho(-2.8, 2.8, -2.4, 2.4, -7, 7);
+
+        glRotatef(-25, 1.0f, 0.0f, 0.0f);
+
+        glTranslatef(0, 0.33f, -1.f);
+
+        float norm = (1 / std::sqrt(x*x + y*y + z*z));
+
+
+        glRotatef(-45, 0.0f, 1.0f, 0.0f);
+
+        GLfloat model[16];
+        glGetFloatv(GL_MODELVIEW_MATRIX, model);
+        GLfloat proj[16];
+        glGetFloatv(GL_PROJECTION_MATRIX, proj);
+
+        draw_axis();
+        draw_cyrcle(1, 0, 0, 0, 1, 0);
+        draw_cyrcle(0, 1, 0, 0, 0, 1);
+        draw_cyrcle(1, 0, 0, 0, 0, 1);
+
+        auto vectorWidth = 5;
+        glLineWidth(vectorWidth);
+        glBegin(GL_LINES);
+        glColor3f(1.0f, 1.0f, 1.0f);
+        glVertex3f(0.0f, 0.0f, 0.0f);
+        glVertex3f(norm *x, norm *y, norm *z);
+        glEnd();
+
+        const auto canvas_size = 230;
+        glLoadIdentity();
+        glOrtho(-canvas_size, canvas_size, -canvas_size, canvas_size, -1, +1);
+
+        print_coords_in_3d(x, y, z, model, proj,false);
+        print_coords_in_3d(x,y,z,model,proj,true);
+
+        glCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 0, 0, 1024, 1024, 0);
+    }
+
+    void draw_gyro_texture(const void * data)
+    {
+        const static float gyro_range   = 1000.f;                   // Preconfigured angular velocity range [-1000...1000] Deg_C/Sec
+        const static float gyro_transform_factor = float((gyro_range * M_PI) / (180.f * 32767.f));
+        auto shrt = (short*)data;
+        auto x = static_cast<float>(shrt[0]) * gyro_transform_factor;
+        auto y = static_cast<float>(shrt[1]) * gyro_transform_factor;
+        auto z = static_cast<float>(shrt[2]) * gyro_transform_factor;
+        draw_motion_data(x, y, z);
+    }
+
+    void draw_accel_texture(const void * data)
+    {
+        const static float gravity = 9.80665f; // Standard Gravitation Acceleration
+        const static float accel_range = 4.f;                       // Accelerometer is preset to [-4...+4]g range
+        const static float accelerator_transform_factor = float(gravity * accel_range / 2048.f);
+
+        auto shrt = (short*)data;
+        auto x = static_cast<float>(shrt[0]) * accelerator_transform_factor;
+        auto y = static_cast<float>(shrt[1]) * accelerator_transform_factor;
+        auto z = static_cast<float>(shrt[2]) * accelerator_transform_factor;
+        draw_motion_data(x, y, z);
+    }
+
+    void upload(const void * data, int width, int height, rs_format format, int stride = 0, rs_stream stream = RS_STREAM_ANY)
     {
         // If the frame timestamp has changed since the last time show(...) was called, re-upload the texture
         if(!texture) glGenTextures(1, &texture);
         glBindTexture(GL_TEXTURE_2D, texture);
         stride = stride == 0 ? width : stride;
         //glPixelStorei(GL_UNPACK_ROW_LENGTH, stride);
+
         switch(format)
         {
         case RS_FORMAT_ANY:
@@ -162,12 +357,25 @@ public:
             glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
             break;
         case RS_FORMAT_Y8:
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB,  width, height, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, data);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, data);
+            break;
+        case RS_FORMAT_MOTION_DATA:
+            switch (stream) {
+            case RS_STREAM_GYRO:
+                draw_gyro_texture(data);
+                break;
+            case RS_STREAM_ACCEL:
+                draw_accel_texture(data);
+                break;
+            default:
+                throw std::runtime_error("Motion data stream not found!");
+                break;
+            }
             break;
         case RS_FORMAT_Y16:
             glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_LUMINANCE, GL_UNSIGNED_SHORT, data);
             break;
-        case RS_FORMAT_RAW8: case RS_FORMAT_MOTION_DATA:
+        case RS_FORMAT_RAW8:
             glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE, width, height, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, data);
             break;
         case RS_FORMAT_RAW10:
@@ -203,10 +411,10 @@ public:
     void upload(rs::frame& frame)
     {
         upload(frame.get_data(), frame.get_width(), frame.get_height(), frame.get_format(), 
-            (frame.get_stride_in_bytes() * 8) / frame.get_bits_per_pixel());
+            (frame.get_stride_in_bytes() * 8) / frame.get_bits_per_pixel(), frame.get_stream_type());
     }
 
-    void show(const rect& r, float alpha = 1.0f) const
+    void show(const rect& r, float alpha) const
     {
         glEnable(GL_BLEND);
 
@@ -239,4 +447,22 @@ inline void draw_depth_histogram(const uint16_t depth_image[], int width, int he
     static uint8_t rgb_image[640*480*3];
     make_depth_histogram(rgb_image, depth_image, width, height);
     glDrawPixels(width, height, GL_RGB, GL_UNSIGNED_BYTE, rgb_image);
+}
+
+inline bool is_integer(float f)
+{
+    return abs(f - floor(f)) < 0.001f;
+}
+
+struct to_string
+{
+    std::ostringstream ss;
+    template<class T> to_string & operator << (const T & val) { ss << val; return *this; }
+    operator std::string() const { return ss.str(); }
+};
+
+inline std::string error_to_string(const rs::error& e)
+{
+    return to_string() << e.get_failed_function() << "("
+        << e.get_failed_args() << "):\n" << e.what();
 }
