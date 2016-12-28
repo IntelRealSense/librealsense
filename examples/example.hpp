@@ -253,7 +253,7 @@ public:
         draw_text(canvas_size * norm *result[0] - w / 2, canvas_size * norm *result[1], s.str().c_str());
     }
 
-    void draw_gyro_texture(float x, float y, float z)
+    void draw_gyro_texture(const void * data)
     {
         const static float gyro_range   = 1000.f;                   // Preconfigured angular velocity range [-1000...1000] Deg_C/Sec
         const static float gyro_transform_factor = float((gyro_range * M_PI) / (180.f * 32767.f));
@@ -335,10 +335,10 @@ public:
 
         glRotatef(-45, 0.0f, 1.0f, 0.0f);
 
-        DrawAxis();
-        DrawCyrcle(1, 0, 0, 0, 1, 0);
-        DrawCyrcle(0, 1, 0, 0, 0, 1);
-        DrawCyrcle(1, 0, 0, 0, 0, 1);
+        draw_axis();
+        draw_cyrcle(1, 0, 0, 0, 1, 0);
+        draw_cyrcle(0, 1, 0, 0, 0, 1);
+        draw_cyrcle(1, 0, 0, 0, 0, 1);
 
 
         auto vectorWidth = 5;
