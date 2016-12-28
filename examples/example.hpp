@@ -253,19 +253,13 @@ public:
         draw_text(canvas_size * norm *result[0] - w / 2, canvas_size * norm *result[1], s.str().c_str());
     }
 
-    void draw_gyro_texture(const void * data)
+    void draw_motion_data(float x, float y, float z)
     {
-        const static float gyro_range   = 1000.f;                   // Preconfigured angular velocity range [-1000...1000] Deg_C/Sec
-        const static float gyro_transform_factor = float((gyro_range * M_PI) / (180.f * 32767.f));
-        auto shrt = (short*)data;
-        auto x = static_cast<float>(shrt[0]) * gyro_transform_factor;
-        auto y = static_cast<float>(shrt[1]) * gyro_transform_factor;
-        auto z = static_cast<float>(shrt[2]) * gyro_transform_factor;
         glViewport(0, 0, 1024, 1024);
         glClearColor(0,0,0,1);
         glClear(GL_COLOR_BUFFER_BIT);
 
-        glMatrixMode(GL_PROJECTION); 
+        glMatrixMode(GL_PROJECTION);
         glLoadIdentity();
 
         glOrtho(-2.8, 2.8, -2.4, 2.4, -7, 7);
@@ -307,6 +301,17 @@ public:
         glCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 0, 0, 1024, 1024, 0);
     }
 
+    void draw_gyro_texture(const void * data)
+    {
+        const static float gyro_range   = 1000.f;                   // Preconfigured angular velocity range [-1000...1000] Deg_C/Sec
+        const static float gyro_transform_factor = float((gyro_range * M_PI) / (180.f * 32767.f));
+        auto shrt = (short*)data;
+        auto x = static_cast<float>(shrt[0]) * gyro_transform_factor;
+        auto y = static_cast<float>(shrt[1]) * gyro_transform_factor;
+        auto z = static_cast<float>(shrt[2]) * gyro_transform_factor;
+        draw_motion_data(x, y, z);
+    }
+
     void draw_accel_texture(const void * data)
     {
         const static float gravity = 9.80665f; // Standard Gravitation Acceleration
@@ -317,39 +322,7 @@ public:
         auto x = static_cast<float>(shrt[0]) * accelerator_transform_factor;
         auto y = static_cast<float>(shrt[1]) * accelerator_transform_factor;
         auto z = static_cast<float>(shrt[2]) * accelerator_transform_factor;
-        glViewport(0, 0, 1024, 1024);
-        glClearColor(0,0,0,1);
-        glClear(GL_COLOR_BUFFER_BIT);
-
-        glMatrixMode(GL_PROJECTION);                        // Select The Projection Matrix
-        glLoadIdentity();                                   // Reset The Projection Matrix
-
-        glOrtho(-2.8, 2.8, -2.4, 2.4, -7, 7);
-
-        glRotatef(-25, 1.0f, 0.0f, 0.0f);
-
-        glTranslatef(0, 0.33f, -1.f);
-
-        float normal = (1 / std::sqrt(x*x + y*y + z*z));
-
-
-        glRotatef(-45, 0.0f, 1.0f, 0.0f);
-
-        draw_axis();
-        draw_cyrcle(1, 0, 0, 0, 1, 0);
-        draw_cyrcle(0, 1, 0, 0, 0, 1);
-        draw_cyrcle(1, 0, 0, 0, 0, 1);
-
-
-        auto vectorWidth = 5;
-        glLineWidth(vectorWidth);
-        glBegin(GL_LINES);
-        glColor3f(1.0f, 1.0f, 1.0f);
-        glVertex3f(0.0f, 0.0f, 0.0f);
-        glVertex3f(normal *x, normal *y, normal *z);
-        glEnd();
-
-        glCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 0, 0, 1024, 1024, 0);
+        draw_motion_data(x, y, z);
     }
 
     void upload(const void * data, int width, int height, rs_format format, int stride = 0, rs_stream stream = RS_STREAM_ANY)
