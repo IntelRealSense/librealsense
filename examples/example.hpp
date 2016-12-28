@@ -11,7 +11,7 @@
 #include <memory>
 #include <string>
 #include <sstream>
-
+#include <iomanip>
 
 inline void make_depth_histogram(uint8_t rgb_image[], const uint16_t depth_image[], int width, int height)
 {
@@ -132,17 +132,8 @@ public:
 
     GLuint get_gl_handle() const { return texture; }
 
-    void DrawAxis()
+    void draw_axis()
     {
-        //// Set Top Point Of Triangle To Red
-        //glColor3f(1.0f, 0.0f, 0.0f);
-        //glBegin(GL_TRIANGLES);                  // Start Drawing A Triangle
-        //    glVertex3f(0.0f, 1.0f, 0.0f);       // First Point Of The Triangle
-        //    glColor3f(0.0f, 1.0f, 0.0f);        // Set Left Point Of Triangle To Green
-        //    glVertex3f(-1.0f, -1.0f, 0.0f);     // Second Point Of The Triangle
-        //    glColor3f(0.0f, 0.0f, 1.0f);        // Set Right Point Of Triangle To Blue
-        //    glVertex3f(1.0f, -1.0f, 0.0f);      // Third Point Of The Triangle
-        //glEnd();
 
         // Traingles For X axis
         glBegin(GL_TRIANGLES);
@@ -196,7 +187,7 @@ public:
         glEnd();
     }
 
-    void DrawCyrcle(float xx, float xy, float xz, float yx, float yy, float yz)
+    void draw_cyrcle(float xx, float xy, float xz, float yx, float yy, float yz)
     {
         const auto N = 50;
         glColor3f(0.5f, 0.5f, 0.5f);
@@ -206,7 +197,7 @@ public:
 
         for (int i = 0; i <= N; i++)
         {
-            const auto theta = (2 * M_PI / N) * i;
+            const double theta = (2 * M_PI / N) * i;
             const auto cost = cos(theta);
             const auto sint = sin(theta);
             glVertex3f(
@@ -219,14 +210,57 @@ public:
         glEnd();
     }
 
+    void multiply_vector_by_matrix(GLfloat vec[], GLfloat mat[], GLfloat* result)
+    {
+        const auto N = 4;
+        for (int i = 0; i < N; i++)
+        {
+            result[i] = 0;
+            for (int j = 0; j < N; j++)
+            {
+                result[i] += vec[j] * mat[N*j + i];
+            }
+        }
+        return;
+    }
+
+    void print_coords_in_3d(float x, float y, float z, GLfloat model[], GLfloat proj[], bool center_text)
+    {
+        auto pitch = (center_text) ? 2 : 1;
+        GLfloat vec[4] = { x / pitch , y / pitch, z / pitch, 0 };
+        float result1[4];
+        float result[4];
+
+        multiply_vector_by_matrix(vec, model, result1);
+        multiply_vector_by_matrix(result1, proj, result);
+
+        const auto canvas_size = 230;
+        const auto presicion = 3;
+        const auto norm = (1 / std::sqrt(x*x + y*y + z*z));
+
+        std::ostringstream s;
+        if (center_text)
+        {
+            s << std::setprecision(presicion) << (1.0f / norm);
+        }
+        else
+        {
+            s << "(" << std::setprecision(presicion) << x << "," << std::setprecision(presicion) << y << "," << std::setprecision(presicion) << z << ")";
+        }
+
+        auto w = (center_text) ? stb_easy_font_width((char*)s.str().c_str()) : 0;
+        glColor3f(1.0f, 1.0f, 1.0f);
+        draw_text(canvas_size * norm *result[0] - w / 2, canvas_size * norm *result[1], s.str().c_str());
+    }
+
     void draw_gyro_texture(float x, float y, float z)
     {
         glViewport(0, 0, 1024, 1024);
         glClearColor(0,0,0,1);
         glClear(GL_COLOR_BUFFER_BIT);
 
-        glMatrixMode(GL_PROJECTION);                        // Select The Projection Matrix
-        glLoadIdentity();                                   // Reset The Projection Matrix
+        glMatrixMode(GL_PROJECTION); 
+        glLoadIdentity();
 
         glOrtho(-2.8, 2.8, -2.4, 2.4, -7, 7);
 
@@ -234,24 +268,35 @@ public:
 
         glTranslatef(0, 0.33f, -1.f);
 
-        float normal = (1 / std::sqrt(x*x + y*y + z*z));
+        float norm = (1 / std::sqrt(x*x + y*y + z*z));
 
 
         glRotatef(-45, 0.0f, 1.0f, 0.0f);
 
-        DrawAxis();
-        DrawCyrcle(1, 0, 0, 0, 1, 0);
-        DrawCyrcle(0, 1, 0, 0, 0, 1);
-        DrawCyrcle(1, 0, 0, 0, 0, 1);
+        GLfloat model[16];
+        glGetFloatv(GL_MODELVIEW_MATRIX, model);
+        GLfloat proj[16];
+        glGetFloatv(GL_PROJECTION_MATRIX, proj);
 
+        draw_axis();
+        draw_cyrcle(1, 0, 0, 0, 1, 0);
+        draw_cyrcle(0, 1, 0, 0, 0, 1);
+        draw_cyrcle(1, 0, 0, 0, 0, 1);
 
         auto vectorWidth = 5;
         glLineWidth(vectorWidth);
         glBegin(GL_LINES);
         glColor3f(1.0f, 1.0f, 1.0f);
         glVertex3f(0.0f, 0.0f, 0.0f);
-        glVertex3f(normal *x, normal *y, normal *z);
+        glVertex3f(norm *x, norm *y, norm *z);
         glEnd();
+
+        const auto canvas_size = 230;
+        glLoadIdentity();
+        glOrtho(-canvas_size, canvas_size, -canvas_size, canvas_size, -1, +1);
+
+        print_coords_in_3d(x, y, z, model, proj,false);
+        print_coords_in_3d(x,y,z,model,proj,true);
 
         glCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 0, 0, 1024, 1024, 0);
 
