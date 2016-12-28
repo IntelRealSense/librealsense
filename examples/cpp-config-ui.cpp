@@ -1,3 +1,5 @@
+#define _USE_MATH_DEFINES
+
 #include <librealsense/rs.hpp>
 #include "example.hpp"
 
@@ -565,16 +567,14 @@ bool no_device_popup(GLFWwindow* window, const ImVec4& clear_color)
 
         ImGui_ImplGlfw_NewFrame();
 
-        // Rendering
+        // Rendering 
         glViewport(0, 0,
             static_cast<int>(ImGui::GetIO().DisplaySize.x),
             static_cast<int>(ImGui::GetIO().DisplaySize.y));
         glClearColor(clear_color.x, clear_color.y, clear_color.z, clear_color.w);
         glClear(GL_COLOR_BUFFER_BIT);
 
-        auto flags = ImGuiWindowFlags_NoResize |
-            ImGuiWindowFlags_NoMove |
-            ImGuiWindowFlags_NoCollapse;
+        auto flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse;
 
         ImGui::SetNextWindowPos({ 0, 0 });
         ImGui::SetNextWindowSize({ static_cast<float>(w), static_cast<float>(h) });
@@ -584,6 +584,7 @@ bool no_device_popup(GLFWwindow* window, const ImVec4& clear_color)
         if (ImGui::BeginPopupModal("config-ui", nullptr,
                                    ImGuiWindowFlags_AlwaysAutoResize))
         {
+            // 
             ImGui::Text("No device detected. Is it plugged in?");
             ImGui::Separator();
 
@@ -607,26 +608,155 @@ bool no_device_popup(GLFWwindow* window, const ImVec4& clear_color)
     return false;
 }
 
+
+GLuint EmptyTexture()                           // Create An Empty Texture
+
+{
+
+    GLuint txtnumber;                       // Texture ID
+
+    unsigned int* data;                     // Stored Data
+
+
+
+    // Create Storage Space For Texture Data (128x128x4)
+
+    data = (unsigned int*)new GLuint[((1024 * 1024) * 4 * sizeof(unsigned int))];
+    memset(data, 0, ((1024 * 1024) * 4 * sizeof(unsigned int)));   // Clear Storage Memory
+
+
+
+    glGenTextures(1, &txtnumber);                   // Create 1 Texture
+
+    glBindTexture(GL_TEXTURE_2D, txtnumber);            // Bind The Texture
+
+    glTexImage2D(GL_TEXTURE_2D, 0, 4, 1024, 1024, 0,
+
+        GL_RGBA, GL_UNSIGNED_BYTE, data);           // Build Texture Using Information In data
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+
+
+    delete[] data;                         // Release data
+
+
+
+    return txtnumber;                       // Return The Texture ID
+
+}
+
+void DrawAxis()
+{
+    //// Set Top Point Of Triangle To Red
+    //glColor3f(1.0f, 0.0f, 0.0f);
+    //glBegin(GL_TRIANGLES);                  // Start Drawing A Triangle
+    //    glVertex3f(0.0f, 1.0f, 0.0f);       // First Point Of The Triangle
+    //    glColor3f(0.0f, 1.0f, 0.0f);        // Set Left Point Of Triangle To Green
+    //    glVertex3f(-1.0f, -1.0f, 0.0f);     // Second Point Of The Triangle
+    //    glColor3f(0.0f, 0.0f, 1.0f);        // Set Right Point Of Triangle To Blue
+    //    glVertex3f(1.0f, -1.0f, 0.0f);      // Third Point Of The Triangle
+    //glEnd();
+
+    // Traingles For X axis
+    glBegin(GL_TRIANGLES);
+        glColor3f(1.0f, 0.0f, 0.0f);
+        glVertex3f(1.1f, 0.0f, 0.0f);
+        glVertex3f(1.0f, 0.05f, 0.0f);
+        glVertex3f(1.0f, -0.05f, 0.0f);
+    glEnd();
+
+    // Traingles For Y axis
+    glBegin(GL_TRIANGLES);
+        glColor3f(0.0f, 1.0f, 0.0f);
+        glVertex3f(0.0f, -1.1f, 0.0f);
+        glVertex3f(0.0f, -1.0f, 0.05f);
+        glVertex3f(0.0f, -1.0f, -0.05f);
+    glEnd();
+    glBegin(GL_TRIANGLES);
+        glColor3f(0.0f, 1.0f, 0.0f);
+        glVertex3f(0.0f, -1.1f, 0.0f);
+        glVertex3f(0.05f, -1.0f, 0.0f);
+        glVertex3f(-0.05f, -1.0f, 0.0f);
+    glEnd();
+
+    // Traingles For Z axis
+    glBegin(GL_TRIANGLES);
+        glColor3f(0.0f, 0.0f, 1.0f);
+        glVertex3f(0.0f, 0.0f, 1.1f);
+        glVertex3f(0.0f, 0.05f, 1.0f);
+        glVertex3f(0.0f, -0.05f, 1.0f);
+    glEnd();
+
+    auto axisWidth = 4;
+    glLineWidth(axisWidth);
+
+    // Drawing Axis
+    glBegin(GL_LINES);
+        // X axis - Red
+        glColor3f(1.0f, 0.0f, 0.0f);
+        glVertex3f(0.0f, 0.0f, 0.0f);
+        glVertex3f(1.0f, 0.0f, 0.0f);
+
+        // Y axis - Green
+        glColor3f(0.0f, 1.0f, 0.0f);
+        glVertex3f(0.0f, 0.0f, 0.0f);
+        glVertex3f(0.0f, -1.0f, 0.0f);
+
+        // Z axis - White
+        glColor3f(0.0f, 0.0f, 1.0f);
+        glVertex3f(0.0f, 0.0f, 0.0f);
+        glVertex3f(0.0f, 0.0f, 1.0f);
+    glEnd();
+}
+
+void DrawCyrcle(float xx, float xy, float xz, float yx, float yy, float yz)
+{
+    const auto N = 50;
+    glColor3f(0.5f, 0.5f, 0.5f);
+    glLineWidth(2);
+    glBegin(GL_LINE_STRIP);
+
+
+    for (int i = 0; i <= N; i++)
+    {
+        const auto theta = (2 * M_PI / N) * i;
+        const auto cost = cos(theta);
+        const auto sint = sin(theta);
+        glVertex3f(
+            1.1 * (xx * cost + yx * sint),
+            1.1 * (xy * cost + yy * sint),
+            1.1 * (xz * cost + yz * sint)
+            );
+    }
+
+    glEnd();
+}
+
 int main(int, char**) try
 {
+    // activate logging to console
     rs::log_to_console(RS_LOG_SEVERITY_WARN);
-    rs::log_to_file(RS_LOG_SEVERITY_DEBUG);
 
+    // Init GUI
     if (!glfwInit())
         exit(1);
 
+    // Create GUI Windows
     auto window = glfwCreateWindow(1280, 720, "librealsense - config-ui", nullptr, nullptr);
     glfwMakeContextCurrent(window);
     ImGui_ImplGlfw_Init(window, true);
 
     ImVec4 clear_color = ImColor(10, 0, 0);
 
+    // Create RealSense Context
     rs::context ctx;
-    //rs::recording_context ctx("config-ui1.db");
-    //rs::mock_context ctx("hq_colorexp_depth_preset.db");
     auto device_index = 0;
-    auto list = ctx.query_devices();
+    auto list = ctx.query_devices(); // Query RealSense connected devices list
 
+    // If no device is connected...
     while (list.size() == 0)
     {
         if (!no_device_popup(window, clear_color)) return EXIT_SUCCESS;
@@ -650,11 +780,59 @@ int main(int, char**) try
     auto model = device_model(dev, error_message);
     std::string label;
 
+    GLuint tex_id = EmptyTexture();
+
+    float a = 0;
+    float x = 10;
+    float y = 10;
+    float z = 20;
+
     while (!glfwWindowShouldClose(window))
     {
+        a += 0.1;
         glfwPollEvents();
         int w, h;
         glfwGetWindowSize(window, &w, &h);
+
+        glViewport(0, 0, 1024, 1024);
+        glClearColor(clear_color.x, clear_color.y, clear_color.z, clear_color.w);
+        glClear(GL_COLOR_BUFFER_BIT);
+
+        glMatrixMode(GL_PROJECTION);                        // Select The Projection Matrix
+        glLoadIdentity();                                   // Reset The Projection Matrix
+
+        // Calculate The Aspect Ratio Of The Window
+        //gluPerspective(45.0f, 256 / 256, 0.1f, 100.0f);
+        //gluPerspective(45.0f, 256 / 256, 4.0f, 10.0f);
+        glOrtho(-2.3, 2.3, -1.8, 1.8, -7, 7);
+
+        glRotatef(-35, 1.0f, 0.0f, 0.0f);
+
+        glTranslatef(0, 0.33f, -1.f);
+
+        float normal = (1 / std::sqrt(x*x + y*y + z*z));
+
+        
+        glRotatef(-45, 0.0f, 1.0f, 0.0f);
+
+        DrawAxis();
+        DrawCyrcle(1, 0, 0, 0, 1, 0); 
+        DrawCyrcle(0, 1, 0, 0, 0, 1);
+        DrawCyrcle(1, 0, 0, 0, 0, 1);
+        
+        
+        auto vectorWidth = 5;
+        glLineWidth(vectorWidth);
+        glBegin(GL_LINES);
+            glColor3f(1.0f, 1.0f, 1.0f);
+            glVertex3f(0.0f, 0.0f, 0.0f);
+            glVertex3f(normal *x, normal *y, normal *z);
+        glEnd();
+
+
+        glBindTexture(GL_TEXTURE_2D, tex_id);
+        glCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 0, 0, 1024, 1024, 0);
+
 
         ImGui_ImplGlfw_NewFrame();
 
@@ -875,7 +1053,7 @@ int main(int, char**) try
                     model.stream_buffers[f.get_stream_type()].upload(f);
                     model.steam_last_frame[f.get_stream_type()] = std::chrono::high_resolution_clock::now();
                     model.stream_size[f.get_stream_type()] = { static_cast<float>(f.get_width()),
-                                                               static_cast<float>(f.get_height()) };
+                        static_cast<float>(f.get_height()) };
                     model.stream_format[f.get_stream_type()] = f.get_format();
                 }
             }
@@ -923,7 +1101,7 @@ int main(int, char**) try
             {
                 ImGui::Text(label.c_str());
                 ImGui::SameLine(ImGui::GetWindowWidth() - 30);
-                if (ImGui::Button("[ ]", { 26, 20 }))
+                if (ImGui::Button("[+]", { 26, 20 }))
                 {
                     model.fullscreen = true;
                     model.selected_stream = stream;

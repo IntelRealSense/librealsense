@@ -129,13 +129,140 @@ class texture_buffer
 public:
     texture_buffer() : texture() {}
 
+
     GLuint get_gl_handle() const { return texture; }
+
+    void DrawAxis()
+    {
+        //// Set Top Point Of Triangle To Red
+        //glColor3f(1.0f, 0.0f, 0.0f);
+        //glBegin(GL_TRIANGLES);                  // Start Drawing A Triangle
+        //    glVertex3f(0.0f, 1.0f, 0.0f);       // First Point Of The Triangle
+        //    glColor3f(0.0f, 1.0f, 0.0f);        // Set Left Point Of Triangle To Green
+        //    glVertex3f(-1.0f, -1.0f, 0.0f);     // Second Point Of The Triangle
+        //    glColor3f(0.0f, 0.0f, 1.0f);        // Set Right Point Of Triangle To Blue
+        //    glVertex3f(1.0f, -1.0f, 0.0f);      // Third Point Of The Triangle
+        //glEnd();
+
+        // Traingles For X axis
+        glBegin(GL_TRIANGLES);
+        glColor3f(1.0f, 0.0f, 0.0f);
+        glVertex3f(1.1f, 0.0f, 0.0f);
+        glVertex3f(1.0f, 0.05f, 0.0f);
+        glVertex3f(1.0f, -0.05f, 0.0f);
+        glEnd();
+
+        // Traingles For Y axis
+        glBegin(GL_TRIANGLES);
+        glColor3f(0.0f, 1.0f, 0.0f);
+        glVertex3f(0.0f, -1.1f, 0.0f);
+        glVertex3f(0.0f, -1.0f, 0.05f);
+        glVertex3f(0.0f, -1.0f, -0.05f);
+        glEnd();
+        glBegin(GL_TRIANGLES);
+        glColor3f(0.0f, 1.0f, 0.0f);
+        glVertex3f(0.0f, -1.1f, 0.0f);
+        glVertex3f(0.05f, -1.0f, 0.0f);
+        glVertex3f(-0.05f, -1.0f, 0.0f);
+        glEnd();
+
+        // Traingles For Z axis
+        glBegin(GL_TRIANGLES);
+        glColor3f(0.0f, 0.0f, 1.0f);
+        glVertex3f(0.0f, 0.0f, 1.1f);
+        glVertex3f(0.0f, 0.05f, 1.0f);
+        glVertex3f(0.0f, -0.05f, 1.0f);
+        glEnd();
+
+        auto axisWidth = 4;
+        glLineWidth(axisWidth);
+
+        // Drawing Axis
+        glBegin(GL_LINES);
+        // X axis - Red
+        glColor3f(1.0f, 0.0f, 0.0f);
+        glVertex3f(0.0f, 0.0f, 0.0f);
+        glVertex3f(1.0f, 0.0f, 0.0f);
+
+        // Y axis - Green
+        glColor3f(0.0f, 1.0f, 0.0f);
+        glVertex3f(0.0f, 0.0f, 0.0f);
+        glVertex3f(0.0f, -1.0f, 0.0f);
+
+        // Z axis - White
+        glColor3f(0.0f, 0.0f, 1.0f);
+        glVertex3f(0.0f, 0.0f, 0.0f);
+        glVertex3f(0.0f, 0.0f, 1.0f);
+        glEnd();
+    }
+
+    void DrawCyrcle(float xx, float xy, float xz, float yx, float yy, float yz)
+    {
+        const auto N = 50;
+        glColor3f(0.5f, 0.5f, 0.5f);
+        glLineWidth(2);
+        glBegin(GL_LINE_STRIP);
+
+
+        for (int i = 0; i <= N; i++)
+        {
+            const auto theta = (2 * M_PI / N) * i;
+            const auto cost = cos(theta);
+            const auto sint = sin(theta);
+            glVertex3f(
+                1.1 * (xx * cost + yx * sint),
+                1.1 * (xy * cost + yy * sint),
+                1.1 * (xz * cost + yz * sint)
+                );
+        }
+
+        glEnd();
+    }
+
+    void draw_gyro_texture(float x, float y, float z)
+    {
+        glViewport(0, 0, 1024, 1024);
+        glClearColor(0,0,0,1);
+        glClear(GL_COLOR_BUFFER_BIT);
+
+        glMatrixMode(GL_PROJECTION);                        // Select The Projection Matrix
+        glLoadIdentity();                                   // Reset The Projection Matrix
+
+        glOrtho(-2.8, 2.8, -2.4, 2.4, -7, 7);
+
+        glRotatef(-25, 1.0f, 0.0f, 0.0f);
+
+        glTranslatef(0, 0.33f, -1.f);
+
+        float normal = (1 / std::sqrt(x*x + y*y + z*z));
+
+
+        glRotatef(-45, 0.0f, 1.0f, 0.0f);
+
+        DrawAxis();
+        DrawCyrcle(1, 0, 0, 0, 1, 0);
+        DrawCyrcle(0, 1, 0, 0, 0, 1);
+        DrawCyrcle(1, 0, 0, 0, 0, 1);
+
+
+        auto vectorWidth = 5;
+        glLineWidth(vectorWidth);
+        glBegin(GL_LINES);
+        glColor3f(1.0f, 1.0f, 1.0f);
+        glVertex3f(0.0f, 0.0f, 0.0f);
+        glVertex3f(normal *x, normal *y, normal *z);
+        glEnd();
+
+        glCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 0, 0, 1024, 1024, 0);
+
+    }
 
     void upload(const void * data, int width, int height, rs_format format, int stride = 0)
     {
         // If the frame timestamp has changed since the last time show(...) was called, re-upload the texture
         if(!texture) glGenTextures(1, &texture);
         glBindTexture(GL_TEXTURE_2D, texture);
+        auto f = (float*)data;
         stride = stride == 0 ? width : stride;
         //glPixelStorei(GL_UNPACK_ROW_LENGTH, stride);
         switch(format)
@@ -162,7 +289,7 @@ public:
             glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
             break;
         case RS_FORMAT_Y8:
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB,  width, height, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, data);
+            draw_gyro_texture(f[0], f[1], f[2]);
             break;
         case RS_FORMAT_Y16:
             glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_LUMINANCE, GL_UNSIGNED_SHORT, data);
@@ -206,7 +333,7 @@ public:
             (frame.get_stride_in_bytes() * 8) / frame.get_bits_per_pixel());
     }
 
-    void show(const rect& r, float alpha = 1.0f) const
+    void show(const rect& r, float alpha) const
     {
         glEnable(GL_BLEND);
 
