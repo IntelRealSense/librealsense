@@ -38,7 +38,16 @@ namespace rsimpl
             uvc_probe_commit,
             uvc_play,
             uvc_stop,
-            uvc_frame
+            uvc_frame,
+            create_hid_device,
+            query_hid_devices,
+            hid_open,
+            hid_close,
+            hid_stop_capture,
+            hid_start_capture,
+            hid_frame,
+            hid_get_sensor_inputs,
+            hid_get_sensors
         };
 
         class compression_algorithm
@@ -88,15 +97,15 @@ namespace rsimpl
             int get_timestamp() const;
 
             template<class T>
-            void save_list(std::vector<T> list, std::vector<T>& target, call_type type, int entity_id, int baseline)
+            void save_list(std::vector<T> list, std::vector<T>& target, call_type type, int entity_id)
             {
                 std::lock_guard<std::mutex> lock(_mutex);
                 call c;
                 c.type = type;
                 c.entity_id = entity_id;
-                c.param1 = static_cast<int>(target.size()) + baseline;
+                c.param1 = static_cast<int>(target.size());
                 for (auto&& i : list) target.push_back(i);
-                c.param2 = static_cast<int>(target.size()) + baseline;
+                c.param2 = static_cast<int>(target.size());
 
                 c.timestamp = get_timestamp();
                 calls.push_back(c);
@@ -127,17 +136,22 @@ namespace rsimpl
 
             void save_device_info_list(std::vector<uvc_device_info> list, lookup_key k)
             {
-                save_list(list, uvc_device_infos, k.type, k.entity_id, usb_baseline);
+                save_list(list, uvc_device_infos, k.type, k.entity_id);
+            }
+
+            void save_device_info_list(std::vector<hid_device_info> list, lookup_key k)
+            {
+                save_list(list, hid_device_infos, k.type, k.entity_id);
             }
 
             void save_device_info_list(std::vector<usb_device_info> list, lookup_key k)
             {
-                save_list(list, usb_device_infos, k.type, k.entity_id, usb_baseline);
+                save_list(list, usb_device_infos, k.type, k.entity_id);
             }
 
             void save_stream_profiles(std::vector<stream_profile> list, lookup_key key)
             {
-                save_list(list, stream_profiles, key.type, key.entity_id, modes_baseline);
+                save_list(list, stream_profiles, key.type, key.entity_id);
             }
 
             std::vector<stream_profile> load_stream_profiles(int id, call_type type)
@@ -158,6 +172,13 @@ namespace rsimpl
                 return load_list(uvc_device_infos, c);
             }
 
+            std::vector<hid_device_info> load_hid_device_info_list()
+            {
+                auto&& c = find_call(call_type::query_hid_devices, 0);
+                return load_list(hid_device_infos, c);
+            }
+
+
             std::vector<uint8_t> load_blob(int id) const
             {
                 return blobs[id];
@@ -165,15 +186,6 @@ namespace rsimpl
 
             call& find_call(call_type t, int entity_id);
             call* cycle_calls(call_type call_type, int id);
-
-            void set_baselines(const recording& other)
-            {
-                uvc_baseline = other.uvc_baseline + other.uvc_device_infos.size();
-                usb_baseline = other.usb_baseline + other.usb_device_infos.size();
-                modes_baseline = other.modes_baseline + other.stream_profiles.size();
-                blobs_baseline = other.blobs_baseline + other.blobs.size();
-                start_time = other.start_time;
-            }
 
             size_t size() const { return calls.size(); }
 
@@ -183,11 +195,7 @@ namespace rsimpl
             std::vector<uvc_device_info> uvc_device_infos;
             std::vector<usb_device_info> usb_device_infos;
             std::vector<stream_profile> stream_profiles;
-
-            int uvc_baseline = 0;
-            int usb_baseline = 0;
-            int modes_baseline = 0;
-            int blobs_baseline = 0;
+            std::vector<hid_device_info> hid_device_infos;
 
             std::mutex _mutex;
             std::chrono::high_resolution_clock::time_point start_time;
@@ -222,13 +230,33 @@ namespace rsimpl
                 std::shared_ptr<uvc_device> source,
                 std::shared_ptr<compression_algorithm> compression,
                 int id, const record_backend* owner)
-                : _source(source), _compression(compression),
-                _entity_id(id), _owner(owner) {}
+                : _source(source), _entity_id(id),
+                _compression(compression), _owner(owner) {}
 
         private:
             std::shared_ptr<uvc_device> _source;
             int _entity_id;
             std::shared_ptr<compression_algorithm> _compression;
+            const record_backend* _owner;
+        };
+
+        class record_hid_device : public hid_device
+        {
+        public:
+            void open() override;
+            void close() override;
+            void stop_capture() override;
+            void start_capture(const std::vector<int>& sensor_iio, hid_callback callback) override;
+            std::vector<hid_sensor_input> get_sensor_inputs(int sensor_iio) override;
+            std::vector<hid_sensor> get_sensors() override;
+
+            record_hid_device(std::shared_ptr<hid_device> source,
+                int id, const record_backend* owner)
+                : _source(source), _entity_id(id), _owner(owner) {}
+
+        private:
+            std::shared_ptr<hid_device> _source;
+            int _entity_id;
             const record_backend* _owner;
         };
 
@@ -250,6 +278,8 @@ namespace rsimpl
         class record_backend : public backend
         {
         public:
+            std::shared_ptr<hid_device> create_hid_device(hid_device_info info) const override;
+            std::vector<hid_device_info> query_hid_devices() const override;
             std::shared_ptr<uvc_device> create_uvc_device(uvc_device_info info) const override;
             std::vector<uvc_device_info> query_uvc_devices() const override;
             std::shared_ptr<usb_device> create_usb_device(usb_device_info info) const override;
@@ -292,7 +322,7 @@ namespace rsimpl
             }
 
         private:
-            void write_to_file();
+            void write_to_file() const;
 
             std::shared_ptr<backend> _source;
 
@@ -326,8 +356,7 @@ namespace rsimpl
             void unlock() const override;
             std::string get_device_location() const override;
 
-            explicit playback_uvc_device(std::shared_ptr<recording> rec,
-                int id);
+            explicit playback_uvc_device(std::shared_ptr<recording> rec,int id);
 
             void callback_thread();
             ~playback_uvc_device();
@@ -357,9 +386,35 @@ namespace rsimpl
             int _entity_id;
         };
 
+        class playback_hid_device : public hid_device
+        {
+        public:
+            void open() override;
+            void close() override;
+            void stop_capture() override;
+            void start_capture(const std::vector<int>& sensor_iio, hid_callback callback) override;
+            std::vector<hid_sensor_input> get_sensor_inputs(int sensor_iio) override;
+            std::vector<hid_sensor> get_sensors() override;
+
+            void callback_thread();
+            ~playback_hid_device();
+
+            explicit playback_hid_device(std::shared_ptr<recording> rec, int id);
+
+        private:
+            std::shared_ptr<recording> _rec;
+            std::mutex _callback_mutex;
+            uvc::hid_callback _callback;
+            int _entity_id;
+            std::thread _callback_thread;
+            std::atomic<bool> _alive;
+        };
+
         class playback_backend : public backend
         {
         public:
+            std::shared_ptr<hid_device> create_hid_device(hid_device_info info) const override;
+            std::vector<hid_device_info> query_hid_devices() const override;
             std::shared_ptr<uvc_device> create_uvc_device(uvc_device_info info) const override;
             std::vector<uvc_device_info> query_uvc_devices() const override;
             std::shared_ptr<usb_device> create_usb_device(usb_device_info info) const override;

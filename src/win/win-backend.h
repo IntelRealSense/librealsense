@@ -20,6 +20,9 @@ namespace rsimpl
 
             std::shared_ptr<usb_device> create_usb_device(usb_device_info info) const override;
             std::vector<usb_device_info> query_usb_devices() const override;
+
+            std::shared_ptr<hid_device> create_hid_device(hid_device_info info) const override;
+            std::vector<hid_device_info> query_hid_devices() const override;
         };
     }
 }

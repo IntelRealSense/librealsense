@@ -116,7 +116,8 @@ namespace rsimpl
             std::string device_path;
         };
 
-        struct hid_sensor{
+        struct hid_sensor
+        {
             int iio;
             std::string name;
         };
@@ -287,8 +288,8 @@ namespace rsimpl
             virtual std::shared_ptr<usb_device> create_usb_device(usb_device_info info) const = 0;
             virtual std::vector<usb_device_info> query_usb_devices() const = 0;
 
-            virtual std::shared_ptr<hid_device> create_hid_device(hid_device_info info) const{ throw std::runtime_error("not implemented"); } // TODO: pure virtual
-            virtual std::vector<hid_device_info> query_hid_devices() const { return std::vector<hid_device_info>{}; } // TODO: pure virtual
+            virtual std::shared_ptr<hid_device> create_hid_device(hid_device_info info) const = 0;
+            virtual std::vector<hid_device_info> query_hid_devices() const = 0;
 
             virtual ~backend() = default;
         };
