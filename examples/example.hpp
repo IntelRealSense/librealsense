@@ -12,6 +12,7 @@
 #include <string>
 #include <sstream>
 #include <iomanip>
+#include <deque>
 
 inline void make_depth_histogram(uint8_t rgb_image[], const uint16_t depth_image[], int width, int height)
 {
@@ -125,6 +126,7 @@ class texture_buffer
 {
     GLuint texture;
     std::vector<uint8_t> rgb;
+    std::deque<float> norms;
 
 public:
     texture_buffer() : texture() {}
@@ -187,13 +189,12 @@ public:
         glEnd();
     }
 
-    void draw_cyrcle(float xx, float xy, float xz, float yx, float yy, float yz)
+    void draw_cyrcle(float xx, float xy, float xz, float yx, float yy, float yz, float radius = 1.1)
     {
         const auto N = 50;
         glColor3f(0.5f, 0.5f, 0.5f);
         glLineWidth(2);
         glBegin(GL_LINE_STRIP);
-
 
         for (int i = 0; i <= N; i++)
         {
@@ -201,9 +202,9 @@ public:
             const auto cost = cos(theta);
             const auto sint = sin(theta);
             glVertex3f(
-                1.1 * (xx * cost + yx * sint),
-                1.1 * (xy * cost + yy * sint),
-                1.1 * (xz * cost + yz * sint)
+                radius * (xx * cost + yx * sint),
+                radius * (xy * cost + yy * sint),
+                radius * (xz * cost + yz * sint)
                 );
         }
 
@@ -224,33 +225,26 @@ public:
         return;
     }
 
-    void print_coords_in_3d(float x, float y, float z, GLfloat model[], GLfloat proj[], bool center_text)
+    float2 xyz_to_xy(float x, float y, float z, GLfloat model[], GLfloat proj[], float vec_norm)
     {
-        auto pitch = (center_text) ? 2 : 1;
-        GLfloat vec[4] = { x / pitch , y / pitch, z / pitch, 0 };
-        float result1[4];
+        GLfloat vec[4] = { x, y, z, 0 };
+        float tmp_result[4];
         float result[4];
 
-        multiply_vector_by_matrix(vec, model, result1);
-        multiply_vector_by_matrix(result1, proj, result);
-
         const auto canvas_size = 230;
-        const auto presicion = 3;
-        const auto norm = (1 / std::sqrt(x*x + y*y + z*z));
 
-        std::ostringstream s;
-        if (center_text)
-        {
-            s << std::setprecision(presicion) << (1.0f / norm);
-        }
-        else
-        {
-            s << "(" << std::setprecision(presicion) << x << "," << std::setprecision(presicion) << y << "," << std::setprecision(presicion) << z << ")";
-        }
+        multiply_vector_by_matrix(vec, model, tmp_result);
+        multiply_vector_by_matrix(tmp_result, proj, result);
 
-        auto w = (center_text) ? stb_easy_font_width((char*)s.str().c_str()) : 0;
+        return{ canvas_size * vec_norm *result[0], canvas_size * vec_norm *result[1] };
+    }
+
+    void print_text_in_3d(float x, float y, float z, const char* text, bool center_text, GLfloat model[], GLfloat proj[], float vec_norm)
+    {
+        auto xy = xyz_to_xy(x, y, z, model, proj, vec_norm);
+        auto w = (center_text) ? stb_easy_font_width((char*)text) : 0;
         glColor3f(1.0f, 1.0f, 1.0f);
-        draw_text(canvas_size * norm *result[0] - w / 2, canvas_size * norm *result[1], s.str().c_str());
+        draw_text(xy.x - w / 2, xy.y, text);
     }
 
     void draw_motion_data(float x, float y, float z)
@@ -268,38 +262,76 @@ public:
 
         glTranslatef(0, 0.33f, -1.f);
 
-        float norm = (1 / std::sqrt(x*x + y*y + z*z));
+        float norm = std::sqrt(x*x + y*y + z*z);
 
+        norms.push_back(norm);
+        if (norms.size() > 3)
+        {
+            norm = norms.front();
+            norms.pop_front();
+        }
 
         glRotatef(-45, 0.0f, 1.0f, 0.0f);
-
-        GLfloat model[16];
-        glGetFloatv(GL_MODELVIEW_MATRIX, model);
-        GLfloat proj[16];
-        glGetFloatv(GL_PROJECTION_MATRIX, proj);
 
         draw_axis();
         draw_cyrcle(1, 0, 0, 0, 1, 0);
         draw_cyrcle(0, 1, 0, 0, 0, 1);
         draw_cyrcle(1, 0, 0, 0, 0, 1);
 
-        auto vectorWidth = 5;
-        glLineWidth(vectorWidth);
-        glBegin(GL_LINES);
-        glColor3f(1.0f, 1.0f, 1.0f);
-        glVertex3f(0.0f, 0.0f, 0.0f);
-        glVertex3f(norm *x, norm *y, norm *z);
-        glEnd();
+        const auto vec_threshold = 0.01f;
+        if ( norm < vec_threshold )
+        {
+            const auto radius = 0.05;
+            static const int circle_points = 100;
+            static const float angle = 2.0f * 3.1416f / circle_points;
 
-        const auto canvas_size = 230;
-        glLoadIdentity();
-        glOrtho(-canvas_size, canvas_size, -canvas_size, canvas_size, -1, +1);
+            glColor3f(1.0f, 1.0f, 1.0f);
+            glBegin(GL_POLYGON);
+            double angle1 = 0.0;
+            glVertex2d(radius * cos(0.0), radius * sin(0.0));
+            int i;
+            for (i = 0;  i < circle_points; i++)
+            {
+                glVertex2d(radius * cos(angle1), radius *sin(angle1));
+                angle1 += angle;
+            }
+            glEnd();
+        }
+        else
+        {
+            auto vectorWidth = 5;
+            glLineWidth(vectorWidth);
+            glBegin(GL_LINES);
+            glColor3f(1.0f, 1.0f, 1.0f);
+            glVertex3f(0.0f, 0.0f, 0.0f);
+            glVertex3f(x / norm, y / norm, z / norm);
+            glEnd();
 
-        print_coords_in_3d(x, y, z, model, proj,false);
-        print_coords_in_3d(x,y,z,model,proj,true);
+            // Save model and projection matrix for later
+            GLfloat model[16];
+            glGetFloatv(GL_MODELVIEW_MATRIX, model);
+            GLfloat proj[16];
+            glGetFloatv(GL_PROJECTION_MATRIX, proj);
+
+            const auto canvas_size = 230;
+            glLoadIdentity();
+            glOrtho(-canvas_size, canvas_size, -canvas_size, canvas_size, -1, +1);
+
+            std::ostringstream s1;
+            const auto presicion = 3;
+
+            s1 << "(" << std::fixed << std::setprecision(presicion) << x << "," << std::fixed << std::setprecision(presicion) << y << "," << std::fixed << std::setprecision(presicion) << z << ")";
+            print_text_in_3d(x, y, z, s1.str().c_str(), false, model, proj, 1/norm);
+
+            std::ostringstream s2;
+            s2 << std::setprecision(presicion) << norm;
+            print_text_in_3d(x / 2, y / 2, z / 2, s2.str().c_str(), true, model, proj, 1/norm);
+        }
 
         glCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 0, 0, 1024, 1024, 0);
     }
+
+    double t = 0;
 
     void draw_gyro_texture(const void * data)
     {
@@ -309,6 +341,9 @@ public:
         auto x = static_cast<float>(shrt[0]) * gyro_transform_factor;
         auto y = static_cast<float>(shrt[1]) * gyro_transform_factor;
         auto z = static_cast<float>(shrt[2]) * gyro_transform_factor;
+
+
+
         draw_motion_data(x, y, z);
     }
 
@@ -357,7 +392,9 @@ public:
             glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
             break;
         case RS_FORMAT_Y8:
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, data);
+            draw_gyro_texture(data);
+
+            //glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, data);
             break;
         case RS_FORMAT_MOTION_DATA:
             switch (stream) {
