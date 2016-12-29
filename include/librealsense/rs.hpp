@@ -242,13 +242,13 @@ namespace rs
     /* Video stream intrinsics */
     struct intrinsics : rs_intrinsics
     {
-        float       hfov() const                                                        { return (atan2f(ppx + 0.5f, fx) + atan2f(width - (ppx + 0.5f), fx)) * 57.2957795f; }
-        float       vfov() const                                                        { return (atan2f(ppy + 0.5f, fy) + atan2f(height - (ppy + 0.5f), fy)) * 57.2957795f; }
+        float       hfov() const                                                        { return (atan2f(ppx + 0.5f, fx) + atan2f(static_cast<float>(width) - (ppx + 0.5f), fx)) * 57.2957795f; }
+        float       vfov() const                                                        { return (atan2f(ppy + 0.5f, fy) + atan2f(static_cast<float>(height) - (ppy + 0.5f), fy)) * 57.2957795f; }
         distortion  model() const                                                       { return (distortion)rs_intrinsics::model; }
 
                     // Helpers for mapping between pixel coordinates and texture coordinates
-        float2      pixel_to_texcoord(const float2 & pixel) const                       { return {(pixel.x+0.5f)/width, (pixel.y+0.5f)/height}; }
-        float2      texcoord_to_pixel(const float2 & coord) const                       { return {coord.x*width - 0.5f, coord.y*height - 0.5f}; }
+        float2      pixel_to_texcoord(const float2 & pixel) const                       { return {(pixel.x+0.5f)/static_cast<float>(width), (pixel.y+0.5f)/static_cast<float>(height)}; }
+        float2      texcoord_to_pixel(const float2 & coord) const                       { return {coord.x*static_cast<float>(width) - 0.5f, coord.y*static_cast<float>(height) - 0.5f}; }
 
                     // Helpers for mapping from image coordinates into 3D space
         float3      deproject(const float2 & pixel, float depth) const                  { float3 point = {}; rs_deproject_pixel_to_point(&point.x, this, &pixel.x, depth); return point; }
