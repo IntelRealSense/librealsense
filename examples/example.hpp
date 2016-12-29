@@ -12,7 +12,6 @@
 #include <string>
 #include <sstream>
 #include <iomanip>
-#include <deque>
 
 inline void make_depth_histogram(uint8_t rgb_image[], const uint16_t depth_image[], int width, int height)
 {
@@ -126,7 +125,6 @@ class texture_buffer
 {
     GLuint texture;
     std::vector<uint8_t> rgb;
-    std::deque<float> norms;
 
 public:
     texture_buffer() : texture() {}
@@ -264,13 +262,6 @@ public:
 
         float norm = std::sqrt(x*x + y*y + z*z);
 
-        norms.push_back(norm);
-        if (norms.size() > 3)
-        {
-            norm = norms.front();
-            norms.pop_front();
-        }
-
         glRotatef(-45, 0.0f, 1.0f, 0.0f);
 
         draw_axis();
@@ -392,9 +383,7 @@ public:
             glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
             break;
         case RS_FORMAT_Y8:
-            draw_gyro_texture(data);
-
-            //glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, data);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, data);
             break;
         case RS_FORMAT_MOTION_DATA:
             switch (stream) {
