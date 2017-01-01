@@ -89,27 +89,6 @@ namespace rsimpl
             return usb_bus + port_path.str();
         }
 
-        static void get_usb_port_id_from_vid_pid(uint16_t vid, uint16_t pid, std::string& usb_port_id)
-        {
-            libusb_context * usb_context;
-            int status = libusb_init(&usb_context);
-            if(status < 0) throw std::runtime_error(to_string() << "libusb_init(...) returned " << libusb_error_name(status));
-
-            auto usb_dev_handle  = libusb_open_device_with_vid_pid(usb_context, vid, pid);
-            if(!usb_dev_handle)
-            {
-                libusb_exit(usb_context);
-                throw std::runtime_error(to_string() << "libusb_open_device_with_vid_pid(...)");
-            }
-
-            auto usb_device = libusb_get_device(usb_dev_handle);
-            if(!usb_device) throw std::runtime_error(to_string() << "libusb_get_device(...)");
-
-            usb_port_id = get_usb_port_id(usb_device);
-            libusb_close(usb_dev_handle);
-            libusb_exit(usb_context);
-        }
-
         // hold all captured inputs in a specific trigger.
         class sensor_inputs {
         public:
@@ -667,7 +646,7 @@ namespace rsimpl
                             ss_vid >> std::hex >> vid;
                             ss_pid >> std::hex >> pid;
 
-                            get_usb_port_id_from_vid_pid(vid, pid, hid_dev_info.unique_id);
+                            hid_dev_info.unique_id = busnum + "-" + port_id;
                             hid_dev_info.id = m[6];
                             hid_dev_info.device_path = device_path;
                             std::string iio_device = m[8];
@@ -825,7 +804,7 @@ namespace rsimpl
                     try
                     {
                         int vid, pid, mi;
-                        int busnum, devnum, parent_devnum;
+                        int busnum, devnum, parent_devnum, devpath;
 
                         auto dev_name = "/dev/" + name;
 
@@ -849,8 +828,11 @@ namespace rsimpl
                                 {
                                     if(std::ifstream(path + "../devnum") >> parent_devnum)
                                     {
-                                        good = true;
-                                        break;
+                                        if(std::ifstream(path + "devpath") >> devpath)
+                                        {
+                                            good = true;
+                                            break;
+                                        }
                                     }
                                 }
                             }
@@ -876,7 +858,7 @@ namespace rsimpl
                         info.mi = mi;
                         info.id = dev_name;
                         info.device_path = std::string(buff);
-                        get_usb_port_id_from_vid_pid(vid, pid, info.unique_id);
+                        info.unique_id = std::to_string(busnum) + "-" + std::to_string(devpath);
                         action(info, dev_name);
                     }
                     catch(const std::exception & e)
