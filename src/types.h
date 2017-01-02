@@ -84,7 +84,7 @@ namespace rsimpl
 
         const char* what() const noexcept override
         {
-            _msg.c_str();
+            return _msg.c_str();
         }
 
     protected:
