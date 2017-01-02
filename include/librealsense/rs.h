@@ -394,6 +394,7 @@ const char * rs_get_device_name(const rs_device * device, rs_error ** error);
 
 /**
  * retrieve the unique serial number of the device
+ * \param[in] device  the relevant RealSense device
  * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
  * \return            the serial number, in a format specific to the device model
  */
@@ -408,6 +409,7 @@ const char * rs_get_device_info(const rs_device * device, rs_camera_info info, r
 
 /**
  * retrieve the USB port number of the device
+ * \param[in] device  the relevant RealSense device
  * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
  * \return            the USB port number in a string form "##-##"
  */
@@ -415,6 +417,7 @@ const char * rs_get_device_usb_port_id(const rs_device * device, rs_error ** err
 
 /**
  * retrieve the version of the firmware currently installed on the device
+ * \param[in] device  the relevant RealSense device
  * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
  * \return            firmware version string, in a format is specific to device model
  */
@@ -422,6 +425,7 @@ const char * rs_get_device_firmware_version(const rs_device * device, rs_error *
 
 /**
  * retrieve extrinsic transformation between the viewpoints of two different streams
+ * \param[in] device  the relevant RealSense device
  * \param[in] from_stream  stream whose coordinate space we will transform from
  * \param[in] to_stream    stream whose coordinate space we will transform to
  * \param[out] extrin      the transformation between the two streams
@@ -431,7 +435,7 @@ void rs_get_device_extrinsics(const rs_device * device, rs_stream from_stream, r
 
 /**
 * retrieve extrinsic transformation between specific stream and the motion module
-* \param[in] from_stream  stream whose coordinate space we will transform from
+* \param[in] from         stream whose coordinate space we will transform from
 * \param[out] extrin      the transformation between the specific stream and motion module
 * \param[out] error       if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 */
@@ -439,6 +443,7 @@ void rs_get_motion_extrinsics_from(const rs_device * device, rs_stream from, rs_
 
 /**
  * retrieve mapping between the units of the depth image and meters
+ * \param[in] device  the relevant RealSense device
  * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
  * \return            depth in meters corresponding to a depth value of 1
  */
@@ -446,6 +451,7 @@ float rs_get_device_depth_scale(const rs_device * device, rs_error ** error);
 
 /**
  * determine if the device allows a specific option to be queried and set
+ * \param[in] device  the relevant RealSense device
  * \param[in] option  the option to check for support
  * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
  * \return            true if the option can be queried and set
@@ -454,6 +460,7 @@ int rs_device_supports_option(const rs_device * device, rs_option option, rs_err
 
 /**
  * determine the number of streaming modes available for a given stream
+ * \param[in] device  the relevant RealSense device
  * \param[in] stream  the stream whose modes will be enumerated
  * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
  * \return            the count of available modes
@@ -462,6 +469,7 @@ int rs_get_stream_mode_count(const rs_device * device, rs_stream stream, rs_erro
 
 /**
  * determine the properties of a specific streaming mode
+ * \param[in] device  the relevant RealSense device
  * \param[in] stream      the stream whose mode will be queried
  * \param[in] index       the zero based index of the streaming mode
  * \param[out] width      the width of a frame image in pixels
@@ -474,6 +482,7 @@ void rs_get_stream_mode(const rs_device * device, rs_stream stream, int index, i
 
 /**
  * enable a specific stream and request specific properties
+ * \param[in] device  the relevant RealSense device
  * \param[in] stream         the stream to enable
  * \param[in] width          the desired width of a frame image in pixels, or 0 if any width is acceptable
  * \param[in] height         the desired height of a frame image in pixels, or 0 if any height is acceptable
@@ -486,6 +495,7 @@ void rs_enable_stream_ex(rs_device * device, rs_stream stream, int width, int he
 
 /**
 * enable a specific stream and request specific properties
+* \param[in] device  the relevant RealSense device
 * \param[in] stream         the stream to enable
 * \param[in] width          the desired width of a frame image in pixels, or 0 if any width is acceptable
 * \param[in] height         the desired height of a frame image in pixels, or 0 if any height is acceptable
@@ -497,6 +507,7 @@ void rs_enable_stream(rs_device * device, rs_stream stream, int width, int heigh
 
 /**
  * enable a specific stream and request properties using a preset
+ * \param[in] device  the relevant RealSense device
  * \param[in] stream  the stream to enable
  * \param[in] preset  the preset to use to enable the stream
  * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
@@ -505,6 +516,7 @@ void rs_enable_stream_preset(rs_device * device, rs_stream stream, rs_preset pre
 
 /**
  * disable a specific stream
+ * \param[in] device  the relevant RealSense device
  * \param[in] stream  the stream to disable
  * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
  */
@@ -512,6 +524,7 @@ void rs_disable_stream(rs_device * device, rs_stream stream, rs_error ** error);
 
 /**
  * determine if a specific stream is enabled
+ * \param[in] device  the relevant RealSense device
  * \param[in] stream  the stream to check
  * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
  * \return            true if the stream is currently enabled
@@ -520,6 +533,7 @@ int rs_is_stream_enabled(const rs_device * device, rs_stream stream, rs_error **
 
 /**
  * retrieve the width in pixels of a specific stream, equivalent to the width field from the stream's intrinsic
+ * \param[in] device  the relevant RealSense device
  * \param[in] stream  the stream whose width to retrieve
  * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
  * \return            the width in pixels of images from this stream
@@ -528,6 +542,7 @@ int rs_get_stream_width(const rs_device * device, rs_stream stream, rs_error ** 
 
 /**
  * retrieve the height in pixels of a specific stream, equivalent to the height field from the stream's intrinsic
+ * \param[in] device  the relevant RealSense device
  * \param[in] stream  the stream whose height to retrieve
  * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
  * \return            the height in pixels of images from this stream
@@ -544,6 +559,7 @@ rs_format rs_get_stream_format(const rs_device * device, rs_stream stream, rs_er
 
 /**
  * retrieve the framerate for a specific stream
+ * \param[in] device  the relevant RealSense device
  * \param[in] stream  the stream whose framerate to retrieve
  * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
  * \return            the framerate of the stream, in frames per second
@@ -552,6 +568,7 @@ int rs_get_stream_framerate(const rs_device * device, rs_stream stream, rs_error
 
 /**
  * retrieve intrinsic camera parameters for a specific stream
+ * \param[in] device  the relevant RealSense device
  * \param[in] stream   the stream whose parameters to retrieve
  * \param[out] intrin  the intrinsic parameters of the stream
  * \param[out] error   if non-null, receives any error that occurs during this call, otherwise, errors are ignored
@@ -560,6 +577,7 @@ void rs_get_stream_intrinsics(const rs_device * device, rs_stream stream, rs_int
 
 /**
 * retrieve intrinsic camera parameters for a motion module
+* \param[in] device  the relevant RealSense device
 * \param[out] intrinsic  the intrinsic parameters
 * \param[out] error   if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 */
@@ -567,6 +585,7 @@ void rs_get_motion_intrinsics(const rs_device * device, rs_motion_intrinsics * i
 
 /**
 * set up a frame callback that will be called immediately when an image is available, with no synchronization logic applied
+* \param[in] device    the relevant RealSense device
 * \param[in] stream    the stream for whose images the callback should be registered
 * \param[in] on_frame  the callback which will receive the frame data and timestamp
 * \param[in] user      a user data point to be passed to the callback
@@ -576,6 +595,7 @@ void rs_set_frame_callback(rs_device * device, rs_stream stream, rs_frame_callba
 
 /**
 * enable and configure motion-tracking data handlers
+* \param[in] device             the relevant RealSense device
 * \param[in] on_motion_event    user-defined routine to be invoked when a motion data arrives
 * \param[in] motion_handler     a user data point to be passed to the motion event callback
 * \param[in] on_timestamp_event user-defined routine to be invoked on timestamp
@@ -593,6 +613,7 @@ void rs_enable_motion_tracking(rs_device * device,
 * However, when the user has an external device (like a compass) and wishes to synchronize it precisely with image and motion stream he can connect the sensor to a GPIO avaialbe on some devices. Every time sensor will signal, the user will get a timestamp callback with a frame number, source ID and a timestamp.
 * This would allow advanced user to synchronize his compass events (presumably coming though I2C or some other method) with realsense data.
 * (This variant is provided specifically to enable passing lambdas with capture lists safely into the library)
+* \param[in] device             the relevant RealSense device
 * \param[in] motion_callback    user-defined routine to be invoked when a motion data arrives
 * \param[in] timestamp_callback user-defined routine to be invoked on timestamp
 * \param[out] error             if non-null, receives any error that occurs during this call, otherwise, errors are ignored
@@ -605,6 +626,7 @@ void rs_enable_motion_tracking_cpp(rs_device * device,
 /**
  * set up a frame callback that will be called immediately when an image is available, with no synchronization logic applied
  * (This variant is provided specificly to enable passing lambdas with capture lists safely into the library)
+ * \param[in] device    the relevant RealSense device
  * \param[in] stream    the stream for whose images the callback should be registered
  * \param[in] callback  the callback which will receive the frame data and timestamp
  * \param[out] error    if non-null, receives any error that occurs during this call, otherwise, errors are ignored
@@ -612,30 +634,38 @@ void rs_enable_motion_tracking_cpp(rs_device * device,
 void rs_set_frame_callback_cpp(rs_device * device, rs_stream stream, rs_frame_callback * callback, rs_error ** error);
 
 /**
+* \param[in] device  the relevant RealSense device
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * disable motion-tracking handlers
 */
 void rs_disable_motion_tracking(rs_device * device, rs_error ** error);
 
 /**
 * check if data acquisition is active
+* \param[in] device  the relevant RealSense device
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return            true if motion tracking is active
 */
 int rs_is_motion_tracking_active(rs_device * device, rs_error ** error);
 
 
 /**
  * begin streaming on all enabled streams for this device
+ * \param[in] device  the relevant RealSense device
  * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
  */
 void rs_start_device(rs_device * device, rs_error ** error);
 
 /**
  * end data acquisition for the specified source providers
+ * \param[in] device  the relevant RealSense device
  * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
  */
 void rs_stop_device(rs_device * device, rs_error ** error);
 
 /**
  * begin streaming on all enabled streams for this device
+ * \param[in] device  the relevant RealSense device
  * \param[in] source  the data source to be activated
  * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
  */
@@ -643,6 +673,7 @@ void rs_start_source(rs_device * device, rs_source source, rs_error ** error);
 
 /**
  * end data acquisition for the specified source providers
+ * \param[in] device  the relevant RealSense device
  * \param[in] source  the data source to be terminated
  * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
  */
@@ -650,6 +681,7 @@ void rs_stop_source(rs_device * device, rs_source source, rs_error ** error);
 
 /**
  * determine if the device is currently streaming
+ * \param[in] device  the relevant RealSense device
  * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
  * \return            true if the device is currently streaming
  */
@@ -657,6 +689,7 @@ int rs_is_device_streaming(const rs_device * device, rs_error ** error);
 
 /**
  * retrieve the available range of values of a supported option
+ * \param[in] device  the relevant RealSense device
  * \param[in] option  the option whose range should be queried
  * \param[out] min    the minimum value which will be accepted for this option
  * \param[out] max    the maximum value which will be accepted for this option
@@ -667,6 +700,7 @@ void rs_get_device_option_range(rs_device * device, rs_option option, double * m
 
 /**
  * retrieve the available range of values of a supported option
+ * \param[in] device  the relevant RealSense device
  * \param[in] option  the option whose range should be queried
  * \param[out] min    the minimum value which will be accepted for this option
  * \param[out] max    the maximum value which will be accepted for this option
@@ -678,6 +712,7 @@ void rs_get_device_option_range_ex(rs_device * device, rs_option option, double 
 
 /**
  * efficiently retrieve the value of an arbitrary number of options, using minimal hardware IO
+ * \param[in] device  the relevant RealSense device
  * \param[in] options  the array of options which should be queried
  * \param[in] count    the length of the options and values arrays
  * \param[out] values  the array which will receive the values of the queried options
@@ -687,6 +722,7 @@ void rs_get_device_options(rs_device * device, const rs_option * options, unsign
 
 /**
  * efficiently set the value of an arbitrary number of options, using minimal hardware IO
+ * \param[in] device  the relevant RealSense device
  * \param[in] options  the array of options which should be set
  * \param[in] count    the length of the options and values arrays
  * \param[in] values   the array of values to which the options should be set
@@ -696,6 +732,7 @@ void rs_set_device_options(rs_device * device, const rs_option * options, unsign
 
 /**
 * efficiently reset the value of an arbitrary number of options to default
+* \param[in] device  the relevant RealSense device
 * \param[in] options  the array of options which should be set to default
 * \param[in] count    the length of the options array
 * \param[out] error   if non-null, receives any error that occurs during this call, otherwise, errors are ignored
@@ -704,6 +741,7 @@ void rs_reset_device_options_to_default(rs_device * device, const rs_option* opt
 
 /**
  * retrieve the current value of a single option
+ * \param[in] device  the relevant RealSense device
  * \param[in] option  the option whose value should be retrieved
  * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
  * \return            the value of the option
@@ -713,6 +751,7 @@ double rs_get_device_option(rs_device * device, rs_option option, rs_error ** er
 
 /**
  * retrieve a static description of what a particular option does on given device
+ * \param[in] device  the relevant RealSense device
  * \param[in] option  the option whose description should be retrieved
  * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
  * \return            the value of the option
@@ -722,6 +761,7 @@ const char * rs_get_device_option_description(rs_device * device, rs_option opti
 
 /**
  * set the current value of a single option
+ * \param[in] device  the relevant RealSense device
  * \param[in] option  the option whose value should be set
  * \param[in] value   the value of the option
  * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
@@ -730,12 +770,14 @@ void rs_set_device_option(rs_device * device, rs_option option, double value, rs
 
 /**
  * block until new frames are available
+ * \param[in] device  the relevant RealSense device
  * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
  */
 void rs_wait_for_frames(rs_device * device, rs_error ** error);
 
 /**
  * check if new frames are available, without blocking
+ * \param[in] device  the relevant RealSense device
  * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
  * \return            1 if new frames are available, 0 if no new frames have arrived
  */
@@ -743,35 +785,44 @@ int rs_poll_for_frames(rs_device * device, rs_error ** error);
 
 /**
  * determine device capabilities
+ * \param[in] device      the relevant RealSense device
  * \param[in] capability  the capability to check for support
+ * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
  * \return                true if device has this capability
  */
 int rs_supports(rs_device * device, rs_capabilities capability, rs_error ** error);
 
 /**
 * specialization over generic support to verify camera header block support
+* \param[in] device      the relevant RealSense device
 * \param[in] info_param  the parameter to check for support
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return                true if the parameter both exist and well-defined for the specific device
 */
 int rs_supports_camera_info(rs_device * device, rs_camera_info info_param, rs_error ** error);
 
 /**
 * retrive metadata from safe frame handle, returned from detach, clone_ref or from frame callback
+* \param[in] frame   current frame reference
 * \param[in] stream  the stream whose latest frame we are interested in
 * \param[in] frame_metadata  the rs_frame_metadata whose latest frame we are interested in
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return            the metadata value
 */
 double rs_get_detached_frame_metadata(const rs_frame_ref * frame, rs_frame_metadata frame_metadata, rs_error ** error);
 
 /**
 * determine device metadata
-* \param[in] metadata  the metadata to check for support
+* \param[in] frame   current frame reference
+* \param[in] frame_metadata  the metadata to check for support
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return                true if device has this metadata
 */
 int rs_supports_frame_metadata(const rs_frame_ref * frame, rs_frame_metadata frame_metadata, rs_error ** error);
 
 /**
  * retrieve the time at which the latest frame on a stream was captured
+ * \param[in] device  the relevant RealSense device
  * \param[in] stream  the stream whose latest frame we are interested in
  * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
  * \return            the timestamp of the frame, in milliseconds since the device was started
@@ -780,6 +831,7 @@ double rs_get_frame_timestamp(const rs_device * device, rs_stream stream, rs_err
 
 /**
 * retrieve the frame number
+* \param[in] device  the relevant RealSense device
 * \param[in] stream  the stream whose latest frame we are interested in
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return            the frame number
@@ -788,6 +840,7 @@ unsigned long long rs_get_frame_number(const rs_device * device, rs_stream strea
 
 /**
  * retrieve the contents of the latest frame on a stream
+ * \param[in] device  the relevant RealSense device
  * \param[in] stream  the stream whose latest frame we are interested in
  * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
  * \return            the pointer to the start of the frame data
@@ -796,7 +849,8 @@ const void * rs_get_frame_data(const rs_device * device, rs_stream stream, rs_er
 
 /**
 * relases the frame handle
-* \param[in] frame handle returned either detach, clone_ref or from frame callback
+* \param[in] device  the relevant RealSense device
+* \param[in] frame   handle returned either detach, clone_ref or from frame callback
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return            the pointer to the start of the frame data
 */
@@ -804,6 +858,7 @@ void rs_release_frame(rs_device * device, rs_frame_ref * frame, rs_error ** erro
 
 /**
 * retrive timestamp from safe frame handle, returned from detach, clone_ref or from frame callback
+* \param[in] frame   current frame reference
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return            the timestamp of the frame, in milliseconds since the device was started
 */
@@ -812,13 +867,15 @@ double rs_get_detached_frame_timestamp(const rs_frame_ref * frame, rs_error ** e
 /**
 * retrive timestamp domain from safe frame handle, returned from detach, clone_ref or from frame callback
 * this method is used to check if two timestamp values are comparable (generated from the same clock)
+* \param[in] frame   current frame reference
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return            the timestamp domain of the frame (camera/ microcontroller)
 */
-rs_timestamp_domain rs_get_detached_frame_timestamp_domain(const rs_frame_ref * frameset, rs_error ** error);
+rs_timestamp_domain rs_get_detached_frame_timestamp_domain(const rs_frame_ref * frame, rs_error ** error);
 
 /**
-* retrive frame number from safe frame handle, returned from detach, clone_ref or from frame callback
+* retrive frame number from safe frame handle, returned from detach, clone_ref or from frame callback\
+* \param[in] frame   current frame reference
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return            the frame nubmer of the frame, in milliseconds since the device was started
 */
@@ -826,6 +883,7 @@ unsigned long long rs_get_detached_frame_number(const rs_frame_ref * frame, rs_e
 
 /**
 * retrive data from safe frame handle, returned from detach, clone_ref or from frame callback
+* \param[in] frame   current frame reference
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return            the pointer to the start of the frame data
 */
@@ -833,6 +891,7 @@ const void * rs_get_detached_frame_data(const rs_frame_ref * frame, rs_error ** 
 
 /**
 * retrive frame intrinsic width in pixels
+* \param[in] frame   current frame reference
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return            intrinsic width
 */
@@ -840,6 +899,7 @@ int rs_get_detached_frame_width(const rs_frame_ref * frame, rs_error ** error);
 
 /**
 * retrive frame intrinsic height
+* \param[in] frame   current frame reference
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return            intrinsic height
 */
@@ -847,13 +907,15 @@ int rs_get_detached_frame_height(const rs_frame_ref * frame, rs_error ** error);
 
 /**
 * retrive frame intrinsic framerate
+* \param[in] frame   current frame reference
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return            intrinsic framerate
 */
-int rs_get_detached_framerate(const rs_frame_ref * frameset, rs_error ** error);
+int rs_get_detached_framerate(const rs_frame_ref * frame, rs_error ** error);
 
 /**
 * retrive frame stride, meaning the actual line width in memory in bytes (not the logical image width)
+* \param[in] frame   current frame reference
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return            frame pad crop
 */
@@ -861,6 +923,7 @@ int rs_get_detached_frame_stride(const rs_frame_ref * frame, rs_error ** error);
 
 /**
 * retrive frame **bits** per pixel
+* \param[in] frame   current frame reference
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return            frame pad crop
 */
@@ -868,6 +931,7 @@ int rs_get_detached_frame_bpp(const rs_frame_ref * frame, rs_error ** error);
 
 /**
 * retrive frame format
+* \param[in] frame   current frame reference
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return            frame format
 */
@@ -875,15 +939,19 @@ rs_format rs_get_detached_frame_format(const rs_frame_ref * frame, rs_error ** e
 
 /**
 * retrive frame stream type
+* \param[in] frame   current frame reference
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return            stream type
 */
-rs_stream rs_get_detached_frame_stream_type(const rs_frame_ref * frameset, rs_error ** error);
+rs_stream rs_get_detached_frame_stream_type(const rs_frame_ref * frame, rs_error ** error);
 
 /**
 * send a blob of data to the device. at the moment only RS_BLOB_TYPE_MOTION_MODULE_FIRMWARE_UPDATE is support 
 * of the motiohn module.
-* \param[in] firmware data.
+* \param[in] device  the relevant RealSense device
+* \param[in] type    type of raw data to send to the device
+* \param[in] data    raw data pointer to send
+* \param[in] size    size in bytes of the raw data to send
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 */
 void rs_send_blob_to_device(rs_device * device, rs_blob_type type, void * data, int size, rs_error ** error);
