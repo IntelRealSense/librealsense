@@ -142,7 +142,7 @@ namespace rsimpl
     {
     public:
         linux_backend_exception(const std::string& msg) noexcept
-            : backend_exception(generate_last_error_message(msg), RS_LIBREALSENSE_EXCEPTION_TYPE_LINUX_BACKEND)
+            : backend_exception(generate_last_error_message(msg), RS_LIBREALSENSE_EXCEPTION_TYPE_BACKEND)
         {}
 
     private:
@@ -155,8 +155,9 @@ namespace rsimpl
     class windows_backend_exception : public backend_exception
     {
     public:
+        // TODO: get last error
         windows_backend_exception(const std::string& msg) noexcept
-            : backend_exception(msg, RS_LIBREALSENSE_EXCEPTION_TYPE_WINDOWS_BACKEND)
+            : backend_exception(msg, RS_LIBREALSENSE_EXCEPTION_TYPE_BACKEND)
         {}
     };
 

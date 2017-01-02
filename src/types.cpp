@@ -36,8 +36,7 @@ namespace rsimpl
         {
         CASE(UNKNOWN)
         CASE(CAMERA_DISCONNECTED)
-        CASE(LINUX_BACKEND)
-        CASE(WINDOWS_BACKEND)
+        CASE(BACKEND)
         CASE(WRONG_VALUE)
         CASE(WRONG_API_CALL_SEQUENCE)
         CASE(NOT_IMPLEMENTED)

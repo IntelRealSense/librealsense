@@ -103,8 +103,7 @@ namespace rs
             case RS_LIBREALSENSE_EXCEPTION_TYPE_CAMERA_DISCONNECTED:
                 throw camera_disconnected_error(e);
                 break;
-            case RS_LIBREALSENSE_EXCEPTION_TYPE_WINDOWS_BACKEND:
-            case RS_LIBREALSENSE_EXCEPTION_TYPE_LINUX_BACKEND:
+            case RS_LIBREALSENSE_EXCEPTION_TYPE_BACKEND:
                 throw backend_error(e);
                 break;
             case RS_LIBREALSENSE_EXCEPTION_TYPE_WRONG_VALUE:
