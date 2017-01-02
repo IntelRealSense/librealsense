@@ -36,7 +36,7 @@ namespace rsimpl
 
         virtual std::vector<uint8_t> send_receive_raw_data(const std::vector<uint8_t>& input)
         { 
-            throw std::runtime_error(to_string() << __FUNCTION__ << " is not implemented for this device!"); 
+            throw not_implemented_exception(to_string() << __FUNCTION__ << " is not implemented for this device!");
         }
 
     protected:

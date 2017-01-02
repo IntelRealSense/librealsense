@@ -49,14 +49,14 @@ namespace rsimpl
         if (in && inSize)
         {
             if (res.size() < static_cast<int>(sizeof(uint32_t))) 
-                throw std::runtime_error("Incomplete bulk usb transfer!");
+                throw wrong_value_exception("Incomplete bulk usb transfer!");
 
             if (res.size() > IVCAM_MONITOR_MAX_BUFFER_SIZE) 
-                throw std::runtime_error("Out buffer is greater than max buffer size!");
+                throw wrong_value_exception("Out buffer is greater than max buffer size!");
 
             op = *reinterpret_cast<uint32_t *>(res.data());
             if (res.size() > static_cast<int>(inSize))
-                throw std::runtime_error("bulk transfer failed - user buffer too small");
+                throw wrong_value_exception("bulk transfer failed - user buffer too small");
 
             inSize = res.size();
             memcpy(in, res.data(), inSize);
@@ -70,7 +70,7 @@ namespace rsimpl
         if (details.oneDirection) return;
 
         if (details.receivedCommandDataLength < 4)
-            throw std::runtime_error("received incomplete response to usb command");
+            throw wrong_value_exception("received incomplete response to usb command");
 
         details.receivedCommandDataLength -= 4;
         memcpy(details.receivedOpcode, outputBuffer, 4);
@@ -129,7 +129,7 @@ namespace rsimpl
                                    details.receivedOpcode[1], details.receivedOpcode[0]);
         if (opCodeAsUint32 != opCodeXmit)
         {
-            throw std::runtime_error(to_string() << "OpCodes do not match! Sent " 
+            throw wrong_value_exception(to_string() << "OpCodes do not match! Sent "
                 << opCodeXmit << " but received " << static_cast<int>(opCodeAsUint32) << "!");
         }
 

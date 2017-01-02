@@ -128,7 +128,7 @@ namespace rsimpl
                         return "Auto";
                     }
                     default:
-                        throw std::runtime_error("value not found");
+                        throw wrong_value_exception("value not found");
                 }
             }
 
@@ -225,7 +225,7 @@ namespace rsimpl
             {
                 auto fisheye_infos = filter_by_mi(dev_info, 3);
                 if (fisheye_infos.size() != 1)
-                    throw std::runtime_error("RS450 model is expected to include a single fish-eye device!");
+                    throw wrong_value_exception("RS450 model is expected to include a single fish-eye device!");
 
                 fisheye_ep = std::make_shared<uvc_endpoint>(backend.create_uvc_device(fisheye_infos.front()),
                                                             std::unique_ptr<frame_timestamp_reader>(new ds5_timestamp_reader()));

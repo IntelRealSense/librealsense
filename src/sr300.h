@@ -212,12 +212,13 @@ namespace rsimpl
             using namespace ivcam;
             static const char* device_name = "Intel RealSense SR300";
 
-            get_depth_endpoint().register_option(RS_OPTION_ENABLE_FW_LOGGER,
-                std::make_shared<fw_logger_option>(_hw_monitor, ivcam::fw_cmd::GLD, 100, "SR300 FW Logger"));
-
             auto fw_version = _hw_monitor->get_firmware_version_string(GVD, gvd_fw_version_offset);
             auto serial = _hw_monitor->get_module_serial_string(GVD, 132);
             enable_timestamp(true, true);
+
+            auto& depth_ep = get_depth_endpoint();
+            depth_ep.register_option(RS_OPTION_ENABLE_FW_LOGGER,
+                std::make_shared<fw_logger_option>(_hw_monitor, ivcam::fw_cmd::GLD, 100, "SR300 FW Logger"));
 
             std::map<rs_camera_info, std::string> depth_camera_info = {{RS_CAMERA_INFO_DEVICE_NAME, device_name},
                                                                        {RS_CAMERA_INFO_MODULE_NAME, "Depth Camera"},
@@ -314,7 +315,7 @@ namespace rsimpl
         virtual rs_intrinsics get_intrinsics(int subdevice, stream_profile profile) const override
         {
             if (subdevice >= get_endpoints_count()) 
-                throw std::runtime_error("Requested subdevice is not supported!");
+                throw rsimpl::wrong_value_exception("Requested subdevice is not supported!");
 
             if (subdevice == _color_device_idx) 
                 return make_color_intrinsics(get_calibration(), { int(profile.width), int(profile.height) });
@@ -322,7 +323,7 @@ namespace rsimpl
             if (subdevice == _depth_device_idx)
                 return make_depth_intrinsics(get_calibration(), { int(profile.width), int(profile.height) });
 
-            throw std::runtime_error(to_string() << "Intrinsic is not implemented for subdevice num " << subdevice);
+            throw rsimpl::wrong_value_exception(to_string() << "Intrinsic is not implemented for subdevice num " << subdevice);
         }
 
     private:

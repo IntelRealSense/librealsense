@@ -114,7 +114,7 @@ namespace rsimpl
             if (info.mi == mi)
                 return info;
         }
-        throw std::runtime_error("Interface not found!");
+        throw wrong_value_exception("Interface not found!");
     }
 
     static std::vector<uvc::uvc_device_info> filter_by_mi(const std::vector<uvc::uvc_device_info>& devices, uint32_t mi)

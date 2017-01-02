@@ -173,7 +173,7 @@ frame* frame::publish(std::shared_ptr<frame_archive> new_owner)
 
 double frame::get_frame_metadata(rs_frame_metadata frame_metadata) const
 {
-    throw std::logic_error("unsupported metadata type");
+    throw not_implemented_exception("unsupported metadata type");
 }
 
 bool frame::supports_frame_metadata(rs_frame_metadata frame_metadata) const

@@ -135,7 +135,7 @@ namespace rsimpl {
                 if (elem.second.x == width && elem.second.y == height)
                     return elem.first;
             }
-            throw std::runtime_error("resolution not found.");
+            throw wrong_value_exception("resolution not found.");
         }
 
         rs_intrinsics get_intrinsic_by_resolution(const std::vector<unsigned char> & raw_data, calibration_table_id table_id, uint32_t width, uint32_t height);
@@ -211,13 +211,13 @@ namespace rsimpl {
                         result.mi = 3;
                         break;
                     case RS420R_PID:
-                        throw std::runtime_error("not implemented.");
+                        throw not_implemented_exception("RS420R_PID usb not implemented.");
                         break;
                     case RS450T_PID:
                         result.mi = 6;
                         break;
                     default:
-                        throw std::runtime_error("not implemented.");
+                        throw not_implemented_exception("usb device not implemented.");
                         break;
                     }
 

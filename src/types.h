@@ -50,6 +50,141 @@ namespace rsimpl
         operator std::string() const { return ss.str(); }
     };
 
+    ///////////////////////
+    // Logging mechanism //
+    ///////////////////////
+
+    void log_to_console(rs_log_severity min_severity);
+    void log_to_file(rs_log_severity min_severity, const char * file_path);
+
+#define LOG_DEBUG(...)   do { CLOG(DEBUG   ,"librealsense") << __VA_ARGS__; } while(false)
+#define LOG_INFO(...)    do { CLOG(INFO    ,"librealsense") << __VA_ARGS__; } while(false)
+#define LOG_WARNING(...) do { CLOG(WARNING ,"librealsense") << __VA_ARGS__; } while(false)
+#define LOG_ERROR(...)   do { CLOG(ERROR   ,"librealsense") << __VA_ARGS__; } while(false)
+#define LOG_FATAL(...)   do { CLOG(FATAL   ,"librealsense") << __VA_ARGS__; } while(false)
+
+
+    //////////////////////////
+    // Exceptions mechanism //
+    //////////////////////////
+
+
+    class librealsense_exception : public std::exception
+    {
+    public:
+        const char* get_message() const noexcept
+        {
+            return _msg.c_str();
+        }
+
+        rs_librealsense_exception_type get_exception_type() const noexcept
+        {
+            return _exception_type;
+        }
+
+        const char* what() const noexcept override
+        {
+            _msg.c_str();
+        }
+
+    protected:
+        librealsense_exception(const std::string& msg,
+                               rs_librealsense_exception_type exception_type) noexcept
+            : _msg(msg),
+              _exception_type(exception_type)
+        {}
+
+    private:
+        std::string _msg;
+        rs_librealsense_exception_type _exception_type;
+    };
+
+    class recoverable_exception : public librealsense_exception
+    {
+    public:
+        recoverable_exception(const std::string& msg,
+                              rs_librealsense_exception_type exception_type) noexcept
+            : librealsense_exception(msg, exception_type)
+        {
+            LOG_WARNING(msg);
+        }
+    };
+
+    class unrecoverable_exception : public librealsense_exception
+    {
+    public:
+        unrecoverable_exception(const std::string& msg,
+                                rs_librealsense_exception_type exception_type) noexcept
+            : librealsense_exception(msg, exception_type)
+        {
+            LOG_ERROR(msg);
+        }
+    };
+
+    class camera_disconnected_exception : public unrecoverable_exception
+    {
+    public:
+        camera_disconnected_exception(const std::string& msg) noexcept
+            : unrecoverable_exception(msg, RS_LIBREALSENSE_EXCEPTION_TYPE_CAMERA_DISCONNECTED)
+        {}
+    };
+
+    class backend_exception : public unrecoverable_exception
+    {
+    public:
+        backend_exception(const std::string& msg,
+                          rs_librealsense_exception_type exception_type) noexcept
+            : unrecoverable_exception(msg, exception_type)
+        {}
+    };
+
+    class linux_backend_exception : public backend_exception
+    {
+    public:
+        linux_backend_exception(const std::string& msg) noexcept
+            : backend_exception(generate_last_error_message(msg), RS_LIBREALSENSE_EXCEPTION_TYPE_LINUX_BACKEND)
+        {}
+
+    private:
+        std::string generate_last_error_message(const std::string& msg) const
+        {
+            return msg + " Last Error: " + strerror(errno);
+        }
+    };
+
+    class windows_backend_exception : public backend_exception
+    {
+    public:
+        windows_backend_exception(const std::string& msg) noexcept
+            : backend_exception(msg, RS_LIBREALSENSE_EXCEPTION_TYPE_WINDOWS_BACKEND)
+        {}
+    };
+
+    class wrong_value_exception : public recoverable_exception
+    {
+    public:
+        wrong_value_exception(const std::string& msg) noexcept
+            : recoverable_exception(msg, RS_LIBREALSENSE_EXCEPTION_TYPE_WRONG_VALUE)
+        {}
+    };
+
+    class wrong_api_call_sequence_exception : public recoverable_exception
+    {
+    public:
+        wrong_api_call_sequence_exception(const std::string& msg) noexcept
+            : recoverable_exception(msg, RS_LIBREALSENSE_EXCEPTION_TYPE_WRONG_API_CALL_SEQUENCE)
+        {}
+    };
+
+    class not_implemented_exception : public recoverable_exception
+    {
+    public:
+        not_implemented_exception(const std::string& msg) noexcept
+            : recoverable_exception(msg, RS_LIBREALSENSE_EXCEPTION_TYPE_NOT_IMPLEMENTED)
+        {}
+    };
+
+
 #pragma pack(push, 1)
     template<class T> class big_endian
     {
@@ -156,19 +291,6 @@ namespace rsimpl
 
     typedef float float_4[4];
 
-    ///////////////////////
-    // Logging mechanism //
-    ///////////////////////
-
-    void log_to_console(rs_log_severity min_severity);
-    void log_to_file(rs_log_severity min_severity, const char * file_path);
-
-#define LOG_DEBUG(...)   do { CLOG(DEBUG   ,"librealsense") << __VA_ARGS__; } while(false)
-#define LOG_INFO(...)    do { CLOG(INFO    ,"librealsense") << __VA_ARGS__; } while(false)
-#define LOG_WARNING(...) do { CLOG(WARNING ,"librealsense") << __VA_ARGS__; } while(false)
-#define LOG_ERROR(...)   do { CLOG(ERROR   ,"librealsense") << __VA_ARGS__; } while(false)
-#define LOG_FATAL(...)   do { CLOG(FATAL   ,"librealsense") << __VA_ARGS__; } while(false)
-
     /////////////////////////////
     // Enumerated type support //
     /////////////////////////////
@@ -183,6 +305,7 @@ namespace rsimpl
     RS_ENUM_HELPERS(rs_camera_info, CAMERA_INFO)
     RS_ENUM_HELPERS(rs_timestamp_domain, TIMESTAMP_DOMAIN)
     RS_ENUM_HELPERS(rs_visual_preset, VISUAL_PRESET)
+    RS_ENUM_HELPERS(rs_librealsense_exception_type, LIBREALSENSE_EXCEPTION_TYPE)
     #undef RS_ENUM_HELPERS
 
     ////////////////////////////////////////////
@@ -244,8 +367,22 @@ namespace rsimpl
                 get_format(request.stream) == request.format;
         }
 
-        bool provides_stream(rs_stream stream) const { for (auto & o : outputs) if (o.first == stream) return true; return false; }
-        rs_format get_format(rs_stream stream) const { for (auto & o : outputs) if (o.first == stream) return o.second; throw std::logic_error("missing output"); }
+        bool provides_stream(rs_stream stream) const
+        {
+            for (auto & o : outputs)
+                if (o.first == stream)
+                    return true;
+
+            return false;
+        }
+        rs_format get_format(rs_stream stream) const
+        {
+            for (auto & o : outputs)
+                if (o.first == stream)
+                    return o.second;
+
+            throw wrong_value_exception("missing output");
+        }
     };
 
     struct native_pixel_format
@@ -488,7 +625,7 @@ namespace rsimpl
         {
              if (item < buffer || item >= buffer + C)
             {
-                throw std::runtime_error("Trying to return item to a heap that didn't allocate it!");
+                throw wrong_value_exception("Trying to return item to a heap that didn't allocate it!");
             }
             auto i = item - buffer;
             auto old_value = std::move(buffer[i]);
@@ -524,7 +661,7 @@ namespace rsimpl
             };
             if (!ready() && !cv.wait_for(lock, std::chrono::hours(1000), ready)) // for some reason passing std::chrono::duration::max makes it return instantly
             {
-                throw std::runtime_error("Could not flush one of the user controlled objects!");
+                throw wrong_value_exception("Could not flush one of the user controlled objects!");
             }
         }
 

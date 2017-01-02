@@ -67,7 +67,7 @@ namespace rsimpl
     rs_intrinsics ds5_camera::get_intrinsics(int subdevice, stream_profile profile) const
     {
         if (subdevice >= get_endpoints_count())
-            throw std::runtime_error("Requested subdevice is unsupported.");
+            throw wrong_value_exception("Requested subdevice is unsupported.");
 
         if (subdevice == _depth_device_idx)
         {
@@ -77,7 +77,7 @@ namespace rsimpl
                 profile.width, profile.height);
         }
 
-        throw std::runtime_error("Not Implemented");
+        throw not_implemented_exception("Not Implemented");
     }
 
     bool ds5_camera::is_camera_in_advanced_mode() const
@@ -86,7 +86,7 @@ namespace rsimpl
         assert(_hw_monitor);
         auto ret = _hw_monitor->send(cmd);
         if (ret.empty())
-            throw std::runtime_error("command result is empty!");
+            throw wrong_value_exception("command result is empty!");
 
         return bool(ret.front());
     }

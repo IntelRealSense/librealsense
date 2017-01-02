@@ -8,6 +8,7 @@
 #include "device.h"
 #include "archive.h"
 #include "concurrency.h"
+#include "types.h"
 
 ////////////////////////
 // API implementation //
@@ -18,6 +19,7 @@ struct rs_error
     std::string message;
     const char * function;
     std::string args;
+    rs_librealsense_exception_type exception_type;
 };
 
 struct rs_raw_data_buffer
@@ -109,10 +111,10 @@ namespace rsimpl
 #define NOEXCEPT_RETURN(R, ...) catch(...) { std::ostringstream ss; rsimpl::stream_args(ss, #__VA_ARGS__, __VA_ARGS__); rs_error* e; rsimpl::translate_exception(__FUNCTION__, ss.str(), &e); LOG_WARNING(rs_get_error_message(e)); rs_free_error(e); return R; }
 #define HANDLE_EXCEPTIONS_AND_RETURN(R, ...) catch(...) { std::ostringstream ss; rsimpl::stream_args(ss, #__VA_ARGS__, __VA_ARGS__); rsimpl::translate_exception(__FUNCTION__, ss.str(), error); return R; }
 #define VALIDATE_NOT_NULL(ARG) if(!(ARG)) throw std::runtime_error("null pointer passed for argument \"" #ARG "\"");
-#define VALIDATE_ENUM(ARG) if(!rsimpl::is_valid(ARG)) { std::ostringstream ss; ss << "bad enum value for argument \"" #ARG "\""; throw std::runtime_error(ss.str()); }
-#define VALIDATE_RANGE(ARG, MIN, MAX) if((ARG) < (MIN) || (ARG) > (MAX)) { std::ostringstream ss; ss << "out of range value for argument \"" #ARG "\""; throw std::runtime_error(ss.str()); }
+#define VALIDATE_ENUM(ARG) if(!rsimpl::is_valid(ARG)) { std::ostringstream ss; ss << "bad enum value for argument \"" #ARG "\""; throw rsimpl::wrong_value_exception(ss.str()); }
+#define VALIDATE_RANGE(ARG, MIN, MAX) if((ARG) < (MIN) || (ARG) > (MAX)) { std::ostringstream ss; ss << "out of range value for argument \"" #ARG "\""; throw rsimpl::wrong_value_exception(ss.str()); }
 #define VALIDATE_LE(ARG, MAX) if((ARG) > (MAX)) { std::ostringstream ss; ss << "out of range value for argument \"" #ARG "\""; throw std::runtime_error(ss.str()); }
-#define VALIDATE_NATIVE_STREAM(ARG) VALIDATE_ENUM(ARG); if(ARG >= RS_STREAM_NATIVE_COUNT) { std::ostringstream ss; ss << "argument \"" #ARG "\" must be a native stream"; throw std::runtime_error(ss.str()); }
+#define VALIDATE_NATIVE_STREAM(ARG) VALIDATE_ENUM(ARG); if(ARG >= RS_STREAM_NATIVE_COUNT) { std::ostringstream ss; ss << "argument \"" #ARG "\" must be a native stream"; throw rsimpl::wrong_value_exception(ss.str()); }
 
 int major(int version)
 {
@@ -135,7 +137,7 @@ std::string api_version_to_string(int version)
 
 void report_version_mismatch(int runtime, int compiletime)
 {
-    throw std::runtime_error(rsimpl::to_string() << "API version mismatch: librealsense.so was compiled with API version " 
+    throw rsimpl::wrong_value_exception(rsimpl::to_string() << "API version mismatch: librealsense.so was compiled with API version "
         << api_version_to_string(runtime) << " but the application was compiled with " 
         << api_version_to_string(compiletime) << "! Make sure correct version of the library is installed (make install)");
 }
@@ -145,7 +147,7 @@ void verify_version_compatibility(int api_version)
     rs_error* error = nullptr;
     auto runtime_api_version = rs_get_api_version(&error);
     if (error)
-        throw std::runtime_error(rs_get_error_message(error));
+        throw rsimpl::wrong_value_exception(rs_get_error_message(error));
 
     if ((runtime_api_version < 10) || (api_version < 10))
     {
@@ -428,7 +430,7 @@ const char* rs_get_camera_info(const rs_device* device, rs_camera_info info, rs_
     {
         return device->device->get_endpoint(device->subdevice).get_info(info).c_str();
     }
-    throw std::runtime_error(rsimpl::to_string() << "info " << rs_camera_info_to_string(info) << " not supported by subdevice " << device->subdevice);
+    throw rsimpl::wrong_value_exception(rsimpl::to_string() << "info " << rs_camera_info_to_string(info) << " not supported by subdevice " << device->subdevice);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, device, info)
 
@@ -648,7 +650,7 @@ void rs_get_extrinsics(const rs_device * from, const rs_device * to, rs_extrinsi
     VALIDATE_NOT_NULL(extrin);
 
     if (from->device != to->device)
-        throw std::runtime_error("Extrinsics between the selected devices are unknown!");
+        throw rsimpl::wrong_value_exception("Extrinsics between the selected devices are unknown!");
 
     *extrin = from->device->get_extrinsics(from->subdevice, to->subdevice);
 }
@@ -708,7 +710,7 @@ void rs_free_error(rs_error * error) { if (error) delete error; }
 const char * rs_get_failed_function(const rs_error * error) { return error ? error->function : nullptr; }
 const char * rs_get_failed_args(const rs_error * error) { return error ? error->args.c_str() : nullptr; }
 const char * rs_get_error_message(const rs_error * error) { return error ? error->message.c_str() : nullptr; }
-
+rs_librealsense_exception_type rs_get_librealsense_exception_type(const rs_error * error) { return error ? error->exception_type : RS_LIBREALSENSE_EXCEPTION_TYPE_UNKNOWN; }
 
 const char * rs_stream_to_string(rs_stream stream) { return rsimpl::get_string(stream); }
 const char * rs_format_to_string(rs_format format) { return rsimpl::get_string(format); }
