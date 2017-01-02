@@ -11,15 +11,20 @@
 
 std::vector<texture_buffer> buffers;
 
+/***************
+
+***************/
+
 int main(int argc, char * argv[]) try
 {
     rs::log_to_console(RS_LOG_SEVERITY_WARN);
-    //rs::log_to_file(rs::log_severity::debug, "librealsense.log");
 
-    rs::context ctx;
-    auto devices = ctx.query_devices();
-    if(devices.size() == 0)
+    rs::context ctx; // Create librealsense context
+    auto devices = ctx.query_devices(); // Query the list of connected RealSense devices
+    if (devices.size() == 0)
+    {
         throw std::runtime_error("No device detected. Is it plugged in?");
+    }
 
     std::vector<rs::frame_queue> syncers;
 
@@ -75,7 +80,7 @@ int main(int argc, char * argv[]) try
             {
                 buffers[i].upload(frame);
             }
-            buffers[i++].show({ (i / 2) * perTextureWidth, (i % 2) * perTextureHeight, perTextureWidth, perTextureHeight });
+            buffers[i++].show({ (i / 2) * perTextureWidth, (i % 2) * perTextureHeight, perTextureWidth, perTextureHeight }, 1);
         }
 
         glPopMatrix();

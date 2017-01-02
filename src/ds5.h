@@ -175,7 +175,7 @@ namespace rsimpl
 
             // TODO: These if conditions will be implemented as inheritance classes
             auto pid = all_device_infos.front().pid;
-            if (pid == RS410A_PID || pid == RS450T_PID)
+            if (pid == RS410A_PID || pid == RS450T_PID || pid == RS430C_PID)
             {
                 depth_ep->register_option(RS_OPTION_EMITTER_ENABLED, std::make_shared<emitter_option>(*depth_ep));
 
@@ -231,6 +231,7 @@ namespace rsimpl
                                                             std::unique_ptr<frame_timestamp_reader>(new ds5_timestamp_reader()));
                 fisheye_ep->register_xu(fisheye_xu); // make sure the XU is initialized everytime we power the camera
                 fisheye_ep->register_pixel_format(pf_raw8);
+                fisheye_ep->register_pixel_format(pf_fe_raw8_unpatched_kernel); // W/O for unpatched kernel
                 fisheye_ep->register_pu(RS_OPTION_GAIN);
                 fisheye_ep->register_option(RS_OPTION_EXPOSURE,
                     std::make_shared<uvc_xu_option<uint16_t>>(*fisheye_ep,

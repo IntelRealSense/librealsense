@@ -415,7 +415,7 @@ namespace rsimpl
                             continue;
                         }
 
-                        auto *data_p = (int*) data;
+                        auto *data_p = (unsigned*) data;
                         auto i = 0;
                         for(auto& channel : this->channels) {
                             callback_data.add_input(hid_sensor{get_iio_device(), get_sensor_name()},
@@ -426,14 +426,14 @@ namespace rsimpl
                         auto cb_data = callback_data.get_input_data();
                         sensor_data sens_data{};
                         sens_data.sensor = cb_data.front().sensor;
-                        sens_data.data.resize(data_size);
+                        sens_data.data.resize(6);
 
-                        auto offset = 0;
+                        auto offset = 4;
                         for (auto& elem : cb_data)
                         {
-                            memcpy(sens_data.data.data() + offset*channel_size,
-                                   &(elem.value), channel_size);
-                            ++offset;
+                            memcpy(sens_data.data.data() + offset,
+                                   &(elem.value), 2);
+                            offset-=2;
                         }
 
                         this->callback(sens_data);

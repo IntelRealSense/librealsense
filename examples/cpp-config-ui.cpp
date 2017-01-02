@@ -1,3 +1,5 @@
+#define _USE_MATH_DEFINES
+
 #include <librealsense/rs.hpp>
 #include "example.hpp"
 
@@ -17,23 +19,7 @@
 
 #pragma comment(lib, "opengl32.lib")
 
-bool is_integer(float f)
-{
-    return abs(f - floor(f)) < 0.001f;
-}
 
-struct to_string
-{
-    std::ostringstream ss;
-    template<class T> to_string & operator << (const T & val) { ss << val; return *this; }
-    operator std::string() const { return ss.str(); }
-};
-
-std::string error_to_string(const rs::error& e)
-{
-    return to_string() << e.get_failed_function() << "("
-        << e.get_failed_args() << "):\n" << e.what();
-}
 
 class option_model
 {
@@ -483,26 +469,41 @@ public:
             }
         }
 
-        auto factor = ceil(sqrt(active_streams.size()));
-        auto complement = ceil(active_streams.size() / factor);
-
-        auto cell_width = static_cast<float>(width / factor);
-        auto cell_height = static_cast<float>(height / complement);
+        if (fullscreen)
+        {
+            auto it = std::find(begin(active_streams), end(active_streams), selected_stream);
+            if (it == end(active_streams)) fullscreen = false;
+        }
 
         std::map<rs_stream, rect> results;
-        auto i = 0;
-        for (auto x = 0; x < factor; x++)
-        {
-            for (auto y = 0; y < complement; y++)
-            {
-                if (i == active_streams.size()) break;
 
-                rect r = { x0 + x * cell_width, y0 + y * cell_height,
-                                    cell_width, cell_height };
-                results[active_streams[i]] = r;
-                i++;
+        if (fullscreen)
+        {
+            results[selected_stream] = { x0, y0, width, height };
+        }
+        else
+        {
+            auto factor = ceil(sqrt(active_streams.size()));
+            auto complement = ceil(active_streams.size() / factor);
+
+            auto cell_width = static_cast<float>(width / factor);
+            auto cell_height = static_cast<float>(height / complement);
+
+            auto i = 0;
+            for (auto x = 0; x < factor; x++)
+            {
+                for (auto y = 0; y < complement; y++)
+                {
+                    if (i == active_streams.size()) break;
+
+                    rect r = { x0 + x * cell_width, y0 + y * cell_height,
+                        cell_width, cell_height };
+                    results[active_streams[i]] = r;
+                    i++;
+                }
             }
         }
+
         return get_interpolated_layout(results);
     }
 
@@ -511,6 +512,9 @@ public:
     std::map<rs_stream, float2> stream_size;
     std::map<rs_stream, rs_format> stream_format;
     std::map<rs_stream, std::chrono::high_resolution_clock::time_point> steam_last_frame;
+
+    bool fullscreen = false;
+    rs_stream selected_stream = RS_STREAM_ANY;
 
 private:
     std::map<rs_stream, rect> get_interpolated_layout(const std::map<rs_stream, rect>& l)
@@ -563,36 +567,38 @@ bool no_device_popup(GLFWwindow* window, const ImVec4& clear_color)
 
         ImGui_ImplGlfw_NewFrame();
 
-        // Rendering
+        // Rendering 
         glViewport(0, 0,
             static_cast<int>(ImGui::GetIO().DisplaySize.x),
             static_cast<int>(ImGui::GetIO().DisplaySize.y));
         glClearColor(clear_color.x, clear_color.y, clear_color.z, clear_color.w);
         glClear(GL_COLOR_BUFFER_BIT);
 
-        auto flags = ImGuiWindowFlags_NoResize |
-            ImGuiWindowFlags_NoMove |
-            ImGuiWindowFlags_NoCollapse;
+        // Flags for pop-up window - no window resize, move or collaps
+        auto flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse;
 
+        // Setting pop-up window size and position
         ImGui::SetNextWindowPos({ 0, 0 });
         ImGui::SetNextWindowSize({ static_cast<float>(w), static_cast<float>(h) });
         ImGui::Begin("", nullptr, flags);
 
-        ImGui::OpenPopup("config-ui");
+        ImGui::OpenPopup("config-ui"); // pop-up title
         if (ImGui::BeginPopupModal("config-ui", nullptr,
                                    ImGuiWindowFlags_AlwaysAutoResize))
         {
+            // Show Error Message
             ImGui::Text("No device detected. Is it plugged in?");
             ImGui::Separator();
 
+            // Present options to user 
             if (ImGui::Button("Retry", ImVec2(120, 0)))
             {
-                return true;
+                return true; // Retry to find connected device
             }
             ImGui::SameLine();
             if (ImGui::Button("Exit", ImVec2(120, 0)))
             {
-                return false;
+                return false; // No device - exit the application
             }
 
             ImGui::EndPopup();
@@ -607,67 +613,81 @@ bool no_device_popup(GLFWwindow* window, const ImVec4& clear_color)
 
 int main(int, char**) try
 {
+    // activate logging to console
     rs::log_to_console(RS_LOG_SEVERITY_WARN);
-    rs::log_to_file(RS_LOG_SEVERITY_DEBUG);
 
+    // Init GUI
     if (!glfwInit())
         exit(1);
 
+    // Create GUI Windows
     auto window = glfwCreateWindow(1280, 720, "librealsense - config-ui", nullptr, nullptr);
     glfwMakeContextCurrent(window);
     ImGui_ImplGlfw_Init(window, true);
 
     ImVec4 clear_color = ImColor(10, 0, 0);
 
+    // Create RealSense Context
     rs::context ctx;
-    //rs::recording_context ctx("config-ui1.db");
-    //rs::mock_context ctx("hq_colorexp_depth_preset.db");
     auto device_index = 0;
-    auto list = ctx.query_devices();
+    auto list = ctx.query_devices(); // Query RealSense connected devices list
 
+    // If no device is connected...
     while (list.size() == 0)
     {
-        if (!no_device_popup(window, clear_color)) return EXIT_SUCCESS;
+        // if user has no connected device - exit application
+        if (!no_device_popup(window, clear_color)) 
+            return EXIT_SUCCESS;
 
+        // else try to query again
         list = ctx.query_devices();
     }
 
-    auto dev = list[device_index];
-    std::vector<std::string> device_names;
-
+    std::vector<std::string> device_names; 
     std::string error_message = "";
 
+    // Initialize list with each device name and serial number
     for (auto&& l : list)
     {
-        auto d = list[device_index];
-        auto name = d.get_camera_info(RS_CAMERA_INFO_DEVICE_NAME);
-        auto serial = d.get_camera_info(RS_CAMERA_INFO_DEVICE_SERIAL_NUMBER);
-        device_names.push_back(to_string() << name << " Sn#" << serial);
+        auto d = list[device_index];                                            // access current device
+        auto name = d.get_camera_info(RS_CAMERA_INFO_DEVICE_NAME);              // retrieve device name
+        auto serial = d.get_camera_info(RS_CAMERA_INFO_DEVICE_SERIAL_NUMBER);   // retrieve device serial number
+        device_names.push_back(to_string() << name << " Sn#" << serial);        // push name and sn to list 
     }
 
-    auto model = device_model(dev, error_message);
+    auto dev = list[device_index];                  // Access first device
+    auto model = device_model(dev, error_message);  // Initialize device model
     std::string label;
 
+    // Closing the window
     while (!glfwWindowShouldClose(window))
     {
         glfwPollEvents();
         int w, h;
         glfwGetWindowSize(window, &w, &h);
 
+        glMatrixMode(GL_PROJECTION); 
+        glLoadIdentity();
+
         ImGui_ImplGlfw_NewFrame();
 
-        auto flags = ImGuiWindowFlags_NoResize |
-            ImGuiWindowFlags_NoMove |
-            ImGuiWindowFlags_NoCollapse;
+        // Flags for pop-up window - no window resize, move or collaps
+        auto flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse;
 
+        // Set window position and size
         ImGui::SetNextWindowPos({ 0, 0 });
         ImGui::SetNextWindowSize({ 300, static_cast<float>(h) });
-        ImGui::Begin("Control Panel", nullptr, flags);
 
+        // *********************
+        // Creating window menus
+        // *********************
+        ImGui::Begin("Control Panel", nullptr, flags);
         ImGui::Text("Viewer FPS: %.0f ", ImGui::GetIO().Framerate);
 
+        // Device Details Menu - Elaborate details on connected devices
         if (ImGui::CollapsingHeader("Device Details", nullptr, true, true))
         {
+            // Draw a combo-box with the list of connected devices
             auto device_names_chars = get_string_pointers(device_names);
             ImGui::PushItemWidth(-1);
             if (ImGui::Combo("", &device_index, device_names_chars.data(),
@@ -684,11 +704,14 @@ int main(int, char**) try
             }
             ImGui::PopItemWidth();
 
+            
+            // Show all device details - name, module name, serial number, FW version and location
             for (auto i = 0; i < RS_CAMERA_INFO_COUNT; i++)
             {
                 auto info = static_cast<rs_camera_info>(i);
                 if (dev.supports(info))
                 {
+                    // retrieve info property
                     std::stringstream ss;
                     ss << rs_camera_info_to_string(info) << ":";
                     auto line = ss.str();
@@ -696,6 +719,7 @@ int main(int, char**) try
                     ImGui::Text(line.c_str());
                     ImGui::PopStyleColor();
 
+                    // retrieve property value
                     ImGui::SameLine();
                     auto value = dev.get_camera_info(info);
                     ImGui::Text(value);
@@ -708,16 +732,18 @@ int main(int, char**) try
             }
         }
 
+        // Streaming Menu - Allow user to play different streams
         if (ImGui::CollapsingHeader("Streaming", nullptr, true, true))
         {
+            // Draw menu foreach subdevice with its properties
             for (auto&& sub : model.subdevices)
             {
+                
                 label = to_string() << sub->dev.get_camera_info(RS_CAMERA_INFO_MODULE_NAME);
                 if (ImGui::CollapsingHeader(label.c_str(), nullptr, true, true))
                 {
+                    // Draw combo-box with all resolution options for this device
                     auto res_chars = get_string_pointers(sub->resolutions);
-                    auto fps_chars = get_string_pointers(sub->fpses);
-
                     ImGui::Text("Resolution:");
                     ImGui::SameLine();
                     ImGui::PushItemWidth(-1);
@@ -731,6 +757,8 @@ int main(int, char**) try
 
                     ImGui::PopItemWidth();
 
+                    // Draw combo-box with all FPS options for this device
+                    auto fps_chars = get_string_pointers(sub->fpses);
                     ImGui::Text("FPS:");
                     ImGui::SameLine();
                     ImGui::PushItemWidth(-1);
@@ -744,6 +772,7 @@ int main(int, char**) try
 
                     ImGui::PopItemWidth();
 
+                    // Check which streams are live in current device
                     auto live_streams = 0;
                     for (auto i = 0; i < RS_STREAM_COUNT; i++)
                     {
@@ -752,6 +781,7 @@ int main(int, char**) try
                             live_streams++;
                     }
 
+                    // Draw combo-box with all format options for current device
                     for (auto i = 0; i < RS_STREAM_COUNT; i++)
                     {
                         auto stream = static_cast<rs_stream>(i);
@@ -833,6 +863,7 @@ int main(int, char**) try
             }
         }
 
+        // Control Menu - Allow user to change cameras properties
         if (ImGui::CollapsingHeader("Control", nullptr, true, true))
         {
             for (auto&& sub : model.subdevices)
@@ -875,6 +906,7 @@ int main(int, char**) try
 
         ImGui::End();
 
+        // Fetch frames from queue
         for (auto&& sub : model.subdevices)
         {
             for (auto& queue : sub->queues)
@@ -884,8 +916,9 @@ int main(int, char**) try
                 {
                     model.stream_buffers[f.get_stream_type()].upload(f);
                     model.steam_last_frame[f.get_stream_type()] = std::chrono::high_resolution_clock::now();
-                    model.stream_size[f.get_stream_type()] = { static_cast<float>(f.get_width()),
-                                                               static_cast<float>(f.get_height()) };
+                    auto width = (f.get_format() == RS_FORMAT_MOTION_DATA)? 640 : f.get_width();
+                    auto height = (f.get_format() == RS_FORMAT_MOTION_DATA)? 480 : f.get_height();
+                    model.stream_size[f.get_stream_type()] = {width, height};
                     model.stream_format[f.get_stream_type()] = f.get_format();
                 }
             }
@@ -928,7 +961,27 @@ int main(int, char**) try
             label = to_string() << rs_stream_to_string(stream) << " "
                 << stream_size.x << "x" << stream_size.y << ", "
                 << rs_format_to_string(model.stream_format[stream]);
-            ImGui::Text(label.c_str());
+
+            if (layout.size() > 1 && !model.fullscreen)
+            {
+                ImGui::Text(label.c_str());
+                ImGui::SameLine(ImGui::GetWindowWidth() - 30);
+                if (ImGui::Button("[+]", { 26, 20 }))
+                {
+                    model.fullscreen = true;
+                    model.selected_stream = stream;
+                }
+            } 
+            else if (model.fullscreen)
+            {
+                ImGui::Text(label.c_str());
+                ImGui::SameLine(ImGui::GetWindowWidth() - 30);
+                if (ImGui::Button("[-]", { 26, 20 }))
+                {
+                    model.fullscreen = false;
+                }
+            }
+
             ImGui::End();
             ImGui::PopStyleColor();
         }
@@ -937,6 +990,7 @@ int main(int, char**) try
         glfwSwapBuffers(window);
     }
 
+    // Stop all subdevices
     for (auto&& sub : model.subdevices)
     {
         if (sub->streaming)

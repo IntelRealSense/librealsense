@@ -8,6 +8,7 @@
 #include <iomanip>
 #include <numeric>
 #include <fstream>
+#include <cmath>
 
 #define unknown "UNKNOWN"
 

@@ -11,6 +11,7 @@
 #include <mutex>
 #include <condition_variable>
 #include <algorithm>
+#include <cmath>
 
 namespace rs
 {
