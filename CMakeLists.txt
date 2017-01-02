@@ -59,7 +59,6 @@ set(REALSENSE_CPP
     src/hw-monitor.cpp
     src/image.cpp
     src/ivcam-private.cpp
-    src/ivcam-device.cpp
     src/log.cpp
     src/rs.cpp
     src/sr300.cpp
@@ -68,9 +67,6 @@ set(REALSENSE_CPP
     src/backend.cpp
     src/verify.c
     src/ds5.cpp
-    src/ds5c.cpp
-    src/ds5t.cpp
-    src/ds5d.cpp
     src/ds5-private.cpp
     src/win/win-helpers.cpp
     src/win/win-uvc.cpp
@@ -98,14 +94,10 @@ set(REALSENSE_HPP
     src/hw-monitor.h
     src/image.h
     src/ivcam-private.h
-    src/ivcam-device.h
     src/types.h
     src/backend.h
     src/sr300.h
     src/ds5.h
-    src/ds5c.h
-    src/ds5t.h
-    src/ds5d.h
     src/ds5-private.h
     src/win/win-helpers.h
     src/win/win-uvc.h
@@ -161,24 +153,16 @@ if(WIN32)
 
     source_group("Source Files\\Devices" FILES
         src/ds5.cpp
-        src/ds5c.cpp
-        src/ds5t.cpp
-        src/ds5d.cpp
         src/ds5-private.cpp
         src/sr300.cpp
         src/ivcam-private.cpp
-        src/ivcam-device.cpp
         )
 
     source_group("Header Files\\Devices" FILES
         src/ds5.h
-        src/ds5c.h
-        src/ds5t.h
-        src/ds5d.h
         src/ds5-private.h
         src/sr300.h
         src/ivcam-private.h
-        src/ivcam-device.h
         )
 
 else()

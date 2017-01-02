@@ -8,8 +8,19 @@ using namespace std;
 
 #define intrinsics_string(res) #res << "\t" << array2str((float_4&)table->rect_params[res]) << endl
 
-namespace rsimpl {
-    namespace ds {
+namespace rsimpl
+{
+    namespace ds
+    {
+        ds5_rect_resolutions width_height_to_ds5_rect_resolutions(uint32_t width, uint32_t height)
+        {
+            for (auto& elem : resolutions_list)
+            {
+                if (elem.second.x == width && elem.second.y == height)
+                    return elem.first;
+            }
+            throw wrong_value_exception("resolution not found.");
+        }
 
         rs_intrinsics get_intrinsic_by_resolution(const vector<unsigned char> & raw_data, calibration_table_id table_id, uint32_t width, uint32_t height)
         {
@@ -60,6 +71,39 @@ namespace rsimpl {
             default:
                 throw wrong_value_exception(to_string() << "Parsing Calibration table type " << table_id << " is not supported");
             }
+        }
+
+        bool try_fetch_usb_device(std::vector<uvc::usb_device_info>& devices,
+                                         const uvc::uvc_device_info& info, uvc::usb_device_info& result)
+        {
+            for (auto it = devices.begin(); it != devices.end(); ++it)
+            {
+                if (it->unique_id == info.unique_id)
+                {
+                    result = *it;
+                    switch (info.pid)
+                    {
+                    case RS400P_PID:
+                    case RS430C_PID:
+                    case RS410A_PID:
+                        result.mi = 3;
+                        break;
+                    case RS420R_PID:
+                        throw not_implemented_exception("RS420R_PID usb not implemented.");
+                        break;
+                    case RS450T_PID:
+                        result.mi = 6;
+                        break;
+                    default:
+                        throw not_implemented_exception("usb device not implemented.");
+                        break;
+                    }
+
+                    devices.erase(it);
+                    return true;
+                }
+            }
+            return false;
         }
     } // rsimpl::ds
 } // namespace rsimpl

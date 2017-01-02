@@ -5,9 +5,6 @@
 
 #include "sr300.h"
 #include "ds5.h"
-#include "ds5d.h"
-#include "ds5c.h"
-#include "ds5t.h"
 #include "backend.h"
 #include "context.h"
 #include "recorder.h"

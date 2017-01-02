@@ -128,105 +128,12 @@ namespace rsimpl {
             { res_1920_1080,{ 1920, 1080 } },
         };
 
-        inline ds5_rect_resolutions width_height_to_ds5_rect_resolutions(uint32_t width, uint32_t height)
-        {
-            for (auto& elem : resolutions_list)
-            {
-                if (elem.second.x == width && elem.second.y == height)
-                    return elem.first;
-            }
-            throw wrong_value_exception("resolution not found.");
-        }
+        ds5_rect_resolutions width_height_to_ds5_rect_resolutions(uint32_t width, uint32_t height);
 
         rs_intrinsics get_intrinsic_by_resolution(const std::vector<unsigned char> & raw_data, calibration_table_id table_id, uint32_t width, uint32_t height);
 
-        //static std::vector<uvc::uvc_device_info> filter_by_product(const std::vector<uvc::uvc_device_info>& devices, uint32_t pid)
-        //{
-        //    std::vector<uvc::uvc_device_info> result;
-        //    for (auto&& info : devices)
-        //    {
-        //        if (info.pid == pid) result.push_back(info);
-        //    }
-        //    return result;
-        //}
-
-        //static std::vector<std::vector<uvc::uvc_device_info>> group_by_unique_id(const std::vector<uvc::uvc_device_info>& devices)
-        //{
-        //    std::map<std::string, std::vector<uvc::uvc_device_info>> map;
-        //    for (auto&& info : devices)
-        //    {
-        //        map[info.unique_id].push_back(info);
-        //    }
-        //    std::vector<std::vector<uvc::uvc_device_info>> result;
-        //    for (auto&& kvp : map)
-        //    {
-        //        result.push_back(kvp.second);
-        //    }
-        //    return result;
-        //}
-
-        //static void trim_device_list(std::vector<uvc::uvc_device_info>& devices, const std::vector<uvc::uvc_device_info>& chosen)
-        //{
-        //    if (chosen.empty())
-        //        return;
-
-        //    auto was_chosen = [&chosen](const uvc::uvc_device_info& info)
-        //    {
-        //        return find(chosen.begin(), chosen.end(), info) == chosen.end();
-        //    };
-        //    devices.erase(std::remove_if(devices.begin(), devices.end(), was_chosen), devices.end());
-        //}
-
-        //static bool mi_present(const std::vector<uvc::uvc_device_info>& devices, uint32_t mi)
-        //{
-        //    for (auto&& info : devices)
-        //    {
-        //        if (info.mi == mi) return true;
-        //    }
-        //    return false;
-        //}
-
-        //static uvc::uvc_device_info get_mi(const std::vector<uvc::uvc_device_info>& devices, uint32_t mi)
-        //{
-        //    for (auto&& info : devices)
-        //    {
-        //        if (info.mi == mi) return info;
-        //    }
-        //    throw std::runtime_error("Interface not found!");
-        //}
-
-        static bool try_fetch_usb_device(std::vector<uvc::usb_device_info>& devices,
-                                         const uvc::uvc_device_info& info, uvc::usb_device_info& result)
-        {
-            for (auto it = devices.begin(); it != devices.end(); ++it)
-            {
-                if (it->unique_id == info.unique_id)
-                {
-                    result = *it;
-                    switch (info.pid)
-                    {
-                    case RS400P_PID:
-                    case RS430C_PID:
-                    case RS410A_PID:
-                        result.mi = 3;
-                        break;
-                    case RS420R_PID:
-                        throw not_implemented_exception("RS420R_PID usb not implemented.");
-                        break;
-                    case RS450T_PID:
-                        result.mi = 6;
-                        break;
-                    default:
-                        throw not_implemented_exception("usb device not implemented.");
-                        break;
-                    }
-
-                    devices.erase(it);
-                    return true;
-                }
-            }
-            return false;
-        }
+        bool try_fetch_usb_device(std::vector<uvc::usb_device_info>& devices,
+                                         const uvc::uvc_device_info& info, uvc::usb_device_info& result);
 
     } // rsimpl::ds
 } // namespace rsimpl
