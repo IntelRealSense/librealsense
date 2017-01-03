@@ -141,12 +141,6 @@ namespace rsimpl
         std::shared_ptr<hid_endpoint> create_hid_device(const uvc::backend& backend,
                                                         const std::vector<uvc::hid_device_info>& all_hid_infos);
 
-            if (all_hid_infos.empty())
-            {
-                throw std::runtime_error("HID device is missing!");
-            }
-
-
         std::shared_ptr<uvc_endpoint> create_depth_device(const uvc::backend& backend,
                                                           const std::vector<uvc::uvc_device_info>& all_device_infos);
 
