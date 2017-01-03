@@ -128,7 +128,7 @@ namespace rsimpl
                         return "Auto";
                     }
                     default:
-                        throw wrong_value_exception("value not found");
+                        throw invalid_value_exception("value not found");
                 }
             }
 

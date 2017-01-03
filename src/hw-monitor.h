@@ -162,7 +162,7 @@ namespace rsimpl
         std::vector<uint8_t> send(std::vector<uint8_t> data) const;
         std::vector<uint8_t> send(command cmd) const;
         void get_gvd(size_t sz, char* gvd, uint8_t gvd_cmd) const;
-        std::string get_firmware_version_string(int gvd_cmd, int offset) const;
+        std::string get_firmware_version_string(int gvd_cmd, uint32_t offset) const;
         std::string get_module_serial_string(uint8_t gvd_cmd, uint32_t offset) const;
     };
 }

@@ -67,7 +67,8 @@ namespace rsimpl
     rs_intrinsics ds5_camera::get_intrinsics(int subdevice, stream_profile profile) const
     {
         if (subdevice >= get_endpoints_count())
-            throw wrong_value_exception("Requested subdevice is unsupported.");
+            throw invalid_value_exception(to_string() << "Requested subdevice " <<
+                                          subdevice << " is unsupported.");
 
         if (subdevice == _depth_device_idx)
         {
@@ -86,7 +87,7 @@ namespace rsimpl
         assert(_hw_monitor);
         auto ret = _hw_monitor->send(cmd);
         if (ret.empty())
-            throw wrong_value_exception("command result is empty!");
+            throw invalid_value_exception("command result is empty!");
 
         return bool(ret.front());
     }
@@ -100,7 +101,6 @@ namespace rsimpl
     std::shared_ptr<hid_endpoint> ds5_camera::create_hid_device(const uvc::backend& backend,
                                                                 const std::vector<uvc::hid_device_info>& all_hid_infos)
     {
-        using namespace ds;
         // TODO: implement multiple hid devices
         assert(!all_hid_infos.empty());
         auto hid_ep = std::make_shared<hid_endpoint>(backend.create_hid_device(all_hid_infos[0]));
@@ -141,7 +141,7 @@ namespace rsimpl
             depth_ep->register_option(RS_OPTION_LASER_POWER,
                 std::make_shared<uvc_xu_option<uint16_t>>(*depth_ep,
                     depth_xu,
-                    DS5_LASER_POWER, "Manual laser power. applicable only in on mode"));
+                    DS5_LASER_POWER, "Manual laser power in mw. applicable only when laser power mode is set to Manual"));
         }
 
         depth_ep->set_pose({ { { 1,0,0 },{ 0,1,0 },{ 0,0,1 } },{ 0,0,0 } });
@@ -161,8 +161,8 @@ namespace rsimpl
         _coefficients_table_raw = [this]() { return get_raw_calibration_table(coefficients_table_id); };
 
         static const char* device_name = "Intel RealSense DS5";
-        auto fw_version = _hw_monitor->get_firmware_version_string(GVD, gvd_fw_version_offset);
-        auto serial = _hw_monitor->get_module_serial_string(GVD, 48);
+        auto fw_version = _hw_monitor->get_firmware_version_string(GVD, fw_version_offset);
+        auto serial = _hw_monitor->get_module_serial_string(GVD, module_serial_offset);
 
         auto& depth_ep = get_depth_endpoint();
         depth_ep.register_option(RS_OPTION_ENABLE_FW_LOGGER,
@@ -182,7 +182,7 @@ namespace rsimpl
         {
             auto fisheye_infos = filter_by_mi(dev_info, 3);
             if (fisheye_infos.size() != 1)
-                throw wrong_value_exception("RS450 model is expected to include a single fish-eye device!");
+                throw invalid_value_exception("RS450 model is expected to include a single fish-eye device!");
 
             fisheye_ep = std::make_shared<uvc_endpoint>(backend.create_uvc_device(fisheye_infos.front()),
                                                         std::unique_ptr<frame_timestamp_reader>(new ds5_timestamp_reader()));
@@ -209,7 +209,7 @@ namespace rsimpl
             register_endpoint_info(hid_index, camera_info);
         }
 
-        set_depth_scale(0.001f);
+        set_depth_scale(0.001f); // TODO: find out what is the right value
 
         // Register endpoint info
         for(auto& element : dev_info)

@@ -161,11 +161,11 @@ namespace rsimpl
         {}
     };
 
-    class wrong_value_exception : public recoverable_exception
+    class invalid_value_exception : public recoverable_exception
     {
     public:
-        wrong_value_exception(const std::string& msg) noexcept
-            : recoverable_exception(msg, RS_LIBREALSENSE_EXCEPTION_TYPE_WRONG_VALUE)
+        invalid_value_exception(const std::string& msg) noexcept
+            : recoverable_exception(msg, RS_LIBREALSENSE_EXCEPTION_TYPE_INVALID_VALUE)
         {}
     };
 
@@ -382,7 +382,7 @@ namespace rsimpl
                 if (o.first == stream)
                     return o.second;
 
-            throw wrong_value_exception("missing output");
+            throw invalid_value_exception("missing output");
         }
     };
 
@@ -626,7 +626,7 @@ namespace rsimpl
         {
              if (item < buffer || item >= buffer + C)
             {
-                throw wrong_value_exception("Trying to return item to a heap that didn't allocate it!");
+                throw invalid_value_exception("Trying to return item to a heap that didn't allocate it!");
             }
             auto i = item - buffer;
             auto old_value = std::move(buffer[i]);
@@ -662,7 +662,7 @@ namespace rsimpl
             };
             if (!ready() && !cv.wait_for(lock, std::chrono::hours(1000), ready)) // for some reason passing std::chrono::duration::max makes it return instantly
             {
-                throw wrong_value_exception("Could not flush one of the user controlled objects!");
+                throw invalid_value_exception("Could not flush one of the user controlled objects!");
             }
         }
 

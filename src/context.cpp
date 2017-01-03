@@ -57,7 +57,7 @@ namespace rsimpl
         case backend_type::playback: 
             _backend = std::make_shared<uvc::playback_backend>(filename, section);
             break;
-        default: throw wrong_value_exception("Undefined backend type!");
+        default: throw invalid_value_exception(to_string() << "Undefined backend type " << static_cast<int>(type));
         }
     }
 

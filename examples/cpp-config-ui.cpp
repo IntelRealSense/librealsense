@@ -916,9 +916,10 @@ int main(int, char**) try
                 {
                     model.stream_buffers[f.get_stream_type()].upload(f);
                     model.steam_last_frame[f.get_stream_type()] = std::chrono::high_resolution_clock::now();
-                    float width = (f.get_format() == RS_FORMAT_MOTION_DATA)? 640 : f.get_width();
-                    float height = (f.get_format() == RS_FORMAT_MOTION_DATA)? 480 : f.get_height();
-                    model.stream_size[f.get_stream_type()] = { width, height};
+                    auto width = (f.get_format() == RS_FORMAT_MOTION_DATA)? 640 : f.get_width();
+                    auto height = (f.get_format() == RS_FORMAT_MOTION_DATA)? 480 : f.get_height();
+                    model.stream_size[f.get_stream_type()] = { static_cast<float>(width),
+                                                               static_cast<float>(height)};
                     model.stream_format[f.get_stream_type()] = f.get_format();
                 }
             }

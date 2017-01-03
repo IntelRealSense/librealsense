@@ -111,8 +111,8 @@ namespace rsimpl
 #define NOEXCEPT_RETURN(R, ...) catch(...) { std::ostringstream ss; rsimpl::stream_args(ss, #__VA_ARGS__, __VA_ARGS__); rs_error* e; rsimpl::translate_exception(__FUNCTION__, ss.str(), &e); LOG_WARNING(rs_get_error_message(e)); rs_free_error(e); return R; }
 #define HANDLE_EXCEPTIONS_AND_RETURN(R, ...) catch(...) { std::ostringstream ss; rsimpl::stream_args(ss, #__VA_ARGS__, __VA_ARGS__); rsimpl::translate_exception(__FUNCTION__, ss.str(), error); return R; }
 #define VALIDATE_NOT_NULL(ARG) if(!(ARG)) throw std::runtime_error("null pointer passed for argument \"" #ARG "\"");
-#define VALIDATE_ENUM(ARG) if(!rsimpl::is_valid(ARG)) { std::ostringstream ss; ss << "bad enum value for argument \"" #ARG "\""; throw rsimpl::wrong_value_exception(ss.str()); }
-#define VALIDATE_RANGE(ARG, MIN, MAX) if((ARG) < (MIN) || (ARG) > (MAX)) { std::ostringstream ss; ss << "out of range value for argument \"" #ARG "\""; throw rsimpl::wrong_value_exception(ss.str()); }
+#define VALIDATE_ENUM(ARG) if(!rsimpl::is_valid(ARG)) { std::ostringstream ss; ss << "invalid enum value for argument \"" #ARG "\""; throw rsimpl::invalid_value_exception(ss.str()); }
+#define VALIDATE_RANGE(ARG, MIN, MAX) if((ARG) < (MIN) || (ARG) > (MAX)) { std::ostringstream ss; ss << "out of range value for argument \"" #ARG "\""; throw rsimpl::invalid_value_exception(ss.str()); }
 #define VALIDATE_LE(ARG, MAX) if((ARG) > (MAX)) { std::ostringstream ss; ss << "out of range value for argument \"" #ARG "\""; throw std::runtime_error(ss.str()); }
 #define VALIDATE_NATIVE_STREAM(ARG) VALIDATE_ENUM(ARG); if(ARG >= RS_STREAM_NATIVE_COUNT) { std::ostringstream ss; ss << "argument \"" #ARG "\" must be a native stream"; throw rsimpl::wrong_value_exception(ss.str()); }
 
@@ -137,7 +137,7 @@ std::string api_version_to_string(int version)
 
 void report_version_mismatch(int runtime, int compiletime)
 {
-    throw rsimpl::wrong_value_exception(rsimpl::to_string() << "API version mismatch: librealsense.so was compiled with API version "
+    throw rsimpl::invalid_value_exception(rsimpl::to_string() << "API version mismatch: librealsense.so was compiled with API version "
         << api_version_to_string(runtime) << " but the application was compiled with " 
         << api_version_to_string(compiletime) << "! Make sure correct version of the library is installed (make install)");
 }
@@ -147,7 +147,7 @@ void verify_version_compatibility(int api_version)
     rs_error* error = nullptr;
     auto runtime_api_version = rs_get_api_version(&error);
     if (error)
-        throw rsimpl::wrong_value_exception(rs_get_error_message(error));
+        throw rsimpl::invalid_value_exception(rs_get_error_message(error));
 
     if ((runtime_api_version < 10) || (api_version < 10))
     {
@@ -430,7 +430,7 @@ const char* rs_get_camera_info(const rs_device* device, rs_camera_info info, rs_
     {
         return device->device->get_endpoint(device->subdevice).get_info(info).c_str();
     }
-    throw rsimpl::wrong_value_exception(rsimpl::to_string() << "info " << rs_camera_info_to_string(info) << " not supported by subdevice " << device->subdevice);
+    throw rsimpl::invalid_value_exception(rsimpl::to_string() << "info " << rs_camera_info_to_string(info) << " not supported by subdevice " << device->subdevice);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, device, info)
 
@@ -650,7 +650,7 @@ void rs_get_extrinsics(const rs_device * from, const rs_device * to, rs_extrinsi
     VALIDATE_NOT_NULL(extrin);
 
     if (from->device != to->device)
-        throw rsimpl::wrong_value_exception("Extrinsics between the selected devices are unknown!");
+        throw rsimpl::invalid_value_exception("Extrinsics between the selected devices are unknown!");
 
     *extrin = from->device->get_extrinsics(from->subdevice, to->subdevice);
 }

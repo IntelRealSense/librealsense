@@ -118,7 +118,7 @@ std::vector<request_mapping> endpoint::resolve_requests(std::vector<stream_profi
 
     if (requests.empty()) return{ begin(results), end(results) };
 
-    throw wrong_value_exception("Subdevice unable to satisfy stream requests!");
+    throw invalid_value_exception("Subdevice unable to satisfy stream requests!");
 }
 
 uvc_endpoint::~uvc_endpoint()
@@ -433,7 +433,7 @@ option& endpoint::get_option(rs_option id)
     auto it = _options.find(id);
     if (it == _options.end())
     {
-        throw wrong_value_exception(to_string()
+        throw invalid_value_exception(to_string()
             << "Device does not support option " 
             << rs_option_to_string(id) << "!");
     }
@@ -445,7 +445,7 @@ const option& endpoint::get_option(rs_option id) const
     auto it = _options.find(id);
     if (it == _options.end())
     {
-        throw wrong_value_exception(to_string()
+        throw invalid_value_exception(to_string()
             << "Device does not support option " 
             << rs_option_to_string(id) << "!");
     }
@@ -481,7 +481,7 @@ const std::string& endpoint::get_info(rs_camera_info info) const
 {
     auto it = _camera_info.find(info);
     if (it == _camera_info.end())
-        throw wrong_value_exception("Selected camera info is not supported for this camera!");
+        throw invalid_value_exception("Selected camera info is not supported for this camera!");
     return it->second;
 }
 
@@ -628,7 +628,7 @@ int hid_endpoint::rs_stream_to_sensor_iio(rs_stream stream) const
         if (stream == elem.second.stream)
             return get_iio_by_name(elem.first);
     }
-    throw wrong_value_exception("rs_stream not found!");
+    throw invalid_value_exception("rs_stream not found!");
 }
 
 int hid_endpoint::get_iio_by_name(const std::string& name) const
@@ -638,7 +638,7 @@ int hid_endpoint::get_iio_by_name(const std::string& name) const
         if (!elem.name.compare(name))
             return elem.iio;
     }
-    throw wrong_value_exception("sensor_name not found!");
+    throw invalid_value_exception("sensor_name not found!");
 }
 
 hid_endpoint::stream_format hid_endpoint::sensor_name_to_stream_format(const std::string& sensor_name) const
@@ -649,7 +649,7 @@ hid_endpoint::stream_format hid_endpoint::sensor_name_to_stream_format(const std
     }
     catch(std::out_of_range)
     {
-        throw wrong_value_exception(to_string() << "format of sensor name " << sensor_name << " not found!");
+        throw invalid_value_exception(to_string() << "format of sensor name " << sensor_name << " not found!");
     }
 
     return stream_and_format;

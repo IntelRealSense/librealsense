@@ -212,8 +212,8 @@ namespace rsimpl
             using namespace ivcam;
             static const char* device_name = "Intel RealSense SR300";
 
-            auto fw_version = _hw_monitor->get_firmware_version_string(GVD, gvd_fw_version_offset);
-            auto serial = _hw_monitor->get_module_serial_string(GVD, 132);
+            auto fw_version = _hw_monitor->get_firmware_version_string(GVD, fw_version_offset);
+            auto serial = _hw_monitor->get_module_serial_string(GVD, module_serial_offset);
             enable_timestamp(true, true);
 
             auto& depth_ep = get_depth_endpoint();
@@ -315,7 +315,7 @@ namespace rsimpl
         virtual rs_intrinsics get_intrinsics(int subdevice, stream_profile profile) const override
         {
             if (subdevice >= get_endpoints_count()) 
-                throw rsimpl::wrong_value_exception("Requested subdevice is not supported!");
+                throw rsimpl::invalid_value_exception("Requested subdevice is not supported!");
 
             if (subdevice == _color_device_idx) 
                 return make_color_intrinsics(get_calibration(), { int(profile.width), int(profile.height) });
@@ -323,7 +323,7 @@ namespace rsimpl
             if (subdevice == _depth_device_idx)
                 return make_depth_intrinsics(get_calibration(), { int(profile.width), int(profile.height) });
 
-            throw rsimpl::wrong_value_exception(to_string() << "Intrinsic is not implemented for subdevice num " << subdevice);
+            throw rsimpl::invalid_value_exception(to_string() << "Intrinsic is not implemented for subdevice num " << subdevice);
         }
 
     private:

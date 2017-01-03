@@ -24,8 +24,6 @@ namespace rsimpl {
         // DS5 fisheye XU identifiers
         const uint8_t FISHEYE_EXPOSURE = 1;
 
-        const int gvd_fw_version_offset = 12;
-
         const uvc::extension_unit depth_xu = { 0, 3, 2,
         { 0xC9606CCB, 0x594C, 0x4D25,{ 0xaf, 0x47, 0xcc, 0xc4, 0x96, 0x43, 0x59, 0x95 } } };
 
@@ -34,9 +32,9 @@ namespace rsimpl {
 
         enum fw_cmd : uint8_t
         {
+            GLD = 0x0f,           // FW logs
             GVD = 0x10,           // camera details
             GETINTCAL = 0x15,     // Read calibration table
-            GLD = 0x0f,           // FW logs
             UAMG = 0X30           // get advanced mode status
         };
 
@@ -78,6 +76,12 @@ namespace rsimpl {
             uint32_t            brown_model;                // 0 - using DS distorion model, 1 - using Brown model
             float4              rect_params[max_ds5_rect_resoluitons];
             uint8_t             reserved2[64];
+        };
+
+        enum gvd_fields
+        {
+            fw_version_offset    = 12,
+            module_serial_offset = 48
         };
 
         enum calibration_table_id

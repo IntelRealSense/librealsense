@@ -70,10 +70,10 @@ namespace rs
         {}
     };
 
-    class wrong_value_error : public recoverable_error
+    class invalid_value_error : public recoverable_error
     {
     public:
-        wrong_value_error(rs_error * e) noexcept
+        invalid_value_error(rs_error * e) noexcept
             : recoverable_error(e)
         {}
     };
@@ -106,8 +106,8 @@ namespace rs
             case RS_LIBREALSENSE_EXCEPTION_TYPE_BACKEND:
                 throw backend_error(e);
                 break;
-            case RS_LIBREALSENSE_EXCEPTION_TYPE_WRONG_VALUE:
-                throw wrong_value_error(e);
+            case RS_LIBREALSENSE_EXCEPTION_TYPE_INVALID_VALUE:
+                throw invalid_value_error(e);
                 break;
             case RS_LIBREALSENSE_EXCEPTION_TYPE_WRONG_API_CALL_SEQUENCE:
                 throw wrong_api_call_sequence_error(e);

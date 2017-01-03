@@ -22,10 +22,16 @@ namespace rsimpl
         virtual ~device() = default;
 
         unsigned int get_endpoints_count() const { return static_cast<unsigned int>(_endpoints.size()); }
-        endpoint& get_endpoint(int subdevice)
+        endpoint& get_endpoint(unsigned subdevice)
         {
-            assert(!_endpoints.empty());
-            return *_endpoints[subdevice];
+            try
+            {
+                return *(_endpoints.at(subdevice));
+            }
+            catch (std::out_of_range)
+            {
+                throw invalid_value_exception("invalid subdevice value");
+            }
         }
 
         rs_extrinsics get_extrinsics(int from, int to);

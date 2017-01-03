@@ -37,7 +37,7 @@ namespace rsimpl
         CASE(UNKNOWN)
         CASE(CAMERA_DISCONNECTED)
         CASE(BACKEND)
-        CASE(WRONG_VALUE)
+        CASE(INVALID_VALUE)
         CASE(WRONG_API_CALL_SEQUENCE)
         CASE(NOT_IMPLEMENTED)
         default: assert(!is_valid(value)); return unknown;
