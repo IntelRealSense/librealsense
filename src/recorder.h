@@ -154,6 +154,16 @@ namespace rsimpl
                 save_list(list, stream_profiles, key.type, key.entity_id);
             }
 
+            void save_hid_sensors(std::vector<hid_sensor> list, lookup_key key)
+            {
+                save_list(list, hid_sensors, key.type, key.entity_id);
+            }
+
+            void save_hid_sensors_inputs(std::vector<hid_sensor_input> list, lookup_key key)
+            {
+                save_list(list, hid_sensor_inputs, key.type, key.entity_id);
+            }
+
             std::vector<stream_profile> load_stream_profiles(int id, call_type type)
             {
                 auto&& c = find_call(type, id);
@@ -178,6 +188,19 @@ namespace rsimpl
                 return load_list(hid_device_infos, c);
             }
 
+            std::vector<hid_sensor> load_hid_sensors_list(int entity_id)
+            {
+                auto&& c = find_call(call_type::hid_get_sensors, entity_id);
+                return load_list(hid_sensors, c);
+            }
+
+            std::vector<hid_sensor_input> load_hid_sensors_inputs_list(int entity_id)
+            {
+                auto&& c = find_call(call_type::hid_get_sensor_inputs, entity_id);
+                return load_list(hid_sensor_inputs, c);
+            }
+
+
 
             std::vector<uint8_t> load_blob(int id) const
             {
@@ -196,6 +219,8 @@ namespace rsimpl
             std::vector<usb_device_info> usb_device_infos;
             std::vector<stream_profile> stream_profiles;
             std::vector<hid_device_info> hid_device_infos;
+            std::vector<hid_sensor> hid_sensors;
+            std::vector<hid_sensor_input> hid_sensor_inputs;
 
             std::mutex _mutex;
             std::chrono::high_resolution_clock::time_point start_time;

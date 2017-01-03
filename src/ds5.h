@@ -137,8 +137,12 @@ namespace rsimpl
                                                         const std::vector<uvc::hid_device_info>& all_hid_infos)
         {
             using namespace ds;
-            // TODO: implement multiple hid devices
-            assert(!all_hid_infos.empty());
+
+            if (all_hid_infos.empty())
+            {
+                throw std::runtime_error("HID device is missing!");
+            }
+
             auto hid_ep = std::make_shared<hid_endpoint>(backend.create_hid_device(all_hid_infos[0]));
             return hid_ep;
         }
