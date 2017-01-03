@@ -22,9 +22,16 @@ namespace rsimpl
         virtual ~device() = default;
 
         unsigned int get_endpoints_count() const { return static_cast<unsigned int>(_endpoints.size()); }
-        endpoint& get_endpoint(int subdevice)
+        endpoint& get_endpoint(unsigned subdevice)
         {
-            return *_endpoints[subdevice];
+            try
+            {
+                return *(_endpoints.at(subdevice));
+            }
+            catch (std::out_of_range)
+            {
+                throw invalid_value_exception("invalid subdevice value");
+            }
         }
 
         rs_extrinsics get_extrinsics(int from, int to);
@@ -35,7 +42,7 @@ namespace rsimpl
 
         virtual std::vector<uint8_t> send_receive_raw_data(const std::vector<uint8_t>& input)
         { 
-            throw std::runtime_error(to_string() << __FUNCTION__ << " is not implemented for this device!"); 
+            throw not_implemented_exception(to_string() << __FUNCTION__ << " is not implemented for this device!");
         }
 
     protected:

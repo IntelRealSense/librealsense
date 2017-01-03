@@ -11,6 +11,7 @@
 #include "ivcam-private.h"
 #include "hw-monitor.h"
 #include "image.h"
+#include <mutex>
 
 namespace rsimpl
 {
@@ -18,18 +19,19 @@ namespace rsimpl
 
     class sr300_camera;
 
-    // TODO: This may need to be modified for thread safety
     class sr300_timestamp_reader : public frame_timestamp_reader
     {
         bool started;
         int64_t total;
         int last_timestamp;
         mutable int64_t counter;
+        mutable std::recursive_mutex _mtx;
     public:
         sr300_timestamp_reader() : started(false), total(0), last_timestamp(0), counter(0) {}
 
         void reset() override
         {
+            std::lock_guard<std::recursive_mutex> lock(_mtx);
             started = false;
             total = 0;
             last_timestamp = 0;
@@ -38,6 +40,7 @@ namespace rsimpl
 
         bool validate_frame(const request_mapping& mode, const void * frame) const override
         {
+            std::lock_guard<std::recursive_mutex> lock(_mtx);
             // Validate that at least one byte of the image is nonzero
             for (const uint8_t * it = (const uint8_t *)frame, *end = it + mode.pf->get_image_size(mode.profile.width, mode.profile.height); it != end; ++it)
             {
@@ -54,6 +57,7 @@ namespace rsimpl
 
         double get_frame_timestamp(const request_mapping& /*mode*/, const void * frame) override
         {
+            std::lock_guard<std::recursive_mutex> lock(_mtx);
             // Timestamps are encoded within the first 32 bits of the image
             int rolling_timestamp = *reinterpret_cast<const int32_t *>(frame);
 
@@ -71,6 +75,7 @@ namespace rsimpl
         }
         unsigned long long get_frame_counter(const request_mapping & /*mode*/, const void * /*frame*/) const override
         {
+            std::lock_guard<std::recursive_mutex> lock(_mtx);
             return ++counter;
         }
     };
@@ -186,9 +191,6 @@ namespace rsimpl
 
             depth_ep->register_option(RS_OPTION_VISUAL_PRESET, std::make_shared<preset_option>(*this));
 
-            depth_ep->register_option(RS_OPTION_ENABLE_FW_LOGGER,
-                std::make_shared<fw_logger_option>(_hw_monitor, ivcam::fw_cmd::GLD, 100, "SR300 FW Logger"));
-
             return depth_ep;
         }
 
@@ -203,16 +205,20 @@ namespace rsimpl
             const uvc::uvc_device_info& color,
             const uvc::uvc_device_info& depth,
             const uvc::usb_device_info& hwm_device)
-            : _hw_monitor(std::make_shared<hw_monitor>(backend.create_usb_device(hwm_device))),
-              _depth_device_idx(add_endpoint(create_depth_device(backend, depth))),
-              _color_device_idx(add_endpoint(create_color_device(backend, color)))
+            : _depth_device_idx(add_endpoint(create_depth_device(backend, depth))),
+              _color_device_idx(add_endpoint(create_color_device(backend, color))),
+              _hw_monitor(std::make_shared<hw_monitor>(std::make_shared<locked_transfer>(backend.create_usb_device(hwm_device), get_depth_endpoint())))
         {
             using namespace ivcam;
             static const char* device_name = "Intel RealSense SR300";
 
-            auto fw_version = _hw_monitor->get_firmware_version_string(GVD, gvd_fw_version_offset);
-            auto serial = _hw_monitor->get_module_serial_string(GVD, 132);
+            auto fw_version = _hw_monitor->get_firmware_version_string(GVD, fw_version_offset);
+            auto serial = _hw_monitor->get_module_serial_string(GVD, module_serial_offset);
             enable_timestamp(true, true);
+
+            auto& depth_ep = get_depth_endpoint();
+            depth_ep.register_option(RS_OPTION_ENABLE_FW_LOGGER,
+                std::make_shared<fw_logger_option>(_hw_monitor, ivcam::fw_cmd::GLD, 100, "SR300 FW Logger"));
 
             std::map<rs_camera_info, std::string> depth_camera_info = {{RS_CAMERA_INFO_DEVICE_NAME, device_name},
                                                                        {RS_CAMERA_INFO_MODULE_NAME, "Depth Camera"},
@@ -309,7 +315,7 @@ namespace rsimpl
         virtual rs_intrinsics get_intrinsics(int subdevice, stream_profile profile) const override
         {
             if (subdevice >= get_endpoints_count()) 
-                throw std::runtime_error("Requested subdevice is not supported!");
+                throw rsimpl::invalid_value_exception("Requested subdevice is not supported!");
 
             if (subdevice == _color_device_idx) 
                 return make_color_intrinsics(get_calibration(), { int(profile.width), int(profile.height) });
@@ -317,14 +323,13 @@ namespace rsimpl
             if (subdevice == _depth_device_idx)
                 return make_depth_intrinsics(get_calibration(), { int(profile.width), int(profile.height) });
 
-            throw std::runtime_error(to_string() << "Intrinsic is not implemented for subdevice num " << subdevice);
+            throw rsimpl::invalid_value_exception(to_string() << "Intrinsic is not implemented for subdevice num " << subdevice);
         }
 
     private:
-        std::shared_ptr<hw_monitor> _hw_monitor;
         const uint8_t _depth_device_idx;
         const uint8_t _color_device_idx;
-        
+        std::shared_ptr<hw_monitor> _hw_monitor;
 
         template<class T>
         void register_depth_xu(uvc_endpoint& depth, rs_option opt, uint8_t id, std::string desc) const

@@ -659,7 +659,8 @@ namespace rsimpl
 
         void wmf_uvc_device::probe_and_commit(stream_profile profile, frame_callback callback)
         {
-            if (_streaming) throw std::runtime_error("Device is already streaming!");
+            if (_streaming)
+                throw std::runtime_error("Device is already streaming!");
 
             _profiles.push_back(profile);
             _frame_callbacks.push_back(callback);

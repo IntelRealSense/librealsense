@@ -51,7 +51,8 @@ int main() try
             for(auto x=0; x<640; ++x)
             {
                 int depth = *depth_frame++;
-                if(depth > 0 && depth < one_meter) ++coverage[x/10];
+                if(depth > 0 && depth < one_meter)
+                    ++coverage[x/10];
             }
 
             if(y%20 == 19)

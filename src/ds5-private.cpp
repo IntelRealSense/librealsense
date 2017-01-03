@@ -8,8 +8,19 @@ using namespace std;
 
 #define intrinsics_string(res) #res << "\t" << array2str((float_4&)table->rect_params[res]) << endl
 
-namespace rsimpl {
-    namespace ds {
+namespace rsimpl
+{
+    namespace ds
+    {
+        ds5_rect_resolutions width_height_to_ds5_rect_resolutions(uint32_t width, uint32_t height)
+        {
+            for (auto& elem : resolutions_list)
+            {
+                if (elem.second.x == width && elem.second.y == height)
+                    return elem.first;
+            }
+            throw invalid_value_exception("resolution not found.");
+        }
 
         rs_intrinsics get_intrinsic_by_resolution(const vector<unsigned char> & raw_data, calibration_table_id table_id, uint32_t width, uint32_t height)
         {
@@ -19,9 +30,7 @@ namespace rsimpl {
             {
                 if (raw_data.size() != sizeof(coefficients_table))
                 {
-                    string str = to_string() << "DS5 Coefficients table read error, actual size is " << raw_data.size() << " while expecting " << sizeof(coefficients_table) << " bytes";
-                    LOG_ERROR(str);
-                    throw runtime_error(str);
+                    throw invalid_value_exception(to_string() << "DS5 Coefficients table read error, actual size is " << raw_data.size() << " while expecting " << sizeof(coefficients_table) << " bytes");
                 }
                 auto table = reinterpret_cast<const coefficients_table *>(raw_data.data());
                 LOG_DEBUG("DS5 Coefficients table: version [mjr.mnr]: 0x" << hex << setfill('0') << setw(4) << table->header.version << dec
@@ -30,9 +39,7 @@ namespace rsimpl {
                 // verify the parsed table
                 if (table->header.crc32 != calc_crc32(raw_data.data() + sizeof(table_header), raw_data.size() - sizeof(table_header)))
                 {
-                    string str("DS5 Coefficients table CRC error, parsing aborted");
-                    LOG_ERROR(str);
-                    throw runtime_error(str);
+                    throw invalid_value_exception("DS5 Coefficients table CRC error, parsing aborted");
                 }
 
                 LOG_DEBUG(endl
@@ -62,9 +69,41 @@ namespace rsimpl {
                 return intrinsics;
             }
             default:
-                LOG_ERROR("Parsing Calibration table type " << table_id << " is not supported");
-                throw runtime_error(to_string() << "Parsing Calibration table type " << table_id << " is not supported");
+                throw invalid_value_exception(to_string() << "Parsing Calibration table type " << table_id << " is not supported");
             }
+        }
+
+        bool try_fetch_usb_device(std::vector<uvc::usb_device_info>& devices,
+                                         const uvc::uvc_device_info& info, uvc::usb_device_info& result)
+        {
+            for (auto it = devices.begin(); it != devices.end(); ++it)
+            {
+                if (it->unique_id == info.unique_id)
+                {
+                    result = *it;
+                    switch (info.pid)
+                    {
+                    case RS400P_PID:
+                    case RS430C_PID:
+                    case RS410A_PID:
+                        result.mi = 3;
+                        break;
+                    case RS420R_PID:
+                        throw not_implemented_exception("RS420R_PID usb not implemented.");
+                        break;
+                    case RS450T_PID:
+                        result.mi = 6;
+                        break;
+                    default:
+                        throw not_implemented_exception("usb device not implemented.");
+                        break;
+                    }
+
+                    devices.erase(it);
+                    return true;
+                }
+            }
+            return false;
         }
     } // rsimpl::ds
 } // namespace rsimpl

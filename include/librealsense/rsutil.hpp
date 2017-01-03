@@ -11,6 +11,7 @@
 #include <mutex>
 #include <condition_variable>
 #include <algorithm>
+#include <cmath>
 
 namespace rs
 {
@@ -250,7 +251,8 @@ namespace rs
                             break;
                         }
                     }
-                    if (request.has_wildcards()) throw std::runtime_error(std::string("Couldn't autocomplete request for subdevice ") + target.get_camera_info(RS_CAMERA_INFO_MODULE_NAME));
+                    if (request.has_wildcards())
+                        throw std::runtime_error(std::string("Couldn't autocomplete request for subdevice ") + target.get_camera_info(RS_CAMERA_INFO_MODULE_NAME));
                 }
             }
 

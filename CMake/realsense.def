@@ -72,6 +72,7 @@ EXPORTS
     rs_get_failed_args
     rs_get_error_message
     rs_free_error
+    rs_get_librealsense_exception_type
 
     rs_stream_to_string
     rs_format_to_string

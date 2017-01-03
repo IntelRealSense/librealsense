@@ -48,17 +48,74 @@ namespace rsimpl
 {
     namespace uvc
     {
-        static void throw_error(const char * s)
+        class named_mutex
         {
-            std::ostringstream ss;
-            ss << s << " error " << errno << ", " << strerror(errno);
-            throw std::runtime_error(ss.str());
-        }
+        public:
+            named_mutex(const std::string& device_path, unsigned timeout)
+                : _device_path(device_path),
+                  _timeout(timeout) // TODO: try to lock with timeout
+            {
+                create_named_mutex(_device_path);
+            }
 
-        static void warn_error(const char * s)
-        {
-            LOG_ERROR(s << " error " << errno << ", " << strerror(errno));
-        }
+            named_mutex(const named_mutex&) = delete;
+
+            void lock() { aquire(); }
+            void unlock() { release(); }
+
+            bool try_lock()
+            {
+                auto ret = lockf(_fildes, F_TLOCK, 0);
+                if (ret != 0)
+                    return false;
+
+                return true;
+            }
+
+            ~named_mutex()
+            {
+                try{
+                    destroy_named_mutex();
+                }
+                catch(...)
+                {
+
+                }
+            }
+
+        private:
+            void aquire()
+            {
+                auto ret = lockf(_fildes, F_LOCK, 0);
+                if (ret != 0)
+                    throw linux_backend_exception(to_string() << "Aquire failed");
+            }
+
+            void release()
+            {
+                auto ret = lockf(_fildes, F_ULOCK, 0);
+                if (ret != 0)
+                    throw linux_backend_exception(to_string() << "lockf(...) failed");
+            }
+
+            void create_named_mutex(const std::string& cam_id)
+            {
+                _fildes = open(cam_id.c_str(), O_RDWR);
+                if (-1 == _fildes)
+                    throw linux_backend_exception(to_string() << "open(...) failed");
+            }
+
+            void destroy_named_mutex()
+            {
+                auto ret = close(_fildes);
+                if (0 != ret)
+                    throw linux_backend_exception(to_string() << "close(...) failed");
+            }
+
+            std::string _device_path;
+            unsigned _timeout;
+            int _fildes;
+        };
 
         static int xioctl(int fh, int request, void *arg)
         {
@@ -77,7 +134,7 @@ namespace rsimpl
 
             // As per the USB 3.0 specs, the current maximum limit for the depth is 7.
             const int max_usb_depth = 8;
-            uint8_t usb_ports[max_usb_depth];
+            uint8_t usb_ports[max_usb_depth] = {};
             std::stringstream port_path;
             int port_count = libusb_get_port_numbers(usb_device, usb_ports, max_usb_depth);
 
@@ -87,27 +144,6 @@ namespace rsimpl
             }
 
             return usb_bus + port_path.str();
-        }
-
-        static void get_usb_port_id_from_vid_pid(uint16_t vid, uint16_t pid, std::string& usb_port_id)
-        {
-            libusb_context * usb_context;
-            int status = libusb_init(&usb_context);
-            if(status < 0) throw std::runtime_error(to_string() << "libusb_init(...) returned " << libusb_error_name(status));
-
-            auto usb_dev_handle  = libusb_open_device_with_vid_pid(usb_context, vid, pid);
-            if(!usb_dev_handle)
-            {
-                libusb_exit(usb_context);
-                throw std::runtime_error(to_string() << "libusb_open_device_with_vid_pid(...)");
-            }
-
-            auto usb_device = libusb_get_device(usb_dev_handle);
-            if(!usb_device) throw std::runtime_error(to_string() << "libusb_get_device(...)");
-
-            usb_port_id = get_usb_port_id(usb_device);
-            libusb_close(usb_dev_handle);
-            libusb_exit(usb_context);
         }
 
         // hold all captured inputs in a specific trigger.
@@ -290,7 +326,7 @@ namespace rsimpl
 
                 // find iio_device in file system.
                 if (!iio_device_file.good()) {
-                    throw std::runtime_error("iio hid device is busy or not found!");
+                    throw linux_backend_exception("iio hid device is busy or not found!");
                 }
 
                 iio_device_file.close();
@@ -299,10 +335,10 @@ namespace rsimpl
                 create_channel_array();
 
                 if (!write_integer_to_param("buffer/length", buf_len)) {
-                    throw std::runtime_error("write_integer_to_param failed!");
+                    throw linux_backend_exception("write_integer_to_param failed!");
                 }
                 if (!write_integer_to_param("buffer/enable", 1)) {
-                    throw std::runtime_error("write_integer_to_param failed!");
+                    throw linux_backend_exception("write_integer_to_param failed!");
                 }
 
                 callback = sensor_callback;
@@ -422,7 +458,7 @@ namespace rsimpl
             // read the IIO device inputs.
             bool read_device_inputs(std::string device_path) {
                 DIR *dir = nullptr;
-                struct dirent *dir_ent;
+                struct dirent *dir_ent = nullptr;
 
                 auto scan_elements_path = device_path + "/scan_elements";
                 // start enumerate the scan elemnts dir.
@@ -501,7 +537,8 @@ namespace rsimpl
                     }
                 });
 
-                if (_info.unique_id == "") throw std::runtime_error("hid device is no longer connected!");
+                if (_info.unique_id == "")
+                    throw linux_backend_exception("hid device is no longer connected!");
             }
 
             ~v4l_hid_device()
@@ -530,7 +567,7 @@ namespace rsimpl
                             hid_sensor.reset();
                         }
                         _hid_sensors.clear();
-                        throw std::runtime_error("Hid device is busy!");
+                        throw linux_backend_exception("Hid device is busy!");
                     }
                 }
             }
@@ -636,10 +673,10 @@ namespace rsimpl
                 FTS *tree = fts_open(paths, FTS_NOCHDIR, 0);
 
                 if (!tree) {
-                    throw std::runtime_error(to_string() << "fts_open returned null!");
+                    throw linux_backend_exception(to_string() << "fts_open returned null!");
                 }
 
-                FTSENT *node;
+                FTSENT *node = nullptr;
                 while ((node = fts_read(tree))) {
                     if (node->fts_level > 0 && node->fts_name[0] == '.')
                         fts_set(tree, node, FTS_SKIP);
@@ -651,10 +688,10 @@ namespace rsimpl
                             auto device_path = std::string(node->fts_path);
                             if (!std::regex_search(device_path, m, std::regex("/sys/devices/pci0000:00/.*(\\S{1})-(\\S{1}).*(\\S{4}):(\\S{4}):(\\S{4}).(\\S{4})/(.*)/iio:device(\\d{1,3})/name$")))
                             {
-                                throw std::runtime_error(to_string() << "HID enumeration failed. couldn't parse iio hid device path, regex is not valid!");
+                                throw linux_backend_exception(to_string() << "HID enumeration failed. couldn't parse iio hid device path, regex is not valid!");
                             }
 
-                            hid_device_info hid_dev_info;
+                            hid_device_info hid_dev_info{};
                             // we are safe to get all parameters because regex is valid.
                             auto busnum = std::string(m[1]);
                             auto port_id = std::string(m[2]);
@@ -667,7 +704,7 @@ namespace rsimpl
                             ss_vid >> std::hex >> vid;
                             ss_pid >> std::hex >> pid;
 
-                            get_usb_port_id_from_vid_pid(vid, pid, hid_dev_info.unique_id);
+                            hid_dev_info.unique_id = busnum + "-" + port_id;
                             hid_dev_info.id = m[6];
                             hid_dev_info.device_path = device_path;
                             std::string iio_device = m[8];
@@ -691,7 +728,8 @@ namespace rsimpl
             v4l_usb_device(const usb_device_info& info)
             {
                 int status = libusb_init(&_usb_context);
-                if(status < 0) throw std::runtime_error(to_string() << "libusb_init(...) returned " << libusb_error_name(status));
+                if(status < 0)
+                    throw linux_backend_exception(to_string() << "libusb_init(...) returned " << libusb_error_name(status));
 
                 std::vector<usb_device_info> results;
                 v4l_usb_device::foreach_usb_device(_usb_context,
@@ -724,16 +762,19 @@ namespace rsimpl
                                                                 libusb_device*)> action)
             {
                 // Obtain libusb_device_handle for each device
-                libusb_device ** list;
+                libusb_device ** list = nullptr;
                 int status = libusb_get_device_list(usb_context, &list);
-                if(status < 0) throw std::runtime_error(to_string() << "libusb_get_device_list(...) returned " << libusb_error_name(status));
+                if(status < 0)
+                    throw linux_backend_exception(to_string() << "libusb_get_device_list(...) returned " << libusb_error_name(status));
+
                 for(int i=0; list[i]; ++i)
                 {
                     libusb_device * usb_device = list[i];
+
                     auto parent_device = libusb_get_parent(usb_device);
                     if (parent_device)
                     {
-                        usb_device_info info;
+                        usb_device_info info{};
                         std::stringstream ss;
                         info.unique_id = get_usb_port_id(usb_device);
                         action(info, usb_device);
@@ -747,15 +788,18 @@ namespace rsimpl
                 int timeout_ms = 5000,
                 bool require_response = true) override
             {
-                libusb_device_handle* usb_handle;
+                libusb_device_handle* usb_handle = nullptr;
                 int status = libusb_open(_usb_device, &usb_handle);
-                if(status < 0) throw std::runtime_error(to_string() << "libusb_open(...) returned " << libusb_error_name(status));
+                if(status < 0)
+                    throw linux_backend_exception(to_string() << "libusb_open(...) returned " << libusb_error_name(status));
                 status = libusb_claim_interface(usb_handle, _mi);
-                if(status < 0) throw std::runtime_error(to_string() << "libusb_claim_interface(...) returned " << libusb_error_name(status));
+                if(status < 0)
+                    throw linux_backend_exception(to_string() << "libusb_claim_interface(...) returned " << libusb_error_name(status));
 
                 int actual_length;
                 status = libusb_bulk_transfer(usb_handle, 1, const_cast<uint8_t*>(data.data()), data.size(), &actual_length, timeout_ms);
-                if(status < 0) throw std::runtime_error(to_string() << "libusb_bulk_transfer(...) returned " << libusb_error_name(status));
+                if(status < 0)
+                    throw linux_backend_exception(to_string() << "libusb_bulk_transfer(...) returned " << libusb_error_name(status));
 
                 std::vector<uint8_t> result;
 
@@ -764,7 +808,9 @@ namespace rsimpl
                 {
                     result.resize(1024);
                     status = libusb_bulk_transfer(usb_handle, 0x81, const_cast<uint8_t*>(result.data()), result.size(), &actual_length, timeout_ms);
-                    if(status < 0) throw std::runtime_error(to_string() << "libusb_bulk_transfer(...) returned " << libusb_error_name(status));
+                    if(status < 0)
+                        throw linux_backend_exception(to_string() << "libusb_bulk_transfer(...) returned " << libusb_error_name(status));
+
                     result.resize(actual_length);
                 }
 
@@ -801,12 +847,14 @@ namespace rsimpl
 
                 if(!module_found)
                 {
-                    throw std::runtime_error("uvcvideo kernel module is not loaded");
+                    throw linux_backend_exception("uvcvideo kernel module is not loaded");
                 }
 
                 // Enumerate all subdevices present on the system
                 DIR * dir = opendir("/sys/class/video4linux");
-                if(!dir) throw std::runtime_error("Cannot access /sys/class/video4linux");
+                if(!dir)
+                    throw linux_backend_exception("Cannot access /sys/class/video4linux");
+
                 while (dirent * entry = readdir(dir))
                 {
                     std::string name = entry->d_name;
@@ -825,17 +873,17 @@ namespace rsimpl
                     try
                     {
                         int vid, pid, mi;
-                        int busnum, devnum, parent_devnum;
+                        int busnum, devnum, parent_devnum, devpath;
 
                         auto dev_name = "/dev/" + name;
 
-                        struct stat st;
+                        struct stat st = {};
                         if(stat(dev_name.c_str(), &st) < 0)
                         {
-                            std::ostringstream ss; ss << "Cannot identify '" << dev_name << "': " << errno << ", " << strerror(errno);
-                            throw std::runtime_error(ss.str());
+                            throw linux_backend_exception(to_string() << "Cannot identify '" << dev_name);
                         }
-                        if(!S_ISCHR(st.st_mode)) throw std::runtime_error(dev_name + " is no device");
+                        if(!S_ISCHR(st.st_mode))
+                            throw linux_backend_exception(dev_name + " is no device");
 
                         // Search directory and up to three parent directories to find busnum/devnum
                         std::ostringstream ss; ss << "/sys/dev/char/" << major(st.st_rdev) << ":" << minor(st.st_rdev) << "/device/";
@@ -849,34 +897,38 @@ namespace rsimpl
                                 {
                                     if(std::ifstream(path + "../devnum") >> parent_devnum)
                                     {
-                                        good = true;
-                                        break;
+                                        if(std::ifstream(path + "devpath") >> devpath)
+                                        {
+                                            good = true;
+                                            break;
+                                        }
                                     }
                                 }
                             }
                             path += "../";
                         }
-                        if(!good) throw std::runtime_error("Failed to read busnum/devnum");
+                        if(!good)
+                            throw linux_backend_exception("Failed to read busnum/devnum");
 
                         std::string modalias;
                         if(!(std::ifstream("/sys/class/video4linux/" + name + "/device/modalias") >> modalias))
-                            throw std::runtime_error("Failed to read modalias");
+                            throw linux_backend_exception("Failed to read modalias");
                         if(modalias.size() < 14 || modalias.substr(0,5) != "usb:v" || modalias[9] != 'p')
-                            throw std::runtime_error("Not a usb format modalias");
+                            throw linux_backend_exception("Not a usb format modalias");
                         if(!(std::istringstream(modalias.substr(5,4)) >> std::hex >> vid))
-                            throw std::runtime_error("Failed to read vendor ID");
+                            throw linux_backend_exception("Failed to read vendor ID");
                         if(!(std::istringstream(modalias.substr(10,4)) >> std::hex >> pid))
-                            throw std::runtime_error("Failed to read product ID");
+                            throw linux_backend_exception("Failed to read product ID");
                         if(!(std::ifstream("/sys/class/video4linux/" + name + "/device/bInterfaceNumber") >> std::hex >> mi))
-                            throw std::runtime_error("Failed to read interface number");
+                            throw linux_backend_exception("Failed to read interface number");
 
-                        uvc_device_info info;
+                        uvc_device_info info{};
                         info.pid = pid;
                         info.vid = vid;
                         info.mi = mi;
                         info.id = dev_name;
                         info.device_path = std::string(buff);
-                        get_usb_port_id_from_vid_pid(vid, pid, info.unique_id);
+                        info.unique_id = std::to_string(busnum) + "-" + std::to_string(devpath);
                         action(info, dev_name);
                     }
                     catch(const std::exception & e)
@@ -903,7 +955,7 @@ namespace rsimpl
                 case RS_OPTION_WHITE_BALANCE: return V4L2_CID_WHITE_BALANCE_TEMPERATURE;
                 case RS_OPTION_ENABLE_AUTO_EXPOSURE: return V4L2_CID_EXPOSURE_AUTO; // Automatic gain/exposure control
                 case RS_OPTION_ENABLE_AUTO_WHITE_BALANCE: return V4L2_CID_AUTO_WHITE_BALANCE;
-                default: throw std::runtime_error(to_string() << "no v4l2 cid for option " << option);
+                default: throw linux_backend_exception(to_string() << "no v4l2 cid for option " << option);
                 }
             }
 
@@ -922,9 +974,10 @@ namespace rsimpl
                         _device_path = i.device_path;
                     }
                 });
-                if (_name == "") throw std::runtime_error("device is no longer connected!");
+                if (_name == "")
+                    throw linux_backend_exception("device is no longer connected!");
 
-
+                _named_mtx = std::unique_ptr<named_mutex>(new named_mutex(_name, 5000));
             }
 
             void capture_loop()
@@ -954,17 +1007,20 @@ namespace rsimpl
                     fmt.fmt.pix.field       = V4L2_FIELD_NONE;
                     if(xioctl(_fd, VIDIOC_S_FMT, &fmt) < 0)
                     {
-                        throw_error("VIDIOC_S_FMT");
+                        throw linux_backend_exception("xioctl(VIDIOC_S_FMT) failed");
                     }
 
                     LOG_INFO("Trying to configure fourcc " << fourcc_to_string(fmt.fmt.pix.pixelformat));
 
                     v4l2_streamparm parm = {};
                     parm.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-                    if(xioctl(_fd, VIDIOC_G_PARM, &parm) < 0) throw_error("VIDIOC_G_PARM");
+                    if(xioctl(_fd, VIDIOC_G_PARM, &parm) < 0)
+                        throw linux_backend_exception("xioctl(VIDIOC_G_PARM) failed");
+
                     parm.parm.capture.timeperframe.numerator = 1;
                     parm.parm.capture.timeperframe.denominator = profile.fps;
-                    if(xioctl(_fd, VIDIOC_S_PARM, &parm) < 0) throw_error("VIDIOC_S_PARM");
+                    if(xioctl(_fd, VIDIOC_S_PARM, &parm) < 0)
+                        throw linux_backend_exception("xioctl(VIDIOC_S_PARM) failed");
 
                     // Init memory mapped IO
                     v4l2_requestbuffers req = {};
@@ -973,12 +1029,14 @@ namespace rsimpl
                     req.memory = V4L2_MEMORY_MMAP;
                     if(xioctl(_fd, VIDIOC_REQBUFS, &req) < 0)
                     {
-                        if(errno == EINVAL) throw std::runtime_error(_name + " does not support memory mapping");
-                        else throw_error("VIDIOC_REQBUFS");
+                        if(errno == EINVAL)
+                            throw linux_backend_exception(_name + " does not support memory mapping");
+                        else
+                            throw linux_backend_exception("xioctl(VIDIOC_REQBUFS) failed");
                     }
                     if(req.count < 2)
                     {
-                        throw std::runtime_error("Insufficient buffer memory on " + _name);
+                        throw linux_backend_exception(to_string() << "Insufficient buffer memory on " << _name);
                     }
 
                     _buffers.resize(req.count);
@@ -988,18 +1046,20 @@ namespace rsimpl
                         buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
                         buf.memory = V4L2_MEMORY_MMAP;
                         buf.index = i;
-                        if(xioctl(_fd, VIDIOC_QUERYBUF, &buf) < 0) throw_error("VIDIOC_QUERYBUF");
+                        if(xioctl(_fd, VIDIOC_QUERYBUF, &buf) < 0)
+                            throw linux_backend_exception("xioctl(VIDIOC_QUERYBUF) failed");
 
                         _buffers[i].length = buf.length;
                         _buffers[i].start = mmap(NULL, buf.length, PROT_READ | PROT_WRITE, MAP_SHARED, _fd, buf.m.offset);
-                        if(_buffers[i].start == MAP_FAILED) throw_error("mmap");
+                        if(_buffers[i].start == MAP_FAILED)
+                            throw linux_backend_exception("mmap");
                     }
                     _profile = profile;
                     _callback = callback;
                 }
                 else
                 {
-                    throw std::runtime_error("Device already streaming!");
+                    throw wrong_api_call_sequence_exception("Device already streaming!");
                 }
             }
 
@@ -1014,7 +1074,8 @@ namespace rsimpl
                         buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
                         buf.memory = V4L2_MEMORY_MMAP;
                         buf.index = i;
-                        if(xioctl(_fd, VIDIOC_QBUF, &buf) < 0) throw_error("VIDIOC_QBUF");
+                        if(xioctl(_fd, VIDIOC_QBUF, &buf) < 0)
+                            throw linux_backend_exception("xioctl(VIDIOC_QBUF) failed");
                     }
 
                     v4l2_buf_type type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
@@ -1026,7 +1087,8 @@ namespace rsimpl
                         }
                         else break;
                     }
-                    if(xioctl(_fd, VIDIOC_STREAMON, &type) < 0) throw_error("VIDIOC_STREAMON");
+                    if(xioctl(_fd, VIDIOC_STREAMON, &type) < 0)
+                        throw linux_backend_exception("xioctl(VIDIOC_STREAMON) failed");
 
                     _is_capturing = true;
                     _thread = std::unique_ptr<std::thread>(new std::thread([this](){ capture_loop(); }));
@@ -1043,7 +1105,8 @@ namespace rsimpl
 
                     // Stop streamining
                     v4l2_buf_type type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-                    if(xioctl(_fd, VIDIOC_STREAMOFF, &type) < 0) warn_error("VIDIOC_STREAMOFF");
+                    if(xioctl(_fd, VIDIOC_STREAMOFF, &type) < 0)
+                        throw linux_backend_exception("xioctl(VIDIOC_STREAMOFF) failed");
                 }
 
                 if (_callback)
@@ -1051,7 +1114,8 @@ namespace rsimpl
 
                     for(size_t i = 0; i < _buffers.size(); i++)
                     {
-                        if(munmap(_buffers[i].start, _buffers[i].length) < 0) warn_error("munmap");
+                        if(munmap(_buffers[i].start, _buffers[i].length) < 0)
+                            throw linux_backend_exception("munmap failed");
                     }
 
                     // Close memory mapped IO
@@ -1061,8 +1125,10 @@ namespace rsimpl
                     req.memory = V4L2_MEMORY_MMAP;
                     if(xioctl(_fd, VIDIOC_REQBUFS, &req) < 0)
                     {
-                        if(errno == EINVAL) LOG_ERROR(_name + " does not support memory mapping");
-                        else warn_error("VIDIOC_REQBUFS");
+                        if(errno == EINVAL)
+                            LOG_ERROR(_name + " does not support memory mapping");
+                        else
+                            throw linux_backend_exception("xioctl(VIDIOC_REQBUFS) failed");
                     }
 
                     _callback = nullptr;
@@ -1081,15 +1147,17 @@ namespace rsimpl
             void poll()
             {
                 int max_fd = _fd;
-                fd_set fds;
+                fd_set fds{};
                 FD_ZERO(&fds);
                 FD_SET(_fd, &fds);
 
                 struct timeval tv = {0,10000};
                 if(select(max_fd + 1, &fds, NULL, NULL, &tv) < 0)
                 {
-                    if (errno == EINTR) return;
-                    throw_error("select");
+                    if (errno == EINTR)
+                        return;
+
+                    throw linux_backend_exception("select failed");
                 }
 
                 if(FD_ISSET(_fd, &fds))
@@ -1099,8 +1167,10 @@ namespace rsimpl
                     buf.memory = V4L2_MEMORY_MMAP;
                     if(xioctl(_fd, VIDIOC_DQBUF, &buf) < 0)
                     {
-                        if(errno == EAGAIN) return;
-                        throw_error("VIDIOC_DQBUF");
+                        if(errno == EAGAIN)
+                            return;
+
+                        throw linux_backend_exception("xioctl(VIDIOC_DQBUF) failed");
                     }
 
                     frame_object fo { (int)_buffers[buf.index].length,
@@ -1108,7 +1178,8 @@ namespace rsimpl
 
                     _callback(_profile, fo);
 
-                    if(xioctl(_fd, VIDIOC_QBUF, &buf) < 0) throw_error("VIDIOC_QBUF");
+                    if(xioctl(_fd, VIDIOC_QBUF, &buf) < 0)
+                        throw linux_backend_exception("xioctl(VIDIOC_QBUF) failed");
                 }
             }
 
@@ -1118,19 +1189,21 @@ namespace rsimpl
                 {
                     _fd = open(_name.c_str(), O_RDWR | O_NONBLOCK, 0);
                     if(_fd < 0)
-                    {
-                        std::ostringstream ss; ss << "Cannot open '" << _name << "': " << errno << ", " << strerror(errno);
-                        throw std::runtime_error(ss.str());
-                    }
+                        throw linux_backend_exception(to_string() << "Cannot open '" << _name);
 
                     v4l2_capability cap = {};
                     if(xioctl(_fd, VIDIOC_QUERYCAP, &cap) < 0)
                     {
-                        if(errno == EINVAL) throw std::runtime_error(_name + " is no V4L2 device");
-                        else throw_error("VIDIOC_QUERYCAP");
+                        if(errno == EINVAL)
+                            throw linux_backend_exception(_name + " is no V4L2 device");
+                        else
+                            throw linux_backend_exception("xioctl(VIDIOC_QUERYCAP) failed");
                     }
-                    if(!(cap.capabilities & V4L2_CAP_VIDEO_CAPTURE)) throw std::runtime_error(_name + " is no video capture device");
-                    if(!(cap.capabilities & V4L2_CAP_STREAMING)) throw std::runtime_error(_name + " does not support streaming I/O");
+                    if(!(cap.capabilities & V4L2_CAP_VIDEO_CAPTURE))
+                        throw linux_backend_exception(_name + " is no video capture device");
+
+                    if(!(cap.capabilities & V4L2_CAP_STREAMING))
+                        throw linux_backend_exception(_name + " does not support streaming I/O");
 
                     // Select video input, video standard and tune here.
                     v4l2_cropcap cropcap = {};
@@ -1153,7 +1226,9 @@ namespace rsimpl
                 if (state == D3 && _state == D0)
                 {
                     stop(_profile);
-                    if(close(_fd) < 0) warn_error("close");
+                    if(close(_fd) < 0)
+                        throw linux_backend_exception("close(...) failed");
+
                     _fd = 0;
                 }
                 _state = state;
@@ -1165,23 +1240,25 @@ namespace rsimpl
             {
                 uvc_xu_control_query q = {static_cast<uint8_t>(xu.unit), control, UVC_SET_CUR,
                                           static_cast<uint16_t>(size), const_cast<uint8_t *>(data)};
-                if(xioctl(_fd, UVCIOC_CTRL_QUERY, &q) < 0) throw_error("UVCIOC_CTRL_QUERY:UVC_SET_CUR");
+                if(xioctl(_fd, UVCIOC_CTRL_QUERY, &q) < 0)
+                    throw linux_backend_exception("set_xu(...). xioctl(UVCIOC_CTRL_QUERY) failed");
             }
             void get_xu(const extension_unit& xu, uint8_t control, uint8_t* data, int size) const override
             {
                 uvc_xu_control_query q = {static_cast<uint8_t>(xu.unit), control, UVC_GET_CUR,
                                           static_cast<uint16_t>(size), const_cast<uint8_t *>(data)};
-                if(xioctl(_fd, UVCIOC_CTRL_QUERY, &q) < 0) throw_error("UVCIOC_CTRL_QUERY:UVC_GET_CUR");
+                if(xioctl(_fd, UVCIOC_CTRL_QUERY, &q) < 0)
+                    throw linux_backend_exception("get_xu(...). xioctl(UVCIOC_CTRL_QUERY) failed");
             }
             control_range get_xu_range(const extension_unit& xu, uint8_t control, int len) const override
             {
-                control_range result;
+                control_range result{};
                 __u16 size = 0;
                 __u32 value = 0; // all of the real sense extended controls are up to 4 bytes
                                 // checking return value for UVC_GET_LEN and allocating
                                 // appropriately might be better
                 __u8 * data = (__u8 *)&value;
-                struct uvc_xu_control_query xquery;
+                struct uvc_xu_control_query xquery = {};
                 memset(&xquery, 0, sizeof(xquery));
                 xquery.query = UVC_GET_LEN;
                 xquery.size = 2; // size seems to always be 2 for the LEN query, but
@@ -1192,7 +1269,7 @@ namespace rsimpl
                 xquery.data = (__u8 *)&size;
 
                 if(-1 == ioctl(_fd,UVCIOC_CTRL_QUERY,&xquery)){
-                    throw std::runtime_error(to_string() << " ioctl failed on UVC_GET_LEN");
+                    throw linux_backend_exception("xioctl(UVC_GET_LEN) failed");
                 }
 
                 assert(size<=4);
@@ -1203,7 +1280,7 @@ namespace rsimpl
                 xquery.unit = xu.unit;
                 xquery.data = data;
                 if(-1 == ioctl(_fd,UVCIOC_CTRL_QUERY,&xquery)){
-                    throw std::runtime_error(to_string() << " ioctl failed on UVC_GET_MIN");
+                    throw linux_backend_exception("xioctl(UVC_GET_MIN) failed");
                 }
                 result.min = value;
 
@@ -1213,7 +1290,7 @@ namespace rsimpl
                 xquery.unit = xu.unit;
                 xquery.data = data;
                 if(-1 == ioctl(_fd,UVCIOC_CTRL_QUERY,&xquery)){
-                    throw std::runtime_error(to_string() << " ioctl failed on UVC_GET_MAX");
+                    throw linux_backend_exception("xioctl(UVC_GET_MAX) failed");
                 }
                 result.max = value;
 
@@ -1223,7 +1300,7 @@ namespace rsimpl
                 xquery.unit = xu.unit;
                 xquery.data = data;
                 if(-1 == ioctl(_fd,UVCIOC_CTRL_QUERY,&xquery)){
-                    throw std::runtime_error(to_string() << " ioctl failed on UVC_GET_DEF");
+                    throw linux_backend_exception("xioctl(UVC_GET_DEF) failed");
                 }
                 result.def = value;
 
@@ -1233,7 +1310,7 @@ namespace rsimpl
                 xquery.unit = xu.unit;
                 xquery.data = data;
                 if(-1 == ioctl(_fd,UVCIOC_CTRL_QUERY,&xquery)){
-                    throw std::runtime_error(to_string() << " ioctl failed on UVC_GET_CUR");
+                    throw linux_backend_exception("xioctl(UVC_GET_CUR) failed");
                 }
                 result.step = value;
 
@@ -1243,7 +1320,9 @@ namespace rsimpl
             int get_pu(rs_option opt) const override
             {
                 struct v4l2_control control = {get_cid(opt), 0};
-                if (xioctl(_fd, VIDIOC_G_CTRL, &control) < 0) throw_error("VIDIOC_G_CTRL");
+                if (xioctl(_fd, VIDIOC_G_CTRL, &control) < 0)
+                    throw linux_backend_exception("xioctl(VIDIOC_G_CTRL) failed");
+
                 if (RS_OPTION_ENABLE_AUTO_EXPOSURE==opt)  { control.value = (V4L2_EXPOSURE_MANUAL==control.value) ? 0 : 1; }
                 return control.value;
             }
@@ -1252,12 +1331,13 @@ namespace rsimpl
             {
                 struct v4l2_control control = {get_cid(opt), value};
                 if (RS_OPTION_ENABLE_AUTO_EXPOSURE==opt) { control.value = value ? V4L2_EXPOSURE_APERTURE_PRIORITY : V4L2_EXPOSURE_MANUAL; }
-                if (xioctl(_fd, VIDIOC_S_CTRL, &control) < 0) throw_error("VIDIOC_S_CTRL");
+                if (xioctl(_fd, VIDIOC_S_CTRL, &control) < 0)
+                    throw linux_backend_exception("xioctl(VIDIOC_S_CTRL) failed");
             }
 
             control_range get_pu_range(rs_option option) const override
             {
-                control_range range;
+                control_range range{};
 
                 // Auto controls range is trimed to {0,1} range
                 if(option >= RS_OPTION_ENABLE_AUTO_EXPOSURE && option <= RS_OPTION_ENABLE_AUTO_WHITE_BALANCE)
@@ -1344,7 +1424,7 @@ namespace rsimpl
                                         static_cast<float>(frame_interval.discrete.denominator) /
                                         static_cast<float>(frame_interval.discrete.numerator);
 
-                                    stream_profile p;
+                                    stream_profile p{};
                                     p.format = fourcc;
                                     p.width = frame_size.discrete.width;
                                     p.height = frame_size.discrete.height;
@@ -1364,8 +1444,14 @@ namespace rsimpl
                 return results;
             }
 
-            void lock() const override {}
-            void unlock() const override {}
+            void lock() const override
+            {
+                _named_mtx->lock();
+            }
+            void unlock() const override
+            {
+                _named_mtx->unlock();
+            }
 
             std::string get_device_location() const override { return _device_path; }
 
@@ -1381,6 +1467,7 @@ namespace rsimpl
             std::atomic<bool> _is_capturing;
             std::atomic<bool> _is_alive;
             std::unique_ptr<std::thread> _thread;
+            std::unique_ptr<named_mutex> _named_mtx;
         };
 
         class v4l_backend : public backend
@@ -1408,9 +1495,10 @@ namespace rsimpl
             }
             std::vector<usb_device_info> query_usb_devices() const override
             {
-                libusb_context * usb_context;
+                libusb_context * usb_context = nullptr;
                 int status = libusb_init(&usb_context);
-                if(status < 0) throw std::runtime_error(to_string() << "libusb_init(...) returned " << libusb_error_name(status));
+                if(status < 0)
+                    throw linux_backend_exception(to_string() << "libusb_init(...) returned " << libusb_error_name(status));
 
                 std::vector<usb_device_info> results;
                 v4l_usb_device::foreach_usb_device(usb_context,

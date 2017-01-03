@@ -31,7 +31,8 @@ int main()
     rs_device_list * devices = rs_query_devices(ctx, &e);
     printf("There are %d connected RealSense devices.\n", rs_get_device_count(devices, &e));
     check_error();
-    if (rs_get_device_count(devices, &e) == 0) return EXIT_FAILURE;
+    if (rs_get_device_count(devices, &e) == 0)
+        return EXIT_FAILURE;
 
     /* This tutorial will access only a single device, but it is trivial to extend to multiple devices */
     rs_device * dev = rs_create_device(devices, 0, &e);
@@ -89,7 +90,8 @@ int main()
             for (x = 0; x < width; ++x)
             {
                 int depth = *depth_frame++;
-                if (depth > 0 && depth < one_meter) ++coverage[x / 10];
+                if (depth > 0 && depth < one_meter)
+                    ++coverage[x / 10];
             }
 
             if (y % 20 == 19)

@@ -17,7 +17,6 @@
 
 namespace rs
 {
-
     class error : public std::runtime_error
     {
         std::string function, args;
@@ -28,10 +27,100 @@ namespace rs
             args = (nullptr != rs_get_failed_args(err)) ? rs_get_failed_args(err) : std::string();
             rs_free_error(err);
         }
-        const std::string & get_failed_function() const { return function; }
-        const std::string & get_failed_args() const { return args; }
-        static void handle(rs_error * e) { if (e) throw error(e); }
+        const std::string & get_failed_function() const
+        {
+            return function;
+        }
+        const std::string & get_failed_args() const
+        {
+            return args;
+        }
+        static void handle(rs_error * e);
     };
+
+    class recoverable_error : public error
+    {
+     public:
+        recoverable_error(rs_error * e) noexcept
+            : error(e)
+        {}
+    };
+
+    class unrecoverable_error : public error
+    {
+    public:
+       unrecoverable_error(rs_error * e) noexcept
+           : error(e)
+       {}
+    };
+
+    class camera_disconnected_error : public unrecoverable_error
+    {
+    public:
+        camera_disconnected_error(rs_error * e) noexcept
+            : unrecoverable_error(e)
+        {}
+    };
+
+    class backend_error : public unrecoverable_error
+    {
+    public:
+        backend_error(rs_error * e) noexcept
+            : unrecoverable_error(e)
+        {}
+    };
+
+    class invalid_value_error : public recoverable_error
+    {
+    public:
+        invalid_value_error(rs_error * e) noexcept
+            : recoverable_error(e)
+        {}
+    };
+
+    class wrong_api_call_sequence_error : public recoverable_error
+    {
+    public:
+        wrong_api_call_sequence_error(rs_error * e) noexcept
+            : recoverable_error(e)
+        {}
+    };
+
+    class not_implemented_error : public recoverable_error
+    {
+    public:
+        not_implemented_error(rs_error * e) noexcept
+            : recoverable_error(e)
+        {}
+    };
+
+    inline void error::handle(rs_error * e)
+    {
+        if (e)
+        {
+            auto h = rs_get_librealsense_exception_type(e);
+            switch (h) {
+            case RS_LIBREALSENSE_EXCEPTION_TYPE_CAMERA_DISCONNECTED:
+                throw camera_disconnected_error(e);
+                break;
+            case RS_LIBREALSENSE_EXCEPTION_TYPE_BACKEND:
+                throw backend_error(e);
+                break;
+            case RS_LIBREALSENSE_EXCEPTION_TYPE_INVALID_VALUE:
+                throw invalid_value_error(e);
+                break;
+            case RS_LIBREALSENSE_EXCEPTION_TYPE_WRONG_API_CALL_SEQUENCE:
+                throw wrong_api_call_sequence_error(e);
+                break;
+            case RS_LIBREALSENSE_EXCEPTION_TYPE_NOT_IMPLEMENTED:
+                throw not_implemented_error(e);
+                break;
+            default:
+                throw error(e);
+                break;
+            }
+        }
+    }
 
     class context;
     class device;
@@ -632,7 +721,7 @@ namespace rs
     private:
         friend context;
 
-        explicit device(std::shared_ptr<rs_device> dev) 
+        explicit device(std::shared_ptr<rs_device> dev)
             : _dev(dev), _debug(dev)
         {
         }
@@ -720,7 +809,7 @@ namespace rs
         * create librealsense context that will try to record all operations over librealsense into a file
         * \param[in] filename string representing the name of the file to record
         */
-        recording_context(const std::string& filename, 
+        recording_context(const std::string& filename,
                           const std::string& section = "",
                           rs_recording_mode mode = RS_RECORDING_MODE_BEST_QUALITY)
         {
@@ -742,7 +831,7 @@ namespace rs
         * if the user calls a method that was either not called during recording or voilates causality of the recording error will be thrown
         * \param[in] filename string of the name of the file
         */
-        mock_context(const std::string& filename, 
+        mock_context(const std::string& filename,
                      const std::string& section = "")
         {
             rs_error* e = nullptr;

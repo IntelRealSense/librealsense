@@ -52,7 +52,9 @@ namespace rsimpl
             {
                 std::string error = to_string() << call << " returned: " << hr_to_string(hr);
                 LOG_WARNING(error);
-                if (to_throw) throw std::runtime_error(error);
+                if (to_throw)
+                    throw std::runtime_error(error);
+
                 return false;
             }
             return true;
@@ -61,10 +63,14 @@ namespace rsimpl
         std::string win_to_utf(const WCHAR * s)
         {
             auto len = WideCharToMultiByte(CP_UTF8, 0, s, -1, nullptr, 0, nullptr, nullptr);
-            if(len == 0) throw std::runtime_error(to_string() << "WideCharToMultiByte(...) returned 0 and GetLastError() is " << GetLastError());
+            if(len == 0)
+                throw std::runtime_error(to_string() << "WideCharToMultiByte(...) returned 0 and GetLastError() is " << GetLastError());
+
             std::string buffer(len-1, ' ');
             len = WideCharToMultiByte(CP_UTF8, 0, s, -1, &buffer[0], static_cast<int>(buffer.size())+1, nullptr, nullptr);
-            if(len == 0) throw std::runtime_error(to_string() << "WideCharToMultiByte(...) returned 0 and GetLastError() is " << GetLastError());
+            if(len == 0)
+                throw std::runtime_error(to_string() << "WideCharToMultiByte(...) returned 0 and GetLastError() is " << GetLastError());
+
             return buffer;
         }
 
@@ -175,7 +181,9 @@ namespace rsimpl
             if (key.ActualLength < sizeof(key)) return false;
 
             auto alloc = std::malloc(key.ActualLength);
-            if (!alloc) throw std::bad_alloc();
+            if (!alloc)
+                throw std::bad_alloc();
+
             auto pKey = std::shared_ptr<USB_NODE_CONNECTION_DRIVERKEY_NAME>(reinterpret_cast<USB_NODE_CONNECTION_DRIVERKEY_NAME *>(alloc), std::free);
 
             pKey->ConnectionIndex = index;
@@ -278,7 +286,9 @@ namespace rsimpl
                 nullptr,
                 nullptr,
                 nullptr);
-            if (device_info == INVALID_HANDLE_VALUE) throw std::runtime_error("SetupDiGetClassDevs");
+            if (device_info == INVALID_HANDLE_VALUE)
+                throw std::runtime_error("SetupDiGetClassDevs");
+
             auto di = std::shared_ptr<void>(device_info, SetupDiDestroyDeviceInfoList);
 
             // enumerate all imaging devices.
@@ -301,7 +311,9 @@ namespace rsimpl
                 }
 
                 auto alloc = std::malloc(buf_size * sizeof(WCHAR) + sizeof(WCHAR));
-                if (!alloc) throw std::bad_alloc();
+                if (!alloc)
+                    throw std::bad_alloc();
+
                 auto pInstID = std::shared_ptr<WCHAR>(reinterpret_cast<WCHAR *>(alloc), std::free);
                 if (CM_Get_Device_ID(devInfo.DevInst, pInstID.get(), buf_size * sizeof(WCHAR) + sizeof(WCHAR), 0) != CR_SUCCESS)
                 {
@@ -331,7 +343,9 @@ namespace rsimpl
                     return "";
                 }
                 alloc = std::malloc(buf_size*sizeof(WCHAR) + sizeof(WCHAR));
-                if (!alloc) throw std::bad_alloc();
+                if (!alloc)
+                    throw std::bad_alloc();
+
                 pInstID = std::shared_ptr<WCHAR>(reinterpret_cast<WCHAR *>(alloc), std::free);
                 if (CM_Get_Device_ID(instance, pInstID.get(), buf_size * sizeof(WCHAR) + sizeof(WCHAR), 0) != CR_SUCCESS) {
                     LOG_ERROR("CM_Get_Device_ID failed");
@@ -362,7 +376,9 @@ namespace rsimpl
                     return "";
                 }
                 alloc = std::malloc(buf_size);
-                if (!alloc) throw std::bad_alloc();
+                if (!alloc)
+                    throw std::bad_alloc();
+
                 auto detail_data = std::shared_ptr<SP_DEVICE_INTERFACE_DETAIL_DATA>(reinterpret_cast<SP_DEVICE_INTERFACE_DETAIL_DATA *>(alloc), std::free);
                 detail_data->cbSize = sizeof(SP_DEVICE_INTERFACE_DETAIL_DATA);
                 SP_DEVINFO_DATA parent_data = { sizeof(SP_DEVINFO_DATA) };
