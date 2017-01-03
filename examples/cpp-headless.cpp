@@ -30,7 +30,8 @@ int main() try
     rs::context ctx;
     auto list = ctx.query_devices();
     printf("There are %llu connected RealSense devices.\n", list.size());
-    if(list.size() == 0) return EXIT_FAILURE;
+    if(list.size() == 0)
+        return EXIT_FAILURE;
 
     auto dev = list[0];
     printf("\nUsing device 0, an %s\n", dev.get_camera_info(RS_CAMERA_INFO_DEVICE_NAME));
@@ -46,7 +47,8 @@ int main() try
     stream.start(sync);
 
     /* Capture 30 frames to give autoexposure, etc. a chance to settle */
-    for (auto i = 0; i < 30; ++i) sync.wait_for_frames();
+    for (auto i = 0; i < 30; ++i)
+        sync.wait_for_frames();
 
     /* Retrieve data from all the enabled streams */
     std::map<rs_stream, rs::frame> frames_by_stream;

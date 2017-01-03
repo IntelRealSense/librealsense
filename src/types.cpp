@@ -29,6 +29,22 @@ namespace rsimpl
         return f.good();
     }
 
+    const char * get_string(rs_librealsense_exception_type value)
+    {
+        #define CASE(X) case RS_LIBREALSENSE_EXCEPTION_TYPE_##X: return #X;
+        switch(value)
+        {
+        CASE(UNKNOWN)
+        CASE(CAMERA_DISCONNECTED)
+        CASE(BACKEND)
+        CASE(INVALID_VALUE)
+        CASE(WRONG_API_CALL_SEQUENCE)
+        CASE(NOT_IMPLEMENTED)
+        default: assert(!is_valid(value)); return unknown;
+        }
+        #undef CASE
+    }
+
     const char * get_string(rs_stream value)
     {
         #define CASE(X) case RS_STREAM_##X: return #X;

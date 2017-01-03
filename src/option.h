@@ -161,7 +161,7 @@ namespace rsimpl
         void start_fw_logger()
         {
             if (_keep_fw_logger_alive)
-                throw std::logic_error("FW logger already started");
+                throw wrong_api_call_sequence_exception("FW logger already started");
 
             _keep_fw_logger_alive = true;
             _fw_logger_thread = std::unique_ptr<std::thread>(new std::thread([this]() {
@@ -198,7 +198,7 @@ namespace rsimpl
         void stop_fw_logger()
         {
             if (!_keep_fw_logger_alive)
-                throw std::logic_error("FW logger not started");
+                throw wrong_api_call_sequence_exception("FW logger not started");
 
             _keep_fw_logger_alive = false;
             _fw_logger_thread->join();

@@ -2,8 +2,6 @@
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
 #pragma once
-#ifndef LIBREALSENSE_IV_PRIVATE_H
-#define LIBREALSENSE_IV_PRIVATE_H
 
 #include "backend.h"
 
@@ -24,9 +22,7 @@ namespace rsimpl {
         const uint8_t IVCAM_COLOR_ERROR = 3;
         const uint8_t IVCAM_COLOR_EXPOSURE_GRANULAR = 4;
 
-        const int gvd_fw_version_offset = 0;
-
-        const uvc::extension_unit depth_xu { 1, 6, 1, 
+        const uvc::extension_unit depth_xu { 1, 6, 1,
             { 0xA55751A1, 0xF3C5, 0x4A5E, { 0x8D, 0x5A, 0x68, 0x54, 0xB8, 0xFA, 0x27, 0x16 } } };
 
         struct camera_calib_params
@@ -60,16 +56,16 @@ namespace rsimpl {
 
         struct cam_auto_range_request
         {
-            int enableMvR;  
+            int enableMvR;
             int enableLaser;
-            int minMvR;     
-            int maxMvR;     
-            int startMvR;   
-            int minLaser;   
-            int maxLaser;   
-            int startLaser; 
-            int ARUpperTh;  
-            int ARLowerTh;  
+            int minMvR;
+            int maxMvR;
+            int startMvR;
+            int minLaser;
+            int maxLaser;
+            int startLaser;
+            int ARUpperTh;
+            int ARLowerTh;
         };
 
         enum fw_cmd : uint8_t
@@ -99,23 +95,14 @@ namespace rsimpl {
             GLD = 0x35
         };
 
-        static bool try_fetch_usb_device(std::vector<uvc::usb_device_info>& devices,
-            const uvc::uvc_device_info& info, uvc::usb_device_info& result)
+        enum gvd_fields
         {
-            for (auto it = devices.begin(); it != devices.end(); ++it)
-            {
-                if (it->unique_id == info.unique_id)
-                {
-                    result = *it;
-                    result.mi = 4;
-                    devices.erase(it);
-                    return true;
-                }
-            }
-            return false;
-        }
+            fw_version_offset    = 0,
+            module_serial_offset = 132
+        };
+
+        bool try_fetch_usb_device(std::vector<uvc::usb_device_info>& devices,
+            const uvc::uvc_device_info& info, uvc::usb_device_info& result);
 
     } // rsimpl::ivcam
 } // namespace rsimpl
-
-#endif  // IV_PRIVATE_H

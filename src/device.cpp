@@ -37,7 +37,9 @@ void device::declare_capability(supported_capability cap)
 rs_extrinsics device::get_extrinsics(int from_subdevice, int to_subdevice)
 {
     auto from = get_endpoint(from_subdevice).get_pose(), to = get_endpoint(to_subdevice).get_pose();
-    if (from == to) return { {1,0,0,0,1,0,0,0,1}, {0,0,0} }; // identity transformation
+    if (from == to)
+        return { {1,0,0,0,1,0,0,0,1}, {0,0,0} }; // identity transformation
+
     auto transform = inverse(from) * to;
     rs_extrinsics extrin;
     (float3x3 &)extrin.rotation = transform.orientation;

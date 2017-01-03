@@ -479,7 +479,7 @@ public:
 
         if (fullscreen)
         {
-            results[selected_stream] = { x0, y0, width, height };
+            results[selected_stream] = { static_cast<float>(x0), static_cast<float>(y0), static_cast<float>(width), static_cast<float>(height) };
         }
         else
         {
@@ -749,9 +749,12 @@ int main(int, char**) try
                     ImGui::PushItemWidth(-1);
                     label = to_string() << sub->dev.get_camera_info(RS_CAMERA_INFO_DEVICE_NAME)
                                         << sub->dev.get_camera_info(RS_CAMERA_INFO_MODULE_NAME) << " resolution";
-                    if (sub->streaming) ImGui::Text(res_chars[sub->selected_res_id]);
-                    else ImGui::Combo(label.c_str(), &sub->selected_res_id, res_chars.data(),
+                    if (sub->streaming)
+                        ImGui::Text(res_chars[sub->selected_res_id]);
+                    else
+                        ImGui::Combo(label.c_str(), &sub->selected_res_id, res_chars.data(),
                                       static_cast<int>(res_chars.size()));
+
                     ImGui::PopItemWidth();
 
                     // Draw combo-box with all FPS options for this device
@@ -761,9 +764,12 @@ int main(int, char**) try
                     ImGui::PushItemWidth(-1);
                     label = to_string() << sub->dev.get_camera_info(RS_CAMERA_INFO_DEVICE_NAME)
                                         << sub->dev.get_camera_info(RS_CAMERA_INFO_MODULE_NAME) << " fps";
-                    if (sub->streaming) ImGui::Text(fps_chars[sub->selected_fps_id]);
-                    else ImGui::Combo(label.c_str(), &sub->selected_fps_id, fps_chars.data(),
+                    if (sub->streaming)
+                        ImGui::Text(fps_chars[sub->selected_fps_id]);
+                    else
+                        ImGui::Combo(label.c_str(), &sub->selected_fps_id, fps_chars.data(),
                                       static_cast<int>(fps_chars.size()));
+
                     ImGui::PopItemWidth();
 
                     // Check which streams are live in current device
@@ -771,22 +777,25 @@ int main(int, char**) try
                     for (auto i = 0; i < RS_STREAM_COUNT; i++)
                     {
                         auto stream = static_cast<rs_stream>(i);
-                        if (sub->formats[stream].size() > 0) live_streams++;
+                        if (sub->formats[stream].size() > 0)
+                            live_streams++;
                     }
 
                     // Draw combo-box with all format options for current device
                     for (auto i = 0; i < RS_STREAM_COUNT; i++)
                     {
                         auto stream = static_cast<rs_stream>(i);
-                        if (sub->formats[stream].size() == 0) continue;
+                        if (sub->formats[stream].size() == 0)
+                            continue;
 
-                        // 
                         auto formats_chars = get_string_pointers(sub->formats[stream]);
                         if (live_streams > 1)
                         {
                             label = to_string() << rs_stream_to_string(stream) << " format:";
-                            if (sub->streaming) ImGui::Text(label.c_str());
-                            else ImGui::Checkbox(label.c_str(), &sub->stream_enabled[stream]);
+                            if (sub->streaming)
+                                ImGui::Text(label.c_str());
+                            else
+                                ImGui::Checkbox(label.c_str(), &sub->stream_enabled[stream]);
                         }
                         else
                         {
@@ -801,9 +810,12 @@ int main(int, char**) try
                             label = to_string() << sub->dev.get_camera_info(RS_CAMERA_INFO_DEVICE_NAME)
                                                 << sub->dev.get_camera_info(RS_CAMERA_INFO_MODULE_NAME)
                                                 << " " << rs_stream_to_string(stream) << " format";
-                            if (sub->streaming) ImGui::Text(formats_chars[sub->selected_format_id[stream]]);
-                            else ImGui::Combo(label.c_str(), &sub->selected_format_id[stream], formats_chars.data(),
+                            if (sub->streaming)
+                                ImGui::Text(formats_chars[sub->selected_format_id[stream]]);
+                            else
+                                ImGui::Combo(label.c_str(), &sub->selected_format_id[stream], formats_chars.data(),
                                 static_cast<int>(formats_chars.size()));
+
                             ImGui::PopItemWidth();
                         }
                         else
@@ -906,7 +918,8 @@ int main(int, char**) try
                     model.steam_last_frame[f.get_stream_type()] = std::chrono::high_resolution_clock::now();
                     auto width = (f.get_format() == RS_FORMAT_MOTION_DATA)? 640 : f.get_width();
                     auto height = (f.get_format() == RS_FORMAT_MOTION_DATA)? 480 : f.get_height();
-                    model.stream_size[f.get_stream_type()] = {width, height};
+                    model.stream_size[f.get_stream_type()] = { static_cast<float>(width),
+                                                               static_cast<float>(height)};
                     model.stream_format[f.get_stream_type()] = f.get_format();
                 }
             }

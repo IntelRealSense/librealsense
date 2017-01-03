@@ -18,7 +18,8 @@ int main() try
     rs::context ctx;
     auto connected_devices = ctx.query_devices();
     printf("There are %llu connected RealSense devices.\n", connected_devices.size());
-    if(connected_devices.size() == 0) return EXIT_FAILURE;
+    if(connected_devices.size() == 0)
+        return EXIT_FAILURE;
 
     // This tutorial will access only a single device, but it is trivial to extend to multiple devices
     auto dev = connected_devices[0];

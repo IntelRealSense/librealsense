@@ -5,9 +5,6 @@
 
 #include "sr300.h"
 #include "ds5.h"
-#include "ds5d.h"
-#include "ds5c.h"
-#include "ds5t.h"
 #include "backend.h"
 #include "context.h"
 #include "recorder.h"
@@ -60,7 +57,7 @@ namespace rsimpl
         case backend_type::playback: 
             _backend = std::make_shared<uvc::playback_backend>(filename, section);
             break;
-        default: throw std::runtime_error("Undefined backend type!");
+        default: throw invalid_value_exception(to_string() << "Undefined backend type " << static_cast<int>(type));
         }
     }
 
@@ -73,10 +70,12 @@ namespace rsimpl
         auto hid_devices = _backend->query_hid_devices();
 
         auto sr300_devices = pick_sr300_devices(uvc_devices, usb_devices);
-        for (auto& dev : sr300_devices) list.push_back(dev);
+        for (auto& dev : sr300_devices)
+            list.push_back(dev);
 
         auto ds5_devices = pick_ds5_devices(uvc_devices, usb_devices, hid_devices);
-        for (auto& dev : ds5_devices) list.push_back(dev);
+        for (auto& dev : ds5_devices)
+            list.push_back(dev);
 
         return list;
     }

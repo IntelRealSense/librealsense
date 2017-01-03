@@ -43,19 +43,21 @@ namespace rsimpl
     void hw_monitor::execute_usb_command(uint8_t *out, size_t outSize, uint32_t & op, uint8_t * in, size_t & inSize) const
     {
         std::vector<uint8_t> out_vec(out, out + outSize);
-        auto res = _command_transfer->send_receive(out_vec);
+        auto res = _locked_transfer->send_receive(out_vec);
 
         // read
         if (in && inSize)
         {
             if (res.size() < static_cast<int>(sizeof(uint32_t))) 
-                throw std::runtime_error("Incomplete bulk usb transfer!");
+                throw invalid_value_exception("Incomplete bulk usb transfer!");
 
             if (res.size() > IVCAM_MONITOR_MAX_BUFFER_SIZE) 
-                throw std::runtime_error("Out buffer is greater than max buffer size!");
+                throw invalid_value_exception("Out buffer is greater than max buffer size!");
 
             op = *reinterpret_cast<uint32_t *>(res.data());
-            if (res.size() > static_cast<int>(inSize)) throw std::runtime_error("bulk transfer failed - user buffer too small");
+            if (res.size() > static_cast<int>(inSize))
+                throw invalid_value_exception("bulk transfer failed - user buffer too small");
+
             inSize = res.size();
             memcpy(in, res.data(), inSize);
         }
@@ -67,7 +69,8 @@ namespace rsimpl
 
         if (details.oneDirection) return;
 
-        if (details.receivedCommandDataLength < 4) throw std::runtime_error("received incomplete response to usb command");
+        if (details.receivedCommandDataLength < 4)
+            throw invalid_value_exception("received incomplete response to usb command");
 
         details.receivedCommandDataLength -= 4;
         memcpy(details.receivedOpcode, outputBuffer, 4);
@@ -89,7 +92,7 @@ namespace rsimpl
 
     std::vector<uint8_t> hw_monitor::send(std::vector<uint8_t> data) const
     {
-        return _command_transfer->send_receive(data);
+        return _locked_transfer->send_receive(data);
     }
 
     std::vector<uint8_t> hw_monitor::send(command cmd) const
@@ -126,7 +129,7 @@ namespace rsimpl
                                    details.receivedOpcode[1], details.receivedOpcode[0]);
         if (opCodeAsUint32 != opCodeXmit)
         {
-            throw std::runtime_error(to_string() << "OpCodes do not match! Sent " 
+            throw invalid_value_exception(to_string() << "OpCodes do not match! Sent "
                 << opCodeXmit << " but received " << static_cast<int>(opCodeAsUint32) << "!");
         }
 
@@ -142,10 +145,10 @@ namespace rsimpl
         memcpy(gvd, data.data(), minSize);
     }
 
-    std::string hw_monitor::get_firmware_version_string(int gvd_cmd, int offset) const
+    std::string hw_monitor::get_firmware_version_string(int gvd_cmd, uint32_t offset) const
     {
-        std::vector<char> gvd(1024);
-        get_gvd(1024, gvd.data(), gvd_cmd);
+        std::vector<char> gvd(HW_MONITOR_BUFFER_SIZE);
+        get_gvd(gvd.size(), gvd.data(), gvd_cmd);
         uint8_t fws[8];
         memcpy(fws, gvd.data() + offset, 8);
         return to_string() << static_cast<int>(fws[3]) << "." << static_cast<int>(fws[2])
@@ -154,8 +157,8 @@ namespace rsimpl
 
     std::string hw_monitor::get_module_serial_string(uint8_t gvd_cmd, uint32_t offset) const
     {
-        std::vector<char> gvd(1024);
-        get_gvd(1024, gvd.data(), gvd_cmd);
+        std::vector<char> gvd(HW_MONITOR_BUFFER_SIZE);
+        get_gvd(gvd.size(), gvd.data(), gvd_cmd);
         unsigned char ss[8];
         memcpy(ss, gvd.data() + offset, 8);
         std::stringstream formattedBuffer;

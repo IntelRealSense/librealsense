@@ -12,6 +12,7 @@
 #include <string>
 #include <sstream>
 #include <iomanip>
+#define _USE_MATH_DEFINES
 #include <cmath>
 
 inline void make_depth_histogram(uint8_t rgb_image[], const uint16_t depth_image[], int width, int height)
@@ -355,7 +356,9 @@ public:
     void upload(const void * data, int width, int height, rs_format format, int stride = 0, rs_stream stream = RS_STREAM_ANY)
     {
         // If the frame timestamp has changed since the last time show(...) was called, re-upload the texture
-        if(!texture) glGenTextures(1, &texture);
+        if(!texture)
+            glGenTextures(1, &texture);
+
         glBindTexture(GL_TEXTURE_2D, texture);
         stride = stride == 0 ? width : stride;
         //glPixelStorei(GL_UNPACK_ROW_LENGTH, stride);
