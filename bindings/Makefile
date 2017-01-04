@@ -4,5 +4,5 @@ all: python_bindings
 
 python_bindings: pylibrs.so
 
-pylibrs.so: ../build/librealsense.a python.cpp
+pylibrs.so: python.cpp ../build/librealsense.a
 	c++ -O3 -shared -std=c++11 $^ -o $@ `python-config --cflags --ldflags` `pkg-config --cflags --libs libusb`
