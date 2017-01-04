@@ -24,6 +24,7 @@ librealsense.xc/build
 *~
 *.a
 *.o
+*.so
 *.pyc
 *.class
 
