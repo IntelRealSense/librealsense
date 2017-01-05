@@ -386,6 +386,8 @@ void uvc_endpoint::start_streaming(frame_callback_ptr callback)
     std::lock_guard<std::mutex> lock(_configure_lock);
     if (_is_streaming)
         throw wrong_api_call_sequence_exception("start_streaming(...) failed. UVC device is already streaming!");
+    else if(!_is_opened)
+        throw wrong_api_call_sequence_exception("start_streaming(...) failed. UVC device was not opened!");
 
     _callback = std::move(callback);
     _is_streaming = true;
