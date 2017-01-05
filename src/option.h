@@ -150,7 +150,8 @@ namespace rsimpl
         ~fw_logger_option()
         {
             try{
-                stop_fw_logger();
+                if (_keep_fw_logger_alive)
+                    stop_fw_logger();
             }
             catch(...)
             {
