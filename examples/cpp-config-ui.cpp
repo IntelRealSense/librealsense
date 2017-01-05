@@ -1,5 +1,3 @@
-#define _USE_MATH_DEFINES
-
 #include <librealsense/rs.hpp>
 #include "example.hpp"
 
@@ -457,7 +455,7 @@ public:
         return 1.0f - t;
     }
 
-    std::map<rs_stream, rect> calc_layout(int x0, int y0, int width, int height)
+    std::map<rs_stream, rect> calc_layout(float x0, float y0, float width, float height)
     {
         std::vector<rs_stream> active_streams;
         for (auto i = 0; i < RS_STREAM_COUNT; i++)
@@ -916,8 +914,8 @@ int main(int, char**) try
                 {
                     model.stream_buffers[f.get_stream_type()].upload(f);
                     model.steam_last_frame[f.get_stream_type()] = std::chrono::high_resolution_clock::now();
-                    auto width = (f.get_format() == RS_FORMAT_MOTION_DATA)? 640 : f.get_width();
-                    auto height = (f.get_format() == RS_FORMAT_MOTION_DATA)? 480 : f.get_height();
+                    auto width = (f.get_format() == RS_FORMAT_MOTION_DATA)? 640.f : f.get_width();
+                    auto height = (f.get_format() == RS_FORMAT_MOTION_DATA)? 480.f : f.get_height();
                     model.stream_size[f.get_stream_type()] = { static_cast<float>(width),
                                                                static_cast<float>(height)};
                     model.stream_format[f.get_stream_type()] = f.get_format();

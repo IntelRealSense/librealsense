@@ -94,6 +94,16 @@ namespace rsimpl
             
             return result;
         }
+
+        std::shared_ptr<hid_device> wmf_backend::create_hid_device(hid_device_info info) const
+        {
+            throw std::runtime_error("HID support is not implemented on Windows at this time!");
+        }
+
+        std::vector<hid_device_info> wmf_backend::query_hid_devices() const
+        {
+            return std::vector<hid_device_info>();
+        }
     }
 }
 

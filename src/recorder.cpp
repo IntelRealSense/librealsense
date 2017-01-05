@@ -45,10 +45,13 @@ namespace rsimpl
 {
     namespace uvc
     {
-        enum device_type
+        enum class device_type
         {
             uvc,
-            usb
+            usb,
+            hid,
+            hid_sensor,
+            hid_input
         };
 
         int compression_algorithm::dist(uint32_t x, uint32_t y) const
@@ -234,7 +237,7 @@ namespace rsimpl
                 {
                     statement insert(c, DEVICE_INFO_INSERT);
                     insert.bind(1, section_id);
-                    insert.bind(2, device_type::uvc);
+                    insert.bind(2, (int)device_type::uvc);
                     insert.bind(3, "");
                     insert.bind(4, uvc_info.unique_id.c_str());
                     insert.bind(5, uvc_info.pid);
@@ -247,13 +250,55 @@ namespace rsimpl
                 {
                     statement insert(c, DEVICE_INFO_INSERT);
                     insert.bind(1, section_id);
-                    insert.bind(2, device_type::usb);
+                    insert.bind(2, (int)device_type::usb);
                     string id(usb_info.id.begin(), usb_info.id.end());
                     insert.bind(3, id.c_str());
                     insert.bind(4, usb_info.unique_id.c_str());
                     insert.bind(5, usb_info.pid);
                     insert.bind(6, usb_info.vid);
                     insert.bind(7, usb_info.mi);
+                    insert();
+                }
+
+                for (auto&& hid_info : hid_device_infos)
+                {
+                    statement insert(c, DEVICE_INFO_INSERT);
+                    insert.bind(1, section_id);
+                    insert.bind(2, (int)device_type::hid);
+                    insert.bind(3, hid_info.id.c_str());
+                    insert.bind(4, hid_info.unique_id.c_str());
+
+                    stringstream ss_vid(hid_info.vid);
+                    stringstream ss_pid(hid_info.pid);
+                    uint32_t vid, pid;
+                    ss_vid >> hex >> vid;
+                    ss_pid >> hex >> pid;
+
+                    insert.bind(5, pid);
+                    insert.bind(6, vid);
+                    insert.bind(7, hid_info.device_path.c_str());
+                    insert();
+                }
+
+                for (auto&& hid_info : hid_sensors)
+                {
+                    statement insert(c, DEVICE_INFO_INSERT);
+                    insert.bind(1, section_id);
+                    insert.bind(2, (int)device_type::hid_sensor);
+                    insert.bind(3, hid_info.name.c_str());
+                    insert.bind(4, "");
+                    insert.bind(5, hid_info.iio);
+                    insert();
+                }
+
+                for (auto&& hid_info : hid_sensor_inputs)
+                {
+                    statement insert(c, DEVICE_INFO_INSERT);
+                    insert.bind(1, section_id);
+                    insert.bind(2, (int)device_type::hid_input);
+                    insert.bind(3, hid_info.name.c_str());
+                    insert.bind(4, "");
+                    insert.bind(5, hid_info.index);
                     insert();
                 }
 
@@ -340,7 +385,7 @@ namespace rsimpl
             select_devices.bind(1, section_id);
             for (auto&& row : select_devices)
             {
-                if (row[1].get_int() == usb)
+                if (row[1].get_int() == (int)device_type::usb)
                 {
                     usb_device_info info;
                     auto id = row[2].get_string();
@@ -351,7 +396,7 @@ namespace rsimpl
                     info.mi = row[6].get_int();
                     result->usb_device_infos.push_back(info);
                 }
-                else
+                else if (row[1].get_int() == (int)device_type::uvc)
                 {
                     uvc_device_info info;
                     info.unique_id = row[3].get_string();
@@ -359,6 +404,33 @@ namespace rsimpl
                     info.vid = row[5].get_int();
                     info.mi = row[6].get_int();
                     result->uvc_device_infos.push_back(info);
+                }
+                else if (row[1].get_int() == (int)device_type::hid)
+                {
+                    hid_device_info info;
+                    info.id = row[2].get_string();
+                    info.unique_id = row[3].get_string();
+                    info.pid = to_string() << row[4].get_int();
+                    info.vid = to_string() << row[5].get_int();
+                    info.device_path = row[6].get_string();
+
+                    result->hid_device_infos.push_back(info);
+                }
+                else if (row[1].get_int() == (int)device_type::hid_sensor)
+                {
+                    hid_sensor info;
+                    info.name = row[2].get_string();
+                    info.iio = row[4].get_int();
+
+                    result->hid_sensors.push_back(info);
+                }
+                else if (row[1].get_int() == (int)device_type::hid_input)
+                {
+                    hid_sensor_input info;
+                    info.name = row[2].get_string();
+                    info.index = row[4].get_int();
+
+                    result->hid_sensor_inputs.push_back(info);
                 }
             }
 
@@ -392,7 +464,7 @@ namespace rsimpl
             memcpy(holder.data(), ptr, size);
             auto id = static_cast<int>(blobs.size());
             blobs.push_back(holder);
-            return id + blobs_baseline;
+            return id;
         }
 
         int recording::get_timestamp() const
@@ -642,6 +714,74 @@ namespace rsimpl
             }, _entity_id, call_type::uvc_unlock);
         }
 
+        void record_hid_device::open()
+        {
+            _owner->try_record([&](recording* rec, lookup_key k)
+            {
+                _source->open();
+                rec->add_call(k);
+            }, _entity_id, call_type::hid_open);
+        }
+
+        void record_hid_device::close()
+        {
+            _owner->try_record([&](recording* rec, lookup_key k)
+            {
+                _source->close();
+                rec->add_call(k);
+            }, _entity_id, call_type::hid_close);
+        }
+
+        void record_hid_device::stop_capture()
+        {
+            _owner->try_record([&](recording* rec, lookup_key k)
+            {
+                _source->stop_capture();
+                rec->add_call(k);
+            }, _entity_id, call_type::hid_stop_capture);
+        }
+
+        void record_hid_device::start_capture(const vector<int>& sensor_iio, hid_callback callback)
+        {
+            _owner->try_record([this, callback, &sensor_iio](recording* rec, lookup_key k)
+            {
+                _source->start_capture(sensor_iio, [this, callback](const sensor_data& sd)
+                {
+                    _owner->try_record([this, callback, &sd](recording* rec1, lookup_key key1)
+                    {
+                        auto&& c = rec1->add_call(key1);
+                        c.param1 = rec1->save_blob(sd.data.data(), sd.data.size());
+                        c.param2 = sd.sensor.iio;
+                        c.inline_string = sd.sensor.name;
+                        callback(sd);
+                    }, _entity_id, call_type::hid_frame);
+                });
+
+                auto& call = rec->add_call(k);
+                call.param1 = rec->save_blob(sensor_iio.data(), sensor_iio.size() * sizeof(int));
+            }, _entity_id, call_type::hid_start_capture);
+        }
+
+        vector<hid_sensor_input> record_hid_device::get_sensor_inputs(int sensor_iio)
+        {
+            return _owner->try_record([&](recording* rec, lookup_key k)
+            {
+                auto res = _source->get_sensor_inputs(sensor_iio);
+                rec->save_hid_sensors_inputs(res, k);
+                return res;
+            }, _entity_id, call_type::hid_get_sensor_inputs);
+        }
+
+        vector<hid_sensor> record_hid_device::get_sensors()
+        {
+            return _owner->try_record([&](recording* rec, lookup_key k)
+            {
+                auto res = _source->get_sensors();
+                rec->save_hid_sensors(res, k);
+                return res;
+            }, _entity_id, call_type::hid_get_sensors);
+        }
+
         string record_uvc_device::get_device_location() const
         {
             return _owner->try_record([&](recording* rec, lookup_key k)
@@ -669,6 +809,30 @@ namespace rsimpl
 
                 return result;
             }, _entity_id, call_type::send_command);
+        }
+
+        shared_ptr<hid_device> record_backend::create_hid_device(hid_device_info info) const
+        {
+            return try_record([&](recording* rec, lookup_key k)
+            {
+                auto dev = _source->create_hid_device(info);
+
+                auto id = _entity_count.fetch_add(1);
+                auto&& c = rec->add_call(k);
+                c.param1 = id;
+
+                return make_shared<record_hid_device>(dev, id, this);
+            }, 0, call_type::create_hid_device);
+        }
+
+        vector<hid_device_info> record_backend::query_hid_devices() const
+        {
+            return try_record([&](recording* rec, lookup_key k)
+            {
+                auto devices = _source->query_hid_devices();
+                rec->save_device_info_list(devices, k);
+                return devices;
+            }, 0, call_type::query_hid_devices);
         }
 
         shared_ptr<uvc_device> record_backend::create_uvc_device(uvc_device_info info) const
@@ -734,6 +898,18 @@ namespace rsimpl
             write_to_file();
         }
 
+        shared_ptr<hid_device> playback_backend::create_hid_device(hid_device_info info) const
+        {
+            auto&& c = _rec->find_call(call_type::create_hid_device, 0);
+
+            return make_shared<playback_hid_device>(_rec, c.param1);
+        }
+
+        vector<hid_device_info> playback_backend::query_hid_devices() const
+        {
+            return _rec->load_hid_device_info_list();
+        }
+
         shared_ptr<uvc_device> playback_backend::create_uvc_device(uvc_device_info info) const
         {
             auto&& c = _rec->find_call(call_type::create_uvc_device, 0);
@@ -770,7 +946,7 @@ namespace rsimpl
             _callback_thread.join();
         }
 
-        void record_backend::write_to_file()
+        void record_backend::write_to_file() const
         {
             _rec->save(_filename.c_str(), _section.c_str(), false);
             LOG(INFO) << "Finished writing " << _rec->size() << " calls...";
@@ -926,6 +1102,79 @@ namespace rsimpl
             _alive(true)
         {
 
+        }
+
+        void playback_hid_device::open()
+        {
+            _rec->find_call(call_type::hid_open, _entity_id);
+        }
+
+        void playback_hid_device::close()
+        {
+            _rec->find_call(call_type::hid_close, _entity_id);
+        }
+
+        void playback_hid_device::stop_capture()
+        {
+            _rec->find_call(call_type::hid_stop_capture, _entity_id);
+        }
+
+        void playback_hid_device::start_capture(const vector<int>& sensor_iio, hid_callback callback)
+        {
+            lock_guard<mutex> lock(_callback_mutex);
+            auto stored = _rec->find_call(call_type::hid_start_capture, _entity_id);
+            auto stored_iios = _rec->load_blob(stored.param1);
+            // TODO: Verify sensor_iio
+
+            _callback = callback;
+        }
+
+        vector<hid_sensor_input> playback_hid_device::get_sensor_inputs(int sensor_iio)
+        {
+            return _rec->load_hid_sensors_inputs_list(_entity_id);
+        }
+
+        vector<hid_sensor> playback_hid_device::get_sensors()
+        {
+            return _rec->load_hid_sensors_list(_entity_id);
+        }
+
+        void playback_hid_device::callback_thread()
+        {
+            while (_alive)
+            {
+                auto c_ptr = _rec->cycle_calls(call_type::hid_frame, _entity_id);
+                if (c_ptr)
+                {
+                    lock_guard<mutex> lock(_callback_mutex);
+
+                    auto sd_data = _rec->load_blob(c_ptr->param1);
+                    auto iio = c_ptr->param2;
+                    auto sensor_name = c_ptr->inline_string;
+
+                    sensor_data sd;
+                    sd.data = sd_data;
+                    sd.sensor.iio = iio;
+                    sd.sensor.name = sensor_name;
+
+                    _callback(sd);
+                }
+                this_thread::sleep_for(chrono::milliseconds(1));
+            }
+        }
+
+        playback_hid_device::~playback_hid_device()
+        {
+            _alive = false;
+            _callback_thread.join();
+        }
+
+        playback_hid_device::playback_hid_device(shared_ptr<recording> rec, int id)
+            : _rec(rec), _entity_id(id),
+              _callback_thread([this]() { callback_thread(); }),
+              _alive(true)
+        {
+            
         }
 
         vector<uint8_t> playback_usb_device::send_receive(const vector<uint8_t>& data, int timeout_ms, bool require_response)
