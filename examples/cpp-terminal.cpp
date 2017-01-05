@@ -7,7 +7,7 @@
 
 #include "tclap/CmdLine.h"
 #include "parser.hpp"
-#include "third_party/auto-complete/auto-complete.h"
+#include "cpp-terminal-helpers/auto-complete/auto-complete.h"
 
 using namespace std;
 using namespace TCLAP;

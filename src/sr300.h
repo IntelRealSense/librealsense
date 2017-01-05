@@ -224,14 +224,16 @@ namespace rsimpl
                                                                        {RS_CAMERA_INFO_MODULE_NAME, "Depth Camera"},
                                                                        {RS_CAMERA_INFO_DEVICE_SERIAL_NUMBER, serial},
                                                                        {RS_CAMERA_INFO_CAMERA_FIRMWARE_VERSION, fw_version},
-                                                                       {RS_CAMERA_INFO_DEVICE_LOCATION, depth.device_path}};
+                                                                       {RS_CAMERA_INFO_DEVICE_LOCATION, depth.device_path},
+                                                                       {RS_CAMERA_INFO_DEVICE_DEBUG_OP_CODE, std::to_string(fw_cmd::GLD)}};
             register_endpoint_info(_depth_device_idx, depth_camera_info);
 
             std::map<rs_camera_info, std::string> color_camera_info = {{RS_CAMERA_INFO_DEVICE_NAME, device_name},
                                                                        {RS_CAMERA_INFO_MODULE_NAME, "Color Camera"},
                                                                        {RS_CAMERA_INFO_DEVICE_SERIAL_NUMBER, serial},
                                                                        {RS_CAMERA_INFO_CAMERA_FIRMWARE_VERSION, fw_version},
-                                                                       {RS_CAMERA_INFO_DEVICE_LOCATION, color.device_path}};
+                                                                       {RS_CAMERA_INFO_DEVICE_LOCATION, color.device_path},
+                                                                       {RS_CAMERA_INFO_DEVICE_DEBUG_OP_CODE, std::to_string(fw_cmd::GLD)}};
             register_endpoint_info(_color_device_idx, color_camera_info);
 
             register_autorange_options();

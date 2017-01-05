@@ -169,6 +169,7 @@ namespace rsimpl
         CASE(DEVICE_SERIAL_NUMBER)
         CASE(CAMERA_FIRMWARE_VERSION)
         CASE(DEVICE_LOCATION)
+        CASE(DEVICE_DEBUG_OP_CODE)
         default: assert(!is_valid(value)); return unknown;
         }
         #undef CASE

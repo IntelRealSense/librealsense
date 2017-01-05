@@ -614,7 +614,7 @@ bool no_device_popup(GLFWwindow* window, const ImVec4& clear_color)
 int main(int, char**) try
 {
     // activate logging to console
-    rs::log_to_console(RS_LOG_SEVERITY_WARN);
+    rs::log_to_file(RS_LOG_SEVERITY_INFO);
 
     // Init GUI
     if (!glfwInit())
