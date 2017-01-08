@@ -1,12 +1,16 @@
 #include "fw-logs-xml-helper.h"
-
+#include <string.h>
+#include <fstream>
+#include <iostream>
+#include <memory>
 
 using namespace std;
 
 
 fw_logs_xml_helper::fw_logs_xml_helper(std::string xml_full_file_path)
-    : _xml_loader(xml_full_file_path),
-      _init_done(false)
+    : _init_done(false),
+      _xml_full_file_path(xml_full_file_path),
+      _document_buffer(NULL)
 {
 }
 
@@ -14,11 +18,54 @@ fw_logs_xml_helper::fw_logs_xml_helper(std::string xml_full_file_path)
 fw_logs_xml_helper::~fw_logs_xml_helper(void)
 {
 	// TODO: Add cleanup code
+    if (_document_buffer)
+        delete[] _document_buffer;
+}
+
+bool fw_logs_xml_helper::get_root_node(xml_node<> **node)
+{
+    if (_init_done)
+    {
+        *node = _xml_doc.first_node();
+        return true;
+    }
+
+    return false;
+}
+
+bool fw_logs_xml_helper::try_load_external_xml()
+{
+    try
+    {
+        if (_xml_full_file_path.empty())
+            return false;
+
+        rapidxml::file<> xml_file(_xml_full_file_path.c_str());
+
+        _document_buffer = new char[xml_file.size() + 2];
+        memcpy(_document_buffer, xml_file.data(), xml_file.size());
+        _document_buffer[xml_file.size()] = '\0';
+        _document_buffer[xml_file.size() + 1] = '\0';
+        _xml_doc.parse<0>(_document_buffer);
+
+        return true;
+    }
+    catch (...)
+    {
+        if (_document_buffer != nullptr)
+        {
+            delete[]_document_buffer;
+            _document_buffer = nullptr;
+        }
+        throw;
+    }
+
+    return false;
 }
 
 bool fw_logs_xml_helper::init()
 {
-    _init_done = get_loader().load_xml();
+    _init_done = try_load_external_xml();
     return _init_done;
 }
 
@@ -29,7 +76,7 @@ bool fw_logs_xml_helper::build_log_meta_data(fw_logs_formating_options* log_meta
     if (!init())
 		return false;
 
-    if (!get_loader().get_root_node(&xml_root_node_list))
+    if (!get_root_node(&xml_root_node_list))
 	{
 		return false;
 	}
@@ -148,11 +195,6 @@ bool fw_logs_xml_helper::get_file_node(xml_node<>* node_file, int* file_id, stri
 		}
 	}
 	return true;
-}
-
-xml_loader& fw_logs_xml_helper::get_loader()
-{
-    return _xml_loader;
 }
 
 bool fw_logs_xml_helper::get_event_node(xml_node<>* node_event, int* event_id, int* num_of_params, string* line)
