@@ -5,61 +5,61 @@
 
 using namespace std;
 
-StringFormatter::StringFormatter(void)
+string_formatter::string_formatter(void)
 {
 }
 
 
-StringFormatter::~StringFormatter(void)
+string_formatter::~string_formatter(void)
 {
 }
 
-bool StringFormatter::GenarateMessage(const string& source, int numOfParams, const uint32_t* params, string* dest)
+bool string_formatter::genarate_message(const string& source, int num_of_params, const uint32_t* params, string* dest)
 {
-	std::map<string, string> expReplaceMap;
+    std::map<string, string> exp_replace_map;
 
-	if (params == nullptr && numOfParams > 0) return false;
+    if (params == nullptr && num_of_params > 0) return false;
 
-	for (int i = 0; i < numOfParams; i++)
+    for (int i = 0; i < num_of_params; i++)
 	{
-		string regularExp[2];
+        string regular_exp[2];
 		string replacement[2];
-		stringstream stRegularExp[2];
-		stringstream stReplacement[2];
+        stringstream st_regular_exp[2];
+        stringstream st_replacement[2];
 
-		stRegularExp[0] << "\\{\\b(" << i << ")\\}";
-		regularExp[0] = stRegularExp[0].str();
+        st_regular_exp[0] << "\\{\\b(" << i << ")\\}";
+        regular_exp[0] = st_regular_exp[0].str();
 
-		stReplacement[0] << params[i];
-		replacement[0] = stReplacement[0].str();
+        st_replacement[0] << params[i];
+        replacement[0] = st_replacement[0].str();
 
-		expReplaceMap[regularExp[0]] = replacement[0];
+        exp_replace_map[regular_exp[0]] = replacement[0];
 
 
-		stRegularExp[1] << "\\{\\b(" << i << "):x\\}";
-		regularExp[1] = stRegularExp[1].str();
+        st_regular_exp[1] << "\\{\\b(" << i << "):x\\}";
+        regular_exp[1] = st_regular_exp[1].str();
 
-		stReplacement[1] << std::hex << std::setw(2) << std::setfill('0') << params[i];
-		replacement[1] = stReplacement[1].str();
+        st_replacement[1] << std::hex << std::setw(2) << std::setfill('0') << params[i];
+        replacement[1] = st_replacement[1].str();
 
-		expReplaceMap[regularExp[1]] = replacement[1];
+        exp_replace_map[regular_exp[1]] = replacement[1];
 	}
 
-	return ReplaceParams(source, expReplaceMap, dest);
+    return replace_params(source, exp_replace_map, dest);
 }
 
-bool StringFormatter::ReplaceParams(const string& source, const std::map<string, string>& expReplaceMap, string* dest)
+bool string_formatter::replace_params(const string& source, const std::map<string, string>& exp_replace_map, string* dest)
 {
-	string sourceTemp(source);
+    string source_temp(source);
 
-	for (auto expReplaceIt = expReplaceMap.begin(); expReplaceIt != expReplaceMap.end(); expReplaceIt++)
+    for (auto exp_replace_it = exp_replace_map.begin(); exp_replace_it != exp_replace_map.end(); exp_replace_it++)
 	{
 		string destTemp;
-		regex e(expReplaceIt->first);
-		regex_replace(back_inserter(destTemp), sourceTemp.begin(), sourceTemp.end(), e, expReplaceIt->second);
-		sourceTemp = destTemp;
+        regex e(exp_replace_it->first);
+        regex_replace(back_inserter(destTemp), source_temp.begin(), source_temp.end(), e, exp_replace_it->second);
+        source_temp = destTemp;
 
 	}
-	*dest = sourceTemp;
+    *dest = source_temp;
 	return true;
 }

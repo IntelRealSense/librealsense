@@ -5,18 +5,18 @@
 #include "fw-log-data.h"
 #include "timestamp-extractor.h"
 
-class FWLogsParser
+class fw_logs_parser
 {
 public:
-    explicit FWLogsParser(std::string xmlFilePath);
-	~FWLogsParser(void);
-	std::vector<std::string> GetFWlogLines(const FWlogsBinaryData& FWlogsDataBinary);
+    explicit fw_logs_parser(std::string xml_full_file_path);
+	~fw_logs_parser(void);
+    std::vector<std::string> get_fw_log_lines(const fw_logs_binary_data& fw_logs_data_binary);
 
 private:
-	std::string GenerateLogLine(char* FWlogs);
-	void FillLogData(const char* FWlogs, FWlogData* logData);
-	void ZeroTimeStamps();
+    std::string generate_log_line(char* fw_logs);
+    void fill_log_data(const char* fw_logs, fw_log_data* log_data);
+    void zero_timestamps();
 
-    FWlogsFormatingOptions m_FWlogsFormatingOptions;
-	TimeStampExtractor m_TimeStampExtractor;
+    fw_logs_formating_options _fw_logs_formating_options;
+    timestamp_extractor _timestamp_extractor;
 };

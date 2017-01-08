@@ -2,34 +2,31 @@
 #include "fw-logs-formating-options.h"
 #include "xml-loader.h"
 
-class FWlogsXMLHelper
+class fw_logs_xml_helper
 {
 public:
-	enum NodeType
+    enum node_type
 	{
-		Event,
-		File,
-		Thread,
-		None
+        event,
+        file,
+        thread,
+        none
 	};
 
-    FWlogsXMLHelper(std::string xmlFilePath);
-	~FWlogsXMLHelper(void);
+    fw_logs_xml_helper(std::string xml_full_file_path);
+	~fw_logs_xml_helper(void);
 
-    bool BuildLogMetaData(FWlogsFormatingOptions* logsFormatingOptions);
+    bool build_log_meta_data(fw_logs_formating_options* logs_formating_options);
 
 private:
-	bool Init();
-    bool BuildMetaDataStructure(xml_node<> *XMLnodeListOfEvents, FWlogsFormatingOptions* logsFormatingOptions);
+    bool init();
+    bool build_meta_data_structure(xml_node<> *xml_node_list_of_events, fw_logs_formating_options* logs_formating_options);
+    node_type get_next_node(xml_node<>* xml_node_list_of_events, int* id, int* num_of_params, std::string* line);
+    bool get_thread_node(xml_node<>* node_file, int* thread_id, std::string* thread_name);
+    bool get_event_node(xml_node<>* node_event, int* event_id, int* num_of_params, std::string* line);
+    bool get_file_node(xml_node<>* node_file, int* file_id, std::string* file_name);
+    xml_loader& get_loader();
 
-	NodeType GetNextNode(xml_node<> *XMLnodeListOfEvents, int* ID, int* NumOfParams, std::string* line);
-	bool GetThreadNode(xml_node<> *NodeFile, int* threadId, std::string* threadName);
-	bool getEventNode(xml_node<> * NodeEvent, int* eventId, int* NumOfParams, std::string* line);
-	bool GetFileNode(xml_node<> *NodeFile, int* fileId, std::string* fileName);
-
-	XMLLoader& GetLoader();
-
-	XMLLoader m_XmlLoader;
-
-	bool m_InitDone;
+    xml_loader _xml_loader;
+	bool _init_done;
 };

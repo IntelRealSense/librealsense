@@ -4,124 +4,122 @@
 using namespace std;
 
 
-FWlogsXMLHelper::FWlogsXMLHelper(std::string xmlFilePath)
-    : m_XmlLoader(xmlFilePath),
-	m_InitDone(false)
+fw_logs_xml_helper::fw_logs_xml_helper(std::string xml_full_file_path)
+    : _xml_loader(xml_full_file_path),
+      _init_done(false)
 {
 }
 
 
-FWlogsXMLHelper::~FWlogsXMLHelper(void)
+fw_logs_xml_helper::~fw_logs_xml_helper(void)
 {
 	// TODO: Add cleanup code
 }
 
-bool FWlogsXMLHelper::Init()
+bool fw_logs_xml_helper::init()
 {
-	m_InitDone = GetLoader().LoadXML();
-	return m_InitDone;
+    _init_done = get_loader().load_xml();
+    return _init_done;
 }
 
-bool FWlogsXMLHelper::BuildLogMetaData(FWlogsFormatingOptions* logMetaData)
+bool fw_logs_xml_helper::build_log_meta_data(fw_logs_formating_options* log_meta_data)
 {
-	xml_node<> *XMLRootNodeList;
+    xml_node<> *xml_root_node_list;
 
-	if (!Init())
+    if (!init())
 		return false;
 
-	if (!GetLoader().GetRootNode(&XMLRootNodeList))
+    if (!get_loader().get_root_node(&xml_root_node_list))
 	{
 		return false;
 	}
 
-    string RootName(XMLRootNodeList->name(), XMLRootNodeList->name() + XMLRootNodeList->name_size());
+    string root_name(xml_root_node_list->name(), xml_root_node_list->name() + xml_root_node_list->name_size());
 
 	// check if Format is the first root name.
-	if (RootName.compare("Format") != 0)
+    if (root_name.compare("Format") != 0)
 		return false;
 
-	xml_node<> *pEventsNode = XMLRootNodeList->first_node();
+    xml_node<>* events_node = xml_root_node_list->first_node();
 
 
-	if (!BuildMetaDataStructure(pEventsNode, logMetaData))
+    if (!build_meta_data_structure(events_node, log_meta_data))
 		return false;
 
 	return true;
 }
 
 
-bool FWlogsXMLHelper::BuildMetaDataStructure(xml_node<> *XMLnodeListOfEvents, FWlogsFormatingOptions* logsFormatingOptions)
+bool fw_logs_xml_helper::build_meta_data_structure(xml_node<> *xml_node_list_of_events, fw_logs_formating_options* logs_formating_options)
 {
-	NodeType res = None;
-	int ID;
-	int NumOfParams;
+    node_type res = none;
+    int id;
+    int num_of_params;
 	string line;
 
 	// loop through all elements in the Format.
-
-
-	for (xml_node<> *pNode = XMLnodeListOfEvents; pNode; pNode = pNode->next_sibling())
+    for (xml_node<>* node = xml_node_list_of_events; node; node = node->next_sibling())
 	{
 		line.clear();
-		res = GetNextNode(pNode, &ID, &NumOfParams, &line);
-		if (res == Event)
+        res = get_next_node(node, &id, &num_of_params, &line);
+        if (res == event)
 		{
-			FWlogEvent logEvent(NumOfParams, line);
-			logsFormatingOptions->m_FWlogsEventList.insert(pair<int, FWlogEvent>(ID, logEvent));
+            fw_log_event log_event(num_of_params, line);
+            logs_formating_options->_fw_logs_event_list.insert(pair<int, fw_log_event>(id, log_event));
 		}
-		else if (res == File)
+        else if (res == file)
 		{
-			logsFormatingOptions->m_FWlogsFileNamesList.insert(pair<int, string>(ID, line));
+            logs_formating_options->_fw_logs_file_names_list.insert(pair<int, string>(id, line));
 		}
-		else if (res == Thread)
+        else if (res == thread)
 		{
-			logsFormatingOptions->m_FWlogsThreadNamesList.insert(pair<int, string>(ID, line));
+            logs_formating_options->_fw_logs_thread_names_list.insert(pair<int, string>(id, line));
 		}
 	}
 
 	return true;
 }
 
-FWlogsXMLHelper::NodeType FWlogsXMLHelper::GetNextNode(xml_node<> *node, int* ID, int* NumOfParams, string* line)
+fw_logs_xml_helper::node_type fw_logs_xml_helper::get_next_node(xml_node<> *node, int* id, int* num_of_params, string* line)
 {
 
-    string Tag(node->name(), node->name() + node->name_size());
+    string tag(node->name(), node->name() + node->name_size());
 
-	if (Tag.compare("Event") == 0)
+    if (tag.compare("Event") == 0)
 	{
-		if (getEventNode(node, ID, NumOfParams, line))
-			return Event;
+        if (get_event_node(node, id, num_of_params, line))
+            return event;
 	}
-	else if (Tag.compare("File") == 0)
+    else if (tag.compare("File") == 0)
 	{
-		if (GetFileNode(node, ID, line))
-			return File;
+        if (get_file_node(node, id, line))
+            return file;
 	}
-	else if (Tag.compare("Thread") == 0)
+    else if (tag.compare("Thread") == 0)
 	{
-		if (GetThreadNode(node, ID, line))
-			return Thread;
+        if (get_thread_node(node, id, line))
+            return thread;
 	}
-	return None;
+    return none;
 }
 
-bool FWlogsXMLHelper::GetThreadNode(xml_node<> *NodeFile, int* threadId, string* threadName)
+bool fw_logs_xml_helper::get_thread_node(xml_node<>* node_file, int* thread_id, string* thread_name)
 {
-	for (xml_attribute<> *pAttribute = NodeFile->first_attribute(); pAttribute; pAttribute = pAttribute->next_attribute())
+    for (xml_attribute<>* attribute = node_file->first_attribute(); attribute; attribute = attribute->next_attribute())
 	{
-        string attr(pAttribute->name(), pAttribute->name() + pAttribute->name_size());
+        string attr(attribute->name(), attribute->name() + attribute->name_size());
 
 		if (attr.compare("id") == 0)
 		{
-            string idAttrStr(pAttribute->value(), pAttribute->value() + pAttribute->value_size());
-            *threadId = stoi(idAttrStr);
+            string id_attr_str(attribute->value(), attribute->value() + attribute->value_size());
+            *thread_id = stoi(id_attr_str);
 			continue;
 		}
 
 		if (attr.compare("Name") == 0)
 		{
-            string NameAttrStr(pAttribute->value(), pAttribute->value() + pAttribute->value_size());
-			*threadName = NameAttrStr;
+            string name_attr_str(attribute->value(), attribute->value() + attribute->value_size());
+            *thread_name = name_attr_str;
 			continue;
 		}
 	}
@@ -129,61 +127,60 @@ bool FWlogsXMLHelper::GetThreadNode(xml_node<> *NodeFile, int* threadId, string*
 	return true;
 }
 
-bool FWlogsXMLHelper::GetFileNode(xml_node<> *NodeFile, int* fileId, string* fileName)
+bool fw_logs_xml_helper::get_file_node(xml_node<>* node_file, int* file_id, string* file_name)
 {
-	for (xml_attribute<> *pAttribute = NodeFile->first_attribute(); pAttribute; pAttribute = pAttribute->next_attribute())
+    for (xml_attribute<>* attribute = node_file->first_attribute(); attribute; attribute = attribute->next_attribute())
 	{
-        string attr(pAttribute->name(), pAttribute->name() + pAttribute->name_size());
+        string attr(attribute->name(), attribute->name() + attribute->name_size());
 
 		if (attr.compare("id") == 0)
 		{
-            string idAttrStr(pAttribute->value(), pAttribute->value() + pAttribute->value_size());
-            *fileId = stoi(idAttrStr);
+            string id_attr_str(attribute->value(), attribute->value() + attribute->value_size());
+            *file_id = stoi(id_attr_str);
 			continue;
 		}
 
 		if (attr.compare("Name") == 0)
 		{
-            string NameAttrStr(pAttribute->value(), pAttribute->value() + pAttribute->value_size());
-			*fileName = NameAttrStr;
+            string name_attr_str(attribute->value(), attribute->value() + attribute->value_size());
+            *file_name = name_attr_str;
 			continue;
 		}
 	}
 	return true;
 }
 
-XMLLoader& FWlogsXMLHelper::GetLoader()
+xml_loader& fw_logs_xml_helper::get_loader()
 {
-	return m_XmlLoader;
+    return _xml_loader;
 }
 
-bool FWlogsXMLHelper::getEventNode(xml_node<> *NodeEvent, int* eventId, int* NumOfParams, string* line)
+bool fw_logs_xml_helper::get_event_node(xml_node<>* node_event, int* event_id, int* num_of_params, string* line)
 {
-	for (xml_attribute<> *pAttribute = NodeEvent->first_attribute(); pAttribute; pAttribute = pAttribute->next_attribute())
+    for (xml_attribute<>* attribute = node_event->first_attribute(); attribute; attribute = attribute->next_attribute())
 	{
-        string attr(pAttribute->name(), pAttribute->name() + pAttribute->name_size());
+        string attr(attribute->name(), attribute->name() + attribute->name_size());
 
 		if (attr.compare("id") == 0)
 		{
-            string idAttrStr(pAttribute->value(), pAttribute->value() + pAttribute->value_size());
-            *eventId = stoi(idAttrStr);
+            string id_attr_str(attribute->value(), attribute->value() + attribute->value_size());
+            *event_id = stoi(id_attr_str);
 			continue;
 		}
 
 		if (attr.compare("numberOfArguments") == 0)
 		{
-            string numOfArgsAttrStr(pAttribute->value(), pAttribute->value() + pAttribute->value_size());
-             *NumOfParams = stoi(numOfArgsAttrStr);
+            string num_of_args_attr_str(attribute->value(), attribute->value() + attribute->value_size());
+             *num_of_params = stoi(num_of_args_attr_str);
 			continue;
 		}
 
 		if (attr.compare("format") == 0)
 		{
-            string formatAttrStr(pAttribute->value(), pAttribute->value() + pAttribute->value_size());
-			*line = formatAttrStr;
+            string format_attr_str(attribute->value(), attribute->value() + attribute->value_size());
+            *line = format_attr_str;
 			continue;
 		}
 	}
 	return true;
-
 }

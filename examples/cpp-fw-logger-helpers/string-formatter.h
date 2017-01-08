@@ -3,14 +3,14 @@
 #include <map>
 #include <stdint.h>
 
-class StringFormatter
+class string_formatter
 {
 public:
-	StringFormatter(void);
-	~StringFormatter(void);
+	string_formatter(void);
+	~string_formatter(void);
 
-    bool GenarateMessage(const std::string& source, int numOfParams, const uint32_t* params, std::string* dest);
+    bool genarate_message(const std::string& source, int num_of_params, const uint32_t* params, std::string* dest);
 
 private:
-	bool ReplaceParams(const std::string& source, const std::map<std::string, std::string>& expReplaceMap, std::string* dest);
+	bool replace_params(const std::string& source, const std::map<std::string, std::string>& exp_replace_map, std::string* dest);
 };

@@ -7,91 +7,92 @@
 using namespace std;
 
 
-FWLogsParser::FWLogsParser(std::string xmlFilePath) : m_FWlogsFormatingOptions(xmlFilePath)
+fw_logs_parser::fw_logs_parser(std::string xml_full_file_path)
+    : _fw_logs_formating_options(xml_full_file_path)
 {
-	m_TimeStampExtractor.ZeroTimeStamps();
+    _timestamp_extractor.zero_timestamps();
 }
 
 
-FWLogsParser::~FWLogsParser(void)
+fw_logs_parser::~fw_logs_parser(void)
 {
 }
 
-vector<string> FWLogsParser::GetFWlogLines(const FWlogsBinaryData& FWlogsDataBinary)
+vector<string> fw_logs_parser::get_fw_log_lines(const fw_logs_binary_data& fw_logs_data_binary)
 {
-	vector<string> stringVector;
-	int numOfLines = int(FWlogsDataBinary.logsBuffer.size()) / sizeof(FwLogBinary);
-	auto tempPointer = reinterpret_cast<FwLogBinary const*>(FWlogsDataBinary.logsBuffer.data());
+    vector<string> string_vector;
+    int num_of_lines = int(fw_logs_data_binary.logs_buffer.size()) / sizeof(fw_log_binary);
+    auto temp_pointer = reinterpret_cast<fw_log_binary const*>(fw_logs_data_binary.logs_buffer.data());
 
-	for (int i = 0; i < numOfLines; i++)
+    for (int i = 0; i < num_of_lines; i++)
 	{
 		string line;
-		auto log = const_cast<char*>(reinterpret_cast<char const*>(tempPointer));
-		line = GenerateLogLine(log);
-		stringVector.push_back(line);
-		tempPointer++;
+        auto log = const_cast<char*>(reinterpret_cast<char const*>(temp_pointer));
+        line = generate_log_line(log);
+        string_vector.push_back(line);
+        temp_pointer++;
 	}
-	return stringVector;
+    return string_vector;
 }
 
-string FWLogsParser::GenerateLogLine(char* FWlogs)
+string fw_logs_parser::generate_log_line(char* fw_logs)
 {
-	FWlogData logData;
-	FillLogData(FWlogs, &logData);
+    fw_log_data log_data;
+    fill_log_data(fw_logs, &log_data);
 
-	return logData.ToString();
+    return log_data.to_string();
 }
 
-void FWLogsParser::FillLogData(const char* FWlogs, FWlogData* logData)
+void fw_logs_parser::fill_log_data(const char* fw_logs, fw_log_data* log_data)
 {
-	StringFormatter regExp;
-	FWlogEvent logEventData;
+    string_formatter reg_exp;
+    fw_log_event log_event_data;
 
-	auto * logBinery = reinterpret_cast<const FwLogBinary*>(FWlogs);
+    auto* log_binary = reinterpret_cast<const fw_log_binary*>(fw_logs);
 
 	//parse first DWORD
-    logData->magicNumber = static_cast<uint32_t>(logBinery->Dword1.bits.magicNumber);
-    logData->severity = static_cast<uint32_t>(logBinery->Dword1.bits.severity);
+    log_data->magic_number = static_cast<uint32_t>(log_binary->dword1.bits.magic_number);
+    log_data->severity = static_cast<uint32_t>(log_binary->dword1.bits.severity);
 
-    logData->fileId = static_cast<uint32_t>(logBinery->Dword1.bits.fileId);
-    logData->groupId = static_cast<uint32_t>(logBinery->Dword1.bits.groupId);
+    log_data->file_id = static_cast<uint32_t>(log_binary->dword1.bits.file_id);
+    log_data->group_id = static_cast<uint32_t>(log_binary->dword1.bits.group_id);
 
 	//parse second DWORD
-    logData->eventId = static_cast<uint32_t>(logBinery->Dword2.bits.eventId);
-    logData->line = static_cast<uint32_t>(logBinery->Dword2.bits.lineId);
-    logData->sequence = static_cast<uint32_t>(logBinery->Dword2.bits.seqId);
+    log_data->event_id = static_cast<uint32_t>(log_binary->dword2.bits.event_id);
+    log_data->line = static_cast<uint32_t>(log_binary->dword2.bits.line_id);
+    log_data->sequence = static_cast<uint32_t>(log_binary->dword2.bits.seq_id);
 
 	//parse third DWORD
-    logData->p1 = static_cast<uint32_t>(logBinery->Dword3.P1);
-    logData->p2 = static_cast<uint32_t>(logBinery->Dword3.P2);
+    log_data->p1 = static_cast<uint32_t>(log_binary->dword3.p1);
+    log_data->p2 = static_cast<uint32_t>(log_binary->dword3.p2);
 
 	//parse forth DWORD
-    logData->p3 = static_cast<uint32_t>(logBinery->Dword4.P3);
+    log_data->p3 = static_cast<uint32_t>(log_binary->dword4.p3);
 
-	auto lastTimeStamp = m_TimeStampExtractor.GetLastTimeStamp();
+    auto last_timestamp = _timestamp_extractor.get_last_timestamp();
 
 	//parse fifth DWORD
-	logData->timeStamp = m_TimeStampExtractor.Calculate64bTimeStampFrom32b(logBinery->Dword5.timeStamp);
+    log_data->timestamp = _timestamp_extractor.calculate_64b_timestamp_from_32b(log_binary->dword5.timestamp);
 
-	if (lastTimeStamp == 0)
+    if (last_timestamp == 0)
 	{
-		logData->delta = 0;
+        log_data->delta = 0;
 	}
 	else
 	{
-		logData->delta = (logData->timeStamp - lastTimeStamp)*0.00001;
+        log_data->delta = (log_data->timestamp - last_timestamp)*0.00001;
 	}
 
-	m_FWlogsFormatingOptions.GetEventData(logData->eventId, &logEventData);
-    uint32_t params[3] = { logData->p1, logData->p2, logData->p3 };
-	regExp.GenarateMessage(logEventData.Line, logEventData.NumOfParams, params, &logData->message);
+    _fw_logs_formating_options.get_event_data(log_data->event_id, &log_event_data);
+    uint32_t params[3] = { log_data->p1, log_data->p2, log_data->p3 };
+    reg_exp.genarate_message(log_event_data.line, log_event_data.num_of_params, params, &log_data->message);
 
-	m_FWlogsFormatingOptions.GetFileName(logData->fileId, &logData->fileName);
-	m_FWlogsFormatingOptions.GetThreadName(
-        static_cast<uint32_t>(logBinery->Dword1.bits.threadId), &logData->threadName);
+    _fw_logs_formating_options.get_file_name(log_data->file_id, &log_data->file_name);
+    _fw_logs_formating_options.get_thread_name(static_cast<uint32_t>(log_binary->dword1.bits.thread_id),
+                                              &log_data->thread_name);
 }
 
-void FWLogsParser::ZeroTimeStamps()
+void fw_logs_parser::zero_timestamps()
 {
-	m_TimeStampExtractor.ZeroTimeStamps();
+    _timestamp_extractor.zero_timestamps();
 }

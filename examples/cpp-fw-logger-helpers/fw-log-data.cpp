@@ -9,43 +9,41 @@
 std::setfill(' ')<< std::setw(num)<<std::left<<element \
 
 
-FWlogData::FWlogData(void)
+fw_log_data::fw_log_data(void)
 {
-	magicNumber = 0;
+    magic_number = 0;
 	severity = 0;
-	fileId = 0;
-	groupId = 0;
-	eventId = 0;
+    file_id = 0;
+    group_id = 0;
+    event_id = 0;
 	line = 0;
 	sequence = 0;
 	p1 = 0;
 	p2 = 0;
 	p3 = 0;
-	timeStamp = 0;
+    timestamp = 0;
 	delta = 0;
-
 	message = "";
-	fileName = "";
+    file_name = "";
 }
 
 
-FWlogData::~FWlogData(void)
+fw_log_data::~fw_log_data(void)
 {
 }
 
 
-std::string FWlogData::ToString()
+std::string fw_log_data::to_string()
 {
 	std::stringstream fmt;
 
-
 	fmt << SET_WIDTH_AND_FILL(6, sequence)
-		<< SET_WIDTH_AND_FILL(30, fileName)
-		<< SET_WIDTH_AND_FILL(6, groupId)
-		<< SET_WIDTH_AND_FILL(15, threadName)
+        << SET_WIDTH_AND_FILL(30, file_name)
+        << SET_WIDTH_AND_FILL(6, group_id)
+        << SET_WIDTH_AND_FILL(15, thread_name)
 		<< SET_WIDTH_AND_FILL(6, severity)
 		<< SET_WIDTH_AND_FILL(6, line)
-		<< SET_WIDTH_AND_FILL(15, timeStamp)
+        << SET_WIDTH_AND_FILL(15, timestamp)
 		<< SET_WIDTH_AND_FILL(15, delta)
 		<< SET_WIDTH_AND_FILL(30, message);
 

@@ -67,7 +67,7 @@ int main(int argc, char* argv[]) try
                                   0xf4, 0x01, 0x00, 0x00, 0x00,    0x00, 0x00, 0x00,
                                   0x00, 0x00, 0x00, 0x00, 0x00,    0x00, 0x00, 0x00};
 
-    unique_ptr<FWLogsParser> fw_logs_parser;
+    unique_ptr<fw_logs_parser> fw_log_parser;
     auto use_xml_file = false;
     auto xml_full_file_path = xml_arg.getValue();
     if (!xml_full_file_path.empty())
@@ -75,7 +75,7 @@ int main(int argc, char* argv[]) try
         std::ifstream f(xml_full_file_path);
         if (f.good())
         {
-            fw_logs_parser = unique_ptr<FWLogsParser>(new FWLogsParser(xml_full_file_path));
+            fw_log_parser = unique_ptr<fw_logs_parser>(new fw_logs_parser(xml_full_file_path));
             use_xml_file = true;
         }
     }
@@ -96,9 +96,9 @@ int main(int argc, char* argv[]) try
 
             if (use_xml_file)
             {
-                FWlogsBinaryData fw_logs_binary_data = {raw_data};
-                fw_logs_binary_data.logsBuffer.erase(fw_logs_binary_data.logsBuffer.begin(),fw_logs_binary_data.logsBuffer.begin()+4);
-                fw_log_lines = fw_logs_parser->GetFWlogLines(fw_logs_binary_data);
+                fw_logs_binary_data fw_logs_binary_data = {raw_data};
+                fw_logs_binary_data.logs_buffer.erase(fw_logs_binary_data.logs_buffer.begin(),fw_logs_binary_data.logs_buffer.begin()+4);
+                fw_log_lines = fw_log_parser->get_fw_log_lines(fw_logs_binary_data);
                 for (auto & elem : fw_log_lines)
                     elem = datetime_string() + "  " + elem;
             }

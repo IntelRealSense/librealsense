@@ -3,32 +3,32 @@
 #include <string>
 #include <stdint.h>
 
-struct FWlogEvent
+struct fw_log_event
 {
-	int NumOfParams;
-	std::string Line;
+    int num_of_params;
+    std::string line;
 
-	FWlogEvent();
-	FWlogEvent(int inputNumOfParams, const std::string& inputLine);
+    fw_log_event();
+    fw_log_event(int input_num_of_params, const std::string& input_line);
 };
 
-class FWlogsXMLHelper;
+class fw_logs_xml_helper;
 
-class FWlogsFormatingOptions
+class fw_logs_formating_options
 {
 public:
-    FWlogsFormatingOptions(std::string xmlFilePath);
-	virtual ~FWlogsFormatingOptions(void);
+    fw_logs_formating_options(std::string xml_full_file_path);
+    virtual ~fw_logs_formating_options(void);
 
 
-	virtual bool GetEventData(int id, FWlogEvent* logEventData) const;
-	virtual bool GetFileName(int id, std::string* fileName) const;
-    virtual bool GetThreadName(uint32_t thread_id, std::string* thread_name);
+    virtual bool get_event_data(int id, fw_log_event* log_event_data) const;
+    virtual bool get_file_name(int id, std::string* file_name) const;
+    virtual bool get_thread_name(uint32_t thread_id, std::string* thread_name);
 
 private:
-    bool InitializeFromXml(std::string xmlFilePath);
-	friend FWlogsXMLHelper;
-	std::unordered_map<int, FWlogEvent> m_FWlogsEventList;
-	std::unordered_map<int, std::string> m_FWlogsFileNamesList;
-	std::unordered_map<int, std::string> m_FWlogsThreadNamesList;
+    bool initialize_from_xml(std::string xml_file_path);
+    friend fw_logs_xml_helper;
+    std::unordered_map<int, fw_log_event> _fw_logs_event_list;
+    std::unordered_map<int, std::string> _fw_logs_file_names_list;
+    std::unordered_map<int, std::string> _fw_logs_thread_names_list;
 };

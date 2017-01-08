@@ -3,26 +3,25 @@
 
 using namespace rapidxml;
 
-class XMLLoader
+class xml_loader
 {
 public:
-    XMLLoader(std::string lpszXML);
-	~XMLLoader(void);
-	bool LoadXML();
+    xml_loader(std::string xm_full_file_path);
+	~xml_loader(void);
+	bool load_xml();
 
-	bool GetElementByTagName(std::string tagName, xml_node<> **nodes);
-	bool GetRootNode(xml_node<> **node);
+	bool get_element_by_tag_name(std::string tagName, xml_node<> **nodes);
+	bool get_root_node(xml_node<> **node);
 
-	//CComPtr<IXMLDOMDocument>& operator->();
 private:
-	bool Init();
-	void Close();
-	bool TryLoadExternalXML();
+    bool init();
+    void close();
+	bool try_load_external_xml();
 
 
-	xml_document<> m_XMLDoc;
-	char *m_documentBuffer;
-	bool m_InitDone;
-    std::string m_XMLname;
-	int m_ResourceID;
+	xml_document<> _xml_doc;
+	char *_document_buffer;
+	bool _init_done;
+    std::string _xml_name;
+    int _resource_id;
 };

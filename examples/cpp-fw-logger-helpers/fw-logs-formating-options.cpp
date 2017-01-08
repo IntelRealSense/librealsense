@@ -6,67 +6,68 @@
 using namespace std;
 
 
-FWlogEvent::FWlogEvent()
-	:NumOfParams(0),
-    Line("") {}
+fw_log_event::fw_log_event()
+    : num_of_params(0),
+      line("")
+{}
 
-FWlogEvent::FWlogEvent(int inputNumOfParams, const std::string& inputLine)
-	:NumOfParams(inputNumOfParams),
-    Line(inputLine) {}
+fw_log_event::fw_log_event(int input_num_of_params, const std::string& input_line)
+    : num_of_params(input_num_of_params),
+      line(input_line)
+{}
 
 
-FWlogsFormatingOptions::FWlogsFormatingOptions(std::string xmlFilePath)
+fw_logs_formating_options::fw_logs_formating_options(std::string xml_full_file_path)
 {
-    InitializeFromXml(xmlFilePath);
+    initialize_from_xml(xml_full_file_path);
 }
 
 
-FWlogsFormatingOptions::~FWlogsFormatingOptions(void)
+fw_logs_formating_options::~fw_logs_formating_options(void)
 {
 }
 
-bool FWlogsFormatingOptions::GetEventData(int id, FWlogEvent* logEventData) const
+bool fw_logs_formating_options::get_event_data(int id, fw_log_event* log_event_data) const
 {
-
-	auto eventIt = m_FWlogsEventList.find(id);
-	if (eventIt != m_FWlogsEventList.end())
+    auto event_it = _fw_logs_event_list.find(id);
+    if (event_it != _fw_logs_event_list.end())
 	{
-		*logEventData = eventIt->second;
+        *log_event_data = event_it->second;
 		return true;
 	}
 	else
 	{
-		stringstream s;
-		s << "*** Unrecognized Log Id: ";
-		s << id;
-		s << "! P1 = 0x{0:x}, P2 = 0x{1:x}, P3 = 0x{2:x}";
-		logEventData->Line = s.str();
-		logEventData->NumOfParams = 3;
+        stringstream ss;
+        ss << "*** Unrecognized Log Id: ";
+        ss << id;
+        ss << "! P1 = 0x{0:x}, P2 = 0x{1:x}, P3 = 0x{2:x}";
+        log_event_data->line = ss.str();
+        log_event_data->num_of_params = 3;
 		return false;
 	}
 }
 
-bool FWlogsFormatingOptions::GetFileName(int id, string* fileName) const
+bool fw_logs_formating_options::get_file_name(int id, string* file_name) const
 {
-	auto fileIt = m_FWlogsFileNamesList.find(id);
-	if (fileIt != m_FWlogsFileNamesList.end())
+    auto file_it = _fw_logs_file_names_list.find(id);
+    if (file_it != _fw_logs_file_names_list.end())
 	{
-		*fileName = fileIt->second;
+        *file_name = file_it->second;
 		return true;
 	}
 	else
 	{
-		*fileName = "Unknown";
+        *file_name = "Unknown";
 		return false;
 	}
 }
 
-bool FWlogsFormatingOptions::GetThreadName(uint32_t thread_id, std::string* thread_name)
+bool fw_logs_formating_options::get_thread_name(uint32_t thread_id, std::string* thread_name)
 {
-	auto fileIt = m_FWlogsThreadNamesList.find(thread_id);
-	if (fileIt != m_FWlogsThreadNamesList.end())
+    auto file_it = _fw_logs_thread_names_list.find(thread_id);
+    if (file_it != _fw_logs_thread_names_list.end())
 	{
-		*thread_name = fileIt->second;
+        *thread_name = file_it->second;
 		return true;
 	}
 	else
@@ -76,8 +77,8 @@ bool FWlogsFormatingOptions::GetThreadName(uint32_t thread_id, std::string* thre
 	}
 }
 
-bool FWlogsFormatingOptions::InitializeFromXml(std::string xmlFilePath)
+bool fw_logs_formating_options::initialize_from_xml(std::string xml_file_path)
 {
-    FWlogsXMLHelper FWlogsXML(xmlFilePath);
-	return FWlogsXML.BuildLogMetaData(this);
+    fw_logs_xml_helper fw_logs_xml(xml_file_path);
+    return fw_logs_xml.build_log_meta_data(this);
 }

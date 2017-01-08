@@ -1,21 +1,21 @@
 #pragma once
 #include <stdint.h>
 
-class TimeStampExtractor
+class timestamp_extractor
 {
 public:
-	TimeStampExtractor(void);
-	~TimeStampExtractor(void);
+	timestamp_extractor(void);
+	~timestamp_extractor(void);
 
-	void ZeroTimeStamps();
+	void zero_timestamps();
 
 	// TODO: Change signature to int
-    uint64_t Calculate64bTimeStampFrom32b(uint32_t TimeStampIn32);
+    uint64_t calculate_64b_timestamp_from_32b(uint32_t timestamp_in_32);
 
-    uint64_t GetLastTimeStamp() const;
+    uint64_t get_last_timestamp() const;
 
 private:
-    uint64_t m_Timestamp;
-    uint32_t m_LastTimeStamp32;
-    uint64_t m_LastTimeStamp64;
+    uint64_t _timestamp;
+    uint32_t _last_timestamp_32;
+    uint64_t _last_timestamp_64;
 };

@@ -4,10 +4,9 @@
 #include <vector>
 
 
-struct FWlogsBinaryData
+struct fw_logs_binary_data
 {
-	// TODO: Make const char []
-    std::vector<uint8_t> logsBuffer;
+    std::vector<uint8_t> logs_buffer;
 };
 
 #pragma pack(1)
@@ -17,74 +16,74 @@ typedef union
     uint32_t value;
 	struct
 	{
-        uint32_t magicNumber : 8;
+        uint32_t magic_number : 8;
         uint32_t severity : 5;
-        uint32_t threadId : 3;
-        uint32_t fileId : 11;
-        uint32_t groupId : 5;
+        uint32_t thread_id : 3;
+        uint32_t file_id : 11;
+        uint32_t group_id : 5;
 	} bits;
-} FWlogHeaderDWord1;
+} fw_log_header_dword1;
 
 typedef union
 {
     uint32_t value;
 	struct
 	{
-        uint32_t eventId : 16;
-        uint32_t lineId : 12;
-        uint32_t seqId : 4;
+        uint32_t event_id : 16;
+        uint32_t line_id : 12;
+        uint32_t seq_id : 4;
 	} bits;
-} FWlogHeaderDWord2;
+} fw_log_header_dword2;
 
-struct FWlogHeaderDWord3
+struct fw_log_header_dword3
 {
-    uint16_t P1;
-    uint16_t P2;
+    uint16_t p1;
+    uint16_t p2;
 };
 
-struct FWlogHeaderDWord4
+struct fw_log_header_dword4
 {
-    uint32_t P3;
+    uint32_t p3;
 };
 
-struct FWlogHeaderDWord5
+struct fw_log_header_dword5
 {
-    uint32_t timeStamp;
+    uint32_t timestamp;
 };
 
-struct FwLogBinary
+struct fw_log_binary
 {
-	FWlogHeaderDWord1 Dword1;
-	FWlogHeaderDWord2 Dword2;
-	FWlogHeaderDWord3 Dword3;
-	FWlogHeaderDWord4 Dword4;
-	FWlogHeaderDWord5 Dword5;
+    fw_log_header_dword1 dword1;
+    fw_log_header_dword2 dword2;
+    fw_log_header_dword3 dword3;
+    fw_log_header_dword4 dword4;
+    fw_log_header_dword5 dword5;
 };
 
 #pragma pack()
 
-class FWlogData
+class fw_log_data
 {
 public:
-	FWlogData(void);
-	~FWlogData(void);
+    fw_log_data(void);
+    ~fw_log_data(void);
 
-    uint32_t magicNumber;
+    uint32_t magic_number;
     uint32_t severity;
-    uint32_t fileId;
-    uint32_t groupId;
-    uint32_t eventId;
+    uint32_t file_id;
+    uint32_t group_id;
+    uint32_t event_id;
     uint32_t line;
     uint32_t sequence;
     uint32_t p1;
     uint32_t p2;
     uint32_t p3;
-    uint64_t timeStamp;
+    uint64_t timestamp;
 	double delta;
 
 	std::string message;
-	std::string fileName;
-	std::string threadName;
+    std::string file_name;
+    std::string thread_name;
 
-	std::string ToString();
+    std::string to_string();
 };

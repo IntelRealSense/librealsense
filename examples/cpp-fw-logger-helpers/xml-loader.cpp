@@ -8,94 +8,93 @@ using namespace std;
 
 
 
-XMLLoader::XMLLoader(string lpszXML)
-	: m_documentBuffer(NULL), m_InitDone(false), m_XMLname(lpszXML)
+xml_loader::xml_loader(string xm_full_file_path)
+    : _document_buffer(NULL), _init_done(false), _xml_name(xm_full_file_path)
 {
 
 }
 
 
-XMLLoader::~XMLLoader(void)
+xml_loader::~xml_loader(void)
 {
-	if (m_documentBuffer)
-		delete[] m_documentBuffer;
-	Close();
+    if (_document_buffer)
+        delete[] _document_buffer;
+    close();
 }
 
-bool XMLLoader::LoadXML()
+bool xml_loader::load_xml()
 {
-	if (!Init())
+    if (!init())
 		return false;
 
-	return TryLoadExternalXML();
+    return try_load_external_xml();
 }
 
-bool XMLLoader::Init()
+bool xml_loader::init()
 {
-	if (m_InitDone)
+	if (_init_done)
 		return false;
 
-	m_InitDone = true;
+	_init_done = true;
 	return true;
 }
 
-void XMLLoader::Close()
+void xml_loader::close()
 {
 	//CoUninitialize();
 }
 
-bool XMLLoader::GetRootNode(xml_node<> **node)
+bool xml_loader::get_root_node(xml_node<> **node)
 {
-	if (m_InitDone)
+	if (_init_done)
 	{
-		*node = m_XMLDoc.first_node();
+        *node = _xml_doc.first_node();
 		return true;
 	}
 
 	return false;
 }
 
-bool XMLLoader::GetElementByTagName(std::string tagName, xml_node<> **node)
+bool xml_loader::get_element_by_tag_name(std::string tag_name, xml_node<>** node_xml)
 {
 	// first element.
-	xml_node<> *pNodeRoot = m_XMLDoc.first_node();
+    xml_node<>* node_root = _xml_doc.first_node();
 
-	for (xml_node<> *pNode = pNodeRoot->first_node(); pNode; pNode = pNode->next_sibling())
+    for (xml_node<>* node = node_root->first_node(); node; node = node->next_sibling())
 	{
-        string nodeName(pNode->name(), pNode->name() + pNode->name_size());
-		if (tagName.compare(nodeName) == 0)
+        string node_name(node->name(), node->name() + node->name_size());
+        if (tag_name.compare(node_name) == 0)
 		{
-			*node = pNode;
+            *node_xml = node;
 			return true;
 		}
 	}
 	return false;
 }
 
-bool XMLLoader::TryLoadExternalXML()
+bool xml_loader::try_load_external_xml()
 {
 	try
 	{
-        if (m_XMLname.empty())
+        if (_xml_name.empty())
 			return false;
 
-        file<> xmlFile(m_XMLname.c_str());
+        file<> xml_file(_xml_name.c_str());
 
-		////LOG_INFO("Config content:\n\n" << xmlFile.data() << "\n\n\n");
-		m_documentBuffer = new char[xmlFile.size() + 2];
-        memcpy(m_documentBuffer, xmlFile.data(), xmlFile.size());
-		m_documentBuffer[xmlFile.size()] = '\0';
-		m_documentBuffer[xmlFile.size() + 1] = '\0';
-		m_XMLDoc.parse<0>(m_documentBuffer);
+        _document_buffer = new char[xml_file.size() + 2];
+        memcpy(_document_buffer, xml_file.data(), xml_file.size());
+        _document_buffer[xml_file.size()] = '\0';
+        _document_buffer[xml_file.size() + 1] = '\0';
+        _xml_doc.parse<0>(_document_buffer);
 
 		return true;
 	}
 	catch (...)
 	{
-		if (m_documentBuffer != nullptr)
+        if (_document_buffer != nullptr)
 		{
-			delete[]m_documentBuffer;
-			m_documentBuffer = nullptr;
+            delete[]_document_buffer;
+            _document_buffer = nullptr;
 		}
         throw;
 	}
