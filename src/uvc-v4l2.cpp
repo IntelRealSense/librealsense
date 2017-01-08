@@ -688,7 +688,8 @@ namespace rsimpl
                             auto device_path = std::string(node->fts_path);
                             if (!std::regex_search(device_path, m, std::regex("/sys/devices/pci0000:00/.*(\\S{1})-(\\S{1}).*(\\S{4}):(\\S{4}):(\\S{4}).(\\S{4})/(.*)/iio:device(\\d{1,3})/name$")))
                             {
-                                throw linux_backend_exception(to_string() << "HID enumeration failed. couldn't parse iio hid device path, regex is not valid!");
+                                LOG_WARNING("couldn't parse iio device path: " << device_path);
+                                continue;
                             }
 
                             hid_device_info hid_dev_info{};
