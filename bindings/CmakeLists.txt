@@ -26,7 +26,7 @@ set(DEPENDENCIES realsense)
 
 option(BUILD_PYTHON_BINDINGS "Build Python bindings" OFF)
 if(BUILD_PYTHON_BINDINGS)
-    find_package(pybind11 REQUIRED)
+	add_subdirectory(third_party/pybind11)
     pybind11_add_module(pylibrs python.cpp)
     target_link_libraries(pylibrs ${DEPENDENCIES})
 endif()
