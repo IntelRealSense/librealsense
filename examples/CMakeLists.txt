@@ -130,9 +130,7 @@ cpp-fw-logger-helpers/fw-logs-parser.h
 cpp-fw-logger-helpers/fw-logs-xml-helper.cpp
 cpp-fw-logger-helpers/fw-logs-xml-helper.h
 cpp-fw-logger-helpers/string-formatter.cpp
-cpp-fw-logger-helpers/string-formatter.h
-cpp-fw-logger-helpers/timestamp-extractor.cpp
-cpp-fw-logger-helpers/timestamp-extractor.h)
+cpp-fw-logger-helpers/string-formatter.h)
 
 
 if(WIN32)

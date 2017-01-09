@@ -10,6 +10,7 @@
 
 using namespace std;
 using namespace TCLAP;
+using namespace fw_logger;
 
 std::string hexify(unsigned char n)
 {

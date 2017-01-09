@@ -3,20 +3,22 @@
 #include <vector>
 #include "fw-logs-formating-options.h"
 #include "fw-log-data.h"
-#include "timestamp-extractor.h"
 
-class fw_logs_parser
+namespace fw_logger
 {
-public:
-    explicit fw_logs_parser(std::string xml_full_file_path);
-	~fw_logs_parser(void);
-    std::vector<std::string> get_fw_log_lines(const fw_logs_binary_data& fw_logs_data_binary);
+    class fw_logs_parser
+    {
+    public:
+        explicit fw_logs_parser(std::string xml_full_file_path);
+        ~fw_logs_parser(void);
+        std::vector<std::string> get_fw_log_lines(const fw_logs_binary_data& fw_logs_data_binary);
 
-private:
-    std::string generate_log_line(char* fw_logs);
-    void fill_log_data(const char* fw_logs, fw_log_data* log_data);
-    void zero_timestamps();
+    private:
+        std::string generate_log_line(char* fw_logs);
+        void fill_log_data(const char* fw_logs, fw_log_data* log_data);
+        uint32_t _last_timestamp;
 
-    fw_logs_formating_options _fw_logs_formating_options;
-    timestamp_extractor _timestamp_extractor;
-};
+        fw_logs_formating_options _fw_logs_formating_options;
+        const double _timestamp_factor;
+    };
+}
