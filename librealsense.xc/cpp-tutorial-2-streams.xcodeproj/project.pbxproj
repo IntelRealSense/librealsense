@@ -13,7 +13,7 @@
 		08567C0F1B5B899B00EB6C0D /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 08567C0E1B5B899B00EB6C0D /* OpenGL.framework */; };
 		2799858B1B95085000894334 /* librealsense.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 2799858A1B95085000894334 /* librealsense.dylib */; };
 		279D52DA1B8E86FB007F2D73 /* cpp-tutorial-2-streams.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 279D52D91B8E86FB007F2D73 /* cpp-tutorial-2-streams.cpp */; };
-		279D52DE1B8E8866007F2D73 /* libglfw3.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 279D52DD1B8E8866007F2D73 /* libglfw3.dylib */; };
+		279D52DE1B8E8866007F2D73 /* libglfw.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 279D52DD1B8E8866007F2D73 /* libglfw.dylib */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -36,7 +36,7 @@
 		08567C0E1B5B899B00EB6C0D /* OpenGL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGL.framework; path = System/Library/Frameworks/OpenGL.framework; sourceTree = SDKROOT; };
 		2799858A1B95085000894334 /* librealsense.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = librealsense.dylib; path = librealsense.xc/build/Debug/librealsense.dylib; sourceTree = "<group>"; };
 		279D52D91B8E86FB007F2D73 /* cpp-tutorial-2-streams.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = "cpp-tutorial-2-streams.cpp"; path = "../examples/cpp-tutorial-2-streams.cpp"; sourceTree = SOURCE_ROOT; };
-		279D52DD1B8E8866007F2D73 /* libglfw3.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libglfw3.dylib; path = /usr/local/lib/libglfw3.dylib; sourceTree = "<group>"; };
+		279D52DD1B8E8866007F2D73 /* libglfw.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libglfw.dylib; path = ../../../../usr/local/lib/libglfw.dylib; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -45,7 +45,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				2799858B1B95085000894334 /* librealsense.dylib in Frameworks */,
-				279D52DE1B8E8866007F2D73 /* libglfw3.dylib in Frameworks */,
+				279D52DE1B8E8866007F2D73 /* libglfw.dylib in Frameworks */,
 				08567C0F1B5B899B00EB6C0D /* OpenGL.framework in Frameworks */,
 				08567C0D1B5B899200EB6C0D /* IOKit.framework in Frameworks */,
 				08567C0B1B5B898C00EB6C0D /* CoreVideo.framework in Frameworks */,
@@ -94,7 +94,7 @@
 		08567C2D1B61D82000EB6C0D /* libs */ = {
 			isa = PBXGroup;
 			children = (
-				279D52DD1B8E8866007F2D73 /* libglfw3.dylib */,
+				279D52DD1B8E8866007F2D73 /* libglfw.dylib */,
 				2799858A1B95085000894334 /* librealsense.dylib */,
 			);
 			name = libs;
