@@ -17,6 +17,8 @@ namespace rsimpl
         virtual std::shared_ptr<device> create(const uvc::backend& backend) const = 0;
         virtual std::shared_ptr<device_info> clone() const = 0;
 
+        virtual uint8_t get_subdevice_count() const = 0;
+
         virtual ~device_info() = default;
     };
 
@@ -25,6 +27,52 @@ namespace rsimpl
         standard,
         record,
         playback
+    };
+
+
+    class recovery_info : public device_info
+    {
+    public:
+        std::shared_ptr<device> create(const uvc::backend& /*backend*/) const override
+        {
+            throw unrecoverable_exception(RECOVERY_MESSAGE,
+                RS_LIBREALSENSE_EXCEPTION_TYPE_DEVICE_IN_RECOVERY_MODE);
+        }
+
+        std::shared_ptr<device_info> clone() const override
+        {
+            return std::make_shared<recovery_info>(*this);
+        }
+
+        uint8_t get_subdevice_count() const override
+        {
+            return 1;
+        }
+
+        static bool is_recovery_pid(uint16_t pid)
+        {
+            return pid == 0x0ADB || pid == 0x0AB3;
+        }
+
+        static std::vector<std::shared_ptr<device_info>> pick_recovery_devices(
+            const std::vector<uvc::usb_device_info>& usb_devices)
+        {
+            std::vector<std::shared_ptr<device_info>> list;
+            for (auto&& usb : usb_devices)
+            {
+                if (is_recovery_pid(usb.pid))
+                {
+                    list.push_back(std::make_shared<recovery_info>(usb));
+                }
+            }
+            return list;
+        }
+
+        explicit recovery_info(uvc::usb_device_info dfu) : _dfu(std::move(dfu)) {}
+
+    private:
+        uvc::usb_device_info _dfu;
+        const char* RECOVERY_MESSAGE = "Selected RealSense device is in recovery mode!\nEither perform a firmware update or reconnect the camera to fall-back to last working firmware if available!";
     };
 
     class context
@@ -92,7 +140,7 @@ namespace rsimpl
 
         auto was_chosen = [&chosen](const uvc::uvc_device_info& info)
         {
-            return find(chosen.begin(), chosen.end(), info) == chosen.end();
+            return find(chosen.begin(), chosen.end(), info) != chosen.end();
         };
         devices.erase(std::remove_if(devices.begin(), devices.end(), was_chosen), devices.end());
     }

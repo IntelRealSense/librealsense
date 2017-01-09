@@ -40,6 +40,13 @@ struct rs_device
     unsigned int subdevice;
 };
 
+struct rs_device_info
+{
+    std::shared_ptr<rsimpl::context> ctx;
+    std::shared_ptr<rsimpl::device_info> info;
+    unsigned int subdevice;
+};
+
 struct rs_context
 {
     std::shared_ptr<rsimpl::context> ctx;
@@ -48,7 +55,7 @@ struct rs_context
 struct rs_device_list
 {
     std::shared_ptr<rsimpl::context> ctx;
-    std::vector<rs_device> list;
+    std::vector<rs_device_info> list;
 };
 
 struct frame_holder
@@ -190,15 +197,14 @@ rs_device_list* rs_query_devices(const rs_context* context, rs_error** error) tr
 {
     VALIDATE_NOT_NULL(context);
 
-    std::vector<rs_device> results;
+    std::vector<rs_device_info> results;
     for (auto&& dev_info : context->ctx->query_devices())
     {
         try
         {
-            auto dev = dev_info->create(context->ctx->get_backend());
-            for (unsigned int i = 0; i < dev->get_endpoints_count(); i++)
+            for (unsigned int i = 0; i < dev_info->get_subdevice_count(); i++)
             {
-                rs_device d{ context->ctx, dev_info, dev, i };
+                rs_device_info d{ context->ctx, dev_info, i };
                 results.push_back(d);
             }
         }
@@ -216,13 +222,13 @@ rs_device_list* rs_query_adjacent_devices(const rs_device* device, rs_error** er
 {
     VALIDATE_NOT_NULL(device);
 
-    std::vector<rs_device> results;
+    std::vector<rs_device_info> results;
     try
     {
         auto dev = device->device;
         for (unsigned int i = 0; i < dev->get_endpoints_count(); i++)
         {
-            rs_device d{ device->ctx, device->info, dev, i };
+            rs_device_info d{ device->ctx, device->info, i };
             results.push_back(d);
         }
     }
@@ -253,9 +259,10 @@ rs_device* rs_create_device(const rs_device_list* list, int index, rs_error** er
 {
     VALIDATE_NOT_NULL(list);
     VALIDATE_RANGE(index, 0, (int)list->list.size() - 1);
+
     return new rs_device{ list->ctx,
                           list->list[index].info, 
-                          list->list[index].device,
+                          list->list[index].info->create(list->ctx->get_backend()),
                           list->list[index].subdevice
                         };
 }
@@ -719,6 +726,8 @@ const char * rs_option_to_string(rs_option option) { return rsimpl::get_string(o
 const char * rs_camera_info_to_string(rs_camera_info info) { return rsimpl::get_string(info); }
 const char * rs_timestamp_domain_to_string(rs_timestamp_domain info){ return rsimpl::get_string(info); }
 const char * rs_visual_preset_to_string(rs_visual_preset preset) { return rsimpl::get_string(preset); }
+
+const char * rs_exception_type_to_string(rs_librealsense_exception_type type) { return rsimpl::get_string(type); }
 
 void rs_log_to_console(rs_log_severity min_severity, rs_error ** error) try
 {

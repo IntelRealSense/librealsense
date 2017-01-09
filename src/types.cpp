@@ -40,6 +40,7 @@ namespace rsimpl
         CASE(INVALID_VALUE)
         CASE(WRONG_API_CALL_SEQUENCE)
         CASE(NOT_IMPLEMENTED)
+        CASE(DEVICE_IN_RECOVERY_MODE)
         default: assert(!is_valid(value)); return unknown;
         }
         #undef CASE

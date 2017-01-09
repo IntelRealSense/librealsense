@@ -20,79 +20,47 @@ namespace rs
     class error : public std::runtime_error
     {
         std::string function, args;
+        rs_librealsense_exception_type type;
     public:
         explicit error(rs_error * err) : runtime_error(rs_get_error_message(err))
         {
             function = (nullptr != rs_get_failed_function(err)) ? rs_get_failed_function(err) : std::string();
             args = (nullptr != rs_get_failed_args(err)) ? rs_get_failed_args(err) : std::string();
+            type = rs_get_librealsense_exception_type(err);
             rs_free_error(err);
         }
-        const std::string & get_failed_function() const
+
+        const std::string& get_failed_function() const
         {
             return function;
         }
-        const std::string & get_failed_args() const
+
+        const std::string& get_failed_args() const
         {
             return args;
         }
+
+        rs_librealsense_exception_type get_type() const { return type; }
+
         static void handle(rs_error * e);
     };
 
-    class recoverable_error : public error
-    {
-     public:
-        recoverable_error(rs_error * e) noexcept
-            : error(e)
-        {}
-    };
+#define RS_ERROR_CLASS(name, base) \
+    class name : public base\
+    {\
+    public:\
+        explicit name(rs_error * e) noexcept : base(e) {}\
+    }
 
-    class unrecoverable_error : public error
-    {
-    public:
-       unrecoverable_error(rs_error * e) noexcept
-           : error(e)
-       {}
-    };
-
-    class camera_disconnected_error : public unrecoverable_error
-    {
-    public:
-        camera_disconnected_error(rs_error * e) noexcept
-            : unrecoverable_error(e)
-        {}
-    };
-
-    class backend_error : public unrecoverable_error
-    {
-    public:
-        backend_error(rs_error * e) noexcept
-            : unrecoverable_error(e)
-        {}
-    };
-
-    class invalid_value_error : public recoverable_error
-    {
-    public:
-        invalid_value_error(rs_error * e) noexcept
-            : recoverable_error(e)
-        {}
-    };
-
-    class wrong_api_call_sequence_error : public recoverable_error
-    {
-    public:
-        wrong_api_call_sequence_error(rs_error * e) noexcept
-            : recoverable_error(e)
-        {}
-    };
-
-    class not_implemented_error : public recoverable_error
-    {
-    public:
-        not_implemented_error(rs_error * e) noexcept
-            : recoverable_error(e)
-        {}
-    };
+    RS_ERROR_CLASS(recoverable_error, error);
+    RS_ERROR_CLASS(unrecoverable_error, error);
+    RS_ERROR_CLASS(camera_disconnected_error, unrecoverable_error);
+    RS_ERROR_CLASS(backend_error, unrecoverable_error);
+    RS_ERROR_CLASS(device_in_recovery_mode_error, unrecoverable_error);
+    RS_ERROR_CLASS(invalid_value_error, recoverable_error);
+    RS_ERROR_CLASS(wrong_api_call_sequence_error, recoverable_error);
+    RS_ERROR_CLASS(not_implemented_error, recoverable_error);
+#undef RS_ERROR_CLASS
 
     inline void error::handle(rs_error * e)
     {
@@ -102,19 +70,16 @@ namespace rs
             switch (h) {
             case RS_LIBREALSENSE_EXCEPTION_TYPE_CAMERA_DISCONNECTED:
                 throw camera_disconnected_error(e);
-                break;
             case RS_LIBREALSENSE_EXCEPTION_TYPE_BACKEND:
                 throw backend_error(e);
-                break;
             case RS_LIBREALSENSE_EXCEPTION_TYPE_INVALID_VALUE:
                 throw invalid_value_error(e);
-                break;
             case RS_LIBREALSENSE_EXCEPTION_TYPE_WRONG_API_CALL_SEQUENCE:
                 throw wrong_api_call_sequence_error(e);
-                break;
             case RS_LIBREALSENSE_EXCEPTION_TYPE_NOT_IMPLEMENTED:
                 throw not_implemented_error(e);
-                break;
+            case RS_LIBREALSENSE_EXCEPTION_TYPE_DEVICE_IN_RECOVERY_MODE:
+                throw device_in_recovery_mode_error(e);
             default:
                 throw error(e);
                 break;
@@ -124,6 +89,7 @@ namespace rs
 
     class context;
     class device;
+    class device_list;
 
     struct stream_profile
     {
@@ -720,6 +686,7 @@ namespace rs
         device() : _dev(nullptr), _debug(nullptr) {}
     private:
         friend context;
+        friend device_list;
 
         explicit device(std::shared_ptr<rs_device> dev)
             : _dev(dev), _debug(dev)
@@ -743,6 +710,89 @@ namespace rs
         return !(a == b);
     }
 
+    class device_list
+    {
+    public:
+        explicit device_list(std::shared_ptr<rs_device_list> list)
+            : _list(move(list)) {}
+
+        device_list()
+            : _list(nullptr) {}
+
+        operator std::vector<device>() const
+        {
+            std::vector<device> res;
+            for (auto&& dev : *this) res.push_back(dev);
+            return res;
+        }
+
+        device operator[](uint32_t index) const
+        {
+            rs_error* e = nullptr;
+            std::shared_ptr<rs_device> dev(
+                rs_create_device(_list.get(), index, &e),
+                rs_delete_device);
+            error::handle(e);
+
+            return device(dev);
+        }
+
+        uint32_t size() const
+        {
+            rs_error* e = nullptr;
+            auto size = rs_get_device_count(_list.get(), &e);
+            error::handle(e);
+            return size;
+        }
+
+        device front() const { return std::move((*this)[0]); }
+        device back() const
+        {
+            return std::move((*this)[size() - 1]);
+        }
+
+        class device_list_iterator
+        {
+            device_list_iterator(
+                const device_list& device_list, 
+                uint32_t uint32_t)
+                : _list(device_list),
+                  _index(uint32_t)
+            {
+            }
+
+        public:
+            device operator*() const
+            {
+                return _list[_index];
+            }
+            bool operator!=(const device_list_iterator& other) const
+            {
+                return other._index != _index;
+            }
+            device_list_iterator& operator++()
+            {
+                _index++;
+                return *this;
+            }
+        private:
+            friend device_list;
+            const device_list& _list;
+            uint32_t _index;
+        };
+
+        device_list_iterator begin() const
+        {
+            return device_list_iterator(*this, 0);
+        }
+        device_list_iterator end() const
+        {
+            return device_list_iterator(*this, size());
+        }
+    private:
+        std::shared_ptr<rs_device_list> _list;
+    };
+
     /**
     * default librealsense context class
     * includes realsense API version as provided by RS_API_VERSION macro
@@ -763,7 +813,7 @@ namespace rs
         * create a static snapshot of all connected devices at the time of the call
         * \return            the list of devices connected devices at the time of the call
         */
-        std::vector<device> query_devices() const
+        device_list query_devices() const
         {
             rs_error* e = nullptr;
             std::shared_ptr<rs_device_list> list(
@@ -771,22 +821,7 @@ namespace rs
                 rs_delete_device_list);
             error::handle(e);
 
-            auto size = rs_get_device_count(list.get(), &e);
-            error::handle(e);
-
-            std::vector<device> results;
-            for (auto i = 0; i < size; i++)
-            {
-                std::shared_ptr<rs_device> dev(
-                    rs_create_device(list.get(), i, &e),
-                    rs_delete_device);
-                error::handle(e);
-
-                device rs_dev(dev);
-                results.push_back(rs_dev);
-            }
-
-            return results;
+            return device_list(list);
         }
 
         rs_extrinsics get_extrinsics(const device& from_device, const device& to_device) const

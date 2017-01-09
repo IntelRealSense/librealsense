@@ -116,19 +116,24 @@ namespace rsimpl
                 return false;
             }
 
-            if(ids[2].size() != 5 || ids[2].substr(0,3) != "mi_" || !(std::istringstream(ids[2].substr(3,2)) >> mi))
+            if(ids.size() > 2 && (ids[2].size() != 5 || ids[2].substr(0,3) != "mi_" || !(std::istringstream(ids[2].substr(3,2)) >> mi)))
             {
                 LOG_ERROR("malformed mi string: " << tokens[1]);
                 return false;
             }
 
             ids = tokenize(tokens[2], '&');
-            if(ids.size() < 2)
+            if(ids.size() == 0)
             {
                 LOG_ERROR("malformed id string: " << tokens[2]);
                 return false;
             }
-            unique_id = ids[1];
+
+            if (ids.size() > 2)
+                unique_id = ids[1];
+            else
+                unique_id = "";
+
             return true;
         }
 

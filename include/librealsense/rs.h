@@ -28,6 +28,7 @@ typedef enum rs_librealsense_exception_type
     RS_LIBREALSENSE_EXCEPTION_TYPE_INVALID_VALUE,
     RS_LIBREALSENSE_EXCEPTION_TYPE_WRONG_API_CALL_SEQUENCE,
     RS_LIBREALSENSE_EXCEPTION_TYPE_NOT_IMPLEMENTED,
+    RS_LIBREALSENSE_EXCEPTION_TYPE_DEVICE_IN_RECOVERY_MODE,
     RS_LIBREALSENSE_EXCEPTION_TYPE_COUNT
 } rs_librealsense_exception_type;
 
@@ -678,6 +679,7 @@ const char * rs_get_failed_args      (const rs_error * error);
 const char * rs_get_error_message    (const rs_error * error);
 void         rs_free_error           (rs_error * error);
 rs_librealsense_exception_type rs_get_librealsense_exception_type(const rs_error * error);
+const char * rs_exception_type_to_string(rs_librealsense_exception_type type);
 
 const char * rs_stream_to_string     (rs_stream stream);
 const char * rs_format_to_string     (rs_format format);
