@@ -84,12 +84,12 @@ PYBIND11_PLUGIN(NAME) {
     // Implicit conversion from tuple
     stream_profile.def("__init__", [](rs::stream_profile &inst, rs_stream s,
                                       int w, int h, int fps, rs_format fmt){
-        new (&inst) rs::stream_profile{.stream = s,
-                                       .width  = w,
-                                       .height = h,
-                                       .fps    = fps,
-                                       .format = fmt
-                                      };
+        new (&inst) rs::stream_profile;
+        inst.stream = s;
+        inst.width = w;
+        inst.height = h;
+        inst.fps = fps;
+        inst.format = fmt;
     });
     
     py::enum_<rs_option> option(m, "option");
