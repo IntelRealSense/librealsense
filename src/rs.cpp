@@ -19,7 +19,7 @@ struct rs_error
     std::string message;
     const char * function;
     std::string args;
-    rs_librealsense_exception_type exception_type;
+    rs_exception_type exception_type;
 };
 
 struct rs_raw_data_buffer
@@ -110,8 +110,9 @@ namespace rsimpl
     static void translate_exception(const char * name, std::string args, rs_error ** error)
     {
         try { throw; }
-        catch (const std::exception & e) { if (error) *error = new rs_error {e.what(), name, move(args)}; } // todo - Handle case where THIS code throws
-        catch (...) { if (error) *error = new rs_error {"unknown error", name, move(args)}; } // todo - Handle case where THIS code throws
+        catch (const librealsense_exception& e) { if (error) *error = new rs_error{ e.what(), name, move(args), e.get_exception_type() }; }
+        catch (const std::exception& e) { if (error) *error = new rs_error {e.what(), name, move(args)}; }
+        catch (...) { if (error) *error = new rs_error {"unknown error", name, move(args)}; }
     }
 }
 
@@ -717,7 +718,7 @@ void rs_free_error(rs_error * error) { if (error) delete error; }
 const char * rs_get_failed_function(const rs_error * error) { return error ? error->function : nullptr; }
 const char * rs_get_failed_args(const rs_error * error) { return error ? error->args.c_str() : nullptr; }
 const char * rs_get_error_message(const rs_error * error) { return error ? error->message.c_str() : nullptr; }
-rs_librealsense_exception_type rs_get_librealsense_exception_type(const rs_error * error) { return error ? error->exception_type : RS_LIBREALSENSE_EXCEPTION_TYPE_UNKNOWN; }
+rs_exception_type rs_get_librealsense_exception_type(const rs_error * error) { return error ? error->exception_type : RS_EXCEPTION_TYPE_UNKNOWN; }
 
 const char * rs_stream_to_string(rs_stream stream) { return rsimpl::get_string(stream); }
 const char * rs_format_to_string(rs_format format) { return rsimpl::get_string(format); }
@@ -727,7 +728,7 @@ const char * rs_camera_info_to_string(rs_camera_info info) { return rsimpl::get_
 const char * rs_timestamp_domain_to_string(rs_timestamp_domain info){ return rsimpl::get_string(info); }
 const char * rs_visual_preset_to_string(rs_visual_preset preset) { return rsimpl::get_string(preset); }
 
-const char * rs_exception_type_to_string(rs_librealsense_exception_type type) { return rsimpl::get_string(type); }
+const char * rs_exception_type_to_string(rs_exception_type type) { return rsimpl::get_string(type); }
 
 void rs_log_to_console(rs_log_severity min_severity, rs_error ** error) try
 {

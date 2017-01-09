@@ -20,7 +20,7 @@ namespace rs
     class error : public std::runtime_error
     {
         std::string function, args;
-        rs_librealsense_exception_type type;
+        rs_exception_type type;
     public:
         explicit error(rs_error * err) : runtime_error(rs_get_error_message(err))
         {
@@ -40,7 +40,7 @@ namespace rs
             return args;
         }
 
-        rs_librealsense_exception_type get_type() const { return type; }
+        rs_exception_type get_type() const { return type; }
 
         static void handle(rs_error * e);
     };
@@ -68,17 +68,17 @@ namespace rs
         {
             auto h = rs_get_librealsense_exception_type(e);
             switch (h) {
-            case RS_LIBREALSENSE_EXCEPTION_TYPE_CAMERA_DISCONNECTED:
+            case RS_EXCEPTION_TYPE_CAMERA_DISCONNECTED:
                 throw camera_disconnected_error(e);
-            case RS_LIBREALSENSE_EXCEPTION_TYPE_BACKEND:
+            case RS_EXCEPTION_TYPE_BACKEND:
                 throw backend_error(e);
-            case RS_LIBREALSENSE_EXCEPTION_TYPE_INVALID_VALUE:
+            case RS_EXCEPTION_TYPE_INVALID_VALUE:
                 throw invalid_value_error(e);
-            case RS_LIBREALSENSE_EXCEPTION_TYPE_WRONG_API_CALL_SEQUENCE:
+            case RS_EXCEPTION_TYPE_WRONG_API_CALL_SEQUENCE:
                 throw wrong_api_call_sequence_error(e);
-            case RS_LIBREALSENSE_EXCEPTION_TYPE_NOT_IMPLEMENTED:
+            case RS_EXCEPTION_TYPE_NOT_IMPLEMENTED:
                 throw not_implemented_error(e);
-            case RS_LIBREALSENSE_EXCEPTION_TYPE_DEVICE_IN_RECOVERY_MODE:
+            case RS_EXCEPTION_TYPE_DEVICE_IN_RECOVERY_MODE:
                 throw device_in_recovery_mode_error(e);
             default:
                 throw error(e);
@@ -101,9 +101,9 @@ namespace rs
 
         bool match(const stream_profile& other) const
         {
-            if (stream != rs_stream::RS_STREAM_ANY && other.stream != rs_stream::RS_STREAM_ANY && (stream != other.stream))
+            if (stream != RS_STREAM_ANY && other.stream != RS_STREAM_ANY && (stream != other.stream))
                 return false;
-            if (format != rs_format::RS_FORMAT_ANY && other.format != rs_format::RS_FORMAT_ANY && (format != other.format))
+            if (format != RS_FORMAT_ANY && other.format != RS_FORMAT_ANY && (format != other.format))
                 return false;
             if (fps != 0 && other.fps != 0 && (fps != other.fps))
                 return false;
@@ -130,7 +130,7 @@ namespace rs
 
         bool has_wildcards() const
         {
-            return (fps == 0 || width == 0 || height == 0 || stream == rs_stream::RS_STREAM_ANY || format == rs_format::RS_FORMAT_ANY);
+            return (fps == 0 || width == 0 || height == 0 || stream == rs_stream::RS_STREAM_ANY || format == RS_FORMAT_ANY);
         }
     };
 

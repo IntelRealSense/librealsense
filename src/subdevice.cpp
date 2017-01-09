@@ -212,7 +212,7 @@ void uvc_endpoint::open(const std::vector<stream_profile>& requests)
     if (_is_streaming)
         throw wrong_api_call_sequence_exception("open(...) failed. UVC device is streaming!");
     else if (_is_opened)
-        throw wrong_api_call_sequence_exception("open(...) failed. Hid device is already opened!");
+        throw wrong_api_call_sequence_exception("open(...) failed. UVC device is already opened!");
 
     auto on = std::unique_ptr<power>(new power(shared_from_this()));
     _archive = std::make_shared<frame_archive>(&_max_publish_list_size);

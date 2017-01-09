@@ -36,7 +36,7 @@ namespace rsimpl
         std::shared_ptr<device> create(const uvc::backend& /*backend*/) const override
         {
             throw unrecoverable_exception(RECOVERY_MESSAGE,
-                RS_LIBREALSENSE_EXCEPTION_TYPE_DEVICE_IN_RECOVERY_MODE);
+                RS_EXCEPTION_TYPE_DEVICE_IN_RECOVERY_MODE);
         }
 
         std::shared_ptr<device_info> clone() const override
