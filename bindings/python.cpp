@@ -16,14 +16,17 @@
 #include "../include/librealsense/rs.h"
 #include "../include/librealsense/rs.hpp"
 
+#define NAME pylibrs
+#define SNAME "pylibrs"
+
 PYBIND11_MAKE_OPAQUE(std::vector<rs::stream_profile>);
 
 
 namespace py = pybind11;
 using namespace pybind11::literals;
 
-PYBIND11_PLUGIN(pylibrs) {
-    py::module m("pylibrs", "Library for accessing Intel RealSenseTM cameras");
+PYBIND11_PLUGIN(NAME) {
+    py::module m(SNAME, "Library for accessing Intel RealSenseTM cameras");
     
     py::enum_<rs_stream> stream(m, "stream");
     stream.value("any", RS_STREAM_ANY)
@@ -68,15 +71,26 @@ PYBIND11_PLUGIN(pylibrs) {
                   .def_readwrite("format", &rs::stream_profile::format)
                   .def("__repr__", [](const rs::stream_profile &p){
                       std::stringstream ss;
-                      ss << rs_stream_to_string(p.stream) << " " << p.width
+                      ss << "<" SNAME ".stream_profile: "
+                         << rs_stream_to_string(p.stream) << " " << p.width
                          << "x" << p.height << " @ " << p.fps << "fps "
-                         << rs_format_to_string(p.format);
+                         << rs_format_to_string(p.format) << ">";
                       return ss.str();
                   });
     
     // binds std::vector<rs::stream_profile> in an opaque manner to prevent
     // expensive copies
     py::bind_vector<std::vector<rs::stream_profile> >(m, "VectorStream_profile");
+    // Implicit conversion from tuple
+    stream_profile.def("__init__", [](rs::stream_profile &inst, rs_stream s,
+                                      int w, int h, int fps, rs_format fmt){
+        new (&inst) rs::stream_profile{.stream = s,
+                                       .width  = w,
+                                       .height = h,
+                                       .fps    = fps,
+                                       .format = fmt
+                                      };
+    });
     
     py::enum_<rs_option> option(m, "option");
     option.value("backlight_compensation", RS_OPTION_BACKLIGHT_COMPENSATION)
@@ -133,21 +147,76 @@ PYBIND11_PLUGIN(pylibrs) {
     
     py::class_<rs_extrinsics> extrinsics(m, "extrinsics");
     extrinsics.def_property(BIND_RAW_ARRAY(rs_extrinsics, rotation, float, 9))
-              .def_property(BIND_RAW_ARRAY(rs_extrinsics, translation, float, 3));
+              .def_property(BIND_RAW_ARRAY(rs_extrinsics, translation, float, 3))
+              .def("__repr__", [](const rs_extrinsics &e){
+                  std::stringstream ss;
+                  ss << "( (" << e.rotation[0];
+                  for (int i=1; i<9; ++i) ss << ", " << e.rotation[i];
+                  ss << "), (" << e.translation[0];
+                  for (int i=1; i<3; ++i) ss << ", " << e.translation[i];
+                  ss << ") )";
+                  return ss.str();
+              });
+    
+    py::class_<rs::option_range> option_range(m, "option_range");
+    option_range.def_readwrite("min", &rs::option_range::min)
+                .def_readwrite("max", &rs::option_range::max)
+                .def_readwrite("default", &rs::option_range::def)
+                .def_readwrite("step", &rs::option_range::step)
+                .def("__repr__", [](const rs::option_range &r){
+                    std::stringstream ss;
+                    ss << "<" SNAME ".option_range: " << r.min << "-" << r.max
+                       << "/" << r.step << " [" << r.def << "]>";
+                    return ss.str();
+                });
     
 //    py::class_<rs::advanced> advanced(m, "advanced");
 //    advanced.def(py::init<std::shared_ptr<rs_device> >())
 //            .def("send_and_receive_raw_data", &rs::advanced::send_and_receive_raw_data,
 //                 "input"_a);
+
+    py::enum_<rs_timestamp_domain> ts_domain(m, "timestamp_domain");
+    ts_domain.value("camera", RS_TIMESTAMP_DOMAIN_CAMERA)
+             .value("external", RS_TIMESTAMP_DOMAIN_EXTERNAL)
+             .value("system", RS_TIMESTAMP_DOMAIN_SYSTEM)
+             .value("count", RS_TIMESTAMP_DOMAIN_COUNT);
     
-    // in general frame seems to be broken because of the deleted constructor
+    py::enum_<rs_frame_metadata> frame_metadata(m, "frame_metadata");
+    frame_metadata.value("actual_exposure", RS_FRAME_METADATA_ACTUAL_EXPOSURE)
+                  .value("count", RS_FRAME_METADATA_COUNT);
+    
     py::class_<rs::frame> frame(m, "frame");
-//    frame.def(py::init<>())
-//    //   .def(py::init<rs_frame*>()) // user shouldnt ever need this constructor
-//         .def(py::init<rs::frame &&>())
-//    /*     .def(py::self = py::self) */ // broken
-//         .def("swap", &rs::frame::swap, "other"_a)
-//    /*   .def( <bool conversion> ) */;
+    frame.def("get_timestamp", &rs::frame::get_timestamp, "Retrieve the time "
+              "at which the frame was captured in milliseconds")
+         .def("get_frame_timestamp_domain", &rs::frame::get_frame_timestamp_domain,
+              "Retrieve the timestamp domain (clock name)")
+         .def("get_frame_metadata", &rs::frame::get_frame_metadata, "Retrieve "
+              "the current value of a single frame_metadata",
+              "frame_metadata"_a)
+         .def("supports_frame_metadata", &rs::frame::supports_frame_metadata,
+              "Determine if the device allows a specific metadata to be "
+              "queried", "frame_metadata"_a)
+         .def("get_frame_number", &rs::frame::get_frame_number, "Retrieve "
+              "frame number (from frame handle)")
+         .def("get_data", &rs::frame::get_data, py::return_value_policy::reference,
+              "retrieve data  from frame handle")
+         .def("get_width", &rs::frame::get_width, "Returns image width in "
+              "pixels")
+         .def("get_height", &rs::frame::get_height, "Returns image height in "
+              "pixels")
+         .def("get_stride_in_bytes", &rs::frame::get_stride_in_bytes,
+              "Retrieve frame stride, meaning the actual line width in memory "
+              "in bytes (not the logical image width)")
+         .def("get_bits_per_pixel", &rs::frame::get_bits_per_pixel, "Retrieve "
+              "bits per pixel")
+         .def("get_bytes_per_pixel", &rs::frame::get_bytes_per_pixel)
+         .def("get_format", &rs::frame::get_format, "Retrieve pixel format of "
+              "the frame")
+         .def("get_stream_type", &rs::frame::get_stream_type, "Retrieve the "
+              "origin stream type that produced the frame");
+//       .def("try_clone_ref", &rs::frame::try_clone_ref);
+    
+    
     
     // wrap rs::device
     py::class_<rs::device> device(m, "device");
@@ -199,14 +268,14 @@ PYBIND11_PLUGIN(pylibrs) {
           .def("get_depth_scale", &rs::device::get_depth_scale, "Retrieve "
                "mapping between the units of the depth image and meters.")
 //          .def("debug", &rs::device::debug)
-          .def(py::init<>())
           .def(py::self == py::self)
           .def(py::self != py::self)
           .def("__repr__", [](const rs::device &dev){
               std::stringstream ss;
-              ss << "librs " << dev.get_camera_info(RS_CAMERA_INFO_DEVICE_NAME)
+              ss << "<" SNAME ".device: " << dev.get_camera_info(RS_CAMERA_INFO_DEVICE_NAME)
                  << " (S/N: " << dev.get_camera_info(RS_CAMERA_INFO_DEVICE_SERIAL_NUMBER)
-                 << ")" << dev.get_camera_info(RS_CAMERA_INFO_MODULE_NAME) << " module";
+                 << ") " << dev.get_camera_info(RS_CAMERA_INFO_MODULE_NAME)
+                 << " module>";
               return ss.str();
           });
 
