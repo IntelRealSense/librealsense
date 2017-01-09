@@ -107,11 +107,9 @@ namespace rsimpl
         CASE(FILTER_OPTION)
         CASE(CONFIDENCE_THRESHOLD)
         CASE(FRAMES_QUEUE_SIZE)
-        CASE(HARDWARE_LOGGER_ENABLED)
         CASE(VISUAL_PRESET)
         CASE(TOTAL_FRAME_DROPS)
         CASE(EMITTER_ENABLED)
-        CASE(ENABLE_FW_LOGGER)
         default: assert(!is_valid(value)); return unknown;
         }
         #undef CASE

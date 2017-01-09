@@ -216,10 +216,6 @@ namespace rsimpl
             auto serial = _hw_monitor->get_module_serial_string(GVD, module_serial_offset);
             enable_timestamp(true, true);
 
-            auto& depth_ep = get_depth_endpoint();
-            depth_ep.register_option(RS_OPTION_ENABLE_FW_LOGGER,
-                std::make_shared<fw_logger_option>(_hw_monitor, ivcam::fw_cmd::GLD, 100, "SR300 FW Logger"));
-
             std::map<rs_camera_info, std::string> depth_camera_info = {{RS_CAMERA_INFO_DEVICE_NAME, device_name},
                                                                        {RS_CAMERA_INFO_MODULE_NAME, "Depth Camera"},
                                                                        {RS_CAMERA_INFO_DEVICE_SERIAL_NUMBER, serial},
