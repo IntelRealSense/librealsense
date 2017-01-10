@@ -168,8 +168,6 @@ namespace rsimpl
         auto serial = _hw_monitor->get_module_serial_string(GVD, module_serial_offset);
 
         auto& depth_ep = get_depth_endpoint();
-        depth_ep.register_option(RS_OPTION_ENABLE_FW_LOGGER,
-            std::make_shared<fw_logger_option>(_hw_monitor, ds::fw_cmd::GLD, 100, "DS5 FW Logger"));
         if (is_camera_in_advanced_mode())
         {
             depth_ep.register_pixel_format(pf_y8i); // L+R
@@ -208,7 +206,8 @@ namespace rsimpl
                                                                  {RS_CAMERA_INFO_MODULE_NAME, "Motion Module"},
                                                                  {RS_CAMERA_INFO_DEVICE_SERIAL_NUMBER, serial},
                                                                  {RS_CAMERA_INFO_CAMERA_FIRMWARE_VERSION, fw_version},
-                                                                 {RS_CAMERA_INFO_DEVICE_LOCATION, hid_info.front().device_path}};
+                                                                 {RS_CAMERA_INFO_DEVICE_LOCATION, hid_info.front().device_path},
+                                                                 {RS_CAMERA_INFO_DEVICE_DEBUG_OP_CODE, std::to_string(fw_cmd::GLD)}};
             register_endpoint_info(hid_index, camera_info);
         }
 
@@ -223,7 +222,8 @@ namespace rsimpl
                                                                      {RS_CAMERA_INFO_MODULE_NAME, "Stereo Module"},
                                                                      {RS_CAMERA_INFO_DEVICE_SERIAL_NUMBER, serial},
                                                                      {RS_CAMERA_INFO_CAMERA_FIRMWARE_VERSION, fw_version},
-                                                                     {RS_CAMERA_INFO_DEVICE_LOCATION, element.device_path}};
+                                                                     {RS_CAMERA_INFO_DEVICE_LOCATION, element.device_path},
+                                                                     {RS_CAMERA_INFO_DEVICE_DEBUG_OP_CODE, std::to_string(fw_cmd::GLD)}};
                 register_endpoint_info(_depth_device_idx, camera_info);
             }
             else if (fisheye_ep && element.pid == RS450T_PID && element.mi == 3) // mi 3 is relate to Fisheye device
@@ -232,7 +232,8 @@ namespace rsimpl
                                                                      {RS_CAMERA_INFO_MODULE_NAME, "Fisheye Camera"},
                                                                      {RS_CAMERA_INFO_DEVICE_SERIAL_NUMBER, serial},
                                                                      {RS_CAMERA_INFO_CAMERA_FIRMWARE_VERSION, fw_version},
-                                                                     {RS_CAMERA_INFO_DEVICE_LOCATION, element.device_path}};
+                                                                     {RS_CAMERA_INFO_DEVICE_LOCATION, element.device_path},
+                                                                     {RS_CAMERA_INFO_DEVICE_DEBUG_OP_CODE, std::to_string(fw_cmd::GLD)}};
                 register_endpoint_info(fe_index, camera_info);
             }
         }
