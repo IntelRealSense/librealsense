@@ -374,7 +374,7 @@ public:
         case RS_FORMAT_DISPARITY16:
             rgb.resize(width * height * 4);
             make_depth_histogram(rgb.data(), reinterpret_cast<const uint16_t *>(data), width, height);
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 640, 480, 0, GL_RGB, GL_UNSIGNED_BYTE, rgb.data());
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, rgb.data());
             
             break;
         case RS_FORMAT_XYZ32F:
@@ -431,7 +431,7 @@ public:
             }
             break;
         default:
-            throw std::runtime_error("The requested format is not provided by demo");
+            throw std::runtime_error("The requested format is not suported for rendering");
         }
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
