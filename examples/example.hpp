@@ -338,10 +338,8 @@ public:
         auto x = static_cast<float>(shrt[0]) * gyro_transform_factor;
         auto y = static_cast<float>(shrt[1]) * gyro_transform_factor;
         auto z = static_cast<float>(shrt[2]) * gyro_transform_factor;
-
-
-
-        draw_motion_data(x, y, z, 0);
+        auto timestamp = *((uint64_t*)(data + 6));
+        draw_motion_data(x, y, z, timestamp);
     }
 
     void draw_accel_texture(const void * data)
