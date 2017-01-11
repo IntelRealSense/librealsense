@@ -37,8 +37,12 @@ assign_version_property(PATCH)
 set(REALSENSE_VERSION_STRING ${REALSENSE_VERSION_MAJOR}.${REALSENSE_VERSION_MINOR}.${REALSENSE_VERSION_PATCH})
 infoValue(REALSENSE_VERSION_STRING)
 
-IF(DEFINED ENV{ROS_PACKAGE_PATH})
-  set(ROS_BUILD_TYPE TRUE)
+# In a ROS Build Environment CMAKE_PREFIX_PATH is also an environment variable
+# Checking for this special case and ensuring it contains a ROS path
+IF(DEFINED ENV{CMAKE_PREFIX_PATH})
+  IF($ENV{CMAKE_PREFIX_PATH} MATCHES "/opt/ros")
+    set(ROS_BUILD_TYPE TRUE)
+  ENDIF()
 ENDIF()
 
 IF (${ROS_BUILD_TYPE})
