@@ -643,7 +643,6 @@ int main(int, char**) try
 
     std::vector<std::string> device_names; 
     std::string error_message = "";
-
     // Initialize list with each device name and serial number
     for (auto&& l : list)
     {
@@ -904,25 +903,40 @@ int main(int, char**) try
 
         ImGui::End();
 
+
         // Fetch frames from queue
         for (auto&& sub : model.subdevices)
         {
             for (auto& queue : sub->queues)
             {
-                rs::frame f;
-                if (queue->poll_for_frame(&f))
+                try
                 {
-                    model.stream_buffers[f.get_stream_type()].upload(f);
-                    model.steam_last_frame[f.get_stream_type()] = std::chrono::high_resolution_clock::now();
-                    auto width = (f.get_format() == RS_FORMAT_MOTION_DATA)? 640.f : f.get_width();
-                    auto height = (f.get_format() == RS_FORMAT_MOTION_DATA)? 480.f : f.get_height();
-                    model.stream_size[f.get_stream_type()] = { static_cast<float>(width),
-                                                               static_cast<float>(height)};
-                    model.stream_format[f.get_stream_type()] = f.get_format();
+                    rs::frame f;
+                    if (queue->poll_for_frame(&f))
+                    {
+                        model.stream_buffers[f.get_stream_type()].upload(f);
+                        model.steam_last_frame[f.get_stream_type()] = std::chrono::high_resolution_clock::now();
+                        auto width = (f.get_format() == RS_FORMAT_MOTION_DATA)? 640.f : f.get_width();
+                        auto height = (f.get_format() == RS_FORMAT_MOTION_DATA)? 480.f : f.get_height();
+                        model.stream_size[f.get_stream_type()] = { static_cast<float>(width),
+                                                                   static_cast<float>(height)};
+                        model.stream_format[f.get_stream_type()] = f.get_format();
+                    }
+                }
+                catch(const rs::error& e)
+                {
+                    error_message = error_to_string(e);
+                     sub->stop();
+                }
+                catch(const std::exception& e)
+                {
+                    error_message = e.what();
+                    sub->stop();
                 }
             }
 
         }
+
 
         // Rendering
         glViewport(0, 0,
