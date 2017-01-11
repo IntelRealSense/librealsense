@@ -247,7 +247,7 @@ public:
         draw_text(xy.x - w / 2, xy.y, text);
     }
 
-    void draw_motion_data(float x, float y, float z)
+    void draw_motion_data(float x, float y, float z, uint64_t timestamp)
     {
         glViewport(0, 0, 1024, 1024);
         glClearColor(0,0,0,1);
@@ -319,6 +319,10 @@ public:
             std::ostringstream s2;
             s2 << std::setprecision(presicion) << norm;
             print_text_in_3d(x / 2, y / 2, z / 2, s2.str().c_str(), true, model, proj, 1/norm);
+
+            std::ostringstream s3;
+            s3 << "Timestamp: " << timestamp;
+            draw_text(-60, -150, s3.str().c_str());
         }
 
         glCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 0, 0, 1024, 1024, 0);
@@ -337,7 +341,7 @@ public:
 
 
 
-        draw_motion_data(x, y, z);
+        draw_motion_data(x, y, z, 0);
     }
 
     void draw_accel_texture(const void * data)
@@ -350,7 +354,8 @@ public:
         auto x = static_cast<float>(shrt[0]) * accelerator_transform_factor;
         auto y = static_cast<float>(shrt[1]) * accelerator_transform_factor;
         auto z = static_cast<float>(shrt[2]) * accelerator_transform_factor;
-        draw_motion_data(x, y, z);
+        auto timestamp = *((uint64_t*)(data + 6));
+        draw_motion_data(x, y, z, timestamp);
     }
 
     void upload(const void * data, int width, int height, rs_format format, int stride = 0, rs_stream stream = RS_STREAM_ANY)
