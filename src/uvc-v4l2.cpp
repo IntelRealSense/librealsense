@@ -404,7 +404,7 @@ namespace rsimpl
                         {
                             // TODO: write to log?
                             continue;
-                        }                        
+                        }
 
                         // TODO: code refactoring to reduce latency
                         for (auto i = 0; i < read_size / channel_size; ++i)
@@ -477,7 +477,7 @@ namespace rsimpl
                     else
                     {
                         input_info.location = bytes - bytes % input_info.bytes
-                                       + input_info.bytes;
+                                              + input_info.bytes;
                     }
 
                     bytes = input_info.location + input_info.bytes;

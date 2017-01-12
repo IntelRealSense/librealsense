@@ -4,6 +4,7 @@ LINUX_BRANCH=$(uname -r)
 # Get the required tools and headers to build the kernel
 sudo apt-get install libusb-1.0-0-dev
 sudo apt-get install linux-headers-generic build-essential
+sudo apt-get install libssl-dev
 
 # Get the linux kernel and change into source tree
 [ ! -d ubuntu-xenial ] && git clone git://kernel.ubuntu.com/ubuntu/ubuntu-xenial.git --depth 1

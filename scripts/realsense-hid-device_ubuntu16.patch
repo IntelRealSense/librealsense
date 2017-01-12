@@ -38,7 +38,7 @@ index ab1e238..28262c4 100644
  {
  	dev_dbg(&indio_dev->dev, "hid_sensor_push_data\n");
 -	iio_push_to_buffers(indio_dev, data);
-+       iio_push_to_buffers_with_timestamp(indio_dev, data, timestamp);
++	iio_push_to_buffers_with_timestamp(indio_dev, data, timestamp);
  }
  
  /* Callback handler to send event after all samples are received and captured */
@@ -159,7 +159,7 @@ index f2ee90a..9a3a9db 100644
  #define HID_USAGE_SENSOR_TIME_HOUR				0x200525
  #define HID_USAGE_SENSOR_TIME_MINUTE				0x200526
  #define HID_USAGE_SENSOR_TIME_SECOND				0x200527
-+#define HID_USAGE_SENSOR_TIME_TIMESTAMP				0x200529
++#define HID_USAGE_SENSOR_TIME_TIMESTAMP			0x200529
 
  /* Units */
  #define HID_USAGE_SENSOR_UNITS_NOT_SPECIFIED			0x00

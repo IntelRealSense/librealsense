@@ -963,7 +963,7 @@ int main(int, char**) try
                 << stream_size.x << "x" << stream_size.y << ", "
                 << rs_format_to_string(model.stream_format[stream]);
 
-            if (layout.size() > 1 && !model.fullscreen)
+            if (!layout.empty() && !model.fullscreen)
             {
                 ImGui::Text(label.c_str());
                 ImGui::SameLine(ImGui::GetWindowWidth() - 30);
