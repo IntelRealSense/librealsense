@@ -271,6 +271,7 @@ public:
         draw_cyrcle(0, 1, 0, 0, 0, 1);
         draw_cyrcle(1, 0, 0, 0, 0, 1);
 
+        const auto canvas_size = 230;
         const auto vec_threshold = 0.01f;
         if ( norm < vec_threshold )
         {
@@ -306,7 +307,6 @@ public:
             GLfloat proj[16];
             glGetFloatv(GL_PROJECTION_MATRIX, proj);
 
-            const auto canvas_size = 230;
             glLoadIdentity();
             glOrtho(-canvas_size, canvas_size, -canvas_size, canvas_size, -1, +1);
 
@@ -319,13 +319,15 @@ public:
             std::ostringstream s2;
             s2 << std::setprecision(presicion) << norm;
             print_text_in_3d(x / 2, y / 2, z / 2, s2.str().c_str(), true, model, proj, 1/norm);
+        }
 
-            if (timestamp != 0)
-            {
-                std::ostringstream s3;
-                s3 << "Timestamp: " << timestamp;
-                draw_text(-60, -150, s3.str().c_str());
-            }
+        if (timestamp != 0)
+        {
+            glLoadIdentity();
+            glOrtho(-canvas_size, canvas_size, -canvas_size, canvas_size, -1, +1);
+            std::ostringstream s3;
+            s3 << "Timestamp: " << timestamp;
+            draw_text(-60, -150, s3.str().c_str());
         }
 
         glCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 0, 0, 1024, 1024, 0);
