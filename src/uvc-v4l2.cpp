@@ -379,12 +379,13 @@ namespace rsimpl
 
                     const unsigned channel_size = get_channel_size();
                     const unsigned output_size = get_output_size();
+                    auto raw_data_size = channel_size*buf_len;
                     do {
-                        auto raw_data_size = channel_size*buf_len;
                         std::vector<uint8_t> raw_data(raw_data_size);
                         fd_set fds;
                         FD_ZERO(&fds);
                         FD_SET(fd, &fds);
+                        auto read_size = 0;
 
                         struct timeval tv = {0,10000};
                         if (select(fd + 1, &fds, NULL, NULL, &tv) < 0)
@@ -395,25 +396,31 @@ namespace rsimpl
 
                         if (FD_ISSET(fd, &fds))
                         {
-                            read(fd, raw_data.data(), raw_data_size);
+                            read_size = read(fd, raw_data.data(), raw_data_size);
+                            if (read_size < 0 )
+                                continue;
                         }
                         else
                         {
                             // TODO: write to log?
                             continue;
+                        }                        
+
+                        // TODO: code refactoring to reduce latency
+                        for (auto i = 0; i < read_size / channel_size; ++i)
+                        {
+                            auto p_raw_data = raw_data.data() + channel_size * i;
+                            sensor_data sens_data{};
+                            sens_data.sensor = hid_sensor{get_iio_device(), get_sensor_name()};
+                            sens_data.data.resize(output_size);
+
+                            // TODO: parse data dynamically
+                            memcpy(sens_data.data.data() + 0, p_raw_data + 0, 2);
+                            memcpy(sens_data.data.data() + 2, p_raw_data + 4, 2);
+                            memcpy(sens_data.data.data() + 4, p_raw_data + 8, 2);
+                            memcpy(sens_data.data.data() + 6, p_raw_data + 16, 8);
+                            this->callback(sens_data);
                         }
-
-                        sensor_data sens_data{};
-                        sens_data.sensor = hid_sensor{get_iio_device(), get_sensor_name()};
-                        sens_data.data.resize(output_size);
-
-                        // TODO: parse data dynamically
-                        memcpy(sens_data.data.data() + 0, raw_data.data() + 0, 2);
-                        memcpy(sens_data.data.data() + 2, raw_data.data() + 4, 2);
-                        memcpy(sens_data.data.data() + 4, raw_data.data() + 8, 2);
-                        memcpy(sens_data.data.data() + 6, raw_data.data() + 16, 8);
-                        this->callback(sens_data);
-
                     } while(this->capturing);
                     close(fd);
                 }));
