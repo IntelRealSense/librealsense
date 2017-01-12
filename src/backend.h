@@ -150,7 +150,6 @@ namespace rsimpl
             virtual void close() = 0;
             virtual void stop_capture() = 0;
             virtual void start_capture(const std::vector<int>& sensor_iio, hid_callback callback) = 0;
-            virtual std::vector<hid_sensor_input> get_sensor_inputs(int sensor_iio) = 0;
             virtual std::vector<hid_sensor> get_sensors() = 0;
         };
 
