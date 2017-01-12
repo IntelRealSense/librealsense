@@ -96,7 +96,7 @@ namespace rsimpl
 
         uint8_t get_subdevice_count() const override
         {
-            auto pid = _hwm.pid;
+            auto pid = _depth.pid;
             switch (pid)
             {
             case 0x0aa5: return 2;
