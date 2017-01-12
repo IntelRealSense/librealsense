@@ -77,7 +77,7 @@ namespace rsimpl
             return _msg.c_str();
         }
 
-        rs_librealsense_exception_type get_exception_type() const noexcept
+        rs_exception_type get_exception_type() const noexcept
         {
             return _exception_type;
         }
@@ -89,21 +89,21 @@ namespace rsimpl
 
     protected:
         librealsense_exception(const std::string& msg,
-                               rs_librealsense_exception_type exception_type) noexcept
+                               rs_exception_type exception_type) noexcept
             : _msg(msg),
               _exception_type(exception_type)
         {}
 
     private:
         std::string _msg;
-        rs_librealsense_exception_type _exception_type;
+        rs_exception_type _exception_type;
     };
 
     class recoverable_exception : public librealsense_exception
     {
     public:
         recoverable_exception(const std::string& msg,
-                              rs_librealsense_exception_type exception_type) noexcept
+                              rs_exception_type exception_type) noexcept
             : librealsense_exception(msg, exception_type)
         {
             LOG_WARNING(msg);
@@ -114,7 +114,7 @@ namespace rsimpl
     {
     public:
         unrecoverable_exception(const std::string& msg,
-                                rs_librealsense_exception_type exception_type) noexcept
+                                rs_exception_type exception_type) noexcept
             : librealsense_exception(msg, exception_type)
         {
             LOG_ERROR(msg);
@@ -125,7 +125,7 @@ namespace rsimpl
     {
     public:
         camera_disconnected_exception(const std::string& msg) noexcept
-            : unrecoverable_exception(msg, RS_LIBREALSENSE_EXCEPTION_TYPE_CAMERA_DISCONNECTED)
+            : unrecoverable_exception(msg, RS_EXCEPTION_TYPE_CAMERA_DISCONNECTED)
         {}
     };
 
@@ -133,7 +133,7 @@ namespace rsimpl
     {
     public:
         backend_exception(const std::string& msg,
-                          rs_librealsense_exception_type exception_type) noexcept
+                          rs_exception_type exception_type) noexcept
             : unrecoverable_exception(msg, exception_type)
         {}
     };
@@ -142,7 +142,7 @@ namespace rsimpl
     {
     public:
         linux_backend_exception(const std::string& msg) noexcept
-            : backend_exception(generate_last_error_message(msg), RS_LIBREALSENSE_EXCEPTION_TYPE_BACKEND)
+            : backend_exception(generate_last_error_message(msg), RS_EXCEPTION_TYPE_BACKEND)
         {}
 
     private:
@@ -157,7 +157,7 @@ namespace rsimpl
     public:
         // TODO: get last error
         windows_backend_exception(const std::string& msg) noexcept
-            : backend_exception(msg, RS_LIBREALSENSE_EXCEPTION_TYPE_BACKEND)
+            : backend_exception(msg, RS_EXCEPTION_TYPE_BACKEND)
         {}
     };
 
@@ -165,7 +165,7 @@ namespace rsimpl
     {
     public:
         invalid_value_exception(const std::string& msg) noexcept
-            : recoverable_exception(msg, RS_LIBREALSENSE_EXCEPTION_TYPE_INVALID_VALUE)
+            : recoverable_exception(msg, RS_EXCEPTION_TYPE_INVALID_VALUE)
         {}
     };
 
@@ -173,7 +173,7 @@ namespace rsimpl
     {
     public:
         wrong_api_call_sequence_exception(const std::string& msg) noexcept
-            : recoverable_exception(msg, RS_LIBREALSENSE_EXCEPTION_TYPE_WRONG_API_CALL_SEQUENCE)
+            : recoverable_exception(msg, RS_EXCEPTION_TYPE_WRONG_API_CALL_SEQUENCE)
         {}
     };
 
@@ -181,7 +181,7 @@ namespace rsimpl
     {
     public:
         not_implemented_exception(const std::string& msg) noexcept
-            : recoverable_exception(msg, RS_LIBREALSENSE_EXCEPTION_TYPE_NOT_IMPLEMENTED)
+            : recoverable_exception(msg, RS_EXCEPTION_TYPE_NOT_IMPLEMENTED)
         {}
     };
 
@@ -306,7 +306,7 @@ namespace rsimpl
     RS_ENUM_HELPERS(rs_camera_info, CAMERA_INFO)
     RS_ENUM_HELPERS(rs_timestamp_domain, TIMESTAMP_DOMAIN)
     RS_ENUM_HELPERS(rs_visual_preset, VISUAL_PRESET)
-    RS_ENUM_HELPERS(rs_librealsense_exception_type, LIBREALSENSE_EXCEPTION_TYPE)
+    RS_ENUM_HELPERS(rs_exception_type, EXCEPTION_TYPE)
     #undef RS_ENUM_HELPERS
 
     ////////////////////////////////////////////

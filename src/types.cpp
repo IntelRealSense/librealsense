@@ -29,9 +29,9 @@ namespace rsimpl
         return f.good();
     }
 
-    const char * get_string(rs_librealsense_exception_type value)
+    const char * get_string(rs_exception_type value)
     {
-        #define CASE(X) case RS_LIBREALSENSE_EXCEPTION_TYPE_##X: return #X;
+        #define CASE(X) case RS_EXCEPTION_TYPE_##X: return #X;
         switch(value)
         {
         CASE(UNKNOWN)
@@ -40,6 +40,7 @@ namespace rsimpl
         CASE(INVALID_VALUE)
         CASE(WRONG_API_CALL_SEQUENCE)
         CASE(NOT_IMPLEMENTED)
+        CASE(DEVICE_IN_RECOVERY_MODE)
         default: assert(!is_valid(value)); return unknown;
         }
         #undef CASE

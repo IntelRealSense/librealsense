@@ -96,6 +96,8 @@ namespace rsimpl
 
     struct frame_timestamp_reader
     {
+        virtual ~frame_timestamp_reader() {}
+
         virtual bool validate_frame(const request_mapping & mode, const void * frame) const = 0;
         virtual double get_frame_timestamp(const request_mapping& mode, const void * frame) = 0;
         virtual unsigned long long get_frame_counter(const request_mapping& mode, const void * frame) const = 0;

@@ -496,6 +496,7 @@ struct to_string
 
 inline std::string error_to_string(const rs::error& e)
 {
-    return to_string() << e.get_failed_function() << "("
+    return to_string() << rs_exception_type_to_string(e.get_type()) 
+        << " in " << e.get_failed_function() << "("
         << e.get_failed_args() << "):\n" << e.what();
 }
