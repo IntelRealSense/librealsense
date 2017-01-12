@@ -335,7 +335,7 @@ public:
 
     double t = 0;
 
-    void draw_gyro_texture(const void * data, unsigned size)
+    void draw_gyro_texture(const uint8_t* data, unsigned size)
     {
         const static float gyro_range   = 1000.f;                   // Preconfigured angular velocity range [-1000...1000] Deg_C/Sec
         const static float gyro_transform_factor = float((gyro_range * M_PI) / (180.f * 32767.f));
@@ -350,7 +350,7 @@ public:
         draw_motion_data(x, y, z, timestamp);
     }
 
-    void draw_accel_texture(const void * data, unsigned size)
+    void draw_accel_texture(const uint8_t* data, unsigned size)
     {
         const static float gravity = 9.80665f; // Standard Gravitation Acceleration
         const static float accel_range = 4.f;                       // Accelerometer is preset to [-4...+4]g range
@@ -368,7 +368,7 @@ public:
         draw_motion_data(x, y, z, timestamp);
     }
 
-    void upload(const void * data, int width, int height, rs_format format, int stride = 0, rs_stream stream = RS_STREAM_ANY)
+    void upload(const uint8_t * data, int width, int height, rs_format format, int stride = 0, rs_stream stream = RS_STREAM_ANY)
     {
         // If the frame timestamp has changed since the last time show(...) was called, re-upload the texture
         if(!texture)
@@ -455,7 +455,7 @@ public:
 
     void upload(rs::frame& frame)
     {
-        upload(frame.get_data(), frame.get_width(), frame.get_height(), frame.get_format(), 
+        upload(static_cast<const uint8_t*>(frame.get_data()), frame.get_width(), frame.get_height(), frame.get_format(),
             (frame.get_stride_in_bytes() * 8) / frame.get_bits_per_pixel(), frame.get_stream_type());
     }
 
