@@ -983,10 +983,17 @@ namespace rsimpl
 
             void capture_loop()
             {
-                while(_is_capturing)
+                try
                 {
-                    poll();
-                    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+                    while(_is_capturing)
+                    {
+                        poll();
+                        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+                    }
+                }
+                catch (const std::exception& ex)
+                {
+                    LOG_ERROR(ex.what());
                 }
             }
 
@@ -1152,36 +1159,50 @@ namespace rsimpl
                 FD_ZERO(&fds);
                 FD_SET(_fd, &fds);
 
-                struct timeval tv = {0,10000};
-                if(select(max_fd + 1, &fds, NULL, NULL, &tv) < 0)
+                struct timeval tv = {5,0};
+                auto val = select(max_fd+1, &fds, NULL, NULL, &tv);
+                if(val < 0)
                 {
                     if (errno == EINTR)
                         return;
 
                     throw linux_backend_exception("select failed");
                 }
-
-                if(FD_ISSET(_fd, &fds))
+                else if(val > 0)
                 {
-                    v4l2_buffer buf = {};
-                    buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-                    buf.memory = V4L2_MEMORY_MMAP;
-                    if(xioctl(_fd, VIDIOC_DQBUF, &buf) < 0)
+                    if(FD_ISSET(_fd, &fds))
                     {
-                        if(errno == EAGAIN)
-                            return;
+                        FD_ZERO(&fds);
+                        FD_SET(_fd, &fds);
+                        v4l2_buffer buf = {};
+                        buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+                        buf.memory = V4L2_MEMORY_MMAP;
+                        if(xioctl(_fd, VIDIOC_DQBUF, &buf) < 0)
+                        {
+                            if(errno == EAGAIN)
+                                return;
 
-                        throw linux_backend_exception("xioctl(VIDIOC_DQBUF) failed");
+                            throw linux_backend_exception("xioctl(VIDIOC_DQBUF) failed");
+                        }
+
+                        frame_object fo { (int)_buffers[buf.index].length,
+                                          _buffers[buf.index].start };
+
+                        _callback(_profile, fo);
+
+                        if(xioctl(_fd, VIDIOC_QBUF, &buf) < 0)
+                            throw linux_backend_exception("xioctl(VIDIOC_QBUF) failed");
                     }
-
-                    frame_object fo { (int)_buffers[buf.index].length,
-                                      _buffers[buf.index].start };
-
-                    _callback(_profile, fo);
-
-                    if(xioctl(_fd, VIDIOC_QBUF, &buf) < 0)
-                        throw linux_backend_exception("xioctl(VIDIOC_QBUF) failed");
+                    else
+                    {
+                        throw linux_backend_exception("FD_ISSET returned false");
+                    }
                 }
+                else
+                {
+                    LOG_WARNING("Frames didn't arrived within 10 seconds");
+                }
+
             }
 
             void set_power_state(power_state state) override
