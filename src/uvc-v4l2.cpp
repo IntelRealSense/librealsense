@@ -1186,7 +1186,7 @@ namespace rsimpl
                         }
 
                         frame_object fo { (int)_buffers[buf.index].length,
-                                          _buffers[buf.index].start };
+                                        _buffers[buf.index].start };
 
                         _callback(_profile, fo);
 
@@ -1200,7 +1200,7 @@ namespace rsimpl
                 }
                 else
                 {
-                    LOG_WARNING("Frames didn't arrived within 10 seconds");
+                    LOG_WARNING("Frames didn't arrived within 5 seconds");
                 }
 
             }
