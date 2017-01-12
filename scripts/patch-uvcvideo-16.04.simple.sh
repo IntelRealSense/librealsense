@@ -9,6 +9,7 @@ sudo apt-get install libssl-dev
 # Get the linux kernel and change into source tree
 [ ! -d ubuntu-xenial ] && git clone git://kernel.ubuntu.com/ubuntu/ubuntu-xenial.git --depth 1
 cd ubuntu-xenial
+sudo git reset --hard
 
 # Apply UVC formats patch for RealSense devices
 patch -p1 < ../scripts/realsense-camera-formats_ubuntu16.patch

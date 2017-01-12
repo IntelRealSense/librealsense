@@ -484,6 +484,7 @@ const std::string& endpoint::get_info(rs_camera_info info) const
     auto it = _camera_info.find(info);
     if (it == _camera_info.end())
         throw invalid_value_exception("Selected camera info is not supported for this camera!");
+
     return it->second;
 }
 
