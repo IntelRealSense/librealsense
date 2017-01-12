@@ -3,8 +3,42 @@
 # ubuntu 16.04 LTS cmake version 3.5.1
 cmake_minimum_required(VERSION 2.8.3)
 
-IF(DEFINED ENV{CMAKE_PREFIX_PATH})
-  IF($ENV{CMAKE_PREFIX_PATH} MATCHES "/opt/ros")
+macro(info msg)
+    message(STATUS "Info: ${msg}")
+endmacro()
+
+macro(infoValue variableName)
+    info("${variableName}=\${${variableName}}")
+endmacro()
+
+##################################################################
+# Parse librealsense version and assign it to CMake variables    #
+# This function parses librealsense public API header file, rs.h #
+# and retrieves version numbers embedded in the source code.     #
+# Since the function relies on hard-coded variables, it is prone #
+# for failures should these constants be modified in future      #
+##################################################################
+function(assign_version_property VER_COMPONENT)
+    file(STRINGS "./include/librealsense/rs.h" REALSENSE_VERSION_${VER_COMPONENT} REGEX "#define RS_API_${VER_COMPONENT}_VERSION")
+    separate_arguments(REALSENSE_VERSION_${VER_COMPONENT})
+    list(GET REALSENSE_VERSION_${VER_COMPONENT} -1 tmp)
+    if (tmp LESS 0)
+        message( FATAL_ERROR "Could not obtain valid Librealsense version ${VER_COMPONENT} component - actual value is ${tmp}" )
+    endif()
+    set(REALSENSE_VERSION_${VER_COMPONENT} ${tmp} PARENT_SCOPE)
+endfunction()
+
+set(REALSENSE_VERSION_MAJOR -1)
+set(REALSENSE_VERSION_MINOR -1)
+set(REALSENSE_VERSION_PATCH -1)
+assign_version_property(MAJOR)
+assign_version_property(MINOR)
+assign_version_property(PATCH)
+set(REALSENSE_VERSION_STRING ${REALSENSE_VERSION_MAJOR}.${REALSENSE_VERSION_MINOR}.${REALSENSE_VERSION_PATCH})
+infoValue(REALSENSE_VERSION_STRING)
+
+IF(DEFINED CMAKE_PREFIX_PATH)
+  IF("${CMAKE_PREFIX_PATH}" MATCHES "/opt/ros")
     set(ROS_BUILD_TYPE TRUE)
   ENDIF()
 ENDIF()
@@ -37,13 +71,13 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
 #set(CMAKE_VERBOSE_MAKEFILE on)
 
 include(CheckCXXCompilerFlag)
-CHECK_CXX_COMPILER_FLAG("-std=c++11 -pthread" COMPILER_SUPPORTS_CXX11)
+CHECK_CXX_COMPILER_FLAG("-std=c++11" COMPILER_SUPPORTS_CXX11)
 CHECK_CXX_COMPILER_FLAG("-std=c++0x" COMPILER_SUPPORTS_CXX0X)
 if(COMPILER_SUPPORTS_CXX11)
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c11 -pthread")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -pthread")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c11")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 elseif(COMPILER_SUPPORTS_CXX0X)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x -pthread")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
 else()
     message(STATUS "The compiler ${CMAKE_CXX_COMPILER} has no C++11 support. Please use a different C++ compiler.")
 endif()
@@ -187,14 +221,16 @@ add_definitions(-D${BACKEND} -DUNICODE)
 
 if(UNIX)
     find_package(PkgConfig REQUIRED)
+    find_package (Threads REQUIRED)
     pkg_search_module(LIBUSB1 REQUIRED libusb-1.0)
     if(LIBUSB1_FOUND)
-      include_directories(SYSTEM ${LIBUSB1_INCLUDE_DIRS})
+        include_directories(SYSTEM ${LIBUSB1_INCLUDE_DIRS})
+        link_directories(${LIBUSB1_LIBRARY_DIRS})
     else()
-      message( FATAL_ERROR "Failed to find libusb-1.0" )
+        message( FATAL_ERROR "Failed to find libusb-1.0" )
     endif(LIBUSB1_FOUND)
 
-    set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -fPIC -pedantic -D_BSD_SOURCE")
+    set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -fPIC -pedantic -g -D_BSD_SOURCE")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC -pedantic -g -Wno-missing-field-initializers")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-switch -Wno-multichar")
 
@@ -211,10 +247,15 @@ if(UNIX)
     endif(${MACHINE} MATCHES "arm-linux-gnueabihf")
 endif()
 
+# Set CMAKE_INSTALL_* if not defined
+include(GNUInstallDirs)
+
 option(BUILD_SHARED_LIBS "Build shared library" ON)
 if(BUILD_SHARED_LIBS)
     add_library(realsense SHARED ${REALSENSE_CPP} ${REALSENSE_HPP} ${REALSENSE_DEF})
-    target_link_libraries(realsense ${LIBUSB1_LIBRARIES})
+    set_target_properties(realsense PROPERTIES VERSION ${REALSENSE_VERSION_STRING}
+                                    SOVERSION ${REALSENSE_VERSION_MAJOR})
+    target_link_libraries(realsense ${LIBUSB1_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
 else()
     add_library(realsense STATIC ${REALSENSE_CPP} ${REALSENSE_HPP})
 endif()
@@ -225,12 +266,25 @@ set_target_properties (realsense PROPERTIES
 
 target_include_directories(realsense PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include/ ${LIBUSB1_INCLUDE_DIRS})
 
-install( TARGETS realsense
-    RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/bin
-    LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
-    ARCHIVE DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
-)
-install(DIRECTORY ${PROJECT_SOURCE_DIR}/include/librealsense DESTINATION ${CMAKE_INSTALL_PREFIX}/include)
+IF (${ROS_BUILD_TYPE})
+    install(TARGETS realsense
+        RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+        LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+        ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+    )
+
+    install(DIRECTORY ${PROJECT_SOURCE_DIR}/include/${PROJECT_NAME}/
+        DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION})
+ELSE()
+    install( TARGETS realsense
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    )
+
+    install(DIRECTORY ${PROJECT_SOURCE_DIR}/include/librealsense DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+    install(CODE "execute_process(COMMAND ldconfig)")
+ENDIF()
 
 option(BUILD_EXAMPLES "Build realsense examples." OFF)
 if(BUILD_EXAMPLES)

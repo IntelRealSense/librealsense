@@ -90,6 +90,23 @@ namespace rsimpl
             return std::make_shared<ds5_info>(*this);
         }
 
+        uint8_t get_subdevice_count() const override
+        {
+            auto depth_pid = _depth.front().pid;
+            switch(depth_pid)
+            {
+            case ds::RS400P_PID:
+            case ds::RS410A_PID:
+            case ds::RS420R_PID:
+            case ds::RS430C_PID: return 1;
+            case ds::RS450T_PID: return 3;
+            default: 
+                throw not_implemented_exception(to_string() <<
+                    "get_subdevice_count is not implemented for DS5 device of type " <<
+                    depth_pid);
+            }
+        }
+
         ds5_info(std::vector<uvc::uvc_device_info> depth,
             uvc::usb_device_info hwm,
             std::vector<uvc::hid_device_info> hid);

@@ -101,8 +101,11 @@ namespace rsimpl
     std::shared_ptr<hid_endpoint> ds5_camera::create_hid_device(const uvc::backend& backend,
                                                                 const std::vector<uvc::hid_device_info>& all_hid_infos)
     {
-        // TODO: implement multiple hid devices
-        assert(!all_hid_infos.empty());
+        if (all_hid_infos.empty())
+        {
+            throw std::runtime_error("HID device is missing!");
+        }
+
         auto hid_ep = std::make_shared<hid_endpoint>(backend.create_hid_device(all_hid_infos[0]));
         return hid_ep;
     }

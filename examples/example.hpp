@@ -15,6 +15,9 @@
 #define _USE_MATH_DEFINES
 #include <cmath>
 
+#define _USE_MATH_DEFINES
+#include <math.h>
+
 inline void make_depth_histogram(uint8_t rgb_image[], const uint16_t depth_image[], int width, int height)
 {
     static uint32_t histogram[0x10000];
@@ -386,7 +389,7 @@ public:
         case RS_FORMAT_DISPARITY16:
             rgb.resize(width * height * 4);
             make_depth_histogram(rgb.data(), reinterpret_cast<const uint16_t *>(data), width, height);
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 640, 480, 0, GL_RGB, GL_UNSIGNED_BYTE, rgb.data());
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, rgb.data());
             
             break;
         case RS_FORMAT_XYZ32F:
@@ -443,7 +446,7 @@ public:
             }
             break;
         default:
-            throw std::runtime_error("The requested format is not provided by demo");
+            throw std::runtime_error("The requested format is not suported for rendering");
         }
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -508,6 +511,7 @@ struct to_string
 
 inline std::string error_to_string(const rs::error& e)
 {
-    return to_string() << e.get_failed_function() << "("
+    return to_string() << rs_exception_type_to_string(e.get_type()) 
+        << " in " << e.get_failed_function() << "("
         << e.get_failed_args() << "):\n" << e.what();
 }
