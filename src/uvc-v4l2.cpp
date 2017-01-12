@@ -355,7 +355,7 @@ namespace rsimpl
 
                 callback = sensor_callback;
                 capturing = true;
-                hid_thread = std::unique_ptr<std::thread>(new std::thread([this, buf_len, iio_read_device_path_str](){
+                hid_thread = std::unique_ptr<std::thread>(new std::thread([this, iio_read_device_path_str](){
                     int fd = 0;
                     const auto max_retries = 10;
                     auto retries = 0;

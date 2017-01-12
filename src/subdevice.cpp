@@ -578,6 +578,12 @@ void hid_endpoint::start_streaming(frame_callback_ptr callback)
         additional_data.stream_type = stream_format.stream;
         additional_data.width = data_size;
         additional_data.height = 1;
+
+        if (sensor_data.data.size() == 14) // TODO
+        {
+            additional_data.timestamp = *((uint64_t*)(sensor_data.data.data() + 6));
+        }
+
         auto frame = this->alloc_frame(data_size, additional_data);
         if (!frame)
         {
