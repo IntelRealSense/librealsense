@@ -1,10 +1,10 @@
 # Sample Applications
 
 The following samples application have been provided:
-- Presenting a BGR image
-- Presenting an infrared image
--	Presenting a depth image
-- Playing color streaming
+* [Presenting a BGR Image](#Presenting-a-BGR-Image)
+* [Presenting an Infrared Image](#Presenting-an-Infrared-Image)
+*	[Presenting a Depth Image](#Presenting-a-Depth-Image)
+* [Play Color Streaming](#Play-Color-Streaming)
 
 ## Presenting a BGR Image
 
@@ -28,7 +28,8 @@ using namespace cv;
 
 int main()
 {
-    // Create a context object. This object owns the handles to all connected realsense devices. rs::context ctx;
+    // Create a context object. This object owns the handles to all connected realsense devices.
+    rs::context ctx;
 
     // access a single device (it is trivial to extend access to multiple devices)
     rs::device * dev = ctx.get_device(0);
@@ -215,9 +216,6 @@ using namespace cv;
 
 int main()
 {
-
-    // g++ -std=c++11 librealsense_sample.cpp -lrealsense -lopencv_core -lopencv_highgui -lopencv_imgproc -lopencv_contrib -o sample && ./sample
-
     // Create a context object. This object owns the handles to all connected realsense devices.
     rs::context ctx;
 
