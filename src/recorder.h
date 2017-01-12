@@ -46,7 +46,6 @@ namespace rsimpl
             hid_stop_capture,
             hid_start_capture,
             hid_frame,
-            hid_get_sensor_inputs,
             hid_get_sensors
         };
 
@@ -194,14 +193,6 @@ namespace rsimpl
                 return load_list(hid_sensors, c);
             }
 
-            std::vector<hid_sensor_input> load_hid_sensors_inputs_list(int entity_id)
-            {
-                auto&& c = find_call(call_type::hid_get_sensor_inputs, entity_id);
-                return load_list(hid_sensor_inputs, c);
-            }
-
-
-
             std::vector<uint8_t> load_blob(int id) const
             {
                 return blobs[id];
@@ -272,7 +263,6 @@ namespace rsimpl
             void close() override;
             void stop_capture() override;
             void start_capture(const std::vector<int>& sensor_iio, hid_callback callback) override;
-            std::vector<hid_sensor_input> get_sensor_inputs(int sensor_iio) override;
             std::vector<hid_sensor> get_sensors() override;
 
             record_hid_device(std::shared_ptr<hid_device> source,
@@ -418,7 +408,6 @@ namespace rsimpl
             void close() override;
             void stop_capture() override;
             void start_capture(const std::vector<int>& sensor_iio, hid_callback callback) override;
-            std::vector<hid_sensor_input> get_sensor_inputs(int sensor_iio) override;
             std::vector<hid_sensor> get_sensors() override;
 
             void callback_thread();

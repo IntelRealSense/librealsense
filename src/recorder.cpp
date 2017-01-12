@@ -762,16 +762,6 @@ namespace rsimpl
             }, _entity_id, call_type::hid_start_capture);
         }
 
-        vector<hid_sensor_input> record_hid_device::get_sensor_inputs(int sensor_iio)
-        {
-            return _owner->try_record([&](recording* rec, lookup_key k)
-            {
-                auto res = _source->get_sensor_inputs(sensor_iio);
-                rec->save_hid_sensors_inputs(res, k);
-                return res;
-            }, _entity_id, call_type::hid_get_sensor_inputs);
-        }
-
         vector<hid_sensor> record_hid_device::get_sensors()
         {
             return _owner->try_record([&](recording* rec, lookup_key k)
@@ -1127,11 +1117,6 @@ namespace rsimpl
             // TODO: Verify sensor_iio
 
             _callback = callback;
-        }
-
-        vector<hid_sensor_input> playback_hid_device::get_sensor_inputs(int sensor_iio)
-        {
-            return _rec->load_hid_sensors_inputs_list(_entity_id);
         }
 
         vector<hid_sensor> playback_hid_device::get_sensors()
