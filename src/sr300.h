@@ -94,6 +94,19 @@ namespace rsimpl
             uvc::uvc_device_info depth,
             uvc::usb_device_info hwm);
 
+        uint8_t get_subdevice_count() const override
+        {
+            auto pid = _depth.pid;
+            switch (pid)
+            {
+            case 0x0aa5: return 2;
+            default:
+                throw not_implemented_exception(to_string() <<
+                    "get_subdevice_count is not implemented for SR300 device of type " <<
+                    pid);
+            }
+        }
+
     private:
         uvc::uvc_device_info _color;
         uvc::uvc_device_info _depth;

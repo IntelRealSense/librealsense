@@ -70,11 +70,15 @@ namespace rsimpl
         auto hid_devices = _backend->query_hid_devices();
 
         auto sr300_devices = pick_sr300_devices(uvc_devices, usb_devices);
-        for (auto& dev : sr300_devices)
+        for (auto&& dev : sr300_devices)
             list.push_back(dev);
 
         auto ds5_devices = pick_ds5_devices(uvc_devices, usb_devices, hid_devices);
-        for (auto& dev : ds5_devices)
+        for (auto&& dev : ds5_devices)
+            list.push_back(dev);
+
+        auto recovery_devices = recovery_info::pick_recovery_devices(usb_devices);
+        for (auto&& dev : recovery_devices)
             list.push_back(dev);
 
         return list;

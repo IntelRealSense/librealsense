@@ -146,81 +146,99 @@ namespace rsimpl
             return usb_bus + port_path.str();
         }
 
-        // hold all captured inputs in a specific trigger.
-        class sensor_inputs {
-        public:
-            const std::list<callback_data>& get_input_data() const
-            {
-                return input_data;
-            }
+        struct hid_input_info {
+            std::string input = "";
+            std::string device_path = "";
+            int index = -1;
+            bool enabled = false;
 
-            // add input to the sensor inputs.
-            void add_input(const hid_sensor& sensor, const hid_sensor_input& sensor_input, unsigned value) {
-                input_data.push_front(callback_data{sensor, sensor_input, value});
-            }
-        private:
-            std::list<callback_data> input_data;
+            unsigned big_endian = 0;
+            unsigned bits_used = 0;
+            unsigned bytes = 0;
+            unsigned is_signed = 0;
+            unsigned location = 0;
+            unsigned shift = 0;
+            uint64_t mask;
+            // TODO: parse 'offset' and 'scale'
         };
 
         // manage an IIO input. or what is called a scan.
         class hid_input {
         public:
-            hid_input()
-                : input(""),
-                  device_path(""),
-                  type(""),
-                  index(-1),
-                  enabled(false)
-            {}
+            hid_input() {}
 
             // initialize the input by reading the input parameters.
             bool init(const std::string& iio_device_path, const std::string& input_name) {
                 char buffer[1024];
 
-                device_path = iio_device_path;
+                info.device_path = iio_device_path;
                 std::string input_prefix = "in_";
                 // validate if input includes th "in_" prefix. if it is . remove it.
                 if (input_name.substr(0,input_prefix.size()) == input_prefix) {
-                    input = input_name.substr(input_prefix.size(), input_name.size());
+                    info.input = input_name.substr(input_prefix.size(), input_name.size());
                 } else {
-                    input = input_name;
+                    info.input = input_name;
                 }
 
                 std::string input_suffix = "_en";
                 // check if input contains the "en" suffix, if it is . remove it.
-                if (input.substr(input.size()-input_suffix.size(), input_suffix.size()) == input_suffix) {
-                    input = input.substr(0, input.size()-input_suffix.size());
+                if (info.input.substr(info.input.size()-input_suffix.size(), input_suffix.size()) == input_suffix) {
+                    info.input = info.input.substr(0, info.input.size()-input_suffix.size());
                 }
 
                 // read scan type.
-                std::ifstream device_type_file(device_path + "/scan_elements/in_" + input + "_type");
+                std::ifstream device_type_file(info.device_path + "/scan_elements/in_" + info.input + "_type");
                 if (!device_type_file) {
                     return false;
                 }
+
                 device_type_file.getline(buffer, sizeof(buffer));
-                type = std::string(buffer);
+                unsigned pad_int;
+                char sign_char, endia_nchar;
+                // TODO: parse with regex
+                auto ret = std::sscanf(buffer,
+                                       "%ce:%c%u/%u>>%u",
+                                       &endia_nchar,
+                                       &sign_char,
+                                       &info.bits_used,
+                                       &pad_int,
+                                       &info.shift);
+
+                if (ret < 0){
+                    return false;
+                }
 
                 device_type_file.close();
 
+                info.big_endian = (endia_nchar == 'b');
+                info.bytes = pad_int / 8;
+                info.is_signed = (sign_char == 's');
+
+                if (info.bits_used == 64)
+                    info.mask = ~0;
+                else
+                    info.mask = (1ULL << info.bits_used) - 1;
+
+
                 // read scan index.
-                std::ifstream device_index_file(device_path + "/scan_elements/in_" + input + "_index");
+                std::ifstream device_index_file(info.device_path + "/scan_elements/in_" + info.input + "_index");
                 if (!device_index_file) {
                     return false;
                 }
 
                 device_index_file.getline(buffer, sizeof(buffer));
-                index = std::stoi(buffer);
+                info.index = std::stoi(buffer);
 
                 device_index_file.close();
 
                 // read enable state.
-                std::ifstream device_enabled_file(device_path + "/scan_elements/in_" + input + "_en");
+                std::ifstream device_enabled_file(info.device_path + "/scan_elements/in_" + info.input + "_en");
                 if (!device_enabled_file) {
                     return false;
                 }
 
                 device_enabled_file.getline(buffer, sizeof(buffer));
-                enabled = (std::stoi(buffer) == 0) ? false : true;
+                info.enabled = (std::stoi(buffer) == 0) ? false : true;
 
                 device_enabled_file.close();
                 return true;
@@ -230,7 +248,7 @@ namespace rsimpl
             bool enable(bool is_enable) {
                 auto input_data = is_enable ? 1 : 0;
                 // open the element requested and enable and disable.
-                std::ofstream iio_device_file(device_path + "/scan_elements/" + "in_" + input + "_en");
+                std::ofstream iio_device_file(info.device_path + "/scan_elements/" + "in_" + info.input + "_en");
 
                 if (!iio_device_file.is_open()) {
                     return false;
@@ -238,21 +256,15 @@ namespace rsimpl
                 iio_device_file << input_data;
                 iio_device_file.close();
 
-                enabled = is_enable;
+                info.enabled = is_enable;
 
                 return true;
             }
 
-            std::string get_name() const { return input; }
-            std::string get_type() const { return type; }
-            int get_index() const { return index; }
-            bool is_enabled() const { return enabled; }
+            const hid_input_info& get_hid_input_info() const { return info; }
+
         private:
-            std::string input;
-            std::string device_path;
-            std::string type;
-            int index;
-            bool enabled;
+            hid_input_info info;
         };
 
         // declare device sensor with all of its inputs.
@@ -304,7 +316,7 @@ namespace rsimpl
             // return an input by name.
             hid_input* get_input(std::string input_name) {
                 for (auto& input : inputs) {
-                    if(input->get_name() == input_name) {
+                    if(input->get_hid_input_info().input == input_name) {
                         return input;
                     }
                 }
@@ -343,7 +355,7 @@ namespace rsimpl
 
                 callback = sensor_callback;
                 capturing = true;
-                hid_thread = std::unique_ptr<std::thread>(new std::thread([this, buf_len, iio_read_device_path_str](){
+                hid_thread = std::unique_ptr<std::thread>(new std::thread([this, iio_read_device_path_str](){
                     int fd = 0;
                     const auto max_retries = 10;
                     auto retries = 0;
@@ -365,15 +377,15 @@ namespace rsimpl
                         return;
                     }
 
+                    const unsigned channel_size = get_channel_size();
+                    const unsigned output_size = get_output_size();
+                    auto raw_data_size = channel_size*buf_len;
                     do {
-                        // each channel is 32 bit
-                        const unsigned channel_size = 4;
-                        auto data_size = this->channels.size()*channel_size;
-                        char data[buf_len*16] = {};
-                        sensor_inputs callback_data;
+                        std::vector<uint8_t> raw_data(raw_data_size);
                         fd_set fds;
                         FD_ZERO(&fds);
                         FD_SET(fd, &fds);
+                        auto read_size = 0;
 
                         struct timeval tv = {0,10000};
                         if (select(fd + 1, &fds, NULL, NULL, &tv) < 0)
@@ -384,7 +396,9 @@ namespace rsimpl
 
                         if (FD_ISSET(fd, &fds))
                         {
-                            read(fd, data, data_size);
+                            read_size = read(fd, raw_data.data(), raw_data_size);
+                            if (read_size < 0 )
+                                continue;
                         }
                         else
                         {
@@ -392,29 +406,21 @@ namespace rsimpl
                             continue;
                         }
 
-                        auto *data_p = (unsigned*) data;
-                        auto i = 0;
-                        for(auto& channel : this->channels) {
-                            callback_data.add_input(hid_sensor{get_iio_device(), get_sensor_name()},
-                                                    hid_sensor_input{channel->get_index(),
-                                                    channel->get_name()}, data_p[i]);
-                            i++;
-                        }
-                        auto cb_data = callback_data.get_input_data();
-                        sensor_data sens_data{};
-                        sens_data.sensor = cb_data.front().sensor;
-                        sens_data.data.resize(6);
-
-                        auto offset = 4;
-                        for (auto& elem : cb_data)
+                        // TODO: code refactoring to reduce latency
+                        for (auto i = 0; i < read_size / channel_size; ++i)
                         {
-                            memcpy(sens_data.data.data() + offset,
-                                   &(elem.value), 2);
-                            offset-=2;
+                            auto p_raw_data = raw_data.data() + channel_size * i;
+                            sensor_data sens_data{};
+                            sens_data.sensor = hid_sensor{get_iio_device(), get_sensor_name()};
+                            sens_data.data.resize(output_size);
+
+                            // TODO: parse data dynamically
+                            memcpy(sens_data.data.data() + 0, p_raw_data + 0, 2);
+                            memcpy(sens_data.data.data() + 2, p_raw_data + 4, 2);
+                            memcpy(sens_data.data.data() + 4, p_raw_data + 8, 2);
+                            memcpy(sens_data.data.data() + 6, p_raw_data + 16, 8);
+                            this->callback(sens_data);
                         }
-
-                        this->callback(sens_data);
-
                     } while(this->capturing);
                     close(fd);
                 }));
@@ -432,13 +438,13 @@ namespace rsimpl
             }
             static bool sort_hids(hid_input* first, hid_input* second)
             {
-                return (first->get_index() >= second->get_index());
+                return (second->get_hid_input_info().index >= first->get_hid_input_info().index);
             }
 
             bool create_channel_array() {
                 // build enabled channels.
                 for(auto& input : inputs) {
-                    if (input->is_enabled())
+                    if (input->get_hid_input_info().enabled)
                     {
                         channels.push_back(input);
                     }
@@ -454,6 +460,46 @@ namespace rsimpl
             int get_iio_device() const { return iio_device; }
 
         private:
+
+            // calculate the storage size of a scan
+            unsigned get_channel_size() const
+            {
+                assert(!channels.empty());
+                auto bytes = 0;
+
+                for (auto& elem : channels)
+                {
+                    auto input_info = elem->get_hid_input_info();
+                    if (bytes % input_info.bytes == 0)
+                    {
+                        input_info.location = bytes;
+                    }
+                    else
+                    {
+                        input_info.location = bytes - bytes % input_info.bytes
+                                              + input_info.bytes;
+                    }
+
+                    bytes = input_info.location + input_info.bytes;
+                }
+
+                return bytes;
+            }
+
+            // calculate the actual size of data
+            unsigned get_output_size() const
+            {
+                assert(!channels.empty());
+                auto bits_used = 0.;
+
+                for (auto& elem : channels)
+                {
+                    auto input_info = elem->get_hid_input_info();
+                    bits_used += input_info.bits_used;
+                }
+
+                return std::ceil(bits_used / CHAR_BIT);
+            }
 
             // read the IIO device inputs.
             bool read_device_inputs(std::string device_path) {
@@ -510,7 +556,7 @@ namespace rsimpl
                 return true;
             }
 
-            static const int buf_len = 100;
+            static const unsigned buf_len = 128; // TODO
             int vid;
             int pid;
             int iio_device;
@@ -589,23 +635,6 @@ namespace rsimpl
                     iio_sensors.push_back(hid_sensor{elem->get_iio_device(), elem->get_sensor_name()});
                 }
                 return iio_sensors;
-            }
-
-            std::vector<hid_sensor_input> get_sensor_inputs(int sensor_iio)
-            {
-                std::vector<hid_sensor_input> sensor_inputs;
-                for (auto& elem : _hid_sensors)
-                {
-                    if (elem->get_iio_device() == sensor_iio)
-                    {
-                        auto inputs = elem->get_inputs();
-                        for (auto input : inputs)
-                        {
-                            sensor_inputs.push_back(hid_sensor_input{input->get_index(), input->get_name()});
-                        }
-                    }
-                }
-                return sensor_inputs;
             }
 
             void start_capture(const std::vector<int>& sensor_iio, hid_callback callback)
@@ -983,10 +1012,17 @@ namespace rsimpl
 
             void capture_loop()
             {
-                while(_is_capturing)
+                try
                 {
-                    poll();
-                    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+                    while(_is_capturing)
+                    {
+                        poll();
+                        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+                    }
+                }
+                catch (const std::exception& ex)
+                {
+                    LOG_ERROR(ex.what());
                 }
             }
 
@@ -1152,36 +1188,50 @@ namespace rsimpl
                 FD_ZERO(&fds);
                 FD_SET(_fd, &fds);
 
-                struct timeval tv = {0,10000};
-                if(select(max_fd + 1, &fds, NULL, NULL, &tv) < 0)
+                struct timeval tv = {5,0};
+                auto val = select(max_fd+1, &fds, NULL, NULL, &tv);
+                if(val < 0)
                 {
                     if (errno == EINTR)
                         return;
 
                     throw linux_backend_exception("select failed");
                 }
-
-                if(FD_ISSET(_fd, &fds))
+                else if(val > 0)
                 {
-                    v4l2_buffer buf = {};
-                    buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-                    buf.memory = V4L2_MEMORY_MMAP;
-                    if(xioctl(_fd, VIDIOC_DQBUF, &buf) < 0)
+                    if(FD_ISSET(_fd, &fds))
                     {
-                        if(errno == EAGAIN)
-                            return;
+                        FD_ZERO(&fds);
+                        FD_SET(_fd, &fds);
+                        v4l2_buffer buf = {};
+                        buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+                        buf.memory = V4L2_MEMORY_MMAP;
+                        if(xioctl(_fd, VIDIOC_DQBUF, &buf) < 0)
+                        {
+                            if(errno == EAGAIN)
+                                return;
 
-                        throw linux_backend_exception("xioctl(VIDIOC_DQBUF) failed");
+                            throw linux_backend_exception("xioctl(VIDIOC_DQBUF) failed");
+                        }
+
+                        frame_object fo { (int)_buffers[buf.index].length,
+                                        _buffers[buf.index].start };
+
+                        _callback(_profile, fo);
+
+                        if(xioctl(_fd, VIDIOC_QBUF, &buf) < 0)
+                            throw linux_backend_exception("xioctl(VIDIOC_QBUF) failed");
                     }
-
-                    frame_object fo { (int)_buffers[buf.index].length,
-                                      _buffers[buf.index].start };
-
-                    _callback(_profile, fo);
-
-                    if(xioctl(_fd, VIDIOC_QBUF, &buf) < 0)
-                        throw linux_backend_exception("xioctl(VIDIOC_QBUF) failed");
+                    else
+                    {
+                        throw linux_backend_exception("FD_ISSET returned false");
+                    }
                 }
+                else
+                {
+                    LOG_WARNING("Frames didn't arrived within 5 seconds");
+                }
+
             }
 
             void set_power_state(power_state state) override
