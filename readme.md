@@ -46,7 +46,7 @@ A comprehensive suite of sample and tutorial applications are provided in the `/
   * [Projection APIs](./doc/projection.md) - A guide on coordinate systems, calibration information, and projection
   * [Camera Spec Sheet](./doc/camera_specs.md) - A brief overview of R200, F200 and SR300
   * [Developer Notes](./doc/dev_log.md) - Several informal notes gathered during internal releases
-  * [OpenCV integration](./doc/stepbystep/getting_started_with_openCV.md) - Getting started with librealsense using OpenCV
+  * [OpenCV Tutorial](./doc/stepbystep/getting_started_with_openCV.md) - Getting started with librealsense using OpenCV
   * [Stream Formats](./doc/supported_video_formats.pdf) - A list of available stream resolutions and pixel formats provided by the supported devices.
   * [Branching and Releases](./doc/branching.md) - Overview of live branches and major releases
 
@@ -66,11 +66,6 @@ A comprehensive suite of sample and tutorial applications are provided in the `/
 3. RealSense SR300
 4. RealSense LR200
 5. [RealSense ZR300](https://newsroom.intel.com/chip-shots/intel-announces-tools-realsense-technology-development/)
-  * Camera Firmware 2.0.71.18 and up
-  * USB Adapter Board Firmware 1.27.0.0 and up
-  * Motion Module Firmware 1.23.0.0 and up
-6. RealSense R400 (DS5 B0: Firmware 5.1.8.0)
-
 
 ## Compatible Platforms
 
