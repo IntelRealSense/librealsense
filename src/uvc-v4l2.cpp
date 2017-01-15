@@ -44,6 +44,8 @@
 
 #pragma GCC diagnostic ignored "-Woverflow"
 
+#define MAX_DEV_PARENT_DIR 10
+
 namespace rsimpl
 {
     namespace uvc
@@ -150,8 +152,8 @@ namespace rsimpl
         struct hid_input_info {
             std::string input = "";
             std::string device_path = "";
-            int index = -1;
-            bool enabled = false;
+            auto index = -1;
+            auto enabled = false;
 
             unsigned big_endian = 0;
             unsigned bits_used = 0;
@@ -712,7 +714,7 @@ namespace rsimpl
                     device_path_str+="/";
                     std::string busnum, devnum, devpath, vid, pid, dev_id;
                     auto good = false;
-                    for(auto i=0; i < 10; ++i)
+                    for(auto i=0; i < MAX_DEV_PARENT_DIR; ++i)
                     {
                         if(std::ifstream(device_path_str + "busnum") >> busnum)
                         {
@@ -737,7 +739,16 @@ namespace rsimpl
                         device_path_str += "../";
                     }
                     if(!good)
-                        throw linux_backend_exception("Failed to read busnum/devnum");
+                    {
+                        LOG_WARNING("Failed to read busnum/devnum. Device Path: " << device_path_str);
+                        ss.str("");
+                        ss.clear(); // Clear state flags.
+
+                        ++num;
+                        ss<<root_path<<num;
+                        continue;
+                    }
+
 
 
                     hid_device_info hid_dev_info{};
@@ -875,7 +886,7 @@ namespace rsimpl
                 std::string modulesline;
                 std::regex regex("uvcvideo.* - Live.*");
                 std::smatch match;
-                bool module_found = false;
+                auto module_found = false;
 
 
                 while(std::getline(modules, modulesline) && !module_found)
@@ -926,8 +937,8 @@ namespace rsimpl
                         // Search directory and up to three parent directories to find busnum/devnum
                         std::ostringstream ss; ss << "/sys/dev/char/" << major(st.st_rdev) << ":" << minor(st.st_rdev) << "/device/";
                         auto path = ss.str();
-                        bool good = false;
-                        for(auto i=0; i<10; ++i)
+                        auto good = false;
+                        for(auto i=0; i < MAX_DEV_PARENT_DIR; ++i)
                         {
                             if(std::ifstream(path + "busnum") >> busnum)
                             {
@@ -943,7 +954,10 @@ namespace rsimpl
                             path += "../";
                         }
                         if(!good)
-                            throw linux_backend_exception("Failed to read busnum/devnum");
+                        {
+                            LOG_WARNING("Failed to read busnum/devnum. Device Path: " << path);
+                            continue;
+                        }
 
                         std::string modalias;
                         if(!(std::ifstream("/sys/class/video4linux/" + name + "/device/modalias") >> modalias))
