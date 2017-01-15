@@ -694,55 +694,58 @@ namespace rsimpl
 
             static void foreach_hid_device(std::function<void(const hid_device_info&, const std::string&)> action)
             {
-                const std::string root_path = "/sys/devices/pci0000:00";
-                // convert to vector because fts_name needs a char*.
-                std::vector<char> path(root_path.c_str(), root_path.c_str() + root_path.size() + 1);
-                char *paths[] = { path.data(), NULL };
-                // using FTS to read the directory structure of the root_path.
-                FTS *tree = fts_open(paths, FTS_NOCHDIR, 0);
+                const std::string root_path = "/sys/bus/iio/devices/iio:device";
 
-                if (!tree) {
-                    throw linux_backend_exception(to_string() << "fts_open returned null!");
-                }
+                auto num = 0;
 
-                FTSENT *node = nullptr;
-                while ((node = fts_read(tree))) {
-                    if (node->fts_level > 0 && node->fts_name[0] == '.')
-                        fts_set(tree, node, FTS_SKIP);
-                    else if (node->fts_info & FTS_F) {
-                        // for each iio:device , add to the device list. regex help identify device.
-                        if (std::regex_search (node->fts_path, std::regex("iio:device[\\d]/name$"))) {
-                            // validate device path and fetch device parameters.
-                            std::smatch m;
-                            auto device_path = std::string(node->fts_path);
-                            if (!std::regex_search(device_path, m, std::regex("/sys/devices/pci0000:00/.*(\\S{1})-(\\S{1}).*(\\S{4}):(\\S{4}):(\\S{4}).(\\S{4})/(.*)/iio:device(\\d{1,3})/name$")))
-                            {
-                                LOG_WARNING("couldn't parse iio device path: " << device_path);
-                                continue;
-                            }
+                std::stringstream ss;
+                ss<<root_path<<num;
 
-                            hid_device_info hid_dev_info{};
-                            // we are safe to get all parameters because regex is valid.
-                            auto busnum = std::string(m[1]);
-                            auto port_id = std::string(m[2]);
-                            hid_dev_info.vid = m[4];
-                            hid_dev_info.pid = m[5];
+                struct stat st;
+                while (stat(ss.str().c_str(),&st) == 0 && st.st_mode & S_IFDIR != 0)
+                {
+                    char device_path[PATH_MAX];
 
-                            std::stringstream ss_vid(hid_dev_info.vid);
-                            std::stringstream ss_pid(hid_dev_info.pid);
-                            unsigned long long vid, pid;
-                            ss_vid >> std::hex >> vid;
-                            ss_pid >> std::hex >> pid;
+                    realpath(ss.str().c_str(), device_path);
 
-                            hid_dev_info.unique_id = busnum + "-" + port_id;
-                            hid_dev_info.id = m[6];
-                            hid_dev_info.device_path = device_path;
-                            std::string iio_device = m[8];
-                            action(hid_dev_info, iio_device);
-                        }
+                    std::smatch m;
+                    std::string device_path1(device_path);
+
+                    if (std::regex_search(device_path1, m, std::regex("/sys/devices/pci0000:00/.*(\\S{1})-(\\S{1}).*(\\S{4}):(\\S{4}):(\\S{4}).(\\S{4})/(.*)/iio:device")))
+                     {
+                        hid_device_info hid_dev_info{};
+                        // we are safe to get all parameters because regex is valid.
+                        auto busnum = std::string(m[1]);
+                        auto port_id = std::string(m[2]);
+                        hid_dev_info.vid = m[4];
+                        hid_dev_info.pid = m[5];
+
+                        std::stringstream ss_vid(hid_dev_info.vid);
+                        std::stringstream ss_pid(hid_dev_info.pid);
+                        unsigned long long vid, pid;
+                        ss_vid >> std::hex >> vid;
+                        ss_pid >> std::hex >> pid;
+
+                        hid_dev_info.unique_id = busnum + "-" + port_id;
+                        hid_dev_info.id = m[6];
+                        hid_dev_info.device_path = device_path;
+
+
+                        auto iio_device = std::to_string(num);
+                        action(hid_dev_info, iio_device);
+                     }
+                    else
+                    {
+                        LOG_WARNING("couldn't parse iio device path: " << device_path);
                     }
+
+                    ss.str("");
+                    ss.clear(); // Clear state flags.
+
+                    num++;
+                    ss<<root_path<<num;
                 }
-                fts_close(tree);
+
             }
 
         private:
