@@ -152,8 +152,8 @@ namespace rsimpl
         struct hid_input_info {
             std::string input = "";
             std::string device_path = "";
-            auto index = -1;
-            auto enabled = false;
+            int index = -1;
+            bool enabled = false;
 
             unsigned big_endian = 0;
             unsigned bits_used = 0;
