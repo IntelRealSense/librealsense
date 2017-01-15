@@ -61,29 +61,35 @@ set_target_properties (cpp-config-ui PROPERTIES
     FOLDER Examples
 )
 
+#CMAKE_DEPENDENT_OPTION(BUILD_OPENGL_EXAMPLES "Build OpenGl Examples" ON
+#	"BUILD_EXAMPLES" OFF)
+option(BUILD_OPENGL_EXAMPLES "Build OpenGl examples." OFF)
+if(BUILD_OPENGL_EXAMPLES)
+	add_executable(c-tutorial-2-streams c-tutorial-2-streams.c)
+	target_link_libraries(c-tutorial-2-streams ${DEPENDENCIES})
+	set_target_properties (c-tutorial-2-streams PROPERTIES
+    FOLDER "C Tutorials")
+
+	add_executable(cpp-tutorial-2-streams cpp-tutorial-2-streams.cpp)
+	target_link_libraries(cpp-tutorial-2-streams ${DEPENDENCIES})
+	set_target_properties (cpp-tutorial-2-streams PROPERTIES
+    FOLDER "C++ Tutorials")
+endif()
+
 # C Tutorials
 add_executable(c-tutorial-1-depth c-tutorial-1-depth.c)
 target_link_libraries(c-tutorial-1-depth ${DEPENDENCIES})
-
-add_executable(c-tutorial-2-streams c-tutorial-2-streams.c)
-target_link_libraries(c-tutorial-2-streams ${DEPENDENCIES})
 
 # C++ Tutorials
 add_executable(cpp-tutorial-1-depth cpp-tutorial-1-depth.cpp)
 target_link_libraries(cpp-tutorial-1-depth ${DEPENDENCIES})
 
-add_executable(cpp-tutorial-2-streams cpp-tutorial-2-streams.cpp)
-target_link_libraries(cpp-tutorial-2-streams ${DEPENDENCIES})
 
-set_target_properties (cpp-tutorial-2-streams PROPERTIES
-    FOLDER "C++ Tutorials"
-)
+
 set_target_properties (cpp-tutorial-1-depth PROPERTIES
     FOLDER "C++ Tutorials"
 )
-set_target_properties (c-tutorial-2-streams PROPERTIES
-    FOLDER "C Tutorials"
-)
+
 set_target_properties (c-tutorial-1-depth PROPERTIES
     FOLDER "C Tutorials"
 )
@@ -166,27 +172,34 @@ set_target_properties (cpp-pointcloud PROPERTIES
     FOLDER Examples
 )
 
-
 install(
     TARGETS
 
-    c-tutorial-1-depth
-    cpp-tutorial-1-depth
-    c-tutorial-2-streams
-    cpp-tutorial-2-streams
+	c-tutorial-1-depth
+	cpp-tutorial-1-depth    
+	cpp-data-collect
+	cpp-enumerate-devices
+	cpp-headless
+	cpp-terminal
+	cpp-fw-logger    
 
-    cpp-enumerate-devices
-    cpp-terminal
-    cpp-fw-logger
-    cpp-config-ui
-    cpp-capture
-    cpp-data-collect
-    cpp-headless
-    cpp-multicam
-    cpp-pointcloud
-
-    RUNTIME DESTINATION
-    ${CMAKE_INSTALL_PREFIX}/bin
+	RUNTIME DESTINATION
+	${CMAKE_INSTALL_PREFIX}/bin
 )
 
+if(BUILD_OPENGL_EXAMPLES)
+	install(
+		TARGETS
 
+		
+		c-tutorial-2-streams
+		cpp-tutorial-2-streams
+		cpp-config-ui
+		cpp-capture
+		cpp-multicam
+		cpp-pointcloud
+		
+		RUNTIME DESTINATION
+		${CMAKE_INSTALL_PREFIX}/bin
+	)
+endif()
