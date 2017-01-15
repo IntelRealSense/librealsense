@@ -16,8 +16,6 @@
 #include <list>
 
 const uint16_t VID_INTEL_CAMERA     = 0x8086;
-const uint16_t ZR300_CX3_PID        = 0x0acb;
-const uint16_t ZR300_FISHEYE_PID    = 0x0ad0;
 
 namespace rsimpl
 {
