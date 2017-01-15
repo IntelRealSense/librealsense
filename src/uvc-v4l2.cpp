@@ -1455,27 +1455,39 @@ namespace rsimpl
 
                     if (pixel_format.pixelformat == 0)
                     {
-                        LOG_WARNING("Unknown pixel-format " << pixel_format.description << "!");
+                        // Microsoft Depth GUIDs for R400 series are not yet recognized
+                        // by the Linux kernel, but they do not require a patch, since there
+                        // are "backup" Z16 and Y8 formats in place
+                        std::vector<std::string> known_problematic_formats = {
+                            "00000050-0000-0010-8000-00aa003",
+                            "00000032-0000-0010-8000-00aa003",
+                        };
 
-                        const std::string s(to_string() << "!" << pixel_format.description);
-                        std::regex rgx("!([0-9a-f]+)-.*");
-                        std::smatch match;
-
-                        if (std::regex_search(s.begin(), s.end(), match, rgx))
+                        if (std::find(known_problematic_formats.begin(),
+                                      known_problematic_formats.end(),
+                                      (const char*)pixel_format.description) ==
+                            known_problematic_formats.end())
                         {
-                            std::stringstream ss;
-                            ss <<  match[1];
-                            int id;
-                            ss >> std::hex >> id;
-                            fourcc = (const big_endian<int> &)id;
+                            const std::string s(to_string() << "!" << pixel_format.description);
+                            std::regex rgx("!([0-9a-f]+)-.*");
+                            std::smatch match;
 
-                            auto format_str = fourcc_to_string(id);
-                            LOG_WARNING("Pixel format " << pixel_format.description << " likely requires patch for fourcc code " << format_str << "!");
+                            if (std::regex_search(s.begin(), s.end(), match, rgx))
+                            {
+                                std::stringstream ss;
+                                ss <<  match[1];
+                                int id;
+                                ss >> std::hex >> id;
+                                fourcc = (const big_endian<int> &)id;
+
+                                auto format_str = fourcc_to_string(id);
+                                LOG_WARNING("Pixel format " << pixel_format.description << " likely requires patch for fourcc code " << format_str << "!");
+                            }
                         }
                     }
                     else
                     {
-                        LOG_INFO("Recognized pixel-format " << pixel_format.description << "!");
+                        LOG_DEBUG("Recognized pixel-format " << pixel_format.description);
                     }
 
                     while (ioctl(_fd, VIDIOC_ENUM_FRAMESIZES, &frame_size) == 0)
@@ -1499,7 +1511,7 @@ namespace rsimpl
                                     p.width = frame_size.discrete.width;
                                     p.height = frame_size.discrete.height;
                                     p.fps = fps;
-                                    results.push_back(p);
+                                    if (fourcc != 0) results.push_back(p);
                                 }
                             }
 

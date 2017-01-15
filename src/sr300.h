@@ -85,14 +85,15 @@ namespace rsimpl
     public:
         std::shared_ptr<device> create(const uvc::backend& backend) const override;
 
-        std::shared_ptr<device_info> clone() const override
-        {
-            return std::make_shared<sr300_info>(*this);
-        }
-
-        sr300_info(uvc::uvc_device_info color,
+        sr300_info(std::shared_ptr<uvc::backend> backend,
+            uvc::uvc_device_info color,
             uvc::uvc_device_info depth,
-            uvc::usb_device_info hwm);
+            uvc::usb_device_info hwm)
+            : device_info(std::move(backend)), _color(std::move(color)),
+             _depth(std::move(depth)), _hwm(std::move(hwm))
+        {
+
+        }
 
         uint8_t get_subdevice_count() const override
         {
@@ -107,15 +108,16 @@ namespace rsimpl
             }
         }
 
+        static std::vector<std::shared_ptr<device_info>> pick_sr300_devices(
+            std::shared_ptr<uvc::backend> backend,
+            std::vector<uvc::uvc_device_info>& uvc,
+            std::vector<uvc::usb_device_info>& usb);
+
     private:
         uvc::uvc_device_info _color;
         uvc::uvc_device_info _depth;
         uvc::usb_device_info _hwm;
     };
-
-    std::vector<std::shared_ptr<device_info>> pick_sr300_devices(
-        std::vector<uvc::uvc_device_info>& uvc,
-        std::vector<uvc::usb_device_info>& usb);
 
     class sr300_camera final : public device
     {
