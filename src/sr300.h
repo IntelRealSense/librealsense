@@ -85,24 +85,39 @@ namespace rsimpl
     public:
         std::shared_ptr<device> create(const uvc::backend& backend) const override;
 
-        std::shared_ptr<device_info> clone() const override
+        sr300_info(std::shared_ptr<uvc::backend> backend,
+            uvc::uvc_device_info color,
+            uvc::uvc_device_info depth,
+            uvc::usb_device_info hwm)
+            : device_info(std::move(backend)), _color(std::move(color)),
+             _depth(std::move(depth)), _hwm(std::move(hwm))
         {
-            return std::make_shared<sr300_info>(*this);
+
         }
 
-        sr300_info(uvc::uvc_device_info color,
-            uvc::uvc_device_info depth,
-            uvc::usb_device_info hwm);
+        uint8_t get_subdevice_count() const override
+        {
+            auto pid = _depth.pid;
+            switch (pid)
+            {
+            case 0x0aa5: return 2;
+            default:
+                throw not_implemented_exception(to_string() <<
+                    "get_subdevice_count is not implemented for SR300 device of type " <<
+                    pid);
+            }
+        }
+
+        static std::vector<std::shared_ptr<device_info>> pick_sr300_devices(
+            std::shared_ptr<uvc::backend> backend,
+            std::vector<uvc::uvc_device_info>& uvc,
+            std::vector<uvc::usb_device_info>& usb);
 
     private:
         uvc::uvc_device_info _color;
         uvc::uvc_device_info _depth;
         uvc::usb_device_info _hwm;
     };
-
-    std::vector<std::shared_ptr<device_info>> pick_sr300_devices(
-        std::vector<uvc::uvc_device_info>& uvc,
-        std::vector<uvc::usb_device_info>& usb);
 
     class sr300_camera final : public device
     {
@@ -216,22 +231,20 @@ namespace rsimpl
             auto serial = _hw_monitor->get_module_serial_string(GVD, module_serial_offset);
             enable_timestamp(true, true);
 
-            auto& depth_ep = get_depth_endpoint();
-            depth_ep.register_option(RS_OPTION_ENABLE_FW_LOGGER,
-                std::make_shared<fw_logger_option>(_hw_monitor, ivcam::fw_cmd::GLD, 100, "SR300 FW Logger"));
-
             std::map<rs_camera_info, std::string> depth_camera_info = {{RS_CAMERA_INFO_DEVICE_NAME, device_name},
                                                                        {RS_CAMERA_INFO_MODULE_NAME, "Depth Camera"},
                                                                        {RS_CAMERA_INFO_DEVICE_SERIAL_NUMBER, serial},
                                                                        {RS_CAMERA_INFO_CAMERA_FIRMWARE_VERSION, fw_version},
-                                                                       {RS_CAMERA_INFO_DEVICE_LOCATION, depth.device_path}};
+                                                                       {RS_CAMERA_INFO_DEVICE_LOCATION, depth.device_path},
+                                                                       {RS_CAMERA_INFO_DEVICE_DEBUG_OP_CODE, std::to_string(fw_cmd::GLD)}};
             register_endpoint_info(_depth_device_idx, depth_camera_info);
 
             std::map<rs_camera_info, std::string> color_camera_info = {{RS_CAMERA_INFO_DEVICE_NAME, device_name},
                                                                        {RS_CAMERA_INFO_MODULE_NAME, "Color Camera"},
                                                                        {RS_CAMERA_INFO_DEVICE_SERIAL_NUMBER, serial},
                                                                        {RS_CAMERA_INFO_CAMERA_FIRMWARE_VERSION, fw_version},
-                                                                       {RS_CAMERA_INFO_DEVICE_LOCATION, color.device_path}};
+                                                                       {RS_CAMERA_INFO_DEVICE_LOCATION, color.device_path},
+                                                                       {RS_CAMERA_INFO_DEVICE_DEBUG_OP_CODE, std::to_string(fw_cmd::GLD)}};
             register_endpoint_info(_color_device_idx, color_camera_info);
 
             register_autorange_options();

@@ -31,24 +31,26 @@ namespace rs
             class multistream
             {
             public:
-            multistream() : intrinsics() {}
-            explicit multistream(std::vector<Dev> results,
-                                 std::map<rs_stream, rs_intrinsics> intrinsics,
-                                 std::map<rs_stream, Dev> devices)
-                : results(std::move(results)),
-                    intrinsics(std::move(intrinsics)),
-                    devices(std::move(devices)) {}
+                multistream() {}
 
-            ~multistream()
-            {
-                try{
-                    stop();
-                }
-                catch(...)
+                explicit multistream(std::vector<Dev> results,
+                                     std::map<rs_stream, stream_profile> profiles,
+                                     std::map<rs_stream, Dev> devices)
+                    : results(std::move(results)),
+                      profiles(std::move(profiles)),
+                      devices(std::move(devices)) {}
+
+                ~multistream()
                 {
-
+                    try
+                    {
+                        stop();
+                    }
+                    catch(...)
+                    {
+                    }
                 }
-            }
+
                 template<class T>
                 void start(T callback)
                 {
@@ -64,11 +66,11 @@ namespace rs
 
                 rs_intrinsics get_intrinsics(rs_stream stream) try
                 {
-                    return intrinsics.at(stream);
+                    return devices.at(stream).get_intrinsics(profiles.at(stream));
                 }
                 catch (std::out_of_range)
                 {
-                    throw std::runtime_error(std::string("config doesn't have intrinsics for stream ") + rs_stream_to_string(stream));
+                    throw std::runtime_error(std::string("config doesnt have intrinsics for ") + rs_stream_to_string(stream));
                 }
 
                 rs_extrinsics get_extrinsics(rs_stream from, rs_stream to) const try
@@ -81,10 +83,10 @@ namespace rs
                 }
 
             private:
-            std::vector<Dev> streams;
-            std::map<rs_stream, rs_intrinsics> intrinsics;
-            std::map<rs_stream, Dev> devices;
-            std::vector<Dev> results;
+                std::vector<Dev> streams;
+                std::map<rs_stream, stream_profile> profiles;
+                std::map<rs_stream, Dev> devices;
+                std::vector<Dev> results;
             };
 
             Config() {}
@@ -127,8 +129,8 @@ namespace rs
             {
                 std::vector<Dev> results;
                 std::vector<rs_stream> satisfied_streams;
-                std::map<rs_stream, rs_intrinsics> intrinsics;
                 std::map<rs_stream, Dev> devices;
+                std::map<rs_stream, stream_profile> stream_to_profile;
 
                 for (auto&& sub : dev.get_adjacent_devices())
                 {
@@ -189,6 +191,7 @@ namespace rs
                         {
                             targets.push_back(result);
                             satisfied_streams.push_back(kvp.first);
+                            stream_to_profile[result.stream] = result;
                         }
                     }
 
@@ -196,7 +199,13 @@ namespace rs
                     {
                         auto_complete(targets, sub);
 
-                        try{
+                        for (auto&& t : targets)
+                        {
+                            stream_to_profile[t.stream] = t;
+                        }
+
+                        try
+                        {
                             sub.open(targets); // TODO: RAII device streaming
                         }
                         catch(...)
@@ -210,15 +219,13 @@ namespace rs
 
                         for (auto && target : targets)
                         {
-                            intrinsics.emplace(std::make_pair(target.stream,
-                                sub.get_intrinsics(target)));
                             devices.emplace(std::make_pair(target.stream, sub));
                         }
                         results.push_back(std::move(sub));
-
                     }
                 }
-                return multistream( move(results), move(intrinsics), move(devices) );
+
+                return multistream( move(results), move(stream_to_profile), move(devices) );
             }
 
         private:

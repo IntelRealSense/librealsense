@@ -69,13 +69,14 @@ namespace rsimpl
         auto usb_devices = _backend->query_usb_devices();
         auto hid_devices = _backend->query_hid_devices();
 
-        auto sr300_devices = pick_sr300_devices(uvc_devices, usb_devices);
-        for (auto& dev : sr300_devices)
-            list.push_back(dev);
+        auto sr300_devices = sr300_info::pick_sr300_devices(_backend, uvc_devices, usb_devices);
+        std::copy(begin(sr300_devices), end(sr300_devices), std::back_inserter(list));
 
-        auto ds5_devices = pick_ds5_devices(uvc_devices, usb_devices, hid_devices);
-        for (auto& dev : ds5_devices)
-            list.push_back(dev);
+        auto ds5_devices = ds5_info::pick_ds5_devices(_backend, uvc_devices, usb_devices, hid_devices);
+        std::copy(begin(ds5_devices), end(ds5_devices), std::back_inserter(list));
+
+        auto recovery_devices = recovery_info::pick_recovery_devices(_backend, usb_devices);
+        std::copy(begin(recovery_devices), end(recovery_devices), std::back_inserter(list));
 
         return list;
     }

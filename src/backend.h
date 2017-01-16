@@ -16,8 +16,6 @@
 #include <list>
 
 const uint16_t VID_INTEL_CAMERA     = 0x8086;
-const uint16_t ZR300_CX3_PID        = 0x0acb;
-const uint16_t ZR300_FISHEYE_PID    = 0x0ad0;
 
 namespace rsimpl
 {
@@ -150,7 +148,6 @@ namespace rsimpl
             virtual void close() = 0;
             virtual void stop_capture() = 0;
             virtual void start_capture(const std::vector<int>& sensor_iio, hid_callback callback) = 0;
-            virtual std::vector<hid_sensor_input> get_sensor_inputs(int sensor_iio) = 0;
             virtual std::vector<hid_sensor> get_sensors() = 0;
         };
 

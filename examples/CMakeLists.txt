@@ -14,7 +14,7 @@ include(CheckCXXCompilerFlag)
 CHECK_CXX_COMPILER_FLAG("-std=c++11" COMPILER_SUPPORTS_CXX11)
 CHECK_CXX_COMPILER_FLAG("-std=c++0x" COMPILER_SUPPORTS_CXX0X)
 if(COMPILER_SUPPORTS_CXX11)
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c11 -pthread")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c11")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 elseif(COMPILER_SUPPORTS_CXX0X)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
@@ -120,17 +120,35 @@ set_target_properties (cpp-enumerate-devices PROPERTIES
     FOLDER Examples
 )
 
-add_executable(cpp-terminal cpp-terminal.cpp third_party/auto-complete/auto-complete.cpp third_party/auto-complete/auto-complete.h)
+add_executable(cpp-terminal cpp-terminal.cpp cpp-terminal-helpers/auto-complete/auto-complete.cpp cpp-terminal-helpers/auto-complete/auto-complete.h)
+add_executable(cpp-fw-logger cpp-fw-logger.cpp cpp-fw-logger-helpers/fw-log-data.cpp
+cpp-fw-logger-helpers/fw-log-data.h
+cpp-fw-logger-helpers/fw-logs-formating-options.cpp
+cpp-fw-logger-helpers/fw-logs-formating-options.h
+cpp-fw-logger-helpers/fw-logs-parser.cpp
+cpp-fw-logger-helpers/fw-logs-parser.h
+cpp-fw-logger-helpers/fw-logs-xml-helper.cpp
+cpp-fw-logger-helpers/fw-logs-xml-helper.h
+cpp-fw-logger-helpers/string-formatter.cpp
+cpp-fw-logger-helpers/string-formatter.h)
+
 
 if(WIN32)
     target_link_libraries(cpp-terminal ${DEPENDENCIES})
+    target_link_libraries(cpp-fw-logger ${DEPENDENCIES})
 else()
     target_link_libraries(cpp-terminal -lpthread ${DEPENDENCIES})
+    target_link_libraries(cpp-fw-logger -lpthread ${DEPENDENCIES})
 endif()
 
-include_directories(cpp-terminal third_party/tclap/include third_party/auto-complete)
+include_directories(cpp-terminal third_party/tclap/include cpp-terminal-helpers/auto-complete)
+include_directories(cpp-fw-logger third_party/tclap/include cpp-fw-logger-helpers)
 
 set_target_properties (cpp-terminal PROPERTIES
+    FOLDER Examples
+)
+
+set_target_properties (cpp-fw-logger PROPERTIES
     FOLDER Examples
 )
 
@@ -159,6 +177,7 @@ install(
 
     cpp-enumerate-devices
     cpp-terminal
+    cpp-fw-logger
     cpp-config-ui
     cpp-capture
     cpp-data-collect

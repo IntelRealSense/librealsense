@@ -10,7 +10,7 @@ extern "C" {
 
 #define RS_API_MAJOR_VERSION    2
 #define RS_API_MINOR_VERSION    3
-#define RS_API_PATCH_VERSION    3
+#define RS_API_PATCH_VERSION    4
 
 #define STRINGIFY(arg) #arg
 #define VAR_ARG_STRING(arg) STRINGIFY(arg)
@@ -20,16 +20,17 @@ extern "C" {
 /* Return version in "X.Y.Z" format */
 #define RS_API_VERSION_STR (VAR_ARG_STRING(RS_API_MAJOR_VERSION.RS_API_MINOR_VERSION.RS_API_PATCH_VERSION))
 
-typedef enum rs_librealsense_exception_type
+typedef enum rs_exception_type
 {
-    RS_LIBREALSENSE_EXCEPTION_TYPE_UNKNOWN,
-    RS_LIBREALSENSE_EXCEPTION_TYPE_CAMERA_DISCONNECTED,
-    RS_LIBREALSENSE_EXCEPTION_TYPE_BACKEND,
-    RS_LIBREALSENSE_EXCEPTION_TYPE_INVALID_VALUE,
-    RS_LIBREALSENSE_EXCEPTION_TYPE_WRONG_API_CALL_SEQUENCE,
-    RS_LIBREALSENSE_EXCEPTION_TYPE_NOT_IMPLEMENTED,
-    RS_LIBREALSENSE_EXCEPTION_TYPE_COUNT
-} rs_librealsense_exception_type;
+    RS_EXCEPTION_TYPE_UNKNOWN,
+    RS_EXCEPTION_TYPE_CAMERA_DISCONNECTED,
+    RS_EXCEPTION_TYPE_BACKEND,
+    RS_EXCEPTION_TYPE_INVALID_VALUE,
+    RS_EXCEPTION_TYPE_WRONG_API_CALL_SEQUENCE,
+    RS_EXCEPTION_TYPE_NOT_IMPLEMENTED,
+    RS_EXCEPTION_TYPE_DEVICE_IN_RECOVERY_MODE,
+    RS_EXCEPTION_TYPE_COUNT
+} rs_exception_type;
 
 typedef enum rs_stream
 {
@@ -119,9 +120,7 @@ typedef enum rs_option
     RS_OPTION_CONFIDENCE_THRESHOLD                       , /**< The confidence level threshold used by the Depth algorithm pipe to set whether a pixel will get a valid range or will be marked with invalid range*/
     RS_OPTION_EMITTER_ENABLED                            , /**< RS400 Emitter enabled */
     RS_OPTION_FRAMES_QUEUE_SIZE                          , /**< Number of frames the user is allowed to keep per stream. Trying to hold-on to more frames will cause frame-drops.*/
-    RS_OPTION_HARDWARE_LOGGER_ENABLED                    , /**< Enable / disable fetching log data from the device */
     RS_OPTION_TOTAL_FRAME_DROPS                          , /**< Total number of detected frame drops from all streams */
-    RS_OPTION_ENABLE_FW_LOGGER                           , /**< Enable / disable device FW logger*/
     RS_OPTION_COUNT                                      ,
 } rs_option;
 
@@ -131,6 +130,7 @@ typedef enum rs_camera_info {
     RS_CAMERA_INFO_DEVICE_SERIAL_NUMBER          ,
     RS_CAMERA_INFO_CAMERA_FIRMWARE_VERSION       ,
     RS_CAMERA_INFO_DEVICE_LOCATION               ,
+    RS_CAMERA_INFO_DEVICE_DEBUG_OP_CODE          ,
     RS_CAMERA_INFO_COUNT
 } rs_camera_info;
 
@@ -677,7 +677,8 @@ const char * rs_get_failed_function  (const rs_error * error);
 const char * rs_get_failed_args      (const rs_error * error);
 const char * rs_get_error_message    (const rs_error * error);
 void         rs_free_error           (rs_error * error);
-rs_librealsense_exception_type rs_get_librealsense_exception_type(const rs_error * error);
+rs_exception_type rs_get_librealsense_exception_type(const rs_error * error);
+const char * rs_exception_type_to_string(rs_exception_type type);
 
 const char * rs_stream_to_string     (rs_stream stream);
 const char * rs_format_to_string     (rs_format format);

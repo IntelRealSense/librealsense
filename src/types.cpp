@@ -29,9 +29,9 @@ namespace rsimpl
         return f.good();
     }
 
-    const char * get_string(rs_librealsense_exception_type value)
+    const char * get_string(rs_exception_type value)
     {
-        #define CASE(X) case RS_LIBREALSENSE_EXCEPTION_TYPE_##X: return #X;
+        #define CASE(X) case RS_EXCEPTION_TYPE_##X: return #X;
         switch(value)
         {
         CASE(UNKNOWN)
@@ -40,6 +40,7 @@ namespace rsimpl
         CASE(INVALID_VALUE)
         CASE(WRONG_API_CALL_SEQUENCE)
         CASE(NOT_IMPLEMENTED)
+        CASE(DEVICE_IN_RECOVERY_MODE)
         default: assert(!is_valid(value)); return unknown;
         }
         #undef CASE
@@ -107,11 +108,9 @@ namespace rsimpl
         CASE(FILTER_OPTION)
         CASE(CONFIDENCE_THRESHOLD)
         CASE(FRAMES_QUEUE_SIZE)
-        CASE(HARDWARE_LOGGER_ENABLED)
         CASE(VISUAL_PRESET)
         CASE(TOTAL_FRAME_DROPS)
         CASE(EMITTER_ENABLED)
-        CASE(ENABLE_FW_LOGGER)
         default: assert(!is_valid(value)); return unknown;
         }
         #undef CASE
@@ -169,6 +168,7 @@ namespace rsimpl
         CASE(DEVICE_SERIAL_NUMBER)
         CASE(CAMERA_FIRMWARE_VERSION)
         CASE(DEVICE_LOCATION)
+        CASE(DEVICE_DEBUG_OP_CODE)
         default: assert(!is_valid(value)); return unknown;
         }
         #undef CASE
