@@ -9,22 +9,22 @@ The project requires two external dependencies, *glfw* and *libusb-1.0*. The Cma
 
 **Important** Several scripts below invoke `wget, git, add-apt-repository` which may be blocked by router settings or a firewall. Infrequently, apt-get mirrors or repositories may also timeout. For *librealsense* users behind an enterprise firewall, configuring the system-wide Ubuntu proxy generally resolves most timeout issues.
 
-## OS Update
+## Make Ubuntu Up-to-date
 1. Update Ubuntu distribution, including getting the latest stable kernel
     > `$sudo apt-get update && sudo apt-get upgrade && sudo apt-get dist-upgrade`<br />    
 
     Check the kernel version - > `$uname -r`<br />
-    In case of stack Ubuntu 14 LTS with Kernel prior to 4.4.0-04 (e.g. 3.19..) the basic upgrade rule is not sufficient to bring the distribution to the latest baseline recommended<br />
+    In case of stack Ubuntu 14 LTS with Kernel prior to 4.4.0-04 (e.g. 3.19..) the basic *apt-get upgrade* rule is not sufficient to bring the distribution to the latest baseline recommended<br />
     Therefore, perform the following command that will promote both Kernel and FrontEnd <br />
     >`$sudo apt-get install --install-recommends linux-generic-lts-xenial xserver-xorg-core-lts-xenial xserver-xorg-lts-xenial xserver-xorg-video-all-lts-xenial xserver-xorg-input-all-lts-xenial libwayland-egl1-mesa-lts-xenial `<br />
-    Note the exact Kernel version being installed (4.4.0-XX).<br />
+    Note the exact Kernel version being installed (4.4.0-XX) for the next step.<br />
 
     At the end update OS Boot Menu and reboot to enforce the correct kernel selection<br />
     > `$sudo update-grub && sudo reboot`<br />
 
     Interrupt the boot process at  Grub2 Boot Menu -> "Advanced Options for Ubuntu" -> Select the kernel version installed in the previous step.<br />
     Complete the boot, login and verify that the required kernel version in place
-    > `$uname -r`  >=  4.4.0-50.
+    > `$uname -r`  >=  4.4.0-50
 
 3. Install the packages required for *librealsense* build: <br />
   >*libusb-1.0* and *pkg-config*:<br />
@@ -60,28 +60,33 @@ The project requires two external dependencies, *glfw* and *libusb-1.0*. The Cma
 >Install udev rules located in librealsense source directory:<br />
   > `$sudo cp config/99-realsense-libusb.rules /etc/udev/rules.d/`<br />
   > `$sudo udevadm control --reload-rules && udevadm trigger`
-3. Install *openssl* package required for kernel modules build
+1. Install *openssl* package required for kernel modules build
 > `$sudo apt-get install libssl-dev`<br />
-4. Next, choose one of the following subheadings based on desired machine configuration / kernel version.
-  * **Ubuntu 14.04 LTS**
-    * Run the following scripts to install necessary dependencies (GCC 4.9 compiler and openssl), update to newer LTS kernel and patch
-    * Run the following script to patch uvcvideo.ko
-      > `./scripts/install_dependencies-4.4.sh`    
-      > `./scripts/patch-uvcvideo-4.4.sh v4.4-wily`<br /> (note the argument provided to this version of the script)
-    * This script involves shallow cloning the Linux source repository (~100mb), and may take a while
-  * **Ubuntu 16.04 LTS Kernel**
-    * `./scripts/patch-uvcvideo-16.04.simple.sh`
+2. Next, build the patched module for the desired machine configuration.<br />
+  The script will download, patch and build uvc kernel module from sources<br />
+  Then it will attempt to insert the patched module instead of the active one. If failed
+  the original uvc module will be preserved
+  * **Ubuntu 14/16 LTS**
+    * The patch also verifies and installs additional packages required to build kernel module from Linux sources.
+    * `./scripts/patch-video-formats-ubuntu-xenial.sh`
+    Note that downloading kernel
   * **Arch-based distributions**
     * You need to install the [base-devel](https://www.archlinux.org/groups/x86_64/base-devel/) package group.
 	* Then run the following script to patch the uvc module:
     * `./scripts/patch-arch.sh`
-4. Reload the uvcvideo driver
-  * `sudo modprobe uvcvideo`
-5. Check installation by examining the last 50 lines of the dmesg log:
-  * `sudo dmesg | tail -n 50`
-  * The log should indicate that a new uvcvideo driver has been registered. If any errors have been noted, first attempt the patching process again, and then file an issue if not successful on the second attempt (and make sure to copy the specific error in dmesg).
-6. Troubleshooting:
-  Patch Generation Issues: Multiple kernels installed
-  Git access issues
-  Tainting Kernel
-  BIOS Settings
+3. Check installation by examining the latest entries in kernel log:
+  * `sudo dmesg | tail -n 50`<br />
+  The log should indicate that a new uvcvideo driver has been registered. If any errors have been noted, first attempt the patching process again, and then file an issue if not successful on the second attempt (and make sure to copy the specific error in dmesg).
+
+## Troubleshooting Installation and Patch-related Issues
+
+  Error | Cause | Correction Steps
+  -------- | ------------ |
+  `git.launchpad... access timeout` | Behind Firewall | Configure Proxy Server
+  `dmesg:... uvcvideo: module verification failed: signature and/or required key missing - tainting kernel` | A standard warning issued since Kernel 4.4-30+ | Notification only - does not affect module's functionality
+  `$sudo modprobe uvcvideo` produces `dmesg: uvc kernel module is not loaded` | The patched module kernel version is incompatible with the resident kernel | - Verify the actual kernel version with `uname -r`.<br /> - Revert and proceed on **Make Ubuntu Up-to-date** step
+  Execution of `./scripts/patch-video-formats-ubuntu-xenial.sh`  fails with `fatal error: openssl/opensslv.h` | Repeat [this][] step | sdf
+
+    * `git.launchpad... access timeout` -
+    * Tainting Kernel
+    * BIOS Settings
