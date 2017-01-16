@@ -44,6 +44,8 @@
 
 #pragma GCC diagnostic ignored "-Woverflow"
 
+#define MAX_DEV_PARENT_DIR 10
+
 namespace rsimpl
 {
     namespace uvc
@@ -130,20 +132,21 @@ namespace rsimpl
 
         static std::string get_usb_port_id(libusb_device* usb_device)
         {
-            std::string usb_bus = std::to_string(libusb_get_bus_number(usb_device));
+            auto usb_bus = std::to_string(libusb_get_bus_number(usb_device));
 
             // As per the USB 3.0 specs, the current maximum limit for the depth is 7.
-            const int max_usb_depth = 8;
+            const auto max_usb_depth = 8;
             uint8_t usb_ports[max_usb_depth] = {};
             std::stringstream port_path;
-            int port_count = libusb_get_port_numbers(usb_device, usb_ports, max_usb_depth);
+            auto port_count = libusb_get_port_numbers(usb_device, usb_ports, max_usb_depth);
+            auto usb_dev = std::to_string(libusb_get_device_address(usb_device));
 
             for (size_t i = 0; i < port_count; ++i)
             {
-                port_path << "-" << std::to_string(usb_ports[i]);
+                port_path << std::to_string(usb_ports[i]) << (((i+1) < port_count)?".":"");
             }
 
-            return usb_bus + port_path.str();
+            return usb_bus + "-" + port_path.str() + "-" + usb_dev;
         }
 
         struct hid_input_info {
@@ -694,55 +697,77 @@ namespace rsimpl
 
             static void foreach_hid_device(std::function<void(const hid_device_info&, const std::string&)> action)
             {
-                const std::string root_path = "/sys/devices/pci0000:00";
-                // convert to vector because fts_name needs a char*.
-                std::vector<char> path(root_path.c_str(), root_path.c_str() + root_path.size() + 1);
-                char *paths[] = { path.data(), NULL };
-                // using FTS to read the directory structure of the root_path.
-                FTS *tree = fts_open(paths, FTS_NOCHDIR, 0);
+                const std::string root_path = "/sys/bus/iio/devices/iio:device";
 
-                if (!tree) {
-                    throw linux_backend_exception(to_string() << "fts_open returned null!");
-                }
+                auto num = 0;
 
-                FTSENT *node = nullptr;
-                while ((node = fts_read(tree))) {
-                    if (node->fts_level > 0 && node->fts_name[0] == '.')
-                        fts_set(tree, node, FTS_SKIP);
-                    else if (node->fts_info & FTS_F) {
-                        // for each iio:device , add to the device list. regex help identify device.
-                        if (std::regex_search (node->fts_path, std::regex("iio:device[\\d]/name$"))) {
-                            // validate device path and fetch device parameters.
-                            std::smatch m;
-                            auto device_path = std::string(node->fts_path);
-                            if (!std::regex_search(device_path, m, std::regex("/sys/devices/pci0000:00/.*(\\S{1})-(\\S{1}).*(\\S{4}):(\\S{4}):(\\S{4}).(\\S{4})/(.*)/iio:device(\\d{1,3})/name$")))
+                std::stringstream ss;
+                ss<<root_path<<num;
+
+                struct stat st;
+                while (stat(ss.str().c_str(),&st) == 0 && st.st_mode & S_IFDIR != 0)
+                {
+                    char device_path[PATH_MAX];
+
+                    realpath(ss.str().c_str(), device_path);
+                    std::string device_path_str(device_path);
+                    device_path_str+="/";
+                    std::string busnum, devnum, devpath, vid, pid, dev_id;
+                    auto good = false;
+                    for(auto i=0; i < MAX_DEV_PARENT_DIR; ++i)
+                    {
+                        if(std::ifstream(device_path_str + "busnum") >> busnum)
+                        {
+                            if(std::ifstream(device_path_str + "devnum") >> devnum)
                             {
-                                LOG_WARNING("couldn't parse iio device path: " << device_path);
-                                continue;
+                                if(std::ifstream(device_path_str + "devpath") >> devpath)
+                                {
+                                    if(std::ifstream(device_path_str + "idVendor") >> vid)
+                                    {
+                                        if(std::ifstream(device_path_str + "idProduct") >> pid)
+                                        {
+                                            if(std::ifstream(device_path_str + "dev") >> dev_id)
+                                            {
+                                                good = true;
+                                                break;
+                                            }
+                                        }
+                                    }
+                                }
                             }
-
-                            hid_device_info hid_dev_info{};
-                            // we are safe to get all parameters because regex is valid.
-                            auto busnum = std::string(m[1]);
-                            auto port_id = std::string(m[2]);
-                            hid_dev_info.vid = m[4];
-                            hid_dev_info.pid = m[5];
-
-                            std::stringstream ss_vid(hid_dev_info.vid);
-                            std::stringstream ss_pid(hid_dev_info.pid);
-                            unsigned long long vid, pid;
-                            ss_vid >> std::hex >> vid;
-                            ss_pid >> std::hex >> pid;
-
-                            hid_dev_info.unique_id = busnum + "-" + port_id;
-                            hid_dev_info.id = m[6];
-                            hid_dev_info.device_path = device_path;
-                            std::string iio_device = m[8];
-                            action(hid_dev_info, iio_device);
                         }
+                        device_path_str += "../";
                     }
+                    if(!good)
+                    {
+                        LOG_WARNING("Failed to read busnum/devnum. Device Path: " << device_path_str);
+                        ss.str("");
+                        ss.clear(); // Clear state flags.
+
+                        ++num;
+                        ss<<root_path<<num;
+                        continue;
+                    }
+
+
+
+                    hid_device_info hid_dev_info{};
+                    hid_dev_info.vid = vid;
+                    hid_dev_info.pid = pid;
+                    hid_dev_info.unique_id = busnum + "-" + devpath + "-" + devnum;
+                    hid_dev_info.id = dev_id;
+                    hid_dev_info.device_path = device_path;
+
+                    auto iio_device = std::to_string(num);
+                    action(hid_dev_info, iio_device);
+
+                    ss.str("");
+                    ss.clear(); // Clear state flags.
+
+                    ++num;
+                    ss<<root_path<<num;
                 }
-                fts_close(tree);
+
             }
 
         private:
@@ -779,12 +804,6 @@ namespace rsimpl
             {
                 if(_usb_device) libusb_unref_device(_usb_device);
                 libusb_exit(_usb_context);
-            }
-
-
-            static std::string get_usb_port_id_from_usb_device(libusb_device* usb_device)
-            {
-                return get_usb_port_id(usb_device);
             }
 
             static void foreach_usb_device(libusb_context* usb_context, std::function<void(
@@ -867,7 +886,7 @@ namespace rsimpl
                 std::string modulesline;
                 std::regex regex("uvcvideo.* - Live.*");
                 std::smatch match;
-                bool module_found = false;
+                auto module_found = false;
 
 
                 while(std::getline(modules, modulesline) && !module_found)
@@ -895,7 +914,7 @@ namespace rsimpl
                     char buff[PATH_MAX] = {0};
                     if (realpath(path.c_str(), buff) != NULL)
                     {
-                        std::string real_path = std::string(buff);
+                        auto real_path = std::string(buff);
                         if (real_path.find("virtual") != std::string::npos)
                             continue;
                     }
@@ -903,7 +922,7 @@ namespace rsimpl
                     try
                     {
                         int vid, pid, mi;
-                        int busnum, devnum, parent_devnum, devpath;
+                        std::string busnum, devnum, devpath;
 
                         auto dev_name = "/dev/" + name;
 
@@ -918,27 +937,27 @@ namespace rsimpl
                         // Search directory and up to three parent directories to find busnum/devnum
                         std::ostringstream ss; ss << "/sys/dev/char/" << major(st.st_rdev) << ":" << minor(st.st_rdev) << "/device/";
                         auto path = ss.str();
-                        bool good = false;
-                        for(int i=0; i<=3; ++i)
+                        auto good = false;
+                        for(auto i=0; i < MAX_DEV_PARENT_DIR; ++i)
                         {
                             if(std::ifstream(path + "busnum") >> busnum)
                             {
                                 if(std::ifstream(path + "devnum") >> devnum)
                                 {
-                                    if(std::ifstream(path + "../devnum") >> parent_devnum)
+                                    if(std::ifstream(path + "devpath") >> devpath)
                                     {
-                                        if(std::ifstream(path + "devpath") >> devpath)
-                                        {
-                                            good = true;
-                                            break;
-                                        }
+                                        good = true;
+                                        break;
                                     }
                                 }
                             }
                             path += "../";
                         }
                         if(!good)
-                            throw linux_backend_exception("Failed to read busnum/devnum");
+                        {
+                            LOG_WARNING("Failed to read busnum/devnum. Device Path: " << path);
+                            continue;
+                        }
 
                         std::string modalias;
                         if(!(std::ifstream("/sys/class/video4linux/" + name + "/device/modalias") >> modalias))
@@ -958,7 +977,7 @@ namespace rsimpl
                         info.mi = mi;
                         info.id = dev_name;
                         info.device_path = std::string(buff);
-                        info.unique_id = std::to_string(busnum) + "-" + std::to_string(devpath);
+                        info.unique_id = busnum + "-" + devpath + "-" + devnum;
                         action(info, dev_name);
                     }
                     catch(const std::exception & e)
