@@ -263,7 +263,7 @@ rs_device* rs_create_device(const rs_device_list* list, int index, rs_error** er
 
     return new rs_device{ list->ctx,
                           list->list[index].info, 
-                          list->list[index].info->create(list->ctx->get_backend()),
+                          list->list[index].info->get_device(),
                           list->list[index].subdevice
                         };
 }

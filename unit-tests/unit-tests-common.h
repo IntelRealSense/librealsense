@@ -76,7 +76,7 @@ inline bool file_exists(const char* filename)
 
 inline rs::context make_context(const char* id)
 {
-    rs::log_to_console(RS_LOG_SEVERITY_DEBUG);
+    rs::log_to_console(RS_LOG_SEVERITY_INFO);
 
     static std::map<std::string, int> _counters;
 
