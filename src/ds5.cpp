@@ -99,12 +99,15 @@ namespace rsimpl
             throw std::runtime_error("HID device is missing!");
         }
 
-        auto hid_ep = std::make_shared<hid_endpoint>(backend.create_hid_device(all_hid_infos[0]));
+        auto hid_ep = std::make_shared<hid_endpoint>(backend.create_hid_device(all_hid_infos[0]),
+                                                                               std::unique_ptr<frame_timestamp_reader>(new ds5_hid_timestamp_reader()));
+        hid_ep->register_pixel_format(pf_accel_axes);
+        hid_ep->register_pixel_format(pf_gyro_axes);
         return hid_ep;
     }
 
     std::shared_ptr<uvc_endpoint> ds5_camera::create_depth_device(const uvc::backend& backend,
-                                                      const std::vector<uvc::uvc_device_info>& all_device_infos)
+                                                                  const std::vector<uvc::uvc_device_info>& all_device_infos)
     {
         using namespace ds;
 

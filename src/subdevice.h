@@ -107,8 +107,10 @@ namespace rsimpl
     class hid_endpoint : public endpoint, public std::enable_shared_from_this<hid_endpoint>
     {
     public:
-        explicit hid_endpoint(std::shared_ptr<uvc::hid_device> hid_device)
-            : _hid_device(hid_device)
+        explicit hid_endpoint(std::shared_ptr<uvc::hid_device> hid_device,
+                              std::unique_ptr<frame_timestamp_reader> timestamp_reader)
+            : _hid_device(hid_device),
+              _timestamp_reader(std::move(timestamp_reader))
         {
             _hid_device->open();
             for (auto& elem : _hid_device->get_sensors())
@@ -131,19 +133,24 @@ namespace rsimpl
 
     private:
 
-        struct stream_format{
+        struct stream_formats{
             rs_stream stream;
-            rs_format format;
+            std::vector<rs_format> formats;
         };
 
-        const std::map<std::string, stream_format> sensor_name_and_stream_format =
-            {{std::string("gyro_3d"), {RS_STREAM_GYRO, RS_FORMAT_MOTION_DATA}},
-             {std::string("accel_3d"), {RS_STREAM_ACCEL, RS_FORMAT_MOTION_DATA}}};
+        const std::map<rs_stream, uint32_t> stream_and_fourcc = {{RS_STREAM_GYRO, 'GYRO'},
+                                                                 {RS_STREAM_ACCEL, 'ACCL'}};
+
+        const std::map<std::string, stream_formats> sensor_name_and_stream_formats =
+            {{std::string("gyro_3d"),  {RS_STREAM_GYRO,  {RS_FORMAT_MOTION_DATA_RAW, RS_FORMAT_MOTION_DATA_AXES}}},
+             {std::string("accel_3d"), {RS_STREAM_ACCEL, {RS_FORMAT_MOTION_DATA_RAW, RS_FORMAT_MOTION_DATA_AXES}}}};
 
         std::shared_ptr<uvc::hid_device> _hid_device;
         std::mutex _configure_lock;
-        std::vector<int> _configured_sensor_iio;
+        std::map<int, stream_formats> _configured_profiles;
         std::vector<uvc::hid_sensor> _hid_sensors;
+        std::map<int, request_mapping> _iio_mapping;
+        std::unique_ptr<frame_timestamp_reader> _timestamp_reader;
 
         std::vector<uvc::stream_profile> init_stream_profiles() override;
 
@@ -153,7 +160,9 @@ namespace rsimpl
 
         int get_iio_by_name(const std::string& name) const;
 
-        stream_format sensor_name_to_stream_format(const std::string& sensor_name) const;
+        stream_formats sensor_name_to_stream_formats(const std::string& sensor_name) const;
+
+        uint32_t stream_to_fourcc(rs_stream stream) const;
     };
 
     class uvc_endpoint : public endpoint, public std::enable_shared_from_this<uvc_endpoint>
