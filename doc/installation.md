@@ -2,6 +2,7 @@
 
 **Note:** Due to the USB 3.0 translation layer between native hardware and virtual machine, the *librealsense* team does not recommend or support installation in a VM.
 
+### My Multi Word Header
 ## 3rd-party dependencies
 
 The project requires two external dependencies, *glfw* and *libusb-1.0*. The Cmake build environment requires *pkg-config*.
@@ -60,6 +61,7 @@ The project requires two external dependencies, *glfw* and *libusb-1.0*. The Cma
 >Install udev rules located in librealsense source directory:<br />
   > `$sudo cp config/99-realsense-libusb.rules /etc/udev/rules.d/`<br />
   > `$sudo udevadm control --reload-rules && udevadm trigger`
+# openssl_installation
 1. Install *openssl* package required for kernel modules build
 > `$sudo apt-get install libssl-dev`<br />
 2. Next, build the patched module for the desired machine configuration.<br />
@@ -85,8 +87,4 @@ The project requires two external dependencies, *glfw* and *libusb-1.0*. The Cma
   `git.launchpad... access timeout` | Behind Firewall | Configure Proxy Server
   `dmesg:... uvcvideo: module verification failed: signature and/or required key missing - tainting kernel` | A standard warning issued since Kernel 4.4-30+ | Notification only - does not affect module's functionality
   `$sudo modprobe uvcvideo` produces `dmesg: uvc kernel module is not loaded` | The patched module kernel version is incompatible with the resident kernel | - Verify the actual kernel version with `uname -r`.<br /> - Revert and proceed on **Make Ubuntu Up-to-date** step
-  Execution of `./scripts/patch-video-formats-ubuntu-xenial.sh`  fails with `fatal error: openssl/opensslv.h` | Repeat [this][] step | sdf
-
-    * `git.launchpad... access timeout` -
-    * Tainting Kernel
-    * BIOS Settings
+  Execution of `./scripts/patch-video-formats-ubuntu-xenial.sh`  fails with `fatal error: openssl/opensslv.h` | Missing Dependency | Install the required [package](#openssl_installation) 
