@@ -12,14 +12,20 @@ function try_module_insert {
 	module_name=$1
 	src_ko=$2
 	tgt_ko=$3
+	backup_available=1
 	
 	# Unload existing modules if resident	
 	printf "Unloading module %s\n" ${module_name}
 	sudo modprobe -r ${module_name}
 	
-	# backup the existing module for recovery	
-	sudo cp ${tgt_ko} ${tgt_ko}.bckup
-	
+	# backup the existing module (if available) for recovery
+	if [ -f ${tgt_ko} ];
+	then
+		sudo cp ${tgt_ko} ${tgt_ko}.bckup
+	else
+		backup_available=0
+	fi
+
 	# copy the patched module to target location	
 	sudo cp ${src_ko} ${tgt_ko}
 	
@@ -34,9 +40,12 @@ function try_module_insert {
 	then
 		echo "Failed to insert the patched module. Operation is aborted, the original module is restored"
 		echo "Verify that the current kernel version is aligned to the patched module versoin"
-		sudo cp ${tgt_ko}.bckup ${tgt_ko}		
-		sudo modprobe ${module_name}
-		printf "The original %s module was reloaded\n" ${module_name}
+		if [ backup_available -ne 0 ];
+		then
+			sudo cp ${tgt_ko}.bckup ${tgt_ko}
+			sudo modprobe ${module_name}
+			printf "The original %s module was reloaded\n" ${module_name}
+		fi
 		exit 1
 	else
 		# Everything went OK, delete backup
