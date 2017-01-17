@@ -27,7 +27,7 @@ else()
     list(APPEND DEPENDENCIES m ${LIBUSB1_LIBRARIES})
 endif()
 
-add_executable(live-test unit-tests-live.cpp unit-tests-main.cpp)
+add_executable(live-test unit-tests-live.cpp unit-tests-main.cpp unit-tests-common.h)
 target_link_libraries(live-test ${DEPENDENCIES})
 
 set_target_properties (live-test PROPERTIES

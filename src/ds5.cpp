@@ -10,15 +10,8 @@ namespace rsimpl
         return std::make_shared<ds5_camera>(backend, _depth, _hwm, _hid);
     }
 
-    // DS5 has 2 pins of video streaming
-    ds5_info::ds5_info(std::vector<uvc::uvc_device_info> depth, uvc::usb_device_info hwm, std::vector<uvc::hid_device_info> hid)
-        : _depth(std::move(depth)),
-          _hwm(std::move(hwm)),
-          _hid(std::move(hid))
-    {
-    }
-
-    std::vector<std::shared_ptr<device_info>> pick_ds5_devices(
+    std::vector<std::shared_ptr<device_info>> ds5_info::pick_ds5_devices(
+        std::shared_ptr<uvc::backend> backend,
         std::vector<uvc::uvc_device_info>& uvc,
         std::vector<uvc::usb_device_info>& usb,
         std::vector<uvc::hid_device_info>& hid)
@@ -39,7 +32,7 @@ namespace rsimpl
 
                 if (ds::try_fetch_usb_device(usb, devices.front(), hwm))
                 {
-                    auto info = std::make_shared<ds5_info>(devices, hwm, hids);
+                    auto info = std::make_shared<ds5_info>(backend, devices, hwm, hids);
                     chosen.insert(chosen.end(), devices.begin(), devices.end());
                     results.push_back(info);
                 }
