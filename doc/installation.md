@@ -11,7 +11,7 @@ The project requires two external dependencies, *glfw* and *libusb-1.0*. The Cma
 
 ## Make Ubuntu Up-to-date
 1. Update Ubuntu distribution, including getting the latest stable kernel
-    * `sudo apt-get update && sudo apt-get upgrade && sudo apt-get dist-upgrade`<br /> 
+    * `sudo apt-get update && sudo apt-get upgrade && sudo apt-get dist-upgrade`<br />
 
     Check the kernel version - > `uname -r`<br />
     In case of stack Ubuntu 14 LTS with Kernel prior to 4.4.0-04 (e.g. 3.19..) the basic *apt-get upgrade* rule is not sufficient to bring the distribution to the latest baseline recommended.<br />
@@ -89,5 +89,5 @@ Error    |      Cause   | Correction Steps |
 -------- | ------------ | ---------------- |
 `git.launchpad... access timeout` | Behind Firewall | Configure Proxy Server |
 `dmesg:... uvcvideo: module verification failed: signature and/or required key missing - tainting kernel` | A standard warning issued since Kernel 4.4-30+ | Notification only - does not affect module's functionality |
-`sudo modprobe uvcvideo` produces `dmesg: uvc kernel module is not loaded` | The patched module kernel version is incompatible with the resident kernel | - Verify the actual kernel version with `uname -r`.<br /> - Revert and proceed on **Make Ubuntu Up-to-date** step |
-Execution of `./scripts/patch-video-formats-ubuntu-xenial.sh`  fails with `fatal error: openssl/opensslv.h` | Missing Dependency | Install *openssl* [package](#video4linux-backend-preparation) |
+`sudo modprobe uvcvideo` produces `dmesg: uvc kernel module is not loaded` | The patched module kernel version is incompatible with the resident kernel | Verify the actual kernel version with `uname -r`.<br />Revert and proceed on **Make Ubuntu Up-to-date** step |
+Execution of `./scripts/patch-video-formats-ubuntu-xenial.sh`  fails with `fatal error: openssl/opensslv.h` | Missing Dependency | Install *openssl* package from **Video4Linux backend preparation** step |
