@@ -11,15 +11,8 @@ namespace rsimpl
         return std::make_shared<sr300_camera>(backend, _color, _depth, _hwm);
     }
 
-    sr300_info::sr300_info(uvc::uvc_device_info color,
-        uvc::uvc_device_info depth, uvc::usb_device_info hwm)
-        : _color(std::move(color)),
-          _depth(std::move(depth)),
-          _hwm(std::move(hwm))
-    {
-    }
-
-    std::vector<std::shared_ptr<device_info>> pick_sr300_devices(
+    std::vector<std::shared_ptr<device_info>> sr300_info::pick_sr300_devices(
+        std::shared_ptr<uvc::backend> backend,
         std::vector<uvc::uvc_device_info>& uvc,
         std::vector<uvc::usb_device_info>& usb)
     {
@@ -40,7 +33,7 @@ namespace rsimpl
 
                 if (ivcam::try_fetch_usb_device(usb, color, hwm))
                 {
-                    auto info = std::make_shared<sr300_info>(color, depth, hwm);
+                    auto info = std::make_shared<sr300_info>(backend, color, depth, hwm);
                     chosen.push_back(color);
                     chosen.push_back(depth);
                     results.push_back(info);

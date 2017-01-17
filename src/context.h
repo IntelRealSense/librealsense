@@ -14,12 +14,25 @@ namespace rsimpl
     class device_info
     {
     public:
-        virtual std::shared_ptr<device> create(const uvc::backend& backend) const = 0;
-        virtual std::shared_ptr<device_info> clone() const = 0;
+        std::shared_ptr<device> get_device() const
+        {
+            return *_device;
+        }
 
         virtual uint8_t get_subdevice_count() const = 0;
 
         virtual ~device_info() = default;
+
+    protected:
+        device_info(std::shared_ptr<uvc::backend> backend)
+            : _backend(std::move(backend)),
+              _device([this]() { return create(*_backend); })
+        {}
+
+        virtual std::shared_ptr<device> create(const uvc::backend& backend) const = 0;
+
+        lazy<std::shared_ptr<device>> _device;
+        std::shared_ptr<uvc::backend> _backend;
     };
 
     enum class backend_type
@@ -39,11 +52,6 @@ namespace rsimpl
                 RS_EXCEPTION_TYPE_DEVICE_IN_RECOVERY_MODE);
         }
 
-        std::shared_ptr<device_info> clone() const override
-        {
-            return std::make_shared<recovery_info>(*this);
-        }
-
         uint8_t get_subdevice_count() const override
         {
             return 1;
@@ -55,6 +63,7 @@ namespace rsimpl
         }
 
         static std::vector<std::shared_ptr<device_info>> pick_recovery_devices(
+            const std::shared_ptr<uvc::backend>& backend,
             const std::vector<uvc::usb_device_info>& usb_devices)
         {
             std::vector<std::shared_ptr<device_info>> list;
@@ -62,13 +71,15 @@ namespace rsimpl
             {
                 if (is_recovery_pid(usb.pid))
                 {
-                    list.push_back(std::make_shared<recovery_info>(usb));
+                    list.push_back(std::make_shared<recovery_info>(backend, usb));
                 }
             }
             return list;
         }
 
-        explicit recovery_info(uvc::usb_device_info dfu) : _dfu(std::move(dfu)) {}
+        explicit recovery_info(std::shared_ptr<uvc::backend> backend,
+                               uvc::usb_device_info dfu)
+            : device_info(backend), _dfu(std::move(dfu)) {}
 
     private:
         uvc::usb_device_info _dfu;
