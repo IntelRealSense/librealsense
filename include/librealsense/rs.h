@@ -1,6 +1,12 @@
 /* License: Apache 2.0. See LICENSE file in root directory.
    Copyright(c) 2015 Intel Corporation. All Rights Reserved. */
 
+/** \file rs.h
+* \brief
+* Exposes librealsense functionality for C compilers
+*/   
+   
+   
 #ifndef LIBREALSENSE_RS_H
 #define LIBREALSENSE_RS_H
 
@@ -36,31 +42,31 @@ typedef enum rs_stream
     RS_STREAM_COLOR_ALIGNED_TO_DEPTH           , /**< Synthetic stream containing color data but sharing intrinsic of depth stream */
     RS_STREAM_INFRARED2_ALIGNED_TO_DEPTH       , /**< Synthetic stream containing second viewpoint infrared data but sharing intrinsic of depth stream */
     RS_STREAM_DEPTH_ALIGNED_TO_COLOR           , /**< Synthetic stream containing depth data but sharing intrinsic of color stream */
-    RS_STREAM_DEPTH_ALIGNED_TO_RECTIFIED_COLOR ,  /**< Synthetic stream containing depth data but sharing intrinsic of rectified color stream */
+    RS_STREAM_DEPTH_ALIGNED_TO_RECTIFIED_COLOR , /**< Synthetic stream containing depth data but sharing intrinsic of rectified color stream */
     RS_STREAM_DEPTH_ALIGNED_TO_INFRARED2       , /**< Synthetic stream containing depth data but sharing intrinsic of second viewpoint infrared stream */
-    RS_STREAM_COUNT
+    RS_STREAM_COUNT                              /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
 } rs_stream;
 
-/** \brief Formats: define how each stream can be encoded.
+/** \brief Formats: defines how each stream can be encoded.
 
-    \c rs_format is closely related to Linux pixel formats, but is trying to abstract away the platform specific constructs */
+    \c rs_format specifies how a frame is represented in memory (similar to the V4L pixel format). */
 typedef enum rs_format
 {
     RS_FORMAT_ANY         , /**< When passed to enable stream, librealsense will try to provide best suited format */
-    RS_FORMAT_Z16         , /**< 16-bit linear depth values. The depth is meters is equal to depth scale * pixel value */
-    RS_FORMAT_DISPARITY16 , /**< 16-bit linear disparity values. The depth in meters is equal to depth scale / pixel value */
+    RS_FORMAT_Z16         , /**< 16-bit linear depth values. The depth is meters is equal to depth scale * pixel value. */
+    RS_FORMAT_DISPARITY16 , /**< 16-bit linear disparity values. The depth in meters is equal to depth scale / pixel value. */
     RS_FORMAT_XYZ32F      , /**< 32-bit floating point 3D coordinates. */
     RS_FORMAT_YUYV        , /**< Standard YUV pixel format as described in https://en.wikipedia.org/wiki/YUV */
-    RS_FORMAT_RGB8        , /**< 8-bit Red, Green and Blue channels */
-    RS_FORMAT_BGR8        , /**< 8-bit Blue, Green and Red channels, suitable for OpenCV */
-    RS_FORMAT_RGBA8       , /**< 8-bit Red, Green, Blue channels + constant alpha channel equal to FF */
-    RS_FORMAT_BGRA8       , /**< 8-bit Blue, Green, Red channels + constant alpha channel equal to FF */
+    RS_FORMAT_RGB8        , /**< 8-bit red, green and blue channels */
+    RS_FORMAT_BGR8        , /**< 8-bit blue, green, and red channels -- suitable for OpenCV */
+    RS_FORMAT_RGBA8       , /**< 8-bit red, green and blue channels + constant alpha channel equal to FF */
+    RS_FORMAT_BGRA8       , /**< 8-bit blue, green, and red channels + constant alpha channel equal to FF */
     RS_FORMAT_Y8          , /**< 8-bit per-pixel grayscale image */
     RS_FORMAT_Y16         , /**< 16-bit per-pixel grayscale image */
     RS_FORMAT_RAW10       , /**< Four 10-bit luminance values encoded into a 5-byte macropixel */
     RS_FORMAT_RAW16       , /**< 16-bit raw image */
     RS_FORMAT_RAW8        , /**< 8-bit raw image */
-    RS_FORMAT_COUNT
+    RS_FORMAT_COUNT         /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
 } rs_format;
 
 /** \brief Output buffer format: sets how librealsense works with frame memory. */
@@ -68,52 +74,52 @@ typedef enum rs_output_buffer_format
 {
     RS_OUTPUT_BUFFER_FORMAT_CONTINUOUS     , /**< Makes sure that the output frame is exposed as a single continuous buffer */
     RS_OUTPUT_BUFFER_FORMAT_NATIVE         , /**< Does not convert buffer to continuous. The user has to handle pitch manually. */
-    RS_OUTPUT_BUFFER_FORMAT_COUNT
+    RS_OUTPUT_BUFFER_FORMAT_COUNT            /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
 } rs_output_buffer_format;
 
-/** \brief Presets hint general preference that is translated by librealsense into concrete resultion and fps */
+/** \brief Presets: general preferences that are translated by librealsense into concrete resolution and FPS. */
 typedef enum rs_preset
 {
     RS_PRESET_BEST_QUALITY     , /**< Prefer best overall quality */
     RS_PRESET_LARGEST_IMAGE    , /**< Prefer largest image size */
     RS_PRESET_HIGHEST_FRAMERATE, /**< Prefer highest frame rate */
-    RS_PRESET_COUNT
+    RS_PRESET_COUNT              /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
 } rs_preset;
 
 /** \brief Source: allows you to choose between available hardware subdevices. */
 typedef enum rs_source
 {
     RS_SOURCE_VIDEO          , /**< Video streaming of depth, infrared, color, or fish-eye */
-    RS_SOURCE_MOTION_TRACKING, /**< Motion tracking from Gyro and Accelerometer */
+    RS_SOURCE_MOTION_TRACKING, /**< Motion tracking from gyroscope and accelerometer */
     RS_SOURCE_ALL            , /**< Enable everything together */
-    RS_SOURCE_COUNT
+    RS_SOURCE_COUNT            /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
 } rs_source;
 
 /** \brief Distortion model: defines how pixel coordinates should be mapped to sensor coordinates. */
 typedef enum rs_distortion
 {
-    RS_DISTORTION_NONE                  , /**< Rectilinear images, no distortion compensation required */
+    RS_DISTORTION_NONE                  , /**< Rectilinear images. No distortion compensation required. */
     RS_DISTORTION_MODIFIED_BROWN_CONRADY, /**< Equivalent to Brown-Conrady distortion, except that tangential distortion is applied to radially distorted points */
     RS_DISTORTION_INVERSE_BROWN_CONRADY , /**< Equivalent to Brown-Conrady distortion, except undistorts image instead of distorting it */
     RS_DISTORTION_FTHETA                , /**< Distortion model of the fish-eye camera */
-    RS_DISTORTION_COUNT
+    RS_DISTORTION_COUNT                   /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
 } rs_distortion;
 
-/** \brief For SR300 devices: provide optimized settings for specific types of usage. */
+/** \brief For SR300 devices: provides optimized settings (presets) for specific types of usage. */
 typedef enum rs_ivcam_preset
 {
-    RS_IVCAM_PRESET_SHORT_RANGE             ,
-    RS_IVCAM_PRESET_LONG_RANGE              ,
-    RS_IVCAM_PRESET_BACKGROUND_SEGMENTATION ,
-    RS_IVCAM_PRESET_GESTURE_RECOGNITION     ,
-    RS_IVCAM_PRESET_OBJECT_SCANNING         ,
-    RS_IVCAM_PRESET_FACE_ANALYTICS          ,
-    RS_IVCAM_PRESET_FACE_LOGIN              ,
-    RS_IVCAM_PRESET_GR_CURSOR               ,
-    RS_IVCAM_PRESET_DEFAULT                 ,
-    RS_IVCAM_PRESET_MID_RANGE               ,
-    RS_IVCAM_PRESET_IR_ONLY                 ,
-    RS_IVCAM_PRESET_COUNT
+    RS_IVCAM_PRESET_SHORT_RANGE             , /**< Preset for short range */
+    RS_IVCAM_PRESET_LONG_RANGE              , /**< Preset for long range */
+    RS_IVCAM_PRESET_BACKGROUND_SEGMENTATION , /**< Preset for background segmentation */
+    RS_IVCAM_PRESET_GESTURE_RECOGNITION     , /**< Preset for gesture recognition */
+    RS_IVCAM_PRESET_OBJECT_SCANNING         , /**< Preset for object scanning */
+    RS_IVCAM_PRESET_FACE_ANALYTICS          , /**< Preset for face analytics */
+    RS_IVCAM_PRESET_FACE_LOGIN              , /**< Preset for face login */
+    RS_IVCAM_PRESET_GR_CURSOR               , /**< Preset for GR cursor */
+    RS_IVCAM_PRESET_DEFAULT                 , /**< Preset for default */
+    RS_IVCAM_PRESET_MID_RANGE               , /**< Preset for mid-range */
+    RS_IVCAM_PRESET_IR_ONLY                 , /**< Preset for IR only */
+    RS_IVCAM_PRESET_COUNT                     /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
 } rs_ivcam_preset;
 
 /** \brief Defines general configuration controls. 
@@ -137,36 +143,36 @@ typedef enum rs_option
     RS_OPTION_F200_ACCURACY                                   , /**< Set the number of patterns projected per frame. The higher the accuracy value, the more patterns projected. Increasing the number of patterns helps to achieve better accuracy. Note that this control affects the depth FPS. */
     RS_OPTION_F200_MOTION_RANGE                               , /**< Motion vs. range trade-off, with lower values allowing for better motion sensitivity and higher values allowing for better depth range*/
     RS_OPTION_F200_FILTER_OPTION                              , /**< Set the filter to apply to each depth frame. Each one of the filters is optimized per the application requirements.*/
-    RS_OPTION_F200_CONFIDENCE_THRESHOLD                       , /**< The confidence level threshold used by the depth algorithm pipe to set whether a pixel will get a valid range or will be marked with invalid range*/
+    RS_OPTION_F200_CONFIDENCE_THRESHOLD                       , /**< Confidence level threshold used by the depth algorithm pipe to set whether a pixel will get a valid range or will be marked with invalid range*/
     RS_OPTION_F200_DYNAMIC_FPS                                , /**< (F200-only) Allows to reduce FPS without restarting streaming. Valid values are {2, 5, 15, 30, 60}.*/
-    RS_OPTION_SR300_AUTO_RANGE_ENABLE_MOTION_VERSUS_RANGE     , /**< Configures SR300 depth auto-range setting. Should not be used directly but through set IVCAM preset method.*/
-    RS_OPTION_SR300_AUTO_RANGE_ENABLE_LASER                   , /**< Configures SR300 depth auto-range setting. Should not be used directly but through set IVCAM preset method.*/
-    RS_OPTION_SR300_AUTO_RANGE_MIN_MOTION_VERSUS_RANGE        , /**< Configures SR300 depth auto-range setting. Should not be used directly but through set IVCAM preset method.*/
-    RS_OPTION_SR300_AUTO_RANGE_MAX_MOTION_VERSUS_RANGE        , /**< Configures SR300 depth auto-range setting. Should not be used directly but through set IVCAM preset method.*/
-    RS_OPTION_SR300_AUTO_RANGE_START_MOTION_VERSUS_RANGE      , /**< Configures SR300 depth auto-range setting. Should not be used directly but through set IVCAM preset method.*/
-    RS_OPTION_SR300_AUTO_RANGE_MIN_LASER                      , /**< Configures SR300 depth auto-range setting. Should not be used directly but through set IVCAM preset method.*/
-    RS_OPTION_SR300_AUTO_RANGE_MAX_LASER                      , /**< Configures SR300 depth auto-range setting. Should not be used directly but through set IVCAM preset method.*/
-    RS_OPTION_SR300_AUTO_RANGE_START_LASER                    , /**< Configures SR300 depth auto-range setting. Should not be used directly but through set IVCAM preset method.*/
-    RS_OPTION_SR300_AUTO_RANGE_UPPER_THRESHOLD                , /**< Configures SR300 depth auto-range setting. Should not be used directly but through set IVCAM preset method.*/
-    RS_OPTION_SR300_AUTO_RANGE_LOWER_THRESHOLD                , /**< Configures SR300 depth auto-range setting. Should not be used directly but through set IVCAM preset method.*/
+    RS_OPTION_SR300_AUTO_RANGE_ENABLE_MOTION_VERSUS_RANGE     , /**< Configures SR300 depth auto-range setting. Should not be used directly but through the \c rs_apply_ivcam_preset method in rsutil.h.*/
+    RS_OPTION_SR300_AUTO_RANGE_ENABLE_LASER                   , /**< Configures SR300 depth auto-range setting. Should not be used directly but through the \c rs_apply_ivcam_preset method in rsutil.h.*/
+    RS_OPTION_SR300_AUTO_RANGE_MIN_MOTION_VERSUS_RANGE        , /**< Configures SR300 depth auto-range setting. Should not be used directly but through the \c rs_apply_ivcam_preset method in rsutil.h.*/
+    RS_OPTION_SR300_AUTO_RANGE_MAX_MOTION_VERSUS_RANGE        , /**< Configures SR300 depth auto-range setting. Should not be used directly but through the \c rs_apply_ivcam_preset method in rsutil.h.*/
+    RS_OPTION_SR300_AUTO_RANGE_START_MOTION_VERSUS_RANGE      , /**< Configures SR300 depth auto-range setting. Should not be used directly but through the \c rs_apply_ivcam_preset method in rsutil.h.*/
+    RS_OPTION_SR300_AUTO_RANGE_MIN_LASER                      , /**< Configures SR300 depth auto-range setting. Should not be used directly but through the \c rs_apply_ivcam_preset method in rsutil.h.*/
+    RS_OPTION_SR300_AUTO_RANGE_MAX_LASER                      , /**< Configures SR300 depth auto-range setting. Should not be used directly but through the \c rs_apply_ivcam_preset method in rsutil.h.*/
+    RS_OPTION_SR300_AUTO_RANGE_START_LASER                    , /**< Configures SR300 depth auto-range setting. Should not be used directly but through the \c rs_apply_ivcam_preset method in rsutil.h.*/
+    RS_OPTION_SR300_AUTO_RANGE_UPPER_THRESHOLD                , /**< Configures SR300 depth auto-range setting. Should not be used directly but through the \c rs_apply_ivcam_preset method in rsutil.h.*/
+    RS_OPTION_SR300_AUTO_RANGE_LOWER_THRESHOLD                , /**< Configures SR300 depth auto-range setting. Should not be used directly but through the \c rs_apply_ivcam_preset method in rsutil.h.*/
     RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED                   , /**< Enable/disable R200 auto-exposure. This will affect both the IR and depth images.*/
     RS_OPTION_R200_LR_GAIN                                    , /**< IR image gain*/
     RS_OPTION_R200_LR_EXPOSURE                                , /**< This control allows manual adjustment of the exposure time value for the L/R imagers.*/
     RS_OPTION_R200_EMITTER_ENABLED                            , /**< Enables/disables R200 emitter*/
     RS_OPTION_R200_DEPTH_UNITS                                , /**< Micrometers per increment in integer depth values. 1000 is default (mm scale). Set before streaming.*/
-    RS_OPTION_R200_DEPTH_CLAMP_MIN                            , /**< Minimum depth in current depth units that will be output. Any values less than ‘Min Depth’ will be mapped to 0 during the conversion between disparity and depth. Set before streaming.*/
-    RS_OPTION_R200_DEPTH_CLAMP_MAX                            , /**< Maximum depth in current depth units that will be output. Any values greater than ‘Max Depth’ will be mapped to 0 during the conversion between disparity and depth. Set before streaming.*/
-    RS_OPTION_R200_DISPARITY_MULTIPLIER                       , /**< The disparity scale factor used when in disparity output mode. Can only be set before streaming.*/
+    RS_OPTION_R200_DEPTH_CLAMP_MIN                            , /**< Minimum depth in current depth units that will be output. Any values less than ג€˜Min Depthג€™ will be mapped to 0 during the conversion between disparity and depth. Set before streaming.*/
+    RS_OPTION_R200_DEPTH_CLAMP_MAX                            , /**< Maximum depth in current depth units that will be output. Any values greater than ג€˜Max Depthג€™ will be mapped to 0 during the conversion between disparity and depth. Set before streaming.*/
+    RS_OPTION_R200_DISPARITY_MULTIPLIER                       , /**< Disparity scale factor used when in disparity output mode. Can only be set before streaming.*/
     RS_OPTION_R200_DISPARITY_SHIFT                            , /**< {0 - 512}. Can only be set before streaming starts.*/
-    RS_OPTION_R200_AUTO_EXPOSURE_MEAN_INTENSITY_SET_POINT     , /**< Mean intensity set point. (Requires LR-auto-exposure to be on.)*/
-    RS_OPTION_R200_AUTO_EXPOSURE_BRIGHT_RATIO_SET_POINT       , /**< Bright ratio set point. (Requires LR-auto-exposure to be on.)*/
-    RS_OPTION_R200_AUTO_EXPOSURE_KP_GAIN                      , /**< Kp gain. (Requires LR-auto-exposure to be on.)*/
-    RS_OPTION_R200_AUTO_EXPOSURE_KP_EXPOSURE                  , /**< Kp exposure. (Requires LR-auto-exposure to be on.)*/
-    RS_OPTION_R200_AUTO_EXPOSURE_KP_DARK_THRESHOLD            , /**< Kp dark threshold. (Requires LR-auto-exposure to be on.)*/
-    RS_OPTION_R200_AUTO_EXPOSURE_TOP_EDGE                     , /**< Auto-exposure region-of-interest top edge (in pixels). (Requires LR-auto-exposure to be on.)*/
-    RS_OPTION_R200_AUTO_EXPOSURE_BOTTOM_EDGE                  , /**< Auto-exposure region-of-interest bottom edge (in pixels). (Requires LR-auto-exposure to be on.)*/
-    RS_OPTION_R200_AUTO_EXPOSURE_LEFT_EDGE                    , /**< Auto-exposure region-of-interest left edge (in pixels). (Requires LR-auto-exposure to be on.)*/
-    RS_OPTION_R200_AUTO_EXPOSURE_RIGHT_EDGE                   , /**< Auto-exposure region-of-interest right edge (in pixels). (Requires LR-auto-exposure to be on.)*/
+    RS_OPTION_R200_AUTO_EXPOSURE_MEAN_INTENSITY_SET_POINT     , /**< Mean intensity set point. Requires the \c RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED option to be set to 1.*/
+    RS_OPTION_R200_AUTO_EXPOSURE_BRIGHT_RATIO_SET_POINT       , /**< Bright ratio set point. Requires the \c RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED option to be set to 1.*/
+    RS_OPTION_R200_AUTO_EXPOSURE_KP_GAIN                      , /**< Kp gain. Requires the \c RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED option to be set to 1.*/
+    RS_OPTION_R200_AUTO_EXPOSURE_KP_EXPOSURE                  , /**< Kp exposure. Requires the \c RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED option to be set to 1.*/
+    RS_OPTION_R200_AUTO_EXPOSURE_KP_DARK_THRESHOLD            , /**< Kp dark threshold. Requires the \c RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED option to be set to 1.*/
+    RS_OPTION_R200_AUTO_EXPOSURE_TOP_EDGE                     , /**< Auto-exposure region-of-interest top edge (in pixels). Requires the \c RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED option to be set to 1.*/
+    RS_OPTION_R200_AUTO_EXPOSURE_BOTTOM_EDGE                  , /**< Auto-exposure region-of-interest bottom edge (in pixels). Requires the \c RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED option to be set to 1.*/
+    RS_OPTION_R200_AUTO_EXPOSURE_LEFT_EDGE                    , /**< Auto-exposure region-of-interest left edge (in pixels). Requires the \c RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED option to be set to 1.*/
+    RS_OPTION_R200_AUTO_EXPOSURE_RIGHT_EDGE                   , /**< Auto-exposure region-of-interest right edge (in pixels). Requires the \c RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED option to be set to 1.*/
     RS_OPTION_R200_DEPTH_CONTROL_ESTIMATE_MEDIAN_DECREMENT    , /**< Value to subtract when estimating the median of the correlation surface*/
     RS_OPTION_R200_DEPTH_CONTROL_ESTIMATE_MEDIAN_INCREMENT    , /**< Value to add when estimating the median of the correlation surface*/
     RS_OPTION_R200_DEPTH_CONTROL_MEDIAN_THRESHOLD             , /**< Threshold: by how much the winning score exceeds the median. */
@@ -189,20 +195,21 @@ typedef enum rs_option
     RS_OPTION_FRAMES_QUEUE_SIZE                               , /**< Number of frames the user is allowed to keep per stream. Trying to hold on to more frames will cause frame-drops.*/
     RS_OPTION_HARDWARE_LOGGER_ENABLED                         , /**< Enable/disable fetching log data from the device */
     RS_OPTION_TOTAL_FRAME_DROPS                               , /**< Total number of detected frame drops from all streams */
-    RS_OPTION_COUNT,
+    RS_OPTION_COUNT                                           , /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
 
 } rs_option;
 
 /** \brief Types of value provided from the device with each frame */
 typedef enum rs_frame_metadata
 {
-    RS_FRAME_METADATA_ACTUAL_EXPOSURE, /**< Actual exposure that the frame was captured with */
+    RS_FRAME_METADATA_ACTUAL_EXPOSURE, /**< Actual exposure at which the frame was captured */
     RS_FRAME_METADATA_ACTUAL_FPS,      /**< Actual FPS at the time of capture */
-    RS_FRAME_METADATA_COUNT
+    RS_FRAME_METADATA_COUNT            /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
 } rs_frame_metadata;
 
-/** \brief Defines the full set of functionality that a RealSense device might provide
-   to check what functionality is supported by a particular device at runtime call dev->supports(capability) */
+/** \brief Specifies various capabilities of a RealSense device.
+
+   To check if a certain capability is supported by a particular device, at runtime call <tt>dev->supports(capability)</tt>. */
 typedef enum rs_capabilities
 {
     RS_CAPABILITIES_DEPTH,                      /**< Provides depth stream */
@@ -210,17 +217,17 @@ typedef enum rs_capabilities
     RS_CAPABILITIES_INFRARED,                   /**< Provides infrared stream */
     RS_CAPABILITIES_INFRARED2,                  /**< Provides second infrared stream */
     RS_CAPABILITIES_FISH_EYE,                   /**< Provides wide field of view (fish-eye) stream */
-    RS_CAPABILITIES_MOTION_EVENTS,              /**< Provides gyro and accelorometer events */
+    RS_CAPABILITIES_MOTION_EVENTS,              /**< Provides gyroscope and accelorometer events */
     RS_CAPABILITIES_MOTION_MODULE_FW_UPDATE,    /**< Provides method for upgrading motion module firmware */
     RS_CAPABILITIES_ADAPTER_BOARD,              /**< Internally MIPI-to-USB adapter */
-    RS_CAPABILITIES_ENUMERATION,                /**< Provides enough basic functionality to be considered supported. this to catch at runtime various outdated engineering samples */
-    RS_CAPABILITIES_COUNT,
+    RS_CAPABILITIES_ENUMERATION,                /**< Provides enough basic functionality to be considered supported. This is to catch at runtime various outdated engineering samples. */
+    RS_CAPABILITIES_COUNT,                      /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
 } rs_capabilities;
 
 /** \brief Proprietary formats for direct communication with device firmware */
 typedef enum rs_blob_type {
     RS_BLOB_TYPE_MOTION_MODULE_FIRMWARE_UPDATE, /**< By using this option, new firmware can be uploaded to the ZR300 motion-module */
-    RS_BLOB_TYPE_COUNT
+    RS_BLOB_TYPE_COUNT                          /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
 }  rs_blob_type;
 
 /**\brief Read-only strings that can be queried from the device.
@@ -251,7 +258,7 @@ typedef enum rs_camera_info {
     RS_CAMERA_INFO_3RD_LENS_COATING_TYPE         , /**< Color coating type */
     RS_CAMERA_INFO_NOMINAL_BASELINE              , /**< Nominal baseline */
     RS_CAMERA_INFO_3RD_NOMINAL_BASELINE          , /**< Color nominal baseline */
-    RS_CAMERA_INFO_COUNT
+    RS_CAMERA_INFO_COUNT                           /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
 } rs_camera_info;
 
 /**\brief Severity of the librealsense logger */
@@ -262,7 +269,7 @@ typedef enum rs_log_severity {
     RS_LOG_SEVERITY_ERROR, /**< Indication of definite failure */
     RS_LOG_SEVERITY_FATAL, /**< Indication of unrecoverable failure */
     RS_LOG_SEVERITY_NONE , /**< No logging will occur */
-    RS_LOG_SEVERITY_COUNT
+    RS_LOG_SEVERITY_COUNT  /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
 } rs_log_severity;
 
 /** \brief Source device that triggered a specific timestamp event from the motion module */
@@ -275,16 +282,18 @@ typedef enum rs_event_source
     RS_EVENT_G0_SYNC       , /**< Event from external GPIO 0 */
     RS_EVENT_G1_SYNC       , /**< Event from external GPIO 1 */
     RS_EVENT_G2_SYNC       , /**< Event from external GPIO 2 */
-    RS_EVENT_SOURCE_COUNT
+    RS_EVENT_SOURCE_COUNT    /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
 }rs_event_source;
 
-/** \brief When working with motion microcontroller, motion data timestamps are always in microcontroller timestamp domain. 
-   Some frames, however, might not succesfully receive microcontroller timestamp and will be marked as camera domain. */
+/** \brief Specifies the clock in relation to which the frame timestamp was measured.
+
+When working with a motion microcontroller, motion data timestamps are always in the microcontroller timestamp domain. 
+Some frames, however, might not succesfully receive microcontroller timestamp and will be marked as camera domain. */
 typedef enum rs_timestamp_domain
 {
     RS_TIMESTAMP_DOMAIN_CAMERA         , /**< Frame timestamp was measured in relation to the camera clock */
     RS_TIMESTAMP_DOMAIN_MICROCONTROLLER, /**< Frame timestamp was measured in relation to the microcontroller clock */
-    RS_TIMESTAMP_DOMAIN_COUNT
+    RS_TIMESTAMP_DOMAIN_COUNT            /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
 }rs_timestamp_domain;
 
 /** \brief Video stream intrinsics */
@@ -300,26 +309,26 @@ typedef struct rs_intrinsics
     float         coeffs[5]; /**< Distortion coefficients */
 } rs_intrinsics;
 
-/** \brief Motion device intrinsic - scale, bias and variances */
+/** \brief Motion device intrinsics: scale, bias, and variances */
 typedef struct rs_motion_device_intrinsic
 {
     /* Scale X        cross axis        cross axis      Bias X */
     /* cross axis     Scale Y           cross axis      Bias Y */
     /* cross axis     cross axis        Scale Z         Bias Z */
-    float data[3][4];
+    float data[3][4];          /**< Interpret data array values */
 
-    float noise_variances[3];
-    float bias_variances[3];
+    float noise_variances[3];  /**< Variance of noise for X, Y, and Z axis */
+    float bias_variances[3];   /**< Variance of bias for X, Y, and Z axis */
 } rs_motion_device_intrinsic;
 
-/** \brief Motion module intrinsics including accelerometer and gyro intrinsics */
+/** \brief Motion module intrinsics: includes accelerometer and gyroscope intrinsics structs of type \c rs_motion_device_intrinsic. */
 typedef struct rs_motion_intrinsics
 {
     rs_motion_device_intrinsic acc;
     rs_motion_device_intrinsic gyro;
 } rs_motion_intrinsics;
 
-/** \brief Cross-stream extrinsics: Encode the topology describing how the different devices are connected. */
+/** \brief Cross-stream extrinsics: encode the topology describing how the different devices are connected. */
 typedef struct rs_extrinsics
 {
     float rotation[9];    /**< Column-major 3x3 rotation matrix */
@@ -334,12 +343,12 @@ typedef struct rs_timestamp_data
     unsigned long long  frame_number;  /**< Relevant frame number, required to join timestamp data with the relevant frame */
 } rs_timestamp_data;
 
-/** \brief Motion data from Gyro / Accel from the microcontroller */
+/** \brief Motion data from gyroscope and accelerometer from the microcontroller */
 typedef struct rs_motion_data
 {
     rs_timestamp_data   timestamp_data; 
     unsigned int        is_valid;   /**< Signaled by firmware in case of an error */ 
-    float               axes[3];    /**< Three [x,y,z] axes; 16-bit data for gyro [rad/sec], 12-bit for accelerometer; 2's complement [m/sec^2]*/
+    float               axes[3];    /**< Three [x,y,z] axes; 16-bit data for gyroscope [rad/sec], 12-bit for accelerometer; 2's complement [m/sec^2]*/
 } rs_motion_data;
 
 
@@ -377,6 +386,7 @@ void rs_delete_context(rs_context * context, rs_error ** error);
 
 /**
  * \brief Determines number of connected devices.
+ * \param context     Object representing librealsense session
  * \param[out] error  If non-null, receives any error that occurs during this call, otherwise, errors are ignored.
  * \return            Device count
  */
@@ -384,6 +394,7 @@ int rs_get_device_count(const rs_context * context, rs_error ** error);
 
 /**
  * \brief Retrieves connected device by index
+ * \param context     Object representing librealsense session
  * \param[in] index   Zero-based index of device to retrieve
  * \param[out] error  If non-null, receives any error that occurs during this call, otherwise, errors are ignored.
  * \return            Requested device
@@ -392,6 +403,7 @@ rs_device * rs_get_device(rs_context * context, int index, rs_error ** error);
 
 /**
  * \brief Retrieves human-readable device model string
+ * \param[in] device  Relevant RealSense device
  * \param[out] error  If non-null, receives any error that occurs during this call, otherwise, errors are ignored.
  * \return            Model string, such as "Intel RealSense F200" or "Intel RealSense R200"
  */
@@ -399,6 +411,7 @@ const char * rs_get_device_name(const rs_device * device, rs_error ** error);
 
 /**
  * \brief Retrieves unique serial number of the device
+  * \param[in] device Relevant RealSense device
  * \param[out] error  If non-null, receives any error that occurs during this call, otherwise, errors are ignored.
  * \return            Serial number, in a format specific to the device model
  */
@@ -406,6 +419,8 @@ const char * rs_get_device_serial(const rs_device * device, rs_error ** error);
 
 /**
 * \brief Retrieves camera specific information, such as versions of various internal componnents
+* \param[in] device Relevant RealSense device
+* \param[out] info  Information that is retrieved
 * \param[out] error  If non-null, receives any error that occurs during this call, otherwise, errors are ignored.
 * \return            Requested camera information string, in a format specific to the device model.
 */
@@ -413,6 +428,7 @@ const char * rs_get_device_info(const rs_device * device, rs_camera_info info, r
 
 /**
  * \brief Retrieves the USB port number of the device
+ * \param[in] device  Relevant RealSense device
  * \param[out] error  If non-null, receives any error that occurs during this call, otherwise, errors are ignored.
  * \return            USB port number in a string of format: "##-##"
  */
@@ -438,6 +454,7 @@ void rs_get_device_extrinsics(const rs_device * device, rs_stream from_stream, r
 
 /**
 * \brief Retrieves extrinsic transformation between specific stream and the motion module
+* \param[in] device       Relevant RealSense device
 * \param[in] from  		  Stream
 * \param[out] extrin      Transformation between the specific stream and motion module
 * \param[out] error       If non-null, receives any error that occurs during this call, otherwise, errors are ignored.
@@ -484,7 +501,7 @@ int rs_get_stream_mode_count(const rs_device * device, rs_stream stream, rs_erro
 void rs_get_stream_mode(const rs_device * device, rs_stream stream, int index, int * width, int * height, rs_format * format, int * framerate, rs_error ** error);
 
 /**
- * \brief Enables a specific stream and request specific properties
+ * \brief Enables a specific stream and requests specific properties
  * \param[in] device         Relevant RealSense device
  * \param[in] stream         Stream
  * \param[in] width          Desired width of a frame image in pixels, or 0 if any width is acceptable
@@ -497,7 +514,7 @@ void rs_get_stream_mode(const rs_device * device, rs_stream stream, int index, i
 void rs_enable_stream_ex(rs_device * device, rs_stream stream, int width, int height, rs_format format, int framerate, rs_output_buffer_format output_format, rs_error ** error);
 
 /**
-* \brief Enables a specific stream and request specific properties
+* \brief Enables a specific stream and requests specific properties
 * \param[in] device         Relevant RealSense device
 * \param[in] stream         Stream
 * \param[in] width          Desired width of a frame image in pixels, or 0 if any width is acceptable
@@ -509,7 +526,7 @@ void rs_enable_stream_ex(rs_device * device, rs_stream stream, int width, int he
 void rs_enable_stream(rs_device * device, rs_stream stream, int width, int height, rs_format format, int framerate, rs_error ** error);
 
 /**
- * \brief Enables a specific stream and request properties using a preset
+ * \brief Enables a specific stream and requests properties using a preset
  * \param[in] device  Relevant RealSense device
  * \param[in] stream  Stream
  * \param[in] preset  Preset to use to enable the stream
@@ -588,12 +605,13 @@ void rs_get_stream_intrinsics(const rs_device * device, rs_stream stream, rs_int
 void rs_get_motion_intrinsics(const rs_device * device, rs_motion_intrinsics * intrinsic, rs_error ** error);
 
 /**
-* \brief Sets up a frame callback that will be called immediately when an image is available, with no synchronization logic applied
+* \brief Sets up a frame callback that is called immediately when an image is available, with no synchronization logic applied
 * \param[in] device    Relevant RealSense device
 * \param[in] stream    Stream
 * \param[in] on_frame  Callback that will receive the frame data and timestamp
 * \param[in] user      User data point to be passed to the callback
 * \param[out] error    If non-null, receives any error that occurs during this call, otherwise, errors are ignored.
+* \see \c rs_set_frame_callback_cpp()
 */
 void rs_set_frame_callback(rs_device * device, rs_stream stream, rs_frame_callback_ptr on_frame, void * user, rs_error ** error);
 
@@ -605,6 +623,7 @@ void rs_set_frame_callback(rs_device * device, rs_stream stream, rs_frame_callba
 * \param[in] on_timestamp_event User-defined routine to be invoked on timestamp
 * \param[in] timestamp_handler  User data point to be passed to the motion event callback
 * \param[out] error             If non-null, receives any error that occurs during this call, otherwise, errors are ignored.
+* \see  \c rs_enable_motion_tracking_cpp()
 */
 void rs_enable_motion_tracking(rs_device * device,
     rs_motion_callback_ptr on_motion_event, void * motion_handler,
@@ -614,19 +633,23 @@ void rs_enable_motion_tracking(rs_device * device,
 /**
 * \brief Enables and configures motion-tracking data handlers
 * 
-* Note: The \c rs_enable_motion_tracking() method is responsible for activating the motion module on-board the device. 
-* One of the services it provides is to produce shared and high-resolution timestamps for all components that are connected to it. 
-* Usually, librealsense takes care of that and copies the timestamps on the relevant frames.
+* <b>Note</b>: 
 *
-* However, when you have an external device (like a compass) and wish to synchronize it precisely with image and 
-* motion streams, you can connect the sensor to a GPIO that is available on some devices. Every time the sensor signals, you 
+* The \c rs_enable_motion_tracking_cpp() method is responsible for activating the motion module on-board the device. 
+* One of the services it provides is to produce shared and high-resolution timestamps for all components that are connected to it. 
+* For Depth, IR, Color and Fisheye sensors, librealsense takes care of that and copies the timestamps on the relevant frames.
+*
+* However, when you have an external device (such as a compass, magnetometer, light sensor, or other) and wish to synchronize it precisely with image and 
+* motion streams, you can connect that sensor to a GPIO that is available on some devices. Every time the sensor signals, you 
 * get a timestamp callback with a frame number, source ID, and a timestamp.
-* This allows advanced users to synchronize compass events (presumably coming though I2C or some other method) with RealSense data.
-* (This variant is provided specifically to enable passing lambdas with capture lists safely into the library.)
-* \param[in] device				Device
+* This timestamp callback allows advanced users to synchronize compass events (presumably coming though I2C or some other method) with RealSense data.
+* 
+* This variant of \c rs_enable_motion_tracking() is provided specifically to enable passing lambdas with capture lists safely into the library.
+* \param[in] device				Relevant RealSense device
 * \param[in] motion_callback    User-defined routine to be invoked when motion data arrives
 * \param[in] timestamp_callback User-defined routine to be invoked on timestamp
 * \param[out] error             If non-null, receives any error that occurs during this call, otherwise, errors are ignored.
+*  \see  \c rs_enable_motion_tracking()
 */
 void rs_enable_motion_tracking_cpp(rs_device * device,
     rs_motion_callback * motion_callback,
@@ -634,13 +657,14 @@ void rs_enable_motion_tracking_cpp(rs_device * device,
     rs_error ** error);
 
 /**
- * \brief Sets up a frame callback that will be called immediately when an image is available, with no synchronization logic applied
+ * \brief Sets up a frame callback that is called immediately when an image is available, with no synchronization logic applied
  
- * This variant is provided specifically to enable passing lambdas with capture lists safely into the library.
+ * This variant of \c rs_set_frame_callback() is provided specifically to enable passing lambdas with capture lists safely into the library.
  * \param[in] device    Relevant RealSense device
  * \param[in] stream    Stream
  * \param[in] callback  Callback that will receive the frame data and timestamp
  * \param[out] error    If non-null, receives any error that occurs during this call, otherwise, errors are ignored.
+ * \see \c rs_set_frame_callback()
  */
 void rs_set_frame_callback_cpp(rs_device * device, rs_stream stream, rs_frame_callback * callback, rs_error ** error);
 
@@ -804,7 +828,7 @@ int rs_poll_for_frames(rs_device * device, rs_error ** error);
 int rs_supports(rs_device * device, rs_capabilities capability, rs_error ** error);
 
 /**
-* \brief Specialization over generic support to verify camera header block support
+* \brief Returns true if given camera information parameter is supported by the device
 * \param[in] device      Relevant RealSense device
 * \param[in] info_param  Parameter to check
 * \param[out] error      If non-null, receives any error that occurs during this call, otherwise, errors are ignored.
@@ -813,28 +837,27 @@ int rs_supports(rs_device * device, rs_capabilities capability, rs_error ** erro
 int rs_supports_camera_info(rs_device * device, rs_camera_info info_param, rs_error ** error);
 
 /**
-* \brief Retrieves metadata from safe frame handle, returned from detach, clone_ref or from frame callback
-* \param[in] frame   Current frame reference
-* \param[in] stream  Stream whose latest frame we are interested in
-* \param[in] frame_metadata  \c rs_frame_metadata whose latest frame we are interested in
-* \param[out] error  If non-null, receives any error that occurs during this call, otherwise, errors are ignored.
-* \return            Metadata value
+* \brief Retrieves metadata from a frame reference
+* \param[in] frame           Current frame reference
+* \param[in] frame_metadata  Metadata
+* \param[out] error          If non-null, receives any error that occurs during this call, otherwise, errors are ignored.
+* \return                    Metadata value
 */
 double rs_get_detached_frame_metadata(const rs_frame_ref * frame, rs_frame_metadata frame_metadata, rs_error ** error);
 
 /**
 * \brief Determines device metadata
-* \param[in] frame   Current frame reference
-* \param[in] frame_metadata  Metadata to check for support
-* \param[out] error  If non-null, receives any error that occurs during this call, otherwise, errors are ignored.
-* \return            true if device has this metadata
+* \param[in] frame           Current frame reference
+* \param[in] frame_metadata  Metadata
+* \param[out] error          If non-null, receives any error that occurs during this call, otherwise, errors are ignored.
+* \return                    true if device has this metadata
 */
 int rs_supports_frame_metadata(const rs_frame_ref * frame, rs_frame_metadata frame_metadata, rs_error ** error);
 
 /**
- * \brief Retrieves the time at which the latest frame on a stream was captured
+ * \brief Retrieves time at which the latest frame on a stream was captured
  * \param[in] device  Relevant RealSense device
- * \param[in] stream  Stream whose latest frame we are interested in
+ * \param[in] stream  Stream whose latest frame is of interest
  * \param[out] error  If non-null, receives any error that occurs during this call, otherwise, errors are ignored.
  * \return            Timestamp of the frame, in milliseconds, since the device was started
  */
@@ -845,7 +868,7 @@ double rs_get_frame_timestamp(const rs_device * device, rs_stream stream, rs_err
 * \param[in] device  Relevant RealSense device
 * \param[in] stream  Stream whose latest frame is of interest
 * \param[out] error  If non-null, receives any error that occurs during this call, otherwise, errors are ignored.
-* \return            the frame number
+* \return            Frame number
 */
 unsigned long long rs_get_frame_number(const rs_device * device, rs_stream stream, rs_error ** error);
 
@@ -854,21 +877,21 @@ unsigned long long rs_get_frame_number(const rs_device * device, rs_stream strea
  * \param[in] device  Relevant RealSense device
  * \param[in] stream  Stream whose latest frame is of interest
  * \param[out] error  If non-null, receives any error that occurs during this call, otherwise, errors are ignored.
- * \return            the pointer to the start of the frame data
+ * \return            Pointer to start of the frame data
  */
 const void * rs_get_frame_data(const rs_device * device, rs_stream stream, rs_error ** error);
 
 /**
-* \brief Releases the frame handle
+* \brief Releases frame handle
 * \param[in] device  Relevant RealSense device
-* \param[in] frame Handle returned either detach, clone_ref or from frame callback
+* \param[in] frame   Handle returned either detach, clone_ref or from frame callback
 * \param[out] error  If non-null, receives any error that occurs during this call, otherwise, errors are ignored.
-* \return            Pointer to the start of the frame data
+* \return            Pointer to start of the frame data
 */
 void rs_release_frame(rs_device * device, rs_frame_ref * frame, rs_error ** error);
 
 /**
-* \brief Retrieves timestamp from safe frame handle, returned from detach, clone_ref or from frame callback
+* \brief Retrieves timestamp from frame reference
 * \param[in] frame   Current frame reference
 * \param[out] error  If non-null, receives any error that occurs during this call, otherwise, errors are ignored.
 * \return            Timestamp of the frame, in milliseconds since the device was started
@@ -876,7 +899,7 @@ void rs_release_frame(rs_device * device, rs_frame_ref * frame, rs_error ** erro
 double rs_get_detached_frame_timestamp(const rs_frame_ref * frame, rs_error ** error);
 
 /**
-* \brief Retrieves timestamp domain from safe frame handle, returned from detach, clone_ref or from frame callback
+* \brief Retrieves timestamp domain from frame reference
 
 * This method is used to check if two timestamp values are comparable (meaning, are generated from the same clock).
 * \param[in] frame   Current frame reference
@@ -886,7 +909,7 @@ double rs_get_detached_frame_timestamp(const rs_frame_ref * frame, rs_error ** e
 rs_timestamp_domain rs_get_detached_frame_timestamp_domain(const rs_frame_ref * frame, rs_error ** error);
 
 /**
-* \brief Retrieves frame number from safe frame handle, returned from detach, clone_ref or from frame callback
+* \brief Retrieves frame number from frame reference
 * \param[in] frame   Current frame reference
 * \param[out] error  If non-null, receives any error that occurs during this call, otherwise, errors are ignored.
 * \return            Frame number, in milliseconds since the device was started
@@ -894,10 +917,10 @@ rs_timestamp_domain rs_get_detached_frame_timestamp_domain(const rs_frame_ref * 
 unsigned long long rs_get_detached_frame_number(const rs_frame_ref * frame, rs_error ** error);
 
 /**
-* \brief Retrieves data from safe frame handle, returned from detach, clone_ref or from frame callback
+* \brief Retrieves data from frame reference
 * \param[in] frame   Current frame reference
 * \param[out] error  If non-null, receives any error that occurs during this call, otherwise, errors are ignored.
-* \return            Pointer to the start of the frame data
+* \return            Pointer to start of the frame data
 */
 const void * rs_get_detached_frame_data(const rs_frame_ref * frame, rs_error ** error);
 
@@ -934,7 +957,7 @@ int rs_get_detached_framerate(const rs_frame_ref * frame, rs_error ** error);
 int rs_get_detached_frame_stride(const rs_frame_ref * frame, rs_error ** error);
 
 /**
-* \brief Retrieves frame **bits** per pixel
+* \brief Retrieves frame <b><i>bits</i></b> per pixel
 * \param[in] frame   Current frame reference
 * \param[out] error  If non-null, receives any error that occurs during this call, otherwise, errors are ignored.
 * \return            Frame pad crop
@@ -958,10 +981,7 @@ rs_format rs_get_detached_frame_format(const rs_frame_ref * frame, rs_error ** e
 rs_stream rs_get_detached_frame_stream_type(const rs_frame_ref * frame, rs_error ** error);
 
 /**
-* \brief Sends a blob of data to the device 
-
-* Currently, only \c RS_BLOB_TYPE_MOTION_MODULE_FIRMWARE_UPDATE is support 
-* of the motiohn module.
+* \brief Sends arbitrary binary data to the device 
 
 * \param[in] device  Relevant RealSense device
 * \param[in] type    Type of raw data to send to the device
@@ -972,30 +992,30 @@ rs_stream rs_get_detached_frame_stream_type(const rs_frame_ref * frame, rs_error
 void rs_send_blob_to_device(rs_device * device, rs_blob_type type, void * data, int size, rs_error ** error);
 
 /**
-* \brief Retrieves the API version from the source code. Evaluate that the value is conformant to the established policies
+* \brief Retrieves API version from the source code. Evaluate that the value is conformant to the established policies
 * \param[out] error  If non-null, receives any error that occurs during this call, otherwise, errors are ignored.
 * \return            Version API encoded into integer value. For example: "1.9.3" becomes "10903".
 */
 int          rs_get_api_version      (rs_error ** error);
 
 /**
-* \brief Returns static pointer to the name of a failing function in case of error
+* \brief Returns static pointer to name of a failing function in case of error
 * \param[in] error   Error object allocated by RealSense API function
 * \return            Pointer to function name (memory manager by the error object)
 */
 const char * rs_get_failed_function  (const rs_error * error);
 
 /**
-* \brief Returns static pointer to the arguments of a failing function in case of error
+* \brief Returns static pointer to arguments of a failing function in case of error
 * \param[in] error   Error object allocated by RealSense API function
 * \return            Pointer to arguments string (memory manager by the error object)
 */
 const char * rs_get_failed_args      (const rs_error * error);
 
 /**
-* \brief Returns static pointer to the error message
+* \brief Returns static pointer to error message
 * \param[in] error   Error object allocated by RealSense API function
-* \return            Pointer to the error message (memory manager by the error object)
+* \return            Pointer to error message (memory manager by the error object)
 */
 const char * rs_get_error_message    (const rs_error * error);
 
