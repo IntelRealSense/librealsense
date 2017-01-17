@@ -4,6 +4,6 @@ function require_package {
 	if [ $(dpkg-query -W -f='${Status}' ${package_name} 2>/dev/null | grep -c "ok installed") -eq 0 ];
 	then
 		printf "Installing %s package" ${package_name}
-		apt-get install ${package_name}
+		sudo apt-get install ${package_name}
 	fi
 }
