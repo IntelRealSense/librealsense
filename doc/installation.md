@@ -72,7 +72,7 @@ Next, build the patched module for the desired machine configuration.<br />
     The script will download, patch and build uvc kernel module from sources.<br />
     Then it will attempt to insert the patched module instead of the active one. If failed
     the original uvc module will be preserved.
-    * `./scripts/patch-video-formats-ubuntu-xenial.sh`<br />
+    * `./scripts/patch-realsense-ubuntu-xenial.sh`<br />
 
   * **Arch-based distributions**
     * You need to install the [base-devel](https://www.archlinux.org/groups/x86_64/base-devel/) package group.
