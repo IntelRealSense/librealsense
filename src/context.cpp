@@ -13,6 +13,7 @@
 
 #ifdef _MSC_VER
 #if (_MSC_VER <= 1800) // constexpr is not supported in MSVC2013
+#pragma error( "Librealsense requires MSVC2015 or later to build" )
 #undef constexpr_support
 #define constexpr_support 0
 #endif
