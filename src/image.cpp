@@ -2,6 +2,9 @@
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
 #include "image.h"
+#define _USE_MATH_DEFINES
+#include <cmath>
+#include <math.h>
 //#include "../include/librealsense/rsutil.h" // For projection/deprojection logic
 
 #ifdef __SSSE3__

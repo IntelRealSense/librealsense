@@ -14,8 +14,6 @@
 #include <iomanip>
 #define _USE_MATH_DEFINES
 #include <cmath>
-
-#define _USE_MATH_DEFINES
 #include <math.h>
 
 inline void make_depth_histogram(uint8_t rgb_image[], const uint16_t depth_image[], int width, int height)
