@@ -27,6 +27,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <limits.h>
+#include <cmath>
 #include <errno.h>
 #include <sys/stat.h>
 #include <sys/mman.h>

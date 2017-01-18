@@ -372,6 +372,10 @@ void uvc_endpoint::close()
     else if (!_is_opened)
         throw wrong_api_call_sequence_exception("close() failed. UVC device was not opened!");
 
+    for (auto& profile : _configuration)
+    {
+        _device->stop(profile);
+    }
     reset_streaming();
     _power.reset();
     _is_opened = false;
@@ -401,11 +405,7 @@ void uvc_endpoint::stop_streaming()
         throw wrong_api_call_sequence_exception("stop_streaming() failed. UVC device is not streaming!");
 
     _is_streaming = false;
-    for (auto& profile : _configuration)
-    {
-        _device->stop(profile);
-    }
-    reset_streaming();
+
 }
 
 void uvc_endpoint::reset_streaming()
