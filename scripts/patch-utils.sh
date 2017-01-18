@@ -1,10 +1,13 @@
 function require_package {
-   package_name=$1
-   printf "verify package=%s\n" "${package_name}"
+	package_name=$1
+	printf "\e[32mPackage required %s: \e[0m" "${package_name}"
 	if [ $(dpkg-query -W -f='${Status}' ${package_name} 2>/dev/null | grep -c "ok installed") -eq 0 ];
 	then
-		printf "Installing %s package" ${package_name}
+		echo -e "\e[31m - not found, installing now...\e[0m"
 		sudo apt-get install ${package_name}
+		echo -e "\e[32mMissing package installed\e[0m"
+	else
+		echo -e "\e[32m - found\e[0m"
 	fi
 }
 
@@ -14,7 +17,7 @@ function try_module_insert {
 	tgt_ko=$3
 	
 	# Unload existing modules if resident	
-	printf "Unloading module %s\n" ${module_name}
+	printf "\e[32mUnloading module %s\n\e[0m" ${module_name}
 	sudo modprobe -r ${module_name}
 	
 	# backup the existing module for recovery	
@@ -26,31 +29,21 @@ function try_module_insert {
 	# try to load the new module
 	set --
 	modprobe_failed=0
-	printf "trying to insert patched %s\n" ${module_name}
+	printf "\e[34mTrying to insert patched module %s\n\e[0m" ${module_name}
 	sudo modprobe ${module_name} || modprobe_failed=$?
 
 	# Check and revert the backup module if 'modprobe' operation crashed
 	if [ $modprobe_failed -ne 0 ];
 	then
-		echo "Failed to insert the patched module. Operation is aborted, the original module is restored"
-		echo "Verify that the current kernel version is aligned to the patched module versoin"
+		echo -e "\e[31mFailed to insert the patched module. Operation is aborted, the original module is restored\e[0m"
+		echo -e "\e[31mVerify that the current kernel version is aligned to the patched module version\e[0m"
 		sudo cp ${tgt_ko}.bckup ${tgt_ko}		
 		sudo modprobe ${module_name}
-		printf "The original %s module was reloaded\n" ${module_name}
+		printf "\e[34mThe original %s module was reloaded\n\e[0m" ${module_name}
 		exit 1
 	else
 		# Everything went OK, delete backup
-		printf "Inserting the patched module %s succeeded\n" ${module_name}
+		printf "\e[32mInserting %s succeeded\n\e[0m" ${module_name}
 		sudo rm ${tgt_ko}.bckup
 	fi
 }
-
-#backup the existing modules
-#sudo cp /lib/modules/`uname -r`/kernel/drivers/media/usb/uvc/uvcvideo.ko /lib/modules/`uname -r`/kernel/drivers/media/usb/uvc/uvcvideo.ko.bckup
-#sudo cp /lib/modules/`uname -r`/kernel/drivers/iio/accel/hid-sensor-accel-3d.ko /lib/modules/`uname -r`/kernel/drivers/iio/accel/hid-sensor-accel-3d.ko.bckup
-#sudo cp /lib/modules/`uname -r`/kernel/drivers/iio/gyro/hid-sensor-gyro-3d.ko /lib/modules/`uname -r`/kernel/drivers/iio/gyro/hid-sensor-gyro-3d.ko.bckup
-
-## Copy the patched modules out to target directory for deployment
-#sudo cp ~/$LINUX_BRANCH-uvcvideo.ko /lib/modules/`uname -r`/kernel/drivers/media/usb/uvc/uvcvideo.ko
-#sudo cp ~/$LINUX_BRANCH-hid-sensor-accel-3d.ko /lib/modules/`uname -r`/kernel/drivers/iio/accel/hid-sensor-accel-3d.ko
-#sudo cp ~/$LINUX_BRANCH-hid-sensor-gyro-3d.ko /lib/modules/`uname -r`/kernel/drivers/iio/gyro/hid-sensor-gyro-3d.ko
