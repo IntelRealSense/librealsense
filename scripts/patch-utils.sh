@@ -33,7 +33,6 @@ function try_module_insert {
 	sudo cp ${src_ko} ${tgt_ko}
 	
 	# try to load the new module
-	set --
 	modprobe_failed=0
 	printf "\e[34mTrying to insert patched module %s\n\e[0m" ${module_name}
 	sudo modprobe ${module_name} || modprobe_failed=$?

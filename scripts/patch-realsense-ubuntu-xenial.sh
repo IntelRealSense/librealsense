@@ -21,9 +21,9 @@ cd ${kernel_name}
 # Verify that there are no trailing changes., warn the user to make corrective action if needed
 if [ $(git status | grep 'modified:' | wc -l) -ne 0 ];
 then
-	echo -e "\e[32mThe kernel sources include modified files that will be lost if you continue:\e[0m"
+	echo -e "\e[32mThe kernel has modified files:\e[0m"
 	git status | grep 'modified:'	
-	read -r -p "Are you sure to proceed ? [Y/n] " response	
+	read -r -p "Proceeding will reset all changes. Are you sure to proceed ? [Y/n] " response	
 	response=${response,,}    # tolower
 	if [[ $response =~ ^(n|N)$ ]]; 
 	then
@@ -32,7 +32,7 @@ then
 	else
 		printf "Resetting local changes in %s folder\n " ${kernel_name}
 		git reset --hard
-		echo "\e[32mUpdate the folder content with the latest from mainline branch\e[0m"
+		echo -e "\e[32mUpdate the folder content with the latest from mainline branch\e[0m"
 		git pull origin master
 	fi
 fi
@@ -44,9 +44,11 @@ if [ $reset_driver -eq 1 ];
 then 
 	echo -e "\e[43mUser requested to rebuild and reinstall ubuntu-xenial stock drivers\e[0m"	
 else
-	# Apply UVC formats patch for RealSense devices
+	# Patching kernel for RealSense devices
 	echo -e "\e[32mApplying realsense-uvc patch\e[0m"
 	patch -p1 < ../scripts/realsense-camera-formats_ubuntu-xenial.patch
+	echo -e "\e[32mApplying realsense-metadata patch\e[0m"
+	patch -p1 < ../scripts/realsense-metadata-ubuntu-xenial.patch	
 	echo -e "\e[32mApplying realsense-hid patch\e[0m"
 	patch -p1 < ../scripts/realsense-hid-ubuntu-xenial.patch
 fi
