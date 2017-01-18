@@ -1,5 +1,10 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
+#ifdef _MSC_VER
+#if (_MSC_VER <= 1800) // constexpr is not supported in MSVC2013
+#error( "Librealsense requires MSVC2015 or later to build. Compilation will be aborted" )
+#endif
+#endif
 
 #include <array>
 
@@ -9,16 +14,7 @@
 #include "context.h"
 #include "recorder.h"
 
-#define constexpr_support 1
 
-#ifdef _MSC_VER
-#if (_MSC_VER <= 1800) // constexpr is not supported in MSVC2013
-#undef constexpr_support
-#define constexpr_support 0
-#endif
-#endif
-
-#if (constexpr_support == 1)
 template<unsigned... Is> struct seq{};
 template<unsigned N, unsigned... Is>
 struct gen_seq : gen_seq<N-1, N-1, Is...>{};
@@ -35,9 +31,8 @@ constexpr std::array<char const, N1+N2-1> concat(char const (&a1)[N1], char cons
   return concat(a1, a2, gen_seq<N1-1>{}, gen_seq<N2>{});
 }
 
+// The string is used to retrieve the version embedded into .so file on Linux
 constexpr auto rs_api_version = concat("VERSION: ",RS_API_VERSION_STR);
-
-#endif
 
 namespace rsimpl
 {
