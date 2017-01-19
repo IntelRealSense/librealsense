@@ -5,6 +5,7 @@
 #include "image.h"
 #include <array>
 #include <set>
+#include <unordered_set>
 
 using namespace rsimpl;
 
@@ -516,12 +517,12 @@ hid_endpoint::~hid_endpoint()
 
 std::vector<uvc::stream_profile> hid_endpoint::init_stream_profiles()
 {
-    std::vector<uvc::stream_profile> results;
+    std::unordered_set<uvc::stream_profile> results;
     for (auto& elem : get_device_profiles())
     {
-        results.push_back({elem.width, elem .height, elem .fps, uint32_t(elem .format)});
+        results.insert({elem.width, elem.height, elem.fps, stream_to_fourcc(elem.stream)});
     }
-    return results;
+    return std::vector<uvc::stream_profile>(results.begin(), results.end());
 }
 
 std::vector<stream_profile> hid_endpoint::get_principal_requests()
@@ -537,10 +538,25 @@ void hid_endpoint::open(const std::vector<stream_profile>& requests)
     else if (_is_opened)
         throw wrong_api_call_sequence_exception("Hid device is already opened!");
 
+    auto mapping = resolve_requests(requests);
     _hid_device->open();
-    for (auto& elem : requests)
+    for (auto& request : requests)
     {
-        _configured_sensor_iio.push_back(rs_stream_to_sensor_iio(elem.stream));
+        auto sensor_iio = rs_stream_to_sensor_iio(request.stream);
+        for (auto& map : mapping)
+        {
+            auto it = std::find_if(begin(map.unpacker->outputs), end(map.unpacker->outputs),
+                                   [&](const std::pair<rs_stream, rs_format>& pair)
+            {
+                return pair.first == request.stream;
+            });
+
+            if (it != end(map.unpacker->outputs))
+            {
+                _configured_profiles.insert(std::make_pair(sensor_iio, stream_formats{request.stream, {request.format}}));
+                _iio_mapping.insert(std::make_pair(sensor_iio, map));
+            }
+        }
     }
     _is_opened = true;
 }
@@ -554,7 +570,8 @@ void hid_endpoint::close()
         throw wrong_api_call_sequence_exception("close() failed. Hid device was not opened!");
 
     _hid_device->close();
-    _configured_sensor_iio.clear();
+    _configured_profiles.clear();
+    _iio_mapping.clear();
     _is_opened = false;
 }
 
@@ -568,22 +585,39 @@ void hid_endpoint::start_streaming(frame_callback_ptr callback)
 
     _archive = std::make_shared<frame_archive>(&_max_publish_list_size);
     _callback = std::move(callback);
-    _hid_device->start_capture(_configured_sensor_iio, [this](const uvc::sensor_data& sensor_data){
+    std::vector<int> configured_sensor_iio;
+    for (auto& elem : _configured_profiles)
+    {
+        configured_sensor_iio.push_back(elem.first);
+    }
+
+
+    _hid_device->start_capture(configured_sensor_iio, [this](const uvc::sensor_data& sensor_data){
         if (!this->is_streaming())
             return;
 
-        frame_additional_data additional_data;
+        auto mode = _iio_mapping[sensor_data.sensor.iio];
         auto data_size = sensor_data.data.size();
-        auto stream_format = sensor_name_to_stream_format(sensor_data.sensor.name);
-        additional_data.format = stream_format.format;
-        additional_data.stream_type = stream_format.stream;
-        additional_data.width = data_size;
-        additional_data.height = 1;
-
-        if (sensor_data.data.size() == 14) // TODO
+        mode.profile.width = data_size;
+        mode.profile.height = 1;
+        // Ignore any HID frames which appear corrupted or invalid
+        if (!_timestamp_reader->validate_frame(mode, sensor_data.data.data()))
         {
-            additional_data.timestamp = *((uint64_t*)(sensor_data.data.data() + 6));
+            LOG_DEBUG("Dropped HID frame. frame is corrupted or invalid.");
+            return;
         }
+
+        // Determine the timestamp for this HID frame
+        auto timestamp = _timestamp_reader->get_frame_timestamp(mode, sensor_data.data.data());
+        auto frame_counter = _timestamp_reader->get_frame_counter(mode, sensor_data.data.data());
+
+        frame_additional_data additional_data;
+        additional_data.format = _configured_profiles[sensor_data.sensor.iio].formats.front();
+        additional_data.stream_type = _configured_profiles[sensor_data.sensor.iio].stream;
+        additional_data.width = mode.profile.width;
+        additional_data.height = mode.profile.height;
+        additional_data.timestamp = timestamp;
+        additional_data.frame_number = frame_counter;
 
         auto frame = this->alloc_frame(data_size, additional_data);
         if (!frame)
@@ -592,7 +626,8 @@ void hid_endpoint::start_streaming(frame_callback_ptr callback)
             return;
         }
 
-        memcpy(frame->get()->data.data(), sensor_data.data.data(), data_size);
+        std::vector<byte*> dest{const_cast<byte*>(frame->get()->data.data())};
+        mode.unpacker->unpack(dest.data(), sensor_data.data.data(), data_size);
         this->invoke_callback(frame);
     });
 
@@ -611,19 +646,23 @@ void hid_endpoint::stop_streaming()
     flush();
     _callback.reset();
     _archive.reset();
+    _timestamp_reader->reset();
 }
 
 std::vector<stream_profile> hid_endpoint::get_device_profiles()
 {
     std::vector<stream_profile> stream_requests;
-    for (auto& elem : _hid_sensors)
+    for (auto& sensor : _hid_sensors)
     {
-        auto stream_format = sensor_name_to_stream_format(elem.name);
-        stream_requests.push_back({ stream_format.stream,
-                                   0,
-                                   0,
-                                   0,
-                                   stream_format.format});
+        auto stream_formats = sensor_name_to_stream_formats(sensor.name);
+        for (auto& format : stream_formats.formats)
+        {
+            stream_requests.push_back({stream_formats.stream,
+                                       0,
+                                       0,
+                                       0,
+                                       format});
+        }
     }
 
     return stream_requests;
@@ -631,7 +670,7 @@ std::vector<stream_profile> hid_endpoint::get_device_profiles()
 
 int hid_endpoint::rs_stream_to_sensor_iio(rs_stream stream) const
 {
-    for (auto& elem : sensor_name_and_stream_format)
+    for (auto& elem : sensor_name_and_stream_formats)
     {
         if (stream == elem.second.stream)
             return get_iio_by_name(elem.first);
@@ -649,16 +688,30 @@ int hid_endpoint::get_iio_by_name(const std::string& name) const
     throw invalid_value_exception("sensor_name not found!");
 }
 
-hid_endpoint::stream_format hid_endpoint::sensor_name_to_stream_format(const std::string& sensor_name) const
+hid_endpoint::stream_formats hid_endpoint::sensor_name_to_stream_formats(const std::string& sensor_name) const
 {
-    stream_format stream_and_format;
+    stream_formats stream_and_formats;
     try{
-        stream_and_format = sensor_name_and_stream_format.at(sensor_name);
+        stream_and_formats = sensor_name_and_stream_formats.at(sensor_name);
     }
     catch(std::out_of_range)
     {
         throw invalid_value_exception(to_string() << "format of sensor name " << sensor_name << " not found!");
     }
 
-    return stream_and_format;
+    return stream_and_formats;
+}
+
+uint32_t hid_endpoint::stream_to_fourcc(rs_stream stream) const
+{
+    uint32_t fourcc;
+    try{
+        fourcc = stream_and_fourcc.at(stream);
+    }
+    catch(std::out_of_range)
+    {
+        throw invalid_value_exception(to_string() << "fourcc of stream " << rs_stream_to_string(stream) << " not found!");
+    }
+
+    return fourcc;
 }

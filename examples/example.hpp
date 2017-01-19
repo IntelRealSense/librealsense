@@ -15,9 +15,6 @@
 #define _USE_MATH_DEFINES
 #include <cmath>
 
-#define _USE_MATH_DEFINES
-#include <math.h>
-
 inline void make_depth_histogram(uint8_t rgb_image[], const uint16_t depth_image[], int width, int height)
 {
     static uint32_t histogram[0x10000];
@@ -250,7 +247,7 @@ public:
         draw_text(xy.x - w / 2, xy.y, text);
     }
 
-    void draw_motion_data(float x, float y, float z, uint64_t timestamp)
+    void draw_motion_data(float x, float y, float z)
     {
         glViewport(0, 0, 1024, 1024);
         glClearColor(0,0,0,1);
@@ -324,52 +321,10 @@ public:
             print_text_in_3d(x / 2, y / 2, z / 2, s2.str().c_str(), true, model, proj, 1/norm);
         }
 
-        if (timestamp != 0)
-        {
-            glLoadIdentity();
-            glOrtho(-canvas_size, canvas_size, -canvas_size, canvas_size, -1, +1);
-            std::ostringstream s3;
-            s3 << "Timestamp: " << timestamp;
-            draw_text(-60, -150, s3.str().c_str());
-        }
-
         glCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 0, 0, 1024, 1024, 0);
     }
 
     double t = 0;
-
-    void draw_gyro_texture(const uint8_t* data, unsigned size)
-    {
-        const static float gyro_range   = 1000.f;                   // Preconfigured angular velocity range [-1000...1000] Deg_C/Sec
-        const static float gyro_transform_factor = float((gyro_range * M_PI) / (180.f * 32767.f));
-        auto shrt = (short*)data;
-        auto x = static_cast<float>(shrt[0]) * gyro_transform_factor;
-        auto y = static_cast<float>(shrt[1]) * gyro_transform_factor;
-        auto z = static_cast<float>(shrt[2]) * gyro_transform_factor;
-        uint64_t timestamp = 0;
-        if (size == 14)
-            timestamp = *((uint64_t*)(data + 6));
-
-        draw_motion_data(x, y, z, timestamp);
-    }
-
-    void draw_accel_texture(const uint8_t* data, unsigned size)
-    {
-        const static float gravity = 9.80665f; // Standard Gravitation Acceleration
-        const static float accel_range = 4.f;                       // Accelerometer is preset to [-4...+4]g range
-        const static float accelerator_transform_factor = float(gravity * accel_range / 2048.f);
-
-        auto shrt = (short*)data;
-        auto x = static_cast<float>(shrt[0]) * accelerator_transform_factor;
-        auto y = static_cast<float>(shrt[1]) * accelerator_transform_factor;
-        auto z = static_cast<float>(shrt[2]) * accelerator_transform_factor;
-
-        uint64_t timestamp = 0;
-        if (size == 14)
-            timestamp = *((uint64_t*)(data + 6));
-
-        draw_motion_data(x, y, z, timestamp);
-    }
 
     void upload(const uint8_t * data, int width, int height, rs_format format, int stride = 0, rs_stream stream = RS_STREAM_ANY)
     {
@@ -407,23 +362,17 @@ public:
         case RS_FORMAT_Y8:
             glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, data);
             break;
-        case RS_FORMAT_MOTION_DATA:
-            switch (stream) {
-            case RS_STREAM_GYRO:
-                draw_gyro_texture(data, width * height);
-                break;
-            case RS_STREAM_ACCEL:
-                draw_accel_texture(data, width * height);
-                break;
-            default:
-                throw std::runtime_error("Motion data stream not found!");
-                break;
-            }
+        case RS_FORMAT_MOTION_DATA_AXES:
+        {
+            auto axes = *(reinterpret_cast<const float3*>(data));
+            draw_motion_data(axes.x, axes.y, axes.z);
+        }
             break;
         case RS_FORMAT_Y16:
             glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_LUMINANCE, GL_UNSIGNED_SHORT, data);
             break;
         case RS_FORMAT_RAW8:
+        case RS_FORMAT_MOTION_DATA_RAW:
             glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE, width, height, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, data);
             break;
         case RS_FORMAT_RAW10:

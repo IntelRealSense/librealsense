@@ -80,6 +80,75 @@ namespace rsimpl
         }
     };
 
+    class ds5_hid_timestamp_reader : public frame_timestamp_reader
+    {
+        static const int sensors = 2;
+        std::vector<bool> started;
+        std::vector<int64_t> total;
+        std::vector<int> last_timestamp;
+        mutable std::vector<int64_t> counter;
+        mutable std::recursive_mutex _mtx;
+    public:
+        ds5_hid_timestamp_reader()
+        {
+            started.resize(sensors);
+            total.resize(sensors);
+            last_timestamp.resize(sensors);
+            counter.resize(sensors);
+            reset();
+        }
+
+        void reset() override
+        {
+            std::lock_guard<std::recursive_mutex> lock(_mtx);
+            for (auto i = 0; i < sensors; ++i)
+            {
+                started[i] = false;
+                total[i] = 0;
+                last_timestamp[i] = 0;
+                counter[i] = 0;
+            }
+        }
+
+        bool validate_frame(const request_mapping& mode, const void * frame) const override
+        {
+            std::lock_guard<std::recursive_mutex> lock(_mtx);
+            // Validate that at least one byte of the image is nonzero
+            for (const uint8_t * it = (const uint8_t *)frame, *end = it + mode.pf->get_image_size(mode.profile.width, mode.profile.height); it != end; ++it)
+            {
+                if (*it)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        double get_frame_timestamp(const request_mapping& mode, const void * frame) override
+        {
+            std::lock_guard<std::recursive_mutex> lock(_mtx);
+            auto frame_size = mode.profile.width * mode.profile.height;
+            static const unsigned hid_data_size = 14;
+            static const unsigned timestamp_offset = 6;
+            if (frame_size == hid_data_size)
+            {
+                 return static_cast<double>(*((uint64_t*)((const uint8_t*)frame + timestamp_offset)));
+            }
+            return 0; // TODO: return time_point
+        }
+
+        unsigned long long get_frame_counter(const request_mapping & mode, const void * /*frame*/) const override
+        {
+            std::lock_guard<std::recursive_mutex> lock(_mtx);
+            int index = 0;
+            if (mode.pf->fourcc == 'GYRO')
+                index = 1;
+
+            return ++counter[index];
+        }
+    };
+
     class ds5_info : public device_info
     {
     public:

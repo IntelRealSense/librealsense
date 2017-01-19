@@ -136,7 +136,8 @@ namespace rsimpl
         CASE(RAW16)
         CASE(RAW8)
         CASE(UYVY)
-        CASE(MOTION_DATA)
+        CASE(MOTION_DATA_RAW)
+        CASE(MOTION_DATA_AXES)
         default: assert(!is_valid(value)); return unknown;
         }
         #undef CASE

@@ -508,6 +508,8 @@ public:
     std::map<rs_stream, float2> stream_size;
     std::map<rs_stream, rs_format> stream_format;
     std::map<rs_stream, std::chrono::high_resolution_clock::time_point> steam_last_frame;
+    std::map<rs_stream, double> stream_timestamp;
+    std::map<rs_stream, unsigned long long> stream_frame_number;
 
     bool fullscreen = false;
     rs_stream selected_stream = RS_STREAM_ANY;
@@ -933,11 +935,14 @@ int main(int, char**) try
                     {
                         model.stream_buffers[f.get_stream_type()].upload(f);
                         model.steam_last_frame[f.get_stream_type()] = std::chrono::high_resolution_clock::now();
-                        auto width = (f.get_format() == RS_FORMAT_MOTION_DATA)? 640.f : f.get_width();
-                        auto height = (f.get_format() == RS_FORMAT_MOTION_DATA)? 480.f : f.get_height();
+                        auto is_motion = ((f.get_format() == RS_FORMAT_MOTION_DATA_RAW) || (f.get_format() == RS_FORMAT_MOTION_DATA_AXES));
+                        auto width = (is_motion)? 640.f : f.get_width();
+                        auto height = (is_motion)? 480.f : f.get_height();
                         model.stream_size[f.get_stream_type()] = { static_cast<float>(width),
                                                                    static_cast<float>(height)};
                         model.stream_format[f.get_stream_type()] = f.get_format();
+                        model.stream_timestamp[f.get_stream_type()] = f.get_timestamp();
+                        model.stream_frame_number[f.get_stream_type()] = f.get_frame_number();
                     }
                 }
                 catch(const rs::error& e)
@@ -990,7 +995,9 @@ int main(int, char**) try
 
             label = to_string() << rs_stream_to_string(stream) << " "
                 << stream_size.x << "x" << stream_size.y << ", "
-                << rs_format_to_string(model.stream_format[stream]);
+                << rs_format_to_string(model.stream_format[stream])
+                << ", Frame Number: " << model.stream_frame_number[stream]
+                << ", Timestamp: " << std::fixed << std::setprecision(2) << model.stream_timestamp[stream];
 
             if (!layout.empty() && !model.fullscreen)
             {

@@ -1,6 +1,8 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
+#define _USE_MATH_DEFINES
+#include <cmath>
 #include "image.h"
 //#include "../include/librealsense/rsutil.h" // For projection/deprojection logic
 
@@ -47,7 +49,32 @@ namespace rsimpl
     //////////////////////////////
     // Naive unpacking routines //
     //////////////////////////////
-    
+
+    inline void copy_hid_axes(byte * const dest[], const byte * source, float factor, unsigned data_shift, int count)
+    {
+        auto shrt = (short*)source;
+        float axes[3] = {static_cast<float>(shrt[0] >> data_shift) * factor,
+                         static_cast<float>(shrt[1] >> data_shift) * factor,
+                         static_cast<float>(shrt[2] >> data_shift) * factor};
+        memcpy(dest[0], axes, sizeof(axes));
+    }
+
+    template<size_t SIZE> void unpack_accel_axes(byte * const dest[], const byte * source, int count)
+    {
+        static const float gravity = 9.80665f; // Standard Gravitation Acceleration
+        static const float accel_range = 4.f;  // Accelerometer is preset to [-4...+4]g range
+        static const float accelerator_transform_factor = float(gravity * accel_range / 2048.f);
+        static const unsigned data_shift = 4; // Acceleration data is stored in 12 MSB
+        copy_hid_axes(dest, source, accelerator_transform_factor, data_shift, count);
+    }
+
+    template<size_t SIZE> void unpack_gyro_axes(byte * const dest[], const byte * source, int count)
+    {
+        static const float gyro_range   = 1000.f; // Preconfigured angular velocity range [-1000...1000] Deg_C/Sec
+        static const float gyro_transform_factor = float((gyro_range * M_PI) / (180.f * 32767.f));
+        copy_hid_axes(dest, source, gyro_transform_factor, 0, count);
+    }
+
     template<size_t SIZE> void copy_pixels(byte * const dest[], const byte * source, int count)
     {
         memcpy(dest[0], source, SIZE * count);
@@ -689,42 +716,46 @@ namespace rsimpl
     //////////////////////////
     // Native pixel formats //
     //////////////////////////
-    const native_pixel_format pf_fe_raw8_unpatched_kernel = { 'RAW8', 1, 1,{  { false, &copy_pixels<1>,                   { { RS_STREAM_FISHEYE,  RS_FORMAT_RAW8 } } } } };
-    const native_pixel_format pf_raw8       = { 'GREY', 1, 1,{  { false, &copy_pixels<1>,                   { { RS_STREAM_FISHEYE,  RS_FORMAT_RAW8 } } } } };
-    const native_pixel_format pf_rw16       = { 'RW16', 1, 2,{  { false, &copy_pixels<2>,                   { { RS_STREAM_COLOR,    RS_FORMAT_RAW16 } } } } };
-    const native_pixel_format pf_rw10       = { 'pRAA', 1, 1,{  { false, &copy_raw10,                       { { RS_STREAM_COLOR,    RS_FORMAT_RAW10 } } } } };
-    const native_pixel_format pf_yuy2       = { 'YUY2', 1, 2,{  { true,  &unpack_yuy2<RS_FORMAT_RGB8 >,     { { RS_STREAM_COLOR,    RS_FORMAT_RGB8 } } },
-                                                                { false, &copy_pixels<2>,                   { { RS_STREAM_COLOR,    RS_FORMAT_YUYV } } },
-                                                                { true,  &unpack_yuy2<RS_FORMAT_RGBA8>,     { { RS_STREAM_COLOR,    RS_FORMAT_RGBA8 } } },
-                                                                { true,  &unpack_yuy2<RS_FORMAT_BGR8 >,     { { RS_STREAM_COLOR,    RS_FORMAT_BGR8 } } },
-                                                                { true,  &unpack_yuy2<RS_FORMAT_BGRA8>,     { { RS_STREAM_COLOR,    RS_FORMAT_BGRA8 } } } } };
-    const native_pixel_format pf_y8         = { 'GREY', 1, 1,{  { false, &copy_pixels<1>,                   { { RS_STREAM_INFRARED, RS_FORMAT_Y8  } } } } };
-    const native_pixel_format pf_y16        = { 'Y16 ', 1, 2,{  { true,  &unpack_y16_from_y16_10,           { { RS_STREAM_INFRARED, RS_FORMAT_Y16 } } } } };
-    const native_pixel_format pf_y8i        = { 'Y8I ', 1, 2,{  { true,  &unpack_y8_y8_from_y8i,            { { RS_STREAM_INFRARED, RS_FORMAT_Y8  },{ RS_STREAM_INFRARED2, RS_FORMAT_Y8 } } } } };
-    const native_pixel_format pf_y12i       = { 'Y12I', 1, 3,{  { true,  &unpack_y16_y16_from_y12i_10,      { { RS_STREAM_INFRARED, RS_FORMAT_Y16 },{ RS_STREAM_INFRARED2, RS_FORMAT_Y16 } } } } };
-    const native_pixel_format pf_z16        = { 'Z16 ', 1, 2,{  { false, &copy_pixels<2>,                   { { RS_STREAM_DEPTH,    RS_FORMAT_Z16 } } },
-                                                                { false, &copy_pixels<2>,                   { { RS_STREAM_DEPTH,    RS_FORMAT_DISPARITY16 } } } } };
-    const native_pixel_format pf_invz       = { 'INVZ', 1, 2, { { false, &copy_pixels<2>,                   { { RS_STREAM_DEPTH, RS_FORMAT_Z16 } } } } };
-    const native_pixel_format pf_f200_invi  = { 'INVI', 1, 1, { { false, &copy_pixels<1>,                   { { RS_STREAM_INFRARED, RS_FORMAT_Y8  } } },
-                                                                { true,  &unpack_y16_from_y8,               { { RS_STREAM_INFRARED, RS_FORMAT_Y16 } } } } };
-    const native_pixel_format pf_f200_inzi  = { 'INZI', 1, 3,{  { true,  &unpack_z16_y8_from_f200_inzi,     { { RS_STREAM_DEPTH,    RS_FORMAT_Z16 },{ RS_STREAM_INFRARED, RS_FORMAT_Y8 } } },
-                                                                { true,  &unpack_z16_y16_from_f200_inzi,    { { RS_STREAM_DEPTH,    RS_FORMAT_Z16 },{ RS_STREAM_INFRARED, RS_FORMAT_Y16 } } } } };
-    const native_pixel_format pf_sr300_invi = { 'INVI', 1, 2,{  { true,  &unpack_y8_from_y16_10,            { { RS_STREAM_INFRARED, RS_FORMAT_Y8  } } },
-                                                                { true,  &unpack_y16_from_y16_10,           { { RS_STREAM_INFRARED, RS_FORMAT_Y16 } } } } };
-    const native_pixel_format pf_sr300_inzi = { 'INZI', 2, 2,{  { true,  &unpack_z16_y8_from_sr300_inzi,    { { RS_STREAM_DEPTH,    RS_FORMAT_Z16 },{ RS_STREAM_INFRARED, RS_FORMAT_Y8 } } },
-                                                                { true,  &unpack_z16_y16_from_sr300_inzi,   { { RS_STREAM_DEPTH,    RS_FORMAT_Z16 },{ RS_STREAM_INFRARED, RS_FORMAT_Y16 } } } } };
+    const native_pixel_format pf_fe_raw8_unpatched_kernel = { 'RAW8', 1, 1,{  { false, &copy_pixels<1>,                  { { RS_STREAM_FISHEYE,  RS_FORMAT_RAW8 } } } } };
+    const native_pixel_format pf_raw8       = { 'GREY', 1, 1,{  { false, &copy_pixels<1>,                                { { RS_STREAM_FISHEYE,  RS_FORMAT_RAW8 } } } } };
+    const native_pixel_format pf_rw16       = { 'RW16', 1, 2,{  { false, &copy_pixels<2>,                                { { RS_STREAM_COLOR,    RS_FORMAT_RAW16 } } } } };
+    const native_pixel_format pf_rw10       = { 'pRAA', 1, 1,{  { false, &copy_raw10,                                    { { RS_STREAM_COLOR,    RS_FORMAT_RAW10 } } } } };
+    const native_pixel_format pf_yuy2       = { 'YUY2', 1, 2,{  { true,  &unpack_yuy2<RS_FORMAT_RGB8 >,                  { { RS_STREAM_COLOR,    RS_FORMAT_RGB8 } } },
+                                                                { false, &copy_pixels<2>,                                { { RS_STREAM_COLOR,    RS_FORMAT_YUYV } } },
+                                                                { true,  &unpack_yuy2<RS_FORMAT_RGBA8>,                  { { RS_STREAM_COLOR,    RS_FORMAT_RGBA8 } } },
+                                                                { true,  &unpack_yuy2<RS_FORMAT_BGR8 >,                  { { RS_STREAM_COLOR,    RS_FORMAT_BGR8 } } },
+                                                                { true,  &unpack_yuy2<RS_FORMAT_BGRA8>,                  { { RS_STREAM_COLOR,    RS_FORMAT_BGRA8 } } } } };
+    const native_pixel_format pf_y8         = { 'GREY', 1, 1,{  { false, &copy_pixels<1>,                                { { RS_STREAM_INFRARED, RS_FORMAT_Y8  } } } } };
+    const native_pixel_format pf_y16        = { 'Y16 ', 1, 2,{  { true,  &unpack_y16_from_y16_10,                        { { RS_STREAM_INFRARED, RS_FORMAT_Y16 } } } } };
+    const native_pixel_format pf_y8i        = { 'Y8I ', 1, 2,{  { true,  &unpack_y8_y8_from_y8i,                         { { RS_STREAM_INFRARED, RS_FORMAT_Y8  },{ RS_STREAM_INFRARED2, RS_FORMAT_Y8 } } } } };
+    const native_pixel_format pf_y12i       = { 'Y12I', 1, 3,{  { true,  &unpack_y16_y16_from_y12i_10,                   { { RS_STREAM_INFRARED, RS_FORMAT_Y16 },{ RS_STREAM_INFRARED2, RS_FORMAT_Y16 } } } } };
+    const native_pixel_format pf_z16        = { 'Z16 ', 1, 2,{  { false, &copy_pixels<2>,                                { { RS_STREAM_DEPTH,    RS_FORMAT_Z16 } } },
+                                                                { false, &copy_pixels<2>,                                { { RS_STREAM_DEPTH,    RS_FORMAT_DISPARITY16 } } } } };
+    const native_pixel_format pf_invz       = { 'INVZ', 1, 2, { { false, &copy_pixels<2>,                                { { RS_STREAM_DEPTH, RS_FORMAT_Z16 } } } } };
+    const native_pixel_format pf_f200_invi  = { 'INVI', 1, 1, { { false, &copy_pixels<1>,                                { { RS_STREAM_INFRARED, RS_FORMAT_Y8  } } },
+                                                                { true,  &unpack_y16_from_y8,                            { { RS_STREAM_INFRARED, RS_FORMAT_Y16 } } } } };
+    const native_pixel_format pf_f200_inzi  = { 'INZI', 1, 3,{  { true,  &unpack_z16_y8_from_f200_inzi,                  { { RS_STREAM_DEPTH,    RS_FORMAT_Z16 },{ RS_STREAM_INFRARED, RS_FORMAT_Y8 } } },
+                                                                { true,  &unpack_z16_y16_from_f200_inzi,                 { { RS_STREAM_DEPTH,    RS_FORMAT_Z16 },{ RS_STREAM_INFRARED, RS_FORMAT_Y16 } } } } };
+    const native_pixel_format pf_sr300_invi = { 'INVI', 1, 2,{  { true,  &unpack_y8_from_y16_10,                         { { RS_STREAM_INFRARED, RS_FORMAT_Y8  } } },
+                                                                { true,  &unpack_y16_from_y16_10,                        { { RS_STREAM_INFRARED, RS_FORMAT_Y16 } } } } };
+    const native_pixel_format pf_sr300_inzi = { 'INZI', 2, 2,{  { true,  &unpack_z16_y8_from_sr300_inzi,                 { { RS_STREAM_DEPTH,    RS_FORMAT_Z16 },{ RS_STREAM_INFRARED, RS_FORMAT_Y8 } } },
+                                                                { true,  &unpack_z16_y16_from_sr300_inzi,                { { RS_STREAM_DEPTH,    RS_FORMAT_Z16 },{ RS_STREAM_INFRARED, RS_FORMAT_Y16 } } } } };
 
-    const native_pixel_format pf_uyvyl      = { 'UYVY', 1, 2,{  { true,  &unpack_uyvy<RS_FORMAT_RGB8 >,     { { RS_STREAM_INFRARED, RS_FORMAT_RGB8 } } },
-                                                                { false, &copy_pixels<2>,                   { { RS_STREAM_INFRARED, RS_FORMAT_UYVY } } },
-                                                                { true,  &unpack_uyvy<RS_FORMAT_RGBA8>,     { { RS_STREAM_INFRARED, RS_FORMAT_RGBA8} } },
-                                                                { true,  &unpack_uyvy<RS_FORMAT_BGR8 >,     { { RS_STREAM_INFRARED, RS_FORMAT_BGR8 } } },
-                                                                { true,  &unpack_uyvy<RS_FORMAT_BGRA8>,     { { RS_STREAM_INFRARED, RS_FORMAT_BGRA8} } } } };
+    const native_pixel_format pf_uyvyl      = { 'UYVY', 1, 2,{  { true,  &unpack_uyvy<RS_FORMAT_RGB8 >,                  { { RS_STREAM_INFRARED, RS_FORMAT_RGB8 } } },
+                                                                { false, &copy_pixels<2>,                                { { RS_STREAM_INFRARED, RS_FORMAT_UYVY } } },
+                                                                { true,  &unpack_uyvy<RS_FORMAT_RGBA8>,                  { { RS_STREAM_INFRARED, RS_FORMAT_RGBA8} } },
+                                                                { true,  &unpack_uyvy<RS_FORMAT_BGR8 >,                  { { RS_STREAM_INFRARED, RS_FORMAT_BGR8 } } },
+                                                                { true,  &unpack_uyvy<RS_FORMAT_BGRA8>,                  { { RS_STREAM_INFRARED, RS_FORMAT_BGRA8} } } } };
 
-    const native_pixel_format pf_yuyv       = { 'YUYV', 1, 2,{  { true,  &unpack_yuy2<RS_FORMAT_RGB8 >,     { { RS_STREAM_COLOR,    RS_FORMAT_RGB8 } } },
-                                                                { false, &copy_pixels<2>,                   { { RS_STREAM_COLOR,    RS_FORMAT_YUYV } } },
-                                                                { true,  &unpack_yuy2<RS_FORMAT_RGBA8>,     { { RS_STREAM_COLOR,    RS_FORMAT_RGBA8 } } },
-                                                                { true,  &unpack_yuy2<RS_FORMAT_BGR8 >,     { { RS_STREAM_COLOR,    RS_FORMAT_BGR8 } } },
-                                                                { true,  &unpack_yuy2<RS_FORMAT_BGRA8>,     { { RS_STREAM_COLOR,    RS_FORMAT_BGRA8 } } } } };
+    const native_pixel_format pf_yuyv       = { 'YUYV', 1, 2,{  { true,  &unpack_yuy2<RS_FORMAT_RGB8 >,                  { { RS_STREAM_COLOR,    RS_FORMAT_RGB8 } } },
+                                                                { false, &copy_pixels<2>,                                { { RS_STREAM_COLOR,    RS_FORMAT_YUYV } } },
+                                                                { true,  &unpack_yuy2<RS_FORMAT_RGBA8>,                  { { RS_STREAM_COLOR,    RS_FORMAT_RGBA8 } } },
+                                                                { true,  &unpack_yuy2<RS_FORMAT_BGR8 >,                  { { RS_STREAM_COLOR,    RS_FORMAT_BGR8 } } },
+                                                                { true,  &unpack_yuy2<RS_FORMAT_BGRA8>,                  { { RS_STREAM_COLOR,    RS_FORMAT_BGRA8 } } } } };
+    const native_pixel_format pf_accel_axes = { 'ACCL', 1, 1,{  { true,  &unpack_accel_axes<RS_FORMAT_MOTION_DATA_AXES>, { { RS_STREAM_ACCEL,    RS_FORMAT_MOTION_DATA_AXES } } },
+                                                                { false, &copy_pixels<1>,                                { { RS_STREAM_ACCEL,    RS_FORMAT_MOTION_DATA_RAW  } } }}};
+    const native_pixel_format pf_gyro_axes  = { 'GYRO', 1, 1,{  { true,  &unpack_gyro_axes<RS_FORMAT_MOTION_DATA_AXES>,  { { RS_STREAM_GYRO,     RS_FORMAT_MOTION_DATA_AXES } } },
+                                                                { false, &copy_pixels<1>,                                { { RS_STREAM_GYRO,     RS_FORMAT_MOTION_DATA_RAW  } } }}};
 
 }
 
