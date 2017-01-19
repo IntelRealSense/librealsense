@@ -47,6 +47,8 @@
 
 #define MAX_DEV_PARENT_DIR 10
 
+#define META_DATA_SIZE 256
+
 namespace rsimpl
 {
     namespace uvc
@@ -1009,11 +1011,12 @@ namespace rsimpl
                 }
             }
 
-            v4l_uvc_device(const uvc_device_info& info)
+            v4l_uvc_device(const uvc_device_info& info, bool use_memory_map = false)
                 : _name(""), _info(),
                   _is_capturing(false),
                   _is_alive(true),
-                  _thread(nullptr)
+                  _thread(nullptr),
+                  _use_memory_map(use_memory_map)
             {
                 foreach_uvc_device([&info, this](const uvc_device_info& i, const std::string& name)
                 {
@@ -1083,7 +1086,7 @@ namespace rsimpl
                     v4l2_requestbuffers req = {};
                     req.count = 4;
                     req.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-                    req.memory = V4L2_MEMORY_MMAP;
+                    req.memory = _use_memory_map ? V4L2_MEMORY_MMAP : V4L2_MEMORY_USERPTR;
                     if(xioctl(_fd, VIDIOC_REQBUFS, &req) < 0)
                     {
                         if(errno == EINVAL)
@@ -1101,15 +1104,24 @@ namespace rsimpl
                     {
                         v4l2_buffer buf = {};
                         buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-                        buf.memory = V4L2_MEMORY_MMAP;
+                        buf.memory = _use_memory_map ? V4L2_MEMORY_MMAP : V4L2_MEMORY_USERPTR;
                         buf.index = i;
                         if(xioctl(_fd, VIDIOC_QUERYBUF, &buf) < 0)
                             throw linux_backend_exception("xioctl(VIDIOC_QUERYBUF) failed");
 
                         _buffers[i].length = buf.length;
-                        _buffers[i].start = mmap(NULL, buf.length, PROT_READ | PROT_WRITE, MAP_SHARED, _fd, buf.m.offset);
-                        if(_buffers[i].start == MAP_FAILED)
-                            throw linux_backend_exception("mmap");
+                        if ( _use_memory_map )
+                        {
+                            _buffers[i].start = mmap(NULL, buf.length, PROT_READ | PROT_WRITE, MAP_SHARED, _fd, buf.m.offset);
+                            if(_buffers[i].start == MAP_FAILED) linux_backend_exception("mmap failed");
+                        }
+                        else
+                        {
+                            _buffers[i].length += META_DATA_SIZE;
+                            _buffers[i].start = malloc( buf.length + META_DATA_SIZE);
+                             if (!_buffers[i].start) linux_backend_exception("userp allocation failed");
+                             memset(_buffers[i].start, 0, _buffers[i].length);
+                        }
                     }
                     _profile = profile;
                     _callback = callback;
@@ -1127,10 +1139,16 @@ namespace rsimpl
                     // Start capturing
                     for(size_t i = 0; i < _buffers.size(); ++i)
                     {
-                        v4l2_buffer buf = {};
-                        buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-                        buf.memory = V4L2_MEMORY_MMAP;
-                        buf.index = i;
+                       v4l2_buffer buf = {};
+                       buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+                       buf.memory = _use_memory_map ? V4L2_MEMORY_MMAP : V4L2_MEMORY_USERPTR;
+                       buf.index = i;
+                       buf.length = _buffers[i].length;
+
+                       if ( !_use_memory_map )
+                       {
+                           buf.m.userptr = (unsigned long) _buffers[i].start;
+                       }
                         if(xioctl(_fd, VIDIOC_QBUF, &buf) < 0)
                             throw linux_backend_exception("xioctl(VIDIOC_QBUF) failed");
                     }
@@ -1171,15 +1189,22 @@ namespace rsimpl
 
                     for(size_t i = 0; i < _buffers.size(); i++)
                     {
-                        if(munmap(_buffers[i].start, _buffers[i].length) < 0)
-                            throw linux_backend_exception("munmap failed");
+                        if (_use_memory_map)
+                        {
+                           if(munmap(_buffers[i].start, _buffers[i].length) < 0) linux_backend_exception("munmap");
+                        }
+                         else
+                        {
+                           free(_buffers[i].start);
+                           _buffers[i].start = 0;
+                        }
                     }
 
                     // Close memory mapped IO
                     struct v4l2_requestbuffers req = {};
                     req.count = 0;
                     req.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-                    req.memory = V4L2_MEMORY_MMAP;
+                    req.memory = _use_memory_map ? V4L2_MEMORY_MMAP : V4L2_MEMORY_USERPTR;
                     if(xioctl(_fd, VIDIOC_REQBUFS, &req) < 0)
                     {
                         if(errno == EINVAL)
@@ -1225,7 +1250,7 @@ namespace rsimpl
                         FD_SET(_fd, &fds);
                         v4l2_buffer buf = {};
                         buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-                        buf.memory = V4L2_MEMORY_MMAP;
+                        buf.memory = _use_memory_map ? V4L2_MEMORY_MMAP : V4L2_MEMORY_USERPTR;
                         if(xioctl(_fd, VIDIOC_DQBUF, &buf) < 0)
                         {
                             if(errno == EAGAIN)
@@ -1237,8 +1262,21 @@ namespace rsimpl
                         frame_object fo { (int)_buffers[buf.index].length,
                                         _buffers[buf.index].start };
 
+
+                        std::cout<<"METADATA: ";
+                        for(auto i=0; i<META_DATA_SIZE; i++)
+                        {
+                            std::cout<<std::hex<<(int)*(byte*)(_buffers[buf.index].start + buf.length + i - 256)<<" ";
+                        };
+
+                        std::cout<<"\n";
+                        // TODO: Print _buffers[buf.index].start + SIZEOF(frame) until
+                        //             _buffers[buf.index].start + SIZEOF(frame) + SIZEOF(METADATA)
+                        //       as hex bytesft
+
                         _callback(_profile, fo);
 
+                         memset(_buffers[buf.index].start, 0, _buffers[buf.index].length);
                         if(xioctl(_fd, VIDIOC_QBUF, &buf) < 0)
                             throw linux_backend_exception("xioctl(VIDIOC_QBUF) failed");
                     }
@@ -1551,6 +1589,7 @@ namespace rsimpl
             std::atomic<bool> _is_alive;
             std::unique_ptr<std::thread> _thread;
             std::unique_ptr<named_mutex> _named_mtx;
+            bool _use_memory_map;
         };
 
         class v4l_backend : public backend
