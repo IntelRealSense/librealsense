@@ -1,19 +1,19 @@
-From 1a711b64aad08d19d657b69307177f0d24adaa8c Mon Sep 17 00:00:00 2001
-From: Avishag Angerman <avishag.angerman@intel.com>
-Date: Wed, 18 Jan 2017 06:42:42 -0500
-Subject: [PATCH] Added support on metadata
+From 090e40fe724d84c81f58600547d00dc7e121af4e Mon Sep 17 00:00:00 2001
+From: Elad Zucker <eladx.zucker@intel.com>
+Date: Thu, 19 Jan 2017 13:17:02 -0500
+Subject: [PATCH] added support for uvc metadata
 
 ---
- drivers/media/usb/uvc/uvc_driver.c |  9 +++++++++
- drivers/media/usb/uvc/uvc_video.c  | 19 ++++++++++++++-----
+ drivers/media/usb/uvc/uvc_driver.c | 45 ++++++++++++++++++++++++++++++++++++++
+ drivers/media/usb/uvc/uvc_video.c  | 19 +++++++++++-----
  drivers/media/usb/uvc/uvcvideo.h   |  3 ++-
- 3 files changed, 25 insertions(+), 6 deletions(-)
+ 3 files changed, 61 insertions(+), 6 deletions(-)
 
 diff --git a/drivers/media/usb/uvc/uvc_driver.c b/drivers/media/usb/uvc/uvc_driver.c
-index 9d44f8e..1cec0d2 100644
+index 9d44f8e..1b403b6 100644
 --- a/drivers/media/usb/uvc/uvc_driver.c
 +++ b/drivers/media/usb/uvc/uvc_driver.c
-@@ -2729,6 +2729,15 @@ static struct usb_device_id uvc_ids[] = {
+@@ -2729,6 +2729,51 @@ static struct usb_device_id uvc_ids[] = {
  	  .bInterfaceSubClass	= 1,
  	  .bInterfaceProtocol	= 0,
  	  .driver_info		= UVC_QUIRK_FORCE_Y8 },
@@ -22,6 +22,42 @@ index 9d44f8e..1cec0d2 100644
 +				| USB_DEVICE_ID_MATCH_INT_INFO,
 +	  .idVendor		= 0x8086,
 +	  .idProduct		= 0x0ad5,
++	  .bInterfaceClass	= USB_CLASS_VIDEO,
++	  .bInterfaceSubClass	= 1,
++	  .bInterfaceProtocol	= 0,
++	  .driver_info		= UVC_QUIRK_APPEND_UVC_HEADER },
++	/* Intel RS430 depth camera */
++	{ .match_flags		= USB_DEVICE_ID_MATCH_DEVICE
++				| USB_DEVICE_ID_MATCH_INT_INFO,
++	  .idVendor		= 0x8086,
++	  .idProduct		= 0x0ad4,
++	  .bInterfaceClass	= USB_CLASS_VIDEO,
++	  .bInterfaceSubClass	= 1,
++	  .bInterfaceProtocol	= 0,
++	  .driver_info		= UVC_QUIRK_APPEND_UVC_HEADER },
++	/* Intel RS420 depth camera */
++	{ .match_flags		= USB_DEVICE_ID_MATCH_DEVICE
++				| USB_DEVICE_ID_MATCH_INT_INFO,
++	  .idVendor		= 0x8086,
++	  .idProduct		= 0x0ad3,
++	  .bInterfaceClass	= USB_CLASS_VIDEO,
++	  .bInterfaceSubClass	= 1,
++	  .bInterfaceProtocol	= 0,
++	  .driver_info		= UVC_QUIRK_APPEND_UVC_HEADER },
++	/* Intel RS410 depth camera */
++	{ .match_flags		= USB_DEVICE_ID_MATCH_DEVICE
++				| USB_DEVICE_ID_MATCH_INT_INFO,
++	  .idVendor		= 0x8086,
++	  .idProduct		= 0x0ad2,
++	  .bInterfaceClass	= USB_CLASS_VIDEO,
++	  .bInterfaceSubClass	= 1,
++	  .bInterfaceProtocol	= 0,
++	  .driver_info		= UVC_QUIRK_APPEND_UVC_HEADER },
++	/* Intel RS400 depth camera */
++	{ .match_flags		= USB_DEVICE_ID_MATCH_DEVICE
++				| USB_DEVICE_ID_MATCH_INT_INFO,
++	  .idVendor		= 0x8086,
++	  .idProduct		= 0x0ad1,
 +	  .bInterfaceClass	= USB_CLASS_VIDEO,
 +	  .bInterfaceSubClass	= 1,
 +	  .bInterfaceProtocol	= 0,
