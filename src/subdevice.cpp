@@ -543,17 +543,19 @@ void hid_endpoint::open(const std::vector<stream_profile>& requests)
     for (auto& request : requests)
     {
         auto sensor_iio = rs_stream_to_sensor_iio(request.stream);
-        for (request_mapping& map : mapping)
+        for (auto& map : mapping)
         {
-            for (std::pair<rs_stream, rs_format>& output : map.unpacker->outputs)
+            auto it = std::find_if(begin(map.unpacker->outputs), end(map.unpacker->outputs),
+                                   [&](const std::pair<rs_stream, rs_format>& pair)
             {
-                if (output.first == request.stream)
-                {
-                    _configured_profiles.insert(std::make_pair(sensor_iio, stream_formats{request.stream, {request.format}}));
-                    _iio_mapping.insert(std::make_pair(sensor_iio, map));
-                }
-            }
+                return pair.first == request.stream;
+            });
 
+            if (it != end(map.unpacker->outputs))
+            {
+                _configured_profiles.insert(std::make_pair(sensor_iio, stream_formats{request.stream, {request.format}}));
+                _iio_mapping.insert(std::make_pair(sensor_iio, map));
+            }
         }
     }
     _is_opened = true;

@@ -1,10 +1,9 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
-#include "image.h"
 #define _USE_MATH_DEFINES
 #include <cmath>
-#include <math.h>
+#include "image.h"
 //#include "../include/librealsense/rsutil.h" // For projection/deprojection logic
 
 #ifdef __SSSE3__
@@ -62,17 +61,17 @@ namespace rsimpl
 
     template<size_t SIZE> void unpack_accel_axes(byte * const dest[], const byte * source, int count)
     {
-        const float gravity = 9.80665f; // Standard Gravitation Acceleration
-        const float accel_range = 4.f;  // Accelerometer is preset to [-4...+4]g range
-        const float accelerator_transform_factor = float(gravity * accel_range / 2048.f);
-        const unsigned data_shift = 4; // Acceleration data is stored in 12 MSB
+        static const float gravity = 9.80665f; // Standard Gravitation Acceleration
+        static const float accel_range = 4.f;  // Accelerometer is preset to [-4...+4]g range
+        static const float accelerator_transform_factor = float(gravity * accel_range / 2048.f);
+        static const unsigned data_shift = 4; // Acceleration data is stored in 12 MSB
         copy_hid_axes(dest, source, accelerator_transform_factor, data_shift, count);
     }
 
     template<size_t SIZE> void unpack_gyro_axes(byte * const dest[], const byte * source, int count)
     {
-        const float gyro_range   = 1000.f; // Preconfigured angular velocity range [-1000...1000] Deg_C/Sec
-        const float gyro_transform_factor = float((gyro_range * M_PI) / (180.f * 32767.f));
+        static const float gyro_range   = 1000.f; // Preconfigured angular velocity range [-1000...1000] Deg_C/Sec
+        static const float gyro_transform_factor = float((gyro_range * M_PI) / (180.f * 32767.f));
         copy_hid_axes(dest, source, gyro_transform_factor, 0, count);
     }
 
