@@ -609,7 +609,6 @@ void hid_endpoint::stop_streaming()
     _hid_device->stop_capture();
     _is_streaming = false;
     flush();
-    _configured_sensor_iio.clear();
     _callback.reset();
     _archive.reset();
 }
