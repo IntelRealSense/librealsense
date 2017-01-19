@@ -1000,13 +1000,13 @@ int main(int, char**) try
 
 
 
-            auto ml = (int)model.timestamp[stream]%1000;
+            auto ml = (int)model.stream_timestamp[stream]%1000;
 
             label = to_string() << rs_stream_to_string(stream) << " "
                 << stream_size.x << "x" << stream_size.y << ", "
                 << rs_format_to_string(model.stream_format[stream])<< ", "
-                <<" Frame# " <<model.frame_number[stream]<< ", "
-                <<" Timestamp " <<std::fixed << model.timestamp[stream];
+                <<" Frame# " <<model.stream_frame_number[stream]<< ", "
+                <<" Timestamp " <<std::fixed << model.stream_timestamp[stream];
 
 
 

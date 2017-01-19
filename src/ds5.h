@@ -229,7 +229,6 @@ namespace rsimpl
         }
         rs_timestamp_domain get_frame_timestamp_domain(const request_mapping& mode) override
         {
-
             return RS_TIMESTAMP_DOMAIN_SYSTEM;
         }
     };
@@ -242,6 +241,7 @@ namespace rsimpl
         std::vector<int> last_timestamp;
         mutable std::vector<int64_t> counter;
         mutable std::recursive_mutex _mtx;
+        static const unsigned hid_data_size = 14;
     public:
         ds5_hid_timestamp_reader()
         {
@@ -283,7 +283,6 @@ namespace rsimpl
         {
             std::lock_guard<std::recursive_mutex> lock(_mtx);
             auto frame_size = mode.profile.width * mode.profile.height;
-            static const unsigned hid_data_size = 14;
             static const unsigned timestamp_offset = 6;
             if (frame_size == hid_data_size)
             {
@@ -300,6 +299,16 @@ namespace rsimpl
                 index = 1;
 
             return ++counter[index];
+        }
+
+        rs_timestamp_domain get_frame_timestamp_domain(const request_mapping& mode)
+        {
+            auto frame_size = mode.profile.width * mode.profile.height;
+            if (frame_size == hid_data_size)
+            {
+                return RS_TIMESTAMP_DOMAIN_CAMERA;
+            }
+            return RS_TIMESTAMP_DOMAIN_SYSTEM;
         }
     };
 
