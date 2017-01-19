@@ -27,6 +27,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <limits.h>
+#include <cmath>
 #include <errno.h>
 #include <sys/stat.h>
 #include <sys/mman.h>
@@ -1261,14 +1262,6 @@ namespace rsimpl
                         frame_object fo { (int)_buffers[buf.index].length,
                                         _buffers[buf.index].start };
 
-
-//                        std::cout<<"METADATA: ";
-//                        for(auto i=2; i<6; i++)
-//                        {
-//                            std::cout<<std::hex<<(int)*(byte*)(_buffers[buf.index].start + buf.length + i - 256)<<" ";
-//                        };
-
-//                        std::cout<<"\n";
 
 
                         _callback(_profile, fo);

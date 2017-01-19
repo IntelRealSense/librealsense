@@ -1,0 +1,92 @@
+From 1a711b64aad08d19d657b69307177f0d24adaa8c Mon Sep 17 00:00:00 2001
+From: Avishag Angerman <avishag.angerman@intel.com>
+Date: Wed, 18 Jan 2017 06:42:42 -0500
+Subject: [PATCH] Added support on metadata
+
+---
+ drivers/media/usb/uvc/uvc_driver.c |  9 +++++++++
+ drivers/media/usb/uvc/uvc_video.c  | 19 ++++++++++++++-----
+ drivers/media/usb/uvc/uvcvideo.h   |  3 ++-
+ 3 files changed, 25 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/media/usb/uvc/uvc_driver.c b/drivers/media/usb/uvc/uvc_driver.c
+index 9d44f8e..1cec0d2 100644
+--- a/drivers/media/usb/uvc/uvc_driver.c
++++ b/drivers/media/usb/uvc/uvc_driver.c
+@@ -2729,6 +2729,15 @@ static struct usb_device_id uvc_ids[] = {
+ 	  .bInterfaceSubClass	= 1,
+ 	  .bInterfaceProtocol	= 0,
+ 	  .driver_info		= UVC_QUIRK_FORCE_Y8 },
++	/* Intel RS450 depth camera */
++	{ .match_flags		= USB_DEVICE_ID_MATCH_DEVICE
++				| USB_DEVICE_ID_MATCH_INT_INFO,
++	  .idVendor		= 0x8086,
++	  .idProduct		= 0x0ad5,
++	  .bInterfaceClass	= USB_CLASS_VIDEO,
++	  .bInterfaceSubClass	= 1,
++	  .bInterfaceProtocol	= 0,
++	  .driver_info		= UVC_QUIRK_APPEND_UVC_HEADER },
+ 	/* Generic USB Video Class */
+ 	{ USB_INTERFACE_INFO(USB_CLASS_VIDEO, 1, 0) },
+ 	{}
+diff --git a/drivers/media/usb/uvc/uvc_video.c b/drivers/media/usb/uvc/uvc_video.c
+index 2b276ab..70c1a51 100644
+--- a/drivers/media/usb/uvc/uvc_video.c
++++ b/drivers/media/usb/uvc/uvc_video.c
+@@ -1233,8 +1233,13 @@ static void uvc_video_decode_bulk(struct urb *urb, struct uvc_streaming *stream,
+ 		do {
+ 			ret = uvc_video_decode_start(stream, buf, mem, len);
+ 			if (ret == -EAGAIN)
+-				buf = uvc_queue_next_buffer(&stream->queue,
+-							    buf);
++			{
++				if (stream->dev->quirks & UVC_QUIRK_APPEND_UVC_HEADER)
++				{
++					uvc_video_decode_data(stream, buf, stream->bulk.header,256);
++				}
++				buf = uvc_queue_next_buffer(&stream->queue,buf);
++			}
+ 		} while (ret == -EAGAIN);
+ 
+ 		/* If an error occurred skip the rest of the payload. */
+@@ -1266,9 +1271,13 @@ static void uvc_video_decode_bulk(struct urb *urb, struct uvc_streaming *stream,
+ 		if (!stream->bulk.skip_payload && buf != NULL) {
+ 			uvc_video_decode_end(stream, buf, stream->bulk.header,
+ 				stream->bulk.payload_size);
+-			if (buf->state == UVC_BUF_STATE_READY)
+-				buf = uvc_queue_next_buffer(&stream->queue,
+-							    buf);
++			if (buf->state == UVC_BUF_STATE_READY) {
++				if (stream->dev->quirks & UVC_QUIRK_APPEND_UVC_HEADER) {
++					uvc_video_decode_data(stream, buf, stream->bulk.header,
++											stream->bulk.header_size);
++				}
++				buf = uvc_queue_next_buffer(&stream->queue, buf);
++			}
+ 		}
+ 
+ 		stream->bulk.header_size = 0;
+diff --git a/drivers/media/usb/uvc/uvcvideo.h b/drivers/media/usb/uvc/uvcvideo.h
+index 020dbb7..badff62 100644
+--- a/drivers/media/usb/uvc/uvcvideo.h
++++ b/drivers/media/usb/uvc/uvcvideo.h
+@@ -172,7 +172,7 @@
+ #define DRIVER_VERSION		"1.1.1"
+ 
+ /* Number of isochronous URBs. */
+-#define UVC_URBS		5
++#define UVC_URBS		128
+ /* Maximum number of packets per URB. */
+ #define UVC_MAX_PACKETS		32
+ /* Maximum status buffer size in bytes of interrupt URB. */
+@@ -197,6 +197,7 @@
+ #define UVC_QUIRK_RESTRICT_FRAME_RATE	0x00000200
+ #define UVC_QUIRK_RESTORE_CTRLS_ON_INIT	0x00000400
+ #define UVC_QUIRK_FORCE_Y8		0x00000800
++#define UVC_QUIRK_APPEND_UVC_HEADER	0x00001000
+ 
+ /* Format flags */
+ #define UVC_FMT_FLAG_COMPRESSED		0x00000001
+-- 
+2.7.4
+
