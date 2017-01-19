@@ -78,6 +78,10 @@ namespace rsimpl
             std::lock_guard<std::recursive_mutex> lock(_mtx);
             return ++counter;
         }
+        rs_timestamp_domain get_frame_timestamp_domain(const request_mapping& mode) override
+        {
+            return RS_TIMESTAMP_DOMAIN_COUNT;
+        }
     };
 
     class sr300_info : public device_info

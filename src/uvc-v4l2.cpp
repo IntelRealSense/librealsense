@@ -1263,16 +1263,6 @@ namespace rsimpl
                                         _buffers[buf.index].start };
 
 
-                        std::cout<<"METADATA: ";
-                        for(auto i=0; i<META_DATA_SIZE; i++)
-                        {
-                            std::cout<<std::hex<<(int)*(byte*)(_buffers[buf.index].start + buf.length + i - 256)<<" ";
-                        };
-
-                        std::cout<<"\n";
-                        // TODO: Print _buffers[buf.index].start + SIZEOF(frame) until
-                        //             _buffers[buf.index].start + SIZEOF(frame) + SIZEOF(METADATA)
-                        //       as hex bytesft
 
                         _callback(_profile, fo);
 
