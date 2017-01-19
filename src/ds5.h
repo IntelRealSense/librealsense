@@ -89,7 +89,7 @@ namespace rsimpl
         }
         bool has_metadata(const request_mapping& mode, const void * frame)
         {
-            metadata* md = (metadata*)(frame +  mode.pf->get_image_size(mode.profile.width, mode.profile.height));
+            metadata* md = (metadata*)((byte*)frame +  mode.pf->get_image_size(mode.profile.width, mode.profile.height));
 
             for(auto i=0; i<sizeof(metadata); i++)
             {
@@ -114,7 +114,7 @@ namespace rsimpl
 
             if(_has_metadata[pin_index])
             {
-                metadata* md = (metadata*)(frame +  mode.pf->get_image_size(mode.profile.width, mode.profile.height));
+                metadata* md = (metadata*)((byte*)frame +  mode.pf->get_image_size(mode.profile.width, mode.profile.height));
                 auto val = (unsigned int)(md->header.timestamp);
                 return (double)((unsigned int)(md->header.timestamp))*TIMESTAMP_TO_MILLISECONS;
             }
@@ -132,7 +132,7 @@ namespace rsimpl
 
             if(_has_metadata[pin_index])
             {
-                metadata* md = (metadata*)(frame +  mode.pf->get_image_size(mode.profile.width, mode.profile.height));
+                metadata* md = (metadata*)((byte*)frame +  mode.pf->get_image_size(mode.profile.width, mode.profile.height));
                 return md->md_capture_timing.frameCounter;
             }
             else
