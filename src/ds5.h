@@ -12,12 +12,151 @@
 #include "hw-monitor.h"
 #include "image.h"
 #include <mutex>
+#include <chrono>
+const double TIMESTAMP_TO_MILLISECONS = 0.001;
 
 namespace rsimpl
 {
     static const std::vector<std::uint16_t> rs4xx_sku_pid = { ds::RS400P_PID, ds::RS410A_PID, ds::RS420R_PID, ds::RS430C_PID, ds::RS450T_PID };
 
     class ds5_camera;
+
+#pragma pack (push, 1)
+    struct uvc_header
+    {
+        byte            length;
+        byte            info;
+        unsigned int    timestamp;
+        byte            source_clock[6];
+    };
+
+    struct metadata_header
+    {
+        unsigned int    metaDataID;
+        unsigned int    size;
+    };
+
+
+    struct metadata_capture_timing
+    {
+        metadata_header  metaDataIdHeader;
+        unsigned int    version;
+        unsigned int    flag;
+        int    frameCounter;
+        unsigned int    opticalTimestamp;   //In millisecond unit
+        unsigned int    readoutTime;        //The readout time in millisecond second unit
+        unsigned int    exposureTime;       //The exposure time in millisecond second unit
+        unsigned int    frameInterval ;     //The frame interval in millisecond second unit
+        unsigned int    pipeLatency;        //The latency between start of frame to frame ready in USB buffer
+    };
+#pragma pack(pop)
+
+    struct metadata
+    {
+       uvc_header header;
+       metadata_capture_timing md_capture_timing;
+    };
+
+    class ds5_timestamp_reader_from_metadata : public frame_timestamp_reader
+    {
+       std::unique_ptr<frame_timestamp_reader> _backup_timestamp_reader;
+       static const int pins = 2;
+       std::vector<std::atomic<bool>> _has_metadata;
+
+    public:
+        ds5_timestamp_reader_from_metadata(std::unique_ptr<frame_timestamp_reader> backup_timestamp_reader)
+            :_backup_timestamp_reader(std::move(backup_timestamp_reader)), _has_metadata(pins)
+        {
+            for (auto i = 0; i < pins; ++i)
+            {
+                _has_metadata[i] = false;
+            }
+        }
+
+
+        bool validate_frame(const request_mapping& mode, const void * frame) const override
+        {
+            // Validate that at least one byte of the image is nonzero
+            for (const uint8_t * it = (const uint8_t *)frame, *end = it + mode.pf->get_image_size(mode.profile.width, mode.profile.height); it != end; ++it)
+            {
+                if (*it)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+        bool has_metadata(const request_mapping& mode, const void * frame)
+        {
+            metadata* md = (metadata*)(frame +  mode.pf->get_image_size(mode.profile.width, mode.profile.height));
+
+            for(auto i=0; i<sizeof(metadata); i++)
+            {
+                if(((byte*)md)[i] !=0)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        double get_frame_timestamp(const request_mapping& mode, const void * frame) override
+        {
+            int pin_index = 0;
+            if (mode.pf->fourcc == 0x5a313620) // Z16
+                pin_index = 1;
+
+            if(!_has_metadata[pin_index])
+            {
+               _has_metadata[pin_index] = has_metadata(mode, frame);
+            }
+
+            if(_has_metadata[pin_index])
+            {
+                metadata* md = (metadata*)(frame +  mode.pf->get_image_size(mode.profile.width, mode.profile.height));
+                auto val = (unsigned int)(md->header.timestamp);
+                std::cout<<std::hex<<val<<" "<<std::dec<<val<<"\n";
+                return (double)((unsigned int)(md->header.timestamp))*TIMESTAMP_TO_MILLISECONS;
+            }
+            else
+            {
+                return _backup_timestamp_reader->get_frame_timestamp(mode, frame);
+            }
+        }
+
+        unsigned long long get_frame_counter(const request_mapping & mode, const void * frame) const override
+        {
+            int pin_index = 0;
+            if (mode.pf->fourcc == 0x5a313620) // Z16
+                pin_index = 1;
+
+            if(_has_metadata[pin_index])
+            {
+                metadata* md = (metadata*)(frame +  mode.pf->get_image_size(mode.profile.width, mode.profile.height));
+                return md->md_capture_timing.frameCounter;
+            }
+            else
+            {
+                return _backup_timestamp_reader->get_frame_counter(mode, frame);
+            }
+        }
+        virtual void reset() override
+        {
+            for (auto i = 0; i < pins; ++i)
+            {
+                _has_metadata[i] = false;
+            }
+        }
+        rs_timestamp_domain get_frame_timestamp_domain(const request_mapping& mode) override
+        {
+            int pin_index = 0;
+            if (mode.pf->fourcc == 0x5a313620) // Z16
+                pin_index = 1;
+
+            return _has_metadata[pin_index]? RS_TIMESTAMP_DOMAIN_CAMERA:_backup_timestamp_reader->get_frame_timestamp_domain(mode);
+        }
+    };
 
     class ds5_timestamp_reader : public frame_timestamp_reader
     {
@@ -26,11 +165,12 @@ namespace rsimpl
         std::vector<int64_t> total;
         std::vector<int> last_timestamp;
         mutable std::vector<int64_t> counter;
+        std::vector<std::chrono::time_point<std::chrono::high_resolution_clock>> start_time;
         mutable std::recursive_mutex _mtx;
     public:
         ds5_timestamp_reader()
             : started(pins), total(pins),
-              last_timestamp(pins), counter(pins)
+              last_timestamp(pins), counter(pins), start_time(pins)
         {
             reset();
         }
@@ -62,11 +202,21 @@ namespace rsimpl
             return false;
         }
 
-        double get_frame_timestamp(const request_mapping& /*mode*/, const void * frame) override
+        double get_frame_timestamp(const request_mapping& mode, const void * frame) override
         {
             std::lock_guard<std::recursive_mutex> lock(_mtx);
-            // TODO: generate timestamp
-            return 0;
+
+            int pin_index = 0;
+            if (mode.pf->fourcc == 0x5a313620) // Z16
+                pin_index = 1;
+
+            if(counter[pin_index] == 0)
+            {
+                 start_time[pin_index] = std::chrono::high_resolution_clock::now();
+
+            }
+            auto time = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now()- start_time[pin_index]).count();
+            return (double)time;
         }
 
         unsigned long long get_frame_counter(const request_mapping & mode, const void * /*frame*/) const override
@@ -77,6 +227,11 @@ namespace rsimpl
                 pin_index = 1;
 
             return ++counter[pin_index];
+        }
+        rs_timestamp_domain get_frame_timestamp_domain(const request_mapping& mode) override
+        {
+
+            return RS_TIMESTAMP_DOMAIN_SYSTEM;
         }
     };
 

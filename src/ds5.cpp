@@ -112,8 +112,9 @@ namespace rsimpl
         for (auto&& info : filter_by_mi(all_device_infos, 0)) // Filter just mi=0, DEPTH
             depth_devices.push_back(backend.create_uvc_device(info));
 
+        std::unique_ptr<frame_timestamp_reader> ds5_timestamp_reader_backup(new ds5_timestamp_reader());
         auto depth_ep = std::make_shared<uvc_endpoint>(std::make_shared<uvc::multi_pins_uvc_device>(depth_devices),
-                                                       std::unique_ptr<frame_timestamp_reader>(new ds5_timestamp_reader()));
+                                                       std::unique_ptr<frame_timestamp_reader>(new ds5_timestamp_reader_from_metadata(std::move(ds5_timestamp_reader_backup))));
         depth_ep->register_xu(depth_xu); // make sure the XU is initialized everytime we power the camera
         depth_ep->register_pixel_format(pf_z16); // Depth
         depth_ep->register_pixel_format(pf_y8); // Left Only - Luminance
@@ -178,8 +179,11 @@ namespace rsimpl
             if (fisheye_infos.size() != 1)
                 throw invalid_value_exception("RS450 model is expected to include a single fish-eye device!");
 
+            std::unique_ptr<frame_timestamp_reader> ds5_timestamp_reader_backup(new ds5_timestamp_reader());
+
             fisheye_ep = std::make_shared<uvc_endpoint>(backend.create_uvc_device(fisheye_infos.front()),
-                                                        std::unique_ptr<frame_timestamp_reader>(new ds5_timestamp_reader()));
+                                                        std::unique_ptr<frame_timestamp_reader>(new ds5_timestamp_reader_from_metadata(std::move(ds5_timestamp_reader_backup))));
+
             fisheye_ep->register_xu(fisheye_xu); // make sure the XU is initialized everytime we power the camera
             fisheye_ep->register_pixel_format(pf_raw8);
             fisheye_ep->register_pixel_format(pf_fe_raw8_unpatched_kernel); // W/O for unpatched kernel

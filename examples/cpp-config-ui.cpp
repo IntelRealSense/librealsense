@@ -508,6 +508,8 @@ public:
     std::map<rs_stream, float2> stream_size;
     std::map<rs_stream, rs_format> stream_format;
     std::map<rs_stream, std::chrono::high_resolution_clock::time_point> steam_last_frame;
+    std::map<rs_stream, double> timestamp;
+    std::map<rs_stream, unsigned int> frame_number;
 
     bool fullscreen = false;
     rs_stream selected_stream = RS_STREAM_ANY;
@@ -660,6 +662,7 @@ int main(int, char**) try
     auto dev = list[device_index];                  // Access first device
     auto model = device_model(dev, error_message);  // Initialize device model
     std::string label;
+
 
     // Closing the window
     while (!glfwWindowShouldClose(window))
@@ -830,12 +833,16 @@ int main(int, char**) try
                                 ImGui::Combo(label.c_str(), &sub->selected_format_id[stream], formats_chars.data(),
                                     static_cast<int>(formats_chars.size()));
 
+
                             ImGui::PopItemWidth();
                         }
                         else
                         {
                             ImGui::Text("N/A");
                         }
+
+
+
                     }
 
                     try
@@ -938,6 +945,9 @@ int main(int, char**) try
                         model.stream_size[f.get_stream_type()] = { static_cast<float>(width),
                                                                    static_cast<float>(height)};
                         model.stream_format[f.get_stream_type()] = f.get_format();
+
+                        model.frame_number[f.get_stream_type()] = f.get_frame_number();
+                        model.timestamp[f.get_stream_type()] = f.get_timestamp();
                     }
                 }
                 catch(const rs::error& e)
@@ -988,9 +998,18 @@ int main(int, char**) try
             label = to_string() << "Stream of " << rs_stream_to_string(stream);
             ImGui::Begin(label.c_str(), nullptr, flags);
 
+
+
+            auto ml = (int)model.timestamp[stream]%1000;
+
             label = to_string() << rs_stream_to_string(stream) << " "
                 << stream_size.x << "x" << stream_size.y << ", "
-                << rs_format_to_string(model.stream_format[stream]);
+                << rs_format_to_string(model.stream_format[stream])<< ", "
+                <<" Frame# " <<model.frame_number[stream]<< ", "
+                <<" Timestamp " <<std::fixed << model.timestamp[stream];
+
+
+
 
             if (!layout.empty() && !model.fullscreen)
             {
