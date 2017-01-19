@@ -663,6 +663,7 @@ int main(int, char**) try
     auto model = device_model(dev, error_message);  // Initialize device model
     std::string label;
 
+
     // Closing the window
     while (!glfwWindowShouldClose(window))
     {
@@ -832,12 +833,16 @@ int main(int, char**) try
                                 ImGui::Combo(label.c_str(), &sub->selected_format_id[stream], formats_chars.data(),
                                     static_cast<int>(formats_chars.size()));
 
+
                             ImGui::PopItemWidth();
                         }
                         else
                         {
                             ImGui::Text("N/A");
                         }
+
+
+
                     }
 
                     try
@@ -993,11 +998,18 @@ int main(int, char**) try
             label = to_string() << "Stream of " << rs_stream_to_string(stream);
             ImGui::Begin(label.c_str(), nullptr, flags);
 
+
+
+            auto ml = (int)model.timestamp[stream]%1000;
+
             label = to_string() << rs_stream_to_string(stream) << " "
                 << stream_size.x << "x" << stream_size.y << ", "
-                << rs_format_to_string(model.stream_format[stream])
-                << ", Frame Number: " << model.stream_frame_number[stream]
-                << ", Timestamp: " << std::fixed << std::setprecision(2) << model.stream_timestamp[stream];
+                << rs_format_to_string(model.stream_format[stream])<< ", "
+                <<" Frame# " <<model.frame_number[stream]<< ", "
+                <<" Timestamp " <<std::fixed << model.timestamp[stream];
+
+
+
 
             if (!layout.empty() && !model.fullscreen)
             {

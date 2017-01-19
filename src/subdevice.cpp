@@ -246,6 +246,8 @@ void uvc_endpoint::open(const std::vector<stream_profile>& requests)
 
             // Determine the timestamp for this frame
             auto timestamp = timestamp_reader->get_frame_timestamp(mode, f.pixels);
+            auto timestamp_domain = timestamp_reader->get_frame_timestamp_domain(mode);
+
             auto frame_counter = timestamp_reader->get_frame_counter(mode, f.pixels);
             //auto received_time = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - capture_start_time).count();
 
@@ -291,9 +293,11 @@ void uvc_endpoint::open(const std::vector<stream_profile>& requests)
                     output.second,
                     output.first);
 
+
                 auto frame_ref = this->alloc_frame(width * height * bpp / 8, additional_data);
                 if (frame_ref)
                 {
+                    frame_ref->get()->set_timestamp_domain(timestamp_domain);
                     refs.push_back(frame_ref);
                     dest.push_back(const_cast<byte*>(frame_ref->get()->get_frame_data()));
                 }
