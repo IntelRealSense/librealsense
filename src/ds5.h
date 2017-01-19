@@ -116,7 +116,6 @@ namespace rsimpl
             {
                 metadata* md = (metadata*)(frame +  mode.pf->get_image_size(mode.profile.width, mode.profile.height));
                 auto val = (unsigned int)(md->header.timestamp);
-                std::cout<<std::hex<<val<<" "<<std::dec<<val<<"\n";
                 return (double)((unsigned int)(md->header.timestamp))*TIMESTAMP_TO_MILLISECONS;
             }
             else
