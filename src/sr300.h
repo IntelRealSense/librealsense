@@ -73,14 +73,16 @@ namespace rsimpl
             const int timestamp = static_cast<int>(total / 100000);
             return timestamp;
         }
+
         unsigned long long get_frame_counter(const request_mapping & /*mode*/, const void * /*frame*/) const override
         {
             std::lock_guard<std::recursive_mutex> lock(_mtx);
             return ++counter;
         }
-        rs_timestamp_domain get_frame_timestamp_domain(const request_mapping& mode) override
+
+        rs_timestamp_domain get_frame_timestamp_domain(const request_mapping& mode) const override
         {
-            return RS_TIMESTAMP_DOMAIN_COUNT;
+            return RS_TIMESTAMP_DOMAIN_HARDWARE_CLOCK;
         }
     };
 

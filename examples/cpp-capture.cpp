@@ -41,12 +41,32 @@ int main(int argc, char * argv[]) try
 
     while (!glfwWindowShouldClose(win))
     {
+        int w, h;
+        glfwGetFramebufferSize(win, &w, &h);
+
+        auto index = 0;
+        auto frames = syncer.wait_for_frames();
+        // for consistent visualization, sort frames based on stream type:
+        std::sort(frames.begin(), frames.end(),
+            [](const rs::frame& a, const rs::frame& b) -> bool
+        {
+            return a.get_stream_type() < b.get_stream_type();
+        });
+        auto tiles_horisontal = static_cast<int>(ceil(sqrt(frames.size())));
+        auto tiles_vertical = ceil((float)frames.size() / tiles_horisontal);
+        auto tile_w = static_cast<float>(w) / tiles_horisontal;
+        auto tile_h = static_cast<float>(h) / tiles_vertical;
+
+        for (auto&& frame : frames)
+        {
+            auto stream_type = frame.get_stream_type();
+            buffers[stream_type].upload(frame);
+        }
+
         // Wait for new images
         glfwPollEvents();
 
         // Clear the framebuffer
-        int w, h;
-        glfwGetFramebufferSize(win, &w, &h);
         glViewport(0, 0, w, h);
         glClear(GL_COLOR_BUFFER_BIT);
 
@@ -55,19 +75,13 @@ int main(int argc, char * argv[]) try
         glfwGetWindowSize(win, &w, &h);
         glOrtho(0, w, h, 0, -1, +1);
 
-        auto index = 0;
-        auto frames = syncer.wait_for_frames();
-        auto tiles = static_cast<int>(ceil(sqrt(frames.size())));
-        auto tile_w = static_cast<float>(w) / tiles;
-        auto tile_h = static_cast<float>(h) / tiles;
-
+        index = 0;
         for (auto&& frame : frames)
         {
-            auto col_id = index / tiles;
-            auto row_id = index % tiles;
-
             auto stream_type = frame.get_stream_type();
-            buffers[stream_type].upload(frame);
+            auto col_id = index / tiles_horisontal;
+            auto row_id = index % tiles_horisontal;
+
             buffers[stream_type].show({ row_id * tile_w, col_id * tile_h, tile_w, tile_h }, 1);
 
             index++;

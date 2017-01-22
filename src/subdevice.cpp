@@ -622,6 +622,7 @@ void hid_endpoint::start_streaming(frame_callback_ptr callback)
         additional_data.height = mode.profile.height;
         additional_data.timestamp = timestamp;
         additional_data.frame_number = frame_counter;
+        additional_data.timestamp_domain = _timestamp_reader->get_frame_timestamp_domain(mode);
 
         auto frame = this->alloc_frame(data_size, additional_data);
         if (!frame)
@@ -662,9 +663,9 @@ std::vector<stream_profile> hid_endpoint::get_device_profiles()
         for (auto& format : stream_formats.formats)
         {
             stream_requests.push_back({stream_formats.stream,
-                                       0,
-                                       0,
-                                       0,
+                                       1,
+                                       1,
+                                       1,
                                        format});
         }
     }

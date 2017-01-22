@@ -62,20 +62,20 @@ namespace rsimpl
        std::unique_ptr<frame_timestamp_reader> _backup_timestamp_reader;
        static const int pins = 2;
        std::vector<std::atomic<bool>> _has_metadata;
+       bool started;
+       mutable std::recursive_mutex _mtx;
 
     public:
         ds5_timestamp_reader_from_metadata(std::unique_ptr<frame_timestamp_reader> backup_timestamp_reader)
             :_backup_timestamp_reader(std::move(backup_timestamp_reader)), _has_metadata(pins)
         {
-            for (auto i = 0; i < pins; ++i)
-            {
-                _has_metadata[i] = false;
-            }
+            reset();
         }
 
 
         bool validate_frame(const request_mapping& mode, const void * frame) const override
         {
+            std::lock_guard<std::recursive_mutex> lock(_mtx);
             // Validate that at least one byte of the image is nonzero
             for (const uint8_t * it = (const uint8_t *)frame, *end = it + mode.pf->get_image_size(mode.profile.width, mode.profile.height); it != end; ++it)
             {
@@ -89,11 +89,12 @@ namespace rsimpl
         }
         bool has_metadata(const request_mapping& mode, const void * frame)
         {
-            metadata* md = (metadata*)((byte*)frame +  mode.pf->get_image_size(mode.profile.width, mode.profile.height));
+            std::lock_guard<std::recursive_mutex> lock(_mtx);
+            auto md = (metadata*)((byte*)frame +  mode.pf->get_image_size(mode.profile.width, mode.profile.height));
 
             for(auto i=0; i<sizeof(metadata); i++)
             {
-                if(((byte*)md)[i] !=0)
+                if(((byte*)md)[i] != 0)
                 {
                     return true;
                 }
@@ -103,7 +104,8 @@ namespace rsimpl
 
         double get_frame_timestamp(const request_mapping& mode, const void * frame) override
         {
-            int pin_index = 0;
+            std::lock_guard<std::recursive_mutex> lock(_mtx);
+            auto pin_index = 0;
             if (mode.pf->fourcc == 0x5a313620) // Z16
                 pin_index = 1;
 
@@ -114,25 +116,30 @@ namespace rsimpl
 
             if(_has_metadata[pin_index])
             {
-                metadata* md = (metadata*)((byte*)frame +  mode.pf->get_image_size(mode.profile.width, mode.profile.height));
-                auto val = (unsigned int)(md->header.timestamp);
-                return (double)((unsigned int)(md->header.timestamp))*TIMESTAMP_TO_MILLISECONS;
+                auto md = (metadata*)((byte*)frame +  mode.pf->get_image_size(mode.profile.width, mode.profile.height));
+                return (double)(md->header.timestamp)*TIMESTAMP_TO_MILLISECONS;
             }
             else
             {
+                if (!started)
+                {
+                    LOG_WARNING("UVC timestamp not found! please apply UVC metadata patch.");
+                    started = true;
+                }
                 return _backup_timestamp_reader->get_frame_timestamp(mode, frame);
             }
         }
 
         unsigned long long get_frame_counter(const request_mapping & mode, const void * frame) const override
         {
-            int pin_index = 0;
+            std::lock_guard<std::recursive_mutex> lock(_mtx);
+            auto pin_index = 0;
             if (mode.pf->fourcc == 0x5a313620) // Z16
                 pin_index = 1;
 
             if(_has_metadata[pin_index])
             {
-                metadata* md = (metadata*)((byte*)frame +  mode.pf->get_image_size(mode.profile.width, mode.profile.height));
+                auto md = (metadata*)((byte*)frame +  mode.pf->get_image_size(mode.profile.width, mode.profile.height));
                 return md->md_capture_timing.frameCounter;
             }
             else
@@ -140,27 +147,32 @@ namespace rsimpl
                 return _backup_timestamp_reader->get_frame_counter(mode, frame);
             }
         }
-        virtual void reset() override
+
+        void reset() override
         {
+            std::lock_guard<std::recursive_mutex> lock(_mtx);
+            started = false;
             for (auto i = 0; i < pins; ++i)
             {
                 _has_metadata[i] = false;
             }
         }
-        rs_timestamp_domain get_frame_timestamp_domain(const request_mapping& mode) override
+
+        rs_timestamp_domain get_frame_timestamp_domain(const request_mapping& mode) const override
         {
-            int pin_index = 0;
+            std::lock_guard<std::recursive_mutex> lock(_mtx);
+            auto pin_index = 0;
             if (mode.pf->fourcc == 0x5a313620) // Z16
                 pin_index = 1;
 
-            return _has_metadata[pin_index]? RS_TIMESTAMP_DOMAIN_CAMERA:_backup_timestamp_reader->get_frame_timestamp_domain(mode);
+            return _has_metadata[pin_index] ? RS_TIMESTAMP_DOMAIN_HARDWARE_CLOCK :
+                                              _backup_timestamp_reader->get_frame_timestamp_domain(mode);
         }
     };
 
     class ds5_timestamp_reader : public frame_timestamp_reader
     {
         static const int pins = 2;
-        std::vector<bool> started;
         std::vector<int64_t> total;
         std::vector<int> last_timestamp;
         mutable std::vector<int64_t> counter;
@@ -168,7 +180,7 @@ namespace rsimpl
         mutable std::recursive_mutex _mtx;
     public:
         ds5_timestamp_reader()
-            : started(pins), total(pins),
+            : total(pins),
               last_timestamp(pins), counter(pins), start_time(pins)
         {
             reset();
@@ -179,7 +191,6 @@ namespace rsimpl
             std::lock_guard<std::recursive_mutex> lock(_mtx);
             for (auto i = 0; i < pins; ++i)
             {
-                started[i] = false;
                 total[i] = 0;
                 last_timestamp[i] = 0;
                 counter[i] = 0;
@@ -204,48 +215,39 @@ namespace rsimpl
         double get_frame_timestamp(const request_mapping& mode, const void * frame) override
         {
             std::lock_guard<std::recursive_mutex> lock(_mtx);
-
-            int pin_index = 0;
-            if (mode.pf->fourcc == 0x5a313620) // Z16
-                pin_index = 1;
-
-            if(counter[pin_index] == 0)
-            {
-                 start_time[pin_index] = std::chrono::high_resolution_clock::now();
-
-            }
-            auto time = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now()- start_time[pin_index]).count();
-            return (double)time;
+            auto ts = std::chrono::time_point_cast<std::chrono::milliseconds>(std::chrono::system_clock::now());
+            return ts.time_since_epoch().count();
         }
 
         unsigned long long get_frame_counter(const request_mapping & mode, const void * /*frame*/) const override
         {
             std::lock_guard<std::recursive_mutex> lock(_mtx);
-            int pin_index = 0;
+            auto pin_index = 0;
             if (mode.pf->fourcc == 0x5a313620) // Z16
                 pin_index = 1;
 
             return ++counter[pin_index];
         }
-        rs_timestamp_domain get_frame_timestamp_domain(const request_mapping& mode) override
+
+        rs_timestamp_domain get_frame_timestamp_domain(const request_mapping& mode) const override
         {
-            return RS_TIMESTAMP_DOMAIN_SYSTEM;
+            return RS_TIMESTAMP_DOMAIN_SYSTEM_TIME;
         }
     };
 
     class ds5_hid_timestamp_reader : public frame_timestamp_reader
     {
         static const int sensors = 2;
-        std::vector<bool> started;
+        bool started;
         std::vector<int64_t> total;
         std::vector<int> last_timestamp;
         mutable std::vector<int64_t> counter;
         mutable std::recursive_mutex _mtx;
         static const unsigned hid_data_size = 14;
+        static const unsigned timestamp_to_ms = 1000.;
     public:
         ds5_hid_timestamp_reader()
         {
-            started.resize(sensors);
             total.resize(sensors);
             last_timestamp.resize(sensors);
             counter.resize(sensors);
@@ -255,9 +257,9 @@ namespace rsimpl
         void reset() override
         {
             std::lock_guard<std::recursive_mutex> lock(_mtx);
+            started = false;
             for (auto i = 0; i < sensors; ++i)
             {
-                started[i] = false;
                 total[i] = 0;
                 last_timestamp[i] = 0;
                 counter[i] = 0;
@@ -286,9 +288,17 @@ namespace rsimpl
             static const unsigned timestamp_offset = 6;
             if (frame_size == hid_data_size)
             {
-                 return static_cast<double>(*((uint64_t*)((const uint8_t*)frame + timestamp_offset)));
+                auto timestamp = *((uint64_t*)((const uint8_t*)frame + timestamp_offset));
+                return static_cast<double>(timestamp) / timestamp_to_ms;
             }
-            return 0; // TODO: return time_point
+
+            if (!started)
+            {
+                LOG_WARNING("HID timestamp not found! please apply HID patch.");
+                started = true;
+            }
+            auto ts = std::chrono::time_point_cast<std::chrono::milliseconds>(std::chrono::system_clock::now());
+            return ts.time_since_epoch().count();
         }
 
         unsigned long long get_frame_counter(const request_mapping & mode, const void * /*frame*/) const override
@@ -301,14 +311,15 @@ namespace rsimpl
             return ++counter[index];
         }
 
-        rs_timestamp_domain get_frame_timestamp_domain(const request_mapping& mode)
+        rs_timestamp_domain get_frame_timestamp_domain(const request_mapping& mode) const
         {
+            std::lock_guard<std::recursive_mutex> lock(_mtx);
             auto frame_size = mode.profile.width * mode.profile.height;
             if (frame_size == hid_data_size)
             {
-                return RS_TIMESTAMP_DOMAIN_CAMERA;
+                return RS_TIMESTAMP_DOMAIN_HARDWARE_CLOCK;
             }
-            return RS_TIMESTAMP_DOMAIN_SYSTEM;
+            return RS_TIMESTAMP_DOMAIN_SYSTEM_TIME;
         }
     };
 

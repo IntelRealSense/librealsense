@@ -101,7 +101,7 @@ namespace rsimpl
         virtual bool validate_frame(const request_mapping & mode, const void * frame) const = 0;
         virtual double get_frame_timestamp(const request_mapping& mode, const void * frame) = 0;
         virtual unsigned long long get_frame_counter(const request_mapping& mode, const void * frame) const = 0;
-        virtual rs_timestamp_domain get_frame_timestamp_domain(const request_mapping& mode) = 0;
+        virtual rs_timestamp_domain get_frame_timestamp_domain(const request_mapping& mode) const = 0;
         virtual void reset() = 0;
     };
 
@@ -143,8 +143,8 @@ namespace rsimpl
                                                                  {RS_STREAM_ACCEL, 'ACCL'}};
 
         const std::map<std::string, stream_formats> sensor_name_and_stream_formats =
-            {{std::string("gyro_3d"),  {RS_STREAM_GYRO,  {RS_FORMAT_MOTION_DATA_RAW, RS_FORMAT_MOTION_DATA_AXES}}},
-             {std::string("accel_3d"), {RS_STREAM_ACCEL, {RS_FORMAT_MOTION_DATA_RAW, RS_FORMAT_MOTION_DATA_AXES}}}};
+            {{std::string("gyro_3d"),  {RS_STREAM_GYRO,  {RS_FORMAT_MOTION_RAW, RS_FORMAT_MOTION_XYZ32F}}},
+             {std::string("accel_3d"), {RS_STREAM_ACCEL, {RS_FORMAT_MOTION_RAW, RS_FORMAT_MOTION_XYZ32F}}}};
 
         std::shared_ptr<uvc::hid_device> _hid_device;
         std::mutex _configure_lock;

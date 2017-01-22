@@ -32,9 +32,8 @@ int main(int argc, char * argv[]) try
     for(auto&& dev : devices)
     {
         std::cout << "Starting " << dev.get_camera_info(RS_CAMERA_INFO_DEVICE_NAME) << "... ";
-        rs::util::config config;
         auto modes = dev.get_stream_modes();
-        dev.open(modes[0]);
+        dev.open(modes.back());
         syncers.emplace_back();
         dev.start(syncers.back());
         std::cout << "done." << std::endl;
@@ -60,6 +59,15 @@ int main(int argc, char * argv[]) try
     {
         // Wait for new images
         glfwPollEvents();
+
+        for(int i = 0; i < syncers.size(); i++)
+        {
+            rs::frame frame;
+            if (syncers[i].poll_for_frame(&frame))
+            {
+                buffers[i].upload(frame);
+            }
+        }
         
         // Draw the images
         int w,h;
@@ -71,16 +79,10 @@ int main(int argc, char * argv[]) try
         glPushMatrix();
         glOrtho(0, w, h, 0, -1, +1);
         glPixelZoom(1, -1);
-        auto i = 0;
 
-        for(auto&& syncer : syncers)
+        for(int i = 0; i < syncers.size(); i++)
         {
-            rs::frame frame;
-            if (syncer.poll_for_frame(&frame))
-            {
-                buffers[i].upload(frame);
-            }
-            buffers[i++].show({ (i / 2) * perTextureWidth, (i % 2) * perTextureHeight, perTextureWidth, perTextureHeight }, 1);
+            buffers[i].show({ (i / 2) * perTextureWidth, (i % 2) * perTextureHeight, perTextureWidth, perTextureHeight }, 1);
         }
 
         glPopMatrix();
