@@ -662,9 +662,9 @@ std::vector<stream_profile> hid_endpoint::get_device_profiles()
         for (auto& format : stream_formats.formats)
         {
             stream_requests.push_back({stream_formats.stream,
-                                       0,
-                                       0,
-                                       0,
+                                       1,
+                                       1,
+                                       1,
                                        format});
         }
     }
