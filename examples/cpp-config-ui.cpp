@@ -510,6 +510,7 @@ public:
     std::map<rs_stream, std::chrono::high_resolution_clock::time_point> steam_last_frame;
     std::map<rs_stream, double> stream_timestamp;
     std::map<rs_stream, unsigned long long> stream_frame_number;
+    std::map<rs_stream, rs_timestamp_domain> stream_timestamp_domain;
 
     bool fullscreen = false;
     rs_stream selected_stream = RS_STREAM_ANY;
@@ -948,6 +949,7 @@ int main(int, char**) try
                         model.stream_format[f.get_stream_type()] = f.get_format();
                         model.stream_timestamp[f.get_stream_type()] = f.get_timestamp();
                         model.stream_frame_number[f.get_stream_type()] = f.get_frame_number();
+                        model.stream_timestamp_domain[f.get_stream_type()] = f.get_frame_timestamp_domain();
                     }
                 }
                 catch(const rs::error& e)
@@ -1004,12 +1006,10 @@ int main(int, char**) try
 
             label = to_string() << rs_stream_to_string(stream) << " "
                 << stream_size.x << "x" << stream_size.y << ", "
-                << rs_format_to_string(model.stream_format[stream])<< ", "
-                <<" Frame# " <<model.stream_frame_number[stream]<< ", "
-                <<" Timestamp " <<std::fixed << model.stream_timestamp[stream];
-
-
-
+                << rs_format_to_string(model.stream_format[stream]) << ", "
+                << " Frame# " << model.stream_frame_number[stream] << ", "
+                << " Timestamp: " << std::fixed << model.stream_timestamp[stream] << ", "
+                << "TimestampDomain: " << rs_timestamp_domain_to_string(model.stream_timestamp_domain[stream]);
 
             if (!layout.empty() && !model.fullscreen)
             {
