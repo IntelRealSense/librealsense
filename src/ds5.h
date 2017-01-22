@@ -165,7 +165,8 @@ namespace rsimpl
             if (mode.pf->fourcc == 0x5a313620) // Z16
                 pin_index = 1;
 
-            return _has_metadata[pin_index]? RS_TIMESTAMP_DOMAIN_CAMERA:_backup_timestamp_reader->get_frame_timestamp_domain(mode);
+            return _has_metadata[pin_index] ? RS_TIMESTAMP_DOMAIN_HARDWARE_CLOCK :
+                                              _backup_timestamp_reader->get_frame_timestamp_domain(mode);
         }
     };
 
@@ -230,7 +231,7 @@ namespace rsimpl
 
         rs_timestamp_domain get_frame_timestamp_domain(const request_mapping& mode) const override
         {
-            return RS_TIMESTAMP_DOMAIN_SYSTEM;
+            return RS_TIMESTAMP_DOMAIN_SYSTEM_TIME;
         }
     };
 
@@ -314,9 +315,9 @@ namespace rsimpl
             auto frame_size = mode.profile.width * mode.profile.height;
             if (frame_size == hid_data_size)
             {
-                return RS_TIMESTAMP_DOMAIN_CAMERA;
+                return RS_TIMESTAMP_DOMAIN_HARDWARE_CLOCK;
             }
-            return RS_TIMESTAMP_DOMAIN_SYSTEM;
+            return RS_TIMESTAMP_DOMAIN_SYSTEM_TIME;
         }
     };
 

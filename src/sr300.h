@@ -82,7 +82,7 @@ namespace rsimpl
 
         rs_timestamp_domain get_frame_timestamp_domain(const request_mapping& mode) const override
         {
-            return RS_TIMESTAMP_DOMAIN_COUNT;
+            return RS_TIMESTAMP_DOMAIN_HARDWARE_CLOCK;
         }
     };
 

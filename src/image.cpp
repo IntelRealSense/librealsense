@@ -752,10 +752,10 @@ namespace rsimpl
                                                                 { true,  &unpack_yuy2<RS_FORMAT_RGBA8>,                  { { RS_STREAM_COLOR,    RS_FORMAT_RGBA8 } } },
                                                                 { true,  &unpack_yuy2<RS_FORMAT_BGR8 >,                  { { RS_STREAM_COLOR,    RS_FORMAT_BGR8 } } },
                                                                 { true,  &unpack_yuy2<RS_FORMAT_BGRA8>,                  { { RS_STREAM_COLOR,    RS_FORMAT_BGRA8 } } } } };
-    const native_pixel_format pf_accel_axes = { 'ACCL', 1, 1,{  { true,  &unpack_accel_axes<RS_FORMAT_MOTION_DATA_AXES>, { { RS_STREAM_ACCEL,    RS_FORMAT_MOTION_DATA_AXES } } },
-                                                                { false, &copy_pixels<1>,                                { { RS_STREAM_ACCEL,    RS_FORMAT_MOTION_DATA_RAW  } } }}};
-    const native_pixel_format pf_gyro_axes  = { 'GYRO', 1, 1,{  { true,  &unpack_gyro_axes<RS_FORMAT_MOTION_DATA_AXES>,  { { RS_STREAM_GYRO,     RS_FORMAT_MOTION_DATA_AXES } } },
-                                                                { false, &copy_pixels<1>,                                { { RS_STREAM_GYRO,     RS_FORMAT_MOTION_DATA_RAW  } } }}};
+    const native_pixel_format pf_accel_axes = { 'ACCL', 1, 1,{  { true,  &unpack_accel_axes<RS_FORMAT_MOTION_XYZ32F>,    { { RS_STREAM_ACCEL,    RS_FORMAT_MOTION_XYZ32F } } },
+                                                                { false, &copy_pixels<1>,                                { { RS_STREAM_ACCEL,    RS_FORMAT_MOTION_RAW  } } }}};
+    const native_pixel_format pf_gyro_axes  = { 'GYRO', 1, 1,{  { true,  &unpack_gyro_axes<RS_FORMAT_MOTION_XYZ32F>,     { { RS_STREAM_GYRO,     RS_FORMAT_MOTION_XYZ32F } } },
+                                                                { false, &copy_pixels<1>,                                { { RS_STREAM_GYRO,     RS_FORMAT_MOTION_RAW  } } }}};
 
 }
 

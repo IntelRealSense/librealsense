@@ -210,6 +210,7 @@ public:
         try
         {
             auto uvc_profiles = dev.get_stream_modes();
+            std::reverse(std::begin(uvc_profiles), std::end(uvc_profiles));
             for (auto&& profile : uvc_profiles)
             {
                 std::stringstream res;
@@ -234,7 +235,10 @@ public:
                         break;
                     }
                 }
-                if (!any_stream_enabled) stream_enabled[profile.stream] = true;
+                if (!any_stream_enabled)
+                {
+                    stream_enabled[profile.stream] = true;
+                }
 
                 profiles.push_back(profile);
             }
@@ -250,7 +254,10 @@ public:
 
             for (auto format_array : format_values)
             {
-                for (auto format : { rs_format::RS_FORMAT_RGB8, rs_format::RS_FORMAT_Z16, rs_format::RS_FORMAT_Y8 } )
+                for (auto format : { rs_format::RS_FORMAT_RGB8,
+                                     rs_format::RS_FORMAT_Z16,
+                                     rs_format::RS_FORMAT_Y8,
+                                     rs_format::RS_FORMAT_MOTION_XYZ32F } )
                 {
                     if (get_default_selection_index(format_array.second, format, &selection_index))
                     {
@@ -374,7 +381,7 @@ public:
     }
 
     template<typename T>
-    bool get_default_selection_index(const std::vector<T>& values, const T & def, int* index /*std::function<int(const std::vector<T>&,T,int*)> compare = nullptr*/)
+    bool get_default_selection_index(const std::vector<T>& values, const T & def, int* index)
     {
         auto max_default = values.begin();
         for (auto it = values.begin(); it != values.end(); it++)
@@ -448,13 +455,13 @@ public:
         }
     }
 
-    double get_fps(double numerator)
+    double get_fps()
     {
         std::lock_guard<std::mutex> lock(_mtx);
         if (_delta == 0)
             return 0;
 
-        return (numerator * _skip_frames)/_delta;
+        return (1000 * _skip_frames) /_delta;
     }
 
 private:
@@ -889,9 +896,6 @@ int main(int, char**) try
                         {
                             ImGui::Text("N/A");
                         }
-
-
-
                     }
 
                     try
@@ -906,6 +910,10 @@ int main(int, char**) try
                                 {
                                     sub->play(sub->get_selected_profiles());
                                 }
+                                if (ImGui::IsItemHovered())
+                                {
+                                    ImGui::SetTooltip("Start streaming data from selected sub-device");
+                                }
                             }
                             else
                             {
@@ -918,6 +926,10 @@ int main(int, char**) try
                             if (ImGui::Button(label.c_str()))
                             {
                                 sub->stop();
+                            }
+                            if (ImGui::IsItemHovered())
+                            {
+                                ImGui::SetTooltip("Stop streaming data from selected sub-device");
                             }
                         }
                     }
@@ -989,7 +1001,7 @@ int main(int, char**) try
                     {
                         model.stream_buffers[f.get_stream_type()].upload(f);
                         model.steam_last_frame[f.get_stream_type()] = std::chrono::high_resolution_clock::now();
-                        auto is_motion = ((f.get_format() == RS_FORMAT_MOTION_DATA_RAW) || (f.get_format() == RS_FORMAT_MOTION_DATA_AXES));
+                        auto is_motion = ((f.get_format() == RS_FORMAT_MOTION_RAW) || (f.get_format() == RS_FORMAT_MOTION_XYZ32F));
                         auto width = (is_motion)? 640.f : f.get_width();
                         auto height = (is_motion)? 480.f : f.get_height();
                         model.stream_size[f.get_stream_type()] = { static_cast<float>(width),
@@ -1049,39 +1061,72 @@ int main(int, char**) try
             label = to_string() << "Stream of " << rs_stream_to_string(stream);
             ImGui::Begin(label.c_str(), nullptr, flags);
 
-            auto numerator = 1000.;
-            auto timestamp_domain = model.stream_timestamp_domain[stream];
-            if ((stream == RS_STREAM_GYRO || stream == RS_STREAM_ACCEL) &&
-                timestamp_domain == RS_TIMESTAMP_DOMAIN_CAMERA)
-            {
-                numerator = 100000000.;
-            }
-
             label = to_string() << rs_stream_to_string(stream) << " "
                 << stream_size.x << "x" << stream_size.y << ", "
                 << rs_format_to_string(model.stream_format[stream]) << ", "
                 << "Frame# " << model.stream_frame_number[stream] << ", "
-                << "Timestamp: " << std::fixed << model.stream_timestamp[stream] << "\n"
-                << "TimestampDomain: " << rs_timestamp_domain_to_string(model.stream_timestamp_domain[stream]) << ", "
-                << "FPS: " << std::setprecision(2) << model.stream_fps[stream].get_fps(numerator);
+                << "FPS:";
+
+            ImGui::Text(label.c_str());
+            ImGui::SameLine();
+
+            label = to_string() << std::setprecision(2) << std::fixed << model.stream_fps[stream].get_fps();
+            ImGui::Text(label.c_str());
+            if (ImGui::IsItemHovered())
+            {
+                ImGui::SetTooltip("FPS is calculated based on timestamps and not viewer time");
+            }
+
+            ImGui::SameLine(ImGui::GetWindowWidth() - 30);
 
             if (!layout.empty() && !model.fullscreen)
             {
-                ImGui::Text(label.c_str());
-                ImGui::SameLine(ImGui::GetWindowWidth() - 30);
                 if (ImGui::Button("[+]", { 26, 20 }))
                 {
                     model.fullscreen = true;
                     model.selected_stream = stream;
                 }
+                if (ImGui::IsItemHovered())
+                {
+                    ImGui::SetTooltip("Maximize stream to full-screen");
+                }
             }
             else if (model.fullscreen)
             {
-                ImGui::Text(label.c_str());
-                ImGui::SameLine(ImGui::GetWindowWidth() - 30);
                 if (ImGui::Button("[-]", { 26, 20 }))
                 {
                     model.fullscreen = false;
+                }
+                if (ImGui::IsItemHovered())
+                {
+                    ImGui::SetTooltip("Minimize stream to tile-view");
+                }
+            }
+
+            label = to_string() << "Timestamp: " << std::fixed << std::setprecision(3) << model.stream_timestamp[stream]
+                                << ", Domain:";
+            ImGui::Text(label.c_str());
+
+            ImGui::SameLine();
+            auto domain = model.stream_timestamp_domain[stream];
+            label = to_string() << rs_timestamp_domain_to_string(domain);
+
+            if (domain == RS_TIMESTAMP_DOMAIN_SYSTEM_TIME)
+            {
+                ImGui::PushStyleColor(ImGuiCol_Text, { 1.0f, 0.0f, 0.0f, 1.0f });
+                ImGui::Text(label.c_str());
+                if (ImGui::IsItemHovered())
+                {
+                    ImGui::SetTooltip("Hardware Timestamp unavailable! This is often an indication of inproperly applied Kernel patch.\nPlease refer to installation.md for mode information");
+                }
+                ImGui::PopStyleColor();
+            }
+            else
+            {
+                ImGui::Text(label.c_str());
+                if (ImGui::IsItemHovered())
+                {
+                    ImGui::SetTooltip("Specifies the clock-domain for the timestamp (hardware-clock / system-time)");
                 }
             }
 

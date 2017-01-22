@@ -62,8 +62,8 @@ typedef enum rs_format
     RS_FORMAT_RAW16           ,
     RS_FORMAT_RAW8            ,
     RS_FORMAT_UYVY            ,
-    RS_FORMAT_MOTION_DATA_RAW ,
-    RS_FORMAT_MOTION_DATA_AXES,
+    RS_FORMAT_MOTION_XYZ32F   ,
+    RS_FORMAT_MOTION_RAW      ,
     RS_FORMAT_COUNT
 } rs_format;
 
@@ -147,9 +147,8 @@ typedef enum rs_log_severity {
 
 typedef enum rs_timestamp_domain
 {
-    RS_TIMESTAMP_DOMAIN_CAMERA,
-    RS_TIMESTAMP_DOMAIN_EXTERNAL,
-    RS_TIMESTAMP_DOMAIN_SYSTEM,
+    RS_TIMESTAMP_DOMAIN_HARDWARE_CLOCK,
+    RS_TIMESTAMP_DOMAIN_SYSTEM_TIME,
     RS_TIMESTAMP_DOMAIN_COUNT
 } rs_timestamp_domain;
 

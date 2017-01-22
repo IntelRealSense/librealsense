@@ -40,17 +40,6 @@ namespace rs
                       profiles(std::move(profiles)),
                       devices(std::move(devices)) {}
 
-                ~multistream()
-                {
-                    try
-                    {
-                        stop();
-                    }
-                    catch(...)
-                    {
-                    }
-                }
-
                 template<class T>
                 void start(T callback)
                 {
