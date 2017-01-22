@@ -461,10 +461,11 @@ public:
         if (_delta == 0)
             return 0;
 
-        return (1000 * _skip_frames) /_delta;
+        return (static_cast<double>(numerator) * _skip_frames)/_delta;
     }
 
 private:
+    static const int numerator = 1000;
     static const int _skip_frames = 5;
     int _counter;
     double _delta;

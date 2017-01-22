@@ -10,7 +10,7 @@ extern "C" {
 
 #define RS_API_MAJOR_VERSION    2
 #define RS_API_MINOR_VERSION    4
-#define RS_API_PATCH_VERSION    0
+#define RS_API_PATCH_VERSION    1
 
 #define STRINGIFY(arg) #arg
 #define VAR_ARG_STRING(arg) STRINGIFY(arg)
@@ -62,8 +62,8 @@ typedef enum rs_format
     RS_FORMAT_RAW16           ,
     RS_FORMAT_RAW8            ,
     RS_FORMAT_UYVY            ,
-    RS_FORMAT_MOTION_XYZ32F   ,
     RS_FORMAT_MOTION_RAW      ,
+    RS_FORMAT_MOTION_XYZ32F   ,
     RS_FORMAT_COUNT
 } rs_format;
 
