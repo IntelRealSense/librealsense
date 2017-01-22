@@ -13,7 +13,7 @@
 #include <iomanip>
 #include <map>
 #include <sstream>
-
+#include <mutex>
 
 #pragma comment(lib, "opengl32.lib")
 
@@ -418,6 +418,53 @@ public:
     bool streaming;
 };
 
+
+class fps_calc
+{
+public:
+    fps_calc()
+        : _counter(0),
+          _delta(0),
+          _last_timestamp(0)
+    {}
+
+      fps_calc(const fps_calc& other) {
+        std::lock_guard<std::mutex> lock(other._mtx);
+        _counter = other._counter;
+        _delta = other._delta;
+        _last_timestamp = other._last_timestamp;
+      }
+
+    void add_timestamp(double timestamp)
+    {
+        std::lock_guard<std::mutex> lock(_mtx);
+        if (++_counter == _skip_frames)
+        {
+            if (_last_timestamp != 0)
+                _delta = timestamp - _last_timestamp;
+
+            _last_timestamp = timestamp;
+            _counter = 0;
+        }
+    }
+
+    double get_fps(double numerator)
+    {
+        std::lock_guard<std::mutex> lock(_mtx);
+        if (_delta == 0)
+            return 0;
+
+        return (numerator * _skip_frames)/_delta;
+    }
+
+private:
+    static const int _skip_frames = 5;
+    int _counter;
+    double _delta;
+    double _last_timestamp;
+    mutable std::mutex _mtx;
+};
+
 typedef std::map<rs_stream, rect> streams_layout;
 
 class device_model
@@ -511,6 +558,7 @@ public:
     std::map<rs_stream, double> stream_timestamp;
     std::map<rs_stream, unsigned long long> stream_frame_number;
     std::map<rs_stream, rs_timestamp_domain> stream_timestamp_domain;
+    std::map<rs_stream, fps_calc> stream_fps;
 
     bool fullscreen = false;
     rs_stream selected_stream = RS_STREAM_ANY;
@@ -947,9 +995,10 @@ int main(int, char**) try
                         model.stream_size[f.get_stream_type()] = { static_cast<float>(width),
                                                                    static_cast<float>(height)};
                         model.stream_format[f.get_stream_type()] = f.get_format();
-                        model.stream_timestamp[f.get_stream_type()] = f.get_timestamp();
                         model.stream_frame_number[f.get_stream_type()] = f.get_frame_number();
                         model.stream_timestamp_domain[f.get_stream_type()] = f.get_frame_timestamp_domain();
+                        model.stream_timestamp[f.get_stream_type()] = f.get_timestamp();
+                        model.stream_fps[f.get_stream_type()].add_timestamp(f.get_timestamp());
                     }
                 }
                 catch(const rs::error& e)
@@ -1000,16 +1049,21 @@ int main(int, char**) try
             label = to_string() << "Stream of " << rs_stream_to_string(stream);
             ImGui::Begin(label.c_str(), nullptr, flags);
 
-
-
-            auto ml = (int)model.stream_timestamp[stream]%1000;
+            auto numerator = 1000.;
+            auto timestamp_domain = model.stream_timestamp_domain[stream];
+            if ((stream == RS_STREAM_GYRO || stream == RS_STREAM_ACCEL) &&
+                timestamp_domain == RS_TIMESTAMP_DOMAIN_CAMERA)
+            {
+                numerator = 100000000.;
+            }
 
             label = to_string() << rs_stream_to_string(stream) << " "
                 << stream_size.x << "x" << stream_size.y << ", "
                 << rs_format_to_string(model.stream_format[stream]) << ", "
-                << " Frame# " << model.stream_frame_number[stream] << ", "
-                << " Timestamp: " << std::fixed << model.stream_timestamp[stream] << ", "
-                << "TimestampDomain: " << rs_timestamp_domain_to_string(model.stream_timestamp_domain[stream]);
+                << "Frame# " << model.stream_frame_number[stream] << ", "
+                << "Timestamp: " << std::fixed << model.stream_timestamp[stream] << "\n"
+                << "TimestampDomain: " << rs_timestamp_domain_to_string(model.stream_timestamp_domain[stream]) << ", "
+                << "FPS: " << std::setprecision(2) << model.stream_fps[stream].get_fps(numerator);
 
             if (!layout.empty() && !model.fullscreen)
             {
