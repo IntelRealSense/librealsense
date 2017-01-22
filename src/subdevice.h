@@ -101,7 +101,7 @@ namespace rsimpl
         virtual bool validate_frame(const request_mapping & mode, const void * frame) const = 0;
         virtual double get_frame_timestamp(const request_mapping& mode, const void * frame) = 0;
         virtual unsigned long long get_frame_counter(const request_mapping& mode, const void * frame) const = 0;
-        virtual rs_timestamp_domain get_frame_timestamp_domain(const request_mapping& mode) = 0;
+        virtual rs_timestamp_domain get_frame_timestamp_domain(const request_mapping& mode) const = 0;
         virtual void reset() = 0;
     };
 
