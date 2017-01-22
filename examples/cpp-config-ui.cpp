@@ -448,16 +448,17 @@ public:
         }
     }
 
-    double get_fps(double numerator)
+    double get_fps()
     {
         std::lock_guard<std::mutex> lock(_mtx);
         if (_delta == 0)
             return 0;
 
-        return (numerator * _skip_frames)/_delta;
+        return (static_cast<double>(numerator) * _skip_frames)/_delta;
     }
 
 private:
+    static const int numerator = 1000;
     static const int _skip_frames = 5;
     int _counter;
     double _delta;
@@ -1049,21 +1050,13 @@ int main(int, char**) try
             label = to_string() << "Stream of " << rs_stream_to_string(stream);
             ImGui::Begin(label.c_str(), nullptr, flags);
 
-            auto numerator = 1000.;
-            auto timestamp_domain = model.stream_timestamp_domain[stream];
-            if ((stream == RS_STREAM_GYRO || stream == RS_STREAM_ACCEL) &&
-                timestamp_domain == RS_TIMESTAMP_DOMAIN_CAMERA)
-            {
-                numerator = 100000000.;
-            }
-
             label = to_string() << rs_stream_to_string(stream) << " "
                 << stream_size.x << "x" << stream_size.y << ", "
                 << rs_format_to_string(model.stream_format[stream]) << ", "
                 << "Frame# " << model.stream_frame_number[stream] << ", "
                 << "Timestamp: " << std::fixed << model.stream_timestamp[stream] << "\n"
                 << "TimestampDomain: " << rs_timestamp_domain_to_string(model.stream_timestamp_domain[stream]) << ", "
-                << "FPS: " << std::setprecision(2) << model.stream_fps[stream].get_fps(numerator);
+                << "FPS: " << std::setprecision(2) << model.stream_fps[stream].get_fps();
 
             if (!layout.empty() && !model.fullscreen)
             {

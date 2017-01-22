@@ -243,6 +243,7 @@ namespace rsimpl
         mutable std::vector<int64_t> counter;
         mutable std::recursive_mutex _mtx;
         static const unsigned hid_data_size = 14;
+        static const unsigned timestamp_to_ms = 1000.;
     public:
         ds5_hid_timestamp_reader()
         {
@@ -286,7 +287,8 @@ namespace rsimpl
             static const unsigned timestamp_offset = 6;
             if (frame_size == hid_data_size)
             {
-                 return static_cast<double>(*((uint64_t*)((const uint8_t*)frame + timestamp_offset)));
+                auto timestamp = *((uint64_t*)((const uint8_t*)frame + timestamp_offset));
+                return static_cast<double>(timestamp) / timestamp_to_ms;
             }
 
             if (!started)
