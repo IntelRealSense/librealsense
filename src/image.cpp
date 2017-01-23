@@ -50,12 +50,12 @@ namespace rsimpl
     // Naive unpacking routines //
     //////////////////////////////
 
-    inline void copy_hid_axes(byte * const dest[], const byte * source, float factor, unsigned data_shift, int count)
+    inline void copy_hid_axes(byte * const dest[], const byte * source, float factor, int count)
     {
         auto shrt = (short*)source;
-        float axes[3] = {static_cast<float>(shrt[0] >> data_shift) * factor,
-                         static_cast<float>(shrt[1] >> data_shift) * factor,
-                         static_cast<float>(shrt[2] >> data_shift) * factor};
+        float axes[3] = {static_cast<float>(shrt[0]) * factor,
+                         static_cast<float>(shrt[1]) * factor,
+                         static_cast<float>(shrt[2]) * factor};
         memcpy(dest[0], axes, sizeof(axes));
     }
 
@@ -64,15 +64,14 @@ namespace rsimpl
         static const float gravity = 9.80665f; // Standard Gravitation Acceleration
         static const float accel_range = 4.f;  // Accelerometer is preset to [-4...+4]g range
         static const float accelerator_transform_factor = float(gravity * accel_range / 2048.f);
-        static const unsigned data_shift = 4; // Acceleration data is stored in 12 MSB
-        copy_hid_axes(dest, source, accelerator_transform_factor, data_shift, count);
+        copy_hid_axes(dest, source, accelerator_transform_factor, count);
     }
 
     template<size_t SIZE> void unpack_gyro_axes(byte * const dest[], const byte * source, int count)
     {
         static const float gyro_range   = 1000.f; // Preconfigured angular velocity range [-1000...1000] Deg_C/Sec
         static const float gyro_transform_factor = float((gyro_range * M_PI) / (180.f * 32767.f));
-        copy_hid_axes(dest, source, gyro_transform_factor, 0, count);
+        copy_hid_axes(dest, source, gyro_transform_factor, count);
     }
 
     template<size_t SIZE> void copy_pixels(byte * const dest[], const byte * source, int count)
