@@ -136,8 +136,8 @@ namespace rsimpl
         CASE(RAW16)
         CASE(RAW8)
         CASE(UYVY)
-        CASE(MOTION_DATA_RAW)
-        CASE(MOTION_DATA_AXES)
+        CASE(MOTION_RAW)
+        CASE(MOTION_XYZ32F)
         default: assert(!is_valid(value)); return unknown;
         }
         #undef CASE
@@ -180,9 +180,8 @@ namespace rsimpl
         #define CASE(X) case RS_TIMESTAMP_DOMAIN_##X: return #X;
         switch (value)
         {
-        CASE(CAMERA)
-        CASE(EXTERNAL)
-        CASE(SYSTEM)
+        CASE(HARDWARE_CLOCK)
+        CASE(SYSTEM_TIME)
         default: assert(!is_valid(value)); return unknown;
         }
         #undef CASE

@@ -249,6 +249,11 @@ public:
 
     void draw_motion_data(float x, float y, float z)
     {
+        glMatrixMode(GL_PROJECTION);
+        glPushMatrix();
+        glMatrixMode(GL_MODELVIEW);
+        glPushMatrix();
+
         glViewport(0, 0, 1024, 1024);
         glClearColor(0,0,0,1);
         glClear(GL_COLOR_BUFFER_BIT);
@@ -322,6 +327,11 @@ public:
         }
 
         glCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 0, 0, 1024, 1024, 0);
+
+        glMatrixMode(GL_MODELVIEW);
+        glPopMatrix();
+        glMatrixMode(GL_PROJECTION);
+        glPopMatrix();
     }
 
     double t = 0;
@@ -362,7 +372,7 @@ public:
         case RS_FORMAT_Y8:
             glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, data);
             break;
-        case RS_FORMAT_MOTION_DATA_AXES:
+        case RS_FORMAT_MOTION_XYZ32F:
         {
             auto axes = *(reinterpret_cast<const float3*>(data));
             draw_motion_data(axes.x, axes.y, axes.z);
@@ -372,7 +382,7 @@ public:
             glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_LUMINANCE, GL_UNSIGNED_SHORT, data);
             break;
         case RS_FORMAT_RAW8:
-        case RS_FORMAT_MOTION_DATA_RAW:
+        case RS_FORMAT_MOTION_RAW:
             glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE, width, height, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, data);
             break;
         case RS_FORMAT_RAW10:
