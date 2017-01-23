@@ -10,7 +10,8 @@ sudo apt-get install linux-headers-generic build-essential
 cd ubuntu-xenial
 
 # Apply UVC formats patch for RealSense devices
-patch -p1 < ../"$( dirname "$0" )"/realsense-camera-formats_ubuntu16.patch
+patch -p1 < ../"$( dirname "$0" )"/0001-Add-video-formats-for-Intel-real-sense-F200-camera-new.patch
+patch -p1 < ../"$( dirname "$0" )"/0002-release-camera-formats_ubuntu16-new.patch
 
 # Copy configuration
 cp /usr/src/linux-headers-$(uname -r)/.config .

@@ -1,3 +1,15 @@
+From ccc513a3a69607fae553738a701340ea35f80858 Mon Sep 17 00:00:00 2001
+From: Elad Zucker <eladz@hexsys-solutions.com>
+Date: Sun, 22 Jan 2017 06:58:07 -0800
+Subject: [PATCH] release-camera-formats_ubuntu16-new
+
+---
+ drivers/media/usb/uvc/Makefile     |  1 +
+ drivers/media/usb/uvc/uvc_driver.c | 56 ++++++++++++++++++++++++++++++++++++++
+ drivers/media/usb/uvc/uvcvideo.h   | 33 ++++++++++++++++++++++
+ include/uapi/linux/videodev2.h     | 12 ++++++++
+ 4 files changed, 102 insertions(+)
+
 diff --git a/drivers/media/usb/uvc/Makefile b/drivers/media/usb/uvc/Makefile
 index c26d12f..d86cf22 100644
 --- a/drivers/media/usb/uvc/Makefile
@@ -8,23 +20,13 @@ index c26d12f..d86cf22 100644
  		  uvc_status.o uvc_isight.o uvc_debugfs.o
  ifeq ($(CONFIG_MEDIA_CONTROLLER),y)
 diff --git a/drivers/media/usb/uvc/uvc_driver.c b/drivers/media/usb/uvc/uvc_driver.c
-index 47ff9f4..7f62ce6 100644
+index 47ff9f4..8d11091 100644
 --- a/drivers/media/usb/uvc/uvc_driver.c
 +++ b/drivers/media/usb/uvc/uvc_driver.c
-@@ -168,6 +168,61 @@ static struct uvc_format_desc uvc_fmts[] = {
+@@ -168,6 +168,62 @@ static struct uvc_format_desc uvc_fmts[] = {
  		.guid		= UVC_GUID_FORMAT_RW10,
  		.fcc		= V4L2_PIX_FMT_SRGGB10P,
  	},
-+	{
-+		.name		= "Raw data 8-bit (RAW8)",
-+		.guid		= UVC_GUID_FORMAT_RAW8,
-+		.fcc		= V4L2_PIX_FMT_RAW8,
-+	},
-+	{
-+		.name		= "Raw data 16-bit (RW16)",
-+		.guid		= UVC_GUID_FORMAT_RW16,
-+		.fcc		= V4L2_PIX_FMT_RW16,
-+	},
 +	{
 +		.name		= "Depth 16-bit (INVZ)",
 +		.guid		= UVC_GUID_FORMAT_INVZ,
@@ -56,6 +58,16 @@ index 47ff9f4..7f62ce6 100644
 +		.fcc		= V4L2_PIX_FMT_RELI,
 +	},
 +	{
++		.name		= "Raw data 8-bit (RAW8)",
++		.guid		= UVC_GUID_FORMAT_RAW8,
++		.fcc		= V4L2_PIX_FMT_RAW8,
++	},
++	{
++		.name		= "Raw data 16-bit (RW16)",
++		.guid		= UVC_GUID_FORMAT_RW16,
++		.fcc		= V4L2_PIX_FMT_RW16,
++	},
++	{
 +		.name		= "Luminosity data 8-bit (L8)",
 +		.guid		= UVC_GUID_FORMAT_L8,
 +		.fcc		= V4L2_PIX_FMT_Y8,
@@ -70,29 +82,18 @@ index 47ff9f4..7f62ce6 100644
 +		.guid		= UVC_GUID_FORMAT_D16,
 +		.fcc		= V4L2_PIX_FMT_Z16,
 +	},
++
  };
  
  /* ------------------------------------------------------------------------
 diff --git a/drivers/media/usb/uvc/uvcvideo.h b/drivers/media/usb/uvc/uvcvideo.h
-index 7e4d3ee..d031a20 100644
+index 7e4d3ee..6704db7 100644
 --- a/drivers/media/usb/uvc/uvcvideo.h
 +++ b/drivers/media/usb/uvc/uvcvideo.h
-@@ -115,6 +115,51 @@
- #define UVC_GUID_FORMAT_M420 \
- 	{ 'M',  '4',  '2',  '0', 0x00, 0x00, 0x10, 0x00, \
+@@ -131,6 +131,39 @@
+ #define UVC_GUID_FORMAT_RW10 \
+ 	{ 'R',  'W',  '1',  '0', 0x00, 0x00, 0x10, 0x00, \
  	 0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71}
-+#define UVC_GUID_FORMAT_Y8I \
-+	{ 'Y',  '8',  'I',  ' ', 0x00, 0x00, 0x10, 0x00, \
-+	 0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71}
-+#define UVC_GUID_FORMAT_Y12I \
-+	{ 'Y',  '1',  '2',  'I', 0x00, 0x00, 0x10, 0x00, \
-+	 0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71}
-+#define UVC_GUID_FORMAT_Z16 \
-+	{ 'Z',  '1',  '6',  ' ', 0x00, 0x00, 0x10, 0x00, \
-+	 0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71}
-+#define UVC_GUID_FORMAT_RW10 \
-+	{ 'R',  'W',  '1',  '0', 0x00, 0x00, 0x10, 0x00, \
-+	 0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71}
 +#define UVC_GUID_FORMAT_RAW8 \
 +    { 'R',  'A',  'W',  '8', 0x66, 0x1a, 0x42, 0xa2, \
 +     0x90, 0x65, 0xd0, 0x18, 0x14, 0xa8, 0xef, 0x8a}
@@ -127,8 +128,8 @@ index 7e4d3ee..d031a20 100644
 +	{ 'P', 0x00,  0x00,  0x00, 0x00, 0x00, 0x10, 0x00, \
 +	 0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71}
  
- #define UVC_GUID_FORMAT_H264 \
- 	{ 'H',  '2',  '6',  '4', 0x00, 0x00, 0x10, 0x00, \
+ /* ------------------------------------------------------------------------
+  * Driver specific constants.
 diff --git a/include/uapi/linux/videodev2.h b/include/uapi/linux/videodev2.h
 index 421d274..7e00be4 100644
 --- a/include/uapi/linux/videodev2.h
@@ -152,3 +153,6 @@ index 421d274..7e00be4 100644
  
  /* SDR formats - used only for Software Defined Radio devices */
  #define V4L2_SDR_FMT_CU8          v4l2_fourcc('C', 'U', '0', '8') /* IQ u8 */
+-- 
+2.7.4
+
