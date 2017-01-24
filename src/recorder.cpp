@@ -1104,8 +1104,11 @@ namespace rsimpl
             _rec->find_call(call_type::hid_close, _entity_id);
 
             lock_guard<mutex> lock(_callback_mutex);
-            _alive = false;
-            _callback_thread.join();
+            if(_alive)
+            {
+                _alive = false;
+                _callback_thread.join();
+            }
         }
 
         void playback_hid_device::stop_capture()
