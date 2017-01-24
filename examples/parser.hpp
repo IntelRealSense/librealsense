@@ -529,7 +529,7 @@ inline void update_sections_data(const uint8_t* data_offset, std::vector<section
     }
 }
 
-inline void decode_string_from_raw_data(const command& command, const std::map<std::string, custom_formatter>& custom_formatters, const uint8_t* raw_data_offset, int data_size, std::string& output, const std::map<std::string, xml_parser_function>& format_type_to_lambda)
+inline void decode_string_from_raw_data(const command& command, const std::map<std::string, custom_formatter>& custom_formatters, const uint8_t* raw_data_offset, size_t data_size, std::string& output, const std::map<std::string, xml_parser_function>& format_type_to_lambda)
 {
     auto data_offset = raw_data_offset + 4;
     data_size -= 4;
