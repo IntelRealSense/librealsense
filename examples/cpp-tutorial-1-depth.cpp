@@ -68,7 +68,7 @@ int main() try
         *out++ = 0;
         printf("\n%s", buffer);
     }
-    
+
     return EXIT_SUCCESS;
 }
 catch(const rs::error & e)

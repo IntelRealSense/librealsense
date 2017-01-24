@@ -754,7 +754,7 @@ namespace rs
         class device_list_iterator
         {
             device_list_iterator(
-                const device_list& device_list, 
+                const device_list& device_list,
                 uint32_t uint32_t)
                 : _list(device_list),
                   _index(uint32_t)

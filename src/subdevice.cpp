@@ -441,7 +441,7 @@ option& endpoint::get_option(rs_option id)
     if (it == _options.end())
     {
         throw invalid_value_exception(to_string()
-            << "Device does not support option " 
+            << "Device does not support option "
             << rs_option_to_string(id) << "!");
     }
     return *it->second;
@@ -453,7 +453,7 @@ const option& endpoint::get_option(rs_option id) const
     if (it == _options.end())
     {
         throw invalid_value_exception(to_string()
-            << "Device does not support option " 
+            << "Device does not support option "
             << rs_option_to_string(id) << "!");
     }
     return *it->second;

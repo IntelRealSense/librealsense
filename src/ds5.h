@@ -338,7 +338,7 @@ namespace rsimpl
             case ds::RS420R_PID:
             case ds::RS430C_PID: return 1;
             case ds::RS450T_PID: return 3;
-            default: 
+            default:
                 throw not_implemented_exception(to_string() <<
                     "get_subdevice_count is not implemented for DS5 device of type " <<
                     depth_pid);
@@ -391,7 +391,7 @@ namespace rsimpl
                 }
             }
 
-            explicit emitter_option(uvc_endpoint& ep) 
+            explicit emitter_option(uvc_endpoint& ep)
                 : uvc_xu_option(ep, ds::depth_xu, ds::DS5_DEPTH_EMITTER_ENABLED,
                                 "Power of the DS5 projector, 0 meaning projector off, 1 meaning projector off, 2 meaning projector in auto mode")
             {}

@@ -630,7 +630,7 @@ bool no_device_popup(GLFWwindow* window, const ImVec4& clear_color)
 
         ImGui_ImplGlfw_NewFrame();
 
-        // Rendering 
+        // Rendering
         glViewport(0, 0,
             static_cast<int>(ImGui::GetIO().DisplaySize.x),
             static_cast<int>(ImGui::GetIO().DisplaySize.y));
@@ -653,7 +653,7 @@ bool no_device_popup(GLFWwindow* window, const ImVec4& clear_color)
             ImGui::Text("No device detected. Is it plugged in?");
             ImGui::Separator();
 
-            // Present options to user 
+            // Present options to user
             if (ImGui::Button("Retry", ImVec2(120, 0)))
             {
                 return true; // Retry to find connected device
@@ -716,7 +716,7 @@ int main(int, char**) try
             auto l = list[i];
             auto name = l.get_camera_info(RS_CAMERA_INFO_DEVICE_NAME);              // retrieve device name
             auto serial = l.get_camera_info(RS_CAMERA_INFO_DEVICE_SERIAL_NUMBER);   // retrieve device serial number
-            device_names.push_back(to_string() << name << " Sn#" << serial);        // push name and sn to list 
+            device_names.push_back(to_string() << name << " Sn#" << serial);        // push name and sn to list
         }
         catch (...)
         {

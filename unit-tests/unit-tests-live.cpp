@@ -438,9 +438,9 @@ TEST_CASE("a single subdevice can only be opened once, different subdevices can 
                 }
                 // TODO: Move
                 SECTION("opening different subdevices") {
-                    for (auto&& subdevice1 : dev.get_adjacent_devices()) 
+                    for (auto&& subdevice1 : dev.get_adjacent_devices())
                     {
-                        for (auto&& subdevice2 : dev.get_adjacent_devices()) 
+                        for (auto&& subdevice2 : dev.get_adjacent_devices())
                         {
                             if (subdevice1 == subdevice2)
                                 continue;
@@ -752,8 +752,8 @@ TEST_CASE("Auto-complete feature works", "[offline][rs::util::config]") {
                       { RS_STREAM_INFRARED, 640, 480,  30, RS_FORMAT_Y8  },
                       { RS_STREAM_INFRARED, 640, 480, 200, RS_FORMAT_Y8  } }, true);
     rs::util::Config<AC_Mock_Device> config;
-    
-    struct Test { 
+
+    struct Test {
         std::vector<rs::stream_profile> given,       // We give these profiles to the config class
                                         expected;    // pool of profiles the config class can return. Leave empty if auto-completer is expected to fail
     };

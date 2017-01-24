@@ -82,8 +82,8 @@ int main() try
             coloredDepth.resize(depth_size);
 
             /* Encode depth data into color image */
-            make_depth_histogram(coloredDepth.data(), 
-                static_cast<const uint16_t*>(depth.get_data()), 
+            make_depth_histogram(coloredDepth.data(),
+                static_cast<const uint16_t*>(depth.get_data()),
                 depth.get_width(), depth.get_height());
 
             pixels = coloredDepth.data();

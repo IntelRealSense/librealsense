@@ -355,7 +355,7 @@ public:
             rgb.resize(width * height * 4);
             make_depth_histogram(rgb.data(), reinterpret_cast<const uint16_t *>(data), width, height);
             glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, rgb.data());
-            
+
             break;
         case RS_FORMAT_XYZ32F:
             glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_FLOAT, data);
@@ -470,7 +470,7 @@ struct to_string
 
 inline std::string error_to_string(const rs::error& e)
 {
-    return to_string() << rs_exception_type_to_string(e.get_type()) 
+    return to_string() << rs_exception_type_to_string(e.get_type())
         << " in " << e.get_failed_function() << "("
         << e.get_failed_args() << "):\n" << e.what();
 }

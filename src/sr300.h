@@ -131,7 +131,7 @@ namespace rsimpl
         class preset_option : public option
         {
         public:
-            void set(float value) override { 
+            void set(float value) override {
                 _owner.rs_apply_ivcam_preset(static_cast<int>(value));
                 last_value = value;
             }
@@ -160,7 +160,7 @@ namespace rsimpl
             sr300_camera& _owner;
         };
 
-        static std::shared_ptr<uvc_endpoint> create_color_device(const uvc::backend& backend, 
+        static std::shared_ptr<uvc_endpoint> create_color_device(const uvc::backend& backend,
                                                                  const uvc::uvc_device_info& color)
         {
             auto color_ep = std::make_shared<uvc_endpoint>(backend.create_uvc_device(color),
@@ -333,10 +333,10 @@ namespace rsimpl
         // NOTE: it is the user's responsibility to make sure the profile makes sense on the given subdevice. UB otherwise.
         virtual rs_intrinsics get_intrinsics(unsigned int subdevice, stream_profile profile) const override
         {
-            if (subdevice >= get_endpoints_count()) 
+            if (subdevice >= get_endpoints_count())
                 throw rsimpl::invalid_value_exception("Requested subdevice is not supported!");
 
-            if (subdevice == _color_device_idx) 
+            if (subdevice == _color_device_idx)
                 return make_color_intrinsics(get_calibration(), { int(profile.width), int(profile.height) });
 
             if (subdevice == _depth_device_idx)
@@ -356,7 +356,7 @@ namespace rsimpl
             depth.register_option(opt,
                 std::make_shared<uvc_xu_option<T>>(
                     depth,
-                    ivcam::depth_xu, 
+                    ivcam::depth_xu,
                     id, std::move(desc)));
         }
 
