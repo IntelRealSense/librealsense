@@ -66,7 +66,7 @@ std::vector<request_mapping> endpoint::resolve_requests(std::vector<stream_profi
     while (!requests.empty() && !_pixel_formats.empty())
     {
         auto max = 0;
-        auto best_size = 0;
+        size_t best_size = 0;
         auto best_pf = &_pixel_formats[0];
         auto best_unpacker = &_pixel_formats[0].unpackers[0];
         for (auto&& pf : _pixel_formats)
@@ -260,7 +260,7 @@ void uvc_endpoint::open(const std::vector<stream_profile>& requests)
 
             auto now = high_resolution_clock::now();
             auto ms = duration_cast<milliseconds>(now - start);
-            auto system_time = static_cast<double>(ms.count());
+            auto system_time = ms.count();
 
             //auto stride_x = mode_selection.get_stride_x();
             //auto stride_y = mode_selection.get_stride_y();
@@ -441,7 +441,7 @@ option& endpoint::get_option(rs_option id)
     if (it == _options.end())
     {
         throw invalid_value_exception(to_string()
-            << "Device does not support option " 
+            << "Device does not support option "
             << rs_option_to_string(id) << "!");
     }
     return *it->second;
@@ -453,7 +453,7 @@ const option& endpoint::get_option(rs_option id) const
     if (it == _options.end())
     {
         throw invalid_value_exception(to_string()
-            << "Device does not support option " 
+            << "Device does not support option "
             << rs_option_to_string(id) << "!");
     }
     return *it->second;
@@ -602,7 +602,7 @@ void hid_endpoint::start_streaming(frame_callback_ptr callback)
 
         auto mode = _iio_mapping[sensor_data.sensor.iio];
         auto data_size = sensor_data.data.size();
-        mode.profile.width = data_size;
+        mode.profile.width = (uint32_t)data_size;
         mode.profile.height = 1;
         // Ignore any HID frames which appear corrupted or invalid
         if (!_timestamp_reader->validate_frame(mode, sensor_data.data.data()))
@@ -632,7 +632,7 @@ void hid_endpoint::start_streaming(frame_callback_ptr callback)
         }
 
         std::vector<byte*> dest{const_cast<byte*>(frame->get()->data.data())};
-        mode.unpacker->unpack(dest.data(), sensor_data.data.data(), data_size);
+        mode.unpacker->unpack(dest.data(), sensor_data.data.data(), (int)data_size);
         this->invoke_callback(frame);
     });
 

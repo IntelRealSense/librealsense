@@ -177,7 +177,7 @@ public:
         glVertex3f(0.0f, -0.05f, 1.0f);
         glEnd();
 
-        auto axisWidth = 4;
+        auto axisWidth = 4.f;
         glLineWidth(axisWidth);
 
         // Drawing Axis
@@ -209,8 +209,8 @@ public:
         for (int i = 0; i <= N; i++)
         {
             const double theta = (2 * M_PI / N) * i;
-            const auto cost = cos(theta);
-            const auto sint = sin(theta);
+            const auto cost = static_cast<float>(cos(theta));
+            const auto sint = static_cast<float>(sin(theta));
             glVertex3f(
                 radius * (xx * cost + yx * sint),
                 radius * (xy * cost + yy * sint),
@@ -254,7 +254,7 @@ public:
         auto xy = xyz_to_xy(x, y, z, model, proj, vec_norm);
         auto w = (center_text) ? stb_easy_font_width((char*)text) : 0;
         glColor3f(1.0f, 1.0f, 1.0f);
-        draw_text(xy.x - w / 2, xy.y, text);
+        draw_text((int)(xy.x - w / 2), (int)xy.y, text);
     }
 
     void draw_motion_data(float x, float y, float z)
@@ -308,7 +308,7 @@ public:
         }
         else
         {
-            auto vectorWidth = 5;
+            auto vectorWidth = 5.f;
             glLineWidth(vectorWidth);
             glBegin(GL_LINES);
             glColor3f(1.0f, 1.0f, 1.0f);
@@ -365,7 +365,7 @@ public:
             rgb.resize(width * height * 4);
             make_depth_histogram(rgb.data(), reinterpret_cast<const uint16_t *>(data), width, height);
             glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, rgb.data());
-            
+
             break;
         case RS_FORMAT_XYZ32F:
             glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_FLOAT, data);
@@ -480,7 +480,7 @@ struct to_string
 
 inline std::string error_to_string(const rs::error& e)
 {
-    return to_string() << rs_exception_type_to_string(e.get_type()) 
+    return to_string() << rs_exception_type_to_string(e.get_type())
         << " in " << e.get_failed_function() << "("
         << e.get_failed_args() << "):\n" << e.what();
 }

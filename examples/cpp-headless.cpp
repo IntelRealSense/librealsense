@@ -29,7 +29,7 @@ int main() try
 
     rs::context ctx;
     auto list = ctx.query_devices();
-    printf("There are %llu connected RealSense devices.\n", list.size());
+    printf("There are %d connected RealSense devices.\n", list.size());
     if(list.size() == 0)
         return EXIT_FAILURE;
 
@@ -82,8 +82,8 @@ int main() try
             coloredDepth.resize(depth_size);
 
             /* Encode depth data into color image */
-            make_depth_histogram(coloredDepth.data(), 
-                static_cast<const uint16_t*>(depth.get_data()), 
+            make_depth_histogram(coloredDepth.data(),
+                static_cast<const uint16_t*>(depth.get_data()),
                 depth.get_width(), depth.get_height());
 
             pixels = coloredDepth.data();
