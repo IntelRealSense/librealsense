@@ -69,7 +69,6 @@ librealsense-log.txt
 *.filters
 *.db
 *.opendb
-*.cmake
 *.rule
 *.check_cache
 *.dll
