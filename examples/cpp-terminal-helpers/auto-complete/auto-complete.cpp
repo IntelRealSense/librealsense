@@ -142,7 +142,7 @@ char auto_complete::getch_nolock()
     fd_set set;
     struct timeval tv;
 
-    tv.tv_sec = INFINITY;
+    tv.tv_sec = static_cast<unsigned long long>(INFINITY);
     tv.tv_usec = 0;
 
     FD_ZERO( &set );
