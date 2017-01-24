@@ -167,7 +167,7 @@ public:
         glVertex3f(0.0f, -0.05f, 1.0f);
         glEnd();
 
-        auto axisWidth = 4;
+        auto axisWidth = 4.f;
         glLineWidth(axisWidth);
 
         // Drawing Axis
@@ -199,8 +199,8 @@ public:
         for (int i = 0; i <= N; i++)
         {
             const double theta = (2 * M_PI / N) * i;
-            const auto cost = cos(theta);
-            const auto sint = sin(theta);
+            const auto cost = static_cast<float>(cos(theta));
+            const auto sint = static_cast<float>(sin(theta));
             glVertex3f(
                 radius * (xx * cost + yx * sint),
                 radius * (xy * cost + yy * sint),
@@ -244,7 +244,7 @@ public:
         auto xy = xyz_to_xy(x, y, z, model, proj, vec_norm);
         auto w = (center_text) ? stb_easy_font_width((char*)text) : 0;
         glColor3f(1.0f, 1.0f, 1.0f);
-        draw_text(xy.x - w / 2, xy.y, text);
+        draw_text((int)(xy.x - w / 2), (int)xy.y, text);
     }
 
     void draw_motion_data(float x, float y, float z)
@@ -298,7 +298,7 @@ public:
         }
         else
         {
-            auto vectorWidth = 5;
+            auto vectorWidth = 5.f;
             glLineWidth(vectorWidth);
             glBegin(GL_LINES);
             glColor3f(1.0f, 1.0f, 1.0f);

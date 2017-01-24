@@ -13,7 +13,7 @@ device::device()
 int device::add_endpoint(std::shared_ptr<endpoint> endpoint)
 {
     _endpoints.push_back(endpoint);
-    return _endpoints.size() - 1;
+    return (int)_endpoints.size() - 1;
 }
 
 void device::register_endpoint_info(int sub, std::map<rs_camera_info, std::string> camera_info)

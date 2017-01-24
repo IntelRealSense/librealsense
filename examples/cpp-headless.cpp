@@ -29,7 +29,7 @@ int main() try
 
     rs::context ctx;
     auto list = ctx.query_devices();
-    printf("There are %llu connected RealSense devices.\n", list.size());
+    printf("There are %d connected RealSense devices.\n", list.size());
     if(list.size() == 0)
         return EXIT_FAILURE;
 

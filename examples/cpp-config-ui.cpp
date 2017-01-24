@@ -444,7 +444,7 @@ public:
         _last_timestamp = other._last_timestamp;
       }
 
-    void add_timestamp(double timestamp, unsigned frame_counter)
+    void add_timestamp(double timestamp, unsigned long long frame_counter)
     {
         std::lock_guard<std::mutex> lock(_mtx);
         if (++_counter >= _skip_frames)
@@ -473,11 +473,11 @@ public:
 private:
     static const int _numerator = 1000;
     static const int _skip_frames = 5;
-    unsigned _num_of_frames;
+    unsigned long long _num_of_frames;
     int _counter;
     double _delta;
     double _last_timestamp;
-    unsigned _last_frame_counter;
+    unsigned long long _last_frame_counter;
     mutable std::mutex _mtx;
 };
 
@@ -709,7 +709,7 @@ int main(int, char**) try
     std::vector<std::string> device_names;
     std::string error_message = "";
     // Initialize list with each device name and serial number
-    for (auto i = 0; i < list.size(); i++)
+    for (uint32_t i = 0; i < list.size(); i++)
     {
         try
         {
@@ -1048,7 +1048,7 @@ int main(int, char**) try
         glLoadIdentity();
         glOrtho(0, w, h, 0, -1, +1);
 
-        auto layout = model.calc_layout(300, 0, w - 300, h);
+        auto layout = model.calc_layout(300.f, 0.f, w - 300.f, (float)h);
 
         for (auto kvp : layout)
         {
@@ -1086,7 +1086,7 @@ int main(int, char**) try
                 ImGui::SetTooltip("FPS is calculated based on timestamps and not viewer time");
             }
 
-            ImGui::SameLine(ImGui::GetWindowWidth() - 30);
+            ImGui::SameLine((int)ImGui::GetWindowWidth() - 30);
 
             if (!layout.empty() && !model.fullscreen)
             {

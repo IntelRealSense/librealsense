@@ -56,7 +56,7 @@ public:
 
     char * const * get_argv() const { return _params.data(); }
     char * get_argv(int i) const { return _params[i]; }
-    int get_argc() const { return _params.size(); }
+    size_t get_argc() const { return _params.size(); }
 
     static command_line_params& instance(int argc = 0, char * const argv[] = 0)
     {
@@ -479,7 +479,7 @@ inline void test_option(rs::device &device, rs_option option, std::initializer_l
     // Test setting good values, and that each value set can be subsequently get
     for (auto value : good_values)
     {
-        REQUIRE_NOTHROW(device.set_option(option, value));
+        REQUIRE_NOTHROW(device.set_option(option, (float)value));
         REQUIRE(device.get_option(option) == value);
     }
 
@@ -488,7 +488,7 @@ inline void test_option(rs::device &device, rs_option option, std::initializer_l
     REQUIRE_NOTHROW(last_good_value = device.get_option(option));
     for (auto value : bad_values)
     {
-        REQUIRE_THROWS_AS(device.set_option(option, value), rs::error);
+        REQUIRE_THROWS_AS(device.set_option(option, (float)value), rs::error);
         REQUIRE(device.get_option(option) == last_good_value);
     }
 

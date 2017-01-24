@@ -13,8 +13,7 @@ TEST_CASE("Device metadata enumerates correctly", "[live]")
     // Require at least one device to be plugged in
     std::vector<rs::device> list;
     REQUIRE_NOTHROW(list = ctx.query_devices());
-    const int device_count = list.size();
-    REQUIRE(device_count > 0);
+    REQUIRE(list.size() > 0);
 
     // For each device
     for (auto&& dev : list)
@@ -40,8 +39,7 @@ TEST_CASE("Start-Stop stream sequence", "[live]")
     auto ctx = make_context(space_to_underscore(Catch::getCurrentContext().getResultCapture()->getCurrentTestName()).c_str());
     std::vector<rs::device> list;
     REQUIRE_NOTHROW(list = ctx.query_devices());
-    const int device_count = list.size();
-    REQUIRE(device_count > 0);
+    REQUIRE(list.size() > 0);
 
     rs::util::config config;
     REQUIRE_NOTHROW(config.enable_all(rs::preset::best_quality));
@@ -73,7 +71,7 @@ TEST_CASE("no extrinsic transformation between a stream and itself", "[live]")
     auto ctx = make_context(space_to_underscore(Catch::getCurrentContext().getResultCapture()->getCurrentTestName()).c_str());
     std::vector<rs::device> list;
     REQUIRE_NOTHROW(list = ctx.query_devices());
-    const int device_count = list.size();
+    const size_t device_count = list.size();
     REQUIRE(device_count > 0);
 
     // For each device
@@ -100,7 +98,7 @@ TEST_CASE("extrinsic transformation between two streams is a rigid transform", "
     auto ctx = make_context(space_to_underscore(Catch::getCurrentContext().getResultCapture()->getCurrentTestName()).c_str());
     std::vector<rs::device> list;
     REQUIRE_NOTHROW(list = ctx.query_devices());
-    const int device_count = list.size();
+    const size_t device_count = list.size();
     REQUIRE(device_count > 0);
 
     // For each device
@@ -148,8 +146,7 @@ TEST_CASE("extrinsic transformations are transitive", "[live]")
     auto ctx = make_context(space_to_underscore(Catch::getCurrentContext().getResultCapture()->getCurrentTestName()).c_str());
     std::vector<rs::device> list;
     REQUIRE_NOTHROW(list = ctx.query_devices());
-    const int device_count = list.size();
-    REQUIRE(device_count > 0);
+    REQUIRE(list.size() > 0);
 
     // For each device
     for (auto&& dev : list)
@@ -205,8 +202,7 @@ TEST_CASE("streaming modes sanity check", "[live]")
     auto ctx = make_context(space_to_underscore(Catch::getCurrentContext().getResultCapture()->getCurrentTestName()).c_str());
     std::vector<rs::device> list;
     REQUIRE_NOTHROW(list = ctx.query_devices());
-    const int device_count = list.size();
-    REQUIRE(device_count > 0);
+    REQUIRE(list.size() > 0);
 
     // For each device
     for (auto&& dev : list)
@@ -336,7 +332,7 @@ TEST_CASE("check option API", "[live][options]")
                     REQUIRE_NOTHROW(dev.set_option(opt, range.min));
                     REQUIRE_NOTHROW(dev.set_option(opt, range.max));
 
-                    int n_steps = (range.max - range.min) / range.step;
+                    int n_steps = int((range.max - range.min) / range.step);
 
                     // check a few arbitrary points along the scale
                     REQUIRE_NOTHROW(dev.set_option(opt, range.min + (1 % n_steps)*range.step));

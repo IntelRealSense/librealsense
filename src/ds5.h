@@ -216,7 +216,7 @@ namespace rsimpl
         {
             std::lock_guard<std::recursive_mutex> lock(_mtx);
             auto ts = std::chrono::time_point_cast<std::chrono::milliseconds>(std::chrono::system_clock::now());
-            return ts.time_since_epoch().count();
+            return static_cast<double>(ts.time_since_epoch().count());
         }
 
         unsigned long long get_frame_counter(const request_mapping & mode, const void * /*frame*/) const override
@@ -243,8 +243,8 @@ namespace rsimpl
         std::vector<int> last_timestamp;
         mutable std::vector<int64_t> counter;
         mutable std::recursive_mutex _mtx;
-        static const unsigned hid_data_size = 14;
-        static const unsigned timestamp_to_ms = 1000.;
+        const unsigned hid_data_size = 14;      // RS4xx HID Data:: 3 Words for axes + 8-byte Timestamp
+        const double timestamp_to_ms = 0.001;
     public:
         ds5_hid_timestamp_reader()
         {
@@ -289,7 +289,7 @@ namespace rsimpl
             if (frame_size == hid_data_size)
             {
                 auto timestamp = *((uint64_t*)((const uint8_t*)frame + timestamp_offset));
-                return static_cast<double>(timestamp) / timestamp_to_ms;
+                return static_cast<double>(timestamp) * timestamp_to_ms;
             }
 
             if (!started)
@@ -298,7 +298,7 @@ namespace rsimpl
                 started = true;
             }
             auto ts = std::chrono::time_point_cast<std::chrono::milliseconds>(std::chrono::system_clock::now());
-            return ts.time_since_epoch().count();
+            return static_cast<double>(ts.time_since_epoch().count());
         }
 
         unsigned long long get_frame_counter(const request_mapping & mode, const void * /*frame*/) const override
@@ -414,7 +414,7 @@ namespace rsimpl
             const std::vector<uvc::hid_device_info>& hid_info);
 
         std::vector<uint8_t> send_receive_raw_data(const std::vector<uint8_t>& input) override;
-        rs_intrinsics get_intrinsics(int subdevice, stream_profile profile) const override;
+        virtual rs_intrinsics get_intrinsics(unsigned int subdevice, stream_profile profile) const override;
 
     private:
         bool is_camera_in_advanced_mode() const;
