@@ -1102,11 +1102,19 @@ namespace rsimpl
         void playback_hid_device::close()
         {
             _rec->find_call(call_type::hid_close, _entity_id);
+
+            lock_guard<mutex> lock(_callback_mutex);
+            _alive = false;
+            _callback_thread.join();
         }
 
         void playback_hid_device::stop_capture()
         {
             _rec->find_call(call_type::hid_stop_capture, _entity_id);
+
+            lock_guard<mutex> lock(_callback_mutex);
+            _alive = false;
+            _callback_thread.join();
         }
 
         void playback_hid_device::start_capture(const vector<int>& sensor_iio, hid_callback callback)
@@ -1117,6 +1125,9 @@ namespace rsimpl
             // TODO: Verify sensor_iio
 
             _callback = callback;
+            _alive = true;
+
+            _callback_thread = std::thread([this]() { callback_thread(); });
         }
 
         vector<hid_sensor> playback_hid_device::get_sensors()
@@ -1131,8 +1142,6 @@ namespace rsimpl
                 auto c_ptr = _rec->cycle_calls(call_type::hid_frame, _entity_id);
                 if (c_ptr)
                 {
-                    lock_guard<mutex> lock(_callback_mutex);
-
                     auto sd_data = _rec->load_blob(c_ptr->param1);
                     auto iio = c_ptr->param2;
                     auto sensor_name = c_ptr->inline_string;
@@ -1150,14 +1159,12 @@ namespace rsimpl
 
         playback_hid_device::~playback_hid_device()
         {
-            _alive = false;
-            _callback_thread.join();
+
         }
 
         playback_hid_device::playback_hid_device(shared_ptr<recording> rec, int id)
             : _rec(rec), _entity_id(id),
-              _callback_thread([this]() { callback_thread(); }),
-              _alive(true)
+              _alive(false)
         {
             
         }
