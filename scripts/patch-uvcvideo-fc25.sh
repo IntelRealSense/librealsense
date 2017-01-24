@@ -61,6 +61,6 @@ sudo modprobe uvcvideo
 
 # Remove kernel source RPM
 echo "Removing kernel source RPM: $RPMFILE"
-rm /tmp/$RPMFILE
+rm $RPMFILE
 
 echo "Script has completed. Please consult the installation guide for further instruction."
