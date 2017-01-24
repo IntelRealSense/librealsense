@@ -663,7 +663,7 @@ public:
                     try
                     {
                         // To reset ROI, just set ROI to the entire frame
-                        dev->dev.set_region_of_interest({ 0, 0, size.x - 1, size.y - 1 });
+                        dev->dev.set_region_of_interest({ 0, 0, (int)size.x - 1, (int)size.y - 1 });
                         roi_display_rect = { 0, 0, 0, 0 };
                         dev->roi_rect = { 0, 0, 0, 0 };
                     }
