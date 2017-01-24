@@ -15,11 +15,16 @@ RELEASE=`uname -r`	# e.g. 4.4.6-300.fc23.x86_64
 RPMFILE=kernel-`echo $RELEASE | cut -d . -f 1-4`.src.rpm
 if [ ! -f $RPMFILE ]; then
 	echo "Changing to temp to download kernel source RPM: $RPMFILE"
+
+	# Download kernel source RPM to /tmp
 	OLDPWD=`pwd`
 	cd /tmp
 
 	echo "Download Fedora Linux kernel source RPM ... (~100MB)"
 	koji download-build --arch=src $RPMFILE
+
+	# Update RPMFILE
+	RPMFILE=/tmp/$RPMFILE
 
 	cd $OLDPWD
 fi
