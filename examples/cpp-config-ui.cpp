@@ -432,24 +432,30 @@ public:
     fps_calc()
         : _counter(0),
           _delta(0),
-          _last_timestamp(0)
+          _last_timestamp(0),
+          _num_of_frames(0)
     {}
 
       fps_calc(const fps_calc& other) {
         std::lock_guard<std::mutex> lock(other._mtx);
         _counter = other._counter;
         _delta = other._delta;
+        _num_of_frames = other._num_of_frames;
         _last_timestamp = other._last_timestamp;
       }
 
-    void add_timestamp(double timestamp)
+    void add_timestamp(double timestamp, unsigned frame_counter)
     {
         std::lock_guard<std::mutex> lock(_mtx);
-        if (++_counter == _skip_frames)
+        if (++_counter >= _skip_frames)
         {
             if (_last_timestamp != 0)
+            {
                 _delta = timestamp - _last_timestamp;
+                _num_of_frames = frame_counter - _last_frame_counter;
+            }
 
+            _last_frame_counter = frame_counter;
             _last_timestamp = timestamp;
             _counter = 0;
         }
@@ -461,15 +467,17 @@ public:
         if (_delta == 0)
             return 0;
 
-        return (static_cast<double>(numerator) * _skip_frames)/_delta;
+        return (static_cast<double>(_numerator) * _num_of_frames)/_delta;
     }
 
 private:
-    static const int numerator = 1000;
+    static const int _numerator = 1000;
     static const int _skip_frames = 5;
+    unsigned _num_of_frames;
     int _counter;
     double _delta;
     double _last_timestamp;
+    unsigned _last_frame_counter;
     mutable std::mutex _mtx;
 };
 
@@ -1011,7 +1019,7 @@ int main(int, char**) try
                         model.stream_frame_number[f.get_stream_type()] = f.get_frame_number();
                         model.stream_timestamp_domain[f.get_stream_type()] = f.get_frame_timestamp_domain();
                         model.stream_timestamp[f.get_stream_type()] = f.get_timestamp();
-                        model.stream_fps[f.get_stream_type()].add_timestamp(f.get_timestamp());
+                        model.stream_fps[f.get_stream_type()].add_timestamp(f.get_timestamp(), f.get_frame_number());
                     }
                 }
                 catch(const rs::error& e)

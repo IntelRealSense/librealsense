@@ -54,8 +54,8 @@ else
 fi
 
 # Copy configuration
-cp /usr/src/linux-headers-$(uname -r)/.config .
-cp /usr/src/linux-headers-$(uname -r)/Module.symvers .
+sudo cp /usr/src/linux-headers-$(uname -r)/.config .
+sudo cp /usr/src/linux-headers-$(uname -r)/Module.symvers .
 
 # Basic build so we can build just the uvcvideo module
 #yes "" | make silentoldconfig modules_prepare
@@ -64,7 +64,7 @@ make silentoldconfig modules_prepare
 # Build the uvc, accel and gyro modules
 KBASE=`pwd`
 cd drivers/media/usb/uvc
-cp $KBASE/Module.symvers .
+sudo cp $KBASE/Module.symvers .
 make -C $KBASE M=$KBASE/drivers/media/usb/uvc/ modules
 make -C $KBASE M=$KBASE/drivers/iio/accel modules
 make -C $KBASE M=$KBASE/drivers/iio/gyro modules
