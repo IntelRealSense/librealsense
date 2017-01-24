@@ -18,7 +18,7 @@ function try_module_insert {
 	backup_available=1
 	
 	# Unload existing modules if resident	
-	printf "\e[32mUnloading module %s\n\e[0m" ${module_name}
+	printf "\e[35mUnloading module %s\n\e[0m" ${module_name}
 	sudo modprobe -r ${module_name}
 	
 	# backup the existing module (if available) for recovery
@@ -34,7 +34,7 @@ function try_module_insert {
 	
 	# try to load the new module
 	modprobe_failed=0
-	printf "\e[34mTrying to insert patched module %s\n\e[0m" ${module_name}
+	printf "\e[36mApplying patched module %s\n\e[0m" ${module_name}
 	sudo modprobe ${module_name} || modprobe_failed=$?
 
 	# Check and revert the backup module if 'modprobe' operation crashed
@@ -51,7 +51,7 @@ function try_module_insert {
 		exit 1
 	else
 		# Everything went OK, delete backup
-		printf "\e[32mInserting %s succeeded\n\e[0m" ${module_name}
+		printf "\e[32mInserting %s succeeded\n\n\e[0m" ${module_name}
 		sudo rm ${tgt_ko}.bckup
 	fi
 }
