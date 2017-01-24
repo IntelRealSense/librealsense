@@ -5,6 +5,46 @@
 
 namespace rsimpl
 {
+    class ds5_auto_exposure_roi_method : public region_of_interest_method
+    {
+    public:
+        ds5_auto_exposure_roi_method(const hw_monitor& hwm) : _hw_monitor(hwm) {}
+
+        void set(const region_of_interest& roi) override
+        {
+            command cmd(ds::SETAEROI);
+            cmd.param1 = roi.min_y;
+            cmd.param2 = roi.max_y;
+            cmd.param3 = roi.min_x;
+            cmd.param4 = roi.max_x;
+            _hw_monitor.send(cmd);
+        }
+
+        region_of_interest get() const override
+        {
+            region_of_interest roi;
+            command cmd(ds::GETAEROI);
+            auto res = _hw_monitor.send(cmd);
+
+            if (res.size() < 4 * sizeof(uint16_t))
+            {
+                throw std::runtime_error("Invalid result size!");
+            }
+
+            auto words = reinterpret_cast<uint16_t*>(res.data());
+
+            roi.min_y = words[0];
+            roi.max_y = words[1];
+            roi.min_x = words[2];
+            roi.max_x = words[3];
+
+            return roi;
+        }
+
+    private:
+        const hw_monitor& _hw_monitor;
+    };
+
     std::shared_ptr<rsimpl::device> ds5_info::create(const uvc::backend& backend) const
     {
         return std::make_shared<ds5_camera>(backend, _depth, _hwm, _hid);
@@ -170,6 +210,8 @@ namespace rsimpl
             depth_ep.register_pixel_format(pf_y8i); // L+R
             depth_ep.register_pixel_format(pf_y12i); // L+R - Calibration not rectified
         }
+
+        depth_ep.set_roi_method(std::make_shared<ds5_auto_exposure_roi_method>(*_hw_monitor));
 
         // TODO: These if conditions will be implemented as inheritance classes
         auto pid = dev_info.front().pid;
