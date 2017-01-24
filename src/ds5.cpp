@@ -103,6 +103,8 @@ namespace rsimpl
                                                                                std::unique_ptr<frame_timestamp_reader>(new ds5_hid_timestamp_reader()));
         hid_ep->register_pixel_format(pf_accel_axes);
         hid_ep->register_pixel_format(pf_gyro_axes);
+
+        hid_ep->set_pose({ { { 1,0,0 },{ 0,1,0 },{ 0,0,1 } },{ 0,0,0 } });
         return hid_ep;
     }
 
