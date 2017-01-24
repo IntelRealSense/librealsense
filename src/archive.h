@@ -15,7 +15,7 @@ struct frame_additional_data
 {
     double timestamp = 0;
     unsigned long long frame_number = 0;
-    long long system_time = 0;
+    unsigned long long system_time = 0;
     int width = 0;
     int height = 0;
     int fps = 0;

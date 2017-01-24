@@ -17,7 +17,7 @@ int main() try
     // Create a context object. This object owns the handles to all connected realsense devices.
     rs::context ctx;
     auto connected_devices = ctx.query_devices();
-    printf("There are %llu connected RealSense devices.\n", connected_devices.size());
+    printf("There are %u connected RealSense devices.\n", connected_devices.size());
     if(connected_devices.size() == 0)
         return EXIT_FAILURE;
 
