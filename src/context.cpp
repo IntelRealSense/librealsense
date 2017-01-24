@@ -41,6 +41,8 @@ namespace rsimpl
                      const char* section, 
                      rs_recording_mode mode)
     {
+
+        LOG_DEBUG("Librealsense " << std::string(std::begin(rs_api_version),std::end(rs_api_version)));
         switch(type)
         {
         case backend_type::standard:
