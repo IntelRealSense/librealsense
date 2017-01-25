@@ -484,3 +484,9 @@ inline std::string error_to_string(const rs::error& e)
         << " in " << e.get_failed_function() << "("
         << e.get_failed_args() << "):\n" << e.what();
 }
+
+std::string api_version_to_string(int version)
+{
+    if (version / 10000 == 0) return to_string() << version;
+    return to_string() << (version / 10000) << "." << (version % 10000) / 100 << "." << (version % 100);
+}
