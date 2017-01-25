@@ -35,7 +35,9 @@ namespace rsimpl {
             GLD = 0x0f,           // FW logs
             GVD = 0x10,           // camera details
             GETINTCAL = 0x15,     // Read calibration table
-            UAMG = 0X30           // get advanced mode status
+            UAMG = 0X30,          // get advanced mode status
+            SETAEROI = 0x44,      // set auto-exposure region of interest
+            GETAEROI = 0x45,      // get auto-exposure region of interest
         };
 
         struct table_header

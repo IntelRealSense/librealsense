@@ -714,6 +714,37 @@ rs_context* rs_create_mock_context(int api_version, const char* filename, const 
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, api_version, filename, section)
 
+void rs_set_region_of_interest(const rs_device* device, int min_x, int min_y, int max_x, int max_y, rs_error ** error) try
+{
+    VALIDATE_NOT_NULL(device);
+
+    VALIDATE_LE(min_x, max_x);
+    VALIDATE_LE(min_y, max_y);
+    VALIDATE_LE(0, min_x);
+    VALIDATE_LE(0, min_y);
+
+    device->device->get_endpoint(device->subdevice).get_roi_method().set({ min_x, min_y, max_x, max_y });
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, min_x, min_y, max_x, max_y)
+
+void rs_get_region_of_interest(const rs_device* device, int* min_x, int* min_y, int* max_x, int* max_y, rs_error ** error) try
+{
+    VALIDATE_NOT_NULL(device);
+    VALIDATE_NOT_NULL(min_x);
+    VALIDATE_NOT_NULL(min_y);
+    VALIDATE_NOT_NULL(max_x);
+    VALIDATE_NOT_NULL(max_y);
+
+    auto roi = device->device->get_endpoint(device->subdevice).get_roi_method().get();
+
+    *min_x = roi.min_x;
+    *min_y = roi.min_y;
+    *max_x = roi.max_x;
+    *max_y = roi.max_y;
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, min_x, min_y, max_x, max_y)
+
+
 void rs_free_error(rs_error * error) { if (error) delete error; }
 const char * rs_get_failed_function(const rs_error * error) { return error ? error->function : nullptr; }
 const char * rs_get_failed_args(const rs_error * error) { return error ? error->args.c_str() : nullptr; }

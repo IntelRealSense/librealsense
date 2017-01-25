@@ -72,9 +72,19 @@ struct rect
     float x, y;
     float w, h;
 
+    operator bool() const
+    {
+        return w*w > 0 && h*h > 0;
+    }
+
     bool operator==(const rect& other) const
     {
         return x == other.x && y == other.y && w == other.w && h == other.h;
+    }
+
+    bool contains(const float2& p) const
+    {
+        return p.x >= x && p.x <= x + w && p.y >= y && p.y <= y + h;
     }
 
     rect center() const
@@ -415,7 +425,7 @@ public:
         glBindTexture(GL_TEXTURE_2D, 0);
     }
 
-    void upload(rs::frame& frame)
+    void upload(const rs::frame& frame)
     {
         upload(static_cast<const uint8_t*>(frame.get_data()), frame.get_width(), frame.get_height(), frame.get_format(),
             (frame.get_stride_in_bytes() * 8) / frame.get_bits_per_pixel(), frame.get_stream_type());

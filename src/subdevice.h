@@ -18,6 +18,23 @@ namespace rsimpl
     class device;
     class option;
 
+    struct region_of_interest
+    {
+        int min_x;
+        int min_y;
+        int max_x;
+        int max_y;
+    };
+
+    class region_of_interest_method
+    {
+    public:
+        virtual void set(const region_of_interest& roi) = 0;
+        virtual region_of_interest get() const = 0;
+
+        virtual ~region_of_interest_method() = default;
+    };
+
     class endpoint
     {
     public:
@@ -72,6 +89,17 @@ namespace rsimpl
         void set_pose(pose p) { _pose = std::move(p); }
         const pose& get_pose() const { return _pose; }
 
+        region_of_interest_method& get_roi_method() const
+        {
+            if (!_roi_method.get())
+                throw rsimpl::not_implemented_exception("Region-of-interest is not implemented for this device!");
+            return *_roi_method;
+        }
+        void set_roi_method(std::shared_ptr<region_of_interest_method> roi_method)
+        {
+            _roi_method = roi_method;
+        }
+
     protected:
 
         bool try_get_pf(const uvc::stream_profile& p, native_pixel_format& result) const;
@@ -92,6 +120,7 @@ namespace rsimpl
         lazy<std::vector<uvc::stream_profile>> _stream_profiles;
         pose _pose;
         std::map<rs_camera_info, std::string> _camera_info;
+        std::shared_ptr<region_of_interest_method> _roi_method = nullptr;
     };
 
     struct frame_timestamp_reader
