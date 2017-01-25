@@ -296,6 +296,8 @@ if(BUILD_UNIT_TESTS)
   add_subdirectory(unit-tests)
 endif()
 
+add_subdirectory(bindings)
+
 # Check for unreferenced files
 FILE(GLOB_RECURSE AllSources RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
   "src/*.c" "src/*.cpp" "src/*.cc" "src/*.c++"

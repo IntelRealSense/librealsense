@@ -51,6 +51,9 @@ EXPORTS
     rs_get_option_range
     rs_get_option_description
     rs_get_option_value_description
+    
+    rs_set_region_of_interest
+    rs_get_region_of_interest
 
     rs_send_and_receive_raw_data
     rs_get_raw_data_size

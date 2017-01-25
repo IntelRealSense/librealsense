@@ -356,6 +356,14 @@ namespace rs
         float step;
     };
 
+    struct region_of_interest
+    {
+        int min_x;
+        int min_y;
+        int max_x;
+        int max_y;
+    };
+
     class advanced
     {
     public:
@@ -523,6 +531,30 @@ namespace rs
             auto res = rs_supports_option(_dev.get(), option, &e);
             error::handle(e);
             return res > 0;
+        }
+
+        /**
+        * sets region of interest for auto-exposure algorithm
+        * \param[in] roi     new region of interest in pixels
+        */
+        void set_region_of_interest(const region_of_interest& roi)
+        {
+            rs_error* e = nullptr;
+            rs_set_region_of_interest(_dev.get(), roi.min_x, roi.min_y, roi.max_x, roi.max_y, &e);
+            error::handle(e);
+        }
+
+        /**
+        * gets region of interest for auto-exposure algorithm
+        * \return    current region of interest in pixels
+        */
+        region_of_interest get_region_of_interest() const
+        {
+            region_of_interest roi;
+            rs_error* e = nullptr;
+            rs_get_region_of_interest(_dev.get(), &roi.min_x, &roi.min_y, &roi.max_x, &roi.max_y, &e);
+            error::handle(e);
+            return roi;
         }
 
         /**
@@ -768,7 +800,11 @@ namespace rs
             }
             bool operator!=(const device_list_iterator& other) const
             {
-                return other._index != _index;
+                return other._index != _index || &other._list != &_list;
+            }
+            bool operator==(const device_list_iterator& other) const
+            {
+                return !(*this != other);
             }
             device_list_iterator& operator++()
             {
