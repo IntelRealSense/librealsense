@@ -36,12 +36,12 @@ namespace rsimpl
 
         rs_extrinsics get_extrinsics(int from, int to);
 
-        virtual rs_intrinsics get_intrinsics(int subdevice, stream_profile profile) const = 0;
+        virtual rs_intrinsics get_intrinsics(unsigned int subdevice, stream_profile profile) const = 0;
 
         float get_depth_scale() const { return _static_info.nominal_depth_scale; }
 
         virtual std::vector<uint8_t> send_receive_raw_data(const std::vector<uint8_t>& input)
-        { 
+        {
             throw not_implemented_exception(to_string() << __FUNCTION__ << " is not implemented for this device!");
         }
 

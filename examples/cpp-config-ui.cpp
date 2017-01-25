@@ -489,7 +489,7 @@ public:
         _last_timestamp = other._last_timestamp;
       }
 
-    void add_timestamp(double timestamp, unsigned frame_counter)
+    void add_timestamp(double timestamp, unsigned long long frame_counter)
     {
         std::lock_guard<std::mutex> lock(_mtx);
         if (++_counter >= _skip_frames)
@@ -518,11 +518,11 @@ public:
 private:
     static const int _numerator = 1000;
     static const int _skip_frames = 5;
-    unsigned _num_of_frames;
+    unsigned long long _num_of_frames;
     int _counter;
     double _delta;
     double _last_timestamp;
-    unsigned _last_frame_counter;
+    unsigned long long _last_frame_counter;
     mutable std::mutex _mtx;
 };
 
@@ -664,7 +664,7 @@ public:
                     try
                     {
                         // To reset ROI, just set ROI to the entire frame
-                        dev->dev.set_region_of_interest({ 0, 0, size.x - 1, size.y - 1 });
+                        dev->dev.set_region_of_interest({ 0, 0, (int)size.x - 1, (int)size.y - 1 });
                         roi_display_rect = { 0, 0, 0, 0 };
                         dev->roi_rect = { 0, 0, 0, 0 };
                     }
@@ -830,7 +830,7 @@ bool no_device_popup(GLFWwindow* window, const ImVec4& clear_color)
 
         ImGui_ImplGlfw_NewFrame();
 
-        // Rendering 
+        // Rendering
         glViewport(0, 0,
             static_cast<int>(ImGui::GetIO().DisplaySize.x),
             static_cast<int>(ImGui::GetIO().DisplaySize.y));
@@ -853,7 +853,7 @@ bool no_device_popup(GLFWwindow* window, const ImVec4& clear_color)
             ImGui::Text("No device detected. Is it plugged in?");
             ImGui::Separator();
 
-            // Present options to user 
+            // Present options to user
             if (ImGui::Button("Retry", ImVec2(120, 0)))
             {
                 return true; // Retry to find connected device
@@ -915,14 +915,14 @@ int main(int, char**) try
     std::vector<std::string> device_names;
     std::string error_message = "";
     // Initialize list with each device name and serial number
-    for (auto i = 0; i < list.size(); i++)
+    for (uint32_t i = 0; i < list.size(); i++)
     {
         try
         {
             auto l = list[i];
             auto name = l.get_camera_info(RS_CAMERA_INFO_DEVICE_NAME);              // retrieve device name
             auto serial = l.get_camera_info(RS_CAMERA_INFO_DEVICE_SERIAL_NUMBER);   // retrieve device serial number
-            device_names.push_back(to_string() << name << " Sn#" << serial);        // push name and sn to list 
+            device_names.push_back(to_string() << name << " Sn#" << serial);        // push name and sn to list
         }
         catch (...)
         {
@@ -1319,7 +1319,7 @@ int main(int, char**) try
         glLoadIdentity();
         glOrtho(0, w, h, 0, -1, +1);
 
-        auto layout = model.calc_layout(300, 0, w - 300, h);
+        auto layout = model.calc_layout(300.f, 0.f, w - 300.f, (float)h);
 
         for (auto kvp : layout)
         {
@@ -1357,7 +1357,7 @@ int main(int, char**) try
                 ImGui::SetTooltip("FPS is calculated based on timestamps and not viewer time");
             }
 
-            ImGui::SameLine(ImGui::GetWindowWidth() - 30);
+            ImGui::SameLine((int)ImGui::GetWindowWidth() - 30);
 
             if (!layout.empty() && !model.fullscreen)
             {

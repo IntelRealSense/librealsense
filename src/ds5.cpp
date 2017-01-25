@@ -97,7 +97,7 @@ namespace rsimpl
         return _hw_monitor->send(input);
     }
 
-    rs_intrinsics ds5_camera::get_intrinsics(int subdevice, stream_profile profile) const
+    rs_intrinsics ds5_camera::get_intrinsics(unsigned int subdevice, stream_profile profile) const
     {
         if (subdevice >= get_endpoints_count())
             throw invalid_value_exception(to_string() << "Requested subdevice " <<
@@ -122,7 +122,7 @@ namespace rsimpl
         if (ret.empty())
             throw invalid_value_exception("command result is empty!");
 
-        return bool(ret.front());
+        return (0 != ret.front());
     }
 
     std::vector<uint8_t> ds5_camera::get_raw_calibration_table(ds::calibration_table_id table_id) const

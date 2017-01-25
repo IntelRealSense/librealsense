@@ -209,7 +209,7 @@ if(WIN32)
     # Makes VS15 find the DLL when trying to run examples/tests
     set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
     set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
-    add_definitions(-D__SSSE3__)
+    add_definitions(-D__SSSE3__ -D_CRT_SECURE_NO_WARNINGS)
 
     set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 elseif(APPLE)
@@ -295,6 +295,8 @@ option(BUILD_UNIT_TESTS "Build realsense unit tests." ON)
 if(BUILD_UNIT_TESTS)
   add_subdirectory(unit-tests)
 endif()
+
+add_subdirectory(bindings)
 
 # Check for unreferenced files
 FILE(GLOB_RECURSE AllSources RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}

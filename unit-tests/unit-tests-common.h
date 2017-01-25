@@ -23,7 +23,7 @@
 // they will only ever be created as temporaries immediately before being passed to a C ABI function. All parameters and return
 // types are vanilla C types, and thus nothrow-copyable, and the function itself cannot throw because it is a C ABI function.
 // Therefore, when a temporary require_error/require_no_error is destructed immediately following one of these C ABI function
-// calls, we should not have any exceptions in flight, and can freely throw (perhaps indirectly by calling Catch's REQUIRE() 
+// calls, we should not have any exceptions in flight, and can freely throw (perhaps indirectly by calling Catch's REQUIRE()
 // macro) to indicate postcondition violations.
 #ifdef WIN32
 #define NOEXCEPT_FALSE
@@ -56,7 +56,7 @@ public:
 
     char * const * get_argv() const { return _params.data(); }
     char * get_argv(int i) const { return _params[i]; }
-    int get_argc() const { return _params.size(); }
+    size_t get_argc() const { return _params.size(); }
 
     static command_line_params& instance(int argc = 0, char * const argv[] = 0)
     {
@@ -398,7 +398,7 @@ inline void frame_callback(rs::device &dev, rs::frame frame, void * user)
 //    stop_streaming = false;
 //    user_data data;
 //    data.duration_per_stream = duration_per_stream;
-//    
+//
 //    for(auto & mode : modes)
 //    {
 //        data.number_of_frames_per_stream[mode.stream] = 0;
@@ -479,7 +479,7 @@ inline void test_option(rs::device &device, rs_option option, std::initializer_l
     // Test setting good values, and that each value set can be subsequently get
     for (auto value : good_values)
     {
-        REQUIRE_NOTHROW(device.set_option(option, value));
+        REQUIRE_NOTHROW(device.set_option(option, (float)value));
         REQUIRE(device.get_option(option) == value);
     }
 
@@ -488,7 +488,7 @@ inline void test_option(rs::device &device, rs_option option, std::initializer_l
     REQUIRE_NOTHROW(last_good_value = device.get_option(option));
     for (auto value : bad_values)
     {
-        REQUIRE_THROWS_AS(device.set_option(option, value), rs::error);
+        REQUIRE_THROWS_AS(device.set_option(option, (float)value), rs::error);
         REQUIRE(device.get_option(option) == last_good_value);
     }
 

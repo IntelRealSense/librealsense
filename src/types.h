@@ -18,7 +18,7 @@
 #include <sstream>                          // For ostringstream
 #include <mutex>                            // For mutex, unique_lock
 #include <memory>                           // For unique_ptr
-#include <map>          
+#include <map>
 #include <algorithm>
 #include <condition_variable>
 #include "backend.h"
@@ -472,7 +472,7 @@ namespace rsimpl
         firmware_version    until;
         rs_camera_info      firmware_type;
 
-        supported_capability(rs_stream capability, firmware_version from, 
+        supported_capability(rs_stream capability, firmware_version from,
             firmware_version until, rs_camera_info firmware_type = RS_CAMERA_INFO_CAMERA_FIRMWARE_VERSION)
             : capability(capability), from(from), until(until), firmware_type(firmware_type) {}
 
@@ -497,7 +497,7 @@ namespace rsimpl
         void commit() { if (active) writer(struct_); }
     };
 
-    template<class T, class R, class W> 
+    template<class T, class R, class W>
     std::shared_ptr<struct_interface<T, R, W>> make_struct_interface(R r, W w)
     {
         return std::make_shared<struct_interface<T, R, W>>(r, w);
@@ -546,10 +546,10 @@ namespace rsimpl
         frame_callback(frame_callback_function_ptr on_frame, void * user) : fptr(on_frame), user(user) {}
 
         operator bool() const { return fptr != nullptr; }
-        void on_frame (rs_frame * frame) override { 
+        void on_frame (rs_frame * frame) override {
             if (fptr)
             {
-                try { fptr(frame, user); } catch (...) 
+                try { fptr(frame, user); } catch (...)
                 {
                     LOG_ERROR("Received an execption from frame callback!");
                 }
@@ -567,14 +567,14 @@ namespace rsimpl
 
     inline rs_intrinsics pad_crop_intrinsics(const rs_intrinsics & i, int pad_crop)
     {
-        return{ i.width + pad_crop * 2, i.height + pad_crop * 2, i.ppx + pad_crop, i.ppy + pad_crop, 
+        return{ i.width + pad_crop * 2, i.height + pad_crop * 2, i.ppx + pad_crop, i.ppy + pad_crop,
             i.fx, i.fy, i.model, {i.coeffs[0], i.coeffs[1], i.coeffs[2], i.coeffs[3], i.coeffs[4]} };
     }
 
     inline rs_intrinsics scale_intrinsics(const rs_intrinsics & i, int width, int height)
     {
         const float sx = static_cast<float>(width) / i.width, sy = static_cast<float>(height) / i.height;
-        return{ width, height, i.ppx*sx, i.ppy*sy, i.fx*sx, i.fy*sy, i.model, 
+        return{ width, height, i.ppx*sx, i.ppy*sy, i.fx*sx, i.fy*sy, i.model,
                 {i.coeffs[0], i.coeffs[1], i.coeffs[2], i.coeffs[3], i.coeffs[4]} };
     }
 
@@ -631,7 +631,7 @@ namespace rsimpl
             auto i = item - buffer;
             auto old_value = std::move(buffer[i]);
             buffer[i] = std::move(T());
-            
+
             {
                 std::unique_lock<std::mutex> lock(mutex);
 
@@ -681,7 +681,7 @@ namespace rsimpl
         frame_continuation() : continuation([]() {}) {}
 
         explicit frame_continuation(std::function<void()> continuation, const void* protected_data) : continuation(continuation), protected_data(protected_data) {}
-        
+
 
         frame_continuation(frame_continuation && other) : continuation(std::move(other.continuation)), protected_data(other.protected_data)
         {
@@ -722,7 +722,7 @@ namespace rsimpl
     };
 
     // this class is a convinience wrapper for intrinsics / extrinsics validation methods
-    class calibration_validator 
+    class calibration_validator
     {
     public:
         calibration_validator(std::function<bool(rs_stream, rs_stream)> extrinsic_validator,
