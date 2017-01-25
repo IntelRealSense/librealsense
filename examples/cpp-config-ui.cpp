@@ -656,6 +656,7 @@ public:
                     catch (const rs::error& e)
                     {
                         error_message = error_to_string(e);
+                        dev->auto_exposure_enabled = false;
                     }
                 }
                 else // If the rect is empty
@@ -663,13 +664,21 @@ public:
                     try
                     {
                         // To reset ROI, just set ROI to the entire frame
-                        dev->dev.set_region_of_interest({ 0, 0, (int)size.x - 1, (int)size.y - 1 });
+                        auto x_margin = (int)size.x / 8;
+                        auto y_margin = (int)size.y / 8;
+
+                        // Default ROI behaviour is center 3/4 of the screen:
+                        dev->dev.set_region_of_interest({ x_margin, y_margin,
+                                                          (int)size.x - x_margin - 1,
+                                                          (int)size.y - y_margin - 1 });
+
                         roi_display_rect = { 0, 0, 0, 0 };
                         dev->roi_rect = { 0, 0, 0, 0 };
                     }
                     catch (const rs::error& e)
                     {
                         error_message = error_to_string(e);
+                        dev->auto_exposure_enabled = false;
                     }
                 }
             }
@@ -974,6 +983,10 @@ int main(int, char**) try
         // *********************
         ImGui::Begin("Control Panel", nullptr, flags);
 
+        rs_error* e = nullptr;
+        label = to_string() << "VERSION: " << api_version_to_string(rs_get_api_version(&e));
+        ImGui::Text(label.c_str());
+
         // Device Details Menu - Elaborate details on connected devices
         if (ImGui::CollapsingHeader("Device Details", nullptr, true, true))
         {
@@ -1038,6 +1051,68 @@ int main(int, char**) try
         // Streaming Menu - Allow user to play different streams
         if (ImGui::CollapsingHeader("Streaming", nullptr, true, true))
         {
+            if (model.subdevices.size() > 1)
+            {
+                try
+                {
+                    auto anything_stream = false;
+                    for (auto&& sub : model.subdevices)
+                    {
+                        if (sub->streaming) anything_stream = true;
+                    }
+                    if (!anything_stream)
+                    {
+                        label = to_string() << "Start All";
+
+                        if (ImGui::Button(label.c_str(), { 270, 0 }))
+                        {
+                            for (auto&& sub : model.subdevices)
+                            {
+                                if (sub->is_selected_combination_supported())
+                                {
+                                    auto profiles = sub->get_selected_profiles();
+                                    sub->play(profiles);
+
+                                    for (auto&& profile : profiles)
+                                    {
+                                        model.streams[profile.stream].dev = sub;
+                                    }
+                                }
+                            }
+
+                        }
+                        if (ImGui::IsItemHovered())
+                        {
+                            ImGui::SetTooltip("Start streaming from all subdevices");
+                        }
+                    }
+                    else
+                    {
+                        label = to_string() << "Stop All";
+
+                        if (ImGui::Button(label.c_str(), { 270, 0 }))
+                        {
+                            for (auto&& sub : model.subdevices)
+                            {
+                                if (sub->streaming) sub->stop();
+                            }
+                        }
+                        if (ImGui::IsItemHovered())
+                        {
+                            ImGui::SetTooltip("Stop streaming from all subdevices");
+                        }
+                    }
+                }
+                catch(const rs::error& e)
+                {
+                    error_message = error_to_string(e);
+                }
+                catch(const std::exception& e)
+                {
+                    error_message = e.what();
+                }
+            }
+
             // Draw menu foreach subdevice with its properties
             for (auto&& sub : model.subdevices)
             {
@@ -1132,7 +1207,7 @@ int main(int, char**) try
                     {
                         if (!sub->streaming)
                         {
-                            label = to_string() << "Play " << sub->dev.get_camera_info(RS_CAMERA_INFO_MODULE_NAME);
+                            label = to_string() << "Start " << sub->dev.get_camera_info(RS_CAMERA_INFO_MODULE_NAME);
 
                             if (sub->is_selected_combination_supported())
                             {
@@ -1177,14 +1252,13 @@ int main(int, char**) try
                     {
                         error_message = e.what();
                     }
-                }
 
-                label = to_string() << sub->dev.get_camera_info(RS_CAMERA_INFO_MODULE_NAME) << " options:";
-                for (auto i = 0; i < RS_OPTION_COUNT; i++)
-                {
-                    auto opt = static_cast<rs_option>(i);
-                    auto&& metadata = sub->options_metadata[opt];
-                    metadata.draw(error_message);
+                    for (auto i = 0; i < RS_OPTION_COUNT; i++)
+                    {
+                        auto opt = static_cast<rs_option>(i);
+                        auto&& metadata = sub->options_metadata[opt];
+                        metadata.draw(error_message);
+                    }
                 }
             }
 
