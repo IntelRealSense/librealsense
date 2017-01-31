@@ -16,7 +16,7 @@ namespace fw_logger
     private:
         std::string generate_log_line(char* fw_logs);
         void fill_log_data(const char* fw_logs, fw_log_data* log_data);
-        uint32_t _last_timestamp;
+        uint64_t _last_timestamp;
 
         fw_logs_formating_options _fw_logs_formating_options;
         const double _timestamp_factor;

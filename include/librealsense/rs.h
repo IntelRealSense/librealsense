@@ -10,7 +10,7 @@ extern "C" {
 
 #define RS_API_MAJOR_VERSION    2
 #define RS_API_MINOR_VERSION    4
-#define RS_API_PATCH_VERSION    2
+#define RS_API_PATCH_VERSION    3
 
 #define STRINGIFY(arg) #arg
 #define VAR_ARG_STRING(arg) STRINGIFY(arg)
@@ -536,6 +536,28 @@ const char* rs_get_option_description(const rs_device* device, rs_option option,
 * \return human-readable description of a specific value of an option or null if no special meaning
 */
 const char* rs_get_option_value_description(const rs_device* device, rs_option option, float value, rs_error ** error);
+
+/**
+ * \brief sets the active region of interest to be used by auto-exposure algorithm
+ * \param[in] device     the RealSense device
+ * \param[in] min_x      lower horizontal bound in pixels
+ * \param[in] min_y      lower vertical bound in pixels
+ * \param[in] max_x      upper horizontal bound in pixels
+ * \param[in] max_y      upper vertical bound in pixels
+ * \param[out] error     if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ */
+void rs_set_region_of_interest(const rs_device* device, int min_x, int min_y, int max_x, int max_y, rs_error ** error);
+
+/**
+ * \brief gets the active region of interest to be used by auto-exposure algorithm
+ * \param[in] device     the RealSense device
+ * \param[out] min_x     lower horizontal bound in pixels
+ * \param[out] min_y     lower vertical bound in pixels
+ * \param[out] max_x     upper horizontal bound in pixels
+ * \param[out] max_y     upper vertical bound in pixels
+ * \param[out] error     if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ */
+void rs_get_region_of_interest(const rs_device* device, int* min_x, int* min_y, int* max_x, int* max_y, rs_error ** error);
 
 /**
 * retrieve camera specific information, like versions of various internal componnents

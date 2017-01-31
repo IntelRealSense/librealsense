@@ -163,6 +163,13 @@ std::vector<const char*> get_string_pointers(const std::vector<std::string>& vec
     return res;
 }
 
+struct mouse_info
+{
+    float2 cursor;
+    bool mouse_down = false;
+};
+
+
 class subdevice_model
 {
 public:
@@ -172,6 +179,15 @@ public:
         for (auto& elem : queues)
         {
             elem = std::unique_ptr<rs::frame_queue>(new rs::frame_queue(5));
+        }
+
+        try
+        {
+            auto_exposure_enabled = dev.get_option(RS_OPTION_ENABLE_AUTO_EXPOSURE) > 0;
+        }
+        catch(...)
+        {
+
         }
 
         for (auto i = 0; i < RS_OPTION_COUNT; i++)
@@ -375,7 +391,33 @@ public:
         }
         if (next_option < RS_OPTION_COUNT)
         {
-            options_metadata[static_cast<rs_option>(next_option)].update(error_message);
+            auto& opt_md = options_metadata[static_cast<rs_option>(next_option)];
+            opt_md.update(error_message);
+
+            if (next_option == RS_OPTION_ENABLE_AUTO_EXPOSURE)
+            {
+                auto old_ae_enabled = auto_exposure_enabled;
+                auto_exposure_enabled = opt_md.value > 0;
+
+                if (!old_ae_enabled && auto_exposure_enabled)
+                {
+                    try
+                    {
+                        auto roi = dev.get_region_of_interest();
+                        roi_rect.x = roi.min_x;
+                        roi_rect.y = roi.min_y;
+                        roi_rect.w = roi.max_x - roi.min_x;
+                        roi_rect.h = roi.max_y - roi.min_y;
+                    }
+                    catch (...)
+                    {
+                        auto_exposure_enabled = false;
+                    }
+                }
+
+
+            }
+
             next_option++;
         }
     }
@@ -422,7 +464,10 @@ public:
     std::vector<std::unique_ptr<rs::frame_queue>> queues;
     bool options_invalidated = false;
     int next_option = RS_OPTION_COUNT;
-    bool streaming;
+    bool streaming = false;
+
+    rect roi_rect;
+    bool auto_exposure_enabled = false;
 };
 
 
@@ -444,7 +489,7 @@ public:
         _last_timestamp = other._last_timestamp;
       }
 
-    void add_timestamp(double timestamp, unsigned frame_counter)
+    void add_timestamp(double timestamp, unsigned long long frame_counter)
     {
         std::lock_guard<std::mutex> lock(_mtx);
         if (++_counter >= _skip_frames)
@@ -473,15 +518,203 @@ public:
 private:
     static const int _numerator = 1000;
     static const int _skip_frames = 5;
-    unsigned _num_of_frames;
+    unsigned long long _num_of_frames;
     int _counter;
     double _delta;
     double _last_timestamp;
-    unsigned _last_frame_counter;
+    unsigned long long _last_frame_counter;
     mutable std::mutex _mtx;
 };
 
 typedef std::map<rs_stream, rect> streams_layout;
+
+class stream_model
+{
+public:
+    rect layout;
+    texture_buffer texture;
+    float2 size;
+    rs_format format;
+    std::chrono::high_resolution_clock::time_point last_frame;
+    double timestamp;
+    unsigned long long frame_number;
+    rs_timestamp_domain timestamp_domain;
+    fps_calc fps;
+    rect roi_display_rect;
+    bool capturing_roi = false;
+    std::shared_ptr<subdevice_model> dev;
+
+    void upload_frame(const rs::frame& f)
+    {
+        texture.upload(f);
+        last_frame = std::chrono::high_resolution_clock::now();
+
+        auto is_motion = ((f.get_format() == RS_FORMAT_MOTION_RAW) || (f.get_format() == RS_FORMAT_MOTION_XYZ32F));
+        auto width = (is_motion) ? 640.f : f.get_width();
+        auto height = (is_motion) ? 480.f : f.get_height();
+
+        size = { static_cast<float>(width), static_cast<float>(height)};
+        format = f.get_format();
+        frame_number = f.get_frame_number();
+        timestamp_domain = f.get_frame_timestamp_domain();
+        timestamp = f.get_timestamp();
+        fps.add_timestamp(f.get_timestamp(), f.get_frame_number());
+    }
+
+    void outline_rect(const rect& r)
+    {
+        glPushAttrib(GL_ENABLE_BIT);
+
+        glLineWidth(1);
+        glLineStipple(1, 0xAAAA);
+        glEnable(GL_LINE_STIPPLE);
+
+        glBegin(GL_LINE_STRIP);
+        glVertex2i(r.x, r.y);
+        glVertex2i(r.x, r.y + r.h);
+        glVertex2i(r.x + r.w, r.y + r.h);
+        glVertex2i(r.x + r.w, r.y);
+        glVertex2i(r.x, r.y);
+        glEnd();
+
+        glPopAttrib();
+    }
+
+    float get_stream_alpha()
+    {
+        using namespace std::chrono;
+        auto now = high_resolution_clock::now();
+        auto diff = now - last_frame;
+        auto ms = duration_cast<milliseconds>(diff).count();
+        auto t = smoothstep(static_cast<float>(ms),
+            _min_timeout, _min_timeout + _frame_timeout);
+        return 1.0f - t;
+    }
+
+    bool is_stream_visible()
+    {
+        using namespace std::chrono;
+        auto now = high_resolution_clock::now();
+        auto diff = now - last_frame;
+        auto ms = duration_cast<milliseconds>(diff).count();
+        return ms <= _frame_timeout + _min_timeout;
+    }
+
+    void update_ae_roi_rect(const rect& stream_rect, const mouse_info& mouse, std::string& error_message)
+    {
+        if (dev.get() && dev->auto_exposure_enabled)
+        {
+            // Case 1: Starting Dragging of the ROI rect
+            // Pre-condition: not capturing already + mouse is down + we are inside stream rect
+            if (!capturing_roi && mouse.mouse_down && stream_rect.contains(mouse.cursor))
+            {
+                // Initialize roi_display_rect with drag-start position
+                roi_display_rect.x = mouse.cursor.x;
+                roi_display_rect.y = mouse.cursor.y;
+                roi_display_rect.w = 0; // Still unknown, will be update later
+                roi_display_rect.h = 0;
+                capturing_roi = true; // Mark that we are in process of capturing the ROI rect
+            }
+            // Case 2: We are in the middle of dragging (capturing) ROI rect and we did not leave the stream boundaries
+            if (capturing_roi && stream_rect.contains(mouse.cursor))
+            {
+                // x,y remain the same, only update the width,height with new mouse position relative to starting mouse position
+                roi_display_rect.w = mouse.cursor.x - roi_display_rect.x;
+                roi_display_rect.h = mouse.cursor.y - roi_display_rect.y;
+            }
+            // Case 3: We are in middle of dragging (capturing) and mouse was released
+            if (!mouse.mouse_down && capturing_roi && stream_rect.contains(mouse.cursor))
+            {
+                // Update width,height one last time
+                roi_display_rect.w = mouse.cursor.x - roi_display_rect.x;
+                roi_display_rect.h = mouse.cursor.y - roi_display_rect.y;
+                capturing_roi = false; // Mark that we are no longer dragging
+
+                if (roi_display_rect) // If the rect is not empty?
+                {
+                    // Convert from local (pixel) coordinate system to device coordinate system
+                    auto r = roi_display_rect;
+                    r.x = ((r.x - stream_rect.x) / stream_rect.w) * size.x;
+                    r.y = ((r.y - stream_rect.y) / stream_rect.h) * size.y;
+                    r.w = (r.w / stream_rect.w) * size.x;
+                    r.h = (r.h / stream_rect.h) * size.y;
+                    dev->roi_rect = r; // Store new rect in device coordinates into the subdevice object
+
+                    // Send it to firmware:
+                    // Step 1: get rid of negative width / height
+                    rs::region_of_interest roi;
+                    roi.min_x = std::min(r.x, r.x + r.w);
+                    roi.max_x = std::max(r.x, r.x + r.w);
+                    roi.min_y = std::min(r.y, r.y + r.h);
+                    roi.max_y = std::max(r.y, r.y + r.h);
+
+                    try
+                    {
+                        // Step 2: send it to firmware
+                        dev->dev.set_region_of_interest(roi);
+                    }
+                    catch (const rs::error& e)
+                    {
+                        error_message = error_to_string(e);
+                        dev->auto_exposure_enabled = false;
+                    }
+                }
+                else // If the rect is empty
+                {
+                    try
+                    {
+                        // To reset ROI, just set ROI to the entire frame
+                        auto x_margin = (int)size.x / 8;
+                        auto y_margin = (int)size.y / 8;
+
+                        // Default ROI behaviour is center 3/4 of the screen:
+                        dev->dev.set_region_of_interest({ x_margin, y_margin,
+                                                          (int)size.x - x_margin - 1,
+                                                          (int)size.y - y_margin - 1 });
+
+                        roi_display_rect = { 0, 0, 0, 0 };
+                        dev->roi_rect = { 0, 0, 0, 0 };
+                    }
+                    catch (const rs::error& e)
+                    {
+                        error_message = error_to_string(e);
+                        dev->auto_exposure_enabled = false;
+                    }
+                }
+            }
+            // If we left stream bounds while capturing, stop capturing
+            if (capturing_roi && !stream_rect.contains(mouse.cursor))
+            {
+                capturing_roi = false;
+            }
+
+            // When not capturing, just refresh the ROI rect in case the stream box moved
+            if (!capturing_roi)
+            {
+                auto r = dev->roi_rect; // Take the current from device, convert to local coordinates
+                r.x = ((r.x / size.x) * stream_rect.w) + stream_rect.x;
+                r.y = ((r.y / size.y) * stream_rect.h) + stream_rect.y;
+                r.w = (r.w / size.x) * stream_rect.w;
+                r.h = (r.h / size.y) * stream_rect.h;
+                roi_display_rect = r;
+            }
+
+            // Display ROI rect
+            glColor3f(1.0f, 1.0f, 1.0f);
+            outline_rect(roi_display_rect);
+        }
+    }
+
+    void show_frame(const rect& stream_rect, const mouse_info& g, std::string& error_message)
+    {
+        texture.show(stream_rect, get_stream_alpha());
+
+        update_ae_roi_rect(stream_rect, g, error_message);
+    }
+
+    float _frame_timeout = 700.0f;
+    float _min_timeout = 90.0f;
+};
 
 class device_model
 {
@@ -496,33 +729,13 @@ public:
     }
 
 
-    bool is_stream_visible(rs_stream s)
-    {
-        using namespace std::chrono;
-        auto now = high_resolution_clock::now();
-        auto diff = now - steam_last_frame[s];
-        auto ms = duration_cast<milliseconds>(diff).count();
-        return ms <= _frame_timeout + _min_timeout;
-    }
-
-    float get_stream_alpha(rs_stream s)
-    {
-        using namespace std::chrono;
-        auto now = high_resolution_clock::now();
-        auto diff = now - steam_last_frame[s];
-        auto ms = duration_cast<milliseconds>(diff).count();
-        auto t = smoothstep(static_cast<float>(ms),
-            _min_timeout, _min_timeout + _frame_timeout);
-        return 1.0f - t;
-    }
-
     std::map<rs_stream, rect> calc_layout(float x0, float y0, float width, float height)
     {
         std::vector<rs_stream> active_streams;
         for (auto i = 0; i < RS_STREAM_COUNT; i++)
         {
             auto stream = static_cast<rs_stream>(i);
-            if (is_stream_visible(stream))
+            if (streams[stream].is_stream_visible())
             {
                 active_streams.push_back(stream);
             }
@@ -566,16 +779,13 @@ public:
         return get_interpolated_layout(results);
     }
 
-    std::vector<std::shared_ptr<subdevice_model>> subdevices;
-    std::map<rs_stream, texture_buffer> stream_buffers;
-    std::map<rs_stream, float2> stream_size;
-    std::map<rs_stream, rs_format> stream_format;
-    std::map<rs_stream, std::chrono::high_resolution_clock::time_point> steam_last_frame;
-    std::map<rs_stream, double> stream_timestamp;
-    std::map<rs_stream, unsigned long long> stream_frame_number;
-    std::map<rs_stream, rs_timestamp_domain> stream_timestamp_domain;
-    std::map<rs_stream, fps_calc> stream_fps;
+    void upload_frame(const rs::frame& f)
+    {
+        streams[f.get_stream_type()].upload_frame(f);
+    }
 
+    std::vector<std::shared_ptr<subdevice_model>> subdevices;
+    std::map<rs_stream, stream_model> streams;
     bool fullscreen = false;
     rs_stream selected_stream = RS_STREAM_ANY;
 
@@ -611,9 +821,6 @@ private:
         return results;
     }
 
-    float _frame_timeout = 700.0f;
-    float _min_timeout = 90.0f;
-
     streams_layout _layout;
     streams_layout _old_layout;
     std::chrono::high_resolution_clock::time_point _transition_start_time;
@@ -630,7 +837,7 @@ bool no_device_popup(GLFWwindow* window, const ImVec4& clear_color)
 
         ImGui_ImplGlfw_NewFrame();
 
-        // Rendering 
+        // Rendering
         glViewport(0, 0,
             static_cast<int>(ImGui::GetIO().DisplaySize.x),
             static_cast<int>(ImGui::GetIO().DisplaySize.y));
@@ -653,7 +860,7 @@ bool no_device_popup(GLFWwindow* window, const ImVec4& clear_color)
             ImGui::Text("No device detected. Is it plugged in?");
             ImGui::Separator();
 
-            // Present options to user 
+            // Present options to user
             if (ImGui::Button("Retry", ImVec2(120, 0)))
             {
                 return true; // Retry to find connected device
@@ -673,6 +880,12 @@ bool no_device_popup(GLFWwindow* window, const ImVec4& clear_color)
     }
     return false;
 }
+
+struct user_data
+{
+    GLFWwindow* curr_window = nullptr;
+    mouse_info* mouse = nullptr;
+};
 
 int main(int, char**) try
 {
@@ -709,14 +922,14 @@ int main(int, char**) try
     std::vector<std::string> device_names;
     std::string error_message = "";
     // Initialize list with each device name and serial number
-    for (auto i = 0; i < list.size(); i++)
+    for (uint32_t i = 0; i < list.size(); i++)
     {
         try
         {
             auto l = list[i];
             auto name = l.get_camera_info(RS_CAMERA_INFO_DEVICE_NAME);              // retrieve device name
             auto serial = l.get_camera_info(RS_CAMERA_INFO_DEVICE_SERIAL_NUMBER);   // retrieve device serial number
-            device_names.push_back(to_string() << name << " Sn#" << serial);        // push name and sn to list 
+            device_names.push_back(to_string() << name << " Sn#" << serial);        // push name and sn to list
         }
         catch (...)
         {
@@ -728,6 +941,23 @@ int main(int, char**) try
     auto model = device_model(dev, error_message);  // Initialize device model
     std::string label;
 
+    mouse_info mouse;
+
+    user_data data;
+    data.curr_window = window;
+    data.mouse = &mouse;
+
+    glfwSetWindowUserPointer(window, &data);
+
+    glfwSetCursorPosCallback(window, [](GLFWwindow * w, double cx, double cy)
+    {
+        reinterpret_cast<user_data *>(glfwGetWindowUserPointer(w))->mouse->cursor = { (float)cx, (float)cy };
+    });
+    glfwSetMouseButtonCallback(window, [](GLFWwindow * w, int button, int action, int mods)
+    {
+        auto data = reinterpret_cast<user_data *>(glfwGetWindowUserPointer(w));
+        data->mouse->mouse_down = action != GLFW_RELEASE;
+    });
 
     // Closing the window
     while (!glfwWindowShouldClose(window))
@@ -752,6 +982,10 @@ int main(int, char**) try
         // Creating window menus
         // *********************
         ImGui::Begin("Control Panel", nullptr, flags);
+
+        rs_error* e = nullptr;
+        label = to_string() << "VERSION: " << api_version_to_string(rs_get_api_version(&e));
+        ImGui::Text(label.c_str());
 
         // Device Details Menu - Elaborate details on connected devices
         if (ImGui::CollapsingHeader("Device Details", nullptr, true, true))
@@ -817,6 +1051,68 @@ int main(int, char**) try
         // Streaming Menu - Allow user to play different streams
         if (ImGui::CollapsingHeader("Streaming", nullptr, true, true))
         {
+            if (model.subdevices.size() > 1)
+            {
+                try
+                {
+                    auto anything_stream = false;
+                    for (auto&& sub : model.subdevices)
+                    {
+                        if (sub->streaming) anything_stream = true;
+                    }
+                    if (!anything_stream)
+                    {
+                        label = to_string() << "Start All";
+
+                        if (ImGui::Button(label.c_str(), { 270, 0 }))
+                        {
+                            for (auto&& sub : model.subdevices)
+                            {
+                                if (sub->is_selected_combination_supported())
+                                {
+                                    auto profiles = sub->get_selected_profiles();
+                                    sub->play(profiles);
+
+                                    for (auto&& profile : profiles)
+                                    {
+                                        model.streams[profile.stream].dev = sub;
+                                    }
+                                }
+                            }
+
+                        }
+                        if (ImGui::IsItemHovered())
+                        {
+                            ImGui::SetTooltip("Start streaming from all subdevices");
+                        }
+                    }
+                    else
+                    {
+                        label = to_string() << "Stop All";
+
+                        if (ImGui::Button(label.c_str(), { 270, 0 }))
+                        {
+                            for (auto&& sub : model.subdevices)
+                            {
+                                if (sub->streaming) sub->stop();
+                            }
+                        }
+                        if (ImGui::IsItemHovered())
+                        {
+                            ImGui::SetTooltip("Stop streaming from all subdevices");
+                        }
+                    }
+                }
+                catch(const rs::error& e)
+                {
+                    error_message = error_to_string(e);
+                }
+                catch(const std::exception& e)
+                {
+                    error_message = e.what();
+                }
+            }
+
             // Draw menu foreach subdevice with its properties
             for (auto&& sub : model.subdevices)
             {
@@ -911,13 +1207,19 @@ int main(int, char**) try
                     {
                         if (!sub->streaming)
                         {
-                            label = to_string() << "Play " << sub->dev.get_camera_info(RS_CAMERA_INFO_MODULE_NAME);
+                            label = to_string() << "Start " << sub->dev.get_camera_info(RS_CAMERA_INFO_MODULE_NAME);
 
                             if (sub->is_selected_combination_supported())
                             {
                                 if (ImGui::Button(label.c_str()))
                                 {
-                                    sub->play(sub->get_selected_profiles());
+                                    auto profiles = sub->get_selected_profiles();
+                                    sub->play(profiles);
+
+                                    for (auto&& profile : profiles)
+                                    {
+                                        model.streams[profile.stream].dev = sub;
+                                    }
                                 }
                                 if (ImGui::IsItemHovered())
                                 {
@@ -950,18 +1252,7 @@ int main(int, char**) try
                     {
                         error_message = e.what();
                     }
-                }
-            }
-        }
 
-        // Control Menu - Allow user to change cameras properties
-        if (ImGui::CollapsingHeader("Control", nullptr, true, true))
-        {
-            for (auto&& sub : model.subdevices)
-            {
-                label = to_string() << sub->dev.get_camera_info(RS_CAMERA_INFO_MODULE_NAME) << " options:";
-                if (ImGui::CollapsingHeader(label.c_str(), nullptr, true, false))
-                {
                     for (auto i = 0; i < RS_OPTION_COUNT; i++)
                     {
                         auto opt = static_cast<rs_option>(i);
@@ -970,6 +1261,7 @@ int main(int, char**) try
                     }
                 }
             }
+
         }
 
         for (auto&& sub : model.subdevices)
@@ -1008,18 +1300,7 @@ int main(int, char**) try
                     rs::frame f;
                     if (queue->poll_for_frame(&f))
                     {
-                        model.stream_buffers[f.get_stream_type()].upload(f);
-                        model.steam_last_frame[f.get_stream_type()] = std::chrono::high_resolution_clock::now();
-                        auto is_motion = ((f.get_format() == RS_FORMAT_MOTION_RAW) || (f.get_format() == RS_FORMAT_MOTION_XYZ32F));
-                        auto width = (is_motion)? 640.f : f.get_width();
-                        auto height = (is_motion)? 480.f : f.get_height();
-                        model.stream_size[f.get_stream_type()] = { static_cast<float>(width),
-                                                                   static_cast<float>(height)};
-                        model.stream_format[f.get_stream_type()] = f.get_format();
-                        model.stream_frame_number[f.get_stream_type()] = f.get_frame_number();
-                        model.stream_timestamp_domain[f.get_stream_type()] = f.get_frame_timestamp_domain();
-                        model.stream_timestamp[f.get_stream_type()] = f.get_timestamp();
-                        model.stream_fps[f.get_stream_type()].add_timestamp(f.get_timestamp(), f.get_frame_number());
+                        model.upload_frame(f);
                     }
                 }
                 catch(const rs::error& e)
@@ -1048,16 +1329,16 @@ int main(int, char**) try
         glLoadIdentity();
         glOrtho(0, w, h, 0, -1, +1);
 
-        auto layout = model.calc_layout(300, 0, w - 300, h);
+        auto layout = model.calc_layout(300.f, 0.f, w - 300.f, (float)h);
 
         for (auto kvp : layout)
         {
             auto&& view_rect = kvp.second;
             auto stream = kvp.first;
-            auto&& stream_size = model.stream_size[stream];
+            auto&& stream_size = model.streams[stream].size;
             auto stream_rect = view_rect.adjust_ratio(stream_size);
 
-            model.stream_buffers[stream].show(stream_rect, model.get_stream_alpha(stream));
+            model.streams[stream].show_frame(stream_rect, mouse, error_message);
 
             flags = ImGuiWindowFlags_NoResize |
                 ImGuiWindowFlags_NoMove |
@@ -1072,21 +1353,21 @@ int main(int, char**) try
 
             label = to_string() << rs_stream_to_string(stream) << " "
                 << stream_size.x << "x" << stream_size.y << ", "
-                << rs_format_to_string(model.stream_format[stream]) << ", "
-                << "Frame# " << model.stream_frame_number[stream] << ", "
+                << rs_format_to_string(model.streams[stream].format) << ", "
+                << "Frame# " << model.streams[stream].frame_number << ", "
                 << "FPS:";
 
             ImGui::Text(label.c_str());
             ImGui::SameLine();
 
-            label = to_string() << std::setprecision(2) << std::fixed << model.stream_fps[stream].get_fps();
+            label = to_string() << std::setprecision(2) << std::fixed << model.streams[stream].fps.get_fps();
             ImGui::Text(label.c_str());
             if (ImGui::IsItemHovered())
             {
                 ImGui::SetTooltip("FPS is calculated based on timestamps and not viewer time");
             }
 
-            ImGui::SameLine(ImGui::GetWindowWidth() - 30);
+            ImGui::SameLine((int)ImGui::GetWindowWidth() - 30);
 
             if (!layout.empty() && !model.fullscreen)
             {
@@ -1112,12 +1393,12 @@ int main(int, char**) try
                 }
             }
 
-            label = to_string() << "Timestamp: " << std::fixed << std::setprecision(3) << model.stream_timestamp[stream]
+            label = to_string() << "Timestamp: " << std::fixed << std::setprecision(3) << model.streams[stream].timestamp
                                 << ", Domain:";
             ImGui::Text(label.c_str());
 
             ImGui::SameLine();
-            auto domain = model.stream_timestamp_domain[stream];
+            auto domain = model.streams[stream].timestamp_domain;
             label = to_string() << rs_timestamp_domain_to_string(domain);
 
             if (domain == RS_TIMESTAMP_DOMAIN_SYSTEM_TIME)
@@ -1141,9 +1422,27 @@ int main(int, char**) try
 
             ImGui::End();
             ImGui::PopStyleColor();
+
+            if (stream_rect.contains(mouse.cursor))
+            {
+                ImGui::PushStyleColor(ImGuiCol_WindowBg, { 0, 0, 0, 0 });
+                ImGui::SetNextWindowPos({ stream_rect.x, stream_rect.y + stream_rect.h - 25 });
+                ImGui::SetNextWindowSize({ stream_rect.w, 25 });
+                label = to_string() << "Footer for stream of " << rs_stream_to_string(stream);
+                ImGui::Begin(label.c_str(), nullptr, flags);
+
+                auto x = ((mouse.cursor.x - stream_rect.x) / stream_rect.w) * stream_size.x;
+                auto y = ((mouse.cursor.y - stream_rect.y) / stream_rect.h) * stream_size.y;
+                label = to_string() << std::fixed << std::setprecision(0) << x << ", " << y;
+                ImGui::Text(label.c_str());
+
+                ImGui::End();
+                ImGui::PopStyleColor();
+            }
         }
 
         ImGui::Render();
+
         glfwSwapBuffers(window);
     }
 

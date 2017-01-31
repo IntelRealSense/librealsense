@@ -1,5 +1,9 @@
-#!/bin/bash -e
-#set -x
+#!/bin/bash
+
+if [ $(ls /dev/video* | wc -l) -ne 0 ];
+then
+	read -p "Remove all RealSense cameras attached. Hit any key when ready"
+fi
 
 #Include usability functions
 source ./scripts/patch-utils.sh
@@ -9,7 +13,7 @@ require_package libusb-1.0-0-dev
 require_package libssl-dev
 
 # Get the required tools and headers to build the kernel
-sudo apt-get install linux-headers-generic build-essential
+sudo apt-get install linux-headers-generic build-essential git
 
 LINUX_BRANCH=$(uname -r)
 
@@ -21,15 +25,17 @@ cd ${kernel_name}
 # Verify that there are no trailing changes., warn the user to make corrective action if needed
 if [ $(git status | grep 'modified:' | wc -l) -ne 0 ];
 then
-	echo -e "\e[32mThe kernel has modified files:\e[0m"
-	git status | grep 'modified:'	
-	read -r -p "Proceeding will reset all changes. Are you sure to proceed ? [Y/n] " response	
+	echo -e "\e[36mThe kernel has modified files:\e[0m"
+	git status | grep 'modified:'
+	echo -e "\e[36mProceeding will reset all local kernel changes. Press 'n' within 10 seconds to abort the procedure"
+	read -t 10 -r -p "Do you want to proceed? [Y/n]" response	
 	response=${response,,}    # tolower
 	if [[ $response =~ ^(n|N)$ ]]; 
 	then
 		echo -e "\e[41mScript has been aborted on user requiest. Please resolve the modified files are rerun\e[0m"
 		exit 1
 	else
+		echo -e "\e[0m"
 		printf "Resetting local changes in %s folder\n " ${kernel_name}
 		git reset --hard
 		echo -e "\e[32mUpdate the folder content with the latest from mainline branch\e[0m"
@@ -65,7 +71,9 @@ make silentoldconfig modules_prepare
 KBASE=`pwd`
 cd drivers/media/usb/uvc
 sudo cp $KBASE/Module.symvers .
+echo -e "\e[32mCompiling uvc module\e[0m"
 make -C $KBASE M=$KBASE/drivers/media/usb/uvc/ modules
+echo -e "\e[32mCompiling accelerometer and gyro modules\e[0m"
 make -C $KBASE M=$KBASE/drivers/iio/accel modules
 make -C $KBASE M=$KBASE/drivers/iio/gyro modules
 
@@ -73,6 +81,8 @@ make -C $KBASE M=$KBASE/drivers/iio/gyro modules
 sudo cp $KBASE/drivers/media/usb/uvc/uvcvideo.ko ~/$LINUX_BRANCH-uvcvideo.ko
 sudo cp $KBASE/drivers/iio/accel/hid-sensor-accel-3d.ko ~/$LINUX_BRANCH-hid-sensor-accel-3d.ko
 sudo cp $KBASE/drivers/iio/gyro/hid-sensor-gyro-3d.ko ~/$LINUX_BRANCH-hid-sensor-gyro-3d.ko
+
+echo -e "\e[32mPatched kernels modules created successfully\n\e[0m"
 
 # Load the newly built modules
 try_module_insert uvcvideo				~/$LINUX_BRANCH-uvcvideo.ko /lib/modules/`uname -r`/kernel/drivers/media/usb/uvc/uvcvideo.ko
