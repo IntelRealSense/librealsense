@@ -62,15 +62,13 @@ namespace rsimpl
     template<size_t SIZE> void unpack_accel_axes(byte * const dest[], const byte * source, int count)
     {
         static const float gravity = 9.80665f; // Standard Gravitation Acceleration
-        static const float accel_range = 4.f;  // Accelerometer is preset to [-4...+4]g range
-        static const float accelerator_transform_factor = float(gravity * accel_range / 2048.f);
+        static const float accelerator_transform_factor = 0.001*gravity;
         copy_hid_axes(dest, source, accelerator_transform_factor, count);
     }
 
     template<size_t SIZE> void unpack_gyro_axes(byte * const dest[], const byte * source, int count)
     {
-        static const float gyro_range   = 1000.f; // Preconfigured angular velocity range [-1000...1000] Deg_C/Sec
-        static const float gyro_transform_factor = float((gyro_range * M_PI) / (180.f * 32767.f));
+        static const float gyro_transform_factor = 0.1* M_PI / 180.f;
         copy_hid_axes(dest, source, gyro_transform_factor, count);
     }
 
