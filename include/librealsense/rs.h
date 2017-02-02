@@ -132,6 +132,7 @@ typedef enum rs_camera_info {
     RS_CAMERA_INFO_CAMERA_FIRMWARE_VERSION       ,
     RS_CAMERA_INFO_DEVICE_LOCATION               ,
     RS_CAMERA_INFO_DEVICE_DEBUG_OP_CODE          ,
+    RS_CAMERA_INFO_ADVANCED_MODE                 ,
     RS_CAMERA_INFO_COUNT
 } rs_camera_info;
 
