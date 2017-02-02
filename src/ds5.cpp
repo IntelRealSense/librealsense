@@ -139,7 +139,7 @@ namespace rsimpl
             throw std::runtime_error("HID device is missing!");
         }
 
-        auto hid_ep = std::make_shared<hid_endpoint>(backend.create_hid_device(all_hid_infos[0]),
+        auto hid_ep = std::make_shared<hid_endpoint>(backend.create_hid_device(all_hid_infos.front()),
                                                                                std::unique_ptr<frame_timestamp_reader>(new ds5_hid_timestamp_reader()));
         hid_ep->register_pixel_format(pf_accel_axes);
         hid_ep->register_pixel_format(pf_gyro_axes);
@@ -246,13 +246,16 @@ namespace rsimpl
 
             // Add hid endpoint
             auto hid_index = add_endpoint(create_hid_device(backend, hid_info));
-            std::map<rs_camera_info, std::string> camera_info = {{RS_CAMERA_INFO_DEVICE_NAME, device_name},
-                                                                 {RS_CAMERA_INFO_MODULE_NAME, "Motion Module"},
-                                                                 {RS_CAMERA_INFO_DEVICE_SERIAL_NUMBER, serial},
-                                                                 {RS_CAMERA_INFO_CAMERA_FIRMWARE_VERSION, fw_version},
-                                                                 {RS_CAMERA_INFO_DEVICE_LOCATION, hid_info.front().device_path},
-                                                                 {RS_CAMERA_INFO_DEVICE_DEBUG_OP_CODE, std::to_string(fw_cmd::GLD)}};
-            register_endpoint_info(hid_index, camera_info);
+            for (auto& elem : hid_info)
+            {
+                std::map<rs_camera_info, std::string> camera_info = {{RS_CAMERA_INFO_DEVICE_NAME, device_name},
+                                                                     {RS_CAMERA_INFO_MODULE_NAME, "Motion Module"},
+                                                                     {RS_CAMERA_INFO_DEVICE_SERIAL_NUMBER, serial},
+                                                                     {RS_CAMERA_INFO_CAMERA_FIRMWARE_VERSION, fw_version},
+                                                                     {RS_CAMERA_INFO_DEVICE_LOCATION, elem.device_path},
+                                                                     {RS_CAMERA_INFO_DEVICE_DEBUG_OP_CODE, std::to_string(fw_cmd::GLD)}};
+                register_endpoint_info(hid_index, camera_info);
+            }
         }
 
         set_depth_scale(0.001f); // TODO: find out what is the right value
