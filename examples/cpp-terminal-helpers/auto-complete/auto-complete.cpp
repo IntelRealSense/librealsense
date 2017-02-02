@@ -133,27 +133,28 @@ char auto_complete::getch_nolock()
 
     return ch;
 #else
+    auto fd = fileno(stdin);
     struct termios old_settings, new_settings;
-    tcgetattr( fileno( stdin ), &old_settings );
+    tcgetattr(fd, &old_settings);
     new_settings = old_settings;
     new_settings.c_lflag &= (~ICANON & ~ECHO);
 
-    tcsetattr( fileno( stdin ), TCSANOW, &new_settings );
-    fd_set set;
+    tcsetattr(fd, TCSANOW, &new_settings);
+    fd_set fds;
     struct timeval tv;
 
-    tv.tv_sec = static_cast<unsigned long long>(INFINITY);
+    tv.tv_sec = 10;
     tv.tv_usec = 0;
 
-    FD_ZERO( &set );
-    FD_SET( fileno( stdin ), &set );
+    FD_ZERO(&fds);
+    FD_SET(fd, &fds);
 
-    int res = select( fileno( stdin )+1, &set, NULL, NULL, &tv );
-    if( res > 0 )
+    auto res = select(fd+1, &fds, NULL, NULL, &tv );
+    if((res > 0) && (FD_ISSET(fd, &fds)))
     {
         uint8_t ch[10];
-        auto num_of_chars = read( fileno( stdin ), ch, 10 );
-        tcsetattr( fileno( stdin ), TCSAFLUSH, &old_settings );
+        auto num_of_chars = read(fd, ch, 10 );
+        tcsetattr(fd, TCSAFLUSH, &old_settings );
         if (num_of_chars == 1)
             return ch[0];
 
