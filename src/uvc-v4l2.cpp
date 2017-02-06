@@ -1630,16 +1630,10 @@ namespace rsimpl
 
             std::vector<hid_device_info> query_hid_devices() const override
             {
-                std::map<std::string, hid_device_info> hid_device_info_map;
-                v4l_hid_device::foreach_hid_device([&](const hid_device_info& hid_dev_info, const std::string&){
-                    hid_device_info_map.insert(std::make_pair(hid_dev_info.unique_id, hid_dev_info));
-                });
-
                 std::vector<hid_device_info> results;
-                for (auto&& elem : hid_device_info_map)
-                {
-                    results.push_back(elem.second);
-                }
+                v4l_hid_device::foreach_hid_device([&](const hid_device_info& hid_dev_info, const std::string&){
+                    results.push_back(hid_dev_info);
+                });
 
                 return results;
             }
