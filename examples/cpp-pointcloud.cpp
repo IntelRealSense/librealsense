@@ -57,8 +57,8 @@ int main(int argc, char * argv[]) try
 
     // Configure all supported streams to run at 30 frames per second
     rs::util::config config;
-    config.enable_stream(RS_STREAM_COLOR, rs::preset::best_quality);
-    config.enable_stream(RS_STREAM_DEPTH, rs::preset::best_quality);
+    config.enable_stream(RS_STREAM_INFRARED, rs::preset::best_quality);
+    config.enable_stream(RS_STREAM_DEPTH, 640, 480, 30, RS_FORMAT_Z16);
     auto stream = config.open(dev);
     
     state app_state = {0, 0, 0, 0, false, &dev};
@@ -97,9 +97,9 @@ int main(int argc, char * argv[]) try
     texture_buffer color_tex;
     const uint16_t * depth;
     
-    const rs_extrinsics extrin = stream.get_extrinsics(RS_STREAM_DEPTH, RS_STREAM_COLOR);
+    const rs_extrinsics extrin = stream.get_extrinsics(RS_STREAM_DEPTH, RS_STREAM_DEPTH);
     const rs_intrinsics depth_intrin = stream.get_intrinsics(RS_STREAM_DEPTH);
-    const rs_intrinsics color_intrin = stream.get_intrinsics(RS_STREAM_COLOR);
+    const rs_intrinsics color_intrin = stream.get_intrinsics(RS_STREAM_INFRARED);
 
     int frame_count = 0; float time = 0, fps = 0;
     auto t0 = std::chrono::high_resolution_clock::now();
@@ -125,7 +125,7 @@ int main(int argc, char * argv[]) try
         glPushAttrib(GL_ALL_ATTRIB_BITS);
 
         for (auto&& frame : frames) {
-            if (frame.get_stream_type() == RS_STREAM_COLOR)
+            if (frame.get_stream_type() == RS_STREAM_INFRARED)
                 color_tex.upload(frame);
             if (frame.get_stream_type() == RS_STREAM_DEPTH)
                 depth = reinterpret_cast<const uint16_t *>(frame.get_data());
@@ -156,6 +156,7 @@ int main(int argc, char * argv[]) try
         glBindTexture(GL_TEXTURE_2D, color_tex.get_gl_handle());
         glBegin(GL_POINTS);
 
+        auto max_depth = *std::max_element(depth,depth+640*480);
         
         std::vector<uint8_t> image;
         auto points = depth_to_points(image, depth_intrin, depth, dev.get_depth_scale());
