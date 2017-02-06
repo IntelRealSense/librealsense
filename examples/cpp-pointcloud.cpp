@@ -58,7 +58,7 @@ int main(int argc, char * argv[]) try
     // Configure all supported streams to run at 30 frames per second
     rs::util::config config;
     config.enable_stream(RS_STREAM_INFRARED, rs::preset::best_quality);
-    config.enable_stream(RS_STREAM_DEPTH, 640, 480, 30, RS_FORMAT_Z16);
+    config.enable_stream(RS_STREAM_DEPTH, rs::preset::best_quality);
     auto stream = config.open(dev);
     
     state app_state = {0, 0, 0, 0, false, &dev};
