@@ -207,7 +207,8 @@ namespace rsimpl
         auto serial = _hw_monitor->get_module_serial_string(GVD, module_serial_offset);
 
         auto& depth_ep = get_depth_endpoint();
-        if (is_camera_in_advanced_mode())
+        auto advanced_mode = is_camera_in_advanced_mode();
+        if (advanced_mode)
         {
             depth_ep.register_pixel_format(pf_y8i); // L+R
             depth_ep.register_pixel_format(pf_y12i); // L+R - Calibration not rectified
@@ -270,7 +271,8 @@ namespace rsimpl
                                                                      {RS_CAMERA_INFO_DEVICE_SERIAL_NUMBER, serial},
                                                                      {RS_CAMERA_INFO_CAMERA_FIRMWARE_VERSION, fw_version},
                                                                      {RS_CAMERA_INFO_DEVICE_LOCATION, element.device_path},
-                                                                     {RS_CAMERA_INFO_DEVICE_DEBUG_OP_CODE, std::to_string(fw_cmd::GLD)}};
+                                                                     {RS_CAMERA_INFO_DEVICE_DEBUG_OP_CODE, std::to_string(fw_cmd::GLD)},
+                                                                     {RS_CAMERA_INFO_ADVANCED_MODE, ((advanced_mode)?"YES":"NO")}};
                 register_endpoint_info(_depth_device_idx, camera_info);
             }
             else if (fisheye_ep && element.pid == RS450T_PID && element.mi == 3) // mi 3 is relate to Fisheye device
