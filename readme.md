@@ -1,5 +1,7 @@
 # Intel® RealSense™ Cross Platform API
 
+[Whats new?](./doc/rs400_support.md) - Summary of changes in librealsense2, including RS400 support, API changes and new functionality.
+
 [ ![License] [license-image] ] [license]
 
 [release-image]: http://img.shields.io/badge/release-1.9.7-blue.svg?style=flat
@@ -30,24 +32,24 @@ The Intel® RealSense™ Cross Platform API is experimental and not an official 
 
 ## Installation Guide
 
-  * [Linux](./doc/installation.md)
-  * [Windows](./doc/installation_windows.md)
-  * [Mac OS X](./doc/installation_osx.md)
+* [Linux](./doc/installation.md)
+* [Windows](./doc/installation_windows.md)
+* [Mac OS X](./doc/installation_osx.md)
 
 ## Documentation
 
 A comprehensive suite of sample and tutorial applications are provided in the `/examples` subdirectory. For new users, it is best to review the tutorial series of apps which are designed to progressively introduce API features.
 
-  * [C API](./include/librealsense/rs.h) - With doxygen-style API comments
-  * To build documentation locally from sources, on Ubuntu run the following commands:
+* [C API](./include/librealsense/rs.h) - With doxygen-style API comments
+* To build documentation locally from sources, on Ubuntu run the following commands:
     * `sudo apt-get install doxygen`
 	* `doxygen doc/doxygen/doxyfile`
-  * [What's New?](./doc/whats_new.md)
-  * [Projection APIs](./doc/projection.md) - A guide on coordinate systems, calibration information, and projection
-  * [Camera Spec Sheet](./doc/camera_specs.md) - A brief overview of R200, F200 and SR300
-  * [Developer Notes](./doc/dev_log.md) - Several informal notes gathered during internal releases
-  * [Stream Formats](./doc/supported_video_formats.pdf) - A list of available stream resolutions and pixel formats provided by the supported devices.
-
+* [What's New?](./doc/whats_new.md)
+* [Projection APIs](./doc/projection.md) - A guide on coordinate systems, calibration information, and projection
+* [Camera Spec Sheet](./doc/camera_specs.md) - A brief overview of R200, F200 and SR300
+* [Developer Notes](./doc/dev_log.md) - Several informal notes gathered during internal releases
+* [Stream Formats](./doc/supported_video_formats.pdf) - A list of available stream resolutions and pixel formats provided by the supported devices.
+  
 ## Functionality
 
 1. Native streams: depth, color, infrared and fisheye.
