@@ -235,8 +235,11 @@ public:
                 push_back_if_not_exists(resolutions, res.str());
                 std::stringstream fps;
                 fps << profile.fps;
-                push_back_if_not_exists(fps_values, profile.fps);
-                push_back_if_not_exists(fpses, fps.str());
+                push_back_if_not_exists(fps_values_per_stream[profile.stream], profile.fps);
+                push_back_if_not_exists(shared_fps_values, profile.fps);
+                push_back_if_not_exists(fpses_per_stream[profile.stream], fps.str());
+                push_back_if_not_exists(shared_fpses, fps.str());
+
                 std::string format = rs_format_to_string(profile.format);
 
                 push_back_if_not_exists(formats[profile.stream], format);
@@ -259,14 +262,31 @@ public:
                 profiles.push_back(profile);
             }
 
+            show_single_fps_list = is_there_equal_fps_groups();
+
             // set default selections
             int selection_index;
 
             get_default_selection_index(res_values, std::pair<int,int>(640,480), &selection_index);
             selected_res_id = selection_index;
 
-            get_default_selection_index(fps_values, 30, &selection_index);
-            selected_fps_id = selection_index;
+
+            if (!show_single_fps_list)
+            {
+                for (auto fps_array : fps_values_per_stream)
+                {
+                    if (get_default_selection_index(fps_array.second, 30, &selection_index))
+                    {
+                        selected_fps_id[fps_array.first] = selection_index;
+                        break;
+                    }
+                }
+            }
+            else
+            {
+                if (get_default_selection_index(shared_fps_values, 30, &selection_index))
+                    selected_shared_fps_id = selection_index;
+            }
 
             for (auto format_array : format_values)
             {
@@ -289,6 +309,35 @@ public:
         }
     }
 
+    bool is_there_equal_fps_groups()
+    {
+        for (int i = 0 ; i < (fps_values_per_stream.size() - 1) ; ++i)
+        {
+            for (int j = i + 1 ; j < fps_values_per_stream.size() ; ++j)
+            {
+                auto group1 = fps_values_per_stream[(rs_stream)i];
+                auto group2 = fps_values_per_stream[(rs_stream)j];
+                if ((group1.size() != group2.size()) || group1.empty() || group2.empty())
+                    continue;
+
+                std::sort(group1.begin(), group1.end());
+                std::sort(group2.begin(), group2.end());
+                bool is_equals = true;
+                for (int w = 0 ; w < group1.size() ; ++w)
+                {
+                    if (group1[w] != group2[w])
+                    {
+                        is_equals = false;
+                        break;
+                    }
+                }
+                if (is_equals)
+                    return true;
+            }
+        }
+        return false;
+    }
+
     bool is_selected_combination_supported()
     {
         std::vector<rs::stream_profile> results;
@@ -300,7 +349,13 @@ public:
             {
                 auto width = res_values[selected_res_id].first;
                 auto height = res_values[selected_res_id].second;
-                auto fps = fps_values[selected_fps_id];
+
+                auto fps = 0;
+                if (show_single_fps_list)
+                    fps = shared_fps_values[selected_shared_fps_id];
+                else
+                    fps = fps_values_per_stream[stream][selected_fps_id[stream]];
+
                 auto format = format_values[stream][selected_format_id[stream]];
 
                 for (auto&& p : profiles)
@@ -327,8 +382,15 @@ public:
             {
                 auto width = res_values[selected_res_id].first;
                 auto height = res_values[selected_res_id].second;
-                auto fps = fps_values[selected_fps_id];
                 auto format = format_values[stream][selected_format_id[stream]];
+
+                auto fps = 0;
+                if (show_single_fps_list)
+                    fps = shared_fps_values[selected_shared_fps_id];
+                else
+                    fps = fps_values_per_stream[stream][selected_fps_id[stream]];
+
+
 
                 error_message << "\n{" << rs_stream_to_string(stream) << ","
                     << width << "x" << height << " at " << fps << "Hz, "
@@ -447,16 +509,20 @@ public:
 
     std::map<rs_option, option_model> options_metadata;
     std::vector<std::string> resolutions;
-    std::vector<std::string> fpses;
+    std::map<rs_stream, std::vector<std::string>> fpses_per_stream;
+    std::vector<std::string> shared_fpses;
     std::map<rs_stream, std::vector<std::string>> formats;
     std::map<rs_stream, bool> stream_enabled;
 
     int selected_res_id = 0;
-    int selected_fps_id = 0;
+    std::map<rs_stream, int> selected_fps_id;
+    int selected_shared_fps_id;
     std::map<rs_stream, int> selected_format_id;
 
     std::vector<std::pair<int, int>> res_values;
-    std::vector<int> fps_values;
+    std::map<rs_stream, std::vector<int>> fps_values_per_stream;
+    std::vector<int> shared_fps_values;
+    bool show_single_fps_list = false;
     std::map<rs_stream, std::vector<rs_format>> format_values;
 
     std::vector<rs::stream_profile> profiles;
@@ -974,9 +1040,10 @@ int main(int, char**) try
         // Flags for pop-up window - no window resize, move or collaps
         auto flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse;
 
+        const float panel_size = 350;
         // Set window position and size
         ImGui::SetNextWindowPos({ 0, 0 });
-        ImGui::SetNextWindowSize({ 300, static_cast<float>(h) });
+        ImGui::SetNextWindowSize({ panel_size, static_cast<float>(h) });
 
         // *********************
         // Creating window menus
@@ -1122,31 +1189,38 @@ int main(int, char**) try
                 {
                     // Draw combo-box with all resolution options for this device
                     auto res_chars = get_string_pointers(sub->resolutions);
+                    ImGui::PushItemWidth(-1);
                     ImGui::Text("Resolution:");
                     ImGui::SameLine();
-                    ImGui::PushItemWidth(-1);
                     label = to_string() << sub->dev.get_camera_info(RS_CAMERA_INFO_DEVICE_NAME)
                         << sub->dev.get_camera_info(RS_CAMERA_INFO_MODULE_NAME) << " resolution";
                     if (sub->streaming)
                         ImGui::Text(res_chars[sub->selected_res_id]);
                     else
+                    {
                         ImGui::Combo(label.c_str(), &sub->selected_res_id, res_chars.data(),
                             static_cast<int>(res_chars.size()));
+                    }
 
-                    ImGui::PopItemWidth();
+                    // FPS
+                    if (sub->show_single_fps_list)
+                    {
+                        auto fps_chars = get_string_pointers(sub->shared_fpses);
+                        ImGui::Text("FPS:");
+                        label = to_string() << sub->dev.get_camera_info(RS_CAMERA_INFO_DEVICE_NAME)
+                            << sub->dev.get_camera_info(RS_CAMERA_INFO_MODULE_NAME) << " fps";
 
-                    // Draw combo-box with all FPS options for this device
-                    auto fps_chars = get_string_pointers(sub->fpses);
-                    ImGui::Text("FPS:");
-                    ImGui::SameLine();
-                    ImGui::PushItemWidth(-1);
-                    label = to_string() << sub->dev.get_camera_info(RS_CAMERA_INFO_DEVICE_NAME)
-                        << sub->dev.get_camera_info(RS_CAMERA_INFO_MODULE_NAME) << " fps";
-                    if (sub->streaming)
-                        ImGui::Text(fps_chars[sub->selected_fps_id]);
-                    else
-                        ImGui::Combo(label.c_str(), &sub->selected_fps_id, fps_chars.data(),
-                            static_cast<int>(fps_chars.size()));
+                        ImGui::SameLine();
+                        if (sub->streaming)
+                        {
+                            ImGui::Text(fps_chars[sub->selected_shared_fps_id]);
+                        }
+                        else
+                        {
+                            ImGui::Combo(label.c_str(), &sub->selected_shared_fps_id, fps_chars.data(),
+                                static_cast<int>(fps_chars.size()));
+                        }
+                    }
 
                     ImGui::PopItemWidth();
 
@@ -1163,44 +1237,66 @@ int main(int, char**) try
                     for (auto i = 0; i < RS_STREAM_COUNT; i++)
                     {
                         auto stream = static_cast<rs_stream>(i);
+
+                        // Format
                         if (sub->formats[stream].size() == 0)
                             continue;
 
+                        ImGui::PushItemWidth(-1);
                         auto formats_chars = get_string_pointers(sub->formats[stream]);
-                        if (live_streams > 1)
+                        if (!sub->streaming || (sub->streaming && sub->stream_enabled[stream]))
                         {
-                            label = to_string() << rs_stream_to_string(stream) << " format:";
-                            if (sub->streaming)
-                                ImGui::Text(label.c_str());
-                            else
-                                ImGui::Checkbox(label.c_str(), &sub->stream_enabled[stream]);
-                        }
-                        else
-                        {
-                            label = to_string() << "Format:";
-                            ImGui::Text(label.c_str());
+                            if (live_streams > 1)
+                            {
+                                label = to_string() << rs_stream_to_string(stream) << " stream" ;
+                                if (sub->streaming)
+                                    ImGui::Text(label.c_str());
+                                else
+                                    ImGui::Checkbox(label.c_str(), &sub->stream_enabled[stream]);
+                            }
                         }
 
-                        ImGui::SameLine();
                         if (sub->stream_enabled[stream])
                         {
-                            ImGui::PushItemWidth(-1);
                             label = to_string() << sub->dev.get_camera_info(RS_CAMERA_INFO_DEVICE_NAME)
                                 << sub->dev.get_camera_info(RS_CAMERA_INFO_MODULE_NAME)
                                 << " " << rs_stream_to_string(stream) << " format";
+
+                            ImGui::Text("Format:");
+                            ImGui::SameLine();
                             if (sub->streaming)
+                            {
                                 ImGui::Text(formats_chars[sub->selected_format_id[stream]]);
+                            }
                             else
+                            {
                                 ImGui::Combo(label.c_str(), &sub->selected_format_id[stream], formats_chars.data(),
                                     static_cast<int>(formats_chars.size()));
+                            }
 
+                            // FPS
+                            // Draw combo-box with all FPS options for this device
+                            if (!sub->show_single_fps_list && !sub->fpses_per_stream[stream].empty() && sub->stream_enabled[stream])
+                            {
+                                auto fps_chars = get_string_pointers(sub->fpses_per_stream[stream]);
+                                ImGui::Text("FPS:");
+                                ImGui::SameLine();
+                                label = to_string() << sub->dev.get_camera_info(RS_CAMERA_INFO_DEVICE_NAME)
+                                    << sub->dev.get_camera_info(RS_CAMERA_INFO_MODULE_NAME)
+                                    << rs_stream_to_string(stream) << " fps";
 
-                            ImGui::PopItemWidth();
+                                if (sub->streaming)
+                                {
+                                    ImGui::Text(fps_chars[sub->selected_fps_id[stream]]);
+                                }
+                                else
+                                {
+                                    ImGui::Combo(label.c_str(), &sub->selected_fps_id[stream], fps_chars.data(),
+                                        static_cast<int>(fps_chars.size()));
+                                }
+                            }
                         }
-                        else
-                        {
-                            ImGui::Text("N/A");
-                        }
+                        ImGui::PopItemWidth();
                     }
 
                     try
@@ -1263,6 +1359,8 @@ int main(int, char**) try
             }
 
         }
+
+        ImGui::Text("\n\n\n\n\n\n\n");
 
         for (auto&& sub : model.subdevices)
         {
@@ -1329,7 +1427,7 @@ int main(int, char**) try
         glLoadIdentity();
         glOrtho(0, w, h, 0, -1, +1);
 
-        auto layout = model.calc_layout(300.f, 0.f, w - 300.f, (float)h);
+        auto layout = model.calc_layout(panel_size, 0.f, w - panel_size, (float)h);
 
         for (auto kvp : layout)
         {

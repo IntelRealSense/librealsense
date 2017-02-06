@@ -55,10 +55,14 @@ bool endpoint::try_get_pf(const uvc::stream_profile& p, native_pixel_format& res
 
 std::vector<request_mapping> endpoint::resolve_requests(std::vector<stream_profile> requests)
 {
-    std::vector<uint32_t> legal_4ccs;
-    for (auto mode : get_stream_profiles()) {
-        if (mode.fps == requests[0].fps && mode.height == requests[0].height && mode.width == requests[0].width)
-            legal_4ccs.push_back(mode.format);
+    // per requested profile, find all 4ccs that support that request.
+    std::map<rs_stream, std::set<uint32_t>> legal_fourccs;
+    auto profiles = get_stream_profiles();
+    for (auto&& request : requests) {
+         for (auto&& mode : profiles) {
+            if (mode.fps == request.fps && mode.height == request.height && mode.width == request.width)
+                legal_fourccs[request.stream].insert(mode.format);
+        }
     }
 
     std::unordered_set<request_mapping> results;
@@ -67,17 +71,20 @@ std::vector<request_mapping> endpoint::resolve_requests(std::vector<stream_profi
     {
         auto max = 0;
         size_t best_size = 0;
-        auto best_pf = &_pixel_formats[0];
-        auto best_unpacker = &_pixel_formats[0].unpackers[0];
+        auto best_pf = &_pixel_formats.front();
+        auto best_unpacker = &_pixel_formats.front().unpackers.front();
         for (auto&& pf : _pixel_formats)
         {
-            if (std::none_of(begin(legal_4ccs), end(legal_4ccs), [&](const uint32_t fourcc) {return fourcc == pf.fourcc; })) continue;
+            // Speeds up algorithm by skipping obviously useless 4ccs
+            // if (std::none_of(begin(legal_fourccs), end(legal_fourccs), [&](const uint32_t fourcc) {return fourcc == pf.fourcc; })) continue;
             for (auto&& unpacker : pf.unpackers)
             {
                 auto count = static_cast<int>(std::count_if(begin(requests), end(requests),
-                    [&unpacker](stream_profile& r)
+                    [&pf, &legal_fourccs, &unpacker](stream_profile& r)
                 {
-                    return unpacker.satisfies(r);
+                    // only count if the 4cc can be unpacked into the relevant stream/format
+                    // and also, the pixel format can be streamed in the requested dimensions/fps.
+                    return unpacker.satisfies(r) && legal_fourccs[r.stream].count(pf.fourcc);
                 }));
 
                 // Here we check if the current pixel format / unpacker combination is better than the current best.
@@ -100,10 +107,9 @@ std::vector<request_mapping> endpoint::resolve_requests(std::vector<stream_profi
         if (max == 0) break;
 
         requests.erase(std::remove_if(begin(requests), end(requests),
-            [best_unpacker, best_pf, &results, this](stream_profile& r)
+            [best_unpacker, best_pf, &results, &legal_fourccs, this](stream_profile& r)
         {
-
-            if (best_unpacker->satisfies(r))
+            if (best_unpacker->satisfies(r) && legal_fourccs[r.stream].count(best_pf->fourcc))
             {
                 request_mapping mapping;
                 mapping.profile = { r.width, r.height, r.fps, best_pf->fourcc };
@@ -529,6 +535,20 @@ std::vector<uvc::stream_profile> hid_endpoint::init_stream_profiles()
     return std::vector<uvc::stream_profile>(results.begin(), results.end());
 }
 
+std::vector<stream_profile> hid_endpoint::get_sensor_profiles(std::string sensor_name) const
+{
+    std::vector<stream_profile> profiles{};
+    for (auto& elem : _sensor_name_and_hid_profiles)
+    {
+        if (!elem.first.compare(sensor_name))
+        {
+            profiles.push_back(elem.second);
+        }
+    }
+
+    return profiles;
+}
+
 std::vector<stream_profile> hid_endpoint::get_principal_requests()
 {
     return get_device_profiles();
@@ -557,7 +577,12 @@ void hid_endpoint::open(const std::vector<stream_profile>& requests)
 
             if (it != end(map.unpacker->outputs))
             {
-                _configured_profiles.insert(std::make_pair(sensor_iio, stream_formats{request.stream, {request.format}}));
+                _configured_profiles.insert(std::make_pair(sensor_iio,
+                                                           stream_profile{request.stream,
+                                                                          request.width,
+                                                                          request.height,
+                                                                          fps_to_sampling_frequency(request.stream, request.fps),
+                                                                          request.format}));
                 _iio_mapping.insert(std::make_pair(sensor_iio, map));
             }
         }
@@ -589,14 +614,14 @@ void hid_endpoint::start_streaming(frame_callback_ptr callback)
 
     _archive = std::make_shared<frame_archive>(&_max_publish_list_size);
     _callback = std::move(callback);
-    std::vector<int> configured_sensor_iio;
+    std::vector<uvc::iio_profile> configured_iio_profiles;
     for (auto& elem : _configured_profiles)
     {
-        configured_sensor_iio.push_back(elem.first);
+        configured_iio_profiles.push_back(uvc::iio_profile{elem.first, elem.second.fps});
     }
 
 
-    _hid_device->start_capture(configured_sensor_iio, [this](const uvc::sensor_data& sensor_data){
+    _hid_device->start_capture(configured_iio_profiles, [this](const uvc::sensor_data& sensor_data){
         if (!this->is_streaming())
             return;
 
@@ -616,7 +641,7 @@ void hid_endpoint::start_streaming(frame_callback_ptr callback)
         auto frame_counter = _timestamp_reader->get_frame_counter(mode, sensor_data.data.data(), data_size);
 
         frame_additional_data additional_data;
-        additional_data.format = _configured_profiles[sensor_data.sensor.iio].formats.front();
+        additional_data.format = _configured_profiles[sensor_data.sensor.iio].format;
         additional_data.stream_type = _configured_profiles[sensor_data.sensor.iio].stream;
         additional_data.width = mode.profile.width;
         additional_data.height = mode.profile.height;
@@ -659,23 +684,16 @@ std::vector<stream_profile> hid_endpoint::get_device_profiles()
     std::vector<stream_profile> stream_requests;
     for (auto& sensor : _hid_sensors)
     {
-        auto stream_formats = sensor_name_to_stream_formats(sensor.name);
-        for (auto& format : stream_formats.formats)
-        {
-            stream_requests.push_back({stream_formats.stream,
-                                       1,
-                                       1,
-                                       1,
-                                       format});
-        }
+        auto profiles = get_sensor_profiles(sensor.name);
+        stream_requests.insert(stream_requests.end(), profiles.begin() ,profiles.end());
     }
 
     return stream_requests;
 }
 
-int hid_endpoint::rs_stream_to_sensor_iio(rs_stream stream) const
+uint32_t hid_endpoint::rs_stream_to_sensor_iio(rs_stream stream) const
 {
-    for (auto& elem : sensor_name_and_stream_formats)
+    for (auto& elem : _sensor_name_and_hid_profiles)
     {
         if (stream == elem.second.stream)
             return get_iio_by_name(elem.first);
@@ -683,7 +701,7 @@ int hid_endpoint::rs_stream_to_sensor_iio(rs_stream stream) const
     throw invalid_value_exception("rs_stream not found!");
 }
 
-int hid_endpoint::get_iio_by_name(const std::string& name) const
+uint32_t hid_endpoint::get_iio_by_name(const std::string& name) const
 {
     for (auto& elem : _hid_sensors)
     {
@@ -691,20 +709,6 @@ int hid_endpoint::get_iio_by_name(const std::string& name) const
             return elem.iio;
     }
     throw invalid_value_exception("sensor_name not found!");
-}
-
-hid_endpoint::stream_formats hid_endpoint::sensor_name_to_stream_formats(const std::string& sensor_name) const
-{
-    stream_formats stream_and_formats;
-    try{
-        stream_and_formats = sensor_name_and_stream_formats.at(sensor_name);
-    }
-    catch(std::out_of_range)
-    {
-        throw invalid_value_exception(to_string() << "format of sensor name " << sensor_name << " not found!");
-    }
-
-    return stream_and_formats;
 }
 
 uint32_t hid_endpoint::stream_to_fourcc(rs_stream stream) const
@@ -719,4 +723,18 @@ uint32_t hid_endpoint::stream_to_fourcc(rs_stream stream) const
     }
 
     return fourcc;
+}
+
+uint32_t hid_endpoint::fps_to_sampling_frequency(rs_stream stream, uint32_t fps) const
+{
+    uint32_t sampling_frequency = 0;
+    try{
+        sampling_frequency = _fps_and_sampling_frequency_per_rs_stream.at(stream).at(fps);
+    }
+    catch(std::out_of_range)
+    {
+        throw invalid_value_exception(to_string() << "sampling_frequency of fps " << fps << " not found!");
+    }
+
+    return sampling_frequency;
 }

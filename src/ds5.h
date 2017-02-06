@@ -26,28 +26,28 @@ namespace rsimpl
     {
         byte            length;
         byte            info;
-        unsigned int    timestamp;
+        uint32_t    timestamp;
         byte            source_clock[6];
     };
 
     struct metadata_header
     {
-        unsigned int    metaDataID;
-        unsigned int    size;
+        uint32_t    metaDataID;
+        uint32_t    size;
     };
 
 
     struct metadata_capture_timing
     {
         metadata_header  metaDataIdHeader;
-        unsigned int    version;
-        unsigned int    flag;
+        uint32_t    version;
+        uint32_t    flag;
         int    frameCounter;
-        unsigned int    opticalTimestamp;   //In millisecond unit
-        unsigned int    readoutTime;        //The readout time in millisecond second unit
-        unsigned int    exposureTime;       //The exposure time in millisecond second unit
-        unsigned int    frameInterval ;     //The frame interval in millisecond second unit
-        unsigned int    pipeLatency;        //The latency between start of frame to frame ready in USB buffer
+        uint32_t    opticalTimestamp;   //In millisecond unit
+        uint32_t    readoutTime;        //The readout time in millisecond second unit
+        uint32_t    exposureTime;       //The exposure time in millisecond second unit
+        uint32_t    frameInterval ;     //The frame interval in millisecond second unit
+        uint32_t    pipeLatency;        //The latency between start of frame to frame ready in USB buffer
     };
 #pragma pack(pop)
 
@@ -431,5 +431,30 @@ namespace rsimpl
 
         std::vector<uint8_t> get_raw_calibration_table(ds::calibration_table_id table_id) const;
 
+        // Bandwidth parameters from BOSCH BMI 055 spec'
+        const std::vector<std::pair<std::string, stream_profile>> sensor_name_and_hid_profiles =
+            {{std::string("gyro_3d"),  {RS_STREAM_GYRO,  1, 1, 200,  RS_FORMAT_MOTION_RAW}},
+             {std::string("gyro_3d"),  {RS_STREAM_GYRO,  1, 1, 400,  RS_FORMAT_MOTION_RAW}},
+             {std::string("gyro_3d"),  {RS_STREAM_GYRO,  1, 1, 1000, RS_FORMAT_MOTION_RAW}},
+             {std::string("gyro_3d"),  {RS_STREAM_GYRO,  1, 1, 200,  RS_FORMAT_MOTION_XYZ32F}},
+             {std::string("gyro_3d"),  {RS_STREAM_GYRO,  1, 1, 400,  RS_FORMAT_MOTION_XYZ32F}},
+             {std::string("gyro_3d"),  {RS_STREAM_GYRO,  1, 1, 1000, RS_FORMAT_MOTION_XYZ32F}},
+             {std::string("accel_3d"), {RS_STREAM_ACCEL, 1, 1, 125,  RS_FORMAT_MOTION_RAW}},
+             {std::string("accel_3d"), {RS_STREAM_ACCEL, 1, 1, 250,  RS_FORMAT_MOTION_RAW}},
+             {std::string("accel_3d"), {RS_STREAM_ACCEL, 1, 1, 500,  RS_FORMAT_MOTION_RAW}},
+             {std::string("accel_3d"), {RS_STREAM_ACCEL, 1, 1, 1000, RS_FORMAT_MOTION_RAW}},
+             {std::string("accel_3d"), {RS_STREAM_ACCEL, 1, 1, 125,  RS_FORMAT_MOTION_XYZ32F}},
+             {std::string("accel_3d"), {RS_STREAM_ACCEL, 1, 1, 250,  RS_FORMAT_MOTION_XYZ32F}},
+             {std::string("accel_3d"), {RS_STREAM_ACCEL, 1, 1, 500,  RS_FORMAT_MOTION_XYZ32F}},
+             {std::string("accel_3d"), {RS_STREAM_ACCEL, 1, 1, 1000, RS_FORMAT_MOTION_XYZ32F}}};
+
+        std::map<rs_stream, std::map<unsigned, unsigned>> fps_and_sampling_frequency_per_rs_stream =
+                                                         {{RS_STREAM_ACCEL, {{125,  1},
+                                                                             {250,  4},
+                                                                             {500,  5},
+                                                                             {1000, 10}}},
+                                                          {RS_STREAM_GYRO,  {{200,  1},
+                                                                             {400,  4},
+                                                                             {1000, 10}}}};
     };
 }

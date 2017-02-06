@@ -39,6 +39,9 @@
 #include <regex>
 #include <list>
 
+#include <sys/signalfd.h>
+#include <signal.h>
+
 #pragma GCC diagnostic ignored "-Wpedantic"
 #include <libusb.h>
 #pragma GCC diagnostic pop
@@ -48,6 +51,8 @@
 #define MAX_DEV_PARENT_DIR 10
 
 #define META_DATA_SIZE 256
+
+#define IIO_ROOT_PATH "/sys/bus/iio/devices/iio:device"
 
 namespace rsimpl
 {
@@ -118,7 +123,7 @@ namespace rsimpl
             }
 
             std::string _device_path;
-            unsigned _timeout;
+            uint32_t _timeout;
             int _fildes;
         };
 
@@ -158,12 +163,12 @@ namespace rsimpl
             int index = -1;
             bool enabled = false;
 
-            unsigned big_endian = 0;
-            unsigned bits_used = 0;
-            unsigned bytes = 0;
-            unsigned is_signed = 0;
-            unsigned location = 0;
-            unsigned shift = 0;
+            uint32_t big_endian = 0;
+            uint32_t bits_used = 0;
+            uint32_t bytes = 0;
+            uint32_t is_signed = 0;
+            uint32_t location = 0;
+            uint32_t shift = 0;
             uint64_t mask;
             // TODO: parse 'offset' and 'scale'
         };
@@ -174,7 +179,8 @@ namespace rsimpl
             hid_input() {}
 
             // initialize the input by reading the input parameters.
-            bool init(const std::string& iio_device_path, const std::string& input_name) {
+            void init(const std::string& iio_device_path, const std::string& input_name)
+            {
                 char buffer[1024];
 
                 info.device_path = iio_device_path;
@@ -193,13 +199,15 @@ namespace rsimpl
                 }
 
                 // read scan type.
-                std::ifstream device_type_file(info.device_path + "/scan_elements/in_" + info.input + "_type");
-                if (!device_type_file) {
-                    return false;
+                auto read_scan_type_path = std::string(info.device_path + "/scan_elements/in_" + info.input + "_type");
+                std::ifstream device_type_file(read_scan_type_path);
+                if (!device_type_file)
+                {
+                    throw linux_backend_exception(to_string() << "Failed to open read_scan_type " << read_scan_type_path);
                 }
 
                 device_type_file.getline(buffer, sizeof(buffer));
-                unsigned pad_int;
+                uint32_t pad_int;
                 char sign_char, endia_nchar;
                 // TODO: parse with regex
                 auto ret = std::sscanf(buffer,
@@ -210,8 +218,9 @@ namespace rsimpl
                                        &pad_int,
                                        &info.shift);
 
-                if (ret < 0){
-                    return false;
+                if (ret < 0)
+                {
+                    throw linux_backend_exception(to_string() << "Failed to parse device_type " << read_scan_type_path);
                 }
 
                 device_type_file.close();
@@ -227,9 +236,11 @@ namespace rsimpl
 
 
                 // read scan index.
-                std::ifstream device_index_file(info.device_path + "/scan_elements/in_" + info.input + "_index");
-                if (!device_index_file) {
-                    return false;
+                auto read_scan_index_path = info.device_path + "/scan_elements/in_" + info.input + "_index";
+                std::ifstream device_index_file(read_scan_index_path);
+                if (!device_index_file)
+                {
+                    throw linux_backend_exception(to_string() << "Failed to open scan_index " << read_scan_index_path);
                 }
 
                 device_index_file.getline(buffer, sizeof(buffer));
@@ -238,33 +249,35 @@ namespace rsimpl
                 device_index_file.close();
 
                 // read enable state.
-                std::ifstream device_enabled_file(info.device_path + "/scan_elements/in_" + info.input + "_en");
-                if (!device_enabled_file) {
-                    return false;
+                auto read_enable_state_path = info.device_path + "/scan_elements/in_" + info.input + "_en";
+                std::ifstream device_enabled_file(read_enable_state_path);
+                if (!device_enabled_file)
+                {
+                    throw linux_backend_exception(to_string() << "Failed to open scan_index " << read_enable_state_path);
                 }
 
                 device_enabled_file.getline(buffer, sizeof(buffer));
                 info.enabled = (std::stoi(buffer) == 0) ? false : true;
 
                 device_enabled_file.close();
-                return true;
             }
 
             // enable scan input. doing so cause the input to be part of the data provided in the polling.
-            bool enable(bool is_enable) {
+            void enable(bool is_enable)
+            {
                 auto input_data = is_enable ? 1 : 0;
                 // open the element requested and enable and disable.
-                std::ofstream iio_device_file(info.device_path + "/scan_elements/" + "in_" + info.input + "_en");
+                auto element_path = info.device_path + "/scan_elements/" + "in_" + info.input + "_en";
+                std::ofstream iio_device_file(element_path);
 
-                if (!iio_device_file.is_open()) {
-                    return false;
+                if (!iio_device_file.is_open())
+                {
+                    throw linux_backend_exception(to_string() << "Failed to open scan_element " << element_path);
                 }
                 iio_device_file << input_data;
                 iio_device_file.close();
 
                 info.enabled = is_enable;
-
-                return true;
             }
 
             const hid_input_info& get_hid_input_info() const { return info; }
@@ -282,9 +295,12 @@ namespace rsimpl
                   iio_device(-1),
                   sensor_name(""),
                   callback(nullptr),
-                  capturing(false)
+                  capturing(false),
+                  sampling_frequency_name("")
             {}
-            ~hid_backend() {
+
+            ~hid_backend()
+            {
                 stop_capture();
 
                 // clear inputs.
@@ -292,20 +308,22 @@ namespace rsimpl
             }
 
             // initialize the device sensor. reading its name and all of its inputs.
-            bool init(int device_vid, int device_pid, int device_iio_num)
+            void init(int device_vid, int device_pid, int device_iio_num)
             {
                 vid = device_vid;
                 pid = device_pid;
                 iio_device = device_iio_num;
 
-                std::ostringstream iio_device_path;
-                iio_device_path << "/sys/bus/iio/devices/iio:device" << iio_device;
+                std::ostringstream device_path;
+                device_path << IIO_ROOT_PATH << iio_device;
+                iio_device_path = device_path.str();
 
-                std::ifstream iio_device_file(iio_device_path.str() + "/name");
+                std::ifstream iio_device_file(iio_device_path + "/name");
 
                 // find iio_device in file system.
-                if (!iio_device_file.good()) {
-                    return false;
+                if (!iio_device_file.good())
+                {
+                    throw linux_backend_exception(to_string() << "Failed to open device sensor. " << iio_device_path);
                 }
 
                 char name_buffer[256];
@@ -315,12 +333,15 @@ namespace rsimpl
                 iio_device_file.close();
 
                 // read all available input of the iio_device
-                read_device_inputs( iio_device_path.str() );
-                return true;
+                read_device_inputs();
+
+                // get the specific name of sampling_frequency
+                sampling_frequency_name = get_sampling_frequency_name();
             }
 
             // return an input by name.
-            hid_input* get_input(std::string input_name) {
+            hid_input* get_input(std::string input_name)
+            {
                 for (auto& input : inputs) {
                     if(input->get_hid_input_info().input == input_name) {
                         return input;
@@ -331,7 +352,8 @@ namespace rsimpl
             }
 
             // start capturing and polling.
-            void start_capture(hid_callback sensor_callback) {
+            void start_capture(hid_callback sensor_callback)
+            {
                 if (capturing)
                     return;
 
@@ -343,7 +365,8 @@ namespace rsimpl
                 std::ifstream iio_device_file(iio_read_device_path_str);
 
                 // find iio_device in file system.
-                if (!iio_device_file.good()) {
+                if (!iio_device_file.good())
+                {
                     throw linux_backend_exception("iio hid device is busy or not found!");
                 }
 
@@ -352,12 +375,8 @@ namespace rsimpl
                 // count number of enabled count elements and sort by their index.
                 create_channel_array();
 
-                if (!write_integer_to_param("buffer/length", buf_len)) {
-                    throw linux_backend_exception("write_integer_to_param failed!");
-                }
-                if (!write_integer_to_param("buffer/enable", 1)) {
-                    throw linux_backend_exception("write_integer_to_param failed!");
-                }
+                write_integer_to_param("buffer/length", buf_len);
+                write_integer_to_param("buffer/enable", 1);
 
                 callback = sensor_callback;
                 capturing = true;
@@ -383,8 +402,8 @@ namespace rsimpl
                         return;
                     }
 
-                    const unsigned channel_size = get_channel_size();
-                    const unsigned output_size = get_output_size();
+                    const uint32_t channel_size = get_channel_size();
+                    const uint32_t output_size = get_output_size();
                     auto raw_data_size = channel_size*buf_len;
                     do {
                         std::vector<uint8_t> raw_data(raw_data_size);
@@ -432,7 +451,8 @@ namespace rsimpl
                 }));
             }
 
-            void stop_capture() {
+            void stop_capture()
+            {
                 if (!capturing)
                     return;
 
@@ -442,14 +462,17 @@ namespace rsimpl
                 callback = NULL;
                 channels.clear();
             }
+
             static bool sort_hids(hid_input* first, hid_input* second)
             {
                 return (second->get_hid_input_info().index >= first->get_hid_input_info().index);
             }
 
-            bool create_channel_array() {
+            void create_channel_array()
+            {
                 // build enabled channels.
-                for(auto& input : inputs) {
+                for(auto& input : inputs)
+                {
                     if (input->get_hid_input_info().enabled)
                     {
                         channels.push_back(input);
@@ -457,6 +480,20 @@ namespace rsimpl
                 }
 
                 channels.sort(sort_hids);
+            }
+
+            void set_frequency(uint32_t frequency)
+            {
+                auto sampling_frequency_path = iio_device_path + "/" + sampling_frequency_name;
+                std::ofstream iio_device_file(sampling_frequency_path);
+
+                if (!iio_device_file.is_open())
+                {
+                     throw linux_backend_exception(to_string() << "Failed to set frequency " << frequency <<
+                                                   ". device path: " << sampling_frequency_path);
+                }
+                iio_device_file << frequency;
+                iio_device_file.close();
             }
 
             std::list<hid_input*>& get_inputs() { return inputs; }
@@ -468,7 +505,7 @@ namespace rsimpl
         private:
 
             // calculate the storage size of a scan
-            unsigned get_channel_size() const
+            uint32_t get_channel_size() const
             {
                 assert(!channels.empty());
                 auto bytes = 0;
@@ -493,7 +530,7 @@ namespace rsimpl
             }
 
             // calculate the actual size of data
-            unsigned get_output_size() const
+            uint32_t get_output_size() const
             {
                 assert(!channels.empty());
                 auto bits_used = 0.;
@@ -507,21 +544,55 @@ namespace rsimpl
                 return std::ceil(bits_used / CHAR_BIT);
             }
 
-            // read the IIO device inputs.
-            bool read_device_inputs(std::string device_path) {
+            std::string get_sampling_frequency_name() const
+            {
+                std::string sampling_frequency_name = "";
                 DIR *dir = nullptr;
                 struct dirent *dir_ent = nullptr;
 
-                auto scan_elements_path = device_path + "/scan_elements";
                 // start enumerate the scan elemnts dir.
-                dir = opendir(scan_elements_path.c_str());
-                if (dir == NULL) {
-                    return false;
+                dir = opendir(iio_device_path.c_str());
+                if (dir == NULL)
+                {
+                    throw linux_backend_exception(to_string() << "Failed to open scan_element " << iio_device_path);
                 }
 
                 // verify file format. should include in_ (input) and _en (enable).
-                while ((dir_ent = readdir(dir)) != NULL) {
-                    if (dir_ent->d_type != DT_DIR) {
+                while ((dir_ent = readdir(dir)) != NULL)
+                {
+                    if (dir_ent->d_type != DT_DIR)
+                    {
+                        std::string file(dir_ent->d_name);
+                        if (file.find("sampling_frequency") != std::string::npos)
+                        {
+                            sampling_frequency_name = file;
+                        }
+
+                    }
+                }
+                closedir(dir);
+                return sampling_frequency_name;
+            }
+
+            // read the IIO device inputs.
+            void read_device_inputs()
+            {
+                DIR *dir = nullptr;
+                struct dirent *dir_ent = nullptr;
+
+                auto scan_elements_path = iio_device_path + "/scan_elements";
+                // start enumerate the scan elemnts dir.
+                dir = opendir(scan_elements_path.c_str());
+                if (dir == NULL)
+                {
+                    throw linux_backend_exception(to_string() << "Failed to open scan_element " << iio_device_path);
+                }
+
+                // verify file format. should include in_ (input) and _en (enable).
+                while ((dir_ent = readdir(dir)) != NULL)
+                {
+                    if (dir_ent->d_type != DT_DIR)
+                    {
                         std::string file(dir_ent->d_name);
                         std::string prefix = "in_";
                         std::string suffix = "_en";
@@ -529,7 +600,11 @@ namespace rsimpl
                             file.substr(file.size()-suffix.size(),suffix.size()) == suffix) {
                             // initialize input.
                             auto* new_input = new hid_input();
-                            if (!new_input->init(device_path, file))
+                            try
+                            {
+                                new_input->init(iio_device_path, file);
+                            }
+                            catch(...)
                             {
                                 // fail to initialize this input. continue to the next one.
                                 continue;
@@ -541,32 +616,35 @@ namespace rsimpl
 
                     }
                 }
+                closedir(dir);
             }
 
             // configure hid device via fd
-            bool write_integer_to_param(const std::string& param,int value) {
+            void write_integer_to_param(const std::string& param,int value)
+            {
                 std::ostringstream iio_device_path;
-                iio_device_path << "/sys/bus/iio/devices/iio:device" << iio_device << "/" << param;
+                iio_device_path << IIO_ROOT_PATH << iio_device << "/" << param;
                 auto str = iio_device_path.str();
 
                 std::ofstream iio_device_file(iio_device_path.str());
 
-                if (!iio_device_file.good()) {
-                    return false;
+                if (!iio_device_file.good())
+                {
+                    throw linux_backend_exception(to_string() << "write_integer_to_param failed! device path: " << iio_device_path.str());
                 }
 
                 iio_device_file << value;
 
                 iio_device_file.close();
-
-                return true;
             }
 
-            static const unsigned buf_len = 128; // TODO
+            static const uint32_t buf_len = 128; // TODO
             int vid;
             int pid;
             int iio_device;
+            std::string iio_device_path;
             std::string sensor_name;
+            std::string sampling_frequency_name;
 
             std::list<hid_input*> inputs;
             std::list<hid_input*> channels;
@@ -606,20 +684,22 @@ namespace rsimpl
                 for (auto& iio_device : iio_devices)
                 {
                     auto device = std::unique_ptr<hid_backend>(new hid_backend());
-                    if (device->init(std::stoul(_info.vid, nullptr, 16),
-                                     std::stoul(_info.pid, nullptr, 16),
-                                     std::stoul(iio_device, nullptr, 16)))
+                    try
                     {
+                        device->init(std::stoul(_info.vid, nullptr, 16),
+                                                             std::stoul(_info.pid, nullptr, 16),
+                                                             std::stoul(iio_device, nullptr, 16));
                         _hid_sensors.push_back(std::move(device));
                     }
-                    else
+                    catch(...)
                     {
                         for (auto& hid_sensor : _hid_sensors)
                         {
                             hid_sensor.reset();
                         }
                         _hid_sensors.clear();
-                        throw linux_backend_exception("Hid device is busy!");
+                        LOG_ERROR("Hid device is busy!");
+                        throw;
                     }
                 }
             }
@@ -643,14 +723,16 @@ namespace rsimpl
                 return iio_sensors;
             }
 
-            void start_capture(const std::vector<int>& sensor_iio, hid_callback callback)
+            void start_capture(const std::vector<iio_profile>& iio_profiles, hid_callback callback)
             {
-                for (auto& iio : sensor_iio)
+                for (auto& profile : iio_profiles)
                 {
                     for (auto& sensor : _hid_sensors)
                     {
-                        if (sensor->get_iio_device() == iio)
+                        if (sensor->get_iio_device() == profile.iio)
                         {
+                            sensor->set_frequency(profile.frequency);
+
                             auto inputs = sensor->get_inputs();
                             for (auto input : inputs)
                             {
@@ -661,7 +743,7 @@ namespace rsimpl
                     }
 
                     if (_streaming_sensors.empty())
-                        LOG_ERROR("iio_sensor " + std::to_string(iio) + " not found!");
+                        LOG_ERROR("iio_sensor " + std::to_string(profile.iio) + " not found!");
                 }
 
                 std::vector<hid_backend*> captured_sensors;
@@ -700,12 +782,10 @@ namespace rsimpl
 
             static void foreach_hid_device(std::function<void(const hid_device_info&, const std::string&)> action)
             {
-                const std::string root_path = "/sys/bus/iio/devices/iio:device";
-
                 auto num = 0;
 
                 std::stringstream ss;
-                ss<<root_path<<num;
+                ss<< IIO_ROOT_PATH <<num;
 
                 struct stat st;
                 while (stat(ss.str().c_str(),&st) == 0 && st.st_mode & S_IFDIR != 0)
@@ -715,7 +795,8 @@ namespace rsimpl
                     realpath(ss.str().c_str(), device_path);
                     std::string device_path_str(device_path);
                     device_path_str+="/";
-                    std::string busnum, devnum, devpath, vid, pid, dev_id;
+                    std::string busnum, devnum, devpath, vid, pid, dev_id, dev_name;
+                    std::ifstream(device_path_str + "name") >> dev_name;
                     auto good = false;
                     for(auto i=0; i < MAX_DEV_PARENT_DIR; ++i)
                     {
@@ -748,7 +829,7 @@ namespace rsimpl
                         ss.clear(); // Clear state flags.
 
                         ++num;
-                        ss<<root_path<<num;
+                        ss<< IIO_ROOT_PATH <<num;
                         continue;
                     }
 
@@ -758,7 +839,7 @@ namespace rsimpl
                     hid_dev_info.vid = vid;
                     hid_dev_info.pid = pid;
                     hid_dev_info.unique_id = busnum + "-" + devpath + "-" + devnum;
-                    hid_dev_info.id = dev_id;
+                    hid_dev_info.id = dev_name;
                     hid_dev_info.device_path = device_path;
 
                     auto iio_device = std::to_string(num);
@@ -768,7 +849,7 @@ namespace rsimpl
                     ss.clear(); // Clear state flags.
 
                     ++num;
-                    ss<<root_path<<num;
+                    ss<< IIO_ROOT_PATH <<num;
                 }
 
             }
@@ -1147,7 +1228,7 @@ namespace rsimpl
 
                        if ( !_use_memory_map )
                        {
-                           buf.m.userptr = (unsigned long) _buffers[i].start;
+                           buf.m.userptr = (unsigned long)_buffers[i].start;
                        }
                         if(xioctl(_fd, VIDIOC_QBUF, &buf) < 0)
                             throw linux_backend_exception("xioctl(VIDIOC_QBUF) failed");
@@ -1175,6 +1256,8 @@ namespace rsimpl
                 if(_is_capturing)
                 {
                     _is_capturing = false;
+                    signal_stop();
+
                     _thread->join();
                     _thread.reset();
 
@@ -1226,15 +1309,30 @@ namespace rsimpl
                 return fourcc_buff;
             }
 
+            void signal_stop()
+            {
+                char buff[1];
+                buff[0] = 0;
+                if (write(_pipe_fd[1], buff, 1) < 0)
+                {
+                    throw linux_backend_exception("Could not signal video capture thread to stop. Error write to pipe.");
+                }
+            }
+
             void poll()
             {
-                int max_fd = _fd;
                 fd_set fds{};
                 FD_ZERO(&fds);
                 FD_SET(_fd, &fds);
+                FD_SET(_pipe_fd[0], &fds);
+                FD_SET(_pipe_fd[1], &fds);
+
+                int max_fd = std::max(std::max(_pipe_fd[0], _pipe_fd[1]), _fd);
 
                 struct timeval tv = {5,0};
+
                 auto val = select(max_fd+1, &fds, NULL, NULL, &tv);
+
                 if(val < 0)
                 {
                     if (errno == EINTR)
@@ -1244,7 +1342,16 @@ namespace rsimpl
                 }
                 else if(val > 0)
                 {
-                    if(FD_ISSET(_fd, &fds))
+                    if(FD_ISSET(_pipe_fd[0], &fds) || FD_ISSET(_pipe_fd[1], &fds))
+                    {
+                        if(!_is_capturing)
+                        {
+                            LOG_INFO("Stream finished");
+                            return;
+                        }
+                    }
+
+                    else if(FD_ISSET(_fd, &fds))
                     {
                         FD_ZERO(&fds);
                         FD_SET(_fd, &fds);
@@ -1290,6 +1397,9 @@ namespace rsimpl
                     if(_fd < 0)
                         throw linux_backend_exception(to_string() << "Cannot open '" << _name);
 
+                    if (pipe(_pipe_fd) < 0)
+                        throw linux_backend_exception("Cannot create pipe!");
+
                     v4l2_capability cap = {};
                     if(xioctl(_fd, VIDIOC_QUERYCAP, &cap) < 0)
                     {
@@ -1328,7 +1438,13 @@ namespace rsimpl
                     if(close(_fd) < 0)
                         throw linux_backend_exception("close(...) failed");
 
+                    if(close(_pipe_fd[0]) < 0)
+                       throw linux_backend_exception("close(...) failed");
+                    if(close(_pipe_fd[1]) < 0)
+                       throw linux_backend_exception("close(...) failed");
+
                     _fd = 0;
+                    _pipe_fd[0] = _pipe_fd[1] = 0;
                 }
                 _state = state;
             }
@@ -1571,7 +1687,8 @@ namespace rsimpl
             std::string _name;
             std::string _device_path;
             uvc_device_info _info;
-            int _fd;
+            int _fd = 0;
+            int _pipe_fd[2];
             std::vector<buffer> _buffers;
             stream_profile _profile;
             frame_callback _callback;

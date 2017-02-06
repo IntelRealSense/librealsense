@@ -262,7 +262,7 @@ namespace rsimpl
             void open() override;
             void close() override;
             void stop_capture() override;
-            void start_capture(const std::vector<int>& sensor_iio, hid_callback callback) override;
+            void start_capture(const std::vector<iio_profile>& iio_profiles, hid_callback callback) override;
             std::vector<hid_sensor> get_sensors() override;
 
             record_hid_device(std::shared_ptr<hid_device> source,
@@ -407,7 +407,7 @@ namespace rsimpl
             void open() override;
             void close() override;
             void stop_capture() override;
-            void start_capture(const std::vector<int>& sensor_iio, hid_callback callback) override;
+            void start_capture(const std::vector<iio_profile>& iio_profiles, hid_callback callback) override;
             std::vector<hid_sensor> get_sensors() override;
 
             void callback_thread();
