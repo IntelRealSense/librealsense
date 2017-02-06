@@ -53,11 +53,9 @@ then
 	echo -e "\e[43mUser requested to rebuild and reinstall ubuntu-xenial stock drivers\e[0m"	
 else
 	# Patching kernel for RealSense devices
-
-	echo -e "\e[32mApplying F200 formats patch patch\e[0m"
+	echo -e "\e[32mApplying F200 formats patch\e[0m"
 	patch -p1 < ../"$( dirname "$0" )"/0001-Add-video-formats-for-Intel-real-sense-F200-camera-new.patch
 	echo -e "\e[32mApplying ZR300 SR300 and LR200 formats patch\e[0m"
-
 	patch -p1 < ../"$( dirname "$0" )"/0002-LR200-ZR300-and-SR300-Pixel-Formats.patch
 fi
 
