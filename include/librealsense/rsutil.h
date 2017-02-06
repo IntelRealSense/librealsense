@@ -10,9 +10,9 @@
 /* Given a point in 3D space, compute the corresponding pixel coordinates in an image with no distortion or forward distortion coefficients produced by the same camera */
 static void rs_project_point_to_pixel(float pixel[2], const struct rs_intrinsics * intrin, const float point[3])
 {
-    assert(intrin->model != RS_DISTORTION_INVERSE_BROWN_CONRADY); // Cannot project to an inverse-distorted image
+    //assert(intrin->model != RS_DISTORTION_INVERSE_BROWN_CONRADY); // Cannot project to an inverse-distorted image
     assert(intrin->model != RS_DISTORTION_FTHETA); // Cannot project to an ftheta image
-    assert(intrin->model != RS_DISTORTION_BROWN_CONRADY); // Cannot project to an brown conrady model
+    //assert(intrin->model != RS_DISTORTION_BROWN_CONRADY); // Cannot project to an brown conrady model
 
     float x = point[0] / point[2], y = point[1] / point[2];
     if(intrin->model == RS_DISTORTION_MODIFIED_BROWN_CONRADY)
@@ -35,7 +35,7 @@ static void rs_deproject_pixel_to_point(float point[3], const struct rs_intrinsi
 {
     assert(intrin->model != RS_DISTORTION_MODIFIED_BROWN_CONRADY); // Cannot deproject from a forward-distorted image
     assert(intrin->model != RS_DISTORTION_FTHETA); // Cannot deproject to an ftheta image
-    assert(intrin->model != RS_DISTORTION_BROWN_CONRADY); // Cannot deproject to an brown conrady model
+    //assert(intrin->model != RS_DISTORTION_BROWN_CONRADY); // Cannot deproject to an brown conrady model
 
     float x = (pixel[0] - intrin->ppx) / intrin->fx;
     float y = (pixel[1] - intrin->ppy) / intrin->fy;
