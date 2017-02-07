@@ -5,7 +5,9 @@ sudo apt-get install linux-headers-generic build-essential git
 
 if [ $(ls /dev/video* | wc -l) -ne 0 ];
 then
-	read -p "Remove all RealSense cameras attached. Hit any key when ready"
+	echo -e "\e[32m"
+	read -p "First, remove all RealSense cameras attached. Hit any key when ready"
+	echo -e "\e[0m"
 fi
 
 #Include usability functions
@@ -46,18 +48,16 @@ then
 fi
 
 #Check if we need to apply patches or get reload stock drivers (Developers' option)
-[ "$#" -ne 0 -a $1 == "reset" ] && reset_driver=1 || reset_driver=0
+[ "$#" -ne 0 -a "$1" == "reset" ] && reset_driver=1 || reset_driver=0
 
 if [ $reset_driver -eq 1 ];
 then 
 	echo -e "\e[43mUser requested to rebuild and reinstall ubuntu-xenial stock drivers\e[0m"	
 else
-	# Patching kernel for RealSense devices
-
+	#Patching kernel for RealSense devices
 	echo -e "\e[32mApplying F200 formats patch patch\e[0m"
 	patch -p1 < ../"$( dirname "$0" )"/0001-Add-video-formats-for-Intel-real-sense-F200-camera-new.patch
 	echo -e "\e[32mApplying ZR300 SR300 and LR200 formats patch\e[0m"
-
 	patch -p1 < ../"$( dirname "$0" )"/0002-LR200-ZR300-and-SR300-Pixel-Formats.patch
 fi
 
