@@ -87,9 +87,13 @@ namespace rsimpl
 
             return false;
         }
-        bool has_metadata(const request_mapping& mode, const void * frame)
+        bool has_metadata(const request_mapping& mode, const void * frame, unsigned int byte_received)
         {
             std::lock_guard<std::recursive_mutex> lock(_mtx);
+			if (byte_received <= mode.pf->get_image_size(mode.profile.width, mode.profile.height))
+			{
+				return false;
+			}
             auto md = (metadata*)((byte*)frame +  mode.pf->get_image_size(mode.profile.width, mode.profile.height));
 
             for(auto i=0; i<sizeof(metadata); i++)
@@ -102,7 +106,7 @@ namespace rsimpl
             return false;
         }
 
-        double get_frame_timestamp(const request_mapping& mode, const void * frame) override
+        double get_frame_timestamp(const request_mapping& mode, const void * frame, unsigned int byte_received) override
         {
             std::lock_guard<std::recursive_mutex> lock(_mtx);
             auto pin_index = 0;
@@ -111,7 +115,7 @@ namespace rsimpl
 
             if(!_has_metadata[pin_index])
             {
-               _has_metadata[pin_index] = has_metadata(mode, frame);
+               _has_metadata[pin_index] = has_metadata(mode, frame, byte_received);
             }
 
             if(_has_metadata[pin_index])
@@ -126,11 +130,11 @@ namespace rsimpl
                     LOG_WARNING("UVC timestamp not found! please apply UVC metadata patch.");
                     started = true;
                 }
-                return _backup_timestamp_reader->get_frame_timestamp(mode, frame);
+                return _backup_timestamp_reader->get_frame_timestamp(mode, frame, byte_received);
             }
         }
 
-        unsigned long long get_frame_counter(const request_mapping & mode, const void * frame) const override
+        unsigned long long get_frame_counter(const request_mapping & mode, const void * frame, unsigned int byte_received) const override
         {
             std::lock_guard<std::recursive_mutex> lock(_mtx);
             auto pin_index = 0;
@@ -144,7 +148,7 @@ namespace rsimpl
             }
             else
             {
-                return _backup_timestamp_reader->get_frame_counter(mode, frame);
+                return _backup_timestamp_reader->get_frame_counter(mode, frame, byte_received);
             }
         }
 
@@ -212,14 +216,14 @@ namespace rsimpl
             return false;
         }
 
-        double get_frame_timestamp(const request_mapping& mode, const void * frame) override
+        double get_frame_timestamp(const request_mapping& mode, const void * frame, unsigned int byte_received) override
         {
             std::lock_guard<std::recursive_mutex> lock(_mtx);
             auto ts = std::chrono::time_point_cast<std::chrono::milliseconds>(std::chrono::system_clock::now());
             return static_cast<double>(ts.time_since_epoch().count());
         }
 
-        unsigned long long get_frame_counter(const request_mapping & mode, const void * /*frame*/) const override
+        unsigned long long get_frame_counter(const request_mapping & mode, const void * /*frame*/, unsigned int byte_received) const override
         {
             std::lock_guard<std::recursive_mutex> lock(_mtx);
             auto pin_index = 0;
@@ -281,7 +285,7 @@ namespace rsimpl
             return false;
         }
 
-        double get_frame_timestamp(const request_mapping& mode, const void * frame) override
+        double get_frame_timestamp(const request_mapping& mode, const void * frame, unsigned int byte_received) override
         {
             std::lock_guard<std::recursive_mutex> lock(_mtx);
             auto frame_size = mode.profile.width * mode.profile.height;
@@ -301,7 +305,7 @@ namespace rsimpl
             return static_cast<double>(ts.time_since_epoch().count());
         }
 
-        unsigned long long get_frame_counter(const request_mapping & mode, const void * /*frame*/) const override
+        unsigned long long get_frame_counter(const request_mapping & mode, const void * /*frame*/, unsigned int byte_received) const override
         {
             std::lock_guard<std::recursive_mutex> lock(_mtx);
             int index = 0;
