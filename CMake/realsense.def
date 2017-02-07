@@ -28,6 +28,7 @@ EXPORTS
 
     rs_start
     rs_start_cpp
+    rs_start_queue
     rs_stop
 
     rs_get_frame_metadata

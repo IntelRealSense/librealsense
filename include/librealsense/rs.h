@@ -354,6 +354,14 @@ void rs_start(const rs_device* device, rs_frame_callback_ptr on_frame, void* use
 /**
 * start streaming from specified configured device
 * \param[in] device  RealSense device
+* \param[in] queue   frame-queue to store new frames into
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+void rs_start_queue(const rs_device* device, rs_frame_queue* queue, rs_error** error);
+
+/**
+* start streaming from specified configured device
+* \param[in] device  RealSense device
 * \param[in] callback callback object created from c++ application. ownership over the callback object is moved into the relevant streaming lock
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 */
@@ -580,7 +588,6 @@ int rs_supports_camera_info(const rs_device* device, rs_camera_info info, rs_err
 /**
 * create frame queue. frame queues are the simplest x-platform syncronization primitive provided by librealsense
 * to help developers who are not using async APIs
-* \param[in] device     the RealSense device
 * \param[in] capacity max number of frames to allow to be stored in the queue before older frames will start to get dropped
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return handle to the frame queue, must be released using rs_delete_frame_queue

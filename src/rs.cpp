@@ -462,6 +462,17 @@ void rs_start(const rs_device* device, rs_frame_callback_ptr on_frame, void * us
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device, on_frame, user)
 
+void rs_start_queue(const rs_device* device, rs_frame_queue* queue, rs_error** error) try
+{
+    VALIDATE_NOT_NULL(device);
+    VALIDATE_NOT_NULL(queue);
+    rsimpl::frame_callback_ptr callback(
+        new rsimpl::frame_callback(rs_enqueue_frame, queue),
+        [](rs_frame_callback* p) { delete p; });
+    device->device->get_endpoint(device->subdevice).start_streaming(std::move(callback));
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, device, queue)
+
 void rs_start_cpp(const rs_device* device, rs_frame_callback * callback, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(device);
