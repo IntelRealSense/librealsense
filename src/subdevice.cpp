@@ -245,10 +245,10 @@ void uvc_endpoint::open(const std::vector<stream_profile>& requests)
             }
 
             // Determine the timestamp for this frame
-            auto timestamp = timestamp_reader->get_frame_timestamp(mode, f.pixels);
+            auto timestamp = timestamp_reader->get_frame_timestamp(mode, f.pixels, f.size);
             auto timestamp_domain = timestamp_reader->get_frame_timestamp_domain(mode);
 
-            auto frame_counter = timestamp_reader->get_frame_counter(mode, f.pixels);
+            auto frame_counter = timestamp_reader->get_frame_counter(mode, f.pixels, f.size);
             //auto received_time = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - capture_start_time).count();
 
             auto width = mode.profile.width;
@@ -612,8 +612,8 @@ void hid_endpoint::start_streaming(frame_callback_ptr callback)
         }
 
         // Determine the timestamp for this HID frame
-        auto timestamp = _timestamp_reader->get_frame_timestamp(mode, sensor_data.data.data());
-        auto frame_counter = _timestamp_reader->get_frame_counter(mode, sensor_data.data.data());
+        auto timestamp = _timestamp_reader->get_frame_timestamp(mode, sensor_data.data.data(), data_size);
+        auto frame_counter = _timestamp_reader->get_frame_counter(mode, sensor_data.data.data(), data_size);
 
         frame_additional_data additional_data;
         additional_data.format = _configured_profiles[sensor_data.sensor.iio].formats.front();

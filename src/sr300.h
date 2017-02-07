@@ -55,7 +55,7 @@ namespace rsimpl
             return false;
         }
 
-        double get_frame_timestamp(const request_mapping& /*mode*/, const void * frame) override
+        double get_frame_timestamp(const request_mapping& /*mode*/, const void * frame, unsigned int byte_received) override
         {
             std::lock_guard<std::recursive_mutex> lock(_mtx);
             // Timestamps are encoded within the first 32 bits of the image
@@ -74,7 +74,7 @@ namespace rsimpl
             return timestamp;
         }
 
-        unsigned long long get_frame_counter(const request_mapping & /*mode*/, const void * /*frame*/) const override
+        unsigned long long get_frame_counter(const request_mapping & /*mode*/, const void * /*frame*/, unsigned int byte_received) const override
         {
             std::lock_guard<std::recursive_mutex> lock(_mtx);
             return ++counter;
