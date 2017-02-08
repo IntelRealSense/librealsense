@@ -543,7 +543,7 @@ namespace rsimpl
                             auto compressed = _compression->encode((uint8_t*)f.pixels, f.size);
                             c.param2 = rec1->save_blob(compressed.data(), static_cast<int>(compressed.size()));
                             c.param4 = static_cast<int>(compressed.size());
-                            c.param3 = 1;
+                            c.param3 = 2;
                         }
 
                         callback(p, f);
@@ -1200,7 +1200,11 @@ namespace rsimpl
                             {
                                 frame_blob = vector<uint8_t>(c_ptr->param4, 0);
                             }
-                            else // frame was saved
+                            else if(c_ptr->param3 ==1)// frame was saved
+                            {
+                                frame_blob =_rec->load_blob(c_ptr->param2);
+                            }
+                            else
                             {
                                 frame_blob = _compression.decode(_rec->load_blob(c_ptr->param2));
                             }

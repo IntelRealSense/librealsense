@@ -139,7 +139,7 @@ namespace rsimpl
             throw std::runtime_error("HID device is missing!");
         }
 
-        auto hid_ep = std::make_shared<hid_endpoint>(backend.create_hid_device(all_hid_infos[0]),
+        auto hid_ep = std::make_shared<hid_endpoint>(backend.create_hid_device(all_hid_infos.front()),
                                                                                std::unique_ptr<frame_timestamp_reader>(new ds5_hid_timestamp_reader()));
         hid_ep->register_pixel_format(pf_accel_axes);
         hid_ep->register_pixel_format(pf_gyro_axes);
@@ -207,7 +207,8 @@ namespace rsimpl
         auto serial = _hw_monitor->get_module_serial_string(GVD, module_serial_offset);
 
         auto& depth_ep = get_depth_endpoint();
-        if (is_camera_in_advanced_mode())
+        auto advanced_mode = is_camera_in_advanced_mode();
+        if (advanced_mode)
         {
             depth_ep.register_pixel_format(pf_y8i); // L+R
             depth_ep.register_pixel_format(pf_y12i); // L+R - Calibration not rectified
@@ -246,13 +247,16 @@ namespace rsimpl
 
             // Add hid endpoint
             auto hid_index = add_endpoint(create_hid_device(backend, hid_info));
-            std::map<rs_camera_info, std::string> camera_info = {{RS_CAMERA_INFO_DEVICE_NAME, device_name},
-                                                                 {RS_CAMERA_INFO_MODULE_NAME, "Motion Module"},
-                                                                 {RS_CAMERA_INFO_DEVICE_SERIAL_NUMBER, serial},
-                                                                 {RS_CAMERA_INFO_CAMERA_FIRMWARE_VERSION, fw_version},
-                                                                 {RS_CAMERA_INFO_DEVICE_LOCATION, hid_info.front().device_path},
-                                                                 {RS_CAMERA_INFO_DEVICE_DEBUG_OP_CODE, std::to_string(fw_cmd::GLD)}};
-            register_endpoint_info(hid_index, camera_info);
+            for (auto& elem : hid_info)
+            {
+                std::map<rs_camera_info, std::string> camera_info = {{RS_CAMERA_INFO_DEVICE_NAME, device_name},
+                                                                     {RS_CAMERA_INFO_MODULE_NAME, "Motion Module"},
+                                                                     {RS_CAMERA_INFO_DEVICE_SERIAL_NUMBER, serial},
+                                                                     {RS_CAMERA_INFO_CAMERA_FIRMWARE_VERSION, fw_version},
+                                                                     {RS_CAMERA_INFO_DEVICE_LOCATION, elem.device_path},
+                                                                     {RS_CAMERA_INFO_DEVICE_DEBUG_OP_CODE, std::to_string(fw_cmd::GLD)}};
+                register_endpoint_info(hid_index, camera_info);
+            }
         }
 
         set_depth_scale(0.001f); // TODO: find out what is the right value
@@ -267,7 +271,8 @@ namespace rsimpl
                                                                      {RS_CAMERA_INFO_DEVICE_SERIAL_NUMBER, serial},
                                                                      {RS_CAMERA_INFO_CAMERA_FIRMWARE_VERSION, fw_version},
                                                                      {RS_CAMERA_INFO_DEVICE_LOCATION, element.device_path},
-                                                                     {RS_CAMERA_INFO_DEVICE_DEBUG_OP_CODE, std::to_string(fw_cmd::GLD)}};
+                                                                     {RS_CAMERA_INFO_DEVICE_DEBUG_OP_CODE, std::to_string(fw_cmd::GLD)},
+                                                                     {RS_CAMERA_INFO_ADVANCED_MODE, ((advanced_mode)?"YES":"NO")}};
                 register_endpoint_info(_depth_device_idx, camera_info);
             }
             else if (fisheye_ep && element.pid == RS450T_PID && element.mi == 3) // mi 3 is relate to Fisheye device
