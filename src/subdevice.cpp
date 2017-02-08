@@ -243,13 +243,6 @@ void uvc_endpoint::open(const std::vector<stream_profile>& requests)
 
             frame_continuation release_and_enqueue([]() {}, f.pixels);
 
-            // Ignore any frames which appear corrupted or invalid
-            if (!timestamp_reader->validate_frame(mode, f.pixels))
-            {
-                LOG_DEBUG("Dropped frame. frame is corrupted or invalid.");
-                return;
-            }
-
             // Determine the timestamp for this frame
             auto timestamp = timestamp_reader->get_frame_timestamp(mode, f.pixels, f.size);
             auto timestamp_domain = timestamp_reader->get_frame_timestamp_domain(mode);
@@ -635,12 +628,6 @@ void hid_endpoint::start_streaming(frame_callback_ptr callback)
         auto data_size = sensor_data.data.size();
         mode.profile.width = (uint32_t)data_size;
         mode.profile.height = 1;
-        // Ignore any HID frames which appear corrupted or invalid
-        if (!_timestamp_reader->validate_frame(mode, sensor_data.data.data()))
-        {
-            LOG_DEBUG("Dropped HID frame. frame is corrupted or invalid.");
-            return;
-        }
 
         // Determine the timestamp for this HID frame
         auto timestamp = _timestamp_reader->get_frame_timestamp(mode, sensor_data.data.data(), data_size);

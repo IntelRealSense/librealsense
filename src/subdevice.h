@@ -127,7 +127,6 @@ namespace rsimpl
     {
         virtual ~frame_timestamp_reader() {}
 
-        virtual bool validate_frame(const request_mapping & mode, const void * frame) const = 0;
         virtual double get_frame_timestamp(const request_mapping& mode, const void * frame, unsigned int byte_received) = 0;
         virtual unsigned long long get_frame_counter(const request_mapping& mode, const void * frame, unsigned int byte_received) const = 0;
         virtual rs_timestamp_domain get_frame_timestamp_domain(const request_mapping& mode) const = 0;

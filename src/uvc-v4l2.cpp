@@ -1369,10 +1369,17 @@ namespace rsimpl
                                         _buffers[buf.index].start };
 
 
+                        if (buf.bytesused > 0)
+                            _callback(_profile, fo);
+                        else
+                            LOG_WARNING("Empty frame has arrived.");
 
-                        _callback(_profile, fo);
+                        if (V4L2_MEMORY_USERPTR == _use_memory_map)
+                        {
+                            auto metadata_offset = _buffers[buf.index].length - META_DATA_SIZE;
+                            memset(_buffers[buf.index].start + metadata_offset, 0, META_DATA_SIZE);
+                        }
 
-                         memset(_buffers[buf.index].start, 0, _buffers[buf.index].length);
                         if(xioctl(_fd, VIDIOC_QBUF, &buf) < 0)
                             throw linux_backend_exception("xioctl(VIDIOC_QBUF) failed");
                     }

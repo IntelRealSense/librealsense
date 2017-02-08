@@ -38,23 +38,6 @@ namespace rsimpl
             counter = 0;
         }
 
-        bool validate_frame(const request_mapping& mode, const void * frame) const override
-        {
-            std::lock_guard<std::recursive_mutex> lock(_mtx);
-            // Validate that at least one byte of the image is nonzero
-            for (const uint8_t * it = (const uint8_t *)frame, *end = it + mode.pf->get_image_size(mode.profile.width, mode.profile.height); it != end; ++it)
-            {
-                if (*it)
-                {
-                    return true;
-                }
-            }
-
-            // F200 and SR300 can sometimes produce empty frames shortly after starting, ignore them
-            //LOG_INFO("Subdevice " << mode.subdevice << " produced empty frame");
-            return false;
-        }
-
         double get_frame_timestamp(const request_mapping& /*mode*/, const void * frame, unsigned int byte_received) override
         {
             std::lock_guard<std::recursive_mutex> lock(_mtx);
