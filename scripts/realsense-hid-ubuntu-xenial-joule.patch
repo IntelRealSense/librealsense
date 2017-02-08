@@ -1,16 +1,17 @@
-From bf97adc5f2ad11f1e9e1a2e59c463b9d1228f1c9 Mon Sep 17 00:00:00 2001
-From: administrator <avishag.angerman@intel.com>
+From cccb3a0d319e6b781dd580b45e5014c66a3dc14c Mon Sep 17 00:00:00 2001
+From: Pandruvada Srinivas <srinivas.pandruvada@intel.com>
 Date: Sun, 23 Oct 2016 17:24:46 -0400
 Subject: [PATCH] Enable HID metadata
 
+Signed-off-by: Avishag Angerman <avishag.angerman@intel.com>
 ---
- drivers/iio/accel/hid-sensor-accel-3d.c | 26 ++++++++++++++++++--------
+ drivers/iio/accel/hid-sensor-accel-3d.c | 30 ++++++++++++++++++++++--------
  drivers/iio/gyro/hid-sensor-gyro-3d.c   | 27 ++++++++++++++++++++-------
  include/linux/hid-sensor-ids.h          |  1 +
- 3 files changed, 39 insertions(+), 15 deletions(-)
+ 3 files changed, 43 insertions(+), 15 deletions(-)
 
 diff --git a/drivers/iio/accel/hid-sensor-accel-3d.c b/drivers/iio/accel/hid-sensor-accel-3d.c
-index ab1e238..1687dc9 100644
+index ab1e238..403e921 100644
 --- a/drivers/iio/accel/hid-sensor-accel-3d.c
 +++ b/drivers/iio/accel/hid-sensor-accel-3d.c
 @@ -42,11 +42,13 @@ struct accel_3d_state {
@@ -74,8 +75,19 @@ index ab1e238..1687dc9 100644
  
  	return 0;
  }
+@@ -236,6 +246,10 @@ static int accel_3d_capture_sample(struct hid_sensor_hub_device *hsdev,
+ 						*(u32 *)raw_data;
+ 		ret = 0;
+ 	break;
++	case HID_USAGE_SENSOR_TIME_TIMESTAMP:
++		accel_state->timestamp = *(int64_t *)raw_data;
++		ret = 0;
++	break;
+ 	default:
+ 		break;
+ 	}
 diff --git a/drivers/iio/gyro/hid-sensor-gyro-3d.c b/drivers/iio/gyro/hid-sensor-gyro-3d.c
-index c67ce2a..1e577cc 100644
+index c67ce2a..b9c0894 100644
 --- a/drivers/iio/gyro/hid-sensor-gyro-3d.c
 +++ b/drivers/iio/gyro/hid-sensor-gyro-3d.c
 @@ -42,11 +42,13 @@ struct gyro_3d_state {
@@ -126,7 +138,7 @@ index c67ce2a..1e577cc 100644
 +	if (atomic_read(&gyro_state->common_attributes.data_ready)) {
 +		if (!gyro_state->timestamp)
 +			gyro_state->timestamp = iio_get_time_ns();
-+			
++
  		hid_sensor_push_data(indio_dev,
  				gyro_state->gyro_val,
 -				sizeof(gyro_state->gyro_val));

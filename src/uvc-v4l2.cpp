@@ -1121,7 +1121,6 @@ namespace rsimpl
                     while(_is_capturing)
                     {
                         poll();
-                        std::this_thread::sleep_for(std::chrono::milliseconds(10));
                     }
                 }
                 catch (const std::exception& ex)

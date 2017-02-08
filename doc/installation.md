@@ -47,11 +47,13 @@ The project requires two external dependencies, *glfw* and *libusb-1.0*. The Cma
   In order to build *librealsense* along with the demos and tutorials use<br />
   * `cmake ../ -DBUILD_EXAMPLES=true`
 
-  Generate and install binaries:<br />
-  * `make && make install`<br />
-  The library will be installed in `/usr/local/lib`, header files in `/usr/local/include`<br />
-  The demos, tutorials and tests will located in `/usr/local/bin`.<br />
-  **Note:** Linux build configuration is presently configured to use the V4L2 backend by default
+  Recompile and install *librealsense* binaries:<br />
+  * `sudo make uninstall && make clean && make && sudo make install`<br />
+  The shared object will be installed in `/usr/local/lib`, header files in `/usr/local/include`<br />
+  The demos, tutorials and tests will located in `/usr/local/bin`<br />
+  **Tip:** Use *`make -jX`* for parallel compilation, where *`X`* stands for the number of CPU cores available:<br />  `sudo make uninstall && make clean && make -j8 && sudo make install`<br />
+  This enhancement will significantly improve build time. The side-effect, however, is that it may cause a low-end platform to hang randomly<br />
+  **Note:** Linux build configuration is presently configured to use the V4L2 backend by default.<br />
 
 4. Install IDE (Optional):
     We use QtCreator as an IDE for Linux development on Ubuntu    
@@ -73,7 +75,9 @@ Next, build the patched module for the desired machine configuration.<br />
     Then it will attempt to insert the patched module instead of the active one. If failed
     the original uvc module will be preserved.
     * `./scripts/patch-realsense-ubuntu-xenial.sh`<br />
-
+  * **Intel® Joule™ with Ubuntu**
+    Based on custom kernel provided by Canonical Ltd.
+      * `./scripts/patch-realsense-ubuntu-xenial-joule.sh`<br />
   * **Arch-based distributions**
     * You need to install the [base-devel](https://www.archlinux.org/groups/x86_64/base-devel/) package group.
 Then run the following script to patch the uvc module:

@@ -12,6 +12,7 @@
 #include <condition_variable>
 #include <algorithm>
 #include <cmath>
+#include <set>
 
 namespace rs
 {
@@ -72,21 +73,26 @@ namespace rs
                 }
 
             private:
-                std::vector<Dev> streams;
                 std::map<rs_stream, stream_profile> profiles;
                 std::map<rs_stream, Dev> devices;
                 std::vector<Dev> results;
             };
 
-            Config() {}
+            Config() : require_all(true) {}
 
             void enable_stream(rs_stream stream, int width, int height, int fps, rs_format format)
             {
                 _presets.erase(stream);
                 _requests[stream] = { stream, width, height, fps, format };
+                require_all = true;
             }
+
             void disable_stream(rs_stream stream)
             {
+                // disable_stream doesn't change require_all because we want both
+                // enable_stream(COLOR); disable_stream(COLOR);
+                // and enable_all(best_quality); disable_stream(MOTION_DATA);
+                // to work as expected.
                 _presets.erase(stream);
                 _requests.erase(stream);
             }
@@ -94,6 +100,7 @@ namespace rs
             {
                 _requests.erase(stream);
                 _presets[stream] = preset;
+                require_all = true;
             }
             void enable_all(preset p)
             {
@@ -101,6 +108,7 @@ namespace rs
                 {
                     enable_stream(static_cast<rs_stream>(i), p);
                 }
+                require_all = false;
             }
 
             void disable_all()
@@ -114,107 +122,57 @@ namespace rs
                 dev.close();
             }
 
+            template <typename... Args>
+            bool can_enable_stream(Dev dev, rs_stream stream, Args... args) {
+                Config<Dev> c(*this);
+                c.enable_stream(stream, args...);
+                for (auto && kvp : c.map_streams(dev))
+                    if (kvp.second.stream == stream)
+                        return true;
+                return false;
+            }
+
             multistream open(Dev dev)
             {
-                std::vector<Dev> results;
-                std::vector<rs_stream> satisfied_streams;
-                std::map<rs_stream, Dev> devices;
-                std::map<rs_stream, stream_profile> stream_to_profile;
+                auto mapping = map_streams(dev);
 
-                for (auto&& sub : dev.get_adjacent_devices())
-                {
-                    std::vector<stream_profile> targets;
-                    auto profiles = sub.get_stream_modes();
+                // If required, make sure we've succeeded at opening
+                // all the requested streams
+                if (require_all) {
+                    std::set<rs_stream> all_streams;
+                    for (auto && kvp : mapping)
+                        all_streams.insert(kvp.second.stream);
 
-                    // deal with explicit requests
-                    for (auto&& kvp : _requests)
-                    {
-                        if (find(begin(satisfied_streams),
-                            end(satisfied_streams), kvp.first)
-                            != end(satisfied_streams)) continue; // skip satisfied requests
-
-                        // if any profile on the subdevice can supply this request, consider it satisfiable
-                        if (std::any_of(begin(profiles), end(profiles),
-                            [&kvp](const stream_profile& profile)
-                            {
-                                return kvp.first == profile.stream;
-                            }))
-                        {
-                            targets.push_back(kvp.second); // store that this request is going to this subdevice
-                            satisfied_streams.push_back(kvp.first); // mark stream as satisfied
-                        }
-                    }
-
-                    // deal with preset streams
-                    std::vector<rs_format> prefered_formats = { RS_FORMAT_Z16, RS_FORMAT_Y8, RS_FORMAT_RGB8 };
-                    for (auto&& kvp : _presets)
-                    {
-                        if (find(begin(satisfied_streams),
-                            end(satisfied_streams), kvp.first)
-                            != end(satisfied_streams)) continue; // skip if already satisified
-
-                        stream_profile result = { RS_STREAM_COUNT, 0, 0, 0, RS_FORMAT_ANY };
-                        switch (kvp.second)
-                        {
-                        case preset::best_quality:
-                            std::sort(begin(profiles), end(profiles), sort_best_quality);
-                            break;
-                        case preset::largest_image:
-                            std::sort(begin(profiles), end(profiles), sort_largest_image);
-                            break;
-                        case preset::highest_framerate:
-                            std::sort(begin(profiles), end(profiles), sort_highest_framerate);
-                            break;
-                        default: throw std::runtime_error("unknown preset selected");
-                        }
-
-                        for (auto itr = profiles.rbegin(); itr != profiles.rend(); ++itr) {
-                            if (itr->stream == kvp.first) {
-                                result = *itr;
-                                break;
-                            }
-                        }
-
-                        // RS_STREAM_COUNT signals subdevice can't handle this stream
-                        if (result.stream != RS_STREAM_COUNT)
-                        {
-                            targets.push_back(result);
-                            satisfied_streams.push_back(kvp.first);
-                            stream_to_profile[result.stream] = result;
-                        }
-                    }
-
-                    if (targets.size() > 0) // if subdevice is handling any streams
-                    {
-                        auto_complete(targets, sub);
-
-                        for (auto&& t : targets)
-                        {
-                            stream_to_profile[t.stream] = t;
-                        }
-
-                        try
-                        {
-                            sub.open(targets); // TODO: RAII device streaming
-                        }
-                        catch(...)
-                        {
-                            for (auto&& elem : results)
-                                elem.close();
-
-                            results.clear();
-                            throw;
-                        }
-
-                        for (auto && target : targets)
-                        {
-                            devices.emplace(std::make_pair(target.stream, sub));
-                        }
-                        results.push_back(std::move(sub));
-                    }
+                    for (auto && kvp : _presets)
+                        if (!all_streams.count(kvp.first))
+                            throw std::runtime_error("Config couldn't configure all streams");
+                    for (auto && kvp : _requests)
+                        if (!all_streams.count(kvp.first))
+                            throw std::runtime_error("Config couldn't configure all streams");
                 }
 
-                return multistream( move(results), move(stream_to_profile), move(devices) );
+                // Unpack the data returned by assign
+                std::map<int, std::vector<stream_profile> > dev_to_profiles;
+                std::vector<Dev> devices;
+                std::map<rs_stream, Dev> stream_to_dev;
+                std::map<rs_stream, stream_profile> stream_to_profile;
+
+                auto devs = dev.get_adjacent_devices();
+                for (auto && kvp : mapping) {
+                    dev_to_profiles[kvp.first].push_back(kvp.second);
+                    stream_to_dev.emplace(kvp.second.stream, devs[kvp.first]);
+                    stream_to_profile[kvp.second.stream] = kvp.second;
+                }
+
+                // TODO: make sure it works
+
+                for (auto && kvp : dev_to_profiles) {
+                    auto sub = devs[kvp.first];
+                    devices.push_back(sub);
+                    sub.open(kvp.second);
+                }
+
+                return multistream(std::move(devices), std::move(stream_to_profile), std::move(stream_to_dev));
             }
 
         private:
@@ -252,8 +210,89 @@ namespace rs
                 }
             }
 
+            std::multimap<int, stream_profile> map_streams(Dev dev) const {
+                std::multimap<int, stream_profile> out;
+                std::set<rs_stream> satisfied_streams;
+
+                // Algorithm assumes get_adjacent_devices always
+                // returns the devices in the same order
+                auto devs = dev.get_adjacent_devices();
+                for (std::size_t i = 0; i < devs.size(); ++i)
+                {
+                    auto sub = devs[i];
+                    std::vector<stream_profile> targets;
+                    auto profiles = sub.get_stream_modes();
+
+                    // deal with explicit requests
+                    for (auto && kvp : _requests)
+                    {
+                        if (satisfied_streams.count(kvp.first)) continue; // skip satisfied requests
+
+                        // if any profile on the subdevice can supply this request, consider it satisfiable
+                        if (std::any_of(begin(profiles), end(profiles),
+                            [&kvp](const stream_profile &profile)
+                            {
+                                return profile.match(kvp.second);
+                            }))
+                        {
+                            targets.push_back(kvp.second); // store that this request is going to this subdevice
+                            satisfied_streams.insert(kvp.first); // mark stream as satisfied
+                        }
+                    }
+
+                    // deal with preset streams
+                    std::vector<rs_format> prefered_formats = { RS_FORMAT_Z16, RS_FORMAT_Y8, RS_FORMAT_RGB8 };
+                    for (auto && kvp : _presets)
+                    {
+                        if (satisfied_streams.count(kvp.first)) continue; // skip satisfied streams
+
+                        stream_profile result = { RS_STREAM_COUNT, 0, 0, 0, RS_FORMAT_ANY };
+                        switch (kvp.second)
+                        {
+                        case preset::best_quality:
+                            std::sort(begin(profiles), end(profiles), sort_best_quality);
+                            break;
+                        case preset::largest_image:
+                            std::sort(begin(profiles), end(profiles), sort_largest_image);
+                            break;
+                        case preset::highest_framerate:
+                            std::sort(begin(profiles), end(profiles), sort_highest_framerate);
+                            break;
+                        default: throw std::runtime_error("Unknown preset selected");
+                        }
+
+                        for (auto itr = profiles.rbegin(); itr != profiles.rend(); ++itr) {
+                            if (itr->stream == kvp.first) {
+                                result = *itr;
+                                break;
+                            }
+                        }
+
+                        // RS_STREAM_COUNT signals subdevice can't handle this stream
+                        if (result.stream != RS_STREAM_COUNT)
+                        {
+                            targets.push_back(result);
+                            satisfied_streams.insert(result.stream);
+                        }
+                    }
+
+                    if (targets.size() > 0) // if subdevice is handling any streams
+                    {
+                        auto_complete(targets, sub);
+
+                        for (auto && t : targets)
+                            out.emplace(i, t);
+
+                    }
+                }
+
+                return out;
+
+            }
+
             std::map<rs_stream, stream_profile> _requests;
             std::map<rs_stream, preset> _presets;
+            bool require_all;
         };
 
         typedef Config<> config;

@@ -62,13 +62,13 @@ A comprehensive suite of sample and tutorial applications are provided in the `/
 ## Compatible Devices
 
 1. RealSense SR300
-2. RealSense R400
+2. RealSense RS400/410/430/450
 
 ## Compatible Platforms
 
 The library is written in standards-conforming C++11 and relies only on the C89 ABI for its public interface. It is developed and tested on the following platforms:
 
-1. Ubuntu 16.04 LTS (GCC 4.9 toolchain)
+1. Ubuntu 14/16 LTS (GCC 4.9 toolchain)
 2. Windows 10 (Visual Studio 2015 Update 3)
 3. Mac OS X 10.7+ (Clang toolchain)
 

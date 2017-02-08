@@ -55,12 +55,30 @@ int main(int argc, char * argv[]) try
 
     auto dev = list[0];
 
-    // Configure all supported streams to run at 30 frames per second
+    // Configure streams to run at 30 frames per second
     rs::util::config config;
-    config.enable_stream(RS_STREAM_INFRARED, rs::preset::best_quality);
     config.enable_stream(RS_STREAM_DEPTH, rs::preset::best_quality);
-    auto stream = config.open(dev);
     
+    // try to open color stream, but fall back to IR if the camera doesn't support it
+    rs_stream mapped;
+    if (config.can_enable_stream(dev, RS_STREAM_COLOR, rs::preset::best_quality)) {
+        mapped = RS_STREAM_COLOR;
+        config.enable_stream(RS_STREAM_COLOR, rs::preset::best_quality);
+    }
+    else if (config.can_enable_stream(dev, RS_STREAM_INFRARED, 0, 0, 0, RS_FORMAT_RGB8)) {
+        mapped = RS_STREAM_INFRARED;
+        config.enable_stream(RS_STREAM_INFRARED, 0, 0, 0, RS_FORMAT_RGB8);
+    }
+    else if (config.can_enable_stream(dev, RS_STREAM_INFRARED, rs::preset::best_quality)) {
+        mapped = RS_STREAM_INFRARED;
+        config.enable_stream(RS_STREAM_INFRARED, rs::preset::best_quality);
+    }
+    else {
+        throw std::runtime_error("Couldn't configure camera for demo");
+    }
+    
+    auto stream = config.open(dev);
+
     state app_state = {0, 0, 0, 0, false, &dev};
     
     glfwInit();
@@ -94,12 +112,13 @@ int main(int argc, char * argv[]) try
     stream.start(syncer);
 
     glfwMakeContextCurrent(win);
-    texture_buffer color_tex;
+    texture_buffer mapped_tex;
     const uint16_t * depth;
     
-    const rs_extrinsics extrin = stream.get_extrinsics(RS_STREAM_DEPTH, RS_STREAM_DEPTH);
+    const rs_extrinsics extrin = stream.get_extrinsics(RS_STREAM_DEPTH, mapped);
     const rs_intrinsics depth_intrin = stream.get_intrinsics(RS_STREAM_DEPTH);
-    const rs_intrinsics color_intrin = stream.get_intrinsics(RS_STREAM_INFRARED);
+    const rs_intrinsics mapped_intrin = stream.get_intrinsics(mapped);
+
 
     int frame_count = 0; float time = 0, fps = 0;
     auto t0 = std::chrono::high_resolution_clock::now();
@@ -125,8 +144,8 @@ int main(int argc, char * argv[]) try
         glPushAttrib(GL_ALL_ATTRIB_BITS);
 
         for (auto&& frame : frames) {
-            if (frame.get_stream_type() == RS_STREAM_INFRARED)
-                color_tex.upload(frame);
+            if (frame.get_stream_type() == mapped)
+                mapped_tex.upload(frame);
             if (frame.get_stream_type() == RS_STREAM_DEPTH)
                 depth = reinterpret_cast<const uint16_t *>(frame.get_data());
         }
@@ -153,7 +172,7 @@ int main(int argc, char * argv[]) try
         glPointSize((float)width/640);
         glEnable(GL_DEPTH_TEST);
         glEnable(GL_TEXTURE_2D);
-        glBindTexture(GL_TEXTURE_2D, color_tex.get_gl_handle());
+        glBindTexture(GL_TEXTURE_2D, mapped_tex.get_gl_handle());
         glBegin(GL_POINTS);
 
         auto max_depth = *std::max_element(depth,depth+640*480);
@@ -169,7 +188,7 @@ int main(int argc, char * argv[]) try
                 if(points->z) //if(uint16_t d = *depth++)
                 {
                     //const rs::float3 point = depth_intrin.deproject({static_cast<float>(x),static_cast<float>(y)}, d*depth_scale);
-                    glTexCoord(project_to_texcoord(&color_intrin, transform(&extrin, *points)));
+                    glTexCoord(project_to_texcoord(&mapped_intrin, transform(&extrin, *points)));
                     glVertex(*points);
                 }
                 ++points;

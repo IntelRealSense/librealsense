@@ -46,6 +46,7 @@ Makefile*
 librealsense-log.txt
 
 *.vcxproj.user
+*.pyproj
 *.orig
 *.psess
 *.vspx

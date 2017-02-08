@@ -55,7 +55,8 @@ PYBIND11_PLUGIN(NAME) {
           .value("raw16", RS_FORMAT_RAW16)
           .value("raw8", RS_FORMAT_RAW8)
           .value("uyvy", RS_FORMAT_UYVY)
-          .value("motion_data", RS_FORMAT_MOTION_DATA)
+          .value("motion_raw", RS_FORMAT_MOTION_RAW)
+          .value("motion_xyz32f", RS_FORMAT_MOTION_XYZ32F)
           .value("count", RS_FORMAT_COUNT);
     
     py::class_<rs::stream_profile> stream_profile(m, "stream_profile");
@@ -92,7 +93,7 @@ PYBIND11_PLUGIN(NAME) {
         inst.fps = fps;
         inst.format = fmt;
     });
-    
+  
     py::enum_<rs_option> option(m, "option");
     option.value("backlight_compensation", RS_OPTION_BACKLIGHT_COMPENSATION)
           .value("brightness", RS_OPTION_BRIGHTNESS)
@@ -125,7 +126,7 @@ PYBIND11_PLUGIN(NAME) {
               .value("brown_conrady", RS_DISTORTION_BROWN_CONRADY)
               .value("count", RS_DISTORTION_COUNT);
     
-#define BIND_RAW_ARRAY(class, name, type, size) #name, [](const class &c) { return c.name; }
+#define BIND_RAW_ARRAY(class, name, type, size) #name, [](const class &c) { return reinterpret_cast<const std::array<type, size>&>(c.name); }
 
     py::class_<rs_intrinsics> intrinsics(m, "intrinsics");
     intrinsics.def_readonly("width", &rs_intrinsics::width)
@@ -144,6 +145,7 @@ PYBIND11_PLUGIN(NAME) {
                .value("camera_firmware_version", RS_CAMERA_INFO_CAMERA_FIRMWARE_VERSION)
                .value("device_location", RS_CAMERA_INFO_DEVICE_LOCATION)
                .value("device_debug_op_code", RS_CAMERA_INFO_DEVICE_DEBUG_OP_CODE)
+               .value("advanced_mode", RS_CAMERA_INFO_ADVANCED_MODE)
                .value("count", RS_CAMERA_INFO_COUNT);
     
     py::class_<rs_extrinsics> extrinsics(m, "extrinsics");
@@ -158,7 +160,13 @@ PYBIND11_PLUGIN(NAME) {
                   ss << ") )";
                   return ss.str();
               });
-    
+
+    py::class_<rs::region_of_interest> region_of_interest(m, "region_of_interest");
+    region_of_interest.def_readwrite("min_x", &rs::region_of_interest::min_x)
+                      .def_readwrite("min_y", &rs::region_of_interest::min_y)
+                      .def_readwrite("max_x", &rs::region_of_interest::max_x)
+                      .def_readwrite("max_y", &rs::region_of_interest::max_y);
+
     py::class_<rs::option_range> option_range(m, "option_range");
     option_range.def_readwrite("min", &rs::option_range::min)
                 .def_readwrite("max", &rs::option_range::max)
@@ -177,9 +185,8 @@ PYBIND11_PLUGIN(NAME) {
 //                 "input"_a);
 
     py::enum_<rs_timestamp_domain> ts_domain(m, "timestamp_domain");
-    ts_domain.value("camera", RS_TIMESTAMP_DOMAIN_CAMERA)
-             .value("external", RS_TIMESTAMP_DOMAIN_EXTERNAL)
-             .value("system", RS_TIMESTAMP_DOMAIN_SYSTEM)
+    ts_domain.value("hardware_clock", RS_TIMESTAMP_DOMAIN_HARDWARE_CLOCK)
+             .value("system_time", RS_TIMESTAMP_DOMAIN_SYSTEM_TIME)
              .value("count", RS_TIMESTAMP_DOMAIN_COUNT);
     
     py::enum_<rs_frame_metadata> frame_metadata(m, "frame_metadata");
@@ -197,13 +204,13 @@ PYBIND11_PLUGIN(NAME) {
          .def("supports_frame_metadata", &rs::frame::supports_frame_metadata,
               "Determine if the device allows a specific metadata to be "
               "queried", "frame_metadata"_a)
-         .def("get_frame_number", &rs::frame::get_frame_number, "Retrieve "
-              "frame number (from frame handle)")
+         .def("get_frame_number", &rs::frame::get_frame_number,
+              /*py::return_value_policy::copy, */"Retrieve frame number (from frame handle)")
          .def("get_data", [](const rs::frame& f) /*-> py::list*/ {
                 auto *data = static_cast<const uint8_t*>(f.get_data());
                 long size = f.get_width()*f.get_height()*f.get_bytes_per_pixel();
                 return /*py::cast*/(std::vector<uint8_t>(data, data + size));
-            }, "retrieve data from frame handle")
+            }, /*py::return_value_policy::take_ownership, */"retrieve data from frame handle")
          .def("get_width", &rs::frame::get_width, "Returns image width in "
               "pixels")
          .def("get_height", &rs::frame::get_height, "Returns image height in "
@@ -246,6 +253,13 @@ PYBIND11_PLUGIN(NAME) {
                .def("back", &rs::device_list::back);
 
     
+    py::class_<rs::frame_queue> frame_queue(m, "frame_queue");
+    frame_queue.def(py::init<unsigned int>())
+               .def(py::init<>())
+               .def("wait_for_frame", &rs::frame_queue::wait_for_frame)
+               // TODO: find more pythonic way to expose this function
+               .def("poll_for_frame", &rs::frame_queue::poll_for_frame, "f"_a);
+
     // wrap rs::device
     py::class_<rs::device> device(m, "device");
     device.def("open", (void (rs::device::*)(const rs::stream_profile&) const) &rs::device::open,
@@ -257,12 +271,18 @@ PYBIND11_PLUGIN(NAME) {
                "profiles.\nThis method should be used for interdependant "
                "streams, such as depth and infrared, that must be configured "
                "together.", "profiles"_a)
-          .def("close", &rs::device::close, "Close subdevice for exclusive "
-               "access.\nThis method should be used for releasing device "
-               "resources.")
+          .def("close", [](const rs::device& dev){
+              // releases the python GIL while close is running to prevent callback deadlock
+              py::gil_scoped_release release;
+              dev.close();
+          }, "Close subdevice for exclusive access.\nThis method should be used "
+             "for releasing device resources.")
           .def("start", [](const rs::device& dev, std::function<void(rs::frame)> callback){
               dev.start(callback);
           }, "Start streaming.", "callback"_a)
+        .def("start", [](const rs::device& dev, rs::frame_queue& queue) {
+              dev.start(queue);
+          }, "start streaming.", "queue"_a)
           .def("stop", &rs::device::stop, "Stop streaming.")
           .def("get_option", &rs::device::get_option, "Read option value from "
                "the device.", "option"_a)
@@ -274,6 +294,10 @@ PYBIND11_PLUGIN(NAME) {
           .def("supports", (bool (rs::device::*)(rs_option) const) &rs::device::supports,
                "Check if a particular option is supported by a subdevice.",
                "option"_a)
+          .def("set_region_of_interest", &rs::device::set_region_of_interest,
+               "Sets the region of interest of the auto-exposure algorithm", "roi"_a)
+          .def("get_region_of_interest", &rs::device::get_region_of_interest,
+               "Gets the current region of interest of the auto-exposure algorithm")
           .def("get_option_description", &rs::device::get_option_description,
                "Get option description.", "option"_a)
           .def("get_option_value_description", &rs::device::get_option_value_description,
@@ -314,5 +338,18 @@ PYBIND11_PLUGIN(NAME) {
                 " snapshot of all connected devices a the time of the call")
            .def("get_extrinsics", &rs::context::get_extrinsics,
                 "from_device"_a, "to_device"_a);
+
+    py::enum_<rs_log_severity> log_severity(m, "log_severity");
+    log_severity.value("debug", RS_LOG_SEVERITY_DEBUG)
+                .value("info", RS_LOG_SEVERITY_INFO)
+                .value("warn", RS_LOG_SEVERITY_WARN)
+                .value("error", RS_LOG_SEVERITY_ERROR)
+                .value("fatal", RS_LOG_SEVERITY_FATAL)
+                .value("none", RS_LOG_SEVERITY_NONE)
+                .value("count", RS_LOG_SEVERITY_COUNT);
+
+    m.def("log_to_console", &rs::log_to_console, "min_severity"_a);
+    m.def("log_to_file", &rs::log_to_file, "min_severity"_a, "file_path"_a);
+    
     return m.ptr();
 }
