@@ -304,6 +304,12 @@ void uvc_endpoint::open(const std::vector<stream_profile>& requests)
                 else
                 {
                     LOG_DEBUG("Dropped frame. alloc_frame(...) returned nullptr");
+
+                    for (auto&& pref : refs)
+                    {
+                        pref->get()->get_owner()->release_frame_ref(pref);
+                    }
+
                     return;
                 }
 
