@@ -13,7 +13,7 @@ Platform | Build Status |
 Linux and OS X | [![Build Status](https://travis-ci.org/IntelRealSense/librealsense.svg?branch=master)](https://travis-ci.org/IntelRealSense/librealsense) |
 Windows | [![Build status](https://ci.appveyor.com/api/projects/status/y9f8qcebnb9v41y4?svg=true)](https://ci.appveyor.com/project/ddiakopoulos/librealsense) |
 
-This project is a cross-platform library (Linux, Windows, Mac) for capturing data from the Intel® RealSense™ SR300 and R400 cameras. 
+This project is a cross-platform library (Linux, Windows, Mac) for capturing data from the Intel® RealSense™ SR300 and RS4XX depth cameras.
 
 Developer kits containing the necessary hardware to use this library are available for purchase at [this link](http://click.intel.com/realsense.html). This project is separate from the production software stack available in the [Intel® RealSense™ SDK](https://software.intel.com/en-us/intel-realsense-sdk), namely that this library only encompasses camera capture functionality without additional computer vision algorithms.
 
@@ -60,13 +60,13 @@ A comprehensive suite of sample and tutorial applications are provided in the `/
 ## Compatible Devices
 
 1. RealSense SR300
-2. RealSense R400
+2. RealSense RS400/410/430/450
 
 ## Compatible Platforms
 
 The library is written in standards-conforming C++11 and relies only on the C89 ABI for its public interface. It is developed and tested on the following platforms:
 
-1. Ubuntu 16.04 LTS (GCC 4.9 toolchain)
+1. Ubuntu 14/16 LTS (GCC 4.9 toolchain)
 2. Windows 10 (Visual Studio 2015 Update 3)
 3. Mac OS X 10.7+ (Clang toolchain)
 
