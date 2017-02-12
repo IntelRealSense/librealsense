@@ -48,7 +48,7 @@ The project requires two external dependencies, *glfw* and *libusb-1.0*. The Cma
   * `cmake ../ -DBUILD_EXAMPLES=true`
 
   Generate and install binaries:<br />
-  * `make && make install`<br />
+  * `make && sudo make install`<br />
   The library will be installed in `/usr/local/lib`, header files in `/usr/local/include`<br />
   The demos, tutorials and tests will located in `/usr/local/bin`.<br />
   **Note:** Linux build configuration is presently configured to use the V4L2 backend by default
