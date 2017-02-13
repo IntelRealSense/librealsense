@@ -338,6 +338,135 @@ public:
         return false;
     }
 
+    void draw_stream_selection()
+    {
+        // Draw combo-box with all resolution options for this device
+        auto res_chars = get_string_pointers(resolutions);
+        ImGui::PushItemWidth(-1);
+        ImGui::Text("Resolution:");
+        ImGui::SameLine();
+        std::string label = to_string() << dev.get_camera_info(RS_CAMERA_INFO_DEVICE_NAME)
+            << dev.get_camera_info(RS_CAMERA_INFO_MODULE_NAME) << " resolution";
+        if (streaming)
+            ImGui::Text(res_chars[selected_res_id]);
+        else
+        {
+            ImGui::Combo(label.c_str(), &selected_res_id, res_chars.data(),
+                static_cast<int>(res_chars.size()));
+        }
+
+        ImGui::PopItemWidth();
+
+        // FPS
+        if (show_single_fps_list)
+        {
+            auto fps_chars = get_string_pointers(shared_fpses);
+            ImGui::Text("FPS:       ");
+            label = to_string() << dev.get_camera_info(RS_CAMERA_INFO_DEVICE_NAME)
+                << dev.get_camera_info(RS_CAMERA_INFO_MODULE_NAME) << " fps";
+
+            ImGui::SameLine();
+            ImGui::PushItemWidth(-1);
+
+            if (streaming)
+            {
+                ImGui::Text(fps_chars[selected_shared_fps_id]);
+            }
+            else
+            {
+                ImGui::Combo(label.c_str(), &selected_shared_fps_id, fps_chars.data(),
+                    static_cast<int>(fps_chars.size()));
+            }
+
+            ImGui::PopItemWidth();
+        }
+
+        // Check which streams are live in current device
+        auto live_streams = 0;
+        for (auto i = 0; i < RS_STREAM_COUNT; i++)
+        {
+            auto stream = static_cast<rs_stream>(i);
+            if (formats[stream].size() > 0)
+                live_streams++;
+        }
+
+        // Draw combo-box with all format options for current device
+        for (auto i = 0; i < RS_STREAM_COUNT; i++)
+        {
+            auto stream = static_cast<rs_stream>(i);
+
+            // Format
+            if (formats[stream].size() == 0)
+                continue;
+
+            ImGui::PushItemWidth(-1);
+            auto formats_chars = get_string_pointers(formats[stream]);
+            if (!streaming || (streaming && stream_enabled[stream]))
+            {
+                if (live_streams > 1)
+                {
+                    label = to_string() << rs_stream_to_string(stream);
+                    if (!show_single_fps_list)
+                        label += " stream:";
+
+                    if (streaming)
+                        ImGui::Text(label.c_str());
+                    else
+                        ImGui::Checkbox(label.c_str(), &stream_enabled[stream]);
+                }
+            }
+
+            if (stream_enabled[stream])
+            {
+                if (show_single_fps_list) ImGui::SameLine();
+
+                label = to_string() << dev.get_camera_info(RS_CAMERA_INFO_DEVICE_NAME)
+                    << dev.get_camera_info(RS_CAMERA_INFO_MODULE_NAME)
+                    << " " << rs_stream_to_string(stream) << " format";
+
+                if (!show_single_fps_list)
+                {
+                    ImGui::Text("Format:    ");
+                    ImGui::SameLine();
+                }
+
+                if (streaming)
+                {
+                    ImGui::Text(formats_chars[selected_format_id[stream]]);
+                }
+                else
+                {
+                    ImGui::Combo(label.c_str(), &selected_format_id[stream], formats_chars.data(),
+                        static_cast<int>(formats_chars.size()));
+                }
+
+                // FPS
+                // Draw combo-box with all FPS options for this device
+                if (!show_single_fps_list && !fpses_per_stream[stream].empty() && stream_enabled[stream])
+                {
+                    auto fps_chars = get_string_pointers(fpses_per_stream[stream]);
+                    ImGui::Text("FPS:       ");
+                    ImGui::SameLine();
+
+                    label = to_string() << dev.get_camera_info(RS_CAMERA_INFO_DEVICE_NAME)
+                        << dev.get_camera_info(RS_CAMERA_INFO_MODULE_NAME)
+                        << rs_stream_to_string(stream) << " fps";
+
+                    if (streaming)
+                    {
+                        ImGui::Text(fps_chars[selected_fps_id[stream]]);
+                    }
+                    else
+                    {
+                        ImGui::Combo(label.c_str(), &selected_fps_id[stream], fps_chars.data(),
+                            static_cast<int>(fps_chars.size()));
+                    }
+                }
+            }
+            ImGui::PopItemWidth();
+        }
+    }
+
     bool is_selected_combination_supported()
     {
         std::vector<rs::stream_profile> results;
@@ -1040,7 +1169,7 @@ int main(int, char**) try
         // Flags for pop-up window - no window resize, move or collaps
         auto flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse;
 
-        const float panel_size = 350;
+        const float panel_size = 300;
         // Set window position and size
         ImGui::SetNextWindowPos({ 0, 0 });
         ImGui::SetNextWindowSize({ panel_size, static_cast<float>(h) });
@@ -1187,117 +1316,7 @@ int main(int, char**) try
                 label = to_string() << sub->dev.get_camera_info(RS_CAMERA_INFO_MODULE_NAME);
                 if (ImGui::CollapsingHeader(label.c_str(), nullptr, true, true))
                 {
-                    // Draw combo-box with all resolution options for this device
-                    auto res_chars = get_string_pointers(sub->resolutions);
-                    ImGui::PushItemWidth(-1);
-                    ImGui::Text("Resolution:");
-                    ImGui::SameLine();
-                    label = to_string() << sub->dev.get_camera_info(RS_CAMERA_INFO_DEVICE_NAME)
-                        << sub->dev.get_camera_info(RS_CAMERA_INFO_MODULE_NAME) << " resolution";
-                    if (sub->streaming)
-                        ImGui::Text(res_chars[sub->selected_res_id]);
-                    else
-                    {
-                        ImGui::Combo(label.c_str(), &sub->selected_res_id, res_chars.data(),
-                            static_cast<int>(res_chars.size()));
-                    }
-
-                    // FPS
-                    if (sub->show_single_fps_list)
-                    {
-                        auto fps_chars = get_string_pointers(sub->shared_fpses);
-                        ImGui::Text("FPS:");
-                        label = to_string() << sub->dev.get_camera_info(RS_CAMERA_INFO_DEVICE_NAME)
-                            << sub->dev.get_camera_info(RS_CAMERA_INFO_MODULE_NAME) << " fps";
-
-                        ImGui::SameLine();
-                        if (sub->streaming)
-                        {
-                            ImGui::Text(fps_chars[sub->selected_shared_fps_id]);
-                        }
-                        else
-                        {
-                            ImGui::Combo(label.c_str(), &sub->selected_shared_fps_id, fps_chars.data(),
-                                static_cast<int>(fps_chars.size()));
-                        }
-                    }
-
-                    ImGui::PopItemWidth();
-
-                    // Check which streams are live in current device
-                    auto live_streams = 0;
-                    for (auto i = 0; i < RS_STREAM_COUNT; i++)
-                    {
-                        auto stream = static_cast<rs_stream>(i);
-                        if (sub->formats[stream].size() > 0)
-                            live_streams++;
-                    }
-
-                    // Draw combo-box with all format options for current device
-                    for (auto i = 0; i < RS_STREAM_COUNT; i++)
-                    {
-                        auto stream = static_cast<rs_stream>(i);
-
-                        // Format
-                        if (sub->formats[stream].size() == 0)
-                            continue;
-
-                        ImGui::PushItemWidth(-1);
-                        auto formats_chars = get_string_pointers(sub->formats[stream]);
-                        if (!sub->streaming || (sub->streaming && sub->stream_enabled[stream]))
-                        {
-                            if (live_streams > 1)
-                            {
-                                label = to_string() << rs_stream_to_string(stream) << " stream" ;
-                                if (sub->streaming)
-                                    ImGui::Text(label.c_str());
-                                else
-                                    ImGui::Checkbox(label.c_str(), &sub->stream_enabled[stream]);
-                            }
-                        }
-
-                        if (sub->stream_enabled[stream])
-                        {
-                            label = to_string() << sub->dev.get_camera_info(RS_CAMERA_INFO_DEVICE_NAME)
-                                << sub->dev.get_camera_info(RS_CAMERA_INFO_MODULE_NAME)
-                                << " " << rs_stream_to_string(stream) << " format";
-
-                            ImGui::Text("Format:");
-                            ImGui::SameLine();
-                            if (sub->streaming)
-                            {
-                                ImGui::Text(formats_chars[sub->selected_format_id[stream]]);
-                            }
-                            else
-                            {
-                                ImGui::Combo(label.c_str(), &sub->selected_format_id[stream], formats_chars.data(),
-                                    static_cast<int>(formats_chars.size()));
-                            }
-
-                            // FPS
-                            // Draw combo-box with all FPS options for this device
-                            if (!sub->show_single_fps_list && !sub->fpses_per_stream[stream].empty() && sub->stream_enabled[stream])
-                            {
-                                auto fps_chars = get_string_pointers(sub->fpses_per_stream[stream]);
-                                ImGui::Text("FPS:");
-                                ImGui::SameLine();
-                                label = to_string() << sub->dev.get_camera_info(RS_CAMERA_INFO_DEVICE_NAME)
-                                    << sub->dev.get_camera_info(RS_CAMERA_INFO_MODULE_NAME)
-                                    << rs_stream_to_string(stream) << " fps";
-
-                                if (sub->streaming)
-                                {
-                                    ImGui::Text(fps_chars[sub->selected_fps_id[stream]]);
-                                }
-                                else
-                                {
-                                    ImGui::Combo(label.c_str(), &sub->selected_fps_id[stream], fps_chars.data(),
-                                        static_cast<int>(fps_chars.size()));
-                                }
-                            }
-                        }
-                        ImGui::PopItemWidth();
-                    }
+                    sub->draw_stream_selection();
 
                     try
                     {
