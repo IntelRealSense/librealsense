@@ -309,7 +309,7 @@ int rs_get_modes_count(const rs_stream_modes_list* list, rs_error** error);
 void rs_delete_modes_list(rs_stream_modes_list* list);
 
 /**
-* open subdevice for exclusive access, by commiting to a configuration
+* open subdevice for exclusive access, by committing to a configuration
 * \param[in] device relevant RealSense device
 * \param[in] stream     the stream type
 * \param[in] width      the width of a frame image in pixels
@@ -321,15 +321,15 @@ void rs_delete_modes_list(rs_stream_modes_list* list);
 void rs_open(rs_device* device, rs_stream stream, int width, int height, int fps, rs_format format, rs_error** error);
 
 /**
-* open subdevice for exclusive access, by commiting to composite configuration, specifying one or more stream profiles
-* this method should be used for interdendent streams, such as depth and infrared, that have to be configured together
+* open subdevice for exclusive access, by committing to composite configuration, specifying one or more stream profiles
+* this method should be used for interdependent  streams, such as depth and infrared, that have to be configured together
 * \param[in] device relevant RealSense device
 * \param[in] stream     the stream type
 * \param[in] width      the width of a frame image in pixels
 * \param[in] height     the height of a frame image in pixels
 * \param[in] fps  the number of frames which will be streamed per second
 * \param[in] format     the pixel format of a frame image
-* \param[in] count      number of simultenous stream profiles to configure
+* \param[in] count      number of simultaneous  stream profiles to configure
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 */
 void rs_open_multiple(rs_device* device, const rs_stream* stream, const int* width,
@@ -346,7 +346,7 @@ void rs_close(const rs_device* device, rs_error** error);
 * start streaming from specified configured device
 * \param[in] device  RealSense device
 * \param[in] on_frame function pointer to register as per-frame callback
-* \param[in] user auxilary data the user wishes to receive together with every frame callback
+* \param[in] user auxiliary  data the user wishes to receive together with every frame callback
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 */
 void rs_start(const rs_device* device, rs_frame_callback_ptr on_frame, void* user, rs_error** error);
@@ -375,7 +375,7 @@ void rs_start_cpp(const rs_device* device, rs_frame_callback* callback, rs_error
 void rs_stop(const rs_device* device, rs_error** error);
 
 /**
-* retrive metadata from frame handle
+* retrieve metadata from frame handle
 * \param[in] frame      handle returned from a callback
 * \param[in] frame_metadata  the rs_frame_metadata whose latest frame we are interested in
 * \return            the metadata value
@@ -391,7 +391,7 @@ double rs_get_frame_metadata(const rs_frame* frame, rs_frame_metadata frame_meta
 int rs_supports_frame_metadata(const rs_frame* frame, rs_frame_metadata frame_metadata, rs_error** error);
 
 /**
-* retrive timestamp from frame handle in milliseconds
+* retrieve timestamp from frame handle in milliseconds
 * \param[in] frame      handle returned from a callback
 * \param[out] error     if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return               the timestamp of the frame in milliseconds
@@ -399,7 +399,7 @@ int rs_supports_frame_metadata(const rs_frame* frame, rs_frame_metadata frame_me
 double rs_get_frame_timestamp(const rs_frame* frame, rs_error** error);
 
 /**
-* retrive timestamp domain from frame handle. timestamps can only be comparable if they are in common domain
+* retrieve timestamp domain from frame handle. timestamps can only be comparable if they are in common domain
 * (for example, depth timestamp might come from system time while color timestamp might come from the device)
 * this method is used to check if two timestamp values are comparable (generated from the same clock)
 * \param[in] frame      handle returned from a callback
@@ -409,7 +409,7 @@ double rs_get_frame_timestamp(const rs_frame* frame, rs_error** error);
 rs_timestamp_domain rs_get_frame_timestamp_domain(const rs_frame* frameset, rs_error** error);
 
 /**
-* retrive frame number from frame handle
+* retrieve frame number from frame handle
 * \param[in] frame      handle returned from a callback
 * \param[out] error     if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return               the frame nubmer of the frame, in milliseconds since the device was started
@@ -417,7 +417,7 @@ rs_timestamp_domain rs_get_frame_timestamp_domain(const rs_frame* frameset, rs_e
 unsigned long long rs_get_frame_number(const rs_frame* frame, rs_error** error);
 
 /**
-* retrive data from frame handle
+* retrieve data from frame handle
 * \param[in] frame      handle returned from a callback
 * \param[out] error     if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return               the pointer to the start of the frame data
@@ -425,7 +425,7 @@ unsigned long long rs_get_frame_number(const rs_frame* frame, rs_error** error);
 const void* rs_get_frame_data(const rs_frame* frame, rs_error** error);
 
 /**
-* retrive frame width in pixels
+* retrieve frame width in pixels
 * \param[in] frame      handle returned from a callback
 * \param[out] error     if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return               frame width in pixels
@@ -433,7 +433,7 @@ const void* rs_get_frame_data(const rs_frame* frame, rs_error** error);
 int rs_get_frame_width(const rs_frame* frame, rs_error** error);
 
 /**
-* retrive frame height in pixels
+* retrieve frame height in pixels
 * \param[in] frame      handle returned from a callback
 * \param[out] error     if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return               frame height in pixels
@@ -441,7 +441,7 @@ int rs_get_frame_width(const rs_frame* frame, rs_error** error);
 int rs_get_frame_height(const rs_frame* frame, rs_error** error);
 
 /**
-* retrive frame stride in bytes (number of bytes from start of line N to start of line N+1)
+* retrieve frame stride in bytes (number of bytes from start of line N to start of line N+1)
 * \param[in] frame      handle returned from a callback
 * \param[out] error     if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return               stride in bytes
@@ -449,8 +449,8 @@ int rs_get_frame_height(const rs_frame* frame, rs_error** error);
 int rs_get_frame_stride_in_bytes(const rs_frame* frame, rs_error** error);
 
 /**
-* retrive bits per pixels in the frame image
-* (note that bits per pixel is not nessesarily devided by 8, as in 12bpp)
+* retrieve bits per pixels in the frame image
+* (note that bits per pixel is not necessarily divided by 8, as in 12bpp)
 * \param[in] frame      handle returned from a callback
 * \param[out] error     if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return               bits per pixel
@@ -458,7 +458,7 @@ int rs_get_frame_stride_in_bytes(const rs_frame* frame, rs_error** error);
 int rs_get_frame_bits_per_pixel(const rs_frame* frame, rs_error** error);
 
 /**
-* retrive pixel format of the frame
+* retrieve pixel format of the frame
 * \param[in] frame      handle returned from a callback
 * \param[out] error     if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return               pixel format as described in rs_format enum
@@ -466,7 +466,7 @@ int rs_get_frame_bits_per_pixel(const rs_frame* frame, rs_error** error);
 rs_format rs_get_frame_format(const rs_frame* frame, rs_error** error);
 
 /**
-* retrive the origin stream type that produced the frame
+* retrieve the origin stream type that produced the frame
 * \param[in] frame      handle returned from a callback
 * \param[out] error     if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return               stream type of the frame
@@ -569,7 +569,7 @@ void rs_set_region_of_interest(const rs_device* device, int min_x, int min_y, in
 void rs_get_region_of_interest(const rs_device* device, int* min_x, int* min_y, int* max_x, int* max_y, rs_error ** error);
 
 /**
-* retrieve camera specific information, like versions of various internal componnents
+* retrieve camera specific information, like versions of various internal components
 * \param[in] device     the RealSense device
 * \param[in] info       camera info type to retrieve
 * \param[out] error     if non-null, receives any error that occurs during this call, otherwise, errors are ignored
@@ -586,7 +586,7 @@ const char* rs_get_camera_info(const rs_device* device, rs_camera_info info, rs_
 int rs_supports_camera_info(const rs_device* device, rs_camera_info info, rs_error** error);
 
 /**
-* create frame queue. frame queues are the simplest x-platform syncronization primitive provided by librealsense
+* create frame queue. frame queues are the simplest x-platform synchronization primitive provided by librealsense
 * to help developers who are not using async APIs
 * \param[in] capacity max number of frames to allow to be stored in the queue before older frames will start to get dropped
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
@@ -687,7 +687,7 @@ rs_context* rs_create_recording_context(int api_version, const char* filename, c
 
 /**
 * create librealsense context that given a file will respond to calls exactly as the recording did
-* if the user calls a method that was either not called during recording or voilates causality of the recording error will be thrown
+* if the user calls a method that was either not called during recording or violates causality of the recording error will be thrown
 * \param[in] api_version realsense API version as provided by RS_API_VERSION macro
 * \param[in] filename string representing the name of the file to play back from
 * \param[in] section  string representing the name of the section within existing recording

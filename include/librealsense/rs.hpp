@@ -220,7 +220,7 @@ namespace rs
         }
 
         /**
-        * retrive frame number (from frame handle)
+        * retrieve frame number (from frame handle)
         * \return               the frame nubmer of the frame, in milliseconds since the device was started
         */
         unsigned long long get_frame_number() const
@@ -232,7 +232,7 @@ namespace rs
         }
 
         /**
-        * retrive data from frame handle
+        * retrieve data from frame handle
         * \return               the pointer to the start of the frame data
         */
         const void * get_data() const
@@ -268,7 +268,7 @@ namespace rs
         }
 
         /**
-        * retrive frame stride, meaning the actual line width in memory in bytes (not the logical image width)
+        * retrieve frame stride, meaning the actual line width in memory in bytes (not the logical image width)
         * \return            stride in bytes
         */
         int get_stride_in_bytes() const
@@ -294,7 +294,7 @@ namespace rs
         int get_bytes_per_pixel() const { return get_bits_per_pixel() / 8; }
 
         /**
-        * retrive pixel format of the frame
+        * retrieve pixel format of the frame
         * \return               pixel format as described in rs_format enum
         */
         rs_format get_format() const
@@ -306,7 +306,7 @@ namespace rs
         }
 
         /**
-        * retrive the origin stream type that produced the frame
+        * retrieve the origin stream type that produced the frame
         * \return               stream type of the frame
         */
         rs_stream get_stream_type() const
@@ -398,7 +398,7 @@ namespace rs
     {
     public:
         /**
-        * open subdevice for exclusive access, by commiting to a configuration
+        * open subdevice for exclusive access, by committing to a configuration
         * \param[in] profile    configuration commited by the device
         */
         void open(const stream_profile& profile) const
@@ -415,8 +415,8 @@ namespace rs
         }
 
         /**
-        * open subdevice for exclusive access, by commiting to composite configuration, specifying one or more stream profiles
-        * this method should be used for interdendent streams, such as depth and infrared, that have to be configured together
+        * open subdevice for exclusive access, by committing to composite configuration, specifying one or more stream profiles
+        * this method should be used for interdependent  streams, such as depth and infrared, that have to be configured together
         * \param[in] profiles   vector of configurations to be commited by the device
         */
         void open(const std::vector<stream_profile>& profiles) const
@@ -619,7 +619,7 @@ namespace rs
         }
 
         /*
-        * retrive stream intrinsics
+        * retrieve stream intrinsics
         * \param[in] profile the stream profile to calculate the intrinsics for
         * \return intrinsics object
         */
@@ -651,7 +651,7 @@ namespace rs
         }
 
         /**
-        * retrieve camera specific information, like versions of various internal componnents
+        * retrieve camera specific information, like versions of various internal components
         * \param[in] info     camera info type to retrieve
         * \return             the requested camera info string, in a format specific to the device model
         */
@@ -899,7 +899,7 @@ namespace rs
     public:
         /**
         * create librealsense context that given a file will respond to calls exactly as the recording did
-        * if the user calls a method that was either not called during recording or voilates causality of the recording error will be thrown
+        * if the user calls a method that was either not called during recording or violates causality of the recording error will be thrown
         * \param[in] filename string of the name of the file
         */
         mock_context(const std::string& filename,
@@ -919,7 +919,7 @@ namespace rs
     {
     public:
         /**
-        * create frame queue. frame queues are the simplest x-platform syncronization primitive provided by librealsense
+        * create frame queue. frame queues are the simplest x-platform synchronization primitive provided by librealsense
         * to help developers who are not using async APIs
         * param[in] capacity size of the frame queue
         */
