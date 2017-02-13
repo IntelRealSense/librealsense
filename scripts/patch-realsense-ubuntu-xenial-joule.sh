@@ -44,7 +44,7 @@ then
 fi
 
 #Check if we need to apply patches or get reload stock drivers (Developers' option)
-[ "$#" -ne 0 -a $1 == "reset" ] && reset_driver=1 || reset_driver=0
+[ "$#" -ne 0 -a "$1" == "reset" ] && reset_driver=1 || reset_driver=0
 
 if [ $reset_driver -eq 1 ];
 then 
