@@ -1,6 +1,12 @@
 /* License: Apache 2.0. See LICENSE file in root directory.
    Copyright(c) 2015 Intel Corporation. All Rights Reserved. */
 
+/** \file rs.h
+* \brief
+* Exposes librealsense functionality for C compilers
+*/   
+   
+   
 #ifndef LIBREALSENSE_RS_H
 #define LIBREALSENSE_RS_H
 
@@ -15,56 +21,61 @@ extern "C" {
 #define STRINGIFY(arg) #arg
 #define VAR_ARG_STRING(arg) STRINGIFY(arg)
 
-/* Version in encoded integer format (1,9,x) -> 1090x note that each component is limited into [0-99] range by design*/
+/* Versioning rules            : For each release at least one of [MJR/MNR/PTCH] triple is promoted                                             */
+/*                             : Versions that differ by RS_API_PATCH_VERSION only are interface-compatible, i.e. no user-code changes required */
+/*                             : Versions that differ by MAJOR/MINOR VERSION component can introduce API changes                                */
+/* Version in encoded integer format (1,9,x) -> 01090x. note that each component is limited into [0-99] range by design                         */
 #define RS_API_VERSION  (((RS_API_MAJOR_VERSION) * 10000) + ((RS_API_MINOR_VERSION) * 100) + (RS_API_PATCH_VERSION))
 /* Return version in "X.Y.Z" format */
 #define RS_API_VERSION_STR (VAR_ARG_STRING(RS_API_MAJOR_VERSION.RS_API_MINOR_VERSION.RS_API_PATCH_VERSION))
 
+/** \brief Exception types are the different categories of errors that RealSense API might return */
 typedef enum rs_exception_type
 {
-    RS_EXCEPTION_TYPE_UNKNOWN,
-    RS_EXCEPTION_TYPE_CAMERA_DISCONNECTED,
-    RS_EXCEPTION_TYPE_BACKEND,
-    RS_EXCEPTION_TYPE_INVALID_VALUE,
-    RS_EXCEPTION_TYPE_WRONG_API_CALL_SEQUENCE,
-    RS_EXCEPTION_TYPE_NOT_IMPLEMENTED,
-    RS_EXCEPTION_TYPE_DEVICE_IN_RECOVERY_MODE,
-    RS_EXCEPTION_TYPE_COUNT
+    RS_EXCEPTION_TYPE_UNKNOWN,					
+    RS_EXCEPTION_TYPE_CAMERA_DISCONNECTED,		/**< Device was disconnected, this can be caused by outside intervention, by internal firmware error or due to insufficient power */
+    RS_EXCEPTION_TYPE_BACKEND,					/**< Error was returned from the underlying OS-specific layer */
+    RS_EXCEPTION_TYPE_INVALID_VALUE,			/**< Invalid value was passed to the API */
+    RS_EXCEPTION_TYPE_WRONG_API_CALL_SEQUENCE,  /**< Function precondition was violated */
+    RS_EXCEPTION_TYPE_NOT_IMPLEMENTED,			/**< The method is not implemented at this point */
+    RS_EXCEPTION_TYPE_DEVICE_IN_RECOVERY_MODE,  /**< Device is in recovery mode and might require firmware update */
+    RS_EXCEPTION_TYPE_COUNT						/**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
 } rs_exception_type;
 
+/** \brief Streams are different types of data provided by RealSense devices */
 typedef enum rs_stream
 {
     RS_STREAM_ANY,
-    RS_STREAM_DEPTH,
-    RS_STREAM_COLOR,
-    RS_STREAM_INFRARED,
-    RS_STREAM_INFRARED2,
-    RS_STREAM_FISHEYE,
-    RS_STREAM_GYRO,
-    RS_STREAM_ACCEL,
+    RS_STREAM_DEPTH                            , /**< Native stream of depth data produced by RealSense device */
+    RS_STREAM_COLOR                            , /**< Native stream of color data captured by RealSense device */
+    RS_STREAM_INFRARED                         , /**< Native stream of infrared data captured by RealSense device */
+    RS_STREAM_INFRARED2                        , /**< Native stream of infrared data captured from a second viewpoint by RealSense device */
+    RS_STREAM_FISHEYE                          , /**< Native stream of fish-eye (wide) data captured from the dedicate motion camera */
+    RS_STREAM_GYRO							   , /**< Native stream of gyroscope motion data produced by RealSense device */
+    RS_STREAM_ACCEL						       , /**< Native stream of accelerometer motion data produced by RealSense device */
     RS_STREAM_COUNT
 } rs_stream;
 
 typedef enum rs_format
 {
-    RS_FORMAT_ANY             ,
-    RS_FORMAT_Z16             , /**< 16 bit linear depth values. The depth is meters is equal to depth scale * pixel value */
-    RS_FORMAT_DISPARITY16     , /**< 16 bit linear disparity values. The depth in meters is equal to depth scale / pixel value */
-    RS_FORMAT_XYZ32F          , /**< 32 bit floating point 3D coordinates. */
-    RS_FORMAT_YUYV            ,
-    RS_FORMAT_RGB8            ,
-    RS_FORMAT_BGR8            ,
-    RS_FORMAT_RGBA8           ,
-    RS_FORMAT_BGRA8           ,
-    RS_FORMAT_Y8              ,
-    RS_FORMAT_Y16             ,
+    RS_FORMAT_ANY             , /**< When passed to enable stream, librealsense will try to provide best suited format */
+    RS_FORMAT_Z16             , /**< 16-bit linear depth values. The depth is meters is equal to depth scale * pixel value. */
+    RS_FORMAT_DISPARITY16     , /**< 16-bit linear disparity values. The depth in meters is equal to depth scale / pixel value. */
+    RS_FORMAT_XYZ32F          , /**< 32-bit floating point 3D coordinates. */
+    RS_FORMAT_YUYV            , /**< Standard YUV pixel format as described in https://en.wikipedia.org/wiki/YUV */
+    RS_FORMAT_RGB8            , /**< 8-bit red, green and blue channels */
+    RS_FORMAT_BGR8            , /**< 8-bit blue, green, and red channels -- suitable for OpenCV */
+    RS_FORMAT_RGBA8           , /**< 8-bit red, green and blue channels + constant alpha channel equal to FF */
+    RS_FORMAT_BGRA8           , /**< 8-bit blue, green, and red channels + constant alpha channel equal to FF */
+    RS_FORMAT_Y8              , /**< 8-bit per-pixel grayscale image */
+    RS_FORMAT_Y16             , /**< 16-bit per-pixel grayscale image */
     RS_FORMAT_RAW10           , /**< Four 10-bit luminance values encoded into a 5-byte macropixel */
-    RS_FORMAT_RAW16           ,
-    RS_FORMAT_RAW8            ,
-    RS_FORMAT_UYVY            ,
-    RS_FORMAT_MOTION_RAW      ,
-    RS_FORMAT_MOTION_XYZ32F   ,
-    RS_FORMAT_COUNT
+    RS_FORMAT_RAW16           , /**< 16-bit raw image */
+    RS_FORMAT_RAW8        	  , /**< 8-bit raw image */
+    RS_FORMAT_UYVY            , /**< Similar to the standard YUYV pixel format, but packed in a different order */
+    RS_FORMAT_MOTION_RAW      , /**< Raw data from the motion sensor */
+    RS_FORMAT_MOTION_XYZ32F   , /**< Motion data packed as 3 32-bit float values, for X, Y, and Z axis */
+    RS_FORMAT_COUNT				/**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
 } rs_format;
 
 typedef enum rs_frame_metadata
@@ -73,32 +84,37 @@ typedef enum rs_frame_metadata
     RS_FRAME_METADATA_COUNT
 } rs_frame_metadata;
 
+/** \brief Distortion model: defines how pixel coordinates should be mapped to sensor coordinates. */
 typedef enum rs_distortion
 {
-    RS_DISTORTION_NONE                  , /**< Rectilinear images, no distortion compensation required */
+    RS_DISTORTION_NONE                  , /**< Rectilinear images. No distortion compensation required. */
     RS_DISTORTION_MODIFIED_BROWN_CONRADY, /**< Equivalent to Brown-Conrady distortion, except that tangential distortion is applied to radially distorted points */
     RS_DISTORTION_INVERSE_BROWN_CONRADY , /**< Equivalent to Brown-Conrady distortion, except undistorts image instead of distorting it */
     RS_DISTORTION_FTHETA                , /**< F-Theta fish-eye distortion model */
     RS_DISTORTION_BROWN_CONRADY         , /**< Unmodified Brown-Conrady distortion model */
-    RS_DISTORTION_COUNT                 ,
+    RS_DISTORTION_COUNT                 , /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
 } rs_distortion;
 
-typedef enum rs_visual_preset
+/** \brief For SR300 devices: provides optimized settings (presets) for specific types of usage. */
+typedef enum rs_ivcam_preset
 {
-    RS_VISUAL_PRESET_SHORT_RANGE             ,
-    RS_VISUAL_PRESET_LONG_RANGE              ,
-    RS_VISUAL_PRESET_BACKGROUND_SEGMENTATION ,
-    RS_VISUAL_PRESET_GESTURE_RECOGNITION     ,
-    RS_VISUAL_PRESET_OBJECT_SCANNING         ,
-    RS_VISUAL_PRESET_FACE_ANALYTICS          ,
-    RS_VISUAL_PRESET_FACE_LOGIN              ,
-    RS_VISUAL_PRESET_GR_CURSOR               ,
-    RS_VISUAL_PRESET_DEFAULT                 ,
-    RS_VISUAL_PRESET_MID_RANGE               ,
-    RS_VISUAL_PRESET_IR_ONLY                 ,
-    RS_VISUAL_PRESET_COUNT
+    RS_VISUAL_PRESET_SHORT_RANGE             , /**< Preset for short range */
+    RS_VISUAL_PRESET_LONG_RANGE              , /**< Preset for long range */
+    RS_VISUAL_PRESET_BACKGROUND_SEGMENTATION , /**< Preset for background segmentation */
+    RS_VISUAL_PRESET_GESTURE_RECOGNITION     , /**< Preset for gesture recognition */
+    RS_VISUAL_PRESET_OBJECT_SCANNING         , /**< Preset for object scanning */
+    RS_VISUAL_PRESET_FACE_ANALYTICS          , /**< Preset for face analytics */
+    RS_VISUAL_PRESET_FACE_LOGIN              , /**< Preset for face login */
+    RS_VISUAL_PRESET_GR_CURSOR               , /**< Preset for GR cursor */
+    RS_VISUAL_PRESET_DEFAULT                 , /**< Preset for default */
+    RS_VISUAL_PRESET_MID_RANGE               , /**< Preset for mid-range */
+    RS_VISUAL_PRESET_IR_ONLY                 , /**< Preset for IR only */
+    RS_VISUAL_PRESET_COUNT					   /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
 } rs_visual_preset;
 
+/** \brief Defines general configuration controls. 
+
+   These can generally be mapped to camera UVC controls, and unless stated otherwise, can be set/queried at any time. */
 typedef enum rs_option
 {
     RS_OPTION_BACKLIGHT_COMPENSATION                     , /**< Enable / disable color backlight compensation*/
@@ -119,75 +135,83 @@ typedef enum rs_option
     RS_OPTION_MOTION_RANGE                               , /**< Motion vs. Range trade-off, with lower values allowing for better motion sensitivity and higher values allowing for better depth range*/
     RS_OPTION_FILTER_OPTION                              , /**< Set the filter to apply to each depth frame. Each one of the filter is optimized per the application requirements*/
     RS_OPTION_CONFIDENCE_THRESHOLD                       , /**< The confidence level threshold used by the Depth algorithm pipe to set whether a pixel will get a valid range or will be marked with invalid range*/
-    RS_OPTION_EMITTER_ENABLED                            , /**< RS400 Emitter enabled */
+    RS_OPTION_EMITTER_ENABLED                            , /**< Laser Emitter enabled */
     RS_OPTION_FRAMES_QUEUE_SIZE                          , /**< Number of frames the user is allowed to keep per stream. Trying to hold-on to more frames will cause frame-drops.*/
     RS_OPTION_TOTAL_FRAME_DROPS                          , /**< Total number of detected frame drops from all streams */
-    RS_OPTION_COUNT                                      ,
+    RS_OPTION_COUNT                                      , /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
 } rs_option;
 
+/**\brief Read-only strings that can be queried from the device.
+
+   Not all information fields are available on all camera types.
+   This information is mainly available for camera debug and troubleshooting and should not be used in applications. */
 typedef enum rs_camera_info {
-    RS_CAMERA_INFO_DEVICE_NAME                   ,
+    RS_CAMERA_INFO_DEVICE_NAME                   , /**< Device friendly name */
     RS_CAMERA_INFO_MODULE_NAME                   ,
-    RS_CAMERA_INFO_DEVICE_SERIAL_NUMBER          ,
-    RS_CAMERA_INFO_CAMERA_FIRMWARE_VERSION       ,
+    RS_CAMERA_INFO_DEVICE_SERIAL_NUMBER          , /**< Device serial number */
+    RS_CAMERA_INFO_CAMERA_FIRMWARE_VERSION       , /**< Primary firmware version */
     RS_CAMERA_INFO_DEVICE_LOCATION               ,
     RS_CAMERA_INFO_DEVICE_DEBUG_OP_CODE          ,
     RS_CAMERA_INFO_ADVANCED_MODE                 ,
-    RS_CAMERA_INFO_COUNT
+    RS_CAMERA_INFO_COUNT						  /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
 } rs_camera_info;
 
+/**\brief Severity of the librealsense logger */
 typedef enum rs_log_severity {
-    RS_LOG_SEVERITY_DEBUG, /* Detailed information about ordinary operations */
-    RS_LOG_SEVERITY_INFO , /* Terse information about ordinary operations */
-    RS_LOG_SEVERITY_WARN , /* Indication of possible failure */
-    RS_LOG_SEVERITY_ERROR, /* Indication of definite failure */
-    RS_LOG_SEVERITY_FATAL, /* Indication of unrecoverable failure */
-    RS_LOG_SEVERITY_NONE , /* No logging will occur */
-    RS_LOG_SEVERITY_COUNT
+    RS_LOG_SEVERITY_DEBUG, /**< Detailed information about ordinary operations */
+    RS_LOG_SEVERITY_INFO , /**< Terse information about ordinary operations */
+    RS_LOG_SEVERITY_WARN , /**< Indication of possible failure */
+    RS_LOG_SEVERITY_ERROR, /**< Indication of definite failure */
+    RS_LOG_SEVERITY_FATAL, /**< Indication of unrecoverable failure */
+    RS_LOG_SEVERITY_NONE , /**< No logging will occur */
+    RS_LOG_SEVERITY_COUNT  /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
 } rs_log_severity;
 
+/** \brief Specifies the clock in relation to which the frame timestamp was measured. */
 typedef enum rs_timestamp_domain
 {
-    RS_TIMESTAMP_DOMAIN_HARDWARE_CLOCK,
-    RS_TIMESTAMP_DOMAIN_SYSTEM_TIME,
-    RS_TIMESTAMP_DOMAIN_COUNT
+    RS_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, /**< Frame timestamp was measured in relation to the camera clock */
+    RS_TIMESTAMP_DOMAIN_SYSTEM_TIME,	/**< Frame timestamp was measured in relation to the OS system clock */
+    RS_TIMESTAMP_DOMAIN_COUNT			/**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
 } rs_timestamp_domain;
 
+/** \brief Video stream intrinsics */
 typedef struct rs_intrinsics
 {
-    int           width;     /* width of the image in pixels */
-    int           height;    /* height of the image in pixels */
-    float         ppx;       /* horizontal coordinate of the principal point of the image, as a pixel offset from the left edge */
-    float         ppy;       /* vertical coordinate of the principal point of the image, as a pixel offset from the top edge */
-    float         fx;        /* focal length of the image plane, as a multiple of pixel width */
-    float         fy;        /* focal length of the image plane, as a multiple of pixel height */
-    rs_distortion model;     /* distortion model of the image */
-    float         coeffs[5]; /* distortion coefficients */
+    int           width;     /**< Width of the image in pixels */
+    int           height;    /**< Height of the image in pixels */
+    float         ppx;       /**< Horizontal coordinate of the principal point of the image, as a pixel offset from the left edge */
+    float         ppy;       /**< Vertical coordinate of the principal point of the image, as a pixel offset from the top edge */
+    float         fx;        /**< Focal length of the image plane, as a multiple of pixel width */
+    float         fy;        /**< Focal length of the image plane, as a multiple of pixel height */
+    rs_distortion model;     /**< Distortion model of the image */
+    float         coeffs[5]; /**< Distortion coefficients */
 } rs_intrinsics;
 
-/* represents motion device intrinsic - scale, bias and variances */
+/** \brief Motion device intrinsics: scale, bias, and variances */
 typedef struct rs_motion_device_intrinsic
 {
     /* Scale X        cross axis        cross axis      Bias X */
     /* cross axis     Scale Y           cross axis      Bias Y */
     /* cross axis     cross axis        Scale Z         Bias Z */
-    float data[3][4];
+    float data[3][4];          /**< Interpret data array values */
 
-    float noise_variances[3];
-    float bias_variances[3];
+    float noise_variances[3];  /**< Variance of noise for X, Y, and Z axis */
+    float bias_variances[3];   /**< Variance of bias for X, Y, and Z axis */
 } rs_motion_device_intrinsic;
 
-/* represents motion module intrinsics including accelerometer and gyro intrinsics */
+/** \brief Motion module intrinsics: includes accelerometer and gyroscope intrinsics structs of type \c rs_motion_device_intrinsic. */
 typedef struct rs_motion_intrinsics
 {
     rs_motion_device_intrinsic acc;
     rs_motion_device_intrinsic gyro;
 } rs_motion_intrinsics;
 
+/** \brief Cross-stream extrinsics: encode the topology describing how the different devices are connected. */
 typedef struct rs_extrinsics
 {
-    float rotation[9];    /* column-major 3x3 rotation matrix */
-    float translation[3]; /* 3 element translation vector, in meters */
+    float rotation[9];    /**< Column-major 3x3 rotation matrix */
+    float translation[3]; /**< Three-element translation vector, in meters */
 } rs_extrinsics;
 
 typedef struct rs_context rs_context;
@@ -206,35 +230,39 @@ typedef void (*rs_frame_callback_ptr)(rs_frame*, void*);
 typedef void (*rs_log_callback_ptr)(rs_log_severity min_severity, const char* message, void* user);
 
 /**
-* create default librealsense context
-* \param[in] api_version realsense API version as provided by RS_API_VERSION macro
-* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
-* \return            context object, should be released by rs_delete_context
+* \brief Creates RealSense context that is required for the rest of the API.
+* \param[in] api_version Users are expected to pass their version of \c RS_API_VERSION to make sure they are running the correct librealsense version.
+* \param[out] error  If non-null, receives any error that occurs during this call, otherwise, errors are ignored.
+* \return            Context object
 */
 rs_context* rs_create_context(int api_version, rs_error** error);
 
 /**
-* delete relasense context
-* \param[in] context realsense context to delete
+* \brief Frees the relevant context object. 
+*
+* This action might invalidate \c rs_device pointers created from this context.
+* \param[in] context Object that is no longer needed
 */
 void rs_delete_context(rs_context* context);
 
 /**
 * create a static snapshot of all connected devices at the time of the call
+* \param context     Object representing librealsense session
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return            the list of devices, should be released by rs_delete_device_list
 */
 rs_device_list* rs_query_devices(const rs_context* context, rs_error** error);
 
 /**
-* determine number of devices in a list
+* Determines number of devices in a list
+* \param[in] info_list The list of connected devices captured using rs_query_devices
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
-* \return            the count of devices
+* \return            Device count
 */
 int rs_get_device_count(const rs_device_list* info_list, rs_error** error);
 
 /**
-* delete device list, any devices created from this list will remain unaffected
+* Deletes device list, any devices created from this list will remain unaffected
 * \param[in] info_list list to delete
 */
 void rs_delete_device_list(rs_device_list* info_list);
