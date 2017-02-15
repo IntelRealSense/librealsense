@@ -140,7 +140,9 @@ namespace rsimpl
         }
 
         auto hid_ep = std::make_shared<hid_endpoint>(backend.create_hid_device(all_hid_infos.front()),
-                                                                               std::unique_ptr<frame_timestamp_reader>(new ds5_hid_timestamp_reader()));
+                                                                               std::unique_ptr<frame_timestamp_reader>(new ds5_hid_timestamp_reader()),
+                                                                               fps_and_sampling_frequency_per_rs_stream,
+                                                                               sensor_name_and_hid_profiles);
         hid_ep->register_pixel_format(pf_accel_axes);
         hid_ep->register_pixel_format(pf_gyro_axes);
 

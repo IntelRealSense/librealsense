@@ -116,26 +116,32 @@ namespace rsimpl
 
         struct hid_sensor
         {
-            int iio;
+            uint32_t iio; // Industrial I/O - An index that represents a single hardware sensor
             std::string name;
         };
 
         struct hid_sensor_input
         {
-            int index;
+            uint32_t index;
             std::string name;
         };
 
         struct callback_data{
             hid_sensor sensor;
             hid_sensor_input sensor_input;
-            unsigned value;
+            uint32_t value;
         };
 
         struct sensor_data
         {
             hid_sensor sensor;
             std::vector<uint8_t> data;
+        };
+
+        struct iio_profile
+        {
+            uint32_t iio;
+            uint32_t frequency;
         };
 
         typedef std::function<void(const sensor_data&)> hid_callback;
@@ -147,7 +153,7 @@ namespace rsimpl
             virtual void open() = 0;
             virtual void close() = 0;
             virtual void stop_capture() = 0;
-            virtual void start_capture(const std::vector<int>& sensor_iio, hid_callback callback) = 0;
+            virtual void start_capture(const std::vector<iio_profile>& iio_profiles, hid_callback callback) = 0;
             virtual std::vector<hid_sensor> get_sensors() = 0;
         };
 
@@ -406,9 +412,9 @@ namespace rsimpl
             }
 
         private:
-            unsigned get_dev_index_by_profiles(const stream_profile& profile) const
+            uint32_t get_dev_index_by_profiles(const stream_profile& profile) const
             {
-                unsigned dev_index = 0;
+                uint32_t dev_index = 0;
                 for (auto& elem : _dev)
                 {
                     auto pin_stream_profiles = elem->get_profiles();
@@ -423,7 +429,7 @@ namespace rsimpl
             }
 
             std::vector<std::shared_ptr<uvc_device>> _dev;
-            std::set<unsigned> _configured_indexes;
+            std::set<uint32_t> _configured_indexes;
         };
 
         std::shared_ptr<backend> create_backend();

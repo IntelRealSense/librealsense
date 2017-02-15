@@ -313,7 +313,7 @@ public:
             glBegin(GL_LINES);
             glColor3f(1.0f, 1.0f, 1.0f);
             glVertex3f(0.0f, 0.0f, 0.0f);
-            glVertex3f(x / norm, y / norm, z / norm);
+            glVertex3f(-x / norm, -y / norm, -z / norm);
             glEnd();
 
             // Save model and projection matrix for later
@@ -326,14 +326,14 @@ public:
             glOrtho(-canvas_size, canvas_size, -canvas_size, canvas_size, -1, +1);
 
             std::ostringstream s1;
-            const auto presicion = 3;
+            const auto precision = 3;
 
-            s1 << "(" << std::fixed << std::setprecision(presicion) << x << "," << std::fixed << std::setprecision(presicion) << y << "," << std::fixed << std::setprecision(presicion) << z << ")";
-            print_text_in_3d(x, y, z, s1.str().c_str(), false, model, proj, 1/norm);
+            s1 << "(" << std::fixed << std::setprecision(precision) << x << "," << std::fixed << std::setprecision(precision) << y << "," << std::fixed << std::setprecision(precision) << z << ")";
+            print_text_in_3d(-x, -y, -z, s1.str().c_str(), false, model, proj, 1/norm);
 
             std::ostringstream s2;
-            s2 << std::setprecision(presicion) << norm;
-            print_text_in_3d(x / 2, y / 2, z / 2, s2.str().c_str(), true, model, proj, 1/norm);
+            s2 << std::setprecision(precision) << norm;
+            print_text_in_3d(-x / 2, -y / 2, -z / 2, s2.str().c_str(), true, model, proj, 1/norm);
         }
 
         glCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 0, 0, 1024, 1024, 0);

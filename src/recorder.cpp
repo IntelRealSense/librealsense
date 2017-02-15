@@ -741,11 +741,11 @@ namespace rsimpl
             }, _entity_id, call_type::hid_stop_capture);
         }
 
-        void record_hid_device::start_capture(const vector<int>& sensor_iio, hid_callback callback)
+        void record_hid_device::start_capture(const std::vector<iio_profile>& iio_profiles, hid_callback callback)
         {
-            _owner->try_record([this, callback, &sensor_iio](recording* rec, lookup_key k)
+            _owner->try_record([this, callback, &iio_profiles](recording* rec, lookup_key k)
             {
-                _source->start_capture(sensor_iio, [this, callback](const sensor_data& sd)
+                _source->start_capture(iio_profiles, [this, callback](const sensor_data& sd)
                 {
                     _owner->try_record([this, callback, &sd](recording* rec1, lookup_key key1)
                     {
@@ -758,7 +758,7 @@ namespace rsimpl
                 });
 
                 auto& call = rec->add_call(k);
-                call.param1 = rec->save_blob(sensor_iio.data(), sensor_iio.size() * sizeof(int));
+                call.param1 = rec->save_blob(iio_profiles.data(), iio_profiles.size() * sizeof(iio_profile));
             }, _entity_id, call_type::hid_start_capture);
         }
 
@@ -1120,7 +1120,7 @@ namespace rsimpl
             _callback_thread.join();
         }
 
-        void playback_hid_device::start_capture(const vector<int>& sensor_iio, hid_callback callback)
+        void playback_hid_device::start_capture(const std::vector<iio_profile>& iio_profiles, hid_callback callback)
         {
             lock_guard<mutex> lock(_callback_mutex);
             auto stored = _rec->find_call(call_type::hid_start_capture, _entity_id);
