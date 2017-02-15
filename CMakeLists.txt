@@ -210,7 +210,9 @@ else()
     add_library(realsense STATIC ${REALSENSE_CPP} ${REALSENSE_HPP})
 endif()
 
-target_include_directories(realsense PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include/ ${LIBUSB1_INCLUDE_DIRS})
+target_include_directories(realsense PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+                                            $<INSTALL_INTERFACE:include>
+                                     PRIVATE ${LIBUSB1_INCLUDE_DIRS})
 
 if(${ROS_BUILD_TYPE})
     install(TARGETS realsense
@@ -222,13 +224,26 @@ if(${ROS_BUILD_TYPE})
     install(DIRECTORY ${PROJECT_SOURCE_DIR}/include/${PROJECT_NAME}/
         DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION})
 else()
-    install( TARGETS realsense
+    set(CMAKECONFIG_INSTALL_DIR "${CMAKE_INSTALL_LIBDIR}/cmake/realsense")
+
+    install(TARGETS realsense
+        EXPORT realsenseTargets
         RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
         ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
     )
 
     install(DIRECTORY ${PROJECT_SOURCE_DIR}/include/librealsense DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+
+    include(CMakePackageConfigHelpers)
+    configure_package_config_file(realsenseConfig.cmake.in realsenseConfig.cmake
+                                  INSTALL_DESTINATION ${CMAKECONFIG_INSTALL_DIR}
+                                  PATH_VARS CMAKE_INSTALL_INCLUDEDIR)
+
+    install(EXPORT realsenseTargets FILE realsenseTargets.cmake NAMESPACE realsense::
+            DESTINATION ${CMAKECONFIG_INSTALL_DIR})
+    install(FILES "${CMAKE_CURRENT_BINARY_DIR}/realsenseConfig.cmake"
+            DESTINATION ${CMAKECONFIG_INSTALL_DIR})
     install(CODE "execute_process(COMMAND ldconfig)")
 endif()
 
