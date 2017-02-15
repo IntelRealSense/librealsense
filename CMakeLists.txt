@@ -212,7 +212,7 @@ endif()
 
 target_include_directories(realsense PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include/ ${LIBUSB1_INCLUDE_DIRS})
 
-IF (${ROS_BUILD_TYPE})
+if(${ROS_BUILD_TYPE})
     install(TARGETS realsense
         RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
         LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
@@ -221,7 +221,7 @@ IF (${ROS_BUILD_TYPE})
 
     install(DIRECTORY ${PROJECT_SOURCE_DIR}/include/${PROJECT_NAME}/
         DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION})
-ELSE()
+else()
     install( TARGETS realsense
         RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
@@ -230,7 +230,7 @@ ELSE()
 
     install(DIRECTORY ${PROJECT_SOURCE_DIR}/include/librealsense DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
     install(CODE "execute_process(COMMAND ldconfig)")
-ENDIF()
+endif()
 
 option(BUILD_EXAMPLES "Build realsense examples." OFF)
 if(BUILD_EXAMPLES)
