@@ -37,8 +37,10 @@ assign_version_property(PATCH)
 set(REALSENSE_VERSION_STRING ${REALSENSE_VERSION_MAJOR}.${REALSENSE_VERSION_MINOR}.${REALSENSE_VERSION_PATCH})
 infoValue(REALSENSE_VERSION_STRING)
 
-IF(DEFINED CMAKE_PREFIX_PATH)
-  IF("${CMAKE_PREFIX_PATH}" MATCHES "/opt/ros")
+# In a ROS Build Environment CMAKE_PREFIX_PATH is also an environment variable
+# Checking for this special case and ensuring it contains a ROS path
+IF(DEFINED ENV{CMAKE_PREFIX_PATH})
+  IF($ENV{CMAKE_PREFIX_PATH} MATCHES "/opt/ros")
     set(ROS_BUILD_TYPE TRUE)
   ENDIF()
 ENDIF()
@@ -344,7 +346,10 @@ set_target_properties (realsense2 PROPERTIES
 
 set(LRS_LIB_NAME realsense2)
 
-target_include_directories(realsense2 PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include/ ${LIBUSB1_INCLUDE_DIRS})
+target_include_directories(realsense2 PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+                                            $<INSTALL_INTERFACE:include>
+                                     PRIVATE ${LIBUSB1_INCLUDE_DIRS})
+
 
 if(${ROS_BUILD_TYPE})
     install(TARGETS realsense2
@@ -356,13 +361,26 @@ if(${ROS_BUILD_TYPE})
     install(DIRECTORY ${PROJECT_SOURCE_DIR}/include/${PROJECT_NAME}/
         DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION})
 else()
-    install( TARGETS realsense2
+    set(CMAKECONFIG_INSTALL_DIR "${CMAKE_INSTALL_LIBDIR}/cmake/realsense2")
+
+    install(TARGETS realsense2
+        EXPORT realsense2Targets
         RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
         ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
     )
 
     install(DIRECTORY ${PROJECT_SOURCE_DIR}/include/librealsense DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+
+    include(CMakePackageConfigHelpers)
+    configure_package_config_file(CMake/realsense2Config.cmake.in realsense2Config.cmake
+                                  INSTALL_DESTINATION ${CMAKECONFIG_INSTALL_DIR}
+                                  PATH_VARS CMAKE_INSTALL_INCLUDEDIR)
+
+    install(EXPORT realsense2Targets FILE realsense2Targets.cmake NAMESPACE realsense2::
+            DESTINATION ${CMAKECONFIG_INSTALL_DIR})
+    install(FILES "${CMAKE_CURRENT_BINARY_DIR}/realsense2Config.cmake"
+            DESTINATION ${CMAKECONFIG_INSTALL_DIR})
     install(CODE "execute_process(COMMAND ldconfig)")
 endif()
 
