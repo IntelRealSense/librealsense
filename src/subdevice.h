@@ -12,11 +12,14 @@
 #include <unordered_set>
 #include <limits.h>
 #include <atomic>
+#include <functional>
 
 namespace rsimpl
 {
     class device;
     class option;
+
+    typedef std::function<void(rs_stream, rs_frame*)> on_before_frame_callback;
 
     struct region_of_interest
     {
@@ -200,7 +203,8 @@ namespace rsimpl
                               std::unique_ptr<frame_timestamp_reader> timestamp_reader)
             : _device(std::move(uvc_device)),
               _user_count(0),
-              _timestamp_reader(std::move(timestamp_reader))
+              _timestamp_reader(std::move(timestamp_reader)),
+              _on_before_frame_callback(nullptr)
         {}
 
         ~uvc_endpoint();
@@ -221,6 +225,10 @@ namespace rsimpl
             return action(*_device);
         }
 
+        void register_on_before_frame_callback(on_before_frame_callback callback)
+        {
+            _on_before_frame_callback = callback;
+        }
 
         void register_pu(rs_option id);
 
@@ -262,5 +270,6 @@ namespace rsimpl
         std::vector<uvc::extension_unit> _xus;
         std::unique_ptr<power> _power;
         std::unique_ptr<frame_timestamp_reader> _timestamp_reader;
+        on_before_frame_callback _on_before_frame_callback;
     };
 }

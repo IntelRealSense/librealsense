@@ -329,7 +329,15 @@ void uvc_endpoint::open(const std::vector<stream_profile>& requests)
                 // all the streams the unpacker generates are handled here.
                 // If it matches one of the streams the user requested, send it to the user.
                 if (std::any_of(begin(requests), end(requests), [&pref](stream_profile request) { return request.stream == pref->get()->get_stream_type(); }))
+                {
+                    if (_on_before_frame_callback)
+                    {
+                        auto stream_type = pref->get()->get_stream_type();
+                        _on_before_frame_callback(stream_type, pref);
+                    }
+
                     this->invoke_callback(pref);
+                }
                 // However, if this is an extra stream we had to open to properly satisty the user's request,
                 // deallocate the frame and prevent the excess data from reaching the user.
                 else

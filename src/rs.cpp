@@ -8,6 +8,7 @@
 #include "device.h"
 #include "archive.h"
 #include "concurrency.h"
+#include "algo.h"
 #include "types.h"
 
 ////////////////////////
@@ -56,33 +57,6 @@ struct rs_device_list
 {
     std::shared_ptr<rsimpl::context> ctx;
     std::vector<rs_device_info> list;
-};
-
-struct frame_holder
-{
-    rs_frame* frame;
-
-    ~frame_holder()
-    {
-        if (frame) rs_release_frame(frame);
-    }
-
-    frame_holder(const frame_holder&) = delete;
-    frame_holder(frame_holder&& other)
-        : frame(other.frame)
-    {
-        other.frame = nullptr;
-    }
-
-    frame_holder() : frame(nullptr) {}
-
-    frame_holder& operator=(const frame_holder&) = delete;
-    frame_holder& operator=(frame_holder&& other)
-    {
-        frame = other.frame;
-        other.frame = nullptr;
-        return *this;
-    }
 };
 
 struct rs_frame_queue

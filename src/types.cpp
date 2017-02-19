@@ -111,6 +111,8 @@ namespace rsimpl
         CASE(VISUAL_PRESET)
         CASE(TOTAL_FRAME_DROPS)
         CASE(EMITTER_ENABLED)
+        CASE(AUTO_EXPOSURE_MODE)
+        CASE(AUTO_EXPOSURE_ANTIFLICKER_RATE)
         default: assert(!is_valid(value)); return unknown;
         }
         #undef CASE

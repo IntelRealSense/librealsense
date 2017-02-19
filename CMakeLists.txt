@@ -89,6 +89,7 @@ set(REALSENSE_CPP
     src/context.cpp
     src/device.cpp
     src/subdevice.cpp
+    src/algo.cpp
     src/option.cpp
     src/hw-monitor.cpp
     src/image.cpp
@@ -124,6 +125,7 @@ set(REALSENSE_HPP
     src/context.h
     src/device.h
     src/subdevice.h
+    src/algo.h
     src/option.h
     src/hw-monitor.h
     src/image.h

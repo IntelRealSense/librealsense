@@ -11,6 +11,7 @@
 #include "ds5-private.h"
 #include "hw-monitor.h"
 #include "image.h"
+#include "algo.h"
 #include <mutex>
 #include <chrono>
 const double TIMESTAMP_TO_MILLISECONS = 0.001;
@@ -356,6 +357,183 @@ namespace rsimpl
             {}
         };
 
+        class enable_auto_exposure_option : public option
+        {
+        public:
+            void set(float value) override
+            {
+                auto auto_exposure_prev_state = _auto_exposure_state->get_enable_auto_exposure();
+                _auto_exposure_state->set_enable_auto_exposure(value);
+
+                if (_auto_exposure_state->get_enable_auto_exposure()) // auto_exposure current value
+                {
+                    if (!auto_exposure_prev_state) // auto_exposure previous value
+                    {
+                        _to_add_frames = true; // auto_exposure moved from disable to enable
+                    }
+                }
+                else
+                {
+                    if (auto_exposure_prev_state)
+                    {
+                        _to_add_frames = false; // auto_exposure moved from enable to disable
+                    }
+                }
+            }
+
+            float query() const override
+            {
+                return _auto_exposure_state->get_enable_auto_exposure();
+            }
+
+            option_range get_range() const override
+            {
+                return range;
+            }
+
+            bool is_enabled() const override { return true; }
+
+            const char* get_description() const override
+            {
+                return "Enable/disable auto-exposure";
+            }
+
+            enable_auto_exposure_option(std::shared_ptr<uvc_endpoint> fisheye_ep,
+                                        std::shared_ptr<auto_exposure_mechanism> auto_exposure,
+                                        std::shared_ptr<auto_exposure_state> auto_exposure_state)
+                : _auto_exposure_state(auto_exposure_state),
+                  _to_add_frames((_auto_exposure_state->get_enable_auto_exposure())),
+                  _auto_exposure(auto_exposure)
+            {
+                fisheye_ep->register_on_before_frame_callback([this](rs_stream stream, rs_frame* f){
+                    if (!_to_add_frames || stream != RS_STREAM_FISHEYE)
+                        return;
+
+                    _auto_exposure->add_frame(f->get()->get_owner()->clone_frame(f));
+                });
+            }
+
+        private:
+            const option_range                           range{0,  1,   1,  1};
+            std::shared_ptr<auto_exposure_state>         _auto_exposure_state;
+            std::atomic<bool>                            _to_add_frames;
+            std::shared_ptr<auto_exposure_mechanism>     _auto_exposure;
+        };
+
+        class auto_exposure_mode_option : public option
+        {
+        public:
+            auto_exposure_mode_option(std::shared_ptr<auto_exposure_mechanism> auto_exposure,
+                                      std::shared_ptr<auto_exposure_state> auto_exposure_state)
+                : _auto_exposure_state(auto_exposure_state),
+                  _auto_exposure(auto_exposure)
+            {}
+
+            void set(float value) override
+            {
+                _auto_exposure_state->set_auto_exposure_mode(static_cast<auto_exposure_modes>((int)value));
+                _auto_exposure->update_auto_exposure_state(*_auto_exposure_state);
+            }
+
+            float query() const override
+            {
+                return static_cast<float>(_auto_exposure_state->get_auto_exposure_mode());
+            }
+
+            option_range get_range() const override
+            {
+                return range;
+            }
+
+            bool is_enabled() const override { return true; }
+
+            const char* get_description() const override
+            {
+                return "Auto-Exposure mode";
+            }
+
+            const char* get_value_description(float val) const override
+            {
+                switch (static_cast<int>(val))
+                {
+                    case 0:
+                    {
+                        return "Static";
+                    }
+                    case 1:
+                    {
+                        return "Anti-Flicker";
+                    }
+                    case 2:
+                    {
+                        return "Hybrid";
+                    }
+                    default:
+                        throw invalid_value_exception("value not found");
+                }
+            }
+
+        private:
+            const option_range                           range{0,  2,   1,  0};
+            std::shared_ptr<auto_exposure_state>         _auto_exposure_state;
+            std::shared_ptr<auto_exposure_mechanism>     _auto_exposure;
+        };
+
+        class auto_exposure_antiflicker_rate_option : public option
+        {
+        public:
+            auto_exposure_antiflicker_rate_option(std::shared_ptr<auto_exposure_mechanism> auto_exposure,
+                                                  std::shared_ptr<auto_exposure_state> auto_exposure_state)
+                : _auto_exposure_state(auto_exposure_state),
+                  _auto_exposure(auto_exposure)
+            {}
+
+            void set(float value) override
+            {
+                _auto_exposure_state->set_auto_exposure_antiflicker_rate(value);
+                _auto_exposure->update_auto_exposure_state(*_auto_exposure_state);
+            }
+
+            float query() const override
+            {
+                return _auto_exposure_state->get_auto_exposure_antiflicker_rate();
+            }
+
+            option_range get_range() const override
+            {
+                return range;
+            }
+
+            bool is_enabled() const override { return true; }
+
+            const char* get_description() const override
+            {
+                return "Auto-Exposure anti-flicker";
+            }
+
+            const char* get_value_description(float val) const override
+            {
+                switch (static_cast<int>(val))
+                {
+                    case 50:
+                    {
+                        return "50Hz";
+                    }
+                    case 60:
+                    {
+                        return "60Hz";
+                    }
+                    default:
+                        throw invalid_value_exception("value not found");
+                }
+            }
+
+        private:
+            const option_range                           range{50, 60,  10, 60};
+            std::shared_ptr<auto_exposure_state>         _auto_exposure_state;
+            std::shared_ptr<auto_exposure_mechanism>     _auto_exposure;
+        };
+
         std::shared_ptr<hid_endpoint> create_hid_device(const uvc::backend& backend,
                                                         const std::vector<uvc::hid_device_info>& all_hid_infos);
 
@@ -374,6 +552,8 @@ namespace rsimpl
 
         std::vector<uint8_t> send_receive_raw_data(const std::vector<uint8_t>& input) override;
         virtual rs_intrinsics get_intrinsics(unsigned int subdevice, stream_profile profile) const override;
+
+        void register_auto_exposure_options(std::shared_ptr<uvc_endpoint> uvc_ep);
 
     private:
         bool is_camera_in_advanced_mode() const;

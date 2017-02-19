@@ -17,6 +17,8 @@
 
 #pragma comment(lib, "opengl32.lib")
 
+#define WHITE_SPACES std::string("                                 ")
+
 class option_model
 {
 public:
@@ -183,7 +185,8 @@ public:
 
         try
         {
-            auto_exposure_enabled = dev.get_option(RS_OPTION_ENABLE_AUTO_EXPOSURE) > 0;
+            if (dev.supports(RS_OPTION_ENABLE_AUTO_EXPOSURE))
+                auto_exposure_enabled = dev.get_option(RS_OPTION_ENABLE_AUTO_EXPOSURE) > 0;
         }
         catch(...)
         {
@@ -202,7 +205,7 @@ public:
             metadata.id = ss.str();
             metadata.opt = opt;
             metadata.endpoint = dev;
-            metadata.label = rs_option_to_string(opt);
+            metadata.label = rs_option_to_string(opt) + WHITE_SPACES + ss.str();
             metadata.invalidate_flag = &options_invalidated;
 
             metadata.supported = dev.supports(opt);

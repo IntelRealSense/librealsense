@@ -500,7 +500,7 @@ namespace rsimpl
 
             const std::string& get_sensor_name() const { return sensor_name; }
 
-            int get_iio_device() const { return iio_device; }
+            uint32_t get_iio_device() const { return iio_device; }
 
         private:
 
@@ -1377,7 +1377,7 @@ namespace rsimpl
                         if (V4L2_MEMORY_USERPTR == _use_memory_map)
                         {
                             auto metadata_offset = _buffers[buf.index].length - META_DATA_SIZE;
-                            memset(_buffers[buf.index].start + metadata_offset, 0, META_DATA_SIZE);
+                            memset((byte*)(_buffers[buf.index].start) + metadata_offset, 0, META_DATA_SIZE);
                         }
 
                         if(xioctl(_fd, VIDIOC_QBUF, &buf) < 0)

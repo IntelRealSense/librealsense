@@ -193,6 +193,23 @@ namespace rsimpl
         return depth_ep;
     }
 
+    void ds5_camera::register_auto_exposure_options(std::shared_ptr<uvc_endpoint> uvc_ep)
+    {
+        auto ae_state = std::make_shared<auto_exposure_state>();
+        auto auto_exposure = std::make_shared<auto_exposure_mechanism>(uvc_ep, *ae_state);
+
+        uvc_ep->register_option(RS_OPTION_ENABLE_AUTO_EXPOSURE,
+                                std::make_shared<enable_auto_exposure_option>(uvc_ep,
+                                                                              auto_exposure,
+                                                                              ae_state));
+        uvc_ep->register_option(RS_OPTION_AUTO_EXPOSURE_MODE,
+                                std::make_shared<auto_exposure_mode_option>(auto_exposure,
+                                                                            ae_state));
+        uvc_ep->register_option(RS_OPTION_AUTO_EXPOSURE_ANTIFLICKER_RATE,
+                                std::make_shared<auto_exposure_antiflicker_rate_option>(auto_exposure,
+                                                                                        ae_state));
+    }
+
     ds5_camera::ds5_camera(const uvc::backend& backend,
                            const std::vector<uvc::uvc_device_info>& dev_info,
                            const uvc::usb_device_info& hwm_device,
@@ -234,6 +251,8 @@ namespace rsimpl
             fisheye_ep = std::make_shared<uvc_endpoint>(backend.create_uvc_device(fisheye_infos.front()),
                                                         std::unique_ptr<frame_timestamp_reader>(new ds5_timestamp_reader_from_metadata(std::move(ds5_timestamp_reader_backup))));
 
+            register_auto_exposure_options(fisheye_ep);
+
             fisheye_ep->register_xu(fisheye_xu); // make sure the XU is initialized everytime we power the camera
             fisheye_ep->register_pixel_format(pf_raw8);
             fisheye_ep->register_pixel_format(pf_fe_raw8_unpatched_kernel); // W/O for unpatched kernel
@@ -241,7 +260,7 @@ namespace rsimpl
             fisheye_ep->register_option(RS_OPTION_EXPOSURE,
                 std::make_shared<uvc_xu_option<uint16_t>>(*fisheye_ep,
                     fisheye_xu,
-                    FISHEYE_EXPOSURE, "Fisheye Exposure")); // TODO: Update description
+                    FISHEYE_EXPOSURE, "Exposure time of Fisheye camera"));
 
             // Add fisheye endpoint
             fe_index = add_endpoint(fisheye_ep);

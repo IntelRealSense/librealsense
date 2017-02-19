@@ -16,7 +16,7 @@ extern "C" {
 
 #define RS_API_MAJOR_VERSION    2
 #define RS_API_MINOR_VERSION    4
-#define RS_API_PATCH_VERSION    5
+#define RS_API_PATCH_VERSION    6
 
 #define STRINGIFY(arg) #arg
 #define VAR_ARG_STRING(arg) STRINGIFY(arg)
@@ -138,6 +138,8 @@ typedef enum rs_option
     RS_OPTION_EMITTER_ENABLED                            , /**< Laser Emitter enabled */
     RS_OPTION_FRAMES_QUEUE_SIZE                          , /**< Number of frames the user is allowed to keep per stream. Trying to hold-on to more frames will cause frame-drops.*/
     RS_OPTION_TOTAL_FRAME_DROPS                          , /**< Total number of detected frame drops from all streams */
+    RS_OPTION_AUTO_EXPOSURE_MODE                         , /**< Auto-Exposure modes: Static, Anti-Flicker and Hybrid */
+    RS_OPTION_AUTO_EXPOSURE_ANTIFLICKER_RATE             , /**< Auto-Exposure anti-flicker rate, can be 50 or 60 Hz */
     RS_OPTION_COUNT                                      , /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
 } rs_option;
 
