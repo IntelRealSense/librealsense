@@ -18,7 +18,7 @@ const double TIMESTAMP_TO_MILLISECONS = 0.001;
 
 namespace rsimpl
 {
-    static const std::vector<std::uint16_t> rs4xx_sku_pid = { ds::RS400P_PID, ds::RS410A_PID, ds::RS420R_PID, ds::RS430C_PID, ds::RS450T_PID };
+    static const std::vector<std::uint16_t> rs4xx_sku_pid = { ds::RS400P_PID, ds::RS410A_PID, ds::RS420R_PID, ds::RS430C_PID, ds::RS440P_PID, ds::RS450T_PID };
 
     class ds5_camera;
 
@@ -296,7 +296,8 @@ namespace rsimpl
             case ds::RS400P_PID:
             case ds::RS410A_PID:
             case ds::RS420R_PID:
-            case ds::RS430C_PID: return 1;
+            case ds::RS430C_PID:
+            case ds::RS440P_PID: return 1;
             case ds::RS450T_PID: return 3;
             default:
                 throw not_implemented_exception(to_string() <<
