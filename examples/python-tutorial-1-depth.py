@@ -6,7 +6,7 @@
 #####################################################
 
 # First import the library
-import pylibrs as rs
+import pylibrealsense as rs
 
 try:
     # Create a context object. This object owns the handles to all connected realsense devices

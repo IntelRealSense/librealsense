@@ -16,8 +16,8 @@
 #include "../include/librealsense/rs.h"
 #include "../include/librealsense/rs.hpp"
 
-#define NAME pylibrs
-#define SNAME "pylibrs"
+#define NAME pylibrealsense
+#define SNAME "pylibrealsense"
 
 PYBIND11_MAKE_OPAQUE(std::vector<rs::stream_profile>);
 
@@ -126,7 +126,7 @@ PYBIND11_PLUGIN(NAME) {
               .value("brown_conrady", RS_DISTORTION_BROWN_CONRADY)
               .value("count", RS_DISTORTION_COUNT);
     
-#define BIND_RAW_ARRAY(class, name, type, size) #name, [](const class &c) { return reinterpret_cast<const std::array<type, size>&>(c.name); }
+#define BIND_RAW_ARRAY(class, name, type, size) #name, [](const class &c) -> const std::array<type, size>& { return reinterpret_cast<const std::array<type, size>&>(c.name); }
 
     py::class_<rs_intrinsics> intrinsics(m, "intrinsics");
     intrinsics.def_readonly("width", &rs_intrinsics::width)
