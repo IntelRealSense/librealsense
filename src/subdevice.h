@@ -232,12 +232,13 @@ namespace rsimpl
             return action(*_device);
         }
 
+        void register_pu(rs_option id);
+
         void register_on_before_frame_callback(on_before_frame_callback callback)
         {
             _on_before_frame_callback = callback;
         }
 
-        void register_pu(rs_option id);
 
         void start_streaming(frame_callback_ptr callback);
 

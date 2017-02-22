@@ -82,10 +82,10 @@ namespace rsimpl
         int     timeout_ms = 5000;
         bool    require_response = true;
 
-        explicit command(uint8_t cmd, int param1 = 0, int param2 = 0, 
-                int param3 = 0, int param4 = 0, int timeout_ms = 5000, 
+        explicit command(uint8_t cmd, int param1 = 0, int param2 = 0,
+                int param3 = 0, int param4 = 0, int timeout_ms = 5000,
                 bool require_response = true)
-            : cmd(cmd), param1(param1), 
+            : cmd(cmd), param1(param1),
               param2(param2),
               param3(param3), param4(param4),
               timeout_ms(timeout_ms), require_response(require_response)

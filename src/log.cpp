@@ -5,9 +5,9 @@
 
 INITIALIZE_EASYLOGGINGPP
 
-namespace rsimpl 
+namespace rsimpl
 {
-    class logger_type 
+    class logger_type
     {
         rs_log_severity minimum_log_severity = RS_LOG_SEVERITY_NONE;
         rs_log_severity minimum_console_severity = RS_LOG_SEVERITY_NONE;
@@ -49,7 +49,7 @@ namespace rsimpl
 
             for (int i = minimum_console_severity; i < RS_LOG_SEVERITY_COUNT; i++)
             {
-                defaultConf.set(severity_to_level(static_cast<rs_log_severity>(i)), 
+                defaultConf.set(severity_to_level(static_cast<rs_log_severity>(i)),
                     el::ConfigurationType::ToStandardOutput, "true");
             }
 

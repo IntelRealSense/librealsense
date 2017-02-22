@@ -91,6 +91,7 @@ set(REALSENSE_CPP
     src/subdevice.cpp
     src/algo.cpp
     src/option.cpp
+    src/ms-xu-option.cpp
     src/hw-monitor.cpp
     src/image.cpp
     src/ivcam-private.cpp
@@ -127,6 +128,7 @@ set(REALSENSE_HPP
     src/subdevice.h
     src/algo.h
     src/option.h
+    src/ms-xu-option.h
     src/hw-monitor.h
     src/image.h
     src/ivcam-private.h

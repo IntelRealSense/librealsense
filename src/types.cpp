@@ -342,5 +342,5 @@ namespace rsimpl
             oldcrc32 = UPDC32(*buf, oldcrc32);
         return ~oldcrc32;
     }
-    
+
 }

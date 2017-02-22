@@ -1,6 +1,15 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2016 Intel Corporation. All Rights Reserved.
 
+#include <mutex>
+#include <chrono>
+#include <vector>
+
+#include "device.h"
+#include "context.h"
+#include "image.h"
+#include "ms-xu-option.h"
+
 #include "ds5.h"
 
 namespace rsimpl
@@ -165,18 +174,14 @@ namespace rsimpl
                                                        std::unique_ptr<frame_timestamp_reader>(new ds5_timestamp_reader_from_metadata(std::move(ds5_timestamp_reader_backup))),
                                                        backend.create_time_service());
         depth_ep->register_xu(depth_xu); // make sure the XU is initialized everytime we power the camera
+
+
         depth_ep->register_pixel_format(pf_z16); // Depth
         depth_ep->register_pixel_format(pf_y8); // Left Only - Luminance
         depth_ep->register_pixel_format(pf_yuyv); // Left Only
         depth_ep->register_pixel_format(pf_uyvyl); // Color from Depth
 
         depth_ep->register_pu(RS_OPTION_GAIN);
-        depth_ep->register_pu(RS_OPTION_ENABLE_AUTO_EXPOSURE);
-
-        depth_ep->register_option(RS_OPTION_EXPOSURE,
-            std::make_shared<uvc_xu_option<uint16_t>>(*depth_ep,
-                depth_xu,
-                DS5_EXPOSURE, "DS5 Exposure")); // TODO: Update description
 
         // TODO: These if conditions will be implemented as inheritance classes
         auto pid = all_device_infos.front().pid;
@@ -235,13 +240,32 @@ namespace rsimpl
             depth_ep.register_pixel_format(pf_y12i); // L+R - Calibration not rectified
         }
 
+        /* Auto/Manual Exposure an White Balance XU controls have alternative implementations based on FW version*/
+        /* Note that for AutoExposure there is a switch from PU to XU as well*/
+        if (fw_version >= std::string("5.5.8"))
+        {
+            depth_ep.register_xu(ms_ctrl_depth_xu); // MS XU node
+            depth_ep.register_option(RS_OPTION_ENABLE_AUTO_EXPOSURE, std::make_shared<ms_xu_control_option>(depth_ep, ms_ctrl_depth_xu, MSXU_EXPOSURE)); // TODO - check if  ->register_xu can be reused
+            depth_ep.register_option(RS_OPTION_EXPOSURE, std::make_shared<ms_xu_data_option>(depth_ep, ms_ctrl_depth_xu, MSXU_EXPOSURE));
+            depth_ep.register_option(RS_OPTION_ENABLE_AUTO_WHITE_BALANCE, std::make_shared<ms_xu_control_option>(depth_ep, ms_ctrl_depth_xu, MSXU_WHITEBALANCE));
+            depth_ep.register_option(RS_OPTION_WHITE_BALANCE, std::make_shared<ms_xu_data_option>(depth_ep, ms_ctrl_depth_xu, MSXU_WHITEBALANCE));
+        }
+        else
+        {
+            depth_ep.register_pu(RS_OPTION_ENABLE_AUTO_EXPOSURE);
+            depth_ep.register_option(RS_OPTION_EXPOSURE,
+                std::make_shared<uvc_xu_option<uint16_t>>(depth_ep,
+                    depth_xu,
+                    DS5_EXPOSURE, "Depth Exposure"));
+        }
+
         depth_ep.set_roi_method(std::make_shared<ds5_auto_exposure_roi_method>(*_hw_monitor));
 
         // TODO: These if conditions will be implemented as inheritance classes
         auto pid = dev_info.front().pid;
 
         std::shared_ptr<uvc_endpoint> fisheye_ep;
-        int fe_index;
+        int fe_index{};
         if (pid == RS450T_PID)
         {
             auto fisheye_infos = filter_by_mi(dev_info, 3);
@@ -299,7 +323,7 @@ namespace rsimpl
                                                                      {RS_CAMERA_INFO_ADVANCED_MODE, ((advanced_mode)?"YES":"NO")}};
                 register_endpoint_info(_depth_device_idx, camera_info);
             }
-            else if (fisheye_ep && element.pid == RS450T_PID && element.mi == 3) // mi 3 is relate to Fisheye device
+            else if (fisheye_ep && element.pid == RS450T_PID && element.mi == 3) // mi 3 is related to Fisheye device
             {
                 std::map<rs_camera_info, std::string> camera_info = {{RS_CAMERA_INFO_DEVICE_NAME, device_name},
                                                                      {RS_CAMERA_INFO_MODULE_NAME, "Fisheye Camera"},

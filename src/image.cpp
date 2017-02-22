@@ -148,7 +148,7 @@ namespace rsimpl
     /////////////////////////////
     // YUY2 unpacking routines //
     /////////////////////////////
-    
+
     // This templated function unpacks YUY2 into Y8/Y16/RGB8/RGBA8/BGR8/BGRA8, depending on the compile-time parameter FORMAT.
     // It is expected that all branching outside of the loop control variable will be removed due to constant-folding.
     template<rs_format FORMAT> void unpack_yuy2(byte * const d [], const byte * s, int n)
@@ -165,14 +165,14 @@ namespace rsimpl
             const __m128i n298 = _mm_set1_epi16(298 << 4);
             const __m128i n409 = _mm_set1_epi16(409 << 4);
             const __m128i n516 = _mm_set1_epi16(516 << 4);
-            const __m128i evens_odds = _mm_setr_epi8(0, 2, 4, 6, 8, 10, 12, 14, 1, 3, 5, 7, 9, 11, 13, 15);            
+            const __m128i evens_odds = _mm_setr_epi8(0, 2, 4, 6, 8, 10, 12, 14, 1, 3, 5, 7, 9, 11, 13, 15);
 
             // Load 8 YUY2 pixels each into two 16-byte registers
             __m128i s0 = _mm_loadu_si128(src++);
             __m128i s1 = _mm_loadu_si128(src++);
 
             if(FORMAT == RS_FORMAT_Y8)
-            {   
+            {
                 // Align all Y components and output 16 pixels (16 bytes) at once
                 __m128i y0 = _mm_shuffle_epi8(s0, _mm_setr_epi8(1, 3, 5, 7, 9, 11, 13, 15,   0, 2, 4, 6, 8, 10, 12, 14));
                 __m128i y1 = _mm_shuffle_epi8(s1, _mm_setr_epi8(0, 2, 4, 6, 8, 10, 12, 14,   1, 3, 5, 7, 9, 11, 13, 15));
@@ -190,7 +190,7 @@ namespace rsimpl
             __m128i y16__8_F = _mm_unpacklo_epi8(yyyyyyyyuuuuvvvv8, zero);         // convert to 16 bit
 
             if(FORMAT == RS_FORMAT_Y16)
-            {      
+            {
                 // Output 16 pixels (32 bytes) at once
                 _mm_storeu_si128(dst++, _mm_slli_epi16(y16__0_7, 8));
                 _mm_storeu_si128(dst++, _mm_slli_epi16(y16__8_F, 8));
@@ -200,7 +200,7 @@ namespace rsimpl
             // Retrieve all 16 U and V components as 16-bit values (8 components per register)
             __m128i uv = _mm_unpackhi_epi32(yyyyyyyyuuuuvvvv0, yyyyyyyyuuuuvvvv8); // uuuuuuuuvvvvvvvv
             __m128i u = _mm_unpacklo_epi8(uv, uv);                                 //  uu uu uu uu uu uu uu uu  u's duplicated
-            __m128i v = _mm_unpackhi_epi8(uv, uv);                                 //  vv vv vv vv vv vv vv vv            
+            __m128i v = _mm_unpackhi_epi8(uv, uv);                                 //  vv vv vv vv vv vv vv vv
             __m128i u16__0_7 = _mm_unpacklo_epi8(u, zero);                         // convert to 16 bit
             __m128i u16__8_F = _mm_unpackhi_epi8(u, zero);                         // convert to 16 bit
             __m128i v16__0_7 = _mm_unpacklo_epi8(v, zero);                         // convert to 16 bit
@@ -217,7 +217,7 @@ namespace rsimpl
             // Compute R, G, B values for second 8 pixels
             __m128i c16__8_F = _mm_slli_epi16(_mm_subs_epi16(y16__8_F, _mm_set1_epi16(16)), 4);
             __m128i d16__8_F = _mm_slli_epi16(_mm_subs_epi16(u16__8_F, _mm_set1_epi16(128)), 4); // perhaps could have done these u,v to d,e before the duplication
-            __m128i e16__8_F = _mm_slli_epi16(_mm_subs_epi16(v16__8_F, _mm_set1_epi16(128)), 4);           
+            __m128i e16__8_F = _mm_slli_epi16(_mm_subs_epi16(v16__8_F, _mm_set1_epi16(128)), 4);
             __m128i r16__8_F = _mm_min_epi16(_mm_set1_epi16(255), _mm_max_epi16(zero, ((_mm_add_epi16(_mm_mulhi_epi16(c16__8_F, n298), _mm_mulhi_epi16(e16__8_F, n409))))));                                                 // (298 * c + 409 * e + 128) ; //
             __m128i g16__8_F = _mm_min_epi16(_mm_set1_epi16(255), _mm_max_epi16(zero, ((_mm_sub_epi16(_mm_sub_epi16(_mm_mulhi_epi16(c16__8_F, n298), _mm_mulhi_epi16(d16__8_F, n100)), _mm_mulhi_epi16(e16__8_F, n208)))))); // (298 * c - 100 * d - 208 * e + 128)
             __m128i b16__8_F = _mm_min_epi16(_mm_set1_epi16(255), _mm_max_epi16(zero, ((_mm_add_epi16(_mm_mulhi_epi16(c16__8_F, n298), _mm_mulhi_epi16(d16__8_F, n516))))));                                                 // clampbyte((298 * c + 516 * d + 128) >> 8);
@@ -255,7 +255,7 @@ namespace rsimpl
                     // Align registers and store 16 pixels (48 bytes) at once
                     _mm_storeu_si128(dst++, _mm_alignr_epi8(rgb1, rgb0, 4));
                     _mm_storeu_si128(dst++, _mm_alignr_epi8(rgb2, rgb1, 8));
-                    _mm_storeu_si128(dst++, _mm_alignr_epi8(rgb3, rgb2, 12));                
+                    _mm_storeu_si128(dst++, _mm_alignr_epi8(rgb3, rgb2, 12));
                 }
             }
 
@@ -292,10 +292,10 @@ namespace rsimpl
                     // Align registers and store 16 pixels (48 bytes) at once
                     _mm_storeu_si128(dst++, _mm_alignr_epi8(bgr1, bgr0, 4));
                     _mm_storeu_si128(dst++, _mm_alignr_epi8(bgr2, bgr1, 8));
-                    _mm_storeu_si128(dst++, _mm_alignr_epi8(bgr3, bgr2, 12));                
+                    _mm_storeu_si128(dst++, _mm_alignr_epi8(bgr3, bgr2, 12));
                 }
             }
-        }    
+        }
 #else  // Generic code for when SSSE3 is not available.
         auto src = reinterpret_cast<const uint8_t *>(s);
         auto dst = reinterpret_cast<uint8_t *>(d[0]);
@@ -430,7 +430,7 @@ namespace rsimpl
         }
 #endif
     }
-    
+
     // This templated function unpacks UYVY into RGB8/RGBA8/BGR8/BGRA8, depending on the compile-time parameter FORMAT.
     // It is expected that all branching outside of the loop control variable will be removed due to constant-folding.
     template<rs_format FORMAT> void unpack_uyvy(byte * const d[], const byte * s, int n)
@@ -683,7 +683,7 @@ namespace rsimpl
         {
             *a++ = split_a(*source);
             *b++ = split_b(*source++);
-        }    
+        }
     }
 
     struct y8i_pixel { uint8_t l, r; };
@@ -720,7 +720,7 @@ namespace rsimpl
     void unpack_z16_y8_from_sr300_inzi(byte * const dest[], const byte * source, int count)
     {
         auto in = reinterpret_cast<const uint16_t *>(source);
-        auto out_ir = reinterpret_cast<uint8_t *>(dest[1]);            
+        auto out_ir = reinterpret_cast<uint8_t *>(dest[1]);
         for(int i=0; i<count; ++i) *out_ir++ = *in++ >> 2;
         memcpy(dest[0], in, count*2);
     }

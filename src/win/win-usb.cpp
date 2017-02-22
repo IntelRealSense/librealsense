@@ -32,7 +32,7 @@ namespace rsimpl
 
         winusb_device::~winusb_device()
         {
-            try 
+            try
             {
                 release();
             }
@@ -76,8 +76,8 @@ namespace rsimpl
             if(strcmp(deviceID.c_str(), deviceID.c_str()))
                 throw std::runtime_error("deviceID is different!");
 
-            _device_handle = CreateFile(lpDevicePath.c_str(), GENERIC_WRITE | GENERIC_READ, 
-                FILE_SHARE_WRITE | FILE_SHARE_READ, nullptr, 
+            _device_handle = CreateFile(lpDevicePath.c_str(), GENERIC_WRITE | GENERIC_READ,
+                FILE_SHARE_WRITE | FILE_SHARE_READ, nullptr,
                 OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL | FILE_FLAG_OVERLAPPED, nullptr);
 
             if (_device_handle == INVALID_HANDLE_VALUE)
@@ -94,7 +94,7 @@ namespace rsimpl
             return *_usb_interface;
         }
 
-        std::vector<std::wstring> usb_enumerate::query_by_interface(const std::string& guidStr, 
+        std::vector<std::wstring> usb_enumerate::query_by_interface(const std::string& guidStr,
             const std::string& vid, const std::string& pid)
         {
             GUID guid;
@@ -215,7 +215,7 @@ namespace rsimpl
                 return false;
             }
 
-            // Get the device path 
+            // Get the device path
             lpDevicePath = detailData->DevicePath;
 
             return true;
@@ -376,7 +376,7 @@ namespace rsimpl
 
         void usb_interface::init_winusb_pipe()
         {
-            // initialize _dataInPipeID and _dataOutPipeID that will be used below. 
+            // initialize _dataInPipeID and _dataOutPipeID that will be used below.
             query_endpoints();
 
             if (_in_pipe_id != 0)
@@ -458,11 +458,11 @@ namespace rsimpl
         }
 
         winusb_bulk_transfer::winusb_bulk_transfer(const usb_device_info& info)
-            : _lp_device_path(info.id),
+            : _lp_device_path(std::wstring(info.id.begin(), info.id.end())),
               _named_mutex(usb_enumerate::get_camera_id(_lp_device_path.c_str()).c_str(), WAIT_FOR_MUTEX_TIME_OUT)
         { }
 
-        void winusb_bulk_transfer::write_to_pipe_and_read_response(unsigned char* buffer, int bufferLength, 
+        void winusb_bulk_transfer::write_to_pipe_and_read_response(unsigned char* buffer, int bufferLength,
             unsigned char* outputBuffer, ULONG& bufferSize, DWORD TimeOut, bool isWriteOnly)
         {
             std::lock_guard<named_mutex> lock(_named_mutex);

@@ -90,9 +90,9 @@ namespace rsimpl
     class context
     {
     public:
-        explicit context(backend_type type, 
-               const char* filename = nullptr, 
-               const char* section = nullptr, 
+        explicit context(backend_type type,
+               const char* filename = nullptr,
+               const char* section = nullptr,
                rs_recording_mode mode = RS_RECORDING_MODE_COUNT);
 
         std::vector<std::shared_ptr<device_info>> query_devices() const;

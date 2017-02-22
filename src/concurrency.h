@@ -18,7 +18,7 @@ class single_consumer_queue
     bool accepting = true;
 
 public:
-    explicit single_consumer_queue<T>(unsigned int cap) 
+    explicit single_consumer_queue<T>(unsigned int cap)
         : q(), mutex(), cv(), cap(cap) {}
 
     void enqueue(T&& item)
@@ -32,7 +32,7 @@ public:
             }
         }
         lock.unlock();
-        cv.notify_one(); 
+        cv.notify_one();
     }
 
     T dequeue()
@@ -79,7 +79,7 @@ public:
 
     size_t size()
     {
-        std::unique_lock<std::mutex> lock(mutex); 
+        std::unique_lock<std::mutex> lock(mutex);
         return q.size();
     }
 };

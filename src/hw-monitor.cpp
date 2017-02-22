@@ -48,10 +48,10 @@ namespace rsimpl
         // read
         if (in && inSize)
         {
-            if (res.size() < static_cast<int>(sizeof(uint32_t))) 
+            if (res.size() < static_cast<int>(sizeof(uint32_t)))
                 throw invalid_value_exception("Incomplete bulk usb transfer!");
 
-            if (res.size() > IVCAM_MONITOR_MAX_BUFFER_SIZE) 
+            if (res.size() > IVCAM_MONITOR_MAX_BUFFER_SIZE)
                 throw invalid_value_exception("Out buffer is greater than max buffer size!");
 
             op = *reinterpret_cast<uint32_t *>(res.data());
@@ -125,7 +125,7 @@ namespace rsimpl
         newCommand.receivedCommandDataLength = details.receivedCommandDataLength;
 
         // endian?
-        auto opCodeAsUint32 = pack(details.receivedOpcode[3], details.receivedOpcode[2], 
+        auto opCodeAsUint32 = pack(details.receivedOpcode[3], details.receivedOpcode[2],
                                    details.receivedOpcode[1], details.receivedOpcode[0]);
         if (opCodeAsUint32 != opCodeXmit)
         {

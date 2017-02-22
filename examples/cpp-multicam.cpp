@@ -68,13 +68,13 @@ int main(int argc, char * argv[]) try
                 buffers[i].upload(frame);
             }
         }
-        
+
         // Draw the images
         int w,h;
         glfwGetFramebufferSize(win, &w, &h);
         glViewport(0, 0, w, h);
         glClear(GL_COLOR_BUFFER_BIT);
-        
+
         glfwGetWindowSize(win, &w, &h);
         glPushMatrix();
         glOrtho(0, w, h, 0, -1, +1);

@@ -187,7 +187,7 @@ namespace rs
             static bool sort_best_quality(const stream_profile& lhs, const stream_profile& rhs) {
                 return std::make_tuple((lhs.width == 640 && lhs.height == 480), (lhs.fps == 30), (lhs.format == RS_FORMAT_Y8), (lhs.format == RS_FORMAT_RGB8), int(lhs.format))
                      < std::make_tuple((rhs.width == 640 && rhs.height == 480), (rhs.fps == 30), (rhs.format == RS_FORMAT_Y8), (rhs.format == RS_FORMAT_RGB8), int(rhs.format));
-                    
+
 
             }
 
@@ -302,7 +302,7 @@ namespace rs
         class syncer
         {
         public:
-            explicit syncer(rs_stream key_stream = RS_STREAM_DEPTH) 
+            explicit syncer(rs_stream key_stream = RS_STREAM_DEPTH)
                 : impl(new shared_impl())
             {
                 impl->key_stream = key_stream;
@@ -345,7 +345,6 @@ namespace rs
                     }
                 }
 
-                
                 get_frameset(&result);
                 return result;
             }

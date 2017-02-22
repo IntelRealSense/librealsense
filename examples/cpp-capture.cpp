@@ -33,7 +33,7 @@ int main(int argc, char * argv[]) try
 
     // Open a GLFW window
     glfwInit();
-    std::ostringstream ss; 
+    std::ostringstream ss;
     ss << "CPP Capture Example (" << dev.get_camera_info(RS_CAMERA_INFO_DEVICE_NAME) << ")";
 
     auto win = glfwCreateWindow(1280, 720, ss.str().c_str(), nullptr, nullptr);

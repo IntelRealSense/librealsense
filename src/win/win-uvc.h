@@ -29,7 +29,7 @@ namespace rsimpl
         typedef std::function<void(const uvc_device_info&, IMFActivate*)>
                 enumeration_callback;
 
-        class wmf_uvc_device : public std::enable_shared_from_this<wmf_uvc_device>, 
+        class wmf_uvc_device : public std::enable_shared_from_this<wmf_uvc_device>,
                                public uvc_device
         {
         public:

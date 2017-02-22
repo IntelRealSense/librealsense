@@ -100,7 +100,7 @@ namespace rsimpl
         }
         bool is_enabled() const override { return true; }
 
-        uvc_xu_option(uvc_endpoint& ep, uvc::extension_unit xu, int id, std::string description)
+        uvc_xu_option(uvc_endpoint& ep, uvc::extension_unit xu, uint8_t id, std::string description)
             : _ep(ep), _xu(xu), _id(id), _desciption(std::move(description))
         {
         }
@@ -110,11 +110,11 @@ namespace rsimpl
             return _desciption.c_str();
         }
 
-    private:
-        uvc_endpoint& _ep;
+    protected:
+        uvc_endpoint&       _ep;
         uvc::extension_unit _xu;
-        int _id;
-        std::string _desciption;
+        uint8_t             _id;
+        std::string         _desciption;
     };
 
     inline std::string hexify(unsigned char n)
@@ -138,7 +138,7 @@ namespace rsimpl
     }
 
     template<class T, class R, class W, class U>
-    class struct_feild_option : public option
+    class struct_field_option : public option
     {
     public:
         void set(float value) override
@@ -155,7 +155,7 @@ namespace rsimpl
         }
         bool is_enabled() const override { return true; }
 
-        explicit struct_feild_option(std::shared_ptr<struct_interface<T, R, W>> struct_interface,
+        explicit struct_field_option(std::shared_ptr<struct_interface<T, R, W>> struct_interface,
                                      U T::* field, option_range range)
             : _struct_interface(struct_interface), _range(range), _field(field)
         {
@@ -173,11 +173,11 @@ namespace rsimpl
     };
 
     template<class T, class R, class W, class U>
-    std::shared_ptr<struct_feild_option<T, R, W, U>> make_field_option(
+    std::shared_ptr<struct_field_option<T, R, W, U>> make_field_option(
         std::shared_ptr<struct_interface<T, R, W>> struct_interface,
         U T::* field, option_range range)
     {
-        return std::make_shared<struct_feild_option<T, R, W, U>>
+        return std::make_shared<struct_field_option<T, R, W, U>>
             (struct_interface, field, range);
     }
 
@@ -186,7 +186,7 @@ namespace rsimpl
     public:
         std::vector<uint8_t> send_receive(const std::vector<uint8_t>& data, int, bool require_response) override;
 
-        command_transfer_over_xu(uvc_endpoint& uvc, 
+        command_transfer_over_xu(uvc_endpoint& uvc,
                              uvc::extension_unit xu, uint8_t ctrl)
             : _uvc(uvc), _xu(std::move(xu)), _ctrl(ctrl)
         {}

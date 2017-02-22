@@ -41,6 +41,7 @@ namespace rsimpl
         };
 
         struct guid { uint32_t data1; uint16_t data2, data3; uint8_t data4[8]; };
+        // subdevice and node fields are assigned by Host driver; unit and GUID are hard-coded in camera firmware
         struct extension_unit { int subdevice, unit, node; guid id; };
 
         class command_transfer
@@ -105,7 +106,7 @@ namespace rsimpl
             std::string device_path;
         };
 
-        inline bool operator==(const uvc_device_info& a, 
+        inline bool operator==(const uvc_device_info& a,
                         const uvc_device_info& b)
         {
             return (a.vid == b.vid) &&
@@ -407,7 +408,7 @@ namespace rsimpl
                 return _dev.front()->get_device_location();
             }
 
-            void lock() const override 
+            void lock() const override
             {
                 std::vector<uvc_device*> locked_dev;
                 try {
@@ -426,7 +427,7 @@ namespace rsimpl
                     throw;
                 }
             }
-            void unlock() const override 
+            void unlock() const override
             {
                 for (auto& elem : _dev)
                 {

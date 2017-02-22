@@ -138,7 +138,7 @@ namespace rsimpl
             return r;
         }
 
-        struct buffer { void * start; size_t length; };
+        struct buffer { uint8_t * start; size_t length; };
 
         static std::string get_usb_port_id(libusb_device* usb_device)
         {
@@ -1206,13 +1206,13 @@ namespace rsimpl
                         _buffers[i].length = buf.length;
                         if ( _use_memory_map )
                         {
-                            _buffers[i].start = mmap(NULL, buf.length, PROT_READ | PROT_WRITE, MAP_SHARED, _fd, buf.m.offset);
+                            _buffers[i].start = static_cast<uint8_t*>(mmap(NULL, buf.length, PROT_READ | PROT_WRITE, MAP_SHARED, _fd, buf.m.offset));
                             if(_buffers[i].start == MAP_FAILED) linux_backend_exception("mmap failed");
                         }
                         else
                         {
                             _buffers[i].length += META_DATA_SIZE;
-                            _buffers[i].start = malloc( buf.length + META_DATA_SIZE);
+                            _buffers[i].start = static_cast<uint8_t*>(malloc( buf.length + META_DATA_SIZE));
                              if (!_buffers[i].start) linux_backend_exception("userp allocation failed");
                              memset(_buffers[i].start, 0, _buffers[i].length);
                         }
@@ -1498,10 +1498,15 @@ namespace rsimpl
             {
                 control_range result{};
                 __u16 size = 0;
-                __u32 value = 0; // all of the real sense extended controls are up to 4 bytes
-                                // checking return value for UVC_GET_LEN and allocating
-                                // appropriately might be better
-                __u8 * data = (__u8 *)&value;
+                //__u32 value = 0;      // all of the real sense extended controls are up to 4 bytes
+                                        // checking return value for UVC_GET_LEN and allocating
+                                        // appropriately might be better
+                //__u8 * data = (__u8 *)&value;
+                // MS XU controls are partially supported only
+                std::vector<uint8_t> buf;
+                buf.resize(std::max((size_t)len,sizeof(__u32)));
+                __u8 * data = buf.data();
+
                 struct uvc_xu_control_query xquery = {};
                 memset(&xquery, 0, sizeof(xquery));
                 xquery.query = UVC_GET_LEN;
@@ -1516,7 +1521,7 @@ namespace rsimpl
                     throw linux_backend_exception("xioctl(UVC_GET_LEN) failed");
                 }
 
-                assert(size<=4);
+                assert(size<=len);
 
                 xquery.query = UVC_GET_MIN;
                 xquery.size = size;
@@ -1526,7 +1531,7 @@ namespace rsimpl
                 if(-1 == ioctl(_fd,UVCIOC_CTRL_QUERY,&xquery)){
                     throw linux_backend_exception("xioctl(UVC_GET_MIN) failed");
                 }
-                result.min = value;
+                result.min = *reinterpret_cast<int*>(data);
 
                 xquery.query = UVC_GET_MAX;
                 xquery.size = size;
@@ -1536,7 +1541,7 @@ namespace rsimpl
                 if(-1 == ioctl(_fd,UVCIOC_CTRL_QUERY,&xquery)){
                     throw linux_backend_exception("xioctl(UVC_GET_MAX) failed");
                 }
-                result.max = value;
+                result.max = *reinterpret_cast<int*>(data);
 
                 xquery.query = UVC_GET_DEF;
                 xquery.size = size;
@@ -1546,7 +1551,7 @@ namespace rsimpl
                 if(-1 == ioctl(_fd,UVCIOC_CTRL_QUERY,&xquery)){
                     throw linux_backend_exception("xioctl(UVC_GET_DEF) failed");
                 }
-                result.def = value;
+                result.def = *reinterpret_cast<int*>(data);
 
                 xquery.query = UVC_GET_RES;
                 xquery.size = size;
@@ -1556,9 +1561,9 @@ namespace rsimpl
                 if(-1 == ioctl(_fd,UVCIOC_CTRL_QUERY,&xquery)){
                     throw linux_backend_exception("xioctl(UVC_GET_CUR) failed");
                 }
-                result.step = value;
+                result.step = *reinterpret_cast<int*>(data);
 
-                return result;
+               return result;
             }
 
             int get_pu(rs_option opt) const override

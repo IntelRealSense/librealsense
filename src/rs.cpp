@@ -120,7 +120,7 @@ std::string api_version_to_string(int version)
 void report_version_mismatch(int runtime, int compiletime)
 {
     throw rsimpl::invalid_value_exception(rsimpl::to_string() << "API version mismatch: librealsense.so was compiled with API version "
-        << api_version_to_string(runtime) << " but the application was compiled with " 
+        << api_version_to_string(runtime) << " but the application was compiled with "
         << api_version_to_string(compiletime) << "! Make sure correct version of the library is installed (make install)");
 }
 
@@ -156,7 +156,7 @@ void verify_version_compatibility(int api_version)
 rs_context * rs_create_context(int api_version, rs_error ** error) try
 {
     verify_version_compatibility(api_version);
-    
+
     return new rs_context{ std::make_shared<rsimpl::context>(rsimpl::backend_type::standard) };
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, api_version)
@@ -243,7 +243,7 @@ rs_device* rs_create_device(const rs_device_list* list, int index, rs_error** er
     VALIDATE_RANGE(index, 0, (int)list->list.size() - 1);
 
     return new rs_device{ list->ctx,
-                          list->list[index].info, 
+                          list->list[index].info,
                           list->list[index].info->get_device(),
                           list->list[index].subdevice
                         };
@@ -343,7 +343,7 @@ void rs_open(rs_device* device, rs_stream stream,
 HANDLE_EXCEPTIONS_AND_RETURN(, device, stream, width, height, fps, format)
 
 void rs_open_multiple(rs_device* device,
-    const rs_stream* stream, const int* width, const int* height, const int* fps, 
+    const rs_stream* stream, const int* width, const int* height, const int* fps,
     const rs_format* format, int count, rs_error** error) try
 {
     VALIDATE_NOT_NULL(device);
@@ -356,7 +356,7 @@ void rs_open_multiple(rs_device* device,
     std::vector<rsimpl::stream_profile> request;
     for (auto i = 0; i < count; i++)
     {
-        request.push_back({ stream[i], static_cast<uint32_t>(width[i]), 
+        request.push_back({ stream[i], static_cast<uint32_t>(width[i]),
                             static_cast<uint32_t>(height[i]), static_cast<uint32_t>(fps[i]), format[i] });
     }
     device->device->get_endpoint(device->subdevice).open(request);
@@ -394,7 +394,7 @@ int rs_supports_option(const rs_device* device, rs_option option, rs_error** err
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, device, option)
 
-void rs_get_option_range(const rs_device* device, rs_option option, 
+void rs_get_option_range(const rs_device* device, rs_option option,
     float* min, float* max, float* step, float* def, rs_error** error) try
 {
     VALIDATE_NOT_NULL(device);
@@ -656,7 +656,7 @@ void rs_get_extrinsics(const rs_device * from, const rs_device * to, rs_extrinsi
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, from, to, extrin)
 
-void rs_get_stream_intrinsics(const rs_device * device, rs_stream stream, int width, int height, int fps, 
+void rs_get_stream_intrinsics(const rs_device * device, rs_stream stream, int width, int height, int fps,
     rs_format format, rs_intrinsics * intrinsics, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(device);

@@ -58,7 +58,7 @@ int main(int argc, char * argv[]) try
     // Configure streams to run at 30 frames per second
     rs::util::config config;
     config.enable_stream(RS_STREAM_DEPTH, rs::preset::best_quality);
-    
+
     // try to open color stream, but fall back to IR if the camera doesn't support it
     rs_stream mapped;
     if (config.can_enable_stream(dev, RS_STREAM_COLOR, rs::preset::best_quality)) {
@@ -76,22 +76,22 @@ int main(int argc, char * argv[]) try
     else {
         throw std::runtime_error("Couldn't configure camera for demo");
     }
-    
+
     auto stream = config.open(dev);
 
     state app_state = {0, 0, 0, 0, false, &dev};
-    
+
     glfwInit();
     std::ostringstream ss; ss << "CPP Point Cloud Example (" << dev.get_camera_info(RS_CAMERA_INFO_DEVICE_NAME) << ")";
     GLFWwindow * win = glfwCreateWindow(640, 480, ss.str().c_str(), 0, 0);
     glfwSetWindowUserPointer(win, &app_state);
-        
+
     glfwSetMouseButtonCallback(win, [](GLFWwindow * win, int button, int action, int /*mods*/)
     {
         auto s = (state *)glfwGetWindowUserPointer(win);
         if(button == GLFW_MOUSE_BUTTON_LEFT) s->ml = action == GLFW_PRESS;
     });
-        
+
     glfwSetCursorPosCallback(win, [](GLFWwindow * win, double x, double y)
     {
         auto s = (state *)glfwGetWindowUserPointer(win);
@@ -114,7 +114,7 @@ int main(int argc, char * argv[]) try
     glfwMakeContextCurrent(win);
     texture_buffer mapped_tex;
     const uint16_t * depth;
-    
+
     const rs_extrinsics extrin = stream.get_extrinsics(RS_STREAM_DEPTH, mapped);
     const rs_intrinsics depth_intrin = stream.get_intrinsics(RS_STREAM_DEPTH);
     const rs_intrinsics mapped_intrin = stream.get_intrinsics(mapped);
@@ -140,7 +140,7 @@ int main(int argc, char * argv[]) try
             frame_count = 0;
             time = 0;
         }
-     
+
         glPushAttrib(GL_ALL_ATTRIB_BITS);
 
         for (auto&& frame : frames) {
@@ -176,11 +176,11 @@ int main(int argc, char * argv[]) try
         glBegin(GL_POINTS);
 
         auto max_depth = *std::max_element(depth,depth+640*480);
-        
+
         std::vector<uint8_t> image;
         auto points = depth_to_points(image, depth_intrin, depth, dev.get_depth_scale());
         //auto depth = reinterpret_cast<const uint16_t *>(dev.get_frame_data(rs::stream::depth));
-        
+
         for (int y=0; y<depth_intrin.height; ++y)
         {
             for(int x=0; x<depth_intrin.width; ++x)
@@ -204,7 +204,7 @@ int main(int argc, char * argv[]) try
         glPushAttrib(GL_ALL_ATTRIB_BITS);
         glPushMatrix();
         glOrtho(0, width, height, 0, -1, +1);
-        
+
         std::ostringstream ss; ss << fps << " FPS";
         draw_text(20, 40, ss.str().c_str());
         glPopMatrix();

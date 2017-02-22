@@ -3,17 +3,9 @@
 
 #pragma once
 
-#include <vector>
-#include "backend.h"
-#include "device.h"
-#include "context.h"
-#include "backend.h"
 #include "ds5-private.h"
-#include "hw-monitor.h"
-#include "image.h"
+
 #include "algo.h"
-#include <mutex>
-#include <chrono>
 
 const double TIMESTAMP_TO_MILLISECONS = 0.001;
 
@@ -28,7 +20,7 @@ namespace rsimpl
     {
         byte            length;
         byte            info;
-        uint32_t    timestamp;
+        uint32_t 	timestamp;
         byte            source_clock[6];
     };
 
@@ -44,7 +36,7 @@ namespace rsimpl
         metadata_header  metaDataIdHeader;
         uint32_t    version;
         uint32_t    flag;
-        int    frameCounter;
+        int         frameCounter;
         uint32_t    opticalTimestamp;   //In millisecond unit
         uint32_t    readoutTime;        //The readout time in millisecond second unit
         uint32_t    exposureTime;       //The exposure time in millisecond second unit
@@ -371,7 +363,7 @@ namespace rsimpl
             void set(float value) override
             {
                 auto auto_exposure_prev_state = _auto_exposure_state->get_enable_auto_exposure();
-                _auto_exposure_state->set_enable_auto_exposure(value);
+                _auto_exposure_state->set_enable_auto_exposure(0.f < std::fabs(value));
 
                 if (_auto_exposure_state->get_enable_auto_exposure()) // auto_exposure current value
                 {
@@ -500,13 +492,13 @@ namespace rsimpl
 
             void set(float value) override
             {
-                _auto_exposure_state->set_auto_exposure_antiflicker_rate(value);
+                _auto_exposure_state->set_auto_exposure_antiflicker_rate(static_cast<uint32_t>(value));
                 _auto_exposure->update_auto_exposure_state(*_auto_exposure_state);
             }
 
             float query() const override
             {
-                return _auto_exposure_state->get_auto_exposure_antiflicker_rate();
+                return static_cast<float>(_auto_exposure_state->get_auto_exposure_antiflicker_rate());
             }
 
             option_range get_range() const override

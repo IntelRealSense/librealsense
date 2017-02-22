@@ -37,8 +37,8 @@ int parse_number(char const *s, int base = 0)
     std::stringstream ss(s);
     int i;
     ss >> i;
-    
-    if (ss.fail() || ss.get(c)) 
+
+    if (ss.fail() || ss.get(c))
     {
         throw std::runtime_error(std::string(std::string("Invalid numeric input - ") + s + std::string("\n")));
     }
@@ -139,7 +139,7 @@ void save_data_to_file(std::list<frame_data> buffer[], std::string filename = ".
     std::ofstream csv;
     csv.open(filename);
     csv << "Stream Type,F#,Timestamp,Arrival Time\n";
-    
+
     for (int stream_index = 0; stream_index < NUM_OF_STREAMS; stream_index++)
     {
         for (unsigned int i = 0; i < buffer[stream_index].size(); i++)
@@ -161,7 +161,7 @@ int main(int argc, char** argv) try
     ValueArg<int> max_frames         ("m", "MaxFrames_Number",   "Maximun number of frames data to receive",            false, 100, "");
     ValueArg<std::string> filename   ("f", "FullFilePath",       "the file which the data will be saved to",            false, "",  "");
     ValueArg<std::string> config_file("c", "ConfigurationFile",  "Specify file path with the requested configuration",  false, "",  "");
-    
+
     cmd.add(timeout);
     cmd.add(max_frames);
     cmd.add(filename);
@@ -173,17 +173,17 @@ int main(int argc, char** argv) try
 
 
     rs::context ctx;
-    
+
     auto list = ctx.query_devices();
     if (list.size() == 0)
         throw std::runtime_error("No device detected. Is it plugged in?");
 
     auto dev = list.front();
- 
+
     // configure Streams
     bool is_valid_config;
     auto is_file_set = filename.isSet();
- 
+
     auto config = is_file_set ? configure_stream(true, is_valid_config, config_file.getValue()) : configure_stream(false, is_valid_config);
     auto camera = config.open(dev);
 
@@ -208,9 +208,9 @@ int main(int argc, char** argv) try
     });
 
     std::this_thread::sleep_for(std::chrono::seconds(timeout.getValue()));
-   
+
     camera.stop();
-   
+
     if (filename.isSet())
         save_data_to_file(buffer, filename.getValue());
     else

@@ -7,6 +7,8 @@
 #error At least Visual Studio 2013 Update 4 is required to compile this backend
 #endif
 
+#define NOMINMAX
+
 #include "win-uvc.h"
 #include "../types.h"
 
@@ -14,7 +16,7 @@
 #include <Windows.h>
 #include "mfapi.h"
 #include <vidcap.h>
-
+#include <type_traits>
 
 #pragma comment(lib, "Shlwapi.lib")
 #pragma comment(lib, "mf.lib")
@@ -22,10 +24,8 @@
 #pragma comment(lib, "mfreadwrite.lib")
 #pragma comment(lib, "mfuuid.lib")
 
-
 #define type_guid  MF_DEVSOURCE_ATTRIBUTE_SOURCE_TYPE_VIDCAP_GUID
 #define did_guid  MF_DEVSOURCE_ATTRIBUTE_SOURCE_TYPE_VIDCAP_SYMBOLIC_LINK
-
 
 namespace rsimpl
 {
@@ -40,7 +40,6 @@ namespace rsimpl
             { 0x50000000, 0x5a313620 },    /* 'Z16'  from 'D16 '    */
             { 0x52415738, 0x47524559 }     /* 'GREY' from 'RAW8 '    */
         };
-
 
         STDMETHODIMP source_reader_callback::QueryInterface(REFIID iid, void** ppv)
         {
@@ -150,24 +149,16 @@ namespace rsimpl
             CHECK_HR(_source->QueryInterface(__uuidof(IKsTopologyInfo),
                 reinterpret_cast<void **>(&ks_topology_info)));
 
-            GUID node_type;
-            CHECK_HR(ks_topology_info->get_NodeType(xu.node, &node_type));
-            const GUID KSNODETYPE_DEV_SPECIFIC_LOCAL{
-                0x941C7AC0L, 0xC559, 0x11D0,
-                { 0x8A, 0x2B, 0x00, 0xA0, 0xC9, 0x25, 0x5A, 0xC1 }
-            };
-            if (node_type != KSNODETYPE_DEV_SPECIFIC_LOCAL)
-                throw std::runtime_error(to_string() <<
-                    "Invalid extension unit node ID: " << xu.node);
+            DWORD nNodes=0;
+            check("get_NumNodes", ks_topology_info->get_NumNodes(&nNodes));
 
-            CComPtr<IUnknown> unknown;
+            CComPtr<IUnknown> unknown = nullptr;
             CHECK_HR(ks_topology_info->CreateNodeInstance(xu.node, IID_IUnknown,
                 reinterpret_cast<LPVOID *>(&unknown)));
 
-            CComPtr<IKsControl> ks_control;
+            CComPtr<IKsControl> ks_control = nullptr;
             CHECK_HR(unknown->QueryInterface(__uuidof(IKsControl),
                 reinterpret_cast<void **>(&ks_control)));
-            LOG_INFO("Obtained KS control node " << xu.node);
             _ks_controls[xu.node] = ks_control;
         }
 
@@ -221,6 +212,8 @@ namespace rsimpl
             if (pHeader->MembersCount < 1)
                 throw std::exception("no data ksprop");
 
+            // The data fields are up to four bytes
+            auto field_width = std:: min(sizeof(uint32_t), (size_t)length);
             switch (pHeader->MembersFlags)
             {
                 /* member flag is not set correctly in current IvCam Implementation */
@@ -233,11 +226,11 @@ namespace rsimpl
                 }
 
                 auto pStruct = next_struct;
-                memcpy_s(&cfg.step, length, pStruct, length);
+                memcpy_s(&cfg.step, field_width, pStruct, field_width);
                 pStruct += length;
-                memcpy_s(&cfg.min, length, pStruct, length);
+                memcpy_s(&cfg.min, field_width, pStruct, field_width);
                 pStruct += length;
-                memcpy_s(&cfg.max, length, pStruct, length);
+                memcpy_s(&cfg.max, field_width, pStruct, field_width);
                 return;
             }
             case KSPROPERTY_MEMBER_VALUES:
@@ -254,7 +247,7 @@ namespace rsimpl
                         throw std::exception("no data ksprop");
                     }
 
-                    memcpy_s(&cfg.def, length, next_struct, length);
+                    memcpy_s(&cfg.def, field_width, next_struct, field_width);
                 }
                 return;
             }

@@ -77,7 +77,7 @@ int main()
         /* Wait for new frame data */
         glfwPollEvents();
         rs_frame* frame;
-        
+
         while (rs_poll_for_frame(queue, &frame, &e))
         {
             check_error();
@@ -133,6 +133,6 @@ int main()
     rs_delete_device_list(devices);
     rs_delete_frame_queue(queue);
     rs_delete_context(ctx);
-    
+
     return EXIT_SUCCESS;
 }

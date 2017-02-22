@@ -92,7 +92,7 @@ auto_exposure_mechanism::auto_exposure_mechanism(uvc_endpoint* dev, auto_exposur
 
                     if (modify_exposure)
                     {
-                        auto value = exposure_value * 10.;
+                        auto value = exposure_value * 10.f;
                         if (value < 1)
                             value = 1;
 
@@ -102,7 +102,7 @@ auto_exposure_mechanism::auto_exposure_mechanism(uvc_endpoint* dev, auto_exposur
 
                     if (modify_gain)
                     {
-                        auto value =  (gain_value - 2.) * 8. + 15. ;
+                        auto value =  (gain_value - 2.f) * 8.f + 15.f;
                         auto& opt = _device->get_option(RS_OPTION_GAIN);
                         opt.set(value);
                     }

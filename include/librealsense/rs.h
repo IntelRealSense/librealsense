@@ -4,9 +4,9 @@
 /** \file rs.h
 * \brief
 * Exposes librealsense functionality for C compilers
-*/   
-   
-   
+*/
+
+
 #ifndef LIBREALSENSE_RS_H
 #define LIBREALSENSE_RS_H
 
@@ -32,14 +32,14 @@ extern "C" {
 /** \brief Exception types are the different categories of errors that RealSense API might return */
 typedef enum rs_exception_type
 {
-    RS_EXCEPTION_TYPE_UNKNOWN,					
-    RS_EXCEPTION_TYPE_CAMERA_DISCONNECTED,		/**< Device was disconnected, this can be caused by outside intervention, by internal firmware error or due to insufficient power */
-    RS_EXCEPTION_TYPE_BACKEND,					/**< Error was returned from the underlying OS-specific layer */
-    RS_EXCEPTION_TYPE_INVALID_VALUE,			/**< Invalid value was passed to the API */
+    RS_EXCEPTION_TYPE_UNKNOWN,
+    RS_EXCEPTION_TYPE_CAMERA_DISCONNECTED,      /**< Device was disconnected, this can be caused by outside intervention, by internal firmware error or due to insufficient power */
+    RS_EXCEPTION_TYPE_BACKEND,                  /**< Error was returned from the underlying OS-specific layer */
+    RS_EXCEPTION_TYPE_INVALID_VALUE,            /**< Invalid value was passed to the API */
     RS_EXCEPTION_TYPE_WRONG_API_CALL_SEQUENCE,  /**< Function precondition was violated */
-    RS_EXCEPTION_TYPE_NOT_IMPLEMENTED,			/**< The method is not implemented at this point */
+    RS_EXCEPTION_TYPE_NOT_IMPLEMENTED,          /**< The method is not implemented at this point */
     RS_EXCEPTION_TYPE_DEVICE_IN_RECOVERY_MODE,  /**< Device is in recovery mode and might require firmware update */
-    RS_EXCEPTION_TYPE_COUNT						/**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
+    RS_EXCEPTION_TYPE_COUNT                     /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
 } rs_exception_type;
 
 /** \brief Streams are different types of data provided by RealSense devices */
@@ -51,8 +51,8 @@ typedef enum rs_stream
     RS_STREAM_INFRARED                         , /**< Native stream of infrared data captured by RealSense device */
     RS_STREAM_INFRARED2                        , /**< Native stream of infrared data captured from a second viewpoint by RealSense device */
     RS_STREAM_FISHEYE                          , /**< Native stream of fish-eye (wide) data captured from the dedicate motion camera */
-    RS_STREAM_GYRO							   , /**< Native stream of gyroscope motion data produced by RealSense device */
-    RS_STREAM_ACCEL						       , /**< Native stream of accelerometer motion data produced by RealSense device */
+    RS_STREAM_GYRO                             , /**< Native stream of gyroscope motion data produced by RealSense device */
+    RS_STREAM_ACCEL                            , /**< Native stream of accelerometer motion data produced by RealSense device */
     RS_STREAM_COUNT
 } rs_stream;
 
@@ -71,11 +71,11 @@ typedef enum rs_format
     RS_FORMAT_Y16             , /**< 16-bit per-pixel grayscale image */
     RS_FORMAT_RAW10           , /**< Four 10-bit luminance values encoded into a 5-byte macropixel */
     RS_FORMAT_RAW16           , /**< 16-bit raw image */
-    RS_FORMAT_RAW8        	  , /**< 8-bit raw image */
+    RS_FORMAT_RAW8            , /**< 8-bit raw image */
     RS_FORMAT_UYVY            , /**< Similar to the standard YUYV pixel format, but packed in a different order */
     RS_FORMAT_MOTION_RAW      , /**< Raw data from the motion sensor */
     RS_FORMAT_MOTION_XYZ32F   , /**< Motion data packed as 3 32-bit float values, for X, Y, and Z axis */
-    RS_FORMAT_COUNT				/**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
+    RS_FORMAT_COUNT             /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
 } rs_format;
 
 typedef enum rs_frame_metadata
@@ -109,10 +109,10 @@ typedef enum rs_ivcam_preset
     RS_VISUAL_PRESET_DEFAULT                 , /**< Preset for default */
     RS_VISUAL_PRESET_MID_RANGE               , /**< Preset for mid-range */
     RS_VISUAL_PRESET_IR_ONLY                 , /**< Preset for IR only */
-    RS_VISUAL_PRESET_COUNT					   /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
+    RS_VISUAL_PRESET_COUNT                     /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
 } rs_visual_preset;
 
-/** \brief Defines general configuration controls. 
+/** \brief Defines general configuration controls.
 
    These can generally be mapped to camera UVC controls, and unless stated otherwise, can be set/queried at any time. */
 typedef enum rs_option
@@ -155,7 +155,7 @@ typedef enum rs_camera_info {
     RS_CAMERA_INFO_DEVICE_LOCATION               ,
     RS_CAMERA_INFO_DEVICE_DEBUG_OP_CODE          ,
     RS_CAMERA_INFO_ADVANCED_MODE                 ,
-    RS_CAMERA_INFO_COUNT						  /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
+    RS_CAMERA_INFO_COUNT                          /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
 } rs_camera_info;
 
 /**\brief Severity of the librealsense logger */
@@ -173,8 +173,8 @@ typedef enum rs_log_severity {
 typedef enum rs_timestamp_domain
 {
     RS_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, /**< Frame timestamp was measured in relation to the camera clock */
-    RS_TIMESTAMP_DOMAIN_SYSTEM_TIME,	/**< Frame timestamp was measured in relation to the OS system clock */
-    RS_TIMESTAMP_DOMAIN_COUNT			/**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
+    RS_TIMESTAMP_DOMAIN_SYSTEM_TIME,    /**< Frame timestamp was measured in relation to the OS system clock */
+    RS_TIMESTAMP_DOMAIN_COUNT           /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
 } rs_timestamp_domain;
 
 /** \brief Video stream intrinsics */
@@ -240,7 +240,7 @@ typedef void (*rs_log_callback_ptr)(rs_log_severity min_severity, const char* me
 rs_context* rs_create_context(int api_version, rs_error** error);
 
 /**
-* \brief Frees the relevant context object. 
+* \brief Frees the relevant context object.
 *
 * This action might invalidate \c rs_device pointers created from this context.
 * \param[in] context Object that is no longer needed
@@ -703,7 +703,7 @@ void rs_delete_raw_data(rs_raw_data_buffer* buffer);
 const unsigned char* rs_get_raw_data(const rs_raw_data_buffer* buffer, rs_error** error);
 
 /*
-librealsense recorder is intended for validation purposes. 
+librealsense recorder is intended for validation purposes.
 it supports three modes of operation:
 */
 typedef enum rs_recording_mode
