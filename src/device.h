@@ -34,9 +34,9 @@ namespace rsimpl
             }
         }
 
-        rs_extrinsics get_extrinsics(int from, int to);
+        rs2_extrinsics get_extrinsics(int from, int to);
 
-        virtual rs_intrinsics get_intrinsics(unsigned int subdevice, stream_profile profile) const = 0;
+        virtual rs2_intrinsics get_intrinsics(unsigned int subdevice, stream_profile profile) const = 0;
 
         float get_depth_scale() const { return _static_info.nominal_depth_scale; }
 
@@ -50,7 +50,7 @@ namespace rsimpl
 
         uvc_endpoint& get_uvc_endpoint(int subdevice);
 
-        void register_endpoint_info(int sub, std::map<rs_camera_info, std::string> camera_info);
+        void register_endpoint_info(int sub, std::map<rs2_camera_info, std::string> camera_info);
 
         void declare_capability(supported_capability cap);
 

@@ -7,19 +7,21 @@
 
 #include "unit-tests-common.h"
 
+using namespace rs2;
+
 // disable in one place options that are sensitive to frame content
 // this is done to make sure unit-tests are deterministic
-void disable_sensitive_options_for(rs::device& dev)
+void disable_sensitive_options_for(device& dev)
 {
-    if (dev.supports(RS_OPTION_ENABLE_AUTO_EXPOSURE))
-        REQUIRE_NOTHROW(dev.set_option(RS_OPTION_ENABLE_AUTO_EXPOSURE, 0));
+    if (dev.supports(RS2_OPTION_ENABLE_AUTO_EXPOSURE))
+        REQUIRE_NOTHROW(dev.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, 0));
 }
 
 TEST_CASE("Device metadata enumerates correctly", "[live]")
 {
     auto ctx = make_context(space_to_underscore(Catch::getCurrentContext().getResultCapture()->getCurrentTestName()).c_str());
     // Require at least one device to be plugged in
-    std::vector<rs::device> list;
+    std::vector<device> list;
     REQUIRE_NOTHROW(list = ctx.query_devices());
     REQUIRE(list.size() > 0);
 
@@ -28,11 +30,11 @@ TEST_CASE("Device metadata enumerates correctly", "[live]")
     {
         SECTION("supported device metadata strings are nonempty, unsupported ones throw")
         {
-            for (auto j = 0; j < RS_CAMERA_INFO_COUNT; ++j) {
+            for (auto j = 0; j < RS2_CAMERA_INFO_COUNT; ++j) {
                 auto is_supported = false;
-                REQUIRE_NOTHROW(is_supported = dev.supports(rs_camera_info(j)));
-                if (is_supported) REQUIRE(dev.get_camera_info(rs_camera_info(j)) != nullptr);
-                else REQUIRE_THROWS_AS(dev.get_camera_info(rs_camera_info(j)), rs::error);
+                REQUIRE_NOTHROW(is_supported = dev.supports(rs2_camera_info(j)));
+                if (is_supported) REQUIRE(dev.get_camera_info(rs2_camera_info(j)) != nullptr);
+                else REQUIRE_THROWS_AS(dev.get_camera_info(rs2_camera_info(j)), error);
             }
         }
     }
@@ -46,12 +48,12 @@ TEST_CASE("Start-Stop stream sequence", "[live]")
 {
     // Require at least one device to be plugged in
     auto ctx = make_context(space_to_underscore(Catch::getCurrentContext().getResultCapture()->getCurrentTestName()).c_str());
-    std::vector<rs::device> list;
+    std::vector<device> list;
     REQUIRE_NOTHROW(list = ctx.query_devices());
     REQUIRE(list.size() > 0);
 
-    rs::util::config config;
-    REQUIRE_NOTHROW(config.enable_all(rs::preset::best_quality));
+    util::config config;
+    REQUIRE_NOTHROW(config.enable_all(preset::best_quality));
 
     // For each device
     for (auto&& dev : list)
@@ -59,13 +61,13 @@ TEST_CASE("Start-Stop stream sequence", "[live]")
         disable_sensitive_options_for(dev);
 
         // Configure all supported streams to run at 30 frames per second
-        rs::util::config::multistream streams;
+        rs2::util::config::multistream streams;
         REQUIRE_NOTHROW(streams = config.open(dev));
 
         for (auto i = 0; i < 5; i++)
         {
             // Test sequence
-            REQUIRE_NOTHROW(streams.start([](rs_frame * fref) {}));
+            REQUIRE_NOTHROW(streams.start([](rs2_frame * fref) {}));
             REQUIRE_NOTHROW(streams.stop());
         }
 
@@ -81,7 +83,7 @@ TEST_CASE("no extrinsic transformation between a stream and itself", "[live]")
 {
     // Require at least one device to be plugged in
     auto ctx = make_context(space_to_underscore(Catch::getCurrentContext().getResultCapture()->getCurrentTestName()).c_str());
-    std::vector<rs::device> list;
+    std::vector<device> list;
     REQUIRE_NOTHROW(list = ctx.query_devices());
     const size_t device_count = list.size();
     REQUIRE(device_count > 0);
@@ -89,11 +91,11 @@ TEST_CASE("no extrinsic transformation between a stream and itself", "[live]")
     // For each device
     for (auto&& dev : list)
     {
-        rs_extrinsics extrin;
+        rs2_extrinsics extrin;
         try {
             extrin = ctx.get_extrinsics(dev, dev);
         }
-        catch (rs::error &e) {
+        catch (error &e) {
             // if device isn't calibrated, get_extrinsics must error out (according to old comment. Might not be true under new API)
             WARN(e.what());
             continue;
@@ -108,7 +110,7 @@ TEST_CASE("extrinsic transformation between two streams is a rigid transform", "
 {
     // Require at least one device to be plugged in
     auto ctx = make_context(space_to_underscore(Catch::getCurrentContext().getResultCapture()->getCurrentTestName()).c_str());
-    std::vector<rs::device> list;
+    std::vector<device> list;
     REQUIRE_NOTHROW(list = ctx.query_devices());
     const size_t device_count = list.size();
     REQUIRE(device_count > 0);
@@ -126,12 +128,12 @@ TEST_CASE("extrinsic transformation between two streams is a rigid transform", "
             for (int k = j + 1; k < adj_devices.size(); ++k)
             {
                 // Extrinsics from A to B should have an orthonormal 3x3 rotation matrix and a translation vector of magnitude less than 10cm
-                rs_extrinsics a_to_b;
+                rs2_extrinsics a_to_b;
 
                 try {
                     a_to_b = ctx.get_extrinsics(adj_devices[j], adj_devices[k]);
                 }
-                catch (rs::error &e) {
+                catch (error &e) {
                     WARN(e.what());
                     continue;
                 }
@@ -140,7 +142,7 @@ TEST_CASE("extrinsic transformation between two streams is a rigid transform", "
                 REQUIRE(vector_length(a_to_b.translation) < 0.1f);
 
                 // Extrinsics from B to A should be the inverse of extrinsics from A to B
-                rs_extrinsics b_to_a;
+                rs2_extrinsics b_to_a;
                 REQUIRE_NOTHROW(b_to_a = ctx.get_extrinsics(adj_devices[k], adj_devices[j]));
 
                 require_transposed(a_to_b.rotation, b_to_a.rotation);
@@ -156,7 +158,7 @@ TEST_CASE("extrinsic transformations are transitive", "[live]")
 {
     // Require at least one device to be plugged in
     auto ctx = make_context(space_to_underscore(Catch::getCurrentContext().getResultCapture()->getCurrentTestName()).c_str());
-    std::vector<rs::device> list;
+    std::vector<device> list;
     REQUIRE_NOTHROW(list = ctx.query_devices());
     REQUIRE(list.size() > 0);
 
@@ -173,14 +175,14 @@ TEST_CASE("extrinsic transformations are transitive", "[live]")
                 for (auto c = 0; c < adj_devices.size(); ++c)
                 {
                     // Require that the composition of a_to_b and b_to_c is equal to a_to_c
-                    rs_extrinsics a_to_b, b_to_c, a_to_c;
+                    rs2_extrinsics a_to_b, b_to_c, a_to_c;
 
                     try {
                         a_to_b = ctx.get_extrinsics(adj_devices[a], adj_devices[b]);
                         b_to_c = ctx.get_extrinsics(adj_devices[b], adj_devices[c]);
                         a_to_c = ctx.get_extrinsics(adj_devices[a], adj_devices[c]);
                     }
-                    catch (rs::error &e)
+                    catch (error &e)
                     {
                         WARN(e.what());
                         continue;
@@ -212,7 +214,7 @@ TEST_CASE("streaming modes sanity check", "[live]")
 {
     // Require at least one device to be plugged in
     auto ctx = make_context(space_to_underscore(Catch::getCurrentContext().getResultCapture()->getCurrentTestName()).c_str());
-    std::vector<rs::device> list;
+    std::vector<device> list;
     REQUIRE_NOTHROW(list = ctx.query_devices());
     REQUIRE(list.size() > 0);
 
@@ -222,7 +224,7 @@ TEST_CASE("streaming modes sanity check", "[live]")
         disable_sensitive_options_for(dev);
 
         // make sure they provide at least one streaming mode
-        std::vector<rs::stream_profile> stream_profiles;
+        std::vector<stream_profile> stream_profiles;
         REQUIRE_NOTHROW(stream_profiles = dev.get_stream_modes());
         REQUIRE(stream_profiles.size() > 0);
 
@@ -234,22 +236,22 @@ TEST_CASE("streaming modes sanity check", "[live]")
                 REQUIRE(profile.width <= 1920);
                 REQUIRE(profile.height >= 180);
                 REQUIRE(profile.height <= 1080);
-                REQUIRE(profile.format > RS_FORMAT_ANY);
-                REQUIRE(profile.format < RS_FORMAT_COUNT);
+                REQUIRE(profile.format > RS2_FORMAT_ANY);
+                REQUIRE(profile.format < RS2_FORMAT_COUNT);
                 REQUIRE(profile.fps >= 2);
                 REQUIRE(profile.fps <= 300);
 
                 // require that we can start streaming this mode
                 REQUIRE_NOTHROW(dev.open({ profile }));
                 // TODO: make callback confirm stream format/dimensions/framerate
-                REQUIRE_NOTHROW(dev.start([](rs_frame * fref) {}));
+                REQUIRE_NOTHROW(dev.start([](rs2_frame * fref) {}));
 
                 // Require that we can disable the stream afterwards
                 REQUIRE_NOTHROW(dev.stop());
                 REQUIRE_NOTHROW(dev.close());
             }
             SECTION("check stream intrinsics are sane") {
-                rs_intrinsics intrin;
+                rs2_intrinsics intrin;
                 REQUIRE_NOTHROW(intrin = dev.get_intrinsics(profile));
 
                 // Intrinsic width/height must match width/height of streaming mode we requested
@@ -274,7 +276,7 @@ TEST_CASE("check option API", "[live][options]")
 {
     // Require at least one device to be plugged in
     auto ctx = make_context(space_to_underscore(Catch::getCurrentContext().getResultCapture()->getCurrentTestName()).c_str());
-    std::vector<rs::device> list;
+    std::vector<device> list;
     REQUIRE_NOTHROW(list = ctx.query_devices());
     REQUIRE(list.size() > 0);
 
@@ -283,8 +285,8 @@ TEST_CASE("check option API", "[live][options]")
     {
 
         // for each option
-        for (auto i = 0; i < RS_OPTION_COUNT; ++i) {
-            auto opt = rs_option(i);
+        for (auto i = 0; i < RS2_OPTION_COUNT; ++i) {
+            auto opt = rs2_option(i);
             bool is_opt_supported;
             REQUIRE_NOTHROW(is_opt_supported = dev.supports(opt));
 
@@ -293,11 +295,11 @@ TEST_CASE("check option API", "[live][options]")
             {
                 if (!is_opt_supported)
                 {
-                    REQUIRE_THROWS_AS(dev.get_option_range(opt), rs::error);
+                    REQUIRE_THROWS_AS(dev.get_option_range(opt), error);
                 }
                 else
                 {
-                    rs::option_range range;
+                    option_range range;
                     REQUIRE_NOTHROW(range = dev.get_option_range(opt));
 
                     // a couple sanity checks
@@ -315,7 +317,7 @@ TEST_CASE("check option API", "[live][options]")
             {
                 if (!is_opt_supported)
                 {
-                    REQUIRE_THROWS_AS(dev.get_option(opt), rs::error);
+                    REQUIRE_THROWS_AS(dev.get_option(opt), error);
                 }
                 else
                 {
@@ -337,7 +339,7 @@ TEST_CASE("check option API", "[live][options]")
             SECTION("set opt doesn't like bad values") {
                 if (!is_opt_supported)
                 {
-                    REQUIRE_THROWS_AS(dev.set_option(opt, 1), rs::error);
+                    REQUIRE_THROWS_AS(dev.set_option(opt, 1), error);
                 }
                 else
                 {
@@ -356,15 +358,15 @@ TEST_CASE("check option API", "[live][options]")
                     REQUIRE_NOTHROW(dev.set_option(opt, range.min + (1111 % n_steps)*range.step));
 
                     // below min and above max shouldn't work
-                    REQUIRE_THROWS_AS(dev.set_option(opt, range.min - range.step), rs::error);
-                    REQUIRE_THROWS_AS(dev.set_option(opt, range.max + range.step), rs::error);
+                    REQUIRE_THROWS_AS(dev.set_option(opt, range.min - range.step), error);
+                    REQUIRE_THROWS_AS(dev.set_option(opt, range.max + range.step), error);
 
                     // make sure requesting value in the range, but not a legal step doesn't work
                     // TODO: maybe something for range.step < 1 ?
                     for (auto j = 1; j < range.step; j++) {
                         CAPTURE(range.step);
                         CAPTURE(j);
-                        REQUIRE_THROWS_AS(dev.set_option(opt, range.min + j), rs::error);
+                        REQUIRE_THROWS_AS(dev.set_option(opt, range.min + j), error);
                     }
                 }
             }
@@ -387,7 +389,7 @@ TEST_CASE("check option API", "[live][options]")
             }
             SECTION("get_description returns a non-empty, non-null string") {
                 if (!is_opt_supported) {
-                    REQUIRE_THROWS_AS(dev.get_option_description(opt), rs::error);
+                    REQUIRE_THROWS_AS(dev.get_option_description(opt), error);
                 }
                 else
                 {
@@ -404,7 +406,7 @@ TEST_CASE("a single subdevice can only be opened once, different subdevices can 
 {
     // Require at least one device to be plugged in
     auto ctx = make_context(space_to_underscore(Catch::getCurrentContext().getResultCapture()->getCurrentTestName()).c_str());
-    std::vector<rs::device> list;
+    std::vector<device> list;
     REQUIRE_NOTHROW(list = ctx.query_devices());
     REQUIRE(list.size() > 0);
 
@@ -426,28 +428,28 @@ TEST_CASE("a single subdevice can only be opened once, different subdevices can 
                     SECTION("same mode")
                     {
                         // selected, but not streaming
-                        REQUIRE_THROWS_AS(dev.open({ modes.front() }), rs::error);
+                        REQUIRE_THROWS_AS(dev.open({ modes.front() }), error);
 
                         // streaming
-                        REQUIRE_NOTHROW(dev.start([](rs_frame * fref) {}));
-                        REQUIRE_THROWS_AS(dev.open({ modes.front() }), rs::error);
+                        REQUIRE_NOTHROW(dev.start([](rs2_frame * fref) {}));
+                        REQUIRE_THROWS_AS(dev.open({ modes.front() }), error);
                     }
 
                     SECTION("different modes")
                     {
                         if (modes.size() == 1)
                         {
-                            WARN("device " << dev.get_camera_info(RS_CAMERA_INFO_DEVICE_NAME) << " S/N: " << dev.get_camera_info(RS_CAMERA_INFO_DEVICE_SERIAL_NUMBER) << " w/ FW v" << dev.get_camera_info(RS_CAMERA_INFO_CAMERA_FIRMWARE_VERSION) << ":");
+                            WARN("device " << dev.get_camera_info(RS2_CAMERA_INFO_DEVICE_NAME) << " S/N: " << dev.get_camera_info(RS2_CAMERA_INFO_DEVICE_SERIAL_NUMBER) << " w/ FW v" << dev.get_camera_info(RS2_CAMERA_INFO_CAMERA_FIRMWARE_VERSION) << ":");
                             WARN("subdevice has only 1 supported streaming mode. Skipping Same Subdevice, different modes test.");
                         }
                         else
                         {
                             // selected, but not streaming
-                            REQUIRE_THROWS_AS(dev.open({ modes[1] }), rs::error);
+                            REQUIRE_THROWS_AS(dev.open({ modes[1] }), error);
 
                             // streaming
-                            REQUIRE_NOTHROW(dev.start([](rs_frame * fref) {}));
-                            REQUIRE_THROWS_AS(dev.open({ modes[1] }), rs::error);
+                            REQUIRE_NOTHROW(dev.start([](rs2_frame * fref) {}));
+                            REQUIRE_THROWS_AS(dev.open({ modes[1] }), error);
                         }
                     }
 
@@ -472,16 +474,16 @@ TEST_CASE("a single subdevice can only be opened once, different subdevices can 
                             {
                                 CAPTURE(subdevice2.get_stream_modes().front().stream);
                                 REQUIRE_NOTHROW(subdevice2.open(subdevice2.get_stream_modes().front()));
-                                REQUIRE_NOTHROW(subdevice2.start([](rs_frame * fref) {}));
+                                REQUIRE_NOTHROW(subdevice2.start([](rs2_frame * fref) {}));
                                 REQUIRE_NOTHROW(subdevice2.stop());
                                 REQUIRE_NOTHROW(subdevice2.close());
                             }
 
                             // streaming
                             {
-                                REQUIRE_NOTHROW(subdevice1.start([](rs_frame * fref) {}));
+                                REQUIRE_NOTHROW(subdevice1.start([](rs2_frame * fref) {}));
                                 REQUIRE_NOTHROW(subdevice2.open(subdevice2.get_stream_modes().front()));
-                                REQUIRE_NOTHROW(subdevice2.start([](rs_frame * fref) {}));
+                                REQUIRE_NOTHROW(subdevice2.start([](rs2_frame * fref) {}));
                                 // stop streaming in opposite order just to be sure that works too
                                 REQUIRE_NOTHROW(subdevice1.stop());
                                 REQUIRE_NOTHROW(subdevice2.stop());
@@ -516,8 +518,8 @@ TEST_CASE("a single subdevice can only be opened once, different subdevices can 
                         REQUIRE_NOTHROW(dev1.open(dev1.get_stream_modes().front()));
                         REQUIRE_NOTHROW(dev2.open(dev2.get_stream_modes().front()));
 
-                        REQUIRE_NOTHROW(dev1.start([](rs_frame * fref) {}));
-                        REQUIRE_NOTHROW(dev2.start([](rs_frame * fref) {}));
+                        REQUIRE_NOTHROW(dev1.start([](rs2_frame * fref) {}));
+                        REQUIRE_NOTHROW(dev2.start([](rs2_frame * fref) {}));
                         REQUIRE_NOTHROW(dev1.stop());
                         REQUIRE_NOTHROW(dev2.stop());
 
@@ -532,7 +534,7 @@ TEST_CASE("a single subdevice can only be opened once, different subdevices can 
     SECTION("two contexts")
     {
         auto ctx2 = make_context("two_contexts");
-        std::vector<rs::device> list2;
+        std::vector<device> list2;
         REQUIRE_NOTHROW(list2 = ctx2.query_devices());
         REQUIRE(list2.size() == list.size());
         SECTION("subdevices on a single device")
@@ -548,14 +550,14 @@ TEST_CASE("a single subdevice can only be opened once, different subdevices can 
                     {
                         SECTION("same subdevice") {
                             // get modes
-                            std::vector<rs::stream_profile> modes1, modes2;
+                            std::vector<stream_profile> modes1, modes2;
                             REQUIRE_NOTHROW(modes1 = dev1.get_stream_modes());
                             REQUIRE_NOTHROW(modes2 = dev2.get_stream_modes());
                             REQUIRE(modes1.size() > 0);
                             REQUIRE(modes1.size() == modes2.size());
                             // require that the lists are the same (disregarding order)
                             for (auto profile : modes1) {
-                                REQUIRE(std::any_of(begin(modes2), end(modes2), [&](const rs::stream_profile & p)
+                                REQUIRE(std::any_of(begin(modes2), end(modes2), [&](const stream_profile & p)
                                 {
                                     return profile == p;
                                 }));
@@ -568,27 +570,27 @@ TEST_CASE("a single subdevice can only be opened once, different subdevices can 
                             SECTION("same mode")
                             {
                                 // selected, but not streaming
-                                REQUIRE_THROWS_AS(dev2.open({ modes1.front() }), rs::error);
+                                REQUIRE_THROWS_AS(dev2.open({ modes1.front() }), error);
 
                                 // streaming
-                                REQUIRE_NOTHROW(dev1.start([](rs_frame * fref) {}));
-                                REQUIRE_THROWS_AS(dev2.open({ modes1.front() }), rs::error);
+                                REQUIRE_NOTHROW(dev1.start([](rs2_frame * fref) {}));
+                                REQUIRE_THROWS_AS(dev2.open({ modes1.front() }), error);
                             }
                             SECTION("different modes")
                             {
                                 if (modes1.size() == 1)
                                 {
-                                    WARN("device " << dev1.get_camera_info(RS_CAMERA_INFO_DEVICE_NAME) << " S/N: " << dev1.get_camera_info(RS_CAMERA_INFO_DEVICE_SERIAL_NUMBER) << " w/ FW v" << dev1.get_camera_info(RS_CAMERA_INFO_CAMERA_FIRMWARE_VERSION) << ":");
+                                    WARN("device " << dev1.get_camera_info(RS2_CAMERA_INFO_DEVICE_NAME) << " S/N: " << dev1.get_camera_info(RS2_CAMERA_INFO_DEVICE_SERIAL_NUMBER) << " w/ FW v" << dev1.get_camera_info(RS2_CAMERA_INFO_CAMERA_FIRMWARE_VERSION) << ":");
                                     WARN("Device has only 1 supported streaming mode. Skipping Same Subdevice, different modes test.");
                                 }
                                 else
                                 {
                                     // selected, but not streaming
-                                    REQUIRE_THROWS_AS(dev2.open({ modes1[1] }), rs::error);
+                                    REQUIRE_THROWS_AS(dev2.open({ modes1[1] }), error);
 
                                     // streaming
-                                    REQUIRE_NOTHROW(dev1.start([](rs_frame * fref) {}));
-                                    REQUIRE_THROWS_AS(dev2.open({ modes1[1] }), rs::error);
+                                    REQUIRE_NOTHROW(dev1.start([](rs2_frame * fref) {}));
+                                    REQUIRE_THROWS_AS(dev2.open({ modes1[1] }), error);
                                 }
                             }
                             REQUIRE_NOTHROW(dev1.stop());
@@ -605,16 +607,16 @@ TEST_CASE("a single subdevice can only be opened once, different subdevices can 
                             {
                                 CAPTURE(dev2.get_stream_modes().front().stream);
                                 REQUIRE_NOTHROW(dev2.open(dev2.get_stream_modes().front()));
-                                REQUIRE_NOTHROW(dev2.start([](rs_frame * fref) {}));
+                                REQUIRE_NOTHROW(dev2.start([](rs2_frame * fref) {}));
                                 REQUIRE_NOTHROW(dev2.stop());
                                 REQUIRE_NOTHROW(dev2.close());
                             }
 
                             // streaming
                             {
-                                REQUIRE_NOTHROW(dev1.start([](rs_frame * fref) {}));
+                                REQUIRE_NOTHROW(dev1.start([](rs2_frame * fref) {}));
                                 REQUIRE_NOTHROW(dev2.open(dev2.get_stream_modes().front()));
-                                REQUIRE_NOTHROW(dev2.start([](rs_frame * fref) {}));
+                                REQUIRE_NOTHROW(dev2.start([](rs2_frame * fref) {}));
                                 // stop streaming in opposite order just to be sure that works too
                                 REQUIRE_NOTHROW(dev1.stop());
                                 REQUIRE_NOTHROW(dev2.stop());
@@ -646,7 +648,7 @@ TEST_CASE("a single subdevice can only be opened once, different subdevices can 
                             continue;
 
                         // get modes
-                        std::vector<rs::stream_profile> modes1, modes2;
+                        std::vector<stream_profile> modes1, modes2;
                         REQUIRE_NOTHROW(modes1 = dev1.get_stream_modes());
                         REQUIRE_NOTHROW(modes2 = dev2.get_stream_modes());
                         REQUIRE(modes1.size() > 0);
@@ -654,10 +656,10 @@ TEST_CASE("a single subdevice can only be opened once, different subdevices can 
 
                         // grab first lock
                         CAPTURE(modes1.front().stream);
-                        CAPTURE(dev1.get_camera_info(RS_CAMERA_INFO_DEVICE_NAME));
-                        CAPTURE(dev1.get_camera_info(RS_CAMERA_INFO_DEVICE_SERIAL_NUMBER));
-                        CAPTURE(dev2.get_camera_info(RS_CAMERA_INFO_DEVICE_NAME));
-                        CAPTURE(dev2.get_camera_info(RS_CAMERA_INFO_DEVICE_SERIAL_NUMBER));
+                        CAPTURE(dev1.get_camera_info(RS2_CAMERA_INFO_DEVICE_NAME));
+                        CAPTURE(dev1.get_camera_info(RS2_CAMERA_INFO_DEVICE_SERIAL_NUMBER));
+                        CAPTURE(dev2.get_camera_info(RS2_CAMERA_INFO_DEVICE_NAME));
+                        CAPTURE(dev2.get_camera_info(RS2_CAMERA_INFO_DEVICE_SERIAL_NUMBER));
                         REQUIRE_NOTHROW(dev1.open(modes1.front()));
 
                         // try to acquire second lock
@@ -665,16 +667,16 @@ TEST_CASE("a single subdevice can only be opened once, different subdevices can 
                         // selected, but not streaming
                         {
                             REQUIRE_NOTHROW(dev2.open({ modes2.front() }));
-                            REQUIRE_NOTHROW(dev2.start([](rs_frame * fref) {}));
+                            REQUIRE_NOTHROW(dev2.start([](rs2_frame * fref) {}));
                             REQUIRE_NOTHROW(dev2.stop());
                             REQUIRE_NOTHROW(dev2.close());
                         }
 
                         // streaming
                         {
-                            REQUIRE_NOTHROW(dev1.start([](rs_frame * fref) {}));
+                            REQUIRE_NOTHROW(dev1.start([](rs2_frame * fref) {}));
                             REQUIRE_NOTHROW(dev2.open({ modes2.front() }));
-                            REQUIRE_NOTHROW(dev2.start([](rs_frame * fref) {}));
+                            REQUIRE_NOTHROW(dev2.start([](rs2_frame * fref) {}));
                             // stop streaming in opposite order just to be sure that works too
                             REQUIRE_NOTHROW(dev1.stop());
                             REQUIRE_NOTHROW(dev2.stop());
@@ -696,7 +698,7 @@ TEST_CASE("All suggested profiles can be opened", "[live]") {
 
     const int num_of_profiles_for_each_subdevice = 2;
 
-    std::vector<rs::device> list;
+    std::vector<device> list;
     REQUIRE_NOTHROW(list = ctx.query_devices());
     REQUIRE(list.size() > 0);
 
@@ -704,15 +706,14 @@ TEST_CASE("All suggested profiles can be opened", "[live]") {
 
         disable_sensitive_options_for(subdevice);
 
-
-        std::vector<rs::stream_profile> modes;
+        std::vector<stream_profile> modes;
         REQUIRE_NOTHROW(modes = subdevice.get_stream_modes());
 
         REQUIRE(modes.size() > 0);
-        WARN(subdevice.get_camera_info(RS_CAMERA_INFO_MODULE_NAME));
+        WARN(subdevice.get_camera_info(RS2_CAMERA_INFO_MODULE_NAME));
         //the test will be done only on sub set of profile for each sub device
         for (int i = 0; i < modes.size(); i += (int)std::ceil((float)modes.size() / (float)num_of_profiles_for_each_subdevice)) {
-            //CAPTURE(rs_subdevice(subdevice));
+            //CAPTURE(rs2_subdevice(subdevice));
             CAPTURE(modes[i].format);
             CAPTURE(modes[i].fps);
             CAPTURE(modes[i].height);
@@ -720,7 +721,7 @@ TEST_CASE("All suggested profiles can be opened", "[live]") {
             CAPTURE(modes[i].stream);
 
             REQUIRE_NOTHROW(subdevice.open({ modes[i] }));
-            REQUIRE_NOTHROW(subdevice.start([](rs_frame * fref) {}));
+            REQUIRE_NOTHROW(subdevice.start([](rs2_frame * fref) {}));
             REQUIRE_NOTHROW(subdevice.stop());
             REQUIRE_NOTHROW(subdevice.close());
         }
@@ -730,7 +731,7 @@ TEST_CASE("All suggested profiles can be opened", "[live]") {
 TEST_CASE("Metadata sanity check", "[live]") {
     //Require at least one device to be plugged in
     auto ctx = make_context(space_to_underscore(Catch::getCurrentContext().getResultCapture()->getCurrentTestName()).c_str());
-    std::vector<rs::device> list;
+    std::vector<device> list;
     REQUIRE_NOTHROW(list = ctx.query_devices());
     REQUIRE(list.size() > 0);
 
@@ -741,11 +742,11 @@ TEST_CASE("Metadata sanity check", "[live]") {
     const float max_diff_between_real_and_metadata_fps = 0.2;
 
     for (auto && subdevice : list) {
-        std::vector<rs::stream_profile> modes;
+        std::vector<stream_profile> modes;
         REQUIRE_NOTHROW(modes = subdevice.get_stream_modes());
 
         REQUIRE(modes.size() > 0);
-        WARN(subdevice.get_camera_info(RS_CAMERA_INFO_MODULE_NAME));
+        WARN(subdevice.get_camera_info(RS2_CAMERA_INFO_MODULE_NAME));
 
         //the test will be done only on sub set of profile for each sub device
         for (int i = 0; i < modes.size(); i += std::ceil((float)modes.size() / (float)num_of_profiles_for_each_subdevice)) {
@@ -766,13 +767,13 @@ TEST_CASE("Metadata sanity check", "[live]") {
             REQUIRE_NOTHROW(subdevice.open({ modes[i] }));
             disable_sensitive_options_for(subdevice);
 
-            REQUIRE_NOTHROW(subdevice.start([&](rs::frame f)
+            REQUIRE_NOTHROW(subdevice.start([&](frame f)
             {
                 if (frames >= frames_before_start_measure && frames_additional_data.size() < frames_for_fps_measure)
                 {
                     if (first)
                     {
-                        start = ctx.rs_get_time();
+                         start = ctx.get_time();
                     }
                     first = false;
                     auto frame_number = f.get_frame_number();
@@ -796,7 +797,7 @@ TEST_CASE("Metadata sanity check", "[live]") {
             REQUIRE_NOTHROW(subdevice.stop());
             REQUIRE_NOTHROW(subdevice.close());
 
-            auto end = ctx.rs_get_time();
+            auto end = ctx.get_time();
             lock.unlock();
 
             auto seconds = (end - start)*msec_to_sec;
@@ -855,26 +856,26 @@ TEST_CASE("Metadata sanity check", "[live]") {
 class AC_Mock_Device
 {
 public:
-    AC_Mock_Device(std::vector<rs::stream_profile> modes, bool result) : result(result), modes(std::move(modes)), expected() {};
-    void set_expected(std::vector<rs::stream_profile> profiles) { expected = profiles; };
+    AC_Mock_Device(std::vector<stream_profile> modes, bool result) : result(result), modes(std::move(modes)), expected() {};
+    void set_expected(std::vector<stream_profile> profiles) { expected = profiles; };
 
     std::vector<AC_Mock_Device> get_adjacent_devices() const { return{ *this }; }
-    std::vector<rs::stream_profile> get_stream_modes() const { return modes; };
-    bool open(std::vector<rs::stream_profile> profiles) const {
+    std::vector<stream_profile> get_stream_modes() const { return modes; };
+    bool open(std::vector<stream_profile> profiles) const {
         for (auto & profile : profiles) {
             if (profile.has_wildcards()) return false;
-            if (std::none_of(begin(expected), end(expected), [&profile](const rs::stream_profile &p) {return p.match(profile); }))
+            if (std::none_of(begin(expected), end(expected), [&profile](const stream_profile &p) {return p.match(profile); }))
                 return false;
         }
         return true;
     }
 
-    rs_intrinsics get_intrinsics(rs::stream_profile profile) const {
-        return{ 0, 0, 0.0, 0.0, 0.0, 0.0, RS_DISTORTION_COUNT,{ 0.0, 0.0, 0.0, 0.0, 0.0 } };
+    rs2_intrinsics get_intrinsics(stream_profile profile) const {
+        return{ 0, 0, 0.0, 0.0, 0.0, 0.0, RS2_DISTORTION_COUNT,{ 0.0, 0.0, 0.0, 0.0, 0.0 } };
     }
-    const char * get_camera_info(rs_camera_info info) const {
+    const char * get_camera_info(rs2_camera_info info) const {
         switch (info) {
-        case RS_CAMERA_INFO_MODULE_NAME: return "Dummy Module";
+        case RS2_CAMERA_INFO_MODULE_NAME: return "Dummy Module";
         default: return "";
         }
     }
@@ -896,58 +897,58 @@ public:
     }
 
 private:
-    std::vector<rs::stream_profile> modes, expected;
+    std::vector<stream_profile> modes, expected;
     bool result;
 };
 
-TEST_CASE("Auto-complete feature works", "[offline][rs::util::config]") {
+TEST_CASE("Auto-complete feature works", "[offline][util::config]") {
     // dummy device can provide the following profiles:
-    AC_Mock_Device dev({ { RS_STREAM_DEPTH   , 640, 240,  10, RS_FORMAT_Z16 },
-                      { RS_STREAM_DEPTH   , 640, 240,  30, RS_FORMAT_Z16 },
-                      { RS_STREAM_DEPTH   , 640, 240, 110, RS_FORMAT_Z16 },
-                      { RS_STREAM_DEPTH   , 640, 480,  10, RS_FORMAT_Z16 },
-                      { RS_STREAM_DEPTH   , 640, 480,  30, RS_FORMAT_Z16 },
-                      { RS_STREAM_INFRARED, 640, 240,  10, RS_FORMAT_Y8  },
-                      { RS_STREAM_INFRARED, 640, 240,  30, RS_FORMAT_Y8  },
-                      { RS_STREAM_INFRARED, 640, 240, 110, RS_FORMAT_Y8  },
-                      { RS_STREAM_INFRARED, 640, 480,  10, RS_FORMAT_Y8  },
-                      { RS_STREAM_INFRARED, 640, 480,  30, RS_FORMAT_Y8  },
-                      { RS_STREAM_INFRARED, 640, 480, 200, RS_FORMAT_Y8  } }, true);
-    rs::util::Config<AC_Mock_Device> config;
+    AC_Mock_Device dev({ { RS2_STREAM_DEPTH   , 640, 240,  10, RS2_FORMAT_Z16 },
+                      { RS2_STREAM_DEPTH   , 640, 240,  30, RS2_FORMAT_Z16 },
+                      { RS2_STREAM_DEPTH   , 640, 240, 110, RS2_FORMAT_Z16 },
+                      { RS2_STREAM_DEPTH   , 640, 480,  10, RS2_FORMAT_Z16 },
+                      { RS2_STREAM_DEPTH   , 640, 480,  30, RS2_FORMAT_Z16 },
+                      { RS2_STREAM_INFRARED, 640, 240,  10, RS2_FORMAT_Y8  },
+                      { RS2_STREAM_INFRARED, 640, 240,  30, RS2_FORMAT_Y8  },
+                      { RS2_STREAM_INFRARED, 640, 240, 110, RS2_FORMAT_Y8  },
+                      { RS2_STREAM_INFRARED, 640, 480,  10, RS2_FORMAT_Y8  },
+                      { RS2_STREAM_INFRARED, 640, 480,  30, RS2_FORMAT_Y8  },
+                      { RS2_STREAM_INFRARED, 640, 480, 200, RS2_FORMAT_Y8  } }, true);
+    util::Config<AC_Mock_Device> config;
 
     struct Test {
-        std::vector<rs::stream_profile> given,       // We give these profiles to the config class
+        std::vector<stream_profile> given,       // We give these profiles to the config class
             expected;    // pool of profiles the config class can return. Leave empty if auto-completer is expected to fail
     };
     std::vector<Test> tests = {
-        // Test 0 (Depth always has RS_FORMAT_Z16)
-        { { { RS_STREAM_DEPTH   ,   0,   0,   0, RS_FORMAT_ANY } },   // given
-          { { RS_STREAM_DEPTH   ,   0,   0,   0, RS_FORMAT_Z16 } } }, // expected
-        // Test 1 (IR always has RS_FORMAT_Y8)
-        { { { RS_STREAM_INFRARED,   0,   0,   0, RS_FORMAT_ANY } },   // given
-          { { RS_STREAM_INFRARED,   0,   0,   0, RS_FORMAT_Y8  } } }, // expected
+        // Test 0 (Depth always has RS2_FORMAT_Z16)
+        { { { RS2_STREAM_DEPTH   ,   0,   0,   0, RS2_FORMAT_ANY } },   // given
+          { { RS2_STREAM_DEPTH   ,   0,   0,   0, RS2_FORMAT_Z16 } } }, // expected
+        // Test 1 (IR always has RS2_FORMAT_Y8)
+        { { { RS2_STREAM_INFRARED,   0,   0,   0, RS2_FORMAT_ANY } },   // given
+          { { RS2_STREAM_INFRARED,   0,   0,   0, RS2_FORMAT_Y8  } } }, // expected
         // Test 2 (No 200 fps depth)
-        { { { RS_STREAM_DEPTH   ,   0,   0, 200, RS_FORMAT_ANY } },   // given
+        { { { RS2_STREAM_DEPTH   ,   0,   0, 200, RS2_FORMAT_ANY } },   // given
           { } },                                                      // expected
         // Test 3 (Can request 200 fps IR)
-        { { { RS_STREAM_INFRARED,   0,   0, 200, RS_FORMAT_ANY } },   // given
-          { { RS_STREAM_INFRARED,   0,   0, 200, RS_FORMAT_ANY } } }, // expected
+        { { { RS2_STREAM_INFRARED,   0,   0, 200, RS2_FORMAT_ANY } },   // given
+          { { RS2_STREAM_INFRARED,   0,   0, 200, RS2_FORMAT_ANY } } }, // expected
         // Test 4 (requesting IR@200fps + depth fails
-        { { { RS_STREAM_INFRARED,   0,   0, 200, RS_FORMAT_ANY }, { RS_STREAM_DEPTH   ,   0,   0,   0, RS_FORMAT_ANY } },   // given
+        { { { RS2_STREAM_INFRARED,   0,   0, 200, RS2_FORMAT_ANY }, { RS2_STREAM_DEPTH   ,   0,   0,   0, RS2_FORMAT_ANY } },   // given
           { } },                                                                                                            // expected
         // Test 5 (Can't do 640x480@110fps a)
-        { { { RS_STREAM_INFRARED, 640, 480, 110, RS_FORMAT_ANY } },   // given
+        { { { RS2_STREAM_INFRARED, 640, 480, 110, RS2_FORMAT_ANY } },   // given
           { } },                                                      // expected
         // Test 6 (Can't do 640x480@110fps b)
-        { { { RS_STREAM_DEPTH   , 640, 480,   0, RS_FORMAT_ANY }, { RS_STREAM_INFRARED,   0,   0, 110, RS_FORMAT_ANY } },   // given
+        { { { RS2_STREAM_DEPTH   , 640, 480,   0, RS2_FORMAT_ANY }, { RS2_STREAM_INFRARED,   0,   0, 110, RS2_FORMAT_ANY } },   // given
           { } },                                                                                                            // expected
         // Test 7 (Pull extra details from second stream a)
-        { { { RS_STREAM_DEPTH   , 640, 480,   0, RS_FORMAT_ANY }, { RS_STREAM_INFRARED,   0,   0,  30, RS_FORMAT_ANY } },   // given
-          { { RS_STREAM_DEPTH   , 640, 480,  30, RS_FORMAT_ANY }, { RS_STREAM_INFRARED, 640, 480,  30, RS_FORMAT_ANY } } }, // expected
+        { { { RS2_STREAM_DEPTH   , 640, 480,   0, RS2_FORMAT_ANY }, { RS2_STREAM_INFRARED,   0,   0,  30, RS2_FORMAT_ANY } },   // given
+          { { RS2_STREAM_DEPTH   , 640, 480,  30, RS2_FORMAT_ANY }, { RS2_STREAM_INFRARED, 640, 480,  30, RS2_FORMAT_ANY } } }, // expected
         // Test 8 (Pull extra details from second stream b) [IR also supports 200, could fail if that gets selected]
-        { { { RS_STREAM_INFRARED, 640, 480,   0, RS_FORMAT_ANY }, { RS_STREAM_DEPTH   ,   0,   0,   0, RS_FORMAT_ANY } },   // given
-          { { RS_STREAM_INFRARED, 640, 480,  10, RS_FORMAT_ANY }, { RS_STREAM_INFRARED, 640, 480,  30, RS_FORMAT_ANY },     // expected - options for IR stream
-            { RS_STREAM_DEPTH   , 640, 480,  10, RS_FORMAT_ANY }, { RS_STREAM_DEPTH   , 640, 480,  30, RS_FORMAT_ANY } } }  // expected - options for depth stream
+        { { { RS2_STREAM_INFRARED, 640, 480,   0, RS2_FORMAT_ANY }, { RS2_STREAM_DEPTH   ,   0,   0,   0, RS2_FORMAT_ANY } },   // given
+          { { RS2_STREAM_INFRARED, 640, 480,  10, RS2_FORMAT_ANY }, { RS2_STREAM_INFRARED, 640, 480,  30, RS2_FORMAT_ANY },     // expected - options for IR stream
+            { RS2_STREAM_DEPTH   , 640, 480,  10, RS2_FORMAT_ANY }, { RS2_STREAM_DEPTH   , 640, 480,  30, RS2_FORMAT_ANY } } }  // expected - options for depth stream
     };
 
     for (int i = 0; i < tests.size(); ++i)
@@ -963,7 +964,7 @@ TEST_CASE("Auto-complete feature works", "[offline][rs::util::config]") {
         }
         else
         {
-            rs::util::Config<AC_Mock_Device>::multistream results;
+            util::Config<AC_Mock_Device>::multistream results;
             REQUIRE_NOTHROW(results = config.open(dev));
             // REQUIRE()s are in here
             results.start(0);

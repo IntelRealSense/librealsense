@@ -18,31 +18,31 @@ namespace rsimpl
     // Image size computation //
     ////////////////////////////
 
-    size_t get_image_size(int width, int height, rs_format format)
+    size_t get_image_size(int width, int height, rs2_format format)
     {
-        if (format == RS_FORMAT_YUYV || (format == RS_FORMAT_UYVY)) assert(width % 2 == 0);
-        if (format == RS_FORMAT_RAW10) assert(width % 4 == 0);
+        if (format == RS2_FORMAT_YUYV || (format == RS2_FORMAT_UYVY)) assert(width % 2 == 0);
+        if (format == RS2_FORMAT_RAW10) assert(width % 4 == 0);
         return width * height * get_image_bpp(format) / 8;
     }
 
-    int get_image_bpp(rs_format format)
+    int get_image_bpp(rs2_format format)
     {
         switch (format)
         {
-        case RS_FORMAT_Z16: return  16;
-        case RS_FORMAT_DISPARITY16: return 16;
-        case RS_FORMAT_XYZ32F: return 12 * 8;
-        case RS_FORMAT_YUYV:  return 16;
-        case RS_FORMAT_RGB8: return 24;
-        case RS_FORMAT_BGR8: return 24;
-        case RS_FORMAT_RGBA8: return 32;
-        case RS_FORMAT_BGRA8: return 32;
-        case RS_FORMAT_Y8: return 8;
-        case RS_FORMAT_Y16: return 16;
-        case RS_FORMAT_RAW10: return 10;
-        case RS_FORMAT_RAW16: return 16;
-        case RS_FORMAT_RAW8: return 8;
-        case RS_FORMAT_UYVY: return 16;
+        case RS2_FORMAT_Z16: return  16;
+        case RS2_FORMAT_DISPARITY16: return 16;
+        case RS2_FORMAT_XYZ32F: return 12 * 8;
+        case RS2_FORMAT_YUYV:  return 16;
+        case RS2_FORMAT_RGB8: return 24;
+        case RS2_FORMAT_BGR8: return 24;
+        case RS2_FORMAT_RGBA8: return 32;
+        case RS2_FORMAT_BGRA8: return 32;
+        case RS2_FORMAT_Y8: return 8;
+        case RS2_FORMAT_Y16: return 16;
+        case RS2_FORMAT_RAW10: return 10;
+        case RS2_FORMAT_RAW16: return 16;
+        case RS2_FORMAT_RAW8: return 8;
+        case RS2_FORMAT_UYVY: return 16;
         default: assert(false); return 0;
         }
     }
@@ -151,7 +151,7 @@ namespace rsimpl
 
     // This templated function unpacks YUY2 into Y8/Y16/RGB8/RGBA8/BGR8/BGRA8, depending on the compile-time parameter FORMAT.
     // It is expected that all branching outside of the loop control variable will be removed due to constant-folding.
-    template<rs_format FORMAT> void unpack_yuy2(byte * const d [], const byte * s, int n)
+    template<rs2_format FORMAT> void unpack_yuy2(byte * const d [], const byte * s, int n)
     {
         assert(n % 16 == 0); // All currently supported color resolutions are multiples of 16 pixels. Could easily extend support to other resolutions by copying final n<16 pixels into a zero-padded buffer and recursively calling self for final iteration.
 #ifdef __SSSE3__
@@ -171,7 +171,7 @@ namespace rsimpl
             __m128i s0 = _mm_loadu_si128(src++);
             __m128i s1 = _mm_loadu_si128(src++);
 
-            if(FORMAT == RS_FORMAT_Y8)
+            if(FORMAT == RS2_FORMAT_Y8)
             {
                 // Align all Y components and output 16 pixels (16 bytes) at once
                 __m128i y0 = _mm_shuffle_epi8(s0, _mm_setr_epi8(1, 3, 5, 7, 9, 11, 13, 15,   0, 2, 4, 6, 8, 10, 12, 14));
@@ -189,7 +189,7 @@ namespace rsimpl
             __m128i y16__0_7 = _mm_unpacklo_epi8(yyyyyyyyuuuuvvvv0, zero);         // convert to 16 bit
             __m128i y16__8_F = _mm_unpacklo_epi8(yyyyyyyyuuuuvvvv8, zero);         // convert to 16 bit
 
-            if(FORMAT == RS_FORMAT_Y16)
+            if(FORMAT == RS2_FORMAT_Y16)
             {
                 // Output 16 pixels (32 bytes) at once
                 _mm_storeu_si128(dst++, _mm_slli_epi16(y16__0_7, 8));
@@ -222,7 +222,7 @@ namespace rsimpl
             __m128i g16__8_F = _mm_min_epi16(_mm_set1_epi16(255), _mm_max_epi16(zero, ((_mm_sub_epi16(_mm_sub_epi16(_mm_mulhi_epi16(c16__8_F, n298), _mm_mulhi_epi16(d16__8_F, n100)), _mm_mulhi_epi16(e16__8_F, n208)))))); // (298 * c - 100 * d - 208 * e + 128)
             __m128i b16__8_F = _mm_min_epi16(_mm_set1_epi16(255), _mm_max_epi16(zero, ((_mm_add_epi16(_mm_mulhi_epi16(c16__8_F, n298), _mm_mulhi_epi16(d16__8_F, n516))))));                                                 // clampbyte((298 * c + 516 * d + 128) >> 8);
 
-            if (FORMAT == RS_FORMAT_RGB8 || FORMAT == RS_FORMAT_RGBA8)
+            if (FORMAT == RS2_FORMAT_RGB8 || FORMAT == RS2_FORMAT_RGBA8)
             {
                 // Shuffle separate R, G, B values into four registers storing four pixels each in (R, G, B, A) order
                 __m128i rg8__0_7 = _mm_unpacklo_epi8(_mm_shuffle_epi8(r16__0_7, evens_odds), _mm_shuffle_epi8(g16__0_7, evens_odds)); // hi to take the odds which are the upper bytes we care about
@@ -235,7 +235,7 @@ namespace rsimpl
                 __m128i rgba_8_B = _mm_unpacklo_epi16(rg8__8_F, ba8__8_F);
                 __m128i rgba_C_F = _mm_unpackhi_epi16(rg8__8_F, ba8__8_F);
 
-                if(FORMAT == RS_FORMAT_RGBA8)
+                if(FORMAT == RS2_FORMAT_RGBA8)
                 {
                     // Store 16 pixels (64 bytes) at once
                     _mm_storeu_si128(dst++, rgba_0_3);
@@ -244,7 +244,7 @@ namespace rsimpl
                     _mm_storeu_si128(dst++, rgba_C_F);
                 }
 
-                if(FORMAT == RS_FORMAT_RGB8)
+                if(FORMAT == RS2_FORMAT_RGB8)
                 {
                     // Shuffle rgb triples to the start and end of each register
                     __m128i rgb0 = _mm_shuffle_epi8(rgba_0_3, _mm_setr_epi8(  3, 7, 11, 15,   0, 1, 2, 4, 5, 6, 8, 9, 10, 12, 13, 14));
@@ -259,7 +259,7 @@ namespace rsimpl
                 }
             }
 
-            if (FORMAT == RS_FORMAT_BGR8 || FORMAT == RS_FORMAT_BGRA8)
+            if (FORMAT == RS2_FORMAT_BGR8 || FORMAT == RS2_FORMAT_BGRA8)
             {
                 // Shuffle separate R, G, B values into four registers storing four pixels each in (B, G, R, A) order
                 __m128i bg8__0_7 = _mm_unpacklo_epi8(_mm_shuffle_epi8(b16__0_7, evens_odds), _mm_shuffle_epi8(g16__0_7, evens_odds)); // hi to take the odds which are the upper bytes we care about
@@ -272,7 +272,7 @@ namespace rsimpl
                 __m128i bgra_8_B = _mm_unpacklo_epi16(bg8__8_F, ra8__8_F);
                 __m128i bgra_C_F = _mm_unpackhi_epi16(bg8__8_F, ra8__8_F);
 
-                if(FORMAT == RS_FORMAT_BGRA8)
+                if(FORMAT == RS2_FORMAT_BGRA8)
                 {
                     // Store 16 pixels (64 bytes) at once
                     _mm_storeu_si128(dst++, bgra_0_3);
@@ -281,7 +281,7 @@ namespace rsimpl
                     _mm_storeu_si128(dst++, bgra_C_F);
                 }
 
-                if(FORMAT == RS_FORMAT_BGR8)
+                if(FORMAT == RS2_FORMAT_BGR8)
                 {
                     // Shuffle rgb triples to the start and end of each register
                     __m128i bgr0 = _mm_shuffle_epi8(bgra_0_3, _mm_setr_epi8(  3, 7, 11, 15,   0, 1, 2, 4, 5, 6, 8, 9, 10, 12, 13, 14));
@@ -301,7 +301,7 @@ namespace rsimpl
         auto dst = reinterpret_cast<uint8_t *>(d[0]);
         for(; n; n -= 16, src += 32)
         {
-            if(FORMAT == RS_FORMAT_Y8)
+            if(FORMAT == RS2_FORMAT_Y8)
             {
                 uint8_t out[16] = {
                     src[ 0], src[ 2], src[ 4], src[ 6],
@@ -314,7 +314,7 @@ namespace rsimpl
                 continue;
             }
 
-            if(FORMAT == RS_FORMAT_Y16)
+            if(FORMAT == RS2_FORMAT_Y16)
             {
                 // Y16 is little-endian.  We output Y << 8.
                 uint8_t out[32] = {
@@ -360,7 +360,7 @@ namespace rsimpl
                 #undef clamp
             }
 
-            if(FORMAT == RS_FORMAT_RGB8)
+            if(FORMAT == RS2_FORMAT_RGB8)
             {
                 uint8_t out[16*3] = {
                     r[ 0], g[ 0], b[ 0], r[ 1], g[ 1], b[ 1],
@@ -377,7 +377,7 @@ namespace rsimpl
                 continue;
             }
 
-            if(FORMAT == RS_FORMAT_BGR8)
+            if(FORMAT == RS2_FORMAT_BGR8)
             {
                 uint8_t out[16*3] = {
                     b[ 0], g[ 0], r[ 0], b[ 1], g[ 1], r[ 1],
@@ -394,7 +394,7 @@ namespace rsimpl
                 continue;
             }
 
-            if(FORMAT == RS_FORMAT_RGBA8)
+            if(FORMAT == RS2_FORMAT_RGBA8)
             {
                 uint8_t out[16*4] = {
                     r[ 0], g[ 0], b[ 0], 255, r[ 1], g[ 1], b[ 1], 255,
@@ -411,7 +411,7 @@ namespace rsimpl
                 continue;
             }
 
-            if(FORMAT == RS_FORMAT_BGRA8)
+            if(FORMAT == RS2_FORMAT_BGRA8)
             {
                 uint8_t out[16*4] = {
                     b[ 0], g[ 0], r[ 0], 255, b[ 1], g[ 1], r[ 1], 255,
@@ -433,7 +433,7 @@ namespace rsimpl
 
     // This templated function unpacks UYVY into RGB8/RGBA8/BGR8/BGRA8, depending on the compile-time parameter FORMAT.
     // It is expected that all branching outside of the loop control variable will be removed due to constant-folding.
-    template<rs_format FORMAT> void unpack_uyvy(byte * const d[], const byte * s, int n)
+    template<rs2_format FORMAT> void unpack_uyvy(byte * const d[], const byte * s, int n)
     {
         assert(n % 16 == 0); // All currently supported color resolutions are multiples of 16 pixels. Could easily extend support to other resolutions by copying final n<16 pixels into a zero-padded buffer and recursively calling self for final iteration.
 #ifdef __SSSE3__
@@ -489,7 +489,7 @@ namespace rsimpl
             __m128i g16__8_F = _mm_min_epi16(_mm_set1_epi16(255), _mm_max_epi16(zero, ((_mm_sub_epi16(_mm_sub_epi16(_mm_mulhi_epi16(c16__8_F, n298), _mm_mulhi_epi16(d16__8_F, n100)), _mm_mulhi_epi16(e16__8_F, n208)))))); // (298 * c - 100 * d - 208 * e + 128)
             __m128i b16__8_F = _mm_min_epi16(_mm_set1_epi16(255), _mm_max_epi16(zero, ((_mm_add_epi16(_mm_mulhi_epi16(c16__8_F, n298), _mm_mulhi_epi16(d16__8_F, n516))))));                                                 // clampbyte((298 * c + 516 * d + 128) >> 8);
 
-            if (FORMAT == RS_FORMAT_RGB8 || FORMAT == RS_FORMAT_RGBA8)
+            if (FORMAT == RS2_FORMAT_RGB8 || FORMAT == RS2_FORMAT_RGBA8)
             {
                 // Shuffle separate R, G, B values into four registers storing four pixels each in (R, G, B, A) order
                 __m128i rg8__0_7 = _mm_unpacklo_epi8(_mm_shuffle_epi8(r16__0_7, evens_odds), _mm_shuffle_epi8(g16__0_7, evens_odds)); // hi to take the odds which are the upper bytes we care about
@@ -502,7 +502,7 @@ namespace rsimpl
                 __m128i rgba_8_B = _mm_unpacklo_epi16(rg8__8_F, ba8__8_F);
                 __m128i rgba_C_F = _mm_unpackhi_epi16(rg8__8_F, ba8__8_F);
 
-                if (FORMAT == RS_FORMAT_RGBA8)
+                if (FORMAT == RS2_FORMAT_RGBA8)
                 {
                     // Store 16 pixels (64 bytes) at once
                     _mm_storeu_si128(dst++, rgba_0_3);
@@ -511,7 +511,7 @@ namespace rsimpl
                     _mm_storeu_si128(dst++, rgba_C_F);
                 }
 
-                if (FORMAT == RS_FORMAT_RGB8)
+                if (FORMAT == RS2_FORMAT_RGB8)
                 {
                     // Shuffle rgb triples to the start and end of each register
                     __m128i rgb0 = _mm_shuffle_epi8(rgba_0_3, _mm_setr_epi8(3, 7, 11, 15, 0, 1, 2, 4, 5, 6, 8, 9, 10, 12, 13, 14));
@@ -526,7 +526,7 @@ namespace rsimpl
                 }
             }
 
-            if (FORMAT == RS_FORMAT_BGR8 || FORMAT == RS_FORMAT_BGRA8)
+            if (FORMAT == RS2_FORMAT_BGR8 || FORMAT == RS2_FORMAT_BGRA8)
             {
                 // Shuffle separate R, G, B values into four registers storing four pixels each in (B, G, R, A) order
                 __m128i bg8__0_7 = _mm_unpacklo_epi8(_mm_shuffle_epi8(b16__0_7, evens_odds), _mm_shuffle_epi8(g16__0_7, evens_odds)); // hi to take the odds which are the upper bytes we care about
@@ -539,7 +539,7 @@ namespace rsimpl
                 __m128i bgra_8_B = _mm_unpacklo_epi16(bg8__8_F, ra8__8_F);
                 __m128i bgra_C_F = _mm_unpackhi_epi16(bg8__8_F, ra8__8_F);
 
-                if (FORMAT == RS_FORMAT_BGRA8)
+                if (FORMAT == RS2_FORMAT_BGRA8)
                 {
                     // Store 16 pixels (64 bytes) at once
                     _mm_storeu_si128(dst++, bgra_0_3);
@@ -548,7 +548,7 @@ namespace rsimpl
                     _mm_storeu_si128(dst++, bgra_C_F);
                 }
 
-                if (FORMAT == RS_FORMAT_BGR8)
+                if (FORMAT == RS2_FORMAT_BGR8)
                 {
                     // Shuffle rgb triples to the start and end of each register
                     __m128i bgr0 = _mm_shuffle_epi8(bgra_0_3, _mm_setr_epi8(3, 7, 11, 15, 0, 1, 2, 4, 5, 6, 8, 9, 10, 12, 13, 14));
@@ -600,7 +600,7 @@ namespace rsimpl
                 #undef clamp
             }
 
-            if (FORMAT == RS_FORMAT_RGB8)
+            if (FORMAT == RS2_FORMAT_RGB8)
             {
                 uint8_t out[16 * 3] = {
                     r[0], g[0], b[0], r[1], g[1], b[1],
@@ -617,7 +617,7 @@ namespace rsimpl
                 continue;
             }
 
-            if (FORMAT == RS_FORMAT_BGR8)
+            if (FORMAT == RS2_FORMAT_BGR8)
             {
                 uint8_t out[16 * 3] = {
                     b[0], g[0], r[0], b[1], g[1], r[1],
@@ -634,7 +634,7 @@ namespace rsimpl
                 continue;
             }
 
-            if (FORMAT == RS_FORMAT_RGBA8)
+            if (FORMAT == RS2_FORMAT_RGBA8)
             {
                 uint8_t out[16 * 4] = {
                     r[0], g[0], b[0], 255, r[1], g[1], b[1], 255,
@@ -651,7 +651,7 @@ namespace rsimpl
                 continue;
             }
 
-            if (FORMAT == RS_FORMAT_BGRA8)
+            if (FORMAT == RS2_FORMAT_BGRA8)
             {
                 uint8_t out[16 * 4] = {
                     b[0], g[0], r[0], 255, b[1], g[1], r[1], 255,
@@ -736,46 +736,46 @@ namespace rsimpl
     //////////////////////////
     // Native pixel formats //
     //////////////////////////
-    const native_pixel_format pf_fe_raw8_unpatched_kernel = { 'RAW8', 1, 1,{  { false, &copy_pixels<1>,                  { { RS_STREAM_FISHEYE,  RS_FORMAT_RAW8 } } } } };
-    const native_pixel_format pf_raw8       = { 'GREY', 1, 1,{  { false, &copy_pixels<1>,                                { { RS_STREAM_FISHEYE,  RS_FORMAT_RAW8 } } } } };
-    const native_pixel_format pf_rw16       = { 'RW16', 1, 2,{  { false, &copy_pixels<2>,                                { { RS_STREAM_COLOR,    RS_FORMAT_RAW16 } } } } };
-    const native_pixel_format pf_rw10       = { 'pRAA', 1, 1,{  { false, &copy_raw10,                                    { { RS_STREAM_COLOR,    RS_FORMAT_RAW10 } } } } };
-    const native_pixel_format pf_yuy2       = { 'YUY2', 1, 2,{  { true,  &unpack_yuy2<RS_FORMAT_RGB8 >,                  { { RS_STREAM_COLOR,    RS_FORMAT_RGB8 } } },
-                                                                { false, &copy_pixels<2>,                                { { RS_STREAM_COLOR,    RS_FORMAT_YUYV } } },
-                                                                { true,  &unpack_yuy2<RS_FORMAT_RGBA8>,                  { { RS_STREAM_COLOR,    RS_FORMAT_RGBA8 } } },
-                                                                { true,  &unpack_yuy2<RS_FORMAT_BGR8 >,                  { { RS_STREAM_COLOR,    RS_FORMAT_BGR8 } } },
-                                                                { true,  &unpack_yuy2<RS_FORMAT_BGRA8>,                  { { RS_STREAM_COLOR,    RS_FORMAT_BGRA8 } } } } };
-    const native_pixel_format pf_y8         = { 'GREY', 1, 1,{  { false, &copy_pixels<1>,                                { { RS_STREAM_INFRARED, RS_FORMAT_Y8  } } } } };
-    const native_pixel_format pf_y16        = { 'Y16 ', 1, 2,{  { true,  &unpack_y16_from_y16_10,                        { { RS_STREAM_INFRARED, RS_FORMAT_Y16 } } } } };
-    const native_pixel_format pf_y8i        = { 'Y8I ', 1, 2,{  { true,  &unpack_y8_y8_from_y8i,                         { { RS_STREAM_INFRARED, RS_FORMAT_Y8  },{ RS_STREAM_INFRARED2, RS_FORMAT_Y8 } } } } };
-    const native_pixel_format pf_y12i       = { 'Y12I', 1, 3,{  { true,  &unpack_y16_y16_from_y12i_10,                   { { RS_STREAM_INFRARED, RS_FORMAT_Y16 },{ RS_STREAM_INFRARED2, RS_FORMAT_Y16 } } } } };
-    const native_pixel_format pf_z16        = { 'Z16 ', 1, 2,{  { false, &copy_pixels<2>,                                { { RS_STREAM_DEPTH,    RS_FORMAT_Z16 } } },
-                                                                { false, &copy_pixels<2>,                                { { RS_STREAM_DEPTH,    RS_FORMAT_DISPARITY16 } } } } };
-    const native_pixel_format pf_invz       = { 'INVZ', 1, 2, { { false, &copy_pixels<2>,                                { { RS_STREAM_DEPTH, RS_FORMAT_Z16 } } } } };
-    const native_pixel_format pf_f200_invi  = { 'INVI', 1, 1, { { false, &copy_pixels<1>,                                { { RS_STREAM_INFRARED, RS_FORMAT_Y8  } } },
-                                                                { true,  &unpack_y16_from_y8,                            { { RS_STREAM_INFRARED, RS_FORMAT_Y16 } } } } };
-    const native_pixel_format pf_f200_inzi  = { 'INZI', 1, 3,{  { true,  &unpack_z16_y8_from_f200_inzi,                  { { RS_STREAM_DEPTH,    RS_FORMAT_Z16 },{ RS_STREAM_INFRARED, RS_FORMAT_Y8 } } },
-                                                                { true,  &unpack_z16_y16_from_f200_inzi,                 { { RS_STREAM_DEPTH,    RS_FORMAT_Z16 },{ RS_STREAM_INFRARED, RS_FORMAT_Y16 } } } } };
-    const native_pixel_format pf_sr300_invi = { 'INVI', 1, 2,{  { true,  &unpack_y8_from_y16_10,                         { { RS_STREAM_INFRARED, RS_FORMAT_Y8  } } },
-                                                                { true,  &unpack_y16_from_y16_10,                        { { RS_STREAM_INFRARED, RS_FORMAT_Y16 } } } } };
-    const native_pixel_format pf_sr300_inzi = { 'INZI', 2, 2,{  { true,  &unpack_z16_y8_from_sr300_inzi,                 { { RS_STREAM_DEPTH,    RS_FORMAT_Z16 },{ RS_STREAM_INFRARED, RS_FORMAT_Y8 } } },
-                                                                { true,  &unpack_z16_y16_from_sr300_inzi,                { { RS_STREAM_DEPTH,    RS_FORMAT_Z16 },{ RS_STREAM_INFRARED, RS_FORMAT_Y16 } } } } };
+    const native_pixel_format pf_fe_raw8_unpatched_kernel = { 'RAW8', 1, 1,{  { false, &copy_pixels<1>,                  { { RS2_STREAM_FISHEYE,  RS2_FORMAT_RAW8 } } } } };
+    const native_pixel_format pf_raw8       = { 'GREY', 1, 1,{  { false, &copy_pixels<1>,                                { { RS2_STREAM_FISHEYE,  RS2_FORMAT_RAW8 } } } } };
+    const native_pixel_format pf_rw16       = { 'RW16', 1, 2,{  { false, &copy_pixels<2>,                                { { RS2_STREAM_COLOR,    RS2_FORMAT_RAW16 } } } } };
+    const native_pixel_format pf_rw10       = { 'pRAA', 1, 1,{  { false, &copy_raw10,                                    { { RS2_STREAM_COLOR,    RS2_FORMAT_RAW10 } } } } };
+    const native_pixel_format pf_yuy2       = { 'YUY2', 1, 2,{  { true,  &unpack_yuy2<RS2_FORMAT_RGB8 >,                  { { RS2_STREAM_COLOR,    RS2_FORMAT_RGB8 } } },
+                                                                { false, &copy_pixels<2>,                                { { RS2_STREAM_COLOR,    RS2_FORMAT_YUYV } } },
+                                                                { true,  &unpack_yuy2<RS2_FORMAT_RGBA8>,                  { { RS2_STREAM_COLOR,    RS2_FORMAT_RGBA8 } } },
+                                                                { true,  &unpack_yuy2<RS2_FORMAT_BGR8 >,                  { { RS2_STREAM_COLOR,    RS2_FORMAT_BGR8 } } },
+                                                                { true,  &unpack_yuy2<RS2_FORMAT_BGRA8>,                  { { RS2_STREAM_COLOR,    RS2_FORMAT_BGRA8 } } } } };
+    const native_pixel_format pf_y8         = { 'GREY', 1, 1,{  { false, &copy_pixels<1>,                                { { RS2_STREAM_INFRARED, RS2_FORMAT_Y8  } } } } };
+    const native_pixel_format pf_y16        = { 'Y16 ', 1, 2,{  { true,  &unpack_y16_from_y16_10,                        { { RS2_STREAM_INFRARED, RS2_FORMAT_Y16 } } } } };
+    const native_pixel_format pf_y8i        = { 'Y8I ', 1, 2,{  { true,  &unpack_y8_y8_from_y8i,                         { { RS2_STREAM_INFRARED, RS2_FORMAT_Y8  },{ RS2_STREAM_INFRARED2, RS2_FORMAT_Y8 } } } } };
+    const native_pixel_format pf_y12i       = { 'Y12I', 1, 3,{  { true,  &unpack_y16_y16_from_y12i_10,                   { { RS2_STREAM_INFRARED, RS2_FORMAT_Y16 },{ RS2_STREAM_INFRARED2, RS2_FORMAT_Y16 } } } } };
+    const native_pixel_format pf_z16        = { 'Z16 ', 1, 2,{  { false, &copy_pixels<2>,                                { { RS2_STREAM_DEPTH,    RS2_FORMAT_Z16 } } },
+                                                                { false, &copy_pixels<2>,                                { { RS2_STREAM_DEPTH,    RS2_FORMAT_DISPARITY16 } } } } };
+    const native_pixel_format pf_invz       = { 'INVZ', 1, 2, { { false, &copy_pixels<2>,                                { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16 } } } } };
+    const native_pixel_format pf_f200_invi  = { 'INVI', 1, 1, { { false, &copy_pixels<1>,                                { { RS2_STREAM_INFRARED, RS2_FORMAT_Y8  } } },
+                                                                { true,  &unpack_y16_from_y8,                            { { RS2_STREAM_INFRARED, RS2_FORMAT_Y16 } } } } };
+    const native_pixel_format pf_f200_inzi  = { 'INZI', 1, 3,{  { true,  &unpack_z16_y8_from_f200_inzi,                  { { RS2_STREAM_DEPTH,    RS2_FORMAT_Z16 },{ RS2_STREAM_INFRARED, RS2_FORMAT_Y8 } } },
+                                                                { true,  &unpack_z16_y16_from_f200_inzi,                 { { RS2_STREAM_DEPTH,    RS2_FORMAT_Z16 },{ RS2_STREAM_INFRARED, RS2_FORMAT_Y16 } } } } };
+    const native_pixel_format pf_sr300_invi = { 'INVI', 1, 2,{  { true,  &unpack_y8_from_y16_10,                         { { RS2_STREAM_INFRARED, RS2_FORMAT_Y8  } } },
+                                                                { true,  &unpack_y16_from_y16_10,                        { { RS2_STREAM_INFRARED, RS2_FORMAT_Y16 } } } } };
+    const native_pixel_format pf_sr300_inzi = { 'INZI', 2, 2,{  { true,  &unpack_z16_y8_from_sr300_inzi,                 { { RS2_STREAM_DEPTH,    RS2_FORMAT_Z16 },{ RS2_STREAM_INFRARED, RS2_FORMAT_Y8 } } },
+                                                                { true,  &unpack_z16_y16_from_sr300_inzi,                { { RS2_STREAM_DEPTH,    RS2_FORMAT_Z16 },{ RS2_STREAM_INFRARED, RS2_FORMAT_Y16 } } } } };
 
-    const native_pixel_format pf_uyvyl      = { 'UYVY', 1, 2,{  { true,  &unpack_uyvy<RS_FORMAT_RGB8 >,                  { { RS_STREAM_INFRARED, RS_FORMAT_RGB8 } } },
-                                                                { false, &copy_pixels<2>,                                { { RS_STREAM_INFRARED, RS_FORMAT_UYVY } } },
-                                                                { true,  &unpack_uyvy<RS_FORMAT_RGBA8>,                  { { RS_STREAM_INFRARED, RS_FORMAT_RGBA8} } },
-                                                                { true,  &unpack_uyvy<RS_FORMAT_BGR8 >,                  { { RS_STREAM_INFRARED, RS_FORMAT_BGR8 } } },
-                                                                { true,  &unpack_uyvy<RS_FORMAT_BGRA8>,                  { { RS_STREAM_INFRARED, RS_FORMAT_BGRA8} } } } };
+    const native_pixel_format pf_uyvyl      = { 'UYVY', 1, 2,{  { true,  &unpack_uyvy<RS2_FORMAT_RGB8 >,                  { { RS2_STREAM_INFRARED, RS2_FORMAT_RGB8 } } },
+                                                                { false, &copy_pixels<2>,                                { { RS2_STREAM_INFRARED, RS2_FORMAT_UYVY } } },
+                                                                { true,  &unpack_uyvy<RS2_FORMAT_RGBA8>,                  { { RS2_STREAM_INFRARED, RS2_FORMAT_RGBA8} } },
+                                                                { true,  &unpack_uyvy<RS2_FORMAT_BGR8 >,                  { { RS2_STREAM_INFRARED, RS2_FORMAT_BGR8 } } },
+                                                                { true,  &unpack_uyvy<RS2_FORMAT_BGRA8>,                  { { RS2_STREAM_INFRARED, RS2_FORMAT_BGRA8} } } } };
 
-    const native_pixel_format pf_yuyv       = { 'YUYV', 1, 2,{  { true,  &unpack_yuy2<RS_FORMAT_RGB8 >,                  { { RS_STREAM_COLOR,    RS_FORMAT_RGB8 } } },
-                                                                { false, &copy_pixels<2>,                                { { RS_STREAM_COLOR,    RS_FORMAT_YUYV } } },
-                                                                { true,  &unpack_yuy2<RS_FORMAT_RGBA8>,                  { { RS_STREAM_COLOR,    RS_FORMAT_RGBA8 } } },
-                                                                { true,  &unpack_yuy2<RS_FORMAT_BGR8 >,                  { { RS_STREAM_COLOR,    RS_FORMAT_BGR8 } } },
-                                                                { true,  &unpack_yuy2<RS_FORMAT_BGRA8>,                  { { RS_STREAM_COLOR,    RS_FORMAT_BGRA8 } } } } };
-    const native_pixel_format pf_accel_axes = { 'ACCL', 1, 1,{  { true,  &unpack_accel_axes<RS_FORMAT_MOTION_XYZ32F>,    { { RS_STREAM_ACCEL,    RS_FORMAT_MOTION_XYZ32F } } },
-                                                                { false, &unpack_hid_raw_data,                                { { RS_STREAM_ACCEL,    RS_FORMAT_MOTION_RAW  } } }}};
-    const native_pixel_format pf_gyro_axes  = { 'GYRO', 1, 1,{  { true,  &unpack_gyro_axes<RS_FORMAT_MOTION_XYZ32F>,     { { RS_STREAM_GYRO,     RS_FORMAT_MOTION_XYZ32F } } },
-                                                                { false, &unpack_hid_raw_data,                                { { RS_STREAM_GYRO,     RS_FORMAT_MOTION_RAW  } } }}};
+    const native_pixel_format pf_yuyv       = { 'YUYV', 1, 2,{  { true,  &unpack_yuy2<RS2_FORMAT_RGB8 >,                  { { RS2_STREAM_COLOR,    RS2_FORMAT_RGB8 } } },
+                                                                { false, &copy_pixels<2>,                                { { RS2_STREAM_COLOR,    RS2_FORMAT_YUYV } } },
+                                                                { true,  &unpack_yuy2<RS2_FORMAT_RGBA8>,                  { { RS2_STREAM_COLOR,    RS2_FORMAT_RGBA8 } } },
+                                                                { true,  &unpack_yuy2<RS2_FORMAT_BGR8 >,                  { { RS2_STREAM_COLOR,    RS2_FORMAT_BGR8 } } },
+                                                                { true,  &unpack_yuy2<RS2_FORMAT_BGRA8>,                  { { RS2_STREAM_COLOR,    RS2_FORMAT_BGRA8 } } } } };
+    const native_pixel_format pf_accel_axes = { 'ACCL', 1, 1,{  { true,  &unpack_accel_axes<RS2_FORMAT_MOTION_XYZ32F>,    { { RS2_STREAM_ACCEL,    RS2_FORMAT_MOTION_XYZ32F } } },
+                                                                { false, &unpack_hid_raw_data,                                { { RS2_STREAM_ACCEL,    RS2_FORMAT_MOTION_RAW  } } }}};
+    const native_pixel_format pf_gyro_axes  = { 'GYRO', 1, 1,{  { true,  &unpack_gyro_axes<RS2_FORMAT_MOTION_XYZ32F>,     { { RS2_STREAM_GYRO,     RS2_FORMAT_MOTION_XYZ32F } } },
+                                                                { false, &unpack_hid_raw_data,                                { { RS2_STREAM_GYRO,     RS2_FORMAT_MOTION_RAW  } } }}};
 
 }
 

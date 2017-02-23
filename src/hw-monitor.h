@@ -25,7 +25,7 @@ const uint8_t   IVCAM_MONITOR_ENDPOINT_IN       = 0x81;
 const uint8_t   IVCAM_MIN_SUPPORTED_VERSION     = 13;
 const uint8_t   IVCAM_MONITOR_HEADER_SIZE       = (sizeof(uint32_t) * 6);
 const uint8_t   NUM_OF_CALIBRATION_PARAMS       = 100;
-const uint8_t   PARAMETERS_BUFFER_SIZE          = 50;
+const uint8_t   PARAMETERS2_BUFFER_SIZE          = 50;
 const uint8_t   SIZE_OF_CALIB_HEADER_BYTES      = 4;
 const uint8_t   NUM_OF_CALIBRATION_COEFFS       = 64;
 

@@ -5,7 +5,7 @@
 #ifndef LIBREALSENSE_BACKEND_H
 #define LIBREALSENSE_BACKEND_H
 
-#include "../include/librealsense/rs.h"     // Inherit all type definitions in the public API
+#include "../include/librealsense/rs2.h"     // Inherit all type definitions in the public API
 
 #include <memory>       // For shared_ptr
 #include <functional>   // For function
@@ -204,9 +204,9 @@ namespace rsimpl
             virtual void get_xu(const extension_unit& xu, uint8_t ctrl, uint8_t* data, int len) const = 0;
             virtual control_range get_xu_range(const extension_unit& xu, uint8_t ctrl, int len) const = 0;
 
-            virtual int get_pu(rs_option opt) const = 0;
-            virtual void set_pu(rs_option opt, int value) = 0;
-            virtual control_range get_pu_range(rs_option opt) const = 0;
+            virtual int get_pu(rs2_option opt) const = 0;
+            virtual void set_pu(rs2_option opt, int value) = 0;
+            virtual control_range get_pu_range(rs2_option opt) const = 0;
 
             virtual std::vector<stream_profile> get_profiles() const = 0;
 
@@ -278,7 +278,7 @@ namespace rsimpl
             {
                 return _dev->get_xu_range(xu, ctrl, len);
             }
-            int get_pu(rs_option opt) const override
+            int get_pu(rs2_option opt) const override
             {
                 for (auto i = 0; i<20; ++i)
                 {
@@ -287,7 +287,7 @@ namespace rsimpl
                 }
                 return _dev->get_pu(opt);
             }
-            void set_pu(rs_option opt, int value) override
+            void set_pu(rs2_option opt, int value) override
             {
                 for (auto i = 0; i<20; ++i)
                 {
@@ -296,7 +296,7 @@ namespace rsimpl
                 }
                 _dev->set_pu(opt, value);
             }
-            control_range get_pu_range(rs_option opt) const override
+            control_range get_pu_range(rs2_option opt) const override
             {
                 return _dev->get_pu_range(opt);
             }
@@ -411,15 +411,15 @@ namespace rsimpl
             {
                 return _dev.front()->get_xu_range(xu, ctrl, len);
             }
-            int get_pu(rs_option opt) const override
+            int get_pu(rs2_option opt) const override
             {
                 return _dev.front()->get_pu(opt);
             }
-            void set_pu(rs_option opt, int value) override
+            void set_pu(rs2_option opt, int value) override
             {
                 _dev.front()->set_pu(opt, value);
             }
-            control_range get_pu_range(rs_option opt) const override
+            control_range get_pu_range(rs2_option opt) const override
             {
                 return _dev.front()->get_pu_range(opt);
             }

@@ -10,7 +10,7 @@
 using namespace rsimpl;
 
 
-rs_frame* endpoint::alloc_frame(size_t size, frame_additional_data additional_data) const
+rs2_frame* endpoint::alloc_frame(size_t size, frame_additional_data additional_data) const
 {
     auto frame = _archive->alloc_frame(size, additional_data, true);
     return _archive->track_frame(frame);
@@ -25,7 +25,7 @@ void endpoint::invoke_callback(frame_holder frame) const
         {
             if (_callback)
             {
-                rs_frame* ref = nullptr;
+                rs2_frame* ref = nullptr;
                 std::swap(frame.frame, ref);
                 _callback->on_frame(ref);
             }
@@ -61,7 +61,7 @@ bool endpoint::try_get_pf(const uvc::stream_profile& p, native_pixel_format& res
 std::vector<request_mapping> endpoint::resolve_requests(std::vector<stream_profile> requests)
 {
     // per requested profile, find all 4ccs that support that request.
-    std::map<rs_stream, std::set<uint32_t>> legal_fourccs;
+    std::map<rs2_stream, std::set<uint32_t>> legal_fourccs;
     auto profiles = get_stream_profiles();
     for (auto&& request : requests) {
          for (auto&& mode : profiles) {
@@ -445,44 +445,44 @@ void uvc_endpoint::release_power()
     if (_user_count.fetch_add(-1) == 1) _device->set_power_state(uvc::D3);
 }
 
-option& endpoint::get_option(rs_option id)
+option& endpoint::get_option(rs2_option id)
 {
     auto it = _options.find(id);
     if (it == _options.end())
     {
         throw invalid_value_exception(to_string()
             << "Device does not support option "
-            << rs_option_to_string(id) << "!");
+            << rs2_option_to_string(id) << "!");
     }
     return *it->second;
 }
 
-const option& endpoint::get_option(rs_option id) const
+const option& endpoint::get_option(rs2_option id) const
 {
     auto it = _options.find(id);
     if (it == _options.end())
     {
         throw invalid_value_exception(to_string()
             << "Device does not support option "
-            << rs_option_to_string(id) << "!");
+            << rs2_option_to_string(id) << "!");
     }
     return *it->second;
 }
 
-bool endpoint::supports_option(rs_option id) const
+bool endpoint::supports_option(rs2_option id) const
 {
     auto it = _options.find(id);
     if (it == _options.end()) return false;
     return it->second->is_enabled();
 }
 
-bool endpoint::supports_info(rs_camera_info info) const
+bool endpoint::supports_info(rs2_camera_info info) const
 {
     auto it = _camera_info.find(info);
     return it != _camera_info.end();
 }
 
-void endpoint::register_info(rs_camera_info info, const std::string& val)
+void endpoint::register_info(rs2_camera_info info, const std::string& val)
 {
     if (supports_info(info) && (get_info(info) != val)) // Append existing infos
     {
@@ -494,7 +494,7 @@ void endpoint::register_info(rs_camera_info info, const std::string& val)
     }
 }
 
-const std::string& endpoint::get_info(rs_camera_info info) const
+const std::string& endpoint::get_info(rs2_camera_info info) const
 {
     auto it = _camera_info.find(info);
     if (it == _camera_info.end())
@@ -503,12 +503,12 @@ const std::string& endpoint::get_info(rs_camera_info info) const
     return it->second;
 }
 
-void endpoint::register_option(rs_option id, std::shared_ptr<option> option)
+void endpoint::register_option(rs2_option id, std::shared_ptr<option> option)
 {
     _options[id] = std::move(option);
 }
 
-void uvc_endpoint::register_pu(rs_option id)
+void uvc_endpoint::register_pu(rs2_option id)
 {
     register_option(id, std::make_shared<uvc_pu_option>(*this, id));
 }
@@ -570,11 +570,11 @@ void hid_endpoint::open(const std::vector<stream_profile>& requests)
     _hid_device->open();
     for (auto& request : requests)
     {
-        auto sensor_iio = rs_stream_to_sensor_iio(request.stream);
+        auto sensor_iio = rs2_stream_to_sensor_iio(request.stream);
         for (auto& map : mapping)
         {
             auto it = std::find_if(begin(map.unpacker->outputs), end(map.unpacker->outputs),
-                                   [&](const std::pair<rs_stream, rs_format>& pair)
+                                   [&](const std::pair<rs2_stream, rs2_format>& pair)
             {
                 return pair.first == request.stream;
             });
@@ -689,14 +689,14 @@ std::vector<stream_profile> hid_endpoint::get_device_profiles()
     return stream_requests;
 }
 
-uint32_t hid_endpoint::rs_stream_to_sensor_iio(rs_stream stream) const
+uint32_t hid_endpoint::rs2_stream_to_sensor_iio(rs2_stream stream) const
 {
     for (auto& elem : _sensor_name_and_hid_profiles)
     {
         if (stream == elem.second.stream)
             return get_iio_by_name(elem.first);
     }
-    throw invalid_value_exception("rs_stream not found!");
+    throw invalid_value_exception("rs2_stream not found!");
 }
 
 uint32_t hid_endpoint::get_iio_by_name(const std::string& name) const
@@ -709,7 +709,7 @@ uint32_t hid_endpoint::get_iio_by_name(const std::string& name) const
     throw invalid_value_exception("sensor_name not found!");
 }
 
-uint32_t hid_endpoint::stream_to_fourcc(rs_stream stream) const
+uint32_t hid_endpoint::stream_to_fourcc(rs2_stream stream) const
 {
     uint32_t fourcc;
     try{
@@ -717,17 +717,17 @@ uint32_t hid_endpoint::stream_to_fourcc(rs_stream stream) const
     }
     catch(std::out_of_range)
     {
-        throw invalid_value_exception(to_string() << "fourcc of stream " << rs_stream_to_string(stream) << " not found!");
+        throw invalid_value_exception(to_string() << "fourcc of stream " << rs2_stream_to_string(stream) << " not found!");
     }
 
     return fourcc;
 }
 
-uint32_t hid_endpoint::fps_to_sampling_frequency(rs_stream stream, uint32_t fps) const
+uint32_t hid_endpoint::fps_to_sampling_frequency(rs2_stream stream, uint32_t fps) const
 {
     uint32_t sampling_frequency = 0;
     try{
-        sampling_frequency = _fps_and_sampling_frequency_per_rs_stream.at(stream).at(fps);
+        sampling_frequency = _fps_and_sampling_frequency_per_rs2_stream.at(stream).at(fps);
     }
     catch(std::out_of_range)
     {

@@ -21,9 +21,9 @@ struct frame_additional_data
     int fps = 0;
     int stride = 0;
     int bpp = 1;
-    rs_format format = RS_FORMAT_ANY;
-    rs_stream stream_type = RS_STREAM_COUNT;
-    rs_timestamp_domain timestamp_domain = RS_TIMESTAMP_DOMAIN_HARDWARE_CLOCK;
+    rs2_format format = RS2_FORMAT_ANY;
+    rs2_stream stream_type = RS2_STREAM_COUNT;
+    rs2_timestamp_domain timestamp_domain = RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK;
     std::chrono::high_resolution_clock::time_point frame_callback_started{};
 
     frame_additional_data() {};
@@ -31,7 +31,7 @@ struct frame_additional_data
     frame_additional_data(double in_timestamp, unsigned long long in_frame_number, long long in_system_time,
         int in_width, int in_height, int in_fps,
         int in_stride, int in_bpp,
-        const rs_format in_format, rs_stream in_stream_type)
+        const rs2_format in_format, rs2_stream in_stream_type)
         : timestamp(in_timestamp),
           frame_number(in_frame_number),
           system_time(in_system_time),
@@ -80,15 +80,15 @@ public:
 
     ~frame() { on_release.reset(); }
 
-    double get_frame_metadata(rs_frame_metadata frame_metadata) const;
-    bool supports_frame_metadata(rs_frame_metadata frame_metadata) const;
+    double get_frame_metadata(rs2_frame_metadata frame_metadata) const;
+    bool supports_frame_metadata(rs2_frame_metadata frame_metadata) const;
     const byte* get_frame_data() const;
     double get_frame_timestamp() const;
-    rs_timestamp_domain get_frame_timestamp_domain() const;
+    rs2_timestamp_domain get_frame_timestamp_domain() const;
     void set_timestamp(double new_ts) { additional_data.timestamp = new_ts; }
     unsigned long long get_frame_number() const;
 
-    void set_timestamp_domain(rs_timestamp_domain timestamp_domain)
+    void set_timestamp_domain(rs2_timestamp_domain timestamp_domain)
     {
         additional_data.timestamp_domain = timestamp_domain;
     }
@@ -99,8 +99,8 @@ public:
     int get_framerate() const;
     int get_stride() const;
     int get_bpp() const;
-    rs_format get_format() const;
-    rs_stream get_stream_type() const;
+    rs2_format get_format() const;
+    rs2_stream get_stream_type() const;
 
     std::chrono::high_resolution_clock::time_point get_frame_callback_start_time_point() const;
     void update_frame_callback_start_ts(std::chrono::high_resolution_clock::time_point ts);
@@ -114,40 +114,40 @@ public:
     rsimpl::frame_archive* get_owner() const { return owner.get(); }
 };
 
-struct rs_frame // esentially an intrusive shared_ptr<frame>
+struct rs2_frame // esentially an intrusive shared_ptr<frame>
 {
-    rs_frame() : frame_ptr(nullptr) {}
+    rs2_frame() : frame_ptr(nullptr) {}
 
-    explicit rs_frame(frame* frame)
+    explicit rs2_frame(frame* frame)
         : frame_ptr(frame)
     {
         if (frame) frame->acquire();
     }
 
-    rs_frame(const rs_frame& other)
+    rs2_frame(const rs2_frame& other)
         : frame_ptr(other.frame_ptr)
     {
         if (frame_ptr) frame_ptr->acquire();
     }
 
-    rs_frame(rs_frame&& other)
+    rs2_frame(rs2_frame&& other)
         : frame_ptr(other.frame_ptr)
     {
         other.frame_ptr = nullptr;
     }
 
-    rs_frame& operator=(rs_frame other)
+    rs2_frame& operator=(rs2_frame other)
     {
         swap(other);
         return *this;
     }
 
-    ~rs_frame()
+    ~rs2_frame()
     {
         if (frame_ptr) frame_ptr->release();
     }
 
-    void swap(rs_frame& other)
+    void swap(rs2_frame& other)
     {
         std::swap(frame_ptr, other.frame_ptr);
     }
@@ -216,8 +216,8 @@ namespace rsimpl
     {
         std::atomic<uint32_t>* max_frame_queue_size;
         std::atomic<uint32_t> published_frames_count;
-        small_heap<frame, RS_USER_QUEUE_SIZE> published_frames;
-        small_heap<rs_frame, RS_USER_QUEUE_SIZE> detached_refs;
+        small_heap<frame, RS2_USER_QUEUE_SIZE> published_frames;
+        small_heap<rs2_frame, RS2_USER_QUEUE_SIZE> detached_refs;
         callbacks_heap callback_inflight;
 
         std::vector<frame> freelist; // return frames here
@@ -239,12 +239,12 @@ namespace rsimpl
         void unpublish_frame(frame* frame);
         frame* publish_frame(frame&& frame);
 
-        rs_frame* clone_frame(rs_frame* frameset);
-        void release_frame_ref(rs_frame* ref);
+        rs2_frame* clone_frame(rs2_frame* frameset);
+        void release_frame_ref(rs2_frame* ref);
 
         // Frame callback thread API
         frame alloc_frame(const size_t size, const frame_additional_data& additional_data, bool requires_memory);
-        rs_frame* track_frame(frame& f);
+        rs2_frame* track_frame(frame& f);
         void log_frame_callback_end(frame* frame) const;
 
         void flush();

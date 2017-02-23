@@ -5,8 +5,8 @@
 #define LIBREALSENSE_UNITTESTS_COMMON_H
 
 #include "catch/catch.hpp"
-#include <librealsense/rs.hpp>
-#include <librealsense/rsutil.hpp>
+#include <librealsense/rs2.hpp>
+#include <librealsense/rsutil2.hpp>
 #include <limits> // For std::numeric_limits
 #include <cmath> // For std::sqrt
 #include <cassert> // For assert
@@ -74,9 +74,9 @@ inline bool file_exists(const char* filename)
     return f.good();
 }
 
-inline rs::context make_context(const char* id)
+inline rs2::context make_context(const char* id)
 {
-    rs::log_to_console(RS_LOG_SEVERITY_INFO);
+    rs2::log_to_console(RS2_LOG_SEVERITY_INFO);
 
     static std::map<std::string, int> _counters;
 
@@ -85,7 +85,7 @@ inline rs::context make_context(const char* id)
     auto argc = command_line_params::instance().get_argc();
     auto argv = command_line_params::instance().get_argv();
 
-    rs::context ctx;
+    rs2::context ctx;
     std::string base_filename;
     bool record = false;
     bool playback = false;
@@ -118,21 +118,21 @@ inline rs::context make_context(const char* id)
 
     if (record)
     {
-        ctx = rs::recording_context(base_filename, section, RS_RECORDING_MODE_BLANK_FRAMES);
+        ctx = rs2::recording_context(base_filename, section, RS2_RECORDING_MODE_BLANK_FRAMES);
     }
     else if (playback)
     {
-        ctx = rs::mock_context(base_filename, section);
+        ctx = rs2::mock_context(base_filename, section);
     }
     return ctx;
 }
 
-// Can be passed to rs_error ** parameters, requires that an error is indicated with the specific provided message
+// Can be passed to rs2_error ** parameters, requires that an error is indicated with the specific provided message
 class require_error
 {
     std::string message;
     bool validate_error_message;      // Messages content may vary , subject to backend selection
-    rs_error * err;
+    rs2_error * err;
 public:
     require_error(std::string message, bool message_validation = true) : message(move(message)), validate_error_message(message_validation), err() {}
     require_error(const require_error &) = delete;
@@ -142,28 +142,28 @@ public:
         REQUIRE(err != nullptr);
         if (validate_error_message)
         {
-            REQUIRE(rs_get_error_message(err) == std::string(message));
+            REQUIRE(rs2_get_error_message(err) == std::string(message));
         }
     }
     require_error &  operator = (const require_error &) = delete;
-    operator rs_error ** () { return &err; }
+    operator rs2_error ** () { return &err; }
 };
 
-// Can be passed to rs_error ** parameters, requires that no error is indicated
+// Can be passed to rs2_error ** parameters, requires that no error is indicated
 class require_no_error
 {
-    rs_error * err;
+    rs2_error * err;
 public:
     require_no_error() : err() {}
     require_no_error(const require_error &) = delete;
     ~require_no_error() NOEXCEPT_FALSE
     {
         assert(!std::uncaught_exception());
-        REQUIRE(rs_get_error_message(err) == rs_get_error_message(nullptr)); // Perform this check first. If an error WAS indicated, Catch will display it, making our debugging easier.
+        REQUIRE(rs2_get_error_message(err) == rs2_get_error_message(nullptr)); // Perform this check first. If an error WAS indicated, Catch will display it, making our debugging easier.
         REQUIRE(err == nullptr);
     }
     require_no_error &  operator = (const require_no_error &) = delete;
-    operator rs_error ** () { return &err; }
+    operator rs2_error ** () { return &err; }
 };
 
 // Compute dot product of a and b
@@ -243,7 +243,7 @@ struct frame_additional_data
 {
     double              timestamp;
     unsigned long long  frame_number;
-    rs_timestamp_domain timestamp_domain;
+    rs2_timestamp_domain timestamp_domain;
 };
 
 inline void check_fps(double actual_fps, double configured_fps)
@@ -255,26 +255,26 @@ inline void check_fps(double actual_fps, double configured_fps)
 const int max_capture_time_sec = 3;            // Each streaming test configuration shall not exceed this threshold
 const uint32_t max_frames_to_receive = 50;     // Max frames to capture per streaming tests
 
-//inline void test_wait_for_frames(rs_device * device, std::initializer_list<stream_mode>& modes, std::map<rs_stream, test_duration>& duration_per_stream)
+//inline void test_wait_for_frames(rs2_device * device, std::initializer_list<stream_mode>& modes, std::map<rs2_stream, test_duration>& duration_per_stream)
 //{
-//    rs_start_device(device, require_no_error());
-//    REQUIRE( rs_is_device_streaming(device, require_no_error()) == 1 );
+//    rs2_start_device(device, require_no_error());
+//    REQUIRE( rs2_is_device_streaming(device, require_no_error()) == 1 );
 //
-//    rs_wait_for_frames(device, require_no_error());
+//    rs2_wait_for_frames(device, require_no_error());
 //
 //    int lowest_fps_mode = std::numeric_limits<int>::max();
 //    for(auto & mode : modes)
 //    {
-//        REQUIRE( rs_is_stream_enabled(device, mode.stream, require_no_error()) == 1 );
-//        REQUIRE( rs_get_frame_data(device, mode.stream, require_no_error()) != nullptr );
-//        REQUIRE( rs_get_frame_timestamp(device, mode.stream, require_no_error()) >= 0 );
+//        REQUIRE( rs2_is_stream_enabled(device, mode.stream, require_no_error()) == 1 );
+//        REQUIRE( rs2_get_frame_data(device, mode.stream, require_no_error()) != nullptr );
+//        REQUIRE( rs2_get_frame_timestamp(device, mode.stream, require_no_error()) >= 0 );
 //        if (mode.framerate < lowest_fps_mode) lowest_fps_mode = mode.framerate;
 //    }
 //
 //    std::vector<unsigned long long> last_frame_number;
 //    std::vector<unsigned long long> number_of_frames;
-//    last_frame_number.resize(RS_STREAM_COUNT);
-//    number_of_frames.resize(RS_STREAM_COUNT);
+//    last_frame_number.resize(RS2_STREAM_COUNT);
+//    number_of_frames.resize(RS2_STREAM_COUNT);
 //
 //    for (auto& elem : modes)
 //    {
@@ -288,19 +288,19 @@ const uint32_t max_frames_to_receive = 50;     // Max frames to capture per stre
 //
 //    for (auto i = 0u; i< actual_frames_to_receive; ++i)
 //    {
-//        rs_wait_for_frames(device, require_no_error());
+//        rs2_wait_for_frames(device, require_no_error());
 //
 //        if (i < first_frame_to_capture) continue;       // Skip some frames at the beginning to stabilize the stream output
 //
 //        for (auto & mode : modes)
 //        {
-//            if (rs_get_frame_timestamp(device, mode.stream, require_no_error()) > 0)
+//            if (rs2_get_frame_timestamp(device, mode.stream, require_no_error()) > 0)
 //            {
-//                REQUIRE( rs_is_stream_enabled(device, mode.stream, require_no_error()) == 1);
-//                REQUIRE( rs_get_frame_data(device, mode.stream, require_no_error()) != nullptr);
-//                REQUIRE( rs_get_frame_timestamp(device, mode.stream, require_no_error()) >= 0);
+//                REQUIRE( rs2_is_stream_enabled(device, mode.stream, require_no_error()) == 1);
+//                REQUIRE( rs2_get_frame_data(device, mode.stream, require_no_error()) != nullptr);
+//                REQUIRE( rs2_get_frame_timestamp(device, mode.stream, require_no_error()) >= 0);
 //
-//                auto frame_number = rs_get_frame_number(device, mode.stream, require_no_error());
+//                auto frame_number = rs2_get_frame_number(device, mode.stream, require_no_error());
 //                if (!duration_per_stream[mode.stream].is_end_time_initialized && last_frame_number[mode.stream] != frame_number)
 //                {
 //                    last_frame_number[mode.stream] = frame_number;
@@ -325,8 +325,8 @@ const uint32_t max_frames_to_receive = 50;     // Max frames to capture per stre
 //        }
 //    }
 //
-//    rs_stop_device(device, require_no_error());
-//    REQUIRE( rs_is_device_streaming(device, require_no_error()) == 0 );
+//    rs2_stop_device(device, require_no_error());
+//    REQUIRE( rs2_is_device_streaming(device, require_no_error()) == 0 );
 //}
 
 
@@ -336,12 +336,12 @@ static std::condition_variable cv;
 static std::atomic<bool> stop_streaming;
 static int done;
 struct user_data {
-    std::map<rs_stream, test_duration> duration_per_stream;
-    std::map<rs_stream, unsigned> number_of_frames_per_stream;
+    std::map<rs2_stream, test_duration> duration_per_stream;
+    std::map<rs2_stream, unsigned> number_of_frames_per_stream;
 };
 
 
-inline void frame_callback(rs::device &dev, rs::frame frame, void * user)
+inline void frame_callback(rs2::device &dev, rs2::frame frame, void * user)
 {
     std::lock_guard<std::mutex> lock(cb_mtx);
 
@@ -399,7 +399,7 @@ inline void frame_callback(rs::device &dev, rs::frame frame, void * user)
     REQUIRE(frame.get_timestamp() >= 0);
 }
 
-//inline void test_frame_callback(rs::device &device, std::initializer_list<rs::stream_profile>& modes, std::map<rs_stream, test_duration>& duration_per_stream)
+//inline void test_frame_callback(device &device, std::initializer_list<stream_profile>& modes, std::map<rs2_stream, test_duration>& duration_per_stream)
 //{
 //    done = false;
 //    stop_streaming = false;
@@ -415,12 +415,12 @@ inline void frame_callback(rs::device &dev, rs::frame frame, void * user)
 //        data.duration_per_stream[mode.stream].first_frame_to_capture = (uint32_t)(data.duration_per_stream[mode.stream].actual_frames_to_receive*0.1);   // Skip the first 10% of frames
 //        data.duration_per_stream[mode.stream].frames_to_capture = data.duration_per_stream[mode.stream].actual_frames_to_receive - data.duration_per_stream[mode.stream].first_frame_to_capture;
 //        // device doesn't know which subdevice is providing which stream. could loop over all subdevices? no, because subdevices don't expose this information
-//        REQUIRE( rs_is_stream_enabled(device, mode.stream, require_no_error()) == 1 );
-//        rs_start(device, mode.stream, frame_callback, &data, require_no_error());
+//        REQUIRE( rs2_is_stream_enabled(device, mode.stream, require_no_error()) == 1 );
+//        rs2_start(device, mode.stream, frame_callback, &data, require_no_error());
 //    }
 //
-//    rs_start_device(device, require_no_error());
-//    REQUIRE( rs_is_device_streaming(device, require_no_error()) == 1 );
+//    rs2_start_device(device, require_no_error());
+//    REQUIRE( rs2_is_device_streaming(device, require_no_error()) == 1 );
 //
 //    {
 //        std::unique_lock<std::mutex> lk(m);
@@ -428,8 +428,8 @@ inline void frame_callback(rs::device &dev, rs::frame frame, void * user)
 //        lk.unlock();
 //    }
 //
-//    rs_stop_device(device, require_no_error());
-//    REQUIRE( rs_is_device_streaming(device, require_no_error()) == 0 );
+//    rs2_stop_device(device, require_no_error());
+//    REQUIRE( rs2_is_device_streaming(device, require_no_error()) == 0 );
 //
 //    for(auto & mode : modes)
 //    {
@@ -439,23 +439,23 @@ inline void frame_callback(rs::device &dev, rs::frame frame, void * user)
 //    }
 //}
 
-//inline void motion_callback(rs_device * , rs_motion_data, void *)
+//inline void motion_callback(rs2_device * , rs2_motion_data, void *)
 //{
 //}
 //
-//inline void timestamp_callback(rs_device * , rs_timestamp_data, void *)
+//inline void timestamp_callback(rs2_device * , rs2_timestamp_data, void *)
 //{
 //}
 //
 //// Provide support for doing basic streaming tests on a set of specified modes
-//inline void test_streaming(rs_device * device, std::initializer_list<rs::stream_profile> modes)
+//inline void test_streaming(rs2_device * device, std::initializer_list<stream_profile> modes)
 //{
-//    std::map<rs_stream, test_duration> duration_per_stream;
+//    std::map<rs2_stream, test_duration> duration_per_stream;
 //    for(auto & mode : modes)
 //    {
-//        duration_per_stream.insert(std::pair<rs_stream, test_duration>(mode.stream, test_duration()));
-//        rs_enable_stream(device, mode.stream, mode.width, mode.height, mode.format, mode.framerate, require_no_error());
-//        REQUIRE( rs_is_stream_enabled(device, mode.stream, require_no_error()) == 1 );
+//        duration_per_stream.insert(std::pair<rs2_stream, test_duration>(mode.stream, test_duration()));
+//        rs2_enable_stream(device, mode.stream, mode.width, mode.height, mode.format, mode.framerate, require_no_error());
+//        REQUIRE( rs2_is_stream_enabled(device, mode.stream, require_no_error()) == 1 );
 //    }
 //
 //    test_wait_for_frames(device, modes, duration_per_stream);
@@ -464,12 +464,12 @@ inline void frame_callback(rs::device &dev, rs::frame frame, void * user)
 //
 //    for(auto & mode : modes)
 //    {
-//        rs_disable_stream(device, mode.stream, require_no_error());
-//        REQUIRE( rs_is_stream_enabled(device, mode.stream, require_no_error()) == 0 );
+//        rs2_disable_stream(device, mode.stream, require_no_error());
+//        REQUIRE( rs2_is_stream_enabled(device, mode.stream, require_no_error()) == 0 );
 //    }
 //}
 
-inline void test_option(rs::device &device, rs_option option, std::initializer_list<int> good_values, std::initializer_list<int> bad_values)
+inline void test_option(rs2::device &device, rs2_option option, std::initializer_list<int> good_values, std::initializer_list<int> bad_values)
 {
     // Test reading the current value
     float first_value;
@@ -477,7 +477,7 @@ inline void test_option(rs::device &device, rs_option option, std::initializer_l
 
 
     // check if first value is something sane (should be default?)
-    rs::option_range range;
+    rs2::option_range range;
     REQUIRE_NOTHROW(range = device.get_option_range(option));
     REQUIRE(first_value >= range.min);
     REQUIRE(first_value <= range.max);
@@ -495,7 +495,7 @@ inline void test_option(rs::device &device, rs_option option, std::initializer_l
     REQUIRE_NOTHROW(last_good_value = device.get_option(option));
     for (auto value : bad_values)
     {
-        REQUIRE_THROWS_AS(device.set_option(option, (float)value), rs::error);
+        REQUIRE_THROWS_AS(device.set_option(option, (float)value), rs2::error);
         REQUIRE(device.get_option(option) == last_good_value);
     }
 

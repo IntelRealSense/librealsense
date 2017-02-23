@@ -1,7 +1,7 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
-#include <librealsense/rs.hpp>
+#include <librealsense/rs2.hpp>
 #include <fstream>
 #include <thread>
 #include "tclap/CmdLine.h"
@@ -11,10 +11,11 @@
 using namespace std;
 using namespace TCLAP;
 using namespace fw_logger;
+using namespace rs2;
 
-std::string hexify(unsigned char n)
+string hexify(unsigned char n)
 {
-    std::string res;
+    string res;
 
     do
     {
@@ -45,14 +46,14 @@ string datetime_string()
 
 int main(int argc, char* argv[]) try
 {
-    CmdLine cmd("librealsense cpp-fw-logger example tool", ' ', RS_API_VERSION_STR);
+    CmdLine cmd("librealsense cpp-fw-logger example tool", ' ', RS2_API_VERSION_STR);
     ValueArg<string> xml_arg("l", "load", "Full file path of HW Logger Events XML file", false, "", "Load HW Logger Events XML file");
     cmd.add(xml_arg);
     cmd.parse(argc, argv);
 
-    rs::log_to_file(RS_LOG_SEVERITY_WARN, "librealsense.log");
+    log_to_file(RS2_LOG_SEVERITY_WARN, "librealsense.log");
     // Obtain a list of devices currently present on the system
-    rs::context ctx;
+    context ctx;
     auto devices = ctx.query_devices();
     unsigned device_count = devices.size();
     if (!device_count)
@@ -61,10 +62,10 @@ int main(int argc, char* argv[]) try
         return EXIT_FAILURE;
     }
 
-    rs::device dev = devices.front();
-    auto str_op_code = dev.get_camera_info(RS_CAMERA_INFO_DEVICE_DEBUG_OP_CODE);
+    device dev = devices.front();
+    auto str_op_code = dev.get_camera_info(RS2_CAMERA_INFO_DEVICE_DEBUG_OP_CODE);
     auto op_code = static_cast<uint8_t>(stoi(str_op_code));
-    std::vector<uint8_t> input = {0x14, 0x00, 0xab, 0xcd, op_code, 0x00, 0x00, 0x00,
+    vector<uint8_t> input = {0x14, 0x00, 0xab, 0xcd, op_code, 0x00, 0x00, 0x00,
                                   0xf4, 0x01, 0x00, 0x00, 0x00,    0x00, 0x00, 0x00,
                                   0x00, 0x00, 0x00, 0x00, 0x00,    0x00, 0x00, 0x00};
 
@@ -73,7 +74,7 @@ int main(int argc, char* argv[]) try
     auto xml_full_file_path = xml_arg.getValue();
     if (!xml_full_file_path.empty())
     {
-        std::ifstream f(xml_full_file_path);
+        ifstream f(xml_full_file_path);
         if (f.good())
         {
             fw_log_parser = unique_ptr<fw_logs_parser>(new fw_logs_parser(xml_full_file_path));
@@ -81,14 +82,14 @@ int main(int argc, char* argv[]) try
         }
     }
 
-    cout << "Device Name: " << dev.get_camera_info(RS_CAMERA_INFO_DEVICE_NAME) << endl <<
-            "Device Location: " << dev.get_camera_info(RS_CAMERA_INFO_DEVICE_LOCATION) << endl << endl;
+    cout << "Device Name: " << dev.get_camera_info(RS2_CAMERA_INFO_DEVICE_NAME) << endl <<
+            "Device Location: " << dev.get_camera_info(RS2_CAMERA_INFO_DEVICE_LOCATION) << endl << endl;
 
     setvbuf(stdout, NULL, _IONBF, 0); // unbuffering stdout
 
-    std::thread logger([&](){
+    thread logger([&](){
         while (true) {
-            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            this_thread::sleep_for(chrono::milliseconds(100));
 
             auto raw_data = dev.debug().send_and_receive_raw_data(input);
             vector<string> fw_log_lines = {""};
@@ -114,20 +115,20 @@ int main(int argc, char* argv[]) try
             }
 
             for (auto& line : fw_log_lines)
-                std::cout << line << endl;
+                cout << line << endl;
         }
     });
     logger.detach();
 
 
     while (true) {
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        this_thread::sleep_for(chrono::milliseconds(100));
     }
 
     return EXIT_SUCCESS;
 }
-catch (const rs::error & e)
+catch (const error & e)
 {
-    std::cerr << "RealSense error calling " << e.get_failed_function() << "(" << e.get_failed_args() << "):\n    " << e.what() << std::endl;
+    cerr << "RealSense error calling " << e.get_failed_function() << "(" << e.get_failed_args() << "):\n    " << e.what() << endl;
     return EXIT_FAILURE;
 }

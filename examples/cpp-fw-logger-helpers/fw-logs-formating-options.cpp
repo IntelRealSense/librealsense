@@ -12,13 +12,13 @@ namespace fw_logger
           line("")
     {}
 
-    fw_log_event::fw_log_event(int input_num_of_params, const std::string& input_line)
+    fw_log_event::fw_log_event(int input_num_of_params, const string& input_line)
         : num_of_params(input_num_of_params),
           line(input_line)
     {}
 
 
-    fw_logs_formating_options::fw_logs_formating_options(const std::string& xml_full_file_path)
+    fw_logs_formating_options::fw_logs_formating_options(const string& xml_full_file_path)
         : _xml_full_file_path(xml_full_file_path)
     {}
 
@@ -62,7 +62,7 @@ namespace fw_logger
         }
     }
 
-    bool fw_logs_formating_options::get_thread_name(uint32_t thread_id, std::string* thread_name) const
+    bool fw_logs_formating_options::get_thread_name(uint32_t thread_id, string* thread_name) const
     {
         auto file_it = _fw_logs_thread_names_list.find(thread_id);
         if (file_it != _fw_logs_thread_names_list.end())

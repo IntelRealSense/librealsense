@@ -50,7 +50,7 @@ namespace rsimpl
         std::shared_ptr<device> create(const uvc::backend& /*backend*/) const override
         {
             throw unrecoverable_exception(RECOVERY_MESSAGE,
-                RS_EXCEPTION_TYPE_DEVICE_IN_RECOVERY_MODE);
+                RS2_EXCEPTION_TYPE_DEVICE_IN_RECOVERY_MODE);
         }
 
         uint8_t get_subdevice_count() const override
@@ -93,7 +93,7 @@ namespace rsimpl
         explicit context(backend_type type,
                const char* filename = nullptr,
                const char* section = nullptr,
-               rs_recording_mode mode = RS_RECORDING_MODE_COUNT);
+               rs2_recording_mode mode = RS2_RECORDING_MODE_COUNT);
 
         std::vector<std::shared_ptr<device_info>> query_devices() const;
         const uvc::backend& get_backend() const { return *_backend; }

@@ -142,14 +142,14 @@ namespace rsimpl
             }
         }
 
-        rs_timestamp_domain get_frame_timestamp_domain(const request_mapping & mode, const uvc::frame_object& fo) const override
+        rs2_timestamp_domain get_frame_timestamp_domain(const request_mapping & mode, const uvc::frame_object& fo) const override
         {
             std::lock_guard<std::recursive_mutex> lock(_mtx);
             auto pin_index = 0;
             if (mode.pf->fourcc == 0x5a313620) // Z16
                 pin_index = 1;
 
-            return _has_metadata[pin_index] ? RS_TIMESTAMP_DOMAIN_HARDWARE_CLOCK :
+            return _has_metadata[pin_index] ? RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK :
                                               _backup_timestamp_reader->get_frame_timestamp_domain(mode,fo);
         }
     };
@@ -197,9 +197,9 @@ namespace rsimpl
             return ++counter[pin_index];
         }
 
-        rs_timestamp_domain get_frame_timestamp_domain(const request_mapping & mode, const uvc::frame_object& fo) const override
+        rs2_timestamp_domain get_frame_timestamp_domain(const request_mapping & mode, const uvc::frame_object& fo) const override
         {
-            return RS_TIMESTAMP_DOMAIN_SYSTEM_TIME;
+            return RS2_TIMESTAMP_DOMAIN_SYSTEM_TIME;
         }
     };
 
@@ -272,13 +272,13 @@ namespace rsimpl
             return ++counter[index];
         }
 
-        rs_timestamp_domain get_frame_timestamp_domain(const request_mapping & mode, const uvc::frame_object& fo) const
+        rs2_timestamp_domain get_frame_timestamp_domain(const request_mapping & mode, const uvc::frame_object& fo) const
         {
             if(has_metadata(mode ,fo.metadata, fo.metadata_size))
             {
-                return RS_TIMESTAMP_DOMAIN_HARDWARE_CLOCK;
+                return RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK;
             }
-            return RS_TIMESTAMP_DOMAIN_SYSTEM_TIME;
+            return RS2_TIMESTAMP_DOMAIN_SYSTEM_TIME;
         }
     };
 
@@ -406,9 +406,9 @@ namespace rsimpl
                   _auto_exposure(auto_exposure)
             {
                 fisheye_ep->register_on_before_frame_callback(
-                            [this](rs_stream stream, rs_frame& f, callback_invokation_holder callback)
+                            [this](rs2_stream stream, rs2_frame& f, callback_invokation_holder callback)
                 {
-                    if (!_to_add_frames || stream != RS_STREAM_FISHEYE)
+                    if (!_to_add_frames || stream != RS2_STREAM_FISHEYE)
                         return;
 
                     _auto_exposure->add_frame(f.get()->get_owner()->clone_frame(&f), std::move(callback));
@@ -553,7 +553,7 @@ namespace rsimpl
             const std::vector<uvc::hid_device_info>& hid_info);
 
         std::vector<uint8_t> send_receive_raw_data(const std::vector<uint8_t>& input) override;
-        virtual rs_intrinsics get_intrinsics(unsigned int subdevice, stream_profile profile) const override;
+        virtual rs2_intrinsics get_intrinsics(unsigned int subdevice, stream_profile profile) const override;
 
         void register_auto_exposure_options(uvc_endpoint* uvc_ep);
 
@@ -570,27 +570,27 @@ namespace rsimpl
 
         // Bandwidth parameters from BOSCH BMI 055 spec'
         const std::vector<std::pair<std::string, stream_profile>> sensor_name_and_hid_profiles =
-            {{std::string("gyro_3d"),  {RS_STREAM_GYRO,  1, 1, 200,  RS_FORMAT_MOTION_RAW}},
-             {std::string("gyro_3d"),  {RS_STREAM_GYRO,  1, 1, 400,  RS_FORMAT_MOTION_RAW}},
-             {std::string("gyro_3d"),  {RS_STREAM_GYRO,  1, 1, 1000, RS_FORMAT_MOTION_RAW}},
-             {std::string("gyro_3d"),  {RS_STREAM_GYRO,  1, 1, 200,  RS_FORMAT_MOTION_XYZ32F}},
-             {std::string("gyro_3d"),  {RS_STREAM_GYRO,  1, 1, 400,  RS_FORMAT_MOTION_XYZ32F}},
-             {std::string("gyro_3d"),  {RS_STREAM_GYRO,  1, 1, 1000, RS_FORMAT_MOTION_XYZ32F}},
-             {std::string("accel_3d"), {RS_STREAM_ACCEL, 1, 1, 125,  RS_FORMAT_MOTION_RAW}},
-             {std::string("accel_3d"), {RS_STREAM_ACCEL, 1, 1, 250,  RS_FORMAT_MOTION_RAW}},
-             {std::string("accel_3d"), {RS_STREAM_ACCEL, 1, 1, 500,  RS_FORMAT_MOTION_RAW}},
-             {std::string("accel_3d"), {RS_STREAM_ACCEL, 1, 1, 1000, RS_FORMAT_MOTION_RAW}},
-             {std::string("accel_3d"), {RS_STREAM_ACCEL, 1, 1, 125,  RS_FORMAT_MOTION_XYZ32F}},
-             {std::string("accel_3d"), {RS_STREAM_ACCEL, 1, 1, 250,  RS_FORMAT_MOTION_XYZ32F}},
-             {std::string("accel_3d"), {RS_STREAM_ACCEL, 1, 1, 500,  RS_FORMAT_MOTION_XYZ32F}},
-             {std::string("accel_3d"), {RS_STREAM_ACCEL, 1, 1, 1000, RS_FORMAT_MOTION_XYZ32F}}};
+            {{std::string("gyro_3d"),  {RS2_STREAM_GYRO,  1, 1, 200,  RS2_FORMAT_MOTION_RAW}},
+             {std::string("gyro_3d"),  {RS2_STREAM_GYRO,  1, 1, 400,  RS2_FORMAT_MOTION_RAW}},
+             {std::string("gyro_3d"),  {RS2_STREAM_GYRO,  1, 1, 1000, RS2_FORMAT_MOTION_RAW}},
+             {std::string("gyro_3d"),  {RS2_STREAM_GYRO,  1, 1, 200,  RS2_FORMAT_MOTION_XYZ32F}},
+             {std::string("gyro_3d"),  {RS2_STREAM_GYRO,  1, 1, 400,  RS2_FORMAT_MOTION_XYZ32F}},
+             {std::string("gyro_3d"),  {RS2_STREAM_GYRO,  1, 1, 1000, RS2_FORMAT_MOTION_XYZ32F}},
+             {std::string("accel_3d"), {RS2_STREAM_ACCEL, 1, 1, 125,  RS2_FORMAT_MOTION_RAW}},
+             {std::string("accel_3d"), {RS2_STREAM_ACCEL, 1, 1, 250,  RS2_FORMAT_MOTION_RAW}},
+             {std::string("accel_3d"), {RS2_STREAM_ACCEL, 1, 1, 500,  RS2_FORMAT_MOTION_RAW}},
+             {std::string("accel_3d"), {RS2_STREAM_ACCEL, 1, 1, 1000, RS2_FORMAT_MOTION_RAW}},
+             {std::string("accel_3d"), {RS2_STREAM_ACCEL, 1, 1, 125,  RS2_FORMAT_MOTION_XYZ32F}},
+             {std::string("accel_3d"), {RS2_STREAM_ACCEL, 1, 1, 250,  RS2_FORMAT_MOTION_XYZ32F}},
+             {std::string("accel_3d"), {RS2_STREAM_ACCEL, 1, 1, 500,  RS2_FORMAT_MOTION_XYZ32F}},
+             {std::string("accel_3d"), {RS2_STREAM_ACCEL, 1, 1, 1000, RS2_FORMAT_MOTION_XYZ32F}}};
 
-        std::map<rs_stream, std::map<unsigned, unsigned>> fps_and_sampling_frequency_per_rs_stream =
-                                                         {{RS_STREAM_ACCEL, {{125,  1},
+        std::map<rs2_stream, std::map<unsigned, unsigned>> fps_and_sampling_frequency_per_rs2_stream =
+                                                         {{RS2_STREAM_ACCEL, {{125,  1},
                                                                              {250,  4},
                                                                              {500,  5},
                                                                              {1000, 10}}},
-                                                          {RS_STREAM_GYRO,  {{200,  1},
+                                                          {RS2_STREAM_GYRO,  {{200,  1},
                                                                              {400,  4},
                                                                              {1000, 10}}}};
     };

@@ -1,7 +1,7 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
-#include <librealsense/rs.hpp>
+#include <librealsense/rs2.hpp>
 #include <iostream>
 #include <iomanip>
 
@@ -9,10 +9,11 @@
 
 using namespace std;
 using namespace TCLAP;
+using namespace rs2;
 
 int main(int argc, char** argv) try
 {
-    CmdLine cmd("librealsense cpp-enumerate-devices example tool", ' ', RS_API_VERSION_STR);
+    CmdLine cmd("librealsense cpp-enumerate-devices example tool", ' ', RS2_API_VERSION_STR);
 
     SwitchArg compact_view_arg("s", "short", "Provide short summary of the devices");
     SwitchArg show_options("o", "option", "Show all supported options per subdevice");
@@ -23,10 +24,10 @@ int main(int argc, char** argv) try
 
     cmd.parse(argc, argv);
 
-    rs::log_to_console(RS_LOG_SEVERITY_WARN);
+    log_to_console(RS2_LOG_SEVERITY_WARN);
 
     // Obtain a list of devices currently present on the system
-    rs::context ctx;
+    context ctx;
     auto devices = ctx.query_devices();
     size_t device_count = devices.size();
     if (!device_count)
@@ -46,15 +47,15 @@ int main(int argc, char** argv) try
         {
             auto dev = devices[i];
 
-            cout << left << setw(30) << dev.get_camera_info(RS_CAMERA_INFO_DEVICE_NAME)
-                << setw(20) << dev.get_camera_info(RS_CAMERA_INFO_DEVICE_SERIAL_NUMBER)
-                << setw(20) << dev.get_camera_info(RS_CAMERA_INFO_CAMERA_FIRMWARE_VERSION)
+            cout << left << setw(30) << dev.get_camera_info(RS2_CAMERA_INFO_DEVICE_NAME)
+                << setw(20) << dev.get_camera_info(RS2_CAMERA_INFO_DEVICE_SERIAL_NUMBER)
+                << setw(20) << dev.get_camera_info(RS2_CAMERA_INFO_CAMERA_FIRMWARE_VERSION)
                 << endl;
         }
 
         if (show_options.getValue() || show_modes.getValue())
             cout << "\n\nNote:  \"-s\" option is not compatible with the other flags specified,"
-                 << " all the additional options are skipped" << std::endl;
+                 << " all the additional options are skipped" << endl;
 
         return EXIT_SUCCESS;
     }
@@ -65,11 +66,11 @@ int main(int argc, char** argv) try
 
         // Show which options are supported by this device
         cout << " Device info: \n";
-        for (auto j = 0; j < RS_CAMERA_INFO_COUNT; ++j)
+        for (auto j = 0; j < RS2_CAMERA_INFO_COUNT; ++j)
         {
-            auto param = static_cast<rs_camera_info>(j);
+            auto param = static_cast<rs2_camera_info>(j);
             if (dev.supports(param))
-                cout << "    " << left << setw(20) << rs_camera_info_to_string(rs_camera_info(param))
+                cout << "    " << left << setw(20) << rs2_camera_info_to_string(rs2_camera_info(param))
                 << ": \t" << dev.get_camera_info(param) << endl;
         }
 
@@ -79,9 +80,9 @@ int main(int argc, char** argv) try
         {
             cout << setw(55) << " Supported options:" << setw(10) << "min" << setw(10)
                 << " max" << setw(6) << " step" << setw(10) << " default" << endl;
-            for (auto j = 0; j < RS_OPTION_COUNT; ++j)
+            for (auto j = 0; j < RS2_OPTION_COUNT; ++j)
             {
-                auto opt = static_cast<rs_option>(j);
+                auto opt = static_cast<rs2_option>(j);
                 if (dev.supports(opt))
                 {
                     auto range = dev.get_option_range(opt);
@@ -105,7 +106,7 @@ int main(int argc, char** argv) try
                     << profile.height << "\t@ " << profile.fps << "Hz\t" << profile.format << endl;
 
                 // Show horizontal and vertical field of view, in degrees
-                //std::cout << "\t" << std::setprecision(3) << intrin.hfov() << " x " << intrin.vfov() << " degrees\n";
+                //cout << "\t" << setprecision(3) << intrin.hfov() << " x " << intrin.vfov() << " degrees\n";
             }
 
             cout << endl;
@@ -116,7 +117,7 @@ int main(int argc, char** argv) try
 
     return EXIT_SUCCESS;
 }
-catch (const rs::error & e)
+catch (const error & e)
 {
     cerr << "RealSense error calling " << e.get_failed_function() << "(" << e.get_failed_args() << "):\n    " << e.what() << endl;
     return EXIT_FAILURE;

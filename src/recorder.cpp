@@ -49,7 +49,7 @@ namespace rsimpl
         {
         public:
             playback_backend_exception(const std::string& msg, rsimpl::uvc::call_type t, int entity_id) noexcept
-                : backend_exception(generate_message(msg, t, entity_id), RS_EXCEPTION_TYPE_BACKEND)
+                : backend_exception(generate_message(msg, t, entity_id), RS2_EXCEPTION_TYPE_BACKEND)
             {}
         private:
             std::string generate_message(const std::string& msg, rsimpl::uvc::call_type t, int entity_id) const
@@ -222,7 +222,7 @@ namespace rsimpl
                     statement insert(c, CONFIG_INSERT);
                     insert.bind(1, section_id);
                     insert.bind(2, API_VERSION_KEY);
-                    insert.bind(3, RS_API_VERSION_STR);
+                    insert.bind(3, RS2_API_VERSION_STR);
                     insert();
                 }
 
@@ -557,13 +557,13 @@ namespace rsimpl
                         auto&& c = rec1->add_call(key1);
                         c.param1 = rec1->save_blob(&p, sizeof(p));
 
-                        if (_owner->get_mode() == RS_RECORDING_MODE_BEST_QUALITY)
+                        if (_owner->get_mode() == RS2_RECORDING_MODE_BEST_QUALITY)
                         {
                             c.param2 = rec1->save_blob(f.pixels, static_cast<int>(f.frame_size));
                             c.param4 = static_cast<int>(f.frame_size);
                             c.param3 = 1;                         
                         }
-                        else if (_owner->get_mode() == RS_RECORDING_MODE_BLANK_FRAMES)
+                        else if (_owner->get_mode() == RS2_RECORDING_MODE_BLANK_FRAMES)
                         {
                             c.param2 = -1;
                             c.param4 = static_cast<int>(f.frame_size);
@@ -697,7 +697,7 @@ namespace rsimpl
             }, _entity_id, call_type::uvc_get_xu_range);
         }
 
-        int record_uvc_device::get_pu(rs_option opt) const
+        int record_uvc_device::get_pu(rs2_option opt) const
         {
             return _owner->try_record([&](recording* rec, lookup_key k)
             {
@@ -711,7 +711,7 @@ namespace rsimpl
             }, _entity_id, call_type::uvc_get_pu);
         }
 
-        void record_uvc_device::set_pu(rs_option opt, int value)
+        void record_uvc_device::set_pu(rs2_option opt, int value)
         {
             _owner->try_record([&](recording* rec, lookup_key k)
             {
@@ -723,7 +723,7 @@ namespace rsimpl
             }, _entity_id, call_type::uvc_set_pu);
         }
 
-        control_range record_uvc_device::get_pu_range(rs_option opt) const
+        control_range record_uvc_device::get_pu_range(rs2_option opt) const
         {
             return _owner->try_record([&](recording* rec, lookup_key k)
             {
@@ -936,7 +936,7 @@ namespace rsimpl
 
         record_backend::record_backend(shared_ptr<backend> source,
             const char* filename, const char* section,
-            rs_recording_mode mode)
+            rs2_recording_mode mode)
             : _source(source), _rec(std::make_shared<uvc::recording>(create_time_service())), _entity_count(1),
             _filename(filename),
             _section(section), _compression(make_shared<compression_algorithm>()), _mode(mode)
@@ -1122,7 +1122,7 @@ namespace rsimpl
             return res;
         }
 
-        int playback_uvc_device::get_pu(rs_option opt) const
+        int playback_uvc_device::get_pu(rs2_option opt) const
         {
             auto&& c = _rec->find_call(call_type::uvc_get_pu, _entity_id, [&](const call& call_found)
             {
@@ -1132,7 +1132,7 @@ namespace rsimpl
             return c.param2;
         }
 
-        void playback_uvc_device::set_pu(rs_option opt, int value)
+        void playback_uvc_device::set_pu(rs2_option opt, int value)
         {
             auto&& c = _rec->find_call(call_type::uvc_set_pu, _entity_id, [&](const call& call_found)
             {
@@ -1140,7 +1140,7 @@ namespace rsimpl
             });
         }
 
-        control_range playback_uvc_device::get_pu_range(rs_option opt) const
+        control_range playback_uvc_device::get_pu_range(rs2_option opt) const
         {
             control_range res;
             auto&& c = _rec->find_call(call_type::uvc_get_pu_range, _entity_id, [&](const call& call_found)
@@ -1221,7 +1221,7 @@ namespace rsimpl
 
         vector<hid_sensor> playback_hid_device::get_sensors()
         {
-            return _rec->load_hid_sensors_list(_entity_id);
+            return _rec->load_hid_sensors2_list(_entity_id);
         }
 
         void playback_hid_device::callback_thread()

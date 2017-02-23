@@ -1,94 +1,94 @@
 LIBRARY
 
 EXPORTS
-    rs_create_context
-    rs_delete_context
-    rs_create_recording_context
-    rs_create_mock_context
-    rs_get_context_time
+    rs2_create_context
+    rs2_delete_context
+    rs2_create_recording_context
+    rs2_create_mock_context
+    rs2_get_context_time
     
-    rs_query_devices
-    rs_get_device_count
-    rs_delete_device_list
+    rs2_query_devices
+    rs2_get_device_count
+    rs2_delete_device_list
 
-    rs_create_device
-    rs_query_adjacent_devices
-    rs_delete_device
-    rs_get_extrinsics
-    rs_get_stream_intrinsics
-    rs_get_device_depth_scale
+    rs2_create_device
+    rs2_query_adjacent_devices
+    rs2_delete_device
+    rs2_get_extrinsics
+    rs2_get_stream_intrinsics
+    rs2_get_device_depth_scale
 
-    rs_get_stream_modes
-    rs_get_stream_mode
-    rs_get_modes_count
-    rs_delete_modes_list
+    rs2_get_stream_modes
+    rs2_get_stream_mode
+    rs2_get_modes_count
+    rs2_delete_modes_list
 
-    rs_open
-    rs_open_multiple
-    rs_close
+    rs2_open
+    rs2_open_multiple
+    rs2_close
 
-    rs_start
-    rs_start_cpp
-    rs_start_queue
-    rs_stop
+    rs2_start
+    rs2_start_cpp
+    rs2_start_queue
+    rs2_stop
 
-    rs_get_frame_metadata
-    rs_supports_frame_metadata
-    rs_get_frame_timestamp
-    rs_get_frame_timestamp_domain
-    rs_get_frame_number
-    rs_get_frame_data
-    rs_get_frame_width
-    rs_get_frame_height
-    rs_get_frame_stride_in_bytes
-    rs_get_frame_bits_per_pixel
-    rs_get_frame_format
-    rs_get_frame_stream_type
-    rs_release_frame
-    rs_clone_frame_ref
+    rs2_get_frame_metadata
+    rs2_supports_frame_metadata
+    rs2_get_frame_timestamp
+    rs2_get_frame_timestamp_domain
+    rs2_get_frame_number
+    rs2_get_frame_data
+    rs2_get_frame_width
+    rs2_get_frame_height
+    rs2_get_frame_stride_in_bytes
+    rs2_get_frame_bits_per_pixel
+    rs2_get_frame_format
+    rs2_get_frame_stream_type
+    rs2_release_frame
+    rs2_clone_frame_ref
 
-    rs_get_option
-    rs_set_option
-    rs_supports_option
-    rs_get_option_range
-    rs_get_option_description
-    rs_get_option_value_description
+    rs2_get_option
+    rs2_set_option
+    rs2_supports_option
+    rs2_get_option_range
+    rs2_get_option_description
+    rs2_get_option_value_description
     
-    rs_set_region_of_interest
-    rs_get_region_of_interest
+    rs2_set_region_of_interest
+    rs2_get_region_of_interest
 
-    rs_send_and_receive_raw_data
-    rs_get_raw_data_size
-    rs_delete_raw_data
-    rs_get_raw_data
+    rs2_send_and_receive_raw_data
+    rs2_get_raw_data_size
+    rs2_delete_raw_data
+    rs2_get_raw_data
 
-    rs_get_camera_info
-    rs_supports_camera_info
+    rs2_get_camera_info
+    rs2_supports_camera_info
 
-    rs_create_frame_queue
-    rs_delete_frame_queue
-    rs_wait_for_frame
-    rs_poll_for_frame
-    rs_enqueue_frame
-    rs_flush_queue
+    rs2_create_frame_queue
+    rs2_delete_frame_queue
+    rs2_wait_for_frame
+    rs2_poll_for_frame
+    rs2_enqueue_frame
+    rs2_flush_queue
 
 
-    rs_get_failed_function
-    rs_get_failed_args
-    rs_get_error_message
-    rs_free_error
-    rs_get_librealsense_exception_type
-    rs_exception_type_to_string
+    rs2_get_failed_function
+    rs2_get_failed_args
+    rs2_get_error_message
+    rs2_free_error
+    rs2_get_librealsense_exception_type
+    rs2_exception_type_to_string
 
-    rs_stream_to_string
-    rs_format_to_string
-    rs_distortion_to_string
-    rs_option_to_string
-    rs_camera_info_to_string
-    rs_timestamp_domain_to_string
-    rs_visual_preset_to_string
+    rs2_stream_to_string
+    rs2_format_to_string
+    rs2_distortion_to_string
+    rs2_option_to_string
+    rs2_camera_info_to_string
+    rs2_timestamp_domain_to_string
+    rs2_visual_preset_to_string
 
-    rs_log_to_console
-    rs_log_to_file
+    rs2_log_to_console
+    rs2_log_to_file
 
-    rs_get_api_version
+    rs2_get_api_version

@@ -50,7 +50,7 @@ namespace rsimpl
             return true;
         }
 
-        uvc_pu_option(uvc_endpoint& ep, rs_option id)
+        uvc_pu_option(uvc_endpoint& ep, rs2_option id)
             : _ep(ep), _id(id)
         {
         }
@@ -58,7 +58,7 @@ namespace rsimpl
         const char* get_description() const override;
     private:
         uvc_endpoint& _ep;
-        rs_option _id;
+        rs2_option _id;
     };
 
     template<typename T>

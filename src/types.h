@@ -9,8 +9,8 @@
 #ifndef LIBREALSENSE_TYPES_H
 #define LIBREALSENSE_TYPES_H
 
-#include "../include/librealsense/rs.h"     // Inherit all type definitions in the public API
-#include "../include/librealsense/rscore.hpp"
+#include "../include/librealsense/rs2.h"     // Inherit all type definitions in the public API
+#include "../include/librealsense/rscore2.hpp"
 
 #include <cassert>                          // For assert
 #include <cstring>                          // For memcmp
@@ -29,10 +29,10 @@
 
 typedef unsigned char byte;
 
-const uint8_t RS_STREAM_NATIVE_COUNT = 5;
-const int RS_USER_QUEUE_SIZE = 20;
-const int RS_MAX_EVENT_QUEUE_SIZE = 500;
-const int RS_MAX_EVENT_TINE_OUT = 10;
+const uint8_t RS2_STREAM_NATIVE_COUNT = 5;
+const int RS2_USER_QUEUE_SIZE = 20;
+const int RS2_MAX_EVENT_QUEUE_SIZE = 500;
+const int RS2_MAX_EVENT_TINE_OUT = 10;
 
 #ifndef DBL_EPSILON
 const double DBL_EPSILON = 2.2204460492503131e-016;  // smallest such that 1.0+DBL_EPSILON != 1.0
@@ -54,8 +54,8 @@ namespace rsimpl
     // Logging mechanism //
     ///////////////////////
 
-    void log_to_console(rs_log_severity min_severity);
-    void log_to_file(rs_log_severity min_severity, const char * file_path);
+    void log_to_console(rs2_log_severity min_severity);
+    void log_to_file(rs2_log_severity min_severity, const char * file_path);
 
 #define LOG_DEBUG(...)   do { CLOG(DEBUG   ,"librealsense") << __VA_ARGS__; } while(false)
 #define LOG_INFO(...)    do { CLOG(INFO    ,"librealsense") << __VA_ARGS__; } while(false)
@@ -77,7 +77,7 @@ namespace rsimpl
             return _msg.c_str();
         }
 
-        rs_exception_type get_exception_type() const noexcept
+        rs2_exception_type get_exception_type() const noexcept
         {
             return _exception_type;
         }
@@ -89,21 +89,21 @@ namespace rsimpl
 
     protected:
         librealsense_exception(const std::string& msg,
-                               rs_exception_type exception_type) noexcept
+                               rs2_exception_type exception_type) noexcept
             : _msg(msg),
               _exception_type(exception_type)
         {}
 
     private:
         std::string _msg;
-        rs_exception_type _exception_type;
+        rs2_exception_type _exception_type;
     };
 
     class recoverable_exception : public librealsense_exception
     {
     public:
         recoverable_exception(const std::string& msg,
-                              rs_exception_type exception_type) noexcept
+                              rs2_exception_type exception_type) noexcept
             : librealsense_exception(msg, exception_type)
         {
             LOG_WARNING(msg);
@@ -114,7 +114,7 @@ namespace rsimpl
     {
     public:
         unrecoverable_exception(const std::string& msg,
-                                rs_exception_type exception_type) noexcept
+                                rs2_exception_type exception_type) noexcept
             : librealsense_exception(msg, exception_type)
         {
             LOG_ERROR(msg);
@@ -125,7 +125,7 @@ namespace rsimpl
     {
     public:
         camera_disconnected_exception(const std::string& msg) noexcept
-            : unrecoverable_exception(msg, RS_EXCEPTION_TYPE_CAMERA_DISCONNECTED)
+            : unrecoverable_exception(msg, RS2_EXCEPTION_TYPE_CAMERA_DISCONNECTED)
         {}
     };
 
@@ -133,7 +133,7 @@ namespace rsimpl
     {
     public:
         backend_exception(const std::string& msg,
-                          rs_exception_type exception_type) noexcept
+                          rs2_exception_type exception_type) noexcept
             : unrecoverable_exception(msg, exception_type)
         {}
     };
@@ -142,7 +142,7 @@ namespace rsimpl
     {
     public:
         linux_backend_exception(const std::string& msg) noexcept
-            : backend_exception(generate_last_error_message(msg), RS_EXCEPTION_TYPE_BACKEND)
+            : backend_exception(generate_last_error_message(msg), RS2_EXCEPTION_TYPE_BACKEND)
         {}
 
     private:
@@ -157,7 +157,7 @@ namespace rsimpl
     public:
         // TODO: get last error
         windows_backend_exception(const std::string& msg) noexcept
-            : backend_exception(msg, RS_EXCEPTION_TYPE_BACKEND)
+            : backend_exception(msg, RS2_EXCEPTION_TYPE_BACKEND)
         {}
     };
 
@@ -165,7 +165,7 @@ namespace rsimpl
     {
     public:
         invalid_value_exception(const std::string& msg) noexcept
-            : recoverable_exception(msg, RS_EXCEPTION_TYPE_INVALID_VALUE)
+            : recoverable_exception(msg, RS2_EXCEPTION_TYPE_INVALID_VALUE)
         {}
     };
 
@@ -173,7 +173,7 @@ namespace rsimpl
     {
     public:
         wrong_api_call_sequence_exception(const std::string& msg) noexcept
-            : recoverable_exception(msg, RS_EXCEPTION_TYPE_WRONG_API_CALL_SEQUENCE)
+            : recoverable_exception(msg, RS2_EXCEPTION_TYPE_WRONG_API_CALL_SEQUENCE)
         {}
     };
 
@@ -181,7 +181,7 @@ namespace rsimpl
     {
     public:
         not_implemented_exception(const std::string& msg) noexcept
-            : recoverable_exception(msg, RS_EXCEPTION_TYPE_NOT_IMPLEMENTED)
+            : recoverable_exception(msg, RS2_EXCEPTION_TYPE_NOT_IMPLEMENTED)
         {}
     };
 
@@ -296,18 +296,18 @@ namespace rsimpl
     // Enumerated type support //
     /////////////////////////////
 
-#define RS_ENUM_HELPERS(TYPE, PREFIX) const char * get_string(TYPE value); \
-        inline bool is_valid(TYPE value) { return value >= 0 && value < RS_##PREFIX##_COUNT; } \
+#define RS2_ENUM_HELPERS(TYPE, PREFIX) const char * get_string(TYPE value); \
+        inline bool is_valid(TYPE value) { return value >= 0 && value < RS2_##PREFIX##_COUNT; } \
         inline std::ostream & operator << (std::ostream & out, TYPE value) { if(is_valid(value)) return out << get_string(value); else return out << (int)value; }
-    RS_ENUM_HELPERS(rs_stream, STREAM)
-    RS_ENUM_HELPERS(rs_format, FORMAT)
-    RS_ENUM_HELPERS(rs_distortion, DISTORTION)
-    RS_ENUM_HELPERS(rs_option, OPTION)
-    RS_ENUM_HELPERS(rs_camera_info, CAMERA_INFO)
-    RS_ENUM_HELPERS(rs_timestamp_domain, TIMESTAMP_DOMAIN)
-    RS_ENUM_HELPERS(rs_visual_preset, VISUAL_PRESET)
-    RS_ENUM_HELPERS(rs_exception_type, EXCEPTION_TYPE)
-    #undef RS_ENUM_HELPERS
+    RS2_ENUM_HELPERS(rs2_stream, STREAM)
+    RS2_ENUM_HELPERS(rs2_format, FORMAT)
+    RS2_ENUM_HELPERS(rs2_distortion, DISTORTION)
+    RS2_ENUM_HELPERS(rs2_option, OPTION)
+    RS2_ENUM_HELPERS(rs2_camera_info, CAMERA_INFO)
+    RS2_ENUM_HELPERS(rs2_timestamp_domain, TIMESTAMP_DOMAIN)
+    RS2_ENUM_HELPERS(rs2_visual_preset, VISUAL_PRESET)
+    RS2_ENUM_HELPERS(rs2_exception_type, EXCEPTION_TYPE)
+    #undef RS2_ENUM_HELPERS
 
     ////////////////////////////////////////////
     // World's tiniest linear algebra library //
@@ -339,14 +339,14 @@ namespace rsimpl
     ///////////////////
    
     typedef std::tuple<uint32_t, int, size_t> native_pixel_format_tuple;
-    typedef std::tuple<rs_stream, rs_format> output_tuple;
+    typedef std::tuple<rs2_stream, rs2_format> output_tuple;
     typedef std::tuple<uvc::stream_profile_tuple, native_pixel_format_tuple, std::vector<output_tuple>> request_mapping_tuple;
 
     struct stream_profile
     {
-        rs_stream stream;
+        rs2_stream stream;
         uint32_t width, height, fps;
-        rs_format format;
+        rs2_format format;
 
     };
 
@@ -365,7 +365,7 @@ namespace rsimpl
     {
         bool requires_processing;
         void(*unpack)(byte * const dest[], const byte * source, int count);
-        std::vector<std::pair<rs_stream, rs_format>> outputs;
+        std::vector<std::pair<rs2_stream, rs2_format>> outputs;
 
         bool satisfies(const stream_profile& request) const
         {
@@ -373,7 +373,7 @@ namespace rsimpl
                 get_format(request.stream) == request.format;
         }
 
-        bool provides_stream(rs_stream stream) const
+        bool provides_stream(rs2_stream stream) const
         {
             for (auto & o : outputs)
                 if (o.first == stream)
@@ -381,7 +381,7 @@ namespace rsimpl
 
             return false;
         }
-        rs_format get_format(rs_stream stream) const
+        rs2_format get_format(rs2_stream stream) const
         {
             for (auto & o : outputs)
                 if (o.first == stream)
@@ -446,18 +446,18 @@ namespace rsimpl
 
     struct frame_holder
     {
-        rs_frame* frame;
+        rs2_frame* frame;
 
-        rs_frame* operator->()
+        rs2_frame* operator->()
         {
             return frame;
         }
 
         operator bool() const { return frame != nullptr; }
 
-        operator rs_frame*() const { return frame; }
+        operator rs2_frame*() const { return frame; }
 
-        frame_holder(rs_frame* f)
+        frame_holder(rs2_frame* f)
         {
             frame = f;
         }
@@ -539,17 +539,17 @@ namespace rsimpl
 
     struct supported_capability
     {
-        rs_stream           capability;
+        rs2_stream           capability;
         firmware_version    from;
         firmware_version    until;
-        rs_camera_info      firmware_type;
+        rs2_camera_info      firmware_type;
 
-        supported_capability(rs_stream capability, firmware_version from,
-            firmware_version until, rs_camera_info firmware_type = RS_CAMERA_INFO_CAMERA_FIRMWARE_VERSION)
+        supported_capability(rs2_stream capability, firmware_version from,
+            firmware_version until, rs2_camera_info firmware_type = RS2_CAMERA_INFO_CAMERA_FIRMWARE_VERSION)
             : capability(capability), from(from), until(until), firmware_type(firmware_type) {}
 
-        explicit supported_capability(rs_stream capability)
-            : capability(capability), from(), until(), firmware_type(RS_CAMERA_INFO_CAMERA_FIRMWARE_VERSION) {}
+        explicit supported_capability(rs2_stream capability)
+            : capability(capability), from(), until(), firmware_type(RS2_CAMERA_INFO_CAMERA_FIRMWARE_VERSION) {}
     };
 
     // This class is used to buffer up several writes to a structure-valued XU control, and send the entire structure all at once
@@ -603,13 +603,13 @@ namespace rsimpl
     struct static_device_info
     {
         float nominal_depth_scale;                                          // Default scale
-        std::vector<rs_frame_metadata> supported_metadata_vector;
+        std::vector<rs2_frame_metadata> supported_metadata_vector;
         std::vector<supported_capability> capabilities_vector;
     };
 
-    typedef void(*frame_callback_function_ptr)(rs_frame * frame, void * user);
+    typedef void(*frame_callback_function_ptr)(rs2_frame * frame, void * user);
 
-    class frame_callback : public rs_frame_callback
+    class frame_callback : public rs2_frame_callback
     {
         frame_callback_function_ptr fptr;
         void * user;
@@ -618,7 +618,7 @@ namespace rsimpl
         frame_callback(frame_callback_function_ptr on_frame, void * user) : fptr(on_frame), user(user) {}
 
         operator bool() const { return fptr != nullptr; }
-        void on_frame (rs_frame * frame) override {
+        void on_frame (rs2_frame * frame) override {
             if (fptr)
             {
                 try { fptr(frame, user); } catch (...)
@@ -630,27 +630,27 @@ namespace rsimpl
         void release() override { delete this; }
     };
 
-    typedef std::unique_ptr<rs_log_callback, void(*)(rs_log_callback*)> log_callback_ptr;
-    typedef std::unique_ptr<rs_frame_callback, void(*)(rs_frame_callback*)> frame_callback_ptr;
+    typedef std::unique_ptr<rs2_log_callback, void(*)(rs2_log_callback*)> log_callback_ptr;
+    typedef std::unique_ptr<rs2_frame_callback, void(*)(rs2_frame_callback*)> frame_callback_ptr;
 
     ////////////////////////////////////////
     // Helper functions for library types //
     ////////////////////////////////////////
 
-    inline rs_intrinsics pad_crop_intrinsics(const rs_intrinsics & i, int pad_crop)
+    inline rs2_intrinsics pad_crop_intrinsics(const rs2_intrinsics & i, int pad_crop)
     {
         return{ i.width + pad_crop * 2, i.height + pad_crop * 2, i.ppx + pad_crop, i.ppy + pad_crop,
             i.fx, i.fy, i.model, {i.coeffs[0], i.coeffs[1], i.coeffs[2], i.coeffs[3], i.coeffs[4]} };
     }
 
-    inline rs_intrinsics scale_intrinsics(const rs_intrinsics & i, int width, int height)
+    inline rs2_intrinsics scale_intrinsics(const rs2_intrinsics & i, int width, int height)
     {
         const float sx = static_cast<float>(width) / i.width, sy = static_cast<float>(height) / i.height;
         return{ width, height, i.ppx*sx, i.ppy*sy, i.fx*sx, i.fy*sy, i.model,
                 {i.coeffs[0], i.coeffs[1], i.coeffs[2], i.coeffs[3], i.coeffs[4]} };
     }
 
-    inline bool operator == (const rs_intrinsics & a, const rs_intrinsics & b) { return std::memcmp(&a, &b, sizeof(a)) == 0; }
+    inline bool operator == (const rs2_intrinsics & a, const rs2_intrinsics & b) { return std::memcmp(&a, &b, sizeof(a)) == 0; }
 
     inline uint32_t pack(uint8_t c0, uint8_t c1, uint8_t c2, uint8_t c3)
     {
@@ -797,16 +797,16 @@ namespace rsimpl
     class calibration_validator
     {
     public:
-        calibration_validator(std::function<bool(rs_stream, rs_stream)> extrinsic_validator,
-                              std::function<bool(rs_stream)>            intrinsic_validator);
+        calibration_validator(std::function<bool(rs2_stream, rs2_stream)> extrinsic_validator,
+                              std::function<bool(rs2_stream)>            intrinsic_validator);
         calibration_validator();
 
-        bool validate_extrinsics(rs_stream from_stream, rs_stream to_stream) const;
-        bool validate_intrinsics(rs_stream stream) const;
+        bool validate_extrinsics(rs2_stream from_stream, rs2_stream to_stream) const;
+        bool validate_intrinsics(rs2_stream stream) const;
 
     private:
-        std::function<bool(rs_stream from_stream, rs_stream to_stream)> extrinsic_validator;
-        std::function<bool(rs_stream stream)> intrinsic_validator;
+        std::function<bool(rs2_stream from_stream, rs2_stream to_stream)> extrinsic_validator;
+        std::function<bool(rs2_stream stream)> intrinsic_validator;
     };
 
     inline bool check_not_all_zeros(std::vector<byte> data)

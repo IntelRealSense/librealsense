@@ -1,4 +1,4 @@
-#include <librealsense/rs.hpp>
+#include <librealsense/rs2.hpp>
 #include "example.hpp"
 
 #define GLFW_INCLUDE_GLU
@@ -19,12 +19,14 @@
 
 #define WHITE_SPACES std::string("                                 ")
 
+using namespace rs2;
+
 class option_model
 {
 public:
-    rs_option opt;
-    rs::option_range range;
-    rs::device endpoint;
+    rs2_option opt;
+    option_range range;
+    device endpoint;
     bool* invalidate_flag;
     bool supported = false;
     float value = 0.0f;
@@ -46,7 +48,7 @@ public:
                         endpoint.set_option(opt, value);
                         *invalidate_flag = true;
                     }
-                    catch (const rs::error& e)
+                    catch (const error& e)
                     {
                         error_message = error_to_string(e);
                     }
@@ -99,7 +101,7 @@ public:
                         }
                     }
                 }
-                catch (const rs::error& e)
+                catch (const error& e)
                 {
                     error_message = error_to_string(e);
                 }
@@ -121,7 +123,7 @@ public:
             if (endpoint.supports(opt))
                 value = endpoint.get_option(opt);
         }
-        catch (const rs::error& e)
+        catch (const error& e)
         {
             error_message = error_to_string(e);
         }
@@ -175,37 +177,37 @@ struct mouse_info
 class subdevice_model
 {
 public:
-    subdevice_model(rs::device dev, std::string& error_message)
-        : dev(dev), streaming(false), queues(RS_STREAM_COUNT)
+    subdevice_model(device dev, std::string& error_message)
+        : dev(dev), streaming(false), queues(RS2_STREAM_COUNT)
     {
         for (auto& elem : queues)
         {
-            elem = std::unique_ptr<rs::frame_queue>(new rs::frame_queue(5));
+            elem = std::unique_ptr<frame_queue>(new frame_queue(5));
         }
 
         try
         {
-            if (dev.supports(RS_OPTION_ENABLE_AUTO_EXPOSURE))
-                auto_exposure_enabled = dev.get_option(RS_OPTION_ENABLE_AUTO_EXPOSURE) > 0;
+            if (dev.supports(RS2_OPTION_ENABLE_AUTO_EXPOSURE))
+                auto_exposure_enabled = dev.get_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE) > 0;
         }
         catch(...)
         {
 
         }
 
-        for (auto i = 0; i < RS_OPTION_COUNT; i++)
+        for (auto i = 0; i < RS2_OPTION_COUNT; i++)
         {
             option_model metadata;
-            auto opt = static_cast<rs_option>(i);
+            auto opt = static_cast<rs2_option>(i);
 
             std::stringstream ss;
-            ss << dev.get_camera_info(RS_CAMERA_INFO_DEVICE_NAME)
-                << "/" << dev.get_camera_info(RS_CAMERA_INFO_MODULE_NAME)
-                << "/" << rs_option_to_string(opt);
+            ss << dev.get_camera_info(RS2_CAMERA_INFO_DEVICE_NAME)
+                << "/" << dev.get_camera_info(RS2_CAMERA_INFO_MODULE_NAME)
+                << "/" << rs2_option_to_string(opt);
             metadata.id = ss.str();
             metadata.opt = opt;
             metadata.endpoint = dev;
-            metadata.label = rs_option_to_string(opt) + WHITE_SPACES + ss.str();
+            metadata.label = rs2_option_to_string(opt) + WHITE_SPACES + ss.str();
             metadata.invalidate_flag = &options_invalidated;
 
             metadata.supported = dev.supports(opt);
@@ -216,7 +218,7 @@ public:
                     metadata.range = dev.get_option_range(opt);
                     metadata.value = dev.get_option(opt);
                 }
-                catch (const rs::error& e)
+                catch (const error& e)
                 {
                     metadata.range = { 0, 1, 0, 0 };
                     metadata.value = 0;
@@ -243,7 +245,7 @@ public:
                 push_back_if_not_exists(fpses_per_stream[profile.stream], fps.str());
                 push_back_if_not_exists(shared_fpses, fps.str());
 
-                std::string format = rs_format_to_string(profile.format);
+                std::string format = rs2_format_to_string(profile.format);
 
                 push_back_if_not_exists(formats[profile.stream], format);
                 push_back_if_not_exists(format_values[profile.stream], profile.format);
@@ -293,10 +295,10 @@ public:
 
             for (auto format_array : format_values)
             {
-                for (auto format : { rs_format::RS_FORMAT_RGB8,
-                                     rs_format::RS_FORMAT_Z16,
-                                     rs_format::RS_FORMAT_Y8,
-                                     rs_format::RS_FORMAT_MOTION_XYZ32F } )
+                for (auto format : { rs2_format::RS2_FORMAT_RGB8,
+                                     rs2_format::RS2_FORMAT_Z16,
+                                     rs2_format::RS2_FORMAT_Y8,
+                                     rs2_format::RS2_FORMAT_MOTION_XYZ32F } )
                 {
                     if (get_default_selection_index(format_array.second, format, &selection_index))
                     {
@@ -306,7 +308,7 @@ public:
                 }
             }
         }
-        catch (const rs::error& e)
+        catch (const error& e)
         {
             error_message = error_to_string(e);
         }
@@ -318,8 +320,8 @@ public:
         {
             for (int j = i + 1 ; j < fps_values_per_stream.size() ; ++j)
             {
-                auto group1 = fps_values_per_stream[(rs_stream)i];
-                auto group2 = fps_values_per_stream[(rs_stream)j];
+                auto group1 = fps_values_per_stream[(rs2_stream)i];
+                auto group2 = fps_values_per_stream[(rs2_stream)j];
                 if ((group1.size() != group2.size()) || group1.empty() || group2.empty())
                     continue;
 
@@ -348,8 +350,8 @@ public:
         ImGui::PushItemWidth(-1);
         ImGui::Text("Resolution:");
         ImGui::SameLine();
-        std::string label = to_string() << dev.get_camera_info(RS_CAMERA_INFO_DEVICE_NAME)
-            << dev.get_camera_info(RS_CAMERA_INFO_MODULE_NAME) << " resolution";
+        std::string label = to_string() << dev.get_camera_info(RS2_CAMERA_INFO_DEVICE_NAME)
+            << dev.get_camera_info(RS2_CAMERA_INFO_MODULE_NAME) << " resolution";
         if (streaming)
             ImGui::Text(res_chars[selected_res_id]);
         else
@@ -365,8 +367,8 @@ public:
         {
             auto fps_chars = get_string_pointers(shared_fpses);
             ImGui::Text("FPS:       ");
-            label = to_string() << dev.get_camera_info(RS_CAMERA_INFO_DEVICE_NAME)
-                << dev.get_camera_info(RS_CAMERA_INFO_MODULE_NAME) << " fps";
+            label = to_string() << dev.get_camera_info(RS2_CAMERA_INFO_DEVICE_NAME)
+                << dev.get_camera_info(RS2_CAMERA_INFO_MODULE_NAME) << " fps";
 
             ImGui::SameLine();
             ImGui::PushItemWidth(-1);
@@ -386,17 +388,17 @@ public:
 
         // Check which streams are live in current device
         auto live_streams = 0;
-        for (auto i = 0; i < RS_STREAM_COUNT; i++)
+        for (auto i = 0; i < RS2_STREAM_COUNT; i++)
         {
-            auto stream = static_cast<rs_stream>(i);
+            auto stream = static_cast<rs2_stream>(i);
             if (formats[stream].size() > 0)
                 live_streams++;
         }
 
         // Draw combo-box with all format options for current device
-        for (auto i = 0; i < RS_STREAM_COUNT; i++)
+        for (auto i = 0; i < RS2_STREAM_COUNT; i++)
         {
-            auto stream = static_cast<rs_stream>(i);
+            auto stream = static_cast<rs2_stream>(i);
 
             // Format
             if (formats[stream].size() == 0)
@@ -408,7 +410,7 @@ public:
             {
                 if (live_streams > 1)
                 {
-                    label = to_string() << rs_stream_to_string(stream);
+                    label = to_string() << rs2_stream_to_string(stream);
                     if (!show_single_fps_list)
                         label += " stream:";
 
@@ -423,9 +425,9 @@ public:
             {
                 if (show_single_fps_list) ImGui::SameLine();
 
-                label = to_string() << dev.get_camera_info(RS_CAMERA_INFO_DEVICE_NAME)
-                    << dev.get_camera_info(RS_CAMERA_INFO_MODULE_NAME)
-                    << " " << rs_stream_to_string(stream) << " format";
+                label = to_string() << dev.get_camera_info(RS2_CAMERA_INFO_DEVICE_NAME)
+                    << dev.get_camera_info(RS2_CAMERA_INFO_MODULE_NAME)
+                    << " " << rs2_stream_to_string(stream) << " format";
 
                 if (!show_single_fps_list)
                 {
@@ -451,9 +453,9 @@ public:
                     ImGui::Text("FPS:       ");
                     ImGui::SameLine();
 
-                    label = to_string() << dev.get_camera_info(RS_CAMERA_INFO_DEVICE_NAME)
-                        << dev.get_camera_info(RS_CAMERA_INFO_MODULE_NAME)
-                        << rs_stream_to_string(stream) << " fps";
+                    label = to_string() << dev.get_camera_info(RS2_CAMERA_INFO_DEVICE_NAME)
+                        << dev.get_camera_info(RS2_CAMERA_INFO_MODULE_NAME)
+                        << rs2_stream_to_string(stream) << " fps";
 
                     if (streaming)
                     {
@@ -472,11 +474,11 @@ public:
 
     bool is_selected_combination_supported()
     {
-        std::vector<rs::stream_profile> results;
+        std::vector<stream_profile> results;
 
-        for (auto i = 0; i < RS_STREAM_COUNT; i++)
+        for (auto i = 0; i < RS2_STREAM_COUNT; i++)
         {
-            auto stream = static_cast<rs_stream>(i);
+            auto stream = static_cast<rs2_stream>(i);
             if (stream_enabled[stream])
             {
                 auto width = res_values[selected_res_id].first;
@@ -500,16 +502,16 @@ public:
         return results.size() > 0;
     }
 
-    std::vector<rs::stream_profile> get_selected_profiles()
+    std::vector<stream_profile> get_selected_profiles()
     {
-        std::vector<rs::stream_profile> results;
+        std::vector<stream_profile> results;
 
         std::stringstream error_message;
         error_message << "The profile ";
 
-        for (auto i = 0; i < RS_STREAM_COUNT; i++)
+        for (auto i = 0; i < RS2_STREAM_COUNT; i++)
         {
-            auto stream = static_cast<rs_stream>(i);
+            auto stream = static_cast<rs2_stream>(i);
             if (stream_enabled[stream])
             {
                 auto width = res_values[selected_res_id].first;
@@ -524,9 +526,9 @@ public:
 
 
 
-                error_message << "\n{" << rs_stream_to_string(stream) << ","
+                error_message << "\n{" << rs2_stream_to_string(stream) << ","
                     << width << "x" << height << " at " << fps << "Hz, "
-                    << rs_format_to_string(format) << "} ";
+                    << rs2_format_to_string(format) << "} ";
 
                 for (auto&& p : profiles)
                 {
@@ -558,11 +560,11 @@ public:
         dev.close();
     }
 
-    void play(const std::vector<rs::stream_profile>& profiles)
+    void play(const std::vector<stream_profile>& profiles)
     {
         dev.open(profiles);
         try {
-            dev.start([&](rs::frame f){
+            dev.start([&](frame f){
                 auto stream_type = f.get_stream_type();
                 queues[(int)stream_type]->enqueue(std::move(f));
             });
@@ -583,12 +585,12 @@ public:
             next_option = 0;
             options_invalidated = false;
         }
-        if (next_option < RS_OPTION_COUNT)
+        if (next_option < RS2_OPTION_COUNT)
         {
-            auto& opt_md = options_metadata[static_cast<rs_option>(next_option)];
+            auto& opt_md = options_metadata[static_cast<rs2_option>(next_option)];
             opt_md.update(error_message);
 
-            if (next_option == RS_OPTION_ENABLE_AUTO_EXPOSURE)
+            if (next_option == RS2_OPTION_ENABLE_AUTO_EXPOSURE)
             {
                 auto old_ae_enabled = auto_exposure_enabled;
                 auto_exposure_enabled = opt_md.value > 0;
@@ -637,31 +639,31 @@ public:
         return false;
     }
 
-    rs::device dev;
+    device dev;
 
-    std::map<rs_option, option_model> options_metadata;
+    std::map<rs2_option, option_model> options_metadata;
     std::vector<std::string> resolutions;
-    std::map<rs_stream, std::vector<std::string>> fpses_per_stream;
+    std::map<rs2_stream, std::vector<std::string>> fpses_per_stream;
     std::vector<std::string> shared_fpses;
-    std::map<rs_stream, std::vector<std::string>> formats;
-    std::map<rs_stream, bool> stream_enabled;
+    std::map<rs2_stream, std::vector<std::string>> formats;
+    std::map<rs2_stream, bool> stream_enabled;
 
     int selected_res_id = 0;
-    std::map<rs_stream, int> selected_fps_id;
+    std::map<rs2_stream, int> selected_fps_id;
     int selected_shared_fps_id;
-    std::map<rs_stream, int> selected_format_id;
+    std::map<rs2_stream, int> selected_format_id;
 
     std::vector<std::pair<int, int>> res_values;
-    std::map<rs_stream, std::vector<int>> fps_values_per_stream;
+    std::map<rs2_stream, std::vector<int>> fps_values_per_stream;
     std::vector<int> shared_fps_values;
     bool show_single_fps_list = false;
-    std::map<rs_stream, std::vector<rs_format>> format_values;
+    std::map<rs2_stream, std::vector<rs2_format>> format_values;
 
-    std::vector<rs::stream_profile> profiles;
+    std::vector<stream_profile> profiles;
 
-    std::vector<std::unique_ptr<rs::frame_queue>> queues;
+    std::vector<std::unique_ptr<frame_queue>> queues;
     bool options_invalidated = false;
-    int next_option = RS_OPTION_COUNT;
+    int next_option = RS2_OPTION_COUNT;
     bool streaming = false;
 
     rect roi_rect;
@@ -724,7 +726,7 @@ private:
     mutable std::mutex _mtx;
 };
 
-typedef std::map<rs_stream, rect> streams_layout;
+typedef std::map<rs2_stream, rect> streams_layout;
 
 class stream_model
 {
@@ -732,22 +734,22 @@ public:
     rect layout;
     texture_buffer texture;
     float2 size;
-    rs_format format;
+    rs2_format format;
     std::chrono::high_resolution_clock::time_point last_frame;
     double timestamp;
     unsigned long long frame_number;
-    rs_timestamp_domain timestamp_domain;
+    rs2_timestamp_domain timestamp_domain;
     fps_calc fps;
     rect roi_display_rect;
     bool capturing_roi = false;
     std::shared_ptr<subdevice_model> dev;
 
-    void upload_frame(const rs::frame& f)
+    void upload_frame(const frame& f)
     {
         texture.upload(f);
         last_frame = std::chrono::high_resolution_clock::now();
 
-        auto is_motion = ((f.get_format() == RS_FORMAT_MOTION_RAW) || (f.get_format() == RS_FORMAT_MOTION_XYZ32F));
+        auto is_motion = ((f.get_format() == RS2_FORMAT_MOTION_RAW) || (f.get_format() == RS2_FORMAT_MOTION_XYZ32F));
         auto width = (is_motion) ? 640.f : f.get_width();
         auto height = (is_motion) ? 480.f : f.get_height();
 
@@ -840,7 +842,7 @@ public:
 
                     // Send it to firmware:
                     // Step 1: get rid of negative width / height
-                    rs::region_of_interest roi;
+                    region_of_interest roi;
                     roi.min_x = std::min(r.x, r.x + r.w);
                     roi.max_x = std::max(r.x, r.x + r.w);
                     roi.min_y = std::min(r.y, r.y + r.h);
@@ -851,7 +853,7 @@ public:
                         // Step 2: send it to firmware
                         dev->dev.set_region_of_interest(roi);
                     }
-                    catch (const rs::error& e)
+                    catch (const error& e)
                     {
                         error_message = error_to_string(e);
                         dev->auto_exposure_enabled = false;
@@ -873,7 +875,7 @@ public:
                         roi_display_rect = { 0, 0, 0, 0 };
                         dev->roi_rect = { 0, 0, 0, 0 };
                     }
-                    catch (const rs::error& e)
+                    catch (const error& e)
                     {
                         error_message = error_to_string(e);
                         dev->auto_exposure_enabled = false;
@@ -917,7 +919,7 @@ public:
 class device_model
 {
 public:
-    explicit device_model(rs::device& dev, std::string& error_message)
+    explicit device_model(device& dev, std::string& error_message)
     {
         for (auto&& sub : dev.get_adjacent_devices())
         {
@@ -927,12 +929,12 @@ public:
     }
 
 
-    std::map<rs_stream, rect> calc_layout(float x0, float y0, float width, float height)
+    std::map<rs2_stream, rect> calc_layout(float x0, float y0, float width, float height)
     {
-        std::vector<rs_stream> active_streams;
-        for (auto i = 0; i < RS_STREAM_COUNT; i++)
+        std::vector<rs2_stream> active_streams;
+        for (auto i = 0; i < RS2_STREAM_COUNT; i++)
         {
-            auto stream = static_cast<rs_stream>(i);
+            auto stream = static_cast<rs2_stream>(i);
             if (streams[stream].is_stream_visible())
             {
                 active_streams.push_back(stream);
@@ -945,7 +947,7 @@ public:
             if (it == end(active_streams)) fullscreen = false;
         }
 
-        std::map<rs_stream, rect> results;
+        std::map<rs2_stream, rect> results;
 
         if (fullscreen)
         {
@@ -977,18 +979,18 @@ public:
         return get_interpolated_layout(results);
     }
 
-    void upload_frame(const rs::frame& f)
+    void upload_frame(const frame& f)
     {
         streams[f.get_stream_type()].upload_frame(f);
     }
 
     std::vector<std::shared_ptr<subdevice_model>> subdevices;
-    std::map<rs_stream, stream_model> streams;
+    std::map<rs2_stream, stream_model> streams;
     bool fullscreen = false;
-    rs_stream selected_stream = RS_STREAM_ANY;
+    rs2_stream selected_stream = RS2_STREAM_ANY;
 
 private:
-    std::map<rs_stream, rect> get_interpolated_layout(const std::map<rs_stream, rect>& l)
+    std::map<rs2_stream, rect> get_interpolated_layout(const std::map<rs2_stream, rect>& l)
     {
         using namespace std::chrono;
         auto now = high_resolution_clock::now();
@@ -1005,7 +1007,7 @@ private:
         auto ms = duration_cast<milliseconds>(diff).count();
         auto t = smoothstep(static_cast<float>(ms), 0, 100);
 
-        std::map<rs_stream, rect> results;
+        std::map<rs2_stream, rect> results;
         for (auto&& kvp : l)
         {
             auto stream = kvp.first;
@@ -1088,7 +1090,7 @@ struct user_data
 int main(int, char**) try
 {
     // activate logging to console
-    rs::log_to_console(RS_LOG_SEVERITY_INFO);
+    log_to_console(RS2_LOG_SEVERITY_INFO);
 
     // Init GUI
     if (!glfwInit())
@@ -1102,7 +1104,7 @@ int main(int, char**) try
     ImVec4 clear_color = ImColor(10, 0, 0);
 
     // Create RealSense Context
-    rs::context ctx;
+    context ctx;
     auto device_index = 0;
     auto list = ctx.query_devices(); // Query RealSense connected devices list
 
@@ -1125,8 +1127,8 @@ int main(int, char**) try
         try
         {
             auto l = list[i];
-            auto name = l.get_camera_info(RS_CAMERA_INFO_DEVICE_NAME);              // retrieve device name
-            auto serial = l.get_camera_info(RS_CAMERA_INFO_DEVICE_SERIAL_NUMBER);   // retrieve device serial number
+            auto name = l.get_camera_info(RS2_CAMERA_INFO_DEVICE_NAME);              // retrieve device name
+            auto serial = l.get_camera_info(RS2_CAMERA_INFO_DEVICE_SERIAL_NUMBER);   // retrieve device serial number
             device_names.push_back(to_string() << name << " Sn#" << serial);        // push name and sn to list
         }
         catch (...)
@@ -1182,8 +1184,8 @@ int main(int, char**) try
         // *********************
         ImGui::Begin("Control Panel", nullptr, flags);
 
-        rs_error* e = nullptr;
-        label = to_string() << "VERSION: " << api_version_to_string(rs_get_api_version(&e));
+        rs2_error* e = nullptr;
+        label = to_string() << "VERSION: " << api_version_to_string(rs2_get_api_version(&e));
         ImGui::Text(label.c_str());
 
         // Device Details Menu - Elaborate details on connected devices
@@ -1208,7 +1210,7 @@ int main(int, char**) try
                     device_index = new_index;
                     model = device_model(dev, error_message);
                 }
-                catch (const rs::error& e)
+                catch (const error& e)
                 {
                     error_message = error_to_string(e);
                 }
@@ -1221,14 +1223,14 @@ int main(int, char**) try
 
 
             // Show all device details - name, module name, serial number, FW version and location
-            for (auto i = 0; i < RS_CAMERA_INFO_COUNT; i++)
+            for (auto i = 0; i < RS2_CAMERA_INFO_COUNT; i++)
             {
-                auto info = static_cast<rs_camera_info>(i);
+                auto info = static_cast<rs2_camera_info>(i);
                 if (dev.supports(info))
                 {
                     // retrieve info property
                     std::stringstream ss;
-                    ss << rs_camera_info_to_string(info) << ":";
+                    ss << rs2_camera_info_to_string(info) << ":";
                     auto line = ss.str();
                     ImGui::PushStyleColor(ImGuiCol_Text, { 1.0f, 1.0f, 1.0f, 0.5f });
                     ImGui::Text(line.c_str());
@@ -1302,7 +1304,7 @@ int main(int, char**) try
                         }
                     }
                 }
-                catch(const rs::error& e)
+                catch(const error& e)
                 {
                     error_message = error_to_string(e);
                 }
@@ -1316,7 +1318,7 @@ int main(int, char**) try
             for (auto&& sub : model.subdevices)
             {
 
-                label = to_string() << sub->dev.get_camera_info(RS_CAMERA_INFO_MODULE_NAME);
+                label = to_string() << sub->dev.get_camera_info(RS2_CAMERA_INFO_MODULE_NAME);
                 if (ImGui::CollapsingHeader(label.c_str(), nullptr, true, true))
                 {
                     sub->draw_stream_selection();
@@ -1325,7 +1327,7 @@ int main(int, char**) try
                     {
                         if (!sub->streaming)
                         {
-                            label = to_string() << "Start " << sub->dev.get_camera_info(RS_CAMERA_INFO_MODULE_NAME);
+                            label = to_string() << "Start " << sub->dev.get_camera_info(RS2_CAMERA_INFO_MODULE_NAME);
 
                             if (sub->is_selected_combination_supported())
                             {
@@ -1351,7 +1353,7 @@ int main(int, char**) try
                         }
                         else
                         {
-                            label = to_string() << "Stop " << sub->dev.get_camera_info(RS_CAMERA_INFO_MODULE_NAME);
+                            label = to_string() << "Stop " << sub->dev.get_camera_info(RS2_CAMERA_INFO_MODULE_NAME);
                             if (ImGui::Button(label.c_str()))
                             {
                                 sub->stop();
@@ -1362,7 +1364,7 @@ int main(int, char**) try
                             }
                         }
                     }
-                    catch(const rs::error& e)
+                    catch(const error& e)
                     {
                         error_message = error_to_string(e);
                     }
@@ -1371,9 +1373,9 @@ int main(int, char**) try
                         error_message = e.what();
                     }
 
-                    for (auto i = 0; i < RS_OPTION_COUNT; i++)
+                    for (auto i = 0; i < RS2_OPTION_COUNT; i++)
                     {
-                        auto opt = static_cast<rs_option>(i);
+                        auto opt = static_cast<rs2_option>(i);
                         auto&& metadata = sub->options_metadata[opt];
                         metadata.draw(error_message);
                     }
@@ -1417,13 +1419,13 @@ int main(int, char**) try
             {
                 try
                 {
-                    rs::frame f;
+                    frame f;
                     if (queue->poll_for_frame(&f))
                     {
                         model.upload_frame(f);
                     }
                 }
-                catch(const rs::error& e)
+                catch(const error& e)
                 {
                     error_message = error_to_string(e);
                      sub->stop();
@@ -1468,12 +1470,12 @@ int main(int, char**) try
             ImGui::PushStyleColor(ImGuiCol_WindowBg, { 0, 0, 0, 0 });
             ImGui::SetNextWindowPos({ stream_rect.x, stream_rect.y });
             ImGui::SetNextWindowSize({ stream_rect.w, stream_rect.h });
-            label = to_string() << "Stream of " << rs_stream_to_string(stream);
+            label = to_string() << "Stream of " << rs2_stream_to_string(stream);
             ImGui::Begin(label.c_str(), nullptr, flags);
 
-            label = to_string() << rs_stream_to_string(stream) << " "
+            label = to_string() << rs2_stream_to_string(stream) << " "
                 << stream_size.x << "x" << stream_size.y << ", "
-                << rs_format_to_string(model.streams[stream].format) << ", "
+                << rs2_format_to_string(model.streams[stream].format) << ", "
                 << "Frame# " << model.streams[stream].frame_number << ", "
                 << "FPS:";
 
@@ -1519,9 +1521,9 @@ int main(int, char**) try
 
             ImGui::SameLine();
             auto domain = model.streams[stream].timestamp_domain;
-            label = to_string() << rs_timestamp_domain_to_string(domain);
+            label = to_string() << rs2_timestamp_domain_to_string(domain);
 
-            if (domain == RS_TIMESTAMP_DOMAIN_SYSTEM_TIME)
+            if (domain == RS2_TIMESTAMP_DOMAIN_SYSTEM_TIME)
             {
                 ImGui::PushStyleColor(ImGuiCol_Text, { 1.0f, 0.0f, 0.0f, 1.0f });
                 ImGui::Text(label.c_str());
@@ -1548,7 +1550,7 @@ int main(int, char**) try
                 ImGui::PushStyleColor(ImGuiCol_WindowBg, { 0, 0, 0, 0 });
                 ImGui::SetNextWindowPos({ stream_rect.x, stream_rect.y + stream_rect.h - 25 });
                 ImGui::SetNextWindowSize({ stream_rect.w, 25 });
-                label = to_string() << "Footer for stream of " << rs_stream_to_string(stream);
+                label = to_string() << "Footer for stream of " << rs2_stream_to_string(stream);
                 ImGui::Begin(label.c_str(), nullptr, flags);
 
                 auto x = ((mouse.cursor.x - stream_rect.x) / stream_rect.w) * stream_size.x;
@@ -1579,7 +1581,7 @@ int main(int, char**) try
 
     return EXIT_SUCCESS;
 }
-catch (const rs::error & e)
+catch (const error & e)
 {
     std::cerr << "RealSense error calling " << e.get_failed_function() << "(" << e.get_failed_args() << "):\n    " << e.what() << std::endl;
     return EXIT_FAILURE;

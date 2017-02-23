@@ -19,7 +19,7 @@ namespace rsimpl
     class device;
     class option;
 
-    typedef std::function<void(rs_stream, rs_frame&, callback_invokation_holder)> on_before_frame_callback;
+    typedef std::function<void(rs2_stream, rs2_frame&, callback_invokation_holder)> on_before_frame_callback;
 
     struct region_of_interest
     {
@@ -44,7 +44,7 @@ namespace rsimpl
         endpoint(std::shared_ptr<uvc::time_service> ts)
             : _is_streaming(false),
               _is_opened(false),
-              _callback(nullptr, [](rs_frame_callback*) {}),
+              _callback(nullptr, [](rs2_frame_callback*) {}),
               _max_publish_list_size(16),
               _stream_profiles([this]() { return this->init_stream_profiles(); }),
               _ts(ts)
@@ -60,7 +60,7 @@ namespace rsimpl
 
         virtual void stop_streaming() = 0;
 
-        rs_frame* alloc_frame(size_t size, frame_additional_data additional_data) const;
+        rs2_frame* alloc_frame(size_t size, frame_additional_data additional_data) const;
 
         void invoke_callback(frame_holder frame) const;
 
@@ -82,14 +82,14 @@ namespace rsimpl
 
         virtual ~endpoint() = default;
 
-        option& get_option(rs_option id);
-        const option& get_option(rs_option id) const;
-        void register_option(rs_option id, std::shared_ptr<option> option);
-        bool supports_option(rs_option id) const;
+        option& get_option(rs2_option id);
+        const option& get_option(rs2_option id) const;
+        void register_option(rs2_option id, std::shared_ptr<option> option);
+        bool supports_option(rs2_option id) const;
 
-        const std::string& get_info(rs_camera_info info) const;
-        bool supports_info(rs_camera_info info) const;
-        void register_info(rs_camera_info info, const std::string& val);
+        const std::string& get_info(rs2_camera_info info) const;
+        bool supports_info(rs2_camera_info info) const;
+        void register_info(rs2_camera_info info, const std::string& val);
 
         void set_pose(pose p) { _pose = std::move(p); }
         const pose& get_pose() const { return _pose; }
@@ -121,11 +121,11 @@ namespace rsimpl
 
     private:
 
-        std::map<rs_option, std::shared_ptr<option>> _options;
+        std::map<rs2_option, std::shared_ptr<option>> _options;
         std::vector<native_pixel_format> _pixel_formats;
         lazy<std::vector<uvc::stream_profile>> _stream_profiles;
         pose _pose;
-        std::map<rs_camera_info, std::string> _camera_info;
+        std::map<rs2_camera_info, std::string> _camera_info;
         std::shared_ptr<region_of_interest_method> _roi_method = nullptr;
 
     };
@@ -136,7 +136,7 @@ namespace rsimpl
 
         virtual double get_frame_timestamp(const request_mapping& mode, const uvc::frame_object& fo) = 0;
         virtual unsigned long long get_frame_counter(const request_mapping& mode, const uvc::frame_object& fo) const = 0;
-        virtual rs_timestamp_domain get_frame_timestamp_domain(const request_mapping & mode, const uvc::frame_object& fo) const = 0;
+        virtual rs2_timestamp_domain get_frame_timestamp_domain(const request_mapping & mode, const uvc::frame_object& fo) const = 0;
         virtual void reset() = 0;
     };
 
@@ -145,12 +145,12 @@ namespace rsimpl
     public:
         explicit hid_endpoint(std::shared_ptr<uvc::hid_device> hid_device,
                               std::unique_ptr<frame_timestamp_reader> timestamp_reader,
-                              std::map<rs_stream, std::map<unsigned, unsigned>> fps_and_sampling_frequency_per_rs_stream,
+                              std::map<rs2_stream, std::map<unsigned, unsigned>> fps_and_sampling_frequency_per_rs2_stream,
                               std::vector<std::pair<std::string, stream_profile>> sensor_name_and_hid_profiles,
                               std::shared_ptr<uvc::time_service> ts)
             : endpoint(ts),_hid_device(hid_device),
               _timestamp_reader(std::move(timestamp_reader)),
-              _fps_and_sampling_frequency_per_rs_stream(fps_and_sampling_frequency_per_rs_stream),
+              _fps_and_sampling_frequency_per_rs2_stream(fps_and_sampling_frequency_per_rs2_stream),
               _sensor_name_and_hid_profiles(sensor_name_and_hid_profiles)
         {
             _hid_device->open();
@@ -174,11 +174,11 @@ namespace rsimpl
 
     private:
 
-        const std::map<rs_stream, uint32_t> stream_and_fourcc = {{RS_STREAM_GYRO,  'GYRO'},
-                                                                 {RS_STREAM_ACCEL, 'ACCL'}};
+        const std::map<rs2_stream, uint32_t> stream_and_fourcc = {{RS2_STREAM_GYRO,  'GYRO'},
+                                                                 {RS2_STREAM_ACCEL, 'ACCL'}};
 
         const std::vector<std::pair<std::string, stream_profile>> _sensor_name_and_hid_profiles;
-        std::map<rs_stream, std::map<uint32_t, uint32_t>> _fps_and_sampling_frequency_per_rs_stream;
+        std::map<rs2_stream, std::map<uint32_t, uint32_t>> _fps_and_sampling_frequency_per_rs2_stream;
         std::shared_ptr<uvc::hid_device> _hid_device;
         std::mutex _configure_lock;
         std::map<uint32_t, stream_profile> _configured_profiles;
@@ -192,13 +192,13 @@ namespace rsimpl
 
         std::vector<stream_profile> get_device_profiles();
 
-        uint32_t rs_stream_to_sensor_iio(rs_stream stream) const;
+        uint32_t rs2_stream_to_sensor_iio(rs2_stream stream) const;
 
         uint32_t get_iio_by_name(const std::string& name) const;
 
-        uint32_t stream_to_fourcc(rs_stream stream) const;
+        uint32_t stream_to_fourcc(rs2_stream stream) const;
 
-        uint32_t fps_to_sampling_frequency(rs_stream stream, uint32_t fps) const;
+        uint32_t fps_to_sampling_frequency(rs2_stream stream, uint32_t fps) const;
     };
 
     class uvc_endpoint : public endpoint, public std::enable_shared_from_this<uvc_endpoint>
@@ -232,7 +232,7 @@ namespace rsimpl
             return action(*_device);
         }
 
-        void register_pu(rs_option id);
+        void register_pu(rs2_option id);
 
         void register_on_before_frame_callback(on_before_frame_callback callback)
         {

@@ -33,15 +33,15 @@ private:
     void handle_special_key(const std::vector<uint8_t>& chars);
     char getch_nolock();
     void backspace(const int num_of_backspaces);
-    std::string chars_queue_to_string() const;
+    std::string chars2_queue_to_string() const;
     std::string get_last_word(const std::string& line) const;
     std::vector<std::string> search(const std::string& word) const;
 
     std::set<std::string> _dictionary;
     std::vector<std::string> _history_words;
     unsigned _history_words_index;
-    std::vector<char> _chars_queue;
-    int _num_of_chars_in_line;
+    std::vector<char> _chars2_queue;
+    int _num_of_chars2_in_line;
     unsigned _tab_index;
     std::vector<std::string> _finds_vec;
     bool _is_first_time_up_arrow;

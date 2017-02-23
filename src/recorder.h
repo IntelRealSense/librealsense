@@ -163,7 +163,7 @@ namespace rsimpl
                 save_list(list, hid_sensors, key.type, key.entity_id);
             }
 
-            void save_hid_sensors_inputs(std::vector<hid_sensor_input> list, lookup_key key)
+            void save_hid_sensors2_inputs(std::vector<hid_sensor_input> list, lookup_key key)
             {
                 save_list(list, hid_sensor_inputs, key.type, key.entity_id);
             }
@@ -192,7 +192,7 @@ namespace rsimpl
                 return load_list(hid_device_infos, c);
             }
 
-            std::vector<hid_sensor> load_hid_sensors_list(int entity_id)
+            std::vector<hid_sensor> load_hid_sensors2_list(int entity_id)
             {
                 auto&& c = find_call(call_type::hid_get_sensors, entity_id);
                 return load_list(hid_sensors, c);
@@ -245,9 +245,9 @@ namespace rsimpl
             void set_xu(const extension_unit& xu, uint8_t ctrl, const uint8_t* data, int len) override;
             void get_xu(const extension_unit& xu, uint8_t ctrl, uint8_t* data, int len) const override;
             control_range get_xu_range(const extension_unit& xu, uint8_t ctrl, int len) const override;
-            int get_pu(rs_option opt) const override;
-            void set_pu(rs_option opt, int value) override;
-            control_range get_pu_range(rs_option opt) const override;
+            int get_pu(rs2_option opt) const override;
+            void set_pu(rs2_option opt, int value) override;
+            control_range get_pu_range(rs2_option opt) const override;
             std::vector<stream_profile> get_profiles() const override;
             void lock() const override;
             void unlock() const override;
@@ -315,10 +315,10 @@ namespace rsimpl
             record_backend(std::shared_ptr<backend> source,
                 const char* filename,
                 const char* section,
-                rs_recording_mode mode);
+                rs2_recording_mode mode);
             ~record_backend();
 
-            rs_recording_mode get_mode() const { return _mode; }
+            rs2_recording_mode get_mode() const { return _mode; }
 
             template<class T>
             auto try_record(T t, int entity_id, call_type type) const
@@ -358,7 +358,7 @@ namespace rsimpl
             std::string _filename;
             std::string _section;
             std::shared_ptr<compression_algorithm> _compression;
-            rs_recording_mode _mode;
+            rs2_recording_mode _mode;
         };
 
         typedef std::vector<std::pair<stream_profile, frame_callback>> configurations;
@@ -377,9 +377,9 @@ namespace rsimpl
             void set_xu(const extension_unit& xu, uint8_t ctrl, const uint8_t* data, int len) override;
             void get_xu(const extension_unit& xu, uint8_t ctrl, uint8_t* data, int len) const override;
             control_range get_xu_range(const extension_unit& xu, uint8_t ctrl, int len) const override;
-            int get_pu(rs_option opt) const override;
-            void set_pu(rs_option opt, int value) override;
-            control_range get_pu_range(rs_option opt) const override;
+            int get_pu(rs2_option opt) const override;
+            void set_pu(rs2_option opt, int value) override;
+            control_range get_pu_range(rs2_option opt) const override;
             std::vector<stream_profile> get_profiles() const override;
             void lock() const override;
             void unlock() const override;

@@ -48,7 +48,7 @@ frame* frame_archive::publish_frame(frame&& frame)
     return new_frame;
 }
 
-rs_frame* frame_archive::clone_frame(rs_frame* frame)
+rs2_frame* frame_archive::clone_frame(rs2_frame* frame)
 {
     auto new_ref = detached_refs.allocate();
     if (new_ref)
@@ -58,7 +58,7 @@ rs_frame* frame_archive::clone_frame(rs_frame* frame)
     return new_ref;
 }
 
-void frame_archive::release_frame_ref(rs_frame* ref)
+void frame_archive::release_frame_ref(rs2_frame* ref)
 {
     detached_refs.deallocate(ref);
 }
@@ -101,14 +101,14 @@ frame frame_archive::alloc_frame(const size_t size, const frame_additional_data&
     return backbuffer;
 }
 
-rs_frame* frame_archive::track_frame(frame& f)
+rs2_frame* frame_archive::track_frame(frame& f)
 {
     std::unique_lock<std::recursive_mutex> lock(mutex);
 
     auto published_frame = f.publish(shared_from_this());
     if (published_frame)
     {
-        rs_frame new_ref(published_frame); // allocate new frame_ref to ref-counter the now published frame
+        rs2_frame new_ref(published_frame); // allocate new frame_ref to ref-counter the now published frame
         return clone_frame(&new_ref);
     }
 
@@ -171,12 +171,12 @@ frame* frame::publish(std::shared_ptr<frame_archive> new_owner)
     return owner->publish_frame(std::move(*this));
 }
 
-double frame::get_frame_metadata(rs_frame_metadata frame_metadata) const
+double frame::get_frame_metadata(rs2_frame_metadata frame_metadata) const
 {
     throw not_implemented_exception("unsupported metadata type");
 }
 
-bool frame::supports_frame_metadata(rs_frame_metadata frame_metadata) const
+bool frame::supports_frame_metadata(rs2_frame_metadata frame_metadata) const
 {
     return false;
 }
@@ -197,7 +197,7 @@ const byte* frame::get_frame_data() const
     return frame_data;
 }
 
-rs_timestamp_domain frame::get_frame_timestamp_domain() const
+rs2_timestamp_domain frame::get_frame_timestamp_domain() const
 {
     return additional_data.timestamp_domain;
 }
@@ -249,11 +249,11 @@ void frame::update_frame_callback_start_ts(std::chrono::high_resolution_clock::t
 }
 
 
-rs_format frame::get_format() const
+rs2_format frame::get_format() const
 {
     return additional_data.format;
 }
-rs_stream frame::get_stream_type() const
+rs2_stream frame::get_stream_type() const
 {
     return additional_data.stream_type;
 }
@@ -278,7 +278,7 @@ void frame_archive::log_frame_callback_end(frame* frame) const
     LOG_DEBUG("CallbackFinished," << rsimpl::get_string(frame->get_stream_type()) << "," << frame->get_frame_number() << ",DispatchedAt," << ts);
 }
 
-void rs_frame::log_callback_start(std::chrono::high_resolution_clock::time_point capture_start_time) const
+void rs2_frame::log_callback_start(std::chrono::high_resolution_clock::time_point capture_start_time) const
 {
     auto callback_start_time = std::chrono::high_resolution_clock::now();
     auto ts = std::chrono::duration_cast<std::chrono::milliseconds>(callback_start_time - capture_start_time).count();

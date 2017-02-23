@@ -1,15 +1,19 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
-#include <librealsense/rs.hpp>
-#include <librealsense/rsutil.hpp>
+#include <librealsense/rs2.hpp>
+#include <librealsense/rsutil2.hpp>
 #include "example.hpp"
 
 #include <iostream>
 #include <algorithm>
 #include <sstream>
 
-std::vector<texture_buffer> buffers;
+
+using namespace rs2;
+using namespace std;
+
+vector<texture_buffer> buffers;
 
 /***************
 
@@ -17,26 +21,26 @@ std::vector<texture_buffer> buffers;
 
 int main(int argc, char * argv[]) try
 {
-    rs::log_to_console(RS_LOG_SEVERITY_WARN);
+    log_to_console(RS2_LOG_SEVERITY_WARN);
 
-    rs::context ctx; // Create librealsense context
+    context ctx; // Create librealsense context
     auto devices = ctx.query_devices(); // Query the list of connected RealSense devices
     if (devices.size() == 0)
     {
-        throw std::runtime_error("No device detected. Is it plugged in?");
+        throw runtime_error("No device detected. Is it plugged in?");
     }
 
-    std::vector<rs::frame_queue> syncers;
+    vector<frame_queue> syncers;
 
     // Configure and start our devices
     for(auto&& dev : devices)
     {
-        std::cout << "Starting " << dev.get_camera_info(RS_CAMERA_INFO_DEVICE_NAME) << "... ";
+        cout << "Starting " << dev.get_camera_info(RS2_CAMERA_INFO_DEVICE_NAME) << "... ";
         auto modes = dev.get_stream_modes();
         dev.open(modes.back());
         syncers.emplace_back();
         dev.start(syncers.back());
-        std::cout << "done." << std::endl;
+        cout << "done." << endl;
     }
 
     // Depth and color
@@ -44,7 +48,7 @@ int main(int argc, char * argv[]) try
 
     // Open a GLFW window
     glfwInit();
-    std::ostringstream ss; ss << "CPP Multi-Camera Example";
+    ostringstream ss; ss << "CPP Multi-Camera Example";
     auto win = glfwCreateWindow(1280, 960, ss.str().c_str(), 0, 0);
     glfwMakeContextCurrent(win);
 
@@ -62,7 +66,7 @@ int main(int argc, char * argv[]) try
 
         for(int i = 0; i < syncers.size(); i++)
         {
-            rs::frame frame;
+            frame frame;
             if (syncers[i].poll_for_frame(&frame))
             {
                 buffers[i].upload(frame);
@@ -93,13 +97,13 @@ int main(int argc, char * argv[]) try
     glfwTerminate();
     return EXIT_SUCCESS;
 }
-catch(const rs::error & e)
+catch(const error & e)
 {
-    std::cerr << "RealSense error calling " << e.get_failed_function() << "(" << e.get_failed_args() << "):\n    " << e.what() << std::endl;
+    cerr << "RealSense error calling " << e.get_failed_function() << "(" << e.get_failed_args() << "):\n    " << e.what() << endl;
     return EXIT_FAILURE;
 }
-catch(const std::exception & e)
+catch(const exception & e)
 {
-    std::cerr << e.what() << std::endl;
+    cerr << e.what() << endl;
     return EXIT_FAILURE;
 }

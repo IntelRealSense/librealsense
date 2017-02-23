@@ -22,7 +22,7 @@ namespace rsimpl
             throw invalid_value_exception("resolution not found.");
         }
 
-        rs_intrinsics get_intrinsic_by_resolution(const vector<unsigned char> & raw_data, calibration_table_id table_id, uint32_t width, uint32_t height)
+        rs2_intrinsics get_intrinsic_by_resolution(const vector<unsigned char> & raw_data, calibration_table_id table_id, uint32_t width, uint32_t height)
         {
             switch (table_id)
             {
@@ -55,7 +55,7 @@ namespace rsimpl
                     << intrinsics_string(res_480_270));
 
                 auto resolution = width_height_to_ds5_rect_resolutions(width ,height);
-                rs_intrinsics intrinsics;
+                rs2_intrinsics intrinsics;
                 intrinsics.width = resolutions_list[resolution].x;
                 intrinsics.height = resolutions_list[resolution].y;
 
@@ -64,7 +64,7 @@ namespace rsimpl
                 intrinsics.fy = rect_params[1];
                 intrinsics.ppx = rect_params[2];
                 intrinsics.ppy = rect_params[3];
-                intrinsics.model = RS_DISTORTION_BROWN_CONRADY;
+                intrinsics.model = RS2_DISTORTION_BROWN_CONRADY;
                 memset(intrinsics.coeffs, 0, arr_size(intrinsics.coeffs));  // All coefficients are zeroed since rectified depth is defined as CS origin
                 return intrinsics;
             }

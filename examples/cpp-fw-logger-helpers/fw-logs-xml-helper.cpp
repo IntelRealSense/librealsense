@@ -8,7 +8,7 @@ using namespace std;
 
 namespace fw_logger
 {
-    fw_logs_xml_helper::fw_logs_xml_helper(std::string xml_full_file_path)
+    fw_logs_xml_helper::fw_logs_xml_helper(string xml_full_file_path)
         : _init_done(false),
           _xml_full_file_path(xml_full_file_path)
     {}

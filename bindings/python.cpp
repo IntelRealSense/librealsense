@@ -13,8 +13,8 @@
 // makes std::function conversions work
 #include <pybind11/functional.h>
 
-#include "../include/librealsense/rs.h"
-#include "../include/librealsense/rs.hpp"
+#include "../include/librealsense2/rs.h"
+#include "../include/librealsense2/rs.hpp"
 
 #define NAME pylibrealsense
 #define SNAME "pylibrealsense"

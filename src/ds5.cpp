@@ -106,7 +106,7 @@ namespace rsimpl
         return _hw_monitor->send(input);
     }
 
-    rs_intrinsics ds5_camera::get_intrinsics(unsigned int subdevice, stream_profile profile) const
+    rs2_intrinsics ds5_camera::get_intrinsics(unsigned int subdevice, stream_profile profile) const
     {
         if (subdevice >= get_endpoints_count())
             throw invalid_value_exception(to_string() << "Requested subdevice " <<
@@ -150,7 +150,7 @@ namespace rsimpl
 
         auto hid_ep = std::make_shared<hid_endpoint>(backend.create_hid_device(all_hid_infos.front()),
                                                                                std::unique_ptr<frame_timestamp_reader>(new ds5_hid_timestamp_reader()),
-                                                                               fps_and_sampling_frequency_per_rs_stream,
+                                                                               fps_and_sampling_frequency_per_rs2_stream,
                                                                                sensor_name_and_hid_profiles,
                                                                                backend.create_time_service());
         hid_ep->register_pixel_format(pf_accel_axes);
@@ -181,15 +181,15 @@ namespace rsimpl
         depth_ep->register_pixel_format(pf_yuyv); // Left Only
         depth_ep->register_pixel_format(pf_uyvyl); // Color from Depth
 
-        depth_ep->register_pu(RS_OPTION_GAIN);
+        depth_ep->register_pu(RS2_OPTION_GAIN);
 
         // TODO: These if conditions will be implemented as inheritance classes
         auto pid = all_device_infos.front().pid;
         if (pid == RS410A_PID || pid == RS450T_PID || pid == RS430C_PID)
         {
-            depth_ep->register_option(RS_OPTION_EMITTER_ENABLED, std::make_shared<emitter_option>(*depth_ep));
+            depth_ep->register_option(RS2_OPTION_EMITTER_ENABLED, std::make_shared<emitter_option>(*depth_ep));
 
-            depth_ep->register_option(RS_OPTION_LASER_POWER,
+            depth_ep->register_option(RS2_OPTION_LASER_POWER,
                 std::make_shared<uvc_xu_option<uint16_t>>(*depth_ep,
                     depth_xu,
                     DS5_LASER_POWER, "Manual laser power in mw. applicable only when laser power mode is set to Manual"));
@@ -205,14 +205,14 @@ namespace rsimpl
        auto ae_state = std::make_shared<auto_exposure_state>();
        auto auto_exposure = std::make_shared<auto_exposure_mechanism>(uvc_ep, *ae_state);
 
-       uvc_ep->register_option(RS_OPTION_ENABLE_AUTO_EXPOSURE,
+       uvc_ep->register_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE,
                                 std::make_shared<enable_auto_exposure_option>(uvc_ep,
                                                                              auto_exposure,
                                                                               ae_state));
-       uvc_ep->register_option(RS_OPTION_AUTO_EXPOSURE_MODE,
+       uvc_ep->register_option(RS2_OPTION_AUTO_EXPOSURE_MODE,
                                 std::make_shared<auto_exposure_mode_option>(auto_exposure,
                                                                             ae_state));
-       uvc_ep->register_option(RS_OPTION_AUTO_EXPOSURE_ANTIFLICKER_RATE,
+       uvc_ep->register_option(RS2_OPTION_AUTO_EXPOSURE_ANTIFLICKER_RATE,
                                std::make_shared<auto_exposure_antiflicker_rate_option>(auto_exposure,
                                                                                       ae_state));
     }
@@ -245,15 +245,15 @@ namespace rsimpl
         if (fw_version >= std::string("5.5.8"))
         {
             depth_ep.register_xu(ms_ctrl_depth_xu); // MS XU node
-            depth_ep.register_option(RS_OPTION_ENABLE_AUTO_EXPOSURE, std::make_shared<ms_xu_control_option>(depth_ep, ms_ctrl_depth_xu, MSXU_EXPOSURE)); // TODO - check if  ->register_xu can be reused
-            depth_ep.register_option(RS_OPTION_EXPOSURE, std::make_shared<ms_xu_data_option>(depth_ep, ms_ctrl_depth_xu, MSXU_EXPOSURE));
-            depth_ep.register_option(RS_OPTION_ENABLE_AUTO_WHITE_BALANCE, std::make_shared<ms_xu_control_option>(depth_ep, ms_ctrl_depth_xu, MSXU_WHITEBALANCE));
-            depth_ep.register_option(RS_OPTION_WHITE_BALANCE, std::make_shared<ms_xu_data_option>(depth_ep, ms_ctrl_depth_xu, MSXU_WHITEBALANCE));
+            depth_ep.register_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, std::make_shared<ms_xu_control_option>(depth_ep, ms_ctrl_depth_xu, MSXU_EXPOSURE)); // TODO - check if  ->register_xu can be reused
+            depth_ep.register_option(RS2_OPTION_EXPOSURE, std::make_shared<ms_xu_data_option>(depth_ep, ms_ctrl_depth_xu, MSXU_EXPOSURE));
+            depth_ep.register_option(RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE, std::make_shared<ms_xu_control_option>(depth_ep, ms_ctrl_depth_xu, MSXU_WHITEBALANCE));
+            depth_ep.register_option(RS2_OPTION_WHITE_BALANCE, std::make_shared<ms_xu_data_option>(depth_ep, ms_ctrl_depth_xu, MSXU_WHITEBALANCE));
         }
         else
         {
-            depth_ep.register_pu(RS_OPTION_ENABLE_AUTO_EXPOSURE);
-            depth_ep.register_option(RS_OPTION_EXPOSURE,
+            depth_ep.register_pu(RS2_OPTION_ENABLE_AUTO_EXPOSURE);
+            depth_ep.register_option(RS2_OPTION_EXPOSURE,
                 std::make_shared<uvc_xu_option<uint16_t>>(depth_ep,
                     depth_xu,
                     DS5_EXPOSURE, "Depth Exposure"));
@@ -283,8 +283,8 @@ namespace rsimpl
             fisheye_ep->register_xu(fisheye_xu); // make sure the XU is initialized everytime we power the camera
             fisheye_ep->register_pixel_format(pf_raw8);
             fisheye_ep->register_pixel_format(pf_fe_raw8_unpatched_kernel); // W/O for unpatched kernel
-            fisheye_ep->register_pu(RS_OPTION_GAIN);
-            fisheye_ep->register_option(RS_OPTION_EXPOSURE,
+            fisheye_ep->register_pu(RS2_OPTION_GAIN);
+            fisheye_ep->register_option(RS2_OPTION_EXPOSURE,
                 std::make_shared<uvc_xu_option<uint16_t>>(*fisheye_ep,
                     fisheye_xu,
                     FISHEYE_EXPOSURE, "Exposure time of Fisheye camera"));
@@ -297,12 +297,12 @@ namespace rsimpl
             auto hid_index = add_endpoint(create_hid_device(backend, hid_info));
             for (auto& elem : hid_info)
             {
-                std::map<rs_camera_info, std::string> camera_info = {{RS_CAMERA_INFO_DEVICE_NAME, device_name},
-                                                                     {RS_CAMERA_INFO_MODULE_NAME, "Motion Module"},
-                                                                     {RS_CAMERA_INFO_DEVICE_SERIAL_NUMBER, serial},
-                                                                     {RS_CAMERA_INFO_CAMERA_FIRMWARE_VERSION, fw_version},
-                                                                     {RS_CAMERA_INFO_DEVICE_LOCATION, elem.device_path},
-                                                                     {RS_CAMERA_INFO_DEVICE_DEBUG_OP_CODE, std::to_string(fw_cmd::GLD)}};
+                std::map<rs2_camera_info, std::string> camera_info = {{RS2_CAMERA_INFO_DEVICE_NAME, device_name},
+                                                                     {RS2_CAMERA_INFO_MODULE_NAME, "Motion Module"},
+                                                                     {RS2_CAMERA_INFO_DEVICE_SERIAL_NUMBER, serial},
+                                                                     {RS2_CAMERA_INFO_CAMERA_FIRMWARE_VERSION, fw_version},
+                                                                     {RS2_CAMERA_INFO_DEVICE_LOCATION, elem.device_path},
+                                                                     {RS2_CAMERA_INFO_DEVICE_DEBUG_OP_CODE, std::to_string(fw_cmd::GLD)}};
                 register_endpoint_info(hid_index, camera_info);
             }
         }
@@ -314,23 +314,23 @@ namespace rsimpl
         {
             if (element.mi == 0) // mi 0 is relate to DS5 device
             {
-                std::map<rs_camera_info, std::string> camera_info = {{RS_CAMERA_INFO_DEVICE_NAME, device_name},
-                                                                     {RS_CAMERA_INFO_MODULE_NAME, "Stereo Module"},
-                                                                     {RS_CAMERA_INFO_DEVICE_SERIAL_NUMBER, serial},
-                                                                     {RS_CAMERA_INFO_CAMERA_FIRMWARE_VERSION, fw_version},
-                                                                     {RS_CAMERA_INFO_DEVICE_LOCATION, element.device_path},
-                                                                     {RS_CAMERA_INFO_DEVICE_DEBUG_OP_CODE, std::to_string(fw_cmd::GLD)},
-                                                                     {RS_CAMERA_INFO_ADVANCED_MODE, ((advanced_mode)?"YES":"NO")}};
+                std::map<rs2_camera_info, std::string> camera_info = {{RS2_CAMERA_INFO_DEVICE_NAME, device_name},
+                                                                     {RS2_CAMERA_INFO_MODULE_NAME, "Stereo Module"},
+                                                                     {RS2_CAMERA_INFO_DEVICE_SERIAL_NUMBER, serial},
+                                                                     {RS2_CAMERA_INFO_CAMERA_FIRMWARE_VERSION, fw_version},
+                                                                     {RS2_CAMERA_INFO_DEVICE_LOCATION, element.device_path},
+                                                                     {RS2_CAMERA_INFO_DEVICE_DEBUG_OP_CODE, std::to_string(fw_cmd::GLD)},
+                                                                     {RS2_CAMERA_INFO_ADVANCED_MODE, ((advanced_mode)?"YES":"NO")}};
                 register_endpoint_info(_depth_device_idx, camera_info);
             }
             else if (fisheye_ep && element.pid == RS450T_PID && element.mi == 3) // mi 3 is related to Fisheye device
             {
-                std::map<rs_camera_info, std::string> camera_info = {{RS_CAMERA_INFO_DEVICE_NAME, device_name},
-                                                                     {RS_CAMERA_INFO_MODULE_NAME, "Fisheye Camera"},
-                                                                     {RS_CAMERA_INFO_DEVICE_SERIAL_NUMBER, serial},
-                                                                     {RS_CAMERA_INFO_CAMERA_FIRMWARE_VERSION, fw_version},
-                                                                     {RS_CAMERA_INFO_DEVICE_LOCATION, element.device_path},
-                                                                     {RS_CAMERA_INFO_DEVICE_DEBUG_OP_CODE, std::to_string(fw_cmd::GLD)}};
+                std::map<rs2_camera_info, std::string> camera_info = {{RS2_CAMERA_INFO_DEVICE_NAME, device_name},
+                                                                     {RS2_CAMERA_INFO_MODULE_NAME, "Fisheye Camera"},
+                                                                     {RS2_CAMERA_INFO_DEVICE_SERIAL_NUMBER, serial},
+                                                                     {RS2_CAMERA_INFO_CAMERA_FIRMWARE_VERSION, fw_version},
+                                                                     {RS2_CAMERA_INFO_DEVICE_LOCATION, element.device_path},
+                                                                     {RS2_CAMERA_INFO_DEVICE_DEBUG_OP_CODE, std::to_string(fw_cmd::GLD)}};
                 register_endpoint_info(fe_index, camera_info);
             }
         }

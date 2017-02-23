@@ -9514,7 +9514,7 @@ bool    ImFontAtlas::Build()
             TexHeight = ImMax(TexHeight, extra_rects[i].y + extra_rects[i].h);
 
     // Allocate packing character data and flag packed characters buffer as non-packed (x0=y0=x1=y1=0)
-    int buf_packedchars_n = 0, buf_rects_n = 0, buf_ranges_n = 0;
+    int buf_packedchars2_n = 0, buf_rects_n = 0, buf_ranges_n = 0;
     stbtt_packedchar* buf_packedchars = (stbtt_packedchar*)ImGui::MemAlloc(total_glyph_count * sizeof(stbtt_packedchar));
     stbrp_rect* buf_rects = (stbrp_rect*)ImGui::MemAlloc(total_glyph_count * sizeof(stbrp_rect));
     stbtt_pack_range* buf_ranges = (stbtt_pack_range*)ImGui::MemAlloc(total_glyph_range_count * sizeof(stbtt_pack_range));
@@ -9545,8 +9545,8 @@ bool    ImFontAtlas::Build()
             range.font_size = data.SizePixels;
             range.first_unicode_char_in_range = in_range[0];
             range.num_chars_in_range = (in_range[1] - in_range[0]) + 1;
-            range.chardata_for_range = buf_packedchars + buf_packedchars_n;
-            buf_packedchars_n += range.num_chars_in_range;
+            range.chardata_for_range = buf_packedchars + buf_packedchars2_n;
+            buf_packedchars2_n += range.num_chars_in_range;
         }
 
         // Pack
@@ -9561,7 +9561,7 @@ bool    ImFontAtlas::Build()
                 TexHeight = ImMax(TexHeight, data.Rects[i].y + data.Rects[i].h);
     }
     IM_ASSERT(buf_rects_n == total_glyph_count);
-    IM_ASSERT(buf_packedchars_n == total_glyph_count);
+    IM_ASSERT(buf_packedchars2_n == total_glyph_count);
     IM_ASSERT(buf_ranges_n == total_glyph_range_count);
 
     // Create texture

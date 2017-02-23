@@ -19,7 +19,7 @@ endmacro()
 # for failures should these constants be modified in future      #
 ##################################################################
 function(assign_version_property VER_COMPONENT)
-    file(STRINGS "./include/librealsense/rs.h" REALSENSE_VERSION_${VER_COMPONENT} REGEX "#define RS_API_${VER_COMPONENT}_VERSION")
+    file(STRINGS "./include/librealsense/rs2.h" REALSENSE_VERSION_${VER_COMPONENT} REGEX "#define RS2_API_${VER_COMPONENT}_VERSION")
     separate_arguments(REALSENSE_VERSION_${VER_COMPONENT})
     list(GET REALSENSE_VERSION_${VER_COMPONENT} -1 tmp)
     if (tmp LESS 0)
@@ -115,11 +115,11 @@ set(REALSENSE_CPP
 )
 
 set(REALSENSE_HPP
-    include/librealsense/rs.hpp
-    include/librealsense/rs.h
-    include/librealsense/rscore.hpp
-    include/librealsense/rsutil.h
-    include/librealsense/rsutil.hpp
+    include/librealsense/rs2.hpp
+    include/librealsense/rs2.h
+    include/librealsense/rscore2.hpp
+    include/librealsense/rsutil2.h
+    include/librealsense/rsutil2.hpp
 
     src/archive.h
     src/concurrency.h
@@ -165,11 +165,11 @@ if(WIN32)
         src/backend.h)
 
     source_group("Header Files\\API" FILES
-        include/librealsense/rs.hpp
-        include/librealsense/rs.h
-        include/librealsense/rscore.hpp
-        include/librealsense/rsutil.h
-        include/librealsense/rsutil.hpp
+        include/librealsense/rs2.hpp
+        include/librealsense/rs2.h
+        include/librealsense/rscore2.hpp
+        include/librealsense/rsutil2.h
+        include/librealsense/rsutil2.hpp
         CMake/realsense.def
         )
 
@@ -208,7 +208,7 @@ else()
 endif()
 
 if(WIN32)
-    set(BACKEND RS_USE_WMF_BACKEND)
+    set(BACKEND RS2_USE_WMF_BACKEND)
     set(REALSENSE_DEF CMake/realsense.def)
     # Makes VS15 find the DLL when trying to run examples/tests
     set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
@@ -217,9 +217,9 @@ if(WIN32)
 
     set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 elseif(APPLE)
-    set(BACKEND RS_USE_LIBUVC_BACKEND)
+    set(BACKEND RS2_USE_LIBUVC_BACKEND)
 else()
-    set(BACKEND RS_USE_V4L2_BACKEND)
+    set(BACKEND RS2_USE_V4L2_BACKEND)
 endif()
 add_definitions(-D${BACKEND} -DUNICODE)
 

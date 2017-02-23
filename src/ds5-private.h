@@ -101,12 +101,12 @@ namespace rsimpl {
         struct ds5_calibration
         {
             uint16_t        version;                        // major.minor
-            rs_intrinsics   left_imager_intrinsic;
-            rs_intrinsics   right_imager_intrinsic;
-            rs_intrinsics   depth_intrinsic[max_ds5_rect_resoluitons];
-            rs_extrinsics   left_imager_extrinsic;
-            rs_extrinsics   right_imager_extrinsic;
-            rs_extrinsics   depth_extrinsic;
+            rs2_intrinsics   left_imager_intrinsic;
+            rs2_intrinsics   right_imager_intrinsic;
+            rs2_intrinsics   depth_intrinsic[max_ds5_rect_resoluitons];
+            rs2_extrinsics   left_imager_extrinsic;
+            rs2_extrinsics   right_imager_extrinsic;
+            rs2_extrinsics   depth_extrinsic;
             std::map<calibration_table_id, bool> data_present;
 
             ds5_calibration() : version(0), left_imager_intrinsic({}), right_imager_intrinsic({}),
@@ -137,7 +137,7 @@ namespace rsimpl {
 
         ds5_rect_resolutions width_height_to_ds5_rect_resolutions(uint32_t width, uint32_t height);
 
-        rs_intrinsics get_intrinsic_by_resolution(const std::vector<unsigned char> & raw_data, calibration_table_id table_id, uint32_t width, uint32_t height);
+        rs2_intrinsics get_intrinsic_by_resolution(const std::vector<unsigned char> & raw_data, calibration_table_id table_id, uint32_t width, uint32_t height);
 
         bool try_fetch_usb_device(std::vector<uvc::usb_device_info>& devices,
                                          const uvc::uvc_device_info& info, uvc::usb_device_info& result);

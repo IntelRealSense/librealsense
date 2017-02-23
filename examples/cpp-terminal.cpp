@@ -1,7 +1,7 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
-#include <librealsense/rs.hpp>
+#include <librealsense/rs2.hpp>
 #include <iostream>
 #include <fstream>
 
@@ -11,6 +11,7 @@
 
 using namespace std;
 using namespace TCLAP;
+using namespace rs2;
 
 vector<uint8_t> build_raw_command_data(const command& command, const vector<string>& params)
 {
@@ -33,7 +34,7 @@ vector<uint8_t> build_raw_command_data(const command& command, const vector<stri
     return raw_data;
 }
 
-void xml_mode(const string& line, const commands_xml& cmd_xml, rs::device& dev, map<string, xml_parser_function>& format_type_to_lambda)
+void xml_mode(const string& line, const commands_xml& cmd_xml, device& dev, map<string, xml_parser_function>& format_type_to_lambda)
 {
     vector<string> tokens;
     stringstream ss(line);
@@ -81,7 +82,7 @@ void xml_mode(const string& line, const commands_xml& cmd_xml, rs::device& dev, 
     }
 }
 
-void hex_mode(const string& line, rs::device& dev)
+void hex_mode(const string& line, device& dev)
 {
     vector<uint8_t> raw_data;
     stringstream ss(line);
@@ -132,7 +133,7 @@ void read_hex_script_file(const string& full_file_path, vector<string>& hex_line
 
 int main(int argc, char** argv) try
 {
-    CmdLine cmd("librealsense cpp-terminal example tool", ' ', RS_API_VERSION_STR);
+    CmdLine cmd("librealsense cpp-terminal example tool", ' ', RS2_API_VERSION_STR);
     ValueArg<string> xml_arg("l", "load", "Full file path of commands XML file", false, "", "Load commands XML file");
     ValueArg<int> device_id_arg("d", "deviceId", "Device ID could be obtain from cpp-enumerate-devices example", false, 0, "Select a device to work with");
     ValueArg<string> hex_cmd_arg("s", "send", "Hexadecimal raw data", false, "", "Send hexadecimal raw data to device");
@@ -144,9 +145,9 @@ int main(int argc, char** argv) try
     cmd.parse(argc, argv);
 
     // parse command.xml
-    rs::log_to_file(RS_LOG_SEVERITY_WARN, "librealsense.log");
+    log_to_file(RS2_LOG_SEVERITY_WARN, "librealsense.log");
     // Obtain a list of devices currently present on the system
-    rs::context ctx;
+    context ctx;
     auto devices = ctx.query_devices();
     int device_count = devices.size();
     if (!device_count)
@@ -252,7 +253,7 @@ int main(int argc, char** argv) try
         cout << endl;
     }
 }
-catch (const rs::error & e)
+catch (const error & e)
 {
     cerr << "RealSense error calling " << e.get_failed_function() << "(" << e.get_failed_args() << "):\n    " << e.what() << endl;
     return EXIT_FAILURE;

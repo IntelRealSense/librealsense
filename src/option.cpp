@@ -41,19 +41,19 @@ const char* rsimpl::uvc_pu_option::get_description() const
 {
     switch(_id)
     {
-    case RS_OPTION_BACKLIGHT_COMPENSATION: return "Enable / disable backlight compensation";
-    case RS_OPTION_BRIGHTNESS: return "UVC image brightness";
-    case RS_OPTION_CONTRAST: return "UVC image contrast";
-    case RS_OPTION_EXPOSURE: return "Controls exposure time of color camera. Setting any value will disable auto exposure";
-    case RS_OPTION_GAIN: return "UVC image gain";
-    case RS_OPTION_GAMMA: return "UVC image gamma setting";
-    case RS_OPTION_HUE: return "UVC image hue";
-    case RS_OPTION_SATURATION: return "UVC image saturation setting";
-    case RS_OPTION_SHARPNESS: return "UVC image sharpness setting";
-    case RS_OPTION_WHITE_BALANCE: return "Controls white balance of color image. Setting any value will disable auto white balance";
-    case RS_OPTION_ENABLE_AUTO_EXPOSURE: return "Enable / disable auto-exposure";
-    case RS_OPTION_ENABLE_AUTO_WHITE_BALANCE: return "Enable / disable auto-white-balance";
-    default: return rs_option_to_string(_id);
+    case RS2_OPTION_BACKLIGHT_COMPENSATION: return "Enable / disable backlight compensation";
+    case RS2_OPTION_BRIGHTNESS: return "UVC image brightness";
+    case RS2_OPTION_CONTRAST: return "UVC image contrast";
+    case RS2_OPTION_EXPOSURE: return "Controls exposure time of color camera. Setting any value will disable auto exposure";
+    case RS2_OPTION_GAIN: return "UVC image gain";
+    case RS2_OPTION_GAMMA: return "UVC image gamma setting";
+    case RS2_OPTION_HUE: return "UVC image hue";
+    case RS2_OPTION_SATURATION: return "UVC image saturation setting";
+    case RS2_OPTION_SHARPNESS: return "UVC image sharpness setting";
+    case RS2_OPTION_WHITE_BALANCE: return "Controls white balance of color image. Setting any value will disable auto white balance";
+    case RS2_OPTION_ENABLE_AUTO_EXPOSURE: return "Enable / disable auto-exposure";
+    case RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE: return "Enable / disable auto-white-balance";
+    default: return rs2_option_to_string(_id);
     }
 }
 

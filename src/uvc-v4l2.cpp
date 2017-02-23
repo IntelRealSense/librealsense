@@ -1,7 +1,7 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
-#ifdef RS_USE_V4L2_BACKEND
+#ifdef RS2_USE_V4L2_BACKEND
 
 #include "backend.h"
 #include "types.h"
@@ -1084,22 +1084,22 @@ namespace rsimpl
                 closedir(dir);
             }
 
-            static uint32_t get_cid(rs_option option)
+            static uint32_t get_cid(rs2_option option)
             {
                 switch(option)
                 {
-                case RS_OPTION_BACKLIGHT_COMPENSATION: return V4L2_CID_BACKLIGHT_COMPENSATION;
-                case RS_OPTION_BRIGHTNESS: return V4L2_CID_BRIGHTNESS;
-                case RS_OPTION_CONTRAST: return V4L2_CID_CONTRAST;
-                case RS_OPTION_EXPOSURE: return V4L2_CID_EXPOSURE_ABSOLUTE; // Is this actually valid? I'm getting a lot of VIDIOC error 22s...
-                case RS_OPTION_GAIN: return V4L2_CID_GAIN;
-                case RS_OPTION_GAMMA: return V4L2_CID_GAMMA;
-                case RS_OPTION_HUE: return V4L2_CID_HUE;
-                case RS_OPTION_SATURATION: return V4L2_CID_SATURATION;
-                case RS_OPTION_SHARPNESS: return V4L2_CID_SHARPNESS;
-                case RS_OPTION_WHITE_BALANCE: return V4L2_CID_WHITE_BALANCE_TEMPERATURE;
-                case RS_OPTION_ENABLE_AUTO_EXPOSURE: return V4L2_CID_EXPOSURE_AUTO; // Automatic gain/exposure control
-                case RS_OPTION_ENABLE_AUTO_WHITE_BALANCE: return V4L2_CID_AUTO_WHITE_BALANCE;
+                case RS2_OPTION_BACKLIGHT_COMPENSATION: return V4L2_CID_BACKLIGHT_COMPENSATION;
+                case RS2_OPTION_BRIGHTNESS: return V4L2_CID_BRIGHTNESS;
+                case RS2_OPTION_CONTRAST: return V4L2_CID_CONTRAST;
+                case RS2_OPTION_EXPOSURE: return V4L2_CID_EXPOSURE_ABSOLUTE; // Is this actually valid? I'm getting a lot of VIDIOC error 22s...
+                case RS2_OPTION_GAIN: return V4L2_CID_GAIN;
+                case RS2_OPTION_GAMMA: return V4L2_CID_GAMMA;
+                case RS2_OPTION_HUE: return V4L2_CID_HUE;
+                case RS2_OPTION_SATURATION: return V4L2_CID_SATURATION;
+                case RS2_OPTION_SHARPNESS: return V4L2_CID_SHARPNESS;
+                case RS2_OPTION_WHITE_BALANCE: return V4L2_CID_WHITE_BALANCE_TEMPERATURE;
+                case RS2_OPTION_ENABLE_AUTO_EXPOSURE: return V4L2_CID_EXPOSURE_AUTO; // Automatic gain/exposure control
+                case RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE: return V4L2_CID_AUTO_WHITE_BALANCE;
                 default: throw linux_backend_exception(to_string() << "no v4l2 cid for option " << option);
                 }
             }
@@ -1581,30 +1581,30 @@ namespace rsimpl
                return result;
             }
 
-            int get_pu(rs_option opt) const override
+            int get_pu(rs2_option opt) const override
             {
                 struct v4l2_control control = {get_cid(opt), 0};
                 if (xioctl(_fd, VIDIOC_G_CTRL, &control) < 0)
                     throw linux_backend_exception("xioctl(VIDIOC_G_CTRL) failed");
 
-                if (RS_OPTION_ENABLE_AUTO_EXPOSURE==opt)  { control.value = (V4L2_EXPOSURE_MANUAL==control.value) ? 0 : 1; }
+                if (RS2_OPTION_ENABLE_AUTO_EXPOSURE==opt)  { control.value = (V4L2_EXPOSURE_MANUAL==control.value) ? 0 : 1; }
                 return control.value;
             }
 
-            void set_pu(rs_option opt, int value) override
+            void set_pu(rs2_option opt, int value) override
             {
                 struct v4l2_control control = {get_cid(opt), value};
-                if (RS_OPTION_ENABLE_AUTO_EXPOSURE==opt) { control.value = value ? V4L2_EXPOSURE_APERTURE_PRIORITY : V4L2_EXPOSURE_MANUAL; }
+                if (RS2_OPTION_ENABLE_AUTO_EXPOSURE==opt) { control.value = value ? V4L2_EXPOSURE_APERTURE_PRIORITY : V4L2_EXPOSURE_MANUAL; }
                 if (xioctl(_fd, VIDIOC_S_CTRL, &control) < 0)
                     throw linux_backend_exception("xioctl(VIDIOC_S_CTRL) failed");
             }
 
-            control_range get_pu_range(rs_option option) const override
+            control_range get_pu_range(rs2_option option) const override
             {
                 control_range range{};
 
                 // Auto controls range is trimed to {0,1} range
-                if(option >= RS_OPTION_ENABLE_AUTO_EXPOSURE && option <= RS_OPTION_ENABLE_AUTO_WHITE_BALANCE)
+                if(option >= RS2_OPTION_ENABLE_AUTO_EXPOSURE && option <= RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE)
                 {
                     range.min  = 0;
                     range.max  = 1;

@@ -36,9 +36,9 @@ namespace rsimpl
             frame->get()->get_owner()->release_frame_ref(frame);
     }
 
-    const char * get_string(rs_exception_type value)
+    const char * get_string(rs2_exception_type value)
     {
-        #define CASE(X) case RS_EXCEPTION_TYPE_##X: return #X;
+        #define CASE(X) case RS2_EXCEPTION_TYPE_##X: return #X;
         switch(value)
         {
         CASE(UNKNOWN)
@@ -53,9 +53,9 @@ namespace rsimpl
         #undef CASE
     }
 
-    const char * get_string(rs_stream value)
+    const char * get_string(rs2_stream value)
     {
-        #define CASE(X) case RS_STREAM_##X: return #X;
+        #define CASE(X) case RS2_STREAM_##X: return #X;
         switch(value)
         {
         CASE(ANY)
@@ -71,9 +71,9 @@ namespace rsimpl
         #undef CASE
     }
 
-    const char * get_string(rs_visual_preset value)
+    const char * get_string(rs2_visual_preset value)
     {
-        #define CASE(X) case RS_VISUAL_PRESET_##X: return #X;
+        #define CASE(X) case RS2_VISUAL_PRESET_##X: return #X;
         switch (value)
         {
             CASE(SHORT_RANGE)
@@ -92,9 +92,9 @@ namespace rsimpl
         #undef CASE
     }
 
-    const char * get_string(rs_option value)
+    const char * get_string(rs2_option value)
     {
-        #define CASE(X) case RS_OPTION_##X: return #X;
+        #define CASE(X) case RS2_OPTION_##X: return #X;
         switch(value)
         {
         CASE(BACKLIGHT_COMPENSATION)
@@ -125,9 +125,9 @@ namespace rsimpl
         #undef CASE
     }
 
-    const char * get_string(rs_format value)
+    const char * get_string(rs2_format value)
     {
-        #define CASE(X) case RS_FORMAT_##X: return #X;
+        #define CASE(X) case RS2_FORMAT_##X: return #X;
         switch(value)
         {
         CASE(ANY)
@@ -152,9 +152,9 @@ namespace rsimpl
         #undef CASE
     }
 
-    const char * get_string(rs_distortion value)
+    const char * get_string(rs2_distortion value)
     {
-        #define CASE(X) case RS_DISTORTION_##X: return #X;
+        #define CASE(X) case RS2_DISTORTION_##X: return #X;
         switch(value)
         {
         CASE(NONE)
@@ -168,9 +168,9 @@ namespace rsimpl
     }
 
 
-    const char * get_string(rs_camera_info value)
+    const char * get_string(rs2_camera_info value)
     {
-        #define CASE(X) case RS_CAMERA_INFO_##X: return #X;
+        #define CASE(X) case RS2_CAMERA_INFO_##X: return #X;
         switch(value)
         {
         CASE(DEVICE_NAME)
@@ -185,9 +185,9 @@ namespace rsimpl
         #undef CASE
     }
 
-    const char * get_string(rs_timestamp_domain value)
+    const char * get_string(rs2_timestamp_domain value)
     {
-        #define CASE(X) case RS_TIMESTAMP_DOMAIN_##X: return #X;
+        #define CASE(X) case RS2_TIMESTAMP_DOMAIN_##X: return #X;
         switch (value)
         {
         CASE(HARDWARE_CLOCK)
@@ -266,21 +266,21 @@ namespace rsimpl
         return rot_mat;
     }
 
-    calibration_validator::calibration_validator(std::function<bool(rs_stream, rs_stream)> extrinsic_validator, std::function<bool(rs_stream)> intrinsic_validator)
+    calibration_validator::calibration_validator(std::function<bool(rs2_stream, rs2_stream)> extrinsic_validator, std::function<bool(rs2_stream)> intrinsic_validator)
         : extrinsic_validator(extrinsic_validator), intrinsic_validator(intrinsic_validator)
     {
     }
 
     calibration_validator::calibration_validator()
-        : extrinsic_validator([](rs_stream, rs_stream) { return true; }), intrinsic_validator([](rs_stream) { return true; })
+        : extrinsic_validator([](rs2_stream, rs2_stream) { return true; }), intrinsic_validator([](rs2_stream) { return true; })
     {
     }
 
-    bool calibration_validator::validate_extrinsics(rs_stream from_stream, rs_stream to_stream) const
+    bool calibration_validator::validate_extrinsics(rs2_stream from_stream, rs2_stream to_stream) const
     {
         return extrinsic_validator(from_stream, to_stream);
     }
-    bool calibration_validator::validate_intrinsics(rs_stream stream) const
+    bool calibration_validator::validate_intrinsics(rs2_stream stream) const
     {
         return intrinsic_validator(stream);
     }

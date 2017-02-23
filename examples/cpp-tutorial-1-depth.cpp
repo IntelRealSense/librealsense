@@ -6,28 +6,30 @@
 /////////////////////////////////////////////////////
 
 // First include the librealsense C++ header file
-#include <librealsense/rs.hpp>
+#include <librealsense/rs2.hpp>
 #include <cstdio>
+
+using namespace rs2;
 
 int main() try
 {
     // Create a context object. This object owns the handles to all connected realsense devices.
-    rs::context ctx;
+    context ctx;
     auto devices = ctx.query_devices();
     printf("There are %u connected RealSense devices.\n", devices.size());
     if(devices.size() == 0) return EXIT_FAILURE;
 
     // This tutorial will access only a single device, but it is trivial to extend to multiple devices
     auto dev = devices[0];
-    printf("\nUsing device 0, an %s\n", dev.get_camera_info(RS_CAMERA_INFO_DEVICE_NAME));
-    printf("    Serial number: %s\n", dev.get_camera_info(RS_CAMERA_INFO_DEVICE_SERIAL_NUMBER));
-    printf("    Firmware version: %s\n", dev.get_camera_info(RS_CAMERA_INFO_CAMERA_FIRMWARE_VERSION));
+    printf("\nUsing device 0, an %s\n", dev.get_camera_info(RS2_CAMERA_INFO_DEVICE_NAME));
+    printf("    Serial number: %s\n", dev.get_camera_info(RS2_CAMERA_INFO_DEVICE_SERIAL_NUMBER));
+    printf("    Firmware version: %s\n", dev.get_camera_info(RS2_CAMERA_INFO_CAMERA_FIRMWARE_VERSION));
 
     // Configure depth to run at VGA resolution at 30 frames per second
-    dev.open({ RS_STREAM_DEPTH, 640, 480, 30, RS_FORMAT_Z16 });
+    dev.open({ RS2_STREAM_DEPTH, 640, 480, 30, RS2_FORMAT_Z16 });
 
     // Configure frame queue of size one and start streaming into it
-    rs::frame_queue queue(1);
+    frame_queue queue(1);
     dev.start(queue);
 
     // Determine depth value corresponding to one meter
@@ -71,10 +73,10 @@ int main() try
 
     return EXIT_SUCCESS;
 }
-catch(const rs::error & e)
+catch(const error & e)
 {
-    // Method calls against librealsense objects may throw exceptions of type rs::error
-    printf("rs::error was thrown when calling %s(%s):\n", e.get_failed_function().c_str(), e.get_failed_args().c_str());
+    // Method calls against librealsense objects may throw exceptions of type error
+    printf("error was thrown when calling %s(%s):\n", e.get_failed_function().c_str(), e.get_failed_args().c_str());
     printf("    %s\n", e.what());
     return EXIT_FAILURE;
 }

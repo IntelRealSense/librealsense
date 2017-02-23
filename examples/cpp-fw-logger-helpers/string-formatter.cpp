@@ -18,7 +18,7 @@ namespace fw_logger
 
     bool string_formatter::generate_message(const string& source, int num_of_params, const uint32_t* params, string* dest)
     {
-        std::map<string, string> exp_replace_map;
+        map<string, string> exp_replace_map;
 
         if (params == nullptr && num_of_params > 0) return false;
 
@@ -41,7 +41,7 @@ namespace fw_logger
             st_regular_exp[1] << "\\{\\b(" << i << "):x\\}";
             regular_exp[1] = st_regular_exp[1].str();
 
-            st_replacement[1] << std::hex << std::setw(2) << std::setfill('0') << params[i];
+            st_replacement[1] << hex << setw(2) << setfill('0') << params[i];
             replacement[1] = st_replacement[1].str();
 
             exp_replace_map[regular_exp[1]] = replacement[1];
@@ -50,7 +50,7 @@ namespace fw_logger
         return replace_params(source, exp_replace_map, dest);
     }
 
-    bool string_formatter::replace_params(const string& source, const std::map<string, string>& exp_replace_map, string* dest) const
+    bool string_formatter::replace_params(const string& source, const map<string, string>& exp_replace_map, string* dest) const
     {
         string source_temp(source);
 

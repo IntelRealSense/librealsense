@@ -8,7 +8,7 @@ using namespace std;
 
 namespace fw_logger
 {
-    fw_logs_parser::fw_logs_parser(std::string xml_full_file_path)
+    fw_logs_parser::fw_logs_parser(string xml_full_file_path)
         : _fw_logs_formating_options(xml_full_file_path),
           _last_timestamp(0),
           _timestamp_factor(0.00001)

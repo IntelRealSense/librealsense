@@ -54,9 +54,9 @@ namespace rsimpl
             void get_xu(const extension_unit& xu, uint8_t ctrl, uint8_t* data, int len) const override;
             control_range get_xu_range(const extension_unit& xu, uint8_t ctrl, int len) const override;
 
-            int get_pu(rs_option opt) const override;
-            void set_pu(rs_option opt, int value) override;
-            control_range get_pu_range(rs_option opt) const override;
+            int get_pu(rs2_option opt) const override;
+            void set_pu(rs2_option opt, int value) override;
+            control_range get_pu_range(rs2_option opt) const override;
 
             void lock() const override { _systemwide_lock.lock(); }
             void unlock() const override { _systemwide_lock.unlock(); }

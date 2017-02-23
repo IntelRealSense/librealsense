@@ -4,9 +4,10 @@
 #include <locale>
 #include <string>
 
+using namespace std;
 
 # define SET_WIDTH_AND_FILL(num, element) \
-std::setfill(' ')<< std::setw(num)<<std::left<<element \
+setfill(' ') << setw(num) << left << element \
 
 namespace fw_logger
 {
@@ -34,9 +35,9 @@ namespace fw_logger
     }
 
 
-    std::string fw_log_data::to_string()
+    string fw_log_data::to_string()
     {
-        std::stringstream fmt;
+        stringstream fmt;
 
         fmt << SET_WIDTH_AND_FILL(6, sequence)
             << SET_WIDTH_AND_FILL(30, file_name)

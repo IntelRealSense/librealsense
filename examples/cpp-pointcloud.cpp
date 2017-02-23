@@ -1,8 +1,8 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
-#include <librealsense/rs.hpp>
-#include <librealsense/rsutil.hpp>
+#include <librealsense/rs2.hpp>
+#include <librealsense/rsutil2.hpp>
 #include "example.hpp"
 
 #include <chrono>
@@ -11,25 +11,28 @@
 #include <iostream>
 #include <algorithm>
 
+using namespace rs2;
+using namespace std;
+
 inline void glVertex(const float3 & vertex) { glVertex3fv(&vertex.x); }
 inline void glTexCoord(const float2 & tex_coord) { glTexCoord2fv(&tex_coord.x); }
 
-struct state { double yaw, pitch, lastX, lastY; bool ml; rs::device * dev; };
+struct state { double yaw, pitch, lastX, lastY; bool ml; device * dev; };
 
-template<class MAP_DEPTH> void deproject_depth(float * points, const rs_intrinsics & intrin, const uint16_t * depth, MAP_DEPTH map_depth)
+template<class MAP_DEPTH> void deproject_depth(float * points, const rs2_intrinsics & intrin, const uint16_t * depth, MAP_DEPTH map_depth)
 {
     for (int y = 0; y<intrin.height; ++y)
     {
         for (int x = 0; x<intrin.width; ++x)
         {
             const float pixel[] = { (float)x, (float)y };
-            rs_deproject_pixel_to_point(points, &intrin, pixel, map_depth(*depth++));
+            rs2_deproject_pixel_to_point(points, &intrin, pixel, map_depth(*depth++));
             points += 3;
         }
     }
 }
 
-const float3 * depth_to_points(std::vector<uint8_t> &image, const rs_intrinsics &depth_intrinsics, const uint16_t * depth_image, float depth_scale)
+const float3 * depth_to_points(vector<uint8_t> &image, const rs2_intrinsics &depth_intrinsics, const uint16_t * depth_image, float depth_scale)
 {
     image.resize(depth_intrinsics.width * depth_intrinsics.height * 12);
 
@@ -38,43 +41,43 @@ const float3 * depth_to_points(std::vector<uint8_t> &image, const rs_intrinsics 
     return reinterpret_cast<float3 *>(image.data());
 }
 
-float3 transform(const rs_extrinsics *extrin, const float3 &point) { float3 p = {}; rs_transform_point_to_point(&p.x, extrin, &point.x); return p; }
-float2 project(const rs_intrinsics *intrin, const float3 & point) { float2 pixel = {}; rs_project_point_to_pixel(&pixel.x, intrin, &point.x); return pixel; }
-float2 pixel_to_texcoord(const rs_intrinsics *intrin, const float2 & pixel) { return{ (pixel.x + 0.5f) / intrin->width, (pixel.y + 0.5f) / intrin->height }; }
-float2 project_to_texcoord(const rs_intrinsics *intrin, const float3 & point) { return pixel_to_texcoord(intrin, project(intrin, point)); }
+float3 transform(const rs2_extrinsics *extrin, const float3 &point) { float3 p = {}; rs2_transform_point_to_point(&p.x, extrin, &point.x); return p; }
+float2 project(const rs2_intrinsics *intrin, const float3 & point) { float2 pixel = {}; rs2_project_point_to_pixel(&pixel.x, intrin, &point.x); return pixel; }
+float2 pixel_to_texcoord(const rs2_intrinsics *intrin, const float2 & pixel) { return{ (pixel.x + 0.5f) / intrin->width, (pixel.y + 0.5f) / intrin->height }; }
+float2 project_to_texcoord(const rs2_intrinsics *intrin, const float3 & point) { return pixel_to_texcoord(intrin, project(intrin, point)); }
 
 int main(int argc, char * argv[]) try
 {
-    rs::log_to_console(RS_LOG_SEVERITY_WARN);
-    //rs::log_to_file(rs::log_severity::debug, "librealsense.log");
+    log_to_console(RS2_LOG_SEVERITY_WARN);
+    //log_to_file(log_severity::debug, "librealsense.log");
 
-    rs::context ctx;
+    context ctx;
     auto list = ctx.query_devices();
     if (list.size() == 0)
-        throw std::runtime_error("No device detected. Is it plugged in?");
+        throw runtime_error("No device detected. Is it plugged in?");
 
     auto dev = list[0];
 
     // Configure streams to run at 30 frames per second
-    rs::util::config config;
-    config.enable_stream(RS_STREAM_DEPTH, rs::preset::best_quality);
+    util::config config;
+    config.enable_stream(RS2_STREAM_DEPTH, preset::best_quality);
 
     // try to open color stream, but fall back to IR if the camera doesn't support it
-    rs_stream mapped;
-    if (config.can_enable_stream(dev, RS_STREAM_COLOR, rs::preset::best_quality)) {
-        mapped = RS_STREAM_COLOR;
-        config.enable_stream(RS_STREAM_COLOR, rs::preset::best_quality);
+    rs2_stream mapped;
+    if (config.can_enable_stream(dev, RS2_STREAM_COLOR, preset::best_quality)) {
+        mapped = RS2_STREAM_COLOR;
+        config.enable_stream(RS2_STREAM_COLOR, preset::best_quality);
     }
-    else if (config.can_enable_stream(dev, RS_STREAM_INFRARED, 0, 0, 0, RS_FORMAT_RGB8)) {
-        mapped = RS_STREAM_INFRARED;
-        config.enable_stream(RS_STREAM_INFRARED, 0, 0, 0, RS_FORMAT_RGB8);
+    else if (config.can_enable_stream(dev, RS2_STREAM_INFRARED, 0, 0, 0, RS2_FORMAT_RGB8)) {
+        mapped = RS2_STREAM_INFRARED;
+        config.enable_stream(RS2_STREAM_INFRARED, 0, 0, 0, RS2_FORMAT_RGB8);
     }
-    else if (config.can_enable_stream(dev, RS_STREAM_INFRARED, rs::preset::best_quality)) {
-        mapped = RS_STREAM_INFRARED;
-        config.enable_stream(RS_STREAM_INFRARED, rs::preset::best_quality);
+    else if (config.can_enable_stream(dev, RS2_STREAM_INFRARED, preset::best_quality)) {
+        mapped = RS2_STREAM_INFRARED;
+        config.enable_stream(RS2_STREAM_INFRARED, preset::best_quality);
     }
     else {
-        throw std::runtime_error("Couldn't configure camera for demo");
+        throw runtime_error("Couldn't configure camera for demo");
     }
 
     auto stream = config.open(dev);
@@ -82,7 +85,7 @@ int main(int argc, char * argv[]) try
     state app_state = {0, 0, 0, 0, false, &dev};
 
     glfwInit();
-    std::ostringstream ss; ss << "CPP Point Cloud Example (" << dev.get_camera_info(RS_CAMERA_INFO_DEVICE_NAME) << ")";
+    ostringstream ss; ss << "CPP Point Cloud Example (" << dev.get_camera_info(RS2_CAMERA_INFO_DEVICE_NAME) << ")";
     GLFWwindow * win = glfwCreateWindow(640, 480, ss.str().c_str(), 0, 0);
     glfwSetWindowUserPointer(win, &app_state);
 
@@ -98,30 +101,30 @@ int main(int argc, char * argv[]) try
         if(s->ml)
         {
             s->yaw -= (x - s->lastX);
-            s->yaw = std::max(s->yaw, -120.0);
-            s->yaw = std::min(s->yaw, +120.0);
+            s->yaw = max(s->yaw, -120.0);
+            s->yaw = min(s->yaw, +120.0);
             s->pitch += (y - s->lastY);
-            s->pitch = std::max(s->pitch, -80.0);
-            s->pitch = std::min(s->pitch, +80.0);
+            s->pitch = max(s->pitch, -80.0);
+            s->pitch = min(s->pitch, +80.0);
         }
         s->lastX = x;
         s->lastY = y;
     });
 
-    rs::util::syncer syncer;
+    util::syncer syncer;
     stream.start(syncer);
 
     glfwMakeContextCurrent(win);
     texture_buffer mapped_tex;
     const uint16_t * depth;
 
-    const rs_extrinsics extrin = stream.get_extrinsics(RS_STREAM_DEPTH, mapped);
-    const rs_intrinsics depth_intrin = stream.get_intrinsics(RS_STREAM_DEPTH);
-    const rs_intrinsics mapped_intrin = stream.get_intrinsics(mapped);
+    const rs2_extrinsics extrin = stream.get_extrinsics(RS2_STREAM_DEPTH, mapped);
+    const rs2_intrinsics depth_intrin = stream.get_intrinsics(RS2_STREAM_DEPTH);
+    const rs2_intrinsics mapped_intrin = stream.get_intrinsics(mapped);
 
 
     int frame_count = 0; float time = 0, fps = 0;
-    auto t0 = std::chrono::high_resolution_clock::now();
+    auto t0 = chrono::high_resolution_clock::now();
     while (!glfwWindowShouldClose(win))
     {
         glfwPollEvents();
@@ -130,8 +133,8 @@ int main(int argc, char * argv[]) try
         if (frames.size() == 0)
             continue;
 
-        auto t1 = std::chrono::high_resolution_clock::now();
-        time += std::chrono::duration<float>(t1-t0).count();
+        auto t1 = chrono::high_resolution_clock::now();
+        time += chrono::duration<float>(t1-t0).count();
         t0 = t1;
         ++frame_count;
         if(time > 0.5f)
@@ -146,7 +149,7 @@ int main(int argc, char * argv[]) try
         for (auto&& frame : frames) {
             if (frame.get_stream_type() == mapped)
                 mapped_tex.upload(frame);
-            if (frame.get_stream_type() == RS_STREAM_DEPTH)
+            if (frame.get_stream_type() == RS2_STREAM_DEPTH)
                 depth = reinterpret_cast<const uint16_t *>(frame.get_data());
         }
 
@@ -175,11 +178,11 @@ int main(int argc, char * argv[]) try
         glBindTexture(GL_TEXTURE_2D, mapped_tex.get_gl_handle());
         glBegin(GL_POINTS);
 
-        auto max_depth = *std::max_element(depth,depth+640*480);
+        auto max_depth = *max_element(depth,depth+640*480);
 
-        std::vector<uint8_t> image;
+        vector<uint8_t> image;
         auto points = depth_to_points(image, depth_intrin, depth, dev.get_depth_scale());
-        //auto depth = reinterpret_cast<const uint16_t *>(dev.get_frame_data(rs::stream::depth));
+        //auto depth = reinterpret_cast<const uint16_t *>(dev.get_frame_data(stream::depth));
 
         for (int y=0; y<depth_intrin.height; ++y)
         {
@@ -187,7 +190,7 @@ int main(int argc, char * argv[]) try
             {
                 if(points->z) //if(uint16_t d = *depth++)
                 {
-                    //const rs::float3 point = depth_intrin.deproject({static_cast<float>(x),static_cast<float>(y)}, d*depth_scale);
+                    //const float3 point = depth_intrin.deproject({static_cast<float>(x),static_cast<float>(y)}, d*depth_scale);
                     glTexCoord(project_to_texcoord(&mapped_intrin, transform(&extrin, *points)));
                     glVertex(*points);
                 }
@@ -205,7 +208,7 @@ int main(int argc, char * argv[]) try
         glPushMatrix();
         glOrtho(0, width, height, 0, -1, +1);
 
-        std::ostringstream ss; ss << fps << " FPS";
+        ostringstream ss; ss << fps << " FPS";
         draw_text(20, 40, ss.str().c_str());
         glPopMatrix();
 
@@ -216,13 +219,13 @@ int main(int argc, char * argv[]) try
     glfwTerminate();
     return EXIT_SUCCESS;
 }
-catch(const rs::error & e)
+catch(const error & e)
 {
-    std::cerr << "RealSense error calling " << e.get_failed_function() << "(" << e.get_failed_args() << "):\n    " << e.what() << std::endl;
+    cerr << "RealSense error calling " << e.get_failed_function() << "(" << e.get_failed_args() << "):\n    " << e.what() << endl;
     return EXIT_FAILURE;
 }
-catch(const std::exception & e)
+catch(const exception & e)
 {
-    std::cerr << e.what() << std::endl;
+    cerr << e.what() << endl;
     return EXIT_FAILURE;
 }

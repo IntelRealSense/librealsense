@@ -68,15 +68,15 @@ auto_exposure_mechanism::auto_exposure_mechanism(uvc_endpoint* dev, auto_exposur
             {
                 double values[2] = {};
 
-                if (frame->get()->supports_frame_metadata(RS_FRAME_METADATA_ACTUAL_EXPOSURE))
+                if (frame->get()->supports_frame_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE))
                 {
-                    auto gain = _device->get_option(RS_OPTION_GAIN).query();
-                    values[0] = frame->get()->get_frame_metadata(RS_FRAME_METADATA_ACTUAL_EXPOSURE);
+                    auto gain = _device->get_option(RS2_OPTION_GAIN).query();
+                    values[0] = frame->get()->get_frame_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE);
                     values[1] = gain;                }
                 else
                 {
-                    values[0] = _device->get_option(RS_OPTION_EXPOSURE).query();
-                    values[1] = _device->get_option(RS_OPTION_GAIN).query();
+                    values[0] = _device->get_option(RS2_OPTION_EXPOSURE).query();
+                    values[1] = _device->get_option(RS2_OPTION_GAIN).query();
                 }
 
                 values[0] /= 10.; // Fisheye exposure value by extension control is in units of 10 mSec
@@ -96,14 +96,14 @@ auto_exposure_mechanism::auto_exposure_mechanism(uvc_endpoint* dev, auto_exposur
                         if (value < 1)
                             value = 1;
 
-                        auto& opt = _device->get_option(RS_OPTION_EXPOSURE);
+                        auto& opt = _device->get_option(RS2_OPTION_EXPOSURE);
                         opt.set(value);
                     }
 
                     if (modify_gain)
                     {
                         auto value =  (gain_value - 2.f) * 8.f + 15.f;
-                        auto& opt = _device->get_option(RS_OPTION_GAIN);
+                        auto& opt = _device->get_option(RS2_OPTION_GAIN);
                         opt.set(value);
                     }
                 }
@@ -221,7 +221,7 @@ void auto_exposure_algorithm::modify_exposure(float& exposure_value, bool& exp_m
     }
 }
 
-bool auto_exposure_algorithm::analyze_image(const rs_frame* image)
+bool auto_exposure_algorithm::analyze_image(const rs2_frame* image)
 {
     int cols = image->get()->get_width();
     int rows = image->get()->get_height();

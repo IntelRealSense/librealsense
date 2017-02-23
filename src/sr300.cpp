@@ -54,22 +54,22 @@ namespace rsimpl
         return results;
     }
 
-    rs_intrinsics sr300_camera::make_depth_intrinsics(const ivcam::camera_calib_params & c, const int2 & dims)
+    rs2_intrinsics sr300_camera::make_depth_intrinsics(const ivcam::camera_calib_params & c, const int2 & dims)
     {
         return{ dims.x, dims.y, (c.Kc[0][2] * 0.5f + 0.5f) * dims.x,
             (c.Kc[1][2] * 0.5f + 0.5f) * dims.y,
             c.Kc[0][0] * 0.5f * dims.x,
             c.Kc[1][1] * 0.5f * dims.y,
-            RS_DISTORTION_INVERSE_BROWN_CONRADY,
+            RS2_DISTORTION_INVERSE_BROWN_CONRADY,
             { c.Invdistc[0], c.Invdistc[1], c.Invdistc[2],
               c.Invdistc[3], c.Invdistc[4] } };
     }
 
-    rs_intrinsics sr300_camera::make_color_intrinsics(const ivcam::camera_calib_params & c, const int2 & dims)
+    rs2_intrinsics sr300_camera::make_color_intrinsics(const ivcam::camera_calib_params & c, const int2 & dims)
     {
-        rs_intrinsics intrin = { dims.x, dims.y, c.Kt[0][2] * 0.5f + 0.5f,
+        rs2_intrinsics intrin = { dims.x, dims.y, c.Kt[0][2] * 0.5f + 0.5f,
             c.Kt[1][2] * 0.5f + 0.5f, c.Kt[0][0] * 0.5f,
-            c.Kt[1][1] * 0.5f, RS_DISTORTION_NONE,{} };
+            c.Kt[1][1] * 0.5f, RS2_DISTORTION_NONE,{} };
 
         if (dims.x * 3 == dims.y * 4) // If using a 4:3 aspect ratio, adjust intrinsics (defaults to 16:9)
         {

@@ -63,9 +63,9 @@ namespace rsimpl
             return ++counter;
         }
 
-        rs_timestamp_domain get_frame_timestamp_domain(const request_mapping & mode, const uvc::frame_object& fo) const override
+        rs2_timestamp_domain get_frame_timestamp_domain(const request_mapping & mode, const uvc::frame_object& fo) const override
         {
-            return RS_TIMESTAMP_DOMAIN_HARDWARE_CLOCK;
+            return RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK;
         }
     };
 
@@ -115,13 +115,13 @@ namespace rsimpl
         {
         public:
             void set(float value) override {
-                _owner.rs_apply_ivcam_preset(static_cast<int>(value));
+                _owner.rs2_apply_ivcam_preset(static_cast<int>(value));
                 last_value = value;
             }
             float query() const override { return last_value; }
             option_range get_range() const override
             {
-                return{ 0, RS_VISUAL_PRESET_COUNT, 1, RS_VISUAL_PRESET_DEFAULT };
+                return{ 0, RS2_VISUAL_PRESET_COUNT, 1, RS2_VISUAL_PRESET_DEFAULT };
             }
             bool is_enabled() const override { return true; }
 
@@ -131,15 +131,15 @@ namespace rsimpl
             }
             const char* get_value_description(float val) const override
             {
-                return rs_visual_preset_to_string(
-                    static_cast<rs_visual_preset>(
+                return rs2_visual_preset_to_string(
+                    static_cast<rs2_visual_preset>(
                         static_cast<int>(val)));
             }
 
             explicit preset_option(sr300_camera& owner) : _owner(owner) {}
 
         private:
-            float last_value = RS_VISUAL_PRESET_DEFAULT;
+            float last_value = RS2_VISUAL_PRESET_DEFAULT;
             sr300_camera& _owner;
         };
 
@@ -152,18 +152,18 @@ namespace rsimpl
             color_ep->register_pixel_format(pf_yuy2);
             color_ep->register_pixel_format(pf_yuyv);
 
-            color_ep->register_pu(RS_OPTION_BACKLIGHT_COMPENSATION);
-            color_ep->register_pu(RS_OPTION_BRIGHTNESS);
-            color_ep->register_pu(RS_OPTION_CONTRAST);
-            color_ep->register_pu(RS_OPTION_EXPOSURE);
-            color_ep->register_pu(RS_OPTION_GAIN);
-            color_ep->register_pu(RS_OPTION_GAMMA);
-            color_ep->register_pu(RS_OPTION_HUE);
-            color_ep->register_pu(RS_OPTION_SATURATION);
-            color_ep->register_pu(RS_OPTION_SHARPNESS);
-            color_ep->register_pu(RS_OPTION_WHITE_BALANCE);
-            color_ep->register_pu(RS_OPTION_ENABLE_AUTO_EXPOSURE);
-            color_ep->register_pu(RS_OPTION_ENABLE_AUTO_WHITE_BALANCE);
+            color_ep->register_pu(RS2_OPTION_BACKLIGHT_COMPENSATION);
+            color_ep->register_pu(RS2_OPTION_BRIGHTNESS);
+            color_ep->register_pu(RS2_OPTION_CONTRAST);
+            color_ep->register_pu(RS2_OPTION_EXPOSURE);
+            color_ep->register_pu(RS2_OPTION_GAIN);
+            color_ep->register_pu(RS2_OPTION_GAMMA);
+            color_ep->register_pu(RS2_OPTION_HUE);
+            color_ep->register_pu(RS2_OPTION_SATURATION);
+            color_ep->register_pu(RS2_OPTION_SHARPNESS);
+            color_ep->register_pu(RS2_OPTION_WHITE_BALANCE);
+            color_ep->register_pu(RS2_OPTION_ENABLE_AUTO_EXPOSURE);
+            color_ep->register_pu(RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE);
 
             color_ep->set_pose({ { { 1,0,0 },{ 0,1,0 },{ 0,0,1 } },{ 0,0,0 } });
 
@@ -184,18 +184,18 @@ namespace rsimpl
             depth_ep->register_pixel_format(pf_sr300_inzi);
             depth_ep->register_pixel_format(pf_sr300_invi);
 
-            register_depth_xu<uint8_t>(*depth_ep, RS_OPTION_LASER_POWER, IVCAM_DEPTH_LASER_POWER,
+            register_depth_xu<uint8_t>(*depth_ep, RS2_OPTION_LASER_POWER, IVCAM_DEPTH_LASER_POWER,
                 "Power of the SR300 projector, with 0 meaning projector off");
-            register_depth_xu<uint8_t>(*depth_ep, RS_OPTION_ACCURACY, IVCAM_DEPTH_ACCURACY,
+            register_depth_xu<uint8_t>(*depth_ep, RS2_OPTION_ACCURACY, IVCAM_DEPTH_ACCURACY,
                 "Set the number of patterns projected per frame.\nThe higher the accuracy value the more patterns projected.\nIncreasing the number of patterns help to achieve better accuracy.\nNote that this control is affecting the Depth FPS");
-            register_depth_xu<uint8_t>(*depth_ep, RS_OPTION_MOTION_RANGE, IVCAM_DEPTH_MOTION_RANGE,
+            register_depth_xu<uint8_t>(*depth_ep, RS2_OPTION_MOTION_RANGE, IVCAM_DEPTH_MOTION_RANGE,
                 "Motion vs. Range trade-off, with lower values allowing for better motion\nsensitivity and higher values allowing for better depth range");
-            register_depth_xu<uint8_t>(*depth_ep, RS_OPTION_CONFIDENCE_THRESHOLD, IVCAM_DEPTH_CONFIDENCE_THRESH,
+            register_depth_xu<uint8_t>(*depth_ep, RS2_OPTION_CONFIDENCE_THRESHOLD, IVCAM_DEPTH_CONFIDENCE_THRESH,
                 "The confidence level threshold used by the Depth algorithm pipe to set whether\na pixel will get a valid range or will be marked with invalid range");
-            register_depth_xu<uint8_t>(*depth_ep, RS_OPTION_FILTER_OPTION, IVCAM_DEPTH_FILTER_OPTION,
+            register_depth_xu<uint8_t>(*depth_ep, RS2_OPTION_FILTER_OPTION, IVCAM_DEPTH_FILTER_OPTION,
                 "Set the filter to apply to each depth frame.\nEach one of the filter is optimized per the application requirements");
 
-            depth_ep->register_option(RS_OPTION_VISUAL_PRESET, std::make_shared<preset_option>(*this));
+            depth_ep->register_option(RS2_OPTION_VISUAL_PRESET, std::make_shared<preset_option>(*this));
 
             return depth_ep;
         }
@@ -222,20 +222,20 @@ namespace rsimpl
             auto serial = _hw_monitor->get_module_serial_string(GVD, module_serial_offset);
             enable_timestamp(true, true);
 
-            std::map<rs_camera_info, std::string> depth_camera_info = {{RS_CAMERA_INFO_DEVICE_NAME, device_name},
-                                                                       {RS_CAMERA_INFO_MODULE_NAME, "Depth Camera"},
-                                                                       {RS_CAMERA_INFO_DEVICE_SERIAL_NUMBER, serial},
-                                                                       {RS_CAMERA_INFO_CAMERA_FIRMWARE_VERSION, fw_version},
-                                                                       {RS_CAMERA_INFO_DEVICE_LOCATION, depth.device_path},
-                                                                       {RS_CAMERA_INFO_DEVICE_DEBUG_OP_CODE, std::to_string(fw_cmd::GLD)}};
+            std::map<rs2_camera_info, std::string> depth_camera_info = {{RS2_CAMERA_INFO_DEVICE_NAME, device_name},
+                                                                       {RS2_CAMERA_INFO_MODULE_NAME, "Depth Camera"},
+                                                                       {RS2_CAMERA_INFO_DEVICE_SERIAL_NUMBER, serial},
+                                                                       {RS2_CAMERA_INFO_CAMERA_FIRMWARE_VERSION, fw_version},
+                                                                       {RS2_CAMERA_INFO_DEVICE_LOCATION, depth.device_path},
+                                                                       {RS2_CAMERA_INFO_DEVICE_DEBUG_OP_CODE, std::to_string(fw_cmd::GLD)}};
             register_endpoint_info(_depth_device_idx, depth_camera_info);
 
-            std::map<rs_camera_info, std::string> color_camera_info = {{RS_CAMERA_INFO_DEVICE_NAME, device_name},
-                                                                       {RS_CAMERA_INFO_MODULE_NAME, "Color Camera"},
-                                                                       {RS_CAMERA_INFO_DEVICE_SERIAL_NUMBER, serial},
-                                                                       {RS_CAMERA_INFO_CAMERA_FIRMWARE_VERSION, fw_version},
-                                                                       {RS_CAMERA_INFO_DEVICE_LOCATION, color.device_path},
-                                                                       {RS_CAMERA_INFO_DEVICE_DEBUG_OP_CODE, std::to_string(fw_cmd::GLD)}};
+            std::map<rs2_camera_info, std::string> color_camera_info = {{RS2_CAMERA_INFO_DEVICE_NAME, device_name},
+                                                                       {RS2_CAMERA_INFO_MODULE_NAME, "Color Camera"},
+                                                                       {RS2_CAMERA_INFO_DEVICE_SERIAL_NUMBER, serial},
+                                                                       {RS2_CAMERA_INFO_CAMERA_FIRMWARE_VERSION, fw_version},
+                                                                       {RS2_CAMERA_INFO_DEVICE_LOCATION, color.device_path},
+                                                                       {RS2_CAMERA_INFO_DEVICE_DEBUG_OP_CODE, std::to_string(fw_cmd::GLD)}};
             register_endpoint_info(_color_device_idx, color_camera_info);
 
             register_autorange_options();
@@ -249,18 +249,18 @@ namespace rsimpl
             set_depth_scale((c.Rmax / 0xFFFF) * 0.001f);
         }
 
-        void rs_apply_ivcam_preset(int preset)
+        void rs2_apply_ivcam_preset(int preset)
         {
             const auto DEPTH_CONTROLS = 5;
-            const rs_option arr_options[DEPTH_CONTROLS] = {
-                RS_OPTION_LASER_POWER,
-                RS_OPTION_ACCURACY,
-                RS_OPTION_FILTER_OPTION,
-                RS_OPTION_CONFIDENCE_THRESHOLD,
-                RS_OPTION_MOTION_RANGE
+            const rs2_option arr_options[DEPTH_CONTROLS] = {
+                RS2_OPTION_LASER_POWER,
+                RS2_OPTION_ACCURACY,
+                RS2_OPTION_FILTER_OPTION,
+                RS2_OPTION_CONFIDENCE_THRESHOLD,
+                RS2_OPTION_MOTION_RANGE
             };
 
-            const ivcam::cam_auto_range_request ar_requests[RS_VISUAL_PRESET_COUNT] =
+            const ivcam::cam_auto_range_request ar_requests[RS2_VISUAL_PRESET_COUNT] =
             {
                 { 1,     1, 180,  303,  180,   2,  16,  -1, 1000, 450 }, /* ShortRange                */
                 { 1,     0, 303,  605,  303,  -1,  -1,  -1, 1250, 975 }, /* LongRange                 */
@@ -275,7 +275,7 @@ namespace rsimpl
                 { 2,     0,  40, 1600,  800,  -1,  -1,  -1,   -1,  -1 }, /* IROnly                    */
             };
 
-            const float arr_values[RS_VISUAL_PRESET_COUNT][DEPTH_CONTROLS] = {
+            const float arr_values[RS2_VISUAL_PRESET_COUNT][DEPTH_CONTROLS] = {
                 { 1,    1,   5,   1,  -1 }, /* ShortRange                */
                 { 1,    1,   7,   0,  -1 }, /* LongRange                 */
                 { 16,   1,   6,   2,  22 }, /* BackgroundSegmentation    */
@@ -292,7 +292,7 @@ namespace rsimpl
             // The Default preset is handled differently from all the rest,
             // When the user applies the Default preset the camera is expected to return to
             // Default values of depth options:
-            if (preset == RS_VISUAL_PRESET_DEFAULT)
+            if (preset == RS2_VISUAL_PRESET_DEFAULT)
             {
                 for (auto opt : arr_options)
                 {
@@ -316,7 +316,7 @@ namespace rsimpl
         }
 
         // NOTE: it is the user's responsibility to make sure the profile makes sense on the given subdevice. UB otherwise.
-        virtual rs_intrinsics get_intrinsics(unsigned int subdevice, stream_profile profile) const override
+        virtual rs2_intrinsics get_intrinsics(unsigned int subdevice, stream_profile profile) const override
         {
             if (subdevice >= get_endpoints_count())
                 throw rsimpl::invalid_value_exception("Requested subdevice is not supported!");
@@ -336,7 +336,7 @@ namespace rsimpl
         std::shared_ptr<hw_monitor> _hw_monitor;
 
         template<class T>
-        void register_depth_xu(uvc_endpoint& depth, rs_option opt, uint8_t id, std::string desc) const
+        void register_depth_xu(uvc_endpoint& depth, rs2_option opt, uint8_t id, std::string desc) const
         {
             depth.register_option(opt,
                 std::make_shared<uvc_xu_option<T>>(
@@ -354,15 +354,15 @@ namespace rsimpl
                 set_auto_range(r);
                 *arr = r;
             });
-            //register_option(RS_OPTION_SR300_AUTO_RANGE_ENABLE_MOTION_VERSUS_RANGE, RS_SUBDEVICE_DEPTH,
+            //register_option(RS2_OPTION_SR300_AUTO_RANGE_ENABLE_MOTION_VERSUS_RANGE, RS2_SUBDEVICE_DEPTH,
             //    make_field_option(arr_reader_writer, &ivcam::cam_auto_range_request::enableMvR, { 0, 2, 1, 1 }));
-            //register_option(RS_OPTION_SR300_AUTO_RANGE_ENABLE_LASER, RS_SUBDEVICE_DEPTH,
+            //register_option(RS2_OPTION_SR300_AUTO_RANGE_ENABLE_LASER, RS2_SUBDEVICE_DEPTH,
             //    make_field_option(arr_reader_writer, &ivcam::cam_auto_range_request::enableLaser, { 0, 1, 1, 1 }));
             // etc..
         }
 
-        static rs_intrinsics make_depth_intrinsics(const ivcam::camera_calib_params& c, const int2& dims);
-        static rs_intrinsics make_color_intrinsics(const ivcam::camera_calib_params& c, const int2& dims);
+        static rs2_intrinsics make_depth_intrinsics(const ivcam::camera_calib_params& c, const int2& dims);
+        static rs2_intrinsics make_color_intrinsics(const ivcam::camera_calib_params& c, const int2& dims);
         float read_mems_temp() const;
         int read_ir_temp() const;
 

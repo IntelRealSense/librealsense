@@ -34,15 +34,15 @@ vector<string> auto_complete::search(const string& word) const
     return finds;
 }
 
-auto_complete::auto_complete(std::set<std::string> dictionary)
-    : _dictionary(dictionary), _history_words_index(0), _num_of_chars_in_line(0), _tab_index(0), _is_first_time_up_arrow(true)
+auto_complete::auto_complete(set<string> dictionary)
+    : _dictionary(dictionary), _history_words_index(0), _num_of_chars2_in_line(0), _tab_index(0), _is_first_time_up_arrow(true)
 {}
 
-string auto_complete::chars_queue_to_string() const
+string auto_complete::chars2_queue_to_string() const
 {
-    auto temp_chars_queue(_chars_queue);
-    temp_chars_queue.push_back('\0');
-    auto word = string(temp_chars_queue.data());
+    auto temp_chars2_queue(_chars2_queue);
+    temp_chars2_queue.push_back('\0');
+    auto word = string(temp_chars2_queue.data());
 
     return word;
 }
@@ -60,19 +60,19 @@ void auto_complete::backspace(const int num_of_backspaces)
 {
     for (auto i = 0; i < num_of_backspaces; ++i)
     {
-        if (_num_of_chars_in_line == 0)
+        if (_num_of_chars2_in_line == 0)
             break;
 
         cout << '\b';
         cout << BACKSLASH_ZERO;
         cout << '\b';
 
-        if (_num_of_chars_in_line != 0)
-            --_num_of_chars_in_line;
+        if (_num_of_chars2_in_line != 0)
+            --_num_of_chars2_in_line;
 
-        if (!_chars_queue.empty())
+        if (!_chars2_queue.empty())
         {
-            _chars_queue.pop_back();
+            _chars2_queue.pop_back();
         }
     }
 }
@@ -88,13 +88,13 @@ void auto_complete::handle_special_key(const vector<uint8_t>& chars)
 
         _finds_vec.clear();
         _tab_index = 0;
-        backspace(_num_of_chars_in_line);
+        backspace(_num_of_chars2_in_line);
         cout << _history_words[_history_words_index];
 
         for (auto c : _history_words[_history_words_index])
         {
-            _chars_queue.push_back(c);
-            ++_num_of_chars_in_line;
+            _chars2_queue.push_back(c);
+            ++_num_of_chars2_in_line;
         }
 
         if (_is_first_time_up_arrow)
@@ -109,13 +109,13 @@ void auto_complete::handle_special_key(const vector<uint8_t>& chars)
 
         _finds_vec.clear();
         _tab_index = 0;
-        backspace(_num_of_chars_in_line);
+        backspace(_num_of_chars2_in_line);
         cout << _history_words[_history_words_index];
 
         for (auto c : _history_words[_history_words_index])
         {
-            _chars_queue.push_back(c);
-            ++_num_of_chars_in_line;
+            _chars2_queue.push_back(c);
+            ++_num_of_chars2_in_line;
         }
     }
 }
@@ -188,7 +188,7 @@ string auto_complete::get_line()
         {
             if (_finds_vec.empty())
             {
-                _finds_vec = search(get_last_word(chars_queue_to_string()));
+                _finds_vec = search(get_last_word(chars2_queue_to_string()));
             }
 
 
@@ -206,16 +206,16 @@ string auto_complete::get_line()
 
             for (auto c : vec_word)
             {
-                _chars_queue.push_back(c);
-                ++_num_of_chars_in_line;
+                _chars2_queue.push_back(c);
+                ++_num_of_chars2_in_line;
             }
         }
         else if (ch == ' ')
         {
             _finds_vec.clear();
             _tab_index = 0;
-            _chars_queue.push_back(' ');
-            ++_num_of_chars_in_line;
+            _chars2_queue.push_back(' ');
+            ++_num_of_chars2_in_line;
 
             cout << ch;
         }
@@ -233,7 +233,7 @@ string auto_complete::get_line()
 
             cout << '\n';
             cout << ch;
-            auto str = chars_queue_to_string();
+            auto str = chars2_queue_to_string();
 
             if (str.compare(""))
             {
@@ -248,17 +248,17 @@ string auto_complete::get_line()
             _tab_index = 0;
 
             cout << ch;
-            _chars_queue.push_back(ch);
-            ++_num_of_chars_in_line;
+            _chars2_queue.push_back(ch);
+            ++_num_of_chars2_in_line;
         }
         else
             getch_nolock(); // TODO
 
         if (ch == NEW_LINE)
         {
-            auto ret_str = chars_queue_to_string();
-            _chars_queue.clear();
-            _num_of_chars_in_line = 0;
+            auto ret_str = chars2_queue_to_string();
+            _chars2_queue.clear();
+            _num_of_chars2_in_line = 0;
             return ret_str;
         }
 

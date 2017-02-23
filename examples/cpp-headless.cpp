@@ -8,8 +8,8 @@
 // This sample captures 30 frames and writes the last frame to disk.
 // It can be useful for debugging an embedded system with no display.
 
-#include <librealsense/rs.hpp>
-#include <librealsense/rsutil.hpp>
+#include <librealsense/rs2.hpp>
+#include <librealsense/rsutil2.hpp>
 #include "example.hpp"
 
 #include <cstdio>
@@ -22,27 +22,30 @@
 #include "third_party/stb_image_write.h"
 #include <sstream>
 
+using namespace rs2;
+using namespace std;
+
 int main() try
 {
-    rs::log_to_console(RS_LOG_SEVERITY_WARN);
-    //rs::log_to_file(rs::log_severity::debug, "librealsense.log");
+    log_to_console(RS2_LOG_SEVERITY_WARN);
+    //log_to_file(log_severity::debug, "librealsense.log");
 
-    rs::context ctx;
+    context ctx;
     auto list = ctx.query_devices();
     printf("There are %d connected RealSense devices.\n", list.size());
     if(list.size() == 0)
         return EXIT_FAILURE;
 
     auto dev = list[0];
-    printf("\nUsing device 0, an %s\n", dev.get_camera_info(RS_CAMERA_INFO_DEVICE_NAME));
-    printf("    Serial number: %s\n", dev.get_camera_info(RS_CAMERA_INFO_DEVICE_SERIAL_NUMBER));
-    printf("    Firmware version: %s\n", dev.get_camera_info(RS_CAMERA_INFO_CAMERA_FIRMWARE_VERSION));
+    printf("\nUsing device 0, an %s\n", dev.get_camera_info(RS2_CAMERA_INFO_DEVICE_NAME));
+    printf("    Serial number: %s\n", dev.get_camera_info(RS2_CAMERA_INFO_DEVICE_SERIAL_NUMBER));
+    printf("    Firmware version: %s\n", dev.get_camera_info(RS2_CAMERA_INFO_CAMERA_FIRMWARE_VERSION));
 
-    rs::util::config config;
-    config.enable_all(rs::preset::best_quality);
+    util::config config;
+    config.enable_all(preset::best_quality);
     auto stream = config.open(dev);
 
-    rs::util::syncer sync;
+    util::syncer sync;
     /* activate video streaming */
     stream.start(sync);
 
@@ -51,11 +54,11 @@ int main() try
         sync.wait_for_frames();
 
     /* Retrieve data from all the enabled streams */
-    std::map<rs_stream, rs::frame> frames_by_stream;
+    map<rs2_stream, frame> frames_by_stream;
     for (auto&& frame : sync.wait_for_frames())
     {
         auto stream_type = frame.get_stream_type();
-        frames_by_stream[stream_type] = std::move(frame);
+        frames_by_stream[stream_type] = move(frame);
     }
 
     /* Store captured frames into current directory */
@@ -64,20 +67,20 @@ int main() try
         auto stream_type = kvp.first;
         auto& frame = kvp.second;
 
-        std::stringstream ss;
+        stringstream ss;
         ss << "cpp-headless-output-" << stream_type << ".png";
 
-        std::cout << "Writing " << ss.str().data() << ", " << frame.get_width() << " x " << frame.get_height() << " pixels"   << std::endl;
+        cout << "Writing " << ss.str().data() << ", " << frame.get_width() << " x " << frame.get_height() << " pixels"   << endl;
 
         auto pixels = frame.get_data();
         auto bpp = frame.get_bytes_per_pixel();
-        std::vector<uint8_t> coloredDepth;
+        vector<uint8_t> coloredDepth;
 
         // Create nice color image from depth data
-        if (stream_type == RS_STREAM_DEPTH)
+        if (stream_type == RS2_STREAM_DEPTH)
         {
             /* Transform Depth range map into color map */
-            auto& depth = frames_by_stream[RS_STREAM_DEPTH];
+            auto& depth = frames_by_stream[RS2_STREAM_DEPTH];
             const auto depth_size = depth.get_width() * depth.get_height() * 3;
             coloredDepth.resize(depth_size);
 
@@ -102,13 +105,13 @@ int main() try
     printf("wrote frames to current working directory.\n");
     return EXIT_SUCCESS;
 }
-catch(const rs::error & e)
+catch(const error & e)
 {
-    std::cerr << "RealSense error calling " << e.get_failed_function() << "(" << e.get_failed_args() << "):\n    " << e.what() << std::endl;
+    cerr << "RealSense error calling " << e.get_failed_function() << "(" << e.get_failed_args() << "):\n    " << e.what() << endl;
     return EXIT_FAILURE;
 }
-catch(const std::exception & e)
+catch(const exception & e)
 {
-    std::cerr << e.what() << std::endl;
+    cerr << e.what() << endl;
     return EXIT_FAILURE;
 }

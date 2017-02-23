@@ -32,17 +32,17 @@ constexpr std::array<char const, N1+N2-1> concat(char const (&a1)[N1], char cons
 }
 
 // The string is used to retrieve the version embedded into .so file on Linux
-constexpr auto rs_api_version = concat("VERSION: ",RS_API_VERSION_STR);
+constexpr auto rs2_api_version = concat("VERSION: ",RS2_API_VERSION_STR);
 
 namespace rsimpl
 {
     context::context(backend_type type,
                      const char* filename,
                      const char* section,
-                     rs_recording_mode mode)
+                     rs2_recording_mode mode)
     {
 
-        LOG_DEBUG("Librealsense " << std::string(std::begin(rs_api_version),std::end(rs_api_version)));
+        LOG_DEBUG("Librealsense " << std::string(std::begin(rs2_api_version),std::end(rs2_api_version)));
 
         switch(type)
         {

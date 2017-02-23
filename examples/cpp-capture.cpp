@@ -1,40 +1,43 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
-#include <librealsense/rs.hpp>
-#include <librealsense/rsutil.hpp>
+#include <librealsense/rs2.hpp>
+#include <librealsense/rsutil2.hpp>
 #include "example.hpp"
 
 #include <sstream>
 #include <iostream>
 
+using namespace rs2;
+using namespace std;
+
 int main(int argc, char * argv[]) try
 {
-    rs::log_to_console(RS_LOG_SEVERITY_WARN);
-    //rs::log_to_file(rs::log_severity::debug, "librealsense.log");
+    log_to_console(RS2_LOG_SEVERITY_WARN);
+    //log_to_file(log_severity::debug, "librealsense.log");
 
-    rs::context ctx;
+    context ctx;
 
     auto list = ctx.query_devices();
     if (list.size() == 0)
-        throw std::runtime_error("No device detected. Is it plugged in?");
+        throw runtime_error("No device detected. Is it plugged in?");
 
     auto dev = list[0];
 
     // Configure all supported streams to run at 30 frames per second
-    rs::util::config config;
-    config.enable_all(rs::preset::best_quality);
+    util::config config;
+    config.enable_all(preset::best_quality);
     auto stream = config.open(dev);
 
-    rs::util::syncer syncer;
+    util::syncer syncer;
     stream.start(syncer);
 
-    texture_buffer buffers[RS_STREAM_COUNT];
+    texture_buffer buffers[RS2_STREAM_COUNT];
 
     // Open a GLFW window
     glfwInit();
-    std::ostringstream ss;
-    ss << "CPP Capture Example (" << dev.get_camera_info(RS_CAMERA_INFO_DEVICE_NAME) << ")";
+    ostringstream ss;
+    ss << "CPP Capture Example (" << dev.get_camera_info(RS2_CAMERA_INFO_DEVICE_NAME) << ")";
 
     auto win = glfwCreateWindow(1280, 720, ss.str().c_str(), nullptr, nullptr);
     glfwMakeContextCurrent(win);
@@ -47,8 +50,8 @@ int main(int argc, char * argv[]) try
         auto index = 0;
         auto frames = syncer.wait_for_frames();
         // for consistent visualization, sort frames based on stream type:
-        std::sort(frames.begin(), frames.end(),
-            [](const rs::frame& a, const rs::frame& b) -> bool
+        sort(frames.begin(), frames.end(),
+            [](const frame& a, const frame& b) -> bool
         {
             return a.get_stream_type() < b.get_stream_type();
         });
@@ -95,13 +98,13 @@ int main(int argc, char * argv[]) try
     glfwTerminate();
     return EXIT_SUCCESS;
 }
-catch (const rs::error & e)
+catch (const error & e)
 {
-    std::cerr << "RealSense error calling " << e.get_failed_function() << "(" << e.get_failed_args() << "):\n    " << e.what() << std::endl;
+    cerr << "RealSense error calling " << e.get_failed_function() << "(" << e.get_failed_args() << "):\n    " << e.what() << endl;
     return EXIT_FAILURE;
 }
-catch (const std::exception & e)
+catch (const exception & e)
 {
-    std::cerr << e.what() << std::endl;
+    cerr << e.what() << endl;
     return EXIT_FAILURE;
 }
