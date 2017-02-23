@@ -110,6 +110,12 @@ namespace sql
         return sqlite3_column_int(m_handle.get(), column);
     }
 
+    double statement::get_double(int const column) const
+    {
+        auto val = sqlite3_column_double(m_handle.get(), column);
+        return val;
+    }
+
     string statement::get_string(int const column) const
     {
         return reinterpret_cast<const char*>(sqlite3_column_text(m_handle.get(), column));
@@ -127,6 +133,11 @@ namespace sql
     void statement::bind(int param, int value) const
     {
         sqlite3_bind_int(m_handle.get(), param, value);
+    }
+
+    void statement::bind(int param, double value) const
+    {
+        sqlite3_bind_double(m_handle.get(), param, value);
     }
 
     void statement::bind(int param, const char* value) const

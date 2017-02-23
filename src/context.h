@@ -5,6 +5,7 @@
 
 #include "types.h"
 #include "backend.h"
+#include "recorder.h"
 #include <vector>
 
 namespace rsimpl
@@ -96,8 +97,11 @@ namespace rsimpl
 
         std::vector<std::shared_ptr<device_info>> query_devices() const;
         const uvc::backend& get_backend() const { return *_backend; }
+        double get_time();
+
     private:
         std::shared_ptr<uvc::backend> _backend;
+        std::shared_ptr<uvc::time_service> _ts;
     };
 
     static std::vector<uvc::uvc_device_info> filter_by_product(const std::vector<uvc::uvc_device_info>& devices, const std::vector<uint16_t>& pid_list)

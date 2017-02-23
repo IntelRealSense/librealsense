@@ -129,13 +129,19 @@ namespace rsimpl
             return results;
         }
 
-        recording::recording()
+        recording::recording(std::shared_ptr<time_service> ts)
+            :_ts(ts)
         {
-            start_time = chrono::high_resolution_clock::now();
+        }
+
+        double recording::get_time()
+        {
+            return _curr_time;
         }
 
         void recording::save(const char* filename, const char* section, bool append) const
         {
+
             connection c(filename);
             LOG_WARNING("Saving recording to file, don't close the application");
 
@@ -229,7 +235,9 @@ namespace rsimpl
                     insert.bind(7, cl.param2);
                     insert.bind(8, cl.param3);
                     insert.bind(9, cl.param4);
-                    insert.bind(10, cl.had_error ? 1 : 0);
+                    insert.bind(10, cl.param5);
+                    insert.bind(11, cl.param6);
+                    insert.bind(12, cl.had_error ? 1 : 0);
                     insert();
                 }
 
@@ -240,9 +248,9 @@ namespace rsimpl
                     insert.bind(2, (int)device_type::uvc);
                     insert.bind(3, "");
                     insert.bind(4, uvc_info.unique_id.c_str());
-                    insert.bind(5, uvc_info.pid);
-                    insert.bind(6, uvc_info.vid);
-                    insert.bind(7, uvc_info.mi);
+                    insert.bind(5, (int)uvc_info.pid);
+                    insert.bind(6, (int)uvc_info.vid);
+                    insert.bind(7, (int)uvc_info.mi);
                     insert();
                 }
 
@@ -254,9 +262,9 @@ namespace rsimpl
                     string id(usb_info.id.begin(), usb_info.id.end());
                     insert.bind(3, id.c_str());
                     insert.bind(4, usb_info.unique_id.c_str());
-                    insert.bind(5, usb_info.pid);
-                    insert.bind(6, usb_info.vid);
-                    insert.bind(7, usb_info.mi);
+                    insert.bind(5, (int)usb_info.pid);
+                    insert.bind(6, (int)usb_info.vid);
+                    insert.bind(7, (int)usb_info.mi);
                     insert();
                 }
 
@@ -274,8 +282,8 @@ namespace rsimpl
                     ss_vid >> hex >> vid;
                     ss_pid >> hex >> pid;
 
-                    insert.bind(5, pid);
-                    insert.bind(6, vid);
+                    insert.bind(5, (int)pid);
+                    insert.bind(6, (int)vid);
                     insert.bind(7, hid_info.device_path.c_str());
                     insert();
                 }
@@ -287,7 +295,7 @@ namespace rsimpl
                     insert.bind(2, (int)device_type::hid_sensor);
                     insert.bind(3, hid_info.name.c_str());
                     insert.bind(4, "");
-                    insert.bind(5, hid_info.iio);
+                    insert.bind(5, (int)hid_info.iio);
                     insert();
                 }
 
@@ -298,7 +306,7 @@ namespace rsimpl
                     insert.bind(2, (int)device_type::hid_input);
                     insert.bind(3, hid_info.name.c_str());
                     insert.bind(4, "");
-                    insert.bind(5, hid_info.index);
+                    insert.bind(5, (int)hid_info.index);
                     insert();
                 }
 
@@ -306,10 +314,10 @@ namespace rsimpl
                 {
                     statement insert(c, PROFILES_INSERT);
                     insert.bind(1, section_id);
-                    insert.bind(2, profile.width);
-                    insert.bind(3, profile.height);
-                    insert.bind(4, profile.fps);
-                    insert.bind(5, profile.format);
+                    insert.bind(2, (int)profile.width);
+                    insert.bind(3, (int)profile.height);
+                    insert.bind(4, (int)profile.fps);
+                    insert.bind(5, (int)profile.format);
                     insert();
                 }
 
@@ -370,15 +378,18 @@ namespace rsimpl
             {
                 call cl;
                 cl.type = static_cast<call_type>(row[1].get_int());
-                cl.timestamp = row[2].get_int();
+                cl.timestamp = row[2].get_double();
                 cl.entity_id = row[3].get_int();
                 cl.inline_string = row[4].get_string();
                 cl.param1 = row[5].get_int();
                 cl.param2 = row[6].get_int();
                 cl.param3 = row[7].get_int();
                 cl.param4 = row[8].get_int();
-                cl.had_error = row[9].get_int() > 0;
+                cl.param5 = row[9].get_int();
+                cl.param6 = row[10].get_int();
+                cl.had_error = row[11].get_int() > 0;
                 result->calls.push_back(cl);
+                result->_curr_time = cl.timestamp;
             }
 
             statement select_devices(c, DEVICE_INFO_SELECT_ALL);
@@ -467,11 +478,9 @@ namespace rsimpl
             return id;
         }
 
-        int recording::get_timestamp() const
+        double recording::get_current_time()
         {
-            using namespace chrono;
-            auto diff = high_resolution_clock::now() - start_time;
-            return static_cast<int>(duration_cast<milliseconds>(diff).count());
+            return _ts->get_time();
         }
 
         call& recording::find_call(call_type t, int entity_id)
@@ -488,7 +497,7 @@ namespace rsimpl
                     {
                         throw runtime_error(calls[idx].inline_string);
                     }
-
+                    _curr_time =  calls[idx].timestamp;
                     return calls[idx];
                 }
             }
@@ -504,6 +513,7 @@ namespace rsimpl
                 if (calls[idx].type == t && calls[idx].entity_id == id)
                 {
                     _cycles[id] = idx;
+                    _curr_time =  calls[idx].timestamp;
                     return &calls[idx];
                 }
                 if (calls[idx].type != t && calls[idx].entity_id == id)
@@ -528,24 +538,26 @@ namespace rsimpl
 
                         if (_owner->get_mode() == RS_RECORDING_MODE_BEST_QUALITY)
                         {
-                            c.param2 = rec1->save_blob(f.pixels, static_cast<int>(f.size));
-                            c.param4 = static_cast<int>(f.size);
-                            c.param3 = 1;
+                            c.param2 = rec1->save_blob(f.pixels, static_cast<int>(f.frame_size));
+                            c.param4 = static_cast<int>(f.frame_size);
+                            c.param3 = 1;                         
                         }
                         else if (_owner->get_mode() == RS_RECORDING_MODE_BLANK_FRAMES)
                         {
                             c.param2 = -1;
-                            c.param4 = static_cast<int>(f.size);
-                            c.param3 = 0;
+                            c.param4 = static_cast<int>(f.frame_size);
+                            c.param3 = 0;                           
                         }
                         else
                         {
-                            auto compressed = _compression->encode((uint8_t*)f.pixels, f.size);
+                            auto compressed = _compression->encode((uint8_t*)f.pixels, f.frame_size);
                             c.param2 = rec1->save_blob(compressed.data(), static_cast<int>(compressed.size()));
                             c.param4 = static_cast<int>(compressed.size());
-                            c.param3 = 2;
+                            c.param3 = 2;                         
                         }
 
+                        c.param5 = rec1->save_blob(f.metadata, static_cast<int>(f.metadata_size));
+                        c.param6 = static_cast<int>(f.metadata_size);
                         callback(p, f);
                     }, _entity_id, call_type::uvc_frame);
                 });
@@ -750,9 +762,13 @@ namespace rsimpl
                     _owner->try_record([this, callback, &sd](recording* rec1, lookup_key key1)
                     {
                         auto&& c = rec1->add_call(key1);
-                        c.param1 = rec1->save_blob(sd.data.data(), sd.data.size());
+                        c.param1 = rec1->save_blob(sd.fo.pixels, sd.fo.frame_size);
                         c.param2 = sd.sensor.iio;
+                        c.param3 = rec1->save_blob(sd.fo.metadata, sd.fo.metadata_size);
+
+
                         c.inline_string = sd.sensor.name;
+
                         callback(sd);
                     }, _entity_id, call_type::hid_frame);
                 });
@@ -800,6 +816,7 @@ namespace rsimpl
                 return result;
             }, _entity_id, call_type::send_command);
         }
+
 
         shared_ptr<hid_device> record_backend::create_hid_device(hid_device_info info) const
         {
@@ -873,10 +890,15 @@ namespace rsimpl
             }, 0, call_type::query_usb_devices);
         }
 
+        std::shared_ptr<time_service> record_backend::create_time_service() const
+        {
+            return _source->create_time_service();
+        }
+
         record_backend::record_backend(shared_ptr<backend> source,
             const char* filename, const char* section,
             rs_recording_mode mode)
-            : _source(source), _rec(make_shared<recording>()), _entity_count(1),
+            : _source(source), _rec(std::make_shared<uvc::recording>(create_time_service())), _entity_count(1),
             _filename(filename),
             _section(section), _compression(make_shared<compression_algorithm>()), _mode(mode)
         {
@@ -924,10 +946,15 @@ namespace rsimpl
             return _rec->load_usb_device_info_list();
         }
 
-        playback_backend::playback_backend(const char* filename, const char* section)
-            : _rec(recording::load(filename, section))
+        std::shared_ptr<time_service> playback_backend::create_time_service() const
         {
-            LOG_WARNING("Starting section " << section);
+            return make_shared<recording_time_service>(*_rec);
+        }
+
+        playback_backend::playback_backend(const char* filename, const char* section)
+            : _rec(uvc::recording::load(filename, section))
+        {
+            LOG_DEBUG("Starting section " << section);
         }
 
         playback_uvc_device::~playback_uvc_device()
@@ -968,11 +995,13 @@ namespace rsimpl
             for (auto&& pair : _commitments)
                 _callbacks.push_back(pair);
             _commitments.clear();
-        }
+
+          }
 
         void playback_uvc_device::stop(stream_profile profile)
         {
             lock_guard<mutex> lock(_callback_mutex);
+
             auto stored = _rec->load_stream_profiles(_entity_id, call_type::uvc_stop);
             vector<stream_profile> input{ profile };
             if (input != stored)
@@ -1087,11 +1116,9 @@ namespace rsimpl
         }
 
         playback_uvc_device::playback_uvc_device(shared_ptr<recording> rec, int id)
-            : _rec(rec), _entity_id(id),
-            _callback_thread([this]() { callback_thread(); }),
-            _alive(true)
+            : _rec(rec), _entity_id(id),_alive(true)
         {
-
+           _callback_thread = std::thread([this]() { callback_thread(); });
         }
 
         void playback_hid_device::open()
@@ -1150,9 +1177,26 @@ namespace rsimpl
                     auto sensor_name = c_ptr->inline_string;
 
                     sensor_data sd;
-                    sd.data = sd_data;
+                    sd.fo.pixels = (void*)sd_data.data();
+                    sd.fo.frame_size = sd_data.size();
+
+                    auto metadata = _rec->load_blob(c_ptr->param3);
+                    sd.fo.metadata = (void*)metadata.data();
+                    sd.fo.metadata_size = metadata.size();
+
                     sd.sensor.iio = iio;
                     sd.sensor.name = sensor_name;
+
+//                    std::cout<<"c_ptr.param1 "<<c_ptr->param1;
+//                    std::cout<<"c_ptr.param3 "<<c_ptr->param3;
+//                    std::cout<<"\nHID METADATA:\n";
+//                    for(auto i = 0; i<sd.fo.frame_size; i++)
+//                        std::cout<<std::hex<<(int)((byte*)sd.fo.pixels)[i]<< " ";
+
+//                    std::cout<<"\nHID PIXELS:\n";
+//                    for(auto i = 0; i<sd.fo.metadata_size; i++)
+//                        std::cout<<std::hex<<(int)((byte*)sd.fo.metadata)[i]<< " ";
+
 
                     _callback(sd);
                 }
@@ -1180,10 +1224,14 @@ namespace rsimpl
             return _rec->load_blob(c.param2);
         }
 
+
+
+
         void playback_uvc_device::callback_thread()
         {
             while (_alive)
             {
+
                 auto c_ptr = _rec->cycle_calls(call_type::uvc_frame, _entity_id);
                 if (c_ptr)
                 {
@@ -1196,9 +1244,11 @@ namespace rsimpl
                         if (p == pair.first)
                         {
                             vector<uint8_t> frame_blob;
+                            vector<uint8_t> metadata_blob;
                             if (c_ptr->param3 == 0) // frame was not saved
                             {
                                 frame_blob = vector<uint8_t>(c_ptr->param4, 0);
+
                             }
                             else if(c_ptr->param3 ==1)// frame was saved
                             {
@@ -1208,13 +1258,17 @@ namespace rsimpl
                             {
                                 frame_blob = _compression.decode(_rec->load_blob(c_ptr->param2));
                             }
-                            frame_object fo{ static_cast<int>(frame_blob.size()), frame_blob.data() };
+                            metadata_blob =_rec->load_blob(c_ptr->param5);
+                            frame_object fo{static_cast<int>(frame_blob.size()), static_cast<int>(metadata_blob.size()),
+                                        frame_blob.data(),metadata_blob.data() };
                             pair.second(p, fo);
                             break;
                         }
                     }
                 }
-                this_thread::sleep_for(chrono::milliseconds(50));
+
+
+                this_thread::sleep_for(chrono::milliseconds(1));
             }
         }
     }

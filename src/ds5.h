@@ -4,7 +4,7 @@
 #pragma once
 
 #include <vector>
-
+#include "backend.h"
 #include "device.h"
 #include "context.h"
 #include "backend.h"
@@ -14,6 +14,7 @@
 #include "algo.h"
 #include <mutex>
 #include <chrono>
+
 const double TIMESTAMP_TO_MILLISECONS = 0.001;
 
 namespace rsimpl
@@ -50,6 +51,7 @@ namespace rsimpl
         uint32_t    frameInterval ;     //The frame interval in millisecond second unit
         uint32_t    pipeLatency;        //The latency between start of frame to frame ready in USB buffer
     };
+
 #pragma pack(pop)
 
     struct metadata
@@ -73,18 +75,18 @@ namespace rsimpl
             reset();
         }
 
-        bool has_metadata(const request_mapping& mode, const void * frame, unsigned int byte_received)
+        bool has_metadata(const request_mapping& mode, const void * metadata, unsigned int metadata_size)
         {
             std::lock_guard<std::recursive_mutex> lock(_mtx);
-            if (byte_received <= mode.pf->get_image_size(mode.profile.width, mode.profile.height))
+
+            if(metadata == nullptr || metadata_size == 0)
             {
                 return false;
             }
-            auto md = (metadata*)((byte*)frame +  mode.pf->get_image_size(mode.profile.width, mode.profile.height));
 
-            for(auto i=0; i<sizeof(metadata); i++)
+            for(auto i=0; i<metadata_size; i++)
             {
-                if(((byte*)md)[i] != 0)
+                if(((byte*)metadata)[i] != 0)
                 {
                     return true;
                 }
@@ -92,7 +94,7 @@ namespace rsimpl
             return false;
         }
 
-        double get_frame_timestamp(const request_mapping& mode, const void * frame, unsigned int byte_received) override
+        double get_frame_timestamp(const request_mapping& mode, const uvc::frame_object& fo) override
         {
             std::lock_guard<std::recursive_mutex> lock(_mtx);
             auto pin_index = 0;
@@ -101,12 +103,12 @@ namespace rsimpl
 
             if(!_has_metadata[pin_index])
             {
-               _has_metadata[pin_index] = has_metadata(mode, frame, byte_received);
+               _has_metadata[pin_index] = has_metadata(mode, fo.metadata, fo.metadata_size);
             }
 
             if(_has_metadata[pin_index])
             {
-                auto md = (metadata*)((byte*)frame +  mode.pf->get_image_size(mode.profile.width, mode.profile.height));
+                auto md = (metadata*)(fo.metadata);
                 return (double)(md->header.timestamp)*TIMESTAMP_TO_MILLISECONS;
             }
             else
@@ -116,11 +118,11 @@ namespace rsimpl
                     LOG_WARNING("UVC timestamp not found! please apply UVC metadata patch.");
                     started = true;
                 }
-                return _backup_timestamp_reader->get_frame_timestamp(mode, frame, byte_received);
+                return _backup_timestamp_reader->get_frame_timestamp(mode, fo);
             }
         }
 
-        unsigned long long get_frame_counter(const request_mapping & mode, const void * frame, unsigned int byte_received) const override
+        unsigned long long get_frame_counter(const request_mapping & mode, const uvc::frame_object& fo) const override
         {
             std::lock_guard<std::recursive_mutex> lock(_mtx);
             auto pin_index = 0;
@@ -129,12 +131,12 @@ namespace rsimpl
 
             if(_has_metadata[pin_index])
             {
-                auto md = (metadata*)((byte*)frame +  mode.pf->get_image_size(mode.profile.width, mode.profile.height));
+                auto md = (metadata*)(fo.metadata);
                 return md->md_capture_timing.frameCounter;
             }
             else
             {
-                return _backup_timestamp_reader->get_frame_counter(mode, frame, byte_received);
+                return _backup_timestamp_reader->get_frame_counter(mode, fo);
             }
         }
 
@@ -148,7 +150,7 @@ namespace rsimpl
             }
         }
 
-        rs_timestamp_domain get_frame_timestamp_domain(const request_mapping& mode) const override
+        rs_timestamp_domain get_frame_timestamp_domain(const request_mapping & mode, const uvc::frame_object& fo) const override
         {
             std::lock_guard<std::recursive_mutex> lock(_mtx);
             auto pin_index = 0;
@@ -156,7 +158,7 @@ namespace rsimpl
                 pin_index = 1;
 
             return _has_metadata[pin_index] ? RS_TIMESTAMP_DOMAIN_HARDWARE_CLOCK :
-                                              _backup_timestamp_reader->get_frame_timestamp_domain(mode);
+                                              _backup_timestamp_reader->get_frame_timestamp_domain(mode,fo);
         }
     };
 
@@ -166,12 +168,12 @@ namespace rsimpl
         std::vector<int64_t> total;
         std::vector<int> last_timestamp;
         mutable std::vector<int64_t> counter;
-        std::vector<std::chrono::time_point<std::chrono::high_resolution_clock>> start_time;
+        std::shared_ptr<uvc::time_service> _ts;
         mutable std::recursive_mutex _mtx;
     public:
-        ds5_timestamp_reader()
+        ds5_timestamp_reader(std::shared_ptr<uvc::time_service> ts)
             : total(pins),
-              last_timestamp(pins), counter(pins), start_time(pins)
+              last_timestamp(pins), counter(pins), _ts(ts)
         {
             reset();
         }
@@ -187,14 +189,13 @@ namespace rsimpl
             }
         }
 
-        double get_frame_timestamp(const request_mapping& mode, const void * frame, unsigned int byte_received) override
+        double get_frame_timestamp(const request_mapping& mode, const uvc::frame_object& fo) override
         {
             std::lock_guard<std::recursive_mutex> lock(_mtx);
-            auto ts = std::chrono::time_point_cast<std::chrono::milliseconds>(std::chrono::system_clock::now());
-            return static_cast<double>(ts.time_since_epoch().count());
+            return _ts->get_time();
         }
 
-        unsigned long long get_frame_counter(const request_mapping & mode, const void * /*frame*/, unsigned int byte_received) const override
+        unsigned long long get_frame_counter(const request_mapping & mode, const uvc::frame_object& fo) const override
         {
             std::lock_guard<std::recursive_mutex> lock(_mtx);
             auto pin_index = 0;
@@ -204,7 +205,7 @@ namespace rsimpl
             return ++counter[pin_index];
         }
 
-        rs_timestamp_domain get_frame_timestamp_domain(const request_mapping& mode) const override
+        rs_timestamp_domain get_frame_timestamp_domain(const request_mapping & mode, const uvc::frame_object& fo) const override
         {
             return RS_TIMESTAMP_DOMAIN_SYSTEM_TIME;
         }
@@ -241,14 +242,13 @@ namespace rsimpl
             }
         }
 
-        double get_frame_timestamp(const request_mapping& mode, const void * frame, unsigned int byte_received) override
+        double get_frame_timestamp(const request_mapping& mode, const uvc::frame_object& fo) override
         {
             std::lock_guard<std::recursive_mutex> lock(_mtx);
-            auto frame_size = mode.profile.width * mode.profile.height;
-            static const unsigned timestamp_offset = 6;
-            if (frame_size == hid_data_size)
+
+            if(has_metadata(mode, fo.metadata, fo.metadata_size))
             {
-                auto timestamp = *((uint64_t*)((const uint8_t*)frame + timestamp_offset));
+                auto timestamp = *((uint64_t*)((const uint8_t*)fo.metadata));
                 return static_cast<double>(timestamp) * timestamp_to_ms;
             }
 
@@ -261,7 +261,16 @@ namespace rsimpl
             return static_cast<double>(ts.time_since_epoch().count());
         }
 
-        unsigned long long get_frame_counter(const request_mapping & mode, const void * /*frame*/, unsigned int byte_received) const override
+        bool has_metadata(const request_mapping& mode, const void * metadata, unsigned int metadata_size) const
+        {
+            if(metadata != nullptr && metadata_size > 0)
+            {
+                return true;
+            }
+            return false;
+        }
+
+        unsigned long long get_frame_counter(const request_mapping & mode, const uvc::frame_object& fo) const override
         {
             std::lock_guard<std::recursive_mutex> lock(_mtx);
             int index = 0;
@@ -271,11 +280,9 @@ namespace rsimpl
             return ++counter[index];
         }
 
-        rs_timestamp_domain get_frame_timestamp_domain(const request_mapping& mode) const
+        rs_timestamp_domain get_frame_timestamp_domain(const request_mapping & mode, const uvc::frame_object& fo) const
         {
-            std::lock_guard<std::recursive_mutex> lock(_mtx);
-            auto frame_size = mode.profile.width * mode.profile.height;
-            if (frame_size == hid_data_size)
+            if(has_metadata(mode ,fo.metadata, fo.metadata_size))
             {
                 return RS_TIMESTAMP_DOMAIN_HARDWARE_CLOCK;
             }
@@ -399,18 +406,20 @@ namespace rsimpl
                 return "Enable/disable auto-exposure";
             }
 
-            enable_auto_exposure_option(std::shared_ptr<uvc_endpoint> fisheye_ep,
+            enable_auto_exposure_option(uvc_endpoint* fisheye_ep,
                                         std::shared_ptr<auto_exposure_mechanism> auto_exposure,
                                         std::shared_ptr<auto_exposure_state> auto_exposure_state)
                 : _auto_exposure_state(auto_exposure_state),
                   _to_add_frames((_auto_exposure_state->get_enable_auto_exposure())),
                   _auto_exposure(auto_exposure)
             {
-                fisheye_ep->register_on_before_frame_callback([this](rs_stream stream, rs_frame* f){
+                fisheye_ep->register_on_before_frame_callback(
+                            [this](rs_stream stream, rs_frame& f, callback_invokation_holder callback)
+                {
                     if (!_to_add_frames || stream != RS_STREAM_FISHEYE)
                         return;
 
-                    _auto_exposure->add_frame(f->get()->get_owner()->clone_frame(f));
+                    _auto_exposure->add_frame(f.get()->get_owner()->clone_frame(&f), std::move(callback));
                 });
             }
 
@@ -554,7 +563,7 @@ namespace rsimpl
         std::vector<uint8_t> send_receive_raw_data(const std::vector<uint8_t>& input) override;
         virtual rs_intrinsics get_intrinsics(unsigned int subdevice, stream_profile profile) const override;
 
-        void register_auto_exposure_options(std::shared_ptr<uvc_endpoint> uvc_ep);
+        void register_auto_exposure_options(uvc_endpoint* uvc_ep);
 
     private:
         bool is_camera_in_advanced_mode() const;

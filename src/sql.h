@@ -76,10 +76,12 @@ namespace sql
         bool step() const;
 
         int get_int(int column = 0) const;
+        double get_double(int column = 0) const;
         std::string get_string(int column = 0) const;
         std::vector<uint8_t> get_blob(int column = 0) const;
 
         void bind(int param, int value) const;
+        void bind(int param, double value) const;
         void bind(int param, const char* value) const;
         void bind(int param, const std::vector<uint8_t>& value) const;
 
@@ -97,6 +99,7 @@ namespace sql
         public:
             std::string get_string() const { return m_owner->get_string(m_column); }
             int get_int() const { return m_owner->get_int(m_column); }
+            double get_double() const { return m_owner->get_double(m_column); }
             int get_bool() const { return m_owner->get_int(m_column) != 0; }
             std::vector<uint8_t> get_blob() const { return m_owner->get_blob(m_column); }
         };

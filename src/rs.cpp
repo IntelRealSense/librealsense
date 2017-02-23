@@ -66,7 +66,7 @@ struct rs_frame_queue
     {
     }
 
-    single_consumer_queue<frame_holder> queue;
+    single_consumer_queue<rsimpl::frame_holder> queue;
 };
 
 // This facility allows for translation of exceptions to rs_error structs at the API boundary
@@ -192,6 +192,13 @@ rs_device_list* rs_query_devices(const rs_context* context, rs_error** error) tr
     return new rs_device_list{ context->ctx, results };
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, context)
+
+double rs_get_context_time(const rs_context* context, rs_error** error) try
+{
+    VALIDATE_NOT_NULL(context);
+    return context->ctx->get_time();
+}
+HANDLE_EXCEPTIONS_AND_RETURN(0, context)
 
 rs_device_list* rs_query_adjacent_devices(const rs_device* device, rs_error** error) try
 {
@@ -605,7 +612,7 @@ int rs_poll_for_frame(rs_frame_queue* queue, rs_frame** output_frame, rs_error**
 {
     VALIDATE_NOT_NULL(queue);
     VALIDATE_NOT_NULL(output_frame);
-    frame_holder fh;
+    rsimpl::frame_holder fh;
     if (queue->queue.try_dequeue(&fh))
     {
         rs_frame* result = nullptr;
@@ -623,7 +630,7 @@ void rs_enqueue_frame(rs_frame* frame, void* queue) try
     VALIDATE_NOT_NULL(frame);
     VALIDATE_NOT_NULL(queue);
     auto q = reinterpret_cast<rs_frame_queue*>(queue);
-    frame_holder fh;
+    rsimpl::frame_holder fh;
     fh.frame = frame;
     q->queue.enqueue(std::move(fh));
 }

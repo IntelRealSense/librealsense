@@ -38,11 +38,11 @@ namespace rsimpl
             counter = 0;
         }
 
-        double get_frame_timestamp(const request_mapping& /*mode*/, const void * frame, unsigned int byte_received) override
+        double get_frame_timestamp(const request_mapping& /*mode*/, const uvc::frame_object& fo) override
         {
             std::lock_guard<std::recursive_mutex> lock(_mtx);
             // Timestamps are encoded within the first 32 bits of the image
-            int rolling_timestamp = *reinterpret_cast<const int32_t *>(frame);
+            int rolling_timestamp = *reinterpret_cast<const int32_t *>(fo.pixels);
 
             if (!started)
             {
@@ -57,13 +57,13 @@ namespace rsimpl
             return timestamp;
         }
 
-        unsigned long long get_frame_counter(const request_mapping & /*mode*/, const void * /*frame*/, unsigned int byte_received) const override
+        unsigned long long get_frame_counter(const request_mapping & /*mode*/, const uvc::frame_object& fo) const override
         {
             std::lock_guard<std::recursive_mutex> lock(_mtx);
             return ++counter;
         }
 
-        rs_timestamp_domain get_frame_timestamp_domain(const request_mapping& mode) const override
+        rs_timestamp_domain get_frame_timestamp_domain(const request_mapping & mode, const uvc::frame_object& fo) const override
         {
             return RS_TIMESTAMP_DOMAIN_HARDWARE_CLOCK;
         }
@@ -147,7 +147,8 @@ namespace rsimpl
                                                                  const uvc::uvc_device_info& color)
         {
             auto color_ep = std::make_shared<uvc_endpoint>(backend.create_uvc_device(color),
-                                                           std::unique_ptr<frame_timestamp_reader>(new sr300_timestamp_reader()));
+                                                           std::unique_ptr<frame_timestamp_reader>(new sr300_timestamp_reader()),
+                                                           backend.create_time_service());
             color_ep->register_pixel_format(pf_yuy2);
             color_ep->register_pixel_format(pf_yuyv);
 
@@ -176,7 +177,8 @@ namespace rsimpl
 
             // create uvc-endpoint from backend uvc-device
             auto depth_ep = std::make_shared<uvc_endpoint>(backend.create_uvc_device(depth),
-                                                           std::unique_ptr<frame_timestamp_reader>(new sr300_timestamp_reader()));
+                                                           std::unique_ptr<frame_timestamp_reader>(new sr300_timestamp_reader()),
+                                                           backend.create_time_service());
             depth_ep->register_xu(depth_xu); // make sure the XU is initialized everytime we power the camera
             depth_ep->register_pixel_format(pf_invz);
             depth_ep->register_pixel_format(pf_sr300_inzi);

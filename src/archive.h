@@ -175,8 +175,9 @@ typedef rsimpl::small_heap<callback_invokation, 1> callbacks_heap;
 
 struct callback_invokation_holder
 {
+    callback_invokation_holder() : invokation(nullptr), owner(nullptr) {}
+
     callback_invokation_holder(const callback_invokation_holder&) = delete;
-    callback_invokation_holder& operator=(const callback_invokation_holder&) = delete;
 
     callback_invokation_holder(callback_invokation_holder&& other)
         : invokation(other.invokation), owner(other.owner)
@@ -184,17 +185,28 @@ struct callback_invokation_holder
         other.invokation = nullptr;
     }
 
-    callback_invokation_holder(callback_invokation* invokation, callbacks_heap& owner)
+    callback_invokation_holder(callback_invokation* invokation, callbacks_heap* owner)
         : invokation(invokation), owner(owner)
     { }
 
     ~callback_invokation_holder()
     {
-        if (invokation) owner.deallocate(invokation);
+        if (invokation) owner->deallocate(invokation);
     }
+
+
+    callback_invokation_holder& operator=(const callback_invokation_holder&) = delete;
+    callback_invokation_holder& operator=(callback_invokation_holder&& other)
+    {
+        invokation = other.invokation;
+        owner = other.owner;
+        other.invokation = nullptr;
+        return *this;
+    }
+
 private:
     callback_invokation* invokation;
-    callbacks_heap& owner;
+    callbacks_heap* owner;
 };
 
 namespace rsimpl
@@ -221,7 +233,7 @@ namespace rsimpl
 
         callback_invokation_holder begin_callback()
         {
-            return{ callback_inflight.allocate(), callback_inflight };
+            return{ callback_inflight.allocate(), &callback_inflight };
         }
 
         void unpublish_frame(frame* frame);

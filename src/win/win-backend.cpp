@@ -10,7 +10,7 @@
 #include "win-uvc.h"
 
 #include <mfapi.h>
-
+#include <chrono>
 #include "win-usb.h"
 
 namespace rsimpl
@@ -104,6 +104,12 @@ namespace rsimpl
         {
             return std::vector<hid_device_info>();
         }
+
+        std::shared_ptr<time_service> wmf_backend::create_time_service() const
+        {
+            return std::make_shared<os_time_service>();
+        }
+
     }
 }
 

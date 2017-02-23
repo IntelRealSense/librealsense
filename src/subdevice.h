@@ -19,7 +19,7 @@ namespace rsimpl
     class device;
     class option;
 
-    typedef std::function<void(rs_stream, rs_frame*)> on_before_frame_callback;
+    typedef std::function<void(rs_stream, rs_frame&, callback_invokation_holder)> on_before_frame_callback;
 
     struct region_of_interest
     {
@@ -41,12 +41,14 @@ namespace rsimpl
     class endpoint
     {
     public:
-        endpoint()
+        endpoint(std::shared_ptr<uvc::time_service> ts)
             : _is_streaming(false),
               _is_opened(false),
               _callback(nullptr, [](rs_frame_callback*) {}),
               _max_publish_list_size(16),
-              _stream_profiles([this]() { return this->init_stream_profiles(); }) {}
+              _stream_profiles([this]() { return this->init_stream_profiles(); }),
+              _ts(ts)
+              {}
 
         virtual std::vector<uvc::stream_profile> init_stream_profiles() = 0;
         const std::vector<uvc::stream_profile>& get_stream_profiles() const
@@ -60,7 +62,7 @@ namespace rsimpl
 
         rs_frame* alloc_frame(size_t size, frame_additional_data additional_data) const;
 
-        void invoke_callback(rs_frame* frame_ref) const;
+        void invoke_callback(frame_holder frame) const;
 
         void flush() const;
 
@@ -115,6 +117,7 @@ namespace rsimpl
         frame_callback_ptr _callback;
         std::shared_ptr<frame_archive> _archive;
         std::atomic<uint32_t> _max_publish_list_size;
+        std::shared_ptr<uvc::time_service> _ts;
 
     private:
 
@@ -124,15 +127,16 @@ namespace rsimpl
         pose _pose;
         std::map<rs_camera_info, std::string> _camera_info;
         std::shared_ptr<region_of_interest_method> _roi_method = nullptr;
+
     };
 
     struct frame_timestamp_reader
     {
         virtual ~frame_timestamp_reader() {}
 
-        virtual double get_frame_timestamp(const request_mapping& mode, const void * frame, unsigned int byte_received) = 0;
-        virtual unsigned long long get_frame_counter(const request_mapping& mode, const void * frame, unsigned int byte_received) const = 0;
-        virtual rs_timestamp_domain get_frame_timestamp_domain(const request_mapping& mode) const = 0;
+        virtual double get_frame_timestamp(const request_mapping& mode, const uvc::frame_object& fo) = 0;
+        virtual unsigned long long get_frame_counter(const request_mapping& mode, const uvc::frame_object& fo) const = 0;
+        virtual rs_timestamp_domain get_frame_timestamp_domain(const request_mapping & mode, const uvc::frame_object& fo) const = 0;
         virtual void reset() = 0;
     };
 
@@ -142,8 +146,9 @@ namespace rsimpl
         explicit hid_endpoint(std::shared_ptr<uvc::hid_device> hid_device,
                               std::unique_ptr<frame_timestamp_reader> timestamp_reader,
                               std::map<rs_stream, std::map<unsigned, unsigned>> fps_and_sampling_frequency_per_rs_stream,
-                              std::vector<std::pair<std::string, stream_profile>> sensor_name_and_hid_profiles)
-            : _hid_device(hid_device),
+                              std::vector<std::pair<std::string, stream_profile>> sensor_name_and_hid_profiles,
+                              std::shared_ptr<uvc::time_service> ts)
+            : endpoint(ts),_hid_device(hid_device),
               _timestamp_reader(std::move(timestamp_reader)),
               _fps_and_sampling_frequency_per_rs_stream(fps_and_sampling_frequency_per_rs_stream),
               _sensor_name_and_hid_profiles(sensor_name_and_hid_profiles)
@@ -200,8 +205,10 @@ namespace rsimpl
     {
     public:
         explicit uvc_endpoint(std::shared_ptr<uvc::uvc_device> uvc_device,
-                              std::unique_ptr<frame_timestamp_reader> timestamp_reader)
-            : _device(std::move(uvc_device)),
+                              std::unique_ptr<frame_timestamp_reader> timestamp_reader,
+                              std::shared_ptr<uvc::time_service> ts)
+            : endpoint(ts),
+              _device(std::move(uvc_device)),
               _user_count(0),
               _timestamp_reader(std::move(timestamp_reader)),
               _on_before_frame_callback(nullptr)

@@ -411,6 +411,45 @@ namespace rsimpl
 
     class device;
 
+    struct frame_holder
+    {
+        rs_frame* frame;
+
+        rs_frame* operator->()
+        {
+            return frame;
+        }
+
+        operator bool() const { return frame != nullptr; }
+
+        operator rs_frame*() const { return frame; }
+
+        frame_holder(rs_frame* f)
+        {
+            frame = f;
+        }
+
+        ~frame_holder();
+
+        frame_holder(const frame_holder&) = delete;
+        frame_holder(frame_holder&& other)
+            : frame(other.frame)
+        {
+            other.frame = nullptr;
+        }
+
+        frame_holder() : frame(nullptr) {}
+
+        frame_holder& operator=(const frame_holder&) = delete;
+        frame_holder& operator=(frame_holder&& other)
+        {
+            frame = other.frame;
+            other.frame = nullptr;
+            return *this;
+        }
+
+    };
+
     class firmware_version
     {
         int                 m_major, m_minor, m_patch, m_build;

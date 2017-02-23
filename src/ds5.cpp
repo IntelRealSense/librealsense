@@ -142,7 +142,8 @@ namespace rsimpl
         auto hid_ep = std::make_shared<hid_endpoint>(backend.create_hid_device(all_hid_infos.front()),
                                                                                std::unique_ptr<frame_timestamp_reader>(new ds5_hid_timestamp_reader()),
                                                                                fps_and_sampling_frequency_per_rs_stream,
-                                                                               sensor_name_and_hid_profiles);
+                                                                               sensor_name_and_hid_profiles,
+                                                                               backend.create_time_service());
         hid_ep->register_pixel_format(pf_accel_axes);
         hid_ep->register_pixel_format(pf_gyro_axes);
 
@@ -159,9 +160,10 @@ namespace rsimpl
         for (auto&& info : filter_by_mi(all_device_infos, 0)) // Filter just mi=0, DEPTH
             depth_devices.push_back(backend.create_uvc_device(info));
 
-        std::unique_ptr<frame_timestamp_reader> ds5_timestamp_reader_backup(new ds5_timestamp_reader());
+        std::unique_ptr<frame_timestamp_reader> ds5_timestamp_reader_backup(new ds5_timestamp_reader(backend.create_time_service()));
         auto depth_ep = std::make_shared<uvc_endpoint>(std::make_shared<uvc::multi_pins_uvc_device>(depth_devices),
-                                                       std::unique_ptr<frame_timestamp_reader>(new ds5_timestamp_reader_from_metadata(std::move(ds5_timestamp_reader_backup))));
+                                                       std::unique_ptr<frame_timestamp_reader>(new ds5_timestamp_reader_from_metadata(std::move(ds5_timestamp_reader_backup))),
+                                                       backend.create_time_service());
         depth_ep->register_xu(depth_xu); // make sure the XU is initialized everytime we power the camera
         depth_ep->register_pixel_format(pf_z16); // Depth
         depth_ep->register_pixel_format(pf_y8); // Left Only - Luminance
@@ -193,21 +195,21 @@ namespace rsimpl
         return depth_ep;
     }
 
-    void ds5_camera::register_auto_exposure_options(std::shared_ptr<uvc_endpoint> uvc_ep)
+    void ds5_camera::register_auto_exposure_options(uvc_endpoint* uvc_ep)
     {
-        auto ae_state = std::make_shared<auto_exposure_state>();
-        auto auto_exposure = std::make_shared<auto_exposure_mechanism>(uvc_ep, *ae_state);
+       auto ae_state = std::make_shared<auto_exposure_state>();
+       auto auto_exposure = std::make_shared<auto_exposure_mechanism>(uvc_ep, *ae_state);
 
-        uvc_ep->register_option(RS_OPTION_ENABLE_AUTO_EXPOSURE,
+       uvc_ep->register_option(RS_OPTION_ENABLE_AUTO_EXPOSURE,
                                 std::make_shared<enable_auto_exposure_option>(uvc_ep,
-                                                                              auto_exposure,
+                                                                             auto_exposure,
                                                                               ae_state));
-        uvc_ep->register_option(RS_OPTION_AUTO_EXPOSURE_MODE,
+       uvc_ep->register_option(RS_OPTION_AUTO_EXPOSURE_MODE,
                                 std::make_shared<auto_exposure_mode_option>(auto_exposure,
                                                                             ae_state));
-        uvc_ep->register_option(RS_OPTION_AUTO_EXPOSURE_ANTIFLICKER_RATE,
-                                std::make_shared<auto_exposure_antiflicker_rate_option>(auto_exposure,
-                                                                                        ae_state));
+       uvc_ep->register_option(RS_OPTION_AUTO_EXPOSURE_ANTIFLICKER_RATE,
+                               std::make_shared<auto_exposure_antiflicker_rate_option>(auto_exposure,
+                                                                                      ae_state));
     }
 
     ds5_camera::ds5_camera(const uvc::backend& backend,
@@ -246,12 +248,13 @@ namespace rsimpl
             if (fisheye_infos.size() != 1)
                 throw invalid_value_exception("RS450 model is expected to include a single fish-eye device!");
 
-            std::unique_ptr<frame_timestamp_reader> ds5_timestamp_reader_backup(new ds5_timestamp_reader());
+            std::unique_ptr<frame_timestamp_reader> ds5_timestamp_reader_backup(new ds5_timestamp_reader(backend.create_time_service()));
 
             fisheye_ep = std::make_shared<uvc_endpoint>(backend.create_uvc_device(fisheye_infos.front()),
-                                                        std::unique_ptr<frame_timestamp_reader>(new ds5_timestamp_reader_from_metadata(std::move(ds5_timestamp_reader_backup))));
+                                                        std::unique_ptr<frame_timestamp_reader>(new ds5_timestamp_reader_from_metadata(std::move(ds5_timestamp_reader_backup))),
+                                                        backend.create_time_service());
 
-            register_auto_exposure_options(fisheye_ep);
+            register_auto_exposure_options(fisheye_ep.get());
 
             fisheye_ep->register_xu(fisheye_xu); // make sure the XU is initialized everytime we power the camera
             fisheye_ep->register_pixel_format(pf_raw8);

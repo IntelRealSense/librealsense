@@ -5,6 +5,7 @@ EXPORTS
     rs_delete_context
     rs_create_recording_context
     rs_create_mock_context
+    rs_get_context_time
     
     rs_query_devices
     rs_get_device_count

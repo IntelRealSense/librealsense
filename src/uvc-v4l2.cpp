@@ -53,6 +53,8 @@
 #define META_DATA_SIZE 256
 
 #define IIO_ROOT_PATH "/sys/bus/iio/devices/iio:device"
+#define HID_METADATA_SIZE 8
+#define HID_DATA_ACTAL_SIZE 6
 
 namespace rsimpl
 {
@@ -405,8 +407,12 @@ namespace rsimpl
                     const uint32_t channel_size = get_channel_size();
                     const uint32_t output_size = get_output_size();
                     auto raw_data_size = channel_size*buf_len;
+
+                    std::vector<uint8_t> raw_data(raw_data_size);
+                    auto metadata = has_metadata();
+
                     do {
-                        std::vector<uint8_t> raw_data(raw_data_size);
+
                         fd_set fds;
                         FD_ZERO(&fds);
                         FD_SET(fd, &fds);
@@ -437,18 +443,23 @@ namespace rsimpl
                             auto p_raw_data = raw_data.data() + channel_size * i;
                             sensor_data sens_data{};
                             sens_data.sensor = hid_sensor{get_iio_device(), get_sensor_name()};
-                            sens_data.data.resize(output_size);
 
-                            // TODO: parse data dynamically
-                            memcpy(sens_data.data.data() + 0, p_raw_data + 0, 2);
-                            memcpy(sens_data.data.data() + 2, p_raw_data + 4, 2);
-                            memcpy(sens_data.data.data() + 4, p_raw_data + 8, 2);
-                            memcpy(sens_data.data.data() + 6, p_raw_data + 16, 8);
+                            auto hid_data_size = channel_size - HID_METADATA_SIZE;
+
+                            sens_data.fo = {hid_data_size, metadata?HID_METADATA_SIZE:0,  p_raw_data,  metadata?p_raw_data + hid_data_size:nullptr};
+
                             this->callback(sens_data);
                         }
                     } while(this->capturing);
                     close(fd);
                 }));
+            }
+
+            bool has_metadata()
+            {
+                if(get_output_size() == HID_DATA_ACTAL_SIZE + HID_METADATA_SIZE)
+                    return true;
+                return false;
             }
 
             void stop_capture()
@@ -554,7 +565,7 @@ namespace rsimpl
                 dir = opendir(iio_device_path.c_str());
                 if (dir == NULL)
                 {
-                    throw linux_backend_exception(to_string() << "Failed to open scan_element " << iio_device_path);
+                     throw linux_backend_exception(to_string() << "Failed to open scan_element " << iio_device_path);
                 }
 
                 // verify file format. should include in_ (input) and _en (enable).
@@ -573,6 +584,7 @@ namespace rsimpl
                 closedir(dir);
                 return sampling_frequency_name;
             }
+
 
             // read the IIO device inputs.
             void read_device_inputs()
@@ -1114,6 +1126,7 @@ namespace rsimpl
                 _named_mtx = std::unique_ptr<named_mutex>(new named_mutex(_name, 5000));
             }
 
+
             void capture_loop()
             {
                 try
@@ -1189,6 +1202,7 @@ namespace rsimpl
                         if(xioctl(_fd, VIDIOC_QUERYBUF, &buf) < 0)
                             throw linux_backend_exception("xioctl(VIDIOC_QUERYBUF) failed");
 
+                        _buffer_length = buf.length;
                         _buffers[i].length = buf.length;
                         if ( _use_memory_map )
                         {
@@ -1314,7 +1328,7 @@ namespace rsimpl
                 buff[0] = 0;
                 if (write(_pipe_fd[1], buff, 1) < 0)
                 {
-                    throw linux_backend_exception("Could not signal video capture thread to stop. Error write to pipe.");
+                     throw linux_backend_exception("Could not signal video capture thread to stop. Error write to pipe.");
                 }
             }
 
@@ -1366,7 +1380,9 @@ namespace rsimpl
                         }
 
                         frame_object fo { (int)_buffers[buf.index].length,
-                                        _buffers[buf.index].start };
+                                        has_metadata()? META_DATA_SIZE: 0,
+                                        _buffers[buf.index].start,
+                                        has_metadata()? _buffers[buf.index].start + _buffer_length: NULL};
 
 
                         if (buf.bytesused > 0)
@@ -1395,6 +1411,12 @@ namespace rsimpl
 
             }
 
+            bool has_metadata()
+            {
+               if(!_use_memory_map)
+                   return true;
+            }
+
             void set_power_state(power_state state) override
             {
                 if (state == D0 && _state == D3)
@@ -1402,6 +1424,7 @@ namespace rsimpl
                     _fd = open(_name.c_str(), O_RDWR | O_NONBLOCK, 0);
                     if(_fd < 0)
                         throw linux_backend_exception(to_string() << "Cannot open '" << _name);
+
 
                     if (pipe(_pipe_fd) < 0)
                         throw linux_backend_exception("Cannot create pipe!");
@@ -1696,6 +1719,7 @@ namespace rsimpl
             int _fd = 0;
             int _pipe_fd[2];
             std::vector<buffer> _buffers;
+            unsigned int _buffer_length = 0;
             stream_profile _profile;
             frame_callback _callback;
             std::atomic<bool> _is_capturing;
@@ -1760,12 +1784,18 @@ namespace rsimpl
 
                 return results;
             }
+            std::shared_ptr<time_service> create_time_service() const override
+            {
+                return std::make_shared<os_time_service>();
+            }
         };
+
 
         std::shared_ptr<backend> create_backend()
         {
             return std::make_shared<v4l_backend>();
         }
+
 
     }
 }

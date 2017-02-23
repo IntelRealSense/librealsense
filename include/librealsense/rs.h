@@ -256,6 +256,15 @@ void rs_delete_context(rs_context* context);
 rs_device_list* rs_query_devices(const rs_context* context, rs_error** error);
 
 /**
+* return the time at specific time point
+* \param context     Object representing librealsense session
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return            the time at specific time point, in live and redord mode it will return the system time and in playback mode it will return the recorded time
+*/
+double rs_get_context_time(const rs_context* context, rs_error** error);
+
+
+/**
 * Determines number of devices in a list
 * \param[in] info_list The list of connected devices captured using rs_query_devices
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored

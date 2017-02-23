@@ -13,7 +13,7 @@
 #include "backend.h"
 #include "context.h"
 #include "recorder.h"
-
+#include <chrono>
 
 template<unsigned... Is> struct seq{};
 template<unsigned N, unsigned... Is>
@@ -43,6 +43,7 @@ namespace rsimpl
     {
 
         LOG_DEBUG("Librealsense " << std::string(std::begin(rs_api_version),std::end(rs_api_version)));
+
         switch(type)
         {
         case backend_type::standard:
@@ -51,11 +52,14 @@ namespace rsimpl
         case backend_type::record:
             _backend = std::make_shared<uvc::record_backend>(uvc::create_backend(), filename, section, mode);
             break;
-        case backend_type::playback: 
+        case backend_type::playback:    
             _backend = std::make_shared<uvc::playback_backend>(filename, section);
+
             break;
         default: throw invalid_value_exception(to_string() << "Undefined backend type " << static_cast<int>(type));
         }
+
+       _ts = _backend->create_time_service();
     }
 
     std::vector<std::shared_ptr<device_info>> context::query_devices() const
@@ -76,5 +80,10 @@ namespace rsimpl
         std::copy(begin(recovery_devices), end(recovery_devices), std::back_inserter(list));
 
         return list;
+    }
+
+    double context::get_time()
+    {
+        return _ts->get_time();
     }
 }

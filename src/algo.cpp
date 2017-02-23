@@ -6,7 +6,6 @@
 
 using namespace rsimpl;
 
-
 bool auto_exposure_state::get_enable_auto_exposure() const
 {
     return is_auto_exposure;
@@ -38,32 +37,42 @@ void auto_exposure_state::set_auto_exposure_antiflicker_rate(unsigned value)
 }
 
 
-auto_exposure_mechanism::auto_exposure_mechanism(std::shared_ptr<uvc_endpoint> dev, auto_exposure_state auto_exposure_state)
+auto_exposure_mechanism::auto_exposure_mechanism(uvc_endpoint* dev, auto_exposure_state auto_exposure_state)
     : _device(dev), _auto_exposure_algo(auto_exposure_state),
       _keep_alive(true), _frames_counter(0),
       _skip_frames(auto_exposure_state.skip_frames), _data_queue(queue_size)
 {
-    _exposure_thread = std::make_shared<std::thread>([this]() {
+    _exposure_thread = std::make_shared<std::thread>(
+                [this]()
+    {
         while (_keep_alive)
         {
             std::unique_lock<std::mutex> lk(_queue_mtx);
             _cv.wait(lk, [&] {return (_data_queue.size() || !_keep_alive); });
+
             if (!_keep_alive)
                 return;
 
+            frame_and_callback frame_callback;
+            auto frame_sts = try_pop_front_data(&frame_callback);
+            auto frame = std::move(frame_callback.f_holder);
 
-            rs_frame* frame_ref = nullptr;
-            auto frame_sts = try_pop_front_data(&frame_ref);
             lk.unlock();
 
-            double values[2] = {};
-            try {
-                if (frame_ref->get()->supports_frame_metadata(RS_FRAME_METADATA_ACTUAL_EXPOSURE))
+            if (!frame_sts)
+            {
+                LOG_ERROR("After waiting on data_queue signalled there are no frames on queue");
+                continue;
+            }
+            try
+            {
+                double values[2] = {};
+
+                if (frame->get()->supports_frame_metadata(RS_FRAME_METADATA_ACTUAL_EXPOSURE))
                 {
                     auto gain = _device->get_option(RS_OPTION_GAIN).query();
-                    values[0] = frame_ref->get()->get_frame_metadata(RS_FRAME_METADATA_ACTUAL_EXPOSURE);
-                    values[1] = gain;
-                }
+                    values[0] = frame->get()->get_frame_metadata(RS_FRAME_METADATA_ACTUAL_EXPOSURE);
+                    values[1] = gain;                }
                 else
                 {
                     values[0] = _device->get_option(RS_OPTION_EXPOSURE).query();
@@ -71,15 +80,11 @@ auto_exposure_mechanism::auto_exposure_mechanism(std::shared_ptr<uvc_endpoint> d
                 }
 
                 values[0] /= 10.; // Fisheye exposure value by extension control is in units of 10 mSec
-            }
-            catch (...) {};
 
-            if (frame_sts)
-            {
                 auto exposure_value = static_cast<float>(values[0]);
                 auto gain_value = static_cast<float>(2. + (values[1] - 15.) / 8.);
 
-                bool sts = _auto_exposure_algo.analyze_image(frame_ref);
+                bool sts = _auto_exposure_algo.analyze_image(frame);
                 if (sts)
                 {
                     bool modify_exposure, modify_gain;
@@ -103,7 +108,14 @@ auto_exposure_mechanism::auto_exposure_mechanism(std::shared_ptr<uvc_endpoint> d
                     }
                 }
             }
-            frame_ref->get()->get_owner()->release_frame_ref(frame_ref);
+            catch (const std::exception& ex)
+            {
+                LOG_ERROR("Error during Auto-Exposure loop: " << ex.what());
+            }
+            catch (...)
+            {
+                LOG_ERROR("Unknown error during Auto-Exposure loop!");
+            }
         }
     });
 }
@@ -125,11 +137,11 @@ void auto_exposure_mechanism::update_auto_exposure_state(auto_exposure_state& au
     _auto_exposure_algo.update_options(auto_exposure_state);
 }
 
-void auto_exposure_mechanism::add_frame(rs_frame* frame)
+void auto_exposure_mechanism::add_frame(frame_holder frame, callback_invokation_holder callback)
 {
+
     if (!_keep_alive || (_skip_frames && (_frames_counter++) != _skip_frames))
     {
-        frame->get()->get_owner()->release_frame_ref(frame);
         return;
     }
 
@@ -142,27 +154,17 @@ void auto_exposure_mechanism::add_frame(rs_frame* frame)
             _data_queue.dequeue();
         }
 
-        push_back_data(frame);
+        _data_queue.enqueue({std::move(frame), std::move(callback)});
     }
     _cv.notify_one();
 }
 
-void auto_exposure_mechanism::push_back_data(rs_frame* data)
-{
-    frame_holder fh;
-    fh.frame = data;
-    _data_queue.enqueue(std::move(fh));
-}
-
-bool auto_exposure_mechanism::try_pop_front_data(rs_frame** data)
+bool auto_exposure_mechanism::try_pop_front_data(frame_and_callback* fh)
 {
     if (!_data_queue.size())
         return false;
 
-    auto fh = _data_queue.dequeue();
-    rs_frame* result = nullptr;
-    std::swap(result, fh.frame);
-    *data = result;
+    *fh = std::move(_data_queue.dequeue());
 
     return true;
 }

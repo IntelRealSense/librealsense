@@ -6,8 +6,9 @@
 #include <array>
 #include <set>
 #include <unordered_set>
-
+#include "algo.h"
 using namespace rsimpl;
+
 
 rs_frame* endpoint::alloc_frame(size_t size, frame_additional_data additional_data) const
 {
@@ -15,14 +16,19 @@ rs_frame* endpoint::alloc_frame(size_t size, frame_additional_data additional_da
     return _archive->track_frame(frame);
 }
 
-void endpoint::invoke_callback(rs_frame* frame_ref) const
+void endpoint::invoke_callback(frame_holder frame) const
 {
-    if (frame_ref)
+    if (frame)
     {
         auto callback = _archive->begin_callback();
         try
         {
-            if (_callback) _callback->on_frame(frame_ref);
+            if (_callback)
+            {
+                rs_frame* ref = nullptr;
+                std::swap(frame.frame, ref);
+                _callback->on_frame(ref);
+            }
         }
         catch(...)
         {
@@ -234,20 +240,20 @@ void uvc_endpoint::open(const std::vector<stream_profile>& requests)
         {
             using namespace std::chrono;
 
-            auto start = high_resolution_clock::now();
             _device->probe_and_commit(mode.profile,
-            [this, mode, start, timestamp_reader, requests](uvc::stream_profile p, uvc::frame_object f) mutable
+            [this, mode, timestamp_reader, requests](uvc::stream_profile p, uvc::frame_object f) mutable
             {
             if (!this->is_streaming())
                 return;
 
             frame_continuation release_and_enqueue([]() {}, f.pixels);
 
+            // Ignore any frames which appear corrupted or invalid
             // Determine the timestamp for this frame
-            auto timestamp = timestamp_reader->get_frame_timestamp(mode, f.pixels, f.size);
-            auto timestamp_domain = timestamp_reader->get_frame_timestamp_domain(mode);
+            auto timestamp = timestamp_reader->get_frame_timestamp(mode, f);
+            auto timestamp_domain = timestamp_reader->get_frame_timestamp_domain(mode, f);
 
-            auto frame_counter = timestamp_reader->get_frame_counter(mode, f.pixels, f.size);
+            auto frame_counter = timestamp_reader->get_frame_counter(mode, f);
             //auto received_time = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - capture_start_time).count();
 
             auto width = mode.profile.width;
@@ -255,11 +261,9 @@ void uvc_endpoint::open(const std::vector<stream_profile>& requests)
             auto fps = mode.profile.fps;
 
             std::vector<byte *> dest;
-            std::vector<rs_frame*> refs;
+            std::vector<frame_holder> refs;
 
-            auto now = high_resolution_clock::now();
-            auto ms = duration_cast<milliseconds>(now - start);
-            auto system_time = ms.count();
+            auto system_time = _ts->get_time();
 
             //auto stride_x = mode_selection.get_stride_x();
             //auto stride_y = mode_selection.get_stride_y();
@@ -293,22 +297,16 @@ void uvc_endpoint::open(const std::vector<stream_profile>& requests)
                     output.first);
 
 
-                auto frame_ref = this->alloc_frame(width * height * bpp / 8, additional_data);
-                if (frame_ref)
+                frame_holder frame = this->alloc_frame(width * height * bpp / 8, additional_data);
+                if (frame.frame)
                 {
-                    frame_ref->get()->set_timestamp_domain(timestamp_domain);
-                    refs.push_back(frame_ref);
-                    dest.push_back(const_cast<byte*>(frame_ref->get()->get_frame_data()));
+                    frame->get()->set_timestamp_domain(timestamp_domain);
+                    dest.push_back(const_cast<byte*>(frame->get()->get_frame_data()));
+                    refs.push_back(std::move(frame));
                 }
                 else
                 {
-                    LOG_DEBUG("Dropped frame. alloc_frame(...) returned nullptr");
-
-                    for (auto&& pref : refs)
-                    {
-                        pref->get()->get_owner()->release_frame_ref(pref);
-                    }
-
+                    LOG_INFO("Dropped frame. alloc_frame(...) returned nullptr");
                     return;
                 }
 
@@ -332,16 +330,13 @@ void uvc_endpoint::open(const std::vector<stream_profile>& requests)
                 {
                     if (_on_before_frame_callback)
                     {
+                        auto callback = _archive->begin_callback();
                         auto stream_type = pref->get()->get_stream_type();
-                        _on_before_frame_callback(stream_type, pref);
+                        _on_before_frame_callback(stream_type, *pref, std::move(callback));
                     }
 
-                    this->invoke_callback(pref);
+                    this->invoke_callback(std::move(pref));
                 }
-                // However, if this is an extra stream we had to open to properly satisty the user's request,
-                // deallocate the frame and prevent the excess data from reaching the user.
-                else
-                    pref->get()->get_owner()->release_frame_ref(pref);
              }
             });
         }
@@ -633,13 +628,13 @@ void hid_endpoint::start_streaming(frame_callback_ptr callback)
             return;
 
         auto mode = _iio_mapping[sensor_data.sensor.iio];
-        auto data_size = sensor_data.data.size();
+        auto data_size = sensor_data.fo.frame_size;
         mode.profile.width = (uint32_t)data_size;
         mode.profile.height = 1;
 
         // Determine the timestamp for this HID frame
-        auto timestamp = _timestamp_reader->get_frame_timestamp(mode, sensor_data.data.data(), data_size);
-        auto frame_counter = _timestamp_reader->get_frame_counter(mode, sensor_data.data.data(), data_size);
+        auto timestamp = _timestamp_reader->get_frame_timestamp(mode, sensor_data.fo);
+        auto frame_counter = _timestamp_reader->get_frame_counter(mode, sensor_data.fo);
 
         frame_additional_data additional_data;
         additional_data.format = _configured_profiles[sensor_data.sensor.iio].format;
@@ -648,7 +643,7 @@ void hid_endpoint::start_streaming(frame_callback_ptr callback)
         additional_data.height = mode.profile.height;
         additional_data.timestamp = timestamp;
         additional_data.frame_number = frame_counter;
-        additional_data.timestamp_domain = _timestamp_reader->get_frame_timestamp_domain(mode);
+        additional_data.timestamp_domain = _timestamp_reader->get_frame_timestamp_domain(mode, sensor_data.fo);
 
         auto frame = this->alloc_frame(data_size, additional_data);
         if (!frame)
@@ -658,7 +653,7 @@ void hid_endpoint::start_streaming(frame_callback_ptr callback)
         }
 
         std::vector<byte*> dest{const_cast<byte*>(frame->get()->data.data())};
-        mode.unpacker->unpack(dest.data(), sensor_data.data.data(), (int)data_size);
+        mode.unpacker->unpack(dest.data(),(const byte*)sensor_data.fo.pixels, (int)data_size);
         this->invoke_callback(frame);
     });
 

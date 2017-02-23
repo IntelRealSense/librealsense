@@ -30,6 +30,7 @@ TEST_CASE("Device metadata enumerates correctly", "[live]")
     }
 }
 
+
 ////////////////////////////////////////////////////////
 // Test basic streaming functionality //
 ////////////////////////////////////////////////////////
@@ -664,6 +665,9 @@ TEST_CASE("a single subdevice can only be opened once, different subdevices can 
 TEST_CASE("All suggested profiles can be opened", "[live]") {
     // Require at least one device to be plugged in
     auto ctx = make_context(space_to_underscore(Catch::getCurrentContext().getResultCapture()->getCurrentTestName()).c_str());
+
+    const int num_of_profiles_for_each_subdevice = 2;
+
     std::vector<rs::device> list;
     REQUIRE_NOTHROW(list = ctx.query_devices());
     REQUIRE(list.size() > 0);
@@ -674,7 +678,8 @@ TEST_CASE("All suggested profiles can be opened", "[live]") {
 
         REQUIRE(modes.size() > 0);
         WARN(subdevice.get_camera_info(RS_CAMERA_INFO_MODULE_NAME));
-        for (int i = 0; i < modes.size(); i+=1) {
+        //the test will be done only on sub set of profile for each sub device
+        for (int i = 0; i < modes.size(); i+=(int)std::ceil((float)modes.size()/(float)num_of_profiles_for_each_subdevice)) {
             //CAPTURE(rs_subdevice(subdevice));
             CAPTURE(modes[i].format);
             CAPTURE(modes[i].fps);
@@ -686,6 +691,109 @@ TEST_CASE("All suggested profiles can be opened", "[live]") {
             REQUIRE_NOTHROW(subdevice.start([](rs_frame * fref) {}));
             REQUIRE_NOTHROW(subdevice.stop());
             REQUIRE_NOTHROW(subdevice.close());
+        }
+    }
+}
+
+TEST_CASE("Metadata sanity check", "[live]") {
+    //Require at least one device to be plugged in
+    auto ctx = make_context(space_to_underscore(Catch::getCurrentContext().getResultCapture()->getCurrentTestName()).c_str());
+    std::vector<rs::device> list;
+    REQUIRE_NOTHROW(list = ctx.query_devices());
+    REQUIRE(list.size() > 0);
+
+    const int frames_before_start_measure = 130;
+    const int frames_for_fps_measure = 100;
+    const double msec_to_sec = 0.001;
+    const int num_of_profiles_for_each_subdevice = 2;
+    const float max_diff_between_real_and_metadata_fps = 0.2;
+
+    for (auto && subdevice : list) {
+        std::vector<rs::stream_profile> modes;
+        REQUIRE_NOTHROW(modes = subdevice.get_stream_modes());
+
+        REQUIRE(modes.size() > 0);
+        WARN(subdevice.get_camera_info(RS_CAMERA_INFO_MODULE_NAME));
+
+        //the test will be done only on sub set of profile for each sub device
+        for (int i = 0; i < modes.size(); i+=std::ceil((float)modes.size()/(float)num_of_profiles_for_each_subdevice)) {
+
+            CAPTURE(modes[i].format);
+            CAPTURE(modes[i].fps);
+            CAPTURE(modes[i].height);
+            CAPTURE(modes[i].width);
+            CAPTURE(modes[i].stream);
+
+            std::vector<frame_additional_data> frames_additional_data;
+            auto frames = 0;
+            double start;
+            std::condition_variable cv;
+            std::mutex m;
+            auto first = true;
+
+            REQUIRE_NOTHROW(subdevice.open({ modes[i] }));
+
+            REQUIRE_NOTHROW(subdevice.start([&](rs::frame f)
+            {
+                if(frames++ >= frames_before_start_measure)
+                {
+                    if (first)
+                    {
+                         start = ctx.rs_get_time();
+                    }
+                    first = false;
+                    auto frame_number = f.get_frame_number();
+                    auto ts = f.get_timestamp();
+                    auto ts_domain = f.get_frame_timestamp_domain();
+
+                    std::unique_lock<std::mutex> lock(m);
+                    frames_additional_data.push_back({  ts,frame_number, ts_domain});
+                }
+                if(frames_additional_data.size()>=frames_for_fps_measure)
+                {
+                    cv.notify_one();
+                }
+            }));
+
+
+            std::unique_lock<std::mutex> lock(m);
+            REQUIRE(cv.wait_for(lock, std::chrono::seconds(30), [&]{return frames_additional_data.size()>=frames_for_fps_measure;}));
+
+            auto end = ctx.rs_get_time();
+            lock.unlock();
+
+            auto seconds = (end - start)*msec_to_sec;
+
+            CAPTURE(start);
+            CAPTURE(end);
+            REQUIRE(seconds>0);
+
+            auto actual_fps = (double)frames_additional_data.size()/ (double)seconds;
+
+            double metadata_seconds = frames_additional_data[frames_additional_data.size()-1].timestamp- frames_additional_data[0].timestamp;
+            metadata_seconds *= msec_to_sec;
+            REQUIRE(metadata_seconds>0);
+
+            auto metadata_frames = frames_additional_data[frames_additional_data.size()-1].frame_number-frames_additional_data[0].frame_number;
+            auto metadata_fps = (double)metadata_frames/(double)metadata_seconds;
+
+            for(auto i=0;i<frames_additional_data.size()-1;i++)
+            {
+                REQUIRE((frames_additional_data[i].timestamp_domain == frames_additional_data[i+1].timestamp_domain));
+                REQUIRE((frames_additional_data[i].frame_number < frames_additional_data[i+1].frame_number));
+            }
+            CAPTURE(actual_fps);
+            CAPTURE(metadata_fps);
+
+            //it the diff in percentege between metadata fps and actual fps is bigger than max_diff_between_real_and_metadata_fps
+            //the test will fail
+            REQUIRE(std::abs(metadata_fps/actual_fps  - 1) < max_diff_between_real_and_metadata_fps );
+
+
+            REQUIRE_NOTHROW(subdevice.stop());
+            REQUIRE_NOTHROW(subdevice.close());
+
+            std::cout<<modes[i].format<<"MODE: "<<modes[i].fps<<" "<<modes[i].height<<" "<<modes[i].width<<" "<< modes[i].stream<< " succeed\n";
         }
     }
 }

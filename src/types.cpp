@@ -3,6 +3,7 @@
 
 #include "types.h"
 #include "device.h"
+#include "archive.h"
 
 #include <algorithm>
 #include <iomanip>
@@ -27,6 +28,12 @@ namespace rsimpl
     {
         std::ifstream f(filename);
         return f.good();
+    }
+
+    frame_holder::~frame_holder()
+    {
+        if (frame)
+            frame->get()->get_owner()->release_frame_ref(frame);
     }
 
     const char * get_string(rs_exception_type value)

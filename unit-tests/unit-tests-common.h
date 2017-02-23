@@ -239,6 +239,13 @@ struct test_duration {
     uint32_t frames_to_capture;
 };
 
+struct frame_additional_data
+{
+    double              timestamp;
+    unsigned long long  frame_number;
+    rs_timestamp_domain timestamp_domain;
+};
+
 inline void check_fps(double actual_fps, double configured_fps)
 {
     REQUIRE(actual_fps >= configured_fps * 0.9); // allow threshold of 10 percent

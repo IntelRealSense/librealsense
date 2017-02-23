@@ -15,12 +15,31 @@
 #include <set>
 #include <list>
 
+
+
 const uint16_t VID_INTEL_CAMERA     = 0x8086;
 
 namespace rsimpl
 {
     namespace uvc
     {
+        class time_service
+        {
+        public:
+            virtual double get_time() const = 0;
+            ~time_service() = default;
+        };
+
+        class os_time_service: public time_service
+        {
+        public:
+            double get_time() const override
+            {
+                auto ts = std::chrono::time_point_cast<std::chrono::milliseconds>(std::chrono::system_clock::now());
+                return static_cast<double>(ts.time_since_epoch().count());
+            }
+        };
+
         struct guid { uint32_t data1; uint16_t data2, data3; uint8_t data4[8]; };
         struct extension_unit { int subdevice, unit, node; guid id; };
 
@@ -68,8 +87,10 @@ namespace rsimpl
 
         struct frame_object
         {
-            int size;
-            const void * pixels;
+            int frame_size;
+            int metadata_size;
+            const void * pixels;           
+            const void * metadata;
         };
 
         typedef std::function<void(stream_profile, frame_object)> frame_callback;
@@ -135,7 +156,7 @@ namespace rsimpl
         struct sensor_data
         {
             hid_sensor sensor;
-            std::vector<uint8_t> data;
+            frame_object fo;
         };
 
         struct iio_profile
@@ -294,6 +315,8 @@ namespace rsimpl
             virtual std::shared_ptr<hid_device> create_hid_device(hid_device_info info) const = 0;
             virtual std::vector<hid_device_info> query_hid_devices() const = 0;
 
+            virtual std::shared_ptr<time_service> create_time_service() const = 0;
+
             virtual ~backend() = default;
         };
 
@@ -433,6 +456,9 @@ namespace rsimpl
         };
 
         std::shared_ptr<backend> create_backend();
+
+
+
     }
 }
 

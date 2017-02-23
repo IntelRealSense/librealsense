@@ -65,7 +65,7 @@ namespace rsimpl
         struct call
         {
             call_type type = call_type::none;
-            int timestamp = 0;
+            double timestamp = 0;
             int entity_id = 0;
             std::string inline_string;
 
@@ -73,6 +73,8 @@ namespace rsimpl
             int param2 = 0;
             int param3 = 0;
             int param4 = 0;
+            int param5 = 0;
+            int param6 = 0;
 
             bool had_error = false;
         };
@@ -86,14 +88,15 @@ namespace rsimpl
         class recording
         {
         public:
-            recording();
+            recording(std::shared_ptr<time_service> ts = nullptr);
 
+            double get_time();
             void save(const char* filename, const char* section, bool append = false) const;
             static std::shared_ptr<recording> load(const char* filename, const char* section);
 
             int save_blob(const void* ptr, unsigned int size);
 
-            int get_timestamp() const;
+
 
             template<class T>
             void save_list(std::vector<T> list, std::vector<T>& target, call_type type, int entity_id)
@@ -106,7 +109,7 @@ namespace rsimpl
                 for (auto&& i : list) target.push_back(i);
                 c.param2 = static_cast<int>(target.size());
 
-                c.timestamp = get_timestamp();
+                c.timestamp = get_current_time();
                 calls.push_back(c);
             }
 
@@ -116,7 +119,7 @@ namespace rsimpl
                 call c;
                 c.type = key.type;
                 c.entity_id = key.entity_id;
-                c.timestamp = get_timestamp();
+                c.timestamp = get_current_time();
                 calls.push_back(c);
                 return calls[calls.size() - 1];
             }
@@ -214,10 +217,14 @@ namespace rsimpl
             std::vector<hid_sensor_input> hid_sensor_inputs;
 
             std::mutex _mutex;
-            std::chrono::high_resolution_clock::time_point start_time;
+            std::shared_ptr<time_service> _ts;
 
             std::map<int, int> _cursors;
             std::map<int, int> _cycles;
+
+            double get_current_time();
+
+            double _curr_time = 0;
         };
 
         class record_backend;
@@ -299,6 +306,7 @@ namespace rsimpl
             std::vector<uvc_device_info> query_uvc_devices() const override;
             std::shared_ptr<usb_device> create_usb_device(usb_device_info info) const override;
             std::vector<usb_device_info> query_usb_devices() const override;
+            std::shared_ptr<time_service> create_time_service() const override;
 
             record_backend(std::shared_ptr<backend> source,
                 const char* filename,
@@ -379,8 +387,8 @@ namespace rsimpl
         private:
             std::shared_ptr<recording> _rec;
             int _entity_id;
-            std::thread _callback_thread;
             std::atomic<bool> _alive;
+            std::thread _callback_thread;
             configurations _callbacks;
             configurations _commitments;
             std::mutex _callback_mutex;
@@ -433,10 +441,25 @@ namespace rsimpl
             std::vector<uvc_device_info> query_uvc_devices() const override;
             std::shared_ptr<usb_device> create_usb_device(usb_device_info info) const override;
             std::vector<usb_device_info> query_usb_devices() const override;
+            std::shared_ptr<time_service> create_time_service() const override;
 
             explicit playback_backend(const char* filename, const char* section);
         private:
             std::shared_ptr<recording> _rec;
+        };
+
+        class recording_time_service: public time_service
+        {
+        public:
+            recording_time_service(recording& rec):
+                _rec(rec){}
+
+            virtual double get_time() const override
+            {
+              return _rec.get_time();
+            }
+        private:
+            recording& _rec;
         };
     }
 }

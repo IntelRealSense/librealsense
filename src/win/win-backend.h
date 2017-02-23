@@ -23,6 +23,10 @@ namespace rsimpl
 
             std::shared_ptr<hid_device> create_hid_device(hid_device_info info) const override;
             std::vector<hid_device_info> query_hid_devices() const override;
+            virtual std::shared_ptr<time_service> create_time_service() const override;
+
+        private:
+            std::chrono::high_resolution_clock::time_point _start_time;
         };
     }
 }

@@ -869,6 +869,20 @@ namespace rs
             return extrin;
         }
 
+        /**
+        * \return            the time at specific time point, in live and redord contextes it will return the system time and in playback contextes it will return the recorded time
+        */
+        double rs_get_time()
+        {
+            rs_error* e = nullptr;
+            auto time = rs_get_context_time(_context.get(), &e);
+
+            error::handle(e);
+
+            return time;
+        }
+
+
     protected:
         std::shared_ptr<rs_context> _context;
     };
