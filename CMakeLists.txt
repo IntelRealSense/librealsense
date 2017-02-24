@@ -229,6 +229,7 @@ ELSE()
     )
 
     install(DIRECTORY ${PROJECT_SOURCE_DIR}/include/librealsense DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+    install(CODE "execute_process(COMMAND ldconfig)")
 ENDIF()
 
 option(BUILD_EXAMPLES "Build realsense examples." OFF)
