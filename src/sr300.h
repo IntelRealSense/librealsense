@@ -12,6 +12,7 @@
 #include "hw-monitor.h"
 #include "image.h"
 #include <mutex>
+#include <string>
 
 namespace rsimpl
 {
@@ -227,7 +228,7 @@ namespace rsimpl
                                                                        {RS2_CAMERA_INFO_DEVICE_SERIAL_NUMBER, serial},
                                                                        {RS2_CAMERA_INFO_CAMERA_FIRMWARE_VERSION, fw_version},
                                                                        {RS2_CAMERA_INFO_DEVICE_LOCATION, depth.device_path},
-                                                                       {RS2_CAMERA_INFO_DEVICE_DEBUG_OP_CODE, std::to_string(fw_cmd::GLD)}};
+                                                                       {RS2_CAMERA_INFO_DEVICE_DEBUG_OP_CODE, std::to_string(static_cast<int>(fw_cmd::GLD))}};
             register_endpoint_info(_depth_device_idx, depth_camera_info);
 
             std::map<rs2_camera_info, std::string> color_camera_info = {{RS2_CAMERA_INFO_DEVICE_NAME, device_name},
@@ -235,7 +236,7 @@ namespace rsimpl
                                                                        {RS2_CAMERA_INFO_DEVICE_SERIAL_NUMBER, serial},
                                                                        {RS2_CAMERA_INFO_CAMERA_FIRMWARE_VERSION, fw_version},
                                                                        {RS2_CAMERA_INFO_DEVICE_LOCATION, color.device_path},
-                                                                       {RS2_CAMERA_INFO_DEVICE_DEBUG_OP_CODE, std::to_string(fw_cmd::GLD)}};
+                                                                       {RS2_CAMERA_INFO_DEVICE_DEBUG_OP_CODE, std::to_string(static_cast<int>(fw_cmd::GLD))}};
             register_endpoint_info(_color_device_idx, color_camera_info);
 
             register_autorange_options();

@@ -15,6 +15,7 @@
 #include <set>
 #include <list>
 #include <tuple>
+#include <string>
 
 const uint16_t VID_INTEL_CAMERA     = 0x8086;
 
@@ -98,7 +99,7 @@ namespace rsimpl
         {
             int frame_size;
             int metadata_size;
-            const void * pixels;           
+            const void * pixels;
             const void * metadata;
         };
 
@@ -114,7 +115,7 @@ namespace rsimpl
             std::string device_path;
         };
 
-        inline bool operator==(const uvc_device_info& a,
+        inline bool operator==(const uvc_device_info& a, 
                         const uvc_device_info& b)
         {
             return (a.vid == b.vid) &&
@@ -441,7 +442,7 @@ namespace rsimpl
                 return _dev.front()->get_device_location();
             }
 
-            void lock() const override
+            void lock() const override 
             {
                 std::vector<uvc_device*> locked_dev;
                 try {
@@ -460,7 +461,7 @@ namespace rsimpl
                     throw;
                 }
             }
-            void unlock() const override
+            void unlock() const override 
             {
                 for (auto& elem : _dev)
                 {

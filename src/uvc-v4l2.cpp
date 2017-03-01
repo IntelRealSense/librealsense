@@ -56,6 +56,57 @@
 #define HID_METADATA_SIZE 8
 #define HID_DATA_ACTAL_SIZE 6
 
+#ifdef ANDROID
+
+// https://android.googlesource.com/platform/bionic/+/master/libc/include/bits/lockf.h
+#define F_ULOCK 0
+#define F_LOCK 1
+#define F_TLOCK 2
+#define F_TEST 3
+
+// https://android.googlesource.com/platform/bionic/+/master/libc/bionic/lockf.cpp
+int lockf64(int fd, int cmd, off64_t length) 
+{
+    // Translate POSIX lockf into fcntl.
+    struct flock64 fl;
+    memset(&fl, 0, sizeof(fl));
+    fl.l_whence = SEEK_CUR;
+    fl.l_start = 0;
+    fl.l_len = length;
+
+    if (cmd == F_ULOCK) {
+        fl.l_type == F_UNLCK;
+        cmd = F_SETLK64;
+        return fcntl(fd, F_SETLK64, &fl);
+    }
+
+    if (cmd == F_LOCK) {
+        fl.l_type = F_WRLCK;
+        return fcntl(fd, F_SETLKW64, &fl);
+    }
+
+    if (cmd == F_TLOCK) {
+        fl.l_type = F_WRLCK;
+        return fcntl(fd, F_SETLK64, &fl);
+    }
+    if (cmd == F_TEST) {
+        fl.l_type = F_RDLCK;
+        if (fcntl(fd, F_GETLK64, &fl) == -1) return -1;
+        if (fl.l_type == F_UNLCK || fl.l_pid == getpid()) return 0;
+        errno = EACCES;
+        return -1;
+    }
+
+    errno = EINVAL;
+    return -1;
+}
+
+int lockf(int fd, int cmd, off_t length)
+{
+    return lockf64(fd, cmd, length);
+}
+#endif
+
 namespace rsimpl
 {
     namespace uvc
@@ -977,6 +1028,7 @@ namespace rsimpl
                     std::function<void(const uvc_device_info&,
                                        const std::string&)> action)
             {
+#ifndef ANDROID
                 // Check if the uvcvideo kernel module is loaded
                 std::ifstream modules("/proc/modules");
                 std::string modulesline;
@@ -994,6 +1046,7 @@ namespace rsimpl
                 {
                     throw linux_backend_exception("uvcvideo kernel module is not loaded");
                 }
+#endif // ANDROID
 
                 // Enumerate all subdevices present on the system
                 DIR * dir = opendir("/sys/class/video4linux");
@@ -1249,6 +1302,7 @@ namespace rsimpl
                     }
 
                     v4l2_buf_type type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+#ifndef ANDROID
                     for(int i=0; i<10; ++i)
                     {
                         if (xioctl(_fd, VIDIOC_STREAMON, &type) < 0)
@@ -1257,6 +1311,7 @@ namespace rsimpl
                         }
                         else break;
                     }
+#endif //ANDROID
                     if(xioctl(_fd, VIDIOC_STREAMON, &type) < 0)
                         throw linux_backend_exception("xioctl(VIDIOC_STREAMON) failed");
 

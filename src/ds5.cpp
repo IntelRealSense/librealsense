@@ -302,7 +302,7 @@ namespace rsimpl
                                                                      {RS2_CAMERA_INFO_DEVICE_SERIAL_NUMBER, serial},
                                                                      {RS2_CAMERA_INFO_CAMERA_FIRMWARE_VERSION, fw_version},
                                                                      {RS2_CAMERA_INFO_DEVICE_LOCATION, elem.device_path},
-                                                                     {RS2_CAMERA_INFO_DEVICE_DEBUG_OP_CODE, std::to_string(fw_cmd::GLD)}};
+                                                                     {RS2_CAMERA_INFO_DEVICE_DEBUG_OP_CODE, std::to_string(static_cast<int>(fw_cmd::GLD))}};
                 register_endpoint_info(hid_index, camera_info);
             }
         }
@@ -319,7 +319,7 @@ namespace rsimpl
                                                                      {RS2_CAMERA_INFO_DEVICE_SERIAL_NUMBER, serial},
                                                                      {RS2_CAMERA_INFO_CAMERA_FIRMWARE_VERSION, fw_version},
                                                                      {RS2_CAMERA_INFO_DEVICE_LOCATION, element.device_path},
-                                                                     {RS2_CAMERA_INFO_DEVICE_DEBUG_OP_CODE, std::to_string(fw_cmd::GLD)},
+                                                                     {RS2_CAMERA_INFO_DEVICE_DEBUG_OP_CODE, std::to_string(static_cast<int>(fw_cmd::GLD))},
                                                                      {RS2_CAMERA_INFO_ADVANCED_MODE, ((advanced_mode)?"YES":"NO")}};
                 register_endpoint_info(_depth_device_idx, camera_info);
             }
@@ -330,7 +330,7 @@ namespace rsimpl
                                                                      {RS2_CAMERA_INFO_DEVICE_SERIAL_NUMBER, serial},
                                                                      {RS2_CAMERA_INFO_CAMERA_FIRMWARE_VERSION, fw_version},
                                                                      {RS2_CAMERA_INFO_DEVICE_LOCATION, element.device_path},
-                                                                     {RS2_CAMERA_INFO_DEVICE_DEBUG_OP_CODE, std::to_string(fw_cmd::GLD)}};
+                                                                     {RS2_CAMERA_INFO_DEVICE_DEBUG_OP_CODE, std::to_string(static_cast<int>(fw_cmd::GLD))}};
                 register_endpoint_info(fe_index, camera_info);
             }
         }
