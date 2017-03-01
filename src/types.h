@@ -337,12 +337,17 @@ namespace rsimpl
     ///////////////////
     // Pixel formats //
     ///////////////////
+   
+    typedef std::tuple<uint32_t, int, size_t> native_pixel_format_tuple;
+    typedef std::tuple<rs_stream, rs_format> output_tuple;
+    typedef std::tuple<uvc::stream_profile_tuple, native_pixel_format_tuple, std::vector<output_tuple>> request_mapping_tuple;
 
     struct stream_profile
     {
         rs_stream stream;
         uint32_t width, height, fps;
         rs_format format;
+
     };
 
 
@@ -384,6 +389,18 @@ namespace rsimpl
 
             throw invalid_value_exception("missing output");
         }
+
+        operator std::vector<output_tuple>()
+        {
+            std::vector<output_tuple> tuple_outputs;
+
+            for (auto output : outputs)
+            {
+                tuple_outputs.push_back(std::make_tuple(output.first, output.second));
+            }
+            return tuple_outputs;
+        }
+
     };
 
     struct native_pixel_format
@@ -394,6 +411,11 @@ namespace rsimpl
         std::vector<pixel_format_unpacker> unpackers;
 
         size_t get_image_size(int width, int height) const { return width * height * plane_count * bytes_per_pixel; }
+
+        operator native_pixel_format_tuple() const
+        {
+            return std::make_tuple(fourcc, plane_count, bytes_per_pixel);
+        }
     };
 
     struct request_mapping
@@ -401,7 +423,18 @@ namespace rsimpl
         uvc::stream_profile profile;
         native_pixel_format* pf;
         pixel_format_unpacker* unpacker;
+
+        operator request_mapping_tuple() const
+        {
+            return std::make_tuple(profile, *pf, *unpacker);
+        }
+        
     };
+
+    inline bool operator< (const request_mapping& first, const request_mapping& second)
+    {
+        return request_mapping_tuple(first) < request_mapping_tuple(second);
+    }
 
     inline bool operator==(const request_mapping& a,
         const request_mapping& b)

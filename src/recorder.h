@@ -37,7 +37,9 @@ namespace rsimpl
             uvc_stream_profiles,
             uvc_probe_commit,
             uvc_play,
-            uvc_stop,
+            uvc_start_callbacks,
+            uvc_stop_callbacks,
+            uvc_close,
             uvc_frame,
             create_hid_device,
             query_hid_devices,
@@ -201,7 +203,7 @@ namespace rsimpl
                 return blobs[id];
             }
 
-            call& find_call(call_type t, int entity_id);
+            call& find_call(call_type t, int entity_id, std::function<bool(const call& c)> history_match_validation = [](const call& c) {return true; });
             call* cycle_calls(call_type call_type, int id);
 
             size_t size() const { return calls.size(); }
@@ -233,8 +235,10 @@ namespace rsimpl
         {
         public:
             void probe_and_commit(stream_profile profile, frame_callback callback) override;
-            void play() override;
-            void stop(stream_profile profile) override;
+            void stream_on() override;
+            void start_callbacks() override;
+            void stop_callbacks() override;
+            void close(stream_profile profile) override;
             void set_power_state(power_state state) override;
             power_state get_power_state() const override;
             void init_xu(const extension_unit& xu) override;
@@ -363,8 +367,10 @@ namespace rsimpl
         {
         public:
             void probe_and_commit(stream_profile profile, frame_callback callback) override;
-            void play() override;
-            void stop(stream_profile profile) override;
+            void stream_on() override;
+            void start_callbacks() override;
+            void stop_callbacks() override;
+            void close(stream_profile profile) override;
             void set_power_state(power_state state) override;
             power_state get_power_state() const override;
             void init_xu(const extension_unit& xu) override;

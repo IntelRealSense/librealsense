@@ -58,7 +58,6 @@ bool endpoint::try_get_pf(const uvc::stream_profile& p, native_pixel_format& res
     return false;
 }
 
-
 std::vector<request_mapping> endpoint::resolve_requests(std::vector<stream_profile> requests)
 {
     // per requested profile, find all 4ccs that support that request.
@@ -71,7 +70,9 @@ std::vector<request_mapping> endpoint::resolve_requests(std::vector<stream_profi
         }
     }
 
-    std::unordered_set<request_mapping> results;
+    //if you want more efficient data structure use std::unordered_set
+    //with well defined hash function 
+    std::set <request_mapping> results;
 
     while (!requests.empty() && !_pixel_formats.empty())
     {
@@ -344,7 +345,7 @@ void uvc_endpoint::open(const std::vector<stream_profile>& requests)
         {
             for (auto&& commited_mode : commited)
             {
-                _device->stop(mode.profile);
+                _device->close(mode.profile);
             }
             throw;
         }
@@ -359,14 +360,14 @@ void uvc_endpoint::open(const std::vector<stream_profile>& requests)
     _is_opened = true;
 
     try {
-        _device->play();
+        _device->stream_on();
     }
     catch (...)
     {
         for (auto& profile : _configuration)
         {
             try {
-                _device->stop(profile);
+                _device->close(profile);
             }
             catch (...) {}
         }
@@ -386,7 +387,7 @@ void uvc_endpoint::close()
 
     for (auto& profile : _configuration)
     {
-        _device->stop(profile);
+        _device->close(profile);
     }
     reset_streaming();
     _power.reset();
@@ -408,6 +409,7 @@ void uvc_endpoint::start_streaming(frame_callback_ptr callback)
 
     _callback = std::move(callback);
     _is_streaming = true;
+    _device->start_callbacks();
 }
 
 void uvc_endpoint::stop_streaming()
@@ -417,7 +419,7 @@ void uvc_endpoint::stop_streaming()
         throw wrong_api_call_sequence_exception("stop_streaming() failed. UVC device is not streaming!");
 
     _is_streaming = false;
-
+    _device->stop_callbacks();
 }
 
 void uvc_endpoint::reset_streaming()

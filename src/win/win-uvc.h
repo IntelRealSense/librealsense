@@ -13,6 +13,7 @@
 #include <ksproxy.h>
 #include <unordered_map>
 #include <mutex>
+#include <atomic>
 
 namespace rsimpl
 {
@@ -37,8 +38,10 @@ namespace rsimpl
             ~wmf_uvc_device();
 
             void probe_and_commit(stream_profile profile, frame_callback callback) override;
-            void play() override;
-            void stop(stream_profile profile) override;
+            void stream_on() override;
+            void start_callbacks() override;
+            void stop_callbacks() override;
+            void close(stream_profile profile) override;
             void set_power_state(power_state state) override;
             power_state get_power_state() const override { return _power_state; }
             std::vector<stream_profile> get_profiles() const override;
@@ -99,6 +102,7 @@ namespace rsimpl
             std::vector<stream_profile>             _profiles;
             std::vector<frame_callback>             _frame_callbacks;
             bool                                    _streaming = false;
+            std::atomic<bool>                       _is_started = false;
         };
 
         class source_reader_callback : public IMFSourceReaderCallback

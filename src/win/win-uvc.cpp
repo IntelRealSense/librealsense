@@ -79,6 +79,9 @@ namespace rsimpl
 
                 LOG_HR(owner->_reader->ReadSample(dwStreamIndex, 0, nullptr, nullptr, nullptr, nullptr));
 
+                if (!owner->_is_started)
+                    return S_OK;
+
                 if (sample)
                 {
                     CComPtr<IMFMediaBuffer> buffer = nullptr;
@@ -764,7 +767,7 @@ namespace rsimpl
 
         }
 
-        void wmf_uvc_device::play()
+        void wmf_uvc_device::stream_on()
         {
             if (_profiles.empty())
                 throw std::runtime_error("Stream not configured");
@@ -787,13 +790,23 @@ namespace rsimpl
             {
                 for (auto& elem : _streams)
                     if (elem.callback)
-                        stop(elem.profile);
+                        close(elem.profile);
 
                 _profiles.clear();
                 _frame_callbacks.clear();
 
                 throw;
             }
+        }
+
+        void wmf_uvc_device::start_callbacks()
+        {
+            _is_started = true;
+        }
+
+        void wmf_uvc_device::stop_callbacks()
+        {
+            _is_started = false;
         }
 
         void wmf_uvc_device::stop_stream_cleanup(const stream_profile& profile, std::vector<profile_and_callback>::iterator& elem)
@@ -820,8 +833,10 @@ namespace rsimpl
             _has_started.reset();
         }
 
-        void wmf_uvc_device::stop(stream_profile profile)
+        void wmf_uvc_device::close(stream_profile profile)
         {
+            _is_started = false;
+
             check_connection();
 
             auto& elem = std::find_if(_streams.begin(), _streams.end(),

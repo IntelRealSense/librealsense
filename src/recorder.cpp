@@ -25,8 +25,8 @@ const char* SECTIONS_COUNT_BY_NAME = "SELECT COUNT(*) FROM rs_sections WHERE nam
 const char* SECTIONS_COUNT_ALL = "SELECT COUNT(*) FROM rs_sections";
 const char* SECTIONS_FIND_BY_NAME = "SELECT key FROM rs_sections WHERE name = ?";
 
-const char* CALLS_CREATE = "CREATE TABLE rs_calls(section NUMBER, type NUMBER, timestamp NUMBER, entity_id NUMBER, txt TEXT, param1 NUMBER, param2 NUMBER, param3 NUMBER, param4 NUMBER, had_errors NUMBER)";
-const char* CALLS_INSERT = "INSERT INTO rs_calls(section, type, timestamp, entity_id, txt, param1, param2, param3, param4, had_errors) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+const char* CALLS_CREATE = "CREATE TABLE rs_calls(section NUMBER, type NUMBER, timestamp NUMBER, entity_id NUMBER, txt TEXT, param1 NUMBER, param2 NUMBER, param3 NUMBER, param4 NUMBER, param5 NUMBER, param6 NUMBER, had_errors NUMBER)";
+const char* CALLS_INSERT = "INSERT INTO rs_calls(section, type, timestamp, entity_id, txt, param1, param2, param3, param4, param5, param6, had_errors) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?)";
 const char* CALLS_SELECT_ALL = "SELECT * FROM rs_calls WHERE section = ?";
 
 const char* DEVICE_INFO_CREATE = "CREATE TABLE rs_device_info(section NUMBER, type NUMBER, id TEXT, uid TEXT, pid NUMBER, vid NUMBER, mi NUMBER)";
@@ -45,6 +45,21 @@ namespace rsimpl
 {
     namespace uvc
     {
+        class playback_backend_exception : public backend_exception
+        {
+        public:
+            playback_backend_exception(const std::string& msg, rsimpl::uvc::call_type t, int entity_id) noexcept
+                : backend_exception(generate_message(msg, t, entity_id), RS_EXCEPTION_TYPE_BACKEND)
+            {}
+        private:
+            std::string generate_message(const std::string& msg, rsimpl::uvc::call_type t, int entity_id) const
+            {
+                std::stringstream s;
+                s << msg << " call type: " << int(t) << " entity " << entity_id;
+                return s.str();
+            }
+        };
+
         enum class device_type
         {
             uvc,
@@ -483,7 +498,7 @@ namespace rsimpl
             return _ts->get_time();
         }
 
-        call& recording::find_call(call_type t, int entity_id)
+        call& recording::find_call(call_type t, int entity_id, std::function<bool(const call& c)> history_match_validation)
         {
             lock_guard<mutex> lock(_mutex);
             for (size_t i = 1; i <= calls.size(); i++)
@@ -498,6 +513,11 @@ namespace rsimpl
                         throw runtime_error(calls[idx].inline_string);
                     }
                     _curr_time =  calls[idx].timestamp;
+
+                    if (!history_match_validation(calls[idx]))
+                    {
+                        throw playback_backend_exception("Recording history mismatch!", t, entity_id);
+                    }
                     return calls[idx];
                 }
             }
@@ -507,6 +527,7 @@ namespace rsimpl
         call* recording::cycle_calls(call_type t, int id)
         {
             lock_guard<mutex> lock(_mutex);
+
             for (size_t i = 1; i <= calls.size(); i++)
             {
                 const auto idx = (_cycles[id] + i) % static_cast<int>(calls.size());
@@ -568,23 +589,41 @@ namespace rsimpl
             }, _entity_id, call_type::uvc_probe_commit);
         }
 
-        void record_uvc_device::play()
+        void record_uvc_device::stream_on()
         {
             _owner->try_record([&](recording* rec, lookup_key k)
             {
-                _source->play();
+                _source->stream_on();
                 rec->add_call(k);
             }, _entity_id, call_type::uvc_play);
         }
 
-        void record_uvc_device::stop(stream_profile profile)
+        void record_uvc_device::start_callbacks()
         {
             _owner->try_record([&](recording* rec, lookup_key k)
             {
-                _source->stop(profile);
+                _source->start_callbacks();
+                rec->add_call(k);
+            }, _entity_id, call_type::uvc_start_callbacks);
+        }
+
+        void record_uvc_device::stop_callbacks()
+        {
+            _owner->try_record([&](recording* rec, lookup_key k)
+            {
+                _source->stop_callbacks();
+                rec->add_call(k);
+            }, _entity_id, call_type::uvc_stop_callbacks);
+        }
+
+        void record_uvc_device::close(stream_profile profile)
+        {
+            _owner->try_record([&](recording* rec, lookup_key k)
+            {
+                _source->close(profile);
                 vector<stream_profile> ps{ profile };
                 rec->save_stream_profiles(ps, k);
-            }, _entity_id, call_type::uvc_stop);
+            }, _entity_id, call_type::uvc_close);
         }
 
         void record_uvc_device::set_power_state(power_state state)
@@ -971,22 +1010,24 @@ namespace rsimpl
 
         void playback_uvc_device::probe_and_commit(stream_profile profile, frame_callback callback)
         {
-            lock_guard<mutex> lock(_callback_mutex);
             auto stored = _rec->load_stream_profiles(_entity_id, call_type::uvc_probe_commit);
             vector<stream_profile> input{ profile };
             if (input != stored)
-                throw runtime_error("Recording history mismatch!");
+                throw playback_backend_exception("Recording history mismatch!", call_type::uvc_probe_commit, _entity_id);
+
+            lock_guard<mutex> lock(_callback_mutex);
 
             auto it = std::remove_if(begin(_callbacks), end(_callbacks),
                 [&profile](const pair<stream_profile, frame_callback>& pair)
             {
                 return pair.first == profile;
             });
+
             _callbacks.erase(it, end(_callbacks));
             _commitments.push_back({ profile, callback });
         }
 
-        void playback_uvc_device::play()
+        void playback_uvc_device::stream_on()
         {
             lock_guard<mutex> lock(_callback_mutex);
 
@@ -995,18 +1036,26 @@ namespace rsimpl
             for (auto&& pair : _commitments)
                 _callbacks.push_back(pair);
             _commitments.clear();
+        }
 
-          }
-
-        void playback_uvc_device::stop(stream_profile profile)
+        void playback_uvc_device::start_callbacks()
         {
-            lock_guard<mutex> lock(_callback_mutex);
+            _rec->find_call(call_type::uvc_start_callbacks, _entity_id);
+        }
 
-            auto stored = _rec->load_stream_profiles(_entity_id, call_type::uvc_stop);
+        void playback_uvc_device::stop_callbacks()
+        {
+            _rec->find_call(call_type::uvc_stop_callbacks, _entity_id);
+        }
+
+        void playback_uvc_device::close(stream_profile profile)
+        {
+            auto stored = _rec->load_stream_profiles(_entity_id, call_type::uvc_close);
             vector<stream_profile> input{ profile };
             if (input != stored)
-                throw runtime_error("Recording history mismatch!");
+                 throw playback_backend_exception("Recording history mismatch!", call_type::uvc_close, _entity_id);
 
+            lock_guard<mutex> lock(_callback_mutex);
             auto it = std::remove_if(begin(_callbacks), end(_callbacks),
                 [&profile](const pair<stream_profile, frame_callback>& pair)
             {
@@ -1017,9 +1066,10 @@ namespace rsimpl
 
         void playback_uvc_device::set_power_state(power_state state)
         {
-            auto&& c = _rec->find_call(call_type::uvc_set_power_state, _entity_id);
-            if (c.param1 != state)
-                throw runtime_error("Recording history mismatch!");
+            auto&& c = _rec->find_call(call_type::uvc_set_power_state, _entity_id, [&](const call& call_found)
+            {
+                return call_found.param1 == state;
+            });
         }
 
         power_state playback_uvc_device::get_power_state() const
@@ -1035,33 +1085,37 @@ namespace rsimpl
 
         void playback_uvc_device::set_xu(const extension_unit& xu, uint8_t ctrl, const uint8_t* data, int len)
         {
-            auto&& c = _rec->find_call(call_type::uvc_set_xu, _entity_id);
-            if (c.param1 != ctrl)
-                throw runtime_error("Recording history mismatch!");
+            auto&& c = _rec->find_call(call_type::uvc_set_xu, _entity_id, [&](const call& call_found) 
+            {
+                return call_found.param1 == ctrl; 
+            });
+
             auto stored_data = _rec->load_blob(c.param2);
             vector<uint8_t> in_data(data, data + len);
             if (stored_data != in_data)
-                throw runtime_error("Recording history mismatch!");
+            {
+                throw playback_backend_exception("Recording history mismatch!", call_type::uvc_set_xu, _entity_id);
+            }
         }
 
         void playback_uvc_device::get_xu(const extension_unit& xu, uint8_t ctrl, uint8_t* data, int len) const
         {
             auto&& c = _rec->find_call(call_type::uvc_get_xu, _entity_id);
             if (c.param1 != ctrl)
-                throw runtime_error("Recording history mismatch!");
+                throw playback_backend_exception("Recording history mismatch!", call_type::uvc_get_xu, _entity_id);
             auto stored_data = _rec->load_blob(c.param2);
             if (stored_data.size() != len)
-                throw runtime_error("Recording history mismatch!");
+                throw playback_backend_exception("Recording history mismatch!", call_type::uvc_get_xu, _entity_id);
             memcpy(data, stored_data.data(), len);
         }
 
         control_range playback_uvc_device::get_xu_range(const extension_unit& xu, uint8_t ctrl, int len) const
         {
             control_range res;
-            auto&& c = _rec->find_call(call_type::uvc_get_xu_range, _entity_id);
-
-            if (c.param1 != ctrl)
-                throw runtime_error("Recording history mismatch!");
+            auto&& c = _rec->find_call(call_type::uvc_get_xu_range, _entity_id, [&](const call& call_found) 
+            {
+                return call_found.param1 == ctrl;
+            });
 
             auto range = _rec->load_blob(c.param2);
             memcpy(&res, range.data(), range.size());
@@ -1070,25 +1124,30 @@ namespace rsimpl
 
         int playback_uvc_device::get_pu(rs_option opt) const
         {
-            auto&& c = _rec->find_call(call_type::uvc_get_pu, _entity_id);
-            if (c.param1 != opt)
-                throw runtime_error("Recording history mismatch!");
+            auto&& c = _rec->find_call(call_type::uvc_get_pu, _entity_id, [&](const call& call_found)
+            {
+                return call_found.param1 == opt;
+            });
+
             return c.param2;
         }
 
         void playback_uvc_device::set_pu(rs_option opt, int value)
         {
-            auto&& c = _rec->find_call(call_type::uvc_set_pu, _entity_id);
-            if (c.param1 != opt && c.param2 != value)
-                throw runtime_error("Recording history mismatch!");
+            auto&& c = _rec->find_call(call_type::uvc_set_pu, _entity_id, [&](const call& call_found)
+            {
+                return call_found.param1 == opt && call_found.param2 == value;
+            });
         }
 
         control_range playback_uvc_device::get_pu_range(rs_option opt) const
         {
             control_range res;
-            auto&& c = _rec->find_call(call_type::uvc_get_pu_range, _entity_id);
-            if (c.param1 != opt)
-                throw runtime_error("Recording history mismatch!");
+            auto&& c = _rec->find_call(call_type::uvc_get_pu_range, _entity_id, [&](const call& call_found)
+            {
+                return call_found.param1 == opt;
+            });
+           
             auto range = _rec->load_blob(c.param2);
             memcpy(&res, range.data(), range.size());
             return res;
@@ -1218,9 +1277,11 @@ namespace rsimpl
 
         vector<uint8_t> playback_usb_device::send_receive(const vector<uint8_t>& data, int timeout_ms, bool require_response)
         {
-            auto&& c = _rec->find_call(call_type::send_command, _entity_id);
-            if (c.param3 != timeout_ms || (c.param4 > 0) != require_response || _rec->load_blob(c.param1) != data)
-                throw runtime_error("Recording history mismatch!");
+            auto&& c = _rec->find_call(call_type::send_command, _entity_id, [&](const call& call_found) 
+            {
+                return call_found.param3 == timeout_ms && (call_found.param4 > 0) == require_response && _rec->load_blob(call_found.param1) == data;
+            });
+
             return _rec->load_blob(c.param2);
         }
 

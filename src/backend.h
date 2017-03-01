@@ -14,8 +14,7 @@
 #include <algorithm>
 #include <set>
 #include <list>
-
-
+#include <tuple>
 
 const uint16_t VID_INTEL_CAMERA     = 0x8086;
 
@@ -69,14 +68,23 @@ namespace rsimpl
             D3
         };
 
+        typedef std::tuple< uint32_t, uint32_t, uint32_t, uint32_t> stream_profile_tuple;
+
         struct stream_profile
         {
+
             uint32_t width;
             uint32_t height;
             uint32_t fps;
             uint32_t format;
-        };
 
+            operator stream_profile_tuple() const
+            {
+                return std::make_tuple(width, height, fps, format);
+            }
+
+        };
+        
         inline bool operator==(const stream_profile& a,
                                const stream_profile& b)
         {
@@ -183,8 +191,10 @@ namespace rsimpl
         {
         public:
             virtual void probe_and_commit(stream_profile profile, frame_callback callback) = 0;
-            virtual void play() = 0;
-            virtual void stop(stream_profile profile) = 0;
+            virtual void stream_on() = 0;
+            virtual void start_callbacks() = 0;
+            virtual void stop_callbacks() = 0;
+            virtual void close(stream_profile profile) = 0;
 
             virtual void set_power_state(power_state state) = 0;
             virtual power_state get_power_state() const = 0;
@@ -218,13 +228,21 @@ namespace rsimpl
             {
                 _dev->probe_and_commit(profile, callback);
             }
-            void play() override
+            void stream_on() override
             {
-                _dev->play();
+                _dev->stream_on();
             }
-            void stop(stream_profile profile) override
+            void start_callbacks() override
             {
-                _dev->stop(profile);
+                _dev->start_callbacks();
+            }
+            void stop_callbacks() override
+            {
+                _dev->stop_callbacks();
+            }
+            void close(stream_profile profile) override
+            {
+                _dev->close(profile);
             }
             void set_power_state(power_state state) override
             {
@@ -335,18 +353,33 @@ namespace rsimpl
                 _dev[dev_index]->probe_and_commit(profile, callback);
             }
 
-            void play() override
+            void stream_on() override
             {
                 for (auto& elem : _configured_indexes)
                 {
-                    _dev[elem]->play();
+                    _dev[elem]->stream_on();
+                }
+            }
+            void start_callbacks() override
+            {
+                for (auto& elem : _configured_indexes)
+                {
+                    _dev[elem]->start_callbacks();
                 }
             }
 
-            void stop(stream_profile profile) override
+            void stop_callbacks() override
+            {
+                for (auto& elem : _configured_indexes)
+                {
+                    _dev[elem]->stop_callbacks();
+                }
+            }
+
+            void close(stream_profile profile) override
             {
                 auto dev_index = get_dev_index_by_profiles(profile);
-                _dev[dev_index]->stop(profile);
+                _dev[dev_index]->close(profile);
                 _configured_indexes.erase(dev_index);
             }
 

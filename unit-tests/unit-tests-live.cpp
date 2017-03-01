@@ -7,6 +7,14 @@
 
 #include "unit-tests-common.h"
 
+// disable in one place options that are sensitive to frame content
+// this is done to make sure unit-tests are deterministic
+void disable_sensitive_options_for(rs::device& dev)
+{
+    if (dev.supports(RS_OPTION_ENABLE_AUTO_EXPOSURE))
+        REQUIRE_NOTHROW(dev.set_option(RS_OPTION_ENABLE_AUTO_EXPOSURE, 0));
+}
+
 TEST_CASE("Device metadata enumerates correctly", "[live]")
 {
     auto ctx = make_context(space_to_underscore(Catch::getCurrentContext().getResultCapture()->getCurrentTestName()).c_str());
@@ -48,8 +56,11 @@ TEST_CASE("Start-Stop stream sequence", "[live]")
     // For each device
     for (auto&& dev : list)
     {
+        disable_sensitive_options_for(dev);
+
         // Configure all supported streams to run at 30 frames per second
-        auto streams = config.open(dev);
+        rs::util::config::multistream streams;
+        REQUIRE_NOTHROW(streams = config.open(dev));
 
         for (auto i = 0; i < 5; i++)
         {
@@ -208,6 +219,8 @@ TEST_CASE("streaming modes sanity check", "[live]")
     // For each device
     for (auto&& dev : list)
     {
+        disable_sensitive_options_for(dev);
+
         // make sure they provide at least one streaming mode
         std::vector<rs::stream_profile> stream_profiles;
         REQUIRE_NOTHROW(stream_profiles = dev.get_stream_modes());
@@ -268,6 +281,7 @@ TEST_CASE("check option API", "[live][options]")
     // for each device
     for (auto&& dev : list)
     {
+
         // for each option
         for (auto i = 0; i < RS_OPTION_COUNT; ++i) {
             auto opt = rs_option(i);
@@ -400,6 +414,8 @@ TEST_CASE("a single subdevice can only be opened once, different subdevices can 
         {
             for (auto & dev : list)
             {
+                disable_sensitive_options_for(dev);
+
                 SECTION("opening the same subdevice multiple times")
                 {
                     auto modes = dev.get_stream_modes();
@@ -441,8 +457,11 @@ TEST_CASE("a single subdevice can only be opened once, different subdevices can 
                 SECTION("opening different subdevices") {
                     for (auto&& subdevice1 : dev.get_adjacent_devices())
                     {
+                        disable_sensitive_options_for(subdevice1);
                         for (auto&& subdevice2 : dev.get_adjacent_devices())
                         {
+                            disable_sensitive_options_for(subdevice2);
+
                             if (subdevice1 == subdevice2)
                                 continue;
 
@@ -485,8 +504,11 @@ TEST_CASE("a single subdevice can only be opened once, different subdevices can 
             {
                 for (auto & dev1 : list)
                 {
+                    disable_sensitive_options_for(dev1);
                     for (auto & dev2 : list)
                     {
+                        disable_sensitive_options_for(dev2);
+
                         // couldn't think of a better way to compare the two...
                         if (dev1 == dev2)
                             continue;
@@ -517,8 +539,11 @@ TEST_CASE("a single subdevice can only be opened once, different subdevices can 
         {
             for (auto&& dev1 : list)
             {
+                disable_sensitive_options_for(dev1);
                 for (auto&& dev2 : list2)
                 {
+                    disable_sensitive_options_for(dev2);
+
                     if (dev1 == dev2)
                     {
                         SECTION("same subdevice") {
@@ -612,8 +637,10 @@ TEST_CASE("a single subdevice can only be opened once, different subdevices can 
             {
                 for (auto & dev1 : list)
                 {
+                    disable_sensitive_options_for(dev1);
                     for (auto & dev2 : list2)
                     {
+                        disable_sensitive_options_for(dev2);
 
                         if (dev1 == dev2)
                             continue;
@@ -663,6 +690,7 @@ TEST_CASE("a single subdevice can only be opened once, different subdevices can 
 }
 
 TEST_CASE("All suggested profiles can be opened", "[live]") {
+	
     // Require at least one device to be plugged in
     auto ctx = make_context(space_to_underscore(Catch::getCurrentContext().getResultCapture()->getCurrentTestName()).c_str());
 
@@ -673,13 +701,17 @@ TEST_CASE("All suggested profiles can be opened", "[live]") {
     REQUIRE(list.size() > 0);
 
     for (auto && subdevice : list) {
+
+        disable_sensitive_options_for(subdevice);
+
+
         std::vector<rs::stream_profile> modes;
         REQUIRE_NOTHROW(modes = subdevice.get_stream_modes());
 
         REQUIRE(modes.size() > 0);
         WARN(subdevice.get_camera_info(RS_CAMERA_INFO_MODULE_NAME));
         //the test will be done only on sub set of profile for each sub device
-        for (int i = 0; i < modes.size(); i+=(int)std::ceil((float)modes.size()/(float)num_of_profiles_for_each_subdevice)) {
+        for (int i = 0; i < modes.size(); i += (int)std::ceil((float)modes.size() / (float)num_of_profiles_for_each_subdevice)) {
             //CAPTURE(rs_subdevice(subdevice));
             CAPTURE(modes[i].format);
             CAPTURE(modes[i].fps);
@@ -716,7 +748,7 @@ TEST_CASE("Metadata sanity check", "[live]") {
         WARN(subdevice.get_camera_info(RS_CAMERA_INFO_MODULE_NAME));
 
         //the test will be done only on sub set of profile for each sub device
-        for (int i = 0; i < modes.size(); i+=std::ceil((float)modes.size()/(float)num_of_profiles_for_each_subdevice)) {
+        for (int i = 0; i < modes.size(); i += std::ceil((float)modes.size() / (float)num_of_profiles_for_each_subdevice)) {
 
             CAPTURE(modes[i].format);
             CAPTURE(modes[i].fps);
@@ -732,14 +764,15 @@ TEST_CASE("Metadata sanity check", "[live]") {
             auto first = true;
 
             REQUIRE_NOTHROW(subdevice.open({ modes[i] }));
+            disable_sensitive_options_for(subdevice);
 
             REQUIRE_NOTHROW(subdevice.start([&](rs::frame f)
             {
-                if(frames++ >= frames_before_start_measure)
+                if (frames >= frames_before_start_measure && frames_additional_data.size() < frames_for_fps_measure)
                 {
                     if (first)
                     {
-                         start = ctx.rs_get_time();
+                        start = ctx.rs_get_time();
                     }
                     first = false;
                     auto frame_number = f.get_frame_number();
@@ -747,9 +780,10 @@ TEST_CASE("Metadata sanity check", "[live]") {
                     auto ts_domain = f.get_frame_timestamp_domain();
 
                     std::unique_lock<std::mutex> lock(m);
-                    frames_additional_data.push_back({  ts,frame_number, ts_domain});
+                    frames_additional_data.push_back({ ts,frame_number, ts_domain });
                 }
-                if(frames_additional_data.size()>=frames_for_fps_measure)
+                frames++;
+                if (frames_additional_data.size() >= frames_for_fps_measure)
                 {
                     cv.notify_one();
                 }
@@ -757,7 +791,10 @@ TEST_CASE("Metadata sanity check", "[live]") {
 
 
             std::unique_lock<std::mutex> lock(m);
-            REQUIRE(cv.wait_for(lock, std::chrono::seconds(30), [&]{return frames_additional_data.size()>=frames_for_fps_measure;}));
+            REQUIRE(cv.wait_for(lock, std::chrono::seconds(30), [&] {return frames_additional_data.size() >= frames_for_fps_measure; }));
+
+            REQUIRE_NOTHROW(subdevice.stop());
+            REQUIRE_NOTHROW(subdevice.close());
 
             auto end = ctx.rs_get_time();
             lock.unlock();
@@ -766,34 +803,51 @@ TEST_CASE("Metadata sanity check", "[live]") {
 
             CAPTURE(start);
             CAPTURE(end);
-            REQUIRE(seconds>0);
 
-            auto actual_fps = (double)frames_additional_data.size()/ (double)seconds;
-
-            double metadata_seconds = frames_additional_data[frames_additional_data.size()-1].timestamp- frames_additional_data[0].timestamp;
-            metadata_seconds *= msec_to_sec;
-            REQUIRE(metadata_seconds>0);
-
-            auto metadata_frames = frames_additional_data[frames_additional_data.size()-1].frame_number-frames_additional_data[0].frame_number;
-            auto metadata_fps = (double)metadata_frames/(double)metadata_seconds;
-
-            for(auto i=0;i<frames_additional_data.size()-1;i++)
+            if (seconds <= 0)
             {
-                REQUIRE((frames_additional_data[i].timestamp_domain == frames_additional_data[i+1].timestamp_domain));
-                REQUIRE((frames_additional_data[i].frame_number < frames_additional_data[i+1].frame_number));
+                std::cout << "Start " << std::fixed << start << "\n";
+                std::cout << "End   " << std::fixed << end << "\n";
+            }
+
+            REQUIRE(seconds > 0);
+
+            auto actual_fps = (double)frames_additional_data.size() / (double)seconds;
+
+            double metadata_seconds = frames_additional_data[frames_additional_data.size() - 1].timestamp - frames_additional_data[0].timestamp;
+            metadata_seconds *= msec_to_sec;
+
+
+            if (metadata_seconds <= 0)
+            {
+                std::cout << "Start metadata " << std::fixed << frames_additional_data[0].timestamp << "\n";
+                std::cout << "End metadata   " << std::fixed << frames_additional_data[frames_additional_data.size() - 1].timestamp << "\n";
+            }
+            REQUIRE(metadata_seconds > 0);
+
+            auto metadata_frames = frames_additional_data[frames_additional_data.size() - 1].frame_number - frames_additional_data[0].frame_number;
+            auto metadata_fps = (double)metadata_frames / (double)metadata_seconds;
+
+            for (auto i = 0; i < frames_additional_data.size() - 1; i++)
+            {
+                CAPTURE(i);
+                CAPTURE(frames_additional_data[i].timestamp_domain);
+                CAPTURE(frames_additional_data[i + 1].timestamp_domain);
+                REQUIRE((frames_additional_data[i].timestamp_domain == frames_additional_data[i + 1].timestamp_domain));
+
+                CAPTURE(frames_additional_data[i].frame_number);
+                CAPTURE(frames_additional_data[i + 1].frame_number);
+
+                REQUIRE((frames_additional_data[i].frame_number < frames_additional_data[i + 1].frame_number));
             }
             CAPTURE(actual_fps);
             CAPTURE(metadata_fps);
 
             //it the diff in percentege between metadata fps and actual fps is bigger than max_diff_between_real_and_metadata_fps
             //the test will fail
-            REQUIRE(std::abs(metadata_fps/actual_fps  - 1) < max_diff_between_real_and_metadata_fps );
+            REQUIRE(std::abs(metadata_fps / actual_fps - 1) < max_diff_between_real_and_metadata_fps);
 
-
-            REQUIRE_NOTHROW(subdevice.stop());
-            REQUIRE_NOTHROW(subdevice.close());
-
-            std::cout<<modes[i].format<<"MODE: "<<modes[i].fps<<" "<<modes[i].height<<" "<<modes[i].width<<" "<< modes[i].stream<< " succeed\n";
+            std::cout << modes[i].format << "MODE: " << modes[i].fps << " " << modes[i].height << " " << modes[i].width << " " << modes[i].stream << " succeed\n";
         }
     }
 }
@@ -863,7 +917,7 @@ TEST_CASE("Auto-complete feature works", "[offline][rs::util::config]") {
 
     struct Test {
         std::vector<rs::stream_profile> given,       // We give these profiles to the config class
-                                        expected;    // pool of profiles the config class can return. Leave empty if auto-completer is expected to fail
+            expected;    // pool of profiles the config class can return. Leave empty if auto-completer is expected to fail
     };
     std::vector<Test> tests = {
         // Test 0 (Depth always has RS_FORMAT_Z16)
@@ -896,7 +950,7 @@ TEST_CASE("Auto-complete feature works", "[offline][rs::util::config]") {
             { RS_STREAM_DEPTH   , 640, 480,  10, RS_FORMAT_ANY }, { RS_STREAM_DEPTH   , 640, 480,  30, RS_FORMAT_ANY } } }  // expected - options for depth stream
     };
 
-    for (int i=0; i<tests.size(); ++i)
+    for (int i = 0; i < tests.size(); ++i)
     {
         config.disable_all();
         for (auto & profile : tests[i].given) {

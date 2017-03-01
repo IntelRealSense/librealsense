@@ -1109,7 +1109,8 @@ namespace rsimpl
                   _is_capturing(false),
                   _is_alive(true),
                   _thread(nullptr),
-                  _use_memory_map(use_memory_map)
+                  _use_memory_map(use_memory_map),
+                  _is_started(false)
             {
                 foreach_uvc_device([&info, this](const uvc_device_info& i, const std::string& name)
                 {
@@ -1226,7 +1227,7 @@ namespace rsimpl
                 }
             }
 
-            void play() override
+            void stream_on() override
             {
                 if(!_is_capturing)
                 {
@@ -1264,11 +1265,22 @@ namespace rsimpl
                 }
             }
 
-            void stop(stream_profile) override
+            void start_callbacks() override
+            {
+                _is_started = true;
+            }
+
+            void stop_callbacks() override
+            {
+                _is_started = false;
+            }
+
+            void close(stream_profile) override
             {
                 if(_is_capturing)
                 {
                     _is_capturing = false;
+                    _is_started = false;
                     signal_stop();
 
                     _thread->join();
@@ -1379,16 +1391,19 @@ namespace rsimpl
                             throw linux_backend_exception("xioctl(VIDIOC_DQBUF) failed");
                         }
 
-                        frame_object fo { (int)_buffers[buf.index].length,
-                                        has_metadata()? META_DATA_SIZE: 0,
-                                        _buffers[buf.index].start,
-                                        has_metadata()? _buffers[buf.index].start + _buffer_length: NULL};
+                        if (_is_started)
+                        {
+                            frame_object fo{ (int)_buffers[buf.index].length,
+                                has_metadata() ? META_DATA_SIZE : 0,
+                                _buffers[buf.index].start,
+                                has_metadata() ? _buffers[buf.index].start + _buffer_length : NULL };
 
 
-                        if (buf.bytesused > 0)
-                            _callback(_profile, fo);
-                        else
-                            LOG_WARNING("Empty frame has arrived.");
+                            if (buf.bytesused > 0)
+                                _callback(_profile, fo);
+                            else
+                                LOG_WARNING("Empty frame has arrived.");
+                        }
 
                         if (V4L2_MEMORY_USERPTR == _use_memory_map)
                         {
@@ -1463,13 +1478,13 @@ namespace rsimpl
                 }
                 if (state == D3 && _state == D0)
                 {
-                    stop(_profile);
-                    if(close(_fd) < 0)
+                    close(_profile);
+                    if(::close(_fd) < 0)
                         throw linux_backend_exception("close(...) failed");
 
-                    if(close(_pipe_fd[0]) < 0)
+                    if(::close(_pipe_fd[0]) < 0)
                        throw linux_backend_exception("close(...) failed");
-                    if(close(_pipe_fd[1]) < 0)
+                    if(::close(_pipe_fd[1]) < 0)
                        throw linux_backend_exception("close(...) failed");
 
                     _fd = 0;
@@ -1729,6 +1744,7 @@ namespace rsimpl
             frame_callback _callback;
             std::atomic<bool> _is_capturing;
             std::atomic<bool> _is_alive;
+            std::atomic<bool> _is_started;
             std::unique_ptr<std::thread> _thread;
             std::unique_ptr<named_mutex> _named_mtx;
             bool _use_memory_map;
