@@ -220,7 +220,7 @@ rs2_device_list* rs2_query_devices(const rs2_context* context, rs2_error** error
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, context)
 
-double rs2_get_context_time(const rs2_context* context, rs2_error** error) try
+rs2_time_t rs2_get_context_time(const rs2_context* context, rs2_error** error) try
 {
     VALIDATE_NOT_NULL(context);
     return context->ctx->get_time();
@@ -510,7 +510,7 @@ int rs2_supports_frame_metadata(const rs2_frame * frame, rs2_frame_metadata fram
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, frame)
 
-double rs2_get_frame_timestamp(const rs2_frame * frame_ref, rs2_error ** error) try
+rs2_time_t rs2_get_frame_timestamp(const rs2_frame * frame_ref, rs2_error ** error) try
 {
     VALIDATE_NOT_NULL(frame_ref);
     return frame_ref->get()->get_frame_timestamp();

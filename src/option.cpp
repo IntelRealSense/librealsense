@@ -64,10 +64,21 @@ std::vector<uint8_t> rsimpl::command_transfer_over_xu::send_receive(const std::v
         {
             std::vector<uint8_t> result;
             std::lock_guard<uvc::uvc_device> lock(dev);
-            dev.set_xu(_xu, _ctrl, data.data(), static_cast<int>(data.size()));
+
+            if (data.size() > HW_MONITOR_BUFFER_SIZE)
+            {
+                LOG_ERROR("XU command size is invalid");
+                throw invalid_value_exception(to_string() << "Requested XU command size " <<
+                    std::dec << data.size() << " exceeds permitted limit " << HW_MONITOR_BUFFER_SIZE);
+            }
+
+            std::vector<uint8_t> transmit_buf(HW_MONITOR_BUFFER_SIZE, 0);
+            std::copy(data.begin(), data.end(), transmit_buf.begin());
+            dev.set_xu(_xu, _ctrl, transmit_buf.data(), static_cast<int>(transmit_buf.size()));
+
             if (require_response)
             {
-                result.resize(IVCAM_MONITOR_MAX_BUFFER_SIZE);
+                result.resize(HW_MONITOR_BUFFER_SIZE);
                 dev.get_xu(_xu, _ctrl, result.data(), static_cast<int>(result.size()));
             }
             return result;

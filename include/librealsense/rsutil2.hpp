@@ -217,7 +217,7 @@ namespace rs2
                 // Algorithm assumes get_adjacent_devices always
                 // returns the devices in the same order
                 auto devs = dev.get_adjacent_devices();
-                for (std::size_t i = 0; i < devs.size(); ++i)
+                for (auto i = 0; i < devs.size(); ++i)
                 {
                     auto sub = devs[i];
                     std::vector<stream_profile> targets;

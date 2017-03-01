@@ -137,7 +137,7 @@ void auto_exposure_mechanism::update_auto_exposure_state(auto_exposure_state& au
     _auto_exposure_algo.update_options(auto_exposure_state);
 }
 
-void auto_exposure_mechanism::add_frame(frame_holder frame, callback_invokation_holder callback)
+void auto_exposure_mechanism::add_frame(frame_holder frame, callback_invocation_holder callback)
 {
 
     if (!_keep_alive || (_skip_frames && (_frames_counter++) != _skip_frames))

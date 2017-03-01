@@ -23,11 +23,14 @@ void endpoint::invoke_callback(frame_holder frame) const
         auto callback = _archive->begin_callback();
         try
         {
+            frame->log_callback_start(_ts->get_time());
             if (_callback)
             {
                 rs2_frame* ref = nullptr;
                 std::swap(frame.frame, ref);
                 _callback->on_frame(ref);
+                //ref->log_callback_end();          // This reference point would allow to measure
+                                                    // user callback lifetime rather than frame data lifetime
             }
         }
         catch(...)
@@ -71,7 +74,7 @@ std::vector<request_mapping> endpoint::resolve_requests(std::vector<stream_profi
     }
 
     //if you want more efficient data structure use std::unordered_set
-    //with well defined hash function 
+    //with well-defined hash function
     std::set <request_mapping> results;
 
     while (!requests.empty() && !_pixel_formats.empty())
@@ -229,7 +232,7 @@ void uvc_endpoint::open(const std::vector<stream_profile>& requests)
         throw wrong_api_call_sequence_exception("open(...) failed. UVC device is already opened!");
 
     auto on = std::unique_ptr<power>(new power(shared_from_this()));
-    _archive = std::make_shared<frame_archive>(&_max_publish_list_size);
+    _archive = std::make_shared<frame_archive>(&_max_publish_list_size,_ts);
     auto mapping = resolve_requests(requests);
 
     auto timestamp_reader = _timestamp_reader.get();
@@ -239,15 +242,18 @@ void uvc_endpoint::open(const std::vector<stream_profile>& requests)
     {
         try
         {
-            using namespace std::chrono;
-
             _device->probe_and_commit(mode.profile,
             [this, mode, timestamp_reader, requests](uvc::stream_profile p, uvc::frame_object f) mutable
             {
-            if (!this->is_streaming())
-                return;
 
-            frame_continuation release_and_enqueue([]() {}, f.pixels);
+            auto system_time = _ts->get_time();
+
+            if (!this->is_streaming())
+            {
+                LOG_WARNING("Frame received with streaming inactive," << rsimpl::get_string(mode.unpacker->outputs.front().first)
+                        << ", Arrived," << std::fixed << system_time);
+                return;
+            }
 
             // Ignore any frames which appear corrupted or invalid
             // Determine the timestamp for this frame
@@ -255,7 +261,6 @@ void uvc_endpoint::open(const std::vector<stream_profile>& requests)
             auto timestamp_domain = timestamp_reader->get_frame_timestamp_domain(mode, f);
 
             auto frame_counter = timestamp_reader->get_frame_counter(mode, f);
-            //auto received_time = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - capture_start_time).count();
 
             auto width = mode.profile.width;
             auto height = mode.profile.height;
@@ -263,16 +268,6 @@ void uvc_endpoint::open(const std::vector<stream_profile>& requests)
 
             std::vector<byte *> dest;
             std::vector<frame_holder> refs;
-
-            auto system_time = _ts->get_time();
-
-            //auto stride_x = mode_selection.get_stride_x();
-            //auto stride_y = mode_selection.get_stride_y();
-            /*for (auto&& output : unpacker.outputs)
-            {
-                LOG_DEBUG("FrameAccepted, RecievedAt," << received_time
-                    << ", FWTS," << timestamp << ", DLLTS," << received_time << ", Type," << rsimpl::get_string(output.first) << ",HasPair,0,F#," << frame_counter);
-            }*/
 
             //frame_drops_status->was_initialized = true;
 
@@ -285,6 +280,10 @@ void uvc_endpoint::open(const std::vector<stream_profile>& requests)
             auto&& unpacker = *mode.unpacker;
             for (auto&& output : unpacker.outputs)
             {
+                LOG_DEBUG("FrameAccepted," << rsimpl::get_string(output.first) << "," << frame_counter
+                    << ",Arrived," << std::fixed << system_time
+                    << ",TS," << std::fixed << timestamp << ",TS_Domain," << rs2_timestamp_domain_to_string(timestamp_domain));
+
                 auto bpp = get_image_bpp(output.second);
                 frame_additional_data additional_data(timestamp,
                     frame_counter,
@@ -616,7 +615,7 @@ void hid_endpoint::start_streaming(frame_callback_ptr callback)
     else if(!_is_opened)
         throw wrong_api_call_sequence_exception("start_streaming(...) failed. Hid device was not opened!");
 
-    _archive = std::make_shared<frame_archive>(&_max_publish_list_size);
+    _archive = std::make_shared<frame_archive>(&_max_publish_list_size, _ts);
     _callback = std::move(callback);
     std::vector<uvc::iio_profile> configured_iio_profiles;
     for (auto& elem : _configured_profiles)
@@ -625,9 +624,17 @@ void hid_endpoint::start_streaming(frame_callback_ptr callback)
     }
 
 
-    _hid_device->start_capture(configured_iio_profiles, [this](const uvc::sensor_data& sensor_data){
+    _hid_device->start_capture(configured_iio_profiles, [this](const uvc::sensor_data& sensor_data)
+    {
+        auto system_time = _ts->get_time();
+
         if (!this->is_streaming())
+        {
+            LOG_INFO("HID Frame received when Streaming is not active,"
+                        << get_string(_configured_profiles[sensor_data.sensor.iio].stream)
+                        << ",Arrived," << std::fixed << system_time);
             return;
+        }
 
         auto mode = _iio_mapping[sensor_data.sensor.iio];
         auto data_size = sensor_data.fo.frame_size;
@@ -647,10 +654,15 @@ void hid_endpoint::start_streaming(frame_callback_ptr callback)
         additional_data.frame_number = frame_counter;
         additional_data.timestamp_domain = _timestamp_reader->get_frame_timestamp_domain(mode, sensor_data.fo);
 
+        LOG_DEBUG("FrameAccepted," << get_string(additional_data.stream_type) << "," << frame_counter
+                  << ",Arrived," << std::fixed << system_time
+                  << ",TS," << timestamp
+                  << ",TS_Domain," << rs2_timestamp_domain_to_string(additional_data.timestamp_domain));
+
         auto frame = this->alloc_frame(data_size, additional_data);
         if (!frame)
         {
-            LOG_DEBUG("Dropped frame. alloc_frame(...) returned nullptr");
+            LOG_INFO("Dropped frame. alloc_frame(...) returned nullptr");
             return;
         }
 

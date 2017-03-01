@@ -692,7 +692,7 @@ TEST_CASE("a single subdevice can only be opened once, different subdevices can 
 }
 
 TEST_CASE("All suggested profiles can be opened", "[live]") {
-	
+
     // Require at least one device to be plugged in
     auto ctx = make_context(space_to_underscore(Catch::getCurrentContext().getResultCapture()->getCurrentTestName()).c_str());
 
@@ -739,7 +739,7 @@ TEST_CASE("Metadata sanity check", "[live]") {
     const int frames_for_fps_measure = 100;
     const double msec_to_sec = 0.001;
     const int num_of_profiles_for_each_subdevice = 2;
-    const float max_diff_between_real_and_metadata_fps = 0.2;
+    const float max_diff_between_real_and_metadata_fps = 0.2f;
 
     for (auto && subdevice : list) {
         std::vector<stream_profile> modes;

@@ -46,7 +46,7 @@ namespace rsimpl
         { msxu_ctrl::MSXU_FOCUS,              { 12, "Focus MS XU Control" } },
         { msxu_ctrl::MSXU_EXPOSURE,           { 15, "Exposure MS XU Control" } },
         { msxu_ctrl::MSXU_EVCOMPENSATION,     { 11, "EV Compensation MS XU Control" } },
-        { msxu_ctrl::MSXU_WHITEBALANCE,       { 15, "White Blance MS XU Control" } },
+        { msxu_ctrl::MSXU_WHITEBALANCE,       { 15, "White Balance MS XU Control" } },
         // The size the following is Vendor-specific. TBD
         { msxu_ctrl::MSXU_FACE_AUTHENTICATION,{ 1024, "Face Authentication MS XU Control" } },
         { msxu_ctrl::MSXU_CAMERA_EXTRINSIC,   { 1024, "Sensor Extrinsic MS XU Control" } },

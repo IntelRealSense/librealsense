@@ -16,7 +16,7 @@
 #include <Windows.h>
 #include "mfapi.h"
 #include <vidcap.h>
-#include <type_traits>
+
 
 #pragma comment(lib, "Shlwapi.lib")
 #pragma comment(lib, "mf.lib")
@@ -87,8 +87,8 @@ namespace rsimpl
                     CComPtr<IMFMediaBuffer> buffer = nullptr;
                     if (SUCCEEDED(sample->GetBufferByIndex(0, &buffer)))
                     {
-                        byte* byte_buffer;
-                        DWORD max_length, current_length;
+                        byte* byte_buffer=nullptr;
+                        DWORD max_length{}, current_length{};
                         if (SUCCEEDED(buffer->Lock(&byte_buffer, &max_length, &current_length)))
                         {
                             try
@@ -96,7 +96,7 @@ namespace rsimpl
                                 auto& stream = owner->_streams[dwStreamIndex];
                                 std::lock_guard<std::mutex> lock(owner->_streams_mutex);
                                 auto profile = stream.profile;
-                                frame_object f{ static_cast<int>(current_length), 0, byte_buffer, nullptr };
+                                frame_object f{ current_length, 0, byte_buffer, nullptr };
                                 stream.callback(profile, f);
                             }
                             catch (...)
@@ -475,7 +475,7 @@ namespace rsimpl
                 auto name = win_to_utf(wchar_name);
                 CoTaskMemFree(wchar_name);
 
-                int vid, pid, mi; std::string unique_id;
+                uint16_t vid, pid, mi; std::string unique_id;
                 if (!parse_usb_path(vid, pid, mi, unique_id, name)) continue;
 
                 uvc_device_info info;
@@ -772,12 +772,12 @@ namespace rsimpl
             if (_profiles.empty())
                 throw std::runtime_error("Stream not configured");
 
-            if (_streaming) 
+            if (_streaming)
                 throw std::runtime_error("Device is already streaming!");
 
             check_connection();
 
-            try 
+            try
             {
                 for (auto i = 0; i < _profiles.size(); ++i)
                 {

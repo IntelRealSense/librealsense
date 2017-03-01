@@ -337,7 +337,7 @@ namespace rsimpl
     ///////////////////
     // Pixel formats //
     ///////////////////
-   
+
     typedef std::tuple<uint32_t, int, size_t> native_pixel_format_tuple;
     typedef std::tuple<rs2_stream, rs2_format> output_tuple;
     typedef std::tuple<uvc::stream_profile_tuple, native_pixel_format_tuple, std::vector<output_tuple>> request_mapping_tuple;
@@ -428,7 +428,7 @@ namespace rsimpl
         {
             return std::make_tuple(profile, *pf, *unpacker);
         }
-        
+
     };
 
     inline bool operator< (const request_mapping& first, const request_mapping& second)
