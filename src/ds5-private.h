@@ -22,6 +22,14 @@ namespace rsimpl {
         const uint8_t DS5_EXPOSURE              = 3;
         const uint8_t DS5_LASER_POWER           = 4;
 
+        static const std::vector<std::uint16_t> rs4xx_sku_pid = { ds::RS400P_PID, ds::RS410A_PID, ds::RS420R_PID, ds::RS430C_PID, ds::RS440P_PID, ds::RS450T_PID };
+
+        static const std::map<std::uint16_t, std::string> rs4xx_sku_names = { { RS400P_PID, "Intel RealSense RS400p"},
+                                                                              { RS410A_PID, "Intel RealSense RS410a"},
+                                                                              { RS420R_PID, "Intel RealSense RS420r"},
+                                                                              { RS430C_PID, "Intel RealSense RS430w"},
+                                                                              { RS450T_PID, "Intel RealSense RS450t"} };
+
         // DS5 fisheye XU identifiers
         const uint8_t FISHEYE_EXPOSURE = 1;
 

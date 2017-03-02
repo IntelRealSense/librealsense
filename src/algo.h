@@ -94,14 +94,14 @@ namespace rsimpl
 
     struct frame_and_callback{
         frame_holder f_holder;
-        callback_invokation_holder callback;
+        callback_invocation_holder callback;
     };
 
     class auto_exposure_mechanism {
     public:
         auto_exposure_mechanism(rsimpl::uvc_endpoint* dev, auto_exposure_state auto_exposure_state);
         ~auto_exposure_mechanism();
-        void add_frame(frame_holder frame, callback_invokation_holder callback);
+        void add_frame(frame_holder frame, callback_invocation_holder callback);
         void update_auto_exposure_state(auto_exposure_state& auto_exposure_state);
         struct exposure_and_frame_counter {
             exposure_and_frame_counter()

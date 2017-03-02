@@ -24,7 +24,7 @@ endif()
 
 if(ANDROID)
     set(DEPENDENCIES realsense)
-    
+
     add_executable(cpp-enumerate-devices cpp-enumerate-devices.cpp)
     target_link_libraries(cpp-enumerate-devices ${DEPENDENCIES})
     include_directories(cpp-enumerate-devices third_party/tclap/include)
@@ -63,7 +63,7 @@ else()
         list(APPEND DEPENDENCIES m ${GLFW_LIBRARIES} ${LIBUSB1_LIBRARIES})
         include_directories(${GLFW_INCLUDE_DIR})
     endif()
-    
+
     add_executable(cpp-config-ui cpp-config-ui.cpp third_party/imgui/imgui.cpp third_party/imgui/imgui_impl_glfw.cpp example.hpp)
     target_link_libraries(cpp-config-ui ${DEPENDENCIES})
     include_directories(cpp-config-ui third_party/imgui)
@@ -121,7 +121,7 @@ else()
     set_target_properties (cpp-headless PROPERTIES
         FOLDER "Examples"
     )
-    
+
     add_executable(cpp-enumerate-devices cpp-enumerate-devices.cpp)
     target_link_libraries(cpp-enumerate-devices ${DEPENDENCIES})
     include_directories(cpp-enumerate-devices third_party/tclap/include)
@@ -129,7 +129,7 @@ else()
     set_target_properties (cpp-enumerate-devices PROPERTIES
         FOLDER Examples
     )
-    
+
     add_executable(cpp-terminal cpp-terminal.cpp cpp-terminal-helpers/auto-complete/auto-complete.cpp cpp-terminal-helpers/auto-complete/auto-complete.h)
     add_executable(cpp-fw-logger cpp-fw-logger.cpp cpp-fw-logger-helpers/fw-log-data.cpp
         cpp-fw-logger-helpers/fw-log-data.h
@@ -141,7 +141,7 @@ else()
         cpp-fw-logger-helpers/fw-logs-xml-helper.h
         cpp-fw-logger-helpers/string-formatter.cpp
         cpp-fw-logger-helpers/string-formatter.h)
-        
+
     if(WIN32)
         target_link_libraries(cpp-terminal ${DEPENDENCIES})
         target_link_libraries(cpp-fw-logger ${DEPENDENCIES})
@@ -149,7 +149,7 @@ else()
         target_link_libraries(cpp-terminal -lpthread ${DEPENDENCIES})
         target_link_libraries(cpp-fw-logger -lpthread ${DEPENDENCIES})
     endif()
-    
+
     include_directories(cpp-terminal third_party/tclap/include cpp-terminal-helpers/auto-complete)
     include_directories(cpp-fw-logger third_party/tclap/include cpp-fw-logger-helpers)
 

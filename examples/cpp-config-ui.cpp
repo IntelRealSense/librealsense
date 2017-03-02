@@ -1090,7 +1090,7 @@ struct user_data
 int main(int, char**) try
 {
     // activate logging to console
-    log_to_console(RS2_LOG_SEVERITY_INFO);
+    log_to_console(RS2_LOG_SEVERITY_WARN);
 
     // Init GUI
     if (!glfwInit())

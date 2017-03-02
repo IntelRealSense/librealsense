@@ -3,10 +3,9 @@
 using namespace rsimpl;
 
 frame_archive::frame_archive(std::atomic<uint32_t>* in_max_frame_queue_size,
-                             std::chrono::high_resolution_clock::time_point capture_started)
+    std::shared_ptr<uvc::time_service> ts)
     : max_frame_queue_size(in_max_frame_queue_size),
-      mutex(), capture_started(capture_started),
-      recycle_frames(true)
+      mutex(), recycle_frames(true), _time_service(ts)
 {
     published_frames_count = 0;
 }
@@ -15,7 +14,7 @@ void frame_archive::unpublish_frame(frame* frame)
 {
     if (frame)
     {
-        //log_frame_callback_end(frame);
+        log_frame_callback_end(frame);
         std::unique_lock<std::recursive_mutex> lock(mutex);
 
         if (is_valid(frame->get_stream_type()))
@@ -141,7 +140,7 @@ void frame_archive::flush()
     {
         LOG_WARNING("The user was holding on to "
             << std::dec << pending_frames << " frames after stream 0x"
-            << std::hex << this << " stopped");
+            << std::hex << this << " stopped" << std::dec);
     }
     // frames and their frame refs are not flushed, by design
 }
@@ -171,12 +170,12 @@ frame* frame::publish(std::shared_ptr<frame_archive> new_owner)
     return owner->publish_frame(std::move(*this));
 }
 
-double frame::get_frame_metadata(rs2_frame_metadata frame_metadata) const
+double frame::get_frame_metadata(const rs2_frame_metadata& /*frame_metadata*/) const
 {
     throw not_implemented_exception("unsupported metadata type");
 }
 
-bool frame::supports_frame_metadata(rs2_frame_metadata frame_metadata) const
+bool frame::supports_frame_metadata(const rs2_frame_metadata& /*frame_metadata*/) const
 {
     return false;
 }
@@ -202,7 +201,7 @@ rs2_timestamp_domain frame::get_frame_timestamp_domain() const
     return additional_data.timestamp_domain;
 }
 
-double frame::get_frame_timestamp() const
+rs2_time_t frame::get_frame_timestamp() const
 {
     return additional_data.timestamp;
 }
@@ -212,7 +211,7 @@ unsigned long long frame::get_frame_number() const
     return additional_data.frame_number;
 }
 
-long long frame::get_frame_system_time() const
+rs2_time_t frame::get_frame_system_time() const
 {
     return additional_data.system_time;
 }
@@ -242,12 +241,10 @@ int frame::get_bpp() const
     return additional_data.bpp;
 }
 
-
-void frame::update_frame_callback_start_ts(std::chrono::high_resolution_clock::time_point ts)
+void frame::update_frame_callback_start_ts(rs2_time_t ts)
 {
     additional_data.frame_callback_started = ts;
 }
-
 
 rs2_format frame::get_format() const
 {
@@ -258,29 +255,56 @@ rs2_stream frame::get_stream_type() const
     return additional_data.stream_type;
 }
 
-std::chrono::high_resolution_clock::time_point frame::get_frame_callback_start_time_point() const
+rs2_time_t frame::get_frame_callback_start_time_point() const
 {
     return additional_data.frame_callback_started;
 }
 
 void frame_archive::log_frame_callback_end(frame* frame) const
 {
-    auto callback_ended = std::chrono::high_resolution_clock::now();
-    auto ts = std::chrono::duration_cast<std::chrono::milliseconds>(callback_ended - capture_started).count();
-    auto callback_warning_duration = 1000 / (frame->additional_data.fps+1);
-    auto callback_duration = std::chrono::duration_cast<std::chrono::milliseconds>(callback_ended - frame->get_frame_callback_start_time_point()).count();
-
-    if (callback_duration > callback_warning_duration)
+    if (frame)
     {
-        LOG_INFO("Frame Callback took too long to complete. (Duration: " << callback_duration << "ms, FPS: " << frame->additional_data.fps << ", Max Duration: " << callback_warning_duration << "ms)");
-    }
+        auto callback_ended = _time_service->get_time();
+        auto callback_warning_duration = 1000 / (frame->additional_data.fps + 1);
+        auto callback_duration = callback_ended - frame->get_frame_callback_start_time_point();
 
-    LOG_DEBUG("CallbackFinished," << rsimpl::get_string(frame->get_stream_type()) << "," << frame->get_frame_number() << ",DispatchedAt," << ts);
+        LOG_DEBUG("CallbackFinished," << rsimpl::get_string(frame->get_stream_type()) << "," << frame->get_frame_number()
+            << ",DispatchedAt," << callback_ended);
+
+        if (callback_duration > callback_warning_duration)
+        {
+            LOG_DEBUG("Frame Callback [" << rsimpl::get_string(frame->get_stream_type())
+                     << "#" << std::dec << frame->additional_data.frame_number
+                     << "] overdue. (Duration: " << callback_duration
+                     << "ms, FPS: " << frame->additional_data.fps << ", Max Duration: " << callback_warning_duration << "ms)");
+        }
+    }
 }
 
-void rs2_frame::log_callback_start(std::chrono::high_resolution_clock::time_point capture_start_time) const
+void rs2_frame::log_callback_start(rs2_time_t timestamp) const
 {
-    auto callback_start_time = std::chrono::high_resolution_clock::now();
-    auto ts = std::chrono::duration_cast<std::chrono::milliseconds>(callback_start_time - capture_start_time).count();
-    LOG_DEBUG("CallbackStarted," << rsimpl::get_string(get()->get_stream_type()) << "," << get()->get_frame_number() << ",DispatchedAt," << ts);
+    if (get())
+    {
+        get()->update_frame_callback_start_ts(timestamp);
+        LOG_DEBUG("CallbackStarted," << rsimpl::get_string(get()->get_stream_type()) << "," << get()->get_frame_number() << ",DispatchedAt," << timestamp);
+    }
+}
+
+void rs2_frame::log_callback_end(rs2_time_t timestamp) const
+{
+    if (get())
+    {
+        auto callback_warning_duration = 1000.f / (get()->additional_data.fps + 1);
+        auto callback_duration = timestamp - get()->get_frame_callback_start_time_point();
+
+        LOG_DEBUG("CallbackFinished," << rsimpl::get_string(get()->get_stream_type()) << "," << get()->get_frame_number() << ",DispatchedAt," << timestamp);
+
+        if (callback_duration > callback_warning_duration)
+        {
+            LOG_INFO("Frame Callback " << rsimpl::get_string(get()->get_stream_type())
+                     << "#" << std::dec << get()->additional_data.frame_number
+                     << "overdue. (Duration: " << callback_duration
+                     << "ms, FPS: " << get()->additional_data.fps << ", Max Duration: " << callback_warning_duration << "ms)");
+        }
+    }
 }

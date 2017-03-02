@@ -21,9 +21,9 @@ namespace rsimpl
 
         std::vector<std::string> tokenize(std::string string, char separator);
 
-        bool parse_usb_path(int & vid, int & pid, int & mi, std::string & unique_id, const std::string & path);
+        bool parse_usb_path(uint16_t & vid, uint16_t & pid, uint16_t & mi, std::string & unique_id, const std::string & path);
 
-        std::string get_usb_port_id(int device_vid, int device_pid, const std::string& device_uid);
+        std::string get_usb_port_id(uint16_t device_vid, uint16_t device_pid, const std::string& device_uid);
 
         class event_base
         {

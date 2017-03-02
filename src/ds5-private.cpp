@@ -84,8 +84,8 @@ namespace rsimpl
                     switch (info.pid)
                     {
                     case RS400P_PID:
-                    case RS430C_PID:
                     case RS410A_PID:
+                    case RS430C_PID:
                     case RS440P_PID:
                         result.mi = 3;
                         break;

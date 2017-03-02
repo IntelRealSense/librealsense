@@ -58,7 +58,7 @@ namespace rsimpl
 
             std::vector<uint8_t> decode(const std::vector<uint8_t>& input) const;
 
-            std::vector<uint8_t> encode(uint8_t* data, uint32_t size) const;
+            std::vector<uint8_t> encode(uint8_t* data, size_t size) const;
 
             int min_dist = 110;
             int max_length = 32;
@@ -96,7 +96,7 @@ namespace rsimpl
             void save(const char* filename, const char* section, bool append = false) const;
             static std::shared_ptr<recording> load(const char* filename, const char* section);
 
-            int save_blob(const void* ptr, unsigned int size);
+            int save_blob(const void* ptr, size_t size);
 
 
 
@@ -460,7 +460,7 @@ namespace rsimpl
             recording_time_service(recording& rec):
                 _rec(rec){}
 
-            virtual double get_time() const override
+            virtual rs2_time_t get_time() const override
             {
               return _rec.get_time();
             }

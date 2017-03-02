@@ -110,7 +110,7 @@ namespace rsimpl
             return results;
         }
 
-        vector<uint8_t> compression_algorithm::encode(uint8_t* data, uint32_t size) const
+        vector<uint8_t> compression_algorithm::encode(uint8_t* data, size_t size) const
         {
             vector<uint8_t> results;
             union {
@@ -149,7 +149,7 @@ namespace rsimpl
         {
         }
 
-        double recording::get_time()
+        rs2_time_t recording::get_time()
         {
             return _curr_time;
         }
@@ -414,8 +414,7 @@ namespace rsimpl
                 if (row[1].get_int() == (int)device_type::usb)
                 {
                     usb_device_info info;
-                    auto id = row[2].get_string();
-                    info.id = wstring(id.begin(), id.end());
+                    info.id = row[2].get_string();
                     info.unique_id = row[3].get_string();
                     info.pid = row[4].get_int();
                     info.vid = row[5].get_int();
@@ -482,7 +481,7 @@ namespace rsimpl
             return result;
         }
 
-        int recording::save_blob(const void* ptr, unsigned size)
+        int recording::save_blob(const void* ptr, size_t size)
         {
             lock_guard<mutex> lock(_mutex);
             vector<uint8_t> holder;
@@ -561,20 +560,20 @@ namespace rsimpl
                         {
                             c.param2 = rec1->save_blob(f.pixels, static_cast<int>(f.frame_size));
                             c.param4 = static_cast<int>(f.frame_size);
-                            c.param3 = 1;                         
+                            c.param3 = 1;
                         }
                         else if (_owner->get_mode() == RS2_RECORDING_MODE_BLANK_FRAMES)
                         {
                             c.param2 = -1;
                             c.param4 = static_cast<int>(f.frame_size);
-                            c.param3 = 0;                           
+                            c.param3 = 0;
                         }
                         else
                         {
                             auto compressed = _compression->encode((uint8_t*)f.pixels, f.frame_size);
                             c.param2 = rec1->save_blob(compressed.data(), static_cast<int>(compressed.size()));
                             c.param4 = static_cast<int>(compressed.size());
-                            c.param3 = 2;                         
+                            c.param3 = 2;
                         }
 
                         c.param5 = rec1->save_blob(f.metadata, static_cast<int>(f.metadata_size));
@@ -1272,7 +1271,7 @@ namespace rsimpl
             : _rec(rec), _entity_id(id),
               _alive(false)
         {
-            
+
         }
 
         vector<uint8_t> playback_usb_device::send_receive(const vector<uint8_t>& data, int timeout_ms, bool require_response)
@@ -1320,7 +1319,7 @@ namespace rsimpl
                                 frame_blob = _compression.decode(_rec->load_blob(c_ptr->param2));
                             }
                             metadata_blob =_rec->load_blob(c_ptr->param5);
-                            frame_object fo{static_cast<int>(frame_blob.size()), static_cast<int>(metadata_blob.size()),
+                            frame_object fo{ frame_blob.size(), metadata_blob.size(),
                                         frame_blob.data(),metadata_blob.data() };
                             pair.second(p, fo);
                             break;

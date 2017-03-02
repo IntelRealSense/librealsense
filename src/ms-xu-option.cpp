@@ -83,8 +83,9 @@ void ms_xu_data_option::encode_data(const float& val, std::vector<uint8_t>& _tra
 
 float ms_xu_data_option::decode_data(const std::vector<uint8_t>& _transmit_buf) const
 {
+    auto mode = static_cast<msxu_ctrl_mode>(_transmit_buf[msxu_mode]);
     // Actual data is provided only when the control is set in manual mode.
-    switch (static_cast<msxu_ctrl_mode>(_transmit_buf[msxu_mode])) // The state is encoded in the first 8 bits
+    switch (mode) // The state is encoded in the first 8 bits
     {
     case MSXU_MODE_D1_MANUAL:
     {
@@ -95,10 +96,10 @@ float ms_xu_data_option::decode_data(const std::vector<uint8_t>& _transmit_buf) 
     case MSXU_MODE_D2_LOCK:
     case MSXU_MODE_D0_AUTO | MSXU_MODE_D2_LOCK:
         throw wrong_api_call_sequence_exception(msxu_map.at((msxu_ctrl)_id)._desc +
-            " data query is available in Manual mode only. Actual: "  + std::to_string((uint8_t)_transmit_buf[msxu_mode]));
+            " data query is available in Manual mode only. Actual: "  + std::to_string(mode));
     default:
-        throw invalid_value_exception(msxu_map.at((msxu_ctrl)_id)._desc + " is in unsupported mode, value: "
-                                                + std::to_string((uint8_t)_transmit_buf[msxu_mode]));
+        throw invalid_value_exception(msxu_map.at((msxu_ctrl)_id)._desc +
+             " is in unsupported Mode " + std::to_string(mode));
     }
 }
 }

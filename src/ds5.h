@@ -11,8 +11,6 @@ const double TIMESTAMP_TO_MILLISECONS = 0.001;
 
 namespace rsimpl
 {
-    static const std::vector<std::uint16_t> rs4xx_sku_pid = { ds::RS400P_PID, ds::RS410A_PID, ds::RS420R_PID, ds::RS430C_PID, ds::RS440P_PID, ds::RS450T_PID };
-
     class ds5_camera;
 
 #pragma pack (push, 1)
@@ -20,7 +18,7 @@ namespace rsimpl
     {
         byte            length;
         byte            info;
-        uint32_t 	timestamp;
+        uint32_t        timestamp;
         byte            source_clock[6];
     };
 
@@ -67,7 +65,7 @@ namespace rsimpl
             reset();
         }
 
-        bool has_metadata(const request_mapping& mode, const void * metadata, unsigned int metadata_size)
+        bool has_metadata(const request_mapping& mode, const void * metadata, size_t metadata_size)
         {
             std::lock_guard<std::recursive_mutex> lock(_mtx);
 
@@ -76,7 +74,7 @@ namespace rsimpl
                 return false;
             }
 
-            for(auto i=0; i<metadata_size; i++)
+            for(uint32_t i=0; i<metadata_size; i++)
             {
                 if(((byte*)metadata)[i] != 0)
                 {
@@ -86,7 +84,7 @@ namespace rsimpl
             return false;
         }
 
-        double get_frame_timestamp(const request_mapping& mode, const uvc::frame_object& fo) override
+        rs2_time_t get_frame_timestamp(const request_mapping& mode, const uvc::frame_object& fo) override
         {
             std::lock_guard<std::recursive_mutex> lock(_mtx);
             auto pin_index = 0;
@@ -181,7 +179,7 @@ namespace rsimpl
             }
         }
 
-        double get_frame_timestamp(const request_mapping& mode, const uvc::frame_object& fo) override
+        rs2_time_t get_frame_timestamp(const request_mapping& mode, const uvc::frame_object& fo) override
         {
             std::lock_guard<std::recursive_mutex> lock(_mtx);
             return _ts->get_time();
@@ -234,14 +232,14 @@ namespace rsimpl
             }
         }
 
-        double get_frame_timestamp(const request_mapping& mode, const uvc::frame_object& fo) override
+        rs2_time_t get_frame_timestamp(const request_mapping& mode, const uvc::frame_object& fo) override
         {
             std::lock_guard<std::recursive_mutex> lock(_mtx);
 
             if(has_metadata(mode, fo.metadata, fo.metadata_size))
             {
                 auto timestamp = *((uint64_t*)((const uint8_t*)fo.metadata));
-                return static_cast<double>(timestamp) * timestamp_to_ms;
+                return static_cast<rs2_time_t>(timestamp) * timestamp_to_ms;
             }
 
             if (!started)
@@ -249,11 +247,11 @@ namespace rsimpl
                 LOG_WARNING("HID timestamp not found! please apply HID patch.");
                 started = true;
             }
-            auto ts = std::chrono::time_point_cast<std::chrono::milliseconds>(std::chrono::system_clock::now());
-            return static_cast<double>(ts.time_since_epoch().count());
+
+            return std::chrono::duration<rs2_time_t, std::milli>(std::chrono::system_clock::now().time_since_epoch()).count();
         }
 
-        bool has_metadata(const request_mapping& mode, const void * metadata, unsigned int metadata_size) const
+        bool has_metadata(const request_mapping& mode, const void * metadata, size_t metadata_size) const
         {
             if(metadata != nullptr && metadata_size > 0)
             {
@@ -353,7 +351,7 @@ namespace rsimpl
 
             explicit emitter_option(uvc_endpoint& ep)
                 : uvc_xu_option(ep, ds::depth_xu, ds::DS5_DEPTH_EMITTER_ENABLED,
-                                "Power of the DS5 projector, 0 meaning projector off, 1 meaning projector off, 2 meaning projector in auto mode")
+                                "Power of the DS5 projector, 0 meaning projector off, 1 meaning projector on, 2 meaning projector in auto mode")
             {}
         };
 
@@ -362,6 +360,8 @@ namespace rsimpl
         public:
             void set(float value) override
             {
+                if (value <0 ) throw invalid_value_exception("Invalid Auto-Exposure mode request " + std::to_string(value));
+
                 auto auto_exposure_prev_state = _auto_exposure_state->get_enable_auto_exposure();
                 _auto_exposure_state->set_enable_auto_exposure(0.f < std::fabs(value));
 
@@ -406,7 +406,7 @@ namespace rsimpl
                   _auto_exposure(auto_exposure)
             {
                 fisheye_ep->register_on_before_frame_callback(
-                            [this](rs2_stream stream, rs2_frame& f, callback_invokation_holder callback)
+                            [this](rs2_stream stream, rs2_frame& f, callback_invocation_holder callback)
                 {
                     if (!_to_add_frames || stream != RS2_STREAM_FISHEYE)
                         return;

@@ -64,31 +64,31 @@ namespace rsimpl
 
 #pragma pack(pop)
 
-    inline void copy_hid_axes(byte * const dest[], const byte * source, float factor, int count)
+    inline void copy_hid_axes(byte * const dest[], const byte * source, double factor, int count)
     {
         auto hid = (hid_data*)(source);
 
-        float axes[3] = {static_cast<float>(hid->x) * factor,
-                         static_cast<float>(hid->y) * factor,
-                         static_cast<float>(hid->z) * factor};
+        float axes[3] = {static_cast<float>((hid->x) * factor),
+                         static_cast<float>((hid->y) * factor),
+                         static_cast<float>((hid->z) * factor)};
         memcpy(dest[0], axes, sizeof(axes));
     }
 
     template<size_t SIZE> void unpack_accel_axes(byte * const dest[], const byte * source, int count)
     {
         static const float gravity = 9.80665f; // Standard Gravitation Acceleration
-        static const float accelerator_transform_factor = 0.001*gravity;
+        static const double accelerator_transform_factor = 0.001f*gravity;
         copy_hid_axes(dest, source, accelerator_transform_factor, count);
     }
 
     template<size_t SIZE> void unpack_gyro_axes(byte * const dest[], const byte * source, int count)
     {
-        static const float gyro_transform_factor = 0.1* M_PI / 180.f;
+        static const double gyro_transform_factor = 0.1* M_PI / 180.f;
         copy_hid_axes(dest, source, gyro_transform_factor, count);
     }
 
     void unpack_hid_raw_data(byte * const dest[], const byte * source, int count)
-    {       
+    {
         memcpy(dest[0] + 0, source + 0, 2);
         memcpy(dest[0] + 2, source + 4, 2);
         memcpy(dest[0] + 4, source + 8, 2);
@@ -773,9 +773,9 @@ namespace rsimpl
                                                                 { true,  &unpack_yuy2<RS2_FORMAT_BGR8 >,                  { { RS2_STREAM_COLOR,    RS2_FORMAT_BGR8 } } },
                                                                 { true,  &unpack_yuy2<RS2_FORMAT_BGRA8>,                  { { RS2_STREAM_COLOR,    RS2_FORMAT_BGRA8 } } } } };
     const native_pixel_format pf_accel_axes = { 'ACCL', 1, 1,{  { true,  &unpack_accel_axes<RS2_FORMAT_MOTION_XYZ32F>,    { { RS2_STREAM_ACCEL,    RS2_FORMAT_MOTION_XYZ32F } } },
-                                                                { false, &unpack_hid_raw_data,                                { { RS2_STREAM_ACCEL,    RS2_FORMAT_MOTION_RAW  } } }}};
+                                                                { false, &unpack_hid_raw_data,                            { { RS2_STREAM_ACCEL,    RS2_FORMAT_MOTION_RAW  } } }}};
     const native_pixel_format pf_gyro_axes  = { 'GYRO', 1, 1,{  { true,  &unpack_gyro_axes<RS2_FORMAT_MOTION_XYZ32F>,     { { RS2_STREAM_GYRO,     RS2_FORMAT_MOTION_XYZ32F } } },
-                                                                { false, &unpack_hid_raw_data,                                { { RS2_STREAM_GYRO,     RS2_FORMAT_MOTION_RAW  } } }}};
+                                                                { false, &unpack_hid_raw_data,                            { { RS2_STREAM_GYRO,     RS2_FORMAT_MOTION_RAW  } } }}};
 
 }
 

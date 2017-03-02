@@ -13,9 +13,8 @@ namespace rsimpl
 
 struct frame_additional_data
 {
-    double timestamp = 0;
+    rs2_time_t timestamp = 0;
     unsigned long long frame_number = 0;
-    unsigned long long system_time = 0;
     int width = 0;
     int height = 0;
     int fps = 0;
@@ -24,11 +23,12 @@ struct frame_additional_data
     rs2_format format = RS2_FORMAT_ANY;
     rs2_stream stream_type = RS2_STREAM_COUNT;
     rs2_timestamp_domain timestamp_domain = RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK;
-    std::chrono::high_resolution_clock::time_point frame_callback_started{};
+    rs2_time_t system_time = 0;
+    rs2_time_t frame_callback_started = 0;
 
     frame_additional_data() {};
 
-    frame_additional_data(double in_timestamp, unsigned long long in_frame_number, long long in_system_time,
+    frame_additional_data(double in_timestamp, unsigned long long in_frame_number, double in_system_time,
         int in_width, int in_height, int in_fps,
         int in_stride, int in_bpp,
         const rs2_format in_format, rs2_stream in_stream_type)
@@ -80,10 +80,10 @@ public:
 
     ~frame() { on_release.reset(); }
 
-    double get_frame_metadata(rs2_frame_metadata frame_metadata) const;
-    bool supports_frame_metadata(rs2_frame_metadata frame_metadata) const;
+    double get_frame_metadata(const rs2_frame_metadata& frame_metadata) const;
+    bool supports_frame_metadata(const rs2_frame_metadata& frame_metadata) const;
     const byte* get_frame_data() const;
-    double get_frame_timestamp() const;
+    rs2_time_t get_frame_timestamp() const;
     rs2_timestamp_domain get_frame_timestamp_domain() const;
     void set_timestamp(double new_ts) { additional_data.timestamp = new_ts; }
     unsigned long long get_frame_number() const;
@@ -93,7 +93,7 @@ public:
         additional_data.timestamp_domain = timestamp_domain;
     }
 
-    long long get_frame_system_time() const;
+    rs2_time_t get_frame_system_time() const;
     int get_width() const;
     int get_height() const;
     int get_framerate() const;
@@ -102,8 +102,8 @@ public:
     rs2_format get_format() const;
     rs2_stream get_stream_type() const;
 
-    std::chrono::high_resolution_clock::time_point get_frame_callback_start_time_point() const;
-    void update_frame_callback_start_ts(std::chrono::high_resolution_clock::time_point ts);
+    rs2_time_t get_frame_callback_start_time_point() const;
+    void update_frame_callback_start_ts(rs2_time_t ts);
 
     void acquire() { ref_count.fetch_add(1); }
     void release();
@@ -159,53 +159,52 @@ struct rs2_frame // esentially an intrusive shared_ptr<frame>
 
     frame* get() const { return frame_ptr; }
 
-    void log_callback_start(std::chrono::high_resolution_clock::time_point capture_start_time) const;
+    void log_callback_start(rs2_time_t timestamp) const;
+    void log_callback_end(rs2_time_t timestamp) const;
 
 private:
     frame * frame_ptr = nullptr;
 };
 
-struct callback_invokation
+struct callback_invocation
 {
     std::chrono::high_resolution_clock::time_point started;
     std::chrono::high_resolution_clock::time_point ended;
 };
 
-typedef rsimpl::small_heap<callback_invokation, 1> callbacks_heap;
+typedef rsimpl::small_heap<callback_invocation, 1> callbacks_heap;
 
-struct callback_invokation_holder
+struct callback_invocation_holder
 {
-    callback_invokation_holder() : invokation(nullptr), owner(nullptr) {}
+    callback_invocation_holder() : invocation(nullptr), owner(nullptr) {}
+    callback_invocation_holder(const callback_invocation_holder&) = delete;
+    callback_invocation_holder& operator=(const callback_invocation_holder&) = delete;
 
-    callback_invokation_holder(const callback_invokation_holder&) = delete;
-
-    callback_invokation_holder(callback_invokation_holder&& other)
-        : invokation(other.invokation), owner(other.owner)
+    callback_invocation_holder(callback_invocation_holder&& other)
+        : invocation(other.invocation), owner(other.owner)
     {
-        other.invokation = nullptr;
+        other.invocation = nullptr;
     }
 
-    callback_invokation_holder(callback_invokation* invokation, callbacks_heap* owner)
-        : invokation(invokation), owner(owner)
+    callback_invocation_holder(callback_invocation* invocation, callbacks_heap* owner)
+        : invocation(invocation), owner(owner)
     { }
 
-    ~callback_invokation_holder()
+    ~callback_invocation_holder()
     {
-        if (invokation) owner->deallocate(invokation);
+        if (invocation) owner->deallocate(invocation);
     }
 
-
-    callback_invokation_holder& operator=(const callback_invokation_holder&) = delete;
-    callback_invokation_holder& operator=(callback_invokation_holder&& other)
+    callback_invocation_holder& operator=(callback_invocation_holder&& other)
     {
-        invokation = other.invokation;
+        invocation = other.invocation;
         owner = other.owner;
-        other.invokation = nullptr;
+        other.invocation = nullptr;
         return *this;
     }
 
 private:
-    callback_invokation* invokation;
+    callback_invocation* invocation;
     callbacks_heap* owner;
 };
 
@@ -224,14 +223,13 @@ namespace rsimpl
         std::atomic<bool> recycle_frames;
         int pending_frames = 0;
         std::recursive_mutex mutex;
-        std::chrono::high_resolution_clock::time_point capture_started;
+        std::shared_ptr<uvc::time_service> _time_service;
 
     public:
         explicit frame_archive(std::atomic<uint32_t>* max_frame_queue_size,
-                               std::chrono::high_resolution_clock::time_point capture_started
-                                    = std::chrono::high_resolution_clock::now());
+            std::shared_ptr<uvc::time_service> ts);
 
-        callback_invokation_holder begin_callback()
+        callback_invocation_holder begin_callback()
         {
             return{ callback_inflight.allocate(), &callback_inflight };
         }

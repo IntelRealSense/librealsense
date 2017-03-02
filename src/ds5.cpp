@@ -68,7 +68,7 @@ namespace rsimpl
         std::vector<uvc::uvc_device_info> chosen;
         std::vector<std::shared_ptr<device_info>> results;
 
-        auto valid_pid = filter_by_product(uvc, rs4xx_sku_pid);
+        auto valid_pid = filter_by_product(uvc, ds::rs4xx_sku_pid);
         auto group_devices = group_devices_and_hids_by_unique_id(group_devices_by_unique_id(valid_pid), hid);
         for (auto& group : group_devices)
         {
@@ -228,7 +228,7 @@ namespace rsimpl
 
         _coefficients_table_raw = [this]() { return get_raw_calibration_table(coefficients_table_id); };
 
-        static const char* device_name = "Intel RealSense DS5";
+        std::string device_name = (rs4xx_sku_names.end() != rs4xx_sku_names.find(dev_info.front().pid)) ? rs4xx_sku_names.at(dev_info.front().pid) : "RS4xx";
         auto fw_version = _hw_monitor->get_firmware_version_string(GVD, fw_version_offset);
         auto serial = _hw_monitor->get_module_serial_string(GVD, module_serial_offset);
 

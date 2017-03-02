@@ -33,10 +33,9 @@ namespace rsimpl
         class os_time_service: public time_service
         {
         public:
-            double get_time() const override
+            rs2_time_t get_time() const override
             {
-                auto ts = std::chrono::time_point_cast<std::chrono::milliseconds>(std::chrono::system_clock::now());
-                return static_cast<double>(ts.time_since_epoch().count());
+                return std::chrono::duration<double, std::milli>(std::chrono::system_clock::now().time_since_epoch()).count();
             }
         };
 
@@ -73,7 +72,6 @@ namespace rsimpl
 
         struct stream_profile
         {
-
             uint32_t width;
             uint32_t height;
             uint32_t fps;
@@ -85,7 +83,7 @@ namespace rsimpl
             }
 
         };
-        
+
         inline bool operator==(const stream_profile& a,
                                const stream_profile& b)
         {
@@ -97,8 +95,8 @@ namespace rsimpl
 
         struct frame_object
         {
-            int frame_size;
-            int metadata_size;
+            size_t frame_size;
+            size_t metadata_size;
             const void * pixels;
             const void * metadata;
         };
@@ -108,14 +106,14 @@ namespace rsimpl
         struct uvc_device_info
         {
             std::string id = ""; // to distingwish between different pins of the same device
-            uint32_t vid;
-            uint32_t pid;
-            uint32_t mi;
+            uint16_t vid;
+            uint16_t pid;
+            uint16_t mi;
             std::string unique_id;
             std::string device_path;
         };
 
-        inline bool operator==(const uvc_device_info& a, 
+        inline bool operator==(const uvc_device_info& a,
                         const uvc_device_info& b)
         {
             return (a.vid == b.vid) &&
@@ -128,11 +126,11 @@ namespace rsimpl
 
         struct usb_device_info
         {
-            std::wstring id;
+            std::string id;
 
-            uint32_t vid;
-            uint32_t pid;
-            uint32_t mi;
+            uint16_t vid;
+            uint16_t pid;
+            uint16_t mi;
             std::string unique_id;
         };
 
@@ -442,7 +440,7 @@ namespace rsimpl
                 return _dev.front()->get_device_location();
             }
 
-            void lock() const override 
+            void lock() const override
             {
                 std::vector<uvc_device*> locked_dev;
                 try {
@@ -461,7 +459,7 @@ namespace rsimpl
                     throw;
                 }
             }
-            void unlock() const override 
+            void unlock() const override
             {
                 for (auto& elem : _dev)
                 {
@@ -491,9 +489,6 @@ namespace rsimpl
         };
 
         std::shared_ptr<backend> create_backend();
-
-
-
     }
 }
 

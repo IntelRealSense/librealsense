@@ -48,13 +48,13 @@
 
 #pragma GCC diagnostic ignored "-Woverflow"
 
-#define MAX_DEV_PARENT_DIR 10
+const size_t MAX_DEV_PARENT_DIR = 10;
 
-#define META_DATA_SIZE 256
+const std::string IIO_ROOT_PATH("/sys/bus/iio/devices/iio:device");
 
-#define IIO_ROOT_PATH "/sys/bus/iio/devices/iio:device"
-#define HID_METADATA_SIZE 8
-#define HID_DATA_ACTAL_SIZE 6
+const size_t META_DATA_SIZE = 256;      // bytes
+const size_t HID_METADATA_SIZE = 8;     // bytes
+const size_t HID_DATA_ACTUAL_SIZE = 6;  // bytes
 
 #ifdef ANDROID
 
@@ -508,7 +508,7 @@ namespace rsimpl
 
             bool has_metadata()
             {
-                if(get_output_size() == HID_DATA_ACTAL_SIZE + HID_METADATA_SIZE)
+                if(get_output_size() == HID_DATA_ACTUAL_SIZE + HID_METADATA_SIZE)
                     return true;
                 return false;
             }
@@ -1302,16 +1302,7 @@ namespace rsimpl
                     }
 
                     v4l2_buf_type type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-#ifndef ANDROID
-                    for(int i=0; i<10; ++i)
-                    {
-                        if (xioctl(_fd, VIDIOC_STREAMON, &type) < 0)
-                        {
-                            std::this_thread::sleep_for(std::chrono::milliseconds(100));
-                        }
-                        else break;
-                    }
-#endif //ANDROID
+
                     if(xioctl(_fd, VIDIOC_STREAMON, &type) < 0)
                         throw linux_backend_exception("xioctl(VIDIOC_STREAMON) failed");
 
@@ -1448,10 +1439,10 @@ namespace rsimpl
 
                         if (_is_started)
                         {
-                            frame_object fo{ (int)_buffers[buf.index].length,
+                            frame_object fo{ _buffers[buf.index].length,
                                 has_metadata() ? META_DATA_SIZE : 0,
                                 _buffers[buf.index].start,
-                                has_metadata() ? _buffers[buf.index].start + _buffer_length : NULL };
+                                has_metadata() ? _buffers[buf.index].start + _buffer_length : nullptr };
 
 
                             if (buf.bytesused > 0)

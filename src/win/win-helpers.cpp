@@ -91,7 +91,7 @@ namespace rsimpl
             }
         }
 
-        bool parse_usb_path(int & vid, int & pid, int & mi, std::string & unique_id, const std::string & path)
+        bool parse_usb_path(uint16_t & vid, uint16_t & pid, uint16_t & mi, std::string & unique_id, const std::string & path)
         {
             auto name = path;
             std::transform(begin(name), end(name), begin(name), ::tolower);
@@ -137,7 +137,7 @@ namespace rsimpl
             return true;
         }
 
-        bool parse_usb_path_from_device_id(int & vid, int & pid, int & mi, std::string & unique_id, const std::string & device_id)
+        bool parse_usb_path_from_device_id(uint16_t & vid, uint16_t & pid, uint16_t & mi, std::string & unique_id, const std::string & device_id)
         {
             auto name = device_id;
             std::transform(begin(name), end(name), begin(name), ::tolower);
@@ -278,7 +278,7 @@ namespace rsimpl
             return "";
         }
 
-        std::string get_usb_port_id(int device_vid, int device_pid,
+        std::string get_usb_port_id(uint16_t device_vid, uint16_t device_pid,
                                     const std::string& device_uid)
         {
             SP_DEVINFO_DATA devInfo = { sizeof(SP_DEVINFO_DATA) };
@@ -329,7 +329,7 @@ namespace rsimpl
                 if (pInstID == nullptr) continue;
 
                 // Check if this is our device
-                int usb_vid, usb_pid, usb_mi; std::string usb_unique_id;
+                uint16_t usb_vid, usb_pid, usb_mi; std::string usb_unique_id;
                 if (!parse_usb_path_from_device_id(usb_vid, usb_pid, usb_mi, usb_unique_id, std::string(win_to_utf(pInstID.get())))) continue;
                 if (usb_vid != device_vid || usb_pid != device_pid || /* usb_mi != device->mi || */ usb_unique_id != device_uid) continue;
 

@@ -78,20 +78,20 @@ namespace rsimpl
                 for (auto&& id : usb_enumerate::query_by_interface(interface_id, "", ""))
                 {
                     std::string path(id.begin(), id.end());
-                    int vid, pid, mi; std::string unique_id;
+                    uint16_t vid, pid, mi; std::string unique_id;
                     if (!parse_usb_path(vid, pid, mi, unique_id, path)) continue;
 
-                    usb_device_info info;
-                    info.id = id;
+                    usb_device_info info{ path, vid, pid, mi, unique_id};
+                    /*info.id = path;
                     info.vid = vid;
                     info.pid = pid;
                     info.unique_id = unique_id;
-                    info.mi = mi;
+                    info.mi = mi;*/
 
                     result.push_back(info);
                 }
             }
-            
+
             return result;
         }
 

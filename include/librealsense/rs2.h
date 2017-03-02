@@ -231,6 +231,8 @@ typedef struct rs2_log_callback rs2_log_callback;
 typedef void (*rs2_frame_callback_ptr)(rs2_frame*, void*);
 typedef void (*rs2_log_callback_ptr)(rs2_log_severity min_severity, const char* message, void* user);
 
+typedef double rs2_time_t;    /**< Timestamp format. units are milliseconds */
+
 /**
 * \brief Creates RealSense context that is required for the rest of the API.
 * \param[in] api_version Users are expected to pass their version of \c RS2_API_VERSION to make sure they are running the correct librealsense version.
@@ -261,7 +263,7 @@ rs2_device_list* rs2_query_devices(const rs2_context* context, rs2_error** error
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return            the time at specific time point, in live and redord mode it will return the system time and in playback mode it will return the recorded time
 */
-double rs2_get_context_time(const rs2_context* context, rs2_error** error);
+rs2_time_t rs2_get_context_time(const rs2_context* context, rs2_error** error);
 
 
 /**
@@ -435,7 +437,7 @@ int rs2_supports_frame_metadata(const rs2_frame* frame, rs2_frame_metadata frame
 * \param[out] error     if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return               the timestamp of the frame in milliseconds
 */
-double rs2_get_frame_timestamp(const rs2_frame* frame, rs2_error** error);
+rs2_time_t rs2_get_frame_timestamp(const rs2_frame* frame, rs2_error** error);
 
 /**
 * retrieve timestamp domain from frame handle. timestamps can only be comparable if they are in common domain
