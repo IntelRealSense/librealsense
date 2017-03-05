@@ -120,6 +120,8 @@ namespace rsimpl2
         CASE(EMITTER_ENABLED)
         CASE(AUTO_EXPOSURE_MODE)
         CASE(AUTO_EXPOSURE_ANTIFLICKER_RATE)
+        CASE(ASIC_TEMPERATURE)
+        CASE(PROJECTOR_TEMPERATURE)
         default: assert(!is_valid(value)); return unknown;
         }
         #undef CASE

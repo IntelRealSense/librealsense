@@ -17,10 +17,11 @@ namespace rsimpl2 {
         const uint16_t RS440P_PID = 0x0af6; // PWG
 
         // DS5 depth XU identifiers
-        const uint8_t DS5_HWMONITOR             = 1;
-        const uint8_t DS5_DEPTH_EMITTER_ENABLED = 2;
-        const uint8_t DS5_EXPOSURE              = 3;
-        const uint8_t DS5_LASER_POWER           = 4;
+        const uint8_t DS5_HWMONITOR                       = 1;
+        const uint8_t DS5_DEPTH_EMITTER_ENABLED           = 2;
+        const uint8_t DS5_EXPOSURE                        = 3;
+        const uint8_t DS5_LASER_POWER                     = 4;
+        const uint8_t DS5_ASIC_AND_PROJECTOR_TEMPERATURES = 9;
 
         static const std::vector<std::uint16_t> rs4xx_sku_pid = { ds::RS400P_PID, ds::RS410A_PID, ds::RS420R_PID, ds::RS430C_PID, ds::RS440P_PID, ds::RS450T_PID };
 

@@ -64,7 +64,7 @@ else()
         include_directories(${GLFW_INCLUDE_DIR})
     endif()
 
-    add_executable(cpp-config-ui cpp-config-ui.cpp third_party/imgui/imgui.cpp third_party/imgui/imgui_impl_glfw.cpp example.hpp)
+    add_executable(cpp-config-ui cpp-config-ui.cpp third_party/imgui/imgui.cpp third_party/imgui/imgui_draw.cpp third_party/imgui/imgui_impl_glfw.cpp example.hpp)
     target_link_libraries(cpp-config-ui ${DEPENDENCIES})
     include_directories(cpp-config-ui third_party/imgui)
 

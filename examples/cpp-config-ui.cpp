@@ -17,7 +17,7 @@
 
 #pragma comment(lib, "opengl32.lib")
 
-#define WHITE_SPACES std::string("                                 ")
+#define WHITE_SPACES std::string("                                     ")
 
 using namespace rs2;
 
@@ -29,6 +29,7 @@ public:
     device endpoint;
     bool* invalidate_flag;
     bool supported = false;
+    bool read_only = false;
     float value = 0.0f;
     std::string label = "";
     std::string id = "";
@@ -62,7 +63,12 @@ public:
 
                 try
                 {
-                    if (is_enum())
+                    if (read_only)
+                    {
+                        ImVec2 vec{0, 14};
+                        ImGui::ProgressBar(value/100.f, vec, std::to_string((int)value).c_str());
+                    }
+                    else if (is_enum())
                     {
                         std::vector<const char*> labels;
                         auto selected = 0, counter = 0;
@@ -116,12 +122,40 @@ public:
         }
     }
 
-    void update(std::string& error_message)
+    void update_supported(std::string& error_message)
     {
         try
         {
-            if (endpoint.supports(opt))
+            supported =  endpoint.supports(opt);
+        }
+        catch (const error& e)
+        {
+            error_message = error_to_string(e);
+        }
+    }
+
+    void update_read_only(std::string& error_message)
+    {
+        try
+        {
+            read_only = endpoint.is_option_read_only(opt);
+        }
+        catch (const error& e)
+        {
+            error_message = error_to_string(e);
+        }
+    }
+
+    void update_all(std::string& error_message)
+    {
+        try
+        {
+            if (supported =  endpoint.supports(opt))
+            {
                 value = endpoint.get_option(opt);
+                range = endpoint.get_option_range(opt);
+                read_only = endpoint.is_option_read_only(opt);
+            }
         }
         catch (const error& e)
         {
@@ -216,7 +250,9 @@ public:
                 try
                 {
                     metadata.range = dev.get_option_range(opt);
-                    metadata.value = dev.get_option(opt);
+                    metadata.read_only = dev.is_option_read_only(opt);
+                    if (!metadata.read_only)
+                        metadata.value = dev.get_option(opt);
                 }
                 catch (const error& e)
                 {
@@ -313,6 +349,7 @@ public:
             error_message = error_to_string(e);
         }
     }
+
 
     bool is_there_equal_fps_groups()
     {
@@ -588,7 +625,7 @@ public:
         if (next_option < RS2_OPTION_COUNT)
         {
             auto& opt_md = options_metadata[static_cast<rs2_option>(next_option)];
-            opt_md.update(error_message);
+            opt_md.update_all(error_message);
 
             if (next_option == RS2_OPTION_ENABLE_AUTO_EXPOSURE)
             {
@@ -1159,9 +1196,20 @@ int main(int, char**) try
         data->mouse->mouse_down = action != GLFW_RELEASE;
     });
 
+    auto last_time_point = std::chrono::high_resolution_clock::now();
+
     // Closing the window
     while (!glfwWindowShouldClose(window))
     {
+        bool update_read_only_options = false;
+        auto now = std::chrono::high_resolution_clock::now();
+        auto duration = std::chrono::duration<double, std::milli>(now - last_time_point).count();
+        if (duration >= 5000)
+        {
+            update_read_only_options = true;
+            last_time_point = now;
+        }
+
         glfwPollEvents();
         int w, h;
         glfwGetWindowSize(window, &w, &h);
@@ -1377,11 +1425,24 @@ int main(int, char**) try
                     {
                         auto opt = static_cast<rs2_option>(i);
                         auto&& metadata = sub->options_metadata[opt];
+                        if (update_read_only_options)
+                        {
+                            metadata.update_supported(error_message);
+                            if (metadata.supported &&
+                                sub->streaming)
+                            {
+                                metadata.update_read_only(error_message);
+                                if (metadata.read_only)
+                                {
+                                    metadata.update_all(error_message);
+                                }
+                            }
+                        }
                         metadata.draw(error_message);
                     }
                 }
+                ImGui::Text("\n");
             }
-
         }
 
         ImGui::Text("\n\n\n\n\n\n\n");

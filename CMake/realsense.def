@@ -56,6 +56,7 @@ EXPORTS
     rs2_get_option_range
     rs2_get_option_description
     rs2_get_option_value_description
+    rs2_is_option_read_only
     
     rs2_set_region_of_interest
     rs2_get_region_of_interest

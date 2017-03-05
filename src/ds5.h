@@ -355,6 +355,92 @@ namespace rsimpl2
             {}
         };
 
+        class asic_and_projector_temperature_options : public option
+        {
+        public:
+            bool is_read_only() const override { return true; }
+
+            void set(float) override
+            {
+                throw not_implemented_exception(to_string() << rs2_option_to_string(_option) << " is read-only!");
+            }
+
+            float query() const override
+            {
+                #pragma pack(push, 1)
+                struct temperature
+                {
+                    uint8_t is_projector_valid;
+                    uint8_t is_asic_valid;
+                    int8_t projector_temperature;
+                    int8_t asic_temperature;
+                };
+                #pragma pack(pop)
+
+                auto temperature_data = static_cast<temperature>(_ep.invoke_powered(
+                    [this](uvc::uvc_device& dev)
+                    {
+                        temperature temp;
+                        dev.get_xu(ds::depth_xu, ds::DS5_ASIC_AND_PROJECTOR_TEMPERATURES, reinterpret_cast<uint8_t*>(&temp), sizeof(temperature));
+                        return temp;
+                    }));
+
+                int8_t temperature::* feild;
+                uint8_t temperature::* is_valid_feild;
+
+                switch (_option)
+                {
+                case RS2_OPTION_ASIC_TEMPERATURE:
+                    feild = &temperature::asic_temperature;
+                    is_valid_feild = &temperature::is_asic_valid;
+                    break;
+                case RS2_OPTION_PROJECTOR_TEMPERATURE:
+                    feild = &temperature::projector_temperature;
+                    is_valid_feild = &temperature::is_projector_valid;
+                    break;
+                default:
+                    throw invalid_value_exception(to_string() << rs2_option_to_string(_option) << " is not temperature option!");
+                }
+
+                if (!static_cast<bool>(temperature_data.*is_valid_feild))
+                    throw invalid_value_exception(to_string() << rs2_option_to_string(_option) << " value is not valid!");
+
+                return temperature_data.*feild;
+            }
+
+            option_range get_range() const override
+            {
+                return option_range{-40, 125, 0, 0};
+            }
+
+            bool is_enabled() const override
+            {
+                return _ep.is_streaming();
+            }
+
+            const char* get_description() const override
+            {
+                switch (_option)
+                {
+                case RS2_OPTION_ASIC_TEMPERATURE:
+                    return "Current Asic Temperature";
+                case RS2_OPTION_PROJECTOR_TEMPERATURE:
+                    return "Current Projector Temperature";
+                default:
+                    throw invalid_value_exception(to_string() << rs2_option_to_string(_option) << " is not temperature option!");
+                }
+            }
+
+            explicit asic_and_projector_temperature_options(uvc_endpoint& ep, rs2_option opt)
+                : _option(opt),
+                  _ep(ep)
+            {}
+
+        private:
+            uvc_endpoint& _ep;
+            rs2_option _option;
+        };
+
         class enable_auto_exposure_option : public option
         {
         public:

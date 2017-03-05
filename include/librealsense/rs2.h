@@ -140,6 +140,8 @@ typedef enum rs2_option
     RS2_OPTION_TOTAL_FRAME_DROPS                          , /**< Total number of detected frame drops from all streams */
     RS2_OPTION_AUTO_EXPOSURE_MODE                         , /**< Auto-Exposure modes: Static, Anti-Flicker and Hybrid */
     RS2_OPTION_AUTO_EXPOSURE_ANTIFLICKER_RATE             , /**< Auto-Exposure anti-flicker rate, can be 50 or 60 Hz */
+    RS2_OPTION_ASIC_TEMPERATURE                           , /**< Current Asic Temperature */
+    RS2_OPTION_PROJECTOR_TEMPERATURE                      , /**< Current Projector Temperature */
     RS2_OPTION_COUNT                                      , /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
 } rs2_option;
 
@@ -573,6 +575,15 @@ rs2_frame* rs2_clone_frame_ref(rs2_frame* frame, rs2_error ** error);
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 */
 void rs2_release_frame(rs2_frame* frame);
+
+/**
+* check if option is read-only
+* \param[in] device   the RealSense device
+* \param[in] option   option id to be checked
+* \param[out] error   if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return true if option is read-only
+*/
+int rs2_is_option_read_only(const rs2_device* device, rs2_option option, rs2_error** error);
 
 /**
 * read option value from the device

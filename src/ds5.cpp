@@ -180,7 +180,6 @@ namespace rsimpl2
         depth_ep->register_pixel_format(pf_y8); // Left Only - Luminance
         depth_ep->register_pixel_format(pf_yuyv); // Left Only
         depth_ep->register_pixel_format(pf_uyvyl); // Color from Depth
-
         depth_ep->register_pu(RS2_OPTION_GAIN);
 
         // TODO: These if conditions will be implemented as inheritance classes
@@ -252,6 +251,13 @@ namespace rsimpl2
             depth_ep.register_option(RS2_OPTION_EXPOSURE, std::make_shared<ms_xu_data_option>(depth_ep, ms_ctrl_depth_xu, MSXU_EXPOSURE));
             depth_ep.register_option(RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE, std::make_shared<ms_xu_control_option>(depth_ep, ms_ctrl_depth_xu, MSXU_WHITEBALANCE));
             depth_ep.register_option(RS2_OPTION_WHITE_BALANCE, std::make_shared<ms_xu_data_option>(depth_ep, ms_ctrl_depth_xu, MSXU_WHITEBALANCE));
+
+            depth_ep.register_option(RS2_OPTION_ASIC_TEMPERATURE,
+                                     std::make_shared<asic_and_projector_temperature_options>(depth_ep,
+                                                                                              RS2_OPTION_ASIC_TEMPERATURE));
+            depth_ep.register_option(RS2_OPTION_PROJECTOR_TEMPERATURE,
+                                     std::make_shared<asic_and_projector_temperature_options>(depth_ep,
+                                                                                              RS2_OPTION_PROJECTOR_TEMPERATURE));
         }
         else
         {

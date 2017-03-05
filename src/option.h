@@ -29,6 +29,7 @@ namespace rsimpl2
         virtual float query() const = 0;
         virtual option_range get_range() const = 0;
         virtual bool is_enabled() const = 0;
+        virtual bool is_read_only() const { return false; }
 
         virtual const char* get_description() const = 0;
         virtual const char* get_value_description(float) const { return nullptr; }
@@ -74,6 +75,7 @@ namespace rsimpl2
                     dev.set_xu(_xu, _id, reinterpret_cast<uint8_t*>(&t), sizeof(T));
                 });
         }
+
         float query() const override
         {
             return static_cast<float>(_ep.invoke_powered(
@@ -84,6 +86,7 @@ namespace rsimpl2
                     return static_cast<float>(t);
                 }));
         }
+
         option_range get_range() const override
         {
             auto uvc_range = _ep.invoke_powered(
@@ -98,12 +101,12 @@ namespace rsimpl2
             result.step = static_cast<float>(uvc_range.step);
             return result;
         }
+
         bool is_enabled() const override { return true; }
 
         uvc_xu_option(uvc_endpoint& ep, uvc::extension_unit xu, uint8_t id, std::string description)
             : _ep(ep), _xu(xu), _id(id), _desciption(std::move(description))
-        {
-        }
+        {}
 
         const char* get_description() const override
         {

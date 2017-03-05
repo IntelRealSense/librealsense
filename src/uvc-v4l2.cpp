@@ -65,7 +65,7 @@ const size_t HID_DATA_ACTUAL_SIZE = 6;  // bytes
 #define F_TEST 3
 
 // https://android.googlesource.com/platform/bionic/+/master/libc/bionic/lockf.cpp
-int lockf64(int fd, int cmd, off64_t length) 
+int lockf64(int fd, int cmd, off64_t length)
 {
     // Translate POSIX lockf into fcntl.
     struct flock64 fl;
@@ -340,9 +340,9 @@ namespace rsimpl2
         };
 
         // declare device sensor with all of its inputs.
-        class hid_backend {
+        class iio_hid_device {
         public:
-            hid_backend()
+            iio_hid_device()
                 : vid(0),
                   pid(0),
                   iio_device(-1),
@@ -352,7 +352,7 @@ namespace rsimpl2
                   sampling_frequency_name("")
             {}
 
-            ~hid_backend()
+            ~iio_hid_device()
             {
                 stop_capture();
 
@@ -746,7 +746,7 @@ namespace rsimpl2
             {
                 for (auto& iio_device : iio_devices)
                 {
-                    auto device = std::unique_ptr<hid_backend>(new hid_backend());
+                    auto device = std::unique_ptr<iio_hid_device>(new iio_hid_device());
                     try
                     {
                         device->init(std::stoul(_info.vid, nullptr, 16),
@@ -809,7 +809,7 @@ namespace rsimpl2
                         LOG_ERROR("iio_sensor " + std::to_string(profile.iio) + " not found!");
                 }
 
-                std::vector<hid_backend*> captured_sensors;
+                std::vector<iio_hid_device*> captured_sensors;
                 try{
                 for (auto& elem : _streaming_sensors)
                 {
@@ -920,8 +920,8 @@ namespace rsimpl2
         private:
             hid_device_info _info;
             std::vector<std::string> iio_devices;
-            std::vector<std::unique_ptr<hid_backend>> _hid_sensors;
-            std::vector<hid_backend*> _streaming_sensors;
+            std::vector<std::unique_ptr<iio_hid_device>> _hid_sensors;
+            std::vector<iio_hid_device*> _streaming_sensors;
         };
 
         class v4l_usb_device : public usb_device

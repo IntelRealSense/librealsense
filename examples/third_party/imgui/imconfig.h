@@ -6,20 +6,12 @@
 
 #pragma once
 
-//---- Define your own ImVector<> type if you don't want to use the provided implementation defined in imgui.h
-//#include <vector>
-//#define ImVector  std::vector
-//#define ImVector  MyVector
-
 //---- Define assertion handler. Defaults to calling assert().
 //#define IM_ASSERT(_EXPR)  MyAssert(_EXPR)
 
 //---- Define attributes of all API symbols declarations, e.g. for DLL under Windows.
 //#define IMGUI_API __declspec( dllexport )
 //#define IMGUI_API __declspec( dllimport )
-
-//---- Include imgui_user.inl at the end of imgui.cpp so you can include code that extends ImGui using its private data/functions.
-//#define IMGUI_INCLUDE_IMGUI_USER_INL
 
 //---- Include imgui_user.h at the end of imgui.h
 //#define IMGUI_INCLUDE_IMGUI_USER_H
@@ -35,7 +27,7 @@
 //#define IMGUI_DISABLE_OBSOLETE_FUNCTIONS
 
 //---- Implement STB libraries in a namespace to avoid conflicts
-//#define IMGUI_STB_NAMESPACE     ImStb
+//#define IMGUI_STB_NAMESPACE     ImGuiStb
 
 //---- Define constructor and implicit cast operators to convert back<>forth from your math types and ImVec2/ImVec4.
 /*
@@ -48,14 +40,12 @@
         operator MyVec4() const { return MyVec4(x,y,z,w); }
 */
 
-//---- Freely implement extra functions within the ImGui:: namespace.
-//---- Declare helpers or widgets implemented in imgui_user.inl or elsewhere, so end-user doesn't need to include multiple files.
-//---- e.g. you can create variants of the ImGui::Value() helper for your low-level math types, or your own widgets/helpers.
+//---- Tip: You can add extra functions within the ImGui:: namespace, here or in your own headers files.
+//---- e.g. create variants of the ImGui::Value() helper for your low-level math types, or your own widgets/helpers.
 /*
 namespace ImGui
 {
-    void    Value(const char* prefix, const MyVec2& v, const char* float_format = NULL);
-    void    Value(const char* prefix, const MyVec4& v, const char* float_format = NULL);
+    void    Value(const char* prefix, const MyMatrix44& v, const char* float_format = NULL);
 }
 */
 

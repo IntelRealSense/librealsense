@@ -504,6 +504,19 @@ namespace rs2
         }
 
         /**
+        * check if particular option is read-only
+        * \param[in] option     option id to be checked
+        * \return true if option is read-only
+        */
+        bool is_option_read_only(rs2_option option)
+        {
+            rs2_error* e = nullptr;
+            auto res = rs2_is_option_read_only(_dev.get(), option, &e);
+            error::handle(e);
+            return res > 0;
+        }
+
+        /**
         * read option value from the device
         * \param[in] option   option id to be queried
         * \return value of the option

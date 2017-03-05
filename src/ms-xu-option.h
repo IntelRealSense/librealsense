@@ -150,6 +150,18 @@ namespace rsimpl2
     class ms_xu_data_option : public ms_xu_option<float>
     {
     public:
+        bool is_enabled() const override
+        {
+            return static_cast<float>(_ep.invoke_powered(
+                [this](uvc::uvc_device& dev)
+            {
+                std::vector<uint8_t>    _transmit_buf(_xu_lenght, 0);
+                dev.get_xu(_xu, _id, const_cast<uint8_t*>(_transmit_buf.data()), _xu_lenght);
+                auto mode = static_cast<msxu_ctrl_mode>(_transmit_buf[msxu_mode]);
+                return mode == MSXU_MODE_D1_MANUAL;
+            }));
+        }
+
         option_range get_range() const override;
 
         virtual void encode_data(const float& val, std::vector<uint8_t>& buf) const override;
