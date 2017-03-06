@@ -202,8 +202,11 @@ namespace rsimpl
 
     void ds5_camera::register_auto_exposure_options(uvc_endpoint* uvc_ep)
     {
+        auto& gain_option = uvc_ep->get_option(RS2_OPTION_GAIN);
+        auto& exposure_option = uvc_ep->get_option(RS2_OPTION_EXPOSURE);
+
        auto ae_state = std::make_shared<auto_exposure_state>();
-       auto auto_exposure = std::make_shared<auto_exposure_mechanism>(uvc_ep, *ae_state);
+       auto auto_exposure = std::make_shared<auto_exposure_mechanism>(gain_option, exposure_option, *ae_state);
 
        uvc_ep->register_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE,
                                 std::make_shared<enable_auto_exposure_option>(uvc_ep,
@@ -278,8 +281,6 @@ namespace rsimpl
                                                         std::unique_ptr<frame_timestamp_reader>(new ds5_timestamp_reader_from_metadata(std::move(ds5_timestamp_reader_backup))),
                                                         backend.create_time_service());
 
-            register_auto_exposure_options(fisheye_ep.get());
-
             fisheye_ep->register_xu(fisheye_xu); // make sure the XU is initialized everytime we power the camera
             fisheye_ep->register_pixel_format(pf_raw8);
             fisheye_ep->register_pixel_format(pf_fe_raw8_unpatched_kernel); // W/O for unpatched kernel
@@ -288,6 +289,8 @@ namespace rsimpl
                 std::make_shared<uvc_xu_option<uint16_t>>(*fisheye_ep,
                     fisheye_xu,
                     FISHEYE_EXPOSURE, "Exposure time of Fisheye camera"));
+
+            register_auto_exposure_options(fisheye_ep.get());
 
             // Add fisheye endpoint
             fe_index = add_endpoint(fisheye_ep);

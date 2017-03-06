@@ -65,7 +65,7 @@ namespace rsimpl
                 intrinsics.ppx = rect_params[2];
                 intrinsics.ppy = rect_params[3];
                 intrinsics.model = RS2_DISTORTION_BROWN_CONRADY;
-                memset(intrinsics.coeffs, 0, arr_size(intrinsics.coeffs));  // All coefficients are zeroed since rectified depth is defined as CS origin
+                memset(intrinsics.coeffs, 0, sizeof(intrinsics.coeffs));  // All coefficients are zeroed since rectified depth is defined as CS origin
                 return intrinsics;
             }
             default:

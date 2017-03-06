@@ -99,7 +99,7 @@ namespace rsimpl
 
     class auto_exposure_mechanism {
     public:
-        auto_exposure_mechanism(rsimpl::uvc_endpoint* dev, auto_exposure_state auto_exposure_state);
+        auto_exposure_mechanism(option& gain_option, option& exposure_option, auto_exposure_state auto_exposure_state);
         ~auto_exposure_mechanism();
         void add_frame(frame_holder frame, callback_invocation_holder callback);
         void update_auto_exposure_state(auto_exposure_state& auto_exposure_state);
@@ -122,7 +122,8 @@ namespace rsimpl
         bool try_get_exp_by_frame_cnt(double& exposure, const unsigned long long frame_counter);
 
         static const int                       queue_size = 2;
-        rsimpl::uvc_endpoint*  _device;
+        option& _gain_option;
+        option& _exposure_option;
         auto_exposure_algorithm                _auto_exposure_algo;
         std::shared_ptr<std::thread>           _exposure_thread;
         std::condition_variable                _cv;

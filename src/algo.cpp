@@ -37,10 +37,11 @@ void auto_exposure_state::set_auto_exposure_antiflicker_rate(unsigned value)
 }
 
 
-auto_exposure_mechanism::auto_exposure_mechanism(uvc_endpoint* dev, auto_exposure_state auto_exposure_state)
-    : _device(dev), _auto_exposure_algo(auto_exposure_state),
+auto_exposure_mechanism::auto_exposure_mechanism(option& gain_option, option& exposure_option, auto_exposure_state auto_exposure_state)
+    : _auto_exposure_algo(auto_exposure_state),
       _keep_alive(true), _frames_counter(0),
-      _skip_frames(auto_exposure_state.skip_frames), _data_queue(queue_size)
+      _skip_frames(auto_exposure_state.skip_frames), _data_queue(queue_size),
+      _gain_option(gain_option), _exposure_option(exposure_option)
 {
     _exposure_thread = std::make_shared<std::thread>(
                 [this]()
@@ -70,13 +71,13 @@ auto_exposure_mechanism::auto_exposure_mechanism(uvc_endpoint* dev, auto_exposur
 
                 if (frame->get()->supports_frame_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE))
                 {
-                    auto gain = _device->get_option(RS2_OPTION_GAIN).query();
+                    auto gain = _gain_option.query();
                     values[0] = frame->get()->get_frame_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE);
                     values[1] = gain;                }
                 else
                 {
-                    values[0] = _device->get_option(RS2_OPTION_EXPOSURE).query();
-                    values[1] = _device->get_option(RS2_OPTION_GAIN).query();
+                    values[0] = _exposure_option.query();
+                    values[1] = _gain_option.query();
                 }
 
                 values[0] /= 10.; // Fisheye exposure value by extension control is in units of 10 mSec
@@ -96,15 +97,13 @@ auto_exposure_mechanism::auto_exposure_mechanism(uvc_endpoint* dev, auto_exposur
                         if (value < 1)
                             value = 1;
 
-                        auto& opt = _device->get_option(RS2_OPTION_EXPOSURE);
-                        opt.set(value);
+                        _exposure_option.set(value);
                     }
 
                     if (modify_gain)
                     {
                         auto value =  (gain_value - 2.f) * 8.f + 15.f;
-                        auto& opt = _device->get_option(RS2_OPTION_GAIN);
-                        opt.set(value);
+                        _gain_option.set(value);
                     }
                 }
             }
