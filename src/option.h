@@ -12,7 +12,7 @@
 #include <memory>
 #include <vector>
 
-namespace rsimpl
+namespace rsimpl2
 {
     struct option_range
     {

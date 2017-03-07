@@ -7,7 +7,7 @@
 #include <set>
 #include <unordered_set>
 #include "algo.h"
-using namespace rsimpl;
+using namespace rsimpl2;
 
 
 rs2_frame* endpoint::alloc_frame(size_t size, frame_additional_data additional_data) const
@@ -250,7 +250,7 @@ void uvc_endpoint::open(const std::vector<stream_profile>& requests)
 
             if (!this->is_streaming())
             {
-                LOG_WARNING("Frame received with streaming inactive," << rsimpl::get_string(mode.unpacker->outputs.front().first)
+                LOG_WARNING("Frame received with streaming inactive," << rsimpl2::get_string(mode.unpacker->outputs.front().first)
                         << ", Arrived," << std::fixed << system_time);
                 return;
             }
@@ -280,7 +280,7 @@ void uvc_endpoint::open(const std::vector<stream_profile>& requests)
             auto&& unpacker = *mode.unpacker;
             for (auto&& output : unpacker.outputs)
             {
-                LOG_DEBUG("FrameAccepted," << rsimpl::get_string(output.first) << "," << frame_counter
+                LOG_DEBUG("FrameAccepted," << rsimpl2::get_string(output.first) << "," << frame_counter
                     << ",Arrived," << std::fixed << system_time
                     << ",TS," << std::fixed << timestamp << ",TS_Domain," << rs2_timestamp_domain_to_string(timestamp_domain));
 

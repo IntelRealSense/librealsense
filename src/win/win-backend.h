@@ -5,7 +5,7 @@
 
 #include "../backend.h"
 
-namespace rsimpl
+namespace rsimpl2
 {
     namespace uvc
     {

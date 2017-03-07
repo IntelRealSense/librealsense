@@ -34,7 +34,7 @@ constexpr std::array<char const, N1+N2-1> concat(char const (&a1)[N1], char cons
 // The string is used to retrieve the version embedded into .so file on Linux
 constexpr auto rs2_api_version = concat("VERSION: ",RS2_API_VERSION_STR);
 
-namespace rsimpl
+namespace rsimpl2
 {
     context::context(backend_type type,
                      const char* filename,

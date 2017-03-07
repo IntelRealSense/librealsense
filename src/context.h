@@ -8,7 +8,7 @@
 #include "recorder.h"
 #include <vector>
 
-namespace rsimpl
+namespace rsimpl2
 {
     class device;
 

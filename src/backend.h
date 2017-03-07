@@ -19,7 +19,7 @@
 
 const uint16_t VID_INTEL_CAMERA     = 0x8086;
 
-namespace rsimpl
+namespace rsimpl2
 {
     namespace uvc
     {

@@ -4,7 +4,7 @@
 #include "types.h"
 #include <iomanip>
 
-namespace rsimpl
+namespace rsimpl2
 {
 
     void hw_monitor::fill_usb_buffer(int opCodeNumber, int p1, int p2, int p3, int p4,

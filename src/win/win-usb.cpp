@@ -18,7 +18,7 @@
 
 #pragma comment(lib, "winusb.lib")
 
-namespace rsimpl
+namespace rsimpl2
 {
     namespace uvc
     {

@@ -13,7 +13,7 @@
 #include <chrono>
 #include "win-usb.h"
 
-namespace rsimpl
+namespace rsimpl2
 {
     namespace uvc
     {

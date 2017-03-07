@@ -7,7 +7,7 @@
 
 #include "types.h"
 
-namespace rsimpl
+namespace rsimpl2
 {
 
     size_t           get_image_size                 (int width, int height, rs2_format format);

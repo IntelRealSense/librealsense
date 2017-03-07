@@ -13,7 +13,7 @@
 
 #define unknown "UNKNOWN"
 
-namespace rsimpl
+namespace rsimpl2
 {
     std::string datetime_string()
     {

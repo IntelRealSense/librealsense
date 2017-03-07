@@ -5,7 +5,7 @@
 
 INITIALIZE_EASYLOGGINGPP
 
-namespace rsimpl
+namespace rsimpl2
 {
     class logger_type
     {
@@ -86,12 +86,12 @@ namespace rsimpl
     static logger_type logger;
 }
 
-void rsimpl::log_to_console(rs2_log_severity min_severity)
+void rsimpl2::log_to_console(rs2_log_severity min_severity)
 {
     logger.log_to_console(min_severity);
 }
 
-void rsimpl::log_to_file(rs2_log_severity min_severity, const char * file_path)
+void rsimpl2::log_to_file(rs2_log_severity min_severity, const char * file_path)
 {
     logger.log_to_file(min_severity, file_path);
 }

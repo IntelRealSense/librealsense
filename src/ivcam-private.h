@@ -5,7 +5,7 @@
 
 #include "backend.h"
 
-namespace rsimpl {
+namespace rsimpl2 {
     namespace ivcam {
         // IVCAM depth XU identifiers
         const uint8_t IVCAM_DEPTH_LASER_POWER = 1;

@@ -12,7 +12,7 @@
 
 #include "ds5.h"
 
-namespace rsimpl
+namespace rsimpl2
 {
     class ds5_auto_exposure_roi_method : public region_of_interest_method
     {
@@ -54,7 +54,7 @@ namespace rsimpl
         const hw_monitor& _hw_monitor;
     };
 
-    std::shared_ptr<rsimpl::device> ds5_info::create(const uvc::backend& backend) const
+    std::shared_ptr<rsimpl2::device> ds5_info::create(const uvc::backend& backend) const
     {
         return std::make_shared<ds5_camera>(backend, _depth, _hwm, _hid);
     }

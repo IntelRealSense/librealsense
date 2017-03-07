@@ -39,7 +39,7 @@ const uint16_t  HW_MONITOR_BUFFER_SIZE          = 1024;
 
 
 
-namespace rsimpl
+namespace rsimpl2
 {
     class uvc_endpoint;
 

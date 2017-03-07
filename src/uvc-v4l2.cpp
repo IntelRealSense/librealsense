@@ -107,7 +107,7 @@ int lockf(int fd, int cmd, off_t length)
 }
 #endif
 
-namespace rsimpl
+namespace rsimpl2
 {
     namespace uvc
     {

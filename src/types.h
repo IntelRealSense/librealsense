@@ -38,7 +38,7 @@ const int RS2_MAX_EVENT_TINE_OUT = 10;
 const double DBL_EPSILON = 2.2204460492503131e-016;  // smallest such that 1.0+DBL_EPSILON != 1.0
 #endif
 
-namespace rsimpl
+namespace rsimpl2
 {
     ///////////////////////////////////
     // Utility types for general use //
@@ -829,9 +829,9 @@ namespace rsimpl
 namespace std {
 
     template <>
-    struct hash<rsimpl::stream_profile>
+    struct hash<rsimpl2::stream_profile>
     {
-        size_t operator()(const rsimpl::stream_profile& k) const
+        size_t operator()(const rsimpl2::stream_profile& k) const
         {
             using std::hash;
 
@@ -844,9 +844,9 @@ namespace std {
     };
 
     template <>
-    struct hash<rsimpl::uvc::stream_profile>
+    struct hash<rsimpl2::uvc::stream_profile>
     {
-        size_t operator()(const rsimpl::uvc::stream_profile& k) const
+        size_t operator()(const rsimpl2::uvc::stream_profile& k) const
         {
             using std::hash;
 
@@ -858,15 +858,15 @@ namespace std {
     };
 
     template <>
-    struct hash<rsimpl::request_mapping>
+    struct hash<rsimpl2::request_mapping>
     {
-        size_t operator()(const rsimpl::request_mapping& k) const
+        size_t operator()(const rsimpl2::request_mapping& k) const
         {
             using std::hash;
 
-            return (hash<rsimpl::uvc::stream_profile>()(k.profile))
-                ^ (hash<rsimpl::pixel_format_unpacker*>()(k.unpacker))
-                ^ (hash<rsimpl::native_pixel_format*>()(k.pf));
+            return (hash<rsimpl2::uvc::stream_profile>()(k.profile))
+                ^ (hash<rsimpl2::pixel_format_unpacker*>()(k.unpacker))
+                ^ (hash<rsimpl2::native_pixel_format*>()(k.pf));
         }
     };
 }

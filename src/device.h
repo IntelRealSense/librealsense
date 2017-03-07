@@ -12,7 +12,7 @@
 #include "option.h"
 #include "subdevice.h"
 
-namespace rsimpl
+namespace rsimpl2
 {
     class device
     {

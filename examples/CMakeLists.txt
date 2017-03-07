@@ -23,7 +23,7 @@ else()
 endif()
 
 if(ANDROID)
-    set(DEPENDENCIES realsense)
+    set(DEPENDENCIES realsense2)
 
     add_executable(cpp-enumerate-devices cpp-enumerate-devices.cpp)
     target_link_libraries(cpp-enumerate-devices ${DEPENDENCIES})
@@ -34,7 +34,7 @@ if(ANDROID)
     )
 else()
     find_package(OpenGL REQUIRED)
-    set(DEPENDENCIES realsense ${OPENGL_LIBRARIES})
+    set(DEPENDENCIES realsense2 ${OPENGL_LIBRARIES})
 
     if(WIN32)
         add_subdirectory(third_party/glfw)

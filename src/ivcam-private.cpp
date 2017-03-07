@@ -4,7 +4,7 @@
 #include "ivcam-private.h"
 
 
-namespace rsimpl
+namespace rsimpl2
 {
     namespace ivcam
     {

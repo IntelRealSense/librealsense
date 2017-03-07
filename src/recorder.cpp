@@ -41,18 +41,18 @@ const char* PROFILES_CREATE = "CREATE TABLE rs_profile(section NUMBER, width NUM
 const char* PROFILES_INSERT = "INSERT INTO rs_profile(section, width, height, fps, fourcc) VALUES(?, ? ,? ,? ,?)";
 const char* PROFILES_SELECT_ALL = "SELECT * FROM rs_profile WHERE section = ?";
 
-namespace rsimpl
+namespace rsimpl2
 {
     namespace uvc
     {
         class playback_backend_exception : public backend_exception
         {
         public:
-            playback_backend_exception(const std::string& msg, rsimpl::uvc::call_type t, int entity_id) noexcept
+            playback_backend_exception(const std::string& msg, rsimpl2::uvc::call_type t, int entity_id) noexcept
                 : backend_exception(generate_message(msg, t, entity_id), RS2_EXCEPTION_TYPE_BACKEND)
             {}
         private:
-            std::string generate_message(const std::string& msg, rsimpl::uvc::call_type t, int entity_id) const
+            std::string generate_message(const std::string& msg, rsimpl2::uvc::call_type t, int entity_id) const
             {
                 std::stringstream s;
                 s << msg << " call type: " << int(t) << " entity " << entity_id;

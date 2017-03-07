@@ -239,10 +239,13 @@ if(ANDROID)
 elseif(UNIX)
     find_package(PkgConfig REQUIRED)
     find_package (Threads REQUIRED)
+    list(APPEND librealsense_PKG_DEPS "Threads")
+    
     pkg_search_module(LIBUSB1 REQUIRED libusb-1.0)
     if(LIBUSB1_FOUND)
         include_directories(SYSTEM ${LIBUSB1_INCLUDE_DIRS})
         link_directories(${LIBUSB1_LIBRARY_DIRS})
+        list(APPEND librealsense_PKG_DEPS "libusb-1.0")
     else()
         message( FATAL_ERROR "Failed to find libusb-1.0" )
     endif(LIBUSB1_FOUND)
@@ -269,19 +272,22 @@ include(GNUInstallDirs)
 
 option(BUILD_SHARED_LIBS "Build shared library" ON)
 if(BUILD_SHARED_LIBS)
-    add_library(realsense SHARED ${REALSENSE_CPP} ${REALSENSE_HPP} ${REALSENSE_DEF})
-    set_target_properties(realsense PROPERTIES VERSION ${REALSENSE_VERSION_STRING}
+    add_library(realsense2 SHARED ${REALSENSE_CPP} ${REALSENSE_HPP} ${REALSENSE_DEF})
+    set_target_properties(realsense2 PROPERTIES VERSION ${REALSENSE_VERSION_STRING}
                                     SOVERSION ${REALSENSE_VERSION_MAJOR})
-    target_link_libraries(realsense ${LIBUSB1_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+    target_link_libraries(realsense2 ${LIBUSB1_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+    list(APPEND librealsense_PKG_LIBS ${CMAKE_THREAD_LIBS_INIT})
 else()
-    add_library(realsense STATIC ${REALSENSE_CPP} ${REALSENSE_HPP})
+    add_library(realsense2 STATIC ${REALSENSE_CPP} ${REALSENSE_HPP})
 endif()
 
-set_target_properties (realsense PROPERTIES
+set_target_properties (realsense2 PROPERTIES
     FOLDER Library
 )
 
-target_include_directories(realsense PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include/ ${LIBUSB1_INCLUDE_DIRS})
+set(LRS_LIB_NAME realsense)
+
+target_include_directories(realsense2 PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include/ ${LIBUSB1_INCLUDE_DIRS})
 
 IF (${ROS_BUILD_TYPE})
     install(TARGETS realsense
@@ -293,7 +299,7 @@ IF (${ROS_BUILD_TYPE})
     install(DIRECTORY ${PROJECT_SOURCE_DIR}/include/${PROJECT_NAME}/
         DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION})
 ELSE()
-    install( TARGETS realsense
+    install( TARGETS realsense2
         RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
         ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
@@ -339,3 +345,15 @@ endif(${ignore_count} GREATER 0)
 
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/cmake_uninstall.cmake" "${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake" IMMEDIATE @ONLY)
 add_custom_target(uninstall "${CMAKE_COMMAND}" -P "${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake")
+
+# Support pkg-config meta-data file
+# Export library compile and link-time dependencies
+foreach(arg ${librealsense_PKG_DEPS})
+    set(LRS_PKG_DEPS "${LRS_PKG_DEPS} ${arg}")
+endforeach()
+foreach(arg ${librealsense_PKG_LIBS})
+    set(LRS_PKG_LIBS "${LRS_PKG_LIBS} ${arg}")
+endforeach()
+# Set library pkgconfig file for facilitating 3rd party integration
+configure_file(config/librealsense.pc.in config/realsense2.pc @ONLY)
+install(FILES "${CMAKE_CURRENT_BINARY_DIR}/config/realsense2.pc" DESTINATION "${CMAKE_INSTALL_LIBDIR}/pkgconfig")

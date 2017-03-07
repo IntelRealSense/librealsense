@@ -9,7 +9,7 @@
 
 const double TIMESTAMP_TO_MILLISECONS = 0.001;
 
-namespace rsimpl
+namespace rsimpl2
 {
     class ds5_camera;
 

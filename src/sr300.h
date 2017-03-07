@@ -14,7 +14,7 @@
 #include <mutex>
 #include <string>
 
-namespace rsimpl
+namespace rsimpl2
 {
     const uint16_t SR300_PID = 0x0aa5;
 
@@ -320,7 +320,7 @@ namespace rsimpl
         virtual rs2_intrinsics get_intrinsics(unsigned int subdevice, stream_profile profile) const override
         {
             if (subdevice >= get_endpoints_count())
-                throw rsimpl::invalid_value_exception("Requested subdevice is not supported!");
+                throw rsimpl2::invalid_value_exception("Requested subdevice is not supported!");
 
             if (subdevice == _color_device_idx)
                 return make_color_intrinsics(get_calibration(), { int(profile.width), int(profile.height) });
@@ -328,7 +328,7 @@ namespace rsimpl
             if (subdevice == _depth_device_idx)
                 return make_depth_intrinsics(get_calibration(), { int(profile.width), int(profile.height) });
 
-            throw rsimpl::invalid_value_exception(to_string() << "Intrinsic is not implemented for subdevice num " << subdevice);
+            throw rsimpl2::invalid_value_exception(to_string() << "Intrinsic is not implemented for subdevice num " << subdevice);
         }
 
     private:

@@ -8,7 +8,7 @@ using namespace std;
 
 #define intrinsics_string(res) #res << "\t" << array2str((float_4&)table->rect_params[res]) << endl
 
-namespace rsimpl
+namespace rsimpl2
 {
     namespace ds
     {

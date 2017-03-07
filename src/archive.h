@@ -6,7 +6,7 @@
 #include "types.h"
 #include <atomic>
 
-namespace rsimpl
+namespace rsimpl2
 {
     class frame_archive;
 }
@@ -50,8 +50,8 @@ struct frame
 private:
     // TODO: check boost::intrusive_ptr or an alternative
     std::atomic<int> ref_count; // the reference count is on how many times this placeholder has been observed (not lifetime, not content)
-    std::shared_ptr<rsimpl::frame_archive> owner; // pointer to the owner to be returned to by last observe
-    rsimpl::frame_continuation on_release;
+    std::shared_ptr<rsimpl2::frame_archive> owner; // pointer to the owner to be returned to by last observe
+    rsimpl2::frame_continuation on_release;
 
 public:
     std::vector<byte> data;
@@ -107,11 +107,11 @@ public:
 
     void acquire() { ref_count.fetch_add(1); }
     void release();
-    frame* publish(std::shared_ptr<rsimpl::frame_archive> new_owner);
-    void attach_continuation(rsimpl::frame_continuation&& continuation) { on_release = std::move(continuation); }
+    frame* publish(std::shared_ptr<rsimpl2::frame_archive> new_owner);
+    void attach_continuation(rsimpl2::frame_continuation&& continuation) { on_release = std::move(continuation); }
     void disable_continuation() { on_release.reset(); }
 
-    rsimpl::frame_archive* get_owner() const { return owner.get(); }
+    rsimpl2::frame_archive* get_owner() const { return owner.get(); }
 };
 
 struct rs2_frame // esentially an intrusive shared_ptr<frame>
@@ -172,7 +172,7 @@ struct callback_invocation
     std::chrono::high_resolution_clock::time_point ended;
 };
 
-typedef rsimpl::small_heap<callback_invocation, 1> callbacks_heap;
+typedef rsimpl2::small_heap<callback_invocation, 1> callbacks_heap;
 
 struct callback_invocation_holder
 {
@@ -208,7 +208,7 @@ private:
     callbacks_heap* owner;
 };
 
-namespace rsimpl
+namespace rsimpl2
 {
     // Defines general frames storage model
     class frame_archive : public std::enable_shared_from_this<frame_archive>

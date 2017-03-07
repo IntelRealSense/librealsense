@@ -11,7 +11,7 @@
 #endif
 
 #pragma pack(push, 1) // All structs in this file are assumed to be byte-packed
-namespace rsimpl
+namespace rsimpl2
 {
 
     ////////////////////////////

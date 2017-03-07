@@ -15,7 +15,7 @@
 #include <mutex>
 #include <atomic>
 
-namespace rsimpl
+namespace rsimpl2
 {
     namespace uvc
     {

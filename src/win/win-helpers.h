@@ -9,7 +9,7 @@
 
 #define WAIT_FOR_MUTEX_TIME_OUT  (5000)
 
-namespace rsimpl
+namespace rsimpl2
 {
     namespace uvc
     {

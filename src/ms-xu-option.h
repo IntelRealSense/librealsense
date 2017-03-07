@@ -10,7 +10,7 @@
 
 #pragma once
 
-namespace rsimpl
+namespace rsimpl2
 {
     // Depth subdevice XUs [depth:0;    vfID_UnitMsExtDepth = 0xE,  Node=3]
     const uvc::extension_unit ms_ctrl_depth_xu = { 0, 14, 3,

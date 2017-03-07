@@ -4,9 +4,9 @@
 #include "sr300.h"
 #include "hw-monitor.h"
 
-namespace rsimpl
+namespace rsimpl2
 {
-    std::shared_ptr<rsimpl::device> sr300_info::create(const uvc::backend& backend) const
+    std::shared_ptr<rsimpl2::device> sr300_info::create(const uvc::backend& backend) const
     {
         return std::make_shared<sr300_camera>(backend, _color, _depth, _hwm);
     }

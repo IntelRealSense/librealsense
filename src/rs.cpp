@@ -30,32 +30,32 @@ struct rs2_raw_data_buffer
 
 struct rs2_stream_profile_list
 {
-    std::vector<rsimpl::stream_profile> list;
+    std::vector<rsimpl2::stream_profile> list;
 };
 
 struct rs2_device
 {
-    std::shared_ptr<rsimpl::context> ctx;
-    std::shared_ptr<rsimpl::device_info> info;
-    std::shared_ptr<rsimpl::device> device;
+    std::shared_ptr<rsimpl2::context> ctx;
+    std::shared_ptr<rsimpl2::device_info> info;
+    std::shared_ptr<rsimpl2::device> device;
     unsigned int subdevice;
 };
 
 struct rs2_device_info
 {
-    std::shared_ptr<rsimpl::context> ctx;
-    std::shared_ptr<rsimpl::device_info> info;
+    std::shared_ptr<rsimpl2::context> ctx;
+    std::shared_ptr<rsimpl2::device_info> info;
     unsigned int subdevice;
 };
 
 struct rs2_context
 {
-    std::shared_ptr<rsimpl::context> ctx;
+    std::shared_ptr<rsimpl2::context> ctx;
 };
 
 struct rs2_device_list
 {
-    std::shared_ptr<rsimpl::context> ctx;
+    std::shared_ptr<rsimpl2::context> ctx;
     std::vector<rs2_device_info> list;
 };
 
@@ -93,11 +93,11 @@ struct rs2_frame_queue
     {
     }
 
-    single_consumer_queue<rsimpl::frame_holder> queue;
+    single_consumer_queue<rsimpl2::frame_holder> queue;
 };
 
 // This facility allows for translation of exceptions to rs2_error structs at the API boundary
-namespace rsimpl
+namespace rsimpl2
 {
     template<class T> void stream_args(std::ostream & out, const char * names, const T & last) { out << names << ':' << last; }
     template<class T, class... U> void stream_args(std::ostream & out, const char * names, const T & first, const U &... rest)
@@ -117,13 +117,13 @@ namespace rsimpl
     }
 }
 
-#define NOEXCEPT_RETURN(R, ...) catch(...) { std::ostringstream ss; rsimpl::stream_args(ss, #__VA_ARGS__, __VA_ARGS__); rs2_error* e; rsimpl::translate_exception(__FUNCTION__, ss.str(), &e); LOG_WARNING(rs2_get_error_message(e)); rs2_free_error(e); return R; }
-#define HANDLE_EXCEPTIONS_AND_RETURN(R, ...) catch(...) { std::ostringstream ss; rsimpl::stream_args(ss, #__VA_ARGS__, __VA_ARGS__); rsimpl::translate_exception(__FUNCTION__, ss.str(), error); return R; }
+#define NOEXCEPT_RETURN(R, ...) catch(...) { std::ostringstream ss; rsimpl2::stream_args(ss, #__VA_ARGS__, __VA_ARGS__); rs2_error* e; rsimpl2::translate_exception(__FUNCTION__, ss.str(), &e); LOG_WARNING(rs2_get_error_message(e)); rs2_free_error(e); return R; }
+#define HANDLE_EXCEPTIONS_AND_RETURN(R, ...) catch(...) { std::ostringstream ss; rsimpl2::stream_args(ss, #__VA_ARGS__, __VA_ARGS__); rsimpl2::translate_exception(__FUNCTION__, ss.str(), error); return R; }
 #define VALIDATE_NOT_NULL(ARG) if(!(ARG)) throw std::runtime_error("null pointer passed for argument \"" #ARG "\"");
-#define VALIDATE_ENUM(ARG) if(!rsimpl::is_valid(ARG)) { std::ostringstream ss; ss << "invalid enum value for argument \"" #ARG "\""; throw rsimpl::invalid_value_exception(ss.str()); }
-#define VALIDATE_RANGE(ARG, MIN, MAX) if((ARG) < (MIN) || (ARG) > (MAX)) { std::ostringstream ss; ss << "out of range value for argument \"" #ARG "\""; throw rsimpl::invalid_value_exception(ss.str()); }
+#define VALIDATE_ENUM(ARG) if(!rsimpl2::is_valid(ARG)) { std::ostringstream ss; ss << "invalid enum value for argument \"" #ARG "\""; throw rsimpl2::invalid_value_exception(ss.str()); }
+#define VALIDATE_RANGE(ARG, MIN, MAX) if((ARG) < (MIN) || (ARG) > (MAX)) { std::ostringstream ss; ss << "out of range value for argument \"" #ARG "\""; throw rsimpl2::invalid_value_exception(ss.str()); }
 #define VALIDATE_LE(ARG, MAX) if((ARG) > (MAX)) { std::ostringstream ss; ss << "out of range value for argument \"" #ARG "\""; throw std::runtime_error(ss.str()); }
-#define VALIDATE_NATIVE_STREAM(ARG) VALIDATE_ENUM(ARG); if(ARG >= RS2_STREAM_NATIVE_COUNT) { std::ostringstream ss; ss << "argument \"" #ARG "\" must be a native stream"; throw rsimpl::wrong_value_exception(ss.str()); }
+#define VALIDATE_NATIVE_STREAM(ARG) VALIDATE_ENUM(ARG); if(ARG >= RS2_STREAM_NATIVE_COUNT) { std::ostringstream ss; ss << "argument \"" #ARG "\" must be a native stream"; throw rsimpl2::wrong_value_exception(ss.str()); }
 
 int major(int version)
 {
@@ -140,13 +140,13 @@ int patch(int version)
 
 std::string api_version_to_string(int version)
 {
-    if (major(version) == 0) return rsimpl::to_string() << version;
-    return rsimpl::to_string() << major(version) << "." << minor(version) << "." << patch(version);
+    if (major(version) == 0) return rsimpl2::to_string() << version;
+    return rsimpl2::to_string() << major(version) << "." << minor(version) << "." << patch(version);
 }
 
 void report_version_mismatch(int runtime, int compiletime)
 {
-    throw rsimpl::invalid_value_exception(rsimpl::to_string() << "API version mismatch: librealsense.so was compiled with API version "
+    throw rsimpl2::invalid_value_exception(rsimpl2::to_string() << "API version mismatch: librealsense.so was compiled with API version "
         << api_version_to_string(runtime) << " but the application was compiled with "
         << api_version_to_string(compiletime) << "! Make sure correct version of the library is installed (make install)");
 }
@@ -156,7 +156,7 @@ void verify_version_compatibility(int api_version)
     rs2_error* error = nullptr;
     auto runtime_api_version = rs2_get_api_version(&error);
     if (error)
-        throw rsimpl::invalid_value_exception(rs2_get_error_message(error));
+        throw rsimpl2::invalid_value_exception(rs2_get_error_message(error));
 
     if ((runtime_api_version < 10) || (api_version < 10))
     {
@@ -184,7 +184,7 @@ rs2_context * rs2_create_context(int api_version, rs2_error ** error) try
 {
     verify_version_compatibility(api_version);
 
-    return new rs2_context{ std::make_shared<rsimpl::context>(rsimpl::backend_type::standard) };
+    return new rs2_context{ std::make_shared<rsimpl2::context>(rsimpl2::backend_type::standard) };
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, api_version)
 
@@ -362,7 +362,7 @@ void rs2_open(rs2_device* device, rs2_stream stream,
     VALIDATE_ENUM(format);
     VALIDATE_ENUM(stream);
 
-    std::vector<rsimpl::stream_profile> request;
+    std::vector<rsimpl2::stream_profile> request;
     request.push_back({ stream, static_cast<uint32_t>(width),
             static_cast<uint32_t>(height), static_cast<uint32_t>(fps), format });
     device->device->get_endpoint(device->subdevice).open(request);
@@ -380,7 +380,7 @@ void rs2_open_multiple(rs2_device* device,
     VALIDATE_NOT_NULL(fps);
     VALIDATE_NOT_NULL(format);
 
-    std::vector<rsimpl::stream_profile> request;
+    std::vector<rsimpl2::stream_profile> request;
     for (auto i = 0; i < count; i++)
     {
         request.push_back({ stream[i], static_cast<uint32_t>(width[i]),
@@ -446,7 +446,7 @@ const char* rs2_get_camera_info(const rs2_device* device, rs2_camera_info info, 
     {
         return device->device->get_endpoint(device->subdevice).get_info(info).c_str();
     }
-    throw rsimpl::invalid_value_exception(rsimpl::to_string() << "info " << rs2_camera_info_to_string(info) << " not supported by subdevice " << device->subdevice);
+    throw rsimpl2::invalid_value_exception(rsimpl2::to_string() << "info " << rs2_camera_info_to_string(info) << " not supported by subdevice " << device->subdevice);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, device, info)
 
@@ -463,8 +463,8 @@ void rs2_start(const rs2_device* device, rs2_frame_callback_ptr on_frame, void *
 {
     VALIDATE_NOT_NULL(device);
     VALIDATE_NOT_NULL(on_frame);
-    rsimpl::frame_callback_ptr callback(
-        new rsimpl::frame_callback(on_frame, user),
+    rsimpl2::frame_callback_ptr callback(
+        new rsimpl2::frame_callback(on_frame, user),
         [](rs2_frame_callback* p) { delete p; });
     device->device->get_endpoint(device->subdevice).start_streaming(std::move(callback));
 }
@@ -474,8 +474,8 @@ void rs2_start_queue(const rs2_device* device, rs2_frame_queue* queue, rs2_error
 {
     VALIDATE_NOT_NULL(device);
     VALIDATE_NOT_NULL(queue);
-    rsimpl::frame_callback_ptr callback(
-        new rsimpl::frame_callback(rs2_enqueue_frame, queue),
+    rsimpl2::frame_callback_ptr callback(
+        new rsimpl2::frame_callback(rs2_enqueue_frame, queue),
         [](rs2_frame_callback* p) { delete p; });
     device->device->get_endpoint(device->subdevice).start_streaming(std::move(callback));
 }
@@ -639,7 +639,7 @@ int rs2_poll_for_frame(rs2_frame_queue* queue, rs2_frame** output_frame, rs2_err
 {
     VALIDATE_NOT_NULL(queue);
     VALIDATE_NOT_NULL(output_frame);
-    rsimpl::frame_holder fh;
+    rsimpl2::frame_holder fh;
     if (queue->queue.try_dequeue(&fh))
     {
         rs2_frame* result = nullptr;
@@ -657,7 +657,7 @@ void rs2_enqueue_frame(rs2_frame* frame, void* queue) try
     VALIDATE_NOT_NULL(frame);
     VALIDATE_NOT_NULL(queue);
     auto q = reinterpret_cast<rs2_frame_queue*>(queue);
-    rsimpl::frame_holder fh;
+    rsimpl2::frame_holder fh;
     fh.frame = frame;
     q->queue.enqueue(std::move(fh));
 }
@@ -677,7 +677,7 @@ void rs2_get_extrinsics(const rs2_device * from, const rs2_device * to, rs2_extr
     VALIDATE_NOT_NULL(extrin);
 
     if (from->device != to->device)
-        throw rsimpl::invalid_value_exception("Extrinsics between the selected devices are unknown!");
+        throw rsimpl2::invalid_value_exception("Extrinsics between the selected devices are unknown!");
 
     *extrin = from->device->get_extrinsics(from->subdevice, to->subdevice);
 }
@@ -719,7 +719,7 @@ rs2_context* rs2_create_recording_context(int api_version, const char* filename,
     VALIDATE_NOT_NULL(section);
     verify_version_compatibility(api_version);
 
-    return new rs2_context{ std::make_shared<rsimpl::context>(rsimpl::backend_type::record, filename, section, mode) };
+    return new rs2_context{ std::make_shared<rsimpl2::context>(rsimpl2::backend_type::record, filename, section, mode) };
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, api_version, filename, section, mode)
 
@@ -729,7 +729,7 @@ rs2_context* rs2_create_mock_context(int api_version, const char* filename, cons
     VALIDATE_NOT_NULL(section);
     verify_version_compatibility(api_version);
 
-    return new rs2_context{ std::make_shared<rsimpl::context>(rsimpl::backend_type::playback, filename, section) };
+    return new rs2_context{ std::make_shared<rsimpl2::context>(rsimpl2::backend_type::playback, filename, section) };
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, api_version, filename, section)
 
@@ -770,24 +770,24 @@ const char * rs2_get_failed_args(const rs2_error * error) { return error ? error
 const char * rs2_get_error_message(const rs2_error * error) { return error ? error->message.c_str() : nullptr; }
 rs2_exception_type rs2_get_librealsense_exception_type(const rs2_error * error) { return error ? error->exception_type : RS2_EXCEPTION_TYPE_UNKNOWN; }
 
-const char * rs2_stream_to_string(rs2_stream stream) { return rsimpl::get_string(stream); }
-const char * rs2_format_to_string(rs2_format format) { return rsimpl::get_string(format); }
-const char * rs2_distortion_to_string(rs2_distortion distortion) { return rsimpl::get_string(distortion); }
-const char * rs2_option_to_string(rs2_option option) { return rsimpl::get_string(option); }
-const char * rs2_camera_info_to_string(rs2_camera_info info) { return rsimpl::get_string(info); }
-const char * rs2_timestamp_domain_to_string(rs2_timestamp_domain info){ return rsimpl::get_string(info); }
-const char * rs2_visual_preset_to_string(rs2_visual_preset preset) { return rsimpl::get_string(preset); }
+const char * rs2_stream_to_string(rs2_stream stream) { return rsimpl2::get_string(stream); }
+const char * rs2_format_to_string(rs2_format format) { return rsimpl2::get_string(format); }
+const char * rs2_distortion_to_string(rs2_distortion distortion) { return rsimpl2::get_string(distortion); }
+const char * rs2_option_to_string(rs2_option option) { return rsimpl2::get_string(option); }
+const char * rs2_camera_info_to_string(rs2_camera_info info) { return rsimpl2::get_string(info); }
+const char * rs2_timestamp_domain_to_string(rs2_timestamp_domain info){ return rsimpl2::get_string(info); }
+const char * rs2_visual_preset_to_string(rs2_visual_preset preset) { return rsimpl2::get_string(preset); }
 
-const char * rs2_exception_type_to_string(rs2_exception_type type) { return rsimpl::get_string(type); }
+const char * rs2_exception_type_to_string(rs2_exception_type type) { return rsimpl2::get_string(type); }
 
 void rs2_log_to_console(rs2_log_severity min_severity, rs2_error ** error) try
 {
-    rsimpl::log_to_console(min_severity);
+    rsimpl2::log_to_console(min_severity);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, min_severity)
 
 void rs2_log_to_file(rs2_log_severity min_severity, const char * file_path, rs2_error ** error) try
 {
-    rsimpl::log_to_file(min_severity, file_path);
+    rsimpl2::log_to_file(min_severity, file_path);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, min_severity, file_path)

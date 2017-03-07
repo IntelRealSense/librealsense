@@ -21,7 +21,7 @@ else()
     message(STATUS "The compiler ${CMAKE_CXX_COMPILER} has no C++11 support. Please use a different C++ compiler.")
 endif()
 
-set(DEPENDENCIES realsense)
+set(DEPENDENCIES realsense2)
 if(WIN32)
 else()
     list(APPEND DEPENDENCIES m ${LIBUSB1_LIBRARIES})

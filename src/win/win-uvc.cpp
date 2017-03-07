@@ -27,7 +27,7 @@
 #define type_guid  MF_DEVSOURCE_ATTRIBUTE_SOURCE_TYPE_VIDCAP_GUID
 #define did_guid  MF_DEVSOURCE_ATTRIBUTE_SOURCE_TYPE_VIDCAP_SYMBOLIC_LINK
 
-namespace rsimpl
+namespace rsimpl2
 {
     namespace uvc
     {

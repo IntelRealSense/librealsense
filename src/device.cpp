@@ -4,7 +4,7 @@
 #include "device.h"
 #include "image.h"
 
-using namespace rsimpl;
+using namespace rsimpl2;
 
 device::device()
 {

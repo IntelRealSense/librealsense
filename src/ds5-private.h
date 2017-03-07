@@ -7,7 +7,7 @@
 #include "types.h"
 #include <map>
 
-namespace rsimpl {
+namespace rsimpl2 {
     namespace ds {
         const uint16_t RS400P_PID = 0x0ad1; // PSR
         const uint16_t RS410A_PID = 0x0ad2; // ASR

@@ -4,7 +4,7 @@
 #include "option.h"
 #include "subdevice.h"
 
-void rsimpl::uvc_pu_option::set(float value)
+void rsimpl2::uvc_pu_option::set(float value)
 {
     _ep.invoke_powered(
         [this, value](uvc::uvc_device& dev)
@@ -13,7 +13,7 @@ void rsimpl::uvc_pu_option::set(float value)
         });
 }
 
-float rsimpl::uvc_pu_option::query() const
+float rsimpl2::uvc_pu_option::query() const
 {
     return static_cast<float>(_ep.invoke_powered(
         [this](uvc::uvc_device& dev)
@@ -22,7 +22,7 @@ float rsimpl::uvc_pu_option::query() const
         }));
 }
 
-rsimpl::option_range rsimpl::uvc_pu_option::get_range() const
+rsimpl2::option_range rsimpl2::uvc_pu_option::get_range() const
 {
     auto uvc_range = _ep.invoke_powered(
         [this](uvc::uvc_device& dev)
@@ -37,7 +37,7 @@ rsimpl::option_range rsimpl::uvc_pu_option::get_range() const
     return result;
 }
 
-const char* rsimpl::uvc_pu_option::get_description() const
+const char* rsimpl2::uvc_pu_option::get_description() const
 {
     switch(_id)
     {
@@ -57,7 +57,7 @@ const char* rsimpl::uvc_pu_option::get_description() const
     }
 }
 
-std::vector<uint8_t> rsimpl::command_transfer_over_xu::send_receive(const std::vector<uint8_t>& data, int, bool require_response)
+std::vector<uint8_t> rsimpl2::command_transfer_over_xu::send_receive(const std::vector<uint8_t>& data, int, bool require_response)
 {
     return _uvc.invoke_powered([this, &data, require_response]
         (uvc::uvc_device& dev)

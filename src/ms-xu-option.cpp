@@ -4,7 +4,7 @@
 #include "option.h"
 #include "ms-xu-option.h"
 
-namespace rsimpl
+namespace rsimpl2
 {
 
 option_range ms_xu_control_option::get_range() const
