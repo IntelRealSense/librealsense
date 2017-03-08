@@ -631,7 +631,7 @@ namespace rsimpl2
     };
 
     typedef std::unique_ptr<rs2_log_callback, void(*)(rs2_log_callback*)> log_callback_ptr;
-    typedef std::unique_ptr<rs2_frame_callback, void(*)(rs2_frame_callback*)> frame_callback_ptr;
+    typedef std::shared_ptr<rs2_frame_callback> frame_callback_ptr;
 
     ////////////////////////////////////////
     // Helper functions for library types //

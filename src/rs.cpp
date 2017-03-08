@@ -464,37 +464,60 @@ void rs2_start(const rs2_device* device, rs2_frame_callback_ptr on_frame, void *
     VALIDATE_NOT_NULL(device);
     VALIDATE_NOT_NULL(on_frame);
     rsimpl2::frame_callback_ptr callback(
-        new rsimpl2::frame_callback(on_frame, user),
-        [](rs2_frame_callback* p) { delete p; });
-    device->device->get_endpoint(device->subdevice).start_streaming(std::move(callback));
+        new rsimpl2::frame_callback(on_frame, user));
+    device->device->get_endpoint(device->subdevice).starter().start(RS2_STREAM_ANY, move(callback));
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device, on_frame, user)
 
-void rs2_start_queue(const rs2_device* device, rs2_frame_queue* queue, rs2_error** error) try
+void rs2_start_stream(const rs2_device* device, rs2_stream stream, rs2_frame_callback_ptr on_frame, void * user, rs2_error ** error) try
+{
+    VALIDATE_NOT_NULL(device);
+    VALIDATE_NOT_NULL(on_frame);
+    rsimpl2::frame_callback_ptr callback(
+        new rsimpl2::frame_callback(on_frame, user));
+    device->device->get_endpoint(device->subdevice).starter().start(stream, move(callback));
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, device, stream, on_frame, user)
+
+void rs2_start_queue(const rs2_device* device, rs2_stream stream, rs2_frame_queue* queue, rs2_error** error) try
 {
     VALIDATE_NOT_NULL(device);
     VALIDATE_NOT_NULL(queue);
     rsimpl2::frame_callback_ptr callback(
-        new rsimpl2::frame_callback(rs2_enqueue_frame, queue),
-        [](rs2_frame_callback* p) { delete p; });
-    device->device->get_endpoint(device->subdevice).start_streaming(std::move(callback));
+        new rsimpl2::frame_callback(rs2_enqueue_frame, queue));
+    device->device->get_endpoint(device->subdevice).starter().start(stream, move(callback));
 }
-HANDLE_EXCEPTIONS_AND_RETURN(, device, queue)
+HANDLE_EXCEPTIONS_AND_RETURN(, device, stream, queue)
 
 void rs2_start_cpp(const rs2_device* device, rs2_frame_callback * callback, rs2_error ** error) try
 {
     VALIDATE_NOT_NULL(device);
     VALIDATE_NOT_NULL(callback);
-    device->device->get_endpoint(device->subdevice).start_streaming({ callback, [](rs2_frame_callback* p) { p->release(); } });
+    device->device->get_endpoint(device->subdevice).starter().start(RS2_STREAM_ANY, { callback, [](rs2_frame_callback* p) { p->release(); } });
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device, callback)
+
+void rs2_start_stream_cpp(const rs2_device* device, rs2_stream stream, rs2_frame_callback * callback, rs2_error ** error) try
+{
+    VALIDATE_NOT_NULL(device);
+    VALIDATE_NOT_NULL(callback);
+    device->device->get_endpoint(device->subdevice).starter().start(stream, { callback, [](rs2_frame_callback* p) { p->release(); } });
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, device, stream, callback)
 
 void rs2_stop(const rs2_device* device, rs2_error ** error) try
 {
     VALIDATE_NOT_NULL(device);
-    device->device->get_endpoint(device->subdevice).stop_streaming();
+    device->device->get_endpoint(device->subdevice).starter().stop(RS2_STREAM_ANY);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device)
+
+void rs2_stop_stream(const rs2_device* device, rs2_stream stream, rs2_error ** error) try
+{
+    VALIDATE_NOT_NULL(device);
+    device->device->get_endpoint(device->subdevice).starter().stop(stream);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, stream, device)
 
 double rs2_get_frame_metadata(const rs2_frame * frame, rs2_frame_metadata frame_metadata, rs2_error ** error) try
 {

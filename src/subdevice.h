@@ -38,16 +38,52 @@ namespace rsimpl2
         virtual ~region_of_interest_method() = default;
     };
 
+    class endpoint;
+
+    class start_adaptor
+    {
+    public:
+        explicit start_adaptor(endpoint* endpoint)
+            : _set_callback_mutex(),
+              _owner(endpoint)
+        {
+        }
+
+        void start(rs2_stream stream, frame_callback_ptr ptr);
+        void stop(rs2_stream stream);
+
+        class frame_callback : public rs2_frame_callback
+        {
+        public:
+            explicit frame_callback(start_adaptor* owner) 
+                : _owner(owner) {}
+
+            void on_frame(rs2_frame* f) override;
+
+            void release() override {}
+        private:
+            start_adaptor* _owner;
+        };
+
+    private:
+        friend class frame_callback;
+        std::mutex _set_callback_mutex;
+        std::map<rs2_stream, frame_callback_ptr> _callbacks;
+        uint32_t _active_callbacks = 0;
+        endpoint* const _owner;
+    };
+
     class endpoint
     {
     public:
-        endpoint(std::shared_ptr<uvc::time_service> ts)
+        explicit endpoint(std::shared_ptr<uvc::time_service> ts)
             : _is_streaming(false),
               _is_opened(false),
               _callback(nullptr, [](rs2_frame_callback*) {}),
               _max_publish_list_size(16),
+              _ts(ts),
               _stream_profiles([this]() { return this->init_stream_profiles(); }),
-              _ts(ts)
+              _start_adaptor(this)
               {}
 
         virtual std::vector<uvc::stream_profile> init_stream_profiles() = 0;
@@ -105,6 +141,8 @@ namespace rsimpl2
             _roi_method = roi_method;
         }
 
+        start_adaptor& starter() { return _start_adaptor; }
+
     protected:
 
         bool try_get_pf(const uvc::stream_profile& p, native_pixel_format& result) const;
@@ -127,7 +165,7 @@ namespace rsimpl2
         pose _pose;
         std::map<rs2_camera_info, std::string> _camera_info;
         std::shared_ptr<region_of_interest_method> _roi_method = nullptr;
-
+        start_adaptor _start_adaptor;
     };
 
     struct frame_timestamp_reader

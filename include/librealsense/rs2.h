@@ -301,10 +301,27 @@ void rs2_delete_device(rs2_device* device);
 */
 rs2_device_list* rs2_query_adjacent_devices(const rs2_device* device, rs2_error** error);
 
-//TODO
+/*
+ * returns the extrinsics between a pair of RealSense devices
+ * usually, extrnisics are available only between devices on the same USB port, like Depth and Fish-Eye
+ * however, in theory extrinsics can be made available between any pair of devices through calibration
+ * \param[in]  from   RealSense device to calculate extrinsics from
+ * \param[in]  to     RealSense device to calculate extrinsics to
+ * \param[out] extrin Resulting translation and rotation (extrinsics)
+ * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ */
 void rs2_get_extrinsics(const rs2_device * from, const rs2_device * to, rs2_extrinsics * extrin, rs2_error ** error);
 
-//TODO
+/*
+ * returns the intrinsics of specific stream configuration
+ * \param[in]  device    RealSense device to query
+ * \param[in]  stream    type of stream
+ * \param[in]  width     stream width
+ * \param[in]  height    stream height
+ * \param[in]  fps       stream fps (in most cases will not affect resulting intrinsics) 
+ * \param[in]  format    stream output format
+ * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ */
 void rs2_get_stream_intrinsics(const rs2_device * device, rs2_stream stream, int width, int height, int fps, rs2_format format, rs2_intrinsics * intrinsics, rs2_error ** error);
 
 /**
@@ -393,12 +410,23 @@ void rs2_close(const rs2_device* device, rs2_error** error);
 void rs2_start(const rs2_device* device, rs2_frame_callback_ptr on_frame, void* user, rs2_error** error);
 
 /**
-* start streaming from specified configured device
+* start streaming from specified configured device only specific stream
 * \param[in] device  RealSense device
+* \param[in] stream  specific stream type to start
+* \param[in] on_frame function pointer to register as per-frame callback
+* \param[in] user auxiliary  data the user wishes to receive together with every frame callback
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+void rs2_start_stream(const rs2_device* device, rs2_stream stream, rs2_frame_callback_ptr on_frame, void* user, rs2_error** error);
+
+/**
+* start streaming from specified configured device of specific stream to frame queue
+* \param[in] device  RealSense device
+* \param[in] stream  specific stream type to start
 * \param[in] queue   frame-queue to store new frames into
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 */
-void rs2_start_queue(const rs2_device* device, rs2_frame_queue* queue, rs2_error** error);
+void rs2_start_queue(const rs2_device* device, rs2_stream stream, rs2_frame_queue* queue, rs2_error** error);
 
 /**
 * start streaming from specified configured device
@@ -409,11 +437,28 @@ void rs2_start_queue(const rs2_device* device, rs2_frame_queue* queue, rs2_error
 void rs2_start_cpp(const rs2_device* device, rs2_frame_callback* callback, rs2_error** error);
 
 /**
+* start streaming from specified configured device
+* \param[in] device  RealSense device
+* \param[in] stream  specific stream type to start
+* \param[in] callback callback object created from c++ application. ownership over the callback object is moved into the relevant streaming lock
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+void rs2_start_stream_cpp(const rs2_device* device, rs2_stream stream, rs2_frame_callback* callback, rs2_error** error);
+
+/**
 * stops streaming from specified configured device
 * \param[in] device  RealSense device
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 */
 void rs2_stop(const rs2_device* device, rs2_error** error);
+
+/**
+* stops streaming from specified configured device from specific stream type
+* \param[in] device  RealSense device
+* \param[in] stream  specific stream type to stop receiving frame from
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+void rs2_stop_stream(const rs2_device* device, rs2_stream stream, rs2_error** error);
 
 /**
 * retrieve metadata from frame handle

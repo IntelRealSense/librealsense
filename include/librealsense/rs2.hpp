@@ -472,12 +472,34 @@ namespace rs2
         }
 
         /**
+        * start streaming of specific stream
+        * \param[in] callback   stream callback
+        */
+        template<class T>
+        void start(rs2_stream stream, T callback) const
+        {
+            rs2_error * e = nullptr;
+            rs2_start_stream_cpp(_dev.get(), stream, new frame_callback<T>(std::move(callback)), &e);
+            error::handle(e);
+        }
+
+        /**
         * stop streaming
         */
         void stop() const
         {
             rs2_error * e = nullptr;
             rs2_stop(_dev.get(), &e);
+            error::handle(e);
+        }
+
+        /**
+        * stop streaming of specific stream
+        */
+        void stop(rs2_stream stream) const
+        {
+            rs2_error * e = nullptr;
+            rs2_stop_stream(_dev.get(), stream, &e);
             error::handle(e);
         }
 

@@ -748,3 +748,76 @@ uint32_t hid_endpoint::fps_to_sampling_frequency(rs2_stream stream, uint32_t fps
 
     return sampling_frequency;
 }
+
+void start_adaptor::start(rs2_stream stream, frame_callback_ptr ptr)
+{
+    if (stream == RS2_STREAM_ANY)
+    {
+        for (int i = RS2_STREAM_DEPTH; i < RS2_STREAM_COUNT; i++)
+        {
+            start(static_cast<rs2_stream>(i), ptr);
+        }
+    }
+    else
+    {
+        std::lock_guard<std::mutex> lock(_set_callback_mutex);
+        if (_active_callbacks == 0)
+        {
+            frame_callback_ptr callback(new frame_callback(this));
+            _owner->start_streaming(move(callback));
+        }
+        if (_callbacks.find(stream) != _callbacks.end())
+        {
+            throw wrong_api_call_sequence_exception(to_string() << "Called start on stream " <<
+                rs2_stream_to_string(stream) <<
+                " while it is already streaming!");
+        }
+        _active_callbacks++;
+        _callbacks[stream] = move(ptr);
+    }
+}
+
+void start_adaptor::stop(rs2_stream stream)
+{
+    if (stream == RS2_STREAM_ANY)
+    {
+        std::unique_lock<std::mutex> lock(_set_callback_mutex);
+
+        _callbacks.clear();
+        _active_callbacks = 0;
+        lock.unlock();
+
+        _owner->stop_streaming();
+    }
+    else
+    {
+        std::unique_lock<std::mutex> lock(_set_callback_mutex);
+        if (_callbacks.find(stream) == _callbacks.end())
+        {
+            throw wrong_api_call_sequence_exception(to_string() << "Called stop on stream " <<
+                rs2_stream_to_string(stream) <<
+                " before calling start for it!");
+        }
+        _callbacks.erase(stream);
+        _active_callbacks--;
+        lock.unlock();
+
+        if (_active_callbacks == 0)
+        {
+            _owner->stop_streaming();
+        }
+    }
+}
+
+void start_adaptor::frame_callback::on_frame(rs2_frame* f)
+{
+    std::lock_guard<std::mutex> lock(_owner->_set_callback_mutex);
+    auto stream_type = f->get()->get_stream_type();
+    auto it = _owner->_callbacks.find(stream_type);
+    if (it == _owner->_callbacks.end())
+    {
+        rs2_release_frame(f);
+        return;
+    }
+    it->second->on_frame(f);
+}

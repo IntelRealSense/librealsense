@@ -28,9 +28,12 @@ EXPORTS
     rs2_close
 
     rs2_start
+    rs2_start_stream
     rs2_start_cpp
+    rs2_start_stream_cpp
     rs2_start_queue
     rs2_stop
+    rs2_stop_stream
 
     rs2_get_frame_metadata
     rs2_supports_frame_metadata
