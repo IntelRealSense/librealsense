@@ -52,14 +52,15 @@ namespace rsimpl2
     public:
         void modify_exposure(float& exposure_value, bool& exp_modified, float& gain_value, bool& gain_modified); // exposure_value in milliseconds
         bool analyze_image(const rs2_frame* image);
-        auto_exposure_algorithm(auto_exposure_state auto_exposure_state);
+        auto_exposure_algorithm(const auto_exposure_state& auto_exposure_state);
         void update_options(const auto_exposure_state& options);
+        void update_roi(const region_of_interest& ae_roi);
 
     private:
         struct histogram_metric { int under_exposure_count; int over_exposure_count; int shadow_limit; int highlight_limit; int lower_q; int upper_q; float main_mean; float main_std; };
         enum class rounding_mode_type { round, ceil, floor };
 
-        inline void im_hist(const uint8_t* data, const int width, const int height, const int rowStep, int h[]);
+        inline void im_hist(const uint8_t* data, const region_of_interest& image_roi, const int rowStep, int h[]);
         void increase_exposure_target(float mult, float& target_exposure);
         void decrease_exposure_target(float mult, float& target_exposure);
         void increase_exposure_gain(const float& target_exposure, const float& target_exposure0, float& exposure, float& gain);
@@ -89,6 +90,8 @@ namespace rsimpl2
         int direction = 0, prev_direction = 0; float hysteresis = 0.075f;// 05;
         float eps = 0.01f, exposure_step = 0.1f, minimal_exposure_step = 0.01f;
         auto_exposure_state state; float flicker_cycle; bool anti_flicker_mode = true;
+        region_of_interest roi{};
+        bool is_roi_initialized = false;
         std::recursive_mutex state_mutex;
     };
 
@@ -99,10 +102,12 @@ namespace rsimpl2
 
     class auto_exposure_mechanism {
     public:
-        auto_exposure_mechanism(option& gain_option, option& exposure_option, auto_exposure_state auto_exposure_state);
+        auto_exposure_mechanism(option& gain_option, option& exposure_option, const auto_exposure_state& auto_exposure_state);
         ~auto_exposure_mechanism();
         void add_frame(frame_holder frame, callback_invocation_holder callback);
-        void update_auto_exposure_state(auto_exposure_state& auto_exposure_state);
+        void update_auto_exposure_state(const auto_exposure_state& auto_exposure_state);
+        void update_auto_exposure_roi(const region_of_interest& roi);
+
         struct exposure_and_frame_counter {
             exposure_and_frame_counter()
                 : exposure(0), frame_counter(0)
@@ -118,20 +123,18 @@ namespace rsimpl2
 
     private:
         bool try_pop_front_data(frame_and_callback* data);
-        void push_back_exp_and_cnt(exposure_and_frame_counter exp_and_cnt);
-        bool try_get_exp_by_frame_cnt(double& exposure, const unsigned long long frame_counter);
 
-        static const int                       queue_size = 2;
-        option& _gain_option;
-        option& _exposure_option;
-        auto_exposure_algorithm                _auto_exposure_algo;
-        std::shared_ptr<std::thread>           _exposure_thread;
-        std::condition_variable                _cv;
-        std::atomic<bool>                      _keep_alive;
-        single_consumer_queue<frame_and_callback>    _data_queue;
-        std::mutex                             _queue_mtx;
-        std::atomic<unsigned>                  _frames_counter;
-        std::atomic<unsigned>                  _skip_frames;
+        static const int                          queue_size = 2;
+        option&                                   _gain_option;
+        option&                                   _exposure_option;
+        auto_exposure_algorithm                   _auto_exposure_algo;
+        std::shared_ptr<std::thread>              _exposure_thread;
+        std::condition_variable                   _cv;
+        std::atomic<bool>                         _keep_alive;
+        single_consumer_queue<frame_and_callback> _data_queue;
+        std::mutex                                _queue_mtx;
+        std::atomic<unsigned>                     _frames_counter;
+        std::atomic<unsigned>                     _skip_frames;
     };
 
 }

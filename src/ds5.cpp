@@ -54,6 +54,29 @@ namespace rsimpl2
         const hw_monitor& _hw_monitor;
     };
 
+    class fisheye_auto_exposure_roi_method : public region_of_interest_method
+    {
+    public:
+        fisheye_auto_exposure_roi_method(std::shared_ptr<auto_exposure_mechanism> auto_exposure)
+            : _auto_exposure(auto_exposure)
+        {}
+
+        void set(const region_of_interest& roi) override
+        {
+            _auto_exposure->update_auto_exposure_roi(roi);
+            _roi = roi;
+        }
+
+        region_of_interest get() const override
+        {
+            return _roi;
+        }
+
+    private:
+        std::shared_ptr<auto_exposure_mechanism> _auto_exposure;
+        region_of_interest _roi{};
+    };
+
     std::shared_ptr<rsimpl2::device> ds5_info::create(const uvc::backend& backend) const
     {
         return std::make_shared<ds5_camera>(backend, _depth, _hwm, _hid);
@@ -199,24 +222,25 @@ namespace rsimpl2
         return depth_ep;
     }
 
-    void ds5_camera::register_auto_exposure_options(uvc_endpoint* uvc_ep)
+    std::shared_ptr<auto_exposure_mechanism> ds5_camera::register_auto_exposure_options(uvc_endpoint* uvc_ep)
     {
         auto& gain_option = uvc_ep->get_option(RS2_OPTION_GAIN);
         auto& exposure_option = uvc_ep->get_option(RS2_OPTION_EXPOSURE);
 
-       auto ae_state = std::make_shared<auto_exposure_state>();
-       auto auto_exposure = std::make_shared<auto_exposure_mechanism>(gain_option, exposure_option, *ae_state);
+        auto ae_state = std::make_shared<auto_exposure_state>();
+        auto auto_exposure = std::make_shared<auto_exposure_mechanism>(gain_option, exposure_option, *ae_state);
 
-       uvc_ep->register_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE,
+        uvc_ep->register_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE,
                                 std::make_shared<enable_auto_exposure_option>(uvc_ep,
-                                                                             auto_exposure,
+                                                                              auto_exposure,
                                                                               ae_state));
-       uvc_ep->register_option(RS2_OPTION_AUTO_EXPOSURE_MODE,
+        uvc_ep->register_option(RS2_OPTION_AUTO_EXPOSURE_MODE,
                                 std::make_shared<auto_exposure_mode_option>(auto_exposure,
                                                                             ae_state));
-       uvc_ep->register_option(RS2_OPTION_AUTO_EXPOSURE_ANTIFLICKER_RATE,
-                               std::make_shared<auto_exposure_antiflicker_rate_option>(auto_exposure,
-                                                                                      ae_state));
+        uvc_ep->register_option(RS2_OPTION_AUTO_EXPOSURE_ANTIFLICKER_RATE,
+                                std::make_shared<auto_exposure_antiflicker_rate_option>(auto_exposure,
+                                                                                        ae_state));
+        return auto_exposure;
     }
 
     ds5_camera::ds5_camera(const uvc::backend& backend,
@@ -296,7 +320,8 @@ namespace rsimpl2
                     fisheye_xu,
                     FISHEYE_EXPOSURE, "Exposure time of Fisheye camera"));
 
-            register_auto_exposure_options(fisheye_ep.get());
+            auto fisheye_auto_exposure = register_auto_exposure_options(fisheye_ep.get());
+            fisheye_ep->set_roi_method(std::make_shared<fisheye_auto_exposure_roi_method>(fisheye_auto_exposure));
 
             // Add fisheye endpoint
             fe_index = add_endpoint(fisheye_ep);

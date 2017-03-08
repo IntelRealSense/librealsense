@@ -37,7 +37,7 @@ void auto_exposure_state::set_auto_exposure_antiflicker_rate(unsigned value)
 }
 
 
-auto_exposure_mechanism::auto_exposure_mechanism(option& gain_option, option& exposure_option, auto_exposure_state auto_exposure_state)
+auto_exposure_mechanism::auto_exposure_mechanism(option& gain_option, option& exposure_option, const auto_exposure_state& auto_exposure_state)
     : _auto_exposure_algo(auto_exposure_state),
       _keep_alive(true), _frames_counter(0),
       _skip_frames(auto_exposure_state.skip_frames), _data_queue(queue_size),
@@ -129,11 +129,17 @@ auto_exposure_mechanism::~auto_exposure_mechanism()
     _exposure_thread->join();
 }
 
-void auto_exposure_mechanism::update_auto_exposure_state(auto_exposure_state& auto_exposure_state)
+void auto_exposure_mechanism::update_auto_exposure_state(const auto_exposure_state& auto_exposure_state)
 {
     std::lock_guard<std::mutex> lk(_queue_mtx);
     _skip_frames = auto_exposure_state.skip_frames;
     _auto_exposure_algo.update_options(auto_exposure_state);
+}
+
+void auto_exposure_mechanism::update_auto_exposure_roi(const region_of_interest& roi)
+{
+    std::lock_guard<std::mutex> lk(_queue_mtx);
+    _auto_exposure_algo.update_roi(roi);
 }
 
 void auto_exposure_mechanism::add_frame(frame_holder frame, callback_invocation_holder callback)
@@ -168,7 +174,7 @@ bool auto_exposure_mechanism::try_pop_front_data(frame_and_callback* fh)
     return true;
 }
 
-auto_exposure_algorithm::auto_exposure_algorithm(auto_exposure_state auto_exposure_state)
+auto_exposure_algorithm::auto_exposure_algorithm(const auto_exposure_state& auto_exposure_state)
 {
     update_options(auto_exposure_state);
 }
@@ -222,16 +228,27 @@ void auto_exposure_algorithm::modify_exposure(float& exposure_value, bool& exp_m
 
 bool auto_exposure_algorithm::analyze_image(const rs2_frame* image)
 {
-    int cols = image->get()->get_width();
-    int rows = image->get()->get_height();
+    region_of_interest image_roi = roi;
+    auto number_of_pixels = (image_roi.max_x - image_roi.min_x + 1)*(image_roi.max_y - image_roi.min_y + 1);
+    if (number_of_pixels == 0)
+        return false;   // empty image
 
-    const int number_of_pixels = cols * rows; //VGA
-    if (number_of_pixels == 0)  return false;   // empty image
+    if (!is_roi_initialized)
+    {
+        auto width = image->get()->get_width();
+        auto height = image->get()->get_height();
+        image_roi.min_x = 0;
+        image_roi.min_y = 0;
+        image_roi.max_x = width - 1;
+        image_roi.max_y = height - 1;
+        number_of_pixels = width * height;
+    }
 
     std::vector<int> H(256);
-    int total_weight = number_of_pixels;
+    auto total_weight = number_of_pixels;
 
-    im_hist((uint8_t*)image->get()->get_frame_data(), cols, rows, image->get()->get_bpp() / 8 * cols, &H[0]);
+    auto cols = image->get()->get_width();
+    im_hist((uint8_t*)image->get()->get_frame_data(), image_roi, image->get()->get_bpp() / 8 * cols, &H[0]);
 
     histogram_metric score = {};
     histogram_score(H, total_weight, score);
@@ -276,13 +293,24 @@ void auto_exposure_algorithm::update_options(const auto_exposure_state& options)
     flicker_cycle = 1000.0f / (state.get_auto_exposure_antiflicker_rate() * 2.0f);
 }
 
-void auto_exposure_algorithm::im_hist(const uint8_t* data, const int width, const int height, const int rowStep, int h[])
+void auto_exposure_algorithm::update_roi(const region_of_interest& ae_roi)
+{
+    std::lock_guard<std::recursive_mutex> lock(state_mutex);
+    roi = ae_roi;
+    is_roi_initialized = true;
+}
+
+void auto_exposure_algorithm::im_hist(const uint8_t* data, const region_of_interest& image_roi, const int rowStep, int h[])
 {
     std::lock_guard<std::recursive_mutex> lock(state_mutex);
 
-    for (int i = 0; i < 256; ++i) h[i] = 0;
-    const uint8_t* rowData = data;
-    for (int i = 0; i < height; ++i, rowData += rowStep) for (int j = 0; j < width; j+=state.sample_rate) ++h[rowData[j]];
+    for (int i = 0; i < 256; ++i)
+        h[i] = 0;
+
+    const uint8_t* rowData = data + (image_roi.min_y * rowStep);
+    for (int i = image_roi.min_y; i < image_roi.max_y; ++i, rowData += rowStep)
+        for (int j = image_roi.min_x; j < image_roi.max_x; j+=state.sample_rate)
+            ++h[rowData[j]];
 }
 
 void auto_exposure_algorithm::increase_exposure_target(float mult, float& target_exposure)
