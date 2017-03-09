@@ -83,8 +83,10 @@ namespace rsimpl2
               _max_publish_list_size(16),
               _ts(ts),
               _stream_profiles([this]() { return this->init_stream_profiles(); }),
+              _notifications_proccessor(std::shared_ptr<notifications_proccessor>(new notifications_proccessor())),
               _start_adaptor(this)
               {}
+
 
         virtual std::vector<uvc::stream_profile> init_stream_profiles() = 0;
         const std::vector<uvc::stream_profile>& get_stream_profiles() const
@@ -95,6 +97,8 @@ namespace rsimpl2
         virtual void start_streaming(frame_callback_ptr callback) = 0;
 
         virtual void stop_streaming() = 0;
+
+        void register_notifications_callback(notifications_callback_ptr callback);
 
         rs2_frame* alloc_frame(size_t size, frame_additional_data additional_data) const;
 
@@ -140,6 +144,7 @@ namespace rsimpl2
         {
             _roi_method = roi_method;
         }
+        std::shared_ptr<notifications_proccessor> get_notifications_proccessor();
 
         start_adaptor& starter() { return _start_adaptor; }
 
@@ -156,7 +161,7 @@ namespace rsimpl2
         std::shared_ptr<frame_archive> _archive;
         std::atomic<uint32_t> _max_publish_list_size;
         std::shared_ptr<uvc::time_service> _ts;
-
+        std::shared_ptr<notifications_proccessor> _notifications_proccessor;
     private:
 
         std::map<rs2_option, std::shared_ptr<option>> _options;
@@ -281,6 +286,7 @@ namespace rsimpl2
         void start_streaming(frame_callback_ptr callback);
 
         void stop_streaming();
+
     private:
         std::vector<uvc::stream_profile> init_stream_profiles() override;
 

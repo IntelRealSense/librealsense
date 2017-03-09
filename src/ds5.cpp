@@ -11,6 +11,7 @@
 #include "ms-xu-option.h"
 
 #include "ds5.h"
+#include "ds5-private.h"
 
 namespace rsimpl2
 {
@@ -276,12 +277,26 @@ namespace rsimpl2
             depth_ep.register_option(RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE, std::make_shared<ms_xu_control_option>(depth_ep, ms_ctrl_depth_xu, MSXU_WHITEBALANCE));
             depth_ep.register_option(RS2_OPTION_WHITE_BALANCE, std::make_shared<ms_xu_data_option>(depth_ep, ms_ctrl_depth_xu, MSXU_WHITEBALANCE));
 
+            auto error_control = std::unique_ptr<uvc_xu_option<uint8_t>>(new uvc_xu_option<uint8_t>(depth_ep, depth_xu, DS5_ERROR_REPORTING, "Error reporting"));
+
+            _polling_error_handler = std::unique_ptr<polling_error_handler>(
+                new polling_error_handler(1000,
+                    std::move(error_control),
+                    depth_ep.get_notifications_proccessor(),
+  
+                    std::unique_ptr<notification_decoder>(new ds5_notification_decoder())));
+
+            _polling_error_handler->start();
+
+            depth_ep.register_option(RS2_OPTION_ERROR_POLLING_ENABLED, std::make_shared<polling_errors_disable>(_polling_error_handler.get()));
+
             depth_ep.register_option(RS2_OPTION_ASIC_TEMPERATURE,
                                      std::make_shared<asic_and_projector_temperature_options>(depth_ep,
                                                                                               RS2_OPTION_ASIC_TEMPERATURE));
             depth_ep.register_option(RS2_OPTION_PROJECTOR_TEMPERATURE,
                                      std::make_shared<asic_and_projector_temperature_options>(depth_ep,
-                                                                                              RS2_OPTION_PROJECTOR_TEMPERATURE));
+                                                                                             RS2_OPTION_PROJECTOR_TEMPERATURE));
+ 
         }
         else
         {
@@ -291,6 +306,8 @@ namespace rsimpl2
                     depth_xu,
                     DS5_EXPOSURE, "Depth Exposure"));
         }
+
+
 
         depth_ep.set_roi_method(std::make_shared<ds5_auto_exposure_roi_method>(*_hw_monitor));
 
@@ -369,4 +386,19 @@ namespace rsimpl2
             }
         }
     }
+    notification ds5_notification_decoder::decode(int value)
+    {
+        if(value == 0)
+            return{ value, RS2_LOG_SEVERITY_ERROR, "Success" };
+        if(value == ds::ds5_notifications_types::hot_laser_pwr_reduce)
+            return{ value, RS2_LOG_SEVERITY_ERROR, "Hot laser pwr reduce" };
+        if (value == ds::ds5_notifications_types::hot_laser_disable)
+            return{ value, RS2_LOG_SEVERITY_ERROR, "Hot laser disable" };
+        if (value == ds::ds5_notifications_types::flag_B_laser_disable)
+            return{ value, RS2_LOG_SEVERITY_ERROR, "Flag B laser disable" };
+
+        return{ value, RS2_LOG_SEVERITY_NONE, "Unknown error!" };
+    }
+
+
 }

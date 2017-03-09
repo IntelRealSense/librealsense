@@ -92,6 +92,7 @@ set(REALSENSE_CPP
     src/algo.cpp
     src/option.cpp
     src/ms-xu-option.cpp
+    src/error-handling.cpp
     src/hw-monitor.cpp
     src/image.cpp
     src/ivcam-private.cpp
@@ -129,6 +130,7 @@ set(REALSENSE_HPP
     src/algo.h
     src/option.h
     src/ms-xu-option.h
+    src/error-handling.h
     src/hw-monitor.h
     src/image.h
     src/ivcam-private.h

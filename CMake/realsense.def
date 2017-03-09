@@ -35,6 +35,12 @@ EXPORTS
     rs2_stop
     rs2_stop_stream
 
+    rs2_set_notifications_callback
+    rs2_set_notifications_callback_cpp
+    rs2_get_notification_description
+    rs2_get_notification_timestamp
+    rs2_get_notification_severity
+
     rs2_get_frame_metadata
     rs2_supports_frame_metadata
     rs2_get_frame_timestamp
@@ -83,6 +89,7 @@ EXPORTS
     rs2_free_error
     rs2_get_librealsense_exception_type
     rs2_exception_type_to_string
+    rs2_log_severity_to_string
 
     rs2_stream_to_string
     rs2_format_to_string

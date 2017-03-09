@@ -60,4 +60,6 @@ namespace rsimpl2
         std::vector<std::shared_ptr<endpoint>> _endpoints;
         static_device_info _static_info;
     };
+
+
 }

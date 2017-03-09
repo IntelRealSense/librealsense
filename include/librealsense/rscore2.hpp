@@ -13,6 +13,13 @@ struct rs2_frame_callback
     virtual                                 ~rs2_frame_callback() {}
 };
 
+struct rs2_notifications_callback
+{
+    virtual void                            on_notification(rs2_notification* n) = 0;
+    virtual void                            release() = 0;
+    virtual                                 ~rs2_notifications_callback() {}
+};
+
 struct rs2_log_callback
 {
     virtual void                            on_event(rs2_log_severity severity, const char * message) = 0;

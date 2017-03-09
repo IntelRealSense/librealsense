@@ -55,8 +55,7 @@ auto_exposure_mechanism::auto_exposure_mechanism(option& gain_option, option& ex
                 return;
 
             frame_and_callback frame_callback;
-            auto frame_sts = try_pop_front_data(&frame_callback);
-            auto frame = std::move(frame_callback.f_holder);
+            auto frame_sts = _data_queue.dequeue(&frame_callback);
 
             lk.unlock();
 
@@ -67,6 +66,8 @@ auto_exposure_mechanism::auto_exposure_mechanism(option& gain_option, option& ex
             }
             try
             {
+                auto frame = std::move(frame_callback.f_holder);
+
                 double values[2] = {};
 
                 if (frame->get()->supports_frame_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE))
@@ -154,24 +155,9 @@ void auto_exposure_mechanism::add_frame(frame_holder frame, callback_invocation_
 
     {
         std::lock_guard<std::mutex> lk(_queue_mtx);
-        if (_data_queue.size() > 1)
-        {
-            _data_queue.dequeue();
-        }
-
         _data_queue.enqueue({std::move(frame), std::move(callback)});
     }
     _cv.notify_one();
-}
-
-bool auto_exposure_mechanism::try_pop_front_data(frame_and_callback* fh)
-{
-    if (!_data_queue.size())
-        return false;
-
-    *fh = std::move(_data_queue.dequeue());
-
-    return true;
 }
 
 auto_exposure_algorithm::auto_exposure_algorithm(const auto_exposure_state& auto_exposure_state)

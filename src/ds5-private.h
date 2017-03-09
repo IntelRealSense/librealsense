@@ -21,7 +21,9 @@ namespace rsimpl2 {
         const uint8_t DS5_DEPTH_EMITTER_ENABLED           = 2;
         const uint8_t DS5_EXPOSURE                        = 3;
         const uint8_t DS5_LASER_POWER                     = 4;
+        const uint8_t DS5_ERROR_REPORTING                 = 7;
         const uint8_t DS5_ASIC_AND_PROJECTOR_TEMPERATURES = 9;
+
 
         static const std::vector<std::uint16_t> rs4xx_sku_pid = { ds::RS400P_PID, ds::RS410A_PID, ds::RS420R_PID, ds::RS430C_PID, ds::RS440P_PID, ds::RS450T_PID };
 
@@ -144,12 +146,22 @@ namespace rsimpl2 {
             { res_1920_1080,{ 1920, 1080 } },
         };
 
+
+
         ds5_rect_resolutions width_height_to_ds5_rect_resolutions(uint32_t width, uint32_t height);
 
         rs2_intrinsics get_intrinsic_by_resolution(const std::vector<unsigned char> & raw_data, calibration_table_id table_id, uint32_t width, uint32_t height);
 
         bool try_fetch_usb_device(std::vector<uvc::usb_device_info>& devices,
                                          const uvc::uvc_device_info& info, uvc::usb_device_info& result);
+
+        enum ds5_notifications_types
+        {
+            success = 0,
+            hot_laser_pwr_reduce = 1, // reported to error depth XU control
+            hot_laser_disable = 2, // reported to error depth XU control
+            flag_B_laser_disable = 3 // reported to error depth XU control
+        };
 
     } // rsimpl::ds
 } // namespace rsimpl

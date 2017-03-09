@@ -13,8 +13,10 @@ using namespace rs2;
 // this is done to make sure unit-tests are deterministic
 void disable_sensitive_options_for(device& dev)
 {
-    if (dev.supports(RS2_OPTION_ENABLE_AUTO_EXPOSURE))
+    if (dev.supports(RS2_OPTION_ENABLE_AUTO_EXPOSURE) )
         REQUIRE_NOTHROW(dev.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, 0));
+    if (dev.supports(RS2_OPTION_ERROR_POLLING_ENABLED))
+        REQUIRE_NOTHROW(dev.set_option(RS2_OPTION_ERROR_POLLING_ENABLED, 0));
 }
 
 TEST_CASE("Device metadata enumerates correctly", "[live]")
@@ -67,7 +69,7 @@ TEST_CASE("Start-Stop stream sequence", "[live]")
         for (auto i = 0; i < 5; i++)
         {
             // Test sequence
-            REQUIRE_NOTHROW(streams.start([](rs2_frame * fref) {}));
+            REQUIRE_NOTHROW(streams.start([](frame fref) {}));
             REQUIRE_NOTHROW(streams.stop());
         }
 
@@ -244,7 +246,7 @@ TEST_CASE("streaming modes sanity check", "[live]")
                 // require that we can start streaming this mode
                 REQUIRE_NOTHROW(dev.open({ profile }));
                 // TODO: make callback confirm stream format/dimensions/framerate
-                REQUIRE_NOTHROW(dev.start([](rs2_frame * fref) {}));
+                REQUIRE_NOTHROW(dev.start([](frame fref) {}));
 
                 // Require that we can disable the stream afterwards
                 REQUIRE_NOTHROW(dev.stop());
@@ -431,7 +433,7 @@ TEST_CASE("a single subdevice can only be opened once, different subdevices can 
                         REQUIRE_THROWS_AS(dev.open({ modes.front() }), error);
 
                         // streaming
-                        REQUIRE_NOTHROW(dev.start([](rs2_frame * fref) {}));
+                        REQUIRE_NOTHROW(dev.start([](frame fref) {}));
                         REQUIRE_THROWS_AS(dev.open({ modes.front() }), error);
                     }
 
@@ -448,7 +450,7 @@ TEST_CASE("a single subdevice can only be opened once, different subdevices can 
                             REQUIRE_THROWS_AS(dev.open({ modes[1] }), error);
 
                             // streaming
-                            REQUIRE_NOTHROW(dev.start([](rs2_frame * fref) {}));
+                            REQUIRE_NOTHROW(dev.start([](frame fref) {}));
                             REQUIRE_THROWS_AS(dev.open({ modes[1] }), error);
                         }
                     }
@@ -474,16 +476,16 @@ TEST_CASE("a single subdevice can only be opened once, different subdevices can 
                             {
                                 CAPTURE(subdevice2.get_stream_modes().front().stream);
                                 REQUIRE_NOTHROW(subdevice2.open(subdevice2.get_stream_modes().front()));
-                                REQUIRE_NOTHROW(subdevice2.start([](rs2_frame * fref) {}));
+                                REQUIRE_NOTHROW(subdevice2.start([](frame fref) {}));
                                 REQUIRE_NOTHROW(subdevice2.stop());
                                 REQUIRE_NOTHROW(subdevice2.close());
                             }
 
                             // streaming
                             {
-                                REQUIRE_NOTHROW(subdevice1.start([](rs2_frame * fref) {}));
+                                REQUIRE_NOTHROW(subdevice1.start([](frame fref) {}));
                                 REQUIRE_NOTHROW(subdevice2.open(subdevice2.get_stream_modes().front()));
-                                REQUIRE_NOTHROW(subdevice2.start([](rs2_frame * fref) {}));
+                                REQUIRE_NOTHROW(subdevice2.start([](frame fref) {}));
                                 // stop streaming in opposite order just to be sure that works too
                                 REQUIRE_NOTHROW(subdevice1.stop());
                                 REQUIRE_NOTHROW(subdevice2.stop());
@@ -518,8 +520,8 @@ TEST_CASE("a single subdevice can only be opened once, different subdevices can 
                         REQUIRE_NOTHROW(dev1.open(dev1.get_stream_modes().front()));
                         REQUIRE_NOTHROW(dev2.open(dev2.get_stream_modes().front()));
 
-                        REQUIRE_NOTHROW(dev1.start([](rs2_frame * fref) {}));
-                        REQUIRE_NOTHROW(dev2.start([](rs2_frame * fref) {}));
+                        REQUIRE_NOTHROW(dev1.start([](frame fref) {}));
+                        REQUIRE_NOTHROW(dev2.start([](frame fref) {}));
                         REQUIRE_NOTHROW(dev1.stop());
                         REQUIRE_NOTHROW(dev2.stop());
 
@@ -573,7 +575,7 @@ TEST_CASE("a single subdevice can only be opened once, different subdevices can 
                                 REQUIRE_THROWS_AS(dev2.open({ modes1.front() }), error);
 
                                 // streaming
-                                REQUIRE_NOTHROW(dev1.start([](rs2_frame * fref) {}));
+                                REQUIRE_NOTHROW(dev1.start([](frame fref) {}));
                                 REQUIRE_THROWS_AS(dev2.open({ modes1.front() }), error);
                             }
                             SECTION("different modes")
@@ -589,7 +591,7 @@ TEST_CASE("a single subdevice can only be opened once, different subdevices can 
                                     REQUIRE_THROWS_AS(dev2.open({ modes1[1] }), error);
 
                                     // streaming
-                                    REQUIRE_NOTHROW(dev1.start([](rs2_frame * fref) {}));
+                                    REQUIRE_NOTHROW(dev1.start([](frame fref) {}));
                                     REQUIRE_THROWS_AS(dev2.open({ modes1[1] }), error);
                                 }
                             }
@@ -607,16 +609,16 @@ TEST_CASE("a single subdevice can only be opened once, different subdevices can 
                             {
                                 CAPTURE(dev2.get_stream_modes().front().stream);
                                 REQUIRE_NOTHROW(dev2.open(dev2.get_stream_modes().front()));
-                                REQUIRE_NOTHROW(dev2.start([](rs2_frame * fref) {}));
+                                REQUIRE_NOTHROW(dev2.start([](frame fref) {}));
                                 REQUIRE_NOTHROW(dev2.stop());
                                 REQUIRE_NOTHROW(dev2.close());
                             }
 
                             // streaming
                             {
-                                REQUIRE_NOTHROW(dev1.start([](rs2_frame * fref) {}));
+                                REQUIRE_NOTHROW(dev1.start([](frame fref) {}));
                                 REQUIRE_NOTHROW(dev2.open(dev2.get_stream_modes().front()));
-                                REQUIRE_NOTHROW(dev2.start([](rs2_frame * fref) {}));
+                                REQUIRE_NOTHROW(dev2.start([](frame fref) {}));
                                 // stop streaming in opposite order just to be sure that works too
                                 REQUIRE_NOTHROW(dev1.stop());
                                 REQUIRE_NOTHROW(dev2.stop());
@@ -667,16 +669,16 @@ TEST_CASE("a single subdevice can only be opened once, different subdevices can 
                         // selected, but not streaming
                         {
                             REQUIRE_NOTHROW(dev2.open({ modes2.front() }));
-                            REQUIRE_NOTHROW(dev2.start([](rs2_frame * fref) {}));
+                            REQUIRE_NOTHROW(dev2.start([](frame fref) {}));
                             REQUIRE_NOTHROW(dev2.stop());
                             REQUIRE_NOTHROW(dev2.close());
                         }
 
                         // streaming
                         {
-                            REQUIRE_NOTHROW(dev1.start([](rs2_frame * fref) {}));
+                            REQUIRE_NOTHROW(dev1.start([](frame fref) {}));
                             REQUIRE_NOTHROW(dev2.open({ modes2.front() }));
-                            REQUIRE_NOTHROW(dev2.start([](rs2_frame * fref) {}));
+                            REQUIRE_NOTHROW(dev2.start([](frame fref) {}));
                             // stop streaming in opposite order just to be sure that works too
                             REQUIRE_NOTHROW(dev1.stop());
                             REQUIRE_NOTHROW(dev2.stop());
@@ -721,7 +723,7 @@ TEST_CASE("All suggested profiles can be opened", "[live]") {
             CAPTURE(modes[i].stream);
 
             REQUIRE_NOTHROW(subdevice.open({ modes[i] }));
-            REQUIRE_NOTHROW(subdevice.start([](rs2_frame * fref) {}));
+            REQUIRE_NOTHROW(subdevice.start([](frame fref) {}));
             REQUIRE_NOTHROW(subdevice.stop());
             REQUIRE_NOTHROW(subdevice.close());
         }
@@ -852,7 +854,93 @@ TEST_CASE("Metadata sanity check", "[live]") {
         }
     }
 }
+void triger_error(device& dev, int num)
+{
+    std::vector<uint8_t> raw_data(24, 0);
+    raw_data[0] = 0x14;
+    raw_data[2] = 0xab;
+    raw_data[3] = 0xcd;
+    raw_data[4] = 0x4d;
+    raw_data[8] = num;
+    dev.debug().send_and_receive_raw_data(raw_data);
+}
 
+
+
+//TEST_CASE("Error handling sanity", "[live]") {
+
+//    //Require at least one device to be plugged in
+//    auto ctx = make_context(space_to_underscore(Catch::getCurrentContext().getResultCapture()->getCurrentTestName()).c_str());
+//    std::vector<device> list;
+//    REQUIRE_NOTHROW(list = ctx.query_devices());
+//    REQUIRE(list.size() > 0);
+
+//    std::string notification_description;
+//    std::condition_variable cv;
+//    std::mutex m;
+
+//    std::map<int, std::string> notification_descriptions;
+
+//    notification_descriptions[1] = "Hot laser pwr reduce";
+//    notification_descriptions[2] = "Hot laser disable";
+//    notification_descriptions[3] = "Flag B laser disable";
+
+
+//    //enable error polling
+//    for (auto && subdevice : list) {
+//        // disable_sensitive_options_for(subdevice);
+
+//         for(auto i=1;i<4;i++)
+//         {
+//             if(subdevice.supports(RS2_OPTION_ERROR_POLLING_ENABLED))
+//             {
+//                 REQUIRE_NOTHROW(subdevice.set_option(RS2_OPTION_ERROR_POLLING_ENABLED, 1));
+//                 subdevice.set_notifications_callback([&](notification n)
+//                 {
+//                     std::unique_lock<std::mutex> lock(m);
+//                     notification_description = n.get_description();
+
+//                 });
+
+//                 triger_error(subdevice, i);
+//                 std::unique_lock<std::mutex> lock(m);
+//                 CAPTURE(notification_description);
+//                 REQUIRE(cv.wait_for(lock, std::chrono::seconds(2), [&] {return notification_description.compare(notification_descriptions[i])== 0; }));
+
+
+//             }
+//         }
+//     }
+
+//    //disable error polling
+
+//    auto got_error=false;
+//    for (auto && subdevice : list) {
+//        // disable_sensitive_options_for(subdevice);
+
+//         for(auto i=1;i<4;i++)
+//         {
+//             if(subdevice.supports(RS2_OPTION_ERROR_POLLING_ENABLED))
+//             {
+//                 REQUIRE_NOTHROW(subdevice.set_option(RS2_OPTION_ERROR_POLLING_ENABLED, 0));
+//                 subdevice.set_notifications_callback([&](notification n)
+//                 {
+//                     got_error = true;
+//                     notification_description = n.get_description();
+
+//                 });
+
+//                 triger_error(subdevice, i);
+//                 std::this_thread::sleep_for(std::chrono::seconds(2));
+//                 CAPTURE(notification_description);
+//                 REQUIRE(got_error == false);
+
+//             }
+//         }
+//     }
+
+
+//}
 class AC_Mock_Device
 {
 public:

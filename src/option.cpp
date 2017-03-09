@@ -3,6 +3,7 @@
 
 #include "option.h"
 #include "subdevice.h"
+#include "error-handling.h"
 
 void rsimpl2::uvc_pu_option::set(float value)
 {
@@ -84,3 +85,55 @@ std::vector<uint8_t> rsimpl2::command_transfer_over_xu::send_receive(const std::
             return result;
         });
 }
+
+void rsimpl2::polling_errors_disable::set(float value)
+{
+    if (value < 0) throw invalid_value_exception("Invalid polling errors disable request " + std::to_string(value));
+
+    if (value == 0)
+    {
+        _polling_error_handler->stop();
+        _value = 0;
+    }
+    else
+    {
+        _polling_error_handler->start();
+        _value = 1;
+    }
+
+
+}
+
+float rsimpl2::polling_errors_disable::query() const
+{
+
+    return _value;
+}
+
+rsimpl2::option_range rsimpl2::polling_errors_disable::get_range() const
+{
+    return{ 0, 1, 1, 1 };
+}
+
+bool rsimpl2::polling_errors_disable::is_enabled() const
+{
+    return true;
+}
+
+const char * rsimpl2::polling_errors_disable::get_description() const
+{
+    return "Enable / disable polling of camera internal errors";
+}
+
+const char * rsimpl2::polling_errors_disable::get_value_description(float value)
+{
+    if (value == 0)
+    {
+        return "Disable error polling";
+    }
+    else
+    {
+        return "Enable error polling";
+    }
+}
+

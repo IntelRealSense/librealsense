@@ -21,6 +21,8 @@ const uint16_t VID_INTEL_CAMERA     = 0x8086;
 
 namespace rsimpl2
 {
+    struct notification;
+
     namespace uvc
     {
         class time_service
@@ -186,11 +188,15 @@ namespace rsimpl2
             virtual std::vector<hid_sensor> get_sensors() = 0;
         };
 
+
+
+
+
         class uvc_device
         {
         public:
             virtual void probe_and_commit(stream_profile profile, frame_callback callback) = 0;
-            virtual void stream_on() = 0;
+            virtual void stream_on(std::function<void(const notification& n)> error_handler = [](const notification& n){}) = 0;
             virtual void start_callbacks() = 0;
             virtual void stop_callbacks() = 0;
             virtual void close(stream_profile profile) = 0;
@@ -215,6 +221,9 @@ namespace rsimpl2
             virtual std::string get_device_location() const = 0;
 
             virtual ~uvc_device() = default;
+
+        protected:
+            std::function<void(const notification& n)> _error_handler;
         };
 
         class retry_controls_work_around : public uvc_device
@@ -227,9 +236,9 @@ namespace rsimpl2
             {
                 _dev->probe_and_commit(profile, callback);
             }
-            void stream_on() override
+            void stream_on(std::function<void(const notification& n)> error_handler = [](const notification& n){}) override
             {
-                _dev->stream_on();
+                _dev->stream_on(error_handler);
             }
             void start_callbacks() override
             {
@@ -352,11 +361,11 @@ namespace rsimpl2
                 _dev[dev_index]->probe_and_commit(profile, callback);
             }
 
-            void stream_on() override
+            void stream_on(std::function<void(const notification& n)> error_handler = [](const notification& n){}) override
             {
                 for (auto& elem : _configured_indexes)
                 {
-                    _dev[elem]->stream_on();
+                    _dev[elem]->stream_on(error_handler);
                 }
             }
             void start_callbacks() override

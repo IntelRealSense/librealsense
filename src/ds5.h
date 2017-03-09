@@ -6,6 +6,7 @@
 #include "ds5-private.h"
 
 #include "algo.h"
+#include "error-handling.h"
 
 const double TIMESTAMP_TO_MILLISECONS = 0.001;
 
@@ -679,5 +680,15 @@ namespace rsimpl2
                                                           {RS2_STREAM_GYRO,  {{200,  1},
                                                                              {400,  4},
                                                                              {1000, 10}}}};
+
+        std::unique_ptr<polling_error_handler> _polling_error_handler;
+
+         
+    };
+
+    class ds5_notification_decoder :public notification_decoder
+    {
+    public:
+        notification decode(int value) override;
     };
 }

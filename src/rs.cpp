@@ -59,6 +59,16 @@ struct rs2_device_list
     std::vector<rs2_device_info> list;
 };
 
+struct rs2_notification
+{
+    rs2_notification(const rsimpl2::notification* notification)
+        :_notification(notification){}
+
+
+    const rsimpl2::notification* _notification;
+};
+
+
 struct frame_holder
 {
     rs2_frame* frame;
@@ -96,6 +106,7 @@ struct rs2_frame_queue
     single_consumer_queue<rsimpl2::frame_holder> queue;
 };
 
+
 // This facility allows for translation of exceptions to rs2_error structs at the API boundary
 namespace rsimpl2
 {
@@ -115,6 +126,25 @@ namespace rsimpl2
         catch (const std::exception& e) { if (error) *error = new rs2_error {e.what(), name, move(args)}; }
         catch (...) { if (error) *error = new rs2_error {"unknown error", name, move(args)}; }
     }
+
+
+    void notifications_proccessor::raise_notification(const notification n)
+    {
+        _dispatcher.invoke([this, n](dispatcher::cancellable_timer ct)
+        {
+            std::lock_guard<std::mutex> lock(_callback_mutex);
+            rs2_notification noti(&n);
+            if (_callback)_callback->on_notification(&noti);
+            else
+            {
+#ifdef DEBUG
+
+#endif // !DEBUG
+
+            }
+        });
+    }
+
 }
 
 #define NOEXCEPT_RETURN(R, ...) catch(...) { std::ostringstream ss; rsimpl2::stream_args(ss, #__VA_ARGS__, __VA_ARGS__); rs2_error* e; rsimpl2::translate_exception(__FUNCTION__, ss.str(), &e); LOG_WARNING(rs2_get_error_message(e)); rs2_free_error(e); return R; }
@@ -480,12 +510,23 @@ HANDLE_EXCEPTIONS_AND_RETURN(, device, on_frame, user)
 void rs2_start_stream(const rs2_device* device, rs2_stream stream, rs2_frame_callback_ptr on_frame, void * user, rs2_error ** error) try
 {
     VALIDATE_NOT_NULL(device);
-    VALIDATE_NOT_NULL(on_frame);
+   VALIDATE_NOT_NULL(on_frame);
     rsimpl2::frame_callback_ptr callback(
         new rsimpl2::frame_callback(on_frame, user));
     device->device->get_endpoint(device->subdevice).starter().start(stream, move(callback));
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device, stream, on_frame, user)
+
+void rs2_set_notifications_callback(const rs2_device * device, rs2_notification_callback_ptr on_notification, void * user, rs2_error ** error) try
+{
+    VALIDATE_NOT_NULL(device);
+    VALIDATE_NOT_NULL(on_notification);
+    rsimpl2::notifications_callback_ptr callback(
+        new rsimpl2::notifications_callback(on_notification, user),
+        [](rs2_notifications_callback* p) { delete p; });
+    device->device->get_endpoint(device->subdevice).register_notifications_callback(std::move(callback));
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, device, on_notification, user)
 
 void rs2_start_queue(const rs2_device* device, rs2_stream stream, rs2_frame_queue* queue, rs2_error** error) try
 {
@@ -513,6 +554,14 @@ void rs2_start_stream_cpp(const rs2_device* device, rs2_stream stream, rs2_frame
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device, stream, callback)
 
+void rs2_set_notifications_callback_cpp(const rs2_device * device, rs2_notifications_callback * callback, rs2_error ** error) try
+{
+    VALIDATE_NOT_NULL(device);
+    VALIDATE_NOT_NULL(callback);
+    device->device->get_endpoint(device->subdevice).register_notifications_callback({ callback, [](rs2_notifications_callback* p) { p->release(); } });
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, device, callback)
+
 void rs2_stop(const rs2_device* device, rs2_error ** error) try
 {
     VALIDATE_NOT_NULL(device);
@@ -533,6 +582,27 @@ double rs2_get_frame_metadata(const rs2_frame * frame, rs2_frame_metadata frame_
     return frame->get()->get_frame_metadata(frame_metadata);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, frame)
+
+const char * rs2_get_notification_description(rs2_notification * notification, rs2_error** error)try
+{
+    VALIDATE_NOT_NULL(notification);
+    return notification->_notification->description.c_str();
+}
+HANDLE_EXCEPTIONS_AND_RETURN(0,notification)
+
+rs2_time_t rs2_get_notification_timestamp(rs2_notification * notification, rs2_error** error)try
+{
+    VALIDATE_NOT_NULL(notification);
+    return notification->_notification->timestamp;
+}
+HANDLE_EXCEPTIONS_AND_RETURN(0,notification)
+
+rs2_log_severity rs2_get_notification_severity(rs2_notification * notification, rs2_error** error)try
+{
+    VALIDATE_NOT_NULL(notification);
+    return (rs2_log_severity)notification->_notification->severity;
+}
+HANDLE_EXCEPTIONS_AND_RETURN(RS2_LOG_SEVERITY_NONE, notification)
 
 int rs2_supports_frame_metadata(const rs2_frame * frame, rs2_frame_metadata frame_metadata, rs2_error ** error) try
 {
@@ -659,9 +729,14 @@ NOEXCEPT_RETURN(, queue)
 rs2_frame* rs2_wait_for_frame(rs2_frame_queue* queue, rs2_error** error) try
 {
     VALIDATE_NOT_NULL(queue);
-    auto frame_holder = queue->queue.dequeue();
+    rsimpl2::frame_holder fh;
+    if (!queue->queue.dequeue(&fh))
+    {
+        throw std::runtime_error("Frame did not arrive in time!");
+    }
+
     rs2_frame* result = nullptr;
-    std::swap(result, frame_holder.frame);
+    std::swap(result, fh.frame);
     return result;
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, queue)
@@ -697,7 +772,7 @@ NOEXCEPT_RETURN(, frame, queue)
 void rs2_flush_queue(rs2_frame_queue* queue, rs2_error** error) try
 {
     VALIDATE_NOT_NULL(queue);
-    queue->queue.flush();
+    queue->queue.clear();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, queue)
 
@@ -808,7 +883,7 @@ const char * rs2_option_to_string(rs2_option option) { return rsimpl2::get_strin
 const char * rs2_camera_info_to_string(rs2_camera_info info) { return rsimpl2::get_string(info); }
 const char * rs2_timestamp_domain_to_string(rs2_timestamp_domain info){ return rsimpl2::get_string(info); }
 const char * rs2_visual_preset_to_string(rs2_visual_preset preset) { return rsimpl2::get_string(preset); }
-
+const char * rs2_log_severity_to_string(rs2_log_severity severity) { return rsimpl2::get_string(severity); }
 const char * rs2_exception_type_to_string(rs2_exception_type type) { return rsimpl2::get_string(type); }
 
 void rs2_log_to_console(rs2_log_severity min_severity, rs2_error ** error) try

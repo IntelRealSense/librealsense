@@ -48,11 +48,11 @@ namespace rsimpl2
         class playback_backend_exception : public backend_exception
         {
         public:
-            playback_backend_exception(const std::string& msg, rsimpl2::uvc::call_type t, int entity_id) noexcept
+            playback_backend_exception(const std::string& msg, call_type t, int entity_id) noexcept
                 : backend_exception(generate_message(msg, t, entity_id), RS2_EXCEPTION_TYPE_BACKEND)
             {}
         private:
-            std::string generate_message(const std::string& msg, rsimpl2::uvc::call_type t, int entity_id) const
+            std::string generate_message(const std::string& msg, call_type t, int entity_id) const
             {
                 std::stringstream s;
                 s << msg << " call type: " << int(t) << " entity " << entity_id;
@@ -588,7 +588,7 @@ namespace rsimpl2
             }, _entity_id, call_type::uvc_probe_commit);
         }
 
-        void record_uvc_device::stream_on()
+        void record_uvc_device::stream_on(std::function<void(const notification& n)> error_handler)
         {
             _owner->try_record([&](recording* rec, lookup_key k)
             {
@@ -1026,7 +1026,7 @@ namespace rsimpl2
             _commitments.push_back({ profile, callback });
         }
 
-        void playback_uvc_device::stream_on()
+        void playback_uvc_device::stream_on(std::function<void(const notification& n)> error_handler)
         {
             lock_guard<mutex> lock(_callback_mutex);
 

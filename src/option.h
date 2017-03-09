@@ -199,4 +199,30 @@ namespace rsimpl2
         uvc::extension_unit _xu;
         uint8_t             _ctrl;
     };
+
+    class polling_error_handler;
+
+    class polling_errors_disable : public option
+    {
+    public:
+        polling_errors_disable(polling_error_handler* handler)
+            :_polling_error_handler(handler), _value(1)
+        {}
+        void set(float value);
+
+        float query() const;
+
+        option_range get_range() const;
+
+        bool is_enabled() const;
+
+
+        const char* get_description() const;
+
+        const char* get_value_description(float value);
+
+    private:
+        polling_error_handler* _polling_error_handler;
+        float _value;
+    };
 }

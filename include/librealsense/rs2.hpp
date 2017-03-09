@@ -139,6 +139,54 @@ namespace rs2
         return (a.width == b.width) && (a.height == b.height) && (a.fps == b.fps) && (a.format == b.format) && (a.stream == b.stream);
     }
 
+    class notification
+    {
+    public:
+        notification(rs2_notification* notification)
+        {
+            rs2_error * e = nullptr;
+            _description = rs2_get_notification_description(notification, &e);
+            error::handle(e);
+            _timestamp = rs2_get_notification_timestamp(notification, &e);
+            error::handle(e);
+            _severity = rs2_get_notification_severity(notification, &e);
+            error::handle(e);
+        }
+        notification() : _description("") {}
+
+        /**
+        * retrieve the notification description
+        * \return            the notification description
+        */
+        std::string get_description() const
+        {
+            return _description;
+        }
+
+        /**
+        * retrieve the notification arrival timestamp
+        * \return            the arrival timestamp
+        */
+        double get_timestamp() const
+        {
+            return _timestamp;
+        }
+
+        /**
+        * retrieve the notification severity
+        * \return            the severity
+        */
+        rs2_log_severity get_severity() const
+        {
+            return _severity;
+        }
+
+    private:
+        std::string _description;
+        double _timestamp;
+        rs2_log_severity _severity;
+    };
+
     class frame
     {
         rs2_frame * frame_ref;
@@ -333,6 +381,8 @@ namespace rs2
         }
     };
 
+
+
     template<class T>
     class frame_callback : public rs2_frame_callback
     {
@@ -342,12 +392,26 @@ namespace rs2
 
         void on_frame(rs2_frame * fref) override
         {
-            on_frame_function({ fref });
+            on_frame_function(frame{ fref });
         }
 
         void release() override { delete this; }
     };
 
+    template<class T>
+    class notifications_callback : public rs2_notifications_callback
+    {
+        T on_notification_function;
+    public:
+        explicit notifications_callback(T on_notification) : on_notification_function(on_notification) {}
+
+        void on_notification(rs2_notification* _notification) override
+        {
+            on_notification_function(notification{ _notification });
+        }
+
+        void release() override { delete this; }
+    };
     struct option_range
     {
         float min;
@@ -514,6 +578,19 @@ namespace rs2
             auto res = rs2_is_option_read_only(_dev.get(), option, &e);
             error::handle(e);
             return res > 0;
+        }
+
+        /**
+        * register notifications callback
+        * \param[in] callback   notifications callback
+        */
+        template<class T>
+        void set_notifications_callback(T callback) const
+        {
+            rs2_error * e = nullptr;
+            rs2_set_notifications_callback_cpp(_dev.get(), 
+                new notifications_callback<T>(std::move(callback)), &e);
+            error::handle(e);
         }
 
         /**
@@ -751,19 +828,23 @@ namespace rs2
         advanced& debug() { return _debug; }
 
         device() : _dev(nullptr), _debug(nullptr) {}
+
+        
     private:
         friend context;
         friend device_list;
-
+        std::shared_ptr<rs2_device> _dev;
         explicit device(std::shared_ptr<rs2_device> dev)
             : _dev(dev), _debug(dev)
         {
         }
 
-        std::shared_ptr<rs2_device> _dev;
+        
         std::shared_ptr<rs2_context> _context;
         advanced _debug;
     };
+
+
 
     inline bool operator==(const device& a, const device& b)
     {
@@ -1063,5 +1144,5 @@ inline std::ostream & operator << (std::ostream & o, rs2_stream stream) { return
 inline std::ostream & operator << (std::ostream & o, rs2_format format) { return o << rs2_format_to_string(format); }
 inline std::ostream & operator << (std::ostream & o, rs2_distortion distortion) { return o << rs2_distortion_to_string(distortion); }
 inline std::ostream & operator << (std::ostream & o, rs2_option option) { return o << rs2_option_to_string(option); }
-
+inline std::ostream & operator << (std::ostream & o, rs2_log_severity severity) { return o << rs2_log_severity_to_string(severity); }
 #endif // LIBREALSENSE_RS2_HPP

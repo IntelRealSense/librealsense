@@ -22,6 +22,8 @@
 #include <algorithm>
 #include <condition_variable>
 #include "backend.h"
+#include "concurrency.h"
+
 
 #define ELPP_THREAD_SAFE
 #define NOMINMAX
@@ -40,6 +42,7 @@ const double DBL_EPSILON = 2.2204460492503131e-016;  // smallest such that 1.0+D
 
 namespace rsimpl2
 {
+
     ///////////////////////////////////
     // Utility types for general use //
     ///////////////////////////////////
@@ -307,6 +310,7 @@ namespace rsimpl2
     RS2_ENUM_HELPERS(rs2_timestamp_domain, TIMESTAMP_DOMAIN)
     RS2_ENUM_HELPERS(rs2_visual_preset, VISUAL_PRESET)
     RS2_ENUM_HELPERS(rs2_exception_type, EXCEPTION_TYPE)
+    RS2_ENUM_HELPERS(rs2_log_severity, LOG_SEVERITY)
     #undef RS2_ENUM_HELPERS
 
     ////////////////////////////////////////////
@@ -630,9 +634,70 @@ namespace rsimpl2
         void release() override { delete this; }
     };
 
+    typedef void(*notifications_callback_function_ptr)(rs2_notification * notification, void * user);
+
+    class notifications_callback : public rs2_notifications_callback
+    {
+        notifications_callback_function_ptr nptr;
+        void * user;
+    public:
+        notifications_callback() : notifications_callback(nullptr, nullptr) {}
+        notifications_callback(notifications_callback_function_ptr on_notification, void * user) : nptr(on_notification), user(user) {}
+
+        operator bool() const { return nptr != nullptr; }
+        void on_notification(rs2_notification * notification) override {
+            if (nptr)
+            {
+                try { nptr(notification, user); }
+                catch (...)
+                {
+                    LOG_ERROR("Received an execption from frame callback!");
+                }
+            }
+        }
+        void release() override { delete this; }
+    };
+
     typedef std::unique_ptr<rs2_log_callback, void(*)(rs2_log_callback*)> log_callback_ptr;
     typedef std::shared_ptr<rs2_frame_callback> frame_callback_ptr;
+    typedef std::unique_ptr<rs2_notifications_callback, void(*)(rs2_notifications_callback*)> notifications_callback_ptr;
 
+
+    struct notification
+    {
+        notification(int type, rs2_log_severity severity, std::string description)
+            :type(type), severity(severity), description(description)
+        {
+            timestamp = std::chrono::duration<double, std::milli>(std::chrono::system_clock::now().time_since_epoch()).count();
+            LOG_INFO(description);
+        }
+
+        int type;
+        rs2_log_severity severity;
+        std::string description;
+        double timestamp;
+    };
+
+    class notification_decoder
+    {
+    public:
+        virtual notification decode(int value) = 0;
+    };
+
+    class notifications_proccessor
+    {
+    public:
+        notifications_proccessor();
+        ~notifications_proccessor();
+
+        void set_callback(notifications_callback_ptr callback);
+        void raise_notification(const notification);
+
+    private:
+        notifications_callback_ptr _callback;
+        std::mutex _callback_mutex;
+        dispatcher _dispatcher;
+    };
     ////////////////////////////////////////
     // Helper functions for library types //
     ////////////////////////////////////////

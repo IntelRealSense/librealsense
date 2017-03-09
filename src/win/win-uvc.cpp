@@ -767,7 +767,7 @@ namespace rsimpl2
 
         }
 
-        void wmf_uvc_device::stream_on()
+        void wmf_uvc_device::stream_on(std::function<void(const notification& n)> error_handler)
         {
             if (_profiles.empty())
                 throw std::runtime_error("Stream not configured");

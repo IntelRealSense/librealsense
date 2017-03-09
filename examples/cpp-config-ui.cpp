@@ -1124,6 +1124,167 @@ struct user_data
     mouse_info* mouse = nullptr;
 };
 
+struct notification_model
+{
+    static const int MAX_LIFETIME_MS = 10000;
+
+    notification_model()
+    {
+        message = "";
+    }
+
+    notification_model(const notification& n)
+    {
+        message = n.get_description();
+        timestamp  = n.get_timestamp();
+        severity = n.get_severity();
+        created_time = std::chrono::high_resolution_clock::now();
+
+    }
+
+    int height = 60;
+
+    int index;
+    std::string message;
+    double timestamp;
+    rs2_log_severity severity;
+    std::chrono::high_resolution_clock::time_point created_time;
+    // TODO: Add more info
+
+    double get_age_in_ms()
+    {
+        auto age = std::chrono::high_resolution_clock::now() - created_time;
+        return std::chrono::duration_cast<std::chrono::milliseconds>(age).count();
+    }
+
+    void draw(int w, int y, notification_model& selected)
+    {
+        auto flags = ImGuiWindowFlags_NoResize |
+            ImGuiWindowFlags_NoMove |
+            ImGuiWindowFlags_NoCollapse;
+
+        auto ms = get_age_in_ms() / MAX_LIFETIME_MS;
+        auto t = smoothstep(static_cast<float>(ms), 0.7f, 1.0f);
+
+        ImGui::PushStyleColor(ImGuiCol_WindowBg, { 0.3f, 0, 0, 1 - t });
+        ImGui::PushStyleColor(ImGuiCol_TitleBg, { 0.5f, 0.2f, 0.2f, 1 - t });
+        ImGui::PushStyleColor(ImGuiCol_TitleBgActive, { 0.6f, 0.2f, 0.2f, 1 - t });
+        ImGui::PushStyleColor(ImGuiCol_Text, { 1, 1, 1, 1 - t });
+
+
+
+        auto lines = std::count(message.begin(), message.end(), '\n')+1;
+        ImGui::SetNextWindowPos({ float(w - 330), float(y) });
+        ImGui::SetNextWindowSize({ float(500), float(lines*50) });
+        height = lines*50 +10;
+        std::string label = to_string() << "Hardware Notification #" << index;
+        ImGui::Begin(label.c_str(), nullptr, flags);
+
+
+
+        ImGui::Text(message.c_str());
+
+        if(lines == 1)
+            ImGui::SameLine();
+        ImGui::Text("(...)");
+
+        if (ImGui::IsMouseClicked(0) && ImGui::IsItemHovered())
+        {
+            selected = *this;
+        }
+
+        ImGui::End();
+
+        ImGui::PopStyleColor();
+        ImGui::PopStyleColor();
+        ImGui::PopStyleColor();
+        ImGui::PopStyleColor();
+    }
+};
+
+struct notifications_model
+{
+    std::vector<notification_model> pending_notifications;
+    int index = 1;
+    const int MAX_SIZE = 5;
+
+    void add_notification(const notification& n)
+    {
+        notification_model m(n);
+        m.index = index++;
+        pending_notifications.push_back(m);
+
+        if (pending_notifications.size() > MAX_SIZE)
+            pending_notifications.erase(pending_notifications.begin());
+    }
+
+    void draw(int w, int h, notification_model& selected)
+    {
+        if (pending_notifications.size() > 0)
+        {
+            // loop over all notifications, remove "old" ones
+            pending_notifications.erase(std::remove_if(std::begin(pending_notifications),
+                                                       std::end(pending_notifications),
+                                                       [&](notification_model& n)
+            {
+                return (n.get_age_in_ms() > notification_model::MAX_LIFETIME_MS);
+            }), end(pending_notifications));
+
+            int idx = 0;
+            auto height = 30;
+            for (auto& noti : pending_notifications)
+            {
+                noti.draw(w, height, selected);
+                height += noti.height;
+                idx++;
+            }
+        }
+
+
+        auto flags = ImGuiWindowFlags_NoResize |
+            ImGuiWindowFlags_NoMove |
+            ImGuiWindowFlags_NoCollapse |
+            ImGuiWindowFlags_NoTitleBar;
+
+        ImGui::PushStyleColor(ImGuiCol_WindowBg, { 0, 0, 0, 0 });
+        ImGui::Begin("Notification parent window", nullptr, flags);
+
+        ImGui::PushStyleColor(ImGuiCol_WindowBg, { 0.1f, 0, 0, 1 });
+        ImGui::PushStyleColor(ImGuiCol_TitleBg, { 0.3f, 0.1f, 0.1f, 1 });
+        ImGui::PushStyleColor(ImGuiCol_TitleBgActive, { 0.5f, 0.1f, 0.1f, 1 });
+        ImGui::PushStyleColor(ImGuiCol_Text, { 1, 1, 1, 1 });
+
+        if (selected.message != "")
+            ImGui::OpenPopup("Notification from Hardware");
+        if (ImGui::BeginPopupModal("Notification from Hardware", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+        {
+            ImGui::Text("Received the following notification:");
+            std::stringstream s;
+            s<<"Timestamp: "<<std::fixed<<selected.timestamp<<"\n"<<"Severity: "<<selected.severity<<"\nDescription: "<<const_cast<char*>(selected.message.c_str());
+            ImGui::InputTextMultiline("notification", const_cast<char*>(s.str().c_str()),
+                selected.message.size() + 1, { 500,100 }, ImGuiInputTextFlags_AutoSelectAll);
+            ImGui::Separator();
+
+            if (ImGui::Button("OK", ImVec2(120, 0)))
+            {
+                selected.message = "";
+                ImGui::CloseCurrentPopup();
+            }
+
+            ImGui::EndPopup();
+        }
+
+        ImGui::PopStyleColor();
+        ImGui::PopStyleColor();
+        ImGui::PopStyleColor();
+        ImGui::PopStyleColor();
+
+        ImGui::End();
+
+        ImGui::PopStyleColor();
+    }
+};
+
 int main(int, char**) try
 {
     // activate logging to console
@@ -1145,6 +1306,8 @@ int main(int, char**) try
     auto device_index = 0;
     auto list = ctx.query_devices(); // Query RealSense connected devices list
 
+
+  
     // If no device is connected...
     while (list.size() == 0)
     {
@@ -1157,7 +1320,9 @@ int main(int, char**) try
     }
 
     std::vector<std::string> device_names;
+    notifications_model not_model;
     std::string error_message = "";
+    notification_model selected_notification;
     // Initialize list with each device name and serial number
     for (uint32_t i = 0; i < list.size(); i++)
     {
@@ -1172,6 +1337,14 @@ int main(int, char**) try
         {
             device_names.push_back(to_string() << "Unknown Device #" << i);
         }
+    }
+
+    for (auto&& sub : list)
+    {
+        sub.set_notifications_callback([&](const notification& n)
+        {
+            not_model.add_notification(n);
+        });
     }
 
     auto dev = list[device_index];                  // Access first device
@@ -1458,7 +1631,7 @@ int main(int, char**) try
         {
             ImGui::Text("RealSense error calling:");
             ImGui::InputTextMultiline("error", const_cast<char*>(error_message.c_str()),
-                error_message.size(), { 500,100 }, ImGuiInputTextFlags_AutoSelectAll);
+                error_message.size() + 1, { 500,100 }, ImGuiInputTextFlags_AutoSelectAll);
             ImGui::Separator();
 
             if (ImGui::Button("OK", ImVec2(120, 0)))
@@ -1472,6 +1645,7 @@ int main(int, char**) try
 
         ImGui::End();
 
+        not_model.draw(w, h, selected_notification);
 
         // Fetch frames from queue
         for (auto&& sub : model.subdevices)
@@ -1499,7 +1673,6 @@ int main(int, char**) try
             }
 
         }
-
 
         // Rendering
         glViewport(0, 0,
@@ -1624,7 +1797,9 @@ int main(int, char**) try
             }
         }
 
+
         ImGui::Render();
+
 
         glfwSwapBuffers(window);
     }

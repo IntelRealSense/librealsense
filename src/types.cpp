@@ -91,7 +91,22 @@ namespace rsimpl2
         }
         #undef CASE
     }
-
+       const char * get_string(rs2_log_severity value)
+    {
+        #define CASE(X) case RS2_LOG_SEVERITY_##X: return #X;
+        switch (value)
+        {
+            CASE(DEBUG)
+            CASE(INFO)
+            CASE(WARN)
+            CASE(ERROR)
+            CASE(FATAL)
+            CASE(NONE)
+            CASE(COUNT)
+        default: assert(!is_valid(value)); return unknown;
+        }
+        #undef CASE
+    }
     const char * get_string(rs2_option value)
     {
         #define CASE(X) case RS2_OPTION_##X: return #X;
@@ -121,6 +136,7 @@ namespace rsimpl2
         CASE(AUTO_EXPOSURE_MODE)
         CASE(AUTO_EXPOSURE_ANTIFLICKER_RATE)
         CASE(ASIC_TEMPERATURE)
+        CASE(ERROR_POLLING_ENABLED)
         CASE(PROJECTOR_TEMPERATURE)
         default: assert(!is_valid(value)); return unknown;
         }
@@ -344,5 +360,26 @@ namespace rsimpl2
             oldcrc32 = UPDC32(*buf, oldcrc32);
         return ~oldcrc32;
     }
+
+    notifications_proccessor::notifications_proccessor()
+        :_dispatcher(10), _callback(nullptr , [](rs2_notifications_callback*) {})
+    {
+    }
+
+    notifications_proccessor::~notifications_proccessor()
+    {
+        _dispatcher.stop();
+    }
+
+
+    void notifications_proccessor::set_callback(notifications_callback_ptr callback)
+    {
+        std::lock_guard<std::mutex> lock(_callback_mutex);
+
+        _dispatcher.stop();
+        _callback = std::move(callback);
+        _dispatcher.start();
+    }
+
 
 }

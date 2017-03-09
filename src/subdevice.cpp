@@ -10,6 +10,11 @@
 using namespace rsimpl2;
 
 
+void rsimpl2::endpoint::register_notifications_callback(notifications_callback_ptr callback)
+{
+    _notifications_proccessor->set_callback(std::move(callback));
+}
+
 rs2_frame* endpoint::alloc_frame(size_t size, frame_additional_data additional_data) const
 {
     auto frame = _archive->alloc_frame(size, additional_data, true);
@@ -44,6 +49,11 @@ void endpoint::flush() const
 {
     if (_archive.get())
         _archive->flush();
+}
+
+std::shared_ptr<notifications_proccessor> endpoint::get_notifications_proccessor()
+{
+    return _notifications_proccessor;
 }
 
 bool endpoint::try_get_pf(const uvc::stream_profile& p, native_pixel_format& result) const
@@ -359,7 +369,10 @@ void uvc_endpoint::open(const std::vector<stream_profile>& requests)
     _is_opened = true;
 
     try {
-        _device->stream_on();
+        _device->stream_on([&](const notification& n)
+        {
+            _notifications_proccessor->raise_notification(n);
+        });
     }
     catch (...)
     {
@@ -420,6 +433,7 @@ void uvc_endpoint::stop_streaming()
     _is_streaming = false;
     _device->stop_callbacks();
 }
+
 
 void uvc_endpoint::reset_streaming()
 {
@@ -688,6 +702,7 @@ void hid_endpoint::stop_streaming()
     _archive.reset();
     _timestamp_reader->reset();
 }
+
 
 std::vector<stream_profile> hid_endpoint::get_device_profiles()
 {

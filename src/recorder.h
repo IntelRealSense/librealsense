@@ -235,7 +235,7 @@ namespace rsimpl2
         {
         public:
             void probe_and_commit(stream_profile profile, frame_callback callback) override;
-            void stream_on() override;
+            void stream_on(std::function<void(const notification& n)> error_handler = [](const notification& n){}) override;
             void start_callbacks() override;
             void stop_callbacks() override;
             void close(stream_profile profile) override;
@@ -367,7 +367,7 @@ namespace rsimpl2
         {
         public:
             void probe_and_commit(stream_profile profile, frame_callback callback) override;
-            void stream_on() override;
+            void stream_on(std::function<void(const notification& n)> error_handler = [](const notification& n){}) override;
             void start_callbacks() override;
             void stop_callbacks() override;
             void close(stream_profile profile) override;

@@ -141,6 +141,7 @@ typedef enum rs2_option
     RS2_OPTION_AUTO_EXPOSURE_MODE                         , /**< Auto-Exposure modes: Static, Anti-Flicker and Hybrid */
     RS2_OPTION_AUTO_EXPOSURE_ANTIFLICKER_RATE             , /**< Auto-Exposure anti-flicker rate, can be 50 or 60 Hz */
     RS2_OPTION_ASIC_TEMPERATURE                           , /**< Current Asic Temperature */
+    RS2_OPTION_ERROR_POLLING_ENABLED                     , /**< disable error handling */
     RS2_OPTION_PROJECTOR_TEMPERATURE                      , /**< Current Projector Temperature */
     RS2_OPTION_COUNT                                      , /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
 } rs2_option;
@@ -178,6 +179,7 @@ typedef enum rs2_timestamp_domain
     RS2_TIMESTAMP_DOMAIN_SYSTEM_TIME,    /**< Frame timestamp was measured in relation to the OS system clock */
     RS2_TIMESTAMP_DOMAIN_COUNT           /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
 } rs2_timestamp_domain;
+
 
 /** \brief Video stream intrinsics */
 typedef struct rs2_intrinsics
@@ -218,6 +220,7 @@ typedef struct rs2_extrinsics
     float translation[3]; /**< Three-element translation vector, in meters */
 } rs2_extrinsics;
 
+
 typedef struct rs2_context rs2_context;
 typedef struct rs2_device_list rs2_device_list;
 typedef struct rs2_device rs2_device;
@@ -226,11 +229,13 @@ typedef struct rs2_stream_profile_list rs2_stream_modes_list;
 typedef struct rs2_raw_data_buffer rs2_raw_data_buffer;
 typedef struct rs2_frame rs2_frame;
 typedef struct rs2_frame_queue rs2_frame_queue;
-
+typedef struct rs2_notification rs2_notification;
+typedef struct rs2_notifications_callback rs2_notifications_callback;
 typedef struct rs2_frame_callback rs2_frame_callback;
 typedef struct rs2_log_callback rs2_log_callback;
 
 typedef void (*rs2_frame_callback_ptr)(rs2_frame*, void*);
+typedef void (*rs2_notification_callback_ptr)(rs2_notification*, void*);
 typedef void (*rs2_log_callback_ptr)(rs2_log_severity min_severity, const char* message, void* user);
 
 typedef double rs2_time_t;    /**< Timestamp format. units are milliseconds */
@@ -412,6 +417,15 @@ void rs2_close(const rs2_device* device, rs2_error** error);
 void rs2_start(const rs2_device* device, rs2_frame_callback_ptr on_frame, void* user, rs2_error** error);
 
 /**
+* set callback to get notifications from specified device
+* \param[in] device  RealSense device
+* \param[in] device  RealSense device
+* \param[in] callback function pointer to register as per-notifications callback
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+void rs2_set_notifications_callback(const rs2_device* device, rs2_notification_callback_ptr on_notification, void* user, rs2_error** error);
+
+/**
 * start streaming from specified configured device only specific stream
 * \param[in] device  RealSense device
 * \param[in] stream  specific stream type to start
@@ -420,6 +434,7 @@ void rs2_start(const rs2_device* device, rs2_frame_callback_ptr on_frame, void* 
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 */
 void rs2_start_stream(const rs2_device* device, rs2_stream stream, rs2_frame_callback_ptr on_frame, void* user, rs2_error** error);
+
 
 /**
 * start streaming from specified configured device of specific stream to frame queue
@@ -461,6 +476,36 @@ void rs2_stop(const rs2_device* device, rs2_error** error);
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 */
 void rs2_stop_stream(const rs2_device* device, rs2_stream stream, rs2_error** error);
+
+/**
+* set callback to get notifications from specified device
+* \param[in] device  RealSense device
+* \param[in] callback callback object created from c++ application. ownership over the callback object is moved into the relevant subdevice lock
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+void rs2_set_notifications_callback_cpp(const rs2_device* device, rs2_notifications_callback* callback, rs2_error** error);
+
+
+/**
+* retrieve description from notification handle
+* \param[in] notification      handle returned from a callback
+* \return            the notification description
+*/
+const char* rs2_get_notification_description(rs2_notification* notification, rs2_error** error);
+
+/**
+* retrieve timestamp from notification handle
+* \param[in] notification      handle returned from a callback
+* \return            the notification timestamp
+*/
+rs2_time_t rs2_get_notification_timestamp(rs2_notification * notification, rs2_error** error);
+
+/**
+* retrieve severity from notification handle
+* \param[in] notification      handle returned from a callback
+* \return            the notification severity
+*/
+rs2_log_severity rs2_get_notification_severity(rs2_notification * notification, rs2_error** error);
 
 /**
 * retrieve metadata from frame handle
@@ -814,6 +859,7 @@ const char * rs2_option_to_string     (rs2_option option);
 const char * rs2_camera_info_to_string(rs2_camera_info info);
 const char * rs2_camera_info_to_string(rs2_camera_info info);
 const char * rs2_timestamp_domain_to_string(rs2_timestamp_domain info);
+const char * rs2_log_severity_to_string(rs2_log_severity info);
 const char * rs2_visual_preset_to_string  (rs2_visual_preset preset);
 
 void rs2_log_to_console(rs2_log_severity min_severity, rs2_error ** error);

@@ -1280,10 +1280,12 @@ namespace rsimpl2
                 }
             }
 
-            void stream_on() override
+            void stream_on(std::function<void(const notification& n)> error_handler) override
             {
                 if(!_is_capturing)
                 {
+                    _error_handler = error_handler;
+
                     // Start capturing
                     for(size_t i = 0; i < _buffers.size(); ++i)
                     {
@@ -1439,16 +1441,30 @@ namespace rsimpl2
 
                         if (_is_started)
                         {
-                            frame_object fo{ _buffers[buf.index].length,
-                                has_metadata() ? META_DATA_SIZE : 0,
-                                _buffers[buf.index].start,
-                                has_metadata() ? _buffers[buf.index].start + _buffer_length : nullptr };
+                            if( buf.bytesused < _buffers[buf.index].length - META_DATA_SIZE &&
+                                    buf.bytesused > 0)
+                            {
+                                auto precent = (100 * buf.bytesused) / _buffers[buf.index].length;
+                                std::stringstream s;
+                                s << "Incomplete frame detected!\nSize " << buf.bytesused
+                                  << " out of " << _buffers[buf.index].length << " bytes (" << precent << "%)";
+                                rsimpl2::notification n = {0, RS2_LOG_SEVERITY_WARN, s.str()};
 
-
-                            if (buf.bytesused > 0)
-                                _callback(_profile, fo);
+                                _error_handler(n);
+                            }
                             else
-                                LOG_WARNING("Empty frame has arrived.");
+                            {
+                                frame_object fo{ _buffers[buf.index].length,
+                                    has_metadata() ? META_DATA_SIZE : 0,
+                                    _buffers[buf.index].start,
+                                    has_metadata() ? _buffers[buf.index].start + _buffer_length : nullptr };
+
+
+                                if (buf.bytesused > 0)
+                                    _callback(_profile, fo);
+                                else
+                                    LOG_WARNING("Empty frame has arrived.");
+                            }
                         }
 
                         if (V4L2_MEMORY_USERPTR == _use_memory_map)
