@@ -198,6 +198,8 @@ namespace rsimpl2
         CASE(DEVICE_LOCATION)
         CASE(DEVICE_DEBUG_OP_CODE)
         CASE(ADVANCED_MODE)
+        CASE(PRODUCT_ID)
+        CASE(MOTION_MODULE_FIRMWARE_VERSION)
         default: assert(!is_valid(value)); return unknown;
         }
         #undef CASE

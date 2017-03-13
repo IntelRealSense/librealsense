@@ -151,14 +151,16 @@ typedef enum rs2_option
    Not all information fields are available on all camera types.
    This information is mainly available for camera debug and troubleshooting and should not be used in applications. */
 typedef enum rs2_camera_info {
-    RS2_CAMERA_INFO_DEVICE_NAME                   , /**< Device friendly name */
-    RS2_CAMERA_INFO_MODULE_NAME                   ,
-    RS2_CAMERA_INFO_DEVICE_SERIAL_NUMBER          , /**< Device serial number */
-    RS2_CAMERA_INFO_CAMERA_FIRMWARE_VERSION       , /**< Primary firmware version */
-    RS2_CAMERA_INFO_DEVICE_LOCATION               ,
-    RS2_CAMERA_INFO_DEVICE_DEBUG_OP_CODE          ,
-    RS2_CAMERA_INFO_ADVANCED_MODE                 ,
-    RS2_CAMERA_INFO_COUNT                          /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
+    RS2_CAMERA_INFO_DEVICE_NAME                    , /**< Device friendly name */
+    RS2_CAMERA_INFO_MODULE_NAME                    ,
+    RS2_CAMERA_INFO_DEVICE_SERIAL_NUMBER           , /**< Device serial number */
+    RS2_CAMERA_INFO_CAMERA_FIRMWARE_VERSION        , /**< Primary firmware version */
+    RS2_CAMERA_INFO_DEVICE_LOCATION                ,
+    RS2_CAMERA_INFO_DEVICE_DEBUG_OP_CODE           ,
+    RS2_CAMERA_INFO_ADVANCED_MODE                  ,
+    RS2_CAMERA_INFO_PRODUCT_ID                     ,
+    RS2_CAMERA_INFO_MOTION_MODULE_FIRMWARE_VERSION ,
+    RS2_CAMERA_INFO_COUNT                            /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
 } rs2_camera_info;
 
 /**\brief Severity of the librealsense logger */

@@ -256,7 +256,7 @@ namespace rsimpl2
         _coefficients_table_raw = [this]() { return get_raw_calibration_table(coefficients_table_id); };
 
         std::string device_name = (rs4xx_sku_names.end() != rs4xx_sku_names.find(dev_info.front().pid)) ? rs4xx_sku_names.at(dev_info.front().pid) : "RS4xx";
-        auto fw_version = _hw_monitor->get_firmware_version_string(GVD, fw_version_offset);
+        auto camera_fw_version = _hw_monitor->get_firmware_version_string(GVD, camera_fw_version_offset);
         auto serial = _hw_monitor->get_module_serial_string(GVD, module_serial_offset);
 
         auto& depth_ep = get_depth_endpoint();
@@ -267,9 +267,11 @@ namespace rsimpl2
             depth_ep.register_pixel_format(pf_y12i); // L+R - Calibration not rectified
         }
 
+        std::string motion_module_fw_version{""};
+
         /* Auto/Manual Exposure an White Balance XU controls have alternative implementations based on FW version*/
         /* Note that for AutoExposure there is a switch from PU to XU as well*/
-        if (fw_version >= std::string("5.5.8"))
+        if (camera_fw_version >= std::string("5.5.8"))
         {
             depth_ep.register_xu(ms_ctrl_depth_xu); // MS XU node
             depth_ep.register_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, std::make_shared<ms_xu_control_option>(depth_ep, ms_ctrl_depth_xu, MSXU_EXPOSURE)); // TODO - check if  ->register_xu can be reused
@@ -296,7 +298,7 @@ namespace rsimpl2
             depth_ep.register_option(RS2_OPTION_PROJECTOR_TEMPERATURE,
                                      std::make_shared<asic_and_projector_temperature_options>(depth_ep,
                                                                                              RS2_OPTION_PROJECTOR_TEMPERATURE));
- 
+            motion_module_fw_version = _hw_monitor->get_firmware_version_string(GVD, motion_module_fw_version_offset);
         }
         else
         {
@@ -313,6 +315,7 @@ namespace rsimpl2
 
         // TODO: These if conditions will be implemented as inheritance classes
         auto pid = dev_info.front().pid;
+        auto pid_hex_str = hexify(pid>>8) + hexify(pid);
 
         std::shared_ptr<uvc_endpoint> fisheye_ep;
         int fe_index{};
@@ -349,11 +352,15 @@ namespace rsimpl2
             for (auto& elem : hid_info)
             {
                 std::map<rs2_camera_info, std::string> camera_info = {{RS2_CAMERA_INFO_DEVICE_NAME, device_name},
-                                                                     {RS2_CAMERA_INFO_MODULE_NAME, "Motion Module"},
-                                                                     {RS2_CAMERA_INFO_DEVICE_SERIAL_NUMBER, serial},
-                                                                     {RS2_CAMERA_INFO_CAMERA_FIRMWARE_VERSION, fw_version},
-                                                                     {RS2_CAMERA_INFO_DEVICE_LOCATION, elem.device_path},
-                                                                     {RS2_CAMERA_INFO_DEVICE_DEBUG_OP_CODE, std::to_string(static_cast<int>(fw_cmd::GLD))}};
+                                                                      {RS2_CAMERA_INFO_MODULE_NAME, "Motion Module"},
+                                                                      {RS2_CAMERA_INFO_DEVICE_SERIAL_NUMBER, serial},
+                                                                      {RS2_CAMERA_INFO_CAMERA_FIRMWARE_VERSION, camera_fw_version},
+                                                                      {RS2_CAMERA_INFO_DEVICE_LOCATION, elem.device_path},
+                                                                      {RS2_CAMERA_INFO_DEVICE_DEBUG_OP_CODE, std::to_string(static_cast<int>(fw_cmd::GLD))},
+                                                                      {RS2_CAMERA_INFO_PRODUCT_ID, pid_hex_str}};
+                if (!motion_module_fw_version.empty())
+                    camera_info[RS2_CAMERA_INFO_MOTION_MODULE_FIRMWARE_VERSION] = motion_module_fw_version;
+
                 register_endpoint_info(hid_index, camera_info);
             }
         }
@@ -366,22 +373,30 @@ namespace rsimpl2
             if (element.mi == 0) // mi 0 is relate to DS5 device
             {
                 std::map<rs2_camera_info, std::string> camera_info = {{RS2_CAMERA_INFO_DEVICE_NAME, device_name},
-                                                                     {RS2_CAMERA_INFO_MODULE_NAME, "Stereo Module"},
-                                                                     {RS2_CAMERA_INFO_DEVICE_SERIAL_NUMBER, serial},
-                                                                     {RS2_CAMERA_INFO_CAMERA_FIRMWARE_VERSION, fw_version},
-                                                                     {RS2_CAMERA_INFO_DEVICE_LOCATION, element.device_path},
-                                                                     {RS2_CAMERA_INFO_DEVICE_DEBUG_OP_CODE, std::to_string(static_cast<int>(fw_cmd::GLD))},
-                                                                     {RS2_CAMERA_INFO_ADVANCED_MODE, ((advanced_mode)?"YES":"NO")}};
+                                                                      {RS2_CAMERA_INFO_MODULE_NAME, "Stereo Module"},
+                                                                      {RS2_CAMERA_INFO_DEVICE_SERIAL_NUMBER, serial},
+                                                                      {RS2_CAMERA_INFO_CAMERA_FIRMWARE_VERSION, camera_fw_version},
+                                                                      {RS2_CAMERA_INFO_DEVICE_LOCATION, element.device_path},
+                                                                      {RS2_CAMERA_INFO_DEVICE_DEBUG_OP_CODE, std::to_string(static_cast<int>(fw_cmd::GLD))},
+                                                                      {RS2_CAMERA_INFO_ADVANCED_MODE, ((advanced_mode)?"YES":"NO")},
+                                                                      {RS2_CAMERA_INFO_PRODUCT_ID, pid_hex_str}};
+                if (!motion_module_fw_version.empty())
+                    camera_info[RS2_CAMERA_INFO_MOTION_MODULE_FIRMWARE_VERSION] = motion_module_fw_version;
+
                 register_endpoint_info(_depth_device_idx, camera_info);
             }
             else if (fisheye_ep && element.pid == RS450T_PID && element.mi == 3) // mi 3 is related to Fisheye device
             {
                 std::map<rs2_camera_info, std::string> camera_info = {{RS2_CAMERA_INFO_DEVICE_NAME, device_name},
-                                                                     {RS2_CAMERA_INFO_MODULE_NAME, "Fisheye Camera"},
-                                                                     {RS2_CAMERA_INFO_DEVICE_SERIAL_NUMBER, serial},
-                                                                     {RS2_CAMERA_INFO_CAMERA_FIRMWARE_VERSION, fw_version},
-                                                                     {RS2_CAMERA_INFO_DEVICE_LOCATION, element.device_path},
-                                                                     {RS2_CAMERA_INFO_DEVICE_DEBUG_OP_CODE, std::to_string(static_cast<int>(fw_cmd::GLD))}};
+                                                                      {RS2_CAMERA_INFO_MODULE_NAME, "Fisheye Camera"},
+                                                                      {RS2_CAMERA_INFO_DEVICE_SERIAL_NUMBER, serial},
+                                                                      {RS2_CAMERA_INFO_CAMERA_FIRMWARE_VERSION, camera_fw_version},
+                                                                      {RS2_CAMERA_INFO_DEVICE_LOCATION, element.device_path},
+                                                                      {RS2_CAMERA_INFO_DEVICE_DEBUG_OP_CODE, std::to_string(static_cast<int>(fw_cmd::GLD))},
+                                                                      {RS2_CAMERA_INFO_PRODUCT_ID, pid_hex_str}};
+                if (!motion_module_fw_version.empty())
+                    camera_info[RS2_CAMERA_INFO_MOTION_MODULE_FIRMWARE_VERSION] = motion_module_fw_version;
+
                 register_endpoint_info(fe_index, camera_info);
             }
         }

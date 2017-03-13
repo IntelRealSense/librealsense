@@ -94,8 +94,9 @@ namespace rsimpl2 {
 
         enum gvd_fields
         {
-            fw_version_offset    = 12,
-            module_serial_offset = 48
+            camera_fw_version_offset        = 12,
+            module_serial_offset            = 48,
+            motion_module_fw_version_offset = 212
         };
 
         enum calibration_table_id

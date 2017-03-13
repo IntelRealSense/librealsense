@@ -17,7 +17,7 @@
 
 #pragma comment(lib, "opengl32.lib")
 
-#define WHITE_SPACES std::string("                                     ")
+#define WHITE_SPACES std::string("                                        ")
 
 using namespace rs2;
 
@@ -1395,7 +1395,7 @@ int main(int, char**) try
         // Flags for pop-up window - no window resize, move or collaps
         auto flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse;
 
-        const float panel_size = 300;
+        const float panel_size = 320;
         // Set window position and size
         ImGui::SetNextWindowPos({ 0, 0 });
         ImGui::SetNextWindowSize({ panel_size, static_cast<float>(h) });
@@ -1486,7 +1486,7 @@ int main(int, char**) try
                     {
                         label = to_string() << "Start All";
 
-                        if (ImGui::Button(label.c_str(), { 270, 0 }))
+                        if (ImGui::Button(label.c_str(), { 290, 0 }))
                         {
                             for (auto&& sub : model.subdevices)
                             {
