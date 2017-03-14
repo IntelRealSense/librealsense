@@ -1261,9 +1261,10 @@ namespace rsimpl
                         frame_object fo { (int)_buffers[buf.index].length,
                                         _buffers[buf.index].start };
 
-
-
-                        _callback(_profile, fo);
+                        if (buf.bytesused > 0)
+                            _callback(_profile, fo);
+                        else
+                            LOG_WARNING("Empty frame has arrived.");
 
                          memset(_buffers[buf.index].start, 0, _buffers[buf.index].length);
                         if(xioctl(_fd, VIDIOC_QBUF, &buf) < 0)

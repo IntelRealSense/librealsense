@@ -75,18 +75,9 @@ namespace rsimpl
 
         bool validate_frame(const request_mapping& mode, const void * frame) const override
         {
-            std::lock_guard<std::recursive_mutex> lock(_mtx);
-            // Validate that at least one byte of the image is nonzero
-            for (const uint8_t * it = (const uint8_t *)frame, *end = it + mode.pf->get_image_size(mode.profile.width, mode.profile.height); it != end; ++it)
-            {
-                if (*it)
-                {
-                    return true;
-                }
-            }
-
-            return false;
+            return true;
         }
+
         bool has_metadata(const request_mapping& mode, const void * frame, unsigned int byte_received)
         {
             std::lock_guard<std::recursive_mutex> lock(_mtx);
@@ -203,17 +194,7 @@ namespace rsimpl
 
         bool validate_frame(const request_mapping& mode, const void * frame) const override
         {
-            std::lock_guard<std::recursive_mutex> lock(_mtx);
-            // Validate that at least one byte of the image is nonzero
-            for (const uint8_t * it = (const uint8_t *)frame, *end = it + mode.pf->get_image_size(mode.profile.width, mode.profile.height); it != end; ++it)
-            {
-                if (*it)
-                {
-                    return true;
-                }
-            }
-
-            return false;
+            return true;
         }
 
         double get_frame_timestamp(const request_mapping& mode, const void * frame, unsigned int byte_received) override
