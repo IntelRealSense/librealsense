@@ -64,7 +64,9 @@ public:
         return params;
     }
 
+    bool _found_any_section = false;
 private:
+
     std::vector<char*> _params;
 };
 
@@ -74,7 +76,7 @@ inline bool file_exists(const char* filename)
     return f.good();
 }
 
-inline rs2::context make_context(const char* id)
+inline bool make_context(const char* id, rs2::context* ctx)
 {
     rs2::log_to_console(RS2_LOG_SEVERITY_INFO);
 
@@ -85,7 +87,7 @@ inline rs2::context make_context(const char* id)
     auto argc = command_line_params::instance().get_argc();
     auto argv = command_line_params::instance().get_argv();
 
-    rs2::context ctx;
+
     std::string base_filename;
     bool record = false;
     bool playback = false;
@@ -116,15 +118,26 @@ inline rs2::context make_context(const char* id)
     ss << id << "." << _counters[id] << ".test";
     auto section = ss.str();
 
-    if (record)
+
+    try
     {
-        ctx = rs2::recording_context(base_filename, section, RS2_RECORDING_MODE_BLANK_FRAMES);
+        if (record)
+        {
+            *ctx = rs2::recording_context(base_filename, section, RS2_RECORDING_MODE_BLANK_FRAMES);
+        }
+        else if (playback)
+        {
+            *ctx = rs2::mock_context(base_filename, section);
+        }
+        command_line_params::instance()._found_any_section = true;
+        return true;
     }
-    else if (playback)
+    catch (...)
     {
-        ctx = rs2::mock_context(base_filename, section);
+
+        return false;
     }
-    return ctx;
+
 }
 
 // Can be passed to rs2_error ** parameters, requires that an error is indicated with the specific provided message

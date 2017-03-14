@@ -376,9 +376,10 @@ namespace rsimpl2
 
     void notifications_proccessor::set_callback(notifications_callback_ptr callback)
     {
-        std::lock_guard<std::mutex> lock(_callback_mutex);
 
         _dispatcher.stop();
+
+        std::lock_guard<std::mutex> lock(_callback_mutex);
         _callback = std::move(callback);
         _dispatcher.start();
     }

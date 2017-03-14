@@ -21,5 +21,5 @@ int main(int argc, char* const argv[])
     }
 
     auto result = Catch::Session().run(static_cast<int>(new_argvs.size()), new_argvs.data());
-    return result;
+    return command_line_params::instance()._found_any_section? result:-1;
 }
