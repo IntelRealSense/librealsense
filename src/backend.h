@@ -107,7 +107,7 @@ namespace rsimpl2
 
         struct uvc_device_info
         {
-            std::string id = ""; // to distingwish between different pins of the same device
+            std::string id = ""; // to distinguish between different pins of the same device
             uint16_t vid;
             uint16_t pid;
             uint16_t mi;
