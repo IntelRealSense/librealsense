@@ -21,5 +21,11 @@ int main(int argc, char* const argv[])
     }
 
     auto result = Catch::Session().run(static_cast<int>(new_argvs.size()), new_argvs.data());
-    return command_line_params::instance()._found_any_section? result:-1;
+
+    if(!command_line_params::instance()._found_any_section)
+    {
+        std::cout<<"didn't run any test\n";
+        return -1;
+    }
+    return result;
 }

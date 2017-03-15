@@ -31,6 +31,9 @@ void ms_xu_control_option::encode_data(const float& val, std::vector<uint8_t>& _
     switch (state) // The state is encoded in the first 8 bits
     {
     case 0:
+        // Work-around: current spec does not define how to find the correct value to set
+        // when moving from auto to manual mode, so we choose to set default
+        std::memcpy(&_transmit_buf[msxu_value], &_def_value, sizeof(_def_value));
         _transmit_buf[msxu_mode]= MSXU_MODE_D1_MANUAL;
         break;
     case 1:
@@ -56,20 +59,6 @@ float ms_xu_control_option::decode_data(const std::vector<uint8_t>& _transmit_bu
         throw invalid_value_exception(msxu_map.at((msxu_ctrl)_id)._desc + " mode is invalid: "
                                         + std::to_string((uint8_t)_transmit_buf[msxu_mode]));
     }
-}
-
-option_range ms_xu_data_option::get_range() const
-{
-    // MS XU range shall be hard-coded till a proper data parsing is provided for cross-platform
-    option_range result {-1,-1,-1,-1};
-    switch (this->_id)
-    {                                       //  min     max     step    default
-        case MSXU_EXPOSURE:     result =    {   0,    160000,    1,      0};  break;
-        case MSXU_WHITEBALANCE: result =    { 2800,   6500,      1,    2800};  break;
-        default:  throw invalid_value_exception(msxu_map.at((msxu_ctrl)_id)._desc + " get range property is not supported");
-    }
-
-    return result;
 }
 
 void ms_xu_data_option::encode_data(const float& val, std::vector<uint8_t>& _transmit_buf) const
