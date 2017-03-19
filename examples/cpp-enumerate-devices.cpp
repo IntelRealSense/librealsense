@@ -70,7 +70,7 @@ int main(int argc, char** argv) try
         {
             auto param = static_cast<rs2_camera_info>(j);
             if (dev.supports(param))
-                cout << "    " << left << setw(20) << rs2_camera_info_to_string(rs2_camera_info(param))
+                cout << "    " << left << setw(30) << rs2_camera_info_to_string(rs2_camera_info(param))
                 << ": \t" << dev.get_camera_info(param) << endl;
         }
 

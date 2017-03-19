@@ -274,6 +274,8 @@ namespace rsimpl2
         }
 
         std::string motion_module_fw_version{""};
+        auto pid = dev_info.front().pid;
+        auto pid_hex_str = hexify(pid>>8) + hexify(pid);
 
         /* Auto/Manual Exposure an White Balance XU controls have alternative implementations based on FW version*/
         /* Note that for AutoExposure there is a switch from PU to XU as well*/
@@ -316,7 +318,8 @@ namespace rsimpl2
             depth_ep.register_option(RS2_OPTION_PROJECTOR_TEMPERATURE,
                                      std::make_shared<asic_and_projector_temperature_options>(depth_ep,
                                                                                              RS2_OPTION_PROJECTOR_TEMPERATURE));
-            motion_module_fw_version = _hw_monitor->get_firmware_version_string(GVD, motion_module_fw_version_offset);
+            if (pid == RS450T_PID)
+                motion_module_fw_version = _hw_monitor->get_firmware_version_string(GVD, motion_module_fw_version_offset);
         }
         else
         {
@@ -332,9 +335,6 @@ namespace rsimpl2
         depth_ep.set_roi_method(std::make_shared<ds5_auto_exposure_roi_method>(*_hw_monitor));
 
         // TODO: These if conditions will be implemented as inheritance classes
-        auto pid = dev_info.front().pid;
-        auto pid_hex_str = hexify(pid>>8) + hexify(pid);
-
         std::shared_ptr<uvc_endpoint> fisheye_ep;
         int fe_index{};
         if (pid == RS450T_PID)
