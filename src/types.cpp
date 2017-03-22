@@ -138,6 +138,7 @@ namespace rsimpl2
         CASE(ASIC_TEMPERATURE)
         CASE(ERROR_POLLING_ENABLED)
         CASE(PROJECTOR_TEMPERATURE)
+        CASE(OUTPUT_TRIGGER_ENABLED)
         default: assert(!is_valid(value)); return unknown;
         }
         #undef CASE

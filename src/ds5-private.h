@@ -22,6 +22,7 @@ namespace rsimpl2 {
         const uint8_t DS5_EXPOSURE                        = 3;
         const uint8_t DS5_LASER_POWER                     = 4;
         const uint8_t DS5_ERROR_REPORTING                 = 7;
+        const uint8_t DS5_EXT_TRIGGER                     = 8;
         const uint8_t DS5_ASIC_AND_PROJECTOR_TEMPERATURES = 9;
 
 

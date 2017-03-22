@@ -219,12 +219,6 @@ namespace rsimpl2
                     DS5_LASER_POWER, "Manual laser power in mw. applicable only when laser power mode is set to Manual"));
         }
 
-        /* depth_ep->register_option(RS2_OPTION_OUTPUT_TRIGGER_ENABLED,
-            std::make_shared<uvc_xu_option<uint16_t>>(*depth_ep,
-                depth_xu,
-                DS5_EXT_TRIG, "Generate trigger from the camera to external device once per frame"));
-                */
-
         depth_ep->set_pose({ { { 1,0,0 },{ 0,1,0 },{ 0,0,1 } },{ 0,0,0 } });
 
         return depth_ep;
@@ -312,6 +306,9 @@ namespace rsimpl2
 
             }
 
+            depth_ep.register_option(RS2_OPTION_OUTPUT_TRIGGER_ENABLED,
+                                        std::make_shared<uvc_xu_option<uint8_t>>(depth_ep, depth_xu, DS5_EXT_TRIGGER, 
+                                            "Generate trigger from the camera to external device once per frame"));
 
             auto error_control = std::unique_ptr<uvc_xu_option<uint8_t>>(new uvc_xu_option<uint8_t>(depth_ep, depth_xu, DS5_ERROR_REPORTING, "Error reporting"));
 

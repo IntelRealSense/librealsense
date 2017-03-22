@@ -27,7 +27,7 @@ int main()
     device dev = ctx.query_devices().front();
 
     util::config config;
-    config.enable_stream(RS_STREAM_COLOR, 640, 480, 30, RS_FORMAT_BGR8);
+    config.enable_stream(RS2_STREAM_COLOR, 640, 480, 30, RS2_FORMAT_BGR8);
     auto stream = config.open(dev);
 
     frame_queue queue;

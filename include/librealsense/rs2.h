@@ -141,8 +141,9 @@ typedef enum rs2_option
     RS2_OPTION_AUTO_EXPOSURE_MODE                         , /**< Auto-Exposure modes: Static, Anti-Flicker and Hybrid */
     RS2_OPTION_AUTO_EXPOSURE_ANTIFLICKER_RATE             , /**< Auto-Exposure anti-flicker rate, can be 50 or 60 Hz */
     RS2_OPTION_ASIC_TEMPERATURE                           , /**< Current Asic Temperature */
-    RS2_OPTION_ERROR_POLLING_ENABLED                     , /**< disable error handling */
+    RS2_OPTION_ERROR_POLLING_ENABLED                      , /**< disable error handling */
     RS2_OPTION_PROJECTOR_TEMPERATURE                      , /**< Current Projector Temperature */
+    RS2_OPTION_OUTPUT_TRIGGER_ENABLED                     , /**< Enable / disable trigger to be outputed from the camera to any external device on every depth frame */
     RS2_OPTION_COUNT                                      , /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
 } rs2_option;
 
