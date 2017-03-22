@@ -4,6 +4,7 @@
 #include <mutex>
 #include <chrono>
 #include <vector>
+#include <iterator>
 
 #include "device.h"
 #include "context.h"
@@ -170,15 +171,28 @@ namespace rsimpl2
     }
 
     std::shared_ptr<hid_endpoint> ds5_camera::create_hid_device(const uvc::backend& backend,
-                                                                const std::vector<uvc::hid_device_info>& all_hid_infos)
+                                                                const std::vector<uvc::hid_device_info>& all_hid_infos,
+                                                                const firmware_version& camera_fw_version)
     {
         if (all_hid_infos.empty())
         {
             throw std::runtime_error("HID device is missing!");
         }
 
+        static const char* custom_sensor_fw_ver = "5.6.0.0";
+        if (camera_fw_version >= firmware_version(custom_sensor_fw_ver))
+        {
+            static const std::vector<std::pair<std::string, stream_profile>> custom_sensor_profiles =
+                {{std::string("custom"), {RS2_STREAM_GPIO1, 1, 1, 1, RS2_FORMAT_GPIO_RAW}},
+                 {std::string("custom"), {RS2_STREAM_GPIO2, 1, 1, 1, RS2_FORMAT_GPIO_RAW}},
+                 {std::string("custom"), {RS2_STREAM_GPIO3, 1, 1, 1, RS2_FORMAT_GPIO_RAW}},
+                 {std::string("custom"), {RS2_STREAM_GPIO4, 1, 1, 1, RS2_FORMAT_GPIO_RAW}}};
+            std::copy(custom_sensor_profiles.begin(), custom_sensor_profiles.end(), std::back_inserter(sensor_name_and_hid_profiles));
+        }
+
         auto hid_ep = std::make_shared<hid_endpoint>(backend.create_hid_device(all_hid_infos.front()),
-                                                                               std::unique_ptr<frame_timestamp_reader>(new ds5_hid_timestamp_reader()),
+                                                                               std::unique_ptr<frame_timestamp_reader>(new ds5_iio_hid_timestamp_reader()),
+                                                                               std::unique_ptr<frame_timestamp_reader>(new ds5_custom_hid_timestamp_reader()),
                                                                                fps_and_sampling_frequency_per_rs2_stream,
                                                                                sensor_name_and_hid_profiles,
                                                                                backend.create_time_service());
@@ -186,6 +200,14 @@ namespace rsimpl2
         hid_ep->register_pixel_format(pf_gyro_axes);
 
         hid_ep->set_pose({ { { 1,0,0 },{ 0,1,0 },{ 0,0,1 } },{ 0,0,0 } });
+
+        if (camera_fw_version >= firmware_version(custom_sensor_fw_ver))
+        {
+            hid_ep->register_option(RS2_OPTION_MOTION_MODULE_TEMPERATURE,
+                                    std::make_shared<motion_module_temperature_option>(*hid_ep));
+            hid_ep->register_pixel_format(pf_gpio_timestamp);
+        }
+
         return hid_ep;
     }
 
@@ -293,7 +315,7 @@ namespace rsimpl2
         _coefficients_table_raw = [this]() { return get_raw_calibration_table(coefficients_table_id); };
 
         std::string device_name = (rs4xx_sku_names.end() != rs4xx_sku_names.find(dev_info.front().pid)) ? rs4xx_sku_names.at(dev_info.front().pid) : "RS4xx";
-        auto camera_fw_version = _hw_monitor->get_firmware_version_string(GVD, camera_fw_version_offset);
+        auto camera_fw_version = firmware_version(_hw_monitor->get_firmware_version_string(GVD, camera_fw_version_offset));
         auto serial = _hw_monitor->get_module_serial_string(GVD, module_serial_offset);
 
 
@@ -313,7 +335,7 @@ namespace rsimpl2
         std::shared_ptr<option> auto_exposure;
         /* Auto/Manual Exposure an White Balance XU controls have alternative implementations based on FW version*/
         /* Note that for AutoExposure there is a switch from PU to XU as well*/
-        if (camera_fw_version >= std::string("5.5.8"))
+        if (camera_fw_version >= firmware_version("5.5.8.0"))
         {
             //if hw_monitor was created by usb replace it xu
             if(hwm_device.size()>0)
@@ -425,13 +447,13 @@ namespace rsimpl2
             fisheye_ep->set_pose({ { { 1,0,0 },{ 0,1,0 },{ 0,0,1 } },{ 0,0,0 } });
 
             // Add hid endpoint
-            auto hid_index = add_endpoint(create_hid_device(backend, hid_info));
+            auto hid_index = add_endpoint(create_hid_device(backend, hid_info, camera_fw_version));
             for (auto& elem : hid_info)
             {
                 std::map<rs2_camera_info, std::string> camera_info = {{RS2_CAMERA_INFO_DEVICE_NAME, device_name},
                                                                       {RS2_CAMERA_INFO_MODULE_NAME, "Motion Module"},
                                                                       {RS2_CAMERA_INFO_DEVICE_SERIAL_NUMBER, serial},
-                                                                      {RS2_CAMERA_INFO_CAMERA_FIRMWARE_VERSION, camera_fw_version},
+                                                                      {RS2_CAMERA_INFO_CAMERA_FIRMWARE_VERSION, static_cast<const char*>(camera_fw_version)},
                                                                       {RS2_CAMERA_INFO_DEVICE_LOCATION, elem.device_path},
                                                                       {RS2_CAMERA_INFO_DEVICE_DEBUG_OP_CODE, std::to_string(static_cast<int>(fw_cmd::GLD))},
                                                                       {RS2_CAMERA_INFO_PRODUCT_ID, pid_hex_str}};
@@ -452,7 +474,7 @@ namespace rsimpl2
                 std::map<rs2_camera_info, std::string> camera_info = {{RS2_CAMERA_INFO_DEVICE_NAME, device_name},
                                                                       {RS2_CAMERA_INFO_MODULE_NAME, "Stereo Module"},
                                                                       {RS2_CAMERA_INFO_DEVICE_SERIAL_NUMBER, serial},
-                                                                      {RS2_CAMERA_INFO_CAMERA_FIRMWARE_VERSION, camera_fw_version},
+                                                                      {RS2_CAMERA_INFO_CAMERA_FIRMWARE_VERSION, static_cast<const char*>(camera_fw_version)},
                                                                       {RS2_CAMERA_INFO_DEVICE_LOCATION, element.device_path},
                                                                       {RS2_CAMERA_INFO_DEVICE_DEBUG_OP_CODE, std::to_string(static_cast<int>(fw_cmd::GLD))},
                                                                       {RS2_CAMERA_INFO_ADVANCED_MODE, ((advanced_mode)?"YES":"NO")},
@@ -467,7 +489,7 @@ namespace rsimpl2
                 std::map<rs2_camera_info, std::string> camera_info = {{RS2_CAMERA_INFO_DEVICE_NAME, device_name},
                                                                       {RS2_CAMERA_INFO_MODULE_NAME, "Fisheye Camera"},
                                                                       {RS2_CAMERA_INFO_DEVICE_SERIAL_NUMBER, serial},
-                                                                      {RS2_CAMERA_INFO_CAMERA_FIRMWARE_VERSION, camera_fw_version},
+                                                                      {RS2_CAMERA_INFO_CAMERA_FIRMWARE_VERSION, static_cast<const char*>(camera_fw_version)},
                                                                       {RS2_CAMERA_INFO_DEVICE_LOCATION, element.device_path},
                                                                       {RS2_CAMERA_INFO_DEVICE_DEBUG_OP_CODE, std::to_string(static_cast<int>(fw_cmd::GLD))},
                                                                       {RS2_CAMERA_INFO_PRODUCT_ID, pid_hex_str}};

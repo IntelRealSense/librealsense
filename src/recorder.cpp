@@ -310,7 +310,6 @@ namespace rsimpl2
                     insert.bind(2, (int)device_type::hid_sensor);
                     insert.bind(3, hid_info.name.c_str());
                     insert.bind(4, "");
-                    insert.bind(5, (int)hid_info.iio);
                     insert();
                 }
 
@@ -321,7 +320,6 @@ namespace rsimpl2
                     insert.bind(2, (int)device_type::hid_input);
                     insert.bind(3, hid_info.name.c_str());
                     insert.bind(4, "");
-                    insert.bind(5, (int)hid_info.index);
                     insert();
                 }
 
@@ -445,7 +443,6 @@ namespace rsimpl2
                 {
                     hid_sensor info;
                     info.name = row[2].get_string();
-                    info.iio = row[4].get_int();
 
                     result->hid_sensors.push_back(info);
                 }
@@ -791,18 +788,17 @@ namespace rsimpl2
             }, _entity_id, call_type::hid_stop_capture);
         }
 
-        void record_hid_device::start_capture(const std::vector<iio_profile>& iio_profiles, hid_callback callback)
+        void record_hid_device::start_capture(const std::vector<hid_profile>& hid_profiles, hid_callback callback)
         {
-            _owner->try_record([this, callback, &iio_profiles](recording* rec, lookup_key k)
+            _owner->try_record([this, callback, &hid_profiles](recording* rec, lookup_key k)
             {
-                _source->start_capture(iio_profiles, [this, callback](const sensor_data& sd)
+                _source->start_capture(hid_profiles, [this, callback](const sensor_data& sd)
                 {
                     _owner->try_record([this, callback, &sd](recording* rec1, lookup_key key1)
                     {
                         auto&& c = rec1->add_call(key1);
                         c.param1 = rec1->save_blob(sd.fo.pixels, sd.fo.frame_size);
-                        c.param2 = sd.sensor.iio;
-                        c.param3 = rec1->save_blob(sd.fo.metadata, sd.fo.metadata_size);
+                        c.param2 = rec1->save_blob(sd.fo.metadata, sd.fo.metadata_size);
 
 
                         c.inline_string = sd.sensor.name;
@@ -812,7 +808,7 @@ namespace rsimpl2
                 });
 
                 auto& call = rec->add_call(k);
-                call.param1 = rec->save_blob(iio_profiles.data(), iio_profiles.size() * sizeof(iio_profile));
+                call.param1 = rec->save_blob(hid_profiles.data(), hid_profiles.size() * sizeof(hid_profile));
             }, _entity_id, call_type::hid_start_capture);
         }
 
@@ -824,6 +820,24 @@ namespace rsimpl2
                 rec->save_hid_sensors(res, k);
                 return res;
             }, _entity_id, call_type::hid_get_sensors);
+        }
+
+        std::vector<uint8_t> record_hid_device::get_custom_report_data(const std::string& custom_sensor_name,
+                                                                       const std::string& report_name,
+                                                                       custom_sensor_report_field report_field)
+        {
+            return _owner->try_record([&](recording* rec, lookup_key k)
+            {
+                auto result = _source->get_custom_report_data(custom_sensor_name, report_name, report_field);
+
+                auto&& c = rec->add_call(k);
+                c.param1 = rec->save_blob((void*)result.data(), result.size());
+                c.param2 = rec->save_blob(custom_sensor_name.c_str(), custom_sensor_name.size() + 1);
+                c.param3 = rec->save_blob(report_name.c_str(), report_name.size() + 1);
+                c.param4 = report_field;
+
+                return result;
+            }, _entity_id, call_type::hid_get_custom_report_data);
         }
 
         string record_uvc_device::get_device_location() const
@@ -1205,7 +1219,7 @@ namespace rsimpl2
             _callback_thread.join();
         }
 
-        void playback_hid_device::start_capture(const std::vector<iio_profile>& iio_profiles, hid_callback callback)
+        void playback_hid_device::start_capture(const std::vector<hid_profile>& hid_profiles, hid_callback callback)
         {
             lock_guard<mutex> lock(_callback_mutex);
             auto stored = _rec->find_call(call_type::hid_start_capture, _entity_id);
@@ -1221,6 +1235,20 @@ namespace rsimpl2
         vector<hid_sensor> playback_hid_device::get_sensors()
         {
             return _rec->load_hid_sensors2_list(_entity_id);
+        }
+
+        std::vector<uint8_t> playback_hid_device::get_custom_report_data(const std::string& custom_sensor_name,
+                                                                         const std::string& report_name,
+                                                                         custom_sensor_report_field report_field)
+        {
+            auto&& c = _rec->find_call(call_type::hid_get_custom_report_data, _entity_id, [&](const call& call_found)
+            {
+                return custom_sensor_name == std::string((const char*)_rec->load_blob(call_found.param2).data()) &&
+                        report_name == std::string((const char*)_rec->load_blob(call_found.param3).data()) &&
+                        report_field == call_found.param4;
+            });
+
+            return _rec->load_blob(c.param1);
         }
 
         void playback_hid_device::callback_thread()
@@ -1242,7 +1270,6 @@ namespace rsimpl2
                     sd.fo.metadata = (void*)metadata.data();
                     sd.fo.metadata_size = metadata.size();
 
-                    sd.sensor.iio = iio;
                     sd.sensor.name = sensor_name;
 
 //                    std::cout<<"c_ptr.param1 "<<c_ptr->param1;

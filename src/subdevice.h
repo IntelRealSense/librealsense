@@ -187,14 +187,17 @@ namespace rsimpl2
     {
     public:
         explicit hid_endpoint(std::shared_ptr<uvc::hid_device> hid_device,
-                              std::unique_ptr<frame_timestamp_reader> timestamp_reader,
+                              std::unique_ptr<frame_timestamp_reader> hid_iio_timestamp_reader,
+                              std::unique_ptr<frame_timestamp_reader> custom_hid_timestamp_reader,
                               std::map<rs2_stream, std::map<unsigned, unsigned>> fps_and_sampling_frequency_per_rs2_stream,
                               std::vector<std::pair<std::string, stream_profile>> sensor_name_and_hid_profiles,
                               std::shared_ptr<uvc::time_service> ts)
             : endpoint(ts),_hid_device(hid_device),
-              _timestamp_reader(std::move(timestamp_reader)),
+              _hid_iio_timestamp_reader(std::move(hid_iio_timestamp_reader)),
+              _custom_hid_timestamp_reader(std::move(custom_hid_timestamp_reader)),
               _fps_and_sampling_frequency_per_rs2_stream(fps_and_sampling_frequency_per_rs2_stream),
-              _sensor_name_and_hid_profiles(sensor_name_and_hid_profiles)
+              _sensor_name_and_hid_profiles(sensor_name_and_hid_profiles),
+              _is_configured_stream(RS2_STREAM_COUNT)
         {
             _hid_device->open();
             for (auto& elem : _hid_device->get_sensors())
@@ -215,19 +218,32 @@ namespace rsimpl2
 
         void stop_streaming();
 
+        std::vector<uint8_t> get_custom_report_data(const std::string& custom_sensor_name,
+                                                    const std::string& report_name,
+                                                    uvc::custom_sensor_report_field report_field)
+        {
+            return _hid_device->get_custom_report_data(custom_sensor_name, report_name, report_field);
+        }
+
     private:
 
         const std::map<rs2_stream, uint32_t> stream_and_fourcc = {{RS2_STREAM_GYRO,  'GYRO'},
-                                                                 {RS2_STREAM_ACCEL, 'ACCL'}};
+                                                                  {RS2_STREAM_ACCEL, 'ACCL'},
+                                                                  {RS2_STREAM_GPIO1, 'GPIO'},
+                                                                  {RS2_STREAM_GPIO2, 'GPIO'},
+                                                                  {RS2_STREAM_GPIO3, 'GPIO'},
+                                                                  {RS2_STREAM_GPIO4, 'GPIO'}};
 
         const std::vector<std::pair<std::string, stream_profile>> _sensor_name_and_hid_profiles;
         std::map<rs2_stream, std::map<uint32_t, uint32_t>> _fps_and_sampling_frequency_per_rs2_stream;
         std::shared_ptr<uvc::hid_device> _hid_device;
         std::mutex _configure_lock;
-        std::map<uint32_t, stream_profile> _configured_profiles;
+        std::map<std::string, stream_profile> _configured_profiles;
+        std::vector<bool> _is_configured_stream;
         std::vector<uvc::hid_sensor> _hid_sensors;
-        std::map<uint32_t, request_mapping> _iio_mapping;
-        std::unique_ptr<frame_timestamp_reader> _timestamp_reader;
+        std::map<std::string, request_mapping> _hid_mapping;
+        std::unique_ptr<frame_timestamp_reader> _hid_iio_timestamp_reader;
+        std::unique_ptr<frame_timestamp_reader> _custom_hid_timestamp_reader;
 
         std::vector<stream_profile> get_sensor_profiles(std::string sensor_name) const;
 
@@ -235,9 +251,7 @@ namespace rsimpl2
 
         std::vector<stream_profile> get_device_profiles();
 
-        uint32_t rs2_stream_to_sensor_iio(rs2_stream stream) const;
-
-        uint32_t get_iio_by_name(const std::string& name) const;
+        const std::string& rs2_stream_to_sensor_name(rs2_stream stream) const;
 
         uint32_t stream_to_fourcc(rs2_stream stream) const;
 

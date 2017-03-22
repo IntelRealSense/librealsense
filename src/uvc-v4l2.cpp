@@ -51,6 +51,7 @@
 const size_t MAX_DEV_PARENT_DIR = 10;
 
 const std::string IIO_ROOT_PATH("/sys/bus/iio/devices/iio:device");
+const std::string HID_CUSTOM_PATH("/sys/bus/platform/drivers/hid_sensor_custom");
 
 const size_t META_DATA_SIZE = 256;      // bytes
 const size_t HID_METADATA_SIZE = 8;     // bytes
@@ -229,23 +230,50 @@ namespace rsimpl2
         // manage an IIO input. or what is called a scan.
         class hid_input {
         public:
-            hid_input() {}
-
-            // initialize the input by reading the input parameters.
-            void init(const std::string& iio_device_path, const std::string& input_name)
+            hid_input(const std::string& iio_device_path, const std::string& input_name)
             {
-                char buffer[1024];
-
                 info.device_path = iio_device_path;
-                std::string input_prefix = "in_";
+                static const std::string input_prefix = "in_";
                 // validate if input includes th "in_" prefix. if it is . remove it.
-                if (input_name.substr(0,input_prefix.size()) == input_prefix) {
+                if (input_name.substr(0,input_prefix.size()) == input_prefix)
+                {
                     info.input = input_name.substr(input_prefix.size(), input_name.size());
-                } else {
+                }
+                else
+                {
                     info.input = input_name;
                 }
 
-                std::string input_suffix = "_en";
+                init();
+            }
+
+            // enable scan input. doing so cause the input to be part of the data provided in the polling.
+            void enable(bool is_enable)
+            {
+                auto input_data = is_enable ? 1 : 0;
+                // open the element requested and enable and disable.
+                auto element_path = info.device_path + "/scan_elements/" + "in_" + info.input + "_en";
+                std::ofstream iio_device_file(element_path);
+
+                if (!iio_device_file.is_open())
+                {
+                    throw linux_backend_exception(to_string() << "Failed to open scan_element " << element_path);
+                }
+                iio_device_file << input_data;
+                iio_device_file.close();
+
+                info.enabled = is_enable;
+            }
+
+            const hid_input_info& get_hid_input_info() const { return info; }
+
+        private:
+            // initialize the input by reading the input parameters.
+            void init()
+            {
+                char buffer[1024] = {};
+
+                static const std::string input_suffix = "_en";
                 // check if input contains the "en" suffix, if it is . remove it.
                 if (info.input.substr(info.input.size()-input_suffix.size(), input_suffix.size()) == input_suffix) {
                     info.input = info.input.substr(0, info.input.size()-input_suffix.size());
@@ -315,105 +343,317 @@ namespace rsimpl2
                 device_enabled_file.close();
             }
 
-            // enable scan input. doing so cause the input to be part of the data provided in the polling.
-            void enable(bool is_enable)
-            {
-                auto input_data = is_enable ? 1 : 0;
-                // open the element requested and enable and disable.
-                auto element_path = info.device_path + "/scan_elements/" + "in_" + info.input + "_en";
-                std::ofstream iio_device_file(element_path);
-
-                if (!iio_device_file.is_open())
-                {
-                    throw linux_backend_exception(to_string() << "Failed to open scan_element " << element_path);
-                }
-                iio_device_file << input_data;
-                iio_device_file.close();
-
-                info.enabled = is_enable;
-            }
-
-            const hid_input_info& get_hid_input_info() const { return info; }
-
-        private:
             hid_input_info info;
         };
 
-        // declare device sensor with all of its inputs.
-        class iio_hid_device {
+        class hid_custom_sensor {
         public:
-            iio_hid_device()
-                : vid(0),
-                  pid(0),
-                  iio_device(-1),
-                  sensor_name(""),
-                  callback(nullptr),
-                  capturing(false),
-                  sampling_frequency_name("")
-            {}
+            hid_custom_sensor(const std::string& device_path, const std::string& sensor_name)
+                : _custom_device_path(device_path),
+                  _custom_sensor_name(sensor_name),
+                  _callback(nullptr),
+                  _is_capturing(false),
+                  _custom_device_name(""),
+                  _fd(0),
+                  _pipe_fd{}
+            {
+                init();
+            }
 
-            ~iio_hid_device()
+            ~hid_custom_sensor()
+            {
+                stop_capture();
+            }
+
+            std::vector<uint8_t> get_report_data(const std::string& report_name, custom_sensor_report_field report_field)
+            {
+                static const std::map<custom_sensor_report_field, std::string> report_fields = {{minimum,   "-minimum"},
+                                                                                                {maximum,   "-maximum"},
+                                                                                                {name,      "-name"},
+                                                                                                {size,      "-size"},
+                                                                                                {unit_expo, "-unit-expo"},
+                                                                                                {units,     "-units"},
+                                                                                                {value,     "-value"}};
+                try{
+                    auto& report_folder = _reports.at(report_name);
+                    auto report_path = _custom_device_path + "/" + report_folder + "/" + report_folder + report_fields.at(report_field);
+                    return read_report(report_path);
+                }
+                catch(std::out_of_range)
+                {
+                    throw invalid_value_exception(to_string() << "report directory name " << report_name << " not found!");
+                }
+            }
+
+            const std::string& get_sensor_name() const { return _custom_sensor_name; }
+
+            // start capturing and polling.
+            void start_capture(hid_callback sensor_callback)
+            {
+                if (_is_capturing)
+                    return;
+
+                std::ostringstream device_path;
+                device_path << "/dev/" << _custom_device_name;
+
+                auto read_device_path_str = device_path.str();
+                std::ifstream device_file(read_device_path_str);
+
+                // find device in file system.
+                if (!device_file.good())
+                {
+                    throw linux_backend_exception("custom hid device is busy or not found!");
+                }
+
+                device_file.close();
+
+                enable(true);
+
+                const auto max_retries = 10;
+                auto retries = 0;
+                while(++retries < max_retries)
+                {
+                    if ((_fd = open(read_device_path_str.c_str(), O_RDONLY | O_NONBLOCK)) > 0)
+                        break;
+
+                    LOG_WARNING("open() failed!");
+                    std::this_thread::sleep_for(std::chrono::milliseconds(5));
+                }
+
+                if ((retries == max_retries) && (_fd <= 0))
+                {
+                    enable(false);
+                    throw linux_backend_exception("open() failed with all retries!");
+                }
+
+                if (pipe(_pipe_fd) < 0)
+                {
+                    close(_fd);
+                    enable(false);
+                    throw linux_backend_exception("hid_custom_sensor: Cannot create pipe!");
+                }
+
+                _callback = sensor_callback;
+                _is_capturing = true;
+                _hid_thread = std::unique_ptr<std::thread>(new std::thread([this, read_device_path_str](){
+                    static const uint32_t buf_len = 128;
+                    const uint32_t channel_size = 24; // TODO: why 24?
+                    std::vector<uint8_t> raw_data(channel_size * buf_len);
+
+                    do {
+                        fd_set fds;
+                        FD_ZERO(&fds);
+                        FD_SET(_fd, &fds);
+                        FD_SET(_pipe_fd[0], &fds);
+
+                        int max_fd = std::max(_pipe_fd[0], _fd);
+                        size_t read_size = 0;
+
+                        struct timeval tv = {5,0};
+                        auto val = select(max_fd + 1, &fds, NULL, NULL, &tv);
+                        if (val < 0)
+                        {
+                            // TODO: write to log?
+                            continue;
+                        }
+                        else if (val > 0)
+                        {
+                            if(FD_ISSET(_pipe_fd[0], &fds))
+                            {
+                                if(!_is_capturing)
+                                {
+                                    LOG_INFO("hid_custom_sensor: Stream finished");
+                                    return;
+                                }
+                            }
+                            else if (FD_ISSET(_fd, &fds))
+                            {
+                                read_size = read(_fd, raw_data.data(), raw_data.size());
+                                if (read_size <= 0 )
+                                    continue;
+                            }
+                            else
+                            {
+                                // TODO: write to log?
+                                continue;
+                            }
+
+                            for (auto i = 0; i < read_size / channel_size; ++i)
+                            {
+                                auto p_raw_data = raw_data.data() + channel_size * i;
+
+                                // TODO: code refactoring to reduce latency
+                                sensor_data sens_data{};
+                                sens_data.sensor = hid_sensor{get_sensor_name()};
+
+                                sens_data.fo = {channel_size, channel_size, p_raw_data, p_raw_data};
+                                this->_callback(sens_data);
+                            }
+                        }
+                        else
+                        {
+                            LOG_WARNING("hid_custom_sensor: Frames didn't arrived within 5 seconds");
+                        }
+                    } while(this->_is_capturing);
+                }));
+            }
+
+            void stop_capture()
+            {
+                if (!_is_capturing)
+                    return;
+
+                _is_capturing = false;
+                signal_stop();
+                _hid_thread->join();
+                enable(false);
+                _callback = NULL;
+
+                if(::close(_fd) < 0)
+                    throw linux_backend_exception("hid_custom_sensor: close(_fd) failed");
+
+                if(::close(_pipe_fd[0]) < 0)
+                   throw linux_backend_exception("hid_custom_sensor: close(_pipe_fd[0]) failed");
+                if(::close(_pipe_fd[1]) < 0)
+                   throw linux_backend_exception("hid_custom_sensor: close(_pipe_fd[1]) failed");
+
+                _fd = 0;
+                _pipe_fd[0] = _pipe_fd[1] = 0;
+            }
+
+        private:
+            std::vector<uint8_t> read_report(const std::string& name_report_path)
+            {
+                auto fd = open(name_report_path.c_str(), O_RDONLY | O_NONBLOCK);
+                if (fd < 0)
+                    throw linux_backend_exception("Failed to open report!");
+
+                if (!_is_capturing)
+                    enable(true);
+
+                std::vector<uint8_t> buffer;
+                buffer.resize(MAX_INPUT);
+                auto read_size = read(fd, buffer.data(), buffer.size());
+                close(fd);
+
+                if (read_size <= 0)
+                    throw linux_backend_exception("Failed to read custom report!");
+
+                buffer.resize(read_size);
+                buffer[buffer.size() - 1] = '\0'; // Replace '\n' with '\0'
+                return buffer;
+            }
+
+            void init()
+            {
+                static const char* prefix_feature_name = "feature";
+                static const char* suffix_name_field = "name";
+                DIR* dir = nullptr;
+                struct dirent* ent = nullptr;
+                if ((dir = opendir(_custom_device_path.c_str())) != NULL)
+                {
+                  while ((ent = readdir(dir)) != NULL)
+                  {
+                      auto str = std::string(ent->d_name);
+                      if (str.find(prefix_feature_name) != std::string::npos)
+                      {
+                          DIR* report_dir = nullptr;
+                          struct dirent* report_ent = nullptr;
+                          auto feature_report_path = _custom_device_path + "/" + ent->d_name;
+                          if ((report_dir = opendir(feature_report_path.c_str())) != NULL)
+                          {
+                              while ((report_ent = readdir(report_dir)) != NULL)
+                              {
+                                  auto feature_str = std::string(report_ent->d_name);
+                                  if (feature_str.find(suffix_name_field) != std::string::npos)
+                                  {
+                                      auto name_report_path = feature_report_path + "/" + report_ent->d_name;
+                                      auto buffer = read_report(name_report_path);
+
+                                      std::string name_report(reinterpret_cast<char const*>(buffer.data()));
+                                      _reports.insert(std::make_pair(name_report, ent->d_name));
+                                  }
+                              }
+                              closedir(report_dir);
+                          }
+                      }
+                  }
+                  closedir(dir);
+                }
+
+                // get device name
+                auto pos = _custom_device_path.find_last_of("/");
+                if (pos < _custom_device_path.size())
+                    _custom_device_name = _custom_device_path.substr(pos + 1);
+            }
+
+            void enable(bool state)
+            {
+                auto input_data = state ? 1 : 0;
+                auto element_path = _custom_device_path + "/enable_sensor";
+                std::ofstream custom_device_file(element_path);
+
+                if (!custom_device_file.is_open())
+                {
+                    throw linux_backend_exception(to_string() << "Failed to enable_sensor " << element_path);
+                }
+                custom_device_file << input_data;
+                custom_device_file.close();
+            }
+
+            void signal_stop()
+            {
+                char buff[1];
+                buff[0] = 0;
+                if (write(_pipe_fd[1], buff, 1) < 0)
+                {
+                     throw linux_backend_exception("hid_custom_sensor: Could not signal video capture thread to stop. Error write to pipe.");
+                }
+            }
+
+            int _pipe_fd[2]; // write to _pipe_fd[1] and read from _pipe_fd[0]
+            int _fd;
+            std::map<std::string, std::string> _reports;
+            std::string _custom_device_path;
+            std::string _custom_sensor_name;
+            std::string _custom_device_name;
+            hid_callback _callback;
+            std::atomic<bool> _is_capturing;
+            std::unique_ptr<std::thread> _hid_thread;
+        };
+
+        // declare device sensor with all of its inputs.
+        class iio_hid_sensor {
+        public:
+            iio_hid_sensor(const std::string& device_path)
+                : _iio_device_path(device_path),
+                  _sensor_name(""),
+                  _callback(nullptr),
+                  _is_capturing(false),
+                  _sampling_frequency_name(""),
+                  _fd(0),
+                  _pipe_fd{}
+            {
+                init();
+            }
+
+            ~iio_hid_sensor()
             {
                 stop_capture();
 
                 // clear inputs.
-                inputs.clear();
-            }
-
-            // initialize the device sensor. reading its name and all of its inputs.
-            void init(int device_vid, int device_pid, int device_iio_num)
-            {
-                vid = device_vid;
-                pid = device_pid;
-                iio_device = device_iio_num;
-
-                std::ostringstream device_path;
-                device_path << IIO_ROOT_PATH << iio_device;
-                iio_device_path = device_path.str();
-
-                std::ifstream iio_device_file(iio_device_path + "/name");
-
-                // find iio_device in file system.
-                if (!iio_device_file.good())
-                {
-                    throw linux_backend_exception(to_string() << "Failed to open device sensor. " << iio_device_path);
-                }
-
-                char name_buffer[256];
-                iio_device_file.getline(name_buffer,sizeof(name_buffer));
-                sensor_name = std::string(name_buffer);
-
-                iio_device_file.close();
-
-                // read all available input of the iio_device
-                read_device_inputs();
-
-                // get the specific name of sampling_frequency
-                sampling_frequency_name = get_sampling_frequency_name();
-            }
-
-            // return an input by name.
-            hid_input* get_input(std::string input_name)
-            {
-                for (auto& input : inputs) {
-                    if(input->get_hid_input_info().input == input_name) {
-                        return input;
-                    }
-                }
-
-                return NULL;
+                _inputs.clear();
             }
 
             // start capturing and polling.
             void start_capture(hid_callback sensor_callback)
             {
-                if (capturing)
+                if (_is_capturing)
                     return;
 
                 std::ostringstream iio_read_device_path;
-                iio_read_device_path << "/dev/iio:device" << iio_device;
+                iio_read_device_path << "/dev/iio:device" << _iio_device_number;
 
-                //cout << iio_read_device_path.str() << endl;
                 auto iio_read_device_path_str = iio_read_device_path.str();
                 std::ifstream iio_device_file(iio_read_device_path_str);
 
@@ -431,122 +671,128 @@ namespace rsimpl2
                 write_integer_to_param("buffer/length", buf_len);
                 write_integer_to_param("buffer/enable", 1);
 
-                callback = sensor_callback;
-                capturing = true;
-                hid_thread = std::unique_ptr<std::thread>(new std::thread([this, iio_read_device_path_str](){
-                    int fd = 0;
-                    const auto max_retries = 10;
-                    auto retries = 0;
-                    while(++retries < max_retries)
-                    {
-                        if ((fd = open(iio_read_device_path_str.c_str(), O_RDONLY | O_NONBLOCK)) > 0)
-                            break;
+                const auto max_retries = 10;
+                auto retries = 0;
+                while(++retries < max_retries)
+                {
+                    if ((_fd = open(iio_read_device_path_str.c_str(), O_RDONLY | O_NONBLOCK)) > 0)
+                        break;
 
-                        LOG_WARNING("open() failed!");
-                        std::this_thread::sleep_for(std::chrono::milliseconds(5));
-                    }
+                    LOG_WARNING("open() failed!");
+                    std::this_thread::sleep_for(std::chrono::milliseconds(5));
+                }
 
-                    if ((retries == max_retries) && (fd <= 0))
-                    {
-                        LOG_ERROR("open() failed with all retries!");
-                        write_integer_to_param("buffer/enable", 0);
-                        callback = NULL;
-                        channels.clear();
-                        return;
-                    }
+                if ((retries == max_retries) && (_fd <= 0))
+                {
+                    write_integer_to_param("buffer/enable", 0);
+                    _channels.clear();
+                    throw linux_backend_exception("open() failed with all retries!");
+                }
 
+                if (pipe(_pipe_fd) < 0)
+                {
+                    close(_fd);
+                    write_integer_to_param("buffer/enable", 0);
+                    _channels.clear();
+                    throw linux_backend_exception("iio_hid_sensor: Cannot create pipe!");
+                }
+
+                _callback = sensor_callback;
+                _is_capturing = true;
+                _hid_thread = std::unique_ptr<std::thread>(new std::thread([this, iio_read_device_path_str](){
                     const uint32_t channel_size = get_channel_size();
-                    const uint32_t output_size = get_output_size();
                     auto raw_data_size = channel_size*buf_len;
 
                     std::vector<uint8_t> raw_data(raw_data_size);
                     auto metadata = has_metadata();
 
                     do {
-
                         fd_set fds;
                         FD_ZERO(&fds);
-                        FD_SET(fd, &fds);
+                        FD_SET(_fd, &fds);
+                        FD_SET(_pipe_fd[0], &fds);
+
+                        int max_fd = std::max(_pipe_fd[0], _fd);
                         auto read_size = 0;
 
-                        struct timeval tv = {0,10000};
-                        if (select(fd + 1, &fds, NULL, NULL, &tv) < 0)
+                        struct timeval tv = {5, 0};
+                        auto val = select(max_fd + 1, &fds, NULL, NULL, &tv);
+                        if (val < 0)
                         {
                             // TODO: write to log?
                             continue;
                         }
-
-                        if (FD_ISSET(fd, &fds))
+                        else if (val > 0)
                         {
-                            read_size = read(fd, raw_data.data(), raw_data_size);
-                            if (read_size < 0 )
+                            if(FD_ISSET(_pipe_fd[0], &fds))
+                            {
+                                if(!_is_capturing)
+                                {
+                                    LOG_INFO("iio_hid_sensor: Stream finished");
+                                    return;
+                                }
+                            }
+                            else if (FD_ISSET(_fd, &fds))
+                            {
+                                read_size = read(_fd, raw_data.data(), raw_data_size);
+                                if (read_size < 0 )
+                                    continue;
+                            }
+                            else
+                            {
+                                // TODO: write to log?
                                 continue;
+                            }
+
+                            // TODO: code refactoring to reduce latency
+                            for (auto i = 0; i < read_size / channel_size; ++i)
+                            {
+                                auto p_raw_data = raw_data.data() + channel_size * i;
+                                sensor_data sens_data{};
+                                sens_data.sensor = hid_sensor{get_sensor_name()};
+
+                                auto hid_data_size = channel_size - HID_METADATA_SIZE;
+
+                                sens_data.fo = {hid_data_size, metadata?HID_METADATA_SIZE:0,  p_raw_data,  metadata?p_raw_data + hid_data_size:nullptr};
+
+                                this->_callback(sens_data);
+                            }
                         }
                         else
                         {
-                            // TODO: write to log?
-                            continue;
+                            LOG_WARNING("iio_hid_sensor: Frames didn't arrived within 5 seconds");
                         }
-
-                        // TODO: code refactoring to reduce latency
-                        for (auto i = 0; i < read_size / channel_size; ++i)
-                        {
-                            auto p_raw_data = raw_data.data() + channel_size * i;
-                            sensor_data sens_data{};
-                            sens_data.sensor = hid_sensor{get_iio_device(), get_sensor_name()};
-
-                            auto hid_data_size = channel_size - HID_METADATA_SIZE;
-
-                            sens_data.fo = {hid_data_size, metadata?HID_METADATA_SIZE:0,  p_raw_data,  metadata?p_raw_data + hid_data_size:nullptr};
-
-                            this->callback(sens_data);
-                        }
-                    } while(this->capturing);
-                    close(fd);
+                    } while(this->_is_capturing);
                 }));
-            }
-
-            bool has_metadata()
-            {
-                if(get_output_size() == HID_DATA_ACTUAL_SIZE + HID_METADATA_SIZE)
-                    return true;
-                return false;
             }
 
             void stop_capture()
             {
-                if (!capturing)
+                if (!_is_capturing)
                     return;
 
-                capturing = false;
-                hid_thread->join();
+                _is_capturing = false;
+                signal_stop();
+                _hid_thread->join();
                 write_integer_to_param("buffer/enable", 0);
-                callback = NULL;
-                channels.clear();
-            }
+                _callback = NULL;
+                _channels.clear();
 
-            static bool sort_hids(hid_input* first, hid_input* second)
-            {
-                return (second->get_hid_input_info().index >= first->get_hid_input_info().index);
-            }
+                if(::close(_fd) < 0)
+                    throw linux_backend_exception("iio_hid_sensor: close(_fd) failed");
 
-            void create_channel_array()
-            {
-                // build enabled channels.
-                for(auto& input : inputs)
-                {
-                    if (input->get_hid_input_info().enabled)
-                    {
-                        channels.push_back(input);
-                    }
-                }
+                if(::close(_pipe_fd[0]) < 0)
+                   throw linux_backend_exception("iio_hid_sensor: close(_pipe_fd[0]) failed");
+                if(::close(_pipe_fd[1]) < 0)
+                   throw linux_backend_exception("iio_hid_sensor: close(_pipe_fd[1]) failed");
 
-                channels.sort(sort_hids);
+                _fd = 0;
+                _pipe_fd[0] = _pipe_fd[1] = 0;
             }
 
             void set_frequency(uint32_t frequency)
             {
-                auto sampling_frequency_path = iio_device_path + "/" + sampling_frequency_name;
+                auto sampling_frequency_path = _iio_device_path + "/" + _sampling_frequency_name;
                 std::ofstream iio_device_file(sampling_frequency_path);
 
                 if (!iio_device_file.is_open())
@@ -558,21 +804,94 @@ namespace rsimpl2
                 iio_device_file.close();
             }
 
-            std::list<hid_input*>& get_inputs() { return inputs; }
+            std::list<hid_input*>& get_inputs() { return _inputs; }
 
-            const std::string& get_sensor_name() const { return sensor_name; }
-
-            uint32_t get_iio_device() const { return iio_device; }
+            const std::string& get_sensor_name() const { return _sensor_name; }
 
         private:
+            void signal_stop()
+            {
+                char buff[1];
+                buff[0] = 0;
+                if (write(_pipe_fd[1], buff, 1) < 0)
+                {
+                     throw linux_backend_exception("iio_hid_sensor: Could not signal video capture thread to stop. Error write to pipe.");
+                }
+            }
+
+            bool has_metadata()
+            {
+                if(get_output_size() == HID_DATA_ACTUAL_SIZE + HID_METADATA_SIZE)
+                    return true;
+                return false;
+            }
+
+            static bool sort_hids(hid_input* first, hid_input* second)
+            {
+                return (second->get_hid_input_info().index >= first->get_hid_input_info().index);
+            }
+
+            void create_channel_array()
+            {
+                // build enabled channels.
+                for(auto& input : _inputs)
+                {
+                    if (input->get_hid_input_info().enabled)
+                    {
+                        _channels.push_back(input);
+                    }
+                }
+
+                _channels.sort(sort_hids);
+            }
+
+            // initialize the device sensor. reading its name and all of its inputs.
+            void init()
+            {
+                std::ifstream iio_device_file(_iio_device_path + "/name");
+
+                // find iio_device in file system.
+                if (!iio_device_file.good())
+                {
+                    throw linux_backend_exception(to_string() << "Failed to open device sensor. " << _iio_device_path);
+                }
+
+                char name_buffer[256] = {};
+                iio_device_file.getline(name_buffer,sizeof(name_buffer));
+                _sensor_name = std::string(name_buffer);
+
+                iio_device_file.close();
+
+                // get IIO device number
+                static const std::string suffix_iio_device_path("/iio:device");
+                auto pos = _iio_device_path.find_last_of(suffix_iio_device_path);
+                if (pos == std::string::npos)
+                    throw linux_backend_exception(to_string() << "Wrong iio device path " << _iio_device_path);
+
+                auto substr = _iio_device_path.substr(pos + 1);
+                if (std::all_of(substr.begin(), substr.end(), ::isdigit))
+                {
+                    _iio_device_number = atoi(substr.c_str());
+                }
+                else
+                {
+                    throw linux_backend_exception(to_string() << "IIO device number is incorrect! Failed to open device sensor. " << _iio_device_path);
+                }
+
+                // read all available input of the iio_device
+                read_device_inputs();
+
+                // get the specific name of sampling_frequency
+                _sampling_frequency_name = get_sampling_frequency_name();
+            }
 
             // calculate the storage size of a scan
             uint32_t get_channel_size() const
             {
-                assert(!channels.empty());
+                assert(!_channels.empty());
                 auto bytes = 0;
 
-                for (auto& elem : channels)
+                for (auto& elem : _channels)
                 {
                     auto input_info = elem->get_hid_input_info();
                     if (bytes % input_info.bytes == 0)
@@ -594,10 +913,10 @@ namespace rsimpl2
             // calculate the actual size of data
             uint32_t get_output_size() const
             {
-                assert(!channels.empty());
+                assert(!_channels.empty());
                 auto bits_used = 0.;
 
-                for (auto& elem : channels)
+                for (auto& elem : _channels)
                 {
                     auto input_info = elem->get_hid_input_info();
                     bits_used += input_info.bits_used;
@@ -613,10 +932,10 @@ namespace rsimpl2
                 struct dirent *dir_ent = nullptr;
 
                 // start enumerate the scan elemnts dir.
-                dir = opendir(iio_device_path.c_str());
+                dir = opendir(_iio_device_path.c_str());
                 if (dir == NULL)
                 {
-                     throw linux_backend_exception(to_string() << "Failed to open scan_element " << iio_device_path);
+                     throw linux_backend_exception(to_string() << "Failed to open scan_element " << _iio_device_path);
                 }
 
                 // verify file format. should include in_ (input) and _en (enable).
@@ -629,7 +948,6 @@ namespace rsimpl2
                         {
                             sampling_frequency_name = file;
                         }
-
                     }
                 }
                 closedir(dir);
@@ -643,12 +961,12 @@ namespace rsimpl2
                 DIR *dir = nullptr;
                 struct dirent *dir_ent = nullptr;
 
-                auto scan_elements_path = iio_device_path + "/scan_elements";
+                auto scan_elements_path = _iio_device_path + "/scan_elements";
                 // start enumerate the scan elemnts dir.
                 dir = opendir(scan_elements_path.c_str());
                 if (dir == NULL)
                 {
-                    throw linux_backend_exception(to_string() << "Failed to open scan_element " << iio_device_path);
+                    throw linux_backend_exception(to_string() << "Failed to open scan_element " << _iio_device_path);
                 }
 
                 // verify file format. should include in_ (input) and _en (enable).
@@ -662,21 +980,19 @@ namespace rsimpl2
                         if (file.substr(0,prefix.size()) == prefix &&
                             file.substr(file.size()-suffix.size(),suffix.size()) == suffix) {
                             // initialize input.
-                            auto* new_input = new hid_input();
+
                             try
                             {
-                                new_input->init(iio_device_path, file);
+                                auto* new_input = new hid_input(_iio_device_path, file);
+                                // push to input list.
+                                _inputs.push_front(new_input);
                             }
                             catch(...)
                             {
                                 // fail to initialize this input. continue to the next one.
                                 continue;
                             }
-
-                            // push to input list.
-                            inputs.push_front(new_input);
                         }
-
                     }
                 }
                 closedir(dir);
@@ -685,15 +1001,14 @@ namespace rsimpl2
             // configure hid device via fd
             void write_integer_to_param(const std::string& param,int value)
             {
-                std::ostringstream iio_device_path;
-                iio_device_path << IIO_ROOT_PATH << iio_device << "/" << param;
-                auto str = iio_device_path.str();
+                std::ostringstream device_path;
+                device_path << _iio_device_path << "/" << param;
 
-                std::ofstream iio_device_file(iio_device_path.str());
+                std::ofstream iio_device_file(device_path.str());
 
                 if (!iio_device_file.good())
                 {
-                    throw linux_backend_exception(to_string() << "write_integer_to_param failed! device path: " << iio_device_path.str());
+                    throw linux_backend_exception(to_string() << "write_integer_to_param failed! device path: " << _iio_device_path);
                 }
 
                 iio_device_file << value;
@@ -702,18 +1017,17 @@ namespace rsimpl2
             }
 
             static const uint32_t buf_len = 128; // TODO
-            int vid;
-            int pid;
-            int iio_device;
-            std::string iio_device_path;
-            std::string sensor_name;
-            std::string sampling_frequency_name;
-
-            std::list<hid_input*> inputs;
-            std::list<hid_input*> channels;
-            hid_callback callback;
-            std::atomic<bool> capturing;
-            std::unique_ptr<std::thread> hid_thread;
+            int _pipe_fd[2]; // write to _pipe_fd[1] and read from _pipe_fd[0]
+            int _fd;
+            int _iio_device_number;
+            std::string _iio_device_path;
+            std::string _sensor_name;
+            std::string _sampling_frequency_name;
+            std::list<hid_input*> _inputs;
+            std::list<hid_input*> _channels;
+            hid_callback _callback;
+            std::atomic<bool> _is_capturing;
+            std::unique_ptr<std::thread> _hid_thread;
         };
 
         class v4l_hid_device : public hid_device
@@ -721,22 +1035,27 @@ namespace rsimpl2
         public:
             v4l_hid_device(const hid_device_info& info)
             {
-                _info.unique_id = "";
-                v4l_hid_device::foreach_hid_device([&](const hid_device_info& hid_dev_info, const std::string& iio_device){
+                bool found = false;
+                v4l_hid_device::foreach_hid_device([&](const hid_device_info& hid_dev_info){
                     if (hid_dev_info.unique_id == info.unique_id)
                     {
-                        _info = info;
-                        iio_devices.push_back(iio_device);
+                        _hid_device_infos.push_back(hid_dev_info);
+                        found = true;
                     }
                 });
 
-                if (_info.unique_id == "")
+                if (!found)
                     throw linux_backend_exception("hid device is no longer connected!");
             }
 
             ~v4l_hid_device()
             {
-                for (auto& elem : _streaming_sensors)
+                for (auto& elem : _streaming_iio_sensors)
+                {
+                    elem->stop_capture();
+                }
+
+                for (auto& elem : _streaming_custom_sensors)
                 {
                     elem->stop_capture();
                 }
@@ -744,23 +1063,29 @@ namespace rsimpl2
 
             void open()
             {
-                for (auto& iio_device : iio_devices)
+                for (auto& device_info : _hid_device_infos)
                 {
-                    auto device = std::unique_ptr<iio_hid_device>(new iio_hid_device());
                     try
                     {
-                        device->init(std::stoul(_info.vid, nullptr, 16),
-                                                             std::stoul(_info.pid, nullptr, 16),
-                                                             std::stoul(iio_device, nullptr, 16));
-                        _hid_sensors.push_back(std::move(device));
+                        if (device_info.id == custom_id)
+                        {
+                            auto device = std::unique_ptr<hid_custom_sensor>(new hid_custom_sensor(device_info.device_path,
+                                                                                                   device_info.id));
+                            _hid_custom_sensors.push_back(std::move(device));
+                        }
+                        else
+                        {
+                            auto device = std::unique_ptr<iio_hid_sensor>(new iio_hid_sensor(device_info.device_path));
+                            _iio_hid_sensors.push_back(std::move(device));
+                        }
                     }
                     catch(...)
                     {
-                        for (auto& hid_sensor : _hid_sensors)
+                        for (auto& hid_sensor : _iio_hid_sensors)
                         {
                             hid_sensor.reset();
                         }
-                        _hid_sensors.clear();
+                        _iio_hid_sensors.clear();
                         LOG_ERROR("Hid device is busy!");
                         throw;
                     }
@@ -769,30 +1094,41 @@ namespace rsimpl2
 
             void close()
             {
-                for (auto& hid_sensor : _hid_sensors)
+                for (auto& hid_iio_sensor : _iio_hid_sensors)
                 {
-                    hid_sensor.reset();
+                    hid_iio_sensor.reset();
                 }
-                _hid_sensors.clear();
+                _iio_hid_sensors.clear();
+
+                for (auto& hid_custom_sensor : _hid_custom_sensors)
+                {
+                    hid_custom_sensor.reset();
+                }
+                _hid_custom_sensors.clear();
             }
 
             std::vector<hid_sensor> get_sensors()
             {
                 std::vector<hid_sensor> iio_sensors;
-                for (auto& elem : _hid_sensors)
+                for (auto& elem : _iio_hid_sensors)
                 {
-                    iio_sensors.push_back(hid_sensor{elem->get_iio_device(), elem->get_sensor_name()});
+                    iio_sensors.push_back(hid_sensor{elem->get_sensor_name()});
+                }
+
+                for (auto& elem : _hid_custom_sensors)
+                {
+                    iio_sensors.push_back(hid_sensor{elem->get_sensor_name()});
                 }
                 return iio_sensors;
             }
 
-            void start_capture(const std::vector<iio_profile>& iio_profiles, hid_callback callback)
+            void start_capture(const std::vector<hid_profile>& hid_profiles, hid_callback callback)
             {
-                for (auto& profile : iio_profiles)
+                for (auto& profile : hid_profiles)
                 {
-                    for (auto& sensor : _hid_sensors)
+                    for (auto& sensor : _iio_hid_sensors)
                     {
-                        if (sensor->get_iio_device() == profile.iio)
+                        if (sensor->get_sensor_name() == profile.sensor_name)
                         {
                             sensor->set_frequency(profile.frequency);
 
@@ -800,36 +1136,68 @@ namespace rsimpl2
                             for (auto input : inputs)
                             {
                                 input->enable(true);
-                                _streaming_sensors.push_back(sensor.get());
+                                _streaming_iio_sensors.push_back(sensor.get());
                             }
                         }
                     }
 
-                    if (_streaming_sensors.empty())
-                        LOG_ERROR("iio_sensor " + std::to_string(profile.iio) + " not found!");
+                    for (auto& sensor : _hid_custom_sensors)
+                    {
+                        if (sensor->get_sensor_name() == profile.sensor_name)
+                        {
+                            _streaming_custom_sensors.push_back(sensor.get());
+                        }
+                    }
+
+                    if (_streaming_iio_sensors.empty() && _streaming_custom_sensors.empty())
+                        LOG_ERROR("sensor " + profile.sensor_name + " not found!");
                 }
 
-                std::vector<iio_hid_device*> captured_sensors;
-                try{
-                for (auto& elem : _streaming_sensors)
+                if (!_streaming_iio_sensors.empty())
                 {
-                    elem->start_capture(callback);
-                    captured_sensors.push_back(elem);
-                }
-                }
-                catch(...)
-                {
-                    for (auto& elem : captured_sensors)
-                        elem->stop_capture();
+                    std::vector<iio_hid_sensor*> captured_sensors;
+                    try{
+                    for (auto& elem : _streaming_iio_sensors)
+                    {
+                        elem->start_capture(callback);
+                        captured_sensors.push_back(elem);
+                    }
+                    }
+                    catch(...)
+                    {
+                        for (auto& elem : captured_sensors)
+                            elem->stop_capture();
 
-                    _streaming_sensors.clear();
-                    throw;
+                        _streaming_iio_sensors.clear();
+                        throw;
+                    }
                 }
+
+                if (!_streaming_custom_sensors.empty())
+                {
+                    std::vector<hid_custom_sensor*> captured_sensors;
+                    try{
+                    for (auto& elem : _streaming_custom_sensors)
+                    {
+                        elem->start_capture(callback);
+                        captured_sensors.push_back(elem);
+                    }
+                    }
+                    catch(...)
+                    {
+                        for (auto& elem : captured_sensors)
+                            elem->stop_capture();
+
+                        _streaming_custom_sensors.clear();
+                        throw;
+                    }
+                }
+
             }
 
             void stop_capture()
             {
-                for (auto& sensor : _hid_sensors)
+                for (auto& sensor : _iio_hid_sensors)
                 {
                     auto inputs = sensor->get_inputs();
                     for (auto input : inputs)
@@ -840,88 +1208,149 @@ namespace rsimpl2
                     }
                 }
 
-                _streaming_sensors.clear();
+                _streaming_iio_sensors.clear();
+
+                for (auto& sensor : _hid_custom_sensors)
+                {
+                    sensor->stop_capture();
+                }
+
+                _streaming_custom_sensors.clear();
             }
 
-            static void foreach_hid_device(std::function<void(const hid_device_info&, const std::string&)> action)
+            std::vector<uint8_t> get_custom_report_data(const std::string& custom_sensor_name,
+                                                        const std::string& report_name,
+                                                        custom_sensor_report_field report_field)
             {
+                auto it = std::find_if(begin(_hid_custom_sensors), end(_hid_custom_sensors),
+                    [&](const std::unique_ptr<hid_custom_sensor>& hcs)
+                {
+                    return hcs->get_sensor_name() == custom_sensor_name;
+                });
+                if (it != end(_hid_custom_sensors))
+                {
+                    return (*it)->get_report_data(report_name, report_field);
+                }
+                throw linux_backend_exception(to_string() << " custom sensor " << custom_sensor_name << " not found!");
+            }
+
+            static void foreach_hid_device(std::function<void(const hid_device_info&)> action)
+            {
+                // Common HID Sensors
                 auto num = 0;
 
                 std::stringstream ss;
-                ss<< IIO_ROOT_PATH <<num;
+                ss << IIO_ROOT_PATH << num;
 
                 struct stat st;
                 while (stat(ss.str().c_str(),&st) == 0 && st.st_mode & S_IFDIR != 0)
                 {
-                    char device_path[PATH_MAX];
-
-                    realpath(ss.str().c_str(), device_path);
-                    std::string device_path_str(device_path);
-                    device_path_str+="/";
-                    std::string busnum, devnum, devpath, vid, pid, dev_id, dev_name;
-                    std::ifstream(device_path_str + "name") >> dev_name;
-                    auto good = false;
-                    for(auto i=0; i < MAX_DEV_PARENT_DIR; ++i)
+                    hid_device_info hid_dev_info{};
+                    if(!get_hid_device_info(ss.str().c_str(), hid_dev_info))
                     {
-                        if(std::ifstream(device_path_str + "busnum") >> busnum)
-                        {
-                            if(std::ifstream(device_path_str + "devnum") >> devnum)
-                            {
-                                if(std::ifstream(device_path_str + "devpath") >> devpath)
-                                {
-                                    if(std::ifstream(device_path_str + "idVendor") >> vid)
-                                    {
-                                        if(std::ifstream(device_path_str + "idProduct") >> pid)
-                                        {
-                                            if(std::ifstream(device_path_str + "dev") >> dev_id)
-                                            {
-                                                good = true;
-                                                break;
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                        device_path_str += "../";
-                    }
-                    if(!good)
-                    {
-                        LOG_WARNING("Failed to read busnum/devnum. Device Path: " << device_path_str);
+                        LOG_WARNING("Failed to read busnum/devnum. Device Path: " << ss.str());
                         ss.str("");
                         ss.clear(); // Clear state flags.
 
                         ++num;
-                        ss<< IIO_ROOT_PATH <<num;
+                        ss << IIO_ROOT_PATH << num;
                         continue;
                     }
 
-
-
-                    hid_device_info hid_dev_info{};
-                    hid_dev_info.vid = vid;
-                    hid_dev_info.pid = pid;
-                    hid_dev_info.unique_id = busnum + "-" + devpath + "-" + devnum;
-                    hid_dev_info.id = dev_name;
-                    hid_dev_info.device_path = device_path;
-
-                    auto iio_device = std::to_string(num);
-                    action(hid_dev_info, iio_device);
+                    action(hid_dev_info);
 
                     ss.str("");
                     ss.clear(); // Clear state flags.
 
                     ++num;
-                    ss<< IIO_ROOT_PATH <<num;
+                    ss << IIO_ROOT_PATH << num;
                 }
 
+                // Custom HID Sensors
+                static const char* prefix_custom_sensor_name = "HID-SENSOR-2000e1";
+                std::vector<std::string> custom_sensors;
+                DIR* dir = nullptr;
+                struct dirent* ent = nullptr;
+                if ((dir = opendir(HID_CUSTOM_PATH.c_str())) != NULL)
+                {
+                  while ((ent = readdir(dir)) != NULL)
+                  {
+                      auto str = std::string(ent->d_name);
+                      if (str.find(prefix_custom_sensor_name) != std::string::npos)
+                          custom_sensors.push_back(HID_CUSTOM_PATH + "/" + str);
+                  }
+                  closedir(dir);
+                }
+
+
+                for (auto& elem : custom_sensors)
+                {
+                    hid_device_info hid_dev_info{};
+                    if(!get_hid_device_info(elem.c_str(), hid_dev_info))
+                    {
+                        LOG_WARNING("Failed to read busnum/devnum. Custom HID Device Path: " << elem);
+                        continue;
+                    }
+
+                    hid_dev_info.id = custom_id;
+                    action(hid_dev_info);
+                }
             }
 
         private:
-            hid_device_info _info;
-            std::vector<std::string> iio_devices;
-            std::vector<std::unique_ptr<iio_hid_device>> _hid_sensors;
-            std::vector<iio_hid_device*> _streaming_sensors;
+            static bool get_hid_device_info(const char* dev_path, hid_device_info& device_info)
+            {
+                char device_path[PATH_MAX] = {};
+                realpath(dev_path, device_path);
+
+                std::string device_path_str(device_path);
+                device_path_str+="/";
+                std::string busnum, devnum, devpath, vid, pid, dev_id, dev_name;
+                std::ifstream(device_path_str + "name") >> dev_name;
+                auto good = false;
+                for(auto i=0; i < MAX_DEV_PARENT_DIR; ++i)
+                {
+                    if(std::ifstream(device_path_str + "busnum") >> busnum)
+                    {
+                        if(std::ifstream(device_path_str + "devnum") >> devnum)
+                        {
+                            if(std::ifstream(device_path_str + "devpath") >> devpath)
+                            {
+                                if(std::ifstream(device_path_str + "idVendor") >> vid)
+                                {
+                                    if(std::ifstream(device_path_str + "idProduct") >> pid)
+                                    {
+                                        if(std::ifstream(device_path_str + "dev") >> dev_id)
+                                        {
+                                            good = true;
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    device_path_str += "../";
+                }
+
+                if (good)
+                {
+                    device_info.vid = vid;
+                    device_info.pid = pid;
+                    device_info.unique_id = busnum + "-" + devpath + "-" + devnum;
+                    device_info.id = dev_name;
+                    device_info.device_path = device_path;
+                }
+
+                return good;
+            }
+
+            std::vector<hid_device_info> _hid_device_infos;
+            std::vector<std::unique_ptr<iio_hid_sensor>> _iio_hid_sensors;
+            std::vector<std::unique_ptr<hid_custom_sensor>> _hid_custom_sensors;
+            std::vector<iio_hid_sensor*> _streaming_iio_sensors;
+            std::vector<hid_custom_sensor*> _streaming_custom_sensors;
+            static constexpr char* custom_id{"custom"};
         };
 
         class v4l_usb_device : public usb_device
@@ -1137,33 +1566,14 @@ namespace rsimpl2
                 closedir(dir);
             }
 
-            static uint32_t get_cid(rs2_option option)
-            {
-                switch(option)
-                {
-                case RS2_OPTION_BACKLIGHT_COMPENSATION: return V4L2_CID_BACKLIGHT_COMPENSATION;
-                case RS2_OPTION_BRIGHTNESS: return V4L2_CID_BRIGHTNESS;
-                case RS2_OPTION_CONTRAST: return V4L2_CID_CONTRAST;
-                case RS2_OPTION_EXPOSURE: return V4L2_CID_EXPOSURE_ABSOLUTE; // Is this actually valid? I'm getting a lot of VIDIOC error 22s...
-                case RS2_OPTION_GAIN: return V4L2_CID_GAIN;
-                case RS2_OPTION_GAMMA: return V4L2_CID_GAMMA;
-                case RS2_OPTION_HUE: return V4L2_CID_HUE;
-                case RS2_OPTION_SATURATION: return V4L2_CID_SATURATION;
-                case RS2_OPTION_SHARPNESS: return V4L2_CID_SHARPNESS;
-                case RS2_OPTION_WHITE_BALANCE: return V4L2_CID_WHITE_BALANCE_TEMPERATURE;
-                case RS2_OPTION_ENABLE_AUTO_EXPOSURE: return V4L2_CID_EXPOSURE_AUTO; // Automatic gain/exposure control
-                case RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE: return V4L2_CID_AUTO_WHITE_BALANCE;
-                default: throw linux_backend_exception(to_string() << "no v4l2 cid for option " << option);
-                }
-            }
-
             v4l_uvc_device(const uvc_device_info& info, bool use_memory_map = false)
                 : _name(""), _info(),
                   _is_capturing(false),
                   _is_alive(true),
                   _thread(nullptr),
                   _use_memory_map(use_memory_map),
-                  _is_started(false)
+                  _is_started(false),
+                  _pipe_fd{}
             {
                 foreach_uvc_device([&info, this](const uvc_device_info& i, const std::string& name)
                 {
@@ -1178,22 +1588,6 @@ namespace rsimpl2
                     throw linux_backend_exception("device is no longer connected!");
 
                 _named_mtx = std::unique_ptr<named_mutex>(new named_mutex(_name, 5000));
-            }
-
-
-            void capture_loop()
-            {
-                try
-                {
-                    while(_is_capturing)
-                    {
-                        poll();
-                    }
-                }
-                catch (const std::exception& ex)
-                {
-                    LOG_ERROR(ex.what());
-                }
             }
 
             ~v4l_uvc_device()
@@ -1373,127 +1767,6 @@ namespace rsimpl2
                 }
             }
 
-            std::string fourcc_to_string(uint32_t id) const
-            {
-                uint32_t device_fourcc = id;
-                char fourcc_buff[sizeof(device_fourcc)+1];
-                memcpy(fourcc_buff, &device_fourcc, sizeof(device_fourcc));
-                fourcc_buff[sizeof(device_fourcc)] = 0;
-                return fourcc_buff;
-            }
-
-            void signal_stop()
-            {
-                char buff[1];
-                buff[0] = 0;
-                if (write(_pipe_fd[1], buff, 1) < 0)
-                {
-                     throw linux_backend_exception("Could not signal video capture thread to stop. Error write to pipe.");
-                }
-            }
-
-            void poll()
-            {
-                fd_set fds{};
-                FD_ZERO(&fds);
-                FD_SET(_fd, &fds);
-                FD_SET(_pipe_fd[0], &fds);
-                FD_SET(_pipe_fd[1], &fds);
-
-                int max_fd = std::max(std::max(_pipe_fd[0], _pipe_fd[1]), _fd);
-
-                struct timeval tv = {5,0};
-
-                auto val = select(max_fd+1, &fds, NULL, NULL, &tv);
-
-                if(val < 0)
-                {
-                    if (errno == EINTR)
-                        return;
-
-                    throw linux_backend_exception("select failed");
-                }
-                else if(val > 0)
-                {
-                    if(FD_ISSET(_pipe_fd[0], &fds) || FD_ISSET(_pipe_fd[1], &fds))
-                    {
-                        if(!_is_capturing)
-                        {
-                            LOG_INFO("Stream finished");
-                            return;
-                        }
-                    }
-
-                    else if(FD_ISSET(_fd, &fds))
-                    {
-                        FD_ZERO(&fds);
-                        FD_SET(_fd, &fds);
-                        v4l2_buffer buf = {};
-                        buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-                        buf.memory = _use_memory_map ? V4L2_MEMORY_MMAP : V4L2_MEMORY_USERPTR;
-                        if(xioctl(_fd, VIDIOC_DQBUF, &buf) < 0)
-                        {
-                            if(errno == EAGAIN)
-                                return;
-
-                            throw linux_backend_exception("xioctl(VIDIOC_DQBUF) failed");
-                        }
-
-                        if (_is_started)
-                        {
-                            if( buf.bytesused < _buffers[buf.index].length - META_DATA_SIZE &&
-                                    buf.bytesused > 0)
-                            {
-                                auto precent = (100 * buf.bytesused) / _buffers[buf.index].length;
-                                std::stringstream s;
-                                s << "Incomplete frame detected!\nSize " << buf.bytesused
-                                  << " out of " << _buffers[buf.index].length << " bytes (" << precent << "%)";
-                                rsimpl2::notification n = {0, RS2_LOG_SEVERITY_WARN, s.str()};
-
-                                _error_handler(n);
-                            }
-                            else
-                            {
-                                frame_object fo{ _buffers[buf.index].length,
-                                    has_metadata() ? META_DATA_SIZE : 0,
-                                    _buffers[buf.index].start,
-                                    has_metadata() ? _buffers[buf.index].start + _buffer_length : nullptr };
-
-
-                                if (buf.bytesused > 0)
-                                    _callback(_profile, fo);
-                                else
-                                    LOG_WARNING("Empty frame has arrived.");
-                            }
-                        }
-
-                        if (V4L2_MEMORY_USERPTR == _use_memory_map)
-                        {
-                            auto metadata_offset = _buffers[buf.index].length - META_DATA_SIZE;
-                            memset((byte*)(_buffers[buf.index].start) + metadata_offset, 0, META_DATA_SIZE);
-                        }
-
-                        if(xioctl(_fd, VIDIOC_QBUF, &buf) < 0)
-                            throw linux_backend_exception("xioctl(VIDIOC_QBUF) failed");
-                    }
-                    else
-                    {
-                        throw linux_backend_exception("FD_ISSET returned false");
-                    }
-                }
-                else
-                {
-                    LOG_WARNING("Frames didn't arrived within 5 seconds");
-                }
-
-            }
-
-            bool has_metadata()
-            {
-               if(!_use_memory_map)
-                   return true;
-            }
-
             void set_power_state(power_state state) override
             {
                 if (state == D0 && _state == D3)
@@ -1504,7 +1777,7 @@ namespace rsimpl2
 
 
                     if (pipe(_pipe_fd) < 0)
-                        throw linux_backend_exception("Cannot create pipe!");
+                        throw linux_backend_exception("v4l_uvc_device: Cannot create pipe!");
 
                     v4l2_capability cap = {};
                     if(xioctl(_fd, VIDIOC_QUERYCAP, &cap) < 0)
@@ -1542,12 +1815,12 @@ namespace rsimpl2
                 {
                     close(_profile);
                     if(::close(_fd) < 0)
-                        throw linux_backend_exception("close(...) failed");
+                        throw linux_backend_exception("v4l_uvc_device: close(_fd) failed");
 
                     if(::close(_pipe_fd[0]) < 0)
-                       throw linux_backend_exception("close(...) failed");
+                       throw linux_backend_exception("v4l_uvc_device: close(_pipe_fd[0]) failed");
                     if(::close(_pipe_fd[1]) < 0)
-                       throw linux_backend_exception("close(...) failed");
+                       throw linux_backend_exception("v4l_uvc_device: close(_pipe_fd[1]) failed");
 
                     _fd = 0;
                     _pipe_fd[0] = _pipe_fd[1] = 0;
@@ -1695,7 +1968,6 @@ namespace rsimpl2
 
             std::vector<stream_profile> get_profiles() const override
             {
-
                 std::vector<stream_profile> results;
 
                 // Retrieve the caps one by one, first get pixel format, then sizes, then
@@ -1794,12 +2066,165 @@ namespace rsimpl2
             std::string get_device_location() const override { return _device_path; }
 
         private:
+            static uint32_t get_cid(rs2_option option)
+            {
+                switch(option)
+                {
+                case RS2_OPTION_BACKLIGHT_COMPENSATION: return V4L2_CID_BACKLIGHT_COMPENSATION;
+                case RS2_OPTION_BRIGHTNESS: return V4L2_CID_BRIGHTNESS;
+                case RS2_OPTION_CONTRAST: return V4L2_CID_CONTRAST;
+                case RS2_OPTION_EXPOSURE: return V4L2_CID_EXPOSURE_ABSOLUTE; // Is this actually valid? I'm getting a lot of VIDIOC error 22s...
+                case RS2_OPTION_GAIN: return V4L2_CID_GAIN;
+                case RS2_OPTION_GAMMA: return V4L2_CID_GAMMA;
+                case RS2_OPTION_HUE: return V4L2_CID_HUE;
+                case RS2_OPTION_SATURATION: return V4L2_CID_SATURATION;
+                case RS2_OPTION_SHARPNESS: return V4L2_CID_SHARPNESS;
+                case RS2_OPTION_WHITE_BALANCE: return V4L2_CID_WHITE_BALANCE_TEMPERATURE;
+                case RS2_OPTION_ENABLE_AUTO_EXPOSURE: return V4L2_CID_EXPOSURE_AUTO; // Automatic gain/exposure control
+                case RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE: return V4L2_CID_AUTO_WHITE_BALANCE;
+                default: throw linux_backend_exception(to_string() << "no v4l2 cid for option " << option);
+                }
+            }
+
+            void capture_loop()
+            {
+                try
+                {
+                    while(_is_capturing)
+                    {
+                        poll();
+                    }
+                }
+                catch (const std::exception& ex)
+                {
+                    LOG_ERROR(ex.what());
+                }
+            }
+
+            void signal_stop()
+            {
+                char buff[1];
+                buff[0] = 0;
+                if (write(_pipe_fd[1], buff, 1) < 0)
+                {
+                     throw linux_backend_exception("v4l_uvc_device: Could not signal video capture thread to stop. Error write to pipe.");
+                }
+            }
+
+            std::string fourcc_to_string(uint32_t id) const
+            {
+                uint32_t device_fourcc = id;
+                char fourcc_buff[sizeof(device_fourcc)+1];
+                memcpy(fourcc_buff, &device_fourcc, sizeof(device_fourcc));
+                fourcc_buff[sizeof(device_fourcc)] = 0;
+                return fourcc_buff;
+            }
+
+            void poll()
+            {
+                fd_set fds{};
+                FD_ZERO(&fds);
+                FD_SET(_fd, &fds);
+                FD_SET(_pipe_fd[0], &fds);
+
+                int max_fd = std::max(_pipe_fd[0], _fd);
+
+                struct timeval tv = {5,0};
+
+                auto val = select(max_fd+1, &fds, NULL, NULL, &tv);
+
+                if(val < 0)
+                {
+                    if (errno == EINTR)
+                        return;
+
+                    throw linux_backend_exception("select failed");
+                }
+                else if(val > 0)
+                {
+                    if(FD_ISSET(_pipe_fd[0], &fds))
+                    {
+                        if(!_is_capturing)
+                        {
+                            LOG_INFO("Stream finished");
+                            return;
+                        }
+                    }
+                    else if(FD_ISSET(_fd, &fds))
+                    {
+                        FD_ZERO(&fds);
+                        FD_SET(_fd, &fds);
+                        v4l2_buffer buf = {};
+                        buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+                        buf.memory = _use_memory_map ? V4L2_MEMORY_MMAP : V4L2_MEMORY_USERPTR;
+                        if(xioctl(_fd, VIDIOC_DQBUF, &buf) < 0)
+                        {
+                            if(errno == EAGAIN)
+                                return;
+
+                            throw linux_backend_exception("xioctl(VIDIOC_DQBUF) failed");
+                        }
+
+                        if (_is_started)
+                        {
+                            if( buf.bytesused < _buffers[buf.index].length - META_DATA_SIZE &&
+                                    buf.bytesused > 0)
+                            {
+                                auto precent = (100 * buf.bytesused) / _buffers[buf.index].length;
+                                std::stringstream s;
+                                s << "Incomplete frame detected!\nSize " << buf.bytesused
+                                  << " out of " << _buffers[buf.index].length << " bytes (" << precent << "%)";
+                                rsimpl2::notification n = {0, RS2_LOG_SEVERITY_WARN, s.str()};
+
+                                _error_handler(n);
+                            }
+                            else
+                            {
+                                frame_object fo{ _buffers[buf.index].length,
+                                    has_metadata() ? META_DATA_SIZE : 0,
+                                    _buffers[buf.index].start,
+                                    has_metadata() ? _buffers[buf.index].start + _buffer_length : nullptr };
+
+
+                                if (buf.bytesused > 0)
+                                    _callback(_profile, fo);
+                                else
+                                    LOG_WARNING("Empty frame has arrived.");
+                            }
+                        }
+
+                        if (V4L2_MEMORY_USERPTR == _use_memory_map)
+                        {
+                            auto metadata_offset = _buffers[buf.index].length - META_DATA_SIZE;
+                            memset((byte*)(_buffers[buf.index].start) + metadata_offset, 0, META_DATA_SIZE);
+                        }
+
+                        if(xioctl(_fd, VIDIOC_QBUF, &buf) < 0)
+                            throw linux_backend_exception("xioctl(VIDIOC_QBUF) failed");
+                    }
+                    else
+                    {
+                        throw linux_backend_exception("FD_ISSET returned false");
+                    }
+                }
+                else
+                {
+                    LOG_WARNING("Frames didn't arrived within 5 seconds");
+                }
+            }
+
+            bool has_metadata()
+            {
+               if(!_use_memory_map)
+                   return true;
+            }
+
             power_state _state = D3;
             std::string _name;
             std::string _device_path;
             uvc_device_info _info;
             int _fd = 0;
-            int _pipe_fd[2];
+            int _pipe_fd[2]; // write to _pipe_fd[1] and read from _pipe_fd[0]
             std::vector<buffer> _buffers;
             unsigned int _buffer_length = 0;
             stream_profile _profile;
@@ -1861,7 +2286,7 @@ namespace rsimpl2
             std::vector<hid_device_info> query_hid_devices() const override
             {
                 std::vector<hid_device_info> results;
-                v4l_hid_device::foreach_hid_device([&](const hid_device_info& hid_dev_info, const std::string&){
+                v4l_hid_device::foreach_hid_device([&](const hid_device_info& hid_dev_info){
                     results.push_back(hid_dev_info);
                 });
 
@@ -1878,8 +2303,6 @@ namespace rsimpl2
         {
             return std::make_shared<v4l_backend>();
         }
-
-
     }
 }
 

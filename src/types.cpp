@@ -66,6 +66,10 @@ namespace rsimpl2
         CASE(FISHEYE)
         CASE(GYRO)
         CASE(ACCEL)
+        CASE(GPIO1)
+        CASE(GPIO2)
+        CASE(GPIO3)
+        CASE(GPIO4)
         default: assert(!is_valid(value)); return unknown;
         }
         #undef CASE
@@ -139,6 +143,7 @@ namespace rsimpl2
         CASE(ERROR_POLLING_ENABLED)
         CASE(PROJECTOR_TEMPERATURE)
         CASE(OUTPUT_TRIGGER_ENABLED)
+        CASE(MOTION_MODULE_TEMPERATURE)
         default: assert(!is_valid(value)); return unknown;
         }
         #undef CASE
@@ -166,6 +171,7 @@ namespace rsimpl2
         CASE(UYVY)
         CASE(MOTION_RAW)
         CASE(MOTION_XYZ32F)
+        CASE(GPIO_RAW)
         default: assert(!is_valid(value)); return unknown;
         }
         #undef CASE

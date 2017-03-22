@@ -583,7 +583,7 @@ void hid_endpoint::open(const std::vector<stream_profile>& requests)
     _hid_device->open();
     for (auto& request : requests)
     {
-        auto sensor_iio = rs2_stream_to_sensor_iio(request.stream);
+        auto sensor_name = rs2_stream_to_sensor_name(request.stream);
         for (auto& map : mapping)
         {
             auto it = std::find_if(begin(map.unpacker->outputs), end(map.unpacker->outputs),
@@ -594,13 +594,14 @@ void hid_endpoint::open(const std::vector<stream_profile>& requests)
 
             if (it != end(map.unpacker->outputs))
             {
-                _configured_profiles.insert(std::make_pair(sensor_iio,
+                _configured_profiles.insert(std::make_pair(sensor_name,
                                                            stream_profile{request.stream,
                                                                           request.width,
                                                                           request.height,
                                                                           fps_to_sampling_frequency(request.stream, request.fps),
                                                                           request.format}));
-                _iio_mapping.insert(std::make_pair(sensor_iio, map));
+                _is_configured_stream[request.stream] = true;
+                _hid_mapping.insert(std::make_pair(sensor_name, map));
             }
         }
     }
@@ -617,8 +618,24 @@ void hid_endpoint::close()
 
     _hid_device->close();
     _configured_profiles.clear();
-    _iio_mapping.clear();
+    _is_configured_stream.clear();
+    _is_configured_stream.resize(RS2_STREAM_COUNT);
+    _hid_mapping.clear();
     _is_opened = false;
+}
+
+// TODO:
+static rs2_stream custom_gpio_to_stream_type(uint32_t custom_gpio)
+{
+    auto gpio = RS2_STREAM_GPIO1 + custom_gpio;
+    if (gpio >= RS2_STREAM_GPIO1 &&
+        gpio <= RS2_STREAM_GPIO4)
+    {
+        return static_cast<rs2_stream>(gpio);
+    }
+
+    LOG_ERROR("custom_gpio " << std::to_string(custom_gpio) << " is incorrect!");
+    return RS2_STREAM_ANY;
 }
 
 void hid_endpoint::start_streaming(frame_callback_ptr callback)
@@ -631,42 +648,70 @@ void hid_endpoint::start_streaming(frame_callback_ptr callback)
 
     _archive = std::make_shared<frame_archive>(&_max_publish_list_size, _ts);
     _callback = std::move(callback);
-    std::vector<uvc::iio_profile> configured_iio_profiles;
+    std::vector<uvc::hid_profile> configured_hid_profiles;
     for (auto& elem : _configured_profiles)
     {
-        configured_iio_profiles.push_back(uvc::iio_profile{elem.first, elem.second.fps});
+        configured_hid_profiles.push_back(uvc::hid_profile{elem.first, elem.second.fps});
     }
 
-
-    _hid_device->start_capture(configured_iio_profiles, [this](const uvc::sensor_data& sensor_data)
+    _hid_device->start_capture(configured_hid_profiles, [this](const uvc::sensor_data& sensor_data)
     {
         auto system_time = _ts->get_time();
+        auto timestamp_reader = _hid_iio_timestamp_reader.get();
+
+        // TODO:
+        static const std::string custom_sensor_name = "custom";
+        auto sensor_name = sensor_data.sensor.name;
+        bool is_custom_sensor = false;
+        static const uint32_t custom_source_id_offset = 16;
+        uint8_t custom_gpio = 0;
+        auto custom_stream_type = RS2_STREAM_ANY;
+        if (sensor_name == custom_sensor_name)
+        {
+            custom_gpio = *(reinterpret_cast<uint8_t*>((uint8_t*)(sensor_data.fo.pixels) + custom_source_id_offset));
+            custom_stream_type = custom_gpio_to_stream_type(custom_gpio);
+
+            if (!_is_configured_stream[custom_stream_type])
+            {
+                LOG_DEBUG("Unrequested " << rs2_stream_to_string(custom_stream_type) << " frame was dropped.");
+                return;
+            }
+
+            is_custom_sensor = true;
+            timestamp_reader = _custom_hid_timestamp_reader.get();
+        }
 
         if (!this->is_streaming())
         {
             LOG_INFO("HID Frame received when Streaming is not active,"
-                        << get_string(_configured_profiles[sensor_data.sensor.iio].stream)
+                        << get_string(_configured_profiles[sensor_name].stream)
                         << ",Arrived," << std::fixed << system_time);
             return;
         }
 
-        auto mode = _iio_mapping[sensor_data.sensor.iio];
+        auto mode = _hid_mapping[sensor_name];
         auto data_size = sensor_data.fo.frame_size;
         mode.profile.width = (uint32_t)data_size;
         mode.profile.height = 1;
 
         // Determine the timestamp for this HID frame
-        auto timestamp = _timestamp_reader->get_frame_timestamp(mode, sensor_data.fo);
-        auto frame_counter = _timestamp_reader->get_frame_counter(mode, sensor_data.fo);
+        auto timestamp = timestamp_reader->get_frame_timestamp(mode, sensor_data.fo);
+        auto frame_counter = timestamp_reader->get_frame_counter(mode, sensor_data.fo);
 
         frame_additional_data additional_data;
-        additional_data.format = _configured_profiles[sensor_data.sensor.iio].format;
-        additional_data.stream_type = _configured_profiles[sensor_data.sensor.iio].stream;
+        additional_data.format = _configured_profiles[sensor_name].format;
+
+        // TODO: Add frame_additional_data reader?
+        if (is_custom_sensor)
+            additional_data.stream_type = custom_stream_type;
+        else
+            additional_data.stream_type = _configured_profiles[sensor_name].stream;
+
         additional_data.width = mode.profile.width;
         additional_data.height = mode.profile.height;
         additional_data.timestamp = timestamp;
         additional_data.frame_number = frame_counter;
-        additional_data.timestamp_domain = _timestamp_reader->get_frame_timestamp_domain(mode, sensor_data.fo);
+        additional_data.timestamp_domain = timestamp_reader->get_frame_timestamp_domain(mode, sensor_data.fo);
 
         LOG_DEBUG("FrameAccepted," << get_string(additional_data.stream_type) << "," << frame_counter
                   << ",Arrived," << std::fixed << system_time
@@ -700,7 +745,8 @@ void hid_endpoint::stop_streaming()
     flush();
     _callback.reset();
     _archive.reset();
-    _timestamp_reader->reset();
+    _hid_iio_timestamp_reader->reset();
+    _custom_hid_timestamp_reader->reset();
 }
 
 
@@ -716,24 +762,14 @@ std::vector<stream_profile> hid_endpoint::get_device_profiles()
     return stream_requests;
 }
 
-uint32_t hid_endpoint::rs2_stream_to_sensor_iio(rs2_stream stream) const
+const std::string& hid_endpoint::rs2_stream_to_sensor_name(rs2_stream stream) const
 {
     for (auto& elem : _sensor_name_and_hid_profiles)
     {
         if (stream == elem.second.stream)
-            return get_iio_by_name(elem.first);
+            return elem.first;
     }
     throw invalid_value_exception("rs2_stream not found!");
-}
-
-uint32_t hid_endpoint::get_iio_by_name(const std::string& name) const
-{
-    for (auto& elem : _hid_sensors)
-    {
-        if (!elem.name.compare(name))
-            return elem.iio;
-    }
-    throw invalid_value_exception("sensor_name not found!");
 }
 
 uint32_t hid_endpoint::stream_to_fourcc(rs2_stream stream) const
@@ -752,16 +788,16 @@ uint32_t hid_endpoint::stream_to_fourcc(rs2_stream stream) const
 
 uint32_t hid_endpoint::fps_to_sampling_frequency(rs2_stream stream, uint32_t fps) const
 {
-    uint32_t sampling_frequency = 0;
-    try{
-        sampling_frequency = _fps_and_sampling_frequency_per_rs2_stream.at(stream).at(fps);
-    }
-    catch(std::out_of_range)
-    {
-        throw invalid_value_exception(to_string() << "sampling_frequency of fps " << fps << " not found!");
-    }
+    // TODO: Add log prints
+    auto it = _fps_and_sampling_frequency_per_rs2_stream.find(stream);
+    if (it == _fps_and_sampling_frequency_per_rs2_stream.end())
+        return fps;
 
-    return sampling_frequency;
+    auto fps_mapping = it->second.find(fps);
+    if (fps_mapping != it->second.end())
+        return fps_mapping->second;
+    else
+        return fps;
 }
 
 void start_adaptor::start(rs2_stream stream, frame_callback_ptr ptr)
@@ -787,7 +823,7 @@ void start_adaptor::start(rs2_stream stream, frame_callback_ptr ptr)
                 rs2_stream_to_string(stream) <<
                 " while it is already streaming!");
         }
-        _active_callbacks++;
+        ++_active_callbacks;
         _callbacks[stream] = move(ptr);
     }
 }
@@ -814,7 +850,7 @@ void start_adaptor::stop(rs2_stream stream)
                 " before calling start for it!");
         }
         _callbacks.erase(stream);
-        _active_callbacks--;
+        --_active_callbacks;
         lock.unlock();
 
         if (_active_callbacks == 0)

@@ -95,6 +95,19 @@ namespace rsimpl2
         memcpy(dest[0] + 6, source + 16, 8);
     }
 
+    void unpack_input_reports_data(byte * const dest[], const byte * source, int count)
+    {
+        // Input Report Struct
+        // uint8_t  sensor_state
+        // uint8_t  sourceId
+        // uint32_t customTimestamp
+        // uint8_t  mmCounter
+        // uint8_t  usbCounter
+        static const int input_reports_size = 9;
+        static const int input_reports_offset = 15;
+        memcpy(dest[0], source + input_reports_offset, input_reports_size);
+    }
+
     template<size_t SIZE> void copy_pixels(byte * const dest[], const byte * source, int count)
     {
         memcpy(dest[0], source, SIZE * count);
@@ -783,7 +796,7 @@ namespace rsimpl2
 
 
     const native_pixel_format pf_yuyv       = { 'YUYV', 1, 2,{  { true,  &unpack_yuy2<RS2_FORMAT_RGB8 >,                  { { RS2_STREAM_COLOR,    RS2_FORMAT_RGB8 } } },
-                                                                { false, &copy_pixels<2>,                                { { RS2_STREAM_COLOR,    RS2_FORMAT_YUYV } } },
+                                                                { false, &copy_pixels<2>,                                 { { RS2_STREAM_COLOR,    RS2_FORMAT_YUYV } } },
                                                                 { true,  &unpack_yuy2<RS2_FORMAT_RGBA8>,                  { { RS2_STREAM_COLOR,    RS2_FORMAT_RGBA8 } } },
                                                                 { true,  &unpack_yuy2<RS2_FORMAT_BGR8 >,                  { { RS2_STREAM_COLOR,    RS2_FORMAT_BGR8 } } },
                                                                 { true,  &unpack_yuy2<RS2_FORMAT_BGRA8>,                  { { RS2_STREAM_COLOR,    RS2_FORMAT_BGRA8 } } } } };
@@ -791,6 +804,10 @@ namespace rsimpl2
                                                                 { false, &unpack_hid_raw_data,                            { { RS2_STREAM_ACCEL,    RS2_FORMAT_MOTION_RAW  } } }}};
     const native_pixel_format pf_gyro_axes  = { 'GYRO', 1, 1,{  { true,  &unpack_gyro_axes<RS2_FORMAT_MOTION_XYZ32F>,     { { RS2_STREAM_GYRO,     RS2_FORMAT_MOTION_XYZ32F } } },
                                                                 { false, &unpack_hid_raw_data,                            { { RS2_STREAM_GYRO,     RS2_FORMAT_MOTION_RAW  } } }}};
+    const native_pixel_format pf_gpio_timestamp = { 'GPIO', 1, 1,{  { false, &unpack_input_reports_data,                  { { RS2_STREAM_GPIO1,    RS2_FORMAT_GPIO_RAW },
+                                                                                                                            { RS2_STREAM_GPIO2,    RS2_FORMAT_GPIO_RAW },
+                                                                                                                            { RS2_STREAM_GPIO3,    RS2_FORMAT_GPIO_RAW },
+                                                                                                                            { RS2_STREAM_GPIO4,    RS2_FORMAT_GPIO_RAW }} } } };
 
 }
 

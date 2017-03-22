@@ -147,7 +147,6 @@ namespace rsimpl2
 
         struct hid_sensor
         {
-            uint32_t iio; // Industrial I/O - An index that represents a single hardware sensor
             std::string name;
         };
 
@@ -169,10 +168,20 @@ namespace rsimpl2
             frame_object fo;
         };
 
-        struct iio_profile
+        struct hid_profile
         {
-            uint32_t iio;
+            std::string sensor_name;
             uint32_t frequency;
+        };
+
+        enum custom_sensor_report_field{
+            minimum,
+            maximum,
+            name,
+            size,
+            unit_expo,
+            units,
+            value
         };
 
         typedef std::function<void(const sensor_data&)> hid_callback;
@@ -184,8 +193,11 @@ namespace rsimpl2
             virtual void open() = 0;
             virtual void close() = 0;
             virtual void stop_capture() = 0;
-            virtual void start_capture(const std::vector<iio_profile>& iio_profiles, hid_callback callback) = 0;
+            virtual void start_capture(const std::vector<hid_profile>& hid_profiles, hid_callback callback) = 0;
             virtual std::vector<hid_sensor> get_sensors() = 0;
+            virtual std::vector<uint8_t> get_custom_report_data(const std::string& custom_sensor_name,
+                                                                const std::string& report_name,
+                                                                custom_sensor_report_field report_field) = 0;
         };
 
 

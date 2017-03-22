@@ -48,7 +48,8 @@ namespace rsimpl2
             hid_stop_capture,
             hid_start_capture,
             hid_frame,
-            hid_get_sensors
+            hid_get_sensors,
+            hid_get_custom_report_data
         };
 
         class compression_algorithm
@@ -273,8 +274,11 @@ namespace rsimpl2
             void open() override;
             void close() override;
             void stop_capture() override;
-            void start_capture(const std::vector<iio_profile>& iio_profiles, hid_callback callback) override;
+            void start_capture(const std::vector<hid_profile>& hid_profiles, hid_callback callback) override;
             std::vector<hid_sensor> get_sensors() override;
+            std::vector<uint8_t> get_custom_report_data(const std::string& custom_sensor_name,
+                                                        const std::string& report_name,
+                                                        custom_sensor_report_field report_field) override;
 
             record_hid_device(std::shared_ptr<hid_device> source,
                 int id, const record_backend* owner)
@@ -421,9 +425,11 @@ namespace rsimpl2
             void open() override;
             void close() override;
             void stop_capture() override;
-            void start_capture(const std::vector<iio_profile>& iio_profiles, hid_callback callback) override;
+            void start_capture(const std::vector<hid_profile>& hid_profiles, hid_callback callback) override;
             std::vector<hid_sensor> get_sensors() override;
-
+            std::vector<uint8_t> get_custom_report_data(const std::string& custom_sensor_name,
+                                                        const std::string& report_name,
+                                                        custom_sensor_report_field report_field) override;
             void callback_thread();
             ~playback_hid_device();
 

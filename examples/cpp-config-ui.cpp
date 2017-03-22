@@ -58,7 +58,7 @@ public:
             else
             {
                 std::string txt = to_string() << label << ":";
-                ImGui::Text(txt.c_str());
+                ImGui::Text("%s", txt.c_str());
                 ImGui::PushItemWidth(-1);
 
                 try
@@ -117,7 +117,7 @@ public:
             auto desc = endpoint.get_option_description(opt);
             if (ImGui::IsItemHovered() && desc)
             {
-                ImGui::SetTooltip(desc);
+                ImGui::SetTooltip("%s", desc);
             }
         }
     }
@@ -212,7 +212,8 @@ class subdevice_model
 {
 public:
     subdevice_model(device dev, std::string& error_message)
-        : dev(dev), streaming(false), queues(RS2_STREAM_COUNT)
+        : dev(dev), streaming(false), queues(RS2_STREAM_COUNT),
+          selected_shared_fps_id(0)
     {
         for (auto& elem : queues)
         {
@@ -303,7 +304,7 @@ public:
                 profiles.push_back(profile);
             }
 
-            show_single_fps_list = is_there_equal_fps_groups();
+            show_single_fps_list = is_there_common_fps();
 
             // set default selections
             int selection_index;
@@ -351,33 +352,41 @@ public:
     }
 
 
-    bool is_there_equal_fps_groups()
+    bool is_there_common_fps()
     {
-        for (int i = 0 ; i < (fps_values_per_stream.size() - 1) ; ++i)
+        std::vector<int> first_fps_group;
+        auto group_index = 0;
+        for (; group_index < fps_values_per_stream.size() ; ++group_index)
         {
-            for (int j = i + 1 ; j < fps_values_per_stream.size() ; ++j)
+            if (!fps_values_per_stream[(rs2_stream)group_index].empty())
             {
-                auto group1 = fps_values_per_stream[(rs2_stream)i];
-                auto group2 = fps_values_per_stream[(rs2_stream)j];
-                if ((group1.size() != group2.size()) || group1.empty() || group2.empty())
-                    continue;
-
-                std::sort(group1.begin(), group1.end());
-                std::sort(group2.begin(), group2.end());
-                bool is_equals = true;
-                for (int w = 0 ; w < group1.size() ; ++w)
-                {
-                    if (group1[w] != group2[w])
-                    {
-                        is_equals = false;
-                        break;
-                    }
-                }
-                if (is_equals)
-                    return true;
+                first_fps_group = fps_values_per_stream[(rs2_stream)group_index];
+                break;
             }
         }
-        return false;
+
+        for (int i = group_index + 1 ; i < fps_values_per_stream.size() ; ++i)
+        {
+            auto fps_group = fps_values_per_stream[(rs2_stream)i];
+            if (fps_group.empty())
+                continue;
+
+            for (auto& fps1 : first_fps_group)
+            {
+                auto it = std::find_if(std::begin(fps_group),
+                                       std::end(fps_group),
+                                       [&](const int& fps2)
+                {
+                    return fps2 == fps1;
+                });
+                if (it != std::end(fps_group))
+                {
+                    break;
+                }
+                return false;
+            }
+        }
+        return true;
     }
 
     void draw_stream_selection()
@@ -390,7 +399,7 @@ public:
         std::string label = to_string() << dev.get_camera_info(RS2_CAMERA_INFO_DEVICE_NAME)
             << dev.get_camera_info(RS2_CAMERA_INFO_MODULE_NAME) << " resolution";
         if (streaming)
-            ImGui::Text(res_chars[selected_res_id]);
+            ImGui::Text("%s", res_chars[selected_res_id]);
         else
         {
             ImGui::Combo(label.c_str(), &selected_res_id, res_chars.data(),
@@ -412,7 +421,7 @@ public:
 
             if (streaming)
             {
-                ImGui::Text(fps_chars[selected_shared_fps_id]);
+                ImGui::Text("%s", fps_chars[selected_shared_fps_id]);
             }
             else
             {
@@ -452,7 +461,7 @@ public:
                         label += " stream:";
 
                     if (streaming)
-                        ImGui::Text(label.c_str());
+                        ImGui::Text("%s", label.c_str());
                     else
                         ImGui::Checkbox(label.c_str(), &stream_enabled[stream]);
                 }
@@ -474,7 +483,7 @@ public:
 
                 if (streaming)
                 {
-                    ImGui::Text(formats_chars[selected_format_id[stream]]);
+                    ImGui::Text("%s", formats_chars[selected_format_id[stream]]);
                 }
                 else
                 {
@@ -496,7 +505,7 @@ public:
 
                     if (streaming)
                     {
-                        ImGui::Text(fps_chars[selected_fps_id[stream]]);
+                        ImGui::Text("%s", fps_chars[selected_fps_id[stream]]);
                     }
                     else
                     {
@@ -743,7 +752,7 @@ public:
         }
     }
 
-    double get_fps()
+    double get_fps() const
     {
         std::lock_guard<std::mutex> lock(_mtx);
         if (_delta == 0)
@@ -1182,7 +1191,7 @@ struct notification_model
 
 
 
-        ImGui::Text(message.c_str());
+        ImGui::Text("%s", message.c_str());
 
         if(lines == 1)
             ImGui::SameLine();
@@ -1407,7 +1416,7 @@ int main(int, char**) try
 
         rs2_error* e = nullptr;
         label = to_string() << "VERSION: " << api_version_to_string(rs2_get_api_version(&e));
-        ImGui::Text(label.c_str());
+        ImGui::Text("%s", label.c_str());
 
         // Device Details Menu - Elaborate details on connected devices
         if (ImGui::CollapsingHeader("Device Details", nullptr, true, true))
@@ -1454,17 +1463,17 @@ int main(int, char**) try
                     ss << rs2_camera_info_to_string(info) << ":";
                     auto line = ss.str();
                     ImGui::PushStyleColor(ImGuiCol_Text, { 1.0f, 1.0f, 1.0f, 0.5f });
-                    ImGui::Text(line.c_str());
+                    ImGui::Text("%s", line.c_str());
                     ImGui::PopStyleColor();
 
                     // retrieve property value
                     ImGui::SameLine();
                     auto value = dev.get_camera_info(info);
-                    ImGui::Text(value);
+                    ImGui::Text("%s", value);
 
                     if (ImGui::IsItemHovered())
                     {
-                        ImGui::SetTooltip(value);
+                        ImGui::SetTooltip("%s", value);
                     }
                 }
             }
@@ -1477,6 +1486,9 @@ int main(int, char**) try
             {
                 try
                 {
+                    const float stream_all_button_width = 290;
+                    const float stream_all_button_height = 0;
+
                     auto anything_stream = false;
                     for (auto&& sub : model.subdevices)
                     {
@@ -1486,7 +1498,7 @@ int main(int, char**) try
                     {
                         label = to_string() << "Start All";
 
-                        if (ImGui::Button(label.c_str(), { 290, 0 }))
+                        if (ImGui::Button(label.c_str(), { stream_all_button_width, stream_all_button_height }))
                         {
                             for (auto&& sub : model.subdevices)
                             {
@@ -1512,7 +1524,7 @@ int main(int, char**) try
                     {
                         label = to_string() << "Stop All";
 
-                        if (ImGui::Button(label.c_str(), { 270, 0 }))
+                        if (ImGui::Button(label.c_str(), { stream_all_button_width, stream_all_button_height }))
                         {
                             for (auto&& sub : model.subdevices)
                             {
@@ -1569,7 +1581,7 @@ int main(int, char**) try
                             }
                             else
                             {
-                                ImGui::TextDisabled(label.c_str());
+                                ImGui::TextDisabled("%s", label.c_str());
                             }
                         }
                         else
@@ -1713,11 +1725,11 @@ int main(int, char**) try
                 << "Frame# " << model.streams[stream].frame_number << ", "
                 << "FPS:";
 
-            ImGui::Text(label.c_str());
+            ImGui::Text("%s", label.c_str());
             ImGui::SameLine();
 
             label = to_string() << std::setprecision(2) << std::fixed << model.streams[stream].fps.get_fps();
-            ImGui::Text(label.c_str());
+            ImGui::Text("%s", label.c_str());
             if (ImGui::IsItemHovered())
             {
                 ImGui::SetTooltip("FPS is calculated based on timestamps and not viewer time");
@@ -1751,7 +1763,7 @@ int main(int, char**) try
 
             label = to_string() << "Timestamp: " << std::fixed << std::setprecision(3) << model.streams[stream].timestamp
                                 << ", Domain:";
-            ImGui::Text(label.c_str());
+            ImGui::Text("%s", label.c_str());
 
             ImGui::SameLine();
             auto domain = model.streams[stream].timestamp_domain;
@@ -1760,7 +1772,7 @@ int main(int, char**) try
             if (domain == RS2_TIMESTAMP_DOMAIN_SYSTEM_TIME)
             {
                 ImGui::PushStyleColor(ImGuiCol_Text, { 1.0f, 0.0f, 0.0f, 1.0f });
-                ImGui::Text(label.c_str());
+                ImGui::Text("%s", label.c_str());
                 if (ImGui::IsItemHovered())
                 {
                     ImGui::SetTooltip("Hardware Timestamp unavailable! This is often an indication of inproperly applied Kernel patch.\nPlease refer to installation.md for mode information");
@@ -1769,7 +1781,7 @@ int main(int, char**) try
             }
             else
             {
-                ImGui::Text(label.c_str());
+                ImGui::Text("%s", label.c_str());
                 if (ImGui::IsItemHovered())
                 {
                     ImGui::SetTooltip("Specifies the clock-domain for the timestamp (hardware-clock / system-time)");
@@ -1790,7 +1802,7 @@ int main(int, char**) try
                 auto x = ((mouse.cursor.x - stream_rect.x) / stream_rect.w) * stream_size.x;
                 auto y = ((mouse.cursor.y - stream_rect.y) / stream_rect.h) * stream_size.y;
                 label = to_string() << std::fixed << std::setprecision(0) << x << ", " << y;
-                ImGui::Text(label.c_str());
+                ImGui::Text("%s", label.c_str());
 
                 ImGui::End();
                 ImGui::PopStyleColor();

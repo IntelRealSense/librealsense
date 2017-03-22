@@ -156,15 +156,12 @@ namespace rsimpl2
     class ds5_timestamp_reader : public frame_timestamp_reader
     {
         static const int pins = 2;
-        std::vector<int64_t> total;
-        std::vector<int> last_timestamp;
         mutable std::vector<int64_t> counter;
         std::shared_ptr<uvc::time_service> _ts;
         mutable std::recursive_mutex _mtx;
     public:
         ds5_timestamp_reader(std::shared_ptr<uvc::time_service> ts)
-            : total(pins),
-              last_timestamp(pins), counter(pins), _ts(ts)
+            : counter(pins), _ts(ts)
         {
             reset();
         }
@@ -174,8 +171,6 @@ namespace rsimpl2
             std::lock_guard<std::recursive_mutex> lock(_mtx);
             for (auto i = 0; i < pins; ++i)
             {
-                total[i] = 0;
-                last_timestamp[i] = 0;
                 counter[i] = 0;
             }
         }
@@ -202,21 +197,15 @@ namespace rsimpl2
         }
     };
 
-    class ds5_hid_timestamp_reader : public frame_timestamp_reader
+    class ds5_iio_hid_timestamp_reader : public frame_timestamp_reader
     {
         static const int sensors = 2;
         bool started;
-        std::vector<int64_t> total;
-        std::vector<int> last_timestamp;
         mutable std::vector<int64_t> counter;
         mutable std::recursive_mutex _mtx;
-        const unsigned hid_data_size = 14;      // RS4xx HID Data:: 3 Words for axes + 8-byte Timestamp
-        const double timestamp_to_ms = 0.001;
     public:
-        ds5_hid_timestamp_reader()
+        ds5_iio_hid_timestamp_reader()
         {
-            total.resize(sensors);
-            last_timestamp.resize(sensors);
             counter.resize(sensors);
             reset();
         }
@@ -227,8 +216,6 @@ namespace rsimpl2
             started = false;
             for (auto i = 0; i < sensors; ++i)
             {
-                total[i] = 0;
-                last_timestamp[i] = 0;
                 counter[i] = 0;
             }
         }
@@ -240,7 +227,7 @@ namespace rsimpl2
             if(has_metadata(mode, fo.metadata, fo.metadata_size))
             {
                 auto timestamp = *((uint64_t*)((const uint8_t*)fo.metadata));
-                return static_cast<rs2_time_t>(timestamp) * timestamp_to_ms;
+                return static_cast<rs2_time_t>(timestamp) * TIMESTAMP_TO_MILLISECONS;
             }
 
             if (!started)
@@ -278,6 +265,56 @@ namespace rsimpl2
                 return RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK;
             }
             return RS2_TIMESTAMP_DOMAIN_SYSTEM_TIME;
+        }
+    };
+
+    class ds5_custom_hid_timestamp_reader : public frame_timestamp_reader
+    {
+        static const int sensors = 4; // TODO: implement frame-counter for each GPIO or
+                                      //       reading counter field report
+        mutable std::vector<int64_t> counter;
+        mutable std::recursive_mutex _mtx;
+    public:
+        ds5_custom_hid_timestamp_reader()
+        {
+            counter.resize(sensors);
+            reset();
+        }
+
+        void reset() override
+        {
+            std::lock_guard<std::recursive_mutex> lock(_mtx);
+            for (auto i = 0; i < sensors; ++i)
+            {
+                counter[i] = 0;
+            }
+        }
+
+        rs2_time_t get_frame_timestamp(const request_mapping& /*mode*/, const uvc::frame_object& fo) override
+        {
+            std::lock_guard<std::recursive_mutex> lock(_mtx);
+            static const uint8_t timestamp_offset = 17;
+
+            auto timestamp = *((uint64_t*)((const uint8_t*)fo.pixels + timestamp_offset));
+            return static_cast<rs2_time_t>(timestamp) * TIMESTAMP_TO_MILLISECONS;
+
+            return std::chrono::duration<rs2_time_t, std::milli>(std::chrono::system_clock::now().time_since_epoch()).count();
+        }
+
+        bool has_metadata(const request_mapping& /*mode*/, const void * /*metadata*/, size_t /*metadata_size*/) const
+        {
+            return true;
+        }
+
+        unsigned long long get_frame_counter(const request_mapping & mode, const uvc::frame_object& fo) const override
+        {
+            std::lock_guard<std::recursive_mutex> lock(_mtx);
+            return ++counter.front();
+        }
+
+        rs2_timestamp_domain get_frame_timestamp_domain(const request_mapping & /*mode*/, const uvc::frame_object& /*fo*/) const
+        {
+            return RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK;
         }
     };
 
@@ -368,6 +405,9 @@ namespace rsimpl2
 
             float query() const override
             {
+                if (!is_enabled())
+                    throw wrong_api_call_sequence_exception("query option is allow only in streaming!");
+
                 #pragma pack(push, 1)
                 struct temperature
                 {
@@ -440,6 +480,61 @@ namespace rsimpl2
         private:
             uvc_endpoint& _ep;
             rs2_option _option;
+        };
+
+        class motion_module_temperature_option : public option
+        {
+        public:
+            bool is_read_only() const override { return true; }
+
+            void set(float) override
+            {
+                throw not_implemented_exception("option is read-only!");
+            }
+
+            float query() const override
+            {
+                if (!is_enabled())
+                    throw wrong_api_call_sequence_exception("query option is allow only in streaming!");
+
+                static const auto report_field = uvc::custom_sensor_report_field::value;
+                auto data = _ep.get_custom_report_data(custom_sensor_name, report_name, report_field);
+                auto data_str = std::string(reinterpret_cast<char const*>(data.data()));
+                return std::stoi(data_str);
+            }
+
+            option_range get_range() const override
+            {
+                if (!is_enabled())
+                    throw wrong_api_call_sequence_exception("get option range is allow only in streaming!");
+
+                static const auto min_report_field = uvc::custom_sensor_report_field::minimum;
+                static const auto max_report_field = uvc::custom_sensor_report_field::maximum;
+                auto min_data = _ep.get_custom_report_data(custom_sensor_name, report_name, min_report_field);
+                auto max_data = _ep.get_custom_report_data(custom_sensor_name, report_name, max_report_field);
+                auto min_str = std::string(reinterpret_cast<char const*>(min_data.data()));
+                auto max_str = std::string(reinterpret_cast<char const*>(max_data.data()));
+                return option_range{std::stof(min_str), std::stof(max_str), 0, 0};
+            }
+
+            bool is_enabled() const override
+            {
+                return _ep.is_streaming();
+            }
+
+            const char* get_description() const override
+            {
+                return "Current Motion-Module Temperature";
+            }
+
+            explicit motion_module_temperature_option(hid_endpoint& ep)
+                : _ep(ep)
+            {}
+
+        private:
+            const std::string custom_sensor_name = "custom";
+            const std::string report_name = "data-field-custom-usage";
+            hid_endpoint& _ep;
         };
 
         class enable_auto_exposure_option : public option
@@ -624,7 +719,8 @@ namespace rsimpl2
         };
 
         std::shared_ptr<hid_endpoint> create_hid_device(const uvc::backend& backend,
-                                                        const std::vector<uvc::hid_device_info>& all_hid_infos);
+                                                        const std::vector<uvc::hid_device_info>& all_hid_infos,
+                                                        const firmware_version& camera_fw_version);
 
         std::shared_ptr<uvc_endpoint> create_depth_device(const uvc::backend& backend,
                                                           const std::vector<uvc::uvc_device_info>& all_device_infos);
@@ -656,7 +752,7 @@ namespace rsimpl2
         std::vector<uint8_t> get_raw_calibration_table(ds::calibration_table_id table_id) const;
 
         // Bandwidth parameters from BOSCH BMI 055 spec'
-        const std::vector<std::pair<std::string, stream_profile>> sensor_name_and_hid_profiles =
+        std::vector<std::pair<std::string, stream_profile>> sensor_name_and_hid_profiles =
             {{std::string("gyro_3d"),  {RS2_STREAM_GYRO,  1, 1, 200,  RS2_FORMAT_MOTION_RAW}},
              {std::string("gyro_3d"),  {RS2_STREAM_GYRO,  1, 1, 400,  RS2_FORMAT_MOTION_RAW}},
              {std::string("gyro_3d"),  {RS2_STREAM_GYRO,  1, 1, 1000, RS2_FORMAT_MOTION_RAW}},

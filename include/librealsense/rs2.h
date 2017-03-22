@@ -53,6 +53,10 @@ typedef enum rs2_stream
     RS2_STREAM_FISHEYE                          , /**< Native stream of fish-eye (wide) data captured from the dedicate motion camera */
     RS2_STREAM_GYRO                             , /**< Native stream of gyroscope motion data produced by RealSense device */
     RS2_STREAM_ACCEL                            , /**< Native stream of accelerometer motion data produced by RealSense device */
+    RS2_STREAM_GPIO1                            , /**< Signals from external device connected through GPIO1 */
+    RS2_STREAM_GPIO2                            , /**< Signals from external device connected through GPIO2 */
+    RS2_STREAM_GPIO3                            , /**< Signals from external device connected through GPIO3 */
+    RS2_STREAM_GPIO4                            , /**< Signals from external device connected through GPIO4 */
     RS2_STREAM_COUNT
 } rs2_stream;
 
@@ -75,6 +79,7 @@ typedef enum rs2_format
     RS2_FORMAT_UYVY            , /**< Similar to the standard YUYV pixel format, but packed in a different order */
     RS2_FORMAT_MOTION_RAW      , /**< Raw data from the motion sensor */
     RS2_FORMAT_MOTION_XYZ32F   , /**< Motion data packed as 3 32-bit float values, for X, Y, and Z axis */
+    RS2_FORMAT_GPIO_RAW        , /**< Raw data from the GPIO's */
     RS2_FORMAT_COUNT             /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
 } rs2_format;
 
@@ -144,6 +149,7 @@ typedef enum rs2_option
     RS2_OPTION_ERROR_POLLING_ENABLED                      , /**< disable error handling */
     RS2_OPTION_PROJECTOR_TEMPERATURE                      , /**< Current Projector Temperature */
     RS2_OPTION_OUTPUT_TRIGGER_ENABLED                     , /**< Enable / disable trigger to be outputed from the camera to any external device on every depth frame */
+    RS2_OPTION_MOTION_MODULE_TEMPERATURE                  , /**< Current Motion-Module Temperature */
     RS2_OPTION_COUNT                                      , /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
 } rs2_option;
 

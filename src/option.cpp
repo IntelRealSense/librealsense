@@ -100,13 +100,10 @@ void rsimpl2::polling_errors_disable::set(float value)
         _polling_error_handler->start();
         _value = 1;
     }
-
-
 }
 
 float rsimpl2::polling_errors_disable::query() const
 {
-
     return _value;
 }
 
@@ -136,4 +133,3 @@ const char * rsimpl2::polling_errors_disable::get_value_description(float value)
         return "Enable error polling";
     }
 }
-

@@ -63,4 +63,4 @@ namespace rsimpl2
              LOG_DEBUG("Notification polling loop is being shut-down");
          }
     }
-};
+}

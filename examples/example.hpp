@@ -16,6 +16,7 @@
 #include <cmath>
 
 namespace rs2
+
 {
     inline void make_depth_histogram(uint8_t rgb_image[], const uint16_t depth_image[], int width, int height)
     {
@@ -395,6 +396,7 @@ namespace rs2
                 break;
             case RS2_FORMAT_RAW8:
             case RS2_FORMAT_MOTION_RAW:
+            case RS2_FORMAT_GPIO_RAW:
                 glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE, width, height, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, data);
                 break;
             case RS2_FORMAT_RAW10:
