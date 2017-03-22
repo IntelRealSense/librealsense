@@ -733,6 +733,18 @@ namespace rsimpl2
         memcpy(dest[0], in, count*2);
     }
 
+    void unpack_rgb_from_bgr(byte * const dest[], const byte * source, int count)
+    {
+        auto in = reinterpret_cast<const uint8_t *>(source);
+        auto out = reinterpret_cast<uint8_t *>(dest[0]);
+
+        memcpy(out, in, count * 3);
+        for (auto i = 0; i < count; i++)
+        {
+            std::swap(out[i * 3], out[i * 3 + 2]);
+        }
+    }
+
     //////////////////////////
     // Native pixel formats //
     //////////////////////////
@@ -766,6 +778,9 @@ namespace rsimpl2
                                                                 { true,  &unpack_uyvy<RS2_FORMAT_RGBA8>,                  { { RS2_STREAM_INFRARED, RS2_FORMAT_RGBA8} } },
                                                                 { true,  &unpack_uyvy<RS2_FORMAT_BGR8 >,                  { { RS2_STREAM_INFRARED, RS2_FORMAT_BGR8 } } },
                                                                 { true,  &unpack_uyvy<RS2_FORMAT_BGRA8>,                  { { RS2_STREAM_INFRARED, RS2_FORMAT_BGRA8} } } } };
+
+    const native_pixel_format pf_rgb888     = { 'RGB2', 1, 2,{  { true,  &unpack_rgb_from_bgr,                            { { RS2_STREAM_INFRARED, RS2_FORMAT_RGB8 } } } } };
+
 
     const native_pixel_format pf_yuyv       = { 'YUYV', 1, 2,{  { true,  &unpack_yuy2<RS2_FORMAT_RGB8 >,                  { { RS2_STREAM_COLOR,    RS2_FORMAT_RGB8 } } },
                                                                 { false, &copy_pixels<2>,                                { { RS2_STREAM_COLOR,    RS2_FORMAT_YUYV } } },

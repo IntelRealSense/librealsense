@@ -204,6 +204,7 @@ namespace rsimpl2
         depth_ep->register_pixel_format(pf_y8); // Left Only - Luminance
         depth_ep->register_pixel_format(pf_yuyv); // Left Only
         depth_ep->register_pixel_format(pf_uyvyl); // Color from Depth
+        depth_ep->register_pixel_format(pf_rgb888); 
         depth_ep->register_pu(RS2_OPTION_GAIN);
 
         // TODO: These if conditions will be implemented as inheritance classes
