@@ -21,6 +21,7 @@
 #include <map>
 #include <algorithm>
 #include <condition_variable>
+#include <functional>
 #include "backend.h"
 
 #include "concurrency.h"

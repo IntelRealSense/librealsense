@@ -5,6 +5,7 @@
 #include "image.h"
 
 using namespace rsimpl2;
+#include <functional>
 
 
 int device::add_endpoint(std::shared_ptr<endpoint> endpoint)
