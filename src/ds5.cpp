@@ -103,16 +103,21 @@ namespace rsimpl2
             {
                 uvc::usb_device_info hwm;
 
+                std::vector<uvc::usb_device_info> hwm_devices;
                 if (ds::try_fetch_usb_device(usb, devices.front(), hwm))
                 {
-                    auto info = std::make_shared<ds5_info>(backend, devices, hwm, hids);
-                    chosen.insert(chosen.end(), devices.begin(), devices.end());
-                    results.push_back(info);
+                    hwm_devices.push_back(hwm);
+
                 }
                 else
                 {
-                    LOG_WARNING("try_fetch_usb_device(...) failed.");
+                    LOG_DEBUG("try_fetch_usb_device(...) failed.");
                 }
+
+                auto info = std::make_shared<ds5_info>(backend, devices, hwm_devices, hids);
+                chosen.insert(chosen.end(), devices.begin(), devices.end());
+                results.push_back(info);
+
             }
             else
             {
@@ -247,18 +252,33 @@ namespace rsimpl2
 
     ds5_camera::ds5_camera(const uvc::backend& backend,
                            const std::vector<uvc::uvc_device_info>& dev_info,
-                           const uvc::usb_device_info& hwm_device,
+                           const std::vector<uvc::usb_device_info>& hwm_device,
                            const std::vector<uvc::hid_device_info>& hid_info)
-        : _depth_device_idx(add_endpoint(create_depth_device(backend, dev_info))),
-          _hw_monitor(std::make_shared<hw_monitor>(std::make_shared<locked_transfer>(backend.create_usb_device(hwm_device), get_depth_endpoint())))
+        : _depth_device_idx(add_endpoint(create_depth_device(backend, dev_info)))
     {
         using namespace ds;
+
+        if(hwm_device.size()>0)
+        {
+            _hw_monitor = std::make_shared<hw_monitor>(
+                                     std::make_shared<locked_transfer>(
+                                        backend.create_usb_device(hwm_device.front()), get_depth_endpoint()));
+        }
+        else
+        {
+            _hw_monitor = std::make_shared<hw_monitor>(
+                            std::make_shared<locked_transfer>(
+                                std::make_shared<command_transfer_over_xu>(
+                                    get_depth_endpoint(), rsimpl2::ds::depth_xu, rsimpl2::ds::DS5_HWMONITOR),
+                                get_depth_endpoint()));
+        }
 
         _coefficients_table_raw = [this]() { return get_raw_calibration_table(coefficients_table_id); };
 
         std::string device_name = (rs4xx_sku_names.end() != rs4xx_sku_names.find(dev_info.front().pid)) ? rs4xx_sku_names.at(dev_info.front().pid) : "RS4xx";
         auto camera_fw_version = _hw_monitor->get_firmware_version_string(GVD, camera_fw_version_offset);
         auto serial = _hw_monitor->get_module_serial_string(GVD, module_serial_offset);
+
 
         auto& depth_ep = get_depth_endpoint();
         auto advanced_mode = is_camera_in_advanced_mode();
@@ -278,6 +298,16 @@ namespace rsimpl2
         /* Note that for AutoExposure there is a switch from PU to XU as well*/
         if (camera_fw_version >= std::string("5.5.8"))
         {
+            //if hw_monitor was created by usb replace it xu
+            if(hwm_device.size()>0)
+            {
+                _hw_monitor = std::make_shared<hw_monitor>(
+                                std::make_shared<locked_transfer>(
+                                    std::make_shared<command_transfer_over_xu>(
+                                        get_depth_endpoint(), rsimpl2::ds::depth_xu, rsimpl2::ds::DS5_HWMONITOR),
+                                    get_depth_endpoint()));
+            }
+
             // MS XU range shall be hard-coded till a proper data parsing is provided for cross-platform
             option_range exposure_range =     { 1000,    160000,   1,     1000};
             option_range whitebalance_range = { 2800,    6500,     1,     2800};
@@ -293,55 +323,56 @@ namespace rsimpl2
                                                                                               exposure_range,
                                                                                               exposure_range.def));
 
+
             depth_ep.register_option(RS2_OPTION_GAIN,
-                                    std::make_shared<auto_disabling_control>(
-                                       std::make_shared<uvc_pu_option>(depth_ep, RS2_OPTION_GAIN),
-                                        auto_exposure));
+                                     std::make_shared<auto_disabling_control>(
+                                        std::make_shared<uvc_pu_option>(depth_ep, RS2_OPTION_GAIN),
+                                         auto_exposure));
 
 
-            if(pid != RS440P_PID && pid != RS450T_PID && pid != RS430C_PID)
-            {
-                depth_ep.register_option(RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE, std::make_shared<ms_xu_control_option>(depth_ep, ms_ctrl_depth_xu,
-                                                                                                                      MSXU_WHITEBALANCE, whitebalance_range.def));
+             if(pid != RS440P_PID && pid != RS450T_PID && pid != RS430C_PID)
+             {
+                 depth_ep.register_option(RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE, std::make_shared<ms_xu_control_option>(depth_ep, ms_ctrl_depth_xu,
+                                                                                                                       MSXU_WHITEBALANCE, whitebalance_range.def));
 
-            }
+             }
 
-            depth_ep.register_option(RS2_OPTION_OUTPUT_TRIGGER_ENABLED,
-                                        std::make_shared<uvc_xu_option<uint8_t>>(depth_ep, depth_xu, DS5_EXT_TRIGGER, 
-                                            "Generate trigger from the camera to external device once per frame"));
+             depth_ep.register_option(RS2_OPTION_OUTPUT_TRIGGER_ENABLED,
+                                         std::make_shared<uvc_xu_option<uint8_t>>(depth_ep, depth_xu, DS5_EXT_TRIGGER,
+                                             "Generate trigger from the camera to external device once per frame"));
 
-            auto error_control = std::unique_ptr<uvc_xu_option<uint8_t>>(new uvc_xu_option<uint8_t>(depth_ep, depth_xu, DS5_ERROR_REPORTING, "Error reporting"));
+             auto error_control = std::unique_ptr<uvc_xu_option<uint8_t>>(new uvc_xu_option<uint8_t>(depth_ep, depth_xu, DS5_ERROR_REPORTING, "Error reporting"));
 
-            _polling_error_handler = std::unique_ptr<polling_error_handler>(
-                new polling_error_handler(1000,
-                    std::move(error_control),
-                    depth_ep.get_notifications_proccessor(),
-  
-                    std::unique_ptr<notification_decoder>(new ds5_notification_decoder())));
+             _polling_error_handler = std::unique_ptr<polling_error_handler>(
+                 new polling_error_handler(1000,
+                     std::move(error_control),
+                     depth_ep.get_notifications_proccessor(),
 
-            _polling_error_handler->start();
+                     std::unique_ptr<notification_decoder>(new ds5_notification_decoder())));
 
-            depth_ep.register_option(RS2_OPTION_ERROR_POLLING_ENABLED, std::make_shared<polling_errors_disable>(_polling_error_handler.get()));
+             _polling_error_handler->start();
 
-            depth_ep.register_option(RS2_OPTION_ASIC_TEMPERATURE,
-                                     std::make_shared<asic_and_projector_temperature_options>(depth_ep,
-                                                                                              RS2_OPTION_ASIC_TEMPERATURE));
+             depth_ep.register_option(RS2_OPTION_ERROR_POLLING_ENABLED, std::make_shared<polling_errors_disable>(_polling_error_handler.get()));
 
-            depth_ep.register_option(RS2_OPTION_PROJECTOR_TEMPERATURE,
-                                     std::make_shared<asic_and_projector_temperature_options>(depth_ep,
-                                                                                             RS2_OPTION_PROJECTOR_TEMPERATURE));
-            if (pid == RS450T_PID)
-                motion_module_fw_version = _hw_monitor->get_firmware_version_string(GVD, motion_module_fw_version_offset);
-        }
-        else
-        {
-            depth_ep.register_pu(RS2_OPTION_GAIN);
-            depth_ep.register_pu(RS2_OPTION_ENABLE_AUTO_EXPOSURE);
-            depth_ep.register_option(RS2_OPTION_EXPOSURE,
-                std::make_shared<uvc_xu_option<uint16_t>>(depth_ep,
-                    depth_xu,
-                    DS5_EXPOSURE, "Depth Exposure"));
-        }
+             depth_ep.register_option(RS2_OPTION_ASIC_TEMPERATURE,
+                                      std::make_shared<asic_and_projector_temperature_options>(depth_ep,
+                                                                                               RS2_OPTION_ASIC_TEMPERATURE));
+
+             depth_ep.register_option(RS2_OPTION_PROJECTOR_TEMPERATURE,
+                                      std::make_shared<asic_and_projector_temperature_options>(depth_ep,
+                                                                                              RS2_OPTION_PROJECTOR_TEMPERATURE));
+             if (pid == RS450T_PID)
+                 motion_module_fw_version = _hw_monitor->get_firmware_version_string(GVD, motion_module_fw_version_offset);
+         }
+         else
+         {
+             depth_ep.register_pu(RS2_OPTION_GAIN);
+             depth_ep.register_pu(RS2_OPTION_ENABLE_AUTO_EXPOSURE);
+             depth_ep.register_option(RS2_OPTION_EXPOSURE,
+                 std::make_shared<uvc_xu_option<uint16_t>>(depth_ep,
+                     depth_xu,
+                     DS5_EXPOSURE, "Depth Exposure"));
+         }
 
 
         depth_ep.set_roi_method(std::make_shared<ds5_auto_exposure_roi_method>(*_hw_monitor));

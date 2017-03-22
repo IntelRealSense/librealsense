@@ -179,55 +179,58 @@ namespace rsimpl2
 
 
 
-    /** \brief gain_control_option class provided controll
-     * that disable auto exposure whan changing the gain value */
+    /** \brief auto_disabling_control class provided a control
+     * that disable auto exposure whan changing the auto disabling control value */
     class auto_disabling_control : public option
     {
     public:
         const char* get_value_description(float val) const override
         {
-            return _gain->get_value_description(val);
+            return _auto_disabling_control->get_value_description(val);
         }
         const char* get_description() const override
         {
-             return _gain->get_description();
+             return _auto_disabling_control->get_description();
         }
         void set(float value) override
         {
            auto strong = _auto_exposure.lock();
+           auto is_auto = strong->query();
 
-           if(strong && strong->query() == true)
+           if(strong && is_auto)
            {
                LOG_DEBUG("Move auto exposure to menual mode in order set value to gain controll");
                strong->set(0);
            }
-           _gain->set(value);
+           _auto_disabling_control->set(value);
         }
+
         float query() const override
         {
-            return _gain->query();
+            return _auto_disabling_control->query();
         }
         option_range get_range() const override
         {
-            return _gain->get_range();
+            return _auto_disabling_control->get_range();
         }
         bool is_enabled() const override
         {
-            return  _gain->is_enabled();        }
+            return  _auto_disabling_control->is_enabled();
+        }
         bool is_read_only() const override
         {
-            return  _gain->is_read_only();
+            return  _auto_disabling_control->is_read_only();
         }
 
 
-        explicit auto_disabling_control(std::shared_ptr<option> gain,
+        explicit auto_disabling_control(std::shared_ptr<option> auto_disabling,
                                       std::shared_ptr<option>auto_exposure)
 
-            :_gain(gain), _auto_exposure(auto_exposure)
+            :_auto_disabling_control(auto_disabling), _auto_exposure(auto_exposure)
         {}
 
     private:
-        std::shared_ptr<option> _gain;
+        std::shared_ptr<option> _auto_disabling_control;
         std::weak_ptr<option> _auto_exposure;
 
     };

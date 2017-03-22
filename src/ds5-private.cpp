@@ -28,16 +28,16 @@ namespace rsimpl2
             {
             case coefficients_table_id:
             {
-                if (raw_data.size() != sizeof(coefficients_table))
-                {
-                    throw invalid_value_exception(to_string() << "DS5 Coefficients table read error, actual size is " << raw_data.size() << " while expecting " << sizeof(coefficients_table) << " bytes");
-                }
+//                if (raw_data.size() != sizeof(coefficients_table))
+//                {
+//                    throw invalid_value_exception(to_string() << "DS5 Coefficients table read error, actual size is " << raw_data.size() << " while expecting " << sizeof(coefficients_table) << " bytes");
+//                }
                 auto table = reinterpret_cast<const coefficients_table *>(raw_data.data());
                 LOG_DEBUG("DS5 Coefficients table: version [mjr.mnr]: 0x" << hex << setfill('0') << setw(4) << table->header.version << dec
                     << ", type " << table->header.table_type << ", size " << table->header.table_size
                     << ", CRC: " << hex << table->header.crc32);
                 // verify the parsed table
-                if (table->header.crc32 != calc_crc32(raw_data.data() + sizeof(table_header), raw_data.size() - sizeof(table_header)))
+                if (table->header.crc32 != calc_crc32(raw_data.data() + sizeof(table_header), sizeof(coefficients_table) - sizeof(table_header)))
                 {
                     throw invalid_value_exception("DS5 Coefficients table CRC error, parsing aborted");
                 }

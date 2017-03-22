@@ -306,7 +306,7 @@ namespace rsimpl2
 
         ds5_info(std::shared_ptr<uvc::backend> backend,
                  std::vector<uvc::uvc_device_info> depth,
-                 uvc::usb_device_info hwm,
+                 std::vector<uvc::usb_device_info> hwm,
                  std::vector<uvc::hid_device_info> hid)
             : device_info(std::move(backend)), _hwm(std::move(hwm)),
               _depth(std::move(depth)), _hid(std::move(hid)) {}
@@ -319,7 +319,7 @@ namespace rsimpl2
 
     private:
         std::vector<uvc::uvc_device_info> _depth;
-        uvc::usb_device_info _hwm;
+        std::vector<uvc::usb_device_info> _hwm;
         std::vector<uvc::hid_device_info> _hid;
     };
 
@@ -636,7 +636,7 @@ namespace rsimpl2
 
         ds5_camera(const uvc::backend& backend,
             const std::vector<uvc::uvc_device_info>& dev_info,
-            const uvc::usb_device_info& hwm_device,
+            const std::vector<uvc::usb_device_info>& hwm_device,
             const std::vector<uvc::hid_device_info>& hid_info);
 
         std::vector<uint8_t> send_receive_raw_data(const std::vector<uint8_t>& input) override;
