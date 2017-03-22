@@ -19,8 +19,6 @@ This project is a cross-platform library (Linux, Windows, Mac) for capturing dat
 
 Developer kits containing the necessary hardware to use this library are available for purchase at [this link](http://click.intel.com/realsense.html). This project is separate from the production software stack available in the [Intel® RealSense™ SDK](https://software.intel.com/en-us/intel-realsense-sdk), namely that this library only encompasses camera capture functionality without additional computer vision algorithms.
 
-The Intel® RealSense™ Cross Platform API is experimental and not an official Intel product. It is subject to incompatible API changes in future updates.
-
 ## Table of Contents
 * [Installation Guide](#installation-guide)
 * [Documentation](#documentation)
@@ -40,18 +38,17 @@ The Intel® RealSense™ Cross Platform API is experimental and not an official 
 
 A comprehensive suite of sample and tutorial applications are provided in the `/examples` subdirectory. For new users, it is best to review the tutorial series of apps which are designed to progressively introduce API features.
 
-* [C API](./include/librealsense2/rs.h) - With doxygen-style API comments
 * To build documentation locally from sources, on Ubuntu run the following commands:
-    * `sudo apt-get install doxygen`
+  * `sudo apt-get install doxygen`
 	* `doxygen doc/doxygen/doxyfile`
-* [Python Bindings](./doc/python.md)
-* [What's New?](./doc/whats_new.md)
-* [Projection APIs](./doc/projection.md) - A guide on coordinate systems, calibration information, and projection
-* [Camera Spec Sheet](./doc/camera_specs.md) - A brief overview of R200, F200 and SR300
-* [Developer Notes](./doc/dev_log.md) - Several informal notes gathered during internal releases
-* [Stream Formats](./doc/supported_video_formats.pdf) - A list of available stream resolutions and pixel formats provided by the supported devices.
-* [troubleshooting.md](./doc/troubleshooting.md) - Useful tips when debugging issues related to the camera.
-  
+* [C API](./include/librealsense2/rs.h) - With doxygen-style API comments
+* [Python Bindings](./doc/python.md) - official python bindings for librealsense
+* [What's New?](./doc/rs400_support.md) - changes in librealsense2
+* [Getting Started](./doc/stepbystep/getting_started_with_openCV.md) - Getting started with OpenCV
+* [Troubleshooting](./doc/troubleshooting.md) - Useful tips when debugging issues related to the camera
+* Device specific topics:
+  * [RS400 and External Devices](./doc/rs400/external_devices.md) - Notes on integrating RS400 with external devices
+
 ## Functionality
 
 1. Native streams: depth, color, infrared and fisheye.
@@ -72,7 +69,7 @@ The library is written in standards-conforming C++11 and relies only on the C89 
 
 1. Ubuntu 14/16 LTS (GCC 4.9 toolchain)
 2. Windows 10 (Visual Studio 2015 Update 3)
-3. Mac OS X 10.7+ (Clang toolchain)
+3. Mac OS X 10.7+ (Clang toolchain) **Temporarily unavailable**
 
 ## Hardware Requirements
 Developer kits containing the necessary hardware to use this library are available for purchase at [this link](http://click.intel.com/realsense.html). In addition, several consumer tablets and laptops with integrated cameras may also function, such as the [HP Spectre x2 with R200](http://store.hp.com/us/en/ContentView?storeId=10151&langId=-1&catalogId=10051&eSpotName=new-detachable).
@@ -80,9 +77,6 @@ Developer kits containing the necessary hardware to use this library are availab
 Developer kits **require** USB 3.0. RealSense™ cameras do not provide backwards compatibility with USB 2.0. Not all USB host chipsets are compatible with this library, although it has been validated with recent generations of the Intel Host Controller chipset. An exhaustive list of incompatible hardware is not presently provided. On x86, a Haswell or newer architecture is recommended.
 
 For small-form factor usages, this library has been demonstrated to work on the following boards:
-  * [Intel Compute Stick, BOXSTK1AW32SCR](http://www.amazon.com/Intel-Compute-BOXSTK1AW32SCR-Windows-32-bit/dp/B01ASB0DJ8)
-  * [MinnowBoard Max](http://minnowboard.org)
-  * [Kangaroo MD2B](http://www.amazon.com/Kangaroo-MD2B-Mobile-Desktop-Computer/dp/B017J20D8U)
   * [UP Board](http://www.up-board.org/kickstarter/up-intel-realsense-technology/)
   * [Intel Joule](https://newsroom.intel.com/chip-shots/make-amazing-things-happen-iot-entrepreneurship-intel-joule/)
 

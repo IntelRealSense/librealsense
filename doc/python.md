@@ -1,10 +1,12 @@
-# Table of Contents
+# Python Wrapper
+
+## Table of Contents
 * [Installation Guide](#installation-guide)
 * [Examples](#examples)
 
-# Installation Guide
+## Installation Guide
 
-## Ubuntu 14.04/16.04 LTS Installation
+### Ubuntu 14.04/16.04 LTS Installation
 1. Ensure apt-get is up to date
   * `sudo apt-get update && sudo apt-get upgrade`
   * **Note:** Use `sudo apt-get dist-upgrade`, instead of `sudo apt-get upgrade`, in case you have an older Ubuntu 14.04 version
@@ -13,12 +15,12 @@
   * **Note:** The project will only use Python2 if it can't use Python3
 3. run the toplevel cmake command with the following additional flag: -DBUILD_PYTHON_BINDINGS=bool:true
 
-## Windows Installation
+### Windows Installation
 1. Install Python 2 or 3 for windows
   * You can find the downloads on the official Python website [here](https://www.python.org/downloads/windows/)
 2. When running cmake, select the BUILD_PYTHON_BINDINGS option
 
-# Examples
+## Examples
 ```python
 import pylibrealsense as rs
 
