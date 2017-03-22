@@ -16,7 +16,7 @@ librealsense2 brings number of improvements and new capabilities which are incom
 * librealsense2 provides more flexible interface for frames acquisition. Instead of a single `wait_for_frames` loop, the API is based on callbacks and queues:
 ```cpp
 // Configure queue of size one and start streaming frames into it
-rs::frame_queue queue(1);
+rs2::frame_queue queue(1);
 dev.start(queue);
 // This call will block until new frame will become available
 auto frame = queue.wait_for_frame();
@@ -25,7 +25,7 @@ auto pixels = frame.get_data(); // pointer to frame data
 * The same API can be used in a slightly different way for **low-latency** applications:
 ```cpp
 // Configure direct callback for new frames:
-dev.start([](rs::frame frame){
+dev.start([](rs2::frame frame){
     auto pixels = frame.get_data(); // pointer to frame data
 });
 // The application will get notified
@@ -33,9 +33,9 @@ dev.start([](rs::frame frame){
 ```
 This approach allows users to bypass buffering and synchronization that was done by `wait_for_frames`.
 
-*  Users who do need to synchronize between different streams can take advantage of the `rs::util::syncer` helper class:
+*  Users who do need to synchronize between different streams can take advantage of the `rs2::util::syncer` helper class:
 ```cpp
-rs::util::syncer sync;
+rs2::util::syncer sync;
 dev.start(sync);
 // The following call will block until next coherent set of frames
 // based on frame timestamp
@@ -59,18 +59,18 @@ librealsense2 gets rid of arbitrary limitations imposed by previous versions wit
 * Each endpoint can be exclusively locked using `open/close` methods:
 ```cpp
 // Configure depth to run at VGA resolution at 30 frames per second
-dev.open({ RS_STREAM_DEPTH, 640, 480, 30, RS_FORMAT_Z16 });
+dev.open({ RS2_STREAM_DEPTH, 640, 480, 30, RS2_FORMAT_Z16 });
 // From this point on, device streaming is exclusively locked.
 dev.close(); // Release device ownership
 ```
-* Alternatively, users can use `rs::util::config` helper class to configure multiple endpoints at once:
+* Alternatively, users can use `rs2::util::config` helper class to configure multiple endpoints at once:
 ```cpp
-rs::util::config config;
+rs2::util::config config;
 // Declare your preferences
-config.enable_all(rs::preset::best_quality);
+config.enable_all(rs2::preset::best_quality);
 // Let the config object resolve it to concrete camera capabilities
 auto stream = config.open(dev);
-stream.start([](rs::frame) {}]);
+stream.start([](rs2::frame) {});
 ```
 
 ## Synthetic streams
@@ -82,8 +82,8 @@ librealsense will no longer provide the services of software rectification, alig
 Motion-tracking is a first-class citizen in librealsense2. Motion data can be acquired using the same APIs as depth and visual data:
 ```cpp
 // Configure the accelerometer to run at 500 frames per second
-dev.open({ RS_STREAM_ACCEL, 0, 0, 500, RS_FORMAT_MOTION_XYZ32F });
-rs::frame_queue queue(1);
+dev.open({ RS2_STREAM_ACCEL, 0, 0, 500, RS2_FORMAT_MOTION_XYZ32F });
+rs2::frame_queue queue(1);
 dev.start(queue);
 // Wait for next motion sample
 auto frame = queue.wait_for_frame();
@@ -91,7 +91,7 @@ auto data = frame.get_data();
 auto axes = *(reinterpret_cast<const float3*>(data));
 std::cout << axes.x << "," << axes.y << "," <<  axes.z << "\n";
 ```
-`rs::util::config` and `rs::util::syncer` can work with motion streams as well.
+`rs2::util::config` and `rs2::util::syncer` can work with motion streams as well.
 
 ## New Functionality
 
@@ -106,6 +106,7 @@ librealsense2 will no longer provide hand-written Visual Studio, QT-Creator and 
 
 * RS400 series does not require any kernel patches for streaming (starting with kernel 4.4.0.59)
 * Advanced camera features may still require kernel patches. Currently, getting **hardware timestamps** is dependent on a patch that has not been up-streamed yet. When not applied you can still use the camera, but you are going to receive system-time instead of optical timestamp.
+* Recently discovered bug in uvcvideo Kernel Module is likely to cause problems when working with exposure and auto-white-balance options. While fix is being up-streamed, librealsense will provide the fix as a Kernel patch.
 
 ## RS400 Advanced Mode
 RS400 series include an advanced set of capabilities, allowing expert users to tweak depth generation parameters and more.
