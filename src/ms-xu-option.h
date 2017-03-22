@@ -10,6 +10,7 @@
 
 #pragma once
 
+#include "option.h"
 namespace rsimpl2
 {
     // Depth subdevice XUs [depth:0;    vfID_UnitMsExtDepth = 0xE,  Node=3]
@@ -102,15 +103,16 @@ namespace rsimpl2
             }));
         }
 
-        explicit ms_xu_option(uvc_endpoint& ep, const uvc::extension_unit& xu, msxu_ctrl ctrl_id)
+        explicit ms_xu_option(uvc_endpoint& ep, const uvc::extension_unit& xu, msxu_ctrl ctrl_id, float def_value)
             : uvc_xu_option<T>(ep, xu, ctrl_id, msxu_map.at(ctrl_id)._desc),
-            _xu_lenght(msxu_map.at(ctrl_id)._lenght) {}
+            _xu_lenght(msxu_map.at(ctrl_id)._lenght), _def_value(def_value) {}
 
     protected:
         virtual void encode_data(const float& val, std::vector<uint8_t>& buf) const = 0; /**< Template method to be defined in derived classes*/
         virtual float decode_data(const std::vector<uint8_t>& buf) const = 0;
 
         const uint16_t _xu_lenght;       /**< The lenght of the data buffer to be exchanged with device*/
+        float _def_value;
     };
 
     /** \brief ms_xu_control_option class provided template specialization
@@ -145,29 +147,18 @@ namespace rsimpl2
                                       const uvc::extension_unit& xu,
                                       msxu_ctrl ctrl_id,
                                       float def_value)
-            : ms_xu_option(ep, xu, ctrl_id), _def_value(def_value)
+            : ms_xu_option(ep, xu, ctrl_id, def_value)
         {}
 
     private:
-        float _def_value;
+
     };
+
 
     /** \brief ms_xu_control_option class provided template specialization to set/get MS XU values (data channel). */
     class ms_xu_data_option : public ms_xu_option<float>
     {
     public:
-        bool is_enabled() const override
-        {
-            return static_cast<float>(_ep.invoke_powered(
-                [this](uvc::uvc_device& dev)
-            {
-                std::vector<uint8_t> transmit_buf(_xu_lenght, 0);
-                dev.get_xu(_xu, _id, const_cast<uint8_t*>(transmit_buf.data()), _xu_lenght);
-                auto mode = static_cast<msxu_ctrl_mode>(transmit_buf[msxu_mode]);
-                return mode == MSXU_MODE_D1_MANUAL;
-            }));
-        }
-
         option_range get_range() const override { return _range; }
 
         virtual void encode_data(const float& val, std::vector<uint8_t>& buf) const override;
@@ -176,11 +167,68 @@ namespace rsimpl2
         explicit ms_xu_data_option(uvc_endpoint& ep,
                                    const uvc::extension_unit& xu,
                                    msxu_ctrl ctrl_id,
-                                   option_range range)
-            : ms_xu_option(ep, xu, ctrl_id), _range(range)
+                                   option_range range, float def_value)
+            : ms_xu_option(ep, xu, ctrl_id, def_value), _range(range)
         {}
 
     private:
         option_range _range;
+    };
+
+
+
+
+
+    /** \brief gain_control_option class provided controll
+     * that disable auto exposure whan changing the gain value */
+    class auto_disabling_control : public option
+    {
+    public:
+        const char* get_value_description(float val) const override
+        {
+            return _gain->get_value_description(val);
+        }
+        const char* get_description() const override
+        {
+             return _gain->get_description();
+        }
+        void set(float value) override
+        {
+           auto strong = _auto_exposure.lock();
+
+           if(strong && strong->query() == true)
+           {
+               LOG_DEBUG("Move auto exposure to menual mode in order set value to gain controll");
+               strong->set(0);
+           }
+           _gain->set(value);
+        }
+        float query() const override
+        {
+            return _gain->query();
+        }
+        option_range get_range() const override
+        {
+            return _gain->get_range();
+        }
+        bool is_enabled() const override
+        {
+            return  _gain->is_enabled();        }
+        bool is_read_only() const override
+        {
+            return  _gain->is_read_only();
+        }
+
+
+        explicit auto_disabling_control(std::shared_ptr<option> gain,
+                                      std::shared_ptr<option>auto_exposure)
+
+            :_gain(gain), _auto_exposure(auto_exposure)
+        {}
+
+    private:
+        std::shared_ptr<option> _gain;
+        std::weak_ptr<option> _auto_exposure;
+
     };
 }

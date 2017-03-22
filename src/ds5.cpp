@@ -205,7 +205,7 @@ namespace rsimpl2
         depth_ep->register_pixel_format(pf_yuyv); // Left Only
         depth_ep->register_pixel_format(pf_uyvyl); // Color from Depth
         depth_ep->register_pixel_format(pf_rgb888); 
-        depth_ep->register_pu(RS2_OPTION_GAIN);
+
 
         // TODO: These if conditions will be implemented as inheritance classes
         auto pid = all_device_infos.front().pid;
@@ -278,27 +278,40 @@ namespace rsimpl2
         auto pid = dev_info.front().pid;
         auto pid_hex_str = hexify(pid>>8) + hexify(pid);
 
+
+        std::shared_ptr<option> auto_exposure;
         /* Auto/Manual Exposure an White Balance XU controls have alternative implementations based on FW version*/
         /* Note that for AutoExposure there is a switch from PU to XU as well*/
         if (camera_fw_version >= std::string("5.5.8"))
         {
             // MS XU range shall be hard-coded till a proper data parsing is provided for cross-platform
-//            option_range exposure_range =     { 1000,    160000,   1,     1000};
-//            option_range whitebalance_range = { 2800,    6500,     1,     2800};
+            option_range exposure_range =     { 1000,    160000,   1,     1000};
+            option_range whitebalance_range = { 2800,    6500,     1,     2800};
 
-//            depth_ep.register_xu(ms_ctrl_depth_xu); // MS XU node
-//            depth_ep.register_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, std::make_shared<ms_xu_control_option>(depth_ep, ms_ctrl_depth_xu,
-//                                                                                                             MSXU_EXPOSURE, exposure_range.def));
-//            depth_ep.register_option(RS2_OPTION_EXPOSURE, std::make_shared<ms_xu_data_option>(depth_ep,
-//                                                                                              ms_ctrl_depth_xu,
-//                                                                                              MSXU_EXPOSURE,
-//                                                                                              exposure_range));
-//            depth_ep.register_option(RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE, std::make_shared<ms_xu_control_option>(depth_ep, ms_ctrl_depth_xu,
-//                                                                                                                  MSXU_WHITEBALANCE, whitebalance_range.def));
-//            depth_ep.register_option(RS2_OPTION_WHITE_BALANCE, std::make_shared<ms_xu_data_option>(depth_ep,
-//                                                                                                   ms_ctrl_depth_xu,
-//                                                                                                   MSXU_WHITEBALANCE,
-//                                                                                                   whitebalance_range));
+            depth_ep.register_xu(ms_ctrl_depth_xu); // MS XU node
+
+            auto_exposure = std::make_shared<ms_xu_control_option>(depth_ep, ms_ctrl_depth_xu,
+                                                                        MSXU_EXPOSURE, exposure_range.def);
+            depth_ep.register_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, auto_exposure);
+            depth_ep.register_option(RS2_OPTION_EXPOSURE, std::make_shared<ms_xu_data_option>(depth_ep,
+                                                                                              ms_ctrl_depth_xu,
+                                                                                              MSXU_EXPOSURE,
+                                                                                              exposure_range,
+                                                                                              exposure_range.def));
+
+            depth_ep.register_option(RS2_OPTION_GAIN,
+                                    std::make_shared<auto_disabling_control>(
+                                       std::make_shared<uvc_pu_option>(depth_ep, RS2_OPTION_GAIN),
+                                        auto_exposure));
+
+
+            if(pid != RS440P_PID && pid != RS450T_PID && pid != RS430C_PID)
+            {
+                depth_ep.register_option(RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE, std::make_shared<ms_xu_control_option>(depth_ep, ms_ctrl_depth_xu,
+                                                                                                                      MSXU_WHITEBALANCE, whitebalance_range.def));
+
+            }
+
 
             auto error_control = std::unique_ptr<uvc_xu_option<uint8_t>>(new uvc_xu_option<uint8_t>(depth_ep, depth_xu, DS5_ERROR_REPORTING, "Error reporting"));
 
@@ -316,6 +329,7 @@ namespace rsimpl2
             depth_ep.register_option(RS2_OPTION_ASIC_TEMPERATURE,
                                      std::make_shared<asic_and_projector_temperature_options>(depth_ep,
                                                                                               RS2_OPTION_ASIC_TEMPERATURE));
+
             depth_ep.register_option(RS2_OPTION_PROJECTOR_TEMPERATURE,
                                      std::make_shared<asic_and_projector_temperature_options>(depth_ep,
                                                                                              RS2_OPTION_PROJECTOR_TEMPERATURE));
@@ -324,13 +338,13 @@ namespace rsimpl2
         }
         else
         {
+            depth_ep.register_pu(RS2_OPTION_GAIN);
             depth_ep.register_pu(RS2_OPTION_ENABLE_AUTO_EXPOSURE);
             depth_ep.register_option(RS2_OPTION_EXPOSURE,
                 std::make_shared<uvc_xu_option<uint16_t>>(depth_ep,
                     depth_xu,
                     DS5_EXPOSURE, "Depth Exposure"));
         }
-
 
 
         depth_ep.set_roi_method(std::make_shared<ds5_auto_exposure_roi_method>(*_hw_monitor));

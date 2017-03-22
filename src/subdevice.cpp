@@ -518,7 +518,7 @@ const std::string& endpoint::get_info(rs2_camera_info info) const
 
 void endpoint::register_option(rs2_option id, std::shared_ptr<option> option)
 {
-    _options[id] = std::move(option);
+    _options[id] = option;
 }
 
 void uvc_endpoint::register_pu(rs2_option id)

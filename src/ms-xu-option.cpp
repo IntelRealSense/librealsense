@@ -27,16 +27,17 @@ option_range ms_xu_control_option::get_range() const
 void ms_xu_control_option::encode_data(const float& val, std::vector<uint8_t>& _transmit_buf) const
 {
     auto state = static_cast<int>(val);
-
+    auto def = static_cast<int>(_def_value);
     switch (state) // The state is encoded in the first 8 bits
     {
     case 0:
         // Work-around: current spec does not define how to find the correct value to set
         // when moving from auto to manual mode, so we choose to set default
-        std::memcpy(&_transmit_buf[msxu_value], &_def_value, sizeof(_def_value));
+        std::memcpy(&_transmit_buf[msxu_value], &def, sizeof(def));
         _transmit_buf[msxu_mode]= MSXU_MODE_D1_MANUAL;
         break;
     case 1:
+        std::memcpy(&_transmit_buf[msxu_value], &def, sizeof(def));
         _transmit_buf[msxu_mode]= MSXU_MODE_D0_AUTO;
         break;
     default:
@@ -72,23 +73,22 @@ void ms_xu_data_option::encode_data(const float& val, std::vector<uint8_t>& _tra
 
 float ms_xu_data_option::decode_data(const std::vector<uint8_t>& _transmit_buf) const
 {
-    auto mode = static_cast<msxu_ctrl_mode>(_transmit_buf[msxu_mode]);
-    // Actual data is provided only when the control is set in manual mode.
-    switch (mode) // The state is encoded in the first 8 bits
-    {
-    case MSXU_MODE_D1_MANUAL:
-    {
-        auto val = reinterpret_cast<const uint64_t*>(&_transmit_buf[msxu_value]);
-        return static_cast<float>(*val);
-    }
-    case MSXU_MODE_D0_AUTO:
-    case MSXU_MODE_D2_LOCK:
-    case MSXU_MODE_D0_AUTO | MSXU_MODE_D2_LOCK:
-        throw wrong_api_call_sequence_exception(msxu_map.at((msxu_ctrl)_id)._desc +
-            " data query is available in Manual mode only. Actual: "  + std::to_string(mode));
-    default:
-        throw invalid_value_exception(msxu_map.at((msxu_ctrl)_id)._desc +
-             " is in unsupported Mode " + std::to_string(mode));
-    }
+      auto mode = static_cast<msxu_ctrl_mode>(_transmit_buf[msxu_mode]);
+      // Actual data is provided only when the control is set in manual mode.
+      switch (mode) // The state is encoded in the first 8 bits
+      {
+      case MSXU_MODE_D1_MANUAL:
+      {
+          auto val = reinterpret_cast<const uint64_t*>(&_transmit_buf[msxu_value]);
+          return static_cast<float>(*val);
+      }
+      case MSXU_MODE_D0_AUTO:
+      case MSXU_MODE_D2_LOCK:
+      case MSXU_MODE_D0_AUTO | MSXU_MODE_D2_LOCK:
+          return _def_value;
+      default:
+          throw invalid_value_exception(msxu_map.at((msxu_ctrl)_id)._desc +
+               " is in unsupported Mode " + std::to_string(mode));
+      }
 }
 }
