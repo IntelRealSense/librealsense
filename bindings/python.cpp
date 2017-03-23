@@ -3,7 +3,6 @@
 // convenience functions
 #include <pybind11/operators.h>
 
-
 // STL conversions
 #include <pybind11/stl.h>
 
@@ -93,7 +92,19 @@ PYBIND11_PLUGIN(NAME) {
         inst.fps = fps;
         inst.format = fmt;
     });
-  
+
+    py::class_<rs2::notification> notification(m, "notification");
+    notification.def(py::init<>())
+                .def("get_description", &rs2::notification::get_description,
+                     "Retrieve the notification's description.")
+                .def("get_timestamp", &rs2::notification::get_timestamp,
+                     "Retrieve the notification's arrival timestamp.")
+                .def("get_severity", &rs2::notification::get_severity,
+                     "Retrieve the notification's severity.");
+
+
+
+
     py::enum_<rs2_option> option(m, "option");
     option.value("backlight_compensation", RS2_OPTION_BACKLIGHT_COMPENSATION)
           .value("brightness", RS2_OPTION_BRIGHTNESS)
@@ -280,10 +291,22 @@ PYBIND11_PLUGIN(NAME) {
           .def("start", [](const rs2::device& dev, std::function<void(rs2::frame)> callback){
               dev.start(callback);
           }, "Start streaming.", "callback"_a)
-        .def("start", [](const rs2::device& dev, rs2::frame_queue& queue) {
+          .def("start", [](const rs2::device& dev, rs2::frame_queue& queue) {
               dev.start(queue);
-          }, "start streaming.", "queue"_a)
-          .def("stop", &rs2::device::stop, "Stop streaming.")
+          }, "Start streaming.", "queue"_a)
+          .def("start", [](const rs2::device& dev, rs2_stream s, std::function<void(rs2::frame)> callback) {
+              dev.start(s, callback);
+          }, "Start streaming of a specific stream.", "stream"_a, "callback"_a)
+          .def("start", [](const rs2::device& dev, rs2_stream s, rs2::frame_queue& queue) {
+              dev.start(s, queue);
+          }, "Start streaming of a specific stream.", "stream"_a, "queue"_a)
+          .def("stop", (void (rs2::device::*)(void) const) &rs2::device::stop, "Stop streaming.")
+          .def("stop", (void (rs2::device::*)(rs2_stream) const) &rs2::device::stop, "Stop streaming of a specific stream.")
+          .def("is_option_read_only", &rs2::device::is_option_read_only, "Check if a"
+               "particular option is read only.", "option"_a)
+          .def("set_notifications_callback", [](const rs2::device& dev, std::function<void(rs2::notification)> callback){
+              dev.set_notifications_callback(callback);
+          }, "Register notifications callback", "callback"_a)
           .def("get_option", &rs2::device::get_option, "Read option value from "
                "the device.", "option"_a)
           .def("get_option_range", &rs2::device::get_option_range, "Retrieve "
@@ -334,10 +357,11 @@ PYBIND11_PLUGIN(NAME) {
     // Bring the context class into python
     py::class_<rs2::context> context(m, "context");
     context.def(py::init<>())
-           .def("query_devices", &rs2::context::query_devices, "Create a static"
-                " snapshot of all connected devices a the time of the call")
-           .def("get_extrinsics", &rs2::context::get_extrinsics,
-                "from_device"_a, "to_device"_a);
+        .def("query_devices", &rs2::context::query_devices, "Create a static"
+            " snapshot of all connected devices a the time of the call")
+        .def("get_extrinsics", &rs2::context::get_extrinsics,
+            "from_device"_a, "to_device"_a)
+        .def("get_time", &rs2::context::get_time);
 
     py::enum_<rs2_log_severity> log_severity(m, "log_severity");
     log_severity.value("debug", RS2_LOG_SEVERITY_DEBUG)
