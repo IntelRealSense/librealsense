@@ -4,13 +4,13 @@ Date: Thu, 19 Jan 2017 13:17:02 -0500
 Subject: [PATCH] added support for uvc metadata
 
 ---
- drivers/media/usb/uvc/uvc_driver.c | 45 ++++++++++++++++++++++++++++++++++++++
- drivers/media/usb/uvc/uvc_video.c  | 19 +++++++++++-----
- drivers/media/usb/uvc/uvcvideo.h   |  3 ++-
- 3 files changed, 61 insertions(+), 6 deletions(-)
+ drivers/media/usb/uvc/uvc_driver.c | 54 ++++++++++++++++++++++++++++++++++++++
+ drivers/media/usb/uvc/uvc_video.c  | 19 ++++++++++----
+ drivers/media/usb/uvc/uvcvideo.h   |  4 +--
+ 3 files changed, 70 insertions(+), 7 deletions(-)
 
 diff --git a/drivers/media/usb/uvc/uvc_driver.c b/drivers/media/usb/uvc/uvc_driver.c
-index 9d44f8e..1b403b6 100644
+index 9d44f8e..b1b4d6b 100644
 --- a/drivers/media/usb/uvc/uvc_driver.c
 +++ b/drivers/media/usb/uvc/uvc_driver.c
 @@ -2729,6 +2729,60 @@ static struct usb_device_id uvc_ids[] = {
@@ -112,19 +112,20 @@ index 2b276ab..70c1a51 100644
  
  		stream->bulk.header_size = 0;
 diff --git a/drivers/media/usb/uvc/uvcvideo.h b/drivers/media/usb/uvc/uvcvideo.h
-index 020dbb7..badff62 100644
+index 020dbb7..58b14d3 100644
 --- a/drivers/media/usb/uvc/uvcvideo.h
 +++ b/drivers/media/usb/uvc/uvcvideo.h
-@@ -172,7 +172,7 @@
- #define DRIVER_VERSION		"1.1.1"
- 
- /* Number of isochronous URBs. */
--#define UVC_URBS		5
-+#define UVC_URBS		128
+@@ -176,8 +176,7 @@
  /* Maximum number of packets per URB. */
  #define UVC_MAX_PACKETS		32
  /* Maximum status buffer size in bytes of interrupt URB. */
-@@ -197,6 +197,7 @@
+-#define UVC_MAX_STATUS_SIZE	16
+-
++#define UVC_MAX_STATUS_SIZE	32
+ #define UVC_CTRL_CONTROL_TIMEOUT	300
+ #define UVC_CTRL_STREAMING_TIMEOUT	5000
+ 
+@@ -197,6 +196,7 @@
  #define UVC_QUIRK_RESTRICT_FRAME_RATE	0x00000200
  #define UVC_QUIRK_RESTORE_CTRLS_ON_INIT	0x00000400
  #define UVC_QUIRK_FORCE_Y8		0x00000800

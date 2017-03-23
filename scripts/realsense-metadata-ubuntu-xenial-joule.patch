@@ -1,7 +1,7 @@
-From 275691e608d258456789812ba0d754c50b517066 Mon Sep 17 00:00:00 2001
+From bddbfd6bdeac42020ca7d0c807f094daa858e3db Mon Sep 17 00:00:00 2001
 From: administrator <avishag.angerman@intel.com>
-Date: Sun, 23 Oct 2016 15:35:20 -0400
-Subject: [PATCH] Enable uvc metadata
+Date: Sun, 23 Oct 2016 13:47:42 -0400
+Subject: [PATCH] Meta for MS XU
 
 ---
  drivers/media/usb/uvc/uvc_driver.c | 45 ++++++++++++++++++++++++++++++++++++++
@@ -112,18 +112,18 @@ index 2b276ab..70c1a51 100644
  
  		stream->bulk.header_size = 0;
 diff --git a/drivers/media/usb/uvc/uvcvideo.h b/drivers/media/usb/uvc/uvcvideo.h
-index 7e4d3ee..313049f 100644
+index 7e4d3ee..90f69a7 100644
 --- a/drivers/media/usb/uvc/uvcvideo.h
 +++ b/drivers/media/usb/uvc/uvcvideo.h
-@@ -139,7 +139,7 @@
- #define DRIVER_VERSION		"1.1.1"
- 
- /* Number of isochronous URBs. */
--#define UVC_URBS		5
-+#define UVC_URBS		128
+@@ -143,7 +143,7 @@
  /* Maximum number of packets per URB. */
  #define UVC_MAX_PACKETS		32
  /* Maximum status buffer size in bytes of interrupt URB. */
+-#define UVC_MAX_STATUS_SIZE	16
++#define UVC_MAX_STATUS_SIZE	32
+ 
+ #define UVC_CTRL_CONTROL_TIMEOUT	300
+ #define UVC_CTRL_STREAMING_TIMEOUT	5000
 @@ -164,6 +164,7 @@
  #define UVC_QUIRK_RESTRICT_FRAME_RATE	0x00000200
  #define UVC_QUIRK_RESTORE_CTRLS_ON_INIT	0x00000400
