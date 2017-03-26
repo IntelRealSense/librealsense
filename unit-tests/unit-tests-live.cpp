@@ -930,7 +930,7 @@ TEST_CASE("Error handling sanity", "[live]") {
             {
                 if(subdevice.supports(RS2_OPTION_ERROR_POLLING_ENABLED))
                 {
-
+                    disable_sensitive_options_for(subdevice);
                     REQUIRE_NOTHROW(subdevice.set_option(RS2_OPTION_ERROR_POLLING_ENABLED, 1));
                     subdevice.set_notifications_callback([&](notification n)
                     {
@@ -969,6 +969,7 @@ TEST_CASE("Error handling sanity", "[live]") {
              {
                  if(subdevice.supports(RS2_OPTION_ERROR_POLLING_ENABLED))
                  {
+                     disable_sensitive_options_for(subdevice);
                      REQUIRE_NOTHROW(subdevice.set_option(RS2_OPTION_ERROR_POLLING_ENABLED, 0));
                      subdevice.set_notifications_callback([&](notification n)
                      {
@@ -988,6 +989,98 @@ TEST_CASE("Error handling sanity", "[live]") {
     }
 }
 
+TEST_CASE("Auto exposure behavior", "[live]") {
+
+    std::string SR300_PID = "0x0aa5";
+    std::stringstream s;
+    s<<SR300_PID;
+    int sr300_pid;
+    s>>std::hex>>sr300_pid;
+    //Require at least one device to be plugged in
+    rs2::context ctx;
+    if(make_context(space_to_underscore(Catch::getCurrentContext().getResultCapture()->getCurrentTestName()).c_str(), &ctx))
+    {
+
+        std::vector<device> list;
+        REQUIRE_NOTHROW(list = ctx.query_devices());
+        REQUIRE(list.size() > 0);
+
+
+        //enable error polling
+        for (auto && subdevice : list) {
+            if(!subdevice.supports(RS2_CAMERA_INFO_PRODUCT_ID))
+            {
+                continue;
+            }
+            std::string pid = subdevice.get_camera_info(RS2_CAMERA_INFO_PRODUCT_ID);
+            std::stringstream s;
+            s<<pid;
+            int curr_pid;
+            s>>std::hex>>curr_pid;
+
+            if(curr_pid != sr300_pid && subdevice.supports(RS2_OPTION_ENABLE_AUTO_EXPOSURE))
+            {
+                option_range renge;
+                option_range exposure_renge;
+
+                float val;
+
+                auto info = subdevice.get_camera_info(RS2_CAMERA_INFO_MODULE_NAME);
+                CAPTURE(info);
+
+                REQUIRE_NOTHROW(subdevice.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE,1));
+
+                SECTION("Disable auto exposure whan setting a value")
+                {
+
+                    REQUIRE_NOTHROW(renge = subdevice.get_option_range(RS2_OPTION_EXPOSURE));
+                    REQUIRE_NOTHROW(subdevice.set_option(RS2_OPTION_EXPOSURE,renge.max));
+                    CAPTURE(renge.max);
+                    REQUIRE_NOTHROW(val = subdevice.get_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE));
+                    REQUIRE(val == 0);
+                }
+
+                SECTION("Disable white balance whan setting a value")
+                {
+                    if(subdevice.supports(RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE) && subdevice.supports(RS2_OPTION_WHITE_BALANCE))
+                    {
+                        REQUIRE_NOTHROW(subdevice.set_option(RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE,1));
+                        REQUIRE_NOTHROW(renge = subdevice.get_option_range(RS2_OPTION_WHITE_BALANCE));
+                        REQUIRE_NOTHROW(subdevice.set_option(RS2_OPTION_WHITE_BALANCE,renge.max));
+                        CAPTURE(renge.max);
+                        REQUIRE_NOTHROW(val = subdevice.get_option(RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE));
+                        REQUIRE(val == 0);
+                    }
+
+                }
+
+                SECTION("Disable auto exposure whan setting a value to gain and set expusure value to default value")
+                {
+                    REQUIRE_NOTHROW(renge = subdevice.get_option_range(RS2_OPTION_GAIN));
+                    REQUIRE_NOTHROW(exposure_renge = subdevice.get_option_range(RS2_OPTION_EXPOSURE));
+                    REQUIRE_NOTHROW(subdevice.set_option(RS2_OPTION_GAIN,renge.max));
+                    CAPTURE(renge.max);
+                    REQUIRE_NOTHROW(val = subdevice.get_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE));
+                    REQUIRE(val == 0);
+                    REQUIRE_NOTHROW(val = subdevice.get_option(RS2_OPTION_EXPOSURE));
+                    REQUIRE(val == exposure_renge.def);
+
+                    REQUIRE_NOTHROW(subdevice.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE,1));
+                    REQUIRE_NOTHROW(renge = subdevice.get_option_range(RS2_OPTION_GAIN));
+                    REQUIRE_NOTHROW(subdevice.set_option(RS2_OPTION_GAIN,renge.min));
+                    CAPTURE(renge.min);
+                    REQUIRE_NOTHROW(val = subdevice.get_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE));
+                    REQUIRE(val == 0);
+                    REQUIRE_NOTHROW(val = subdevice.get_option(RS2_OPTION_EXPOSURE));
+                    REQUIRE(val == exposure_renge.def);
+                }
+
+            }
+
+        }
+
+    }
+}
 class AC_Mock_Device
 {
 public:
