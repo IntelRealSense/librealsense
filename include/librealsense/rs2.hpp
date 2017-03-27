@@ -1064,11 +1064,6 @@ namespace rs2
 
         frame_queue() : frame_queue(1) {}
 
-        ~frame_queue()
-        {
-            flush();
-        }
-
         /**
         * release all frames inside the queue
         */

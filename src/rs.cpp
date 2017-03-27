@@ -531,6 +531,7 @@ HANDLE_EXCEPTIONS_AND_RETURN(, device, on_notification, user)
 void rs2_start_queue(const rs2_device* device, rs2_stream stream, rs2_frame_queue* queue, rs2_error** error) try
 {
     VALIDATE_NOT_NULL(device);
+    VALIDATE_ENUM(stream);
     VALIDATE_NOT_NULL(queue);
     rsimpl2::frame_callback_ptr callback(
         new rsimpl2::frame_callback(rs2_enqueue_frame, queue));
