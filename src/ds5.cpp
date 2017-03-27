@@ -355,8 +355,8 @@ namespace rsimpl2
              }
 
              depth_ep.register_option(RS2_OPTION_OUTPUT_TRIGGER_ENABLED,
-                                         std::make_shared<uvc_xu_option<uint8_t>>(depth_ep, depth_xu, DS5_EXT_TRIGGER,
-                                             "Generate trigger from the camera to external device once per frame"));
+                                      std::make_shared<uvc_xu_option<uint8_t>>(depth_ep, depth_xu, DS5_EXT_TRIGGER,
+                                      "Generate trigger from the camera to external device once per frame"));
 
              auto error_control = std::unique_ptr<uvc_xu_option<uint8_t>>(new uvc_xu_option<uint8_t>(depth_ep, depth_xu, DS5_ERROR_REPORTING, "Error reporting"));
 
@@ -371,13 +371,15 @@ namespace rsimpl2
 
              depth_ep.register_option(RS2_OPTION_ERROR_POLLING_ENABLED, std::make_shared<polling_errors_disable>(_polling_error_handler.get()));
 
+             if (pid == RS410A_PID || pid == RS450T_PID || pid == RS430C_PID)
+             {
+                 depth_ep.register_option(RS2_OPTION_PROJECTOR_TEMPERATURE,
+                                          std::make_shared<asic_and_projector_temperature_options>(depth_ep,
+                                                                                                  RS2_OPTION_PROJECTOR_TEMPERATURE));
+             }
              depth_ep.register_option(RS2_OPTION_ASIC_TEMPERATURE,
                                       std::make_shared<asic_and_projector_temperature_options>(depth_ep,
                                                                                                RS2_OPTION_ASIC_TEMPERATURE));
-
-             depth_ep.register_option(RS2_OPTION_PROJECTOR_TEMPERATURE,
-                                      std::make_shared<asic_and_projector_temperature_options>(depth_ep,
-                                                                                              RS2_OPTION_PROJECTOR_TEMPERATURE));
              if (pid == RS450T_PID)
                  motion_module_fw_version = _hw_monitor->get_firmware_version_string(GVD, motion_module_fw_version_offset);
          }
