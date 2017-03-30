@@ -207,6 +207,7 @@ namespace rsimpl2
         CASE(ADVANCED_MODE)
         CASE(PRODUCT_ID)
         CASE(MOTION_MODULE_FIRMWARE_VERSION)
+        CASE(IS_CAMERA_LOCKED)
         default: assert(!is_valid(value)); return unknown;
         }
         #undef CASE

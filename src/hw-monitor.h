@@ -36,6 +36,8 @@ const uint16_t  IVCAM_MONITOR_MAX_BUFFER_SIZE   = 1024;
 const uint16_t  IVCAM_MONITOR_MUTEX_TIMEOUT     = 3000;
 const uint16_t  HW_MONITOR_COMMAND_SIZE         = 1000;
 const uint16_t  HW_MONITOR_BUFFER_SIZE          = 1024;
+const uint16_t  HW_MONITOR_DATA_SIZE_OFFSET     = 1020;
+const uint16_t  SIZE_OF_HW_MONITOR_HEADER       = 4;
 
 
 
@@ -164,5 +166,6 @@ namespace rsimpl2
         void get_gvd(size_t sz, char* gvd, uint8_t gvd_cmd) const;
         std::string get_firmware_version_string(int gvd_cmd, uint32_t offset) const;
         std::string get_module_serial_string(uint8_t gvd_cmd, uint32_t offset) const;
+        bool is_camera_locked(uint8_t gvd_cmd, uint32_t offset) const;
     };
 }

@@ -655,27 +655,33 @@ namespace rsimpl2
             }, _entity_id, call_type::uvc_init_xu);
         }
 
-        void record_uvc_device::set_xu(const extension_unit& xu, uint8_t ctrl, const uint8_t* data, int len)
+        bool record_uvc_device::set_xu(const extension_unit& xu, uint8_t ctrl, const uint8_t* data, int len)
         {
-            _owner->try_record([&](recording* rec, lookup_key k)
+            return _owner->try_record([&](recording* rec, lookup_key k)
             {
-                _source->set_xu(xu, ctrl, data, len);
+                auto sts = _source->set_xu(xu, ctrl, data, len);
 
                 auto&& c = rec->add_call(k);
                 c.param1 = ctrl;
                 c.param2 = rec->save_blob(data, len);
+                c.param3 = sts;
+
+                return sts;
             }, _entity_id, call_type::uvc_set_xu);
         }
 
-        void record_uvc_device::get_xu(const extension_unit& xu, uint8_t ctrl, uint8_t* data, int len) const
+        bool record_uvc_device::get_xu(const extension_unit& xu, uint8_t ctrl, uint8_t* data, int len) const
         {
-            _owner->try_record([&](recording* rec, lookup_key k)
+            return _owner->try_record([&](recording* rec, lookup_key k)
             {
-                _source->get_xu(xu, ctrl, data, len);
+                auto sts = _source->get_xu(xu, ctrl, data, len);
 
                 auto&& c = rec->add_call(k);
                 c.param1 = ctrl;
                 c.param2 = rec->save_blob(data, len);
+                c.param3 = sts;
+
+                return sts;
             }, _entity_id, call_type::uvc_get_xu);
         }
 
@@ -687,35 +693,42 @@ namespace rsimpl2
 
                 auto&& c = rec->add_call(k);
                 c.param1 = ctrl;
-                c.param2 = rec->save_blob(&res, sizeof(res));
+                c.param2 = rec->save_blob(res.def.data(), res.def.size());
+                c.param3 = rec->save_blob(res.min.data(), res.min.size());
+                c.param4 = rec->save_blob(res.max.data(), res.max.size());
+                c.param5 = rec->save_blob(res.step.data(), res.step.size());
 
                 return res;
             }, _entity_id, call_type::uvc_get_xu_range);
         }
 
-        int record_uvc_device::get_pu(rs2_option opt) const
+        bool record_uvc_device::get_pu(rs2_option opt, int32_t& value) const
         {
             return _owner->try_record([&](recording* rec, lookup_key k)
             {
-                auto res = _source->get_pu(opt);
-
-                auto&& c = rec->add_call(k);
-                c.param1 = opt;
-                c.param2 = res;
-
-                return res;
-            }, _entity_id, call_type::uvc_get_pu);
-        }
-
-        void record_uvc_device::set_pu(rs2_option opt, int value)
-        {
-            _owner->try_record([&](recording* rec, lookup_key k)
-            {
-                _source->set_pu(opt, value);
+                auto sts = _source->get_pu(opt, value);
 
                 auto&& c = rec->add_call(k);
                 c.param1 = opt;
                 c.param2 = value;
+                c.param3 = sts;
+
+                return sts;
+            }, _entity_id, call_type::uvc_get_pu);
+        }
+
+        bool record_uvc_device::set_pu(rs2_option opt, int32_t value)
+        {
+            return _owner->try_record([&](recording* rec, lookup_key k)
+            {
+                auto sts = _source->set_pu(opt, value);
+
+                auto&& c = rec->add_call(k);
+                c.param1 = opt;
+                c.param2 = value;
+                c.param3 = sts;
+
+                return sts;
             }, _entity_id, call_type::uvc_set_pu);
         }
 
@@ -1096,7 +1109,7 @@ namespace rsimpl2
             _rec->find_call(call_type::uvc_init_xu, _entity_id);
         }
 
-        void playback_uvc_device::set_xu(const extension_unit& xu, uint8_t ctrl, const uint8_t* data, int len)
+        bool playback_uvc_device::set_xu(const extension_unit& xu, uint8_t ctrl, const uint8_t* data, int len)
         {
             auto&& c = _rec->find_call(call_type::uvc_set_xu, _entity_id, [&](const call& call_found) 
             {
@@ -1109,9 +1122,10 @@ namespace rsimpl2
             {
                 throw playback_backend_exception("Recording history mismatch!", call_type::uvc_set_xu, _entity_id);
             }
+            return c.param3;
         }
 
-        void playback_uvc_device::get_xu(const extension_unit& xu, uint8_t ctrl, uint8_t* data, int len) const
+        bool playback_uvc_device::get_xu(const extension_unit& xu, uint8_t ctrl, uint8_t* data, int len) const
         {
             auto&& c = _rec->find_call(call_type::uvc_get_xu, _entity_id);
             if (c.param1 != ctrl)
@@ -1120,6 +1134,7 @@ namespace rsimpl2
             if (stored_data.size() != len)
                 throw playback_backend_exception("Recording history mismatch!", call_type::uvc_get_xu, _entity_id);
             memcpy(data, stored_data.data(), len);
+            return c.param3;
         }
 
         control_range playback_uvc_device::get_xu_range(const extension_unit& xu, uint8_t ctrl, int len) const
@@ -1130,27 +1145,31 @@ namespace rsimpl2
                 return call_found.param1 == ctrl;
             });
 
-            auto range = _rec->load_blob(c.param2);
-            memcpy(&res, range.data(), range.size());
+            res.def = _rec->load_blob(c.param2);
+            res.min = _rec->load_blob(c.param3);
+            res.max = _rec->load_blob(c.param4);
+            res.step = _rec->load_blob(c.param5);
+
             return res;
         }
 
-        int playback_uvc_device::get_pu(rs2_option opt) const
+        bool playback_uvc_device::get_pu(rs2_option opt, int32_t& value) const
         {
             auto&& c = _rec->find_call(call_type::uvc_get_pu, _entity_id, [&](const call& call_found)
             {
                 return call_found.param1 == opt;
             });
-
-            return c.param2;
+            value = c.param2;
+            return c.param3;
         }
 
-        void playback_uvc_device::set_pu(rs2_option opt, int value)
+        bool playback_uvc_device::set_pu(rs2_option opt, int32_t value)
         {
             auto&& c = _rec->find_call(call_type::uvc_set_pu, _entity_id, [&](const call& call_found)
             {
                 return call_found.param1 == opt && call_found.param2 == value;
             });
+            return c.param3;
         }
 
         control_range playback_uvc_device::get_pu_range(rs2_option opt) const

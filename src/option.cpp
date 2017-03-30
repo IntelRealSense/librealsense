@@ -10,7 +10,8 @@ void rsimpl2::uvc_pu_option::set(float value)
     _ep.invoke_powered(
         [this, value](uvc::uvc_device& dev)
         {
-            dev.set_pu(_id, static_cast<int>(value));
+            if (!dev.set_pu(_id, static_cast<int32_t>(value)))
+                throw invalid_value_exception(to_string() << "set_pu(id=" << _id << ") failed!" << " Last Error: " << strerror(errno));
         });
 }
 
@@ -19,7 +20,11 @@ float rsimpl2::uvc_pu_option::query() const
     return static_cast<float>(_ep.invoke_powered(
         [this](uvc::uvc_device& dev)
         {
-            return dev.get_pu(_id);
+            int32_t value = 0;
+            if (!dev.get_pu(_id, value))
+                throw invalid_value_exception(to_string() << "get_pu(id=" << _id << ") failed!" << " Last Error: " << strerror(errno));
+
+            return static_cast<float>(value);
         }));
 }
 
@@ -30,12 +35,15 @@ rsimpl2::option_range rsimpl2::uvc_pu_option::get_range() const
         {
             return dev.get_pu_range(_id);
         });
-    option_range result;
-    result.min  = static_cast<float>(uvc_range.min);
-    result.max  = static_cast<float>(uvc_range.max);
-    result.def  = static_cast<float>(uvc_range.def);
-    result.step = static_cast<float>(uvc_range.step);
-    return result;
+
+    auto min = *(reinterpret_cast<int32_t*>(uvc_range.min.data()));
+    auto max = *(reinterpret_cast<int32_t*>(uvc_range.max.data()));
+    auto step = *(reinterpret_cast<int32_t*>(uvc_range.step.data()));
+    auto def = *(reinterpret_cast<int32_t*>(uvc_range.def.data()));
+    return option_range{static_cast<float>(min),
+                        static_cast<float>(max),
+                        static_cast<float>(step),
+                        static_cast<float>(def)};
 }
 
 const char* rsimpl2::uvc_pu_option::get_description() const
@@ -75,12 +83,37 @@ std::vector<uint8_t> rsimpl2::command_transfer_over_xu::send_receive(const std::
 
             std::vector<uint8_t> transmit_buf(HW_MONITOR_BUFFER_SIZE, 0);
             std::copy(data.begin(), data.end(), transmit_buf.begin());
-            dev.set_xu(_xu, _ctrl, transmit_buf.data(), static_cast<int>(transmit_buf.size()));
+
+            auto sts = false;
+            for (auto i = 0; i < MAX_RETRIES; ++i)
+            {
+                if ((sts = dev.set_xu(_xu, _ctrl, transmit_buf.data(), static_cast<int>(transmit_buf.size()))))
+                    break;
+
+                std::this_thread::sleep_for(std::chrono::milliseconds(DELAY_FOR_RETRIES));
+            }
+
+            if (!sts)
+                throw invalid_value_exception(to_string() << "set_xu(...) failed!" << " Last Error: " << strerror(errno));
+
 
             if (require_response)
             {
                 result.resize(HW_MONITOR_BUFFER_SIZE);
-                dev.get_xu(_xu, _ctrl, result.data(), static_cast<int>(result.size()));
+                for (auto i = 0; i < MAX_RETRIES; ++i)
+                {
+                    if ((sts = dev.get_xu(_xu, _ctrl, result.data(), static_cast<int>(result.size()))))
+                        break;
+
+                    std::this_thread::sleep_for(std::chrono::milliseconds(DELAY_FOR_RETRIES));
+                }
+
+                if (!sts)
+                    throw invalid_value_exception(to_string() << "get_xu(...) failed!" << " Last Error: " << strerror(errno));
+
+                // Returned data size located in the last 4 bytes
+                auto data_size = *(reinterpret_cast<uint32_t*>(result.data() + HW_MONITOR_DATA_SIZE_OFFSET)) + SIZE_OF_HW_MONITOR_HEADER;
+                result.resize(data_size);
             }
             return result;
         });
@@ -88,7 +121,8 @@ std::vector<uint8_t> rsimpl2::command_transfer_over_xu::send_receive(const std::
 
 void rsimpl2::polling_errors_disable::set(float value)
 {
-    if (value < 0) throw invalid_value_exception("Invalid polling errors disable request " + std::to_string(value));
+    if (value < 0)
+        throw invalid_value_exception("Invalid polling errors disable request " + std::to_string(value));
 
     if (value == 0)
     {
@@ -109,7 +143,7 @@ float rsimpl2::polling_errors_disable::query() const
 
 rsimpl2::option_range rsimpl2::polling_errors_disable::get_range() const
 {
-    return{ 0, 1, 1, 1 };
+    return option_range{0, 1, 1, 1};
 }
 
 bool rsimpl2::polling_errors_disable::is_enabled() const

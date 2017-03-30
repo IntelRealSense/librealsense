@@ -69,7 +69,7 @@ namespace rsimpl2
                 std::string error = to_string() << call << " returned: " << hr_to_string(hr);
                 LOG_WARNING(error);
                 if (to_throw)
-                    throw std::runtime_error(error);
+                    throw windows_backend_exception(error);
 
                 return false;
             }

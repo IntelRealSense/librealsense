@@ -24,6 +24,8 @@ namespace rsimpl2 {
         const uint8_t DS5_ERROR_REPORTING                 = 7;
         const uint8_t DS5_EXT_TRIGGER                     = 8;
         const uint8_t DS5_ASIC_AND_PROJECTOR_TEMPERATURES = 9;
+        const uint8_t DS5_ENABLE_AUTO_WHITE_BALANCE       = 0xA;
+        const uint8_t DS5_ENABLE_AUTO_EXPOSURE            = 0xB;
 
 
         static const std::vector<std::uint16_t> rs4xx_sku_pid = { ds::RS400P_PID, ds::RS410A_PID, ds::RS420R_PID, ds::RS430C_PID, ds::RS440P_PID, ds::RS450T_PID };
@@ -111,7 +113,8 @@ namespace rsimpl2 {
         {
             camera_fw_version_offset        = 12,
             module_serial_offset            = 48,
-            motion_module_fw_version_offset = 212
+            motion_module_fw_version_offset = 212,
+            is_camera_locked_offset         = 216
         };
 
         enum calibration_table_id

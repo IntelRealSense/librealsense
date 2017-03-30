@@ -16,17 +16,44 @@
 #include <iterator>
 #include <tuple>
 #include <map>
-#include <string>
+#include <cstring>
 
+const uint16_t MAX_RETRIES          = 20;
 const uint16_t VID_INTEL_CAMERA     = 0x8086;
 const uint8_t DEFAULT_FRAME_BUFFERS = 4;
+const uint16_t DELAY_FOR_RETRIES    = 50;
 
 namespace rsimpl2
 {
     struct notification;
-
     namespace uvc
     {
+        struct control_range
+        {
+            control_range()
+            {}
+
+            control_range(int32_t in_min, int32_t in_max, int32_t in_step, int32_t in_def)
+            {
+                populate_raw_data(min, in_min);
+                populate_raw_data(max, in_max);
+                populate_raw_data(step, in_step);
+                populate_raw_data(def, in_def);
+            }
+
+            std::vector<uint8_t> min;
+            std::vector<uint8_t> max;
+            std::vector<uint8_t> step;
+            std::vector<uint8_t> def;
+
+        private:
+            void populate_raw_data(std::vector<uint8_t>& vec, int32_t value)
+            {
+                vec.resize(sizeof(value));
+                memcpy(vec.data(), &value, sizeof(value));
+            }
+        };
+
         class time_service
         {
         public:
@@ -56,14 +83,6 @@ namespace rsimpl2
                 bool require_response = true) = 0;
 
             virtual ~command_transfer() = default;
-        };
-
-        struct control_range
-        {
-            int min;
-            int max;
-            int def;
-            int step;
         };
 
         enum power_state
@@ -231,12 +250,12 @@ namespace rsimpl2
             virtual power_state get_power_state() const = 0;
 
             virtual void init_xu(const extension_unit& xu) = 0;
-            virtual void set_xu(const extension_unit& xu, uint8_t ctrl, const uint8_t* data, int len) = 0;
-            virtual void get_xu(const extension_unit& xu, uint8_t ctrl, uint8_t* data, int len) const = 0;
+            virtual bool set_xu(const extension_unit& xu, uint8_t ctrl, const uint8_t* data, int len) = 0;
+            virtual bool get_xu(const extension_unit& xu, uint8_t ctrl, uint8_t* data, int len) const = 0;
             virtual control_range get_xu_range(const extension_unit& xu, uint8_t ctrl, int len) const = 0;
 
-            virtual int get_pu(rs2_option opt) const = 0;
-            virtual void set_pu(rs2_option opt, int value) = 0;
+            virtual bool get_pu(rs2_option opt, int32_t& value) const = 0;
+            virtual bool set_pu(rs2_option opt, int32_t value) = 0;
             virtual control_range get_pu_range(rs2_option opt) const = 0;
 
             virtual std::vector<stream_profile> get_profiles() const = 0;
@@ -262,82 +281,105 @@ namespace rsimpl2
             {
                 _dev->probe_and_commit(profile, callback, buffers);
             }
+
             void stream_on(std::function<void(const notification& n)> error_handler = [](const notification& n){}) override
             {
                 _dev->stream_on(error_handler);
             }
+
             void start_callbacks() override
             {
                 _dev->start_callbacks();
             }
+
             void stop_callbacks() override
             {
                 _dev->stop_callbacks();
             }
+
             void close(stream_profile profile) override
             {
                 _dev->close(profile);
             }
+
             void set_power_state(power_state state) override
             {
                 _dev->set_power_state(state);
             }
+
             power_state get_power_state() const override
             {
                 return _dev->get_power_state();
             }
+
             void init_xu(const extension_unit& xu) override
             {
                 _dev->init_xu(xu);
             }
-            void set_xu(const extension_unit& xu, uint8_t ctrl, const uint8_t* data, int len) override
+
+            bool set_xu(const extension_unit& xu, uint8_t ctrl, const uint8_t* data, int len) override
             {
-                for (auto i = 0; i<20; ++i)
+                for (auto i = 0; i < MAX_RETRIES; ++i)
                 {
-                    try { _dev->set_xu(xu, ctrl, data, len); return; }
-                    catch (...) { std::this_thread::sleep_for(std::chrono::milliseconds(50)); }
+                    if (_dev->set_xu(xu, ctrl, data, len))
+                        return true;
+
+                    std::this_thread::sleep_for(std::chrono::milliseconds(DELAY_FOR_RETRIES));
                 }
-                _dev->set_xu(xu, ctrl, data, len);
+                return false;
             }
-            void get_xu(const extension_unit& xu, uint8_t ctrl, uint8_t* data, int len) const override
+
+            bool get_xu(const extension_unit& xu, uint8_t ctrl, uint8_t* data, int len) const override
             {
-                for (auto i = 0; i<20; ++i)
+                for (auto i = 0; i < MAX_RETRIES; ++i)
                 {
-                    try { _dev->get_xu(xu, ctrl, data, len); return; }
-                    catch (...) { std::this_thread::sleep_for(std::chrono::milliseconds(50)); }
+                    if (_dev->get_xu(xu, ctrl, data, len))
+                        return true;
+
+                    std::this_thread::sleep_for(std::chrono::milliseconds(DELAY_FOR_RETRIES));
                 }
-                _dev->get_xu(xu, ctrl, data, len);
+                return false;
             }
+
             control_range get_xu_range(const extension_unit& xu, uint8_t ctrl, int len) const override
             {
                 return _dev->get_xu_range(xu, ctrl, len);
             }
-            int get_pu(rs2_option opt) const override
+
+            bool get_pu(rs2_option opt, int32_t& value) const override
             {
-                for (auto i = 0; i<20; ++i)
+                for (auto i = 0; i < MAX_RETRIES; ++i)
                 {
-                    try { return _dev->get_pu(opt); }
-                    catch (...) { std::this_thread::sleep_for(std::chrono::milliseconds(50)); }
+                    if (_dev->get_pu(opt, value))
+                        return true;
+
+                    std::this_thread::sleep_for(std::chrono::milliseconds(DELAY_FOR_RETRIES));
                 }
-                return _dev->get_pu(opt);
+                return false;
             }
-            void set_pu(rs2_option opt, int value) override
+
+            bool set_pu(rs2_option opt, int32_t value) override
             {
-                for (auto i = 0; i<20; ++i)
+                for (auto i = 0; i < MAX_RETRIES; ++i)
                 {
-                    try { _dev->set_pu(opt, value); return; }
-                    catch (...) { std::this_thread::sleep_for(std::chrono::milliseconds(50)); }
+                    if (_dev->set_pu(opt, value))
+                        return true;
+
+                    std::this_thread::sleep_for(std::chrono::milliseconds(DELAY_FOR_RETRIES));
                 }
-                _dev->set_pu(opt, value);
+                return false;
             }
+
             control_range get_pu_range(rs2_option opt) const override
             {
                 return _dev->get_pu_range(opt);
             }
+
             std::vector<stream_profile> get_profiles() const override
             {
                 return _dev->get_profiles();
             }
+
             std::string get_device_location() const override
             {
                 return _dev->get_device_location();
@@ -473,30 +515,37 @@ namespace rsimpl2
             {
                 return _dev.front()->get_power_state();
             }
+
             void init_xu(const extension_unit& xu) override
             {
                 _dev.front()->init_xu(xu);
             }
-            void set_xu(const extension_unit& xu, uint8_t ctrl, const uint8_t* data, int len) override
+
+            bool set_xu(const extension_unit& xu, uint8_t ctrl, const uint8_t* data, int len) override
             {
-                _dev.front()->set_xu(xu, ctrl, data, len);
+                return _dev.front()->set_xu(xu, ctrl, data, len);
             }
-            void get_xu(const extension_unit& xu, uint8_t ctrl, uint8_t* data, int len) const override
+
+            bool get_xu(const extension_unit& xu, uint8_t ctrl, uint8_t* data, int len) const override
             {
-                _dev.front()->get_xu(xu, ctrl, data, len);
+                return _dev.front()->get_xu(xu, ctrl, data, len);
             }
+
             control_range get_xu_range(const extension_unit& xu, uint8_t ctrl, int len) const override
             {
                 return _dev.front()->get_xu_range(xu, ctrl, len);
             }
-            int get_pu(rs2_option opt) const override
+
+            bool get_pu(rs2_option opt, int32_t& value) const override
             {
-                return _dev.front()->get_pu(opt);
+                return _dev.front()->get_pu(opt, value);
             }
-            void set_pu(rs2_option opt, int value) override
+
+            bool set_pu(rs2_option opt, int32_t value) override
             {
-                _dev.front()->set_pu(opt, value);
+                return _dev.front()->set_pu(opt, value);
             }
+
             control_range get_pu_range(rs2_option opt) const override
             {
                 return _dev.front()->get_pu_range(opt);
@@ -538,6 +587,7 @@ namespace rsimpl2
                     throw;
                 }
             }
+
             void unlock() const override
             {
                 for (auto& elem : _dev)

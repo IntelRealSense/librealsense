@@ -119,17 +119,21 @@ namespace rsimpl2
                 _owner.rs2_apply_ivcam_preset(static_cast<int>(value));
                 last_value = value;
             }
+
             float query() const override { return last_value; }
+
             option_range get_range() const override
             {
-                return{ 0, RS2_VISUAL_PRESET_COUNT, 1, RS2_VISUAL_PRESET_DEFAULT };
+                return option_range{0, RS2_VISUAL_PRESET_COUNT, 1, RS2_VISUAL_PRESET_DEFAULT};
             }
+
             bool is_enabled() const override { return true; }
 
             const char* get_description() const override
             {
                 return "Recommended sets of options optimized for different visual use-cases";
             }
+
             const char* get_value_description(float val) const override
             {
                 return rs2_visual_preset_to_string(
@@ -137,7 +141,9 @@ namespace rsimpl2
                         static_cast<int>(val)));
             }
 
-            explicit preset_option(sr300_camera& owner) : _owner(owner) {}
+            explicit preset_option(sr300_camera& owner)
+                : _owner(owner)
+            {}
 
         private:
             float last_value = RS2_VISUAL_PRESET_DEFAULT;

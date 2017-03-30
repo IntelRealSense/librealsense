@@ -7,21 +7,45 @@
 namespace rsimpl2
 {
 
+void ms_xu_control_option::parse_data(std::vector<uint8_t>& data) const
+{
+    static const uint8_t offset_value = msxu_fields::msxu_mode;
+    static const uint8_t size_value = sizeof(int32_t);
+    std::copy(data.begin() + offset_value, data.begin() + offset_value + size_value, data.begin());
+    data.resize(size_value);
+}
+
 option_range ms_xu_control_option::get_range() const
 {
     auto uvc_range = _ep.invoke_powered(
         [this](uvc::uvc_device& dev)
         {
-            return dev.get_xu_range(_xu, _id, _xu_lenght);
+            return dev.get_xu_range(_xu, _id, _xu_length);
         });
 
-    // Rectify data obtained from FW.
-    // The control step is provided as enumerated value, but is rectified to [0/1] range for compatibility with regular XU
-    if (uvc_range.max>1)         uvc_range.max = 1;
-    if (0==uvc_range.step)       uvc_range.step = 1;
+    parse_data(uvc_range.min);
+    parse_data(uvc_range.max);
+    parse_data(uvc_range.step);
+    parse_data(uvc_range.def);
 
-    return {static_cast<float>(uvc_range.min), static_cast<float>(uvc_range.max),
-            static_cast<float>(uvc_range.def), static_cast<float>(uvc_range.step)};
+    auto max = *(reinterpret_cast<int32_t*>(uvc_range.max.data()));
+    if (max > 1)
+    {
+        max = 1;
+    }
+
+    auto step = *(reinterpret_cast<int32_t*>(uvc_range.step.data()));
+    if (0 == step)
+    {
+        step = 1;
+    }
+
+    auto min = *(reinterpret_cast<int32_t*>(uvc_range.min.data()));
+    auto def = *(reinterpret_cast<int32_t*>(uvc_range.def.data()));
+    return option_range{static_cast<float>(min),
+                        static_cast<float>(max),
+                        static_cast<float>(step),
+                        static_cast<float>(def)};
 }
 
 void ms_xu_control_option::encode_data(const float& val, std::vector<uint8_t>& _transmit_buf) const

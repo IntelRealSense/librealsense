@@ -27,6 +27,8 @@
 #define type_guid  MF_DEVSOURCE_ATTRIBUTE_SOURCE_TYPE_VIDCAP_GUID
 #define did_guid  MF_DEVSOURCE_ATTRIBUTE_SOURCE_TYPE_VIDCAP_SYMBOLIC_LINK
 
+#define DEVICE_NOT_READY_ERROR 0x80070015
+
 namespace rsimpl2
 {
     namespace uvc
@@ -172,7 +174,7 @@ namespace rsimpl2
             _ks_controls[xu.node] = ks_control;
         }
 
-        void wmf_uvc_device::set_xu(const extension_unit& xu, uint8_t ctrl, const uint8_t* data, int len)
+        bool wmf_uvc_device::set_xu(const extension_unit& xu, uint8_t ctrl, const uint8_t* data, int len)
         {
             auto ks_control = get_ks_control(xu);
 
@@ -184,11 +186,17 @@ namespace rsimpl2
             node.NodeId = xu.node;
 
             ULONG bytes_received = 0;
-            CHECK_HR(ks_control->KsProperty(reinterpret_cast<PKSPROPERTY>(&node),
-                sizeof(KSP_NODE), (void*)data, len, &bytes_received));
+            auto hr = ks_control->KsProperty(reinterpret_cast<PKSPROPERTY>(&node),
+                sizeof(KSP_NODE), (void*)data, len, &bytes_received);
+
+            if (hr == DEVICE_NOT_READY_ERROR)
+                return false;
+
+            CHECK_HR(hr);
+            return true;
         }
 
-        void wmf_uvc_device::get_xu(const extension_unit& xu, uint8_t ctrl, uint8_t* data, int len) const
+        bool wmf_uvc_device::get_xu(const extension_unit& xu, uint8_t ctrl, uint8_t* data, int len) const
         {
             auto ks_control = get_ks_control(xu);
 
@@ -200,10 +208,17 @@ namespace rsimpl2
             node.NodeId = xu.node;
 
             ULONG bytes_received = 0;
-            CHECK_HR(ks_control->KsProperty(reinterpret_cast<PKSPROPERTY>(&node),
-                sizeof(node), data, len, &bytes_received));
+            auto hr = ks_control->KsProperty(reinterpret_cast<PKSPROPERTY>(&node),
+                sizeof(node), data, len, &bytes_received);
+
+            if (hr == DEVICE_NOT_READY_ERROR)
+                return false;
+
             if (bytes_received != len)
                 throw std::runtime_error("XU read did not return enough data");
+
+            CHECK_HR(hr);
+            return true;
         }
 
         void ReadFromBuffer(control_range& cfg, BYTE* buffer, int length)
@@ -223,7 +238,8 @@ namespace rsimpl2
                 throw std::exception("no data ksprop");
 
             // The data fields are up to four bytes
-            auto field_width = std:: min(sizeof(uint32_t), (size_t)length);
+            auto field_width = std::min(sizeof(uint32_t), (size_t)length);
+            auto option_range_size = std::max(sizeof(uint32_t), (size_t)length);
             switch (pHeader->MembersFlags)
             {
                 /* member flag is not set correctly in current IvCam Implementation */
@@ -236,11 +252,14 @@ namespace rsimpl2
                 }
 
                 auto pStruct = next_struct;
-                memcpy_s(&cfg.step, field_width, pStruct, field_width);
+                cfg.step.resize(option_range_size);
+                memcpy_s(cfg.step.data(), field_width, pStruct, field_width);
                 pStruct += length;
-                memcpy_s(&cfg.min, field_width, pStruct, field_width);
+                cfg.min.resize(option_range_size);
+                memcpy_s(cfg.min.data(), field_width, pStruct, field_width);
                 pStruct += length;
-                memcpy_s(&cfg.max, field_width, pStruct, field_width);
+                cfg.max.resize(option_range_size);
+                memcpy_s(cfg.max.data(), field_width, pStruct, field_width);
                 return;
             }
             case KSPROPERTY_MEMBER_VALUES:
@@ -257,7 +276,8 @@ namespace rsimpl2
                         throw std::exception("no data ksprop");
                     }
 
-                    memcpy_s(&cfg.def, field_width, next_struct, field_width);
+                    cfg.def.resize(option_range_size);
+                    memcpy_s(cfg.def.data(), field_width, next_struct, field_width);
                 }
                 return;
             }
@@ -268,7 +288,6 @@ namespace rsimpl2
 
         control_range wmf_uvc_device::get_xu_range(const extension_unit& xu, uint8_t ctrl, int len) const
         {
-            control_range result = {};
             auto ks_control = get_ks_control(xu);
 
             /* get step, min and max values*/
@@ -300,6 +319,7 @@ namespace rsimpl2
 
             if (bytes_received != size) { throw  std::runtime_error("wrong data"); }
 
+            control_range result{};
             ReadFromBuffer(result, buffer.data(), len);
 
             /* get def value*/
@@ -349,51 +369,86 @@ namespace rsimpl2
             { RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE, VideoProcAmp_WhiteBalance, true },
         };
 
-        int wmf_uvc_device::get_pu(rs2_option opt) const
+        bool wmf_uvc_device::get_pu(rs2_option opt, int32_t& value) const
         {
-            long value = 0, flags = 0;
+            long val = 0, flags = 0;
             if (opt == RS2_OPTION_EXPOSURE)
             {
-                CHECK_HR(_camera_control->Get(CameraControl_Exposure, &value, &flags));
-                return value;
+                auto hr = _camera_control->Get(CameraControl_Exposure, &val, &flags);
+                if (hr == DEVICE_NOT_READY_ERROR)
+                    return false;
+
+                value = val;
+                CHECK_HR(hr);
+                return true;
             }
             if (opt == RS2_OPTION_ENABLE_AUTO_EXPOSURE)
             {
-                CHECK_HR(_camera_control->Get(CameraControl_Exposure, &value, &flags));
-                return flags == CameraControl_Flags_Auto;
+                auto hr = _camera_control->Get(CameraControl_Exposure, &val, &flags);
+                if (hr == DEVICE_NOT_READY_ERROR)
+                    return false;
+
+                value = (flags == CameraControl_Flags_Auto);
+                CHECK_HR(hr);
+                return true;
             }
             for (auto & pu : pu_controls)
             {
                 if (opt == pu.option)
                 {
-                    CHECK_HR(_video_proc->Get(pu.property, &value, &flags));
-                    if (pu.enable_auto) return flags == VideoProcAmp_Flags_Auto;
-                    else return value;
+                    auto hr = _video_proc->Get(pu.property, &val, &flags);
+                    if (hr == DEVICE_NOT_READY_ERROR)
+                        return false;
+
+                    if (pu.enable_auto)
+                        value = (flags == VideoProcAmp_Flags_Auto);
+                    else
+                        value = val;
+
+                    CHECK_HR(hr);
+                    return true;
                 }
             }
             throw std::runtime_error("Unsupported control!");
         }
 
-        void wmf_uvc_device::set_pu(rs2_option opt, int value)
+        bool wmf_uvc_device::set_pu(rs2_option opt, int value)
         {
             if (opt == RS2_OPTION_EXPOSURE)
             {
-                CHECK_HR(_camera_control->Set(CameraControl_Exposure, static_cast<int>(value), CameraControl_Flags_Manual));
-                return;
+                auto hr = _camera_control->Set(CameraControl_Exposure, static_cast<int>(value), CameraControl_Flags_Manual);
+                if (hr == DEVICE_NOT_READY_ERROR)
+                    return false;
+
+                CHECK_HR(hr);
+                return true;
             }
             if (opt == RS2_OPTION_ENABLE_AUTO_EXPOSURE)
             {
                 if (value)
                 {
-                    CHECK_HR(_camera_control->Set(CameraControl_Exposure, 0, CameraControl_Flags_Auto));
+                    auto hr = _camera_control->Set(CameraControl_Exposure, 0, CameraControl_Flags_Auto);
+                    if (hr == DEVICE_NOT_READY_ERROR)
+                        return false;
+
+                    CHECK_HR(hr);
                 }
                 else
                 {
                     long min, max, step, def, caps;
-                    CHECK_HR(_camera_control->GetRange(CameraControl_Exposure, &min, &max, &step, &def, &caps));
-                    CHECK_HR(_camera_control->Set(CameraControl_Exposure, def, CameraControl_Flags_Manual));
+                    auto hr = _camera_control->GetRange(CameraControl_Exposure, &min, &max, &step, &def, &caps);
+                    if (hr == DEVICE_NOT_READY_ERROR)
+                        return false;
+
+                    CHECK_HR(hr);
+
+                    hr = _camera_control->Set(CameraControl_Exposure, def, CameraControl_Flags_Manual);
+                    if (hr == DEVICE_NOT_READY_ERROR)
+                        return false;
+
+                    CHECK_HR(hr);
                 }
-                return;
+                return true;
             }
             for (auto & pu : pu_controls)
             {
@@ -403,20 +458,37 @@ namespace rsimpl2
                     {
                         if (value)
                         {
-                            CHECK_HR(_video_proc->Set(pu.property, 0, VideoProcAmp_Flags_Auto));
+                            auto hr = _video_proc->Set(pu.property, 0, VideoProcAmp_Flags_Auto);
+                            if (hr == DEVICE_NOT_READY_ERROR)
+                                return false;
+
+                            CHECK_HR(hr);
                         }
                         else
                         {
                             long min, max, step, def, caps;
-                            CHECK_HR(_video_proc->GetRange(pu.property, &min, &max, &step, &def, &caps));
-                            CHECK_HR(_video_proc->Set(pu.property, def, VideoProcAmp_Flags_Manual));
+                            auto hr = _video_proc->GetRange(pu.property, &min, &max, &step, &def, &caps);
+                            if (hr == DEVICE_NOT_READY_ERROR)
+                                return false;
+
+                            CHECK_HR(hr);
+
+                            hr = _video_proc->Set(pu.property, def, VideoProcAmp_Flags_Manual);
+                            if (hr == DEVICE_NOT_READY_ERROR)
+                                return false;
+
+                            CHECK_HR(hr);
                         }
                     }
                     else
                     {
-                        CHECK_HR(_video_proc->Set(pu.property, value, VideoProcAmp_Flags_Manual));
+                        auto hr = _video_proc->Set(pu.property, value, VideoProcAmp_Flags_Manual);
+                        if (hr == DEVICE_NOT_READY_ERROR)
+                            return false;
+
+                        CHECK_HR(hr);
                     }
-                    return;
+                    return true;
                 }
             }
             throw std::runtime_error("Unsupported control!");
@@ -424,14 +496,11 @@ namespace rsimpl2
 
         control_range wmf_uvc_device::get_pu_range(rs2_option opt) const
         {
-            control_range result;
             if (opt == RS2_OPTION_ENABLE_AUTO_EXPOSURE ||
                 opt == RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE)
             {
-                result.min = 0;
-                result.max = 1;
-                result.step = 1;
-                result.def = 1;
+                static const int32_t min = 0, max = 1, step = 1, def = 1;
+                control_range result(min, max, step, def);
                 return result;
             }
 
@@ -439,10 +508,7 @@ namespace rsimpl2
             if (opt == RS2_OPTION_EXPOSURE)
             {
                 CHECK_HR(_camera_control->GetRange(CameraControl_Exposure, &minVal, &maxVal, &steppingDelta, &defVal, &capsFlag));
-                result.min = minVal;
-                result.max = maxVal;
-                result.step = steppingDelta;
-                result.def = defVal;
+                control_range result(minVal, maxVal, steppingDelta, defVal);
                 return result;
             }
             for (auto & pu : pu_controls)
@@ -451,10 +517,7 @@ namespace rsimpl2
                 {
                     if (!_video_proc.p) throw std::runtime_error("No video proc!");
                     CHECK_HR(_video_proc->GetRange(pu.property, &minVal, &maxVal, &steppingDelta, &defVal, &capsFlag));
-                    result.min = static_cast<int>(minVal);
-                    result.max = static_cast<int>(maxVal);
-                    result.step = static_cast<int>(steppingDelta);
-                    result.def = static_cast<int>(defVal);
+                    control_range result(minVal, maxVal, steppingDelta, defVal);
                     return result;
                 }
             }

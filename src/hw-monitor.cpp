@@ -171,4 +171,13 @@ namespace rsimpl2
 
         return formattedBuffer.str();
     }
+
+    bool hw_monitor::is_camera_locked(uint8_t gvd_cmd, uint32_t offset) const
+    {
+        std::vector<char> gvd(HW_MONITOR_BUFFER_SIZE);
+        get_gvd(gvd.size(), gvd.data(), gvd_cmd);
+        bool value;
+        memcpy(&value, gvd.data() + offset, 1);
+        return value;
+    }
 }

@@ -86,9 +86,10 @@ namespace rsimpl2
             _ep.invoke_powered(
                 [this, value](uvc::uvc_device& dev)
             {
-                std::vector<uint8_t>    _transmit_buf(_xu_lenght, 0);
+                std::vector<uint8_t>    _transmit_buf(_xu_length, 0);
                 this->encode_data(value, _transmit_buf);
-                dev.set_xu(_xu, _id, const_cast<uint8_t*>(_transmit_buf.data()), _xu_lenght);
+                if (!dev.set_xu(_xu, _id, const_cast<uint8_t*>(_transmit_buf.data()), _xu_length))
+                    throw invalid_value_exception(to_string() << "set_xu(id=" << _id << ") failed!" << " Last Error: " << strerror(errno));
             });
         }
 
@@ -97,21 +98,23 @@ namespace rsimpl2
             return static_cast<float>(_ep.invoke_powered(
                 [this](uvc::uvc_device& dev)
             {
-                std::vector<uint8_t>    _transmit_buf(_xu_lenght, 0);
-                dev.get_xu(_xu, _id, const_cast<uint8_t*>(_transmit_buf.data()), _xu_lenght);
+                std::vector<uint8_t>    _transmit_buf(_xu_length, 0);
+                if (!dev.get_xu(_xu, _id, const_cast<uint8_t*>(_transmit_buf.data()), _xu_length))
+                    throw invalid_value_exception(to_string() << "get_xu(id=" << _id << ") failed!" << " Last Error: " << strerror(errno));
+
                 return this->decode_data(_transmit_buf);
             }));
         }
 
         explicit ms_xu_option(uvc_endpoint& ep, const uvc::extension_unit& xu, msxu_ctrl ctrl_id, float def_value)
             : uvc_xu_option<T>(ep, xu, ctrl_id, msxu_map.at(ctrl_id)._desc),
-            _xu_lenght(msxu_map.at(ctrl_id)._lenght), _def_value(def_value) {}
+            _xu_length(msxu_map.at(ctrl_id)._lenght), _def_value(def_value) {}
 
     protected:
         virtual void encode_data(const float& val, std::vector<uint8_t>& buf) const = 0; /**< Template method to be defined in derived classes*/
         virtual float decode_data(const std::vector<uint8_t>& buf) const = 0;
 
-        const uint16_t _xu_lenght;       /**< The lenght of the data buffer to be exchanged with device*/
+        const uint16_t _xu_length;       /**< The lenght of the data buffer to be exchanged with device*/
         float _def_value;
     };
 
@@ -151,6 +154,7 @@ namespace rsimpl2
         {}
 
     private:
+        void parse_data(std::vector<uint8_t>& data) const;
 
     };
 
@@ -167,7 +171,7 @@ namespace rsimpl2
         explicit ms_xu_data_option(uvc_endpoint& ep,
                                    const uvc::extension_unit& xu,
                                    msxu_ctrl ctrl_id,
-                                   option_range range, float def_value)
+                                   const option_range& range, float def_value)
             : ms_xu_option(ep, xu, ctrl_id, def_value), _range(range)
         {}
 
@@ -195,11 +199,13 @@ namespace rsimpl2
         void set(float value) override
         {
            auto strong = _auto_exposure.lock();
+           assert(strong);
+
            auto is_auto = strong->query();
 
            if(strong && is_auto)
            {
-               LOG_DEBUG("Move auto exposure to menual mode in order set value to gain controll");
+               LOG_DEBUG("Move auto exposure to manual mode in order set value to gain controll");
                strong->set(0);
            }
            _auto_disabling_control->set(value);
@@ -209,14 +215,17 @@ namespace rsimpl2
         {
             return _auto_disabling_control->query();
         }
+
         option_range get_range() const override
         {
             return _auto_disabling_control->get_range();
         }
+
         bool is_enabled() const override
         {
             return  _auto_disabling_control->is_enabled();
         }
+
         bool is_read_only() const override
         {
             return  _auto_disabling_control->is_read_only();
@@ -224,7 +233,7 @@ namespace rsimpl2
 
 
         explicit auto_disabling_control(std::shared_ptr<option> auto_disabling,
-                                      std::shared_ptr<option>auto_exposure)
+                                        std::shared_ptr<option> auto_exposure)
 
             :_auto_disabling_control(auto_disabling), _auto_exposure(auto_exposure)
         {}

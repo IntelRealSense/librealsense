@@ -13,8 +13,15 @@ using namespace rs2;
 // this is done to make sure unit-tests are deterministic
 void disable_sensitive_options_for(device& dev)
 {
-    if (dev.supports(RS2_OPTION_ENABLE_AUTO_EXPOSURE) )
+    if (dev.supports(RS2_OPTION_ENABLE_AUTO_EXPOSURE))
         REQUIRE_NOTHROW(dev.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, 0));
+
+    if (dev.supports(RS2_OPTION_EXPOSURE))
+    {
+        auto range = dev.get_option_range(RS2_OPTION_EXPOSURE);
+        REQUIRE_NOTHROW(dev.set_option(RS2_OPTION_EXPOSURE, range.def));
+    }
+
     if (dev.supports(RS2_OPTION_ERROR_POLLING_ENABLED))
         REQUIRE_NOTHROW(dev.set_option(RS2_OPTION_ERROR_POLLING_ENABLED, 0));
 }
@@ -1052,27 +1059,6 @@ TEST_CASE("Auto exposure behavior", "[live]") {
                         REQUIRE(val == 0);
                     }
 
-                }
-
-                SECTION("Disable auto exposure whan setting a value to gain and set expusure value to default value")
-                {
-                    REQUIRE_NOTHROW(renge = subdevice.get_option_range(RS2_OPTION_GAIN));
-                    REQUIRE_NOTHROW(exposure_renge = subdevice.get_option_range(RS2_OPTION_EXPOSURE));
-                    REQUIRE_NOTHROW(subdevice.set_option(RS2_OPTION_GAIN,renge.max));
-                    CAPTURE(renge.max);
-                    REQUIRE_NOTHROW(val = subdevice.get_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE));
-                    REQUIRE(val == 0);
-                    REQUIRE_NOTHROW(val = subdevice.get_option(RS2_OPTION_EXPOSURE));
-                    REQUIRE(val == exposure_renge.def);
-
-                    REQUIRE_NOTHROW(subdevice.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE,1));
-                    REQUIRE_NOTHROW(renge = subdevice.get_option_range(RS2_OPTION_GAIN));
-                    REQUIRE_NOTHROW(subdevice.set_option(RS2_OPTION_GAIN,renge.min));
-                    CAPTURE(renge.min);
-                    REQUIRE_NOTHROW(val = subdevice.get_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE));
-                    REQUIRE(val == 0);
-                    REQUIRE_NOTHROW(val = subdevice.get_option(RS2_OPTION_EXPOSURE));
-                    REQUIRE(val == exposure_renge.def);
                 }
 
             }

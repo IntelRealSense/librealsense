@@ -421,8 +421,15 @@ namespace rsimpl2
                 auto temperature_data = static_cast<temperature>(_ep.invoke_powered(
                     [this](uvc::uvc_device& dev)
                     {
-                        temperature temp;
-                        dev.get_xu(ds::depth_xu, ds::DS5_ASIC_AND_PROJECTOR_TEMPERATURES, reinterpret_cast<uint8_t*>(&temp), sizeof(temperature));
+                        temperature temp{};
+                        if (!dev.get_xu(ds::depth_xu,
+                                        ds::DS5_ASIC_AND_PROJECTOR_TEMPERATURES,
+                                        reinterpret_cast<uint8_t*>(&temp),
+                                        sizeof(temperature)))
+                         {
+                                throw invalid_value_exception(to_string() << "get_xu(...) failed!" << " Last Error: " << strerror(errno));
+                         }
+
                         return temp;
                     }));
 
@@ -478,8 +485,8 @@ namespace rsimpl2
             {}
 
         private:
-            uvc_endpoint& _ep;
-            rs2_option _option;
+            uvc_endpoint&                 _ep;
+            rs2_option                    _option;
         };
 
         class motion_module_temperature_option : public option
@@ -500,7 +507,7 @@ namespace rsimpl2
                 static const auto report_field = uvc::custom_sensor_report_field::value;
                 auto data = _ep.get_custom_report_data(custom_sensor_name, report_name, report_field);
                 auto data_str = std::string(reinterpret_cast<char const*>(data.data()));
-                return std::stoi(data_str);
+                return std::stof(data_str);
             }
 
             option_range get_range() const override
@@ -514,7 +521,10 @@ namespace rsimpl2
                 auto max_data = _ep.get_custom_report_data(custom_sensor_name, report_name, max_report_field);
                 auto min_str = std::string(reinterpret_cast<char const*>(min_data.data()));
                 auto max_str = std::string(reinterpret_cast<char const*>(max_data.data()));
-                return option_range{std::stof(min_str), std::stof(max_str), 0, 0};
+
+                return option_range{std::stof(min_str),
+                                    std::stof(max_str),
+                                    0, 0};
             }
 
             bool is_enabled() const override
@@ -570,7 +580,7 @@ namespace rsimpl2
 
             option_range get_range() const override
             {
-                return range;
+                return option_range{0, 1, 1, 1};
             }
 
             bool is_enabled() const override { return true; }
@@ -598,7 +608,6 @@ namespace rsimpl2
             }
 
         private:
-            const option_range                           range{0,  1,   1,  1};
             std::shared_ptr<auto_exposure_state>         _auto_exposure_state;
             std::atomic<bool>                            _to_add_frames;
             std::shared_ptr<auto_exposure_mechanism>     _auto_exposure;
@@ -626,7 +635,7 @@ namespace rsimpl2
 
             option_range get_range() const override
             {
-                return range;
+                return option_range{0, 2, 1, 0};
             }
 
             bool is_enabled() const override { return true; }
@@ -658,9 +667,8 @@ namespace rsimpl2
             }
 
         private:
-            const option_range                           range{0,  2,   1,  0};
-            std::shared_ptr<auto_exposure_state>         _auto_exposure_state;
-            std::shared_ptr<auto_exposure_mechanism>     _auto_exposure;
+            std::shared_ptr<auto_exposure_state>        _auto_exposure_state;
+            std::shared_ptr<auto_exposure_mechanism>    _auto_exposure;
         };
 
         class auto_exposure_antiflicker_rate_option : public option
@@ -685,7 +693,7 @@ namespace rsimpl2
 
             option_range get_range() const override
             {
-                return range;
+                return option_range{50, 60, 10, 60};
             }
 
             bool is_enabled() const override { return true; }
@@ -708,12 +716,11 @@ namespace rsimpl2
                         return "60Hz";
                     }
                     default:
-                        throw invalid_value_exception("value not found");
+                        throw invalid_value_exception("antiflicker_rate: get_value_description(...) failed. value not found!");
                 }
             }
 
         private:
-            const option_range                           range{50, 60,  10, 60};
             std::shared_ptr<auto_exposure_state>         _auto_exposure_state;
             std::shared_ptr<auto_exposure_mechanism>     _auto_exposure;
         };
@@ -780,12 +787,12 @@ namespace rsimpl2
 
         std::map<rs2_stream, std::map<unsigned, unsigned>> fps_and_sampling_frequency_per_rs2_stream =
                                                          {{RS2_STREAM_ACCEL, {{125,  1},
-                                                                             {250,  4},
-                                                                             {500,  5},
-                                                                             {1000, 10}}},
+                                                                              {250,  4},
+                                                                              {500,  5},
+                                                                              {1000, 10}}},
                                                           {RS2_STREAM_GYRO,  {{200,  1},
-                                                                             {400,  4},
-                                                                             {1000, 10}}}};
+                                                                              {400,  4},
+                                                                              {1000, 10}}}};
 
         std::unique_ptr<polling_error_handler> _polling_error_handler;
 

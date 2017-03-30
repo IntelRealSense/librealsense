@@ -2031,19 +2031,33 @@ namespace rsimpl2
             power_state get_power_state() const override { return _state; }
 
             void init_xu(const extension_unit& xu) override {}
-            void set_xu(const extension_unit& xu, uint8_t control, const uint8_t* data, int size) override
+            bool set_xu(const extension_unit& xu, uint8_t control, const uint8_t* data, int size) override
             {
                 uvc_xu_control_query q = {static_cast<uint8_t>(xu.unit), control, UVC_SET_CUR,
                                           static_cast<uint16_t>(size), const_cast<uint8_t *>(data)};
                 if(xioctl(_fd, UVCIOC_CTRL_QUERY, &q) < 0)
+                {
+                    if (errno == EIO || errno == EAGAIN) // TODO: Log?
+                        return false;
+
                     throw linux_backend_exception("set_xu(...). xioctl(UVCIOC_CTRL_QUERY) failed");
+                }
+
+                return true;
             }
-            void get_xu(const extension_unit& xu, uint8_t control, uint8_t* data, int size) const override
+            bool get_xu(const extension_unit& xu, uint8_t control, uint8_t* data, int size) const override
             {
                 uvc_xu_control_query q = {static_cast<uint8_t>(xu.unit), control, UVC_GET_CUR,
                                           static_cast<uint16_t>(size), const_cast<uint8_t *>(data)};
                 if(xioctl(_fd, UVCIOC_CTRL_QUERY, &q) < 0)
+                {
+                    if (errno == EIO || errno == EAGAIN) // TODO: Log?
+                        return false;
+
                     throw linux_backend_exception("get_xu(...). xioctl(UVCIOC_CTRL_QUERY) failed");
+                }
+
+                return true;
             }
             control_range get_xu_range(const extension_unit& xu, uint8_t control, int len) const override
             {
@@ -2054,10 +2068,6 @@ namespace rsimpl2
                                         // appropriately might be better
                 //__u8 * data = (__u8 *)&value;
                 // MS XU controls are partially supported only
-                std::vector<uint8_t> buf;
-                buf.resize(std::max((size_t)len,sizeof(__u32)));
-                __u8 * data = buf.data();
-
                 struct uvc_xu_control_query xquery = {};
                 memset(&xquery, 0, sizeof(xquery));
                 xquery.query = UVC_GET_LEN;
@@ -2074,78 +2084,97 @@ namespace rsimpl2
 
                 assert(size<=len);
 
+                std::vector<uint8_t> buf;
+                auto buf_size = std::max((size_t)len,sizeof(__u32));
+                buf.resize(buf_size);
+
                 xquery.query = UVC_GET_MIN;
                 xquery.size = size;
                 xquery.selector = control;
                 xquery.unit = xu.unit;
-                xquery.data = data;
+                xquery.data = buf.data();
                 if(-1 == ioctl(_fd,UVCIOC_CTRL_QUERY,&xquery)){
                     throw linux_backend_exception("xioctl(UVC_GET_MIN) failed");
                 }
-                result.min = *reinterpret_cast<int*>(data);
+                result.min.resize(buf_size);
+                std::copy(buf.begin(), buf.end(), result.min.begin());
 
                 xquery.query = UVC_GET_MAX;
                 xquery.size = size;
                 xquery.selector = control;
                 xquery.unit = xu.unit;
-                xquery.data = data;
+                xquery.data = buf.data();
                 if(-1 == ioctl(_fd,UVCIOC_CTRL_QUERY,&xquery)){
                     throw linux_backend_exception("xioctl(UVC_GET_MAX) failed");
                 }
-                result.max = *reinterpret_cast<int*>(data);
+                result.max.resize(buf_size);
+                std::copy(buf.begin(), buf.end(), result.max.begin());
 
                 xquery.query = UVC_GET_DEF;
                 xquery.size = size;
                 xquery.selector = control;
                 xquery.unit = xu.unit;
-                xquery.data = data;
+                xquery.data = buf.data();
                 if(-1 == ioctl(_fd,UVCIOC_CTRL_QUERY,&xquery)){
                     throw linux_backend_exception("xioctl(UVC_GET_DEF) failed");
                 }
-                result.def = *reinterpret_cast<int*>(data);
+                result.def.resize(buf_size);
+                std::copy(buf.begin(), buf.end(), result.def.begin());
 
                 xquery.query = UVC_GET_RES;
                 xquery.size = size;
                 xquery.selector = control;
                 xquery.unit = xu.unit;
-                xquery.data = data;
+                xquery.data = buf.data();
                 if(-1 == ioctl(_fd,UVCIOC_CTRL_QUERY,&xquery)){
                     throw linux_backend_exception("xioctl(UVC_GET_CUR) failed");
                 }
-                result.step = *reinterpret_cast<int*>(data);
+                result.step.resize(buf_size);
+                std::copy(buf.begin(), buf.end(), result.step.begin());
 
                return result;
             }
 
-            int get_pu(rs2_option opt) const override
+            bool get_pu(rs2_option opt, int32_t& value) const override
             {
                 struct v4l2_control control = {get_cid(opt), 0};
                 if (xioctl(_fd, VIDIOC_G_CTRL, &control) < 0)
+                {
+                    if (errno == EIO || errno == EAGAIN) // TODO: Log?
+                        return false;
+
                     throw linux_backend_exception("xioctl(VIDIOC_G_CTRL) failed");
+                }
 
                 if (RS2_OPTION_ENABLE_AUTO_EXPOSURE==opt)  { control.value = (V4L2_EXPOSURE_MANUAL==control.value) ? 0 : 1; }
-                return control.value;
+                value = control.value;
+
+                return true;
             }
 
-            void set_pu(rs2_option opt, int value) override
+            bool set_pu(rs2_option opt, int32_t value) override
             {
                 struct v4l2_control control = {get_cid(opt), value};
                 if (RS2_OPTION_ENABLE_AUTO_EXPOSURE==opt) { control.value = value ? V4L2_EXPOSURE_APERTURE_PRIORITY : V4L2_EXPOSURE_MANUAL; }
                 if (xioctl(_fd, VIDIOC_S_CTRL, &control) < 0)
+                {
+                    if (errno == EIO || errno == EAGAIN) // TODO: Log?
+                        return false;
+
                     throw linux_backend_exception("xioctl(VIDIOC_S_CTRL) failed");
+                }
+
+                return true;
             }
 
             control_range get_pu_range(rs2_option option) const override
             {
-                control_range range{};
-
                 // Auto controls range is trimed to {0,1} range
                 if(option >= RS2_OPTION_ENABLE_AUTO_EXPOSURE && option <= RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE)
                 {
-                    range.min  = 0;
-                    range.max  = 1;
-                    range.step = 1;
-                    range.def  = 1;
+                    static const int32_t min = 0, max = 1, step = 1, def = 1;
+                    control_range range(min, max, step, def);
+
                     return range;
                 }
 
@@ -2159,10 +2188,7 @@ namespace rsimpl2
                     query.minimum = query.maximum = 0;
                 }
 
-                range.min  = query.minimum;
-                range.max  = query.maximum;
-                range.step = query.step;
-                range.def  = query.default_value;
+                control_range range(query.minimum, query.maximum, query.step, query.default_value);
 
                 return range;
             }

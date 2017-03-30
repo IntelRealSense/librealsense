@@ -72,7 +72,8 @@ namespace rsimpl2
                 [this, value](uvc::uvc_device& dev)
                 {
                     T t = static_cast<T>(value);
-                    dev.set_xu(_xu, _id, reinterpret_cast<uint8_t*>(&t), sizeof(T));
+                    if (!dev.set_xu(_xu, _id, reinterpret_cast<uint8_t*>(&t), sizeof(T)))
+                        throw invalid_value_exception(to_string() << "set_xu(id=" << _id << ") failed!" << " Last Error: " << strerror(errno));
                 });
         }
 
@@ -82,7 +83,9 @@ namespace rsimpl2
                 [this](uvc::uvc_device& dev)
                 {
                     T t;
-                    dev.get_xu(_xu, _id, reinterpret_cast<uint8_t*>(&t), sizeof(T));
+                    if (!dev.get_xu(_xu, _id, reinterpret_cast<uint8_t*>(&t), sizeof(T)))
+                        throw invalid_value_exception(to_string() << "get_xu(id=" << _id << ") failed!" << " Last Error: " << strerror(errno));
+
                     return static_cast<float>(t);
                 }));
         }
@@ -94,12 +97,15 @@ namespace rsimpl2
                 {
                     return dev.get_xu_range(_xu, _id, sizeof(T));
                 });
-            option_range result;
-            result.min = static_cast<float>(uvc_range.min);
-            result.max = static_cast<float>(uvc_range.max);
-            result.def = static_cast<float>(uvc_range.def);
-            result.step = static_cast<float>(uvc_range.step);
-            return result;
+
+            auto min = *(reinterpret_cast<int32_t*>(uvc_range.min.data()));
+            auto max = *(reinterpret_cast<int32_t*>(uvc_range.max.data()));
+            auto step = *(reinterpret_cast<int32_t*>(uvc_range.step.data()));
+            auto def = *(reinterpret_cast<int32_t*>(uvc_range.def.data()));
+            return option_range{static_cast<float>(min),
+                                static_cast<float>(max),
+                                static_cast<float>(step),
+                                static_cast<float>(def)};
         }
 
         bool is_enabled() const override { return true; }
@@ -159,7 +165,7 @@ namespace rsimpl2
         bool is_enabled() const override { return true; }
 
         explicit struct_field_option(std::shared_ptr<struct_interface<T, R, W>> struct_interface,
-                                     U T::* field, option_range range)
+                                     U T::* field, const option_range& range)
             : _struct_interface(struct_interface), _range(range), _field(field)
         {
         }
@@ -178,7 +184,7 @@ namespace rsimpl2
     template<class T, class R, class W, class U>
     std::shared_ptr<struct_field_option<T, R, W, U>> make_field_option(
         std::shared_ptr<struct_interface<T, R, W>> struct_interface,
-        U T::* field, option_range range)
+        U T::* field, const option_range& range)
     {
         return std::make_shared<struct_field_option<T, R, W, U>>
             (struct_interface, field, range);
@@ -206,8 +212,9 @@ namespace rsimpl2
     {
     public:
         polling_errors_disable(polling_error_handler* handler)
-            :_polling_error_handler(handler), _value(1)
+            : _polling_error_handler(handler), _value(1)
         {}
+
         void set(float value);
 
         float query() const;
@@ -222,7 +229,7 @@ namespace rsimpl2
         const char* get_value_description(float value);
 
     private:
-        polling_error_handler* _polling_error_handler;
-        float _value;
+        polling_error_handler*          _polling_error_handler;
+        float                           _value;
     };
 }

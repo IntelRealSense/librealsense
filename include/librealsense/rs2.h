@@ -167,6 +167,7 @@ typedef enum rs2_camera_info {
     RS2_CAMERA_INFO_ADVANCED_MODE                  ,
     RS2_CAMERA_INFO_PRODUCT_ID                     ,
     RS2_CAMERA_INFO_MOTION_MODULE_FIRMWARE_VERSION ,
+    RS2_CAMERA_INFO_IS_CAMERA_LOCKED               , /**< EEPROM Lock Status */
     RS2_CAMERA_INFO_COUNT                            /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
 } rs2_camera_info;
 
