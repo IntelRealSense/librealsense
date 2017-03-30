@@ -433,7 +433,7 @@ int rs2_is_option_read_only(const rs2_device* device, rs2_option option, rs2_err
     VALIDATE_ENUM(option);
     return device->device->get_endpoint(device->subdevice).get_option(option).is_read_only();
 }
-HANDLE_EXCEPTIONS_AND_RETURN(0.0, device, option)
+HANDLE_EXCEPTIONS_AND_RETURN(0, device, option)
 
 float rs2_get_option(const rs2_device* device, rs2_option option, rs2_error** error) try
 {

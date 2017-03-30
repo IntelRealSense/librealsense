@@ -122,7 +122,7 @@ void auto_complete::handle_special_key(const vector<uint8_t>& chars)
 
 char auto_complete::getch_nolock()
 {
-#if defined(WIN32)
+#if defined(_WIN32)
     auto ch = static_cast<char>(_getch_nolock());
     if (ch < 0)
     {

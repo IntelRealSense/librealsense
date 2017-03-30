@@ -108,6 +108,7 @@ set(REALSENSE_CPP
     src/win/win-helpers.cpp
     src/win/win-uvc.cpp
     src/win/win-usb.cpp
+    src/win/win-hid.cpp
     src/win/win-backend.cpp
 
     third_party/sqlite/sqlite3.h
@@ -142,6 +143,7 @@ set(REALSENSE_HPP
     src/win/win-helpers.h
     src/win/win-uvc.h
     src/win/win-usb.h
+    src/win/win-hid.h
     src/win/win-backend.h
 
     third_party/sqlite/sqlite3.c
@@ -154,6 +156,7 @@ if(WIN32)
         src/win/win-helpers.cpp
         src/win/win-uvc.cpp
         src/win/win-usb.cpp
+        src/win/win-hid.cpp
         src/win/win-backend.cpp
         src/uvc-v4l2.cpp
         src/backend.cpp
@@ -163,6 +166,7 @@ if(WIN32)
         src/win/win-helpers.h
         src/win/win-uvc.h
         src/win/win-usb.h
+        src/win/win-hid.h
         src/win/win-backend.h
         src/backend.h)
 

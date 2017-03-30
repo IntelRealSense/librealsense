@@ -151,6 +151,9 @@ namespace rsimpl2
 
         void wmf_uvc_device::init_xu(const extension_unit& xu)
         {
+            if (!_source)
+                throw std::runtime_error("Could not initialize extensions controls!");
+
             // Attempt to retrieve IKsControl
             CComPtr<IKsTopologyInfo> ks_topology_info = nullptr;
             CHECK_HR(_source->QueryInterface(__uuidof(IKsTopologyInfo),
@@ -446,6 +449,7 @@ namespace rsimpl2
             {
                 if (opt == pu.option)
                 {
+                    if (!_video_proc.p) throw std::runtime_error("No video proc!");
                     CHECK_HR(_video_proc->GetRange(pu.property, &minVal, &maxVal, &steppingDelta, &defVal, &capsFlag));
                     result.min = static_cast<int>(minVal);
                     result.max = static_cast<int>(maxVal);
@@ -503,61 +507,135 @@ namespace rsimpl2
 
         void wmf_uvc_device::set_power_state(power_state state)
         {
-            if (_power_state != D0 && state == D0)
+            auto rs2 = is_win10_redstone2();
+
+            // This is temporary work-around for Windows 10 Red-Stone2 build
+            // There seem to be issues re-creating Media Foundation objects frequently
+            // That's why until this is properly investigated on RS2 machines librealsense will keep MF objects alive
+            // As a negative side-effect the camera will remain in D0 power state longer
+            if (rs2)
             {
-                foreach_uvc_device([this](const uvc_device_info& i,
-                    IMFActivate* device)
+                if (_power_state != D0 && state == D0)
                 {
-                    if (i == _info && device)
+                    foreach_uvc_device([this](const uvc_device_info& i,
+                        IMFActivate* device)
                     {
-                        wchar_t did[256];
-                        CHECK_HR(device->GetString(did_guid, did, sizeof(did) / sizeof(wchar_t), nullptr));
-
-                        CHECK_HR(MFCreateAttributes(&_device_attrs, 2));
-                        CHECK_HR(_device_attrs->SetGUID(MF_DEVSOURCE_ATTRIBUTE_SOURCE_TYPE, type_guid));
-                        CHECK_HR(_device_attrs->SetString(did_guid, did));
-                        CHECK_HR(MFCreateDeviceSourceActivate(_device_attrs, &_activate));
-
-                        _callback = new source_reader_callback(shared_from_this()); /// async I/O
-
-                        CHECK_HR(MFCreateAttributes(&_reader_attrs, 2));
-                        CHECK_HR(_reader_attrs->SetUINT32(MF_SOURCE_READER_DISCONNECT_MEDIASOURCE_ON_SHUTDOWN, FALSE));
-                        CHECK_HR(_reader_attrs->SetUnknown(MF_SOURCE_READER_ASYNC_CALLBACK,
-                            static_cast<IUnknown*>(_callback)));
-
-                        CHECK_HR(_reader_attrs->SetUINT32(MF_READWRITE_ENABLE_HARDWARE_TRANSFORMS, TRUE));
-                        CHECK_HR(_activate->ActivateObject(IID_IMFMediaSource, reinterpret_cast<void **>(&_source)));
-                        CHECK_HR(MFCreateSourceReaderFromMediaSource(_source, _reader_attrs, &_reader));
-
-                        _source->QueryInterface(__uuidof(IAMCameraControl),
-                            reinterpret_cast<void **>(&_camera_control.p));
-                        _source->QueryInterface(__uuidof(IAMVideoProcAmp),
-                            reinterpret_cast<void **>(&_video_proc.p));
-
-                        UINT32 streamIndex;
-                        CHECK_HR(_device_attrs->GetCount(&streamIndex));
-                        _streams.resize(streamIndex);
-                        for (auto& elem : _streams)
+                        if (i == _info && device)
                         {
-                            elem.callback = nullptr;
+                            wchar_t did[256];
+                            HRESULT hr;
+                            int count = 0;
+                            CHECK_HR(device->GetString(did_guid, did, sizeof(did) / sizeof(wchar_t), nullptr));
+
+                            if (_reader == nullptr)
+                            {
+                                CHECK_HR(MFCreateAttributes(&_device_attrs, 2));
+                                CHECK_HR(_device_attrs->SetGUID(MF_DEVSOURCE_ATTRIBUTE_SOURCE_TYPE, type_guid));
+                                CHECK_HR(_device_attrs->SetString(did_guid, did));
+                                hr = device->ActivateObject(IID_PPV_ARGS(&_source));
+                                if (_source == nullptr)
+                                {
+                                    do
+                                    {
+                                        Sleep(10);
+                                        count++;
+                                        hr = device->ActivateObject(IID_PPV_ARGS(&_source));
+                                    } while (_source == nullptr && count < 30);
+                                }
+
+                                CHECK_HR(hr);
+
+                                _callback = new source_reader_callback(shared_from_this()); /// async I/O
+
+                                CHECK_HR(MFCreateAttributes(&_reader_attrs, 3));
+                                CHECK_HR(_reader_attrs->SetUINT32(MF_SOURCE_READER_DISCONNECT_MEDIASOURCE_ON_SHUTDOWN, FALSE));
+                                CHECK_HR(_reader_attrs->SetUnknown(MF_SOURCE_READER_ASYNC_CALLBACK, static_cast<IUnknown*>(_callback)));
+                                CHECK_HR(_reader_attrs->SetUINT32(MF_READWRITE_ENABLE_HARDWARE_TRANSFORMS, TRUE));
+                                CHECK_HR(MFCreateSourceReaderFromMediaSource(_source, _reader_attrs, &_reader));
+                            }
+                            _source->QueryInterface(__uuidof(IAMCameraControl),
+                                reinterpret_cast<void **>(&_camera_control.p));
+                            _source->QueryInterface(__uuidof(IAMVideoProcAmp),
+                                reinterpret_cast<void **>(&_video_proc.p));
+
+                            UINT32 streamIndex;
+                            CHECK_HR(_device_attrs->GetCount(&streamIndex));
+                            _streams.resize(streamIndex);
+                            for (auto& elem : _streams)
+                            {
+                                elem.callback = nullptr;
+                            }
+
+                            CHECK_HR(_reader->SetStreamSelection(static_cast<DWORD>(MF_SOURCE_READER_ALL_STREAMS), TRUE));
                         }
+                    });
 
-                        CHECK_HR(_reader->SetStreamSelection(static_cast<DWORD>(MF_SOURCE_READER_ALL_STREAMS), TRUE));
-                    }
-                });
+                    _power_state = D0;
+                }
 
-                _power_state = D0;
+                if (_power_state != D3 && state == D3)
+                {
+                    _power_state = D3;
+                }
             }
-
-            if (_power_state != D3 && state == D3)
+            else
             {
-                _reader = nullptr;
-                _source = nullptr;
-                _reader_attrs = nullptr;
-                _activate = nullptr;
-                _device_attrs = nullptr;
+                if (_power_state != D0 && state == D0)
+                {
+                    foreach_uvc_device([this](const uvc_device_info& i,
+                        IMFActivate* device)
+                    {
+                        if (i == _info && device)
+                        {
+                            wchar_t did[256];
+                            CHECK_HR(device->GetString(did_guid, did, sizeof(did) / sizeof(wchar_t), nullptr));
 
-                _power_state = D3;
+                            CHECK_HR(MFCreateAttributes(&_device_attrs, 2));
+                            CHECK_HR(_device_attrs->SetGUID(MF_DEVSOURCE_ATTRIBUTE_SOURCE_TYPE, type_guid));
+                            CHECK_HR(_device_attrs->SetString(did_guid, did));
+                            CHECK_HR(MFCreateDeviceSourceActivate(_device_attrs, &_activate));
+
+                            _callback = new source_reader_callback(shared_from_this()); /// async I/O
+
+                            CHECK_HR(MFCreateAttributes(&_reader_attrs, 2));
+                            CHECK_HR(_reader_attrs->SetUINT32(MF_SOURCE_READER_DISCONNECT_MEDIASOURCE_ON_SHUTDOWN, FALSE));
+                            CHECK_HR(_reader_attrs->SetUnknown(MF_SOURCE_READER_ASYNC_CALLBACK,
+                                static_cast<IUnknown*>(_callback)));
+
+                            CHECK_HR(_reader_attrs->SetUINT32(MF_READWRITE_ENABLE_HARDWARE_TRANSFORMS, TRUE));
+                            CHECK_HR(_activate->ActivateObject(IID_IMFMediaSource, reinterpret_cast<void **>(&_source)));
+                            CHECK_HR(MFCreateSourceReaderFromMediaSource(_source, _reader_attrs, &_reader));
+
+                            _source->QueryInterface(__uuidof(IAMCameraControl),
+                                reinterpret_cast<void **>(&_camera_control.p));
+                            _source->QueryInterface(__uuidof(IAMVideoProcAmp),
+                                reinterpret_cast<void **>(&_video_proc.p));
+
+                            UINT32 streamIndex;
+                            CHECK_HR(_device_attrs->GetCount(&streamIndex));
+                            _streams.resize(streamIndex);
+                            for (auto& elem : _streams)
+                            {
+                                elem.callback = nullptr;
+                            }
+
+                            CHECK_HR(_reader->SetStreamSelection(static_cast<DWORD>(MF_SOURCE_READER_ALL_STREAMS), TRUE));
+                        }
+                    });
+
+                    _power_state = D0;
+                }
+
+                if (_power_state != D3 && state == D3)
+                {
+                    _reader = nullptr;
+                    _source = nullptr;
+                    _reader_attrs = nullptr;
+                    _activate = nullptr;
+                    _device_attrs = nullptr;
+
+                    _power_state = D3;
+                }
             }
         }
 
@@ -642,6 +720,7 @@ namespace rsimpl2
             catch (...) {}
         }
 
+
         wmf_uvc_device::~wmf_uvc_device()
         {
             try {
@@ -650,6 +729,18 @@ namespace rsimpl2
                     flush(MF_SOURCE_READER_ALL_STREAMS);
                 }
                 wmf_uvc_device::set_power_state(D3);
+
+                if (_source)
+                {
+                    _source.Release();
+                    _source = nullptr;
+                    _reader.Release();
+                    _reader = nullptr;
+                    _reader_attrs.Release();
+                    _reader_attrs = nullptr;
+                    _device_attrs.Release();
+                    _device_attrs = nullptr;
+                }
             }
             catch (...)
             {
@@ -783,7 +874,7 @@ namespace rsimpl2
 
             try
             {
-                for (auto i = 0; i < _profiles.size(); ++i)
+                for (uint32_t i = 0; i < _profiles.size(); ++i)
                 {
                     play_profile(_profiles[i], _frame_callbacks[i]);
                 }

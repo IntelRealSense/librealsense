@@ -766,7 +766,11 @@ namespace rsimpl2
              {std::string("accel_3d"), {RS2_STREAM_ACCEL, 1, 1, 125,  RS2_FORMAT_MOTION_XYZ32F}},
              {std::string("accel_3d"), {RS2_STREAM_ACCEL, 1, 1, 250,  RS2_FORMAT_MOTION_XYZ32F}},
              {std::string("accel_3d"), {RS2_STREAM_ACCEL, 1, 1, 500,  RS2_FORMAT_MOTION_XYZ32F}},
-             {std::string("accel_3d"), {RS2_STREAM_ACCEL, 1, 1, 1000, RS2_FORMAT_MOTION_XYZ32F}}};
+             {std::string("accel_3d"), {RS2_STREAM_ACCEL, 1, 1, 1000, RS2_FORMAT_MOTION_XYZ32F}},
+             { "HID Sensor Class Device: Gyroscope", { RS2_STREAM_GYRO, 1, 1, 1000, RS2_FORMAT_MOTION_XYZ32F } } ,
+             { "HID Sensor Class Device: Accelerometer", { RS2_STREAM_ACCEL, 1, 1, 1000, RS2_FORMAT_MOTION_XYZ32F } },
+             { "HID Sensor Class Device: Custom", { RS2_STREAM_ACCEL, 1, 1, 1000, RS2_FORMAT_MOTION_XYZ32F } }
+        };
 
         std::map<rs2_stream, std::map<unsigned, unsigned>> fps_and_sampling_frequency_per_rs2_stream =
                                                          {{RS2_STREAM_ACCEL, {{125,  1},

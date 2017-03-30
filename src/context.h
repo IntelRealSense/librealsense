@@ -125,7 +125,7 @@ namespace rsimpl2
             auto unique_id = dev.front().unique_id;
             for (auto&& hid : hids)
             {
-                if (hid.unique_id == unique_id)
+                if (hid.unique_id == unique_id || hid.unique_id == "*")
                     hid_group.push_back(hid);
             }
             results.push_back(std::make_pair(dev, hid_group));

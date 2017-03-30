@@ -171,6 +171,8 @@ private:
 
     bool is_enum() const
     {
+        if (range.step < 0.001f) return false;
+
         for (auto i = range.min; i <= range.max; i += range.step)
         {
             if (endpoint.get_option_value_description(opt, i) == nullptr)
@@ -696,7 +698,7 @@ public:
 
     int selected_res_id = 0;
     std::map<rs2_stream, int> selected_fps_id;
-    int selected_shared_fps_id;
+    int selected_shared_fps_id = 0;
     std::map<rs2_stream, int> selected_format_id;
 
     std::vector<std::pair<int, int>> res_values;

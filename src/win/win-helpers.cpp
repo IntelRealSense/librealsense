@@ -46,6 +46,22 @@ namespace rsimpl2
             return ss.str();
         }
 
+        typedef ULONG(__stdcall* fnRtlGetVersion)(PRTL_OSVERSIONINFOW lpVersionInformation);
+
+
+        bool is_win10_redstone2()
+        {
+            RTL_OSVERSIONINFOEXW verInfo = { 0 };
+            verInfo.dwOSVersionInfoSize = sizeof(verInfo);
+            static auto RtlGetVersion = reinterpret_cast<fnRtlGetVersion>(GetProcAddress(GetModuleHandleW(L"ntdll.dll"), "RtlGetVersion"));
+            if (RtlGetVersion != nullptr && RtlGetVersion(reinterpret_cast<PRTL_OSVERSIONINFOW>(&verInfo)) == 0)
+            {
+                return verInfo.dwMajorVersion >= 0x0A && verInfo.dwBuildNumber >= 15063;
+            }
+            else
+                return false;
+        }
+
         bool check(const char * call, HRESULT hr, bool to_throw)
         {
             if (FAILED(hr))
@@ -96,7 +112,7 @@ namespace rsimpl2
             auto name = path;
             std::transform(begin(name), end(name), begin(name), ::tolower);
             auto tokens = tokenize(name, '#');
-            if(tokens.size() < 1 || tokens[0] != R"(\\?\usb)") return false; // Not a USB device
+            if(tokens.size() < 1 || (tokens[0] != R"(\\?\usb)" && tokens[0] != R"(\\?\hid)")) return false; // Not a USB device
             if(tokens.size() < 3)
             {
                 LOG_ERROR("malformed usb device path: " << name);

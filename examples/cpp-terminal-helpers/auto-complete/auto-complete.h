@@ -6,7 +6,7 @@
 #include <vector>
 #include <functional>
 #include <stdint.h>
-#if defined(WIN32)
+#if defined(_WIN32)
     #include <conio.h>
     #define NEW_LINE '\r'
     #define BACKSPACE '\b'

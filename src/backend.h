@@ -13,8 +13,9 @@
 #include <vector>
 #include <algorithm>
 #include <set>
-#include <list>
+#include <iterator>
 #include <tuple>
+#include <map>
 #include <string>
 
 const uint16_t VID_INTEL_CAMERA     = 0x8086;
@@ -183,6 +184,18 @@ namespace rsimpl2
             unit_expo,
             units,
             value
+        };
+
+        struct hid_sensor_data
+        {
+            short x;
+            char reserved1[2];
+            short y;
+            char reserved2[2];
+            short z;
+            char reserved3[2];
+            uint32_t ts_low;
+            uint32_t ts_high;
         };
 
         typedef std::function<void(const sensor_data&)> hid_callback;
@@ -360,11 +373,55 @@ namespace rsimpl2
             virtual ~backend() = default;
         };
 
+        class multi_pins_hid_device : public hid_device
+        {
+        public:
+            void open() override
+            {
+                for (auto&& dev : _dev) dev->open();
+            }
+
+            void close() override 
+            {
+                for (auto&& dev : _dev) dev->close();
+            }
+
+            void stop_capture() override
+            {
+                _dev.front()->stop_capture();
+            }
+
+            void start_capture(const std::vector<hid_profile>& sensor_iio, hid_callback callback) override
+            {
+                _dev.front()->start_capture(sensor_iio, callback);
+            }
+
+            std::vector<hid_sensor> get_sensors() override
+            {
+                return _dev.front()->get_sensors();
+            }
+
+            explicit multi_pins_hid_device(const std::vector<std::shared_ptr<hid_device>>& dev)
+                : _dev(dev)
+            {
+            }
+
+            std::vector<uint8_t> get_custom_report_data(const std::string& custom_sensor_name,
+                const std::string& report_name,
+                custom_sensor_report_field report_field) override
+            {
+                return _dev.front()->get_custom_report_data(custom_sensor_name, report_name, report_field);
+            }
+
+        private:
+            std::vector<std::shared_ptr<hid_device>> _dev;
+        };
+
         class multi_pins_uvc_device : public uvc_device
         {
         public:
             explicit multi_pins_uvc_device(const std::vector<std::shared_ptr<uvc_device>>& dev)
-                :_dev(dev)
+                : _dev(dev)
             {}
 
             void probe_and_commit(stream_profile profile, frame_callback callback, int buffers) override

@@ -19,6 +19,8 @@ namespace rsimpl2
 
         std::string win_to_utf(const WCHAR * s);
 
+        bool is_win10_redstone2();
+
         std::vector<std::string> tokenize(std::string string, char separator);
 
         bool parse_usb_path(uint16_t & vid, uint16_t & pid, uint16_t & mi, std::string & unique_id, const std::string & path);

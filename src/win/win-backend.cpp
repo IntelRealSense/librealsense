@@ -8,11 +8,11 @@
 
 #include "win-backend.h"
 #include "win-uvc.h"
+#include "win-usb.h"
+#include "win-hid.h"
 
 #include <mfapi.h>
 #include <chrono>
-#include "win-usb.h"
-
 namespace rsimpl2
 {
     namespace uvc
@@ -97,12 +97,34 @@ namespace rsimpl2
 
         std::shared_ptr<hid_device> wmf_backend::create_hid_device(hid_device_info info) const
         {
-            throw std::runtime_error("HID support is not implemented on Windows at this time!");
+            std::shared_ptr<hid_device> result = nullptr;
+
+            auto action = [&result, &info](const hid_device_info& i, CComPtr<ISensor> ptr)
+            {
+                if (info.device_path == i.device_path)
+                {
+                    result = std::make_shared<wmf_hid_device>(ptr);
+                }
+            };
+
+            wmf_hid_device::foreach_hid_device(action);
+
+            if (result.get()) return result;
+            throw std::runtime_error("Device no longer found!");
         }
 
         std::vector<hid_device_info> wmf_backend::query_hid_devices() const
         {
-            return std::vector<hid_device_info>();
+            std::vector<hid_device_info> devices;
+
+            auto action = [&devices](const hid_device_info& info, CComPtr<ISensor>)
+            {
+                devices.push_back(info);
+            };
+
+            wmf_hid_device::foreach_hid_device(action);
+
+            return devices;
         }
 
         std::shared_ptr<time_service> wmf_backend::create_time_service() const

@@ -39,7 +39,7 @@ namespace rsimpl2
              auto val = 0;
              try
              {
-                 val = _option->query();
+                 val = static_cast<int>(_option->query());
 
                  if (val != 0)
                  {
