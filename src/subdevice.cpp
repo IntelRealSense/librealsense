@@ -9,15 +9,14 @@
 #include "algo.h"
 using namespace rsimpl2;
 
-
 void rsimpl2::endpoint::register_notifications_callback(notifications_callback_ptr callback)
 {
     _notifications_proccessor->set_callback(std::move(callback));
 }
 
-rs2_frame* endpoint::alloc_frame(size_t size, frame_additional_data additional_data) const
+rs2_frame* endpoint::alloc_frame(size_t size, frame_additional_data additional_data, bool requires_memory) const
 {
-    auto frame = _archive->alloc_frame(size, additional_data, true);
+    auto frame = _archive->alloc_frame(size, additional_data, requires_memory);
     return _archive->track_frame(frame);
 }
 
@@ -242,7 +241,7 @@ void uvc_endpoint::open(const std::vector<stream_profile>& requests)
         throw wrong_api_call_sequence_exception("open(...) failed. UVC device is already opened!");
 
     auto on = std::unique_ptr<power>(new power(shared_from_this()));
-    _archive = std::make_shared<frame_archive>(&_max_publish_list_size,_ts);
+    _archive = std::make_shared<frame_archive>(&_max_publish_list_size,_ts, _device);
     auto mapping = resolve_requests(requests);
 
     auto timestamp_reader = _timestamp_reader.get();
@@ -253,7 +252,7 @@ void uvc_endpoint::open(const std::vector<stream_profile>& requests)
         try
         {
             _device->probe_and_commit(mode.profile,
-            [this, mode, timestamp_reader, requests](uvc::stream_profile p, uvc::frame_object f) mutable
+            [this, mode, timestamp_reader, requests](uvc::stream_profile p, uvc::frame_object f, std::function<void()> continuation) mutable
             {
 
             auto system_time = _ts->get_time();
@@ -265,12 +264,16 @@ void uvc_endpoint::open(const std::vector<stream_profile>& requests)
                 return;
             }
 
+            frame_continuation release_and_enqueue(continuation, f.pixels);
+
             // Ignore any frames which appear corrupted or invalid
             // Determine the timestamp for this frame
             auto timestamp = timestamp_reader->get_frame_timestamp(mode, f);
             auto timestamp_domain = timestamp_reader->get_frame_timestamp_domain(mode, f);
 
             auto frame_counter = timestamp_reader->get_frame_counter(mode, f);
+
+            auto requires_processing = mode.requires_processing();
 
             auto width = mode.profile.width;
             auto height = mode.profile.height;
@@ -307,7 +310,7 @@ void uvc_endpoint::open(const std::vector<stream_profile>& requests)
                     output.first);
 
 
-                frame_holder frame = this->alloc_frame(width * height * bpp / 8, additional_data);
+                frame_holder frame = this->alloc_frame(width * height * bpp / 8, additional_data, requires_processing);
                 if (frame.frame)
                 {
                     frame->get()->set_timestamp_domain(timestamp_domain);
@@ -325,8 +328,7 @@ void uvc_endpoint::open(const std::vector<stream_profile>& requests)
             }
 
             // Unpack the frame
-            //if (requires_processing)
-            if (dest.size() > 0)
+            if (requires_processing && (dest.size() > 0))
             {
                 unpacker.unpack(dest.data(), reinterpret_cast<const byte *>(f.pixels), width * height);
             }
@@ -334,6 +336,11 @@ void uvc_endpoint::open(const std::vector<stream_profile>& requests)
             // If any frame callbacks were specified, dispatch them now
             for (auto&& pref : refs)
             {
+                if (!requires_processing)
+                {
+                    pref->attach_continuation(std::move(release_and_enqueue));
+                }
+
                 // all the streams the unpacker generates are handled here.
                 // If it matches one of the streams the user requested, send it to the user.
                 if (std::any_of(begin(requests), end(requests), [&pref](stream_profile request) { return request.stream == pref->get()->get_stream_type(); }))
@@ -348,7 +355,7 @@ void uvc_endpoint::open(const std::vector<stream_profile>& requests)
                     this->invoke_callback(std::move(pref));
                 }
              }
-            });
+            }, _max_publish_list_size.load());
         }
         catch(...)
         {
@@ -646,7 +653,7 @@ void hid_endpoint::start_streaming(frame_callback_ptr callback)
     else if(!_is_opened)
         throw wrong_api_call_sequence_exception("start_streaming(...) failed. Hid device was not opened!");
 
-    _archive = std::make_shared<frame_archive>(&_max_publish_list_size, _ts);
+    _archive = std::make_shared<frame_archive>(&_max_publish_list_size, _ts, nullptr);
     _callback = std::move(callback);
     std::vector<uvc::hid_profile> configured_hid_profiles;
     for (auto& elem : _configured_profiles)
@@ -718,7 +725,7 @@ void hid_endpoint::start_streaming(frame_callback_ptr callback)
                   << ",TS," << timestamp
                   << ",TS_Domain," << rs2_timestamp_domain_to_string(additional_data.timestamp_domain));
 
-        auto frame = this->alloc_frame(data_size, additional_data);
+        auto frame = this->alloc_frame(data_size, additional_data, true);
         if (!frame)
         {
             LOG_INFO("Dropped frame. alloc_frame(...) returned nullptr");

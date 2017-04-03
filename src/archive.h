@@ -152,6 +152,11 @@ struct rs2_frame // esentially an intrusive shared_ptr<frame>
         std::swap(frame_ptr, other.frame_ptr);
     }
 
+    void attach_continuation(rsimpl2::frame_continuation&& continuation) const
+    {
+        if (frame_ptr) frame_ptr->attach_continuation(std::move(continuation));
+    }
+
     void disable_continuation() const
     {
         if (frame_ptr) frame_ptr->disable_continuation();
@@ -224,10 +229,12 @@ namespace rsimpl2
         int pending_frames = 0;
         std::recursive_mutex mutex;
         std::shared_ptr<uvc::time_service> _time_service;
+        std::shared_ptr<uvc::uvc_device> device;
 
     public:
         explicit frame_archive(std::atomic<uint32_t>* max_frame_queue_size,
-            std::shared_ptr<uvc::time_service> ts);
+                               std::shared_ptr<uvc::time_service> ts,
+                               std::shared_ptr<uvc::uvc_device> dev);
 
         callback_invocation_holder begin_callback()
         {

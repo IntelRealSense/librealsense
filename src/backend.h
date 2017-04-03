@@ -18,6 +18,7 @@
 #include <string>
 
 const uint16_t VID_INTEL_CAMERA     = 0x8086;
+const uint8_t DEFAULT_FRAME_BUFFERS = 4;
 
 namespace rsimpl2
 {
@@ -103,7 +104,7 @@ namespace rsimpl2
             const void * metadata;
         };
 
-        typedef std::function<void(stream_profile, frame_object)> frame_callback;
+        typedef std::function<void(stream_profile, frame_object, std::function<void()>)> frame_callback;
 
         struct uvc_device_info
         {
@@ -207,7 +208,7 @@ namespace rsimpl2
         class uvc_device
         {
         public:
-            virtual void probe_and_commit(stream_profile profile, frame_callback callback) = 0;
+            virtual void probe_and_commit(stream_profile profile, frame_callback callback, int buffers = DEFAULT_FRAME_BUFFERS) = 0;
             virtual void stream_on(std::function<void(const notification& n)> error_handler = [](const notification& n){}) = 0;
             virtual void start_callbacks() = 0;
             virtual void stop_callbacks() = 0;
@@ -244,9 +245,9 @@ namespace rsimpl2
             explicit retry_controls_work_around(std::shared_ptr<uvc_device> dev)
                 : _dev(dev) {}
 
-            void probe_and_commit(stream_profile profile, frame_callback callback) override
+            void probe_and_commit(stream_profile profile, frame_callback callback, int buffers) override
             {
-                _dev->probe_and_commit(profile, callback);
+                _dev->probe_and_commit(profile, callback, buffers);
             }
             void stream_on(std::function<void(const notification& n)> error_handler = [](const notification& n){}) override
             {
@@ -366,11 +367,11 @@ namespace rsimpl2
                 :_dev(dev)
             {}
 
-            void probe_and_commit(stream_profile profile, frame_callback callback) override
+            void probe_and_commit(stream_profile profile, frame_callback callback, int buffers) override
             {
                 auto dev_index = get_dev_index_by_profiles(profile);
                 _configured_indexes.insert(dev_index);
-                _dev[dev_index]->probe_and_commit(profile, callback);
+                _dev[dev_index]->probe_and_commit(profile, callback, buffers);
             }
 
             void stream_on(std::function<void(const notification& n)> error_handler = [](const notification& n){}) override

@@ -97,14 +97,18 @@ namespace rsimpl2
                                 std::lock_guard<std::mutex> lock(owner->_streams_mutex);
                                 auto profile = stream.profile;
                                 frame_object f{ current_length, 0, byte_buffer, nullptr };
-                                stream.callback(profile, f);
+
+                                auto continuation = [buffer, this]()
+                                {
+                                    buffer->Unlock();
+                                };
+
+                                stream.callback(profile, f, continuation);
                             }
                             catch (...)
                             {
                                 // TODO: log
                             }
-
-                            buffer->Unlock();
                         }
                     }
                 }
@@ -653,7 +657,7 @@ namespace rsimpl2
             }
         }
 
-        void wmf_uvc_device::probe_and_commit(stream_profile profile, frame_callback callback)
+        void wmf_uvc_device::probe_and_commit(stream_profile profile, frame_callback callback, int /*buffers*/)
         {
             if (_streaming)
                 throw std::runtime_error("Device is already streaming!");

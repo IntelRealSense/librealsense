@@ -190,7 +190,114 @@ namespace rsimpl2
             return r;
         }
 
-        struct buffer { uint8_t * start; size_t length; };
+        class buffer
+        {
+        public:
+            buffer(int fd, bool use_memory_map, int index)
+                : _use_memory_map(use_memory_map), _index(index)
+            {
+                v4l2_buffer buf = {};
+                buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+                buf.memory = use_memory_map ? V4L2_MEMORY_MMAP : V4L2_MEMORY_USERPTR;
+                buf.index = index;
+                if(xioctl(fd, VIDIOC_QUERYBUF, &buf) < 0)
+                    throw linux_backend_exception("xioctl(VIDIOC_QUERYBUF) failed");
+
+                _original_length = buf.length;
+                _length = buf.length;
+                if (use_memory_map)
+                {
+                    _start = static_cast<uint8_t*>(mmap(NULL, buf.length,
+                                                        PROT_READ | PROT_WRITE, MAP_SHARED,
+                                                        fd, buf.m.offset));
+                    if(_start == MAP_FAILED)
+                        linux_backend_exception("mmap failed");
+                }
+                else
+                {
+                    _length += META_DATA_SIZE;
+                    _start = static_cast<uint8_t*>(malloc( buf.length + META_DATA_SIZE));
+                    if (!_start) linux_backend_exception("User_p allocation failed!");
+                    memset(_start, 0, _length);
+                }
+            }
+
+            void prepare_for_streaming(int fd)
+            {
+                v4l2_buffer buf = {};
+                buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+                buf.memory = _use_memory_map ? V4L2_MEMORY_MMAP : V4L2_MEMORY_USERPTR;
+                buf.index = _index;
+                buf.length = _length;
+
+                if ( !_use_memory_map )
+                {
+                    buf.m.userptr = (unsigned long)_start;
+                }
+                if(xioctl(fd, VIDIOC_QBUF, &buf) < 0)
+                    throw linux_backend_exception("xioctl(VIDIOC_QBUF) failed");
+            }
+
+            ~buffer()
+            {
+                if (_use_memory_map)
+                {
+                   if(munmap(_start, _length) < 0)
+                       linux_backend_exception("munmap");
+                }
+                else
+                {
+                   free(_start);
+                }
+            }
+
+            void attach_buffer(const v4l2_buffer& buf)
+            {
+                std::lock_guard<std::mutex> lock(_mutex);
+                _buf = buf;
+                _must_enqueue = true;
+            }
+
+            void detach_buffer()
+            {
+                std::lock_guard<std::mutex> lock(_mutex);
+                _must_enqueue = false;
+            }
+
+            void request_next_frame(int fd)
+            {
+                std::lock_guard<std::mutex> lock(_mutex);
+
+                if (_must_enqueue)
+                {
+                    if (V4L2_MEMORY_USERPTR == _use_memory_map)
+                    {
+                        auto metadata_offset = get_full_length() - META_DATA_SIZE;
+                        memset((byte*)(get_frame_start()) + metadata_offset, 0, META_DATA_SIZE);
+                    }
+
+                    if (xioctl(fd, VIDIOC_QBUF, &_buf) < 0)
+                        throw linux_backend_exception("xioctl(VIDIOC_QBUF) failed");
+
+                    _must_enqueue = false;
+                }
+            }
+
+            size_t get_full_length() const { return _length; }
+            size_t get_length_frame_only() const { return _original_length; }
+
+            uint8_t* get_frame_start() const { return _start; }
+
+        private:
+            uint8_t* _start;
+            size_t _length;
+            size_t _original_length;
+            bool _use_memory_map;
+            int _index;
+            v4l2_buffer _buf;
+            std::mutex _mutex;
+            bool _must_enqueue = false;
+        };
 
         static std::string get_usb_port_id(libusb_device* usb_device)
         {
@@ -355,7 +462,7 @@ namespace rsimpl2
                   _is_capturing(false),
                   _custom_device_name(""),
                   _fd(0),
-                  _pipe_fd{}
+                  _stop_pipe_fd{}
             {
                 init();
             }
@@ -426,7 +533,7 @@ namespace rsimpl2
                     throw linux_backend_exception("open() failed with all retries!");
                 }
 
-                if (pipe(_pipe_fd) < 0)
+                if (pipe(_stop_pipe_fd) < 0)
                 {
                     close(_fd);
                     enable(false);
@@ -444,9 +551,9 @@ namespace rsimpl2
                         fd_set fds;
                         FD_ZERO(&fds);
                         FD_SET(_fd, &fds);
-                        FD_SET(_pipe_fd[0], &fds);
+                        FD_SET(_stop_pipe_fd[0], &fds);
 
-                        int max_fd = std::max(_pipe_fd[0], _fd);
+                        int max_fd = std::max(_stop_pipe_fd[0], _fd);
                         size_t read_size = 0;
 
                         struct timeval tv = {5,0};
@@ -458,7 +565,7 @@ namespace rsimpl2
                         }
                         else if (val > 0)
                         {
-                            if(FD_ISSET(_pipe_fd[0], &fds))
+                            if(FD_ISSET(_stop_pipe_fd[0], &fds))
                             {
                                 if(!_is_capturing)
                                 {
@@ -512,13 +619,13 @@ namespace rsimpl2
                 if(::close(_fd) < 0)
                     throw linux_backend_exception("hid_custom_sensor: close(_fd) failed");
 
-                if(::close(_pipe_fd[0]) < 0)
-                   throw linux_backend_exception("hid_custom_sensor: close(_pipe_fd[0]) failed");
-                if(::close(_pipe_fd[1]) < 0)
-                   throw linux_backend_exception("hid_custom_sensor: close(_pipe_fd[1]) failed");
+                if(::close(_stop_pipe_fd[0]) < 0)
+                   throw linux_backend_exception("hid_custom_sensor: close(_stop_pipe_fd[0]) failed");
+                if(::close(_stop_pipe_fd[1]) < 0)
+                   throw linux_backend_exception("hid_custom_sensor: close(_stop_pipe_fd[1]) failed");
 
                 _fd = 0;
-                _pipe_fd[0] = _pipe_fd[1] = 0;
+                _stop_pipe_fd[0] = _stop_pipe_fd[1] = 0;
             }
 
         private:
@@ -605,13 +712,13 @@ namespace rsimpl2
             {
                 char buff[1];
                 buff[0] = 0;
-                if (write(_pipe_fd[1], buff, 1) < 0)
+                if (write(_stop_pipe_fd[1], buff, 1) < 0)
                 {
                      throw linux_backend_exception("hid_custom_sensor: Could not signal video capture thread to stop. Error write to pipe.");
                 }
             }
 
-            int _pipe_fd[2]; // write to _pipe_fd[1] and read from _pipe_fd[0]
+            int _stop_pipe_fd[2]; // write to _stop_pipe_fd[1] and read from _stop_pipe_fd[0]
             int _fd;
             std::map<std::string, std::string> _reports;
             std::string _custom_device_path;
@@ -632,7 +739,7 @@ namespace rsimpl2
                   _is_capturing(false),
                   _sampling_frequency_name(""),
                   _fd(0),
-                  _pipe_fd{}
+                  _stop_pipe_fd{}
             {
                 init();
             }
@@ -689,7 +796,7 @@ namespace rsimpl2
                     throw linux_backend_exception("open() failed with all retries!");
                 }
 
-                if (pipe(_pipe_fd) < 0)
+                if (pipe(_stop_pipe_fd) < 0)
                 {
                     close(_fd);
                     write_integer_to_param("buffer/enable", 0);
@@ -710,9 +817,9 @@ namespace rsimpl2
                         fd_set fds;
                         FD_ZERO(&fds);
                         FD_SET(_fd, &fds);
-                        FD_SET(_pipe_fd[0], &fds);
+                        FD_SET(_stop_pipe_fd[0], &fds);
 
-                        int max_fd = std::max(_pipe_fd[0], _fd);
+                        int max_fd = std::max(_stop_pipe_fd[0], _fd);
                         auto read_size = 0;
 
                         struct timeval tv = {5, 0};
@@ -724,7 +831,7 @@ namespace rsimpl2
                         }
                         else if (val > 0)
                         {
-                            if(FD_ISSET(_pipe_fd[0], &fds))
+                            if(FD_ISSET(_stop_pipe_fd[0], &fds))
                             {
                                 if(!_is_capturing)
                                 {
@@ -781,13 +888,13 @@ namespace rsimpl2
                 if(::close(_fd) < 0)
                     throw linux_backend_exception("iio_hid_sensor: close(_fd) failed");
 
-                if(::close(_pipe_fd[0]) < 0)
-                   throw linux_backend_exception("iio_hid_sensor: close(_pipe_fd[0]) failed");
-                if(::close(_pipe_fd[1]) < 0)
-                   throw linux_backend_exception("iio_hid_sensor: close(_pipe_fd[1]) failed");
+                if(::close(_stop_pipe_fd[0]) < 0)
+                   throw linux_backend_exception("iio_hid_sensor: close(_stop_pipe_fd[0]) failed");
+                if(::close(_stop_pipe_fd[1]) < 0)
+                   throw linux_backend_exception("iio_hid_sensor: close(_stop_pipe_fd[1]) failed");
 
                 _fd = 0;
-                _pipe_fd[0] = _pipe_fd[1] = 0;
+                _stop_pipe_fd[0] = _stop_pipe_fd[1] = 0;
             }
 
             void set_frequency(uint32_t frequency)
@@ -813,7 +920,7 @@ namespace rsimpl2
             {
                 char buff[1];
                 buff[0] = 0;
-                if (write(_pipe_fd[1], buff, 1) < 0)
+                if (write(_stop_pipe_fd[1], buff, 1) < 0)
                 {
                      throw linux_backend_exception("iio_hid_sensor: Could not signal video capture thread to stop. Error write to pipe.");
                 }
@@ -1017,7 +1124,7 @@ namespace rsimpl2
             }
 
             static const uint32_t buf_len = 128; // TODO
-            int _pipe_fd[2]; // write to _pipe_fd[1] and read from _pipe_fd[0]
+            int _stop_pipe_fd[2]; // write to _stop_pipe_fd[1] and read from _stop_pipe_fd[0]
             int _fd;
             int _iio_device_number;
             std::string _iio_device_path;
@@ -1350,7 +1457,7 @@ namespace rsimpl2
             std::vector<std::unique_ptr<hid_custom_sensor>> _hid_custom_sensors;
             std::vector<iio_hid_sensor*> _streaming_iio_sensors;
             std::vector<hid_custom_sensor*> _streaming_custom_sensors;
-            static constexpr char* custom_id{"custom"};
+            static constexpr const char* custom_id{"custom"};
         };
 
         class v4l_usb_device : public usb_device
@@ -1573,7 +1680,7 @@ namespace rsimpl2
                   _thread(nullptr),
                   _use_memory_map(use_memory_map),
                   _is_started(false),
-                  _pipe_fd{}
+                  _stop_pipe_fd{}
             {
                 foreach_uvc_device([&info, this](const uvc_device_info& i, const std::string& name)
                 {
@@ -1596,7 +1703,7 @@ namespace rsimpl2
                 if (_thread) _thread->join();
             }
 
-            void probe_and_commit(stream_profile profile, frame_callback callback) override
+            void probe_and_commit(stream_profile profile, frame_callback callback, int buffers) override
             {
                 if(!_is_capturing && !_callback)
                 {
@@ -1625,7 +1732,7 @@ namespace rsimpl2
 
                     // Init memory mapped IO
                     v4l2_requestbuffers req = {};
-                    req.count = 4;
+                    req.count = buffers;
                     req.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
                     req.memory = _use_memory_map ? V4L2_MEMORY_MMAP : V4L2_MEMORY_USERPTR;
                     if(xioctl(_fd, VIDIOC_REQBUFS, &req) < 0)
@@ -1640,31 +1747,11 @@ namespace rsimpl2
                         throw linux_backend_exception(to_string() << "Insufficient buffer memory on " << _name);
                     }
 
-                    _buffers.resize(req.count);
-                    for(size_t i = 0; i < _buffers.size(); ++i)
+                    for(size_t i = 0; i < buffers; ++i)
                     {
-                        v4l2_buffer buf = {};
-                        buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-                        buf.memory = _use_memory_map ? V4L2_MEMORY_MMAP : V4L2_MEMORY_USERPTR;
-                        buf.index = i;
-                        if(xioctl(_fd, VIDIOC_QUERYBUF, &buf) < 0)
-                            throw linux_backend_exception("xioctl(VIDIOC_QUERYBUF) failed");
-
-                        _buffer_length = buf.length;
-                        _buffers[i].length = buf.length;
-                        if ( _use_memory_map )
-                        {
-                            _buffers[i].start = static_cast<uint8_t*>(mmap(NULL, buf.length, PROT_READ | PROT_WRITE, MAP_SHARED, _fd, buf.m.offset));
-                            if(_buffers[i].start == MAP_FAILED) linux_backend_exception("mmap failed");
-                        }
-                        else
-                        {
-                            _buffers[i].length += META_DATA_SIZE;
-                            _buffers[i].start = static_cast<uint8_t*>(malloc( buf.length + META_DATA_SIZE));
-                             if (!_buffers[i].start) linux_backend_exception("userp allocation failed");
-                             memset(_buffers[i].start, 0, _buffers[i].length);
-                        }
+                        _buffers.push_back(std::make_shared<buffer>(_fd, _use_memory_map, i));
                     }
+
                     _profile = profile;
                     _callback = callback;
                 }
@@ -1681,24 +1768,9 @@ namespace rsimpl2
                     _error_handler = error_handler;
 
                     // Start capturing
-                    for(size_t i = 0; i < _buffers.size(); ++i)
-                    {
-                       v4l2_buffer buf = {};
-                       buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-                       buf.memory = _use_memory_map ? V4L2_MEMORY_MMAP : V4L2_MEMORY_USERPTR;
-                       buf.index = i;
-                       buf.length = _buffers[i].length;
-
-                       if ( !_use_memory_map )
-                       {
-                           buf.m.userptr = (unsigned long)_buffers[i].start;
-                       }
-                        if(xioctl(_fd, VIDIOC_QBUF, &buf) < 0)
-                            throw linux_backend_exception("xioctl(VIDIOC_QBUF) failed");
-                    }
+                    for (auto&& buf : _buffers) buf->prepare_for_streaming(_fd);
 
                     v4l2_buf_type type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-
                     if(xioctl(_fd, VIDIOC_STREAMON, &type) < 0)
                         throw linux_backend_exception("xioctl(VIDIOC_STREAMON) failed");
 
@@ -1736,19 +1808,11 @@ namespace rsimpl2
 
                 if (_callback)
                 {
-
                     for(size_t i = 0; i < _buffers.size(); i++)
                     {
-                        if (_use_memory_map)
-                        {
-                           if(munmap(_buffers[i].start, _buffers[i].length) < 0) linux_backend_exception("munmap");
-                        }
-                         else
-                        {
-                           free(_buffers[i].start);
-                           _buffers[i].start = 0;
-                        }
+                        _buffers[i]->detach_buffer();
                     }
+                    _buffers.resize(0);
 
                     // Close memory mapped IO
                     struct v4l2_requestbuffers req = {};
@@ -1767,6 +1831,122 @@ namespace rsimpl2
                 }
             }
 
+            std::string fourcc_to_string(uint32_t id) const
+            {
+                uint32_t device_fourcc = id;
+                char fourcc_buff[sizeof(device_fourcc)+1];
+                memcpy(fourcc_buff, &device_fourcc, sizeof(device_fourcc));
+                fourcc_buff[sizeof(device_fourcc)] = 0;
+                return fourcc_buff;
+            }
+
+            void signal_stop()
+            {
+                char buff[1];
+                buff[0] = 0;
+                if (write(_stop_pipe_fd[1], buff, 1) < 0)
+                {
+                     throw linux_backend_exception("Could not signal video capture thread to stop. Error write to pipe.");
+                }
+            }
+
+            void poll()
+            {
+                fd_set fds{};
+                FD_ZERO(&fds);
+                FD_SET(_fd, &fds);
+                FD_SET(_stop_pipe_fd[0], &fds);
+                FD_SET(_stop_pipe_fd[1], &fds);
+
+                int max_fd = std::max(std::max(_stop_pipe_fd[0], _stop_pipe_fd[1]), _fd);
+
+                struct timeval tv = {5,0};
+
+                auto val = select(max_fd+1, &fds, NULL, NULL, &tv);
+
+                if(val < 0)
+                {
+                    _is_capturing = false;
+                    _is_started = false;
+                    signal_stop();
+
+                    _thread->join();
+                    _thread.reset();
+
+                    // Stop streamining
+                    v4l2_buf_type type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+                    if(xioctl(_fd, VIDIOC_STREAMOFF, &type) < 0)
+                        throw linux_backend_exception("xioctl(VIDIOC_STREAMOFF) failed");
+                }
+
+                if (_callback)
+                {
+
+                    for(size_t i = 0; i < _buffers.size(); i++)
+                    {
+                        FD_ZERO(&fds);
+                        FD_SET(_fd, &fds);
+                        v4l2_buffer buf = {};
+                        buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+                        buf.memory = _use_memory_map ? V4L2_MEMORY_MMAP : V4L2_MEMORY_USERPTR;
+                        if(xioctl(_fd, VIDIOC_DQBUF, &buf) < 0)
+                        {
+                            if(errno == EAGAIN)
+                                return;
+
+                            throw linux_backend_exception("xioctl(VIDIOC_DQBUF) failed");
+                        }
+
+                        bool moved_qbuff = false;
+                        auto buffer = _buffers[buf.index];
+
+                        if (_is_started)
+                        {
+
+                            if((buf.bytesused < buffer->get_full_length() - META_DATA_SIZE) &&
+                                buf.bytesused > 0)
+                            {
+                                auto percentage = (100 * buf.bytesused) / buffer->get_full_length();
+                                std::stringstream s;
+                                s << "Incomplete frame detected!\nSize " << buf.bytesused
+                                  << " out of " << buffer->get_full_length() << " bytes (" << percentage << "%)";
+                                rsimpl2::notification n = {0, RS2_LOG_SEVERITY_WARN, s.str()};
+
+                                _error_handler(n);
+                            }
+                            else
+                            {
+                                frame_object fo{ buffer->get_length_frame_only(),
+                                    has_metadata() ? META_DATA_SIZE : 0,
+                                    buffer->get_frame_start(),
+                                    has_metadata() ? buffer->get_frame_start() + buffer->get_length_frame_only() : nullptr };
+
+                                if (buf.bytesused > 0)
+                                {
+                                    buffer->attach_buffer(buf);
+                                    moved_qbuff = true;
+                                    auto fd = _fd;
+                                    _callback(_profile, fo,
+                                        [fd, buffer]() mutable {
+                                            buffer->request_next_frame(fd);
+                                        });
+                                }
+                                else
+                                {
+                                    LOG_WARNING("Empty frame has arrived.");
+                                }
+                            }
+                        }
+
+                        if (!moved_qbuff)
+                        {
+                            if (xioctl(_fd, VIDIOC_QBUF, &buf) < 0)
+                                throw linux_backend_exception("xioctl(VIDIOC_QBUF) failed");
+                        }
+                    }
+                }
+            }
+
             void set_power_state(power_state state) override
             {
                 if (state == D0 && _state == D3)
@@ -1776,7 +1956,7 @@ namespace rsimpl2
                         throw linux_backend_exception(to_string() << "Cannot open '" << _name);
 
 
-                    if (pipe(_pipe_fd) < 0)
+                    if (pipe(_stop_pipe_fd) < 0)
                         throw linux_backend_exception("v4l_uvc_device: Cannot create pipe!");
 
                     v4l2_capability cap = {};
@@ -1817,13 +1997,13 @@ namespace rsimpl2
                     if(::close(_fd) < 0)
                         throw linux_backend_exception("v4l_uvc_device: close(_fd) failed");
 
-                    if(::close(_pipe_fd[0]) < 0)
-                       throw linux_backend_exception("v4l_uvc_device: close(_pipe_fd[0]) failed");
-                    if(::close(_pipe_fd[1]) < 0)
-                       throw linux_backend_exception("v4l_uvc_device: close(_pipe_fd[1]) failed");
+                    if(::close(_stop_pipe_fd[0]) < 0)
+                       throw linux_backend_exception("v4l_uvc_device: close(_stop_pipe_fd[0]) failed");
+                    if(::close(_stop_pipe_fd[1]) < 0)
+                       throw linux_backend_exception("v4l_uvc_device: close(_stop_pipe_fd[1]) failed");
 
                     _fd = 0;
-                    _pipe_fd[0] = _pipe_fd[1] = 0;
+                    _stop_pipe_fd[0] = _stop_pipe_fd[1] = 0;
                 }
                 _state = state;
             }
@@ -2101,118 +2281,6 @@ namespace rsimpl2
                 }
             }
 
-            void signal_stop()
-            {
-                char buff[1];
-                buff[0] = 0;
-                if (write(_pipe_fd[1], buff, 1) < 0)
-                {
-                     throw linux_backend_exception("v4l_uvc_device: Could not signal video capture thread to stop. Error write to pipe.");
-                }
-            }
-
-            std::string fourcc_to_string(uint32_t id) const
-            {
-                uint32_t device_fourcc = id;
-                char fourcc_buff[sizeof(device_fourcc)+1];
-                memcpy(fourcc_buff, &device_fourcc, sizeof(device_fourcc));
-                fourcc_buff[sizeof(device_fourcc)] = 0;
-                return fourcc_buff;
-            }
-
-            void poll()
-            {
-                fd_set fds{};
-                FD_ZERO(&fds);
-                FD_SET(_fd, &fds);
-                FD_SET(_pipe_fd[0], &fds);
-
-                int max_fd = std::max(_pipe_fd[0], _fd);
-
-                struct timeval tv = {5,0};
-
-                auto val = select(max_fd+1, &fds, NULL, NULL, &tv);
-
-                if(val < 0)
-                {
-                    if (errno == EINTR)
-                        return;
-
-                    throw linux_backend_exception("select failed");
-                }
-                else if(val > 0)
-                {
-                    if(FD_ISSET(_pipe_fd[0], &fds))
-                    {
-                        if(!_is_capturing)
-                        {
-                            LOG_INFO("Stream finished");
-                            return;
-                        }
-                    }
-                    else if(FD_ISSET(_fd, &fds))
-                    {
-                        FD_ZERO(&fds);
-                        FD_SET(_fd, &fds);
-                        v4l2_buffer buf = {};
-                        buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-                        buf.memory = _use_memory_map ? V4L2_MEMORY_MMAP : V4L2_MEMORY_USERPTR;
-                        if(xioctl(_fd, VIDIOC_DQBUF, &buf) < 0)
-                        {
-                            if(errno == EAGAIN)
-                                return;
-
-                            throw linux_backend_exception("xioctl(VIDIOC_DQBUF) failed");
-                        }
-
-                        if (_is_started)
-                        {
-                            if( buf.bytesused < _buffers[buf.index].length - META_DATA_SIZE &&
-                                    buf.bytesused > 0)
-                            {
-                                auto precent = (100 * buf.bytesused) / _buffers[buf.index].length;
-                                std::stringstream s;
-                                s << "Incomplete frame detected!\nSize " << buf.bytesused
-                                  << " out of " << _buffers[buf.index].length << " bytes (" << precent << "%)";
-                                rsimpl2::notification n = {0, RS2_LOG_SEVERITY_WARN, s.str()};
-
-                                _error_handler(n);
-                            }
-                            else
-                            {
-                                frame_object fo{ _buffers[buf.index].length,
-                                    has_metadata() ? META_DATA_SIZE : 0,
-                                    _buffers[buf.index].start,
-                                    has_metadata() ? _buffers[buf.index].start + _buffer_length : nullptr };
-
-
-                                if (buf.bytesused > 0)
-                                    _callback(_profile, fo);
-                                else
-                                    LOG_WARNING("Empty frame has arrived.");
-                            }
-                        }
-
-                        if (V4L2_MEMORY_USERPTR == _use_memory_map)
-                        {
-                            auto metadata_offset = _buffers[buf.index].length - META_DATA_SIZE;
-                            memset((byte*)(_buffers[buf.index].start) + metadata_offset, 0, META_DATA_SIZE);
-                        }
-
-                        if(xioctl(_fd, VIDIOC_QBUF, &buf) < 0)
-                            throw linux_backend_exception("xioctl(VIDIOC_QBUF) failed");
-                    }
-                    else
-                    {
-                        throw linux_backend_exception("FD_ISSET returned false");
-                    }
-                }
-                else
-                {
-                    LOG_WARNING("Frames didn't arrived within 5 seconds");
-                }
-            }
-
             bool has_metadata()
             {
                if(!_use_memory_map)
@@ -2224,9 +2292,9 @@ namespace rsimpl2
             std::string _device_path;
             uvc_device_info _info;
             int _fd = 0;
-            int _pipe_fd[2]; // write to _pipe_fd[1] and read from _pipe_fd[0]
-            std::vector<buffer> _buffers;
-            unsigned int _buffer_length = 0;
+            int _stop_pipe_fd[2]; // write to _stop_pipe_fd[1] and read from _stop_pipe_fd[0]
+
+            std::vector<std::shared_ptr<buffer>> _buffers;
             stream_profile _profile;
             frame_callback _callback;
             std::atomic<bool> _is_capturing;

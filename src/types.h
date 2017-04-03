@@ -433,6 +433,8 @@ namespace rsimpl2
             return std::make_tuple(profile, *pf, *unpacker);
         }
 
+        bool requires_processing() const { return unpacker->requires_processing; }
+
     };
 
     inline bool operator< (const request_mapping& first, const request_mapping& second)

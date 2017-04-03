@@ -542,13 +542,13 @@ namespace rsimpl2
             return nullptr;
         }
 
-        void record_uvc_device::probe_and_commit(stream_profile profile, frame_callback callback)
+        void record_uvc_device::probe_and_commit(stream_profile profile, frame_callback callback, int buffers)
         {
             _owner->try_record([this, callback, profile](recording* rec, lookup_key k)
             {
-                _source->probe_and_commit(profile, [this, callback](stream_profile p, frame_object f)
+                _source->probe_and_commit(profile, [this, callback](stream_profile p, frame_object f, std::function<void()> continuation)
                 {
-                    _owner->try_record([this, callback, p, &f](recording* rec1, lookup_key key1)
+                    _owner->try_record([this, callback, p, &f, continuation](recording* rec1, lookup_key key1)
                     {
                         auto&& c = rec1->add_call(key1);
                         c.param1 = rec1->save_blob(&p, sizeof(p));
@@ -575,7 +575,7 @@ namespace rsimpl2
 
                         c.param5 = rec1->save_blob(f.metadata, static_cast<int>(f.metadata_size));
                         c.param6 = static_cast<int>(f.metadata_size);
-                        callback(p, f);
+                        callback(p, f, continuation);
                     }, _entity_id, call_type::uvc_frame);
                 });
 
@@ -1021,7 +1021,7 @@ namespace rsimpl2
             LOG(INFO) << "Finished writing " << _rec->size() << " calls...";
         }
 
-        void playback_uvc_device::probe_and_commit(stream_profile profile, frame_callback callback)
+        void playback_uvc_device::probe_and_commit(stream_profile profile, frame_callback callback, int buffers)
         {
             auto stored = _rec->load_stream_profiles(_entity_id, call_type::uvc_probe_commit);
             vector<stream_profile> input{ profile };
@@ -1348,7 +1348,7 @@ namespace rsimpl2
                             metadata_blob =_rec->load_blob(c_ptr->param5);
                             frame_object fo{ frame_blob.size(), metadata_blob.size(),
                                         frame_blob.data(),metadata_blob.data() };
-                            pair.second(p, fo);
+                            pair.second(p, fo, []() {});
                             break;
                         }
                     }

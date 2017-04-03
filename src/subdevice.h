@@ -100,7 +100,7 @@ namespace rsimpl2
 
         void register_notifications_callback(notifications_callback_ptr callback);
 
-        rs2_frame* alloc_frame(size_t size, frame_additional_data additional_data) const;
+        rs2_frame* alloc_frame(size_t size, frame_additional_data additional_data, bool requires_memory) const;
 
         void invoke_callback(frame_holder frame) const;
 
