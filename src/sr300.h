@@ -166,7 +166,8 @@ namespace rsimpl2
             color_ep->register_pu(RS2_OPTION_ENABLE_AUTO_EXPOSURE);
             color_ep->register_pu(RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE);
 
-            color_ep->set_pose({ { { 1,0,0 },{ 0,1,0 },{ 0,0,1 } },{ 0,0,0 } });
+
+            color_ep->set_pose(lazy<pose>([](){pose p = {{ { 1,0,0 },{ 0,1,0 },{ 0,0,1 } },{ 0,0,0 }}; return p; }));
 
             return color_ep;
         }
@@ -246,7 +247,8 @@ namespace rsimpl2
                 transpose(reinterpret_cast<const float3x3 &>(c.Rt)),
                           reinterpret_cast<const float3 &>(c.Tt) * 0.001f
             };
-            get_depth_endpoint().set_pose(inverse(depth_to_color));
+
+            get_depth_endpoint().set_pose(lazy<pose>([depth_to_color](){return inverse(depth_to_color); }));
             set_depth_scale((c.Rmax / 0xFFFF) * 0.001f);
         }
 

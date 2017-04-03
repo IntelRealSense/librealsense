@@ -46,6 +46,8 @@ float2 project(const rs2_intrinsics *intrin, const float3 & point) { float2 pixe
 float2 pixel_to_texcoord(const rs2_intrinsics *intrin, const float2 & pixel) { return{ (pixel.x + 0.5f) / intrin->width, (pixel.y + 0.5f) / intrin->height }; }
 float2 project_to_texcoord(const rs2_intrinsics *intrin, const float3 & point) { return pixel_to_texcoord(intrin, project(intrin, point)); }
 
+
+
 int main(int argc, char * argv[]) try
 {
     log_to_console(RS2_LOG_SEVERITY_WARN);
@@ -64,7 +66,12 @@ int main(int argc, char * argv[]) try
 
     // try to open color stream, but fall back to IR if the camera doesn't support it
     rs2_stream mapped;
-    if (config.can_enable_stream(dev, RS2_STREAM_COLOR, preset::best_quality)) {
+    if (config.can_enable_stream(dev, RS2_STREAM_FISHEYE, 640, 480, 60, RS2_FORMAT_RAW8))
+    {
+        mapped = RS2_STREAM_FISHEYE;
+        config.enable_stream(RS2_STREAM_FISHEYE, 640, 480,  60, RS2_FORMAT_RAW8);
+    }
+    else if (config.can_enable_stream(dev, RS2_STREAM_COLOR, preset::best_quality)) {
         mapped = RS2_STREAM_COLOR;
         config.enable_stream(RS2_STREAM_COLOR, preset::best_quality);
     }
@@ -88,6 +95,7 @@ int main(int argc, char * argv[]) try
     ostringstream ss; ss << "CPP Point Cloud Example (" << dev.get_camera_info(RS2_CAMERA_INFO_DEVICE_NAME) << ")";
     GLFWwindow * win = glfwCreateWindow(640, 480, ss.str().c_str(), 0, 0);
     glfwSetWindowUserPointer(win, &app_state);
+
 
     glfwSetMouseButtonCallback(win, [](GLFWwindow * win, int button, int action, int /*mods*/)
     {
@@ -122,6 +130,7 @@ int main(int argc, char * argv[]) try
     const rs2_intrinsics depth_intrin = stream.get_intrinsics(RS2_STREAM_DEPTH);
     const rs2_intrinsics mapped_intrin = stream.get_intrinsics(mapped);
 
+    vector<uint8_t> undistorted_fisheye(640*480, 0);
 
     int frame_count = 0; float time = 0, fps = 0;
     auto t0 = chrono::high_resolution_clock::now();
@@ -144,11 +153,15 @@ int main(int argc, char * argv[]) try
             time = 0;
         }
 
+
         glPushAttrib(GL_ALL_ATTRIB_BITS);
 
         for (auto&& frame : frames) {
             if (frame.get_stream_type() == mapped)
+            {           
                 mapped_tex.upload(frame);
+            }
+
             if (frame.get_stream_type() == RS2_STREAM_DEPTH)
                 depth = reinterpret_cast<const uint16_t *>(frame.get_data());
         }
@@ -188,15 +201,26 @@ int main(int argc, char * argv[]) try
         {
             for(int x=0; x<depth_intrin.width; ++x)
             {
-                if(points->z) //if(uint16_t d = *depth++)
+                if(points->z)
                 {
-                    //const float3 point = depth_intrin.deproject({static_cast<float>(x),static_cast<float>(y)}, d*depth_scale);
-                    glTexCoord(project_to_texcoord(&mapped_intrin, transform(&extrin, *points)));
+                    auto trans = transform(&extrin, *points);
+                    auto tex_xy = project_to_texcoord(&mapped_intrin, trans);
+
+                    //Its seems that at the moment fisheye extrinsics are roteted in x and y in 180 degrees
+                    //as a temporery work around we rotete the coordinates of the texture
+                    if(mapped == RS2_STREAM_FISHEYE)
+                    {
+                        tex_xy.x = 1 - tex_xy.x;
+                        tex_xy.y = 1 - tex_xy.y;
+                    }
+
+                    glTexCoord(tex_xy);
                     glVertex(*points);
                 }
                 ++points;
             }
         }
+
         glEnd();
         glPopMatrix();
         glMatrixMode(GL_PROJECTION);
@@ -211,7 +235,6 @@ int main(int argc, char * argv[]) try
         ostringstream ss; ss << fps << " FPS";
         draw_text(20, 40, ss.str().c_str());
         glPopMatrix();
-
         glfwSwapBuffers(win);
     }
 

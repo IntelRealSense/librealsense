@@ -7,16 +7,19 @@
 #include "rs2.h"
 #include "assert.h"
 
+#include <math.h>
+
+
 /* Given a point in 3D space, compute the corresponding pixel coordinates in an image with no distortion or forward distortion coefficients produced by the same camera */
 static void rs2_project_point_to_pixel(float pixel[2], const struct rs2_intrinsics * intrin, const float point[3])
 {
-    //assert(intrin->model != RS2_DISTORTION_INVERSE_BROWN_CONRADY); // Cannot project to an inverse-distorted image
-    assert(intrin->model != RS2_DISTORTION_FTHETA); // Cannot project to an ftheta image
-    //assert(intrin->model != RS2_DISTORTION_BROWN_CONRADY); // Cannot project to an brown conrady model
+    assert(intrin->model != RS2_DISTORTION_INVERSE_BROWN_CONRADY); // Cannot project to an inverse-distorted image
 
     float x = point[0] / point[2], y = point[1] / point[2];
+
     if(intrin->model == RS2_DISTORTION_MODIFIED_BROWN_CONRADY)
     {
+
         float r2  = x*x + y*y;
         float f = 1 + intrin->coeffs[0]*r2 + intrin->coeffs[1]*r2*r2 + intrin->coeffs[4]*r2*r2*r2;
         x *= f;
@@ -26,6 +29,14 @@ static void rs2_project_point_to_pixel(float pixel[2], const struct rs2_intrinsi
         x = dx;
         y = dy;
     }
+    if (intrin->model == RS2_DISTORTION_FTHETA)
+    {
+        float r = sqrt(x*x + y*y);
+            auto rd = (1.0f / intrin->coeffs[0] * atan(2 * r* tan(intrin->coeffs[0] / 2.0f)));
+            x *= rd / r;
+            y *= rd / r;
+    }
+
     pixel[0] = x * intrin->fx + intrin->ppx;
     pixel[1] = y * intrin->fy + intrin->ppy;
 }

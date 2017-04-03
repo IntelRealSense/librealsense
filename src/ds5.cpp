@@ -137,21 +137,48 @@ namespace rsimpl2
     }
 
     rs2_intrinsics ds5_camera::get_intrinsics(unsigned int subdevice, stream_profile profile) const
-    {
-        if (subdevice >= get_endpoints_count())
-            throw invalid_value_exception(to_string() << "Requested subdevice " <<
-                                          subdevice << " is unsupported.");
+      {
+          if (subdevice >= get_endpoints_count())
+              throw invalid_value_exception(to_string() << "Requested subdevice " <<
+                                            subdevice << " is unsupported.");
 
-        if (subdevice == _depth_device_idx)
-        {
-            return get_intrinsic_by_resolution(
-                *_coefficients_table_raw,
-                ds::calibration_table_id::coefficients_table_id,
-                profile.width, profile.height);
-        }
+          if (subdevice == _depth_device_idx)
+          {
+              return get_intrinsic_by_resolution(
+                  *_coefficients_table_raw,
+                  ds::calibration_table_id::coefficients_table_id,
+                  profile.width, profile.height);
+          }
 
-        throw not_implemented_exception("Not Implemented");
-    }
+          if (subdevice == _fisheye_device_idx)
+          {
+              return get_intrinsic_by_resolution(
+                  *_fisheye_calibration_raw,
+                  ds::calibration_table_id::fisheye_calibration_id,
+                  profile.width, profile.height);
+          }
+          throw not_implemented_exception("Not Implemented");
+      }
+
+      pose ds5_camera::get_device_position(unsigned int subdevice) const
+      {
+          if (subdevice >= get_endpoints_count())
+              throw invalid_value_exception(to_string() << "Requested subdevice " <<
+                                            subdevice << " is unsupported.");
+
+          if (subdevice == _fisheye_device_idx)
+          {
+             auto extr = rsimpl2::ds::get_extrinsics_data(*_fisheye_calibration_raw);
+             pose p {{extr.rotation[0], extr.rotation[1], extr.rotation[2],
+                     extr.rotation[3], extr.rotation[4], extr.rotation[5],
+                     extr.rotation[6], extr.rotation[7], extr.rotation[8]},
+                     {extr.translation[0], extr.translation[1], extr.translation[2]}};
+
+
+             return inverse(p);
+          }
+          throw not_implemented_exception("Not Implemented");
+      }
 
     bool ds5_camera::is_camera_in_advanced_mode() const
     {
@@ -169,6 +196,14 @@ namespace rsimpl2
         command cmd(ds::GETINTCAL, table_id);
         return _hw_monitor->send(cmd);
     }
+
+    std::vector<uint8_t> ds5_camera::get_raw_fisheye_calibration_table() const
+       {
+           const int offset = 0x84;
+           const int size = 0x98;
+           command cmd(ds::MMER, offset, size);
+           return _hw_monitor->send(cmd);
+       }
 
     std::shared_ptr<hid_endpoint> ds5_camera::create_hid_device(const uvc::backend& backend,
                                                                 const std::vector<uvc::hid_device_info>& all_hid_infos,
@@ -199,7 +234,8 @@ namespace rsimpl2
         hid_ep->register_pixel_format(pf_accel_axes);
         hid_ep->register_pixel_format(pf_gyro_axes);
 
-        hid_ep->set_pose({ { { 1,0,0 },{ 0,1,0 },{ 0,0,1 } },{ 0,0,0 } });
+
+        hid_ep->set_pose(lazy<pose>([](){pose p = {{ { 1,0,0 },{ 0,1,0 },{ 0,0,1 } },{ 0,0,0 }}; return p; }));
 
         if (camera_fw_version >= firmware_version(custom_sensor_fw_ver))
         {
@@ -219,6 +255,7 @@ namespace rsimpl2
         std::vector<std::shared_ptr<uvc::uvc_device>> depth_devices;
         for (auto&& info : filter_by_mi(all_device_infos, 0)) // Filter just mi=0, DEPTH
             depth_devices.push_back(backend.create_uvc_device(info));
+
 
         std::unique_ptr<frame_timestamp_reader> ds5_timestamp_reader_backup(new ds5_timestamp_reader(backend.create_time_service()));
         auto depth_ep = std::make_shared<uvc_endpoint>(std::make_shared<uvc::multi_pins_uvc_device>(depth_devices),
@@ -246,7 +283,7 @@ namespace rsimpl2
                     DS5_LASER_POWER, "Manual laser power in mw. applicable only when laser power mode is set to Manual"));
         }
 
-        depth_ep->set_pose({ { { 1,0,0 },{ 0,1,0 },{ 0,0,1 } },{ 0,0,0 } });
+        depth_ep->set_pose(lazy<pose>([](){pose p = {{ { 1,0,0 },{ 0,1,0 },{ 0,0,1 } },{ 0,0,0 }}; return p; }));
 
         return depth_ep;
     }
@@ -313,6 +350,7 @@ namespace rsimpl2
         }
 
         _coefficients_table_raw = [this]() { return get_raw_calibration_table(coefficients_table_id); };
+        _fisheye_calibration_raw = [this]() { return get_raw_fisheye_calibration_table(); };
 
         std::string device_name = (rs4xx_sku_names.end() != rs4xx_sku_names.find(dev_info.front().pid)) ? rs4xx_sku_names.at(dev_info.front().pid) : "RS4xx";
         auto camera_fw_version = firmware_version(_hw_monitor->get_firmware_version_string(GVD, camera_fw_version_offset));
@@ -443,8 +481,9 @@ namespace rsimpl2
 
 
             // Add fisheye endpoint
-            fe_index = add_endpoint(fisheye_ep);
-            fisheye_ep->set_pose({ { { 1,0,0 },{ 0,1,0 },{ 0,0,1 } },{ 0,0,0 } });
+            _fisheye_device_idx = add_endpoint(fisheye_ep);
+
+            fisheye_ep->set_pose(lazy<pose>([this](){return get_device_position(_fisheye_device_idx);}));
 
             // Add hid endpoint
             auto hid_index = add_endpoint(create_hid_device(backend, hid_info, camera_fw_version));
@@ -496,7 +535,7 @@ namespace rsimpl2
                 if (!motion_module_fw_version.empty())
                     camera_info[RS2_CAMERA_INFO_MOTION_MODULE_FIRMWARE_VERSION] = motion_module_fw_version;
 
-                register_endpoint_info(fe_index, camera_info);
+                register_endpoint_info(_fisheye_device_idx, camera_info);
             }
         }
     }

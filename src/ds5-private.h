@@ -48,6 +48,7 @@ namespace rsimpl2 {
             GLD = 0x0f,           // FW logs
             GVD = 0x10,           // camera details
             GETINTCAL = 0x15,     // Read calibration table
+            MMER = 0x4F,          // MM EEPROM read ( from DS5 cache )
             UAMG = 0X30,          // get advanced mode status
             SETAEROI = 0x44,      // set auto-exposure region of interest
             GETAEROI = 0x45,      // get auto-exposure region of interest
@@ -92,6 +93,19 @@ namespace rsimpl2 {
             float4              rect_params[max_ds5_rect_resoluitons];
             uint8_t             reserved2[64];
         };
+
+#pragma pack(push, 1)
+        struct fisheye_calibration_table
+        {
+            table_header        header;
+            float               intrinsics_model;           //  1 - Brown, 2 - FOV, 3 - Kannala Brandt
+            float3x3            intrinsic;                  //  fisheye intrinsic data, normilized
+            float               distortion[5];
+            float3x3            rotation;                   //  the fisheye rotation matrix
+            float3              translation;                //  the fisheye translation vector
+            uint8_t             reserved2[28];
+        };
+#pragma pack(pop)
 
         enum gvd_fields
         {
@@ -153,6 +167,9 @@ namespace rsimpl2 {
         ds5_rect_resolutions width_height_to_ds5_rect_resolutions(uint32_t width, uint32_t height);
 
         rs2_intrinsics get_intrinsic_by_resolution(const std::vector<unsigned char> & raw_data, calibration_table_id table_id, uint32_t width, uint32_t height);
+        rs2_intrinsics get_intrinsic_by_resolution_coefficients_table(const std::vector<unsigned char> & raw_data, uint32_t width, uint32_t height);
+        rs2_intrinsics get_intrinsic_fisheye_table(const std::vector<unsigned char> & raw_data, uint32_t width, uint32_t height);
+        rs2_extrinsics get_extrinsics_data(const std::vector<unsigned char> & raw_data);
 
         bool try_fetch_usb_device(std::vector<uvc::usb_device_info>& devices,
                                          const uvc::uvc_device_info& info, uvc::usb_device_info& result);

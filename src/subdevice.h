@@ -131,8 +131,8 @@ namespace rsimpl2
         bool supports_info(rs2_camera_info info) const;
         void register_info(rs2_camera_info info, const std::string& val);
 
-        void set_pose(pose p) { _pose = std::move(p); }
-        const pose& get_pose() const { return _pose; }
+        void set_pose(lazy<pose> p) { _pose = std::move(p); }
+        pose get_pose() const { return *_pose; }
 
         region_of_interest_method& get_roi_method() const
         {
@@ -167,7 +167,7 @@ namespace rsimpl2
         std::map<rs2_option, std::shared_ptr<option>> _options;
         std::vector<native_pixel_format> _pixel_formats;
         lazy<std::vector<uvc::stream_profile>> _stream_profiles;
-        pose _pose;
+        lazy<pose> _pose;
         std::map<rs2_camera_info, std::string> _camera_info;
         std::shared_ptr<region_of_interest_method> _roi_method = nullptr;
         start_adaptor _start_adaptor;

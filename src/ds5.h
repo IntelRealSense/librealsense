@@ -744,12 +744,18 @@ namespace rsimpl2
         bool is_camera_in_advanced_mode() const;
 
         const uint8_t _depth_device_idx;
+        uint8_t _fisheye_device_idx;
+
         std::shared_ptr<hw_monitor> _hw_monitor;
 
 
         lazy<std::vector<uint8_t>> _coefficients_table_raw;
+        lazy<std::vector<uint8_t>> _fisheye_calibration_raw;
+
 
         std::vector<uint8_t> get_raw_calibration_table(ds::calibration_table_id table_id) const;
+        std::vector<uint8_t> get_raw_fisheye_calibration_table() const;
+        pose get_device_position(unsigned int subdevice) const;
 
         // Bandwidth parameters from BOSCH BMI 055 spec'
         std::vector<std::pair<std::string, stream_profile>> sensor_name_and_hid_profiles =
