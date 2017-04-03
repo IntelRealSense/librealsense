@@ -22,6 +22,7 @@
 #include <atomic>
 #include <map>          
 #include <algorithm>
+#include <functional>
 
 const uint8_t RS_STREAM_NATIVE_COUNT    = 5;
 const int RS_USER_QUEUE_SIZE = 20;
