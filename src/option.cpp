@@ -11,7 +11,7 @@ void rsimpl2::uvc_pu_option::set(float value)
         [this, value](uvc::uvc_device& dev)
         {
             if (!dev.set_pu(_id, static_cast<int32_t>(value)))
-                throw invalid_value_exception(to_string() << "set_pu(id=" << _id << ") failed!" << " Last Error: " << strerror(errno));
+                throw invalid_value_exception(to_string() << "set_pu(id=" << std::to_string(_id) << ") failed!" << " Last Error: " << strerror(errno));
         });
 }
 
@@ -22,7 +22,7 @@ float rsimpl2::uvc_pu_option::query() const
         {
             int32_t value = 0;
             if (!dev.get_pu(_id, value))
-                throw invalid_value_exception(to_string() << "get_pu(id=" << _id << ") failed!" << " Last Error: " << strerror(errno));
+                throw invalid_value_exception(to_string() << "get_pu(id=" << std::to_string(_id) << ") failed!" << " Last Error: " << strerror(errno));
 
             return static_cast<float>(value);
         }));

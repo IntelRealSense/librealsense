@@ -370,7 +370,7 @@ namespace rsimpl2
         auto pid_hex_str = hexify(pid>>8) + hexify(pid);
 
         std::string is_camera_locked{""};
-        if (camera_fw_version >= firmware_version("5.6.2.0"))
+        if (camera_fw_version >= firmware_version("5.6.3.0"))
         {
             auto is_locked = _hw_monitor->is_camera_locked(GVD, is_camera_locked_offset);
             is_camera_locked = (is_locked)?"YES":"NO";

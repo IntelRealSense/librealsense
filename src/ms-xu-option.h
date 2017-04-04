@@ -89,7 +89,7 @@ namespace rsimpl2
                 std::vector<uint8_t>    _transmit_buf(_xu_length, 0);
                 this->encode_data(value, _transmit_buf);
                 if (!dev.set_xu(_xu, _id, const_cast<uint8_t*>(_transmit_buf.data()), _xu_length))
-                    throw invalid_value_exception(to_string() << "set_xu(id=" << _id << ") failed!" << " Last Error: " << strerror(errno));
+                    throw invalid_value_exception(to_string() << "set_xu(id=" << std::to_string(_id) << ") failed!" << " Last Error: " << strerror(errno));
             });
         }
 
@@ -100,7 +100,7 @@ namespace rsimpl2
             {
                 std::vector<uint8_t>    _transmit_buf(_xu_length, 0);
                 if (!dev.get_xu(_xu, _id, const_cast<uint8_t*>(_transmit_buf.data()), _xu_length))
-                    throw invalid_value_exception(to_string() << "get_xu(id=" << _id << ") failed!" << " Last Error: " << strerror(errno));
+                    throw invalid_value_exception(to_string() << "get_xu(id=" << std::to_string(_id) << ") failed!" << " Last Error: " << strerror(errno));
 
                 return this->decode_data(_transmit_buf);
             }));
