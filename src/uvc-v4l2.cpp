@@ -1469,6 +1469,7 @@ namespace rsimpl2
                 if(status < 0)
                     throw linux_backend_exception(to_string() << "libusb_init(...) returned " << libusb_error_name(status));
 
+
                 std::vector<usb_device_info> results;
                 v4l_usb_device::foreach_usb_device(_usb_context,
                 [&results, info, this](const usb_device_info& i, libusb_device* dev)
@@ -1496,21 +1497,28 @@ namespace rsimpl2
                 // Obtain libusb_device_handle for each device
                 libusb_device ** list = nullptr;
                 int status = libusb_get_device_list(usb_context, &list);
+
                 if(status < 0)
                     throw linux_backend_exception(to_string() << "libusb_get_device_list(...) returned " << libusb_error_name(status));
 
                 for(int i=0; list[i]; ++i)
                 {
                     libusb_device * usb_device = list[i];
-
-                    auto parent_device = libusb_get_parent(usb_device);
-                    if (parent_device)
+                    libusb_config_descriptor *config;
+                    status = libusb_get_active_config_descriptor(usb_device, &config);                  
+                    if(status == 0)
                     {
-                        usb_device_info info{};
-                        std::stringstream ss;
-                        info.unique_id = get_usb_port_id(usb_device);
-                        action(info, usb_device);
+                        auto parent_device = libusb_get_parent(usb_device);
+                        if (parent_device)
+                        {
+                            usb_device_info info{};
+                            std::stringstream ss;
+                            info.unique_id = get_usb_port_id(usb_device);
+                            info.mi = config->bNumInterfaces - 1; // The hardware monitor USB interface is expected to be the last one
+                            action(info, usb_device);
+                        }
                     }
+                    libusb_free_config_descriptor(config);
                 }
                 libusb_free_device_list(list, 1);
             }
@@ -1878,11 +1886,17 @@ namespace rsimpl2
                     if(xioctl(_fd, VIDIOC_STREAMOFF, &type) < 0)
                         throw linux_backend_exception("xioctl(VIDIOC_STREAMOFF) failed");
                 }
-
-                if (_callback)
+                else if(val > 0)
                 {
-
-                    for(size_t i = 0; i < _buffers.size(); i++)
+                    if(FD_ISSET(_stop_pipe_fd[0], &fds) || FD_ISSET(_stop_pipe_fd[1], &fds))
+                    {
+                        if(!_is_capturing)
+                        {
+                            LOG_INFO("Stream finished");
+                            return;
+                        }
+                    }
+                    else if(FD_ISSET(_fd, &fds))
                     {
                         FD_ZERO(&fds);
                         FD_SET(_fd, &fds);
@@ -1902,9 +1916,8 @@ namespace rsimpl2
 
                         if (_is_started)
                         {
-
                             if((buf.bytesused < buffer->get_full_length() - META_DATA_SIZE) &&
-                                buf.bytesused > 0)
+                                    buf.bytesused > 0)
                             {
                                 auto percentage = (100 * buf.bytesused) / buffer->get_full_length();
                                 std::stringstream s;
@@ -1917,24 +1930,24 @@ namespace rsimpl2
                             else
                             {
                                 frame_object fo{ buffer->get_length_frame_only(),
-                                    has_metadata() ? META_DATA_SIZE : 0,
-                                    buffer->get_frame_start(),
-                                    has_metadata() ? buffer->get_frame_start() + buffer->get_length_frame_only() : nullptr };
+                                            has_metadata() ? META_DATA_SIZE : 0,
+                                            buffer->get_frame_start(),
+                                            has_metadata() ? buffer->get_frame_start() + buffer->get_length_frame_only() : nullptr };
 
-                                if (buf.bytesused > 0)
-                                {
-                                    buffer->attach_buffer(buf);
-                                    moved_qbuff = true;
-                                    auto fd = _fd;
-                                    _callback(_profile, fo,
-                                        [fd, buffer]() mutable {
-                                            buffer->request_next_frame(fd);
-                                        });
-                                }
-                                else
-                                {
-                                    LOG_WARNING("Empty frame has arrived.");
-                                }
+                                 if (buf.bytesused > 0)
+                                 {
+                                     buffer->attach_buffer(buf);
+                                     moved_qbuff = true;
+                                     auto fd = _fd;
+                                     _callback(_profile, fo,
+                                               [fd, buffer]() mutable {
+                                         buffer->request_next_frame(fd);
+                                     });
+                                 }
+                                 else
+                                 {
+                                     LOG_WARNING("Empty frame has arrived.");
+                                 }
                             }
                         }
 
@@ -1944,6 +1957,14 @@ namespace rsimpl2
                                 throw linux_backend_exception("xioctl(VIDIOC_QBUF) failed");
                         }
                     }
+                    else
+                    {
+                        throw linux_backend_exception("FD_ISSET returned false");
+                    }
+                }
+                else
+                {
+                    LOG_WARNING("Frames didn't arrived within 5 seconds");
                 }
             }
 

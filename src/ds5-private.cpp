@@ -134,6 +134,7 @@ namespace rsimpl2
             {
                 if (it->unique_id == info.unique_id)
                 {
+                    bool found = false;
                     result = *it;
                     switch (info.pid)
                     {
@@ -141,21 +142,24 @@ namespace rsimpl2
                     case RS410A_PID:
                     case RS430C_PID:
                     case RS440P_PID:
-                        result.mi = 3;
+                        found = result.mi == 3;
                         break;
                     case RS420R_PID:
                         throw not_implemented_exception("RS420R_PID usb not implemented.");
                         break;
                     case RS450T_PID:
-                        result.mi = 6;
+                        found = result.mi == 6;
                         break;
                     default:
                         throw not_implemented_exception("usb device not implemented.");
                         break;
                     }
 
-                    devices.erase(it);
-                    return true;
+                    if (found)
+                    {
+                        devices.erase(it);
+                        return true;
+                    }
                 }
             }
             return false;

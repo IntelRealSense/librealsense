@@ -15,10 +15,13 @@ namespace rsimpl2
             {
                 if (it->unique_id == info.unique_id)
                 {
+
                     result = *it;
-                    result.mi = 4;
-                    devices.erase(it);
-                    return true;
+                    if(result.mi == 4)
+                    {
+                        devices.erase(it);
+                        return true;
+                    }
                 }
             }
             return false;
