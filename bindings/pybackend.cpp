@@ -95,9 +95,9 @@ PYBIND11_PLUGIN(NAME) {
                    .def_readwrite("device_path", &uvc::hid_device_info::device_path);
 
     py::class_<uvc::hid_sensor> hid_sensor(uvc_m, "hid_sensor");
-    hid_sensor.def_readwrite("iio", &uvc::hid_sensor::iio, "Industrial I/O - An "
-                             "index that represents a single hardware sensor")
-              .def_readwrite("name", &uvc::hid_sensor::name);
+    //hid_sensor.def_readwrite("iio", &uvc::hid_sensor::iio, "Industrial I/O - An "
+    //                         "index that represents a single hardware sensor")
+    //          .def_readwrite("name", &uvc::hid_sensor::name);
 
     py::class_<uvc::hid_sensor_input> hid_sensor_input(uvc_m, "hid_sensor_input");
     hid_sensor_input.def_readwrite("index", &uvc::hid_sensor_input::index)
@@ -112,9 +112,9 @@ PYBIND11_PLUGIN(NAME) {
     sensor_data.def_readwrite("sensor", &uvc::sensor_data::sensor)
                .def_readwrite("fo", &uvc::sensor_data::fo);
 
-    py::class_<uvc::iio_profile> iio_profile(uvc_m, "iio_profile");
-    iio_profile.def_readwrite("iio", &uvc::iio_profile::iio)
-        .def_readwrite("frequency", &uvc::iio_profile::frequency);
+    //py::class_<uvc::iio_profile> iio_profile(uvc_m, "iio_profile");
+    //iio_profile.def_readwrite("iio", &uvc::iio_profile::iio)
+    //    .def_readwrite("frequency", &uvc::iio_profile::frequency);
 
     py::class_<uvc::hid_device> hid_device(uvc_m, "hid_device");
     hid_device.def("open", &uvc::hid_device::open)
@@ -124,7 +124,7 @@ PYBIND11_PLUGIN(NAME) {
         .def("get_sensors", &uvc::hid_device::get_sensors);
 
     py::class_<uvc::uvc_device> uvc_device(uvc_m, "uvc_device");
-    uvc_device.def("probe_and_commit", &uvc::uvc_device::probe_and_commit, "profile"_a, "callback"_a)
+    uvc_device.def("probe_and_commit", &uvc::uvc_device::probe_and_commit, "profile"_a, "callback"_a, "buffers"_a)
         .def("stream_on", &uvc::uvc_device::stream_on, "error_handler"_a)
         .def("start_callbacks", &uvc::uvc_device::start_callbacks)
         .def("stop_callbacks", &uvc::uvc_device::stop_callbacks)
@@ -135,7 +135,7 @@ PYBIND11_PLUGIN(NAME) {
         .def("set_xu", &uvc::uvc_device::set_xu, "xu"_a, "ctrl"_a, "data"_a, "len"_a)
         .def("get_xu", &uvc::uvc_device::get_xu, "xu"_a, "ctrl"_a, "data"_a, "len"_a)
         .def("get_xu_range", &uvc::uvc_device::get_xu_range, "xu"_a, "ctrl"_a, "len"_a)
-        .def("get_pu", &uvc::uvc_device::get_pu, "opt"_a)
+        .def("get_pu", &uvc::uvc_device::get_pu, "opt"_a, "value"_a)
         .def("set_pu", &uvc::uvc_device::set_pu, "opt"_a, "value"_a)
         .def("get_pu_range", &uvc::uvc_device::get_pu_range, "opt"_a)
         .def("get_profiles", &uvc::uvc_device::get_profiles)

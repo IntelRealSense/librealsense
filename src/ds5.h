@@ -330,9 +330,9 @@ namespace rsimpl2
             {
             case ds::RS400P_PID:
             case ds::RS410A_PID:
-            case ds::RS420R_PID:
             case ds::RS430C_PID:
             case ds::RS440P_PID: return 1;
+            case ds::RS420R_PID: return 2;
             case ds::RS450T_PID: return 3;
             default:
                 throw not_implemented_exception(to_string() <<

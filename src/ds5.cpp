@@ -452,6 +452,7 @@ namespace rsimpl2
         depth_ep.set_roi_method(std::make_shared<ds5_auto_exposure_roi_method>(*_hw_monitor));
 
         // TODO: These if conditions will be implemented as inheritance classes
+
         std::shared_ptr<uvc_endpoint> fisheye_ep;
         int fe_index{};
         if (pid == RS450T_PID)
@@ -501,6 +502,28 @@ namespace rsimpl2
             }
         }
 
+        std::shared_ptr<uvc_endpoint> color_ep;
+        int color_index{};
+        if (pid == RS420R_PID)
+        {
+            auto color_infos = filter_by_mi(dev_info, 3);
+            if (color_infos.size() != 1)
+                throw invalid_value_exception("RS430C model is expected to include a single color device!");
+
+            std::unique_ptr<frame_timestamp_reader> ds5_timestamp_reader_backup(new ds5_timestamp_reader(backend.create_time_service()));
+
+            color_ep = std::make_shared<uvc_endpoint>(backend.create_uvc_device(color_infos.front()),
+                std::unique_ptr<frame_timestamp_reader>(new ds5_timestamp_reader_from_metadata(std::move(ds5_timestamp_reader_backup))),
+                backend.create_time_service());
+
+            //color_ep->register_xu(fisheye_xu); // make sure the XU is initialized everytime we power the camera
+            color_ep->register_pixel_format(pf_yuy2);
+
+            // Add fisheye endpoint
+            color_index = add_endpoint(color_ep);
+            color_ep->set_pose(lazy<pose>([]() {return pose{ { { 1,0,0 },{ 0,1,0 },{ 0,0,1 } },{ 0,0,0 } }; })); // TODO: Fetch real extrinsics
+        }
+
         set_depth_scale(0.001f); // TODO: find out what is the right value
 
         // Register endpoint info
@@ -531,7 +554,6 @@ namespace rsimpl2
                                                                       {RS2_CAMERA_INFO_DEVICE_SERIAL_NUMBER, serial},
                                                                       {RS2_CAMERA_INFO_CAMERA_FIRMWARE_VERSION, static_cast<const char*>(camera_fw_version)},
                                                                       {RS2_CAMERA_INFO_DEVICE_LOCATION, element.device_path},
-                                                                      {RS2_CAMERA_INFO_DEVICE_DEBUG_OP_CODE, std::to_string(static_cast<int>(fw_cmd::GLD))},
                                                                       {RS2_CAMERA_INFO_PRODUCT_ID, pid_hex_str}};
                 if (!motion_module_fw_version.empty())
                     camera_info[RS2_CAMERA_INFO_MOTION_MODULE_FIRMWARE_VERSION] = motion_module_fw_version;
@@ -540,6 +562,16 @@ namespace rsimpl2
                     camera_info[RS2_CAMERA_INFO_IS_CAMERA_LOCKED] = is_camera_locked;
 
                 register_endpoint_info(_fisheye_device_idx, camera_info);
+            } 
+            else if (color_ep && element.pid == RS420R_PID && element.mi == 3) // mi 3 is related to Color device
+            {
+                std::map<rs2_camera_info, std::string> camera_info = { { RS2_CAMERA_INFO_DEVICE_NAME, device_name },
+                { RS2_CAMERA_INFO_MODULE_NAME, "Color Camera" },
+                { RS2_CAMERA_INFO_DEVICE_SERIAL_NUMBER, serial },
+                { RS2_CAMERA_INFO_CAMERA_FIRMWARE_VERSION, static_cast<const char*>(camera_fw_version) },
+                { RS2_CAMERA_INFO_DEVICE_LOCATION, element.device_path },
+                { RS2_CAMERA_INFO_PRODUCT_ID, pid_hex_str } };
+                register_endpoint_info(color_index, camera_info);
             }
         }
     }

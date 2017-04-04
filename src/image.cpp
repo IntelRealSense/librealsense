@@ -765,11 +765,13 @@ namespace rsimpl2
     const native_pixel_format pf_raw8       = { 'GREY', 1, 1,{  { false, &copy_pixels<1>,                                { { RS2_STREAM_FISHEYE,  RS2_FORMAT_RAW8 } } } } };
     const native_pixel_format pf_rw16       = { 'RW16', 1, 2,{  { false, &copy_pixels<2>,                                { { RS2_STREAM_COLOR,    RS2_FORMAT_RAW16 } } } } };
     const native_pixel_format pf_rw10       = { 'pRAA', 1, 1,{  { false, &copy_raw10,                                    { { RS2_STREAM_COLOR,    RS2_FORMAT_RAW10 } } } } };
+
     const native_pixel_format pf_yuy2       = { 'YUY2', 1, 2,{  { true,  &unpack_yuy2<RS2_FORMAT_RGB8 >,                  { { RS2_STREAM_COLOR,    RS2_FORMAT_RGB8 } } },
                                                                 { false, &copy_pixels<2>,                                { { RS2_STREAM_COLOR,    RS2_FORMAT_YUYV } } },
                                                                 { true,  &unpack_yuy2<RS2_FORMAT_RGBA8>,                  { { RS2_STREAM_COLOR,    RS2_FORMAT_RGBA8 } } },
                                                                 { true,  &unpack_yuy2<RS2_FORMAT_BGR8 >,                  { { RS2_STREAM_COLOR,    RS2_FORMAT_BGR8 } } },
                                                                 { true,  &unpack_yuy2<RS2_FORMAT_BGRA8>,                  { { RS2_STREAM_COLOR,    RS2_FORMAT_BGRA8 } } } } };
+
     const native_pixel_format pf_y8         = { 'GREY', 1, 1,{  { false, &copy_pixels<1>,                                { { RS2_STREAM_INFRARED, RS2_FORMAT_Y8  } } } } };
     const native_pixel_format pf_y16        = { 'Y16 ', 1, 2,{  { true,  &unpack_y16_from_y16_10,                        { { RS2_STREAM_INFRARED, RS2_FORMAT_Y16 } } } } };
     const native_pixel_format pf_y8i        = { 'Y8I ', 1, 2,{  { true,  &unpack_y8_y8_from_y8i,                         { { RS2_STREAM_INFRARED, RS2_FORMAT_Y8  },{ RS2_STREAM_INFRARED2, RS2_FORMAT_Y8 } } } } };
@@ -800,6 +802,7 @@ namespace rsimpl2
                                                                 { true,  &unpack_yuy2<RS2_FORMAT_RGBA8>,                  { { RS2_STREAM_COLOR,    RS2_FORMAT_RGBA8 } } },
                                                                 { true,  &unpack_yuy2<RS2_FORMAT_BGR8 >,                  { { RS2_STREAM_COLOR,    RS2_FORMAT_BGR8 } } },
                                                                 { true,  &unpack_yuy2<RS2_FORMAT_BGRA8>,                  { { RS2_STREAM_COLOR,    RS2_FORMAT_BGRA8 } } } } };
+
     const native_pixel_format pf_accel_axes = { 'ACCL', 1, 1,{  { true,  &unpack_accel_axes<RS2_FORMAT_MOTION_XYZ32F>,    { { RS2_STREAM_ACCEL,    RS2_FORMAT_MOTION_XYZ32F } } },
                                                                 { false, &unpack_hid_raw_data,                            { { RS2_STREAM_ACCEL,    RS2_FORMAT_MOTION_RAW  } } }}};
     const native_pixel_format pf_gyro_axes  = { 'GYRO', 1, 1,{  { true,  &unpack_gyro_axes<RS2_FORMAT_MOTION_XYZ32F>,     { { RS2_STREAM_GYRO,     RS2_FORMAT_MOTION_XYZ32F } } },

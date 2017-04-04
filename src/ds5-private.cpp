@@ -145,7 +145,7 @@ namespace rsimpl2
                         found = result.mi == 3;
                         break;
                     case RS420R_PID:
-                        throw not_implemented_exception("RS420R_PID usb not implemented.");
+                        result.mi = 4;
                         break;
                     case RS450T_PID:
                         found = result.mi == 6;

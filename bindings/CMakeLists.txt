@@ -41,9 +41,9 @@ endif()
 if(BUILD_RAW_RS)
     set(RAW_RS_CPP ../src/backend.cpp ../src/win/win-helpers.cpp ../src/win/win-uvc.cpp
                    ../src/win/win-usb.cpp ../src/win/win-backend.cpp ../src/uvc-v4l2.cpp
-                   ../src/verify.c ../src/archive.cpp ../src/log.cpp ../src/types.cpp)
+                   ../src/win/win-hid.cpp ../src/archive.cpp ../src/log.cpp ../src/types.cpp)
     set(RAW_RS_HPP ../src/backend.h ../src/win/win-helpers.h ../src/win/win-uvc.h
-                   ../src/win/win-usb.h ../src/win/win-backend.h ../src/archive.h
+                   ../src/win/win-usb.h ../src/win/win-hid.h ../src/win/win-backend.h ../src/archive.h
                    ../src/types.h)
     pybind11_add_module(pybackend2 pybackend.cpp ${RAW_RS_CPP} ${RAW_RS_HPP})
     target_link_libraries(pybackend2 ${LIBUSB1_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})

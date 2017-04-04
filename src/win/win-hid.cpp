@@ -234,129 +234,136 @@ namespace rsimpl2
 
         void wmf_hid_device::foreach_hid_device(std::function<void(hid_device_info, CComPtr<ISensor>)> action)
         {
-            CComPtr<ISensorManager> pSensorManager;
-            CComPtr<ISensorCollection> pSensorColl;
-            CComPtr<ISensor> pSensor;
-            ULONG uCount;
-
-            CComPtr<ISensorDataReport> ppDataReport;
-
-            CHECK_HR(CoCreateInstance(CLSID_SensorManager, NULL,
-                CLSCTX_INPROC_SERVER,
-                IID_PPV_ARGS(&pSensorManager)));
-
-            CHECK_HR(pSensorManager->GetSensorsByCategory(SENSOR_CATEGORY_ALL, &pSensorColl));
-
-            CHECK_HR(pSensorColl->GetCount(&uCount));
-
-            for (ULONG i = 0; i < uCount; i++)
+            try
             {
-                if (SUCCEEDED(pSensorColl->GetAt(i, &pSensor.p)))
+                CComPtr<ISensorManager> pSensorManager;
+                CComPtr<ISensorCollection> pSensorColl;
+                CComPtr<ISensor> pSensor;
+                ULONG uCount;
+
+                CComPtr<ISensorDataReport> ppDataReport;
+
+                CHECK_HR(CoCreateInstance(CLSID_SensorManager, NULL,
+                    CLSCTX_INPROC_SERVER,
+                    IID_PPV_ARGS(&pSensorManager)));
+
+                CHECK_HR(pSensorManager->GetSensorsByCategory(SENSOR_CATEGORY_ALL, &pSensorColl));
+
+                CHECK_HR(pSensorColl->GetCount(&uCount));
+
+                for (ULONG i = 0; i < uCount; i++)
                 {
-                    BSTR fName;
-                    pSensor->GetFriendlyName(&fName);
-
-                    SENSOR_ID id;
-                    pSensor->GetID(&id);
-
-                    SENSOR_TYPE_ID type;
-                    pSensor->GetType(&type);
-
-                    CComPtr<IPortableDeviceValues> pValues = nullptr;  // Output
-
-                    hid_device_info info;
-
-                    auto hr = pSensor->GetProperties(nullptr, &pValues);
-                    DWORD cVals = 0; // Count of returned properties.
-                    if (SUCCEEDED(hr))
+                    if (SUCCEEDED(pSensorColl->GetAt(i, &pSensor.p)))
                     {
-                        // Get the number of values returned.        
-                        hr = pValues->GetCount(&cVals);
+                        BSTR fName;
+                        pSensor->GetFriendlyName(&fName);
+
+                        SENSOR_ID id;
+                        pSensor->GetID(&id);
+
+                        SENSOR_TYPE_ID type;
+                        pSensor->GetType(&type);
+
+                        CComPtr<IPortableDeviceValues> pValues = nullptr;  // Output
+
+                        hid_device_info info;
+
+                        auto hr = pSensor->GetProperties(nullptr, &pValues);
+                        DWORD cVals = 0; // Count of returned properties.
                         if (SUCCEEDED(hr))
                         {
-                            PROPERTYKEY pk; // Keys
-                            PROPVARIANT pv = {}; // Values
-
-                            // Loop through the values;
-                            for (DWORD j = 0; j < cVals; j++)
+                            // Get the number of values returned.        
+                            hr = pValues->GetCount(&cVals);
+                            if (SUCCEEDED(hr))
                             {
-                                // Get the value at the current index.
-                                hr = pValues->GetAt(j, &pk, &pv);
-                                if (SUCCEEDED(hr))
+                                PROPERTYKEY pk; // Keys
+                                PROPVARIANT pv = {}; // Values
+
+                                                     // Loop through the values;
+                                for (DWORD j = 0; j < cVals; j++)
                                 {
-                                    if (IsEqualPropertyKey(pk, SENSOR_PROPERTY_DEVICE_PATH))
+                                    // Get the value at the current index.
+                                    hr = pValues->GetAt(j, &pk, &pv);
+                                    if (SUCCEEDED(hr))
                                     {
-                                        info.device_path = std::string(pv.pwszVal, pv.pwszVal + wcslen(pv.pwszVal));
-                                        info.id = std::string(fName, fName + wcslen(fName));
-
-                                        uint16_t vid, pid, mi;
-                                        std::string uid;
-                                        if (parse_usb_path(vid, pid, mi, uid, info.device_path))
+                                        if (IsEqualPropertyKey(pk, SENSOR_PROPERTY_DEVICE_PATH))
                                         {
-                                            info.unique_id = "*";
-                                            info.pid = to_string() << std::hex << pid;
-                                            info.vid = to_string() << std::hex << vid;
-                                        }
-                                    }
+                                            info.device_path = std::string(pv.pwszVal, pv.pwszVal + wcslen(pv.pwszVal));
+                                            info.id = std::string(fName, fName + wcslen(fName));
 
-                                    //if (IsEqualPropertyKey(pk, SENSOR_PROPERTY_MODEL))
-                                    //{
-                                    //    info.pid = std::string(pv.pwszVal, pv.pwszVal + wcslen(pv.pwszVal));
-                                    //}
+                                            uint16_t vid, pid, mi;
+                                            std::string uid;
+                                            if (parse_usb_path(vid, pid, mi, uid, info.device_path))
+                                            {
+                                                info.unique_id = "*";
+                                                info.pid = to_string() << std::hex << pid;
+                                                info.vid = to_string() << std::hex << vid;
+                                            }
+                                        }
+
+                                        //if (IsEqualPropertyKey(pk, SENSOR_PROPERTY_MODEL))
+                                        //{
+                                        //    info.pid = std::string(pv.pwszVal, pv.pwszVal + wcslen(pv.pwszVal));
+                                        //}
+                                    }
                                 }
                             }
                         }
+
+                        action(info, pSensor);
+
+                        //if (wcsstr(fName, L"Accelerometer") != NULL)
+                        //if (wcsstr(fName, L"Gyroscope") != NULL)
+                        //{
+                        //    auto callback = new SensorEvents();
+                        //    ISensorEvents* sensorEvents;
+                        //    HRESULT hr = callback->QueryInterface(IID_PPV_ARGS(&sensorEvents));
+                        //    hr = pSensor->SetEventSink(sensorEvents);
+                        //    //for (int i = 0; i < 10000; i++)
+                        //    //{
+                        //    //    hr = pSensor->GetData(&ppDataReport);
+                        //    //    if (ppDataReport != NULL)
+                        //    //    {
+                        //    //        SYSTEMTIME time;
+                        //    //        ppDataReport->GetTimestamp(&time);
+
+                        //    //        printf("%d.%d.%d %d:%d:%d.%d\n", time.wDay, time.wMonth, time.wYear, time.wHour, time.wMinute, time.wSecond, time.wMilliseconds);
+
+                        //    //        IPortableDeviceValues* values;
+                        //    //        ppDataReport->GetSensorValues(NULL, &values);
+
+                        //    //        DWORD valuesCount = 0;
+                        //    //        hr = values->GetCount(&valuesCount);
+                        //    //        if (SUCCEEDED(hr))
+                        //    //        {
+                        //    //            PROPERTYKEY pk; // Keys
+                        //    //            PROPVARIANT pv = {}; // Values
+
+                        //    //            for (DWORD i = 0; i < valuesCount; i++)
+                        //    //            {
+                        //    //                // Get the value at the current index.
+                        //    //                hr = values->GetAt(i, &pk, &pv);
+                        //    //                if (SUCCEEDED(hr))
+                        //    //                {
+                        //    //                    if (IsEqualPropertyKey(pk, SENSOR_DATA_TYPE_CUSTOM_USAGE))
+                        //    //                    {
+                        //    //                        wprintf_s(L"\Acceleration X: %lu\n", pv.ulVal);
+                        //    //                    }
+                        //    //                }
+                        //    //            }
+                        //    //        }
+                        //    //        //SENSOR_DATA_TYPE_ACCELERATION_X_G
+                        //    //    }
+                        //    //}
+                        //    //printf("\n");
+                        //}
+                        SysFreeString(fName);
                     }
-
-                    action(info, pSensor);
-
-                    //if (wcsstr(fName, L"Accelerometer") != NULL)
-                    //if (wcsstr(fName, L"Gyroscope") != NULL)
-                    //{
-                    //    auto callback = new SensorEvents();
-                    //    ISensorEvents* sensorEvents;
-                    //    HRESULT hr = callback->QueryInterface(IID_PPV_ARGS(&sensorEvents));
-                    //    hr = pSensor->SetEventSink(sensorEvents);
-                    //    //for (int i = 0; i < 10000; i++)
-                    //    //{
-                    //    //    hr = pSensor->GetData(&ppDataReport);
-                    //    //    if (ppDataReport != NULL)
-                    //    //    {
-                    //    //        SYSTEMTIME time;
-                    //    //        ppDataReport->GetTimestamp(&time);
-
-                    //    //        printf("%d.%d.%d %d:%d:%d.%d\n", time.wDay, time.wMonth, time.wYear, time.wHour, time.wMinute, time.wSecond, time.wMilliseconds);
-
-                    //    //        IPortableDeviceValues* values;
-                    //    //        ppDataReport->GetSensorValues(NULL, &values);
-
-                    //    //        DWORD valuesCount = 0;
-                    //    //        hr = values->GetCount(&valuesCount);
-                    //    //        if (SUCCEEDED(hr))
-                    //    //        {
-                    //    //            PROPERTYKEY pk; // Keys
-                    //    //            PROPVARIANT pv = {}; // Values
-
-                    //    //            for (DWORD i = 0; i < valuesCount; i++)
-                    //    //            {
-                    //    //                // Get the value at the current index.
-                    //    //                hr = values->GetAt(i, &pk, &pv);
-                    //    //                if (SUCCEEDED(hr))
-                    //    //                {
-                    //    //                    if (IsEqualPropertyKey(pk, SENSOR_DATA_TYPE_CUSTOM_USAGE))
-                    //    //                    {
-                    //    //                        wprintf_s(L"\Acceleration X: %lu\n", pv.ulVal);
-                    //    //                    }
-                    //    //                }
-                    //    //            }
-                    //    //        }
-                    //    //        //SENSOR_DATA_TYPE_ACCELERATION_X_G
-                    //    //    }
-                    //    //}
-                    //    //printf("\n");
-                    //}
-                    SysFreeString(fName);
                 }
+            }
+            catch (...)
+            {
+                LOG_ERROR("Could not enumerate HID devices!");
             }
         }
     }
