@@ -6,7 +6,12 @@
 // STL conversions
 #include <pybind11/stl.h>
 
+// makes std::function conversions work
+#include <pybind11/functional.h>
+
 #include "../src/backend.h"
+
+#include <sstream>
 
 #define NAME pybackend2
 #define SNAME "pybackend2"
@@ -57,6 +62,21 @@ PYBIND11_PLUGIN(NAME) {
     py::class_<uvc::command_transfer> command_transfer(m, "command_transfer");
     command_transfer.def("send_receive", &uvc::command_transfer::send_receive, "data"_a, "timeout_ms"_a, "require_response"_a);
 
+    py::enum_<rs2_option> option(m, "option");
+    option.value("backlight_compensation", RS2_OPTION_BACKLIGHT_COMPENSATION)
+        .value("brightness", RS2_OPTION_BRIGHTNESS)
+        .value("contrast", RS2_OPTION_CONTRAST)
+        .value("exposure", RS2_OPTION_EXPOSURE)
+        .value("gain", RS2_OPTION_GAIN)
+        .value("gamma", RS2_OPTION_GAMMA)
+        .value("hue", RS2_OPTION_HUE)
+        .value("saturation", RS2_OPTION_SATURATION)
+        .value("sharpness", RS2_OPTION_SHARPNESS)
+        .value("white_balance", RS2_OPTION_WHITE_BALANCE)
+        .value("enable_auto_exposure", RS2_OPTION_ENABLE_AUTO_EXPOSURE)
+        .value("enable_auto_white_balance", RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE);
+
+
     py::enum_<uvc::power_state> power_state(m, "power_state");
     power_state.value("D0", uvc::power_state::D0)
                .value("D3", uvc::power_state::D3);
@@ -68,7 +88,14 @@ PYBIND11_PLUGIN(NAME) {
                   .def_readwrite("fps", &uvc::stream_profile::fps)
                   .def_readwrite("format", &uvc::stream_profile::format)
 //                  .def("stream_profile_tuple", &uvc::stream_profile::stream_profile_tuple) // converstion operator to std::tuple
-                  .def(py::self == py::self);
+                  .def(py::self == py::self).def("__repr__", [](const uvc::stream_profile &p) {
+        std::stringstream ss;
+        ss << "<" SNAME ".stream_profile: "
+            << p.width
+            << "x" << p.height << " @ " << p.fps << "fps "
+            << p.format << ">";
+        return ss.str();
+    });;
 
     py::class_<uvc::frame_object> frame_object(m, "frame_object");
     frame_object.def_readwrite("frame_size", &uvc::frame_object::frame_size)
@@ -150,31 +177,49 @@ PYBIND11_PLUGIN(NAME) {
                    "custom_sensor_name"_a, "report_name"_a, "report_field"_a);
 
     py::class_<uvc::uvc_device> uvc_device(m, "uvc_device");
-    uvc_device.def("probe_and_commit", &uvc::uvc_device::probe_and_commit, "profile"_a, "callback"_a, "buffers"_a)
-        .def("stream_on", &uvc::uvc_device::stream_on, "error_handler"_a)
-        .def("start_callbacks", &uvc::uvc_device::start_callbacks)
-        .def("stop_callbacks", &uvc::uvc_device::stop_callbacks)
-        .def("close", &uvc::uvc_device::close, "profile"_a)
-        .def("set_power_state", &uvc::uvc_device::set_power_state, "state"_a)
-        .def("get_power_state", &uvc::uvc_device::get_power_state)
-        .def("init_xu", &uvc::uvc_device::init_xu, "xu"_a)
-        .def("set_xu", &uvc::uvc_device::set_xu, "xu"_a, "ctrl"_a, "data"_a, "len"_a)
-        .def("get_xu", &uvc::uvc_device::get_xu, "xu"_a, "ctrl"_a, "data"_a, "len"_a)
-        .def("get_xu_range", &uvc::uvc_device::get_xu_range, "xu"_a, "ctrl"_a, "len"_a)
-        .def("get_pu", &uvc::uvc_device::get_pu, "opt"_a, "value"_a)
-        .def("set_pu", &uvc::uvc_device::set_pu, "opt"_a, "value"_a)
-        .def("get_pu_range", &uvc::uvc_device::get_pu_range, "opt"_a)
-        .def("get_profiles", &uvc::uvc_device::get_profiles)
-        .def("lock", &uvc::uvc_device::lock)
-        .def("unlock", &uvc::uvc_device::unlock)
-        .def("get_device_location", &uvc::uvc_device::get_device_location);
 
-    py::class_<uvc::retry_controls_work_around, uvc::uvc_device> retry_controls_work_around(m, "retry_controls_work_around");
-    retry_controls_work_around.def(py::init<std::shared_ptr<uvc::uvc_device>>());
+    py::class_<uvc::retry_controls_work_around, std::shared_ptr<uvc::retry_controls_work_around>> retry_controls_work_around(m, "retry_controls_work_around");
+    retry_controls_work_around.def(py::init<std::shared_ptr<uvc::uvc_device>>())
+        .def("probe_and_commit", 
+            [](uvc::retry_controls_work_around& dev, const uvc::stream_profile& profile, 
+                std::function<void(const uvc::stream_profile&, const uvc::frame_object&)> callback) {
+        dev.probe_and_commit(profile, [=](const uvc::stream_profile& p, 
+            const uvc::frame_object& fo, std::function<void()> next)
+        {
+            callback(p, fo);
+            next();
+        }, 4);
+            }
+            , "profile"_a, "callback"_a)
+        .def("stream_on", [](uvc::retry_controls_work_around& dev) {
+                dev.stream_on([](const notification& n) 
+                {
+                });
+            })
+        .def("start_callbacks", &uvc::retry_controls_work_around::start_callbacks)
+        .def("stop_callbacks", &uvc::retry_controls_work_around::stop_callbacks)
+        .def("close", &uvc::retry_controls_work_around::close, "profile"_a)
+        .def("set_power_state", &uvc::retry_controls_work_around::set_power_state, "state"_a)
+        .def("get_power_state", &uvc::retry_controls_work_around::get_power_state)
+        .def("init_xu", &uvc::retry_controls_work_around::init_xu, "xu"_a)
+        .def("set_xu", &uvc::retry_controls_work_around::set_xu, "xu"_a, "ctrl"_a, "data"_a, "len"_a)
+        .def("get_pu", [](uvc::retry_controls_work_around& dev, rs2_option opt) {
+                int val = 0;
+                dev.get_pu(opt, val);
+                return val;
+            }, "opt"_a)
+        .def("get_xu_range", &uvc::retry_controls_work_around::get_xu_range, "xu"_a, "ctrl"_a, "len"_a)
+        .def("get_pu", &uvc::retry_controls_work_around::get_pu, "opt"_a, "value"_a)
+        .def("set_pu", &uvc::retry_controls_work_around::set_pu, "opt"_a, "value"_a)
+        .def("get_pu_range", &uvc::retry_controls_work_around::get_pu_range, "opt"_a)
+        .def("get_profiles", &uvc::retry_controls_work_around::get_profiles)
+        .def("lock", &uvc::retry_controls_work_around::lock)
+        .def("unlock", &uvc::retry_controls_work_around::unlock)
+        .def("get_device_location", &uvc::retry_controls_work_around::get_device_location);
 
     py::class_<uvc::usb_device, uvc::command_transfer> usb_device(m, "usb_device");
 
-    py::class_<uvc::backend, std::shared_ptr<uvc::backend> > backend(m, "backend");
+    py::class_<uvc::backend, std::shared_ptr<uvc::backend>> backend(m, "backend");
     backend.def("create_uvc_device", &uvc::backend::create_uvc_device, "info"_a)
         .def("query_uvc_devices", &uvc::backend::query_uvc_devices)
         .def("create_usb_device", &uvc::backend::create_usb_device, "info"_a)

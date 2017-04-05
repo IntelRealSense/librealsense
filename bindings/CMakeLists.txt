@@ -25,9 +25,8 @@ endif()
 set(DEPENDENCIES realsense2)
 
 option(BUILD_PYTHON_BINDINGS "Build Python bindings" OFF)
-option(BUILD_RAW_RS "Build a shared library of just the backend." OFF)
 
-if(BUILD_PYTHON_BINDINGS OR BUILD_RAW_RS)
+if(BUILD_PYTHON_BINDINGS)
     add_subdirectory(third_party/pybind11)
 endif()
 
@@ -37,8 +36,7 @@ if(BUILD_PYTHON_BINDINGS)
     set_target_properties(pyrealsense2 PROPERTIES FOLDER Bindings)
 endif()
 
-
-if(BUILD_RAW_RS)
+if(BUILD_PYTHON_BINDINGS)
     set(RAW_RS_CPP ../src/backend.cpp ../src/win/win-helpers.cpp ../src/win/win-uvc.cpp
                    ../src/win/win-usb.cpp ../src/win/win-backend.cpp ../src/uvc-v4l2.cpp
                    ../src/win/win-hid.cpp ../src/archive.cpp ../src/log.cpp ../src/types.cpp)
