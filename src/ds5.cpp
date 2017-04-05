@@ -471,10 +471,22 @@ namespace rsimpl2
             fisheye_ep->register_pixel_format(pf_raw8);
             fisheye_ep->register_pixel_format(pf_fe_raw8_unpatched_kernel); // W/O for unpatched kernel
 
-
-            auto fisheye_auto_exposure = register_auto_exposure_options(fisheye_ep.get(), &fisheye_xu);
-            fisheye_ep->set_roi_method(std::make_shared<fisheye_auto_exposure_roi_method>(fisheye_auto_exposure));
-
+            if (camera_fw_version >= firmware_version("5.6.3.0")) // Create Auto Exposure controls from FW version 5.6.3.0
+            {
+                auto fisheye_auto_exposure = register_auto_exposure_options(fisheye_ep.get(), &fisheye_xu);
+                fisheye_ep->set_roi_method(std::make_shared<fisheye_auto_exposure_roi_method>(fisheye_auto_exposure));
+            }
+            else
+            {
+                fisheye_ep->register_option(RS2_OPTION_GAIN,
+                                            std::make_shared<uvc_pu_option>(*fisheye_ep.get(),
+                                                                            RS2_OPTION_GAIN));
+                fisheye_ep->register_option(RS2_OPTION_EXPOSURE,
+                                            std::make_shared<uvc_xu_option<uint16_t>>(*fisheye_ep.get(),
+                                                                                      fisheye_xu,
+                                                                                      rsimpl2::ds::FISHEYE_EXPOSURE,
+                                                                                      "Exposure time of Fisheye camera"));
+            }
 
             // Add fisheye endpoint
             _fisheye_device_idx = add_endpoint(fisheye_ep);

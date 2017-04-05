@@ -84,7 +84,7 @@ namespace rsimpl2
         void histogram_score(std::vector<int>& h, const int total_weight, histogram_metric& score);
 
 
-        float minimal_exposure = 0.1f, maximal_exposure = 20.f, base_gain = 2.0f, gain_limit = 15.0f;
+        float minimal_exposure = 0.2f, maximal_exposure = 20.f, base_gain = 2.0f, gain_limit = 15.0f;
         float exposure = 10.0f, gain = 2.0f, target_exposure = 0.0f;
         uint8_t under_exposure_limit = 5, over_exposure_limit = 250; int under_exposure_noise_limit = 50, over_exposure_noise_limit = 50;
         int direction = 0, prev_direction = 0; float hysteresis = 0.075f;// 05;
