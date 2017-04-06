@@ -753,7 +753,6 @@ namespace rsimpl2
 
         std::vector<uint8_t> send_receive_raw_data(const std::vector<uint8_t>& input) override;
         virtual rs2_intrinsics get_intrinsics(unsigned int subdevice, stream_profile profile) const override;
-
         std::shared_ptr<auto_exposure_mechanism> register_auto_exposure_options(uvc_endpoint* uvc_ep, const uvc::extension_unit* fisheye_xu);
 
     private:
@@ -766,11 +765,12 @@ namespace rsimpl2
 
 
         lazy<std::vector<uint8_t>> _coefficients_table_raw;
-        lazy<std::vector<uint8_t>> _fisheye_calibration_raw;
-
+        lazy<std::vector<uint8_t>> _fisheye_intrinsics_raw;
+        lazy<std::vector<uint8_t>> _fisheye_extrinsics_raw;
 
         std::vector<uint8_t> get_raw_calibration_table(ds::calibration_table_id table_id) const;
-        std::vector<uint8_t> get_raw_fisheye_calibration_table() const;
+        std::vector<uint8_t> get_raw_fisheye_intrinsics_table() const;
+        std::vector<uint8_t> get_raw_fisheye_extrinsics_table() const;
         pose get_device_position(unsigned int subdevice) const;
 
         // Bandwidth parameters from BOSCH BMI 055 spec'

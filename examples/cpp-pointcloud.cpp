@@ -208,11 +208,11 @@ int main(int argc, char * argv[]) try
 
                     //Its seems that at the moment fisheye extrinsics are roteted in x and y in 180 degrees
                     //as a temporery work around we rotete the coordinates of the texture
-                    if(mapped == RS2_STREAM_FISHEYE)
-                    {
-                        tex_xy.x = 1 - tex_xy.x;
-                        tex_xy.y = 1 - tex_xy.y;
-                    }
+//                    if(mapped == RS2_STREAM_FISHEYE)
+//                    {
+//                        tex_xy.x = 1 - tex_xy.x;
+//                        tex_xy.y = 1 - tex_xy.y;
+//                    }
 
                     glTexCoord(tex_xy);
                     glVertex(*points);

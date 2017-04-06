@@ -135,7 +135,6 @@ namespace rsimpl2
     {
         return _hw_monitor->send(input);
     }
-
     rs2_intrinsics ds5_camera::get_intrinsics(unsigned int subdevice, stream_profile profile) const
       {
           if (subdevice >= get_endpoints_count())
@@ -153,7 +152,7 @@ namespace rsimpl2
           if (subdevice == _fisheye_device_idx)
           {
               return get_intrinsic_by_resolution(
-                  *_fisheye_calibration_raw,
+                  *_fisheye_intrinsics_raw,
                   ds::calibration_table_id::fisheye_calibration_id,
                   profile.width, profile.height);
           }
@@ -168,7 +167,7 @@ namespace rsimpl2
 
           if (subdevice == _fisheye_device_idx)
           {
-             auto extr = rsimpl2::ds::get_extrinsics_data(*_fisheye_calibration_raw);
+             auto extr = rsimpl2::ds::get_extrinsics_data(*_fisheye_extrinsics_raw);
              pose p {{extr.rotation[0], extr.rotation[1], extr.rotation[2],
                      extr.rotation[3], extr.rotation[4], extr.rotation[5],
                      extr.rotation[6], extr.rotation[7], extr.rotation[8]},
@@ -197,13 +196,19 @@ namespace rsimpl2
         return _hw_monitor->send(cmd);
     }
 
-    std::vector<uint8_t> ds5_camera::get_raw_fisheye_calibration_table() const
-       {
-           const int offset = 0x84;
-           const int size = 0x98;
-           command cmd(ds::MMER, offset, size);
-           return _hw_monitor->send(cmd);
-       }
+    std::vector<uint8_t> ds5_camera::get_raw_fisheye_intrinsics_table() const
+    {
+        const int offset = 0x84;
+        const int size = 0x98;
+        command cmd(ds::MMER, offset, size);
+        return _hw_monitor->send(cmd);
+    }
+
+    std::vector<uint8_t> ds5_camera::get_raw_fisheye_extrinsics_table() const
+    {
+        command cmd(ds::GET_EXTRINSICS);
+        return _hw_monitor->send(cmd);
+    }
 
     std::shared_ptr<hid_endpoint> ds5_camera::create_hid_device(const uvc::backend& backend,
                                                                 const std::vector<uvc::hid_device_info>& all_hid_infos,
@@ -350,8 +355,8 @@ namespace rsimpl2
         }
 
         _coefficients_table_raw = [this]() { return get_raw_calibration_table(coefficients_table_id); };
-        _fisheye_calibration_raw = [this]() { return get_raw_fisheye_calibration_table(); };
-
+        _fisheye_intrinsics_raw = [this]() { return get_raw_fisheye_intrinsics_table(); };
+        _fisheye_extrinsics_raw = [this]() { return get_raw_fisheye_extrinsics_table(); };
         std::string device_name = (rs4xx_sku_names.end() != rs4xx_sku_names.find(dev_info.front().pid)) ? rs4xx_sku_names.at(dev_info.front().pid) : "RS4xx";
         auto camera_fw_version = firmware_version(_hw_monitor->get_firmware_version_string(GVD, camera_fw_version_offset));
         auto serial = _hw_monitor->get_module_serial_string(GVD, module_serial_offset);

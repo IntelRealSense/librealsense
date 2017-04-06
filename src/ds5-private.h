@@ -51,9 +51,11 @@ namespace rsimpl2 {
             GVD = 0x10,           // camera details
             GETINTCAL = 0x15,     // Read calibration table
             MMER = 0x4F,          // MM EEPROM read ( from DS5 cache )
+            GET_EXTRINSICS = 0x53, // get extrinsics
             UAMG = 0X30,          // get advanced mode status
             SETAEROI = 0x44,      // set auto-exposure region of interest
             GETAEROI = 0x45,      // get auto-exposure region of interest
+            HWRST = 0x20          // hardware reset
         };
 
         struct table_header
@@ -97,16 +99,23 @@ namespace rsimpl2 {
         };
 
 #pragma pack(push, 1)
-        struct fisheye_calibration_table
+        struct fisheye_intrinsics_table
         {
             table_header        header;
             float               intrinsics_model;           //  1 - Brown, 2 - FOV, 3 - Kannala Brandt
             float3x3            intrinsic;                  //  fisheye intrinsic data, normilized
             float               distortion[5];
+        };
+
+        struct fisheye_extrinsics_table
+        {
+            table_header header;
+            int64_t serial_mm;
+            int64_t serial_depth;
             float3x3            rotation;                   //  the fisheye rotation matrix
             float3              translation;                //  the fisheye translation vector
-            uint8_t             reserved2[28];
         };
+
 #pragma pack(pop)
 
         enum gvd_fields
