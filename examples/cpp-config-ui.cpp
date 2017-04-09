@@ -961,7 +961,7 @@ public:
     }
 
     float _frame_timeout = 700.0f;
-    float _min_timeout = 90.0f;
+    float _min_timeout = 167.0f;
 };
 
 class device_model
