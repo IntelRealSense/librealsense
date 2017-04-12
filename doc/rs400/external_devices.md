@@ -20,8 +20,8 @@ RS430 comes with Depth, Fish-Eye and Motion-Tracking sensors on board, all synch
 If you wish to synchronize external sensor (for example a compass) with RealSense, all you need to do is trigger one of 4 GPIOs of the RS430 whenever you read data from the external sensors. RS430 will generate timestamp for each GPIO event, allowing you to synchronize between the data streams in software:
 
 ```cpp
-rs2::utils::config config;
-config.enable_stream(RS2_STREAM_GPIO1, 0, 0, 0, RS2_FORMAT_TIMESTAMP_ONLY);
+rs2::util::config config;
+config.enable_stream(RS2_STREAM_GPIO1, 0, 0, 0, RS2_FORMAT_GPIO_RAW);
 auto stream = config.open(dev);
 
 rs2::frame_queue events_queue;
