@@ -172,7 +172,7 @@ int main(int argc, char * argv[]) try
             }
 
             if (frame.get_stream_type() == mapped)
-            {           
+            {
                 mapped_tex.upload(frame);
             }
         }
@@ -248,7 +248,7 @@ int main(int argc, char * argv[]) try
 
         ImGui::Text("Texture Source:");
         ImGui::PushItemWidth(-1);
-        if (ImGui::Combo(" texture", &selected_stream, stream_names.data(), stream_names.size()))
+        if (ImGui::Combo(" texture", &selected_stream, stream_names.data(), static_cast<int>(stream_names.size())))
         {
             stream.stop();
             dev.close();

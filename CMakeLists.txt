@@ -137,6 +137,8 @@ set(REALSENSE_HPP
     src/subdevice.h
     src/algo.h
     src/option.h
+    src/metadata.h
+    src/metadata-parser.h
     src/error-handling.h
     src/hw-monitor.h
     src/image.h
@@ -226,7 +228,7 @@ if(WIN32)
         src/sr300.h
         src/ivcam-private.h
         )
-    
+
     foreach(flag_var
             CMAKE_CXX_FLAGS CMAKE_CXX_FLAGS_DEBUG CMAKE_CXX_FLAGS_RELEASE
             CMAKE_CXX_FLAGS_MINSIZEREL CMAKE_CXX_FLAGS_RELWITHDEBINFO
@@ -274,7 +276,7 @@ elseif(UNIX)
     find_package(PkgConfig REQUIRED)
     find_package (Threads REQUIRED)
     list(APPEND librealsense_PKG_DEPS "Threads")
-    
+
     pkg_search_module(LIBUSB1 REQUIRED libusb-1.0)
     if(LIBUSB1_FOUND)
         include_directories(SYSTEM ${LIBUSB1_INCLUDE_DIRS})

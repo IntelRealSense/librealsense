@@ -5,11 +5,13 @@
 #include <chrono>
 #include <vector>
 #include <iterator>
+#include <cstddef>
 
 #include "device.h"
 #include "context.h"
 #include "image.h"
 
+#include "metadata-parser.h"
 #include "ds5.h"
 #include "ds5-private.h"
 #include "ds5-options.h"
@@ -317,7 +319,7 @@ namespace rsimpl2
         depth_ep->register_pixel_format(pf_y8); // Left Only - Luminance
         depth_ep->register_pixel_format(pf_yuyv); // Left Only
         depth_ep->register_pixel_format(pf_uyvyl); // Color from Depth
-        depth_ep->register_pixel_format(pf_rgb888); 
+        depth_ep->register_pixel_format(pf_rgb888);
 
 
         // TODO: These if conditions will be implemented as inheritance classes
@@ -428,7 +430,7 @@ namespace rsimpl2
 
         std::string motion_module_fw_version{""};
         auto pid = dev_info.front().pid;
-        auto pid_hex_str = hexify(pid>>8) + hexify(pid);
+        auto pid_hex_str = hexify(pid>>8) + hexify(static_cast<uint8_t>(pid));
 
         std::string is_camera_locked{""};
         if (camera_fw_version >= firmware_version("5.6.3.0"))
@@ -516,9 +518,42 @@ namespace rsimpl2
             depth_ep.register_option(RS2_OPTION_DEPTH_UNITS, std::make_shared<depth_scale_option>(*_hw_monitor));
         else
             depth_ep.register_option(RS2_OPTION_DEPTH_UNITS, std::make_shared<const_value_option>("Number of meters represented by a single depth unit",
-                                                                                                  0.001));
+                                                                                                  0.001f));
+        // Metadata registration
+        depth_ep.register_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP,    make_uvc_header_parser(&uvc::uvc_header::timestamp));
 
-        // TODO: These if conditions will be implemented as inheritance classes
+        // attributes of md_capture_timing
+        auto md_prop_offset = offsetof(metadata_raw, mode) +
+                offsetof(md_depth_mode, depth_y_mode) +
+                offsetof(md_depth_y_normal_mode, intel_capture_timing);
+
+        depth_ep.register_metadata(RS2_FRAME_METADATA_FRAME_COUNTER,    make_attribute_parser(&md_capture_timing::frame_counter, md_capture_timing_attributes::frame_counter_attribute,md_prop_offset));
+        depth_ep.register_metadata(RS2_FRAME_METADATA_SENSOR_TIMESTAMP, make_attribute_parser(&md_capture_timing::sensor_timestamp, md_capture_timing_attributes::sensor_timestamp_attribute, md_prop_offset));
+
+        // attributes of md_capture_stats
+        md_prop_offset = offsetof(metadata_raw, mode) +
+                offsetof(md_depth_mode, depth_y_mode) +
+                offsetof(md_depth_y_normal_mode, intel_capture_stats);
+
+        depth_ep.register_metadata(RS2_FRAME_METADATA_WHITE_BALANCE,    make_attribute_parser(&md_capture_stats::white_balance, md_capture_stat_attributes::white_balance_attribute, md_prop_offset));
+
+        // attributes of md_depth_control
+        md_prop_offset = offsetof(metadata_raw, mode) +
+                offsetof(md_depth_mode, depth_y_mode) +
+                offsetof(md_depth_y_normal_mode, intel_depth_control);
+
+        depth_ep.register_metadata(RS2_FRAME_METADATA_GAIN_LEVEL,        make_attribute_parser(&md_depth_control::manual_gain, md_depth_control_attributes::gain_attribute, md_prop_offset));
+        depth_ep.register_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE,   make_attribute_parser(&md_depth_control::manual_exposure, md_depth_control_attributes::exposure_attribute, md_prop_offset));
+        depth_ep.register_metadata(RS2_FRAME_METADATA_AUTO_EXPOSURE,     make_attribute_parser(&md_depth_control::auto_exposure_mode, md_depth_control_attributes::ae_mode_attribute, md_prop_offset));
+
+        // md_configuration - will be used for internal validation only
+        md_prop_offset = offsetof(metadata_raw, mode) + offsetof(md_depth_mode, depth_y_mode) + offsetof(md_depth_y_normal_mode, intel_configuration);
+
+        depth_ep.register_metadata((rs2_frame_metadata)RS2_FRAME_METADATA_HW_TYPE,          make_attribute_parser(&md_configuration::hw_type, md_configuration_attributes::hw_type_attribute, md_prop_offset));
+        depth_ep.register_metadata((rs2_frame_metadata)RS2_FRAME_METADATA_SKU_ID,           make_attribute_parser(&md_configuration::sku_id, md_configuration_attributes::sku_id_attribute, md_prop_offset));
+        depth_ep.register_metadata((rs2_frame_metadata)RS2_FRAME_METADATA_FORMAT,           make_attribute_parser(&md_configuration::format, md_configuration_attributes::format_attribute, md_prop_offset));
+        depth_ep.register_metadata((rs2_frame_metadata)RS2_FRAME_METADATA_WIDTH,            make_attribute_parser(&md_configuration::width, md_configuration_attributes::width_attribute, md_prop_offset));
+        depth_ep.register_metadata((rs2_frame_metadata)RS2_FRAME_METADATA_HEIGHT,           make_attribute_parser(&md_configuration::height, md_configuration_attributes::height_attribute, md_prop_offset));
 
         std::shared_ptr<uvc_endpoint> fisheye_ep;
 
@@ -554,6 +589,42 @@ namespace rsimpl2
                                                                                       rsimpl2::ds::FISHEYE_EXPOSURE,
                                                                                       "Exposure time of Fisheye camera"));
             }
+
+            // Metadata registration
+            fisheye_ep->register_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP,   make_uvc_header_parser(&uvc::uvc_header::timestamp));
+            fisheye_ep->register_metadata(RS2_FRAME_METADATA_AUTO_EXPOSURE,     make_additional_data_parser(&frame_additional_data::fisheye_ae_mode));
+
+            // attributes of md_capture_timing
+            md_prop_offset = offsetof(metadata_raw, mode) +
+                       offsetof(md_fisheye_mode, fisheye_mode) +
+                       offsetof(md_fisheye_normal_mode, intel_capture_timing);
+
+            fisheye_ep->register_metadata(RS2_FRAME_METADATA_FRAME_COUNTER,     make_attribute_parser(&md_capture_timing::frame_counter, md_capture_timing_attributes::frame_counter_attribute,md_prop_offset));
+            fisheye_ep->register_metadata(RS2_FRAME_METADATA_SENSOR_TIMESTAMP,  make_attribute_parser(&md_capture_timing::sensor_timestamp, md_capture_timing_attributes::sensor_timestamp_attribute, md_prop_offset));
+
+            // attributes of md_capture_stats
+            md_prop_offset = offsetof(metadata_raw, mode) +
+                    offsetof(md_fisheye_mode, fisheye_mode) +
+                    offsetof(md_fisheye_normal_mode, intel_capture_stats);
+
+            // attributes of md_capture_stats
+            md_prop_offset = offsetof(metadata_raw, mode) +
+                    offsetof(md_fisheye_mode, fisheye_mode) +
+                    offsetof(md_fisheye_normal_mode, intel_configuration);
+
+            fisheye_ep->register_metadata((rs2_frame_metadata)RS2_FRAME_METADATA_HW_TYPE,   make_attribute_parser(&md_configuration::hw_type,    md_configuration_attributes::hw_type_attribute, md_prop_offset));
+            fisheye_ep->register_metadata((rs2_frame_metadata)RS2_FRAME_METADATA_SKU_ID,    make_attribute_parser(&md_configuration::sku_id,     md_configuration_attributes::sku_id_attribute, md_prop_offset));
+            fisheye_ep->register_metadata((rs2_frame_metadata)RS2_FRAME_METADATA_FORMAT,    make_attribute_parser(&md_configuration::format,     md_configuration_attributes::format_attribute, md_prop_offset));
+            fisheye_ep->register_metadata((rs2_frame_metadata)RS2_FRAME_METADATA_WIDTH,     make_attribute_parser(&md_configuration::width,      md_configuration_attributes::width_attribute, md_prop_offset));
+            fisheye_ep->register_metadata((rs2_frame_metadata)RS2_FRAME_METADATA_HEIGHT,    make_attribute_parser(&md_configuration::height,     md_configuration_attributes::height_attribute, md_prop_offset));
+
+            // attributes of md_fisheye_control
+            md_prop_offset = offsetof(metadata_raw, mode) +
+                    offsetof(md_fisheye_mode, fisheye_mode) +
+                    offsetof(md_fisheye_normal_mode, intel_fisheye_control);
+
+            fisheye_ep->register_metadata(RS2_FRAME_METADATA_GAIN_LEVEL,        make_attribute_parser(&md_fisheye_control::manual_gain, md_depth_control_attributes::gain_attribute, md_prop_offset));
+            fisheye_ep->register_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE,   make_attribute_parser(&md_fisheye_control::manual_exposure, md_depth_control_attributes::exposure_attribute, md_prop_offset));
 
             // Add fisheye endpoint
             _fisheye_device_idx = add_endpoint(fisheye_ep);
@@ -655,7 +726,7 @@ namespace rsimpl2
                     camera_info[RS2_CAMERA_INFO_IS_CAMERA_LOCKED] = is_camera_locked;
 
                 register_endpoint_info(_fisheye_device_idx, camera_info);
-            } 
+            }
             else if (color_ep && element.pid == RS415_PID && element.mi == 3) // mi 3 is related to Color device
             {
                 std::map<rs2_camera_info, std::string> camera_info = { { RS2_CAMERA_INFO_DEVICE_NAME, device_name },
@@ -694,13 +765,13 @@ namespace rsimpl2
             if (is_left(to_stream) && from_stream == RS2_STREAM_INFRARED2)
             {
                 auto table = ds::check_calib<ds::coefficients_table>(*_coefficients_table_raw);
-                ext.translation[0] = -0.001 * table->baseline;
+                ext.translation[0] = -0.001f * table->baseline;
                 return ext;
             }
             else if (to_stream == RS2_STREAM_INFRARED2 && is_left(from_stream))
             {
                 auto table = ds::check_calib<ds::coefficients_table>(*_coefficients_table_raw);
-                ext.translation[0] = 0.001 * table->baseline;
+                ext.translation[0] = 0.001f * table->baseline;
                 return ext;
             }
         }

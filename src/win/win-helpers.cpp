@@ -40,7 +40,7 @@ namespace rsimpl2
         std::string hr_to_string(HRESULT hr)
         {
             _com_error err(hr);
-            std::wstring errorMessage = err.ErrorMessage();
+            std::wstring errorMessage = (err.ErrorMessage()) ? err.ErrorMessage() : L"";
             std::stringstream ss;
             ss << "HResult 0x" << std::hex << hr << ": \"" << std::string(errorMessage.begin(), errorMessage.end()) << "\"";
             return ss.str();

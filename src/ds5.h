@@ -139,7 +139,6 @@ namespace rsimpl2
 
         std::unique_ptr<polling_error_handler> _polling_error_handler;
 
-         
     };
 
     class ds5_notification_decoder :public notification_decoder

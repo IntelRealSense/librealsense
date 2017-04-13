@@ -1,5 +1,8 @@
 #!/bin/bash
 
+#Break execution on any error received
+set -e
+
 if [ $(ls /dev/video* | wc -l) -ne 0 ];
 then
 	read -p "Remove all RealSense cameras attached. Hit any key when ready"
@@ -63,16 +66,17 @@ fi
 sudo cp /usr/src/linux-headers-$(uname -r)/.config .
 sudo cp /usr/src/linux-headers-$(uname -r)/Module.symvers .
 
-# Basic build so we can build just the uvcvideo module
+# Basic build for kernel modules
 #yes "" | make silentoldconfig modules_prepare
-make silentoldconfig modules_prepare
+echo -e "\e[32mPrepare kernel modules configuration\e[0m"
+sudo make silentoldconfig modules_prepare
 
 # Build the uvc, accel and gyro modules
 KBASE=`pwd`
 cd drivers/media/usb/uvc
 sudo cp $KBASE/Module.symvers .
 echo -e "\e[32mCompiling uvc module\e[0m"
-make -C $KBASE M=$KBASE/drivers/media/usb/uvc/ modules
+sudo make -C $KBASE M=$KBASE/drivers/media/usb/uvc/ modules
 echo -e "\e[32mCompiling accelerometer and gyro modules\e[0m"
 make -C $KBASE M=$KBASE/drivers/iio/accel modules
 make -C $KBASE M=$KBASE/drivers/iio/gyro modules

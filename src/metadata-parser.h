@@ -1,0 +1,172 @@
+// License: Apache 2.0. See LICENSE file in root directory.
+// Copyright(c) 2017 Intel Corporation. All Rights Reserved.
+// Metadata attributes provided by RS4xx Depth Cameras
+
+#pragma once
+
+#include "types.h"
+#include "archive.h"
+#include "metadata.h"
+
+using namespace rsimpl2;
+
+namespace rsimpl2
+{
+/** \brief Metadata fields that are utilized internally by librealsense
+    Provides extention to the r2_frame_metadata list of attributes*/
+    enum frame_metadata_internal
+    {
+        RS2_FRAME_METADATA_HW_TYPE  =   RS2_FRAME_METADATA_COUNT +1 , /**< 8-bit Module type: RS4xx, IVCAM*/
+        RS2_FRAME_METADATA_SKU_ID                                   , /**< 8-bit SKU Id*/
+        RS2_FRAME_METADATA_FORMAT                                   , /**< 16-bit Frame format*/
+        RS2_FRAME_METADATA_WIDTH                                    , /**< 16-bit Frame width. pixels*/
+        RS2_FRAME_METADATA_HEIGHT                                   , /**< 16-bit Frame height. pixels*/
+        RS2_FRAME_METADATA_COUNT
+    };
+
+    /**\brief Base class that establishes the interface for retrieving metadata attributes*/
+    class md_attribute_parser_base
+    {
+    public:
+        virtual rs2_metadata_t get(const frame & frm) const = 0;
+        virtual bool supports(const frame & frm) const = 0;
+
+        virtual ~md_attribute_parser_base() = default;
+    };
+
+    /**\brief The metadata parser class directly access the metadata attribute in the blob recieved from HW.
+    *   Given the metadata-nested construct, and the c++ lack of pointers
+    *   to the inner struct, we pre-calculate and store the attribute offset internally
+    *   http://stackoverflow.com/questions/1929887/is-pointer-to-inner-struct-member-forbidden*/
+    template<class S, class Attribute, typename Flag>
+    class md_attribute_parser : public md_attribute_parser_base
+    {
+    public:
+        md_attribute_parser(Attribute S::* attribute_name, Flag flag, unsigned long long offset) :
+            _md_attribute(attribute_name), _md_flag(flag), _offset(offset) {};
+
+        rs2_metadata_t get(const frame & frm) const override
+        {
+            auto s = reinterpret_cast<const S*>(((const uint8_t*)frm.additional_data.metadata_blob.data()) + _offset);
+
+            if (!is_attribute_valid(s))
+                throw invalid_value_exception("metadata not available");
+
+            return static_cast<rs2_metadata_t>((*s).*_md_attribute);
+        }
+
+        // Verifies that the parameter is both supported and available
+        bool supports(const frame & frm) const override
+        {
+            auto s = reinterpret_cast<const S*>(((const uint8_t*)frm.additional_data.metadata_blob.data()) + _offset);
+
+            return is_attribute_valid(s);
+        }
+
+    protected:
+
+            bool is_attribute_valid(const S* s) const
+            {
+                // verify that the struct is of the correct type
+                // Check that the header id and the struct size corresponds.
+                // Note that this heurisic is not deterministic and may validate false frames! TODO - requires review
+                md_type expected_type = md_type_trait<S>::type;
+
+                if ((s->header.md_type_id != expected_type) || (s->header.md_size !=sizeof(*s)))
+                {
+                    std::string type = (md_type_desc.count(s->header.md_type_id) > 0) ?
+                                md_type_desc.at(s->header.md_type_id) : (to_string() << static_cast<uint32_t>(s->header.md_type_id));
+                    LOG_DEBUG("metadata mismatch - received: " << type << ", expected: " << md_type_desc.at(expected_type));
+                    return false;
+                }
+
+                 // Check if the attribute's flag is set
+                 auto attribute_enabled =  (0 !=(s->flags & static_cast<uint32_t>(_md_flag)));
+                 if (!attribute_enabled)
+                    LOG_DEBUG("metadata attribute No: "<< (*s.*_md_attribute) << "is not active");
+
+                 return attribute_enabled;
+            }
+
+    private:
+        md_attribute_parser() = delete;
+        md_attribute_parser(const md_attribute_parser&) = delete;
+
+        Attribute S::*          _md_attribute;      // Pointer to the attribute within struct that holds the relevant data
+        Flag                _md_flag;       // Bit that indicates whether the particluar attribute is actiive
+        unsigned long long  _offset;        // Inner struct offset with regard to the most outer one
+    };
+
+    /**\brief A helper function to create a specialized attribute parser.
+     *  Return it as a pointer to a base-class*/
+    template<class S, class Attribute, typename Flag>
+    std::shared_ptr<md_attribute_parser_base> make_attribute_parser(Attribute S::* attribute, Flag flag, unsigned long long offset)
+    {
+        std::shared_ptr<md_attribute_parser<S, Attribute, Flag>> parser(new md_attribute_parser<S, Attribute, Flag>(attribute,flag, offset));
+        return parser;
+    }
+
+    /**\brief A UVC-Header parser class*/
+    template<class St, class Attribute>
+    class md_uvc_header_parser : public md_attribute_parser_base
+    {
+    public:
+        md_uvc_header_parser(Attribute St::* attribute_name) :
+            _md_attribute(attribute_name) {};
+
+        rs2_metadata_t get(const frame & frm) const override
+        {
+            auto val = static_cast<rs2_metadata_t>((*reinterpret_cast<const St*>((const uint8_t*)frm.additional_data.metadata_blob.data())).*_md_attribute);
+
+            return val;
+        }
+
+        bool supports(const frame & frm) const override
+        { return true; }
+
+    private:
+        md_uvc_header_parser() = delete;
+        md_uvc_header_parser(const md_uvc_header_parser&) = delete;
+
+        Attribute St::*          _md_attribute;      // Pointer to the attribute within uvc header that provides the relevant data
+    };
+
+    /**\brief A utility function to create uvh header parser*/
+    template<class St, class Attribute>
+    std::shared_ptr<md_attribute_parser_base> make_uvc_header_parser(Attribute St::* attribute)
+    {
+        std::shared_ptr<md_uvc_header_parser<St, Attribute>> parser(new md_uvc_header_parser<St, Attribute>(attribute));
+        return parser;
+    }
+
+    /**\brief provide attributes generated and stored internally by the library*/
+    template<class St, class Attribute>
+    class md_additional_parser : public md_attribute_parser_base
+    {
+    public:
+        md_additional_parser(Attribute St::* attribute_name) :
+            _md_attribute(attribute_name) {};
+
+        rs2_metadata_t get(const frame & frm) const override
+        {
+            return static_cast<rs2_metadata_t>(frm.additional_data.*_md_attribute);
+        }
+
+        bool supports(const frame & frm) const override
+        { return true; }
+
+    private:
+        md_additional_parser() = delete;
+        md_additional_parser(const md_additional_parser&) = delete;
+
+        Attribute St::*          _md_attribute;      // Pointer to the attribute within uvc header that provides the relevant data
+    };
+
+    /**\brief A utility function to create additional_data parser*/
+    template<class St, class Attribute>
+    std::shared_ptr<md_attribute_parser_base> make_additional_data_parser(Attribute St::* attribute)
+    {
+        std::shared_ptr<md_additional_parser<St, Attribute>> parser(new md_additional_parser<St, Attribute>(attribute));
+        return parser;
+    }
+}

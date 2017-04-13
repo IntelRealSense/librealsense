@@ -261,7 +261,7 @@ namespace rs2
         * \param[in] frame_metadata  the frame_metadata whose value should be retrieved
         * \return            the value of the frame_metadata
         */
-        double get_frame_metadata(rs2_frame_metadata frame_metadata) const
+        rs2_metadata_t get_frame_metadata(rs2_frame_metadata frame_metadata) const
         {
             rs2_error * e = nullptr;
             auto r = rs2_get_frame_metadata(frame_ref, frame_metadata, &e);
@@ -678,7 +678,7 @@ namespace rs2
         void set_notifications_callback(T callback) const
         {
             rs2_error * e = nullptr;
-            rs2_set_notifications_callback_cpp(_dev.get(), 
+            rs2_set_notifications_callback_cpp(_dev.get(),
                 new notifications_callback<T>(std::move(callback)), &e);
             error::handle(e);
         }
@@ -975,7 +975,6 @@ namespace rs2
         {
         }
 
-        
         std::shared_ptr<rs2_context> _context;
         advanced _debug;
     };
@@ -1286,5 +1285,11 @@ inline std::ostream & operator << (std::ostream & o, rs2_format format) { return
 inline std::ostream & operator << (std::ostream & o, rs2_distortion distortion) { return o << rs2_distortion_to_string(distortion); }
 inline std::ostream & operator << (std::ostream & o, rs2_option option) { return o << rs2_option_to_string(option); }
 inline std::ostream & operator << (std::ostream & o, rs2_log_severity severity) { return o << rs2_log_severity_to_string(severity); }
+inline std::ostream & operator << (std::ostream & o, rs2_camera_info camera_info) { return o << rs2_camera_info_to_string(camera_info); }
+inline std::ostream & operator << (std::ostream & o, rs2_frame_metadata metadata) { return o << rs2_frame_metadata_to_string(metadata); }
+inline std::ostream & operator << (std::ostream & o, rs2_timestamp_domain domain) { return o << rs2_timestamp_domain_to_string(domain); }
+inline std::ostream & operator << (std::ostream & o, rs2_notification_category notificaton) { return o << rs2_notification_category_to_string(notificaton); }
+inline std::ostream & operator << (std::ostream & o, rs2_visual_preset preset) { return o << rs2_visual_preset_to_string(preset); }
+inline std::ostream & operator << (std::ostream & o, rs2_exception_type exception_type) { return o << rs2_exception_type_to_string(exception_type); }
 
 #endif // LIBREALSENSE_RS2_HPP

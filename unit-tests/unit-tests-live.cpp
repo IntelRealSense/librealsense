@@ -5,6 +5,7 @@
 // This set of tests is valid for any number and combination of RealSense cameras, including R200 and F200 //
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+#include <cmath>
 #include "unit-tests-common.h"
 
 using namespace rs2;
@@ -49,7 +50,6 @@ TEST_CASE("Device metadata enumerates correctly", "[live]")
             }
         }
    }
-
 }
 
 
@@ -824,7 +824,56 @@ TEST_CASE("All suggested profiles can be opened", "[live]") {
     }
 }
 
-TEST_CASE("Metadata sanity check", "[live]") {
+/* Apply heuristic test to check metadata attributes for sanity*/
+void metadata_verification(const std::vector<frame_additional_data>& data)
+{
+    // Heuristics that we use to verify metadata
+    // Metadata sanity
+    // Frame numbers and timestamps increase monotonically
+    // Sensor timestamp should be less or equal to frame timestamp
+    // Exposure time and gain values are greater than zero
+    // Sensor framerate is bounded to >0 and < 200 fps for uvc streams
+    int64_t last_val[3] = { -1, -1, -1 };
+
+    for (size_t i=0; i < data.size(); i++)
+    {
+
+        // Check that Frame/Sensor timetamps, frame number rise monotonically
+        for (int j=RS2_FRAME_METADATA_FRAME_COUNTER; j <=RS2_FRAME_METADATA_SENSOR_TIMESTAMP; j++)
+        {
+            if (data[i].frame_md.md_attributes[j].first)
+            {
+                int64_t value = data[i].frame_md.md_attributes[j].second;
+                CAPTURE(value);
+                CAPTURE(last_val[j]);
+
+                REQUIRE_NOTHROW( ( value > last_val[0] ) );
+                if (RS2_FRAME_METADATA_FRAME_COUNTER==j) // In addition, there shall be no frame number gaps
+                {
+                    REQUIRE_NOTHROW( ( 1 == ( value - last_val[j] ) ) );
+                }
+
+                last_val[j] = data[i].frame_md.md_attributes[j].second;
+            }
+        }
+
+        // Sensor timestamp should be less or equal to frame timestamp
+        if (    data[i].frame_md.md_attributes[RS2_FRAME_METADATA_SENSOR_TIMESTAMP].first &&
+                data[i].frame_md.md_attributes[RS2_FRAME_METADATA_FRAME_TIMESTAMP].first)
+        {
+            REQUIRE(data[i].frame_md.md_attributes[RS2_FRAME_METADATA_FRAME_TIMESTAMP].second >
+                    data[i].frame_md.md_attributes[RS2_FRAME_METADATA_SENSOR_TIMESTAMP].second);
+        }
+
+        // Exposure time and gain values are greater than zero
+        if (data[i].frame_md.md_attributes[RS2_FRAME_METADATA_ACTUAL_EXPOSURE].first)
+            REQUIRE(data[i].frame_md.md_attributes[RS2_FRAME_METADATA_ACTUAL_EXPOSURE].second > 0);
+        if (data[i].frame_md.md_attributes[RS2_FRAME_METADATA_GAIN_LEVEL].first)
+            REQUIRE(data[i].frame_md.md_attributes[RS2_FRAME_METADATA_GAIN_LEVEL].second > 0);
+    }
+}
+
+TEST_CASE("Per-frame metadata sanity check", "[live]") {
     //Require at least one device to be plugged in
     rs2::context ctx;
     if(make_context(space_to_underscore(Catch::getCurrentContext().getResultCapture()->getCurrentTestName()).c_str(), &ctx))
@@ -847,10 +896,11 @@ TEST_CASE("Metadata sanity check", "[live]") {
             WARN(subdevice.get_camera_info(RS2_CAMERA_INFO_MODULE_NAME));
 
             //the test will be done only on sub set of profile for each sub device
-            for (int i = 0; i < modes.size(); i += std::ceil((float)modes.size() / (float)num_of_profiles_for_each_subdevice))
+            for (int i = 0; i < modes.size(); i += static_cast<int>(std::ceil((float)modes.size() / (float)num_of_profiles_for_each_subdevice)))
             {
-                if (modes[i].width == 1920) continue; // Full-HD is often times too heavy for the build machine to handle
-                // Disabling for now
+                if ((modes[i].width == 1920) ||                                                         // Full-HD is often times too heavy for the build machine to handle
+                    ((RS2_STREAM_GPIO1 <= modes[i].stream) && (RS2_STREAM_GPIO4 >= modes[i].stream)))   // GPIO Requires external triggers to produce events
+                        continue;   // Disabling for now
 
                 CAPTURE(modes[i].format);
                 CAPTURE(modes[i].fps);
@@ -870,19 +920,40 @@ TEST_CASE("Metadata sanity check", "[live]") {
 
                 REQUIRE_NOTHROW(subdevice.start([&](frame f)
                 {
-                    if (frames >= frames_before_start_measure && frames_additional_data.size() < frames_for_fps_measure)
+                    if ((frames >= frames_before_start_measure) && (frames_additional_data.size() < frames_for_fps_measure))
                     {
                         if (first)
                         {
                              start = ctx.get_time();
                         }
                         first = false;
-                        auto frame_number = f.get_frame_number();
-                        auto ts = f.get_timestamp();
-                        auto ts_domain = f.get_frame_timestamp_domain();
+
+                        frame_additional_data data { f.get_timestamp(),
+                                                     f.get_frame_number(),
+                                                     f.get_frame_timestamp_domain(),
+                                                     f.get_stream_type(),
+                                                     f.get_format()};
+
+                        // Store frame metadata attributes, verify API behavior correctness
+                        for (auto i=0; i< RS2_FRAME_METADATA_COUNT; i++)
+                        {
+                            bool supported = false;
+                            REQUIRE_NOTHROW(supported = f.supports_frame_metadata((rs2_frame_metadata)i));
+                            if (supported)
+                            {
+                                rs2_metadata_t val{};
+                                REQUIRE_NOTHROW(val =f.get_frame_metadata((rs2_frame_metadata)i));
+                                data.frame_md.md_attributes[i] = std::make_pair(true,val);
+                            }
+                            else
+                            {
+                                REQUIRE_THROWS(f.get_frame_metadata((rs2_frame_metadata)i));
+                                data.frame_md.md_attributes[i].first = false;
+                            }
+                        }
 
                         std::unique_lock<std::mutex> lock(m);
-                        frames_additional_data.push_back({ ts,frame_number, ts_domain });
+                        frames_additional_data.push_back(data);
                     }
                     frames++;
                     if (frames_additional_data.size() >= frames_for_fps_measure)
@@ -945,9 +1016,12 @@ TEST_CASE("Metadata sanity check", "[live]") {
                 CAPTURE(actual_fps);
                 CAPTURE(metadata_fps);
 
-                //it the diff in percentege between metadata fps and actual fps is bigger than max_diff_between_real_and_metadata_fps
+                //it the diff in percentage between metadata fps and actual fps is bigger than max_diff_between_real_and_metadata_fps
                 //the test will fail
                 REQUIRE(std::abs(metadata_fps / actual_fps - 1) < max_diff_between_real_and_metadata_fps);
+
+                // Verify per-frame metadata attributes
+                metadata_verification(frames_additional_data);
 
                 std::cout << modes[i].format << "MODE: " << modes[i].fps << " " << modes[i].height << " " << modes[i].width << " " << modes[i].stream << " succeed\n";
             }
@@ -1052,7 +1126,7 @@ TEST_CASE("Error handling sanity", "[live]") {
 
                  }
              }
-         }  
+         }
     }
 }
 
@@ -1087,9 +1161,9 @@ TEST_CASE("Auto exposure behavior", "[live]") {
 
             if(curr_pid != sr300_pid && subdevice.supports(RS2_OPTION_ENABLE_AUTO_EXPOSURE))
             {
-                option_range range;
+                option_range range{};
 
-                float val;
+                float val{};
 
                 auto info = subdevice.get_camera_info(RS2_CAMERA_INFO_MODULE_NAME);
                 CAPTURE(info);
@@ -1100,7 +1174,7 @@ TEST_CASE("Auto exposure behavior", "[live]") {
                 {
 
                     REQUIRE_NOTHROW(range = subdevice.get_option_range(RS2_OPTION_EXPOSURE));
-                    REQUIRE_NOTHROW(subdevice.set_option(RS2_OPTION_EXPOSURE, range.max));
+                    REQUIRE_NOTHROW(subdevice.set_option(RS2_OPTION_EXPOSURE,range.max));
                     CAPTURE(range.max);
                     REQUIRE_NOTHROW(val = subdevice.get_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE));
                     REQUIRE(val == 0);
@@ -1112,7 +1186,7 @@ TEST_CASE("Auto exposure behavior", "[live]") {
                     {
                         REQUIRE_NOTHROW(subdevice.set_option(RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE,1));
                         REQUIRE_NOTHROW(range = subdevice.get_option_range(RS2_OPTION_WHITE_BALANCE));
-                        REQUIRE_NOTHROW(subdevice.set_option(RS2_OPTION_WHITE_BALANCE, range.max));
+                        REQUIRE_NOTHROW(subdevice.set_option(RS2_OPTION_WHITE_BALANCE,range.max));
                         CAPTURE(range.max);
                         REQUIRE_NOTHROW(val = subdevice.get_option(RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE));
                         REQUIRE(val == 0);

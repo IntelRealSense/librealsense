@@ -48,7 +48,6 @@
 
 const size_t MAX_DEV_PARENT_DIR = 10;
 
-const size_t META_DATA_SIZE = 256;      // bytes
 
 #ifdef ANDROID
 
@@ -192,8 +191,8 @@ namespace rsimpl2
             }
             else
             {
-                _length += META_DATA_SIZE;
-                _start = static_cast<uint8_t*>(malloc( buf.length + META_DATA_SIZE));
+                _length += MAX_META_DATA_SIZE;
+                _start = static_cast<uint8_t*>(malloc( buf.length + MAX_META_DATA_SIZE));
                 if (!_start) linux_backend_exception("User_p allocation failed!");
                 memset(_start, 0, _length);
             }
@@ -249,8 +248,8 @@ namespace rsimpl2
             {
                 if (V4L2_MEMORY_USERPTR == _use_memory_map)
                 {
-                    auto metadata_offset = get_full_length() - META_DATA_SIZE;
-                    memset((byte*)(get_frame_start()) + metadata_offset, 0, META_DATA_SIZE);
+                    auto metadata_offset = get_full_length() - MAX_META_DATA_SIZE;
+                    memset((byte*)(get_frame_start()) + metadata_offset, 0, MAX_META_DATA_SIZE);
                 }
 
                 if (xioctl(fd, VIDIOC_QBUF, &_buf) < 0)
@@ -724,7 +723,7 @@ namespace rsimpl2
 
                     if (_is_started)
                     {
-                        if((buf.bytesused < buffer->get_full_length() - META_DATA_SIZE) &&
+                        if((buf.bytesused < buffer->get_full_length() - MAX_META_DATA_SIZE) &&
                                 buf.bytesused > 0)
                         {
                             auto percentage = (100 * buf.bytesused) / buffer->get_full_length();
@@ -738,7 +737,7 @@ namespace rsimpl2
                         else
                         {
                             frame_object fo{ buffer->get_length_frame_only(),
-                                        has_metadata() ? META_DATA_SIZE : 0,
+                                        has_metadata() ? MAX_META_DATA_SIZE : uint8_t(0),
                                         buffer->get_frame_start(),
                                         has_metadata() ? buffer->get_frame_start() + buffer->get_length_frame_only() : nullptr };
 

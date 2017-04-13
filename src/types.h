@@ -210,7 +210,7 @@ namespace rsimpl2
     class lazy
     {
     public:
-        lazy() : _init([]() { T t; return t; }) {}
+        lazy() : _init([]() { T t{}; return t; }) {}
         lazy(std::function<T()> initializer) : _init(std::move(initializer)) {}
 
         T& operator*()
@@ -310,6 +310,7 @@ namespace rsimpl2
     RS2_ENUM_HELPERS(rs2_distortion, DISTORTION)
     RS2_ENUM_HELPERS(rs2_option, OPTION)
     RS2_ENUM_HELPERS(rs2_camera_info, CAMERA_INFO)
+    RS2_ENUM_HELPERS(rs2_frame_metadata, FRAME_METADATA)
     RS2_ENUM_HELPERS(rs2_timestamp_domain, TIMESTAMP_DOMAIN)
     RS2_ENUM_HELPERS(rs2_visual_preset, VISUAL_PRESET)
     RS2_ENUM_HELPERS(rs2_exception_type, EXCEPTION_TYPE)
@@ -322,6 +323,7 @@ namespace rsimpl2
     ////////////////////////////////////////////
 #pragma pack(push, 1)
     struct int2 { int x, y; };
+    struct float2 { float x, y; float & operator [] (int i) { return (&x)[i]; } };
     struct float3 { float x, y, z; float & operator [] (int i) { return (&x)[i]; } };
     struct float4 { float x, y, z, w; float & operator [] (int i) { return (&x)[i]; } };
     struct float3x3 { float3 x, y, z; float & operator () (int i, int j) { return (&x)[j][i]; } }; // column-major

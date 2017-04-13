@@ -500,7 +500,6 @@ int rs2_supports_camera_info(const rs2_device* device, rs2_camera_info info, rs2
 }
 HANDLE_EXCEPTIONS_AND_RETURN(false, device, info)
 
-
 void rs2_start(const rs2_device* device, rs2_frame_callback_ptr on_frame, void * user, rs2_error ** error) try
 {
     VALIDATE_NOT_NULL(device);
@@ -581,12 +580,21 @@ void rs2_stop_stream(const rs2_device* device, rs2_stream stream, rs2_error ** e
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, stream, device)
 
-double rs2_get_frame_metadata(const rs2_frame * frame, rs2_frame_metadata frame_metadata, rs2_error ** error) try
+int rs2_supports_frame_metadata(const rs2_frame * frame, rs2_frame_metadata frame_metadata, rs2_error ** error) try
 {
     VALIDATE_NOT_NULL(frame);
+    VALIDATE_ENUM(frame_metadata);
+    return frame->get()->supports_frame_metadata(frame_metadata);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(0, frame, frame_metadata)
+
+rs2_metadata_t rs2_get_frame_metadata(const rs2_frame * frame, rs2_frame_metadata frame_metadata, rs2_error ** error) try
+{
+    VALIDATE_NOT_NULL(frame);
+    VALIDATE_ENUM(frame_metadata);
     return frame->get()->get_frame_metadata(frame_metadata);
 }
-HANDLE_EXCEPTIONS_AND_RETURN(0, frame)
+HANDLE_EXCEPTIONS_AND_RETURN(0, frame, frame_metadata)
 
 const char * rs2_get_notification_description(rs2_notification * notification, rs2_error** error)try
 {
@@ -615,13 +623,6 @@ rs2_notification_category rs2_get_notification_category(rs2_notification * notif
     return (rs2_notification_category)notification->_notification->category;
 }
 HANDLE_EXCEPTIONS_AND_RETURN(RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR, notification)
-
-int rs2_supports_frame_metadata(const rs2_frame * frame, rs2_frame_metadata frame_metadata, rs2_error ** error) try
-{
-    VALIDATE_NOT_NULL(frame);
-    return frame->get()->supports_frame_metadata(frame_metadata);
-}
-HANDLE_EXCEPTIONS_AND_RETURN(0, frame)
 
 rs2_time_t rs2_get_frame_timestamp(const rs2_frame * frame_ref, rs2_error ** error) try
 {
@@ -831,7 +832,7 @@ HANDLE_EXCEPTIONS_AND_RETURN(, device, intrinsics)
 void rs2_hardware_reset(const rs2_device * device, rs2_error ** error) try
 {
     VALIDATE_NOT_NULL(device);
-    device->device->hardware_reset();    
+    device->device->hardware_reset();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device)
 
@@ -979,6 +980,7 @@ const char * rs2_format_to_string(rs2_format format) { return rsimpl2::get_strin
 const char * rs2_distortion_to_string(rs2_distortion distortion) { return rsimpl2::get_string(distortion); }
 const char * rs2_option_to_string(rs2_option option) { return rsimpl2::get_string(option); }
 const char * rs2_camera_info_to_string(rs2_camera_info info) { return rsimpl2::get_string(info); }
+const char * rs2_frame_metadata_to_string(rs2_frame_metadata metadata) { return rsimpl2::get_string(metadata); }
 const char * rs2_timestamp_domain_to_string(rs2_timestamp_domain info){ return rsimpl2::get_string(info); }
 const char * rs2_notification_category_to_string(rs2_notification_category category){ return rsimpl2::get_string(category); }
 const char * rs2_visual_preset_to_string(rs2_visual_preset preset) { return rsimpl2::get_string(preset); }

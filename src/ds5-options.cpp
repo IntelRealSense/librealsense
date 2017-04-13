@@ -61,27 +61,27 @@ namespace rsimpl2
                 return temp;
             }));
 
-        int8_t temperature::* feild;
-        uint8_t temperature::* is_valid_feild;
+        int8_t temperature::* field;
+        uint8_t temperature::* is_valid_field;
 
         switch (_option)
         {
         case RS2_OPTION_ASIC_TEMPERATURE:
-            feild = &temperature::asic_temperature;
-            is_valid_feild = &temperature::is_asic_valid;
+            field = &temperature::asic_temperature;
+            is_valid_field = &temperature::is_asic_valid;
             break;
         case RS2_OPTION_PROJECTOR_TEMPERATURE:
-            feild = &temperature::projector_temperature;
-            is_valid_feild = &temperature::is_projector_valid;
+            field = &temperature::projector_temperature;
+            is_valid_field = &temperature::is_projector_valid;
             break;
         default:
             throw invalid_value_exception(to_string() << rs2_option_to_string(_option) << " is not temperature option!");
         }
 
-        if (!static_cast<bool>(temperature_data.*is_valid_feild))
+        if (0 == temperature_data.*is_valid_field)
             throw invalid_value_exception(to_string() << rs2_option_to_string(_option) << " value is not valid!");
 
-        return temperature_data.*feild;
+        return temperature_data.*field;
     }
 
     option_range asic_and_projector_temperature_options::get_range() const
@@ -249,6 +249,8 @@ namespace rsimpl2
             if (!_to_add_frames || stream != RS2_STREAM_FISHEYE)
                 return;
 
+            f.get()->additional_data.fisheye_ae_mode = true;
+
             _auto_exposure->add_frame(f.get()->get_owner()->clone_frame(&f), std::move(callback));
         });
     }
@@ -356,7 +358,7 @@ namespace rsimpl2
         cmd.param1 = ds::etDepthTableControl;
 
         auto depth_table = get_depth_table(ds::GET_VAL);
-        depth_table.depth_units = 1000000 * value;
+        depth_table.depth_units = static_cast<uint32_t>(1000000 * value);
         auto ptr = (uint8_t*)(&depth_table);
         cmd.data = std::vector<uint8_t>(ptr, ptr + sizeof(ds::depth_table_control));
 
@@ -366,7 +368,7 @@ namespace rsimpl2
     float depth_scale_option::query() const
     {
         auto table = get_depth_table(ds::GET_VAL);
-        return (float)(0.000001 * table.depth_units);
+        return (float)(0.000001 * (float)table.depth_units);
     }
 
     option_range depth_scale_option::get_range() const

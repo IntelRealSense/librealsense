@@ -155,6 +155,8 @@ void save_data_to_file(list<frame_data> buffer[], string filename = ".\\frames_d
             csv << line.str();
         }
     }
+
+    csv.close();
 }
 
 int main(int argc, char** argv) try

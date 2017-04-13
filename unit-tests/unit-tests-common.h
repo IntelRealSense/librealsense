@@ -17,6 +17,7 @@
 #include <atomic>
 #include <vector>
 #include <fstream>
+#include <array>
 
 // noexcept is not accepted by Visual Studio 2013 yet, but noexcept(false) is require on throwing destructors on gcc and clang
 // It is normally advisable not to throw in a destructor, however, this usage is safe for require_error/require_no_error because
@@ -252,11 +253,27 @@ struct test_duration {
     uint32_t frames_to_capture;
 };
 
+struct frame_metadata
+{
+    std::array<std::pair<bool,rs2_metadata_t>,RS2_FRAME_METADATA_COUNT> md_attributes{};
+};
+
+
 struct frame_additional_data
 {
-    double              timestamp;
-    unsigned long long  frame_number;
-    rs2_timestamp_domain timestamp_domain;
+    double                  timestamp;
+    unsigned long long      frame_number;
+    rs2_timestamp_domain    timestamp_domain;
+    rs2_stream              stream;
+    rs2_format              format;
+    frame_metadata          frame_md;       // Metadata attributes
+
+    frame_additional_data(const double &ts, const unsigned long long frame_num, const rs2_timestamp_domain& ts_domain, const rs2_stream& strm, const rs2_format& fmt) :
+        timestamp(ts),
+        frame_number(frame_num),
+        timestamp_domain(ts_domain),
+        stream(strm),
+        format(fmt){}
 };
 
 inline void check_fps(double actual_fps, double configured_fps)

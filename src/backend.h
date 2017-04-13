@@ -23,6 +23,9 @@ const uint16_t VID_INTEL_CAMERA      = 0x8086;
 const uint8_t  DEFAULT_FRAME_BUFFERS = 4;
 const uint16_t DELAY_FOR_RETRIES     = 50;
 
+const uint8_t MAX_META_DATA_SIZE      = 0xff; // UVC Metadata total length
+                                            // is limited by design to 255 bytes
+
 namespace rsimpl2
 {
     struct notification;
@@ -116,12 +119,25 @@ namespace rsimpl2
                    (a.format == b.format);
         }
 
+#pragma pack(push, 1)
+        struct uvc_header
+        {
+            uint8_t         length;             // UVC Metadata total length is
+                                                // limited by design to 255 bytes
+            uint8_t         info;
+            uint32_t        timestamp;
+            uint8_t         source_clock[6];
+        };
+#pragma pack(pop)
+
+        constexpr uint8_t uvc_header_size = sizeof(uvc_header);
+
         struct frame_object
         {
-            size_t frame_size;
-            size_t metadata_size;
-            const void * pixels;
-            const void * metadata;
+            size_t          frame_size;
+            uint8_t         metadata_size;
+            const void *    pixels;
+            const void *    metadata;
         };
 
         typedef std::function<void(stream_profile, frame_object, std::function<void()>)> frame_callback;
@@ -423,7 +439,7 @@ namespace rsimpl2
                 for (auto&& dev : _dev) dev->open();
             }
 
-            void close() override 
+            void close() override
             {
                 for (auto&& dev : _dev) dev->close();
             }

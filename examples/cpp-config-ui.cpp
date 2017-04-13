@@ -13,6 +13,7 @@
 #include <iomanip>
 #include <map>
 #include <sstream>
+#include <array>
 #include <mutex>
 
 #pragma comment(lib, "opengl32.lib")
@@ -807,20 +808,30 @@ private:
 
 typedef std::map<rs2_stream, rect> streams_layout;
 
+struct frame_metadata
+{
+    std::array<std::pair<bool,rs2_metadata_t>,RS2_FRAME_METADATA_COUNT> md_attributes{};
+};
+
 class stream_model
 {
 public:
-    rect layout;
-    texture_buffer texture;
-    float2 size;
-    rs2_format format;
+    rect                layout;
+    texture_buffer      texture;
+    float2              size;
+    rs2_stream          stream;
+    rs2_format          format;
     std::chrono::high_resolution_clock::time_point last_frame;
-    double timestamp;
-    unsigned long long frame_number;
+    double              timestamp;
+    unsigned long long  frame_number;
     rs2_timestamp_domain timestamp_domain;
-    fps_calc fps;
-    rect roi_display_rect;
-    bool capturing_roi = false;
+    fps_calc            fps;
+    rect                roi_display_rect{};
+    frame_metadata      frame_md;
+    bool                metadata_displayed  = false;
+    bool                roi_supported       = false;    // supported by device in its current state
+    bool                roi_checked         = false;    // actively selected by user
+    bool                capturing_roi       = false;    // active modification of roi
     std::shared_ptr<subdevice_model> dev;
 
     void upload_frame(frame&& f)
@@ -832,11 +843,23 @@ public:
         auto height = (is_motion) ? 480.f : f.get_height();
 
         size = { static_cast<float>(width), static_cast<float>(height)};
+        stream = f.get_stream_type();
         format = f.get_format();
         frame_number = f.get_frame_number();
         timestamp_domain = f.get_frame_timestamp_domain();
         timestamp = f.get_timestamp();
         fps.add_timestamp(f.get_timestamp(), f.get_frame_number());
+
+        // populate frame metadata attributes
+        for (auto i=0; i< RS2_FRAME_METADATA_COUNT; i++)
+        {
+            if (f.supports_frame_metadata((rs2_frame_metadata)i))
+                frame_md.md_attributes[i] = std::make_pair(true,f.get_frame_metadata((rs2_frame_metadata)i));
+            else
+                frame_md.md_attributes[i].first = false;
+        }
+
+        roi_supported =  (dev.get() && dev->auto_exposure_enabled);
 
         texture.upload(f);
     }
@@ -882,7 +905,7 @@ public:
 
     void update_ae_roi_rect(const rect& stream_rect, const mouse_info& mouse, std::string& error_message)
     {
-        if (dev.get() && dev->auto_exposure_enabled)
+        if (roi_checked)
         {
             // Case 1: Starting Dragging of the ROI rect
             // Pre-condition: not capturing already + mouse is down + we are inside stream rect
@@ -936,7 +959,6 @@ public:
                     catch (const error& e)
                     {
                         error_message = error_to_string(e);
-                        dev->auto_exposure_enabled = false;
                     }
                 }
                 else // If the rect is empty
@@ -958,7 +980,6 @@ public:
                     catch (const error& e)
                     {
                         error_message = error_to_string(e);
-                        dev->auto_exposure_enabled = false;
                     }
                 }
             }
@@ -990,6 +1011,39 @@ public:
         texture.show(stream_rect, get_stream_alpha());
 
         update_ae_roi_rect(stream_rect, g, error_message);
+    }
+
+    void show_metadata(const mouse_info& g)
+    {
+
+        auto lines = RS2_FRAME_METADATA_COUNT;
+        auto flags = ImGuiWindowFlags_ShowBorders;
+
+        ImGui::PushStyleColor(ImGuiCol_WindowBg, { 0.3f, 0.3f, 0.3f, 0.5});
+        ImGui::PushStyleColor(ImGuiCol_TitleBg, { 0.f, 0.25f, 0.3f, 1 });
+        ImGui::PushStyleColor(ImGuiCol_TitleBgActive, { 0.f, 0.3f, 0.8f, 1 });
+        ImGui::PushStyleColor(ImGuiCol_Text, { 1, 1, 1, 1 });
+
+        std::string label = to_string() << rs2_stream_to_string(stream) << " Stream Metadata #";
+        ImGui::Begin(label.c_str(), nullptr, flags);
+
+        // Print all available frame metadata attributes
+        for (size_t i=0; i < RS2_FRAME_METADATA_COUNT; i++ )
+        {
+            if (frame_md.md_attributes[i].first)
+            {
+                label = to_string() << rs2_frame_metadata_to_string((rs2_frame_metadata)i) << " = " << frame_md.md_attributes[i].second;
+                ImGui::Text("%s", label.c_str());
+            }
+        }
+
+        ImGui::End();
+
+        ImGui::PopStyleColor();
+        ImGui::PopStyleColor();
+        ImGui::PopStyleColor();
+        ImGui::PopStyleColor();
+
     }
 
     float _frame_timeout = 700.0f;
@@ -1068,6 +1122,7 @@ public:
     std::vector<std::shared_ptr<subdevice_model>> subdevices;
     std::map<rs2_stream, stream_model> streams;
     bool fullscreen = false;
+    bool metadata_supported = false;
     rs2_stream selected_stream = RS2_STREAM_ANY;
 
 private:
@@ -1351,7 +1406,6 @@ int main(int, char**) try
     auto list = ctx.query_devices(); // Query RealSense connected devices list
 
 
-  
     // If no device is connected...
     while (list.size() == 0)
     {
@@ -1400,6 +1454,7 @@ int main(int, char**) try
     user_data data;
     data.curr_window = window;
     data.mouse = &mouse;
+
 
     glfwSetWindowUserPointer(window, &data);
 
@@ -1648,8 +1703,7 @@ int main(int, char**) try
                         if (update_read_only_options)
                         {
                             metadata.update_supported(error_message);
-                            if (metadata.supported &&
-                                sub->streaming)
+                            if (metadata.supported && sub->streaming)
                             {
                                 metadata.update_read_only(error_message);
                                 if (metadata.read_only)
@@ -1734,7 +1788,7 @@ int main(int, char**) try
 
         auto layout = model.calc_layout(panel_size, 0.f, w - panel_size, (float)h);
 
-        for (auto kvp : layout)
+        for (auto &&kvp : layout)
         {
             auto&& view_rect = kvp.second;
             auto stream = kvp.first;
@@ -1794,6 +1848,30 @@ int main(int, char**) try
                 {
                     ImGui::SetTooltip("Minimize stream to tile-view");
                 }
+            }
+
+            if (!layout.empty())
+            {
+                if (model.streams[stream].roi_supported )
+                {
+                    ImGui::SameLine((int)ImGui::GetWindowWidth() - 160);
+                    ImGui::Checkbox("[ROI]", &model.streams[stream].roi_checked);
+
+                    if (ImGui::IsItemHovered())
+                        ImGui::SetTooltip("Auto Exposure Region-of-Interest Selection");
+                }
+                else
+                    model.streams[stream].roi_checked = false;
+            }
+
+            // Control metadata overlay widget
+            ImGui::SameLine((int)ImGui::GetWindowWidth() - 90); // metadata GUI hint
+            if (!layout.empty())
+            {
+                ImGui::Checkbox("[MD]", &model.streams[stream].metadata_displayed);
+
+                if (ImGui::IsItemHovered())
+                    ImGui::SetTooltip("Show per-frame metadata");
             }
 
             label = to_string() << "Timestamp: " << std::fixed << std::setprecision(3) << model.streams[stream].timestamp
@@ -1859,6 +1937,12 @@ int main(int, char**) try
             }
         }
 
+        // Metadata overlay windows shall be drawn after textures to preserve z-buffer functionality
+        for (auto &&kvp : layout)
+        {
+            if (model.streams[kvp.first].metadata_displayed)
+                model.streams[kvp.first].show_metadata(mouse);
+        }
 
         ImGui::Render();
 

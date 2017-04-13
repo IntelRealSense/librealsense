@@ -33,9 +33,9 @@ namespace pybackend2 {
         const uint16_t pre_header_data = 0xcdab;
         raw_data.resize(HW_MONITOR_BUFFER_SIZE);
         auto write_ptr = raw_data.data();
-        auto header_size = 4;
+        size_t header_size = 4;
 
-        auto cur_index = 2;
+        size_t cur_index = 2;
         *reinterpret_cast<uint16_t *>(write_ptr + cur_index) = pre_header_data;
         cur_index += sizeof(uint16_t);
         *reinterpret_cast<unsigned int *>(write_ptr + cur_index) = cmd_op_code;

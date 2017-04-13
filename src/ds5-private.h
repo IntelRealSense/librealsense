@@ -177,14 +177,6 @@ namespace rsimpl2
             int32_t disparity_shift;
         };
 
-        struct uvc_header
-        {
-            byte            length;
-            byte            info;
-            uint32_t        timestamp;
-            byte            source_clock[6];
-        };
-
         struct metadata_header
         {
             uint32_t    metaDataID;
@@ -207,7 +199,7 @@ namespace rsimpl2
 
         struct metadata
         {
-           uvc_header header;
+           uvc::uvc_header header;
            metadata_capture_timing md_capture_timing;
         };
 

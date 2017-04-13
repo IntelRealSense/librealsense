@@ -87,7 +87,13 @@ typedef enum rs2_format
 /** \brief Per-Frame-Metadata are set of read-only properties that might be exposed for each individual frame */
 typedef enum rs2_frame_metadata
 {
-    RS2_FRAME_METADATA_ACTUAL_EXPOSURE,
+    RS2_FRAME_METADATA_FRAME_COUNTER        , /**< frame counter */
+    RS2_FRAME_METADATA_FRAME_TIMESTAMP      , /**< Timestamp. Start of readout. usec*/
+    RS2_FRAME_METADATA_SENSOR_TIMESTAMP     , /**< Timestamp, Designates the middle of sensor's exposure. usec*/
+    RS2_FRAME_METADATA_ACTUAL_EXPOSURE      , /**< Frame's actual exposure length. usec*/
+    RS2_FRAME_METADATA_GAIN_LEVEL           , /**< Transition function raw->scale : [16-248] -> [1-15.5]*/
+    RS2_FRAME_METADATA_AUTO_EXPOSURE        , /**< Auto-exposure mode. Enumerated according to MS specification */
+    RS2_FRAME_METADATA_WHITE_BALANCE        , /**< Temperature. Kelvin degrees. Applicable for Color Sensors*/
     RS2_FRAME_METADATA_COUNT
 } rs2_frame_metadata;
 
@@ -157,7 +163,7 @@ typedef enum rs2_option
 } rs2_option;
 
 /** \brief Read-only strings that can be queried from the device.
-   Not all information fields are available on all camera types.
+   Not all information attributes are available on all camera types.
    This information is mainly available for camera debug and troubleshooting and should not be used in applications. */
 typedef enum rs2_camera_info {
     RS2_CAMERA_INFO_DEVICE_NAME                    , /**< Device friendly name */
@@ -253,7 +259,8 @@ typedef void (*rs2_frame_callback_ptr)(rs2_frame*, void*);
 typedef void (*rs2_notification_callback_ptr)(rs2_notification*, void*);
 typedef void (*rs2_log_callback_ptr)(rs2_log_severity min_severity, const char* message, void* user);
 
-typedef double rs2_time_t;    /**< Timestamp format. units are milliseconds */
+typedef double  rs2_time_t; /**< Timestamp format. units are milliseconds */
+typedef long    rs2_metadata_t;   /**< Metadata attribute type*/
 
 /**
 * \brief Creates RealSense context that is required for the rest of the API.
@@ -344,7 +351,7 @@ void rs2_get_extrinsics(const rs2_device * from_dev, rs2_stream from_stream,
  * \param[in]  stream    type of stream
  * \param[in]  width     stream width
  * \param[in]  height    stream height
- * \param[in]  fps       stream fps (in most cases will not affect resulting intrinsics) 
+ * \param[in]  fps       stream fps (in most cases will not affect resulting intrinsics)
  * \param[in]  format    stream output format
  * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
  */
@@ -545,7 +552,7 @@ rs2_notification_category rs2_get_notification_category(rs2_notification * notif
 * \param[in] frame_metadata  the rs2_frame_metadata whose latest frame we are interested in
 * \return            the metadata value
 */
-double rs2_get_frame_metadata(const rs2_frame* frame, rs2_frame_metadata frame_metadata, rs2_error** error);
+rs2_metadata_t rs2_get_frame_metadata(const rs2_frame* frame, rs2_frame_metadata frame_metadata, rs2_error** error);
 
 /**
 * determine device metadata
@@ -934,15 +941,18 @@ void         rs2_free_error           (rs2_error * error);
 rs2_exception_type rs2_get_librealsense_exception_type(const rs2_error * error);
 const char * rs2_exception_type_to_string(rs2_exception_type type);
 
-const char * rs2_stream_to_string     (rs2_stream stream);
-const char * rs2_format_to_string     (rs2_format format);
-const char * rs2_distortion_to_string (rs2_distortion distortion);
-const char * rs2_option_to_string     (rs2_option option);
-const char * rs2_camera_info_to_string(rs2_camera_info info);
-const char * rs2_camera_info_to_string(rs2_camera_info info);
-const char * rs2_timestamp_domain_to_string(rs2_timestamp_domain info);
-const char * rs2_log_severity_to_string(rs2_log_severity info);
-const char * rs2_visual_preset_to_string  (rs2_visual_preset preset);
+const char * rs2_stream_to_string           (rs2_stream stream);
+const char * rs2_format_to_string           (rs2_format format);
+const char * rs2_distortion_to_string       (rs2_distortion distortion);
+const char * rs2_option_to_string           (rs2_option option);
+const char * rs2_camera_info_to_string      (rs2_camera_info info);
+const char * rs2_frame_metadata_to_string   (rs2_frame_metadata metadata);
+const char * rs2_timestamp_domain_to_string (rs2_timestamp_domain info);
+const char * rs2_notification_category_to_string(rs2_notification_category category);
+const char * rs2_visual_preset_to_string    (rs2_visual_preset preset);
+const char * rs2_log_severity_to_string     (rs2_log_severity info);
+const char * rs2_visual_preset_to_string    (rs2_visual_preset preset);
+const char * rs2_exception_type_to_string   (rs2_exception_type type);
 
 void rs2_log_to_console(rs2_log_severity min_severity, rs2_error ** error);
 void rs2_log_to_file(rs2_log_severity min_severity, const char * file_path, rs2_error ** error);

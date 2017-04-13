@@ -225,6 +225,23 @@ namespace rsimpl2
         #undef CASE
     }
 
+    const char * get_string(rs2_frame_metadata value)
+    {
+        #define CASE(X) case RS2_FRAME_METADATA_##X: return #X;
+        switch (value)
+        {
+        CASE(FRAME_COUNTER)
+        CASE(FRAME_TIMESTAMP)
+        CASE(SENSOR_TIMESTAMP)
+        CASE(ACTUAL_EXPOSURE)
+        CASE(GAIN_LEVEL)
+        CASE(AUTO_EXPOSURE)
+        CASE(WHITE_BALANCE)
+        default: assert(!is_valid(value)); return unknown;
+        }
+        #undef CASE
+    }
+
     const char * get_string(rs2_timestamp_domain value)
     {
         #define CASE(X) case RS2_TIMESTAMP_DOMAIN_##X: return #X;

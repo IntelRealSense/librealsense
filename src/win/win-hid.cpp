@@ -198,7 +198,6 @@ namespace rsimpl2
 
         void wmf_hid_device::stop_capture()
         {
-            
             _sensor->SetEventSink(NULL);
             _cb = nullptr;
 
@@ -272,7 +271,7 @@ namespace rsimpl2
                         DWORD cVals = 0; // Count of returned properties.
                         if (SUCCEEDED(hr))
                         {
-                            // Get the number of values returned.        
+                            // Get the number of values returned.
                             hr = pValues->GetCount(&cVals);
                             if (SUCCEEDED(hr))
                             {

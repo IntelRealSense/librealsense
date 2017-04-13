@@ -55,7 +55,7 @@ namespace rsimpl2
         class frame_callback : public rs2_frame_callback
         {
         public:
-            explicit frame_callback(start_adaptor* owner) 
+            explicit frame_callback(start_adaptor* owner)
                 : _owner(owner) {}
 
             void on_frame(rs2_frame* f) override;
@@ -121,6 +121,8 @@ namespace rsimpl2
         bool supports_info(rs2_camera_info info) const;
         void register_info(rs2_camera_info info, const std::string& val);
 
+        void register_metadata(rs2_frame_metadata metadata, std::shared_ptr<md_attribute_parser_base> metadata_parser);
+
         void set_pose(lazy<pose> p) { _pose = std::move(p); }
         pose get_pose() const { return *_pose; }
 
@@ -158,6 +160,7 @@ namespace rsimpl2
         std::shared_ptr<uvc::time_service> _ts;
         std::shared_ptr<notifications_proccessor> _notifications_proccessor;
         on_before_frame_callback _on_before_frame_callback;
+        std::shared_ptr<metadata_parser_map> _metadata_parsers = nullptr;
 
     private:
         std::map<rs2_option, std::shared_ptr<option>> _options;
@@ -166,6 +169,7 @@ namespace rsimpl2
         lazy<pose> _pose;
         std::map<rs2_camera_info, std::string> _camera_info;
         std::shared_ptr<region_of_interest_method> _roi_method = nullptr;
+
         start_adaptor _start_adaptor;
     };
 

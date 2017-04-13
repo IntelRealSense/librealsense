@@ -207,7 +207,13 @@ PYBIND11_PLUGIN(NAME) {
              .value("count", RS2_TIMESTAMP_DOMAIN_COUNT);
     
     py::enum_<rs2_frame_metadata> frame_metadata(m, "frame_metadata");
-    frame_metadata.value("actual_exposure", RS2_FRAME_METADATA_ACTUAL_EXPOSURE)
+    frame_metadata.value("frame counter", RS2_FRAME_METADATA_FRAME_COUNTER)
+                  .value("frame_timestamp_usec", RS2_FRAME_METADATA_FRAME_TIMESTAMP)
+                  .value("sensor_timestamp_usec", RS2_FRAME_METADATA_SENSOR_TIMESTAMP)
+                  .value("actual_exposure_usec", RS2_FRAME_METADATA_ACTUAL_EXPOSURE)
+                  .value("gain_level", RS2_FRAME_METADATA_GAIN_LEVEL)
+                  .value("auto_exposure", RS2_FRAME_METADATA_AUTO_EXPOSURE)
+                  .value("white_balance_temp_k", RS2_FRAME_METADATA_WHITE_BALANCE)
                   .value("count", RS2_FRAME_METADATA_COUNT);
     
     py::class_<rs2::frame> frame(m, "frame");

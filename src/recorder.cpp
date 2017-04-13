@@ -1111,9 +1111,9 @@ namespace rsimpl2
 
         bool playback_uvc_device::set_xu(const extension_unit& xu, uint8_t ctrl, const uint8_t* data, int len)
         {
-            auto&& c = _rec->find_call(call_type::uvc_set_xu, _entity_id, [&](const call& call_found) 
+            auto&& c = _rec->find_call(call_type::uvc_set_xu, _entity_id, [&](const call& call_found)
             {
-                return call_found.param1 == ctrl; 
+                return call_found.param1 == ctrl;
             });
 
             auto stored_data = _rec->load_blob(c.param2);
@@ -1140,7 +1140,7 @@ namespace rsimpl2
         control_range playback_uvc_device::get_xu_range(const extension_unit& xu, uint8_t ctrl, int len) const
         {
             control_range res;
-            auto&& c = _rec->find_call(call_type::uvc_get_xu_range, _entity_id, [&](const call& call_found) 
+            auto&& c = _rec->find_call(call_type::uvc_get_xu_range, _entity_id, [&](const call& call_found)
             {
                 return call_found.param1 == ctrl;
             });
@@ -1179,7 +1179,6 @@ namespace rsimpl2
             {
                 return call_found.param1 == opt;
             });
-           
             auto range = _rec->load_blob(c.param2);
             rsimpl2::copy(&res, range.data(), range.size());
             return res;
@@ -1284,7 +1283,7 @@ namespace rsimpl2
                     sd.fo.pixels = (void*)sd_data.data();
                     sd.fo.frame_size = sd_data.size();
 
-                    auto metadata = _rec->load_blob(c_ptr->param3);
+                    auto metadata = _rec->load_blob(c_ptr->param2);
                     sd.fo.metadata = (void*)metadata.data();
                     sd.fo.metadata_size = metadata.size();
 
@@ -1321,7 +1320,7 @@ namespace rsimpl2
 
         vector<uint8_t> playback_usb_device::send_receive(const vector<uint8_t>& data, int timeout_ms, bool require_response)
         {
-            auto&& c = _rec->find_call(call_type::send_command, _entity_id, [&](const call& call_found) 
+            auto&& c = _rec->find_call(call_type::send_command, _entity_id, [&](const call& call_found)
             {
                 return call_found.param3 == timeout_ms && (call_found.param4 > 0) == require_response && _rec->load_blob(call_found.param1) == data;
             });
@@ -1364,7 +1363,8 @@ namespace rsimpl2
                                 frame_blob = _compression.decode(_rec->load_blob(c_ptr->param2));
                             }
                             metadata_blob =_rec->load_blob(c_ptr->param5);
-                            frame_object fo{ frame_blob.size(), metadata_blob.size(),
+                            frame_object fo{ frame_blob.size(),
+                                        static_cast<uint8_t>(metadata_blob.size()), // Metadata is limited to 0xff bytes by design
                                         frame_blob.data(),metadata_blob.data() };
                             pair.second(p, fo, []() {});
                             break;

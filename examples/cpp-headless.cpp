@@ -17,6 +17,7 @@
 #include <vector>
 #include <limits>
 #include <iostream>
+#include <fstream>
 
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "third_party/stb_image_write.h"
@@ -25,10 +26,32 @@
 using namespace rs2;
 using namespace std;
 
+void metadata_to_csv(const frame& frm, const std::string& filename)
+{
+    ofstream    csv;
+
+    csv.open(filename);
+
+    cout << "Writing metadata to " << filename << endl;
+    csv << "Stream," << rs2_stream_to_string(frm.get_stream_type()) << "\nMetadata Attribute,Value\n";
+
+    // Record all the available metadata attributes
+    for (size_t i = 0; i < RS2_FRAME_METADATA_COUNT; i++)
+    {
+        if (frm.supports_frame_metadata((rs2_frame_metadata)i))
+        {
+            csv << rs2_frame_metadata_to_string((rs2_frame_metadata)i) << ","
+                << frm.get_frame_metadata((rs2_frame_metadata)i) << "\n";
+        }
+    }
+
+    csv.close();
+}
+
+
 int main() try
 {
     log_to_console(RS2_LOG_SEVERITY_WARN);
-    //log_to_file(log_severity::debug, "librealsense.log");
 
     context ctx;
     auto list = ctx.query_devices();
@@ -98,6 +121,10 @@ int main() try
             bpp,
             pixels,
             frame.get_width() * bpp );
+
+        /* Record per-frame metadata for UVC streams*/
+        std::string metadata_file_name = rs2::to_string() << "cpp-headless-output-" << stream_type << "-metadata.csv";
+        metadata_to_csv(frame, metadata_file_name);
     }
 
     frames_by_stream.clear();

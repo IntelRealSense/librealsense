@@ -11,7 +11,7 @@ namespace rsimpl2
         _active_object([this](dispatcher::cancellable_timer cancellable_timer)
         {
             polling(cancellable_timer);
-        }), 
+        }),
         _option(std::move(option)),
         _notifications_proccessor(proccessor),
         _decoder(std::move(decoder))
@@ -47,7 +47,6 @@ namespace rsimpl2
                      auto strong = _notifications_proccessor.lock();
                      if (strong)strong->raise_notification(notification);
                  }
-                
              }
              catch (const std::exception& ex)
              {

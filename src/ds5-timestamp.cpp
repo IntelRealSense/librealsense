@@ -190,6 +190,7 @@ namespace rsimpl2
     unsigned long long ds5_iio_hid_timestamp_reader::get_frame_counter(const request_mapping & mode, const uvc::frame_object& fo) const
     {
         std::lock_guard<std::recursive_mutex> lock(_mtx);
+        if (nullptr == mode.pf) return 0;                   // Windows support is limited
         int index = 0;
         if (mode.pf->fourcc == 'GYRO')
             index = 1;

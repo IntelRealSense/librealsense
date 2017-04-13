@@ -1,14 +1,15 @@
+#include "metadata-parser.h"
 #include "archive.h"
 
 using namespace rsimpl2;
 
 frame_archive::frame_archive(std::atomic<uint32_t>* in_max_frame_queue_size,
                              std::shared_ptr<uvc::time_service> ts,
-                             std::shared_ptr<uvc::uvc_device> dev)
+                             std::shared_ptr<uvc::uvc_device> dev,
+                             std::shared_ptr<metadata_parser_map> parsers)
     : max_frame_queue_size(in_max_frame_queue_size),
       mutex(), recycle_frames(true), _time_service(ts),
-      device(dev)
-
+      device(dev), _metadata_parsers(parsers)
 {
     published_frames_count = 0;
 }
@@ -173,14 +174,37 @@ frame* frame::publish(std::shared_ptr<frame_archive> new_owner)
     return owner->publish_frame(std::move(*this));
 }
 
-double frame::get_frame_metadata(const rs2_frame_metadata& /*frame_metadata*/) const
+rs2_metadata_t frame::get_frame_metadata(const rs2_frame_metadata& frame_metadata) const
 {
-    throw not_implemented_exception("unsupported metadata type");
+    auto md_parsers = owner->get_md_parsers();
+
+    if ((!md_parsers) || (0 == additional_data.metadata_size))
+        throw invalid_value_exception(to_string() << "metadata not available for "
+                                      << get_string(get_stream_type())<<" stream");
+
+    auto it = md_parsers.get()->find(frame_metadata);
+    if (it == md_parsers.get()->end())          // Possible user error - md attribute is not supported by this frame type
+        throw invalid_value_exception(to_string() << get_string(frame_metadata)
+                                      << " attribute is not applicable for "
+                                      << get_string(get_stream_type()) << " stream ");
+
+    // Proceed to parse and extract the required data attribute
+    return it->second->get(*this);
 }
 
-bool frame::supports_frame_metadata(const rs2_frame_metadata& /*frame_metadata*/) const
+bool frame::supports_frame_metadata(const rs2_frame_metadata& frame_metadata) const
 {
-    return false;
+    auto md_parsers = owner->get_md_parsers();
+
+    // verify preconditions
+    if ((!md_parsers) || (0 == additional_data.metadata_size))
+        return false;                         // No parsers are available or no metadata was attached
+
+    auto it = md_parsers.get()->find(frame_metadata);
+    if (it == md_parsers.get()->end())          // Possible user error - md attribute is not supported by this frame type
+        return false;
+
+    return it->second->supports(*this);
 }
 
 const byte* frame::get_frame_data() const

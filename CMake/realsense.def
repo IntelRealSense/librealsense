@@ -97,12 +97,14 @@ EXPORTS
     rs2_distortion_to_string
     rs2_option_to_string
     rs2_camera_info_to_string
+    rs2_frame_metadata_to_string
     rs2_timestamp_domain_to_string
     rs2_visual_preset_to_string
+    rs2_notification_category_to_string
 
     rs2_log_to_console
     rs2_log_to_file
-    
+
     rs2_create_syncer
     rs2_start_syncer
     rs2_wait_for_frames

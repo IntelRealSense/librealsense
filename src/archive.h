@@ -5,10 +5,13 @@
 
 #include "types.h"
 #include <atomic>
+#include <array>
+#include <math.h>
 
 namespace rsimpl2
 {
     class frame_archive;
+    class md_attribute_parser_base;
 }
 
 struct frame_additional_data
@@ -20,18 +23,22 @@ struct frame_additional_data
     int fps = 0;
     int stride = 0;
     int bpp = 1;
-    rs2_format format = RS2_FORMAT_ANY;
-    rs2_stream stream_type = RS2_STREAM_COUNT;
+    rs2_format      format = RS2_FORMAT_ANY;
+    rs2_stream      stream_type = RS2_STREAM_COUNT;
     rs2_timestamp_domain timestamp_domain = RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK;
-    rs2_time_t system_time = 0;
-    rs2_time_t frame_callback_started = 0;
+    rs2_time_t      system_time = 0;
+    rs2_time_t      frame_callback_started = 0;
+    uint32_t        metadata_size = 0;
+    bool            fisheye_ae_mode = false;
+    std::array<uint8_t,MAX_META_DATA_SIZE> metadata_blob;
 
     frame_additional_data() {};
 
     frame_additional_data(double in_timestamp, unsigned long long in_frame_number, double in_system_time,
         int in_width, int in_height, int in_fps,
         int in_stride, int in_bpp,
-        const rs2_format in_format, rs2_stream in_stream_type)
+        const rs2_format in_format, rs2_stream in_stream_type,
+        uint8_t md_size, const uint8_t* md_buf)
         : timestamp(in_timestamp),
           frame_number(in_frame_number),
           system_time(in_system_time),
@@ -41,7 +48,13 @@ struct frame_additional_data
           stride(in_stride),
           bpp(in_bpp),
           format(in_format),
-          stream_type(in_stream_type) {}
+          stream_type(in_stream_type),
+          metadata_size(md_size)
+    {
+        // Copy up to 255 bytes to preserve metadata as raw data
+        if (metadata_size)
+            std::copy(md_buf,md_buf+ std::min(md_size,MAX_META_DATA_SIZE),metadata_blob.begin());
+    }
 };
 
 // Define a movable but explicitly noncopyable buffer type to hold our frame data
@@ -80,7 +93,7 @@ public:
 
     ~frame() { on_release.reset(); }
 
-    double get_frame_metadata(const rs2_frame_metadata& frame_metadata) const;
+    rs2_metadata_t get_frame_metadata(const rs2_frame_metadata& frame_metadata) const;
     bool supports_frame_metadata(const rs2_frame_metadata& frame_metadata) const;
     const byte* get_frame_data() const;
     rs2_time_t get_frame_timestamp() const;
@@ -215,6 +228,8 @@ private:
 
 namespace rsimpl2
 {
+     typedef std::map<rs2_frame_metadata, std::shared_ptr<md_attribute_parser_base>> metadata_parser_map;
+
     // Defines general frames storage model
     class frame_archive : public std::enable_shared_from_this<frame_archive>
     {
@@ -230,11 +245,13 @@ namespace rsimpl2
         std::recursive_mutex mutex;
         std::shared_ptr<uvc::time_service> _time_service;
         std::shared_ptr<uvc::uvc_device> device;
+        std::shared_ptr<metadata_parser_map> _metadata_parsers = nullptr;
 
     public:
         explicit frame_archive(std::atomic<uint32_t>* max_frame_queue_size,
                                std::shared_ptr<uvc::time_service> ts,
-                               std::shared_ptr<uvc::uvc_device> dev);
+                               std::shared_ptr<uvc::uvc_device> dev,
+                               std::shared_ptr<metadata_parser_map> parsers);
 
         callback_invocation_holder begin_callback()
         {
@@ -251,6 +268,7 @@ namespace rsimpl2
         frame alloc_frame(const size_t size, const frame_additional_data& additional_data, bool requires_memory);
         rs2_frame* track_frame(frame& f);
         void log_frame_callback_end(frame* frame) const;
+        std::shared_ptr<metadata_parser_map> get_md_parsers(void) const { return _metadata_parsers; };
 
         void flush();
 

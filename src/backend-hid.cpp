@@ -47,7 +47,7 @@
 
 const size_t MAX_DEV_PARENT_DIR = 10;
 
-const size_t HID_METADATA_SIZE = 8;     // bytes
+const uint8_t HID_METADATA_SIZE = 8;     // bytes
 const size_t HID_DATA_ACTUAL_SIZE = 6;  // bytes
 
 const std::string IIO_DEVICE_PREFIX("iio:device");
@@ -559,7 +559,7 @@ namespace rsimpl2
 
                             auto hid_data_size = channel_size - HID_METADATA_SIZE;
 
-                            sens_data.fo = {hid_data_size, metadata?HID_METADATA_SIZE:0,  p_raw_data,  metadata?p_raw_data + hid_data_size:nullptr};
+                            sens_data.fo = {hid_data_size, metadata?HID_METADATA_SIZE: uint8_t(0),  p_raw_data,  metadata?p_raw_data + hid_data_size:nullptr};
 
                             this->_callback(sens_data);
                         }
@@ -1081,13 +1081,17 @@ namespace rsimpl2
         bool v4l_hid_device::get_hid_device_info(const char* dev_path, hid_device_info& device_info)
         {
             char device_path[PATH_MAX] = {};
-            realpath(dev_path, device_path);
+            if (nullptr == realpath(dev_path, device_path))
+            {
+                LOG_WARNING("Could not resolve HID path: " << dev_path);
+                return false;
+            }
 
             std::string device_path_str(device_path);
             device_path_str+="/";
             std::string busnum, devnum, devpath, vid, pid, dev_id, dev_name;
             std::ifstream(device_path_str + "name") >> dev_name;
-            auto good = false;
+            auto valid = false;
             for(auto i=0; i < MAX_DEV_PARENT_DIR; ++i)
             {
                 if(std::ifstream(device_path_str + "busnum") >> busnum)
@@ -1102,7 +1106,7 @@ namespace rsimpl2
                                 {
                                     if(std::ifstream(device_path_str + "dev") >> dev_id)
                                     {
-                                        good = true;
+                                        valid = true;
                                         break;
                                     }
                                 }
@@ -1113,7 +1117,7 @@ namespace rsimpl2
                 device_path_str += "../";
             }
 
-            if (good)
+            if (valid)
             {
                 device_info.vid = vid;
                 device_info.pid = pid;
@@ -1122,7 +1126,7 @@ namespace rsimpl2
                 device_info.device_path = device_path;
             }
 
-            return good;
+            return valid;
         }
     }
 }

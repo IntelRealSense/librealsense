@@ -26,7 +26,7 @@ namespace rsimpl2
             *_ptr = value;
         }
 
-        float query() const override { return _ptr->load(); }
+        float query() const override { return static_cast<float>(_ptr->load()); }
 
         bool is_enabled() const override { return true; }
 
@@ -47,6 +47,7 @@ namespace rsimpl2
           _stream_profiles([this]() { return this->init_stream_profiles(); }),
           _notifications_proccessor(std::shared_ptr<notifications_proccessor>(new notifications_proccessor())),
           _start_adaptor(this),
+          _metadata_parsers(std::make_shared<metadata_parser_map>()),
           _on_before_frame_callback(nullptr)
     {
         _options[RS2_OPTION_FRAMES_QUEUE_SIZE] = std::make_shared<frame_queue_size>(&_max_publish_list_size,
@@ -285,7 +286,8 @@ namespace rsimpl2
             throw wrong_api_call_sequence_exception("open(...) failed. UVC device is already opened!");
 
         auto on = std::unique_ptr<power>(new power(shared_from_this()));
-        _archive = std::make_shared<frame_archive>(&_max_publish_list_size,_ts, _device);
+        _archive = std::make_shared<frame_archive>(&_max_publish_list_size,_ts, _device,_metadata_parsers);
+
         auto mapping = resolve_requests(requests);
 
         auto timestamp_reader = _timestamp_reader.get();
@@ -334,6 +336,7 @@ namespace rsimpl2
                     frames_drops_counter.fetch_add(int(frame_counter - frame_drops_status->prev_frame_counter - 1));
                     frame_drops_status->prev_frame_counter = frame_counter;
                 }*/
+
                 auto&& unpacker = *mode.unpacker;
                 for (auto&& output : unpacker.outputs)
                 {
@@ -351,8 +354,9 @@ namespace rsimpl2
                         width,
                         bpp,
                         output.second,
-                        output.first);
-
+                        output.first,
+                        static_cast<uint8_t>(f.metadata_size),
+                        (const uint8_t*)f.metadata);
 
                     frame_holder frame = this->alloc_frame(width * height * bpp / 8, additional_data, requires_processing);
                     if (frame.frame)
@@ -577,6 +581,15 @@ namespace rsimpl2
         register_option(id, std::make_shared<uvc_pu_option>(*this, id));
     }
 
+    void endpoint::register_metadata(rs2_frame_metadata metadata, std::shared_ptr<md_attribute_parser_base> metadata_parser)
+    {
+        if (_metadata_parsers.get()->end() != _metadata_parsers.get()->find(metadata))
+            throw invalid_value_exception( to_string() << "Metadata attribute parser for " << rs2_frame_metadata_to_string(metadata)
+                                           <<  " is already defined");
+
+        _metadata_parsers.get()->insert(std::pair<rs2_frame_metadata, std::shared_ptr<md_attribute_parser_base>>(metadata, metadata_parser));
+    }
+
     hid_endpoint::~hid_endpoint()
     {
         try
@@ -697,7 +710,7 @@ namespace rsimpl2
         else if(!_is_opened)
             throw wrong_api_call_sequence_exception("start_streaming(...) failed. Hid device was not opened!");
 
-        _archive = std::make_shared<frame_archive>(&_max_publish_list_size, _ts, nullptr);
+        _archive = std::make_shared<frame_archive>(&_max_publish_list_size, _ts, nullptr, _metadata_parsers);
         _callback = std::move(callback);
         std::vector<uvc::hid_profile> configured_hid_profiles;
         for (auto& elem : _configured_profiles)
@@ -749,7 +762,7 @@ namespace rsimpl2
             auto timestamp = timestamp_reader->get_frame_timestamp(mode, sensor_data.fo);
             auto frame_counter = timestamp_reader->get_frame_counter(mode, sensor_data.fo);
 
-            frame_additional_data additional_data;
+            frame_additional_data additional_data{};
             additional_data.format = _configured_profiles[sensor_name].format;
 
             // TODO: Add frame_additional_data reader?
@@ -766,7 +779,7 @@ namespace rsimpl2
 
             LOG_DEBUG("FrameAccepted," << get_string(additional_data.stream_type) << "," << frame_counter
                       << ",Arrived," << std::fixed << system_time
-                      << ",TS," << timestamp
+                      << ",TS," << std::fixed << timestamp
                       << ",TS_Domain," << rs2_timestamp_domain_to_string(additional_data.timestamp_domain));
 
             auto frame = this->alloc_frame(data_size, additional_data, true);
