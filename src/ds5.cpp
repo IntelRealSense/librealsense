@@ -592,12 +592,13 @@ namespace rsimpl2
             }
         }
     }
+
     notification ds5_notification_decoder::decode(int value)
     {
         if(value == 0)
             return{ value, RS2_LOG_SEVERITY_ERROR, "Success" };
         if(value == ds::ds5_notifications_types::hot_laser_pwr_reduce)
-            return{ value, RS2_LOG_SEVERITY_ERROR, "Hot laser pwr reduce" };
+            return{ value, RS2_LOG_SEVERITY_ERROR, "Hot laser power reduce" };
         if (value == ds::ds5_notifications_types::hot_laser_disable)
             return{ value, RS2_LOG_SEVERITY_ERROR, "Hot laser disable" };
         if (value == ds::ds5_notifications_types::flag_B_laser_disable)
@@ -606,5 +607,27 @@ namespace rsimpl2
         return{ value, RS2_LOG_SEVERITY_NONE, "Unknown error!" };
     }
 
+    rs2_extrinsics ds5_camera::get_extrinsics(int from_subdevice, rs2_stream from_stream, int to_subdevice, rs2_stream to_stream)
+    {
+        auto is_left = [](rs2_stream s) { return s == RS2_STREAM_INFRARED || s == RS2_STREAM_DEPTH; };
 
+        if (from_subdevice == to_subdevice && from_subdevice == 0)
+        {
+            rs2_extrinsics ext { {1,0,0,0,1,0,0,0,1}, {0,0,0} };
+
+            if (is_left(to_stream) && from_stream == RS2_STREAM_INFRARED2)
+            {
+                auto table = ds::check_calib(*_coefficients_table_raw);
+                ext.translation[0] = -0.001 * table->baseline;
+                return ext;
+            }
+            else if (to_stream == RS2_STREAM_INFRARED2 && is_left(from_stream))
+            {
+                auto table = ds::check_calib(*_coefficients_table_raw);
+                ext.translation[0] = 0.001 * table->baseline;
+                return ext;
+            }
+        }
+        return device::get_extrinsics(from_subdevice, from_stream, to_subdevice, to_stream);
+    }
 }

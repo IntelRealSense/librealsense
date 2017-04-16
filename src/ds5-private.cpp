@@ -21,7 +21,8 @@ namespace rsimpl2
             }
             throw invalid_value_exception("resolution not found.");
         }
-        rs2_intrinsics get_intrinsic_by_resolution_coefficients_table(const std::vector<unsigned char> & raw_data, uint32_t width, uint32_t height)
+
+        const coefficients_table* check_calib(const std::vector<unsigned char>& raw_data)
         {
             auto table = reinterpret_cast<const coefficients_table *>(raw_data.data());
             LOG_DEBUG("DS5 Coefficients table: version [mjr.mnr]: 0x" << hex << setfill('0') << setw(4) << table->header.version << dec
@@ -32,6 +33,12 @@ namespace rsimpl2
             {
                 throw invalid_value_exception("DS5 Coefficients table CRC error, parsing aborted");
             }
+            return table;
+        }
+
+        rs2_intrinsics get_intrinsic_by_resolution_coefficients_table(const std::vector<unsigned char> & raw_data, uint32_t width, uint32_t height)
+        {
+            auto table = check_calib(raw_data);
 
             LOG_DEBUG(endl
                 << "baseline = " << table->baseline << " mm" << endl

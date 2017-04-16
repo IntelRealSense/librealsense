@@ -34,7 +34,7 @@ void device::declare_capability(supported_capability cap)
     _static_info.capabilities_vector.push_back(cap);
 }
 
-rs2_extrinsics device::get_extrinsics(int from_subdevice, int to_subdevice)
+rs2_extrinsics device::get_extrinsics(int from_subdevice, rs2_stream, int to_subdevice, rs2_stream)
 {
     auto from = get_endpoint(from_subdevice).get_pose(), to = get_endpoint(to_subdevice).get_pose();
     if (from == to)

@@ -777,18 +777,22 @@ void rs2_flush_queue(rs2_frame_queue* queue, rs2_error** error) try
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, queue)
 
-void rs2_get_extrinsics(const rs2_device * from, const rs2_device * to, rs2_extrinsics * extrin, rs2_error ** error) try
+void rs2_get_extrinsics(const rs2_device * from_dev, rs2_stream from_stream,
+                        const rs2_device * to_dev, rs2_stream to_stream,
+                        rs2_extrinsics * extrin, rs2_error ** error) try
 {
-    VALIDATE_NOT_NULL(from);
-    VALIDATE_NOT_NULL(to);
+    VALIDATE_NOT_NULL(from_dev);
+    VALIDATE_NOT_NULL(to_dev);
     VALIDATE_NOT_NULL(extrin);
+    VALIDATE_ENUM(from_stream);
+    VALIDATE_ENUM(to_stream);
 
-    if (from->device != to->device)
+    if (from_dev->device != to_dev->device)
         throw rsimpl2::invalid_value_exception("Extrinsics between the selected devices are unknown!");
 
-    *extrin = from->device->get_extrinsics(from->subdevice, to->subdevice);
+    *extrin = from_dev->device->get_extrinsics(from_dev->subdevice, from_stream, to_dev->subdevice, to_stream);
 }
-HANDLE_EXCEPTIONS_AND_RETURN(, from, to, extrin)
+HANDLE_EXCEPTIONS_AND_RETURN(, from_dev, from_stream, to_dev, to_stream, extrin)
 
 void rs2_get_stream_intrinsics(const rs2_device * device, rs2_stream stream, int width, int height, int fps,
     rs2_format format, rs2_intrinsics * intrinsics, rs2_error ** error) try

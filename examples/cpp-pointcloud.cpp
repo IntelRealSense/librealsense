@@ -83,6 +83,10 @@ int main(int argc, char * argv[]) try
         mapped = RS2_STREAM_INFRARED;
         config.enable_stream(RS2_STREAM_INFRARED, preset::best_quality);
     }
+    else if (config.can_enable_stream(dev, RS2_STREAM_INFRARED2, preset::best_quality)) {
+        mapped = RS2_STREAM_INFRARED2;
+        config.enable_stream(RS2_STREAM_INFRARED2, preset::best_quality);
+    }
     else {
         throw runtime_error("Couldn't configure camera for demo");
     }

@@ -34,7 +34,7 @@ namespace rsimpl2
             }
         }
 
-        rs2_extrinsics get_extrinsics(int from, int to);
+        virtual rs2_extrinsics get_extrinsics(int from, rs2_stream from_stream, int to, rs2_stream to_stream);
 
         virtual rs2_intrinsics get_intrinsics(unsigned int subdevice, stream_profile profile) const = 0;
 

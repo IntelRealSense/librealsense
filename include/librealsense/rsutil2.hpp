@@ -65,7 +65,7 @@ namespace rs2
 
                 rs2_extrinsics get_extrinsics(rs2_stream from, rs2_stream to) const try
                 {
-                    return devices.at(from).get_extrinsics_to(devices.at(to));
+                    return devices.at(from).get_extrinsics_to(from, devices.at(to), to);
                 }
                 catch (std::out_of_range)
                 {

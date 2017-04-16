@@ -805,11 +805,11 @@ namespace rs2
             return results;
         }
 
-        rs2_extrinsics get_extrinsics_to(const device& to_device) const
+        rs2_extrinsics get_extrinsics_to(rs2_stream from_stream, const device& to_device, rs2_stream to_stream) const
         {
             rs2_error* e = nullptr;
             rs2_extrinsics extrin;
-            rs2_get_extrinsics(_dev.get(), to_device._dev.get(), &extrin, &e);
+            rs2_get_extrinsics(_dev.get(), from_stream, to_device._dev.get(), to_stream, &extrin, &e);
             error::handle(e);
             return extrin;
         }
@@ -980,7 +980,17 @@ namespace rs2
         {
             rs2_error* e = nullptr;
             rs2_extrinsics extrin;
-            rs2_get_extrinsics(from_device._dev.get(), to_device._dev.get(), &extrin, &e);
+            rs2_get_extrinsics(from_device._dev.get(), RS2_STREAM_ANY, to_device._dev.get(), RS2_STREAM_ANY, &extrin, &e);
+            error::handle(e);
+            return extrin;
+        }
+
+        rs2_extrinsics get_extrinsics(const device& from_device, rs2_stream from_stream,
+                                      const device& to_device, rs2_stream to_stream) const
+        {
+            rs2_error* e = nullptr;
+            rs2_extrinsics extrin;
+            rs2_get_extrinsics(from_device._dev.get(), from_stream, to_device._dev.get(), to_stream, &extrin, &e);
             error::handle(e);
             return extrin;
         }

@@ -182,6 +182,7 @@ namespace rsimpl2 {
         rs2_intrinsics get_intrinsic_by_resolution_coefficients_table(const std::vector<unsigned char> & raw_data, uint32_t width, uint32_t height);
         rs2_intrinsics get_intrinsic_fisheye_table(const std::vector<unsigned char> & raw_data, uint32_t width, uint32_t height);
         rs2_extrinsics get_extrinsics_data(const std::vector<unsigned char> & raw_data);
+        const coefficients_table* check_calib(const std::vector<unsigned char>& raw_data);
 
         bool try_fetch_usb_device(std::vector<uvc::usb_device_info>& devices,
                                          const uvc::uvc_device_info& info, uvc::usb_device_info& result);

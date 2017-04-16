@@ -322,12 +322,16 @@ rs2_device_list* rs2_query_adjacent_devices(const rs2_device* device, rs2_error*
  * returns the extrinsics between a pair of RealSense devices
  * usually, extrnisics are available only between devices on the same USB port, like Depth and Fish-Eye
  * however, in theory extrinsics can be made available between any pair of devices through calibration
- * \param[in]  from   RealSense device to calculate extrinsics from
- * \param[in]  to     RealSense device to calculate extrinsics to
- * \param[out] extrin Resulting translation and rotation (extrinsics)
- * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ * \param[in]  from_dev     RealSense device to calculate extrinsics from
+ * \param[in]  from_stream  The viewport to calculate extrinsics from
+ * \param[in]  to_dev       RealSense device to calculate extrinsics to
+ * \param[in]  to_stream    The viewport to calculate extrinsics to
+ * \param[out] extrin       Resulting translation and rotation (extrinsics)
+ * \param[out] error        if non-null, receives any error that occurs during this call, otherwise, errors are ignored
  */
-void rs2_get_extrinsics(const rs2_device * from, const rs2_device * to, rs2_extrinsics * extrin, rs2_error ** error);
+void rs2_get_extrinsics(const rs2_device * from_dev, rs2_stream from_stream,
+                        const rs2_device * to_dev, rs2_stream to_stream,
+                        rs2_extrinsics * extrin, rs2_error ** error);
 
 /*
  * returns the intrinsics of specific stream configuration

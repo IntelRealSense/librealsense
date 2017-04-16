@@ -363,6 +363,8 @@ namespace rsimpl2
     class ds5_camera final : public device
     {
     public:
+        rs2_extrinsics get_extrinsics(int from_subdevice, rs2_stream, int to_subdevice, rs2_stream) override;
+
         class emitter_option : public uvc_xu_option<uint8_t>
         {
         public:
