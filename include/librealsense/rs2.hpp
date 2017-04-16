@@ -805,6 +805,10 @@ namespace rs2
             return results;
         }
 
+        /**
+        * returns the extrinsics from stream on this device to stream on another device
+        * \return extrinsics
+        */
         rs2_extrinsics get_extrinsics_to(rs2_stream from_stream, const device& to_device, rs2_stream to_stream) const
         {
             rs2_error* e = nullptr;
@@ -814,22 +818,26 @@ namespace rs2
             return extrin;
         }
 
-        /**
-        * retrieve mapping between the units of the depth image and meters
-        * \return            depth in meters corresponding to a depth value of 1
-        */
+        /** Retrieves mapping between the units of the depth image and meters
+         * This function is deprecated! Please use RS2_OPTION_DEPTH_UNITS instead
+         * \return depth in meters corresponding to a depth value of 1
+         */
+        #ifdef __GNUC__
+        __attribute__((deprecated))
+        #elif defined(_MSC_VER)
+        __declspec(deprecated)
+        #endif
         float get_depth_scale() const
         {
-            rs2_error* e = nullptr;
-            auto result = rs2_get_device_depth_scale(_dev.get(), &e);
-            error::handle(e);
-            return result;
+            if (supports(RS2_OPTION_DEPTH_UNITS))
+                return get_option(RS2_OPTION_DEPTH_UNITS);
+            return 1.f;
         }
+
         advanced& debug() { return _debug; }
 
         device() : _dev(nullptr), _debug(nullptr) {}
 
-        
     private:
         friend context;
         friend device_list;
@@ -1150,4 +1158,5 @@ inline std::ostream & operator << (std::ostream & o, rs2_format format) { return
 inline std::ostream & operator << (std::ostream & o, rs2_distortion distortion) { return o << rs2_distortion_to_string(distortion); }
 inline std::ostream & operator << (std::ostream & o, rs2_option option) { return o << rs2_option_to_string(option); }
 inline std::ostream & operator << (std::ostream & o, rs2_log_severity severity) { return o << rs2_log_severity_to_string(severity); }
+
 #endif // LIBREALSENSE_RS2_HPP

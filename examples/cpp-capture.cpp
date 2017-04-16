@@ -63,7 +63,7 @@ int main(int argc, char * argv[]) try
         for (auto&& frame : frames)
         {
             auto stream_type = frame.get_stream_type();
-            buffers[stream_type].upload(frame);
+            buffers[stream_type].upload(std::move(frame));
         }
 
         // Wait for new images

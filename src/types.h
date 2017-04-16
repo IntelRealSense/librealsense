@@ -31,8 +31,7 @@
 
 typedef unsigned char byte;
 
-const uint8_t RS2_STREAM_NATIVE_COUNT = 5;
-const int RS2_USER_QUEUE_SIZE = 20;
+const int RS2_USER_QUEUE_SIZE = 64;
 const int RS2_MAX_EVENT_QUEUE_SIZE = 500;
 const int RS2_MAX_EVENT_TINE_OUT = 10;
 
@@ -608,7 +607,6 @@ namespace rsimpl2
 
     struct static_device_info
     {
-        float nominal_depth_scale;                                          // Default scale
         std::vector<rs2_frame_metadata> supported_metadata_vector;
         std::vector<supported_capability> capabilities_vector;
     };

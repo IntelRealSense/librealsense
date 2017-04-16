@@ -60,6 +60,7 @@ typedef enum rs2_stream
     RS2_STREAM_COUNT
 } rs2_stream;
 
+/** \brief Format identifies how binary data is encoded within a frame */
 typedef enum rs2_format
 {
     RS2_FORMAT_ANY             , /**< When passed to enable stream, librealsense will try to provide best suited format */
@@ -79,10 +80,11 @@ typedef enum rs2_format
     RS2_FORMAT_UYVY            , /**< Similar to the standard YUYV pixel format, but packed in a different order */
     RS2_FORMAT_MOTION_RAW      , /**< Raw data from the motion sensor */
     RS2_FORMAT_MOTION_XYZ32F   , /**< Motion data packed as 3 32-bit float values, for X, Y, and Z axis */
-    RS2_FORMAT_GPIO_RAW        , /**< Raw data from the GPIO's */
+    RS2_FORMAT_GPIO_RAW        , /**< Raw data from the external sensors hooked to one of the GPIO's */
     RS2_FORMAT_COUNT             /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
 } rs2_format;
 
+/** \brief Per-Frame-Metadata are set of read-only properties that might be exposed for each individual frame */
 typedef enum rs2_frame_metadata
 {
     RS2_FRAME_METADATA_ACTUAL_EXPOSURE,
@@ -118,7 +120,6 @@ typedef enum rs2_ivcam_preset
 } rs2_visual_preset;
 
 /** \brief Defines general configuration controls.
-
    These can generally be mapped to camera UVC controls, and unless stated otherwise, can be set/queried at any time. */
 typedef enum rs2_option
 {
@@ -150,28 +151,28 @@ typedef enum rs2_option
     RS2_OPTION_PROJECTOR_TEMPERATURE                      , /**< Current Projector Temperature */
     RS2_OPTION_OUTPUT_TRIGGER_ENABLED                     , /**< Enable / disable trigger to be outputed from the camera to any external device on every depth frame */
     RS2_OPTION_MOTION_MODULE_TEMPERATURE                  , /**< Current Motion-Module Temperature */
+    RS2_OPTION_DEPTH_UNITS                                , /**< Number of meters represented by a single depth unit */
     RS2_OPTION_COUNT                                      , /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
 } rs2_option;
 
-/**\brief Read-only strings that can be queried from the device.
-
+/** \brief Read-only strings that can be queried from the device.
    Not all information fields are available on all camera types.
    This information is mainly available for camera debug and troubleshooting and should not be used in applications. */
 typedef enum rs2_camera_info {
     RS2_CAMERA_INFO_DEVICE_NAME                    , /**< Device friendly name */
-    RS2_CAMERA_INFO_MODULE_NAME                    ,
+    RS2_CAMERA_INFO_MODULE_NAME                    , /**< Specific sensor name within a RealSense device */
     RS2_CAMERA_INFO_DEVICE_SERIAL_NUMBER           , /**< Device serial number */
     RS2_CAMERA_INFO_CAMERA_FIRMWARE_VERSION        , /**< Primary firmware version */
-    RS2_CAMERA_INFO_DEVICE_LOCATION                ,
-    RS2_CAMERA_INFO_DEVICE_DEBUG_OP_CODE           ,
-    RS2_CAMERA_INFO_ADVANCED_MODE                  ,
-    RS2_CAMERA_INFO_PRODUCT_ID                     ,
-    RS2_CAMERA_INFO_MOTION_MODULE_FIRMWARE_VERSION ,
-    RS2_CAMERA_INFO_IS_CAMERA_LOCKED               , /**< EEPROM Lock Status */
+    RS2_CAMERA_INFO_DEVICE_LOCATION                , /**< Unique identifier of the port the device is connected to (platform specific) */
+    RS2_CAMERA_INFO_DEVICE_DEBUG_OP_CODE           , /**< If device supports firmware logging, this is the command to send to get logs from firmware */
+    RS2_CAMERA_INFO_ADVANCED_MODE                  , /**< True iff the device is in advanced mode */
+    RS2_CAMERA_INFO_PRODUCT_ID                     , /**< Product ID as reported in the USB descriptor */
+    RS2_CAMERA_INFO_MOTION_MODULE_FIRMWARE_VERSION , /**< Motion Module firmware version */
+    RS2_CAMERA_INFO_IS_CAMERA_LOCKED               , /**< True iff EEPROM is locked */
     RS2_CAMERA_INFO_COUNT                            /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
 } rs2_camera_info;
 
-/**\brief Severity of the librealsense logger */
+/** \brief Severity of the librealsense logger */
 typedef enum rs2_log_severity {
     RS2_LOG_SEVERITY_DEBUG, /**< Detailed information about ordinary operations */
     RS2_LOG_SEVERITY_INFO , /**< Terse information about ordinary operations */
@@ -318,7 +319,7 @@ void rs2_delete_device(rs2_device* device);
 */
 rs2_device_list* rs2_query_adjacent_devices(const rs2_device* device, rs2_error** error);
 
-/*
+/**
  * returns the extrinsics between a pair of RealSense devices
  * usually, extrnisics are available only between devices on the same USB port, like Depth and Fish-Eye
  * however, in theory extrinsics can be made available between any pair of devices through calibration
@@ -333,7 +334,7 @@ void rs2_get_extrinsics(const rs2_device * from_dev, rs2_stream from_stream,
                         const rs2_device * to_dev, rs2_stream to_stream,
                         rs2_extrinsics * extrin, rs2_error ** error);
 
-/*
+/**
  * returns the intrinsics of specific stream configuration
  * \param[in]  device    RealSense device to query
  * \param[in]  stream    type of stream
@@ -344,13 +345,6 @@ void rs2_get_extrinsics(const rs2_device * from_dev, rs2_stream from_stream,
  * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
  */
 void rs2_get_stream_intrinsics(const rs2_device * device, rs2_stream stream, int width, int height, int fps, rs2_format format, rs2_intrinsics * intrinsics, rs2_error ** error);
-
-/**
-* retrieve mapping between the units of the depth image and meters
-* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
-* \return            depth in meters corresponding to a depth value of 1
-*/
-float rs2_get_device_depth_scale(const rs2_device * device, rs2_error ** error);
 
 /**
 * check if physical subdevice is supported

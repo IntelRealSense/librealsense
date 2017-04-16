@@ -13,6 +13,7 @@
 #include <algorithm>
 #include <cmath>
 #include <set>
+#include <iostream>
 
 namespace rs2
 {
@@ -358,7 +359,6 @@ namespace rs2
                 get_frameset(&frames);
                 return true;
             }
-
         private:
             struct stream_pipe
             {
@@ -368,7 +368,6 @@ namespace rs2
 
                 ~stream_pipe()
                 {
-                    queue.flush();
                 }
             };
 
@@ -395,12 +394,30 @@ namespace rs2
                     if (i == impl->key_stream) continue;
 
                     frame res;
-                    while ((!impl->streams[i].front || impl->streams[i].front.try_clone_ref(&res)) &&
-                           impl->streams[i].queue.poll_for_frame(&impl->streams[i].front) &&
-                           impl->streams[i].front && res &&
-                           dist(impl->streams[i].front, impl->streams[impl->key_stream].front) <
-                           dist(res, impl->streams[impl->key_stream].front)) { }
-                    if (res) frames->push_back(std::move(res));
+
+                    while (true)
+                    {
+                        // res <-- front
+                        if (impl->streams[i].front)
+                        {
+                            impl->streams[i].front.try_clone_ref(&res);
+                            // ignoring return value, if front wasn't copied to res,
+                            // it is still better to get rid of it, otherwise,
+                            // one single frame can stuck syncronization
+                        }
+
+                        // front <-- deque(q)
+                        if (!impl->streams[i].queue.poll_for_frame(&impl->streams[i].front)) break;
+
+                        // if res is a better match, break
+                        if (res && dist(impl->streams[i].front, impl->streams[impl->key_stream].front) >
+                                dist(res, impl->streams[impl->key_stream].front)) break;
+                    }
+
+                    if (res)
+                    {
+                        frames->push_back(std::move(res));
+                    }
                 }
                 frames->push_back(std::move(impl->streams[impl->key_stream].front));
             }

@@ -340,8 +340,6 @@ PYBIND11_PLUGIN(NAME) {
                "physical parent composite device.")
           .def("get_extrinsics_to", &rs2::device::get_extrinsics_to,
                "from_stream"_a, "to_device"_a, "to_stream"_a)
-          .def("get_depth_scale", &rs2::device::get_depth_scale, "Retrieve "
-               "mapping between the units of the depth image and meters.")
 //          .def("debug", &rs2::device::debug)
           .def(py::self == py::self)
           .def(py::self != py::self)

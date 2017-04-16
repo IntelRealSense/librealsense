@@ -21,6 +21,8 @@
 
 using namespace rs2;
 
+class subdevice_model;
+
 class option_model
 {
 public:
@@ -33,11 +35,14 @@ public:
     float value = 0.0f;
     std::string label = "";
     std::string id = "";
+    subdevice_model* dev;
 
     void draw(std::string& error_message)
     {
         if (supported)
         {
+            auto desc = endpoint.get_option_description(opt);
+
             if (is_checkbox())
             {
                 auto bool_value = value > 0.0f;
@@ -54,11 +59,25 @@ public:
                         error_message = error_to_string(e);
                     }
                 }
+                if (ImGui::IsItemHovered() && desc)
+                {
+                    ImGui::SetTooltip("%s", desc);
+                }
             }
             else
             {
-                std::string txt = to_string() << label << ":";
+                std::string txt = to_string() << rs2_option_to_string(opt) << ":";
                 ImGui::Text("%s", txt.c_str());
+
+                ImGui::SameLine();
+                ImGui::PushStyleColor(ImGuiCol_Text, { 0.5f, 0.5f, 0.5f, 1.f });
+                ImGui::Text("(?)");
+                ImGui::PopStyleColor();
+                if (ImGui::IsItemHovered() && desc)
+                {
+                    ImGui::SetTooltip("%s", desc);
+                }
+
                 ImGui::PushItemWidth(-1);
 
                 try
@@ -101,9 +120,10 @@ public:
                     else
                     {
                         if (ImGui::SliderFloat(id.c_str(), &value,
-                            range.min, range.max))
+                            range.min, range.max, "%.4f"))
                         {
                             endpoint.set_option(opt, value);
+                            *invalidate_flag = true;
                         }
                     }
                 }
@@ -112,12 +132,6 @@ public:
                     error_message = error_to_string(e);
                 }
                 ImGui::PopItemWidth();
-            }
-
-            auto desc = endpoint.get_option_description(opt);
-            if (ImGui::IsItemHovered() && desc)
-            {
-                ImGui::SetTooltip("%s", desc);
             }
         }
     }
@@ -232,6 +246,16 @@ public:
 
         }
 
+        try
+        {
+            if (dev.supports(RS2_OPTION_DEPTH_UNITS))
+                depth_units = dev.get_option(RS2_OPTION_DEPTH_UNITS);
+        }
+        catch(...)
+        {
+
+        }
+
         for (auto i = 0; i < RS2_OPTION_COUNT; i++)
         {
             option_model metadata;
@@ -246,6 +270,7 @@ public:
             metadata.endpoint = dev;
             metadata.label = rs2_option_to_string(opt) + WHITE_SPACES + ss.str();
             metadata.invalidate_flag = &options_invalidated;
+            metadata.dev = this;
 
             metadata.supported = dev.supports(opt);
             if (metadata.supported)
@@ -662,6 +687,11 @@ public:
 
             }
 
+            if (next_option == RS2_OPTION_DEPTH_UNITS)
+            {
+                opt_md.dev->depth_units = opt_md.value;
+            }
+
             next_option++;
         }
     }
@@ -716,6 +746,7 @@ public:
 
     rect roi_rect;
     bool auto_exposure_enabled = false;
+    float depth_units = 1.f;
 };
 
 
@@ -792,9 +823,8 @@ public:
     bool capturing_roi = false;
     std::shared_ptr<subdevice_model> dev;
 
-    void upload_frame(const frame& f)
+    void upload_frame(frame&& f)
     {
-        texture.upload(f);
         last_frame = std::chrono::high_resolution_clock::now();
 
         auto is_motion = ((f.get_format() == RS2_FORMAT_MOTION_RAW) || (f.get_format() == RS2_FORMAT_MOTION_XYZ32F));
@@ -807,6 +837,8 @@ public:
         timestamp_domain = f.get_frame_timestamp_domain();
         timestamp = f.get_timestamp();
         fps.add_timestamp(f.get_timestamp(), f.get_frame_number());
+
+        texture.upload(std::move(f));
     }
 
     void outline_rect(const rect& r)
@@ -1027,9 +1059,10 @@ public:
         return get_interpolated_layout(results);
     }
 
-    void upload_frame(const frame& f)
+    void upload_frame(frame&& f)
     {
-        streams[f.get_stream_type()].upload_frame(f);
+        auto stream_type = f.get_stream_type();
+        streams[stream_type].upload_frame(std::move(f));
     }
 
     std::vector<std::shared_ptr<subdevice_model>> subdevices;
@@ -1671,7 +1704,7 @@ int main(int, char**) try
                     frame f;
                     if (queue->poll_for_frame(&f))
                     {
-                        model.upload_frame(f);
+                        model.upload_frame(std::move(f));
                     }
                 }
                 catch(const error& e)
@@ -1801,9 +1834,24 @@ int main(int, char**) try
                 label = to_string() << "Footer for stream of " << rs2_stream_to_string(stream);
                 ImGui::Begin(label.c_str(), nullptr, flags);
 
+                std::stringstream ss;
                 auto x = ((mouse.cursor.x - stream_rect.x) / stream_rect.w) * stream_size.x;
                 auto y = ((mouse.cursor.y - stream_rect.y) / stream_rect.h) * stream_size.y;
-                label = to_string() << std::fixed << std::setprecision(0) << x << ", " << y;
+                ss << std::fixed << std::setprecision(0) << x << ", " << y;
+
+                float val;
+                if (model.streams[stream].texture.try_pick(x, y, &val))
+                {
+                    ss << ", *p: 0x" << std::hex << val;
+                    if (stream == RS2_STREAM_DEPTH && val > 0)
+                    {
+                        auto meters = (val * model.streams[stream].dev->depth_units);
+                        ss << std::dec << ", ~"
+                           << std::setprecision(2) << meters << " meters";
+                    }
+                }
+
+                label = ss.str();
                 ImGui::Text("%s", label.c_str());
 
                 ImGui::End();

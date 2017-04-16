@@ -131,11 +131,12 @@ namespace rsimpl2
                   Param2(cmd.param2),
                   Param3(cmd.param3),
                   Param4(cmd.param4),
-                  sizeOfSendCommandData(0),
+                  sizeOfSendCommandData(std::min((uint16_t)cmd.data.size(), HW_MONITOR_BUFFER_SIZE)),
                   TimeOut(cmd.timeout_ms),
                   oneDirection(!cmd.require_response),
                   receivedCommandDataLength(0)
             {
+                memcpy(data, cmd.data.data(), sizeOfSendCommandData);
             }
         };
 

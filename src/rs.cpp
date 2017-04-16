@@ -806,13 +806,6 @@ void rs2_get_stream_intrinsics(const rs2_device * device, rs2_stream stream, int
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device, intrinsics)
 
-float rs2_get_device_depth_scale(const rs2_device * device, rs2_error ** error) try
-{
-    VALIDATE_NOT_NULL(device);
-    return device->device->get_depth_scale();
-}
-HANDLE_EXCEPTIONS_AND_RETURN(0.0f, device)
-
 // Verify  and provide API version encoded as integer value
 int rs2_get_api_version(rs2_error ** error) try
 {

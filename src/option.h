@@ -232,4 +232,93 @@ namespace rsimpl2
         polling_error_handler*          _polling_error_handler;
         float                           _value;
     };
+
+    /** \brief auto_disabling_control class provided a control
+    * that disable auto exposure whan changing the auto disabling control value */
+   class auto_disabling_control : public option
+   {
+   public:
+       const char* get_value_description(float val) const override
+       {
+           return _auto_disabling_control->get_value_description(val);
+       }
+       const char* get_description() const override
+       {
+            return _auto_disabling_control->get_description();
+       }
+       void set(float value) override
+       {
+          auto strong = _auto_exposure.lock();
+          assert(strong);
+
+          auto is_auto = strong->query();
+
+          if(strong && is_auto)
+          {
+              LOG_DEBUG("Move auto exposure to manual mode in order set value to gain controll");
+              strong->set(0);
+          }
+          _auto_disabling_control->set(value);
+       }
+
+       float query() const override
+       {
+           return _auto_disabling_control->query();
+       }
+
+       option_range get_range() const override
+       {
+           return _auto_disabling_control->get_range();
+       }
+
+       bool is_enabled() const override
+       {
+           return  _auto_disabling_control->is_enabled();
+       }
+
+       bool is_read_only() const override
+       {
+           return  _auto_disabling_control->is_read_only();
+       }
+
+
+       explicit auto_disabling_control(std::shared_ptr<option> auto_disabling,
+                                       std::shared_ptr<option> auto_exposure)
+
+           :_auto_disabling_control(auto_disabling), _auto_exposure(auto_exposure)
+       {}
+
+   private:
+       std::shared_ptr<option> _auto_disabling_control;
+       std::weak_ptr<option> _auto_exposure;
+   };
+
+   class readonly_option : public option
+   {
+   public:
+       bool is_read_only() const override { return true; }
+
+       void set(float) override
+       {
+           throw not_implemented_exception("This option is read-only!");
+       }
+   };
+
+
+   class const_value_option : public readonly_option
+   {
+   public:
+       const_value_option(std::string desc, float val)
+            : _desc(std::move(desc)), _val(val) {}
+
+       float query() const override { return _val; }
+       option_range get_range() const override { return { _val, _val, 0, _val }; }
+       bool is_enabled() const override { return true; }
+
+       const char* get_description() const override { return _desc.c_str(); }
+
+   private:
+       float _val;
+       std::string _desc;
+   };
 }

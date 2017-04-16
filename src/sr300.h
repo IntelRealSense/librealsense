@@ -255,7 +255,10 @@ namespace rsimpl2
             };
 
             get_depth_endpoint().set_pose(lazy<pose>([depth_to_color](){return inverse(depth_to_color); }));
-            set_depth_scale((c.Rmax / 0xFFFF) * 0.001f);
+
+            get_depth_endpoint().register_option(RS2_OPTION_DEPTH_UNITS,
+                                                 std::make_shared<const_value_option>("Number of meters represented by a single depth unit",
+                                                                                      1000.f / (0xFFFF / c.Rmax)));
         }
 
         void rs2_apply_ivcam_preset(int preset)

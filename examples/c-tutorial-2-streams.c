@@ -68,6 +68,13 @@ int main()
     for (int i = 0; i < RS2_STREAM_COUNT; i++)
         frontbuffer[i] = NULL;
 
+    float depth_units = 1.f;
+    if (rs2_supports_option(dev, RS2_OPTION_DEPTH_UNITS, &e) && !e)
+    {
+        depth_units = rs2_get_option(dev, RS2_OPTION_DEPTH_UNITS, &e);
+        check_error();
+    }
+
     /* Open a GLFW window to display our output */
     glfwInit();
     GLFWwindow * win = glfwCreateWindow(640, 480 * 2, "librealsense tutorial #2", NULL, NULL);
@@ -99,7 +106,7 @@ int main()
         {
             /* Display depth data by linearly mapping depth between 0 and 2 meters to the red channel */
             glRasterPos2f(-1, 1);
-            glPixelTransferf(GL_RED_SCALE, 0xFFFF * rs2_get_device_depth_scale(dev, &e) / 2.0f);
+            glPixelTransferf(GL_RED_SCALE, (0xFFFF * depth_units) / 2.0f);
             check_error();
             glDrawPixels(640, 480, GL_RED, GL_UNSIGNED_SHORT, rs2_get_frame_data(frontbuffer[RS2_STREAM_DEPTH], &e));
             check_error();

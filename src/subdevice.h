@@ -76,17 +76,7 @@ namespace rsimpl2
     class endpoint
     {
     public:
-        explicit endpoint(std::shared_ptr<uvc::time_service> ts)
-            : _is_streaming(false),
-              _is_opened(false),
-              _callback(nullptr, [](rs2_frame_callback*) {}),
-              _max_publish_list_size(16),
-              _ts(ts),
-              _stream_profiles([this]() { return this->init_stream_profiles(); }),
-              _notifications_proccessor(std::shared_ptr<notifications_proccessor>(new notifications_proccessor())),
-              _start_adaptor(this)
-              {}
-
+        explicit endpoint(std::shared_ptr<uvc::time_service> ts);
 
         virtual std::vector<uvc::stream_profile> init_stream_profiles() = 0;
         const std::vector<uvc::stream_profile>& get_stream_profiles() const

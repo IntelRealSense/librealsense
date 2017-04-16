@@ -9,10 +9,11 @@
 #include "device.h"
 #include "context.h"
 #include "image.h"
-#include "ms-xu-option.h"
 
 #include "ds5.h"
 #include "ds5-private.h"
+#include "ds5-options.h"
+#include "ds5-timestamp.h"
 
 namespace rsimpl2
 {
@@ -455,6 +456,7 @@ namespace rsimpl2
          }
 
         depth_ep.set_roi_method(std::make_shared<ds5_auto_exposure_roi_method>(*_hw_monitor));
+        depth_ep.register_option(RS2_OPTION_DEPTH_UNITS, std::make_shared<depth_scale_option>(*_hw_monitor));
 
         // TODO: These if conditions will be implemented as inheritance classes
 
@@ -540,8 +542,6 @@ namespace rsimpl2
             color_index = add_endpoint(color_ep);
             color_ep->set_pose(lazy<pose>([]() {return pose{ { { 1,0,0 },{ 0,1,0 },{ 0,0,1 } },{ 0,0,0 } }; })); // TODO: Fetch real extrinsics
         }
-
-        set_depth_scale(0.001f); // TODO: find out what is the right value
 
         // Register endpoint info
         for(auto& element : dev_info)

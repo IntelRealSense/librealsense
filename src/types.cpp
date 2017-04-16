@@ -144,6 +144,7 @@ namespace rsimpl2
         CASE(PROJECTOR_TEMPERATURE)
         CASE(OUTPUT_TRIGGER_ENABLED)
         CASE(MOTION_MODULE_TEMPERATURE)
+        CASE(DEPTH_UNITS)
         default: assert(!is_valid(value)); return unknown;
         }
         #undef CASE

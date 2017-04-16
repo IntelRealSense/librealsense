@@ -49,6 +49,11 @@ int main() try
     auto win = glfwCreateWindow(640, 480 * 2, "librealsense tutorial #2", nullptr, nullptr);
     glfwMakeContextCurrent(win);
 
+    // Determine depth value corresponding to one meter
+    auto depth_units = 1.f;
+    if (dev.supports(RS2_OPTION_DEPTH_UNITS))
+        depth_units = dev.get_option(RS2_OPTION_DEPTH_UNITS);
+
     while(!glfwWindowShouldClose(win))
     {
         glfwPollEvents();
@@ -72,7 +77,7 @@ int main() try
             {
                 case RS2_STREAM_DEPTH: // Display depth data by linearly mapping depth between 0 and 2 meters to the red channel
                     glRasterPos2f(-1, 1);
-                    glPixelTransferf(GL_RED_SCALE, 0xFFFF * dev.get_depth_scale() / 2.0f);
+                    glPixelTransferf(GL_RED_SCALE, (0xFFFF * depth_units) / 2.0f);
                     glDrawPixels(640, 480, GL_RED, GL_UNSIGNED_SHORT, frontbuffer[stream].get_data());
                     glPixelTransferf(GL_RED_SCALE, 1.0f);
                 break;

@@ -46,8 +46,3 @@ rs2_extrinsics device::get_extrinsics(int from_subdevice, rs2_stream, int to_sub
     (float3 &)extrin.translation = transform.position;
     return extrin;
 }
-
-void device::set_depth_scale(float scale)
-{
-    _static_info.nominal_depth_scale = scale;
-}

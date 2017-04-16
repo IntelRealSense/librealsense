@@ -16,7 +16,6 @@ EXPORTS
     rs2_delete_device
     rs2_get_extrinsics
     rs2_get_stream_intrinsics
-    rs2_get_device_depth_scale
 
     rs2_get_stream_modes
     rs2_get_stream_mode

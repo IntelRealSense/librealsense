@@ -57,7 +57,13 @@ int main()
     check_error();
 
     /* Determine depth value corresponding to one meter */
-    const uint16_t one_meter = (uint16_t)(1.0f / rs2_get_device_depth_scale(dev, &e));
+    float depth_units = 1.f;
+    if (rs2_supports_option(dev, RS2_OPTION_DEPTH_UNITS, &e) && !e)
+    {
+        depth_units = rs2_get_option(dev, RS2_OPTION_DEPTH_UNITS, &e);
+        check_error();
+    }
+    const uint16_t one_meter = (uint16_t)(1.0 / depth_units);
     check_error();
 
     int rows = (height / 20);

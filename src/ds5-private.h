@@ -7,8 +7,12 @@
 #include "types.h"
 #include <map>
 
-namespace rsimpl2 {
-    namespace ds {
+const double TIMESTAMP_TO_MILLISECONS = 0.001;
+
+namespace rsimpl2
+{
+    namespace ds
+    {
         const uint16_t RS400P_PID = 0x0ad1; // PSR
         const uint16_t RS410A_PID = 0x0ad2; // ASR
         const uint16_t RS420R_PID = 0x0ad3; // ASRC
@@ -55,7 +59,18 @@ namespace rsimpl2 {
             UAMG = 0X30,          // get advanced mode status
             SETAEROI = 0x44,      // set auto-exposure region of interest
             GETAEROI = 0x45,      // get auto-exposure region of interest
-            HWRST = 0x20          // hardware reset
+            HWRST = 0x20,         // hardware reset
+            SET_ADV = 0x2B,       // set advanced mode control
+            GET_ADV = 0x2C,       // get advanced mode control
+        };
+
+        const int etDepthTableControl = 9; // Identifier of the depth table control
+
+        enum advnaced_query_mode
+        {
+            GET_VAL = 0,
+            GET_MIN = 1,
+            GET_MAX = 2,
         };
 
         struct table_header
@@ -99,6 +114,7 @@ namespace rsimpl2 {
         };
 
 #pragma pack(push, 1)
+
         struct fisheye_intrinsics_table
         {
             table_header        header;
@@ -114,6 +130,49 @@ namespace rsimpl2 {
             int64_t serial_depth;
             float3x3            rotation;                   //  the fisheye rotation matrix
             float3              translation;                //  the fisheye translation vector
+        };
+
+        struct depth_table_control
+        {
+            uint32_t depth_units;
+            int32_t depth_clamp_min;
+            int32_t depth_clamp_max;
+            int32_t disparity_multiplier;
+            int32_t disparity_shift;
+        };
+
+        struct uvc_header
+        {
+            byte            length;
+            byte            info;
+            uint32_t        timestamp;
+            byte            source_clock[6];
+        };
+
+        struct metadata_header
+        {
+            uint32_t    metaDataID;
+            uint32_t    size;
+        };
+
+
+        struct metadata_capture_timing
+        {
+            metadata_header  metaDataIdHeader;
+            uint32_t    version;
+            uint32_t    flag;
+            int         frameCounter;
+            uint32_t    opticalTimestamp;   //In millisecond unit
+            uint32_t    readoutTime;        //The readout time in millisecond second unit
+            uint32_t    exposureTime;       //The exposure time in millisecond second unit
+            uint32_t    frameInterval ;     //The frame interval in millisecond second unit
+            uint32_t    pipeLatency;        //The latency between start of frame to frame ready in USB buffer
+        };
+
+        struct metadata
+        {
+           uvc_header header;
+           metadata_capture_timing md_capture_timing;
         };
 
 #pragma pack(pop)
@@ -186,6 +245,7 @@ namespace rsimpl2 {
 
         bool try_fetch_usb_device(std::vector<uvc::usb_device_info>& devices,
                                          const uvc::uvc_device_info& info, uvc::usb_device_info& result);
+
 
         enum ds5_notifications_types
         {

@@ -91,7 +91,6 @@ set(REALSENSE_CPP
     src/subdevice.cpp
     src/algo.cpp
     src/option.cpp
-    src/ms-xu-option.cpp
     src/error-handling.cpp
     src/hw-monitor.cpp
     src/image.cpp
@@ -100,10 +99,13 @@ set(REALSENSE_CPP
     src/rs.cpp
     src/sr300.cpp
     src/types.cpp
-    src/uvc-v4l2.cpp
+    src/backend-v4l2.cpp
+    src/backend-hid.cpp
     src/backend.cpp
     src/verify.c
     src/ds5.cpp
+    src/ds5-options.cpp
+    src/ds5-timestamp.cpp
     src/ds5-private.cpp
     src/win/win-helpers.cpp
     src/win/win-uvc.cpp
@@ -130,7 +132,6 @@ set(REALSENSE_HPP
     src/subdevice.h
     src/algo.h
     src/option.h
-    src/ms-xu-option.h
     src/error-handling.h
     src/hw-monitor.h
     src/image.h
@@ -139,7 +140,11 @@ set(REALSENSE_HPP
     src/backend.h
     src/sr300.h
     src/ds5.h
+    src/ds5-options.h
     src/ds5-private.h
+    src/ds5-timestamp.h
+    src/backend-v4l2.h
+    src/backend-hid.h
     src/win/win-helpers.h
     src/win/win-uvc.h
     src/win/win-usb.h
@@ -158,7 +163,8 @@ if(WIN32)
         src/win/win-usb.cpp
         src/win/win-hid.cpp
         src/win/win-backend.cpp
-        src/uvc-v4l2.cpp
+        src/backend-v4l2.cpp
+        src/backend-hid.cpp
         src/backend.cpp
         src/verify.c)
 
@@ -168,6 +174,8 @@ if(WIN32)
         src/win/win-usb.h
         src/win/win-hid.h
         src/win/win-backend.h
+        src/backend-v4l2.h
+        src/backend-hid.h
         src/backend.h)
 
     source_group("Header Files\\API" FILES
@@ -197,14 +205,18 @@ if(WIN32)
 
     source_group("Source Files\\Devices" FILES
         src/ds5.cpp
+        src/ds5-options.cpp
         src/ds5-private.cpp
+        src/ds5-timestamp.cpp
         src/sr300.cpp
         src/ivcam-private.cpp
         )
 
     source_group("Header Files\\Devices" FILES
         src/ds5.h
+        src/ds5-options.h
         src/ds5-private.h
+        src/ds5-timestamp.h
         src/sr300.h
         src/ivcam-private.h
         )
