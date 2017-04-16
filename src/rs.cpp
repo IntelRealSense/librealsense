@@ -10,6 +10,7 @@
 #include "concurrency.h"
 #include "algo.h"
 #include "types.h"
+#include "sync.h"
 
 ////////////////////////
 // API implementation //
@@ -64,10 +65,13 @@ struct rs2_notification
     rs2_notification(const rsimpl2::notification* notification)
         :_notification(notification){}
 
-
     const rsimpl2::notification* _notification;
 };
 
+struct rs2_syncer
+{
+    std::shared_ptr<rsimpl2::sync_interface> syncer;
+};
 
 struct frame_holder
 {
@@ -292,7 +296,7 @@ void rs2_delete_device_list(rs2_device_list* list) try
     VALIDATE_NOT_NULL(list);
     delete list;
 }
-catch (...) {}
+NOEXCEPT_RETURN(, list)
 
 rs2_device* rs2_create_device(const rs2_device_list* list, int index, rs2_error** error) try
 {
@@ -867,6 +871,77 @@ void rs2_get_region_of_interest(const rs2_device* device, int* min_x, int* min_y
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, min_x, min_y, max_x, max_y)
 
+rs2_syncer* rs2_create_syncer(const rs2_device* dev, rs2_error** error) try
+{
+    VALIDATE_NOT_NULL(dev);
+    return new rs2_syncer { dev->device->create_syncer() };
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, dev)
+
+void rs2_start_syncer(const rs2_device* device, rs2_stream stream, rs2_syncer* syncer, rs2_error** error) try
+{
+    VALIDATE_NOT_NULL(device);
+    VALIDATE_ENUM(stream);
+    VALIDATE_NOT_NULL(syncer);
+    rsimpl2::frame_callback_ptr callback(
+        new rsimpl2::frame_callback(rs2_sync_frame, syncer));
+    device->device->get_endpoint(device->subdevice).starter().start(stream, move(callback));
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, device, stream, syncer)
+
+void rs2_wait_for_frames(rs2_syncer* syncer, unsigned int timeout_ms, rs2_frame** output_array, rs2_error** error) try
+{
+    VALIDATE_NOT_NULL(syncer);
+    VALIDATE_NOT_NULL(output_array);
+    auto res = syncer->syncer->wait_for_frames(timeout_ms);
+    for (uint32_t i = 0; i < RS2_STREAM_COUNT; i++)
+    {
+        output_array[i] = nullptr;
+    }
+    for (auto&& holder : res)
+    {
+        output_array[holder.frame->get()->get_stream_type()] = holder.frame;
+        holder.frame = nullptr;
+    }
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, syncer, timeout_ms, output_array)
+
+int rs2_poll_for_frames(rs2_syncer* syncer, rs2_frame** output_array, rs2_error** error) try
+{
+    VALIDATE_NOT_NULL(syncer);
+    VALIDATE_NOT_NULL(output_array);
+    rsimpl2::frameset res;
+    if (syncer->syncer->poll_for_frames(res))
+    {
+        for (uint32_t i = 0; i < RS2_STREAM_COUNT; i++)
+        {
+            output_array[i] = nullptr;
+        }
+        for (auto&& holder : res)
+        {
+            output_array[holder.frame->get()->get_stream_type()] = holder.frame;
+            holder.frame = nullptr;
+        }
+        return 1;
+    }
+    return 0;
+}
+HANDLE_EXCEPTIONS_AND_RETURN(0, syncer, output_array)
+
+void rs2_sync_frame(rs2_frame* frame, void* syncer) try
+{
+    VALIDATE_NOT_NULL(frame);
+    VALIDATE_NOT_NULL(syncer);
+    ((rs2_syncer*)syncer)->syncer->dispatch_frame(frame);
+}
+NOEXCEPT_RETURN(, frame, syncer)
+
+void rs2_delete_syncer(rs2_syncer* syncer) try
+{
+    VALIDATE_NOT_NULL(syncer);
+    delete syncer;
+}
+NOEXCEPT_RETURN(, syncer)
 
 void rs2_free_error(rs2_error * error) { if (error) delete error; }
 const char * rs2_get_failed_function(const rs2_error * error) { return error ? error->function : nullptr; }

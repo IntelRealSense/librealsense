@@ -36,6 +36,15 @@ namespace rsimpl2
             frame->get()->get_owner()->release_frame_ref(frame);
     }
 
+    frame_holder& frame_holder::operator=(frame_holder&& other)
+    {
+        if (frame)
+            frame->get()->get_owner()->release_frame_ref(frame);
+        frame = other.frame;
+        other.frame = nullptr;
+        return *this;
+    }
+
     const char * get_string(rs2_exception_type value)
     {
         #define CASE(X) case RS2_EXCEPTION_TYPE_##X: return #X;

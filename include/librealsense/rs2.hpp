@@ -90,6 +90,7 @@ namespace rs2
     class context;
     class device;
     class device_list;
+    class syncer;
 
     struct stream_profile
     {
@@ -189,11 +190,7 @@ namespace rs2
 
     class frame
     {
-        rs2_frame * frame_ref;
-        frame(const frame &) = delete;
     public:
-        friend class frame_queue;
-
         frame() : frame_ref(nullptr) {}
         frame(rs2_frame * frame_ref) : frame_ref(frame_ref) {}
         frame(frame&& other) : frame_ref(other.frame_ref) { other.frame_ref = nullptr; }
@@ -232,7 +229,7 @@ namespace rs2
             return r;
         }
 
-        /* retrieve the timestamp domain
+        /** retrieve the timestamp domain
         * \return            timestamp domain (clock name) for timestamp values
         */
         rs2_timestamp_domain get_frame_timestamp_domain() const
@@ -243,7 +240,7 @@ namespace rs2
             return r;
         }
 
-        /* retrieve the current value of a single frame_metadata
+        /** retrieve the current value of a single frame_metadata
         * \param[in] frame_metadata  the frame_metadata whose value should be retrieved
         * \return            the value of the frame_metadata
         */
@@ -255,7 +252,7 @@ namespace rs2
             return r;
         }
 
-        /* determine if the device allows a specific metadata to be queried
+        /** determine if the device allows a specific metadata to be queried
         * \param[in] frame_metadata  the frame_metadata to check for support
         * \return            true if the frame_metadata can be queried
         */
@@ -379,6 +376,13 @@ namespace rs2
             *result = frame(s);
             return true;
         }
+
+    private:
+        friend class frame_queue;
+        friend class syncer;
+
+        rs2_frame* frame_ref;
+        frame(const frame&) = delete;
     };
 
 
@@ -458,6 +462,73 @@ namespace rs2
         std::shared_ptr<rs2_device> _dev;
     };
 
+    typedef std::vector<frame> frameset;
+
+    class syncer
+    {
+    public:
+        /**
+        * Wait until coherent set of frames becomes available
+        * \param[in] timeout_ms   Max time in milliseconds to wait until an exception will be thrown
+        * \return Set of coherent frames
+        */
+        frameset wait_for_frames(unsigned int timeout_ms = 5000) const
+        {
+            frameset results;
+            std::vector<rs2_frame*> frame_refs(RS2_STREAM_COUNT, nullptr);
+            rs2_error* e = nullptr;
+            rs2_wait_for_frames(_syncer.get(), timeout_ms, frame_refs.data(), &e);
+            error::handle(e);
+            for (rs2_frame* ref : frame_refs)
+            {
+                if (ref) results.emplace_back(ref);
+            }
+            return results;
+        }
+
+        /**
+        * Check if a coherent set of frames is available
+        * \param[out] result      New coherent frame-set
+        * \return true if new frame-set was stored to result
+        */
+        bool poll_for_frames(frameset* result) const
+        {
+            std::vector<rs2_frame*> frame_refs(RS2_STREAM_COUNT, nullptr);
+            rs2_error* e = nullptr;
+            auto res = rs2_poll_for_frames(_syncer.get(), frame_refs.data(), &e);
+            error::handle(e);
+
+            if (res)
+            {
+                result->clear();
+                for (rs2_frame* ref : frame_refs)
+                {
+                    if (ref) result->emplace_back(ref);
+                }
+            }
+        }
+
+        /**
+        * Syncronize new frame
+        * \param[in] f - frame handle to enqueue (this operation passed ownership to the syncer)
+        */
+        void enqueue(frame f) const
+        {
+            rs2_sync_frame(f.frame_ref, _syncer.get()); // noexcept
+            f.frame_ref = nullptr; // frame has been essentially moved from
+        }
+
+        void operator()(frame f) const
+        {
+            enqueue(std::move(f));
+        }
+    private:
+        friend class device;
+        std::shared_ptr<rs2_syncer> _syncer;
+
+        syncer(std::shared_ptr<rs2_syncer> s) : _syncer(s) {}
+    };
+
     class device
     {
     public:
@@ -524,8 +595,8 @@ namespace rs2
         }
 
         /**
-        * start streaming
-        * \param[in] callback   stream callback
+        * Start passing frames into user provided callback
+        * \param[in] callback   Stream callback, can be any callable object accepting rs2::frame
         */
         template<class T>
         void start(T callback) const
@@ -536,8 +607,8 @@ namespace rs2
         }
 
         /**
-        * start streaming of specific stream
-        * \param[in] callback   stream callback
+        * Start passing frames of specific stream into user provided callback
+        * \param[in] callback   Stream callback, can be any callable object accepting rs2::frame
         */
         template<class T>
         void start(rs2_stream stream, T callback) const
@@ -806,6 +877,19 @@ namespace rs2
         }
 
         /**
+         * Create frames syncronization primitive suitable for this device
+         */
+        syncer create_syncer() const
+        {
+            rs2_error* e = nullptr;
+            std::shared_ptr<rs2_syncer> s(
+                rs2_create_syncer(_dev.get(), &e),
+                rs2_delete_syncer);
+            error::handle(e);
+            return syncer(s);
+        }
+
+        /**
         * returns the extrinsics from stream on this device to stream on another device
         * \return extrinsics
         */
@@ -841,6 +925,7 @@ namespace rs2
     private:
         friend context;
         friend device_list;
+
         std::shared_ptr<rs2_device> _dev;
         explicit device(std::shared_ptr<rs2_device> dev)
             : _dev(dev), _debug(dev)

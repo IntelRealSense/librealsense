@@ -42,6 +42,7 @@ A comprehensive suite of sample and tutorial applications are provided in the `/
   * `sudo apt-get install doxygen`
 	* `doxygen doc/doxygen/doxyfile`
 * [C API](./include/librealsense2/rs.h) - With doxygen-style API comments
+* [Frame Management](./doc/frame_lifetime.md) - Frame Memory Management, Threading Model and Syncronization
 * [Python Bindings](./doc/python.md) - official python bindings for librealsense
 * [What's New?](./doc/rs400_support.md) - changes in librealsense2
 * [Getting Started](./doc/stepbystep/getting_started_with_openCV.md) - Getting started with OpenCV

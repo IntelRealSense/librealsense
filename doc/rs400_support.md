@@ -33,9 +33,9 @@ dev.start([](rs2::frame frame){
 ```
 This approach allows users to bypass buffering and synchronization that was done by `wait_for_frames`.
 
-*  Users who do need to synchronize between different streams can take advantage of the `rs2::util::syncer` helper class:
+*  Users who do need to synchronize between different streams can take advantage of the `rs2::syncer` class:
 ```cpp
-rs2::util::syncer sync;
+auto sync = dev.create_syncer();
 dev.start(sync);
 // The following call will block until next coherent set of frames
 // based on frame timestamp
@@ -91,7 +91,7 @@ auto data = frame.get_data();
 auto axes = *(reinterpret_cast<const float3*>(data));
 std::cout << axes.x << "," << axes.y << "," <<  axes.z << "\n";
 ```
-`rs2::util::config` and `rs2::util::syncer` can work with motion streams as well.
+`rs2::util::config` and `rs2::syncer` can work with motion streams as well.
 
 ## New Functionality
 

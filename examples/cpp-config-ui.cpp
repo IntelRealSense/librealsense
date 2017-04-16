@@ -838,7 +838,7 @@ public:
         timestamp = f.get_timestamp();
         fps.add_timestamp(f.get_timestamp(), f.get_frame_number());
 
-        texture.upload(std::move(f));
+        texture.upload(f);
     }
 
     void outline_rect(const rect& r)

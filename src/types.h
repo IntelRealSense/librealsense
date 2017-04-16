@@ -479,12 +479,7 @@ namespace rsimpl2
         frame_holder() : frame(nullptr) {}
 
         frame_holder& operator=(const frame_holder&) = delete;
-        frame_holder& operator=(frame_holder&& other)
-        {
-            frame = other.frame;
-            other.frame = nullptr;
-            return *this;
-        }
+        frame_holder& operator=(frame_holder&& other);
 
     };
 

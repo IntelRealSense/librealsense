@@ -142,7 +142,7 @@ int main(int argc, char * argv[]) try
         s->lastY = y;
     });
 
-    util::syncer syncer;
+    auto syncer = dev.create_syncer();
     stream.start(syncer);
 
     texture_buffer mapped_tex;
@@ -173,7 +173,7 @@ int main(int argc, char * argv[]) try
 
             if (frame.get_stream_type() == mapped)
             {           
-                mapped_tex.upload(std::move(frame));
+                mapped_tex.upload(frame);
             }
         }
 

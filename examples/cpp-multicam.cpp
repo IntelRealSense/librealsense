@@ -69,7 +69,7 @@ int main(int argc, char * argv[]) try
             frame frame;
             if (syncers[i].poll_for_frame(&frame))
             {
-                buffers[i].upload(std::move(frame));
+                buffers[i].upload(frame);
             }
         }
 

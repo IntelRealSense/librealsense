@@ -100,5 +100,12 @@ EXPORTS
 
     rs2_log_to_console
     rs2_log_to_file
+    
+    rs2_create_syncer
+    rs2_start_syncer
+    rs2_wait_for_frames
+    rs2_poll_for_frames
+    rs2_sync_frame
+    rs2_delete_syncer
 
     rs2_get_api_version

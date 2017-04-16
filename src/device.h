@@ -11,6 +11,7 @@
 #include "hw-monitor.h"
 #include "option.h"
 #include "subdevice.h"
+#include "sync.h"
 
 namespace rsimpl2
 {
@@ -41,6 +42,11 @@ namespace rsimpl2
         virtual std::vector<uint8_t> send_receive_raw_data(const std::vector<uint8_t>& input)
         {
             throw not_implemented_exception(to_string() << __FUNCTION__ << " is not implemented for this device!");
+        }
+
+        virtual std::shared_ptr<sync_interface> create_syncer()
+        {
+            return std::make_shared<syncer>();
         }
 
     protected:

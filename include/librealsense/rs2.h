@@ -244,6 +244,7 @@ typedef struct rs2_notification rs2_notification;
 typedef struct rs2_notifications_callback rs2_notifications_callback;
 typedef struct rs2_frame_callback rs2_frame_callback;
 typedef struct rs2_log_callback rs2_log_callback;
+typedef struct rs2_syncer rs2_syncer;
 
 typedef void (*rs2_frame_callback_ptr)(rs2_frame*, void*);
 typedef void (*rs2_notification_callback_ptr)(rs2_notification*, void*);
@@ -786,37 +787,87 @@ void rs2_flush_queue(rs2_frame_queue* queue, rs2_error** error);
 * \param[in] device  input RealSense device
 * \param[in] raw_data_to_send   raw data to be send to device
 * \param[in] size_of_raw_data_to_send   size of raw_data_to_send
-* \param[out] error   if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return            rs2_raw_data_buffer, should be released by rs2_delete_raw_data
 */
 rs2_raw_data_buffer* rs2_send_and_receive_raw_data(rs2_device* device, void* raw_data_to_send, unsigned size_of_raw_data_to_send, rs2_error** error);
 
 /**
 * get the size of rs2_raw_data_buffer
-* \param[in] buffer        pointer to rs2_raw_data_buffer returned by rs2_send_and_receive_raw_data
+* \param[in] buffer  pointer to rs2_raw_data_buffer returned by rs2_send_and_receive_raw_data
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return size of rs2_raw_data_buffer
 */
 int rs2_get_raw_data_size(const rs2_raw_data_buffer* buffer, rs2_error** error);
 
 /**
-* delete rs2_raw_data_buffer
+* Delete rs2_raw_data_buffer
 * \param[in] buffer        rs2_raw_data_buffer returned by rs2_send_and_receive_raw_data
 */
 void rs2_delete_raw_data(rs2_raw_data_buffer* buffer);
 
 /**
-* retrieve char array from rs2_raw_data_buffer
-* \param[in] buffer        rs2_raw_data_buffer returned by rs2_send_and_receive_raw_data
+* Retrieve char array from rs2_raw_data_buffer
+* \param[in] buffer   rs2_raw_data_buffer returned by rs2_send_and_receive_raw_data
 * \param[out] error   if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return raw data
 */
 const unsigned char* rs2_get_raw_data(const rs2_raw_data_buffer* buffer, rs2_error** error);
 
-/*
-librealsense recorder is intended for validation purposes.
-it supports three modes of operation:
-*/
+/**
+ * \brief Create syncronization primitive to group frames into coherent frame-sets
+ * \param[in] dev        RealSense device
+ * \param[out] error     if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ * \return
+ */
+rs2_syncer* rs2_create_syncer(const rs2_device* dev, rs2_error** error);
+
+/**
+ * \brief Start streaming from specified configured device of specific stream to frame queue
+ * \param[in] device  RealSense device
+ * \param[in] stream  specific stream type to start
+ * \param[in] queue   frame-queue to store new frames into
+ * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ */
+void rs2_start_syncer(const rs2_device* device, rs2_stream stream, rs2_syncer* syncer, rs2_error** error);
+
+/**
+ * \brief[in] Wait until coherent set of frames becomes available
+ * \param[in] syncer        Syncronization primitive used to group the frames
+ * \param[in] timeout_ms    Max time in milliseconds to wait until exception is thrown
+ * \param[in] output_array  Array of size RS2_STREAM_COUNT of frame handles
+ *                          All not-null frame handles must be released using rs2_release_frame
+ * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ */
+void rs2_wait_for_frames(rs2_syncer* syncer, unsigned int timeout_ms, rs2_frame** output_array, rs2_error** error);
+
+/**
+ * \brief Check if a coherent set of frames is available
+ * \param[in] syncer        Syncronization primitive used to group the frames
+ * \param[in] output_array  Array of size RS2_STREAM_COUNT of frame handles
+ *                          All not-null frame handles must be released using rs2_release_frame
+ * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ * \return                  non-zero if frame-set was found
+ */
+int rs2_poll_for_frames(rs2_syncer* syncer, rs2_frame** output_array, rs2_error** error);
+
+/**
+ * Dispatch new frame into the syncer
+ * \param[in] frame frame handle to enqueue (this operation passed ownership to the syncer)
+ * \param[in] syncer the frame syncer data structure
+ */
+void rs2_sync_frame(rs2_frame* frame, void* syncer);
+
+/**
+ * \brief Releases any resources hold by a frame syncronization primitive
+ * \param[in] syncer        Syncronization primitive
+ */
+void rs2_delete_syncer(rs2_syncer* syncer);
+
+/**
+ * librealsense Recorder is intended for effective unit-testing
+ * Currently supports three modes of operation:
+ */
 typedef enum rs2_recording_mode
 {
     RS2_RECORDING_MODE_BLANK_FRAMES, /* frame metadata will be recorded, but pixel data will be replaced with zeros to save space */
@@ -826,31 +877,31 @@ typedef enum rs2_recording_mode
 } rs2_recording_mode;
 
 /**
-* create librealsense context that will try to record all operations over librealsense into a file
-* \param[in] api_version realsense API version as provided by RS2_API_VERSION macro
-* \param[in] filename string representing the name of the file to record
-* \param[in] section  string representing the name of the section within existing recording
-* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
-* \return            context object, should be released by rs2_delete_context
-*/
+ * Create librealsense context that will try to record all operations over librealsense into a file
+ * \param[in] api_version realsense API version as provided by RS2_API_VERSION macro
+ * \param[in] filename string representing the name of the file to record
+ * \param[in] section  string representing the name of the section within existing recording
+ * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ * \return            context object, should be released by rs2_delete_context
+ */
 rs2_context* rs2_create_recording_context(int api_version, const char* filename, const char* section, rs2_recording_mode mode, rs2_error** error);
 
 /**
-* create librealsense context that given a file will respond to calls exactly as the recording did
-* if the user calls a method that was either not called during recording or violates causality of the recording error will be thrown
-* \param[in] api_version realsense API version as provided by RS2_API_VERSION macro
-* \param[in] filename string representing the name of the file to play back from
-* \param[in] section  string representing the name of the section within existing recording
-* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
-* \return            context object, should be released by rs2_delete_context
-*/
+ * Create librealsense context that given a file will respond to calls exactly as the recording did
+ * if the user calls a method that was either not called during recording or violates causality of the recording error will be thrown
+ * \param[in] api_version realsense API version as provided by RS2_API_VERSION macro
+ * \param[in] filename string representing the name of the file to play back from
+ * \param[in] section  string representing the name of the section within existing recording
+ * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ * \return            context object, should be released by rs2_delete_context
+ */
 rs2_context* rs2_create_mock_context(int api_version, const char* filename, const char* section, rs2_error** error);
 
 /**
-* retrieve the API version from the source code. Evaluate that the value is conformant to the established policies
-* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
-* \return            the version API encoded into integer value "1.9.3" -> 10903
-*/
+ * Retrieve the API version from the source code. Evaluate that the value is conformant to the established policies
+ * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ * \return            the version API encoded into integer value "1.9.3" -> 10903
+ */
 int          rs2_get_api_version      (rs2_error ** error);
 
 const char * rs2_get_failed_function  (const rs2_error * error);

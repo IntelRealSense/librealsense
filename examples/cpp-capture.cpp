@@ -13,7 +13,7 @@ using namespace std;
 
 int main(int argc, char * argv[]) try
 {
-    log_to_console(RS2_LOG_SEVERITY_WARN);
+    log_to_console(RS2_LOG_SEVERITY_INFO);
     //log_to_file(log_severity::debug, "librealsense.log");
 
     context ctx;
@@ -29,7 +29,7 @@ int main(int argc, char * argv[]) try
     config.enable_all(preset::best_quality);
     auto stream = config.open(dev);
 
-    util::syncer syncer;
+    auto syncer = dev.create_syncer();
     stream.start(syncer);
 
     texture_buffer buffers[RS2_STREAM_COUNT];
@@ -63,7 +63,7 @@ int main(int argc, char * argv[]) try
         for (auto&& frame : frames)
         {
             auto stream_type = frame.get_stream_type();
-            buffers[stream_type].upload(std::move(frame));
+            buffers[stream_type].upload(frame);
         }
 
         // Wait for new images

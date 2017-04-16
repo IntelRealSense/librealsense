@@ -90,6 +90,7 @@ set(REALSENSE_CPP
     src/device.cpp
     src/subdevice.cpp
     src/algo.cpp
+    src/sync.cpp
     src/option.cpp
     src/error-handling.cpp
     src/hw-monitor.cpp
@@ -129,6 +130,7 @@ set(REALSENSE_HPP
     src/concurrency.h
     src/context.h
     src/device.h
+    src/sync.h
     src/subdevice.h
     src/algo.h
     src/option.h

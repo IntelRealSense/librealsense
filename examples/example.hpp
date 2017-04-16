@@ -453,11 +453,11 @@ namespace rs2
             }
         }
 
-        void upload(rs2::frame&& frame)
+        void upload(const rs2::frame& frame)
         {
             upload(static_cast<const uint8_t*>(frame.get_data()), frame.get_width(), frame.get_height(), frame.get_format(),
                 (frame.get_stride_in_bytes() * 8) / frame.get_bits_per_pixel(), frame.get_stream_type());
-            last = std::move(frame);
+            frame.try_clone_ref(&last);
         }
 
         void show(const rect& r, float alpha) const
