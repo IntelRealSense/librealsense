@@ -13,9 +13,12 @@ sudo apt-get install libssl-dev
 # Update the kernel to v4.4-wily
 echo && echo Upgrading kernel to v4.4-wily, will reboot upon completion... && echo
 # Get headers and images
-wget http://kernel.ubuntu.com/~kernel-ppa/mainline/v4.4-wily/linux-headers-4.4.0-040400_4.4.0-040400.201601101930_all.deb -P /tmp/
-wget http://kernel.ubuntu.com/~kernel-ppa/mainline/v4.4-wily/linux-headers-4.4.0-040400-generic_4.4.0-040400.201601101930_amd64.deb -P /tmp/
-wget http://kernel.ubuntu.com/~kernel-ppa/mainline/v4.4-wily/linux-image-4.4.0-040400-generic_4.4.0-040400.201601101930_amd64.deb -P /tmp/
+KERNEL_FOLDER=v4.4.6-wily
+KERNEL_VERSION=4.4.6-040406
+KERNEL_DATE=201603161231
+wget http://kernel.ubuntu.com/~kernel-ppa/mainline/$KERNEL_FOLDER/linux-headers-${KERNEL_VERSION}_${KERNEL_VERSION}.${KERNEL_DATE}_all.deb -P /tmp/
+wget http://kernel.ubuntu.com/~kernel-ppa/mainline/$KERNEL_FOLDER/linux-headers-${KERNEL_VERSION}-generic_${KERNEL_VERSION}.${KERNEL_DATE}_amd64.deb -P /tmp/
+wget http://kernel.ubuntu.com/~kernel-ppa/mainline/$KERNEL_FOLDER/linux-image-${KERNEL_VERSION}-generic_${KERNEL_VERSION}.${KERNEL_DATE}_amd64.deb -P /tmp/
 
 # Install
 sudo dpkg -i /tmp/*.deb
