@@ -213,6 +213,11 @@ namespace rsimpl2
             return _hw_monitor->send(input);
         }
 
+        void hardware_reset() override
+        {
+            force_hardware_reset();
+        }
+
         uvc_endpoint& get_depth_endpoint() { return static_cast<uvc_endpoint&>(get_endpoint(_depth_device_idx)); }
 
         sr300_camera(const uvc::backend& backend,

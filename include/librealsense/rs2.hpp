@@ -152,9 +152,19 @@ namespace rs2
             error::handle(e);
             _severity = rs2_get_notification_severity(notification, &e);
             error::handle(e);
+            _category = rs2_get_notification_category(notification, &e);
+            error::handle(e);
         }
         notification() : _description("") {}
 
+        /**
+        * retrieve the notification category
+        * \return            the notification category
+        */
+        rs2_notification_category get_category() const
+        {
+            return _category;
+        }
         /**
         * retrieve the notification description
         * \return            the notification description
@@ -186,6 +196,7 @@ namespace rs2
         std::string _description;
         double _timestamp;
         rs2_log_severity _severity;
+        rs2_notification_category _category;
     };
 
     class frame
@@ -900,6 +911,17 @@ namespace rs2
             rs2_get_extrinsics(_dev.get(), from_stream, to_device._dev.get(), to_stream, &extrin, &e);
             error::handle(e);
             return extrin;
+        }
+
+        /**
+        * send hardware reset request to the device
+        */
+        void hardware_reset()
+        {
+            rs2_error* e = nullptr;
+
+            rs2_hardware_reset(_dev.get(), &e);
+            error::handle(e);
         }
 
         /** Retrieves mapping between the units of the depth image and meters

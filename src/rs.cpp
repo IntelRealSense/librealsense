@@ -609,6 +609,13 @@ rs2_log_severity rs2_get_notification_severity(rs2_notification * notification, 
 }
 HANDLE_EXCEPTIONS_AND_RETURN(RS2_LOG_SEVERITY_NONE, notification)
 
+rs2_notification_category rs2_get_notification_category(rs2_notification * notification, rs2_error** error)try
+{
+    VALIDATE_NOT_NULL(notification);
+    return (rs2_notification_category)notification->_notification->category;
+}
+HANDLE_EXCEPTIONS_AND_RETURN(RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR, notification)
+
 int rs2_supports_frame_metadata(const rs2_frame * frame, rs2_frame_metadata frame_metadata, rs2_error ** error) try
 {
     VALIDATE_NOT_NULL(frame);
@@ -810,6 +817,14 @@ void rs2_get_stream_intrinsics(const rs2_device * device, rs2_stream stream, int
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device, intrinsics)
 
+
+void rs2_hardware_reset(const rs2_device * device, rs2_error ** error) try
+{
+    VALIDATE_NOT_NULL(device);
+    device->device->hardware_reset();    
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, device)
+
 // Verify  and provide API version encoded as integer value
 int rs2_get_api_version(rs2_error ** error) try
 {
@@ -955,6 +970,7 @@ const char * rs2_distortion_to_string(rs2_distortion distortion) { return rsimpl
 const char * rs2_option_to_string(rs2_option option) { return rsimpl2::get_string(option); }
 const char * rs2_camera_info_to_string(rs2_camera_info info) { return rsimpl2::get_string(info); }
 const char * rs2_timestamp_domain_to_string(rs2_timestamp_domain info){ return rsimpl2::get_string(info); }
+const char * rs2_notification_category_to_string(rs2_notification_category category){ return rsimpl2::get_string(category); }
 const char * rs2_visual_preset_to_string(rs2_visual_preset preset) { return rsimpl2::get_string(preset); }
 const char * rs2_log_severity_to_string(rs2_log_severity severity) { return rsimpl2::get_string(severity); }
 const char * rs2_exception_type_to_string(rs2_exception_type type) { return rsimpl2::get_string(type); }

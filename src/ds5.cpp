@@ -136,6 +136,13 @@ namespace rsimpl2
     {
         return _hw_monitor->send(input);
     }
+
+    void ds5_camera::hardware_reset()
+    {
+        command cmd(ds::HWRST);
+        _hw_monitor->send(cmd);
+    }
+
     rs2_intrinsics ds5_camera::get_intrinsics(unsigned int subdevice, stream_profile profile) const
       {
           if (subdevice >= get_endpoints_count())
@@ -595,16 +602,16 @@ namespace rsimpl2
 
     notification ds5_notification_decoder::decode(int value)
     {
-        if(value == 0)
-            return{ value, RS2_LOG_SEVERITY_ERROR, "Success" };
-        if(value == ds::ds5_notifications_types::hot_laser_pwr_reduce)
-            return{ value, RS2_LOG_SEVERITY_ERROR, "Hot laser power reduce" };
+        if (value == 0)
+            return{ RS2_NOTIFICATION_CATEGORY_HARDWARE_ERROR, value, RS2_LOG_SEVERITY_ERROR, "Success" };
+        if (value == ds::ds5_notifications_types::hot_laser_power_reduce)
+            return{ RS2_NOTIFICATION_CATEGORY_HARDWARE_ERROR, value, RS2_LOG_SEVERITY_ERROR, "Hot laser power reduce" };
         if (value == ds::ds5_notifications_types::hot_laser_disable)
-            return{ value, RS2_LOG_SEVERITY_ERROR, "Hot laser disable" };
+            return{ RS2_NOTIFICATION_CATEGORY_HARDWARE_ERROR, value, RS2_LOG_SEVERITY_ERROR, "Hot laser disable" };
         if (value == ds::ds5_notifications_types::flag_B_laser_disable)
-            return{ value, RS2_LOG_SEVERITY_ERROR, "Flag B laser disable" };
+            return{ RS2_NOTIFICATION_CATEGORY_HARDWARE_ERROR, value, RS2_LOG_SEVERITY_ERROR, "Flag B laser disable" };
 
-        return{ value, RS2_LOG_SEVERITY_NONE, "Unknown error!" };
+        return{ RS2_NOTIFICATION_CATEGORY_HARDWARE_ERROR, value, RS2_LOG_SEVERITY_NONE, "Unknown error!" };
     }
 
     rs2_extrinsics ds5_camera::get_extrinsics(int from_subdevice, rs2_stream from_stream, int to_subdevice, rs2_stream to_stream)

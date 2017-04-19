@@ -235,6 +235,20 @@ namespace rsimpl2
         #undef CASE
     }
 
+    const char * get_string(rs2_notification_category value)
+    {
+        #define CASE(X) case RS2_NOTIFICATION_CATEGORY_##X: return #X;
+        switch (value)
+        {
+        CASE(FRAMES_TIMEOUT)
+        CASE(FRAME_CORRUPTED)
+        CASE(HARDWARE_ERROR)
+        CASE(UNKNOWN_ERROR)
+        default: assert(!is_valid(value)); return unknown;
+        }
+        #undef CASE
+    }
+
     std::string firmware_version::to_string() const
     {
         if (is_any) return "any";
