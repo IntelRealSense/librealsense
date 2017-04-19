@@ -38,6 +38,7 @@ namespace rsimpl2
         virtual rs2_extrinsics get_extrinsics(int from, rs2_stream from_stream, int to, rs2_stream to_stream);
 
         virtual rs2_intrinsics get_intrinsics(unsigned int subdevice, stream_profile profile) const = 0;
+        virtual void hardware_reset() = 0;
 
         virtual std::vector<uint8_t> send_receive_raw_data(const std::vector<uint8_t>& input)
         {

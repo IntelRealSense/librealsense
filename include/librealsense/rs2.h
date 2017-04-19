@@ -183,6 +183,15 @@ typedef enum rs2_log_severity {
     RS2_LOG_SEVERITY_COUNT  /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
 } rs2_log_severity;
 
+/** \brief Category of the librealsense notifications */
+typedef enum rs2_notification_category{
+    RS2_NOTIFICATION_CATEGORY_FRAMES_TIMEOUT,   /**< Frames didn't arrived within 5 seconds */
+    RS2_NOTIFICATION_CATEGORY_FRAME_CORRUPTED,  /**< Received partial/incomplete frame */
+    RS2_NOTIFICATION_CATEGORY_HARDWARE_ERROR,   /**< Error reported from the device */
+    RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR,    /**< Received unknown error from the device */
+    RS2_NOTIFICATION_CATEGORY_COUNT             /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
+}rs2_notification_category;
+
 /** \brief Specifies the clock in relation to which the frame timestamp was measured. */
 typedef enum rs2_timestamp_domain
 {
@@ -346,6 +355,12 @@ void rs2_get_extrinsics(const rs2_device * from_dev, rs2_stream from_stream,
  * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
  */
 void rs2_get_stream_intrinsics(const rs2_device * device, rs2_stream stream, int width, int height, int fps, rs2_format format, rs2_intrinsics * intrinsics, rs2_error ** error);
+
+/**
+ * send hardware reset request to the device
+ * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ */
+void rs2_hardware_reset(const rs2_device * device, rs2_error ** error);
 
 /**
 * check if physical subdevice is supported
@@ -516,6 +531,12 @@ rs2_time_t rs2_get_notification_timestamp(rs2_notification * notification, rs2_e
 */
 rs2_log_severity rs2_get_notification_severity(rs2_notification * notification, rs2_error** error);
 
+/**
+* retrieve category from notification handle
+* \param[in] notification      handle returned from a callback
+* \return            the notification category
+*/
+rs2_notification_category rs2_get_notification_category(rs2_notification * notification, rs2_error** error);
 /**
 * retrieve metadata from frame handle
 * \param[in] frame      handle returned from a callback

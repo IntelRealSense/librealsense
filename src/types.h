@@ -310,6 +310,7 @@ namespace rsimpl2
     RS2_ENUM_HELPERS(rs2_visual_preset, VISUAL_PRESET)
     RS2_ENUM_HELPERS(rs2_exception_type, EXCEPTION_TYPE)
     RS2_ENUM_HELPERS(rs2_log_severity, LOG_SEVERITY)
+    RS2_ENUM_HELPERS(rs2_notification_category, NOTIFICATION_CATEGORY)
     #undef RS2_ENUM_HELPERS
 
     ////////////////////////////////////////////
@@ -658,15 +659,17 @@ namespace rsimpl2
     typedef std::unique_ptr<rs2_notifications_callback, void(*)(rs2_notifications_callback*)> notifications_callback_ptr;
 
 
+
     struct notification
     {
-        notification(int type, rs2_log_severity severity, std::string description)
-            :type(type), severity(severity), description(description)
+        notification(rs2_notification_category category, int type, rs2_log_severity severity, std::string description)
+            :category(category), type(type), severity(severity), description(description)
         {
             timestamp = std::chrono::duration<double, std::milli>(std::chrono::system_clock::now().time_since_epoch()).count();
             LOG_INFO(description);
         }
 
+        rs2_notification_category category;
         int type;
         rs2_log_severity severity;
         std::string description;

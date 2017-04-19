@@ -615,6 +615,7 @@ namespace rsimpl2
                 _thread->join();
                 _thread.reset();
 
+
                 // Stop streamining
                 v4l2_buf_type type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
                 if(xioctl(_fd, VIDIOC_STREAMOFF, &type) < 0)
@@ -730,7 +731,7 @@ namespace rsimpl2
                             std::stringstream s;
                             s << "Incomplete frame detected!\nSize " << buf.bytesused
                               << " out of " << buffer->get_full_length() << " bytes (" << percentage << "%)";
-                            rsimpl2::notification n = {0, RS2_LOG_SEVERITY_WARN, s.str()};
+                            rsimpl2::notification n = { RS2_NOTIFICATION_CATEGORY_FRAME_CORRUPTED, 0, RS2_LOG_SEVERITY_WARN, s.str()};
 
                             _error_handler(n);
                         }
@@ -771,7 +772,11 @@ namespace rsimpl2
             }
             else
             {
-                LOG_WARNING("Frames didn't arrived within 5 seconds");
+                LOG_WARNING("BUG REPRUDUCED!!! Frames didn't arrived within 5 seconds");
+
+                rsimpl2::notification n = {RS2_NOTIFICATION_CATEGORY_FRAMES_TIMEOUT, 0, RS2_LOG_SEVERITY_WARN,  "Frames didn't arrived within 5 seconds"};
+
+                _error_handler(n);
             }
         }
 
@@ -1127,6 +1132,10 @@ namespace rsimpl2
             catch (const std::exception& ex)
             {
                 LOG_ERROR(ex.what());
+
+                rsimpl2::notification n = {RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR, 0, RS2_LOG_SEVERITY_ERROR, ex.what()};
+
+                _error_handler(n);
             }
         }
 

@@ -79,7 +79,7 @@ namespace rsimpl2
         std::vector<uint8_t> send_receive_raw_data(const std::vector<uint8_t>& input) override;
         virtual rs2_intrinsics get_intrinsics(unsigned int subdevice, stream_profile profile) const override;
         std::shared_ptr<auto_exposure_mechanism> register_auto_exposure_options(uvc_endpoint* uvc_ep, const uvc::extension_unit* fisheye_xu);
-
+        void hardware_reset() override;
     private:
         bool is_camera_in_advanced_mode() const;
 

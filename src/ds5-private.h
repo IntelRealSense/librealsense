@@ -250,7 +250,7 @@ namespace rsimpl2
         enum ds5_notifications_types
         {
             success = 0,
-            hot_laser_pwr_reduce = 1, // reported to error depth XU control
+            hot_laser_power_reduce = 1, // reported to error depth XU control
             hot_laser_disable = 2, // reported to error depth XU control
             flag_B_laser_disable = 3 // reported to error depth XU control
         };

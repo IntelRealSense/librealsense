@@ -33,12 +33,14 @@ EXPORTS
     rs2_start_queue
     rs2_stop
     rs2_stop_stream
+    rs2_hardware_reset
 
     rs2_set_notifications_callback
     rs2_set_notifications_callback_cpp
     rs2_get_notification_description
     rs2_get_notification_timestamp
     rs2_get_notification_severity
+    rs2_get_notification_category
 
     rs2_get_frame_metadata
     rs2_supports_frame_metadata
