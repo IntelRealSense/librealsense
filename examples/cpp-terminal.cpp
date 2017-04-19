@@ -116,7 +116,7 @@ auto_complete get_auto_complete_obj(bool is_application_in_hex_mode, const map<s
     return auto_complete(commands);
 }
 
-void read_hex_script_file(const string& full_file_path, vector<string>& hex_lines)
+void read_script_file(const string& full_file_path, vector<string>& hex_lines)
 {
     ifstream myfile(full_file_path);
     if (myfile.is_open())
@@ -138,10 +138,12 @@ int main(int argc, char** argv) try
     ValueArg<int> device_id_arg("d", "deviceId", "Device ID could be obtain from cpp-enumerate-devices example", false, 0, "Select a device to work with");
     ValueArg<string> hex_cmd_arg("s", "send", "Hexadecimal raw data", false, "", "Send hexadecimal raw data to device");
     ValueArg<string> hex_script_arg("r", "raw", "Full file path of hexadecimal raw data script", false, "", "Send raw data line by line from script file");
+    ValueArg<string> commands_script_arg("c", "cmd", "Full file path of commands script", false, "", "Send commands line by line from script file");
     cmd.add(xml_arg);
     cmd.add(device_id_arg);
     cmd.add(hex_cmd_arg);
     cmd.add(hex_script_arg);
+    cmd.add(commands_script_arg);
     cmd.parse(argc, argv);
 
     // parse command.xml
@@ -179,14 +181,25 @@ int main(int argc, char** argv) try
         return EXIT_SUCCESS;
     }
 
+    std::string script_file("");
+    vector<string> script_lines;
+    if (hex_script_arg.isSet())
+    {
+        script_file = hex_script_arg.getValue();
+    }
+    else if (commands_script_arg.isSet())
+    {
+        script_file = commands_script_arg.getValue();
+    }
+
+    if (!script_file.empty())
+        read_script_file(script_file, script_lines);
+
     if (hex_script_arg.isSet())
     {
         try
         {
-            vector<string> hex_lines;
-            read_hex_script_file(hex_script_arg.getValue(), hex_lines);
-
-            for (auto& elem : hex_lines)
+            for (auto& elem : script_lines)
                 hex_mode(elem, dev);
         }
         catch (const exception& ex)
@@ -209,9 +222,26 @@ int main(int argc, char** argv) try
             cout << "Provided XML not found!\n";
             return EXIT_FAILURE;
         }
-        cout << "Loaded provided commands XML file.\nNow you can type commands from the XML file.";
+
         update_format_type_to_lambda(format_type_to_lambda);
         is_application_in_hex_mode = false;
+
+        if (commands_script_arg.isSet())
+        {
+            try
+            {
+                for (auto& elem : script_lines)
+                    xml_mode(elem, cmd_xml, dev, format_type_to_lambda);
+            }
+            catch (const exception& ex)
+            {
+                cout << endl << ex.what() << endl;
+                return EXIT_FAILURE;
+            }
+            return EXIT_SUCCESS;
+        }
+
+        cout << "Loaded provided commands XML file.\nNow you can type commands from the XML file.";
     }
     else
     {
