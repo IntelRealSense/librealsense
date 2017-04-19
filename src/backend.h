@@ -18,10 +18,10 @@
 #include <map>
 #include <cstring>
 
-const uint16_t MAX_RETRIES          = 20;
-const uint16_t VID_INTEL_CAMERA     = 0x8086;
-const uint8_t DEFAULT_FRAME_BUFFERS = 4;
-const uint16_t DELAY_FOR_RETRIES    = 50;
+const uint16_t MAX_RETRIES           = 100;
+const uint16_t VID_INTEL_CAMERA      = 0x8086;
+const uint8_t  DEFAULT_FRAME_BUFFERS = 4;
+const uint16_t DELAY_FOR_RETRIES     = 50;
 
 namespace rsimpl2
 {

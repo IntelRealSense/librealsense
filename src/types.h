@@ -24,8 +24,6 @@
 #include "backend.h"
 #include "concurrency.h"
 
-
-#define ELPP_THREAD_SAFE
 #define NOMINMAX
 #include "../third_party/easyloggingpp/src/easylogging++.h"
 

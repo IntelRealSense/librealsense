@@ -1,21 +1,33 @@
-![banner]
-
                                        ‫بسم الله الرَّحْمَنِ الرَّحِيمِ
 
 
-> **Manual For v9.84**
->
-> [![Build Status](https://travis-ci.org/easylogging/easyloggingpp.png?branch=develop)](https://travis-ci.org/easylogging/easyloggingpp)
+![banner]
+
+> **Manual For v9.94.2**
+
+[![Build Status (Develop)](https://img.shields.io/travis/muflihun/easyloggingpp/develop.svg)](https://travis-ci.org/muflihun/easyloggingpp) (`develop`)
+
+[![Build Status (Master)](https://img.shields.io/travis/muflihun/easyloggingpp/master.svg)](https://travis-ci.org/muflihun/easyloggingpp) (`master`)
+
+[![Version](https://img.shields.io/github/release/muflihun/easyloggingpp.svg)](https://github.com/muflihun/easyloggingpp/releases/latest)
+
+[![Canon.io](https://img.shields.io/badge/conan.io-easyloggingpp%2F9.94.2-green.svg?logo=data:image/png;base64%2CiVBORw0KGgoAAAANSUhEUgAAAA4AAAAOCAMAAAAolt3jAAAA1VBMVEUAAABhlctjlstkl8tlmMtlmMxlmcxmmcxnmsxpnMxpnM1qnc1sn85voM91oM11oc1xotB2oc56pNF6pNJ2ptJ8ptJ8ptN9ptN8p9N5qNJ9p9N9p9R8qtOBqdSAqtOAqtR%2BrNSCrNJ/rdWDrNWCsNWCsNaJs9eLs9iRvNuVvdyVv9yXwd2Zwt6axN6dxt%2Bfx%2BChyeGiyuGjyuCjyuGly%2BGlzOKmzOGozuKoz%2BKqz%2BOq0OOv1OWw1OWw1eWx1eWy1uay1%2Baz1%2Baz1%2Bez2Oe02Oe12ee22ujUGwH3AAAAAXRSTlMAQObYZgAAAAFiS0dEAIgFHUgAAAAJcEhZcwAACxMAAAsTAQCanBgAAAAHdElNRQfgBQkREyOxFIh/AAAAiklEQVQI12NgAAMbOwY4sLZ2NtQ1coVKWNvoc/Eq8XDr2wB5Ig62ekza9vaOqpK2TpoMzOxaFtwqZua2Bm4makIM7OzMAjoaCqYuxooSUqJALjs7o4yVpbowvzSUy87KqSwmxQfnsrPISyFzWeWAXCkpMaBVIC4bmCsOdgiUKwh3JojLgAQ4ZCE0AMm2D29tZwe6AAAAAElFTkSuQmCC)](http://www.conan.io/source/easyloggingpp/9.94.2/memsharded/testing)
+
+[![Try online](https://img.shields.io/badge/try-online-blue.svg)](http://melpon.org/wandbox/permlink/rwDXGcnP1IoCKXrJ)
+
+[![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/muflihun/easyloggingpp/blob/master/LICENCE)
+
+[![Donate](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://www.paypal.me/MuflihunDotCom/25)
+
+[![Downloads](https://img.shields.io/github/downloads/muflihun/easyloggingpp/total.svg)](https://github.com/muflihun/easyloggingpp/releases/latest)
 
 ### Quick Links
 
-  [![download] Latest Release](https://github.com/easylogging/easyloggingpp/releases/latest)
+  [![download] Latest Release](https://github.com/muflihun/easyloggingpp/releases/latest)
   
-  [![notes] Release Notes](https://github.com/easylogging/easyloggingpp/tree/master/doc/RELEASE-NOTES-v9.84)
+  [![notes] Changelog](/CHANGELOG.md)
  
-  [![samples] Samples](https://github.com/easylogging/easyloggingpp/tree/v9.84/samples)
-
-  [![paypal]](http://muflihun.com/donation/)
+  [![samples] Samples](/samples)
 
 ---
 
@@ -27,6 +39,7 @@
 <a href="#getting-started">Getting Started</a>
     <a href="#download">Download</a>
     <a href="#quick-start">Quick Start</a>
+    <a href="#install-optional">Install (Optional)</a>
     <a href="#setting-application-arguments">Setting Application Arguments</a>
 <a href="#configuration">Configuration</a>
     <a href="#level">Level</a>
@@ -38,6 +51,7 @@
     <a href="#global-configurations">Global Configurations</a>
     <a href="#logging-format-specifiers">Logging Format Specifiers</a>
     <a href="#datetime-format-specifiers">Date/Time Format Specifiers</a>
+    <a href="#custom-format-specifiers">Custom Format Specifiers</a>
     <a href="#logging-flags">Logging Flags</a>
     <a href="#application-arguments">Application Arguments</a>
     <a href="#configuration-macros">Configuration Macros</a>
@@ -47,20 +61,20 @@
     <a href="#conditional-logging">Conditional Logging</a>
     <a href="#occasional-logging">Occasional Logging</a>
     <a href="#printf-like-logging">printf Like Logging</a>
+    <a href="#network-logging">Network Logging</a>
     <a href="#verbose-logging">Verbose Logging</a>
         <a href="#basic-1">Basic</a>
         <a href="#conditional-and-occasional">Conditional and Occasional</a>
         <a href="#verbose-level">Verbose Level</a>
         <a href="#check-if-verbose-logging-is-on">Check If Verbose Logging Is On</a>
         <a href="#vmodule">VModule</a>
-    <a href="#stl-logging">STL Logging</a>
-        <a href="#supported-templates">Supported Templates</a>
     <a href="#registering-new-loggers">Registering New Loggers</a>
     <a href="#unregister-loggers">Unregister Loggers</a>
     <a href="#populating-existing-logger-ids">Populating Existing Logger IDs</a>
     <a href="#sharing-logging-repository">Sharing Logging Repository</a>
 <a href="#extra-features">Extra Features</a>
     <a href="#performance-tracking">Performance Tracking</a>
+        <a href="#conditional-performance-tracking">Conditional Performance Tracking</a>
         <a href="#make-use-of-performance-tracking-data">Make Use of Performance Tracking Data</a>
     <a href="#log-file-rotating">Log File Rotating</a>
     <a href="#crash-handling">Crash Handling</a>
@@ -70,6 +84,8 @@
     <a href="#check-macros">CHECK Macros</a>
     <a href="#logging-perror">Logging perror()</a>
     <a href="#syslog">Using Syslog</a>
+    <a href="#stl-logging">STL Logging</a>
+        <a href="#supported-templates">Supported Templates</a>
     <a href="#qt-logging">Qt Logging</a>
     <a href="#boost-logging">Boost Logging</a>
     <a href="#wxwidgets-logging">wxWidgets Logging</a>
@@ -78,61 +94,66 @@
         <a href="#logging-third-party-class">Logging Third-party Class</a>
     <a href="#manually-flushing-and-rolling-log-files">Manually Flushing and Rolling Log Files</a>
     <a href="#log-dispatch-callback">Log Dispatch Callback</a>
+    <a href="#logger-registration-callback">Logger Registration Callback</a>
     <a href="#asynchronous-logging">Asynchronous Logging</a>
     <a href="#helper-classes">Helper Classes</a>
 <a href="#contribution">Contribution</a>
     <a href="#submitting-patches">Submitting Patches</a>
     <a href="#reporting-a-bug">Reporting a Bug</a>
-    <a href="#donation">Donation</a>
 <a href="#compatibility">Compatibility</a>
 <a href="#licence">Licence</a>
 <a href="#disclaimer">Disclaimer</a>
 </pre>
 
 # Introduction
-Easylogging++ is single header only, feature-rich, efficient logging library for C++ applications. It has been written keeping three things in mind; performance, management (setup, configure, logging, simplicity) and portability. Its highly configurable and extremely useful for small to large sized projects.
-This manual is for Easylogging++ v9.84. For other versions please refer to corresponding [release](https://github.com/easylogging/easyloggingpp/releases) on github.
+Easylogging++ is single header efficient logging library for C++ applications. It is extremely powerful, highly extendable and configurable to user's requirements. It provides ability to [write your own sinks](https://github.com/muflihun/easyloggingpp/tree/master/samples/send-to-network) (referred to as `LogDispatchCallback`). Currently used by hundreds of open-source projects.
+
+This manual is for Easylogging++ v9.94.2. For other versions please refer to corresponding [release](https://github.com/muflihun/easyloggingpp/releases) on github.
 
  [![top] Goto Top](#table-of-contents)
  
 ### Why yet another library
-If you are working on a small utility or large project in C++, this library can be handy. Its based on single header and does not require linking or installation. You can import into your project as if its part of your project. This library has been designed with various thoughts in mind (i.e, portibility, performance, usability, features and easy to setup).
+If you are working on a small utility or large project in C++, this library can be handy. Its based on single header and only requires to link to single source file. (Originally it was header-only and was changed to use source file in [issue #445](https://github.com/muflihun/easyloggingpp/issues/445). You can still use header-only in [v9.89](https://github.com/muflihun/easyloggingpp/releases/tag/9.89)). 
 
-Why yet another library? Well, answer is pretty straight forward, use it as if you wrote it so you can fix issues (if any) as you go or raise them on github. In addition to that, I have not seen any logging library based on single-header with such a design where you can configure on the go and get the same performance. I have seen other single-header logging libraries for C++ but either they use external libraries, e.g, boost, Qt to support certain features like threading, regular expression or date etc. This library has everything built-in to prevent usage of external libraries, not that I don't like those libraries, in fact I love them, but because not all projects use these libraries, I couldn't take risk of depending on them.
+This library has been designed with various thoughts in mind (i.e, portability, performance, usability, features and easy to setup).
+
+Why yet another library? Well, answer is pretty straight forward, use it as you wrote it so you can fix issues (if any) as you go or raise them on github. In addition to that, I personally have not seen any logging library based on single-header with such a design where you can configure on the go, extend it to your needs and get fast performance. I have seen other single-header logging libraries for C++ but either they use external libraries, e.g, boost or Qt to support certain features like threading, regular expression or date etc. This library has everything built-in to prevent usage of external libraries, not that I don't like those libraries, in fact I love them, but because not all projects use these libraries, I couldn't take risk of depending on them.
 
  [![top] Goto Top](#table-of-contents)
  
 ### Features at a glance
 Easylogging++ is feature-rich containing many features that both typical and advanced developer will require while writing a software;
- * Highly configurable
+ * [Highly configurable](#configuration)
+ * [Extendable](#log-dispatch-callback)
  * Extremely fast
- * Thread and type safe
- * Cross-platform
- * Custom log patterns
- * Conditional and occasional logging
- * Performance tracking
- * Verbose logging
- * Crash handling
- * Helper CHECK macros
- * STL logging
- * Third-party library logging (Qt, boost, wxWidgets etc)
- * Extensible (Logging your own class or third-party class)
- * And many more...
+ * [Thread](#multi-threading) and type safe
+ * [Cross-platform](#compatibility)
+ * [Custom log patterns](#logging-format-specifiers)
+ * [Conditional and occasional logging](#conditional-logging)
+ * [Performance tracking](#performance-tracking)
+ * [Verbose logging](#verbose-logging]
+ * [Crash handling](#crash-handling)
+ * [Helper CHECK macros](#check-macros)
+ * [STL logging](#stl-logging)
+ * [Send to Syslog](#syslog)
+ * [Third-party library logging (Qt, boost, wxWidgets etc)](#logging-third-party-class)
+ * [Extensible (Logging your own class or third-party class)](#logging-your-own-class)
+ * [And many more...](#extra-features)
 
  [![top] Goto Top](#table-of-contents)
  
 # Getting Started
 ### Download
-Download latest version from [Latest Release](https://github.com/easylogging/easyloggingpp/releases/latest)
+Download latest version from [Latest Release](https://github.com/muflihun/easyloggingpp/releases/latest)
 
-For other releases, please visit [releases page](https://github.com/easylogging/easyloggingpp/releases). If you application does not support C++11, please consider using [v8.91](https://github.com/easylogging/easyloggingpp/tree/v8.91). This is stable version for C++98 and C++03, just lack some features.
+For other releases, please visit [releases page](https://github.com/muflihun/easyloggingpp/releases). If you application does not support C++11, please consider using [v8.91](https://github.com/muflihun/easyloggingpp/tree/v8.91). This is stable version for C++98 and C++03, just lack some features.
 
  [![top] Goto Top](#table-of-contents)
  
 ### Quick Start
 In order to get started with Easylogging++, you can follow three easy steps:
 * Download latest version
-* Include into your project
+* Include into your project (`easylogging++.h` and `easylogging++.cc`)
 * Initialize using single macro... and off you go!
 
 ```c++
@@ -146,7 +167,31 @@ int main(int argc, char* argv[]) {
 }
 ```
 
+Now compile using
+
+```
+g++ main.cc easylogging++.cc -o prog -std=c++11
+```
+
 That simple! Please note that `INITIALIZE_EASYLOGGINGPP` should be used once and once-only otherwise you will end up getting compilation errors. This is definiting several `extern` variables. This means it can be defined only once per application. Best place to put this initialization statement is in file where `int main(int, char**)` function is defined, right after last include statement.
+
+### Install (Optional)
+If you want to install this header system-wide, you can do so via:
+```
+mkdir build
+cd build
+cmake -Dtest=ON ../
+make
+make test
+make install
+```
+
+Following options are supported by Easylogging++ cmake and you can turn these options on using `-D<option>=ON`
+
+ * `lib_utc_datetime` - Defines `ELPP_UTC_DATETIME`
+ * `build_static_lib` - Builds static library for Easylogging++ 
+
+With that said, you will still need `easylogging++.cc` file in order to compile. For header only, please check [v9.89](https://github.com/muflihun/easyloggingpp/releases/tag/9.89) and lower.
 
  [![top] Goto Top](#table-of-contents)
  
@@ -203,7 +248,7 @@ Following table contains configurations supported by configuration file.
 | `To_Standard_Output`    |   bool   | Whether or not to write logs to standard output e.g, terminal or command prompt                                                                                           |
 | `Format`                |   char*  | Determines format/pattern of logging for corresponding level and logger.                                                                                                  |
 | `Filename`              |   char*  | Determines log file (full path) to write logs to for corresponding level and logger                                                                                       |
-| `Milliseconds_Width`    |   uint   | Specifies milliseconds width. Width can be within range (1-6)                                                                                                             |
+| `Subsecond_Precision`   |   uint   | Specifies subsecond precision (previously called 'milliseconds width'). Width can be within range (1-6)                                                                   |
 | `Performance_Tracking`  |   bool   | Determines whether or not performance tracking is enabled. This does not depend on logger or level. Performance tracking always uses 'performance' logger unless specified|
 | `Max_Log_File_Size`     |   size_t | If log file size of corresponding level is >= specified size, log file will be truncated.                                                                                 |
 | `Log_Flush_Threshold`   |  size_t  | Specifies number of log entries to hold until we flush pending log data                                                                                                   |
@@ -219,7 +264,7 @@ Sample Configuration File
    ENABLED              =  true
    TO_FILE              =  true
    TO_STANDARD_OUTPUT   =  true
-   MILLISECONDS_WIDTH   =  6
+   SUBSECOND_PRECISION  =  6
    PERFORMANCE_TRACKING =  true
    MAX_LOG_FILE_SIZE    =  2097152 ## 2MB - Comment starts with two hashes (##)
    LOG_FLUSH_THRESHOLD  =  100 ## Flush after every 100 logs
@@ -328,6 +373,7 @@ You can customize format of logging using following specifiers:
 |-----------------|---------------------------------------------------------------------------------------------|
 | `%logger`       | Logger ID                                                                                   |
 | `%thread`       | Thread ID - Uses std::thread if available, otherwise GetCurrentThreadId() on windows        |
+| `%thread_name`  | Use `Helpers::setThreadName` to set name of current thread (where you run `setThreadName` from). See [Thread Names sample](/samples/STL/thread-names.cpp)|
 | `%level`        | Severity level (Info, Debug, Error, Warning, Fatal, Verbose, Trace)                         |
 | `%levshort`     | Severity level (Short version i.e, I for Info and respectively D, E, W, F, V, T)            |
 | `%vlevel`       | Verbosity level (Applicable to verbose logging)                                             |
@@ -343,21 +389,6 @@ You can customize format of logging using following specifiers:
 | `%`             | Escape character (e.g, %%level will write %level)                                           |
 
 * Subject to compiler's availability of certain macros, e.g, `__LINE__`, `__FILE__` etc 
-
-You can also specify your own format specifiers. In order to do that you can use `el::Helpers::installCustomFormatSpecifier`. A perfect example is `%ip_addr` for TCP server application;
-
-```C++
-const char* getIp(void) {
-    return "192.168.1.1";
-}
-
-int main(void) {
-    el::Helpers::installCustomFormatSpecifier(el::CustomFormatSpecifier("%ip_addr", getIp));
-    el::Loggers::reconfigureAllLoggers(el::ConfigurationType::Format, "%datetime %level %ip_addr : %msg");
-    LOG(INFO) << "This is request from client";
-    return 0;
-}
-```
 
  [![top] Goto Top](#table-of-contents)
  
@@ -378,11 +409,30 @@ You can customize date/time format using following specifiers
 | `%H`            | Hour (24-hour format)                                                                                            |
 | `%m`            | Minute (zero-padded)                                                                                             |
 | `%s`            | Second (zero-padded)                                                                                             |
-| `%g`            | Milliseconds (width is configured by ConfigurationType::MillisecondsWidth)                                       |
+| `%g`            | Subsecond part (precision is configured by ConfigurationType::SubsecondPrecision)                               |
 | `%F`            | AM/PM designation                                                                                                |
 | `%`             | Escape character                                                                                                 |
 
 Please note, date/time is limited to `30` characters at most.
+
+ [![top] Goto Top](#table-of-contents)
+
+### Custom Format Specifiers
+
+You can also specify your own format specifiers. In order to do that you can use `el::Helpers::installCustomFormatSpecifier`. A perfect example is `%ip_addr` for TCP server application;
+
+```C++
+const char* getIp(void) {
+    return "192.168.1.1";
+}
+
+int main(void) {
+    el::Helpers::installCustomFormatSpecifier(el::CustomFormatSpecifier("%ip_addr", getIp));
+    el::Loggers::reconfigureAllLoggers(el::ConfigurationType::Format, "%datetime %level %ip_addr : %msg");
+    LOG(INFO) << "This is request from client";
+    return 0;
+}
+```
 
  [![top] Goto Top](#table-of-contents)
  
@@ -393,8 +443,8 @@ Form some parts of logging you can set logging flags; here are flags supported:
 |--------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------|
 | `NewLineForContainer (1)`                              | Makes sure we have new line for each container log entry                                                                                      |
 | `AllowVerboseIfModuleNotSpecified (2)`                 | Makes sure if -vmodule is used and does not specifies a module, then verbose logging is allowed via that module. Say param was -vmodule=main*=3 and a verbose log is being written from a file called something.cpp then if this flag is enabled, log will be written otherwise it will be disallowed. Note: having this defeats purpose of -vmodule                                 |
-| `LogDetailedCrashReason (4)`                           | When handling crashes by default, detailed crash reason will be logged as well (Disabled by default) ([issue #90](https://github.com/easylogging/easyloggingpp/issues/90))                                                                                                                                                                                |
-| `DisableApplicationAbortOnFatalLog (8)`                | Allows to disable application abortion when logged using FATAL level. Note that this does not apply to default crash handlers as application should be aborted after crash signal is handled. (Not added by default) ([issue #119](https://github.com/easylogging/easyloggingpp/issues/119))                                                                                                                                                                               |
+| `LogDetailedCrashReason (4)`                           | When handling crashes by default, detailed crash reason will be logged as well (Disabled by default) ([issue #90](https://github.com/muflihun/easyloggingpp/issues/90))                                                                                                                                                                                |
+| `DisableApplicationAbortOnFatalLog (8)`                | Allows to disable application abortion when logged using FATAL level. Note that this does not apply to default crash handlers as application should be aborted after crash signal is handled. (Not added by default) ([issue #119](https://github.com/muflihun/easyloggingpp/issues/119))                                                                                                                                                                               |
 | `ImmediateFlush (16)`                                  | Flushes log with every log-entry (performance sensative) - Disabled by default                                                                |
 | `StrictLogFileSizeCheck (32)`                          | Makes sure log file size is checked with every log                                                                                            |
 | `ColoredTerminalOutput (64)`                           | Terminal output will be colorful if supported by terminal.                                                                                            |
@@ -410,6 +460,8 @@ Form some parts of logging you can set logging flags; here are flags supported:
 You can set/unset these flags by using static `el::Loggers::addFlag` and `el::Loggers::removeFlag`. You can check to see if certain flag is available by using `el::Loggers::hasFlag`, all these functions take strongly-typed enum `el::LoggingFlag`
 
  > You can set these flags by using `--logging-flags` command line arg. You need to enable this functionality by defining macro `ELPP_LOGGING_FLAGS_FROM_ARG` (You will need to make sure to use `START_EASYLOGGINGPP(argc, argv)` to configure arguments).
+
+ > You can also set default (initial) flags using `ELPP_DEFAULT_LOGGING_FLAGS` and set numerical value for initial flags
 
  [![top] Goto Top](#table-of-contents)
 
@@ -430,7 +482,7 @@ Following table will explain all command line arguments that you may use to defi
 ### Configuration Macros
 Some of logging options can be set by macros, this is a thoughtful decision, for example if we have `ELPP_THREAD_SAFE` defined, all the thread-safe functionalities are enabled otherwise disabled (making sure over-head of thread-safety goes with it). To make it easy to remember and prevent possible conflicts, all the macros start with `ELPP_`
 
-NOTE: All the macros either need to be defined before `#include "easylogging++"` - but this gets hard and unreadable if project is getting bigger so we recommend you define all these macros using `-D` option of compiler, for example in case of `g++` you will do `g++ source.cpp ... -DELPP_SYSLOG -DELPP_THREADSAFE ...`
+NOTE: All the macros either need to be defined before `#include "easylogging++"` - but this gets hard and unreadable if project is getting bigger so we recommend you define all these macros using `-D` option of compiler, for example in case of `g++` you will do `g++ source.cpp ... -DELPP_SYSLOG -DELPP_THREAD_SAFE ...`
 
 |   Macro Name                             |                 Description                                                                                                                        |
 |------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -438,7 +490,7 @@ NOTE: All the macros either need to be defined before `#include "easylogging++"`
 | `ELPP_UNICODE`                          | Enables Unicode support when logging. Requires `START_EASYLOGGINGPP`                 |
 | `ELPP_THREAD_SAFE`                      | Enables thread-safety - make sure -lpthread linking for linux.                                                                                     |
 | `ELPP_FORCE_USE_STD_THREAD`             | Forces to use C++ standard library for threading (Only useful when using `ELPP_THREAD_SAFE`            |
-| `ELPP_STACKTRACE_ON_CRASH`              | Applicable to GCC only. Enables stacktrace on application crash                                                                                    |
+| `ELPP_FEATURE_CRASH_LOG`              | Applicable to GCC only. Enables stacktrace on application crash                                                                                    |
 | `ELPP_DISABLE_DEFAULT_CRASH_HANDLING`   | Disables default crash handling. You can use el::Helpers::setCrashHandler to use your own handler.                                                 |
 | `ELPP_DISABLE_LOGS`                     | Disables all logs - (preprocessing)                                                                                                                |
 | `ELPP_DISABLE_DEBUG_LOGS`               | Disables debug logs - (preprocessing)                                                                                                              |
@@ -448,8 +500,9 @@ NOTE: All the macros either need to be defined before `#include "easylogging++"`
 | `ELPP_DISABLE_FATAL_LOGS`               | Disables fatal logs - (preprocessing)                                                                                                              |
 | `ELPP_DISABLE_VERBOSE_LOGS`             | Disables verbose logs - (preprocessing)                                                                                                            |
 | `ELPP_DISABLE_TRACE_LOGS`               | Disables trace logs - (preprocessing)                                                                                                              |
-| `ELPP_FORCE_ENV_VAR_FROM_BASH`          | If environment variable could not be found, force using alternative bash command to find value, e.g, `whoami` for username. (DO NOT USE THIS MACRO WITH `LD_PRELOAD` FOR LIBRARIES THAT ARE ALREADY USING Easylogging++ OR YOU WILL END UP IN STACK OVERFLOW FOR PROCESSES (`popen`) (see [issue #87](https://github.com/easylogging/easyloggingpp/issues/87) for details))                                                                                                                                                                                       |
+| `ELPP_FORCE_ENV_VAR_FROM_BASH`          | If environment variable could not be found, force using alternative bash command to find value, e.g, `whoami` for username. (DO NOT USE THIS MACRO WITH `LD_PRELOAD` FOR LIBRARIES THAT ARE ALREADY USING Easylogging++ OR YOU WILL END UP IN STACK OVERFLOW FOR PROCESSES (`popen`) (see [issue #87](https://github.com/muflihun/easyloggingpp/issues/87) for details))                                                                                                                                                                                       |
 | `ELPP_DEFAULT_LOG_FILE`                 | Full filename where you want initial files to be created. You need to embed value of this macro with quotes, e.g, `-DELPP_DEFAULT_LOG_FILE='"logs/el.gtest.log"'` Note the double quotes inside single quotes, double quotes are the values for `const char*` and single quotes specifies value of macro                                                                                 |
+| `ELPP_NO_LOG_TO_FILE`                 | Disable logging to file initially|
 | `ELPP_NO_DEFAULT_LOG_FILE`              | If you dont want to initialize library with default log file, define this macro. But be sure to configure your logger with propery log filename or you will end up getting heaps of errors when trying to log to file (and `TO_FILE` is configured to `true`)                                                                                                              |
 | `ELPP_FRESH_LOG_FILE`              | Never appends log file whenever log file is created (Use with care as it may cause some unexpected result for some users)                                                  |
 | `ELPP_DEBUG_ERRORS`                    | If you wish to find out internal errors raised by Easylogging++ that can be because of configuration or something else, you can enable them by defining this macro. You will get your errors on standard output i.e, terminal or command prompt.                                                                                                                                             |
@@ -459,6 +512,9 @@ NOTE: All the macros either need to be defined before `#include "easylogging++"`
 | `ELPP_WINSOCK2`        | On windows system force to use `winsock2.h` instead of `winsock.h` when `WIN32_LEAN_AND_MEAN` is defined                                                                    |
 | `ELPP_CUSTOM_COUT` (advanced)     | Resolves to a value e.g, `#define ELPP_CUSTOM_COUT qDebug()` or `#define ELPP_CUSTOM_COUT std::cerr`. This will use the value for standard output (instead of using `std::cout`|
 | `ELPP_CUSTOM_COUT_LINE` (advanced) | Used with `ELPP_CUSTOM_COUT` to define how to write a log line with custom cout. e.g, `#define ELPP_CUSTOM_COUT_LINE(msg) QString::fromStdString(msg).trimmed()` |
+| `ELPP_NO_CHECK_MACROS`             | Do not define the *CHECK* macros                                                                                                                  |
+| `ELPP_NO_DEBUG_MACROS`             | Do not define the *DEBUG* macros                                                                                                                  |
+| `ELPP_UTC_DATETIME`                | Uses UTC time instead of local time (essentially uses `gmtime` instead of `localtime` and family functions)
 
  [![top] Goto Top](#table-of-contents)
  
@@ -489,15 +545,15 @@ LOG(INFO) << "This is info log";
 CLOG(ERROR, "performance") << "This is info log using performance logger";
 ```
 
-There is another way to use same macro i.e, `LOG` (and associated macros). This is that you define macro `ELPP_DEFAULT_LOGGER` and `ELPP_CURR_FILE_PERFORMANCE_LOGGER_ID` with logger ID that is already registered, and now when you use `LOG` macro, it automatically will use specified logger instead of `default` logger. Please note that this should be defined in source file instead of header file. This is so that when we include header we dont accidently use invalid logger.
+There is another way to use same macro i.e, `LOG` (and associated macros). This is that you define macro `ELPP_DEFAULT_LOGGER` and `ELPP_DEFAULT_PERFORMANCE_LOGGER` with logger ID that is already registered, and now when you use `LOG` macro, it automatically will use specified logger instead of `default` logger. Please note that this should be defined in source file instead of header file. This is so that when we include header we dont accidently use invalid logger.
 
 A quick example is here
 ```c++
 #ifndef ELPP_DEFAULT_LOGGER
 #   define ELPP_DEFAULT_LOGGER "update_manager"
 #endif
-#ifndef ELPP_CURR_FILE_PERFORMANCE_LOGGER_ID
-#   define ELPP_CURR_FILE_PERFORMANCE_LOGGER_ID ELPP_DEFAULT_LOGGER
+#ifndef ELPP_DEFAULT_PERFORMANCE_LOGGER
+#   define ELPP_DEFAULT_PERFORMANCE_LOGGER ELPP_DEFAULT_LOGGER
 #endif
 #include "easylogging++.h"
 UpdateManager::UpdateManager {
@@ -607,6 +663,12 @@ defaultLogger->info("My first ultimate log message %% %%v %v %v", 123, 222);
 
  [![top] Goto Top](#table-of-contents)
 
+### Network Logging
+
+You can send your messages to network. But you will have to implement your own way using log dispatcher API. We have written fully working sample for this purpose. Please see [Send to Network sample](/samples/send-to-network)
+
+ [![top] Goto Top](#table-of-contents)
+
 ### Verbose Logging
 #### Basic
 Verbose logging is useful in every software to record more information than usual. Very useful for troubleshooting. Following are verbose logging specific macros;
@@ -667,35 +729,6 @@ In order to change vmodules on the fly (instead of via command line args) - use 
 
  [![top] Goto Top](#table-of-contents)
  
-### STL Logging
-As mentioned earlier, with easylogging++, you can log your STL templates including most containers. In order to do so you will need to define `ELPP_STL_LOGGING` macro. This enables including all the necessary headers and defines all necessary functions.
-For performance, containers are limited to log maximum of 100 entries. This behaviour can be changed by changed header file (base::consts::kMaxLogPerContainer) but not recommended as in order to log, writer has to go through each entry causing potential delays. But if you are not really concerned with performance, you may change this value.
-
- [![top] Goto Top](#table-of-contents)
- 
-#### Supported Templates
-Following templates are supported as part of STL Logging; note: basic and primitive types e.g, std::string or long are not listed as they is supported anyway, following list only contains non-basic types e.g, containers or bitset etc.
-
-|     *       |          *              |       *          |       *          |
-|-------------|-------------------------|------------------|------------------|
-| std::vector |  std::list              |  std::deque      |    std::queue    |
-| std::stack  |  std::priority_queue    |  std::set        |    std::multiset |
-| std::pair   |  std::bitset            |  std::map        |    std::multimap |
-
-Some C++11 specific templates are supported by further explicit macro definitions; note these also need `ELPP_STL_LOGGING`
-
-|   Template              |     Macro Needed            |
-|-------------------------|-----------------------------|
-| std::array              | `ELPP_LOG_STD_ARRAY`       |
-| std::unordered_map      | `ELPP_LOG_UNORDERED_MAP`   |
-| std::unordered_multimap | `ELPP_LOG_UNORDERED_MAP`   |
-| std::unordered_set      | `ELPP_LOG_UNORDERED_SET`   |
-| std::unordered_multiset | `ELPP_LOG_UNORDERED_SET`   |
-
-Standard manipulators are also supported, in addition std::stringstream is also supported.
-
- [![top] Goto Top](#table-of-contents)
- 
 ### Registering New Loggers
 Loggers are unique in logger repository by ID. You can register new logger the same way as you would get logger. Using `getLogger(.., ..)` from `el::Loggers` helper class. This function takes two params, first being ID and second being boolean (optional) to whether or not to register new logger if does not already exist and returns pointer to existing (or newly created) el::Logger class. This second param is optional and defaults to true. If you set it to false and logger does not exist already, it will return nullptr.
 
@@ -735,16 +768,18 @@ Let's say we have an application that uses easylogging++ and has it's own config
  * Instead of using `INITIALIZE_EASYLOGGINGPP` you use `SHARE_EASYLOGGINGPP(access-function-to-repository)`
  * Instead of using `INITIALIZE_EASYLOGGINGPP` you use `INITIALIZE_NULL_EASYLOGGINGPP` and then `el::Helpers::setStorage(el::base::type::StoragePointer)`
  
-  Refer [this](https://github.com/easylogging/easyloggingpp/blob/master/samples/STL/shared-storage) for details
-
-After you share repository, you can reconfigure the only repository (i.e, the one that is used by application and library both), and use both to write logs. A very good example is in `samples/VC++/DLLSample`
+After you share repository, you can reconfigure the only repository (i.e, the one that is used by application and library both), and use both to write logs.
 
  [![top] Goto Top](#table-of-contents)
 
 # Extra Features
 Easylogging++ is feature-rich logging library. Apart from features already mentioned above, here are some extra features. If code snippets don't make sense and further sample is needed, there are many samples available at github repository (samples). Feel free to browse around.
 
+Some features require you to define macros (marked as prerequisite in each section) to enable them. This is to reduce compile time. If you want to enable all features you can define `ELPP_FEATURE_ALL`.
+
 ### Performance Tracking
+Prerequisite: Define macro `ELPP_FEATURE_PERFORMANCE_TRACKING`
+
 One of the most notable features of Easylogging++ is its ability to track performance of your function or block of function. 
 Please note, this is not backward compatible as previously we had macros that user must had defined in order to track performance and I am sure many users had avoided in doing so. (Read v8.91 ReadMe for older way of doing it)
 The new way of tracking performance is much easier and reliable. All you need to do is use one of two macros from where you want to start tracking.
@@ -782,7 +817,7 @@ The result of above execution for iter = 10, is as following
 06:22:31,460 INFO Executed [void performHeavyTask(int)] in [106 ms]
 ```
 
-In the above example, we have used both the macros. In line-2 we have `TIMED_FUNC` with object name timerObj and line-7 we have TIMED_SCOPE with object name `timerBlkObj` and block name `heavy-iter`. Notice how block name is thrown out to the logs with every hit.  (Note: `TIMED_FUNC` is `TIMED_BLOC` with block name = function name)
+In the above example, we have used both the macros. In line-2 we have `TIMED_FUNC` with object pointer name timerObj and line-7 we have TIMED_SCOPE with object pointer name `timerBlkObj` and block name `heavy-iter`. Notice how block name is thrown out to the logs with every hit.  (Note: `TIMED_FUNC` is `TIMED_SCOPE` with block name = function name)
 
 You might wonder why do we need object name. Well easylogging++ performance tracking feature takes it further and provides ability to add, what's called checkpoints. 
 Checkpoints have two macros:
@@ -808,7 +843,7 @@ void performHeavyTask(int iter) {
 }
 ```
 
-Notice macro on line-11 (also note comment on line-8. It's checkpoint for heavy-iter block. Now notice following output
+Notice macro on line-11 (also note comment on line-8). It's checkpoint for heavy-iter block. Now notice following output
 ```
 06:33:07,558 INFO Executed [heavy-iter] in [9 ms]
 06:33:07,566 INFO Performance checkpoint for block [heavy-iter] : [8 ms]
@@ -850,16 +885,31 @@ Notes:
 
 1. Performance tracking uses `performance` logger (INFO level) by default unless `el::base::PerformanceTracker` is constructed manually (not using macro - not recommended). When configuring other loggers, make sure you configure this one as well.
 
-2. In above examples, `timerObj` and `timerBlkObj` is of type `el::base::PerformanceTracker` and `checkpoint()` can be accessed by `timerObj.checkpoint()` but not recommended as this will override behaviour of using macros, behaviour like location of checkpoint.
+2. In above examples, `timerObj` and `timerBlkObj` is of type `el::base::type::PerformanceTrackerPtr`. The `checkpoint()` routine of the `el::base::PerformanceTracker` can be accessed by `timerObj->checkpoint()` but not recommended as this will override behaviour of using macros, behaviour like location of checkpoint.
 
-3. In order to access `el::base::PerformanceTracker` while in `TIMED_BLOCK`, you can use `timerObj.timer`
+3. In order to access `el::base::type::PerformanceTrackerPtr` while in `TIMED_BLOCK`, you can use `timerObj.timer`
 
 4. `TIMED_BLOCK` macro resolves to a single-looped for-loop, so be careful where you define `TIMED_BLOCK`, if for-loop is allowed in the line where you use it, you should have no errors.
 
- > You may be interested in [python script to parse performance logs](https://github.com/easylogging/easyloggingpp/issues/206)
+ > You may be interested in [python script to parse performance logs](https://github.com/muflihun/easyloggingpp/issues/206)
 
  [![top] Goto Top](#table-of-contents)
+ 
+#### Conditional Performance Tracking
+If you want to enable performance tracking for certain conditions only, e.g. based on a certain verbosity level, you can use the variants `TIMED_FUNC_IF` or `TIMED_SCOPE_IF`.
+ 
+ A verbosity level example is given below
+ 
+```c++
+ void performHeavyTask(int iter) {
+    // enable performance tracking for verbosity level 4 or higher
+    TIMED_FUNC_IF( timerObj, VLOG_IS_ON(4) );
+    // Some more heavy tasks
+ }
+```
 
+ [![top] Goto Top](#table-of-contents)
+ 
 #### Make Use of Performance Tracking Data
 If you wish to capture performance tracking data right after it is finished, you can do so by extending `el::PerformanceTrackingCallback`.
 
@@ -877,13 +927,15 @@ If you are having failure in log-rollout, you may have failed to add flag i.e, `
 This feature has it's own section in this reference manual because you can do stuffs with the file being thrown away. This is useful, for example if you wish to back this file up etc.
 This can be done by using `el::Helpers::installPreRollOutCallback(const PreRollOutCallback& handler)` where `PreRollOutCallback` is typedef of type `std::function<void(const char*, std::size_t)>`. Please note following if you are using this feature
 
-There is a [sample](https://github.com/easylogging/easyloggingpp/tree/master/samples/STL/logrotate.cpp) available that you can use as basis.
+There is a [sample](/samples/STL/logrotate.cpp) available that you can use as basis.
 
 > You should not log anything in this function. This is because logger would already be locked in multi-threaded application and you can run into dead lock conditions. If you are sure that you are not going to log to same file and not using same logger, feel free to give it a try.
 
  [![top] Goto Top](#table-of-contents)
 
 ### Crash Handling
+Prerequisite: Define macro `ELPP_FEATURE_CRASH_LOG`
+
 Easylogging++ provides ability to handle unexpected crashes for GCC compilers. This is active by default and can be disabled by defining macro `ELPP_DISABLE_DEFAULT_CRASH_HANDLING`. By doing so you are telling library not to handle any crashes. Later on if you wish to handle crash yourself, you can assign crash handler of type void func(int) where int is signal caught. 
 
 Following signals are handled;
@@ -893,7 +945,7 @@ Following signals are handled;
 * SIGSEGV
 * SIGINT
 
-Stacktraces are not printed by default, in order to do so define macro `ELPP_STACKTRACE_ON_CRASH`. Remember, stack trace is only available for GCC compiler.
+Stacktraces are not printed by default, in order to do so define macro `ELPP_FEATURE_CRASH_LOG`. Remember, stack trace is only available for GCC compiler.
 
 > Default handler and stack trace uses `default` logger.
 
@@ -944,11 +996,15 @@ int main(void) {
  [![top] Goto Top](#table-of-contents)
 
 ### Stacktrace
+Prerequisite: Define macro `ELPP_FEATURE_CRASH_LOG`
+
 Easylogging++ supports stack trace printing for GCC compilers. You can print stack trace at anytime by calling `el::base::debug::StackTrace()`, formatting will be done automatically. Note, if you are using non-GCC compiler, you will end-up getting empty output.
 
  [![top] Goto Top](#table-of-contents)
  
 ### Multi-threading
+Prerequisite: Define macro `ELPP_THREAD_SAFE`
+
 Easylogging++ is thread-safe. By default thread-safety is disabled. You can enable it by defining `ELPP_THREAD_SAFE` otherwise you will see unexpected results. This is intentional to make library efficient for single threaded application.
 
  [![top] Goto Top](#table-of-contents)
@@ -982,7 +1038,9 @@ Easylogging++ supports `perror()` styled logging using `PLOG(LEVEL)`, `PLOG_IF(C
  [![top] Goto Top](#table-of-contents)
 
 ### Syslog
-Easylogging++ supports syslog for platforms that have `syslog.h` header. In order to enable it, you need to define `ELPP_SYSLOG`. If your platform does not have `syslog.h`, make sure you do not define this macro or you will end up in errors. Once you are ready to use syslog, you can do so by using one of `SYSLOG(LEVEL)`, `SYSLOG_IF(Condition, LEVEL)`, `SYSLOG_EVERY_N(n, LEVEL)` and uses logger ID: `syslog`. If you want to use custom logger you can do so by using `CSYSLOG(LEVEL, loggerId)` or `CSYSLOG_IF(Condition, LEVEL, loggerId)` or `CSYSLOG_EVERY_N(n, LEVEL, loggerId)`
+Prerequisite: Define macro `ELPP_SYSLOG`
+
+Easylogging++ supports syslog for platforms that have `syslog.h` header. If your platform does not have `syslog.h`, make sure you do not define this macro or you will end up in errors. Once you are ready to use syslog, you can do so by using one of `SYSLOG(LEVEL)`, `SYSLOG_IF(Condition, LEVEL)`, `SYSLOG_EVERY_N(n, LEVEL)` and uses logger ID: `syslog`. If you want to use custom logger you can do so by using `CSYSLOG(LEVEL, loggerId)` or `CSYSLOG_IF(Condition, LEVEL, loggerId)` or `CSYSLOG_EVERY_N(n, LEVEL, loggerId)`
 
 Syslog in Easylogging++ supports C++ styled streams logging, following example;
 ```c++
@@ -1010,8 +1068,41 @@ Following levels are not supported and correspond to `LOG_NOTICE`: TRACE, wherea
 
  [![top] Goto Top](#table-of-contents)
  
+### STL Logging
+Prerequisite: Define macro `ELPP_STL_LOGGING`
+
+As mentioned earlier, with easylogging++, you can log your STL templates including most containers. In order to do so you will need to define `ELPP_STL_LOGGING` macro. This enables including all the necessary headers and defines all necessary functions.
+For performance, containers are limited to log maximum of 100 entries. This behaviour can be changed by changed header file (base::consts::kMaxLogPerContainer) but not recommended as in order to log, writer has to go through each entry causing potential delays. But if you are not really concerned with performance, you may change this value.
+
+ [![top] Goto Top](#table-of-contents)
+
+#### Supported Templates
+Following templates are supported as part of STL Logging; note: basic and primitive types e.g, std::string or long are not listed as they is supported anyway, following list only contains non-basic types e.g, containers or bitset etc.
+
+|     *       |          *              |       *          |       *          |
+|-------------|-------------------------|------------------|------------------|
+| std::vector |  std::list              |  std::deque      |    std::queue    |
+| std::stack  |  std::priority_queue    |  std::set        |    std::multiset |
+| std::pair   |  std::bitset            |  std::map        |    std::multimap |
+
+Some C++11 specific templates are supported by further explicit macro definitions; note these also need `ELPP_STL_LOGGING`
+
+|   Template              |     Macro Needed            |
+|-------------------------|-----------------------------|
+| std::array              | `ELPP_LOG_STD_ARRAY`       |
+| std::unordered_map      | `ELPP_LOG_UNORDERED_MAP`   |
+| std::unordered_multimap | `ELPP_LOG_UNORDERED_MAP`   |
+| std::unordered_set      | `ELPP_LOG_UNORDERED_SET`   |
+| std::unordered_multiset | `ELPP_LOG_UNORDERED_SET`   |
+
+Standard manipulators are also supported, in addition std::stringstream is also supported.
+
+[![top] Goto Top](#table-of-contents)
+ 
 ### Qt Logging
-Easylogging++ has complete logging support for Qt core library. define `ELPP_QT_LOGGING` macro. This will include all the headers supported Qt logging. Once you did that, you should be good to go.
+Prerequisite: Define macro `ELPP_QT_LOGGING`
+
+Easylogging++ has complete logging support for Qt core library. When enabled, this will include all the headers supported Qt logging. Once you did that, you should be good to go.
 
 Following Qt classes and containers are supported by Easylogging++ v9.0+
 
@@ -1028,9 +1119,9 @@ Also note, if you are logging a container that contains custom class, make sure 
  [![top] Goto Top](#table-of-contents)
 
 ### Boost Logging
-Easylogging++ supports some of boost templates. In order to enable boost logging, define macro `ELPP_BOOST_LOGGING`
+Prerequisite: Define macro `ELPP_BOOST_LOGGING`
 
-Following table shows the templates supported.
+Easylogging++ supports some of boost templates. Following table shows the templates supported.
 
 |     *                               |          *                               |
 |-------------------------------------|------------------------------------------|
@@ -1043,7 +1134,9 @@ Following table shows the templates supported.
  [![top] Goto Top](#table-of-contents)
 
 ### wxWidgets Logging
-Easylogging++ supports some of wxWidgets templates. In order to enable wxWidgets logging, define macro `ELPP_WXWIDGETS_LOGGING`
+Prerequisite: Define macro `ELPP_WXWIDGETS_LOGGING`
+
+Easylogging++ supports some of wxWidgets templates.
 
 Following table shows the templates supported.
 
@@ -1176,9 +1269,18 @@ If you wish to capture log message right after it is dispatched, you can do so b
  > DO NOT LOG ANYTHING IN THIS HANDLER OR YOU WILL END UP IN INFINITE-LOOP
 
  [![top] Goto Top](#table-of-contents)
+
+### Logger Registration Callback
+If you wish to capture event of logger registration (and potentially want to reconfigure this logger without changing default configuration) you can use `el::LoggerRegistrationCallback`. The syntax is similar to [other callbacks](#log-dispatch-callback). You can use [this sample](https://github.com/muflihun/easyloggingpp/blob/master/samples/STL/new-logger-registration-callback.cpp) as basis.
+
+ > DO NOT LOG ANYTHING IN THIS HANDLER
+
+ [![top] Goto Top](#table-of-contents)
  
 ### Asynchronous Logging
-Asynchronous logging is in experimental stages and they are not widely promoted. You may enable and test this feature by defining macro `ELPP_EXPERIMENTAL_ASYNC` and if you find some issue with the feature please report in [this issue](https://github.com/easylogging/easyloggingpp/issues/202). Reporting issues always help for constant improvements.
+Prerequisite: Define macro `ELPP_EXPERIMENTAL_ASYNC`
+
+Asynchronous logging is in experimental stages and they are not widely promoted. You may enable and test this feature by defining macro `ELPP_EXPERIMENTAL_ASYNC` and if you find some issue with the feature please report in [this issue](https://github.com/muflihun/easyloggingpp/issues/202). Reporting issues always help for constant improvements.
 
 Please note:
 * Asynchronous will only work with few compilers (it purely uses `std::thread`)
@@ -1193,7 +1295,7 @@ There are static helper classes available to make it easy to do stuffs;
  * `el::Helpers`
  * `el::Loggers`
 
-You can do various cool stuffs using functions in these classes, see [this issue](https://github.com/easylogging/easyloggingpp/issues/210) for instance.
+You can do various cool stuffs using functions in these classes, see [this issue](https://github.com/muflihun/easyloggingpp/issues/210) for instance.
 
  [![top] Goto Top](#table-of-contents)
  
@@ -1204,21 +1306,13 @@ You can submit patches to `develop` branch and we will try and merge them. Since
  [![top] Goto Top](#table-of-contents)
  
 ### Reporting a Bug
-If you have found a bug and wish to report it, feel free to do so at [github issue tracker](https://github.com/easylogging/easyloggingpp/issues?state=open). I will try to look at it as soon as possible. Some information should be provided to make it easy to reproduce;
+If you have found a bug and wish to report it, feel free to do so at [github issue tracker](https://github.com/muflihun/easyloggingpp/issues?state=open). I will try to look at it as soon as possible. Some information should be provided to make it easy to reproduce;
 * Platform (OS, Compiler)
 * Log file location
 * Macros defined (on compilation) OR simple compilation 
 * Please assign issue label.
 
 Try to provide as much information as possible. Any bug with no clear information will be ignored and closed.
-
- [![top] Goto Top](#table-of-contents)
-
-### Donation
-
-Easylogging++ is free to use. You can check the details on where do donations go by clicking link below.
-
-[![paypal]](http://muflihun.com/donation/)
 
  [![top] Goto Top](#table-of-contents)
 
@@ -1270,11 +1364,11 @@ Easylogging++ has also been tested with following C++ libraries;
 ```
 The MIT License (MIT)
 
-Copyright (c) 2015 muflihun.com
+Copyright (c) 2017 muflihun.com
 
-https://github.com/easylogging/easyloggingpp
-http://easylogging.muflihun.com
-http://muflihun.com
+https://github.com/muflihun/easyloggingpp
+https://labs.muflihun.com
+https://muflihun.com
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -1304,40 +1398,38 @@ Icons used in this manual (in compatibility section) are solely for information 
 
  [![top] Goto Top](#table-of-contents)
  
-  [banner]: https://raw.githubusercontent.com/easylogging/homepage/master/images/banner.png?v=4
-  [ubuntu]: https://raw.githubusercontent.com/easylogging/homepage/master/images/icons/ubuntu.png?v=2
-  [mint]: https://raw.githubusercontent.com/easylogging/homepage/master/images/icons/linux-mint.png?v=2
-  [freebsd]: https://raw.githubusercontent.com/easylogging/homepage/master/images/icons/free-bsd.png?v=2
-  [sl]: https://raw.githubusercontent.com/easylogging/homepage/master/images/icons/scientific-linux.png?v=2
-  [fedora]: https://raw.githubusercontent.com/easylogging/homepage/master/images/icons/fedora.png?v=3
-  [mac]: https://raw.githubusercontent.com/easylogging/homepage/master/images/icons/mac-osx.png?v=2
-  [winxp]: https://raw.githubusercontent.com/easylogging/homepage/master/images/icons/windowsxp.png?v=2
-  [win7]: https://raw.githubusercontent.com/easylogging/homepage/master/images/icons/windows7.png?v=2
-  [win8]: https://raw.githubusercontent.com/easylogging/homepage/master/images/icons/windows8.png?v=2
-  [win10]: https://raw.githubusercontent.com/easylogging/homepage/master/images/icons/windows10.png?v=2
-  [qt]: https://raw.githubusercontent.com/easylogging/homepage/master/images/icons/qt.png?v=3
-  [boost]: https://raw.githubusercontent.com/easylogging/homepage/master/images/icons/boost.png?v=3
-  [wxwidgets]: https://raw.githubusercontent.com/easylogging/homepage/master/images/icons/wxwidgets.png?v=3
-  [devcpp]: https://raw.githubusercontent.com/easylogging/homepage/master/images/icons/devcpp.png?v=3
-  [gtkmm]: https://raw.githubusercontent.com/easylogging/homepage/master/images/icons/gtkmm.png?v=3
-  [tdm]: https://raw.githubusercontent.com/easylogging/homepage/master/images/icons/tdm.png?v=3
-  [raspberrypi]: https://raw.githubusercontent.com/easylogging/homepage/master/images/icons/raspberry-pi.png?v=3
-  [solaris]: https://raw.githubusercontent.com/easylogging/homepage/master/images/icons/solaris.png?v=3
+  [banner]: https://raw.githubusercontent.com/muflihun/easyloggingpp.muflihun.com/master/images/banner.png?v=4
+  [ubuntu]: https://raw.githubusercontent.com/muflihun/easyloggingpp.muflihun.com/master/images/icons/ubuntu.png?v=2
+  [mint]: https://raw.githubusercontent.com/muflihun/easyloggingpp.muflihun.com/master/images/icons/linux-mint.png?v=2
+  [freebsd]: https://raw.githubusercontent.com/muflihun/easyloggingpp.muflihun.com/master/images/icons/free-bsd.png?v=2
+  [sl]: https://raw.githubusercontent.com/muflihun/easyloggingpp.muflihun.com/master/images/icons/scientific-linux.png?v=2
+  [fedora]: https://raw.githubusercontent.com/muflihun/easyloggingpp.muflihun.com/master/images/icons/fedora.png?v=3
+  [mac]: https://raw.githubusercontent.com/muflihun/easyloggingpp.muflihun.com/master/images/icons/mac-osx.png?v=2
+  [winxp]: https://raw.githubusercontent.com/muflihun/easyloggingpp.muflihun.com/master/images/icons/windowsxp.png?v=2
+  [win7]: https://raw.githubusercontent.com/muflihun/easyloggingpp.muflihun.com/master/images/icons/windows7.png?v=2
+  [win8]: https://raw.githubusercontent.com/muflihun/easyloggingpp.muflihun.com/master/images/icons/windows8.png?v=2
+  [win10]: https://raw.githubusercontent.com/muflihun/easyloggingpp.muflihun.com/master/images/icons/windows10.png?v=2
+  [qt]: https://raw.githubusercontent.com/muflihun/easyloggingpp.muflihun.com/master/images/icons/qt.png?v=3
+  [boost]: https://raw.githubusercontent.com/muflihun/easyloggingpp.muflihun.com/master/images/icons/boost.png?v=3
+  [wxwidgets]: https://raw.githubusercontent.com/muflihun/easyloggingpp.muflihun.com/master/images/icons/wxwidgets.png?v=3
+  [devcpp]: https://raw.githubusercontent.com/muflihun/easyloggingpp.muflihun.com/master/images/icons/devcpp.png?v=3
+  [gtkmm]: https://raw.githubusercontent.com/muflihun/easyloggingpp.muflihun.com/master/images/icons/gtkmm.png?v=3
+  [tdm]: https://raw.githubusercontent.com/muflihun/easyloggingpp.muflihun.com/master/images/icons/tdm.png?v=3
+  [raspberrypi]: https://raw.githubusercontent.com/muflihun/easyloggingpp.muflihun.com/master/images/icons/raspberry-pi.png?v=3
+  [solaris]: https://raw.githubusercontent.com/muflihun/easyloggingpp.muflihun.com/master/images/icons/solaris.png?v=3
 
 
-  [gcc]: https://raw.githubusercontent.com/easylogging/homepage/master/images/icons/gcc.png?v=4
-  [mingw]: https://raw.githubusercontent.com/easylogging/homepage/master/images/icons/mingw.png?v=2
-  [cygwin]: https://raw.githubusercontent.com/easylogging/homepage/master/images/icons/cygwin.png?v=2
-  [vcpp]: https://raw.githubusercontent.com/easylogging/homepage/master/images/icons/vcpp.png?v=2
-  [llvm]: https://raw.githubusercontent.com/easylogging/homepage/master/images/icons/llvm.png?v=2
-  [intel]: https://raw.githubusercontent.com/easylogging/homepage/master/images/icons/intel.png?v=2
-  [android]: https://raw.githubusercontent.com/easylogging/homepage/master/images/icons/android.png?v=2
-  [manual]: https://raw.githubusercontent.com/easylogging/homepage/master/images/help.png?v=3
-  [download]: https://raw.githubusercontent.com/easylogging/homepage/master/images/download.png?v=2
-  [samples]: https://raw.githubusercontent.com/easylogging/homepage/master/images/sample.png?v=2
-  [notes]: https://raw.githubusercontent.com/easylogging/homepage/master/images/notes.png?v=4
-  [top]: https://raw.githubusercontent.com/easylogging/homepage/master/images/up.png?v=4
-  [www]: https://raw.githubusercontent.com/easylogging/homepage/master/images/logo-www.png?v=6
+  [gcc]: https://raw.githubusercontent.com/muflihun/easyloggingpp.muflihun.com/master/images/icons/gcc.png?v=4
+  [mingw]: https://raw.githubusercontent.com/muflihun/easyloggingpp.muflihun.com/master/images/icons/mingw.png?v=2
+  [cygwin]: https://raw.githubusercontent.com/muflihun/easyloggingpp.muflihun.com/master/images/icons/cygwin.png?v=2
+  [vcpp]: https://raw.githubusercontent.com/muflihun/easyloggingpp.muflihun.com/master/images/icons/vcpp.png?v=2
+  [llvm]: https://raw.githubusercontent.com/muflihun/easyloggingpp.muflihun.com/master/images/icons/llvm.png?v=2
+  [intel]: https://raw.githubusercontent.com/muflihun/easyloggingpp.muflihun.com/master/images/icons/intel.png?v=2
+  [android]: https://raw.githubusercontent.com/muflihun/easyloggingpp.muflihun.com/master/images/icons/android.png?v=2
+  [manual]: https://raw.githubusercontent.com/muflihun/easyloggingpp.muflihun.com/master/images/help.png?v=3
+  [download]: https://raw.githubusercontent.com/muflihun/easyloggingpp.muflihun.com/master/images/download.png?v=2
+  [samples]: https://raw.githubusercontent.com/muflihun/easyloggingpp.muflihun.com/master/images/sample.png?v=2
+  [notes]: https://raw.githubusercontent.com/muflihun/easyloggingpp.muflihun.com/master/images/notes.png?v=4
+  [top]: https://raw.githubusercontent.com/muflihun/easyloggingpp.muflihun.com/master/images/up.png?v=4
+  [www]: https://raw.githubusercontent.com/muflihun/easyloggingpp.muflihun.com/master/images/logo-www.png?v=6
   
-  [paypal]: https://www.paypalobjects.com/en_AU/i/btn/btn_donateCC_LG.gif
-  [pledgie]: https://pledgie.com/campaigns/22070.png

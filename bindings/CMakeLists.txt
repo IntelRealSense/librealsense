@@ -38,11 +38,11 @@ endif()
 
 if(BUILD_PYTHON_BINDINGS)
     set(RAW_RS_CPP ../src/backend.cpp ../src/win/win-helpers.cpp ../src/win/win-uvc.cpp
-                   ../src/win/win-usb.cpp ../src/win/win-backend.cpp ../src/backend-v4l2.cpp ../src/backend-hid.cpp
-                   ../src/win/win-hid.cpp ../src/archive.cpp ../src/log.cpp ../src/types.cpp)
+                   ../src/win/win-usb.cpp ../src/win/win-backend.cpp ../src/backend-v4l2.cpp ../src/backend-hid.cpp ../src/types.cpp
+                   ../src/win/win-hid.cpp ../src/archive.cpp ../src/log.cpp ../src/types.cpp ../third_party/easyloggingpp/src/easylogging++.cc)
     set(RAW_RS_HPP ../src/backend.h ../src/win/win-helpers.h ../src/win/win-uvc.h ../src/backend-v4l2.h ../src/backend-hid.h
                    ../src/win/win-usb.h ../src/win/win-hid.h ../src/win/win-backend.h ../src/archive.h
-                   ../src/types.h)
+                   ../src/types.h ../third_party/easyloggingpp/src/easylogging++.h)
     pybind11_add_module(pybackend2 pybackend.cpp ${RAW_RS_CPP} ${RAW_RS_HPP})
     target_link_libraries(pybackend2 ${LIBUSB1_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
     set_target_properties(pybackend2 PROPERTIES FOLDER Bindings)

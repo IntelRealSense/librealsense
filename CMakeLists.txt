@@ -114,9 +114,12 @@ set(REALSENSE_CPP
     src/win/win-hid.cpp
     src/win/win-backend.cpp
 
-    third_party/sqlite/sqlite3.h
-    src/sql.h
-    src/recorder.h
+    third_party/easyloggingpp/src/easylogging++.cc
+
+    third_party/sqlite/sqlite3.c
+    src/sql.cpp
+    src/recorder.cpp
+
 )
 
 set(REALSENSE_HPP
@@ -153,9 +156,10 @@ set(REALSENSE_HPP
     src/win/win-hid.h
     src/win/win-backend.h
 
-    third_party/sqlite/sqlite3.c
-    src/sql.cpp
-    src/recorder.cpp
+    third_party/easyloggingpp/src/easylogging++.h
+    third_party/sqlite/sqlite3.h
+    src/sql.h
+    src/recorder.h
 )
 
 if(WIN32)
@@ -301,6 +305,10 @@ else()
     add_library(realsense2 STATIC ${REALSENSE_CPP} ${REALSENSE_HPP})
 endif()
 
+add_definitions(-DELPP_THREAD_SAFE)
+add_definitions(-DELPP_NO_DEFAULT_LOG_FILE)
+
+
 set_target_properties (realsense2 PROPERTIES
     FOLDER Library
 )
@@ -328,6 +336,7 @@ ELSE()
     install(DIRECTORY ${PROJECT_SOURCE_DIR}/include/librealsense DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
     install(CODE "execute_process(COMMAND ldconfig)")
 ENDIF()
+
 
 option(BUILD_EXAMPLES "Build realsense examples." OFF)
 if(BUILD_EXAMPLES)

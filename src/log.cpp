@@ -19,6 +19,7 @@ namespace rsimpl2
         log_callback_ptr callback;
 
         std::string filename;
+        const std::string log_id = "librealsense";
 
     public:
         static el::Level severity_to_level(rs2_log_severity severity)
@@ -59,14 +60,60 @@ namespace rsimpl2
                     el::ConfigurationType::ToFile, "true");
             }
 
-            el::Loggers::reconfigureLogger("librealsense", defaultConf);
+            el::Loggers::reconfigureLogger(log_id, defaultConf);
         }
 
-        logger_type() : callback(nullptr, [](rs2_log_callback*) {})
+        void open_def() const
         {
-            filename = to_string() << datetime_string() << ".log";
+            el::Configurations defaultConf;
+            defaultConf.setToDefault();
+            // To set GLOBAL configurations you may use
 
-            open();
+            defaultConf.setGlobally(el::ConfigurationType::ToFile, "false");
+            defaultConf.setGlobally(el::ConfigurationType::ToStandardOutput, "false");
+
+            el::Loggers::reconfigureLogger(log_id, defaultConf);
+        }
+
+
+        logger_type()
+            : callback(nullptr, [](rs2_log_callback*) {}),
+              filename(to_string() << datetime_string() << ".log")
+        {
+            rs2_log_severity severity;
+            if (try_get_log_severity(severity))
+            {
+                log_to_file(severity, filename.c_str());
+            }
+            else
+            {
+                open_def();
+            }
+        }
+
+        static bool try_get_log_severity(rs2_log_severity& severity)
+        {
+            static const char* severity_var_name = "LRS_LOG_LEVEL";
+            auto content = getenv(severity_var_name);
+
+            if (content)
+            {
+                std::string content_str(content);
+                std::transform(content_str.begin(), content_str.end(), content_str.begin(), ::toupper);
+
+                for (uint32_t i = 0; i < RS2_LOG_SEVERITY_COUNT; i++)
+                {
+                    auto current = (rs2_log_severity)i;
+                    std::string name = rsimpl2::get_string(current);
+                    if (content_str == name)
+                    {
+                        severity = current;
+                        return true;
+                    }
+                }
+            }
+
+            return false;
         }
 
         void log_to_console(rs2_log_severity min_severity)
@@ -77,8 +124,12 @@ namespace rsimpl2
 
         void log_to_file(rs2_log_severity min_severity, const char * file_path)
         {
-            minimum_file_severity = min_severity;
-            if (file_path) filename = file_path;
+            if (!try_get_log_severity(minimum_file_severity))
+                minimum_file_severity = min_severity;
+
+            if (file_path)
+                filename = file_path;
+
             open();
         }
     };
