@@ -254,7 +254,7 @@ namespace rsimpl2
                 }
 
                 if (xioctl(fd, VIDIOC_QBUF, &_buf) < 0)
-                    throw linux_backend_exception("xioctl(VIDIOC_QBUF) failed");
+                    LOG_ERROR("xioctl(VIDIOC_QBUF) failed when requesting new frame! Last-error: " << strerror(errno));
 
                 _must_enqueue = false;
             }
@@ -773,7 +773,6 @@ namespace rsimpl2
             else
             {
                 LOG_WARNING("BUG REPRUDUCED!!! Frames didn't arrived within 5 seconds");
-
                 rsimpl2::notification n = {RS2_NOTIFICATION_CATEGORY_FRAMES_TIMEOUT, 0, RS2_LOG_SEVERITY_WARN,  "Frames didn't arrived within 5 seconds"};
 
                 _error_handler(n);
