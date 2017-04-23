@@ -22,7 +22,7 @@
 
 ## Examples
 ```python
-import pylibrealsense as rs
+import pyrealsense2 as rs
 
 def callback(frame):
     print "got frame #", frame.get_frame_number()

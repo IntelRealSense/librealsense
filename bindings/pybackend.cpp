@@ -5,13 +5,16 @@
 
 // STL conversions
 #include <pybind11/stl.h>
+#include <pybind11/stl_bind.h>
 
 // makes std::function conversions work
 #include <pybind11/functional.h>
 
 #include "../src/backend.h"
+#include "pybackend_extras.h"
 
 #include <sstream>
+#include <vector>
 
 #define NAME pybackend2
 #define SNAME "pybackend2"
@@ -20,6 +23,10 @@ namespace py = pybind11;
 using namespace pybind11::literals;
 
 using namespace rsimpl2;
+using namespace pybackend2;
+
+// Prevents expensive copies of pixel buffers into python
+PYBIND11_MAKE_OPAQUE(std::vector<uint8_t>);
 
 PYBIND11_PLUGIN(NAME) {
     py::module m(SNAME, "Bindings for the backend of librealsense");
@@ -45,13 +52,18 @@ PYBIND11_PLUGIN(NAME) {
         .def_readwrite("data2", &uvc::guid::data2)
         .def_readwrite("data3", &uvc::guid::data3)
         .def_property(BIND_RAW_RW_ARRAY(uvc::guid, data4, uint8_t, 8))
-        .def("__init__", [](uvc::guid &g, uint32_t d1, uint32_t d2, uint32_t d3, std::array<uint8_t, 8> d4) {
-            new (&g) uvc::guid();
-            g.data1 = d1;
-            g.data2 = d2;
-            g.data3 = d3;
-            for (int i=0; i<8; ++i) g.data4[i] = d4[i];
-        }, "data1"_a, "data2"_a, "data3"_a, "data4"_a);
+        .def("__init__", [](uvc::guid &g, uint32_t d1, uint32_t d2, uint32_t d3, std::array<uint8_t, 8> d4)
+            {
+                new (&g) uvc::guid();
+                g.data1 = d1;
+                g.data2 = d2;
+                g.data3 = d3;
+                for (int i=0; i<8; ++i) g.data4[i] = d4[i];
+            }, "data1"_a, "data2"_a, "data3"_a, "data4"_a)
+        /*.def("__init__", [](uvc::guid &g, const std::string &str)
+            {
+                new (&g) uvc::guid(stoguid(str));
+            })*/;
 
     py::class_<uvc::extension_unit> extension_unit(m, "extension_unit");
     extension_unit.def_readwrite("subdevice", &uvc::extension_unit::subdevice)
@@ -97,12 +109,14 @@ PYBIND11_PLUGIN(NAME) {
         return ss.str();
     });;
 
+    // Bind std::vector<uint8_t> to act like a pythonic list
+    py::bind_vector<std::vector<uint8_t>>(m, "VectorByte");
+
     py::class_<uvc::frame_object> frame_object(m, "frame_object");
     frame_object.def_readwrite("frame_size", &uvc::frame_object::frame_size)
                 .def_readwrite("metadata_size", &uvc::frame_object::metadata_size)
-                /* How to do pointers?
-                .def_property("pixels", [](const uvc::frame_object &f) -> python::data_buffer { return ??? }, ???)
-                .def_property("metadata", [](const uvc::frame_object &f) -> python::data_buffer { return ??? }, ???) */;
+                .def_property_readonly("pixels", [](const uvc::frame_object &f) { return std::vector<uint8_t>(static_cast<const uint8_t*>(f.pixels), static_cast<const uint8_t*>(f.pixels)+f.frame_size);})
+                .def_property_readonly("metadata", [](const uvc::frame_object &f) { return std::vector<uint8_t>(static_cast<const uint8_t*>(f.metadata), static_cast<const uint8_t*>(f.metadata)+f.metadata_size);});
 
     py::class_<uvc::uvc_device_info> uvc_device_info(m, "uvc_device_info");
     uvc_device_info.def_readwrite("id", &uvc::uvc_device_info::id, "To distinguish between different pins of the same device.")
@@ -202,14 +216,26 @@ PYBIND11_PLUGIN(NAME) {
         .def("set_power_state", &uvc::retry_controls_work_around::set_power_state, "state"_a)
         .def("get_power_state", &uvc::retry_controls_work_around::get_power_state)
         .def("init_xu", &uvc::retry_controls_work_around::init_xu, "xu"_a)
-        .def("set_xu", &uvc::retry_controls_work_around::set_xu, "xu"_a, "ctrl"_a, "data"_a, "len"_a)
+        .def("set_xu", [](uvc::retry_controls_work_around &dev, const uvc::extension_unit &xu, uint8_t ctrl, py::list l)
+            {
+                auto data = l.cast<std::vector<uint8_t>>();
+                dev.set_xu(xu, ctrl, data.data(), data.size());
+            }, "xu"_a, "ctrl"_a, "data"_a)
+        .def("get_xu", [](const uvc::retry_controls_work_around &dev, const uvc::extension_unit &xu, uint8_t ctrl, size_t len)
+            {
+                std::vector<uint8_t> data(len);
+                dev.get_xu(xu, ctrl, data.data(), len);
+                py::list ret(len);
+                for (size_t i = 0; i < len; ++i)
+                    ret[i] = data[i];
+                return ret;
+            }, "xu"_a, "ctrl"_a, "len"_a)
+        .def("get_xu_range", &uvc::retry_controls_work_around::get_xu_range, "xu"_a, "ctrl"_a, "len"_a)
         .def("get_pu", [](uvc::retry_controls_work_around& dev, rs2_option opt) {
                 int val = 0;
                 dev.get_pu(opt, val);
                 return val;
             }, "opt"_a)
-        .def("get_xu_range", &uvc::retry_controls_work_around::get_xu_range, "xu"_a, "ctrl"_a, "len"_a)
-        .def("get_pu", &uvc::retry_controls_work_around::get_pu, "opt"_a, "value"_a)
         .def("set_pu", &uvc::retry_controls_work_around::set_pu, "opt"_a, "value"_a)
         .def("get_pu_range", &uvc::retry_controls_work_around::get_pu_range, "opt"_a)
         .def("get_profiles", &uvc::retry_controls_work_around::get_profiles)
@@ -234,7 +260,18 @@ PYBIND11_PLUGIN(NAME) {
     py::class_<uvc::multi_pins_uvc_device, uvc::uvc_device> multi_pins_uvc_device(m, "multi_pins_uvc_device");
     multi_pins_uvc_device.def(py::init<std::vector<std::shared_ptr<uvc::uvc_device>>&>());
 
+    py::enum_<command> command_py(m, "command");
+    command_py.value("enable_advanced_mode", command::enable_advanced_mode)
+              .value("advanced_mode_enabled", command::advanced_mode_enabled)
+              .value("reset", command::reset)
+              .value("set_advanced", command::set_advanced)
+              .value("get_advanced", command::get_advanced);
+
     m.def("create_backend", &uvc::create_backend, py::return_value_policy::move);
+    m.def("encode_command", [](command opcode, uint32_t p1, uint32_t p2, uint32_t p3, uint32_t p4, py::list data)
+        {
+            encode_command(opcode, p1, p2, p3, p4, data.cast<std::vector<uint8_t>>());
+        }, "opcode"_a, "p1"_a=0, "p2"_a=0, "p3"_a=0, "p4"_a=0, "data"_a = py::list(0));
 
     return m.ptr();
 }
