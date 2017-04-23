@@ -84,13 +84,12 @@ public:
         accepting = false;
         need_to_flush = true;
 
-        cv.notify_all();
-
         while (q.size() > 0)
         {
             auto item = std::move(q.front());
             q.pop_front();
         }
+        cv.notify_all();
     }
 
     void start()
@@ -141,6 +140,7 @@ public:
         {
             while (_is_alive)
             {
+
                 std::function<void(cancellable_timer)> item;
 
                 if (_queue.dequeue(&item))
@@ -198,6 +198,7 @@ public:
     ~dispatcher()
     {
         stop();
+        _queue.clear();
         _is_alive = false;
         _thread.join();
     }

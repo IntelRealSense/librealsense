@@ -792,9 +792,9 @@ namespace rsimpl2
     std::vector<stream_profile> hid_endpoint::get_device_profiles()
     {
         std::vector<stream_profile> stream_requests;
-        for (auto& sensor : _hid_sensors)
+        for (auto it = _hid_sensors.rbegin(); it != _hid_sensors.rend(); ++it)
         {
-            auto profiles = get_sensor_profiles(sensor.name);
+            auto profiles = get_sensor_profiles(it->name);
             stream_requests.insert(stream_requests.end(), profiles.begin() ,profiles.end());
         }
 
