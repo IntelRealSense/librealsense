@@ -15,7 +15,7 @@ class single_consumer_queue
     std::mutex mutex;
     std::condition_variable cv; // not empty signal
     unsigned int cap;
-    bool accepting = true;
+    bool accepting;
 
     // flush mechanism is required to abort wait on cv
     // when need to stop
@@ -25,7 +25,7 @@ class single_consumer_queue
     std::mutex was_flushed_mutex;
 public:
     explicit single_consumer_queue<T>(unsigned int cap)
-        : q(), mutex(), cv(), cap(cap), need_to_flush(false), was_flushed(false)
+        : q(), mutex(), cv(), cap(cap), need_to_flush(false), was_flushed(false), accepting(true)
     {}
 
     void enqueue(T&& item)

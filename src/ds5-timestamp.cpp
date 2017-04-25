@@ -228,8 +228,6 @@ namespace rsimpl2
 
         auto timestamp = *((uint64_t*)((const uint8_t*)fo.pixels + timestamp_offset));
         return static_cast<rs2_time_t>(timestamp) * TIMESTAMP_TO_MILLISECONS;
-
-        return std::chrono::duration<rs2_time_t, std::milli>(std::chrono::system_clock::now().time_since_epoch()).count();
     }
 
     bool ds5_custom_hid_timestamp_reader::has_metadata(const request_mapping& /*mode*/, const void * /*metadata*/, size_t /*metadata_size*/) const

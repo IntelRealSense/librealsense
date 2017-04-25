@@ -483,7 +483,7 @@ namespace rsimpl2
             lock_guard<mutex> lock(_mutex);
             vector<uint8_t> holder;
             holder.resize(size);
-            memcpy(holder.data(), ptr, size);
+            rsimpl2::copy(holder.data(), ptr, size);
             auto id = static_cast<int>(blobs.size());
             blobs.push_back(holder);
             return id;
@@ -1133,7 +1133,7 @@ namespace rsimpl2
             auto stored_data = _rec->load_blob(c.param2);
             if (stored_data.size() != len)
                 throw playback_backend_exception("Recording history mismatch!", call_type::uvc_get_xu, _entity_id);
-            memcpy(data, stored_data.data(), len);
+            rsimpl2::copy(data, stored_data.data(), len);
             return c.param3;
         }
 
@@ -1181,7 +1181,7 @@ namespace rsimpl2
             });
            
             auto range = _rec->load_blob(c.param2);
-            memcpy(&res, range.data(), range.size());
+            rsimpl2::copy(&res, range.data(), range.size());
             return res;
         }
 
@@ -1278,7 +1278,6 @@ namespace rsimpl2
                 if (c_ptr)
                 {
                     auto sd_data = _rec->load_blob(c_ptr->param1);
-                    auto iio = c_ptr->param2;
                     auto sensor_name = c_ptr->inline_string;
 
                     sensor_data sd;
@@ -1343,7 +1342,7 @@ namespace rsimpl2
                 {
                     auto profile_blob = _rec->load_blob(c_ptr->param1);
                     stream_profile p;
-                    memcpy(&p, profile_blob.data(), sizeof(p));
+                    rsimpl2::copy(&p, profile_blob.data(), sizeof(p));
                     lock_guard<mutex> lock(_callback_mutex);
                     for (auto&& pair : _callbacks)
                     {

@@ -226,7 +226,7 @@ namespace rsimpl2
 
         const char* get_description() const;
 
-        const char* get_value_description(float value);
+        const char* get_value_description(float value) const;
 
     private:
         polling_error_handler*          _polling_error_handler;

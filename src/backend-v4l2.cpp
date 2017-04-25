@@ -651,7 +651,7 @@ namespace rsimpl2
         {
             uint32_t device_fourcc = id;
             char fourcc_buff[sizeof(device_fourcc)+1];
-            memcpy(fourcc_buff, &device_fourcc, sizeof(device_fourcc));
+            rsimpl2::copy(fourcc_buff, &device_fourcc, sizeof(device_fourcc));
             fourcc_buff[sizeof(device_fourcc)] = 0;
             return fourcc_buff;
         }

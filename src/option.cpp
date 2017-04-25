@@ -138,7 +138,7 @@ const char * rsimpl2::polling_errors_disable::get_description() const
     return "Enable / disable polling of camera internal errors";
 }
 
-const char * rsimpl2::polling_errors_disable::get_value_description(float value)
+const char * rsimpl2::polling_errors_disable::get_value_description(float value) const
 {
     if (value == 0)
     {

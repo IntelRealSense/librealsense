@@ -155,7 +155,13 @@ namespace rs2
             _category = rs2_get_notification_category(notification, &e);
             error::handle(e);
         }
-        notification() : _description("") {}
+
+        notification()
+            : _description(""),
+              _timestamp(-1),
+              _severity(RS2_LOG_SEVERITY_COUNT),
+              _category(RS2_NOTIFICATION_CATEGORY_COUNT)
+        {}
 
         /**
         * retrieve the notification category
@@ -516,7 +522,9 @@ namespace rs2
                 {
                     if (ref) result->emplace_back(ref);
                 }
+                return true;
             }
+            return false;
         }
 
         /**

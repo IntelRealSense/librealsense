@@ -119,13 +119,13 @@ namespace rsimpl2
                     std::wstring wPid(pid.begin(), pid.end());
 
                     auto vidPos = lpDevicePath.find(std::wstring(L"vid_") + std::wstring(vid.begin(), vid.end()));
-                    if ((vidPos < 0 || vidPos > lpDevicePath.length()))
+                    if (vidPos == std::wstring::npos)
                     {
                         continue;
                     }
 
                     auto pidPos = lpDevicePath.find(std::wstring(L"pid_") + std::wstring(pid.begin(), pid.end()));
-                    if ((pidPos < 0 || pidPos > lpDevicePath.length()))
+                    if (pidPos == std::wstring::npos)
                     {
                         continue;
                     }
@@ -206,6 +206,9 @@ namespace rsimpl2
                     return false;
                 }
             }
+
+            if (nullptr == detailData)
+                throw winapi_error("SP_DEVICE_INTERFACE_DETAIL_DATA object is null!");
 
             detailData->cbSize = sizeof(SP_DEVICE_INTERFACE_DETAIL_DATA);
             length = requiredLength;

@@ -85,7 +85,7 @@ namespace rsimpl2
              intrinsics.ppx = intrin(2,0);
              intrinsics.ppy = intrin(2,1);
              intrinsics.model = RS2_DISTORTION_FTHETA;
-             memcpy(intrinsics.coeffs, table->distortion, sizeof(table->distortion));
+             rsimpl2::copy(intrinsics.coeffs, table->distortion, sizeof(table->distortion));
 
 
              LOG_DEBUG(endl<<

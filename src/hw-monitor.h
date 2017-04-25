@@ -136,7 +136,7 @@ namespace rsimpl2
                   oneDirection(!cmd.require_response),
                   receivedCommandDataLength(0)
             {
-                memcpy(data, cmd.data.data(), sizeOfSendCommandData);
+                rsimpl2::copy(data, cmd.data.data(), sizeOfSendCommandData);
             }
         };
 
@@ -164,7 +164,7 @@ namespace rsimpl2
 
         std::vector<uint8_t> send(std::vector<uint8_t> data) const;
         std::vector<uint8_t> send(command cmd) const;
-        void get_gvd(size_t sz, char* gvd, uint8_t gvd_cmd) const;
+        void get_gvd(size_t sz, unsigned char* gvd, uint8_t gvd_cmd) const;
         std::string get_firmware_version_string(int gvd_cmd, uint32_t offset) const;
         std::string get_module_serial_string(uint8_t gvd_cmd, uint32_t offset) const;
         bool is_camera_locked(uint8_t gvd_cmd, uint32_t offset) const;
