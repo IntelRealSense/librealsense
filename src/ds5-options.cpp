@@ -55,7 +55,7 @@ namespace rsimpl2
                                 reinterpret_cast<uint8_t*>(&temp),
                                 sizeof(temperature)))
                  {
-                        throw invalid_value_exception(to_string() << "get_xu(...) failed!" << " Last Error: " << strerror(errno));
+                        throw invalid_value_exception(to_string() << "get_xu(ctrl=DS5_ASIC_AND_PROJECTOR_TEMPERATURES) failed!" << " Last Error: " << strerror(errno));
                  }
 
                 return temp;

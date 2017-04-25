@@ -772,7 +772,7 @@ namespace rsimpl2
             }
             else
             {
-                LOG_WARNING("BUG REPRUDUCED!!! Frames didn't arrived within 5 seconds");
+                LOG_WARNING("Frames didn't arrived within 5 seconds");
                 rsimpl2::notification n = {RS2_NOTIFICATION_CATEGORY_FRAMES_TIMEOUT, 0, RS2_LOG_SEVERITY_WARN,  "Frames didn't arrived within 5 seconds"};
 
                 _error_handler(n);

@@ -463,12 +463,16 @@ namespace rsimpl2
          }
 
         depth_ep.set_roi_method(std::make_shared<ds5_auto_exposure_roi_method>(*_hw_monitor));
-        depth_ep.register_option(RS2_OPTION_DEPTH_UNITS, std::make_shared<depth_scale_option>(*_hw_monitor));
+
+        if (advanced_mode)
+            depth_ep.register_option(RS2_OPTION_DEPTH_UNITS, std::make_shared<depth_scale_option>(*_hw_monitor));
+        else
+            depth_ep.register_option(RS2_OPTION_DEPTH_UNITS, std::make_shared<const_value_option>("Number of meters represented by a single depth unit",
+                                                                                                  0.001));
 
         // TODO: These if conditions will be implemented as inheritance classes
 
         std::shared_ptr<uvc_endpoint> fisheye_ep;
-        int fe_index{};
         if (pid == RS450T_PID)
         {
             auto fisheye_infos = filter_by_mi(dev_info, 3);
