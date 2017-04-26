@@ -109,6 +109,9 @@ util::config configure_stream(bool is_file_set, bool& is_valid, string fn = "")
     }
 
     ifstream file(fn);
+    if (!file.is_open())
+        throw runtime_error("Given .csv configure file Not Found!");
+
 
     string line;
     while (getline(file, line))
@@ -158,8 +161,8 @@ int main(int argc, char** argv) try
 {
     // Parse command line arguments
     CmdLine cmd("librealsense cpp-data-collect example tool", ' ');
-    ValueArg<int> timeout            ("t", "Timeout",            "Max amount of time to receive frames",                false, 10,  "");
-    ValueArg<int> max_frames         ("m", "MaxFrames_Number",   "Maximun number of frames data to receive",            false, 100, "");
+    ValueArg<int>    timeout    ("t", "Timeout",            "Max amount of time to receive frames",                false, 10,  "");
+    ValueArg<int>    max_frames ("m", "MaxFrames_Number",   "Maximun number of frames data to receive",            false, 100, "");
     ValueArg<string> filename   ("f", "FullFilePath",       "the file which the data will be saved to",            false, "",  "");
     ValueArg<string> config_file("c", "ConfigurationFile",  "Specify file path with the requested configuration",  false, "",  "");
 
@@ -183,15 +186,13 @@ int main(int argc, char** argv) try
 
     // configure Streams
     bool is_valid_config;
-    auto is_file_set = filename.isSet();
+    auto is_file_set = config_file.isSet();
 
     auto config = is_file_set ? configure_stream(true, is_valid_config, config_file.getValue()) : configure_stream(false, is_valid_config);
     auto camera = config.open(dev);
 
     std::list<frame_data> buffer[NUM_OF_STREAMS];
     auto start_time = chrono::high_resolution_clock::now();
-
-    condition_variable cv;
 
     camera.start([&buffer, &start_time](frame f)
     {
