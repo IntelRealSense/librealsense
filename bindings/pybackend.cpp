@@ -26,7 +26,7 @@ using namespace rsimpl2;
 using namespace pybackend2;
 
 // Prevents expensive copies of pixel buffers into python
-PYBIND11_MAKE_OPAQUE(std::vector<uint8_t>);
+PYBIND11_MAKE_OPAQUE(std::vector<uint8_t>)
 
 PYBIND11_PLUGIN(NAME) {
     py::module m(SNAME, "Bindings for the backend of librealsense");
