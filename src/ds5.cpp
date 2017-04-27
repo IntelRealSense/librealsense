@@ -144,48 +144,59 @@ namespace rsimpl2
     }
 
     rs2_intrinsics ds5_camera::get_intrinsics(unsigned int subdevice, stream_profile profile) const
-      {
-          if (subdevice >= get_endpoints_count())
-              throw invalid_value_exception(to_string() << "Requested subdevice " <<
-                                            subdevice << " is unsupported.");
+    {
+        if (subdevice >= get_endpoints_count())
+            throw invalid_value_exception(to_string() << "Requested subdevice " <<
+                                          subdevice << " is unsupported.");
 
-          if (subdevice == _depth_device_idx)
-          {
-              return get_intrinsic_by_resolution(
-                  *_coefficients_table_raw,
-                  ds::calibration_table_id::coefficients_table_id,
-                  profile.width, profile.height);
-          }
+        if (subdevice == _depth_device_idx)
+        {
+            return get_intrinsic_by_resolution(
+                *_coefficients_table_raw,
+                ds::calibration_table_id::coefficients_table_id,
+                profile.width, profile.height);
+        }
 
-          if (subdevice == _fisheye_device_idx)
-          {
-              return get_intrinsic_by_resolution(
-                  *_fisheye_intrinsics_raw,
-                  ds::calibration_table_id::fisheye_calibration_id,
-                  profile.width, profile.height);
-          }
-          throw not_implemented_exception("Not Implemented");
-      }
+        if (subdevice == _fisheye_device_idx)
+        {
+            return get_intrinsic_by_resolution(
+                *_fisheye_intrinsics_raw,
+                ds::calibration_table_id::fisheye_calibration_id,
+                profile.width, profile.height);
+        }
+        throw not_implemented_exception("Not Implemented");
+    }
 
-      pose ds5_camera::get_device_position(unsigned int subdevice) const
-      {
-          if (subdevice >= get_endpoints_count())
-              throw invalid_value_exception(to_string() << "Requested subdevice " <<
-                                            subdevice << " is unsupported.");
+    pose ds5_camera::get_device_position(unsigned int subdevice) const
+    {
+        if (subdevice >= get_endpoints_count())
+            throw invalid_value_exception(to_string() << "Requested subdevice " <<
+                                          subdevice << " is unsupported.");
 
-          if (subdevice == _fisheye_device_idx)
-          {
-             auto extr = rsimpl2::ds::get_extrinsics_data(*_fisheye_extrinsics_raw);
-             pose p {{extr.rotation[0], extr.rotation[1], extr.rotation[2],
-                     extr.rotation[3], extr.rotation[4], extr.rotation[5],
-                     extr.rotation[6], extr.rotation[7], extr.rotation[8]},
-                     {extr.translation[0], extr.translation[1], extr.translation[2]}};
+        if (subdevice == _fisheye_device_idx)
+        {
+            auto extr = rsimpl2::ds::get_fisheye_extrinsics_data(*_fisheye_extrinsics_raw);
+            return inverse(extr);
+        }
 
+        if (subdevice == _motion_module_device_idx)
+        {
+            // Fist, get Fish-eye pose
+            auto fe_pose = get_device_position(_fisheye_device_idx);
 
-             return inverse(p);
-          }
-          throw not_implemented_exception("Not Implemented");
-      }
+            auto motion_extr = *_motion_module_extrinsics_raw;
+
+            auto rot = motion_extr.rotation;
+            auto trans = motion_extr.translation;
+
+            pose ex = {{rot(0,0), rot(1,0),rot(2,0),rot(1,0), rot(1,1),rot(2,1),rot(0,2), rot(1,2),rot(2,2)},
+                       {trans[0], trans[1], trans[2]}};
+
+            return fe_pose * ex;
+        }
+
+        throw not_implemented_exception("Not Implemented");
+    }
 
     bool ds5_camera::is_camera_in_advanced_mode() const
     {
@@ -210,6 +221,17 @@ namespace rsimpl2
         const int size = 0x98;
         command cmd(ds::MMER, offset, size);
         return _hw_monitor->send(cmd);
+    }
+
+    ds::extrinsics_table ds5_camera::get_motion_module_extrinsics() const
+    {
+        const int offset = 0xD0;
+        const int size = sizeof(ds::extrinsics_table);
+        command cmd(ds::MMER, offset, size);
+        auto result = _hw_monitor->send(cmd);
+        if (result.size() < sizeof(ds::extrinsics_table))
+            throw std::runtime_error("Not enough data returned from the device!");
+        return *((ds::extrinsics_table*)result.data()); // copy by value
     }
 
     std::vector<uint8_t> ds5_camera::get_raw_fisheye_extrinsics_table() const
@@ -365,6 +387,8 @@ namespace rsimpl2
         _coefficients_table_raw = [this]() { return get_raw_calibration_table(coefficients_table_id); };
         _fisheye_intrinsics_raw = [this]() { return get_raw_fisheye_intrinsics_table(); };
         _fisheye_extrinsics_raw = [this]() { return get_raw_fisheye_extrinsics_table(); };
+        _motion_module_extrinsics_raw = [this]() { return get_motion_module_extrinsics(); };
+
         std::string device_name = (rs4xx_sku_names.end() != rs4xx_sku_names.find(dev_info.front().pid)) ? rs4xx_sku_names.at(dev_info.front().pid) : "RS4xx";
         auto camera_fw_version = firmware_version(_hw_monitor->get_firmware_version_string(GVD, camera_fw_version_offset));
         auto serial = _hw_monitor->get_module_serial_string(GVD, module_serial_offset);
@@ -420,7 +444,7 @@ namespace rsimpl2
                                      exposure_option,
                                      enable_auto_exposure));
 
-            if(pid != RS440P_PID && pid != RS450T_PID && pid != RS430C_PID)
+            if(pid != RS440P_PID && pid != RS450T_PID && pid != RS430C_PID && pid != PWGT_PID)
             {
                 depth_ep.register_option(RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE,
                     std::make_shared<uvc_xu_option<uint8_t>>(depth_ep,
@@ -473,7 +497,8 @@ namespace rsimpl2
         // TODO: These if conditions will be implemented as inheritance classes
 
         std::shared_ptr<uvc_endpoint> fisheye_ep;
-        if (pid == RS450T_PID)
+
+        if (pid == RS450T_PID || pid == PWGT_PID)
         {
             auto fisheye_infos = filter_by_mi(dev_info, 3);
             if (fisheye_infos.size() != 1)
@@ -512,7 +537,8 @@ namespace rsimpl2
             fisheye_ep->set_pose(lazy<pose>([this](){return get_device_position(_fisheye_device_idx);}));
 
             // Add hid endpoint
-            auto hid_index = add_endpoint(create_hid_device(backend, hid_info, camera_fw_version));
+            auto hid_ep = create_hid_device(backend, hid_info, camera_fw_version);
+            _motion_module_device_idx = add_endpoint(hid_ep);
             for (auto& elem : hid_info)
             {
                 std::map<rs2_camera_info, std::string> camera_info = {{RS2_CAMERA_INFO_DEVICE_NAME, device_name},
@@ -528,7 +554,8 @@ namespace rsimpl2
                 if (!is_camera_locked.empty())
                     camera_info[RS2_CAMERA_INFO_IS_CAMERA_LOCKED] = is_camera_locked;
 
-                register_endpoint_info(hid_index, camera_info);
+                register_endpoint_info(_motion_module_device_idx, camera_info);
+                hid_ep->set_pose(lazy<pose>([this](){return get_device_position(_motion_module_device_idx); }));
             }
         }
 
@@ -575,7 +602,7 @@ namespace rsimpl2
 
                 register_endpoint_info(_depth_device_idx, camera_info);
             }
-            else if (fisheye_ep && element.pid == RS450T_PID && element.mi == 3) // mi 3 is related to Fisheye device
+            else if (fisheye_ep && (element.pid == RS450T_PID || element.pid == PWGT_PID) && element.mi == 3) // mi 3 is related to Fisheye device
             {
                 std::map<rs2_camera_info, std::string> camera_info = {{RS2_CAMERA_INFO_DEVICE_NAME, device_name},
                                                                       {RS2_CAMERA_INFO_MODULE_NAME, "Fisheye Camera"},

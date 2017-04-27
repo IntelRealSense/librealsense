@@ -18,4 +18,4 @@ namespace pybackend2 {
     uvc::guid stoguid(std::string);
 
     std::vector<uint8_t> encode_command(command, uint32_t, uint32_t, uint32_t, uint32_t, std::vector<uint8_t>);
-};
+}

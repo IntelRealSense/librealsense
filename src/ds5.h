@@ -27,7 +27,9 @@ namespace rsimpl2
             case ds::RS430C_PID:
             case ds::RS440P_PID: return 1;
             case ds::RS420R_PID: return 2;
-            case ds::RS450T_PID: return 3;
+            case ds::RS450T_PID:
+            case ds::PWGT_PID:
+                return 3;
             default:
                 throw not_implemented_exception(to_string() <<
                     "get_subdevice_count is not implemented for DS5 device of type " <<
@@ -84,7 +86,8 @@ namespace rsimpl2
         bool is_camera_in_advanced_mode() const;
 
         const uint8_t _depth_device_idx;
-        uint8_t _fisheye_device_idx;
+        uint8_t _fisheye_device_idx = -1;
+        uint8_t _motion_module_device_idx = -1;
 
         std::shared_ptr<hw_monitor> _hw_monitor;
 
@@ -92,10 +95,12 @@ namespace rsimpl2
         lazy<std::vector<uint8_t>> _coefficients_table_raw;
         lazy<std::vector<uint8_t>> _fisheye_intrinsics_raw;
         lazy<std::vector<uint8_t>> _fisheye_extrinsics_raw;
+        lazy<ds::extrinsics_table> _motion_module_extrinsics_raw;
 
         std::vector<uint8_t> get_raw_calibration_table(ds::calibration_table_id table_id) const;
         std::vector<uint8_t> get_raw_fisheye_intrinsics_table() const;
         std::vector<uint8_t> get_raw_fisheye_extrinsics_table() const;
+        ds::extrinsics_table get_motion_module_extrinsics() const;
         pose get_device_position(unsigned int subdevice) const;
 
         // Bandwidth parameters from BOSCH BMI 055 spec'

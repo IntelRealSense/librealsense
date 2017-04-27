@@ -66,6 +66,7 @@ namespace rsimpl2
             memset(intrinsics.coeffs, 0, sizeof(intrinsics.coeffs));  // All coefficients are zeroed since rectified depth is defined as CS origin
             return intrinsics;
         }
+
         rs2_intrinsics get_intrinsic_fisheye_table(const std::vector<unsigned char> & raw_data, uint32_t width, uint32_t height)
         { 
              auto table = reinterpret_cast<const fisheye_intrinsics_table *>(raw_data.data());
@@ -100,36 +101,33 @@ namespace rsimpl2
             {
             case coefficients_table_id:
             {
-              return get_intrinsic_by_resolution_coefficients_table(raw_data, width, height);
+                return get_intrinsic_by_resolution_coefficients_table(raw_data, width, height);
             }
             case fisheye_calibration_id:
             {
                 return get_intrinsic_fisheye_table(raw_data, width, height);
             }
-
             default:
                 throw invalid_value_exception(to_string() << "Parsing Calibration table type " << table_id << " is not supported");
             }
         }
 
-         rs2_extrinsics get_extrinsics_data(const vector<unsigned char> & raw_data)
-         {
+        pose get_fisheye_extrinsics_data(const vector<unsigned char> & raw_data)
+        {
+            auto table = reinterpret_cast<const fisheye_extrinsics_table*>(raw_data.data());
 
-              auto table = reinterpret_cast<const fisheye_extrinsics_table*>(raw_data.data());
+            if (table->header.crc32 != calc_crc32(raw_data.data() + sizeof(table_header), raw_data.size() - sizeof(table_header)))
+            {
+                throw invalid_value_exception("DS5 Fisheye calibration table CRC error, parsing aborted");
+            }
 
-              if (table->header.crc32 != calc_crc32(raw_data.data() + sizeof(table_header), raw_data.size() - sizeof(table_header)))
-              {
-                  throw invalid_value_exception("DS5 Fisheye calibration table CRC error, parsing aborted");
-              }
+            auto rot = table->rotation;
+            auto trans = table->translation;
 
-              auto rot = table-> rotation;
-              auto trans = table-> translation;
-
-
-              rs2_extrinsics ex = {{rot(0,0), rot(1,0),rot(2,0),rot(1,0), rot(1,1),rot(2,1),rot(0,2), rot(1,2),rot(2,2)},
-                                 {(trans[0]), (trans[1]),(trans[2])}};
-              return ex;
-         }
+            pose ex = {{rot(0,0), rot(1,0),rot(2,0),rot(1,0), rot(1,1),rot(2,1),rot(0,2), rot(1,2),rot(2,2)},
+                       {trans[0], trans[1], trans[2]}};
+            return ex;
+        }
 
 
 
@@ -154,6 +152,7 @@ namespace rsimpl2
                         result.mi = 4;
                         break;
                     case RS450T_PID:
+                    case PWGT_PID:
                         found = result.mi == 6;
                         break;
                     default:
