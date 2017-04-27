@@ -364,6 +364,7 @@ namespace rsimpl2
         void hid_custom_sensor::init()
         {
             static const char* prefix_feature_name = "feature";
+            static const char* prefix_input_name = "input";
             static const char* suffix_name_field = "name";
             DIR* dir = nullptr;
             struct dirent* ent = nullptr;
@@ -372,19 +373,20 @@ namespace rsimpl2
               while ((ent = readdir(dir)) != NULL)
               {
                   auto str = std::string(ent->d_name);
-                  if (str.find(prefix_feature_name) != std::string::npos)
+                  if (str.find(prefix_feature_name) != std::string::npos ||
+                      str.find(prefix_input_name) != std::string::npos)
                   {
                       DIR* report_dir = nullptr;
                       struct dirent* report_ent = nullptr;
-                      auto feature_report_path = _custom_device_path + "/" + ent->d_name;
-                      if ((report_dir = opendir(feature_report_path.c_str())) != NULL)
+                      auto report_path = _custom_device_path + "/" + ent->d_name;
+                      if ((report_dir = opendir(report_path.c_str())) != NULL)
                       {
                           while ((report_ent = readdir(report_dir)) != NULL)
                           {
-                              auto feature_str = std::string(report_ent->d_name);
-                              if (feature_str.find(suffix_name_field) != std::string::npos)
+                              auto report_str = std::string(report_ent->d_name);
+                              if (report_str.find(suffix_name_field) != std::string::npos)
                               {
-                                  auto name_report_path = feature_report_path + "/" + report_ent->d_name;
+                                  auto name_report_path = report_path + "/" + report_ent->d_name;
                                   auto buffer = read_report(name_report_path);
 
                                   std::string name_report(reinterpret_cast<char const*>(buffer.data()));

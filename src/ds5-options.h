@@ -50,7 +50,7 @@ namespace rsimpl2
 
     private:
         const std::string custom_sensor_name = "custom";
-        const std::string report_name = "data-field-custom-usage";
+        const std::string report_name = "data-field-custom-value_2";
         hid_endpoint& _ep;
     };
 
