@@ -2,6 +2,14 @@
 
 **Note:** Due to the USB 3.0 translation layer between native hardware and virtual machine, the *librealsense* team does not recommend or support installation in a VM.
 
+## Install pre-built snap
+
+Install librealsense in seconds on [Ubuntu and other snap supported Linux distributions](https://snapcraft.io/docs/core/install) with:
+
+    snap install librealsense
+
+Snaps contain all necessary dependencies required to run. The snap will get automatically updated when a new version is pushed to the store. 
+
 ## 3rd-party dependencies
 
 The project requires two external dependencies, *glfw* and *libusb-1.0*. The Cmake build environment additionally requires *pkg-config*.
