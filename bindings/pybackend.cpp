@@ -12,6 +12,7 @@
 
 #include "../src/backend.h"
 #include "pybackend_extras.h"
+#include "../examples/third_party/stb_image_write.h"
 
 #include <sstream>
 #include <vector>
@@ -60,13 +61,18 @@ PYBIND11_PLUGIN(NAME) {
                 g.data3 = d3;
                 for (int i=0; i<8; ++i) g.data4[i] = d4[i];
             }, "data1"_a, "data2"_a, "data3"_a, "data4"_a)
-        /*.def("__init__", [](uvc::guid &g, const std::string &str)
+        .def("__init__", [](uvc::guid &g, const std::string &str)
             {
                 new (&g) uvc::guid(stoguid(str));
-            })*/;
+            });
 
     py::class_<uvc::extension_unit> extension_unit(m, "extension_unit");
-    extension_unit.def_readwrite("subdevice", &uvc::extension_unit::subdevice)
+    extension_unit.def(py::init<>())
+                  .def("__init__", [](uvc::extension_unit & xu, int s, int u, int n, uvc::guid g)
+                      {
+                          new (&xu) uvc::extension_unit { s, u, n, g };
+                      }, "subdevice"_a, "unit"_a, "node"_a, "guid"_a)
+                  .def_readwrite("subdevice", &uvc::extension_unit::subdevice)
                   .def_readwrite("unit", &uvc::extension_unit::unit)
                   .def_readwrite("node", &uvc::extension_unit::node)
                   .def_readwrite("id", &uvc::extension_unit::id);
@@ -116,7 +122,15 @@ PYBIND11_PLUGIN(NAME) {
     frame_object.def_readwrite("frame_size", &uvc::frame_object::frame_size)
                 .def_readwrite("metadata_size", &uvc::frame_object::metadata_size)
                 .def_property_readonly("pixels", [](const uvc::frame_object &f) { return std::vector<uint8_t>(static_cast<const uint8_t*>(f.pixels), static_cast<const uint8_t*>(f.pixels)+f.frame_size);})
-                .def_property_readonly("metadata", [](const uvc::frame_object &f) { return std::vector<uint8_t>(static_cast<const uint8_t*>(f.metadata), static_cast<const uint8_t*>(f.metadata)+f.metadata_size);});
+                .def_property_readonly("metadata", [](const uvc::frame_object &f) { return std::vector<uint8_t>(static_cast<const uint8_t*>(f.metadata), static_cast<const uint8_t*>(f.metadata)+f.metadata_size);})
+                .def("save_png", [](const uvc::frame_object &f, std::string fn, int w, int h, int bpp, int s)
+                    {
+                        stbi_write_png(fn.c_str(), w, h, bpp, f.pixels, s);
+                    }, "filename"_a, "width"_a, "height"_a, "bytes_per_pixel"_a, "stride"_a)
+                .def("save_png", [](const uvc::frame_object &f, std::string fn, int w, int h, int bpp)
+                    {
+                        stbi_write_png(fn.c_str(), w, h, bpp, f.pixels, w*bpp);
+                    }, "filename"_a, "width"_a, "height"_a, "bytes_per_pixel"_a);
 
     py::class_<uvc::uvc_device_info> uvc_device_info(m, "uvc_device_info");
     uvc_device_info.def_readwrite("id", &uvc::uvc_device_info::id, "To distinguish between different pins of the same device.")
@@ -212,13 +226,23 @@ PYBIND11_PLUGIN(NAME) {
             })
         .def("start_callbacks", &uvc::retry_controls_work_around::start_callbacks)
         .def("stop_callbacks", &uvc::retry_controls_work_around::stop_callbacks)
-        .def("close", &uvc::retry_controls_work_around::close, "profile"_a)
+        .def("close", [](uvc::retry_controls_work_around &dev, uvc::stream_profile profile)
+            {
+                py::gil_scoped_release release;
+                dev.close(profile);
+            }, "profile"_a)
         .def("set_power_state", &uvc::retry_controls_work_around::set_power_state, "state"_a)
         .def("get_power_state", &uvc::retry_controls_work_around::get_power_state)
         .def("init_xu", &uvc::retry_controls_work_around::init_xu, "xu"_a)
         .def("set_xu", [](uvc::retry_controls_work_around &dev, const uvc::extension_unit &xu, uint8_t ctrl, py::list l)
             {
-                auto data = l.cast<std::vector<uint8_t>>();
+                std::vector<uint8_t> data(l.size());
+                for (int i = 0; i < l.size(); ++i)
+                    data[i] = l[i].cast<uint8_t>();
+                dev.set_xu(xu, ctrl, data.data(), data.size());
+            }, "xu"_a, "ctrl"_a, "data"_a)
+        .def("set_xu", [](uvc::retry_controls_work_around &dev, const uvc::extension_unit &xu, uint8_t ctrl, std::vector<uint8_t> &data)
+            {
                 dev.set_xu(xu, ctrl, data.data(), data.size());
             }, "xu"_a, "ctrl"_a, "data"_a)
         .def("get_xu", [](const uvc::retry_controls_work_around &dev, const uvc::extension_unit &xu, uint8_t ctrl, size_t len)
@@ -270,7 +294,7 @@ PYBIND11_PLUGIN(NAME) {
     m.def("create_backend", &uvc::create_backend, py::return_value_policy::move);
     m.def("encode_command", [](command opcode, uint32_t p1, uint32_t p2, uint32_t p3, uint32_t p4, py::list data)
         {
-            encode_command(opcode, p1, p2, p3, p4, data.cast<std::vector<uint8_t>>());
+            return encode_command(opcode, p1, p2, p3, p4, data.cast<std::vector<uint8_t>>());
         }, "opcode"_a, "p1"_a=0, "p2"_a=0, "p3"_a=0, "p4"_a=0, "data"_a = py::list(0));
 
     return m.ptr();

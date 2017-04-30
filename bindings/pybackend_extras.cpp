@@ -3,15 +3,19 @@
 
 using namespace rsimpl2;
 
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include "../examples/third_party/stb_image_write.h"
+
 // 123e4567-e89b-12d3-a456-426655440000
 namespace pybackend2 {
 
     uvc::guid stoguid(std::string str)
     {
         uvc::guid g;
-        str[8] = str[13] = str[18] = str[23] = ' ';
-        std::stringstream ss(str);
-        ss >> std::hex >> g.data1 >> g.data2 >> g.data3;
+        sscanf(str.c_str(), "%8" SCNx32"-%4" SCNx16"-%4" SCNx16"-%2" SCNx8"%2" SCNx8"-%2"
+                            SCNx8"%2" SCNx8"%2" SCNx8"%2" SCNx8"%2" SCNx8"%2" SCNx8,
+               &g.data1, &g.data2, &g.data3, g.data4, g.data4+1, g.data4+2,
+               g.data4+3, g.data4+4, g.data4+5, g.data4+6, g.data4+7);
 
         return g;
     }
