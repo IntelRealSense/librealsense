@@ -13,13 +13,13 @@ namespace rsimpl2
 {
     namespace ds
     {
-        const uint16_t RS400P_PID = 0x0ad1; // PSR
-        const uint16_t RS410A_PID = 0x0ad2; // ASR
-        const uint16_t RS420R_PID = 0x0ad3; // ASRC
-        const uint16_t RS430C_PID = 0x0ad4; // AWG
-        const uint16_t RS450T_PID = 0x0ad5; // AWGT
-        const uint16_t RS440P_PID = 0x0af6; // PWG
-        const uint16_t PWGT_PID = 0x0afe;   // PWGT
+        const uint16_t RS400_PID = 0x0ad1; // PSR
+        const uint16_t RS410_PID = 0x0ad2; // ASR
+        const uint16_t RS415_PID = 0x0ad3; // ASRC
+        const uint16_t RS430_PID = 0x0ad4; // AWG
+        const uint16_t RS430_MM_PID = 0x0ad5; // AWGT
+        const uint16_t RS420_PID    = 0x0af6; // PWG
+        const uint16_t RS420_MM_PID = 0x0afe; // PWGT
 
         // DS5 depth XU identifiers
         const uint8_t DS5_HWMONITOR                       = 1;
@@ -33,21 +33,21 @@ namespace rsimpl2
         const uint8_t DS5_ENABLE_AUTO_EXPOSURE            = 0xB;
 
 
-        static const std::vector<std::uint16_t> rs4xx_sku_pid = { ds::RS400P_PID,
-                                                                  ds::RS410A_PID,
-                                                                  ds::RS420R_PID,
-                                                                  ds::RS430C_PID,
-                                                                  ds::RS440P_PID,
-                                                                  ds::RS450T_PID,
-                                                                  ds::PWGT_PID };
+        static const std::vector<std::uint16_t> rs4xx_sku_pid = { ds::RS400_PID,
+                                                                  ds::RS410_PID,
+                                                                  ds::RS415_PID,
+                                                                  ds::RS430_PID,
+                                                                  ds::RS420_PID,
+                                                                  ds::RS430_MM_PID,
+                                                                  ds::RS420_MM_PID };
 
-        static const std::map<std::uint16_t, std::string> rs4xx_sku_names = { { RS400P_PID, "Intel RealSense RS400p"},
-                                                                              { RS410A_PID, "Intel RealSense RS410a"},
-                                                                              { RS420R_PID, "Intel RealSense RS420r"},
-                                                                              { RS430C_PID, "Intel RealSense RS430w"},
-                                                                              { RS450T_PID, "Intel RealSense RS450t"},
-                                                                              { RS440P_PID, "Intel RealSense PWG"   },
-                                                                              { PWGT_PID, "Intel RealSense PWGT"    }};
+        static const std::map<std::uint16_t, std::string> rs4xx_sku_names = { { RS400_PID, "Intel RealSense RS400"},
+                                                                              { RS410_PID, "Intel RealSense RS410"},
+                                                                              { RS415_PID, "Intel RealSense RS415"},
+                                                                              { RS430_PID, "Intel RealSense RS430"},
+                                                                              { RS430_MM_PID, "Intel RealSense RS430+MM"},
+                                                                              { RS420_PID, "Intel RealSense RS420"   },
+                                                                              { RS420_MM_PID, "Intel RealSense RS420+MM"    }};
 
         // DS5 fisheye XU identifiers
         const uint8_t FISHEYE_EXPOSURE = 1;

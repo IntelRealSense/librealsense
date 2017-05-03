@@ -22,13 +22,13 @@ namespace rsimpl2
             auto depth_pid = _depth.front().pid;
             switch(depth_pid)
             {
-            case ds::RS400P_PID:
-            case ds::RS410A_PID:
-            case ds::RS430C_PID:
-            case ds::RS440P_PID: return 1;
-            case ds::RS420R_PID: return 2;
-            case ds::RS450T_PID:
-            case ds::PWGT_PID:
+            case ds::RS400_PID:
+            case ds::RS410_PID:
+            case ds::RS430_PID:
+            case ds::RS420_PID: return 1;
+            case ds::RS415_PID: return 2;
+            case ds::RS430_MM_PID:
+            case ds::RS420_MM_PID:
                 return 3;
             default:
                 throw not_implemented_exception(to_string() <<

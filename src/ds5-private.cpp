@@ -142,17 +142,17 @@ namespace rsimpl2
                     result = *it;
                     switch (info.pid)
                     {
-                    case RS400P_PID:
-                    case RS410A_PID:
-                    case RS430C_PID:
-                    case RS440P_PID:
+                    case RS400_PID:
+                    case RS410_PID:
+                    case RS430_PID:
+                    case RS420_PID:
                         found = result.mi == 3;
                         break;
-                    case RS420R_PID:
+                    case RS415_PID:
                         result.mi = 4;
                         break;
-                    case RS450T_PID:
-                    case PWGT_PID:
+                    case RS430_MM_PID:
+                    case RS420_MM_PID:
                         found = result.mi == 6;
                         break;
                     default:

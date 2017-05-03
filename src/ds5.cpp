@@ -308,7 +308,7 @@ namespace rsimpl2
 
         // TODO: These if conditions will be implemented as inheritance classes
         auto pid = all_device_infos.front().pid;
-        if (pid == RS410A_PID || pid == RS450T_PID || pid == RS430C_PID)
+        if (pid == RS410_PID || pid == RS430_MM_PID || pid == RS430_PID)
         {
             depth_ep->register_option(RS2_OPTION_EMITTER_ENABLED, std::make_shared<emitter_option>(*depth_ep));
 
@@ -444,7 +444,7 @@ namespace rsimpl2
                                      exposure_option,
                                      enable_auto_exposure));
 
-            if(pid != RS440P_PID && pid != RS450T_PID && pid != RS430C_PID && pid != PWGT_PID)
+            if(pid != RS420_PID && pid != RS430_MM_PID && pid != RS430_PID && pid != RS420_MM_PID)
             {
                 depth_ep.register_option(RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE,
                     std::make_shared<uvc_xu_option<uint8_t>>(depth_ep,
@@ -473,7 +473,7 @@ namespace rsimpl2
 
              depth_ep.register_option(RS2_OPTION_ERROR_POLLING_ENABLED, std::make_shared<polling_errors_disable>(_polling_error_handler.get()));
 
-             if (pid == RS410A_PID || pid == RS450T_PID || pid == RS430C_PID)
+             if (pid == RS410_PID || pid == RS430_MM_PID || pid == RS430_PID)
              {
                  depth_ep.register_option(RS2_OPTION_PROJECTOR_TEMPERATURE,
                                           std::make_shared<asic_and_projector_temperature_options>(depth_ep,
@@ -482,7 +482,7 @@ namespace rsimpl2
              depth_ep.register_option(RS2_OPTION_ASIC_TEMPERATURE,
                                       std::make_shared<asic_and_projector_temperature_options>(depth_ep,
                                                                                                RS2_OPTION_ASIC_TEMPERATURE));
-             if (pid == RS450T_PID)
+             if (pid == RS430_MM_PID)
                  motion_module_fw_version = _hw_monitor->get_firmware_version_string(GVD, motion_module_fw_version_offset);
          }
 
@@ -498,7 +498,7 @@ namespace rsimpl2
 
         std::shared_ptr<uvc_endpoint> fisheye_ep;
 
-        if (pid == RS450T_PID || pid == PWGT_PID)
+        if (pid == RS430_MM_PID || pid == RS420_MM_PID)
         {
             auto fisheye_infos = filter_by_mi(dev_info, 3);
             if (fisheye_infos.size() != 1)
@@ -561,7 +561,7 @@ namespace rsimpl2
 
         std::shared_ptr<uvc_endpoint> color_ep;
         int color_index{};
-        if (pid == RS420R_PID)
+        if (pid == RS415_PID)
         {
             auto color_infos = filter_by_mi(dev_info, 3);
             if (color_infos.size() != 1)
@@ -602,7 +602,7 @@ namespace rsimpl2
 
                 register_endpoint_info(_depth_device_idx, camera_info);
             }
-            else if (fisheye_ep && (element.pid == RS450T_PID || element.pid == PWGT_PID) && element.mi == 3) // mi 3 is related to Fisheye device
+            else if (fisheye_ep && (element.pid == RS430_MM_PID || element.pid == RS420_MM_PID) && element.mi == 3) // mi 3 is related to Fisheye device
             {
                 std::map<rs2_camera_info, std::string> camera_info = {{RS2_CAMERA_INFO_DEVICE_NAME, device_name},
                                                                       {RS2_CAMERA_INFO_MODULE_NAME, "Fisheye Camera"},
@@ -618,7 +618,7 @@ namespace rsimpl2
 
                 register_endpoint_info(_fisheye_device_idx, camera_info);
             } 
-            else if (color_ep && element.pid == RS420R_PID && element.mi == 3) // mi 3 is related to Color device
+            else if (color_ep && element.pid == RS415_PID && element.mi == 3) // mi 3 is related to Color device
             {
                 std::map<rs2_camera_info, std::string> camera_info = { { RS2_CAMERA_INFO_DEVICE_NAME, device_name },
                 { RS2_CAMERA_INFO_MODULE_NAME, "Color Camera" },
