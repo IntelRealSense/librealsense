@@ -125,7 +125,7 @@ namespace rsimpl2
 
         std::map<rs2_stream, std::map<unsigned, unsigned>> fps_and_sampling_frequency_per_rs2_stream =
                                                          {{RS2_STREAM_ACCEL, {{125,  1},
-                                                                              {250,  4},
+                                                                              {250,  2},
                                                                               {500,  5},
                                                                               {1000, 10}}},
                                                           {RS2_STREAM_GYRO,  {{200,  1},
