@@ -43,19 +43,19 @@ namespace rsimpl2
 
             defaultConf.setGlobally(el::ConfigurationType::ToFile, "false");
             defaultConf.setGlobally(el::ConfigurationType::ToStandardOutput, "false");
-            defaultConf.setGlobally(el::ConfigurationType::Filename, filename);
             defaultConf.setGlobally(el::ConfigurationType::MaxLogFileSize, "2097152");
             defaultConf.setGlobally(el::ConfigurationType::LogFlushThreshold, "10");
             defaultConf.setGlobally(el::ConfigurationType::Format, " %datetime{%d/%M %H:%m:%s,%g} %level [%thread] (%fbase:%line) %msg");
 
-            for (int i = minimum_console_severity; i < RS2_LOG_SEVERITY_COUNT; i++)
+            for (int i = minimum_console_severity; i < RS2_LOG_SEVERITY_NONE; i++)
             {
                 defaultConf.set(severity_to_level(static_cast<rs2_log_severity>(i)),
                     el::ConfigurationType::ToStandardOutput, "true");
             }
 
-            for (int i = minimum_file_severity; i < RS2_LOG_SEVERITY_COUNT; i++)
+            for (int i = minimum_file_severity; i < RS2_LOG_SEVERITY_NONE; i++)
             {
+                defaultConf.setGlobally(el::ConfigurationType::Filename, filename);
                 defaultConf.set(severity_to_level(static_cast<rs2_log_severity>(i)),
                     el::ConfigurationType::ToFile, "true");
             }
