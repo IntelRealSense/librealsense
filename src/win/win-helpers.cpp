@@ -515,7 +515,7 @@ namespace rsimpl2
                 ++i;
             }
             auto res = WaitForMultipleObjects(static_cast<DWORD>(events.size()), handles, waitAll, timeout);
-            if (res >= WAIT_OBJECT_0 && res < WAIT_OBJECT_0 + events.size())
+            if (res < (WAIT_OBJECT_0 + events.size()))
             {
                 return events[res - WAIT_OBJECT_0];
             }
@@ -618,6 +618,11 @@ namespace rsimpl2
             {
                 return Mutex_TotalFailure;
             }
+            else if (GetLastError() == ERROR_ALREADY_EXISTS)
+            {
+                return Mutex_AlreadyExist;
+            }
+
             return Mutex_Succeed;
         }
 
@@ -646,7 +651,7 @@ namespace rsimpl2
                         //it can caused by termination of the process that created the mutex
                         if (stsOpenMutex == Mutex_TotalFailure)
                         {
-                            // do nothing
+                            continue;
                         }
                         else if (stsOpenMutex == Mutex_Succeed)
                         {

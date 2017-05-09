@@ -24,15 +24,12 @@
 #include "backend.h"
 #include "concurrency.h"
 
-
-#define ELPP_THREAD_SAFE
 #define NOMINMAX
 #include "../third_party/easyloggingpp/src/easylogging++.h"
 
 typedef unsigned char byte;
 
-const uint8_t RS2_STREAM_NATIVE_COUNT = 5;
-const int RS2_USER_QUEUE_SIZE = 20;
+const int RS2_USER_QUEUE_SIZE = 64;
 const int RS2_MAX_EVENT_QUEUE_SIZE = 500;
 const int RS2_MAX_EVENT_TINE_OUT = 10;
 
@@ -52,6 +49,12 @@ namespace rsimpl2
         template<class T> to_string & operator << (const T & val) { ss << val; return *this; }
         operator std::string() const { return ss.str(); }
     };
+
+    inline void copy(void* dst, void const* src, size_t size)
+    {
+        auto from = reinterpret_cast<uint8_t const*>(src);
+        std::copy(from, from + size, reinterpret_cast<uint8_t*>(dst));
+    }
 
     ///////////////////////
     // Logging mechanism //
@@ -311,6 +314,7 @@ namespace rsimpl2
     RS2_ENUM_HELPERS(rs2_visual_preset, VISUAL_PRESET)
     RS2_ENUM_HELPERS(rs2_exception_type, EXCEPTION_TYPE)
     RS2_ENUM_HELPERS(rs2_log_severity, LOG_SEVERITY)
+    RS2_ENUM_HELPERS(rs2_notification_category, NOTIFICATION_CATEGORY)
     #undef RS2_ENUM_HELPERS
 
     ////////////////////////////////////////////
@@ -480,12 +484,7 @@ namespace rsimpl2
         frame_holder() : frame(nullptr) {}
 
         frame_holder& operator=(const frame_holder&) = delete;
-        frame_holder& operator=(frame_holder&& other)
-        {
-            frame = other.frame;
-            other.frame = nullptr;
-            return *this;
-        }
+        frame_holder& operator=(frame_holder&& other);
 
     };
 
@@ -608,7 +607,6 @@ namespace rsimpl2
 
     struct static_device_info
     {
-        float nominal_depth_scale;                                          // Default scale
         std::vector<rs2_frame_metadata> supported_metadata_vector;
         std::vector<supported_capability> capabilities_vector;
     };
@@ -665,15 +663,17 @@ namespace rsimpl2
     typedef std::unique_ptr<rs2_notifications_callback, void(*)(rs2_notifications_callback*)> notifications_callback_ptr;
 
 
+
     struct notification
     {
-        notification(int type, rs2_log_severity severity, std::string description)
-            :type(type), severity(severity), description(description)
+        notification(rs2_notification_category category, int type, rs2_log_severity severity, std::string description)
+            :category(category), type(type), severity(severity), description(description)
         {
             timestamp = std::chrono::duration<double, std::milli>(std::chrono::system_clock::now().time_since_epoch()).count();
             LOG_INFO(description);
         }
 
+        rs2_notification_category category;
         int type;
         rs2_log_severity severity;
         std::string description;

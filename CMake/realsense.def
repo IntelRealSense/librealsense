@@ -16,7 +16,6 @@ EXPORTS
     rs2_delete_device
     rs2_get_extrinsics
     rs2_get_stream_intrinsics
-    rs2_get_device_depth_scale
 
     rs2_get_stream_modes
     rs2_get_stream_mode
@@ -34,12 +33,14 @@ EXPORTS
     rs2_start_queue
     rs2_stop
     rs2_stop_stream
+    rs2_hardware_reset
 
     rs2_set_notifications_callback
     rs2_set_notifications_callback_cpp
     rs2_get_notification_description
     rs2_get_notification_timestamp
     rs2_get_notification_severity
+    rs2_get_notification_category
 
     rs2_get_frame_metadata
     rs2_supports_frame_metadata
@@ -101,5 +102,12 @@ EXPORTS
 
     rs2_log_to_console
     rs2_log_to_file
+    
+    rs2_create_syncer
+    rs2_start_syncer
+    rs2_wait_for_frames
+    rs2_poll_for_frames
+    rs2_sync_frame
+    rs2_delete_syncer
 
     rs2_get_api_version

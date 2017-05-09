@@ -7,14 +7,19 @@
 #include "types.h"
 #include <map>
 
-namespace rsimpl2 {
-    namespace ds {
-        const uint16_t RS400P_PID = 0x0ad1; // PSR
-        const uint16_t RS410A_PID = 0x0ad2; // ASR
-        const uint16_t RS420R_PID = 0x0ad3; // ASRC
-        const uint16_t RS430C_PID = 0x0ad4; // AWG
-        const uint16_t RS450T_PID = 0x0ad5; // AWGT
-        const uint16_t RS440P_PID = 0x0af6; // PWG
+const double TIMESTAMP_TO_MILLISECONS = 0.001;
+
+namespace rsimpl2
+{
+    namespace ds
+    {
+        const uint16_t RS400_PID = 0x0ad1; // PSR
+        const uint16_t RS410_PID = 0x0ad2; // ASR
+        const uint16_t RS415_PID = 0x0ad3; // ASRC
+        const uint16_t RS430_PID = 0x0ad4; // AWG
+        const uint16_t RS430_MM_PID = 0x0ad5; // AWGT
+        const uint16_t RS420_PID    = 0x0af6; // PWG
+        const uint16_t RS420_MM_PID = 0x0afe; // PWGT
 
         // DS5 depth XU identifiers
         const uint8_t DS5_HWMONITOR                       = 1;
@@ -28,13 +33,21 @@ namespace rsimpl2 {
         const uint8_t DS5_ENABLE_AUTO_EXPOSURE            = 0xB;
 
 
-        static const std::vector<std::uint16_t> rs4xx_sku_pid = { ds::RS400P_PID, ds::RS410A_PID, ds::RS420R_PID, ds::RS430C_PID, ds::RS440P_PID, ds::RS450T_PID };
+        static const std::vector<std::uint16_t> rs4xx_sku_pid = { ds::RS400_PID,
+                                                                  ds::RS410_PID,
+                                                                  ds::RS415_PID,
+                                                                  ds::RS430_PID,
+                                                                  ds::RS420_PID,
+                                                                  ds::RS430_MM_PID,
+                                                                  ds::RS420_MM_PID };
 
-        static const std::map<std::uint16_t, std::string> rs4xx_sku_names = { { RS400P_PID, "Intel RealSense RS400p"},
-                                                                              { RS410A_PID, "Intel RealSense RS410a"},
-                                                                              { RS420R_PID, "Intel RealSense RS420r"},
-                                                                              { RS430C_PID, "Intel RealSense RS430w"},
-                                                                              { RS450T_PID, "Intel RealSense RS450t"} };
+        static const std::map<std::uint16_t, std::string> rs4xx_sku_names = { { RS400_PID, "Intel RealSense RS400"},
+                                                                              { RS410_PID, "Intel RealSense RS410"},
+                                                                              { RS415_PID, "Intel RealSense RS415"},
+                                                                              { RS430_PID, "Intel RealSense RS430"},
+                                                                              { RS430_MM_PID, "Intel RealSense RS430+MM"},
+                                                                              { RS420_PID, "Intel RealSense RS420"   },
+                                                                              { RS420_MM_PID, "Intel RealSense RS420+MM"    }};
 
         // DS5 fisheye XU identifiers
         const uint8_t FISHEYE_EXPOSURE = 1;
@@ -51,9 +64,22 @@ namespace rsimpl2 {
             GVD = 0x10,           // camera details
             GETINTCAL = 0x15,     // Read calibration table
             MMER = 0x4F,          // MM EEPROM read ( from DS5 cache )
+            GET_EXTRINSICS = 0x53, // get extrinsics
             UAMG = 0X30,          // get advanced mode status
             SETAEROI = 0x44,      // set auto-exposure region of interest
             GETAEROI = 0x45,      // get auto-exposure region of interest
+            HWRST = 0x20,         // hardware reset
+            SET_ADV = 0x2B,       // set advanced mode control
+            GET_ADV = 0x2C,       // get advanced mode control
+        };
+
+        const int etDepthTableControl = 9; // Identifier of the depth table control
+
+        enum advnaced_query_mode
+        {
+            GET_VAL = 0,
+            GET_MIN = 1,
+            GET_MAX = 2,
         };
 
         struct table_header
@@ -97,16 +123,73 @@ namespace rsimpl2 {
         };
 
 #pragma pack(push, 1)
-        struct fisheye_calibration_table
+
+        struct fisheye_intrinsics_table
         {
             table_header        header;
             float               intrinsics_model;           //  1 - Brown, 2 - FOV, 3 - Kannala Brandt
             float3x3            intrinsic;                  //  fisheye intrinsic data, normilized
             float               distortion[5];
+        };
+
+        struct fisheye_extrinsics_table
+        {
+            table_header        header;
+            int64_t             serial_mm;
+            int64_t             serial_depth;
             float3x3            rotation;                   //  the fisheye rotation matrix
             float3              translation;                //  the fisheye translation vector
-            uint8_t             reserved2[28];
         };
+
+        struct extrinsics_table
+        {
+            float3x3            rotation;
+            float3              translation;
+        };
+
+        struct depth_table_control
+        {
+            uint32_t depth_units;
+            int32_t depth_clamp_min;
+            int32_t depth_clamp_max;
+            int32_t disparity_multiplier;
+            int32_t disparity_shift;
+        };
+
+        struct uvc_header
+        {
+            byte            length;
+            byte            info;
+            uint32_t        timestamp;
+            byte            source_clock[6];
+        };
+
+        struct metadata_header
+        {
+            uint32_t    metaDataID;
+            uint32_t    size;
+        };
+
+
+        struct metadata_capture_timing
+        {
+            metadata_header  metaDataIdHeader;
+            uint32_t    version;
+            uint32_t    flag;
+            int         frameCounter;
+            uint32_t    opticalTimestamp;   //In millisecond unit
+            uint32_t    readoutTime;        //The readout time in millisecond second unit
+            uint32_t    exposureTime;       //The exposure time in millisecond second unit
+            uint32_t    frameInterval ;     //The frame interval in millisecond second unit
+            uint32_t    pipeLatency;        //The latency between start of frame to frame ready in USB buffer
+        };
+
+        struct metadata
+        {
+           uvc_header header;
+           metadata_capture_timing md_capture_timing;
+        };
+
 #pragma pack(pop)
 
         enum gvd_fields
@@ -169,18 +252,20 @@ namespace rsimpl2 {
 
         ds5_rect_resolutions width_height_to_ds5_rect_resolutions(uint32_t width, uint32_t height);
 
-        rs2_intrinsics get_intrinsic_by_resolution(const std::vector<unsigned char> & raw_data, calibration_table_id table_id, uint32_t width, uint32_t height);
+        rs2_intrinsics get_intrinsic_by_resolution(const std::vector<unsigned char>& raw_data, calibration_table_id table_id, uint32_t width, uint32_t height);
         rs2_intrinsics get_intrinsic_by_resolution_coefficients_table(const std::vector<unsigned char> & raw_data, uint32_t width, uint32_t height);
-        rs2_intrinsics get_intrinsic_fisheye_table(const std::vector<unsigned char> & raw_data, uint32_t width, uint32_t height);
-        rs2_extrinsics get_extrinsics_data(const std::vector<unsigned char> & raw_data);
+        rs2_intrinsics get_intrinsic_fisheye_table(const std::vector<unsigned char>& raw_data, uint32_t width, uint32_t height);
+        pose get_fisheye_extrinsics_data(const std::vector<unsigned char>& raw_data);
+        const coefficients_table* check_calib(const std::vector<unsigned char>& raw_data);
 
         bool try_fetch_usb_device(std::vector<uvc::usb_device_info>& devices,
                                          const uvc::uvc_device_info& info, uvc::usb_device_info& result);
 
+
         enum ds5_notifications_types
         {
             success = 0,
-            hot_laser_pwr_reduce = 1, // reported to error depth XU control
+            hot_laser_power_reduce = 1, // reported to error depth XU control
             hot_laser_disable = 2, // reported to error depth XU control
             flag_B_laser_disable = 3 // reported to error depth XU control
         };

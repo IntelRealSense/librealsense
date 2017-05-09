@@ -10,6 +10,7 @@
 #include "concurrency.h"
 #include "algo.h"
 #include "types.h"
+#include "sync.h"
 
 ////////////////////////
 // API implementation //
@@ -64,10 +65,13 @@ struct rs2_notification
     rs2_notification(const rsimpl2::notification* notification)
         :_notification(notification){}
 
-
     const rsimpl2::notification* _notification;
 };
 
+struct rs2_syncer
+{
+    std::shared_ptr<rsimpl2::sync_interface> syncer;
+};
 
 struct frame_holder
 {
@@ -292,7 +296,7 @@ void rs2_delete_device_list(rs2_device_list* list) try
     VALIDATE_NOT_NULL(list);
     delete list;
 }
-catch (...) {}
+NOEXCEPT_RETURN(, list)
 
 rs2_device* rs2_create_device(const rs2_device_list* list, int index, rs2_error** error) try
 {
@@ -605,6 +609,13 @@ rs2_log_severity rs2_get_notification_severity(rs2_notification * notification, 
 }
 HANDLE_EXCEPTIONS_AND_RETURN(RS2_LOG_SEVERITY_NONE, notification)
 
+rs2_notification_category rs2_get_notification_category(rs2_notification * notification, rs2_error** error)try
+{
+    VALIDATE_NOT_NULL(notification);
+    return (rs2_notification_category)notification->_notification->category;
+}
+HANDLE_EXCEPTIONS_AND_RETURN(RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR, notification)
+
 int rs2_supports_frame_metadata(const rs2_frame * frame, rs2_frame_metadata frame_metadata, rs2_error ** error) try
 {
     VALIDATE_NOT_NULL(frame);
@@ -777,18 +788,22 @@ void rs2_flush_queue(rs2_frame_queue* queue, rs2_error** error) try
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, queue)
 
-void rs2_get_extrinsics(const rs2_device * from, const rs2_device * to, rs2_extrinsics * extrin, rs2_error ** error) try
+void rs2_get_extrinsics(const rs2_device * from_dev, rs2_stream from_stream,
+                        const rs2_device * to_dev, rs2_stream to_stream,
+                        rs2_extrinsics * extrin, rs2_error ** error) try
 {
-    VALIDATE_NOT_NULL(from);
-    VALIDATE_NOT_NULL(to);
+    VALIDATE_NOT_NULL(from_dev);
+    VALIDATE_NOT_NULL(to_dev);
     VALIDATE_NOT_NULL(extrin);
+    VALIDATE_ENUM(from_stream);
+    VALIDATE_ENUM(to_stream);
 
-    if (from->device != to->device)
+    if (from_dev->device != to_dev->device)
         throw rsimpl2::invalid_value_exception("Extrinsics between the selected devices are unknown!");
 
-    *extrin = from->device->get_extrinsics(from->subdevice, to->subdevice);
+    *extrin = from_dev->device->get_extrinsics(from_dev->subdevice, from_stream, to_dev->subdevice, to_stream);
 }
-HANDLE_EXCEPTIONS_AND_RETURN(, from, to, extrin)
+HANDLE_EXCEPTIONS_AND_RETURN(, from_dev, from_stream, to_dev, to_stream, extrin)
 
 void rs2_get_stream_intrinsics(const rs2_device * device, rs2_stream stream, int width, int height, int fps,
     rs2_format format, rs2_intrinsics * intrinsics, rs2_error ** error) try
@@ -802,12 +817,13 @@ void rs2_get_stream_intrinsics(const rs2_device * device, rs2_stream stream, int
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device, intrinsics)
 
-float rs2_get_device_depth_scale(const rs2_device * device, rs2_error ** error) try
+
+void rs2_hardware_reset(const rs2_device * device, rs2_error ** error) try
 {
     VALIDATE_NOT_NULL(device);
-    return device->device->get_depth_scale();
+    device->device->hardware_reset();    
 }
-HANDLE_EXCEPTIONS_AND_RETURN(0.0f, device)
+HANDLE_EXCEPTIONS_AND_RETURN(, device)
 
 // Verify  and provide API version encoded as integer value
 int rs2_get_api_version(rs2_error ** error) try
@@ -870,6 +886,77 @@ void rs2_get_region_of_interest(const rs2_device* device, int* min_x, int* min_y
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, min_x, min_y, max_x, max_y)
 
+rs2_syncer* rs2_create_syncer(const rs2_device* dev, rs2_error** error) try
+{
+    VALIDATE_NOT_NULL(dev);
+    return new rs2_syncer { dev->device->create_syncer() };
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, dev)
+
+void rs2_start_syncer(const rs2_device* device, rs2_stream stream, rs2_syncer* syncer, rs2_error** error) try
+{
+    VALIDATE_NOT_NULL(device);
+    VALIDATE_ENUM(stream);
+    VALIDATE_NOT_NULL(syncer);
+    rsimpl2::frame_callback_ptr callback(
+        new rsimpl2::frame_callback(rs2_sync_frame, syncer));
+    device->device->get_endpoint(device->subdevice).starter().start(stream, move(callback));
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, device, stream, syncer)
+
+void rs2_wait_for_frames(rs2_syncer* syncer, unsigned int timeout_ms, rs2_frame** output_array, rs2_error** error) try
+{
+    VALIDATE_NOT_NULL(syncer);
+    VALIDATE_NOT_NULL(output_array);
+    auto res = syncer->syncer->wait_for_frames(timeout_ms);
+    for (uint32_t i = 0; i < RS2_STREAM_COUNT; i++)
+    {
+        output_array[i] = nullptr;
+    }
+    for (auto&& holder : res)
+    {
+        output_array[holder.frame->get()->get_stream_type()] = holder.frame;
+        holder.frame = nullptr;
+    }
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, syncer, timeout_ms, output_array)
+
+int rs2_poll_for_frames(rs2_syncer* syncer, rs2_frame** output_array, rs2_error** error) try
+{
+    VALIDATE_NOT_NULL(syncer);
+    VALIDATE_NOT_NULL(output_array);
+    rsimpl2::frameset res;
+    if (syncer->syncer->poll_for_frames(res))
+    {
+        for (uint32_t i = 0; i < RS2_STREAM_COUNT; i++)
+        {
+            output_array[i] = nullptr;
+        }
+        for (auto&& holder : res)
+        {
+            output_array[holder.frame->get()->get_stream_type()] = holder.frame;
+            holder.frame = nullptr;
+        }
+        return 1;
+    }
+    return 0;
+}
+HANDLE_EXCEPTIONS_AND_RETURN(0, syncer, output_array)
+
+void rs2_sync_frame(rs2_frame* frame, void* syncer) try
+{
+    VALIDATE_NOT_NULL(frame);
+    VALIDATE_NOT_NULL(syncer);
+    ((rs2_syncer*)syncer)->syncer->dispatch_frame(frame);
+}
+NOEXCEPT_RETURN(, frame, syncer)
+
+void rs2_delete_syncer(rs2_syncer* syncer) try
+{
+    VALIDATE_NOT_NULL(syncer);
+    delete syncer;
+}
+NOEXCEPT_RETURN(, syncer)
 
 void rs2_free_error(rs2_error * error) { if (error) delete error; }
 const char * rs2_get_failed_function(const rs2_error * error) { return error ? error->function : nullptr; }
@@ -883,6 +970,7 @@ const char * rs2_distortion_to_string(rs2_distortion distortion) { return rsimpl
 const char * rs2_option_to_string(rs2_option option) { return rsimpl2::get_string(option); }
 const char * rs2_camera_info_to_string(rs2_camera_info info) { return rsimpl2::get_string(info); }
 const char * rs2_timestamp_domain_to_string(rs2_timestamp_domain info){ return rsimpl2::get_string(info); }
+const char * rs2_notification_category_to_string(rs2_notification_category category){ return rsimpl2::get_string(category); }
 const char * rs2_visual_preset_to_string(rs2_visual_preset preset) { return rsimpl2::get_string(preset); }
 const char * rs2_log_severity_to_string(rs2_log_severity severity) { return rsimpl2::get_string(severity); }
 const char * rs2_exception_type_to_string(rs2_exception_type type) { return rsimpl2::get_string(type); }

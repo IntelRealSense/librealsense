@@ -142,7 +142,7 @@ namespace rsimpl2
         }
 
         cmd.data.resize(sizeof(uint16_t) * data.size());
-        memcpy(cmd.data.data(), data.data(), cmd.data.size());
+        rsimpl2::copy(cmd.data.data(), data.data(), cmd.data.size());
 
         _hw_monitor->send(cmd);
     }
@@ -173,7 +173,7 @@ namespace rsimpl2
         auto data = _hw_monitor->send(command);
 
         sr300_raw_calibration rawCalib;
-        memcpy(&rawCalib, data.data(), std::min(sizeof(rawCalib), data.size()));
+        rsimpl2::copy(&rawCalib, data.data(), std::min(sizeof(rawCalib), data.size()));
         return rawCalib.CalibrationParameters;
     }
 }

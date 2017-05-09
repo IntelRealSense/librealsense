@@ -90,8 +90,8 @@ set(REALSENSE_CPP
     src/device.cpp
     src/subdevice.cpp
     src/algo.cpp
+    src/sync.cpp
     src/option.cpp
-    src/ms-xu-option.cpp
     src/error-handling.cpp
     src/hw-monitor.cpp
     src/image.cpp
@@ -100,10 +100,13 @@ set(REALSENSE_CPP
     src/rs.cpp
     src/sr300.cpp
     src/types.cpp
-    src/uvc-v4l2.cpp
+    src/backend-v4l2.cpp
+    src/backend-hid.cpp
     src/backend.cpp
     src/verify.c
     src/ds5.cpp
+    src/ds5-options.cpp
+    src/ds5-timestamp.cpp
     src/ds5-private.cpp
     src/win/win-helpers.cpp
     src/win/win-uvc.cpp
@@ -111,9 +114,12 @@ set(REALSENSE_CPP
     src/win/win-hid.cpp
     src/win/win-backend.cpp
 
-    third_party/sqlite/sqlite3.h
-    src/sql.h
-    src/recorder.h
+    third_party/easyloggingpp/src/easylogging++.cc
+
+    third_party/sqlite/sqlite3.c
+    src/sql.cpp
+    src/recorder.cpp
+
 )
 
 set(REALSENSE_HPP
@@ -127,10 +133,10 @@ set(REALSENSE_HPP
     src/concurrency.h
     src/context.h
     src/device.h
+    src/sync.h
     src/subdevice.h
     src/algo.h
     src/option.h
-    src/ms-xu-option.h
     src/error-handling.h
     src/hw-monitor.h
     src/image.h
@@ -139,16 +145,21 @@ set(REALSENSE_HPP
     src/backend.h
     src/sr300.h
     src/ds5.h
+    src/ds5-options.h
     src/ds5-private.h
+    src/ds5-timestamp.h
+    src/backend-v4l2.h
+    src/backend-hid.h
     src/win/win-helpers.h
     src/win/win-uvc.h
     src/win/win-usb.h
     src/win/win-hid.h
     src/win/win-backend.h
 
-    third_party/sqlite/sqlite3.c
-    src/sql.cpp
-    src/recorder.cpp
+    third_party/easyloggingpp/src/easylogging++.h
+    third_party/sqlite/sqlite3.h
+    src/sql.h
+    src/recorder.h
 )
 
 if(WIN32)
@@ -158,7 +169,8 @@ if(WIN32)
         src/win/win-usb.cpp
         src/win/win-hid.cpp
         src/win/win-backend.cpp
-        src/uvc-v4l2.cpp
+        src/backend-v4l2.cpp
+        src/backend-hid.cpp
         src/backend.cpp
         src/verify.c)
 
@@ -168,6 +180,8 @@ if(WIN32)
         src/win/win-usb.h
         src/win/win-hid.h
         src/win/win-backend.h
+        src/backend-v4l2.h
+        src/backend-hid.h
         src/backend.h)
 
     source_group("Header Files\\API" FILES
@@ -197,17 +211,31 @@ if(WIN32)
 
     source_group("Source Files\\Devices" FILES
         src/ds5.cpp
+        src/ds5-options.cpp
         src/ds5-private.cpp
+        src/ds5-timestamp.cpp
         src/sr300.cpp
         src/ivcam-private.cpp
         )
 
     source_group("Header Files\\Devices" FILES
         src/ds5.h
+        src/ds5-options.h
         src/ds5-private.h
+        src/ds5-timestamp.h
         src/sr300.h
         src/ivcam-private.h
         )
+    
+    foreach(flag_var
+            CMAKE_CXX_FLAGS CMAKE_CXX_FLAGS_DEBUG CMAKE_CXX_FLAGS_RELEASE
+            CMAKE_CXX_FLAGS_MINSIZEREL CMAKE_CXX_FLAGS_RELWITHDEBINFO
+            CMAKE_C_FLAGS CMAKE_C_FLAGS_DEBUG CMAKE_C_FLAGS_RELEASE
+            CMAKE_C_FLAGS_MINSIZEREL CMAKE_C_FLAGS_RELWITHDEBINFO)
+        if(${flag_var} MATCHES "/MD")
+            string(REGEX REPLACE "/MD" "/MT" ${flag_var} "${${flag_var}}")
+        endif(${flag_var} MATCHES "/MD")
+    endforeach(flag_var)
 
 else()
 
@@ -286,6 +314,10 @@ if(BUILD_SHARED_LIBS)
 else()
     add_library(realsense2 STATIC ${REALSENSE_CPP} ${REALSENSE_HPP})
 endif()
+
+add_definitions(-DELPP_THREAD_SAFE)
+add_definitions(-DELPP_NO_DEFAULT_LOG_FILE)
+
 
 set_target_properties (realsense2 PROPERTIES
     FOLDER Library

@@ -208,7 +208,7 @@ namespace rsimpl2
         {
             // Hack, start default profile
             _cb = new sensor_events(callback);
-            ISensorEvents* sensorEvents;
+            ISensorEvents* sensorEvents = nullptr;
             CHECK_HR(_cb->QueryInterface(IID_PPV_ARGS(&sensorEvents)));
             CHECK_HR(_sensor->SetEventSink(sensorEvents));
         }
@@ -236,16 +236,16 @@ namespace rsimpl2
         {
             try
             {
-                CComPtr<ISensorManager> pSensorManager;
-                CComPtr<ISensorCollection> pSensorColl;
-                CComPtr<ISensor> pSensor;
+                CComPtr<ISensorManager> pSensorManager = nullptr;
+                CComPtr<ISensorCollection> pSensorColl = nullptr;
+                CComPtr<ISensor> pSensor = nullptr;
                 ULONG uCount;
 
                 CComPtr<ISensorDataReport> ppDataReport;
 
                 CHECK_HR(CoCreateInstance(CLSID_SensorManager, NULL,
-                    CLSCTX_INPROC_SERVER,
-                    IID_PPV_ARGS(&pSensorManager)));
+                         CLSCTX_INPROC_SERVER,
+                         IID_PPV_ARGS(&pSensorManager)));
 
                 CHECK_HR(pSensorManager->GetSensorsByCategory(SENSOR_CATEGORY_ALL, &pSensorColl));
 

@@ -213,6 +213,11 @@ namespace rsimpl2
             return _hw_monitor->send(input);
         }
 
+        void hardware_reset() override
+        {
+            force_hardware_reset();
+        }
+
         uvc_endpoint& get_depth_endpoint() { return static_cast<uvc_endpoint&>(get_endpoint(_depth_device_idx)); }
 
         sr300_camera(const uvc::backend& backend,
@@ -255,7 +260,10 @@ namespace rsimpl2
             };
 
             get_depth_endpoint().set_pose(lazy<pose>([depth_to_color](){return inverse(depth_to_color); }));
-            set_depth_scale((c.Rmax / 0xFFFF) * 0.001f);
+
+            get_depth_endpoint().register_option(RS2_OPTION_DEPTH_UNITS,
+                                                 std::make_shared<const_value_option>("Number of meters represented by a single depth unit",
+                                                                                      1000.f / (0xFFFF / c.Rmax)));
         }
 
         void rs2_apply_ivcam_preset(int preset)
@@ -269,20 +277,20 @@ namespace rsimpl2
                 RS2_OPTION_MOTION_RANGE
             };
 
-            const ivcam::cam_auto_range_request ar_requests[RS2_VISUAL_PRESET_COUNT] =
-            {
-                { 1,     1, 180,  303,  180,   2,  16,  -1, 1000, 450 }, /* ShortRange                */
-                { 1,     0, 303,  605,  303,  -1,  -1,  -1, 1250, 975 }, /* LongRange                 */
-                { 0,     0,  -1,   -1,   -1,  -1,  -1,  -1,   -1,  -1 }, /* BackgroundSegmentation    */
-                { 1,     1, 100,  179,  100,   2,  16,  -1, 1000, 450 }, /* GestureRecognition        */
-                { 0,     1,  -1,   -1,   -1,   2,  16,  16, 1000, 450 }, /* ObjectScanning            */
-                { 0,     0,  -1,   -1,   -1,  -1,  -1,  -1,   -1,  -1 }, /* FaceAnalytics             */
-                { 2,     0,  40, 1600,  800,  -1,  -1,  -1,   -1,  -1 }, /* FaceLogin                 */
-                { 1,     1, 100,  179,  179,   2,  16,  -1, 1000, 450 }, /* GRCursor                  */
-                { 0,     0,  -1,   -1,   -1,  -1,  -1,  -1,   -1,  -1 }, /* Default                   */
-                { 1,     1, 180,  605,  303,   2,  16,  -1, 1250, 650 }, /* MidRange                  */
-                { 2,     0,  40, 1600,  800,  -1,  -1,  -1,   -1,  -1 }, /* IROnly                    */
-            };
+            //const ivcam::cam_auto_range_request ar_requests[RS2_VISUAL_PRESET_COUNT] =
+            //{
+            //    { 1,     1, 180,  303,  180,   2,  16,  -1, 1000, 450 }, /* ShortRange                */
+            //    { 1,     0, 303,  605,  303,  -1,  -1,  -1, 1250, 975 }, /* LongRange                 */
+            //    { 0,     0,  -1,   -1,   -1,  -1,  -1,  -1,   -1,  -1 }, /* BackgroundSegmentation    */
+            //    { 1,     1, 100,  179,  100,   2,  16,  -1, 1000, 450 }, /* GestureRecognition        */
+            //    { 0,     1,  -1,   -1,   -1,   2,  16,  16, 1000, 450 }, /* ObjectScanning            */
+            //    { 0,     0,  -1,   -1,   -1,  -1,  -1,  -1,   -1,  -1 }, /* FaceAnalytics             */
+            //    { 2,     0,  40, 1600,  800,  -1,  -1,  -1,   -1,  -1 }, /* FaceLogin                 */
+            //    { 1,     1, 100,  179,  179,   2,  16,  -1, 1000, 450 }, /* GRCursor                  */
+            //    { 0,     0,  -1,   -1,   -1,  -1,  -1,  -1,   -1,  -1 }, /* Default                   */
+            //    { 1,     1, 180,  605,  303,   2,  16,  -1, 1250, 650 }, /* MidRange                  */
+            //    { 2,     0,  40, 1600,  800,  -1,  -1,  -1,   -1,  -1 }, /* IROnly                    */
+            //};
 
             const float arr_values[RS2_VISUAL_PRESET_COUNT][DEPTH_CONTROLS] = {
                 { 1,    1,   5,   1,  -1 }, /* ShortRange                */

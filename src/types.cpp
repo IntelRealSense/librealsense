@@ -17,9 +17,10 @@ namespace rsimpl2
 {
     std::string datetime_string()
     {
-        auto t = time(nullptr); char buffer[20] = {};
+        auto t = time(nullptr);
+        char buffer[20] = {};
         const tm* time = localtime(&t);
-        if (nullptr != &time)
+        if (nullptr != time)
             strftime(buffer, sizeof(buffer), "%Y-%m-%d-%H_%M_%S", time);
         return to_string() << buffer;
     }
@@ -34,6 +35,15 @@ namespace rsimpl2
     {
         if (frame)
             frame->get()->get_owner()->release_frame_ref(frame);
+    }
+
+    frame_holder& frame_holder::operator=(frame_holder&& other)
+    {
+        if (frame)
+            frame->get()->get_owner()->release_frame_ref(frame);
+        frame = other.frame;
+        other.frame = nullptr;
+        return *this;
     }
 
     const char * get_string(rs2_exception_type value)
@@ -144,6 +154,7 @@ namespace rsimpl2
         CASE(PROJECTOR_TEMPERATURE)
         CASE(OUTPUT_TRIGGER_ENABLED)
         CASE(MOTION_MODULE_TEMPERATURE)
+        CASE(DEPTH_UNITS)
         default: assert(!is_valid(value)); return unknown;
         }
         #undef CASE
@@ -220,6 +231,20 @@ namespace rsimpl2
         {
         CASE(HARDWARE_CLOCK)
         CASE(SYSTEM_TIME)
+        default: assert(!is_valid(value)); return unknown;
+        }
+        #undef CASE
+    }
+
+    const char * get_string(rs2_notification_category value)
+    {
+        #define CASE(X) case RS2_NOTIFICATION_CATEGORY_##X: return #X;
+        switch (value)
+        {
+        CASE(FRAMES_TIMEOUT)
+        CASE(FRAME_CORRUPTED)
+        CASE(HARDWARE_ERROR)
+        CASE(UNKNOWN_ERROR)
         default: assert(!is_valid(value)); return unknown;
         }
         #undef CASE

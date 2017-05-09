@@ -31,7 +31,7 @@ namespace rsimpl2
 
         if (dataLength)
         {
-            memcpy(writePtr + cur_index, data, dataLength);
+            rsimpl2::copy(writePtr + cur_index, data, dataLength);
             cur_index += dataLength;
         }
 
@@ -59,7 +59,7 @@ namespace rsimpl2
                 throw invalid_value_exception("bulk transfer failed - user buffer too small");
 
             inSize = res.size();
-            memcpy(in, res.data(), inSize);
+            rsimpl2::copy(in, res.data(), inSize);
         }
     }
 
@@ -73,10 +73,10 @@ namespace rsimpl2
             throw invalid_value_exception("received incomplete response to usb command");
 
         details.receivedCommandDataLength -= 4;
-        memcpy(details.receivedOpcode, outputBuffer, 4);
+        rsimpl2::copy(details.receivedOpcode, outputBuffer, 4);
 
         if (details.receivedCommandDataLength > 0)
-            memcpy(details.receivedCommandData, outputBuffer + 4, details.receivedCommandDataLength);
+            rsimpl2::copy(details.receivedCommandData, outputBuffer + 4, details.receivedCommandDataLength);
     }
 
     void hw_monitor::send_hw_monitor_command(hwmon_cmd_details& details) const
@@ -120,8 +120,8 @@ namespace rsimpl2
         if (newCommand.oneDirection)
             return std::vector<uint8_t>();
 
-        memcpy(newCommand.receivedOpcode, details.receivedOpcode, 4);
-        memcpy(newCommand.receivedCommandData, details.receivedCommandData, details.receivedCommandDataLength);
+        rsimpl2::copy(newCommand.receivedOpcode, details.receivedOpcode, 4);
+        rsimpl2::copy(newCommand.receivedCommandData, details.receivedCommandData, details.receivedCommandDataLength);
         newCommand.receivedCommandDataLength = details.receivedCommandDataLength;
 
         // endian?
@@ -137,30 +137,30 @@ namespace rsimpl2
             newCommand.receivedCommandData + newCommand.receivedCommandDataLength);
     }
 
-    void hw_monitor::get_gvd(size_t sz, char* gvd, uint8_t gvd_cmd) const
+    void hw_monitor::get_gvd(size_t sz, unsigned char* gvd, uint8_t gvd_cmd) const
     {
         command command(gvd_cmd);
         auto data = send(command);
         auto minSize = std::min(sz, data.size());
-        memcpy(gvd, data.data(), minSize);
+        rsimpl2::copy(gvd, data.data(), minSize);
     }
 
     std::string hw_monitor::get_firmware_version_string(int gvd_cmd, uint32_t offset) const
     {
-        std::vector<char> gvd(HW_MONITOR_BUFFER_SIZE);
+        std::vector<unsigned char> gvd(HW_MONITOR_BUFFER_SIZE);
         get_gvd(gvd.size(), gvd.data(), gvd_cmd);
         uint8_t fws[8];
-        memcpy(fws, gvd.data() + offset, 8);
+        rsimpl2::copy(fws, gvd.data() + offset, 8);
         return to_string() << static_cast<int>(fws[3]) << "." << static_cast<int>(fws[2])
             << "." << static_cast<int>(fws[1]) << "." << static_cast<int>(fws[0]);
     }
 
     std::string hw_monitor::get_module_serial_string(uint8_t gvd_cmd, uint32_t offset) const
     {
-        std::vector<char> gvd(HW_MONITOR_BUFFER_SIZE);
+        std::vector<unsigned char> gvd(HW_MONITOR_BUFFER_SIZE);
         get_gvd(gvd.size(), gvd.data(), gvd_cmd);
         unsigned char ss[8];
-        memcpy(ss, gvd.data() + offset, 8);
+        rsimpl2::copy(ss, gvd.data() + offset, 8);
         std::stringstream formattedBuffer;
         formattedBuffer << std::setfill('0') << std::setw(2) << std::hex << static_cast<int>(ss[0]) <<
             std::setfill('0') << std::setw(2) << std::hex << static_cast<int>(ss[1]) <<
@@ -174,10 +174,10 @@ namespace rsimpl2
 
     bool hw_monitor::is_camera_locked(uint8_t gvd_cmd, uint32_t offset) const
     {
-        std::vector<char> gvd(HW_MONITOR_BUFFER_SIZE);
+        std::vector<unsigned char> gvd(HW_MONITOR_BUFFER_SIZE);
         get_gvd(gvd.size(), gvd.data(), gvd_cmd);
         bool value;
-        memcpy(&value, gvd.data() + offset, 1);
+        rsimpl2::copy(&value, gvd.data() + offset, 1);
         return value;
     }
 }

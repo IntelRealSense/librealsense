@@ -11,6 +11,7 @@
 #include "hw-monitor.h"
 #include "option.h"
 #include "subdevice.h"
+#include "sync.h"
 
 namespace rsimpl2
 {
@@ -34,15 +35,19 @@ namespace rsimpl2
             }
         }
 
-        rs2_extrinsics get_extrinsics(int from, int to);
+        virtual rs2_extrinsics get_extrinsics(int from, rs2_stream from_stream, int to, rs2_stream to_stream);
 
         virtual rs2_intrinsics get_intrinsics(unsigned int subdevice, stream_profile profile) const = 0;
-
-        float get_depth_scale() const { return _static_info.nominal_depth_scale; }
+        virtual void hardware_reset() = 0;
 
         virtual std::vector<uint8_t> send_receive_raw_data(const std::vector<uint8_t>& input)
         {
             throw not_implemented_exception(to_string() << __FUNCTION__ << " is not implemented for this device!");
+        }
+
+        virtual std::shared_ptr<sync_interface> create_syncer()
+        {
+            return std::make_shared<syncer>();
         }
 
     protected:
@@ -53,9 +58,6 @@ namespace rsimpl2
         void register_endpoint_info(int sub, std::map<rs2_camera_info, std::string> camera_info);
 
         void declare_capability(supported_capability cap);
-
-        void set_depth_scale(float scale);
-
     private:
         std::vector<std::shared_ptr<endpoint>> _endpoints;
         static_device_info _static_info;

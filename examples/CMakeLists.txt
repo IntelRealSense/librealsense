@@ -168,8 +168,9 @@ else()
         FOLDER Examples
     )
 
-    add_executable(cpp-pointcloud cpp-pointcloud.cpp)
+    add_executable(cpp-pointcloud cpp-pointcloud.cpp third_party/imgui/imgui.cpp third_party/imgui/imgui_draw.cpp third_party/imgui/imgui_impl_glfw.cpp)
     target_link_libraries(cpp-pointcloud ${DEPENDENCIES})
+    include_directories(cpp-config-ui third_party/imgui)
 
     set_target_properties (cpp-pointcloud PROPERTIES
         FOLDER Examples

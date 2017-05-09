@@ -71,7 +71,7 @@ namespace rsimpl2
         float axes[3] = {static_cast<float>((hid->x) * factor),
                          static_cast<float>((hid->y) * factor),
                          static_cast<float>((hid->z) * factor)};
-        memcpy(dest[0], axes, sizeof(axes));
+        rsimpl2::copy(dest[0], axes, sizeof(axes));
     }
 
     template<size_t SIZE> void unpack_accel_axes(byte * const dest[], const byte * source, int count)
@@ -89,10 +89,10 @@ namespace rsimpl2
 
     void unpack_hid_raw_data(byte * const dest[], const byte * source, int count)
     {
-        memcpy(dest[0] + 0, source + 0, 2);
-        memcpy(dest[0] + 2, source + 4, 2);
-        memcpy(dest[0] + 4, source + 8, 2);
-        memcpy(dest[0] + 6, source + 16, 8);
+        rsimpl2::copy(dest[0] + 0, source + 0, 2);
+        rsimpl2::copy(dest[0] + 2, source + 4, 2);
+        rsimpl2::copy(dest[0] + 4, source + 8, 2);
+        rsimpl2::copy(dest[0] + 6, source + 16, 8);
     }
 
     void unpack_input_reports_data(byte * const dest[], const byte * source, int count)
@@ -105,17 +105,17 @@ namespace rsimpl2
         // uint8_t  usbCounter
         static const int input_reports_size = 9;
         static const int input_reports_offset = 15;
-        memcpy(dest[0], source + input_reports_offset, input_reports_size);
+        rsimpl2::copy(dest[0], source + input_reports_offset, input_reports_size);
     }
 
     template<size_t SIZE> void copy_pixels(byte * const dest[], const byte * source, int count)
     {
-        memcpy(dest[0], source, SIZE * count);
+        rsimpl2::copy(dest[0], source, SIZE * count);
     }
 
     void copy_raw10(byte * const dest[], const byte * source, int count)
     {
-        memcpy(dest[0], source, (5 * (count/4)));
+        rsimpl2::copy(dest[0], source, (5 * (count/4)));
     }
 
     template<class SOURCE, class UNPACK> void unpack_pixels(byte * const dest[], int count, const SOURCE * source, UNPACK unpack)
@@ -322,7 +322,7 @@ namespace rsimpl2
                     src[16], src[18], src[20], src[22],
                     src[24], src[26], src[28], src[30],
                 };
-                memcpy(dst, out, sizeof out);
+                rsimpl2::copy(dst, out, sizeof out);
                 dst += sizeof out;
                 continue;
             }
@@ -336,7 +336,7 @@ namespace rsimpl2
                     0, src[16], 0, src[18], 0, src[20], 0, src[22],
                     0, src[24], 0, src[26], 0, src[28], 0, src[30],
                 };
-                memcpy(dst, out, sizeof out);
+                rsimpl2::copy(dst, out, sizeof out);
                 dst += sizeof out;
                 continue;
             }
@@ -385,7 +385,7 @@ namespace rsimpl2
                     r[12], g[12], b[12], r[13], g[13], b[13],
                     r[14], g[14], b[14], r[15], g[15], b[15],
                 };
-                memcpy(dst, out, sizeof out);
+                rsimpl2::copy(dst, out, sizeof out);
                 dst += sizeof out;
                 continue;
             }
@@ -402,7 +402,7 @@ namespace rsimpl2
                     b[12], g[12], r[12], b[13], g[13], r[13],
                     b[14], g[14], r[14], b[15], g[15], r[15],
                 };
-                memcpy(dst, out, sizeof out);
+                rsimpl2::copy(dst, out, sizeof out);
                 dst += sizeof out;
                 continue;
             }
@@ -419,7 +419,7 @@ namespace rsimpl2
                     r[12], g[12], b[12], 255, r[13], g[13], b[13], 255,
                     r[14], g[14], b[14], 255, r[15], g[15], b[15], 255,
                 };
-                memcpy(dst, out, sizeof out);
+                rsimpl2::copy(dst, out, sizeof out);
                 dst += sizeof out;
                 continue;
             }
@@ -436,7 +436,7 @@ namespace rsimpl2
                     b[12], g[12], r[12], 255, b[13], g[13], r[13], 255,
                     b[14], g[14], r[14], 255, b[15], g[15], r[15], 255,
                 };
-                memcpy(dst, out, sizeof out);
+                rsimpl2::copy(dst, out, sizeof out);
                 dst += sizeof out;
                 continue;
             }
@@ -625,7 +625,7 @@ namespace rsimpl2
                     r[12], g[12], b[12], r[13], g[13], b[13],
                     r[14], g[14], b[14], r[15], g[15], b[15],
                 };
-                memcpy(dst, out, sizeof out);
+                rsimpl2::copy(dst, out, sizeof out);
                 dst += sizeof out;
                 continue;
             }
@@ -642,7 +642,7 @@ namespace rsimpl2
                     b[12], g[12], r[12], b[13], g[13], r[13],
                     b[14], g[14], r[14], b[15], g[15], r[15],
                 };
-                memcpy(dst, out, sizeof out);
+                rsimpl2::copy(dst, out, sizeof out);
                 dst += sizeof out;
                 continue;
             }
@@ -659,7 +659,7 @@ namespace rsimpl2
                     r[12], g[12], b[12], 255, r[13], g[13], b[13], 255,
                     r[14], g[14], b[14], 255, r[15], g[15], b[15], 255,
                 };
-                memcpy(dst, out, sizeof out);
+                rsimpl2::copy(dst, out, sizeof out);
                 dst += sizeof out;
                 continue;
             }
@@ -676,7 +676,7 @@ namespace rsimpl2
                     b[12], g[12], r[12], 255, b[13], g[13], r[13], 255,
                     b[14], g[14], r[14], 255, b[15], g[15], r[15], 255,
                 };
-                memcpy(dst, out, sizeof out);
+                rsimpl2::copy(dst, out, sizeof out);
                 dst += sizeof out;
                 continue;
             }
@@ -735,7 +735,7 @@ namespace rsimpl2
         auto in = reinterpret_cast<const uint16_t *>(source);
         auto out_ir = reinterpret_cast<uint8_t *>(dest[1]);
         for(int i=0; i<count; ++i) *out_ir++ = *in++ >> 2;
-        memcpy(dest[0], in, count*2);
+        rsimpl2::copy(dest[0], in, count*2);
     }
 
     void unpack_z16_y16_from_sr300_inzi (byte * const dest[], const byte * source, int count)
@@ -743,7 +743,7 @@ namespace rsimpl2
         auto in = reinterpret_cast<const uint16_t *>(source);
         auto out_ir = reinterpret_cast<uint16_t *>(dest[1]);
         for(int i=0; i<count; ++i) *out_ir++ = *in++ << 6;
-        memcpy(dest[0], in, count*2);
+        rsimpl2::copy(dest[0], in, count*2);
     }
 
     void unpack_rgb_from_bgr(byte * const dest[], const byte * source, int count)
@@ -751,7 +751,7 @@ namespace rsimpl2
         auto in = reinterpret_cast<const uint8_t *>(source);
         auto out = reinterpret_cast<uint8_t *>(dest[0]);
 
-        memcpy(out, in, count * 3);
+        rsimpl2::copy(out, in, count * 3);
         for (auto i = 0; i < count; i++)
         {
             std::swap(out[i * 3], out[i * 3 + 2]);

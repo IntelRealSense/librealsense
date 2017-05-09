@@ -18,7 +18,7 @@
 #define NAME pyrealsense2
 #define SNAME "pyrealsense2"
 
-PYBIND11_MAKE_OPAQUE(std::vector<rs2::stream_profile>);
+PYBIND11_MAKE_OPAQUE(std::vector<rs2::stream_profile>)
 
 
 namespace py = pybind11;
@@ -339,9 +339,7 @@ PYBIND11_PLUGIN(NAME) {
                "Returns the list of adjacent devices, sharing the same "
                "physical parent composite device.")
           .def("get_extrinsics_to", &rs2::device::get_extrinsics_to,
-               "to_device"_a)
-          .def("get_depth_scale", &rs2::device::get_depth_scale, "Retrieve "
-               "mapping between the units of the depth image and meters.")
+               "from_stream"_a, "to_device"_a, "to_stream"_a)
 //          .def("debug", &rs2::device::debug)
           .def(py::self == py::self)
           .def(py::self != py::self)
@@ -359,8 +357,12 @@ PYBIND11_PLUGIN(NAME) {
     context.def(py::init<>())
         .def("query_devices", &rs2::context::query_devices, "Create a static"
             " snapshot of all connected devices a the time of the call")
-        .def("get_extrinsics", &rs2::context::get_extrinsics,
-            "from_device"_a, "to_device"_a)
+        .def("get_extrinsics", [](const rs2::context& ctx, const rs2::device& from, rs2_stream from_stream,
+                                                           const rs2::device& to, rs2_stream to_stream)
+    {
+        return ctx.get_extrinsics(from, from_stream, to, to_stream);
+    }, "Get extrinsics",
+            "from_device"_a, "from_stream"_a, "to_device"_a, "to_stream"_a)
         .def("get_time", &rs2::context::get_time);
 
     py::enum_<rs2_log_severity> log_severity(m, "log_severity");

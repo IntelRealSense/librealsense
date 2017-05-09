@@ -16,7 +16,7 @@
 #include <Windows.h>
 #include "mfapi.h"
 #include <vidcap.h>
-
+#include <Mferror.h>
 
 #pragma comment(lib, "Shlwapi.lib")
 #pragma comment(lib, "mf.lib")
@@ -27,7 +27,7 @@
 #define type_guid  MF_DEVSOURCE_ATTRIBUTE_SOURCE_TYPE_VIDCAP_GUID
 #define did_guid  MF_DEVSOURCE_ATTRIBUTE_SOURCE_TYPE_VIDCAP_SYMBOLIC_LINK
 
-#define DEVICE_NOT_READY_ERROR 0x80070015
+#define DEVICE_NOT_READY_ERROR _HRESULT_TYPEDEF_(0x80070015L)
 
 namespace rsimpl2
 {
@@ -253,13 +253,13 @@ namespace rsimpl2
 
                 auto pStruct = next_struct;
                 cfg.step.resize(option_range_size);
-                memcpy_s(cfg.step.data(), field_width, pStruct, field_width);
+                rsimpl2::copy(cfg.step.data(), pStruct, field_width);
                 pStruct += length;
                 cfg.min.resize(option_range_size);
-                memcpy_s(cfg.min.data(), field_width, pStruct, field_width);
+                rsimpl2::copy(cfg.min.data(), pStruct, field_width);
                 pStruct += length;
                 cfg.max.resize(option_range_size);
-                memcpy_s(cfg.max.data(), field_width, pStruct, field_width);
+                rsimpl2::copy(cfg.max.data(), pStruct, field_width);
                 return;
             }
             case KSPROPERTY_MEMBER_VALUES:
@@ -277,7 +277,7 @@ namespace rsimpl2
                     }
 
                     cfg.def.resize(option_range_size);
-                    memcpy_s(cfg.def.data(), field_width, next_struct, field_width);
+                    rsimpl2::copy(cfg.def.data(), next_struct, field_width);
                 }
                 return;
             }
@@ -704,14 +704,13 @@ namespace rsimpl2
 
         std::vector<stream_profile> wmf_uvc_device::get_profiles() const
         {
-            std::vector<stream_profile> results;
             check_connection();
-
-            CComPtr<IMFMediaType> pMediaType = nullptr;
 
             if (get_power_state() != D0)
                 throw std::runtime_error("Device must be powered to query supported profiles!");
 
+            CComPtr<IMFMediaType> pMediaType = nullptr;
+            std::vector<stream_profile> results;
             for (unsigned int sIndex = 0; sIndex < _streams.size(); ++sIndex)
             {
                 for (auto k = 0;; k++)
@@ -719,7 +718,7 @@ namespace rsimpl2
                     auto hr = _reader->GetNativeMediaType(sIndex, k, &pMediaType.p);
                     if (FAILED(hr) || pMediaType == nullptr)
                     {
-                        if (hr != 0xc00d36b9) // An object ran out of media types to suggest therefore the requested chain of streaming objects cannot be completed
+                        if (hr != MF_E_NO_MORE_TYPES) // An object ran out of media types to suggest therefore the requested chain of streaming objects cannot be completed
                             check("_reader->GetNativeMediaType(sIndex, k, &pMediaType.p)", hr, false);
 
                         break;
@@ -830,7 +829,7 @@ namespace rsimpl2
                     auto hr = _reader->GetNativeMediaType(sIndex, k, &pMediaType.p);
                     if (FAILED(hr) || pMediaType == nullptr)
                     {
-                        if (hr != 0xc00d36b9) // An object ran out of media types to suggest therefore the requested chain of streaming objects cannot be completed
+                        if (hr != MF_E_NO_MORE_TYPES) // An object ran out of media types to suggest therefore the requested chain of streaming objects cannot be completed
                             check("_reader->GetNativeMediaType(sIndex, k, &pMediaType.p)", hr, false);
 
                         break;
@@ -1029,7 +1028,7 @@ namespace rsimpl2
                     auto sts = _reader->Flush(sIndex);
                     if (sts != S_OK)
                     {
-                        if (sts == 0xc00d3704)
+                        if (sts == MF_E_HW_MFT_FAILED_START_STREAMING)
                             throw std::runtime_error("Camera already streaming");
 
                         throw;

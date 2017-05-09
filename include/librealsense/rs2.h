@@ -16,7 +16,7 @@ extern "C" {
 
 #define RS2_API_MAJOR_VERSION    2
 #define RS2_API_MINOR_VERSION    5
-#define RS2_API_PATCH_VERSION    2
+#define RS2_API_PATCH_VERSION    7
 
 #define STRINGIFY(arg) #arg
 #define VAR_ARG_STRING(arg) STRINGIFY(arg)
@@ -60,6 +60,7 @@ typedef enum rs2_stream
     RS2_STREAM_COUNT
 } rs2_stream;
 
+/** \brief Format identifies how binary data is encoded within a frame */
 typedef enum rs2_format
 {
     RS2_FORMAT_ANY             , /**< When passed to enable stream, librealsense will try to provide best suited format */
@@ -79,10 +80,11 @@ typedef enum rs2_format
     RS2_FORMAT_UYVY            , /**< Similar to the standard YUYV pixel format, but packed in a different order */
     RS2_FORMAT_MOTION_RAW      , /**< Raw data from the motion sensor */
     RS2_FORMAT_MOTION_XYZ32F   , /**< Motion data packed as 3 32-bit float values, for X, Y, and Z axis */
-    RS2_FORMAT_GPIO_RAW        , /**< Raw data from the GPIO's */
+    RS2_FORMAT_GPIO_RAW        , /**< Raw data from the external sensors hooked to one of the GPIO's */
     RS2_FORMAT_COUNT             /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
 } rs2_format;
 
+/** \brief Per-Frame-Metadata are set of read-only properties that might be exposed for each individual frame */
 typedef enum rs2_frame_metadata
 {
     RS2_FRAME_METADATA_ACTUAL_EXPOSURE,
@@ -118,7 +120,6 @@ typedef enum rs2_ivcam_preset
 } rs2_visual_preset;
 
 /** \brief Defines general configuration controls.
-
    These can generally be mapped to camera UVC controls, and unless stated otherwise, can be set/queried at any time. */
 typedef enum rs2_option
 {
@@ -150,28 +151,28 @@ typedef enum rs2_option
     RS2_OPTION_PROJECTOR_TEMPERATURE                      , /**< Current Projector Temperature */
     RS2_OPTION_OUTPUT_TRIGGER_ENABLED                     , /**< Enable / disable trigger to be outputed from the camera to any external device on every depth frame */
     RS2_OPTION_MOTION_MODULE_TEMPERATURE                  , /**< Current Motion-Module Temperature */
+    RS2_OPTION_DEPTH_UNITS                                , /**< Number of meters represented by a single depth unit */
     RS2_OPTION_COUNT                                      , /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
 } rs2_option;
 
-/**\brief Read-only strings that can be queried from the device.
-
+/** \brief Read-only strings that can be queried from the device.
    Not all information fields are available on all camera types.
    This information is mainly available for camera debug and troubleshooting and should not be used in applications. */
 typedef enum rs2_camera_info {
     RS2_CAMERA_INFO_DEVICE_NAME                    , /**< Device friendly name */
-    RS2_CAMERA_INFO_MODULE_NAME                    ,
+    RS2_CAMERA_INFO_MODULE_NAME                    , /**< Specific sensor name within a RealSense device */
     RS2_CAMERA_INFO_DEVICE_SERIAL_NUMBER           , /**< Device serial number */
     RS2_CAMERA_INFO_CAMERA_FIRMWARE_VERSION        , /**< Primary firmware version */
-    RS2_CAMERA_INFO_DEVICE_LOCATION                ,
-    RS2_CAMERA_INFO_DEVICE_DEBUG_OP_CODE           ,
-    RS2_CAMERA_INFO_ADVANCED_MODE                  ,
-    RS2_CAMERA_INFO_PRODUCT_ID                     ,
-    RS2_CAMERA_INFO_MOTION_MODULE_FIRMWARE_VERSION ,
-    RS2_CAMERA_INFO_IS_CAMERA_LOCKED               , /**< EEPROM Lock Status */
+    RS2_CAMERA_INFO_DEVICE_LOCATION                , /**< Unique identifier of the port the device is connected to (platform specific) */
+    RS2_CAMERA_INFO_DEVICE_DEBUG_OP_CODE           , /**< If device supports firmware logging, this is the command to send to get logs from firmware */
+    RS2_CAMERA_INFO_ADVANCED_MODE                  , /**< True iff the device is in advanced mode */
+    RS2_CAMERA_INFO_PRODUCT_ID                     , /**< Product ID as reported in the USB descriptor */
+    RS2_CAMERA_INFO_MOTION_MODULE_FIRMWARE_VERSION , /**< Motion Module firmware version */
+    RS2_CAMERA_INFO_IS_CAMERA_LOCKED               , /**< True iff EEPROM is locked */
     RS2_CAMERA_INFO_COUNT                            /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
 } rs2_camera_info;
 
-/**\brief Severity of the librealsense logger */
+/** \brief Severity of the librealsense logger */
 typedef enum rs2_log_severity {
     RS2_LOG_SEVERITY_DEBUG, /**< Detailed information about ordinary operations */
     RS2_LOG_SEVERITY_INFO , /**< Terse information about ordinary operations */
@@ -181,6 +182,15 @@ typedef enum rs2_log_severity {
     RS2_LOG_SEVERITY_NONE , /**< No logging will occur */
     RS2_LOG_SEVERITY_COUNT  /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
 } rs2_log_severity;
+
+/** \brief Category of the librealsense notifications */
+typedef enum rs2_notification_category{
+    RS2_NOTIFICATION_CATEGORY_FRAMES_TIMEOUT,   /**< Frames didn't arrived within 5 seconds */
+    RS2_NOTIFICATION_CATEGORY_FRAME_CORRUPTED,  /**< Received partial/incomplete frame */
+    RS2_NOTIFICATION_CATEGORY_HARDWARE_ERROR,   /**< Error reported from the device */
+    RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR,    /**< Received unknown error from the device */
+    RS2_NOTIFICATION_CATEGORY_COUNT             /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
+}rs2_notification_category;
 
 /** \brief Specifies the clock in relation to which the frame timestamp was measured. */
 typedef enum rs2_timestamp_domain
@@ -243,6 +253,7 @@ typedef struct rs2_notification rs2_notification;
 typedef struct rs2_notifications_callback rs2_notifications_callback;
 typedef struct rs2_frame_callback rs2_frame_callback;
 typedef struct rs2_log_callback rs2_log_callback;
+typedef struct rs2_syncer rs2_syncer;
 
 typedef void (*rs2_frame_callback_ptr)(rs2_frame*, void*);
 typedef void (*rs2_notification_callback_ptr)(rs2_notification*, void*);
@@ -318,18 +329,22 @@ void rs2_delete_device(rs2_device* device);
 */
 rs2_device_list* rs2_query_adjacent_devices(const rs2_device* device, rs2_error** error);
 
-/*
+/**
  * returns the extrinsics between a pair of RealSense devices
  * usually, extrnisics are available only between devices on the same USB port, like Depth and Fish-Eye
  * however, in theory extrinsics can be made available between any pair of devices through calibration
- * \param[in]  from   RealSense device to calculate extrinsics from
- * \param[in]  to     RealSense device to calculate extrinsics to
- * \param[out] extrin Resulting translation and rotation (extrinsics)
- * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ * \param[in]  from_dev     RealSense device to calculate extrinsics from
+ * \param[in]  from_stream  The viewport to calculate extrinsics from
+ * \param[in]  to_dev       RealSense device to calculate extrinsics to
+ * \param[in]  to_stream    The viewport to calculate extrinsics to
+ * \param[out] extrin       Resulting translation and rotation (extrinsics)
+ * \param[out] error        if non-null, receives any error that occurs during this call, otherwise, errors are ignored
  */
-void rs2_get_extrinsics(const rs2_device * from, const rs2_device * to, rs2_extrinsics * extrin, rs2_error ** error);
+void rs2_get_extrinsics(const rs2_device * from_dev, rs2_stream from_stream,
+                        const rs2_device * to_dev, rs2_stream to_stream,
+                        rs2_extrinsics * extrin, rs2_error ** error);
 
-/*
+/**
  * returns the intrinsics of specific stream configuration
  * \param[in]  device    RealSense device to query
  * \param[in]  stream    type of stream
@@ -342,11 +357,10 @@ void rs2_get_extrinsics(const rs2_device * from, const rs2_device * to, rs2_extr
 void rs2_get_stream_intrinsics(const rs2_device * device, rs2_stream stream, int width, int height, int fps, rs2_format format, rs2_intrinsics * intrinsics, rs2_error ** error);
 
 /**
-* retrieve mapping between the units of the depth image and meters
-* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
-* \return            depth in meters corresponding to a depth value of 1
-*/
-float rs2_get_device_depth_scale(const rs2_device * device, rs2_error ** error);
+ * send hardware reset request to the device
+ * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ */
+void rs2_hardware_reset(const rs2_device * device, rs2_error ** error);
 
 /**
 * check if physical subdevice is supported
@@ -517,6 +531,12 @@ rs2_time_t rs2_get_notification_timestamp(rs2_notification * notification, rs2_e
 */
 rs2_log_severity rs2_get_notification_severity(rs2_notification * notification, rs2_error** error);
 
+/**
+* retrieve category from notification handle
+* \param[in] notification      handle returned from a callback
+* \return            the notification category
+*/
+rs2_notification_category rs2_get_notification_category(rs2_notification * notification, rs2_error** error);
 /**
 * retrieve metadata from frame handle
 * \param[in] frame      handle returned from a callback
@@ -788,37 +808,87 @@ void rs2_flush_queue(rs2_frame_queue* queue, rs2_error** error);
 * \param[in] device  input RealSense device
 * \param[in] raw_data_to_send   raw data to be send to device
 * \param[in] size_of_raw_data_to_send   size of raw_data_to_send
-* \param[out] error   if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return            rs2_raw_data_buffer, should be released by rs2_delete_raw_data
 */
 rs2_raw_data_buffer* rs2_send_and_receive_raw_data(rs2_device* device, void* raw_data_to_send, unsigned size_of_raw_data_to_send, rs2_error** error);
 
 /**
 * get the size of rs2_raw_data_buffer
-* \param[in] buffer        pointer to rs2_raw_data_buffer returned by rs2_send_and_receive_raw_data
+* \param[in] buffer  pointer to rs2_raw_data_buffer returned by rs2_send_and_receive_raw_data
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return size of rs2_raw_data_buffer
 */
 int rs2_get_raw_data_size(const rs2_raw_data_buffer* buffer, rs2_error** error);
 
 /**
-* delete rs2_raw_data_buffer
+* Delete rs2_raw_data_buffer
 * \param[in] buffer        rs2_raw_data_buffer returned by rs2_send_and_receive_raw_data
 */
 void rs2_delete_raw_data(rs2_raw_data_buffer* buffer);
 
 /**
-* retrieve char array from rs2_raw_data_buffer
-* \param[in] buffer        rs2_raw_data_buffer returned by rs2_send_and_receive_raw_data
+* Retrieve char array from rs2_raw_data_buffer
+* \param[in] buffer   rs2_raw_data_buffer returned by rs2_send_and_receive_raw_data
 * \param[out] error   if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return raw data
 */
 const unsigned char* rs2_get_raw_data(const rs2_raw_data_buffer* buffer, rs2_error** error);
 
-/*
-librealsense recorder is intended for validation purposes.
-it supports three modes of operation:
-*/
+/**
+ * \brief Create syncronization primitive to group frames into coherent frame-sets
+ * \param[in] dev        RealSense device
+ * \param[out] error     if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ * \return
+ */
+rs2_syncer* rs2_create_syncer(const rs2_device* dev, rs2_error** error);
+
+/**
+ * \brief Start streaming from specified configured device of specific stream to frame queue
+ * \param[in] device  RealSense device
+ * \param[in] stream  specific stream type to start
+ * \param[in] queue   frame-queue to store new frames into
+ * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ */
+void rs2_start_syncer(const rs2_device* device, rs2_stream stream, rs2_syncer* syncer, rs2_error** error);
+
+/**
+ * \brief[in] Wait until coherent set of frames becomes available
+ * \param[in] syncer        Syncronization primitive used to group the frames
+ * \param[in] timeout_ms    Max time in milliseconds to wait until exception is thrown
+ * \param[in] output_array  Array of size RS2_STREAM_COUNT of frame handles
+ *                          All not-null frame handles must be released using rs2_release_frame
+ * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ */
+void rs2_wait_for_frames(rs2_syncer* syncer, unsigned int timeout_ms, rs2_frame** output_array, rs2_error** error);
+
+/**
+ * \brief Check if a coherent set of frames is available
+ * \param[in] syncer        Syncronization primitive used to group the frames
+ * \param[in] output_array  Array of size RS2_STREAM_COUNT of frame handles
+ *                          All not-null frame handles must be released using rs2_release_frame
+ * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ * \return                  non-zero if frame-set was found
+ */
+int rs2_poll_for_frames(rs2_syncer* syncer, rs2_frame** output_array, rs2_error** error);
+
+/**
+ * Dispatch new frame into the syncer
+ * \param[in] frame frame handle to enqueue (this operation passed ownership to the syncer)
+ * \param[in] syncer the frame syncer data structure
+ */
+void rs2_sync_frame(rs2_frame* frame, void* syncer);
+
+/**
+ * \brief Releases any resources hold by a frame syncronization primitive
+ * \param[in] syncer        Syncronization primitive
+ */
+void rs2_delete_syncer(rs2_syncer* syncer);
+
+/**
+ * librealsense Recorder is intended for effective unit-testing
+ * Currently supports three modes of operation:
+ */
 typedef enum rs2_recording_mode
 {
     RS2_RECORDING_MODE_BLANK_FRAMES, /* frame metadata will be recorded, but pixel data will be replaced with zeros to save space */
@@ -828,31 +898,31 @@ typedef enum rs2_recording_mode
 } rs2_recording_mode;
 
 /**
-* create librealsense context that will try to record all operations over librealsense into a file
-* \param[in] api_version realsense API version as provided by RS2_API_VERSION macro
-* \param[in] filename string representing the name of the file to record
-* \param[in] section  string representing the name of the section within existing recording
-* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
-* \return            context object, should be released by rs2_delete_context
-*/
+ * Create librealsense context that will try to record all operations over librealsense into a file
+ * \param[in] api_version realsense API version as provided by RS2_API_VERSION macro
+ * \param[in] filename string representing the name of the file to record
+ * \param[in] section  string representing the name of the section within existing recording
+ * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ * \return            context object, should be released by rs2_delete_context
+ */
 rs2_context* rs2_create_recording_context(int api_version, const char* filename, const char* section, rs2_recording_mode mode, rs2_error** error);
 
 /**
-* create librealsense context that given a file will respond to calls exactly as the recording did
-* if the user calls a method that was either not called during recording or violates causality of the recording error will be thrown
-* \param[in] api_version realsense API version as provided by RS2_API_VERSION macro
-* \param[in] filename string representing the name of the file to play back from
-* \param[in] section  string representing the name of the section within existing recording
-* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
-* \return            context object, should be released by rs2_delete_context
-*/
+ * Create librealsense context that given a file will respond to calls exactly as the recording did
+ * if the user calls a method that was either not called during recording or violates causality of the recording error will be thrown
+ * \param[in] api_version realsense API version as provided by RS2_API_VERSION macro
+ * \param[in] filename string representing the name of the file to play back from
+ * \param[in] section  string representing the name of the section within existing recording
+ * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ * \return            context object, should be released by rs2_delete_context
+ */
 rs2_context* rs2_create_mock_context(int api_version, const char* filename, const char* section, rs2_error** error);
 
 /**
-* retrieve the API version from the source code. Evaluate that the value is conformant to the established policies
-* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
-* \return            the version API encoded into integer value "1.9.3" -> 10903
-*/
+ * Retrieve the API version from the source code. Evaluate that the value is conformant to the established policies
+ * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ * \return            the version API encoded into integer value "1.9.3" -> 10903
+ */
 int          rs2_get_api_version      (rs2_error ** error);
 
 const char * rs2_get_failed_function  (const rs2_error * error);

@@ -84,32 +84,14 @@ std::vector<uint8_t> rsimpl2::command_transfer_over_xu::send_receive(const std::
             std::vector<uint8_t> transmit_buf(HW_MONITOR_BUFFER_SIZE, 0);
             std::copy(data.begin(), data.end(), transmit_buf.begin());
 
-            auto sts = false;
-            for (auto i = 0; i < MAX_RETRIES; ++i)
-            {
-                if ((sts = dev.set_xu(_xu, _ctrl, transmit_buf.data(), static_cast<int>(transmit_buf.size()))))
-                    break;
-
-                std::this_thread::sleep_for(std::chrono::milliseconds(DELAY_FOR_RETRIES));
-            }
-
-            if (!sts)
-                throw invalid_value_exception(to_string() << "set_xu(...) failed!" << " Last Error: " << strerror(errno));
-
+            if (!dev.set_xu(_xu, _ctrl, transmit_buf.data(), static_cast<int>(transmit_buf.size())))
+                throw invalid_value_exception(to_string() << "set_xu(ctrl=" << unsigned(_ctrl) << ") failed!" << " Last Error: " << strerror(errno));
 
             if (require_response)
             {
                 result.resize(HW_MONITOR_BUFFER_SIZE);
-                for (auto i = 0; i < MAX_RETRIES; ++i)
-                {
-                    if ((sts = dev.get_xu(_xu, _ctrl, result.data(), static_cast<int>(result.size()))))
-                        break;
-
-                    std::this_thread::sleep_for(std::chrono::milliseconds(DELAY_FOR_RETRIES));
-                }
-
-                if (!sts)
-                    throw invalid_value_exception(to_string() << "get_xu(...) failed!" << " Last Error: " << strerror(errno));
+                if (!dev.get_xu(_xu, _ctrl, result.data(), static_cast<int>(result.size())))
+                    throw invalid_value_exception(to_string() << "get_xu(ctrl=" << unsigned(_ctrl) << ") failed!" << " Last Error: " << strerror(errno));
 
                 // Returned data size located in the last 4 bytes
                 auto data_size = *(reinterpret_cast<uint32_t*>(result.data() + HW_MONITOR_DATA_SIZE_OFFSET)) + SIZE_OF_HW_MONITOR_HEADER;
@@ -156,7 +138,7 @@ const char * rsimpl2::polling_errors_disable::get_description() const
     return "Enable / disable polling of camera internal errors";
 }
 
-const char * rsimpl2::polling_errors_disable::get_value_description(float value)
+const char * rsimpl2::polling_errors_disable::get_value_description(float value) const
 {
     if (value == 0)
     {

@@ -6,6 +6,19 @@
 $ uname -r
 ```
 
+## Enable LibRealSense Log
+- In order to change the log level of LibRealSense logger, you need to set a local variable named LRS_LOG_LEVEL and initialize it with the desirable log level
+
+On Linux:
+```bash
+$ export LRS_LOG_LEVEL="<Log Level>"
+```
+On Windows:
+```bash
+$ set LRS_LOG_LEVEL="<Log Level>"
+```
+- A LibRealSense log will be created even an application didn't activate LibRealSense logger.
+
 ## Connected Intel Cameras
 - List of all connected Intel cameras
 ```bash

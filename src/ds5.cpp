@@ -9,10 +9,11 @@
 #include "device.h"
 #include "context.h"
 #include "image.h"
-#include "ms-xu-option.h"
 
 #include "ds5.h"
 #include "ds5-private.h"
+#include "ds5-options.h"
+#include "ds5-timestamp.h"
 
 namespace rsimpl2
 {
@@ -136,49 +137,66 @@ namespace rsimpl2
         return _hw_monitor->send(input);
     }
 
+    void ds5_camera::hardware_reset()
+    {
+        command cmd(ds::HWRST);
+        _hw_monitor->send(cmd);
+    }
+
     rs2_intrinsics ds5_camera::get_intrinsics(unsigned int subdevice, stream_profile profile) const
-      {
-          if (subdevice >= get_endpoints_count())
-              throw invalid_value_exception(to_string() << "Requested subdevice " <<
-                                            subdevice << " is unsupported.");
+    {
+        if (subdevice >= get_endpoints_count())
+            throw invalid_value_exception(to_string() << "Requested subdevice " <<
+                                          subdevice << " is unsupported.");
 
-          if (subdevice == _depth_device_idx)
-          {
-              return get_intrinsic_by_resolution(
-                  *_coefficients_table_raw,
-                  ds::calibration_table_id::coefficients_table_id,
-                  profile.width, profile.height);
-          }
+        if (subdevice == _depth_device_idx)
+        {
+            return get_intrinsic_by_resolution(
+                *_coefficients_table_raw,
+                ds::calibration_table_id::coefficients_table_id,
+                profile.width, profile.height);
+        }
 
-          if (subdevice == _fisheye_device_idx)
-          {
-              return get_intrinsic_by_resolution(
-                  *_fisheye_calibration_raw,
-                  ds::calibration_table_id::fisheye_calibration_id,
-                  profile.width, profile.height);
-          }
-          throw not_implemented_exception("Not Implemented");
-      }
+        if (subdevice == _fisheye_device_idx)
+        {
+            return get_intrinsic_by_resolution(
+                *_fisheye_intrinsics_raw,
+                ds::calibration_table_id::fisheye_calibration_id,
+                profile.width, profile.height);
+        }
+        throw not_implemented_exception("Not Implemented");
+    }
 
-      pose ds5_camera::get_device_position(unsigned int subdevice) const
-      {
-          if (subdevice >= get_endpoints_count())
-              throw invalid_value_exception(to_string() << "Requested subdevice " <<
-                                            subdevice << " is unsupported.");
+    pose ds5_camera::get_device_position(unsigned int subdevice) const
+    {
+        if (subdevice >= get_endpoints_count())
+            throw invalid_value_exception(to_string() << "Requested subdevice " <<
+                                          subdevice << " is unsupported.");
 
-          if (subdevice == _fisheye_device_idx)
-          {
-             auto extr = rsimpl2::ds::get_extrinsics_data(*_fisheye_calibration_raw);
-             pose p {{extr.rotation[0], extr.rotation[1], extr.rotation[2],
-                     extr.rotation[3], extr.rotation[4], extr.rotation[5],
-                     extr.rotation[6], extr.rotation[7], extr.rotation[8]},
-                     {extr.translation[0], extr.translation[1], extr.translation[2]}};
+        if (subdevice == _fisheye_device_idx)
+        {
+            auto extr = rsimpl2::ds::get_fisheye_extrinsics_data(*_fisheye_extrinsics_raw);
+            return inverse(extr);
+        }
 
+        if (subdevice == _motion_module_device_idx)
+        {
+            // Fist, get Fish-eye pose
+            auto fe_pose = get_device_position(_fisheye_device_idx);
 
-             return inverse(p);
-          }
-          throw not_implemented_exception("Not Implemented");
-      }
+            auto motion_extr = *_motion_module_extrinsics_raw;
+
+            auto rot = motion_extr.rotation;
+            auto trans = motion_extr.translation;
+
+            pose ex = {{rot(0,0), rot(1,0),rot(2,0),rot(1,0), rot(1,1),rot(2,1),rot(0,2), rot(1,2),rot(2,2)},
+                       {trans[0], trans[1], trans[2]}};
+
+            return fe_pose * ex;
+        }
+
+        throw not_implemented_exception("Not Implemented");
+    }
 
     bool ds5_camera::is_camera_in_advanced_mode() const
     {
@@ -197,13 +215,30 @@ namespace rsimpl2
         return _hw_monitor->send(cmd);
     }
 
-    std::vector<uint8_t> ds5_camera::get_raw_fisheye_calibration_table() const
-       {
-           const int offset = 0x84;
-           const int size = 0x98;
-           command cmd(ds::MMER, offset, size);
-           return _hw_monitor->send(cmd);
-       }
+    std::vector<uint8_t> ds5_camera::get_raw_fisheye_intrinsics_table() const
+    {
+        const int offset = 0x84;
+        const int size = 0x98;
+        command cmd(ds::MMER, offset, size);
+        return _hw_monitor->send(cmd);
+    }
+
+    ds::extrinsics_table ds5_camera::get_motion_module_extrinsics() const
+    {
+        const int offset = 0xD0;
+        const int size = sizeof(ds::extrinsics_table);
+        command cmd(ds::MMER, offset, size);
+        auto result = _hw_monitor->send(cmd);
+        if (result.size() < sizeof(ds::extrinsics_table))
+            throw std::runtime_error("Not enough data returned from the device!");
+        return *((ds::extrinsics_table*)result.data()); // copy by value
+    }
+
+    std::vector<uint8_t> ds5_camera::get_raw_fisheye_extrinsics_table() const
+    {
+        command cmd(ds::GET_EXTRINSICS);
+        return _hw_monitor->send(cmd);
+    }
 
     std::shared_ptr<hid_endpoint> ds5_camera::create_hid_device(const uvc::backend& backend,
                                                                 const std::vector<uvc::hid_device_info>& all_hid_infos,
@@ -273,7 +308,7 @@ namespace rsimpl2
 
         // TODO: These if conditions will be implemented as inheritance classes
         auto pid = all_device_infos.front().pid;
-        if (pid == RS410A_PID || pid == RS450T_PID || pid == RS430C_PID)
+        if (pid == RS410_PID || pid == RS430_MM_PID || pid == RS430_PID)
         {
             depth_ep->register_option(RS2_OPTION_EMITTER_ENABLED, std::make_shared<emitter_option>(*depth_ep));
 
@@ -350,7 +385,9 @@ namespace rsimpl2
         }
 
         _coefficients_table_raw = [this]() { return get_raw_calibration_table(coefficients_table_id); };
-        _fisheye_calibration_raw = [this]() { return get_raw_fisheye_calibration_table(); };
+        _fisheye_intrinsics_raw = [this]() { return get_raw_fisheye_intrinsics_table(); };
+        _fisheye_extrinsics_raw = [this]() { return get_raw_fisheye_extrinsics_table(); };
+        _motion_module_extrinsics_raw = [this]() { return get_motion_module_extrinsics(); };
 
         std::string device_name = (rs4xx_sku_names.end() != rs4xx_sku_names.find(dev_info.front().pid)) ? rs4xx_sku_names.at(dev_info.front().pid) : "RS4xx";
         auto camera_fw_version = firmware_version(_hw_monitor->get_firmware_version_string(GVD, camera_fw_version_offset));
@@ -407,7 +444,7 @@ namespace rsimpl2
                                      exposure_option,
                                      enable_auto_exposure));
 
-            if(pid != RS440P_PID && pid != RS450T_PID && pid != RS430C_PID)
+            if(pid != RS420_PID && pid != RS430_MM_PID && pid != RS430_PID && pid != RS420_MM_PID)
             {
                 depth_ep.register_option(RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE,
                     std::make_shared<uvc_xu_option<uint8_t>>(depth_ep,
@@ -436,7 +473,7 @@ namespace rsimpl2
 
              depth_ep.register_option(RS2_OPTION_ERROR_POLLING_ENABLED, std::make_shared<polling_errors_disable>(_polling_error_handler.get()));
 
-             if (pid == RS410A_PID || pid == RS450T_PID || pid == RS430C_PID)
+             if (pid == RS410_PID || pid == RS430_MM_PID || pid == RS430_PID)
              {
                  depth_ep.register_option(RS2_OPTION_PROJECTOR_TEMPERATURE,
                                           std::make_shared<asic_and_projector_temperature_options>(depth_ep,
@@ -445,17 +482,23 @@ namespace rsimpl2
              depth_ep.register_option(RS2_OPTION_ASIC_TEMPERATURE,
                                       std::make_shared<asic_and_projector_temperature_options>(depth_ep,
                                                                                                RS2_OPTION_ASIC_TEMPERATURE));
-             if (pid == RS450T_PID)
+             if (pid == RS430_MM_PID)
                  motion_module_fw_version = _hw_monitor->get_firmware_version_string(GVD, motion_module_fw_version_offset);
          }
 
         depth_ep.set_roi_method(std::make_shared<ds5_auto_exposure_roi_method>(*_hw_monitor));
 
+        if (advanced_mode)
+            depth_ep.register_option(RS2_OPTION_DEPTH_UNITS, std::make_shared<depth_scale_option>(*_hw_monitor));
+        else
+            depth_ep.register_option(RS2_OPTION_DEPTH_UNITS, std::make_shared<const_value_option>("Number of meters represented by a single depth unit",
+                                                                                                  0.001));
+
         // TODO: These if conditions will be implemented as inheritance classes
 
         std::shared_ptr<uvc_endpoint> fisheye_ep;
-        int fe_index{};
-        if (pid == RS450T_PID)
+
+        if (pid == RS430_MM_PID || pid == RS420_MM_PID)
         {
             auto fisheye_infos = filter_by_mi(dev_info, 3);
             if (fisheye_infos.size() != 1)
@@ -471,10 +514,22 @@ namespace rsimpl2
             fisheye_ep->register_pixel_format(pf_raw8);
             fisheye_ep->register_pixel_format(pf_fe_raw8_unpatched_kernel); // W/O for unpatched kernel
 
-
-            auto fisheye_auto_exposure = register_auto_exposure_options(fisheye_ep.get(), &fisheye_xu);
-            fisheye_ep->set_roi_method(std::make_shared<fisheye_auto_exposure_roi_method>(fisheye_auto_exposure));
-
+            if (camera_fw_version >= firmware_version("5.6.3.0")) // Create Auto Exposure controls from FW version 5.6.3.0
+            {
+                auto fisheye_auto_exposure = register_auto_exposure_options(fisheye_ep.get(), &fisheye_xu);
+                fisheye_ep->set_roi_method(std::make_shared<fisheye_auto_exposure_roi_method>(fisheye_auto_exposure));
+            }
+            else
+            {
+                fisheye_ep->register_option(RS2_OPTION_GAIN,
+                                            std::make_shared<uvc_pu_option>(*fisheye_ep.get(),
+                                                                            RS2_OPTION_GAIN));
+                fisheye_ep->register_option(RS2_OPTION_EXPOSURE,
+                                            std::make_shared<uvc_xu_option<uint16_t>>(*fisheye_ep.get(),
+                                                                                      fisheye_xu,
+                                                                                      rsimpl2::ds::FISHEYE_EXPOSURE,
+                                                                                      "Exposure time of Fisheye camera"));
+            }
 
             // Add fisheye endpoint
             _fisheye_device_idx = add_endpoint(fisheye_ep);
@@ -482,7 +537,8 @@ namespace rsimpl2
             fisheye_ep->set_pose(lazy<pose>([this](){return get_device_position(_fisheye_device_idx);}));
 
             // Add hid endpoint
-            auto hid_index = add_endpoint(create_hid_device(backend, hid_info, camera_fw_version));
+            auto hid_ep = create_hid_device(backend, hid_info, camera_fw_version);
+            _motion_module_device_idx = add_endpoint(hid_ep);
             for (auto& elem : hid_info)
             {
                 std::map<rs2_camera_info, std::string> camera_info = {{RS2_CAMERA_INFO_DEVICE_NAME, device_name},
@@ -498,13 +554,14 @@ namespace rsimpl2
                 if (!is_camera_locked.empty())
                     camera_info[RS2_CAMERA_INFO_IS_CAMERA_LOCKED] = is_camera_locked;
 
-                register_endpoint_info(hid_index, camera_info);
+                register_endpoint_info(_motion_module_device_idx, camera_info);
+                hid_ep->set_pose(lazy<pose>([this](){return get_device_position(_motion_module_device_idx); }));
             }
         }
 
         std::shared_ptr<uvc_endpoint> color_ep;
         int color_index{};
-        if (pid == RS420R_PID)
+        if (pid == RS415_PID)
         {
             auto color_infos = filter_by_mi(dev_info, 3);
             if (color_infos.size() != 1)
@@ -523,8 +580,6 @@ namespace rsimpl2
             color_index = add_endpoint(color_ep);
             color_ep->set_pose(lazy<pose>([]() {return pose{ { { 1,0,0 },{ 0,1,0 },{ 0,0,1 } },{ 0,0,0 } }; })); // TODO: Fetch real extrinsics
         }
-
-        set_depth_scale(0.001f); // TODO: find out what is the right value
 
         // Register endpoint info
         for(auto& element : dev_info)
@@ -547,7 +602,7 @@ namespace rsimpl2
 
                 register_endpoint_info(_depth_device_idx, camera_info);
             }
-            else if (fisheye_ep && element.pid == RS450T_PID && element.mi == 3) // mi 3 is related to Fisheye device
+            else if (fisheye_ep && (element.pid == RS430_MM_PID || element.pid == RS420_MM_PID) && element.mi == 3) // mi 3 is related to Fisheye device
             {
                 std::map<rs2_camera_info, std::string> camera_info = {{RS2_CAMERA_INFO_DEVICE_NAME, device_name},
                                                                       {RS2_CAMERA_INFO_MODULE_NAME, "Fisheye Camera"},
@@ -563,7 +618,7 @@ namespace rsimpl2
 
                 register_endpoint_info(_fisheye_device_idx, camera_info);
             } 
-            else if (color_ep && element.pid == RS420R_PID && element.mi == 3) // mi 3 is related to Color device
+            else if (color_ep && element.pid == RS415_PID && element.mi == 3) // mi 3 is related to Color device
             {
                 std::map<rs2_camera_info, std::string> camera_info = { { RS2_CAMERA_INFO_DEVICE_NAME, device_name },
                 { RS2_CAMERA_INFO_MODULE_NAME, "Color Camera" },
@@ -575,19 +630,42 @@ namespace rsimpl2
             }
         }
     }
+
     notification ds5_notification_decoder::decode(int value)
     {
-        if(value == 0)
-            return{ value, RS2_LOG_SEVERITY_ERROR, "Success" };
-        if(value == ds::ds5_notifications_types::hot_laser_pwr_reduce)
-            return{ value, RS2_LOG_SEVERITY_ERROR, "Hot laser pwr reduce" };
+        if (value == 0)
+            return{ RS2_NOTIFICATION_CATEGORY_HARDWARE_ERROR, value, RS2_LOG_SEVERITY_ERROR, "Success" };
+        if (value == ds::ds5_notifications_types::hot_laser_power_reduce)
+            return{ RS2_NOTIFICATION_CATEGORY_HARDWARE_ERROR, value, RS2_LOG_SEVERITY_ERROR, "Hot laser power reduce" };
         if (value == ds::ds5_notifications_types::hot_laser_disable)
-            return{ value, RS2_LOG_SEVERITY_ERROR, "Hot laser disable" };
+            return{ RS2_NOTIFICATION_CATEGORY_HARDWARE_ERROR, value, RS2_LOG_SEVERITY_ERROR, "Hot laser disable" };
         if (value == ds::ds5_notifications_types::flag_B_laser_disable)
-            return{ value, RS2_LOG_SEVERITY_ERROR, "Flag B laser disable" };
+            return{ RS2_NOTIFICATION_CATEGORY_HARDWARE_ERROR, value, RS2_LOG_SEVERITY_ERROR, "Flag B laser disable" };
 
-        return{ value, RS2_LOG_SEVERITY_NONE, "Unknown error!" };
+        return{ RS2_NOTIFICATION_CATEGORY_HARDWARE_ERROR, value, RS2_LOG_SEVERITY_NONE, "Unknown error!" };
     }
 
+    rs2_extrinsics ds5_camera::get_extrinsics(int from_subdevice, rs2_stream from_stream, int to_subdevice, rs2_stream to_stream)
+    {
+        auto is_left = [](rs2_stream s) { return s == RS2_STREAM_INFRARED || s == RS2_STREAM_DEPTH; };
 
+        if (from_subdevice == to_subdevice && from_subdevice == 0)
+        {
+            rs2_extrinsics ext { {1,0,0,0,1,0,0,0,1}, {0,0,0} };
+
+            if (is_left(to_stream) && from_stream == RS2_STREAM_INFRARED2)
+            {
+                auto table = ds::check_calib(*_coefficients_table_raw);
+                ext.translation[0] = -0.001 * table->baseline;
+                return ext;
+            }
+            else if (to_stream == RS2_STREAM_INFRARED2 && is_left(from_stream))
+            {
+                auto table = ds::check_calib(*_coefficients_table_raw);
+                ext.translation[0] = 0.001 * table->baseline;
+                return ext;
+            }
+        }
+        return device::get_extrinsics(from_subdevice, from_stream, to_subdevice, to_stream);
+    }
 }

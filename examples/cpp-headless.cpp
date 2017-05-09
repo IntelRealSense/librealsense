@@ -45,7 +45,7 @@ int main() try
     config.enable_all(preset::best_quality);
     auto stream = config.open(dev);
 
-    util::syncer sync;
+    auto sync = dev.create_syncer();
     /* activate video streaming */
     stream.start(sync);
 
