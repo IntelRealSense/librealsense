@@ -16,6 +16,7 @@ EXPORTS
     rs2_delete_device
     rs2_get_extrinsics
     rs2_get_stream_intrinsics
+    rs2_get_motion_intrinsics
 
     rs2_get_stream_modes
     rs2_get_stream_mode
@@ -82,7 +83,6 @@ EXPORTS
     rs2_poll_for_frame
     rs2_enqueue_frame
     rs2_flush_queue
-
 
     rs2_get_failed_function
     rs2_get_failed_args

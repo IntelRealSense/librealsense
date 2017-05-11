@@ -162,6 +162,45 @@ namespace rsimpl2
         : _ep(ep)
     {}
 
+    void enable_motion_correction::set(float value)
+    {
+        _is_enabled = value > 0;
+    }
+
+    float enable_motion_correction::query() const
+    {
+        auto is_enabled = _is_enabled.load();
+        return is_enabled ? 1.f : 0.f;
+    }
+
+    enable_motion_correction::enable_motion_correction(endpoint* mm_ep,
+                                                       ds::imu_intrinsics accel,
+                                                       ds::imu_intrinsics gyro)
+        : _is_enabled(true), _accel(accel), _gyro(gyro)
+    {
+        mm_ep->register_on_before_frame_callback(
+                    [this](rs2_stream stream, rs2_frame& f, callback_invocation_holder callback)
+        {
+            auto fr = f.get();
+            if (_is_enabled.load() && fr->get_format() == RS2_FORMAT_MOTION_XYZ32F)
+            {
+                auto xyz = (float*)(fr->get_frame_data());
+
+                if (stream == RS2_STREAM_ACCEL)
+                {
+                    for (int i = 0; i < 3; i++)
+                        xyz[i] = xyz[i] * _accel.scale[i] + _accel.bias[i];
+                }
+
+                if (stream == RS2_STREAM_GYRO)
+                {
+                    for (int i = 0; i < 3; i++)
+                        xyz[i] = xyz[i] * _gyro.scale[i] + _gyro.bias[i];
+                }
+            }
+        });
+    }
+
     void enable_auto_exposure_option::set(float value)
     {
         if (value <0 ) throw invalid_value_exception("Invalid Auto-Exposure mode request " + std::to_string(value));

@@ -132,6 +132,17 @@ namespace rsimpl2
         return results;
     }
 
+    rs2_motion_device_intrinsic ds5_camera::get_motion_intrinsics(rs2_stream stream) const
+    {
+        if (stream == RS2_STREAM_ACCEL)
+            return create_motion_intrinsics(*_accel_intrinsics);
+
+        if (stream == RS2_STREAM_GYRO)
+            return create_motion_intrinsics(*_gyro_intrinsics);
+
+        return device::get_motion_intrinsics(stream);
+    }
+
     std::vector<uint8_t> ds5_camera::send_receive_raw_data(const std::vector<uint8_t>& input)
     {
         return _hw_monitor->send(input);
@@ -143,7 +154,7 @@ namespace rsimpl2
         _hw_monitor->send(cmd);
     }
 
-    rs2_intrinsics ds5_camera::get_intrinsics(unsigned int subdevice, stream_profile profile) const
+    rs2_intrinsics ds5_camera::get_intrinsics(unsigned int subdevice, const stream_profile& profile) const
     {
         if (subdevice >= get_endpoints_count())
             throw invalid_value_exception(to_string() << "Requested subdevice " <<
@@ -223,15 +234,18 @@ namespace rsimpl2
         return _hw_monitor->send(cmd);
     }
 
-    ds::extrinsics_table ds5_camera::get_motion_module_extrinsics() const
+    ds::imu_calibration_table ds5_camera::get_motion_module_calibration_table() const
     {
-        const int offset = 0xD0;
-        const int size = sizeof(ds::extrinsics_table);
+        const int offset = 0x134;
+        const int size = sizeof(ds::imu_calibration_table);
         command cmd(ds::MMER, offset, size);
         auto result = _hw_monitor->send(cmd);
-        if (result.size() < sizeof(ds::extrinsics_table))
+        if (result.size() < sizeof(ds::imu_calibration_table))
             throw std::runtime_error("Not enough data returned from the device!");
-        return *((ds::extrinsics_table*)result.data()); // copy by value
+
+        auto table = ds::check_calib<ds::imu_calibration_table>(result);
+
+        return *table;
     }
 
     std::vector<uint8_t> ds5_camera::get_raw_fisheye_extrinsics_table() const
@@ -387,7 +401,9 @@ namespace rsimpl2
         _coefficients_table_raw = [this]() { return get_raw_calibration_table(coefficients_table_id); };
         _fisheye_intrinsics_raw = [this]() { return get_raw_fisheye_intrinsics_table(); };
         _fisheye_extrinsics_raw = [this]() { return get_raw_fisheye_extrinsics_table(); };
-        _motion_module_extrinsics_raw = [this]() { return get_motion_module_extrinsics(); };
+        _motion_module_extrinsics_raw = [this]() { return get_motion_module_calibration_table().imu_to_fisheye; };
+        _accel_intrinsics = [this](){ return get_motion_module_calibration_table().accel_intrinsics; };
+        _gyro_intrinsics = [this](){ return get_motion_module_calibration_table().gyro_intrinsics; };
 
         std::string device_name = (rs4xx_sku_names.end() != rs4xx_sku_names.find(dev_info.front().pid)) ? rs4xx_sku_names.at(dev_info.front().pid) : "RS4xx";
         auto camera_fw_version = firmware_version(_hw_monitor->get_firmware_version_string(GVD, camera_fw_version_offset));
@@ -539,6 +555,17 @@ namespace rsimpl2
             // Add hid endpoint
             auto hid_ep = create_hid_device(backend, hid_info, camera_fw_version);
             _motion_module_device_idx = add_endpoint(hid_ep);
+
+            try
+            {
+                hid_ep->register_option(RS2_OPTION_ENABLE_MOTION_CORRECTION,
+                                        std::make_shared<enable_motion_correction>(hid_ep.get(), *_accel_intrinsics, *_gyro_intrinsics));
+            }
+            catch (const std::exception& ex)
+            {
+                LOG_ERROR("Motion Device is not calibrated! Motion Data Correction will not be available! Error: " << ex.what());
+            }
+
             for (auto& elem : hid_info)
             {
                 std::map<rs2_camera_info, std::string> camera_info = {{RS2_CAMERA_INFO_DEVICE_NAME, device_name},
@@ -655,13 +682,13 @@ namespace rsimpl2
 
             if (is_left(to_stream) && from_stream == RS2_STREAM_INFRARED2)
             {
-                auto table = ds::check_calib(*_coefficients_table_raw);
+                auto table = ds::check_calib<ds::coefficients_table>(*_coefficients_table_raw);
                 ext.translation[0] = -0.001 * table->baseline;
                 return ext;
             }
             else if (to_stream == RS2_STREAM_INFRARED2 && is_left(from_stream))
             {
-                auto table = ds::check_calib(*_coefficients_table_raw);
+                auto table = ds::check_calib<ds::coefficients_table>(*_coefficients_table_raw);
                 ext.translation[0] = 0.001 * table->baseline;
                 return ext;
             }

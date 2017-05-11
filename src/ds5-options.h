@@ -54,6 +54,35 @@ namespace rsimpl2
         hid_endpoint& _ep;
     };
 
+    class enable_motion_correction : public option
+    {
+    public:
+        void set(float value) override;
+
+        float query() const override;
+
+        option_range get_range() const override
+        {
+            return option_range{0, 1, 1, 1};
+        }
+
+        bool is_enabled() const override { return true; }
+
+        const char* get_description() const override
+        {
+            return "Enable/Disable Automatic Motion Data Correction";
+        }
+
+        enable_motion_correction(endpoint* mm_ep,
+                                 ds::imu_intrinsics accel,
+                                 ds::imu_intrinsics gyro);
+
+    private:
+        std::atomic<bool> _is_enabled;
+        ds::imu_intrinsics _accel;
+        ds::imu_intrinsics _gyro;
+    };
+
     class enable_auto_exposure_option : public option
     {
     public:

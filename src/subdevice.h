@@ -138,6 +138,11 @@ namespace rsimpl2
 
         start_adaptor& starter() { return _start_adaptor; }
 
+        void register_on_before_frame_callback(on_before_frame_callback callback)
+        {
+            _on_before_frame_callback = callback;
+        }
+
     protected:
 
         bool try_get_pf(const uvc::stream_profile& p, native_pixel_format& result) const;
@@ -152,8 +157,9 @@ namespace rsimpl2
         std::atomic<uint32_t> _max_publish_list_size;
         std::shared_ptr<uvc::time_service> _ts;
         std::shared_ptr<notifications_proccessor> _notifications_proccessor;
-    private:
+        on_before_frame_callback _on_before_frame_callback;
 
+    private:
         std::map<rs2_option, std::shared_ptr<option>> _options;
         std::vector<native_pixel_format> _pixel_formats;
         lazy<std::vector<uvc::stream_profile>> _stream_profiles;
@@ -257,8 +263,7 @@ namespace rsimpl2
             : endpoint(ts),
               _device(std::move(uvc_device)),
               _user_count(0),
-              _timestamp_reader(std::move(timestamp_reader)),
-              _on_before_frame_callback(nullptr)
+              _timestamp_reader(std::move(timestamp_reader))
         {}
 
         ~uvc_endpoint();
@@ -280,12 +285,6 @@ namespace rsimpl2
         }
 
         void register_pu(rs2_option id);
-
-        void register_on_before_frame_callback(on_before_frame_callback callback)
-        {
-            _on_before_frame_callback = callback;
-        }
-
 
         void start_streaming(frame_callback_ptr callback);
 
@@ -326,6 +325,5 @@ namespace rsimpl2
         std::vector<uvc::extension_unit> _xus;
         std::unique_ptr<power> _power;
         std::unique_ptr<frame_timestamp_reader> _timestamp_reader;
-        on_before_frame_callback _on_before_frame_callback;
     };
 }

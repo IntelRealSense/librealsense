@@ -152,6 +152,7 @@ typedef enum rs2_option
     RS2_OPTION_OUTPUT_TRIGGER_ENABLED                     , /**< Enable / disable trigger to be outputed from the camera to any external device on every depth frame */
     RS2_OPTION_MOTION_MODULE_TEMPERATURE                  , /**< Current Motion-Module Temperature */
     RS2_OPTION_DEPTH_UNITS                                , /**< Number of meters represented by a single depth unit */
+    RS2_OPTION_ENABLE_MOTION_CORRECTION                   , /**< Enable/Disable automatic correction of the motion data */
     RS2_OPTION_COUNT                                      , /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
 } rs2_option;
 
@@ -225,13 +226,6 @@ typedef struct rs2_motion_device_intrinsic
     float noise_variances[3];  /**< Variance of noise for X, Y, and Z axis */
     float bias_variances[3];   /**< Variance of bias for X, Y, and Z axis */
 } rs2_motion_device_intrinsic;
-
-/** \brief Motion module intrinsics: includes accelerometer and gyroscope intrinsics structs of type \c rs2_motion_device_intrinsic. */
-typedef struct rs2_motion_intrinsics
-{
-    rs2_motion_device_intrinsic acc;
-    rs2_motion_device_intrinsic gyro;
-} rs2_motion_intrinsics;
 
 /** \brief Cross-stream extrinsics: encode the topology describing how the different devices are connected. */
 typedef struct rs2_extrinsics
@@ -355,6 +349,14 @@ void rs2_get_extrinsics(const rs2_device * from_dev, rs2_stream from_stream,
  * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
  */
 void rs2_get_stream_intrinsics(const rs2_device * device, rs2_stream stream, int width, int height, int fps, rs2_format format, rs2_intrinsics * intrinsics, rs2_error ** error);
+
+/**
+ * returns the intrinsics of specific stream configuration
+ * \param[in]  device    RealSense device to query
+ * \param[in]  stream    type of stream
+ * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ */
+void rs2_get_motion_intrinsics(const rs2_device * device, rs2_stream stream, rs2_motion_device_intrinsic * intrinsics, rs2_error ** error);
 
 /**
  * send hardware reset request to the device

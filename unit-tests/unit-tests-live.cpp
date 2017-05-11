@@ -300,6 +300,65 @@ TEST_CASE("streaming modes sanity check", "[live]")
     }
 }
 
+TEST_CASE("motion profiles sanity", "[live]")
+{
+    rs2::context ctx;
+    if(make_context(space_to_underscore(Catch::getCurrentContext().getResultCapture()->getCurrentTestName()).c_str(), &ctx))
+    {
+        std::vector<device> list;
+        REQUIRE_NOTHROW(list = ctx.query_devices());
+        REQUIRE(list.size() > 0);
+
+        // For each device
+        for (auto&& dev : list)
+        {
+            disable_sensitive_options_for(dev);
+
+            // make sure they provide at least one streaming mode
+            std::vector<stream_profile> stream_profiles;
+            REQUIRE_NOTHROW(stream_profiles = dev.get_stream_modes());
+            REQUIRE(stream_profiles.size() > 0);
+
+            // for each stream profile provided:
+            for (auto profile : stream_profiles)
+            {
+                SECTION("check motion intrisics") {
+
+                    auto stream = profile.stream;
+                    rs2_motion_device_intrinsic mm_int;
+
+                    CAPTURE(stream);
+
+                    if (stream != RS2_STREAM_ACCEL && stream != RS2_STREAM_GYRO)
+                    {
+                        REQUIRE_THROWS(dev.get_motion_intrinsics(stream));
+                    }
+                    else
+                    {
+                        REQUIRE_NOTHROW(mm_int = dev.get_motion_intrinsics(stream));
+
+                        for (int j = 0; j < 3; j++)
+                        {
+                            auto scale = mm_int.data[j][j];
+                            CAPTURE(scale);
+                            // Make sure scale value is "sane"
+                            // We don't expect Motion Device to require adjustment of more then 20%
+                            REQUIRE(scale > 0.8);
+                            REQUIRE(scale < 1.2);
+
+                            auto bias = mm_int.data[0][3];
+                            CAPTURE(bias);
+                            // Make sure bias is "sane"
+                            REQUIRE(bias > -0.5);
+                            REQUIRE(bias < 0.5);
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
 TEST_CASE("check option API", "[live][options]")
 {
     // Require at least one device to be plugged in
@@ -895,6 +954,7 @@ TEST_CASE("Metadata sanity check", "[live]") {
         }
     }
 }
+
 void triger_error(device& dev, int num)
 {
     std::vector<uint8_t> raw_data(24, 0);
@@ -905,8 +965,6 @@ void triger_error(device& dev, int num)
     raw_data[8] = num;
     dev.debug().send_and_receive_raw_data(raw_data);
 }
-
-
 
 TEST_CASE("Error handling sanity", "[live]") {
 

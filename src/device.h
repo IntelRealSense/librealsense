@@ -37,7 +37,12 @@ namespace rsimpl2
 
         virtual rs2_extrinsics get_extrinsics(int from, rs2_stream from_stream, int to, rs2_stream to_stream);
 
-        virtual rs2_intrinsics get_intrinsics(unsigned int subdevice, stream_profile profile) const = 0;
+        virtual rs2_intrinsics get_intrinsics(unsigned int subdevice, const stream_profile& profile) const = 0;
+        virtual rs2_motion_device_intrinsic get_motion_intrinsics(rs2_stream) const
+        {
+            throw not_implemented_exception(to_string() << __FUNCTION__ << " is not implemented for this device!");
+        }
+
         virtual void hardware_reset() = 0;
 
         virtual std::vector<uint8_t> send_receive_raw_data(const std::vector<uint8_t>& input)

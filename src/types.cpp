@@ -155,6 +155,7 @@ namespace rsimpl2
         CASE(OUTPUT_TRIGGER_ENABLED)
         CASE(MOTION_MODULE_TEMPERATURE)
         CASE(DEPTH_UNITS)
+        CASE(ENABLE_MOTION_CORRECTION)
         default: assert(!is_valid(value)); return unknown;
         }
         #undef CASE

@@ -2,7 +2,6 @@
 //// Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
 #include "ds5-private.h"
-#include <iomanip>
 
 using namespace std;
 
@@ -22,23 +21,9 @@ namespace rsimpl2
             throw invalid_value_exception("resolution not found.");
         }
 
-        const coefficients_table* check_calib(const std::vector<unsigned char>& raw_data)
+        rs2_intrinsics get_intrinsic_by_resolution_coefficients_table(const std::vector<uint8_t> & raw_data, uint32_t width, uint32_t height)
         {
-            auto table = reinterpret_cast<const coefficients_table *>(raw_data.data());
-            LOG_DEBUG("DS5 Coefficients table: version [mjr.mnr]: 0x" << hex << setfill('0') << setw(4) << table->header.version << dec
-                << ", type " << table->header.table_type << ", size " << table->header.table_size
-                << ", CRC: " << hex << table->header.crc32);
-            // verify the parsed table
-            if (table->header.crc32 != calc_crc32(raw_data.data() + sizeof(table_header), sizeof(coefficients_table) - sizeof(table_header)))
-            {
-                throw invalid_value_exception("DS5 Coefficients table CRC error, parsing aborted");
-            }
-            return table;
-        }
-
-        rs2_intrinsics get_intrinsic_by_resolution_coefficients_table(const std::vector<unsigned char> & raw_data, uint32_t width, uint32_t height)
-        {
-            auto table = check_calib(raw_data);
+            auto table = check_calib<ds::coefficients_table>(raw_data);
 
             LOG_DEBUG(endl
                 << "baseline = " << table->baseline << " mm" << endl
@@ -67,17 +52,9 @@ namespace rsimpl2
             return intrinsics;
         }
 
-        rs2_intrinsics get_intrinsic_fisheye_table(const std::vector<unsigned char> & raw_data, uint32_t width, uint32_t height)
+        rs2_intrinsics get_intrinsic_fisheye_table(const std::vector<uint8_t>& raw_data, uint32_t width, uint32_t height)
         { 
-             auto table = reinterpret_cast<const fisheye_intrinsics_table *>(raw_data.data());
-             LOG_DEBUG("DS5 Fisheye calibration table: version [mjr.mnr]: 0x" << hex << setfill('0') << setw(4) << table->header.version << dec
-                 << ", type " << table->header.table_type << ", size " << table->header.table_size
-                 << ", CRC: " << hex << table->header.crc32);
-             // verify the parsed table
-             if (table->header.crc32 != calc_crc32(raw_data.data() + sizeof(table_header), raw_data.size() - sizeof(table_header)))
-             {
-                 throw invalid_value_exception("DS5 Fisheye calibration table CRC error, parsing aborted");
-             }
+             auto table = check_calib<ds::fisheye_intrinsics_table>(raw_data);
 
              rs2_intrinsics intrinsics;
              auto intrin = table->intrinsic;
@@ -95,7 +72,7 @@ namespace rsimpl2
              return intrinsics;
         }
 
-        rs2_intrinsics get_intrinsic_by_resolution(const vector<unsigned char> & raw_data, calibration_table_id table_id, uint32_t width, uint32_t height)
+        rs2_intrinsics get_intrinsic_by_resolution(const vector<uint8_t> & raw_data, calibration_table_id table_id, uint32_t width, uint32_t height)
         {
             switch (table_id)
             {
@@ -112,14 +89,9 @@ namespace rsimpl2
             }
         }
 
-        pose get_fisheye_extrinsics_data(const vector<unsigned char> & raw_data)
+        pose get_fisheye_extrinsics_data(const vector<uint8_t> & raw_data)
         {
-            auto table = reinterpret_cast<const fisheye_extrinsics_table*>(raw_data.data());
-
-            if (table->header.crc32 != calc_crc32(raw_data.data() + sizeof(table_header), raw_data.size() - sizeof(table_header)))
-            {
-                throw invalid_value_exception("DS5 Fisheye calibration table CRC error, parsing aborted");
-            }
+            auto table = check_calib<fisheye_extrinsics_table>(raw_data);
 
             auto rot = table->rotation;
             auto trans = table->translation;

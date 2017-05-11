@@ -5,7 +5,9 @@
 
 #include "backend.h"
 #include "types.h"
+
 #include <map>
+#include <iomanip>
 
 const double TIMESTAMP_TO_MILLISECONS = 0.001;
 
@@ -122,6 +124,25 @@ namespace rsimpl2
             uint8_t             reserved2[64];
         };
 
+        template<class T>
+        const T* check_calib(const std::vector<uint8_t>& raw_data)
+        {
+            using namespace std;
+
+            auto table = reinterpret_cast<const T*>(raw_data.data());
+            auto header = reinterpret_cast<const table_header*>(raw_data.data());
+            // verify the parsed table
+            if (table->header.crc32 != calc_crc32(raw_data.data() + sizeof(table_header), raw_data.size() - sizeof(table_header)))
+            {
+                throw invalid_value_exception("Table CRC error, parsing aborted!");
+            }
+            LOG_DEBUG("Loaded Valid Table: version [mjr.mnr]: 0x" <<
+                      hex << setfill('0') << setw(4) << header->version << dec
+                << ", type " << header->table_type << ", size " << header->table_size
+                << ", CRC: " << hex << header->crc32);
+            return table;
+        }
+
 #pragma pack(push, 1)
 
         struct fisheye_intrinsics_table
@@ -190,6 +211,34 @@ namespace rsimpl2
            metadata_capture_timing md_capture_timing;
         };
 
+        struct imu_intrinsics
+        {
+            float bias[3];
+            float scale[3];
+        };
+
+        inline rs2_motion_device_intrinsic create_motion_intrinsics(imu_intrinsics data)
+        {
+            rs2_motion_device_intrinsic result;
+            memset(&result, 0, sizeof(result));
+            for (int i = 0; i < 3; i++)
+            {
+                result.data[i][3] = data.bias[i];
+                result.data[i][i] = data.scale[i];
+            }
+            return result;
+        }
+
+        struct imu_calibration_table
+        {
+            table_header        header;
+            float               rmax;
+            extrinsics_table    imu_to_fisheye;
+            imu_intrinsics      accel_intrinsics;
+            imu_intrinsics      gyro_intrinsics;
+            uint8_t             reserved[64];
+        };
+
 #pragma pack(pop)
 
         enum gvd_fields
@@ -252,11 +301,10 @@ namespace rsimpl2
 
         ds5_rect_resolutions width_height_to_ds5_rect_resolutions(uint32_t width, uint32_t height);
 
-        rs2_intrinsics get_intrinsic_by_resolution(const std::vector<unsigned char>& raw_data, calibration_table_id table_id, uint32_t width, uint32_t height);
-        rs2_intrinsics get_intrinsic_by_resolution_coefficients_table(const std::vector<unsigned char> & raw_data, uint32_t width, uint32_t height);
-        rs2_intrinsics get_intrinsic_fisheye_table(const std::vector<unsigned char>& raw_data, uint32_t width, uint32_t height);
-        pose get_fisheye_extrinsics_data(const std::vector<unsigned char>& raw_data);
-        const coefficients_table* check_calib(const std::vector<unsigned char>& raw_data);
+        rs2_intrinsics get_intrinsic_by_resolution(const std::vector<uint8_t>& raw_data, calibration_table_id table_id, uint32_t width, uint32_t height);
+        rs2_intrinsics get_intrinsic_by_resolution_coefficients_table(const std::vector<uint8_t>& raw_data, uint32_t width, uint32_t height);
+        rs2_intrinsics get_intrinsic_fisheye_table(const std::vector<uint8_t>& raw_data, uint32_t width, uint32_t height);
+        pose get_fisheye_extrinsics_data(const std::vector<uint8_t>& raw_data);
 
         bool try_fetch_usb_device(std::vector<uvc::usb_device_info>& devices,
                                          const uvc::uvc_device_info& info, uvc::usb_device_info& result);

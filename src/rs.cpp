@@ -805,6 +805,16 @@ void rs2_get_extrinsics(const rs2_device * from_dev, rs2_stream from_stream,
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, from_dev, from_stream, to_dev, to_stream, extrin)
 
+void rs2_get_motion_intrinsics(const rs2_device * device, rs2_stream stream, rs2_motion_device_intrinsic * intrinsics, rs2_error ** error) try
+{
+    VALIDATE_NOT_NULL(device);
+    VALIDATE_NOT_NULL(intrinsics);
+    VALIDATE_ENUM(stream);
+
+    *intrinsics = device->device->get_motion_intrinsics(stream);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, device, stream, intrinsics)
+
 void rs2_get_stream_intrinsics(const rs2_device * device, rs2_stream stream, int width, int height, int fps,
     rs2_format format, rs2_intrinsics * intrinsics, rs2_error ** error) try
 {

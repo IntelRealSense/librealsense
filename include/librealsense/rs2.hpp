@@ -922,6 +922,19 @@ namespace rs2
         }
 
         /**
+         * returns scale and bias of a motion stream
+         * \param stream    Motion stream type (Gyro / Accel / ...)
+         */
+        rs2_motion_device_intrinsic get_motion_intrinsics(rs2_stream stream)
+        {
+            rs2_error* e = nullptr;
+            rs2_motion_device_intrinsic intrin;
+            rs2_get_motion_intrinsics(_dev.get(), stream, &intrin, &e);
+            error::handle(e);
+            return intrin;
+        }
+
+        /**
         * send hardware reset request to the device
         */
         void hardware_reset()

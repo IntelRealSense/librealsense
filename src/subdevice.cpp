@@ -36,7 +36,8 @@ namespace rsimpl2
           _ts(ts),
           _stream_profiles([this]() { return this->init_stream_profiles(); }),
           _notifications_proccessor(std::shared_ptr<notifications_proccessor>(new notifications_proccessor())),
-          _start_adaptor(this)
+          _start_adaptor(this),
+          _on_before_frame_callback(nullptr)
     {
         _options[RS2_OPTION_FRAMES_QUEUE_SIZE] = std::make_shared<frame_queue_size>(&_max_publish_list_size);
     }
@@ -766,7 +767,15 @@ namespace rsimpl2
 
             std::vector<byte*> dest{const_cast<byte*>(frame->get()->data.data())};
             mode.unpacker->unpack(dest.data(),(const byte*)sensor_data.fo.pixels, (int)data_size);
-            this->invoke_callback(frame);
+
+            if (_on_before_frame_callback)
+            {
+                auto callback = _archive->begin_callback();
+                auto stream_type = frame->get()->get_stream_type();
+                _on_before_frame_callback(stream_type, *frame, std::move(callback));
+            }
+
+            this->invoke_callback(std::move(frame));
         });
 
         _is_streaming = true;
