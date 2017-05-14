@@ -284,17 +284,20 @@ PYBIND11_PLUGIN(NAME) {
     py::class_<uvc::multi_pins_uvc_device, uvc::uvc_device> multi_pins_uvc_device(m, "multi_pins_uvc_device");
     multi_pins_uvc_device.def(py::init<std::vector<std::shared_ptr<uvc::uvc_device>>&>());
 
-    py::enum_<command> command_py(m, "command");
+    /*py::enum_<command> command_py(m, "command");
     command_py.value("enable_advanced_mode", command::enable_advanced_mode)
               .value("advanced_mode_enabled", command::advanced_mode_enabled)
               .value("reset", command::reset)
               .value("set_advanced", command::set_advanced)
-              .value("get_advanced", command::get_advanced);
+              .value("get_advanced", command::get_advanced);*/
 
     m.def("create_backend", &uvc::create_backend, py::return_value_policy::move);
-    m.def("encode_command", [](command opcode, uint32_t p1, uint32_t p2, uint32_t p3, uint32_t p4, py::list data)
+    m.def("encode_command", [](uint8_t opcode, uint32_t p1, uint32_t p2, uint32_t p3, uint32_t p4, py::list l)
         {
-            return encode_command(opcode, p1, p2, p3, p4, data.cast<std::vector<uint8_t>>());
+            std::vector<uint8_t> data(l.size());
+            for (int i = 0; i < l.size(); ++i)
+                data[i] = l[i].cast<uint8_t>();
+            return encode_command(static_cast<command>(opcode), p1, p2, p3, p4, data);
         }, "opcode"_a, "p1"_a=0, "p2"_a=0, "p3"_a=0, "p4"_a=0, "data"_a = py::list(0));
 
     return m.ptr();

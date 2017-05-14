@@ -65,6 +65,3 @@ try:
 #    print("    %s\n", e.what())
 #    exit(1)
 except: print("oops")
-
-                
-                    

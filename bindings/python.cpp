@@ -93,6 +93,13 @@ PYBIND11_PLUGIN(NAME) {
         inst.format = fmt;
     });
 
+    py::enum_<rs2_notification_category> notification_category(m, "notification_category");
+    notification_category.value("frames_timeout", rs2_notification_category::RS2_NOTIFICATION_CATEGORY_FRAMES_TIMEOUT)
+                         .value("frame_corrupted", rs2_notification_category::RS2_NOTIFICATION_CATEGORY_FRAME_CORRUPTED)
+                         .value("hardware_error", rs2_notification_category::RS2_NOTIFICATION_CATEGORY_HARDWARE_ERROR)
+                         .value("unknown_error", rs2_notification_category::RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR)
+                         .value("count", rs2_notification_category::RS2_NOTIFICATION_CATEGORY_COUNT);
+
     py::class_<rs2::notification> notification(m, "notification");
     notification.def(py::init<>())
                 .def("get_description", &rs2::notification::get_description,
@@ -100,10 +107,9 @@ PYBIND11_PLUGIN(NAME) {
                 .def("get_timestamp", &rs2::notification::get_timestamp,
                      "Retrieve the notification's arrival timestamp.")
                 .def("get_severity", &rs2::notification::get_severity,
-                     "Retrieve the notification's severity.");
-
-
-
+                     "Retrieve the notification's severity.")
+                .def("get_category", &rs2::notification::get_category,
+                     "Retrieve the notification's category.");
 
     py::enum_<rs2_option> option(m, "option");
     option.value("backlight_compensation", RS2_OPTION_BACKLIGHT_COMPENSATION)
@@ -271,6 +277,20 @@ PYBIND11_PLUGIN(NAME) {
                // TODO: find more pythonic way to expose this function
                .def("poll_for_frame", &rs2::frame_queue::poll_for_frame, "f"_a);
 
+    py::class_<rs2::syncer> syncer(m, "syncer");
+    syncer.def("wait_for_frames", &rs2::syncer::wait_for_frames, "timeout_ms"_a=5000,
+               "Wait until a coherent set of frames becomes available.")
+          .def("poll_for_frames", [](const rs2::syncer &sync)
+                {
+                    rs2::frameset frames;
+                    sync.poll_for_frames(&frames);
+                    return frames;
+                }, "Check if a coherent set of frames is available");
+
+   /* py::class_<rs2_motion_device_intrinsic> motion_device_inrinsic(m, "motion_device_intrinsic");
+    motion_device_inrinsic.def_property_readonly(BIND_RAW_ARRAY(rs2_motion_device_intrinsic, noise_variances, float, 3))
+                          .def_property_readonly(BIND_RAW_ARRAY(rs2_motion_device_intrinsic, bias_variances, float, 3));*/
+
     // wrap rs2::device
     py::class_<rs2::device> device(m, "device");
     device.def("open", (void (rs2::device::*)(const rs2::stream_profile&) const) &rs2::device::open,
@@ -290,16 +310,22 @@ PYBIND11_PLUGIN(NAME) {
              "for releasing device resources.")
           .def("start", [](const rs2::device& dev, std::function<void(rs2::frame)> callback){
               dev.start(callback);
-          }, "Start streaming.", "callback"_a)
+          }, "Start passing frames into user provided callback.", "callback"_a)
+          .def("start", [](const rs2::device& dev, rs2::syncer syncer){
+              dev.start(syncer);
+          }, "Start passing frames into user provided callback.", "syncer"_a)
           .def("start", [](const rs2::device& dev, rs2::frame_queue& queue) {
               dev.start(queue);
-          }, "Start streaming.", "queue"_a)
+          }, "Start passing frames into user provided callback.", "queue"_a)
           .def("start", [](const rs2::device& dev, rs2_stream s, std::function<void(rs2::frame)> callback) {
               dev.start(s, callback);
-          }, "Start streaming of a specific stream.", "stream"_a, "callback"_a)
+          }, "Start passing frames of a specific stream into user provided callback.", "stream"_a, "syncer"_a)
+          .def("start", [](const rs2::device& dev, rs2_stream s, rs2::syncer syncer) {
+              dev.start(s, syncer);
+          }, "Start passing frames of a specific stream into user provided callback.", "stream"_a, "queue"_a)
           .def("start", [](const rs2::device& dev, rs2_stream s, rs2::frame_queue& queue) {
               dev.start(s, queue);
-          }, "Start streaming of a specific stream.", "stream"_a, "queue"_a)
+          }, "Start passing frames of a specific stream into user provided callback.", "stream"_a, "queue"_a)
           .def("stop", (void (rs2::device::*)(void) const) &rs2::device::stop, "Stop streaming.")
           .def("stop", (void (rs2::device::*)(rs2_stream) const) &rs2::device::stop, "Stop streaming of a specific stream.")
           .def("is_option_read_only", &rs2::device::is_option_read_only, "Check if a"
@@ -338,8 +364,13 @@ PYBIND11_PLUGIN(NAME) {
           .def("get_adjacent_devices", &rs2::device::get_adjacent_devices,
                "Returns the list of adjacent devices, sharing the same "
                "physical parent composite device.")
+          .def("create_syncer", &rs2::device::create_syncer, "Create frames syncronization"
+               " primitive suitable for this device")
           .def("get_extrinsics_to", &rs2::device::get_extrinsics_to,
                "from_stream"_a, "to_device"_a, "to_stream"_a)
+          /*.def("get_motion_intrinsics", &rs2::device::get_motion_intrinsics, "stream"_a,
+               "Returns scale and bias of a motion stream")*/
+          .def("hardware_reset", &rs2::device::hardware_reset, "Send hardware reset request to the device")
 //          .def("debug", &rs2::device::debug)
           .def(py::self == py::self)
           .def(py::self != py::self)

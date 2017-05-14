@@ -22,6 +22,7 @@
 
 ## Examples
 ```python
+import time
 import pyrealsense2 as rs
 
 def callback(frame):
@@ -35,7 +36,7 @@ profile = rs.stream_profile(rs.stream.depth, 640, 480, 30, rs.format.z16)
 dev.open(profile)
 dev.start(callback)
 
-# Callback is running
+time.sleep(5) # Callback is running
 
 dev.stop()
 dev.close()
