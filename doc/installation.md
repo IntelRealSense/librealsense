@@ -45,7 +45,9 @@ The project requires two external dependencies, *glfw* and *libusb-1.0*. The Cma
   The default build is set to produce the core shared object and unit-tests binaries
   * `cmake ../`<br />
   In order to build *librealsense* along with the demos and tutorials use<br />
-  * `cmake ../ -DBUILD_EXAMPLES=true`
+  * `cmake ../ -DBUILD_EXAMPLES=true`<br />
+  To build textual examples only (for systems without OpenGL or X11) use the following cmake command:<br />
+  * `cmake ../ -DBUILD_EXAMPLES=true -DBUILD_GRAPHICAL_EXAMPLES=false`
 
   Recompile and install *librealsense* binaries:<br />
   * `sudo make uninstall && make clean && make && sudo make install`<br />
