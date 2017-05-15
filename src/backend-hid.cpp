@@ -50,7 +50,8 @@ const size_t MAX_DEV_PARENT_DIR = 10;
 const size_t HID_METADATA_SIZE = 8;     // bytes
 const size_t HID_DATA_ACTUAL_SIZE = 6;  // bytes
 
-const std::string IIO_ROOT_PATH("/sys/bus/iio/devices/iio:device");
+const std::string IIO_DEVICE_PREFIX("iio:device");
+const std::string IIO_ROOT_PATH("/sys/bus/iio/devices");
 const std::string HID_CUSTOM_PATH("/sys/bus/platform/drivers/hid_sensor_custom");
 
 namespace rsimpl2
@@ -457,7 +458,7 @@ namespace rsimpl2
                 return;
 
             std::ostringstream iio_read_device_path;
-            iio_read_device_path << "/dev/iio:device" << _iio_device_number;
+            iio_read_device_path << "/dev/" << IIO_DEVICE_PREFIX << _iio_device_number;
 
             auto iio_read_device_path_str = iio_read_device_path.str();
             std::ifstream iio_device_file(iio_read_device_path_str);
@@ -663,7 +664,7 @@ namespace rsimpl2
             iio_device_file.close();
 
             // get IIO device number
-            static const std::string suffix_iio_device_path("/iio:device");
+            static const std::string suffix_iio_device_path("/" + IIO_DEVICE_PREFIX);
             auto pos = _iio_device_path.find_last_of(suffix_iio_device_path);
             if (pos == std::string::npos)
                 throw linux_backend_exception(to_string() << "Wrong iio device path " << _iio_device_path);
@@ -1020,40 +1021,37 @@ namespace rsimpl2
         void v4l_hid_device::foreach_hid_device(std::function<void(const hid_device_info&)> action)
         {
             // Common HID Sensors
-            auto num = 0;
+            DIR* dir = nullptr;
+            struct dirent* ent = nullptr;
+            std::vector<std::string> common_sensors;
+            if ((dir = opendir(IIO_ROOT_PATH.c_str())) != NULL)
+            {
+              while ((ent = readdir(dir)) != NULL)
+              {
+                  auto str = std::string(ent->d_name);
+                  if (str.find(IIO_DEVICE_PREFIX) != std::string::npos)
+                      common_sensors.push_back(IIO_ROOT_PATH + "/" + str);
+              }
+              closedir(dir);
+            }
 
-            std::stringstream ss;
-            ss << IIO_ROOT_PATH << num;
-
-            struct stat st;
-            while (stat(ss.str().c_str(),&st) == 0 && st.st_mode & S_IFDIR != 0)
+            for (auto& elem : common_sensors)
             {
                 hid_device_info hid_dev_info{};
-                if(!get_hid_device_info(ss.str().c_str(), hid_dev_info))
+                if(!get_hid_device_info(elem.c_str(), hid_dev_info))
                 {
-                    LOG_WARNING("Failed to read busnum/devnum. Device Path: " << ss.str());
-                    ss.str("");
-                    ss.clear(); // Clear state flags.
-
-                    ++num;
-                    ss << IIO_ROOT_PATH << num;
+                    LOG_WARNING("Failed to read busnum/devnum. Device Path: " << elem);
                     continue;
                 }
-
                 action(hid_dev_info);
-
-                ss.str("");
-                ss.clear(); // Clear state flags.
-
-                ++num;
-                ss << IIO_ROOT_PATH << num;
             }
+
 
             // Custom HID Sensors
             static const char* prefix_custom_sensor_name = "HID-SENSOR-2000e1";
             std::vector<std::string> custom_sensors;
-            DIR* dir = nullptr;
-            struct dirent* ent = nullptr;
+            dir = nullptr;
+            ent = nullptr;
             if ((dir = opendir(HID_CUSTOM_PATH.c_str())) != NULL)
             {
               while ((ent = readdir(dir)) != NULL)
