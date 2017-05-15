@@ -189,13 +189,13 @@ namespace rsimpl2
                 if (stream == RS2_STREAM_ACCEL)
                 {
                     for (int i = 0; i < 3; i++)
-                        xyz[i] = xyz[i] * _accel.scale[i] + _accel.bias[i];
+                        xyz[i] = xyz[i] * _accel.scale[i] - _accel.bias[i];
                 }
 
                 if (stream == RS2_STREAM_GYRO)
                 {
                     for (int i = 0; i < 3; i++)
-                        xyz[i] = xyz[i] * _gyro.scale[i] + _gyro.bias[i];
+                        xyz[i] = xyz[i] * _gyro.scale[i] - _gyro.bias[i];
                 }
             }
         });
