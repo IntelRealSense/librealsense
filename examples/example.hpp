@@ -497,8 +497,7 @@ namespace rs2
 
     inline bool is_integer(float f)
     {
-        if (f >= 0 && f < 1) return false;
-        return abs(f - floor(f)) < 0.001f;
+        return (fabs(fmod(f, 1)) < std::numeric_limits<float>::min());
     }
 
     struct to_string

@@ -164,19 +164,23 @@ namespace rsimpl2
 
     void enable_motion_correction::set(float value)
     {
-        _is_enabled = value > 0;
+        if (!is_valid(value))
+            throw invalid_value_exception(to_string() << "set(enable_motion_correction) failed! Given value " << value << " is out of range.");
+
+        _is_enabled = value > _opt_range.min;
     }
 
     float enable_motion_correction::query() const
     {
         auto is_enabled = _is_enabled.load();
-        return is_enabled ? 1.f : 0.f;
+        return is_enabled ? _opt_range.max : _opt_range.min;
     }
 
     enable_motion_correction::enable_motion_correction(endpoint* mm_ep,
-                                                       ds::imu_intrinsics accel,
-                                                       ds::imu_intrinsics gyro)
-        : _is_enabled(true), _accel(accel), _gyro(gyro)
+                                                       const ds::imu_intrinsics& accel,
+                                                       const ds::imu_intrinsics& gyro,
+                                                       const option_range& opt_range)
+        : librealsense_option(opt_range), _is_enabled(true), _accel(accel), _gyro(gyro)
     {
         mm_ep->register_on_before_frame_callback(
                     [this](rs2_stream stream, rs2_frame& f, callback_invocation_holder callback)
@@ -203,7 +207,8 @@ namespace rsimpl2
 
     void enable_auto_exposure_option::set(float value)
     {
-        if (value <0 ) throw invalid_value_exception("Invalid Auto-Exposure mode request " + std::to_string(value));
+        if (!is_valid(value))
+            throw invalid_value_exception("set(enable_auto_exposure) failed! Invalid Auto-Exposure mode request " + std::to_string(value));
 
         auto auto_exposure_prev_state = _auto_exposure_state->get_enable_auto_exposure();
         _auto_exposure_state->set_enable_auto_exposure(0.f < std::fabs(value));
@@ -230,9 +235,11 @@ namespace rsimpl2
     }
 
     enable_auto_exposure_option::enable_auto_exposure_option(uvc_endpoint* fisheye_ep,
-                                std::shared_ptr<auto_exposure_mechanism> auto_exposure,
-                                std::shared_ptr<auto_exposure_state> auto_exposure_state)
-        : _auto_exposure_state(auto_exposure_state),
+                                                             std::shared_ptr<auto_exposure_mechanism> auto_exposure,
+                                                             std::shared_ptr<auto_exposure_state> auto_exposure_state,
+                                                             const option_range& opt_range)
+        : librealsense_option(opt_range),
+          _auto_exposure_state(auto_exposure_state),
           _to_add_frames((_auto_exposure_state->get_enable_auto_exposure())),
           _auto_exposure(auto_exposure)
     {
@@ -246,15 +253,21 @@ namespace rsimpl2
         });
     }
 
-    auto_exposure_mode_option::auto_exposure_mode_option(
-                              std::shared_ptr<auto_exposure_mechanism> auto_exposure,
-                              std::shared_ptr<auto_exposure_state> auto_exposure_state)
-        : _auto_exposure_state(auto_exposure_state),
-          _auto_exposure(auto_exposure)
+    auto_exposure_mode_option::auto_exposure_mode_option(std::shared_ptr<auto_exposure_mechanism> auto_exposure,
+                                                         std::shared_ptr<auto_exposure_state> auto_exposure_state,
+                                                         const option_range& opt_range,
+                                                         const std::map<float, std::string>& description_per_value)
+        : librealsense_option(opt_range),
+          _auto_exposure_state(auto_exposure_state),
+          _auto_exposure(auto_exposure),
+          _description_per_value(description_per_value)
     {}
 
     void auto_exposure_mode_option::set(float value)
     {
+        if (!is_valid(value))
+            throw invalid_value_exception(to_string() << "set(auto_exposure_mode_option) failed! Given value " << value << " is out of range.");
+
         _auto_exposure_state->set_auto_exposure_mode(static_cast<auto_exposure_modes>((int)value));
         _auto_exposure->update_auto_exposure_state(*_auto_exposure_state);
     }
@@ -266,34 +279,30 @@ namespace rsimpl2
 
     const char* auto_exposure_mode_option::get_value_description(float val) const
     {
-        switch (static_cast<int>(val))
+        try{
+            return _description_per_value.at(val).c_str();
+        }
+        catch(std::out_of_range)
         {
-            case 0:
-            {
-                return "Static";
-            }
-            case 1:
-            {
-                return "Anti-Flicker";
-            }
-            case 2:
-            {
-                return "Hybrid";
-            }
-            default:
-                throw invalid_value_exception("value not found");
+            throw invalid_value_exception(to_string() << "auto_exposure_mode: get_value_description(...) failed! Description of value " << val << " is not found.");
         }
     }
 
-    auto_exposure_antiflicker_rate_option::auto_exposure_antiflicker_rate_option(
-                                          std::shared_ptr<auto_exposure_mechanism> auto_exposure,
-                                          std::shared_ptr<auto_exposure_state> auto_exposure_state)
-        : _auto_exposure_state(auto_exposure_state),
-          _auto_exposure(auto_exposure)
+    auto_exposure_antiflicker_rate_option::auto_exposure_antiflicker_rate_option(std::shared_ptr<auto_exposure_mechanism> auto_exposure,
+                                                                                 std::shared_ptr<auto_exposure_state> auto_exposure_state,
+                                                                                 const option_range& opt_range,
+                                                                                 const std::map<float, std::string>& description_per_value)
+        : librealsense_option(opt_range),
+          _auto_exposure_state(auto_exposure_state),
+          _auto_exposure(auto_exposure),
+          _description_per_value(description_per_value)
     {}
 
     void auto_exposure_antiflicker_rate_option::set(float value)
     {
+        if (!is_valid(value))
+            throw invalid_value_exception(to_string() << "set(auto_exposure_antiflicker_rate_option) failed! Given value " << value << " is out of range.");
+
         _auto_exposure_state->set_auto_exposure_antiflicker_rate(static_cast<uint32_t>(value));
         _auto_exposure->update_auto_exposure_state(*_auto_exposure_state);
     }
@@ -305,18 +314,12 @@ namespace rsimpl2
 
     const char* auto_exposure_antiflicker_rate_option::get_value_description(float val) const
     {
-        switch (static_cast<int>(val))
+        try{
+            return _description_per_value.at(val).c_str();
+        }
+        catch(std::out_of_range)
         {
-            case 50:
-            {
-                return "50Hz";
-            }
-            case 60:
-            {
-                return "60Hz";
-            }
-            default:
-                throw invalid_value_exception("antiflicker_rate: get_value_description(...) failed. value not found!");
+            throw invalid_value_exception(to_string() << "antiflicker_rate: get_value_description(...) failed! Description of value " << val << " is not found.");
         }
     }
 

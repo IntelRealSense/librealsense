@@ -350,16 +350,24 @@ namespace rsimpl2
 
         auto auto_exposure_option = std::make_shared<enable_auto_exposure_option>(uvc_ep,
                                                                                   auto_exposure,
-                                                                                  ae_state);
+                                                                                  ae_state,
+                                                                                  option_range{0, 1, 1, 1});
 
         uvc_ep->register_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE,auto_exposure_option);
 
         uvc_ep->register_option(RS2_OPTION_AUTO_EXPOSURE_MODE,
                                 std::make_shared<auto_exposure_mode_option>(auto_exposure,
-                                                                            ae_state));
+                                                                            ae_state,
+                                                                            option_range{0, 2, 1, 0},
+                                                                            std::map<float, std::string>{{0, "Static"},
+                                                                                                         {1, "Anti-Flicker"},
+                                                                                                         {2, "Hybrid"}}));
         uvc_ep->register_option(RS2_OPTION_AUTO_EXPOSURE_ANTIFLICKER_RATE,
                                 std::make_shared<auto_exposure_antiflicker_rate_option>(auto_exposure,
-                                                                                        ae_state));
+                                                                                        ae_state,
+                                                                                        option_range{50, 60, 10, 60},
+                                                                                        std::map<float, std::string>{{50, "50Hz"},
+                                                                                                                     {60, "60Hz"}}));
 
 
         uvc_ep->register_option(RS2_OPTION_GAIN,
@@ -559,7 +567,10 @@ namespace rsimpl2
             try
             {
                 hid_ep->register_option(RS2_OPTION_ENABLE_MOTION_CORRECTION,
-                                        std::make_shared<enable_motion_correction>(hid_ep.get(), *_accel_intrinsics, *_gyro_intrinsics));
+                                        std::make_shared<enable_motion_correction>(hid_ep.get(),
+                                                                                   *_accel_intrinsics,
+                                                                                   *_gyro_intrinsics,
+                                                                                   option_range{0, 1, 1, 1}));
             }
             catch (const std::exception& ex)
             {

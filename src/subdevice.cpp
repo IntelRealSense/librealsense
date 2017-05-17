@@ -10,14 +10,24 @@
 
 namespace rsimpl2
 {
-    class frame_queue_size : public option
+    class frame_queue_size : public librealsense_option
     {
     public:
-        frame_queue_size(std::atomic<uint32_t>* ptr) : _ptr(ptr) {}
+        frame_queue_size(std::atomic<uint32_t>* ptr, const option_range& opt_range)
+            : librealsense_option(opt_range),
+              _ptr(ptr)
+        {}
 
-        void set(float value) override { *_ptr = value; }
+        void set(float value) override
+        {
+            if (!is_valid(value))
+                throw invalid_value_exception(to_string() << "set(frame_queue_size) failed! Given value " << value << " is out of range.");
+
+            *_ptr = value;
+        }
+
         float query() const override { return _ptr->load(); }
-        option_range get_range() const override { return { 0, 64, 1, 16 }; }
+
         bool is_enabled() const override { return true; }
 
         const char* get_description() const override
@@ -39,7 +49,8 @@ namespace rsimpl2
           _start_adaptor(this),
           _on_before_frame_callback(nullptr)
     {
-        _options[RS2_OPTION_FRAMES_QUEUE_SIZE] = std::make_shared<frame_queue_size>(&_max_publish_list_size);
+        _options[RS2_OPTION_FRAMES_QUEUE_SIZE] = std::make_shared<frame_queue_size>(&_max_publish_list_size,
+                                                                                    option_range{ 0, 64, 1, 16 });
     }
 
     void endpoint::register_notifications_callback(notifications_callback_ptr callback)

@@ -304,7 +304,6 @@ namespace rsimpl2
        }
    };
 
-
    class const_value_option : public readonly_option
    {
    public:
@@ -320,5 +319,30 @@ namespace rsimpl2
    private:
        float _val;
        std::string _desc;
+   };
+
+   class librealsense_option : public option
+   {
+   public:
+       librealsense_option(const option_range& opt_range)
+           : _opt_range(opt_range)
+       {}
+
+       bool is_valid(float value) const
+       {
+           if (!std::isnormal(_opt_range.step))
+               throw invalid_value_exception(to_string() << "is_valid(...) failed! step is not properly defined. (" << _opt_range.step << ")");
+
+           auto n = (value - _opt_range.min)/_opt_range.step;
+           return (fabs(fmod(n, 1)) < std::numeric_limits<float>::min());
+       }
+
+       option_range get_range() const override
+       {
+           return _opt_range;
+       }
+
+    protected:
+       const option_range _opt_range;
    };
 }

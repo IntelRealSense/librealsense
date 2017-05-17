@@ -112,20 +112,19 @@ namespace rsimpl2
     class sr300_camera final : public device
     {
     public:
-        class preset_option : public option
+        class preset_option : public librealsense_option
         {
         public:
-            void set(float value) override {
+            void set(float value) override
+            {
+                if (!is_valid(value))
+                    throw invalid_value_exception(to_string() << "set(preset_option) failed! Given value " << value << " is out of range.");
+
                 _owner.rs2_apply_ivcam_preset(static_cast<int>(value));
                 last_value = value;
             }
 
             float query() const override { return last_value; }
-
-            option_range get_range() const override
-            {
-                return option_range{0, RS2_VISUAL_PRESET_COUNT, 1, RS2_VISUAL_PRESET_DEFAULT};
-            }
 
             bool is_enabled() const override { return true; }
 
@@ -141,8 +140,9 @@ namespace rsimpl2
                         static_cast<int>(val)));
             }
 
-            explicit preset_option(sr300_camera& owner)
-                : _owner(owner)
+            explicit preset_option(sr300_camera& owner, const option_range& opt_range)
+                : librealsense_option(opt_range),
+                  _owner(owner)
             {}
 
         private:
@@ -203,7 +203,8 @@ namespace rsimpl2
             register_depth_xu<uint8_t>(*depth_ep, RS2_OPTION_FILTER_OPTION, IVCAM_DEPTH_FILTER_OPTION,
                 "Set the filter to apply to each depth frame.\nEach one of the filter is optimized per the application requirements");
 
-            depth_ep->register_option(RS2_OPTION_VISUAL_PRESET, std::make_shared<preset_option>(*this));
+            depth_ep->register_option(RS2_OPTION_VISUAL_PRESET, std::make_shared<preset_option>(*this,
+                                                                                                option_range{0, RS2_VISUAL_PRESET_COUNT, 1, RS2_VISUAL_PRESET_DEFAULT}));
 
             return depth_ep;
         }
