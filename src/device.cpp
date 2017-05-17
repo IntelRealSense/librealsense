@@ -11,6 +11,7 @@
 #include <algorithm>
 #include <sstream>
 #include <iostream>
+#include <functional>
 
 using namespace rsimpl;
 using namespace rsimpl::motion_module;

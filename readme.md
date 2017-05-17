@@ -49,6 +49,9 @@ A comprehensive suite of sample and tutorial applications are provided in the `/
   * [OpenCV Tutorial](./doc/stepbystep/getting_started_with_openCV.md) - Getting started with librealsense using OpenCV
   * [Stream Formats](./doc/supported_video_formats.pdf) - A list of available stream resolutions and pixel formats provided by the supported devices.
   * [Branching and Releases](./doc/branching.md) - Overview of live branches and major releases
+  * [SDK Design Guidelines](http://www.mouser.com/pdfdocs/intel-realsense-sdk-design-r200.pdf) - Guidelines and tips for designing applications using RealSense cameras
+  * [R200 Datasheet](http://www.mouser.com/pdfdocs/intel_realsense_camera_r200.pdf) - In-depth information about the R200 camera hardware. 
+  * [Intel RealSense Stereoscopic Depth Cameras](https://arxiv.org/abs/1705.05548) - A technical paper describing the R200, LR200, SR300 and RS400 in detail. Includes theoretical background, performance expectations, post-processing suggestions, etc.  
 
 ## Functionality
 
