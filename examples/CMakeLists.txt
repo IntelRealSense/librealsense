@@ -48,7 +48,7 @@ else()
                   /usr/local/lib/${CMAKE_LIBRARY_ARCHITECTURE}
                   /usr/X11R6/lib
     )
-    list(APPEND DEPENDENCIES m ${GLFW_LIBRARIES} ${LIBUSB1_LIBRARIES})
+    list(APPEND DEPENDENCIES ${GLFW_LIBRARIES} ${LIBUSB1_LIBRARIES} m Xrandr Xi Xrender drm Xdamage Xinerama Xxf86vm Xcursor Xext X11 pthread dl)
     include_directories(${GLFW_INCLUDE_DIR})
 endif()
 
