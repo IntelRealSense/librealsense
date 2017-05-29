@@ -87,13 +87,14 @@ typedef enum rs2_format
 /** \brief Per-Frame-Metadata are set of read-only properties that might be exposed for each individual frame */
 typedef enum rs2_frame_metadata
 {
-    RS2_FRAME_METADATA_FRAME_COUNTER        , /**< frame counter */
-    RS2_FRAME_METADATA_FRAME_TIMESTAMP      , /**< Timestamp. Start of readout. usec*/
-    RS2_FRAME_METADATA_SENSOR_TIMESTAMP     , /**< Timestamp, Designates the middle of sensor's exposure. usec*/
-    RS2_FRAME_METADATA_ACTUAL_EXPOSURE      , /**< Frame's actual exposure length. usec*/
-    RS2_FRAME_METADATA_GAIN_LEVEL           , /**< Transition function raw->scale : [16-248] -> [1-15.5]*/
-    RS2_FRAME_METADATA_AUTO_EXPOSURE        , /**< Auto-exposure mode. Enumerated according to MS specification */
-    RS2_FRAME_METADATA_WHITE_BALANCE        , /**< Temperature. Kelvin degrees. Applicable for Color Sensors*/
+    RS2_FRAME_METADATA_FRAME_COUNTER        , /**< A sequential index managed per-stream. Integer value*/
+    RS2_FRAME_METADATA_FRAME_TIMESTAMP      , /**< Timestamp set by device clock when data readout and transmit commence. usec*/
+    RS2_FRAME_METADATA_SENSOR_TIMESTAMP     , /**< Timestamp of the middle of sensor's exposure calculated by device. usec*/
+    RS2_FRAME_METADATA_ACTUAL_EXPOSURE      , /**< Sensor's exposure width. When Auto Exposure (AE) is on the value is controlled by firmware. usec*/
+    RS2_FRAME_METADATA_GAIN_LEVEL           , /**< A relative value increasing which will increase the Sensor's gain factor. \
+                                              When AE is set On, the value is controlled by firmware. Integer value*/
+    RS2_FRAME_METADATA_AUTO_EXPOSURE        , /**< Auto Exposure Mode indicator. Zero corresponds to AE switched off. */
+    RS2_FRAME_METADATA_WHITE_BALANCE        , /**< White Balance setting as a color temperature. Kelvin degrees*/
     RS2_FRAME_METADATA_COUNT
 } rs2_frame_metadata;
 
