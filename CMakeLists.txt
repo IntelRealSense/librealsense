@@ -45,7 +45,7 @@ ENDIF()
 
 IF (${ROS_BUILD_TYPE})
   message(STATUS "Building in a ROS environment")
-  project(librealsense)
+  project(librealsense2)
 
   #################################
   # catkin specific configuration #
@@ -59,7 +59,7 @@ IF (${ROS_BUILD_TYPE})
   # DEPENDS: system dependencies of this project that dependent projects also need
   catkin_package(
     INCLUDE_DIRS include
-    LIBRARIES realsense
+    LIBRARIES realsense2
   )
 ELSE()
   project(Realsense)
@@ -325,12 +325,12 @@ set_target_properties (realsense2 PROPERTIES
     FOLDER Library
 )
 
-set(LRS_LIB_NAME realsense)
+set(LRS_LIB_NAME realsense2)
 
 target_include_directories(realsense2 PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include/ ${LIBUSB1_INCLUDE_DIRS})
 
 IF (${ROS_BUILD_TYPE})
-    install(TARGETS realsense
+    install(TARGETS realsense2
         RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
         LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
         ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
