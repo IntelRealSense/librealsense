@@ -245,7 +245,7 @@ namespace rsimpl2
         {
             uint32_t device_fourcc = reinterpret_cast<const big_endian<uint32_t>&>(elem);
             char fourcc[sizeof(device_fourcc) + 1];
-            memcpy(fourcc, &device_fourcc, sizeof(device_fourcc));
+            rsimpl2::copy(fourcc, &device_fourcc, sizeof(device_fourcc));
             fourcc[sizeof(device_fourcc)] = 0;
             LOG_WARNING("Unutilized format " << fourcc);
         }
@@ -257,7 +257,7 @@ namespace rsimpl2
             {
                 uint32_t device_fourcc = reinterpret_cast<const big_endian<uint32_t>&>(elem);
                 char fourcc[sizeof(device_fourcc) + 1];
-                memcpy(fourcc, &device_fourcc, sizeof(device_fourcc));
+                rsimpl2::copy(fourcc, &device_fourcc, sizeof(device_fourcc));
                 fourcc[sizeof(device_fourcc)] = 0;
                 ss << fourcc << std::endl;
             }
