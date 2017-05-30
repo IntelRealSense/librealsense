@@ -78,7 +78,7 @@ PYBIND11_PLUGIN(NAME) {
                   .def_readwrite("id", &uvc::extension_unit::id);
 
     py::class_<uvc::command_transfer> command_transfer(m, "command_transfer");
-    command_transfer.def("send_receive", &uvc::command_transfer::send_receive, "data"_a, "timeout_ms"_a, "require_response"_a);
+    command_transfer.def("send_receive", &uvc::command_transfer::send_receive, "data"_a, "timeout_ms"_a=5000, "require_response"_a=true);
 
     py::enum_<rs2_option> option(m, "option");
     option.value("backlight_compensation", RS2_OPTION_BACKLIGHT_COMPENSATION)
@@ -111,7 +111,7 @@ PYBIND11_PLUGIN(NAME) {
         ss << "<" SNAME ".stream_profile: "
             << p.width
             << "x" << p.height << " @ " << p.fps << "fps "
-            << p.format << ">";
+            << std::hex << p.format << ">";
         return ss.str();
     });;
 
@@ -267,7 +267,7 @@ PYBIND11_PLUGIN(NAME) {
         .def("unlock", &uvc::retry_controls_work_around::unlock)
         .def("get_device_location", &uvc::retry_controls_work_around::get_device_location);
 
-    py::class_<uvc::usb_device, uvc::command_transfer> usb_device(m, "usb_device");
+    py::class_<uvc::usb_device, uvc::command_transfer, std::shared_ptr<uvc::usb_device>> usb_device(m, "usb_device");
 
     py::class_<uvc::backend, std::shared_ptr<uvc::backend>> backend(m, "backend");
     backend.def("create_uvc_device", &uvc::backend::create_uvc_device, "info"_a)
