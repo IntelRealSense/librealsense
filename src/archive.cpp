@@ -178,7 +178,7 @@ rs2_metadata_t frame::get_frame_metadata(const rs2_frame_metadata& frame_metadat
 {
     auto md_parsers = owner->get_md_parsers();
 
-    if ((!md_parsers) || (0 == additional_data.metadata_size))
+    if (!md_parsers)
         throw invalid_value_exception(to_string() << "metadata not available for "
                                       << get_string(get_stream_type())<<" stream");
 
@@ -197,7 +197,7 @@ bool frame::supports_frame_metadata(const rs2_frame_metadata& frame_metadata) co
     auto md_parsers = owner->get_md_parsers();
 
     // verify preconditions
-    if ((!md_parsers) || (0 == additional_data.metadata_size))
+    if (!md_parsers)
         return false;                         // No parsers are available or no metadata was attached
 
     auto it = md_parsers.get()->find(frame_metadata);
