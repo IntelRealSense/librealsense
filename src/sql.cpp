@@ -126,7 +126,8 @@ namespace sql
         auto size = sqlite3_column_bytes(m_handle.get(), column);
         vector<uint8_t> result(size, 0);
         auto blob = (unsigned char*)sqlite3_column_blob(m_handle.get(), column);
-        memcpy(result.data(), blob, size);
+        std::copy(blob, blob + size, result.data());
+
         return result;
     }
 

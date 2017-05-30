@@ -53,7 +53,8 @@ namespace rsimpl2
             void populate_raw_data(std::vector<uint8_t>& vec, int32_t value)
             {
                 vec.resize(sizeof(value));
-                memcpy(vec.data(), &value, sizeof(value));
+                auto data = reinterpret_cast<const uint8_t*>(&value);
+                std::copy(data, data + sizeof(value), vec.data());
             }
         };
 
