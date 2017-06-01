@@ -146,7 +146,7 @@ elseif(APPLE)
     set(BACKEND RS_USE_LIBUVC_BACKEND)
 elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "^(arm.*|ARM.*)")
     set(BACKEND RS_USE_LIBUVC_BACKEND)
-else
+else()
     set(BACKEND RS_USE_V4L2_BACKEND)
 endif()
 
