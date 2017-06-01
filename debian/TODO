@@ -1,3 +1,0 @@
-Prevent dkms from being installed or executed
-if the kernel is "new enough" to have all of the
-required patches for Intel RealSense cameras.

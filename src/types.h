@@ -22,12 +22,16 @@
 #include <atomic>
 #include <map>          
 #include <algorithm>
+#include <functional>
 
 const uint8_t RS_STREAM_NATIVE_COUNT    = 5;
 const int RS_USER_QUEUE_SIZE = 20;
-const int RS_MAX_EVENT_QUEUE_SIZE = 500;
-const int RS_MAX_EVENT_TINE_OUT = 10;
 
+// Timestamp syncronization settings:
+const int RS_MAX_EVENT_QUEUE_SIZE = 500;  // Max number of timestamp events to keep for all streams
+const int RS_MAX_EVENT_TIME_OUT = 20;     // Max timeout in milliseconds that a frame can wait for its corresponding timestamp event
+// Usually timestamp events arrive much faster then frames, but due to USB arbitration the QoS isn't guaranteed.
+// RS_MAX_EVENT_TIME_OUT controls how much time the user is willing to wait before "giving-up" on a particular frame
 
 namespace rsimpl
 {
@@ -95,6 +99,7 @@ namespace rsimpl
     RS_ENUM_HELPERS(rs_blob_type, BLOB_TYPE)
     RS_ENUM_HELPERS(rs_camera_info, CAMERA_INFO)
     RS_ENUM_HELPERS(rs_timestamp_domain, TIMESTAMP_DOMAIN)
+    RS_ENUM_HELPERS(rs_frame_metadata, FRAME_METADATA)
     #undef RS_ENUM_HELPERS
 
     ////////////////////////////////////////////

@@ -7,17 +7,20 @@
 <package format="2">
   <name>librealsense</name>
   <!-- The version tag needs to be updated with each new release of librealsense -->
-  <version>1.11.1</version>
+  <version>1.12.1</version>
   <description>
   Library for capturing data from the Intel(R) RealSense(TM) F200, SR300, R200, LR200 and ZR300 cameras. This effort was initiated to better support researchers, creative coders, and app developers in domains such as robotics, virtual reality, and the internet of things. Several often-requested features of RealSense(TM); devices are implemented in this project, including multi-camera capture.
   </description>
 
+  <maintainer email="matthew.c.curfman@intel.com">Matt Curfman</maintainer>
   <maintainer email="sergey.dorodnicov@intel.com">Sergey Dorodnicov</maintainer>
-  <maintainer email="mark.d.horn@intel.com">Mark Horn</maintainer>
-  <maintainer email="reagan.lopez@intel.com">Reagan Lopez</maintainer>
 
   <url type="website">http://www.ros.org/wiki/RealSense</url>
   <url type="bugtracker">https://github.com/intel-ros/realsense/issues</url>
+
+  <author email="sergey.dorodnicov@intel.com">Sergey Dorodnicov</author>
+  <author email="mark.d.horn@intel.com">Mark Horn</author>
+  <author email="reagan.lopez@intel.com">Reagan Lopez</author>
 
   <license>Apache License, Version 2.0</license>
 

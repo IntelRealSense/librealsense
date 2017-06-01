@@ -1,0 +1,102 @@
+From e5f6f87b3fd169f45b7775e4ca85eb961843e549 Mon Sep 17 00:00:00 2001
+From: Daniel Patrick Johnson <teknotus@teknot.us>
+Date: Mon, 2 Mar 2015 20:30:48 -0800
+Subject: [PATCH] Add video formats for Intel real sense F200 camera
+
+Signed-off-by: Daniel Patrick Johnson <teknotus@teknot.us>
+---
+ drivers/media/usb/uvc/uvc_driver.c | 30 ++++++++++++++++++++++++++++++
+ drivers/media/usb/uvc/uvcvideo.h   | 18 ++++++++++++++++++
+ include/uapi/linux/videodev2.h     |  6 ++++++
+ 3 files changed, 54 insertions(+)
+
+diff --git a/drivers/media/usb/uvc/uvc_driver.c b/drivers/media/usb/uvc/uvc_driver.c
+index 47ff9f4..5757bf2 100644
+--- a/drivers/media/usb/uvc/uvc_driver.c
++++ b/drivers/media/usb/uvc/uvc_driver.c
+@@ -168,6 +168,36 @@ static struct uvc_format_desc uvc_fmts[] = {
+ 		.guid		= UVC_GUID_FORMAT_RW10,
+ 		.fcc		= V4L2_PIX_FMT_SRGGB10P,
+ 	},
++	{
++		.name		= "Depth 16-bit (INVZ)",
++		.guid		= UVC_GUID_FORMAT_INVZ,
++		.fcc		= V4L2_PIX_FMT_INVZ,
++	},
++	{
++		.name		= "Depth:IR 16:8 24-bit (INZI)",
++		.guid		= UVC_GUID_FORMAT_INZI,
++		.fcc		= V4L2_PIX_FMT_INZI,
++	},
++	{
++		.name		= "Depth 16-bit (INVR)",
++		.guid		= UVC_GUID_FORMAT_INVR,
++		.fcc		= V4L2_PIX_FMT_INVR,
++	},
++	{
++		.name		= "Depth:IR 16:8 24-bit (INRI)",
++		.guid		= UVC_GUID_FORMAT_INRI,
++		.fcc		= V4L2_PIX_FMT_INRI,
++	},
++	{
++		.name		= "Infrared 8-bit (INVI)",
++		.guid		= UVC_GUID_FORMAT_INVI,
++		.fcc		= V4L2_PIX_FMT_INVI,
++	},
++	{
++		.name		= "FlickerIR 8-bit (RELI)",
++		.guid		= UVC_GUID_FORMAT_RELI,
++		.fcc		= V4L2_PIX_FMT_RELI,
++	},
+ };
+ 
+ /* ------------------------------------------------------------------------
+diff --git a/drivers/media/usb/uvc/uvcvideo.h b/drivers/media/usb/uvc/uvcvideo.h
+index 7e4d3ee..fad3eb5 100644
+--- a/drivers/media/usb/uvc/uvcvideo.h
++++ b/drivers/media/usb/uvc/uvcvideo.h
+@@ -131,6 +131,24 @@
+ #define UVC_GUID_FORMAT_RW10 \
+ 	{ 'R',  'W',  '1',  '0', 0x00, 0x00, 0x10, 0x00, \
+ 	 0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71}
++#define UVC_GUID_FORMAT_INVZ \
++	{ 'I',  'N',  'V',  'Z', 0x90, 0x2d, 0x58, 0x4a, \
++	 0x92, 0x0b, 0x77, 0x3f, 0x1f, 0x2c, 0x55, 0x6b}
++#define UVC_GUID_FORMAT_INZI \
++	{ 'I',  'N',  'Z',  'I', 0x66, 0x1a, 0x42, 0xa2, \
++	 0x90, 0x65, 0xd0, 0x18, 0x14, 0xa8, 0xef, 0x8a}
++#define UVC_GUID_FORMAT_INVR \
++	{ 'I',  'N',  'V',  'R', 0x90, 0x2d, 0x58, 0x4a, \
++	 0x92, 0x0b, 0x77, 0x3f, 0x1f, 0x2c, 0x55, 0x6b}
++#define UVC_GUID_FORMAT_INRI \
++	{ 'I',  'N',  'R',  'I', 0x90, 0x2d, 0x58, 0x4a, \
++	 0x92, 0x0b, 0x77, 0x3f, 0x1f, 0x2c, 0x55, 0x6b}
++#define UVC_GUID_FORMAT_INVI \
++	{ 'I',  'N',  'V',  'I', 0xdb, 0x57, 0x49, 0x5e, \
++	 0x8e, 0x3f, 0xf4, 0x79, 0x53, 0x2b, 0x94, 0x6f}
++#define UVC_GUID_FORMAT_RELI \
++	{ 'R',  'E',  'L',  'I', 0x14, 0x13, 0x43, 0xf9, \
++	 0xa7, 0x5a, 0xee, 0x6b, 0xbf, 0x01, 0x2e, 0x23}
+ 
+ /* ------------------------------------------------------------------------
+  * Driver specific constants.
+diff --git a/include/uapi/linux/videodev2.h b/include/uapi/linux/videodev2.h
+index 421d274..b6869f7 100644
+--- a/include/uapi/linux/videodev2.h
++++ b/include/uapi/linux/videodev2.h
+@@ -624,6 +624,12 @@ struct v4l2_pix_format {
+ #define V4L2_PIX_FMT_Y8I      v4l2_fourcc('Y', '8', 'I', ' ') /* Greyscale 8-bit L/R interleaved */
+ #define V4L2_PIX_FMT_Y12I     v4l2_fourcc('Y', '1', '2', 'I') /* Greyscale 12-bit L/R interleaved */
+ #define V4L2_PIX_FMT_Z16      v4l2_fourcc('Z', '1', '6', ' ') /* Depth data 16-bit */
++#define V4L2_PIX_FMT_INVZ		v4l2_fourcc('I',  'N',  'V',  'Z') /* 16 Depth */
++#define V4L2_PIX_FMT_INZI		v4l2_fourcc('I',  'N',  'Z',  'I') /* 24 Depth/IR 16:8 */
++#define V4L2_PIX_FMT_INVR		v4l2_fourcc('I',  'N',  'V',  'R') /* 16 Depth */
++#define V4L2_PIX_FMT_INRI		v4l2_fourcc('I',  'N',  'R',  'I') /* 24 Depth/IR 16:8 */
++#define V4L2_PIX_FMT_INVI		v4l2_fourcc('I',  'N',  'V',  'I') /* 8 IR */
++#define V4L2_PIX_FMT_RELI		v4l2_fourcc('R',  'E',  'L',  'I') /* 8 IR alternating on off illumination */
+ 
+ /* SDR formats - used only for Software Defined Radio devices */
+ #define V4L2_SDR_FMT_CU8          v4l2_fourcc('C', 'U', '0', '8') /* IQ u8 */
+-- 
+2.7.4
+

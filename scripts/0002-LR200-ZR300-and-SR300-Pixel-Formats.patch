@@ -1,0 +1,86 @@
+From ccc513a3a69607fae553738a701340ea35f80858 Mon Sep 17 00:00:00 2001
+From: Elad Zucker <eladz@hexsys-solutions.com>
+From: Evgeni Raikhel <eraikhel@intel.com>
+Date: Mon, 6 Feb 2017 16:33:55 +0200
+Subject: [PATCH 2/2] LR200 ZR300 and SR300 Formats
+
+---
+ drivers/media/usb/uvc/uvc_driver.c | 12 +++++++++++-
+ drivers/media/usb/uvc/uvcvideo.h   |  6 ++++++
+ include/uapi/linux/videodev2.h     |  8 +++++++-
+ 3 files changed, 24 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/media/usb/uvc/uvc_driver.c b/drivers/media/usb/uvc/uvc_driver.c
+index a6da397..abb0389 100644
+--- a/drivers/media/usb/uvc/uvc_driver.c
++++ b/drivers/media/usb/uvc/uvc_driver.c
+@@ -169,12 +169,22 @@ static struct uvc_format_desc uvc_fmts[] = {
+ 		.fcc		= V4L2_PIX_FMT_SRGGB10P,
+ 	},
+ 	{
++		.name		= "Raw data 8-bit (RAW8)",
++		.guid		= UVC_GUID_FORMAT_RAW8,
++		.fcc		= V4L2_PIX_FMT_RAW8,
++	},
++	{
++		.name		= "Raw data 16-bit (RW16)",
++		.guid		= UVC_GUID_FORMAT_RW16,
++		.fcc		= V4L2_PIX_FMT_RW16,
++	},
++	{
+ 		.name		= "Depth 16-bit (INVZ)",
+ 		.guid		= UVC_GUID_FORMAT_INVZ,
+ 		.fcc		= V4L2_PIX_FMT_INVZ,
+ 	},
+ 	{
+-		.name		= "Depth:IR 16:8 24-bit (INZI)",
++		.name		= "Depth:IR 16:10 26-bit (INZI)",
+ 		.guid		= UVC_GUID_FORMAT_INZI,
+ 		.fcc		= V4L2_PIX_FMT_INZI,
+ 	},
+diff --git a/drivers/media/usb/uvc/uvcvideo.h b/drivers/media/usb/uvc/uvcvideo.h
+index fad3eb5..7969389 100644
+--- a/drivers/media/usb/uvc/uvcvideo.h
++++ b/drivers/media/usb/uvc/uvcvideo.h
+@@ -128,9 +128,15 @@
+ #define UVC_GUID_FORMAT_Z16 \
+ 	{ 'Z',  '1',  '6',  ' ', 0x00, 0x00, 0x10, 0x00, \
+ 	 0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71}
++#define UVC_GUID_FORMAT_RAW8 \
++	{ 'R',  'A',  'W',  '8', 0x66, 0x1a, 0x42, 0xa2, \
++	 0x90, 0x65, 0xd0, 0x18, 0x14, 0xa8, 0xef, 0x8a}
+ #define UVC_GUID_FORMAT_RW10 \
+ 	{ 'R',  'W',  '1',  '0', 0x00, 0x00, 0x10, 0x00, \
+ 	 0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71}
++#define UVC_GUID_FORMAT_RW16 \
++	{ 'R',  'W',  '1',  '6', 0x00, 0x00, 0x10, 0x00, \
++	0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71}
+ #define UVC_GUID_FORMAT_INVZ \
+ 	{ 'I',  'N',  'V',  'Z', 0x90, 0x2d, 0x58, 0x4a, \
+ 	 0x92, 0x0b, 0x77, 0x3f, 0x1f, 0x2c, 0x55, 0x6b}
+diff --git a/include/uapi/linux/videodev2.h b/include/uapi/linux/videodev2.h
+index 6bf0018..703ccbf 100644
+--- a/include/uapi/linux/videodev2.h
++++ b/include/uapi/linux/videodev2.h
+@@ -624,11 +624,17 @@ struct v4l2_pix_format {
+ #define V4L2_PIX_FMT_Y8I      v4l2_fourcc('Y', '8', 'I', ' ') /* Greyscale 8-bit L/R interleaved */
+ #define V4L2_PIX_FMT_Y12I     v4l2_fourcc('Y', '1', '2', 'I') /* Greyscale 12-bit L/R interleaved */
+ #define V4L2_PIX_FMT_Z16      v4l2_fourcc('Z', '1', '6', ' ') /* Depth data 16-bit */
++#define V4L2_PIX_FMT_Y8 		v4l2_fourcc('Y',  '8',  ' ',  ' ') /* Greyscale 8-bit */
++#define V4L2_PIX_FMT_Y10		v4l2_fourcc('Y',  '1',  '0',  ' ') /* Greyscale 10-bit */
++#define V4L2_PIX_FMT_Y12		v4l2_fourcc('Y',  '1',  '2',  ' ') /* Greyscale 12-bit */
++#define V4L2_PIX_FMT_Y16		v4l2_fourcc('Y',  '1',  '6',  ' ') /* Greyscale 16-bit */
++#define V4L2_PIX_FMT_RAW8		v4l2_fourcc('R',  'A',  'W',  '8') /* Raw data 8-bit */
++#define V4L2_PIX_FMT_RW16		v4l2_fourcc('R',  'W',  '1',  '6') /* Raw data 16-bit */
+ #define V4L2_PIX_FMT_INVZ		v4l2_fourcc('I',  'N',  'V',  'Z') /* 16 Depth */
+ #define V4L2_PIX_FMT_INZI		v4l2_fourcc('I',  'N',  'Z',  'I') /* 24 Depth/IR 16:8 */
+ #define V4L2_PIX_FMT_INVR		v4l2_fourcc('I',  'N',  'V',  'R') /* 16 Depth */
+ #define V4L2_PIX_FMT_INRI		v4l2_fourcc('I',  'N',  'R',  'I') /* 24 Depth/IR 16:8 */
+-#define V4L2_PIX_FMT_INVI		v4l2_fourcc('I',  'N',  'V',  'I') /* 8 IR */
++#define V4L2_PIX_FMT_INVI		v4l2_fourcc('I',  'N',  'V',  'I') /* 10 IR */
+ #define V4L2_PIX_FMT_RELI		v4l2_fourcc('R',  'E',  'L',  'I') /* 8 IR alternating on off illumination */
+
+ /* SDR formats - used only for Software Defined Radio devices */
+--
+1.9.1
+

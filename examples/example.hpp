@@ -128,8 +128,16 @@ public:
                 glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width/2, height/2, 0, GL_RGB, GL_UNSIGNED_BYTE, rgb.data());
             }
             break;
+        case rs::format::raw16:
+            // All RAW formats will be treated and displayed as Greyscale images
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_LUMINANCE, GL_UNSIGNED_SHORT, data);
+            break;
         default:
-            throw std::runtime_error("The requested format is not provided by demo");
+            {
+                std::stringstream ss;
+                ss << rs_format_to_string((rs_format)format) << " pixel format is not supported by the demo";
+                throw std::runtime_error(ss.str().c_str());
+            }
         }
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -228,14 +236,12 @@ public:
     void show(rs::stream stream, rs::format format, int stream_framerate, unsigned long long frame_number, double timestamp, int rx, int ry, int rw, int rh, int width, int height)
     {
         show(rx, ry, rw, rh, width, height);
-        if (frame_number != 0)
-        {
-            std::ostringstream ss; ss << stream << ": " << width << " x " << height << " " << format << " (" << fps << "/" << stream_framerate << ")" << ", F#: " << frame_number << ", TS: " << timestamp;
-            glColor3f(0,0,0);
-            draw_text(rx+9, ry+17, ss.str().c_str());
-            glColor3f(1,1,1);
-            draw_text(rx+8, ry+16, ss.str().c_str());
-        }
+
+        std::ostringstream ss; ss << stream << ": " << width << " x " << height << " " << format << " (" << fps << "/" << stream_framerate << ")" << ", F#: " << frame_number << ", TS: " << timestamp;
+        glColor3f(0,0,0);
+        draw_text(rx+9, ry+17, ss.str().c_str());
+        glColor3f(1,1,1);
+        draw_text(rx+8, ry+16, ss.str().c_str());
     }
 
     void show(int rx, int ry, int rw, int rh, int width, int height)

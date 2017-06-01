@@ -8,6 +8,7 @@ extern "C" {
 #include <stdio.h> // FILE
 #include <errno.h>
 #include <libusb.h>
+#include <sys/time.h> // timeval
 #include "libuvc_config.h"
     
 /** UVC error types, based on libusb errors

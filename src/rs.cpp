@@ -74,8 +74,9 @@ void report_version_mismatch(int runtime, int compiletime)
 
 rs_context * rs_create_context(int api_version, rs_error ** error) try
 {
-    int runtime_api_version = rs_get_api_version(error);
-    if (*error) throw std::runtime_error(rs_get_error_message(*error));
+    rs_error * local_error = nullptr;
+    auto runtime_api_version = rs_get_api_version(&local_error);
+    if (local_error) throw std::runtime_error(rs_get_error_message(local_error));
 
     if ((runtime_api_version < 10) || (api_version < 10))
     {
@@ -457,6 +458,7 @@ HANDLE_EXCEPTIONS_AND_RETURN(0, device)
 double rs_get_detached_frame_metadata(const rs_frame_ref * frame, rs_frame_metadata frame_metadata, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(frame);
+    VALIDATE_ENUM(frame_metadata);
     return frame->get_frame_metadata(frame_metadata);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, frame)
@@ -464,6 +466,7 @@ HANDLE_EXCEPTIONS_AND_RETURN(0, frame)
 int rs_supports_frame_metadata(const rs_frame_ref * frame, rs_frame_metadata frame_metadata, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(frame);
+    VALIDATE_ENUM(frame_metadata);
     return frame->supports_frame_metadata(frame_metadata);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, frame)
@@ -760,6 +763,8 @@ const char * rs_event_to_string(rs_event_source event)   { return rsimpl::get_st
 const char * rs_blob_type_to_string(rs_blob_type type) { return rsimpl::get_string(type); }
 const char * rs_camera_info_to_string(rs_camera_info info) { return rsimpl::get_string(info); }
 const char * rs_timestamp_domain_to_string(rs_timestamp_domain info){ return rsimpl::get_string(info); }
+
+const char * rs_frame_metadata_to_string(rs_frame_metadata md) { return rsimpl::get_string(md); }
 
 void rs_log_to_console(rs_log_severity min_severity, rs_error ** error) try
 {

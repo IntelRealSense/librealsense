@@ -1,4 +1,0 @@
-debian/dkms.conf         /usr/src/uvcvideo-1.1.1-3-realsense
-debian/dkms-pre-build.sh /usr/src/uvcvideo-1.1.1-3-realsense
-debian/realsense-uvcvideo-add-to-upstreamed.patch /usr/src/uvcvideo-1.1.1-3-realsense/patches
-debian/realsense-uvcvideo-no-upstreamed.patch /usr/src/uvcvideo-1.1.1-3-realsense/patches
