@@ -51,13 +51,13 @@ fi
 
 if [ $reset_driver -eq 1 ];
 then 
-	echo -e "\e[43mUser requested to rebuild and reinstall ubuntu-xenial stock drivers\e[0m"	
+	echo -e "\e[43mUser requested to rebuild and reinstall ubuntu-xenial stock drivers\e[0m"
 else
 	# Patching kernel for RealSense devices
 	echo -e "\e[32mApplying realsense-uvc patch\e[0m"
 	patch -p1 < ../scripts/realsense-camera-formats_ubuntu-xenial.patch
 	echo -e "\e[32mApplying realsense-metadata patch\e[0m"
-	patch -p1 < ../scripts/realsense-metadata-ubuntu-xenial.patch	
+	patch -p1 < ../scripts/realsense-metadata-ubuntu-xenial.patch
 	echo -e "\e[32mApplying realsense-hid patch\e[0m"
 	patch -p1 < ../scripts/realsense-hid-ubuntu-xenial.patch
 fi
@@ -76,22 +76,25 @@ KBASE=`pwd`
 cd drivers/media/usb/uvc
 sudo cp $KBASE/Module.symvers .
 echo -e "\e[32mCompiling uvc module\e[0m"
-sudo make -C $KBASE M=$KBASE/drivers/media/usb/uvc/ modules
+sudo make -j -C $KBASE M=$KBASE/drivers/media/usb/uvc/ modules
 echo -e "\e[32mCompiling accelerometer and gyro modules\e[0m"
-make -C $KBASE M=$KBASE/drivers/iio/accel modules
-make -C $KBASE M=$KBASE/drivers/iio/gyro modules
+make -j -C $KBASE M=$KBASE/drivers/iio/accel modules
+make -j -C $KBASE M=$KBASE/drivers/iio/gyro modules
+echo -e "\e[32mCompiling v4l2-core modules\e[0m"
+sudo make -j -C $KBASE M=$KBASE/drivers/media/v4l2-core modules
 
 # Copy the patched modules to a sane location
 sudo cp $KBASE/drivers/media/usb/uvc/uvcvideo.ko ~/$LINUX_BRANCH-uvcvideo.ko
 sudo cp $KBASE/drivers/iio/accel/hid-sensor-accel-3d.ko ~/$LINUX_BRANCH-hid-sensor-accel-3d.ko
 sudo cp $KBASE/drivers/iio/gyro/hid-sensor-gyro-3d.ko ~/$LINUX_BRANCH-hid-sensor-gyro-3d.ko
+sudo cp $KBASE/drivers/media/v4l2-core/videodev.ko ~/$LINUX_BRANCH-videodev.ko
 
-echo -e "\e[32mPatched kernels modules created successfully\n\e[0m"
+echo -e "\e[32mPatched kernels modules were created successfully\n\e[0m"
 
-# Load the newly built modules
-try_module_insert uvcvideo				~/$LINUX_BRANCH-uvcvideo.ko /lib/modules/`uname -r`/kernel/drivers/media/usb/uvc/uvcvideo.ko
-try_module_insert hid-sensor-accel-3d 	~/$LINUX_BRANCH-hid-sensor-accel-3d.ko /lib/modules/`uname -r`/kernel/drivers/iio/accel/hid-sensor-accel-3d.ko
-try_module_insert hid-sensor-gyro-3d	~/$LINUX_BRANCH-hid-sensor-gyro-3d.ko /lib/modules/`uname -r`/kernel/drivers/iio/gyro/hid-sensor-gyro-3d.ko
-
+# Load the newly-built modules
+try_module_insert videodev				~/$LINUX_BRANCH-videodev.ko 			/lib/modules/`uname -r`/kernel/drivers/media/v4l2-core/videodev.ko
+try_module_insert uvcvideo				~/$LINUX_BRANCH-uvcvideo.ko 			/lib/modules/`uname -r`/kernel/drivers/media/usb/uvc/uvcvideo.ko
+try_module_insert hid-sensor-accel-3d 	~/$LINUX_BRANCH-hid-sensor-accel-3d.ko 	/lib/modules/`uname -r`/kernel/drivers/iio/accel/hid-sensor-accel-3d.ko
+try_module_insert hid-sensor-gyro-3d	~/$LINUX_BRANCH-hid-sensor-gyro-3d.ko 	/lib/modules/`uname -r`/kernel/drivers/iio/gyro/hid-sensor-gyro-3d.ko
 
 echo -e "\e[92m\n\e[1mScript has completed. Please consult the installation guide for further instruction.\n\e[0m"
