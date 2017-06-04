@@ -76,6 +76,7 @@ Next, build the patched module for the desired machine configuration.<br />
 
   * **Arch-based distributions**
     * You need to install the [base-devel](https://www.archlinux.org/groups/x86_64/base-devel/) package group.
+    * You need to install the according linux-headers as well (i.e.: linux-lts-headers for the linux-lts kernel).
 Then run the following script to patch the uvc module:
     * `./scripts/patch-arch.sh`<br />
 
