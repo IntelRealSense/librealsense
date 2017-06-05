@@ -2,12 +2,16 @@
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
 #include <librealsense/rs2.hpp>
+#include <librealsense/rsutil2.hpp>
 #include <iostream>
 #include <fstream>
 
 #include "tclap/CmdLine.h"
 #include "parser.hpp"
 #include "cpp-terminal-helpers/auto-complete/auto-complete.h"
+
+#include <string>
+
 
 using namespace std;
 using namespace TCLAP;
@@ -19,14 +23,14 @@ vector<uint8_t> build_raw_command_data(const command& command, const vector<stri
         throw runtime_error("Input string was not in a correct format!");
 
     vector<parameter> vec_parameters;
-    for (auto param_index = 0; param_index < params.size() ; ++param_index)
+    for (auto param_index = 0; param_index < params.size(); ++param_index)
     {
         auto is_there_write_data = param_index >= int(command.parameters.size());
-        auto name = (is_there_write_data)? "" : command.parameters[param_index].name;
-        auto is_reverse_bytes = (is_there_write_data)? false : command.parameters[param_index].is_reverse_bytes;
+        auto name = (is_there_write_data) ? "" : command.parameters[param_index].name;
+        auto is_reverse_bytes = (is_there_write_data) ? false : command.parameters[param_index].is_reverse_bytes;
         auto is_decimal = (is_there_write_data) ? false : command.parameters[param_index].is_decimal;
         auto format_length = (is_there_write_data) ? -1 : command.parameters[param_index].format_length;
-        vec_parameters.push_back(parameter(name, params[param_index], is_decimal, is_reverse_bytes, format_length ));
+        vec_parameters.push_back(parameter(name, params[param_index], is_decimal, is_reverse_bytes, format_length));
     }
 
     vector<uint8_t> raw_data;
@@ -131,7 +135,8 @@ void read_script_file(const string& full_file_path, vector<string>& hex_lines)
     throw runtime_error("Script file not found!");
 }
 
-int main(int argc, char** argv) try
+
+int main(int argc, char** argv)
 {
     CmdLine cmd("librealsense cpp-terminal example tool", ' ', RS2_API_VERSION_STR);
     ValueArg<string> xml_arg("l", "load", "Full file path of commands XML file", false, "", "Load commands XML file");
@@ -150,70 +155,12 @@ int main(int argc, char** argv) try
     log_to_file(RS2_LOG_SEVERITY_WARN, "librealsense.log");
     // Obtain a list of devices currently present on the system
     context ctx;
-    auto devices = ctx.query_devices();
-    int device_count = devices.size();
-    if (!device_count)
-    {
-        printf("No device detected. Is it plugged in?\n");
-        return EXIT_FAILURE;
-    }
+    util::device_hub hub(ctx);
 
-    auto device_id = device_id_arg.getValue();
-    if ((device_id + 1) > device_count || device_id < 0)
-    {
-        cout << "Given device ID is out of range!\n";
-        return EXIT_FAILURE;
-    }
-
-    auto dev = devices[device_id];
-    if (hex_cmd_arg.isSet())
-    {
-        auto line = hex_cmd_arg.getValue();
-        try
-        {
-            hex_mode(line, dev);
-        }
-        catch (const exception& ex)
-        {
-            cout << endl << ex.what() << endl;
-            return EXIT_FAILURE;
-        }
-        return EXIT_SUCCESS;
-    }
-
-    std::string script_file("");
-    vector<string> script_lines;
-    if (hex_script_arg.isSet())
-    {
-        script_file = hex_script_arg.getValue();
-    }
-    else if (commands_script_arg.isSet())
-    {
-        script_file = commands_script_arg.getValue();
-    }
-
-    if (!script_file.empty())
-        read_script_file(script_file, script_lines);
-
-    if (hex_script_arg.isSet())
-    {
-        try
-        {
-            for (auto& elem : script_lines)
-                hex_mode(elem, dev);
-        }
-        catch (const exception& ex)
-        {
-            cout << endl << ex.what() << endl;
-            return EXIT_FAILURE;
-        }
-        return EXIT_SUCCESS;
-    }
-
-    auto is_application_in_hex_mode = true;
     auto xml_full_file_path = xml_arg.getValue();
     map<string, xml_parser_function> format_type_to_lambda;
     commands_xml cmd_xml;
+    auto is_application_in_hex_mode = true;
     if (!xml_full_file_path.empty())
     {
         auto sts = parse_xml_from_file(xml_full_file_path, cmd_xml);
@@ -225,6 +172,66 @@ int main(int argc, char** argv) try
 
         update_format_type_to_lambda(format_type_to_lambda);
         is_application_in_hex_mode = false;
+        cout << "Loaded provided commands XML file.\nNow you can type commands from the XML file.\n";
+    }
+    else
+    {
+        cout << "Commands XML file not provided.\nyou still can send raw data to device in hexadecimal\nseparated by spaces (e.g. 5A 4B 3C).\n";
+    }
+    auto auto_comp = get_auto_complete_obj(is_application_in_hex_mode, cmd_xml.commands);
+
+    while (true)
+    {
+        auto dev = hub.wait_for_device();
+        fflush(nullptr);
+
+        if (hex_cmd_arg.isSet())
+        {
+            auto line = hex_cmd_arg.getValue();
+            try
+            {
+                hex_mode(line, dev);
+            }
+            catch (const exception& ex)
+            {
+                cout << endl << ex.what() << endl;
+                continue;
+            }
+            return EXIT_SUCCESS;
+
+        }
+
+        std::string script_file("");
+        vector<string> script_lines;
+        if (hex_script_arg.isSet())
+        {
+            script_file = hex_script_arg.getValue();
+        }
+        else if (commands_script_arg.isSet())
+        {
+            script_file = commands_script_arg.getValue();
+        }
+
+        if (!script_file.empty())
+            read_script_file(script_file, script_lines);
+
+        if (hex_script_arg.isSet())
+        {
+            try
+            {
+                for (auto& elem : script_lines)
+                    hex_mode(elem, dev);
+            }
+            catch (const exception& ex)
+            {
+                cout << endl << ex.what() << endl;
+                continue;
+            }
+            return EXIT_SUCCESS;
+        }
+
+
+
 
         if (commands_script_arg.isSet())
         {
@@ -236,55 +243,54 @@ int main(int argc, char** argv) try
             catch (const exception& ex)
             {
                 cout << endl << ex.what() << endl;
-                return EXIT_FAILURE;
+                continue;
             }
             return EXIT_SUCCESS;
         }
 
-        cout << "Loaded provided commands XML file.\nNow you can type commands from the XML file.";
-    }
-    else
-    {
-        cout << "Commands XML file not provided.\nyou still can send raw data to device in hexadecimal\nseparated by spaces (e.g. 5A 4B 3C).\n";
-    }
 
-    auto auto_comp = get_auto_complete_obj(is_application_in_hex_mode, cmd_xml.commands);
 
-    while (true)
-    {
-        cout << "\n\n#>";
-        fflush(nullptr);
-        string line = "";
 
-        if (!is_application_in_hex_mode)
+        while (hub.is_connected(dev))
         {
-            line = auto_comp.get_line();
-        }
-        else
-        {
-            getline(cin, line);
-        }
-
-        try
-        {
-            if (is_application_in_hex_mode)
+            try
             {
-                hex_mode(line, dev);
+                cout << "\n\n#>";
+                fflush(nullptr);
+                string line = "";
+
+
+                line = auto_comp.get_line([&]() {return !hub.is_connected(dev); });
+                if (!hub.is_connected(dev))
+                    continue;
+
+
+                if (line == "next")
+                {
+                    dev = hub.wait_for_device();
+                    continue;
+                }
+                if (is_application_in_hex_mode)
+                {
+                    hex_mode(line, dev);
+                }
+                else
+                {
+                    xml_mode(line, cmd_xml, dev, format_type_to_lambda);
+                }
+
+                cout << endl;
             }
-            else
+            catch (const error & e)
             {
-                xml_mode(line, cmd_xml, dev, format_type_to_lambda);
+                cerr << "RealSense error calling " << e.get_failed_function() << "(" << e.get_failed_args() << "):\n    " << e.what() << endl;
+            }
+            catch (const exception & e)
+            {
+                cerr << e.what() << endl;
             }
         }
-        catch(const exception& ex)
-        {
-            cout << endl << ex.what() << endl;
-        }
-        cout << endl;
+
     }
 }
-catch (const error & e)
-{
-    cerr << "RealSense error calling " << e.get_failed_function() << "(" << e.get_failed_args() << "):\n    " << e.what() << endl;
-    return EXIT_FAILURE;
-}
+

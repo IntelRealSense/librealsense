@@ -126,7 +126,7 @@ namespace rsimpl2
 
         private:
             libusb_context* _usb_context;
-            libusb_device* _usb_device;
+            libusb_device* _usb_device = nullptr;
             int _mi;
         };
 
@@ -177,7 +177,6 @@ namespace rsimpl2
             void unlock() const override;
 
             std::string get_device_location() const override { return _device_path; }
-
         private:
             static uint32_t get_cid(rs2_option option);
 
@@ -216,6 +215,7 @@ namespace rsimpl2
             std::vector<hid_device_info> query_hid_devices() const override;
 
             std::shared_ptr<time_service> create_time_service() const override;
+            std::shared_ptr<device_watcher> create_device_watcher() const;
         };
     }
 }

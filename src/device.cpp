@@ -6,9 +6,6 @@
 
 using namespace rsimpl2;
 
-device::device()
-{
-}
 
 int device::add_endpoint(std::shared_ptr<endpoint> endpoint)
 {

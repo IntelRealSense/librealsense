@@ -17,7 +17,7 @@ int main() try
     context ctx;
     auto devices = ctx.query_devices();
     printf("There are %u connected RealSense devices.\n", devices.size());
-    if(devices.size() == 0) return EXIT_FAILURE;
+    if (devices.size() == 0) return EXIT_FAILURE;
 
     // This tutorial will access only a single device, but it is trivial to extend to multiple devices
     auto dev = devices[0];
@@ -38,7 +38,7 @@ int main() try
         depth_units = dev.get_option(RS2_OPTION_DEPTH_UNITS);
     const auto one_meter = static_cast<uint16_t>(1.0 / depth_units);
 
-    while(true)
+    while (true)
     {
         // This call waits until a new coherent set of frames is available on a device
         // Calls to get_frame_data(...) and get_frame_timestamp(...) on a device will return stable values until wait_for_frames(...) is called
@@ -48,23 +48,23 @@ int main() try
         auto depth_frame = reinterpret_cast<const uint16_t *>(frame.get_data());
 
         // Print a simple text-based representation of the image, by breaking it into 10x20 pixel regions and and approximating the coverage of pixels within one meter
-        char buffer[(640/10+1)*(480/20)+1];
+        char buffer[(640 / 10 + 1)*(480 / 20) + 1];
         auto out = buffer;
         int coverage[64] = {};
-        for(auto y=0; y<480; ++y)
+        for (auto y = 0; y<480; ++y)
         {
-            for(auto x=0; x<640; ++x)
+            for (auto x = 0; x<640; ++x)
             {
                 int depth = *depth_frame++;
-                if(depth > 0 && depth < one_meter)
-                    ++coverage[x/10];
+                if (depth > 0 && depth < one_meter)
+                    ++coverage[x / 10];
             }
 
-            if(y%20 == 19)
+            if (y % 20 == 19)
             {
-                for(auto& c : coverage)
+                for (auto& c : coverage)
                 {
-                    *out++ = " .:nhBXWW"[c/25];
+                    *out++ = " .:nhBXWW"[c / 25];
                     c = 0;
                 }
                 *out++ = '\n';
@@ -76,7 +76,7 @@ int main() try
 
     return EXIT_SUCCESS;
 }
-catch(const error & e)
+catch (const error & e)
 {
     // Method calls against librealsense objects may throw exceptions of type error
     printf("error was thrown when calling %s(%s):\n", e.get_failed_function().c_str(), e.get_failed_args().c_str());

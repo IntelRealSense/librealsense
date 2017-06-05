@@ -113,3 +113,6 @@ EXPORTS
     rs2_delete_syncer
 
     rs2_get_api_version
+    rs2_set_devices_changed_callback_cpp
+    rs2_set_devices_changed_callback
+    rs2_device_was_removed

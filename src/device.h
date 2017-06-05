@@ -18,8 +18,6 @@ namespace rsimpl2
     class device
     {
     public:
-        device();
-
         virtual ~device() = default;
 
         unsigned int get_endpoints_count() const { return static_cast<unsigned int>(_endpoints.size()); }

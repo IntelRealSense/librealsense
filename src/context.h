@@ -6,11 +6,35 @@
 #include "types.h"
 #include "backend.h"
 #include "recorder.h"
+#include "archive.h"
 #include <vector>
 
 namespace rsimpl2
 {
+    class context;
+    class device_info;
+}
+
+struct rs2_device_info
+{
+    std::shared_ptr<rsimpl2::context> ctx;
+    std::shared_ptr<rsimpl2::device_info> info;
+    unsigned int subdevice;
+};
+
+
+struct rs2_device_list
+{
+    std::shared_ptr<rsimpl2::context> ctx;
+    std::vector<rs2_device_info> list;
+};
+
+namespace rsimpl2
+{
     class device;
+    class context;
+    class device_info;
+
 
     class device_info
     {
@@ -24,10 +48,17 @@ namespace rsimpl2
 
         virtual ~device_info() = default;
 
+
+        virtual uvc::devices_data get_device_data()const = 0;
+
+        bool operator==(const device_info& other)
+        {
+            return other.get_device_data() == get_device_data();
+        }
     protected:
         device_info(std::shared_ptr<uvc::backend> backend)
             : _backend(std::move(backend)),
-              _device([this]() { return create(*_backend); })
+            _device([this]() { return create(*_backend); })
         {}
 
         virtual std::shared_ptr<device> create(const uvc::backend& backend) const = 0;
@@ -79,29 +110,45 @@ namespace rsimpl2
         }
 
         explicit recovery_info(std::shared_ptr<uvc::backend> backend,
-                               uvc::usb_device_info dfu)
+            uvc::usb_device_info dfu)
             : device_info(backend), _dfu(std::move(dfu)) {}
+
+        uvc::devices_data get_device_data()const override
+        {
+            return uvc::devices_data({ _dfu });
+        }
 
     private:
         uvc::usb_device_info _dfu;
         const char* RECOVERY_MESSAGE = "Selected RealSense device is in recovery mode!\nEither perform a firmware update or reconnect the camera to fall-back to last working firmware if available!";
     };
 
-    class context
+	typedef std::vector<std::shared_ptr<device_info>> devices_info;
+
+    class context : public std::enable_shared_from_this<context>
     {
     public:
         explicit context(backend_type type,
-               const char* filename = nullptr,
-               const char* section = nullptr,
-               rs2_recording_mode mode = RS2_RECORDING_MODE_COUNT);
+            const char* filename = nullptr,
+            const char* section = nullptr,
+            rs2_recording_mode mode = RS2_RECORDING_MODE_COUNT);
 
+        ~context();
         std::vector<std::shared_ptr<device_info>> query_devices() const;
         const uvc::backend& get_backend() const { return *_backend; }
         double get_time();
+        void set_devices_changed_callback(devices_changed_callback_ptr callback);
+
+        std::vector<std::shared_ptr<device_info>> create_devices(uvc::devices_data devices) const;
 
     private:
+        void on_device_changed(uvc::devices_data old, uvc::devices_data curr);
+
+        devices_info sub(devices_info first, devices_info second);
         std::shared_ptr<uvc::backend> _backend;
         std::shared_ptr<uvc::time_service> _ts;
+        std::shared_ptr<uvc::device_watcher> _device_watcher;
+        devices_changed_callback_ptr _devices_changed_callback;
     };
 
     static std::vector<uvc::uvc_device_info> filter_by_product(const std::vector<uvc::uvc_device_info>& devices, const std::vector<uint16_t>& pid_list)
@@ -116,7 +163,7 @@ namespace rsimpl2
     }
 
     static std::vector<std::pair<std::vector<uvc::uvc_device_info>, std::vector<uvc::hid_device_info>>> group_devices_and_hids_by_unique_id(const std::vector<std::vector<uvc::uvc_device_info>>& devices,
-                                                                                                                         const std::vector<uvc::hid_device_info>& hids)
+        const std::vector<uvc::hid_device_info>& hids)
     {
         std::vector<std::pair<std::vector<uvc::uvc_device_info>, std::vector<uvc::hid_device_info>>> results;
         for (auto&& dev : devices)
@@ -190,4 +237,5 @@ namespace rsimpl2
         }
         return results;
     }
+
 }

@@ -255,7 +255,7 @@ struct test_duration {
 
 struct frame_metadata
 {
-    std::array<std::pair<bool,rs2_metadata_t>,RS2_FRAME_METADATA_COUNT> md_attributes{};
+    std::array<std::pair<bool, rs2_metadata_t>, RS2_FRAME_METADATA_COUNT> md_attributes{};
 };
 
 
@@ -273,7 +273,7 @@ struct frame_additional_data
         frame_number(frame_num),
         timestamp_domain(ts_domain),
         stream(strm),
-        format(fmt){}
+        format(fmt) {}
 };
 
 inline void check_fps(double actual_fps, double configured_fps)

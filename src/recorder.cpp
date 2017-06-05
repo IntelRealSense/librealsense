@@ -25,8 +25,8 @@ const char* SECTIONS_COUNT_BY_NAME = "SELECT COUNT(*) FROM rs_sections WHERE nam
 const char* SECTIONS_COUNT_ALL = "SELECT COUNT(*) FROM rs_sections";
 const char* SECTIONS_FIND_BY_NAME = "SELECT key FROM rs_sections WHERE name = ?";
 
-const char* CALLS_CREATE = "CREATE TABLE rs_calls(section NUMBER, type NUMBER, timestamp NUMBER, entity_id NUMBER, txt TEXT, param1 NUMBER, param2 NUMBER, param3 NUMBER, param4 NUMBER, param5 NUMBER, param6 NUMBER, had_errors NUMBER)";
-const char* CALLS_INSERT = "INSERT INTO rs_calls(section, type, timestamp, entity_id, txt, param1, param2, param3, param4, param5, param6, had_errors) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?)";
+const char* CALLS_CREATE = "CREATE TABLE rs_calls(section NUMBER, type NUMBER, timestamp NUMBER, entity_id NUMBER, txt TEXT, param1 NUMBER, param2 NUMBER, param3 NUMBER, param4 NUMBER, param5 NUMBER, param6 NUMBER, had_errors NUMBER, param7 NUMBER, param8 NUMBER, param9 NUMBER, param10 NUMBER, param11 NUMBER, param12 NUMBER)";
+const char* CALLS_INSERT = "INSERT INTO rs_calls(section, type, timestamp, entity_id, txt, param1, param2, param3, param4, param5, param6, had_errors, param7, param8, param9, param10, param11, param12) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?, ?, ?, ?, ?, ?,?)";
 const char* CALLS_SELECT_ALL = "SELECT * FROM rs_calls WHERE section = ?";
 
 const char* DEVICE_INFO_CREATE = "CREATE TABLE rs_device_info(section NUMBER, type NUMBER, id TEXT, uid TEXT, pid NUMBER, vid NUMBER, mi NUMBER)";
@@ -144,9 +144,22 @@ namespace rsimpl2
             return results;
         }
 
-        recording::recording(std::shared_ptr<time_service> ts)
-            :_ts(ts)
+        recording::recording(std::shared_ptr<time_service> ts, std::shared_ptr<playback_device_watcher> watcher)
+            :_ts(ts), _watcher(watcher)
         {
+        }
+
+        void recording::invoke_device_changed_event()
+        {
+            call* next;
+            do
+            {
+                devices_data old, curr;
+                lookup_key k{ 0, call_type::device_watcher_event };
+                load_device_changed_data(old, curr, k);
+                _watcher->raise_callback(old, curr);
+                next = peak_next_call();
+            } while (next && next->type == call_type::device_watcher_event);
         }
 
         rs2_time_t recording::get_time()
@@ -156,7 +169,6 @@ namespace rsimpl2
 
         void recording::save(const char* filename, const char* section, bool append) const
         {
-
             connection c(filename);
             LOG_WARNING("Saving recording to file, don't close the application");
 
@@ -253,6 +265,13 @@ namespace rsimpl2
                     insert.bind(10, cl.param5);
                     insert.bind(11, cl.param6);
                     insert.bind(12, cl.had_error ? 1 : 0);
+                    insert.bind(13, cl.param7);
+                    insert.bind(14, cl.param8);
+                    insert.bind(15, cl.param9);
+                    insert.bind(16, cl.param10);
+                    insert.bind(17, cl.param11);
+                    insert.bind(18, cl.param12);
+
                     insert();
                 }
 
@@ -344,14 +363,14 @@ namespace rsimpl2
             });
         }
 
-        shared_ptr<recording> recording::load(const char* filename, const char* section)
+        shared_ptr<recording> recording::load(const char* filename, const char* section, std::shared_ptr<playback_device_watcher> watcher)
         {
             if (!file_exists(filename))
             {
                 throw runtime_error("Recording file not found!");
             }
 
-            auto result = make_shared<recording>();
+            auto result = make_shared<recording>(nullptr, watcher);
 
             connection c(filename);
 
@@ -361,6 +380,7 @@ namespace rsimpl2
             }
 
             int section_id = 0;
+
             {
                 statement check_section_exists(c, SECTIONS_COUNT_BY_NAME);
                 check_section_exists.bind(1, section);
@@ -387,6 +407,9 @@ namespace rsimpl2
 
             statement select_calls(c, CALLS_SELECT_ALL);
             select_calls.bind(1, section_id);
+
+            result->calls.push_back(call());
+
             for (auto&& row : select_calls)
             {
                 call cl;
@@ -401,6 +424,14 @@ namespace rsimpl2
                 cl.param5 = row[9].get_int();
                 cl.param6 = row[10].get_int();
                 cl.had_error = row[11].get_int() > 0;
+                cl.param7 = row[12].get_int();
+                cl.param8 = row[13].get_int();
+                cl.param9 = row[14].get_int();
+                cl.param10 = row[15].get_int();
+                cl.param11 = row[16].get_int();
+                cl.param12 = row[17].get_int();
+
+
                 result->calls.push_back(cl);
                 result->_curr_time = cl.timestamp;
             }
@@ -470,6 +501,7 @@ namespace rsimpl2
 
             statement select_blobs(c, BLOBS_SELECT_ALL);
             select_blobs.bind(1, section_id);
+
             for (auto&& row : select_blobs)
             {
                 result->blobs.push_back(row[1].get_blob());
@@ -480,7 +512,7 @@ namespace rsimpl2
 
         int recording::save_blob(const void* ptr, size_t size)
         {
-            lock_guard<mutex> lock(_mutex);
+            lock_guard<recursive_mutex> lock(_mutex);
             vector<uint8_t> holder;
             holder.resize(size);
             rsimpl2::copy(holder.data(), ptr, size);
@@ -496,7 +528,9 @@ namespace rsimpl2
 
         call& recording::find_call(call_type t, int entity_id, std::function<bool(const call& c)> history_match_validation)
         {
-            lock_guard<mutex> lock(_mutex);
+            lock_guard<recursive_mutex> lock(_mutex);
+
+
             for (size_t i = 1; i <= calls.size(); i++)
             {
                 const auto idx = (_cursors[entity_id] + i) % static_cast<int>(calls.size());
@@ -508,11 +542,17 @@ namespace rsimpl2
                     {
                         throw runtime_error(calls[idx].inline_string);
                     }
-                    _curr_time =  calls[idx].timestamp;
+                    _curr_time = calls[idx].timestamp;
 
                     if (!history_match_validation(calls[idx]))
                     {
                         throw playback_backend_exception("Recording history mismatch!", t, entity_id);
+                    }
+                    auto next = peak_next_call();
+
+                    if (next && t != call_type::device_watcher_event && next->type == call_type::device_watcher_event)
+                    {
+                        invoke_device_changed_event();
                     }
                     return calls[idx];
                 }
@@ -520,17 +560,33 @@ namespace rsimpl2
             throw runtime_error("The recording is missing the part you are trying to playback!");
         }
 
+        call* recording::peak_next_call(int id)
+        {
+
+            const auto idx = (_cycles[id] + 1) % static_cast<int>(calls.size());
+            if (calls[idx].entity_id == id)
+            {
+                return &calls[idx];
+            }
+
+        }
+
+
         call* recording::cycle_calls(call_type t, int id)
         {
-            lock_guard<mutex> lock(_mutex);
-
+            lock_guard<recursive_mutex> lock(_mutex);
+            auto&& next = peak_next_call();
+            if (next && next->type == call_type::device_watcher_event)
+            {
+                invoke_device_changed_event();
+            }
             for (size_t i = 1; i <= calls.size(); i++)
             {
                 const auto idx = (_cycles[id] + i) % static_cast<int>(calls.size());
                 if (calls[idx].type == t && calls[idx].entity_id == id)
                 {
                     _cycles[id] = idx;
-                    _curr_time =  calls[idx].timestamp;
+                    _curr_time = calls[idx].timestamp;
                     return &calls[idx];
                 }
                 if (calls[idx].type != t && calls[idx].entity_id == id)
@@ -541,6 +597,33 @@ namespace rsimpl2
             }
             return nullptr;
         }
+
+        void record_device_watcher::start(device_changed_callback callback)
+        {
+            _owner->try_record([=](recording* rec1, lookup_key key1)
+            {
+                _source_watcher->start([=](devices_data old, devices_data curr)
+                {
+                    _owner->try_record([=](recording* rec1, lookup_key key1)
+                    {
+                        rec1->save_device_changed_data(old, curr, key1);
+                        callback(old, curr);
+
+                    }, _entity_id, call_type::device_watcher_event);
+                });
+
+            }, _entity_id, call_type::device_watcher_start);
+        }
+
+        void record_device_watcher::stop()
+        {
+            _owner->try_record([&](recording* rec1, lookup_key key1)
+            {
+                _source_watcher->stop();
+
+            }, _entity_id, call_type::device_watcher_stop);
+        }
+
 
         void record_uvc_device::probe_and_commit(stream_profile profile, frame_callback callback, int buffers)
         {
@@ -740,7 +823,10 @@ namespace rsimpl2
 
                 auto&& c = rec->add_call(k);
                 c.param1 = opt;
-                c.param2 = rec->save_blob(&res, sizeof(res));
+                c.param2 = rec->save_blob(res.min.data(), res.min.size());
+                c.param3 = rec->save_blob(res.max.data(), res.max.size());
+                c.param4 = rec->save_blob(res.step.data(), res.step.size());
+                c.param5 = rec->save_blob(res.def.data(), res.def.size());
 
                 return res;
             }, _entity_id, call_type::uvc_get_pu_range);
@@ -769,7 +855,7 @@ namespace rsimpl2
         {
             _owner->try_record([&](recording* rec, lookup_key k)
             {
-                _source->lock();
+                _source->unlock();
                 rec->add_call(k);
             }, _entity_id, call_type::uvc_unlock);
         }
@@ -836,8 +922,8 @@ namespace rsimpl2
         }
 
         std::vector<uint8_t> record_hid_device::get_custom_report_data(const std::string& custom_sensor_name,
-                                                                       const std::string& report_name,
-                                                                       custom_sensor_report_field report_field)
+            const std::string& report_name,
+            custom_sensor_report_field report_field)
         {
             return _owner->try_record([&](recording* rec, lookup_key k)
             {
@@ -960,15 +1046,18 @@ namespace rsimpl2
             return _source->create_time_service();
         }
 
+        std::shared_ptr<device_watcher> record_backend::create_device_watcher() const
+        {
+            return std::make_shared<record_device_watcher>(this, _source->create_device_watcher(), 0);
+        }
+
         record_backend::record_backend(shared_ptr<backend> source,
             const char* filename, const char* section,
             rs2_recording_mode mode)
             : _source(source), _rec(std::make_shared<uvc::recording>(create_time_service())), _entity_count(1),
             _filename(filename),
             _section(section), _compression(make_shared<compression_algorithm>()), _mode(mode)
-        {
-
-        }
+        {}
 
         record_backend::~record_backend()
         {
@@ -1016,9 +1105,16 @@ namespace rsimpl2
             return make_shared<recording_time_service>(*_rec);
         }
 
-        playback_backend::playback_backend(const char* filename, const char* section)
-            : _rec(uvc::recording::load(filename, section))
+        std::shared_ptr<device_watcher> playback_backend::create_device_watcher() const
         {
+            return _device_watcher;
+        }
+
+        playback_backend::playback_backend(const char* filename, const char* section)
+            : _device_watcher(new playback_device_watcher(0)),
+            _rec(uvc::recording::load(filename, section, _device_watcher))
+        {
+
             LOG_DEBUG("Starting section " << section);
         }
 
@@ -1031,7 +1127,42 @@ namespace rsimpl2
         void record_backend::write_to_file() const
         {
             _rec->save(_filename.c_str(), _section.c_str(), false);
-            LOG(INFO) << "Finished writing " << _rec->size() << " calls...";
+            //LOG(INFO) << "Finished writing " << _rec->size() << " calls...";
+        }
+
+        playback_device_watcher::playback_device_watcher(int id)
+            : _entity_id(id), _alive(false), _dispatcher(10)
+        {}
+
+        playback_device_watcher::~playback_device_watcher()
+        {
+            stop();
+        }
+
+        void playback_device_watcher::start(device_changed_callback callback)
+        {
+            std::lock_guard<std::recursive_mutex> lock(_mutex);
+            stop();
+            _dispatcher.start();
+            _callback = callback;
+            _alive = true;
+        }
+
+        void playback_device_watcher::stop()
+        {
+            std::lock_guard<std::recursive_mutex> lock(_mutex);
+            if (_alive)
+            {
+                _alive = false;
+                _dispatcher.stop();
+            }
+        }
+
+        void playback_device_watcher::raise_callback(devices_data old, devices_data curr)
+        {
+            _dispatcher.invoke([=](dispatcher::cancellable_timer t) {
+                _callback(old, curr);
+            });
         }
 
         void playback_uvc_device::probe_and_commit(stream_profile profile, frame_callback callback, int buffers)
@@ -1079,7 +1210,7 @@ namespace rsimpl2
             auto stored = _rec->load_stream_profiles(_entity_id, call_type::uvc_close);
             vector<stream_profile> input{ profile };
             if (input != stored)
-                 throw playback_backend_exception("Recording history mismatch!", call_type::uvc_close, _entity_id);
+                throw playback_backend_exception("Recording history mismatch!", call_type::uvc_close, _entity_id);
 
             lock_guard<mutex> lock(_callback_mutex);
             auto it = std::remove_if(begin(_callbacks), end(_callbacks),
@@ -1174,13 +1305,14 @@ namespace rsimpl2
 
         control_range playback_uvc_device::get_pu_range(rs2_option opt) const
         {
-            control_range res;
+
             auto&& c = _rec->find_call(call_type::uvc_get_pu_range, _entity_id, [&](const call& call_found)
             {
                 return call_found.param1 == opt;
             });
-            auto range = _rec->load_blob(c.param2);
-            rsimpl2::copy(&res, range.data(), range.size());
+
+            control_range res(_rec->load_blob(c.param2), _rec->load_blob(c.param3), _rec->load_blob(c.param4), _rec->load_blob(c.param5));
+
             return res;
         }
 
@@ -1206,9 +1338,9 @@ namespace rsimpl2
         }
 
         playback_uvc_device::playback_uvc_device(shared_ptr<recording> rec, int id)
-            : _rec(rec), _entity_id(id),_alive(true)
+            : _rec(rec), _entity_id(id), _alive(true)
         {
-           _callback_thread = std::thread([this]() { callback_thread(); });
+            _callback_thread = std::thread([this]() { callback_thread(); });
         }
 
         void playback_hid_device::open()
@@ -1221,7 +1353,7 @@ namespace rsimpl2
             _rec->find_call(call_type::hid_close, _entity_id);
 
             lock_guard<mutex> lock(_callback_mutex);
-            if(_alive)
+            if (_alive)
             {
                 _alive = false;
                 _callback_thread.join();
@@ -1256,14 +1388,14 @@ namespace rsimpl2
         }
 
         std::vector<uint8_t> playback_hid_device::get_custom_report_data(const std::string& custom_sensor_name,
-                                                                         const std::string& report_name,
-                                                                         custom_sensor_report_field report_field)
+            const std::string& report_name,
+            custom_sensor_report_field report_field)
         {
             auto&& c = _rec->find_call(call_type::hid_get_custom_report_data, _entity_id, [&](const call& call_found)
             {
                 return custom_sensor_name == std::string((const char*)_rec->load_blob(call_found.param2).data()) &&
-                        report_name == std::string((const char*)_rec->load_blob(call_found.param3).data()) &&
-                        report_field == call_found.param4;
+                    report_name == std::string((const char*)_rec->load_blob(call_found.param3).data()) &&
+                    report_field == call_found.param4;
             });
 
             return _rec->load_blob(c.param1);
@@ -1289,17 +1421,6 @@ namespace rsimpl2
 
                     sd.sensor.name = sensor_name;
 
-//                    std::cout<<"c_ptr.param1 "<<c_ptr->param1;
-//                    std::cout<<"c_ptr.param3 "<<c_ptr->param3;
-//                    std::cout<<"\nHID METADATA:\n";
-//                    for(auto i = 0; i<sd.fo.frame_size; i++)
-//                        std::cout<<std::hex<<(int)((byte*)sd.fo.pixels)[i]<< " ";
-
-//                    std::cout<<"\nHID PIXELS:\n";
-//                    for(auto i = 0; i<sd.fo.metadata_size; i++)
-//                        std::cout<<std::hex<<(int)((byte*)sd.fo.metadata)[i]<< " ";
-
-
                     _callback(sd);
                 }
                 this_thread::sleep_for(chrono::milliseconds(1));
@@ -1313,7 +1434,7 @@ namespace rsimpl2
 
         playback_hid_device::playback_hid_device(shared_ptr<recording> rec, int id)
             : _rec(rec), _entity_id(id),
-              _alive(false)
+            _alive(false)
         {
 
         }
@@ -1354,15 +1475,16 @@ namespace rsimpl2
                                 frame_blob = vector<uint8_t>(c_ptr->param4, 0);
 
                             }
-                            else if(c_ptr->param3 ==1)// frame was saved
+                            else if (c_ptr->param3 == 1)// frame was saved
                             {
-                                frame_blob =_rec->load_blob(c_ptr->param2);
+                                frame_blob = _rec->load_blob(c_ptr->param2);
                             }
                             else
                             {
                                 frame_blob = _compression.decode(_rec->load_blob(c_ptr->param2));
                             }
-                            metadata_blob =_rec->load_blob(c_ptr->param5);
+
+                            metadata_blob = _rec->load_blob(c_ptr->param5);
                             frame_object fo{ frame_blob.size(),
                                         static_cast<uint8_t>(metadata_blob.size()), // Metadata is limited to 0xff bytes by design
                                         frame_blob.data(),metadata_blob.data() };

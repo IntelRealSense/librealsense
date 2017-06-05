@@ -43,7 +43,7 @@ struct ImGuiPopupRef;
 struct ImGuiWindow;
 
 typedef int ImGuiLayoutType;      // enum ImGuiLayoutType_
-typedef int ImGuiButtonFlags;     // enum ImGuiButtonFlags_
+//typedef int ImGuiButtonFlags;     // enum ImGuiButtonFlags_
 typedef int ImGuiTreeNodeFlags;   // enum ImGuiTreeNodeFlags_
 typedef int ImGuiSliderFlags;     // enum ImGuiSliderFlags_
 
@@ -147,20 +147,20 @@ inline void operator delete(void*, ImPlacementNewDummy, void*) {}
 // Types
 //-----------------------------------------------------------------------------
 
-enum ImGuiButtonFlags_
-{
-    ImGuiButtonFlags_Repeat                 = 1 << 0,   // hold to repeat
-    ImGuiButtonFlags_PressedOnClickRelease  = 1 << 1,   // (default) return pressed on click+release on same item (default if no PressedOn** flag is set)
-    ImGuiButtonFlags_PressedOnClick         = 1 << 2,   // return pressed on click (default requires click+release)
-    ImGuiButtonFlags_PressedOnRelease       = 1 << 3,   // return pressed on release (default requires click+release)
-    ImGuiButtonFlags_PressedOnDoubleClick   = 1 << 4,   // return pressed on double-click (default requires click+release)
-    ImGuiButtonFlags_FlattenChilds          = 1 << 5,   // allow interaction even if a child window is overlapping
-    ImGuiButtonFlags_DontClosePopups        = 1 << 6,   // disable automatically closing parent popup on press
-    ImGuiButtonFlags_Disabled               = 1 << 7,   // disable interaction
-    ImGuiButtonFlags_AlignTextBaseLine      = 1 << 8,   // vertically align button to match text baseline - ButtonEx() only
-    ImGuiButtonFlags_NoKeyModifiers         = 1 << 9,   // disable interaction if a key modifier is held
-    ImGuiButtonFlags_AllowOverlapMode       = 1 << 10   // require previous frame HoveredId to either match id or be null before being usable
-};
+//enum ImGuiButtonFlags_
+//{
+//    ImGuiButtonFlags_Repeat                 = 1 << 0,   // hold to repeat
+//    ImGuiButtonFlags_PressedOnClickRelease  = 1 << 1,   // (default) return pressed on click+release on same item (default if no PressedOn** flag is set)
+//    ImGuiButtonFlags_PressedOnClick         = 1 << 2,   // return pressed on click (default requires click+release)
+//    ImGuiButtonFlags_PressedOnRelease       = 1 << 3,   // return pressed on release (default requires click+release)
+//    ImGuiButtonFlags_PressedOnDoubleClick   = 1 << 4,   // return pressed on double-click (default requires click+release)
+//    ImGuiButtonFlags_FlattenChilds          = 1 << 5,   // allow interaction even if a child window is overlapping
+//    ImGuiButtonFlags_DontClosePopups        = 1 << 6,   // disable automatically closing parent popup on press
+//    ImGuiButtonFlags_Disabled               = 1 << 7,   // disable interaction
+//    ImGuiButtonFlags_AlignTextBaseLine      = 1 << 8,   // vertically align button to match text baseline - ButtonEx() only
+//    ImGuiButtonFlags_NoKeyModifiers         = 1 << 9,   // disable interaction if a key modifier is held
+//    ImGuiButtonFlags_AllowOverlapMode       = 1 << 10   // require previous frame HoveredId to either match id or be null before being usable
+//};
 
 enum ImGuiSliderFlags_
 {
@@ -717,7 +717,7 @@ namespace ImGui
     IMGUI_API const char*   FindRenderedTextEnd(const char* text, const char* text_end = NULL); // Find the optional ## from which we stop displaying text.
 
     IMGUI_API bool          ButtonBehavior(const ImRect& bb, ImGuiID id, bool* out_hovered, bool* out_held, ImGuiButtonFlags flags = 0);
-    IMGUI_API bool          ButtonEx(const char* label, const ImVec2& size_arg = ImVec2(0,0), ImGuiButtonFlags flags = 0);
+    //IMGUI_API bool          ButtonEx(const char* label, const ImVec2& size_arg = ImVec2(0,0), ImGuiButtonFlags flags = 0);
     IMGUI_API bool          CloseButton(ImGuiID id, const ImVec2& pos, float radius);
 
     IMGUI_API bool          SliderBehavior(const ImRect& frame_bb, ImGuiID id, float* v, float v_min, float v_max, float power, int decimal_precision, ImGuiSliderFlags flags = 0);

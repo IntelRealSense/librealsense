@@ -240,7 +240,7 @@ typedef struct rs2_extrinsics
     float translation[3]; /**< Three-element translation vector, in meters */
 } rs2_extrinsics;
 
-
+typedef struct rs2_device_info rs2_device_info;
 typedef struct rs2_context rs2_context;
 typedef struct rs2_device_list rs2_device_list;
 typedef struct rs2_device rs2_device;
@@ -251,12 +251,14 @@ typedef struct rs2_frame rs2_frame;
 typedef struct rs2_frame_queue rs2_frame_queue;
 typedef struct rs2_notification rs2_notification;
 typedef struct rs2_notifications_callback rs2_notifications_callback;
+typedef struct rs2_devices_changed_callback rs2_devices_changed_callback;
 typedef struct rs2_frame_callback rs2_frame_callback;
 typedef struct rs2_log_callback rs2_log_callback;
 typedef struct rs2_syncer rs2_syncer;
 
 typedef void (*rs2_frame_callback_ptr)(rs2_frame*, void*);
 typedef void (*rs2_notification_callback_ptr)(rs2_notification*, void*);
+typedef void (*rs2_devices_changed_callback_ptr)(rs2_device_list*, rs2_device_list*, void*);
 typedef void (*rs2_log_callback_ptr)(rs2_log_severity min_severity, const char* message, void* user);
 
 typedef double  rs2_time_t; /**< Timestamp format. units are milliseconds */
@@ -546,6 +548,34 @@ rs2_log_severity rs2_get_notification_severity(rs2_notification * notification, 
 * \return            the notification category
 */
 rs2_notification_category rs2_get_notification_category(rs2_notification * notification, rs2_error** error);
+/**
+* set callback to get devices changed events 
+* these events will be raised by the context whenever new RealSense device is connected or existing device gets disconnected
+* \param context     Object representing librealsense session
+* \param[in] callback callback object created from c++ application. ownership over the callback object is moved into the context
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+void rs2_set_devices_changed_callback_cpp(rs2_context* context, rs2_devices_changed_callback* callback, rs2_error** error);
+
+/**
+* set callback to get devices changed events
+* these events will be raised by the context whenever new RealSense device is connected or existing device gets disconnected
+* \param context     Object representing librealsense session
+* \param[in] callback function pointer to register as per-notifications callback
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+void rs2_set_devices_changed_callback(rs2_context* context, rs2_devices_changed_callback_ptr callback, rs2_error** error);
+
+/**
+* this function returns true if the specific device is contained inside the device list "removed"
+* \param[in] device    RealSense device
+* \param[in] event_information    handle returned from a callback
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return            true if the device was disconnected and false otherwise
+*/
+int rs2_device_was_removed(const rs2_device_list* removed, const rs2_device* dev, rs2_error** error);
+
+
 /**
 * retrieve metadata from frame handle
 * \param[in] frame      handle returned from a callback

@@ -22,6 +22,7 @@
 #include <algorithm>
 #include <condition_variable>
 #include "backend.h"
+
 #include "concurrency.h"
 
 #define NOMINMAX
@@ -660,9 +661,33 @@ namespace rsimpl2
         void release() override { delete this; }
     };
 
+    typedef void(*devices_changed_function_ptr)(rs2_device_list* removed, rs2_device_list* added, void * user);
+
+    class devices_changed_callback: public rs2_devices_changed_callback
+    {
+        devices_changed_function_ptr nptr;
+        void * user;
+    public:
+        devices_changed_callback() : devices_changed_callback(nullptr, nullptr) {}
+        devices_changed_callback(devices_changed_function_ptr on_devices_changed, void * user) : nptr(on_devices_changed), user(user) {}
+
+        operator bool() const { return nptr != nullptr; }
+        void on_devices_changed(rs2_device_list* removed, rs2_device_list* added) override {
+            if (nptr)
+            {
+                try { nptr(removed, added, user); }
+                catch (...)
+                {
+                    LOG_ERROR("Received an execption from frame callback!");
+                }
+            }
+        }
+        void release() override { delete this; }
+    };
     typedef std::unique_ptr<rs2_log_callback, void(*)(rs2_log_callback*)> log_callback_ptr;
     typedef std::shared_ptr<rs2_frame_callback> frame_callback_ptr;
     typedef std::unique_ptr<rs2_notifications_callback, void(*)(rs2_notifications_callback*)> notifications_callback_ptr;
+    typedef std::unique_ptr<rs2_devices_changed_callback, void(*)(rs2_devices_changed_callback*)> devices_changed_callback_ptr;
 
 
 
@@ -681,6 +706,7 @@ namespace rsimpl2
         std::string description;
         double timestamp;
     };
+
 
     class notification_decoder
     {
@@ -811,6 +837,201 @@ namespace rsimpl2
         int get_size() const { return size; }
     };
 
+    struct uvc_device_info
+    {
+        std::string id = ""; // to distinguish between different pins of the same device
+        uint16_t vid;
+        uint16_t pid;
+        uint16_t mi;
+        std::string unique_id;
+        std::string device_path;
+
+        operator std::string()
+        {
+            std::stringstream s;
+            s << "id- " << id <<
+                "\nvid- " << std::hex << vid <<
+                "\npid- " << std::hex << pid <<
+                "\nmi- " << mi <<
+                "\nunique_id- " << unique_id <<
+                "\npath- " << device_path;
+
+            return s.str();
+        }
+    };
+
+    inline bool operator==(const uvc_device_info& a,
+                    const uvc_device_info& b)
+    {
+        return (a.vid == b.vid) &&
+               (a.pid == b.pid) &&
+               (a.mi == b.mi) &&
+               (a.unique_id == b.unique_id) &&
+               (a.id == b.id) &&
+               (a.device_path == b.device_path);
+    }
+
+    struct usb_device_info
+    {
+        std::string id;
+
+        uint16_t vid;
+        uint16_t pid;
+        uint16_t mi;
+        std::string unique_id;
+
+        operator std::string()
+        {
+            std::stringstream s;
+
+            s << "vid- " << std::hex << vid <<
+                "\npid- " << std::hex << pid <<
+                "\nmi- " << mi <<
+                "\nunique_id- " << unique_id;
+
+            return s.str();
+        }
+    };
+
+    inline bool operator==(const usb_device_info& a,
+        const usb_device_info& b)
+    {
+        return  (a.id == b.id) &&
+            (a.vid == b.vid) &&
+            (a.pid == b.pid) &&
+            (a.mi == b.mi) &&
+            (a.unique_id == b.unique_id);
+    }
+
+    struct hid_device_info
+    {
+        std::string id;
+        std::string vid;
+        std::string pid;
+        std::string unique_id;
+        std::string device_path;
+
+        operator std::string()
+        {
+            std::stringstream s;
+            s << "id- " << id <<
+                "\nvid- " << std::hex << vid <<
+                "\npid- " << std::hex << pid <<
+                "\nunique_id- " << unique_id <<
+                "\npath- " << device_path;
+
+            return s.str();
+        }
+    };
+
+    inline bool operator==(const hid_device_info& a,
+        const hid_device_info& b)
+    {
+        return  (a.id == b.id) &&
+            (a.vid == b.vid) &&
+            (a.pid == b.pid) &&
+            (a.unique_id == b.unique_id) &&
+            (a.device_path == b.device_path);
+    }
+
+
+    struct devices_data
+    {
+        devices_data(std::vector<uvc_device_info>  uvc_devices, std::vector<usb_device_info> usb_devices, std::vector<hid_device_info> hid_devices)
+            :_uvc_devices(uvc_devices), _usb_devices(usb_devices), _hid_devices(hid_devices) {}
+
+        devices_data(std::vector<usb_device_info> usb_devices)
+            :_usb_devices(usb_devices) {}
+
+        devices_data(std::vector<uvc_device_info> uvc_devices, std::vector<usb_device_info> usb_devices)
+            :_uvc_devices(uvc_devices), _usb_devices(usb_devices) {}
+
+        std::vector<uvc_device_info> _uvc_devices;
+        std::vector<usb_device_info> _usb_devices;
+        std::vector<hid_device_info> _hid_devices;
+
+        bool operator == (const devices_data& other)
+        {
+            return !list_changed(_uvc_devices, other._uvc_devices) &&
+                !list_changed(_hid_devices, other._hid_devices);
+        }
+
+        operator std::string()
+        {
+            std::string s;
+            s = _uvc_devices.size()>0 ? "uvc devices:\n" : "";
+            for (auto uvc : _uvc_devices)
+            {
+                s += uvc;
+                s += "\n\n";
+            }
+
+            s += _usb_devices.size()>0 ? "usb devices:\n" : "";
+            for (auto usb : _usb_devices)
+            {
+                s += usb;
+                s += "\n\n";
+            }
+
+            s += _hid_devices.size()>0 ? "hid devices: \n" : "";
+            for (auto hid : _hid_devices)
+            {
+                s += hid;
+                s += "\n\n";
+            }
+            return s;
+        }
+    };
+
+
+    typedef std::function<void(devices_data old, devices_data curr)> device_changed_callback;
+    struct callback_invocation
+    {
+        std::chrono::high_resolution_clock::time_point started;
+        std::chrono::high_resolution_clock::time_point ended;
+    };
+
+    typedef rsimpl2::small_heap<callback_invocation, 1> callbacks_heap;
+
+    struct callback_invocation_holder
+    {
+        callback_invocation_holder() : invocation(nullptr), owner(nullptr) {}
+        callback_invocation_holder(const callback_invocation_holder&) = delete;
+        callback_invocation_holder& operator=(const callback_invocation_holder&) = delete;
+
+        callback_invocation_holder(callback_invocation_holder&& other)
+            : invocation(other.invocation), owner(other.owner)
+        {
+            other.invocation = nullptr;
+        }
+
+        callback_invocation_holder(callback_invocation* invocation, callbacks_heap* owner)
+            : invocation(invocation), owner(owner)
+        { }
+
+        ~callback_invocation_holder()
+        {
+            if (invocation) owner->deallocate(invocation);
+        }
+
+        callback_invocation_holder& operator=(callback_invocation_holder&& other)
+        {
+            invocation = other.invocation;
+            owner = other.owner;
+            other.invocation = nullptr;
+            return *this;
+        }
+
+        operator bool()
+        {
+            return invocation;
+        }
+
+    private:
+        callback_invocation* invocation;
+        callbacks_heap* owner;
+    };
+
     class frame_continuation
     {
         std::function<void()> continuation;
@@ -893,6 +1114,70 @@ namespace rsimpl2
     float3x3 calc_rodrigues_matrix(const std::vector<double> rot);
     // Auxillary function that calculates standard 32bit CRC code. used in verificaiton
     uint32_t calc_crc32(const uint8_t *buf, size_t bufsize);
+
+
+    class polling_device_watcher: public rsimpl2::uvc::device_watcher
+    {
+    public:
+        polling_device_watcher(const uvc::backend* backend_ref):
+            _backend(backend_ref),_active_object([this](dispatcher::cancellable_timer cancellable_timer)
+        {
+            polling(cancellable_timer);
+        }),
+        _devices_data(  _backend->query_uvc_devices(),
+                        _backend->query_usb_devices(),
+                        _backend->query_hid_devices())
+        {
+        }
+       ~ polling_device_watcher()
+        {
+            stop();
+        }
+        void  polling(dispatcher::cancellable_timer cancellable_timer)
+        {
+            if(cancellable_timer.try_sleep(100))
+            {
+               uvc::devices_data curr(_backend->query_uvc_devices(), _backend->query_usb_devices(), _backend->query_hid_devices());
+
+                if(list_changed(_devices_data._uvc_devices, curr._uvc_devices ) ||
+                   list_changed(_devices_data._usb_devices, curr._usb_devices ) ||
+                   list_changed(_devices_data._hid_devices, curr._hid_devices ))
+                { 
+                    callback_invocation_holder callback = { _callback_inflight.allocate(), &_callback_inflight };
+                    if(callback)
+                    {
+                        _callback(_devices_data, curr);
+                        _devices_data = curr;
+
+                    }
+                }
+            }
+        }
+
+        void start(uvc::device_changed_callback callback) override
+        {
+            stop();
+            _callback = std::move(callback);
+            _active_object.start();
+        }
+
+        void stop() override
+        {
+            _active_object.stop();
+
+            _callback_inflight.wait_until_empty();
+        }
+
+    private:
+        active_object<> _active_object;
+
+        callbacks_heap _callback_inflight;
+        const uvc::backend* _backend;
+
+        uvc::devices_data _devices_data;
+        uvc::device_changed_callback _callback;
+
+    };
 }
 
 namespace std {
@@ -938,6 +1223,26 @@ namespace std {
                 ^ (hash<rsimpl2::native_pixel_format*>()(k.pf));
         }
     };
+
+
 }
 
+
+template<class T>
+std::vector<std::shared_ptr<T>> subtract_sets(const std::vector<std::shared_ptr<T>>& first, const std::vector<std::shared_ptr<T>>& second)
+{
+    std::vector<std::shared_ptr<T>> results;
+    std::for_each(first.begin(), first.end(), [&](std::shared_ptr<T> data)
+    {
+        if (std::find_if(second.begin(), second.end(), [&](std::shared_ptr<T> new_dev) {return *new_dev == *data; }) == second.end())
+        {
+            for (auto i = 0; i < data->get_subdevice_count(); i++)
+            {
+                results.push_back(data);
+            }
+
+        }
+    });
+    return results;
+}
 #endif

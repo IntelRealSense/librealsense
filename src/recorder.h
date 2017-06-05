@@ -4,6 +4,7 @@
 #pragma once
 
 #include "backend.h"
+#include "context.h"
 #include <vector>
 #include <mutex>
 #include <chrono>
@@ -49,7 +50,10 @@ namespace rsimpl2
             hid_start_capture,
             hid_frame,
             hid_get_sensors,
-            hid_get_custom_report_data
+            hid_get_custom_report_data,
+            device_watcher_start,
+            device_watcher_event,
+            device_watcher_stop
         };
 
         class compression_algorithm
@@ -80,6 +84,15 @@ namespace rsimpl2
             int param6 = 0;
 
             bool had_error = false;
+
+            int param7 = 0;
+            int param8 = 0;
+            int param9 = 0;
+            int param10 = 0;
+            int param11 = 0;
+            int param12 = 0;
+
+
         };
 
         struct lookup_key
@@ -87,30 +100,41 @@ namespace rsimpl2
             int entity_id;
             call_type type;
         };
+        class playback_device_watcher;
 
         class recording
         {
         public:
-            recording(std::shared_ptr<time_service> ts = nullptr);
+            recording(std::shared_ptr<time_service> ts = nullptr, std::shared_ptr<playback_device_watcher> watcher = nullptr);
 
             double get_time();
             void save(const char* filename, const char* section, bool append = false) const;
-            static std::shared_ptr<recording> load(const char* filename, const char* section);
+            static std::shared_ptr<recording> load(const char* filename, const char* section, std::shared_ptr<playback_device_watcher> watcher = nullptr);
 
             int save_blob(const void* ptr, size_t size);
 
+            template<class T>
+            std::pair<int, int> insert_list(std::vector<T> list, std::vector<T>& target)
+            {
+                std::pair<int, int> range;
 
+                range.first = static_cast<int>(target.size());
+                for (auto&& i : list) target.push_back(i);
+                range.second = static_cast<int>(target.size());
+
+                return range;
+            }
 
             template<class T>
             void save_list(std::vector<T> list, std::vector<T>& target, call_type type, int entity_id)
             {
-                std::lock_guard<std::mutex> lock(_mutex);
+                std::lock_guard<std::recursive_mutex> lock(_mutex);
                 call c;
                 c.type = type;
                 c.entity_id = entity_id;
-                c.param1 = static_cast<int>(target.size());
-                for (auto&& i : list) target.push_back(i);
-                c.param2 = static_cast<int>(target.size());
+                auto range = insert_list(list, target);
+                c.param1 = range.first;
+                c.param2 = range.second;
 
                 c.timestamp = get_current_time();
                 calls.push_back(c);
@@ -118,7 +142,7 @@ namespace rsimpl2
 
             call& add_call(lookup_key key)
             {
-                std::lock_guard<std::mutex> lock(_mutex);
+                std::lock_guard<std::recursive_mutex> lock(_mutex);
                 call c;
                 c.type = key.type;
                 c.entity_id = key.entity_id;
@@ -131,12 +155,58 @@ namespace rsimpl2
             std::vector<T> load_list(const std::vector<T>& source, const call& c)
             {
                 std::vector<T> results;
-                std::lock_guard<std::mutex> lock(_mutex);
+                std::lock_guard<std::recursive_mutex> lock(_mutex);
                 for (auto i = c.param1; i < c.param2; i++)
                 {
                     results.push_back(source[i]);
                 }
                 return results;
+            }
+
+            template<class T>
+            std::vector<T> load_list(const std::vector<T>& source, const int range_start, const int range_end)
+            {
+                std::vector<T> results;
+                std::lock_guard<std::recursive_mutex> lock(_mutex);
+                for (auto i = range_start; i < range_end; i++)
+                {
+                    results.push_back(source[i]);
+                }
+                return results;
+            }
+            void save_device_changed_data(devices_data old, devices_data curr, lookup_key k)
+            {
+                std::lock_guard<std::recursive_mutex> lock(_mutex);
+                call c;
+                c.type = k.type;
+                c.entity_id = k.entity_id;
+
+                auto range = insert_list(old._uvc_devices, uvc_device_infos);
+                c.param1 = range.first;
+                c.param2 = range.second;
+
+                range = insert_list(old._usb_devices, usb_device_infos);
+                c.param3 = range.first;
+                c.param4 = range.second;
+
+                range = insert_list(old._hid_devices, hid_device_infos);
+                c.param5 = range.first;
+                c.param6 = range.second;
+
+                range = insert_list(curr._uvc_devices, uvc_device_infos);
+                c.param7 = range.first;
+                c.param8 = range.second;
+
+                range = insert_list(curr._usb_devices, usb_device_infos);
+                c.param9 = range.first;
+                c.param10 = range.second;
+
+                range = insert_list(curr._hid_devices, hid_device_infos);
+                c.param11 = range.first;
+                c.param12 = range.second;
+
+                c.timestamp = get_current_time();
+                calls.push_back(c);
             }
 
             void save_device_info_list(std::vector<uvc_device_info> list, lookup_key k)
@@ -169,10 +239,25 @@ namespace rsimpl2
                 save_list(list, hid_sensor_inputs, key.type, key.entity_id);
             }
 
+
             std::vector<stream_profile> load_stream_profiles(int id, call_type type)
             {
                 auto&& c = find_call(type, id);
                 return load_list(stream_profiles, c);
+            }
+
+            void load_device_changed_data(devices_data& old, devices_data& curr, lookup_key k)
+            {
+                auto&& c = find_call(k.type, k.entity_id);
+
+                old._uvc_devices = load_list(uvc_device_infos, c.param1, c.param2);
+                old._usb_devices = load_list(usb_device_infos, c.param3, c.param4);
+                old._hid_devices = load_list(hid_device_infos, c.param5, c.param6);
+
+                curr._uvc_devices = load_list(uvc_device_infos, c.param7, c.param8);
+                curr._usb_devices = load_list(usb_device_infos, c.param9, c.param10);
+                curr._hid_devices = load_list(hid_device_infos, c.param11, c.param12);
+
             }
 
             std::vector<usb_device_info> load_usb_device_info_list()
@@ -206,7 +291,7 @@ namespace rsimpl2
 
             call& find_call(call_type t, int entity_id, std::function<bool(const call& c)> history_match_validation = [](const call& c) {return true; });
             call* cycle_calls(call_type call_type, int id);
-
+            call* peak_next_call(int id = 0);
             size_t size() const { return calls.size(); }
 
         private:
@@ -218,14 +303,17 @@ namespace rsimpl2
             std::vector<hid_device_info> hid_device_infos;
             std::vector<hid_sensor> hid_sensors;
             std::vector<hid_sensor_input> hid_sensor_inputs;
+            std::shared_ptr<playback_device_watcher> _watcher;
 
-            std::mutex _mutex;
+            std::recursive_mutex _mutex;
             std::shared_ptr<time_service> _ts;
 
             std::map<int, int> _cursors;
             std::map<int, int> _cycles;
 
             double get_current_time();
+
+            void invoke_device_changed_event();
 
             double _curr_time = 0;
         };
@@ -236,7 +324,7 @@ namespace rsimpl2
         {
         public:
             void probe_and_commit(stream_profile profile, frame_callback callback, int buffers) override;
-            void stream_on(std::function<void(const notification& n)> error_handler = [](const notification& n){}) override;
+            void stream_on(std::function<void(const notification& n)> error_handler = [](const notification& n) {}) override;
             void start_callbacks() override;
             void stop_callbacks() override;
             void close(stream_profile profile) override;
@@ -277,8 +365,8 @@ namespace rsimpl2
             void start_capture(const std::vector<hid_profile>& hid_profiles, hid_callback callback) override;
             std::vector<hid_sensor> get_sensors() override;
             std::vector<uint8_t> get_custom_report_data(const std::string& custom_sensor_name,
-                                                        const std::string& report_name,
-                                                        custom_sensor_report_field report_field) override;
+                const std::string& report_name,
+                custom_sensor_report_field report_field) override;
 
             record_hid_device(std::shared_ptr<hid_device> source,
                 int id, const record_backend* owner)
@@ -305,6 +393,28 @@ namespace rsimpl2
             const record_backend* _owner;
         };
 
+
+        class record_device_watcher : public device_watcher
+        {
+        public:
+            record_device_watcher(const record_backend* owner, std::shared_ptr<device_watcher> source_watcher, int id) :
+                _source_watcher(source_watcher), _owner(owner), _entity_id(id) {}
+
+            ~record_device_watcher()
+            {
+                stop();
+            }
+
+            void start(device_changed_callback callback) override;
+
+            void stop() override;
+
+        private:
+            const record_backend* _owner;
+            std::shared_ptr<device_watcher> _source_watcher;
+            int _entity_id;
+        };
+
         class record_backend : public backend
         {
         public:
@@ -315,6 +425,7 @@ namespace rsimpl2
             std::shared_ptr<usb_device> create_usb_device(usb_device_info info) const override;
             std::vector<usb_device_info> query_usb_devices() const override;
             std::shared_ptr<time_service> create_time_service() const override;
+            std::shared_ptr<device_watcher> create_device_watcher() const override;
 
             record_backend(std::shared_ptr<backend> source,
                 const char* filename,
@@ -329,7 +440,7 @@ namespace rsimpl2
                 -> decltype(t((recording*)nullptr, *((lookup_key*)nullptr)))
             {
                 lookup_key k{ entity_id, type };
-
+                _entity_count = 0;
                 try
                 {
                     return t(_rec.get(), k);
@@ -367,11 +478,31 @@ namespace rsimpl2
 
         typedef std::vector<std::pair<stream_profile, frame_callback>> configurations;
 
+        class playback_device_watcher :public device_watcher
+        {
+
+        public:
+            playback_device_watcher(int id);
+            ~playback_device_watcher();
+            void start(device_changed_callback callback) override;
+            void stop() override;
+
+            void raise_callback(devices_data old, devices_data curr);
+
+        private:
+            int _entity_id;
+            std::atomic<bool> _alive;
+            std::thread _callback_thread;
+            dispatcher _dispatcher;
+            device_changed_callback _callback;
+            std::recursive_mutex _mutex;
+        };
+
         class playback_uvc_device : public uvc_device
         {
         public:
             void probe_and_commit(stream_profile profile, frame_callback callback, int buffers) override;
-            void stream_on(std::function<void(const notification& n)> error_handler = [](const notification& n){}) override;
+            void stream_on(std::function<void(const notification& n)> error_handler = [](const notification& n) {}) override;
             void start_callbacks() override;
             void stop_callbacks() override;
             void close(stream_profile profile) override;
@@ -389,7 +520,7 @@ namespace rsimpl2
             void unlock() const override;
             std::string get_device_location() const override;
 
-            explicit playback_uvc_device(std::shared_ptr<recording> rec,int id);
+            explicit playback_uvc_device(std::shared_ptr<recording> rec, int id);
 
             void callback_thread();
             ~playback_uvc_device();
@@ -428,8 +559,8 @@ namespace rsimpl2
             void start_capture(const std::vector<hid_profile>& hid_profiles, hid_callback callback) override;
             std::vector<hid_sensor> get_sensors() override;
             std::vector<uint8_t> get_custom_report_data(const std::string& custom_sensor_name,
-                                                        const std::string& report_name,
-                                                        custom_sensor_report_field report_field) override;
+                const std::string& report_name,
+                custom_sensor_report_field report_field) override;
             void callback_thread();
             ~playback_hid_device();
 
@@ -454,21 +585,24 @@ namespace rsimpl2
             std::shared_ptr<usb_device> create_usb_device(usb_device_info info) const override;
             std::vector<usb_device_info> query_usb_devices() const override;
             std::shared_ptr<time_service> create_time_service() const override;
+            std::shared_ptr<device_watcher> create_device_watcher() const override;
 
             explicit playback_backend(const char* filename, const char* section);
         private:
+
+            std::shared_ptr<playback_device_watcher> _device_watcher;
             std::shared_ptr<recording> _rec;
         };
 
-        class recording_time_service: public time_service
+        class recording_time_service : public time_service
         {
         public:
-            recording_time_service(recording& rec):
-                _rec(rec){}
+            recording_time_service(recording& rec) :
+                _rec(rec) {}
 
             virtual rs2_time_t get_time() const override
             {
-              return _rec.get_time();
+                return _rec.get_time();
             }
         private:
             recording& _rec;

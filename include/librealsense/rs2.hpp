@@ -14,6 +14,8 @@
 #include <exception>
 #include <ostream>
 #include <iostream>
+#include <atomic>
+#include <condition_variable>
 
 namespace rs2
 {
@@ -433,6 +435,30 @@ namespace rs2
 
         void release() override { delete this; }
     };
+
+    class event_information;
+
+    template<class T>
+    class devices_changed_callback : public rs2_devices_changed_callback
+    {
+        T _callback;
+
+    public:
+        explicit devices_changed_callback(T callback) : _callback(callback) {}
+
+        void on_devices_changed(rs2_device_list* removed, rs2_device_list* added) override
+        {
+            std::shared_ptr<rs2_device_list> old(removed, rs2_delete_device_list);
+            std::shared_ptr<rs2_device_list> news(added, rs2_delete_device_list);
+
+
+            event_information info({device_list(old), device_list(news)});
+            _callback(info);
+        }
+
+        void release() override { delete this; }
+    };
+
     struct option_range
     {
         float min;
@@ -454,6 +480,12 @@ namespace rs2
     public:
         explicit advanced(std::shared_ptr<rs2_device> dev)
             : _dev(dev) {}
+
+        advanced& operator=(const std::shared_ptr<rs2_device> dev)
+        {
+            _dev = dev;
+            return *this;
+        }
 
         std::vector<uint8_t> send_and_receive_raw_data(const std::vector<uint8_t>& input) const
         {
@@ -963,7 +995,31 @@ namespace rs2
 
         advanced& debug() { return _debug; }
 
+        device& operator=(const std::shared_ptr<rs2_device> dev)
+        {
+            _dev.reset();
+            _dev = dev;
+            _debug = dev; 
+            return *this;
+        }
+        device& operator=(const device& dev)
+        {
+            *this = nullptr;
+            _dev = dev._dev;
+            _debug = dev._debug;
+            return *this;
+        }
         device() : _dev(nullptr), _debug(nullptr) {}
+
+        operator bool() const
+        {
+            return _dev != nullptr;
+        }
+        const rs2_device* get() const
+        {
+            return _dev.get();
+        }
+
 
     private:
         friend context;
@@ -1007,6 +1063,12 @@ namespace rs2
             std::vector<device> res;
             for (auto&& dev : *this) res.push_back(dev);
             return res;
+        }
+
+        device_list& operator=(std::shared_ptr<rs2_device_list> list)
+        {
+            _list = move(list);
+            return *this;
         }
 
         device operator[](uint32_t index) const
@@ -1076,8 +1138,51 @@ namespace rs2
         {
             return device_list_iterator(*this, size());
         }
+        const rs2_device_list* get_list() const
+        {
+            return _list.get();
+        }
+
     private:
         std::shared_ptr<rs2_device_list> _list;
+    };
+
+
+    class event_information
+    {
+    public:
+        event_information(device_list removed, device_list added)
+            :_removed(removed), _added(added){}
+
+        /**
+        * check if specific device was disconnected
+        * \return            true if device disconnected, false if device connected 
+        */
+        bool was_removed(const rs2::device& dev) const
+        {
+            rs2_error * e = nullptr;
+
+            if(!dev)
+                return false;
+
+            auto res =  rs2_device_was_removed(_removed.get_list(), dev.get(), &e);
+            error::handle(e);
+
+            return res;
+        }
+
+        /**
+        * returns a list of all newly connected devices
+        * \return            the list of all new connected devices
+        */
+        device_list get_new_devices()  const
+        {
+            return _added;
+        }
+
+    private:
+        device_list _removed;
+        device_list _added;
     };
 
     /**
@@ -1143,10 +1248,23 @@ namespace rs2
             return time;
         }
 
-
+        /**
+        * register devices changed callback
+        * \param[in] callback   devices changed callback
+        */
+        template<class T>
+        void set_devices_changed_callback(T callback) const
+        {
+            rs2_error * e = nullptr;
+            rs2_set_devices_changed_callback_cpp(_context.get(),
+                new devices_changed_callback<T>(std::move(callback)), &e);
+            error::handle(e);
+        }
     protected:
         std::shared_ptr<rs2_context> _context;
     };
+
+
 
     class recording_context : public context
     {

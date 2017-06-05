@@ -10,7 +10,7 @@
 #include "win-uvc.h"
 #include "win-usb.h"
 #include "win-hid.h"
-
+#include "../types.h"
 #include <mfapi.h>
 #include <chrono>
 namespace rsimpl2
@@ -132,6 +132,10 @@ namespace rsimpl2
             return std::make_shared<os_time_service>();
         }
 
+        std::shared_ptr<device_watcher> wmf_backend::create_device_watcher() const
+        {
+            return std::make_shared<polling_device_watcher>(this);
+        }
     }
 }
 

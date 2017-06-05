@@ -42,28 +42,19 @@ struct rs2_device
     unsigned int subdevice;
 };
 
-struct rs2_device_info
-{
-    std::shared_ptr<rsimpl2::context> ctx;
-    std::shared_ptr<rsimpl2::device_info> info;
-    unsigned int subdevice;
-};
+
 
 struct rs2_context
 {
     std::shared_ptr<rsimpl2::context> ctx;
 };
 
-struct rs2_device_list
-{
-    std::shared_ptr<rsimpl2::context> ctx;
-    std::vector<rs2_device_info> list;
-};
+
 
 struct rs2_notification
 {
     rs2_notification(const rsimpl2::notification* notification)
-        :_notification(notification){}
+        :_notification(notification) {}
 
     const rsimpl2::notification* _notification;
 };
@@ -117,9 +108,9 @@ namespace rsimpl2
     template<class T> void stream_args(std::ostream & out, const char * names, const T & last) { out << names << ':' << last; }
     template<class T, class... U> void stream_args(std::ostream & out, const char * names, const T & first, const U &... rest)
     {
-        while(*names && *names != ',') out << *names++;
+        while (*names && *names != ',') out << *names++;
         out << ':' << first << ", ";
-        while(*names && (*names == ',' || isspace(*names))) ++names;
+        while (*names && (*names == ',' || isspace(*names))) ++names;
         stream_args(out, names, rest...);
     }
 
@@ -127,8 +118,8 @@ namespace rsimpl2
     {
         try { throw; }
         catch (const librealsense_exception& e) { if (error) *error = new rs2_error{ e.what(), name, move(args), e.get_exception_type() }; }
-        catch (const std::exception& e) { if (error) *error = new rs2_error {e.what(), name, move(args)}; }
-        catch (...) { if (error) *error = new rs2_error {"unknown error", name, move(args)}; }
+        catch (const std::exception& e) { if (error) *error = new rs2_error{ e.what(), name, move(args) }; }
+        catch (...) { if (error) *error = new rs2_error{ "unknown error", name, move(args) }; }
     }
 
 
@@ -286,7 +277,8 @@ HANDLE_EXCEPTIONS_AND_RETURN(nullptr, device)
 
 int rs2_get_device_count(const rs2_device_list* list, rs2_error** error) try
 {
-    VALIDATE_NOT_NULL(list);
+    if (list == nullptr)
+        return 0;
     return static_cast<int>(list->list.size());
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, list)
@@ -307,7 +299,7 @@ rs2_device* rs2_create_device(const rs2_device_list* list, int index, rs2_error*
                           list->list[index].info,
                           list->list[index].info->get_device(),
                           list->list[index].subdevice
-                        };
+    };
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, list, index)
 
@@ -513,7 +505,7 @@ HANDLE_EXCEPTIONS_AND_RETURN(, device, on_frame, user)
 void rs2_start_stream(const rs2_device* device, rs2_stream stream, rs2_frame_callback_ptr on_frame, void * user, rs2_error ** error) try
 {
     VALIDATE_NOT_NULL(device);
-   VALIDATE_NOT_NULL(on_frame);
+    VALIDATE_NOT_NULL(on_frame);
     rsimpl2::frame_callback_ptr callback(
         new rsimpl2::frame_callback(on_frame, user));
     device->device->get_endpoint(device->subdevice).starter().start(stream, move(callback));
@@ -530,6 +522,17 @@ void rs2_set_notifications_callback(const rs2_device * device, rs2_notification_
     device->device->get_endpoint(device->subdevice).register_notifications_callback(std::move(callback));
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device, on_notification, user)
+
+void rs2_set_devices_changed_callback(const rs2_context* context, rs2_devices_changed_callback_ptr callback, void * user, rs2_error ** error) try
+{
+    VALIDATE_NOT_NULL(context);
+    VALIDATE_NOT_NULL(callback);
+    rsimpl2::devices_changed_callback_ptr cb(
+        new rsimpl2::devices_changed_callback(callback, user),
+        [](rs2_devices_changed_callback* p) { delete p; });
+    context->ctx->set_devices_changed_callback(std::move(cb));
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, context, callback, user)
 
 void rs2_start_queue(const rs2_device* device, rs2_stream stream, rs2_frame_queue* queue, rs2_error** error) try
 {
@@ -566,6 +569,14 @@ void rs2_set_notifications_callback_cpp(const rs2_device * device, rs2_notificat
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device, callback)
 
+void rs2_set_devices_changed_callback_cpp(rs2_context* context, rs2_devices_changed_callback* callback, rs2_error** error) try
+{
+    VALIDATE_NOT_NULL(context);
+    VALIDATE_NOT_NULL(callback);
+    context->ctx->set_devices_changed_callback({ callback, [](rs2_devices_changed_callback* p) { p->release(); } });
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, context, callback)
+
 void rs2_stop(const rs2_device* device, rs2_error ** error) try
 {
     VALIDATE_NOT_NULL(device);
@@ -601,14 +612,14 @@ const char * rs2_get_notification_description(rs2_notification * notification, r
     VALIDATE_NOT_NULL(notification);
     return notification->_notification->description.c_str();
 }
-HANDLE_EXCEPTIONS_AND_RETURN(0,notification)
+HANDLE_EXCEPTIONS_AND_RETURN(0, notification)
 
 rs2_time_t rs2_get_notification_timestamp(rs2_notification * notification, rs2_error** error)try
 {
     VALIDATE_NOT_NULL(notification);
     return notification->_notification->timestamp;
 }
-HANDLE_EXCEPTIONS_AND_RETURN(0,notification)
+HANDLE_EXCEPTIONS_AND_RETURN(0, notification)
 
 rs2_log_severity rs2_get_notification_severity(rs2_notification * notification, rs2_error** error)try
 {
@@ -623,6 +634,24 @@ rs2_notification_category rs2_get_notification_category(rs2_notification * notif
     return (rs2_notification_category)notification->_notification->category;
 }
 HANDLE_EXCEPTIONS_AND_RETURN(RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR, notification)
+
+
+
+int rs2_device_was_removed(const rs2_device_list* removed, const rs2_device* dev, rs2_error** error)try
+{
+    VALIDATE_NOT_NULL(removed);
+    VALIDATE_NOT_NULL(dev);
+
+    for (auto rem : removed->list)
+    {
+        if (dev->info->get_device_data() == rem.info->get_device_data())
+        {
+            return 1;
+        }
+    }
+    return 0;
+}
+HANDLE_EXCEPTIONS_AND_RETURN(false, removed, dev)
 
 rs2_time_t rs2_get_frame_timestamp(const rs2_frame * frame_ref, rs2_error ** error) try
 {
@@ -790,8 +819,8 @@ void rs2_flush_queue(rs2_frame_queue* queue, rs2_error** error) try
 HANDLE_EXCEPTIONS_AND_RETURN(, queue)
 
 void rs2_get_extrinsics(const rs2_device * from_dev, rs2_stream from_stream,
-                        const rs2_device * to_dev, rs2_stream to_stream,
-                        rs2_extrinsics * extrin, rs2_error ** error) try
+    const rs2_device * to_dev, rs2_stream to_stream,
+    rs2_extrinsics * extrin, rs2_error ** error) try
 {
     VALIDATE_NOT_NULL(from_dev);
     VALIDATE_NOT_NULL(to_dev);
@@ -824,7 +853,7 @@ void rs2_get_stream_intrinsics(const rs2_device * device, rs2_stream stream, int
     VALIDATE_ENUM(format);
     VALIDATE_NOT_NULL(intrinsics);
     // cast because i've been getting errors. (int->uint32_t requires narrowing conversion)
-    *intrinsics = device->device->get_intrinsics(device->subdevice, {stream, uint32_t(width), uint32_t(height), uint32_t(fps), format});
+    *intrinsics = device->device->get_intrinsics(device->subdevice, { stream, uint32_t(width), uint32_t(height), uint32_t(fps), format });
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device, intrinsics)
 
@@ -900,7 +929,7 @@ HANDLE_EXCEPTIONS_AND_RETURN(, min_x, min_y, max_x, max_y)
 rs2_syncer* rs2_create_syncer(const rs2_device* dev, rs2_error** error) try
 {
     VALIDATE_NOT_NULL(dev);
-    return new rs2_syncer { dev->device->create_syncer() };
+    return new rs2_syncer{ dev->device->create_syncer() };
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, dev)
 
@@ -980,9 +1009,12 @@ const char * rs2_format_to_string(rs2_format format) { return rsimpl2::get_strin
 const char * rs2_distortion_to_string(rs2_distortion distortion) { return rsimpl2::get_string(distortion); }
 const char * rs2_option_to_string(rs2_option option) { return rsimpl2::get_string(option); }
 const char * rs2_camera_info_to_string(rs2_camera_info info) { return rsimpl2::get_string(info); }
+
 const char * rs2_frame_metadata_to_string(rs2_frame_metadata metadata) { return rsimpl2::get_string(metadata); }
 const char * rs2_timestamp_domain_to_string(rs2_timestamp_domain info){ return rsimpl2::get_string(info); }
-const char * rs2_notification_category_to_string(rs2_notification_category category){ return rsimpl2::get_string(category); }
+
+const char * rs2_notification_category_to_string(rs2_notification_category category) { return rsimpl2::get_string(category); }
+
 const char * rs2_visual_preset_to_string(rs2_visual_preset preset) { return rsimpl2::get_string(preset); }
 const char * rs2_log_severity_to_string(rs2_log_severity severity) { return rsimpl2::get_string(severity); }
 const char * rs2_exception_type_to_string(rs2_exception_type type) { return rsimpl2::get_string(type); }

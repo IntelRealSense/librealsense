@@ -66,7 +66,11 @@ namespace rsimpl2
 
         rs2_timestamp_domain get_frame_timestamp_domain(const request_mapping & mode, const uvc::frame_object& fo) const override
         {
-            return RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK;
+            if(fo.metadata_size > 0 )
+                return RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK;
+
+            else
+                return RS2_TIMESTAMP_DOMAIN_SYSTEM_TIME;
         }
     };
 
@@ -102,6 +106,11 @@ namespace rsimpl2
             std::shared_ptr<uvc::backend> backend,
             std::vector<uvc::uvc_device_info>& uvc,
             std::vector<uvc::usb_device_info>& usb);
+
+        uvc::devices_data get_device_data()const
+        {
+            return uvc::devices_data({ _color, _depth }, { _hwm });
+        }
 
     private:
         uvc::uvc_device_info _color;

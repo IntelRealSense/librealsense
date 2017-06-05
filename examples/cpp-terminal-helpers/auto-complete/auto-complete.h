@@ -6,6 +6,7 @@
 #include <vector>
 #include <functional>
 #include <stdint.h>
+
 #if defined(_WIN32)
     #include <conio.h>
     #define NEW_LINE '\r'
@@ -27,11 +28,11 @@ class auto_complete
 {
 public:
     explicit auto_complete(std::set<std::string> dictionary);
-    std::string get_line();
+    std::string get_line(std::function<bool()> to_stop = []() {return false;}); // to_stop predicate can be used to stop waiting for input if the camera disconnected
 
 private:
     void handle_special_key(const std::vector<uint8_t>& chars);
-    char getch_nolock();
+    char getch_nolock(std::function <bool()> stop = [](){return false;});
     void backspace(const int num_of_backspaces);
     std::string chars2_queue_to_string() const;
     std::string get_last_word(const std::string& line) const;

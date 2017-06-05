@@ -13,12 +13,12 @@
 #include <condition_variable>
 #include <set>
 #include <cctype>
-
+#include <thread>
 using namespace std;
 using namespace TCLAP;
 using namespace rs2;
 
-int MAX_FRAMES_NUMBER = 100;
+int MAX_FRAMES_NUMBER = 10; //number of frames to capture from each stream
 const unsigned int NUM_OF_STREAMS = static_cast<int>(RS2_STREAM_COUNT);
 
 struct frame_data
@@ -109,9 +109,9 @@ util::config configure_stream(bool is_file_set, bool& is_valid, string fn = "")
     }
 
     ifstream file(fn);
+
     if (!file.is_open())
         throw runtime_error("Given .csv configure file Not Found!");
-
 
     string line;
     while (getline(file, line))
@@ -159,8 +159,10 @@ void save_data_to_file(list<frame_data> buffer[], string filename = ".\\frames_d
     csv.close();
 }
 
-int main(int argc, char** argv) try
+int main(int argc, char** argv)
 {
+    log_to_file(RS2_LOG_SEVERITY_WARN);
+
     // Parse command line arguments
     CmdLine cmd("librealsense cpp-data-collect example tool", ' ');
     ValueArg<int>    timeout    ("t", "Timeout",            "Max amount of time to receive frames",                false, 10,  "");
@@ -174,61 +176,118 @@ int main(int argc, char** argv) try
     cmd.add(config_file);
     cmd.parse(argc, argv);
 
-    if (max_frames.isSet())
-        MAX_FRAMES_NUMBER = max_frames.getValue();
+    auto max_frames_number =  MAX_FRAMES_NUMBER;
 
+    if (max_frames.isSet())
+        max_frames_number = max_frames.getValue();
+
+    bool succeed = false;
+    std::mutex mutex;
+
+    std::condition_variable cv;
 
     context ctx;
+    util::device_hub hub(ctx);
 
-    auto list = ctx.query_devices();
-    if (list.size() == 0)
-        throw runtime_error("No device detected. Is it plugged in?");
-
-    auto dev = list.front();
-
-    // configure Streams
-    bool is_valid_config;
-    auto is_file_set = config_file.isSet();
-
-    auto config = is_file_set ? configure_stream(true, is_valid_config, config_file.getValue()) : configure_stream(false, is_valid_config);
-    auto camera = config.open(dev);
-
-    std::list<frame_data> buffer[NUM_OF_STREAMS];
-    auto start_time = chrono::high_resolution_clock::now();
-
-    camera.start([&buffer, &start_time](frame f)
+    while(!succeed)
     {
-        auto arrival_time = chrono::duration_cast<chrono::milliseconds>(chrono::high_resolution_clock::now() - start_time);
+        try
+        {
+            auto dev = hub.wait_for_device();
 
-        frame_data data;
-        data.frame_number = f.get_frame_number();
-        data.strean_type = f.get_stream_type();
-        data.ts = f.get_timestamp();
-        data.domain = f.get_frame_timestamp_domain();
-        data.arrival_time = arrival_time.count();
 
-        if (buffer[(int)data.strean_type].size() < MAX_FRAMES_NUMBER)
-            buffer[(int)data.strean_type].push_back(data);
-    });
+            bool need_to_reset = false;
 
-    this_thread::sleep_for(chrono::seconds(timeout.getValue()));
 
-    camera.stop();
+            for (auto sub:dev.get_adjacent_devices())
+            {
+                sub.set_notifications_callback([&](const notification& n)
+                {
+                    if(n.get_category() == RS2_NOTIFICATION_CATEGORY_FRAMES_TIMEOUT)
+                    {
+                        std::unique_lock<std::mutex> lock(mutex);
+                        need_to_reset = true;
+                        cv.notify_one();
+                    }
+                });
+            }
 
-    if (filename.isSet())
-        save_data_to_file(buffer, filename.getValue());
-    else
-        save_data_to_file(buffer);
+
+            // configure Streams
+            bool is_valid_config;
+            auto is_file_set = config_file.isSet();
+
+            auto config = is_file_set ? configure_stream(true, is_valid_config, config_file.getValue()) : configure_stream(false, is_valid_config);
+            auto camera = config.open(dev);
+
+            std::list<frame_data> buffer[NUM_OF_STREAMS];
+            auto start_time = chrono::high_resolution_clock::now();
+
+            camera.start([&buffer, &start_time, &cv, &max_frames_number](frame f)
+            {
+                auto arrival_time = chrono::duration_cast<chrono::milliseconds>(chrono::high_resolution_clock::now() - start_time);
+
+                frame_data data;
+                data.frame_number = f.get_frame_number();
+                data.strean_type = f.get_stream_type();
+                data.ts = f.get_timestamp();
+                data.domain = f.get_frame_timestamp_domain();
+                data.arrival_time = arrival_time.count();
+
+                if (buffer[(int)data.strean_type].size() < max_frames_number)
+                    buffer[(int)data.strean_type].push_back(data);
+                else
+                    cv.notify_one();
+            });
+
+            const auto ready = [&]()
+            {
+                if(!hub.is_connected(dev) || need_to_reset)
+                    return true;
+
+                for(auto&& profile : camera.get_profiles())
+                {
+                    if(buffer[(int) profile.second.stream].size() < MAX_FRAMES_NUMBER)
+                        return false;
+                }
+                succeed = true;
+                return true;
+            };
+
+
+            std::unique_lock<std::mutex> lock(mutex);
+            auto res = cv.wait_for(lock,std::chrono::seconds(60), ready);
+            if(res)
+            {
+                if(need_to_reset)
+                {
+                    succeed = false;
+                    camera.stop();
+                    dev.hardware_reset();
+                    need_to_reset = false;
+                }
+                if(!succeed &&(need_to_reset || !hub.is_connected(dev)))
+                    continue;
+            }
+
+            camera.stop();
+            if (filename.isSet())
+                save_data_to_file(buffer, filename.getValue());
+            else
+                save_data_to_file(buffer);
+        }
+        catch (const error & e)
+        {
+            cerr << "RealSense error calling " << e.get_failed_function() << "(" << e.get_failed_args() << "):\n    " << e.what() << endl;
+            return EXIT_FAILURE;
+        }
+        catch (const exception & e)
+        {
+            cerr << e.what() << endl;
+            return EXIT_FAILURE;
+        }
+    }
 
     return EXIT_SUCCESS;
 }
-catch (const error & e)
-{
-    cerr << "RealSense error calling " << e.get_failed_function() << "(" << e.get_failed_args() << "):\n    " << e.what() << endl;
-    return EXIT_FAILURE;
-}
-catch (const exception & e)
-{
-    cerr << e.what() << endl;
-    return EXIT_FAILURE;
-}
+

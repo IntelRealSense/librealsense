@@ -147,7 +147,16 @@ namespace rsimpl2
 
         void named_mutex::create_named_mutex(const std::string& cam_id)
         {
-            _fildes = open(cam_id.c_str(), O_RDWR);
+            const auto max_retries = 10;
+
+            for(auto i=0; i< max_retries; i++)
+            {
+                _fildes = open(cam_id.c_str(), O_RDWR);
+                if (0 <= _fildes)
+                    break;
+
+                std::this_thread::sleep_for(std::chrono::milliseconds(10));
+            }
             if (-1 == _fildes)
                 throw linux_backend_exception(to_string() << "open(...) failed");
         }
@@ -301,8 +310,16 @@ namespace rsimpl2
 
         v4l_usb_device::~v4l_usb_device()
         {
-            if(_usb_device) libusb_unref_device(_usb_device);
-            libusb_exit(_usb_context);
+            try
+            {
+                if(_usb_device)
+                    libusb_unref_device(_usb_device);
+                libusb_exit(_usb_context);
+            }
+            catch(...)
+            {
+
+            }
         }
 
         void v4l_usb_device::foreach_usb_device(libusb_context* usb_context, std::function<void(
@@ -332,8 +349,9 @@ namespace rsimpl2
                         info.mi = config->bNumInterfaces - 1; // The hardware monitor USB interface is expected to be the last one
                         action(info, usb_device);
                     }
+                    libusb_free_config_descriptor(config);
                 }
-                libusb_free_config_descriptor(config);
+
             }
             libusb_free_device_list(list, 1);
         }
@@ -378,31 +396,13 @@ namespace rsimpl2
                 std::function<void(const uvc_device_info&,
                                    const std::string&)> action)
         {
-#ifndef ANDROID
-            // Check if the uvcvideo kernel module is loaded
-            std::ifstream modules("/proc/modules");
-            std::string modulesline;
-            std::regex regex("uvcvideo.* - Live.*");
-            std::smatch match;
-            auto module_found = false;
-
-
-            while(std::getline(modules, modulesline) && !module_found)
-            {
-                module_found = std::regex_match(modulesline, match, regex);
-            }
-
-            if(!module_found)
-            {
-                throw linux_backend_exception("uvcvideo kernel module is not loaded");
-            }
-#endif // ANDROID
-
             // Enumerate all subdevices present on the system
             DIR * dir = opendir("/sys/class/video4linux");
             if(!dir)
-                throw linux_backend_exception("Cannot access /sys/class/video4linux");
-
+            {
+                LOG_ERROR("Cannot access /sys/class/video4linux");
+                return;
+            }
             while (dirent * entry = readdir(dir))
             {
                 std::string name = entry->d_name;
@@ -1200,6 +1200,10 @@ namespace rsimpl2
             return std::make_shared<os_time_service>();
         }
 
+        std::shared_ptr<device_watcher> v4l_backend::create_device_watcher() const
+        {
+            return std::make_shared<polling_device_watcher>(this);
+        }
 
         std::shared_ptr<backend> create_backend()
         {

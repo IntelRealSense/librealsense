@@ -50,6 +50,10 @@ namespace rsimpl2
                 std::vector<uvc::usb_device_info>& usb,
                 std::vector<uvc::hid_device_info>& hid);
 
+        uvc::devices_data get_device_data()const override
+        {
+            return uvc::devices_data(_depth, _hwm, _hid);
+        }
     private:
         std::vector<uvc::uvc_device_info> _depth;
         std::vector<uvc::usb_device_info> _hwm;

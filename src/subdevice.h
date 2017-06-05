@@ -110,7 +110,9 @@ namespace rsimpl2
             _pixel_formats.push_back(pf);
         }
 
-        virtual ~endpoint() = default;
+        virtual ~endpoint() {
+            flush();
+        }
 
         option& get_option(rs2_option id);
         const option& get_option(rs2_option id) const;

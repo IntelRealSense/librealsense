@@ -104,6 +104,22 @@ struct ImVec4
     IM_VEC4_CLASS_EXTRA
 #endif
 };
+typedef int ImGuiButtonFlags;     // enum ImGuiButtonFlags_
+
+enum ImGuiButtonFlags_
+{
+    ImGuiButtonFlags_Repeat                 = 1 << 0,   // hold to repeat
+    ImGuiButtonFlags_PressedOnClickRelease  = 1 << 1,   // (default) return pressed on click+release on same item (default if no PressedOn** flag is set)
+    ImGuiButtonFlags_PressedOnClick         = 1 << 2,   // return pressed on click (default requires click+release)
+    ImGuiButtonFlags_PressedOnRelease       = 1 << 3,   // return pressed on release (default requires click+release)
+    ImGuiButtonFlags_PressedOnDoubleClick   = 1 << 4,   // return pressed on double-click (default requires click+release)
+    ImGuiButtonFlags_FlattenChilds          = 1 << 5,   // allow interaction even if a child window is overlapping
+    ImGuiButtonFlags_DontClosePopups        = 1 << 6,   // disable automatically closing parent popup on press
+    ImGuiButtonFlags_Disabled               = 1 << 7,   // disable interaction
+    ImGuiButtonFlags_AlignTextBaseLine      = 1 << 8,   // vertically align button to match text baseline - ButtonEx() only
+    ImGuiButtonFlags_NoKeyModifiers         = 1 << 9,   // disable interaction if a key modifier is held
+    ImGuiButtonFlags_AllowOverlapMode       = 1 << 10   // require previous frame HoveredId to either match id or be null before being usable
+};
 
 // ImGui end-user API
 // In a namespace so that user can add extra functions in a separate file (e.g. Value() helpers for your vector or common types)
@@ -258,6 +274,7 @@ namespace ImGui
     IMGUI_API void          BulletText(const char* fmt, ...) IM_PRINTFARGS(1);                      // shortcut for Bullet()+Text()
     IMGUI_API void          BulletTextV(const char* fmt, va_list args);
     IMGUI_API bool          Button(const char* label, const ImVec2& size = ImVec2(0,0));            // button
+    IMGUI_API bool          ButtonEx(const char* label, const ImVec2& size_arg = ImVec2(0,0), ImGuiButtonFlags flags = 0);
     IMGUI_API bool          SmallButton(const char* label);                                         // button with FramePadding=(0,0)
     IMGUI_API bool          InvisibleButton(const char* str_id, const ImVec2& size);
     IMGUI_API void          Image(ImTextureID user_texture_id, const ImVec2& size, const ImVec2& uv0 = ImVec2(0,0), const ImVec2& uv1 = ImVec2(1,1), const ImVec4& tint_col = ImVec4(1,1,1,1), const ImVec4& border_col = ImVec4(0,0,0,0));

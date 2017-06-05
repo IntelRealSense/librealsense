@@ -120,7 +120,7 @@ void auto_complete::handle_special_key(const vector<uint8_t>& chars)
     }
 }
 
-char auto_complete::getch_nolock()
+char auto_complete::getch_nolock(std::function <bool()> stop)
 {
 #if defined(_WIN32)
     auto ch = static_cast<char>(_getch_nolock());
@@ -134,6 +134,7 @@ char auto_complete::getch_nolock()
     return ch;
 #else
     auto fd = fileno(stdin);
+
     struct termios old_settings, new_settings;
     tcgetattr(fd, &old_settings);
     new_settings = old_settings;
@@ -143,36 +144,42 @@ char auto_complete::getch_nolock()
     fd_set fds;
     struct timeval tv;
 
-    tv.tv_sec = 10;
+    tv.tv_sec = 1;
     tv.tv_usec = 0;
 
-    FD_ZERO(&fds);
-    FD_SET(fd, &fds);
-
-    auto res = select(fd+1, &fds, NULL, NULL, &tv );
-    if((res > 0) && (FD_ISSET(fd, &fds)))
+    while(!stop())
     {
-        uint8_t ch[10];
-        auto num_of_chars = read(fd, ch, 10 );
+        FD_ZERO(&fds);
+        FD_SET(fd, &fds);
+
+        auto res = select(fd+1, &fds, NULL, NULL, &tv );
+        if((res > 0) && (FD_ISSET(fd, &fds)))
+        {
+            uint8_t ch[10];
+            auto num_of_chars = read(fd, ch, 10 );
+            tcsetattr(fd, TCSAFLUSH, &old_settings );
+            if (num_of_chars == 1)
+                return ch[0];
+
+            //TODO: Arrow keys
+            vector<uint8_t> vec_ch;
+            for (auto i = 0; i < num_of_chars; ++i)
+                vec_ch.push_back(ch[i]);
+
+            handle_special_key(vec_ch);
+            return -1;
+        }
         tcsetattr(fd, TCSAFLUSH, &old_settings );
-        if (num_of_chars == 1)
-            return ch[0];
-
-        //TODO: Arrow keys
-        vector<uint8_t> vec_ch;
-        for (auto i = 0; i < num_of_chars; ++i)
-            vec_ch.push_back(ch[i]);
-
-        handle_special_key(vec_ch);
-        return -1;
+        return res;
     }
+    return -1;
 #endif
 }
 
 
-string auto_complete::get_line()
+string auto_complete::get_line(std::function <bool()> to_stop)
 {
-    while (true)
+    while (!to_stop())
     {
         auto ch = getch_nolock();
 
@@ -251,7 +258,7 @@ string auto_complete::get_line()
             _chars2_queue.push_back(ch);
             ++_num_of_chars2_in_line;
         }
-        else
+        else if(ch != 0)
             getch_nolock(); // TODO
 
         if (ch == NEW_LINE)
@@ -266,4 +273,9 @@ string auto_complete::get_line()
         cin.clear();
         fflush(nullptr);
     }
+    _chars2_queue.clear();
+    _num_of_chars2_in_line = 0;
+    cout.clear();
+    cin.clear();
+    fflush(nullptr);
 }

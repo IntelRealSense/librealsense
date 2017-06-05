@@ -1031,7 +1031,7 @@ namespace rsimpl2
                         if (sts == MF_E_HW_MFT_FAILED_START_STREAMING)
                             throw std::runtime_error("Camera already streaming");
 
-                        throw;
+                        throw std::runtime_error(to_string() << "Flush failed" << sts);
                     }
 
                     _is_flushed.wait(INFINITE);

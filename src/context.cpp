@@ -11,9 +11,11 @@
 #include "sr300.h"
 #include "ds5.h"
 #include "backend.h"
-#include "context.h"
 #include "recorder.h"
 #include <chrono>
+#include "types.h"
+#include "context.h"
+
 
 template<unsigned... Is> struct seq{};
 template<unsigned N, unsigned... Is>
@@ -40,6 +42,7 @@ namespace rsimpl2
                      const char* filename,
                      const char* section,
                      rs2_recording_mode mode)
+        : _devices_changed_callback(nullptr , [](rs2_devices_changed_callback*){})
     {
 
         LOG_DEBUG("Librealsense " << std::string(std::begin(rs2_api_version),std::end(rs2_api_version)));
@@ -60,30 +63,83 @@ namespace rsimpl2
         }
 
        _ts = _backend->create_time_service();
+
+       _device_watcher = _backend->create_device_watcher();
+    }
+
+    context::~context()
+    {
+        _device_watcher->stop(); //ensure that the device watcher will stop before the _devices_changed_callback will be deleted
     }
 
     std::vector<std::shared_ptr<device_info>> context::query_devices() const
     {
+
+        uvc::devices_data devices(_backend->query_uvc_devices(), _backend->query_usb_devices(), _backend->query_hid_devices());
+
+        return create_devices(devices);
+    }
+
+    std::vector<std::shared_ptr<device_info>> context::create_devices(uvc::devices_data devices) const
+    {
         std::vector<std::shared_ptr<device_info>> list;
 
-        auto uvc_devices = _backend->query_uvc_devices();
-        auto usb_devices = _backend->query_usb_devices();
-        auto hid_devices = _backend->query_hid_devices();
-
-        auto sr300_devices = sr300_info::pick_sr300_devices(_backend, uvc_devices, usb_devices);
+        auto sr300_devices = sr300_info::pick_sr300_devices(_backend, devices._uvc_devices, devices._usb_devices);
         std::copy(begin(sr300_devices), end(sr300_devices), std::back_inserter(list));
 
-        auto ds5_devices = ds5_info::pick_ds5_devices(_backend, uvc_devices, usb_devices, hid_devices);
+        auto ds5_devices = ds5_info::pick_ds5_devices(_backend, devices._uvc_devices, devices._usb_devices, devices._hid_devices);
         std::copy(begin(ds5_devices), end(ds5_devices), std::back_inserter(list));
 
-        auto recovery_devices = recovery_info::pick_recovery_devices(_backend, usb_devices);
+        auto recovery_devices = recovery_info::pick_recovery_devices(_backend, devices._usb_devices);
         std::copy(begin(recovery_devices), end(recovery_devices), std::back_inserter(list));
 
         return list;
     }
 
+
+    void context::on_device_changed(uvc::devices_data old, uvc::devices_data curr)
+    {
+        auto old_list = create_devices(old);
+        auto new_list = create_devices(curr);
+
+        if (rsimpl2::list_changed<std::shared_ptr<device_info>>(old_list, new_list, [](std::shared_ptr<device_info> first, std::shared_ptr<device_info> second) { return *first == *second; }))
+        {
+            std::vector<rs2_device_info> rs2_devices_info_added;
+            std::vector<rs2_device_info> rs2_devices_info_removed;
+
+            auto devices_info_removed = subtract_sets(old_list, new_list);
+
+            for (auto i=0; i<devices_info_removed.size(); i++)
+            {
+                rs2_devices_info_removed.push_back({ shared_from_this(), devices_info_removed[i], (unsigned int)i });
+                LOG_DEBUG("\nDevice disconnected:\n\n" << std::string(devices_info_removed[i]->get_device_data()));
+            }
+
+            auto devices_info_added = subtract_sets(new_list, old_list);
+            for (auto i = 0; i<devices_info_added.size(); i++)
+            {
+                rs2_devices_info_added.push_back({ shared_from_this(), devices_info_added[i], (unsigned int)i });
+                LOG_DEBUG("\nDevice sconnected:\n\n" << std::string(devices_info_added[i]->get_device_data()));
+            }
+
+            _devices_changed_callback->on_devices_changed(  new rs2_device_list({ shared_from_this(), rs2_devices_info_removed }),
+                                                            new rs2_device_list({ shared_from_this(), rs2_devices_info_added }));
+        }
+    }
+
     double context::get_time()
     {
         return _ts->get_time();
+    }
+
+    void context::set_devices_changed_callback(devices_changed_callback_ptr callback)
+    {
+        _device_watcher->stop();
+
+        _devices_changed_callback = std::move(callback);
+        _device_watcher->start([this](uvc::devices_data old, uvc::devices_data curr)
+        {
+            on_device_changed(old, curr);
+        });
     }
 }
