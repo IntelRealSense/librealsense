@@ -13,8 +13,6 @@
 using namespace rs2;
 using namespace std;
 
-vector<texture_buffer> buffers;
-
 /***************
 
 ***************/
@@ -22,6 +20,8 @@ vector<texture_buffer> buffers;
 int main(int argc, char * argv[]) try
 {
     log_to_console(RS2_LOG_SEVERITY_WARN);
+
+    vector<texture_buffer> buffers;
 
     context ctx; // Create librealsense context
     auto devices = ctx.query_devices(); // Query the list of connected RealSense devices
@@ -95,6 +95,9 @@ int main(int argc, char * argv[]) try
 
     glfwDestroyWindow(win);
     glfwTerminate();
+
+    buffers.clear();
+
     return EXIT_SUCCESS;
 }
 catch(const error & e)

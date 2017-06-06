@@ -129,11 +129,6 @@ namespace rsimpl2
             return S_OK;
         }
 
-
-
-
-
-
         bool wmf_uvc_device::is_connected(const uvc_device_info& info)
         {
             auto result = false;
@@ -681,7 +676,6 @@ namespace rsimpl2
                             {
                                 elem.callback = nullptr;
                             }
-
                             CHECK_HR(_reader->SetStreamSelection(static_cast<DWORD>(MF_SOURCE_READER_ALL_STREAMS), TRUE));
                         }
                     });
@@ -691,6 +685,9 @@ namespace rsimpl2
 
                 if (_power_state != D3 && state == D3)
                 {
+                    _ks_controls.clear();
+                    _camera_control = nullptr;
+                    _video_proc = nullptr;
                     _reader = nullptr;
                     _source = nullptr;
                     _reader_attrs = nullptr;
@@ -794,12 +791,17 @@ namespace rsimpl2
 
                 if (_source)
                 {
+                    _ks_controls.clear();
+                    _camera_control = nullptr;
+                    _video_proc = nullptr;
                     _source.Release();
                     _source = nullptr;
                     _reader.Release();
                     _reader = nullptr;
                     _reader_attrs.Release();
                     _reader_attrs = nullptr;
+                    _activate.Release();
+                    _activate = nullptr;
                     _device_attrs.Release();
                     _device_attrs = nullptr;
                 }
