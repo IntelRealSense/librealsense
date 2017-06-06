@@ -43,6 +43,7 @@ A comprehensive suite of sample and tutorial applications are provided in the `/
 	* `doxygen doc/doxygen/doxyfile`
 * [C API](./include/librealsense2/rs.h) - With doxygen-style API comments
 * [Frame Management](./doc/frame_lifetime.md) - Frame Memory Management, Threading Model and Syncronization
+* [Frame Metadata](./doc/frame_metadata.md) - support for frame-metadata attributes
 * [Python Bindings](./doc/python.md) - official python bindings for librealsense
 * [What's New?](./doc/rs400_support.md) - changes in librealsense2
 * [Getting Started](./doc/stepbystep/getting_started_with_openCV.md) - Getting started with OpenCV
