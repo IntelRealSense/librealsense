@@ -82,7 +82,7 @@ Next, build the patched module for the desired machine configuration.<br />
       * `./scripts/patch-realsense-ubuntu-xenial-joule.sh`<br />
   * **Arch-based distributions**
     * You need to install the [base-devel](https://www.archlinux.org/groups/x86_64/base-devel/) package group.
-    * You need to install the according linux-headers as well (i.e.: linux-lts-headers for the linux-lts kernel).
+    * You need to install the according linux-headers as well (i.e.: linux-lts-headers for the linux-lts kernel).<br />
     Navigate to the scripts folder:
     * `cd ./scripts/`<br />
     Then run the following script to patch the uvc module:
