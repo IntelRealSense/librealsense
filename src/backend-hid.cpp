@@ -75,6 +75,11 @@ namespace rsimpl2
             init();
         }
 
+        hid_input::~hid_input()
+        {
+            enable(false);
+        }
+
         // enable scan input. doing so cause the input to be part of the data provided in the polling.
         void hid_input::enable(bool is_enable)
         {
@@ -445,6 +450,7 @@ namespace rsimpl2
 
         iio_hid_sensor::~iio_hid_sensor()
         {
+            write_integer_to_param("buffer/enable", 0);
             stop_capture();
 
             // clear inputs.
@@ -474,9 +480,6 @@ namespace rsimpl2
             // count number of enabled count elements and sort by their index.
             create_channel_array();
 
-            write_integer_to_param("buffer/length", buf_len);
-            write_integer_to_param("buffer/enable", 1);
-
             const auto max_retries = 10;
             auto retries = 0;
             while(++retries < max_retries)
@@ -490,7 +493,6 @@ namespace rsimpl2
 
             if ((retries == max_retries) && (_fd <= 0))
             {
-                write_integer_to_param("buffer/enable", 0);
                 _channels.clear();
                 throw linux_backend_exception("open() failed with all retries!");
             }
@@ -498,14 +500,13 @@ namespace rsimpl2
             if (pipe(_stop_pipe_fd) < 0)
             {
                 close(_fd);
-                write_integer_to_param("buffer/enable", 0);
                 _channels.clear();
                 throw linux_backend_exception("iio_hid_sensor: Cannot create pipe!");
             }
 
             _callback = sensor_callback;
             _is_capturing = true;
-            _hid_thread = std::unique_ptr<std::thread>(new std::thread([this, iio_read_device_path_str](){
+            _hid_thread = std::unique_ptr<std::thread>(new std::thread([this](){
                 const uint32_t channel_size = get_channel_size();
                 auto raw_data_size = channel_size*buf_len;
 
@@ -580,7 +581,6 @@ namespace rsimpl2
             _is_capturing = false;
             signal_stop();
             _hid_thread->join();
-            write_integer_to_param("buffer/enable", 0);
             _callback = NULL;
             _channels.clear();
 
@@ -684,6 +684,12 @@ namespace rsimpl2
 
             // get the specific name of sampling_frequency
             _sampling_frequency_name = get_sampling_frequency_name();
+
+            for (auto& input : _inputs)
+                input->enable(true);
+
+            write_integer_to_param("buffer/length", buf_len);
+            write_integer_to_param("buffer/enable", 1);
         }
 
         // calculate the storage size of a scan
@@ -915,13 +921,7 @@ namespace rsimpl2
                     if (sensor->get_sensor_name() == profile.sensor_name)
                     {
                         sensor->set_frequency(profile.frequency);
-
-                        auto inputs = sensor->get_inputs();
-                        for (auto input : inputs)
-                        {
-                            input->enable(true);
-                            _streaming_iio_sensors.push_back(sensor.get());
-                        }
+                        _streaming_iio_sensors.push_back(sensor.get());
                     }
                 }
 
@@ -983,13 +983,7 @@ namespace rsimpl2
         {
             for (auto& sensor : _iio_hid_sensors)
             {
-                auto inputs = sensor->get_inputs();
-                for (auto input : inputs)
-                {
-                    input->enable(false);
                     sensor->stop_capture();
-                    break;
-                }
             }
 
             _streaming_iio_sensors.clear();

@@ -64,6 +64,7 @@ namespace rsimpl2
         {
         public:
             hid_input(const std::string& iio_device_path, const std::string& input_name);
+            ~hid_input();
 
             // enable scan input. doing so cause the input to be part of the data provided in the polling.
             void enable(bool is_enable);
@@ -124,8 +125,6 @@ namespace rsimpl2
             void set_frequency(uint32_t frequency);
 
             void stop_capture();
-
-            std::list<hid_input*>& get_inputs() { return _inputs; }
 
             const std::string& get_sensor_name() const { return _sensor_name; }
 
