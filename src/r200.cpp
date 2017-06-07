@@ -3,6 +3,7 @@
 
 #include "image.h"
 #include "r200.h"
+#include "ds-private.h"
 
 using namespace rsimpl;
 using namespace rsimpl::ds;
