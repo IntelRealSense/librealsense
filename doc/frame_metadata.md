@@ -74,8 +74,8 @@ Calling __*rs2_get_frame_metadata*__ without testing for attribute support may r
 
 
 ## Employing metadata attributes in demos
-The samples that demonstrate querying and retrieval of metadata are `cpp-headless` and `cpp-config-ui`.
- - `cpp-headless` saves the metadata attributes available for each stream into a comma-separated text file. For instance, for the Depth stream the possible [output ](./metadata/cpp-headless-output-DEPTH-metadata.csv) is:  
+The samples that demonstrate querying and retrieval of metadata are `rs-headless` and `rs-config-ui`.
+ - `rs-headless` saves the metadata attributes available for each stream into a comma-separated text file. For instance, for the Depth stream the possible [output ](./metadata/cpp-headless-output-DEPTH-metadata.csv) is:  
 
 Stream |Depth
 :-----:|------:|
@@ -87,7 +87,7 @@ ACTUAL_EXPOSURE|6951
 GAIN_LEVEL|16
 AUTO_EXPOSURE|1  
 
- - `cpp-config-ui` includes a checkbox in the upper-right corner of  stream's canvas, clicking on which will bring up an overlay window with the metadata attributes available.  
+ - `rs-config-ui` includes a checkbox in the upper-right corner of  stream's canvas, clicking on which will bring up an overlay window with the metadata attributes available.  
 
 ​![Demo Presenting metadata attributes](./metadata/metadata-cpp-config-ui.png)
 

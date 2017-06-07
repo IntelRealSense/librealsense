@@ -1024,7 +1024,7 @@ namespace rsimpl2
 
         operator bool()
         {
-            return invocation;
+            return invocation != nullptr;
         }
 
     private:

@@ -175,6 +175,11 @@ if(WIN32)
         src/backend-hid.cpp
         src/backend.cpp
         src/verify.c)
+        
+    source_group("Source Files\\Logging" FILES
+        third_party/easyloggingpp/src/easylogging++.cc
+        src/log.cpp
+        )
 
     source_group("Header Files\\Backend" FILES
         src/win/win-helpers.h
@@ -227,6 +232,10 @@ if(WIN32)
         src/ds5-timestamp.h
         src/sr300.h
         src/ivcam-private.h
+        )
+        
+    source_group("Header Files\\Logging" FILES
+        third_party/easyloggingpp/src/easylogging++.h
         )
 
     foreach(flag_var
@@ -349,14 +358,24 @@ ELSE()
     install(CODE "execute_process(COMMAND ldconfig)")
 ENDIF()
 
+option(BUILD_UNIT_TESTS "Build realsense unit tests." ON)
 option(BUILD_EXAMPLES "Build realsense examples." OFF)
+option(BUILD_RS400_EXTRAS "Build RS400 advanced APIs." ON)
+
+if(((BUILD_EXAMPLES AND BUILD_GRAPHICAL_EXAMPLES) OR BUILD_RS400_EXTRAS) AND WIN32)
+    add_subdirectory(examples/third_party/glfw)
+endif()
+
 if(BUILD_EXAMPLES)
   add_subdirectory(examples)
 endif()
 
-option(BUILD_UNIT_TESTS "Build realsense unit tests." ON)
 if(BUILD_UNIT_TESTS)
   add_subdirectory(unit-tests)
+endif()
+
+if(BUILD_RS400_EXTRAS)
+  add_subdirectory(rs400/examples)
 endif()
 
 add_subdirectory(bindings)

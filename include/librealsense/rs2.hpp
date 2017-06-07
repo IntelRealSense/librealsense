@@ -1168,7 +1168,7 @@ namespace rs2
             auto res =  rs2_device_was_removed(_removed.get_list(), dev.get(), &e);
             error::handle(e);
 
-            return res;
+            return res > 0;
         }
 
         /**

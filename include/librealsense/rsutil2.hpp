@@ -391,7 +391,7 @@ namespace rs2
                     auto list = _ctx.query_devices();
                     auto result = rs2_device_was_removed(list.get_list(), dev.get(), &e);
                     if (e) return false;
-                    return result;
+                    return result > 0;
                 }
                 catch (...)  { return false; }
             }

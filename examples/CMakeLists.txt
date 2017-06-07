@@ -29,11 +29,11 @@ endif()
 if(ANDROID)
     set(DEPENDENCIES realsense2)
 
-    add_executable(cpp-enumerate-devices cpp-enumerate-devices.cpp)
-    target_link_libraries(cpp-enumerate-devices ${DEPENDENCIES})
-    include_directories(cpp-enumerate-devices third_party/tclap/include)
+    add_executable(rs-enumerate-devices cpp-enumerate-devices.cpp)
+    target_link_libraries(rs-enumerate-devices ${DEPENDENCIES})
+    include_directories(rs-enumerate-devices third_party/tclap/include)
 
-    set_target_properties (cpp-enumerate-devices PROPERTIES
+    set_target_properties (rs-enumerate-devices PROPERTIES
         FOLDER Examples
     )
 else()
@@ -42,7 +42,6 @@ else()
         set(DEPENDENCIES realsense2 ${OPENGL_LIBRARIES})
 
         if(WIN32)
-            add_subdirectory(third_party/glfw)
             list(APPEND DEPENDENCIES glfw3)
         else()
             # Find glfw header
@@ -93,43 +92,43 @@ else()
     )
 
     # data-collect
-    add_executable(cpp-data-collect cpp-data-collect.cpp)
-    target_link_libraries(cpp-data-collect ${DEPENDENCIES})
-    include_directories(cpp-data-collect third_party/tclap/include)
-    set_target_properties (cpp-data-collect PROPERTIES
+    add_executable(rs-data-collect cpp-data-collect.cpp)
+    target_link_libraries(rs-data-collect ${DEPENDENCIES})
+    include_directories(rs-data-collect third_party/tclap/include)
+    set_target_properties (rs-data-collect PROPERTIES
         FOLDER "Examples"
     )
 
     # headless
-    add_executable(cpp-headless cpp-headless.cpp)
-    target_link_libraries(cpp-headless ${DEPENDENCIES})
-    include_directories(cpp-headless third_party/tclap/include)
-    set_target_properties (cpp-headless PROPERTIES
+    add_executable(rs-headless cpp-headless.cpp)
+    target_link_libraries(rs-headless ${DEPENDENCIES})
+    include_directories(rs-headless third_party/tclap/include)
+    set_target_properties (rs-headless PROPERTIES
         FOLDER "Examples"
     )
 
     # enumerate-devices
-    add_executable(cpp-enumerate-devices cpp-enumerate-devices.cpp)
-    target_link_libraries(cpp-enumerate-devices ${DEPENDENCIES})
-    include_directories(cpp-enumerate-devices third_party/tclap/include)
-    set_target_properties (cpp-enumerate-devices PROPERTIES
+    add_executable(rs-enumerate-devices cpp-enumerate-devices.cpp)
+    target_link_libraries(rs-enumerate-devices ${DEPENDENCIES})
+    include_directories(rs-enumerate-devices third_party/tclap/include)
+    set_target_properties (rs-enumerate-devices PROPERTIES
         FOLDER Examples
     )
 
     # terminal
-    add_executable(cpp-terminal cpp-terminal.cpp cpp-terminal-helpers/auto-complete/auto-complete.cpp cpp-terminal-helpers/auto-complete/auto-complete.h)
+    add_executable(rs-terminal cpp-terminal.cpp cpp-terminal-helpers/auto-complete/auto-complete.cpp cpp-terminal-helpers/auto-complete/auto-complete.h)
     if(WIN32)
-        target_link_libraries(cpp-terminal ${DEPENDENCIES})
+        target_link_libraries(rs-terminal ${DEPENDENCIES})
     else()
-        target_link_libraries(cpp-terminal -lpthread ${DEPENDENCIES})
+        target_link_libraries(rs-terminal -lpthread ${DEPENDENCIES})
     endif()
-    include_directories(cpp-terminal third_party/tclap/include cpp-terminal-helpers/auto-complete)
-    set_target_properties (cpp-terminal PROPERTIES
+    include_directories(rs-terminal third_party/tclap/include cpp-terminal-helpers/auto-complete)
+    set_target_properties (rs-terminal PROPERTIES
         FOLDER Examples
     )
 
     # fw-logger
-    add_executable(cpp-fw-logger cpp-fw-logger.cpp cpp-fw-logger-helpers/fw-log-data.cpp
+    add_executable(rs-fw-logger cpp-fw-logger.cpp cpp-fw-logger-helpers/fw-log-data.cpp
         cpp-fw-logger-helpers/fw-log-data.h
         cpp-fw-logger-helpers/fw-logs-formating-options.cpp
         cpp-fw-logger-helpers/fw-logs-formating-options.h
@@ -140,26 +139,23 @@ else()
         cpp-fw-logger-helpers/string-formatter.cpp
         cpp-fw-logger-helpers/string-formatter.h)
     if(WIN32)
-        target_link_libraries(cpp-fw-logger ${DEPENDENCIES})
+        target_link_libraries(rs-fw-logger ${DEPENDENCIES})
     else()
-        target_link_libraries(cpp-fw-logger -lpthread ${DEPENDENCIES})
+        target_link_libraries(rs-fw-logger -lpthread ${DEPENDENCIES})
     endif()
-    include_directories(cpp-fw-logger third_party/tclap/include cpp-fw-logger-helpers)
-    set_target_properties (cpp-fw-logger PROPERTIES
+    include_directories(rs-fw-logger third_party/tclap/include cpp-fw-logger-helpers)
+    set_target_properties (rs-fw-logger PROPERTIES
         FOLDER Examples
     )
 
     install(
         TARGETS
 
-        c-tutorial-1-depth
-        cpp-tutorial-1-depth
-
-        cpp-enumerate-devices
-        cpp-terminal
-        cpp-fw-logger
-        cpp-data-collect
-        cpp-headless
+        rs-enumerate-devices
+        rs-terminal
+        rs-fw-logger
+        rs-data-collect
+        rs-headless
 
         RUNTIME DESTINATION
         ${CMAKE_INSTALL_PREFIX}/bin
@@ -176,18 +172,18 @@ else()
         )
 
         # config-ui
-        add_executable(cpp-config-ui cpp-config-ui.cpp third_party/imgui/imgui.cpp third_party/imgui/imgui_draw.cpp third_party/imgui/imgui_impl_glfw.cpp example.hpp)
-        target_link_libraries(cpp-config-ui ${DEPENDENCIES})
-        include_directories(cpp-config-ui third_party/imgui)
-        set_target_properties (cpp-config-ui PROPERTIES
+        add_executable(rs-config-ui cpp-config-ui.cpp third_party/imgui/imgui.cpp third_party/imgui/imgui_draw.cpp third_party/imgui/imgui_impl_glfw.cpp example.hpp)
+        target_link_libraries(rs-config-ui ${DEPENDENCIES})
+        include_directories(rs-config-ui third_party/imgui)
+        set_target_properties (rs-config-ui PROPERTIES
             FOLDER Examples
         )
 
         # capture
-        add_executable(cpp-capture cpp-capture.cpp)
-        target_link_libraries(cpp-capture ${DEPENDENCIES})
-        include_directories(cpp-capture third_party/tclap/include)
-        set_target_properties (cpp-capture PROPERTIES
+        add_executable(rs-capture cpp-capture.cpp)
+        target_link_libraries(rs-capture ${DEPENDENCIES})
+        include_directories(rs-capture third_party/tclap/include)
+        set_target_properties (rs-capture PROPERTIES
             FOLDER "Examples"
         )
 
@@ -199,30 +195,27 @@ else()
         )
 
         # multicam
-        add_executable(cpp-multicam cpp-multicam.cpp)
-        target_link_libraries(cpp-multicam ${DEPENDENCIES})
-        set_target_properties (cpp-multicam PROPERTIES
+        add_executable(rs-multicam cpp-multicam.cpp)
+        target_link_libraries(rs-multicam ${DEPENDENCIES})
+        set_target_properties (rs-multicam PROPERTIES
             FOLDER Examples
         )
 
         # pointcloud
-        add_executable(cpp-pointcloud cpp-pointcloud.cpp third_party/imgui/imgui.cpp third_party/imgui/imgui_draw.cpp third_party/imgui/imgui_impl_glfw.cpp)
-        target_link_libraries(cpp-pointcloud ${DEPENDENCIES})
-        include_directories(cpp-config-ui third_party/imgui)
-        set_target_properties (cpp-pointcloud PROPERTIES
+        add_executable(rs-pointcloud cpp-pointcloud.cpp third_party/imgui/imgui.cpp third_party/imgui/imgui_draw.cpp third_party/imgui/imgui_impl_glfw.cpp)
+        target_link_libraries(rs-pointcloud ${DEPENDENCIES})
+        include_directories(rs-config-ui third_party/imgui)
+        set_target_properties (rs-pointcloud PROPERTIES
             FOLDER Examples
         )
 
         install(
             TARGETS
 
-            c-tutorial-2-streams
-            cpp-tutorial-2-streams
-
-            cpp-config-ui
-            cpp-capture
-            cpp-multicam
-            cpp-pointcloud
+            rs-config-ui
+            rs-capture
+            rs-multicam
+            rs-pointcloud
 
             RUNTIME DESTINATION
             ${CMAKE_INSTALL_PREFIX}/bin
