@@ -3,6 +3,7 @@
 
 #include "image.h"
 #include "r200.h"
+#include "ds-private.h"
 
 using namespace rsimpl;
 using namespace rsimpl::ds;
@@ -13,6 +14,11 @@ namespace rsimpl
         : ds_device(device, info, calibration_validator())
     {
     }
+
+    r200_camera::~r200_camera()
+	{
+    	rsimpl::ds::force_firmware_reset(get_device());
+	}
 
     void r200_camera::start_fw_logger(char /*fw_log_op_code*/, int /*grab_rate_in_ms*/, std::timed_mutex& /*mutex*/)
     {
