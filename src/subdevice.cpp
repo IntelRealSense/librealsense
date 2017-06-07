@@ -3,10 +3,12 @@
 
 #include "device.h"
 #include "image.h"
+#include "algo.h"
+#include "metadata-parser.h"
+
 #include <array>
 #include <set>
 #include <unordered_set>
-#include "algo.h"
 
 namespace rsimpl2
 {
@@ -52,6 +54,8 @@ namespace rsimpl2
     {
         _options[RS2_OPTION_FRAMES_QUEUE_SIZE] = std::make_shared<frame_queue_size>(&_max_publish_list_size,
                                                                                     option_range{ 0, 64, 1, 16 });
+
+        register_metadata(RS2_FRAME_METADATA_TIME_OF_ARRIVAL, std::make_shared<rsimpl2::md_time_of_arrival_parser>());
     }
 
     void endpoint::register_notifications_callback(notifications_callback_ptr callback)

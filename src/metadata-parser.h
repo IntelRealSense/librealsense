@@ -28,10 +28,24 @@ namespace rsimpl2
     class md_attribute_parser_base
     {
     public:
-        virtual rs2_metadata_t get(const frame & frm) const = 0;
-        virtual bool supports(const frame & frm) const = 0;
+        virtual rs2_metadata_t get(const frame& frm) const = 0;
+        virtual bool supports(const frame& frm) const = 0;
 
         virtual ~md_attribute_parser_base() = default;
+    };
+
+    class md_time_of_arrival_parser : public md_attribute_parser_base
+    {
+    public:
+        rs2_metadata_t get(const frame& frm) const override
+        {
+            return (rs2_metadata_t)frm.get_frame_system_time();
+        }
+
+        bool supports(const frame& frm) const override
+        { 
+            return true; 
+        }
     };
 
     /**\brief The metadata parser class directly access the metadata attribute in the blob recieved from HW.

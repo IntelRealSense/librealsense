@@ -237,6 +237,7 @@ namespace rsimpl2
         CASE(GAIN_LEVEL)
         CASE(AUTO_EXPOSURE)
         CASE(WHITE_BALANCE)
+        CASE(TIME_OF_ARRIVAL)
         default: assert(!is_valid(value)); return unknown;
         }
         #undef CASE
