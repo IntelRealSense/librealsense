@@ -11,6 +11,26 @@ function require_package {
 	fi
 }
 
+#Based on the current kernel version select the branch name to fetch the kernel source code
+function choose_kernel_branch {
+
+	# Split the kernel version string
+	IFS='.' read -a kernel_version <<< "$1"
+
+	case "${kernel_version[1]}" in
+    "4")									# Kernel 4.4. is managed on master branch
+        echo master
+        ;;
+    "8")								 	# kernel 4.8 is managed on branch hwe
+        echo hwe
+        ;;
+    *)
+        echo -e "\e[31mUnsupported kernel version $1 . The patchs supports Ubuntu kernels 4.4 and 4.8 only\e[0m"
+		exit 1
+        ;;
+	esac
+}
+
 function try_unload_module {
 	unload_module_name=$1
 	op_failed=0

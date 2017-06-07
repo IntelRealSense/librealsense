@@ -11,18 +11,21 @@ fi
 #Include usability functions
 source ./scripts/patch-utils.sh
 
+# Get the required tools and headers to build the kernel
+sudo apt-get install linux-headers-generic build-essential git
+
 #Additional packages to build patch
 require_package libusb-1.0-0-dev
 require_package libssl-dev
 
-# Get the required tools and headers to build the kernel
-sudo apt-get install linux-headers-generic build-essential git
-
 LINUX_BRANCH=$(uname -r)
 
-kernel_name="ubuntu-xenial"
+kernel_branch=$(choose_kernel_branch $LINUX_BRANCH)
+kernel_name="ubuntu-xenial-$kernel_branch"
+
+
 # Get the linux kernel and change into source tree
-[ ! -d ${kernel_name} ] && git clone git://kernel.ubuntu.com/ubuntu/ubuntu-xenial.git --depth 1
+[ ! -d ${kernel_name} ] && git clone -b $kernel_branch git://kernel.ubuntu.com/ubuntu/ubuntu-xenial.git --depth 1 ./${kernel_name}
 cd ${kernel_name}
 
 # Verify that there are no trailing changes., warn the user to make corrective action if needed
@@ -30,8 +33,10 @@ if [ $(git status | grep 'modified:' | wc -l) -ne 0 ];
 then
 	echo -e "\e[36mThe kernel has modified files:\e[0m"
 	git status | grep 'modified:'
-	echo -e "\e[36mProceeding will reset all local kernel changes. Press 'n' within 10 seconds to abort the procedure"
-	read -t 10 -r -p "Do you want to proceed? [Y/n]" response	
+	echo -e "\e[36mProceeding will reset all local kernel changes. Press 'n' within 10 seconds to abort the operation"
+	set +e
+	read -n 1 -t 10 -r -p "Do you want to proceed? [Y/n]" response
+	set -e
 	response=${response,,}    # tolower
 	if [[ $response =~ ^(n|N)$ ]]; 
 	then
@@ -59,7 +64,7 @@ else
 	echo -e "\e[32mApplying realsense-metadata patch\e[0m"
 	patch -p1 < ../scripts/realsense-metadata-ubuntu-xenial.patch
 	echo -e "\e[32mApplying realsense-hid patch\e[0m"
-	patch -p1 < ../scripts/realsense-hid-ubuntu-xenial.patch
+	patch -p1 < ../scripts/realsense-hid-ubuntu-xenial-${kernel_branch}.patch
 fi
 
 # Copy configuration
