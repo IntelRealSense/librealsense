@@ -188,7 +188,7 @@ namespace rsimpl2
             hid_callback _callback;
         };
 
-        void wmf_hid_device::open()
+        void wmf_hid_device::open(const std::vector<hid_profile>&iio_profiles)
         {
         }
 
@@ -203,7 +203,7 @@ namespace rsimpl2
 
         }
 
-        void wmf_hid_device::start_capture(const std::vector<hid_profile>&iio_profiles, hid_callback callback)
+        void wmf_hid_device::start_capture(hid_callback callback)
         {
             // Hack, start default profile
             _cb = new sensor_events(callback);

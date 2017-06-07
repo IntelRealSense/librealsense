@@ -335,10 +335,10 @@ namespace rsimpl2
         {
         public:
             virtual ~hid_device() = default;
-            virtual void open() = 0;
+            virtual void open(const std::vector<hid_profile>& hid_profiles) = 0;
             virtual void close() = 0;
             virtual void stop_capture() = 0;
-            virtual void start_capture(const std::vector<hid_profile>& hid_profiles, hid_callback callback) = 0;
+            virtual void start_capture(hid_callback callback) = 0;
             virtual std::vector<hid_sensor> get_sensors() = 0;
             virtual std::vector<uint8_t> get_custom_report_data(const std::string& custom_sensor_name,
                                                                 const std::string& report_name,
@@ -591,9 +591,9 @@ namespace rsimpl2
         class multi_pins_hid_device : public hid_device
         {
         public:
-            void open() override
+            void open(const std::vector<hid_profile>& sensor_iio) override
             {
-                for (auto&& dev : _dev) dev->open();
+                for (auto&& dev : _dev) dev->open(sensor_iio);
             }
 
             void close() override
@@ -606,9 +606,9 @@ namespace rsimpl2
                 _dev.front()->stop_capture();
             }
 
-            void start_capture(const std::vector<hid_profile>& sensor_iio, hid_callback callback) override
+            void start_capture(hid_callback callback) override
             {
-                _dev.front()->start_capture(sensor_iio, callback);
+                _dev.front()->start_capture(callback);
             }
 
             std::vector<hid_sensor> get_sensors() override

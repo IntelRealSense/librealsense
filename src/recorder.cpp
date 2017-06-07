@@ -860,12 +860,13 @@ namespace rsimpl2
             }, _entity_id, call_type::uvc_unlock);
         }
 
-        void record_hid_device::open()
+        void record_hid_device::open(const std::vector<hid_profile>& hid_profiles)
         {
             _owner->try_record([&](recording* rec, lookup_key k)
             {
-                _source->open();
-                rec->add_call(k);
+                _source->open(hid_profiles);
+                auto&& c =rec->add_call(k);
+                c.param1 = rec->save_blob(hid_profiles.data(), hid_profiles.size() * sizeof(hid_profile));
             }, _entity_id, call_type::hid_open);
         }
 
@@ -887,11 +888,11 @@ namespace rsimpl2
             }, _entity_id, call_type::hid_stop_capture);
         }
 
-        void record_hid_device::start_capture(const std::vector<hid_profile>& hid_profiles, hid_callback callback)
+        void record_hid_device::start_capture(hid_callback callback)
         {
-            _owner->try_record([this, callback, &hid_profiles](recording* rec, lookup_key k)
+            _owner->try_record([this, callback](recording* rec, lookup_key k)
             {
-                _source->start_capture(hid_profiles, [this, callback](const sensor_data& sd)
+                _source->start_capture([this, callback](const sensor_data& sd)
                 {
                     _owner->try_record([this, callback, &sd](recording* rec1, lookup_key key1)
                     {
@@ -906,8 +907,6 @@ namespace rsimpl2
                     }, _entity_id, call_type::hid_frame);
                 });
 
-                auto& call = rec->add_call(k);
-                call.param1 = rec->save_blob(hid_profiles.data(), hid_profiles.size() * sizeof(hid_profile));
             }, _entity_id, call_type::hid_start_capture);
         }
 
@@ -1343,9 +1342,11 @@ namespace rsimpl2
             _callback_thread = std::thread([this]() { callback_thread(); });
         }
 
-        void playback_hid_device::open()
+        void playback_hid_device::open(const std::vector<hid_profile>& hid_profiles)
         {
-            _rec->find_call(call_type::hid_open, _entity_id);
+            auto stored = _rec->find_call(call_type::hid_open, _entity_id);
+            auto stored_iios = _rec->load_blob(stored.param1);
+            // TODO: Verify sensor_iio
         }
 
         void playback_hid_device::close()
@@ -1369,12 +1370,9 @@ namespace rsimpl2
             _callback_thread.join();
         }
 
-        void playback_hid_device::start_capture(const std::vector<hid_profile>& hid_profiles, hid_callback callback)
+        void playback_hid_device::start_capture(hid_callback callback)
         {
             lock_guard<mutex> lock(_callback_mutex);
-            auto stored = _rec->find_call(call_type::hid_start_capture, _entity_id);
-            auto stored_iios = _rec->load_blob(stored.param1);
-            // TODO: Verify sensor_iio
 
             _callback = callback;
             _alive = true;

@@ -196,10 +196,10 @@ PYBIND11_PLUGIN(NAME) {
                    .def_readwrite("ts_high", &uvc::hid_sensor_data::ts_high);
 
     py::class_<uvc::hid_device> hid_device(m, "hid_device");
-    hid_device.def("open", &uvc::hid_device::open)
+    hid_device.def("open", &uvc::hid_device::open, "hid_profiles"_a)
               .def("close", &uvc::hid_device::close)
               .def("stop_capture", &uvc::hid_device::stop_capture)
-              .def("start_capture", &uvc::hid_device::start_capture, "hid_profiles"_a, "callback"_a)
+              .def("start_capture", &uvc::hid_device::start_capture, "callback"_a)
               .def("get_sensors", &uvc::hid_device::get_sensors)
               .def("get_custom_report_data", &uvc::hid_device::get_custom_report_data,
                    "custom_sensor_name"_a, "report_name"_a, "report_field"_a);

@@ -359,10 +359,10 @@ namespace rsimpl2
         class record_hid_device : public hid_device
         {
         public:
-            void open() override;
+            void open(const std::vector<hid_profile>& hid_profiles) override;
             void close() override;
             void stop_capture() override;
-            void start_capture(const std::vector<hid_profile>& hid_profiles, hid_callback callback) override;
+            void start_capture(hid_callback callback) override;
             std::vector<hid_sensor> get_sensors() override;
             std::vector<uint8_t> get_custom_report_data(const std::string& custom_sensor_name,
                 const std::string& report_name,
@@ -553,10 +553,10 @@ namespace rsimpl2
         class playback_hid_device : public hid_device
         {
         public:
-            void open() override;
+            void open(const std::vector<hid_profile>& hid_profiles) override;
             void close() override;
             void stop_capture() override;
-            void start_capture(const std::vector<hid_profile>& hid_profiles, hid_callback callback) override;
+            void start_capture(hid_callback callback) override;
             std::vector<hid_sensor> get_sensors() override;
             std::vector<uint8_t> get_custom_report_data(const std::string& custom_sensor_name,
                 const std::string& report_name,

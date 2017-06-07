@@ -201,7 +201,16 @@ namespace rsimpl2
               _sensor_name_and_hid_profiles(sensor_name_and_hid_profiles),
               _is_configured_stream(RS2_STREAM_COUNT)
         {
-            _hid_device->open();
+            std::map<std::string, uint32_t> frequency_per_sensor;
+            for (auto& elem : sensor_name_and_hid_profiles)
+                frequency_per_sensor.insert(std::make_pair(elem.first, elem.second.fps));
+
+            std::vector<uvc::hid_profile> profiles_vector;
+            for (auto& elem : frequency_per_sensor)
+                profiles_vector.push_back(uvc::hid_profile{elem.first, elem.second});
+
+
+            _hid_device->open(profiles_vector);
             for (auto& elem : _hid_device->get_sensors())
                 _hid_sensors.push_back(elem);
 

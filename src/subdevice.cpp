@@ -648,7 +648,6 @@ namespace rsimpl2
             throw wrong_api_call_sequence_exception("Hid device is already opened!");
 
         auto mapping = resolve_requests(requests);
-        _hid_device->open();
         for (auto& request : requests)
         {
             auto sensor_name = rs2_stream_to_sensor_name(request.stream);
@@ -673,6 +672,13 @@ namespace rsimpl2
                 }
             }
         }
+
+        std::vector<uvc::hid_profile> configured_hid_profiles;
+        for (auto& elem : _configured_profiles)
+        {
+            configured_hid_profiles.push_back(uvc::hid_profile{elem.first, elem.second.fps});
+        }
+        _hid_device->open(configured_hid_profiles);
         _is_opened = true;
     }
 
@@ -716,13 +722,7 @@ namespace rsimpl2
 
         _archive = std::make_shared<frame_archive>(&_max_publish_list_size, _ts, nullptr, _metadata_parsers);
         _callback = std::move(callback);
-        std::vector<uvc::hid_profile> configured_hid_profiles;
-        for (auto& elem : _configured_profiles)
-        {
-            configured_hid_profiles.push_back(uvc::hid_profile{elem.first, elem.second.fps});
-        }
-
-        _hid_device->start_capture(configured_hid_profiles, [this](const uvc::sensor_data& sensor_data)
+        _hid_device->start_capture([this](const uvc::sensor_data& sensor_data)
         {
             auto system_time = _ts->get_time();
             auto timestamp_reader = _hid_iio_timestamp_reader.get();
