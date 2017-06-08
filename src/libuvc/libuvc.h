@@ -52,7 +52,7 @@ typedef enum uvc_error {
 } uvc_error_t;
 
 /** VideoStreaming interface descriptor subtype (A.6) */
-enum uvc_vs_desc_subtype {
+typedef enum uvc_vs_desc_subtype {
   UVC_VS_UNDEFINED = 0x00,
   UVC_VS_INPUT_HEADER = 0x01,
   UVC_VS_OUTPUT_HEADER = 0x02,
@@ -67,7 +67,7 @@ enum uvc_vs_desc_subtype {
   UVC_VS_FORMAT_FRAME_BASED = 0x10,
   UVC_VS_FRAME_FRAME_BASED = 0x11,
   UVC_VS_FORMAT_STREAM_BASED = 0x12
-};
+} uvc_vs_desc_subtype_t;
 
 struct uvc_format_desc;
 struct uvc_frame_desc;
@@ -161,10 +161,10 @@ enum uvc_req_code {
   UVC_GET_DEF = 0x87
 };
 
-enum uvc_device_power_mode {
+typedef enum uvc_device_power_mode {
   UVC_VC_VIDEO_POWER_MODE_FULL = 0x000b,
   UVC_VC_VIDEO_POWER_MODE_DEVICE_DEPENDENT = 0x001b,
-};
+} uvc_device_power_mode_t;
 
 /** Camera terminal control selector (A.9.4) */
 enum uvc_ct_ctrl_selector {
@@ -222,11 +222,11 @@ enum uvc_term_type {
 };
 
 /** Input terminal type (B.2) */
-enum uvc_it_type {
+typedef enum uvc_it_type {
   UVC_ITT_VENDOR_SPECIFIC = 0x0200,
   UVC_ITT_CAMERA = 0x0201,
   UVC_ITT_MEDIA_TRANSPORT_INPUT = 0x0202
-};
+} uvc_it_type_t;
 
 /** Output terminal type (B.3) */
 enum uvc_ot_type {
@@ -322,12 +322,12 @@ enum uvc_status_class {
   UVC_STATUS_CLASS_CONTROL_PROCESSING = 0x12,
 };
 
-enum uvc_status_attribute {
+typedef enum uvc_status_attribute {
   UVC_STATUS_ATTRIBUTE_VALUE_CHANGE = 0x00,
   UVC_STATUS_ATTRIBUTE_INFO_CHANGE = 0x01,
   UVC_STATUS_ATTRIBUTE_FAILURE_CHANGE = 0x02,
   UVC_STATUS_ATTRIBUTE_UNKNOWN = 0xff
-};
+} uvc_status_attribute_t;
 
 /** A callback function to accept status updates
  * @ingroup device

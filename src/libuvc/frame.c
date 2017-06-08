@@ -62,7 +62,7 @@ uvc_error_t uvc_ensure_frame_size(uvc_frame_t *frame, size_t need_bytes) {
  * @return New frame, or NULL on error
  */
 uvc_frame_t *uvc_allocate_frame(size_t data_bytes) {
-  uvc_frame_t *frame = malloc(sizeof(*frame));
+  uvc_frame_t *frame = (uvc_frame_t *)malloc(sizeof(*frame));
 
   if (!frame)
     return NULL;
