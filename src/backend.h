@@ -518,13 +518,13 @@ namespace rsimpl2
         {
             devices_data(){}
 
-            devices_data(std::vector<uvc_device_info>  uvc_devices, std::vector<usb_device_info> usb_devices, std::vector<hid_device_info> hid_devices)
+            devices_data(const std::vector<uvc_device_info>& uvc_devices, const std::vector<usb_device_info>& usb_devices, const std::vector<hid_device_info>& hid_devices)
                 :_uvc_devices(uvc_devices), _usb_devices(usb_devices), _hid_devices(hid_devices) {}
 
-            devices_data(std::vector<usb_device_info> usb_devices)
+            devices_data(const std::vector<usb_device_info>& usb_devices)
                 :_usb_devices(usb_devices) {}
 
-            devices_data(std::vector<uvc_device_info> uvc_devices, std::vector<usb_device_info> usb_devices)
+            devices_data(const std::vector<uvc_device_info>& uvc_devices, const std::vector<usb_device_info>& usb_devices)
                 :_uvc_devices(uvc_devices), _usb_devices(usb_devices) {}
 
             std::vector<uvc_device_info> _uvc_devices;
