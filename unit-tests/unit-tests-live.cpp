@@ -12,7 +12,6 @@
 using namespace rs2;
 
 # define SECTION_FROM_TEST_NAME space_to_underscore(Catch::getCurrentContext().getResultCapture()->getCurrentTestName()).c_str()
-
 //// disable in one place options that are sensitive to frame content
 //// this is done to make sure unit-tests are deterministic
 void disable_sensitive_options_for(device& dev)
@@ -1232,6 +1231,7 @@ void reset_device(std::shared_ptr<device>& strong, std::weak_ptr<device>& weak, 
 }
 
 TEST_CASE("Disconnect events works", "[live]") {
+
     rs2::context ctx;
     if (make_context(SECTION_FROM_TEST_NAME, &ctx))
     {
@@ -1270,6 +1270,7 @@ TEST_CASE("Disconnect events works", "[live]") {
 
                     for (auto d : info.get_new_devices())
                     {
+                        disable_sensitive_options_for(d);
                         if (serial == d.get_camera_info(RS2_CAMERA_INFO_DEVICE_SERIAL_NUMBER))
                         {
                             try
@@ -1376,9 +1377,6 @@ TEST_CASE("Connect events works", "[live]") {
         REQUIRE(cv.wait_for(lock, std::chrono::seconds(10), [&]() {return disconnected; }));
         //Check that after reset the device gets connected back within reasonable period of time
         REQUIRE(cv.wait_for(lock, std::chrono::seconds(10), [&]() {return connected; }));
-
-
-
     }
 }
 
@@ -1387,44 +1385,66 @@ std::shared_ptr<std::function<void(frame fref)>> check_stream_sanity(device& dev
     std::shared_ptr<std::condition_variable> cv = std::make_shared<std::condition_variable>();
     std::shared_ptr<std::mutex> m = std::make_shared<std::mutex>();
     std::shared_ptr<std::map<rs2_stream, int>> streams_frames = std::make_shared<std::map<rs2_stream, int>>();
+    std::vector<device> devs;
 
-    rs2::util::config::multistream streams;
-    util::config config;
-    REQUIRE_NOTHROW(config.enable_all(preset::best_quality));
-    REQUIRE_NOTHROW(streams = config.open(dev));
+    std::shared_ptr<std::function<void(frame fref)>>  func;
 
-    auto profiles = streams.get_profiles();
 
-    for (auto f : profiles)
+    std::vector<stream_profile> profiles = {
+    {RS2_STREAM_DEPTH, 640, 480, 60, RS2_FORMAT_Z16},
+    {RS2_STREAM_FISHEYE, 640, 480, 60, RS2_FORMAT_RAW8}};
+
+    for (auto sub:dev.get_adjacent_devices())
     {
-        (*streams_frames)[f.first] = 0;
-    }
-    auto func = std::make_shared< std::function<void(frame fref)>>([num_of_frames, m, streams_frames, cv](frame fref) mutable
-    {
-        std::unique_lock<std::mutex> lock(*m);
-        auto stream = fref.get_stream_type();
-        streams_frames->at(stream)++;
-        cv->notify_one();
+        std::vector<stream_profile> modes;
+        REQUIRE_NOTHROW(modes = sub.get_stream_modes());
 
-    });
-    REQUIRE_NOTHROW(streams.start(*func));
-
-    {
-        std::unique_lock<std::mutex> lock(*m);
-        REQUIRE(cv->wait_for(lock, std::chrono::seconds(30), [&]
+        for(auto p:profiles )
         {
-            for (auto f : (*streams_frames))
+            if(std::find_if(modes.begin(), modes.end(), [&](stream_profile profile){return p==profile;}) < modes.end())
             {
-                if (f.second < num_of_frames)
-                    return false;
+
+                (*streams_frames)[p.stream] = 0;
+
+                REQUIRE_NOTHROW(sub.open(p));
+                devs.push_back(sub);
+
+                func = std::make_shared< std::function<void(frame fref)>>([devs, num_of_frames, m, streams_frames, cv](frame fref) mutable
+                    {
+                        std::unique_lock<std::mutex> lock(*m);
+                        auto stream = fref.get_stream_type();
+                        streams_frames->at(stream)++;
+                        if(streams_frames->at(stream) >= num_of_frames)
+                            cv->notify_one();
+
+                    });
+                REQUIRE_NOTHROW(sub.start(*func));
+                break;
             }
-            return true;
-        }));
+        }
+
     }
+
+    REQUIRE(streams_frames->size()>0);
+
+    std::unique_lock<std::mutex> lock(*m);
+    cv->wait_for(lock, std::chrono::seconds(30), [&]
+    {
+        for (auto f : (*streams_frames))
+        {
+            if (f.second < num_of_frames)
+                return false;
+        }
+        return true;
+    });
+
     if (!infinite)
     {
-        REQUIRE_NOTHROW(streams.stop());
-        REQUIRE_NOTHROW(streams.close());
+        for(auto dev:devs)
+        {
+            REQUIRE_NOTHROW(dev.stop());
+            REQUIRE_NOTHROW(dev.close());
+        }
     }
 
     return func;
@@ -1640,6 +1660,7 @@ TEST_CASE("device_hub sanity", "[live]") {
         rs2::util::device_hub hub1(ctx);    //because we are also register to devices changed events in the test we need
         //to override the test's callback with the device_hub callback
         REQUIRE_NOTHROW(dev = std::make_shared<device>(hub1.wait_for_device()));
+        disable_sensitive_options_for(*dev);
         check_controlls_sanity(*dev);
     }
 }

@@ -102,8 +102,9 @@ namespace rsimpl2
         auto old_list = create_devices(old);
         auto new_list = create_devices(curr);
 
-        if (rsimpl2::list_changed<std::shared_ptr<device_info>>(old_list, new_list, [](std::shared_ptr<device_info> first, std::shared_ptr<device_info> second) { return *first == *second; }))
+        if (rsimpl2::list_changed<std::shared_ptr<device_info>>(old_list, new_list, [](std::shared_ptr<device_info> first, std::shared_ptr<device_info> second) {return *first == *second; }))
         {
+
             std::vector<rs2_device_info> rs2_devices_info_added;
             std::vector<rs2_device_info> rs2_devices_info_removed;
 

@@ -102,6 +102,10 @@ namespace rsimpl2
         {
             auto& devices = group.first;
             auto& hids = group.second;
+
+            if(group.first[0].pid == ds::RS430_MM_PID &&  hids.size()==0)
+                continue;
+
             if (!devices.empty() &&
                 mi_present(devices, 0))
             {

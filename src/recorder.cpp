@@ -536,8 +536,6 @@ namespace rsimpl2
                 const auto idx = (_cursors[entity_id] + i) % static_cast<int>(calls.size());
                 if (calls[idx].type == t && calls[idx].entity_id == entity_id)
                 {
-                    _cursors[entity_id] = _cycles[entity_id] = idx;
-
                     if (calls[idx].had_error)
                     {
                         throw runtime_error(calls[idx].inline_string);
@@ -549,6 +547,8 @@ namespace rsimpl2
                         throw playback_backend_exception("Recording history mismatch!", t, entity_id);
                     }
                     auto next = peak_next_call();
+
+                    _cursors[entity_id] = _cycles[entity_id] = idx;
 
                     if (next && t != call_type::device_watcher_event && next->type == call_type::device_watcher_event)
                     {
@@ -562,13 +562,8 @@ namespace rsimpl2
 
         call* recording::peak_next_call(int id)
         {
-
             const auto idx = (_cycles[id] + 1) % static_cast<int>(calls.size());
-            if (calls[idx].entity_id == id)
-            {
-                return &calls[idx];
-            }
-
+            return &calls[idx];
         }
 
 
