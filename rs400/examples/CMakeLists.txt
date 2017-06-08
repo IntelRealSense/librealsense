@@ -49,8 +49,8 @@ else()
     include_directories(${GLFW_INCLUDE_DIR})
 endif()
 
-add_executable(rs400-advanced-mode-sample sample.cpp ../include/r400_advanced_mode/r400_advanced_mode.hpp third_party/json.hpp json_loader.hpp
-    ../../examples/third_party/imgui/imgui.cpp ../../examples/third_party/imgui/imgui_draw.cpp ../../examples/third_party/imgui/imgui_impl_glfw.cpp sample.hpp ../include/r400_advanced_mode/AdvancedModeCommand.h)
+add_executable(rs400-advanced-mode-sample sample.cpp ../include/rs400_advanced_mode/rs400_advanced_mode.hpp third_party/json.hpp json_loader.hpp
+    ../../examples/third_party/imgui/imgui.cpp ../../examples/third_party/imgui/imgui_draw.cpp ../../examples/third_party/imgui/imgui_impl_glfw.cpp sample.hpp ../include/rs400_advanced_mode/AdvancedModeCommand.h)
 target_link_libraries(rs400-advanced-mode-sample ${DEPENDENCIES})
 include_directories(rs400-advanced-mode-sample ../../examples/third_party/imgui third_party ../../examples/third_party/tclap/include)
 
@@ -72,7 +72,7 @@ if(WIN32)
         ../../examples/third_party/imgui/imgui_impl_glfw.cpp)
 
     source_group("Header Files\\Reference" FILES
-        ../include/r400_advanced_mode/AdvancedModeCommand.h)
+        ../include/rs400_advanced_mode/AdvancedModeCommand.h)
 
 endif()
 
@@ -87,9 +87,9 @@ install(
 if(WIN32)
     set(ADVANCED_DEF advanced-c.def)
 endif()
-add_library(rs400-advanced-mode SHARED advanced-c.h advanced-c.cpp ../include/r400_advanced_mode/AdvancedModeCommand.h ${ADVANCED_DEF} c-sample.c)
+add_library(rs400-advanced-mode SHARED ../include/rs400_advanced_mode/rs400_advanced_mode.h advanced-c.cpp ../include/rs400_advanced_mode/AdvancedModeCommand.h ${ADVANCED_DEF} c-sample.c)
 target_link_libraries(rs400-advanced-mode ${DEPENDENCIES})
-include_directories(rs400-advanced-mode ../include/r400_advanced_mode ../../include)
+include_directories(rs400-advanced-mode ../include)
 
 set_target_properties (rs400-advanced-mode PROPERTIES
     FOLDER "RS400 Extras"

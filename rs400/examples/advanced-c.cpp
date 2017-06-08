@@ -1,8 +1,8 @@
-#include "advanced-c.h"
-#include "../include/r400_advanced_mode/r400_advanced_mode.hpp"
+#include <rs400_advanced_mode/rs400_advanced_mode.h>
+#include <rs400_advanced_mode/rs400_advanced_mode.hpp>
 #include "../../include/librealsense/rs2.hpp"
 
-using namespace r400;
+using namespace rs400;
 
 template<class T>
 int do_advanced_mode(rs2_device* dev, T action)

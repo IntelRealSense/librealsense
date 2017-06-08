@@ -107,8 +107,3 @@ librealsense2 will no longer provide hand-written Visual Studio, QT-Creator and 
 * RS400 series does not require any kernel patches for streaming (starting with kernel 4.4.0.59)
 * Advanced camera features may still require kernel patches. Currently, getting **hardware timestamps** is dependent on a patch that has not been up-streamed yet. When not applied you can still use the camera, but you are going to receive system-time instead of optical timestamp.
 * Recently discovered bug in uvcvideo Kernel Module is likely to cause problems when working with exposure and auto-white-balance options. While fix is being up-streamed, librealsense will provide the fix as a Kernel patch.
-
-## RS400 Advanced Mode
-RS400 series include an advanced set of capabilities, allowing expert users to tweak depth generation parameters and more.
-* Intel will ship auxiliary library alongside librealsense under proprietary license.
-* This **Advanced Mode API** can be used to tweak depth parameters, color correction parameters, read and write to registers.

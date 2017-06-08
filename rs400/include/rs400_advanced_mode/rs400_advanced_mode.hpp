@@ -9,7 +9,7 @@
 #include <thread>
 #include <chrono>
 
-namespace r400
+namespace rs400
 {
     enum class command
     {
