@@ -333,6 +333,9 @@ namespace rsimpl2
            if (!std::isnormal(_opt_range.step))
                throw invalid_value_exception(to_string() << "is_valid(...) failed! step is not properly defined. (" << _opt_range.step << ")");
 
+           if ((value < _opt_range.min) || (value > _opt_range.max))
+               return false;
+
            auto n = (value - _opt_range.min)/_opt_range.step;
            return (fabs(fmod(n, 1)) < std::numeric_limits<float>::min());
        }
