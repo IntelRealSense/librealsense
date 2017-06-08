@@ -780,6 +780,7 @@ namespace rsimpl2
             additional_data.timestamp = timestamp;
             additional_data.frame_number = frame_counter;
             additional_data.timestamp_domain = timestamp_reader->get_frame_timestamp_domain(mode, sensor_data.fo);
+            additional_data.system_time = system_time;
 
             LOG_DEBUG("FrameAccepted," << get_string(additional_data.stream_type) << "," << frame_counter
                       << ",Arrived," << std::fixed << system_time

@@ -106,7 +106,7 @@ namespace rsimpl2
         md_attribute_parser() = delete;
         md_attribute_parser(const md_attribute_parser&) = delete;
 
-        Attribute S::*          _md_attribute;      // Pointer to the attribute within struct that holds the relevant data
+        Attribute S::*      _md_attribute;  // Pointer to the attribute within struct that holds the relevant data
         Flag                _md_flag;       // Bit that indicates whether the particluar attribute is actiive
         unsigned long long  _offset;        // Inner struct offset with regard to the most outer one
     };
@@ -181,6 +181,40 @@ namespace rsimpl2
     std::shared_ptr<md_attribute_parser_base> make_additional_data_parser(Attribute St::* attribute)
     {
         std::shared_ptr<md_additional_parser<St, Attribute>> parser(new md_additional_parser<St, Attribute>(attribute));
+        return parser;
+    }
+
+    /**\brief Optical timestamp for RS4xx devices is calculated internally*/
+    class md_rs4xx_sensor_timestamp : public md_attribute_parser_base
+    {
+        std::shared_ptr<md_attribute_parser_base> _sensor_ts_parser = nullptr;
+        std::shared_ptr<md_attribute_parser_base> _frame_ts_parser = nullptr;
+
+    public:
+        explicit md_rs4xx_sensor_timestamp(std::shared_ptr<md_attribute_parser_base> sensor_ts_parser,
+            std::shared_ptr<md_attribute_parser_base> frame_ts_parser) :
+            _sensor_ts_parser(sensor_ts_parser), _frame_ts_parser(frame_ts_parser) {};
+
+        virtual ~md_rs4xx_sensor_timestamp() { _sensor_ts_parser = nullptr; _frame_ts_parser = nullptr; };
+
+        // The sensor's timestamp is defined as the middle of exposure time. Sensor_ts= Frame_ts - (Actual_Exposure/2)
+        // For RS4xx the metadata payload holds only the (Actual_Exposure/2) offset, and the actual value needs to be calculated
+        rs2_metadata_t get(const frame & frm) const override
+        {
+            return _frame_ts_parser->get(frm) - _sensor_ts_parser->get(frm);
+        };
+
+        bool supports(const frame & frm) const override
+        {
+            return (_sensor_ts_parser->supports(frm) && _frame_ts_parser->supports(frm));
+        };
+    };
+
+    /**\brief A helper function to create a specialized parser for RS4xx sensor timestamp*/
+    inline std::shared_ptr<md_attribute_parser_base> make_rs4xx_sensor_ts_parser(std::shared_ptr<md_attribute_parser_base> frame_ts_parser,
+        std::shared_ptr<md_attribute_parser_base> sensor_ts_parser)
+    {
+        std::shared_ptr<md_rs4xx_sensor_timestamp> parser(new md_rs4xx_sensor_timestamp(sensor_ts_parser, frame_ts_parser));
         return parser;
     }
 }

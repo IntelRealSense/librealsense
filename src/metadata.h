@@ -28,17 +28,18 @@ namespace rsimpl2
     /**\brief md_mode - enumerates the types of metadata modes(structs) supported */
     enum class md_type: uint32_t
     {
-        META_DATA_INTEL_DEPTH_CONTROL_ID    = 0x80000000,
-        META_DATA_INTEL_CAPTURE_TIMING_ID   = 0x80000001,
-        META_DATA_INTEL_CONFIGURATION_ID    = 0x80000002,
-        META_DATA_INTEL_STAT_ID             = 0x80000003,
-        META_DATA_INTEL_FISH_EYE_CONTROL_ID = 0x80000004,
-        META_DATA_INTEL_RGB_CONTROL_ID      = 0x80000005,
-        META_DATA_INTEl_FE_FOV_MODEL_ID     = 0x80000006,
-        META_DATA_CAPTURE_STATS_ID          = 0x00000003,
-        META_DATA_CAMERA_EXTRINSICS_ID      = 0x00000004,
-        META_DATA_CAMERA_INTRINSICS_ID      = 0x00000005,
-        META_DATA_CAMERA_DEBUG_ID           = 0x800000FF,
+        META_DATA_INTEL_DEPTH_CONTROL_ID        = 0x80000000,
+        META_DATA_INTEL_CAPTURE_TIMING_ID       = 0x80000001,
+        META_DATA_INTEL_CONFIGURATION_ID        = 0x80000002,
+        META_DATA_INTEL_STAT_ID                 = 0x80000003,
+        META_DATA_INTEL_FISH_EYE_CONTROL_ID     = 0x80000004,
+        META_DATA_INTEL_RGB_CONTROL_ID          = 0x80000005,
+        META_DATA_INTEl_FE_FOV_MODEL_ID         = 0x80000006,
+        META_DATA_INTEl_FE_CAMERA_EXTRINSICS_ID = 0x80000007,
+        META_DATA_CAPTURE_STATS_ID              = 0x00000003,
+        META_DATA_CAMERA_EXTRINSICS_ID          = 0x00000004,
+        META_DATA_CAMERA_INTRINSICS_ID          = 0x00000005,
+        META_DATA_CAMERA_DEBUG_ID               = 0x800000FF,
     };
 
     static const std::map<md_type,std::string> md_type_desc =
@@ -210,6 +211,7 @@ namespace rsimpl2
         uint32_t    exposure_roi_top;
         uint32_t    exposure_roi_bottom;
         uint32_t    preset;
+        uint32_t    laserPowerMode;
     };
 
     REGISTER_MD_TYPE(md_depth_control, md_type::META_DATA_INTEL_DEPTH_CONTROL_ID)

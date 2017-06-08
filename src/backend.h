@@ -107,8 +107,7 @@ namespace rsimpl2
         public:
             rs2_time_t get_time() const override
             {
-                static double first = std::chrono::duration<double, std::milli>(std::chrono::system_clock::now().time_since_epoch()).count();
-                return std::chrono::duration<double, std::milli>(std::chrono::system_clock::now().time_since_epoch()).count() - first;
+                return std::chrono::duration<double, std::milli>(std::chrono::system_clock::now().time_since_epoch()).count();
             }
         };
 

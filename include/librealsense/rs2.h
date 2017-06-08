@@ -16,7 +16,7 @@ extern "C" {
 
 #define RS2_API_MAJOR_VERSION    2
 #define RS2_API_MINOR_VERSION    6
-#define RS2_API_PATCH_VERSION    1
+#define RS2_API_PATCH_VERSION    2
 
 #define STRINGIFY(arg) #arg
 #define VAR_ARG_STRING(arg) STRINGIFY(arg)
@@ -263,8 +263,8 @@ typedef void (*rs2_notification_callback_ptr)(rs2_notification*, void*);
 typedef void (*rs2_devices_changed_callback_ptr)(rs2_device_list*, rs2_device_list*, void*);
 typedef void (*rs2_log_callback_ptr)(rs2_log_severity min_severity, const char* message, void* user);
 
-typedef double  rs2_time_t; /**< Timestamp format. units are milliseconds */
-typedef long    rs2_metadata_t;   /**< Metadata attribute type*/
+typedef double      rs2_time_t;     /**< Timestamp format. units are milliseconds */
+typedef long long   rs2_metadata_t; /**< Metadata attribute type is defined as 64 bit signed integer*/
 
 /**
 * \brief Creates RealSense context that is required for the rest of the API.
