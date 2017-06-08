@@ -9,6 +9,3 @@ before_build:
 build:
   verbosity: minimal
   project: librealsense.vc12/realsense.sln
-
-cache:
-  - librealsense.vc12/packages
