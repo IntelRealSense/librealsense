@@ -10,6 +10,7 @@
 #include <cstdio>
 #include <sstream>
 #include <cstring>
+#include <iomanip>
 
 #include <algorithm>
 #include <functional>
@@ -493,6 +494,16 @@ namespace rsimpl
 
         int get_vendor_id(const device & device) { return device.subdevices[0]->get_vid(); }
         int get_product_id(const device & device) { return device.subdevices[0]->get_pid(); }
+
+        std::string get_usb_hub_name(const device & device)
+        {
+            std::stringstream usb_bus;
+            usb_bus << std::setw( 3 ) << std::setfill( '0' ) << (int)libusb_get_bus_number(device.usb_device);
+            usb_bus << "/";
+            usb_bus << std::setw( 3 ) << std::setfill( '0' ) << (int)1;//libusb_get_device_address(device.usb_device);
+
+            return "/dev/bus/usb/" + usb_bus.str();
+        }
 
         std::string get_usb_port_id(const device & device)
         {
