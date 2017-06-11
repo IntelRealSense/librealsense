@@ -58,9 +58,9 @@ TEST_CASE("Device metadata enumerates correctly", "[live]")
 }
 
 
-//////////////////////////////////////////////////////////
-//// Test basic streaming functionality //
-//////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////
+////// Test basic streaming functionality //
+////////////////////////////////////////////////////////////
 TEST_CASE("Start-Stop stream sequence", "[live]")
 {
     // Require at least one device to be plugged in
@@ -96,9 +96,9 @@ TEST_CASE("Start-Stop stream sequence", "[live]")
     }
 }
 
-/////////////////////////////////////
-//// Calibration information tests //
-/////////////////////////////////////
+///////////////////////////////////////
+////// Calibration information tests //
+///////////////////////////////////////
 
 TEST_CASE("no extrinsic transformation between a stream and itself", "[live]")
 {
@@ -1624,11 +1624,11 @@ TEST_CASE("Connect Disconnect events while controlls", "[live]") {
 
 }
 
-TEST_CASE("device_hub sanity", "[live]") {
+TEST_CASE("device_hub", "[live]") {
+
     rs2::context ctx;
+
     std::shared_ptr<device> dev;
-    std::condition_variable cv;
-    std::mutex m;
 
     if (make_context(SECTION_FROM_TEST_NAME, &ctx))
     {
@@ -1639,27 +1639,14 @@ TEST_CASE("device_hub sanity", "[live]") {
 
         disable_sensitive_options_for(*dev);
 
-        //Setting up devices change callback to notify the test about device disconnection
-        REQUIRE_NOTHROW(ctx.set_devices_changed_callback([&, weak](event_information& info)
-        {
-            auto&& strong = weak.lock();
-
-            if (strong && info.was_removed(*strong))
-            {
-                std::unique_lock<std::mutex> lock(m);
-                cv.notify_one();
-            }
-        }));
-
         dev->hardware_reset();
 
+        while(hub.is_connected(*dev))
         {
-            std::unique_lock<std::mutex> lock(m);
-            REQUIRE(cv.wait_for(lock, std::chrono::seconds(10), [&]() {return !hub.is_connected(*dev); }));
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
         }
-        rs2::util::device_hub hub1(ctx);    //because we are also register to devices changed events in the test we need
-        //to override the test's callback with the device_hub callback
-        REQUIRE_NOTHROW(dev = std::make_shared<device>(hub1.wait_for_device()));
+
+        REQUIRE_NOTHROW(dev = std::make_shared<device>(hub.wait_for_device()));
         disable_sensitive_options_for(*dev);
         check_controlls_sanity(*dev);
     }

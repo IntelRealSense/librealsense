@@ -575,7 +575,7 @@ void rs2_set_devices_changed_callback(rs2_context* context, rs2_devices_changed_
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return            true if the device was disconnected and false otherwise
 */
-int rs2_device_was_removed(const rs2_device_list* removed, const rs2_device* dev, rs2_error** error);
+int rs2_device_list_contains(const rs2_device_list* removed, const rs2_device* dev, rs2_error** error);
 
 
 /**

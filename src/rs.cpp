@@ -637,7 +637,7 @@ HANDLE_EXCEPTIONS_AND_RETURN(RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR, notificati
 
 
 
-int rs2_device_was_removed(const rs2_device_list* removed, const rs2_device* dev, rs2_error** error)try
+int rs2_device_list_contains(const rs2_device_list* removed, const rs2_device* dev, rs2_error** error)try
 {
     VALIDATE_NOT_NULL(removed);
     VALIDATE_NOT_NULL(dev);
@@ -651,6 +651,7 @@ int rs2_device_was_removed(const rs2_device_list* removed, const rs2_device* dev
     }
     return 0;
 }
+
 HANDLE_EXCEPTIONS_AND_RETURN(false, removed, dev)
 
 rs2_time_t rs2_get_frame_timestamp(const rs2_frame * frame_ref, rs2_error ** error) try
