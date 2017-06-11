@@ -103,7 +103,7 @@ namespace rsimpl2
             auto& devices = group.first;
             auto& hids = group.second;
 
-            if(group.first[0].pid == ds::RS430_MM_PID &&  hids.size()==0)
+            if((group.first[0].pid == ds::RS430_MM_PID || group.first[0].pid == ds::RS420_MM_PID) &&  hids.size()==0)
                 continue;
 
             if (!devices.empty() &&
@@ -512,7 +512,7 @@ namespace rsimpl2
              depth_ep.register_option(RS2_OPTION_ASIC_TEMPERATURE,
                                       std::make_shared<asic_and_projector_temperature_options>(depth_ep,
                                                                                                RS2_OPTION_ASIC_TEMPERATURE));
-             if (pid == RS430_MM_PID)
+             if (pid == RS430_MM_PID || pid == RS420_MM_PID)
                  motion_module_fw_version = _hw_monitor->get_firmware_version_string(GVD, motion_module_fw_version_offset);
          }
 
