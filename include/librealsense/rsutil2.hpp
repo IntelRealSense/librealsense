@@ -318,11 +318,15 @@ namespace rs2
             device_hub(const context& ctx)
                 : _ctx(ctx)
             {
+                _device_list = _ctx.query_devices();
+
                 _ctx.set_devices_changed_callback([&](event_information& info)
                 {
-                    std::unique_lock<std::mutex> lock(_mutex);      
-                    _device_list = info.get_new_devices();
+                    std::unique_lock<std::mutex> lock(_mutex);
+                    _device_list = _ctx.query_devices();
 
+                    // Current device will point to the first available device
+                    _camera_index = 0;
                     if (_device_list.size() > 0)
                     {
                         _cv.notify_all();
@@ -336,29 +340,24 @@ namespace rs2
              */
             device wait_for_device()
             {
-                try
                 {
-                    // check at first if there is at list one device connected 
-                    auto list = _ctx.query_devices();  
-
-                    if (list.size() > 0)
+                    std::unique_lock<std::mutex> lock(_mutex);
+                    // check if there is at least one device connected
+                    if (_device_list.size() > 0)
                     {
                         // user can switch the devices by calling to wait_for_device until he get the desire device
                         // _camera_index is the curr device that user want to work with
 
-                        auto dev = list[_camera_index % list.size()];
-                        _camera_index = ++_camera_index % list.size();
+                        auto dev = _device_list[_camera_index % _device_list.size()];
+                        _camera_index = ++_camera_index % _device_list.size();
                         return dev;
                     }
                     else
                     {
-                        // if there is no device connected the curr device zerroing 
-                        _camera_index = 0;
+                        std::cout<<"No device connected\n";
                     }
                 }
-                catch (...) {}
-
-                // if there are no devices connected or somthing wrong happend while enumaretion 
+                // if there are no devices connected or something wrong happened while enumeration
                 // wait for event of device connection
                 // and do it until camera connected and succeed in its creation
                 while (true)
@@ -372,14 +371,17 @@ namespace rs2
                     {
                         return  _device_list[0];
                     }
-                    catch (...) {}
+                    catch (...)
+                    {
+                        std::cout<<"Couldn't create the device\n";
+                    }
                 }
             }
 
             /**
             * Checks if device is still connected
             */
-            bool is_connected(const device& dev) const
+            bool is_connected(const device& dev)
             {
                 rs2_error* e = nullptr;
 
@@ -388,8 +390,8 @@ namespace rs2
 
                 try
                 {
-                    auto list = _ctx.query_devices();
-                    auto result = rs2_device_was_removed(list.get_list(), dev.get(), &e);
+                    std::unique_lock<std::mutex> lock(_mutex);
+                    auto result = rs2_device_list_contains(_device_list.get_list(), dev.get(), &e);
                     if (e) return false;
                     return result > 0;
                 }

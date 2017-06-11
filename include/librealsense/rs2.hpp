@@ -1165,7 +1165,7 @@ namespace rs2
             if(!dev)
                 return false;
 
-            auto res =  rs2_device_was_removed(_removed.get_list(), dev.get(), &e);
+            auto res =  rs2_device_list_contains(_removed.get_list(), dev.get(), &e);
             error::handle(e);
 
             return res > 0;
