@@ -45,6 +45,7 @@ A comprehensive suite of sample and tutorial applications are provided in the `/
 * [What's New?](./doc/rs400_support.md) - changes in librealsense2
 * [Getting Started](./doc/stepbystep/getting_started_with_openCV.md) - Getting started with OpenCV
 * [Troubleshooting](./doc/troubleshooting.md) - Useful tips when debugging issues related to the camera
+* [Error Handling](./doc/error_handling.md) - Documents librealsense error handling policy
 * Device specific topics:
   * [RS400 and External Devices](./doc/rs400/external_devices.md) - Notes on integrating RS400 with external devices
   * [RS400 Advanced Mode](./doc/rs400/rs400_advanced_mode.md) - Overview of the Advanced Mode APIs
