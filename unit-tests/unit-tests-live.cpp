@@ -239,6 +239,48 @@ TEST_CASE("extrinsic transformations are transitive", "[live]")
     }
 }
 
+TEST_CASE("check width and height of stream intrinsics", "[live]")
+{
+    rs2::context ctx;
+    if (make_context(SECTION_FROM_TEST_NAME, &ctx))
+    {
+        std::vector<device> list;
+        REQUIRE_NOTHROW(list = ctx.query_devices());
+        REQUIRE(list.size() > 0);
+
+        for (auto&& dev : list)
+        {
+            auto module_name = dev.get_camera_info(RS2_CAMERA_INFO_MODULE_NAME);
+            // TODO: if FE
+            std::vector<stream_profile> stream_profiles;
+            REQUIRE_NOTHROW(stream_profiles = dev.get_stream_modes());
+            REQUIRE(stream_profiles.size() > 0);
+
+            // for each stream profile provided:
+            for (auto& profile : stream_profiles)
+            {
+                for (auto& profile : stream_profiles)
+                {
+                    if (profile.stream == RS2_STREAM_GPIO1 ||
+                        profile.stream == RS2_STREAM_GPIO2 ||
+                        profile.stream == RS2_STREAM_GPIO3 ||
+                        profile.stream == RS2_STREAM_GPIO4 ||
+                        profile.stream == RS2_STREAM_GYRO  ||
+                        profile.stream == RS2_STREAM_ACCEL)
+                        continue;
+
+                rs2_intrinsics intrin;
+                REQUIRE_NOTHROW(intrin = dev.get_intrinsics(profile));
+
+                // Intrinsic width/height must match width/height of streaming mode we requested
+                REQUIRE(intrin.width == profile.width);
+                REQUIRE(intrin.height == profile.height);
+                }
+            }
+        }
+    }
+}
+
 // break up
 TEST_CASE("streaming modes sanity check", "[live]")
 {
