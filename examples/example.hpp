@@ -87,7 +87,7 @@ namespace rs2
 
         bool contains(const float2& p) const
         {
-            return p.x >= x && p.x <= x + w && p.y >= y && p.y <= y + h;
+            return (p.x >= x) && (p.x < x + w) && (p.y >= y) && (p.y < y + h);
         }
 
         rect center() const

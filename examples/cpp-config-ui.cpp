@@ -2104,7 +2104,7 @@ int main(int, char**) try
                 auto y = ((mouse.cursor.y - stream_rect.y) / stream_rect.h) * stream_size.y;
                 ss << std::fixed << std::setprecision(0) << x << ", " << y;
 
-                float val;
+                float val{};
                 if (model.streams[stream].texture->try_pick(x, y, &val))
                 {
                     ss << ", *p: 0x" << std::hex << val;

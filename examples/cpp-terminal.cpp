@@ -172,7 +172,7 @@ int main(int argc, char** argv)
 
         update_format_type_to_lambda(format_type_to_lambda);
         is_application_in_hex_mode = false;
-        cout << "Loaded provided commands XML file.\nNow you can type commands from the XML file.\n";
+        cout << "Commands XML file - " << xml_full_file_path << " was loaded successfully. Type commands by name (e.g.'gvd'`).\n";
     }
     else
     {
