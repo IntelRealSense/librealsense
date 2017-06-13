@@ -5,7 +5,9 @@ set -e
 
 if [ $(ls /dev/video* | wc -l) -ne 0 ];
 then
+	echo -e "\e[32m"
 	read -p "Remove all RealSense cameras attached. Hit any key when ready"
+	echo -e "\e[0m"
 fi
 
 #Include usability functions
@@ -47,7 +49,7 @@ then
 		printf "Resetting local changes in %s folder\n " ${kernel_name}
 		git reset --hard
 		echo -e "\e[32mUpdate the folder content with the latest from mainline branch\e[0m"
-		git pull origin master
+		git pull origin $kernel_branch
 	fi
 fi
 
