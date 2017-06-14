@@ -29,7 +29,10 @@ try:
     dev.start(queue)
 
     # Determine depth value corresponding to one meter
-    one_meter = int(1.0 / dev.get_depth_scale())
+    depth_units = 1.0
+    if dev.supports(rs.option.depth_units):
+        depth_units = dev.get_option(rs.option.depth_units)
+    one_meter = int(1.0 / depth_units)
 
     while True:
         # This call waits until a new coherent set of frames is available on a device
