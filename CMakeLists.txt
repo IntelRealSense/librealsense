@@ -167,10 +167,13 @@ if(UNIX)
 
     find_package(PkgConfig REQUIRED)
     find_package (Threads REQUIRED)
+    list(APPEND librealsense_PKG_DEPS "Threads")
+
     pkg_search_module(LIBUSB1 REQUIRED libusb-1.0)
     if(LIBUSB1_FOUND)
       include_directories(SYSTEM ${LIBUSB1_INCLUDE_DIRS})
       link_directories(${LIBUSB1_LIBRARY_DIRS})
+      list(APPEND librealsense_PKG_DEPS "libusb-1.0")
     else()
       message( FATAL_ERROR "Failed to find libusb-1.0" )
     endif(LIBUSB1_FOUND)
@@ -201,14 +204,19 @@ endif()
 include(GNUInstallDirs)
 
 option(BUILD_SHARED_LIBS "Build shared library" ON)
+
 if(BUILD_SHARED_LIBS)
     add_library(realsense SHARED ${REALSENSE_CPP} ${REALSENSE_HPP} ${REALSENSE_DEF})
     set_target_properties(realsense PROPERTIES VERSION ${REALSENSE_VERSION_STRING}
                                     SOVERSION ${REALSENSE_VERSION_MAJOR})
     target_link_libraries(realsense ${LIBUSB1_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+    list(APPEND librealsense_PKG_LIBS ${CMAKE_THREAD_LIBS_INIT})
 else()
     add_library(realsense STATIC ${REALSENSE_CPP} ${REALSENSE_HPP})
 endif()
+# Export librealsense library name
+set(LRS_LIB_NAME realsense)
+
 
 target_include_directories(realsense PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
                                             $<INSTALL_INTERFACE:include>
@@ -281,3 +289,15 @@ endif(${ignore_count} GREATER 0)
 
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/cmake_uninstall.cmake" "${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake" IMMEDIATE @ONLY)
 add_custom_target(uninstall "${CMAKE_COMMAND}" -P "${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake")
+
+# Support pkg-config meta-data file
+# Export library compile and link-time dependencies
+foreach(arg ${librealsense_PKG_DEPS})
+    set(LRS_PKG_DEPS "${LRS_PKG_DEPS} ${arg}")
+endforeach()
+foreach(arg ${librealsense_PKG_LIBS})
+    set(LRS_PKG_LIBS "${LRS_PKG_LIBS} ${arg}")
+endforeach()
+# Set library pkgconfig file for facilitating 3rd party integration
+configure_file(config/librealsense.pc.in config/librealsense.pc @ONLY)
+install(FILES "${CMAKE_CURRENT_BINARY_DIR}/config/librealsense.pc" DESTINATION "${CMAKE_INSTALL_LIBDIR}/pkgconfig")
