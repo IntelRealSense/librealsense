@@ -25,7 +25,7 @@ namespace rsimpl2
             if (!is_valid(value))
                 throw invalid_value_exception(to_string() << "set(frame_queue_size) failed! Given value " << value << " is out of range.");
 
-            *_ptr = value;
+            *_ptr = static_cast<uint32_t>(value);
         }
 
         float query() const override { return static_cast<float>(_ptr->load()); }

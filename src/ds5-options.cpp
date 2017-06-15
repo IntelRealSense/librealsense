@@ -133,11 +133,8 @@ namespace rsimpl2
         static const auto min_report_field = uvc::custom_sensor_report_field::minimum;
         static const auto max_report_field = uvc::custom_sensor_report_field::maximum;
         auto min_data = _ep.get_custom_report_data(custom_sensor_name, report_name, min_report_field);
-        if (min_data.empty())
-            throw invalid_value_exception("get_range() motion_module_temperature_option failed! Empty buffer arrived.");
-
         auto max_data = _ep.get_custom_report_data(custom_sensor_name, report_name, max_report_field);
-        if (max_data.empty())
+        if (min_data.empty() || max_data.empty())
             throw invalid_value_exception("get_range() motion_module_temperature_option failed! Empty buffer arrived.");
 
         auto min_str = std::string(reinterpret_cast<char const*>(min_data.data()));

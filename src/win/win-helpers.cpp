@@ -66,10 +66,11 @@ namespace rsimpl2
         {
             if (FAILED(hr))
             {
-                std::string error = to_string() << call << " returned: " << hr_to_string(hr);
-                LOG_WARNING(error);
+                std::string descr = to_string() << call << " returned: " << hr_to_string(hr);
                 if (to_throw)
-                    throw windows_backend_exception(error);
+                    throw windows_backend_exception(descr);
+                else
+                    LOG_INFO(descr);
 
                 return false;
             }
