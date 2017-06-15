@@ -2,14 +2,6 @@
 
 [Whats new?](./doc/rs400_support.md) - Summary of changes in librealsense2, including RS400 support, API changes and new functionality.
 
-[ ![License] [license-image] ] [license]
-
-[release-image]: http://img.shields.io/badge/release-1.9.7-blue.svg?style=flat
-[releases]: https://github.com/IntelRealSense/librealsense/releases
-
-[license-image]: http://img.shields.io/badge/license-Apache--2-blue.svg?style=flat
-[license]: LICENSE
-
 Platform | Build Status |
 -------- | ------------ |
 Linux and OS X | [![Build Status](https://travis-ci.org/IntelRealSense/librealsense.svg?branch=master)](https://travis-ci.org/IntelRealSense/librealsense) |
@@ -20,10 +12,11 @@ This project is a cross-platform library (Linux, Windows, Mac) for capturing dat
 Developer kits containing the necessary hardware to use this library are available for purchase at [this link](http://click.intel.com/realsense.html). This project is separate from the production software stack available in the [Intel® RealSense™ SDK](https://software.intel.com/en-us/intel-realsense-sdk), namely that this library only encompasses camera capture functionality without additional computer vision algorithms.
 
 ## Table of Contents
-* Installation Guide:
+* Installation Guides:
   * [Linux](./doc/installation.md)
   * [Windows](./doc/installation_windows.md)
   * [Mac OS X](./doc/installation_osx.md)
+* [Useful Links](#useful-links)
 * [Documentation](#documentation)
 * [Functionality](#functionality)
 * [Compatible Devices](#compatible-devices)
@@ -31,12 +24,19 @@ Developer kits containing the necessary hardware to use this library are availab
 * [Integrations](#integrations)
 * [License](#license)
 
+## Useful Links
+* [Intel RealSense Community](https://communities.intel.com/community/tech/realsense) - Official support, Q&A and other useful content
+* [Support Site](http://www.intel.com/content/www/us/en/support/emerging-technologies/intel-realsense-technology.html) - Contains content and web ticket capability for 1:1 interaction
+* [SDK Design Guidelines](http://www.mouser.com/pdfdocs/intel-realsense-sdk-design-r200.pdf) - Guidelines and tips for designing applications using RealSense cameras
+* [R200 Datasheet](http://www.mouser.com/pdfdocs/intel_realsense_camera_r200.pdf) - In-depth information about the R200 camera hardware.
+* [Intel RealSense Stereoscopic Depth Cameras](https://arxiv.org/abs/1705.05548) - A technical paper describing the R200, LR200, SR300 and RS400 in detail. Includes theoretical background, performance expectations, post-processing suggestions, etc.  
 ## Documentation
 
 A comprehensive suite of sample and tutorial applications are provided in the `/examples` subdirectory. For new users, it is best to review the tutorial series of apps which are designed to progressively introduce API features.
 
-* To build documentation locally from sources, on Ubuntu run the following commands:
-  * `sudo apt-get install doxygen`
+  * [C API](./include/librealsense/rs.h) - With doxygen-style API comments
+  * To build documentation locally from sources, on Ubuntu run the following commands:
+    * `sudo apt-get install doxygen`
 	* `doxygen doc/doxygen/doxyfile`
 * [C API](./include/librealsense2/rs.h) - With doxygen-style API comments
 * [Frame Management](./doc/frame_lifetime.md) - Frame Memory Management, Threading Model and Syncronization
@@ -71,6 +71,8 @@ The library is written in standards-conforming C++11 and relies only on the C89 
 1. Ubuntu 14/16 LTS (GCC 4.9 toolchain)
 2. Windows 10 (Visual Studio 2015 Update 3)
 3. Mac OS X 10.7+ (Clang toolchain) **Temporarily unavailable**
+4. [Ostro](https://ostroproject.org/)
+
 
 ## Hardware Requirements
 Developer kits containing the necessary hardware to use this library are available for purchase at [this link](http://click.intel.com/realsense.html). In addition, several consumer tablets and laptops with integrated cameras may also function, such as the [HP Spectre x2 with R200](http://store.hp.com/us/en/ContentView?storeId=10151&langId=-1&catalogId=10051&eSpotName=new-detachable).
