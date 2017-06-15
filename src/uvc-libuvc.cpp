@@ -9,6 +9,8 @@
 #include "libuvc/libuvc.h"
 #include "libuvc/libuvc_internal.h" // For LibUSB punchthrough
 #include <thread>
+#include <iomanip>
+#include <sstream>
 
 namespace rsimpl
 {
@@ -174,6 +176,16 @@ namespace rsimpl
 
         int get_vendor_id(const device & device) { return device.vid; }
         int get_product_id(const device & device) { return device.pid; }
+
+        std::string get_usb_hub_name(const device & device)
+        {
+            std::stringstream usb_bus;
+            usb_bus << std::setw( 3 ) << std::setfill( '0' ) << (int)uvc_get_bus_number(device.uvcdevice);
+            usb_bus << "/";
+            usb_bus << std::setw( 3 ) << std::setfill( '0' ) << (int)1;//libusb_get_device_address(device.usb_device);
+
+            return "/dev/bus/usb/" + usb_bus.str();
+        }
 
         std::string get_usb_port_id(const device & device)
         {
