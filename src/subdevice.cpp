@@ -53,7 +53,7 @@ namespace rsimpl2
           _on_before_frame_callback(nullptr)
     {
         _options[RS2_OPTION_FRAMES_QUEUE_SIZE] = std::make_shared<frame_queue_size>(&_max_publish_list_size,
-                                                                                    option_range{ 0, 64, 1, 16 });
+                                                                                    option_range{ 0, 32, 1, 16 });
 
         register_metadata(RS2_FRAME_METADATA_TIME_OF_ARRIVAL, std::make_shared<rsimpl2::md_time_of_arrival_parser>());
     }
