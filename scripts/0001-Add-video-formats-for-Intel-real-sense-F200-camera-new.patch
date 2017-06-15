@@ -21,7 +21,7 @@ index 47ff9f4..5757bf2 100644
 +	{
 +		.name		= "Depth 16-bit (INVZ)",
 +		.guid		= UVC_GUID_FORMAT_INVZ,
-+		.fcc		= V4L2_PIX_FMT_INVZ,
++		.fcc		= V4L2_PIX_FMT_Z16,
 +	},
 +	{
 +		.name		= "Depth:IR 16:8 24-bit (INZI)",
@@ -41,7 +41,7 @@ index 47ff9f4..5757bf2 100644
 +	{
 +		.name		= "Infrared 8-bit (INVI)",
 +		.guid		= UVC_GUID_FORMAT_INVI,
-+		.fcc		= V4L2_PIX_FMT_INVI,
++		.fcc		= V4L2_PIX_FMT_Y10,
 +	},
 +	{
 +		.name		= "FlickerIR 8-bit (RELI)",
@@ -81,22 +81,19 @@ index 7e4d3ee..fad3eb5 100644
  /* ------------------------------------------------------------------------
   * Driver specific constants.
 diff --git a/include/uapi/linux/videodev2.h b/include/uapi/linux/videodev2.h
-index 421d274..b6869f7 100644
+index 421d274..c32f2cd 100644
 --- a/include/uapi/linux/videodev2.h
 +++ b/include/uapi/linux/videodev2.h
-@@ -624,6 +624,12 @@ struct v4l2_pix_format {
+@@ -624,6 +624,10 @@ struct v4l2_pix_format {
  #define V4L2_PIX_FMT_Y8I      v4l2_fourcc('Y', '8', 'I', ' ') /* Greyscale 8-bit L/R interleaved */
  #define V4L2_PIX_FMT_Y12I     v4l2_fourcc('Y', '1', '2', 'I') /* Greyscale 12-bit L/R interleaved */
  #define V4L2_PIX_FMT_Z16      v4l2_fourcc('Z', '1', '6', ' ') /* Depth data 16-bit */
-+#define V4L2_PIX_FMT_INVZ		v4l2_fourcc('I',  'N',  'V',  'Z') /* 16 Depth */
-+#define V4L2_PIX_FMT_INZI		v4l2_fourcc('I',  'N',  'Z',  'I') /* 24 Depth/IR 16:8 */
-+#define V4L2_PIX_FMT_INVR		v4l2_fourcc('I',  'N',  'V',  'R') /* 16 Depth */
-+#define V4L2_PIX_FMT_INRI		v4l2_fourcc('I',  'N',  'R',  'I') /* 24 Depth/IR 16:8 */
-+#define V4L2_PIX_FMT_INVI		v4l2_fourcc('I',  'N',  'V',  'I') /* 8 IR */
-+#define V4L2_PIX_FMT_RELI		v4l2_fourcc('R',  'E',  'L',  'I') /* 8 IR alternating on off illumination */
++#define V4L2_PIX_FMT_INZI     v4l2_fourcc('I',  'N',  'Z',  'I') /* 24 Depth/IR 16:8 */
++#define V4L2_PIX_FMT_INVR     v4l2_fourcc('I',  'N',  'V',  'R') /* 16 Depth */
++#define V4L2_PIX_FMT_INRI     v4l2_fourcc('I',  'N',  'R',  'I') /* 24 Depth/IR 16:8 */
++#define V4L2_PIX_FMT_RELI     v4l2_fourcc('R',  'E',  'L',  'I') /* 8 IR alternating on off illumination */
  
  /* SDR formats - used only for Software Defined Radio devices */
  #define V4L2_SDR_FMT_CU8          v4l2_fourcc('C', 'U', '0', '8') /* IQ u8 */
 -- 
 2.7.4
-
