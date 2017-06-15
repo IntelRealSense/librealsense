@@ -238,7 +238,7 @@ namespace rsimpl2
             camera_fw_version_offset        = 12,
             module_serial_offset            = 48,
             motion_module_fw_version_offset = 212,
-            is_camera_locked_offset         = 216
+            is_camera_locked_offset         = 25
         };
 
         enum calibration_table_id
