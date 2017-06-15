@@ -1412,10 +1412,14 @@ std::vector<std::string> get_device_info(const device& dev)
 
 std::string get_device_name(device& dev)
 {
-    std::string name = dev.get_camera_info(RS2_CAMERA_INFO_DEVICE_NAME);              // retrieve device name
+    // retrieve device name
+    std::string name = (dev.supports(RS2_CAMERA_INFO_DEVICE_NAME))? dev.get_camera_info(RS2_CAMERA_INFO_DEVICE_NAME):"Unknown";
 
-    std::string serial = dev.get_camera_info(RS2_CAMERA_INFO_DEVICE_SERIAL_NUMBER);   // retrieve device serial number
-    std::string module = dev.get_camera_info(RS2_CAMERA_INFO_MODULE_NAME);   // retrieve device serial number
+    // retrieve device serial number
+    std::string serial = (dev.supports(RS2_CAMERA_INFO_DEVICE_SERIAL_NUMBER))? dev.get_camera_info(RS2_CAMERA_INFO_DEVICE_SERIAL_NUMBER):"Unknown";
+
+    // retrieve device module name
+    std::string module = (dev.supports(RS2_CAMERA_INFO_MODULE_NAME))? dev.get_camera_info(RS2_CAMERA_INFO_MODULE_NAME):"Unknown";
 
     std::stringstream s;
     s<< std::setw(25)<<std::left<< name <<  " " <<std::setw(10)<<std::left<< module<<" Sn#" << serial;
