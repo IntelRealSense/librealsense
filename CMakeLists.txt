@@ -145,8 +145,9 @@ if(WIN32)
 elseif(APPLE)
     set(BACKEND RS_USE_LIBUVC_BACKEND)
 else()
-    set(BACKEND RS_USE_V4L2_BACKEND)
+    set(BACKEND RS_USE_LIBUVC_BACKEND)
 endif()
+
 add_definitions(-D${BACKEND} -DUNICODE)
 
 if(UNIX)
