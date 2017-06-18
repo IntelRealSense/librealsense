@@ -442,8 +442,9 @@ namespace rsimpl2
             auto is_locked = _hw_monitor->is_camera_locked(GVD, is_camera_locked_offset);
             is_camera_locked = (is_locked)?"YES":"NO";
 
+#ifdef HWM_OVER_XU
             //if hw_monitor was created by usb replace it xu
-            if(hwm_device.size()>0)
+            if(hwm_device.size() > 0)
             {
                 _hw_monitor = std::make_shared<hw_monitor>(
                                 std::make_shared<locked_transfer>(
@@ -451,6 +452,7 @@ namespace rsimpl2
                                         get_depth_endpoint(), rsimpl2::ds::depth_xu, rsimpl2::ds::DS5_HWMONITOR),
                                     get_depth_endpoint()));
             }
+#endif
 
             depth_ep.register_pu(RS2_OPTION_GAIN);
             auto exposure_option = std::make_shared<uvc_xu_option<uint32_t>>(depth_ep,
