@@ -549,7 +549,6 @@ namespace rsimpl2
                     auto next = peak_next_call();
 
                     _cursors[entity_id] = _cycles[entity_id] = idx;
-
                     if (next && t != call_type::device_watcher_event && next->type == call_type::device_watcher_event)
                     {
                         invoke_device_changed_event();
@@ -569,12 +568,14 @@ namespace rsimpl2
 
         call* recording::cycle_calls(call_type t, int id)
         {
+
             lock_guard<recursive_mutex> lock(_mutex);
             auto&& next = peak_next_call();
             if (next && next->type == call_type::device_watcher_event)
             {
                 invoke_device_changed_event();
             }
+
             for (size_t i = 1; i <= calls.size(); i++)
             {
                 const auto idx = (_cycles[id] + i) % static_cast<int>(calls.size());
@@ -1447,26 +1448,32 @@ namespace rsimpl2
 
         void playback_uvc_device::callback_thread()
         {
+
             while (_alive)
             {
+                auto c_ptr = _rec->peak_next_call(_entity_id);
 
-                auto c_ptr = _rec->cycle_calls(call_type::uvc_frame, _entity_id);
-                if (c_ptr)
+                if (c_ptr && c_ptr->type == call_type::uvc_frame)
                 {
                     auto profile_blob = _rec->load_blob(c_ptr->param1);
+
                     stream_profile p;
                     rsimpl2::copy(&p, profile_blob.data(), sizeof(p));
                     lock_guard<mutex> lock(_callback_mutex);
+
                     for (auto&& pair : _callbacks)
                     {
+
                         if (p == pair.first)
                         {
+
+                            auto c_ptr = _rec->cycle_calls(call_type::uvc_frame, _entity_id);
                             vector<uint8_t> frame_blob;
                             vector<uint8_t> metadata_blob;
+
                             if (c_ptr->param3 == 0) // frame was not saved
                             {
                                 frame_blob = vector<uint8_t>(c_ptr->param4, 0);
-
                             }
                             else if (c_ptr->param3 == 1)// frame was saved
                             {
@@ -1481,13 +1488,17 @@ namespace rsimpl2
                             frame_object fo{ frame_blob.size(),
                                         static_cast<uint8_t>(metadata_blob.size()), // Metadata is limited to 0xff bytes by design
                                         frame_blob.data(),metadata_blob.data() };
+
                             pair.second(p, fo, []() {});
+
                             break;
                         }
                     }
                 }
-
-
+                else
+                {
+                    _rec->cycle_calls(call_type::uvc_frame, _entity_id);
+                }
                 this_thread::sleep_for(chrono::milliseconds(1));
             }
         }
