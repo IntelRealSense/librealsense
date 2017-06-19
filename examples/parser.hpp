@@ -238,7 +238,7 @@ inline void parse_xml_from_memory(const char * content, commands_xml& cmd_xml)
 
     auto node = doc->first_node("Commands");
     if (!node)
-        throw std::logic_error("Corrupted XML file");
+        throw std::logic_error("Invalid XML file - expecting Commands node to be present");
 
     for (auto NodeI = node->first_node(); NodeI; NodeI = NodeI->next_sibling())
     {

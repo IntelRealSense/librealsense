@@ -210,7 +210,7 @@ namespace rsimpl2
                 return false;
 
             if (bytes_received != len)
-                throw std::runtime_error("XU read did not return enough data");
+                throw std::runtime_error(to_string() << "XU partial read: received " << bytes_received << "/" << len);
 
             CHECK_HR(hr);
             return true;
