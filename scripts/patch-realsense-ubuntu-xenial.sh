@@ -46,10 +46,11 @@ then
 		exit 1
 	else
 		echo -e "\e[0m"
-		printf "Resetting local changes in %s folder\n " ${kernel_name}
-		git reset --hard
 		echo -e "\e[32mUpdate the folder content with the latest from mainline branch\e[0m"
-		git pull origin $kernel_branch
+		git fetch origin $kernel_branch --depth 1
+		printf "Resetting local changes in %s folder\n " ${kernel_name}
+		git reset --hard origin/$kernel_branch
+		git gc
 	fi
 fi
 

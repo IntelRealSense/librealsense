@@ -115,7 +115,6 @@ namespace rsimpl2
                 if (ds::try_fetch_usb_device(usb, devices.front(), hwm))
                 {
                     hwm_devices.push_back(hwm);
-
                 }
                 else
                 {
@@ -328,7 +327,7 @@ namespace rsimpl2
 
         // TODO: These if conditions will be implemented as inheritance classes
         auto pid = all_device_infos.front().pid;
-        if (pid == RS410_PID || pid == RS430_MM_PID || pid == RS430_PID)
+        if ((pid == RS410_PID) || (pid == RS430_MM_PID) || (pid == RS430_PID) || (pid == RS430_MM_RGB_PID) || (pid == RS435_RGB_PID))
         {
             depth_ep->register_option(RS2_OPTION_EMITTER_ENABLED, std::make_shared<emitter_option>(*depth_ep));
 
@@ -341,6 +340,37 @@ namespace rsimpl2
         depth_ep->set_pose(lazy<pose>([](){pose p = {{ { 1,0,0 },{ 0,1,0 },{ 0,0,1 } },{ 0,0,0 }}; return p; }));
 
         return depth_ep;
+    }
+
+    std::shared_ptr<uvc_endpoint> ds5_camera::create_color_device(const uvc::backend& backend,
+        const std::vector<uvc::uvc_device_info>& color_devices_info)
+    {
+
+        std::unique_ptr<frame_timestamp_reader> ds5_timestamp_reader_backup(new ds5_timestamp_reader(backend.create_time_service()));
+
+        auto color_ep = std::make_shared<uvc_endpoint>(backend.create_uvc_device(color_devices_info.front()),
+            std::unique_ptr<frame_timestamp_reader>(new ds5_timestamp_reader_from_metadata(std::move(ds5_timestamp_reader_backup))),
+            backend.create_time_service());
+
+        _color_device_idx = add_endpoint(color_ep);
+
+        color_ep->register_pixel_format(pf_yuyv);
+        color_ep->register_pixel_format(pf_bayer16);
+
+        color_ep->register_pu(RS2_OPTION_BACKLIGHT_COMPENSATION);
+        color_ep->register_pu(RS2_OPTION_BRIGHTNESS);
+        color_ep->register_pu(RS2_OPTION_CONTRAST);
+        color_ep->register_pu(RS2_OPTION_EXPOSURE);
+        color_ep->register_pu(RS2_OPTION_GAIN);
+        color_ep->register_pu(RS2_OPTION_GAMMA);
+        color_ep->register_pu(RS2_OPTION_HUE);
+        color_ep->register_pu(RS2_OPTION_SATURATION);
+        color_ep->register_pu(RS2_OPTION_SHARPNESS);
+        color_ep->register_pu(RS2_OPTION_WHITE_BALANCE);
+        color_ep->register_pu(RS2_OPTION_ENABLE_AUTO_EXPOSURE);
+        color_ep->register_pu(RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE);
+
+        return color_ep;
     }
 
     std::shared_ptr<auto_exposure_mechanism> ds5_camera::register_auto_exposure_options(uvc_endpoint* uvc_ep, const uvc::extension_unit* fisheye_xu)
@@ -476,7 +506,8 @@ namespace rsimpl2
                                      exposure_option,
                                      enable_auto_exposure));
 
-            if(pid != RS420_PID && pid != RS430_MM_PID && pid != RS430_PID && pid != RS420_MM_PID)
+            // ASR/PRS SKUs support Auto-WB
+            if (pid == RS400_PID || pid == RS400_MM_PID || pid == RS410_PID || pid == RS410_MM_PID || pid == RS415_PID)
             {
                 depth_ep.register_option(RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE,
                     std::make_shared<uvc_xu_option<uint8_t>>(depth_ep,
@@ -677,31 +708,22 @@ namespace rsimpl2
         }
 
         std::shared_ptr<uvc_endpoint> color_ep;
-        int color_index{};
-        if (pid == RS415_PID)
+        // Add RGB Sensor
+        if ((pid == RS415_PID) || (pid == RS430_MM_RGB_PID) || (pid == RS435_RGB_PID))
         {
-            auto color_infos = filter_by_mi(dev_info, 3);
-            if (color_infos.size() != 1)
-                throw invalid_value_exception("RS430C model is expected to include a single color device!");
+            auto color_devs_info = filter_by_mi(dev_info, 3); // TODO check
+            if (color_devs_info.size() != 1)
+                throw invalid_value_exception(to_string() << "RS4XX with RGB models are expected to include a single color device! - "
+                    << color_devs_info.size() << " found");
 
-            std::unique_ptr<frame_timestamp_reader> ds5_timestamp_reader_backup(new ds5_timestamp_reader(backend.create_time_service()));
-
-            color_ep = std::make_shared<uvc_endpoint>(backend.create_uvc_device(color_infos.front()),
-                std::unique_ptr<frame_timestamp_reader>(new ds5_timestamp_reader_from_metadata(std::move(ds5_timestamp_reader_backup))),
-                backend.create_time_service());
-
-            //color_ep->register_xu(fisheye_xu); // make sure the XU is initialized everytime we power the camera
-            color_ep->register_pixel_format(pf_yuy2);
-
-            // Add fisheye endpoint
-            color_index = add_endpoint(color_ep);
-            color_ep->set_pose(lazy<pose>([]() {return pose{ { { 1,0,0 },{ 0,1,0 },{ 0,0,1 } },{ 0,0,0 } }; })); // TODO: Fetch real extrinsics
+            color_ep = create_color_device(backend, color_devs_info);
+            color_ep->set_pose(lazy<pose>([]() {return pose{ { { 1,0,0 },{ 0,1,0 },{ 0,0,1 } },{ 0,0,0 } }; })); // TODO: Fetch calibration extrinsic
         }
 
         // Register endpoint info
         for(auto& element : dev_info)
         {
-            if (element.mi == 0) // mi 0 is relate to DS5 device
+            if (element.mi == 0) // mi 0 is defines RS4xx Stereo (Depth) interface
             {
                 std::map<rs2_camera_info, std::string> camera_info = {{RS2_CAMERA_INFO_DEVICE_NAME, device_name},
                                                                       {RS2_CAMERA_INFO_MODULE_NAME, "Stereo Module"},
@@ -735,15 +757,15 @@ namespace rsimpl2
 
                 register_endpoint_info(_fisheye_device_idx, camera_info);
             }
-            else if (color_ep && element.pid == RS415_PID && element.mi == 3) // mi 3 is related to Color device
+            else if (color_ep && ((element.pid == RS415_PID) || (element.pid == RS435_RGB_PID)) && element.mi == 3) // mi 3 is related to Color device
             {
                 std::map<rs2_camera_info, std::string> camera_info = { { RS2_CAMERA_INFO_DEVICE_NAME, device_name },
-                { RS2_CAMERA_INFO_MODULE_NAME, "Color Camera" },
+                { RS2_CAMERA_INFO_MODULE_NAME, "RGB Camera" },
                 { RS2_CAMERA_INFO_DEVICE_SERIAL_NUMBER, serial },
                 { RS2_CAMERA_INFO_CAMERA_FIRMWARE_VERSION, static_cast<const char*>(camera_fw_version) },
                 { RS2_CAMERA_INFO_DEVICE_LOCATION, element.device_path },
                 { RS2_CAMERA_INFO_PRODUCT_ID, pid_hex_str } };
-                register_endpoint_info(color_index, camera_info);
+                register_endpoint_info(_color_device_idx, camera_info);
             }
         }
     }

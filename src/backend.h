@@ -34,8 +34,8 @@ namespace rsimpl2
     struct notification;
 
     template<class T>
-    bool list_changed(const std::vector<T>& list1, 
-                      const std::vector<T>& list2, 
+    bool list_changed(const std::vector<T>& list1,
+                      const std::vector<T>& list2,
                       std::function<bool(T, T)> comperizon = [](T first, T second) { return first == second; })
     {
         if (list1.size() != list2.size())
@@ -84,7 +84,6 @@ namespace rsimpl2
             std::vector<uint8_t> step;
             std::vector<uint8_t> def;
 
-            
         private:
             void populate_raw_data(std::vector<uint8_t>& vec, int32_t value)
             {

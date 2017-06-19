@@ -1143,7 +1143,7 @@ namespace rsimpl2
                 if(list_changed(_devices_data._uvc_devices, curr._uvc_devices ) ||
                    list_changed(_devices_data._usb_devices, curr._usb_devices ) ||
                    list_changed(_devices_data._hid_devices, curr._hid_devices ))
-                { 
+                {
                     callback_invocation_holder callback = { _callback_inflight.allocate(), &_callback_inflight };
                     if(callback)
                     {

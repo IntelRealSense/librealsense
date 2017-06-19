@@ -1700,7 +1700,7 @@ int main(int, char**) try
             }
             if (ImGui::IsItemHovered())
             {
-                ImGui::SetTooltip(device_names_chars[new_index]);
+                ImGui::SetTooltip("%s", device_names_chars[new_index]);
             }
             ImGui::PopItemWidth();
 

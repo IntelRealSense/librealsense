@@ -177,7 +177,7 @@ if(WIN32)
         src/backend-hid.cpp
         src/backend.cpp
         src/verify.c)
-        
+
     source_group("Source Files\\Logging" FILES
         third_party/easyloggingpp/src/easylogging++.cc
         src/log.cpp
@@ -235,7 +235,7 @@ if(WIN32)
         src/sr300.h
         src/ivcam-private.h
         )
-        
+
     source_group("Header Files\\Logging" FILES
         third_party/easyloggingpp/src/easylogging++.h
         )

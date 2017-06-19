@@ -124,7 +124,7 @@ namespace rs400
             }
             std::vector<uint8_t> result;
             result.resize(results.size() - sizeof(uint32_t));
-            std::copy(results.data() + sizeof(uint32_t), 
+            std::copy(results.data() + sizeof(uint32_t),
                       results.data() + results.size(), result.data());
             return result;
         }

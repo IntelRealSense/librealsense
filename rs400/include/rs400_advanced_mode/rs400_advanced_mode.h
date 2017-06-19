@@ -84,4 +84,4 @@ int get_census(rs2_device* dev, STCensusRadius* group);
 #ifdef __cplusplus
 }
 #endif
-#endif 
+#endif

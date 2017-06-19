@@ -999,7 +999,7 @@ namespace rs2
         {
             _dev.reset();
             _dev = dev;
-            _debug = dev; 
+            _debug = dev;
             return *this;
         }
         device& operator=(const device& dev)
@@ -1156,7 +1156,7 @@ namespace rs2
 
         /**
         * check if specific device was disconnected
-        * \return            true if device disconnected, false if device connected 
+        * \return            true if device disconnected, false if device connected
         */
         bool was_removed(const rs2::device& dev) const
         {

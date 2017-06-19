@@ -68,7 +68,7 @@ if(WIN32)
         third_party/json.hpp)
 
     source_group("Source Files\\3rd Party" FILES
-        ../../examples/third_party/imgui/imgui.cpp 
+        ../../examples/third_party/imgui/imgui.cpp
         ../../examples/third_party/imgui/imgui_impl_glfw.cpp)
 
     source_group("Header Files\\Reference" FILES
@@ -79,7 +79,7 @@ endif()
 install(
     TARGETS
     rs400-advanced-mode-sample
-    
+
     RUNTIME DESTINATION
     ${CMAKE_INSTALL_PREFIX}/bin
 )

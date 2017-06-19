@@ -123,7 +123,7 @@ namespace rsimpl2
         const char* RECOVERY_MESSAGE = "Selected RealSense device is in recovery mode!\nEither perform a firmware update or reconnect the camera to fall-back to last working firmware if available!";
     };
 
-	typedef std::vector<std::shared_ptr<device_info>> devices_info;
+    typedef std::vector<std::shared_ptr<device_info>> devices_info;
 
     class context : public std::enable_shared_from_this<context>
     {

@@ -25,7 +25,7 @@ diff --git a/drivers/media/usb/uvc/uvc_driver.c b/drivers/media/usb/uvc/uvc_driv
 index 9b8ac20..9d44f8e 100644
 --- a/drivers/media/usb/uvc/uvc_driver.c
 +++ b/drivers/media/usb/uvc/uvc_driver.c
-@@ -168,6 +168,61 @@ static struct uvc_format_desc uvc_fmts[] = {
+@@ -168,6 +168,66 @@ static struct uvc_format_desc uvc_fmts[] = {
  		.guid		= UVC_GUID_FORMAT_RW10,
  		.fcc		= V4L2_PIX_FMT_SRGGB10P,
  	},
@@ -84,6 +84,11 @@ index 9b8ac20..9d44f8e 100644
 +		.guid		= UVC_GUID_FORMAT_D16,
 +		.fcc		= V4L2_PIX_FMT_Z16,
 +	},
++	{
++		.name		= "16-bit Bayer BGBG/GRGR",
++		.guid		= UVC_GUID_FORMAT_BAYER16,
++		.fcc		= V4L2_PIX_FMT_SBGGR16,
++	},
  };
  
  /* ------------------------------------------------------------------------
@@ -99,7 +104,7 @@ index 7e4d3ee..020dbb7 100644
  #define UVC_GUID_FORMAT_H264 \
  	{ 'H',  '2',  '6',  '4', 0x00, 0x00, 0x10, 0x00, \
  	 0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71}
-@@ -131,6 +130,40 @@
+@@ -131,6 +130,43 @@
  #define UVC_GUID_FORMAT_RW10 \
  	{ 'R',  'W',  '1',  '0', 0x00, 0x00, 0x10, 0x00, \
  	 0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71}
@@ -136,6 +141,9 @@ index 7e4d3ee..020dbb7 100644
 +#define UVC_GUID_FORMAT_D16 \
 +	{ 'P', 0x00,  0x00,  0x00, 0x00, 0x00, 0x10, 0x00, \
 +	 0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71}
++#define UVC_GUID_FORMAT_BAYER16 \
++    { 'R',  'W',  '1',  '6', 0x66, 0x1a, 0x42, 0xa2, \
++     0x90, 0x65, 0xd0, 0x18, 0x14, 0xa8, 0xef, 0x8a}
 +
  
  /* ------------------------------------------------------------------------

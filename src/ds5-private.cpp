@@ -124,15 +124,16 @@ namespace rsimpl2
                     case RS420_PID:
                         found = result.mi == 3;
                         break;
-                    case RS415_PID:
-                        result.mi = 4;
-                        break;
                     case RS430_MM_PID:
                     case RS420_MM_PID:
                         found = result.mi == 6;
                         break;
+                    case RS415_PID:
+                    case RS435_RGB_PID:
+                        found = (result.mi == 5);
+                        break;
                     default:
-                        throw not_implemented_exception("usb device not implemented.");
+                        throw not_implemented_exception(to_string() << "USB device " << info.pid << ":" << info.vid << " is not supported.");
                         break;
                     }
 

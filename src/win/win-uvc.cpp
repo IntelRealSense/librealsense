@@ -367,44 +367,34 @@ namespace rsimpl2
         bool wmf_uvc_device::get_pu(rs2_option opt, int32_t& value) const
         {
             long val = 0, flags = 0;
-            if (opt == RS2_OPTION_EXPOSURE)
+            if ((opt == RS2_OPTION_EXPOSURE) || (opt == RS2_OPTION_ENABLE_AUTO_EXPOSURE))
             {
+                if (!_camera_control.p) throw std::runtime_error("No camera control!");
                 auto hr = _camera_control->Get(CameraControl_Exposure, &val, &flags);
                 if (hr == DEVICE_NOT_READY_ERROR)
                     return false;
 
-                value = val;
+                value = (opt == RS2_OPTION_EXPOSURE) ? val : (flags == CameraControl_Flags_Auto);
                 CHECK_HR(hr);
                 return true;
             }
-            if (opt == RS2_OPTION_ENABLE_AUTO_EXPOSURE)
-            {
-                auto hr = _camera_control->Get(CameraControl_Exposure, &val, &flags);
-                if (hr == DEVICE_NOT_READY_ERROR)
-                    return false;
 
-                value = (flags == CameraControl_Flags_Auto);
-                CHECK_HR(hr);
-                return true;
-            }
             for (auto & pu : pu_controls)
             {
                 if (opt == pu.option)
                 {
+                    if (!_video_proc.p) throw std::runtime_error("No video proc!");
                     auto hr = _video_proc->Get(pu.property, &val, &flags);
                     if (hr == DEVICE_NOT_READY_ERROR)
                         return false;
 
-                    if (pu.enable_auto)
-                        value = (flags == VideoProcAmp_Flags_Auto);
-                    else
-                        value = val;
+                    value = (pu.enable_auto) ? (flags == VideoProcAmp_Flags_Auto) : val;
 
                     CHECK_HR(hr);
                     return true;
                 }
             }
-            throw std::runtime_error("Unsupported control!");
+            throw std::runtime_error(to_string() << "Unsupported control - " << opt);
         }
 
         bool wmf_uvc_device::set_pu(rs2_option opt, int value)
@@ -486,7 +476,7 @@ namespace rsimpl2
                     return true;
                 }
             }
-            throw std::runtime_error("Unsupported control!");
+            throw std::runtime_error(to_string() << "Unsupported control - " << opt);
         }
 
         control_range wmf_uvc_device::get_pu_range(rs2_option opt) const
@@ -581,7 +571,7 @@ namespace rsimpl2
                         if (i == _info && device)
                         {
                             wchar_t did[256];
-                            HRESULT hr;
+                            HRESULT hr = S_OK;
                             int count = 0;
                             CHECK_HR(device->GetString(did_guid, did, sizeof(did) / sizeof(wchar_t), nullptr));
 
@@ -611,18 +601,16 @@ namespace rsimpl2
                                 CHECK_HR(_reader_attrs->SetUINT32(MF_READWRITE_ENABLE_HARDWARE_TRANSFORMS, TRUE));
                                 CHECK_HR(MFCreateSourceReaderFromMediaSource(_source, _reader_attrs, &_reader));
                             }
-                            _source->QueryInterface(__uuidof(IAMCameraControl),
-                                reinterpret_cast<void **>(&_camera_control.p));
-                            _source->QueryInterface(__uuidof(IAMVideoProcAmp),
-                                reinterpret_cast<void **>(&_video_proc.p));
+                            LOG_HR(_source->QueryInterface(__uuidof(IAMCameraControl),
+                                reinterpret_cast<void **>(&_camera_control.p)));
+                            LOG_HR(_source->QueryInterface(__uuidof(IAMVideoProcAmp),
+                                reinterpret_cast<void **>(&_video_proc.p)));
 
-                            UINT32 streamIndex;
+                            UINT32 streamIndex{};
                             CHECK_HR(_device_attrs->GetCount(&streamIndex));
                             _streams.resize(streamIndex);
                             for (auto& elem : _streams)
-                            {
                                 elem.callback = nullptr;
-                            }
 
                             CHECK_HR(_reader->SetStreamSelection(static_cast<DWORD>(MF_SOURCE_READER_ALL_STREAMS), TRUE));
                         }
@@ -664,18 +652,17 @@ namespace rsimpl2
                             CHECK_HR(_activate->ActivateObject(IID_IMFMediaSource, reinterpret_cast<void **>(&_source)));
                             CHECK_HR(MFCreateSourceReaderFromMediaSource(_source, _reader_attrs, &_reader));
 
-                            _source->QueryInterface(__uuidof(IAMCameraControl),
-                                reinterpret_cast<void **>(&_camera_control.p));
-                            _source->QueryInterface(__uuidof(IAMVideoProcAmp),
-                                reinterpret_cast<void **>(&_video_proc.p));
+                            LOG_HR(_source->QueryInterface(__uuidof(IAMCameraControl),
+                                reinterpret_cast<void **>(&_camera_control.p)));
+                            LOG_HR(_source->QueryInterface(__uuidof(IAMVideoProcAmp),
+                                reinterpret_cast<void **>(&_video_proc.p)));
 
-                            UINT32 streamIndex;
+                            UINT32 streamIndex{};
                             CHECK_HR(_device_attrs->GetCount(&streamIndex));
                             _streams.resize(streamIndex);
                             for (auto& elem : _streams)
-                            {
                                 elem.callback = nullptr;
-                            }
+
                             CHECK_HR(_reader->SetStreamSelection(static_cast<DWORD>(MF_SOURCE_READER_ALL_STREAMS), TRUE));
                         }
                     });

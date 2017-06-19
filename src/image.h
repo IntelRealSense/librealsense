@@ -31,6 +31,7 @@ namespace rsimpl2
     extern const native_pixel_format pf_raw8;       // 8 bit luminance
     extern const native_pixel_format pf_rw10;       // Four 10 bit luminance values in one 40 bit macropixel
     extern const native_pixel_format pf_rw16;       // 10 bit in 16 bit WORD with 6 bit unused
+    extern const native_pixel_format pf_bayer16;    // 16-bit Bayer raw
     extern const native_pixel_format pf_yuy2;       // Y0 U Y1 V ordered chroma subsampled macropixel
     extern const native_pixel_format pf_yuyv;       // Y0 U Y1 V ordered chroma subsampled macropixel
     extern const native_pixel_format pf_y8;         // 8 bit IR/Luminosity (left) imager

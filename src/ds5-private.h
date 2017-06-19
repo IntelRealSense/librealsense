@@ -15,13 +15,17 @@ namespace rsimpl2
 {
     namespace ds
     {
-        const uint16_t RS400_PID = 0x0ad1; // PSR
-        const uint16_t RS410_PID = 0x0ad2; // ASR
-        const uint16_t RS415_PID = 0x0ad3; // ASRC
-        const uint16_t RS430_PID = 0x0ad4; // AWG
-        const uint16_t RS430_MM_PID = 0x0ad5; // AWGT
-        const uint16_t RS420_PID    = 0x0af6; // PWG
-        const uint16_t RS420_MM_PID = 0x0afe; // PWGT
+        const uint16_t RS400_PID        = 0x0ad1; // PSR
+        const uint16_t RS400_MM_PID     = 0x0b00; // PSR
+        const uint16_t RS410_PID        = 0x0ad2; // ASR
+        const uint16_t RS410_MM_PID     = 0x0aff; // ASR
+        const uint16_t RS415_PID        = 0x0ad3; // ASRC
+        const uint16_t RS420_PID        = 0x0af6; // PWG
+        const uint16_t RS420_MM_PID     = 0x0afe; // PWGT
+        const uint16_t RS430_PID        = 0x0ad4; // AWG
+        const uint16_t RS430_MM_PID     = 0x0ad5; // AWGT
+        const uint16_t RS430_MM_RGB_PID = 0x0b01; // AWGCT
+        const uint16_t RS435_RGB_PID    = 0x0b07; // AWGC
 
         // DS5 depth XU identifiers
         const uint8_t DS5_HWMONITOR                       = 1;
@@ -34,22 +38,33 @@ namespace rsimpl2
         const uint8_t DS5_ENABLE_AUTO_WHITE_BALANCE       = 0xA;
         const uint8_t DS5_ENABLE_AUTO_EXPOSURE            = 0xB;
 
+        static const std::set<std::uint16_t> rs4xx_sku_pid = {
+            ds::RS400_PID,
+            ds::RS400_MM_PID,
+            ds::RS410_PID,
+            ds::RS410_MM_PID,
+            ds::RS415_PID,
+            ds::RS420_PID,
+            ds::RS420_MM_PID,
+            ds::RS430_PID,
+            ds::RS430_MM_PID,
+            ds::RS430_MM_RGB_PID,
+            ds::RS435_RGB_PID
+        };
 
-        static const std::set<std::uint16_t> rs4xx_sku_pid = { ds::RS400_PID,
-                                                                  ds::RS410_PID,
-                                                                  ds::RS415_PID,
-                                                                  ds::RS430_PID,
-                                                                  ds::RS420_PID,
-                                                                  ds::RS430_MM_PID,
-                                                                  ds::RS420_MM_PID };
-
-        static const std::map<std::uint16_t, std::string> rs4xx_sku_names = { { RS400_PID, "Intel RealSense RS400"},
-                                                                              { RS410_PID, "Intel RealSense RS410"},
-                                                                              { RS415_PID, "Intel RealSense RS415"},
-                                                                              { RS430_PID, "Intel RealSense RS430"},
-                                                                              { RS430_MM_PID, "Intel RealSense RS430+MM"},
-                                                                              { RS420_PID, "Intel RealSense RS420"   },
-                                                                              { RS420_MM_PID, "Intel RealSense RS420+MM"    }};
+        static const std::map<std::uint16_t, std::string> rs4xx_sku_names = {
+            { RS400_PID,    "Intel RealSense 400"},
+            { RS400_MM_PID, "Intel RealSense 400 with Tracking Module"},
+            { RS410_PID,    "Intel RealSense 410"},
+            { RS410_MM_PID, "Intel RealSense 410 with Tracking Module"},
+            { RS415_PID,    "Intel RealSense 415"},
+            { RS420_PID,    "Intel RealSense 420"},
+            { RS420_MM_PID, "Intel RealSense 420 with Tracking Module"},
+            { RS430_PID,    "Intel RealSense 430"},
+            { RS430_MM_PID, "Intel RealSense 430 with Tracking Module"},
+            { RS430_MM_PID, "Intel RealSense 430 with Tracking Module and RGB Module"},
+            { RS435_RGB_PID,"Intel RealSense 435"},
+        };
 
         // DS5 fisheye XU identifiers
         const uint8_t FISHEYE_EXPOSURE = 1;
@@ -62,17 +77,17 @@ namespace rsimpl2
 
         enum fw_cmd : uint8_t
         {
-            GLD = 0x0f,           // FW logs
-            GVD = 0x10,           // camera details
-            GETINTCAL = 0x15,     // Read calibration table
-            MMER = 0x4F,          // MM EEPROM read ( from DS5 cache )
-            GET_EXTRINSICS = 0x53, // get extrinsics
-            UAMG = 0X30,          // get advanced mode status
-            SETAEROI = 0x44,      // set auto-exposure region of interest
-            GETAEROI = 0x45,      // get auto-exposure region of interest
-            HWRST = 0x20,         // hardware reset
-            SET_ADV = 0x2B,       // set advanced mode control
-            GET_ADV = 0x2C,       // get advanced mode control
+            GLD             = 0x0f,     // FW logs
+            GVD             = 0x10,     // camera details
+            GETINTCAL       = 0x15,     // Read calibration table
+            HWRST           = 0x20,     // hardware reset
+            SET_ADV         = 0x2B,     // set advanced mode control
+            GET_ADV         = 0x2C,     // get advanced mode control
+            UAMG            = 0X30,     // get advanced mode status
+            SETAEROI        = 0x44,     // set auto-exposure region of interest
+            GETAEROI        = 0x45,     // get auto-exposure region of interest
+            MMER            = 0x4F,     // MM EEPROM read ( from DS5 cache )
+            GET_EXTRINSICS  = 0x53,     // get extrinsics
         };
 
         const int etDepthTableControl = 9; // Identifier of the depth table control

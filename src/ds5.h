@@ -25,8 +25,11 @@ namespace rsimpl2
             case ds::RS400_PID:
             case ds::RS410_PID:
             case ds::RS430_PID:
-            case ds::RS420_PID: return 1;
-            case ds::RS415_PID: return 2;
+            case ds::RS420_PID:
+                return 1;
+            case ds::RS415_PID:
+            case ds::RS435_RGB_PID:
+                return 2;
             case ds::RS430_MM_PID:
             case ds::RS420_MM_PID:
                 return 3;
@@ -72,6 +75,9 @@ namespace rsimpl2
         std::shared_ptr<uvc_endpoint> create_depth_device(const uvc::backend& backend,
                                                           const std::vector<uvc::uvc_device_info>& all_device_infos);
 
+        std::shared_ptr<uvc_endpoint> create_color_device(const uvc::backend& backend,
+                                                          const std::vector<uvc::uvc_device_info>& all_device_infos);
+
         uvc_endpoint& get_depth_endpoint()
         {
             return static_cast<uvc_endpoint&>(get_endpoint(_depth_device_idx));
@@ -94,6 +100,7 @@ namespace rsimpl2
         const uint8_t _depth_device_idx;
         uint8_t _fisheye_device_idx = -1;
         uint8_t _motion_module_device_idx = -1;
+        uint8_t _color_device_idx = -1;
 
         std::shared_ptr<hw_monitor> _hw_monitor;
 

@@ -43,8 +43,8 @@ namespace rsimpl2
         }
 
         bool supports(const frame& frm) const override
-        { 
-            return true; 
+        {
+            return true;
         }
     };
 

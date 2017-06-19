@@ -116,7 +116,7 @@ void checkbox(const char* id, T* val, S T::* f, bool& to_set)
 template<class T, class S>
 void slider_int(const char* id, T* val, S T::* feild, bool& to_set)
 {
-    ImGui::Text(id);
+    ImGui::Text("%s", id);
     int temp = val->*feild;
     int min = (val + 1)->*feild;
     int max = (val + 2)->*feild;
@@ -131,7 +131,7 @@ void slider_int(const char* id, T* val, S T::* feild, bool& to_set)
 template<class T, class S>
 void slider_float(const char* id, T* val, S T::* feild, bool& to_set)
 {
-    ImGui::Text(id);
+    ImGui::Text("%s", id);
     float temp = val->*feild;
     float min = (val + 1)->*feild;
     float max = (val + 2)->*feild;
@@ -262,7 +262,7 @@ int main(int argc, char** argv) try
     {
         return dev->debug().send_and_receive_raw_data(input);
     };
-    
+
     rs400::advanced_mode advanced(send_receive);
 
     camera_state state;
@@ -311,7 +311,7 @@ int main(int argc, char** argv) try
             }
 
             dev = get_device(ctx);
-        } 
+        }
     }
     catch (const rs2::error & e)
     {
@@ -620,14 +620,14 @@ int main(int argc, char** argv) try
 
         if (ImGui::CollapsingHeader("Stream Profile", nullptr, true, true))
         {
-            ImGui::Text("Depth Format: "); ImGui::SameLine(); ImGui::Text(rs2_format_to_string(depth_format));
-            ImGui::Text("IR Format: "); ImGui::SameLine(); ImGui::Text(rs2_format_to_string(ir_format));
+            ImGui::Text("Depth Format: "); ImGui::SameLine(); ImGui::Text("%s", rs2_format_to_string(depth_format));
+            ImGui::Text("IR Format: "); ImGui::SameLine(); ImGui::Text("%s", rs2_format_to_string(ir_format));
             std::stringstream ss;
             ss << "Resolution: " << width << " x " << height << " px";
-            ImGui::Text(ss.str().c_str()); ss.str("");
+            ImGui::Text("%s", ss.str().c_str()); ss.str("");
             ss << "FPS: " << fps << " Hz";
-            ImGui::Text(ss.str().c_str()); ss.str("");
-            
+            ImGui::Text("%s", ss.str().c_str()); ss.str("");
+
             ImGui::Text("Current View:");
             ImGui::PushItemWidth(-1);
             ImGui::Combo("Selected View", &selected_view, views.data(), views.size());
@@ -678,7 +678,7 @@ int main(int argc, char** argv) try
             ImGui::PushItemWidth(-1);
 
             auto to_set = false;
-            
+
             slider_int("Min West", state.rsvc.vals, &rs400::STRauSupportVectorControl::minWest, to_set);
             slider_int("Min East", state.rsvc.vals, &rs400::STRauSupportVectorControl::minEast, to_set);
             slider_int("Min WE Sum", state.rsvc.vals, &rs400::STRauSupportVectorControl::minWEsum, to_set);

@@ -16,7 +16,7 @@ extern "C" {
 
 #define RS2_API_MAJOR_VERSION    2
 #define RS2_API_MINOR_VERSION    6
-#define RS2_API_PATCH_VERSION    2
+#define RS2_API_PATCH_VERSION    3
 
 #define STRINGIFY(arg) #arg
 #define VAR_ARG_STRING(arg) STRINGIFY(arg)
@@ -551,7 +551,7 @@ rs2_log_severity rs2_get_notification_severity(rs2_notification * notification, 
 */
 rs2_notification_category rs2_get_notification_category(rs2_notification * notification, rs2_error** error);
 /**
-* set callback to get devices changed events 
+* set callback to get devices changed events
 * these events will be raised by the context whenever new RealSense device is connected or existing device gets disconnected
 * \param context     Object representing librealsense session
 * \param[in] callback callback object created from c++ application. ownership over the callback object is moved into the context
