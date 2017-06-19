@@ -35,7 +35,7 @@ namespace rsimpl2
         const uint8_t DS5_ENABLE_AUTO_EXPOSURE            = 0xB;
 
 
-        static const std::vector<std::uint16_t> rs4xx_sku_pid = { ds::RS400_PID,
+        static const std::set<std::uint16_t> rs4xx_sku_pid = { ds::RS400_PID,
                                                                   ds::RS410_PID,
                                                                   ds::RS415_PID,
                                                                   ds::RS430_PID,

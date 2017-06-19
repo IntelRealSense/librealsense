@@ -15,6 +15,7 @@
 #include <sstream>
 #include <array>
 #include <mutex>
+#include <set>
 
 #pragma comment(lib, "opengl32.lib")
 
@@ -1080,20 +1081,19 @@ public:
 
     std::map<rs2_stream, rect> calc_layout(float x0, float y0, float width, float height)
     {
-        std::vector<rs2_stream> active_streams;
+        std::set<rs2_stream> active_streams;
         for (auto i = 0; i < RS2_STREAM_COUNT; i++)
         {
             auto stream = static_cast<rs2_stream>(i);
             if (streams[stream].is_stream_visible())
             {
-                active_streams.push_back(stream);
+                active_streams.insert(stream);
             }
         }
 
         if (fullscreen)
         {
-            auto it = std::find(begin(active_streams), end(active_streams), selected_stream);
-            if (it == end(active_streams)) fullscreen = false;
+            if (active_streams.count(selected_stream) == 0) fullscreen = false;
         }
 
         std::map<rs2_stream, rect> results;
@@ -1110,17 +1110,17 @@ public:
             auto cell_width = static_cast<float>(width / factor);
             auto cell_height = static_cast<float>(height / complement);
 
-            auto i = 0;
+            auto it = active_streams.begin();
             for (auto x = 0; x < factor; x++)
             {
                 for (auto y = 0; y < complement; y++)
                 {
-                    if (i == active_streams.size()) break;
+                    if (it == active_streams.end()) break;
 
                     rect r = { x0 + x * cell_width, y0 + y * cell_height,
                         cell_width, cell_height };
-                    results[active_streams[i]] = r;
-                    i++;
+                    results[*it] = r;
+                    it++;
                 }
             }
         }

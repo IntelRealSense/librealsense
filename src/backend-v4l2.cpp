@@ -1021,15 +1021,12 @@ namespace rsimpl2
                     // Microsoft Depth GUIDs for R400 series are not yet recognized
                     // by the Linux kernel, but they do not require a patch, since there
                     // are "backup" Z16 and Y8 formats in place
-                    std::vector<std::string> known_problematic_formats = {
+                    std::set<std::string> known_problematic_formats = {
                         "00000050-0000-0010-8000-00aa003",
                         "00000032-0000-0010-8000-00aa003",
                     };
 
-                    if (std::find(known_problematic_formats.begin(),
-                                  known_problematic_formats.end(),
-                                  (const char*)pixel_format.description) ==
-                        known_problematic_formats.end())
+                    if (known_problematic_formats.count((const char*)pixel_format.description) == 0)
                     {
                         const std::string s(to_string() << "!" << pixel_format.description);
                         std::regex rgx("!([0-9a-f]+)-.*");

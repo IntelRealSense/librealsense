@@ -151,12 +151,12 @@ namespace rsimpl2
         devices_changed_callback_ptr _devices_changed_callback;
     };
 
-    static std::vector<uvc::uvc_device_info> filter_by_product(const std::vector<uvc::uvc_device_info>& devices, const std::vector<uint16_t>& pid_list)
+    static std::vector<uvc::uvc_device_info> filter_by_product(const std::vector<uvc::uvc_device_info>& devices, const std::set<uint16_t>& pid_list)
     {
         std::vector<uvc::uvc_device_info> result;
         for (auto&& info : devices)
         {
-            if (pid_list.end() != std::find(pid_list.begin(), pid_list.end(), info.pid))
+            if (pid_list.count(info.pid))
                 result.push_back(info);
         }
         return result;
