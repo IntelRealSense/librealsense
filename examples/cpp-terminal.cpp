@@ -63,6 +63,13 @@ void xml_mode(const string& line, const commands_xml& cmd_xml, device& dev, map<
         params.push_back(tokens[i]);
 
     auto raw_data = build_raw_command_data(command, params);
+
+    for (auto b : raw_data)
+    {
+        cout << hex << fixed << setfill('0') << setw(2) << (int)b << " ";
+    }
+    cout << endl;
+
     auto result = dev.debug().send_and_receive_raw_data(raw_data);
 
     unsigned returned_opcode = *result.data();
@@ -117,7 +124,7 @@ auto_complete get_auto_complete_obj(bool is_application_in_hex_mode, const map<s
         for (auto& elem : commands_map)
             commands.insert(elem.first);
     }
-    return auto_complete(commands);
+    return auto_complete(commands, is_application_in_hex_mode);
 }
 
 void read_script_file(const string& full_file_path, vector<string>& hex_lines)
@@ -176,7 +183,9 @@ int main(int argc, char** argv)
     }
     else
     {
-        cout << "Commands XML file not provided.\nyou still can send raw data to device in hexadecimal\nseparated by spaces (e.g. 5A 4B 3C).\n";
+        cout << "Commands XML file not provided.\nyou still can send raw data to device in hexadecimal\nseparated by spaces.\n";
+        cout << "Example GVD command for the SR300:\n14 00 ab cd 3b 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00\n";
+        cout << "Example GVD command for the RS4xx:\n14 00 ab cd 10 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00\n";
     }
     auto auto_comp = get_auto_complete_obj(is_application_in_hex_mode, cmd_xml.commands);
 
@@ -269,6 +278,10 @@ int main(int argc, char** argv)
                 {
                     dev = hub.wait_for_device();
                     continue;
+                }
+                if (line == "exit")
+                {
+                    return EXIT_SUCCESS;
                 }
                 if (is_application_in_hex_mode)
                 {

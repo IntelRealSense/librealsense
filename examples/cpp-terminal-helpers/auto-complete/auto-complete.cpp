@@ -34,8 +34,8 @@ vector<string> auto_complete::search(const string& word) const
     return finds;
 }
 
-auto_complete::auto_complete(set<string> dictionary)
-    : _dictionary(dictionary), _history_words_index(0), _num_of_chars2_in_line(0), _tab_index(0), _is_first_time_up_arrow(true)
+auto_complete::auto_complete(set<string> dictionary, bool bypass)
+    : _dictionary(dictionary), _history_words_index(0), _num_of_chars2_in_line(0), _tab_index(0), _is_first_time_up_arrow(true), _bypass(bypass)
 {}
 
 string auto_complete::chars2_queue_to_string() const
@@ -179,6 +179,13 @@ char auto_complete::getch_nolock(std::function <bool()> stop)
 
 string auto_complete::get_line(std::function <bool()> to_stop)
 {
+    if (_bypass)
+    {
+        string res;
+        std::getline(std::cin, res);
+        return res;
+    }
+
     while (!to_stop())
     {
         auto ch = getch_nolock();

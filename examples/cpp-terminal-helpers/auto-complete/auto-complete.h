@@ -27,7 +27,7 @@
 class auto_complete
 {
 public:
-    explicit auto_complete(std::set<std::string> dictionary);
+    explicit auto_complete(std::set<std::string> dictionary, bool bypass = false);
     std::string get_line(std::function<bool()> to_stop = []() {return false;}); // to_stop predicate can be used to stop waiting for input if the camera disconnected
 
 private:
@@ -46,4 +46,5 @@ private:
     unsigned _tab_index;
     std::vector<std::string> _finds_vec;
     bool _is_first_time_up_arrow;
+    bool _bypass;
 };
