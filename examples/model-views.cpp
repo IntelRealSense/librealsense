@@ -207,6 +207,9 @@ namespace rs2
 
         }
 
+        // For Realtec sensors
+        rgb_rotation_btn = is_in(std::string(dev.get_camera_info(RS2_CAMERA_INFO_MODULE_NAME)), { std::string("RGB Camera") });
+
         for (auto i = 0; i < RS2_OPTION_COUNT; i++)
         {
             option_model metadata;
@@ -493,6 +496,13 @@ namespace rs2
                 }
             }
             ImGui::PopItemWidth();
+
+            if (streaming && rgb_rotation_btn && ImGui::Button("Flip Stream Orientation", ImVec2(160, 20)))
+            {
+                rotate_rgb_image(dev, res_values[selected_res_id].first);
+                if (ImGui::IsItemHovered())
+                    ImGui::SetTooltip("Rotate Sensor 180 deg");
+            }
         }
     }
 
@@ -1124,7 +1134,7 @@ namespace rs2
 
 
 
-        auto lines = std::count(message.begin(), message.end(), '\n')+1;
+        auto lines = static_cast<int>(std::count(message.begin(), message.end(), '\n') + 1);
         ImGui::SetNextWindowPos({ float(w - 430), float(y) });
         ImGui::SetNextWindowSize({ float(500), float(lines*50) });
         height = lines*50 +10;

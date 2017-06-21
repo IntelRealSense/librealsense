@@ -84,7 +84,7 @@ int find_device_index(const device_list& list ,std::vector<std::string> device_i
     }
 
     auto it = std::find(devices_info.begin(),devices_info.end(), device_info);
-    return std::distance(devices_info.begin(), it);
+    return static_cast<int>(std::distance(devices_info.begin(), it));
 }
 
 int main(int, char**) try
@@ -200,7 +200,7 @@ int main(int, char**) try
                 try
                 {
                     list = ctx.query_devices();
-                    
+
                     device_names = get_devices_names(list);
 
                     for(auto dev: devs)
@@ -214,7 +214,7 @@ int main(int, char**) try
                         device_index = 0;
                         dev = nullptr;
                         model.reset();
-                       
+
                         if(list.size()>0)
                         {
                             dev = list[device_index];                  // Access first device
@@ -236,7 +236,6 @@ int main(int, char**) try
                             not_model.add_notification({n.get_description(), n.get_timestamp(), n.get_severity(), n.get_category()});
                         });
                     }
-                    
                 }
                 catch (const error& e)
                 {
@@ -359,7 +358,6 @@ int main(int, char**) try
                                     }
                                 }
                             }
-
                         }
                         if (ImGui::IsItemHovered())
                         {
@@ -604,7 +602,7 @@ int main(int, char**) try
                 ImGui::SetTooltip("FPS is calculated based on timestamps and not viewer time");
             }
 
-            ImGui::SameLine((int)ImGui::GetWindowWidth() - 30);
+            ImGui::SameLine(ImGui::GetWindowWidth() - 30);
 
             if (!layout.empty() && !model.fullscreen)
             {
@@ -634,7 +632,7 @@ int main(int, char**) try
             {
                 if (model.streams[stream].roi_supported )
                 {
-                    ImGui::SameLine((int)ImGui::GetWindowWidth() - 160);
+                    ImGui::SameLine(ImGui::GetWindowWidth() - 160);
                     ImGui::Checkbox("[ROI]", &model.streams[stream].roi_checked);
 
                     if (ImGui::IsItemHovered())
@@ -645,7 +643,7 @@ int main(int, char**) try
             }
 
             // Control metadata overlay widget
-            ImGui::SameLine((int)ImGui::GetWindowWidth() - 90); // metadata GUI hint
+            ImGui::SameLine(ImGui::GetWindowWidth() - 90); // metadata GUI hint
             if (!layout.empty())
             {
                 ImGui::Checkbox("[MD]", &model.streams[stream].metadata_displayed);

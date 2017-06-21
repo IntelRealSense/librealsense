@@ -322,7 +322,7 @@ namespace rsimpl2
         }
     }
 
-    ds::depth_table_control depth_scale_option::get_depth_table(ds::advnaced_query_mode mode) const
+    ds::depth_table_control depth_scale_option::get_depth_table(ds::advanced_query_mode mode) const
     {
         command cmd(ds::GET_ADV);
         cmd.param1 = ds::etDepthTableControl;

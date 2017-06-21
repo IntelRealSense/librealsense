@@ -428,6 +428,11 @@ namespace rs2
     public:
         texture_buffer() : texture() {}
 
+        bool has_frame()
+        {
+            return last;
+        }
+
         GLuint get_gl_handle() const { return texture; }
 
         void draw_axis()
@@ -703,7 +708,7 @@ namespace rs2
             // Show stream thumbnail
             static const rect unit_square_coordinates{0, 0, 1, 1};
             static const float2 thumbnail_size = {150, 150};
-            static const float thumbnail_scale_factor = 0.97;
+            static const float thumbnail_scale_factor = 0.97f;
             rect thumbnail{r.x + r.w, r.y + r.h, thumbnail_size.x, thumbnail_size.y };
             thumbnail = thumbnail.adjust_ratio({r.w, r.h}).enclose_in(r.scale(thumbnail_scale_factor));
             rect zoomed_rect = normalized_zoom.unnormalize(r);
@@ -761,5 +766,29 @@ namespace rs2
     {
         if (version / 10000 == 0) return to_string() << version;
         return to_string() << (version / 10000) << "." << (version % 10000) / 100 << "." << (version % 100);
+    }
+
+    // Comparing parameter against a range of values of the same type
+    // https://stackoverflow.com/questions/15181579/c-most-efficient-way-to-compare-a-variable-to-multiple-values
+    template <typename T>
+    bool is_in(const T& val, const std::initializer_list<T>& list)
+    {
+        for (const auto& i : list) {
+            if (val == i) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // RS4xx with RealTec RGB sensor may additionally require sensor orientation control to make runtime adjustments
+    inline void rotate_rgb_image(device& dev,uint32_t res_width)
+    {
+        std::vector<uint8_t> hor_flip{ 0x14, 0, 0xab, 0xcd, 0x29, 0, 0, 0, 0x20, 0x38, 0x0, 0x0,
+            ((res_width < 1280) ? (uint8_t)0x84 : (uint8_t)0x20), 0,0,0,0,0,0,0,0,0,0,0 };
+        std::vector<uint8_t> ver_flip{ 0x14, 0, 0xab, 0xcd, 0x29, 0, 0, 0, 0x21, 0x38, 0x0, 0x0,
+            ((res_width < 1280) ? (uint8_t)0x47 : (uint8_t)0x46), 0,0,0,0,0,0,0,0,0,0,0 };
+        dev.debug().send_and_receive_raw_data(hor_flip);
+        dev.debug().send_and_receive_raw_data(ver_flip);
     }
 }

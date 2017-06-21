@@ -13,7 +13,6 @@
 #include <functional>
 #include <exception>
 #include <ostream>
-#include <iostream>
 #include <atomic>
 #include <condition_variable>
 

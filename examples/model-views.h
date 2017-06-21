@@ -117,6 +117,7 @@ namespace rs2
         bool options_invalidated = false;
         int next_option = RS2_OPTION_COUNT;
         bool streaming = false;
+        bool rgb_rotation_btn = false;
 
         rect normalized_zoom{0, 0, 1, 1};
         rect roi_rect;

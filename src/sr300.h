@@ -159,8 +159,8 @@ namespace rsimpl2
             sr300_camera& _owner;
         };
 
-        static std::shared_ptr<uvc_endpoint> create_color_device(const uvc::backend& backend,
-                                                                 const uvc::uvc_device_info& color)
+        std::shared_ptr<uvc_endpoint> create_color_device(const uvc::backend& backend,
+            const uvc::uvc_device_info& color)
         {
             auto color_ep = std::make_shared<uvc_endpoint>(backend.create_uvc_device(color),
                                                            std::unique_ptr<frame_timestamp_reader>(new sr300_timestamp_reader()),
@@ -273,7 +273,7 @@ namespace rsimpl2
 
             get_depth_endpoint().register_option(RS2_OPTION_DEPTH_UNITS,
                                                  std::make_shared<const_value_option>("Number of meters represented by a single depth unit",
-                                                                                      1000.f / (0xFFFF / c.Rmax)));
+                                                                                      (c.Rmax/ 1000 /0xFFFF )));
         }
 
         void rs2_apply_ivcam_preset(int preset)

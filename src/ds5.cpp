@@ -180,6 +180,14 @@ namespace rsimpl2
                 ds::calibration_table_id::fisheye_calibration_id,
                 profile.width, profile.height);
         }
+        if (subdevice == _color_device_idx)
+        {
+            return get_intrinsic_by_resolution(
+                *_color_calib_table_raw,
+                ds::calibration_table_id::rgb_calibration_id,
+                profile.width, profile.height);
+        }
+
         throw not_implemented_exception("Not Implemented");
     }
 
@@ -209,6 +217,22 @@ namespace rsimpl2
                        {trans[0], trans[1], trans[2]}};
 
             return fe_pose * ex;
+        }
+
+        if (subdevice == _color_device_idx)
+        {
+            std::vector<uint8_t> raw_data{};
+            try
+            {
+                raw_data = *_color_calib_table_raw;
+            }
+            catch (...)
+            {
+                LOG_WARNING("RGB Calibration is not available, switch to synthetic extrinsic" << std::endl);
+            }
+
+            auto extr = rsimpl2::ds::get_color_stream_extrinsic(raw_data);
+            return inverse(extr);
         }
 
         throw not_implemented_exception("Not Implemented");
@@ -345,7 +369,6 @@ namespace rsimpl2
     std::shared_ptr<uvc_endpoint> ds5_camera::create_color_device(const uvc::backend& backend,
         const std::vector<uvc::uvc_device_info>& color_devices_info)
     {
-
         std::unique_ptr<frame_timestamp_reader> ds5_timestamp_reader_backup(new ds5_timestamp_reader(backend.create_time_service()));
 
         auto color_ep = std::make_shared<uvc_endpoint>(backend.create_uvc_device(color_devices_info.front()),
@@ -370,6 +393,35 @@ namespace rsimpl2
         color_ep->register_pu(RS2_OPTION_WHITE_BALANCE);
         color_ep->register_pu(RS2_OPTION_ENABLE_AUTO_EXPOSURE);
         color_ep->register_pu(RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE);
+
+        color_ep->register_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP, make_uvc_header_parser(&uvc::uvc_header::timestamp));
+
+        // attributes of md_capture_timing
+        auto md_prop_offset = offsetof(metadata_raw, mode) +
+            offsetof(md_rgb_mode, rgb_mode) +
+            offsetof(md_rgb_normal_mode, intel_capture_timing);
+
+        color_ep->register_metadata(RS2_FRAME_METADATA_FRAME_COUNTER, make_attribute_parser(&md_capture_timing::frame_counter, md_capture_timing_attributes::frame_counter_attribute, md_prop_offset));
+        color_ep->register_metadata(RS2_FRAME_METADATA_SENSOR_TIMESTAMP, make_rs4xx_sensor_ts_parser(make_uvc_header_parser(&uvc::uvc_header::timestamp),
+            make_attribute_parser(&md_capture_timing::sensor_timestamp, md_capture_timing_attributes::sensor_timestamp_attribute, md_prop_offset)));
+
+        // attributes of md_capture_stats
+        md_prop_offset = offsetof(metadata_raw, mode) +
+            offsetof(md_rgb_mode, rgb_mode) +
+            offsetof(md_rgb_normal_mode, intel_capture_stats);
+
+        color_ep->register_metadata(RS2_FRAME_METADATA_WHITE_BALANCE, make_attribute_parser(&md_capture_stats::white_balance, md_capture_stat_attributes::white_balance_attribute, md_prop_offset));
+
+        // attributes of md_rgb_control
+        md_prop_offset = offsetof(metadata_raw, mode) +
+            offsetof(md_rgb_mode, rgb_mode) +
+            offsetof(md_rgb_normal_mode, intel_rgb_control);
+
+        color_ep->register_metadata(RS2_FRAME_METADATA_GAIN_LEVEL, make_attribute_parser(&md_rgb_control::gain, md_rgb_control_attributes::gain_attribute, md_prop_offset));
+        color_ep->register_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE, make_attribute_parser(&md_rgb_control::manual_exp, md_rgb_control_attributes::manual_exp_attribute, md_prop_offset));
+        color_ep->register_metadata(RS2_FRAME_METADATA_AUTO_EXPOSURE, make_attribute_parser(&md_rgb_control::ae_mode, md_rgb_control_attributes::ae_mode_attribute, md_prop_offset));
+
+        color_ep->set_pose(lazy<pose>([this]() {return get_device_position(_color_device_idx); }));
 
         return color_ep;
     }
@@ -446,6 +498,7 @@ namespace rsimpl2
         _coefficients_table_raw = [this]() { return get_raw_calibration_table(coefficients_table_id); };
         _fisheye_intrinsics_raw = [this]() { return get_raw_fisheye_intrinsics_table(); };
         _fisheye_extrinsics_raw = [this]() { return get_raw_fisheye_extrinsics_table(); };
+        _color_calib_table_raw = [this]() { return get_raw_calibration_table(rgb_calibration_id); };
         _motion_module_extrinsics_raw = [this]() { return get_motion_module_calibration_table().imu_to_fisheye; };
         _accel_intrinsics = [this](){ return get_motion_module_calibration_table().accel_intrinsics; };
         _gyro_intrinsics = [this](){ return get_motion_module_calibration_table().gyro_intrinsics; };
@@ -453,7 +506,6 @@ namespace rsimpl2
         std::string device_name = (rs4xx_sku_names.end() != rs4xx_sku_names.find(dev_info.front().pid)) ? rs4xx_sku_names.at(dev_info.front().pid) : "RS4xx";
         auto camera_fw_version = firmware_version(_hw_monitor->get_firmware_version_string(GVD, camera_fw_version_offset));
         auto serial = _hw_monitor->get_module_serial_string(GVD, module_serial_offset);
-
 
         auto& depth_ep = get_depth_endpoint();
         auto advanced_mode = is_camera_in_advanced_mode();
@@ -718,7 +770,6 @@ namespace rsimpl2
                     << color_devs_info.size() << " found");
 
             color_ep = create_color_device(backend, color_devs_info);
-            color_ep->set_pose(lazy<pose>([]() {return pose{ { { 1,0,0 },{ 0,1,0 },{ 0,0,1 } },{ 0,0,0 } }; })); // TODO: Fetch calibration extrinsic
         }
 
         // Register endpoint info

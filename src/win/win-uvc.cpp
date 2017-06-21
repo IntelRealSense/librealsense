@@ -31,7 +31,7 @@ The library will be compiled without the metadata support!\n")
 #include <limits>
 #include "mfapi.h"
 #include <vidcap.h>
-#include <ksmedia.h>    // Metadata Extention
+#include <ksmedia.h>    // Metadata Extension
 #include <Mferror.h>
 
 #pragma comment(lib, "Shlwapi.lib")
@@ -54,9 +54,10 @@ namespace rsimpl2
         const std::unordered_map<uint32_t, uint32_t> fourcc_map = {
             { 0x59382020, 0x47524559 },    /* 'GREY' from 'Y8  ' */
             { 0x52573130, 0x70524141 },    /* 'pRAA' from 'RW10'.*/
-            { 0x32000000, 0x47524559 },    /* 'GREY' from 'L8  '   */
-            { 0x50000000, 0x5a313620 },    /* 'Z16'  from 'D16 '    */
-            { 0x52415738, 0x47524559 }     /* 'GREY' from 'RAW8 '    */
+            { 0x32000000, 0x47524559 },    /* 'GREY' from 'L8  ' */
+            { 0x50000000, 0x5a313620 },    /* 'Z16'  from 'D16 ' */
+            { 0x52415738, 0x47524559 },    /* 'GREY' from 'RAW8' */
+            { 0x52573136, 0x42595232 }     /* 'RW16' from 'BYR2' */
         };
 
 #ifdef METADATA_SUPPORT
@@ -315,7 +316,7 @@ namespace rsimpl2
                 return false;
 
             if (bytes_received != len)
-                throw std::runtime_error(to_string() << "XU partial read: received " << bytes_received << "/" << len);
+                throw std::runtime_error(to_string() << "Get XU n:" << (int)ctrl << " received " << bytes_received << "/" << len << " bytes");
 
             CHECK_HR(hr);
             return true;
@@ -660,7 +661,7 @@ namespace rsimpl2
 
         void wmf_uvc_device::set_power_state(power_state state)
         {
-            auto rs2 = is_win10_redstone2();
+            static auto rs2 = is_win10_redstone2();
 
             // This is temporary work-around for Windows 10 Red-Stone2 build
             // There seem to be issues re-creating Media Foundation objects frequently

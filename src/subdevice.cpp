@@ -245,27 +245,29 @@ namespace rsimpl2
             }
         }
 
-        for (auto& elem : unutilized_formats)
-        {
-            uint32_t device_fourcc = reinterpret_cast<const big_endian<uint32_t>&>(elem);
-            char fourcc[sizeof(device_fourcc) + 1];
-            rsimpl2::copy(fourcc, &device_fourcc, sizeof(device_fourcc));
-            fourcc[sizeof(device_fourcc)] = 0;
-            LOG_WARNING("Unutilized format " << fourcc);
-        }
-
-        if (!unutilized_formats.empty())
+        if (unutilized_formats.size())
         {
             std::stringstream ss;
+            ss << "Unused media formats : ";
+            for (auto& elem : unutilized_formats)
+            {
+                uint32_t device_fourcc = reinterpret_cast<const big_endian<uint32_t>&>(elem);
+                char fourcc[sizeof(device_fourcc) + 1];
+                rsimpl2::copy(fourcc, &device_fourcc, sizeof(device_fourcc));
+                fourcc[sizeof(device_fourcc)] = 0;
+                ss << fourcc << " ";
+            }
+
+            ss << "; Device-supported: ";
             for (auto& elem : supported_formats)
             {
                 uint32_t device_fourcc = reinterpret_cast<const big_endian<uint32_t>&>(elem);
                 char fourcc[sizeof(device_fourcc) + 1];
                 rsimpl2::copy(fourcc, &device_fourcc, sizeof(device_fourcc));
                 fourcc[sizeof(device_fourcc)] = 0;
-                ss << fourcc << std::endl;
+                ss << fourcc << " ";
             }
-            LOG_WARNING("\nDevice supported formats:\n" << ss.str());
+            LOG_WARNING(ss.str());
         }
 
         // Sort the results to make sure that the user will receive predictable deterministic output from the API
@@ -361,6 +363,7 @@ namespace rsimpl2
                         output.first,
                         static_cast<uint8_t>(f.metadata_size),
                         (const uint8_t*)f.metadata);
+
 
                     frame_holder frame = this->alloc_frame(width * height * bpp / 8, additional_data, requires_processing);
                     if (frame.frame)
@@ -505,6 +508,7 @@ namespace rsimpl2
 
     void uvc_endpoint::acquire_power()
     {
+        std::lock_guard<std::mutex> lock(_power_lock);
         if (_user_count.fetch_add(1) == 0)
         {
             _device->set_power_state(uvc::D0);
@@ -514,7 +518,11 @@ namespace rsimpl2
 
     void uvc_endpoint::release_power()
     {
-        if (_user_count.fetch_add(-1) == 1) _device->set_power_state(uvc::D3);
+        std::lock_guard<std::mutex> lock(_power_lock);
+        if (_user_count.fetch_add(-1) == 1)
+        {
+            _device->set_power_state(uvc::D3);
+        }
     }
 
     option& endpoint::get_option(rs2_option id)
@@ -781,7 +789,7 @@ namespace rsimpl2
             additional_data.frame_number = frame_counter;
             additional_data.timestamp_domain = timestamp_reader->get_frame_timestamp_domain(mode, sensor_data.fo);
             additional_data.system_time = system_time;
-
+            additional_data.fps = mode.profile.fps;
             LOG_DEBUG("FrameAccepted," << get_string(additional_data.stream_type) << "," << frame_counter
                       << ",Arrived," << std::fixed << system_time
                       << ",TS," << std::fixed << timestamp

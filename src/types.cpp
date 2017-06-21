@@ -303,8 +303,9 @@ namespace rsimpl2
 
     /// Convert orientation angles stored in rodrigues conventions to rotation matrix
     /// for details: http://mesh.brown.edu/en193s08-2003/notes/en193s08-rots.pdf
-    float3x3 calc_rodrigues_matrix(const std::vector<double> rot)
+    float3x3 calc_rotation_from_rodrigues_angles(const std::vector<double> rot)
     {
+        assert(3 == rot.size());
         float3x3 rot_mat{};
 
         double theta = sqrt(std::inner_product(rot.begin(), rot.end(), rot.begin(), 0.0));

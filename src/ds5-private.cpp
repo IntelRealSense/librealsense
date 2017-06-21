@@ -35,7 +35,9 @@ namespace rsimpl2
                 << intrinsics_string(res_424_240)
                 << intrinsics_string(res_640_360)
                 << intrinsics_string(res_320_240)
-                << intrinsics_string(res_480_270));
+                << intrinsics_string(res_480_270)
+                << intrinsics_string(res_1280_800)
+                << intrinsics_string(res_960_540));
 
             auto resolution = width_height_to_ds5_rect_resolutions(width ,height);
             rs2_intrinsics intrinsics;
@@ -69,11 +71,40 @@ namespace rsimpl2
 
              rsimpl2::copy(intrinsics.coeffs, table->distortion, sizeof(table->distortion));
 
-
-             LOG_DEBUG(endl<<
-                       array2str((float_4&)(intrinsics.fx, intrinsics.fy, intrinsics.ppx, intrinsics.ppy)) << endl);
+             LOG_DEBUG(endl<< array2str((float_4&)(intrinsics.fx, intrinsics.fy, intrinsics.ppx, intrinsics.ppy)) << endl);
 
              return intrinsics;
+        }
+
+        rs2_intrinsics get_color_stream_intrinsic(const std::vector<uint8_t>& raw_data, uint32_t width, uint32_t height)
+        {
+            ds::rgb_calibration_table rgb_table{};
+            try
+            {
+                auto table = check_calib<ds::rgb_calibration_table>(raw_data);
+                rgb_table = *table;
+            }
+            catch (...) // hard-coded values for debugging override presumably correct data from calibration
+            {
+                LOG_WARNING("RGB Calibration is not available, switch to synthetic intrinsic" << endl);
+                rgb_table.intrinsic = { 1.459629f,        0.f,     0.030549f,   // Normalized intrinsic matrix
+                                          0.f,        2.588633f,   0.081319f,
+                                          0.f,            0.f,        1.f };
+            }
+            float3x3 intrin = rgb_table.intrinsic;
+            rs2_intrinsics calc_intrinsic{ // Calculate specific intrinsic parameters based on the normalized intrinsic and the sensor's resolution
+                static_cast<int>(width),
+                static_cast<int>(height),
+                ((1 + intrin(2, 0))*width) / 2.f,
+                ((1 + intrin(2, 1))*height) / 2.f,
+                intrin(0, 0) * width / 2.f,
+                intrin(1, 1) * height / 2.f,
+                RS2_DISTORTION_BROWN_CONRADY
+            };
+            rsimpl2::copy(calc_intrinsic.coeffs, rgb_table.distortion, sizeof(rgb_table.distortion));
+            LOG_DEBUG(endl << array2str((float_4&)(calc_intrinsic.fx, calc_intrinsic.fy, calc_intrinsic.ppx, calc_intrinsic.ppy)) << endl);
+
+            return calc_intrinsic;
         }
 
         rs2_intrinsics get_intrinsic_by_resolution(const vector<uint8_t> & raw_data, calibration_table_id table_id, uint32_t width, uint32_t height)
@@ -87,6 +118,10 @@ namespace rsimpl2
             case fisheye_calibration_id:
             {
                 return get_intrinsic_fisheye_table(raw_data, width, height);
+            }
+            case rgb_calibration_id:
+            {
+                return get_color_stream_intrinsic(raw_data, width, height);
             }
             default:
                 throw invalid_value_exception(to_string() << "Parsing Calibration table type " << table_id << " is not supported");
@@ -105,7 +140,32 @@ namespace rsimpl2
             return ex;
         }
 
+        pose get_color_stream_extrinsic(const std::vector<uint8_t>& raw_data)
+        {
+            float3 trans_vector{ -0.035f, 0.f, 0.f }; // Translation offset in meters
+            float3 rot_vector{ 0.f, 0.f, 0.f};
+            try
+            {
+                auto table = check_calib<rgb_calibration_table>(raw_data);
+                rot_vector = table->rotation;
+                trans_vector = table->translation;
+                float trans_scale = 0.001f; // Convert units from mm to meter
+                if (table->translation.x > 0.f) // Extrinsic represented in Depth sensor CS
+                {
+                    trans_scale *= -1;
+                    rot_vector.x *= -1; rot_vector.y *= -1;
+                }
+                trans_vector.x *= trans_scale;
+                trans_vector.y *= trans_scale;
+                trans_vector.z *= trans_scale;
+            }
+            catch (...)
+            {
+                LOG_ERROR("RGB Sensor Extrinsic data is not available, using default values");
+            }
 
+            return{ calc_rotation_from_rodrigues_angles({ rot_vector.x, rot_vector.y, rot_vector.z }), trans_vector };
+        }
 
         bool try_fetch_usb_device(std::vector<uvc::usb_device_info>& devices,
                                          const uvc::uvc_device_info& info, uvc::usb_device_info& result)

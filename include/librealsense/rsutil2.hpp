@@ -146,7 +146,7 @@ namespace rs2
 
             multistream open(Dev dev)
             {
-                auto mapping = map_streams(dev);
+                 auto mapping = map_streams(dev);
 
                 // If required, make sure we've succeeded at opening
                 // all the requested streams

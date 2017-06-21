@@ -108,6 +108,7 @@ namespace rsimpl2
         lazy<std::vector<uint8_t>> _coefficients_table_raw;
         lazy<std::vector<uint8_t>> _fisheye_intrinsics_raw;
         lazy<std::vector<uint8_t>> _fisheye_extrinsics_raw;
+        lazy<std::vector<uint8_t>> _color_calib_table_raw;
         lazy<ds::extrinsics_table> _motion_module_extrinsics_raw;
         lazy<ds::imu_intrinsics> _accel_intrinsics;
         lazy<ds::imu_intrinsics> _gyro_intrinsics;

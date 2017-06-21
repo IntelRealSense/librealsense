@@ -16,7 +16,7 @@ using namespace std;
 int main(int argc, char * argv[])
 {
     context ctx;
-    
+
     util::device_hub hub(ctx);
 
     auto finished = false;
@@ -48,7 +48,6 @@ int main(int argc, char * argv[])
 
             while (hub.is_connected(dev) && !glfwWindowShouldClose(win))
             {
-                
                 int w, h;
                 glfwGetFramebufferSize(win, &w, &h);
 
@@ -61,9 +60,17 @@ int main(int argc, char * argv[])
                     return a.get_stream_type() < b.get_stream_type();
                 });
 
-                //dev.get_option(RS2_OPTION_LASER_POWER);
-                auto tiles_horisontal = static_cast<int>(ceil(sqrt(frames.size())));
-                auto tiles_vertical = ceil((float)frames.size() / tiles_horisontal);
+                auto tiles = 0;
+                for (auto&& buffer : buffers)
+                {
+                    if(buffer.has_frame())
+                        tiles++;
+                }
+
+                tiles = max(tiles, (int)frames.size());
+
+                auto tiles_horisontal = static_cast<int>(ceil(sqrt(tiles)));
+                auto tiles_vertical = ceil((float)tiles / tiles_horisontal);
                 auto tile_w = static_cast<float>((float)w / tiles_horisontal);
                 auto tile_h = static_cast<float>((float)h / tiles_vertical);
 
@@ -86,13 +93,16 @@ int main(int argc, char * argv[])
                 glOrtho(0, w, h, 0, -1, +1);
 
                 index = 0;
-                for (auto&& frame : frames)
+                for (auto&& buffer : buffers)
                 {
-                    auto stream_type = frame.get_stream_type();
+                    if(!buffer.has_frame())
+                        continue;
+
+                    //auto stream_type = frame.get_stream_type();
                     auto col_id = index / tiles_horisontal;
                     auto row_id = index % tiles_horisontal;
 
-                    buffers[stream_type].show({ row_id * tile_w, static_cast<float>(col_id * tile_h), tile_w, tile_h }, 1);
+                    buffer.show({ row_id * tile_w, static_cast<float>(col_id * tile_h), tile_w, tile_h }, 1);
 
                     index++;
                 }
@@ -101,12 +111,9 @@ int main(int argc, char * argv[])
                 glfwSwapBuffers(win);
             }
 
-
             if (glfwWindowShouldClose(win))
                 finished = true;
 
-
-            
         }
         catch (const error & e)
         {
@@ -121,4 +128,3 @@ int main(int argc, char * argv[])
     }
     return EXIT_SUCCESS;
 }
-

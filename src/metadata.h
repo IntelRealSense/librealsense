@@ -109,6 +109,26 @@ namespace rsimpl2
         exposure_attribute              = (1u << 1),
     };
 
+    /**\brief md_rgb_control_attributes - bit mask to find active attributes,
+    *  md_rgb_control struct */
+    enum class md_rgb_control_attributes : uint32_t
+    {
+        brightness_attribute            = (1u << 0),
+        contrast_attribute              = (1u << 1),
+        saturation_attribute            = (1u << 2),
+        sharpness_attribute             = (1u << 3),
+        ae_mode_attribute               = (1u << 4),
+        awb_temp_attribute              = (1u << 5),
+        gain_attribute                  = (1u << 6),
+        backlight_comp_attribute        = (1u << 7),
+        gamma_attribute                 = (1u << 8),
+        hue_attribute                   = (1u << 9),
+        manual_exp_attribute            = (1u << 10),
+        manual_wb_attribute             = (1u << 11),
+        power_line_frequency_attribute  = (1u << 12),
+        low_light_comp_attribute        = (1u << 13),
+    };
+
     /**\brief md_configuration_attributes - bit mask to find active attributes,
      *  md_configuration struct */
     enum class md_configuration_attributes : uint32_t
@@ -229,6 +249,31 @@ namespace rsimpl2
     };
 
     REGISTER_MD_TYPE(md_fisheye_control, md_type::META_DATA_INTEL_FISH_EYE_CONTROL_ID)
+
+    /**\brief md_fisheye_control - fisheye-related parameters.
+     *  Corresponds to FW's STMetaDataIntelFishEyeControl object*/
+    struct md_rgb_control
+    {
+        md_header   header;
+        uint32_t    version;
+        uint32_t    flags;
+        uint32_t    brightness;
+        uint32_t    contrast;
+        uint32_t    saturation;
+        uint32_t    sharpness;
+        uint32_t    ae_mode;
+        uint32_t    awb_temp;
+        uint32_t    gain;
+        uint32_t    backlight_comp;
+        uint32_t    gamma;
+        uint32_t    hue;
+        uint32_t    manual_exp;
+        uint32_t    manual_wb;
+        uint32_t    power_line_frequency;
+        uint32_t    low_light_comp;
+    };
+
+    REGISTER_MD_TYPE(md_rgb_control, md_type::META_DATA_INTEL_RGB_CONTROL_ID)
 
     /**\brief md_configuration - device/stream configuration.
      *  Corresponds to FW's STMetaDataIntelConfiguration object*/
@@ -362,6 +407,14 @@ namespace rsimpl2
         md_configuration        intel_configuration;
     };
 
+    struct md_rgb_normal_mode
+    {
+        md_capture_timing       intel_capture_timing;
+        md_capture_stats        intel_capture_stats;
+        md_rgb_control          intel_rgb_control;
+        md_configuration        intel_configuration;
+    };
+
     struct md_calibration_mode
     {
         md_capture_timing       intel_capture_timing;
@@ -390,12 +443,19 @@ namespace rsimpl2
         md_calibration_mode     calib_mode;
     };
 
+    union md_rgb_mode
+    {
+        md_rgb_normal_mode      rgb_mode;
+        md_calibration_mode     calib_mode;
+    };
+
     /**\brief metadata_raw - aggrevative structure that represents all the possible
      * metadata struct types to be handled */
     union md_modes
     {
         md_depth_mode           depth_mode;
         md_fisheye_mode         fisheye_mode;
+        md_rgb_mode             rgb_mode;
     };
 
     /**\brief metadata_raw - metadata structure
