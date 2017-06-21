@@ -13,7 +13,6 @@
 #include <functional>
 #include <exception>
 #include <ostream>
-#include <iostream>
 #include <atomic>
 #include <condition_variable>
 #include <iterator>
@@ -470,7 +469,7 @@ namespace rs2
             if (frame_ref)
             {
                 rs2_error* e = nullptr;
-                _size = rs2_embeded_frames_count(frame_ref, &e);
+                _size = rs2_embedded_frames_count(frame_ref, &e);
                 error::handle(e);
             }
         }
@@ -516,7 +515,7 @@ namespace rs2
             if (frame_ref)
             {
                 rs2_error* e = nullptr;
-                _size = rs2_embeded_frames_count(frame_ref, &e);
+                _size = rs2_embedded_frames_count(frame_ref, &e);
                 error::handle(e);
             }
         }
@@ -617,7 +616,7 @@ namespace rs2
             for (int i = 0; i < frames.size(); i++)
                 std::swap(refs[i], frames[i].frame_ref);
 
-            auto result = rs2_allocate_composite_frame(_source, refs.data(), refs.size(), &e);
+            auto result = rs2_allocate_composite_frame(_source, refs.data(), (int)refs.size(), &e);
             error::handle(e);
             return result;
         }

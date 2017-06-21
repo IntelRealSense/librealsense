@@ -232,6 +232,11 @@ namespace rs2
 
         }
 
+        // For Realtec sensors
+        rgb_rotation_btn = (val_in_range(std::string(dev.get_info(RS2_CAMERA_INFO_PRODUCT_ID)),
+                            { std::string("0AD3") ,std::string("0B07") }) &&
+                            val_in_range(std::string(s.get_info(RS2_CAMERA_INFO_NAME)), { std::string("RGB Camera") }));
+
         for (auto i = 0; i < RS2_OPTION_COUNT; i++)
         {
             option_model metadata;
@@ -518,6 +523,13 @@ namespace rs2
                 }
             }
             ImGui::PopItemWidth();
+
+            if (streaming && rgb_rotation_btn && ImGui::Button("Flip Stream Orientation", ImVec2(160, 20)))
+            {
+                rotate_rgb_image(dev, res_values[selected_res_id].first);
+                if (ImGui::IsItemHovered())
+                    ImGui::SetTooltip("Rotate Sensor 180 deg");
+            }
         }
     }
 
@@ -671,10 +683,10 @@ namespace rs2
                         if (s.is<roi_sensor>())
                         {
                             auto r = s.as<roi_sensor>().get_region_of_interest();
-                            roi_rect.x = r.min_x;
-                            roi_rect.y = r.min_y;
-                            roi_rect.w = r.max_x - r.min_x;
-                            roi_rect.h = r.max_y - r.min_y;
+                            roi_rect.x = static_cast<float>(r.min_x);
+                            roi_rect.y = static_cast<float>(r.min_y);
+                            roi_rect.w = static_cast<float>(r.max_x - r.min_x);
+                            roi_rect.h = static_cast<float>(r.max_y - r.min_y);
                         }
                     }
                     catch (...)
@@ -1168,8 +1180,7 @@ namespace rs2
 
     double notification_model::get_age_in_ms()
     {
-        auto age = std::chrono::high_resolution_clock::now() - created_time;
-        return std::chrono::duration_cast<std::chrono::milliseconds>(age).count();
+        return std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now() - created_time).count();
     }
 
     void notification_model::set_color_scheme(float t)
@@ -1201,7 +1212,7 @@ namespace rs2
         set_color_scheme(t);
         ImGui::PushStyleColor(ImGuiCol_Text, { 1, 1, 1, 1 - t });
 
-        auto lines = std::count(message.begin(), message.end(), '\n')+1;
+        auto lines = static_cast<int>(std::count(message.begin(), message.end(), '\n') + 1);
         ImGui::SetNextWindowPos({ float(w - 430), float(y) });
         ImGui::SetNextWindowSize({ float(415), float(lines*50) });
         height = lines*50 +10;

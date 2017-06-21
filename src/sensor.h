@@ -261,7 +261,10 @@ namespace librealsense
                 : _owner(owner)
             {
                 auto strong = _owner.lock();
-                if (strong) strong->acquire_power();
+                if (strong)
+                {
+                    strong->acquire_power();
+                }
             }
 
             ~power()

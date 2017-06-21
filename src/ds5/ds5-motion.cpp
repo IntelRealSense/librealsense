@@ -218,7 +218,7 @@ namespace librealsense
                                                                             std::map<float, std::string>{{0.f, "Static"},
                                                                                                          {1.f, "Anti-Flicker"},
                                                                                                          {2.f, "Hybrid"}}));
-        uvc_ep->register_option(RS2_OPTION_AUTO_EXPOSURE_ANTIFLICKER_RATE,
+        uvc_ep->register_option(RS2_OPTION_POWER_LINE_FREQUENCY,
                                 std::make_shared<auto_exposure_antiflicker_rate_option>(auto_exposure,
                                                                                         ae_state,
                                                                                         option_range{50, 60, 10, 60},

@@ -27,7 +27,7 @@ const uint8_t  DEFAULT_FRAME_BUFFERS = 4;
 const uint16_t DELAY_FOR_RETRIES     = 50;
 
 const uint8_t MAX_META_DATA_SIZE      = 0xff; // UVC Metadata total length
-                                            // is limited by design to 255 bytes
+                                            // is limited by (UVC Bulk) design to 255 bytes
 
 namespace librealsense
 {
@@ -36,7 +36,7 @@ namespace librealsense
     template<class T>
     bool list_changed(const std::vector<T>& list1,
                       const std::vector<T>& list2,
-                      std::function<bool(T, T)> comperizon = [](T first, T second) { return first == second; })
+                      std::function<bool(T, T)> equal = [](T first, T second) { return first == second; })
     {
         if (list1.size() != list2.size())
             return true;
@@ -46,7 +46,7 @@ namespace librealsense
             bool found = false;
             for (auto dev2 : list2)
             {
-                if (comperizon(dev1,dev2))
+                if (equal(dev1,dev2))
                 {
                     found = true;
                 }

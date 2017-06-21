@@ -1025,7 +1025,10 @@ namespace librealsense
                         "00000032-0000-0010-8000-00aa003",
                     };
 
-                    if (known_problematic_formats.count((const char*)pixel_format.description) == 0)
+                    if (std::find(known_problematic_formats.begin(),
+                                  known_problematic_formats.end(),
+                                  (const char*)pixel_format.description) ==
+                        known_problematic_formats.end())
                     {
                         const std::string s(to_string() << "!" << pixel_format.description);
                         std::regex rgx("!([0-9a-f]+)-.*");

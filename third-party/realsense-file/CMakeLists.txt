@@ -21,7 +21,7 @@ include_directories(
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 source_group("Header Files\\3rd_party\\lz4" FILES
         3rd_party/lz4/lib/lz4.h
-        )	
+        )
 source_group("Source Files\\3rd_party\\lz4" FILES
         3rd_party/lz4/lib/lz4.c
         )

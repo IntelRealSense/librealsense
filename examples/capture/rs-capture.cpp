@@ -103,11 +103,8 @@ int main(int argc, char * argv[])
                 glfwSwapBuffers(win);
             }
 
-
             if (glfwWindowShouldClose(win))
                 finished = true;
-
-
 
         }
         catch (const error & e)
@@ -123,4 +120,3 @@ int main(int argc, char * argv[])
     }
     return EXIT_SUCCESS;
 }
-

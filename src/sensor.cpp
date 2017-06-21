@@ -187,27 +187,29 @@ namespace librealsense
             }
         }
 
-        for (auto& elem : unutilized_formats)
-        {
-            uint32_t device_fourcc = reinterpret_cast<const big_endian<uint32_t>&>(elem);
-            char fourcc[sizeof(device_fourcc) + 1];
-            librealsense::copy(fourcc, &device_fourcc, sizeof(device_fourcc));
-            fourcc[sizeof(device_fourcc)] = 0;
-            LOG_WARNING("Unutilized format " << fourcc);
-        }
-
-        if (!unutilized_formats.empty())
+        if (unutilized_formats.size())
         {
             std::stringstream ss;
+            ss << "Unused media formats : ";
+            for (auto& elem : unutilized_formats)
+            {
+                uint32_t device_fourcc = reinterpret_cast<const big_endian<uint32_t>&>(elem);
+                char fourcc[sizeof(device_fourcc) + 1];
+            librealsense::copy(fourcc, &device_fourcc, sizeof(device_fourcc));
+                fourcc[sizeof(device_fourcc)] = 0;
+                ss << fourcc << " ";
+            }
+
+            ss << "; Device-supported: ";
             for (auto& elem : supported_formats)
             {
                 uint32_t device_fourcc = reinterpret_cast<const big_endian<uint32_t>&>(elem);
                 char fourcc[sizeof(device_fourcc) + 1];
                 librealsense::copy(fourcc, &device_fourcc, sizeof(device_fourcc));
                 fourcc[sizeof(device_fourcc)] = 0;
-                ss << fourcc << std::endl;
+                ss << fourcc << " ";
             }
-            LOG_WARNING("\nDevice supported formats:\n" << ss.str());
+            LOG_WARNING(ss.str());
         }
 
         // Sort the results to make sure that the user will receive predictable deterministic output from the API
@@ -450,6 +452,7 @@ namespace librealsense
 
     void uvc_sensor::acquire_power()
     {
+        std::lock_guard<std::mutex> lock(_power_lock);
         if (_user_count.fetch_add(1) == 0)
         {
             _device->set_power_state(platform::D0);
@@ -459,7 +462,11 @@ namespace librealsense
 
     void uvc_sensor::release_power()
     {
-        if (_user_count.fetch_add(-1) == 1) _device->set_power_state(platform::D3);
+        std::lock_guard<std::mutex> lock(_power_lock);
+        if (_user_count.fetch_add(-1) == 1)
+        {
+            _device->set_power_state(platform::D3);
+        }
     }
 
     bool info_container::supports_info(rs2_camera_info info) const

@@ -154,7 +154,7 @@ typedef enum rs2_option
     RS2_OPTION_FRAMES_QUEUE_SIZE                          , /**< Number of frames the user is allowed to keep per stream. Trying to hold-on to more frames will cause frame-drops.*/
     RS2_OPTION_TOTAL_FRAME_DROPS                          , /**< Total number of detected frame drops from all streams */
     RS2_OPTION_AUTO_EXPOSURE_MODE                         , /**< Auto-Exposure modes: Static, Anti-Flicker and Hybrid */
-    RS2_OPTION_AUTO_EXPOSURE_ANTIFLICKER_RATE             , /**< Auto-Exposure anti-flicker rate, can be 50 or 60 Hz */
+    RS2_OPTION_POWER_LINE_FREQUENCY                       , /**< Power Line Frequency control for anti-flickering Off/50Hz/60Hz/Auto */
     RS2_OPTION_ASIC_TEMPERATURE                           , /**< Current Asic Temperature */
     RS2_OPTION_ERROR_POLLING_ENABLED                      , /**< disable error handling */
     RS2_OPTION_PROJECTOR_TEMPERATURE                      , /**< Current Projector Temperature */
@@ -1088,7 +1088,7 @@ rs2_frame* rs2_allocate_composite_frame(rs2_source* source, rs2_frame** frames, 
 
 rs2_frame* rs2_extract_frame(rs2_frame* composite, int index, rs2_error** error);
 
-int rs2_embeded_frames_count(rs2_frame* composite, rs2_error** error);
+int rs2_embedded_frames_count(rs2_frame* composite, rs2_error** error);
 
 void rs2_synthetic_frame_ready(rs2_source* source, rs2_frame* frame, rs2_error** error);
 

@@ -1210,7 +1210,7 @@ rs2_frame* rs2_allocate_composite_frame(rs2_source* source, rs2_frame** frames, 
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, frames, count)
 
-int rs2_embeded_frames_count(rs2_frame* composite, rs2_error** error) try
+int rs2_embedded_frames_count(rs2_frame* composite, rs2_error** error) try
 {
     VALIDATE_NOT_NULL(composite)
 

@@ -21,7 +21,10 @@ function choose_kernel_branch {
     "4")									# Kernel 4.4. is managed on master branch
         echo master
         ;;
-    "8")								 	# kernel 4.8 is managed on branch hwe
+    "8")								 	# kernel 4.8 is available via explicit tags. Currently on 4.8.0-58
+        echo Ubuntu-hwe-4.8.0-58.63_16.04.1
+        ;;
+    "10")								 	# kernel 4.10 is managed on branch hwe
         echo hwe
         ;;
     *)
@@ -111,7 +114,7 @@ function try_module_insert {
 	then
 		echo -e "\e[31mFailed to insert the patched module. Operation is aborted, the original module is restored\e[0m"
 		echo -e "\e[31mVerify that the current kernel version is aligned to the patched module version\e[0m"
-		if [ backup_available -ne 0 ];
+		if [ ${backup_available} -ne 0 ];
 		then
 			sudo cp ${tgt_ko}.bckup ${tgt_ko}
 			sudo modprobe ${module_name}
