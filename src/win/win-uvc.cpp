@@ -7,6 +7,20 @@
 #error At least Visual Studio 2013 Update 4 is required to compile this backend
 #endif
 
+#include <ntverp.h>
+#if VER_PRODUCTBUILD <= 9600    // (WinSDK 8.1)
+#ifdef ENFORCE_METADATA
+#error( "Librealsense Error!: Featuring UVC Metadata requires WinSDK 10.0.10586.0. \
+ Install the required toolset to proceed. Alternatively, uncheck ENFORCE_METADATA option in CMake GUI tool")
+#else
+#pragma message ( "\nLibrealsense notification: Featuring UVC Metadata requires WinSDK 10.0.10586.0 toolset. \
+The library will be compiled without the metadata support!\n")
+#endif // ENFORCE_METADATA
+#else
+#define METADATA_SUPPORT
+#endif      // (WinSDK 8.1)
+
+
 #define NOMINMAX
 
 #include "win-uvc.h"
@@ -14,8 +28,10 @@
 
 #include "Shlwapi.h"
 #include <Windows.h>
+#include <limits>
 #include "mfapi.h"
 #include <vidcap.h>
+#include <ksmedia.h>    // Metadata Extention
 #include <Mferror.h>
 
 #pragma comment(lib, "Shlwapi.lib")
@@ -42,6 +58,90 @@ namespace rsimpl2
             { 0x50000000, 0x5a313620 },    /* 'Z16'  from 'D16 '    */
             { 0x52415738, 0x47524559 }     /* 'GREY' from 'RAW8 '    */
         };
+
+#ifdef METADATA_SUPPORT
+
+#pragma pack(push, 1)
+            struct ms_proprietary_md_blob
+            {
+                // These fields are identical in layout and content with the standard UVC header
+                uint32_t        timestamp;
+                uint8_t         source_clock[6];
+                // MS internal
+                uint8_t         reserved[6];
+            };
+
+            struct ms_metadata_header
+            {
+                KSCAMERA_METADATA_ITEMHEADER    ms_header;
+                ms_proprietary_md_blob          ms_blobs[2]; // The blobs content is identical
+            };
+#pragma pack(pop)
+
+            constexpr uint8_t ms_header_size = sizeof(ms_metadata_header);
+
+            bool try_read_metadata(IMFSample *pSample, uint8_t& metadata_size, byte** bytes)
+            {
+                CComPtr<IUnknown>       spUnknown;
+                CComPtr<IMFAttributes>  spSample;
+                HRESULT hr = S_OK;
+
+                CHECK_HR(hr = pSample->QueryInterface(IID_PPV_ARGS(&spSample)));
+                LOG_HR(hr = spSample->GetUnknown(MFSampleExtension_CaptureMetadata, IID_PPV_ARGS(&spUnknown)));
+
+                if (SUCCEEDED(hr))
+                {
+                    CComPtr<IMFAttributes>          spMetadata;
+                    CComPtr<IMFMediaBuffer>         spBuffer;
+                    PKSCAMERA_METADATA_ITEMHEADER   pMetadata = nullptr;
+                    DWORD                           dwMaxLength = 0;
+                    DWORD                           dwCurrentLength = 0;
+
+                    CHECK_HR(hr = spUnknown->QueryInterface(IID_PPV_ARGS(&spMetadata)));
+                    CHECK_HR(hr = spMetadata->GetUnknown(MF_CAPTURE_METADATA_FRAME_RAWSTREAM, IID_PPV_ARGS(&spBuffer)));
+                    CHECK_HR(hr = spBuffer->Lock((BYTE**)&pMetadata, &dwMaxLength, &dwCurrentLength));
+
+                    if (nullptr == pMetadata) // Bail, no data.
+                        return false;
+
+                    if (pMetadata->MetadataId != MetadataId_UsbVideoHeader) // Wrong metadata type, bail.
+                        return false;
+
+                    // Microsoft converts the standard UVC (12-byte) header into MS proprietary 40-bytes struct
+                    // Therefore we revert it to the original structure for uniform handling
+                    static const uint8_t md_lenth_max = 0xff;
+                    auto md_raw = reinterpret_cast<byte*>(pMetadata);
+                    ms_metadata_header *ms_hdr = reinterpret_cast<ms_metadata_header*>(md_raw);
+                    uvc_header *uvc_hdr = reinterpret_cast<uvc_header*>(md_raw + ms_header_size - uvc_header_size);
+                    try
+                    {        // restore the original timestamp and source clock fields
+                        memcpy(&(uvc_hdr->timestamp), &ms_hdr->ms_blobs[0], 10);
+                    }
+                    catch (...)
+                    {
+                        return false;
+                    }
+
+                    // Metadata for Bulk endpoints is limited to 255 bytes by design
+                    auto payload_length = ms_hdr->ms_header.Size - ms_header_size;
+                    if ((int)payload_length > (md_lenth_max - uvc_header_size))
+                    {
+                        LOG_WARNING("Invalid metadata payload, length"
+                            << payload_length << ", expected [0-" << int(md_lenth_max - uvc_header_size) << "]");
+                        return false;
+                    }
+                    uvc_hdr->length = static_cast<uint8_t>(payload_length);
+                    uvc_hdr->info = 0x0; // TODO - currently not available
+                    metadata_size = static_cast<uint8_t>(uvc_hdr->length + uvc_header_size);
+
+                    *bytes = (byte*)uvc_hdr;
+
+                    return true;
+                }
+                else
+                    return false;
+            }
+#endif // METADATA_SUPPORT
 
         STDMETHODIMP source_reader_callback::QueryInterface(REFIID iid, void** ppv)
         {
@@ -93,12 +193,17 @@ namespace rsimpl2
                         DWORD max_length{}, current_length{};
                         if (SUCCEEDED(buffer->Lock(&byte_buffer, &max_length, &current_length)))
                         {
+                            byte* metadata = nullptr;
+                            uint8_t metadata_size = 0;
+#ifdef METADATA_SUPPORT
+                            try_read_metadata(sample, metadata_size, &metadata);
+#endif
                             try
                             {
                                 auto& stream = owner->_streams[dwStreamIndex];
                                 std::lock_guard<std::mutex> lock(owner->_streams_mutex);
                                 auto profile = stream.profile;
-                                frame_object f{ current_length, 0, byte_buffer, nullptr };
+                                frame_object f{ current_length, metadata_size, byte_buffer, metadata };
 
                                 auto continuation = [buffer, this]()
                                 {

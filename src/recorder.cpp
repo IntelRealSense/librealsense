@@ -158,7 +158,7 @@ namespace rsimpl2
                 lookup_key k{ 0, call_type::device_watcher_event };
                 load_device_changed_data(old, curr, k);
                 _watcher->raise_callback(old, curr);
-                next = peak_next_call();
+                next = pick_next_call();
             } while (next && next->type == call_type::device_watcher_event);
         }
 
@@ -546,7 +546,7 @@ namespace rsimpl2
                     {
                         throw playback_backend_exception("Recording history mismatch!", t, entity_id);
                     }
-                    auto next = peak_next_call();
+                    auto next = pick_next_call();
 
                     _cursors[entity_id] = _cycles[entity_id] = idx;
                     if (next && t != call_type::device_watcher_event && next->type == call_type::device_watcher_event)
@@ -559,7 +559,7 @@ namespace rsimpl2
             throw runtime_error("The recording is missing the part you are trying to playback!");
         }
 
-        call* recording::peak_next_call(int id)
+        call* recording::pick_next_call(int id)
         {
             const auto idx = (_cycles[id] + 1) % static_cast<int>(calls.size());
             return &calls[idx];
@@ -570,7 +570,7 @@ namespace rsimpl2
         {
 
             lock_guard<recursive_mutex> lock(_mutex);
-            auto&& next = peak_next_call();
+            auto&& next = pick_next_call();
             if (next && next->type == call_type::device_watcher_event)
             {
                 invoke_device_changed_event();
@@ -1248,7 +1248,7 @@ namespace rsimpl2
             {
                 throw playback_backend_exception("Recording history mismatch!", call_type::uvc_set_xu, _entity_id);
             }
-            return c.param3;
+            return (c.param3 != 0);
         }
 
         bool playback_uvc_device::get_xu(const extension_unit& xu, uint8_t ctrl, uint8_t* data, int len) const
@@ -1260,7 +1260,7 @@ namespace rsimpl2
             if (stored_data.size() != len)
                 throw playback_backend_exception("Recording history mismatch!", call_type::uvc_get_xu, _entity_id);
             rsimpl2::copy(data, stored_data.data(), len);
-            return c.param3;
+            return (c.param3 != 0);
         }
 
         control_range playback_uvc_device::get_xu_range(const extension_unit& xu, uint8_t ctrl, int len) const
@@ -1286,7 +1286,7 @@ namespace rsimpl2
                 return call_found.param1 == opt;
             });
             value = c.param2;
-            return c.param3;
+            return (c.param3 != 0);
         }
 
         bool playback_uvc_device::set_pu(rs2_option opt, int32_t value)
@@ -1295,7 +1295,7 @@ namespace rsimpl2
             {
                 return call_found.param1 == opt && call_found.param2 == value;
             });
-            return c.param3;
+            return (c.param3 != 0);
         }
 
         control_range playback_uvc_device::get_pu_range(rs2_option opt) const
@@ -1411,7 +1411,7 @@ namespace rsimpl2
 
                     auto metadata = _rec->load_blob(c_ptr->param2);
                     sd.fo.metadata = (void*)metadata.data();
-                    sd.fo.metadata_size = metadata.size();
+                    sd.fo.metadata_size = static_cast<uint8_t>(metadata.size());
 
                     sd.sensor.name = sensor_name;
 
@@ -1451,7 +1451,7 @@ namespace rsimpl2
 
             while (_alive)
             {
-                auto c_ptr = _rec->peak_next_call(_entity_id);
+                auto c_ptr = _rec->pick_next_call(_entity_id);
 
                 if (c_ptr && c_ptr->type == call_type::uvc_frame)
                 {
