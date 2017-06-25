@@ -8,23 +8,23 @@ using namespace rsimpl2;
 #include <functional>
 
 
-int device::add_endpoint(std::shared_ptr<endpoint> endpoint)
+int device::add_sensor(std::shared_ptr<sensor_base> sensor_base)
 {
-    _endpoints.push_back(endpoint);
-    return (int)_endpoints.size() - 1;
+    _sensors.push_back(sensor_base);
+    return (int)_sensors.size() - 1;
 }
 
-void device::register_endpoint_info(int sub, std::map<rs2_camera_info, std::string> camera_info)
+void device::register_sensor_info(int sub, std::map<rs2_camera_info, std::string> camera_info)
 {
     for (auto& elem : camera_info)
     {
-        get_uvc_endpoint(sub).register_info(elem.first, std::move(elem.second));
+        get_uvc_sensor(sub).register_info(elem.first, std::move(elem.second));
     }
 }
 
-uvc_endpoint& device::get_uvc_endpoint(int sub)
+uvc_sensor& device::get_uvc_sensor(int sub)
 {
-    return static_cast<uvc_endpoint&>(*_endpoints[sub]);
+    return static_cast<uvc_sensor&>(*_sensors[sub]);
 }
 
 void device::declare_capability(supported_capability cap)
@@ -34,13 +34,13 @@ void device::declare_capability(supported_capability cap)
 
 rs2_extrinsics device::get_extrinsics(int from_subdevice, rs2_stream, int to_subdevice, rs2_stream)
 {
-    auto from = get_endpoint(from_subdevice).get_pose(), to = get_endpoint(to_subdevice).get_pose();
-    if (from == to)
-        return { {1,0,0,0,1,0,0,0,1}, {0,0,0} }; // identity transformation
+//    auto from = get_sensor(from_subdevice).get_pose(), to = get_sensor(to_subdevice).get_pose();
+//    if (from == to)
+//        return { {1,0,0,0,1,0,0,0,1}, {0,0,0} }; // identity transformation
 
-    auto transform = inverse(from) * to;
-    rs2_extrinsics extrin;
-    (float3x3 &)extrin.rotation = transform.orientation;
-    (float3 &)extrin.translation = transform.position;
-    return extrin;
+//    auto transform = inverse(from) * to;
+//    rs2_extrinsics extrin;
+//    (float3x3 &)extrin.rotation = transform.orientation;
+//    (float3 &)extrin.translation = transform.position;
+//    return extrin;
 }

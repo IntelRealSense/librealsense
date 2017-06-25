@@ -159,10 +159,10 @@ namespace rsimpl2
             sr300_camera& _owner;
         };
 
-        static std::shared_ptr<uvc_endpoint> create_color_device(const uvc::backend& backend,
+        static std::shared_ptr<uvc_sensor> create_color_device(const uvc::backend& backend,
                                                                  const uvc::uvc_device_info& color)
         {
-            auto color_ep = std::make_shared<uvc_endpoint>(backend.create_uvc_device(color),
+            auto color_ep = std::make_shared<uvc_sensor>(backend.create_uvc_device(color),
                                                            std::unique_ptr<frame_timestamp_reader>(new sr300_timestamp_reader()),
                                                            backend.create_time_service());
             color_ep->register_pixel_format(pf_yuy2);
@@ -187,13 +187,13 @@ namespace rsimpl2
             return color_ep;
         }
 
-        std::shared_ptr<uvc_endpoint> create_depth_device(const uvc::backend& backend,
+        std::shared_ptr<uvc_sensor> create_depth_device(const uvc::backend& backend,
                                                           const uvc::uvc_device_info& depth)
         {
             using namespace ivcam;
 
-            // create uvc-endpoint from backend uvc-device
-            auto depth_ep = std::make_shared<uvc_endpoint>(backend.create_uvc_device(depth),
+            // create uvc-sensor_base from backend uvc-device
+            auto depth_ep = std::make_shared<uvc_sensor>(backend.create_uvc_device(depth),
                                                            std::unique_ptr<frame_timestamp_reader>(new sr300_timestamp_reader()),
                                                            backend.create_time_service());
             depth_ep->register_xu(depth_xu); // make sure the XU is initialized everytime we power the camera
@@ -228,15 +228,15 @@ namespace rsimpl2
             force_hardware_reset();
         }
 
-        uvc_endpoint& get_depth_endpoint() { return static_cast<uvc_endpoint&>(get_endpoint(_depth_device_idx)); }
+        uvc_sensor& get_depth_sensor() { return static_cast<uvc_sensor&>(get_sensor(_depth_device_idx)); }
 
         sr300_camera(const uvc::backend& backend,
             const uvc::uvc_device_info& color,
             const uvc::uvc_device_info& depth,
             const uvc::usb_device_info& hwm_device)
-            : _depth_device_idx(add_endpoint(create_depth_device(backend, depth))),
-              _color_device_idx(add_endpoint(create_color_device(backend, color))),
-              _hw_monitor(std::make_shared<hw_monitor>(std::make_shared<locked_transfer>(backend.create_usb_device(hwm_device), get_depth_endpoint())))
+            : _depth_device_idx(add_sensor(create_depth_device(backend, depth))),
+              _color_device_idx(add_sensor(create_color_device(backend, color))),
+              _hw_monitor(std::make_shared<hw_monitor>(std::make_shared<locked_transfer>(backend.create_usb_device(hwm_device), get_depth_sensor())))
         {
             using namespace ivcam;
             static const char* device_name = "Intel RealSense SR300";
@@ -251,7 +251,7 @@ namespace rsimpl2
                                                                        {RS2_CAMERA_INFO_CAMERA_FIRMWARE_VERSION, fw_version},
                                                                        {RS2_CAMERA_INFO_DEVICE_LOCATION, depth.device_path},
                                                                        {RS2_CAMERA_INFO_DEVICE_DEBUG_OP_CODE, std::to_string(static_cast<int>(fw_cmd::GLD))}};
-            register_endpoint_info(_depth_device_idx, depth_camera_info);
+            register_sensor_info(_depth_device_idx, depth_camera_info);
 
             std::map<rs2_camera_info, std::string> color_camera_info = {{RS2_CAMERA_INFO_DEVICE_NAME, device_name},
                                                                        {RS2_CAMERA_INFO_MODULE_NAME, "Color Camera"},
@@ -259,7 +259,7 @@ namespace rsimpl2
                                                                        {RS2_CAMERA_INFO_CAMERA_FIRMWARE_VERSION, fw_version},
                                                                        {RS2_CAMERA_INFO_DEVICE_LOCATION, color.device_path},
                                                                        {RS2_CAMERA_INFO_DEVICE_DEBUG_OP_CODE, std::to_string(static_cast<int>(fw_cmd::GLD))}};
-            register_endpoint_info(_color_device_idx, color_camera_info);
+            register_sensor_info(_color_device_idx, color_camera_info);
 
             register_autorange_options();
 
@@ -269,9 +269,9 @@ namespace rsimpl2
                           reinterpret_cast<const float3 &>(c.Tt) * 0.001f
             };
 
-            get_depth_endpoint().set_pose(lazy<pose>([depth_to_color](){return inverse(depth_to_color); }));
+            get_depth_sensor().set_pose(lazy<pose>([depth_to_color](){return inverse(depth_to_color); }));
 
-            get_depth_endpoint().register_option(RS2_OPTION_DEPTH_UNITS,
+            get_depth_sensor().register_option(RS2_OPTION_DEPTH_UNITS,
                                                  std::make_shared<const_value_option>("Number of meters represented by a single depth unit",
                                                                                       1000.f / (0xFFFF / c.Rmax)));
         }
@@ -323,7 +323,7 @@ namespace rsimpl2
             {
                 for (auto opt : arr_options)
                 {
-                    auto&& o = get_depth_endpoint().get_option(opt);
+                    auto&& o = get_depth_sensor().get_option(opt);
                     o.set(o.get_range().def);
                 }
             }
@@ -333,7 +333,7 @@ namespace rsimpl2
                 {
                     if (arr_values[preset][i] >= 0)
                     {
-                        auto&& o = get_depth_endpoint().get_option(arr_options[i]);
+                        auto&& o = get_depth_sensor().get_option(arr_options[i]);
                         o.set(arr_values[preset][i]);
                     }
                 }
@@ -345,7 +345,7 @@ namespace rsimpl2
         // NOTE: it is the user's responsibility to make sure the profile makes sense on the given subdevice. UB otherwise.
         rs2_intrinsics get_intrinsics(unsigned int subdevice, const stream_profile& profile) const override
         {
-            if (subdevice >= get_endpoints_count())
+            if (subdevice >= get_sensors_count())
                 throw rsimpl2::invalid_value_exception("Requested subdevice is not supported!");
 
             if (subdevice == _color_device_idx)
@@ -363,7 +363,7 @@ namespace rsimpl2
         std::shared_ptr<hw_monitor> _hw_monitor;
 
         template<class T>
-        void register_depth_xu(uvc_endpoint& depth, rs2_option opt, uint8_t id, std::string desc) const
+        void register_depth_xu(uvc_sensor& depth, rs2_option opt, uint8_t id, std::string desc) const
         {
             depth.register_option(opt,
                 std::make_shared<uvc_xu_option<T>>(

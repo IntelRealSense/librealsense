@@ -2,7 +2,7 @@
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
 #pragma once
-#include "subdevice.h"
+#include "sensor.h"
 #include "concurrency.h"
 #include "types.h"
 

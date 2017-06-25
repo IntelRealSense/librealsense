@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include "subdevice.h"
+#include "sensor.h"
 #include <mutex>
 
 const uint8_t   IV_COMMAND_FIRMWARE_UPDATE_MODE = 0x01;
@@ -20,8 +20,8 @@ const uint8_t   IV_COMMAND_VERSION              = 0x0B;
 const uint8_t   IV_COMMAND_CONFIDENCE_THRESHHOLD= 0x0C;
 
 const uint8_t   IVCAM_MONITOR_INTERFACE         = 0x4;
-const uint8_t   IVCAM_MONITOR_ENDPOINT_OUT      = 0x1;
-const uint8_t   IVCAM_MONITOR_ENDPOINT_IN       = 0x81;
+const uint8_t   IVCAM_MONITOR_sensor_base_OUT      = 0x1;
+const uint8_t   IVCAM_MONITOR_sensor_base_IN       = 0x81;
 const uint8_t   IVCAM_MIN_SUPPORTED_VERSION     = 13;
 const uint8_t   IVCAM_MONITOR_HEADER_SIZE       = (sizeof(uint32_t) * 6);
 const uint8_t   NUM_OF_CALIBRATION_PARAMS       = 100;
@@ -43,14 +43,14 @@ const uint16_t  SIZE_OF_HW_MONITOR_HEADER       = 4;
 
 namespace rsimpl2
 {
-    class uvc_endpoint;
+    class uvc_sensor;
 
     class locked_transfer
     {
     public:
-        locked_transfer(std::shared_ptr<uvc::command_transfer> command_transfer, uvc_endpoint& uvc_ep)
+        locked_transfer(std::shared_ptr<uvc::command_transfer> command_transfer, uvc_sensor& uvc_ep)
             :_command_transfer(command_transfer),
-             _uvc_endpoint(uvc_ep)
+             _uvc_sensor_base(uvc_ep)
         {}
 
         std::vector<uint8_t> send_receive(
@@ -59,7 +59,7 @@ namespace rsimpl2
             bool require_response = true)
         {
             std::lock_guard<std::recursive_mutex> lock(_local_mtx);
-            return _uvc_endpoint.invoke_powered([&]
+            return _uvc_sensor_base.invoke_powered([&]
                 (uvc::uvc_device& dev)
                 {
                     std::lock_guard<uvc::uvc_device> lock(dev);
@@ -69,7 +69,7 @@ namespace rsimpl2
 
     private:
         std::shared_ptr<uvc::command_transfer> _command_transfer;
-        uvc_endpoint& _uvc_endpoint;
+        uvc_sensor& _uvc_sensor_base;
         std::recursive_mutex _local_mtx;
     };
 

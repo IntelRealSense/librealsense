@@ -26,7 +26,7 @@ namespace rsimpl2
         }
     }
 
-    emitter_option::emitter_option(uvc_endpoint& ep)
+    emitter_option::emitter_option(uvc_sensor& ep)
         : uvc_xu_option(ep, ds::depth_xu, ds::DS5_DEPTH_EMITTER_ENABLED,
                         "Power of the DS5 projector, 0 meaning projector off, 1 meaning projector on, 2 meaning projector in auto mode")
     {}
@@ -107,7 +107,7 @@ namespace rsimpl2
         }
     }
 
-    asic_and_projector_temperature_options::asic_and_projector_temperature_options(uvc_endpoint& ep, rs2_option opt)
+    asic_and_projector_temperature_options::asic_and_projector_temperature_options(uvc_sensor& ep, rs2_option opt)
         : _option(opt), _ep(ep)
         {}
 
@@ -155,7 +155,7 @@ namespace rsimpl2
         return "Current Motion-Module Temperature";
     }
 
-    motion_module_temperature_option::motion_module_temperature_option(hid_endpoint& ep)
+    motion_module_temperature_option::motion_module_temperature_option(hid_sensor& ep)
         : _ep(ep)
     {}
 
@@ -173,7 +173,7 @@ namespace rsimpl2
         return is_enabled ? _opt_range.max : _opt_range.min;
     }
 
-    enable_motion_correction::enable_motion_correction(endpoint* mm_ep,
+    enable_motion_correction::enable_motion_correction(sensor_base* mm_ep,
                                                        const ds::imu_intrinsics& accel,
                                                        const ds::imu_intrinsics& gyro,
                                                        const option_range& opt_range)
@@ -231,7 +231,7 @@ namespace rsimpl2
         return _auto_exposure_state->get_enable_auto_exposure();
     }
 
-    enable_auto_exposure_option::enable_auto_exposure_option(uvc_endpoint* fisheye_ep,
+    enable_auto_exposure_option::enable_auto_exposure_option(uvc_sensor* fisheye_ep,
                                                              std::shared_ptr<auto_exposure_mechanism> auto_exposure,
                                                              std::shared_ptr<auto_exposure_state> auto_exposure_state,
                                                              const option_range& opt_range)

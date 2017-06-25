@@ -3,29 +3,35 @@
 
 #pragma once
 
-#include "backend.h"
-#include "archive.h"
 #include <chrono>
 #include <memory>
 #include <vector>
+
+#include "backend.h"
+#include "archive.h"
 #include "hw-monitor.h"
 #include "option.h"
-#include "subdevice.h"
+#include "sensor.h"
 #include "sync.h"
+#include "core.h"
 
 namespace rsimpl2
 {
-    class device
+    class device : public device_interface
     {
     public:
         virtual ~device() = default;
 
-        unsigned int get_endpoints_count() const { return static_cast<unsigned int>(_endpoints.size()); }
-        endpoint& get_endpoint(unsigned subdevice)
+        unsigned int get_sensors_count() const override
+        {
+            return static_cast<unsigned int>(_sensors.size());
+        }
+
+        sensor_interface& get_sensor(unsigned subdevice) override
         {
             try
             {
-                return *(_endpoints.at(subdevice));
+                return *(_sensors.at(subdevice));
             }
             catch (std::out_of_range)
             {
@@ -54,15 +60,15 @@ namespace rsimpl2
         }
 
     protected:
-        int add_endpoint(std::shared_ptr<endpoint> endpoint);
+        int add_sensor(std::shared_ptr<sensor_base> sensor_base);
 
-        uvc_endpoint& get_uvc_endpoint(int subdevice);
+        uvc_sensor& get_uvc_sensor(int subdevice);
 
-        void register_endpoint_info(int sub, std::map<rs2_camera_info, std::string> camera_info);
+        void register_sensor_info(int sub, std::map<rs2_camera_info, std::string> camera_info);
 
         void declare_capability(supported_capability cap);
     private:
-        std::vector<std::shared_ptr<endpoint>> _endpoints;
+        std::vector<std::shared_ptr<sensor_interface>> _sensors;
         static_device_info _static_info;
     };
 

@@ -14,7 +14,7 @@ namespace rsimpl2
     {
     public:
         const char* get_value_description(float val) const override;
-        explicit emitter_option(uvc_endpoint& ep);
+        explicit emitter_option(uvc_sensor& ep);
     };
 
     class asic_and_projector_temperature_options : public readonly_option
@@ -28,10 +28,10 @@ namespace rsimpl2
 
         const char* get_description() const override;
 
-        explicit asic_and_projector_temperature_options(uvc_endpoint& ep, rs2_option opt);
+        explicit asic_and_projector_temperature_options(uvc_sensor& ep, rs2_option opt);
 
     private:
-        uvc_endpoint&                 _ep;
+        uvc_sensor&                 _ep;
         rs2_option                    _option;
     };
 
@@ -46,12 +46,12 @@ namespace rsimpl2
 
         const char* get_description() const override;
 
-        explicit motion_module_temperature_option(hid_endpoint& ep);
+        explicit motion_module_temperature_option(hid_sensor& ep);
 
     private:
         const std::string custom_sensor_name = "custom";
         const std::string report_name = "data-field-custom-value_2";
-        hid_endpoint& _ep;
+        hid_sensor& _ep;
     };
 
     class enable_motion_correction : public librealsense_option
@@ -68,7 +68,7 @@ namespace rsimpl2
             return "Enable/Disable Automatic Motion Data Correction";
         }
 
-        enable_motion_correction(endpoint* mm_ep,
+        enable_motion_correction(sensor_base* mm_ep,
                                  const ds::imu_intrinsics& accel,
                                  const ds::imu_intrinsics& gyro,
                                  const option_range& opt_range);
@@ -93,7 +93,7 @@ namespace rsimpl2
             return "Enable/disable auto-exposure";
         }
 
-        enable_auto_exposure_option(uvc_endpoint* fisheye_ep,
+        enable_auto_exposure_option(uvc_sensor* fisheye_ep,
                                     std::shared_ptr<auto_exposure_mechanism> auto_exposure,
                                     std::shared_ptr<auto_exposure_state> auto_exposure_state,
                                     const option_range& opt_range);

@@ -260,7 +260,7 @@ rs2_device_list* rs2_query_adjacent_devices(const rs2_device* device, rs2_error*
     try
     {
         auto dev = device->device;
-        for (unsigned int i = 0; i < dev->get_endpoints_count(); i++)
+        for (unsigned int i = 0; i < dev->get_sensors_count(); i++)
         {
             rs2_device_info d{ device->ctx, device->info, i };
             results.push_back(d);
@@ -313,7 +313,7 @@ NOEXCEPT_RETURN(, device)
 rs2_stream_modes_list* rs2_get_stream_modes(rs2_device* device, rs2_error** error) try
 {
     VALIDATE_NOT_NULL(device);
-    return new rs2_stream_modes_list{ device->device->get_endpoint(device->subdevice).get_principal_requests() };
+    return new rs2_stream_modes_list{ device->device->get_sensor(device->subdevice).get_principal_requests() };
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, device)
 
@@ -391,7 +391,7 @@ void rs2_open(rs2_device* device, rs2_stream stream,
     std::vector<rsimpl2::stream_profile> request;
     request.push_back({ stream, static_cast<uint32_t>(width),
             static_cast<uint32_t>(height), static_cast<uint32_t>(fps), format });
-    device->device->get_endpoint(device->subdevice).open(request);
+    device->device->get_sensor(device->subdevice).open(request);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device, stream, width, height, fps, format)
 
@@ -412,14 +412,14 @@ void rs2_open_multiple(rs2_device* device,
         request.push_back({ stream[i], static_cast<uint32_t>(width[i]),
                             static_cast<uint32_t>(height[i]), static_cast<uint32_t>(fps[i]), format[i] });
     }
-    device->device->get_endpoint(device->subdevice).open(request);
+    device->device->get_sensor(device->subdevice).open(request);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device, stream, width, height, fps, format)
 
 void rs2_close(const rs2_device* device, rs2_error ** error) try
 {
     VALIDATE_NOT_NULL(device);
-    device->device->get_endpoint(device->subdevice).close();
+    device->device->get_sensor(device->subdevice).close();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device)
 
@@ -427,7 +427,7 @@ int rs2_is_option_read_only(const rs2_device* device, rs2_option option, rs2_err
 {
     VALIDATE_NOT_NULL(device);
     VALIDATE_ENUM(option);
-    return device->device->get_endpoint(device->subdevice).get_option(option).is_read_only();
+    return device->device->get_sensor(device->subdevice).get_option(option).is_read_only();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, device, option)
 
@@ -435,7 +435,7 @@ float rs2_get_option(const rs2_device* device, rs2_option option, rs2_error** er
 {
     VALIDATE_NOT_NULL(device);
     VALIDATE_ENUM(option);
-    return device->device->get_endpoint(device->subdevice).get_option(option).query();
+    return device->device->get_sensor(device->subdevice).get_option(option).query();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0.0f, device, option)
 
@@ -443,7 +443,7 @@ void rs2_set_option(const rs2_device* device, rs2_option option, float value, rs
 {
     VALIDATE_NOT_NULL(device);
     VALIDATE_ENUM(option);
-    device->device->get_endpoint(device->subdevice).get_option(option).set(value);
+    device->device->get_sensor(device->subdevice).get_option(option).set(value);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device, option, value)
 
@@ -451,7 +451,7 @@ int rs2_supports_option(const rs2_device* device, rs2_option option, rs2_error**
 {
     VALIDATE_NOT_NULL(device);
     VALIDATE_ENUM(option);
-    return device->device->get_endpoint(device->subdevice).supports_option(option);
+    return device->device->get_sensor(device->subdevice).supports_option(option);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, device, option)
 
@@ -464,7 +464,7 @@ void rs2_get_option_range(const rs2_device* device, rs2_option option,
     VALIDATE_NOT_NULL(max);
     VALIDATE_NOT_NULL(step);
     VALIDATE_NOT_NULL(def);
-    auto range = device->device->get_endpoint(device->subdevice).get_option(option).get_range();
+    auto range = device->device->get_sensor(device->subdevice).get_option(option).get_range();
     *min = range.min;
     *max = range.max;
     *def = range.def;
@@ -476,9 +476,9 @@ const char* rs2_get_camera_info(const rs2_device* device, rs2_camera_info info, 
 {
     VALIDATE_NOT_NULL(device);
     VALIDATE_ENUM(info);
-    if (device->device->get_endpoint(device->subdevice).supports_info(info))
+    if (device->device->get_sensor(device->subdevice).supports_info(info))
     {
-        return device->device->get_endpoint(device->subdevice).get_info(info).c_str();
+        return device->device->get_sensor(device->subdevice).get_info(info).c_str();
     }
     throw rsimpl2::invalid_value_exception(rsimpl2::to_string() << "info " << rs2_camera_info_to_string(info) << " not supported by subdevice " << device->subdevice);
 }
@@ -488,7 +488,7 @@ int rs2_supports_camera_info(const rs2_device* device, rs2_camera_info info, rs2
 {
     VALIDATE_NOT_NULL(device);
     VALIDATE_ENUM(info);
-    return device->device->get_endpoint(device->subdevice).supports_info(info);
+    return device->device->get_sensor(device->subdevice).supports_info(info);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(false, device, info)
 
@@ -498,19 +498,9 @@ void rs2_start(const rs2_device* device, rs2_frame_callback_ptr on_frame, void *
     VALIDATE_NOT_NULL(on_frame);
     rsimpl2::frame_callback_ptr callback(
         new rsimpl2::frame_callback(on_frame, user));
-    device->device->get_endpoint(device->subdevice).starter().start(RS2_STREAM_ANY, move(callback));
+    device->device->get_sensor(device->subdevice).start(move(callback));
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device, on_frame, user)
-
-void rs2_start_stream(const rs2_device* device, rs2_stream stream, rs2_frame_callback_ptr on_frame, void * user, rs2_error ** error) try
-{
-    VALIDATE_NOT_NULL(device);
-    VALIDATE_NOT_NULL(on_frame);
-    rsimpl2::frame_callback_ptr callback(
-        new rsimpl2::frame_callback(on_frame, user));
-    device->device->get_endpoint(device->subdevice).starter().start(stream, move(callback));
-}
-HANDLE_EXCEPTIONS_AND_RETURN(, device, stream, on_frame, user)
 
 void rs2_set_notifications_callback(const rs2_device * device, rs2_notification_callback_ptr on_notification, void * user, rs2_error ** error) try
 {
@@ -519,7 +509,7 @@ void rs2_set_notifications_callback(const rs2_device * device, rs2_notification_
     rsimpl2::notifications_callback_ptr callback(
         new rsimpl2::notifications_callback(on_notification, user),
         [](rs2_notifications_callback* p) { delete p; });
-    device->device->get_endpoint(device->subdevice).register_notifications_callback(std::move(callback));
+    device->device->get_sensor(device->subdevice).register_notifications_callback(std::move(callback));
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device, on_notification, user)
 
@@ -534,38 +524,19 @@ void rs2_set_devices_changed_callback(const rs2_context* context, rs2_devices_ch
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, context, callback, user)
 
-void rs2_start_queue(const rs2_device* device, rs2_stream stream, rs2_frame_queue* queue, rs2_error** error) try
-{
-    VALIDATE_NOT_NULL(device);
-    VALIDATE_ENUM(stream);
-    VALIDATE_NOT_NULL(queue);
-    rsimpl2::frame_callback_ptr callback(
-        new rsimpl2::frame_callback(rs2_enqueue_frame, queue));
-    device->device->get_endpoint(device->subdevice).starter().start(stream, move(callback));
-}
-HANDLE_EXCEPTIONS_AND_RETURN(, device, stream, queue)
-
 void rs2_start_cpp(const rs2_device* device, rs2_frame_callback * callback, rs2_error ** error) try
 {
     VALIDATE_NOT_NULL(device);
     VALIDATE_NOT_NULL(callback);
-    device->device->get_endpoint(device->subdevice).starter().start(RS2_STREAM_ANY, { callback, [](rs2_frame_callback* p) { p->release(); } });
+    device->device->get_sensor(device->subdevice).start({ callback, [](rs2_frame_callback* p) { p->release(); } });
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device, callback)
-
-void rs2_start_stream_cpp(const rs2_device* device, rs2_stream stream, rs2_frame_callback * callback, rs2_error ** error) try
-{
-    VALIDATE_NOT_NULL(device);
-    VALIDATE_NOT_NULL(callback);
-    device->device->get_endpoint(device->subdevice).starter().start(stream, { callback, [](rs2_frame_callback* p) { p->release(); } });
-}
-HANDLE_EXCEPTIONS_AND_RETURN(, device, stream, callback)
 
 void rs2_set_notifications_callback_cpp(const rs2_device * device, rs2_notifications_callback * callback, rs2_error ** error) try
 {
     VALIDATE_NOT_NULL(device);
     VALIDATE_NOT_NULL(callback);
-    device->device->get_endpoint(device->subdevice).register_notifications_callback({ callback, [](rs2_notifications_callback* p) { p->release(); } });
+    device->device->get_sensor(device->subdevice).register_notifications_callback({ callback, [](rs2_notifications_callback* p) { p->release(); } });
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device, callback)
 
@@ -580,16 +551,9 @@ HANDLE_EXCEPTIONS_AND_RETURN(, context, callback)
 void rs2_stop(const rs2_device* device, rs2_error ** error) try
 {
     VALIDATE_NOT_NULL(device);
-    device->device->get_endpoint(device->subdevice).starter().stop(RS2_STREAM_ANY);
+    device->device->get_sensor(device->subdevice).stop();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device)
-
-void rs2_stop_stream(const rs2_device* device, rs2_stream stream, rs2_error ** error) try
-{
-    VALIDATE_NOT_NULL(device);
-    device->device->get_endpoint(device->subdevice).starter().stop(stream);
-}
-HANDLE_EXCEPTIONS_AND_RETURN(, stream, device)
 
 int rs2_supports_frame_metadata(const rs2_frame * frame, rs2_frame_metadata frame_metadata, rs2_error ** error) try
 {
@@ -737,7 +701,7 @@ const char* rs2_get_option_description(const rs2_device* device, rs2_option opti
 {
     VALIDATE_NOT_NULL(device);
     VALIDATE_ENUM(option);
-    return device->device->get_endpoint(device->subdevice).get_option(option).get_description();
+    return device->device->get_sensor(device->subdevice).get_option(option).get_description();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, device, option)
 
@@ -752,7 +716,7 @@ const char* rs2_get_option_value_description(const rs2_device* device, rs2_optio
 {
     VALIDATE_NOT_NULL(device);
     VALIDATE_ENUM(option);
-    return device->device->get_endpoint(device->subdevice).get_option(option).get_value_description(value);
+    return device->device->get_sensor(device->subdevice).get_option(option).get_value_description(value);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, device, option, value)
 
@@ -906,7 +870,7 @@ void rs2_set_region_of_interest(const rs2_device* device, int min_x, int min_y, 
     VALIDATE_LE(0, min_x);
     VALIDATE_LE(0, min_y);
 
-    device->device->get_endpoint(device->subdevice).get_roi_method().set({ min_x, min_y, max_x, max_y });
+    device->device->get_sensor(device->subdevice).get_roi_method().set({ min_x, min_y, max_x, max_y });
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, min_x, min_y, max_x, max_y)
 
@@ -918,7 +882,7 @@ void rs2_get_region_of_interest(const rs2_device* device, int* min_x, int* min_y
     VALIDATE_NOT_NULL(max_x);
     VALIDATE_NOT_NULL(max_y);
 
-    auto roi = device->device->get_endpoint(device->subdevice).get_roi_method().get();
+    auto roi = device->device->get_sensor(device->subdevice).get_roi_method().get();
 
     *min_x = roi.min_x;
     *min_y = roi.min_y;
@@ -934,16 +898,15 @@ rs2_syncer* rs2_create_syncer(const rs2_device* dev, rs2_error** error) try
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, dev)
 
-void rs2_start_syncer(const rs2_device* device, rs2_stream stream, rs2_syncer* syncer, rs2_error** error) try
+void rs2_start_syncer(const rs2_device* device, rs2_syncer* syncer, rs2_error** error) try
 {
     VALIDATE_NOT_NULL(device);
-    VALIDATE_ENUM(stream);
     VALIDATE_NOT_NULL(syncer);
     rsimpl2::frame_callback_ptr callback(
         new rsimpl2::frame_callback(rs2_sync_frame, syncer));
-    device->device->get_endpoint(device->subdevice).starter().start(stream, move(callback));
+    device->device->get_sensor(device->subdevice).start(move(callback));
 }
-HANDLE_EXCEPTIONS_AND_RETURN(, device, stream, syncer)
+HANDLE_EXCEPTIONS_AND_RETURN(, device, syncer)
 
 void rs2_wait_for_frames(rs2_syncer* syncer, unsigned int timeout_ms, rs2_frame** output_array, rs2_error** error) try
 {

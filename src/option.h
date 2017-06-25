@@ -6,7 +6,8 @@
 #include "backend.h"
 #include "archive.h"
 #include "hw-monitor.h"
-#include "subdevice.h"
+#include "sensor.h"
+#include "core.h"
 
 #include <chrono>
 #include <memory>
@@ -14,29 +15,6 @@
 
 namespace rsimpl2
 {
-    struct option_range
-    {
-        float min;
-        float max;
-        float step;
-        float def;
-    };
-
-    class option
-    {
-    public:
-        virtual void set(float value) = 0;
-        virtual float query() const = 0;
-        virtual option_range get_range() const = 0;
-        virtual bool is_enabled() const = 0;
-        virtual bool is_read_only() const { return false; }
-
-        virtual const char* get_description() const = 0;
-        virtual const char* get_value_description(float) const { return nullptr; }
-
-        virtual ~option() = default;
-    };
-
     class uvc_pu_option : public option
     {
     public:
@@ -51,14 +29,14 @@ namespace rsimpl2
             return true;
         }
 
-        uvc_pu_option(uvc_endpoint& ep, rs2_option id)
+        uvc_pu_option(uvc_sensor& ep, rs2_option id)
             : _ep(ep), _id(id)
         {
         }
 
         const char* get_description() const override;
     private:
-        uvc_endpoint& _ep;
+        uvc_sensor& _ep;
         rs2_option _id;
     };
 
@@ -110,7 +88,7 @@ namespace rsimpl2
 
         bool is_enabled() const override { return true; }
 
-        uvc_xu_option(uvc_endpoint& ep, uvc::extension_unit xu, uint8_t id, std::string description)
+        uvc_xu_option(uvc_sensor& ep, uvc::extension_unit xu, uint8_t id, std::string description)
             : _ep(ep), _xu(xu), _id(id), _desciption(std::move(description))
         {}
 
@@ -120,7 +98,7 @@ namespace rsimpl2
         }
 
     protected:
-        uvc_endpoint&       _ep;
+        uvc_sensor&       _ep;
         uvc::extension_unit _xu;
         uint8_t             _id;
         std::string         _desciption;
@@ -195,13 +173,13 @@ namespace rsimpl2
     public:
         std::vector<uint8_t> send_receive(const std::vector<uint8_t>& data, int, bool require_response) override;
 
-        command_transfer_over_xu(uvc_endpoint& uvc,
+        command_transfer_over_xu(uvc_sensor& uvc,
                              uvc::extension_unit xu, uint8_t ctrl)
             : _uvc(uvc), _xu(std::move(xu)), _ctrl(ctrl)
         {}
 
     private:
-        uvc_endpoint&       _uvc;
+        uvc_sensor&       _uvc;
         uvc::extension_unit _xu;
         uint8_t             _ctrl;
     };

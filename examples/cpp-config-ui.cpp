@@ -30,7 +30,7 @@ class option_model
 public:
     rs2_option opt;
     option_range range;
-    device endpoint;
+    device sensor_base;
     bool* invalidate_flag;
     bool supported = false;
     bool read_only = false;
@@ -43,7 +43,7 @@ public:
     {
         if (supported)
         {
-            auto desc = endpoint.get_option_description(opt);
+            auto desc = sensor_base.get_option_description(opt);
 
             if (is_checkbox())
             {
@@ -53,7 +53,7 @@ public:
                     value = bool_value ? 1.0f : 0.0f;
                     try
                     {
-                        endpoint.set_option(opt, value);
+                        sensor_base.set_option(opt, value);
                         *invalidate_flag = true;
                     }
                     catch (const error& e)
@@ -96,13 +96,13 @@ public:
                         for (auto i = range.min; i <= range.max; i += range.step, counter++)
                         {
                             if (abs(i - value) < 0.001f) selected = counter;
-                            labels.push_back(endpoint.get_option_value_description(opt, i));
+                            labels.push_back(sensor_base.get_option_value_description(opt, i));
                         }
                         if (ImGui::Combo(id.c_str(), &selected, labels.data(),
                             static_cast<int>(labels.size())))
                         {
                             value = range.min + range.step * selected;
-                            endpoint.set_option(opt, value);
+                            sensor_base.set_option(opt, value);
                             *invalidate_flag = true;
                         }
                     }
@@ -115,7 +115,7 @@ public:
                         {
                             // TODO: Round to step?
                             value = static_cast<float>(int_value);
-                            endpoint.set_option(opt, value);
+                            sensor_base.set_option(opt, value);
                             *invalidate_flag = true;
                         }
                     }
@@ -124,7 +124,7 @@ public:
                         if (ImGui::SliderFloat(id.c_str(), &value,
                             range.min, range.max, "%.4f"))
                         {
-                            endpoint.set_option(opt, value);
+                            sensor_base.set_option(opt, value);
                             *invalidate_flag = true;
                         }
                     }
@@ -142,7 +142,7 @@ public:
     {
         try
         {
-            supported =  endpoint.supports(opt);
+            supported =  sensor_base.supports(opt);
         }
         catch (const error& e)
         {
@@ -154,7 +154,7 @@ public:
     {
         try
         {
-            read_only = endpoint.is_option_read_only(opt);
+            read_only = sensor_base.is_option_read_only(opt);
         }
         catch (const error& e)
         {
@@ -166,11 +166,11 @@ public:
     {
         try
         {
-            if (supported =  endpoint.supports(opt))
+            if (supported =  sensor_base.supports(opt))
             {
-                value = endpoint.get_option(opt);
-                range = endpoint.get_option_range(opt);
-                read_only = endpoint.is_option_read_only(opt);
+                value = sensor_base.get_option(opt);
+                range = sensor_base.get_option_range(opt);
+                read_only = sensor_base.is_option_read_only(opt);
             }
         }
         catch (const error& e)
@@ -191,7 +191,7 @@ private:
 
         for (auto i = range.min; i <= range.max; i += range.step)
         {
-            if (endpoint.get_option_value_description(opt, i) == nullptr)
+            if (sensor_base.get_option_value_description(opt, i) == nullptr)
                 return false;
         }
         return true;
@@ -269,7 +269,7 @@ public:
                 << "/" << rs2_option_to_string(opt);
             metadata.id = ss.str();
             metadata.opt = opt;
-            metadata.endpoint = dev;
+            metadata.sensor_base = dev;
             metadata.label = rs2_option_to_string(opt) + WHITE_SPACES + ss.str();
             metadata.invalidate_flag = &options_invalidated;
             metadata.dev = this;

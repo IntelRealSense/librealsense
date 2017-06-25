@@ -90,7 +90,7 @@ set(REALSENSE_CPP
     src/archive.cpp
     src/context.cpp
     src/device.cpp
-    src/subdevice.cpp
+    src/sensor.cpp
     src/algo.cpp
     src/sync.cpp
     src/option.cpp
@@ -106,10 +106,15 @@ set(REALSENSE_CPP
     src/backend-hid.cpp
     src/backend.cpp
     src/verify.c
-    src/ds5.cpp
-    src/ds5-options.cpp
-    src/ds5-timestamp.cpp
-    src/ds5-private.cpp
+    src/ds5/ds5-options.cpp
+    src/ds5/ds5-timestamp.cpp
+    src/ds5/ds5-private.cpp
+    src/ds5/ds5-motion.cpp
+    src/ds5/ds5-rolling-shutter.cpp
+    src/ds5/ds5-device.cpp
+    src/ds5/ds5-color.cpp
+    src/ds5/ds5-active.cpp
+    src/ds5/ds5-factory.cpp
     src/win/win-helpers.cpp
     src/win/win-uvc.cpp
     src/win/win-usb.cpp
@@ -131,12 +136,13 @@ set(REALSENSE_HPP
     include/librealsense/rsutil2.h
     include/librealsense/rsutil2.hpp
 
+    src/core.h
     src/archive.h
     src/concurrency.h
     src/context.h
-    src/device.h
+    src/sensor.h
     src/sync.h
-    src/subdevice.h
+    src/sensor.h
     src/algo.h
     src/option.h
     src/metadata.h
@@ -147,11 +153,17 @@ set(REALSENSE_HPP
     src/ivcam-private.h
     src/types.h
     src/backend.h
+    src/device.h
     src/sr300.h
-    src/ds5.h
-    src/ds5-options.h
-    src/ds5-private.h
-    src/ds5-timestamp.h
+    src/ds5/ds5-factory.h
+    src/ds5/ds5-device.h
+    src/ds5/ds5-options.h
+    src/ds5/ds5-private.h
+    src/ds5/ds5-timestamp.h
+    src/ds5/ds5-active.h
+    src/ds5/ds5-motion.h
+    src/ds5/ds5-rolling-shutter.h
+    src/ds5/ds5-color.h
     src/backend-v4l2.h
     src/backend-hid.h
     src/win/win-helpers.h
@@ -219,19 +231,28 @@ if(WIN32)
         )
 
     source_group("Source Files\\Devices" FILES
-        src/ds5.cpp
-        src/ds5-options.cpp
-        src/ds5-private.cpp
-        src/ds5-timestamp.cpp
+        src/ds5/ds5-device.cpp
+        src/ds5/ds5-factory.cpp
+        src/ds5/ds5-options.cpp
+        src/ds5/ds5-private.cpp
+        src/ds5/ds5-timestamp.cpp
+        src/ds5/ds5-motion.cpp
+        src/ds5/ds5-rolling-shutter.cpp
+        src/ds5/ds5-color.cpp
+        src/ds5/ds5-active.cpp
         src/sr300.cpp
         src/ivcam-private.cpp
         )
 
     source_group("Header Files\\Devices" FILES
-        src/ds5.h
-        src/ds5-options.h
-        src/ds5-private.h
-        src/ds5-timestamp.h
+        src/ds5/ds5-device.h
+        src/ds5/ds5-options.h
+        src/ds5/ds5-private.h
+        src/ds5/ds5-timestamp.h
+        src/ds5/ds5-active.h
+        src/ds5/ds5-motion.h
+        src/ds5/ds5-rolling-shutter.h
+        src/ds5/ds5-color.h
         src/sr300.h
         src/ivcam-private.h
         )
@@ -338,7 +359,7 @@ list(APPEND librealsense_PKG_LIBS ${CMAKE_THREAD_LIBS_INIT})
 
 add_definitions(-DELPP_THREAD_SAFE)
 add_definitions(-DELPP_NO_DEFAULT_LOG_FILE)
-
+include_directories(realsense2 src)
 
 set_target_properties (realsense2 PROPERTIES
     FOLDER Library

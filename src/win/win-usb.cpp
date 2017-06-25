@@ -266,7 +266,7 @@ namespace rsimpl2
 
         void usb_interface::set_timeout_policy(unsigned char pipeID, unsigned long timeOutInMs) const
         {
-            // WinUsb_SetPipePolicy function sets the policy for a specific pipe associated with an endpoint on the device
+            // WinUsb_SetPipePolicy function sets the policy for a specific pipe associated with an sensor_base on the device
             // PIPE_TRANSFER_TIMEOUT: Waits for a time-out interval before canceling the request
             auto bRetVal = WinUsb_SetPipePolicy(_interface_handle, pipeID, PIPE_TRANSFER_TIMEOUT, sizeof(timeOutInMs), &timeOutInMs);
             if (!bRetVal)
@@ -332,7 +332,7 @@ namespace rsimpl2
             return true;
         }
 
-        void usb_interface::query_endpoints()
+        void usb_interface::query_sensor_bases()
         {
             if (_interface_handle == INVALID_HANDLE_VALUE)
                 throw std::runtime_error("Interface handle is INVALID_HANDLE_VALUE!");
@@ -350,9 +350,9 @@ namespace rsimpl2
                 throw winapi_error("WinUsb_QueryInterfaceSettings failed.");
 
 
-            for (auto index = static_cast<UCHAR>(0); index < InterfaceDescriptor.bNumEndpoints; ++index)
+            for (auto index = static_cast<UCHAR>(0); index < InterfaceDescriptor.bNumsensor_bases; ++index)
             {
-                auto sts = WinUsb_QueryPipe(_interface_handle, 0, index, &Pipe); // WinUsb_QueryPipe function retrieves information about the specified endpoint and the associated pipe for an interface
+                auto sts = WinUsb_QueryPipe(_interface_handle, 0, index, &Pipe); // WinUsb_QueryPipe function retrieves information about the specified sensor_base and the associated pipe for an interface
                 if (!sts)
                 {
                     continue;
@@ -360,11 +360,11 @@ namespace rsimpl2
 
                 if (Pipe.PipeType == UsbdPipeTypeBulk) // Bulk Transfer
                 {
-                    if (USB_ENDPOINT_DIRECTION_IN(Pipe.PipeId))
+                    if (USB_sensor_base_DIRECTION_IN(Pipe.PipeId))
                     {
                         _in_pipe_id = Pipe.PipeId;
                     }
-                    else if (USB_ENDPOINT_DIRECTION_OUT(Pipe.PipeId))
+                    else if (USB_sensor_base_DIRECTION_OUT(Pipe.PipeId))
                     {
                         _out_pipe_id = Pipe.PipeId;
                     }
@@ -380,7 +380,7 @@ namespace rsimpl2
         void usb_interface::init_winusb_pipe()
         {
             // initialize _dataInPipeID and _dataOutPipeID that will be used below.
-            query_endpoints();
+            query_sensor_bases();
 
             if (_in_pipe_id != 0)
                 set_timeout_policy(_in_pipe_id, _in_out_pipe_timeout_ms);

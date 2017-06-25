@@ -5,6 +5,7 @@
 
 #include "backend.h"
 #include "archive.h"
+#include "core.h"
 
 #include <chrono>
 #include <memory>
@@ -21,73 +22,16 @@ namespace rsimpl2
 
     typedef std::function<void(rs2_stream, rs2_frame&, callback_invocation_holder)> on_before_frame_callback;
 
-    struct region_of_interest
-    {
-        int min_x;
-        int min_y;
-        int max_x;
-        int max_y;
-    };
-
-    class region_of_interest_method
+    class sensor_base : public sensor_interface
     {
     public:
-        virtual void set(const region_of_interest& roi) = 0;
-        virtual region_of_interest get() const = 0;
-
-        virtual ~region_of_interest_method() = default;
-    };
-
-    class endpoint;
-
-    class start_adaptor
-    {
-    public:
-        explicit start_adaptor(endpoint* endpoint)
-            : _set_callback_mutex(),
-              _owner(endpoint)
-        {
-        }
-
-        void start(rs2_stream stream, frame_callback_ptr ptr);
-        void stop(rs2_stream stream);
-
-        class frame_callback : public rs2_frame_callback
-        {
-        public:
-            explicit frame_callback(start_adaptor* owner)
-                : _owner(owner) {}
-
-            void on_frame(rs2_frame* f) override;
-
-            void release() override {}
-        private:
-            start_adaptor* _owner;
-        };
-
-    private:
-        friend class frame_callback;
-        std::mutex _set_callback_mutex;
-        std::map<rs2_stream, frame_callback_ptr> _callbacks;
-        uint32_t _active_callbacks = 0;
-        endpoint* const _owner;
-    };
-
-    class endpoint
-    {
-    public:
-        explicit endpoint(std::shared_ptr<uvc::time_service> ts);
+        explicit sensor_base(std::shared_ptr<uvc::time_service> ts);
 
         virtual std::vector<uvc::stream_profile> init_stream_profiles() = 0;
         const std::vector<uvc::stream_profile>& get_stream_profiles() const
         {
             return *_stream_profiles;
         }
-
-        virtual void start_streaming(frame_callback_ptr callback) = 0;
-
-        virtual void stop_streaming() = 0;
-
         void register_notifications_callback(notifications_callback_ptr callback);
 
         rs2_frame* alloc_frame(size_t size, frame_additional_data additional_data, bool requires_memory) const;
@@ -101,16 +45,12 @@ namespace rsimpl2
             return _is_streaming;
         }
 
-        virtual std::vector<stream_profile> get_principal_requests() = 0;
-        virtual void open(const std::vector<stream_profile>& requests) = 0;
-        virtual void close() = 0;
-
         void register_pixel_format(native_pixel_format pf)
         {
             _pixel_formats.push_back(pf);
         }
 
-        virtual ~endpoint() {
+        virtual ~sensor_base() {
             flush();
         }
 
@@ -139,8 +79,6 @@ namespace rsimpl2
             _roi_method = roi_method;
         }
         std::shared_ptr<notifications_proccessor> get_notifications_proccessor();
-
-        start_adaptor& starter() { return _start_adaptor; }
 
         void register_on_before_frame_callback(on_before_frame_callback callback)
         {
@@ -171,8 +109,6 @@ namespace rsimpl2
         lazy<pose> _pose;
         std::map<rs2_camera_info, std::string> _camera_info;
         std::shared_ptr<region_of_interest_method> _roi_method = nullptr;
-
-        start_adaptor _start_adaptor;
     };
 
     struct frame_timestamp_reader
@@ -185,16 +121,16 @@ namespace rsimpl2
         virtual void reset() = 0;
     };
 
-    class hid_endpoint : public endpoint, public std::enable_shared_from_this<hid_endpoint>
+    class hid_sensor : public sensor_base, public std::enable_shared_from_this<hid_sensor>
     {
     public:
-        explicit hid_endpoint(std::shared_ptr<uvc::hid_device> hid_device,
+        explicit hid_sensor(std::shared_ptr<uvc::hid_device> hid_device,
                               std::unique_ptr<frame_timestamp_reader> hid_iio_timestamp_reader,
                               std::unique_ptr<frame_timestamp_reader> custom_hid_timestamp_reader,
                               std::map<rs2_stream, std::map<unsigned, unsigned>> fps_and_sampling_frequency_per_rs2_stream,
                               std::vector<std::pair<std::string, stream_profile>> sensor_name_and_hid_profiles,
                               std::shared_ptr<uvc::time_service> ts)
-            : endpoint(ts),_hid_device(hid_device),
+            : sensor_base(ts),_hid_device(hid_device),
               _hid_iio_timestamp_reader(std::move(hid_iio_timestamp_reader)),
               _custom_hid_timestamp_reader(std::move(custom_hid_timestamp_reader)),
               _fps_and_sampling_frequency_per_rs2_stream(fps_and_sampling_frequency_per_rs2_stream),
@@ -217,7 +153,7 @@ namespace rsimpl2
             _hid_device->close();
         }
 
-        ~hid_endpoint();
+        ~hid_sensor();
 
         std::vector<stream_profile> get_principal_requests() override;
 
@@ -225,9 +161,9 @@ namespace rsimpl2
 
         void close() override;
 
-        void start_streaming(frame_callback_ptr callback);
+        void start(frame_callback_ptr callback);
 
-        void stop_streaming();
+        void stop();
 
         std::vector<uint8_t> get_custom_report_data(const std::string& custom_sensor_name,
                                                     const std::string& report_name,
@@ -269,19 +205,19 @@ namespace rsimpl2
         uint32_t fps_to_sampling_frequency(rs2_stream stream, uint32_t fps) const;
     };
 
-    class uvc_endpoint : public endpoint, public std::enable_shared_from_this<uvc_endpoint>
+    class uvc_sensor : public sensor_base, public std::enable_shared_from_this<uvc_sensor>
     {
     public:
-        explicit uvc_endpoint(std::shared_ptr<uvc::uvc_device> uvc_device,
+        explicit uvc_sensor(std::shared_ptr<uvc::uvc_device> uvc_device,
                               std::unique_ptr<frame_timestamp_reader> timestamp_reader,
                               std::shared_ptr<uvc::time_service> ts)
-            : endpoint(ts),
+            : sensor_base(ts),
               _device(std::move(uvc_device)),
               _user_count(0),
               _timestamp_reader(std::move(timestamp_reader))
         {}
 
-        ~uvc_endpoint();
+        ~uvc_sensor();
 
         std::vector<stream_profile> get_principal_requests() override;
 
@@ -301,9 +237,9 @@ namespace rsimpl2
 
         void register_pu(rs2_option id);
 
-        void start_streaming(frame_callback_ptr callback);
+        void start(frame_callback_ptr callback);
 
-        void stop_streaming();
+        void stop();
 
     private:
         std::vector<uvc::stream_profile> init_stream_profiles() override;
@@ -316,7 +252,7 @@ namespace rsimpl2
 
         struct power
         {
-            explicit power(std::weak_ptr<uvc_endpoint> owner)
+            explicit power(std::weak_ptr<uvc_sensor> owner)
                 : _owner(owner)
             {
                 auto strong = _owner.lock();
@@ -329,7 +265,7 @@ namespace rsimpl2
                 if (strong) strong->release_power();
             }
         private:
-            std::weak_ptr<uvc_endpoint> _owner;
+            std::weak_ptr<uvc_sensor> _owner;
         };
 
         std::shared_ptr<uvc::uvc_device> _device;

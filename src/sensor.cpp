@@ -40,7 +40,7 @@ namespace rsimpl2
         std::atomic<uint32_t>* _ptr;
     };
 
-    endpoint::endpoint(std::shared_ptr<uvc::time_service> ts)
+    sensor_base::sensor_base(std::shared_ptr<uvc::time_service> ts)
         : _is_streaming(false),
           _is_opened(false),
           _callback(nullptr, [](rs2_frame_callback*) {}),
@@ -48,7 +48,6 @@ namespace rsimpl2
           _ts(ts),
           _stream_profiles([this]() { return this->init_stream_profiles(); }),
           _notifications_proccessor(std::shared_ptr<notifications_proccessor>(new notifications_proccessor())),
-          _start_adaptor(this),
           _metadata_parsers(std::make_shared<metadata_parser_map>()),
           _on_before_frame_callback(nullptr)
     {
@@ -58,18 +57,18 @@ namespace rsimpl2
         register_metadata(RS2_FRAME_METADATA_TIME_OF_ARRIVAL, std::make_shared<rsimpl2::md_time_of_arrival_parser>());
     }
 
-    void endpoint::register_notifications_callback(notifications_callback_ptr callback)
+    void sensor_base::register_notifications_callback(notifications_callback_ptr callback)
     {
         _notifications_proccessor->set_callback(std::move(callback));
     }
 
-    rs2_frame* endpoint::alloc_frame(size_t size, frame_additional_data additional_data, bool requires_memory) const
+    rs2_frame* sensor_base::alloc_frame(size_t size, frame_additional_data additional_data, bool requires_memory) const
     {
         auto frame = _archive->alloc_frame(size, additional_data, requires_memory);
         return _archive->track_frame(frame);
     }
 
-    void endpoint::invoke_callback(frame_holder frame) const
+    void sensor_base::invoke_callback(frame_holder frame) const
     {
         if (frame)
         {
@@ -93,18 +92,18 @@ namespace rsimpl2
         }
     }
 
-    void endpoint::flush() const
+    void sensor_base::flush() const
     {
         if (_archive.get())
             _archive->flush();
     }
 
-    std::shared_ptr<notifications_proccessor> endpoint::get_notifications_proccessor()
+    std::shared_ptr<notifications_proccessor> sensor_base::get_notifications_proccessor()
     {
         return _notifications_proccessor;
     }
 
-    bool endpoint::try_get_pf(const uvc::stream_profile& p, native_pixel_format& result) const
+    bool sensor_base::try_get_pf(const uvc::stream_profile& p, native_pixel_format& result) const
     {
         auto it = std::find_if(begin(_pixel_formats), end(_pixel_formats),
             [&p](const native_pixel_format& pf)
@@ -119,7 +118,7 @@ namespace rsimpl2
         return false;
     }
 
-    std::vector<request_mapping> endpoint::resolve_requests(std::vector<stream_profile> requests)
+    std::vector<request_mapping> sensor_base::resolve_requests(std::vector<stream_profile> requests)
     {
         // per requested profile, find all 4ccs that support that request.
         std::map<rs2_stream, std::set<uint32_t>> legal_fourccs;
@@ -196,12 +195,12 @@ namespace rsimpl2
         throw invalid_value_exception("Subdevice unable to satisfy stream requests!");
     }
 
-    uvc_endpoint::~uvc_endpoint()
+    uvc_sensor::~uvc_sensor()
     {
         try
         {
             if (_is_streaming)
-                stop_streaming();
+                stop();
 
             if (_is_opened)
                 close();
@@ -212,13 +211,13 @@ namespace rsimpl2
         }
     }
 
-    std::vector<uvc::stream_profile> uvc_endpoint::init_stream_profiles()
+    std::vector<uvc::stream_profile> uvc_sensor::init_stream_profiles()
     {
         power on(shared_from_this());
         return _device->get_profiles();
     }
 
-    std::vector<stream_profile> uvc_endpoint::get_principal_requests()
+    std::vector<stream_profile> uvc_sensor::get_principal_requests()
     {
         std::unordered_set<stream_profile> results;
         std::set<uint32_t> unutilized_formats;
@@ -281,7 +280,7 @@ namespace rsimpl2
         return res;
     }
 
-    void uvc_endpoint::open(const std::vector<stream_profile>& requests)
+    void uvc_sensor::open(const std::vector<stream_profile>& requests)
     {
         std::lock_guard<std::mutex> lock(_configure_lock);
         if (_is_streaming)
@@ -448,7 +447,7 @@ namespace rsimpl2
         }
     }
 
-    void uvc_endpoint::close()
+    void uvc_sensor::close()
     {
         std::lock_guard<std::mutex> lock(_configure_lock);
         if (_is_streaming)
@@ -465,12 +464,12 @@ namespace rsimpl2
         _is_opened = false;
     }
 
-    void uvc_endpoint::register_xu(uvc::extension_unit xu)
+    void uvc_sensor::register_xu(uvc::extension_unit xu)
     {
         _xus.push_back(std::move(xu));
     }
 
-    void uvc_endpoint::start_streaming(frame_callback_ptr callback)
+    void uvc_sensor::start(frame_callback_ptr callback)
     {
         std::lock_guard<std::mutex> lock(_configure_lock);
         if (_is_streaming)
@@ -483,7 +482,7 @@ namespace rsimpl2
         _device->start_callbacks();
     }
 
-    void uvc_endpoint::stop_streaming()
+    void uvc_sensor::stop()
     {
         std::lock_guard<std::mutex> lock(_configure_lock);
         if (!_is_streaming)
@@ -494,7 +493,7 @@ namespace rsimpl2
     }
 
 
-    void uvc_endpoint::reset_streaming()
+    void uvc_sensor::reset_streaming()
     {
         flush();
         _configuration.clear();
@@ -503,7 +502,7 @@ namespace rsimpl2
         _timestamp_reader->reset();
     }
 
-    void uvc_endpoint::acquire_power()
+    void uvc_sensor::acquire_power()
     {
         if (_user_count.fetch_add(1) == 0)
         {
@@ -512,12 +511,12 @@ namespace rsimpl2
         }
     }
 
-    void uvc_endpoint::release_power()
+    void uvc_sensor::release_power()
     {
         if (_user_count.fetch_add(-1) == 1) _device->set_power_state(uvc::D3);
     }
 
-    option& endpoint::get_option(rs2_option id)
+    option& sensor_base::get_option(rs2_option id)
     {
         auto it = _options.find(id);
         if (it == _options.end())
@@ -529,7 +528,7 @@ namespace rsimpl2
         return *it->second;
     }
 
-    const option& endpoint::get_option(rs2_option id) const
+    const option& sensor_base::get_option(rs2_option id) const
     {
         auto it = _options.find(id);
         if (it == _options.end())
@@ -541,20 +540,20 @@ namespace rsimpl2
         return *it->second;
     }
 
-    bool endpoint::supports_option(rs2_option id) const
+    bool sensor_base::supports_option(rs2_option id) const
     {
         auto it = _options.find(id);
         if (it == _options.end()) return false;
         return it->second->is_enabled();
     }
 
-    bool endpoint::supports_info(rs2_camera_info info) const
+    bool sensor_base::supports_info(rs2_camera_info info) const
     {
         auto it = _camera_info.find(info);
         return it != _camera_info.end();
     }
 
-    void endpoint::register_info(rs2_camera_info info, const std::string& val)
+    void sensor_base::register_info(rs2_camera_info info, const std::string& val)
     {
         if (supports_info(info) && (get_info(info) != val)) // Append existing infos
         {
@@ -566,7 +565,7 @@ namespace rsimpl2
         }
     }
 
-    const std::string& endpoint::get_info(rs2_camera_info info) const
+    const std::string& sensor_base::get_info(rs2_camera_info info) const
     {
         auto it = _camera_info.find(info);
         if (it == _camera_info.end())
@@ -575,17 +574,17 @@ namespace rsimpl2
         return it->second;
     }
 
-    void endpoint::register_option(rs2_option id, std::shared_ptr<option> option)
+    void sensor_base::register_option(rs2_option id, std::shared_ptr<option> option)
     {
         _options[id] = option;
     }
 
-    void uvc_endpoint::register_pu(rs2_option id)
+    void uvc_sensor::register_pu(rs2_option id)
     {
         register_option(id, std::make_shared<uvc_pu_option>(*this, id));
     }
 
-    void endpoint::register_metadata(rs2_frame_metadata metadata, std::shared_ptr<md_attribute_parser_base> metadata_parser)
+    void sensor_base::register_metadata(rs2_frame_metadata metadata, std::shared_ptr<md_attribute_parser_base> metadata_parser)
     {
         if (_metadata_parsers.get()->end() != _metadata_parsers.get()->find(metadata))
             throw invalid_value_exception( to_string() << "Metadata attribute parser for " << rs2_frame_metadata_to_string(metadata)
@@ -594,12 +593,12 @@ namespace rsimpl2
         _metadata_parsers.get()->insert(std::pair<rs2_frame_metadata, std::shared_ptr<md_attribute_parser_base>>(metadata, metadata_parser));
     }
 
-    hid_endpoint::~hid_endpoint()
+    hid_sensor::~hid_sensor()
     {
         try
         {
             if (_is_streaming)
-                stop_streaming();
+                stop();
 
             if (_is_opened)
                 close();
@@ -610,7 +609,7 @@ namespace rsimpl2
         }
     }
 
-    std::vector<uvc::stream_profile> hid_endpoint::init_stream_profiles()
+    std::vector<uvc::stream_profile> hid_sensor::init_stream_profiles()
     {
         std::unordered_set<uvc::stream_profile> results;
         for (auto& elem : get_device_profiles())
@@ -620,7 +619,7 @@ namespace rsimpl2
         return std::vector<uvc::stream_profile>(results.begin(), results.end());
     }
 
-    std::vector<stream_profile> hid_endpoint::get_sensor_profiles(std::string sensor_name) const
+    std::vector<stream_profile> hid_sensor::get_sensor_profiles(std::string sensor_name) const
     {
         std::vector<stream_profile> profiles{};
         for (auto& elem : _sensor_name_and_hid_profiles)
@@ -634,12 +633,12 @@ namespace rsimpl2
         return profiles;
     }
 
-    std::vector<stream_profile> hid_endpoint::get_principal_requests()
+    std::vector<stream_profile> hid_sensor::get_principal_requests()
     {
         return get_device_profiles();
     }
 
-    void hid_endpoint::open(const std::vector<stream_profile>& requests)
+    void hid_sensor::open(const std::vector<stream_profile>& requests)
     {
         std::lock_guard<std::mutex> lock(_configure_lock);
         if (_is_streaming)
@@ -682,7 +681,7 @@ namespace rsimpl2
         _is_opened = true;
     }
 
-    void hid_endpoint::close()
+    void hid_sensor::close()
     {
         std::lock_guard<std::mutex> lock(_configure_lock);
         if (_is_streaming)
@@ -712,7 +711,7 @@ namespace rsimpl2
         return RS2_STREAM_ANY;
     }
 
-    void hid_endpoint::start_streaming(frame_callback_ptr callback)
+    void hid_sensor::start(frame_callback_ptr callback)
     {
         std::lock_guard<std::mutex> lock(_configure_lock);
         if (_is_streaming)
@@ -810,7 +809,7 @@ namespace rsimpl2
         _is_streaming = true;
     }
 
-    void hid_endpoint::stop_streaming()
+    void hid_sensor::stop()
     {
         std::lock_guard<std::mutex> lock(_configure_lock);
         if (!_is_streaming)
@@ -827,7 +826,7 @@ namespace rsimpl2
     }
 
 
-    std::vector<stream_profile> hid_endpoint::get_device_profiles()
+    std::vector<stream_profile> hid_sensor::get_device_profiles()
     {
         std::vector<stream_profile> stream_requests;
         for (auto it = _hid_sensors.rbegin(); it != _hid_sensors.rend(); ++it)
@@ -839,7 +838,7 @@ namespace rsimpl2
         return stream_requests;
     }
 
-    const std::string& hid_endpoint::rs2_stream_to_sensor_name(rs2_stream stream) const
+    const std::string& hid_sensor::rs2_stream_to_sensor_name(rs2_stream stream) const
     {
         for (auto& elem : _sensor_name_and_hid_profiles)
         {
@@ -849,7 +848,7 @@ namespace rsimpl2
         throw invalid_value_exception("rs2_stream not found!");
     }
 
-    uint32_t hid_endpoint::stream_to_fourcc(rs2_stream stream) const
+    uint32_t hid_sensor::stream_to_fourcc(rs2_stream stream) const
     {
         uint32_t fourcc;
         try{
@@ -863,7 +862,7 @@ namespace rsimpl2
         return fourcc;
     }
 
-    uint32_t hid_endpoint::fps_to_sampling_frequency(rs2_stream stream, uint32_t fps) const
+    uint32_t hid_sensor::fps_to_sampling_frequency(rs2_stream stream, uint32_t fps) const
     {
         // TODO: Add log prints
         auto it = _fps_and_sampling_frequency_per_rs2_stream.find(stream);
@@ -875,78 +874,5 @@ namespace rsimpl2
             return fps_mapping->second;
         else
             return fps;
-    }
-
-    void start_adaptor::start(rs2_stream stream, frame_callback_ptr ptr)
-    {
-        if (stream == RS2_STREAM_ANY)
-        {
-            for (int i = RS2_STREAM_DEPTH; i < RS2_STREAM_COUNT; i++)
-            {
-                start(static_cast<rs2_stream>(i), ptr);
-            }
-        }
-        else
-        {
-            std::lock_guard<std::mutex> lock(_set_callback_mutex);
-            if (_active_callbacks == 0)
-            {
-                frame_callback_ptr callback(new frame_callback(this));
-                _owner->start_streaming(move(callback));
-            }
-            if (_callbacks.find(stream) != _callbacks.end())
-            {
-                throw wrong_api_call_sequence_exception(to_string() << "Called start on stream " <<
-                    rs2_stream_to_string(stream) <<
-                    " while it is already streaming!");
-            }
-            ++_active_callbacks;
-            _callbacks[stream] = move(ptr);
-        }
-    }
-
-    void start_adaptor::stop(rs2_stream stream)
-    {
-        if (stream == RS2_STREAM_ANY)
-        {
-            std::unique_lock<std::mutex> lock(_set_callback_mutex);
-
-            _callbacks.clear();
-            _active_callbacks = 0;
-            lock.unlock();
-
-            _owner->stop_streaming();
-        }
-        else
-        {
-            std::unique_lock<std::mutex> lock(_set_callback_mutex);
-            if (_callbacks.find(stream) == _callbacks.end())
-            {
-                throw wrong_api_call_sequence_exception(to_string() << "Called stop on stream " <<
-                    rs2_stream_to_string(stream) <<
-                    " before calling start for it!");
-            }
-            _callbacks.erase(stream);
-            --_active_callbacks;
-            lock.unlock();
-
-            if (_active_callbacks == 0)
-            {
-                _owner->stop_streaming();
-            }
-        }
-    }
-
-    void start_adaptor::frame_callback::on_frame(rs2_frame* f)
-    {
-        std::lock_guard<std::mutex> lock(_owner->_set_callback_mutex);
-        auto stream_type = f->get()->get_stream_type();
-        auto it = _owner->_callbacks.find(stream_type);
-        if (it == _owner->_callbacks.end())
-        {
-            rs2_release_frame(f);
-            return;
-        }
-        it->second->on_frame(f);
     }
 }

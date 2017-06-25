@@ -60,6 +60,41 @@ typedef enum rs2_stream
     RS2_STREAM_COUNT
 } rs2_stream;
 
+/** \brief  */
+typedef enum rs2_frame_type
+{
+    RS2_FRAME_TYPE_IMAGE,
+    RS2_FRAME_TYPE_FLOAT3,
+    RS2_FRAME_TYPE_6DOF,
+    RS2_FRAME_TYPE_COUNT
+} rs2_frame_type;
+
+/** \brief  */
+typedef enum rs2_sensor_type
+{
+    RS2_SENSOR_TYPE_DEPTH,
+    RS2_SENSOR_TYPE_COLOR,
+    RS2_SENSOR_TYPE_RS400_DEPTH,
+    RS2_SENSOR_TYPE_SR300_DEPTH,
+    RS2_SENSOR_TYPE_REGION_OF_INTEREST,
+    RS2_SENSOR_TYPE_WITH_LASER,
+    RS2_SENSOR_TYPE_MOTION_MODULE,
+    RS2_SENSOR_TYPE_COUNT
+} rs2_sensor_type;
+
+/** \brief  */
+typedef enum rs2_stream_profile_type
+{
+    RS2_STREAM_PROFILE_TYPE_IMAGE,
+    RS2_STREAM_PROFILE_TYPE_PERIODIC,
+    RS2_STREAM_PROFILE_TYPE_INFRARED,
+    RS2_STREAM_PROFILE_TYPE_COLOR,
+    RS2_STREAM_PROFILE_TYPE_RS400_DEPTH,
+    RS2_STREAM_PROFILE_TYPE_SR300_DEPTH,
+    RS2_STREAM_PROFILE_TYPE_MOTION,
+    RS2_STREAM_PROFILE_TYPE_COUNT,
+} rs2_stream_profile_type;
+
 /** \brief Format identifies how binary data is encoded within a frame */
 typedef enum rs2_format
 {
