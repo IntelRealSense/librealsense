@@ -350,7 +350,7 @@ namespace rsimpl2
                 throw winapi_error("WinUsb_QueryInterfaceSettings failed.");
 
 
-            for (auto index = static_cast<UCHAR>(0); index < InterfaceDescriptor.bNumsensor_bases; ++index)
+            for (auto index = static_cast<UCHAR>(0); index < InterfaceDescriptor.bNumEndpoints; ++index)
             {
                 auto sts = WinUsb_QueryPipe(_interface_handle, 0, index, &Pipe); // WinUsb_QueryPipe function retrieves information about the specified sensor_base and the associated pipe for an interface
                 if (!sts)
@@ -360,11 +360,11 @@ namespace rsimpl2
 
                 if (Pipe.PipeType == UsbdPipeTypeBulk) // Bulk Transfer
                 {
-                    if (USB_sensor_base_DIRECTION_IN(Pipe.PipeId))
+                    if (USB_ENDPOINT_DIRECTION_IN(Pipe.PipeId))
                     {
                         _in_pipe_id = Pipe.PipeId;
                     }
-                    else if (USB_sensor_base_DIRECTION_OUT(Pipe.PipeId))
+                    else if (USB_ENDPOINT_DIRECTION_OUT(Pipe.PipeId))
                     {
                         _out_pipe_id = Pipe.PipeId;
                     }

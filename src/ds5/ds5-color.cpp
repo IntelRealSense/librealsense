@@ -76,6 +76,7 @@ namespace rsimpl2
             if (color_ep && element.mi == 3) // mi 3 is related to Color device
             {
                 std::map<rs2_camera_info, std::string> camera_info = {
+                    { RS2_CAMERA_INFO_DEVICE_NAME, "ASRC" },
                 { RS2_CAMERA_INFO_MODULE_NAME, "RGB Camera" },
                 { RS2_CAMERA_INFO_CAMERA_FIRMWARE_VERSION, static_cast<const char*>(_fw_version) } };
 

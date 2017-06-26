@@ -8,10 +8,10 @@
 
 #include <array>
 
-#include "sr300.h"
+#include "ivcam/sr300.h"
 #include "ds5/ds5-factory.h"
 #include "backend.h"
-#include "recorder.h"
+#include "mock/recorder.h"
 #include <chrono>
 #include "types.h"
 #include "context.h"

@@ -3,8 +3,6 @@
 
 #pragma once
 
-#include "types.h"
-
 #include <functional>
 
 namespace rsimpl2
@@ -97,6 +95,8 @@ namespace rsimpl2
         virtual void set_roi_method(std::shared_ptr<region_of_interest_method> roi_method) = 0;
         virtual void register_notifications_callback(notifications_callback_ptr callback) = 0;
 
+        virtual pose get_pose() const = 0;
+
         virtual void start(frame_callback_ptr callback) = 0;
         virtual void stop() = 0;
 
@@ -114,14 +114,14 @@ namespace rsimpl2
 
 //        virtual bool is_streaming() const = 0;
 
-//        virtual ~sensor_interface() = default;
+        virtual ~sensor_interface() = default;
     };
 
     class device_interface
     {
     public:
         virtual sensor_interface& get_sensor(unsigned int i) = 0;
-        virtual unsigned int get_sensors_count() const = 0;
+        virtual size_t get_sensors_count() const = 0;
 
         virtual ~device_interface() = default;
     };
