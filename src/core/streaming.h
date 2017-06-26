@@ -2,7 +2,7 @@
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
 #pragma once
-
+#include "types.h"
 #include <functional>
 
 namespace rsimpl2
@@ -120,7 +120,7 @@ namespace rsimpl2
     class device_interface
     {
     public:
-        virtual sensor_interface& get_sensor(unsigned int i) = 0;
+        virtual sensor_interface& get_sensor(size_t i) = 0;
         virtual size_t get_sensors_count() const = 0;
 
         virtual ~device_interface() = default;

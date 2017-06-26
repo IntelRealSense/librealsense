@@ -22,12 +22,12 @@ namespace rsimpl2
     public:
         virtual ~device() = default;
 
-        unsigned int get_sensors_count() const override
+        size_t get_sensors_count() const override
         {
             return static_cast<unsigned int>(_sensors.size());
         }
 
-        sensor_interface& get_sensor(unsigned subdevice) override
+        sensor_interface& get_sensor(size_t subdevice) override
         {
             try
             {
