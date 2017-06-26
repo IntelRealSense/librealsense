@@ -934,7 +934,7 @@ namespace rs2
         {
             rs2_error* e = nullptr;
             std::shared_ptr<rs2_syncer> s(
-                rs2_create_syncer(_dev.get(), &e),
+                rs2_create_syncer(&e),
                 rs2_delete_syncer);
             error::handle(e);
             return syncer(s);

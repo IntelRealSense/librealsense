@@ -38,7 +38,7 @@ namespace rsimpl2
             void init_interface(HANDLE deviceHandle);
             void release();
             void init_winusb_pipe();
-            void query_sensor_bases();
+            void query_endpoints();
             void set_timeout_policy(unsigned char pipeID, unsigned long timeOutInMs) const;
 
             unsigned long _in_out_pipe_timeout_ms = 7000;

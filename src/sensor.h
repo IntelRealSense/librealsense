@@ -5,7 +5,10 @@
 
 #include "backend.h"
 #include "archive.h"
+
 #include "core/streaming.h"
+#include "core/roi.h"
+#include "core/options.h"
 
 #include <chrono>
 #include <memory>
@@ -22,7 +25,32 @@ namespace rsimpl2
 
     typedef std::function<void(rs2_stream, rs2_frame&, callback_invocation_holder)> on_before_frame_callback;
 
-    class sensor_base : public sensor_interface
+    class options_container : public virtual options_interface
+    {
+    public:
+        option& get_option(rs2_option id) override;
+        const option& get_option(rs2_option id) const override;
+        bool supports_option(rs2_option id) const override;
+
+        void register_option(rs2_option id, std::shared_ptr<option> option);
+
+    private:
+        std::map<rs2_option, std::shared_ptr<option>> _options;
+    };
+
+    class info_container : public virtual info_interface
+    {
+    public:
+        const std::string& get_info(rs2_camera_info info) const override;
+        bool supports_info(rs2_camera_info info) const override;
+
+        void register_info(rs2_camera_info info, const std::string& val);
+
+    private:
+        std::map<rs2_camera_info, std::string> _camera_info;
+    };
+
+    class sensor_base : public virtual sensor_interface, public options_container, public info_container
     {
     public:
         explicit sensor_base(std::shared_ptr<uvc::time_service> ts);
@@ -32,7 +60,9 @@ namespace rsimpl2
         {
             return *_stream_profiles;
         }
-        void register_notifications_callback(notifications_callback_ptr callback);
+
+        void register_notifications_callback(notifications_callback_ptr callback) override;
+        std::shared_ptr<notifications_proccessor> get_notifications_proccessor();
 
         rs2_frame* alloc_frame(size_t size, frame_additional_data additional_data, bool requires_memory) const;
 
@@ -54,31 +84,10 @@ namespace rsimpl2
             flush();
         }
 
-        option& get_option(rs2_option id);
-        const option& get_option(rs2_option id) const;
-        void register_option(rs2_option id, std::shared_ptr<option> option);
-        bool supports_option(rs2_option id) const;
-
-        const std::string& get_info(rs2_camera_info info) const;
-        bool supports_info(rs2_camera_info info) const;
-        void register_info(rs2_camera_info info, const std::string& val);
-
         void register_metadata(rs2_frame_metadata metadata, std::shared_ptr<md_attribute_parser_base> metadata_parser);
 
         void set_pose(lazy<pose> p) { _pose = std::move(p); }
         pose get_pose() const { return *_pose; }
-
-        region_of_interest_method& get_roi_method() const
-        {
-            if (!_roi_method.get())
-                throw rsimpl2::not_implemented_exception("Region-of-interest is not implemented for this device!");
-            return *_roi_method;
-        }
-        void set_roi_method(std::shared_ptr<region_of_interest_method> roi_method)
-        {
-            _roi_method = roi_method;
-        }
-        std::shared_ptr<notifications_proccessor> get_notifications_proccessor();
 
         void register_on_before_frame_callback(on_before_frame_callback callback)
         {
@@ -103,12 +112,9 @@ namespace rsimpl2
         std::shared_ptr<metadata_parser_map> _metadata_parsers = nullptr;
 
     private:
-        std::map<rs2_option, std::shared_ptr<option>> _options;
         std::vector<native_pixel_format> _pixel_formats;
         lazy<std::vector<uvc::stream_profile>> _stream_profiles;
         lazy<pose> _pose;
-        std::map<rs2_camera_info, std::string> _camera_info;
-        std::shared_ptr<region_of_interest_method> _roi_method = nullptr;
     };
 
     struct frame_timestamp_reader
@@ -121,7 +127,8 @@ namespace rsimpl2
         virtual void reset() = 0;
     };
 
-    class hid_sensor : public sensor_base, public std::enable_shared_from_this<hid_sensor>
+    class hid_sensor : public sensor_base, 
+                       public std::enable_shared_from_this<hid_sensor>
     {
     public:
         explicit hid_sensor(std::shared_ptr<uvc::hid_device> hid_device,
@@ -130,12 +137,12 @@ namespace rsimpl2
                               std::map<rs2_stream, std::map<unsigned, unsigned>> fps_and_sampling_frequency_per_rs2_stream,
                               std::vector<std::pair<std::string, stream_profile>> sensor_name_and_hid_profiles,
                               std::shared_ptr<uvc::time_service> ts)
-            : sensor_base(ts),_hid_device(hid_device),
-              _hid_iio_timestamp_reader(std::move(hid_iio_timestamp_reader)),
-              _custom_hid_timestamp_reader(std::move(custom_hid_timestamp_reader)),
+            : sensor_base(ts),_sensor_name_and_hid_profiles(sensor_name_and_hid_profiles),
               _fps_and_sampling_frequency_per_rs2_stream(fps_and_sampling_frequency_per_rs2_stream),
-              _sensor_name_and_hid_profiles(sensor_name_and_hid_profiles),
-              _is_configured_stream(RS2_STREAM_COUNT)
+              _hid_device(hid_device),
+              _is_configured_stream(RS2_STREAM_COUNT),
+              _hid_iio_timestamp_reader(std::move(hid_iio_timestamp_reader)),
+              _custom_hid_timestamp_reader(std::move(custom_hid_timestamp_reader))
         {
             std::map<std::string, uint32_t> frequency_per_sensor;
             for (auto& elem : sensor_name_and_hid_profiles)
@@ -205,7 +212,9 @@ namespace rsimpl2
         uint32_t fps_to_sampling_frequency(rs2_stream stream, uint32_t fps) const;
     };
 
-    class uvc_sensor : public sensor_base, public std::enable_shared_from_this<uvc_sensor>
+    class uvc_sensor : public sensor_base, 
+                       public roi_sensor_interface,
+                       public std::enable_shared_from_this<uvc_sensor>
     {
     public:
         explicit uvc_sensor(std::shared_ptr<uvc::uvc_device> uvc_device,
@@ -218,6 +227,17 @@ namespace rsimpl2
         {}
 
         ~uvc_sensor();
+
+        region_of_interest_method& get_roi_method() const
+        {
+            if (!_roi_method.get())
+                throw rsimpl2::not_implemented_exception("Region-of-interest is not implemented for this device!");
+            return *_roi_method;
+        }
+        void set_roi_method(std::shared_ptr<region_of_interest_method> roi_method)
+        {
+            _roi_method = roi_method;
+        }
 
         std::vector<stream_profile> get_principal_requests() override;
 
@@ -276,5 +296,6 @@ namespace rsimpl2
         std::vector<uvc::extension_unit> _xus;
         std::unique_ptr<power> _power;
         std::unique_ptr<frame_timestamp_reader> _timestamp_reader;
+        std::shared_ptr<region_of_interest_method> _roi_method = nullptr;
     };
 }

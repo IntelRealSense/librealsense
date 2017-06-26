@@ -6,6 +6,7 @@
 #include "types.h"
 #include "backend.h"
 #include "mock/recorder.h"
+#include "core/streaming.h"
 
 #include <vector>
 
@@ -39,7 +40,7 @@ namespace rsimpl2
     class device_info
     {
     public:
-        std::shared_ptr<device> get_device() const
+        std::shared_ptr<device_interface> get_device() const
         {
             return *_device;
         }
@@ -51,19 +52,19 @@ namespace rsimpl2
 
         virtual uvc::devices_data get_device_data()const = 0;
 
-        bool operator==(const device_info& other)
+        bool operator==(const device_info& other) const
         {
             return other.get_device_data() == get_device_data();
         }
     protected:
-        device_info(std::shared_ptr<uvc::backend> backend)
-            : _backend(std::move(backend)),
-            _device([this]() { return create(*_backend); })
+        explicit device_info(std::shared_ptr<uvc::backend> backend)
+            : _device([this]() { return create(*_backend); }),
+            _backend(std::move(backend))
         {}
 
-        virtual std::shared_ptr<device> create(const uvc::backend& backend) const = 0;
+        virtual std::shared_ptr<device_interface> create(const uvc::backend& backend) const = 0;
 
-        lazy<std::shared_ptr<device>> _device;
+        lazy<std::shared_ptr<device_interface>> _device;
         std::shared_ptr<uvc::backend> _backend;
     };
 
@@ -78,7 +79,7 @@ namespace rsimpl2
     class recovery_info : public device_info
     {
     public:
-        std::shared_ptr<device> create(const uvc::backend& /*backend*/) const override
+        std::shared_ptr<device_interface> create(const uvc::backend& /*backend*/) const override
         {
             throw unrecoverable_exception(RECOVERY_MESSAGE,
                 RS2_EXCEPTION_TYPE_DEVICE_IN_RECOVERY_MODE);
@@ -144,7 +145,6 @@ namespace rsimpl2
     private:
         void on_device_changed(uvc::devices_data old, uvc::devices_data curr);
 
-        devices_info sub(devices_info first, devices_info second);
         std::shared_ptr<uvc::backend> _backend;
         std::shared_ptr<uvc::time_service> _ts;
         std::shared_ptr<uvc::device_watcher> _device_watcher;

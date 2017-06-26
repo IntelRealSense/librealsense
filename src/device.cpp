@@ -8,7 +8,7 @@ using namespace rsimpl2;
 #include <functional>
 
 
-int device::add_sensor(std::shared_ptr<sensor_base> sensor_base)
+int device::add_sensor(std::shared_ptr<sensor_interface> sensor_base)
 {
     _sensors.push_back(sensor_base);
     return (int)_sensors.size() - 1;
@@ -24,17 +24,42 @@ void device::register_sensor_info(int sub, std::map<rs2_camera_info, std::string
 
 uvc_sensor& device::get_uvc_sensor(int sub)
 {
-    return static_cast<uvc_sensor&>(*_sensors[sub]);
+    return dynamic_cast<uvc_sensor&>(*_sensors[sub]);
 }
 
-void device::declare_capability(supported_capability cap)
+size_t device::get_sensors_count() const
 {
-    _static_info.capabilities_vector.push_back(cap);
+    return static_cast<unsigned int>(_sensors.size());
 }
 
-rs2_extrinsics device::get_extrinsics(int from_subdevice, rs2_stream, int to_subdevice, rs2_stream)
+sensor_interface& device::get_sensor(unsigned subdevice)
 {
-    auto from = get_sensor(from_subdevice).get_pose(), to = get_sensor(to_subdevice).get_pose();
+    try
+    {
+        return *(_sensors.at(subdevice));
+    }
+    catch (std::out_of_range)
+    {
+        throw invalid_value_exception("invalid subdevice value");
+    }
+}
+
+const sensor_interface& device::get_sensor(unsigned subdevice) const
+{
+    try
+    {
+        return *(_sensors.at(subdevice));
+    }
+    catch (std::out_of_range)
+    {
+        throw invalid_value_exception("invalid subdevice value");
+    }
+}
+
+rs2_extrinsics device::get_extrinsics(size_t from_subdevice, rs2_stream, size_t to_subdevice, rs2_stream) const
+{
+    auto from = dynamic_cast<const sensor_base&>(get_sensor(from_subdevice)).get_pose(), 
+         to   = dynamic_cast<const sensor_base&>(get_sensor(to_subdevice)).get_pose();
     if (from == to)
         return { {1,0,0,0,1,0,0,0,1}, {0,0,0} }; // identity transformation
 

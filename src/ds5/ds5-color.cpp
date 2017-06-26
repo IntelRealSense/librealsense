@@ -70,7 +70,7 @@ namespace rsimpl2
         color_ep->set_pose(lazy<pose>([]() {return pose{ { { 1,0,0 },{ 0,1,0 },{ 0,0,1 } },{ 0,0,0 } }; })); // TODO: Fetch calibration extrinsic
 
 
-        // Register sensor_base info
+        // Register endpoint info
         for(auto& element : dev_info)
         {
             if (color_ep && element.mi == 3) // mi 3 is related to Color device

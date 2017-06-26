@@ -11,6 +11,8 @@
 #include "algo.h"
 #include "types.h"
 #include "sync.h"
+#include "core/debug.h"
+#include "core/motion.h"
 
 ////////////////////////
 // API implementation //
@@ -38,7 +40,7 @@ struct rs2_device
 {
     std::shared_ptr<rsimpl2::context> ctx;
     std::shared_ptr<rsimpl2::device_info> info;
-    std::shared_ptr<rsimpl2::device> device;
+    std::shared_ptr<rsimpl2::device_interface> device;
     unsigned int subdevice;
 };
 
@@ -149,6 +151,7 @@ namespace rsimpl2
 #define VALIDATE_RANGE(ARG, MIN, MAX) if((ARG) < (MIN) || (ARG) > (MAX)) { std::ostringstream ss; ss << "out of range value for argument \"" #ARG "\""; throw rsimpl2::invalid_value_exception(ss.str()); }
 #define VALIDATE_LE(ARG, MAX) if((ARG) > (MAX)) { std::ostringstream ss; ss << "out of range value for argument \"" #ARG "\""; throw std::runtime_error(ss.str()); }
 #define VALIDATE_NATIVE_STREAM(ARG) VALIDATE_ENUM(ARG); if(ARG >= RS2_STREAM_NATIVE_COUNT) { std::ostringstream ss; ss << "argument \"" #ARG "\" must be a native stream"; throw rsimpl2::wrong_value_exception(ss.str()); }
+#define VALIDATE_INTERFACE(X, T) dynamic_cast<T*>(&(X)); if (!dynamic_cast<T*>(&(X))) throw std::runtime_error("Object does not support \"" #T "\" interface!");
 
 int major(int version)
 {
@@ -353,9 +356,12 @@ NOEXCEPT_RETURN(, list)
 rs2_raw_data_buffer* rs2_send_and_receive_raw_data(rs2_device* device, void* raw_data_to_send, unsigned size_of_raw_data_to_send, rs2_error** error) try
 {
     VALIDATE_NOT_NULL(device);
+
+    auto debug_interface = VALIDATE_INTERFACE(*device->device, rsimpl2::debug_interface);
+
     auto raw_data_buffer = static_cast<uint8_t*>(raw_data_to_send);
     std::vector<uint8_t> buffer_to_send(raw_data_buffer, raw_data_buffer + size_of_raw_data_to_send);
-    auto ret_data = device->device->send_receive_raw_data(buffer_to_send);
+    auto ret_data = debug_interface->send_receive_raw_data(buffer_to_send);
     return new rs2_raw_data_buffer{ ret_data };
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, device)
@@ -806,7 +812,8 @@ void rs2_get_motion_intrinsics(const rs2_device * device, rs2_stream stream, rs2
     VALIDATE_NOT_NULL(intrinsics);
     VALIDATE_ENUM(stream);
 
-    *intrinsics = device->device->get_motion_intrinsics(stream);
+    auto motion = VALIDATE_INTERFACE(device->device->get_sensor(device->subdevice), rsimpl2::motion_sensor_interface);
+    *intrinsics = motion->get_motion_intrinsics(stream);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device, stream, intrinsics)
 
@@ -817,8 +824,11 @@ void rs2_get_stream_intrinsics(const rs2_device * device, rs2_stream stream, int
     VALIDATE_ENUM(stream);
     VALIDATE_ENUM(format);
     VALIDATE_NOT_NULL(intrinsics);
+
+    auto video = VALIDATE_INTERFACE(device->device->get_sensor(device->subdevice), rsimpl2::video_sensor_interface);
+
     // cast because i've been getting errors. (int->uint32_t requires narrowing conversion)
-    *intrinsics = device->device->get_intrinsics(device->subdevice, { stream, uint32_t(width), uint32_t(height), uint32_t(fps), format });
+    *intrinsics = video->get_intrinsics({ stream, uint32_t(width), uint32_t(height), uint32_t(fps), format });
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device, intrinsics)
 
@@ -870,7 +880,9 @@ void rs2_set_region_of_interest(const rs2_device* device, int min_x, int min_y, 
     VALIDATE_LE(0, min_x);
     VALIDATE_LE(0, min_y);
 
-    device->device->get_sensor(device->subdevice).get_roi_method().set({ min_x, min_y, max_x, max_y });
+    auto roi = VALIDATE_INTERFACE(device->device->get_sensor(device->subdevice), rsimpl2::roi_sensor_interface);
+
+    roi->get_roi_method().set({ min_x, min_y, max_x, max_y });
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, min_x, min_y, max_x, max_y)
 
@@ -882,21 +894,22 @@ void rs2_get_region_of_interest(const rs2_device* device, int* min_x, int* min_y
     VALIDATE_NOT_NULL(max_x);
     VALIDATE_NOT_NULL(max_y);
 
-    auto roi = device->device->get_sensor(device->subdevice).get_roi_method().get();
+    auto roi = VALIDATE_INTERFACE(device->device->get_sensor(device->subdevice), rsimpl2::roi_sensor_interface);
 
-    *min_x = roi.min_x;
-    *min_y = roi.min_y;
-    *max_x = roi.max_x;
-    *max_y = roi.max_y;
+    auto rect = roi->get_roi_method().get();
+
+    *min_x = rect.min_x;
+    *min_y = rect.min_y;
+    *max_x = rect.max_x;
+    *max_y = rect.max_y;
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, min_x, min_y, max_x, max_y)
 
-rs2_syncer* rs2_create_syncer(const rs2_device* dev, rs2_error** error) try
+rs2_syncer* rs2_create_syncer(rs2_error** error) try
 {
-    VALIDATE_NOT_NULL(dev);
-    return new rs2_syncer{ dev->device->create_syncer() };
+    return new rs2_syncer{ std::make_shared<rsimpl2::syncer>() };
 }
-HANDLE_EXCEPTIONS_AND_RETURN(nullptr, dev)
+catch (...) { rsimpl2::translate_exception(__FUNCTION__, "", error); return nullptr; }
 
 void rs2_start_syncer(const rs2_device* device, rs2_syncer* syncer, rs2_error** error) try
 {

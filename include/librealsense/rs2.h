@@ -913,11 +913,10 @@ const unsigned char* rs2_get_raw_data(const rs2_raw_data_buffer* buffer, rs2_err
 
 /**
  * \brief Create syncronization primitive to group frames into coherent frame-sets
- * \param[in] dev        RealSense device
  * \param[out] error     if non-null, receives any error that occurs during this call, otherwise, errors are ignored
  * \return
  */
-rs2_syncer* rs2_create_syncer(const rs2_device* dev, rs2_error** error);
+rs2_syncer* rs2_create_syncer(rs2_error** error);
 
 /**
  * \brief Start streaming from specified configured device of specific stream to frame queue

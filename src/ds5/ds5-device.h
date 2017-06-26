@@ -7,20 +7,21 @@
 
 #include "algo.h"
 #include "error-handling.h"
+#include "core/debug.h"
 
 namespace rsimpl2
 {
-    class ds5_device : public device
+    class ds5_device : public virtual device, public debug_interface
     {
     public:
-        rs2_extrinsics get_extrinsics(int from_subdevice, rs2_stream, int to_subdevice, rs2_stream) override;
+        rs2_extrinsics get_extrinsics(size_t from_subdevice, rs2_stream, size_t to_subdevice, rs2_stream) const override;
 
         std::shared_ptr<uvc_sensor> create_depth_device(const uvc::backend& backend,
                                                         const std::vector<uvc::uvc_device_info>& all_device_infos);
 
         uvc_sensor& get_depth_sensor()
         {
-            return static_cast<uvc_sensor&>(get_sensor(_depth_device_idx));
+            return dynamic_cast<uvc_sensor&>(get_sensor(_depth_device_idx));
         }
 
         ds5_device(const uvc::backend& backend,
@@ -29,7 +30,6 @@ namespace rsimpl2
             const std::vector<uvc::hid_device_info>& hid_info);
 
         std::vector<uint8_t> send_receive_raw_data(const std::vector<uint8_t>& input) override;
-        rs2_intrinsics get_intrinsics(unsigned int subdevice, const stream_profile& profile) const override;
 
         void hardware_reset() override;
 
@@ -40,6 +40,8 @@ namespace rsimpl2
         pose get_device_position(unsigned int subdevice) const;
 
     private:
+        friend class ds5_depth_sensor;
+
         bool is_camera_in_advanced_mode() const;
 
         const uint8_t _depth_device_idx;
@@ -51,7 +53,7 @@ namespace rsimpl2
         std::unique_ptr<polling_error_handler> _polling_error_handler;
     };
 
-    class ds5_notification_decoder :public notification_decoder
+    class ds5_notification_decoder : public notification_decoder
     {
     public:
         notification decode(int value) override;
