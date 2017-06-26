@@ -171,7 +171,8 @@ set(REALSENSE_HPP
     src/win/win-usb.h
     src/win/win-hid.h
     src/win/win-backend.h
-
+        src/record_device.cpp
+        src/record_device.h
     third_party/easyloggingpp/src/easylogging++.h
     third_party/sqlite/sqlite3.h
     src/sql.h

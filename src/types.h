@@ -215,6 +215,11 @@ namespace rsimpl2
         lazy() : _init([]() { T t{}; return t; }) {}
         lazy(std::function<T()> initializer) : _init(std::move(initializer)) {}
 
+        T& operator->() const
+        {
+            return *operate();
+        }
+
         T& operator*()
         {
             return *operate();
