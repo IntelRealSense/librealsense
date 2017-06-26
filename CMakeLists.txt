@@ -97,13 +97,13 @@ set(REALSENSE_CPP
     src/error-handling.cpp
     src/hw-monitor.cpp
     src/image.cpp
-    src/ivcam-private.cpp
+    src/ivcam/ivcam-private.cpp
     src/log.cpp
     src/rs.cpp
-    src/sr300.cpp
+    src/ivcam/sr300.cpp
     src/types.cpp
-    src/backend-v4l2.cpp
-    src/backend-hid.cpp
+    src/linux/backend-v4l2.cpp
+    src/linux/backend-hid.cpp
     src/backend.cpp
     src/verify.c
     src/ds5/ds5-options.cpp
@@ -124,8 +124,8 @@ set(REALSENSE_CPP
     third_party/easyloggingpp/src/easylogging++.cc
 
     third_party/sqlite/sqlite3.c
-    src/sql.cpp
-    src/recorder.cpp
+    src/mock/sql.cpp
+    src/mock/recorder.cpp
 
 )
 
@@ -136,7 +136,7 @@ set(REALSENSE_HPP
     include/librealsense/rsutil2.h
     include/librealsense/rsutil2.hpp
 
-    src/core.h
+    src/core/streaming.h
     src/archive.h
     src/concurrency.h
     src/context.h
@@ -150,11 +150,11 @@ set(REALSENSE_HPP
     src/error-handling.h
     src/hw-monitor.h
     src/image.h
-    src/ivcam-private.h
+    src/ivcam/ivcam-private.h
     src/types.h
     src/backend.h
     src/device.h
-    src/sr300.h
+    src/ivcam/sr300.h
     src/ds5/ds5-factory.h
     src/ds5/ds5-device.h
     src/ds5/ds5-options.h
@@ -164,8 +164,8 @@ set(REALSENSE_HPP
     src/ds5/ds5-motion.h
     src/ds5/ds5-rolling-shutter.h
     src/ds5/ds5-color.h
-    src/backend-v4l2.h
-    src/backend-hid.h
+    src/linux/backend-v4l2.h
+    src/linux/backend-hid.h
     src/win/win-helpers.h
     src/win/win-uvc.h
     src/win/win-usb.h
@@ -175,8 +175,8 @@ set(REALSENSE_HPP
         src/record_device.h
     third_party/easyloggingpp/src/easylogging++.h
     third_party/sqlite/sqlite3.h
-    src/sql.h
-    src/recorder.h
+    src/mock/sql.h
+    src/mock/recorder.h
 )
 
 if(WIN32)
@@ -186,10 +186,10 @@ if(WIN32)
         src/win/win-usb.cpp
         src/win/win-hid.cpp
         src/win/win-backend.cpp
-        src/backend-v4l2.cpp
-        src/backend-hid.cpp
+        src/linux/backend-v4l2.cpp
+        src/linux/backend-hid.cpp
         src/backend.cpp
-        src/verify.c)
+        )
 
     source_group("Source Files\\Logging" FILES
         third_party/easyloggingpp/src/easylogging++.cc
@@ -202,8 +202,8 @@ if(WIN32)
         src/win/win-usb.h
         src/win/win-hid.h
         src/win/win-backend.h
-        src/backend-v4l2.h
-        src/backend-hid.h
+        src/linux/backend-v4l2.h
+        src/linux/backend-hid.h
         src/backend.h)
 
     source_group("Header Files\\API" FILES
@@ -213,12 +213,13 @@ if(WIN32)
         include/librealsense/rsutil2.h
         include/librealsense/rsutil2.hpp
         CMake/realsense.def
+		src/verify.c
         )
 
     source_group("Header Files\\Recorder" FILES
         third_party/sqlite/sqlite3.h
-        src/sql.h
-        src/recorder.h
+        src/mock/sql.h
+        src/mock/recorder.h
         )
 
     source_group("Source Files\\API" FILES
@@ -227,8 +228,8 @@ if(WIN32)
 
     source_group("Source Files\\Recorder" FILES
         third_party/sqlite/sqlite3.c
-        src/sql.cpp
-        src/recorder.cpp
+        src/mock/sql.cpp
+        src/mock/recorder.cpp
         )
 
     source_group("Source Files\\Devices" FILES
@@ -241,8 +242,8 @@ if(WIN32)
         src/ds5/ds5-rolling-shutter.cpp
         src/ds5/ds5-color.cpp
         src/ds5/ds5-active.cpp
-        src/sr300.cpp
-        src/ivcam-private.cpp
+        src/ivcam/sr300.cpp
+        src/ivcam/ivcam-private.cpp
         )
 
     source_group("Header Files\\Devices" FILES
@@ -254,8 +255,12 @@ if(WIN32)
         src/ds5/ds5-motion.h
         src/ds5/ds5-rolling-shutter.h
         src/ds5/ds5-color.h
-        src/sr300.h
-        src/ivcam-private.h
+        src/ivcam/sr300.h
+        src/ivcam/ivcam-private.h
+        )
+		
+	source_group("Header Files\\Core" FILES
+        src/core/streaming.h
         )
 
     source_group("Header Files\\Logging" FILES

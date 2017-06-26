@@ -13,7 +13,7 @@
 #include "option.h"
 #include "sensor.h"
 #include "sync.h"
-#include "core.h"
+#include "core/streaming.h"
 
 namespace rsimpl2
 {

@@ -322,7 +322,8 @@ namespace rsimpl2
 
         for (auto& elem : hid_info)
         {
-            std::map<rs2_camera_info, std::string> camera_info = {{RS2_CAMERA_INFO_MODULE_NAME, "Motion Module"},
+            std::map<rs2_camera_info, std::string> camera_info = { { RS2_CAMERA_INFO_DEVICE_NAME, "DS5 with MM" },
+                {RS2_CAMERA_INFO_MODULE_NAME, "Motion Module"},
                                                                   {RS2_CAMERA_INFO_CAMERA_FIRMWARE_VERSION, static_cast<const char*>(_fw_version)},
                                                                   {RS2_CAMERA_INFO_DEVICE_LOCATION, elem.device_path},
                                                                   {RS2_CAMERA_INFO_DEVICE_DEBUG_OP_CODE, std::to_string(static_cast<int>(fw_cmd::GLD))},
@@ -340,6 +341,7 @@ namespace rsimpl2
             if (fisheye_ep && element.mi == 3) // mi 3 is related to Fisheye device
             {
                 std::map<rs2_camera_info, std::string> camera_info = {
+                                                                      {RS2_CAMERA_INFO_DEVICE_NAME, "DS5 with MM"},
                                                                       {RS2_CAMERA_INFO_MODULE_NAME, "Fisheye Camera"},
                                                                       {RS2_CAMERA_INFO_CAMERA_FIRMWARE_VERSION, static_cast<const char*>(_fw_version)},
                                                                       {RS2_CAMERA_INFO_DEVICE_LOCATION, element.device_path},

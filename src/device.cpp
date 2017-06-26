@@ -34,13 +34,13 @@ void device::declare_capability(supported_capability cap)
 
 rs2_extrinsics device::get_extrinsics(int from_subdevice, rs2_stream, int to_subdevice, rs2_stream)
 {
-//    auto from = get_sensor(from_subdevice).get_pose(), to = get_sensor(to_subdevice).get_pose();
-//    if (from == to)
-//        return { {1,0,0,0,1,0,0,0,1}, {0,0,0} }; // identity transformation
+    auto from = get_sensor(from_subdevice).get_pose(), to = get_sensor(to_subdevice).get_pose();
+    if (from == to)
+        return { {1,0,0,0,1,0,0,0,1}, {0,0,0} }; // identity transformation
 
-//    auto transform = inverse(from) * to;
-//    rs2_extrinsics extrin;
-//    (float3x3 &)extrin.rotation = transform.orientation;
-//    (float3 &)extrin.translation = transform.position;
-//    return extrin;
+    auto transform = inverse(from) * to;
+    rs2_extrinsics extrin;
+    (float3x3 &)extrin.rotation = transform.orientation;
+    (float3 &)extrin.translation = transform.position;
+    return extrin;
 }

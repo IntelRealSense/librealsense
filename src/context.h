@@ -5,8 +5,8 @@
 
 #include "types.h"
 #include "backend.h"
-#include "recorder.h"
-#include "archive.h"
+#include "mock/recorder.h"
+
 #include <vector>
 
 namespace rsimpl2

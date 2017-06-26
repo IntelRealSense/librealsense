@@ -7,7 +7,7 @@
 #include "archive.h"
 #include "hw-monitor.h"
 #include "sensor.h"
-#include "core.h"
+#include "core/streaming.h"
 
 #include <chrono>
 #include <memory>
