@@ -4,12 +4,65 @@
 #include <librealsense/rs2.hpp>
 #include <iostream>
 #include <iomanip>
+#include <map>
 
 #include "tclap/CmdLine.h"
 
 using namespace std;
 using namespace TCLAP;
 using namespace rs2;
+
+void print(rs2_extrinsics extrinsics)
+{
+    stringstream ss;
+     ss << "Rotation: ";
+
+    for (auto i = 0 ; i < sizeof(extrinsics.rotation)/sizeof(extrinsics.rotation[0]) ; ++i)
+        ss << setprecision(15) << extrinsics.rotation[i] << "  ";
+
+    ss << "\nTranslation: ";
+    for (auto i = 0 ; i < sizeof(extrinsics.translation)/sizeof(extrinsics.translation[0]) ; ++i)
+        ss << setprecision(15) << extrinsics.translation[i] << "  ";
+
+    cout << ss.str() << endl << endl;
+}
+
+void print(rs2_motion_device_intrinsic intrinsics)
+{
+    stringstream ss;
+     ss << "Bias Variances: ";
+
+    for (auto i = 0 ; i < sizeof(intrinsics.bias_variances)/sizeof(intrinsics.bias_variances[0]) ; ++i)
+        ss << setprecision(15) << intrinsics.bias_variances[i] << "  ";
+
+    ss << "\nNoise Variances: ";
+    for (auto i = 0 ; i < sizeof(intrinsics.noise_variances)/sizeof(intrinsics.noise_variances[0]) ; ++i)
+        ss << setprecision(15) << intrinsics.noise_variances[i] << "  ";
+
+    ss << "\nData: ";
+    for (auto i = 0 ; i < sizeof(intrinsics.data)/sizeof(intrinsics.data[0]) ; ++i)
+        ss << setprecision(15) << intrinsics.data[i] << "  ";
+
+    cout << ss.str() << endl << endl;
+}
+
+void print(rs2_intrinsics intrinsics)
+{
+    stringstream ss;
+     ss << "Width: "        << intrinsics.width  <<
+           "\nHeight: "     << intrinsics.height <<
+           "\nPPX: "        << setprecision(15)  << intrinsics.ppx <<
+           "\nPPY: "        << setprecision(15)  << intrinsics.ppy <<
+           "\nFx: "         << setprecision(15)  << intrinsics.fx  <<
+           "\nFy: "         << setprecision(15)  << intrinsics.fy  <<
+           "\nDistortion: " << rs2_distortion_to_string(intrinsics.model) <<
+           "\nCoeffs: ";
+
+    for (auto i = 0 ; i < sizeof(intrinsics.coeffs)/sizeof(intrinsics.coeffs[0]) ; ++i)
+        ss << setprecision(15) << intrinsics.coeffs[i] << "  ";
+
+    cout << ss.str() << endl << endl;
+}
 
 int main(int argc, char** argv) try
 {
@@ -18,9 +71,11 @@ int main(int argc, char** argv) try
     SwitchArg compact_view_arg("s", "short", "Provide short summary of the devices");
     SwitchArg show_options("o", "option", "Show all supported options per subdevice");
     SwitchArg show_modes("m", "modes", "Show all supported stream modes per subdevice");
+    SwitchArg show_calibration_data("c", "calib_data", "Show extrinsics and intrinsics of all subdevices");
     cmd.add(compact_view_arg);
     cmd.add(show_options);
     cmd.add(show_modes);
+    cmd.add(show_calibration_data);
 
     cmd.parse(argc, argv);
 
@@ -60,6 +115,7 @@ int main(int argc, char** argv) try
         return EXIT_SUCCESS;
     }
 
+    map<rs2_stream, int> device_index_per_stream;
     for (auto i = 0; i < device_count; ++i)
     {
         auto dev = devices[i];
@@ -102,7 +158,7 @@ int main(int argc, char** argv) try
             // Show which streams are supported by this device
             for (auto&& profile : dev.get_stream_modes())
             {
-                cout << "    " << profile.stream << "\t  " << profile.width << "\tx "
+                cout << "    " << profile.stream << "\t  " << profile.width << "x"
                     << profile.height << "\t@ " << profile.fps << "Hz\t" << profile.format << endl;
 
                 // Show horizontal and vertical field of view, in degrees
@@ -110,6 +166,54 @@ int main(int argc, char** argv) try
             }
 
             cout << endl;
+        }
+
+        // Print Intrinsics
+        if (show_calibration_data.getValue())
+        {
+            // Intrinsics
+            for (auto&& profile : dev.get_stream_modes())
+            {
+                device_index_per_stream[profile.stream] = i;
+                if (profile.stream == RS2_STREAM_GPIO1 ||
+                    profile.stream == RS2_STREAM_GPIO2 ||
+                    profile.stream == RS2_STREAM_GPIO3 ||
+                    profile.stream == RS2_STREAM_GPIO4)
+                    continue;
+
+                cout << "Intrinsics of " << profile.stream << "\t  " << profile.width << "\tx "
+                    << profile.height << "\t@ " << profile.fps << "Hz\t" << profile.format << endl;
+                if (profile.stream == RS2_STREAM_GYRO  ||
+                    profile.stream == RS2_STREAM_ACCEL)
+                {
+                    auto intrinsics = dev.get_motion_intrinsics(profile.stream);
+                    print(intrinsics);
+                }
+                else
+                {
+                    auto intrinsics = dev.get_intrinsics(profile);
+                    print(intrinsics);
+                }
+
+            }
+        }
+    }
+
+    // Print Extrinsics
+    if (show_calibration_data.getValue())
+    {
+        for (auto& elemA : device_index_per_stream)
+        {
+            auto deviceA = devices[elemA.second];
+            for (auto& elemB : device_index_per_stream)
+            {
+                auto deviceB = devices[elemB.second];
+                cout << "Extrinsics from " << rs2_stream_to_string(elemA.first) <<
+                        " to " << rs2_stream_to_string(elemB.first) << endl;
+
+                auto extrinsics_A_to_B = deviceA.get_extrinsics_to(elemA.first, deviceB, elemB.first);
+                print(extrinsics_A_to_B);
+            }
         }
     }
 
