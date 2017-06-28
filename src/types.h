@@ -1217,11 +1217,7 @@ std::vector<std::shared_ptr<T>> subtract_sets(const std::vector<std::shared_ptr<
     {
         if (std::find_if(second.begin(), second.end(), [&](std::shared_ptr<T> new_dev) {return *new_dev == *data; }) == second.end())
         {
-            for (auto i = 0; i < data->get_subdevice_count(); i++)
-            {
-                results.push_back(data);
-            }
-
+            results.push_back(data);
         }
     });
     return results;

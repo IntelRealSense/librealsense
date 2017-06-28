@@ -516,6 +516,15 @@ namespace rs2
     class syncer
     {
     public:
+        syncer()
+        {
+            rs2_error* e = nullptr;
+            _syncer = std::shared_ptr<rs2_syncer>(
+                    rs2_create_syncer(&e),
+                    rs2_delete_syncer);
+            error::handle(e);
+        }
+
         /**
         * Wait until coherent set of frames becomes available
         * \param[in] timeout_ms   Max time in milliseconds to wait until an exception will be thrown
@@ -580,7 +589,7 @@ namespace rs2
         syncer(std::shared_ptr<rs2_syncer> s) : _syncer(s) {}
     };
 
-    class device
+    class sensor
     {
     public:
         /**
@@ -590,7 +599,7 @@ namespace rs2
         void open(const stream_profile& profile) const
         {
             rs2_error* e = nullptr;
-            rs2_open(_dev.get(),
+            rs2_open(_sensor.get(),
                 profile.stream,
                 profile.width,
                 profile.height,
@@ -623,7 +632,7 @@ namespace rs2
                 streams.push_back(p.stream);
             }
 
-            rs2_open_multiple(_dev.get(),
+            rs2_open_multiple(_sensor.get(),
                 streams.data(),
                 widths.data(),
                 heights.data(),
@@ -641,7 +650,7 @@ namespace rs2
         void close() const
         {
             rs2_error* e = nullptr;
-            rs2_close(_dev.get(), &e);
+            rs2_close(_sensor.get(), &e);
             error::handle(e);
         }
 
@@ -653,19 +662,7 @@ namespace rs2
         void start(T callback) const
         {
             rs2_error * e = nullptr;
-            rs2_start_cpp(_dev.get(), new frame_callback<T>(std::move(callback)), &e);
-            error::handle(e);
-        }
-
-        /**
-        * Start passing frames of specific stream into user provided callback
-        * \param[in] callback   Stream callback, can be any callable object accepting rs2::frame
-        */
-        template<class T>
-        void start(rs2_stream stream, T callback) const
-        {
-            rs2_error * e = nullptr;
-            rs2_start_stream_cpp(_dev.get(), stream, new frame_callback<T>(std::move(callback)), &e);
+            rs2_start_cpp(_sensor.get(), new frame_callback<T>(std::move(callback)), &e);
             error::handle(e);
         }
 
@@ -675,17 +672,7 @@ namespace rs2
         void stop() const
         {
             rs2_error * e = nullptr;
-            rs2_stop(_dev.get(), &e);
-            error::handle(e);
-        }
-
-        /**
-        * stop streaming of specific stream
-        */
-        void stop(rs2_stream stream) const
-        {
-            rs2_error * e = nullptr;
-            rs2_stop_stream(_dev.get(), stream, &e);
+            rs2_stop(_sensor.get(), &e);
             error::handle(e);
         }
 
@@ -697,7 +684,7 @@ namespace rs2
         bool is_option_read_only(rs2_option option)
         {
             rs2_error* e = nullptr;
-            auto res = rs2_is_option_read_only(_dev.get(), option, &e);
+            auto res = rs2_is_option_read_only(_sensor.get(), option, &e);
             error::handle(e);
             return res > 0;
         }
@@ -710,7 +697,7 @@ namespace rs2
         void set_notifications_callback(T callback) const
         {
             rs2_error * e = nullptr;
-            rs2_set_notifications_callback_cpp(_dev.get(),
+            rs2_set_notifications_callback_cpp(_sensor.get(),
                 new notifications_callback<T>(std::move(callback)), &e);
             error::handle(e);
         }
@@ -723,7 +710,7 @@ namespace rs2
         float get_option(rs2_option option) const
         {
             rs2_error* e = nullptr;
-            auto res = rs2_get_option(_dev.get(), option, &e);
+            auto res = rs2_get_option(_sensor.get(), option, &e);
             error::handle(e);
             return res;
         }
@@ -736,7 +723,7 @@ namespace rs2
         {
             option_range result;
             rs2_error* e = nullptr;
-            rs2_get_option_range(_dev.get(), option,
+            rs2_get_option_range(_sensor.get(), option,
                 &result.min, &result.max, &result.step, &result.def, &e);
             error::handle(e);
             return result;
@@ -750,7 +737,7 @@ namespace rs2
         void set_option(rs2_option option, float value) const
         {
             rs2_error* e = nullptr;
-            rs2_set_option(_dev.get(), option, value, &e);
+            rs2_set_option(_sensor.get(), option, value, &e);
             error::handle(e);
         }
 
@@ -762,33 +749,9 @@ namespace rs2
         bool supports(rs2_option option) const
         {
             rs2_error* e = nullptr;
-            auto res = rs2_supports_option(_dev.get(), option, &e);
+            auto res = rs2_supports_option(_sensor.get(), option, &e);
             error::handle(e);
             return res > 0;
-        }
-
-        /**
-        * sets region of interest for auto-exposure algorithm
-        * \param[in] roi     new region of interest in pixels
-        */
-        void set_region_of_interest(const region_of_interest& roi)
-        {
-            rs2_error* e = nullptr;
-            rs2_set_region_of_interest(_dev.get(), roi.min_x, roi.min_y, roi.max_x, roi.max_y, &e);
-            error::handle(e);
-        }
-
-        /**
-        * gets region of interest for auto-exposure algorithm
-        * \return    current region of interest in pixels
-        */
-        region_of_interest get_region_of_interest() const
-        {
-            region_of_interest roi;
-            rs2_error* e = nullptr;
-            rs2_get_region_of_interest(_dev.get(), &roi.min_x, &roi.min_y, &roi.max_x, &roi.max_y, &e);
-            error::handle(e);
-            return roi;
         }
 
         /**
@@ -799,7 +762,7 @@ namespace rs2
         const char* get_option_description(rs2_option option) const
         {
             rs2_error* e = nullptr;
-            auto res = rs2_get_option_description(_dev.get(), option, &e);
+            auto res = rs2_get_option_description(_sensor.get(), option, &e);
             error::handle(e);
             return res;
         }
@@ -813,7 +776,7 @@ namespace rs2
         const char* get_option_value_description(rs2_option option, float val) const
         {
             rs2_error* e = nullptr;
-            auto res = rs2_get_option_value_description(_dev.get(), option, val, &e);
+            auto res = rs2_get_option_value_description(_sensor.get(), option, val, &e);
             error::handle(e);
             return res;
         }
@@ -828,7 +791,7 @@ namespace rs2
 
             rs2_error* e = nullptr;
             std::shared_ptr<rs2_stream_modes_list> list(
-                rs2_get_stream_modes(_dev.get(), &e),
+                rs2_get_stream_modes(_sensor.get(), &e),
                 rs2_delete_modes_list);
             error::handle(e);
 
@@ -857,18 +820,116 @@ namespace rs2
         * \param[in] profile the stream profile to calculate the intrinsics for
         * \return intrinsics object
         */
-        rs2_intrinsics get_intrinsics(stream_profile profile) const
-        {
-            rs2_error* e = nullptr;
+        rs2_intrinsics get_intrinsics(stream_profile profile) const {
+            rs2_error *e = nullptr;
             rs2_intrinsics intrinsics;
-            rs2_get_stream_intrinsics(_dev.get(),
-                profile.stream,
-                profile.width,
-                profile.height,
-                profile.fps,
-                profile.format, &intrinsics, &e);
+            rs2_get_stream_intrinsics(_sensor.get(),
+                                      profile.stream,
+                                      profile.width,
+                                      profile.height,
+                                      profile.fps,
+                                      profile.format, &intrinsics, &e);
             error::handle(e);
             return intrinsics;
+        }
+
+        /**
+         * returns scale and bias of a motion stream
+         * \param stream    Motion stream type (Gyro / Accel / ...)
+         */
+        rs2_motion_device_intrinsic get_motion_intrinsics(rs2_stream stream) {
+            rs2_error *e = nullptr;
+            rs2_motion_device_intrinsic intrin;
+            rs2_get_motion_intrinsics(_sensor.get(), stream, &intrin, &e);
+            error::handle(e);
+            return intrin;
+        }
+
+        /** Retrieves mapping between the units of the depth image and meters
+         * This function is deprecated! Please use RS2_OPTION_DEPTH_UNITS instead
+         * \return depth in meters corresponding to a depth value of 1
+         */
+        #ifdef __GNUC__
+        __attribute__((deprecated))
+        #elif defined(_MSC_VER)
+        __declspec(deprecated)
+        #endif
+        float get_depth_scale() const
+        {
+            if (supports(RS2_OPTION_DEPTH_UNITS))
+                return get_option(RS2_OPTION_DEPTH_UNITS);
+            return 1.f;
+        }
+
+        sensor& operator=(const std::shared_ptr<rs2_sensor> dev)
+        {
+            _sensor.reset();
+            _sensor = dev;
+            return *this;
+        }
+        sensor& operator=(const sensor& dev)
+        {
+            *this = nullptr;
+            _sensor = dev._sensor;
+            return *this;
+        }
+        sensor() : _sensor(nullptr) {}
+
+        operator bool() const
+        {
+            return _sensor != nullptr;
+        }
+        const rs2_sensor* get() const
+        {
+            return _sensor.get();
+        }
+
+
+    private:
+        friend context;
+        friend device_list;
+        friend device;
+
+        std::shared_ptr<rs2_sensor> _sensor;
+        explicit sensor(std::shared_ptr<rs2_sensor> dev)
+            : _sensor(dev)
+        {
+        }
+    };
+
+
+    class device
+    {
+    public:
+
+        /**
+        * returns the list of adjacent devices, sharing the same physical parent composite device
+        * \return            the list of adjacent devices
+        */
+        std::vector<sensor> query_sensors() const
+        {
+            rs2_error* e = nullptr;
+            std::shared_ptr<rs2_sensor_list> list(
+                    rs2_query_sensors(_dev.get(), &e),
+                    rs2_delete_sensor_list);
+            error::handle(e);
+
+            auto size = rs2_get_sensors_count(list.get(), &e);
+            error::handle(e);
+
+            std::vector<sensor> results;
+            for (auto i = 0; i < size; i++)
+            {
+                std::shared_ptr<rs2_sensor> dev(
+                        rs2_create_sensor(list.get(), i, &e),
+                        rs2_delete_sensor);
+                error::handle(e);
+
+                sensor rs2_dev(dev);
+                results.push_back(rs2_dev);
+            }
+
+            return results;
         }
 
         /**
@@ -898,75 +959,6 @@ namespace rs2
         }
 
         /**
-        * returns the list of adjacent devices, sharing the same physical parent composite device
-        * \return            the list of adjacent devices
-        */
-        std::vector<device> get_adjacent_devices() const
-        {
-            rs2_error* e = nullptr;
-            std::shared_ptr<rs2_device_list> list(
-                rs2_query_adjacent_devices(_dev.get(), &e),
-                rs2_delete_device_list);
-            error::handle(e);
-
-            auto size = rs2_get_device_count(list.get(), &e);
-            error::handle(e);
-
-            std::vector<device> results;
-            for (auto i = 0; i < size; i++)
-            {
-                std::shared_ptr<rs2_device> dev(
-                    rs2_create_device(list.get(), i, &e),
-                    rs2_delete_device);
-                error::handle(e);
-
-                device rs2_dev(dev);
-                results.push_back(rs2_dev);
-            }
-
-            return results;
-        }
-
-        /**
-         * Create frames syncronization primitive suitable for this device
-         */
-        syncer create_syncer() const
-        {
-            rs2_error* e = nullptr;
-            std::shared_ptr<rs2_syncer> s(
-                rs2_create_syncer(&e),
-                rs2_delete_syncer);
-            error::handle(e);
-            return syncer(s);
-        }
-
-        /**
-        * returns the extrinsics from stream on this device to stream on another device
-        * \return extrinsics
-        */
-        rs2_extrinsics get_extrinsics_to(rs2_stream from_stream, const device& to_device, rs2_stream to_stream) const
-        {
-            rs2_error* e = nullptr;
-            rs2_extrinsics extrin;
-            rs2_get_extrinsics(_dev.get(), from_stream, to_device._dev.get(), to_stream, &extrin, &e);
-            error::handle(e);
-            return extrin;
-        }
-
-        /**
-         * returns scale and bias of a motion stream
-         * \param stream    Motion stream type (Gyro / Accel / ...)
-         */
-        rs2_motion_device_intrinsic get_motion_intrinsics(rs2_stream stream)
-        {
-            rs2_error* e = nullptr;
-            rs2_motion_device_intrinsic intrin;
-            rs2_get_motion_intrinsics(_dev.get(), stream, &intrin, &e);
-            error::handle(e);
-            return intrin;
-        }
-
-        /**
         * send hardware reset request to the device
         */
         void hardware_reset()
@@ -977,39 +969,19 @@ namespace rs2
             error::handle(e);
         }
 
-        /** Retrieves mapping between the units of the depth image and meters
-         * This function is deprecated! Please use RS2_OPTION_DEPTH_UNITS instead
-         * \return depth in meters corresponding to a depth value of 1
-         */
-        #ifdef __GNUC__
-        __attribute__((deprecated))
-        #elif defined(_MSC_VER)
-        __declspec(deprecated)
-        #endif
-        float get_depth_scale() const
-        {
-            if (supports(RS2_OPTION_DEPTH_UNITS))
-                return get_option(RS2_OPTION_DEPTH_UNITS);
-            return 1.f;
-        }
-
-        advanced& debug() { return _debug; }
-
         device& operator=(const std::shared_ptr<rs2_device> dev)
         {
             _dev.reset();
             _dev = dev;
-            _debug = dev;
             return *this;
         }
         device& operator=(const device& dev)
         {
             *this = nullptr;
             _dev = dev._dev;
-            _debug = dev._debug;
             return *this;
         }
-        device() : _dev(nullptr), _debug(nullptr) {}
+        device() : _dev(nullptr) {}
 
         operator bool() const
         {
@@ -1026,28 +998,10 @@ namespace rs2
         friend device_list;
 
         std::shared_ptr<rs2_device> _dev;
-        explicit device(std::shared_ptr<rs2_device> dev)
-            : _dev(dev), _debug(dev)
+        explicit device(std::shared_ptr<rs2_device> dev) : _dev(dev)
         {
         }
-
-        std::shared_ptr<rs2_context> _context;
-        advanced _debug;
     };
-
-
-
-    inline bool operator==(const device& a, const device& b)
-    {
-        return (std::string(a.get_camera_info(RS2_CAMERA_INFO_DEVICE_NAME)) == b.get_camera_info(RS2_CAMERA_INFO_DEVICE_NAME)) &&
-               (std::string(a.get_camera_info(RS2_CAMERA_INFO_MODULE_NAME)) == b.get_camera_info(RS2_CAMERA_INFO_MODULE_NAME)) &&
-               (std::string(a.get_camera_info(RS2_CAMERA_INFO_DEVICE_SERIAL_NUMBER)) == b.get_camera_info(RS2_CAMERA_INFO_DEVICE_SERIAL_NUMBER));
-    }
-
-    inline bool operator!=(const device& a, const device& b)
-    {
-        return !(a == b);
-    }
 
     class device_list
     {
@@ -1216,25 +1170,6 @@ namespace rs2
             return device_list(list);
         }
 
-        rs2_extrinsics get_extrinsics(const device& from_device, const device& to_device) const
-        {
-            rs2_error* e = nullptr;
-            rs2_extrinsics extrin;
-            rs2_get_extrinsics(from_device._dev.get(), RS2_STREAM_ANY, to_device._dev.get(), RS2_STREAM_ANY, &extrin, &e);
-            error::handle(e);
-            return extrin;
-        }
-
-        rs2_extrinsics get_extrinsics(const device& from_device, rs2_stream from_stream,
-                                      const device& to_device, rs2_stream to_stream) const
-        {
-            rs2_error* e = nullptr;
-            rs2_extrinsics extrin;
-            rs2_get_extrinsics(from_device._dev.get(), from_stream, to_device._dev.get(), to_stream, &extrin, &e);
-            error::handle(e);
-            return extrin;
-        }
-
         /**
         * \return            the time at specific time point, in live and redord contextes it will return the system time and in playback contextes it will return the recorded time
         */
@@ -1326,16 +1261,6 @@ namespace rs2
         }
 
         frame_queue() : frame_queue(1) {}
-
-        /**
-        * release all frames inside the queue
-        */
-        void flush() const
-        {
-            rs2_error* e = nullptr;
-            rs2_flush_queue(_queue.get(), &e);
-            error::handle(e);
-        }
 
         /**
         * enqueue new frame into a queue

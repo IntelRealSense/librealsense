@@ -41,9 +41,12 @@ int main()
 
             vector<rs2_stream> supported_streams = { RS2_STREAM_DEPTH, RS2_STREAM_INFRARED, RS2_STREAM_COLOR };
 
+            auto sensors = dev.query_sensors();
+            auto depth = sensors[0];
+
             // Configure the relevant subdevices of the RealSense camera
-            dev.open({ { RS2_STREAM_DEPTH, 640, 480, 30, RS2_FORMAT_Z16 },
-                       { RS2_STREAM_INFRARED, 640, 480, 30, RS2_FORMAT_Y8 } });
+            depth.open({ { RS2_STREAM_DEPTH, 640, 480, 30, RS2_FORMAT_Z16 },
+                         { RS2_STREAM_INFRARED, 640, 480, 30, RS2_FORMAT_Y8 } });
 
             // Create frame queue to pass new frames from the device to our application
             frame_queue queue(RS2_STREAM_COUNT);
@@ -51,7 +54,7 @@ int main()
             frame frontbuffer[RS2_STREAM_COUNT];
 
             // Start the physical devices and specify our frame queue as the target
-            dev.start(queue);
+            depth.start(queue);
 
             // Open a GLFW window to display our output
             glfwInit();
@@ -61,8 +64,8 @@ int main()
 
             // Determine depth value corresponding to one meter
             auto depth_units = 1.f;
-            if (dev.supports(RS2_OPTION_DEPTH_UNITS))
-                depth_units = dev.get_option(RS2_OPTION_DEPTH_UNITS);
+            if (depth.supports(RS2_OPTION_DEPTH_UNITS))
+                depth_units = depth.get_option(RS2_OPTION_DEPTH_UNITS);
 
             // Loop until window closed or device disconnects
             while(!glfwWindowShouldClose(win) && hub.is_connected(dev))

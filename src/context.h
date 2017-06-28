@@ -20,7 +20,6 @@ struct rs2_device_info
 {
     std::shared_ptr<rsimpl2::context> ctx;
     std::shared_ptr<rsimpl2::device_info> info;
-    unsigned int subdevice;
 };
 
 
@@ -28,6 +27,11 @@ struct rs2_device_list
 {
     std::shared_ptr<rsimpl2::context> ctx;
     std::vector<rs2_device_info> list;
+};
+
+struct rs2_sensor_list
+{
+    std::shared_ptr<rsimpl2::device_interface> dev;
 };
 
 namespace rsimpl2
@@ -40,12 +44,10 @@ namespace rsimpl2
     class device_info
     {
     public:
-        std::shared_ptr<device_interface> get_device() const
+        std::shared_ptr<device_interface> create_device() const
         {
-            return *_device;
+            return create(*_backend);
         }
-
-        virtual uint8_t get_subdevice_count() const = 0;
 
         virtual ~device_info() = default;
 
@@ -56,15 +58,14 @@ namespace rsimpl2
         {
             return other.get_device_data() == get_device_data();
         }
+
     protected:
         explicit device_info(std::shared_ptr<uvc::backend> backend)
-            : _device([this]() { return create(*_backend); }),
-            _backend(std::move(backend))
+            : _backend(std::move(backend))
         {}
 
         virtual std::shared_ptr<device_interface> create(const uvc::backend& backend) const = 0;
 
-        lazy<std::shared_ptr<device_interface>> _device;
         std::shared_ptr<uvc::backend> _backend;
     };
 
@@ -83,11 +84,6 @@ namespace rsimpl2
         {
             throw unrecoverable_exception(RECOVERY_MESSAGE,
                 RS2_EXCEPTION_TYPE_DEVICE_IN_RECOVERY_MODE);
-        }
-
-        uint8_t get_subdevice_count() const override
-        {
-            return 1;
         }
 
         static bool is_recovery_pid(uint16_t pid)

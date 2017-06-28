@@ -15,8 +15,8 @@ extern "C" {
 #endif
 
 #define RS2_API_MAJOR_VERSION    2
-#define RS2_API_MINOR_VERSION    6
-#define RS2_API_PATCH_VERSION    3
+#define RS2_API_MINOR_VERSION    7
+#define RS2_API_PATCH_VERSION    0
 
 #define STRINGIFY(arg) #arg
 #define VAR_ARG_STRING(arg) STRINGIFY(arg)
@@ -281,6 +281,8 @@ typedef struct rs2_device_info rs2_device_info;
 typedef struct rs2_context rs2_context;
 typedef struct rs2_device_list rs2_device_list;
 typedef struct rs2_device rs2_device;
+typedef struct rs2_sensor_list rs2_sensor_list;
+typedef struct rs2_sensor rs2_sensor;
 typedef struct rs2_error rs2_error;
 typedef struct rs2_stream_profile_list rs2_stream_modes_list;
 typedef struct rs2_raw_data_buffer rs2_raw_data_buffer;
@@ -333,7 +335,6 @@ rs2_device_list* rs2_query_devices(const rs2_context* context, rs2_error** error
 */
 rs2_time_t rs2_get_context_time(const rs2_context* context, rs2_error** error);
 
-
 /**
 * Determines number of devices in a list
 * \param[in] info_list The list of connected devices captured using rs2_query_devices
@@ -347,6 +348,15 @@ int rs2_get_device_count(const rs2_device_list* info_list, rs2_error** error);
 * \param[in] info_list list to delete
 */
 void rs2_delete_device_list(rs2_device_list* info_list);
+
+/**
+* this function returns true if the specific device is contained inside the device list "removed"
+* \param[in] device    RealSense device
+* \param[in] event_information    handle returned from a callback
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return            true if the device was disconnected and false otherwise
+*/
+int rs2_device_list_contains(const rs2_device_list* removed, const rs2_device* dev, rs2_error** error);
 
 /**
 * create device by index
@@ -363,11 +373,40 @@ rs2_device* rs2_create_device(const rs2_device_list* list, int index, rs2_error*
 void rs2_delete_device(rs2_device* device);
 
 /**
-* get list of devices adjacent to a given device
+* create a static snapshot of all connected sensors within specific device
+* \param devuice     Specific RealSense device
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return            the list of devices, should be released by rs2_delete_device_list
 */
-rs2_device_list* rs2_query_adjacent_devices(const rs2_device* device, rs2_error** error);
+rs2_sensor_list* rs2_query_sensors(const rs2_device* device, rs2_error** error);
+
+/**
+* Deletes sensors list, any sensors created from this list will remain unaffected
+* \param[in] info_list list to delete
+*/
+void rs2_delete_sensor_list(rs2_sensor_list* info_list);
+
+/**
+* Determines number of sensors in a list
+* \param[in] info_list The list of connected sensors captured using rs2_query_sensors
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return            Sensors count
+*/
+int rs2_get_sensors_count(const rs2_sensor_list* info_list, rs2_error** error);
+
+/**
+* delete relasense sensor
+* \param[in] device realsense sensor to delete
+*/
+void rs2_delete_sensor(rs2_sensor* sensor);
+
+/**
+* create sensor by index
+* \param[in] index   the zero based index of sensor to retrieve
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return            the requested sensor, should be released by rs2_delete_sensor
+*/
+rs2_sensor* rs2_create_sensor(const rs2_sensor_list* list, int index, rs2_error** error);
 
 /**
  * returns the extrinsics between a pair of RealSense devices
@@ -380,8 +419,8 @@ rs2_device_list* rs2_query_adjacent_devices(const rs2_device* device, rs2_error*
  * \param[out] extrin       Resulting translation and rotation (extrinsics)
  * \param[out] error        if non-null, receives any error that occurs during this call, otherwise, errors are ignored
  */
-void rs2_get_extrinsics(const rs2_device * from_dev, rs2_stream from_stream,
-                        const rs2_device * to_dev, rs2_stream to_stream,
+void rs2_get_extrinsics(const rs2_sensor * from_dev, rs2_stream from_stream,
+                        const rs2_sensor * to_dev, rs2_stream to_stream,
                         rs2_extrinsics * extrin, rs2_error ** error);
 
 /**
@@ -394,7 +433,7 @@ void rs2_get_extrinsics(const rs2_device * from_dev, rs2_stream from_stream,
  * \param[in]  format    stream output format
  * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
  */
-void rs2_get_stream_intrinsics(const rs2_device * device, rs2_stream stream, int width, int height, int fps, rs2_format format, rs2_intrinsics * intrinsics, rs2_error ** error);
+void rs2_get_stream_intrinsics(const rs2_sensor * device, rs2_stream stream, int width, int height, int fps, rs2_format format, rs2_intrinsics * intrinsics, rs2_error ** error);
 
 /**
  * returns the intrinsics of specific stream configuration
@@ -402,7 +441,7 @@ void rs2_get_stream_intrinsics(const rs2_device * device, rs2_stream stream, int
  * \param[in]  stream    type of stream
  * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
  */
-void rs2_get_motion_intrinsics(const rs2_device * device, rs2_stream stream, rs2_motion_device_intrinsic * intrinsics, rs2_error ** error);
+void rs2_get_motion_intrinsics(const rs2_sensor * device, rs2_stream stream, rs2_motion_device_intrinsic * intrinsics, rs2_error ** error);
 
 /**
  * send hardware reset request to the device
@@ -416,7 +455,7 @@ void rs2_hardware_reset(const rs2_device * device, rs2_error ** error);
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return            list of stream profiles that given subdevice can provide, should be released by rs2_delete_profiles_list
 */
-rs2_stream_modes_list* rs2_get_stream_modes(rs2_device* device, rs2_error** error);
+rs2_stream_modes_list* rs2_get_stream_modes(rs2_sensor* device, rs2_error** error);
 
 /**
 * determine the properties of a specific streaming mode
@@ -455,7 +494,7 @@ void rs2_delete_modes_list(rs2_stream_modes_list* list);
 * \param[in] format     the pixel format of a frame image
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 */
-void rs2_open(rs2_device* device, rs2_stream stream, int width, int height, int fps, rs2_format format, rs2_error** error);
+void rs2_open(rs2_sensor* device, rs2_stream stream, int width, int height, int fps, rs2_format format, rs2_error** error);
 
 /**
 * open subdevice for exclusive access, by committing to composite configuration, specifying one or more stream profiles
@@ -469,7 +508,7 @@ void rs2_open(rs2_device* device, rs2_stream stream, int width, int height, int 
 * \param[in] count      number of simultaneous  stream profiles to configure
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 */
-void rs2_open_multiple(rs2_device* device, const rs2_stream* stream, const int* width,
+void rs2_open_multiple(rs2_sensor* device, const rs2_stream* stream, const int* width,
     const int* height, const int* fps, const rs2_format* format, int count, rs2_error** error);
 
 /**
@@ -477,7 +516,7 @@ void rs2_open_multiple(rs2_device* device, const rs2_stream* stream, const int* 
 * \param[in] device     RealSense device
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 */
-void rs2_close(const rs2_device* device, rs2_error** error);
+void rs2_close(const rs2_sensor* device, rs2_error** error);
 
 /**
 * start streaming from specified configured device
@@ -486,7 +525,7 @@ void rs2_close(const rs2_device* device, rs2_error** error);
 * \param[in] user auxiliary  data the user wishes to receive together with every frame callback
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 */
-void rs2_start(const rs2_device* device, rs2_frame_callback_ptr on_frame, void* user, rs2_error** error);
+void rs2_start(const rs2_sensor* device, rs2_frame_callback_ptr on_frame, void* user, rs2_error** error);
 
 /**
 * set callback to get notifications from specified device
@@ -495,27 +534,7 @@ void rs2_start(const rs2_device* device, rs2_frame_callback_ptr on_frame, void* 
 * \param[in] callback function pointer to register as per-notifications callback
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 */
-void rs2_set_notifications_callback(const rs2_device* device, rs2_notification_callback_ptr on_notification, void* user, rs2_error** error);
-
-/**
-* start streaming from specified configured device only specific stream
-* \param[in] device  RealSense device
-* \param[in] stream  specific stream type to start
-* \param[in] on_frame function pointer to register as per-frame callback
-* \param[in] user auxiliary  data the user wishes to receive together with every frame callback
-* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
-*/
-void rs2_start_stream(const rs2_device* device, rs2_stream stream, rs2_frame_callback_ptr on_frame, void* user, rs2_error** error);
-
-
-/**
-* start streaming from specified configured device of specific stream to frame queue
-* \param[in] device  RealSense device
-* \param[in] stream  specific stream type to start
-* \param[in] queue   frame-queue to store new frames into
-* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
-*/
-void rs2_start_queue(const rs2_device* device, rs2_stream stream, rs2_frame_queue* queue, rs2_error** error);
+void rs2_set_notifications_callback(const rs2_sensor* device, rs2_notification_callback_ptr on_notification, void* user, rs2_error** error);
 
 /**
 * start streaming from specified configured device
@@ -523,31 +542,14 @@ void rs2_start_queue(const rs2_device* device, rs2_stream stream, rs2_frame_queu
 * \param[in] callback callback object created from c++ application. ownership over the callback object is moved into the relevant streaming lock
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 */
-void rs2_start_cpp(const rs2_device* device, rs2_frame_callback* callback, rs2_error** error);
-
-/**
-* start streaming from specified configured device
-* \param[in] device  RealSense device
-* \param[in] stream  specific stream type to start
-* \param[in] callback callback object created from c++ application. ownership over the callback object is moved into the relevant streaming lock
-* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
-*/
-void rs2_start_stream_cpp(const rs2_device* device, rs2_stream stream, rs2_frame_callback* callback, rs2_error** error);
+void rs2_start_cpp(const rs2_sensor* device, rs2_frame_callback* callback, rs2_error** error);
 
 /**
 * stops streaming from specified configured device
 * \param[in] device  RealSense device
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 */
-void rs2_stop(const rs2_device* device, rs2_error** error);
-
-/**
-* stops streaming from specified configured device from specific stream type
-* \param[in] device  RealSense device
-* \param[in] stream  specific stream type to stop receiving frame from
-* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
-*/
-void rs2_stop_stream(const rs2_device* device, rs2_stream stream, rs2_error** error);
+void rs2_stop(const rs2_sensor* device, rs2_error** error);
 
 /**
 * set callback to get notifications from specified device
@@ -555,7 +557,7 @@ void rs2_stop_stream(const rs2_device* device, rs2_stream stream, rs2_error** er
 * \param[in] callback callback object created from c++ application. ownership over the callback object is moved into the relevant subdevice lock
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 */
-void rs2_set_notifications_callback_cpp(const rs2_device* device, rs2_notifications_callback* callback, rs2_error** error);
+void rs2_set_notifications_callback_cpp(const rs2_sensor* device, rs2_notifications_callback* callback, rs2_error** error);
 
 
 /**
@@ -602,16 +604,6 @@ void rs2_set_devices_changed_callback_cpp(rs2_context* context, rs2_devices_chan
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 */
 void rs2_set_devices_changed_callback(rs2_context* context, rs2_devices_changed_callback_ptr callback, rs2_error** error);
-
-/**
-* this function returns true if the specific device is contained inside the device list "removed"
-* \param[in] device    RealSense device
-* \param[in] event_information    handle returned from a callback
-* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
-* \return            true if the device was disconnected and false otherwise
-*/
-int rs2_device_list_contains(const rs2_device_list* removed, const rs2_device* dev, rs2_error** error);
-
 
 /**
 * retrieve metadata from frame handle
@@ -734,7 +726,7 @@ void rs2_release_frame(rs2_frame* frame);
 * \param[out] error   if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return true if option is read-only
 */
-int rs2_is_option_read_only(const rs2_device* device, rs2_option option, rs2_error** error);
+int rs2_is_option_read_only(const rs2_sensor* device, rs2_option option, rs2_error** error);
 
 /**
 * read option value from the device
@@ -743,7 +735,7 @@ int rs2_is_option_read_only(const rs2_device* device, rs2_option option, rs2_err
 * \param[out] error   if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return value of the option
 */
-float rs2_get_option(const rs2_device* device, rs2_option option, rs2_error** error);
+float rs2_get_option(const rs2_sensor* device, rs2_option option, rs2_error** error);
 
 /**
 * write new value to device option
@@ -752,7 +744,7 @@ float rs2_get_option(const rs2_device* device, rs2_option option, rs2_error** er
 * \param[in] value      new value for the option
 * \param[out] error     if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 */
-void rs2_set_option(const rs2_device* device, rs2_option option, float value, rs2_error** error);
+void rs2_set_option(const rs2_sensor* device, rs2_option option, float value, rs2_error** error);
 
 /**
 * check if particular option is supported by a subdevice
@@ -761,7 +753,7 @@ void rs2_set_option(const rs2_device* device, rs2_option option, float value, rs
 * \param[out] error     if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return true if option is supported
 */
-int rs2_supports_option(const rs2_device* device, rs2_option option, rs2_error** error);
+int rs2_supports_option(const rs2_sensor* device, rs2_option option, rs2_error** error);
 
 /**
 * retrieve the available range of values of a supported option
@@ -773,7 +765,7 @@ int rs2_supports_option(const rs2_device* device, rs2_option option, rs2_error**
 * \param[out] def    the default value of the option
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 */
-void rs2_get_option_range(const rs2_device* device, rs2_option option, float* min, float* max, float* step, float* def, rs2_error** error);
+void rs2_get_option_range(const rs2_sensor* device, rs2_option option, float* min, float* max, float* step, float* def, rs2_error** error);
 
 /**
 * get option description
@@ -782,7 +774,7 @@ void rs2_get_option_range(const rs2_device* device, rs2_option option, float* mi
 * \param[out] error     if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return human-readable option description
 */
-const char* rs2_get_option_description(const rs2_device* device, rs2_option option, rs2_error ** error);
+const char* rs2_get_option_description(const rs2_sensor* device, rs2_option option, rs2_error ** error);
 
 /**
 * get option value description (in case specific option value hold special meaning)
@@ -792,7 +784,7 @@ const char* rs2_get_option_description(const rs2_device* device, rs2_option opti
 * \param[out] error     if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return human-readable description of a specific value of an option or null if no special meaning
 */
-const char* rs2_get_option_value_description(const rs2_device* device, rs2_option option, float value, rs2_error ** error);
+const char* rs2_get_option_value_description(const rs2_sensor* device, rs2_option option, float value, rs2_error ** error);
 
 /**
  * \brief sets the active region of interest to be used by auto-exposure algorithm
@@ -803,7 +795,7 @@ const char* rs2_get_option_value_description(const rs2_device* device, rs2_optio
  * \param[in] max_y      upper vertical bound in pixels
  * \param[out] error     if non-null, receives any error that occurs during this call, otherwise, errors are ignored
  */
-void rs2_set_region_of_interest(const rs2_device* device, int min_x, int min_y, int max_x, int max_y, rs2_error ** error);
+void rs2_set_region_of_interest(const rs2_sensor* device, int min_x, int min_y, int max_x, int max_y, rs2_error ** error);
 
 /**
  * \brief gets the active region of interest to be used by auto-exposure algorithm
@@ -814,7 +806,7 @@ void rs2_set_region_of_interest(const rs2_device* device, int min_x, int min_y, 
  * \param[out] max_y     upper vertical bound in pixels
  * \param[out] error     if non-null, receives any error that occurs during this call, otherwise, errors are ignored
  */
-void rs2_get_region_of_interest(const rs2_device* device, int* min_x, int* min_y, int* max_x, int* max_y, rs2_error ** error);
+void rs2_get_region_of_interest(const rs2_sensor* device, int* min_x, int* min_y, int* max_x, int* max_y, rs2_error ** error);
 
 /**
 * retrieve camera specific information, like versions of various internal components
@@ -873,13 +865,6 @@ int rs2_poll_for_frame(rs2_frame_queue* queue, rs2_frame** output_frame, rs2_err
 void rs2_enqueue_frame(rs2_frame* frame, void* queue);
 
 /**
-* release all frames inside the queue
-* \param[in] queue the frame queue data structure
-* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
-*/
-void rs2_flush_queue(rs2_frame_queue* queue, rs2_error** error);
-
-/**
 * send raw data to device
 * \param[in] device  input RealSense device
 * \param[in] raw_data_to_send   raw data to be send to device
@@ -925,7 +910,7 @@ rs2_syncer* rs2_create_syncer(rs2_error** error);
  * \param[in] queue   frame-queue to store new frames into
  * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
  */
-void rs2_start_syncer(const rs2_device* device, rs2_stream stream, rs2_syncer* syncer, rs2_error** error);
+void rs2_start_syncer(const rs2_sensor* device, rs2_syncer* syncer, rs2_error** error);
 
 /**
  * \brief[in] Wait until coherent set of frames becomes available

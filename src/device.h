@@ -22,8 +22,8 @@ namespace rsimpl2
     public:
         size_t get_sensors_count() const override;
 
-        sensor_interface& get_sensor(unsigned subdevice) override;
-        const sensor_interface& get_sensor(unsigned subdevice) const override;
+        sensor_interface& get_sensor(size_t subdevice) override;
+        const sensor_interface& get_sensor(size_t subdevice) const override;
 
         rs2_extrinsics get_extrinsics(size_t from, rs2_stream from_stream, size_t to, rs2_stream to_stream) const override;
 

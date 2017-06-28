@@ -32,7 +32,7 @@ size_t device::get_sensors_count() const
     return static_cast<unsigned int>(_sensors.size());
 }
 
-sensor_interface& device::get_sensor(unsigned subdevice)
+sensor_interface& device::get_sensor(size_t subdevice)
 {
     try
     {
@@ -44,7 +44,7 @@ sensor_interface& device::get_sensor(unsigned subdevice)
     }
 }
 
-const sensor_interface& device::get_sensor(unsigned subdevice) const
+const sensor_interface& device::get_sensor(size_t subdevice) const
 {
     try
     {

@@ -112,14 +112,14 @@ namespace rsimpl2
 
             for (auto i=0; i<devices_info_removed.size(); i++)
             {
-                rs2_devices_info_removed.push_back({ shared_from_this(), devices_info_removed[i], (unsigned int)i });
+                rs2_devices_info_removed.push_back({ shared_from_this(), devices_info_removed[i] });
                 LOG_DEBUG("\nDevice disconnected:\n\n" << std::string(devices_info_removed[i]->get_device_data()));
             }
 
             auto devices_info_added = subtract_sets(new_list, old_list);
             for (auto i = 0; i<devices_info_added.size(); i++)
             {
-                rs2_devices_info_added.push_back({ shared_from_this(), devices_info_added[i], (unsigned int)i });
+                rs2_devices_info_added.push_back({ shared_from_this(), devices_info_added[i] });
                 LOG_DEBUG("\nDevice sconnected:\n\n" << std::string(devices_info_added[i]->get_device_data()));
             }
 

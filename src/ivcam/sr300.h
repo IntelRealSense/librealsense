@@ -91,19 +91,6 @@ namespace rsimpl2
 
         }
 
-        uint8_t get_subdevice_count() const override
-        {
-            auto pid = _depth.pid;
-            switch (pid)
-            {
-            case 0x0aa5: return 2;
-            default:
-                throw not_implemented_exception(to_string() <<
-                    "get_subdevice_count is not implemented for SR300 device of type " <<
-                    pid);
-            }
-        }
-
         static std::vector<std::shared_ptr<device_info>> pick_sr300_devices(
             std::shared_ptr<uvc::backend> backend,
             std::vector<uvc::uvc_device_info>& uvc,
