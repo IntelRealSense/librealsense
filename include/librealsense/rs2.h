@@ -913,11 +913,10 @@ const unsigned char* rs2_get_raw_data(const rs2_raw_data_buffer* buffer, rs2_err
 
 /**
  * \brief Create syncronization primitive to group frames into coherent frame-sets
- * \param[in] dev        RealSense device
  * \param[out] error     if non-null, receives any error that occurs during this call, otherwise, errors are ignored
  * \return
  */
-rs2_syncer* rs2_create_syncer(const rs2_device* dev, rs2_error** error);
+rs2_syncer* rs2_create_syncer(rs2_error** error);
 
 /**
  * \brief Start streaming from specified configured device of specific stream to frame queue
@@ -1023,6 +1022,26 @@ const char * rs2_exception_type_to_string   (rs2_exception_type type);
 
 void rs2_log_to_console(rs2_log_severity min_severity, rs2_error ** error);
 void rs2_log_to_file(rs2_log_severity min_severity, const char * file_path, rs2_error ** error);
+
+typedef enum rs2_extension_type
+{
+    RS2_EXTENSION_TYPE_DEBUG,
+    RS2_EXTENSION_TYPE_INFO,
+    RS2_EXTENSION_TYPE_MOTION,
+    RS2_EXTENSION_TYPE_OPTIONS,
+    RS2_EXTENSION_TYPE_UNKNOWN,
+    RS2_EXTENSION_TYPE_VIDEO,
+    RS2_EXTENSION_TYPE_ROI,
+    RS2_EXTENSION_TYPE_COUNT
+} rs2_extension_type;
+/**
+ * TODO: document
+ * @param device
+ * @param extension_type
+ * @return
+ */
+int rs2_is_sensor(const rs2_device* device, rs2_extension_type extension_type, rs2_error ** error);
+
 
 #ifdef __cplusplus
 }

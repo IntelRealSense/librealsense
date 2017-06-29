@@ -64,6 +64,8 @@ int main(int argc, char** argv) try
     {
         auto dev = devices[i];
 
+        roi_device roi(dev);
+        std::cout << roi.get().max_y << std::endl;
         // Show which options are supported by this device
         cout << " Device info: \n";
         for (auto j = 0; j < RS2_CAMERA_INFO_COUNT; ++j)

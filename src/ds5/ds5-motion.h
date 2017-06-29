@@ -19,12 +19,13 @@ namespace rsimpl2
             const std::vector<uvc::usb_device_info>& hwm_device,
             const std::vector<uvc::hid_device_info>& hid_info);
 
-        rs2_intrinsics get_intrinsics(unsigned int subdevice, const stream_profile& profile) const override;
-        rs2_motion_device_intrinsic get_motion_intrinsics(rs2_stream) const override;
+        rs2_motion_device_intrinsic get_motion_intrinsics(rs2_stream) const;
 
         std::shared_ptr<auto_exposure_mechanism> register_auto_exposure_options(uvc_sensor* uvc_ep, const uvc::extension_unit* fisheye_xu);
 
     private:
+        friend class ds5_fisheye_sensor;
+
         uint8_t _fisheye_device_idx = -1;
         uint8_t _motion_module_device_idx = -1;
 
@@ -34,7 +35,6 @@ namespace rsimpl2
         lazy<ds::imu_intrinsics> _accel_intrinsics;
         lazy<ds::imu_intrinsics> _gyro_intrinsics;
 
-        std::vector<uint8_t> get_raw_calibration_table(ds::calibration_table_id table_id) const;
         std::vector<uint8_t> get_raw_fisheye_intrinsics_table() const;
         std::vector<uint8_t> get_raw_fisheye_extrinsics_table() const;
         ds::imu_calibration_table get_motion_module_calibration_table() const;

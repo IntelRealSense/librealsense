@@ -342,7 +342,7 @@ namespace rsimpl2
                     insert();
                 }
 
-                for (auto&& profile : stream_profiles)
+                for (auto&& profile : this->stream_profiles)
                 {
                     statement insert(c, PROFILES_INSERT);
                     insert.bind(1, section_id);

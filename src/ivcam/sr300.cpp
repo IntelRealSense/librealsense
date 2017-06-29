@@ -6,7 +6,7 @@
 
 namespace rsimpl2
 {
-    std::shared_ptr<rsimpl2::device> sr300_info::create(const uvc::backend& backend) const
+    std::shared_ptr<device_interface> sr300_info::create(const uvc::backend& backend) const
     {
         return std::make_shared<sr300_camera>(backend, _color, _depth, _hwm);
     }

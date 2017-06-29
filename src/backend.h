@@ -506,7 +506,7 @@ namespace rsimpl2
         class usb_device : public command_transfer
         {
         public:
-            // interupt sensor_base and any additional USB specific stuff
+            // interupt endpoint and any additional USB specific stuff
         };
 
 

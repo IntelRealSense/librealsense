@@ -1,22 +1,15 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
-
 #pragma once
 
-#include "ds5-rolling-shutter.h"
-#include "ds5-active.h"
-#include "ds5-motion.h"
-#include "ds5-color.h"
-
-#include "algo.h"
-#include "error-handling.h"
+#include "ds5-private.h"
 
 namespace rsimpl2
 {
     class ds5_info : public device_info
     {
     public:
-        std::shared_ptr<device> create(const uvc::backend& backend) const override;
+        std::shared_ptr<device_interface> create(const uvc::backend& backend) const override;
 
         uint8_t get_subdevice_count() const override
         {
@@ -45,8 +38,8 @@ namespace rsimpl2
                  std::vector<uvc::uvc_device_info> depth,
                  std::vector<uvc::usb_device_info> hwm,
                  std::vector<uvc::hid_device_info> hid)
-            : device_info(std::move(backend)), _hwm(std::move(hwm)),
-              _depth(std::move(depth)), _hid(std::move(hid)) {}
+            : device_info(std::move(backend)), _depth(std::move(depth)),
+              _hwm(std::move(hwm)), _hid(std::move(hid)) {}
 
         static std::vector<std::shared_ptr<device_info>> pick_ds5_devices(
                 std::shared_ptr<uvc::backend> backend,

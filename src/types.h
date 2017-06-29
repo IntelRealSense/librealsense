@@ -323,6 +323,7 @@ namespace rsimpl2
     RS2_ENUM_HELPERS(rs2_exception_type, EXCEPTION_TYPE)
     RS2_ENUM_HELPERS(rs2_log_severity, LOG_SEVERITY)
     RS2_ENUM_HELPERS(rs2_notification_category, NOTIFICATION_CATEGORY)
+    RS2_ENUM_HELPERS(rs2_extension_type, EXTENSION_TYPE)
     #undef RS2_ENUM_HELPERS
 
     ////////////////////////////////////////////
@@ -551,21 +552,6 @@ namespace rsimpl2
         }
     };
 
-    struct supported_capability
-    {
-        rs2_stream           capability;
-        firmware_version    from;
-        firmware_version    until;
-        rs2_camera_info      firmware_type;
-
-        supported_capability(rs2_stream capability, firmware_version from,
-            firmware_version until, rs2_camera_info firmware_type = RS2_CAMERA_INFO_CAMERA_FIRMWARE_VERSION)
-            : capability(capability), from(from), until(until), firmware_type(firmware_type) {}
-
-        explicit supported_capability(rs2_stream capability)
-            : capability(capability), from(), until(), firmware_type(RS2_CAMERA_INFO_CAMERA_FIRMWARE_VERSION) {}
-    };
-
     // This class is used to buffer up several writes to a structure-valued XU control, and send the entire structure all at once
     // Additionally, it will ensure that any fields not set in a given struct will retain their original values
     template<class T, class R, class W> struct struct_interface
@@ -612,12 +598,6 @@ namespace rsimpl2
         T max_number;
         T last_number;
         unsigned long long num_of_wraparounds;
-    };
-
-    struct static_device_info
-    {
-        std::vector<rs2_frame_metadata> supported_metadata_vector;
-        std::vector<supported_capability> capabilities_vector;
     };
 
     typedef void(*frame_callback_function_ptr)(rs2_frame * frame, void * user);
@@ -717,6 +697,7 @@ namespace rsimpl2
     class notification_decoder
     {
     public:
+        virtual ~notification_decoder() = default;
         virtual notification decode(int value) = 0;
     };
 

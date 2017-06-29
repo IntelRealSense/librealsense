@@ -15,6 +15,7 @@
 #include "ds5-timestamp.h"
 #include "ds5-options.h"
 #include "ds5-motion.h"
+#include "core/motion.h"
 
 namespace rsimpl2
 {
@@ -41,6 +42,49 @@ namespace rsimpl2
         region_of_interest _roi{};
     };
 
+    class ds5_hid_sensor : public hid_sensor, public motion_sensor_interface
+    {
+    public:
+        explicit ds5_hid_sensor(const ds5_motion* owner, std::shared_ptr<uvc::hid_device> hid_device,
+            std::unique_ptr<frame_timestamp_reader> hid_iio_timestamp_reader,
+            std::unique_ptr<frame_timestamp_reader> custom_hid_timestamp_reader,
+            std::map<rs2_stream, std::map<unsigned, unsigned>> fps_and_sampling_frequency_per_rs2_stream,
+            std::vector<std::pair<std::string, stream_profile>> sensor_name_and_hid_profiles,
+            std::shared_ptr<uvc::time_service> ts)
+            : hid_sensor(hid_device, move(hid_iio_timestamp_reader), move(custom_hid_timestamp_reader), 
+                fps_and_sampling_frequency_per_rs2_stream, sensor_name_and_hid_profiles, ts), _owner(owner)
+        { 
+        }
+
+        rs2_motion_device_intrinsic get_motion_intrinsics(rs2_stream stream) const override
+        {
+            return _owner->get_motion_intrinsics(stream);
+        }
+
+    private:
+        const ds5_motion* _owner;
+    };
+
+    class ds5_fisheye_sensor : public uvc_sensor, public video_sensor_interface
+    {
+    public:
+        explicit ds5_fisheye_sensor(const ds5_motion* owner, std::shared_ptr<uvc::uvc_device> uvc_device,
+            std::unique_ptr<frame_timestamp_reader> timestamp_reader,
+            std::shared_ptr<uvc::time_service> ts)
+            : uvc_sensor(uvc_device, move(timestamp_reader), ts), _owner(owner)
+        {}
+
+        rs2_intrinsics get_intrinsics(const stream_profile& profile) const override
+        {
+            return get_intrinsic_by_resolution(
+                *_owner->_fisheye_intrinsics_raw,
+                ds::calibration_table_id::fisheye_calibration_id,
+                profile.width, profile.height);
+        }
+    private:
+        const ds5_motion* _owner;
+    };
+
     rs2_motion_device_intrinsic ds5_motion::get_motion_intrinsics(rs2_stream stream) const
     {
         if (stream == RS2_STREAM_ACCEL)
@@ -49,20 +93,7 @@ namespace rsimpl2
         if (stream == RS2_STREAM_GYRO)
             return create_motion_intrinsics(*_gyro_intrinsics);
 
-        return device::get_motion_intrinsics(stream);
-    }
-
-    rs2_intrinsics ds5_motion::get_intrinsics(unsigned int subdevice, const stream_profile& profile) const
-    {
-        if (subdevice == _fisheye_device_idx)
-        {
-            return get_intrinsic_by_resolution(
-                *_fisheye_intrinsics_raw,
-                ds::calibration_table_id::fisheye_calibration_id,
-                profile.width, profile.height);
-        }
-
-        return ds5_device::get_intrinsics(subdevice, profile);
+        throw std::runtime_error(to_string() << "Motion Intrinsics unknown for stream " << rs2_stream_to_string(stream) << "!");
     }
 
     pose ds5_motion::get_device_position(unsigned int subdevice) const
@@ -140,12 +171,12 @@ namespace rsimpl2
             std::copy(custom_sensor_profiles.begin(), custom_sensor_profiles.end(), std::back_inserter(sensor_name_and_hid_profiles));
         }
 
-        auto hid_ep = std::make_shared<hid_sensor>(backend.create_hid_device(all_hid_infos.front()),
-                                                                               std::unique_ptr<frame_timestamp_reader>(new ds5_iio_hid_timestamp_reader()),
-                                                                               std::unique_ptr<frame_timestamp_reader>(new ds5_custom_hid_timestamp_reader()),
-                                                                               fps_and_sampling_frequency_per_rs2_stream,
-                                                                               sensor_name_and_hid_profiles,
-                                                                               backend.create_time_service());
+        auto hid_ep = std::make_shared<ds5_hid_sensor>(this, backend.create_hid_device(all_hid_infos.front()),
+                                                        std::unique_ptr<frame_timestamp_reader>(new ds5_iio_hid_timestamp_reader()),
+                                                        std::unique_ptr<frame_timestamp_reader>(new ds5_custom_hid_timestamp_reader()),
+                                                        fps_and_sampling_frequency_per_rs2_stream,
+                                                        sensor_name_and_hid_profiles,
+                                                        backend.create_time_service());
         hid_ep->register_pixel_format(pf_accel_axes);
         hid_ep->register_pixel_format(pf_gyro_axes);
 
@@ -228,15 +259,13 @@ namespace rsimpl2
             motion_module_fw_version = _hw_monitor->get_firmware_version_string(GVD, motion_module_fw_version_offset);
         }
 
-        std::shared_ptr<uvc_sensor> fisheye_ep;
-
         auto fisheye_infos = filter_by_mi(dev_info, 3);
         if (fisheye_infos.size() != 1)
             throw invalid_value_exception("RS450 model is expected to include a single fish-eye device!");
 
         std::unique_ptr<frame_timestamp_reader> ds5_timestamp_reader_backup(new ds5_timestamp_reader(backend.create_time_service()));
 
-        fisheye_ep = std::make_shared<uvc_sensor>(backend.create_uvc_device(fisheye_infos.front()),
+        auto fisheye_ep = std::make_shared<ds5_fisheye_sensor>(this, backend.create_uvc_device(fisheye_infos.front()),
                                                     std::unique_ptr<frame_timestamp_reader>(new ds5_timestamp_reader_from_metadata(std::move(ds5_timestamp_reader_backup))),
                                                     backend.create_time_service());
 
@@ -298,12 +327,12 @@ namespace rsimpl2
         fisheye_ep->register_metadata(RS2_FRAME_METADATA_GAIN_LEVEL,        make_attribute_parser(&md_fisheye_control::manual_gain, md_depth_control_attributes::gain_attribute, md_prop_offset));
         fisheye_ep->register_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE,   make_attribute_parser(&md_fisheye_control::manual_exposure, md_depth_control_attributes::exposure_attribute, md_prop_offset));
 
-        // Add fisheye sensor_base
+        // Add fisheye endpoint
         _fisheye_device_idx = add_sensor(fisheye_ep);
 
         fisheye_ep->set_pose(lazy<pose>([this](){return get_device_position(_fisheye_device_idx);}));
 
-        // Add hid sensor_base
+        // Add hid endpoint
         auto hid_ep = create_hid_device(backend, hid_info, _fw_version);
         _motion_module_device_idx = add_sensor(hid_ep);
 

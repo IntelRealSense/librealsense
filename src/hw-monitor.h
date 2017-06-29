@@ -20,8 +20,8 @@ const uint8_t   IV_COMMAND_VERSION              = 0x0B;
 const uint8_t   IV_COMMAND_CONFIDENCE_THRESHHOLD= 0x0C;
 
 const uint8_t   IVCAM_MONITOR_INTERFACE         = 0x4;
-const uint8_t   IVCAM_MONITOR_sensor_base_OUT      = 0x1;
-const uint8_t   IVCAM_MONITOR_sensor_base_IN       = 0x81;
+const uint8_t   IVCAM_MONITOR_ENDPOINT_OUT      = 0x1;
+const uint8_t   IVCAM_MONITOR_ENDPOINT_IN       = 0x81;
 const uint8_t   IVCAM_MIN_SUPPORTED_VERSION     = 13;
 const uint8_t   IVCAM_MONITOR_HEADER_SIZE       = (sizeof(uint32_t) * 6);
 const uint8_t   NUM_OF_CALIBRATION_PARAMS       = 100;

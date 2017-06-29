@@ -2,73 +2,67 @@
 // Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 
 #pragma once
+#include <core/roi.h>
+#include <core/extension.h>
 #include "core/streaming.h"
 #include "archive.h"
 #include "concurrency.h"
 namespace rsimpl2
 {
+
     class extension_metadata
     {
         //TODO: should be serialize-able, update-able, extendable to the actual extension
+        virtual void update(std::shared_ptr<rsimpl2::extension_interface> ext) = 0;
     };
+
     class query_metadata_interface
     {
     public:
         virtual ~query_metadata_interface() = default;
-
-        /**
-         * @brief Get the number of available metadata objects
-         * @return Number of available metadata objects
-         */
-        virtual uint32_t metadata_count() const = 0;
-
-        /**
-         * @brief Iterate the available metadata objects
-         * @param[in] index  Index of the requested metadata object
-         * @param[out] obj  On successful execution will contain the metadata object of the requested index
-         * @return True on successful execution
-         */
         virtual std::vector<std::shared_ptr<extension_metadata>> query_metadata() const = 0;
     };
 
-    /**
-     * sensor_description_interface is an abstraction for metadata information of sensors
-     * A sensor description object will contain all the information of a sensor's extensions
-     *
-     * This is mainly in use for serializaion of sensors
-     */
-    class sensor_description_interface : public query_metadata_interface
-
+    class sensor_metadata : public query_metadata_interface
     {
     public:
-        virtual ~sensor_description_interface() = default;
+        sensor_metadata(const std::vector<std::shared_ptr<extension_metadata>>& sensor_extensios)
+            :
+            m_extensios(sensor_extensios)
+        {
+
+        }
+
+        std::vector<std::shared_ptr<rsimpl2::extension_metadata>> query_metadata() const override
+        {
+
+        }
+    private:
+        std::vector<std::shared_ptr<extension_metadata>> m_extensios;
     };
 
-
-    /**
-     * device_description_interface is an abstraction for metadata information of a device
-     * A device description object will contain all the information of a device's extensions and its sensors descriptions
-     *
-     * This is mainly in use for serializaion of devices
-     */
-    class device_description_interface : public query_metadata_interface
+    class device_metadata : public query_metadata_interface
     {
     public:
-        virtual ~device_description_interface() = default;
+        device_metadata(const std::vector<std::shared_ptr<extension_metadata>>& device_extensios,
+                        const std::vector<sensor_metadata>& sensors_metadata)
+            :
+            m_extensios(device_extensios),
+            m_sensors_metadata(sensors_metadata)
+        {
 
-        /**
-         * @brief Get the number of available sensors descriptions
-         * @return Number of available sensors descriptions
-         */
-        virtual uint32_t sensor_description_count() const = 0;
-
-        /**
-         * @brief  Iterate the available sensors descriptions
-         * @param index  Index of the requested sensors descriptions
-         * @param description On successful execution will contain the sensors descriptions of the requested index
-         * @return True on successful execution
-         */
-        virtual bool query_sensor_description(uint32_t index, sensor_description_interface** description) const = 0;
+        }
+        std::vector<sensor_metadata> query_sensor_metadata() const
+        {
+            return m_sensors_metadata;
+        }
+        std::vector<std::shared_ptr<extension_metadata>> query_metadata() const override
+        {
+            return m_extensios;
+        }
+    private:
+        std::vector<std::shared_ptr<extension_metadata>> m_extensios;
+        std::vector<sensor_metadata> m_sensors_metadata;
     };
     
     class device_serializer
@@ -86,22 +80,22 @@ namespace rsimpl2
 
         virtual void reset() = 0;
 
-        virtual std::shared_ptr<device_description_interface> query_device_description() = 0;
-        virtual void write_device_description(std::shared_ptr<device_description_interface> device_description) = 0;
+        virtual device_metadata query_device_description() = 0;
+        virtual void write_device_description(const device_metadata& device_description) = 0;
 
         virtual storage_data read() = 0;
         virtual void write(storage_data data) = 0;
 
         virtual void seek_to_time(std::chrono::nanoseconds time) = 0;
         virtual std::chrono::nanoseconds query_duration() const = 0;
-        
     };
+
     class record_sensor : public sensor_interface
     {
     public:
-        using ziv_frame_callback_t = std::function<void(std::shared_ptr<frame_interface>)>;
+        using frame_interface_callback_t = std::function<void(std::shared_ptr<frame_interface>)>;
 
-        record_sensor(sensor_interface& sensor, ziv_frame_callback_t on_frame);
+        record_sensor(sensor_interface& sensor, frame_interface_callback_t on_frame);
         std::vector<stream_profile> get_principal_requests() override;
         void open(const std::vector<stream_profile>& requests) override;
         void close() override;
@@ -110,22 +104,20 @@ namespace rsimpl2
         const std::string& get_info(rs2_camera_info info) const override;
         bool supports_info(rs2_camera_info info) const override;
         bool supports_option(rs2_option id) const override;
-        region_of_interest_method& get_roi_method() const override;
-        void set_roi_method(std::shared_ptr<region_of_interest_method> roi_method) override;
         void register_notifications_callback(notifications_callback_ptr callback) override;
-        pose get_pose() const override;
         void start(frame_callback_ptr callback) override;
         void stop() override;
+        bool is_streaming() const override;
         virtual ~record_sensor();
     private:
         sensor_interface& m_sensor;
-        ziv_frame_callback_t m_record_callback;
+        frame_interface_callback_t m_record_callback;
         bool m_is_recording;
         bool m_is_pause;
         frame_callback_ptr m_frame_callback;
     };
 
-    class record_device : public device_interface
+    class record_device : public device_interface, public extension_interface
     {
     public:
         record_device(std::shared_ptr<device_interface> device, std::shared_ptr<device_serializer> serializer);
@@ -163,18 +155,16 @@ namespace rsimpl2
 
     class mock_frame : public frame_interface
     {
-        const void* m_data;
-        size_t m_size;
         sensor_interface& m_sensor;
+        frame* m_frame;
     public:
-        mock_frame(sensor_interface& s, const void* data, size_t size);
+        mock_frame(sensor_interface& s, frame* f);
         double get_timestamp() const override;
         rs2_timestamp_domain get_timestamp_domain() const override;
         unsigned int get_stream_index() const override;
         const uint8_t* get_data() const override;
         size_t get_data_size() const override;
         const sensor_interface& get_sensor() const override;
-
     };
 }
 

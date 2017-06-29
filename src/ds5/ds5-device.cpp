@@ -70,22 +70,25 @@ namespace rsimpl2
         _hw_monitor->send(cmd);
     }
 
-    rs2_intrinsics ds5_device::get_intrinsics(unsigned int subdevice, const stream_profile& profile) const
+    class ds5_depth_sensor : public uvc_sensor, public video_sensor_interface
     {
-        if (subdevice >= get_sensors_count())
-            throw invalid_value_exception(to_string() << "Requested subdevice " <<
-                                          subdevice << " is unsupported.");
+    public:
+        explicit ds5_depth_sensor(const ds5_device* owner, std::shared_ptr<uvc::uvc_device> uvc_device,
+            std::unique_ptr<frame_timestamp_reader> timestamp_reader,
+            std::shared_ptr<uvc::time_service> ts)
+            : uvc_sensor(uvc_device, move(timestamp_reader), ts), _owner(owner)
+        {}
 
-        if (subdevice == _depth_device_idx)
+        rs2_intrinsics get_intrinsics(const stream_profile& profile) const override
         {
             return get_intrinsic_by_resolution(
-                *_coefficients_table_raw,
+                *_owner->_coefficients_table_raw,
                 ds::calibration_table_id::coefficients_table_id,
                 profile.width, profile.height);
         }
-
-        throw not_implemented_exception("Not Implemented");
-    }
+    private:
+        const ds5_device* _owner;
+    };
 
     pose ds5_device::get_device_position(unsigned int subdevice) const
     {
@@ -124,7 +127,7 @@ namespace rsimpl2
 
 
         std::unique_ptr<frame_timestamp_reader> ds5_timestamp_reader_backup(new ds5_timestamp_reader(backend.create_time_service()));
-        auto depth_ep = std::make_shared<uvc_sensor>(std::make_shared<uvc::multi_pins_uvc_device>(depth_devices),
+        auto depth_ep = std::make_shared<ds5_depth_sensor>(this, std::make_shared<uvc::multi_pins_uvc_device>(depth_devices),
                                                        std::unique_ptr<frame_timestamp_reader>(new ds5_timestamp_reader_from_metadata(std::move(ds5_timestamp_reader_backup))),
                                                        backend.create_time_service());
         depth_ep->register_xu(depth_xu); // make sure the XU is initialized everytime we power the camera
@@ -290,7 +293,7 @@ namespace rsimpl2
         depth_ep.register_metadata((rs2_frame_metadata)RS2_FRAME_METADATA_WIDTH,            make_attribute_parser(&md_configuration::width, md_configuration_attributes::width_attribute, md_prop_offset));
         depth_ep.register_metadata((rs2_frame_metadata)RS2_FRAME_METADATA_HEIGHT,           make_attribute_parser(&md_configuration::height, md_configuration_attributes::height_attribute, md_prop_offset));
 
-        // Register sensor_base info
+        // Register endpoint info
         for(auto& element : dev_info)
         {
             if (element.mi == 0) // mi 0 is defines RS4xx Stereo (Depth) interface
@@ -325,7 +328,7 @@ namespace rsimpl2
         return{ RS2_NOTIFICATION_CATEGORY_HARDWARE_ERROR, value, RS2_LOG_SEVERITY_NONE, "Unknown error!" };
     }
 
-    rs2_extrinsics ds5_device::get_extrinsics(int from_subdevice, rs2_stream from_stream, int to_subdevice, rs2_stream to_stream)
+    rs2_extrinsics ds5_device::get_extrinsics(size_t from_subdevice, rs2_stream from_stream, size_t to_subdevice, rs2_stream to_stream) const
     {
         auto is_left = [](rs2_stream s) { return s == RS2_STREAM_INFRARED || s == RS2_STREAM_DEPTH; };
 

@@ -580,6 +580,7 @@ namespace rs2
         syncer(std::shared_ptr<rs2_syncer> s) : _syncer(s) {}
     };
 
+
     class device
     {
     public:
@@ -934,7 +935,7 @@ namespace rs2
         {
             rs2_error* e = nullptr;
             std::shared_ptr<rs2_syncer> s(
-                rs2_create_syncer(_dev.get(), &e),
+                rs2_create_syncer(&e),
                 rs2_delete_syncer);
             error::handle(e);
             return syncer(s);
@@ -1036,6 +1037,37 @@ namespace rs2
     };
 
 
+    class roi_device
+    {
+    private:
+        device m_device;
+    public:
+        roi_device(device sensor)
+        {
+            rs2_error* e = nullptr;
+            if(rs2_is_sensor(sensor.get(), RS2_EXTENSION_TYPE_ROI, &e) == 0)
+            {
+                throw std::invalid_argument("Sensor does not support ROI extension");
+            }
+            error::handle(e);
+            m_device = sensor;
+        }
+
+        virtual void set(const region_of_interest& roi)
+        {
+            rs2_error* e = nullptr;
+            rs2_set_region_of_interest(m_device.get(), roi.min_x,roi.min_y,roi.max_x,roi.max_y, &e);
+            error::handle(e);
+        }
+        virtual region_of_interest get() const
+        {
+            region_of_interest roi {};
+            rs2_error* e = nullptr;
+            rs2_get_region_of_interest(m_device.get(), &roi.min_x,&roi.min_y,&roi.max_x,&roi.max_y, &e);
+            error::handle(e);
+            return roi;
+        }
+    };
 
     inline bool operator==(const device& a, const device& b)
     {

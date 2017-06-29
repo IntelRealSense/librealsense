@@ -51,8 +51,7 @@ namespace rsimpl2
           _metadata_parsers(std::make_shared<metadata_parser_map>()),
           _on_before_frame_callback(nullptr)
     {
-        _options[RS2_OPTION_FRAMES_QUEUE_SIZE] = std::make_shared<frame_queue_size>(&_max_publish_list_size,
-                                                                                    option_range{ 0, 32, 1, 16 });
+        register_option(RS2_OPTION_FRAMES_QUEUE_SIZE, std::make_shared<frame_queue_size>(&_max_publish_list_size, option_range{ 0, 32, 1, 16 }));
 
         register_metadata(RS2_FRAME_METADATA_TIME_OF_ARRIVAL, std::make_shared<rsimpl2::md_time_of_arrival_parser>());
     }
@@ -516,7 +515,7 @@ namespace rsimpl2
         if (_user_count.fetch_add(-1) == 1) _device->set_power_state(uvc::D3);
     }
 
-    option& sensor_base::get_option(rs2_option id)
+    option& options_container::get_option(rs2_option id)
     {
         auto it = _options.find(id);
         if (it == _options.end())
@@ -528,7 +527,7 @@ namespace rsimpl2
         return *it->second;
     }
 
-    const option& sensor_base::get_option(rs2_option id) const
+    const option& options_container::get_option(rs2_option id) const
     {
         auto it = _options.find(id);
         if (it == _options.end())
@@ -540,20 +539,20 @@ namespace rsimpl2
         return *it->second;
     }
 
-    bool sensor_base::supports_option(rs2_option id) const
+    bool options_container::supports_option(rs2_option id) const
     {
         auto it = _options.find(id);
         if (it == _options.end()) return false;
         return it->second->is_enabled();
     }
 
-    bool sensor_base::supports_info(rs2_camera_info info) const
+    bool info_container::supports_info(rs2_camera_info info) const
     {
         auto it = _camera_info.find(info);
         return it != _camera_info.end();
     }
 
-    void sensor_base::register_info(rs2_camera_info info, const std::string& val)
+    void info_container::register_info(rs2_camera_info info, const std::string& val)
     {
         if (supports_info(info) && (get_info(info) != val)) // Append existing infos
         {
@@ -565,7 +564,7 @@ namespace rsimpl2
         }
     }
 
-    const std::string& sensor_base::get_info(rs2_camera_info info) const
+    const std::string& info_container::get_info(rs2_camera_info info) const
     {
         auto it = _camera_info.find(info);
         if (it == _camera_info.end())
@@ -574,7 +573,7 @@ namespace rsimpl2
         return it->second;
     }
 
-    void sensor_base::register_option(rs2_option id, std::shared_ptr<option> option)
+    void options_container::register_option(rs2_option id, std::shared_ptr<option> option)
     {
         _options[id] = option;
     }

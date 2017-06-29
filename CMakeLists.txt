@@ -137,6 +137,13 @@ set(REALSENSE_HPP
     include/librealsense/rsutil2.hpp
 
     src/core/streaming.h
+	src/core/debug.h
+	src/core/roi.h
+	src/core/motion.h
+	src/core/video.h
+	src/core/options.h
+    src/core/info.h
+    src/core/extension.h
     src/archive.h
     src/concurrency.h
     src/context.h
@@ -251,6 +258,7 @@ if(WIN32)
         src/ds5/ds5-options.h
         src/ds5/ds5-private.h
         src/ds5/ds5-timestamp.h
+		src/ds5/ds5-factory.h
         src/ds5/ds5-active.h
         src/ds5/ds5-motion.h
         src/ds5/ds5-rolling-shutter.h
@@ -261,6 +269,12 @@ if(WIN32)
 		
 	source_group("Header Files\\Core" FILES
         src/core/streaming.h
+		src/core/debug.h
+		src/core/roi.h
+		src/core/video.h
+		src/core/motion.h
+		src/core/info.h
+		src/core/options.h
         )
 
     source_group("Header Files\\Logging" FILES

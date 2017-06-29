@@ -11,6 +11,9 @@
 #include "algo.h"
 #include "types.h"
 #include "sync.h"
+#include "core/debug.h"
+#include "core/motion.h"
+#include "core/extension.h"
 
 ////////////////////////
 // API implementation //
@@ -38,7 +41,7 @@ struct rs2_device
 {
     std::shared_ptr<rsimpl2::context> ctx;
     std::shared_ptr<rsimpl2::device_info> info;
-    std::shared_ptr<rsimpl2::device> device;
+    std::shared_ptr<rsimpl2::device_interface> device;
     unsigned int subdevice;
 };
 
@@ -126,18 +129,18 @@ namespace rsimpl2
     void notifications_proccessor::raise_notification(const notification n)
     {
         _dispatcher.invoke([this, n](dispatcher::cancellable_timer ct)
-        {
-            std::lock_guard<std::mutex> lock(_callback_mutex);
-            rs2_notification noti(&n);
-            if (_callback)_callback->on_notification(&noti);
-            else
-            {
+                           {
+                               std::lock_guard<std::mutex> lock(_callback_mutex);
+                               rs2_notification noti(&n);
+                               if (_callback)_callback->on_notification(&noti);
+                               else
+                               {
 #ifdef DEBUG
 
 #endif // !DEBUG
 
-            }
-        });
+                               }
+                           });
     }
 
 }
@@ -148,7 +151,21 @@ namespace rsimpl2
 #define VALIDATE_ENUM(ARG) if(!rsimpl2::is_valid(ARG)) { std::ostringstream ss; ss << "invalid enum value for argument \"" #ARG "\""; throw rsimpl2::invalid_value_exception(ss.str()); }
 #define VALIDATE_RANGE(ARG, MIN, MAX) if((ARG) < (MIN) || (ARG) > (MAX)) { std::ostringstream ss; ss << "out of range value for argument \"" #ARG "\""; throw rsimpl2::invalid_value_exception(ss.str()); }
 #define VALIDATE_LE(ARG, MAX) if((ARG) > (MAX)) { std::ostringstream ss; ss << "out of range value for argument \"" #ARG "\""; throw std::runtime_error(ss.str()); }
-#define VALIDATE_NATIVE_STREAM(ARG) VALIDATE_ENUM(ARG); if(ARG >= RS2_STREAM_NATIVE_COUNT) { std::ostringstream ss; ss << "argument \"" #ARG "\" must be a native stream"; throw rsimpl2::wrong_value_exception(ss.str()); }
+//#define VALIDATE_NATIVE_STREAM(ARG) VALIDATE_ENUM(ARG); if(ARG >= RS2_STREAM_NATIVE_COUNT) { std::ostringstream ss; ss << "argument \"" #ARG "\" must be a native stream"; throw rsimpl2::wrong_value_exception(ss.str()); }
+#define VALIDATE_INTERFACE_NO_THROW(X, T) (dynamic_cast<T*>(&(X))  || dynamic_cast<rsimpl2::extension_interface*>(&(X)))
+#define VALIDATE_INTERFACE(X,T)                                                                \
+    ([&]() {                                                                                   \
+        auto p = dynamic_cast<T*>(&(X));                                                       \
+        if (!dynamic_cast<T*>(&(X)))                                                           \
+        {                                                                                      \
+            auto ext = dynamic_cast<rsimpl2::extension_interface*>(&(X));                      \
+            if (!ext)                                                                          \
+                throw std::runtime_error("Object does not support \"" #T "\" interface! " );   \
+            else                                                                               \
+                return dynamic_cast<T*>(ext);                                                  \
+        }                                                                                      \
+        return p;                                                                              \
+    })()
 
 int major(int version)
 {
@@ -172,8 +189,8 @@ std::string api_version_to_string(int version)
 void report_version_mismatch(int runtime, int compiletime)
 {
     throw rsimpl2::invalid_value_exception(rsimpl2::to_string() << "API version mismatch: librealsense.so was compiled with API version "
-        << api_version_to_string(runtime) << " but the application was compiled with "
-        << api_version_to_string(compiletime) << "! Make sure correct version of the library is installed (make install)");
+                                                                << api_version_to_string(runtime) << " but the application was compiled with "
+                                                                << api_version_to_string(compiletime) << "! Make sure correct version of the library is installed (make install)");
 }
 
 void verify_version_compatibility(int api_version)
@@ -296,9 +313,9 @@ rs2_device* rs2_create_device(const rs2_device_list* list, int index, rs2_error*
     VALIDATE_RANGE(index, 0, (int)list->list.size() - 1);
 
     return new rs2_device{ list->ctx,
-                          list->list[index].info,
-                          list->list[index].info->get_device(),
-                          list->list[index].subdevice
+                           list->list[index].info,
+                           list->list[index].info->get_device(),
+                           list->list[index].subdevice
     };
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, list, index)
@@ -353,9 +370,12 @@ NOEXCEPT_RETURN(, list)
 rs2_raw_data_buffer* rs2_send_and_receive_raw_data(rs2_device* device, void* raw_data_to_send, unsigned size_of_raw_data_to_send, rs2_error** error) try
 {
     VALIDATE_NOT_NULL(device);
+
+    auto debug_interface = VALIDATE_INTERFACE(*device->device, rsimpl2::debug_interface);
+
     auto raw_data_buffer = static_cast<uint8_t*>(raw_data_to_send);
     std::vector<uint8_t> buffer_to_send(raw_data_buffer, raw_data_buffer + size_of_raw_data_to_send);
-    auto ret_data = device->device->send_receive_raw_data(buffer_to_send);
+    auto ret_data = debug_interface->send_receive_raw_data(buffer_to_send);
     return new rs2_raw_data_buffer{ ret_data };
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, device)
@@ -382,7 +402,7 @@ void rs2_delete_raw_data(rs2_raw_data_buffer* buffer) try
 NOEXCEPT_RETURN(, buffer)
 
 void rs2_open(rs2_device* device, rs2_stream stream,
-    int width, int height, int fps, rs2_format format, rs2_error** error) try
+              int width, int height, int fps, rs2_format format, rs2_error** error) try
 {
     VALIDATE_NOT_NULL(device);
     VALIDATE_ENUM(format);
@@ -390,14 +410,14 @@ void rs2_open(rs2_device* device, rs2_stream stream,
 
     std::vector<rsimpl2::stream_profile> request;
     request.push_back({ stream, static_cast<uint32_t>(width),
-            static_cast<uint32_t>(height), static_cast<uint32_t>(fps), format });
+                        static_cast<uint32_t>(height), static_cast<uint32_t>(fps), format });
     device->device->get_sensor(device->subdevice).open(request);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device, stream, width, height, fps, format)
 
 void rs2_open_multiple(rs2_device* device,
-    const rs2_stream* stream, const int* width, const int* height, const int* fps,
-    const rs2_format* format, int count, rs2_error** error) try
+                       const rs2_stream* stream, const int* width, const int* height, const int* fps,
+                       const rs2_format* format, int count, rs2_error** error) try
 {
     VALIDATE_NOT_NULL(device);
     VALIDATE_NOT_NULL(stream);
@@ -456,7 +476,7 @@ int rs2_supports_option(const rs2_device* device, rs2_option option, rs2_error**
 HANDLE_EXCEPTIONS_AND_RETURN(0, device, option)
 
 void rs2_get_option_range(const rs2_device* device, rs2_option option,
-    float* min, float* max, float* step, float* def, rs2_error** error) try
+                          float* min, float* max, float* step, float* def, rs2_error** error) try
 {
     VALIDATE_NOT_NULL(device);
     VALIDATE_ENUM(option);
@@ -784,8 +804,8 @@ void rs2_flush_queue(rs2_frame_queue* queue, rs2_error** error) try
 HANDLE_EXCEPTIONS_AND_RETURN(, queue)
 
 void rs2_get_extrinsics(const rs2_device * from_dev, rs2_stream from_stream,
-    const rs2_device * to_dev, rs2_stream to_stream,
-    rs2_extrinsics * extrin, rs2_error ** error) try
+                        const rs2_device * to_dev, rs2_stream to_stream,
+                        rs2_extrinsics * extrin, rs2_error ** error) try
 {
     VALIDATE_NOT_NULL(from_dev);
     VALIDATE_NOT_NULL(to_dev);
@@ -806,19 +826,23 @@ void rs2_get_motion_intrinsics(const rs2_device * device, rs2_stream stream, rs2
     VALIDATE_NOT_NULL(intrinsics);
     VALIDATE_ENUM(stream);
 
-    *intrinsics = device->device->get_motion_intrinsics(stream);
+    auto motion = VALIDATE_INTERFACE(device->device->get_sensor(device->subdevice), rsimpl2::motion_sensor_interface);
+    *intrinsics = motion->get_motion_intrinsics(stream);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device, stream, intrinsics)
 
 void rs2_get_stream_intrinsics(const rs2_device * device, rs2_stream stream, int width, int height, int fps,
-    rs2_format format, rs2_intrinsics * intrinsics, rs2_error ** error) try
+                               rs2_format format, rs2_intrinsics * intrinsics, rs2_error ** error) try
 {
     VALIDATE_NOT_NULL(device);
     VALIDATE_ENUM(stream);
     VALIDATE_ENUM(format);
     VALIDATE_NOT_NULL(intrinsics);
+
+    auto video = VALIDATE_INTERFACE(device->device->get_sensor(device->subdevice), rsimpl2::video_sensor_interface);
+
     // cast because i've been getting errors. (int->uint32_t requires narrowing conversion)
-    *intrinsics = device->device->get_intrinsics(device->subdevice, { stream, uint32_t(width), uint32_t(height), uint32_t(fps), format });
+    *intrinsics = video->get_intrinsics({ stream, uint32_t(width), uint32_t(height), uint32_t(fps), format });
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device, intrinsics)
 
@@ -870,7 +894,9 @@ void rs2_set_region_of_interest(const rs2_device* device, int min_x, int min_y, 
     VALIDATE_LE(0, min_x);
     VALIDATE_LE(0, min_y);
 
-    device->device->get_sensor(device->subdevice).get_roi_method().set({ min_x, min_y, max_x, max_y });
+    auto roi = VALIDATE_INTERFACE(device->device->get_sensor(device->subdevice), rsimpl2::roi_sensor_interface);
+
+    roi->get_roi_method().set({ min_x, min_y, max_x, max_y });
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, min_x, min_y, max_x, max_y)
 
@@ -882,21 +908,22 @@ void rs2_get_region_of_interest(const rs2_device* device, int* min_x, int* min_y
     VALIDATE_NOT_NULL(max_x);
     VALIDATE_NOT_NULL(max_y);
 
-    auto roi = device->device->get_sensor(device->subdevice).get_roi_method().get();
+    auto roi = VALIDATE_INTERFACE(device->device->get_sensor(device->subdevice), rsimpl2::roi_sensor_interface);
 
-    *min_x = roi.min_x;
-    *min_y = roi.min_y;
-    *max_x = roi.max_x;
-    *max_y = roi.max_y;
+    auto rect = roi->get_roi_method().get();
+
+    *min_x = rect.min_x;
+    *min_y = rect.min_y;
+    *max_x = rect.max_x;
+    *max_y = rect.max_y;
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, min_x, min_y, max_x, max_y)
 
-rs2_syncer* rs2_create_syncer(const rs2_device* dev, rs2_error** error) try
+rs2_syncer* rs2_create_syncer(rs2_error** error) try
 {
-    VALIDATE_NOT_NULL(dev);
-    return new rs2_syncer{ dev->device->create_syncer() };
+    return new rs2_syncer{ std::make_shared<rsimpl2::syncer>() };
 }
-HANDLE_EXCEPTIONS_AND_RETURN(nullptr, dev)
+catch (...) { rsimpl2::translate_exception(__FUNCTION__, "", error); return nullptr; }
 
 void rs2_start_syncer(const rs2_device* device, rs2_syncer* syncer, rs2_error** error) try
 {
@@ -994,3 +1021,27 @@ void rs2_log_to_file(rs2_log_severity min_severity, const char * file_path, rs2_
     rsimpl2::log_to_file(min_severity, file_path);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, min_severity, file_path)
+
+int rs2_is_sensor(const rs2_device* device, rs2_extension_type extension_type, rs2_error ** error) try
+{
+    VALIDATE_NOT_NULL(device);
+    VALIDATE_ENUM(extension_type);
+    auto& sensor = device->device->get_sensor(device->subdevice);
+    switch (extension_type)
+    {
+
+        case RS2_EXTENSION_TYPE_DEBUG:     return VALIDATE_INTERFACE_NO_THROW(sensor, rsimpl2::debug_interface);
+        case RS2_EXTENSION_TYPE_INFO:      return VALIDATE_INTERFACE_NO_THROW(sensor, rsimpl2::info_interface);
+        case RS2_EXTENSION_TYPE_MOTION:    return VALIDATE_INTERFACE_NO_THROW(sensor, rsimpl2::motion_sensor_interface);
+        case RS2_EXTENSION_TYPE_OPTIONS:   return VALIDATE_INTERFACE_NO_THROW(sensor, rsimpl2::options_interface);
+        case RS2_EXTENSION_TYPE_VIDEO:     return VALIDATE_INTERFACE_NO_THROW(sensor, rsimpl2::video_sensor_interface);
+        case RS2_EXTENSION_TYPE_ROI:       return VALIDATE_INTERFACE_NO_THROW(sensor, rsimpl2::roi_sensor_interface);
+        default:
+            return 0;
+    }
+}
+HANDLE_EXCEPTIONS_AND_RETURN(0, device, extension_type)
+
+//TODO: int rs2_is_frame(const rs2_frame* frame, rs2_extension_type extension_type, rs2_error ** error)
+//TODO: int rs2_is_device(const rs2_device* frame, rs2_extension_type extension_type, rs2_error ** error)
+

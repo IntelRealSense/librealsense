@@ -4,6 +4,8 @@
 #pragma once
 
 #include <vector>
+#include <mutex>
+#include <string>
 
 #include "device.h"
 #include "context.h"
@@ -11,8 +13,8 @@
 #include "ivcam-private.h"
 #include "hw-monitor.h"
 #include "image.h"
-#include <mutex>
-#include <string>
+
+#include "core/debug.h"
 
 namespace rsimpl2
 {
@@ -77,7 +79,7 @@ namespace rsimpl2
     class sr300_info : public device_info
     {
     public:
-        std::shared_ptr<device> create(const uvc::backend& backend) const override;
+        std::shared_ptr<device_interface> create(const uvc::backend& backend) const override;
 
         sr300_info(std::shared_ptr<uvc::backend> backend,
             uvc::uvc_device_info color,
@@ -107,7 +109,7 @@ namespace rsimpl2
             std::vector<uvc::uvc_device_info>& uvc,
             std::vector<uvc::usb_device_info>& usb);
 
-        uvc::devices_data get_device_data()const
+        uvc::devices_data get_device_data() const override
         {
             return uvc::devices_data({ _color, _depth }, { _hwm });
         }
@@ -118,7 +120,7 @@ namespace rsimpl2
         uvc::usb_device_info _hwm;
     };
 
-    class sr300_camera final : public device
+    class sr300_camera final : public device, public debug_interface
     {
     public:
         class preset_option : public librealsense_option
@@ -159,10 +161,44 @@ namespace rsimpl2
             sr300_camera& _owner;
         };
 
-        static std::shared_ptr<uvc_sensor> create_color_device(const uvc::backend& backend,
-                                                                 const uvc::uvc_device_info& color)
+        class sr300_color_sensor : public uvc_sensor, public video_sensor_interface
         {
-            auto color_ep = std::make_shared<uvc_sensor>(backend.create_uvc_device(color),
+        public:
+            explicit sr300_color_sensor(const sr300_camera* owner, std::shared_ptr<uvc::uvc_device> uvc_device,
+                std::unique_ptr<frame_timestamp_reader> timestamp_reader,
+                std::shared_ptr<uvc::time_service> ts)
+                : uvc_sensor(uvc_device, move(timestamp_reader), ts), _owner(owner)
+            {}
+
+            rs2_intrinsics get_intrinsics(const stream_profile& profile) const override
+            {
+                return make_color_intrinsics(_owner->get_calibration(), { int(profile.width), int(profile.height) });
+            }
+        private:
+            const sr300_camera* _owner;
+        };
+
+        class sr300_depth_sensor : public uvc_sensor, public video_sensor_interface
+        {
+        public:
+            explicit sr300_depth_sensor(const sr300_camera* owner, std::shared_ptr<uvc::uvc_device> uvc_device,
+                std::unique_ptr<frame_timestamp_reader> timestamp_reader,
+                std::shared_ptr<uvc::time_service> ts)
+                : uvc_sensor(uvc_device, move(timestamp_reader), ts), _owner(owner)
+            {}
+
+            rs2_intrinsics get_intrinsics(const stream_profile& profile) const override
+            {
+                return make_depth_intrinsics(_owner->get_calibration(), { int(profile.width), int(profile.height) });
+            }
+        private:
+            const sr300_camera* _owner;
+        };
+
+        std::shared_ptr<uvc_sensor> create_color_device(const uvc::backend& backend,
+                                                        const uvc::uvc_device_info& color)
+        {
+            auto color_ep = std::make_shared<sr300_color_sensor>(this, backend.create_uvc_device(color),
                                                            std::unique_ptr<frame_timestamp_reader>(new sr300_timestamp_reader()),
                                                            backend.create_time_service());
             color_ep->register_pixel_format(pf_yuy2);
@@ -188,12 +224,12 @@ namespace rsimpl2
         }
 
         std::shared_ptr<uvc_sensor> create_depth_device(const uvc::backend& backend,
-                                                          const uvc::uvc_device_info& depth)
+                                                        const uvc::uvc_device_info& depth)
         {
             using namespace ivcam;
 
-            // create uvc-sensor_base from backend uvc-device
-            auto depth_ep = std::make_shared<uvc_sensor>(backend.create_uvc_device(depth),
+            // create uvc-endpoint from backend uvc-device
+            auto depth_ep = std::make_shared<sr300_depth_sensor>(this, backend.create_uvc_device(depth),
                                                            std::unique_ptr<frame_timestamp_reader>(new sr300_timestamp_reader()),
                                                            backend.create_time_service());
             depth_ep->register_xu(depth_xu); // make sure the XU is initialized everytime we power the camera
@@ -228,7 +264,8 @@ namespace rsimpl2
             force_hardware_reset();
         }
 
-        uvc_sensor& get_depth_sensor() { return static_cast<uvc_sensor&>(get_sensor(_depth_device_idx)); }
+        uvc_sensor& get_depth_sensor() { return dynamic_cast<uvc_sensor&>(get_sensor(_depth_device_idx)); }
+
 
         sr300_camera(const uvc::backend& backend,
             const uvc::uvc_device_info& color,
@@ -340,21 +377,6 @@ namespace rsimpl2
                 //if (arr_values[preset][0] == 1)
                     //set_auto_range(ar_requests[preset]);
             }
-        }
-
-        // NOTE: it is the user's responsibility to make sure the profile makes sense on the given subdevice. UB otherwise.
-        rs2_intrinsics get_intrinsics(unsigned int subdevice, const stream_profile& profile) const override
-        {
-            if (subdevice >= get_sensors_count())
-                throw rsimpl2::invalid_value_exception("Requested subdevice is not supported!");
-
-            if (subdevice == _color_device_idx)
-                return make_color_intrinsics(get_calibration(), { int(profile.width), int(profile.height) });
-
-            if (subdevice == _depth_device_idx)
-                return make_depth_intrinsics(get_calibration(), { int(profile.width), int(profile.height) });
-
-            throw rsimpl2::invalid_value_exception(to_string() << "Intrinsic is not implemented for subdevice num " << subdevice);
         }
 
     private:

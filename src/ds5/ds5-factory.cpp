@@ -16,6 +16,10 @@
 #include "ds5-private.h"
 #include "ds5-options.h"
 #include "ds5-timestamp.h"
+#include "ds5-rolling-shutter.h"
+#include "ds5-active.h"
+#include "ds5-color.h"
+#include "ds5-motion.h"
 
 namespace rsimpl2
 {
@@ -129,7 +133,7 @@ namespace rsimpl2
               ds5_motion(backend, dev_info, hwm_device, hid_info) {}
     };
 
-    std::shared_ptr<rsimpl2::device> ds5_info::create(const uvc::backend& backend) const
+    std::shared_ptr<device_interface> ds5_info::create(const uvc::backend& backend) const
     {
         using namespace ds;
 

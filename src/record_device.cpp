@@ -120,7 +120,7 @@ rsimpl2::record_sensor::~record_sensor()
 
 }
 rsimpl2::record_sensor::record_sensor(sensor_interface& sensor,
-                                      rsimpl2::record_sensor::ziv_frame_callback_t on_frame):
+                                      rsimpl2::record_sensor::frame_interface_callback_t on_frame):
     m_sensor(sensor),
     m_record_callback(on_frame),
     m_is_pause(false),
@@ -160,43 +160,50 @@ bool rsimpl2::record_sensor::supports_option(rs2_option id) const
 {
     m_sensor.supports_option(id);
 }
-rsimpl2::region_of_interest_method& rsimpl2::record_sensor::get_roi_method() const
-{
-    m_sensor.get_roi_method();
-}
-void rsimpl2::record_sensor::set_roi_method(std::shared_ptr<rsimpl2::region_of_interest_method> roi_method)
-{
-    m_sensor.set_roi_method(roi_method);
-}
+
 void rsimpl2::record_sensor::register_notifications_callback(rsimpl2::notifications_callback_ptr callback)
 {
     m_sensor.register_notifications_callback(std::move(callback));
 }
-rsimpl2::pose rsimpl2::record_sensor::get_pose() const
-{
-    m_sensor.get_pose();
-}
 
+class my_frame_callback : public rs2_frame_callback
+{
+    std::function<void(rs2_frame*)> on_frame_function;
+public:
+    explicit my_frame_callback(std::function<void(rs2_frame*)> on_frame) : on_frame_function(on_frame) {}
+
+    void on_frame(rs2_frame * fref) override
+    {
+        on_frame_function(fref);
+    }
+
+    void release() override { delete this; }
+};
 void rsimpl2::record_sensor::start(frame_callback_ptr callback)
 {
     if(m_frame_callback != nullptr)
     {
         return; //already started
     }
-    auto record_cb = [this, callback](rs2::frame f)
+
+    frame_callback f;
+    auto record_cb = [this, callback](rs2_frame* f)
     {
-        //TODO: how to pass same frame (when type is "frame")
-        auto data = std::make_shared<mock_frame>(m_sensor, f.get_data(), static_cast<size_t>(f.get_stride_in_bytes()*f.get_height()));
-        m_record_callback(data);
-        //callback->on_frame(f.);
+        m_record_callback(std::make_shared<mock_frame>(m_sensor, f->get()));
+        callback->on_frame(f);
     };
-    m_frame_callback = std::make_shared<rs2::frame_callback<decltype(record_cb)>>(record_cb);
-    m_sensor.start(std::move(callback));
+    m_frame_callback = std::make_shared<my_frame_callback>(record_cb);
+
+    m_sensor.start(m_frame_callback);
 }
 void rsimpl2::record_sensor::stop()
 {
     m_sensor.stop();
     m_frame_callback.reset();
+}
+bool rsimpl2::record_sensor::is_streaming() const
+{
+    return m_sensor.is_streaming();
 }
 
 double rsimpl2::mock_frame::get_timestamp() const
@@ -213,20 +220,19 @@ unsigned int rsimpl2::mock_frame::get_stream_index() const
 }
 const uint8_t* rsimpl2::mock_frame::get_data() const
 {
-    return static_cast<const uint8_t*>(m_data);
+    return m_frame->data.data();
 }
 size_t rsimpl2::mock_frame::get_data_size() const
 {
-    return m_size;
+    return m_frame->data.size();
 }
 const rsimpl2::sensor_interface& rsimpl2::mock_frame::get_sensor() const
 {
     return m_sensor;
 }
-rsimpl2::mock_frame::mock_frame(rsimpl2::sensor_interface& s, const void* data, size_t size) :
+rsimpl2::mock_frame::mock_frame(rsimpl2::sensor_interface& s, frame* f) :
     m_sensor(s),
-    m_data(data),
-    m_size(size)
+    m_frame(f)
 {
 
 }

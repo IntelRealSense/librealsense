@@ -16,7 +16,6 @@ using namespace std;
 int main(int argc, char * argv[])
 {
     context ctx;
-    
     util::device_hub hub(ctx);
 
     auto finished = false;
