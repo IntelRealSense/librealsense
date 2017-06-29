@@ -31,7 +31,11 @@ public:
         std::vector<rs2::stream_profile> profiles;
         std::transform(requests.begin(),requests.end(), std::back_inserter(profiles),[](const rsimpl2::stream_profile& p)
         {
-            return rs2::stream_profile{ p.stream, p.width, p.height, p.fps, p.format};
+            return rs2::stream_profile{ p.stream,
+                                        static_cast<int>(p.width),
+                                        static_cast<int>(p.height),
+                                        static_cast<int>(p.fps),
+                                        p.format};
         } );
         m_sensor.open(profiles);
     }
@@ -98,7 +102,7 @@ public:
     }
     const string& get_info(rs2_camera_info info) const override
     {
-        return m_sensors[0].get_camera_info(info);
+        throw std::runtime_error("Not Implementer: get_info() const ");
     }
     bool supports_info(rs2_camera_info info) const override
     {
