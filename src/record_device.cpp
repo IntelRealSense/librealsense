@@ -5,7 +5,7 @@
 #include "record_device.h"
 
 rsimpl2::record_device::record_device(std::shared_ptr<rsimpl2::device_interface> device,
-                                      std::shared_ptr<rsimpl2::device_serializer> serializer):
+                                      std::shared_ptr<rsimpl2::device_serializer::writer> serializer):
     m_write_thread([](){return std::make_shared<dispatcher>(std::numeric_limits<unsigned int>::max());}),
     m_is_first_event(true),
     m_is_recording(true),
@@ -107,13 +107,29 @@ void rsimpl2::record_device::write_data(size_t sensor_index, std::shared_ptr<fra
                                      m_cached_data_size -= data_size;
                                  });
 }
-
-
-
-
-
-
-
+const std::string& rsimpl2::record_device::get_info(rs2_camera_info info) const
+{
+    throw not_implemented_exception(__FUNCTION__);
+}
+bool rsimpl2::record_device::supports_info(rs2_camera_info info) const
+{
+    throw not_implemented_exception(__FUNCTION__);
+}
+const rsimpl2::sensor_interface& rsimpl2::record_device::get_sensor(size_t i) const
+{
+    throw not_implemented_exception(__FUNCTION__);
+}
+void rsimpl2::record_device::hardware_reset()
+{
+    throw not_implemented_exception(__FUNCTION__);
+}
+rs2_extrinsics rsimpl2::record_device::get_extrinsics(size_t from,
+                                                      rs2_stream from_stream,
+                                                      size_t to,
+                                                      rs2_stream to_stream) const
+{
+    throw not_implemented_exception(__FUNCTION__);
+}
 
 rsimpl2::record_sensor::~record_sensor()
 {
@@ -205,6 +221,10 @@ bool rsimpl2::record_sensor::is_streaming() const
 {
     return m_sensor.is_streaming();
 }
+void* rsimpl2::record_sensor::extend_to(rs2_extension_type extension_type)
+{
+    throw not_implemented_exception(__FUNCTION__);
+}
 
 double rsimpl2::mock_frame::get_timestamp() const
 {
@@ -233,6 +253,53 @@ const rsimpl2::sensor_interface& rsimpl2::mock_frame::get_sensor() const
 rsimpl2::mock_frame::mock_frame(rsimpl2::sensor_interface& s, frame* f) :
     m_sensor(s),
     m_frame(f)
+{
+
+}
+rsimpl2::ros_device_serializer_impl::ros_device_serializer_impl(std::string file):
+    m_file(file)
+{
+
+}
+
+std::shared_ptr<rsimpl2::device_serializer::writer> rsimpl2::ros_device_serializer_impl::get_writer()
+{
+    throw not_implemented_exception(__FUNCTION__);
+}
+std::shared_ptr<rsimpl2::device_serializer::writer> rsimpl2::ros_device_serializer_impl::get_reader()
+{
+    throw not_implemented_exception(__FUNCTION__);
+}
+
+void rsimpl2::ros_device_serializer_impl::ros_writer::write_device_description(const rsimpl2::device_metadata& device_description)
+{
+    throw not_implemented_exception(__FUNCTION__);
+}
+void rsimpl2::ros_device_serializer_impl::ros_writer::write(rsimpl2::device_serializer::storage_data data)
+{
+    throw not_implemented_exception(__FUNCTION__);
+}
+void rsimpl2::ros_device_serializer_impl::ros_writer::reset()
+{
+    throw not_implemented_exception(__FUNCTION__);
+}
+rsimpl2::device_metadata rsimpl2::ros_device_serializer_impl::ros_reader::query_device_description()
+{
+    throw not_implemented_exception(__FUNCTION__);
+}
+rsimpl2::device_serializer::storage_data rsimpl2::ros_device_serializer_impl::ros_reader::read()
+{
+    throw not_implemented_exception(__FUNCTION__);
+}
+void rsimpl2::ros_device_serializer_impl::ros_reader::seek_to_time(std::chrono::nanoseconds time)
+{
+    throw not_implemented_exception(__FUNCTION__);
+}
+std::chrono::nanoseconds rsimpl2::ros_device_serializer_impl::ros_reader::query_duration() const
+{
+    throw not_implemented_exception(__FUNCTION__);
+}
+void rsimpl2::ros_device_serializer_impl::ros_reader::reset()
 {
 
 }

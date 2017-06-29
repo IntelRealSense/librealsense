@@ -115,6 +115,14 @@ else()
         FOLDER Examples
     )
 
+    # record-sample
+    add_executable(rs-record cpp-record.cpp)
+    target_link_libraries(rs-record ${DEPENDENCIES})
+    include_directories(rs-record third_party/tclap/include)
+    set_target_properties (rs-record PROPERTIES
+            FOLDER Examples
+            )
+
     # terminal
     add_executable(rs-terminal cpp-terminal.cpp cpp-terminal-helpers/auto-complete/auto-complete.cpp cpp-terminal-helpers/auto-complete/auto-complete.h)
     if(WIN32)

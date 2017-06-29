@@ -2,7 +2,7 @@
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
 #pragma once
-#ifndef LIBREALSENSE_BACKEND_H
+#ifndef LIBREALSENSE_BACKEND_Hros_device_serializer
 #define LIBREALSENSE_BACKEND_H
 
 #include "../include/librealsense/rs2.h"     // Inherit all type definitions in the public API

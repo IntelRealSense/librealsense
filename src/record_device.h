@@ -64,11 +64,12 @@ namespace rsimpl2
         std::vector<std::shared_ptr<extension_metadata>> m_extensios;
         std::vector<sensor_metadata> m_sensors_metadata;
     };
+
+
     
     class device_serializer
     {
     public:
-
         struct storage_data
         {
             std::chrono::nanoseconds timestamp;
@@ -76,21 +77,58 @@ namespace rsimpl2
             std::shared_ptr<frame_interface> frame;
         };
 
+        class writer
+        {
+        public:
+            virtual void write_device_description(const device_metadata& device_description) = 0;
+            virtual void write(storage_data data) = 0;
+            virtual void reset() = 0;
+            virtual ~writer() = default;
+        };
+        class reader
+        {
+        public:
+            virtual device_metadata query_device_description() = 0;
+            virtual storage_data read() = 0;
+            virtual void seek_to_time(std::chrono::nanoseconds time) = 0;
+            virtual std::chrono::nanoseconds query_duration() const = 0;
+            virtual void reset() = 0;
+            virtual ~reader() = default;
+        };
+
+        virtual std::shared_ptr<writer> get_writer() = 0;
+        virtual std::shared_ptr<writer> get_reader() = 0;
         virtual ~device_serializer() = default;
-
-        virtual void reset() = 0;
-
-        virtual device_metadata query_device_description() = 0;
-        virtual void write_device_description(const device_metadata& device_description) = 0;
-
-        virtual storage_data read() = 0;
-        virtual void write(storage_data data) = 0;
-
-        virtual void seek_to_time(std::chrono::nanoseconds time) = 0;
-        virtual std::chrono::nanoseconds query_duration() const = 0;
     };
 
-    class record_sensor : public sensor_interface
+    class ros_device_serializer_impl : public device_serializer
+    {
+    public:
+        ros_device_serializer_impl(std::string file);
+
+        class ros_writer : public device_serializer::writer
+        {
+        public:
+            void write_device_description(const device_metadata& device_description) override;
+            void write(storage_data data) override;
+            void reset() override;
+        };
+        class ros_reader : public device_serializer::reader
+        {
+        public:
+            device_metadata query_device_description() override;
+            storage_data read() override;
+            void seek_to_time(std::chrono::nanoseconds time) override;
+            std::chrono::nanoseconds query_duration() const override;
+            void reset() override;
+        };
+        std::shared_ptr<writer> get_writer() override;
+        std::shared_ptr<writer> get_reader() override;
+
+    private:
+        std::string m_file;
+    };
+    class record_sensor : public sensor_interface, public extension_interface
     {
     public:
         using frame_interface_callback_t = std::function<void(std::shared_ptr<frame_interface>)>;
@@ -109,6 +147,7 @@ namespace rsimpl2
         void stop() override;
         bool is_streaming() const override;
         virtual ~record_sensor();
+        void* extend_to(rs2_extension_type extension_type) override;
     private:
         sensor_interface& m_sensor;
         frame_interface_callback_t m_record_callback;
@@ -117,15 +156,22 @@ namespace rsimpl2
         frame_callback_ptr m_frame_callback;
     };
 
-    class record_device : public device_interface, public extension_interface
+    class record_device : public device_interface
     {
     public:
-        record_device(std::shared_ptr<device_interface> device, std::shared_ptr<device_serializer> serializer);
+        record_device(std::shared_ptr<device_interface> device, std::shared_ptr<device_serializer::writer> serializer);
         virtual ~record_device();
 
         sensor_interface& get_sensor(size_t i) override;
         size_t get_sensors_count() const override;
-
+        const std::string& get_info(rs2_camera_info info) const override;
+        bool supports_info(rs2_camera_info info) const override;
+        const sensor_interface& get_sensor(size_t i) const override;
+        void hardware_reset() override;
+        rs2_extrinsics get_extrinsics(size_t from,
+                                      rs2_stream from_stream,
+                                      size_t to,
+                                      rs2_stream to_stream) const override;
         static const uint64_t MAX_CACHED_DATA_SIZE = 1920 * 1080 * 4 * 30; // ~1 sec of HD video @ 30 FPS
 
     private:
@@ -138,7 +184,7 @@ namespace rsimpl2
         std::vector<std::shared_ptr<record_sensor>> m_sensors;
 
         lazy<std::shared_ptr<dispatcher>> m_write_thread;
-        std::shared_ptr<device_serializer> m_writer;
+        std::shared_ptr<device_serializer::writer> m_writer;
 
         std::chrono::high_resolution_clock::time_point m_capture_time_base;
         std::chrono::high_resolution_clock::duration m_record_pause_time;

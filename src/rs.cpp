@@ -14,6 +14,7 @@
 #include "core/debug.h"
 #include "core/motion.h"
 #include "core/extension.h"
+#include "record_device.h"
 
 ////////////////////////
 // API implementation //
@@ -52,7 +53,15 @@ struct rs2_context
     std::shared_ptr<rsimpl2::context> ctx;
 };
 
+struct rs2_device_serializer
+{
+    std::shared_ptr<rsimpl2::device_serializer> device_serializer;
+};
 
+struct rs2_record_device
+{
+    std::shared_ptr<rsimpl2::record_device> record_device;
+};
 
 struct rs2_notification
 {
@@ -1045,3 +1054,33 @@ HANDLE_EXCEPTIONS_AND_RETURN(0, device, extension_type)
 //TODO: int rs2_is_frame(const rs2_frame* frame, rs2_extension_type extension_type, rs2_error ** error)
 //TODO: int rs2_is_device(const rs2_device* frame, rs2_extension_type extension_type, rs2_error ** error)
 
+rs2_device_serializer * rs2_create_device_serializer(const char* file, rs2_error ** error) try
+{
+    VALIDATE_NOT_NULL(file);
+
+    return new rs2_device_serializer{ std::make_shared<rsimpl2::ros_device_serializer_impl>(file) };
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, file)
+
+void rs2_delete_device_serializer(rs2_device_serializer * device_serializer) try
+{
+    VALIDATE_NOT_NULL(device_serializer);
+    delete device_serializer;
+}
+NOEXCEPT_RETURN(, device_serializer)
+
+
+rs2_record_device* rs2_create_record_device(const rs2_device* device, rs2_device_serializer* serializer, rs2_error** error) try
+{
+    VALIDATE_NOT_NULL(device);
+    VALIDATE_NOT_NULL(serializer);
+
+    return new rs2_record_device( { std::make_shared<rsimpl2::record_device>(device->device, serializer->device_serializer->get_writer()) });
+}NOEXCEPT_RETURN(nullptr, device, serializer)
+
+void rs2_delete_record_device(rs2_record_device* device) try
+{
+    VALIDATE_NOT_NULL(device);
+    delete device;
+}
+NOEXCEPT_RETURN(, device)
