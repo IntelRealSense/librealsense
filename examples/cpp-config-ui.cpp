@@ -498,13 +498,13 @@ public:
 
             if (stream_enabled[stream])
             {
-                if (show_single_fps_list) ImGui::SameLine();
+                if (show_single_fps_list && live_streams > 1) ImGui::SameLine();
 
                 label = to_string() << dev.get_camera_info(RS2_CAMERA_INFO_DEVICE_NAME)
                     << dev.get_camera_info(RS2_CAMERA_INFO_MODULE_NAME)
                     << " " << rs2_stream_to_string(stream) << " format";
 
-                if (!show_single_fps_list)
+                if (!show_single_fps_list && live_streams > 1)
                 {
                     ImGui::Text("Format:    ");
                     ImGui::SameLine();
@@ -824,6 +824,7 @@ public:
     float2 size;
     rs2_stream          stream;
     rs2_format format;
+    int color_map_idx = 0;
 
     std::chrono::high_resolution_clock::time_point last_frame;
     double              timestamp;
@@ -2094,8 +2095,8 @@ int main(int, char**) try
             if (stream_rect.contains(mouse.cursor))
             {
                 ImGui::PushStyleColor(ImGuiCol_WindowBg, { 0, 0, 0, 0 });
-                ImGui::SetNextWindowPos({ stream_rect.x, stream_rect.y + stream_rect.h - 25 });
-                ImGui::SetNextWindowSize({ stream_rect.w, 25 });
+                ImGui::SetNextWindowPos({ stream_rect.x, stream_rect.y + stream_rect.h - 30 });
+                ImGui::SetNextWindowSize({ stream_rect.w, 30 });
                 label = to_string() << "Footer for stream of " << rs2_stream_to_string(stream);
                 ImGui::Begin(label.c_str(), nullptr, flags);
 
@@ -2118,6 +2119,14 @@ int main(int, char**) try
 
                 label = ss.str();
                 ImGui::Text("%s", label.c_str());
+
+                ImGui::SameLine((int)ImGui::GetWindowWidth() - 150);
+                ImGui::PushItemWidth(-1);
+                if (ImGui::Combo("Color Map:", &model.streams[stream].color_map_idx, color_maps_names.data(), color_maps_names.size()))
+                {
+                    model.streams[stream].texture->cm = color_maps[model.streams[stream].color_map_idx];
+                }
+                ImGui::PopItemWidth();
 
                 ImGui::End();
                 ImGui::PopStyleColor();

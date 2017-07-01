@@ -768,7 +768,9 @@ namespace rsimpl2
     const native_pixel_format pf_rw10       = { 'pRAA', 1, 1,{  { false, &copy_raw10,                                    { { RS2_STREAM_COLOR,    RS2_FORMAT_RAW10 } } } } };
 
     const native_pixel_format pf_yuy2       = { 'YUY2', 1, 2,{  { true,  &unpack_yuy2<RS2_FORMAT_RGB8 >,                  { { RS2_STREAM_COLOR,    RS2_FORMAT_RGB8 } } },
-                                                                { false, &copy_pixels<2>,                                { { RS2_STREAM_COLOR,    RS2_FORMAT_YUYV } } },
+                                                                { true,  &unpack_yuy2<RS2_FORMAT_Y8>,                     { { RS2_STREAM_COLOR,    RS2_FORMAT_Y8 } } },
+                                                                { true,  &unpack_yuy2<RS2_FORMAT_Y16>,                    { { RS2_STREAM_COLOR,    RS2_FORMAT_Y16 } } },
+                                                                { false, &copy_pixels<2>,                                 { { RS2_STREAM_COLOR,    RS2_FORMAT_YUYV } } },
                                                                 { true,  &unpack_yuy2<RS2_FORMAT_RGBA8>,                  { { RS2_STREAM_COLOR,    RS2_FORMAT_RGBA8 } } },
                                                                 { true,  &unpack_yuy2<RS2_FORMAT_BGR8 >,                  { { RS2_STREAM_COLOR,    RS2_FORMAT_BGR8 } } },
                                                                 { true,  &unpack_yuy2<RS2_FORMAT_BGRA8>,                  { { RS2_STREAM_COLOR,    RS2_FORMAT_BGRA8 } } } } };

@@ -41,7 +41,10 @@ namespace rsimpl2
             throw not_implemented_exception(to_string() << __FUNCTION__ << " is not implemented for this device!");
         }
 
-        virtual void hardware_reset() = 0;
+        virtual void hardware_reset()
+        {
+            throw not_implemented_exception(to_string() << __FUNCTION__ << " is not implemented for this device!");
+        }
 
         virtual std::vector<uint8_t> send_receive_raw_data(const std::vector<uint8_t>& input)
         {

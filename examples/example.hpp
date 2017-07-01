@@ -14,36 +14,10 @@
 #include <iomanip>
 #define _USE_MATH_DEFINES
 #include <cmath>
+#include <map>
 
 namespace rs2
-
 {
-    inline void make_depth_histogram(uint8_t rgb_image[], const uint16_t depth_image[], int width, int height)
-    {
-        static uint32_t histogram[0x10000];
-        memset(histogram, 0, sizeof(histogram));
-
-        for (auto i = 0; i < width*height; ++i) ++histogram[depth_image[i]];
-        for (auto i = 2; i < 0x10000; ++i) histogram[i] += histogram[i - 1]; // Build a cumulative histogram for the indices in [1,0xFFFF]
-        for (auto i = 0; i < width*height; ++i)
-        {
-            if (auto d = depth_image[i])
-            {
-                int f = histogram[d] * 255 / histogram[0xFFFF]; // 0-255 based on histogram location
-                rgb_image[i * 3 + 0] = 255 - f;
-                rgb_image[i * 3 + 1] = 0;
-                rgb_image[i * 3 + 2] = f;
-            }
-            else
-            {
-                rgb_image[i * 3 + 0] = 20;
-                rgb_image[i * 3 + 1] = 5;
-                rgb_image[i * 3 + 2] = 0;
-            }
-        }
-    }
-
-
     inline float clamp(float x, float min, float max)
     {
         return std::max(std::min(max, x), min);
@@ -64,6 +38,21 @@ namespace rs2
     {
         float x, y, z;
     };
+
+    float3 operator*(const float3& a, float t)
+    {
+        return { a.x * t, a.y * t, a.z * t };
+    }
+
+    float3 operator+(const float3& a, const float3& b)
+    {
+        return { a.x + b.x, a.y + b.y, a.z + b.z };
+    }
+
+    inline float3 lerp(const float3& a, const float3& b, float t)
+    {
+        return b * t + a * (1 - t);
+    }
 
     struct float2
     {
@@ -136,6 +125,128 @@ namespace rs2
     // Image display code //
     ////////////////////////
 
+    class color_map
+    {
+    public:
+        color_map(std::map<float, float3> map, int steps = 64) : _map(map) 
+        {
+            initialize(steps);
+        }
+
+        color_map(const std::vector<float3>& values, int steps = 64)
+        {
+            for (int i = 0; i < values.size(); i++)
+            {
+                _map[(float)i/(values.size()-1)] = values[i];
+            }
+            initialize(steps);
+        }
+
+        color_map() {}
+
+        float3 get(float value) const
+        {
+            if (_max == _min) return *_data;
+            auto t = (value - _min) / (_max - _min);
+            return _data[(int)(t * (_size - 1))];
+        }
+
+        float min_key() const { return _min; }
+        float max_key() const { return _max; }
+
+    private:
+        float3 calc(float value) const
+        {
+            if (_map.size() == 0) return { value, value, value };
+            // if we have exactly this value in the map, just return it                                                                                                                                                                 
+            if( _map.find(value) != _map.end() ) return _map.at(value);
+            // if we are beyond the limits, return the first/last element                                                                                                                                                               
+            if( value < _map.begin()->first )   return _map.begin()->second;
+            if( value > _map.rbegin()->first )  return _map.rbegin()->second;
+
+            auto lower = _map.lower_bound(value) == _map.begin() ? _map.begin() : --(_map.lower_bound(value)) ;
+            auto upper = _map.upper_bound(value);
+
+            auto t = (value - lower->first) / (upper->first - lower->first);
+            auto c1 = lower->second;
+            auto c2 = upper->second;
+            return lerp(c1, c2, t);
+        }
+
+        void initialize(int steps)
+        {
+            if (_map.size() == 0) return;
+
+            _min = _map.begin()->first;
+            _max = _map.rbegin()->first;
+
+            _cache.resize(steps + 1);
+            for (int i = 0; i <= steps; i++)
+            {
+                auto t = (float)i/steps;
+                auto x = _min + t*(_max - _min);
+                _cache[i] = calc(x);
+            }
+
+            // Save size and data to avoid STL checks penalties in DEBUG
+            _size = _cache.size();
+            _data = _cache.data();
+        }
+
+        std::map<float, float3> _map;
+        std::vector<float3> _cache;
+        float _min, _max;
+        int _size; float3* _data;
+    };
+
+    static color_map classic {{
+        { 0, { 0, 0, 0 }},
+        { 0.0001f, { 0, 0, 255 }},
+        { 1, { 255, 0, 0 }},
+        }};
+
+    static color_map jet {{
+           { 0, 0, 255 },
+           { 0, 255, 255 },
+           { 255, 255, 0 },
+           { 255, 0, 0 },
+           { 50, 0, 0 },
+        }};
+
+    static color_map hsv {{
+           { 255, 0, 0 },
+           { 255, 255, 0 },
+           { 0, 255, 0 },
+           { 0, 255, 255 },
+           { 0, 0, 255 },
+           { 255, 0, 255 },
+           { 255, 0, 0 },
+        }};
+
+
+    static std::vector<color_map*> color_maps { &classic, &jet, &hsv };
+    static std::vector<const char*> color_maps_names { "Classic", "Jet", "HSV" };
+
+    inline void make_depth_histogram(const color_map& map, uint8_t rgb_image[], const uint16_t depth_image[], int width, int height)
+    {
+        static uint32_t histogram[0x10000];
+        memset(histogram, 0, sizeof(histogram));
+
+        for (auto i = 0; i < width*height; ++i) ++histogram[depth_image[i]];
+        for (auto i = 2; i < 0x10000; ++i) histogram[i] += histogram[i - 1]; // Build a cumulative histogram for the indices in [1,0xFFFF]
+        for (auto i = 0; i < width*height; ++i)
+        {
+            auto d = depth_image[i];
+            auto f = histogram[d] / (float)histogram[0xFFFF]; // 0-255 based on histogram location
+
+            auto c = map.get(f);
+            rgb_image[i * 3 + 0] = c.x;
+            rgb_image[i * 3 + 1] = c.y;
+            rgb_image[i * 3 + 2] = c.z;
+        }
+    }
+
+
     class texture_buffer
     {
         GLuint texture;
@@ -157,9 +268,10 @@ namespace rs2
             case RS2_FORMAT_ANY:
                 throw std::runtime_error("not a valid format");
             case RS2_FORMAT_Z16:
+            case RS2_FORMAT_Y16:
             case RS2_FORMAT_DISPARITY16:
                 rgb.resize(width * height * 4);
-                make_depth_histogram(rgb.data(), reinterpret_cast<const uint16_t *>(data), width, height);
+                make_depth_histogram(*cm, rgb.data(), reinterpret_cast<const uint16_t *>(data), width, height);
                 glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, rgb.data());
                 break;
             case RS2_FORMAT_XYZ32F:
@@ -183,9 +295,9 @@ namespace rs2
                 draw_motion_data(axes.x, axes.y, axes.z);
             }
             break;
-            case RS2_FORMAT_Y16:
-                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_LUMINANCE, GL_UNSIGNED_SHORT, data);
-                break;
+            //case RS2_FORMAT_Y16:
+            //    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_LUMINANCE, GL_UNSIGNED_SHORT, data);
+            //    break;
             case RS2_FORMAT_RAW8:
             case RS2_FORMAT_MOTION_RAW:
             case RS2_FORMAT_GPIO_RAW:
@@ -222,6 +334,8 @@ namespace rs2
         }
 
     public:
+        color_map* cm = &classic;
+
         texture_buffer() : texture() {}
 
         GLuint get_gl_handle() const { return texture; }
@@ -485,13 +599,33 @@ namespace rs2
             glBindTexture(GL_TEXTURE_2D, 0);
 
             glDisable(GL_BLEND);
+
+            for (int i = 1; i <= 64; i++)
+            {
+                auto t1 = (float)i/64;
+                auto k1 = cm->min_key() + t1*(cm->max_key() - cm->min_key());
+                auto t2 = (float)(i - 1)/64;
+                auto k2 = cm->min_key() + t2*(cm->max_key() - cm->min_key());
+                auto c1 = cm->get(k1);
+                auto c2 = cm->get(k2);
+
+                glBegin(GL_QUADS);
+                    glColor3f(c1.x / 255, c1.y / 255, c1.z / 255); glVertex2f(r.x + r.w - 150 + t1 * 140, r.y + r.h - 22);
+                    glColor3f(c2.x / 255, c2.y / 255, c2.z / 255); glVertex2f(r.x + r.w - 150 + t2 * 140, r.y + r.h - 22);
+                    glColor3f(c2.x / 255, c2.y / 255, c2.z / 255); glVertex2f(r.x + r.w - 150 + t2 * 140, r.y + r.h - 3);
+                    glColor3f(c1.x / 255, c1.y / 255, c1.z / 255); glVertex2f(r.x + r.w - 150 + t1 * 140, r.y + r.h - 3);
+                glEnd();
+            }
         }
     };
 
     inline void draw_depth_histogram(const uint16_t depth_image[], int width, int height)
     {
+        static color_map cm { { { 0, { 255, 0, 0 } },
+                                { 1, { 0, 0, 255 } },
+                            }};
         static uint8_t rgb_image[640 * 480 * 3];
-        make_depth_histogram(rgb_image, depth_image, width, height);
+        make_depth_histogram(cm, rgb_image, depth_image, width, height);
         glDrawPixels(width, height, GL_RGB, GL_UNSIGNED_BYTE, rgb_image);
     }
 

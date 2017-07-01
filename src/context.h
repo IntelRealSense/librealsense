@@ -123,6 +123,41 @@ namespace rsimpl2
         const char* RECOVERY_MESSAGE = "Selected RealSense device is in recovery mode!\nEither perform a firmware update or reconnect the camera to fall-back to last working firmware if available!";
     };
 
+    class platform_camera_info : public device_info
+    {
+    public:
+        std::shared_ptr<device> create(const uvc::backend& /*backend*/) const override;
+
+        uint8_t get_subdevice_count() const override
+        {
+            return 1;
+        }
+
+        static std::vector<std::shared_ptr<device_info>> pick_uvc_devices(
+            const std::shared_ptr<uvc::backend>& backend,
+            const std::vector<uvc::uvc_device_info>& uvc_devices)
+        {
+            std::vector<std::shared_ptr<device_info>> list;
+            for (auto&& uvc : uvc_devices)
+            {
+                list.push_back(std::make_shared<platform_camera_info>(backend, uvc));
+            }
+            return list;
+        }
+
+        explicit platform_camera_info(std::shared_ptr<uvc::backend> backend,
+            uvc::uvc_device_info uvc)
+            : device_info(backend), _uvc(std::move(uvc)) {}
+
+        uvc::devices_data get_device_data() const override
+        {
+            return uvc::devices_data();
+        }
+
+    private:
+        uvc::uvc_device_info _uvc;
+    };
+
     typedef std::vector<std::shared_ptr<device_info>> devices_info;
 
     class context : public std::enable_shared_from_this<context>
