@@ -114,7 +114,7 @@ int main()
 Compile and run the program from the terminal, with the following command:
 
 ```shell
-g++ -std=c++11 IR_sample.cpp -lrealsense -lopencv_core -lopencv_omgproc -lopencv_contrib -o ir && ./ir
+g++ -std=c++11 IR_sample.cpp -lrealsense -lopencv_core -lopencv_imgproc -lopencv_highgui -o ir && ./ir
 ```
 
 **Result :**
