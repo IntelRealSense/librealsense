@@ -24,11 +24,9 @@ kernel_name="ubuntu-xenial"
 # If LINUX_BRANCH is 4.8.xx
 if [ "${LINUX_BRANCH:0:4}" == "4.8." ];
 then
-<<<<<<< HEAD
+
 	[ ! -d ${kernel_name} ] && git clone git://kernel.ubuntu.com/ubuntu/ubuntu-xenial.git --depth 1 -b Ubuntu-hwe-4.8.0-58.63_16.04.1  --single-branch
-=======
-	[ ! -d ${kernel_name} ] && git clone git://kernel.ubuntu.com/ubuntu/ubuntu-xenial.git --depth 1 -b hwe  --single-branch
->>>>>>> 2a062ab6d31a0f8917908492533a9dfc9bba0dcb
+
 # If LINUX_BRANCH is 4.4.xx
 elif [ "${LINUX_BRANCH:0:4}" == "4.4." ];
 then
@@ -60,11 +58,8 @@ then
 		echo -e "\e[32mUpdate the folder content with the latest from mainline branch\e[0m"
 		if [ "${LINUX_BRANCH:0:4}" == "4.8." ];
 		then
-<<<<<<< HEAD
+
 			git pull origin Ubuntu-hwe-4.8.0-58.63_16.04.1 --depth 1
-=======
-			git pull origin hwe --depth 1
->>>>>>> 2a062ab6d31a0f8917908492533a9dfc9bba0dcb
 		fi
 		if [ "${LINUX_BRANCH:0:4}" == "4.4." ];
 		then
