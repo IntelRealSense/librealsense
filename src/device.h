@@ -24,6 +24,10 @@ namespace rsimpl2
 
         sensor_interface& get_sensor(size_t subdevice) override;
         const sensor_interface& get_sensor(size_t subdevice) const override;
+        virtual void hardware_reset()
+        {
+            throw not_implemented_exception(to_string() << __FUNCTION__ << " is not implemented for this device!");
+        }
 
         rs2_extrinsics get_extrinsics(size_t from, rs2_stream from_stream, size_t to, rs2_stream to_stream) const override;
 

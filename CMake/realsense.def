@@ -10,10 +10,15 @@ EXPORTS
     rs2_query_devices
     rs2_get_device_count
     rs2_delete_device_list
-
     rs2_create_device
-    rs2_query_adjacent_devices
     rs2_delete_device
+
+    rs2_query_sensors
+    rs2_get_sensors_count
+    rs2_delete_sensor_list
+    rs2_create_sensor
+    rs2_delete_sensor
+    
     rs2_get_extrinsics
     rs2_get_stream_intrinsics
     rs2_get_motion_intrinsics
@@ -70,8 +75,10 @@ EXPORTS
     rs2_delete_raw_data
     rs2_get_raw_data
 
-    rs2_get_camera_info
-    rs2_supports_camera_info
+    rs2_get_device_info
+    rs2_supports_device_info
+    rs2_get_sensor_info
+    rs2_supports_sensor_info
 
     rs2_create_frame_queue
     rs2_delete_frame_queue

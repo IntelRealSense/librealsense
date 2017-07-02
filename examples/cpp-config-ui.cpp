@@ -498,13 +498,13 @@ public:
 
             if (stream_enabled[stream])
             {
-                if (show_single_fps_list) ImGui::SameLine();
+                if (show_single_fps_list && live_streams > 1) ImGui::SameLine();
 
                 label = to_string() << dev.get_info(RS2_CAMERA_INFO_DEVICE_NAME)
                     << s.get_info(RS2_CAMERA_INFO_SENSOR_NAME)
                     << " " << rs2_stream_to_string(stream) << " format";
 
-                if (!show_single_fps_list)
+                if (!show_single_fps_list && live_streams > 1)
                 {
                     ImGui::Text("Format:    ");
                     ImGui::SameLine();
@@ -754,6 +754,8 @@ public:
     rect roi_rect;
     bool auto_exposure_enabled = false;
     float depth_units = 1.f;
+
+    bool roi_checked         = false;    // actively selected by user
 };
 
 
@@ -829,6 +831,7 @@ public:
     float2 size;
     rs2_stream          stream;
     rs2_format format;
+    int color_map_idx = 0;
 
     std::chrono::high_resolution_clock::time_point last_frame;
     double              timestamp;
@@ -838,9 +841,6 @@ public:
     rect                roi_display_rect{};
     frame_metadata      frame_md;
     bool                metadata_displayed  = false;
-    bool                roi_supported       = false;    // supported by device in its current state
-    bool                roi_checked         = false;    // actively selected by user
-    bool                capturing_roi       = false;    // active modification of roi
     std::shared_ptr<subdevice_model> dev;
 
     stream_model()
@@ -872,8 +872,6 @@ public:
             else
                 frame_md.md_attributes[i].first = false;
         }
-
-        roi_supported =  (dev.get() && dev->auto_exposure_enabled);
 
         texture->upload(f);
 
@@ -920,7 +918,7 @@ public:
 
     void update_ae_roi_rect(const rect& stream_rect, const mouse_info& mouse, std::string& error_message)
     {
-        if (roi_checked)
+        if (dev && dev->roi_checked)
         {
             // Case 1: Starting Dragging of the ROI rect
             // Pre-condition: not capturing already + mouse is down + we are inside stream rect
@@ -1063,6 +1061,7 @@ public:
 
     float _frame_timeout = 700.0f;
     float _min_timeout = 167.0f;
+    bool capturing_roi       = false;    // active modification of roi
 };
 
 class device_model
@@ -2044,16 +2043,16 @@ int main(int, char**) try
 
             if (!layout.empty())
             {
-                if (model.streams[stream].roi_supported )
+                if (model.streams[stream].dev && model.streams[stream].dev->auto_exposure_enabled)
                 {
                     ImGui::SameLine((int)ImGui::GetWindowWidth() - 160);
-                    ImGui::Checkbox("[ROI]", &model.streams[stream].roi_checked);
+                    ImGui::Checkbox("[ROI]", &model.streams[stream].dev->roi_checked);
 
                     if (ImGui::IsItemHovered())
                         ImGui::SetTooltip("Auto Exposure Region-of-Interest Selection");
                 }
                 else
-                    model.streams[stream].roi_checked = false;
+                    model.streams[stream].dev->roi_checked = false;
             }
 
             // Control metadata overlay widget
@@ -2096,14 +2095,15 @@ int main(int, char**) try
             ImGui::End();
             ImGui::PopStyleColor();
 
+            
+            ImGui::PushStyleColor(ImGuiCol_WindowBg, { 0, 0, 0, 0 });
+            ImGui::SetNextWindowPos({ stream_rect.x, stream_rect.y + stream_rect.h - 30 });
+            ImGui::SetNextWindowSize({ stream_rect.w, 30 });
+            label = to_string() << "Footer for stream of " << rs2_stream_to_string(stream);
+            ImGui::Begin(label.c_str(), nullptr, flags);
+
             if (stream_rect.contains(mouse.cursor))
             {
-                ImGui::PushStyleColor(ImGuiCol_WindowBg, { 0, 0, 0, 0 });
-                ImGui::SetNextWindowPos({ stream_rect.x, stream_rect.y + stream_rect.h - 25 });
-                ImGui::SetNextWindowSize({ stream_rect.w, 25 });
-                label = to_string() << "Footer for stream of " << rs2_stream_to_string(stream);
-                ImGui::Begin(label.c_str(), nullptr, flags);
-
                 std::stringstream ss;
                 auto x = ((mouse.cursor.x - stream_rect.x) / stream_rect.w) * stream_size.x;
                 auto y = ((mouse.cursor.y - stream_rect.y) / stream_rect.h) * stream_size.y;
@@ -2117,16 +2117,28 @@ int main(int, char**) try
                     {
                         auto meters = (val * model.streams[stream].dev->depth_units);
                         ss << std::dec << ", ~"
-                           << std::setprecision(2) << meters << " meters";
+                            << std::setprecision(2) << meters << " meters";
                     }
                 }
 
                 label = ss.str();
                 ImGui::Text("%s", label.c_str());
-
-                ImGui::End();
-                ImGui::PopStyleColor();
             }
+
+            if (stream == RS2_STREAM_DEPTH)
+            {
+                ImGui::SameLine((int)ImGui::GetWindowWidth() - 150);
+                ImGui::PushItemWidth(-1);
+                if (ImGui::Combo("Color Map:", &model.streams[stream].color_map_idx, color_maps_names.data(), color_maps_names.size()))
+                {
+                    model.streams[stream].texture->cm = color_maps[model.streams[stream].color_map_idx];
+                }
+                ImGui::PopItemWidth();
+            }
+
+            ImGui::End();
+            ImGui::PopStyleColor();
+            
         }
 
         // Metadata overlay windows shall be drawn after textures to preserve z-buffer functionality

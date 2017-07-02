@@ -11,7 +11,7 @@
 
 namespace rsimpl2
 {
-    class ds5_device : public device, public debug_interface
+    class ds5_device : public virtual device, public debug_interface
     {
     public:
         rs2_extrinsics get_extrinsics(size_t from_subdevice, rs2_stream, size_t to_subdevice, rs2_stream) const override;

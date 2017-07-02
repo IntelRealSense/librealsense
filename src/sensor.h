@@ -50,7 +50,7 @@ namespace rsimpl2
         std::map<rs2_camera_info, std::string> _camera_info;
     };
 
-    class sensor_base : public virtual sensor_interface, public options_container, public info_container
+    class sensor_base : public virtual sensor_interface, public options_container, public virtual info_container
     {
     public:
         explicit sensor_base(std::string name, std::shared_ptr<uvc::time_service> ts);
