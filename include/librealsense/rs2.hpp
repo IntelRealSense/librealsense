@@ -610,6 +610,32 @@ namespace rs2
         }
 
         /**
+        * check if specific camera info is supported
+        * \param[in] info    the parameter to check for support
+        * \return                true if the parameter both exist and well-defined for the specific device
+        */
+        bool supports(rs2_camera_info info) const
+        {
+            rs2_error* e = nullptr;
+            auto is_supported = rs2_supports_sensor_info(_sensor.get(), info, &e);
+            error::handle(e);
+            return is_supported > 0;
+        }
+
+        /**
+        * retrieve camera specific information, like versions of various internal components
+        * \param[in] info     camera info type to retrieve
+        * \return             the requested camera info string, in a format specific to the device model
+        */
+        const char* get_info(rs2_camera_info info) const
+        {
+            rs2_error* e = nullptr;
+            auto result = rs2_get_sensor_info(_sensor.get(), info, &e);
+            error::handle(e);
+            return result;
+        }
+
+        /**
         * open subdevice for exclusive access, by committing to composite configuration, specifying one or more stream profiles
         * this method should be used for interdependent  streams, such as depth and infrared, that have to be configured together
         * \param[in] profiles   vector of configurations to be commited by the device
@@ -940,7 +966,7 @@ namespace rs2
         bool supports(rs2_camera_info info) const
         {
             rs2_error* e = nullptr;
-            auto is_supported = rs2_supports_camera_info(_dev.get(), info, &e);
+            auto is_supported = rs2_supports_device_info(_dev.get(), info, &e);
             error::handle(e);
             return is_supported > 0;
         }
@@ -950,10 +976,10 @@ namespace rs2
         * \param[in] info     camera info type to retrieve
         * \return             the requested camera info string, in a format specific to the device model
         */
-        const char* get_camera_info(rs2_camera_info info) const
+        const char* get_info(rs2_camera_info info) const
         {
             rs2_error* e = nullptr;
-            auto result = rs2_get_camera_info(_dev.get(), info, &e);
+            auto result = rs2_get_device_info(_dev.get(), info, &e);
             error::handle(e);
             return result;
         }

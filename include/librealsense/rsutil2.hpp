@@ -169,17 +169,17 @@ namespace rs2
                 std::map<rs2_stream, Dev> stream_to_dev;
                 std::map<rs2_stream, stream_profile> stream_to_profile;
 
-                auto devs = dev.get_adjacent_devices();
+                auto sensors = dev.query_sensors();
                 for (auto && kvp : mapping) {
                     dev_to_profiles[kvp.first].push_back(kvp.second);
-                    stream_to_dev.emplace(kvp.second.stream, devs[kvp.first]);
+                    stream_to_dev.emplace(kvp.second.stream, sensors[kvp.first]);
                     stream_to_profile[kvp.second.stream] = kvp.second;
                 }
 
                 // TODO: make sure it works
 
                 for (auto && kvp : dev_to_profiles) {
-                    auto sub = devs[kvp.first];
+                    auto sub = sensors[kvp.first];
                     devices.push_back(sub);
                     sub.open(kvp.second);
                 }
@@ -218,7 +218,7 @@ namespace rs2
                         }
                     }
                     if (request.has_wildcards())
-                        throw std::runtime_error(std::string("Couldn't autocomplete request for subdevice ") + target.get_camera_info(RS2_CAMERA_INFO_MODULE_NAME));
+                        throw std::runtime_error(std::string("Couldn't autocomplete request for subdevice ") + target.get_camera_info(RS2_CAMERA_INFO_DEVICE_NAME));
                 }
             }
 

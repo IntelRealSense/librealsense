@@ -514,7 +514,7 @@ void rs2_get_option_range(const rs2_sensor* sensor, rs2_option option,
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, sensor, option, min, max, step, def)
 
-const char* rs2_get_camera_info(const rs2_device* dev, rs2_camera_info info, rs2_error** error) try
+const char* rs2_get_device_info(const rs2_device* dev, rs2_camera_info info, rs2_error** error) try
 {
     VALIDATE_NOT_NULL(dev);
     VALIDATE_ENUM(info);
@@ -522,11 +522,31 @@ const char* rs2_get_camera_info(const rs2_device* dev, rs2_camera_info info, rs2
     {
         return dev->device->get_info(info).c_str();
     }
-    throw rsimpl2::invalid_value_exception(rsimpl2::to_string() << "info " << rs2_camera_info_to_string(info) << " not supported by the sensor!");
+    throw rsimpl2::invalid_value_exception(rsimpl2::to_string() << "info " << rs2_camera_info_to_string(info) << " not supported by the device!");
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, dev, info)
 
-int rs2_supports_camera_info(const rs2_sensor* sensor, rs2_camera_info info, rs2_error** error) try
+int rs2_supports_device_info(const rs2_device* dev, rs2_camera_info info, rs2_error** error) try
+{
+    VALIDATE_NOT_NULL(dev);
+    VALIDATE_ENUM(info);
+    return dev->device->supports_info(info);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(false, dev, info)
+
+const char* rs2_get_sensor_info(const rs2_sensor* sensor, rs2_camera_info info, rs2_error** error) try
+{
+    VALIDATE_NOT_NULL(sensor);
+    VALIDATE_ENUM(info);
+    if (sensor->sensor->supports_info(info))
+    {
+        return sensor->sensor->get_info(info).c_str();
+    }
+    throw rsimpl2::invalid_value_exception(rsimpl2::to_string() << "info " << rs2_camera_info_to_string(info) << " not supported by the sensor!");
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, sensor, info)
+
+int rs2_supports_sensor_info(const rs2_sensor* sensor, rs2_camera_info info, rs2_error** error) try
 {
     VALIDATE_NOT_NULL(sensor);
     VALIDATE_ENUM(info);

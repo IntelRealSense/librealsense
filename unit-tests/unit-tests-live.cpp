@@ -48,8 +48,8 @@ TEST_CASE("Device metadata enumerates correctly", "[live]")
                 for (auto j = 0; j < RS2_CAMERA_INFO_COUNT; ++j) {
                     auto is_supported = false;
                     REQUIRE_NOTHROW(is_supported = dev.supports(rs2_camera_info(j)));
-                    if (is_supported) REQUIRE(dev.get_camera_info(rs2_camera_info(j)) != nullptr);
-                    else REQUIRE_THROWS_AS(dev.get_camera_info(rs2_camera_info(j)), error);
+                    if (is_supported) REQUIRE(dev.get_info(rs2_camera_info(j)) != nullptr);
+                    else REQUIRE_THROWS_AS(dev.get_info(rs2_camera_info(j)), error);
                 }
             }
         }
@@ -250,7 +250,7 @@ TEST_CASE("check width and height of stream intrinsics", "[live]")
 
         for (auto&& dev : list)
         {
-            auto module_name = dev.get_camera_info(RS2_CAMERA_INFO_MODULE_NAME);
+            auto module_name = dev.get_info(RS2_CAMERA_INFO_MODULE_NAME);
             // TODO: if FE
             std::vector<stream_profile> stream_profiles;
             REQUIRE_NOTHROW(stream_profiles = dev.get_stream_modes());
@@ -578,7 +578,9 @@ TEST_CASE("a single subdevice can only be opened once, different subdevices can 
                         {
                             if (modes.size() == 1)
                             {
-                                WARN("device " << dev.get_camera_info(RS2_CAMERA_INFO_DEVICE_NAME) << " S/N: " << dev.get_camera_info(RS2_CAMERA_INFO_DEVICE_SERIAL_NUMBER) << " w/ FW v" << dev.get_camera_info(RS2_CAMERA_INFO_CAMERA_FIRMWARE_VERSION) << ":");
+                                WARN("device " << dev.get_info(RS2_CAMERA_INFO_DEVICE_NAME) << " S/N: " << dev.get_info(
+                                        RS2_CAMERA_INFO_DEVICE_SERIAL_NUMBER) << " w/ FW v" << dev.get_info(
+                                        RS2_CAMERA_INFO_CAMERA_FIRMWARE_VERSION) << ":");
                                 WARN("subdevice has only 1 supported streaming mode. Skipping Same Subdevice, different modes test.");
                             }
                             else
@@ -720,7 +722,9 @@ TEST_CASE("a single subdevice can only be opened once, different subdevices can 
                                 {
                                     if (modes1.size() == 1)
                                     {
-                                        WARN("device " << dev1.get_camera_info(RS2_CAMERA_INFO_DEVICE_NAME) << " S/N: " << dev1.get_camera_info(RS2_CAMERA_INFO_DEVICE_SERIAL_NUMBER) << " w/ FW v" << dev1.get_camera_info(RS2_CAMERA_INFO_CAMERA_FIRMWARE_VERSION) << ":");
+                                        WARN("device " << dev1.get_info(RS2_CAMERA_INFO_DEVICE_NAME) << " S/N: " << dev1.get_info(
+                                                RS2_CAMERA_INFO_DEVICE_SERIAL_NUMBER) << " w/ FW v" << dev1.get_info(
+                                                RS2_CAMERA_INFO_CAMERA_FIRMWARE_VERSION) << ":");
                                         WARN("Device has only 1 supported streaming mode. Skipping Same Subdevice, different modes test.");
                                     }
                                     else
@@ -796,10 +800,10 @@ TEST_CASE("a single subdevice can only be opened once, different subdevices can 
 
                             // grab first lock
                             CAPTURE(modes1.front().stream);
-                            CAPTURE(dev1.get_camera_info(RS2_CAMERA_INFO_DEVICE_NAME));
-                            CAPTURE(dev1.get_camera_info(RS2_CAMERA_INFO_DEVICE_SERIAL_NUMBER));
-                            CAPTURE(dev2.get_camera_info(RS2_CAMERA_INFO_DEVICE_NAME));
-                            CAPTURE(dev2.get_camera_info(RS2_CAMERA_INFO_DEVICE_SERIAL_NUMBER));
+                            CAPTURE(dev1.get_info(RS2_CAMERA_INFO_DEVICE_NAME));
+                            CAPTURE(dev1.get_info(RS2_CAMERA_INFO_DEVICE_SERIAL_NUMBER));
+                            CAPTURE(dev2.get_info(RS2_CAMERA_INFO_DEVICE_NAME));
+                            CAPTURE(dev2.get_info(RS2_CAMERA_INFO_DEVICE_SERIAL_NUMBER));
                             REQUIRE_NOTHROW(dev1.open(modes1.front()));
 
                             // try to acquire second lock
@@ -853,7 +857,7 @@ TEST_CASE("All suggested profiles can be opened", "[live]") {
             REQUIRE_NOTHROW(modes = subdevice.get_stream_modes());
 
             REQUIRE(modes.size() > 0);
-            WARN(subdevice.get_camera_info(RS2_CAMERA_INFO_MODULE_NAME));
+            WARN(subdevice.get_info(RS2_CAMERA_INFO_MODULE_NAME));
             //the test will be done only on sub set of profile for each sub device
             for (int i = 0; i < modes.size(); i += (int)std::ceil((float)modes.size() / (float)num_of_profiles_for_each_subdevice)) {
                 //CAPTURE(rs2_subdevice(subdevice));
@@ -940,7 +944,7 @@ TEST_CASE("Per-frame metadata sanity check", "[live]") {
             REQUIRE_NOTHROW(modes = subdevice.get_stream_modes());
 
             REQUIRE(modes.size() > 0);
-            WARN(subdevice.get_camera_info(RS2_CAMERA_INFO_MODULE_NAME));
+            WARN(subdevice.get_info(RS2_CAMERA_INFO_MODULE_NAME));
 
             //the test will be done only on sub set of profile for each sub device
             for (int i = 0; i < modes.size(); i += static_cast<int>(std::ceil((float)modes.size() / (float)num_of_profiles_for_each_subdevice)))
@@ -1201,7 +1205,7 @@ TEST_CASE("Auto exposure behavior", "[live]") {
             {
                 continue;
             }
-            std::string pid = subdevice.get_camera_info(RS2_CAMERA_INFO_PRODUCT_ID);
+            std::string pid = subdevice.get_info(RS2_CAMERA_INFO_PRODUCT_ID);
             std::stringstream s;
             s << pid;
             int curr_pid;
@@ -1213,7 +1217,7 @@ TEST_CASE("Auto exposure behavior", "[live]") {
 
                 float val{};
 
-                auto info = subdevice.get_camera_info(RS2_CAMERA_INFO_MODULE_NAME);
+                auto info = subdevice.get_info(RS2_CAMERA_INFO_MODULE_NAME);
                 CAPTURE(info);
 
                 REQUIRE_NOTHROW(subdevice.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, 1));
@@ -1290,7 +1294,7 @@ TEST_CASE("Disconnect events works", "[live]") {
 
         std::string serial;
 
-        REQUIRE_NOTHROW(serial = dev_strong->get_camera_info(RS2_CAMERA_INFO_DEVICE_SERIAL_NUMBER));
+        REQUIRE_NOTHROW(serial = dev_strong->get_info(RS2_CAMERA_INFO_DEVICE_SERIAL_NUMBER));
 
         std::condition_variable cv;
         std::mutex m;
@@ -1313,7 +1317,7 @@ TEST_CASE("Disconnect events works", "[live]") {
                     for (auto d : info.get_new_devices())
                     {
                         disable_sensitive_options_for(d);
-                        if (serial == d.get_camera_info(RS2_CAMERA_INFO_DEVICE_SERIAL_NUMBER))
+                        if (serial == d.get_info(RS2_CAMERA_INFO_DEVICE_SERIAL_NUMBER))
                         {
                             try
                             {
@@ -1365,7 +1369,7 @@ TEST_CASE("Connect events works", "[live]") {
 
         std::string serial;
 
-        REQUIRE_NOTHROW(serial = dev_strong->get_camera_info(RS2_CAMERA_INFO_DEVICE_SERIAL_NUMBER));
+        REQUIRE_NOTHROW(serial = dev_strong->get_info(RS2_CAMERA_INFO_DEVICE_SERIAL_NUMBER));
 
         auto disconnected = false;
         auto connected = false;
@@ -1389,7 +1393,7 @@ TEST_CASE("Connect events works", "[live]") {
 
                     for (auto d : info.get_new_devices())
                     {
-                        if (serial == d.get_camera_info(RS2_CAMERA_INFO_DEVICE_SERIAL_NUMBER))
+                        if (serial == d.get_info(RS2_CAMERA_INFO_DEVICE_SERIAL_NUMBER))
                         {
                             try
                             {
@@ -1509,7 +1513,7 @@ TEST_CASE("Connect Disconnect events while streaming", "[live]") {
         auto dev_weak = dev.second;
 
 
-        REQUIRE_NOTHROW(serial = dev_strong->get_camera_info(RS2_CAMERA_INFO_DEVICE_SERIAL_NUMBER));
+        REQUIRE_NOTHROW(serial = dev_strong->get_info(RS2_CAMERA_INFO_DEVICE_SERIAL_NUMBER));
 
 
         auto disconnected = false;
@@ -1534,7 +1538,7 @@ TEST_CASE("Connect Disconnect events while streaming", "[live]") {
 
                     for (auto d : info.get_new_devices())
                     {
-                        if (serial == d.get_camera_info(RS2_CAMERA_INFO_DEVICE_SERIAL_NUMBER))
+                        if (serial == d.get_info(RS2_CAMERA_INFO_DEVICE_SERIAL_NUMBER))
                         {
                             try
                             {
@@ -1604,7 +1608,7 @@ TEST_CASE("Connect Disconnect events while controlls", "[live]") {
 
         std::string serial;
 
-        REQUIRE_NOTHROW(serial = dev_strong->get_camera_info(RS2_CAMERA_INFO_DEVICE_SERIAL_NUMBER));
+        REQUIRE_NOTHROW(serial = dev_strong->get_info(RS2_CAMERA_INFO_DEVICE_SERIAL_NUMBER));
 
 
         auto disconnected = false;
@@ -1629,7 +1633,7 @@ TEST_CASE("Connect Disconnect events while controlls", "[live]") {
 
                     for (auto d : info.get_new_devices())
                     {
-                        if (serial == d.get_camera_info(RS2_CAMERA_INFO_DEVICE_SERIAL_NUMBER))
+                        if (serial == d.get_info(RS2_CAMERA_INFO_DEVICE_SERIAL_NUMBER))
                         {
                             try
                             {

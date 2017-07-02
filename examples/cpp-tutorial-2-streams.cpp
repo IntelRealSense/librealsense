@@ -35,9 +35,9 @@ int main()
             printf("There are %u connected RealSense devices.\n", connected_devices.size());
 
 
-            printf("\nUsing device 0, an %s\n", dev.get_camera_info(RS2_CAMERA_INFO_DEVICE_NAME));
-            printf("    Serial number: %s\n", dev.get_camera_info(RS2_CAMERA_INFO_DEVICE_SERIAL_NUMBER));
-            printf("    Firmware version: %s\n", dev.get_camera_info(RS2_CAMERA_INFO_CAMERA_FIRMWARE_VERSION));
+            printf("\nUsing device 0, an %s\n", dev.get_info(RS2_CAMERA_INFO_DEVICE_NAME));
+            printf("    Serial number: %s\n", dev.get_info(RS2_CAMERA_INFO_DEVICE_SERIAL_NUMBER));
+            printf("    Firmware version: %s\n", dev.get_info(RS2_CAMERA_INFO_CAMERA_FIRMWARE_VERSION));
 
             vector<rs2_stream> supported_streams = { RS2_STREAM_DEPTH, RS2_STREAM_INFRARED, RS2_STREAM_COLOR };
 

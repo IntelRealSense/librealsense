@@ -35,7 +35,7 @@ int main(int argc, char * argv[]) try
     // Configure and start our devices
     for(auto&& dev : devices)
     {
-        cout << "Starting " << dev.get_camera_info(RS2_CAMERA_INFO_DEVICE_NAME) << "... ";
+        cout << "Starting " << dev.get_info(RS2_CAMERA_INFO_DEVICE_NAME) << "... ";
         auto modes = dev.get_stream_modes();
         dev.open(modes.back());
         syncers.emplace_back();

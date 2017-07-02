@@ -25,7 +25,7 @@ namespace rsimpl2
 
         std::unique_ptr<frame_timestamp_reader> ds5_timestamp_reader_backup(new ds5_timestamp_reader(backend.create_time_service()));
 
-        auto color_ep = std::make_shared<uvc_sensor>(backend.create_uvc_device(color_devices_info.front()),
+        auto color_ep = std::make_shared<uvc_sensor>("RGB Camera", backend.create_uvc_device(color_devices_info.front()),
             std::unique_ptr<frame_timestamp_reader>(new ds5_timestamp_reader_from_metadata(std::move(ds5_timestamp_reader_backup))),
             backend.create_time_service());
 
@@ -68,20 +68,5 @@ namespace rsimpl2
 
         color_ep = create_color_device(backend, color_devs_info);
         color_ep->set_pose(lazy<pose>([]() {return pose{ { { 1,0,0 },{ 0,1,0 },{ 0,0,1 } },{ 0,0,0 } }; })); // TODO: Fetch calibration extrinsic
-
-
-        // Register endpoint info
-        for(auto& element : dev_info)
-        {
-            if (color_ep && element.mi == 3) // mi 3 is related to Color device
-            {
-                std::map<rs2_camera_info, std::string> camera_info = {
-                    { RS2_CAMERA_INFO_DEVICE_NAME, "ASRC" },
-                { RS2_CAMERA_INFO_MODULE_NAME, "RGB Camera" },
-                { RS2_CAMERA_INFO_CAMERA_FIRMWARE_VERSION, static_cast<const char*>(_fw_version) } };
-
-                register_sensor_info(_color_device_idx, camera_info);
-            }
-        }
     }
 }

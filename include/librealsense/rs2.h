@@ -204,7 +204,7 @@ typedef enum rs2_option
    This information is mainly available for camera debug and troubleshooting and should not be used in applications. */
 typedef enum rs2_camera_info {
     RS2_CAMERA_INFO_DEVICE_NAME                    , /**< Device friendly name */
-    RS2_CAMERA_INFO_MODULE_NAME                    , /**< Specific sensor name within a RealSense device */
+    RS2_CAMERA_INFO_SENSOR_NAME                    , /**< Sensor friendly name */
     RS2_CAMERA_INFO_DEVICE_SERIAL_NUMBER           , /**< Device serial number */
     RS2_CAMERA_INFO_CAMERA_FIRMWARE_VERSION        , /**< Primary firmware version */
     RS2_CAMERA_INFO_DEVICE_LOCATION                , /**< Unique identifier of the port the device is connected to (platform specific) */
@@ -815,7 +815,7 @@ void rs2_get_region_of_interest(const rs2_sensor* device, int* min_x, int* min_y
 * \param[out] error     if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return               the requested camera info string, in a format specific to the device model
 */
-const char* rs2_get_camera_info(const rs2_device* device, rs2_camera_info info, rs2_error** error);
+const char* rs2_get_device_info(const rs2_device* device, rs2_camera_info info, rs2_error** error);
 
 /**
 * check if specific camera info is supported
@@ -823,7 +823,24 @@ const char* rs2_get_camera_info(const rs2_device* device, rs2_camera_info info, 
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return                true if the parameter both exist and well-defined for the specific device
 */
-int rs2_supports_camera_info(const rs2_device* device, rs2_camera_info info, rs2_error** error);
+int rs2_supports_device_info(const rs2_device* device, rs2_camera_info info, rs2_error** error);
+
+/**
+* retrieve camera specific information, like versions of various internal components
+* \param[in] device     the RealSense device
+* \param[in] info       camera info type to retrieve
+* \param[out] error     if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return               the requested camera info string, in a format specific to the device model
+*/
+const char* rs2_get_sensor_info(const rs2_sensor* device, rs2_camera_info info, rs2_error** error);
+
+/**
+* check if specific camera info is supported
+* \param[in] info    the parameter to check for support
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return                true if the parameter both exist and well-defined for the specific device
+*/
+int rs2_supports_sensor_info(const rs2_sensor* device, rs2_camera_info info, rs2_error** error);
 
 /**
 * create frame queue. frame queues are the simplest x-platform synchronization primitive provided by librealsense

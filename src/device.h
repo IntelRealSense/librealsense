@@ -32,8 +32,6 @@ namespace rsimpl2
 
         uvc_sensor& get_uvc_sensor(int subdevice);
 
-        void register_sensor_info(int sub, std::map<rs2_camera_info, std::string> camera_info);
-
     private:
         std::vector<std::shared_ptr<sensor_interface>> _sensors;
     };

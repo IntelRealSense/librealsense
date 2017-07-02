@@ -544,6 +544,11 @@ namespace rsimpl2
         {
             return string_representation.c_str();
         }
+
+        operator std::string() const
+        {
+            return string_representation.c_str();
+        }
     };
 
     // This class is used to buffer up several writes to a structure-valued XU control, and send the entire structure all at once

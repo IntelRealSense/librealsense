@@ -229,8 +229,8 @@ struct mouse_info
 class subdevice_model
 {
 public:
-    subdevice_model(sensor dev, std::string& error_message)
-        : dev(dev), streaming(false), queues(RS2_STREAM_COUNT),
+    subdevice_model(device dev, sensor s, std::string& error_message)
+        : s(s), dev(dev), streaming(false), queues(RS2_STREAM_COUNT),
           selected_shared_fps_id(0)
     {
         for (auto& elem : queues)
@@ -240,8 +240,8 @@ public:
 
         try
         {
-            if (dev.supports(RS2_OPTION_ENABLE_AUTO_EXPOSURE))
-                auto_exposure_enabled = dev.get_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE) > 0;
+            if (s.supports(RS2_OPTION_ENABLE_AUTO_EXPOSURE))
+                auto_exposure_enabled = s.get_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE) > 0;
         }
         catch(...)
         {
@@ -250,8 +250,8 @@ public:
 
         try
         {
-            if (dev.supports(RS2_OPTION_DEPTH_UNITS))
-                depth_units = dev.get_option(RS2_OPTION_DEPTH_UNITS);
+            if (s.supports(RS2_OPTION_DEPTH_UNITS))
+                depth_units = s.get_option(RS2_OPTION_DEPTH_UNITS);
         }
         catch(...)
         {
@@ -264,25 +264,25 @@ public:
             auto opt = static_cast<rs2_option>(i);
 
             std::stringstream ss;
-            ss << dev.get_camera_info(RS2_CAMERA_INFO_DEVICE_NAME)
-                << "/" << dev.get_camera_info(RS2_CAMERA_INFO_MODULE_NAME)
+            ss << dev.get_info(RS2_CAMERA_INFO_DEVICE_NAME)
+                << "/" << s.get_info(RS2_CAMERA_INFO_SENSOR_NAME)
                 << "/" << rs2_option_to_string(opt);
             metadata.id = ss.str();
             metadata.opt = opt;
-            metadata.endpoint = dev;
+            metadata.endpoint = s;
             metadata.label = rs2_option_to_string(opt) + WHITE_SPACES + ss.str();
             metadata.invalidate_flag = &options_invalidated;
             metadata.dev = this;
 
-            metadata.supported = dev.supports(opt);
+            metadata.supported = s.supports(opt);
             if (metadata.supported)
             {
                 try
                 {
-                    metadata.range = dev.get_option_range(opt);
-                    metadata.read_only = dev.is_option_read_only(opt);
+                    metadata.range = s.get_option_range(opt);
+                    metadata.read_only = s.is_option_read_only(opt);
                     if (!metadata.read_only)
-                        metadata.value = dev.get_option(opt);
+                        metadata.value = s.get_option(opt);
                 }
                 catch (const error& e)
                 {
@@ -296,7 +296,7 @@ public:
 
         try
         {
-            auto uvc_profiles = dev.get_stream_modes();
+            auto uvc_profiles = s.get_stream_modes();
             std::reverse(std::begin(uvc_profiles), std::end(uvc_profiles));
             for (auto&& profile : uvc_profiles)
             {
@@ -425,8 +425,8 @@ public:
         ImGui::PushItemWidth(-1);
         ImGui::Text("Resolution:");
         ImGui::SameLine();
-        std::string label = to_string() << dev.get_camera_info(RS2_CAMERA_INFO_DEVICE_NAME)
-            << dev.get_camera_info(RS2_CAMERA_INFO_MODULE_NAME) << " resolution";
+        std::string label = to_string() << dev.get_info(RS2_CAMERA_INFO_DEVICE_NAME)
+            << s.get_info(RS2_CAMERA_INFO_SENSOR_NAME) << " resolution";
         if (streaming)
             ImGui::Text("%s", res_chars[selected_res_id]);
         else
@@ -442,8 +442,8 @@ public:
         {
             auto fps_chars = get_string_pointers(shared_fpses);
             ImGui::Text("FPS:       ");
-            label = to_string() << dev.get_camera_info(RS2_CAMERA_INFO_DEVICE_NAME)
-                << dev.get_camera_info(RS2_CAMERA_INFO_MODULE_NAME) << " fps";
+            label = to_string() << dev.get_info(RS2_CAMERA_INFO_DEVICE_NAME)
+                << s.get_info(RS2_CAMERA_INFO_SENSOR_NAME) << " fps";
 
             ImGui::SameLine();
             ImGui::PushItemWidth(-1);
@@ -500,8 +500,8 @@ public:
             {
                 if (show_single_fps_list) ImGui::SameLine();
 
-                label = to_string() << dev.get_camera_info(RS2_CAMERA_INFO_DEVICE_NAME)
-                    << dev.get_camera_info(RS2_CAMERA_INFO_MODULE_NAME)
+                label = to_string() << dev.get_info(RS2_CAMERA_INFO_DEVICE_NAME)
+                    << s.get_info(RS2_CAMERA_INFO_SENSOR_NAME)
                     << " " << rs2_stream_to_string(stream) << " format";
 
                 if (!show_single_fps_list)
@@ -528,8 +528,8 @@ public:
                     ImGui::Text("FPS:       ");
                     ImGui::SameLine();
 
-                    label = to_string() << dev.get_camera_info(RS2_CAMERA_INFO_DEVICE_NAME)
-                        << dev.get_camera_info(RS2_CAMERA_INFO_MODULE_NAME)
+                    label = to_string() << dev.get_info(RS2_CAMERA_INFO_DEVICE_NAME)
+                        << s.get_info(RS2_CAMERA_INFO_SENSOR_NAME)
                         << rs2_stream_to_string(stream) << " fps";
 
                     if (streaming)
@@ -628,7 +628,7 @@ public:
     {
         streaming = false;
 
-        dev.stop();
+        s.stop();
 
         for (auto& elem : queues)
         {
@@ -636,21 +636,21 @@ public:
             while (elem->poll_for_frame(&f)); // Empty all queues
         }
 
-        dev.close();
+        s.close();
     }
 
     void play(const std::vector<stream_profile>& profiles)
     {
-        dev.open(profiles);
+        s.open(profiles);
         try {
-            dev.start([&](frame f){
+            s.start([&](frame f){
                 auto stream_type = f.get_stream_type();
                 queues[(int)stream_type]->enqueue(std::move(f));
             });
         }
         catch (...)
         {
-            dev.close();
+            s.close();
             throw;
         }
 
@@ -678,11 +678,11 @@ public:
                 {
                     try
                     {
-                        auto roi = dev.get_region_of_interest();
-                        roi_rect.x = roi.min_x;
-                        roi_rect.y = roi.min_y;
-                        roi_rect.w = roi.max_x - roi.min_x;
-                        roi_rect.h = roi.max_y - roi.min_y;
+//                        auto roi = s.get_region_of_interest();
+//                        roi_rect.x = roi.min_x;
+//                        roi_rect.y = roi.min_y;
+//                        roi_rect.w = roi.max_x - roi.min_x;
+//                        roi_rect.h = roi.max_y - roi.min_y;
                     }
                     catch (...)
                     {
@@ -723,7 +723,8 @@ public:
         return false;
     }
 
-    sensor dev;
+    device dev;
+    sensor s;
 
     std::map<rs2_option, option_model> options_metadata;
     std::vector<std::string> resolutions;
@@ -968,7 +969,7 @@ public:
                     try
                     {
                         // Step 2: send it to firmware
-                        dev->dev.set_region_of_interest(roi);
+                        //dev->s.set_region_of_interest(roi);
                     }
                     catch (const error& e)
                     {
@@ -984,9 +985,9 @@ public:
                         auto y_margin = (int)size.y / 8;
 
                         // Default ROI behaviour is center 3/4 of the screen:
-                        dev->dev.set_region_of_interest({ x_margin, y_margin,
-                                                          (int)size.x - x_margin - 1,
-                                                          (int)size.y - y_margin - 1 });
+                        //dev->s.set_region_of_interest({ x_margin, y_margin,
+                        //                                  (int)size.x - x_margin - 1,
+                        //                                  (int)size.y - y_margin - 1 });
 
                         roi_display_rect = { 0, 0, 0, 0 };
                         dev->roi_rect = { 0, 0, 0, 0 };
@@ -1078,7 +1079,7 @@ public:
     {
         for (auto&& sub : dev.query_sensors())
         {
-            auto model = std::make_shared<subdevice_model>(sub, error_message);
+            auto model = std::make_shared<subdevice_model>(dev, sub, error_message);
             subdevices.push_back(model);
         }
     }
@@ -1404,7 +1405,7 @@ std::vector<std::string> get_device_info(const device& dev)
         auto info = static_cast<rs2_camera_info>(i);
         if (dev.supports(info))
         {
-            auto value = dev.get_camera_info(info);
+            auto value = dev.get_info(info);
             res.push_back(value);
 
         }
@@ -1417,16 +1418,13 @@ std::vector<std::string> get_device_info(const device& dev)
 std::string get_device_name(device& dev)
 {
     // retrieve device name
-    std::string name = (dev.supports(RS2_CAMERA_INFO_DEVICE_NAME))? dev.get_camera_info(RS2_CAMERA_INFO_DEVICE_NAME):"Unknown";
+    std::string name = (dev.supports(RS2_CAMERA_INFO_DEVICE_NAME))? dev.get_info(RS2_CAMERA_INFO_DEVICE_NAME) : "Unknown";
 
     // retrieve device serial number
-    std::string serial = (dev.supports(RS2_CAMERA_INFO_DEVICE_SERIAL_NUMBER))? dev.get_camera_info(RS2_CAMERA_INFO_DEVICE_SERIAL_NUMBER):"Unknown";
-
-    // retrieve device module name
-    std::string module = (dev.supports(RS2_CAMERA_INFO_MODULE_NAME))? dev.get_camera_info(RS2_CAMERA_INFO_MODULE_NAME):"Unknown";
+    std::string serial = (dev.supports(RS2_CAMERA_INFO_DEVICE_SERIAL_NUMBER)) ? dev.get_info(RS2_CAMERA_INFO_DEVICE_SERIAL_NUMBER) : "Unknown";
 
     std::stringstream s;
-    s<< std::setw(25)<<std::left<< name <<  " " <<std::setw(10)<<std::left<< module<<" Sn#" << serial;
+    s << std::setw(25) << std::left << name << " Sn# " << serial;
     return s.str();        // push name and sn to list
 }
 
@@ -1611,10 +1609,13 @@ int main(int, char**) try
                     for (auto&& sub : list)
                     {
                         devs.push_back(sub);
-                        sub.set_notifications_callback([&](const notification& n)
+                        for (auto&& s : sub.query_sensors())
                         {
-                            not_model.add_notification({n.get_description(), n.get_timestamp(), n.get_severity(), n.get_category()});
-                        });
+                            s.set_notifications_callback([&](const notification& n)
+                                                       {
+                                                           not_model.add_notification({n.get_description(), n.get_timestamp(), n.get_severity(), n.get_category()});
+                                                       });
+                        }
                     }
                     
                 }
@@ -1725,7 +1726,7 @@ int main(int, char**) try
 
                     // retrieve property value
                     ImGui::SameLine();
-                    auto value = dev.get_camera_info(info);
+                    auto value = dev.get_info(info);
                     ImGui::Text("%s", value);
 
                     if (ImGui::IsItemHovered())
@@ -1808,7 +1809,7 @@ int main(int, char**) try
             for (auto&& sub : model.subdevices)
             {
 
-                label = to_string() << sub->dev.get_camera_info(RS2_CAMERA_INFO_MODULE_NAME);
+                label = to_string() << sub->s.get_info(RS2_CAMERA_INFO_SENSOR_NAME);
                 if (ImGui::CollapsingHeader(label.c_str(), nullptr, true, true))
                 {
                     sub->draw_stream_selection();
@@ -1817,7 +1818,7 @@ int main(int, char**) try
                     {
                         if (!sub->streaming)
                         {
-                            label = to_string() << "Start " << sub->dev.get_camera_info(RS2_CAMERA_INFO_MODULE_NAME);
+                            label = to_string() << "Start " << sub->s.get_info(RS2_CAMERA_INFO_SENSOR_NAME);
 
                             if (sub->is_selected_combination_supported())
                             {
@@ -1843,7 +1844,7 @@ int main(int, char**) try
                         }
                         else
                         {
-                            label = to_string() << "Stop " << sub->dev.get_camera_info(RS2_CAMERA_INFO_MODULE_NAME);
+                            label = to_string() << "Stop " << sub->s.get_info(RS2_CAMERA_INFO_SENSOR_NAME);
                             if (ImGui::Button(label.c_str()))
                             {
                                 sub->stop();

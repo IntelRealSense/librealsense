@@ -33,7 +33,7 @@ int main(int argc, char * argv[])
 
             auto stream = config.open(dev);
 
-            auto syncer = dev.create_syncer();
+            syncer syncer;
             stream.start(syncer);
 
             texture_buffer buffers[RS2_STREAM_COUNT];
@@ -41,7 +41,7 @@ int main(int argc, char * argv[])
             // Open a GLFW window
             glfwInit();
             ostringstream ss;
-            ss << "CPP Capture Example (" << dev.get_camera_info(RS2_CAMERA_INFO_DEVICE_NAME) << ")";
+            ss << "CPP Capture Example (" << dev.get_info(RS2_CAMERA_INFO_DEVICE_NAME) << ")";
 
             win = glfwCreateWindow(1280, 720, ss.str().c_str(), nullptr, nullptr);
             glfwMakeContextCurrent(win);

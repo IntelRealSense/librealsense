@@ -40,7 +40,7 @@ namespace rsimpl2
         std::atomic<uint32_t>* _ptr;
     };
 
-    sensor_base::sensor_base(std::shared_ptr<uvc::time_service> ts)
+    sensor_base::sensor_base(std::string name, std::shared_ptr<uvc::time_service> ts)
         : _is_streaming(false),
           _is_opened(false),
           _callback(nullptr, [](rs2_frame_callback*) {}),
@@ -54,6 +54,8 @@ namespace rsimpl2
         register_option(RS2_OPTION_FRAMES_QUEUE_SIZE, std::make_shared<frame_queue_size>(&_max_publish_list_size, option_range{ 0, 32, 1, 16 }));
 
         register_metadata(RS2_FRAME_METADATA_TIME_OF_ARRIVAL, std::make_shared<rsimpl2::md_time_of_arrival_parser>());
+
+        register_info(RS2_CAMERA_INFO_SENSOR_NAME, name);
     }
 
     void sensor_base::register_notifications_callback(notifications_callback_ptr callback)

@@ -14,14 +14,6 @@ int device::add_sensor(std::shared_ptr<sensor_interface> sensor_base)
     return (int)_sensors.size() - 1;
 }
 
-void device::register_sensor_info(int sub, std::map<rs2_camera_info, std::string> camera_info)
-{
-    for (auto& elem : camera_info)
-    {
-        get_uvc_sensor(sub).register_info(elem.first, std::move(elem.second));
-    }
-}
-
 uvc_sensor& device::get_uvc_sensor(int sub)
 {
     return dynamic_cast<uvc_sensor&>(*_sensors[sub]);
