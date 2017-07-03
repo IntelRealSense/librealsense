@@ -291,7 +291,7 @@ namespace rsimpl2
 
             call& find_call(call_type t, int entity_id, std::function<bool(const call& c)> history_match_validation = [](const call& c) {return true; });
             call* cycle_calls(call_type call_type, int id);
-            call* peak_next_call(int id = 0);
+            call* pick_next_call(int id = 0);
             size_t size() const { return calls.size(); }
 
         private:
@@ -308,8 +308,8 @@ namespace rsimpl2
             std::recursive_mutex _mutex;
             std::shared_ptr<time_service> _ts;
 
-            std::map<int, int> _cursors;
-            std::map<int, int> _cycles;
+            std::map<size_t, size_t> _cursors;
+            std::map<size_t, size_t> _cycles;
 
             double get_current_time();
 

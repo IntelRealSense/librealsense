@@ -162,10 +162,10 @@ namespace rsimpl2
         uint32_t    version;
         uint32_t    flags;              // Bit array to specify attributes that are valid
         uint32_t    frame_counter;
-        uint32_t    sensor_timestamp;  //In millisecond unit
-        uint32_t    readout_time;       //The readout time in millisecond second unit
-        uint32_t    exposure_time;      //The exposure time in microsecond second unit
-        uint32_t    frame_interval;     //The frame interval in microsecond second unit
+        uint32_t    sensor_timestamp;   //In microsecond unit
+        uint32_t    readout_time;       //The readout time in microsecond unit
+        uint32_t    exposure_time;      //The exposure time in microsecond unit
+        uint32_t    frame_interval;     //The frame interval in microsecond unit
         uint32_t    pipe_latency;       //The latency between start of frame to frame ready in USB buffer
     };
 

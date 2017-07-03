@@ -344,7 +344,6 @@ namespace rsimpl2
                     if (parent_device)
                     {
                         usb_device_info info{};
-                        std::stringstream ss;
                         info.unique_id = get_usb_port_id(usb_device);
                         info.mi = config->bNumInterfaces - 1; // The hardware monitor USB interface is expected to be the last one
                         action(info, usb_device);

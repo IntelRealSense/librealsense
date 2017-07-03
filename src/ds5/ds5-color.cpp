@@ -32,6 +32,7 @@ namespace rsimpl2
         _color_device_idx = add_sensor(color_ep);
 
         color_ep->register_pixel_format(pf_yuyv);
+        color_ep->register_pixel_format(pf_yuy2);
         color_ep->register_pixel_format(pf_bayer16);
 
         color_ep->register_pu(RS2_OPTION_BACKLIGHT_COMPENSATION);
