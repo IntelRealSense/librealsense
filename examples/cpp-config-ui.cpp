@@ -1863,6 +1863,36 @@ int main(int, char**) try
                         error_message = e.what();
                     }
 
+                    auto&& de_opt = sub->options_metadata[RS2_OPTION_DEPTH_UNITS];
+                    if (de_opt.supported)
+                    {
+                        if (ImGui::Checkbox("Histogram Equalization", &model.streams[RS2_STREAM_DEPTH].texture->equalize))
+                        {
+                            auto depth_units = de_opt.value;
+                            model.streams[RS2_STREAM_DEPTH].texture->min_depth = 0;
+                            model.streams[RS2_STREAM_DEPTH].texture->max_depth = 6 / depth_units;
+                        }
+                        if (!model.streams[RS2_STREAM_DEPTH].texture->equalize)
+                        {
+                            auto depth_units = de_opt.value;
+                            auto val = model.streams[RS2_STREAM_DEPTH].texture->min_depth * depth_units;
+                            if (ImGui::SliderFloat("Near (m)", &val, 0, 16))
+                            {
+                                model.streams[RS2_STREAM_DEPTH].texture->min_depth = val / depth_units;
+                            }
+                            val = model.streams[RS2_STREAM_DEPTH].texture->max_depth * depth_units;
+                            if (ImGui::SliderFloat("Far  (m)", &val, 0, 16))
+                            {
+                                model.streams[RS2_STREAM_DEPTH].texture->max_depth = val / depth_units;
+                            }
+                            if (model.streams[RS2_STREAM_DEPTH].texture->min_depth > model.streams[RS2_STREAM_DEPTH].texture->max_depth)
+                            {
+                                std::swap(model.streams[RS2_STREAM_DEPTH].texture->max_depth, model.streams[RS2_STREAM_DEPTH].texture->min_depth);
+                            }
+                        }
+                    }
+
+
                     for (auto i = 0; i < RS2_OPTION_COUNT; i++)
                     {
                         auto opt = static_cast<rs2_option>(i);

@@ -72,7 +72,7 @@ namespace rsimpl2
     public:
         platform_camera(std::shared_ptr<uvc::uvc_device> uvc, std::shared_ptr<uvc::time_service> ts)
         {
-            auto color_ep = std::make_shared<uvc_sensor>("RGB Camera", uvc, std::make_unique<ds5_timestamp_reader>(ts), ts);
+            auto color_ep = std::make_shared<uvc_sensor>("RGB Camera", uvc, std::unique_ptr<ds5_timestamp_reader>(new ds5_timestamp_reader(ts)), ts);
             add_sensor(color_ep);
 
             register_info(RS2_CAMERA_INFO_DEVICE_NAME, "Platform Camera");
