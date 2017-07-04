@@ -19,23 +19,23 @@ else()
 endif()
 
 # terminal
-add_executable(rs-terminal rs-terminal.cpp auto-complete.cpp auto-complete.h)
-if(WIN32)
-    target_link_libraries(rs-terminal ${DEPENDENCIES})
-else()
-    target_link_libraries(rs-terminal -lpthread ${DEPENDENCIES})
-endif()
-include_directories(rs-terminal ../../common ../../third-party ../../third-party/tclap/include)
-set_target_properties (rs-terminal PROPERTIES
-    FOLDER Tools
-)
+#add_executable(rs-terminal rs-terminal.cpp auto-complete.cpp auto-complete.h)
+#if(WIN32)
+#    target_link_libraries(rs-terminal ${DEPENDENCIES})
+#else()
+#    target_link_libraries(rs-terminal -lpthread ${DEPENDENCIES})
+#endif()
+#include_directories(rs-terminal ../../common ../../third-party ../../third-party/tclap/include)
+#set_target_properties (rs-terminal PROPERTIES
+#    FOLDER Tools
+#)
 
-install(
-    TARGETS
+#install(
+#    TARGETS
 
-    rs-terminal
+#    rs-terminal
 
-    RUNTIME DESTINATION
-    ${CMAKE_INSTALL_PREFIX}/bin
-)
+#    RUNTIME DESTINATION
+#    ${CMAKE_INSTALL_PREFIX}/bin
+#)
 

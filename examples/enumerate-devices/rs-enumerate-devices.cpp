@@ -103,8 +103,8 @@ int main(int argc, char** argv) try
         {
             auto dev = devices[i];
 
-            cout << left << setw(30) << dev.get_info(RS2_CAMERA_INFO_DEVICE_NAME)
-                << setw(20) << dev.get_info(RS2_CAMERA_INFO_CAMERA_FIRMWARE_VERSION)
+            cout << left << setw(30) << dev.get_info(RS2_CAMERA_INFO_NAME)
+                << setw(20) << dev.get_info(RS2_CAMERA_INFO_FIRMWARE_VERSION)
                 << endl;
         }
 
@@ -135,7 +135,7 @@ int main(int argc, char** argv) try
         {
             for (auto&& sensor : dev.query_sensors())
             {
-                cout << "Options for " << sensor.get_info(RS2_CAMERA_INFO_SENSOR_NAME) << endl;
+                cout << "Options for " << sensor.get_info(RS2_CAMERA_INFO_NAME);
 
                 cout << setw(55) << " Supported options:" << setw(10) << "min" << setw(10)
                      << " max" << setw(6) << " step" << setw(10) << " default" << endl;
@@ -159,7 +159,7 @@ int main(int argc, char** argv) try
         {
             for (auto&& sensor : dev.query_sensors())
             {
-                cout << "Stream Profiles supported by " << sensor.get_info(RS2_CAMERA_INFO_SENSOR_NAME) << endl;
+                cout << "Stream Profiles supported by " << sensor.get_info(RS2_CAMERA_INFO_NAME) << endl;
 
                 cout << setw(55) << " Supported modes:" << setw(10) << "stream" << setw(10)
                      << " resolution" << setw(6) << " fps" << setw(10) << " format" << endl;
@@ -181,7 +181,7 @@ int main(int argc, char** argv) try
         {
             for (auto&& sensor : dev.query_sensors())
             {
-                cout << "Intrinsics provided by " << sensor.get_info(RS2_CAMERA_INFO_SENSOR_NAME) << endl;
+                cout << "Intrinsics provided by " << sensor.get_info(RS2_CAMERA_INFO_NAME) << endl;
 
                 // Intrinsics
                 for (auto&& profile : sensor.get_stream_modes())

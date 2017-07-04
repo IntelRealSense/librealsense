@@ -19,32 +19,32 @@ else()
 endif()
 
 # fw-logger
-add_executable(rs-fw-logger rs-fw-logger.cpp fw-log-data.cpp
-    fw-log-data.h
-    fw-logs-formating-options.cpp
-    fw-logs-formating-options.h
-    fw-logs-parser.cpp
-    fw-logs-parser.h
-    fw-logs-xml-helper.cpp
-    fw-logs-xml-helper.h
-    string-formatter.cpp
-    string-formatter.h)
-if(WIN32)
-    target_link_libraries(rs-fw-logger ${DEPENDENCIES})
-else()
-    target_link_libraries(rs-fw-logger -lpthread ${DEPENDENCIES})
-endif()
-include_directories(rs-fw-logger ../../third-party/tclap/include cpp-fw-logger-helpers)
-set_target_properties (rs-fw-logger PROPERTIES
-    FOLDER Examples
-)
+#add_executable(rs-fw-logger rs-fw-logger.cpp fw-log-data.cpp
+#    fw-log-data.h
+#    fw-logs-formating-options.cpp
+#    fw-logs-formating-options.h
+#    fw-logs-parser.cpp
+#    fw-logs-parser.h
+#    fw-logs-xml-helper.cpp
+#    fw-logs-xml-helper.h
+#    string-formatter.cpp
+#    string-formatter.h)
+#if(WIN32)
+#    target_link_libraries(rs-fw-logger ${DEPENDENCIES})
+#else()
+#    target_link_libraries(rs-fw-logger -lpthread ${DEPENDENCIES})
+#endif()
+#include_directories(rs-fw-logger ../../third-party/tclap/include cpp-fw-logger-helpers)
+#set_target_properties (rs-fw-logger PROPERTIES
+#    FOLDER Examples
+#)
 
-install(
-    TARGETS
+#install(
+#    TARGETS
 
-    rs-fw-logger
+#    rs-fw-logger
 
-    RUNTIME DESTINATION
-    ${CMAKE_INSTALL_PREFIX}/bin
-)
+#    RUNTIME DESTINATION
+#    ${CMAKE_INSTALL_PREFIX}/bin
+#)
 

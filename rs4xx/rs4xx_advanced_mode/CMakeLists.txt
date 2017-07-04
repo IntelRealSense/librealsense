@@ -54,7 +54,6 @@ set(RS4XX_SOURCES
     src/rs4xx_advanced_mode.cpp
     src/json_loader.hpp
     src/concurrency.hpp
-    src/third_party/json.hpp
     )
 
 set(RS4XX_INCLUDES

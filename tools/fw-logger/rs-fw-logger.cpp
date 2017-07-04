@@ -88,7 +88,7 @@ int main(int argc, char* argv[])
                      0xf4, 0x01, 0x00, 0x00, 0x00,    0x00, 0x00, 0x00,
                      0x00, 0x00, 0x00, 0x00, 0x00,    0x00, 0x00, 0x00};
 
-            cout << "Device Name: " << dev.get_info(RS2_CAMERA_INFO_DEVICE_NAME) << endl <<
+            cout << "Device Name: " << dev.get_info(RS2_CAMERA_INFO_NAME) << endl <<
                     "Device Location: " << dev.get_info(RS2_CAMERA_INFO_DEVICE_LOCATION) << endl << endl;
 
             setvbuf(stdout, NULL, _IONBF, 0); // unbuffering stdout

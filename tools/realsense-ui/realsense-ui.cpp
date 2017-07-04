@@ -42,10 +42,10 @@ std::vector<std::string> get_device_info(const device& dev)
 std::string get_device_name(device& dev)
 {
     // retrieve device name
-    std::string name = (dev.supports(RS2_CAMERA_INFO_DEVICE_NAME))? dev.get_info(RS2_CAMERA_INFO_DEVICE_NAME) : "Unknown";
+    std::string name = (dev.supports(RS2_CAMERA_INFO_NAME))? dev.get_info(RS2_CAMERA_INFO_NAME) : "Unknown";
 
     // retrieve device serial number
-    std::string serial = (dev.supports(RS2_CAMERA_INFO_DEVICE_SERIAL_NUMBER)) ? dev.get_info(RS2_CAMERA_INFO_DEVICE_SERIAL_NUMBER) : "Unknown";
+    std::string serial = (dev.supports(RS2_CAMERA_INFO_SERIAL_NUMBER)) ? dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER) : "Unknown";
 
     std::stringstream s;
     s << std::setw(25) << std::left << name << " Sn# " << serial;
@@ -397,7 +397,7 @@ int main(int, char**) try
             for (auto&& sub : model.subdevices)
             {
 
-                label = to_string() << sub->s.get_info(RS2_CAMERA_INFO_SENSOR_NAME);
+                label = to_string() << sub->s.get_info(RS2_CAMERA_INFO_NAME);
                 if (ImGui::CollapsingHeader(label.c_str(), nullptr, true, true))
                 {
                     sub->draw_stream_selection();
@@ -406,7 +406,7 @@ int main(int, char**) try
                     {
                         if (!sub->streaming)
                         {
-                            label = to_string() << "Start " << sub->s.get_info(RS2_CAMERA_INFO_SENSOR_NAME);
+                            label = to_string() << "Start " << sub->s.get_info(RS2_CAMERA_INFO_NAME);
 
                             if (sub->is_selected_combination_supported())
                             {
@@ -432,7 +432,7 @@ int main(int, char**) try
                         }
                         else
                         {
-                            label = to_string() << "Stop " << sub->s.get_info(RS2_CAMERA_INFO_SENSOR_NAME);
+                            label = to_string() << "Stop " << sub->s.get_info(RS2_CAMERA_INFO_NAME);
                             if (ImGui::Button(label.c_str()))
                             {
                                 sub->stop();

@@ -213,8 +213,8 @@ namespace rs2
             auto opt = static_cast<rs2_option>(i);
 
             std::stringstream ss;
-            ss << dev.get_info(RS2_CAMERA_INFO_DEVICE_NAME)
-                << "/" << s.get_info(RS2_CAMERA_INFO_SENSOR_NAME)
+            ss << dev.get_info(RS2_CAMERA_INFO_NAME)
+                << "/" << s.get_info(RS2_CAMERA_INFO_NAME)
                 << "/" << rs2_option_to_string(opt);
             metadata.id = ss.str();
             metadata.opt = opt;
@@ -374,8 +374,8 @@ namespace rs2
         ImGui::PushItemWidth(-1);
         ImGui::Text("Resolution:");
         ImGui::SameLine();
-        std::string label = to_string() << dev.get_info(RS2_CAMERA_INFO_DEVICE_NAME)
-            << s.get_info(RS2_CAMERA_INFO_SENSOR_NAME) << " resolution";
+        std::string label = to_string() << dev.get_info(RS2_CAMERA_INFO_NAME)
+            << s.get_info(RS2_CAMERA_INFO_NAME) << " resolution";
         if (streaming)
             ImGui::Text("%s", res_chars[selected_res_id]);
         else
@@ -391,8 +391,8 @@ namespace rs2
         {
             auto fps_chars = get_string_pointers(shared_fpses);
             ImGui::Text("FPS:       ");
-            label = to_string() << dev.get_info(RS2_CAMERA_INFO_DEVICE_NAME)
-                << s.get_info(RS2_CAMERA_INFO_SENSOR_NAME) << " fps";
+            label = to_string() << dev.get_info(RS2_CAMERA_INFO_NAME)
+                << s.get_info(RS2_CAMERA_INFO_NAME) << " fps";
 
             ImGui::SameLine();
             ImGui::PushItemWidth(-1);
@@ -449,8 +449,8 @@ namespace rs2
             {
                 if (show_single_fps_list) ImGui::SameLine();
 
-                label = to_string() << dev.get_info(RS2_CAMERA_INFO_DEVICE_NAME)
-                    << s.get_info(RS2_CAMERA_INFO_SENSOR_NAME)
+                label = to_string() << dev.get_info(RS2_CAMERA_INFO_NAME)
+                    << s.get_info(RS2_CAMERA_INFO_NAME)
                     << " " << rs2_stream_to_string(stream) << " format";
 
                 if (!show_single_fps_list)
@@ -477,8 +477,8 @@ namespace rs2
                     ImGui::Text("FPS:       ");
                     ImGui::SameLine();
 
-                    label = to_string() << s.get_info(RS2_CAMERA_INFO_DEVICE_NAME)
-                        << s.get_info(RS2_CAMERA_INFO_SENSOR_NAME)
+                    label = to_string() << s.get_info(RS2_CAMERA_INFO_NAME)
+                        << s.get_info(RS2_CAMERA_INFO_NAME)
                         << rs2_stream_to_string(stream) << " fps";
 
                     if (streaming)
