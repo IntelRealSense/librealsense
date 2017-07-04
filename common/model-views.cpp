@@ -213,8 +213,8 @@ namespace rs2
             auto opt = static_cast<rs2_option>(i);
 
             std::stringstream ss;
-            ss << dev.get_info(RS2_CAMERA_INFO_DEVICE_NAME)
-                << "/" << s.get_info(RS2_CAMERA_INFO_SENSOR_NAME)
+            ss << dev.get_info(RS2_CAMERA_INFO_NAME)
+                << "/" << s.get_info(RS2_CAMERA_INFO_NAME)
                 << "/" << rs2_option_to_string(opt);
             metadata.id = ss.str();
             metadata.opt = opt;
@@ -374,8 +374,8 @@ namespace rs2
         ImGui::PushItemWidth(-1);
         ImGui::Text("Resolution:");
         ImGui::SameLine();
-        std::string label = to_string() << dev.get_info(RS2_CAMERA_INFO_DEVICE_NAME)
-            << s.get_info(RS2_CAMERA_INFO_SENSOR_NAME) << " resolution";
+        std::string label = to_string() << dev.get_info(RS2_CAMERA_INFO_NAME)
+            << s.get_info(RS2_CAMERA_INFO_NAME) << " resolution";
         if (streaming)
             ImGui::Text("%s", res_chars[selected_res_id]);
         else
@@ -391,8 +391,8 @@ namespace rs2
         {
             auto fps_chars = get_string_pointers(shared_fpses);
             ImGui::Text("FPS:       ");
-            label = to_string() << dev.get_info(RS2_CAMERA_INFO_DEVICE_NAME)
-                << s.get_info(RS2_CAMERA_INFO_SENSOR_NAME) << " fps";
+            label = to_string() << dev.get_info(RS2_CAMERA_INFO_NAME)
+                << s.get_info(RS2_CAMERA_INFO_NAME) << " fps";
 
             ImGui::SameLine();
             ImGui::PushItemWidth(-1);
@@ -449,8 +449,8 @@ namespace rs2
             {
                 if (show_single_fps_list) ImGui::SameLine();
 
-                label = to_string() << dev.get_info(RS2_CAMERA_INFO_DEVICE_NAME)
-                    << s.get_info(RS2_CAMERA_INFO_SENSOR_NAME)
+                label = to_string() << dev.get_info(RS2_CAMERA_INFO_NAME)
+                    << s.get_info(RS2_CAMERA_INFO_NAME)
                     << " " << rs2_stream_to_string(stream) << " format";
 
                 if (!show_single_fps_list)
@@ -477,8 +477,8 @@ namespace rs2
                     ImGui::Text("FPS:       ");
                     ImGui::SameLine();
 
-                    label = to_string() << s.get_info(RS2_CAMERA_INFO_DEVICE_NAME)
-                        << s.get_info(RS2_CAMERA_INFO_SENSOR_NAME)
+                    label = to_string() << s.get_info(RS2_CAMERA_INFO_NAME)
+                        << s.get_info(RS2_CAMERA_INFO_NAME)
                         << rs2_stream_to_string(stream) << " fps";
 
                     if (streaming)
@@ -627,11 +627,15 @@ namespace rs2
                 {
                     try
                     {
-                        //auto roi = s.get_region_of_interest();
-                        //roi_rect.x = roi.min_x;
-                        //roi_rect.y = roi.min_y;
-                        //roi_rect.w = roi.max_x - roi.min_x;
-                        //roi_rect.h = roi.max_y - roi.min_y;
+                        roi_sensor roi(s);
+                        if (roi)
+                        {
+                            auto r = roi.get_region_of_interest();
+                            roi_rect.x = r.min_x;
+                            roi_rect.y = r.min_y;
+                            roi_rect.w = r.max_x - r.min_x;
+                            roi_rect.h = r.max_y - r.min_y;
+                        }
                     }
                     catch (...)
                     {
@@ -770,6 +774,8 @@ namespace rs2
 
                     try
                     {
+                        roi_sensor rs(dev->s);
+                        if (rs) rs.set_region_of_interest(roi);
                         // Step 2: send it to firmware
                         //s->dev.set_region_of_interest(roi);
                     }
@@ -787,9 +793,10 @@ namespace rs2
                         auto y_margin = (int)size.y / 8;
 
                         // Default ROI behaviour is center 3/4 of the screen:
-                        //s->dev.set_region_of_interest({ x_margin, y_margin,
-                        //                                  (int)size.x - x_margin - 1,
-                        //                                  (int)size.y - y_margin - 1 });
+                        roi_sensor rs(dev->s);
+                        if (rs) rs.set_region_of_interest({ x_margin, y_margin,
+                                                      (int)size.x - x_margin - 1,
+                                                      (int)size.y - y_margin - 1 });
 
                         roi_display_rect = { 0, 0, 0, 0 };
                         dev->roi_rect = { 0, 0, 0, 0 };

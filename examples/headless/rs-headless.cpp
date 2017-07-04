@@ -64,9 +64,9 @@ int main()
         {
             auto dev = hub.wait_for_device();
 
-            printf("\nUsing device 0, an %s\n", dev.get_info(RS2_CAMERA_INFO_DEVICE_NAME));
-            printf("    Serial number: %s\n", dev.get_info(RS2_CAMERA_INFO_DEVICE_SERIAL_NUMBER));
-            printf("    Firmware version: %s\n", dev.get_info(RS2_CAMERA_INFO_CAMERA_FIRMWARE_VERSION));
+            printf("\nUsing device 0, an %s\n", dev.get_info(RS2_CAMERA_INFO_NAME));
+            printf("    Serial number: %s\n", dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER));
+            printf("    Firmware version: %s\n", dev.get_info(RS2_CAMERA_INFO_FIRMWARE_VERSION));
 
             util::config config;
             config.enable_all(preset::best_quality);

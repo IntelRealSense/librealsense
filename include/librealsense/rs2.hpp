@@ -404,8 +404,6 @@ namespace rs2
         frame(const frame&) = delete;
     };
 
-
-
     template<class T>
     class frame_callback : public rs2_frame_callback
     {
@@ -905,13 +903,13 @@ namespace rs2
         {
             return _sensor != nullptr;
         }
-        const rs2_sensor* get() const
+
+        const std::shared_ptr<rs2_sensor>& get() const
         {
-            return _sensor.get();
+            return _sensor;
         }
 
-
-    private:
+    protected:
         friend context;
         friend device_list;
         friend device;
@@ -923,6 +921,40 @@ namespace rs2
         }
     };
 
+    class roi_sensor : public sensor
+    {
+    public:
+        roi_sensor(sensor s)
+            : sensor(s.get())
+        {
+            rs2_error* e = nullptr;
+            if(rs2_is_sensor(_sensor.get(), RS2_EXTENSION_TYPE_ROI, &e) == 0 && !e)
+            {
+                _sensor = nullptr;
+            }
+            error::handle(e);
+        }
+
+        void set_region_of_interest(const region_of_interest& roi)
+        {
+            if (!_sensor) throw std::runtime_error("Sensor does not support Region-of-Interest!");
+            rs2_error* e = nullptr;
+            rs2_set_region_of_interest(_sensor.get(), roi.min_x, roi.min_y, roi.max_x, roi.max_y, &e);
+            error::handle(e);
+        }
+
+        region_of_interest get_region_of_interest() const
+        {
+            if (!_sensor) throw std::runtime_error("Sensor does not support Region-of-Interest!");
+            region_of_interest roi {};
+            rs2_error* e = nullptr;
+            rs2_get_region_of_interest(_sensor.get(), &roi.min_x, &roi.min_y, &roi.max_x, &roi.max_y, &e);
+            error::handle(e);
+            return roi;
+        }
+
+        operator bool() const { return _sensor.get(); }
+    };
 
     class device
     {

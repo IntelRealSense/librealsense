@@ -12,6 +12,7 @@
 #include "../include/librealsense/rs2.h"     // Inherit all type definitions in the public API
 #include "../include/librealsense/rscore2.hpp"
 
+#include <stdint.h>
 #include <cassert>                          // For assert
 #include <cstring>                          // For memcmp
 #include <vector>                           // For vector
@@ -215,6 +216,11 @@ namespace librealsense
         lazy() : _init([]() { T t{}; return t; }) {}
         lazy(std::function<T()> initializer) : _init(std::move(initializer)) {}
 
+        T* operator->() const
+        {
+            return operate();
+        }
+
         T& operator*()
         {
             return *operate();
@@ -318,6 +324,7 @@ namespace librealsense
     RS2_ENUM_HELPERS(rs2_exception_type, EXCEPTION_TYPE)
     RS2_ENUM_HELPERS(rs2_log_severity, LOG_SEVERITY)
     RS2_ENUM_HELPERS(rs2_notification_category, NOTIFICATION_CATEGORY)
+    RS2_ENUM_HELPERS(rs2_extension_type, EXTENSION_TYPE)
     #undef RS2_ENUM_HELPERS
 
     ////////////////////////////////////////////

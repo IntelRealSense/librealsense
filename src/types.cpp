@@ -267,6 +267,23 @@ namespace librealsense
         #undef CASE
     }
 
+    const char * get_string(rs2_extension_type value)
+    {
+        #define CASE(X) case RS2_EXTENSION_TYPE_##X: return #X;
+                switch(value)
+                {
+                    CASE(DEBUG)
+                    CASE(INFO)
+                    CASE(MOTION)
+                    CASE(OPTIONS)
+                    CASE(UNKNOWN)
+                    CASE(VIDEO)
+                    CASE(ROI)
+                    default: assert(!is_valid(value)); return unknown;
+                }
+        #undef CASE
+    }
+
     std::string firmware_version::to_string() const
     {
         if (is_any) return "any";

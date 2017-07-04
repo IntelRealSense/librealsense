@@ -2,17 +2,13 @@
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
 #include <functional>   // For function
-#include <climits>
 
 #include "context.h"
 #include "device.h"
-#include "archive.h"
-#include "concurrency.h"
 #include "algo.h"
-#include "types.h"
-#include "sync.h"
 #include "core/debug.h"
 #include "core/motion.h"
+#include "core/extension.h"
 
 ////////////////////////
 // API implementation //
@@ -56,7 +52,15 @@ struct rs2_context
     std::shared_ptr<librealsense::context> ctx;
 };
 
+struct rs2_device_serializer
+{
+   // std::shared_ptr<rsimpl2::device_serializer> device_serializer;
+};
 
+struct rs2_record_device
+{
+   // std::shared_ptr<rsimpl2::record_device> record_device;
+};
 
 struct rs2_notification
 {
@@ -133,18 +137,18 @@ namespace librealsense
     void notifications_proccessor::raise_notification(const notification n)
     {
         _dispatcher.invoke([this, n](dispatcher::cancellable_timer ct)
-        {
-            std::lock_guard<std::mutex> lock(_callback_mutex);
-            rs2_notification noti(&n);
-            if (_callback)_callback->on_notification(&noti);
-            else
-            {
+                           {
+                               std::lock_guard<std::mutex> lock(_callback_mutex);
+                               rs2_notification noti(&n);
+                               if (_callback)_callback->on_notification(&noti);
+                               else
+                               {
 #ifdef DEBUG
 
 #endif // !DEBUG
 
-            }
-        });
+                               }
+                           });
     }
 
 }
@@ -155,8 +159,21 @@ namespace librealsense
 #define VALIDATE_ENUM(ARG) if(!librealsense::is_valid(ARG)) { std::ostringstream ss; ss << "invalid enum value for argument \"" #ARG "\""; throw librealsense::invalid_value_exception(ss.str()); }
 #define VALIDATE_RANGE(ARG, MIN, MAX) if((ARG) < (MIN) || (ARG) > (MAX)) { std::ostringstream ss; ss << "out of range value for argument \"" #ARG "\""; throw librealsense::invalid_value_exception(ss.str()); }
 #define VALIDATE_LE(ARG, MAX) if((ARG) > (MAX)) { std::ostringstream ss; ss << "out of range value for argument \"" #ARG "\""; throw std::runtime_error(ss.str()); }
-#define VALIDATE_NATIVE_STREAM(ARG) VALIDATE_ENUM(ARG); if(ARG >= RS2_STREAM_NATIVE_COUNT) { std::ostringstream ss; ss << "argument \"" #ARG "\" must be a native stream"; throw rsimpl2::wrong_value_exception(ss.str()); }
-#define VALIDATE_INTERFACE(X, T) dynamic_cast<T*>(&(X)); if (!dynamic_cast<T*>(&(X))) throw std::runtime_error("Object does not support \"" #T "\" interface!");
+//#define VALIDATE_NATIVE_STREAM(ARG) VALIDATE_ENUM(ARG); if(ARG >= RS2_STREAM_NATIVE_COUNT) { std::ostringstream ss; ss << "argument \"" #ARG "\" must be a native stream"; throw rsimpl2::wrong_value_exception(ss.str()); }
+#define VALIDATE_INTERFACE_NO_THROW(X, T) (dynamic_cast<T*>(&(*X)) || dynamic_cast<librealsense::extension_interface*>(&(*X)))
+#define VALIDATE_INTERFACE(X,T)                                                                \
+    ([&]() {                                                                                   \
+        auto p = dynamic_cast<T*>(&(*X));                                                       \
+        if (!dynamic_cast<T*>(&(*X)))                                                           \
+        {                                                                                      \
+            auto ext = dynamic_cast<librealsense::extension_interface*>(&(*X));                      \
+            if (!ext)                                                                          \
+                throw std::runtime_error("Object does not support \"" #T "\" interface! " );   \
+            else                                                                               \
+                return dynamic_cast<T*>(ext);                                                  \
+        }                                                                                      \
+        return p;                                                                              \
+    })()
 
 int major(int version)
 {
@@ -180,8 +197,8 @@ std::string api_version_to_string(int version)
 void report_version_mismatch(int runtime, int compiletime)
 {
     throw librealsense::invalid_value_exception(librealsense::to_string() << "API version mismatch: librealsense.so was compiled with API version "
-        << api_version_to_string(runtime) << " but the application was compiled with "
-        << api_version_to_string(compiletime) << "! Make sure correct version of the library is installed (make install)");
+                                                                << api_version_to_string(runtime) << " but the application was compiled with "
+                                                                << api_version_to_string(compiletime) << "! Make sure correct version of the library is installed (make install)");
 }
 
 void verify_version_compatibility(int api_version)
@@ -393,7 +410,7 @@ rs2_raw_data_buffer* rs2_send_and_receive_raw_data(rs2_device* device, void* raw
 {
     VALIDATE_NOT_NULL(device);
 
-    auto debug_interface = VALIDATE_INTERFACE(*device->device, librealsense::debug_interface);
+    auto debug_interface = VALIDATE_INTERFACE(device->device, librealsense::debug_interface);
 
     auto raw_data_buffer = static_cast<uint8_t*>(raw_data_to_send);
     std::vector<uint8_t> buffer_to_send(raw_data_buffer, raw_data_buffer + size_of_raw_data_to_send);
@@ -424,7 +441,7 @@ void rs2_delete_raw_data(rs2_raw_data_buffer* buffer) try
 NOEXCEPT_RETURN(, buffer)
 
 void rs2_open(rs2_sensor* sensor, rs2_stream stream,
-    int width, int height, int fps, rs2_format format, rs2_error** error) try
+              int width, int height, int fps, rs2_format format, rs2_error** error) try
 {
     VALIDATE_NOT_NULL(sensor);
     VALIDATE_ENUM(format);
@@ -868,7 +885,8 @@ void rs2_get_motion_intrinsics(const rs2_sensor * sensor, rs2_stream stream, rs2
     VALIDATE_NOT_NULL(intrinsics);
     VALIDATE_ENUM(stream);
 
-    auto motion = VALIDATE_INTERFACE(*sensor->sensor, librealsense::motion_sensor_interface);
+    auto motion = VALIDATE_INTERFACE(sensor->sensor, librealsense::motion_sensor_interface);
+
     *intrinsics = motion->get_motion_intrinsics(stream);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, sensor, stream, intrinsics)
@@ -881,7 +899,7 @@ void rs2_get_stream_intrinsics(const rs2_sensor * sensor, rs2_stream stream, int
     VALIDATE_ENUM(format);
     VALIDATE_NOT_NULL(intrinsics);
 
-    auto video = VALIDATE_INTERFACE(*sensor->sensor, librealsense::video_sensor_interface);
+    auto video = VALIDATE_INTERFACE(sensor->sensor, librealsense::video_sensor_interface);
 
     // cast because i've been getting errors. (int->uint32_t requires narrowing conversion)
     *intrinsics = video->get_intrinsics({ stream, uint32_t(width), uint32_t(height), uint32_t(fps), format });
@@ -936,7 +954,7 @@ void rs2_set_region_of_interest(const rs2_sensor* sensor, int min_x, int min_y, 
     VALIDATE_LE(0, min_x);
     VALIDATE_LE(0, min_y);
 
-    auto roi = VALIDATE_INTERFACE(*sensor->sensor, librealsense::roi_sensor_interface);
+    auto roi = VALIDATE_INTERFACE(sensor->sensor, librealsense::roi_sensor_interface);
 
     roi->get_roi_method().set({ min_x, min_y, max_x, max_y });
 }
@@ -950,7 +968,7 @@ void rs2_get_region_of_interest(const rs2_sensor* sensor, int* min_x, int* min_y
     VALIDATE_NOT_NULL(max_x);
     VALIDATE_NOT_NULL(max_y);
 
-    auto roi = VALIDATE_INTERFACE(*sensor->sensor, librealsense::roi_sensor_interface);
+    auto roi = VALIDATE_INTERFACE(sensor->sensor, librealsense::roi_sensor_interface);
 
     auto rect = roi->get_roi_method().get();
 
@@ -1063,3 +1081,57 @@ void rs2_log_to_file(rs2_log_severity min_severity, const char * file_path, rs2_
     librealsense::log_to_file(min_severity, file_path);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, min_severity, file_path)
+
+int rs2_is_sensor(const rs2_sensor* sensor, rs2_extension_type extension_type, rs2_error ** error) try
+{
+    VALIDATE_NOT_NULL(sensor);
+    VALIDATE_ENUM(extension_type);
+    switch (extension_type)
+    {
+        case RS2_EXTENSION_TYPE_DEBUG:     return VALIDATE_INTERFACE_NO_THROW(sensor->sensor, librealsense::debug_interface);
+        case RS2_EXTENSION_TYPE_INFO:      return VALIDATE_INTERFACE_NO_THROW(sensor->sensor, librealsense::info_interface);
+        case RS2_EXTENSION_TYPE_MOTION:    return VALIDATE_INTERFACE_NO_THROW(sensor->sensor, librealsense::motion_sensor_interface);
+        case RS2_EXTENSION_TYPE_OPTIONS:   return VALIDATE_INTERFACE_NO_THROW(sensor->sensor, librealsense::options_interface);
+        case RS2_EXTENSION_TYPE_VIDEO:     return VALIDATE_INTERFACE_NO_THROW(sensor->sensor, librealsense::video_sensor_interface);
+        case RS2_EXTENSION_TYPE_ROI:       return VALIDATE_INTERFACE_NO_THROW(sensor->sensor, librealsense::roi_sensor_interface);
+        default:
+            return 0;
+    }
+}
+HANDLE_EXCEPTIONS_AND_RETURN(0, sensor, extension_type)
+
+//TODO: int rs2_is_frame(const rs2_frame* frame, rs2_extension_type extension_type, rs2_error ** error)
+//TODO: int rs2_is_device(const rs2_device* frame, rs2_extension_type extension_type, rs2_error ** error)
+
+rs2_device_serializer * rs2_create_device_serializer(const char* file, rs2_error ** error) try
+{
+    VALIDATE_NOT_NULL(file);
+
+    return nullptr;
+    //return new rs2_device_serializer{ std::make_shared<rsimpl2::ros_device_serializer_impl>(file) };
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, file)
+
+void rs2_delete_device_serializer(rs2_device_serializer * device_serializer) try
+{
+    VALIDATE_NOT_NULL(device_serializer);
+    delete device_serializer;
+}
+NOEXCEPT_RETURN(, device_serializer)
+
+
+rs2_record_device* rs2_create_record_device(const rs2_device* device, rs2_device_serializer* serializer, rs2_error** error) try
+{
+    VALIDATE_NOT_NULL(device);
+    VALIDATE_NOT_NULL(serializer);
+
+    return nullptr;
+    //return new rs2_record_device( { std::make_shared<rsimpl2::record_device>(device->device, serializer->device_serializer->get_writer()) });
+}NOEXCEPT_RETURN(nullptr, device, serializer)
+
+void rs2_delete_record_device(rs2_record_device* device) try
+{
+    VALIDATE_NOT_NULL(device);
+    delete device;
+}
+NOEXCEPT_RETURN(, device)

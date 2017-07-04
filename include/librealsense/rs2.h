@@ -292,6 +292,8 @@ typedef struct rs2_devices_changed_callback rs2_devices_changed_callback;
 typedef struct rs2_frame_callback rs2_frame_callback;
 typedef struct rs2_log_callback rs2_log_callback;
 typedef struct rs2_syncer rs2_syncer;
+typedef struct rs2_device_serializer rs2_device_serializer;
+typedef struct rs2_record_device rs2_record_device;
 
 typedef void (*rs2_frame_callback_ptr)(rs2_frame*, void*);
 typedef void (*rs2_notification_callback_ptr)(rs2_notification*, void*);
@@ -1022,6 +1024,51 @@ const char * rs2_exception_type_to_string   (rs2_exception_type type);
 
 void rs2_log_to_console(rs2_log_severity min_severity, rs2_error ** error);
 void rs2_log_to_file(rs2_log_severity min_severity, const char * file_path, rs2_error ** error);
+
+typedef enum rs2_extension_type
+{
+    RS2_EXTENSION_TYPE_DEBUG,
+    RS2_EXTENSION_TYPE_INFO,
+    RS2_EXTENSION_TYPE_MOTION,
+    RS2_EXTENSION_TYPE_OPTIONS,
+    RS2_EXTENSION_TYPE_UNKNOWN,
+    RS2_EXTENSION_TYPE_VIDEO,
+    RS2_EXTENSION_TYPE_ROI,
+    RS2_EXTENSION_TYPE_COUNT
+} rs2_extension_type;
+/**
+ * TODO: document
+ * \param device
+ * \param extension_type
+ * \return
+ */
+int rs2_is_sensor(const rs2_sensor* sensor, rs2_extension_type extension_type, rs2_error ** error);
+/**
+ * TODO: document
+ * \param file
+ * \param error
+ * \return
+ */
+rs2_device_serializer * rs2_create_device_serializer(const char* file, rs2_error ** error);
+/**
+ * TODO: document
+ * \param device_serializer
+ */
+void rs2_delete_device_serializer(rs2_device_serializer * device_serializer);
+
+/**
+ * TODO: document
+ * \param device
+ * \param serializer
+ * \param error
+ * \return
+ */
+rs2_record_device* rs2_create_record_device(const rs2_device* device, rs2_device_serializer* serializer, rs2_error** error);
+/**
+ * TODO: document
+ * \param device 
+ */
+void rs2_delete_record_device(rs2_record_device* device);
 
 #ifdef __cplusplus
 }
