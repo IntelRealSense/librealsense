@@ -394,7 +394,7 @@ namespace rs2
                 try
                 {
                     std::unique_lock<std::mutex> lock(_mutex);
-                    auto result = rs2_device_list_contains(_device_list.get_list(), dev.get(), &e);
+                    auto result = rs2_device_list_contains(_device_list.get_list(), dev.get().get(), &e);
                     if (e) return false;
                     return result > 0;
                 }

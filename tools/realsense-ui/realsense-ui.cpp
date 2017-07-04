@@ -614,7 +614,7 @@ int main(int, char**) try
 
             ImGui::PushStyleColor(ImGuiCol_WindowBg, { 0, 0, 0, 0 });
             ImGui::SetNextWindowPos({ stream_rect.x, stream_rect.y });
-            ImGui::SetNextWindowSize({ stream_rect.w, stream_rect.h });
+            ImGui::SetNextWindowSize({ stream_rect.w, 50 });
             label = to_string() << "Stream of " << rs2_stream_to_string(stream);
             ImGui::Begin(label.c_str(), nullptr, flags);
 

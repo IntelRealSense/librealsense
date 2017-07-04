@@ -1043,6 +1043,15 @@ typedef enum rs2_extension_type
  * \return
  */
 int rs2_is_sensor(const rs2_sensor* sensor, rs2_extension_type extension_type, rs2_error ** error);
+
+/**
+ * TODO: document
+ * \param device
+ * \param extension_type
+ * \return
+ */
+int rs2_is_device(const rs2_device* dev, rs2_extension_type extension_type, rs2_error ** error);
+
 /**
  * TODO: document
  * \param file

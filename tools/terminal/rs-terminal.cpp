@@ -70,7 +70,7 @@ void xml_mode(const string& line, const commands_xml& cmd_xml, device& dev, map<
     }
     cout << endl;
 
-    auto result = dev.debug().send_and_receive_raw_data(raw_data);
+    auto result = dev.as<debug_protocol>().send_and_receive_raw_data(raw_data);
 
     unsigned returned_opcode = *result.data();
     // check returned opcode
@@ -109,7 +109,7 @@ void hex_mode(const string& line, device& dev)
     if (raw_data.empty())
         throw runtime_error("Wrong input!");
 
-    auto result = dev.debug().send_and_receive_raw_data(raw_data);
+    auto result = dev.as<debug_protocol>().send_and_receive_raw_data(raw_data);
 
     cout << endl;
     for (auto& elem : result)

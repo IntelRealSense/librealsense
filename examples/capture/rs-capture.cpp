@@ -41,7 +41,7 @@ int main(int argc, char * argv[])
             // Open a GLFW window
             glfwInit();
             ostringstream ss;
-            ss << "CPP Capture Example (" << dev.get_info(RS2_CAMERA_INFO_DEVICE_NAME) << ")";
+            ss << "CPP Capture Example (" << dev.get_info(RS2_CAMERA_INFO_NAME) << ")";
 
             win = glfwCreateWindow(1280, 720, ss.str().c_str(), nullptr, nullptr);
             glfwMakeContextCurrent(win);

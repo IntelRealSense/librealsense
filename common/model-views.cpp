@@ -627,10 +627,9 @@ namespace rs2
                 {
                     try
                     {
-                        roi_sensor roi(s);
-                        if (roi)
+                        if (s.is<roi_sensor>())
                         {
-                            auto r = roi.get_region_of_interest();
+                            auto r = s.as<roi_sensor>().get_region_of_interest();
                             roi_rect.x = r.min_x;
                             roi_rect.y = r.min_y;
                             roi_rect.w = r.max_x - r.min_x;
@@ -731,6 +730,7 @@ namespace rs2
     {
         if (dev->roi_checked)
         {
+            auto&& sensor = dev->s;
             // Case 1: Starting Dragging of the ROI rect
             // Pre-condition: not capturing already + mouse is down + we are inside stream rect
             if (!capturing_roi && mouse.mouse_down && stream_rect.contains(mouse.cursor))
@@ -774,10 +774,11 @@ namespace rs2
 
                     try
                     {
-                        roi_sensor rs(dev->s);
-                        if (rs) rs.set_region_of_interest(roi);
                         // Step 2: send it to firmware
-                        //s->dev.set_region_of_interest(roi);
+                        if (sensor.is<roi_sensor>())
+                        {
+                            sensor.as<roi_sensor>().set_region_of_interest(roi);
+                        }
                     }
                     catch (const error& e)
                     {
@@ -793,10 +794,12 @@ namespace rs2
                         auto y_margin = (int)size.y / 8;
 
                         // Default ROI behaviour is center 3/4 of the screen:
-                        roi_sensor rs(dev->s);
-                        if (rs) rs.set_region_of_interest({ x_margin, y_margin,
-                                                      (int)size.x - x_margin - 1,
-                                                      (int)size.y - y_margin - 1 });
+                        if (sensor.is<roi_sensor>())
+                        {
+                            sensor.as<roi_sensor>().set_region_of_interest({ x_margin, y_margin,
+                                                                             (int)size.x - x_margin - 1,
+                                                                             (int)size.y - y_margin - 1 });
+                        }
 
                         roi_display_rect = { 0, 0, 0, 0 };
                         dev->roi_rect = { 0, 0, 0, 0 };

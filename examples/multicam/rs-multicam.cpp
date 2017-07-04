@@ -35,7 +35,7 @@ int main(int argc, char * argv[]) try
     // Configure and start our devices
     for(auto&& dev : devices)
     {
-        cout << "Starting " << dev.get_info(RS2_CAMERA_INFO_DEVICE_NAME) << "... ";
+        cout << "Starting " << dev.get_info(RS2_CAMERA_INFO_NAME) << "... ";
         auto sensor = dev.query_sensors().front();
         auto modes = sensor.get_stream_modes();
         sensor.open(modes.back());

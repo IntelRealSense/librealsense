@@ -909,6 +909,20 @@ namespace rs2
             return _sensor;
         }
 
+        template<class T>
+        bool is() const
+        {
+            T extension(*this);
+            return extension;
+        }
+
+        template<class T>
+        T as() const
+        {
+            T extension(*this);
+            return extension;
+        }
+
     protected:
         friend context;
         friend device_list;
@@ -1046,19 +1060,69 @@ namespace rs2
         {
             return _dev != nullptr;
         }
-        const rs2_device* get() const
+        const std::shared_ptr<rs2_device>& get() const
         {
-            return _dev.get();
+            return _dev;
         }
 
+        template<class T>
+        bool is() const
+        {
+            T extension(*this);
+            return extension;
+        }
 
-    private:
+        template<class T>
+        T as() const
+        {
+            T extension(*this);
+            return extension;
+        }
+
+    protected:
         friend context;
         friend device_list;
 
         std::shared_ptr<rs2_device> _dev;
         explicit device(std::shared_ptr<rs2_device> dev) : _dev(dev)
         {
+        }
+    };
+
+    class debug_protocol : public device
+    {
+    public:
+        debug_protocol(device d)
+                : device(d.get())
+        {
+            rs2_error* e = nullptr;
+            if(rs2_is_device(_dev.get(), RS2_EXTENSION_TYPE_ROI, &e) == 0 && !e)
+            {
+                _dev = nullptr;
+            }
+            error::handle(e);
+        }
+
+        std::vector<uint8_t> send_and_receive_raw_data(const std::vector<uint8_t>& input) const
+        {
+            if (!_dev) throw std::runtime_error("Device does not support Debug Protocol!");
+
+            std::vector<uint8_t> results;
+
+            rs2_error* e = nullptr;
+            std::shared_ptr<rs2_raw_data_buffer> list(
+                    rs2_send_and_receive_raw_data(_dev.get(), (void*)input.data(), (uint32_t)input.size(), &e),
+                    rs2_delete_raw_data);
+            error::handle(e);
+
+            auto size = rs2_get_raw_data_size(list.get(), &e);
+            error::handle(e);
+
+            auto start = rs2_get_raw_data(list.get(), &e);
+
+            results.insert(results.begin(), start, start + size);
+
+            return results;
         }
     };
 
@@ -1178,7 +1242,7 @@ namespace rs2
             if(!dev)
                 return false;
 
-            auto res =  rs2_device_list_contains(_removed.get_list(), dev.get(), &e);
+            auto res =  rs2_device_list_contains(_removed.get_list(), dev.get().get(), &e);
             error::handle(e);
 
             return res > 0;

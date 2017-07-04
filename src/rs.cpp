@@ -1100,6 +1100,24 @@ int rs2_is_sensor(const rs2_sensor* sensor, rs2_extension_type extension_type, r
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, sensor, extension_type)
 
+int rs2_is_device(const rs2_device* dev, rs2_extension_type extension_type, rs2_error ** error) try
+{
+    VALIDATE_NOT_NULL(dev);
+    VALIDATE_ENUM(extension_type);
+    switch (extension_type)
+    {
+        case RS2_EXTENSION_TYPE_DEBUG:     return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::debug_interface);
+        case RS2_EXTENSION_TYPE_INFO:      return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::info_interface);
+        case RS2_EXTENSION_TYPE_MOTION:    return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::motion_sensor_interface);
+        case RS2_EXTENSION_TYPE_OPTIONS:   return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::options_interface);
+        case RS2_EXTENSION_TYPE_VIDEO:     return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::video_sensor_interface);
+        case RS2_EXTENSION_TYPE_ROI:       return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::roi_sensor_interface);
+        default:
+            return 0;
+    }
+}
+HANDLE_EXCEPTIONS_AND_RETURN(0, dev, extension_type)
+
 //TODO: int rs2_is_frame(const rs2_frame* frame, rs2_extension_type extension_type, rs2_error ** error)
 //TODO: int rs2_is_device(const rs2_device* frame, rs2_extension_type extension_type, rs2_error ** error)
 
