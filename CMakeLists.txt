@@ -85,7 +85,8 @@ else()
 endif()
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/CMake)
-
+set(ROOT_DIR ${CMAKE_CURRENT_SOURCE_DIR})
+add_subdirectory(src/ros/realsense_file)
 set(REALSENSE_CPP
     src/archive.cpp
     src/context.cpp
@@ -120,7 +121,9 @@ set(REALSENSE_CPP
     src/win/win-usb.cpp
     src/win/win-hid.cpp
     src/win/win-backend.cpp
-
+    src/record_device.cpp
+    src/ros/ros_serializer.cpp
+    src/ros/conversions.cpp
     third_party/easyloggingpp/src/easylogging++.cc
 
     third_party/sqlite/sqlite3.c
@@ -178,8 +181,10 @@ set(REALSENSE_HPP
     src/win/win-usb.h
     src/win/win-hid.h
     src/win/win-backend.h
-        src/record_device.cpp
-        src/record_device.h
+    src/record_device.h
+    src/ros/ros_serializer.h
+    src/ros/conversions.h
+
     third_party/easyloggingpp/src/easylogging++.h
     third_party/sqlite/sqlite3.h
     src/mock/sql.h

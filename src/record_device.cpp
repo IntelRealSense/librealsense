@@ -4,6 +4,9 @@
 #include <librealsense/rs2.hpp>
 #include "record_device.h"
 
+#define FOREACH(var, enum_type) \
+    for(enum_type var = static_cast<enum_type>(0); var < )
+
 rsimpl2::record_device::record_device(std::shared_ptr<rsimpl2::device_interface> device,
                                       std::shared_ptr<rsimpl2::device_serializer::writer> serializer):
     m_write_thread([](){return std::make_shared<dispatcher>(std::numeric_limits<unsigned int>::max());}),
@@ -57,9 +60,25 @@ size_t rsimpl2::record_device::get_sensors_count() const
     return m_sensors.size();
 }
 
+//template <typename T, typename P>
+//bool Is(P* device)
+//{
+//    return dynamic_cast<T*>(device) != nullptr;
+//}
+
 void rsimpl2::record_device::write_header()
 {
-    throw not_implemented_exception(__FUNCTION__);
+    auto device_extensions_md = get_extensions_snapshots(m_device.get());
+
+    std::vector<sensor_metadata> sensors_md;
+    for (size_t j = 0; j < m_device->get_sensors_count(); ++j)
+    {
+        auto& sensor = m_device->get_sensor(j);
+        auto sensor_extensions_md = get_extensions_snapshots(&sensor);
+        sensors_md.emplace_back(sensor_extensions_md);
+    }
+
+    m_writer->write_device_description({device_extensions_md, sensors_md});
 }
 
 std::chrono::nanoseconds rsimpl2::record_device::get_capture_time()
@@ -129,6 +148,45 @@ rs2_extrinsics rsimpl2::record_device::get_extrinsics(size_t from,
                                                       rs2_stream to_stream) const
 {
     throw not_implemented_exception(__FUNCTION__);
+}
+
+template<typename T>
+std::vector<std::shared_ptr<rsimpl2::extension_snapshot>> rsimpl2::record_device::get_extensions_snapshots(T* extendable)
+{
+    std::vector<std::shared_ptr<extension_snapshot>> sensor_extensions_md;
+    for (int i =0 ; i < static_cast<int>(RS2_EXTENSION_TYPE_COUNT); ++i)
+    {
+        rs2_extension_type ext = static_cast<rs2_extension_type>(i);
+        if (ext == RS2_EXTENSION_TYPE_UNKNOWN) continue;
+        if (ext == RS2_EXTENSION_TYPE_INFO)
+        {
+            auto info_api = As<rsimpl2::info_interface, T>(extendable);
+            if (info_api)
+            {
+                auto inf = std::make_shared<info_snapshot>(info_api);
+                sensor_extensions_md.push_back(inf);
+            }
+            continue;
+        }
+        if (ext == RS2_EXTENSION_TYPE_OPTIONS)
+        {
+            continue;
+        }
+        //TODO: add other cases
+        //        switch (ext)
+//        {
+//            case RS2_EXTENSION_TYPE_DEBUG:     { rsimpl2::debug_interface                 }
+//            case RS2_EXTENSION_TYPE_INFO:
+//            break;
+//            case RS2_EXTENSION_TYPE_MOTION:    { rsimpl2::motion_sensor_interface         }
+//            case RS2_EXTENSION_TYPE_OPTIONS:   { rsimpl2::options_interface               }
+//            case RS2_EXTENSION_TYPE_VIDEO:     { rsimpl2::video_sensor_interface          }
+//            case RS2_EXTENSION_TYPE_ROI:       { rsimpl2::roi_sensor_interface            }
+//            default:
+//                throw invalid_value_exception(std::string("Unhandled extension typs:") + std::to_string(i));
+//        }
+    }
+    return sensor_extensions_md;
 }
 
 rsimpl2::record_sensor::~record_sensor()
@@ -221,10 +279,6 @@ bool rsimpl2::record_sensor::is_streaming() const
 {
     return m_sensor.is_streaming();
 }
-void* rsimpl2::record_sensor::extend_to(rs2_extension_type extension_type)
-{
-    throw not_implemented_exception(__FUNCTION__);
-}
 
 double rsimpl2::mock_frame::get_timestamp() const
 {
@@ -271,7 +325,7 @@ std::shared_ptr<rsimpl2::device_serializer::writer> rsimpl2::ros_device_serializ
     throw not_implemented_exception(__FUNCTION__);
 }
 
-void rsimpl2::ros_device_serializer_impl::ros_writer::write_device_description(const rsimpl2::device_metadata& device_description)
+void rsimpl2::ros_device_serializer_impl::ros_writer::write_device_description(const rsimpl2::device_snapshot& device_description)
 {
     throw not_implemented_exception(__FUNCTION__);
 }
@@ -283,7 +337,7 @@ void rsimpl2::ros_device_serializer_impl::ros_writer::reset()
 {
     throw not_implemented_exception(__FUNCTION__);
 }
-rsimpl2::device_metadata rsimpl2::ros_device_serializer_impl::ros_reader::query_device_description()
+rsimpl2::device_snapshot rsimpl2::ros_device_serializer_impl::ros_reader::query_device_description()
 {
     throw not_implemented_exception(__FUNCTION__);
 }

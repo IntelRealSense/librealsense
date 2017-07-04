@@ -7,44 +7,93 @@
 #include "core/streaming.h"
 #include "archive.h"
 #include "concurrency.h"
+#include "sensor.h"
 namespace rsimpl2
 {
-
-    class extension_metadata
+    template <typename T,typename P>
+    T* As(P* ptr)
     {
-        //TODO: should be serialize-able, update-able, extendable to the actual extension
+        return dynamic_cast<T*>(ptr);
+    }
+
+    /**
+     * Deriving classes are expected to return an extension_snapshot
+     * @tparam T
+     */
+    template <typename T>
+    class recordable
+    {
+        virtual void create_snapshot(std::shared_ptr<T>& snapshot) = 0;
+    };
+
+    class extension_snapshot
+    {
         virtual void update(std::shared_ptr<rsimpl2::extension_interface> ext) = 0;
     };
 
-    class query_metadata_interface
+    template <typename T>
+    class extension_snapshot_base : public extension_snapshot
     {
     public:
-        virtual ~query_metadata_interface() = default;
-        virtual std::vector<std::shared_ptr<extension_metadata>> query_metadata() const = 0;
+        void update(std::shared_ptr<rsimpl2::extension_interface> ext) override
+        {
+            auto api = As<T, rsimpl2::extension_interface>(ext.get());
+            if(api == nullptr)
+            {
+                throw std::runtime_error("TODO: write me");
+            }
+            update_self(api);
+        }
+    protected:
+        virtual void update_self(T* info_api) = 0;
     };
 
-    class sensor_metadata : public query_metadata_interface
+
+
+    //TODO: CR this class, created as poc
+    class info_snapshot : public extension_snapshot_base<info_interface>, public info_container
     {
     public:
-        sensor_metadata(const std::vector<std::shared_ptr<extension_metadata>>& sensor_extensios)
+        info_snapshot(info_interface* info_api)
+        {
+            update_self(info_api);
+        }
+    private:
+        void update_self(info_interface* info_api)
+        {
+            for (int i = 0; i < RS2_CAMERA_INFO_COUNT; ++i)
+            {
+                rs2_camera_info info = static_cast<rs2_camera_info>(i);
+                if(info_api->supports_info(info))
+                {
+                    register_info(info, info_api->get_info(info));
+                }
+            }
+        }
+    };
+
+    class sensor_metadata
+    {
+    public:
+        sensor_metadata(const std::vector<std::shared_ptr<extension_snapshot>>& sensor_extensios)
             :
             m_extensios(sensor_extensios)
         {
 
         }
 
-        std::vector<std::shared_ptr<rsimpl2::extension_metadata>> query_metadata() const override
+        std::vector<std::shared_ptr<rsimpl2::extension_snapshot>> get_extensions_snapshots() const
         {
 
         }
     private:
-        std::vector<std::shared_ptr<extension_metadata>> m_extensios;
+        std::vector<std::shared_ptr<extension_snapshot>> m_extensios;
     };
 
-    class device_metadata : public query_metadata_interface
+    class device_snapshot
     {
     public:
-        device_metadata(const std::vector<std::shared_ptr<extension_metadata>>& device_extensios,
+        device_snapshot(const std::vector<std::shared_ptr<extension_snapshot>>& device_extensios,
                         const std::vector<sensor_metadata>& sensors_metadata)
             :
             m_extensios(device_extensios),
@@ -56,17 +105,15 @@ namespace rsimpl2
         {
             return m_sensors_metadata;
         }
-        std::vector<std::shared_ptr<extension_metadata>> query_metadata() const override
+        std::vector<std::shared_ptr<extension_snapshot>> query_metadata() const
         {
             return m_extensios;
         }
     private:
-        std::vector<std::shared_ptr<extension_metadata>> m_extensios;
+        std::vector<std::shared_ptr<extension_snapshot>> m_extensios;
         std::vector<sensor_metadata> m_sensors_metadata;
     };
 
-
-    
     class device_serializer
     {
     public:
@@ -80,7 +127,7 @@ namespace rsimpl2
         class writer
         {
         public:
-            virtual void write_device_description(const device_metadata& device_description) = 0;
+            virtual void write_device_description(const device_snapshot& device_description) = 0;
             virtual void write(storage_data data) = 0;
             virtual void reset() = 0;
             virtual ~writer() = default;
@@ -88,7 +135,7 @@ namespace rsimpl2
         class reader
         {
         public:
-            virtual device_metadata query_device_description() = 0;
+            virtual device_snapshot query_device_description() = 0;
             virtual storage_data read() = 0;
             virtual void seek_to_time(std::chrono::nanoseconds time) = 0;
             virtual std::chrono::nanoseconds query_duration() const = 0;
@@ -109,14 +156,14 @@ namespace rsimpl2
         class ros_writer : public device_serializer::writer
         {
         public:
-            void write_device_description(const device_metadata& device_description) override;
+            void write_device_description(const device_snapshot& device_description) override;
             void write(storage_data data) override;
             void reset() override;
         };
         class ros_reader : public device_serializer::reader
         {
         public:
-            device_metadata query_device_description() override;
+            device_snapshot query_device_description() override;
             storage_data read() override;
             void seek_to_time(std::chrono::nanoseconds time) override;
             std::chrono::nanoseconds query_duration() const override;
@@ -128,12 +175,14 @@ namespace rsimpl2
     private:
         std::string m_file;
     };
-    class record_sensor : public sensor_interface, public extension_interface
+    class record_sensor : public sensor_interface
     {
     public:
         using frame_interface_callback_t = std::function<void(std::shared_ptr<frame_interface>)>;
 
         record_sensor(sensor_interface& sensor, frame_interface_callback_t on_frame);
+        virtual ~record_sensor();
+
         std::vector<stream_profile> get_principal_requests() override;
         void open(const std::vector<stream_profile>& requests) override;
         void close() override;
@@ -146,8 +195,7 @@ namespace rsimpl2
         void start(frame_callback_ptr callback) override;
         void stop() override;
         bool is_streaming() const override;
-        virtual ~record_sensor();
-        void* extend_to(rs2_extension_type extension_type) override;
+
     private:
         sensor_interface& m_sensor;
         frame_interface_callback_t m_record_callback;
@@ -197,6 +245,8 @@ namespace rsimpl2
         uint64_t m_cached_data_size;
         bool m_is_first_event;
         std::once_flag m_first_call_flag;
+        template <typename T>
+        std::vector<std::shared_ptr<extension_snapshot>> get_extensions_snapshots(T* extendable);
     };
 
     class mock_frame : public frame_interface
