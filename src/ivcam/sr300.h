@@ -91,19 +91,6 @@ namespace rsimpl2
 
         }
 
-        uint8_t get_subdevice_count() const override
-        {
-            auto pid = _depth.pid;
-            switch (pid)
-            {
-            case 0x0aa5: return 2;
-            default:
-                throw not_implemented_exception(to_string() <<
-                    "get_subdevice_count is not implemented for SR300 device of type " <<
-                    pid);
-            }
-        }
-
         static std::vector<std::shared_ptr<device_info>> pick_sr300_devices(
             std::shared_ptr<uvc::backend> backend,
             std::vector<uvc::uvc_device_info>& uvc,
@@ -167,7 +154,7 @@ namespace rsimpl2
             explicit sr300_color_sensor(const sr300_camera* owner, std::shared_ptr<uvc::uvc_device> uvc_device,
                 std::unique_ptr<frame_timestamp_reader> timestamp_reader,
                 std::shared_ptr<uvc::time_service> ts)
-                : uvc_sensor(uvc_device, move(timestamp_reader), ts), _owner(owner)
+                : uvc_sensor("RGB Camera", uvc_device, move(timestamp_reader), ts), _owner(owner)
             {}
 
             rs2_intrinsics get_intrinsics(const stream_profile& profile) const override
@@ -184,7 +171,7 @@ namespace rsimpl2
             explicit sr300_depth_sensor(const sr300_camera* owner, std::shared_ptr<uvc::uvc_device> uvc_device,
                 std::unique_ptr<frame_timestamp_reader> timestamp_reader,
                 std::shared_ptr<uvc::time_service> ts)
-                : uvc_sensor(uvc_device, move(timestamp_reader), ts), _owner(owner)
+                : uvc_sensor("Coded-Light Depth Sensor", uvc_device, move(timestamp_reader), ts), _owner(owner)
             {}
 
             rs2_intrinsics get_intrinsics(const stream_profile& profile) const override
@@ -270,48 +257,7 @@ namespace rsimpl2
         sr300_camera(const uvc::backend& backend,
             const uvc::uvc_device_info& color,
             const uvc::uvc_device_info& depth,
-            const uvc::usb_device_info& hwm_device)
-            : _depth_device_idx(add_sensor(create_depth_device(backend, depth))),
-              _color_device_idx(add_sensor(create_color_device(backend, color))),
-              _hw_monitor(std::make_shared<hw_monitor>(std::make_shared<locked_transfer>(backend.create_usb_device(hwm_device), get_depth_sensor())))
-        {
-            using namespace ivcam;
-            static const char* device_name = "Intel RealSense SR300";
-
-            auto fw_version = _hw_monitor->get_firmware_version_string(GVD, fw_version_offset);
-            auto serial = _hw_monitor->get_module_serial_string(GVD, module_serial_offset);
-            enable_timestamp(true, true);
-
-            std::map<rs2_camera_info, std::string> depth_camera_info = {{RS2_CAMERA_INFO_DEVICE_NAME, device_name},
-                                                                       {RS2_CAMERA_INFO_MODULE_NAME, "Depth Camera"},
-                                                                       {RS2_CAMERA_INFO_DEVICE_SERIAL_NUMBER, serial},
-                                                                       {RS2_CAMERA_INFO_CAMERA_FIRMWARE_VERSION, fw_version},
-                                                                       {RS2_CAMERA_INFO_DEVICE_LOCATION, depth.device_path},
-                                                                       {RS2_CAMERA_INFO_DEVICE_DEBUG_OP_CODE, std::to_string(static_cast<int>(fw_cmd::GLD))}};
-            register_sensor_info(_depth_device_idx, depth_camera_info);
-
-            std::map<rs2_camera_info, std::string> color_camera_info = {{RS2_CAMERA_INFO_DEVICE_NAME, device_name},
-                                                                       {RS2_CAMERA_INFO_MODULE_NAME, "Color Camera"},
-                                                                       {RS2_CAMERA_INFO_DEVICE_SERIAL_NUMBER, serial},
-                                                                       {RS2_CAMERA_INFO_CAMERA_FIRMWARE_VERSION, fw_version},
-                                                                       {RS2_CAMERA_INFO_DEVICE_LOCATION, color.device_path},
-                                                                       {RS2_CAMERA_INFO_DEVICE_DEBUG_OP_CODE, std::to_string(static_cast<int>(fw_cmd::GLD))}};
-            register_sensor_info(_color_device_idx, color_camera_info);
-
-            register_autorange_options();
-
-            auto c = get_calibration();
-            pose depth_to_color = {
-                transpose(reinterpret_cast<const float3x3 &>(c.Rt)),
-                          reinterpret_cast<const float3 &>(c.Tt) * 0.001f
-            };
-
-            get_depth_sensor().set_pose(lazy<pose>([depth_to_color](){return inverse(depth_to_color); }));
-
-            get_depth_sensor().register_option(RS2_OPTION_DEPTH_UNITS,
-                                                 std::make_shared<const_value_option>("Number of meters represented by a single depth unit",
-                                                                                      1000.f / (0xFFFF / c.Rmax)));
-        }
+            const uvc::usb_device_info& hwm_device);
 
         void rs2_apply_ivcam_preset(int preset)
         {

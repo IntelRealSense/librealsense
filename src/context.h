@@ -20,7 +20,6 @@ struct rs2_device_info
 {
     std::shared_ptr<rsimpl2::context> ctx;
     std::shared_ptr<rsimpl2::device_info> info;
-    unsigned int subdevice;
 };
 
 
@@ -28,6 +27,11 @@ struct rs2_device_list
 {
     std::shared_ptr<rsimpl2::context> ctx;
     std::vector<rs2_device_info> list;
+};
+
+struct rs2_sensor_list
+{
+    std::shared_ptr<rsimpl2::device_interface> dev;
 };
 
 namespace rsimpl2
@@ -40,12 +44,10 @@ namespace rsimpl2
     class device_info
     {
     public:
-        std::shared_ptr<device_interface> get_device() const
+        std::shared_ptr<device_interface> create_device() const
         {
-            return *_device;
+            return create(*_backend);
         }
-
-        virtual uint8_t get_subdevice_count() const = 0;
 
         virtual ~device_info() = default;
 
@@ -56,15 +58,14 @@ namespace rsimpl2
         {
             return other.get_device_data() == get_device_data();
         }
+
     protected:
         explicit device_info(std::shared_ptr<uvc::backend> backend)
-            : _device([this]() { return create(*_backend); }),
-            _backend(std::move(backend))
+            : _backend(std::move(backend))
         {}
 
         virtual std::shared_ptr<device_interface> create(const uvc::backend& backend) const = 0;
 
-        lazy<std::shared_ptr<device_interface>> _device;
         std::shared_ptr<uvc::backend> _backend;
     };
 
@@ -83,11 +84,6 @@ namespace rsimpl2
         {
             throw unrecoverable_exception(RECOVERY_MESSAGE,
                 RS2_EXCEPTION_TYPE_DEVICE_IN_RECOVERY_MODE);
-        }
-
-        uint8_t get_subdevice_count() const override
-        {
-            return 1;
         }
 
         static bool is_recovery_pid(uint16_t pid)
@@ -122,6 +118,36 @@ namespace rsimpl2
     private:
         uvc::usb_device_info _dfu;
         const char* RECOVERY_MESSAGE = "Selected RealSense device is in recovery mode!\nEither perform a firmware update or reconnect the camera to fall-back to last working firmware if available!";
+    };
+
+    class platform_camera_info : public device_info
+    {
+    public:
+        std::shared_ptr<device_interface> create(const uvc::backend& /*backend*/) const override;
+
+        static std::vector<std::shared_ptr<device_info>> pick_uvc_devices(
+            const std::shared_ptr<uvc::backend>& backend,
+            const std::vector<uvc::uvc_device_info>& uvc_devices)
+        {
+            std::vector<std::shared_ptr<device_info>> list;
+            for (auto&& uvc : uvc_devices)
+            {
+                list.push_back(std::make_shared<platform_camera_info>(backend, uvc));
+            }
+            return list;
+        }
+
+        explicit platform_camera_info(std::shared_ptr<uvc::backend> backend,
+            uvc::uvc_device_info uvc)
+            : device_info(backend), _uvc(std::move(uvc)) {}
+
+        uvc::devices_data get_device_data() const override
+        {
+            return uvc::devices_data();
+        }
+
+    private:
+        uvc::uvc_device_info _uvc;
     };
 
     typedef std::vector<std::shared_ptr<device_info>> devices_info;

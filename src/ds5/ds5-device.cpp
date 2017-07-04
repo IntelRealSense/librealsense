@@ -76,7 +76,7 @@ namespace rsimpl2
         explicit ds5_depth_sensor(const ds5_device* owner, std::shared_ptr<uvc::uvc_device> uvc_device,
             std::unique_ptr<frame_timestamp_reader> timestamp_reader,
             std::shared_ptr<uvc::time_service> ts)
-            : uvc_sensor(uvc_device, move(timestamp_reader), ts), _owner(owner)
+            : uvc_sensor("Stereo Module", uvc_device, move(timestamp_reader), ts), _owner(owner)
         {}
 
         rs2_intrinsics get_intrinsics(const stream_profile& profile) const override
@@ -251,7 +251,7 @@ namespace rsimpl2
 
         depth_ep.set_roi_method(std::make_shared<ds5_auto_exposure_roi_method>(*_hw_monitor));
 
-        if (advanced_mode)
+        if (advanced_mode && _fw_version >= firmware_version("5.6.3.0"))
             depth_ep.register_option(RS2_OPTION_DEPTH_UNITS, std::make_shared<depth_scale_option>(*_hw_monitor));
         else
             depth_ep.register_option(RS2_OPTION_DEPTH_UNITS, std::make_shared<const_value_option>("Number of meters represented by a single depth unit",
@@ -293,25 +293,13 @@ namespace rsimpl2
         depth_ep.register_metadata((rs2_frame_metadata)RS2_FRAME_METADATA_WIDTH,            make_attribute_parser(&md_configuration::width, md_configuration_attributes::width_attribute, md_prop_offset));
         depth_ep.register_metadata((rs2_frame_metadata)RS2_FRAME_METADATA_HEIGHT,           make_attribute_parser(&md_configuration::height, md_configuration_attributes::height_attribute, md_prop_offset));
 
-        // Register endpoint info
-        for(auto& element : dev_info)
-        {
-            if (element.mi == 0) // mi 0 is defines RS4xx Stereo (Depth) interface
-            {
-                std::map<rs2_camera_info, std::string> camera_info = {{RS2_CAMERA_INFO_DEVICE_NAME, device_name},
-                                                                      {RS2_CAMERA_INFO_MODULE_NAME, "Stereo Module"},
-                                                                      {RS2_CAMERA_INFO_DEVICE_SERIAL_NUMBER, serial},
-                                                                      {RS2_CAMERA_INFO_CAMERA_FIRMWARE_VERSION, static_cast<const char*>(_fw_version)},
-                                                                      {RS2_CAMERA_INFO_DEVICE_LOCATION, element.device_path},
-                                                                      {RS2_CAMERA_INFO_DEVICE_DEBUG_OP_CODE, std::to_string(static_cast<int>(fw_cmd::GLD))},
-                                                                      {RS2_CAMERA_INFO_ADVANCED_MODE, ((advanced_mode)?"YES":"NO")},
-                                                                      {RS2_CAMERA_INFO_PRODUCT_ID, pid_hex_str}};
-                if (!is_camera_locked.empty())
-                    camera_info[RS2_CAMERA_INFO_IS_CAMERA_LOCKED] = is_camera_locked;
-
-                register_sensor_info(_depth_device_idx, camera_info);
-            }
-        }
+        register_info(RS2_CAMERA_INFO_DEVICE_NAME,              device_name);
+        register_info(RS2_CAMERA_INFO_DEVICE_SERIAL_NUMBER,     serial);
+        register_info(RS2_CAMERA_INFO_CAMERA_FIRMWARE_VERSION,  _fw_version);
+        register_info(RS2_CAMERA_INFO_DEVICE_LOCATION,          dev_info.front().device_path);
+        register_info(RS2_CAMERA_INFO_DEVICE_DEBUG_OP_CODE,     std::to_string(static_cast<int>(fw_cmd::GLD)));
+        register_info(RS2_CAMERA_INFO_ADVANCED_MODE,            ((advanced_mode)?"YES":"NO"));
+        register_info(RS2_CAMERA_INFO_PRODUCT_ID,               pid_hex_str);
     }
 
     notification ds5_notification_decoder::decode(int value)

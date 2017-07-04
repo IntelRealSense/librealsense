@@ -21,21 +21,23 @@ int main() try
 
     // This tutorial will access only a single device, but it is trivial to extend to multiple devices
     auto dev = devices[0];
-    printf("\nUsing device 0, an %s\n", dev.get_camera_info(RS2_CAMERA_INFO_DEVICE_NAME));
-    printf("    Serial number: %s\n", dev.get_camera_info(RS2_CAMERA_INFO_DEVICE_SERIAL_NUMBER));
-    printf("    Firmware version: %s\n", dev.get_camera_info(RS2_CAMERA_INFO_CAMERA_FIRMWARE_VERSION));
+    printf("\nUsing device 0, an %s\n", dev.get_info(RS2_CAMERA_INFO_DEVICE_NAME));
+    printf("    Serial number: %s\n", dev.get_info(RS2_CAMERA_INFO_DEVICE_SERIAL_NUMBER));
+    printf("    Firmware version: %s\n", dev.get_info(RS2_CAMERA_INFO_CAMERA_FIRMWARE_VERSION));
+
+    auto depth = dev.query_sensors().front();
 
     // Configure depth to run at VGA resolution at 30 frames per second
-    dev.open({ RS2_STREAM_DEPTH, 640, 480, 30, RS2_FORMAT_Z16 });
+    depth.open({ RS2_STREAM_DEPTH, 640, 480, 30, RS2_FORMAT_Z16 });
 
     // Configure frame queue of size one and start streaming into it
     frame_queue queue(1);
-    dev.start(queue);
+    depth.start(queue);
 
     // Determine depth value corresponding to one meter
     auto depth_units = 1.f;
-    if (dev.supports(RS2_OPTION_DEPTH_UNITS))
-        depth_units = dev.get_option(RS2_OPTION_DEPTH_UNITS);
+    if (depth.supports(RS2_OPTION_DEPTH_UNITS))
+        depth_units = depth.get_option(RS2_OPTION_DEPTH_UNITS);
     const auto one_meter = static_cast<uint16_t>(1.0 / depth_units);
 
     while (true)

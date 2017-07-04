@@ -550,6 +550,11 @@ namespace rsimpl2
         {
             return string_representation.c_str();
         }
+
+        operator std::string() const
+        {
+            return string_representation.c_str();
+        }
     };
 
     // This class is used to buffer up several writes to a structure-valued XU control, and send the entire structure all at once
@@ -1223,11 +1228,7 @@ std::vector<std::shared_ptr<T>> subtract_sets(const std::vector<std::shared_ptr<
     {
         if (std::find_if(second.begin(), second.end(), [&](std::shared_ptr<T> new_dev) {return *new_dev == *data; }) == second.end())
         {
-            for (auto i = 0; i < data->get_subdevice_count(); i++)
-            {
-                results.push_back(data);
-            }
-
+            results.push_back(data);
         }
     });
     return results;

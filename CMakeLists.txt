@@ -432,6 +432,7 @@ endif()
 
 option(BUILD_UNIT_TESTS "Build realsense unit tests." ON)
 option(BUILD_EXAMPLES "Build realsense examples." OFF)
+option(ENFORCE_METADATA "Require WinSDK with Metadata support during compilation. Windows OS Only" OFF)
 option(BUILD_RS400_EXTRAS "Build RS400 advanced APIs." ON)
 
 if(((BUILD_EXAMPLES AND BUILD_GRAPHICAL_EXAMPLES) OR BUILD_RS400_EXTRAS) AND WIN32)
@@ -448,6 +449,10 @@ endif()
 
 if(BUILD_RS400_EXTRAS)
   add_subdirectory(rs400/examples)
+endif()
+
+if (ENFORCE_METADATA)
+  add_definitions(-DENFORCE_METADATA)
 endif()
 
 add_subdirectory(bindings)

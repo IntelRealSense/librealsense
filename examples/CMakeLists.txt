@@ -180,7 +180,7 @@ else()
         )
 
         # config-ui
-        add_executable(rs-config-ui cpp-config-ui.cpp third_party/imgui/imgui.cpp third_party/imgui/imgui_draw.cpp third_party/imgui/imgui_impl_glfw.cpp example.hpp)
+        add_executable(rs-config-ui cpp-config-ui.cpp third_party/imgui/imgui.cpp third_party/imgui/imgui_draw.cpp third_party/imgui/imgui_impl_glfw.cpp example.hpp model-views.h model-views.cpp)
         target_link_libraries(rs-config-ui ${DEPENDENCIES})
         include_directories(rs-config-ui third_party/imgui)
         set_target_properties (rs-config-ui PROPERTIES

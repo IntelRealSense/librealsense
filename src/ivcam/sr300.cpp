@@ -176,4 +176,38 @@ namespace rsimpl2
         rsimpl2::copy(&rawCalib, data.data(), std::min(sizeof(rawCalib), data.size()));
         return rawCalib.CalibrationParameters;
     }
+
+    sr300_camera::sr300_camera(const uvc::backend &backend, const uvc::uvc_device_info &color,
+                               const uvc::uvc_device_info &depth, const uvc::usb_device_info &hwm_device)
+            : _depth_device_idx(add_sensor(create_depth_device(backend, depth))),
+              _color_device_idx(add_sensor(create_color_device(backend, color))),
+              _hw_monitor(std::make_shared<hw_monitor>(std::make_shared<locked_transfer>(backend.create_usb_device(hwm_device), get_depth_sensor())))
+    {
+        using namespace ivcam;
+        static const char* device_name = "Intel RealSense SR300";
+
+        auto fw_version = _hw_monitor->get_firmware_version_string(GVD, fw_version_offset);
+        auto serial = _hw_monitor->get_module_serial_string(GVD, module_serial_offset);
+        enable_timestamp(true, true);
+
+        register_info(RS2_CAMERA_INFO_DEVICE_NAME,              device_name);
+        register_info(RS2_CAMERA_INFO_DEVICE_SERIAL_NUMBER,     serial);
+        register_info(RS2_CAMERA_INFO_CAMERA_FIRMWARE_VERSION,  fw_version);
+        register_info(RS2_CAMERA_INFO_DEVICE_LOCATION,          depth.device_path);
+        register_info(RS2_CAMERA_INFO_DEVICE_DEBUG_OP_CODE,     std::to_string(static_cast<int>(fw_cmd::GLD)));
+
+        register_autorange_options();
+
+        auto c = get_calibration();
+        pose depth_to_color = {
+                transpose(reinterpret_cast<const float3x3 &>(c.Rt)),
+                reinterpret_cast<const float3 &>(c.Tt) * 0.001f
+        };
+
+        get_depth_sensor().set_pose(lazy<pose>([depth_to_color](){return inverse(depth_to_color); }));
+
+        get_depth_sensor().register_option(RS2_OPTION_DEPTH_UNITS,
+                                           std::make_shared<const_value_option>("Number of meters represented by a single depth unit",
+                                                                                1000.f / (0xFFFF / c.Rmax)));
+    }
 }

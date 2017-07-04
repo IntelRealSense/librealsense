@@ -119,7 +119,7 @@ int main(int argc, char * argv[])
             state app_state = {0, 0, 0, 0, false, &dev};
 
             glfwInit();
-            ostringstream ss; ss << "CPP Point Cloud Example (" << dev.get_camera_info(RS2_CAMERA_INFO_DEVICE_NAME) << ")";
+            ostringstream ss; ss << "CPP Point Cloud Example (" << dev.get_info(RS2_CAMERA_INFO_DEVICE_NAME) << ")";
             win = glfwCreateWindow(1280, 720, ss.str().c_str(), 0, 0);
             ImGui_ImplGlfw_Init(win, true);
             glfwMakeContextCurrent(win);

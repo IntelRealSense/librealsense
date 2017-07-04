@@ -211,7 +211,7 @@ namespace rsimpl2
         switch(value)
         {
         CASE(DEVICE_NAME)
-        CASE(MODULE_NAME)
+        CASE(SENSOR_NAME)
         CASE(DEVICE_SERIAL_NUMBER)
         CASE(CAMERA_FIRMWARE_VERSION)
         CASE(DEVICE_LOCATION)

@@ -25,14 +25,17 @@ namespace rsimpl2
         sensor_interface& get_sensor(size_t subdevice) override;
         const sensor_interface& get_sensor(size_t subdevice) const override;
 
+        virtual void hardware_reset()
+        {
+            throw not_implemented_exception(to_string() << __FUNCTION__ << " is not implemented for this device!");
+        }
+
         rs2_extrinsics get_extrinsics(size_t from, rs2_stream from_stream, size_t to, rs2_stream to_stream) const override;
 
     protected:
         int add_sensor(std::shared_ptr<sensor_interface> sensor_base);
 
         uvc_sensor& get_uvc_sensor(int subdevice);
-
-        void register_sensor_info(int sub, std::map<rs2_camera_info, std::string> camera_info);
 
     private:
         std::vector<std::shared_ptr<sensor_interface>> _sensors;

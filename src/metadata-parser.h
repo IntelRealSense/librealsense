@@ -136,7 +136,7 @@ namespace rsimpl2
         }
 
         bool supports(const frame & frm) const override
-        { return true; }
+        { return (frm.additional_data.metadata_size >= uvc::uvc_header_size); }
 
     private:
         md_uvc_header_parser() = delete;

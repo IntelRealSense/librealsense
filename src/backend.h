@@ -91,7 +91,6 @@ namespace rsimpl2
                 auto data = reinterpret_cast<const uint8_t*>(&value);
                 std::copy(data, data + sizeof(value), vec.data());
             }
-
         };
 
         class time_service

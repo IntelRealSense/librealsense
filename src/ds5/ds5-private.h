@@ -146,6 +146,10 @@ namespace rsimpl2
 
             auto table = reinterpret_cast<const T*>(raw_data.data());
             auto header = reinterpret_cast<const table_header*>(raw_data.data());
+            if(raw_data.size() < sizeof(table_header))
+            {
+                throw invalid_value_exception("Table CRC error, buffer too small");
+            }
             // verify the parsed table
             if (table->header.crc32 != calc_crc32(raw_data.data() + sizeof(table_header), raw_data.size() - sizeof(table_header)))
             {

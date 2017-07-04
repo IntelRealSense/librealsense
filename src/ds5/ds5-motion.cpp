@@ -71,7 +71,7 @@ namespace rsimpl2
         explicit ds5_fisheye_sensor(const ds5_motion* owner, std::shared_ptr<uvc::uvc_device> uvc_device,
             std::unique_ptr<frame_timestamp_reader> timestamp_reader,
             std::shared_ptr<uvc::time_service> ts)
-            : uvc_sensor(uvc_device, move(timestamp_reader), ts), _owner(owner)
+            : uvc_sensor("Wide FOV Camera", uvc_device, move(timestamp_reader), ts), _owner(owner)
         {}
 
         rs2_intrinsics get_intrinsics(const stream_profile& profile) const override
@@ -349,38 +349,10 @@ namespace rsimpl2
             LOG_ERROR("Motion Device is not calibrated! Motion Data Correction will not be available! Error: " << ex.what());
         }
 
-        for (auto& elem : hid_info)
-        {
-            std::map<rs2_camera_info, std::string> camera_info = { { RS2_CAMERA_INFO_DEVICE_NAME, "DS5 with MM" },
-                {RS2_CAMERA_INFO_MODULE_NAME, "Motion Module"},
-                                                                  {RS2_CAMERA_INFO_CAMERA_FIRMWARE_VERSION, static_cast<const char*>(_fw_version)},
-                                                                  {RS2_CAMERA_INFO_DEVICE_LOCATION, elem.device_path},
-                                                                  {RS2_CAMERA_INFO_DEVICE_DEBUG_OP_CODE, std::to_string(static_cast<int>(fw_cmd::GLD))},
-                                                                 };
-            if (!motion_module_fw_version.empty())
-                camera_info[RS2_CAMERA_INFO_MOTION_MODULE_FIRMWARE_VERSION] = motion_module_fw_version;
+        hid_ep->set_pose(lazy<pose>([this](){return get_device_position(_motion_module_device_idx); }));
 
-            register_sensor_info(_motion_module_device_idx, camera_info);
-            hid_ep->set_pose(lazy<pose>([this](){return get_device_position(_motion_module_device_idx); }));
-        }
+        if (!motion_module_fw_version.empty())
+            register_info(RS2_CAMERA_INFO_MOTION_MODULE_FIRMWARE_VERSION, motion_module_fw_version);
 
-        // Register sensor_base info
-        for(auto& element : dev_info)
-        {
-            if (fisheye_ep && element.mi == 3) // mi 3 is related to Fisheye device
-            {
-                std::map<rs2_camera_info, std::string> camera_info = {
-                                                                      {RS2_CAMERA_INFO_DEVICE_NAME, "DS5 with MM"},
-                                                                      {RS2_CAMERA_INFO_MODULE_NAME, "Fisheye Camera"},
-                                                                      {RS2_CAMERA_INFO_CAMERA_FIRMWARE_VERSION, static_cast<const char*>(_fw_version)},
-                                                                      {RS2_CAMERA_INFO_DEVICE_LOCATION, element.device_path},
-                };
-                if (!motion_module_fw_version.empty())
-                    camera_info[RS2_CAMERA_INFO_MOTION_MODULE_FIRMWARE_VERSION] = motion_module_fw_version;
-
-
-                register_sensor_info(_fisheye_device_idx, camera_info);
-            }
-        }
     }
 }

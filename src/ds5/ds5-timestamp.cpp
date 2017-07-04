@@ -75,7 +75,7 @@ namespace rsimpl2
         if (mode.pf->fourcc == 0x5a313620) // Z16
             pin_index = 1;
 
-        if(_has_metadata[pin_index])
+        if(_has_metadata[pin_index] && fo.metadata_size > uvc::uvc_header_size)
         {
             auto md = (rsimpl2::ds::metadata*)(fo.metadata);
             return md->md_capture_timing.frameCounter;

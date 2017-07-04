@@ -10,12 +10,12 @@
 
 #include "ivcam/sr300.h"
 #include "ds5/ds5-factory.h"
+#include "ds5/ds5-timestamp.h"
 #include "backend.h"
 #include "mock/recorder.h"
 #include <chrono>
 #include "types.h"
 #include "context.h"
-
 
 template<unsigned... Is> struct seq{};
 template<unsigned N, unsigned... Is>
@@ -67,6 +67,45 @@ namespace rsimpl2
        _device_watcher = _backend->create_device_watcher();
     }
 
+    class platform_camera : public device
+    {
+    public:
+        platform_camera(std::shared_ptr<uvc::uvc_device> uvc, std::shared_ptr<uvc::time_service> ts)
+        {
+            auto color_ep = std::make_shared<uvc_sensor>("RGB Camera", uvc, std::unique_ptr<ds5_timestamp_reader>(new ds5_timestamp_reader(ts)), ts);
+            add_sensor(color_ep);
+
+            register_info(RS2_CAMERA_INFO_DEVICE_NAME, "Platform Camera");
+
+            color_ep->register_pixel_format(pf_yuy2);
+            color_ep->register_pixel_format(pf_yuyv);
+
+            color_ep->register_pu(RS2_OPTION_BACKLIGHT_COMPENSATION);
+            color_ep->register_pu(RS2_OPTION_BRIGHTNESS);
+            color_ep->register_pu(RS2_OPTION_CONTRAST);
+            color_ep->register_pu(RS2_OPTION_EXPOSURE);
+            color_ep->register_pu(RS2_OPTION_GAMMA);
+            color_ep->register_pu(RS2_OPTION_HUE);
+            color_ep->register_pu(RS2_OPTION_SATURATION);
+            color_ep->register_pu(RS2_OPTION_SHARPNESS);
+            color_ep->register_pu(RS2_OPTION_WHITE_BALANCE);
+            color_ep->register_pu(RS2_OPTION_ENABLE_AUTO_EXPOSURE);
+            color_ep->register_pu(RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE);
+
+            color_ep->set_pose(lazy<pose>([](){pose p = {{ { 1,0,0 },{ 0,1,0 },{ 0,0,1 } },{ 0,0,0 }}; return p; }));
+        }
+
+        virtual rs2_intrinsics get_intrinsics(unsigned int subdevice, const stream_profile& profile) const 
+        {
+            return rs2_intrinsics {};
+        }
+    };
+
+    std::shared_ptr<device_interface> platform_camera_info::create(const uvc::backend& backend) const
+    {
+        return std::make_shared<platform_camera>(backend.create_uvc_device(_uvc), backend.create_time_service());
+    }
+
     context::~context()
     {
         _device_watcher->stop(); //ensure that the device watcher will stop before the _devices_changed_callback will be deleted
@@ -93,6 +132,9 @@ namespace rsimpl2
         auto recovery_devices = recovery_info::pick_recovery_devices(_backend, devices._usb_devices);
         std::copy(begin(recovery_devices), end(recovery_devices), std::back_inserter(list));
 
+        auto uvc_devices = platform_camera_info::pick_uvc_devices(_backend, devices._uvc_devices);
+        std::copy(begin(uvc_devices), end(uvc_devices), std::back_inserter(list));
+
         return list;
     }
 
@@ -112,14 +154,14 @@ namespace rsimpl2
 
             for (auto i=0; i<devices_info_removed.size(); i++)
             {
-                rs2_devices_info_removed.push_back({ shared_from_this(), devices_info_removed[i], (unsigned int)i });
+                rs2_devices_info_removed.push_back({ shared_from_this(), devices_info_removed[i] });
                 LOG_DEBUG("\nDevice disconnected:\n\n" << std::string(devices_info_removed[i]->get_device_data()));
             }
 
             auto devices_info_added = subtract_sets(new_list, old_list);
             for (auto i = 0; i<devices_info_added.size(); i++)
             {
-                rs2_devices_info_added.push_back({ shared_from_this(), devices_info_added[i], (unsigned int)i });
+                rs2_devices_info_added.push_back({ shared_from_this(), devices_info_added[i] });
                 LOG_DEBUG("\nDevice sconnected:\n\n" << std::string(devices_info_added[i]->get_device_data()));
             }
 

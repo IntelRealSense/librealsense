@@ -82,14 +82,14 @@ int main(int argc, char* argv[])
 
         try
         {
-            auto str_op_code = dev.get_camera_info(RS2_CAMERA_INFO_DEVICE_DEBUG_OP_CODE);
+            auto str_op_code = dev.get_info(RS2_CAMERA_INFO_DEVICE_DEBUG_OP_CODE);
             auto op_code = static_cast<uint8_t>(stoi(str_op_code));
             input = {0x14, 0x00, 0xab, 0xcd, op_code, 0x00, 0x00, 0x00,
                      0xf4, 0x01, 0x00, 0x00, 0x00,    0x00, 0x00, 0x00,
                      0x00, 0x00, 0x00, 0x00, 0x00,    0x00, 0x00, 0x00};
 
-            cout << "Device Name: " << dev.get_camera_info(RS2_CAMERA_INFO_DEVICE_NAME) << endl <<
-                    "Device Location: " << dev.get_camera_info(RS2_CAMERA_INFO_DEVICE_LOCATION) << endl << endl;
+            cout << "Device Name: " << dev.get_info(RS2_CAMERA_INFO_DEVICE_NAME) << endl <<
+                    "Device Location: " << dev.get_info(RS2_CAMERA_INFO_DEVICE_LOCATION) << endl << endl;
 
             setvbuf(stdout, NULL, _IONBF, 0); // unbuffering stdout
         }

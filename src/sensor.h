@@ -50,10 +50,10 @@ namespace rsimpl2
         std::map<rs2_camera_info, std::string> _camera_info;
     };
 
-    class sensor_base : public virtual sensor_interface, public options_container, public info_container
+    class sensor_base : public virtual sensor_interface, public options_container, public virtual info_container
     {
     public:
-        explicit sensor_base(std::shared_ptr<uvc::time_service> ts);
+        explicit sensor_base(std::string name, std::shared_ptr<uvc::time_service> ts);
 
         virtual std::vector<uvc::stream_profile> init_stream_profiles() = 0;
         const std::vector<uvc::stream_profile>& get_stream_profiles() const
@@ -132,12 +132,12 @@ namespace rsimpl2
     {
     public:
         explicit hid_sensor(std::shared_ptr<uvc::hid_device> hid_device,
-                              std::unique_ptr<frame_timestamp_reader> hid_iio_timestamp_reader,
-                              std::unique_ptr<frame_timestamp_reader> custom_hid_timestamp_reader,
-                              std::map<rs2_stream, std::map<unsigned, unsigned>> fps_and_sampling_frequency_per_rs2_stream,
-                              std::vector<std::pair<std::string, stream_profile>> sensor_name_and_hid_profiles,
-                              std::shared_ptr<uvc::time_service> ts)
-            : sensor_base(ts),_sensor_name_and_hid_profiles(sensor_name_and_hid_profiles),
+                            std::unique_ptr<frame_timestamp_reader> hid_iio_timestamp_reader,
+                            std::unique_ptr<frame_timestamp_reader> custom_hid_timestamp_reader,
+                            std::map<rs2_stream, std::map<unsigned, unsigned>> fps_and_sampling_frequency_per_rs2_stream,
+                            std::vector<std::pair<std::string, stream_profile>> sensor_name_and_hid_profiles,
+                            std::shared_ptr<uvc::time_service> ts)
+            : sensor_base("Motion Module", ts),_sensor_name_and_hid_profiles(sensor_name_and_hid_profiles),
               _fps_and_sampling_frequency_per_rs2_stream(fps_and_sampling_frequency_per_rs2_stream),
               _hid_device(hid_device),
               _is_configured_stream(RS2_STREAM_COUNT),
@@ -217,10 +217,10 @@ namespace rsimpl2
                        public std::enable_shared_from_this<uvc_sensor>
     {
     public:
-        explicit uvc_sensor(std::shared_ptr<uvc::uvc_device> uvc_device,
+        explicit uvc_sensor(std::string name, std::shared_ptr<uvc::uvc_device> uvc_device,
                               std::unique_ptr<frame_timestamp_reader> timestamp_reader,
                               std::shared_ptr<uvc::time_service> ts)
-            : sensor_base(ts),
+            : sensor_base(name, ts),
               _device(std::move(uvc_device)),
               _user_count(0),
               _timestamp_reader(std::move(timestamp_reader))

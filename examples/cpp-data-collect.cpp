@@ -72,13 +72,7 @@ rs2_stream parse_stream_type(const string str)
 
 int parse_fps(const string str)
 {
-    set<int> valid_fps({ 10, 15, 30, 60, 90, 100, 200 });
-    auto fps = parse_number(str.c_str());
-    if (valid_fps.find(fps) == valid_fps.end())
-    {
-        throw runtime_error( (string("Invalid FPS parameter - ") + str + string("\n")).c_str());
-    }
-    return fps;
+    return parse_number(str.c_str());
 }
 
 void parse_configuration(const vector<string> row, rs2_stream& type, int& width, int& height, rs2_format& format, int& fps)
