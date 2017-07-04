@@ -1,11 +1,14 @@
-#ifndef R400_ADVANCED_MODE_H
-#define R400_ADVANCED_MODE_H
+/* License: Apache 2.0. See LICENSE file in root directory.
+   Copyright(c) 2017 Intel Corporation. All Rights Reserved. */
+
+#ifndef RS4XX_ADVANCED_MODE_H
+#define RS4XX_ADVANCED_MODE_H
 
 #include <stdint.h>
 
-#define R400_ADVANCED_MODE_HPP
-#include "AdvancedModeCommand.h"
-#undef R400_ADVANCED_MODE_HPP
+#define RS4XX_ADVANCED_MODE_HPP
+#include "advanced_mode_command.h"
+#undef RS4XX_ADVANCED_MODE_HPP
 
 #include <librealsense/rs2.h>
 

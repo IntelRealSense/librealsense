@@ -1,12 +1,12 @@
 // See LICENSE file in root directory.
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
-#include <rs400_advanced_mode/rs400_advanced_mode.hpp>
+#include "../include/rs4xx_advanced_mode.hpp"
 #include <librealsense/rs2.hpp>
 #include <regex>
 
 #include "sample.hpp"
-#include "concurrency.hpp"
+#include "../src/concurrency.hpp"
 
 #define GLFW_INCLUDE_GLU
 #include <GLFW/glfw3.h>
@@ -19,7 +19,7 @@
 
 #include "tclap/CmdLine.h"
 
-#include "json_loader.hpp"
+#include "../src/json_loader.hpp"
 
 using namespace TCLAP;
 
@@ -144,7 +144,7 @@ void slider_float(const char* id, T* val, S T::* feild, bool& to_set)
 }
 
 template<class T>
-void write_advanced(const rs400::advanced_mode& advanced, const T& t, bool to_set, std::string& error_message)
+void write_advanced(const rs4xx::advanced_mode& advanced, const T& t, bool to_set, std::string& error_message)
 {
     if (to_set)
     {
@@ -263,7 +263,7 @@ int main(int argc, char** argv) try
         return dev->debug().send_and_receive_raw_data(input);
     };
 
-    rs400::advanced_mode advanced(send_receive);
+    rs4xx::advanced_mode advanced(send_receive);
 
     camera_state state;
     // Work-around, HDAD feild deos not contain MIN/MAX:
@@ -640,16 +640,16 @@ int main(int argc, char** argv) try
 
             auto to_set = false;
 
-            slider_int("DS Second Peak Threshold", state.depth_controls.vals, &rs400::STDepthControlGroup::deepSeaSecondPeakThreshold, to_set);
-            slider_int("DS Neighbor Threshold", state.depth_controls.vals, &rs400::STDepthControlGroup::deepSeaNeighborThreshold, to_set);
-            slider_int("DS Median Threshold", state.depth_controls.vals, &rs400::STDepthControlGroup::deepSeaMedianThreshold, to_set);
-            slider_int("Estimate Median Increment", state.depth_controls.vals, &rs400::STDepthControlGroup::plusIncrement, to_set);
-            slider_int("Estimate Median Decrement", state.depth_controls.vals, &rs400::STDepthControlGroup::minusDecrement, to_set);
-            slider_int("Score Minimum Threshold", state.depth_controls.vals, &rs400::STDepthControlGroup::scoreThreshA, to_set);
-            slider_int("Score Maximum Threshold", state.depth_controls.vals, &rs400::STDepthControlGroup::scoreThreshB, to_set);
-            slider_int("DS LR Threshold", state.depth_controls.vals, &rs400::STDepthControlGroup::lrAgreeThreshold, to_set);
-            slider_int("Texture Count Threshold", state.depth_controls.vals, &rs400::STDepthControlGroup::textureCountThreshold, to_set);
-            slider_int("Texture Difference Threshold", state.depth_controls.vals, &rs400::STDepthControlGroup::textureDifferenceThreshold, to_set);
+            slider_int("DS Second Peak Threshold", state.depth_controls.vals, &rs4xx::STDepthControlGroup::deepSeaSecondPeakThreshold, to_set);
+            slider_int("DS Neighbor Threshold", state.depth_controls.vals, &rs4xx::STDepthControlGroup::deepSeaNeighborThreshold, to_set);
+            slider_int("DS Median Threshold", state.depth_controls.vals, &rs4xx::STDepthControlGroup::deepSeaMedianThreshold, to_set);
+            slider_int("Estimate Median Increment", state.depth_controls.vals, &rs4xx::STDepthControlGroup::plusIncrement, to_set);
+            slider_int("Estimate Median Decrement", state.depth_controls.vals, &rs4xx::STDepthControlGroup::minusDecrement, to_set);
+            slider_int("Score Minimum Threshold", state.depth_controls.vals, &rs4xx::STDepthControlGroup::scoreThreshA, to_set);
+            slider_int("Score Maximum Threshold", state.depth_controls.vals, &rs4xx::STDepthControlGroup::scoreThreshB, to_set);
+            slider_int("DS LR Threshold", state.depth_controls.vals, &rs4xx::STDepthControlGroup::lrAgreeThreshold, to_set);
+            slider_int("Texture Count Threshold", state.depth_controls.vals, &rs4xx::STDepthControlGroup::textureCountThreshold, to_set);
+            slider_int("Texture Difference Threshold", state.depth_controls.vals, &rs4xx::STDepthControlGroup::textureDifferenceThreshold, to_set);
 
             ImGui::PopItemWidth();
 
@@ -662,10 +662,10 @@ int main(int argc, char** argv) try
 
             auto to_set = false;
 
-            checkbox("RSM Bypass", state.rsm.vals, &rs400::STRsm::rsmBypass, to_set);
-            slider_float("Disparity Difference Threshold", state.rsm.vals, &rs400::STRsm::diffThresh, to_set);
-            slider_float("SLO RAU Difference Threshold", state.rsm.vals, &rs400::STRsm::sloRauDiffThresh, to_set);
-            slider_int("Remove Threshold", state.rsm.vals, &rs400::STRsm::removeThresh, to_set);
+            checkbox("RSM Bypass", state.rsm.vals, &rs4xx::STRsm::rsmBypass, to_set);
+            slider_float("Disparity Difference Threshold", state.rsm.vals, &rs4xx::STRsm::diffThresh, to_set);
+            slider_float("SLO RAU Difference Threshold", state.rsm.vals, &rs4xx::STRsm::sloRauDiffThresh, to_set);
+            slider_int("Remove Threshold", state.rsm.vals, &rs4xx::STRsm::removeThresh, to_set);
 
             ImGui::PopItemWidth();
 
@@ -679,14 +679,14 @@ int main(int argc, char** argv) try
 
             auto to_set = false;
 
-            slider_int("Min West", state.rsvc.vals, &rs400::STRauSupportVectorControl::minWest, to_set);
-            slider_int("Min East", state.rsvc.vals, &rs400::STRauSupportVectorControl::minEast, to_set);
-            slider_int("Min WE Sum", state.rsvc.vals, &rs400::STRauSupportVectorControl::minWEsum, to_set);
-            slider_int("Min North", state.rsvc.vals, &rs400::STRauSupportVectorControl::minNorth, to_set);
-            slider_int("Min South", state.rsvc.vals, &rs400::STRauSupportVectorControl::minSouth, to_set);
-            slider_int("Min NS Sum", state.rsvc.vals, &rs400::STRauSupportVectorControl::minNSsum, to_set);
-            slider_int("U Shrink", state.rsvc.vals, &rs400::STRauSupportVectorControl::uShrink, to_set);
-            slider_int("V Shrink", state.rsvc.vals, &rs400::STRauSupportVectorControl::vShrink, to_set);
+            slider_int("Min West", state.rsvc.vals, &rs4xx::STRauSupportVectorControl::minWest, to_set);
+            slider_int("Min East", state.rsvc.vals, &rs4xx::STRauSupportVectorControl::minEast, to_set);
+            slider_int("Min WE Sum", state.rsvc.vals, &rs4xx::STRauSupportVectorControl::minWEsum, to_set);
+            slider_int("Min North", state.rsvc.vals, &rs4xx::STRauSupportVectorControl::minNorth, to_set);
+            slider_int("Min South", state.rsvc.vals, &rs4xx::STRauSupportVectorControl::minSouth, to_set);
+            slider_int("Min NS Sum", state.rsvc.vals, &rs4xx::STRauSupportVectorControl::minNSsum, to_set);
+            slider_int("U Shrink", state.rsvc.vals, &rs4xx::STRauSupportVectorControl::uShrink, to_set);
+            slider_int("V Shrink", state.rsvc.vals, &rs4xx::STRauSupportVectorControl::vShrink, to_set);
 
             ImGui::PopItemWidth();
 
@@ -699,11 +699,11 @@ int main(int argc, char** argv) try
 
             auto to_set = false;
 
-            checkbox("Disable SAD Color", state.color_control.vals, &rs400::STColorControl::disableSADColor, to_set);
-            checkbox("Disable RAU Color", state.color_control.vals, &rs400::STColorControl::disableRAUColor, to_set);
-            checkbox("Disable SLO Right Color", state.color_control.vals, &rs400::STColorControl::disableSLORightColor, to_set);
-            checkbox("Disable SLO Left Color", state.color_control.vals, &rs400::STColorControl::disableSLOLeftColor, to_set);
-            checkbox("Disable SAD Normalize", state.color_control.vals, &rs400::STColorControl::disableSADNormalize, to_set);
+            checkbox("Disable SAD Color", state.color_control.vals, &rs4xx::STColorControl::disableSADColor, to_set);
+            checkbox("Disable RAU Color", state.color_control.vals, &rs4xx::STColorControl::disableRAUColor, to_set);
+            checkbox("Disable SLO Right Color", state.color_control.vals, &rs4xx::STColorControl::disableSLORightColor, to_set);
+            checkbox("Disable SLO Left Color", state.color_control.vals, &rs4xx::STColorControl::disableSLOLeftColor, to_set);
+            checkbox("Disable SAD Normalize", state.color_control.vals, &rs4xx::STColorControl::disableSADNormalize, to_set);
 
             ImGui::PopItemWidth();
 
@@ -716,9 +716,9 @@ int main(int argc, char** argv) try
 
             auto to_set = false;
 
-            slider_int("Diff Threshold Red", state.rctc.vals, &rs400::STRauColorThresholdsControl::rauDiffThresholdRed, to_set);
-            slider_int("Diff Threshold Green", state.rctc.vals, &rs400::STRauColorThresholdsControl::rauDiffThresholdGreen, to_set);
-            slider_int("Diff Threshold Blue", state.rctc.vals, &rs400::STRauColorThresholdsControl::rauDiffThresholdBlue, to_set);
+            slider_int("Diff Threshold Red", state.rctc.vals, &rs4xx::STRauColorThresholdsControl::rauDiffThresholdRed, to_set);
+            slider_int("Diff Threshold Green", state.rctc.vals, &rs4xx::STRauColorThresholdsControl::rauDiffThresholdGreen, to_set);
+            slider_int("Diff Threshold Blue", state.rctc.vals, &rs4xx::STRauColorThresholdsControl::rauDiffThresholdBlue, to_set);
 
             ImGui::PopItemWidth();
 
@@ -731,9 +731,9 @@ int main(int argc, char** argv) try
 
             auto to_set = false;
 
-            slider_int("Diff Threshold Red", state.sctc.vals, &rs400::STSloColorThresholdsControl::diffThresholdRed, to_set);
-            slider_int("Diff Threshold Green", state.sctc.vals, &rs400::STSloColorThresholdsControl::diffThresholdGreen, to_set);
-            slider_int("Diff Threshold Blue", state.sctc.vals, &rs400::STSloColorThresholdsControl::diffThresholdBlue, to_set);
+            slider_int("Diff Threshold Red", state.sctc.vals, &rs4xx::STSloColorThresholdsControl::diffThresholdRed, to_set);
+            slider_int("Diff Threshold Green", state.sctc.vals, &rs4xx::STSloColorThresholdsControl::diffThresholdGreen, to_set);
+            slider_int("Diff Threshold Blue", state.sctc.vals, &rs4xx::STSloColorThresholdsControl::diffThresholdBlue, to_set);
 
             ImGui::PopItemWidth();
 
@@ -746,12 +746,12 @@ int main(int argc, char** argv) try
 
             auto to_set = false;
 
-            slider_int("K1 Penalty", state.spc.vals, &rs400::STSloPenaltyControl::sloK1Penalty, to_set);
-            slider_int("K2 Penalty", state.spc.vals, &rs400::STSloPenaltyControl::sloK2Penalty, to_set);
-            slider_int("K1 Penalty Mod1", state.spc.vals, &rs400::STSloPenaltyControl::sloK1PenaltyMod1, to_set);
-            slider_int("K1 Penalty Mod2", state.spc.vals, &rs400::STSloPenaltyControl::sloK1PenaltyMod2, to_set);
-            slider_int("K2 Penalty Mod1", state.spc.vals, &rs400::STSloPenaltyControl::sloK2PenaltyMod1, to_set);
-            slider_int("K2 Penalty Mod2", state.spc.vals, &rs400::STSloPenaltyControl::sloK2PenaltyMod2, to_set);
+            slider_int("K1 Penalty", state.spc.vals, &rs4xx::STSloPenaltyControl::sloK1Penalty, to_set);
+            slider_int("K2 Penalty", state.spc.vals, &rs4xx::STSloPenaltyControl::sloK2Penalty, to_set);
+            slider_int("K1 Penalty Mod1", state.spc.vals, &rs4xx::STSloPenaltyControl::sloK1PenaltyMod1, to_set);
+            slider_int("K1 Penalty Mod2", state.spc.vals, &rs4xx::STSloPenaltyControl::sloK1PenaltyMod2, to_set);
+            slider_int("K2 Penalty Mod1", state.spc.vals, &rs4xx::STSloPenaltyControl::sloK2PenaltyMod1, to_set);
+            slider_int("K2 Penalty Mod2", state.spc.vals, &rs4xx::STSloPenaltyControl::sloK2PenaltyMod2, to_set);
 
             ImGui::PopItemWidth();
 
@@ -764,11 +764,11 @@ int main(int argc, char** argv) try
 
             auto to_set = false;
 
-            checkbox("Ignore SAD", state.hdad.vals, &rs400::STHdad::ignoreSAD, to_set);
+            checkbox("Ignore SAD", state.hdad.vals, &rs4xx::STHdad::ignoreSAD, to_set);
 
             // TODO: Not clear from documents what is the valid range:
-            slider_float("AD Lambda", state.hdad.vals, &rs400::STHdad::lambdaAD, to_set);
-            slider_float("Census Lambda", state.hdad.vals, &rs400::STHdad::lambdaCensus, to_set);
+            slider_float("AD Lambda", state.hdad.vals, &rs4xx::STHdad::lambdaAD, to_set);
+            slider_float("Census Lambda", state.hdad.vals, &rs4xx::STHdad::lambdaCensus, to_set);
 
             ImGui::PopItemWidth();
 
@@ -781,18 +781,18 @@ int main(int argc, char** argv) try
 
             auto to_set = false;
 
-            slider_float("Color Correction 1", state.cc.vals, &rs400::STColorCorrection::colorCorrection1,  to_set);
-            slider_float("Color Correction 2", state.cc.vals, &rs400::STColorCorrection::colorCorrection2,  to_set);
-            slider_float("Color Correction 3", state.cc.vals, &rs400::STColorCorrection::colorCorrection3,  to_set);
-            slider_float("Color Correction 4", state.cc.vals, &rs400::STColorCorrection::colorCorrection4,  to_set);
-            slider_float("Color Correction 5", state.cc.vals, &rs400::STColorCorrection::colorCorrection5,  to_set);
-            slider_float("Color Correction 6", state.cc.vals, &rs400::STColorCorrection::colorCorrection6,  to_set);
-            slider_float("Color Correction 7", state.cc.vals, &rs400::STColorCorrection::colorCorrection7,  to_set);
-            slider_float("Color Correction 8", state.cc.vals, &rs400::STColorCorrection::colorCorrection8,  to_set);
-            slider_float("Color Correction 9", state.cc.vals, &rs400::STColorCorrection::colorCorrection9,  to_set);
-            slider_float("Color Correction 10",state.cc.vals, &rs400::STColorCorrection::colorCorrection10, to_set);
-            slider_float("Color Correction 11",state.cc.vals, &rs400::STColorCorrection::colorCorrection11, to_set);
-            slider_float("Color Correction 12",state.cc.vals, &rs400::STColorCorrection::colorCorrection12, to_set);
+            slider_float("Color Correction 1", state.cc.vals, &rs4xx::STColorCorrection::colorCorrection1,  to_set);
+            slider_float("Color Correction 2", state.cc.vals, &rs4xx::STColorCorrection::colorCorrection2,  to_set);
+            slider_float("Color Correction 3", state.cc.vals, &rs4xx::STColorCorrection::colorCorrection3,  to_set);
+            slider_float("Color Correction 4", state.cc.vals, &rs4xx::STColorCorrection::colorCorrection4,  to_set);
+            slider_float("Color Correction 5", state.cc.vals, &rs4xx::STColorCorrection::colorCorrection5,  to_set);
+            slider_float("Color Correction 6", state.cc.vals, &rs4xx::STColorCorrection::colorCorrection6,  to_set);
+            slider_float("Color Correction 7", state.cc.vals, &rs4xx::STColorCorrection::colorCorrection7,  to_set);
+            slider_float("Color Correction 8", state.cc.vals, &rs4xx::STColorCorrection::colorCorrection8,  to_set);
+            slider_float("Color Correction 9", state.cc.vals, &rs4xx::STColorCorrection::colorCorrection9,  to_set);
+            slider_float("Color Correction 10",state.cc.vals, &rs4xx::STColorCorrection::colorCorrection10, to_set);
+            slider_float("Color Correction 11",state.cc.vals, &rs4xx::STColorCorrection::colorCorrection11, to_set);
+            slider_float("Color Correction 12",state.cc.vals, &rs4xx::STColorCorrection::colorCorrection12, to_set);
 
             ImGui::PopItemWidth();
 
@@ -805,11 +805,11 @@ int main(int argc, char** argv) try
 
             auto to_set = false;
 
-            slider_float("Depth Units", state.depth_table.vals, &rs400::STDepthTableControl::depthUnits, to_set);
-            slider_float("Depth Clamp Min", state.depth_table.vals, &rs400::STDepthTableControl::depthClampMin, to_set);
-            slider_float("Depth Clamp Max", state.depth_table.vals, &rs400::STDepthTableControl::depthClampMax, to_set);
-            slider_float("Disparity Mode", state.depth_table.vals, &rs400::STDepthTableControl::disparityMode, to_set);
-            slider_float("Disparity Shift", state.depth_table.vals, &rs400::STDepthTableControl::disparityShift, to_set);
+            slider_float("Depth Units", state.depth_table.vals, &rs4xx::STDepthTableControl::depthUnits, to_set);
+            slider_float("Depth Clamp Min", state.depth_table.vals, &rs4xx::STDepthTableControl::depthClampMin, to_set);
+            slider_float("Depth Clamp Max", state.depth_table.vals, &rs4xx::STDepthTableControl::depthClampMax, to_set);
+            slider_float("Disparity Mode", state.depth_table.vals, &rs4xx::STDepthTableControl::disparityMode, to_set);
+            slider_float("Disparity Shift", state.depth_table.vals, &rs4xx::STDepthTableControl::disparityShift, to_set);
 
             ImGui::PopItemWidth();
 
@@ -822,7 +822,7 @@ int main(int argc, char** argv) try
 
             auto to_set = false;
 
-            slider_float("Mean Intensity Set Point", state.ae.vals, &rs400::STAEControl::meanIntensitySetPoint, to_set);
+            slider_float("Mean Intensity Set Point", state.ae.vals, &rs4xx::STAEControl::meanIntensitySetPoint, to_set);
 
             ImGui::PopItemWidth();
 
@@ -835,8 +835,8 @@ int main(int argc, char** argv) try
 
             auto to_set = false;
 
-            slider_float("u-Diameter", state.census.vals, &rs400::STCensusRadius::uDiameter, to_set);
-            slider_float("v-Diameter", state.census.vals, &rs400::STCensusRadius::vDiameter, to_set);
+            slider_float("u-Diameter", state.census.vals, &rs4xx::STCensusRadius::uDiameter, to_set);
+            slider_float("v-Diameter", state.census.vals, &rs4xx::STCensusRadius::vDiameter, to_set);
 
             ImGui::PopItemWidth();
 
