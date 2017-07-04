@@ -15,7 +15,7 @@
 #include <mutex>
 #include <atomic>
 
-namespace rsimpl2
+namespace librealsense
 {
     namespace uvc
     {

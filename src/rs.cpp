@@ -33,42 +33,42 @@ struct rs2_raw_data_buffer
 
 struct rs2_stream_profile_list
 {
-    std::vector<rsimpl2::stream_profile> list;
+    std::vector<librealsense::stream_profile> list;
 };
 
 struct rs2_device
 {
-    std::shared_ptr<rsimpl2::context> ctx;
-    std::shared_ptr<rsimpl2::device_info> info;
-    std::shared_ptr<rsimpl2::device_interface> device;
+    std::shared_ptr<librealsense::context> ctx;
+    std::shared_ptr<librealsense::device_info> info;
+    std::shared_ptr<librealsense::device_interface> device;
 };
 
 struct rs2_sensor
 {
-    std::shared_ptr<rsimpl2::device_interface> device;
-    rsimpl2::sensor_interface* sensor;
+    std::shared_ptr<librealsense::device_interface> device;
+    librealsense::sensor_interface* sensor;
     size_t index;
 };
 
 
 struct rs2_context
 {
-    std::shared_ptr<rsimpl2::context> ctx;
+    std::shared_ptr<librealsense::context> ctx;
 };
 
 
 
 struct rs2_notification
 {
-    rs2_notification(const rsimpl2::notification* notification)
+    rs2_notification(const librealsense::notification* notification)
         :_notification(notification) {}
 
-    const rsimpl2::notification* _notification;
+    const librealsense::notification* _notification;
 };
 
 struct rs2_syncer
 {
-    std::shared_ptr<rsimpl2::sync_interface> syncer;
+    std::shared_ptr<librealsense::sync_interface> syncer;
 };
 
 struct frame_holder
@@ -105,12 +105,12 @@ struct rs2_frame_queue
     {
     }
 
-    single_consumer_queue<rsimpl2::frame_holder> queue;
+    single_consumer_queue<librealsense::frame_holder> queue;
 };
 
 
 // This facility allows for translation of exceptions to rs2_error structs at the API boundary
-namespace rsimpl2
+namespace librealsense
 {
     template<class T> void stream_args(std::ostream & out, const char * names, const T & last) { out << names << ':' << last; }
     template<class T, class... U> void stream_args(std::ostream & out, const char * names, const T & first, const U &... rest)
@@ -149,11 +149,11 @@ namespace rsimpl2
 
 }
 
-#define NOEXCEPT_RETURN(R, ...) catch(...) { std::ostringstream ss; rsimpl2::stream_args(ss, #__VA_ARGS__, __VA_ARGS__); rs2_error* e; rsimpl2::translate_exception(__FUNCTION__, ss.str(), &e); LOG_WARNING(rs2_get_error_message(e)); rs2_free_error(e); return R; }
-#define HANDLE_EXCEPTIONS_AND_RETURN(R, ...) catch(...) { std::ostringstream ss; rsimpl2::stream_args(ss, #__VA_ARGS__, __VA_ARGS__); rsimpl2::translate_exception(__FUNCTION__, ss.str(), error); return R; }
+#define NOEXCEPT_RETURN(R, ...) catch(...) { std::ostringstream ss; librealsense::stream_args(ss, #__VA_ARGS__, __VA_ARGS__); rs2_error* e; librealsense::translate_exception(__FUNCTION__, ss.str(), &e); LOG_WARNING(rs2_get_error_message(e)); rs2_free_error(e); return R; }
+#define HANDLE_EXCEPTIONS_AND_RETURN(R, ...) catch(...) { std::ostringstream ss; librealsense::stream_args(ss, #__VA_ARGS__, __VA_ARGS__); librealsense::translate_exception(__FUNCTION__, ss.str(), error); return R; }
 #define VALIDATE_NOT_NULL(ARG) if(!(ARG)) throw std::runtime_error("null pointer passed for argument \"" #ARG "\"");
-#define VALIDATE_ENUM(ARG) if(!rsimpl2::is_valid(ARG)) { std::ostringstream ss; ss << "invalid enum value for argument \"" #ARG "\""; throw rsimpl2::invalid_value_exception(ss.str()); }
-#define VALIDATE_RANGE(ARG, MIN, MAX) if((ARG) < (MIN) || (ARG) > (MAX)) { std::ostringstream ss; ss << "out of range value for argument \"" #ARG "\""; throw rsimpl2::invalid_value_exception(ss.str()); }
+#define VALIDATE_ENUM(ARG) if(!librealsense::is_valid(ARG)) { std::ostringstream ss; ss << "invalid enum value for argument \"" #ARG "\""; throw librealsense::invalid_value_exception(ss.str()); }
+#define VALIDATE_RANGE(ARG, MIN, MAX) if((ARG) < (MIN) || (ARG) > (MAX)) { std::ostringstream ss; ss << "out of range value for argument \"" #ARG "\""; throw librealsense::invalid_value_exception(ss.str()); }
 #define VALIDATE_LE(ARG, MAX) if((ARG) > (MAX)) { std::ostringstream ss; ss << "out of range value for argument \"" #ARG "\""; throw std::runtime_error(ss.str()); }
 #define VALIDATE_NATIVE_STREAM(ARG) VALIDATE_ENUM(ARG); if(ARG >= RS2_STREAM_NATIVE_COUNT) { std::ostringstream ss; ss << "argument \"" #ARG "\" must be a native stream"; throw rsimpl2::wrong_value_exception(ss.str()); }
 #define VALIDATE_INTERFACE(X, T) dynamic_cast<T*>(&(X)); if (!dynamic_cast<T*>(&(X))) throw std::runtime_error("Object does not support \"" #T "\" interface!");
@@ -173,13 +173,13 @@ int patch(int version)
 
 std::string api_version_to_string(int version)
 {
-    if (major(version) == 0) return rsimpl2::to_string() << version;
-    return rsimpl2::to_string() << major(version) << "." << minor(version) << "." << patch(version);
+    if (major(version) == 0) return librealsense::to_string() << version;
+    return librealsense::to_string() << major(version) << "." << minor(version) << "." << patch(version);
 }
 
 void report_version_mismatch(int runtime, int compiletime)
 {
-    throw rsimpl2::invalid_value_exception(rsimpl2::to_string() << "API version mismatch: librealsense.so was compiled with API version "
+    throw librealsense::invalid_value_exception(librealsense::to_string() << "API version mismatch: librealsense.so was compiled with API version "
         << api_version_to_string(runtime) << " but the application was compiled with "
         << api_version_to_string(compiletime) << "! Make sure correct version of the library is installed (make install)");
 }
@@ -189,7 +189,7 @@ void verify_version_compatibility(int api_version)
     rs2_error* error = nullptr;
     auto runtime_api_version = rs2_get_api_version(&error);
     if (error)
-        throw rsimpl2::invalid_value_exception(rs2_get_error_message(error));
+        throw librealsense::invalid_value_exception(rs2_get_error_message(error));
 
     if ((runtime_api_version < 10) || (api_version < 10))
     {
@@ -217,7 +217,7 @@ rs2_context * rs2_create_context(int api_version, rs2_error ** error) try
 {
     verify_version_compatibility(api_version);
 
-    return new rs2_context{ std::make_shared<rsimpl2::context>(rsimpl2::backend_type::standard) };
+    return new rs2_context{ std::make_shared<librealsense::context>(librealsense::backend_type::standard) };
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, api_version)
 
@@ -393,7 +393,7 @@ rs2_raw_data_buffer* rs2_send_and_receive_raw_data(rs2_device* device, void* raw
 {
     VALIDATE_NOT_NULL(device);
 
-    auto debug_interface = VALIDATE_INTERFACE(*device->device, rsimpl2::debug_interface);
+    auto debug_interface = VALIDATE_INTERFACE(*device->device, librealsense::debug_interface);
 
     auto raw_data_buffer = static_cast<uint8_t*>(raw_data_to_send);
     std::vector<uint8_t> buffer_to_send(raw_data_buffer, raw_data_buffer + size_of_raw_data_to_send);
@@ -430,7 +430,7 @@ void rs2_open(rs2_sensor* sensor, rs2_stream stream,
     VALIDATE_ENUM(format);
     VALIDATE_ENUM(stream);
 
-    std::vector<rsimpl2::stream_profile> request;
+    std::vector<librealsense::stream_profile> request;
     request.push_back({ stream, static_cast<uint32_t>(width),
             static_cast<uint32_t>(height), static_cast<uint32_t>(fps), format });
     sensor->sensor->open(request);
@@ -448,7 +448,7 @@ void rs2_open_multiple(rs2_sensor* sensor,
     VALIDATE_NOT_NULL(fps);
     VALIDATE_NOT_NULL(format);
 
-    std::vector<rsimpl2::stream_profile> request;
+    std::vector<librealsense::stream_profile> request;
     for (auto i = 0; i < count; i++)
     {
         request.push_back({ stream[i], static_cast<uint32_t>(width[i]),
@@ -522,7 +522,7 @@ const char* rs2_get_device_info(const rs2_device* dev, rs2_camera_info info, rs2
     {
         return dev->device->get_info(info).c_str();
     }
-    throw rsimpl2::invalid_value_exception(rsimpl2::to_string() << "info " << rs2_camera_info_to_string(info) << " not supported by the device!");
+    throw librealsense::invalid_value_exception(librealsense::to_string() << "info " << rs2_camera_info_to_string(info) << " not supported by the device!");
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, dev, info)
 
@@ -542,7 +542,7 @@ const char* rs2_get_sensor_info(const rs2_sensor* sensor, rs2_camera_info info, 
     {
         return sensor->sensor->get_info(info).c_str();
     }
-    throw rsimpl2::invalid_value_exception(rsimpl2::to_string() << "info " << rs2_camera_info_to_string(info) << " not supported by the sensor!");
+    throw librealsense::invalid_value_exception(librealsense::to_string() << "info " << rs2_camera_info_to_string(info) << " not supported by the sensor!");
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, sensor, info)
 
@@ -558,8 +558,8 @@ void rs2_start(const rs2_sensor* sensor, rs2_frame_callback_ptr on_frame, void *
 {
     VALIDATE_NOT_NULL(sensor);
     VALIDATE_NOT_NULL(on_frame);
-    rsimpl2::frame_callback_ptr callback(
-        new rsimpl2::frame_callback(on_frame, user));
+    librealsense::frame_callback_ptr callback(
+        new librealsense::frame_callback(on_frame, user));
     sensor->sensor->start(move(callback));
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, sensor, on_frame, user)
@@ -568,8 +568,8 @@ void rs2_set_notifications_callback(const rs2_sensor * sensor, rs2_notification_
 {
     VALIDATE_NOT_NULL(sensor);
     VALIDATE_NOT_NULL(on_notification);
-    rsimpl2::notifications_callback_ptr callback(
-        new rsimpl2::notifications_callback(on_notification, user),
+    librealsense::notifications_callback_ptr callback(
+        new librealsense::notifications_callback(on_notification, user),
         [](rs2_notifications_callback* p) { delete p; });
     sensor->sensor->register_notifications_callback(std::move(callback));
 }
@@ -579,8 +579,8 @@ void rs2_set_devices_changed_callback(const rs2_context* context, rs2_devices_ch
 {
     VALIDATE_NOT_NULL(context);
     VALIDATE_NOT_NULL(callback);
-    rsimpl2::devices_changed_callback_ptr cb(
-        new rsimpl2::devices_changed_callback(callback, user),
+    librealsense::devices_changed_callback_ptr cb(
+        new librealsense::devices_changed_callback(callback, user),
         [](rs2_devices_changed_callback* p) { delete p; });
     context->ctx->set_devices_changed_callback(std::move(cb));
 }
@@ -798,7 +798,7 @@ NOEXCEPT_RETURN(, queue)
 rs2_frame* rs2_wait_for_frame(rs2_frame_queue* queue, rs2_error** error) try
 {
     VALIDATE_NOT_NULL(queue);
-    rsimpl2::frame_holder fh;
+    librealsense::frame_holder fh;
     if (!queue->queue.dequeue(&fh))
     {
         throw std::runtime_error("Frame did not arrive in time!");
@@ -814,7 +814,7 @@ int rs2_poll_for_frame(rs2_frame_queue* queue, rs2_frame** output_frame, rs2_err
 {
     VALIDATE_NOT_NULL(queue);
     VALIDATE_NOT_NULL(output_frame);
-    rsimpl2::frame_holder fh;
+    librealsense::frame_holder fh;
     if (queue->queue.try_dequeue(&fh))
     {
         rs2_frame* result = nullptr;
@@ -832,7 +832,7 @@ void rs2_enqueue_frame(rs2_frame* frame, void* queue) try
     VALIDATE_NOT_NULL(frame);
     VALIDATE_NOT_NULL(queue);
     auto q = reinterpret_cast<rs2_frame_queue*>(queue);
-    rsimpl2::frame_holder fh;
+    librealsense::frame_holder fh;
     fh.frame = frame;
     q->queue.enqueue(std::move(fh));
 }
@@ -856,7 +856,7 @@ void rs2_get_extrinsics(const rs2_sensor * from_dev, rs2_stream from_stream,
     VALIDATE_ENUM(to_stream);
 
     if (from_dev->device != to_dev->device)
-        throw rsimpl2::invalid_value_exception("Extrinsics between the selected devices are unknown!");
+        throw librealsense::invalid_value_exception("Extrinsics between the selected devices are unknown!");
 
     *extrin = from_dev->device->get_extrinsics(from_dev->index, from_stream, to_dev->index, to_stream);
 }
@@ -868,7 +868,7 @@ void rs2_get_motion_intrinsics(const rs2_sensor * sensor, rs2_stream stream, rs2
     VALIDATE_NOT_NULL(intrinsics);
     VALIDATE_ENUM(stream);
 
-    auto motion = VALIDATE_INTERFACE(*sensor->sensor, rsimpl2::motion_sensor_interface);
+    auto motion = VALIDATE_INTERFACE(*sensor->sensor, librealsense::motion_sensor_interface);
     *intrinsics = motion->get_motion_intrinsics(stream);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, sensor, stream, intrinsics)
@@ -881,7 +881,7 @@ void rs2_get_stream_intrinsics(const rs2_sensor * sensor, rs2_stream stream, int
     VALIDATE_ENUM(format);
     VALIDATE_NOT_NULL(intrinsics);
 
-    auto video = VALIDATE_INTERFACE(*sensor->sensor, rsimpl2::video_sensor_interface);
+    auto video = VALIDATE_INTERFACE(*sensor->sensor, librealsense::video_sensor_interface);
 
     // cast because i've been getting errors. (int->uint32_t requires narrowing conversion)
     *intrinsics = video->get_intrinsics({ stream, uint32_t(width), uint32_t(height), uint32_t(fps), format });
@@ -913,7 +913,7 @@ rs2_context* rs2_create_recording_context(int api_version, const char* filename,
     VALIDATE_NOT_NULL(section);
     verify_version_compatibility(api_version);
 
-    return new rs2_context{ std::make_shared<rsimpl2::context>(rsimpl2::backend_type::record, filename, section, mode) };
+    return new rs2_context{ std::make_shared<librealsense::context>(librealsense::backend_type::record, filename, section, mode) };
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, api_version, filename, section, mode)
 
@@ -923,7 +923,7 @@ rs2_context* rs2_create_mock_context(int api_version, const char* filename, cons
     VALIDATE_NOT_NULL(section);
     verify_version_compatibility(api_version);
 
-    return new rs2_context{ std::make_shared<rsimpl2::context>(rsimpl2::backend_type::playback, filename, section) };
+    return new rs2_context{ std::make_shared<librealsense::context>(librealsense::backend_type::playback, filename, section) };
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, api_version, filename, section)
 
@@ -936,7 +936,7 @@ void rs2_set_region_of_interest(const rs2_sensor* sensor, int min_x, int min_y, 
     VALIDATE_LE(0, min_x);
     VALIDATE_LE(0, min_y);
 
-    auto roi = VALIDATE_INTERFACE(*sensor->sensor, rsimpl2::roi_sensor_interface);
+    auto roi = VALIDATE_INTERFACE(*sensor->sensor, librealsense::roi_sensor_interface);
 
     roi->get_roi_method().set({ min_x, min_y, max_x, max_y });
 }
@@ -950,7 +950,7 @@ void rs2_get_region_of_interest(const rs2_sensor* sensor, int* min_x, int* min_y
     VALIDATE_NOT_NULL(max_x);
     VALIDATE_NOT_NULL(max_y);
 
-    auto roi = VALIDATE_INTERFACE(*sensor->sensor, rsimpl2::roi_sensor_interface);
+    auto roi = VALIDATE_INTERFACE(*sensor->sensor, librealsense::roi_sensor_interface);
 
     auto rect = roi->get_roi_method().get();
 
@@ -963,16 +963,16 @@ HANDLE_EXCEPTIONS_AND_RETURN(, sensor, min_x, min_y, max_x, max_y)
 
 rs2_syncer* rs2_create_syncer(rs2_error** error) try
 {
-    return new rs2_syncer{ std::make_shared<rsimpl2::syncer>() };
+    return new rs2_syncer{ std::make_shared<librealsense::syncer>() };
 }
-catch (...) { rsimpl2::translate_exception(__FUNCTION__, "", error); return nullptr; }
+catch (...) { librealsense::translate_exception(__FUNCTION__, "", error); return nullptr; }
 
 void rs2_start_syncer(const rs2_sensor* sensor, rs2_syncer* syncer, rs2_error** error) try
 {
     VALIDATE_NOT_NULL(sensor);
     VALIDATE_NOT_NULL(syncer);
-    rsimpl2::frame_callback_ptr callback(
-        new rsimpl2::frame_callback(rs2_sync_frame, syncer));
+    librealsense::frame_callback_ptr callback(
+        new librealsense::frame_callback(rs2_sync_frame, syncer));
     sensor->sensor->start(move(callback));
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, sensor, syncer)
@@ -998,7 +998,7 @@ int rs2_poll_for_frames(rs2_syncer* syncer, rs2_frame** output_array, rs2_error*
 {
     VALIDATE_NOT_NULL(syncer);
     VALIDATE_NOT_NULL(output_array);
-    rsimpl2::frameset res;
+    librealsense::frameset res;
     if (syncer->syncer->poll_for_frames(res))
     {
         for (uint32_t i = 0; i < RS2_STREAM_COUNT; i++)
@@ -1037,29 +1037,29 @@ const char * rs2_get_failed_args(const rs2_error * error) { return error ? error
 const char * rs2_get_error_message(const rs2_error * error) { return error ? error->message.c_str() : nullptr; }
 rs2_exception_type rs2_get_librealsense_exception_type(const rs2_error * error) { return error ? error->exception_type : RS2_EXCEPTION_TYPE_UNKNOWN; }
 
-const char * rs2_stream_to_string(rs2_stream stream) { return rsimpl2::get_string(stream); }
-const char * rs2_format_to_string(rs2_format format) { return rsimpl2::get_string(format); }
-const char * rs2_distortion_to_string(rs2_distortion distortion) { return rsimpl2::get_string(distortion); }
-const char * rs2_option_to_string(rs2_option option) { return rsimpl2::get_string(option); }
-const char * rs2_camera_info_to_string(rs2_camera_info info) { return rsimpl2::get_string(info); }
+const char * rs2_stream_to_string(rs2_stream stream) { return librealsense::get_string(stream); }
+const char * rs2_format_to_string(rs2_format format) { return librealsense::get_string(format); }
+const char * rs2_distortion_to_string(rs2_distortion distortion) { return librealsense::get_string(distortion); }
+const char * rs2_option_to_string(rs2_option option) { return librealsense::get_string(option); }
+const char * rs2_camera_info_to_string(rs2_camera_info info) { return librealsense::get_string(info); }
 
-const char * rs2_frame_metadata_to_string(rs2_frame_metadata metadata) { return rsimpl2::get_string(metadata); }
-const char * rs2_timestamp_domain_to_string(rs2_timestamp_domain info){ return rsimpl2::get_string(info); }
+const char * rs2_frame_metadata_to_string(rs2_frame_metadata metadata) { return librealsense::get_string(metadata); }
+const char * rs2_timestamp_domain_to_string(rs2_timestamp_domain info){ return librealsense::get_string(info); }
 
-const char * rs2_notification_category_to_string(rs2_notification_category category) { return rsimpl2::get_string(category); }
+const char * rs2_notification_category_to_string(rs2_notification_category category) { return librealsense::get_string(category); }
 
-const char * rs2_visual_preset_to_string(rs2_visual_preset preset) { return rsimpl2::get_string(preset); }
-const char * rs2_log_severity_to_string(rs2_log_severity severity) { return rsimpl2::get_string(severity); }
-const char * rs2_exception_type_to_string(rs2_exception_type type) { return rsimpl2::get_string(type); }
+const char * rs2_visual_preset_to_string(rs2_visual_preset preset) { return librealsense::get_string(preset); }
+const char * rs2_log_severity_to_string(rs2_log_severity severity) { return librealsense::get_string(severity); }
+const char * rs2_exception_type_to_string(rs2_exception_type type) { return librealsense::get_string(type); }
 
 void rs2_log_to_console(rs2_log_severity min_severity, rs2_error ** error) try
 {
-    rsimpl2::log_to_console(min_severity);
+    librealsense::log_to_console(min_severity);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, min_severity)
 
 void rs2_log_to_file(rs2_log_severity min_severity, const char * file_path, rs2_error ** error) try
 {
-    rsimpl2::log_to_file(min_severity, file_path);
+    librealsense::log_to_file(min_severity, file_path);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, min_severity, file_path)

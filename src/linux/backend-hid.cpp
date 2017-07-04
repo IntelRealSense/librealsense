@@ -54,7 +54,7 @@ const std::string IIO_DEVICE_PREFIX("iio:device");
 const std::string IIO_ROOT_PATH("/sys/bus/iio/devices");
 const std::string HID_CUSTOM_PATH("/sys/bus/platform/drivers/hid_sensor_custom");
 
-namespace rsimpl2
+namespace librealsense
 {
     namespace uvc
     {

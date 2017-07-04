@@ -3,7 +3,7 @@
 
 #include "ds5-options.h"
 
-namespace rsimpl2
+namespace librealsense
 {
     const char* emitter_option::get_value_description(float val) const
     {

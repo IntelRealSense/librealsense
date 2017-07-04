@@ -13,7 +13,7 @@
 #include "context.h"
 #include "image.h"
 
-namespace rsimpl2
+namespace librealsense
 {
     ds5_timestamp_reader_from_metadata::ds5_timestamp_reader_from_metadata(std::unique_ptr<frame_timestamp_reader> backup_timestamp_reader)
         :_backup_timestamp_reader(std::move(backup_timestamp_reader)), _has_metadata(pins)
@@ -54,7 +54,7 @@ namespace rsimpl2
 
         if(_has_metadata[pin_index])
         {
-            auto md = (rsimpl2::ds::metadata*)(fo.metadata);
+            auto md = (librealsense::ds::metadata*)(fo.metadata);
             return (double)(md->header.timestamp)*TIMESTAMP_TO_MILLISECONS;
         }
         else
@@ -77,7 +77,7 @@ namespace rsimpl2
 
         if(_has_metadata[pin_index] && fo.metadata_size > uvc::uvc_header_size)
         {
-            auto md = (rsimpl2::ds::metadata*)(fo.metadata);
+            auto md = (librealsense::ds::metadata*)(fo.metadata);
             return md->md_capture_timing.frameCounter;
         }
         else

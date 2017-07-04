@@ -121,9 +121,9 @@ set(REALSENSE_CPP
     src/win/win-hid.cpp
     src/win/win-backend.cpp
 
-    third_party/easyloggingpp/src/easylogging++.cc
+    third-party/easyloggingpp/src/easylogging++.cc
 
-    third_party/sqlite/sqlite3.c
+    third-party/sqlite/sqlite3.c
     src/mock/sql.cpp
     src/mock/recorder.cpp
 
@@ -179,8 +179,8 @@ set(REALSENSE_HPP
     src/win/win-hid.h
     src/win/win-backend.h
 
-    third_party/easyloggingpp/src/easylogging++.h
-    third_party/sqlite/sqlite3.h
+    third-party/easyloggingpp/src/easylogging++.h
+    third-party/sqlite/sqlite3.h
     src/mock/sql.h
     src/mock/recorder.h
 )
@@ -223,7 +223,7 @@ if(WIN32)
         )
 
     source_group("Header Files\\Recorder" FILES
-        third_party/sqlite/sqlite3.h
+        third-party/sqlite/sqlite3.h
         src/mock/sql.h
         src/mock/recorder.h
         )
@@ -233,7 +233,7 @@ if(WIN32)
         )
 
     source_group("Source Files\\Recorder" FILES
-        third_party/sqlite/sqlite3.c
+        third-party/sqlite/sqlite3.c
         src/mock/sql.cpp
         src/mock/recorder.cpp
         )
@@ -277,7 +277,7 @@ if(WIN32)
         )
 
     source_group("Header Files\\Logging" FILES
-        third_party/easyloggingpp/src/easylogging++.h
+        third-party/easyloggingpp/src/easylogging++.h
         )
 
     foreach(flag_var
@@ -363,7 +363,6 @@ if(HWM_OVER_XU)
     add_definitions(-DHWM_OVER_XU)
 endif()
 
-
 option(BUILD_SHARED_LIBS "Build shared library" ON)
 if(BUILD_SHARED_LIBS)
     add_library(realsense2 SHARED ${REALSENSE_CPP} ${REALSENSE_HPP} ${REALSENSE_DEF})
@@ -425,16 +424,22 @@ else()
 endif()
 
 option(BUILD_UNIT_TESTS "Build realsense unit tests." ON)
-option(BUILD_EXAMPLES "Build realsense examples." OFF)
+option(BUILD_EXAMPLES "Build realsense examples and tools." ON)
 option(ENFORCE_METADATA "Require WinSDK with Metadata support during compilation. Windows OS Only" OFF)
 option(BUILD_RS400_EXTRAS "Build RS400 advanced APIs." ON)
+option(BUILD_PYTHON_BINDINGS "Build Python bindings" OFF)
+
+# This parameter is meant for disabling graphical examples when building for
+# headless targets.
+option(BUILD_GRAPHICAL_EXAMPLES "Build graphical examples and tools." ON)
 
 if(((BUILD_EXAMPLES AND BUILD_GRAPHICAL_EXAMPLES) OR BUILD_RS400_EXTRAS) AND WIN32)
-    add_subdirectory(examples/third_party/glfw)
+  add_subdirectory(examples/third_party/glfw)
 endif()
 
 if(BUILD_EXAMPLES)
   add_subdirectory(examples)
+  add_subdirectory(tools)
 endif()
 
 if(BUILD_UNIT_TESTS)
@@ -449,7 +454,9 @@ if (ENFORCE_METADATA)
   add_definitions(-DENFORCE_METADATA)
 endif()
 
-add_subdirectory(bindings)
+if (BUILD_PYTHON_BINDINGS)
+  add_subdirectory(bindings/python)
+endif()
 
 # Check for unreferenced files
 FILE(GLOB_RECURSE AllSources RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}

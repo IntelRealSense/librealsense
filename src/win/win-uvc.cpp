@@ -45,7 +45,7 @@ The library will be compiled without the metadata support!\n")
 
 #define DEVICE_NOT_READY_ERROR _HRESULT_TYPEDEF_(0x80070015L)
 
-namespace rsimpl2
+namespace librealsense
 {
     namespace uvc
     {
@@ -353,13 +353,13 @@ namespace rsimpl2
 
                 auto pStruct = next_struct;
                 cfg.step.resize(option_range_size);
-                rsimpl2::copy(cfg.step.data(), pStruct, field_width);
+                librealsense::copy(cfg.step.data(), pStruct, field_width);
                 pStruct += length;
                 cfg.min.resize(option_range_size);
-                rsimpl2::copy(cfg.min.data(), pStruct, field_width);
+                librealsense::copy(cfg.min.data(), pStruct, field_width);
                 pStruct += length;
                 cfg.max.resize(option_range_size);
-                rsimpl2::copy(cfg.max.data(), pStruct, field_width);
+                librealsense::copy(cfg.max.data(), pStruct, field_width);
                 return;
             }
             case KSPROPERTY_MEMBER_VALUES:
@@ -377,7 +377,7 @@ namespace rsimpl2
                     }
 
                     cfg.def.resize(option_range_size);
-                    rsimpl2::copy(cfg.def.data(), next_struct, field_width);
+                    librealsense::copy(cfg.def.data(), next_struct, field_width);
                 }
                 return;
             }

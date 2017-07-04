@@ -100,7 +100,7 @@ int lockf(int fd, int cmd, off_t length)
 }
 #endif
 
-namespace rsimpl2
+namespace librealsense
 {
     namespace uvc
     {
@@ -649,7 +649,7 @@ namespace rsimpl2
         {
             uint32_t device_fourcc = id;
             char fourcc_buff[sizeof(device_fourcc)+1];
-            rsimpl2::copy(fourcc_buff, &device_fourcc, sizeof(device_fourcc));
+            librealsense::copy(fourcc_buff, &device_fourcc, sizeof(device_fourcc));
             fourcc_buff[sizeof(device_fourcc)] = 0;
             return fourcc_buff;
         }
@@ -729,7 +729,7 @@ namespace rsimpl2
                             std::stringstream s;
                             s << "Incomplete frame detected!\nSize " << buf.bytesused
                               << " out of " << buffer->get_full_length() << " bytes (" << percentage << "%)";
-                            rsimpl2::notification n = { RS2_NOTIFICATION_CATEGORY_FRAME_CORRUPTED, 0, RS2_LOG_SEVERITY_WARN, s.str()};
+                            librealsense::notification n = { RS2_NOTIFICATION_CATEGORY_FRAME_CORRUPTED, 0, RS2_LOG_SEVERITY_WARN, s.str()};
 
                             _error_handler(n);
                         }
@@ -771,7 +771,7 @@ namespace rsimpl2
             else
             {
                 LOG_WARNING("Frames didn't arrived within 5 seconds");
-                rsimpl2::notification n = {RS2_NOTIFICATION_CATEGORY_FRAMES_TIMEOUT, 0, RS2_LOG_SEVERITY_WARN,  "Frames didn't arrived within 5 seconds"};
+                librealsense::notification n = {RS2_NOTIFICATION_CATEGORY_FRAMES_TIMEOUT, 0, RS2_LOG_SEVERITY_WARN,  "Frames didn't arrived within 5 seconds"};
 
                 _error_handler(n);
             }
@@ -1127,7 +1127,7 @@ namespace rsimpl2
             {
                 LOG_ERROR(ex.what());
 
-                rsimpl2::notification n = {RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR, 0, RS2_LOG_SEVERITY_ERROR, ex.what()};
+                librealsense::notification n = {RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR, 0, RS2_LOG_SEVERITY_ERROR, ex.what()};
 
                 _error_handler(n);
             }

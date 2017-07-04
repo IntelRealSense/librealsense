@@ -27,7 +27,7 @@
 #include "concurrency.h"
 
 #define NOMINMAX
-#include "../third_party/easyloggingpp/src/easylogging++.h"
+#include "../third-party/easyloggingpp/src/easylogging++.h"
 
 typedef unsigned char byte;
 
@@ -39,7 +39,7 @@ const int RS2_MAX_EVENT_TINE_OUT = 10;
 const double DBL_EPSILON = 2.2204460492503131e-016;  // smallest such that 1.0+DBL_EPSILON != 1.0
 #endif
 
-namespace rsimpl2
+namespace librealsense
 {
 
     ///////////////////////////////////
@@ -977,7 +977,7 @@ namespace rsimpl2
         std::chrono::high_resolution_clock::time_point ended;
     };
 
-    typedef rsimpl2::small_heap<callback_invocation, 1> callbacks_heap;
+    typedef librealsense::small_heap<callback_invocation, 1> callbacks_heap;
 
     struct callback_invocation_holder
     {
@@ -1102,7 +1102,7 @@ namespace rsimpl2
     uint32_t calc_crc32(const uint8_t *buf, size_t bufsize);
 
 
-    class polling_device_watcher: public rsimpl2::uvc::device_watcher
+    class polling_device_watcher: public librealsense::uvc::device_watcher
     {
     public:
         polling_device_watcher(const uvc::backend* backend_ref):
@@ -1169,9 +1169,9 @@ namespace rsimpl2
 namespace std {
 
     template <>
-    struct hash<rsimpl2::stream_profile>
+    struct hash<librealsense::stream_profile>
     {
-        size_t operator()(const rsimpl2::stream_profile& k) const
+        size_t operator()(const librealsense::stream_profile& k) const
         {
             using std::hash;
 
@@ -1184,9 +1184,9 @@ namespace std {
     };
 
     template <>
-    struct hash<rsimpl2::uvc::stream_profile>
+    struct hash<librealsense::uvc::stream_profile>
     {
-        size_t operator()(const rsimpl2::uvc::stream_profile& k) const
+        size_t operator()(const librealsense::uvc::stream_profile& k) const
         {
             using std::hash;
 
@@ -1198,15 +1198,15 @@ namespace std {
     };
 
     template <>
-    struct hash<rsimpl2::request_mapping>
+    struct hash<librealsense::request_mapping>
     {
-        size_t operator()(const rsimpl2::request_mapping& k) const
+        size_t operator()(const librealsense::request_mapping& k) const
         {
             using std::hash;
 
-            return (hash<rsimpl2::uvc::stream_profile>()(k.profile))
-                ^ (hash<rsimpl2::pixel_format_unpacker*>()(k.unpacker))
-                ^ (hash<rsimpl2::native_pixel_format*>()(k.pf));
+            return (hash<librealsense::uvc::stream_profile>()(k.profile))
+                ^ (hash<librealsense::pixel_format_unpacker*>()(k.unpacker))
+                ^ (hash<librealsense::native_pixel_format*>()(k.pf));
         }
     };
 

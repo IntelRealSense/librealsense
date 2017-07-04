@@ -6,7 +6,7 @@
 
 #include <functional>
 
-namespace rsimpl2
+namespace librealsense
 {
     class stream_profile_interface
     {

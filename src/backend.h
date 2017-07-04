@@ -29,7 +29,7 @@ const uint16_t DELAY_FOR_RETRIES     = 50;
 const uint8_t MAX_META_DATA_SIZE      = 0xff; // UVC Metadata total length
                                             // is limited by design to 255 bytes
 
-namespace rsimpl2
+namespace librealsense
 {
     struct notification;
 

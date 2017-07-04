@@ -4,7 +4,7 @@
 #include "types.h"
 #include <iomanip>
 
-namespace rsimpl2
+namespace librealsense
 {
 
     void hw_monitor::fill_usb_buffer(int opCodeNumber, int p1, int p2, int p3, int p4,
@@ -31,7 +31,7 @@ namespace rsimpl2
 
         if (dataLength)
         {
-            rsimpl2::copy(writePtr + cur_index, data, dataLength);
+            librealsense::copy(writePtr + cur_index, data, dataLength);
             cur_index += dataLength;
         }
 
@@ -59,7 +59,7 @@ namespace rsimpl2
                 throw invalid_value_exception("bulk transfer failed - user buffer too small");
 
             inSize = res.size();
-            rsimpl2::copy(in, res.data(), inSize);
+            librealsense::copy(in, res.data(), inSize);
         }
     }
 
@@ -73,10 +73,10 @@ namespace rsimpl2
             throw invalid_value_exception("received incomplete response to usb command");
 
         details.receivedCommandDataLength -= 4;
-        rsimpl2::copy(details.receivedOpcode, outputBuffer, 4);
+        librealsense::copy(details.receivedOpcode, outputBuffer, 4);
 
         if (details.receivedCommandDataLength > 0)
-            rsimpl2::copy(details.receivedCommandData, outputBuffer + 4, details.receivedCommandDataLength);
+            librealsense::copy(details.receivedCommandData, outputBuffer + 4, details.receivedCommandDataLength);
     }
 
     void hw_monitor::send_hw_monitor_command(hwmon_cmd_details& details) const
@@ -120,8 +120,8 @@ namespace rsimpl2
         if (newCommand.oneDirection)
             return std::vector<uint8_t>();
 
-        rsimpl2::copy(newCommand.receivedOpcode, details.receivedOpcode, 4);
-        rsimpl2::copy(newCommand.receivedCommandData, details.receivedCommandData, details.receivedCommandDataLength);
+        librealsense::copy(newCommand.receivedOpcode, details.receivedOpcode, 4);
+        librealsense::copy(newCommand.receivedCommandData, details.receivedCommandData, details.receivedCommandDataLength);
         newCommand.receivedCommandDataLength = details.receivedCommandDataLength;
 
         // endian?
@@ -142,7 +142,7 @@ namespace rsimpl2
         command command(gvd_cmd);
         auto data = send(command);
         auto minSize = std::min(sz, data.size());
-        rsimpl2::copy(gvd, data.data(), minSize);
+        librealsense::copy(gvd, data.data(), minSize);
     }
 
     std::string hw_monitor::get_firmware_version_string(int gvd_cmd, uint32_t offset) const
@@ -150,7 +150,7 @@ namespace rsimpl2
         std::vector<unsigned char> gvd(HW_MONITOR_BUFFER_SIZE);
         get_gvd(gvd.size(), gvd.data(), gvd_cmd);
         uint8_t fws[8];
-        rsimpl2::copy(fws, gvd.data() + offset, 8);
+        librealsense::copy(fws, gvd.data() + offset, 8);
         return to_string() << static_cast<int>(fws[3]) << "." << static_cast<int>(fws[2])
             << "." << static_cast<int>(fws[1]) << "." << static_cast<int>(fws[0]);
     }
@@ -160,7 +160,7 @@ namespace rsimpl2
         std::vector<unsigned char> gvd(HW_MONITOR_BUFFER_SIZE);
         get_gvd(gvd.size(), gvd.data(), gvd_cmd);
         unsigned char ss[8];
-        rsimpl2::copy(ss, gvd.data() + offset, 8);
+        librealsense::copy(ss, gvd.data() + offset, 8);
         std::stringstream formattedBuffer;
         formattedBuffer << std::setfill('0') << std::setw(2) << std::hex << static_cast<int>(ss[0]) <<
             std::setfill('0') << std::setw(2) << std::hex << static_cast<int>(ss[1]) <<
@@ -177,7 +177,7 @@ namespace rsimpl2
         std::vector<unsigned char> gvd(HW_MONITOR_BUFFER_SIZE);
         get_gvd(gvd.size(), gvd.data(), gvd_cmd);
         bool value;
-        rsimpl2::copy(&value, gvd.data() + offset, 1);
+        librealsense::copy(&value, gvd.data() + offset, 1);
         return value;
     }
 }

@@ -18,7 +18,7 @@
 #include <atomic>
 #include <functional>
 
-namespace rsimpl2
+namespace librealsense
 {
     class device;
     class option;
@@ -231,7 +231,7 @@ namespace rsimpl2
         region_of_interest_method& get_roi_method() const
         {
             if (!_roi_method.get())
-                throw rsimpl2::not_implemented_exception("Region-of-interest is not implemented for this device!");
+                throw librealsense::not_implemented_exception("Region-of-interest is not implemented for this device!");
             return *_roi_method;
         }
         void set_roi_method(std::shared_ptr<region_of_interest_method> roi_method)

@@ -17,7 +17,7 @@
 #include "ds5-options.h"
 #include "ds5-timestamp.h"
 
-namespace rsimpl2
+namespace librealsense
 {
     ds5_active::ds5_active(const uvc::backend& backend,
                            const std::vector<uvc::uvc_device_info>& dev_info,

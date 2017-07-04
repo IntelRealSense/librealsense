@@ -11,7 +11,7 @@
 #include <atomic>
 #include <map>
 
-namespace rsimpl2
+namespace librealsense
 {
     namespace uvc
     {

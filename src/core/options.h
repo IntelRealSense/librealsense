@@ -4,7 +4,7 @@
 
 #include "../include/librealsense/rs2.h"
 
-namespace rsimpl2
+namespace librealsense
 {
     struct option_range
     {

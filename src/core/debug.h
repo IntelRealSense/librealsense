@@ -6,7 +6,7 @@
 
 #include <vector>
 
-namespace rsimpl2
+namespace librealsense
 {
     class debug_interface : public virtual device_interface
     {

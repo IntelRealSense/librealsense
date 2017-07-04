@@ -43,7 +43,7 @@
 #include <libusb.h>
 #pragma GCC diagnostic pop
 
-namespace rsimpl2
+namespace librealsense
 {
     namespace uvc
     {

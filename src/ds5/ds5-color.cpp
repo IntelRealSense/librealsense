@@ -17,7 +17,7 @@
 #include "ds5-options.h"
 #include "ds5-timestamp.h"
 
-namespace rsimpl2
+namespace librealsense
 {
     std::shared_ptr<uvc_sensor> ds5_color::create_color_device(const uvc::backend& backend,
         const std::vector<uvc::uvc_device_info>& color_devices_info)

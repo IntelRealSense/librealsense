@@ -15,7 +15,7 @@
 #include "sync.h"
 #include "core/streaming.h"
 
-namespace rsimpl2
+namespace librealsense
 {
     class device : public virtual device_interface, public info_container
     {

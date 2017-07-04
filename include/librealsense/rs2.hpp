@@ -927,6 +927,7 @@ namespace rs2
     class device
     {
     public:
+        using SensorType = sensor;
 
         /**
         * returns the list of adjacent devices, sharing the same physical parent composite device

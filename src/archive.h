@@ -8,7 +8,7 @@
 #include <array>
 #include <math.h>
 
-namespace rsimpl2
+namespace librealsense
 {
     class frame_archive;
     class md_attribute_parser_base;
@@ -63,8 +63,8 @@ struct frame
 private:
     // TODO: check boost::intrusive_ptr or an alternative
     std::atomic<int> ref_count; // the reference count is on how many times this placeholder has been observed (not lifetime, not content)
-    std::shared_ptr<rsimpl2::frame_archive> owner; // pointer to the owner to be returned to by last observe
-    rsimpl2::frame_continuation on_release;
+    std::shared_ptr<librealsense::frame_archive> owner; // pointer to the owner to be returned to by last observe
+    librealsense::frame_continuation on_release;
 
 public:
     std::vector<byte> data;
@@ -120,11 +120,11 @@ public:
 
     void acquire() { ref_count.fetch_add(1); }
     void release();
-    frame* publish(std::shared_ptr<rsimpl2::frame_archive> new_owner);
-    void attach_continuation(rsimpl2::frame_continuation&& continuation) { on_release = std::move(continuation); }
+    frame* publish(std::shared_ptr<librealsense::frame_archive> new_owner);
+    void attach_continuation(librealsense::frame_continuation&& continuation) { on_release = std::move(continuation); }
     void disable_continuation() { on_release.reset(); }
 
-    rsimpl2::frame_archive* get_owner() const { return owner.get(); }
+    librealsense::frame_archive* get_owner() const { return owner.get(); }
 };
 
 struct rs2_frame // esentially an intrusive shared_ptr<frame>
@@ -165,7 +165,7 @@ struct rs2_frame // esentially an intrusive shared_ptr<frame>
         std::swap(frame_ptr, other.frame_ptr);
     }
 
-    void attach_continuation(rsimpl2::frame_continuation&& continuation) const
+    void attach_continuation(librealsense::frame_continuation&& continuation) const
     {
         if (frame_ptr) frame_ptr->attach_continuation(std::move(continuation));
     }
@@ -186,7 +186,7 @@ private:
 
 
 
-namespace rsimpl2
+namespace librealsense
 {
      typedef std::map<rs2_frame_metadata, std::shared_ptr<md_attribute_parser_base>> metadata_parser_map;
 

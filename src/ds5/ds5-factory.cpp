@@ -21,7 +21,7 @@
 #include "ds5-color.h"
 #include "ds5-motion.h"
 
-namespace rsimpl2
+namespace librealsense
 {
     // PSR
     class rs400_device : public ds5_rolling_shutter

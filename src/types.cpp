@@ -13,7 +13,7 @@
 
 #define unknown "UNKNOWN"
 
-namespace rsimpl2
+namespace librealsense
 {
     std::string datetime_string()
     {
@@ -210,16 +210,14 @@ namespace rsimpl2
         #define CASE(X) case RS2_CAMERA_INFO_##X: return #X;
         switch(value)
         {
-        CASE(DEVICE_NAME)
-        CASE(SENSOR_NAME)
-        CASE(DEVICE_SERIAL_NUMBER)
-        CASE(CAMERA_FIRMWARE_VERSION)
-        CASE(DEVICE_LOCATION)
-        CASE(DEVICE_DEBUG_OP_CODE)
+        CASE(NAME)
+        CASE(SERIAL_NUMBER)
+        CASE(FIRMWARE_VERSION)
+        CASE(LOCATION)
+        CASE(DEBUG_OP_CODE)
         CASE(ADVANCED_MODE)
         CASE(PRODUCT_ID)
-        CASE(MOTION_MODULE_FIRMWARE_VERSION)
-        CASE(IS_CAMERA_LOCKED)
+        CASE(CAMERA_LOCKED)
         default: assert(!is_valid(value)); return unknown;
         }
         #undef CASE

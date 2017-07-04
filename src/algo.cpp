@@ -4,7 +4,7 @@
 #include "algo.h"
 #include "option.h"
 
-using namespace rsimpl2;
+using namespace librealsense;
 
 bool auto_exposure_state::get_enable_auto_exposure() const
 {

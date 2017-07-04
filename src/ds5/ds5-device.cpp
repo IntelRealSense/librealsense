@@ -17,7 +17,7 @@
 #include "ds5-options.h"
 #include "ds5-timestamp.h"
 
-namespace rsimpl2
+namespace librealsense
 {
     class ds5_auto_exposure_roi_method : public region_of_interest_method
     {
@@ -163,7 +163,7 @@ namespace rsimpl2
             _hw_monitor = std::make_shared<hw_monitor>(
                             std::make_shared<locked_transfer>(
                                 std::make_shared<command_transfer_over_xu>(
-                                    get_depth_sensor(), rsimpl2::ds::depth_xu, rsimpl2::ds::DS5_HWMONITOR),
+                                    get_depth_sensor(), librealsense::ds::depth_xu, librealsense::ds::DS5_HWMONITOR),
                                 get_depth_sensor()));
         }
 
@@ -197,7 +197,7 @@ namespace rsimpl2
                 _hw_monitor = std::make_shared<hw_monitor>(
                                 std::make_shared<locked_transfer>(
                                     std::make_shared<command_transfer_over_xu>(
-                                        get_depth_sensor(), rsimpl2::ds::depth_xu, rsimpl2::ds::DS5_HWMONITOR),
+                                        get_depth_sensor(), librealsense::ds::depth_xu, librealsense::ds::DS5_HWMONITOR),
                                     get_depth_sensor()));
             }
 #endif
@@ -293,11 +293,11 @@ namespace rsimpl2
         depth_ep.register_metadata((rs2_frame_metadata)RS2_FRAME_METADATA_WIDTH,            make_attribute_parser(&md_configuration::width, md_configuration_attributes::width_attribute, md_prop_offset));
         depth_ep.register_metadata((rs2_frame_metadata)RS2_FRAME_METADATA_HEIGHT,           make_attribute_parser(&md_configuration::height, md_configuration_attributes::height_attribute, md_prop_offset));
 
-        register_info(RS2_CAMERA_INFO_DEVICE_NAME,              device_name);
-        register_info(RS2_CAMERA_INFO_DEVICE_SERIAL_NUMBER,     serial);
-        register_info(RS2_CAMERA_INFO_CAMERA_FIRMWARE_VERSION,  _fw_version);
-        register_info(RS2_CAMERA_INFO_DEVICE_LOCATION,          dev_info.front().device_path);
-        register_info(RS2_CAMERA_INFO_DEVICE_DEBUG_OP_CODE,     std::to_string(static_cast<int>(fw_cmd::GLD)));
+        register_info(RS2_CAMERA_INFO_NAME,              device_name);
+        register_info(RS2_CAMERA_INFO_SERIAL_NUMBER,     serial);
+        register_info(RS2_CAMERA_INFO_FIRMWARE_VERSION,  _fw_version);
+        register_info(RS2_CAMERA_INFO_LOCATION,          dev_info.front().device_path);
+        register_info(RS2_CAMERA_INFO_DEBUG_OP_CODE,     std::to_string(static_cast<int>(fw_cmd::GLD)));
         register_info(RS2_CAMERA_INFO_ADVANCED_MODE,            ((advanced_mode)?"YES":"NO"));
         register_info(RS2_CAMERA_INFO_PRODUCT_ID,               pid_hex_str);
     }
