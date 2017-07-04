@@ -15,7 +15,7 @@ using namespace rs2;
 void print(rs2_extrinsics extrinsics)
 {
     stringstream ss;
-    ss << "Rotation: ";
+     ss << "Rotation: ";
 
     for (auto i = 0 ; i < sizeof(extrinsics.rotation)/sizeof(extrinsics.rotation[0]) ; ++i)
         ss << setprecision(15) << extrinsics.rotation[i] << "  ";
@@ -30,7 +30,7 @@ void print(rs2_extrinsics extrinsics)
 void print(rs2_motion_device_intrinsic intrinsics)
 {
     stringstream ss;
-    ss << "Bias Variances: ";
+     ss << "Bias Variances: ";
 
     for (auto i = 0 ; i < sizeof(intrinsics.bias_variances)/sizeof(intrinsics.bias_variances[0]) ; ++i)
         ss << setprecision(15) << intrinsics.bias_variances[i] << "  ";
@@ -49,14 +49,14 @@ void print(rs2_motion_device_intrinsic intrinsics)
 void print(rs2_intrinsics intrinsics)
 {
     stringstream ss;
-    ss << "Width: "        << intrinsics.width  <<
-       "\nHeight: "     << intrinsics.height <<
-       "\nPPX: "        << setprecision(15)  << intrinsics.ppx <<
-       "\nPPY: "        << setprecision(15)  << intrinsics.ppy <<
-       "\nFx: "         << setprecision(15)  << intrinsics.fx  <<
-       "\nFy: "         << setprecision(15)  << intrinsics.fy  <<
-       "\nDistortion: " << rs2_distortion_to_string(intrinsics.model) <<
-       "\nCoeffs: ";
+     ss << "Width: "        << intrinsics.width  <<
+           "\nHeight: "     << intrinsics.height <<
+           "\nPPX: "        << setprecision(15)  << intrinsics.ppx <<
+           "\nPPY: "        << setprecision(15)  << intrinsics.ppy <<
+           "\nFx: "         << setprecision(15)  << intrinsics.fx  <<
+           "\nFy: "         << setprecision(15)  << intrinsics.fy  <<
+           "\nDistortion: " << rs2_distortion_to_string(intrinsics.model) <<
+           "\nCoeffs: ";
 
     for (auto i = 0 ; i < sizeof(intrinsics.coeffs)/sizeof(intrinsics.coeffs[0]) ; ++i)
         ss << setprecision(15) << intrinsics.coeffs[i] << "  ";
@@ -94,18 +94,18 @@ int main(int argc, char** argv) try
     if (compact_view_arg.getValue())
     {
         cout << left << setw(30) << "Device Name"
-             << setw(20) << "Serial Number"
-             << setw(20) << "Firmware Version"
-             << endl;
+            << setw(20) << "Serial Number"
+            << setw(20) << "Firmware Version"
+            << endl;
 
         for (auto i = 0; i < device_count; ++i)
         {
             auto dev = devices[i];
 
             cout << left << setw(30) << dev.get_info(RS2_CAMERA_INFO_DEVICE_NAME)
-                 << setw(20) << dev.get_info(RS2_CAMERA_INFO_DEVICE_SERIAL_NUMBER)
-                 << setw(20) << dev.get_info(RS2_CAMERA_INFO_CAMERA_FIRMWARE_VERSION)
-                 << endl;
+                << setw(20) << dev.get_info(RS2_CAMERA_INFO_DEVICE_SERIAL_NUMBER)
+                << setw(20) << dev.get_info(RS2_CAMERA_INFO_CAMERA_FIRMWARE_VERSION)
+                << endl;
         }
 
         if (show_options.getValue() || show_modes.getValue())
@@ -127,7 +127,7 @@ int main(int argc, char** argv) try
             auto param = static_cast<rs2_camera_info>(j);
             if (dev.supports(param))
                 cout << "    " << left << setw(30) << rs2_camera_info_to_string(rs2_camera_info(param))
-                     << ": \t" << dev.get_info(param) << endl;
+                << ": \t" << dev.get_info(param) << endl;
         }
 
         cout << endl;
@@ -135,7 +135,7 @@ int main(int argc, char** argv) try
         if (show_options.getValue())
         {
             cout << setw(55) << " Supported options:" << setw(10) << "min" << setw(10)
-                 << " max" << setw(6) << " step" << setw(10) << " default" << endl;
+                << " max" << setw(6) << " step" << setw(10) << " default" << endl;
             for (auto j = 0; j < RS2_OPTION_COUNT; ++j)
             {
                 auto opt = static_cast<rs2_option>(j);
@@ -143,8 +143,8 @@ int main(int argc, char** argv) try
                 {
                     auto range = dev.get_option_range(opt);
                     cout << "    " << left << setw(50) << opt << " : "
-                         << setw(5) << range.min << "... " << setw(12) << range.max
-                         << setw(6) << range.step << setw(10) << range.def << "\n";
+                        << setw(5) << range.min << "... " << setw(12) << range.max
+                        << setw(6) << range.step << setw(10) << range.def << "\n";
                 }
             }
 
@@ -154,12 +154,12 @@ int main(int argc, char** argv) try
         if (show_modes.getValue())
         {
             cout << setw(55) << " Supported modes:" << setw(10) << "stream" << setw(10)
-                 << " resolution" << setw(6) << " fps" << setw(10) << " format" << endl;
+                << " resolution" << setw(6) << " fps" << setw(10) << " format" << endl;
             // Show which streams are supported by this device
             for (auto&& profile : dev.get_stream_modes())
             {
                 cout << "    " << profile.stream << "\t  " << profile.width << "x"
-                     << profile.height << "\t@ " << profile.fps << "Hz\t" << profile.format << endl;
+                    << profile.height << "\t@ " << profile.fps << "Hz\t" << profile.format << endl;
 
                 // Show horizontal and vertical field of view, in degrees
                 //cout << "\t" << setprecision(3) << intrin.hfov() << " x " << intrin.vfov() << " degrees\n";
@@ -182,7 +182,7 @@ int main(int argc, char** argv) try
                     continue;
 
                 cout << "Intrinsics of " << profile.stream << "\t  " << profile.width << "\tx "
-                     << profile.height << "\t@ " << profile.fps << "Hz\t" << profile.format << endl;
+                    << profile.height << "\t@ " << profile.fps << "Hz\t" << profile.format << endl;
                 if (profile.stream == RS2_STREAM_GYRO  ||
                     profile.stream == RS2_STREAM_ACCEL)
                 {
@@ -209,7 +209,7 @@ int main(int argc, char** argv) try
             {
                 auto deviceB = devices[elemB.second];
                 cout << "Extrinsics from " << rs2_stream_to_string(elemA.first) <<
-                     " to " << rs2_stream_to_string(elemB.first) << endl;
+                        " to " << rs2_stream_to_string(elemB.first) << endl;
 
                 auto extrinsics_A_to_B = deviceA.get_extrinsics_to(elemA.first, deviceB, elemB.first);
                 print(extrinsics_A_to_B);
