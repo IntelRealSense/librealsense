@@ -1039,27 +1039,27 @@ typedef enum rs2_extension_type
     RS2_EXTENSION_TYPE_COUNT
 } rs2_extension_type;
 /**
- * TODO: document
+ * TODO: Ziv, document
  * \param device
  * \param extension_type
  * \return
  */
 int rs2_is_sensor(const rs2_sensor* sensor, rs2_extension_type extension_type, rs2_error ** error);
 /**
- * TODO: document
+ * TODO: Ziv, document
  * \param file
  * \param error
  * \return
  */
 rs2_device_serializer * rs2_create_device_serializer(const char* file, rs2_error ** error);
 /**
- * TODO: document
+ * TODO: Ziv, document
  * \param device_serializer
  */
 void rs2_delete_device_serializer(rs2_device_serializer * device_serializer);
 
 /**
- * TODO: document
+ * TODO: Ziv, document
  * \param device
  * \param serializer
  * \param error
@@ -1067,7 +1067,7 @@ void rs2_delete_device_serializer(rs2_device_serializer * device_serializer);
  */
 rs2_record_device* rs2_create_record_device(const rs2_device* device, rs2_device_serializer* serializer, rs2_error** error);
 /**
- * TODO: document
+ * TODO: Ziv, document
  * \param device 
  */
 void rs2_delete_record_device(rs2_record_device* device);

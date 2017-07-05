@@ -14,7 +14,7 @@ namespace rsimpl2
         float def;
     };
 
-    class option //TODO: : public recordable<option>
+    class option //TODO: Ziv, public recordable<option>
     {
     public:
         virtual void set(float value) = 0;
@@ -29,7 +29,7 @@ namespace rsimpl2
         virtual ~option() = default;
     };
 
-    class options_interface//TODO: : public recordable<options_interface>
+    class options_interface//TODO: Ziv, public recordable<options_interface>
     {
     public:
         virtual option& get_option(rs2_option id) = 0;

@@ -170,7 +170,7 @@ std::vector<std::shared_ptr<rsimpl2::extension_snapshot>> rsimpl2::record_device
         {
             continue;
         }
-        //TODO: add other cases
+        //TODO: Ziv, add other cases
         //        switch (ext)
 //        {
 //            case RS2_EXTENSION_TYPE_DEBUG:     { rsimpl2::debug_interface                 }
@@ -303,7 +303,7 @@ void* rsimpl2::record_sensor::extend_to(rs2_extension_type extension_type)
                 m_record_callback(std::make_shared<extension_snapshot_frame>(m_sensor, e));
             });
             //m_extensions[extension_type] = d;
-            //TODO: Verify this doesn't result in memory leaks
+            //TODO: Ziv, Verify this doesn't result in memory leaks
             return api.get();
         }
         case RS2_EXTENSION_TYPE_INFO:break;
@@ -351,7 +351,7 @@ rsimpl2::mock_frame::mock_frame(rsimpl2::sensor_interface& s, frame* f) :
 rsimpl2::ros_device_serializer_impl::ros_device_serializer_impl(std::string file):
     m_file(file)
 {
-    //TODO have stream_writer throw this error
+    //TODO: Ziv, have stream_writer throw this error
     if(!std::ofstream(file).good())
     {
         throw std::invalid_argument(std::string("File ") + file + " is invalid or cannot be opened");

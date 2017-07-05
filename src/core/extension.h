@@ -13,9 +13,9 @@ namespace rsimpl2
 
     /**
      * Extensions' snapshot implementations are expected to derive from this class in addition to the actual extension
-     * Extensions' interfaces are no expected to derive from this class (//TODO what if they do? - test that it works)
+     * Extensions' interfaces are no expected to derive from this class (//TODO Ziv, what if they do? - test that it works)
      */
-    class extension_snapshot //TODO: : public std::enable_shared_from_this ?
+    class extension_snapshot //TODO: : Ziv, public std::enable_shared_from_this ?
     {
     public:
         virtual void update(std::shared_ptr<extension_snapshot> ext) = 0;

@@ -1105,8 +1105,8 @@ int rs2_is_sensor(const rs2_sensor* sensor, rs2_extension_type extension_type, r
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, sensor, extension_type)
 
-//TODO: int rs2_is_frame(const rs2_frame* frame, rs2_extension_type extension_type, rs2_error ** error)
-//TODO: int rs2_is_device(const rs2_device* frame, rs2_extension_type extension_type, rs2_error ** error)
+//TODO: Ziv, int rs2_is_frame(const rs2_frame* frame, rs2_extension_type extension_type, rs2_error ** error)
+//TODO: Ziv, int rs2_is_device(const rs2_device* frame, rs2_extension_type extension_type, rs2_error ** error)
 
 rs2_device_serializer * rs2_create_device_serializer(const char* file, rs2_error ** error) try
 {

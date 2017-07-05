@@ -117,8 +117,8 @@ namespace rsimpl2
 
     class record_sensor : public sensor_interface,
                           public extendable_interface,//Allows extension for any of the given device's extensions
-                          public info_container,//TODO: does it make sense to inherit here?, maybe construct the item as recordable
-                          public options_container//TODO: does it make sense to inherit here?
+                          public info_container,//TODO: Ziv, does it make sense to inherit here?, maybe construct the item as recordable
+                          public options_container//TODO: Ziv, does it make sense to inherit here?
     {
     public:
         using frame_interface_callback_t = std::function<void(std::shared_ptr<frame_interface>)>;
@@ -149,7 +149,7 @@ namespace rsimpl2
 
     class record_device : public device_interface,
                           public extendable_interface,
-                          public info_container//TODO: does it make sense to inherit here?
+                          public info_container//TODO: Ziv, does it make sense to inherit from container
     {
     public:
         record_device(std::shared_ptr<device_interface> device, std::shared_ptr<device_serializer::writer> serializer);

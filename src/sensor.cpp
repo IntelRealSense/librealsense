@@ -581,7 +581,7 @@ namespace rsimpl2
     void info_container::create_recordable(std::shared_ptr<info_interface>& recordable,
                                            std::function<void(std::shared_ptr<extension_snapshot>)> record_action)
     {
-        //TODO: fix this - consider create_shared_from_this
+        //TODO: Ziv, fix this - consider create_shared_from_this
         recordable = std::make_shared<info_container>(*this);
     }
 

@@ -53,7 +53,7 @@ namespace rsimpl2
         std::map<rs2_camera_info, std::string> _camera_info;
     };
 
-    //TODO: CR this class, created as poc
+    //TODO: Ziv, CR this class, created as poc
     class info_snapshot : public extension_snapshot_base<info_interface>, public info_container
     {
     public:
