@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 2.8.3)
 
-project(RS400_Advanced_Mode_Samples)
+project(RS4XX_Advanced_Mode)
 
 # Save the command line compile commands in the build output
 set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
@@ -49,19 +49,18 @@ else()
     include_directories(${GLFW_INCLUDE_DIR})
 endif()
 
-add_executable(rs400-advanced-mode-sample sample.cpp ../include/rs400_advanced_mode/rs400_advanced_mode.hpp ../../third-party/json.hpp json_loader.hpp
-    ../../third-party/imgui/imgui.cpp ../../third-party/imgui/imgui_draw.cpp ../../third-party/imgui/imgui_impl_glfw.cpp sample.hpp ../include/rs400_advanced_mode/AdvancedModeCommand.h)
-target_link_libraries(rs400-advanced-mode-sample ${DEPENDENCIES})
-include_directories(rs400-advanced-mode-sample ../../third-party/imgui ../../third-party ../../third-party/tclap/include)
+set(RS4XX_SOURCES
+    src/verify.c
+    src/rs4xx_advanced_mode.cpp
+    src/json_loader.hpp
+    src/concurrency.hpp
+    )
 
-file(GLOB JSONS
-  "presets/*.json"
-)
-file(COPY ${JSONS} DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/presets)
-
-set_target_properties (rs400-advanced-mode-sample PROPERTIES
-    FOLDER "RS400 Extras"
-)
+set(RS4XX_INCLUDES
+    include/rs4xx_advanced_mode.h
+    include/advanced_mode_command.h
+    #include/rs4xx_advanced_mode.hpp
+    )
 
 if(WIN32)
     source_group("Header Files\\3rd Party" FILES
@@ -72,26 +71,38 @@ if(WIN32)
         ../../third-party/imgui/imgui_impl_glfw.cpp)
 
     source_group("Header Files\\Reference" FILES
-        ../include/rs400_advanced_mode/AdvancedModeCommand.h)
+        ./include/advanced_mode_command.h)
 
 endif()
 
+if(WIN32)
+    set(ADVANCED_DEF ${RS4XX_SOURCES} ${RS4XX_INCLUDES} rs4xx_advanced_mode.def)
+endif()
+add_library(rs4xx-advanced-mode SHARED ${RS4XX_SOURCES} ${RS4XX_INCLUDES} ${ADVANCED_DEF})
+target_link_libraries(rs4xx-advanced-mode ${DEPENDENCIES})
+include_directories(rs4xx-advanced-mode include)
+
+set_target_properties (rs4xx-advanced-mode PROPERTIES
+    FOLDER "RS4XX Extras"
+)
+
+add_executable(rs4xx-advanced-mode-sample examples/c-sample.c src/rs4xx_advanced_mode.cpp)
+target_link_libraries(rs4xx-advanced-mode-sample ${DEPENDENCIES})
+include_directories(rs4xx-advanced-mode-sample third_party ../../examples/third_party/tclap/include)
+
+file(GLOB JSONS
+  "./presets/*.json"
+)
+file(COPY ${JSONS} DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/presets)
+
+set_target_properties (rs4xx-advanced-mode-sample PROPERTIES
+    FOLDER "RS4XX Extras"
+)
+
 install(
     TARGETS
-    rs400-advanced-mode-sample
+    rs4xx-advanced-mode-sample
 
     RUNTIME DESTINATION
     ${CMAKE_INSTALL_PREFIX}/bin
 )
-
-if(WIN32)
-    set(ADVANCED_DEF advanced-c.def)
-endif()
-add_library(rs400-advanced-mode SHARED ../include/rs400_advanced_mode/rs400_advanced_mode.h advanced-c.cpp ../include/rs400_advanced_mode/AdvancedModeCommand.h ${ADVANCED_DEF} c-sample.c)
-target_link_libraries(rs400-advanced-mode ${DEPENDENCIES})
-include_directories(rs400-advanced-mode ../include)
-
-set_target_properties (rs400-advanced-mode PROPERTIES
-    FOLDER "RS400 Extras"
-)
-

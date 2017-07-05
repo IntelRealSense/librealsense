@@ -1,7 +1,7 @@
 // See LICENSE file in root directory.
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
-#include <rs400_advanced_mode/rs400_advanced_mode.h>
+#include "../include/rs4xx_advanced_mode.h"
 #include <stdlib.h>
 #include <stdio.h>
 

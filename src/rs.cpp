@@ -17,7 +17,7 @@
 struct rs2_error
 {
     std::string message;
-    const char * function;
+    const char* function;
     std::string args;
     rs2_exception_type exception_type;
 };

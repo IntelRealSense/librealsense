@@ -1,5 +1,8 @@
+/* License: Apache 2.0. See LICENSE file in root directory.
+   Copyright(c) 2017 Intel Corporation. All Rights Reserved. */
+
 /**
- * @file   AdvancedModeCommand.h
+ * @file   advanced_mode_command.h
  * @brief  Advanced Mode Commands header file
  */
 
@@ -151,7 +154,7 @@ typedef struct
     uint32_t vDiameter;
 }STCensusRadius;
 
-#ifndef R400_ADVANCED_MODE_HPP
+#ifndef RS4XX_ADVANCED_MODE_HPP
 ErrorTypes AdvancedModeCommandGet( TOpcodeParams* pParams );
 ErrorTypes AdvancedModeCommandSet( TOpcodeParams* pParams );
 uint16_t AdvancedModeVersionGet();

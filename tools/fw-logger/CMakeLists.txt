@@ -39,12 +39,12 @@ set_target_properties (rs-fw-logger PROPERTIES
     FOLDER Examples
 )
 
-install(
-    TARGETS
+#install(
+#    TARGETS
 
-    rs-fw-logger
+#    rs-fw-logger
 
-    RUNTIME DESTINATION
-    ${CMAKE_INSTALL_PREFIX}/bin
-)
+#    RUNTIME DESTINATION
+#    ${CMAKE_INSTALL_PREFIX}/bin
+#)
 
