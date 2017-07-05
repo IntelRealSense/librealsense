@@ -393,6 +393,12 @@ namespace rsimpl2
         color_ep->register_pu(RS2_OPTION_WHITE_BALANCE);
         color_ep->register_pu(RS2_OPTION_ENABLE_AUTO_EXPOSURE);
         color_ep->register_pu(RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE);
+        color_ep->register_option(RS2_OPTION_POWER_LINE_FREQUENCY,
+            std::make_shared<uvc_pu_option>(*color_ep, RS2_OPTION_POWER_LINE_FREQUENCY,
+                std::map<float, std::string>{ { 0.f, "Disabled"},
+                { 1.f, "50Hz" },
+                { 2.f, "60Hz" },
+                { 3.f, "Auto" }, }));
 
         color_ep->register_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP, make_uvc_header_parser(&uvc::uvc_header::timestamp));
 
@@ -451,7 +457,7 @@ namespace rsimpl2
                                                                             std::map<float, std::string>{{0.f, "Static"},
                                                                                                          {1.f, "Anti-Flicker"},
                                                                                                          {2.f, "Hybrid"}}));
-        uvc_ep->register_option(RS2_OPTION_AUTO_EXPOSURE_ANTIFLICKER_RATE,
+        uvc_ep->register_option(RS2_OPTION_POWER_LINE_FREQUENCY,
                                 std::make_shared<auto_exposure_antiflicker_rate_option>(auto_exposure,
                                                                                         ae_state,
                                                                                         option_range{50, 60, 10, 60},

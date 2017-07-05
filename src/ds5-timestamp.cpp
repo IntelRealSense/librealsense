@@ -54,8 +54,8 @@ namespace rsimpl2
 
         if(_has_metadata[pin_index])
         {
-            auto md = (rsimpl2::ds::metadata*)(fo.metadata);
-            return (double)(md->header.timestamp)*TIMESTAMP_TO_MILLISECONDS;
+            auto md = (rsimpl2::metadata_intel_basic*)(fo.metadata);
+            return (double)(md->header.timestamp)*TIMESTAMP_USEC_TO_MSEC;
         }
         else
         {
@@ -77,9 +77,9 @@ namespace rsimpl2
 
         if(_has_metadata[pin_index] && fo.metadata_size > uvc::uvc_header_size)
         {
-            auto md = (rsimpl2::ds::metadata*)(fo.metadata);
-            if ((md->header.length > uvc::uvc_header_size) && (md->header.length <=MAX_META_DATA_SIZE))
-                return md->md_capture_timing.frameCounter;
+            auto md = (rsimpl2::metadata_intel_basic*)(fo.metadata);
+            if (md->capture_valid())
+                return md->payload.frame_counter;
         }
 
         return _backup_timestamp_reader->get_frame_counter(mode, fo);
@@ -165,7 +165,7 @@ namespace rsimpl2
         if(has_metadata(mode, fo.metadata, fo.metadata_size))
         {
             auto timestamp = *((uint64_t*)((const uint8_t*)fo.metadata));
-            return static_cast<rs2_time_t>(timestamp) * TIMESTAMP_TO_MILLISECONDS;
+            return static_cast<rs2_time_t>(timestamp) * TIMESTAMP_USEC_TO_MSEC;
         }
 
         if (!started)
@@ -227,7 +227,7 @@ namespace rsimpl2
         static const uint8_t timestamp_offset = 17;
 
         auto timestamp = *((uint64_t*)((const uint8_t*)fo.pixels + timestamp_offset));
-        return static_cast<rs2_time_t>(timestamp) * TIMESTAMP_TO_MILLISECONDS;
+        return static_cast<rs2_time_t>(timestamp) * TIMESTAMP_USEC_TO_MSEC;
     }
 
     bool ds5_custom_hid_timestamp_reader::has_metadata(const request_mapping& /*mode*/, const void * /*metadata*/, size_t /*metadata_size*/) const

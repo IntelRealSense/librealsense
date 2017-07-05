@@ -3,13 +3,14 @@
 
 #pragma once
 
+#include "metadata.h"
 #include "backend.h"
 #include "types.h"
 
 #include <map>
 #include <iomanip>
 
-const double TIMESTAMP_TO_MILLISECONDS = 0.001;
+const double TIMESTAMP_USEC_TO_MSEC = 0.001;
 
 namespace rsimpl2
 {
@@ -216,32 +217,6 @@ namespace rsimpl2
             float3x3            rotation_matrix_rect;       // Rotation matrix for rectification of RGB
             float3              translation_rect;           // Translation vector for rectification
             float               reserved[24];
-        };
-
-        struct metadata_header
-        {
-            uint32_t    metaDataID;
-            uint32_t    size;
-        };
-
-
-        struct metadata_capture_timing
-        {
-            metadata_header  metaDataIdHeader;
-            uint32_t    version;
-            uint32_t    flag;
-            int         frameCounter;
-            uint32_t    opticalTimestamp;   //In millisecond unit
-            uint32_t    readoutTime;        //The readout time in millisecond second unit
-            uint32_t    exposureTime;       //The exposure time in millisecond second unit
-            uint32_t    frameInterval ;     //The frame interval in millisecond second unit
-            uint32_t    pipeLatency;        //The latency between start of frame to frame ready in USB buffer
-        };
-
-        struct metadata
-        {
-           uvc::uvc_header header;
-           metadata_capture_timing md_capture_timing;
         };
 
         struct imu_intrinsics

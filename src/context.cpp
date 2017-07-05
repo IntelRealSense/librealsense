@@ -120,7 +120,7 @@ namespace rsimpl2
             for (auto i = 0; i<devices_info_added.size(); i++)
             {
                 rs2_devices_info_added.push_back({ shared_from_this(), devices_info_added[i], (unsigned int)i });
-                LOG_DEBUG("\nDevice sconnected:\n\n" << std::string(devices_info_added[i]->get_device_data()));
+                LOG_DEBUG("\nDevice connected:\n\n" << std::string(devices_info_added[i]->get_device_data()));
             }
 
             _devices_changed_callback->on_devices_changed(  new rs2_device_list({ shared_from_this(), rs2_devices_info_removed }),

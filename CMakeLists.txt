@@ -260,6 +260,9 @@ if(WIN32)
     # Makes VS15 find the DLL when trying to run examples/tests
     set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
     set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
+    # build with multiple cores
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /MP")
     add_definitions(-D__SSSE3__ -D_CRT_SECURE_NO_WARNINGS)
 
     set_property(GLOBAL PROPERTY USE_FOLDERS ON)

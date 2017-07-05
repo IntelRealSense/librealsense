@@ -9,6 +9,10 @@
 #ifndef LIBREALSENSE_TYPES_H
 #define LIBREALSENSE_TYPES_H
 
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+
 #include "../include/librealsense/rs2.h"     // Inherit all type definitions in the public API
 #include "../include/librealsense/rscore2.hpp"
 
@@ -19,6 +23,7 @@
 #include <mutex>                            // For mutex, unique_lock
 #include <memory>                           // For unique_ptr
 #include <map>
+#include <limits>
 #include <algorithm>
 #include <condition_variable>
 #include <functional>
@@ -26,7 +31,6 @@
 
 #include "concurrency.h"
 
-#define NOMINMAX
 #include "../third_party/easyloggingpp/src/easylogging++.h"
 
 typedef unsigned char byte;
@@ -584,29 +588,33 @@ namespace rsimpl2
         return std::make_shared<struct_interface<T, R, W>>(r, w);
     }
 
-    template <typename T>
-    class wraparound_mechanism
+    // Provides an efficient wraparound for built-in arithmetic times, for use-cases such as a rolling timestamp
+    template <typename T, typename S>
+    class arithmetic_wraparound
     {
     public:
-        wraparound_mechanism(T min_value, T max_value)
-            : max_number(max_value - min_value + 1), last_number(min_value), num_of_wraparounds(0)
-        {}
-
-        T fix(T number)
-        {
-            if ((number + (num_of_wraparounds*max_number)) < last_number)
-                ++num_of_wraparounds;
-
-
-            number += (num_of_wraparounds*max_number);
-            last_number = number;
-            return number;
+        arithmetic_wraparound() :
+            last_input(std::numeric_limits<T>::lowest()), accumulated(0) {
+            static_assert(
+                (std::is_arithmetic<T>::value) && 
+                (std::is_arithmetic<S>::value) &&
+                (std::numeric_limits<T>::max() < std::numeric_limits<S>::max()) &&
+                (std::numeric_limits<T>::lowest() >= std::numeric_limits<S>::lowest())
+                , "Wraparound class requirements are not met");
         }
 
+        S calc(const T input)
+        {
+            accumulated += static_cast<T>(input - last_input); // Automatically resolves wraparounds
+            last_input = input;
+            return (accumulated);
+        }
+
+        void reset() { last_input = std::numeric_limits<T>::lowest();  accumulated = 0; }
+
     private:
-        T max_number;
-        T last_number;
-        unsigned long long num_of_wraparounds;
+        T last_input;
+        S accumulated;
     };
 
     struct static_device_info

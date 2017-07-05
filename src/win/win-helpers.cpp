@@ -7,9 +7,8 @@
     #error At least Visual Studio 2013 Update 4 is required to compile this backend
 #endif
 
-#include "win-helpers.h"
-
 #include "../types.h"
+#include "win-helpers.h"
 
 #include <Cfgmgr32.h>
 #include <usbioctl.h>

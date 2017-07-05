@@ -295,7 +295,7 @@ void frame_archive::log_frame_callback_end(frame* frame) const
         auto callback_warning_duration = 1000 / (frame->additional_data.fps + 1);
         auto callback_duration = callback_ended - frame->get_frame_callback_start_time_point();
 
-        LOG_DEBUG("CallbackFinished," << rsimpl2::get_string(frame->get_stream_type()) << "," << frame->get_frame_number()
+        LOG_DEBUG("CallbackFinished," << rsimpl2::get_string(frame->get_stream_type()) << "," << std::dec << frame->get_frame_number()
             << ",DispatchedAt," << callback_ended);
 
         if (callback_duration > callback_warning_duration)
@@ -324,7 +324,7 @@ void rs2_frame::log_callback_end(rs2_time_t timestamp) const
         auto callback_warning_duration = 1000.f / (get()->additional_data.fps + 1);
         auto callback_duration = timestamp - get()->get_frame_callback_start_time_point();
 
-        LOG_DEBUG("CallbackFinished," << rsimpl2::get_string(get()->get_stream_type()) << "," << get()->get_frame_number() << ",DispatchedAt," << timestamp);
+        LOG_DEBUG("CallbackFinished," << rsimpl2::get_string(get()->get_stream_type()) << "," << std::dec << get()->get_frame_number() << ",DispatchedAt," << timestamp);
 
         if (callback_duration > callback_warning_duration)
         {

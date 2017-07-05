@@ -2,6 +2,7 @@
 // Copyright(c) 2016 Intel Corporation. All Rights Reserved.
 
 #include "sr300.h"
+#include "metadata.h"
 #include "hw-monitor.h"
 
 namespace rsimpl2
@@ -175,5 +176,55 @@ namespace rsimpl2
         sr300_raw_calibration rawCalib;
         rsimpl2::copy(&rawCalib, data.data(), std::min(sizeof(rawCalib), data.size()));
         return rawCalib.CalibrationParameters;
+    }
+
+    rs2_time_t sr300_timestamp_reader_from_metadata::get_frame_timestamp(const request_mapping& mode, const uvc::frame_object& fo)
+    {
+        std::lock_guard<std::recursive_mutex> lock(_mtx);
+
+        if(has_metadata_ts(fo))
+        {
+            auto md = (rsimpl2::metadata_raw*)(fo.metadata);
+            return (double)(ts_wrap.calc(md->header.timestamp))*TIMESTAMP_10NSEC_TO_MSEC;
+        }
+        else
+        {
+            if (!one_time_note)
+            {
+                LOG_WARNING("UVC metadata payloads are not available for stream " 
+                    << std::hex << mode.pf->fourcc << std::dec << (mode.profile.format)
+                    << ". Please refer to installation chapter for details.");
+                one_time_note = true;
+            }
+            return _backup_timestamp_reader->get_frame_timestamp(mode, fo);
+        }
+    }
+
+    unsigned long long sr300_timestamp_reader_from_metadata::get_frame_counter(const request_mapping & mode, const uvc::frame_object& fo) const
+    {
+        std::lock_guard<std::recursive_mutex> lock(_mtx);
+
+        if (has_metadata_fc(fo))
+        {
+            auto md = (rsimpl2::metadata_raw*)(fo.metadata);
+            return md->mode.sr300_rgb_mode.frame_counter; // The attribute offset is identical for all sr300-supported streams
+        }
+
+        return _backup_timestamp_reader->get_frame_counter(mode, fo);
+    }
+
+    void sr300_timestamp_reader_from_metadata::reset()
+    {
+        std::lock_guard<std::recursive_mutex> lock(_mtx);
+        one_time_note = false;
+        _backup_timestamp_reader->reset();
+        ts_wrap.reset();
+    }
+
+    rs2_timestamp_domain sr300_timestamp_reader_from_metadata::get_frame_timestamp_domain(const request_mapping & mode, const uvc::frame_object& fo) const
+    {
+        std::lock_guard<std::recursive_mutex> lock(_mtx);
+
+        return (has_metadata_ts(fo))? RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK : _backup_timestamp_reader->get_frame_timestamp_domain(mode,fo);
     }
 }

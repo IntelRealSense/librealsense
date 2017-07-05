@@ -98,9 +98,9 @@ struct camera_state
     }
 };
 
-struct json_feild
+struct json_field
 {
-    virtual ~json_feild() = default;
+    virtual ~json_field() = default;
 
     bool was_set = false;
 
@@ -108,7 +108,7 @@ struct json_feild
 };
 
 template<class T, class S>
-struct json_struct_feild : json_feild
+struct json_struct_field : json_field
 {
     T* strct;
     S T::group_type::* field;
@@ -129,7 +129,7 @@ struct json_struct_feild : json_feild
             }
         }
     }
-    
+
     void load(const std::string& str) override
     {
         float value = ::atof(str.c_str());
@@ -140,7 +140,7 @@ struct json_struct_feild : json_feild
 };
 
 template<class T, class S>
-struct json_string_struct_feild : json_feild
+struct json_string_struct_field : json_field
 {
     T* strct;
     S T::group_type::* field;
@@ -153,11 +153,11 @@ struct json_string_struct_feild : json_feild
 };
 
 template<class T, class S>
-struct json_invert_struct_feild : json_struct_feild<T, S>
+struct json_invert_struct_field : json_struct_field<T, S>
 {
-    using json_struct_feild<T, S>::range_check;
-    using json_struct_feild<T, S>::strct;
-    using json_struct_feild<T, S>::field;
+    using json_struct_field<T, S>::range_check;
+    using json_struct_field<T, S>::strct;
+    using json_struct_field<T, S>::field;
 
     void load(const std::string& str) override
     {
@@ -169,29 +169,29 @@ struct json_invert_struct_feild : json_struct_feild<T, S>
 };
 
 template<class T, class S>
-std::shared_ptr<json_feild> make_feild(T& strct, S T::group_type::* feild, double scale = 1.0f)
+std::shared_ptr<json_field> make_field(T& strct, S T::group_type::* field, double scale = 1.0f)
 {
-    std::shared_ptr<json_struct_feild<T, S>> f(new json_struct_feild<T, S>());
-    f->field = feild;
+    std::shared_ptr<json_struct_field<T, S>> f(new json_struct_field<T, S>());
+    f->field = field;
     f->strct = &strct;
     f->scale = scale;
     return f;
 }
 
 template<class T, class S>
-std::shared_ptr<json_feild> make_string_feild(T& strct, S T::group_type::* feild, double scale = 1.0f)
+std::shared_ptr<json_field> make_string_field(T& strct, S T::group_type::* field, double scale = 1.0f)
 {
-    std::shared_ptr<json_string_struct_feild<T, S>> f(new json_string_struct_feild<T, S>());
-    f->field = feild;
+    std::shared_ptr<json_string_struct_field<T, S>> f(new json_string_struct_field<T, S>());
+    f->field = field;
     f->strct = &strct;
     return f;
 }
 
 template<class T, class S>
-std::shared_ptr<json_feild> make_invert_feild(T& strct, S T::group_type::* feild)
+std::shared_ptr<json_field> make_invert_field(T& strct, S T::group_type::* field)
 {
-    std::shared_ptr<json_invert_struct_feild<T, S>> f(new json_invert_struct_feild<T, S>());
-    f->field = feild;
+    std::shared_ptr<json_invert_struct_field<T, S>> f(new json_invert_struct_field<T, S>());
+    f->field = field;
     f->strct = &strct;
     return f;
 }
@@ -207,116 +207,116 @@ inline void load_json(const std::string& filename, camera_state& state)
     json j;
     i >> j;
 
-    std::map<std::string, std::shared_ptr<json_feild>> feilds = {
+    std::map<std::string, std::shared_ptr<json_field>> fields = {
         // Depth Control
-        { "param-leftrightthreshold", make_feild(state.depth_controls, &rs400::STDepthControlGroup::lrAgreeThreshold) },
-        { "param-maxscorethreshb", make_feild(state.depth_controls, &rs400::STDepthControlGroup::scoreThreshB) },
-        { "param-medianthreshold", make_feild(state.depth_controls, &rs400::STDepthControlGroup::deepSeaMedianThreshold) },
-        { "param-minscorethresha", make_feild(state.depth_controls, &rs400::STDepthControlGroup::scoreThreshA) },
-        { "param-neighborthresh", make_feild(state.depth_controls, &rs400::STDepthControlGroup::deepSeaNeighborThreshold) },
-        { "param-secondpeakdelta", make_feild(state.depth_controls, &rs400::STDepthControlGroup::deepSeaSecondPeakThreshold) },
-        { "param-texturecountthresh", make_feild(state.depth_controls, &rs400::STDepthControlGroup::textureCountThreshold) },
-        { "param-robbinsmonrodecrement", make_feild(state.depth_controls, &rs400::STDepthControlGroup::minusDecrement) },
-        { "param-robbinsmonroincrement", make_feild(state.depth_controls, &rs400::STDepthControlGroup::plusIncrement) },
+        { "param-leftrightthreshold", make_field(state.depth_controls, &rs400::STDepthControlGroup::lrAgreeThreshold) },
+        { "param-maxscorethreshb", make_field(state.depth_controls, &rs400::STDepthControlGroup::scoreThreshB) },
+        { "param-medianthreshold", make_field(state.depth_controls, &rs400::STDepthControlGroup::deepSeaMedianThreshold) },
+        { "param-minscorethresha", make_field(state.depth_controls, &rs400::STDepthControlGroup::scoreThreshA) },
+        { "param-neighborthresh", make_field(state.depth_controls, &rs400::STDepthControlGroup::deepSeaNeighborThreshold) },
+        { "param-secondpeakdelta", make_field(state.depth_controls, &rs400::STDepthControlGroup::deepSeaSecondPeakThreshold) },
+        { "param-texturecountthresh", make_field(state.depth_controls, &rs400::STDepthControlGroup::textureCountThreshold) },
+        { "param-robbinsmonrodecrement", make_field(state.depth_controls, &rs400::STDepthControlGroup::minusDecrement) },
+        { "param-robbinsmonroincrement", make_field(state.depth_controls, &rs400::STDepthControlGroup::plusIncrement) },
 
         // RSM
-        { "param-usersm", make_invert_feild(state.rsm, &rs400::STRsm::rsmBypass) },
-        { "param-rsmdiffthreshold", make_feild(state.rsm, &rs400::STRsm::diffThresh) },
-        { "param-rsmrauslodiffthreshold", make_feild(state.rsm, &rs400::STRsm::sloRauDiffThresh) },
-        { "param-rsmremovethreshold", make_feild(state.rsm, &rs400::STRsm::removeThresh, 168) },
+        { "param-usersm", make_invert_field(state.rsm, &rs400::STRsm::rsmBypass) },
+        { "param-rsmdiffthreshold", make_field(state.rsm, &rs400::STRsm::diffThresh) },
+        { "param-rsmrauslodiffthreshold", make_field(state.rsm, &rs400::STRsm::sloRauDiffThresh) },
+        { "param-rsmremovethreshold", make_field(state.rsm, &rs400::STRsm::removeThresh, 168) },
 
         // RAU Support Vector Control
-        { "param-raumine", make_feild(state.rsvc, &rs400::STRauSupportVectorControl::minEast) },
-        { "param-rauminn", make_feild(state.rsvc, &rs400::STRauSupportVectorControl::minNorth) },
-        { "param-rauminnssum", make_feild(state.rsvc, &rs400::STRauSupportVectorControl::minNSsum) },
-        { "param-raumins", make_feild(state.rsvc, &rs400::STRauSupportVectorControl::minSouth) },
-        { "param-rauminw", make_feild(state.rsvc, &rs400::STRauSupportVectorControl::minWest) },
-        { "param-rauminwesum", make_feild(state.rsvc, &rs400::STRauSupportVectorControl::minWEsum) },
-        { "param-regionshrinku", make_feild(state.rsvc, &rs400::STRauSupportVectorControl::uShrink) },
-        { "param-regionshrinkv", make_feild(state.rsvc, &rs400::STRauSupportVectorControl::vShrink) },
+        { "param-raumine", make_field(state.rsvc, &rs400::STRauSupportVectorControl::minEast) },
+        { "param-rauminn", make_field(state.rsvc, &rs400::STRauSupportVectorControl::minNorth) },
+        { "param-rauminnssum", make_field(state.rsvc, &rs400::STRauSupportVectorControl::minNSsum) },
+        { "param-raumins", make_field(state.rsvc, &rs400::STRauSupportVectorControl::minSouth) },
+        { "param-rauminw", make_field(state.rsvc, &rs400::STRauSupportVectorControl::minWest) },
+        { "param-rauminwesum", make_field(state.rsvc, &rs400::STRauSupportVectorControl::minWEsum) },
+        { "param-regionshrinku", make_field(state.rsvc, &rs400::STRauSupportVectorControl::uShrink) },
+        { "param-regionshrinkv", make_field(state.rsvc, &rs400::STRauSupportVectorControl::vShrink) },
 
         // Color Controls
-        { "param-disableraucolor", make_feild(state.color_control, &rs400::STColorControl::disableRAUColor) },
-        { "param-disablesadcolor", make_feild(state.color_control, &rs400::STColorControl::disableSADColor) },
-        { "param-disablesadnormalize", make_feild(state.color_control, &rs400::STColorControl::disableSADNormalize) },
-        { "param-disablesloleftcolor", make_feild(state.color_control, &rs400::STColorControl::disableSLOLeftColor) },
-        { "param-disableslorightcolor", make_feild(state.color_control, &rs400::STColorControl::disableSLORightColor) },
+        { "param-disableraucolor", make_field(state.color_control, &rs400::STColorControl::disableRAUColor) },
+        { "param-disablesadcolor", make_field(state.color_control, &rs400::STColorControl::disableSADColor) },
+        { "param-disablesadnormalize", make_field(state.color_control, &rs400::STColorControl::disableSADNormalize) },
+        { "param-disablesloleftcolor", make_field(state.color_control, &rs400::STColorControl::disableSLOLeftColor) },
+        { "param-disableslorightcolor", make_field(state.color_control, &rs400::STColorControl::disableSLORightColor) },
 
         // RAU Color Thresholds Control
-        { "param-regioncolorthresholdb", make_feild(state.rctc, &rs400::STRauColorThresholdsControl::rauDiffThresholdBlue, 1022) },
-        { "param-regioncolorthresholdg", make_feild(state.rctc, &rs400::STRauColorThresholdsControl::rauDiffThresholdGreen, 1022) },
-        { "param-regioncolorthresholdr", make_feild(state.rctc, &rs400::STRauColorThresholdsControl::rauDiffThresholdRed, 1022) },
+        { "param-regioncolorthresholdb", make_field(state.rctc, &rs400::STRauColorThresholdsControl::rauDiffThresholdBlue, 1022) },
+        { "param-regioncolorthresholdg", make_field(state.rctc, &rs400::STRauColorThresholdsControl::rauDiffThresholdGreen, 1022) },
+        { "param-regioncolorthresholdr", make_field(state.rctc, &rs400::STRauColorThresholdsControl::rauDiffThresholdRed, 1022) },
 
         // SLO Color Thresholds Control
-        { "param-scanlineedgetaub", make_feild(state.sctc, &rs400::STSloColorThresholdsControl::diffThresholdBlue) },
-        { "param-scanlineedgetaug", make_feild(state.sctc, &rs400::STSloColorThresholdsControl::diffThresholdGreen) },
-        { "param-scanlineedgetaur", make_feild(state.sctc, &rs400::STSloColorThresholdsControl::diffThresholdRed) },
+        { "param-scanlineedgetaub", make_field(state.sctc, &rs400::STSloColorThresholdsControl::diffThresholdBlue) },
+        { "param-scanlineedgetaug", make_field(state.sctc, &rs400::STSloColorThresholdsControl::diffThresholdGreen) },
+        { "param-scanlineedgetaur", make_field(state.sctc, &rs400::STSloColorThresholdsControl::diffThresholdRed) },
 
         // SLO Penalty Control
-        { "param-scanlinep1", make_feild(state.spc, &rs400::STSloPenaltyControl::sloK1Penalty) },
-        { "param-scanlinep1onediscon", make_feild(state.spc, &rs400::STSloPenaltyControl::sloK1PenaltyMod1) },
-        { "param-scanlinep1twodiscon", make_feild(state.spc, &rs400::STSloPenaltyControl::sloK1PenaltyMod2) },
-        { "param-scanlinep2", make_feild(state.spc, &rs400::STSloPenaltyControl::sloK2Penalty) },
-        { "param-scanlinep2onediscon", make_feild(state.spc, &rs400::STSloPenaltyControl::sloK2PenaltyMod1) },
-        { "param-scanlinep2twodiscon", make_feild(state.spc, &rs400::STSloPenaltyControl::sloK2PenaltyMod2) },
+        { "param-scanlinep1", make_field(state.spc, &rs400::STSloPenaltyControl::sloK1Penalty) },
+        { "param-scanlinep1onediscon", make_field(state.spc, &rs400::STSloPenaltyControl::sloK1PenaltyMod1) },
+        { "param-scanlinep1twodiscon", make_field(state.spc, &rs400::STSloPenaltyControl::sloK1PenaltyMod2) },
+        { "param-scanlinep2", make_field(state.spc, &rs400::STSloPenaltyControl::sloK2Penalty) },
+        { "param-scanlinep2onediscon", make_field(state.spc, &rs400::STSloPenaltyControl::sloK2PenaltyMod1) },
+        { "param-scanlinep2twodiscon", make_field(state.spc, &rs400::STSloPenaltyControl::sloK2PenaltyMod2) },
 
         // HDAD
-        { "param-lambdaad", make_feild(state.hdad, &rs400::STHdad::lambdaAD) },
-        { "param-lambdacensus", make_feild(state.hdad, &rs400::STHdad::lambdaCensus) },
-        { "ignoreSAD", make_feild(state.hdad, &rs400::STHdad::ignoreSAD) },
+        { "param-lambdaad", make_field(state.hdad, &rs400::STHdad::lambdaAD) },
+        { "param-lambdacensus", make_field(state.hdad, &rs400::STHdad::lambdaCensus) },
+        { "ignoreSAD", make_field(state.hdad, &rs400::STHdad::ignoreSAD) },
 
         // SLO Penalty Control
-        { "param-colorcorrection1", make_feild(state.cc, &rs400::STColorCorrection::colorCorrection1) },
-        { "param-colorcorrection2", make_feild(state.cc, &rs400::STColorCorrection::colorCorrection2) },
-        { "param-colorcorrection3", make_feild(state.cc, &rs400::STColorCorrection::colorCorrection3) },
-        { "param-colorcorrection4", make_feild(state.cc, &rs400::STColorCorrection::colorCorrection4) },
-        { "param-colorcorrection5", make_feild(state.cc, &rs400::STColorCorrection::colorCorrection5) },
-        { "param-colorcorrection6", make_feild(state.cc, &rs400::STColorCorrection::colorCorrection6) },
-        { "param-colorcorrection7", make_feild(state.cc, &rs400::STColorCorrection::colorCorrection7) },
-        { "param-colorcorrection8", make_feild(state.cc, &rs400::STColorCorrection::colorCorrection8) },
-        { "param-colorcorrection9", make_feild(state.cc, &rs400::STColorCorrection::colorCorrection9) },
-        { "param-colorcorrection10", make_feild(state.cc, &rs400::STColorCorrection::colorCorrection10) },
-        { "param-colorcorrection11", make_feild(state.cc, &rs400::STColorCorrection::colorCorrection11) },
-        { "param-colorcorrection12", make_feild(state.cc, &rs400::STColorCorrection::colorCorrection12) },
+        { "param-colorcorrection1", make_field(state.cc, &rs400::STColorCorrection::colorCorrection1) },
+        { "param-colorcorrection2", make_field(state.cc, &rs400::STColorCorrection::colorCorrection2) },
+        { "param-colorcorrection3", make_field(state.cc, &rs400::STColorCorrection::colorCorrection3) },
+        { "param-colorcorrection4", make_field(state.cc, &rs400::STColorCorrection::colorCorrection4) },
+        { "param-colorcorrection5", make_field(state.cc, &rs400::STColorCorrection::colorCorrection5) },
+        { "param-colorcorrection6", make_field(state.cc, &rs400::STColorCorrection::colorCorrection6) },
+        { "param-colorcorrection7", make_field(state.cc, &rs400::STColorCorrection::colorCorrection7) },
+        { "param-colorcorrection8", make_field(state.cc, &rs400::STColorCorrection::colorCorrection8) },
+        { "param-colorcorrection9", make_field(state.cc, &rs400::STColorCorrection::colorCorrection9) },
+        { "param-colorcorrection10", make_field(state.cc, &rs400::STColorCorrection::colorCorrection10) },
+        { "param-colorcorrection11", make_field(state.cc, &rs400::STColorCorrection::colorCorrection11) },
+        { "param-colorcorrection12", make_field(state.cc, &rs400::STColorCorrection::colorCorrection12) },
 
         // Depth Table
-        { "param-depthunits", make_feild(state.depth_table, &rs400::STDepthTableControl::depthUnits) },
-        { "param-depthclampmin", make_feild(state.depth_table, &rs400::STDepthTableControl::depthClampMin) },
-        { "param-depthclampmax", make_feild(state.depth_table, &rs400::STDepthTableControl::depthClampMax) },
-        { "param-disparitymode", make_feild(state.depth_table, &rs400::STDepthTableControl::disparityMode) },
-        { "param-disparityshift", make_feild(state.depth_table, &rs400::STDepthTableControl::disparityShift) },
-        
+        { "param-depthunits", make_field(state.depth_table, &rs400::STDepthTableControl::depthUnits) },
+        { "param-depthclampmin", make_field(state.depth_table, &rs400::STDepthTableControl::depthClampMin) },
+        { "param-depthclampmax", make_field(state.depth_table, &rs400::STDepthTableControl::depthClampMax) },
+        { "param-disparitymode", make_field(state.depth_table, &rs400::STDepthTableControl::disparityMode) },
+        { "param-disparityshift", make_field(state.depth_table, &rs400::STDepthTableControl::disparityShift) },
+
         // Auto-Exposure
-        { "param-autoexposure-setpoint", make_feild(state.ae, &rs400::STAEControl::meanIntensitySetPoint) },
+        { "param-autoexposure-setpoint", make_field(state.ae, &rs400::STAEControl::meanIntensitySetPoint) },
 
         // Census
-        { "param-censusenablereg-udiameter", make_feild(state.census, &rs400::STCensusRadius::uDiameter) },
-        { "param-censusenablereg-vdiameter", make_feild(state.census, &rs400::STCensusRadius::vDiameter) },
+        { "param-censusenablereg-udiameter", make_field(state.census, &rs400::STCensusRadius::uDiameter) },
+        { "param-censusenablereg-vdiameter", make_field(state.census, &rs400::STCensusRadius::vDiameter) },
 
         // Stream Profile
-        { "stream-width", make_feild(state.profile, &stream_profile::width) },
-        { "stream-height", make_feild(state.profile, &stream_profile::height) },
-        { "stream-fps", make_feild(state.profile, &stream_profile::fps) },
-        { "stream-depth-format", make_string_feild(state.profile, &stream_profile::depth_format) },
-        { "stream-ir-format", make_string_feild(state.profile, &stream_profile::ir_format) },
+        { "stream-width", make_field(state.profile, &stream_profile::width) },
+        { "stream-height", make_field(state.profile, &stream_profile::height) },
+        { "stream-fps", make_field(state.profile, &stream_profile::fps) },
+        { "stream-depth-format", make_string_field(state.profile, &stream_profile::depth_format) },
+        { "stream-ir-format", make_string_field(state.profile, &stream_profile::ir_format) },
 
         // Controls Group
-        { "controls-laserstate", make_string_feild(state.laser, &laser_control::laser_state) },
-        { "controls-laserpower", make_feild(state.laser, &laser_control::laser_power) },
+        { "controls-laserstate", make_string_field(state.laser, &laser_control::laser_state) },
+        { "controls-laserpower", make_field(state.laser, &laser_control::laser_power) },
 
-        { "controls-autoexposure-roi-top", make_feild(state.roi, &roi_control::roi_top) },
-        { "controls-autoexposure-roi-bottom", make_feild(state.roi, &roi_control::roi_bottom) },
-        { "controls-autoexposure-roi-left", make_feild(state.roi, &roi_control::roi_left) },
-        { "controls-autoexposure-roi-right", make_feild(state.roi, &roi_control::roi_right) },
+        { "controls-autoexposure-roi-top", make_field(state.roi, &roi_control::roi_top) },
+        { "controls-autoexposure-roi-bottom", make_field(state.roi, &roi_control::roi_bottom) },
+        { "controls-autoexposure-roi-left", make_field(state.roi, &roi_control::roi_left) },
+        { "controls-autoexposure-roi-right", make_field(state.roi, &roi_control::roi_right) },
 
-        { "controls-autoexposure-auto", make_string_feild(state.exposure, &exposure_control::auto_exposure) },
-        { "controls-autoexposure-manual", make_feild(state.exposure, &exposure_control::exposure) },
+        { "controls-autoexposure-auto", make_string_field(state.exposure, &exposure_control::auto_exposure) },
+        { "controls-autoexposure-manual", make_field(state.exposure, &exposure_control::exposure) },
     };
 
     for (auto it = j.begin(); it != j.end(); ++it)
     {
-        auto kvp = feilds.find(it.key());
-        if (kvp != feilds.end())
+        auto kvp = fields.find(it.key());
+        if (kvp != fields.end())
         {
             try
             {
@@ -340,7 +340,7 @@ inline void load_json(const std::string& filename, camera_state& state)
         }
     }
 
-    for (auto& kvp : feilds)
+    for (auto& kvp : fields)
     {
         if (!kvp.second->was_set)
         {

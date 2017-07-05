@@ -51,15 +51,24 @@ namespace rsimpl2
             return true;
         }
 
-        uvc_pu_option(uvc_endpoint& ep, rs2_option id)
-            : _ep(ep), _id(id)
+        uvc_pu_option(uvc_endpoint& ep, rs2_option id, const std::map<float, std::string>& description_per_value = {})
+            : _ep(ep), _id(id), _description_per_value(description_per_value)
         {
         }
 
         const char* get_description() const override;
+
+        const char* get_value_description(float val) const override
+        {
+            if (_description_per_value.find(val) != _description_per_value.end())
+                return _description_per_value.at(val).c_str();
+            return nullptr;
+        }
+
     private:
         uvc_endpoint& _ep;
         rs2_option _id;
+        const std::map<float, std::string> _description_per_value;
     };
 
     template<typename T>

@@ -114,31 +114,31 @@ void checkbox(const char* id, T* val, S T::* f, bool& to_set)
 }
 
 template<class T, class S>
-void slider_int(const char* id, T* val, S T::* feild, bool& to_set)
+void slider_int(const char* id, T* val, S T::* field, bool& to_set)
 {
     ImGui::Text("%s", id);
-    int temp = val->*feild;
-    int min = (val + 1)->*feild;
-    int max = (val + 2)->*feild;
+    int temp = val->*field;
+    int min = (val + 1)->*field;
+    int max = (val + 2)->*field;
 
     if (ImGui::SliderInt(id, &temp, min, max))
     {
-        val->*feild = temp;
+        val->*field = temp;
         to_set = true;
     }
 }
 
 template<class T, class S>
-void slider_float(const char* id, T* val, S T::* feild, bool& to_set)
+void slider_float(const char* id, T* val, S T::* field, bool& to_set)
 {
     ImGui::Text("%s", id);
-    float temp = val->*feild;
-    float min = (val + 1)->*feild;
-    float max = (val + 2)->*feild;
+    float temp = val->*field;
+    float min = (val + 1)->*field;
+    float max = (val + 2)->*field;
 
     if (ImGui::SliderFloat(id, &temp, min, max))
     {
-        val->*feild = temp;
+        val->*field = temp;
         to_set = true;
     }
 }
@@ -266,7 +266,7 @@ int main(int argc, char** argv) try
     rs400::advanced_mode advanced(send_receive);
 
     camera_state state;
-    // Work-around, HDAD feild deos not contain MIN/MAX:
+    // Work-around, HDAD field deos not contain MIN/MAX:
     state.hdad.vals[1].ignoreSAD = 0;       state.hdad.vals[2].ignoreSAD = 1;
     state.hdad.vals[1].lambdaAD = 0;        state.hdad.vals[2].lambdaAD = 1000000;
     state.hdad.vals[1].lambdaCensus = 0;    state.hdad.vals[2].lambdaCensus = 1000000;

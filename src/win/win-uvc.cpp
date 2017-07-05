@@ -20,8 +20,9 @@ The library will be compiled without the metadata support!\n")
 #define METADATA_SUPPORT
 #endif      // (WinSDK 8.1)
 
-
+#ifndef NOMINMAX
 #define NOMINMAX
+#endif
 
 #include "win-uvc.h"
 #include "../types.h"
@@ -458,16 +459,17 @@ namespace rsimpl2
 
         struct pu_control { rs2_option option; long property; bool enable_auto; };
         static const pu_control pu_controls[] = {
-            { RS2_OPTION_BACKLIGHT_COMPENSATION, VideoProcAmp_BacklightCompensation },
-            { RS2_OPTION_BRIGHTNESS, VideoProcAmp_Brightness },
-            { RS2_OPTION_CONTRAST, VideoProcAmp_Contrast },
-            { RS2_OPTION_GAIN, VideoProcAmp_Gain },
-            { RS2_OPTION_GAMMA, VideoProcAmp_Gamma },
-            { RS2_OPTION_HUE, VideoProcAmp_Hue },
-            { RS2_OPTION_SATURATION, VideoProcAmp_Saturation },
-            { RS2_OPTION_SHARPNESS, VideoProcAmp_Sharpness },
-            { RS2_OPTION_WHITE_BALANCE, VideoProcAmp_WhiteBalance },
-            { RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE, VideoProcAmp_WhiteBalance, true },
+            { RS2_OPTION_BRIGHTNESS,                    KSPROPERTY_VIDEOPROCAMP_BRIGHTNESS },
+            { RS2_OPTION_CONTRAST,                      KSPROPERTY_VIDEOPROCAMP_CONTRAST },
+            { RS2_OPTION_HUE,                           KSPROPERTY_VIDEOPROCAMP_HUE },
+            { RS2_OPTION_SATURATION,                    KSPROPERTY_VIDEOPROCAMP_SATURATION },
+            { RS2_OPTION_SHARPNESS,                     KSPROPERTY_VIDEOPROCAMP_SHARPNESS },
+            { RS2_OPTION_GAMMA,                         KSPROPERTY_VIDEOPROCAMP_GAMMA },
+            { RS2_OPTION_WHITE_BALANCE,                 KSPROPERTY_VIDEOPROCAMP_WHITEBALANCE },
+            { RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE,     KSPROPERTY_VIDEOPROCAMP_WHITEBALANCE, true },
+            { RS2_OPTION_BACKLIGHT_COMPENSATION,        KSPROPERTY_VIDEOPROCAMP_BACKLIGHT_COMPENSATION },
+            { RS2_OPTION_GAIN,                          KSPROPERTY_VIDEOPROCAMP_GAIN },
+            { RS2_OPTION_POWER_LINE_FREQUENCY,          KSPROPERTY_VIDEOPROCAMP_POWERLINE_FREQUENCY }
         };
 
         bool wmf_uvc_device::get_pu(rs2_option opt, int32_t& value) const

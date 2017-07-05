@@ -16,7 +16,7 @@ extern "C" {
 
 #define RS2_API_MAJOR_VERSION    2
 #define RS2_API_MINOR_VERSION    6
-#define RS2_API_PATCH_VERSION    3
+#define RS2_API_PATCH_VERSION    4
 
 #define STRINGIFY(arg) #arg
 #define VAR_ARG_STRING(arg) STRINGIFY(arg)
@@ -153,7 +153,7 @@ typedef enum rs2_option
     RS2_OPTION_FRAMES_QUEUE_SIZE                          , /**< Number of frames the user is allowed to keep per stream. Trying to hold-on to more frames will cause frame-drops.*/
     RS2_OPTION_TOTAL_FRAME_DROPS                          , /**< Total number of detected frame drops from all streams */
     RS2_OPTION_AUTO_EXPOSURE_MODE                         , /**< Auto-Exposure modes: Static, Anti-Flicker and Hybrid */
-    RS2_OPTION_AUTO_EXPOSURE_ANTIFLICKER_RATE             , /**< Auto-Exposure anti-flicker rate, can be 50 or 60 Hz */
+    RS2_OPTION_POWER_LINE_FREQUENCY                       , /**< Power Line Frequency control for anti-flickering Off/50Hz/60Hz/Auto */
     RS2_OPTION_ASIC_TEMPERATURE                           , /**< Current Asic Temperature */
     RS2_OPTION_ERROR_POLLING_ENABLED                      , /**< disable error handling */
     RS2_OPTION_PROJECTOR_TEMPERATURE                      , /**< Current Projector Temperature */

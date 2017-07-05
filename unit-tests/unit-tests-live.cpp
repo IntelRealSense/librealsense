@@ -904,14 +904,6 @@ void metadata_verification(const std::vector<frame_additional_data>& data)
             }
         }
 
-        // Sensor timestamp should be less or equal to frame timestamp
-        if (data[i].frame_md.md_attributes[RS2_FRAME_METADATA_SENSOR_TIMESTAMP].first &&
-            data[i].frame_md.md_attributes[RS2_FRAME_METADATA_FRAME_TIMESTAMP].first)
-        {
-            REQUIRE(data[i].frame_md.md_attributes[RS2_FRAME_METADATA_FRAME_TIMESTAMP].second >
-                data[i].frame_md.md_attributes[RS2_FRAME_METADATA_SENSOR_TIMESTAMP].second);
-        }
-
         // Exposure time and gain values are greater than zero
         if (data[i].frame_md.md_attributes[RS2_FRAME_METADATA_ACTUAL_EXPOSURE].first)
             REQUIRE(data[i].frame_md.md_attributes[RS2_FRAME_METADATA_ACTUAL_EXPOSURE].second > 0);
@@ -929,7 +921,7 @@ TEST_CASE("Per-frame metadata sanity check", "[live]") {
         REQUIRE_NOTHROW(list = ctx.query_devices());
         REQUIRE(list.size() > 0);
 
-        const int frames_before_start_measure = 130;
+        const int frames_before_start_measure = 30;
         const int frames_for_fps_measure = 100;
         const double msec_to_sec = 0.001;
         const int num_of_profiles_for_each_subdevice = 2;
@@ -1011,8 +1003,10 @@ TEST_CASE("Per-frame metadata sanity check", "[live]") {
                 }));
 
 
+                CAPTURE(frames_additional_data.size());
+                CAPTURE(frames_for_fps_measure);
                 std::unique_lock<std::mutex> lock(m);
-                REQUIRE(cv.wait_for(lock, std::chrono::seconds(30), [&] {return frames_additional_data.size() >= frames_for_fps_measure; }));
+                cv.wait_for(lock, std::chrono::seconds(30), [&] {return ((frames_additional_data.size() >= frames_for_fps_measure)); });
 
                 REQUIRE_NOTHROW(subdevice.stop());
                 REQUIRE_NOTHROW(subdevice.close());
@@ -1025,53 +1019,48 @@ TEST_CASE("Per-frame metadata sanity check", "[live]") {
                 CAPTURE(start);
                 CAPTURE(end);
 
-                if (seconds <= 0)
-                {
-                    std::cout << "Start " << std::fixed << start << "\n";
-                    std::cout << "End   " << std::fixed << end << "\n";
-                }
-
                 REQUIRE(seconds > 0);
 
-                auto actual_fps = (double)frames_additional_data.size() / (double)seconds;
-
-                double metadata_seconds = frames_additional_data[frames_additional_data.size() - 1].timestamp - frames_additional_data[0].timestamp;
-                metadata_seconds *= msec_to_sec;
-
-
-                if (metadata_seconds <= 0)
+                if (frames_additional_data.size())
                 {
-                    std::cout << "Start metadata " << std::fixed << frames_additional_data[0].timestamp << "\n";
-                    std::cout << "End metadata   " << std::fixed << frames_additional_data[frames_additional_data.size() - 1].timestamp << "\n";
+                    auto actual_fps = (double)frames_additional_data.size() / (double)seconds;
+                    double metadata_seconds = frames_additional_data[frames_additional_data.size() - 1].timestamp - frames_additional_data[0].timestamp;
+                    metadata_seconds *= msec_to_sec;
+
+                    if (metadata_seconds <= 0)
+                    {
+                        std::cout << "Start metadata " << std::fixed << frames_additional_data[0].timestamp << "\n";
+                        std::cout << "End metadata   " << std::fixed << frames_additional_data[frames_additional_data.size() - 1].timestamp << "\n";
+                    }
+                    REQUIRE(metadata_seconds > 0);
+
+                    auto metadata_frames = frames_additional_data[frames_additional_data.size() - 1].frame_number - frames_additional_data[0].frame_number;
+                    auto metadata_fps = (double)metadata_frames / (double)metadata_seconds;
+
+                    for (auto i = 0; i < frames_additional_data.size() - 1; i++)
+                    {
+                        CAPTURE(i);
+                        CAPTURE(frames_additional_data[i].timestamp_domain);
+                        CAPTURE(frames_additional_data[i + 1].timestamp_domain);
+                        REQUIRE((frames_additional_data[i].timestamp_domain == frames_additional_data[i + 1].timestamp_domain));
+
+                        CAPTURE(frames_additional_data[i].frame_number);
+                        CAPTURE(frames_additional_data[i + 1].frame_number);
+
+                        REQUIRE((frames_additional_data[i].frame_number < frames_additional_data[i + 1].frame_number));
+                    }
+                    CAPTURE(actual_fps);
+                    CAPTURE(metadata_fps);
+
+                    //it the diff in percentage between metadata fps and actual fps is bigger than max_diff_between_real_and_metadata_fps
+                    //the test will fail
+                    REQUIRE(std::abs(metadata_fps / actual_fps - 1) < max_diff_between_real_and_metadata_fps);
+
+                    // Verify per-frame metadata attributes
+                    metadata_verification(frames_additional_data);
+
+                    std::cout << modes[i].format << " MODE: " << modes[i].fps << " " << modes[i].height << " " << modes[i].width << " " << modes[i].stream << " succeed\n";
                 }
-                REQUIRE(metadata_seconds > 0);
-
-                auto metadata_frames = frames_additional_data[frames_additional_data.size() - 1].frame_number - frames_additional_data[0].frame_number;
-                auto metadata_fps = (double)metadata_frames / (double)metadata_seconds;
-
-                for (auto i = 0; i < frames_additional_data.size() - 1; i++)
-                {
-                    CAPTURE(i);
-                    CAPTURE(frames_additional_data[i].timestamp_domain);
-                    CAPTURE(frames_additional_data[i + 1].timestamp_domain);
-                    REQUIRE((frames_additional_data[i].timestamp_domain == frames_additional_data[i + 1].timestamp_domain));
-
-                    CAPTURE(frames_additional_data[i].frame_number);
-                    CAPTURE(frames_additional_data[i + 1].frame_number);
-
-                    REQUIRE((frames_additional_data[i].frame_number < frames_additional_data[i + 1].frame_number));
-                }
-                CAPTURE(actual_fps);
-                CAPTURE(metadata_fps);
-
-                //it the diff in percentage between metadata fps and actual fps is bigger than max_diff_between_real_and_metadata_fps
-                //the test will fail
-                REQUIRE(std::abs(metadata_fps / actual_fps - 1) < max_diff_between_real_and_metadata_fps);
-
-                // Verify per-frame metadata attributes
-                metadata_verification(frames_additional_data);
-
-                std::cout << modes[i].format << "MODE: " << modes[i].fps << " " << modes[i].height << " " << modes[i].width << " " << modes[i].stream << " succeed\n";
             }
         }
     }
