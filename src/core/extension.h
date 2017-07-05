@@ -2,9 +2,15 @@
 // Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 
 #pragma once
-
+#include "../../include/librealsense/rs2.h" //TODO: Ziv, remove relative\file
 namespace rsimpl2
 {
+    template<typename T, typename P>
+    bool Is(std::shared_ptr<P> snapshot)
+    {
+        return dynamic_cast<T*>(snapshot.get()) != nullptr;
+    }
+
     class extendable_interface
     {
     public:

@@ -17,6 +17,7 @@
 #include <limits.h>
 #include <atomic>
 #include <functional>
+#include <core/debug.h>
 
 namespace rsimpl2
 {
@@ -75,6 +76,16 @@ namespace rsimpl2
         }
     };
 
+    class debug_snapshot : public extension_snapshot//TODO: Ziv, public debug_interface
+    {
+    public:
+        debug_snapshot(const std::vector<uint8_t>& input) : m_data(input)
+        {
+        }
+
+    private:
+        std::vector<uint8_t> m_data;
+    };
 
     class sensor_base : public virtual sensor_interface, public options_container, public virtual info_container
     {

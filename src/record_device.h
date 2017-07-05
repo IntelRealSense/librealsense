@@ -4,117 +4,13 @@
 #pragma once
 #include <core/roi.h>
 #include <core/extension.h>
+#include <core/serialization.h>
 #include "core/streaming.h"
 #include "archive.h"
 #include "concurrency.h"
 #include "sensor.h"
 namespace rsimpl2
 {
-    class sensor_metadata
-    {
-    public:
-        sensor_metadata(const std::vector<std::shared_ptr<extension_snapshot>>& sensor_extensios)
-            :
-            m_extensios(sensor_extensios)
-        {
-
-        }
-
-        std::vector<std::shared_ptr<rsimpl2::extension_snapshot>> get_extensions_snapshots() const
-        {
-
-        }
-    private:
-        std::vector<std::shared_ptr<extension_snapshot>> m_extensios;
-    };
-
-    class device_snapshot
-    {
-    public:
-        device_snapshot(const std::vector<std::shared_ptr<extension_snapshot>>& device_extensios,
-                        const std::vector<sensor_metadata>& sensors_metadata)
-            :
-            m_extensios(device_extensios),
-            m_sensors_metadata(sensors_metadata)
-        {
-
-        }
-        std::vector<sensor_metadata> query_sensor_metadata() const
-        {
-            return m_sensors_metadata;
-        }
-        std::vector<std::shared_ptr<extension_snapshot>> query_metadata() const
-        {
-            return m_extensios;
-        }
-    private:
-        std::vector<std::shared_ptr<extension_snapshot>> m_extensios;
-        std::vector<sensor_metadata> m_sensors_metadata;
-    };
-
-    class device_serializer
-    {
-    public:
-        struct storage_data
-        {
-            std::chrono::nanoseconds timestamp;
-            size_t sensor_index;
-            std::shared_ptr<frame_interface> frame;
-        };
-
-        class writer
-        {
-        public:
-            virtual void write_device_description(const device_snapshot& device_description) = 0;
-            virtual void write(storage_data data) = 0;
-            virtual void reset() = 0;
-            virtual ~writer() = default;
-        };
-        class reader
-        {
-        public:
-            virtual device_snapshot query_device_description() = 0;
-            virtual storage_data read() = 0;
-            virtual void seek_to_time(std::chrono::nanoseconds time) = 0;
-            virtual std::chrono::nanoseconds query_duration() const = 0;
-            virtual void reset() = 0;
-            virtual ~reader() = default;
-        };
-
-        virtual std::shared_ptr<writer> get_writer() = 0;
-        virtual std::shared_ptr<writer> get_reader() = 0;
-        virtual ~device_serializer() = default;
-    };
-
-    class ros_device_serializer_impl : public device_serializer
-    {
-    public:
-        ros_device_serializer_impl(std::string file);
-
-        class ros_writer : public device_serializer::writer
-        {
-        public:
-            void write_device_description(const device_snapshot& device_description) override;
-            void write(storage_data data) override;
-            void reset() override;
-        };
-        class ros_reader : public device_serializer::reader
-        {
-        public:
-            device_snapshot query_device_description() override;
-            storage_data read() override;
-            void seek_to_time(std::chrono::nanoseconds time) override;
-            std::chrono::nanoseconds query_duration() const override;
-            void reset() override;
-        };
-        std::shared_ptr<writer> get_writer() override;
-        std::shared_ptr<writer> get_reader() override;
-
-    private:
-        std::string m_file;
-    };
-
-
     class record_sensor : public sensor_interface,
                           public extendable_interface,//Allows extension for any of the given device's extensions
                           public info_container,//TODO: Ziv, does it make sense to inherit here?, maybe construct the item as recordable

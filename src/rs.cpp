@@ -3,6 +3,7 @@
 
 #include <functional>   // For function
 #include <climits>
+#include <ros/ros_device_serializer.h>
 
 #include "context.h"
 #include "device.h"
@@ -1112,7 +1113,7 @@ rs2_device_serializer * rs2_create_device_serializer(const char* file, rs2_error
 {
     VALIDATE_NOT_NULL(file);
 
-    return new rs2_device_serializer{ std::make_shared<rsimpl2::ros_device_serializer_impl>(file) };
+    return new rs2_device_serializer{ std::make_shared<rsimpl2::ros_device_serializer>(file) };
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, file)
 

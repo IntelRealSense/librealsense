@@ -122,8 +122,7 @@ set(REALSENSE_CPP
     src/win/win-hid.cpp
     src/win/win-backend.cpp
     src/record_device.cpp
-    src/ros/ros_serializer.cpp
-    src/ros/conversions.cpp
+    src/ros/ros_device_serializer.cpp
     third_party/easyloggingpp/src/easylogging++.cc
 
     third_party/sqlite/sqlite3.c
@@ -182,8 +181,8 @@ set(REALSENSE_HPP
     src/win/win-hid.h
     src/win/win-backend.h
     src/record_device.h
-    src/ros/ros_serializer.h
-    src/ros/conversions.h
+    src/ros/ros_device_serializer.h
+    src/core/serialization.h
 
     third_party/easyloggingpp/src/easylogging++.h
     third_party/sqlite/sqlite3.h

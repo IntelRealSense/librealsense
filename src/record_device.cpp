@@ -68,7 +68,7 @@ void rsimpl2::record_device::write_header()
 {
     auto device_extensions_md = get_extensions_snapshots(m_device.get());
 
-    std::vector<sensor_metadata> sensors_md;
+    std::vector<sensor_snapshot> sensors_md;
     for (size_t j = 0; j < m_device->get_sensors_count(); ++j)
     {
         auto& sensor = m_device->get_sensor(j);
@@ -148,43 +148,80 @@ rs2_extrinsics rsimpl2::record_device::get_extrinsics(size_t from,
     throw not_implemented_exception(__FUNCTION__);
 }
 
+/**
+ * Go over the extendable instance and find all extensions
+ * @tparam T
+ * @param extendable
+ * @return
+ */
 template<typename T>
 std::vector<std::shared_ptr<rsimpl2::extension_snapshot>> rsimpl2::record_device::get_extensions_snapshots(T* extendable)
 {
-    std::vector<std::shared_ptr<extension_snapshot>> sensor_extensions_md;
-    for (int i =0 ; i < static_cast<int>(RS2_EXTENSION_TYPE_COUNT); ++i)
+
+    //No support for extensions with more than a single type - i.e every extension has exactly one type in rs2_extension_type
+    std::vector<std::shared_ptr<extension_snapshot>> snapshots;
+    for (int i = 0; i < static_cast<int>(RS2_EXTENSION_TYPE_COUNT); ++i)
     {
         rs2_extension_type ext = static_cast<rs2_extension_type>(i);
-        if (ext == RS2_EXTENSION_TYPE_UNKNOWN) continue;
-        if (ext == RS2_EXTENSION_TYPE_INFO)
+        switch(ext)
         {
-            auto info_api = dynamic_cast<rsimpl2::info_interface*>(extendable);
-            if (info_api)
+            case RS2_EXTENSION_TYPE_DEBUG:
             {
-                auto inf = std::make_shared<info_snapshot>(info_api);
-                sensor_extensions_md.push_back(inf);
+                auto api = dynamic_cast<rsimpl2::debug_interface*>(extendable);
+                if (api)
+                {
+                    std::shared_ptr<debug_interface> p;
+                    api->recordable<debug_interface>::create_snapshot(p);
+                    //TODO: Ziv, Make sure dynamic cast indeed works
+                    snapshots.push_back(std::dynamic_pointer_cast<extension_snapshot>(p));
+                }
+                break;
             }
-            continue;
+            case RS2_EXTENSION_TYPE_INFO:
+            {
+                auto api = dynamic_cast<rsimpl2::info_interface*>(extendable);
+                if (api)
+                {
+                    std::shared_ptr<info_interface> p;
+                    api->recordable<info_interface>::create_snapshot(p);
+                    //TODO: Ziv, Make sure dynamic cast indeed works
+                    snapshots.push_back(std::dynamic_pointer_cast<extension_snapshot>(p));
+                }
+                break;
+            }
+            case RS2_EXTENSION_TYPE_MOTION:
+            {
+                //rsimpl2::motion_sensor_interface
+                break;
+            }
+            case RS2_EXTENSION_TYPE_OPTIONS:
+            {
+                //rsimpl2::options_interface
+                //TODO: Ziv, handle
+                break;
+            }
+            case RS2_EXTENSION_TYPE_UNKNOWN:
+            {
+                LOG_WARNING("Instance has an extension with an unknown extension type");
+                assert(0);
+                break;
+            }
+            case RS2_EXTENSION_TYPE_VIDEO:
+            {
+                //rsimpl2::video_sensor_interface
+                break;
+            }
+            case RS2_EXTENSION_TYPE_ROI:
+            {
+                //rsimpl2::roi_sensor_interface
+                break;
+            }
+            case RS2_EXTENSION_TYPE_COUNT:
+            default:
+                throw invalid_value_exception("No such extension type");
         }
-        if (ext == RS2_EXTENSION_TYPE_OPTIONS)
-        {
-            continue;
-        }
-        //TODO: Ziv, add other cases
-        //        switch (ext)
-//        {
-//            case RS2_EXTENSION_TYPE_DEBUG:     { rsimpl2::debug_interface                 }
-//            case RS2_EXTENSION_TYPE_INFO:
-//            break;
-//            case RS2_EXTENSION_TYPE_MOTION:    { rsimpl2::motion_sensor_interface         }
-//            case RS2_EXTENSION_TYPE_OPTIONS:   { rsimpl2::options_interface               }
-//            case RS2_EXTENSION_TYPE_VIDEO:     { rsimpl2::video_sensor_interface          }
-//            case RS2_EXTENSION_TYPE_ROI:       { rsimpl2::roi_sensor_interface            }
-//            default:
-//                throw invalid_value_exception(std::string("Unhandled extension typs:") + std::to_string(i));
-//        }
     }
-    return sensor_extensions_md;
+    return snapshots;
 }
 void* rsimpl2::record_device::extend_to(rs2_extension_type extension_type)
 {
@@ -348,54 +385,6 @@ rsimpl2::mock_frame::mock_frame(rsimpl2::sensor_interface& s, frame* f) :
 {
 
 }
-rsimpl2::ros_device_serializer_impl::ros_device_serializer_impl(std::string file):
-    m_file(file)
-{
-    //TODO: Ziv, have stream_writer throw this error
-    if(!std::ofstream(file).good())
-    {
-        throw std::invalid_argument(std::string("File ") + file + " is invalid or cannot be opened");
-    }
-}
 
-std::shared_ptr<rsimpl2::device_serializer::writer> rsimpl2::ros_device_serializer_impl::get_writer()
-{
-    throw not_implemented_exception(__FUNCTION__);
-}
-std::shared_ptr<rsimpl2::device_serializer::writer> rsimpl2::ros_device_serializer_impl::get_reader()
-{
-    throw not_implemented_exception(__FUNCTION__);
-}
 
-void rsimpl2::ros_device_serializer_impl::ros_writer::write_device_description(const rsimpl2::device_snapshot& device_description)
-{
-    throw not_implemented_exception(__FUNCTION__);
-}
-void rsimpl2::ros_device_serializer_impl::ros_writer::write(rsimpl2::device_serializer::storage_data data)
-{
-    throw not_implemented_exception(__FUNCTION__);
-}
-void rsimpl2::ros_device_serializer_impl::ros_writer::reset()
-{
-    throw not_implemented_exception(__FUNCTION__);
-}
-rsimpl2::device_snapshot rsimpl2::ros_device_serializer_impl::ros_reader::query_device_description()
-{
-    throw not_implemented_exception(__FUNCTION__);
-}
-rsimpl2::device_serializer::storage_data rsimpl2::ros_device_serializer_impl::ros_reader::read()
-{
-    throw not_implemented_exception(__FUNCTION__);
-}
-void rsimpl2::ros_device_serializer_impl::ros_reader::seek_to_time(std::chrono::nanoseconds time)
-{
-    throw not_implemented_exception(__FUNCTION__);
-}
-std::chrono::nanoseconds rsimpl2::ros_device_serializer_impl::ros_reader::query_duration() const
-{
-    throw not_implemented_exception(__FUNCTION__);
-}
-void rsimpl2::ros_device_serializer_impl::ros_reader::reset()
-{
 
-}
