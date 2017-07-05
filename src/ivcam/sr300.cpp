@@ -210,4 +210,15 @@ namespace rsimpl2
                                            std::make_shared<const_value_option>("Number of meters represented by a single depth unit",
                                                                                 1000.f / (0xFFFF / c.Rmax)));
     }
+    void sr300_camera::create_snapshot(std::shared_ptr<debug_interface>& snapshot)
+    {
+        //TODO: implement
+        throw std::runtime_error("Not Implemented");
+    }
+    void sr300_camera::create_recordable(std::shared_ptr<debug_interface>& recordable,
+                                         std::function<void(std::shared_ptr<extension_snapshot>)> record_action)
+    {
+        //TODO: implement
+        throw std::runtime_error("Not Implemented");
+    }
 }

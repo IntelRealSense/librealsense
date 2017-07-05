@@ -8,7 +8,7 @@
 
 namespace rsimpl2
 {
-    class debug_interface : public virtual device_interface
+    class debug_interface : public virtual device_interface, public virtual recordable<debug_interface>
     {
     public:
         virtual std::vector<uint8_t> send_receive_raw_data(const std::vector<uint8_t>& input) = 0;

@@ -2,10 +2,8 @@
 // Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 
 #include <librealsense/rs2.hpp>
+#include <core/debug.h>
 #include "record_device.h"
-
-#define FOREACH(var, enum_type) \
-    for(enum_type var = static_cast<enum_type>(0); var < )
 
 rsimpl2::record_device::record_device(std::shared_ptr<rsimpl2::device_interface> device,
                                       std::shared_ptr<rsimpl2::device_serializer::writer> serializer):
@@ -160,7 +158,7 @@ std::vector<std::shared_ptr<rsimpl2::extension_snapshot>> rsimpl2::record_device
         if (ext == RS2_EXTENSION_TYPE_UNKNOWN) continue;
         if (ext == RS2_EXTENSION_TYPE_INFO)
         {
-            auto info_api = As<rsimpl2::info_interface, T>(extendable);
+            auto info_api = dynamic_cast<rsimpl2::info_interface*>(extendable);
             if (info_api)
             {
                 auto inf = std::make_shared<info_snapshot>(info_api);
@@ -187,6 +185,10 @@ std::vector<std::shared_ptr<rsimpl2::extension_snapshot>> rsimpl2::record_device
 //        }
     }
     return sensor_extensions_md;
+}
+void* rsimpl2::record_device::extend_to(rs2_extension_type extension_type)
+{
+    return nullptr;
 }
 
 rsimpl2::record_sensor::~record_sensor()
@@ -279,6 +281,42 @@ bool rsimpl2::record_sensor::is_streaming() const
 {
     return m_sensor.is_streaming();
 }
+void* rsimpl2::record_sensor::extend_to(rs2_extension_type extension_type)
+{
+    switch (extension_type)
+    {
+
+        case RS2_EXTENSION_TYPE_DEBUG:
+        {
+//            if(m_extensions.find())
+//            {
+//                return m_extensions[extension_type].get();
+//            }
+            auto ptr = dynamic_cast<debug_interface*>(&m_sensor);
+            if(!ptr)
+            {
+                throw invalid_value_exception(std::string("Sensor is not of type ") + typeid(debug_interface).name());
+            }
+            std::shared_ptr<debug_interface> api;
+            ptr->recordable<debug_interface>::create_recordable(api, [this](std::shared_ptr<extension_snapshot> e)
+            {
+                m_record_callback(std::make_shared<extension_snapshot_frame>(m_sensor, e));
+            });
+            //m_extensions[extension_type] = d;
+            //TODO: Verify this doesn't result in memory leaks
+            return api.get();
+        }
+        case RS2_EXTENSION_TYPE_INFO:break;
+        case RS2_EXTENSION_TYPE_MOTION:break;
+        case RS2_EXTENSION_TYPE_OPTIONS:break;
+        //case RS2_EXTENSION_TYPE_UNKNOWN:break;
+        case RS2_EXTENSION_TYPE_VIDEO:break;
+        case RS2_EXTENSION_TYPE_ROI:break;
+        //case RS2_EXTENSION_TYPE_COUNT:break;
+        default:
+            throw invalid_value_exception(std::string("extension_type ") + std::to_string(extension_type) + " is not supported");
+    }
+}
 
 double rsimpl2::mock_frame::get_timestamp() const
 {
@@ -313,7 +351,11 @@ rsimpl2::mock_frame::mock_frame(rsimpl2::sensor_interface& s, frame* f) :
 rsimpl2::ros_device_serializer_impl::ros_device_serializer_impl(std::string file):
     m_file(file)
 {
-
+    //TODO have stream_writer throw this error
+    if(!std::ofstream(file).good())
+    {
+        throw std::invalid_argument(std::string("File ") + file + " is invalid or cannot be opened");
+    }
 }
 
 std::shared_ptr<rsimpl2::device_serializer::writer> rsimpl2::ros_device_serializer_impl::get_writer()

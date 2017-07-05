@@ -166,13 +166,13 @@ namespace rsimpl2
 #define VALIDATE_RANGE(ARG, MIN, MAX) if((ARG) < (MIN) || (ARG) > (MAX)) { std::ostringstream ss; ss << "out of range value for argument \"" #ARG "\""; throw rsimpl2::invalid_value_exception(ss.str()); }
 #define VALIDATE_LE(ARG, MAX) if((ARG) > (MAX)) { std::ostringstream ss; ss << "out of range value for argument \"" #ARG "\""; throw std::runtime_error(ss.str()); }
 //#define VALIDATE_NATIVE_STREAM(ARG) VALIDATE_ENUM(ARG); if(ARG >= RS2_STREAM_NATIVE_COUNT) { std::ostringstream ss; ss << "argument \"" #ARG "\" must be a native stream"; throw rsimpl2::wrong_value_exception(ss.str()); }
-#define VALIDATE_INTERFACE_NO_THROW(X, T) (dynamic_cast<T*>(X)  || dynamic_cast<rsimpl2::extension_interface*>(X))
+#define VALIDATE_INTERFACE_NO_THROW(X, T) (dynamic_cast<T*>(X)  || dynamic_cast<rsimpl2::extendable_interface*>(X))
 #define VALIDATE_INTERFACE(X,T)                                                                \
     ([&]() {                                                                                   \
         auto p = dynamic_cast<T*>(X);                                                       \
         if (!dynamic_cast<T*>(X))                                                           \
         {                                                                                      \
-            auto ext = dynamic_cast<rsimpl2::extension_interface*>(X);                      \
+            auto ext = dynamic_cast<rsimpl2::extendable_interface*>(X);                      \
             if (!ext)                                                                          \
                 throw std::runtime_error("Object does not support \"" #T "\" interface! " );   \
             else                                                                               \

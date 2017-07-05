@@ -16,6 +16,7 @@
 #include <iostream>
 #include <atomic>
 #include <condition_variable>
+#include <fstream>
 
 namespace rs2
 {
@@ -1156,6 +1157,39 @@ namespace rs2
         std::shared_ptr<rs2_device_list> _list;
     };
 
+    class recorder
+    {
+    public:
+        recorder(std::string file, rs2::device device) :
+            m_file(file)
+        {
+            rs2_error* e = nullptr;
+            m_serializer = std::shared_ptr<rs2_device_serializer>(
+                rs2_create_device_serializer(file.c_str(), &e),
+                rs2_delete_device_serializer);
+            rs2::error::handle(e);
+
+            e = nullptr;
+            m_record_device = std::shared_ptr<rs2_record_device>(
+                rs2_create_record_device(device.get(), m_serializer.get(), &e),
+                rs2_delete_record_device);
+            rs2::error::handle(e);
+        }
+
+        bool pause()
+        {
+            throw std::runtime_error("Not Implemented");
+        }
+
+        bool resume()
+        {
+            throw std::runtime_error("Not Implemented");
+        }
+    private:
+        std::string m_file;
+        std::shared_ptr<rs2_device_serializer> m_serializer;
+        std::shared_ptr<rs2_record_device> m_record_device;
+    };
 
     class event_information
     {

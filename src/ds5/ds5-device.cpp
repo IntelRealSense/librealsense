@@ -339,4 +339,13 @@ namespace rsimpl2
         }
         return device::get_extrinsics(from_subdevice, from_stream, to_subdevice, to_stream);
     }
+    void ds5_device::create_snapshot(std::shared_ptr<debug_interface>& snapshot)
+    {
+
+    }
+    void ds5_device::create_recordable(std::shared_ptr<debug_interface>& recordable,
+                                       std::function<void(std::shared_ptr<extension_snapshot>)> record_action)
+    {
+
+    }
 }

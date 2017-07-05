@@ -10,68 +10,6 @@
 #include "sensor.h"
 namespace rsimpl2
 {
-    template <typename T,typename P>
-    T* As(P* ptr)
-    {
-        return dynamic_cast<T*>(ptr);
-    }
-
-    /**
-     * Deriving classes are expected to return an extension_snapshot
-     * @tparam T
-     */
-    template <typename T>
-    class recordable
-    {
-        virtual void create_snapshot(std::shared_ptr<T>& snapshot) = 0;
-    };
-
-    class extension_snapshot
-    {
-        virtual void update(std::shared_ptr<rsimpl2::extension_interface> ext) = 0;
-    };
-
-    template <typename T>
-    class extension_snapshot_base : public extension_snapshot
-    {
-    public:
-        void update(std::shared_ptr<rsimpl2::extension_interface> ext) override
-        {
-            auto api = As<T, rsimpl2::extension_interface>(ext.get());
-            if(api == nullptr)
-            {
-                throw std::runtime_error("TODO: write me");
-            }
-            update_self(api);
-        }
-    protected:
-        virtual void update_self(T* info_api) = 0;
-    };
-
-
-
-    //TODO: CR this class, created as poc
-    class info_snapshot : public extension_snapshot_base<info_interface>, public info_container
-    {
-    public:
-        info_snapshot(info_interface* info_api)
-        {
-            update_self(info_api);
-        }
-    private:
-        void update_self(info_interface* info_api)
-        {
-            for (int i = 0; i < RS2_CAMERA_INFO_COUNT; ++i)
-            {
-                rs2_camera_info info = static_cast<rs2_camera_info>(i);
-                if(info_api->supports_info(info))
-                {
-                    register_info(info, info_api->get_info(info));
-                }
-            }
-        }
-    };
-
     class sensor_metadata
     {
     public:
@@ -175,7 +113,12 @@ namespace rsimpl2
     private:
         std::string m_file;
     };
-    class record_sensor : public sensor_interface
+
+
+    class record_sensor : public sensor_interface,
+                          public extendable_interface,//Allows extension for any of the given device's extensions
+                          public info_container,//TODO: does it make sense to inherit here?, maybe construct the item as recordable
+                          public options_container//TODO: does it make sense to inherit here?
     {
     public:
         using frame_interface_callback_t = std::function<void(std::shared_ptr<frame_interface>)>;
@@ -195,7 +138,7 @@ namespace rsimpl2
         void start(frame_callback_ptr callback) override;
         void stop() override;
         bool is_streaming() const override;
-
+        void* extend_to(rs2_extension_type extension_type) override;
     private:
         sensor_interface& m_sensor;
         frame_interface_callback_t m_record_callback;
@@ -204,7 +147,9 @@ namespace rsimpl2
         frame_callback_ptr m_frame_callback;
     };
 
-    class record_device : public device_interface
+    class record_device : public device_interface,
+                          public extendable_interface,
+                          public info_container//TODO: does it make sense to inherit here?
     {
     public:
         record_device(std::shared_ptr<device_interface> device, std::shared_ptr<device_serializer::writer> serializer);
@@ -221,6 +166,7 @@ namespace rsimpl2
                                       size_t to,
                                       rs2_stream to_stream) const override;
         static const uint64_t MAX_CACHED_DATA_SIZE = 1920 * 1080 * 4 * 30; // ~1 sec of HD video @ 30 FPS
+        void* extend_to(rs2_extension_type extension_type) override;
 
     private:
         void write_header();
@@ -247,6 +193,41 @@ namespace rsimpl2
         std::once_flag m_first_call_flag;
         template <typename T>
         std::vector<std::shared_ptr<extension_snapshot>> get_extensions_snapshots(T* extendable);
+    };
+
+    class extension_snapshot_frame : public frame_interface
+    {
+        sensor_interface& m_sensor;
+        std::shared_ptr<extension_snapshot> m_ext;
+
+    public:
+        extension_snapshot_frame(sensor_interface& s, std::shared_ptr<extension_snapshot> e) :m_sensor(s), m_ext(e)
+        {
+        }
+        double get_timestamp() const override
+        {
+            return 9;
+        }
+        rs2_timestamp_domain get_timestamp_domain() const override
+        {
+            return rs2_timestamp_domain::RS2_TIMESTAMP_DOMAIN_SYSTEM_TIME;
+        }
+        unsigned int get_stream_index() const override
+        {
+            return 0;
+        }
+        const uint8_t* get_data() const override
+        {
+            return nullptr;
+        }
+        size_t get_data_size() const override
+        {
+            return 0;
+        }
+        const sensor_interface& get_sensor() const override
+        {
+            return m_sensor;
+        }
     };
 
     class mock_frame : public frame_interface

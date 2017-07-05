@@ -574,6 +574,16 @@ namespace rsimpl2
 
         return it->second;
     }
+    void info_container::create_snapshot(std::shared_ptr<info_interface>& snapshot)
+    {
+        snapshot = std::make_shared<info_snapshot>(this);
+    }
+    void info_container::create_recordable(std::shared_ptr<info_interface>& recordable,
+                                           std::function<void(std::shared_ptr<extension_snapshot>)> record_action)
+    {
+        //TODO: fix this - consider create_shared_from_this
+        recordable = std::make_shared<info_container>(*this);
+    }
 
     void options_container::register_option(rs2_option id, std::shared_ptr<option> option)
     {

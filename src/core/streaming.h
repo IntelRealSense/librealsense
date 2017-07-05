@@ -4,6 +4,7 @@
 
 #include "options.h"
 #include "types.h" //stream_profile, notifications_callback_ptr, frame_callback_ptr,
+#include "extension.h"
 //#include "rs2.h" //rs2_stream
 #include <functional>
 
@@ -40,7 +41,7 @@ namespace rsimpl2
     using on_frame = std::function<void(frame_interface*)>;
     using stream_profiles = std::vector<std::shared_ptr<stream_profile_interface>>;
 
-    class info_interface
+    class info_interface : public virtual recordable<info_interface>
     {
     public:
         virtual const std::string& get_info(rs2_camera_info info) const = 0;
