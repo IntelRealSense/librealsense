@@ -143,6 +143,7 @@ set(REALSENSE_HPP
 	src/core/video.h
 	src/core/options.h
 	src/core/info.h
+	src/core/extension.h
 	
     src/archive.h
     src/concurrency.h
@@ -274,6 +275,7 @@ if(WIN32)
 		src/core/motion.h
 		src/core/info.h
 		src/core/options.h
+		src/core/extension.h
         )
 
     source_group("Header Files\\Logging" FILES
@@ -363,6 +365,8 @@ if(HWM_OVER_XU)
     add_definitions(-DHWM_OVER_XU)
 endif()
 
+add_subdirectory(realsense-file)
+
 option(BUILD_SHARED_LIBS "Build shared library" ON)
 if(BUILD_SHARED_LIBS)
     add_library(realsense2 SHARED ${REALSENSE_CPP} ${REALSENSE_HPP} ${REALSENSE_DEF})
@@ -372,7 +376,7 @@ endif()
 
 set_target_properties(realsense2 PROPERTIES VERSION ${REALSENSE_VERSION_STRING}
                                 SOVERSION ${REALSENSE_VERSION_MAJOR})
-target_link_libraries(realsense2 ${LIBUSB1_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(realsense2 realsense_file ${LIBUSB1_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
 list(APPEND librealsense_PKG_LIBS ${CMAKE_THREAD_LIBS_INIT})
 
 add_definitions(-DELPP_THREAD_SAFE)
@@ -434,7 +438,7 @@ option(BUILD_PYTHON_BINDINGS "Build Python bindings" OFF)
 option(BUILD_GRAPHICAL_EXAMPLES "Build graphical examples and tools." ON)
 
 if(((BUILD_EXAMPLES AND BUILD_GRAPHICAL_EXAMPLES) OR BUILD_RS400_EXTRAS) AND WIN32)
-  add_subdirectory(examples/third_party/glfw)
+  add_subdirectory(third-party/glfw)
 endif()
 
 if(BUILD_EXAMPLES)
