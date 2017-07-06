@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 2.8.9)
 project(realsense_file)
 
-find_package(Boost COMPONENTS system REQUIRED)
+#find_package(Boost COMPONENTS system REQUIRED)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -fPIC")
 
