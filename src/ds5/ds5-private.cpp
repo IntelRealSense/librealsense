@@ -146,5 +146,5 @@ namespace librealsense
             }
             return false;
         }
-    } // rsimpl::ds
-} // namespace rsimpl
+    } // librealsense::ds
+} // namespace librealsense

@@ -171,7 +171,7 @@ std::vector<std::shared_ptr<librealsense::extension_snapshot>> librealsense::rec
                 if (api)
                 {
                     std::shared_ptr<debug_interface> p;
-                    api->recordable<debug_interface>::create_snapshot(p);
+                    //TODO: Ziv, use api->create_snapshot(p); //recordable<debug_interface>::
                     //TODO: Ziv, Make sure dynamic cast indeed works
                     snapshots.push_back(std::dynamic_pointer_cast<extension_snapshot>(p));
                 }
@@ -183,7 +183,7 @@ std::vector<std::shared_ptr<librealsense::extension_snapshot>> librealsense::rec
                 if (api)
                 {
                     std::shared_ptr<info_interface> p;
-                    api->recordable<info_interface>::create_snapshot(p);
+                    api->create_snapshot(p); //recordable<info_interface>::
                     //TODO: Ziv, Make sure dynamic cast indeed works
                     snapshots.push_back(std::dynamic_pointer_cast<extension_snapshot>(p));
                 }
@@ -335,10 +335,11 @@ void* librealsense::record_sensor::extend_to(rs2_extension_type extension_type)
                 throw invalid_value_exception(std::string("Sensor is not of type ") + typeid(debug_interface).name());
             }
             std::shared_ptr<debug_interface> api;
-            ptr->recordable<debug_interface>::create_recordable(api, [this](std::shared_ptr<extension_snapshot> e)
-            {
-                m_record_callback(std::make_shared<extension_snapshot_frame>(m_sensor, e));
-            });
+//           TODO: Ziv, use create_recordable
+//            ptr->create_recordable(api, [this](std::shared_ptr<extension_snapshot> e) //recordable<debug_interface>::
+//            {
+//                m_record_callback(std::make_shared<extension_snapshot_frame>(m_sensor, e));
+//            });
             //m_extensions[extension_type] = d;
             //TODO: Ziv, Verify this doesn't result in memory leaks
             return api.get();

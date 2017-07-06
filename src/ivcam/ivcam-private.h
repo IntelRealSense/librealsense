@@ -104,5 +104,5 @@ namespace librealsense {
         bool try_fetch_usb_device(std::vector<uvc::usb_device_info>& devices,
             const uvc::uvc_device_info& info, uvc::usb_device_info& result);
 
-    } // rsimpl::ivcam
-} // namespace rsimpl
+    } // librealsense::ivcam
+} // namespace librealsense

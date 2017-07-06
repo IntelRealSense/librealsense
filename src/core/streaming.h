@@ -41,6 +41,7 @@ namespace librealsense
     using on_frame = std::function<void(frame_interface*)>;
     using stream_profiles = std::vector<std::shared_ptr<stream_profile_interface>>;
 
+    //TODO: Move to info.h
     class info_interface : public virtual recordable<info_interface>
     {
     public:

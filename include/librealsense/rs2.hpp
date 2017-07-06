@@ -1241,7 +1241,7 @@ namespace rs2
 
             e = nullptr;
             m_record_device = std::shared_ptr<rs2_record_device>(
-                rs2_create_record_device(device.get(), m_serializer.get(), &e),
+                rs2_create_record_device(device.get().get(), m_serializer.get(), &e),
                 rs2_delete_record_device);
             rs2::error::handle(e);
         }

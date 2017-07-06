@@ -40,6 +40,4 @@ namespace librealsense
     private:
         std::vector<std::shared_ptr<sensor_interface>> _sensors;
     };
-
-
 }
