@@ -10,7 +10,7 @@
 #include "core/motion.h"
 #include "core/extension.h"
 #include "record_device.h"
-#include <ros/ros_device_serializer.h>
+#include <ros_device_serializer.h>
 	
 ////////////////////////
 // API implementation //

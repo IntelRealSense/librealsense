@@ -86,7 +86,6 @@ endif()
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/CMake)
 set(ROOT_DIR ${CMAKE_CURRENT_SOURCE_DIR})
-add_subdirectory(src/ros/realsense_file)
 set(REALSENSE_CPP
     src/archive.cpp
     src/context.cpp
@@ -122,7 +121,7 @@ set(REALSENSE_CPP
     src/win/win-hid.cpp
     src/win/win-backend.cpp
     src/record_device.cpp
-    src/ros/ros_device_serializer.cpp
+        src/ros_device_serializer.cpp
     third-party/easyloggingpp/src/easylogging++.cc
     third-party/sqlite/sqlite3.c
     src/mock/sql.cpp
@@ -145,6 +144,7 @@ set(REALSENSE_HPP
 	src/core/options.h
     src/core/info.h
     src/core/extension.h
+
     src/archive.h
     src/concurrency.h
     src/context.h
@@ -180,7 +180,7 @@ set(REALSENSE_HPP
     src/win/win-hid.h
     src/win/win-backend.h
     src/record_device.h
-    src/ros/ros_device_serializer.h
+        src/ros_device_serializer.h
     src/core/serialization.h
 
     third-party/easyloggingpp/src/easylogging++.h
@@ -278,6 +278,7 @@ if(WIN32)
 		src/core/motion.h
 		src/core/info.h
 		src/core/options.h
+		src/core/extension.h
         )
 
     source_group("Header Files\\Logging" FILES
@@ -367,6 +368,8 @@ if(HWM_OVER_XU)
     add_definitions(-DHWM_OVER_XU)
 endif()
 
+add_subdirectory(realsense-file)
+
 option(BUILD_SHARED_LIBS "Build shared library" ON)
 if(BUILD_SHARED_LIBS)
     add_library(realsense2 SHARED ${REALSENSE_CPP} ${REALSENSE_HPP} ${REALSENSE_DEF})
@@ -376,7 +379,7 @@ endif()
 
 set_target_properties(realsense2 PROPERTIES VERSION ${REALSENSE_VERSION_STRING}
                                 SOVERSION ${REALSENSE_VERSION_MAJOR})
-target_link_libraries(realsense2 ${LIBUSB1_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(realsense2 realsense_file ${LIBUSB1_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
 list(APPEND librealsense_PKG_LIBS ${CMAKE_THREAD_LIBS_INIT})
 
 add_definitions(-DELPP_THREAD_SAFE)
