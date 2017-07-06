@@ -3,7 +3,7 @@
 
 #include "sync.h"
 
-namespace rsimpl2
+namespace librealsense
 {
     void syncer::dispatch_frame(frame_holder f)
     {

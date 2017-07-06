@@ -203,16 +203,14 @@ typedef enum rs2_option
    Not all information attributes are available on all camera types.
    This information is mainly available for camera debug and troubleshooting and should not be used in applications. */
 typedef enum rs2_camera_info {
-    RS2_CAMERA_INFO_DEVICE_NAME                    , /**< Device friendly name */
-    RS2_CAMERA_INFO_SENSOR_NAME                    , /**< Sensor friendly name */
-    RS2_CAMERA_INFO_DEVICE_SERIAL_NUMBER           , /**< Device serial number */
-    RS2_CAMERA_INFO_CAMERA_FIRMWARE_VERSION        , /**< Primary firmware version */
-    RS2_CAMERA_INFO_DEVICE_LOCATION                , /**< Unique identifier of the port the device is connected to (platform specific) */
-    RS2_CAMERA_INFO_DEVICE_DEBUG_OP_CODE           , /**< If device supports firmware logging, this is the command to send to get logs from firmware */
+    RS2_CAMERA_INFO_NAME                           , /**< Friendly name */
+    RS2_CAMERA_INFO_SERIAL_NUMBER                  , /**< Device serial number */
+    RS2_CAMERA_INFO_FIRMWARE_VERSION               , /**< Primary firmware version */
+    RS2_CAMERA_INFO_LOCATION                       , /**< Unique identifier of the port the device is connected to (platform specific) */
+    RS2_CAMERA_INFO_DEBUG_OP_CODE                  , /**< If device supports firmware logging, this is the command to send to get logs from firmware */
     RS2_CAMERA_INFO_ADVANCED_MODE                  , /**< True iff the device is in advanced mode */
     RS2_CAMERA_INFO_PRODUCT_ID                     , /**< Product ID as reported in the USB descriptor */
-    RS2_CAMERA_INFO_MOTION_MODULE_FIRMWARE_VERSION , /**< Motion Module firmware version */
-    RS2_CAMERA_INFO_IS_CAMERA_LOCKED               , /**< True iff EEPROM is locked */
+    RS2_CAMERA_INFO_CAMERA_LOCKED                  , /**< True iff EEPROM is locked */
     RS2_CAMERA_INFO_COUNT                            /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
 } rs2_camera_info;
 
@@ -1047,6 +1045,13 @@ typedef enum rs2_extension_type
 int rs2_is_sensor(const rs2_sensor* sensor, rs2_extension_type extension_type, rs2_error ** error);
 /**
  * TODO: Ziv, document
+ * \param device
+ * \param extension_type
+ * \return
+ */
+int rs2_is_device(const rs2_device* dev, rs2_extension_type extension_type, rs2_error ** error);
+
+/**
  * \param file
  * \param error
  * \return

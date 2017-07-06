@@ -13,7 +13,7 @@
 #include <memory>
 #include <vector>
 
-namespace rsimpl2
+namespace librealsense
 {
     class uvc_pu_option : public option
     {

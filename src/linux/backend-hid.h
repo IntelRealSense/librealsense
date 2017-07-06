@@ -38,7 +38,7 @@
 #include <regex>
 #include <list>
 
-namespace rsimpl2
+namespace librealsense
 {
     namespace uvc
     {

@@ -3,7 +3,7 @@
 #include <memory>
 
 
-namespace rsimpl2
+namespace librealsense
 {
     polling_error_handler::polling_error_handler(unsigned int poll_intervals_ms, std::unique_ptr<option> option,
         std::shared_ptr <notifications_proccessor> proccessor, std::unique_ptr<notification_decoder> decoder)

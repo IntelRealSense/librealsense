@@ -5,7 +5,7 @@
 
 INITIALIZE_EASYLOGGINGPP
 
-namespace rsimpl2
+namespace librealsense
 {
     class logger_type
     {
@@ -104,7 +104,7 @@ namespace rsimpl2
                 for (uint32_t i = 0; i < RS2_LOG_SEVERITY_COUNT; i++)
                 {
                     auto current = (rs2_log_severity)i;
-                    std::string name = rsimpl2::get_string(current);
+                    std::string name = librealsense::get_string(current);
                     if (content_str == name)
                     {
                         severity = current;
@@ -137,12 +137,12 @@ namespace rsimpl2
     static logger_type logger;
 }
 
-void rsimpl2::log_to_console(rs2_log_severity min_severity)
+void librealsense::log_to_console(rs2_log_severity min_severity)
 {
     logger.log_to_console(min_severity);
 }
 
-void rsimpl2::log_to_file(rs2_log_severity min_severity, const char * file_path)
+void librealsense::log_to_file(rs2_log_severity min_severity, const char * file_path)
 {
     logger.log_to_file(min_severity, file_path);
 }

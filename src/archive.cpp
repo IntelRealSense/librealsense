@@ -1,7 +1,7 @@
 #include "metadata-parser.h"
 #include "archive.h"
 
-using namespace rsimpl2;
+using namespace librealsense;
 
 frame_archive::frame_archive(std::atomic<uint32_t>* in_max_frame_queue_size,
                              std::shared_ptr<uvc::time_service> ts,
@@ -295,12 +295,12 @@ void frame_archive::log_frame_callback_end(frame* frame) const
         auto callback_warning_duration = 1000 / (frame->additional_data.fps + 1);
         auto callback_duration = callback_ended - frame->get_frame_callback_start_time_point();
 
-        LOG_DEBUG("CallbackFinished," << rsimpl2::get_string(frame->get_stream_type()) << "," << frame->get_frame_number()
+        LOG_DEBUG("CallbackFinished," << librealsense::get_string(frame->get_stream_type()) << "," << frame->get_frame_number()
             << ",DispatchedAt," << callback_ended);
 
         if (callback_duration > callback_warning_duration)
         {
-            LOG_DEBUG("Frame Callback [" << rsimpl2::get_string(frame->get_stream_type())
+            LOG_DEBUG("Frame Callback [" << librealsense::get_string(frame->get_stream_type())
                      << "#" << std::dec << frame->additional_data.frame_number
                      << "] overdue. (Duration: " << callback_duration
                      << "ms, FPS: " << frame->additional_data.fps << ", Max Duration: " << callback_warning_duration << "ms)");
@@ -313,7 +313,7 @@ void rs2_frame::log_callback_start(rs2_time_t timestamp) const
     if (get())
     {
         get()->update_frame_callback_start_ts(timestamp);
-        LOG_DEBUG("CallbackStarted," << rsimpl2::get_string(get()->get_stream_type()) << "," << get()->get_frame_number() << ",DispatchedAt," << timestamp);
+        LOG_DEBUG("CallbackStarted," << librealsense::get_string(get()->get_stream_type()) << "," << get()->get_frame_number() << ",DispatchedAt," << timestamp);
     }
 }
 
@@ -324,11 +324,11 @@ void rs2_frame::log_callback_end(rs2_time_t timestamp) const
         auto callback_warning_duration = 1000.f / (get()->additional_data.fps + 1);
         auto callback_duration = timestamp - get()->get_frame_callback_start_time_point();
 
-        LOG_DEBUG("CallbackFinished," << rsimpl2::get_string(get()->get_stream_type()) << "," << get()->get_frame_number() << ",DispatchedAt," << timestamp);
+        LOG_DEBUG("CallbackFinished," << librealsense::get_string(get()->get_stream_type()) << "," << get()->get_frame_number() << ",DispatchedAt," << timestamp);
 
         if (callback_duration > callback_warning_duration)
         {
-            LOG_INFO("Frame Callback " << rsimpl2::get_string(get()->get_stream_type())
+            LOG_INFO("Frame Callback " << librealsense::get_string(get()->get_stream_type())
                      << "#" << std::dec << get()->additional_data.frame_number
                      << "overdue. (Duration: " << callback_duration
                      << "ms, FPS: " << get()->additional_data.fps << ", Max Duration: " << callback_warning_duration << "ms)");

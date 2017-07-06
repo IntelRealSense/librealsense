@@ -9,7 +9,7 @@ uint32_t DEVICE_INDEX = (std::numeric_limits<uint32_t>::max)(); //braces are for
 std::string SENSOR_COUNT { "sensor_count" };
 rs::file_format::file_types::microseconds FIRST_FRAME_TIMESTAMP { 0 };
 
-rsimpl2::ros_device_serializer::ros_device_serializer(std::string file):
+librealsense::ros_device_serializer::ros_device_serializer(std::string file):
     m_file(file)
 {
     //TODO: Ziv, have stream_writer throw this error
@@ -23,11 +23,11 @@ rsimpl2::ros_device_serializer::ros_device_serializer(std::string file):
 ///            ros_device_serializer                   ///
 //////////////////////////////////////////////////////////
 
-std::shared_ptr<rsimpl2::device_serializer::writer> rsimpl2::ros_device_serializer::get_writer()
+std::shared_ptr<librealsense::device_serializer::writer> librealsense::ros_device_serializer::get_writer()
 {
     return m_writer;
 }
-std::shared_ptr<rsimpl2::device_serializer::reader> rsimpl2::ros_device_serializer::get_reader()
+std::shared_ptr<librealsense::device_serializer::reader> librealsense::ros_device_serializer::get_reader()
 {
     return m_reader;
 }
@@ -36,7 +36,7 @@ std::shared_ptr<rsimpl2::device_serializer::reader> rsimpl2::ros_device_serializ
 ///      ros_device_serializer::ros_writer             ///
 //////////////////////////////////////////////////////////
 
-void rsimpl2::ros_device_serializer::ros_writer::write_device_description(const rsimpl2::device_snapshot& device_description)
+void librealsense::ros_device_serializer::ros_writer::write_device_description(const librealsense::device_snapshot& device_description)
 {
     for (auto&& device_extension_snapshot : device_description.get_device_extensions_snapshots())
     {
@@ -54,25 +54,25 @@ void rsimpl2::ros_device_serializer::ros_writer::write_device_description(const 
         }
     }
 }
-void rsimpl2::ros_device_serializer::ros_writer::write(rsimpl2::device_serializer::storage_data data)
+void librealsense::ros_device_serializer::ros_writer::write(librealsense::device_serializer::storage_data data)
 {
     throw not_implemented_exception(__FUNCTION__);
 }
-void rsimpl2::ros_device_serializer::ros_writer::reset()
+void librealsense::ros_device_serializer::ros_writer::reset()
 {
     throw not_implemented_exception(__FUNCTION__);
 }
 
-void rsimpl2::ros_device_serializer::ros_writer::write_extension_snapshot(uint32_t id,
-                                                                          std::shared_ptr<rsimpl2::extension_snapshot> snapshot)
+void librealsense::ros_device_serializer::ros_writer::write_extension_snapshot(uint32_t id,
+                                                                          std::shared_ptr<librealsense::extension_snapshot> snapshot)
 {
-    if (Is<rsimpl2::info_interface>(snapshot))
+    if (Is<librealsense::info_interface>(snapshot))
     {
         std::cout << "Remove me !!! info_interface " << id << " : " << snapshot.get() << std::endl;
         //write_vendor_info(snapshot, id);
     }
 
-    if (Is<rsimpl2::debug_interface>(snapshot))
+    if (Is<librealsense::debug_interface>(snapshot))
     {
         std::cout << "Remove me !!! debug_interface " << id << " : " << snapshot.get() << std::endl;
         auto timestamp_ns = rs::file_format::file_types::nanoseconds(FIRST_FRAME_TIMESTAMP);
@@ -85,23 +85,23 @@ void rsimpl2::ros_device_serializer::ros_writer::write_extension_snapshot(uint32
 ///      ros_device_serializer::ros_reader             ///
 //////////////////////////////////////////////////////////
 
-rsimpl2::device_snapshot rsimpl2::ros_device_serializer::ros_reader::query_device_description()
+librealsense::device_snapshot librealsense::ros_device_serializer::ros_reader::query_device_description()
 {
     throw not_implemented_exception(__FUNCTION__);
 }
-rsimpl2::device_serializer::storage_data rsimpl2::ros_device_serializer::ros_reader::read()
+librealsense::device_serializer::storage_data librealsense::ros_device_serializer::ros_reader::read()
 {
     throw not_implemented_exception(__FUNCTION__);
 }
-void rsimpl2::ros_device_serializer::ros_reader::seek_to_time(std::chrono::nanoseconds time)
+void librealsense::ros_device_serializer::ros_reader::seek_to_time(std::chrono::nanoseconds time)
 {
     throw not_implemented_exception(__FUNCTION__);
 }
-std::chrono::nanoseconds rsimpl2::ros_device_serializer::ros_reader::query_duration() const
+std::chrono::nanoseconds librealsense::ros_device_serializer::ros_reader::query_duration() const
 {
     throw not_implemented_exception(__FUNCTION__);
 }
-void rsimpl2::ros_device_serializer::ros_reader::reset()
+void librealsense::ros_device_serializer::ros_reader::reset()
 {
 
 }

@@ -17,7 +17,7 @@
 #include "ds5-motion.h"
 #include "core/motion.h"
 
-namespace rsimpl2
+namespace librealsense
 {
     class fisheye_auto_exposure_roi_method : public region_of_interest_method
     {
@@ -100,7 +100,7 @@ namespace rsimpl2
     {
         if (subdevice == _fisheye_device_idx)
         {
-            auto extr = rsimpl2::ds::get_fisheye_extrinsics_data(*_fisheye_extrinsics_raw);
+            auto extr = librealsense::ds::get_fisheye_extrinsics_data(*_fisheye_extrinsics_raw);
             return inverse(extr);
         }
 
@@ -199,7 +199,7 @@ namespace rsimpl2
 
         auto exposure_option =  std::make_shared<uvc_xu_option<uint16_t>>(*uvc_ep,
                 *fisheye_xu,
-                rsimpl2::ds::FISHEYE_EXPOSURE, "Exposure time of Fisheye camera");
+                librealsense::ds::FISHEYE_EXPOSURE, "Exposure time of Fisheye camera");
 
         auto ae_state = std::make_shared<auto_exposure_state>();
         auto auto_exposure = std::make_shared<auto_exposure_mechanism>(*gain_option, *exposure_option, *ae_state);
@@ -286,7 +286,7 @@ namespace rsimpl2
             fisheye_ep->register_option(RS2_OPTION_EXPOSURE,
                                         std::make_shared<uvc_xu_option<uint16_t>>(*fisheye_ep.get(),
                                                                                   fisheye_xu,
-                                                                                  rsimpl2::ds::FISHEYE_EXPOSURE,
+                                                                                  librealsense::ds::FISHEYE_EXPOSURE,
                                                                                   "Exposure time of Fisheye camera"));
         }
 
@@ -352,7 +352,7 @@ namespace rsimpl2
         hid_ep->set_pose(lazy<pose>([this](){return get_device_position(_motion_module_device_idx); }));
 
         if (!motion_module_fw_version.empty())
-            register_info(RS2_CAMERA_INFO_MOTION_MODULE_FIRMWARE_VERSION, motion_module_fw_version);
+            register_info(RS2_CAMERA_INFO_FIRMWARE_VERSION, motion_module_fw_version);
 
     }
 }

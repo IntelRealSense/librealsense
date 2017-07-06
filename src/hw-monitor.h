@@ -41,7 +41,7 @@ const uint16_t  SIZE_OF_HW_MONITOR_HEADER       = 4;
 
 
 
-namespace rsimpl2
+namespace librealsense
 {
     class uvc_sensor;
 
@@ -136,7 +136,7 @@ namespace rsimpl2
                   oneDirection(!cmd.require_response),
                   receivedCommandDataLength(0)
             {
-                rsimpl2::copy(data, cmd.data.data(), sizeOfSendCommandData);
+                librealsense::copy(data, cmd.data.data(), sizeOfSendCommandData);
             }
         };
 

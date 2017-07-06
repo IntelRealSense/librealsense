@@ -4,7 +4,7 @@
 #include "device.h"
 #include "image.h"
 
-using namespace rsimpl2;
+using namespace librealsense;
 #include <functional>
 
 

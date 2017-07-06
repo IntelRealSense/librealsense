@@ -9,7 +9,7 @@
 #include "error-handling.h"
 #include "core/debug.h"
 
-namespace rsimpl2
+namespace librealsense
 {
     class ds5_device : public virtual device, public debug_interface
     {

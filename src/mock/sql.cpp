@@ -1,5 +1,5 @@
 #include "sql.h"
-#include "../third_party/sqlite/sqlite3.h"
+#include "../third-party/sqlite/sqlite3.h"
 #include <stdexcept>
 #include <cstring>
 #include <thread>

@@ -6,7 +6,7 @@
 #include <core/serialization.h>
 #include <ros/realsense_file/include/file_types.h>
 using namespace rs::file_format;
-namespace rsimpl2
+namespace librealsense
 {
     class ros_device_serializer: public device_serializer
     {

@@ -18,7 +18,7 @@
 
 #pragma comment(lib, "winusb.lib")
 
-namespace rsimpl2
+namespace librealsense
 {
     namespace uvc
     {

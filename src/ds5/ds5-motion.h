@@ -5,7 +5,7 @@
 
 #include "ds5-device.h"
 
-namespace rsimpl2
+namespace librealsense
 {
     class ds5_motion : public virtual ds5_device
     {

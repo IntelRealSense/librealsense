@@ -26,7 +26,7 @@
 #pragma comment(lib, "Sensorsapi.lib")
 #pragma comment(lib, "PortableDeviceGuids.lib")
 
-namespace rsimpl2
+namespace librealsense
 {
     namespace uvc
     {

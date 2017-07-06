@@ -10,7 +10,7 @@
 #include <mutex>
 #include <memory>
 
-namespace rsimpl2
+namespace librealsense
 {
     typedef std::vector<frame_holder> frameset;
 

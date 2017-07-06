@@ -9,7 +9,7 @@
 #include "archive.h"
 #include "concurrency.h"
 #include "sensor.h"
-namespace rsimpl2
+namespace librealsense
 {
     class record_sensor : public sensor_interface,
                           public extendable_interface,//Allows extension for any of the given device's extensions

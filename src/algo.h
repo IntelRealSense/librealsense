@@ -13,7 +13,7 @@
 #include <cmath>
 #include <memory>
 
-namespace rsimpl2
+namespace librealsense
 {
     enum class auto_exposure_modes {
         static_auto_exposure = 0,

@@ -499,7 +499,7 @@ inline void frame_callback(rs2::device &dev, rs2::frame frame, void * user)
 //    }
 //}
 
-inline void test_option(rs2::device &device, rs2_option option, std::initializer_list<int> good_values, std::initializer_list<int> bad_values)
+inline void test_option(rs2::sensor &device, rs2_option option, std::initializer_list<int> good_values, std::initializer_list<int> bad_values)
 {
     // Test reading the current value
     float first_value;

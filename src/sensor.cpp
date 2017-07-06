@@ -10,7 +10,7 @@
 #include <set>
 #include <unordered_set>
 
-namespace rsimpl2
+namespace librealsense
 {
     class frame_queue_size : public librealsense_option
     {
@@ -53,9 +53,9 @@ namespace rsimpl2
     {
         register_option(RS2_OPTION_FRAMES_QUEUE_SIZE, std::make_shared<frame_queue_size>(&_max_publish_list_size, option_range{ 0, 32, 1, 16 }));
 
-        register_metadata(RS2_FRAME_METADATA_TIME_OF_ARRIVAL, std::make_shared<rsimpl2::md_time_of_arrival_parser>());
+        register_metadata(RS2_FRAME_METADATA_TIME_OF_ARRIVAL, std::make_shared<librealsense::md_time_of_arrival_parser>());
 
-        register_info(RS2_CAMERA_INFO_SENSOR_NAME, name);
+        register_info(RS2_CAMERA_INFO_NAME, name);
     }
 
     void sensor_base::register_notifications_callback(notifications_callback_ptr callback)
@@ -249,7 +249,7 @@ namespace rsimpl2
         {
             uint32_t device_fourcc = reinterpret_cast<const big_endian<uint32_t>&>(elem);
             char fourcc[sizeof(device_fourcc) + 1];
-            rsimpl2::copy(fourcc, &device_fourcc, sizeof(device_fourcc));
+            librealsense::copy(fourcc, &device_fourcc, sizeof(device_fourcc));
             fourcc[sizeof(device_fourcc)] = 0;
             LOG_WARNING("Unutilized format " << fourcc);
         }
@@ -261,7 +261,7 @@ namespace rsimpl2
             {
                 uint32_t device_fourcc = reinterpret_cast<const big_endian<uint32_t>&>(elem);
                 char fourcc[sizeof(device_fourcc) + 1];
-                rsimpl2::copy(fourcc, &device_fourcc, sizeof(device_fourcc));
+                librealsense::copy(fourcc, &device_fourcc, sizeof(device_fourcc));
                 fourcc[sizeof(device_fourcc)] = 0;
                 ss << fourcc << std::endl;
             }
@@ -309,7 +309,7 @@ namespace rsimpl2
 
                 if (!this->is_streaming())
                 {
-                    LOG_WARNING("Frame received with streaming inactive," << rsimpl2::get_string(mode.unpacker->outputs.front().first)
+                    LOG_WARNING("Frame received with streaming inactive," << librealsense::get_string(mode.unpacker->outputs.front().first)
                             << ", Arrived," << std::fixed << system_time);
                     return;
                 }
@@ -344,7 +344,7 @@ namespace rsimpl2
                 auto&& unpacker = *mode.unpacker;
                 for (auto&& output : unpacker.outputs)
                 {
-                    LOG_DEBUG("FrameAccepted," << rsimpl2::get_string(output.first) << "," << frame_counter
+                    LOG_DEBUG("FrameAccepted," << librealsense::get_string(output.first) << "," << frame_counter
                         << ",Arrived," << std::fixed << system_time
                         << ",TS," << std::fixed << timestamp << ",TS_Domain," << rs2_timestamp_domain_to_string(timestamp_domain));
 

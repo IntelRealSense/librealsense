@@ -5,8 +5,8 @@
 #include <core/debug.h>
 #include "record_device.h"
 
-rsimpl2::record_device::record_device(std::shared_ptr<rsimpl2::device_interface> device,
-                                      std::shared_ptr<rsimpl2::device_serializer::writer> serializer):
+librealsense::record_device::record_device(std::shared_ptr<librealsense::device_interface> device,
+                                      std::shared_ptr<librealsense::device_serializer::writer> serializer):
     m_write_thread([](){return std::make_shared<dispatcher>(std::numeric_limits<unsigned int>::max());}),
     m_is_first_event(true),
     m_is_recording(true),
@@ -45,15 +45,15 @@ rsimpl2::record_device::record_device(std::shared_ptr<rsimpl2::device_interface>
     }
 }
 
-rsimpl2::record_device::~record_device()
+librealsense::record_device::~record_device()
 {
     (*m_write_thread)->stop();
 }
-rsimpl2::sensor_interface& rsimpl2::record_device::get_sensor(size_t i)
+librealsense::sensor_interface& librealsense::record_device::get_sensor(size_t i)
 {
     return *(m_sensors[i]);
 }
-size_t rsimpl2::record_device::get_sensors_count() const
+size_t librealsense::record_device::get_sensors_count() const
 {
     return m_sensors.size();
 }
@@ -64,7 +64,7 @@ size_t rsimpl2::record_device::get_sensors_count() const
 //    return dynamic_cast<T*>(device) != nullptr;
 //}
 
-void rsimpl2::record_device::write_header()
+void librealsense::record_device::write_header()
 {
     auto device_extensions_md = get_extensions_snapshots(m_device.get());
 
@@ -79,13 +79,13 @@ void rsimpl2::record_device::write_header()
     m_writer->write_device_description({device_extensions_md, sensors_md});
 }
 
-std::chrono::nanoseconds rsimpl2::record_device::get_capture_time()
+std::chrono::nanoseconds librealsense::record_device::get_capture_time()
 {
     auto now = std::chrono::high_resolution_clock::now();
     return (now - m_capture_time_base) - m_record_pause_time;
 }
 
-void rsimpl2::record_device::write_data(size_t sensor_index, std::shared_ptr<frame_interface> f)
+void librealsense::record_device::write_data(size_t sensor_index, std::shared_ptr<frame_interface> f)
 {
     uint64_t data_size = f->get_data_size();
     uint64_t cached_data_size = m_cached_data_size + data_size;
@@ -124,23 +124,23 @@ void rsimpl2::record_device::write_data(size_t sensor_index, std::shared_ptr<fra
                                      m_cached_data_size -= data_size;
                                  });
 }
-const std::string& rsimpl2::record_device::get_info(rs2_camera_info info) const
+const std::string& librealsense::record_device::get_info(rs2_camera_info info) const
 {
     throw not_implemented_exception(__FUNCTION__);
 }
-bool rsimpl2::record_device::supports_info(rs2_camera_info info) const
+bool librealsense::record_device::supports_info(rs2_camera_info info) const
 {
     throw not_implemented_exception(__FUNCTION__);
 }
-const rsimpl2::sensor_interface& rsimpl2::record_device::get_sensor(size_t i) const
+const librealsense::sensor_interface& librealsense::record_device::get_sensor(size_t i) const
 {
     throw not_implemented_exception(__FUNCTION__);
 }
-void rsimpl2::record_device::hardware_reset()
+void librealsense::record_device::hardware_reset()
 {
     throw not_implemented_exception(__FUNCTION__);
 }
-rs2_extrinsics rsimpl2::record_device::get_extrinsics(size_t from,
+rs2_extrinsics librealsense::record_device::get_extrinsics(size_t from,
                                                       rs2_stream from_stream,
                                                       size_t to,
                                                       rs2_stream to_stream) const
@@ -155,7 +155,7 @@ rs2_extrinsics rsimpl2::record_device::get_extrinsics(size_t from,
  * @return
  */
 template<typename T>
-std::vector<std::shared_ptr<rsimpl2::extension_snapshot>> rsimpl2::record_device::get_extensions_snapshots(T* extendable)
+std::vector<std::shared_ptr<librealsense::extension_snapshot>> librealsense::record_device::get_extensions_snapshots(T* extendable)
 {
 
     //No support for extensions with more than a single type - i.e every extension has exactly one type in rs2_extension_type
@@ -167,7 +167,7 @@ std::vector<std::shared_ptr<rsimpl2::extension_snapshot>> rsimpl2::record_device
         {
             case RS2_EXTENSION_TYPE_DEBUG:
             {
-                auto api = dynamic_cast<rsimpl2::debug_interface*>(extendable);
+                auto api = dynamic_cast<librealsense::debug_interface*>(extendable);
                 if (api)
                 {
                     std::shared_ptr<debug_interface> p;
@@ -179,7 +179,7 @@ std::vector<std::shared_ptr<rsimpl2::extension_snapshot>> rsimpl2::record_device
             }
             case RS2_EXTENSION_TYPE_INFO:
             {
-                auto api = dynamic_cast<rsimpl2::info_interface*>(extendable);
+                auto api = dynamic_cast<librealsense::info_interface*>(extendable);
                 if (api)
                 {
                     std::shared_ptr<info_interface> p;
@@ -191,12 +191,12 @@ std::vector<std::shared_ptr<rsimpl2::extension_snapshot>> rsimpl2::record_device
             }
             case RS2_EXTENSION_TYPE_MOTION:
             {
-                //rsimpl2::motion_sensor_interface
+                //librealsense::motion_sensor_interface
                 break;
             }
             case RS2_EXTENSION_TYPE_OPTIONS:
             {
-                //rsimpl2::options_interface
+                //librealsense::options_interface
                 //TODO: Ziv, handle
                 break;
             }
@@ -208,12 +208,12 @@ std::vector<std::shared_ptr<rsimpl2::extension_snapshot>> rsimpl2::record_device
             }
             case RS2_EXTENSION_TYPE_VIDEO:
             {
-                //rsimpl2::video_sensor_interface
+                //librealsense::video_sensor_interface
                 break;
             }
             case RS2_EXTENSION_TYPE_ROI:
             {
-                //rsimpl2::roi_sensor_interface
+                //librealsense::roi_sensor_interface
                 break;
             }
             case RS2_EXTENSION_TYPE_COUNT:
@@ -223,17 +223,17 @@ std::vector<std::shared_ptr<rsimpl2::extension_snapshot>> rsimpl2::record_device
     }
     return snapshots;
 }
-void* rsimpl2::record_device::extend_to(rs2_extension_type extension_type)
+void* librealsense::record_device::extend_to(rs2_extension_type extension_type)
 {
     return nullptr;
 }
 
-rsimpl2::record_sensor::~record_sensor()
+librealsense::record_sensor::~record_sensor()
 {
 
 }
-rsimpl2::record_sensor::record_sensor(sensor_interface& sensor,
-                                      rsimpl2::record_sensor::frame_interface_callback_t on_frame):
+librealsense::record_sensor::record_sensor(sensor_interface& sensor,
+                                      librealsense::record_sensor::frame_interface_callback_t on_frame):
     m_sensor(sensor),
     m_record_callback(on_frame),
     m_is_pause(false),
@@ -241,40 +241,40 @@ rsimpl2::record_sensor::record_sensor(sensor_interface& sensor,
 {
 
 }
-std::vector<rsimpl2::stream_profile> rsimpl2::record_sensor::get_principal_requests()
+std::vector<librealsense::stream_profile> librealsense::record_sensor::get_principal_requests()
 {
     m_sensor.get_principal_requests();
 }
-void rsimpl2::record_sensor::open(const std::vector<rsimpl2::stream_profile>& requests)
+void librealsense::record_sensor::open(const std::vector<librealsense::stream_profile>& requests)
 {
     m_sensor.open(requests);
 }
-void rsimpl2::record_sensor::close()
+void librealsense::record_sensor::close()
 {
     m_sensor.close();
 }
-rsimpl2::option& rsimpl2::record_sensor::get_option(rs2_option id)
+librealsense::option& librealsense::record_sensor::get_option(rs2_option id)
 {
     m_sensor.get_option(id);
 }
-const rsimpl2::option& rsimpl2::record_sensor::get_option(rs2_option id) const
+const librealsense::option& librealsense::record_sensor::get_option(rs2_option id) const
 {
     m_sensor.get_option(id);
 }
-const std::string& rsimpl2::record_sensor::get_info(rs2_camera_info info) const
+const std::string& librealsense::record_sensor::get_info(rs2_camera_info info) const
 {
     m_sensor.get_info(info);
 }
-bool rsimpl2::record_sensor::supports_info(rs2_camera_info info) const
+bool librealsense::record_sensor::supports_info(rs2_camera_info info) const
 {
     m_sensor.supports_info(info);
 }
-bool rsimpl2::record_sensor::supports_option(rs2_option id) const
+bool librealsense::record_sensor::supports_option(rs2_option id) const
 {
     m_sensor.supports_option(id);
 }
 
-void rsimpl2::record_sensor::register_notifications_callback(rsimpl2::notifications_callback_ptr callback)
+void librealsense::record_sensor::register_notifications_callback(librealsense::notifications_callback_ptr callback)
 {
     m_sensor.register_notifications_callback(std::move(callback));
 }
@@ -292,7 +292,7 @@ public:
 
     void release() override { delete this; }
 };
-void rsimpl2::record_sensor::start(frame_callback_ptr callback)
+void librealsense::record_sensor::start(frame_callback_ptr callback)
 {
     if(m_frame_callback != nullptr)
     {
@@ -309,16 +309,16 @@ void rsimpl2::record_sensor::start(frame_callback_ptr callback)
 
     m_sensor.start(m_frame_callback);
 }
-void rsimpl2::record_sensor::stop()
+void librealsense::record_sensor::stop()
 {
     m_sensor.stop();
     m_frame_callback.reset();
 }
-bool rsimpl2::record_sensor::is_streaming() const
+bool librealsense::record_sensor::is_streaming() const
 {
     return m_sensor.is_streaming();
 }
-void* rsimpl2::record_sensor::extend_to(rs2_extension_type extension_type)
+void* librealsense::record_sensor::extend_to(rs2_extension_type extension_type)
 {
     switch (extension_type)
     {
@@ -355,31 +355,31 @@ void* rsimpl2::record_sensor::extend_to(rs2_extension_type extension_type)
     }
 }
 
-double rsimpl2::mock_frame::get_timestamp() const
+double librealsense::mock_frame::get_timestamp() const
 {
     return 0;
 }
-rs2_timestamp_domain rsimpl2::mock_frame::get_timestamp_domain() const
+rs2_timestamp_domain librealsense::mock_frame::get_timestamp_domain() const
 {
     return rs2_timestamp_domain::RS2_TIMESTAMP_DOMAIN_SYSTEM_TIME;
 }
-unsigned int rsimpl2::mock_frame::get_stream_index() const
+unsigned int librealsense::mock_frame::get_stream_index() const
 {
     return 0;
 }
-const uint8_t* rsimpl2::mock_frame::get_data() const
+const uint8_t* librealsense::mock_frame::get_data() const
 {
     return m_frame->data.data();
 }
-size_t rsimpl2::mock_frame::get_data_size() const
+size_t librealsense::mock_frame::get_data_size() const
 {
     return m_frame->data.size();
 }
-const rsimpl2::sensor_interface& rsimpl2::mock_frame::get_sensor() const
+const librealsense::sensor_interface& librealsense::mock_frame::get_sensor() const
 {
     return m_sensor;
 }
-rsimpl2::mock_frame::mock_frame(rsimpl2::sensor_interface& s, frame* f) :
+librealsense::mock_frame::mock_frame(librealsense::sensor_interface& s, frame* f) :
     m_sensor(s),
     m_frame(f)
 {

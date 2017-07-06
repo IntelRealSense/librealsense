@@ -9,7 +9,7 @@
 #include "extension.h"
 #include "streaming.h"
 
-namespace rsimpl2
+namespace librealsense
 {
     class sensor_snapshot
     {
@@ -21,7 +21,7 @@ namespace rsimpl2
 
         }
 
-        std::vector<std::shared_ptr<rsimpl2::extension_snapshot>> get_extensions_snapshots() const
+        std::vector<std::shared_ptr<librealsense::extension_snapshot>> get_extensions_snapshots() const
         {
 
         }

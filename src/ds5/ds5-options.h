@@ -8,7 +8,7 @@
 #include "algo.h"
 #include "error-handling.h"
 
-namespace rsimpl2
+namespace librealsense
 {
     class emitter_option : public uvc_xu_option<uint8_t>
     {

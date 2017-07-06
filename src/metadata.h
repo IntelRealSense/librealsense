@@ -14,7 +14,7 @@
     };
 
 
-namespace rsimpl2
+namespace librealsense
 {
     template<class T>
     struct md_type_trait;

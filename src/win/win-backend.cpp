@@ -13,7 +13,7 @@
 #include "../types.h"
 #include <mfapi.h>
 #include <chrono>
-namespace rsimpl2
+namespace librealsense
 {
     namespace uvc
     {

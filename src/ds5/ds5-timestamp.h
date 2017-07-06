@@ -8,7 +8,7 @@
 #include "algo.h"
 #include "error-handling.h"
 
-namespace rsimpl2
+namespace librealsense
 {
     class ds5_timestamp_reader_from_metadata : public frame_timestamp_reader
     {

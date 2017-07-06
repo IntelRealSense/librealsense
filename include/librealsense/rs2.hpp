@@ -904,13 +904,27 @@ namespace rs2
         {
             return _sensor != nullptr;
         }
-        const rs2_sensor* get() const
+
+        const std::shared_ptr<rs2_sensor>& get() const
         {
-            return _sensor.get();
+            return _sensor;
         }
 
+        template<class T>
+        bool is() const
+        {
+            T extension(*this);
+            return extension;
+        }
 
-    private:
+        template<class T>
+        T as() const
+        {
+            T extension(*this);
+            return extension;
+        }
+
+    protected:
         friend context;
         friend device_list;
         friend device;
@@ -922,41 +936,47 @@ namespace rs2
         }
     };
 
-    class roi_sensor
+    class roi_sensor : public sensor
     {
-    private:
-        sensor m_sensor;
     public:
-        roi_sensor(sensor sensor)
+        roi_sensor(sensor s)
+            : _sensor(s.get())
         {
             rs2_error* e = nullptr;
-            if(rs2_is_sensor(sensor.get(), RS2_EXTENSION_TYPE_ROI, &e) == 0)
+            if(rs2_is_sensor(_sensor.get(), RS2_EXTENSION_TYPE_ROI, &e) == 0 && !e)
             {
-                throw std::invalid_argument("Sensor does not support ROI extension");
+                _sensor = nullptr;
             }
             error::handle(e);
-            m_sensor = sensor;
         }
 
-        virtual void set(const region_of_interest& roi)
+        void set_region_of_interest(const region_of_interest& roi)
         {
+            if (!_sensor) throw std::runtime_error("Sensor does not support Region-of-Interest!");
             rs2_error* e = nullptr;
-            rs2_set_region_of_interest(m_sensor.get(), roi.min_x,roi.min_y,roi.max_x,roi.max_y, &e);
+            rs2_set_region_of_interest(_sensor.get(), roi.min_x, roi.min_y, roi.max_x, roi.max_y, &e);
             error::handle(e);
         }
-        virtual region_of_interest get() const
+
+        region_of_interest get_region_of_interest() const
         {
+            if (!_sensor) throw std::runtime_error("Sensor does not support Region-of-Interest!");
             region_of_interest roi {};
             rs2_error* e = nullptr;
-            rs2_get_region_of_interest(m_sensor.get(), &roi.min_x,&roi.min_y,&roi.max_x,&roi.max_y, &e);
+            rs2_get_region_of_interest(_sensor.get(), &roi.min_x, &roi.min_y, &roi.max_x, &roi.max_y, &e);
             error::handle(e);
             return roi;
         }
+
+        operator bool() const { return _sensor.get(); }
+	private:
+		std::shared_ptr<rs2_sensor> _sensor;
     };
 
     class device
     {
     public:
+        using SensorType = sensor;
 
         /**
         * returns the list of adjacent devices, sharing the same physical parent composite device
@@ -1043,19 +1063,69 @@ namespace rs2
         {
             return _dev != nullptr;
         }
-        const rs2_device* get() const
+        const std::shared_ptr<rs2_device>& get() const
         {
-            return _dev.get();
+            return _dev;
         }
 
+        template<class T>
+        bool is() const
+        {
+            T extension(*this);
+            return extension;
+        }
 
-    private:
+        template<class T>
+        T as() const
+        {
+            T extension(*this);
+            return extension;
+        }
+
+    protected:
         friend context;
         friend device_list;
 
         std::shared_ptr<rs2_device> _dev;
         explicit device(std::shared_ptr<rs2_device> dev) : _dev(dev)
         {
+        }
+    };
+
+    class debug_protocol : public device
+    {
+    public:
+        debug_protocol(device d)
+                : device(d.get())
+        {
+            rs2_error* e = nullptr;
+            if(rs2_is_device(_dev.get(), RS2_EXTENSION_TYPE_ROI, &e) == 0 && !e)
+            {
+                _dev = nullptr;
+            }
+            error::handle(e);
+        }
+
+        std::vector<uint8_t> send_and_receive_raw_data(const std::vector<uint8_t>& input) const
+        {
+            if (!_dev) throw std::runtime_error("Device does not support Debug Protocol!");
+
+            std::vector<uint8_t> results;
+
+            rs2_error* e = nullptr;
+            std::shared_ptr<rs2_raw_data_buffer> list(
+                    rs2_send_and_receive_raw_data(_dev.get(), (void*)input.data(), (uint32_t)input.size(), &e),
+                    rs2_delete_raw_data);
+            error::handle(e);
+
+            auto size = rs2_get_raw_data_size(list.get(), &e);
+            error::handle(e);
+
+            auto start = rs2_get_raw_data(list.get(), &e);
+
+            results.insert(results.begin(), start, start + size);
+
+            return results;
         }
     };
 
@@ -1208,7 +1278,7 @@ namespace rs2
             if(!dev)
                 return false;
 
-            auto res =  rs2_device_list_contains(_removed.get_list(), dev.get(), &e);
+            auto res =  rs2_device_list_contains(_removed.get_list(), dev.get().get(), &e);
             error::handle(e);
 
             return res > 0;

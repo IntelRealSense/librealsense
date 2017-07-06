@@ -35,9 +35,9 @@ namespace rs2
             public:
                 multistream() {}
 
-                explicit multistream(std::vector<Dev> results,
+                explicit multistream(std::vector<typename Dev::SensorType> results,
                                      std::map<rs2_stream, stream_profile> profiles,
-                                     std::map<rs2_stream, Dev> devices)
+                                     std::map<rs2_stream, typename Dev::SensorType> devices)
                     : profiles(std::move(profiles)),
                       devices(std::move(devices)),
                       results(std::move(results))
@@ -85,9 +85,11 @@ namespace rs2
                     return profiles;
                 }
             private:
+                friend class Config;
+
                 std::map<rs2_stream, stream_profile> profiles;
-                std::map<rs2_stream, Dev> devices;
-                std::vector<Dev> results;
+                std::map<rs2_stream, typename Dev::SensorType> devices;
+                std::vector<typename Dev::SensorType> results;
             };
 
             Config() : require_all(true) {}
@@ -129,9 +131,10 @@ namespace rs2
                 _requests.clear();
             }
 
-            void close(Dev dev)
+            void close(multistream stream)
             {
-                dev.close();
+                for (auto&& dev : stream.results)
+                    dev.close();
             }
 
             template <typename... Args>
@@ -165,8 +168,8 @@ namespace rs2
 
                 // Unpack the data returned by assign
                 std::map<int, std::vector<stream_profile> > dev_to_profiles;
-                std::vector<Dev> devices;
-                std::map<rs2_stream, Dev> stream_to_dev;
+                std::vector<typename Dev::SensorType> devices;
+                std::map<rs2_stream, typename Dev::SensorType> stream_to_dev;
                 std::map<rs2_stream, stream_profile> stream_to_profile;
 
                 auto sensors = dev.query_sensors();
@@ -203,7 +206,7 @@ namespace rs2
 
             }
 
-            static void auto_complete(std::vector<stream_profile> &requests, Dev &target)
+            static void auto_complete(std::vector<stream_profile> &requests, typename Dev::SensorType &target)
             {
                 auto candidates = target.get_stream_modes();
                 for (auto & request : requests)
@@ -218,7 +221,7 @@ namespace rs2
                         }
                     }
                     if (request.has_wildcards())
-                        throw std::runtime_error(std::string("Couldn't autocomplete request for subdevice ") + target.get_camera_info(RS2_CAMERA_INFO_DEVICE_NAME));
+                        throw std::runtime_error(std::string("Couldn't autocomplete request for subdevice ") + target.get_info(RS2_CAMERA_INFO_NAME));
                 }
             }
 
@@ -228,7 +231,7 @@ namespace rs2
 
                 // Algorithm assumes get_adjacent_devices always
                 // returns the devices in the same order
-                auto devs = dev.get_adjacent_devices();
+                auto devs = dev.query_sensors();
                 for (auto i = 0; i < devs.size(); ++i)
                 {
                     auto sub = devs[i];
@@ -391,7 +394,7 @@ namespace rs2
                 try
                 {
                     std::unique_lock<std::mutex> lock(_mutex);
-                    auto result = rs2_device_list_contains(_device_list.get_list(), dev.get(), &e);
+                    auto result = rs2_device_list_contains(_device_list.get_list(), dev.get().get(), &e);
                     if (e) return false;
                     return result > 0;
                 }

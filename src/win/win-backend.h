@@ -5,7 +5,7 @@
 
 #include "../backend.h"
 
-namespace rsimpl2
+namespace librealsense
 {
     namespace uvc
     {

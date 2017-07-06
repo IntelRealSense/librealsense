@@ -6,7 +6,7 @@
 
 #include "streaming.h"
 
-namespace rsimpl2
+namespace librealsense
 {
     class motion_sensor_interface : public virtual sensor_interface
     {

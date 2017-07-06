@@ -41,7 +41,7 @@ const char* PROFILES_CREATE = "CREATE TABLE rs_profile(section NUMBER, width NUM
 const char* PROFILES_INSERT = "INSERT INTO rs_profile(section, width, height, fps, fourcc) VALUES(?, ? ,? ,? ,?)";
 const char* PROFILES_SELECT_ALL = "SELECT * FROM rs_profile WHERE section = ?";
 
-namespace rsimpl2
+namespace librealsense
 {
     namespace uvc
     {
@@ -515,7 +515,7 @@ namespace rsimpl2
             lock_guard<recursive_mutex> lock(_mutex);
             vector<uint8_t> holder;
             holder.resize(size);
-            rsimpl2::copy(holder.data(), ptr, size);
+            librealsense::copy(holder.data(), ptr, size);
             auto id = static_cast<int>(blobs.size());
             blobs.push_back(holder);
             return id;
@@ -1259,7 +1259,7 @@ namespace rsimpl2
             auto stored_data = _rec->load_blob(c.param2);
             if (stored_data.size() != len)
                 throw playback_backend_exception("Recording history mismatch!", call_type::uvc_get_xu, _entity_id);
-            rsimpl2::copy(data, stored_data.data(), len);
+            librealsense::copy(data, stored_data.data(), len);
             return (c.param3 != 0);
         }
 
@@ -1458,7 +1458,7 @@ namespace rsimpl2
                     auto profile_blob = _rec->load_blob(c_ptr->param1);
 
                     stream_profile p;
-                    rsimpl2::copy(&p, profile_blob.data(), sizeof(p));
+                    librealsense::copy(&p, profile_blob.data(), sizeof(p));
                     lock_guard<mutex> lock(_callback_mutex);
 
                     for (auto&& pair : _callbacks)

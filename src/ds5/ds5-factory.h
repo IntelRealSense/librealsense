@@ -4,7 +4,7 @@
 
 #include "ds5-private.h"
 
-namespace rsimpl2
+namespace librealsense
 {
     class ds5_info : public device_info
     {

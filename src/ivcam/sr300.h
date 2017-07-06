@@ -16,7 +16,7 @@
 
 #include "core/debug.h"
 
-namespace rsimpl2
+namespace librealsense
 {
     const uint16_t SR300_PID = 0x0aa5;
 

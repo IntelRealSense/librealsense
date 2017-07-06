@@ -7,7 +7,7 @@ using namespace std;
 
 #define intrinsics_string(res) #res << "\t" << array2str((float_4&)table->rect_params[res]) << endl
 
-namespace rsimpl2
+namespace librealsense
 {
     namespace ds
     {
@@ -67,7 +67,7 @@ namespace rsimpl2
              intrinsics.height = height;
              intrinsics.width = width;
 
-             rsimpl2::copy(intrinsics.coeffs, table->distortion, sizeof(table->distortion));
+             librealsense::copy(intrinsics.coeffs, table->distortion, sizeof(table->distortion));
 
 
              LOG_DEBUG(endl<<

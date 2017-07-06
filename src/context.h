@@ -10,7 +10,7 @@
 
 #include <vector>
 
-namespace rsimpl2
+namespace librealsense
 {
     class context;
     class device_info;
@@ -18,23 +18,23 @@ namespace rsimpl2
 
 struct rs2_device_info
 {
-    std::shared_ptr<rsimpl2::context> ctx;
-    std::shared_ptr<rsimpl2::device_info> info;
+    std::shared_ptr<librealsense::context> ctx;
+    std::shared_ptr<librealsense::device_info> info;
 };
 
 
 struct rs2_device_list
 {
-    std::shared_ptr<rsimpl2::context> ctx;
+    std::shared_ptr<librealsense::context> ctx;
     std::vector<rs2_device_info> list;
 };
 
 struct rs2_sensor_list
 {
-    std::shared_ptr<rsimpl2::device_interface> dev;
+    std::shared_ptr<librealsense::device_interface> dev;
 };
 
-namespace rsimpl2
+namespace librealsense
 {
     class device;
     class context;

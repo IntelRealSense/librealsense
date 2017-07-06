@@ -4,7 +4,7 @@
 #include "ivcam-private.h"
 
 
-namespace rsimpl2
+namespace librealsense
 {
     namespace ivcam
     {

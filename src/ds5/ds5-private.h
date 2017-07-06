@@ -11,7 +11,7 @@
 
 const double TIMESTAMP_TO_MILLISECONS = 0.001;
 
-namespace rsimpl2
+namespace librealsense
 {
     namespace ds
     {

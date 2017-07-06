@@ -3,15 +3,17 @@
 
 #pragma once
 #include "../../include/librealsense/rs2.h" //TODO: Ziv, remove relative\file
-namespace rsimpl2
-{
-    template<typename T, typename P>
-    bool Is(std::shared_ptr<P> snapshot)
-    {
-        return dynamic_cast<T*>(snapshot.get()) != nullptr;
-    }
 
-    class extendable_interface
+namespace librealsense
+{
+	template<typename T, typename P>
+	bool Is(std::shared_ptr<P> snapshot)
+	{
+		return dynamic_cast<T*>(snapshot.get()) != nullptr;
+	}
+
+	class extendable_interface
+
     {
     public:
         virtual void* extend_to(rs2_extension_type extension_type) = 0;

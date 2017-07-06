@@ -4,7 +4,7 @@
 #include "sr300.h"
 #include "hw-monitor.h"
 
-namespace rsimpl2
+namespace librealsense
 {
     std::shared_ptr<device_interface> sr300_info::create(const uvc::backend& backend) const
     {
@@ -142,7 +142,7 @@ namespace rsimpl2
         }
 
         cmd.data.resize(sizeof(uint16_t) * data.size());
-        rsimpl2::copy(cmd.data.data(), data.data(), cmd.data.size());
+        librealsense::copy(cmd.data.data(), data.data(), cmd.data.size());
 
         _hw_monitor->send(cmd);
     }
@@ -173,7 +173,7 @@ namespace rsimpl2
         auto data = _hw_monitor->send(command);
 
         sr300_raw_calibration rawCalib;
-        rsimpl2::copy(&rawCalib, data.data(), std::min(sizeof(rawCalib), data.size()));
+        librealsense::copy(&rawCalib, data.data(), std::min(sizeof(rawCalib), data.size()));
         return rawCalib.CalibrationParameters;
     }
 
@@ -190,11 +190,11 @@ namespace rsimpl2
         auto serial = _hw_monitor->get_module_serial_string(GVD, module_serial_offset);
         enable_timestamp(true, true);
 
-        register_info(RS2_CAMERA_INFO_DEVICE_NAME,              device_name);
-        register_info(RS2_CAMERA_INFO_DEVICE_SERIAL_NUMBER,     serial);
-        register_info(RS2_CAMERA_INFO_CAMERA_FIRMWARE_VERSION,  fw_version);
-        register_info(RS2_CAMERA_INFO_DEVICE_LOCATION,          depth.device_path);
-        register_info(RS2_CAMERA_INFO_DEVICE_DEBUG_OP_CODE,     std::to_string(static_cast<int>(fw_cmd::GLD)));
+        register_info(RS2_CAMERA_INFO_NAME,              device_name);
+        register_info(RS2_CAMERA_INFO_SERIAL_NUMBER,     serial);
+        register_info(RS2_CAMERA_INFO_FIRMWARE_VERSION,  fw_version);
+        register_info(RS2_CAMERA_INFO_LOCATION,          depth.device_path);
+        register_info(RS2_CAMERA_INFO_DEBUG_OP_CODE,     std::to_string(static_cast<int>(fw_cmd::GLD)));
 
         register_autorange_options();
 

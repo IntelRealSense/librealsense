@@ -6,7 +6,7 @@
 
 #include <memory>
 
-namespace rsimpl2
+namespace librealsense
 {
     struct region_of_interest
     {

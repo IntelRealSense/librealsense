@@ -4,7 +4,7 @@
 
 #include "streaming.h"
 
-namespace rsimpl2
+namespace librealsense
 {
     struct stream_profile;
 

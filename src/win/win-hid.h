@@ -8,7 +8,7 @@
 #include <Sensorsapi.h>
 #include <atlcomcli.h>
 
-namespace rsimpl2
+namespace librealsense
 {
     namespace uvc
     {

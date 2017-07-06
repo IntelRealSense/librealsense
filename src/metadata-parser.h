@@ -8,9 +8,9 @@
 #include "archive.h"
 #include "metadata.h"
 
-using namespace rsimpl2;
+using namespace librealsense;
 
-namespace rsimpl2
+namespace librealsense
 {
 /** \brief Metadata fields that are utilized internally by librealsense
     Provides extention to the r2_frame_metadata list of attributes*/

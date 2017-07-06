@@ -1,0 +1,941 @@
+// License: Apache 2.0. See LICENSE file in root directory.
+// Copyright(c) 2015 Intel Corporation. All Rights Reserved.
+
+#pragma once
+#define GLFW_INCLUDE_GLU
+#include <GLFW/glfw3.h>
+
+#include <vector>
+#include <algorithm>
+#include <cstring>
+#include <ctype.h>
+#include <memory>
+#include <string>
+#include <sstream>
+#include <iomanip>
+#define _USE_MATH_DEFINES
+#include <cmath>
+#include <map>
+
+namespace rs2
+{
+    class fps_calc
+    {
+    public:
+        fps_calc()
+            : _counter(0),
+              _delta(0),
+              _last_timestamp(0),
+              _num_of_frames(0)
+        {}
+
+        fps_calc(const fps_calc& other)
+        {
+            std::lock_guard<std::mutex> lock(other._mtx);
+            _counter = other._counter;
+            _delta = other._delta;
+            _num_of_frames = other._num_of_frames;
+            _last_timestamp = other._last_timestamp;
+        }
+        void add_timestamp(double timestamp, unsigned long long frame_counter)
+        {
+            std::lock_guard<std::mutex> lock(_mtx);
+            if (++_counter >= _skip_frames)
+            {
+                if (_last_timestamp != 0)
+                {
+                    _delta = timestamp - _last_timestamp;
+                    _num_of_frames = frame_counter - _last_frame_counter;
+                }
+
+                _last_frame_counter = frame_counter;
+                _last_timestamp = timestamp;
+                _counter = 0;
+            }
+        }
+
+        double get_fps() const
+        {
+            std::lock_guard<std::mutex> lock(_mtx);
+            if (_delta == 0)
+                return 0;
+
+            return (static_cast<double>(_numerator) * _num_of_frames)/_delta;
+        }
+
+    private:
+        static const int _numerator = 1000;
+        static const int _skip_frames = 5;
+        unsigned long long _num_of_frames;
+        int _counter;
+        double _delta;
+        double _last_timestamp;
+        unsigned long long _last_frame_counter;
+        mutable std::mutex _mtx;
+    };
+
+    inline float clamp(float x, float min, float max)
+    {
+        return std::max(std::min(max, x), min);
+    }
+
+    inline float smoothstep(float x, float min, float max)
+    {
+        x = clamp((x - min) / (max - min), 0.0, 1.0);
+        return x*x*(3 - 2 * x);
+    }
+
+    inline float lerp(float a, float b, float t)
+    {
+        return b * t + a * (1 - t);
+    }
+
+    struct float3
+    {
+        float x, y, z;
+    };
+
+    inline float3 operator*(const float3& a, float t)
+    {
+        return { a.x * t, a.y * t, a.z * t };
+    }
+
+    inline float3 operator+(const float3& a, const float3& b)
+    {
+        return { a.x + b.x, a.y + b.y, a.z + b.z };
+    }
+
+    inline float3 lerp(const float3& a, const float3& b, float t)
+    {
+        return b * t + a * (1 - t);
+    }
+
+    struct float2
+    {
+        float x, y;
+
+        float length() const { return sqrt(x*x + y*y); }
+
+        float2 normalize() const
+        {
+            return { x / length(), y / length() };
+        }
+    };
+
+    inline float2 operator-(float2 a, float2 b)
+    {
+        return { a.x - b.x, a.y - b.y };
+    }
+
+    inline float2 operator*(float a, float2 b)
+    {
+        return { a * b.x, a * b.y };
+    }
+
+    struct mouse_info
+    {
+        float2 cursor;
+        bool mouse_down = false;
+    };
+
+    template<typename T>
+    T normalizeT(const T& in_val, const T& min, const T& max)
+    {
+        return ((in_val - min)/(max - min));
+    }
+
+    template<typename T>
+    T unnormalizeT(const T& in_val, const T& min, const T& max)
+    {
+        return ((in_val * (max - min)) + min);
+    }
+
+    struct rect
+    {
+        float x, y;
+        float w, h;
+
+        operator bool() const
+        {
+            return w*w > 0 && h*h > 0;
+        }
+
+        bool operator==(const rect& other) const
+        {
+            return x == other.x && y == other.y && w == other.w && h == other.h;
+        }
+
+        bool operator!=(const rect& other) const
+        {
+            return !(*this == other);
+        }
+
+        rect normalize(const rect& normalize_to) const
+        {
+            return rect{normalizeT(x, normalize_to.x, normalize_to.x + normalize_to.w),
+                        normalizeT(y, normalize_to.y, normalize_to.y + normalize_to.h),
+                        normalizeT(w, 0.f, normalize_to.w),
+                        normalizeT(h, 0.f, normalize_to.h)};
+        }
+
+        rect unnormalize(const rect& unnormalize_to) const
+        {
+            return rect{unnormalizeT(x, unnormalize_to.x, unnormalize_to.x + unnormalize_to.w),
+                        unnormalizeT(y, unnormalize_to.y, unnormalize_to.y + unnormalize_to.h),
+                        unnormalizeT(w, 0.f, unnormalize_to.w),
+                        unnormalizeT(h, 0.f, unnormalize_to.h)};
+        }
+
+        rect cut_by(const rect& r) const
+        {
+            auto x1 = x;
+            auto y1 = y;
+            auto x2 = x + w;
+            auto y2 = y + h;
+
+            x1 = std::max(x1, r.x);
+            x1 = std::min(x1, r.x + r.w);
+            y1 = std::max(y1, r.y);
+            y1 = std::min(y1, r.y + r.h);
+
+            x2 = std::max(x2, r.x);
+            x2 = std::min(x2, r.x + r.w);
+            y2 = std::max(y2, r.y);
+            y2 = std::min(y2, r.y + r.h);
+
+            return { x1, y1, x2 - x1, y2 - y1 };
+        }
+
+        bool contains(const float2& p) const
+        {
+            return (p.x >= x) && (p.x < x + w) && (p.y >= y) && (p.y < y + h);
+        }
+
+        rect pan(const float2& p) const
+        {
+            return { x - p.x, y - p.y, w, h };
+        }
+
+        rect center() const
+        {
+            return{ x + w / 2.f, y + h / 2.f, 0, 0 };
+        }
+
+        rect lerp(float t, const rect& other) const
+        {
+            return{
+                rs2::lerp(x, other.x, t), rs2::lerp(y, other.y, t),
+                rs2::lerp(w, other.w, t), rs2::lerp(h, other.h, t),
+            };
+        }
+
+        rect adjust_ratio(float2 size) const
+        {
+            auto H = static_cast<float>(h), W = static_cast<float>(h) * size.x / size.y;
+            if (W > w)
+            {
+                auto scale = w / W;
+                W *= scale;
+                H *= scale;
+            }
+
+            return{ x + (w - W) / 2, y + (h - H) / 2, W, H };
+        }
+
+        rect scale(float factor) const
+        {
+            return { x, y, w * factor, h * factor };
+        }
+
+        rect shrink_by(float2 pixels) const
+        {
+            return { x + pixels.x, y + pixels.y, w - pixels.x * 2, h - pixels.y * 2 };
+        }
+
+        rect center_at(const float2& new_center) const
+        {
+            auto c = center();
+            auto diff_x = new_center.x - c.x;
+            auto diff_y = new_center.y - c.y;
+
+            return { x + diff_x, y + diff_y, w, h };
+        }
+
+        rect fit(rect r) const
+        {
+            float new_w = w;
+            float new_h = h;
+
+            if (w < r.w)
+                new_w = r.w;
+
+            if (h < r.h)
+                new_h = r.h;
+
+            auto res = rect{x, y, new_w, new_h};
+            return res.adjust_ratio({w,h});
+        }
+
+        rect zoom(float zoom_factor) const
+        {
+            auto c = center();
+            return scale(zoom_factor).center_at({c.x,c.y});
+        }
+
+        rect enclose_in(rect in_rect) const
+        {
+            rect out_rect{x, y, w, h};
+            if (w > in_rect.w || h > in_rect.h)
+            {
+                return in_rect;
+            }
+
+            if (x < in_rect.x)
+            {
+                out_rect.x = in_rect.x;
+            }
+
+            if (y < in_rect.y)
+            {
+                out_rect.y = in_rect.y;
+            }
+
+
+            if (x + w > in_rect.x + in_rect.w)
+            {
+                out_rect.x = in_rect.x + in_rect.w - w;
+            }
+
+            if (y + h > in_rect.y + in_rect.h)
+            {
+                out_rect.y = in_rect.y + in_rect.h - h;
+            }
+
+            return out_rect;
+        }
+    };
+
+    //////////////////////////////
+    // Simple font loading code //
+    //////////////////////////////
+
+#include "../third-party/stb_easy_font.h"
+
+    inline void draw_text(int x, int y, const char * text)
+    {
+        char buffer[60000]; // ~300 chars
+        glEnableClientState(GL_VERTEX_ARRAY);
+        glVertexPointer(2, GL_FLOAT, 16, buffer);
+        glDrawArrays(GL_QUADS, 0, 4 * stb_easy_font_print((float)x, (float)(y - 7), (char *)text, nullptr, buffer, sizeof(buffer)));
+        glDisableClientState(GL_VERTEX_ARRAY);
+    }
+
+    ////////////////////////
+    // Image display code //
+    ////////////////////////
+
+    class color_map
+    {
+    public:
+        color_map(std::map<float, float3> map, int steps = 64) : _map(map) 
+        {
+            initialize(steps);
+        }
+
+        color_map(const std::vector<float3>& values, int steps = 64)
+        {
+            for (int i = 0; i < values.size(); i++)
+            {
+                _map[(float)i/(values.size()-1)] = values[i];
+            }
+            initialize(steps);
+        }
+
+        color_map() {}
+
+        float3 get(float value) const
+        {
+            if (_max == _min) return *_data;
+            auto t = (value - _min) / (_max - _min);
+            t = std::min(std::max(t, 0.f), 1.f);
+            return _data[(int)(t * (_size - 1))];
+        }
+
+        float min_key() const { return _min; }
+        float max_key() const { return _max; }
+
+    private:
+        float3 calc(float value) const
+        {
+            if (_map.size() == 0) return { value, value, value };
+            // if we have exactly this value in the map, just return it                                                                                                                                                                 
+            if( _map.find(value) != _map.end() ) return _map.at(value);
+            // if we are beyond the limits, return the first/last element                                                                                                                                                               
+            if( value < _map.begin()->first )   return _map.begin()->second;
+            if( value > _map.rbegin()->first )  return _map.rbegin()->second;
+
+            auto lower = _map.lower_bound(value) == _map.begin() ? _map.begin() : --(_map.lower_bound(value)) ;
+            auto upper = _map.upper_bound(value);
+
+            auto t = (value - lower->first) / (upper->first - lower->first);
+            auto c1 = lower->second;
+            auto c2 = upper->second;
+            return lerp(c1, c2, t);
+        }
+
+        void initialize(int steps)
+        {
+            if (_map.size() == 0) return;
+
+            _min = _map.begin()->first;
+            _max = _map.rbegin()->first;
+
+            _cache.resize(steps + 1);
+            for (int i = 0; i <= steps; i++)
+            {
+                auto t = (float)i/steps;
+                auto x = _min + t*(_max - _min);
+                _cache[i] = calc(x);
+            }
+
+            // Save size and data to avoid STL checks penalties in DEBUG
+            _size = _cache.size();
+            _data = _cache.data();
+        }
+
+        std::map<float, float3> _map;
+        std::vector<float3> _cache;
+        float _min, _max;
+        int _size; float3* _data;
+    };
+
+    static color_map classic {{
+            { 255, 0, 0 },
+            { 0, 0, 255 },
+        }};
+
+    static color_map jet {{
+            { 50, 0, 0 },
+            { 255, 0, 0 },
+            { 255, 255, 0 },
+            { 0, 255, 255 },
+            { 0, 0, 255 },
+        }};
+
+    static color_map hsv {{
+            { 255, 0, 0 },
+            { 255, 255, 0 },
+            { 0, 255, 0 },
+            { 0, 255, 255 },
+            { 0, 0, 255 },
+            { 255, 0, 255 },
+            { 255, 0, 0 },
+        }};
+
+
+    static std::vector<color_map*> color_maps { &classic, &jet, &hsv };
+    static std::vector<const char*> color_maps_names { "Classic", "Jet", "HSV" };
+
+    inline void make_depth_histogram(const color_map& map, uint8_t rgb_image[], const uint16_t depth_image[], int width, int height, bool equalize, float min, float max)
+    {
+        const auto max_depth = 0x10000;
+        if (equalize)
+        {
+            static uint32_t histogram[max_depth];
+            memset(histogram, 0, sizeof(histogram));
+
+            for (auto i = 0; i < width*height; ++i) ++histogram[depth_image[i]];
+            for (auto i = 2; i < max_depth; ++i) histogram[i] += histogram[i - 1]; // Build a cumulative histogram for the indices in [1,0xFFFF]
+            for (auto i = 0; i < width*height; ++i)
+            {
+                auto d = depth_image[i];
+
+                if (d)
+                {
+                    auto f = histogram[d] / (float)histogram[0xFFFF]; // 0-255 based on histogram location
+
+                    auto c = map.get(f);
+                    rgb_image[i * 3 + 0] = c.x;
+                    rgb_image[i * 3 + 1] = c.y;
+                    rgb_image[i * 3 + 2] = c.z;
+                }
+                else
+                {
+                    rgb_image[i * 3 + 0] = 0;
+                    rgb_image[i * 3 + 1] = 0;
+                    rgb_image[i * 3 + 2] = 0;
+                }
+            }
+        }
+        else
+        {
+            for (auto i = 0; i < width*height; ++i)
+            {
+                auto d = depth_image[i];
+
+                if (d)
+                {
+                    auto f = (d - min) / (max - min);
+
+                    auto c = map.get(f);
+                    rgb_image[i * 3 + 0] = c.x;
+                    rgb_image[i * 3 + 1] = c.y;
+                    rgb_image[i * 3 + 2] = c.z;
+                }
+                else
+                {
+                    rgb_image[i * 3 + 0] = 0;
+                    rgb_image[i * 3 + 1] = 0;
+                    rgb_image[i * 3 + 2] = 0;
+                }
+            }
+        }
+    }
+
+
+    class texture_buffer
+    {
+        GLuint texture;
+        std::vector<uint8_t> rgb;
+        rs2::frame last;
+
+        void upload(const uint8_t * data, int width, int height, rs2_format format, int stride = 0, rs2_stream stream = RS2_STREAM_ANY)
+        {
+            // If the frame timestamp has changed since the last time show(...) was called, re-upload the texture
+            if (!texture)
+                glGenTextures(1, &texture);
+
+            glBindTexture(GL_TEXTURE_2D, texture);
+            stride = stride == 0 ? width : stride;
+            //glPixelStorei(GL_UNPACK_ROW_LENGTH, stride);
+
+            switch (format)
+            {
+            case RS2_FORMAT_ANY:
+                throw std::runtime_error("not a valid format");
+            case RS2_FORMAT_Z16:
+            case RS2_FORMAT_DISPARITY16:
+                rgb.resize(width * height * 4);
+                make_depth_histogram(*cm, rgb.data(), reinterpret_cast<const uint16_t *>(data), width, height, equalize, min_depth, max_depth);
+                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, rgb.data());
+                break;
+            case RS2_FORMAT_XYZ32F:
+                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_FLOAT, data);
+                break;
+            case RS2_FORMAT_YUYV: // Display YUYV by showing the luminance channel and packing chrominance into ignored alpha channel
+                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, data);
+                break;
+            case RS2_FORMAT_RGB8: case RS2_FORMAT_BGR8: // Display both RGB and BGR by interpreting them RGB, to show the flipped byte ordering. Obviously, GL_BGR could be used on OpenGL 1.2+
+                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+                break;
+            case RS2_FORMAT_RGBA8: case RS2_FORMAT_BGRA8: // Display both RGBA and BGRA by interpreting them RGBA, to show the flipped byte ordering. Obviously, GL_BGRA could be used on OpenGL 1.2+
+                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+                break;
+            case RS2_FORMAT_Y8:
+                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, data);
+                break;
+            case RS2_FORMAT_MOTION_XYZ32F:
+            {
+                auto axes = *(reinterpret_cast<const float3*>(data));
+                draw_motion_data(axes.x, axes.y, axes.z);
+            }
+            break;
+            case RS2_FORMAT_Y16:
+                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_LUMINANCE, GL_UNSIGNED_SHORT, data);
+                break;
+            case RS2_FORMAT_RAW8:
+            case RS2_FORMAT_MOTION_RAW:
+            case RS2_FORMAT_GPIO_RAW:
+                glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE, width, height, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, data);
+                break;
+            case RS2_FORMAT_RAW10:
+            {
+                // Visualize Raw10 by performing a naive downsample. Each 2x2 block contains one red pixel, two green pixels, and one blue pixel, so combine them into a single RGB triple.
+                rgb.clear(); rgb.resize(width / 2 * height / 2 * 3);
+                auto out = rgb.data(); auto in0 = reinterpret_cast<const uint8_t *>(data), in1 = in0 + width * 5 / 4;
+                for (auto y = 0; y<height; y += 2)
+                {
+                    for (auto x = 0; x<width; x += 4)
+                    {
+                        *out++ = in0[0]; *out++ = (in0[1] + in1[0]) / 2; *out++ = in1[1]; // RGRG -> RGB RGB
+                        *out++ = in0[2]; *out++ = (in0[3] + in1[2]) / 2; *out++ = in1[3]; // GBGB
+                        in0 += 5; in1 += 5;
+                    }
+                    in0 = in1; in1 += width * 5 / 4;
+                }
+                glPixelStorei(GL_UNPACK_ROW_LENGTH, width / 2);        // Update row stride to reflect post-downsampling dimensions of the target texture
+                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width / 2, height / 2, 0, GL_RGB, GL_UNSIGNED_BYTE, rgb.data());
+            }
+            break;
+            default:
+                throw std::runtime_error("The requested format is not suported for rendering");
+            }
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+            glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+            glBindTexture(GL_TEXTURE_2D, 0);
+        }
+
+    public:
+        color_map* cm = &classic;
+        bool equalize = true;
+        float min_depth = 0.f;
+        float max_depth = 16.f;
+
+        texture_buffer() : texture() {}
+
+        GLuint get_gl_handle() const { return texture; }
+
+        void draw_axis()
+        {
+
+            // Traingles For X axis
+            glBegin(GL_TRIANGLES);
+            glColor3f(1.0f, 0.0f, 0.0f);
+            glVertex3f(1.1f, 0.0f, 0.0f);
+            glVertex3f(1.0f, 0.05f, 0.0f);
+            glVertex3f(1.0f, -0.05f, 0.0f);
+            glEnd();
+
+            // Traingles For Y axis
+            glBegin(GL_TRIANGLES);
+            glColor3f(0.0f, 1.0f, 0.0f);
+            glVertex3f(0.0f, -1.1f, 0.0f);
+            glVertex3f(0.0f, -1.0f, 0.05f);
+            glVertex3f(0.0f, -1.0f, -0.05f);
+            glEnd();
+            glBegin(GL_TRIANGLES);
+            glColor3f(0.0f, 1.0f, 0.0f);
+            glVertex3f(0.0f, -1.1f, 0.0f);
+            glVertex3f(0.05f, -1.0f, 0.0f);
+            glVertex3f(-0.05f, -1.0f, 0.0f);
+            glEnd();
+
+            // Traingles For Z axis
+            glBegin(GL_TRIANGLES);
+            glColor3f(0.0f, 0.0f, 1.0f);
+            glVertex3f(0.0f, 0.0f, 1.1f);
+            glVertex3f(0.0f, 0.05f, 1.0f);
+            glVertex3f(0.0f, -0.05f, 1.0f);
+            glEnd();
+
+            auto axisWidth = 4.f;
+            glLineWidth(axisWidth);
+
+            // Drawing Axis
+            glBegin(GL_LINES);
+            // X axis - Red
+            glColor3f(1.0f, 0.0f, 0.0f);
+            glVertex3f(0.0f, 0.0f, 0.0f);
+            glVertex3f(1.0f, 0.0f, 0.0f);
+
+            // Y axis - Green
+            glColor3f(0.0f, 1.0f, 0.0f);
+            glVertex3f(0.0f, 0.0f, 0.0f);
+            glVertex3f(0.0f, -1.0f, 0.0f);
+
+            // Z axis - White
+            glColor3f(0.0f, 0.0f, 1.0f);
+            glVertex3f(0.0f, 0.0f, 0.0f);
+            glVertex3f(0.0f, 0.0f, 1.0f);
+            glEnd();
+        }
+
+        void draw_cyrcle(float xx, float xy, float xz, float yx, float yy, float yz, float radius = 1.1)
+        {
+            const auto N = 50;
+            glColor3f(0.5f, 0.5f, 0.5f);
+            glLineWidth(2);
+            glBegin(GL_LINE_STRIP);
+
+            for (int i = 0; i <= N; i++)
+            {
+                const double theta = (2 * M_PI / N) * i;
+                const auto cost = static_cast<float>(cos(theta));
+                const auto sint = static_cast<float>(sin(theta));
+                glVertex3f(
+                    radius * (xx * cost + yx * sint),
+                    radius * (xy * cost + yy * sint),
+                    radius * (xz * cost + yz * sint)
+                    );
+            }
+
+            glEnd();
+        }
+
+        void multiply_vector_by_matrix(GLfloat vec[], GLfloat mat[], GLfloat* result)
+        {
+            const auto N = 4;
+            for (int i = 0; i < N; i++)
+            {
+                result[i] = 0;
+                for (int j = 0; j < N; j++)
+                {
+                    result[i] += vec[j] * mat[N*j + i];
+                }
+            }
+            return;
+        }
+
+        float2 xyz_to_xy(float x, float y, float z, GLfloat model[], GLfloat proj[], float vec_norm)
+        {
+            GLfloat vec[4] = { x, y, z, 0 };
+            float tmp_result[4];
+            float result[4];
+
+            const auto canvas_size = 230;
+
+            multiply_vector_by_matrix(vec, model, tmp_result);
+            multiply_vector_by_matrix(tmp_result, proj, result);
+
+            return{ canvas_size * vec_norm *result[0], canvas_size * vec_norm *result[1] };
+        }
+
+        void print_text_in_3d(float x, float y, float z, const char* text, bool center_text, GLfloat model[], GLfloat proj[], float vec_norm)
+        {
+            auto xy = xyz_to_xy(x, y, z, model, proj, vec_norm);
+            auto w = (center_text) ? stb_easy_font_width((char*)text) : 0;
+            glColor3f(1.0f, 1.0f, 1.0f);
+            draw_text((int)(xy.x - w / 2), (int)xy.y, text);
+        }
+
+        void draw_motion_data(float x, float y, float z)
+        {
+            glMatrixMode(GL_PROJECTION);
+            glPushMatrix();
+            glMatrixMode(GL_MODELVIEW);
+            glPushMatrix();
+
+            glViewport(0, 0, 1024, 1024);
+            glClearColor(0, 0, 0, 1);
+            glClear(GL_COLOR_BUFFER_BIT);
+
+            glMatrixMode(GL_PROJECTION);
+            glLoadIdentity();
+
+            glOrtho(-2.8, 2.8, -2.4, 2.4, -7, 7);
+
+            glRotatef(-25, 1.0f, 0.0f, 0.0f);
+
+            glTranslatef(0, 0.33f, -1.f);
+
+            float norm = std::sqrt(x*x + y*y + z*z);
+
+            glRotatef(-45, 0.0f, 1.0f, 0.0f);
+
+            draw_axis();
+            draw_cyrcle(1, 0, 0, 0, 1, 0);
+            draw_cyrcle(0, 1, 0, 0, 0, 1);
+            draw_cyrcle(1, 0, 0, 0, 0, 1);
+
+            const auto canvas_size = 230;
+            const auto vec_threshold = 0.01f;
+            if (norm < vec_threshold)
+            {
+                const auto radius = 0.05;
+                static const int circle_points = 100;
+                static const float angle = 2.0f * 3.1416f / circle_points;
+
+                glColor3f(1.0f, 1.0f, 1.0f);
+                glBegin(GL_POLYGON);
+                double angle1 = 0.0;
+                glVertex2d(radius * cos(0.0), radius * sin(0.0));
+                int i;
+                for (i = 0; i < circle_points; i++)
+                {
+                    glVertex2d(radius * cos(angle1), radius *sin(angle1));
+                    angle1 += angle;
+                }
+                glEnd();
+            }
+            else
+            {
+                auto vectorWidth = 5.f;
+                glLineWidth(vectorWidth);
+                glBegin(GL_LINES);
+                glColor3f(1.0f, 1.0f, 1.0f);
+                glVertex3f(0.0f, 0.0f, 0.0f);
+                glVertex3f(-x / norm, -y / norm, -z / norm);
+                glEnd();
+
+                // Save model and projection matrix for later
+                GLfloat model[16];
+                glGetFloatv(GL_MODELVIEW_MATRIX, model);
+                GLfloat proj[16];
+                glGetFloatv(GL_PROJECTION_MATRIX, proj);
+
+                glLoadIdentity();
+                glOrtho(-canvas_size, canvas_size, -canvas_size, canvas_size, -1, +1);
+
+                std::ostringstream s1;
+                const auto precision = 3;
+
+                s1 << "(" << std::fixed << std::setprecision(precision) << x << "," << std::fixed << std::setprecision(precision) << y << "," << std::fixed << std::setprecision(precision) << z << ")";
+                print_text_in_3d(-x, -y, -z, s1.str().c_str(), false, model, proj, 1 / norm);
+
+                std::ostringstream s2;
+                s2 << std::setprecision(precision) << norm;
+                print_text_in_3d(-x / 2, -y / 2, -z / 2, s2.str().c_str(), true, model, proj, 1 / norm);
+            }
+
+            glCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 0, 0, 1024, 1024, 0);
+
+            glMatrixMode(GL_MODELVIEW);
+            glPopMatrix();
+            glMatrixMode(GL_PROJECTION);
+            glPopMatrix();
+        }
+
+        double t = 0;
+
+        bool try_pick(int x, int y, float* result)
+        {
+            auto format = last.get_format();
+            switch (format)
+            {
+            case RS2_FORMAT_Z16:
+            case RS2_FORMAT_Y16:
+            case RS2_FORMAT_DISPARITY16:
+            {
+                auto ptr = (const uint16_t*)last.get_data();
+                *result = ptr[y * (last.get_stride_in_bytes() / sizeof(uint16_t)) + x];
+                return true;
+            }
+            case RS2_FORMAT_RAW8:
+            case RS2_FORMAT_Y8:
+            {
+                auto ptr = (const uint8_t*)last.get_data();
+                *result = ptr[y * last.get_stride_in_bytes() + x];
+                return true;
+            }
+            default:
+                return false;
+            }
+        }
+
+        void upload(const rs2::frame& frame)
+        {
+            upload(static_cast<const uint8_t*>(frame.get_data()), frame.get_width(), frame.get_height(), frame.get_format(),
+                (frame.get_stride_in_bytes() * 8) / frame.get_bits_per_pixel(), frame.get_stream_type());
+            frame.try_clone_ref(&last);
+        }
+
+        void draw_texture(const rect& s, const rect& t) const
+        {
+            glBegin(GL_QUAD_STRIP);
+            {
+                glTexCoord2f(s.x, s.y + s.h); glVertex2f(t.x, t.y + t.h);
+                glTexCoord2f(s.x, s.y); glVertex2f(t.x, t.y);
+                glTexCoord2f(s.x + s.w, s.y + s.h); glVertex2f(t.x + t.w, t.y + t.h);
+                glTexCoord2f(s.x + s.w, s.y); glVertex2f(t.x + t.w, t.y);
+            }
+            glEnd();
+        }
+
+        void show(const rect& r, float alpha, const rect& normalized_zoom = rect{0, 0, 1, 1}) const
+        {
+            glEnable(GL_BLEND);
+
+            glBlendFunc(GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA);
+            glBegin(GL_QUADS);
+            glColor4f(1.0f, 1.0f, 1.0f, 1 - alpha);
+            glEnd();
+
+            glBindTexture(GL_TEXTURE_2D, texture);
+            glEnable(GL_TEXTURE_2D);
+            draw_texture(normalized_zoom, r);
+
+            glDisable(GL_TEXTURE_2D);
+            glBindTexture(GL_TEXTURE_2D, 0);
+
+            glDisable(GL_BLEND);
+        }
+
+        void show_preview(const rect& r, const rect& normalized_zoom = rect{0, 0, 1, 1}) const
+        {
+            glBindTexture(GL_TEXTURE_2D, texture);
+            glEnable(GL_TEXTURE_2D);
+
+            // Show stream thumbnail
+            static const rect unit_square_coordinates{0, 0, 1, 1};
+            static const float2 thumbnail_size = {141, 141};
+            static const float2 thumbnail_margin = { 10, 27 };
+            rect thumbnail{r.x + r.w, r.y + r.h, thumbnail_size.x, thumbnail_size.y };
+            thumbnail = thumbnail.adjust_ratio({r.w, r.h}).enclose_in(r.shrink_by(thumbnail_margin));
+            rect zoomed_rect = normalized_zoom.unnormalize(r);
+
+            if (r != zoomed_rect)
+                draw_texture(unit_square_coordinates, thumbnail);
+
+            glDisable(GL_TEXTURE_2D);
+            glBindTexture(GL_TEXTURE_2D, 0);
+
+            if (r != zoomed_rect)
+            {
+                // Draw ROI
+                auto normalized_thumbnail_roi = normalized_zoom.unnormalize(thumbnail);
+                glLineWidth(1);
+                glBegin(GL_LINE_STRIP);
+                glColor4f(1,1,1,1);
+                glVertex2f(normalized_thumbnail_roi.x, normalized_thumbnail_roi.y);
+                glVertex2f(normalized_thumbnail_roi.x, normalized_thumbnail_roi.y + normalized_thumbnail_roi.h);
+                glVertex2f(normalized_thumbnail_roi.x + normalized_thumbnail_roi.w, normalized_thumbnail_roi.y + normalized_thumbnail_roi.h);
+                glVertex2f(normalized_thumbnail_roi.x + normalized_thumbnail_roi.w, normalized_thumbnail_roi.y);
+                glVertex2f(normalized_thumbnail_roi.x, normalized_thumbnail_roi.y);
+                glEnd();
+            }
+
+            if (last)
+            {
+                if (last.get_stream_type() == RS2_STREAM_DEPTH)
+                {
+                    const int segments = 16;
+                    for (int i = 1; i <= segments; i++)
+                    {
+                        auto t1 = (float)i/segments;
+                        auto k1 = cm->min_key() + t1*(cm->max_key() - cm->min_key());
+                        auto t2 = (float)(i - 1)/segments;
+                        auto k2 = cm->min_key() + t2*(cm->max_key() - cm->min_key());
+                        auto c1 = cm->get(k1);
+                        auto c2 = cm->get(k2);
+
+                        glBegin(GL_QUADS);
+                            glColor3f(c1.x / 255, c1.y / 255, c1.z / 255); glVertex2f(r.x + r.w - 150 + t1 * 140, r.y + r.h - 22);
+                            glColor3f(c2.x / 255, c2.y / 255, c2.z / 255); glVertex2f(r.x + r.w - 150 + t2 * 140, r.y + r.h - 22);
+                            glColor3f(c2.x / 255, c2.y / 255, c2.z / 255); glVertex2f(r.x + r.w - 150 + t2 * 140, r.y + r.h - 4);
+                            glColor3f(c1.x / 255, c1.y / 255, c1.z / 255); glVertex2f(r.x + r.w - 150 + t1 * 140, r.y + r.h - 4);
+                        glEnd();
+                    }
+                }
+            }
+            
+        }
+    };
+
+    inline bool is_integer(float f)
+    {
+        return (fabs(fmod(f, 1)) < std::numeric_limits<float>::min());
+    }
+
+    struct to_string
+    {
+        std::ostringstream ss;
+        template<class T> to_string & operator << (const T & val) { ss << val; return *this; }
+        operator std::string() const { return ss.str(); }
+    };
+
+    inline std::string error_to_string(const error& e)
+    {
+        return to_string() << rs2_exception_type_to_string(e.get_type())
+            << " in " << e.get_failed_function() << "("
+            << e.get_failed_args() << "):\n" << e.what();
+    }
+
+    inline std::string api_version_to_string(int version)
+    {
+        if (version / 10000 == 0) return to_string() << version;
+        return to_string() << (version / 10000) << "." << (version % 10000) / 100 << "." << (version % 100);
+    }
+}

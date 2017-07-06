@@ -36,7 +36,7 @@ constexpr std::array<char const, N1+N2-1> concat(char const (&a1)[N1], char cons
 // The string is used to retrieve the version embedded into .so file on Linux
 constexpr auto rs2_api_version = concat("VERSION: ",RS2_API_VERSION_STR);
 
-namespace rsimpl2
+namespace librealsense
 {
     context::context(backend_type type,
                      const char* filename,
@@ -75,7 +75,7 @@ namespace rsimpl2
             auto color_ep = std::make_shared<uvc_sensor>("RGB Camera", uvc, std::unique_ptr<ds5_timestamp_reader>(new ds5_timestamp_reader(ts)), ts);
             add_sensor(color_ep);
 
-            register_info(RS2_CAMERA_INFO_DEVICE_NAME, "Platform Camera");
+            register_info(RS2_CAMERA_INFO_NAME, "Platform Camera");
 
             color_ep->register_pixel_format(pf_yuy2);
             color_ep->register_pixel_format(pf_yuyv);
@@ -144,7 +144,7 @@ namespace rsimpl2
         auto old_list = create_devices(old);
         auto new_list = create_devices(curr);
 
-        if (rsimpl2::list_changed<std::shared_ptr<device_info>>(old_list, new_list, [](std::shared_ptr<device_info> first, std::shared_ptr<device_info> second) {return *first == *second; }))
+        if (librealsense::list_changed<std::shared_ptr<device_info>>(old_list, new_list, [](std::shared_ptr<device_info> first, std::shared_ptr<device_info> second) {return *first == *second; }))
         {
 
             std::vector<rs2_device_info> rs2_devices_info_added;
