@@ -1,0 +1,36 @@
+# API Architecture
+
+RealSense APIs is clustered into three categories, aimed at different usages: 
+1. [High-Level Computer-Vision Pipeline API](#High-Level-Pipeline-API) - If you are getting started with RealSense and want do build something that would just work, Pipeline API will configure the device with the best recommended settings and will manage hardware resources as well as threading on your behalf. Recommended for **Researchers** and **App Developers**. 
+2. [Processig Building-Blocks](#Processing-Blocks) - If you need to take control over threading, spatial and temporal syncronization and memory management, we provide a set of building blocks you can easily arrange into custom processing flows. Recommended for **Game Developers**.
+3. [Low-Level Sensor Access](#Low-Level-Sensor-API) - If you know what you are doing you can take direct control over the individual sensors composing the device to get the maximum out of the hardware. Recommended for **Framework and Tools Developers**, as well as Developers in emerging feilds like **VR/AR**. 
+
+## Low-Level Sensor API
+RealSense devices are composed from sensors. Some are commonplace, like a regular RGB camera, some are more exotic, like RS400 Stereo module or SR300 Structured-Light sensor:
+<img src="img/realsense.gif" width="400" height="200" />
+Each sensor has its own power management and control. Standard sensors pass UVC / HID complience tests and can be used without custom software. Different sensors can be safely used from different applications and can only influence each other indirectly. 
+Each sensor can offer one or more streams. Streams must be configured together and are usually dependent on each other. For example, RS400 Depth stream depends on Infrared streams, so they must be initiated together with a single resolution and FPS.
+All sensors provide streaming (not nesseserily of images) but each individual sensor can be extended to offer additional APIs. For example, most video devices can let the user configure region of interest for the auto-exposure algorithm. RS400 stereo module can offer **Advanced Mode** functionality, letting you control the various ASIC registers responsible for depth generation.  
+The user of sensor API provides a callback to be invoked whenever new data frame becomes avaialable. The callback runs immediately on the thread that received the frame from the OS providing best possible latency. Whenever possible librealsense will avoid any unnessesary copies of the frame data. 
+
+TODO: Sensor enumeration code snippet
+TODO: Sensor streaming code snippet
+TODO: Link to sensor class
+TODO: Advanced Mode code snippet
+
+## Processing Blocks
+
+* If you are not interested in the individual sensors of the device, you can configure the device for streaming using `config` class. 
+* To marshal frames from OS callback thread to the main application we provide safe `queue` implementation. 
+* If you wish to syncronize any set of different asynchronous streams with respect to hardware timestamps, we offer `syncer` class. 
+* If you need to align streams to a single viewport, we offer `TODO` class for that. You can also use your own calibration data to align otherwise uncalibrated devices. 
+* If you need to perfom processing on the frame while benefiting from librealsense memory pooling, we offer `processing` class for that. 
+Putting all these together lets you define your own custom processing pipeline, best suited for your application. 
+
+## High-Level Pipeline API
+
+To further simplify working with the camera, we introduce the concept of `middleware`. Each middleware knows the best configuration recommended for its use-case and knows what processing has to be done. You can use `pipeline` class to execute one or possibly many middlewares. The pipeline will make sure all syncronization and alignment requirements are met and will take care of threading and resource management. 
+
+TODO: Link to background removal
+TODO: Link to measurement tool?
+TODO: Code snippet with pipeline

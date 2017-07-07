@@ -6,7 +6,7 @@ Starting with the RS400 RealSense camera, Intel Perceptual Computing group is in
 * Software support for RealSense™ will be split between two coexisting lineups of releases: librealsense 1.x and librealsense 2+.
 * librealsense 1.x will continue to provide support for the following generations of RealSense devices: F200, R200 and ZR300.
 * librealsense 2+ will support the next generation of RealSense devices, starting with the RS400.
-![RS400 support](ds5_branches.png)
+![RS400 support](img/ds5_branches.png)
 
 ## API Changes
 
