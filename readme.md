@@ -34,7 +34,7 @@ Developer kits containing the necessary hardware to use this library are availab
 
 A comprehensive suite of sample and tutorial applications are provided in the `/examples` subdirectory. For new users, it is best to review the tutorial series of apps which are designed to progressively introduce API features.
 
-* [API Architecture](./doc/api_arch.md) - Overview of the high-level concepts ![ new ](https://img.shields.io/badge/*-new-yellow.svg?style=plastic)
+* [API Architecture](./doc/api_arch.md) - Overview of the high-level concepts
 * [C API](./include/librealsense/rs.h) - With doxygen-style API comments
 * To build documentation locally from sources, on Ubuntu run the following commands:
   * `sudo apt-get install doxygen`

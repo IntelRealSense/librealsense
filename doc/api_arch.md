@@ -1,14 +1,14 @@
 # API Architecture
 
 RealSense APIs is clustered into three categories, aimed at different usages: 
-1. [High-Level Computer-Vision Pipeline API](#High-Level-Pipeline-API) - If you are getting started with RealSense and want do build something that would just work, Pipeline API will configure the device with the best recommended settings and will manage hardware resources as well as threading on your behalf. Recommended for **Researchers** and **App Developers**. 
-2. [Processig Building-Blocks](#Processing-Blocks) - If you need to take control over threading, spatial and temporal syncronization and memory management, we provide a set of building blocks you can easily arrange into custom processing flows. Recommended for **Game Developers**.
-3. [Low-Level Sensor Access](#Low-Level-Sensor-API) - If you know what you are doing you can take direct control over the individual sensors composing the device to get the maximum out of the hardware. Recommended for **Framework and Tools Developers**, as well as Developers in emerging feilds like **VR/AR**. 
+1. [High-Level Computer-Vision Pipeline API](#high-level-pipeline-api) - If you are getting started with RealSense and want do build something that would just work, Pipeline API will configure the device with the best recommended settings and will manage hardware resources as well as threading on your behalf. Recommended for **Researchers** and **App Developers**. 
+2. [Processig Building-Blocks](#processing-blocks) - If you need to take control over threading, spatial and temporal syncronization and memory management, we provide a set of building blocks you can easily arrange into custom processing flows. Recommended for **Game Developers**.
+3. [Low-Level Sensor Access](#low-level-sensor-api) - If you know what you are doing you can take direct control over the individual sensors composing the device to get the maximum out of the hardware. Recommended for **Framework and Tools Developers**, as well as Developers in emerging feilds like **VR/AR**. 
 
 ## Low-Level Sensor API
 RealSense devices are composed from sensors. Some are commonplace, like a regular RGB camera, some are more exotic, like RS400 Stereo module or SR300 Structured-Light sensor:
 
-<img src="img/sensors.gif" width="400" height="200" />
+<div style="text-align:center"><img src="img/sensors.gif" width="400" height="200" /></div>
 
 Each sensor has its own power management and control. Standard sensors pass UVC / HID complience tests and can be used without custom software. Different sensors can be safely used from different applications and can only influence each other indirectly. 
 
