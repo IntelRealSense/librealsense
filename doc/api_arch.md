@@ -7,16 +7,21 @@ RealSense APIs is clustered into three categories, aimed at different usages:
 
 ## Low-Level Sensor API
 RealSense devices are composed from sensors. Some are commonplace, like a regular RGB camera, some are more exotic, like RS400 Stereo module or SR300 Structured-Light sensor:
-<img src="img/realsense.gif" width="400" height="200" />
+
+<img src="img/sensors.gif" width="400" height="200" />
+
 Each sensor has its own power management and control. Standard sensors pass UVC / HID complience tests and can be used without custom software. Different sensors can be safely used from different applications and can only influence each other indirectly. 
+
 Each sensor can offer one or more streams. Streams must be configured together and are usually dependent on each other. For example, RS400 Depth stream depends on Infrared streams, so they must be initiated together with a single resolution and FPS.
+
 All sensors provide streaming (not nesseserily of images) but each individual sensor can be extended to offer additional APIs. For example, most video devices can let the user configure region of interest for the auto-exposure algorithm. RS400 stereo module can offer **Advanced Mode** functionality, letting you control the various ASIC registers responsible for depth generation.  
+
 The user of sensor API provides a callback to be invoked whenever new data frame becomes avaialable. The callback runs immediately on the thread that received the frame from the OS providing best possible latency. Whenever possible librealsense will avoid any unnessesary copies of the frame data. 
 
-TODO: Sensor enumeration code snippet
-TODO: Sensor streaming code snippet
-TODO: Link to sensor class
-TODO: Advanced Mode code snippet
+* TODO: Sensor enumeration code snippet
+* TODO: Sensor streaming code snippet
+* TODO: Link to sensor class
+* TODO: Advanced Mode code snippet
 
 ## Processing Blocks
 
@@ -31,6 +36,6 @@ Putting all these together lets you define your own custom processing pipeline, 
 
 To further simplify working with the camera, we introduce the concept of `middleware`. Each middleware knows the best configuration recommended for its use-case and knows what processing has to be done. You can use `pipeline` class to execute one or possibly many middlewares. The pipeline will make sure all syncronization and alignment requirements are met and will take care of threading and resource management. 
 
-TODO: Link to background removal
-TODO: Link to measurement tool?
-TODO: Code snippet with pipeline
+* TODO: Link to background removal
+* TODO: Link to measurement tool?
+* TODO: Code snippet with pipeline
