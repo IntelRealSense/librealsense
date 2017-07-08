@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.9)
-project(realsense_file)
+project(realsense-file)
 
 SET(ROOT_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 
@@ -78,7 +78,7 @@ set(LZ4_DIR  ${ROOT_DIR}/3rd_party/lz4)
 set(LZ4_INCLUDE_PATH ${LZ4_DIR}/lib/)
 set(ROSBAG_DIR  3rd_party/rosbag) 
 #set(ROSBAG_INCLUDE_PATH ${ROSBAG_DIR}/)
-set(REALSENSE_FILE_DIR  realsense_file) 
+set(REALSENSE_FILE_DIR  realsense-file) 
 set(REALSENSE_FILE_INCLUDE_PATH ${REALSENSE_FILE_DIR}/include/)
 
 #find_package(Boost COMPONENTS system REQUIRED)

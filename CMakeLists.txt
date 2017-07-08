@@ -365,7 +365,7 @@ if(HWM_OVER_XU)
     add_definitions(-DHWM_OVER_XU)
 endif()
 
-add_subdirectory(realsense-file)
+add_subdirectory(third-party/realsense-file)
 
 option(BUILD_SHARED_LIBS "Build shared library" ON)
 if(BUILD_SHARED_LIBS)
@@ -376,7 +376,7 @@ endif()
 
 set_target_properties(realsense2 PROPERTIES VERSION ${REALSENSE_VERSION_STRING}
                                 SOVERSION ${REALSENSE_VERSION_MAJOR})
-target_link_libraries(realsense2 realsense_file ${LIBUSB1_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(realsense2 realsense-file ${LIBUSB1_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
 list(APPEND librealsense_PKG_LIBS ${CMAKE_THREAD_LIBS_INIT})
 
 add_definitions(-DELPP_THREAD_SAFE)
