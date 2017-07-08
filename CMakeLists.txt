@@ -106,6 +106,8 @@ set(REALSENSE_CPP
     src/linux/backend-hid.cpp
     src/backend.cpp
     src/verify.c
+	src/align.cpp
+	src/source.cpp
     src/ds5/ds5-options.cpp
     src/ds5/ds5-timestamp.cpp
     src/ds5/ds5-private.cpp
@@ -144,6 +146,7 @@ set(REALSENSE_HPP
 	src/core/options.h
 	src/core/info.h
 	src/core/extension.h
+	src/core/processing.h
 	
     src/archive.h
     src/concurrency.h
@@ -151,6 +154,7 @@ set(REALSENSE_HPP
     src/sensor.h
     src/sync.h
     src/sensor.h
+	src/align.h
     src/algo.h
     src/option.h
     src/metadata.h
@@ -158,6 +162,7 @@ set(REALSENSE_HPP
     src/error-handling.h
     src/hw-monitor.h
     src/image.h
+	src/source.h
     src/ivcam/ivcam-private.h
     src/types.h
     src/backend.h
@@ -220,7 +225,6 @@ if(WIN32)
         include/librealsense/rsutil2.h
         include/librealsense/rsutil2.hpp
         CMake/realsense.def
-		src/verify.c
         )
 
     source_group("Header Files\\Recorder" FILES
@@ -231,6 +235,7 @@ if(WIN32)
 
     source_group("Source Files\\API" FILES
         src/rs.cpp
+		src/verify.c
         )
 
     source_group("Source Files\\Recorder" FILES

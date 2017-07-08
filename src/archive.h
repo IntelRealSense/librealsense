@@ -204,13 +204,11 @@ namespace librealsense
         int pending_frames = 0;
         std::recursive_mutex mutex;
         std::shared_ptr<uvc::time_service> _time_service;
-        std::shared_ptr<uvc::uvc_device> device;
         std::shared_ptr<metadata_parser_map> _metadata_parsers = nullptr;
 
     public:
         explicit frame_archive(std::atomic<uint32_t>* max_frame_queue_size,
                                std::shared_ptr<uvc::time_service> ts,
-                               std::shared_ptr<uvc::uvc_device> dev,
                                std::shared_ptr<metadata_parser_map> parsers);
 
         callback_invocation_holder begin_callback()

@@ -451,5 +451,9 @@ namespace librealsense
         _dispatcher.start();
     }
 
-
+    void copy(void* dst, void const* src, size_t size)
+    {
+        auto from = reinterpret_cast<uint8_t const*>(src);
+        std::copy(from, from + size, reinterpret_cast<uint8_t*>(dst));
+    }
 }

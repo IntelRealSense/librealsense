@@ -54,7 +54,7 @@ namespace librealsense
         hid_sensor& _ep;
     };
 
-    class enable_motion_correction : public librealsense_option
+    class enable_motion_correction : public option_base
     {
     public:
         void set(float value) override;
@@ -79,7 +79,7 @@ namespace librealsense
         ds::imu_intrinsics _gyro;
     };
 
-    class enable_auto_exposure_option : public librealsense_option
+    class enable_auto_exposure_option : public option_base
     {
     public:
         void set(float value) override;
@@ -104,7 +104,7 @@ namespace librealsense
         std::shared_ptr<auto_exposure_mechanism>     _auto_exposure;
     };
 
-    class auto_exposure_mode_option : public librealsense_option
+    class auto_exposure_mode_option : public option_base
     {
     public:
         auto_exposure_mode_option(std::shared_ptr<auto_exposure_mechanism> auto_exposure,
@@ -131,7 +131,7 @@ namespace librealsense
         std::shared_ptr<auto_exposure_mechanism>    _auto_exposure;
     };
 
-    class auto_exposure_antiflicker_rate_option : public librealsense_option
+    class auto_exposure_antiflicker_rate_option : public option_base
     {
     public:
         auto_exposure_antiflicker_rate_option(std::shared_ptr<auto_exposure_mechanism> auto_exposure,

@@ -40,6 +40,8 @@ const int RS2_MAX_EVENT_TINE_OUT = 10;
 const double DBL_EPSILON = 2.2204460492503131e-016;  // smallest such that 1.0+DBL_EPSILON != 1.0
 #endif
 
+#pragma warning(disable: 4250)
+
 namespace librealsense
 {
 
@@ -53,11 +55,7 @@ namespace librealsense
         operator std::string() const { return ss.str(); }
     };
 
-    inline void copy(void* dst, void const* src, size_t size)
-    {
-        auto from = reinterpret_cast<uint8_t const*>(src);
-        std::copy(from, from + size, reinterpret_cast<uint8_t*>(dst));
-    }
+    void copy(void* dst, void const* src, size_t size);
 
     ///////////////////////
     // Logging mechanism //
@@ -678,6 +676,7 @@ namespace librealsense
     };
     typedef std::unique_ptr<rs2_log_callback, void(*)(rs2_log_callback*)> log_callback_ptr;
     typedef std::shared_ptr<rs2_frame_callback> frame_callback_ptr;
+    typedef std::shared_ptr<rs2_frame_processor_callback> frame_processor_callback;
     typedef std::unique_ptr<rs2_notifications_callback, void(*)(rs2_notifications_callback*)> notifications_callback_ptr;
     typedef std::unique_ptr<rs2_devices_changed_callback, void(*)(rs2_devices_changed_callback*)> devices_changed_callback_ptr;
 

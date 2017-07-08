@@ -5,11 +5,10 @@ using namespace librealsense;
 
 frame_archive::frame_archive(std::atomic<uint32_t>* in_max_frame_queue_size,
                              std::shared_ptr<uvc::time_service> ts,
-                             std::shared_ptr<uvc::uvc_device> dev,
                              std::shared_ptr<metadata_parser_map> parsers)
     : max_frame_queue_size(in_max_frame_queue_size),
       mutex(), recycle_frames(true), _time_service(ts),
-      device(dev), _metadata_parsers(parsers)
+      _metadata_parsers(parsers)
 {
     published_frames_count = 0;
 }

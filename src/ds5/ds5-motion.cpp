@@ -215,15 +215,15 @@ namespace librealsense
                                 std::make_shared<auto_exposure_mode_option>(auto_exposure,
                                                                             ae_state,
                                                                             option_range{0, 2, 1, 0},
-                                                                            std::map<float, std::string>{{0, "Static"},
-                                                                                                         {1, "Anti-Flicker"},
-                                                                                                         {2, "Hybrid"}}));
+                                                                            std::map<float, std::string>{{0.f, "Static"},
+                                                                                                         {1.f, "Anti-Flicker"},
+                                                                                                         {2.f, "Hybrid"}}));
         uvc_ep->register_option(RS2_OPTION_AUTO_EXPOSURE_ANTIFLICKER_RATE,
                                 std::make_shared<auto_exposure_antiflicker_rate_option>(auto_exposure,
                                                                                         ae_state,
                                                                                         option_range{50, 60, 10, 60},
-                                                                                        std::map<float, std::string>{{50, "50Hz"},
-                                                                                                                     {60, "60Hz"}}));
+                                                                                        std::map<float, std::string>{{50.f, "50Hz"},
+                                                                                                                     {60.f, "60Hz"}}));
 
 
         uvc_ep->register_option(RS2_OPTION_GAIN,
