@@ -23,7 +23,7 @@ add_executable(rs-enumerate-devices rs-enumerate-devices.cpp)
 target_link_libraries(rs-enumerate-devices ${DEPENDENCIES})
 include_directories(rs-enumerate-devices ../../third-party/tclap/include)
 set_target_properties (rs-enumerate-devices PROPERTIES
-    FOLDER Examples
+    FOLDER Tools
 )
 
 install(

@@ -61,7 +61,6 @@ endif()
 
 
 add_subdirectory(capture)
-add_subdirectory(enumerate-devices)
 add_subdirectory(headless)
 add_subdirectory(multicam)
 add_subdirectory(pointcloud)

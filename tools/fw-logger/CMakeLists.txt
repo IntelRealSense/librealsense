@@ -36,7 +36,7 @@ else()
 endif()
 include_directories(rs-fw-logger ../../third-party/tclap/include cpp-fw-logger-helpers)
 set_target_properties (rs-fw-logger PROPERTIES
-    FOLDER Examples
+    FOLDER Tools
 )
 
 install(
