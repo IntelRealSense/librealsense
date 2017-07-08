@@ -34,9 +34,69 @@ namespace librealsense
         std::atomic<uint32_t>* _ptr;
     };
 
-    std::shared_ptr<option> callback_source::get_published_size_option()
+    std::shared_ptr<option> frame_source::get_published_size_option()
     {
         return std::make_shared<frame_queue_size>(&_max_publish_list_size, option_range{ 0, 32, 1, 16 });
+    }
+
+    frame_source::frame_source(std::shared_ptr<uvc::time_service> ts)
+            : _callback(nullptr, [](rs2_frame_callback*) {}),
+              _max_publish_list_size(16),
+              _ts(ts)
+    {}
+
+    void frame_source::init(rs2_extension_type type, std::shared_ptr<metadata_parser_map> metadata_parsers)
+    {
+        std::lock_guard<std::mutex> lock(_callback_mutex);
+        _archive = make_archive(type, &_max_publish_list_size, _ts, metadata_parsers);
+    }
+
+    callback_invocation_holder frame_source::begin_callback() { return _archive->begin_callback(); }
+
+    void frame_source::reset()
+    {
+        std::lock_guard<std::mutex> lock(_callback_mutex);
+        _callback.reset();
+        _archive.reset();
+    }
+
+    rs2_frame* frame_source::alloc_frame(size_t size, frame_additional_data additional_data, bool requires_memory) const
+    {
+        return _archive->alloc_and_track(size, additional_data, requires_memory);
+    }
+
+    void frame_source::set_callback(frame_callback_ptr callback)
+    {
+        std::lock_guard<std::mutex> lock(_callback_mutex);
+        _callback = callback;
+    }
+
+    void frame_source::invoke_callback(frame_holder frame) const
+    {
+        if (frame)
+        {
+            auto callback = _archive->begin_callback();
+            try
+            {
+                frame->log_callback_start(_ts->get_time());
+                if (_callback)
+                {
+                    rs2_frame* ref = nullptr;
+                    std::swap(frame.frame, ref);
+                    _callback->on_frame(ref);
+                }
+            }
+            catch(...)
+            {
+                LOG_ERROR("Exception was thrown during user callback!");
+            }
+        }
+    }
+
+    void frame_source::flush() const
+    {
+        if (_archive.get())
+            _archive->flush();
     }
 }
 

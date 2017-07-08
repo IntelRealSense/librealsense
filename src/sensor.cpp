@@ -225,7 +225,7 @@ namespace librealsense
             throw wrong_api_call_sequence_exception("open(...) failed. UVC device is already opened!");
 
         auto on = std::unique_ptr<power>(new power(shared_from_this()));
-        _source.init(_metadata_parsers);
+        _source.init(RS2_EXTENSION_TYPE_VIDEO_FRAME, _metadata_parsers);
         auto mapping = resolve_requests(requests);
 
         auto timestamp_reader = _timestamp_reader.get();
@@ -286,21 +286,19 @@ namespace librealsense
                     frame_additional_data additional_data(timestamp,
                         frame_counter,
                         system_time,
-                        width,
-                        height,
-                        fps,
-                        width,
-                        bpp,
                         output.second,
                         output.first,
+                        fps,
                         static_cast<uint8_t>(f.metadata_size),
                         (const uint8_t*)f.metadata);
 
                     frame_holder frame = _source.alloc_frame(width * height * bpp / 8, additional_data, requires_processing);
                     if (frame.frame)
                     {
-                        frame->get()->set_timestamp_domain(timestamp_domain);
-                        dest.push_back(const_cast<byte*>(frame->get()->get_frame_data()));
+                        auto video = (video_frame*)frame->get();
+                        video->assign(width, height, width, bpp);
+                        video->set_timestamp_domain(timestamp_domain);
+                        dest.push_back(const_cast<byte*>(video->get_frame_data()));
                         refs.push_back(std::move(frame));
                     }
                     else
@@ -655,7 +653,7 @@ namespace librealsense
             throw wrong_api_call_sequence_exception("start_streaming(...) failed. Hid device was not opened!");
 
         _source.set_callback(callback);
-        _source.init(_metadata_parsers);
+        _source.init(RS2_EXTENSION_TYPE_MOTION_FRAME, _metadata_parsers);
 
         _hid_device->start_capture([this](const uvc::sensor_data& sensor_data)
         {
@@ -710,8 +708,7 @@ namespace librealsense
             else
                 additional_data.stream_type = _configured_profiles[sensor_name].stream;
 
-            additional_data.width = mode.profile.width;
-            additional_data.height = mode.profile.height;
+            additional_data.fps = mode.profile.fps;
             additional_data.timestamp = timestamp;
             additional_data.frame_number = frame_counter;
             additional_data.timestamp_domain = timestamp_reader->get_frame_timestamp_domain(mode, sensor_data.fo);

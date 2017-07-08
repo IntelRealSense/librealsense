@@ -32,9 +32,7 @@
 
 typedef unsigned char byte;
 
-const int RS2_USER_QUEUE_SIZE = 64;
-const int RS2_MAX_EVENT_QUEUE_SIZE = 500;
-const int RS2_MAX_EVENT_TINE_OUT = 10;
+const int RS2_USER_QUEUE_SIZE = 128;
 
 #ifndef DBL_EPSILON
 const double DBL_EPSILON = 2.2204460492503131e-016;  // smallest such that 1.0+DBL_EPSILON != 1.0
@@ -319,10 +317,10 @@ namespace librealsense
     RS2_ENUM_HELPERS(rs2_frame_metadata, FRAME_METADATA)
     RS2_ENUM_HELPERS(rs2_timestamp_domain, TIMESTAMP_DOMAIN)
     RS2_ENUM_HELPERS(rs2_visual_preset, VISUAL_PRESET)
+    RS2_ENUM_HELPERS(rs2_extension_type, EXTENSION_TYPE)
     RS2_ENUM_HELPERS(rs2_exception_type, EXCEPTION_TYPE)
     RS2_ENUM_HELPERS(rs2_log_severity, LOG_SEVERITY)
     RS2_ENUM_HELPERS(rs2_notification_category, NOTIFICATION_CATEGORY)
-    RS2_ENUM_HELPERS(rs2_extension_type, EXTENSION_TYPE)
     #undef RS2_ENUM_HELPERS
 
     ////////////////////////////////////////////

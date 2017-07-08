@@ -122,3 +122,4 @@ EXPORTS
 
     rs2_is_sensor
     rs2_is_device
+    rs2_is_frame

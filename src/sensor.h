@@ -100,7 +100,7 @@ namespace librealsense
         on_before_frame_callback _on_before_frame_callback;
         std::shared_ptr<metadata_parser_map> _metadata_parsers = nullptr;
 
-        callback_source _source;
+        frame_source _source;
 
     private:
         std::vector<native_pixel_format> _pixel_formats;
