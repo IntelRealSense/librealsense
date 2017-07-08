@@ -119,3 +119,6 @@ EXPORTS
     rs2_set_devices_changed_callback_cpp
     rs2_set_devices_changed_callback
     rs2_device_list_contains
+
+    rs2_is_sensor
+    rs2_is_device
