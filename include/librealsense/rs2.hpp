@@ -533,7 +533,7 @@ namespace rs2
             }
 
             rs2_error* e = nullptr;
-            rs2_process_frames(_block.get(), refs.data(), refs.size(), &e);
+            rs2_process_frames(_block.get(), refs.data(), (int)refs.size(), &e);
             error::handle(e);
         }
 
@@ -1065,7 +1065,7 @@ namespace rs2
             return roi;
         }
 
-        operator bool() const { return _sensor.get(); }
+        operator bool() const { return _sensor.get() != nullptr; }
     };
 
     class device

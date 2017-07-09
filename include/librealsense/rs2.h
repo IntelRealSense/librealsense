@@ -278,6 +278,7 @@ typedef struct rs2_processing_block rs2_processing_block;
 typedef struct rs2_frame_processor_callback rs2_frame_processor_callback;
 
 typedef void (*rs2_frame_callback_ptr)(rs2_frame*, void*);
+typedef void (*rs2_frame_processor_callback_ptr)(rs2_frame**, int, rs2_source*, void*);
 typedef void (*rs2_notification_callback_ptr)(rs2_notification*, void*);
 typedef void (*rs2_devices_changed_callback_ptr)(rs2_device_list*, rs2_device_list*, void*);
 typedef void (*rs2_log_callback_ptr)(rs2_log_severity min_severity, const char* message, void* user);

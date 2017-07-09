@@ -1,6 +1,8 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
+#include "../include/librealsense/rs2.hpp"
+
 #include "align.h"
 
 namespace librealsense
@@ -86,7 +88,7 @@ namespace librealsense
 
         int width = new_width;
         int height = new_height;
-        int bpp = new_bpp;
+        int bpp = new_bpp * 8;
         int stride = new_stride;
 
         if (bpp == 0)
@@ -97,11 +99,11 @@ namespace librealsense
         if (width == 0 && stride == 0)
         {
             width = vf->get_width();
-            stride = vf->get_stride();
+            stride = width * bpp / 8;
         }
         else if (width == 0)
         {
-            width = stride;
+            width = stride * 8 / bpp;
         }
         else if (stride == 0)
         {
@@ -118,6 +120,57 @@ namespace librealsense
         vf->assign(width, height, stride, bpp);
 
         return res;
+    }
+
+    histogram::histogram(std::shared_ptr<uvc::time_service> ts)
+        : processing_block(RS2_EXTENSION_TYPE_VIDEO_FRAME, ts)
+    {
+        auto on_frame = [](std::vector<rs2::frame> frames, const rs2::frame_source& source)
+        {
+            for (auto&& f : frames)
+            {
+                if (f.get_stream_type() == RS2_STREAM_DEPTH)
+                {
+                    const auto max_depth = 0x10000;
+
+                    static uint32_t histogram[max_depth];
+                    memset(histogram, 0, sizeof(histogram));
+
+                    auto vf = f.as<video_frame>();
+                    auto width = vf.get_width();
+                    auto height = vf.get_height();
+
+                    auto depth_image = vf.get_frame_data();
+
+                    for (auto i = 0; i < width*height; ++i) ++histogram[depth_image[i]];
+                    for (auto i = 2; i < max_depth; ++i) histogram[i] += histogram[i - 1]; // Build a cumulative histogram for the indices in [1,0xFFFF]
+                    for (auto i = 0; i < width*height; ++i)
+                    {
+                        auto d = depth_image[i];
+
+                        //if (d)
+                        //{
+                        //    auto f = histogram[d] / (float)histogram[0xFFFF]; // 0-255 based on histogram location
+
+                        //    auto c = map.get(f);
+                        //    rgb_image[i * 3 + 0] = c.x;
+                        //    rgb_image[i * 3 + 1] = c.y;
+                        //    rgb_image[i * 3 + 2] = c.z;
+                        //}
+                        //else
+                        //{
+                        //    rgb_image[i * 3 + 0] = 0;
+                        //    rgb_image[i * 3 + 1] = 0;
+                        //    rgb_image[i * 3 + 2] = 0;
+                        //}
+                    }
+                }
+            }
+        };
+
+        auto callback = new rs2::frame_processor_callback<decltype(on_frame)>(on_frame);
+
+        set_processing_callback(std::shared_ptr<rs2_frame_processor_callback>(callback));
     }
 }
 
