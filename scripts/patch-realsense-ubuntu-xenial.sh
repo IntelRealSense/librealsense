@@ -1,40 +1,32 @@
-#!/bin/bash -e
+#!/bin/bash
 
-# Get the required tools and headers to build the kernel
-sudo apt-get install linux-headers-generic build-essential git
+#Break execution on any error received
+set -e
 
 if [ $(ls /dev/video* | wc -l) -ne 0 ];
 then
 	echo -e "\e[32m"
-	read -p "First, remove all RealSense cameras attached. Hit any key when ready"
+	read -p "Remove all RealSense cameras attached. Hit any key when ready"
 	echo -e "\e[0m"
 fi
 
 #Include usability functions
 source ./scripts/patch-utils.sh
 
+# Get the required tools and headers to build the kernel
+sudo apt-get install linux-headers-generic build-essential git
+
 #Additional packages to build patch
 require_package libusb-1.0-0-dev
 require_package libssl-dev
 
 LINUX_BRANCH=$(uname -r)
-kernel_name="ubuntu-xenial"
 
-# Download the latest the linux kernel sources from ubuntu-xenial tree
-# If LINUX_BRANCH is 4.8.xx
-if [ "${LINUX_BRANCH:0:4}" == "4.8." ];
-then
+kernel_branch=$(choose_kernel_branch $LINUX_BRANCH)
+kernel_name="ubuntu-xenial-$kernel_branch"
 
-	[ ! -d ${kernel_name} ] && git clone git://kernel.ubuntu.com/ubuntu/ubuntu-xenial.git --depth 1 -b Ubuntu-hwe-4.8.0-58.63_16.04.1  --single-branch
-
-# If LINUX_BRANCH is 4.4.xx
-elif [ "${LINUX_BRANCH:0:4}" == "4.4." ];
-then
-	[ ! -d ${kernel_name} ] && git clone git://kernel.ubuntu.com/ubuntu/ubuntu-xenial.git --depth 1
-else
-	echo -e "\e[41mKernel Version: $LINUX_BRANCH is not officially supported.Please change it to 4.8.xx or 4.4.xx\e[0m"
-	exit 1
-fi
+# Get the linux kernel and change into source tree
+[ ! -d ${kernel_name} ] && git clone -b $kernel_branch git://kernel.ubuntu.com/ubuntu/ubuntu-xenial.git --depth 1 ./${kernel_name}
 cd ${kernel_name}
 
 # Verify that there are no trailing changes., warn the user to make corrective action if needed
@@ -42,9 +34,9 @@ if [ $(git status | grep 'modified:' | wc -l) -ne 0 ];
 then
 	echo -e "\e[36mThe kernel has modified files:\e[0m"
 	git status | grep 'modified:'
-	echo -e "\e[36mProceeding will reset all local kernel changes. Press 'n' within 10 seconds to abort the procedure"
+	echo -e "\e[36mProceeding will reset all local kernel changes. Press 'n' within 10 seconds to abort the operation"
 	set +e
-	read -t 10 -r -p "Do you want to proceed? [Y/n]" response
+	read -n 1 -t 10 -r -p "Do you want to proceed? [Y/n]" response
 	set -e
 	response=${response,,}    # tolower
 	if [[ $response =~ ^(n|N)$ ]]; 
@@ -53,19 +45,11 @@ then
 		exit 1
 	else
 		echo -e "\e[0m"
-		printf "Resetting local changes in %s folder\n " ${kernel_name}
-		git reset --hard
 		echo -e "\e[32mUpdate the folder content with the latest from mainline branch\e[0m"
-		if [ "${LINUX_BRANCH:0:4}" == "4.8." ];
-		then
-
-			git pull origin Ubuntu-hwe-4.8.0-58.63_16.04.1 --depth 1
-		fi
-		if [ "${LINUX_BRANCH:0:4}" == "4.4." ];
-		then
-			git pull origin master
-		fi		
-		
+		git fetch origin $kernel_branch --depth 1
+		printf "Resetting local changes in %s folder\n " ${kernel_name}
+		git reset --hard $kernel_branch
+		#git gc
 	fi
 fi
 
@@ -76,11 +60,9 @@ if [ $reset_driver -eq 1 ];
 then 
 	echo -e "\e[43mUser requested to rebuild and reinstall ubuntu-xenial stock drivers\e[0m"	
 else
-	#Patching kernel for RealSense devices
-	echo -e "\e[32mApplying F200 formats patch patch\e[0m"
-	patch -p1 < ../"$( dirname "$0" )"/0001-Add-video-formats-for-Intel-real-sense-F200-camera-new.patch
-	echo -e "\e[32mApplying ZR300 SR300 and LR200 formats patch\e[0m"
-	patch -p1 < ../"$( dirname "$0" )"/0002-LR200-ZR300-and-SR300-Pixel-Formats.patch
+	# Patching kernel for RealSense devices
+	echo -e "\e[32mApplying realsense-uvc patch\e[0m"
+	patch -p1 < ../"$( dirname "$0" )"/realsense-camera-formats_ubuntu-xenial-${kernel_branch}.patch
 fi
 
 # Copy configuration
@@ -89,16 +71,17 @@ sudo cp /usr/src/linux-headers-$(uname -r)/Module.symvers .
 
 # Basic build so we can build just the uvcvideo module
 #yes "" | make silentoldconfig modules_prepare
-make scripts silentoldconfig modules_prepare
+echo -e "\e[32mPrepare kernel modules configuration\e[0m"
+sudo make silentoldconfig modules_prepare
 
-# Build the uvc, accel and gyro modules
+# Build the uvc module
 KBASE=`pwd`
 cd drivers/media/usb/uvc
 sudo cp $KBASE/Module.symvers .
 echo -e "\e[32mCompiling uvc module\e[0m"
-sudo make -C $KBASE M=$KBASE/drivers/media/usb/uvc/ modules
+sudo make -j -C $KBASE M=$KBASE/drivers/media/usb/uvc/ modules
 
-# Copy the patched modules to a sane location
+# Copy the patched module to a sane location
 sudo cp $KBASE/drivers/media/usb/uvc/uvcvideo.ko ~/$LINUX_BRANCH-uvcvideo.ko
 
 echo -e "\e[32mPatched kernel module created successfully\n\e[0m"

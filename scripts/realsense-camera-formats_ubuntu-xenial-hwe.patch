@@ -1,0 +1,139 @@
+From 2fb29ac45b298b1dbea7fca174b6e8b7d22e4fb3 Mon Sep 17 00:00:00 2001
+From: Daniel Patrick Johnson <teknotus@teknot.us>
+From: Elad Zucker <eladz@hexsys-solutions.com>
+From: Evgeni Raikhel <eraikhel@intel.com>
+Date: Sun, 4 Jun 2017 17:30:59 +0300
+Subject: [PATCH] Add video formats for Intel® RealSense™ devices
+
+Signed-off-by: Evgeni Raikhel <evgeni.raikhel@intel.com>
+---
+ drivers/media/usb/uvc/uvc_driver.c   | 45 ++++++++++++++++++++++++++++++++++++
+ drivers/media/usb/uvc/uvcvideo.h     | 27 ++++++++++++++++++++++
+ drivers/media/v4l2-core/v4l2-ioctl.c |  2 ++
+ include/uapi/linux/videodev2.h       |  3 +++
+ 4 files changed, 81 insertions(+)
+
+diff --git a/drivers/media/usb/uvc/uvc_driver.c b/drivers/media/usb/uvc/uvc_driver.c
+index 04bf350..01646ac 100644
+--- a/drivers/media/usb/uvc/uvc_driver.c
++++ b/drivers/media/usb/uvc/uvc_driver.c
+@@ -188,6 +188,51 @@ static struct uvc_format_desc uvc_fmts[] = {
+ 		.guid		= UVC_GUID_FORMAT_GR16,
+ 		.fcc		= V4L2_PIX_FMT_SGRBG16,
+ 	},
++	{
++		.name		= "Raw data 8-bit (RAW8)",
++		.guid		= UVC_GUID_FORMAT_RAW8,
++		.fcc		= V4L2_PIX_FMT_GREY,
++	},
++	{
++		.name		= "Raw data 16-bit (RW16)",
++		.guid		= UVC_GUID_FORMAT_RW16,
++		.fcc		= V4L2_PIX_FMT_RW16,
++	},
++	{
++		.name		= "Depth 16-bit (INVZ)",
++		.guid		= UVC_GUID_FORMAT_INVZ,
++		.fcc		= V4L2_PIX_FMT_Z16,
++	},
++	{
++		.name		= "Depth:IR 16:8 24-bit (INZI)",
++		.guid		= UVC_GUID_FORMAT_INZI,
++		.fcc		= V4L2_PIX_FMT_INZI,
++	},
++	{
++		.name		= "Infrared 8-bit (INVI)",
++		.guid		= UVC_GUID_FORMAT_INVI,
++		.fcc		= V4L2_PIX_FMT_GREY,
++	},
++	{
++		.name		= "Luminosity data 8-bit (L8)",
++		.guid		= UVC_GUID_FORMAT_L8,
++		.fcc		= V4L2_PIX_FMT_GREY,
++	},
++	{
++		.name		= "Luminosity data 16-bit (L16)",
++		.guid		= UVC_GUID_FORMAT_L16,
++		.fcc		= V4L2_PIX_FMT_Y16,
++	},
++	{
++		.name		= "Depth data 16-bit (D16)",
++		.guid		= UVC_GUID_FORMAT_D16,
++		.fcc		= V4L2_PIX_FMT_Z16,
++	},
++	{
++		.name		= "16-bit Bayer BGBG/GRGR",
++		.guid		= UVC_GUID_FORMAT_BAYER16,
++		.fcc		= V4L2_PIX_FMT_SBGGR16,
++	},
+ };
+ 
+ /* ------------------------------------------------------------------------
+diff --git a/drivers/media/usb/uvc/uvcvideo.h b/drivers/media/usb/uvc/uvcvideo.h
+index 3d6cc62..46ded0b 100644
+--- a/drivers/media/usb/uvc/uvcvideo.h
++++ b/drivers/media/usb/uvc/uvcvideo.h
+@@ -143,6 +143,33 @@
+ #define UVC_GUID_FORMAT_RW10 \
+ 	{ 'R',  'W',  '1',  '0', 0x00, 0x00, 0x10, 0x00, \
+ 	 0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71}
++#define UVC_GUID_FORMAT_RAW8 \
++    { 'R',  'A',  'W',  '8', 0x66, 0x1a, 0x42, 0xa2, \
++     0x90, 0x65, 0xd0, 0x18, 0x14, 0xa8, 0xef, 0x8a}
++#define UVC_GUID_FORMAT_RW16 \
++    { 'R',  'W',  '1',  '6', 0x00, 0x00, 0x10, 0x00, \
++     0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71}
++#define UVC_GUID_FORMAT_INVZ \
++	{ 'I',  'N',  'V',  'Z', 0x90, 0x2d, 0x58, 0x4a, \
++	 0x92, 0x0b, 0x77, 0x3f, 0x1f, 0x2c, 0x55, 0x6b}
++#define UVC_GUID_FORMAT_INZI \
++	{ 'I',  'N',  'Z',  'I', 0x66, 0x1a, 0x42, 0xa2, \
++	 0x90, 0x65, 0xd0, 0x18, 0x14, 0xa8, 0xef, 0x8a}
++#define UVC_GUID_FORMAT_INVI \
++	{ 'I',  'N',  'V',  'I', 0xdb, 0x57, 0x49, 0x5e, \
++	 0x8e, 0x3f, 0xf4, 0x79, 0x53, 0x2b, 0x94, 0x6f}
++#define UVC_GUID_FORMAT_L8 \
++	{ '2', 0x00,  0x00,  0x00, 0x00, 0x00, 0x10, 0x00, \
++	 0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71}
++#define UVC_GUID_FORMAT_L16 \
++	{ 'Q', 0x00,  0x00,  0x00, 0x00, 0x00, 0x10, 0x00, \
++	 0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71}
++#define UVC_GUID_FORMAT_D16 \
++	{ 'P', 0x00,  0x00,  0x00, 0x00, 0x00, 0x10, 0x00, \
++	 0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71}
++#define UVC_GUID_FORMAT_BAYER16 \
++    { 'R',  'W',  '1',  '6', 0x66, 0x1a, 0x42, 0xa2, \
++     0x90, 0x65, 0xd0, 0x18, 0x14, 0xa8, 0xef, 0x8a}
+ 
+ /* ------------------------------------------------------------------------
+  * Driver specific constants.
+diff --git a/drivers/media/v4l2-core/v4l2-ioctl.c b/drivers/media/v4l2-core/v4l2-ioctl.c
+index 0c3f238..058d12a 100644
+--- a/drivers/media/v4l2-core/v4l2-ioctl.c
++++ b/drivers/media/v4l2-core/v4l2-ioctl.c
+@@ -1217,6 +1217,8 @@ static void v4l_fill_fmtdesc(struct v4l2_fmtdesc *fmt)
+ 	case V4L2_TCH_FMT_DELTA_TD08:	descr = "8-bit signed deltas"; break;
+ 	case V4L2_TCH_FMT_TU16:		descr = "16-bit unsigned touch data"; break;
+ 	case V4L2_TCH_FMT_TU08:		descr = "8-bit unsigned touch data"; break;
++	case V4L2_PIX_FMT_RW16:		descr = "16-bit Raw data"; break;
++	case V4L2_PIX_FMT_INZI:		descr = "32-bit IR:Depth 10:16"; break;
+ 
+ 	default:
+ 		/* Compressed formats */
+diff --git a/include/uapi/linux/videodev2.h b/include/uapi/linux/videodev2.h
+index 45184a2..64b9949 100644
+--- a/include/uapi/linux/videodev2.h
++++ b/include/uapi/linux/videodev2.h
+@@ -661,6 +661,9 @@ struct v4l2_pix_format {
+ #define V4L2_PIX_FMT_Y12I     v4l2_fourcc('Y', '1', '2', 'I') /* Greyscale 12-bit L/R interleaved */
+ #define V4L2_PIX_FMT_Z16      v4l2_fourcc('Z', '1', '6', ' ') /* Depth data 16-bit */
+ #define V4L2_PIX_FMT_MT21C    v4l2_fourcc('M', 'T', '2', '1') /* Mediatek compressed block mode  */
++#define V4L2_PIX_FMT_Y16	v4l2_fourcc('Y', '1', '6', ' ') /* Greyscale 16-bit */
++#define V4L2_PIX_FMT_RW16	v4l2_fourcc('R', 'W', '1', '6') /* Raw data 16-bit */
++#define V4L2_PIX_FMT_INZI	v4l2_fourcc('I', 'N', 'Z', 'I') /* 24 Depth/IR 16:8 */
+ 
+ /* SDR formats - used only for Software Defined Radio devices */
+ #define V4L2_SDR_FMT_CU8          v4l2_fourcc('C', 'U', '0', '8') /* IQ u8 */
+-- 
+2.7.4
+
