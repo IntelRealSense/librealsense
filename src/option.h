@@ -299,10 +299,10 @@ namespace librealsense
        std::string _desc;
    };
 
-   class librealsense_option : public option
+   class option_base : public option
    {
    public:
-       librealsense_option(const option_range& opt_range)
+       option_base(const option_range& opt_range)
            : _opt_range(opt_range)
        {}
 

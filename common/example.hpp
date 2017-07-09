@@ -499,11 +499,36 @@ namespace rs2
         std::vector<uint8_t> rgb;
         rs2::frame last;
 
-        void upload(const uint8_t * data, int width, int height, rs2_format format, int stride = 0, rs2_stream stream = RS2_STREAM_ANY)
+    public:
+        color_map* cm = &classic;
+        bool equalize = true;
+        float min_depth = 0.f;
+        float max_depth = 16.f;
+
+        texture_buffer() : texture() {}
+
+        GLuint get_gl_handle() const { return texture; }
+
+        void upload(const rs2::frame& frame)
         {
             // If the frame timestamp has changed since the last time show(...) was called, re-upload the texture
             if (!texture)
                 glGenTextures(1, &texture);
+
+            int width = 0;
+            int height = 0;
+            int stride = 0;
+            auto format = frame.get_format();
+            auto data = frame.get_data();
+
+            auto image = frame.as<video_frame>();
+
+            if (image)
+            {
+                width = image.get_width();
+                height = image.get_height();
+                stride = image.get_stride_in_bytes();
+            }
 
             glBindTexture(GL_TEXTURE_2D, texture);
             stride = stride == 0 ? width : stride;
@@ -576,17 +601,9 @@ namespace rs2
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
             glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
             glBindTexture(GL_TEXTURE_2D, 0);
+
+            frame.try_clone_ref(&last);
         }
-
-    public:
-        color_map* cm = &classic;
-        bool equalize = true;
-        float min_depth = 0.f;
-        float max_depth = 16.f;
-
-        texture_buffer() : texture() {}
-
-        GLuint get_gl_handle() const { return texture; }
 
         void draw_axis()
         {
@@ -792,6 +809,9 @@ namespace rs2
 
         bool try_pick(int x, int y, float* result)
         {
+            auto image = last.as<video_frame>();
+            if (!image) return false;
+
             auto format = last.get_format();
             switch (format)
             {
@@ -800,26 +820,19 @@ namespace rs2
             case RS2_FORMAT_DISPARITY16:
             {
                 auto ptr = (const uint16_t*)last.get_data();
-                *result = ptr[y * (last.get_stride_in_bytes() / sizeof(uint16_t)) + x];
+                *result = ptr[y * (image.get_stride_in_bytes() / sizeof(uint16_t)) + x];
                 return true;
             }
             case RS2_FORMAT_RAW8:
             case RS2_FORMAT_Y8:
             {
                 auto ptr = (const uint8_t*)last.get_data();
-                *result = ptr[y * last.get_stride_in_bytes() + x];
+                *result = ptr[y * image.get_stride_in_bytes() + x];
                 return true;
             }
             default:
                 return false;
             }
-        }
-
-        void upload(const rs2::frame& frame)
-        {
-            upload(static_cast<const uint8_t*>(frame.get_data()), frame.get_width(), frame.get_height(), frame.get_format(),
-                (frame.get_stride_in_bytes() * 8) / frame.get_bits_per_pixel(), frame.get_stream_type());
-            frame.try_clone_ref(&last);
         }
 
         void draw_texture(const rect& s, const rect& t) const

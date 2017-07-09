@@ -177,7 +177,7 @@ namespace librealsense
                                                        const ds::imu_intrinsics& accel,
                                                        const ds::imu_intrinsics& gyro,
                                                        const option_range& opt_range)
-        : librealsense_option(opt_range), _is_enabled(true), _accel(accel), _gyro(gyro)
+        : option_base(opt_range), _is_enabled(true), _accel(accel), _gyro(gyro)
     {
         mm_ep->register_on_before_frame_callback(
                     [this](rs2_stream stream, rs2_frame& f, callback_invocation_holder callback)
@@ -235,7 +235,7 @@ namespace librealsense
                                                              std::shared_ptr<auto_exposure_mechanism> auto_exposure,
                                                              std::shared_ptr<auto_exposure_state> auto_exposure_state,
                                                              const option_range& opt_range)
-        : librealsense_option(opt_range),
+        : option_base(opt_range),
           _auto_exposure_state(auto_exposure_state),
           _to_add_frames((_auto_exposure_state->get_enable_auto_exposure())),
           _auto_exposure(auto_exposure)
@@ -256,7 +256,7 @@ namespace librealsense
                                                          std::shared_ptr<auto_exposure_state> auto_exposure_state,
                                                          const option_range& opt_range,
                                                          const std::map<float, std::string>& description_per_value)
-        : librealsense_option(opt_range),
+        : option_base(opt_range),
           _auto_exposure_state(auto_exposure_state),
           _auto_exposure(auto_exposure),
           _description_per_value(description_per_value)
@@ -291,7 +291,7 @@ namespace librealsense
                                                                                  std::shared_ptr<auto_exposure_state> auto_exposure_state,
                                                                                  const option_range& opt_range,
                                                                                  const std::map<float, std::string>& description_per_value)
-        : librealsense_option(opt_range),
+        : option_base(opt_range),
           _auto_exposure_state(auto_exposure_state),
           _auto_exposure(auto_exposure),
           _description_per_value(description_per_value)

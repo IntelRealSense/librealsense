@@ -3,12 +3,12 @@
 
 #include <core/debug.h>
 #include "ros_device_serializer.h"
-#include "../realsense-file/include/rs/storage/realsense_file/file_types.h"
+//#include "../realsense-file/include/rs/storage/realsense_file/file_types.h"
 
 //TODO: Ziv, move to better location
 uint32_t DEVICE_INDEX = (std::numeric_limits<uint32_t>::max)(); //braces are for windows compilation
 std::string SENSOR_COUNT { "sensor_count" };
-rs::file_format::file_types::microseconds FIRST_FRAME_TIMESTAMP { 0 };
+//rs::file_format::file_types::microseconds FIRST_FRAME_TIMESTAMP { 0 };
 
 librealsense::ros_device_serializer::ros_device_serializer(std::string file):
     m_file(file)
@@ -76,7 +76,7 @@ void librealsense::ros_device_serializer::ros_writer::write_extension_snapshot(u
     if (Is<librealsense::debug_interface>(snapshot))
     {
         std::cout << "Remove me !!! debug_interface " << id << " : " << snapshot.get() << std::endl;
-        auto timestamp_ns = rs::file_format::file_types::nanoseconds(FIRST_FRAME_TIMESTAMP);
+        //auto timestamp_ns = rs::file_format::file_types::nanoseconds(FIRST_FRAME_TIMESTAMP);
         //write_property(snapshot, id, timestamp_ns);
     }
 }

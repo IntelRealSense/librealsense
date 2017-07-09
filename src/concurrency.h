@@ -7,6 +7,7 @@
 #include <condition_variable>
 #include <thread>
 #include <atomic>
+
 // Simplest implementation of a blocking concurrent queue for thread messaging
 template<class T>
 class single_consumer_queue

@@ -110,7 +110,7 @@ namespace librealsense
     class sr300_camera final : public device, public debug_interface
     {
     public:
-        class preset_option : public librealsense_option
+        class preset_option : public option_base
         {
         public:
             void set(float value) override
@@ -139,7 +139,7 @@ namespace librealsense
             }
 
             explicit preset_option(sr300_camera& owner, const option_range& opt_range)
-                : librealsense_option(opt_range),
+                : option_base(opt_range),
                   _owner(owner)
             {}
 

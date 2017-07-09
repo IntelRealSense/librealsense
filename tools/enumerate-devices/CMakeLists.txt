@@ -14,8 +14,6 @@ if(COMPILER_SUPPORTS_CXX11)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 elseif(COMPILER_SUPPORTS_CXX0X)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
-else()
-    message(STATUS "The compiler ${CMAKE_CXX_COMPILER} has no C++11 support. Please use a different C++ compiler.")
 endif()
 
 # enumerate-devices
@@ -23,7 +21,7 @@ add_executable(rs-enumerate-devices rs-enumerate-devices.cpp)
 target_link_libraries(rs-enumerate-devices ${DEPENDENCIES})
 include_directories(rs-enumerate-devices ../../third-party/tclap/include)
 set_target_properties (rs-enumerate-devices PROPERTIES
-    FOLDER Examples
+    FOLDER Tools
 )
 
 install(

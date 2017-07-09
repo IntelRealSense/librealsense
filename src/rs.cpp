@@ -723,21 +723,24 @@ HANDLE_EXCEPTIONS_AND_RETURN(nullptr, frame_ref)
 int rs2_get_frame_width(const rs2_frame * frame_ref, rs2_error ** error) try
 {
     VALIDATE_NOT_NULL(frame_ref);
-    return frame_ref->get()->get_width();
+    auto vf = VALIDATE_INTERFACE(frame_ref->get(), librealsense::video_frame);
+    return vf->get_width();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, frame_ref)
 
 int rs2_get_frame_height(const rs2_frame * frame_ref, rs2_error ** error) try
 {
     VALIDATE_NOT_NULL(frame_ref);
-    return frame_ref->get()->get_height();
+    auto vf = VALIDATE_INTERFACE(frame_ref->get(), librealsense::video_frame);
+    return vf->get_height();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, frame_ref)
 
 int rs2_get_frame_stride_in_bytes(const rs2_frame * frame_ref, rs2_error ** error) try
 {
     VALIDATE_NOT_NULL(frame_ref);
-    return frame_ref->get()->get_stride();
+    auto vf = VALIDATE_INTERFACE(frame_ref->get(), librealsense::video_frame);
+    return vf->get_stride();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, frame_ref)
 
@@ -745,7 +748,8 @@ HANDLE_EXCEPTIONS_AND_RETURN(0, frame_ref)
 int rs2_get_frame_bits_per_pixel(const rs2_frame * frame_ref, rs2_error ** error) try
 {
     VALIDATE_NOT_NULL(frame_ref);
-    return frame_ref->get()->get_bpp();
+    auto vf = VALIDATE_INTERFACE(frame_ref->get(), librealsense::video_frame);
+    return vf->get_bpp();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, frame_ref)
 
@@ -1117,7 +1121,19 @@ int rs2_is_device(const rs2_device* dev, rs2_extension_type extension_type, rs2_
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, dev, extension_type)
 
-//TODO: Ziv, int rs2_is_frame(const rs2_frame* frame, rs2_extension_type extension_type, rs2_error ** error)
+
+int rs2_is_frame(const rs2_frame* f, rs2_extension_type extension_type, rs2_error ** error) try
+{
+    VALIDATE_NOT_NULL(f);
+    VALIDATE_ENUM(extension_type);
+    switch (extension_type)
+    {
+        case RS2_EXTENSION_TYPE_VIDEO_FRAME:     return VALIDATE_INTERFACE_NO_THROW(f->get(), librealsense::video_frame);
+        default:
+            return 0;
+    }
+}
+HANDLE_EXCEPTIONS_AND_RETURN(0, f, extension_type)
 
 rs2_device_serializer * rs2_create_device_serializer(const char* file, rs2_error ** error) try
 {

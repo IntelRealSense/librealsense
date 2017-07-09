@@ -662,9 +662,9 @@ namespace rs2
     {
         last_frame = std::chrono::high_resolution_clock::now();
 
-        auto is_motion = ((f.get_format() == RS2_FORMAT_MOTION_RAW) || (f.get_format() == RS2_FORMAT_MOTION_XYZ32F));
-        auto width = (is_motion) ? 640.f : f.get_width();
-        auto height = (is_motion) ? 480.f : f.get_height();
+        auto image = f.as<video_frame>();
+        auto width = (image) ? image.get_width() : 640.f;
+        auto height = (image) ? image.get_height() : 480.f;
 
         size = { static_cast<float>(width), static_cast<float>(height)};
         stream = f.get_stream_type();

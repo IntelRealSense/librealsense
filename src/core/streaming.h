@@ -4,7 +4,8 @@
 
 #include "options.h"
 #include "types.h" //stream_profile, notifications_callback_ptr, frame_callback_ptr,
-#include "extension.h"
+#include "extension.h" //recordable<T> - TODO: remove after moving info_interface from this file
+//#include "extension.h"
 //#include "rs2.h" //rs2_stream
 #include <functional>
 
