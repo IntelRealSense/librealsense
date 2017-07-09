@@ -44,11 +44,11 @@
 #include "exceptions.h"
 #include "structures.h"
 
-#include "../../../cpp_common/include/ros/header.h"
-//#include "../../../rostime/include/ros/time.h"
-#include "../../../roscpp_traits/include/ros/message_traits.h"
-#include "../../../roscpp_traits/include/ros/message_event.h"
-#include "../../../roscpp_serialization/include/ros/serialization.h"
+#include "ros/header.h"
+#include "ros/time.h"
+#include "ros/message_traits.h"
+#include "ros/message_event.h"
+#include "ros/serialization.h"
 
 //#include "ros/subscription_callback_helper.h"
 

@@ -85,7 +85,7 @@ else()
 endif()
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/CMake)
-set(ROOT_DIR ${CMAKE_CURRENT_SOURCE_DIR})
+
 set(REALSENSE_CPP
     src/archive.cpp
     src/context.cpp
@@ -191,6 +191,38 @@ set(REALSENSE_HPP
     third-party/sqlite/sqlite3.h
     src/mock/sql.h
     src/mock/recorder.h
+
+    src/ros/data_objects/pose.h
+    src/ros/data_objects/vendor_data.h
+    src/ros/data_objects/image.h
+    src/ros/data_objects/motion_stream_info.h
+    src/ros/data_objects/property.h
+    src/ros/data_objects/log.h
+    src/ros/data_objects/motion_sample.h
+    src/ros/data_objects/time_sample.h
+    src/ros/data_objects/compressed_image.h
+    src/ros/data_objects/occupancy_map.h
+    src/ros/data_objects/stream_data.h
+    src/ros/data_objects/image_stream_info.h
+    src/ros/stream_playback.h
+    src/ros/conversions.cpp
+    src/ros/conversions.h
+    src/ros/stream_recorder.h
+    src/ros/file_format_version.h
+    src/ros/file_types.h
+    src/ros/status.h
+        src/ros/stream_playback.h
+    src/ros/ros_writer.h
+    src/ros/stream_recorder.cpp
+        src/ros/stream_playback.cpp
+    src/ros/topic.h
+)
+# Add additional include directories to allow file to include rosbag headers
+include(${CMAKE_CURRENT_LIST_DIR}/third-party/realsense-file/3rd_party/config.cmake)
+include_directories(
+        ${ROSBAG_HEADER_DIRS}
+        ${BOOST_INCLUDE_PATH}
+        ${LZ4_INCLUDE_PATH}
 )
 
 if(WIN32)
@@ -206,7 +238,7 @@ if(WIN32)
         )
 
     source_group("Source Files\\Logging" FILES
-        third_party/easyloggingpp/src/easylogging++.cc
+        third-party/easyloggingpp/src/easylogging++.cc
         src/log.cpp
         )
 

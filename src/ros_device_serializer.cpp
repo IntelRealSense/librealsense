@@ -3,14 +3,14 @@
 
 #include <core/debug.h>
 #include "ros_device_serializer.h"
-//#include "../realsense-file/include/rs/storage/realsense_file/file_types.h"
+#include "ros/file_types.h"
 
 //TODO: Ziv, move to better location
 uint32_t DEVICE_INDEX = (std::numeric_limits<uint32_t>::max)(); //braces are for windows compilation
 std::string SENSOR_COUNT { "sensor_count" };
-//rs::file_format::file_types::microseconds FIRST_FRAME_TIMESTAMP { 0 };
+rs::file_format::file_types::microseconds FIRST_FRAME_TIMESTAMP { 0 };
 
-librealsense::ros_device_serializer::ros_device_serializer(std::string file):
+librealsense::ros_device_serializer::ros_device_serializer(const std::string& file):
     m_file(file)
 {
     //TODO: Ziv, have stream_writer throw this error
@@ -18,6 +18,9 @@ librealsense::ros_device_serializer::ros_device_serializer(std::string file):
     {
         throw std::invalid_argument(std::string("File ") + file + " is invalid or cannot be opened");
     }
+    m_writer = std::make_shared<ros_writer>(file);
+    m_reader = std::make_shared<ros_reader>(file);
+
 }
 
 //////////////////////////////////////////////////////////
@@ -36,6 +39,11 @@ std::shared_ptr<librealsense::device_serializer::reader> librealsense::ros_devic
 //////////////////////////////////////////////////////////
 ///      ros_device_serializer::ros_writer             ///
 //////////////////////////////////////////////////////////
+librealsense::ros_device_serializer::ros_writer::ros_writer(const std::string& file) :
+    m_stream_recorder(file)
+{
+
+}
 
 void librealsense::ros_device_serializer::ros_writer::write_device_description(const librealsense::device_snapshot& device_description)
 {
@@ -82,9 +90,16 @@ void librealsense::ros_device_serializer::ros_writer::write_extension_snapshot(u
 }
 
 
+
 //////////////////////////////////////////////////////////
 ///      ros_device_serializer::ros_reader             ///
 //////////////////////////////////////////////////////////
+
+librealsense::ros_device_serializer::ros_reader::ros_reader(const std::string& file) :
+    m_stream_playback(file)
+{
+
+}
 
 librealsense::device_snapshot librealsense::ros_device_serializer::ros_reader::query_device_description()
 {
