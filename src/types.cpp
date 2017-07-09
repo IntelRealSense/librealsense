@@ -279,6 +279,7 @@ namespace librealsense
                     CASE(UNKNOWN)
                     CASE(VIDEO)
                     CASE(ROI)
+                    CASE(ADVANCED_MODE)
                     default: assert(!is_valid(value)); return unknown;
                 }
         #undef CASE

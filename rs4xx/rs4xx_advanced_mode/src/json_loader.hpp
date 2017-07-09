@@ -12,7 +12,7 @@
 #include <map>
 #include <string>
 
-#include "third_party/json.hpp"
+#include "../third-party/json.hpp"
 #include "rs4xx_advanced_mode.hpp"
 
 using json = nlohmann::json;

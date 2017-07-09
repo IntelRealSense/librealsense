@@ -144,6 +144,7 @@ namespace librealsense
         return depth_ep;
     }
 
+
     ds5_device::ds5_device(const uvc::backend& backend,
                            const std::vector<uvc::uvc_device_info>& dev_info,
                            const std::vector<uvc::usb_device_info>& hwm_device,

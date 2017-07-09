@@ -35,8 +35,9 @@ int main()
     STDepthControlGroup depth_control;
 
     printf("Reading deepSeaMedianThreshold from Depth Control...\n");
-    int result = get_depth_control(dev, &depth_control);
-    if (result)
+    const int mode = 0;
+    int error = rs2_get_depth_control(dev, &depth_control, mode);
+    if (error)
     {
         printf("Advanced mode get failed!\n");
         return EXIT_FAILURE;
@@ -45,8 +46,8 @@ int main()
     printf("deepSeaMedianThreshold = %d\n", depth_control.deepSeaMedianThreshold);
 
     printf("Writing Depth Control back to the device...\n");
-    set_depth_control(dev, &depth_control);
-    if (result)
+    rs2_set_depth_control(dev, &depth_control, 0);
+    if (error)
     {
         printf("Advanced mode set failed!\n");
         return EXIT_FAILURE;

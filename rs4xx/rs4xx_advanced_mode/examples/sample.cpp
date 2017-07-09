@@ -16,12 +16,12 @@
 #include <thread>
 #include <iostream>
 #include <memory>
-
 #include "tclap/CmdLine.h"
 
 #include "../src/json_loader.hpp"
 
 using namespace TCLAP;
+using namespace rs4xx;
 
 struct to_string
 {
@@ -95,12 +95,6 @@ bool device_connected(const rs2::context& ctx)
     return list.size() > 0;
 }
 
-std::shared_ptr<rs2::device> get_device(rs2::context& ctx)
-{
-    auto list = ctx.query_devices();
-    return std::make_shared<rs2::device>(list[0]);
-}
-
 template<class T, class S>
 void checkbox(const char* id, T* val, S T::* f, bool& to_set)
 {
@@ -144,12 +138,12 @@ void slider_float(const char* id, T* val, S T::* feild, bool& to_set)
 }
 
 template<class T>
-void write_advanced(const rs4xx::advanced_mode& advanced, const T& t, bool to_set, std::string& error_message)
+void write_advanced(advanced_mode* advanced, const T& t, bool to_set, std::string& error_message)
 {
     if (to_set)
     {
         try {
-            advanced.set(t.vals[0]);
+            //advanced->set(t.vals[0]);
         }
         catch (const rs2::error & e)
         {
@@ -187,16 +181,34 @@ rs2_format parse(const std::string& format)
     throw std::runtime_error("Stream format \"" + format + "\" not found!");
 }
 
-float parse_option(const rs2::device& dev, rs2_option opt, const std::string& val)
+float parse_option(rs2::sensor* sensor, rs2_option opt, const std::string& val)
 {
-    auto range = dev.get_option_range(opt);
+    auto range = sensor->get_option_range(opt);
     if (range.step == 0) return range.min;
     for (auto i = range.min; i <= range.max; i += range.step)
     {
-        if (dev.get_option_value_description(opt, i) == val)
+        if (sensor->get_option_value_description(opt, i) == val)
             return i;
     }
     return range.min;
+}
+
+void create_advanced_device(rs2::context& ctx, std::shared_ptr<advanced_mode>& advanced,
+                   std::shared_ptr<rs2::sensor>& sensor)
+{
+    for (auto dev : ctx.query_devices())
+    {
+        if (dev.is<advanced_mode>())
+        {
+            advanced = std::make_shared<advanced_mode>(dev);
+            auto sensors = advanced->query_sensors();
+            sensor = std::make_shared<rs2::sensor>(sensors.front());
+            break;
+        }
+    }
+
+    if (advanced == nullptr)
+        throw std::runtime_error("Advanced Mode device not found!");
 }
 
 int main(int argc, char** argv) try
@@ -253,44 +265,12 @@ int main(int argc, char** argv) try
         if (!no_device_popup(window, clear_color)) return EXIT_SUCCESS;
     }
 
-    auto dev = get_device(ctx);
 
+    std::shared_ptr<advanced_mode> advanced;
+    std::shared_ptr<rs2::sensor> sensor;
+    camera_state state;
     single_consumer_queue<rs2::frame> queue;
     texture_buffer tex_buffer[RS2_STREAM_COUNT];
-
-    auto send_receive = [&dev](const std::vector<uint8_t>& input)
-    {
-        return dev->debug().send_and_receive_raw_data(input);
-    };
-
-    rs4xx::advanced_mode advanced(send_receive);
-
-    camera_state state;
-    // Work-around, HDAD feild deos not contain MIN/MAX:
-    state.hdad.vals[1].ignoreSAD = 0;       state.hdad.vals[2].ignoreSAD = 1;
-    state.hdad.vals[1].lambdaAD = 0;        state.hdad.vals[2].lambdaAD = 1000000;
-    state.hdad.vals[1].lambdaCensus = 0;    state.hdad.vals[2].lambdaCensus = 1000000;
-
-    state.ae.vals[1].meanIntensitySetPoint = 0; state.ae.vals[2].meanIntensitySetPoint = 1000000;
-
-    state.profile.vals[1].width = 100; state.profile.vals[2].width = 10000;
-    state.profile.vals[1].height = 100; state.profile.vals[2].height = 10000;
-    state.profile.vals[1].fps = 10; state.profile.vals[2].fps = 180;
-
-    auto exposure_range = dev->get_option_range(RS2_OPTION_EXPOSURE);
-    state.exposure.vals[1].exposure = exposure_range.min; state.exposure.vals[2].exposure = exposure_range.max;
-    auto ae_range = dev->get_option_range(RS2_OPTION_ENABLE_AUTO_EXPOSURE);
-    state.exposure.vals[1].auto_exposure = ae_range.min; state.exposure.vals[2].auto_exposure = ae_range.max;
-
-    auto laser_range = dev->get_option_range(RS2_OPTION_LASER_POWER);
-    state.laser.vals[1].laser_power = laser_range.min; state.laser.vals[2].laser_power = laser_range.max;
-    auto laser_mode_range = dev->get_option_range(RS2_OPTION_EMITTER_ENABLED);
-    state.laser.vals[1].laser_state = laser_mode_range.min; state.laser.vals[2].laser_state = laser_mode_range.max;
-
-    state.roi.vals[1].roi_top = 0; state.roi.vals[2].roi_top = 0xFFFF;
-    state.roi.vals[1].roi_left = 0; state.roi.vals[2].roi_left = 0xFFFF;
-    state.roi.vals[1].roi_right = 0; state.roi.vals[2].roi_right = 0xFFFF;
-    state.roi.vals[1].roi_bottom = 0; state.roi.vals[2].roi_bottom = 0xFFFF;
 
     auto callback = [&](rs2::frame f)
     {
@@ -299,19 +279,49 @@ int main(int argc, char** argv) try
 
     try
     {
-        if (!advanced.is_enabled())
+
+
+        while (!device_connected(ctx))
+        {
+            if (!no_device_popup(window, clear_color)) return EXIT_SUCCESS;
+        }
+
+        create_advanced_device(ctx, advanced, sensor);
+
+        if (!advanced->is_enabled())
         {
             // Go to advanced mode and re-create the device
-            advanced.go_to_advanced_mode();
+            advanced->go_to_advanced_mode();
             std::this_thread::sleep_for(std::chrono::seconds(1));
-
-            while (!device_connected(ctx))
-            {
-                if (!no_device_popup(window, clear_color)) return EXIT_SUCCESS;
-            }
-
-            dev = get_device(ctx);
+            create_advanced_device(ctx, advanced, sensor);
         }
+
+        // Work-around, HDAD feild deos not contain MIN/MAX:
+        state.hdad.vals[1].ignoreSAD = 0;       state.hdad.vals[2].ignoreSAD = 1;
+        state.hdad.vals[1].lambdaAD = 0;        state.hdad.vals[2].lambdaAD = 1000000;
+        state.hdad.vals[1].lambdaCensus = 0;    state.hdad.vals[2].lambdaCensus = 1000000;
+
+        state.ae.vals[1].meanIntensitySetPoint = 0; state.ae.vals[2].meanIntensitySetPoint = 1000000;
+
+        state.profile.vals[1].width = 100; state.profile.vals[2].width = 10000;
+        state.profile.vals[1].height = 100; state.profile.vals[2].height = 10000;
+        state.profile.vals[1].fps = 10; state.profile.vals[2].fps = 180;
+
+        auto exposure_range = sensor->get_option_range(RS2_OPTION_EXPOSURE);
+        state.exposure.vals[1].exposure = exposure_range.min; state.exposure.vals[2].exposure = exposure_range.max;
+        auto ae_range = sensor->get_option_range(RS2_OPTION_ENABLE_AUTO_EXPOSURE);
+        state.exposure.vals[1].auto_exposure = ae_range.min; state.exposure.vals[2].auto_exposure = ae_range.max;
+
+        auto laser_range = sensor->get_option_range(RS2_OPTION_LASER_POWER);
+        state.laser.vals[1].laser_power = laser_range.min; state.laser.vals[2].laser_power = laser_range.max;
+        auto laser_mode_range = sensor->get_option_range(RS2_OPTION_EMITTER_ENABLED);
+        state.laser.vals[1].laser_state = laser_mode_range.min; state.laser.vals[2].laser_state = laser_mode_range.max;
+
+        state.roi.vals[1].roi_top = 0; state.roi.vals[2].roi_top = 0xFFFF;
+        state.roi.vals[1].roi_left = 0; state.roi.vals[2].roi_left = 0xFFFF;
+        state.roi.vals[1].roi_right = 0; state.roi.vals[2].roi_right = 0xFFFF;
+        state.roi.vals[1].roi_bottom = 0; state.roi.vals[2].roi_bottom = 0xFFFF;
+
     }
     catch (const rs2::error & e)
     {
@@ -333,30 +343,29 @@ int main(int argc, char** argv) try
         {
             if (restart)
             {
-
                 for (auto k = 0; k < 3; k++)
                 {
                     // Get Current Algo Control Values
-                    advanced.get(state.depth_controls.vals + k, k);
-                    advanced.get(state.rsm.vals + k, k);
-                    advanced.get(state.rsvc.vals + k, k);
-                    advanced.get(state.color_control.vals + k, k);
-                    advanced.get(state.rctc.vals + k, k);
-                    advanced.get(state.sctc.vals + k, k);
-                    advanced.get(state.spc.vals + k, k);
-                    advanced.get(state.cc.vals + k, k);
-                    advanced.get(state.depth_table.vals + k, k);
-                    advanced.get(state.census.vals + k, k);
+                    state.depth_controls.vals[k] = advanced->get_depth_control(k);
+                    state.rsm.vals[k] = advanced->get_rsm(k);
+                    state.rsvc.vals[k] = advanced->get_rau_support_vector_control(k);
+                    state.color_control.vals[k] = advanced->get_color_control(k);
+                    state.rctc.vals[k] = advanced->get_rau_thresholds_control(k);
+                    state.sctc.vals[k] = advanced->get_slo_color_thresholds_control(k);
+                    state.spc.vals[k] = advanced->get_slo_penalty_control(k);
+                    state.cc.vals[k] = advanced->get_color_correction(k);
+                    state.depth_table.vals[k] = advanced->get_depth_table(k);
+                    state.census.vals[k] = advanced->get_census(k);
                 }
-                advanced.get(state.hdad.vals);
-                advanced.get(state.ae.vals);
+                state.hdad.vals[0] = advanced->get_hdad();
+                state.ae.vals[0] =  advanced->get_ae_control();
 
                 state.reset();
 
                 if (started)
                 {
-                    dev->stop();
-                    dev->close();
+                    sensor->stop();
+                    sensor->close();
                     started = false;
                 }
 
@@ -378,7 +387,7 @@ int main(int argc, char** argv) try
                         if (state.depth_controls.update)
                             try
                             {
-                                advanced.set(*state.depth_controls.vals);
+                                //advanced->set(*state.depth_controls.vals);
                             }
                             catch (const std::exception& e)
                             {
@@ -388,7 +397,7 @@ int main(int argc, char** argv) try
                         if (state.rsm.update)
                             try
                             {
-                                advanced.set(*state.rsm.vals);
+                                //advanced->set(*state.rsm.vals);
                             }
                             catch (const std::exception& e)
                             {
@@ -398,7 +407,7 @@ int main(int argc, char** argv) try
                         if (state.rsvc.update)
                             try
                             {
-                                advanced.set(*state.rsvc.vals);
+                                //advanced->set(*state.rsvc.vals);
                             }
                             catch (const std::exception& e)
                             {
@@ -408,7 +417,7 @@ int main(int argc, char** argv) try
                         if (state.color_control.update)
                             try
                             {
-                                advanced.set(*state.color_control.vals);
+                                //advanced->set(*state.color_control.vals);
                             }
                             catch (const std::exception& e)
                             {
@@ -418,7 +427,7 @@ int main(int argc, char** argv) try
                         if (state.rctc.update)
                             try
                             {
-                                advanced.set(*state.rctc.vals);
+                                //advanced->set(*state.rctc.vals);
                             }
                             catch (const std::exception& e)
                             {
@@ -428,7 +437,7 @@ int main(int argc, char** argv) try
                         if (state.sctc.update)
                             try
                             {
-                                advanced.set(*state.sctc.vals);
+                                //advanced->set(*state.sctc.vals);
                             }
                             catch (const std::exception& e)
                             {
@@ -438,7 +447,7 @@ int main(int argc, char** argv) try
                         if (state.spc.update)
                             try
                             {
-                                advanced.set(*state.spc.vals);
+                                //advanced->set(*state.spc.vals);
                             }
                             catch (const std::exception& e)
                             {
@@ -448,7 +457,7 @@ int main(int argc, char** argv) try
                         if (state.hdad.update)
                             try
                             {
-                                advanced.set(*state.hdad.vals);
+                                //advanced->set(*state.hdad.vals);
                             }
                             catch (const std::exception& e)
                             {
@@ -458,7 +467,7 @@ int main(int argc, char** argv) try
                         if (state.cc.update)
                             try
                             {
-                                advanced.set(*state.cc.vals);
+                                //advanced->set(*state.cc.vals);
                             }
                             catch (const std::exception& e)
                             {
@@ -468,7 +477,7 @@ int main(int argc, char** argv) try
                         if (state.depth_table.update)
                             try
                             {
-                                advanced.set(*state.depth_table.vals);
+                                //advanced->set(*state.depth_table.vals);
                             }
                             catch (const std::exception& e)
                             {
@@ -478,7 +487,7 @@ int main(int argc, char** argv) try
                        if (state.ae.update)
                             try
                             {
-                                advanced.set(*state.ae.vals);
+                                //advanced->set(*state.ae.vals);
                             }
                             catch (const std::exception& e)
                             {
@@ -488,7 +497,7 @@ int main(int argc, char** argv) try
                         if (state.census.update)
                             try
                             {
-                                advanced.set(*state.census.vals);
+                                //advanced->set(*state.census.vals);
                             }
                             catch (const std::exception& e)
                             {
@@ -512,11 +521,11 @@ int main(int argc, char** argv) try
                         if (state.laser.update)
                             try
                             {
-                                auto val = parse_option(*dev, RS2_OPTION_EMITTER_ENABLED, state.laser.vals[0].laser_state);
-                                dev->set_option(RS2_OPTION_EMITTER_ENABLED, val);
+                                auto val = parse_option(sensor.get(), RS2_OPTION_EMITTER_ENABLED, state.laser.vals[0].laser_state);
+                                sensor->set_option(RS2_OPTION_EMITTER_ENABLED, val);
                                 if (state.laser.vals[0].laser_state == "On")
                                 {
-                                    dev->set_option(RS2_OPTION_LASER_POWER, state.laser.vals[0].laser_power);
+                                    sensor->set_option(RS2_OPTION_LASER_POWER, state.laser.vals[0].laser_power);
                                 }
                             }
                             catch (const std::exception& e)
@@ -529,8 +538,8 @@ int main(int argc, char** argv) try
                             {
                                 auto val = (state.exposure.vals[0].auto_exposure == "true") ? 1.f : 0.f;
 
-                                dev->set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, val);
-                                dev->set_option(RS2_OPTION_EXPOSURE, state.exposure.vals[0].exposure);
+                                sensor->set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, val);
+                                sensor->set_option(RS2_OPTION_EXPOSURE, state.exposure.vals[0].exposure);
                             }
                             catch (const std::exception& e)
                             {
@@ -547,8 +556,7 @@ int main(int argc, char** argv) try
                                     state.roi.vals[0].roi_right,
                                     state.roi.vals[0].roi_bottom
                                 };
-
-                                dev->set_region_of_interest(roi);
+                            sensor->as<rs2::roi_sensor>().set_region_of_interest(roi);
                             }
                             catch (const std::exception& e)
                             {
@@ -567,8 +575,8 @@ int main(int argc, char** argv) try
                 if (ir_format != RS2_FORMAT_COUNT)
                     profiles.push_back({ RS2_STREAM_INFRARED, width, height, fps, ir_format });
 
-                dev->open(profiles);
-                dev->start(callback);
+                sensor->open(profiles);
+                sensor->start(callback);
 
                 started = true;
 
@@ -640,20 +648,20 @@ int main(int argc, char** argv) try
 
             auto to_set = false;
 
-            slider_int("DS Second Peak Threshold", state.depth_controls.vals, &rs4xx::STDepthControlGroup::deepSeaSecondPeakThreshold, to_set);
-            slider_int("DS Neighbor Threshold", state.depth_controls.vals, &rs4xx::STDepthControlGroup::deepSeaNeighborThreshold, to_set);
-            slider_int("DS Median Threshold", state.depth_controls.vals, &rs4xx::STDepthControlGroup::deepSeaMedianThreshold, to_set);
-            slider_int("Estimate Median Increment", state.depth_controls.vals, &rs4xx::STDepthControlGroup::plusIncrement, to_set);
-            slider_int("Estimate Median Decrement", state.depth_controls.vals, &rs4xx::STDepthControlGroup::minusDecrement, to_set);
-            slider_int("Score Minimum Threshold", state.depth_controls.vals, &rs4xx::STDepthControlGroup::scoreThreshA, to_set);
-            slider_int("Score Maximum Threshold", state.depth_controls.vals, &rs4xx::STDepthControlGroup::scoreThreshB, to_set);
-            slider_int("DS LR Threshold", state.depth_controls.vals, &rs4xx::STDepthControlGroup::lrAgreeThreshold, to_set);
-            slider_int("Texture Count Threshold", state.depth_controls.vals, &rs4xx::STDepthControlGroup::textureCountThreshold, to_set);
-            slider_int("Texture Difference Threshold", state.depth_controls.vals, &rs4xx::STDepthControlGroup::textureDifferenceThreshold, to_set);
+            slider_int("DS Second Peak Threshold", state.depth_controls.vals, &STDepthControlGroup::deepSeaSecondPeakThreshold, to_set);
+            slider_int("DS Neighbor Threshold", state.depth_controls.vals, &STDepthControlGroup::deepSeaNeighborThreshold, to_set);
+            slider_int("DS Median Threshold", state.depth_controls.vals, &STDepthControlGroup::deepSeaMedianThreshold, to_set);
+            slider_int("Estimate Median Increment", state.depth_controls.vals, &STDepthControlGroup::plusIncrement, to_set);
+            slider_int("Estimate Median Decrement", state.depth_controls.vals, &STDepthControlGroup::minusDecrement, to_set);
+            slider_int("Score Minimum Threshold", state.depth_controls.vals, &STDepthControlGroup::scoreThreshA, to_set);
+            slider_int("Score Maximum Threshold", state.depth_controls.vals, &STDepthControlGroup::scoreThreshB, to_set);
+            slider_int("DS LR Threshold", state.depth_controls.vals, &STDepthControlGroup::lrAgreeThreshold, to_set);
+            slider_int("Texture Count Threshold", state.depth_controls.vals, &STDepthControlGroup::textureCountThreshold, to_set);
+            slider_int("Texture Difference Threshold", state.depth_controls.vals, &STDepthControlGroup::textureDifferenceThreshold, to_set);
 
             ImGui::PopItemWidth();
 
-            write_advanced(advanced, state.depth_controls, to_set, error_message);
+            write_advanced(advanced.get(), state.depth_controls, to_set, error_message);
         }
 
         if (ImGui::CollapsingHeader("Rsm", nullptr, true, false))
@@ -662,14 +670,14 @@ int main(int argc, char** argv) try
 
             auto to_set = false;
 
-            checkbox("RSM Bypass", state.rsm.vals, &rs4xx::STRsm::rsmBypass, to_set);
-            slider_float("Disparity Difference Threshold", state.rsm.vals, &rs4xx::STRsm::diffThresh, to_set);
-            slider_float("SLO RAU Difference Threshold", state.rsm.vals, &rs4xx::STRsm::sloRauDiffThresh, to_set);
-            slider_int("Remove Threshold", state.rsm.vals, &rs4xx::STRsm::removeThresh, to_set);
+            checkbox("RSM Bypass", state.rsm.vals, &STRsm::rsmBypass, to_set);
+            slider_float("Disparity Difference Threshold", state.rsm.vals, &STRsm::diffThresh, to_set);
+            slider_float("SLO RAU Difference Threshold", state.rsm.vals, &STRsm::sloRauDiffThresh, to_set);
+            slider_int("Remove Threshold", state.rsm.vals, &STRsm::removeThresh, to_set);
 
             ImGui::PopItemWidth();
 
-            write_advanced(advanced, state.rsm, to_set, error_message);
+            write_advanced(advanced.get(), state.rsm, to_set, error_message);
         }
 
 
@@ -679,18 +687,18 @@ int main(int argc, char** argv) try
 
             auto to_set = false;
 
-            slider_int("Min West", state.rsvc.vals, &rs4xx::STRauSupportVectorControl::minWest, to_set);
-            slider_int("Min East", state.rsvc.vals, &rs4xx::STRauSupportVectorControl::minEast, to_set);
-            slider_int("Min WE Sum", state.rsvc.vals, &rs4xx::STRauSupportVectorControl::minWEsum, to_set);
-            slider_int("Min North", state.rsvc.vals, &rs4xx::STRauSupportVectorControl::minNorth, to_set);
-            slider_int("Min South", state.rsvc.vals, &rs4xx::STRauSupportVectorControl::minSouth, to_set);
-            slider_int("Min NS Sum", state.rsvc.vals, &rs4xx::STRauSupportVectorControl::minNSsum, to_set);
-            slider_int("U Shrink", state.rsvc.vals, &rs4xx::STRauSupportVectorControl::uShrink, to_set);
-            slider_int("V Shrink", state.rsvc.vals, &rs4xx::STRauSupportVectorControl::vShrink, to_set);
+            slider_int("Min West", state.rsvc.vals, &STRauSupportVectorControl::minWest, to_set);
+            slider_int("Min East", state.rsvc.vals, &STRauSupportVectorControl::minEast, to_set);
+            slider_int("Min WE Sum", state.rsvc.vals, &STRauSupportVectorControl::minWEsum, to_set);
+            slider_int("Min North", state.rsvc.vals, &STRauSupportVectorControl::minNorth, to_set);
+            slider_int("Min South", state.rsvc.vals, &STRauSupportVectorControl::minSouth, to_set);
+            slider_int("Min NS Sum", state.rsvc.vals, &STRauSupportVectorControl::minNSsum, to_set);
+            slider_int("U Shrink", state.rsvc.vals, &STRauSupportVectorControl::uShrink, to_set);
+            slider_int("V Shrink", state.rsvc.vals, &STRauSupportVectorControl::vShrink, to_set);
 
             ImGui::PopItemWidth();
 
-            write_advanced(advanced, state.rsvc, to_set, error_message);
+            write_advanced(advanced.get(), state.rsvc, to_set, error_message);
         }
 
         if (ImGui::CollapsingHeader("Color Control", nullptr, true, false))
@@ -699,15 +707,15 @@ int main(int argc, char** argv) try
 
             auto to_set = false;
 
-            checkbox("Disable SAD Color", state.color_control.vals, &rs4xx::STColorControl::disableSADColor, to_set);
-            checkbox("Disable RAU Color", state.color_control.vals, &rs4xx::STColorControl::disableRAUColor, to_set);
-            checkbox("Disable SLO Right Color", state.color_control.vals, &rs4xx::STColorControl::disableSLORightColor, to_set);
-            checkbox("Disable SLO Left Color", state.color_control.vals, &rs4xx::STColorControl::disableSLOLeftColor, to_set);
-            checkbox("Disable SAD Normalize", state.color_control.vals, &rs4xx::STColorControl::disableSADNormalize, to_set);
+            checkbox("Disable SAD Color", state.color_control.vals, &STColorControl::disableSADColor, to_set);
+            checkbox("Disable RAU Color", state.color_control.vals, &STColorControl::disableRAUColor, to_set);
+            checkbox("Disable SLO Right Color", state.color_control.vals, &STColorControl::disableSLORightColor, to_set);
+            checkbox("Disable SLO Left Color", state.color_control.vals, &STColorControl::disableSLOLeftColor, to_set);
+            checkbox("Disable SAD Normalize", state.color_control.vals, &STColorControl::disableSADNormalize, to_set);
 
             ImGui::PopItemWidth();
 
-            write_advanced(advanced, state.color_control, to_set, error_message);
+            write_advanced(advanced.get(), state.color_control, to_set, error_message);
         }
 
         if (ImGui::CollapsingHeader("Rau Color Thresholds Control", nullptr, true, false))
@@ -716,13 +724,13 @@ int main(int argc, char** argv) try
 
             auto to_set = false;
 
-            slider_int("Diff Threshold Red", state.rctc.vals, &rs4xx::STRauColorThresholdsControl::rauDiffThresholdRed, to_set);
-            slider_int("Diff Threshold Green", state.rctc.vals, &rs4xx::STRauColorThresholdsControl::rauDiffThresholdGreen, to_set);
-            slider_int("Diff Threshold Blue", state.rctc.vals, &rs4xx::STRauColorThresholdsControl::rauDiffThresholdBlue, to_set);
+            slider_int("Diff Threshold Red", state.rctc.vals, &STRauColorThresholdsControl::rauDiffThresholdRed, to_set);
+            slider_int("Diff Threshold Green", state.rctc.vals, &STRauColorThresholdsControl::rauDiffThresholdGreen, to_set);
+            slider_int("Diff Threshold Blue", state.rctc.vals, &STRauColorThresholdsControl::rauDiffThresholdBlue, to_set);
 
             ImGui::PopItemWidth();
 
-            write_advanced(advanced, state.rctc, to_set, error_message);
+            write_advanced(advanced.get(), state.rctc, to_set, error_message);
         }
 
         if (ImGui::CollapsingHeader("SLO Color Thresholds Control", nullptr, true, false))
@@ -731,13 +739,13 @@ int main(int argc, char** argv) try
 
             auto to_set = false;
 
-            slider_int("Diff Threshold Red", state.sctc.vals, &rs4xx::STSloColorThresholdsControl::diffThresholdRed, to_set);
-            slider_int("Diff Threshold Green", state.sctc.vals, &rs4xx::STSloColorThresholdsControl::diffThresholdGreen, to_set);
-            slider_int("Diff Threshold Blue", state.sctc.vals, &rs4xx::STSloColorThresholdsControl::diffThresholdBlue, to_set);
+            slider_int("Diff Threshold Red", state.sctc.vals, &STSloColorThresholdsControl::diffThresholdRed, to_set);
+            slider_int("Diff Threshold Green", state.sctc.vals, &STSloColorThresholdsControl::diffThresholdGreen, to_set);
+            slider_int("Diff Threshold Blue", state.sctc.vals, &STSloColorThresholdsControl::diffThresholdBlue, to_set);
 
             ImGui::PopItemWidth();
 
-            write_advanced(advanced, state.sctc, to_set, error_message);
+            write_advanced(advanced.get(), state.sctc, to_set, error_message);
         }
 
         if (ImGui::CollapsingHeader("SLO Penalty Control", nullptr, true, false))
@@ -746,16 +754,16 @@ int main(int argc, char** argv) try
 
             auto to_set = false;
 
-            slider_int("K1 Penalty", state.spc.vals, &rs4xx::STSloPenaltyControl::sloK1Penalty, to_set);
-            slider_int("K2 Penalty", state.spc.vals, &rs4xx::STSloPenaltyControl::sloK2Penalty, to_set);
-            slider_int("K1 Penalty Mod1", state.spc.vals, &rs4xx::STSloPenaltyControl::sloK1PenaltyMod1, to_set);
-            slider_int("K1 Penalty Mod2", state.spc.vals, &rs4xx::STSloPenaltyControl::sloK1PenaltyMod2, to_set);
-            slider_int("K2 Penalty Mod1", state.spc.vals, &rs4xx::STSloPenaltyControl::sloK2PenaltyMod1, to_set);
-            slider_int("K2 Penalty Mod2", state.spc.vals, &rs4xx::STSloPenaltyControl::sloK2PenaltyMod2, to_set);
+            slider_int("K1 Penalty", state.spc.vals, &STSloPenaltyControl::sloK1Penalty, to_set);
+            slider_int("K2 Penalty", state.spc.vals, &STSloPenaltyControl::sloK2Penalty, to_set);
+            slider_int("K1 Penalty Mod1", state.spc.vals, &STSloPenaltyControl::sloK1PenaltyMod1, to_set);
+            slider_int("K1 Penalty Mod2", state.spc.vals, &STSloPenaltyControl::sloK1PenaltyMod2, to_set);
+            slider_int("K2 Penalty Mod1", state.spc.vals, &STSloPenaltyControl::sloK2PenaltyMod1, to_set);
+            slider_int("K2 Penalty Mod2", state.spc.vals, &STSloPenaltyControl::sloK2PenaltyMod2, to_set);
 
             ImGui::PopItemWidth();
 
-            write_advanced(advanced, state.spc, to_set, error_message);
+            write_advanced(advanced.get(), state.spc, to_set, error_message);
         }
 
         if (ImGui::CollapsingHeader("HDAD", nullptr, true, false))
@@ -764,15 +772,15 @@ int main(int argc, char** argv) try
 
             auto to_set = false;
 
-            checkbox("Ignore SAD", state.hdad.vals, &rs4xx::STHdad::ignoreSAD, to_set);
+            checkbox("Ignore SAD", state.hdad.vals, &STHdad::ignoreSAD, to_set);
 
             // TODO: Not clear from documents what is the valid range:
-            slider_float("AD Lambda", state.hdad.vals, &rs4xx::STHdad::lambdaAD, to_set);
-            slider_float("Census Lambda", state.hdad.vals, &rs4xx::STHdad::lambdaCensus, to_set);
+            slider_float("AD Lambda", state.hdad.vals, &STHdad::lambdaAD, to_set);
+            slider_float("Census Lambda", state.hdad.vals, &STHdad::lambdaCensus, to_set);
 
             ImGui::PopItemWidth();
 
-            write_advanced(advanced, state.hdad, to_set, error_message);
+            write_advanced(advanced.get(), state.hdad, to_set, error_message);
         }
 
         if (ImGui::CollapsingHeader("Color Correction", nullptr, true, false))
@@ -781,22 +789,22 @@ int main(int argc, char** argv) try
 
             auto to_set = false;
 
-            slider_float("Color Correction 1", state.cc.vals, &rs4xx::STColorCorrection::colorCorrection1,  to_set);
-            slider_float("Color Correction 2", state.cc.vals, &rs4xx::STColorCorrection::colorCorrection2,  to_set);
-            slider_float("Color Correction 3", state.cc.vals, &rs4xx::STColorCorrection::colorCorrection3,  to_set);
-            slider_float("Color Correction 4", state.cc.vals, &rs4xx::STColorCorrection::colorCorrection4,  to_set);
-            slider_float("Color Correction 5", state.cc.vals, &rs4xx::STColorCorrection::colorCorrection5,  to_set);
-            slider_float("Color Correction 6", state.cc.vals, &rs4xx::STColorCorrection::colorCorrection6,  to_set);
-            slider_float("Color Correction 7", state.cc.vals, &rs4xx::STColorCorrection::colorCorrection7,  to_set);
-            slider_float("Color Correction 8", state.cc.vals, &rs4xx::STColorCorrection::colorCorrection8,  to_set);
-            slider_float("Color Correction 9", state.cc.vals, &rs4xx::STColorCorrection::colorCorrection9,  to_set);
-            slider_float("Color Correction 10",state.cc.vals, &rs4xx::STColorCorrection::colorCorrection10, to_set);
-            slider_float("Color Correction 11",state.cc.vals, &rs4xx::STColorCorrection::colorCorrection11, to_set);
-            slider_float("Color Correction 12",state.cc.vals, &rs4xx::STColorCorrection::colorCorrection12, to_set);
+            slider_float("Color Correction 1", state.cc.vals, &STColorCorrection::colorCorrection1,  to_set);
+            slider_float("Color Correction 2", state.cc.vals, &STColorCorrection::colorCorrection2,  to_set);
+            slider_float("Color Correction 3", state.cc.vals, &STColorCorrection::colorCorrection3,  to_set);
+            slider_float("Color Correction 4", state.cc.vals, &STColorCorrection::colorCorrection4,  to_set);
+            slider_float("Color Correction 5", state.cc.vals, &STColorCorrection::colorCorrection5,  to_set);
+            slider_float("Color Correction 6", state.cc.vals, &STColorCorrection::colorCorrection6,  to_set);
+            slider_float("Color Correction 7", state.cc.vals, &STColorCorrection::colorCorrection7,  to_set);
+            slider_float("Color Correction 8", state.cc.vals, &STColorCorrection::colorCorrection8,  to_set);
+            slider_float("Color Correction 9", state.cc.vals, &STColorCorrection::colorCorrection9,  to_set);
+            slider_float("Color Correction 10",state.cc.vals, &STColorCorrection::colorCorrection10, to_set);
+            slider_float("Color Correction 11",state.cc.vals, &STColorCorrection::colorCorrection11, to_set);
+            slider_float("Color Correction 12",state.cc.vals, &STColorCorrection::colorCorrection12, to_set);
 
             ImGui::PopItemWidth();
 
-            write_advanced(advanced, state.cc, to_set, error_message);
+            write_advanced(advanced.get(), state.cc, to_set, error_message);
         }
 
         if (ImGui::CollapsingHeader("Depth Table", nullptr, true, false))
@@ -805,15 +813,15 @@ int main(int argc, char** argv) try
 
             auto to_set = false;
 
-            slider_float("Depth Units", state.depth_table.vals, &rs4xx::STDepthTableControl::depthUnits, to_set);
-            slider_float("Depth Clamp Min", state.depth_table.vals, &rs4xx::STDepthTableControl::depthClampMin, to_set);
-            slider_float("Depth Clamp Max", state.depth_table.vals, &rs4xx::STDepthTableControl::depthClampMax, to_set);
-            slider_float("Disparity Mode", state.depth_table.vals, &rs4xx::STDepthTableControl::disparityMode, to_set);
-            slider_float("Disparity Shift", state.depth_table.vals, &rs4xx::STDepthTableControl::disparityShift, to_set);
+            slider_float("Depth Units", state.depth_table.vals, &STDepthTableControl::depthUnits, to_set);
+            slider_float("Depth Clamp Min", state.depth_table.vals, &STDepthTableControl::depthClampMin, to_set);
+            slider_float("Depth Clamp Max", state.depth_table.vals, &STDepthTableControl::depthClampMax, to_set);
+            slider_float("Disparity Mode", state.depth_table.vals, &STDepthTableControl::disparityMode, to_set);
+            slider_float("Disparity Shift", state.depth_table.vals, &STDepthTableControl::disparityShift, to_set);
 
             ImGui::PopItemWidth();
 
-            write_advanced(advanced, state.depth_controls, to_set, error_message);
+            write_advanced(advanced.get(), state.depth_controls, to_set, error_message);
         }
 
         if (ImGui::CollapsingHeader("AE Control", nullptr, true, false))
@@ -822,11 +830,11 @@ int main(int argc, char** argv) try
 
             auto to_set = false;
 
-            slider_float("Mean Intensity Set Point", state.ae.vals, &rs4xx::STAEControl::meanIntensitySetPoint, to_set);
+            slider_float("Mean Intensity Set Point", state.ae.vals, &STAEControl::meanIntensitySetPoint, to_set);
 
             ImGui::PopItemWidth();
 
-            write_advanced(advanced, state.ae, to_set, error_message);
+            write_advanced(advanced.get(), state.ae, to_set, error_message);
         }
 
         if (ImGui::CollapsingHeader("Census Enable Reg", nullptr, true, false))
@@ -835,12 +843,12 @@ int main(int argc, char** argv) try
 
             auto to_set = false;
 
-            slider_float("u-Diameter", state.census.vals, &rs4xx::STCensusRadius::uDiameter, to_set);
-            slider_float("v-Diameter", state.census.vals, &rs4xx::STCensusRadius::vDiameter, to_set);
+            slider_float("u-Diameter", state.census.vals, &STCensusRadius::uDiameter, to_set);
+            slider_float("v-Diameter", state.census.vals, &STCensusRadius::vDiameter, to_set);
 
             ImGui::PopItemWidth();
 
-            write_advanced(advanced, state.census, to_set, error_message);
+            write_advanced(advanced.get(), state.census, to_set, error_message);
         }
 
         if (error_message != "")

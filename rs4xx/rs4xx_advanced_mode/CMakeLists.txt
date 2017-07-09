@@ -59,7 +59,7 @@ set(RS4XX_SOURCES
 set(RS4XX_INCLUDES
     include/rs4xx_advanced_mode.h
     include/advanced_mode_command.h
-    #include/rs4xx_advanced_mode.hpp
+    include/rs4xx_advanced_mode.hpp
     )
 
 if(WIN32)
@@ -86,22 +86,32 @@ set_target_properties (rs4xx-advanced-mode PROPERTIES
     FOLDER "RS4XX Extras"
 )
 
-add_executable(rs4xx-advanced-mode-sample examples/c-sample.c src/rs4xx_advanced_mode.cpp)
-target_link_libraries(rs4xx-advanced-mode-sample ${DEPENDENCIES})
-include_directories(rs4xx-advanced-mode-sample third_party ../../examples/third_party/tclap/include)
+add_executable(rs4xx-advanced-mode-sample-cpp examples/sample.cpp src/rs4xx_advanced_mode.cpp include/rs4xx_advanced_mode.hpp ../../third-party/json.hpp src/json_loader.hpp
+    ../../third-party/imgui/imgui.cpp ../../third-party/imgui/imgui_draw.cpp ../../third-party/imgui/imgui_impl_glfw.cpp examples/sample.hpp include/advanced_mode_command.h)
+target_link_libraries(rs4xx-advanced-mode-sample-cpp ${DEPENDENCIES})
+include_directories(rs4xx-advanced-mode-sample-cpp ../../third-party/imgui ../../third-party ../../third-party/tclap/include)
+
+add_executable(rs4xx-advanced-mode-sample-c examples/c-sample.c src/rs4xx_advanced_mode.cpp)
+target_link_libraries(rs4xx-advanced-mode-sample-c ${DEPENDENCIES})
+include_directories(rs4xx-advanced-mode-sample-c third_party ../../examples/third_party/tclap/include ../../examples/third_party/imgui)
 
 file(GLOB JSONS
   "./presets/*.json"
 )
 file(COPY ${JSONS} DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/presets)
 
-set_target_properties (rs4xx-advanced-mode-sample PROPERTIES
+set_target_properties (rs4xx-advanced-mode-sample-c PROPERTIES
+    FOLDER "RS4XX Extras"
+)
+
+set_target_properties (rs4xx-advanced-mode-sample-cpp PROPERTIES
     FOLDER "RS4XX Extras"
 )
 
 install(
     TARGETS
-    rs4xx-advanced-mode-sample
+    rs4xx-advanced-mode-sample-c
+    rs4xx-advanced-mode-sample-cpp
 
     RUNTIME DESTINATION
     ${CMAKE_INSTALL_PREFIX}/bin

@@ -137,13 +137,14 @@ set(REALSENSE_HPP
     include/librealsense/rsutil2.hpp
 
     src/core/streaming.h
-	src/core/debug.h
-	src/core/roi.h
-	src/core/motion.h
-	src/core/video.h
-	src/core/options.h
-	src/core/info.h
-	
+    src/core/debug.h
+    src/core/advanced_mode.h
+    src/core/roi.h
+    src/core/motion.h
+    src/core/video.h
+    src/core/options.h
+    src/core/info.h
+
     src/archive.h
     src/concurrency.h
     src/context.h

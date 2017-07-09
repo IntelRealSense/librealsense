@@ -24,7 +24,7 @@
 namespace librealsense
 {
     // PSR
-    class rs400_device : public ds5_rolling_shutter
+    class rs400_device : public ds5_rolling_shutter, public ds5_advanced_mode_base
     {
     public:
         rs400_device(const uvc::backend& backend,
@@ -32,12 +32,13 @@ namespace librealsense
             const std::vector<uvc::usb_device_info>& hwm_device,
             const std::vector<uvc::hid_device_info>& hid_info)
             : ds5_device(backend, dev_info, hwm_device, hid_info),
-              ds5_rolling_shutter(backend, dev_info, hwm_device, hid_info) {}
+              ds5_rolling_shutter(backend, dev_info, hwm_device, hid_info),
+              ds5_advanced_mode_base(ds5_device::_hw_monitor) {}
     };
 
     // ASR
     class rs410_device : public ds5_rolling_shutter,
-                         public ds5_active
+                         public ds5_active, public ds5_advanced_mode_base
     {
     public:
         rs410_device(const uvc::backend& backend,
@@ -46,13 +47,15 @@ namespace librealsense
             const std::vector<uvc::hid_device_info>& hid_info)
             : ds5_device(backend, dev_info, hwm_device, hid_info),
               ds5_rolling_shutter(backend, dev_info, hwm_device, hid_info),
-              ds5_active(backend, dev_info, hwm_device, hid_info) {}
+              ds5_active(backend, dev_info, hwm_device, hid_info),
+              ds5_advanced_mode_base(ds5_device::_hw_monitor) {}
     };
 
     // ASRC
     class rs415_device : public ds5_rolling_shutter,
                          public ds5_active,
-                         public ds5_color
+                         public ds5_color,
+                         public ds5_advanced_mode_base
     {
     public:
         rs415_device(const uvc::backend& backend,
@@ -62,11 +65,12 @@ namespace librealsense
             : ds5_device(backend, dev_info, hwm_device, hid_info),
               ds5_rolling_shutter(backend, dev_info, hwm_device, hid_info),
               ds5_active(backend, dev_info, hwm_device, hid_info),
-              ds5_color(backend, dev_info, hwm_device, hid_info) {}
+              ds5_color(backend, dev_info, hwm_device, hid_info),
+              ds5_advanced_mode_base(ds5_device::_hw_monitor) {}
     };
 
     // PWGT
-    class rs420_mm_device : public ds5_motion
+    class rs420_mm_device : public ds5_motion, public ds5_advanced_mode_base
     {
     public:
         rs420_mm_device(const uvc::backend& backend,
@@ -74,11 +78,12 @@ namespace librealsense
             const std::vector<uvc::usb_device_info>& hwm_device,
             const std::vector<uvc::hid_device_info>& hid_info)
             : ds5_device(backend, dev_info, hwm_device, hid_info),
-              ds5_motion(backend, dev_info, hwm_device, hid_info) {}
+              ds5_motion(backend, dev_info, hwm_device, hid_info),
+              ds5_advanced_mode_base(ds5_device::_hw_monitor) {}
     };
 
     // AWG
-    class rs430_device : public ds5_active
+    class rs430_device : public ds5_active, public ds5_advanced_mode_base
     {
     public:
         rs430_device(const uvc::backend& backend,
@@ -86,12 +91,14 @@ namespace librealsense
             const std::vector<uvc::usb_device_info>& hwm_device,
             const std::vector<uvc::hid_device_info>& hid_info)
             : ds5_device(backend, dev_info, hwm_device, hid_info),
-              ds5_active(backend, dev_info, hwm_device, hid_info) {}
+              ds5_active(backend, dev_info, hwm_device, hid_info),
+              ds5_advanced_mode_base(ds5_device::_hw_monitor) {}
     };
 
     // AWGT
     class rs430_mm_device : public ds5_active,
-                            public ds5_motion
+                            public ds5_motion,
+                            public ds5_advanced_mode_base
     {
     public:
         rs430_mm_device(const uvc::backend& backend,
@@ -100,12 +107,14 @@ namespace librealsense
             const std::vector<uvc::hid_device_info>& hid_info)
             : ds5_device(backend, dev_info, hwm_device, hid_info),
               ds5_active(backend, dev_info, hwm_device, hid_info),
-              ds5_motion(backend, dev_info, hwm_device, hid_info) {}
+              ds5_motion(backend, dev_info, hwm_device, hid_info),
+              ds5_advanced_mode_base(ds5_device::_hw_monitor) {}
     };
 
     // AWGC
     class rs435_device : public ds5_active,
-                         public ds5_color
+                         public ds5_color,
+                         public ds5_advanced_mode_base
     {
     public:
         rs435_device(const uvc::backend& backend,
@@ -114,13 +123,15 @@ namespace librealsense
             const std::vector<uvc::hid_device_info>& hid_info)
             : ds5_device(backend, dev_info, hwm_device, hid_info),
               ds5_active(backend, dev_info, hwm_device, hid_info),
-              ds5_color(backend, dev_info, hwm_device, hid_info) {}
+              ds5_color(backend, dev_info, hwm_device, hid_info),
+              ds5_advanced_mode_base(ds5_device::_hw_monitor) {}
     };
 
     // AWGCT
     class rs430_rgb_mm_device : public ds5_active,
                                 public ds5_color,
-                                public ds5_motion
+                                public ds5_motion,
+                                public ds5_advanced_mode_base
     {
     public:
         rs430_rgb_mm_device(const uvc::backend& backend,
@@ -130,7 +141,8 @@ namespace librealsense
             : ds5_device(backend, dev_info, hwm_device, hid_info),
               ds5_active(backend, dev_info, hwm_device, hid_info),
               ds5_color(backend, dev_info, hwm_device, hid_info),
-              ds5_motion(backend, dev_info, hwm_device, hid_info) {}
+              ds5_motion(backend, dev_info, hwm_device, hid_info),
+              ds5_advanced_mode_base(ds5_device::_hw_monitor) {}
     };
 
     std::shared_ptr<device_interface> ds5_info::create(const uvc::backend& backend) const

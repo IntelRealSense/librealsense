@@ -9,6 +9,7 @@
 #include "core/debug.h"
 #include "core/motion.h"
 #include "core/extension.h"
+#include "core/advanced_mode.h"
 
 ////////////////////////
 // API implementation //
@@ -1088,12 +1089,12 @@ int rs2_is_sensor(const rs2_sensor* sensor, rs2_extension_type extension_type, r
     VALIDATE_ENUM(extension_type);
     switch (extension_type)
     {
-        case RS2_EXTENSION_TYPE_DEBUG:     return VALIDATE_INTERFACE_NO_THROW(sensor->sensor, librealsense::debug_interface);
-        case RS2_EXTENSION_TYPE_INFO:      return VALIDATE_INTERFACE_NO_THROW(sensor->sensor, librealsense::info_interface);
-        case RS2_EXTENSION_TYPE_MOTION:    return VALIDATE_INTERFACE_NO_THROW(sensor->sensor, librealsense::motion_sensor_interface);
-        case RS2_EXTENSION_TYPE_OPTIONS:   return VALIDATE_INTERFACE_NO_THROW(sensor->sensor, librealsense::options_interface);
-        case RS2_EXTENSION_TYPE_VIDEO:     return VALIDATE_INTERFACE_NO_THROW(sensor->sensor, librealsense::video_sensor_interface);
-        case RS2_EXTENSION_TYPE_ROI:       return VALIDATE_INTERFACE_NO_THROW(sensor->sensor, librealsense::roi_sensor_interface);
+        case RS2_EXTENSION_TYPE_DEBUG:         return VALIDATE_INTERFACE_NO_THROW(sensor->sensor, librealsense::debug_interface);
+        case RS2_EXTENSION_TYPE_INFO:          return VALIDATE_INTERFACE_NO_THROW(sensor->sensor, librealsense::info_interface);
+        case RS2_EXTENSION_TYPE_MOTION:        return VALIDATE_INTERFACE_NO_THROW(sensor->sensor, librealsense::motion_sensor_interface);
+        case RS2_EXTENSION_TYPE_OPTIONS:       return VALIDATE_INTERFACE_NO_THROW(sensor->sensor, librealsense::options_interface);
+        case RS2_EXTENSION_TYPE_VIDEO:         return VALIDATE_INTERFACE_NO_THROW(sensor->sensor, librealsense::video_sensor_interface);
+        case RS2_EXTENSION_TYPE_ROI:           return VALIDATE_INTERFACE_NO_THROW(sensor->sensor, librealsense::roi_sensor_interface);
         default:
             return 0;
     }
@@ -1106,12 +1107,13 @@ int rs2_is_device(const rs2_device* dev, rs2_extension_type extension_type, rs2_
     VALIDATE_ENUM(extension_type);
     switch (extension_type)
     {
-        case RS2_EXTENSION_TYPE_DEBUG:     return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::debug_interface);
-        case RS2_EXTENSION_TYPE_INFO:      return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::info_interface);
-        case RS2_EXTENSION_TYPE_MOTION:    return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::motion_sensor_interface);
-        case RS2_EXTENSION_TYPE_OPTIONS:   return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::options_interface);
-        case RS2_EXTENSION_TYPE_VIDEO:     return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::video_sensor_interface);
-        case RS2_EXTENSION_TYPE_ROI:       return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::roi_sensor_interface);
+        case RS2_EXTENSION_TYPE_DEBUG:         return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::debug_interface);
+        case RS2_EXTENSION_TYPE_INFO:          return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::info_interface);
+        case RS2_EXTENSION_TYPE_MOTION:        return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::motion_sensor_interface);
+        case RS2_EXTENSION_TYPE_OPTIONS:       return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::options_interface);
+        case RS2_EXTENSION_TYPE_VIDEO:         return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::video_sensor_interface);
+        case RS2_EXTENSION_TYPE_ROI:           return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::roi_sensor_interface);
+        case RS2_EXTENSION_TYPE_ADVANCED_MODE: return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::ds5_advanced_mode_interface);
         default:
             return 0;
     }
