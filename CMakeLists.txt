@@ -204,7 +204,7 @@ if(WIN32)
         )
 
     source_group("Source Files\\Logging" FILES
-        third_party/easyloggingpp/src/easylogging++.cc
+        third-party/easyloggingpp/src/easylogging++.cc
         src/log.cpp
         )
 
