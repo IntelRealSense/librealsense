@@ -12,11 +12,7 @@ void rs::file_format::stream_recorder::write_file_version()
 {
     std_msgs::UInt32 msg;
     msg.data = get_file_version();
-
-    if(m_file.write(get_file_version_topic(), file_types::nanoseconds::min(), msg) != status::status_no_error)
-    {
-        throw std::runtime_error("Failed to write file version");
-    }
+    m_file.write(get_file_version_topic(), file_types::nanoseconds::min(), msg);
 }
 
 rs::file_format::stream_recorder::stream_recorder(const std::string &file_path) :
@@ -25,7 +21,11 @@ rs::file_format::stream_recorder::stream_recorder(const std::string &file_path) 
     write_file_version();
 }
 
-rs::file_format::status rs::file_format::stream_recorder::record(std::shared_ptr<rs::file_format::ros_data_objects::stream_data> data)
+void rs::file_format::stream_recorder::record(std::shared_ptr<rs::file_format::ros_data_objects::stream_data> data)
 {
-    return data->write_data(m_file);
+    data->write_data(m_file);
 }
+//std::string rs::file_format::stream_recorder::get_file_path()
+//{
+//    return  m_file->;
+//}

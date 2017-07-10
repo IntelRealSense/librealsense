@@ -5,6 +5,7 @@
 #include <chrono>
 #include <memory>
 #include <vector>
+#include <archive.h>
 
 #include "extension.h"
 #include "streaming.h"
@@ -32,6 +33,7 @@ namespace librealsense
     class device_snapshot
     {
     public:
+        device_snapshot() {}
         device_snapshot(const std::vector<std::shared_ptr<extension_snapshot>>& device_extensios,
                         const std::vector<sensor_snapshot>& sensors_snapshot)
             :
@@ -56,18 +58,26 @@ namespace librealsense
     class device_serializer
     {
     public:
-        struct storage_data
+        struct frame_box
         {
-            std::chrono::nanoseconds timestamp;//TODO: Ziv, consider = std::chrono::high_resolution_clock::now().time_since_epoch();
-            size_t sensor_index;
-            std::shared_ptr <frame_interface> frame;
+            std::chrono::nanoseconds timestamp;
+            uint32_t sensor_index;
+            std::shared_ptr <librealsense::frame> frame;
+        };
+
+        struct snapshot_box
+        {
+            std::chrono::nanoseconds timestamp;
+            uint32_t sensor_index;
+            std::shared_ptr<extension_snapshot> snapshot;
         };
 
         class writer
         {
         public:
             virtual void write_device_description(const device_snapshot& device_description) = 0;
-            virtual void write(storage_data data) = 0;
+            virtual void write(const frame_box& data) = 0;
+            virtual void write(const snapshot_box& data) = 0;
             virtual void reset() = 0;
             virtual ~writer() = default;
         };
@@ -75,15 +85,15 @@ namespace librealsense
         {
         public:
             virtual device_snapshot query_device_description() = 0;
-            virtual storage_data read() = 0;
+            virtual frame_box read() = 0;
             virtual void seek_to_time(std::chrono::nanoseconds time) = 0;
             virtual std::chrono::nanoseconds query_duration() const = 0;
             virtual void reset() = 0;
             virtual ~reader() = default;
         };
 
-        virtual std::shared_ptr <writer> get_writer() = 0;
-        virtual std::shared_ptr <reader> get_reader() = 0;
+        virtual std::shared_ptr<writer> get_writer() = 0;
+        virtual std::shared_ptr<reader> get_reader() = 0;
         virtual ~device_serializer() = default;
     };
 }

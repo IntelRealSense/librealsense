@@ -13,12 +13,12 @@ namespace rs
         {
             struct pose_info
             {
-				file_types::vector3 translation;
-				file_types::vector4 rotation;
-				file_types::vector3 velocity;
-				file_types::vector3 angular_velocity;
-				file_types::vector3 acceleration;
-				file_types::vector3 angular_acceleration;
+				librealsense::float3 translation;
+				librealsense::float4 rotation;
+				librealsense::float3 velocity;
+				librealsense::float3 angular_velocity;
+				librealsense::float3 acceleration;
+				librealsense::float3 angular_acceleration;
                 file_types::nanoseconds capture_time;
                 file_types::nanoseconds timestamp;
 				file_types::nanoseconds system_timestamp;
@@ -33,7 +33,7 @@ namespace rs
                 {
                 }
 
-                status write_data(ros_writer& file) override
+                void write_data(ros_writer& file) override
                 {
                     realsense_msgs::pose msg;
 
@@ -65,7 +65,7 @@ namespace rs
                     msg.timestamp = m_info.timestamp.count();
                     msg.system_timestamp = m_info.system_timestamp.count();
 
-                    return file.write(get_topic(m_info.device_id), m_info.capture_time, msg);
+                    file.write(get_topic(m_info.device_id), m_info.capture_time, msg);
 
                 }
 

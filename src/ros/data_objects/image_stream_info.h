@@ -15,12 +15,12 @@ namespace rs
             {
                 uint32_t width;
                 uint32_t height;
-                file_types::intrinsics intrinsics;
+                rs2_intrinsics intrinsics;
                 file_types::stream_extrinsics stream_extrinsics;
                 uint32_t device_id;
                 std::string type;
                 uint32_t fps;
-                file_types::pixel_format format;
+                rs2_format format;
             };
 
             class image_stream_info : public stream_info
@@ -34,7 +34,7 @@ namespace rs
                 {
                     return "/camera/rs_stream_info/" + std::to_string(device_id);
                 }
-                status write_data(ros_writer& file) override
+                void write_data(ros_writer& file) override
                 {
                     realsense_msgs::stream_info msg;
                     msg.stream_type = m_info.type;
@@ -43,7 +43,7 @@ namespace rs
                     msg.height = m_info.height;
                     if(conversions::convert(m_info.format, msg.encoding) == false)
                     {
-                        return status_param_unsupported;
+                        //return status_param_unsupported;
                     }
                     msg.camera_info.height = m_info.height;
                     msg.camera_info.width  = m_info.width;
@@ -58,7 +58,7 @@ namespace rs
 
                     conversions::convert(m_info.stream_extrinsics.extrinsics_data, msg.stream_extrinsics.extrinsics);
                     msg.stream_extrinsics.reference_point_id = m_info.stream_extrinsics.reference_point_id;
-                    return file.write(get_topic(m_info.device_id), file_types::nanoseconds::min(), msg);
+                    file.write(get_topic(m_info.device_id), file_types::nanoseconds::min(), msg);
                 }
 
                 const image_stream_data& get_info() const

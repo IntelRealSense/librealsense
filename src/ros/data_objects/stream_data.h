@@ -16,7 +16,7 @@ namespace rs
             {
             public:
                 virtual ~stream_data(){}
-                virtual rs::file_format::status write_data(ros_writer& file) = 0;
+                virtual void write_data(ros_writer& file) = 0;
             };
 
             struct stream_info : stream_data

@@ -43,7 +43,7 @@ namespace rs
                     return file_types::st_time;
                 }
 
-                status write_data(ros_writer& file) override
+                void write_data(ros_writer& file) override
                 {
                     std::string topic = "/time/" + std::to_string(m_info.device_id);
                     sensor_msgs::TimeReference msg;
@@ -52,7 +52,7 @@ namespace rs
                     msg.time_ref = ros::Time(m_info.timestamp.count());
                     msg.source = m_info.source;
 
-                    return file.write(topic, m_info.capture_time, msg);
+                    file.write(topic, m_info.capture_time, msg);
                 }
 
                 static std::string get_topic(uint32_t device_id)

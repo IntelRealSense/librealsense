@@ -1,7 +1,6 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 
-#include <librealsense/rs2.hpp>
 #include <core/debug.h>
 #include "record_device.h"
 
@@ -12,26 +11,27 @@ librealsense::record_device::record_device(std::shared_ptr<librealsense::device_
     m_is_recording(true),
     m_record_pause_time(0),
     m_device(device),
-    m_writer(serializer)
+    m_ros_writer(serializer)
 {
+    //TODO: validation can probably be removed
     if (device == nullptr)
     {
-        throw std::invalid_argument("device");
+        throw invalid_value_exception("device is null");
     }
 
     if (serializer == nullptr)
     {
-        throw std::invalid_argument("serializer");
+        throw invalid_value_exception("serializer is null");
     }
 
-    serializer->reset();
+    m_ros_writer->reset();
 
     for (size_t i = 0; i < m_device->get_sensors_count(); i++)
     {
         auto& sensor = m_device->get_sensor(i);
 
         auto recording_sensor = std::make_shared<record_sensor>(sensor,
-                                                                [this, i](std::shared_ptr<frame_interface> f)
+                                                                [this, i](std::shared_ptr<librealsense::frame> f)
                                                                 {
                                                                     std::call_once(m_first_call_flag, [this]()
                                                                     {
@@ -76,7 +76,7 @@ void librealsense::record_device::write_header()
         sensors_md.emplace_back(sensor_extensions_md);
     }
 
-    m_writer->write_device_description({device_extensions_md, sensors_md});
+    m_ros_writer->write_device_description({device_extensions_md, sensors_md});
 }
 
 std::chrono::nanoseconds librealsense::record_device::get_capture_time()
@@ -85,9 +85,9 @@ std::chrono::nanoseconds librealsense::record_device::get_capture_time()
     return (now - m_capture_time_base) - m_record_pause_time;
 }
 
-void librealsense::record_device::write_data(size_t sensor_index, std::shared_ptr<frame_interface> f)
+void librealsense::record_device::write_data(size_t sensor_index, std::shared_ptr<librealsense::frame> f)
 {
-    uint64_t data_size = f->get_data_size();
+    uint64_t data_size = f->data.size();
     uint64_t cached_data_size = m_cached_data_size + data_size;
     if (cached_data_size > MAX_CACHED_DATA_SIZE)
     {
@@ -110,7 +110,7 @@ void librealsense::record_device::write_data(size_t sensor_index, std::shared_pt
                                          try
                                          {
                                              write_header();
-                                             m_writer->write({capture_time, sensor_index, f});
+                                             m_ros_writer->write({capture_time, static_cast<uint32_t>(sensor_index), f});
                                          }
                                          catch (const std::exception& e)
                                          {
@@ -302,7 +302,8 @@ void librealsense::record_sensor::start(frame_callback_ptr callback)
     frame_callback f;
     auto record_cb = [this, callback](rs2_frame* f)
     {
-        m_record_callback(std::make_shared<mock_frame>(m_sensor, f->get()));
+        auto frame = std::shared_ptr<librealsense::frame>(f->get()->get_owner()->clone_frame(f)->get()); //TODO: Ziv, <--- pshhh what??!
+        m_record_callback(frame);
         callback->on_frame(f);
     };
     m_frame_callback = std::make_shared<my_frame_callback>(record_cb);

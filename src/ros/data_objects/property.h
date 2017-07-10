@@ -42,11 +42,11 @@ namespace rs
                     return file_types::st_property;
                 }
 
-                status write_data(ros_writer& file) override
+                void write_data(ros_writer& file) override
                 {
                     std_msgs::Float64 msg;
                     msg.data = m_info.value;
-                    return file.write(get_topic(m_info.key, m_info.device_id), m_info.capture_time, msg);
+                    file.write(get_topic(m_info.key, m_info.device_id), m_info.capture_time, msg);
                 }
 
                 static std::string get_topic(const std::string& key, uint32_t device_id)

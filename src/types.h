@@ -125,7 +125,13 @@ namespace librealsense
             LOG_ERROR(msg);
         }
     };
-
+    class io_exception : public unrecoverable_exception
+    {
+    public:
+        io_exception(const std::string& msg) noexcept
+            : unrecoverable_exception(msg, RS2_EXCEPTION_TYPE_IO)
+        {}
+    };
     class camera_disconnected_exception : public unrecoverable_exception
     {
     public:

@@ -7,9 +7,9 @@
 namespace librealsense
 {
 	template<typename T, typename P>
-	bool Is(std::shared_ptr<P> snapshot)
+	bool Is(std::shared_ptr<P> ptr)
 	{
-		return dynamic_cast<T*>(snapshot.get()) != nullptr;
+		return std::dynamic_pointer_cast<T>(ptr) != nullptr;
 	}
 
 	class extendable_interface

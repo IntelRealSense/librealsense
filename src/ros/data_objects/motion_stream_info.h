@@ -16,7 +16,7 @@ namespace rs
             {
                 file_types::motion_type type;
                 uint32_t fps;
-                file_types::motion_intrinsics intrinsics;
+                rs2_motion_device_intrinsic intrinsics;
                 file_types::stream_extrinsics stream_extrinsics;
                 uint32_t device_id;
             };
@@ -38,21 +38,21 @@ namespace rs
                     assign(info, m_info);
                 }
 
-                rs::file_format::status write_data(rs::file_format::ros_writer& file) override
+                void write_data(rs::file_format::ros_writer& file) override
                 {
                     realsense_msgs::motion_stream_info msg;
                     msg.fps = m_info.fps;
 
                     if(conversions::convert(m_info.type, msg.motion_type) == false)
                     {
-                        return status_param_unsupported;
+                        //return status_param_unsupported;
                     }
 
                     conversions::convert(m_info.intrinsics, msg.stream_intrinsics);
                     conversions::convert(m_info.stream_extrinsics.extrinsics_data, msg.stream_extrinsics.extrinsics);
                     msg.stream_extrinsics.reference_point_id = m_info.stream_extrinsics.reference_point_id;
 
-                    return file.write(get_topic(m_info.device_id), file_types::nanoseconds::min(), msg);
+                    file.write(get_topic(m_info.device_id), file_types::nanoseconds::min(), msg);
                 }
 
                 static std::string get_topic(uint32_t device_id)

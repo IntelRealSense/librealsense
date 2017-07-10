@@ -9,6 +9,7 @@
 #include "ros/file_types.h"
 #include "ros/exception.h"
 #include "rosbag/bag.h"
+#include "types.h"
 namespace rs
 {
 	namespace file_format
@@ -16,51 +17,46 @@ namespace rs
 		class ros_writer
 		{
 		public:
-			virtual ~ros_writer()
-			{
-				m_file->close();
-			}
-
 			ros_writer(std::string file_path)
 			{
 				try
 				{
-					m_file = std::make_shared<rosbag::Bag>();
-					m_file->open(file_path, rosbag::BagMode::Write);
-					m_file->setCompression(rosbag::CompressionType::LZ4);
-				} catch(rosbag::BagIOException&)
+					m_bag.open(file_path, rosbag::BagMode::Write);
+					m_bag.setCompression(rosbag::CompressionType::LZ4);
+				}
+                catch(rosbag::BagIOException& e)
 				{
-					throw std::runtime_error(std::string("Failed to open file: \"") + file_path + "\"");
+					throw librealsense::invalid_value_exception(std::string("Failed to open file: \"") + file_path + std::string("\" for writing. Exception: ") + e.what());
 				}
 			}
 
 			template<class T>
-			rs::file_format::status write(std::string const& topic, rs::file_format::file_types::nanoseconds const& time, T const& msg)
+			void write(std::string const& topic, rs::file_format::file_types::nanoseconds const& time, T const& msg)
 			{
 				try
 				{
 					if (time == rs::file_format::file_types::nanoseconds::min())
 					{
-						m_file->write(topic, ros::TIME_MIN, msg);
+						m_bag.write(topic, ros::TIME_MIN, msg);
 					}
 					else
 					{
 						std::chrono::duration<uint32_t> sec = std::chrono::duration_cast<std::chrono::duration<uint32_t>>(time);
-						rs::file_format::file_types::nanoseconds range = time - std::chrono::duration_cast<rs::file_format::file_types::nanoseconds>(sec);
-						ros::Time capture_time = ros::Time(sec.count(),
-														   std::chrono::duration_cast<std::chrono::duration<uint32_t, std::nano>>(range).count());
-						m_file->write(topic, capture_time, msg);
+						rs::file_format::file_types::nanoseconds nanos = time - std::chrono::duration_cast<rs::file_format::file_types::nanoseconds>(sec);
+						auto unanos = std::chrono::duration_cast<std::chrono::duration<uint32_t, std::nano>>(nanos);
+						ros::Time capture_time = ros::Time(sec.count(),unanos.count());
+						m_bag.write(topic, capture_time, msg);
 					}
 				}
-				catch (rosbag::BagIOException&)
+				catch (rosbag::BagIOException& e)
 				{
-					return rs::file_format::status::status_file_write_failed;
+					throw librealsense::io_exception(std::string("Ros Writer: Failed to write topic: \"") + topic
+														 + std::string("\" to file. (rosbag error: ") + e.what());
 				}
-				return rs::file_format::status::status_no_error;
 			}
 
 		private:
-			std::shared_ptr<rosbag::Bag> m_file;
+			rosbag::Bag m_bag;
 		};
 
 

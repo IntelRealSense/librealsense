@@ -40,14 +40,14 @@ namespace rs
                 {
                     return file_types::st_occupancy_map;
                 }
-                status write_data(ros_writer& file) override
+                void write_data(ros_writer& file) override
                 {
                     realsense_msgs::occupancy_map msg;
                     msg.accuracy = m_info.accuracy;
                     msg.reserved = m_info.reserved;
                     msg.tile_count = m_info.tile_count;
                     msg.tiles.assign(m_info.tiles.get(), m_info.tiles.get() + (m_info.tile_count * 3));
-                    return file.write(get_topic(m_info.device_id), m_info.capture_time, msg);
+                    file.write(get_topic(m_info.device_id), m_info.capture_time, msg);
                 }
                 static std::string get_topic(uint32_t device_id)
                 {

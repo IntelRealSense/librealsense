@@ -33,14 +33,13 @@ namespace rs
                     m_info = info;
                 }
 
-                status write_data(ros_writer& file) override
+                void write_data(ros_writer& file) override
                 {
                     realsense_msgs::vendor_data msg;
                     msg.value = m_info.value;
                     msg.name = m_info.name;
-                    return file.write(get_topic(m_info.device_id), file_types::nanoseconds::min(), msg);
+                    file.write(get_topic(m_info.device_id), file_types::nanoseconds::min(), msg);
                 }
-
 
                 static std::string get_topic(const uint32_t& device_id = -1)
                 {

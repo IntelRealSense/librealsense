@@ -30,7 +30,6 @@
 using namespace rs::file_format;
 using namespace rs::file_format::file_types;
 
-
 inline std::vector<std::string> get_topics(std::unique_ptr<rosbag::View>& view)
 {
     std::vector<std::string> topics;
@@ -328,13 +327,14 @@ std::shared_ptr<ros_data_objects::compressed_image> stream_playback::create_comp
         return nullptr;
     }
     info.system_time = nanoseconds(info_msg->system_time);
-    info.timestamp_domain = static_cast<file_types::timestamp_domain>(info_msg->time_stamp_domain);
+    info.timestamp_domain = static_cast<rs2_timestamp_domain>(info_msg->time_stamp_domain);
     info.height = info_msg->height;
     info.width = info_msg->width;
     info.step = info_msg->step;
     for(auto metadata : info_msg->frame_metadata)
     {
-        info.metadata[static_cast<file_types::metadata_type>(metadata.type)] = metadata.data;
+        //TODO: Ziv, make sure this works correctly
+        info.metadata[static_cast<rs2_frame_metadata>(metadata.type)] = metadata.data;
     }
     auto sts = conversions::convert(info_msg->encoding, info.format);
     if(sts != status_no_error)
@@ -385,10 +385,11 @@ std::shared_ptr<ros_data_objects::image> stream_playback::create_image(const ros
         return nullptr;
     }
     info.system_time = nanoseconds(info_msg->system_time);
-    info.timestamp_domain = static_cast<file_types::timestamp_domain>(info_msg->time_stamp_domain);
+    info.timestamp_domain = static_cast<rs2_timestamp_domain>(info_msg->time_stamp_domain);
     for(auto metadata : info_msg->frame_metadata)
     {
-        info.metadata[static_cast<file_types::metadata_type>(metadata.type)] = metadata.data;
+        //TODO: Ziv, make sure this works correctly
+        info.metadata[static_cast<rs2_frame_metadata>(metadata.type)] = metadata.data;
     }
     return std::make_shared<ros_data_objects::image>(info);
 }
@@ -407,15 +408,12 @@ std::shared_ptr<ros_data_objects::image_stream_info> stream_playback::create_ima
     info.fps = msg->fps;
     info.width = msg->width;
     info.height = msg->height;
-    if(conversions::convert(msg->encoding, info.format) == false)
-    {
-        return nullptr;
-    }
+    conversions::convert(msg->encoding, info.format);
     info.intrinsics.fx = static_cast<float>(msg->camera_info.K[0]);
     info.intrinsics.ppx = static_cast<float>(msg->camera_info.K[2]);
     info.intrinsics.fy = static_cast<float>(msg->camera_info.K[4]);
     info.intrinsics.ppy = static_cast<float>(msg->camera_info.K[5]);
-    info.intrinsics.model = msg->camera_info.distortion_model;
+    conversions::convert(msg->camera_info.distortion_model, info.intrinsics.model);
 
     for(uint32_t i = 0; i < msg->camera_info.D.size(); ++i )
     {

@@ -25,18 +25,18 @@ namespace rs
                 std::string stream;
                 uint32_t width;
                 uint32_t height;
-                file_types::pixel_format format;
+                rs2_format format;
                 uint32_t step;
                 file_types::nanoseconds capture_time;
                 file_types::seconds timestamp;
                 file_types::nanoseconds system_time;
-                file_types::timestamp_domain timestamp_domain;
+                rs2_timestamp_domain timestamp_domain;
                 uint32_t device_id;
                 uint32_t frame_number;
                 std::shared_ptr<uint8_t> data;
                 file_types::compression_type compression_type;
                 uint32_t compression_size;
-                std::map<file_types::metadata_type, std::vector<uint8_t>> metadata;
+                std::map<rs2_frame_metadata, std::vector<uint8_t>> metadata;
             };
 
             class compressed_image : public rs::file_format::ros_data_objects::sample
@@ -55,14 +55,14 @@ namespace rs
                 }
 
 
-                rs::file_format::status write_data(ros_writer& file) override
+                void write_data(ros_writer& file) override
                 {
 
                     sensor_msgs::CompressedImage image;
 
                     if(rs::file_format::conversions::convert(m_info.compression_type, image.format) == false)
                     {
-                        return status_param_unsupported;
+                        //return status_param_unsupported;
                     }
                     image.data.assign(m_info.data.get(), m_info.data.get() + (m_info.compression_size));
                     image.header.seq = m_info.frame_number;
@@ -70,11 +70,8 @@ namespace rs
 
                     auto image_topic = get_topic(m_info.stream, m_info.device_id);
 
-                    auto retval = file.write(image_topic, m_info.capture_time, image);
-                    if(retval != status_no_error)
-                    {
-                        return retval;
-                    }
+                    file.write(image_topic, m_info.capture_time, image);
+
                     realsense_msgs::compressed_frame_info msg;
                     msg.system_time = m_info.system_time.count();
                     msg.time_stamp_domain = m_info.timestamp_domain;
@@ -93,15 +90,12 @@ namespace rs
 
                     if(conversions::convert(m_info.format, msg.encoding) == false)
                     {
-                        return status_item_unavailable;
+                        //return status_item_unavailable;
                     }
                     auto info_topic = get_info_topic(topic(image_topic).at(2), std::stoi(topic(image_topic).at(4)));
-                    retval = file.write(info_topic, m_info.capture_time, msg);
-                    if(retval != status_no_error)
-                    {
-                        return retval;
-                    }
-                    return status_no_error;
+                    file.write(info_topic, m_info.capture_time, msg);
+
+                    //return status_no_error;
                 }
 
                 compressed_image_info get_info() const

@@ -45,13 +45,13 @@ namespace rs
                     std::memcpy(m_info.data, info.data, sizeof(m_info.data));
                 }
 
-                virtual status write_data(ros_writer& file) override
+                virtual void write_data(ros_writer& file) override
                 {
                     std::string topic = get_topic(m_info.type, m_info.device_id);
                     std::string type_str;
                     if(conversions::convert(m_info.type, type_str) == false)
                     {
-                        return status_param_unsupported;
+                        //return status_param_unsupported;
                     }
                     if(type_str == file_types::motion_stream_type::ACCL)
                     {
@@ -61,10 +61,7 @@ namespace rs
                         accelerometer->linear_acceleration.z = m_info.data[2];
 
                         accelerometer->header.stamp = ros::Time(m_info.timestamp.count());
-                        if(file.write(topic, m_info.capture_time, accelerometer) != status_no_error)
-                        {
-                            return status_file_write_failed;
-                        }
+                        file.write(topic, m_info.capture_time, accelerometer);
                     }
                     else if(type_str == file_types::motion_stream_type::GYRO)
                     {
@@ -75,15 +72,11 @@ namespace rs
 
                         gyrometer->header.stamp = ros::Time(m_info.timestamp.count());
                         gyrometer->header.seq = m_info.frame_number;
-                        if(file.write(topic, m_info.capture_time, gyrometer) != status_no_error)
-                        {
-                            return status_file_write_failed;
-                        }
+                        file.write(topic, m_info.capture_time, gyrometer);
                     }else
                     {
-                        return status_feature_unsupported;
+                        throw librealsense::invalid_value_exception(type_str + "is not supported");
                     }
-                    return status_no_error;
                 }
 
                 static std::string get_topic(file_types::motion_type type, uint32_t device_id)

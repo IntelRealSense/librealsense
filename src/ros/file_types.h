@@ -4,7 +4,7 @@
 #pragma once
 #include <string>
 #include <chrono>
-
+#include "../../include/librealsense/rs2.h" //TODO: Ziv, loose relative path
 namespace rs
 {
     namespace file_format
@@ -74,29 +74,29 @@ namespace rs
                 const std::string DISTORTION_FTHETA = "DISTORTION_FTHETA";                                      /**< F-Theta fish-eye distortion model */
             }
 
-            /**
-            * @brief Image pixel format
-            */
-            enum class pixel_format : int32_t
-            {
-                custom      = 0,  /**< custom pixel format that is not part of the given pixel format list */
-                z16         = 1,  /**< 16-bit linear depth values. The depth is meters is equal to depth scale * pixel value     */
-                disparity16 = 2,  /**< 16-bit linear disparity values. The depth in meters is equal to depth scale / pixel value */
-                xyz32f      = 3,  /**< 32-bit floating point 3D coordinates.                                                     */
-                yuyv        = 4,  /**< The yuyv color format. See [fourcc.org](http://fourcc.org/) for the description and memory layout.*/
-                rgb8        = 5,  /**< The 24-bit RGB24 color format. See [fourcc.org](http://fourcc.org/) for the description and memory layout.*/
-                bgr8        = 6,  /**< The 24-bit BGR24 color format. See [fourcc.org](http://fourcc.org/) for the description and memory layout.*/
-                rgba8       = 7,  /**< The 32-bit RGBA32 color format.  See [fourcc.org](http://fourcc.org/) for the description and memory layout. */
-                bgra8       = 8,  /**< The 32-bit BGRA32 color format.  See [fourcc.org](http://fourcc.org/) for the description and memory layout. */
-                y8          = 9,  /**< The 8-bit gray format. Also used for the 8-bit IR data. See [fourcc.org](http://fourcc.org/) for the description and memory layout. */
-                y16         = 10, /**< The 16-bit gray format. Also used for the 16-bit IR data. See [fourcc.org](http://fourcc.org/) for the description and memory layout. */
-                raw8        = 11, /**< The 8-bit gray format. */
-                raw10       = 12, /**< Four 10-bit luminance values encoded into a 5-byte macro pixel */
-                raw16       = 13, /**< Custom format for camera calibration */
-                uyvy        = 14, /**< The uyvy color format. See [fourcc.org](http://fourcc.org/) for the description and memory layout.*/
-                yuy2        = 15, /**< The yuy2 color format. See [fourcc.org](http://fourcc.org/) for the description and memory layout.*/
-                nv12        = 16  /**< The nv12 color format. See [fourcc.org](http://fourcc.org/) for the description and memory layout.*/
-            };
+//            /**
+//            * @brief Image pixel format
+//            */
+//            enum class pixel_format : int32_t
+//            {
+//                custom      = 0,  /**< custom pixel format that is not part of the given pixel format list */
+//                z16         = 1,  /**< 16-bit linear depth values. The depth is meters is equal to depth scale * pixel value     */
+//                disparity16 = 2,  /**< 16-bit linear disparity values. The depth in meters is equal to depth scale / pixel value */
+//                xyz32f      = 3,  /**< 32-bit floating point 3D coordinates.                                                     */
+//                yuyv        = 4,  /**< The yuyv color format. See [fourcc.org](http://fourcc.org/) for the description and memory layout.*/
+//                rgb8        = 5,  /**< The 24-bit RGB24 color format. See [fourcc.org](http://fourcc.org/) for the description and memory layout.*/
+//                bgr8        = 6,  /**< The 24-bit BGR24 color format. See [fourcc.org](http://fourcc.org/) for the description and memory layout.*/
+//                rgba8       = 7,  /**< The 32-bit RGBA32 color format.  See [fourcc.org](http://fourcc.org/) for the description and memory layout. */
+//                bgra8       = 8,  /**< The 32-bit BGRA32 color format.  See [fourcc.org](http://fourcc.org/) for the description and memory layout. */
+//                y8          = 9,  /**< The 8-bit gray format. Also used for the 8-bit IR data. See [fourcc.org](http://fourcc.org/) for the description and memory layout. */
+//                y16         = 10, /**< The 16-bit gray format. Also used for the 16-bit IR data. See [fourcc.org](http://fourcc.org/) for the description and memory layout. */
+//                raw8        = 11, /**< The 8-bit gray format. */
+//                raw10       = 12, /**< Four 10-bit luminance values encoded into a 5-byte macro pixel */
+//                raw16       = 13, /**< Custom format for camera calibration */
+//                uyvy        = 14, /**< The uyvy color format. See [fourcc.org](http://fourcc.org/) for the description and memory layout.*/
+//                yuy2        = 15, /**< The yuy2 color format. See [fourcc.org](http://fourcc.org/) for the description and memory layout.*/
+//                nv12        = 16  /**< The nv12 color format. See [fourcc.org](http://fourcc.org/) for the description and memory layout.*/
+//            };
 
             /**
             * @brief Additional pixel format that are not supported by ros, not included in the file
@@ -127,43 +127,43 @@ namespace rs
                 png = 5
             };
 
-            /**
-            * @brief Timestamp domain types
-            */
-            enum timestamp_domain
-            {
-                camera = 0,             /**< Frame timestamp was measured in relation to the camera clock */
-                hardware_clock = 1,     /**< Frame timestamp was measured in relation to the camera clock */
-                microcontroller = 2,    /**< Frame timestamp was measured in relation to the microcontroller clock */
-                system_time = 3         /**< Frame timestamp was measured in relation to the OS system clock */
-            };
-
-            /**
-            * @brief Metadata types
-            */
-            enum metadata_type
-            {
-                actual_exposure = 0,
-                actual_fps      = 1
-            };
-
-            /** @brief Stream intrinsic parameters */
-            struct intrinsics
-            {
-                float               ppx;        /**< Horizontal coordinate of the principal point of the image, as a pixel offset from the left edge */
-                float               ppy;        /**< Vertical coordinate of the principal point of the image, as a pixel offset from the top edge */
-                float               fx;         /**< Focal length of the image plane, as a multiple of pixel width */
-                float               fy;         /**< Focal length of the image plane, as a multiple of pixel height */
-                std::string         model;      /**< Distortion model of the image */
-                float               coeffs[5];  /**< Distortion coefficients */
-            };
-
-            /** @brief Camera extrinsics parameters */
-            struct extrinsics
-            {
-                float               rotation[9];    /**< Column-major 3x3 rotation matrix */
-                float               translation[3]; /**< Three-element translation vector, in meters */
-            };
+//            /**
+//            * @brief Timestamp domain types
+//            */
+//            enum timestamp_domain
+//            {
+//                camera = 0,             /**< Frame timestamp was measured in relation to the camera clock */
+//                hardware_clock = 1,     /**< Frame timestamp was measured in relation to the camera clock */
+//                microcontroller = 2,    /**< Frame timestamp was measured in relation to the microcontroller clock */
+//                system_time = 3         /**< Frame timestamp was measured in relation to the OS system clock */
+//            };
+//
+//            /**
+//            * @brief Metadata types
+//            */
+//            enum metadata_type
+//            {
+//                actual_exposure = 0,
+//                actual_fps      = 1
+//            };
+//
+//            /** @brief Stream intrinsic parameters */
+//            struct intrinsics
+//            {
+//                float               ppx;        /**< Horizontal coordinate of the principal point of the image, as a pixel offset from the left edge */
+//                float               ppy;        /**< Vertical coordinate of the principal point of the image, as a pixel offset from the top edge */
+//                float               fx;         /**< Focal length of the image plane, as a multiple of pixel width */
+//                float               fy;         /**< Focal length of the image plane, as a multiple of pixel height */
+//                std::string         model;      /**< Distortion model of the image */
+//                float               coeffs[5];  /**< Distortion coefficients */
+//            };
+//
+//            /** @brief Camera extrinsics parameters */
+//            struct extrinsics
+//            {
+//                float               rotation[9];    /**< Column-major 3x3 rotation matrix */
+//                float               translation[3]; /**< Three-element translation vector, in meters */
+//            };
 
 
             /**
@@ -171,38 +171,38 @@ namespace rs
             */
             struct stream_extrinsics
             {
-                extrinsics extrinsics_data;     /**< Represents the extrinsics data*/
+                rs2_extrinsics extrinsics_data;     /**< Represents the extrinsics data*/
                 uint64_t reference_point_id;    /**< Unique identifier of the extrinsics reference point, used as a key to which different extinsics are calculated*/
             };
 
-            /**
-            * @brief Represents the motion sensor scale, bias and variances.
-            */
-            struct motion_intrinsics
-            {
-                /* Scale X        cross axis        cross axis      Bias X */
-                /* cross axis     Scale Y           cross axis      Bias Y */
-                /* cross axis     cross axis        Scale Z         Bias Z */
-                float data[3][4];          /**< Interpret data array values */
-                float noise_variances[3];  /**< Variance of noise for X, Y, and Z axis */
-                float bias_variances[3];   /**< Variance of bias for X, Y, and Z axis */
-            };
+//            /**
+//            * @brief Represents the motion sensor scale, bias and variances.
+//            */
+//            struct motion_intrinsics
+//            {
+//                /* Scale X        cross axis        cross axis      Bias X */
+//                /* cross axis     Scale Y           cross axis      Bias Y */
+//                /* cross axis     cross axis        Scale Z         Bias Z */
+//                float data[3][4];          /**< Interpret data array values */
+//                float noise_variances[3];  /**< Variance of noise for X, Y, and Z axis */
+//                float bias_variances[3];   /**< Variance of bias for X, Y, and Z axis */
+//            };
 
-			/**
-			* @brief vector3
-			*/
-			struct vector3
-			{
-				float x, y, z;
-			};
-
-			/**
-			* @brief vector4
-			*/
-			struct vector4
-			{
-				float x, y, z, w;
-			};
+//			/**
+//			* @brief vector3
+//			*/
+//			struct vector3
+//			{
+//				float x, y, z;
+//			};
+//
+//			/**
+//			* @brief vector4
+//			*/
+//			struct vector4
+//			{
+//				float x, y, z, w;
+//			};
         }
     }
 }

@@ -8,6 +8,7 @@
 #include <rosgraph_msgs/Log.h>
 #include "stream_data.h"
 
+//TODO: Ziv, remove this file
 
 namespace rs
 {
@@ -44,7 +45,7 @@ namespace rs
                     return file_types::st_log;
                 }
 
-                virtual status write_data(ros_writer& file) override
+                virtual void write_data(ros_writer& file) override
                 {
                     rosgraph_msgs::Log msg;
                     msg.level = m_info.level;
@@ -53,7 +54,7 @@ namespace rs
                     msg.function = m_info.function;
                     msg.line = m_info.line;
 
-                    return file.write(get_topic(), m_info.capture_time, msg);
+                    file.write(get_topic(), m_info.capture_time, msg);
                 }
 
 

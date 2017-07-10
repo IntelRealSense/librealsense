@@ -965,7 +965,7 @@ namespace rs2
             return roi;
         }
 
-        operator bool() const { return _sensor.get(); }
+        operator bool() const { return _sensor.get() != nullptr; }
 	private:
 		std::shared_ptr<rs2_sensor> _sensor;
     };

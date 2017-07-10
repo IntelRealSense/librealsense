@@ -123,8 +123,7 @@ set(REALSENSE_CPP
     src/win/win-hid.cpp
     src/win/win-backend.cpp
     src/record_device.cpp
-        src/ros_device_serializer.cpp
-    third-party/easyloggingpp/src/easylogging++.cc
+        third-party/easyloggingpp/src/easylogging++.cc
     third-party/sqlite/sqlite3.c
     src/mock/sql.cpp
     src/mock/recorder.cpp
@@ -184,7 +183,9 @@ set(REALSENSE_HPP
     src/win/win-hid.h
     src/win/win-backend.h
     src/record_device.h
-        src/ros_device_serializer.h
+    src/serializers/ros_device_serializer.h
+    src/serializers/ros_reader.h
+    src/serializers/ros_writer.h
     src/core/serialization.h
 
     third-party/easyloggingpp/src/easylogging++.h
@@ -205,16 +206,15 @@ set(REALSENSE_HPP
     src/ros/data_objects/stream_data.h
     src/ros/data_objects/image_stream_info.h
     src/ros/stream_playback.h
-    src/ros/conversions.cpp
     src/ros/conversions.h
     src/ros/stream_recorder.h
     src/ros/file_format_version.h
     src/ros/file_types.h
     src/ros/status.h
-        src/ros/stream_playback.h
+    src/ros/stream_playback.h
     src/ros/ros_writer.h
     src/ros/stream_recorder.cpp
-        src/ros/stream_playback.cpp
+    src/ros/stream_playback.cpp
     src/ros/topic.h
 )
 # Add additional include directories to allow file to include rosbag headers

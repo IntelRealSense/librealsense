@@ -17,7 +17,7 @@ namespace librealsense
                           public options_container//TODO: Ziv, does it make sense to inherit here?
     {
     public:
-        using frame_interface_callback_t = std::function<void(std::shared_ptr<frame_interface>)>;
+        using frame_interface_callback_t = std::function<void(std::shared_ptr<librealsense::frame>)>;
 
         record_sensor(sensor_interface& sensor, frame_interface_callback_t on_frame);
         virtual ~record_sensor();
@@ -67,14 +67,14 @@ namespace librealsense
     private:
         void write_header();
         std::chrono::nanoseconds get_capture_time();
-        void write_data(size_t sensor_index, std::shared_ptr<frame_interface> f);
+        void write_data(size_t sensor_index, std::shared_ptr<librealsense::frame> f);
 
     private:
         std::shared_ptr<device_interface> m_device;
         std::vector<std::shared_ptr<record_sensor>> m_sensors;
 
         lazy<std::shared_ptr<dispatcher>> m_write_thread;
-        std::shared_ptr<device_serializer::writer> m_writer;
+        std::shared_ptr<device_serializer::writer> m_ros_writer;
 
         std::chrono::high_resolution_clock::time_point m_capture_time_base;
         std::chrono::high_resolution_clock::duration m_record_pause_time;

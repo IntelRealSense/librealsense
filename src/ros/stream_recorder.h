@@ -28,8 +28,9 @@ namespace rs
             * @return status_no_error             Successful execution
             * @return status_param_unsupported    One of the stream data feilds is not supported
             */
-            virtual status record(std::shared_ptr<ros_data_objects::stream_data> data);
+            virtual void record(std::shared_ptr<ros_data_objects::stream_data> data);
 
+//            std::string get_file_path();
         private:
             void write_file_version();
             ros_writer m_file;

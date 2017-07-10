@@ -5,6 +5,7 @@ namespace rs
 {
     namespace file_format
     {
+        //TODO: refactor and make this usable
          static const std::string get_file_version_topic()
          {
              return "/FILE_VERSION";
