@@ -65,7 +65,7 @@ namespace librealsense
         } 
 
         video_frame* vf = nullptr;
-        frame* f = original->get();
+        auto f = original->get();
         if (new_bpp == 0 || (new_width == 0 && new_stride == 0) || new_height == 0)
         {
             // If the user wants to delegate width, height and etc to original frame, it must be a video frame
@@ -122,55 +122,80 @@ namespace librealsense
         return res;
     }
 
-    histogram::histogram(std::shared_ptr<uvc::time_service> ts)
-        : processing_block(RS2_EXTENSION_TYPE_VIDEO_FRAME, ts)
-    {
-        auto on_frame = [](std::vector<rs2::frame> frames, const rs2::frame_source& source)
-        {
-            for (auto&& f : frames)
-            {
-                if (f.get_stream_type() == RS2_STREAM_DEPTH)
-                {
-                    const auto max_depth = 0x10000;
+    //void colorize::set_color_map(rs2_color_map cm)
+    //{
+    //    std::lock_guard<std::mutex> lock(_mutex);
+    //    switch(cm)
+    //    {
+    //    case RS2_COLOR_MAP_CLASSIC: 
+    //        _cm = &classic;
+    //        break;
+    //    case RS2_COLOR_MAP_JET:
+    //        _cm = &jet;
+    //        break;
+    //    case RS2_COLOR_MAP_HSV:
+    //        _cm = &hsv;
+    //        break;
+    //    default:
+    //        _cm = &classic;
+    //    }
+    //}
 
-                    static uint32_t histogram[max_depth];
-                    memset(histogram, 0, sizeof(histogram));
+    //void colorize::histogram_equalization(bool enable)
+    //{
+    //    std::lock_guard<std::mutex> lock(_mutex);
+    //    _equalize = enable;
+    //}
 
-                    auto vf = f.as<video_frame>();
-                    auto width = vf.get_width();
-                    auto height = vf.get_height();
+    //colorize::colorize(std::shared_ptr<uvc::time_service> ts)
+    //    : processing_block(RS2_EXTENSION_TYPE_VIDEO_FRAME, ts), _cm(&classic), _equalize(true)
+    //{
+    //    auto on_frame = [this](std::vector<rs2::frame> frames, const rs2::frame_source& source)
+    //    {
+    //        std::lock_guard<std::mutex> lock(_mutex);
 
-                    auto depth_image = vf.get_frame_data();
+    //        for (auto&& f : frames)
+    //        {
+    //            if (f.get_stream_type() == RS2_STREAM_DEPTH)
+    //            {
+    //                const auto max_depth = 0x10000;
 
-                    for (auto i = 0; i < width*height; ++i) ++histogram[depth_image[i]];
-                    for (auto i = 2; i < max_depth; ++i) histogram[i] += histogram[i - 1]; // Build a cumulative histogram for the indices in [1,0xFFFF]
-                    for (auto i = 0; i < width*height; ++i)
-                    {
-                        auto d = depth_image[i];
+    //                static uint32_t histogram[max_depth];
+    //                memset(histogram, 0, sizeof(histogram));
 
-                        //if (d)
-                        //{
-                        //    auto f = histogram[d] / (float)histogram[0xFFFF]; // 0-255 based on histogram location
+    //                auto vf = f.as<video_frame>();
+    //                auto width = vf.get_width();
+    //                auto height = vf.get_height();
 
-                        //    auto c = map.get(f);
-                        //    rgb_image[i * 3 + 0] = c.x;
-                        //    rgb_image[i * 3 + 1] = c.y;
-                        //    rgb_image[i * 3 + 2] = c.z;
-                        //}
-                        //else
-                        //{
-                        //    rgb_image[i * 3 + 0] = 0;
-                        //    rgb_image[i * 3 + 1] = 0;
-                        //    rgb_image[i * 3 + 2] = 0;
-                        //}
-                    }
-                }
-            }
-        };
+    //                auto depth_image = vf.get_frame_data();
 
-        auto callback = new rs2::frame_processor_callback<decltype(on_frame)>(on_frame);
+    //                for (auto i = 0; i < width*height; ++i) ++histogram[depth_image[i]];
+    //                for (auto i = 2; i < max_depth; ++i) histogram[i] += histogram[i - 1]; // Build a cumulative histogram for the indices in [1,0xFFFF]
+    //                for (auto i = 0; i < width*height; ++i)
+    //                {
+    //                    auto d = depth_image[i];
 
-        set_processing_callback(std::shared_ptr<rs2_frame_processor_callback>(callback));
-    }
+    //                    //if (d)
+    //                    //{
+    //                    //    auto f = histogram[d] / (float)histogram[0xFFFF]; // 0-255 based on histogram location
+
+    //                    //    auto c = map.get(f);
+    //                    //    rgb_image[i * 3 + 0] = c.x;
+    //                    //    rgb_image[i * 3 + 1] = c.y;
+    //                    //    rgb_image[i * 3 + 2] = c.z;
+    //                    //}
+    //                    //else
+    //                    //{
+    //                    //    rgb_image[i * 3 + 0] = 0;
+    //                    //    rgb_image[i * 3 + 1] = 0;
+    //                    //    rgb_image[i * 3 + 2] = 0;
+    //                    //}
+    //                }
+    //            }
+    //        }
+    //    };
+    //    auto callback = new rs2::frame_processor_callback<decltype(on_frame)>(on_frame);
+    //    set_processing_callback(std::shared_ptr<rs2_frame_processor_callback>(callback));
+    //}
 }
 

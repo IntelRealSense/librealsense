@@ -246,7 +246,7 @@ namespace librealsense
             if (!_to_add_frames || stream != RS2_STREAM_FISHEYE)
                 return;
 
-            f.get()->additional_data.fisheye_ae_mode = true;
+            ((frame*)f.get())->additional_data.fisheye_ae_mode = true;
 
             _auto_exposure->add_frame(f.get()->get_owner()->clone_frame(&f), std::move(callback));
         });

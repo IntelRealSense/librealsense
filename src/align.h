@@ -4,6 +4,7 @@
 #pragma once
 
 #include "core/processing.h"
+#include "image.h"
 #include "source.h"
 
 namespace librealsense
@@ -48,12 +49,5 @@ namespace librealsense
         std::mutex _mutex;
         frame_processor_callback _callback;
         synthetic_source _source_wrapper;
-    };
-
-    class histogram : public processing_block
-    {
-    public:
-        histogram(std::shared_ptr<uvc::time_service> ts);
-
     };
 }

@@ -48,7 +48,7 @@ int main(int argc, char * argv[])
                 {
                     auto x = rand() % vf.get_width();
                     auto y = rand() % vf.get_height();
-                    auto orig_pixel = orig_data[y * vf.get_stride_in_bytes() + x * vf.get_bytes_per_pixel()];
+                    auto orig_pixel = orig_data[y * vf.get_stride_in_bytes() + x * vf.get_bytes_per_pixel() + 1];
                     data[y * rf.get_stride_in_bytes() + x * rf.get_bytes_per_pixel() + 1] = orig_pixel;
                 }
                 source.frame_ready(std::move(result));

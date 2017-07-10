@@ -726,7 +726,7 @@ namespace librealsense
                 return;
             }
 
-            std::vector<byte*> dest{const_cast<byte*>(frame->get()->data.data())};
+            std::vector<byte*> dest{const_cast<byte*>(frame->get()->get_frame_data())};
             mode.unpacker->unpack(dest.data(),(const byte*)sensor_data.fo.pixels, (int)data_size);
 
             if (_on_before_frame_callback)
