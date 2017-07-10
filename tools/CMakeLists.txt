@@ -62,7 +62,7 @@ else()
     endif()
 endif()
 
-add_subdirectory(terminal)
+#add_subdirectory(terminal)
 add_subdirectory(fw-logger)
 add_subdirectory(enumerate-devices)
 add_subdirectory(realsense-ui)

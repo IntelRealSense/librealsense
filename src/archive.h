@@ -122,7 +122,7 @@ namespace librealsense
         rs2_time_t get_frame_system_time() const;
         rs2_format get_format() const;
         rs2_stream get_stream_type() const;
-        int frame::get_framerate() const;
+        int get_framerate() const;
 
         rs2_time_t get_frame_callback_start_time_point() const;
         void update_frame_callback_start_ts(rs2_time_t ts);
