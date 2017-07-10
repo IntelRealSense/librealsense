@@ -51,15 +51,15 @@ endif()
 
 set(RS4XX_SOURCES
     src/verify.c
-    src/rs4xx_advanced_mode.cpp
+    src/rs2_advanced_mode.cpp
     src/json_loader.hpp
     src/concurrency.hpp
     )
 
 set(RS4XX_INCLUDES
-    include/rs4xx_advanced_mode.h
+    ../../include/librealsense/rs2_advanced_mode.h
     include/advanced_mode_command.h
-    include/rs4xx_advanced_mode.hpp
+    ../../include/librealsense/rs2_advanced_mode.hpp
     )
 
 if(WIN32)
@@ -76,42 +76,42 @@ if(WIN32)
 endif()
 
 if(WIN32)
-    set(ADVANCED_DEF ${RS4XX_SOURCES} ${RS4XX_INCLUDES} rs4xx_advanced_mode.def)
+    set(ADVANCED_DEF ${RS4XX_SOURCES} ${RS4XX_INCLUDES} ../../CMake/advanced_mode.def)
 endif()
-add_library(rs4xx-advanced-mode SHARED ${RS4XX_SOURCES} ${RS4XX_INCLUDES} ${ADVANCED_DEF})
-target_link_libraries(rs4xx-advanced-mode ${DEPENDENCIES})
-include_directories(rs4xx-advanced-mode include)
+add_library(rs2-advanced-mode SHARED ${RS4XX_SOURCES} ${RS4XX_INCLUDES} ${ADVANCED_DEF})
+target_link_libraries(rs2-advanced-mode ${DEPENDENCIES})
+include_directories(rs2-advanced-mode include)
 
-set_target_properties (rs4xx-advanced-mode PROPERTIES
+set_target_properties (rs2-advanced-mode PROPERTIES
     FOLDER "RS4XX Extras"
 )
 
-add_executable(rs4xx-advanced-mode-sample-cpp examples/sample.cpp src/rs4xx_advanced_mode.cpp include/rs4xx_advanced_mode.hpp ../../third-party/json.hpp src/json_loader.hpp
+add_executable(rs2-advanced-mode-sample-cpp examples/sample.cpp src/rs2_advanced_mode.cpp ../../include/librealsense/rs2_advanced_mode.hpp ../../third-party/json.hpp src/json_loader.hpp
     ../../third-party/imgui/imgui.cpp ../../third-party/imgui/imgui_draw.cpp ../../third-party/imgui/imgui_impl_glfw.cpp examples/sample.hpp include/advanced_mode_command.h)
-target_link_libraries(rs4xx-advanced-mode-sample-cpp ${DEPENDENCIES})
-include_directories(rs4xx-advanced-mode-sample-cpp ../../third-party/imgui ../../third-party ../../third-party/tclap/include)
+target_link_libraries(rs2-advanced-mode-sample-cpp ${DEPENDENCIES})
+include_directories(rs2-advanced-mode-sample-cpp ../../third-party/imgui ../../third-party ../../third-party/tclap/include)
 
-add_executable(rs4xx-advanced-mode-sample-c examples/c-sample.c src/rs4xx_advanced_mode.cpp)
-target_link_libraries(rs4xx-advanced-mode-sample-c ${DEPENDENCIES})
-include_directories(rs4xx-advanced-mode-sample-c third_party ../../examples/third_party/tclap/include ../../examples/third_party/imgui)
+add_executable(rs2-advanced-mode-sample-c examples/c-sample.c src/rs2_advanced_mode.cpp)
+target_link_libraries(rs2-advanced-mode-sample-c ${DEPENDENCIES})
+include_directories(rs2-advanced-mode-sample-c third_party ../../examples/third_party/tclap/include ../../examples/third_party/imgui)
 
 file(GLOB JSONS
   "./presets/*.json"
 )
 file(COPY ${JSONS} DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/presets)
 
-set_target_properties (rs4xx-advanced-mode-sample-c PROPERTIES
+set_target_properties (rs2-advanced-mode-sample-c PROPERTIES
     FOLDER "RS4XX Extras"
 )
 
-set_target_properties (rs4xx-advanced-mode-sample-cpp PROPERTIES
+set_target_properties (rs2-advanced-mode-sample-cpp PROPERTIES
     FOLDER "RS4XX Extras"
 )
 
 install(
     TARGETS
-    rs4xx-advanced-mode-sample-c
-    rs4xx-advanced-mode-sample-cpp
+    rs2-advanced-mode-sample-c
+    rs2-advanced-mode-sample-cpp
 
     RUNTIME DESTINATION
     ${CMAKE_INSTALL_PREFIX}/bin

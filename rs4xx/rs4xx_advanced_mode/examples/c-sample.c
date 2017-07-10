@@ -1,7 +1,7 @@
 // See LICENSE file in root directory.
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
-#include "../include/rs4xx_advanced_mode.h"
+#include <librealsense/rs2_advanced_mode.h>
 #include <stdlib.h>
 #include <stdio.h>
 
@@ -16,6 +16,7 @@ void check_error()
         exit(EXIT_FAILURE);
     }
 }
+
 
 int main()
 {
@@ -36,22 +37,14 @@ int main()
 
     printf("Reading deepSeaMedianThreshold from Depth Control...\n");
     const int mode = 0;
-    int error = rs2_get_depth_control(dev, &depth_control, mode);
-    if (error)
-    {
-        printf("Advanced mode get failed!\n");
-        return EXIT_FAILURE;
-    }
+    rs2_get_depth_control(dev, &depth_control, mode, &e);
+    check_error();
 
     printf("deepSeaMedianThreshold = %d\n", depth_control.deepSeaMedianThreshold);
 
     printf("Writing Depth Control back to the device...\n");
-    rs2_set_depth_control(dev, &depth_control, 0);
-    if (error)
-    {
-        printf("Advanced mode set failed!\n");
-        return EXIT_FAILURE;
-    }
+    rs2_set_depth_control(dev, &depth_control, &e);
+    check_error();
 
     return EXIT_SUCCESS;
 }

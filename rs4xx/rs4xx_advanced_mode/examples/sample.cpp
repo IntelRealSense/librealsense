@@ -1,7 +1,7 @@
 // See LICENSE file in root directory.
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
-#include "../include/rs4xx_advanced_mode.hpp"
+#include <librealsense/rs2_advanced_mode.hpp>
 #include <librealsense/rs2.hpp>
 #include <regex>
 
@@ -134,25 +134,6 @@ void slider_float(const char* id, T* val, S T::* feild, bool& to_set)
     {
         val->*feild = temp;
         to_set = true;
-    }
-}
-
-template<class T>
-void write_advanced(advanced_mode* advanced, const T& t, bool to_set, std::string& error_message)
-{
-    if (to_set)
-    {
-        try {
-            //advanced->set(t.vals[0]);
-        }
-        catch (const rs2::error & e)
-        {
-            error_message = error_to_string(e);
-        }
-        catch (const std::exception & e)
-        {
-            error_message = e.what();
-        }
     }
 }
 
@@ -387,7 +368,7 @@ int main(int argc, char** argv) try
                         if (state.depth_controls.update)
                             try
                             {
-                                //advanced->set(*state.depth_controls.vals);
+                                advanced->set_depth_control(*state.depth_controls.vals);
                             }
                             catch (const std::exception& e)
                             {
@@ -397,7 +378,7 @@ int main(int argc, char** argv) try
                         if (state.rsm.update)
                             try
                             {
-                                //advanced->set(*state.rsm.vals);
+                                advanced->set_rsm(*state.rsm.vals);
                             }
                             catch (const std::exception& e)
                             {
@@ -407,7 +388,7 @@ int main(int argc, char** argv) try
                         if (state.rsvc.update)
                             try
                             {
-                                //advanced->set(*state.rsvc.vals);
+                                advanced->set_rau_support_vector_control(*state.rsvc.vals);
                             }
                             catch (const std::exception& e)
                             {
@@ -417,7 +398,7 @@ int main(int argc, char** argv) try
                         if (state.color_control.update)
                             try
                             {
-                                //advanced->set(*state.color_control.vals);
+                                advanced->set_color_control(*state.color_control.vals);
                             }
                             catch (const std::exception& e)
                             {
@@ -427,7 +408,7 @@ int main(int argc, char** argv) try
                         if (state.rctc.update)
                             try
                             {
-                                //advanced->set(*state.rctc.vals);
+                                advanced->set_rau_thresholds_control(*state.rctc.vals);
                             }
                             catch (const std::exception& e)
                             {
@@ -437,7 +418,7 @@ int main(int argc, char** argv) try
                         if (state.sctc.update)
                             try
                             {
-                                //advanced->set(*state.sctc.vals);
+                                advanced->set_slo_color_thresholds_control(*state.sctc.vals);
                             }
                             catch (const std::exception& e)
                             {
@@ -447,7 +428,7 @@ int main(int argc, char** argv) try
                         if (state.spc.update)
                             try
                             {
-                                //advanced->set(*state.spc.vals);
+                                advanced->set_slo_penalty_control(*state.spc.vals);
                             }
                             catch (const std::exception& e)
                             {
@@ -457,7 +438,7 @@ int main(int argc, char** argv) try
                         if (state.hdad.update)
                             try
                             {
-                                //advanced->set(*state.hdad.vals);
+                                advanced->set_hdad(*state.hdad.vals);
                             }
                             catch (const std::exception& e)
                             {
@@ -467,7 +448,7 @@ int main(int argc, char** argv) try
                         if (state.cc.update)
                             try
                             {
-                                //advanced->set(*state.cc.vals);
+                                advanced->set_color_correction(*state.cc.vals);
                             }
                             catch (const std::exception& e)
                             {
@@ -477,7 +458,7 @@ int main(int argc, char** argv) try
                         if (state.depth_table.update)
                             try
                             {
-                                //advanced->set(*state.depth_table.vals);
+                                advanced->set_depth_table(*state.depth_table.vals);
                             }
                             catch (const std::exception& e)
                             {
@@ -487,7 +468,7 @@ int main(int argc, char** argv) try
                        if (state.ae.update)
                             try
                             {
-                                //advanced->set(*state.ae.vals);
+                                advanced->set_ae_control(*state.ae.vals);
                             }
                             catch (const std::exception& e)
                             {
@@ -497,7 +478,7 @@ int main(int argc, char** argv) try
                         if (state.census.update)
                             try
                             {
-                                //advanced->set(*state.census.vals);
+                                advanced->set_census(*state.census.vals);
                             }
                             catch (const std::exception& e)
                             {
@@ -661,7 +642,8 @@ int main(int argc, char** argv) try
 
             ImGui::PopItemWidth();
 
-            write_advanced(advanced.get(), state.depth_controls, to_set, error_message);
+            if (to_set)
+                advanced->set_depth_control(state.depth_controls.vals[0]);
         }
 
         if (ImGui::CollapsingHeader("Rsm", nullptr, true, false))
@@ -677,7 +659,8 @@ int main(int argc, char** argv) try
 
             ImGui::PopItemWidth();
 
-            write_advanced(advanced.get(), state.rsm, to_set, error_message);
+            if (to_set)
+                advanced->set_rsm(state.rsm.vals[0]);
         }
 
 
@@ -698,7 +681,8 @@ int main(int argc, char** argv) try
 
             ImGui::PopItemWidth();
 
-            write_advanced(advanced.get(), state.rsvc, to_set, error_message);
+            if (to_set)
+                advanced->set_rau_support_vector_control(state.rsvc.vals[0]);
         }
 
         if (ImGui::CollapsingHeader("Color Control", nullptr, true, false))
@@ -715,7 +699,8 @@ int main(int argc, char** argv) try
 
             ImGui::PopItemWidth();
 
-            write_advanced(advanced.get(), state.color_control, to_set, error_message);
+            if (to_set)
+                advanced->set_color_control(state.color_control.vals[0]);
         }
 
         if (ImGui::CollapsingHeader("Rau Color Thresholds Control", nullptr, true, false))
@@ -730,7 +715,8 @@ int main(int argc, char** argv) try
 
             ImGui::PopItemWidth();
 
-            write_advanced(advanced.get(), state.rctc, to_set, error_message);
+            if (to_set)
+                advanced->set_rau_thresholds_control(state.rctc.vals[0]);
         }
 
         if (ImGui::CollapsingHeader("SLO Color Thresholds Control", nullptr, true, false))
@@ -745,7 +731,8 @@ int main(int argc, char** argv) try
 
             ImGui::PopItemWidth();
 
-            write_advanced(advanced.get(), state.sctc, to_set, error_message);
+            if (to_set)
+                advanced->set_slo_color_thresholds_control(state.sctc.vals[0]);
         }
 
         if (ImGui::CollapsingHeader("SLO Penalty Control", nullptr, true, false))
@@ -763,7 +750,8 @@ int main(int argc, char** argv) try
 
             ImGui::PopItemWidth();
 
-            write_advanced(advanced.get(), state.spc, to_set, error_message);
+            if (to_set)
+                advanced->set_slo_penalty_control(state.spc.vals[0]);
         }
 
         if (ImGui::CollapsingHeader("HDAD", nullptr, true, false))
@@ -780,7 +768,8 @@ int main(int argc, char** argv) try
 
             ImGui::PopItemWidth();
 
-            write_advanced(advanced.get(), state.hdad, to_set, error_message);
+            if (to_set)
+                advanced->set_hdad(state.hdad.vals[0]);
         }
 
         if (ImGui::CollapsingHeader("Color Correction", nullptr, true, false))
@@ -804,7 +793,8 @@ int main(int argc, char** argv) try
 
             ImGui::PopItemWidth();
 
-            write_advanced(advanced.get(), state.cc, to_set, error_message);
+            if (to_set)
+                advanced->set_color_correction(state.cc.vals[0]);
         }
 
         if (ImGui::CollapsingHeader("Depth Table", nullptr, true, false))
@@ -821,7 +811,8 @@ int main(int argc, char** argv) try
 
             ImGui::PopItemWidth();
 
-            write_advanced(advanced.get(), state.depth_controls, to_set, error_message);
+            if (to_set)
+                advanced->set_depth_control(state.depth_controls.vals[0]);
         }
 
         if (ImGui::CollapsingHeader("AE Control", nullptr, true, false))
@@ -834,7 +825,8 @@ int main(int argc, char** argv) try
 
             ImGui::PopItemWidth();
 
-            write_advanced(advanced.get(), state.ae, to_set, error_message);
+            if (to_set)
+                advanced->set_ae_control(state.ae.vals[0]);
         }
 
         if (ImGui::CollapsingHeader("Census Enable Reg", nullptr, true, false))
@@ -848,7 +840,8 @@ int main(int argc, char** argv) try
 
             ImGui::PopItemWidth();
 
-            write_advanced(advanced.get(), state.census, to_set, error_message);
+            if (to_set)
+                advanced->set_census(state.census.vals[0]);
         }
 
         if (error_message != "")

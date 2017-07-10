@@ -135,6 +135,8 @@ set(REALSENSE_HPP
     include/librealsense/rscore2.hpp
     include/librealsense/rsutil2.h
     include/librealsense/rsutil2.hpp
+    include/librealsense/rs2_advanced_mode.h
+    include/librealsense/rs2_advanced_mode.hpp
 
     src/core/streaming.h
     src/core/debug.h
@@ -179,6 +181,7 @@ set(REALSENSE_HPP
     src/win/win-usb.h
     src/win/win-hid.h
     src/win/win-backend.h
+    src/api.h
 
     third-party/easyloggingpp/src/easylogging++.h
     third-party/sqlite/sqlite3.h
@@ -219,8 +222,12 @@ if(WIN32)
         include/librealsense/rscore2.hpp
         include/librealsense/rsutil2.h
         include/librealsense/rsutil2.hpp
+        include/librealsense/rs2_advanced_mode.h
+        include/librealsense/rs2_advanced_mode.hpp
         CMake/realsense.def
-		src/verify.c
+        CMake/advanced_mode.def
+        src/verify.c
+        rs4xx/rs4xx_advanced_mode/src/verify.c
         )
 
     source_group("Header Files\\Recorder" FILES
@@ -298,6 +305,7 @@ endif()
 if(WIN32)
     set(BACKEND RS2_USE_WMF_BACKEND)
     set(REALSENSE_DEF CMake/realsense.def)
+    set(REALSENSE_DEF CMake/advanced_mode.def)
     # Makes VS15 find the DLL when trying to run examples/tests
     set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
     set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})

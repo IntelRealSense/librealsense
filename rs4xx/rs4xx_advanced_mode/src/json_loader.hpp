@@ -13,7 +13,7 @@
 #include <string>
 
 #include "../third-party/json.hpp"
-#include "rs4xx_advanced_mode.hpp"
+#include <librealsense/rs2_advanced_mode.hpp>
 
 using json = nlohmann::json;
 
