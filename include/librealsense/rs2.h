@@ -60,41 +60,6 @@ typedef enum rs2_stream
     RS2_STREAM_COUNT
 } rs2_stream;
 
-/** \brief  */
-typedef enum rs2_frame_type
-{
-    RS2_FRAME_TYPE_IMAGE,
-    RS2_FRAME_TYPE_FLOAT3,
-    RS2_FRAME_TYPE_6DOF,
-    RS2_FRAME_TYPE_COUNT
-} rs2_frame_type;
-
-/** \brief  */
-typedef enum rs2_sensor_type
-{
-    RS2_SENSOR_TYPE_DEPTH,
-    RS2_SENSOR_TYPE_COLOR,
-    RS2_SENSOR_TYPE_RS400_DEPTH,
-    RS2_SENSOR_TYPE_SR300_DEPTH,
-    RS2_SENSOR_TYPE_REGION_OF_INTEREST,
-    RS2_SENSOR_TYPE_WITH_LASER,
-    RS2_SENSOR_TYPE_MOTION_MODULE,
-    RS2_SENSOR_TYPE_COUNT
-} rs2_sensor_type;
-
-/** \brief  */
-typedef enum rs2_stream_profile_type
-{
-    RS2_STREAM_PROFILE_TYPE_IMAGE,
-    RS2_STREAM_PROFILE_TYPE_PERIODIC,
-    RS2_STREAM_PROFILE_TYPE_INFRARED,
-    RS2_STREAM_PROFILE_TYPE_COLOR,
-    RS2_STREAM_PROFILE_TYPE_RS400_DEPTH,
-    RS2_STREAM_PROFILE_TYPE_SR300_DEPTH,
-    RS2_STREAM_PROFILE_TYPE_MOTION,
-    RS2_STREAM_PROFILE_TYPE_COUNT,
-} rs2_stream_profile_type;
-
 /** \brief Format identifies how binary data is encoded within a frame */
 typedef enum rs2_format
 {
@@ -294,6 +259,7 @@ typedef struct rs2_log_callback rs2_log_callback;
 typedef struct rs2_syncer rs2_syncer;
 typedef struct rs2_device_serializer rs2_device_serializer;
 typedef struct rs2_record_device rs2_record_device;
+typedef struct rs2_source rs2_source;
 
 typedef void (*rs2_frame_callback_ptr)(rs2_frame*, void*);
 typedef void (*rs2_notification_callback_ptr)(rs2_notification*, void*);
@@ -1034,9 +1000,12 @@ typedef enum rs2_extension_type
     RS2_EXTENSION_TYPE_UNKNOWN,
     RS2_EXTENSION_TYPE_VIDEO,
     RS2_EXTENSION_TYPE_ROI,
+    RS2_EXTENSION_TYPE_VIDEO_FRAME,
+    RS2_EXTENSION_TYPE_MOTION_FRAME,
     RS2_EXTENSION_TYPE_ADVANCED_MODE,
     RS2_EXTENSION_TYPE_COUNT
 } rs2_extension_type;
+
 /**
  * TODO: document
  * \param device
@@ -1052,6 +1021,14 @@ int rs2_is_sensor(const rs2_sensor* sensor, rs2_extension_type extension_type, r
  * \return
  */
 int rs2_is_device(const rs2_device* dev, rs2_extension_type extension_type, rs2_error ** error);
+
+/**
+ * TODO: document
+ * \param frame
+ * \param extension_type
+ * \return
+ */
+int rs2_is_frame(const rs2_frame* frame, rs2_extension_type extension_type, rs2_error ** error);
 
 /**
  * TODO: document

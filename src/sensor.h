@@ -9,6 +9,7 @@
 #include "core/streaming.h"
 #include "core/roi.h"
 #include "core/options.h"
+#include "source.h"
 
 #include <chrono>
 #include <memory>
@@ -64,12 +65,6 @@ namespace librealsense
         void register_notifications_callback(notifications_callback_ptr callback) override;
         std::shared_ptr<notifications_proccessor> get_notifications_proccessor();
 
-        rs2_frame* alloc_frame(size_t size, frame_additional_data additional_data, bool requires_memory) const;
-
-        void invoke_callback(frame_holder frame) const;
-
-        void flush() const;
-
         bool is_streaming() const
         {
             return _is_streaming;
@@ -80,9 +75,7 @@ namespace librealsense
             _pixel_formats.push_back(pf);
         }
 
-        virtual ~sensor_base() {
-            flush();
-        }
+        virtual ~sensor_base() { _source.flush(); }
 
         void register_metadata(rs2_frame_metadata metadata, std::shared_ptr<md_attribute_parser_base> metadata_parser);
 
@@ -102,14 +95,12 @@ namespace librealsense
 
         std::atomic<bool> _is_streaming;
         std::atomic<bool> _is_opened;
-        std::mutex _callback_mutex;
-        frame_callback_ptr _callback;
-        std::shared_ptr<frame_archive> _archive;
-        std::atomic<uint32_t> _max_publish_list_size;
         std::shared_ptr<uvc::time_service> _ts;
         std::shared_ptr<notifications_proccessor> _notifications_proccessor;
         on_before_frame_callback _on_before_frame_callback;
         std::shared_ptr<metadata_parser_map> _metadata_parsers = nullptr;
+
+        frame_source _source;
 
     private:
         std::vector<native_pixel_format> _pixel_formats;

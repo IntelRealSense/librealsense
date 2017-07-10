@@ -85,12 +85,7 @@ namespace librealsense
             std::vector<uint8_t> def;
 
         private:
-            void populate_raw_data(std::vector<uint8_t>& vec, int32_t value)
-            {
-                vec.resize(sizeof(value));
-                auto data = reinterpret_cast<const uint8_t*>(&value);
-                std::copy(data, data + sizeof(value), vec.data());
-            }
+            void populate_raw_data(std::vector<uint8_t>& vec, int32_t value);
         };
 
         class time_service

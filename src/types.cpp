@@ -105,7 +105,28 @@ namespace librealsense
         }
         #undef CASE
     }
-       const char * get_string(rs2_log_severity value)
+
+    const char * get_string(rs2_extension_type value)
+    {
+        #define CASE(X) case RS2_EXTENSION_TYPE_##X: return #X;
+        switch (value)
+        {
+            CASE(DEBUG)
+            CASE(INFO)
+            CASE(MOTION)
+            CASE(OPTIONS)
+            CASE(UNKNOWN)
+            CASE(VIDEO)
+            CASE(ROI)
+            CASE(VIDEO_FRAME)
+            CASE(MOTION_FRAME)
+            CASE(ADVANCED_MODE)
+        default: assert(!is_valid(value)); return unknown;
+        }
+        #undef CASE
+    }
+       
+    const char * get_string(rs2_log_severity value)
     {
         #define CASE(X) case RS2_LOG_SEVERITY_##X: return #X;
         switch (value)
@@ -121,6 +142,7 @@ namespace librealsense
         }
         #undef CASE
     }
+
     const char * get_string(rs2_option value)
     {
         #define CASE(X) case RS2_OPTION_##X: return #X;
@@ -264,24 +286,6 @@ namespace librealsense
         CASE(UNKNOWN_ERROR)
         default: assert(!is_valid(value)); return unknown;
         }
-        #undef CASE
-    }
-
-    const char * get_string(rs2_extension_type value)
-    {
-        #define CASE(X) case RS2_EXTENSION_TYPE_##X: return #X;
-                switch(value)
-                {
-                    CASE(DEBUG)
-                    CASE(INFO)
-                    CASE(MOTION)
-                    CASE(OPTIONS)
-                    CASE(UNKNOWN)
-                    CASE(VIDEO)
-                    CASE(ROI)
-                    CASE(ADVANCED_MODE)
-                    default: assert(!is_valid(value)); return unknown;
-                }
         #undef CASE
     }
 
@@ -452,5 +456,9 @@ namespace librealsense
         _dispatcher.start();
     }
 
-
+    void copy(void* dst, void const* src, size_t size)
+    {
+        auto from = reinterpret_cast<uint8_t const*>(src);
+        std::copy(from, from + size, reinterpret_cast<uint8_t*>(dst));
+    }
 }

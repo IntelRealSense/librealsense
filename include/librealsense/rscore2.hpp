@@ -13,6 +13,13 @@ struct rs2_frame_callback
     virtual                                 ~rs2_frame_callback() {}
 };
 
+struct rs2_frame_processor_callback
+{
+    virtual rs2_frame *                     on_frame(rs2_frame * f, rs2_source * source) = 0;
+    virtual void                            release() = 0;
+    virtual                                 ~rs2_frame_processor_callback() {}
+};
+
 struct rs2_notifications_callback
 {
     virtual void                            on_notification(rs2_notification* n) = 0;

@@ -106,6 +106,8 @@ set(REALSENSE_CPP
     src/linux/backend-hid.cpp
     src/backend.cpp
     src/verify.c
+	src/align.cpp
+	src/source.cpp
     src/ds5/ds5-options.cpp
     src/ds5/ds5-timestamp.cpp
     src/ds5/ds5-private.cpp
@@ -147,6 +149,7 @@ set(REALSENSE_HPP
     src/core/options.h
     src/core/info.h
 	src/core/extension.h
+	src/core/processing.h
 
     src/archive.h
     src/concurrency.h
@@ -154,6 +157,7 @@ set(REALSENSE_HPP
     src/sensor.h
     src/sync.h
     src/sensor.h
+	src/align.h
     src/algo.h
     src/option.h
     src/metadata.h
@@ -161,6 +165,7 @@ set(REALSENSE_HPP
     src/error-handling.h
     src/hw-monitor.h
     src/image.h
+	src/source.h
     src/ivcam/ivcam-private.h
     src/types.h
     src/backend.h
@@ -227,8 +232,6 @@ if(WIN32)
         include/librealsense/rs2_advanced_mode.hpp
         CMake/realsense.def
         CMake/advanced_mode.def
-        src/verify.c
-        rs4xx/rs4xx_advanced_mode/src/verify.c
         )
 
     source_group("Header Files\\Recorder" FILES
@@ -239,6 +242,7 @@ if(WIN32)
 
     source_group("Source Files\\API" FILES
         src/rs.cpp
+		src/verify.c
         )
 
     source_group("Source Files\\Recorder" FILES
@@ -374,6 +378,8 @@ if(HWM_OVER_XU)
     add_definitions(-DHWM_OVER_XU)
 endif()
 
+add_subdirectory(third-party/realsense-file)
+
 option(BUILD_SHARED_LIBS "Build shared library" ON)
 if(BUILD_SHARED_LIBS)
     add_library(realsense2 SHARED ${REALSENSE_CPP} ${REALSENSE_HPP} ${REALSENSE_DEF})
@@ -383,7 +389,7 @@ endif()
 
 set_target_properties(realsense2 PROPERTIES VERSION ${REALSENSE_VERSION_STRING}
                                 SOVERSION ${REALSENSE_VERSION_MAJOR})
-target_link_libraries(realsense2 ${LIBUSB1_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(realsense2 realsense-file ${LIBUSB1_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
 list(APPEND librealsense_PKG_LIBS ${CMAKE_THREAD_LIBS_INIT})
 
 add_definitions(-DELPP_THREAD_SAFE)

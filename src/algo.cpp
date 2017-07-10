@@ -214,10 +214,12 @@ bool auto_exposure_algorithm::analyze_image(const rs2_frame* image)
     if (number_of_pixels == 0)
         return false;   // empty image
 
+    auto frame = ((video_frame*)image->get());
+
     if (!is_roi_initialized)
     {
-        auto width = image->get()->get_width();
-        auto height = image->get()->get_height();
+        auto width = frame->get_width();
+        auto height = frame->get_height();
         image_roi.min_x = 0;
         image_roi.min_y = 0;
         image_roi.max_x = width - 1;
@@ -228,8 +230,8 @@ bool auto_exposure_algorithm::analyze_image(const rs2_frame* image)
     std::vector<int> H(256);
     auto total_weight = number_of_pixels;
 
-    auto cols = image->get()->get_width();
-    im_hist((uint8_t*)image->get()->get_frame_data(), image_roi, image->get()->get_bpp() / 8 * cols, &H[0]);
+    auto cols = frame->get_width();
+    im_hist((uint8_t*)frame->get_frame_data(), image_roi, frame->get_bpp() / 8 * cols, &H[0]);
 
     histogram_metric score = {};
     histogram_score(H, total_weight, score);

@@ -12,46 +12,17 @@
 
 namespace librealsense
 {
-    class frame_queue_size : public librealsense_option
-    {
-    public:
-        frame_queue_size(std::atomic<uint32_t>* ptr, const option_range& opt_range)
-            : librealsense_option(opt_range),
-              _ptr(ptr)
-        {}
-
-        void set(float value) override
-        {
-            if (!is_valid(value))
-                throw invalid_value_exception(to_string() << "set(frame_queue_size) failed! Given value " << value << " is out of range.");
-
-            *_ptr = static_cast<uint32_t>(value);
-        }
-
-        float query() const override { return static_cast<float>(_ptr->load()); }
-
-        bool is_enabled() const override { return true; }
-
-        const char* get_description() const override
-        {
-            return "Max number of frames you can hold at a given time. Increasing this number will reduce frame drops but increase lattency, and vice versa";
-        }
-    private:
-        std::atomic<uint32_t>* _ptr;
-    };
-
     sensor_base::sensor_base(std::string name, std::shared_ptr<uvc::time_service> ts)
-        : _is_streaming(false),
+        : _source(ts),
+          _is_streaming(false),
           _is_opened(false),
-          _callback(nullptr, [](rs2_frame_callback*) {}),
-          _max_publish_list_size(16),
-          _ts(ts),
           _stream_profiles([this]() { return this->init_stream_profiles(); }),
           _notifications_proccessor(std::shared_ptr<notifications_proccessor>(new notifications_proccessor())),
           _metadata_parsers(std::make_shared<metadata_parser_map>()),
-          _on_before_frame_callback(nullptr)
+          _on_before_frame_callback(nullptr),
+          _ts(ts)
     {
-        register_option(RS2_OPTION_FRAMES_QUEUE_SIZE, std::make_shared<frame_queue_size>(&_max_publish_list_size, option_range{ 0, 32, 1, 16 }));
+        register_option(RS2_OPTION_FRAMES_QUEUE_SIZE, _source.get_published_size_option());
 
         register_metadata(RS2_FRAME_METADATA_TIME_OF_ARRIVAL, std::make_shared<librealsense::md_time_of_arrival_parser>());
 
@@ -61,42 +32,6 @@ namespace librealsense
     void sensor_base::register_notifications_callback(notifications_callback_ptr callback)
     {
         _notifications_proccessor->set_callback(std::move(callback));
-    }
-
-    rs2_frame* sensor_base::alloc_frame(size_t size, frame_additional_data additional_data, bool requires_memory) const
-    {
-        auto frame = _archive->alloc_frame(size, additional_data, requires_memory);
-        return _archive->track_frame(frame);
-    }
-
-    void sensor_base::invoke_callback(frame_holder frame) const
-    {
-        if (frame)
-        {
-            auto callback = _archive->begin_callback();
-            try
-            {
-                frame->log_callback_start(_ts->get_time());
-                if (_callback)
-                {
-                    rs2_frame* ref = nullptr;
-                    std::swap(frame.frame, ref);
-                    _callback->on_frame(ref);
-                    //ref->log_callback_end();          // This reference point would allow to measure
-                                                        // user callback lifetime rather than frame data lifetime
-                }
-            }
-            catch(...)
-            {
-                LOG_ERROR("Exception was thrown during user callback!");
-            }
-        }
-    }
-
-    void sensor_base::flush() const
-    {
-        if (_archive.get())
-            _archive->flush();
     }
 
     std::shared_ptr<notifications_proccessor> sensor_base::get_notifications_proccessor()
@@ -290,8 +225,7 @@ namespace librealsense
             throw wrong_api_call_sequence_exception("open(...) failed. UVC device is already opened!");
 
         auto on = std::unique_ptr<power>(new power(shared_from_this()));
-        _archive = std::make_shared<frame_archive>(&_max_publish_list_size,_ts, _device,_metadata_parsers);
-
+        _source.init(RS2_EXTENSION_TYPE_VIDEO_FRAME, _metadata_parsers);
         auto mapping = resolve_requests(requests);
 
         auto timestamp_reader = _timestamp_reader.get();
@@ -352,21 +286,19 @@ namespace librealsense
                     frame_additional_data additional_data(timestamp,
                         frame_counter,
                         system_time,
-                        width,
-                        height,
-                        fps,
-                        width,
-                        bpp,
                         output.second,
                         output.first,
+                        fps,
                         static_cast<uint8_t>(f.metadata_size),
                         (const uint8_t*)f.metadata);
 
-                    frame_holder frame = this->alloc_frame(width * height * bpp / 8, additional_data, requires_processing);
+                    frame_holder frame = _source.alloc_frame(width * height * bpp / 8, additional_data, requires_processing);
                     if (frame.frame)
                     {
-                        frame->get()->set_timestamp_domain(timestamp_domain);
-                        dest.push_back(const_cast<byte*>(frame->get()->get_frame_data()));
+                        auto video = (video_frame*)frame->get();
+                        video->assign(width, height, width, bpp);
+                        video->set_timestamp_domain(timestamp_domain);
+                        dest.push_back(const_cast<byte*>(video->get_frame_data()));
                         refs.push_back(std::move(frame));
                     }
                     else
@@ -399,15 +331,15 @@ namespace librealsense
                     {
                         if (_on_before_frame_callback)
                         {
-                            auto callback = _archive->begin_callback();
+                            auto callback = _source.begin_callback();
                             auto stream_type = pref->get()->get_stream_type();
                             _on_before_frame_callback(stream_type, *pref, std::move(callback));
                         }
 
-                        this->invoke_callback(std::move(pref));
+                        _source.invoke_callback(std::move(pref));
                     }
                  }
-                }, _max_publish_list_size.load());
+                }, _source.get_published_size_option()->query());
             }
             catch(...)
             {
@@ -478,7 +410,8 @@ namespace librealsense
         else if(!_is_opened)
             throw wrong_api_call_sequence_exception("start_streaming(...) failed. UVC device was not opened!");
 
-        _callback = std::move(callback);
+        _source.set_callback(callback);
+        
         _is_streaming = true;
         _device->start_callbacks();
     }
@@ -496,10 +429,9 @@ namespace librealsense
 
     void uvc_sensor::reset_streaming()
     {
-        flush();
+        _source.flush();
         _configuration.clear();
-        _callback.reset();
-        _archive.reset();
+        _source.reset();
         _timestamp_reader->reset();
     }
 
@@ -720,8 +652,9 @@ namespace librealsense
         else if(!_is_opened)
             throw wrong_api_call_sequence_exception("start_streaming(...) failed. Hid device was not opened!");
 
-        _archive = std::make_shared<frame_archive>(&_max_publish_list_size, _ts, nullptr, _metadata_parsers);
-        _callback = std::move(callback);
+        _source.set_callback(callback);
+        _source.init(RS2_EXTENSION_TYPE_MOTION_FRAME, _metadata_parsers);
+
         _hid_device->start_capture([this](const uvc::sensor_data& sensor_data)
         {
             auto system_time = _ts->get_time();
@@ -775,8 +708,7 @@ namespace librealsense
             else
                 additional_data.stream_type = _configured_profiles[sensor_name].stream;
 
-            additional_data.width = mode.profile.width;
-            additional_data.height = mode.profile.height;
+            additional_data.fps = mode.profile.fps;
             additional_data.timestamp = timestamp;
             additional_data.frame_number = frame_counter;
             additional_data.timestamp_domain = timestamp_reader->get_frame_timestamp_domain(mode, sensor_data.fo);
@@ -787,7 +719,7 @@ namespace librealsense
                       << ",TS," << std::fixed << timestamp
                       << ",TS_Domain," << rs2_timestamp_domain_to_string(additional_data.timestamp_domain));
 
-            auto frame = this->alloc_frame(data_size, additional_data, true);
+            auto frame = _source.alloc_frame(data_size, additional_data, true);
             if (!frame)
             {
                 LOG_INFO("Dropped frame. alloc_frame(...) returned nullptr");
@@ -799,12 +731,12 @@ namespace librealsense
 
             if (_on_before_frame_callback)
             {
-                auto callback = _archive->begin_callback();
+                auto callback = _source.begin_callback();
                 auto stream_type = frame->get()->get_stream_type();
                 _on_before_frame_callback(stream_type, *frame, std::move(callback));
             }
 
-            this->invoke_callback(std::move(frame));
+            _source.invoke_callback(std::move(frame));
         });
 
         _is_streaming = true;
@@ -819,9 +751,8 @@ namespace librealsense
 
         _hid_device->stop_capture();
         _is_streaming = false;
-        flush();
-        _callback.reset();
-        _archive.reset();
+        _source.flush();
+        _source.reset();
         _hid_iio_timestamp_reader->reset();
         _custom_hid_timestamp_reader->reset();
     }

@@ -308,6 +308,85 @@ namespace rs2
         }
 
         /**
+        * retrieve pixel format of the frame
+        * \return               pixel format as described in rs2_format enum
+        */
+        rs2_format get_format() const
+        {
+            rs2_error * e = nullptr;
+            auto r = rs2_get_frame_format(frame_ref, &e);
+            error::handle(e);
+            return r;
+        }
+
+        /**
+        * retrieve the origin stream type that produced the frame
+        * \return               stream type of the frame
+        */
+        rs2_stream get_stream_type() const
+        {
+            rs2_error * e = nullptr;
+            auto s = rs2_get_frame_stream_type(frame_ref, &e);
+            error::handle(e);
+            return s;
+        }
+
+        /**
+        * create additional reference to a frame without duplicating frame data
+        * \param[out] result     new frame reference, release by destructor
+        * \return                true if cloning was successful
+        */
+        bool try_clone_ref(frame* result) const
+        {
+            rs2_error * e = nullptr;
+            auto s = rs2_clone_frame_ref(frame_ref, &e);
+            error::handle(e);
+            if (!s) return false;
+            *result = frame(s);
+            return true;
+        }
+
+        template<class T>
+        bool is() const
+        {
+            T extension(*this);
+            return extension;
+        }
+
+        template<class T>
+        T as() const
+        {
+            T extension(*this);
+            return extension;
+        }
+
+        rs2_frame* get() const { return frame_ref; }
+
+    protected:
+        friend class frame_queue;
+        friend class syncer;
+
+        rs2_frame* frame_ref;
+        frame(const frame&) = delete;
+    };
+
+    class video_frame : public frame
+    {
+    public:
+        video_frame(const frame& f)
+            : frame()
+        {
+            rs2_error* e = nullptr;
+            if(!f || (rs2_is_frame(f.get(), RS2_EXTENSION_TYPE_VIDEO_FRAME, &e) == 0 && !e))
+            {
+                frame_ref = nullptr;
+            }
+            error::handle(e);
+
+            if (f) f.try_clone_ref(this);
+        }
+
+        /**
         * returns image width in pixels
         * \return        frame width in pixels
         */
@@ -356,52 +435,6 @@ namespace rs2
         }
 
         int get_bytes_per_pixel() const { return get_bits_per_pixel() / 8; }
-
-        /**
-        * retrieve pixel format of the frame
-        * \return               pixel format as described in rs2_format enum
-        */
-        rs2_format get_format() const
-        {
-            rs2_error * e = nullptr;
-            auto r = rs2_get_frame_format(frame_ref, &e);
-            error::handle(e);
-            return r;
-        }
-
-        /**
-        * retrieve the origin stream type that produced the frame
-        * \return               stream type of the frame
-        */
-        rs2_stream get_stream_type() const
-        {
-            rs2_error * e = nullptr;
-            auto s = rs2_get_frame_stream_type(frame_ref, &e);
-            error::handle(e);
-            return s;
-        }
-
-        /**
-        * create additional reference to a frame without duplicating frame data
-        * \param[out] result     new frame reference, release by destructor
-        * \return                true if cloning was successful
-        */
-        bool try_clone_ref(frame* result) const
-        {
-            rs2_error * e = nullptr;
-            auto s = rs2_clone_frame_ref(frame_ref, &e);
-            error::handle(e);
-            if (!s) return false;
-            *result = frame(s);
-            return true;
-        }
-
-    private:
-        friend class frame_queue;
-        friend class syncer;
-
-        rs2_frame* frame_ref;
-        frame(const frame&) = delete;
     };
 
     template<class T>
@@ -471,42 +504,6 @@ namespace rs2
         int min_y;
         int max_x;
         int max_y;
-    };
-
-    class advanced
-    {
-    public:
-        explicit advanced(std::shared_ptr<rs2_device> dev)
-            : _dev(dev) {}
-
-        advanced& operator=(const std::shared_ptr<rs2_device> dev)
-        {
-            _dev = dev;
-            return *this;
-        }
-
-        std::vector<uint8_t> send_and_receive_raw_data(const std::vector<uint8_t>& input) const
-        {
-            std::vector<uint8_t> results;
-
-            rs2_error* e = nullptr;
-            std::shared_ptr<rs2_raw_data_buffer> list(
-                rs2_send_and_receive_raw_data(_dev.get(), (void*)input.data(), (uint32_t)input.size(), &e),
-                rs2_delete_raw_data);
-            error::handle(e);
-
-            auto size = rs2_get_raw_data_size(list.get(), &e);
-            error::handle(e);
-
-            auto start = rs2_get_raw_data(list.get(), &e);
-
-            results.insert(results.begin(), start, start + size);
-
-            return results;
-        }
-
-    private:
-        std::shared_ptr<rs2_device> _dev;
     };
 
     typedef std::vector<frame> frameset;
@@ -1053,7 +1050,7 @@ namespace rs2
             return *this;
         }
         device() : _dev(nullptr) {}
-
+        
         operator bool() const
         {
             return _dev != nullptr;

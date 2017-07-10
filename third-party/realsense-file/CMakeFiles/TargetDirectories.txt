@@ -1,0 +1,3 @@
+/home/administrator/Desktop/realsense_file/CMakeFiles/edit_cache.dir
+/home/administrator/Desktop/realsense_file/CMakeFiles/rebuild_cache.dir
+/home/administrator/Desktop/realsense_file/CMakeFiles/realsense_file.dir
