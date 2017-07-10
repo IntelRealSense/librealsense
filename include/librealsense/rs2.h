@@ -1022,8 +1022,6 @@ int rs2_is_sensor(const rs2_sensor* sensor, rs2_extension_type extension_type, r
 int rs2_is_device(const rs2_device* dev, rs2_extension_type extension_type, rs2_error ** error);
 
 /**
-<<<<<<< HEAD
-=======
  * TODO: document
  * \param frame
  * \param extension_type
@@ -1033,7 +1031,6 @@ int rs2_is_frame(const rs2_frame* frame, rs2_extension_type extension_type, rs2_
 
 /**
  * TODO: document
->>>>>>> 6a8d1ffeced1c6b4726d771a7214ddb8df6aa46d
  * \param file
  * \param error
  * \return
