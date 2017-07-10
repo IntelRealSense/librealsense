@@ -146,6 +146,7 @@ set(REALSENSE_HPP
     src/core/video.h
     src/core/options.h
     src/core/info.h
+	src/core/extension.h
 
     src/archive.h
     src/concurrency.h
@@ -282,6 +283,7 @@ if(WIN32)
 		src/core/motion.h
 		src/core/info.h
 		src/core/options.h
+		src/core/extension.h
         )
 
     source_group("Header Files\\Logging" FILES
@@ -443,7 +445,7 @@ option(BUILD_PYTHON_BINDINGS "Build Python bindings" OFF)
 option(BUILD_GRAPHICAL_EXAMPLES "Build graphical examples and tools." ON)
 
 if(((BUILD_EXAMPLES AND BUILD_GRAPHICAL_EXAMPLES) OR BUILD_RS4XX_EXTRAS) AND WIN32)
-  add_subdirectory(examples/third_party/glfw)
+  add_subdirectory(third-party/glfw)
 endif()
 
 if(BUILD_EXAMPLES)
