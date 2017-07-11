@@ -343,8 +343,44 @@ void draw_advanced_mode_tab(device& dev, advanced_mode_control& amc, bool& get_c
         }
         catch(...)
         {
-            // TODO: raise notification
+            // TODO
         }
+    }
+}
+
+void draw_presets_combo(device& dev, int& preset_index, int& last_preset_index, std::string& error_message)
+{
+    if (ImGui::CollapsingHeader("Advanced-Mode Presets", nullptr, true, true))
+    {
+        const char* presets[] = {"p1", "p2", "p3"};
+        ImGui::PushItemWidth(-1);
+        if (ImGui::IsItemHovered())
+        {
+            ImGui::SetTooltip("Advanced-Mode Presets");
+        }
+
+        if (ImGui::Combo("presets", &preset_index, presets, 3))
+        {
+            last_preset_index = preset_index;
+            if (dev.is<rs4xx::advanced_mode>())
+            {
+                auto advanced = dev.as<rs4xx::advanced_mode>();
+                if (advanced.is_enabled())
+                {
+                    // TODO: Set Preset
+                }
+                else
+                {
+                    error_message = "Advanced-Mode is Disabled!";
+                }
+            }
+            else
+            {
+                error_message = "Device doesn't support Advanced Mode!";
+            }
+        }
+
+        ImGui::PopItemWidth();
     }
 }
 
@@ -454,8 +490,12 @@ int main(int, char**) try
 
     advanced_mode_control amc{};
     bool get_curr_advanced_controls = true;
+
     int last_tab_index = 0;
     int tab_index = 0;
+
+    int last_preset_index = 0;
+    int preset_index = -1;
 
     // Closing the window
     while (!glfwWindowShouldClose(window))
@@ -607,8 +647,10 @@ int main(int, char**) try
             model.draw_device_details(dev);
         }
 
+
         if (list.size() > 0)
         {
+            draw_presets_combo(dev, preset_index, last_preset_index, error_message);
             if (last_tab_index == 0)
             {
                 draw_general_tab(model, list, dev, label, hw_reset_enable, update_read_only_options, error_message);
@@ -616,10 +658,6 @@ int main(int, char**) try
             else if (last_tab_index == 1)
             {
                 draw_advanced_mode_tab(dev, amc, get_curr_advanced_controls, error_message);
-            }
-            else if (last_tab_index == 2)
-            {
-
             }
         }
 

@@ -8,6 +8,7 @@
 #include "core/advanced_mode.h"
 #include "api.h"
 
+const char * rs2_advanced_mode_preset_to_string(rs2_advanced_mode_preset preset){ return librealsense::get_string((rs2_notification_category)preset); } // TODO
 
 void rs2_toggle_advanced_mode(rs2_device* dev, int enable, rs2_error** error) try
 {

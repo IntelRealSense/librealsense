@@ -950,7 +950,7 @@ namespace rs2
         {
             ImGui::SetTooltip("%s", device_names_chars[new_index]);
         }
-        return ImGui::Combo("", &new_index, device_names_chars.data(), static_cast<int>(device_names.size()));
+        return ImGui::Combo("device_model", &new_index, device_names_chars.data(), static_cast<int>(device_names.size()));
         ImGui::PopItemWidth();
     }
 

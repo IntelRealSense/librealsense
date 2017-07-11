@@ -9,6 +9,23 @@
 #include <librealsense/rs2_advanced_mode_command.h>
 #undef RS4XX_ADVANCED_MODE_HPP
 
+typedef enum
+{
+    etDepthControl              = 0,
+    etRsm                       = 1,
+    etRauSupportVectorControl   = 2,
+    etColorControl              = 3,
+    etRauColorThresholdsControl = 4,
+    etSloColorThresholdsControl = 5,
+    etSloPenaltyControl         = 6,
+    etHdad                      = 7,
+    etColorCorrection           = 8,
+    etDepthTableControl         = 9,
+    etAEControl                 = 10,
+    etCencusRadius9             = 11,
+    etLastAdvancedModeGroup     = 12,       // Must be last
+}
+EtAdvancedModeRegGroup;
 
 namespace librealsense
 {
