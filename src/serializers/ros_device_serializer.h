@@ -13,8 +13,12 @@ namespace librealsense
     {
     public:
         ros_device_serializer(const std::string& file) :
-            m_writer([file]() { return std::make_shared<ros_writer>(file); } ),
-            m_reader([file]() { return std::make_shared<ros_reader>(file); } )
+            m_writer([file]() { 
+				return std::make_shared<ros_device_serializer_writer>(file); 
+			} ),
+            m_reader([file]() { 
+				return std::make_shared<ros_reader>(file); 
+			} )
         {
         }
 

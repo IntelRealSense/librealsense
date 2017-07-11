@@ -66,14 +66,14 @@ Header::~Header()
 
 }
 
-bool Header::parse(const std::shared_ptr<std::vector<uint8_t>>& buffer, uint32_t size, std::string& error_msg)
+bool Header::parse(const std::vector<uint8_t>& buffer, uint32_t size, std::string& error_msg)
 {
-  return parse(buffer->data(), size, error_msg);
+  return parse(buffer.data(), size, error_msg);
 }
 
-bool Header::parse(uint8_t* buffer, uint32_t size, std::string& error_msg)
+bool Header::parse(const uint8_t* buffer, uint32_t size, std::string& error_msg)
 {
-  uint8_t* buf = buffer;
+  const uint8_t* buf = buffer;
   while (buf < buffer + size)
   {
     uint32_t len;
@@ -122,7 +122,7 @@ bool Header::getValue(const std::string& key, std::string& value) const
   return true;
 }
 
-void Header::write(const M_string& key_vals, std::shared_ptr<std::vector<uint8_t>>& buffer, uint32_t& size)
+void Header::write(const M_string& key_vals, std::vector<uint8_t>& buffer, uint32_t& size)
 {
   // Calculate the necessary size
   size = 0;
@@ -147,8 +147,8 @@ void Header::write(const M_string& key_vals, std::shared_ptr<std::vector<uint8_t
   }
 
   std::vector<uint8_t> v(0, size);
-  buffer.reset(new std::vector<uint8_t> (0, size));
-  char* ptr = (char*)buffer.get();
+  buffer = std::vector<uint8_t> (size, 0);
+  char* ptr = (char*)buffer.data();
 
   // Write the data
   {
@@ -168,7 +168,7 @@ void Header::write(const M_string& key_vals, std::shared_ptr<std::vector<uint8_t
     }
   }
 
-  assert(ptr == (char*)buffer.get() + size);
+  assert(ptr == (char*)buffer.data() + size);
 }
 
 }

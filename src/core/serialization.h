@@ -15,16 +15,14 @@ namespace librealsense
     class sensor_snapshot
     {
     public:
-        sensor_snapshot(const std::vector<std::shared_ptr<extension_snapshot>>& sensor_extensios)
-            :
+        sensor_snapshot(const std::vector<std::shared_ptr<extension_snapshot>>& sensor_extensios) :
             m_extensios(sensor_extensios)
         {
-
         }
 
         std::vector<std::shared_ptr<librealsense::extension_snapshot>> get_extensions_snapshots() const
         {
-
+			return m_extensios;
         }
     private:
         std::vector<std::shared_ptr<extension_snapshot>> m_extensios;
@@ -35,8 +33,7 @@ namespace librealsense
     public:
         device_snapshot() {}
         device_snapshot(const std::vector<std::shared_ptr<extension_snapshot>>& device_extensios,
-                        const std::vector<sensor_snapshot>& sensors_snapshot)
-            :
+                        const std::vector<sensor_snapshot>& sensors_snapshot) :
             m_extensios(device_extensios),
             m_sensors_snapshot(sensors_snapshot)
         {

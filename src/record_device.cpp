@@ -223,9 +223,9 @@ std::vector<std::shared_ptr<librealsense::extension_snapshot>> librealsense::rec
     }
     return snapshots;
 }
-void* librealsense::record_device::extend_to(rs2_extension_type extension_type)
+bool librealsense::record_device::extend_to(rs2_extension_type extension_type, void** ext)
 {
-    return nullptr;
+    return false;
 }
 
 librealsense::record_sensor::~record_sensor()
@@ -243,7 +243,7 @@ librealsense::record_sensor::record_sensor(sensor_interface& sensor,
 }
 std::vector<librealsense::stream_profile> librealsense::record_sensor::get_principal_requests()
 {
-    m_sensor.get_principal_requests();
+	return m_sensor.get_principal_requests();
 }
 void librealsense::record_sensor::open(const std::vector<librealsense::stream_profile>& requests)
 {
@@ -255,23 +255,23 @@ void librealsense::record_sensor::close()
 }
 librealsense::option& librealsense::record_sensor::get_option(rs2_option id)
 {
-    m_sensor.get_option(id);
+    return m_sensor.get_option(id);
 }
 const librealsense::option& librealsense::record_sensor::get_option(rs2_option id) const
 {
-    m_sensor.get_option(id);
+    return m_sensor.get_option(id);
 }
 const std::string& librealsense::record_sensor::get_info(rs2_camera_info info) const
 {
-    m_sensor.get_info(info);
+    return m_sensor.get_info(info);
 }
 bool librealsense::record_sensor::supports_info(rs2_camera_info info) const
 {
-    m_sensor.supports_info(info);
+    return m_sensor.supports_info(info);
 }
 bool librealsense::record_sensor::supports_option(rs2_option id) const
 {
-    m_sensor.supports_option(id);
+    return m_sensor.supports_option(id);
 }
 
 void librealsense::record_sensor::register_notifications_callback(librealsense::notifications_callback_ptr callback)
@@ -318,7 +318,7 @@ bool librealsense::record_sensor::is_streaming() const
 {
     return m_sensor.is_streaming();
 }
-void* librealsense::record_sensor::extend_to(rs2_extension_type extension_type)
+bool librealsense::record_sensor::extend_to(rs2_extension_type extension_type, void** ext)
 {
     switch (extension_type)
     {

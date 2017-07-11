@@ -131,3 +131,8 @@ EXPORTS
     rs2_start_processing
     rs2_process_frames
     rs2_delete_processing_block
+
+    rs2_create_device_serializer
+    rs2_delete_device_serializer
+    rs2_create_record_device 
+    rs2_delete_record_device 

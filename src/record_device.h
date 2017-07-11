@@ -34,7 +34,7 @@ namespace librealsense
         void start(frame_callback_ptr callback) override;
         void stop() override;
         bool is_streaming() const override;
-        void* extend_to(rs2_extension_type extension_type) override;
+        bool extend_to(rs2_extension_type extension_type, void** ext) override;
     private:
         sensor_interface& m_sensor;
         frame_interface_callback_t m_record_callback;
@@ -62,7 +62,9 @@ namespace librealsense
                                       size_t to,
                                       rs2_stream to_stream) const override;
         static const uint64_t MAX_CACHED_DATA_SIZE = 1920 * 1080 * 4 * 30; // ~1 sec of HD video @ 30 FPS
-        void* extend_to(rs2_extension_type extension_type) override;
+		bool extend_to(rs2_extension_type extension_type, void** ext) override;
+
+
 
     private:
         void write_header();

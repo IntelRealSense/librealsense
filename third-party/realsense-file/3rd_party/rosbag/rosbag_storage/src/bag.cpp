@@ -350,14 +350,14 @@ void Bag::writeFileHeaderRecord() {
     header[CONNECTION_COUNT_FIELD_NAME] = toHeaderString(&connection_count_);
     header[CHUNK_COUNT_FIELD_NAME]      = toHeaderString(&chunk_count_);
 
-    std::shared_ptr<std::vector<uint8_t>> header_buffer;
+    std::vector<uint8_t> header_buffer;
     uint32_t header_len;
     ros::Header::write(header, header_buffer, header_len);
     uint32_t data_len = 0;
     if (header_len < FILE_HEADER_LENGTH)
         data_len = FILE_HEADER_LENGTH - header_len;
     write((char*) &header_len, 4);
-    write((char*) header_buffer.get(), header_len);
+    write((char*) header_buffer.data(), header_len);
     write((char*) &data_len, 4);
 
     // Pad the file header record out
@@ -963,11 +963,11 @@ bool Bag::isOp(M_string& fields, uint8_t reqOp) const {
 }
 
 void Bag::writeHeader(M_string const& fields) {
-	std::shared_ptr<std::vector<uint8_t>> header_buffer;
+	std::vector<uint8_t> header_buffer;
     uint32_t header_len;
     ros::Header::write(fields, header_buffer, header_len);
     write((char*) &header_len, 4);
-    write((char*) header_buffer.get(), header_len);
+    write((char*) header_buffer.data(), header_len);
 }
 
 void Bag::writeDataLength(uint32_t data_len) {
@@ -975,7 +975,7 @@ void Bag::writeDataLength(uint32_t data_len) {
 }
 
 void Bag::appendHeaderToBuffer(Buffer& buf, M_string const& fields) {
-	std::shared_ptr<std::vector<uint8_t>> header_buffer;
+	std::vector<uint8_t> header_buffer;
     uint32_t header_len;
     ros::Header::write(fields, header_buffer, header_len);
 
@@ -985,7 +985,7 @@ void Bag::appendHeaderToBuffer(Buffer& buf, M_string const& fields) {
 
     memcpy(buf.getData() + offset, &header_len, 4);
     offset += 4;
-    memcpy(buf.getData() + offset, header_buffer.get(), header_len);
+    memcpy(buf.getData() + offset, header_buffer.data(), header_len);
 }
 
 void Bag::appendDataLengthToBuffer(Buffer& buf, uint32_t data_len) {

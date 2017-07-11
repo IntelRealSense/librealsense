@@ -27,8 +27,6 @@ void disable_sensitive_options_for(device& dev)
         auto range = dev.get_option_range(RS2_OPTION_EXPOSURE);
         REQUIRE_NOTHROW(dev.set_option(RS2_OPTION_EXPOSURE, range.def));
     }
-
-
 }
 
 TEST_CASE("Device metadata enumerates correctly", "[live]")

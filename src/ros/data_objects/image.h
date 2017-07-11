@@ -129,7 +129,7 @@ namespace rs
                     return "/camera/" + stream + "/rs_frame_info_ext/" + std::to_string(device_id);
                 }
 
-                static bool copy_image_metadata(std::shared_ptr<librealsense::video_frame> source,
+                static void copy_image_metadata(std::shared_ptr<librealsense::video_frame> source,
                                                 std::map<rs2_frame_metadata, std::vector<uint8_t>>& target)
                 {
                     for (int i = 0; i < static_cast<rs2_frame_metadata>(rs2_frame_metadata::RS2_FRAME_METADATA_COUNT); i++)
@@ -141,7 +141,7 @@ namespace rs
                         }
                         auto md = source->get_frame_metadata(type);
                         std::vector<uint8_t> buffer(sizeof(md));
-                        mempcpy(buffer.data(), &md, sizeof(md));
+                        memcpy(buffer.data(), &md, sizeof(md));
                         //TODO: Test above
                         buffer.swap(target[type]);
                     }

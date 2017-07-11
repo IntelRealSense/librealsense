@@ -13,18 +13,18 @@
 #include <ros/conversions.h>
 namespace librealsense
 {
-    class ros_writer: public device_serializer::writer
+    class ros_device_serializer_writer: public device_serializer::writer
     {
         //TODO: Ziv, move to better location
         uint32_t DEVICE_INDEX = (std::numeric_limits<uint32_t>::max)(); //braces are for windows compilation
         std::string SENSOR_COUNT { "sensor_count" };
         rs::file_format::file_types::microseconds FIRST_FRAME_TIMESTAMP { 0 };
     public:
-        ros_writer(const std::string& file) :
+        ros_device_serializer_writer(const std::string& file) :
             m_file_path(file),
-            m_stream_recorder(file)
+            m_stream_recorder(new rs::file_format::stream_recorder(file))
         {
-            reset();
+            internal_reset(false);
         }
 
         void write_device_description(const librealsense::device_snapshot& device_description) override
@@ -47,8 +47,7 @@ namespace librealsense
 
         void reset() override
         {
-            m_stream_recorder = rs::file_format::stream_recorder(m_file_path);
-            m_first_frame_time = FIRST_FRAME_TIMESTAMP;
+			internal_reset(true);
         }
 
         void write(const librealsense::device_serializer::frame_box& data) override
@@ -104,6 +103,15 @@ namespace librealsense
         }
 
     private:
+		void internal_reset(bool recreate_device)
+		{
+			if (recreate_device)
+			{
+				m_stream_recorder.reset();
+				m_stream_recorder.reset(new rs::file_format::stream_recorder(m_file_path));
+			}
+			m_first_frame_time = FIRST_FRAME_TIMESTAMP;
+		}
 
 //        error_code write_device_description(core::device_description_interface *description)
 //        {
@@ -142,7 +150,7 @@ namespace librealsense
         void write_image(const device_serializer::frame_box& data)
         {
             auto image_obj = std::make_shared<rs::file_format::ros_data_objects::image>(data);
-            m_stream_recorder.record(image_obj);
+            m_stream_recorder->record(image_obj);
         }
 
         void write_extension_snapshot(uint32_t id, std::shared_ptr<librealsense::extension_snapshot> snapshot)
@@ -178,7 +186,7 @@ namespace librealsense
                 vendor_info.value = info->get_info(camera_info);
 
                 auto msg = std::make_shared<rs::file_format::ros_data_objects::vendor_data>(vendor_info);
-                m_stream_recorder.record(msg);
+                m_stream_recorder->record(msg);
             }
         }
 
@@ -190,7 +198,7 @@ namespace librealsense
             vendor_info.value = std::to_string(sensor_count);
 
             auto msg = std::make_shared<rs::file_format::ros_data_objects::vendor_data>(vendor_info);
-            m_stream_recorder.record(msg);
+            m_stream_recorder->record(msg);
         }
 
 //        error_code write_property(rs::extensions::common::properties_extension* pinfo,
@@ -551,7 +559,7 @@ namespace librealsense
 
 
         rs::file_format::file_types::microseconds m_first_frame_time;
-        rs::file_format::stream_recorder m_stream_recorder;
+        std::unique_ptr<rs::file_format::stream_recorder> m_stream_recorder;
         std::string m_file_path;
     };
 
