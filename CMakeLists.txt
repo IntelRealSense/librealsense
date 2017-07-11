@@ -185,7 +185,7 @@ set(REALSENSE_HPP
     src/record_device.h
     src/serializers/ros_device_serializer.h
     src/serializers/ros_reader.h
-    src/serializers/ros_writer.h
+    src/serializers/ros_device_serializer_writer.h
     src/core/serialization.h
 
     third-party/easyloggingpp/src/easylogging++.h
@@ -206,14 +206,10 @@ set(REALSENSE_HPP
     src/ros/data_objects/stream_data.h
     src/ros/data_objects/image_stream_info.h
     src/ros/stream_playback.h
-    src/ros/conversions.h
-    src/ros/stream_recorder.h
-    src/ros/file_format_version.h
     src/ros/file_types.h
     src/ros/status.h
     src/ros/stream_playback.h
     src/ros/ros_writer.h
-    src/ros/stream_recorder.cpp
     src/ros/stream_playback.cpp
     src/ros/topic.h
 )

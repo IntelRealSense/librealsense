@@ -4,7 +4,7 @@
 #pragma once
 
 #include <core/serialization.h>
-#include "ros_writer.h"
+#include "ros_device_serializer_writer.h"
 #include "ros_reader.h"
 
 namespace librealsense

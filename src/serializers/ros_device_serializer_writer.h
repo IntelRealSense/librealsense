@@ -3,14 +3,18 @@
 
 #pragma once
 
-#include <core/serialization.h>
-#include <ros/file_types.h>
-#include <ros/stream_recorder.h>
-#include <core/debug.h>
-#include <archive.h>
-#include <ros/data_objects/vendor_data.h>
-#include <ros/data_objects/image.h>
-#include <ros/conversions.h>
+#include <memory>
+#include <string>
+
+#include "core/serialization.h"
+#include "ros/file_types.h"
+#include "core/debug.h"
+#include "archive.h"
+#include "ros/data_objects/vendor_data.h"
+#include "ros/data_objects/image.h"
+#include "ros/data_objects/stream_data.h"
+#include "ros/ros_writer.h"
+
 namespace librealsense
 {
     class ros_device_serializer_writer: public device_serializer::writer
@@ -22,7 +26,7 @@ namespace librealsense
     public:
         ros_device_serializer_writer(const std::string& file) :
             m_file_path(file),
-            m_stream_recorder(new rs::file_format::stream_recorder(file))
+            m_writer(new rs::file_format::ros_writer(file))
         {
             internal_reset(false);
         }
@@ -79,36 +83,36 @@ namespace librealsense
 //            }
         }
 
-        void write(const librealsense::device_serializer::snapshot_box& data) override
-        {
-            if (data.snapshot == nullptr)
-            {
-                throw invalid_value_exception("null frame");
-            }
-            if(Is<info_interface>(data.snapshot))
-            {
-                write_vendor_info(data);
-                return;
-            }
-//            if(Is<options_interface>(data.snapshot.get()))
-//            {
-//                write_property(data);
-//                return;
-//            }
-//            if(Is<debug_interface>(data.snapshot.get()))
-//            {
-//                write_debug(data);
-//                return;
-//            }
-        }
+        //void write(const librealsense::device_serializer::snapshot_box& data) override
+        //{
+        //    if (data.snapshot == nullptr)
+        //    {
+        //        throw invalid_value_exception("null frame");
+        //    }
+        //    if(Is<info_interface>(data.snapshot))
+        //    {
+        //        write_vendor_info(data);
+        //        return;
+        //    }
+        //    if(Is<options_interface>(data.snapshot.get()))
+        //    {
+        //        write_property(data);
+        //        return;
+        //    }
+        //    if(Is<debug_interface>(data.snapshot))
+        //    {
+        //        write_debug_info(data);
+        //        return;
+        //    }
+        //}
 
     private:
 		void internal_reset(bool recreate_device)
 		{
 			if (recreate_device)
 			{
-				m_stream_recorder.reset();
-				m_stream_recorder.reset(new rs::file_format::stream_recorder(m_file_path));
+				m_writer.reset();
+                m_writer.reset(new rs::file_format::ros_writer(m_file_path));
 			}
 			m_first_frame_time = FIRST_FRAME_TIMESTAMP;
 		}
@@ -150,16 +154,21 @@ namespace librealsense
         void write_image(const device_serializer::frame_box& data)
         {
             auto image_obj = std::make_shared<rs::file_format::ros_data_objects::image>(data);
-            m_stream_recorder->record(image_obj);
+            record(image_obj);
         }
 
         void write_extension_snapshot(uint32_t id, std::shared_ptr<librealsense::extension_snapshot> snapshot)
-        {    if (Is<librealsense::info_interface>(snapshot))
+        {    
+            if (Is<librealsense::info_interface>(snapshot))
             {
                 std::cout << "Remove me !!! info_interface " << id << " : " << snapshot.get() << std::endl;
                 //write_vendor_info(snapshot, id);
             }
-
+            if (Is<librealsense::options_interface>(snapshot))
+            {
+                std::cout << "Remove me !!! info_interface " << id << " : " << snapshot.get() << std::endl;
+                //write_vendor_info(snapshot, id);
+            }
             if (Is<librealsense::debug_interface>(snapshot))
             {
                 std::cout << "Remove me !!! debug_interface " << id << " : " << snapshot.get() << std::endl;
@@ -167,7 +176,11 @@ namespace librealsense
                 //write_property(snapshot, id, timestamp_ns);
             }
         }
+        void write_debug_info(const device_serializer::snapshot_box& box)
+        {
 
+        }
+            
         void write_vendor_info(const device_serializer::snapshot_box& box)
         {
             info_interface* info = dynamic_cast<info_interface*>(box.snapshot.get());
@@ -186,7 +199,7 @@ namespace librealsense
                 vendor_info.value = info->get_info(camera_info);
 
                 auto msg = std::make_shared<rs::file_format::ros_data_objects::vendor_data>(vendor_info);
-                m_stream_recorder->record(msg);
+                record(msg);
             }
         }
 
@@ -198,7 +211,7 @@ namespace librealsense
             vendor_info.value = std::to_string(sensor_count);
 
             auto msg = std::make_shared<rs::file_format::ros_data_objects::vendor_data>(vendor_info);
-            m_stream_recorder->record(msg);
+            record(msg);
         }
 
 //        error_code write_property(rs::extensions::common::properties_extension* pinfo,
@@ -558,8 +571,20 @@ namespace librealsense
 
 
 
+        /**
+        * @brief Writes a stream_data object to the file
+        *
+        * @param[in] data          an object implements the stream_data interface
+        * @return status_no_error             Successful execution
+        * @return status_param_unsupported    One of the stream data feilds is not supported
+        */
+        void record(std::shared_ptr<rs::file_format::ros_data_objects::stream_data> data)
+        {
+            data->write_data(*m_writer);
+        }
+
         rs::file_format::file_types::microseconds m_first_frame_time;
-        std::unique_ptr<rs::file_format::stream_recorder> m_stream_recorder;
+        std::unique_ptr<rs::file_format::ros_writer> m_writer;
         std::string m_file_path;
     };
 

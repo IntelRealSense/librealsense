@@ -7,7 +7,6 @@
 librealsense::record_device::record_device(std::shared_ptr<librealsense::device_interface> device,
                                       std::shared_ptr<librealsense::device_serializer::writer> serializer):
     m_write_thread([](){return std::make_shared<dispatcher>(std::numeric_limits<unsigned int>::max());}),
-    m_is_first_event(true),
     m_is_recording(true),
     m_record_pause_time(0),
     m_device(device),
@@ -91,7 +90,7 @@ void librealsense::record_device::write_data(size_t sensor_index, std::shared_pt
     uint64_t cached_data_size = m_cached_data_size + data_size;
     if (cached_data_size > MAX_CACHED_DATA_SIZE)
     {
-        LOG_ERROR("frame drop occurred");
+        LOG_ERROR("frame drop occurred");//TODO: Use notification
         return;
     }
 
@@ -99,30 +98,19 @@ void librealsense::record_device::write_data(size_t sensor_index, std::shared_pt
     auto capture_time = get_capture_time();
 
     (*m_write_thread)->invoke([this, sensor_index, capture_time, f, data_size](dispatcher::cancellable_timer t)
-                                 {
-                                     if(m_is_recording == false)
-                                     {
-                                         return;
-                                     }
-
-                                     if(m_is_first_event)
-                                     {
-                                         try
-                                         {
-                                             write_header();
-                                             m_ros_writer->write({capture_time, static_cast<uint32_t>(sensor_index), f});
-                                         }
-                                         catch (const std::exception& e)
-                                         {
-                                             LOG_ERROR("Error read thread");
-                                         }
-
-                                         m_is_first_event = false;
-                                     }
-
-                                     std::lock_guard<std::mutex> locker(m_mutex);
-                                     m_cached_data_size -= data_size;
-                                 });
+    {
+        if (m_is_recording == false)
+        {
+            return;
+        }
+        std::call_once(m_first_frame, [&]()
+        {
+            write_header(); //TODO: This could throw an exception - notify and close recorder
+        });
+        m_ros_writer->write({ capture_time, static_cast<uint32_t>(sensor_index), f });
+        std::lock_guard<std::mutex> locker(m_mutex);
+        m_cached_data_size -= data_size;
+    });
 }
 const std::string& librealsense::record_device::get_info(rs2_camera_info info) const
 {
@@ -325,10 +313,6 @@ bool librealsense::record_sensor::extend_to(rs2_extension_type extension_type, v
 
         case RS2_EXTENSION_TYPE_DEBUG:
         {
-//            if(m_extensions.find())
-//            {
-//                return m_extensions[extension_type].get();
-//            }
             auto ptr = dynamic_cast<debug_interface*>(&m_sensor);
             if(!ptr)
             {
@@ -342,7 +326,8 @@ bool librealsense::record_sensor::extend_to(rs2_extension_type extension_type, v
 //            });
             //m_extensions[extension_type] = d;
             //TODO: Ziv, Verify this doesn't result in memory leaks
-            return api.get();
+            *ext = api.get();
+            return true;
         }
         case RS2_EXTENSION_TYPE_INFO:break;
         case RS2_EXTENSION_TYPE_MOTION:break;
@@ -354,4 +339,5 @@ bool librealsense::record_sensor::extend_to(rs2_extension_type extension_type, v
         default:
             throw invalid_value_exception(std::string("extension_type ") + std::to_string(extension_type) + " is not supported");
     }
+    return false;
 }

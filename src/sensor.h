@@ -77,7 +77,7 @@ namespace librealsense
         }
     };
 
-    class debug_snapshot : public extension_snapshot//TODO: Ziv, public debug_interface
+    class debug_snapshot : public extension_snapshot, public debug_interface
     {
     public:
         debug_snapshot(const std::vector<uint8_t>& input) : m_data(input)

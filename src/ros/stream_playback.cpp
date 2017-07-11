@@ -21,11 +21,9 @@
 #include "sensor_msgs/TimeReference.h"
 
 #include "std_msgs/Float64.h"
-#include "ros/conversions.h"
 #include "ros/topic.h"
 
 #include "std_msgs/UInt32.h"
-#include "ros/file_format_version.h"
 
 using namespace rs::file_format;
 using namespace rs::file_format::file_types;
@@ -84,7 +82,6 @@ stream_playback::stream_playback(const std::string &file_path)
     m_topics = get_topics(m_samples_view);
 }
 
-
 status stream_playback::set_filter(std::vector<std::string> topics)
 {
     std::unique_lock<std::mutex> locker(m_mutex);
@@ -121,6 +118,7 @@ status stream_playback::set_filter(std::vector<std::string> topics)
     m_samples_itrator = m_samples_view->begin();
     return status_no_error;
 }
+
 status stream_playback::seek_to_time(file_types::nanoseconds seek_time, std::unique_ptr<rosbag::View>& samples_view) const
 {
     ros::Time to_time = ros::TIME_MIN;
@@ -151,6 +149,7 @@ status stream_playback::seek_to_time(file_types::nanoseconds seek_time, std::uni
     return status_no_error;
 
 }
+
 status stream_playback::seek_to_time(file_types::nanoseconds seek_time)
 {
     std::unique_lock<std::mutex> locker(m_mutex);

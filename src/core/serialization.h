@@ -74,7 +74,7 @@ namespace librealsense
         public:
             virtual void write_device_description(const device_snapshot& device_description) = 0;
             virtual void write(const frame_box& data) = 0;
-            virtual void write(const snapshot_box& data) = 0;
+            //virtual void write(const snapshot_box& data) = 0;
             virtual void reset() = 0;
             virtual ~writer() = default;
         };

@@ -3,9 +3,6 @@ project(realsense-file)
 
 include(3rd_party/config.cmake)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -fPIC")
-
 FILE(GLOB_RECURSE AllSources
 		${LZ4_DIR}/lib/lz4.h
 		${LZ4_DIR}/lib/lz4.c

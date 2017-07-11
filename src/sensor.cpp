@@ -339,7 +339,7 @@ namespace librealsense
                         _source.invoke_callback(std::move(pref));
                     }
                  }
-                }, _source.get_published_size_option()->query());
+                }, static_cast<int>(_source.get_published_size_option()->query()));
             }
             catch(...)
             {

@@ -37,7 +37,6 @@
 #include <iostream>
 
 #include "boost/format.hpp"
-//#include "boost/make_shared.hpp"
 
 //#include <ros/ros.h>
 #ifdef _WIN32
@@ -50,7 +49,7 @@
 #        define fseeko _fseeki64
 #        define ftello _ftelli64
 #        define fileno _fileno
-#        define ftruncate _chsize
+#        define ftruncate _chsize_s //Intel Realsense Change, Was: #define ftruncate _chsize 
 #    endif
 #endif
 

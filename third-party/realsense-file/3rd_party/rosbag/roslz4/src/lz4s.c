@@ -181,10 +181,10 @@ int bufferToOutput(roslz4_stream *str) {
         state->buffer_offset, str->output_left);
 
   // Shrink output by 1 to detect if data is not compressible
-  uint32_t comp_size = LZ4_compress_limitedOutput(state->buffer,
-                                                  str->output_next + 4,
-                                                  (int) state->buffer_offset,
-                                                  (int) uncomp_size - 1);
+  uint32_t comp_size = LZ4_compress_default(state->buffer,
+                                            str->output_next + 4,
+                                            (int) state->buffer_offset,
+                                            (int) uncomp_size - 1);
   uint32_t wrote;
   if (comp_size > 0) {
     DEBUG("bufferToOutput() Compressed to %i bytes\n", comp_size);

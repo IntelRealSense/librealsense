@@ -3,10 +3,8 @@
 #pragma once
 
 #include "options.h"
-#include "types.h" //stream_profile, notifications_callback_ptr, frame_callback_ptr,
-#include "extension.h" //recordable<T> - TODO: remove after moving info_interface from this file
-//#include "extension.h"
-//#include "rs2.h" //rs2_stream
+#include "types.h"
+#include "info.h"
 #include <functional>
 
 namespace librealsense
@@ -59,16 +57,6 @@ namespace librealsense
 
     using on_frame = std::function<void(frame_interface*)>;
     using stream_profiles = std::vector<std::shared_ptr<stream_profile_interface>>;
-
-    //TODO: Move to info.h
-    class info_interface : public virtual recordable<info_interface>
-    {
-    public:
-        virtual const std::string& get_info(rs2_camera_info info) const = 0;
-        virtual bool supports_info(rs2_camera_info info) const = 0;
-
-        virtual ~info_interface() = default;
-    };
 
     class sensor_interface : public virtual info_interface, public virtual options_interface
     {

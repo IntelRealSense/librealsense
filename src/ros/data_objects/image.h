@@ -3,11 +3,11 @@
 #pragma once
 #include "sensor_msgs/Image.h"
 #include "realsense_msgs/frame_info.h"
-#include "ros/conversions.h"
 #include "ros/topic.h"
 #include "stream_data.h"
 #include "core/serialization.h"
 #include "archive.h"
+#include "ros/file_types.h"
 namespace rs
 {
     namespace file_format

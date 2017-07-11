@@ -4,11 +4,27 @@
 #pragma once
 #include <string>
 #include <chrono>
-#include "../../include/librealsense/rs2.h" //TODO: Ziv, loose relative path
+#include "librealsense/rs2.h"
+#include "std_msgs/Float32.h"
+#include "std_msgs/String.h"
+#include "realsense_msgs/motion_intrinsics.h"
+#include "realsense_msgs/extrinsics.h"
+#include "sensor_msgs/image_encodings.h"
 namespace rs
 {
     namespace file_format
     {
+        //TODO: refactor and make this usable
+        static const std::string get_file_version_topic()
+        {
+            return "/FILE_VERSION";
+        }
+
+        static constexpr uint32_t get_file_version()
+        {
+            return 1;
+        }
+
         namespace file_types
         {
 
@@ -74,30 +90,6 @@ namespace rs
                 const std::string DISTORTION_FTHETA = "DISTORTION_FTHETA";                                      /**< F-Theta fish-eye distortion model */
             }
 
-//            /**
-//            * @brief Image pixel format
-//            */
-//            enum class pixel_format : int32_t
-//            {
-//                custom      = 0,  /**< custom pixel format that is not part of the given pixel format list */
-//                z16         = 1,  /**< 16-bit linear depth values. The depth is meters is equal to depth scale * pixel value     */
-//                disparity16 = 2,  /**< 16-bit linear disparity values. The depth in meters is equal to depth scale / pixel value */
-//                xyz32f      = 3,  /**< 32-bit floating point 3D coordinates.                                                     */
-//                yuyv        = 4,  /**< The yuyv color format. See [fourcc.org](http://fourcc.org/) for the description and memory layout.*/
-//                rgb8        = 5,  /**< The 24-bit RGB24 color format. See [fourcc.org](http://fourcc.org/) for the description and memory layout.*/
-//                bgr8        = 6,  /**< The 24-bit BGR24 color format. See [fourcc.org](http://fourcc.org/) for the description and memory layout.*/
-//                rgba8       = 7,  /**< The 32-bit RGBA32 color format.  See [fourcc.org](http://fourcc.org/) for the description and memory layout. */
-//                bgra8       = 8,  /**< The 32-bit BGRA32 color format.  See [fourcc.org](http://fourcc.org/) for the description and memory layout. */
-//                y8          = 9,  /**< The 8-bit gray format. Also used for the 8-bit IR data. See [fourcc.org](http://fourcc.org/) for the description and memory layout. */
-//                y16         = 10, /**< The 16-bit gray format. Also used for the 16-bit IR data. See [fourcc.org](http://fourcc.org/) for the description and memory layout. */
-//                raw8        = 11, /**< The 8-bit gray format. */
-//                raw10       = 12, /**< Four 10-bit luminance values encoded into a 5-byte macro pixel */
-//                raw16       = 13, /**< Custom format for camera calibration */
-//                uyvy        = 14, /**< The uyvy color format. See [fourcc.org](http://fourcc.org/) for the description and memory layout.*/
-//                yuy2        = 15, /**< The yuy2 color format. See [fourcc.org](http://fourcc.org/) for the description and memory layout.*/
-//                nv12        = 16  /**< The nv12 color format. See [fourcc.org](http://fourcc.org/) for the description and memory layout.*/
-//            };
-
             /**
             * @brief Additional pixel format that are not supported by ros, not included in the file
             *        sensor_msgs/image_encodings.h
@@ -127,45 +119,6 @@ namespace rs
                 png = 5
             };
 
-//            /**
-//            * @brief Timestamp domain types
-//            */
-//            enum timestamp_domain
-//            {
-//                camera = 0,             /**< Frame timestamp was measured in relation to the camera clock */
-//                hardware_clock = 1,     /**< Frame timestamp was measured in relation to the camera clock */
-//                microcontroller = 2,    /**< Frame timestamp was measured in relation to the microcontroller clock */
-//                system_time = 3         /**< Frame timestamp was measured in relation to the OS system clock */
-//            };
-//
-//            /**
-//            * @brief Metadata types
-//            */
-//            enum metadata_type
-//            {
-//                actual_exposure = 0,
-//                actual_fps      = 1
-//            };
-//
-//            /** @brief Stream intrinsic parameters */
-//            struct intrinsics
-//            {
-//                float               ppx;        /**< Horizontal coordinate of the principal point of the image, as a pixel offset from the left edge */
-//                float               ppy;        /**< Vertical coordinate of the principal point of the image, as a pixel offset from the top edge */
-//                float               fx;         /**< Focal length of the image plane, as a multiple of pixel width */
-//                float               fy;         /**< Focal length of the image plane, as a multiple of pixel height */
-//                std::string         model;      /**< Distortion model of the image */
-//                float               coeffs[5];  /**< Distortion coefficients */
-//            };
-//
-//            /** @brief Camera extrinsics parameters */
-//            struct extrinsics
-//            {
-//                float               rotation[9];    /**< Column-major 3x3 rotation matrix */
-//                float               translation[3]; /**< Three-element translation vector, in meters */
-//            };
-
-
             /**
             * @brief Stream extrinsics
             */
@@ -174,35 +127,240 @@ namespace rs
                 rs2_extrinsics extrinsics_data;     /**< Represents the extrinsics data*/
                 uint64_t reference_point_id;    /**< Unique identifier of the extrinsics reference point, used as a key to which different extinsics are calculated*/
             };
+        }
 
-//            /**
-//            * @brief Represents the motion sensor scale, bias and variances.
-//            */
-//            struct motion_intrinsics
-//            {
-//                /* Scale X        cross axis        cross axis      Bias X */
-//                /* cross axis     Scale Y           cross axis      Bias Y */
-//                /* cross axis     cross axis        Scale Z         Bias Z */
-//                float data[3][4];          /**< Interpret data array values */
-//                float noise_variances[3];  /**< Variance of noise for X, Y, and Z axis */
-//                float bias_variances[3];   /**< Variance of bias for X, Y, and Z axis */
-//            };
+        namespace conversions
+        {
+            //TODO: Ziv, throw on error
+            inline bool convert(rs2_format source, std::string& target)
+            {
+                switch (source)
+                {
+                case rs2_format::RS2_FORMAT_Z16:
+                    target = sensor_msgs::image_encodings::MONO16; break;
+                case rs2_format::RS2_FORMAT_DISPARITY16:
+                    target = file_types::additional_image_encodings::DISPARITY16; break;
+                case rs2_format::RS2_FORMAT_XYZ32F:
+                    target = file_types::additional_image_encodings::XYZ32F; break;
+                case rs2_format::RS2_FORMAT_YUYV:
+                    target = file_types::additional_image_encodings::YUYV; break;
+                case rs2_format::RS2_FORMAT_RGB8:
+                    target = sensor_msgs::image_encodings::RGB8; break;
+                case rs2_format::RS2_FORMAT_BGR8:
+                    target = sensor_msgs::image_encodings::BGR8; break;
+                case rs2_format::RS2_FORMAT_RGBA8:
+                    target = sensor_msgs::image_encodings::RGBA8; break;
+                case rs2_format::RS2_FORMAT_BGRA8:
+                    target = sensor_msgs::image_encodings::BGRA8; break;
+                case rs2_format::RS2_FORMAT_Y8:
+                    target = sensor_msgs::image_encodings::TYPE_8UC1; break;
+                case rs2_format::RS2_FORMAT_Y16:
+                    target = sensor_msgs::image_encodings::TYPE_16UC1; break;
+                case rs2_format::RS2_FORMAT_RAW8:
+                    target = sensor_msgs::image_encodings::MONO8; break;
+                case rs2_format::RS2_FORMAT_RAW10:
+                    target = file_types::additional_image_encodings::RAW10; break;
+                case rs2_format::RS2_FORMAT_RAW16:
+                    target = file_types::additional_image_encodings::RAW16; break;
+                case rs2_format::RS2_FORMAT_UYVY:
+                    target = sensor_msgs::image_encodings::YUV422; break;
+                    //                    case rs2_format::RS2_FORMAT_YUY2 :
+                    //                        target = file_types::additional_image_encodings::YUY2; break;
+                    //                    case rs2_format::RS2_FORMAT_NV12 :
+                    //                        target = file_types::additional_image_encodings::NV12; break;
+                    //                    case rs2_format::RS2_FORMAT_CUSTOM :
+                    //                        target = file_types::additional_image_encodings::CUSTOM; break;
+                default: return false;
+                }
+                return true;
+            }
 
-//			/**
-//			* @brief vector3
-//			*/
-//			struct vector3
-//			{
-//				float x, y, z;
-//			};
-//
-//			/**
-//			* @brief vector4
-//			*/
-//			struct vector4
-//			{
-//				float x, y, z, w;
-//			};
+            inline bool convert(const std::string& source, rs2_format& target)
+            {
+                if (source == sensor_msgs::image_encodings::MONO16)
+                    target = rs2_format::RS2_FORMAT_Z16;
+                else if (source == file_types::additional_image_encodings::DISPARITY16)
+                    target = rs2_format::RS2_FORMAT_DISPARITY16;
+                else if (source == file_types::additional_image_encodings::XYZ32F)
+                    target = rs2_format::RS2_FORMAT_XYZ32F;
+                else if (source == file_types::additional_image_encodings::YUYV)
+                    target = rs2_format::RS2_FORMAT_YUYV;
+                else if (source == sensor_msgs::image_encodings::RGB8)
+                    target = rs2_format::RS2_FORMAT_RGB8;
+                else if (source == sensor_msgs::image_encodings::BGR8)
+                    target = rs2_format::RS2_FORMAT_BGR8;
+                else if (source == sensor_msgs::image_encodings::RGBA8)
+                    target = rs2_format::RS2_FORMAT_RGBA8;
+                else if (source == sensor_msgs::image_encodings::BGRA8)
+                    target = rs2_format::RS2_FORMAT_BGRA8;
+                else if (source == sensor_msgs::image_encodings::TYPE_8UC1)
+                    target = rs2_format::RS2_FORMAT_Y8;
+                else if (source == sensor_msgs::image_encodings::TYPE_16UC1)
+                    target = rs2_format::RS2_FORMAT_Y16;
+                else if (source == sensor_msgs::image_encodings::MONO8)
+                    target = rs2_format::RS2_FORMAT_RAW8;
+                else if (source == file_types::additional_image_encodings::RAW10)
+                    target = rs2_format::RS2_FORMAT_RAW10;
+                else if (source == file_types::additional_image_encodings::RAW16)
+                    target = rs2_format::RS2_FORMAT_RAW16;
+                else if (source == sensor_msgs::image_encodings::YUV422)
+                    target = rs2_format::RS2_FORMAT_UYVY;
+                //                else if(source == file_types::additional_image_encodings::YUY2)
+                //                    target = rs2_format::RS2_FORMAT_YUY2;
+                //                else if(source == file_types::additional_image_encodings::NV12)
+                //                    target = rs2_format::RS2_FORMAT_NV12;
+                //                else if(source == file_types::additional_image_encodings::CUSTOM)
+                //                    target = rs2_format::RS2_FORMAT_CUSTOM;
+                else return false;
+
+                return true;
+            }
+
+
+            inline bool convert(rs2_stream source, std::string& target)
+            {
+                switch (source)
+                {
+                case rs2_stream::RS2_STREAM_DEPTH:
+                    target = rs::file_format::file_types::stream_type::DEPTH; break;
+                case rs2_stream::RS2_STREAM_COLOR:
+                    target = rs::file_format::file_types::stream_type::COLOR; break;
+                case rs2_stream::RS2_STREAM_INFRARED:
+                    target = rs::file_format::file_types::stream_type::INFRARED; break;
+                case rs2_stream::RS2_STREAM_INFRARED2:
+                    target = rs::file_format::file_types::stream_type::INFRARED2; break;
+                case rs2_stream::RS2_STREAM_FISHEYE:
+                    target = rs::file_format::file_types::stream_type::FISHEYE; break;
+                    //                    case rs2_stream::RS2_STREAM_RECTIFIED_COLOR:
+                    //                        target = rs::file_format::file_types::stream_type::RECTIFIED_COLOR; break;
+                default: return false;
+
+                }
+                return true;
+
+            }
+
+            inline bool convert(const std::string& source, rs2_stream& target)
+            {
+                if (source == rs::file_format::file_types::stream_type::DEPTH)
+                    target = rs2_stream::RS2_STREAM_DEPTH;
+                else if (source == rs::file_format::file_types::stream_type::COLOR)
+                    target = rs2_stream::RS2_STREAM_COLOR;
+                else if (source == rs::file_format::file_types::stream_type::INFRARED)
+                    target = rs2_stream::RS2_STREAM_INFRARED;
+                else if (source == rs::file_format::file_types::stream_type::INFRARED2)
+                    target = rs2_stream::RS2_STREAM_INFRARED2;
+                else if (source == rs::file_format::file_types::stream_type::FISHEYE)
+                    target = rs2_stream::RS2_STREAM_FISHEYE;
+                //                else if(source ==  rs::file_format::file_types::stream_type::RECTIFIED_COLOR)
+                //                    target = rs2_stream::RS2_STREAM_RECTIFIED_COLOR;
+                else return false;
+                return true;
+            }
+            inline bool convert(rs2_distortion source, std::string& target)
+            {
+                switch (source)
+                {
+                case rs2_distortion::RS2_DISTORTION_FTHETA:
+                    target = rs::file_format::file_types::distortion::DISTORTION_FTHETA; break;
+                case rs2_distortion::RS2_DISTORTION_INVERSE_BROWN_CONRADY:
+                    target = rs::file_format::file_types::distortion::DISTORTION_INVERSE_BROWN_CONRADY; break;
+                case rs2_distortion::RS2_DISTORTION_MODIFIED_BROWN_CONRADY:
+                    target = rs::file_format::file_types::distortion::DISTORTION_MODIFIED_BROWN_CONRADY; break;
+                case rs2_distortion::RS2_DISTORTION_NONE:
+                    target = rs::file_format::file_types::distortion::DISTORTION_NONE; break;
+                case rs2_distortion::RS2_DISTORTION_BROWN_CONRADY:
+                    target = rs::file_format::file_types::distortion::DISTORTION_UNMODIFIED_BROWN_CONRADY; break;
+                default: return false;
+
+                }
+                return true;
+            }
+
+            inline bool convert(const std::string& source, rs2_distortion& target)
+            {
+                if (source == rs::file_format::file_types::distortion::DISTORTION_FTHETA)
+                    target = rs2_distortion::RS2_DISTORTION_FTHETA;
+                else if (source == rs::file_format::file_types::distortion::DISTORTION_INVERSE_BROWN_CONRADY)
+                    target = rs2_distortion::RS2_DISTORTION_INVERSE_BROWN_CONRADY;
+                else if (source == rs::file_format::file_types::distortion::DISTORTION_MODIFIED_BROWN_CONRADY)
+                    target = rs2_distortion::RS2_DISTORTION_MODIFIED_BROWN_CONRADY;
+                else if (source == rs::file_format::file_types::distortion::DISTORTION_NONE)
+                    target = rs2_distortion::RS2_DISTORTION_NONE;
+                else if (source == rs::file_format::file_types::distortion::DISTORTION_UNMODIFIED_BROWN_CONRADY)
+                    target = rs2_distortion::RS2_DISTORTION_BROWN_CONRADY;
+                else return false;
+                return true;
+            }
+            inline bool convert(file_types::compression_type source, std::string& target)
+            {
+                switch (source)
+                {
+                case file_types::h264:
+                    target = "h264"; break;
+                case file_types::lz4:
+                    target = "lz4"; break;
+                case file_types::jpeg:
+                    target = "jpeg"; break;
+                case file_types::png:
+                    target = "png"; break;
+                default:
+                    return false;
+                }
+                return true;
+            }
+
+            inline bool convert(file_types::motion_type source, std::string& target)
+            {
+                switch (source)
+                {
+                case file_types::motion_type::accel:
+                    target = rs::file_format::file_types::motion_stream_type::ACCL; break;
+                case file_types::motion_type::gyro:
+                    target = rs::file_format::file_types::motion_stream_type::GYRO; break;
+                default:
+                    return false;
+                }
+                return true;
+
+            }
+
+            inline bool convert(const std::string& source, file_types::motion_type& target)
+            {
+                if (source == rs::file_format::file_types::motion_stream_type::ACCL)
+                    target = file_types::motion_type::accel;
+                else if (source == rs::file_format::file_types::motion_stream_type::GYRO)
+                    target = file_types::motion_type::gyro;
+                else return false;
+                return true;
+            }
+
+            inline void convert(const realsense_msgs::motion_intrinsics& source, rs2_motion_device_intrinsic& target)
+            {
+                memcpy(target.bias_variances, &source.bias_variances[0], sizeof(target.bias_variances));
+                memcpy(target.noise_variances, &source.noise_variances[0], sizeof(target.noise_variances));
+                memcpy(target.data, &source.data[0], sizeof(target.data));
+            }
+
+            inline void convert(const rs2_motion_device_intrinsic& source, realsense_msgs::motion_intrinsics& target)
+            {
+                memcpy(&target.bias_variances[0], source.bias_variances, sizeof(source.bias_variances));
+                memcpy(&target.noise_variances[0], source.noise_variances, sizeof(source.noise_variances));
+                memcpy(&target.data[0], source.data, sizeof(source.data));
+            }
+
+            inline void convert(const realsense_msgs::extrinsics& source, rs2_extrinsics& target)
+            {
+                memcpy(target.rotation, &source.rotation[0], sizeof(target.rotation));
+                memcpy(target.translation, &source.translation[0], sizeof(target.translation));
+            }
+
+            inline void convert(const rs2_extrinsics& source, realsense_msgs::extrinsics& target)
+            {
+                memcpy(&target.rotation[0], source.rotation, sizeof(source.rotation));
+                memcpy(&target.translation[0], source.translation, sizeof(source.translation));
+            }
+
         }
     }
 }

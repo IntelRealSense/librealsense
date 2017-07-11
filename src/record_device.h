@@ -84,10 +84,9 @@ namespace librealsense
 
         std::mutex m_mutex;
         bool m_is_recording;
-
+        std::once_flag m_first_frame;
 
         uint64_t m_cached_data_size;
-        bool m_is_first_event;
         std::once_flag m_first_call_flag;
         template <typename T>
         std::vector<std::shared_ptr<extension_snapshot>> get_extensions_snapshots(T* extendable);
