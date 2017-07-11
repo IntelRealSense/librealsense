@@ -158,6 +158,23 @@ namespace librealsense
     }
 
 }
+template<> struct TypesToExtensions;
+template<rs2_extension_type> struct ExtensionsToTypes;
+
+#define MAP_EXTENSION(E, T)                           \
+template<> struct ExtensionsToTypes<E> {              \
+    using type = T;                                   \
+};                                                    \
+struct TypesToExtensions<T> {                         \
+    static constexpr rs2_extension_type value = E;    \
+}
+
+MAP_EXTENSION(RS2_EXTENSION_TYPE_DEBUG   , librealsense::debug_interface);
+MAP_EXTENSION(RS2_EXTENSION_TYPE_INFO    , librealsense::info_interface);
+MAP_EXTENSION(RS2_EXTENSION_TYPE_MOTION  , librealsense::motion_sensor_interface);
+MAP_EXTENSION(RS2_EXTENSION_TYPE_OPTIONS , librealsense::options_interface);
+MAP_EXTENSION(RS2_EXTENSION_TYPE_VIDEO   , librealsense::video_sensor_interface);
+MAP_EXTENSION(RS2_EXTENSION_TYPE_ROI     , librealsense::roi_sensor_interface);
 
 #define NOEXCEPT_RETURN(R, ...) catch(...) { std::ostringstream ss; librealsense::stream_args(ss, #__VA_ARGS__, __VA_ARGS__); rs2_error* e; librealsense::translate_exception(__FUNCTION__, ss.str(), &e); LOG_WARNING(rs2_get_error_message(e)); rs2_free_error(e); return R; }
 #define HANDLE_EXCEPTIONS_AND_RETURN(R, ...) catch(...) { std::ostringstream ss; librealsense::stream_args(ss, #__VA_ARGS__, __VA_ARGS__); librealsense::translate_exception(__FUNCTION__, ss.str(), error); return R; }
@@ -166,19 +183,26 @@ namespace librealsense
 #define VALIDATE_RANGE(ARG, MIN, MAX) if((ARG) < (MIN) || (ARG) > (MAX)) { std::ostringstream ss; ss << "out of range value for argument \"" #ARG "\""; throw librealsense::invalid_value_exception(ss.str()); }
 #define VALIDATE_LE(ARG, MAX) if((ARG) > (MAX)) { std::ostringstream ss; ss << "out of range value for argument \"" #ARG "\""; throw std::runtime_error(ss.str()); }
 //#define VALIDATE_NATIVE_STREAM(ARG) VALIDATE_ENUM(ARG); if(ARG >= RS2_STREAM_NATIVE_COUNT) { std::ostringstream ss; ss << "argument \"" #ARG "\" must be a native stream"; throw librealsense::wrong_value_exception(ss.str()); }
-#define VALIDATE_INTERFACE_NO_THROW(X, T) (dynamic_cast<T*>(&(*X)) || dynamic_cast<librealsense::extendable_interface*>(&(*X)))
-#define VALIDATE_INTERFACE(X,T)                                                                \
+#define VALIDATE_INTERFACE_NO_THROW(X, T) \
+([&]() {
+    auto p = dynamic_cast<ExtensionsToTypes<T>::type*>(&(*X));
+    if (p == nullptr)
+    {
+        auto ext = dynamic_cast<librealsense::extendable_interface*>(&(*X));
+        if (ext == nullptr) return nullptr;
+        else
+        {
+            if(!ext->extend_to(T, (void**)p))
+                return nullptr;
+        }
+    }
+    return p;
+})()
+#define VALIDATE_INTERFACE(X,T)                                                              \
     ([&]() {                                                                                   \
-        auto p = dynamic_cast<T*>(&(*X));                                                      \
-        if (!dynamic_cast<T*>(&(*X)))                                                          \
-        {                                                                                      \
-            auto ext = dynamic_cast<librealsense::extendable_interface*>(&(*X));               \
-            if (!ext)                                                                          \
-                throw std::runtime_error("Object does not support \"" #T "\" interface! " );   \
-            else                                                                               \
-                return dynamic_cast<T*>(ext);                                                  \
-        }                                                                                      \
-        return p;                                                                              \
+        auto p = VALIDATE_INTERFACE_NO_THROW(X,T);                                                   \
+        if(p == nullptr) throw std::runtime_error("Object does not support \"" #T "\" interface! " );   \
+        return p;
     })()
 
 int major(int version)
@@ -415,8 +439,7 @@ NOEXCEPT_RETURN(, list)
 rs2_raw_data_buffer* rs2_send_and_receive_raw_data(rs2_device* device, void* raw_data_to_send, unsigned size_of_raw_data_to_send, rs2_error** error) try
 {
     VALIDATE_NOT_NULL(device);
-
-    auto debug_interface = VALIDATE_INTERFACE(device->device, librealsense::debug_interface);
+    auto debug_interface = VALIDATE_INTERFACE(device->device, RS2_EXTENSION_TYPE_DEBUG);
 
     auto raw_data_buffer = static_cast<uint8_t*>(raw_data_to_send);
     std::vector<uint8_t> buffer_to_send(raw_data_buffer, raw_data_buffer + size_of_raw_data_to_send);
@@ -727,7 +750,7 @@ HANDLE_EXCEPTIONS_AND_RETURN(nullptr, frame_ref)
 int rs2_get_frame_width(const rs2_frame * frame_ref, rs2_error ** error) try
 {
     VALIDATE_NOT_NULL(frame_ref);
-    auto vf = VALIDATE_INTERFACE(frame_ref->get(), librealsense::video_frame);
+    auto vf = VALIDATE_INTERFACE(frame_ref->get(), RS2_EXTENSION_TYPE_VIDEO_FRAME);
     return vf->get_width();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, frame_ref)
@@ -735,7 +758,7 @@ HANDLE_EXCEPTIONS_AND_RETURN(0, frame_ref)
 int rs2_get_frame_height(const rs2_frame * frame_ref, rs2_error ** error) try
 {
     VALIDATE_NOT_NULL(frame_ref);
-    auto vf = VALIDATE_INTERFACE(frame_ref->get(), librealsense::video_frame);
+    auto vf = VALIDATE_INTERFACE(frame_ref->get(), RS2_EXTENSION_TYPE_VIDEO_FRAME);
     return vf->get_height();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, frame_ref)
@@ -743,7 +766,7 @@ HANDLE_EXCEPTIONS_AND_RETURN(0, frame_ref)
 int rs2_get_frame_stride_in_bytes(const rs2_frame * frame_ref, rs2_error ** error) try
 {
     VALIDATE_NOT_NULL(frame_ref);
-    auto vf = VALIDATE_INTERFACE(frame_ref->get(), librealsense::video_frame);
+    auto vf = VALIDATE_INTERFACE(frame_ref->get(), RS2_EXTENSION_TYPE_VIDEO_FRAME);
     return vf->get_stride();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, frame_ref)
@@ -752,7 +775,7 @@ HANDLE_EXCEPTIONS_AND_RETURN(0, frame_ref)
 int rs2_get_frame_bits_per_pixel(const rs2_frame * frame_ref, rs2_error ** error) try
 {
     VALIDATE_NOT_NULL(frame_ref);
-    auto vf = VALIDATE_INTERFACE(frame_ref->get(), librealsense::video_frame);
+    auto vf = VALIDATE_INTERFACE(frame_ref->get(), RS2_EXTENSION_TYPE_VIDEO_FRAME);
     return vf->get_bpp();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, frame_ref)
@@ -895,7 +918,7 @@ void rs2_get_motion_intrinsics(const rs2_sensor * sensor, rs2_stream stream, rs2
     VALIDATE_NOT_NULL(intrinsics);
     VALIDATE_ENUM(stream);
 
-    auto motion = VALIDATE_INTERFACE(sensor->sensor, librealsense::motion_sensor_interface);
+    auto motion = VALIDATE_INTERFACE(sensor->sensor, RS2_EXTENSION_TYPE_MOTION);
     *intrinsics = motion->get_motion_intrinsics(stream);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, sensor, stream, intrinsics)
@@ -908,7 +931,7 @@ void rs2_get_stream_intrinsics(const rs2_sensor * sensor, rs2_stream stream, int
     VALIDATE_ENUM(format);
     VALIDATE_NOT_NULL(intrinsics);
 
-    auto video = VALIDATE_INTERFACE(sensor->sensor, librealsense::video_sensor_interface);
+    auto video = VALIDATE_INTERFACE(sensor->sensor, RS2_EXTENSION_TYPE_VIDEO);
 
     // cast because i've been getting errors. (int->uint32_t requires narrowing conversion)
     *intrinsics = video->get_intrinsics({ stream, uint32_t(width), uint32_t(height), uint32_t(fps), format });
@@ -963,7 +986,7 @@ void rs2_set_region_of_interest(const rs2_sensor* sensor, int min_x, int min_y, 
     VALIDATE_LE(0, min_x);
     VALIDATE_LE(0, min_y);
 
-    auto roi = VALIDATE_INTERFACE(sensor->sensor, librealsense::roi_sensor_interface);
+    auto roi = VALIDATE_INTERFACE(sensor->sensor, RS2_EXTENSION_TYPE_ROI);
     roi->get_roi_method().set({ min_x, min_y, max_x, max_y });
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, sensor, min_x, min_y, max_x, max_y)
@@ -976,7 +999,7 @@ void rs2_get_region_of_interest(const rs2_sensor* sensor, int* min_x, int* min_y
     VALIDATE_NOT_NULL(max_x);
     VALIDATE_NOT_NULL(max_y);
 
-    auto roi = VALIDATE_INTERFACE(sensor->sensor, librealsense::roi_sensor_interface);
+    auto roi = VALIDATE_INTERFACE(sensor->sensor, RS2_EXTENSION_TYPE_ROI);
     auto rect = roi->get_roi_method().get();
 
     *min_x = rect.min_x;
@@ -1094,17 +1117,7 @@ int rs2_is_sensor(const rs2_sensor* sensor, rs2_extension_type extension_type, r
 {
     VALIDATE_NOT_NULL(sensor);
     VALIDATE_ENUM(extension_type);
-    switch (extension_type)
-    {
-        case RS2_EXTENSION_TYPE_DEBUG:     return VALIDATE_INTERFACE_NO_THROW(sensor->sensor, librealsense::debug_interface);
-        case RS2_EXTENSION_TYPE_INFO:      return VALIDATE_INTERFACE_NO_THROW(sensor->sensor, librealsense::info_interface);
-        case RS2_EXTENSION_TYPE_MOTION:    return VALIDATE_INTERFACE_NO_THROW(sensor->sensor, librealsense::motion_sensor_interface);
-        case RS2_EXTENSION_TYPE_OPTIONS:   return VALIDATE_INTERFACE_NO_THROW(sensor->sensor, librealsense::options_interface);
-        case RS2_EXTENSION_TYPE_VIDEO:     return VALIDATE_INTERFACE_NO_THROW(sensor->sensor, librealsense::video_sensor_interface);
-        case RS2_EXTENSION_TYPE_ROI:       return VALIDATE_INTERFACE_NO_THROW(sensor->sensor, librealsense::roi_sensor_interface);
-        default:
-            return 0;
-    }
+    return VALIDATE_INTERFACE_NO_THROW(sensor->sensor, extension_type) != nullptr;
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, sensor, extension_type)
 
@@ -1112,17 +1125,7 @@ int rs2_is_device(const rs2_device* dev, rs2_extension_type extension_type, rs2_
 {
     VALIDATE_NOT_NULL(dev);
     VALIDATE_ENUM(extension_type);
-    switch (extension_type)
-    {
-        case RS2_EXTENSION_TYPE_DEBUG:     return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::debug_interface);
-        case RS2_EXTENSION_TYPE_INFO:      return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::info_interface);
-        case RS2_EXTENSION_TYPE_MOTION:    return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::motion_sensor_interface);
-        case RS2_EXTENSION_TYPE_OPTIONS:   return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::options_interface);
-        case RS2_EXTENSION_TYPE_VIDEO:     return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::video_sensor_interface);
-        case RS2_EXTENSION_TYPE_ROI:       return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::roi_sensor_interface);
-        default:
-            return 0;
-    }
+    return VALIDATE_INTERFACE_NO_THROW(sensor->sensor, extension_type) != nullptr;
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, dev, extension_type)
 
@@ -1131,12 +1134,7 @@ int rs2_is_frame(const rs2_frame* f, rs2_extension_type extension_type, rs2_erro
 {
     VALIDATE_NOT_NULL(f);
     VALIDATE_ENUM(extension_type);
-    switch (extension_type)
-    {
-        case RS2_EXTENSION_TYPE_VIDEO_FRAME:     return VALIDATE_INTERFACE_NO_THROW(f->get(), librealsense::video_frame);
-        default:
-            return 0;
-    }
+    return VALIDATE_INTERFACE_NO_THROW(sensor->sensor, extension_type) != nullptr;
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, f, extension_type)
 

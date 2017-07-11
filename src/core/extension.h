@@ -16,7 +16,7 @@ namespace librealsense
 
     {
     public:
-        virtual void* extend_to(rs2_extension_type extension_type) = 0;
+        virtual bool extend_to(rs2_extension_type extension_type, void** ptr) = 0;
     };
 
     /**
