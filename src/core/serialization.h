@@ -62,7 +62,7 @@ namespace librealsense
         {
             std::chrono::nanoseconds timestamp;
             uint32_t sensor_index;
-            std::shared_ptr <librealsense::frame> frame;
+            std::shared_ptr <librealsense::frame_interface> frame;
         };
 
         struct snapshot_box

@@ -17,7 +17,7 @@ namespace librealsense
                           public options_container//TODO: Ziv, does it make sense to inherit here?
     {
     public:
-        using frame_interface_callback_t = std::function<void(std::shared_ptr<librealsense::frame>)>;
+        using frame_interface_callback_t = std::function<void(std::shared_ptr<librealsense::frame_interface>)>;
 
         record_sensor(sensor_interface& sensor, frame_interface_callback_t on_frame);
         virtual ~record_sensor();
@@ -67,7 +67,7 @@ namespace librealsense
     private:
         void write_header();
         std::chrono::nanoseconds get_capture_time();
-        void write_data(size_t sensor_index, std::shared_ptr<librealsense::frame> f);
+        void write_data(size_t sensor_index, std::shared_ptr<librealsense::frame_interface> f);
 
     private:
         std::shared_ptr<device_interface> m_device;
@@ -91,53 +91,132 @@ namespace librealsense
         std::vector<std::shared_ptr<extension_snapshot>> get_extensions_snapshots(T* extendable);
     };
 
-    class extension_snapshot_frame : public frame_interface
-    {
-        sensor_interface& m_sensor;
-        std::shared_ptr<extension_snapshot> m_ext;
-
-    public:
-        extension_snapshot_frame(sensor_interface& s, std::shared_ptr<extension_snapshot> e) :m_sensor(s), m_ext(e)
-        {
-        }
-        double get_timestamp() const override
-        {
-            return 9;
-        }
-        rs2_timestamp_domain get_timestamp_domain() const override
-        {
-            return rs2_timestamp_domain::RS2_TIMESTAMP_DOMAIN_SYSTEM_TIME;
-        }
-        unsigned int get_stream_index() const override
-        {
-            return 0;
-        }
-        const uint8_t* get_data() const override
-        {
-            return nullptr;
-        }
-        size_t get_data_size() const override
-        {
-            return 0;
-        }
-        const sensor_interface& get_sensor() const override
-        {
-            return m_sensor;
-        }
-    };
+//    class extension_snapshot_frame : public frame_interface
+//    {
+//        sensor_interface& m_sensor;
+//        std::shared_ptr<extension_snapshot> m_ext;
+//
+//    public:
+//        extension_snapshot_frame(sensor_interface& s, std::shared_ptr<extension_snapshot> e) :m_sensor(s), m_ext(e)
+//        {
+//        }
+//        double get_timestamp() const override
+//        {
+//            return 9;
+//        }
+//        rs2_timestamp_domain get_timestamp_domain() const override
+//        {
+//            return rs2_timestamp_domain::RS2_TIMESTAMP_DOMAIN_SYSTEM_TIME;
+//        }
+//        unsigned int get_stream_index() const override
+//        {
+//            return 0;
+//        }
+//        const uint8_t* get_data() const override
+//        {
+//            return nullptr;
+//        }
+//        size_t get_data_size() const override
+//        {
+//            return 0;
+//        }
+//        const sensor_interface& get_sensor() const override
+//        {
+//            return m_sensor;
+//        }
+//    };
 
     class mock_frame : public frame_interface
     {
-        sensor_interface& m_sensor;
-        frame* m_frame;
     public:
-        mock_frame(sensor_interface& s, frame* f);
-        double get_timestamp() const override;
-        rs2_timestamp_domain get_timestamp_domain() const override;
-        unsigned int get_stream_index() const override;
-        const uint8_t* get_data() const override;
-        size_t get_data_size() const override;
-        const sensor_interface& get_sensor() const override;
+        mock_frame()
+        {
+
+        }
+        uint64_t get_frame_data_size() const override
+        {
+            return 0;
+        }
+        rs2_metadata_t get_frame_metadata(const rs2_frame_metadata& frame_metadata) const override
+        {
+            return rs2_frame_metadata::RS2_FRAME_METADATA_ACTUAL_EXPOSURE;
+        }
+        bool supports_frame_metadata(const rs2_frame_metadata& frame_metadata) const override
+        {
+            return false;
+        }
+        const byte* get_frame_data() const override
+        {
+            return nullptr;
+        }
+        rs2_time_t get_frame_timestamp() const override
+        {
+            return 0;
+        }
+        rs2_timestamp_domain get_frame_timestamp_domain() const override
+        {
+            return rs2_timestamp_domain::RS2_TIMESTAMP_DOMAIN_SYSTEM_TIME;
+        }
+        void set_timestamp(double new_ts) override
+        {
+
+        }
+        unsigned long long int get_frame_number() const override
+        {
+            return 0;
+        }
+        void set_timestamp_domain(rs2_timestamp_domain timestamp_domain) override
+        {
+
+        }
+        rs2_time_t get_frame_system_time() const override
+        {
+            return 0;
+        }
+        rs2_format get_format() const override
+        {
+            return rs2_format::RS2_FORMAT_XYZ32F;
+        }
+        rs2_stream get_stream_type() const override
+        {
+            return rs2_stream::RS2_STREAM_FISHEYE;
+        }
+        int get_framerate() const override
+        {
+            return 0;
+        }
+        rs2_time_t get_frame_callback_start_time_point() const override
+        {
+            return 0;
+        }
+        void update_frame_callback_start_ts(rs2_time_t ts) override
+        {
+
+        }
+        void acquire() override
+        {
+
+        }
+        void release() override
+        {
+
+        }
+        frame_interface* publish(std::shared_ptr<archive_interface> new_owner) override
+        {
+            return nullptr;
+        }
+        void attach_continuation(frame_continuation&& continuation) override
+        {
+
+        }
+        void disable_continuation() override
+        {
+
+        }
+        archive_interface* get_owner() const override
+        {
+            return nullptr;
+        }
     };
 }
 

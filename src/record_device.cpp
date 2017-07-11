@@ -31,7 +31,7 @@ librealsense::record_device::record_device(std::shared_ptr<librealsense::device_
         auto& sensor = m_device->get_sensor(i);
 
         auto recording_sensor = std::make_shared<record_sensor>(sensor,
-                                                                [this, i](std::shared_ptr<librealsense::frame> f)
+                                                                [this, i](std::shared_ptr<librealsense::frame_interface> f)
                                                                 {
                                                                     std::call_once(m_first_call_flag, [this]()
                                                                     {
@@ -85,9 +85,9 @@ std::chrono::nanoseconds librealsense::record_device::get_capture_time()
     return (now - m_capture_time_base) - m_record_pause_time;
 }
 
-void librealsense::record_device::write_data(size_t sensor_index, std::shared_ptr<librealsense::frame> f)
+void librealsense::record_device::write_data(size_t sensor_index, std::shared_ptr<librealsense::frame_interface> f)
 {
-    uint64_t data_size = f->data.size();
+    uint64_t data_size = f->get_frame_data_size();
     uint64_t cached_data_size = m_cached_data_size + data_size;
     if (cached_data_size > MAX_CACHED_DATA_SIZE)
     {
@@ -302,8 +302,7 @@ void librealsense::record_sensor::start(frame_callback_ptr callback)
     frame_callback f;
     auto record_cb = [this, callback](rs2_frame* f)
     {
-        auto frame = std::shared_ptr<librealsense::frame>(f->get()->get_owner()->clone_frame(f)->get()); //TODO: Ziv, <--- pshhh what??!
-        m_record_callback(frame);
+        m_record_callback(std::shared_ptr<librealsense::frame_interface>(f->get()->get_owner()->clone_frame(f)->get())); //TODO: Ziv, clone frame correctly
         callback->on_frame(f);
     };
     m_frame_callback = std::make_shared<my_frame_callback>(record_cb);
@@ -356,37 +355,3 @@ void* librealsense::record_sensor::extend_to(rs2_extension_type extension_type)
             throw invalid_value_exception(std::string("extension_type ") + std::to_string(extension_type) + " is not supported");
     }
 }
-
-double librealsense::mock_frame::get_timestamp() const
-{
-    return 0;
-}
-rs2_timestamp_domain librealsense::mock_frame::get_timestamp_domain() const
-{
-    return rs2_timestamp_domain::RS2_TIMESTAMP_DOMAIN_SYSTEM_TIME;
-}
-unsigned int librealsense::mock_frame::get_stream_index() const
-{
-    return 0;
-}
-const uint8_t* librealsense::mock_frame::get_data() const
-{
-    return m_frame->data.data();
-}
-size_t librealsense::mock_frame::get_data_size() const
-{
-    return m_frame->data.size();
-}
-const librealsense::sensor_interface& librealsense::mock_frame::get_sensor() const
-{
-    return m_sensor;
-}
-librealsense::mock_frame::mock_frame(librealsense::sensor_interface& s, frame* f) :
-    m_sensor(s),
-    m_frame(f)
-{
-
-}
-
-
-
