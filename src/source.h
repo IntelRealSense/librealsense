@@ -35,6 +35,8 @@ namespace librealsense
 
         virtual ~frame_source() { flush(); }
 
+        double get_time() const { return _ts->get_time(); }
+
     private:
         std::mutex _callback_mutex;
         std::shared_ptr<archive_interface> _archive;

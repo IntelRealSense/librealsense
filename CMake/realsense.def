@@ -93,6 +93,7 @@ EXPORTS
     rs2_free_error
     rs2_get_librealsense_exception_type
     rs2_exception_type_to_string
+    rs2_extension_type_to_string
     rs2_log_severity_to_string
 
     rs2_stream_to_string
@@ -123,3 +124,10 @@ EXPORTS
     rs2_is_sensor
     rs2_is_device
     rs2_is_frame
+
+    rs2_allocate_synthetic_video_frame
+    rs2_synthetic_frame_ready
+    rs2_create_processing_block
+    rs2_start_processing
+    rs2_process_frames
+    rs2_delete_processing_block

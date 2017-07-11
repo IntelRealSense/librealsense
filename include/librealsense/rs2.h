@@ -209,6 +209,20 @@ typedef enum rs2_timestamp_domain
 } rs2_timestamp_domain;
 
 
+typedef enum rs2_extension_type
+{
+    RS2_EXTENSION_TYPE_DEBUG,
+    RS2_EXTENSION_TYPE_INFO,
+    RS2_EXTENSION_TYPE_MOTION,
+    RS2_EXTENSION_TYPE_OPTIONS,
+    RS2_EXTENSION_TYPE_UNKNOWN,
+    RS2_EXTENSION_TYPE_VIDEO,
+    RS2_EXTENSION_TYPE_ROI,
+    RS2_EXTENSION_TYPE_VIDEO_FRAME,
+    RS2_EXTENSION_TYPE_MOTION_FRAME,
+    RS2_EXTENSION_TYPE_COUNT
+} rs2_extension_type;
+
 /** \brief Video stream intrinsics */
 typedef struct rs2_intrinsics
 {
@@ -261,8 +275,11 @@ typedef struct rs2_syncer rs2_syncer;
 typedef struct rs2_device_serializer rs2_device_serializer;
 typedef struct rs2_record_device rs2_record_device;
 typedef struct rs2_source rs2_source;
+typedef struct rs2_processing_block rs2_processing_block;
+typedef struct rs2_frame_processor_callback rs2_frame_processor_callback;
 
 typedef void (*rs2_frame_callback_ptr)(rs2_frame*, void*);
+typedef void (*rs2_frame_processor_callback_ptr)(rs2_frame**, int, rs2_source*, void*);
 typedef void (*rs2_notification_callback_ptr)(rs2_notification*, void*);
 typedef void (*rs2_devices_changed_callback_ptr)(rs2_device_list*, rs2_device_list*, void*);
 typedef void (*rs2_log_callback_ptr)(rs2_log_severity min_severity, const char* message, void* user);
@@ -974,7 +991,6 @@ const char * rs2_get_failed_args      (const rs2_error * error);
 const char * rs2_get_error_message    (const rs2_error * error);
 void         rs2_free_error           (rs2_error * error);
 rs2_exception_type rs2_get_librealsense_exception_type(const rs2_error * error);
-const char * rs2_exception_type_to_string(rs2_exception_type type);
 
 const char * rs2_stream_to_string           (rs2_stream stream);
 const char * rs2_format_to_string           (rs2_format format);
@@ -988,23 +1004,10 @@ const char * rs2_visual_preset_to_string    (rs2_visual_preset preset);
 const char * rs2_log_severity_to_string     (rs2_log_severity info);
 const char * rs2_visual_preset_to_string    (rs2_visual_preset preset);
 const char * rs2_exception_type_to_string   (rs2_exception_type type);
+const char * rs2_extension_type_to_string   (rs2_extension_type type);
 
 void rs2_log_to_console(rs2_log_severity min_severity, rs2_error ** error);
 void rs2_log_to_file(rs2_log_severity min_severity, const char * file_path, rs2_error ** error);
-
-typedef enum rs2_extension_type
-{
-    RS2_EXTENSION_TYPE_DEBUG,
-    RS2_EXTENSION_TYPE_INFO,
-    RS2_EXTENSION_TYPE_MOTION,
-    RS2_EXTENSION_TYPE_OPTIONS,
-    RS2_EXTENSION_TYPE_UNKNOWN,
-    RS2_EXTENSION_TYPE_VIDEO,
-    RS2_EXTENSION_TYPE_ROI,
-    RS2_EXTENSION_TYPE_VIDEO_FRAME,
-    RS2_EXTENSION_TYPE_MOTION_FRAME,
-    RS2_EXTENSION_TYPE_COUNT
-} rs2_extension_type;
 
 /**
  * TODO: Ziv, document
@@ -1055,6 +1058,20 @@ rs2_record_device* rs2_create_record_device(const rs2_device* device, rs2_device
  * \param device 
  */
 void rs2_delete_record_device(rs2_record_device* device);
+
+
+rs2_frame* rs2_allocate_synthetic_video_frame(rs2_source* source, rs2_stream new_stream, rs2_frame* original, 
+    rs2_format new_format, int new_bpp, int new_width, int new_height, int new_stride, rs2_error** error);
+
+void rs2_synthetic_frame_ready(rs2_source* source, rs2_frame* frame, rs2_error** error);
+
+rs2_processing_block* rs2_create_processing_block(rs2_context* ctx, rs2_extension_type output_type, rs2_frame_processor_callback* proc, rs2_error** error);
+
+void rs2_start_processing(rs2_processing_block* block, rs2_frame_callback* on_frame, rs2_error** error);
+
+void rs2_process_frames(rs2_processing_block* block, rs2_frame** frames, int count, rs2_error** error);
+
+void rs2_delete_processing_block(rs2_processing_block* block);
 
 #ifdef __cplusplus
 }

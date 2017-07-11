@@ -366,6 +366,8 @@ namespace rs2
     protected:
         friend class frame_queue;
         friend class syncer;
+        friend class frame_source;
+        friend class processing_block;
 
         rs2_frame* frame_ref;
         frame(const frame&) = delete;
@@ -453,6 +455,107 @@ namespace rs2
         void release() override { delete this; }
     };
 
+    class frame_source
+    {
+    public:
+
+        frame allocate_video_frame(rs2_stream new_stream, 
+                                   const frame& original, 
+                                   rs2_format new_format = RS2_FORMAT_ANY,
+                                   int new_bpp = 0,
+                                   int new_width = 0,
+                                   int new_height = 0,
+                                   int new_stride = 0) const 
+        {
+            rs2_error* e = nullptr;
+            auto result = rs2_allocate_synthetic_video_frame(_source, new_stream, 
+                original.get(), new_format, new_bpp, new_width, new_height, new_stride, &e);
+            error::handle(e);
+            return result;
+        }
+
+        void frame_ready(frame result) const
+        {
+            rs2_error* e = nullptr;
+            rs2_synthetic_frame_ready(_source, result.get(), &e);
+            error::handle(e);
+            result.frame_ref = nullptr;
+        }
+
+    private:
+        template<class T>
+        friend class frame_processor_callback;
+
+        frame_source(rs2_source* source) : _source(source) {}
+        frame_source(const frame_source&) = delete;
+        rs2_source* _source;
+    };
+
+    typedef std::vector<frame> frameset;
+
+    template<class T>
+    class frame_processor_callback : public rs2_frame_processor_callback
+    {
+        T on_frame_function;
+    public:
+        explicit frame_processor_callback(T on_frame) : on_frame_function(on_frame) {}
+
+        void on_frame(rs2_frame ** f, int count, rs2_source * source) override
+        {
+            frame_source src(source);
+            frameset frames(count);
+            for (int i = 0; i < count; i++)
+            {
+                frames[i] = std::move(frame(f[i]));
+            }
+            on_frame_function(std::move(frames), source);
+        }
+
+        void release() override { delete this; }
+    };
+
+    class processing_block
+    {
+    public:
+        template<class S>
+        void start(S on_frame)
+        {
+            rs2_error* e = nullptr;
+            rs2_start_processing(_block.get(), new frame_callback<S>(on_frame), &e);
+            error::handle(e);
+        }
+
+        void invoke(frameset frames) const
+        {
+            std::vector<rs2_frame*> refs(frames.size(), nullptr);
+            for (size_t i = 0; i < frames.size(); i++)
+            {
+                std::swap(refs[i], frames[i].frame_ref);
+            }
+
+            rs2_error* e = nullptr;
+            rs2_process_frames(_block.get(), refs.data(), (int)refs.size(), &e);
+            error::handle(e);
+        }
+
+        void operator()(frame f) const
+        {
+            frameset v(1);
+            v[0] = std::move(f);
+            invoke(std::move(v));
+        }
+
+    private:
+        friend class context;
+
+        processing_block(std::shared_ptr<rs2_processing_block> block)
+            : _block(block)
+        {
+        }
+
+        std::shared_ptr<rs2_processing_block> _block;
+    };
+
     template<class T>
     class notifications_callback : public rs2_notifications_callback
     {
@@ -506,8 +609,6 @@ namespace rs2
         int max_x;
         int max_y;
     };
-
-    typedef std::vector<frame> frameset;
 
     class syncer
     {
@@ -1351,6 +1452,22 @@ namespace rs2
                 new devices_changed_callback<T>(std::move(callback)), &e);
             error::handle(e);
         }
+
+        template<class T>
+        processing_block create_processing_block(rs2_extension_type output_type, T processing_function)
+        {
+            rs2_error* e = nullptr;
+            std::shared_ptr<rs2_processing_block> block(
+                rs2_create_processing_block(_context.get(),
+                    output_type,
+                    new frame_processor_callback<T>(processing_function),
+                    &e),
+                rs2_delete_processing_block);
+            error::handle(e);
+
+            return processing_block(block);
+        }
+
     protected:
         std::shared_ptr<rs2_context> _context;
     };

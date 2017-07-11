@@ -4,6 +4,7 @@
 #pragma once
 
 #include "types.h"
+#include "core/streaming.h"
 #include <atomic>
 #include <array>
 #include <math.h>
@@ -51,7 +52,7 @@ struct frame_additional_data
 struct rs2_frame // esentially an intrusive shared_ptr<frame>
 {
     rs2_frame();
-    explicit rs2_frame(librealsense::frame* frame);
+    explicit rs2_frame(librealsense::frame_interface* frame);
     rs2_frame(const rs2_frame& other);
     rs2_frame(rs2_frame&& other);
 
@@ -63,13 +64,13 @@ struct rs2_frame // esentially an intrusive shared_ptr<frame>
     void attach_continuation(librealsense::frame_continuation&& continuation) const;
     void disable_continuation() const;
 
-    librealsense::frame* get() const;
+    librealsense::frame_interface* get() const;
 
     void log_callback_start(rs2_time_t timestamp) const;
     void log_callback_end(rs2_time_t timestamp) const;
 
 private:
-    librealsense::frame* frame_ptr = nullptr;
+    librealsense::frame_interface* frame_ptr = nullptr;
 };
 
 namespace librealsense
@@ -77,7 +78,7 @@ namespace librealsense
     typedef std::map<rs2_frame_metadata, std::shared_ptr<md_attribute_parser_base>> metadata_parser_map;
 
     // Define a movable but explicitly noncopyable buffer type to hold our frame data
-    class frame
+    class frame : public frame_interface
     {
     public:
         std::vector<byte> data;
@@ -129,17 +130,28 @@ namespace librealsense
 
         void acquire() { ref_count.fetch_add(1); }
         void release();
-        frame* publish(std::shared_ptr<librealsense::archive_interface> new_owner);
-        void attach_continuation(librealsense::frame_continuation&& continuation) { on_release = std::move(continuation); }
+        frame_interface* publish(std::shared_ptr<archive_interface> new_owner);
+        void attach_continuation(frame_continuation&& continuation) { on_release = std::move(continuation); }
         void disable_continuation() { on_release.reset(); }
 
-        librealsense::archive_interface* get_owner() const { return owner.get(); }
+        archive_interface* get_owner() const { return owner.get(); }
 
     private:
         // TODO: check boost::intrusive_ptr or an alternative
         std::atomic<int> ref_count; // the reference count is on how many times this placeholder has been observed (not lifetime, not content)
-        std::shared_ptr<librealsense::archive_interface> owner; // pointer to the owner to be returned to by last observe
-        librealsense::frame_continuation on_release;
+        std::shared_ptr<archive_interface> owner; // pointer to the owner to be returned to by last observe
+        frame_continuation on_release;
+    };
+
+    class composite_frame : public frame
+    {
+    public:
+        composite_frame() : frame() {}
+
+        
+
+    private:
+
     };
 
     class video_frame : public frame

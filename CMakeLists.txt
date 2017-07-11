@@ -315,6 +315,7 @@ if(WIN32)
 		src/core/info.h
 		src/core/options.h
 		src/core/extension.h
+        src/core/processing.h
         )
 
     source_group("Header Files\\Logging" FILES

@@ -296,7 +296,7 @@ namespace librealsense
                     if (frame.frame)
                     {
                         auto video = (video_frame*)frame->get();
-                        video->assign(width, height, width, bpp);
+                        video->assign(width, height, width * bpp / 8, bpp);
                         video->set_timestamp_domain(timestamp_domain);
                         dest.push_back(const_cast<byte*>(video->get_frame_data()));
                         refs.push_back(std::move(frame));
@@ -736,7 +736,7 @@ namespace librealsense
                 return;
             }
 
-            std::vector<byte*> dest{const_cast<byte*>(frame->get()->data.data())};
+            std::vector<byte*> dest{const_cast<byte*>(frame->get()->get_frame_data())};
             mode.unpacker->unpack(dest.data(),(const byte*)sensor_data.fo.pixels, (int)data_size);
 
             if (_on_before_frame_callback)
