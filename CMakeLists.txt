@@ -139,6 +139,7 @@ set(REALSENSE_HPP
     include/librealsense/rsutil2.hpp
     include/librealsense/rs2_advanced_mode.h
     include/librealsense/rs2_advanced_mode.hpp
+    include/librealsense/rs2_advanced_mode_command.h
 
     src/core/streaming.h
     src/core/debug.h
@@ -230,6 +231,7 @@ if(WIN32)
         include/librealsense/rsutil2.hpp
         include/librealsense/rs2_advanced_mode.h
         include/librealsense/rs2_advanced_mode.hpp
+        include/librealsense/rs2_advanced_mode_command.h
         CMake/realsense.def
         CMake/advanced_mode.def
         )
@@ -242,7 +244,7 @@ if(WIN32)
 
     source_group("Source Files\\API" FILES
         src/rs.cpp
-		src/verify.c
+        src/verify.c
         )
 
     source_group("Source Files\\Recorder" FILES
@@ -414,7 +416,7 @@ if(${ROS_BUILD_TYPE})
         ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
     )
 
-    install(DIRECTORY ${PROJECT_SOURCE_DIR}/include/${PROJECT_NAME}/
+    install(DIRECTORY ${PROJECT_SOURCE_DIR}/include/librealsense/
         DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION})
 else()
     set(CMAKECONFIG_INSTALL_DIR "${CMAKE_INSTALL_LIBDIR}/cmake/realsense2")

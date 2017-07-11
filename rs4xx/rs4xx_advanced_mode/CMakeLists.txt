@@ -57,8 +57,8 @@ set(RS4XX_SOURCES
 
 set(RS4XX_INCLUDES
     ../../include/librealsense/rs2_advanced_mode.h
-    include/advanced_mode_command.h
     ../../include/librealsense/rs2_advanced_mode.hpp
+    ../../include/librealsense/rs2_advanced_mode_command.h
     )
 
 if(WIN32)
@@ -70,7 +70,7 @@ if(WIN32)
         ../../third-party/imgui/imgui_impl_glfw.cpp)
 
     source_group("Header Files\\Reference" FILES
-        ./include/advanced_mode_command.h)
+        ../../include/librealsense/rs2_advanced_mode_command.h)
 
 endif()
 

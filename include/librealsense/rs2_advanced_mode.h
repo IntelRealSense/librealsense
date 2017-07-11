@@ -7,7 +7,7 @@
 #include <stdint.h>
 
 #define RS4XX_ADVANCED_MODE_HPP
-#include "advanced_mode_command.h"
+#include <librealsense/rs2_advanced_mode_command.h>
 #undef RS4XX_ADVANCED_MODE_HPP
 
 #include <librealsense/rs2.h>
@@ -16,7 +16,7 @@
 extern "C" {
 #endif
 
-void rs2_go_to_advanced_mode(rs2_device* dev, rs2_error** error);
+void rs2_toggle_advanced_mode(rs2_device* dev, int enable, rs2_error** error);
 
 void rs2_is_enabled(rs2_device* dev, int* enabled, rs2_error** error);
 

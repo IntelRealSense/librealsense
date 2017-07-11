@@ -6,7 +6,7 @@
 #include "hw-monitor.h"
 #include "streaming.h"
 #define RS4XX_ADVANCED_MODE_HPP
-#include "../rs4xx/rs4xx_advanced_mode/include/advanced_mode_command.h"
+#include <librealsense/rs2_advanced_mode_command.h>
 #undef RS4XX_ADVANCED_MODE_HPP
 
 
@@ -36,7 +36,7 @@ namespace librealsense
     public:
         virtual bool is_enabled() const = 0;
 
-        virtual void go_to_advanced_mode() const = 0;
+        virtual void toggle_advanced_mode(bool enable) const = 0;
 
         virtual void get_depth_control_group(STDepthControlGroup* ptr, int mode = 0) const = 0;
         virtual void get_rsm(STRsm* ptr, int mode = 0) const = 0;
@@ -80,9 +80,9 @@ namespace librealsense
             return *(reinterpret_cast<uint32_t*>(results.data()) + 1) > 0;
         }
 
-        void go_to_advanced_mode() const
+        void toggle_advanced_mode(bool enable) const
         {
-            send_recieve(encode_command(ds::fw_cmd::enable_advanced_mode, 1));
+            send_recieve(encode_command(ds::fw_cmd::enable_advanced_mode, enable));
             send_recieve(encode_command(ds::fw_cmd::reset));
         }
 

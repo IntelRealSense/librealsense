@@ -23,10 +23,10 @@ namespace rs4xx
             rs2::error::handle(e);
         }
 
-        void go_to_advanced_mode()
+        void toggle_advanced_mode(bool enable)
         {
             rs2_error* e = nullptr;
-            rs2_go_to_advanced_mode(_dev.get(), &e);
+            rs2_toggle_advanced_mode(_dev.get(), enable, &e);
             rs2::error::handle(e);
         }
 

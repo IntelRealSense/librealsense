@@ -1,6 +1,7 @@
 #include <librealsense/rs2.hpp>
 #include "example.hpp"
 #include "model-views.h"
+#include "../common/realsense-ui/realsense-ui-advanced-mode.h"
 
 #include <cstdarg>
 #include <thread>
@@ -16,6 +17,7 @@
 #pragma comment(lib, "opengl32.lib")
 
 using namespace rs2;
+using namespace rs4xx;
 
 struct user_data
 {
@@ -84,6 +86,268 @@ int find_device_index(const device_list& list ,std::vector<std::string> device_i
     return std::distance(devices_info.begin(), it);
 }
 
+void draw_general_tab(device_model& model, device_list& list,
+                      device& dev, std::string& label, bool hw_reset_enable,
+                      bool update_read_only_options, std::string& error_message)
+{
+    // Streaming Menu - Allow user to play different streams
+    if (list.size()>0 && ImGui::CollapsingHeader("Streaming", nullptr, true, true))
+    {
+        if (model.subdevices.size() > 1)
+        {
+            try
+            {
+                const float stream_all_button_width = 290;
+                const float stream_all_button_height = 0;
+
+                auto anything_stream = false;
+                for (auto&& sub : model.subdevices)
+                {
+                    if (sub->streaming) anything_stream = true;
+                }
+                if (!anything_stream)
+                {
+                    label = to_string() << "Start All";
+
+                    if (ImGui::Button(label.c_str(), { stream_all_button_width, stream_all_button_height }))
+                    {
+                        for (auto&& sub : model.subdevices)
+                        {
+                            if (sub->is_selected_combination_supported())
+                            {
+                                auto profiles = sub->get_selected_profiles();
+                                sub->play(profiles);
+
+                                for (auto&& profile : profiles)
+                                {
+                                    model.streams[profile.stream].dev = sub;
+                                }
+                            }
+                        }
+
+                    }
+                    if (ImGui::IsItemHovered())
+                    {
+                        ImGui::SetTooltip("Start streaming from all subdevices");
+                    }
+                }
+                else
+                {
+                    label = to_string() << "Stop All";
+
+                    if (ImGui::Button(label.c_str(), { stream_all_button_width, stream_all_button_height }))
+                    {
+                        for (auto&& sub : model.subdevices)
+                        {
+                            if (sub->streaming) sub->stop();
+                        }
+                    }
+                    if (ImGui::IsItemHovered())
+                    {
+                        ImGui::SetTooltip("Stop streaming from all subdevices");
+                    }
+                }
+            }
+            catch(const error& e)
+            {
+                error_message = error_to_string(e);
+            }
+            catch(const std::exception& e)
+            {
+                error_message = e.what();
+            }
+        }
+
+        // Draw menu foreach subdevice with its properties
+        for (auto&& sub : model.subdevices)
+        {
+
+            label = to_string() << sub->s.get_info(RS2_CAMERA_INFO_NAME);
+            if (ImGui::CollapsingHeader(label.c_str(), nullptr, true, true))
+            {
+                sub->draw_stream_selection();
+
+                try
+                {
+                    if (!sub->streaming)
+                    {
+                        label = to_string() << "Start " << sub->s.get_info(RS2_CAMERA_INFO_NAME);
+
+                        if (sub->is_selected_combination_supported())
+                        {
+                            if (ImGui::Button(label.c_str()))
+                            {
+                                auto profiles = sub->get_selected_profiles();
+                                sub->play(profiles);
+
+                                for (auto&& profile : profiles)
+                                {
+                                    model.streams[profile.stream].dev = sub;
+                                }
+                            }
+                            if (ImGui::IsItemHovered())
+                            {
+                                ImGui::SetTooltip("Start streaming data from selected sub-device");
+                            }
+                        }
+                        else
+                        {
+                            ImGui::TextDisabled("%s", label.c_str());
+                        }
+                    }
+                    else
+                    {
+                        label = to_string() << "Stop " << sub->s.get_info(RS2_CAMERA_INFO_NAME);
+                        if (ImGui::Button(label.c_str()))
+                        {
+                            sub->stop();
+                        }
+                        if (ImGui::IsItemHovered())
+                        {
+                            ImGui::SetTooltip("Stop streaming data from selected sub-device");
+                        }
+                    }
+                }
+                catch(const error& e)
+                {
+                    error_message = error_to_string(e);
+                }
+                catch(const std::exception& e)
+                {
+                    error_message = e.what();
+                }
+
+                auto&& de_opt = sub->options_metadata[RS2_OPTION_DEPTH_UNITS];
+                if (de_opt.supported)
+                {
+                    if (ImGui::Checkbox("Histogram Equalization", &model.streams[RS2_STREAM_DEPTH].texture->equalize))
+                    {
+                        auto depth_units = de_opt.value;
+                        model.streams[RS2_STREAM_DEPTH].texture->min_depth = 0;
+                        model.streams[RS2_STREAM_DEPTH].texture->max_depth = 6 / depth_units;
+                    }
+                    if (!model.streams[RS2_STREAM_DEPTH].texture->equalize)
+                    {
+                        auto depth_units = de_opt.value;
+                        auto val = model.streams[RS2_STREAM_DEPTH].texture->min_depth * depth_units;
+                        if (ImGui::SliderFloat("Near (m)", &val, 0, 16))
+                        {
+                            model.streams[RS2_STREAM_DEPTH].texture->min_depth = val / depth_units;
+                        }
+                        val = model.streams[RS2_STREAM_DEPTH].texture->max_depth * depth_units;
+                        if (ImGui::SliderFloat("Far  (m)", &val, 0, 16))
+                        {
+                            model.streams[RS2_STREAM_DEPTH].texture->max_depth = val / depth_units;
+                        }
+                        if (model.streams[RS2_STREAM_DEPTH].texture->min_depth > model.streams[RS2_STREAM_DEPTH].texture->max_depth)
+                        {
+                            std::swap(model.streams[RS2_STREAM_DEPTH].texture->max_depth, model.streams[RS2_STREAM_DEPTH].texture->min_depth);
+                        }
+                    }
+                }
+
+
+                for (auto i = 0; i < RS2_OPTION_COUNT; i++)
+                {
+                    auto opt = static_cast<rs2_option>(i);
+                    auto&& metadata = sub->options_metadata[opt];
+                    if (update_read_only_options)
+                    {
+                        metadata.update_supported(error_message);
+                        if (metadata.supported && sub->streaming)
+                        {
+                            metadata.update_read_only(error_message);
+                            if (metadata.read_only)
+                            {
+                                metadata.update_all(error_message);
+                            }
+                        }
+                    }
+                    metadata.draw(error_message);
+                }
+            }
+            ImGui::Text("\n");
+        }
+    }
+
+    if (list.size()>0 && ImGui::CollapsingHeader("Hardware Commands", nullptr, true))
+    {
+        label = to_string() << "Hardware Reset";
+
+        const float hardware_reset_button_width = 290;
+        const float hardware_reset_button_height = 0;
+
+        if (ImGui::ButtonEx(label.c_str(), { hardware_reset_button_width, hardware_reset_button_height }, hw_reset_enable?0:ImGuiButtonFlags_Disabled))
+        {
+            try
+            {
+                dev.hardware_reset();
+            }
+            catch(const error& e)
+            {
+                error_message = error_to_string(e);
+            }
+            catch(const std::exception& e)
+            {
+                error_message = e.what();
+            }
+        }
+    }
+
+    ImGui::Text("\n\n\n\n\n\n\n");
+
+    for (auto&& sub : model.subdevices)
+    {
+        sub->update(error_message);
+    }
+}
+
+void draw_advanced_mode_tab(device& dev, advanced_mode_control& amc, bool& get_curr_advanced_controls, std::string& error_message)
+{
+    auto is_advanced_mode = dev.is<advanced_mode>();
+    if (!is_advanced_mode)
+    {
+        error_message = "Device doesn't support Advanced Mode!";
+        return;
+    }
+
+    if (ImGui::CollapsingHeader("Advanced Mode", nullptr, true, true))
+    {
+        try
+        {
+            auto advanced = dev.as<advanced_mode>();
+            if (advanced.is_enabled())
+            {
+                if (ImGui::Button("Disable Advanced Mode", ImVec2{290, 0}))
+                {
+                    //if (yes_no_dialog()) // TODO
+                    //{
+                        advanced.toggle_advanced_mode(false);
+                        std::this_thread::sleep_for(std::chrono::seconds(1));
+                    //}
+                }
+                draw_advanced_mode_controls(advanced, amc, get_curr_advanced_controls);
+            }
+            else
+            {
+                if (ImGui::Button("Enable Advanced Mode", ImVec2{290, 0}))
+                {
+                    //if (yes_no_dialog()) // TODO
+                    //{
+                        advanced.toggle_advanced_mode(true);
+                        std::this_thread::sleep_for(std::chrono::seconds(1));
+                    //}
+                }
+                ImGui::TextColored(ImVec4{255.0f, 0.0f, 0.0f, 1.0f}, "DEVICE IS NOT IN ADVANCED-MODE!\nYOU CAN MOVE IT TO ADVANCED-MODE BY CLICK\nON THE BUTTON ABOVE.");
+            }
+        }
+        catch(...)
+        {
+            // TODO: raise notification
+        }
+    }
+}
+
 int main(int, char**) try
 {
     // activate logging to console
@@ -135,6 +399,7 @@ int main(int, char**) try
 
     auto last_time_point = std::chrono::high_resolution_clock::now();
 
+
     device dev;
     device_model model;
     device_list list;
@@ -171,17 +436,26 @@ int main(int, char**) try
             dev_exist = false;
         }
 
-        for(auto dev:info.get_new_devices())
+        try
         {
-            not_model.add_notification({get_device_name(dev) + "\nconnected",
-                                        timestamp,
-                                        RS2_LOG_SEVERITY_INFO,
-                                        RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR});
+            for(auto dev:info.get_new_devices())
+            {
+                not_model.add_notification({get_device_name(dev) + "\nconnected",
+                                            timestamp,
+                                            RS2_LOG_SEVERITY_INFO,
+                                            RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR});
+            }
         }
-
+        catch(...)
+        {}
         refresh_device_list = true;
 
     });
+
+    advanced_mode_control amc{};
+    bool get_curr_advanced_controls = true;
+    int last_tab_index = 0;
+    int tab_index = 0;
 
     // Closing the window
     while (!glfwWindowShouldClose(window))
@@ -191,8 +465,8 @@ int main(int, char**) try
 
             if(refresh_device_list)
             {
-
                 refresh_device_list = false;
+                get_curr_advanced_controls = true;
 
                 try
                 {
@@ -285,6 +559,14 @@ int main(int, char**) try
         label = to_string() << "VERSION: " << api_version_to_string(rs2_get_api_version(&e));
         ImGui::Text("%s", label.c_str());
 
+        if (list.size() > 0)
+        {
+            // Draw 3 tabs
+            const char* tabs[] = {"General", "Advanced Mode"};
+            if (ImGui::TabLabels(tabs, 2, tab_index))
+                last_tab_index = tab_index;
+        }
+
         if (list.size() == 0)
         {
             ImGui::Text("No device detected.");
@@ -325,216 +607,22 @@ int main(int, char**) try
             model.draw_device_details(dev);
         }
 
-        // Streaming Menu - Allow user to play different streams
-        if (list.size()>0 && ImGui::CollapsingHeader("Streaming", nullptr, true, true))
+        if (list.size() > 0)
         {
-            if (model.subdevices.size() > 1)
+            if (last_tab_index == 0)
             {
-                try
-                {
-                    const float stream_all_button_width = 290;
-                    const float stream_all_button_height = 0;
-
-                    auto anything_stream = false;
-                    for (auto&& sub : model.subdevices)
-                    {
-                        if (sub->streaming) anything_stream = true;
-                    }
-                    if (!anything_stream)
-                    {
-                        label = to_string() << "Start All";
-
-                        if (ImGui::Button(label.c_str(), { stream_all_button_width, stream_all_button_height }))
-                        {
-                            for (auto&& sub : model.subdevices)
-                            {
-                                if (sub->is_selected_combination_supported())
-                                {
-                                    auto profiles = sub->get_selected_profiles();
-                                    sub->play(profiles);
-
-                                    for (auto&& profile : profiles)
-                                    {
-                                        model.streams[profile.stream].dev = sub;
-                                    }
-                                }
-                            }
-
-                        }
-                        if (ImGui::IsItemHovered())
-                        {
-                            ImGui::SetTooltip("Start streaming from all subdevices");
-                        }
-                    }
-                    else
-                    {
-                        label = to_string() << "Stop All";
-
-                        if (ImGui::Button(label.c_str(), { stream_all_button_width, stream_all_button_height }))
-                        {
-                            for (auto&& sub : model.subdevices)
-                            {
-                                if (sub->streaming) sub->stop();
-                            }
-                        }
-                        if (ImGui::IsItemHovered())
-                        {
-                            ImGui::SetTooltip("Stop streaming from all subdevices");
-                        }
-                    }
-                }
-                catch(const error& e)
-                {
-                    error_message = error_to_string(e);
-                }
-                catch(const std::exception& e)
-                {
-                    error_message = e.what();
-                }
+                draw_general_tab(model, list, dev, label, hw_reset_enable, update_read_only_options, error_message);
             }
-
-            // Draw menu foreach subdevice with its properties
-            for (auto&& sub : model.subdevices)
+            else if (last_tab_index == 1)
+            {
+                draw_advanced_mode_tab(dev, amc, get_curr_advanced_controls, error_message);
+            }
+            else if (last_tab_index == 2)
             {
 
-                label = to_string() << sub->s.get_info(RS2_CAMERA_INFO_NAME);
-                if (ImGui::CollapsingHeader(label.c_str(), nullptr, true, true))
-                {
-                    sub->draw_stream_selection();
-
-                    try
-                    {
-                        if (!sub->streaming)
-                        {
-                            label = to_string() << "Start " << sub->s.get_info(RS2_CAMERA_INFO_NAME);
-
-                            if (sub->is_selected_combination_supported())
-                            {
-                                if (ImGui::Button(label.c_str()))
-                                {
-                                    auto profiles = sub->get_selected_profiles();
-                                    sub->play(profiles);
-
-                                    for (auto&& profile : profiles)
-                                    {
-                                        model.streams[profile.stream].dev = sub;
-                                    }
-                                }
-                                if (ImGui::IsItemHovered())
-                                {
-                                    ImGui::SetTooltip("Start streaming data from selected sub-device");
-                                }
-                            }
-                            else
-                            {
-                                ImGui::TextDisabled("%s", label.c_str());
-                            }
-                        }
-                        else
-                        {
-                            label = to_string() << "Stop " << sub->s.get_info(RS2_CAMERA_INFO_NAME);
-                            if (ImGui::Button(label.c_str()))
-                            {
-                                sub->stop();
-                            }
-                            if (ImGui::IsItemHovered())
-                            {
-                                ImGui::SetTooltip("Stop streaming data from selected sub-device");
-                            }
-                        }
-                    }
-                    catch(const error& e)
-                    {
-                        error_message = error_to_string(e);
-                    }
-                    catch(const std::exception& e)
-                    {
-                        error_message = e.what();
-                    }
-
-                    auto&& de_opt = sub->options_metadata[RS2_OPTION_DEPTH_UNITS];
-                    if (de_opt.supported)
-                    {
-                        if (ImGui::Checkbox("Histogram Equalization", &model.streams[RS2_STREAM_DEPTH].texture->equalize))
-                        {
-                            auto depth_units = de_opt.value;
-                            model.streams[RS2_STREAM_DEPTH].texture->min_depth = 0;
-                            model.streams[RS2_STREAM_DEPTH].texture->max_depth = 6 / depth_units;
-                        }
-                        if (!model.streams[RS2_STREAM_DEPTH].texture->equalize)
-                        {
-                            auto depth_units = de_opt.value;
-                            auto val = model.streams[RS2_STREAM_DEPTH].texture->min_depth * depth_units;
-                            if (ImGui::SliderFloat("Near (m)", &val, 0, 16))
-                            {
-                                model.streams[RS2_STREAM_DEPTH].texture->min_depth = val / depth_units;
-                            }
-                            val = model.streams[RS2_STREAM_DEPTH].texture->max_depth * depth_units;
-                            if (ImGui::SliderFloat("Far  (m)", &val, 0, 16))
-                            {
-                                model.streams[RS2_STREAM_DEPTH].texture->max_depth = val / depth_units;
-                            }
-                            if (model.streams[RS2_STREAM_DEPTH].texture->min_depth > model.streams[RS2_STREAM_DEPTH].texture->max_depth)
-                            {
-                                std::swap(model.streams[RS2_STREAM_DEPTH].texture->max_depth, model.streams[RS2_STREAM_DEPTH].texture->min_depth);
-                            }
-                        }
-                    }
-
-
-                    for (auto i = 0; i < RS2_OPTION_COUNT; i++)
-                    {
-                        auto opt = static_cast<rs2_option>(i);
-                        auto&& metadata = sub->options_metadata[opt];
-                        if (update_read_only_options)
-                        {
-                            metadata.update_supported(error_message);
-                            if (metadata.supported && sub->streaming)
-                            {
-                                metadata.update_read_only(error_message);
-                                if (metadata.read_only)
-                                {
-                                    metadata.update_all(error_message);
-                                }
-                            }
-                        }
-                        metadata.draw(error_message);
-                    }
-                }
-                ImGui::Text("\n");
             }
         }
 
-        if (list.size()>0 && ImGui::CollapsingHeader("Hardware Commands", nullptr, true))
-        {
-            label = to_string() << "Hardware Reset";
-
-            const float hardware_reset_button_width = 290;
-            const float hardware_reset_button_height = 0;
-
-            if (ImGui::ButtonEx(label.c_str(), { hardware_reset_button_width, hardware_reset_button_height }, hw_reset_enable?0:ImGuiButtonFlags_Disabled))
-            {
-                try
-                {
-                    dev.hardware_reset();
-                }
-                catch(const error& e)
-                {
-                    error_message = error_to_string(e);
-                }
-                catch(const std::exception& e)
-                {
-                    error_message = e.what();
-                }
-            }
-        }
-
-        ImGui::Text("\n\n\n\n\n\n\n");
-
-        for (auto&& sub : model.subdevices)
-        {
-            sub->update(error_message);
-        }
 
         if (error_message != "")
             ImGui::OpenPopup("Oops, something went wrong!");

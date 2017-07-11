@@ -9,13 +9,13 @@
 #include "api.h"
 
 
-void rs2_go_to_advanced_mode(rs2_device* dev, rs2_error** error) try
+void rs2_toggle_advanced_mode(rs2_device* dev, int enable, rs2_error** error) try
 {
     VALIDATE_NOT_NULL(dev);
     auto advanced_mode = VALIDATE_INTERFACE(dev->device, librealsense::ds5_advanced_mode_base);
-    advanced_mode->go_to_advanced_mode();
+    advanced_mode->toggle_advanced_mode(enable);
 }
-HANDLE_EXCEPTIONS_AND_RETURN(, dev)
+HANDLE_EXCEPTIONS_AND_RETURN(, dev, enable)
 
 void rs2_is_enabled(rs2_device* dev, int* enabled, rs2_error** error) try
 {
