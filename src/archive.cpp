@@ -61,7 +61,7 @@ namespace librealsense
         {
             std::unique_lock<std::recursive_mutex> lock(mutex);
 
-            auto published_frame = f.publish(shared_from_this());
+            auto published_frame = f.publish(this->shared_from_this());
             if (published_frame)
             {
                 rs2_frame new_ref(published_frame); // allocate new frame_ref to ref-counter the now published frame
@@ -80,8 +80,7 @@ namespace librealsense
                 log_frame_callback_end(f);
                 std::unique_lock<std::recursive_mutex> lock(mutex);
 
-                if (is_valid(frame->get_stream_type()))
-                    --published_frames_count;
+                --published_frames_count;
 
                 if (recycle_frames)
                 {
@@ -97,16 +96,15 @@ namespace librealsense
         {
             auto f = (T*)frame;
 
-            if (is_valid(f->get_stream_type()) &&
-                published_frames_count >= *max_frame_queue_size)
+            if (published_frames_count >= *max_frame_queue_size)
             {
-                LOG_DEBUG("stream_type is invalid OR user didn't release frame resource.");
+                LOG_DEBUG("User didn't release frame resource.");
                 return nullptr;
             }
             auto new_frame = published_frames.allocate();
             if (new_frame)
             {
-                if (is_valid(f->get_stream_type())) ++published_frames_count;
+                ++published_frames_count;
                 *new_frame = std::move(*f);
             }
 
@@ -225,6 +223,9 @@ namespace librealsense
         {
         case RS2_EXTENSION_TYPE_VIDEO_FRAME:
             return std::make_shared<frame_archive<video_frame>>(in_max_frame_queue_size, ts, parsers);
+
+        case RS2_EXTENSION_TYPE_COMPOSITE_FRAME:
+            return std::make_shared<frame_archive<composite_frame>>(in_max_frame_queue_size, ts, parsers);
 
         default:
             throw std::runtime_error("Requested frame type is not supported!");

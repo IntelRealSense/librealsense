@@ -18,10 +18,10 @@ namespace librealsense
         _source.set_callback(callback);
     }
 
-    processing_block::processing_block(rs2_extension_type output_type, std::shared_ptr<uvc::time_service> ts)
-            : _source(ts), _source_wrapper(output_type, _source)
+    processing_block::processing_block(std::shared_ptr<uvc::time_service> ts)
+            : _source(ts), _source_wrapper(_source)
     {
-        _source.init(output_type, std::make_shared<metadata_parser_map>());
+        _source.init(std::make_shared<metadata_parser_map>());
     }
 
     void processing_block::invoke(std::vector<frame_holder> frames)
@@ -58,12 +58,6 @@ namespace librealsense
                                                       int new_height, 
                                                       int new_stride)
     {
-        if (_output_type != RS2_EXTENSION_TYPE_VIDEO_FRAME)
-        {
-            std::string err = to_string() << "Frame source of type " << rs2_extension_type_to_string(_output_type) << " cannot allocate frames of type VIDEO_FRAME!";
-            throw invalid_value_exception(err);
-        } 
-
         video_frame* vf = nullptr;
         auto f = original->get();
         if (new_bpp == 0 || (new_width == 0 && new_stride == 0) || new_height == 0)
@@ -115,9 +109,68 @@ namespace librealsense
             height = vf->get_height();
         }
         
-        auto res = _actual_source.alloc_frame(stride * height, data, true);
+        auto res = _actual_source.alloc_frame(RS2_EXTENSION_TYPE_VIDEO_FRAME, stride * height, data, true);
+        if (!res) throw wrong_api_call_sequence_exception("Out of frame resources!");
         vf = (video_frame*)res->get();
         vf->assign(width, height, stride, bpp);
+
+        return res;
+    }
+
+    int get_embeded_frames_size(rs2_frame* f)
+    {
+        if (f == nullptr) return 0;
+        if (auto c = dynamic_cast<composite_frame*>(f->get())) return c->get_embeded_frames_count();
+        return 1;
+    }
+
+    void copy_frames(frame_holder from, rs2_frame**& target)
+    {
+        if (auto comp = dynamic_cast<composite_frame*>(from.frame->get()))
+        {
+            auto frame_buff = comp->get_frames();
+            for (int i = 0; i < comp->get_embeded_frames_count(); i++)
+            {
+                *target = frame_buff[i];
+                target++;
+            }
+            from.frame->disable_continuation();
+        }
+        else
+        {
+            *target = nullptr; // "move" the frame ref into target
+            std::swap(*target, from.frame);
+            target++;
+        }
+    }
+
+    rs2_frame* synthetic_source::allocate_composite_frame(std::vector<frame_holder> holders)
+    {
+        frame_additional_data d {};
+
+        auto req_size = 0;
+        for (auto&& f : holders)
+            req_size += get_embeded_frames_size(f.frame);
+
+        auto res = _actual_source.alloc_frame(RS2_EXTENSION_TYPE_COMPOSITE_FRAME, req_size * sizeof(rs2_frame*), d, true);
+        if (!res) throw wrong_api_call_sequence_exception("Out of frame resources!");
+        auto cf = (composite_frame*)res->get();
+
+        auto frames = cf->get_frames();
+        for (auto&& f : holders)
+            copy_frames(std::move(f), frames);
+        frames -= req_size;
+
+        auto releaser = [frames, req_size]()
+        {
+            for (int i = 0; i < req_size; i++)
+            {
+                rs2_release_frame(frames[i]);
+                frames[i] = nullptr;
+            }
+        };
+        frame_continuation release_frames(releaser, nullptr);
+        cf->attach_continuation(std::move(release_frames));
 
         return res;
     }

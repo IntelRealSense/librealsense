@@ -372,6 +372,8 @@ namespace rs2
         frame(const frame&) = delete;
     };
 
+    typedef std::vector<frame> frameset;
+
     class video_frame : public frame
     {
     public:
@@ -383,9 +385,11 @@ namespace rs2
             {
                 frame_ref = nullptr;
             }
+            else
+            {
+                f.try_clone_ref(this);
+            }
             error::handle(e);
-
-            if (f) f.try_clone_ref(this);
         }
 
         /**
@@ -439,6 +443,44 @@ namespace rs2
         int get_bytes_per_pixel() const { return get_bits_per_pixel() / 8; }
     };
 
+    class composite_frame : public frame
+    {
+    public:
+        composite_frame(const frame& f)
+                : frame()
+        {
+            rs2_error* e = nullptr;
+            if(!f || (rs2_is_frame(f.get(), RS2_EXTENSION_TYPE_COMPOSITE_FRAME, &e) == 0 && !e))
+            {
+                frame_ref = nullptr;
+            }
+            else
+            {
+                f.try_clone_ref(this);
+            }
+            error::handle(e);
+        }
+
+        frameset get_frames() const
+        {
+            rs2_error* e = nullptr;
+            auto count = rs2_embeded_frames_count(frame_ref, &e);
+            error::handle(e);
+
+            frameset res(count);
+
+            for (int i = 0; i < count; i++)
+            {
+                auto fref = rs2_extract_frame(frame_ref, i, &e);
+                error::handle(e);
+
+                res[i] = frame(fref);
+            }
+
+            return std::move(res);
+        }
+    };
+
     template<class T>
     class frame_callback : public rs2_frame_callback
     {
@@ -473,6 +515,19 @@ namespace rs2
             return result;
         }
 
+        frame allocate_composite_frame(std::vector<frame> frames) const
+        {
+            rs2_error* e = nullptr;
+
+            std::vector<rs2_frame*> refs(frames.size(), nullptr);
+            for (int i = 0; i < frames.size(); i++)
+                std::swap(refs[i], frames[i].frame_ref);
+
+            auto result = rs2_allocate_composite_frame(_source, refs.data(), refs.size(), &e);
+            error::handle(e);
+            return result;
+        }
+
         void frame_ready(frame result) const
         {
             rs2_error* e = nullptr;
@@ -489,8 +544,6 @@ namespace rs2
         frame_source(const frame_source&) = delete;
         rs2_source* _source;
     };
-
-    typedef std::vector<frame> frameset;
 
     template<class T>
     class frame_processor_callback : public rs2_frame_processor_callback
@@ -1418,12 +1471,11 @@ namespace rs2
         }
 
         template<class T>
-        processing_block create_processing_block(rs2_extension_type output_type, T processing_function)
+        processing_block create_processing_block(T processing_function)
         {
             rs2_error* e = nullptr;
             std::shared_ptr<rs2_processing_block> block(
                 rs2_create_processing_block(_context.get(),
-                    output_type,
                     new frame_processor_callback<T>(processing_function),
                     &e),
                 rs2_delete_processing_block);
@@ -1521,6 +1573,22 @@ namespace rs2
             return{ frame_ref };
         }
 
+        frameset wait_for_frames() const
+        {
+            auto f = wait_for_frame();
+            auto comp = f.as<composite_frame>();
+            if (comp)
+            {
+                return std::move(comp.get_frames());
+            }
+            else
+            {
+                frameset res(1);
+                res[0] = std::move(f);
+                return std::move(res);
+            }
+        }
+
         /**
         * poll if a new frame is available and dequeue if it is
         * \param[out] f - frame handle
@@ -1534,6 +1602,26 @@ namespace rs2
             error::handle(e);
             if (res) *f = { frame_ref };
             return res > 0;
+        }
+
+        bool poll_for_frames(frameset* frames) const
+        {
+            frame f;
+            if (poll_for_frame(&f))
+            {
+                if (auto comp = f.as<composite_frame>())
+                {
+                    *frames = std::move(comp.get_frames());
+                }
+                else
+                {
+                    frameset res(1);
+                    res[0] = std::move(f);
+                    *frames = std::move(res);
+                }
+                return true;
+            }
+            return false;
         }
 
         void operator()(frame f) const

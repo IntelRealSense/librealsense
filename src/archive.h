@@ -107,34 +107,34 @@ namespace librealsense
 
         virtual ~frame() { on_release.reset(); }
 
-        rs2_metadata_t get_frame_metadata(const rs2_frame_metadata& frame_metadata) const;
-        bool supports_frame_metadata(const rs2_frame_metadata& frame_metadata) const;
-        const byte* get_frame_data() const;
-        rs2_time_t get_frame_timestamp() const;
-        rs2_timestamp_domain get_frame_timestamp_domain() const;
-        void set_timestamp(double new_ts) { additional_data.timestamp = new_ts; }
-        unsigned long long get_frame_number() const;
+        rs2_metadata_t get_frame_metadata(const rs2_frame_metadata& frame_metadata) const override;
+        bool supports_frame_metadata(const rs2_frame_metadata& frame_metadata) const override;
+        const byte* get_frame_data() const override;
+        rs2_time_t get_frame_timestamp() const override;
+        rs2_timestamp_domain get_frame_timestamp_domain() const override;
+        void set_timestamp(double new_ts) override { additional_data.timestamp = new_ts; }
+        unsigned long long get_frame_number() const override;
 
-        void set_timestamp_domain(rs2_timestamp_domain timestamp_domain)
+        void set_timestamp_domain(rs2_timestamp_domain timestamp_domain) override
         {
             additional_data.timestamp_domain = timestamp_domain;
         }
 
-        rs2_time_t get_frame_system_time() const;
-        rs2_format get_format() const;
-        rs2_stream get_stream_type() const;
-        int get_framerate() const;
+        rs2_time_t get_frame_system_time() const override;
+        rs2_format get_format() const override;
+        rs2_stream get_stream_type() const override;
+        int get_framerate() const override;
 
-        rs2_time_t get_frame_callback_start_time_point() const;
-        void update_frame_callback_start_ts(rs2_time_t ts);
+        rs2_time_t get_frame_callback_start_time_point() const override;
+        void update_frame_callback_start_ts(rs2_time_t ts) override;
 
-        void acquire() { ref_count.fetch_add(1); }
-        void release();
-        frame_interface* publish(std::shared_ptr<archive_interface> new_owner);
-        void attach_continuation(frame_continuation&& continuation) { on_release = std::move(continuation); }
-        void disable_continuation() { on_release.reset(); }
+        void acquire() override { ref_count.fetch_add(1); }
+        void release() override;
+        frame_interface* publish(std::shared_ptr<archive_interface> new_owner) override;
+        void attach_continuation(frame_continuation&& continuation) override { on_release = std::move(continuation); }
+        void disable_continuation() override { on_release.reset(); }
 
-        archive_interface* get_owner() const { return owner.get(); }
+        archive_interface* get_owner() const override { return owner.get(); }
 
     private:
         // TODO: check boost::intrusive_ptr or an alternative
@@ -148,10 +148,72 @@ namespace librealsense
     public:
         composite_frame() : frame() {}
 
-        
+        rs2_frame* get_frame(int i) const
+        {
+            auto frames = get_frames();
+            return frames[i];
+        }
 
-    private:
+        rs2_frame** get_frames() const { return (rs2_frame**)data.data(); }
 
+        const frame_interface* first() const
+        {
+            return get_frame(0) ? get_frame(0)->get() : nullptr;
+        }
+        frame_interface* first()
+        {
+            return get_frame(0) ? get_frame(0)->get() : nullptr;
+        }
+
+        int get_embeded_frames_count() const { return data.size() / sizeof(rs2_frame*); }
+
+        // In the next section we make the composite frame "look and feel" like the first of its children
+        rs2_metadata_t get_frame_metadata(const rs2_frame_metadata& frame_metadata) const override
+        {
+            return first()->get_frame_metadata(frame_metadata);
+        }
+        bool supports_frame_metadata(const rs2_frame_metadata& frame_metadata) const override
+        {
+            return first()->supports_frame_metadata(frame_metadata);
+        }
+        const byte* get_frame_data() const override
+        {
+            return first()->get_frame_data();
+        }
+        rs2_time_t get_frame_timestamp() const override
+        {
+            return first()->get_frame_timestamp();
+        }
+        rs2_timestamp_domain get_frame_timestamp_domain() const override
+        {
+            return first()->get_frame_timestamp_domain();
+        }
+        unsigned long long get_frame_number() const override
+        {
+            if (first())
+                return first()->get_frame_number();
+            else
+                return frame::get_frame_number();
+        }
+        rs2_time_t get_frame_system_time() const override
+        {
+            return first()->get_frame_system_time();
+        }
+        rs2_format get_format() const override
+        {
+            return first()->get_format();
+        }
+        rs2_stream get_stream_type() const override
+        {
+            if (first())
+                return first()->get_stream_type();
+            else
+                return frame::get_stream_type();
+        }
+        int get_framerate() const override
+        {
+            return first()->get_framerate();
+        }
     };
 
     class video_frame : public frame

@@ -219,6 +219,7 @@ typedef enum rs2_extension_type
     RS2_EXTENSION_TYPE_ROI,
     RS2_EXTENSION_TYPE_VIDEO_FRAME,
     RS2_EXTENSION_TYPE_MOTION_FRAME,
+    RS2_EXTENSION_TYPE_COMPOSITE_FRAME,
     RS2_EXTENSION_TYPE_COUNT
 } rs2_extension_type;
 
@@ -1063,9 +1064,15 @@ void rs2_delete_record_device(rs2_record_device* device);
 rs2_frame* rs2_allocate_synthetic_video_frame(rs2_source* source, rs2_stream new_stream, rs2_frame* original, 
     rs2_format new_format, int new_bpp, int new_width, int new_height, int new_stride, rs2_error** error);
 
+rs2_frame* rs2_allocate_composite_frame(rs2_source* source, rs2_frame** frames, int count, rs2_error** error);
+
+rs2_frame* rs2_extract_frame(rs2_frame* composite, int index, rs2_error** error);
+
+int rs2_embeded_frames_count(rs2_frame* composite, rs2_error** error);
+
 void rs2_synthetic_frame_ready(rs2_source* source, rs2_frame* frame, rs2_error** error);
 
-rs2_processing_block* rs2_create_processing_block(rs2_context* ctx, rs2_extension_type output_type, rs2_frame_processor_callback* proc, rs2_error** error);
+rs2_processing_block* rs2_create_processing_block(rs2_context* ctx, rs2_frame_processor_callback* proc, rs2_error** error);
 
 void rs2_start_processing(rs2_processing_block* block, rs2_frame_callback* on_frame, rs2_error** error);
 
