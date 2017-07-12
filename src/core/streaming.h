@@ -20,19 +20,36 @@ namespace librealsense
     };
 
     class sensor_interface;
+    class archive_interface;
 
     class frame_interface
     {
     public:
-        virtual double get_timestamp() const = 0;
-        virtual rs2_timestamp_domain get_timestamp_domain() const = 0;
+        virtual rs2_metadata_t get_frame_metadata(const rs2_frame_metadata& frame_metadata) const = 0;
+        virtual bool supports_frame_metadata(const rs2_frame_metadata& frame_metadata) const = 0;
+        virtual const byte* get_frame_data() const = 0;
+        virtual rs2_time_t get_frame_timestamp() const = 0;
+        virtual rs2_timestamp_domain get_frame_timestamp_domain() const = 0;
+        virtual void set_timestamp(double new_ts) = 0;
+        virtual unsigned long long get_frame_number() const = 0;
 
-        virtual unsigned int get_stream_index() const = 0;
+        virtual void set_timestamp_domain(rs2_timestamp_domain timestamp_domain) = 0;
 
-        virtual const uint8_t* get_data() const = 0;
-        virtual size_t get_data_size() const = 0;
+        virtual rs2_time_t get_frame_system_time() const = 0;
+        virtual rs2_format get_format() const = 0;
+        virtual rs2_stream get_stream_type() const = 0;
+        virtual int get_framerate() const = 0;
 
-        virtual const sensor_interface& get_sensor() const = 0;
+        virtual rs2_time_t get_frame_callback_start_time_point() const = 0;
+        virtual void update_frame_callback_start_ts(rs2_time_t ts) = 0;
+
+        virtual void acquire() = 0;
+        virtual void release() = 0;
+        virtual frame_interface* publish(std::shared_ptr<archive_interface> new_owner) = 0;
+        virtual void attach_continuation(frame_continuation&& continuation) = 0;
+        virtual void disable_continuation() = 0;
+
+        virtual archive_interface* get_owner() const = 0;
 
         virtual ~frame_interface() = default;
     };

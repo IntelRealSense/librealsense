@@ -33,8 +33,31 @@ int main(int argc, char * argv[])
 
             auto stream = config.open(dev);
 
+            auto black = ctx.create_processing_block(
+                [](std::vector<frame> frames, const frame_source& source)
+            {
+                auto&& first = frames.front();
+                auto result = source.allocate_video_frame(first.get_stream_type(), first, RS2_FORMAT_Y16, 2);
+                auto vf = first.as<video_frame>();
+                auto rf = result.as<video_frame>();
+                auto data = (uint8_t*)rf.get_data();
+                memset(data, 0, rf.get_stride_in_bytes() * rf.get_height());
+                auto orig_data = (uint8_t*)vf.get_data();
+                auto pixels = vf.get_width() * vf.get_height();
+                for (auto i = 0; i < 0.1 * pixels; i++)
+                {
+                    auto x = rand() % vf.get_width();
+                    auto y = rand() % vf.get_height();
+                    auto orig_pixel = orig_data[y * vf.get_stride_in_bytes() + x * vf.get_bytes_per_pixel() + 1];
+                    data[y * rf.get_stride_in_bytes() + x * rf.get_bytes_per_pixel() + 1] = orig_pixel;
+                }
+                source.frame_ready(std::move(result));
+            });
+
             syncer syncer;
-            stream.start(syncer);
+            stream.start(black);
+
+            black.start(syncer);
 
             texture_buffer buffers[RS2_STREAM_COUNT];
 

@@ -164,6 +164,9 @@ namespace librealsense
         std::vector<std::shared_ptr<device_info>> query_devices() const;
         const uvc::backend& get_backend() const { return *_backend; }
         double get_time();
+
+        std::shared_ptr<uvc::time_service> get_time_service() { return _ts; }
+
         void set_devices_changed_callback(devices_changed_callback_ptr callback);
 
         std::vector<std::shared_ptr<device_info>> create_devices(uvc::devices_data devices) const;

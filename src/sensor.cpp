@@ -225,7 +225,7 @@ namespace librealsense
             throw wrong_api_call_sequence_exception("open(...) failed. UVC device is already opened!");
 
         auto on = std::unique_ptr<power>(new power(shared_from_this()));
-        _source.init(RS2_EXTENSION_TYPE_VIDEO_FRAME, _metadata_parsers);
+        _source.init(_metadata_parsers);
         auto mapping = resolve_requests(requests);
 
         auto timestamp_reader = _timestamp_reader.get();
@@ -292,11 +292,11 @@ namespace librealsense
                         static_cast<uint8_t>(f.metadata_size),
                         (const uint8_t*)f.metadata);
 
-                    frame_holder frame = _source.alloc_frame(width * height * bpp / 8, additional_data, requires_processing);
+                    frame_holder frame = _source.alloc_frame(RS2_EXTENSION_TYPE_VIDEO_FRAME, width * height * bpp / 8, additional_data, requires_processing);
                     if (frame.frame)
                     {
-                        auto video = (video_frame*)frame->get();
-                        video->assign(width, height, width, bpp);
+                        auto video = (video_frame*)frame.frame->get();
+                        video->assign(width, height, width * bpp / 8, bpp);
                         video->set_timestamp_domain(timestamp_domain);
                         dest.push_back(const_cast<byte*>(video->get_frame_data()));
                         refs.push_back(std::move(frame));
@@ -653,7 +653,7 @@ namespace librealsense
             throw wrong_api_call_sequence_exception("start_streaming(...) failed. Hid device was not opened!");
 
         _source.set_callback(callback);
-        _source.init(RS2_EXTENSION_TYPE_MOTION_FRAME, _metadata_parsers);
+        _source.init(_metadata_parsers);
 
         _hid_device->start_capture([this](const uvc::sensor_data& sensor_data)
         {
@@ -719,14 +719,14 @@ namespace librealsense
                       << ",TS," << std::fixed << timestamp
                       << ",TS_Domain," << rs2_timestamp_domain_to_string(additional_data.timestamp_domain));
 
-            auto frame = _source.alloc_frame(data_size, additional_data, true);
+            auto frame = _source.alloc_frame(RS2_EXTENSION_TYPE_MOTION_FRAME, data_size, additional_data, true);
             if (!frame)
             {
                 LOG_INFO("Dropped frame. alloc_frame(...) returned nullptr");
                 return;
             }
 
-            std::vector<byte*> dest{const_cast<byte*>(frame->get()->data.data())};
+            std::vector<byte*> dest{const_cast<byte*>(frame->get()->get_frame_data())};
             mode.unpacker->unpack(dest.data(),(const byte*)sensor_data.fo.pixels, (int)data_size);
 
             if (_on_before_frame_callback)

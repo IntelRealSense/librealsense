@@ -9,11 +9,63 @@
 #include "core/motion.h"
 #include "core/extension.h"
 #include "core/advanced_mode.h"
+#include "align.h"
 
 ////////////////////////
 // API implementation //
 ////////////////////////
+struct rs2_raw_data_buffer
+{
+    std::vector<uint8_t> buffer;
+};
 
+struct rs2_stream_profile_list
+{
+    std::vector<librealsense::stream_profile> list;
+};
+
+struct rs2_sensor
+{
+    std::shared_ptr<librealsense::device_interface> device;
+    librealsense::sensor_interface* sensor;
+    size_t index;
+};
+
+
+struct rs2_context
+{
+    std::shared_ptr<librealsense::context> ctx;
+};
+
+struct rs2_device_serializer
+{
+   // std::shared_ptr<rsimpl2::device_serializer> device_serializer;
+};
+
+struct rs2_record_device
+{
+   // std::shared_ptr<rsimpl2::record_device> record_device;
+};
+
+struct rs2_syncer
+{
+    std::shared_ptr<librealsense::sync_interface> syncer;
+};
+
+struct rs2_frame_queue
+{
+    explicit rs2_frame_queue(int cap)
+        : queue(cap)
+    {
+    }
+
+    single_consumer_queue<librealsense::frame_holder> queue;
+};
+
+struct rs2_processing_block
+{
+    std::shared_ptr<librealsense::processing_block_interface> block;
+};
 int major(int version)
 {
     return version / 10000;
@@ -912,6 +964,7 @@ const char * rs2_notification_category_to_string(rs2_notification_category categ
 const char * rs2_visual_preset_to_string(rs2_visual_preset preset) { return librealsense::get_string(preset); }
 const char * rs2_log_severity_to_string(rs2_log_severity severity) { return librealsense::get_string(severity); }
 const char * rs2_exception_type_to_string(rs2_exception_type type) { return librealsense::get_string(type); }
+const char * rs2_extension_type_to_string(rs2_extension_type type) { return librealsense::get_string(type); }
 
 void rs2_log_to_console(rs2_log_severity min_severity, rs2_error ** error) try
 {
@@ -969,6 +1022,7 @@ int rs2_is_frame(const rs2_frame* f, rs2_extension_type extension_type, rs2_erro
     switch (extension_type)
     {
         case RS2_EXTENSION_TYPE_VIDEO_FRAME:     return VALIDATE_INTERFACE_NO_THROW(f->get(), librealsense::video_frame);
+        case RS2_EXTENSION_TYPE_COMPOSITE_FRAME: return VALIDATE_INTERFACE_NO_THROW(f->get(), librealsense::composite_frame);
         default:
             return 0;
     }
@@ -1010,3 +1064,111 @@ void rs2_delete_record_device(rs2_record_device* device) try
     delete device;
 }
 NOEXCEPT_RETURN(, device)
+
+rs2_frame* rs2_allocate_synthetic_video_frame(rs2_source* source, rs2_stream new_stream, rs2_frame* original, 
+    rs2_format new_format, int new_bpp, int new_width, int new_height, int new_stride, rs2_error** error) try
+{
+    VALIDATE_NOT_NULL(source);
+    VALIDATE_NOT_NULL(original);
+    VALIDATE_ENUM(new_stream);
+    VALIDATE_ENUM(new_format);
+
+    return source->source->allocate_video_frame(new_stream, original, new_format, new_bpp, new_width, new_height, new_stride);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, source, new_stream, original, new_format, new_bpp, new_width, new_height, new_stride)
+
+void rs2_synthetic_frame_ready(rs2_source* source, rs2_frame* frame, rs2_error** error) try
+{
+    VALIDATE_NOT_NULL(frame);
+
+    librealsense::frame_holder holder(frame);
+    VALIDATE_NOT_NULL(source);
+
+    source->source->frame_ready(std::move(holder));
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, source, frame)
+
+rs2_processing_block* rs2_create_processing_block(rs2_context* ctx, rs2_frame_processor_callback* proc, rs2_error** error) try
+{
+    VALIDATE_NOT_NULL(ctx);
+
+    auto block = std::make_shared<librealsense::processing_block>(ctx->ctx->get_time_service());
+    block->set_processing_callback({ proc, [](rs2_frame_processor_callback* p) { p->release(); } });
+    
+    return new rs2_processing_block { block };
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, ctx, proc)
+
+void rs2_start_processing(rs2_processing_block* block, rs2_frame_callback* on_frame, rs2_error** error) try
+{
+    VALIDATE_NOT_NULL(block);
+    
+    block->block->set_output_callback({ on_frame, [](rs2_frame_callback* p) { p->release(); } });
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, block, on_frame)
+
+void rs2_process_frames(rs2_processing_block* block, rs2_frame** frames, int count, rs2_error** error) try
+{
+    VALIDATE_NOT_NULL(block);
+    VALIDATE_NOT_NULL(frames);
+
+    std::vector<librealsense::frame_holder> frame_holders;
+    for (int i = 0; i < count; i++)
+    {
+        VALIDATE_NOT_NULL(frames[i]);
+        frame_holders.push_back(frames[i]);
+    }
+    
+    block->block->invoke(std::move(frame_holders));
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, block, frames, count)
+
+void rs2_delete_processing_block(rs2_processing_block* block) try
+{
+    VALIDATE_NOT_NULL(block);
+    
+    delete block;
+}
+NOEXCEPT_RETURN(, block)
+
+rs2_frame* rs2_extract_frame(rs2_frame* composite, int index, rs2_error** error) try
+{
+    VALIDATE_NOT_NULL(composite);
+
+    auto cf = VALIDATE_INTERFACE(composite->get(), librealsense::composite_frame);
+
+    VALIDATE_RANGE(index, 0, cf->get_embeded_frames_count() - 1);
+    auto res = cf->get_frame(index);
+
+    auto clone = res->get()->get_owner()->clone_frame(res);
+
+    return clone;
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, composite)
+
+rs2_frame* rs2_allocate_composite_frame(rs2_source* source, rs2_frame** frames, int count, rs2_error** error) try
+{
+    VALIDATE_NOT_NULL(source)
+    VALIDATE_NOT_NULL(frames)
+    VALIDATE_RANGE(count, 1, 128);
+
+    std::vector<frame_holder> holders(count);
+    for (int i = 0; i < count; i++)
+    {
+        holders[i] = std::move(frame_holder(frames[i]));
+    }
+    auto res = source->source->allocate_composite_frame(std::move(holders));
+
+    return res;
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, frames, count)
+
+int rs2_embeded_frames_count(rs2_frame* composite, rs2_error** error) try
+{
+    VALIDATE_NOT_NULL(composite)
+
+    auto cf = VALIDATE_INTERFACE(composite->get(), librealsense::composite_frame);
+
+    return cf->get_embeded_frames_count();
+}
+HANDLE_EXCEPTIONS_AND_RETURN(0, composite)

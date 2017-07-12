@@ -15,46 +15,6 @@ struct rs2_error
     rs2_exception_type exception_type;
 };
 
-struct rs2_raw_data_buffer
-{
-    std::vector<uint8_t> buffer;
-};
-
-struct rs2_stream_profile_list
-{
-    std::vector<librealsense::stream_profile> list;
-};
-
-struct rs2_device
-{
-    std::shared_ptr<librealsense::context> ctx;
-    std::shared_ptr<librealsense::device_info> info;
-    std::shared_ptr<librealsense::device_interface> device;
-};
-
-struct rs2_sensor
-{
-    std::shared_ptr<librealsense::device_interface> device;
-    librealsense::sensor_interface* sensor;
-    size_t index;
-};
-
-
-struct rs2_context
-{
-    std::shared_ptr<librealsense::context> ctx;
-};
-
-struct rs2_device_serializer
-{
-   // std::shared_ptr<rsimpl2::device_serializer> device_serializer;
-};
-
-struct rs2_record_device
-{
-   // std::shared_ptr<rsimpl2::record_device> record_device;
-};
-
 struct rs2_notification
 {
     rs2_notification(const librealsense::notification* notification)
@@ -63,46 +23,11 @@ struct rs2_notification
     const librealsense::notification* _notification;
 };
 
-struct rs2_syncer
+struct rs2_device
 {
-    std::shared_ptr<librealsense::sync_interface> syncer;
-};
-
-struct frame_holder
-{
-    rs2_frame* frame;
-
-    ~frame_holder()
-    {
-        if (frame) rs2_release_frame(frame);
-    }
-
-    frame_holder(const frame_holder&) = delete;
-    frame_holder(frame_holder&& other)
-        : frame(other.frame)
-    {
-        other.frame = nullptr;
-    }
-
-    frame_holder() : frame(nullptr) {}
-
-    frame_holder& operator=(const frame_holder&) = delete;
-    frame_holder& operator=(frame_holder&& other)
-    {
-        frame = other.frame;
-        other.frame = nullptr;
-        return *this;
-    }
-};
-
-struct rs2_frame_queue
-{
-    explicit rs2_frame_queue(int cap)
-        : queue(cap)
-    {
-    }
-
-    single_consumer_queue<librealsense::frame_holder> queue;
+    std::shared_ptr<librealsense::context> ctx;
+    std::shared_ptr<librealsense::device_info> info;
+    std::shared_ptr<librealsense::device_interface> device;
 };
 
 namespace librealsense

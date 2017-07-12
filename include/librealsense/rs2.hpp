@@ -365,10 +365,14 @@ namespace rs2
     protected:
         friend class frame_queue;
         friend class syncer;
+        friend class frame_source;
+        friend class processing_block;
 
         rs2_frame* frame_ref;
         frame(const frame&) = delete;
     };
+
+    typedef std::vector<frame> frameset;
 
     class video_frame : public frame
     {
@@ -381,9 +385,11 @@ namespace rs2
             {
                 frame_ref = nullptr;
             }
+            else
+            {
+                f.try_clone_ref(this);
+            }
             error::handle(e);
-
-            if (f) f.try_clone_ref(this);
         }
 
         /**
@@ -437,6 +443,44 @@ namespace rs2
         int get_bytes_per_pixel() const { return get_bits_per_pixel() / 8; }
     };
 
+    class composite_frame : public frame
+    {
+    public:
+        composite_frame(const frame& f)
+                : frame()
+        {
+            rs2_error* e = nullptr;
+            if(!f || (rs2_is_frame(f.get(), RS2_EXTENSION_TYPE_COMPOSITE_FRAME, &e) == 0 && !e))
+            {
+                frame_ref = nullptr;
+            }
+            else
+            {
+                f.try_clone_ref(this);
+            }
+            error::handle(e);
+        }
+
+        frameset get_frames() const
+        {
+            rs2_error* e = nullptr;
+            auto count = rs2_embeded_frames_count(frame_ref, &e);
+            error::handle(e);
+
+            frameset res(count);
+
+            for (int i = 0; i < count; i++)
+            {
+                auto fref = rs2_extract_frame(frame_ref, i, &e);
+                error::handle(e);
+
+                res[i] = frame(fref);
+            }
+
+            return std::move(res);
+        }
+    };
+
     template<class T>
     class frame_callback : public rs2_frame_callback
     {
@@ -450,6 +494,118 @@ namespace rs2
         }
 
         void release() override { delete this; }
+    };
+
+    class frame_source
+    {
+    public:
+
+        frame allocate_video_frame(rs2_stream new_stream, 
+                                   const frame& original, 
+                                   rs2_format new_format = RS2_FORMAT_ANY,
+                                   int new_bpp = 0,
+                                   int new_width = 0,
+                                   int new_height = 0,
+                                   int new_stride = 0) const 
+        {
+            rs2_error* e = nullptr;
+            auto result = rs2_allocate_synthetic_video_frame(_source, new_stream, 
+                original.get(), new_format, new_bpp, new_width, new_height, new_stride, &e);
+            error::handle(e);
+            return result;
+        }
+
+        frame allocate_composite_frame(std::vector<frame> frames) const
+        {
+            rs2_error* e = nullptr;
+
+            std::vector<rs2_frame*> refs(frames.size(), nullptr);
+            for (int i = 0; i < frames.size(); i++)
+                std::swap(refs[i], frames[i].frame_ref);
+
+            auto result = rs2_allocate_composite_frame(_source, refs.data(), refs.size(), &e);
+            error::handle(e);
+            return result;
+        }
+
+        void frame_ready(frame result) const
+        {
+            rs2_error* e = nullptr;
+            rs2_synthetic_frame_ready(_source, result.get(), &e);
+            error::handle(e);
+            result.frame_ref = nullptr;
+        }
+
+    private:
+        template<class T>
+        friend class frame_processor_callback;
+
+        frame_source(rs2_source* source) : _source(source) {}
+        frame_source(const frame_source&) = delete;
+        rs2_source* _source;
+    };
+
+    template<class T>
+    class frame_processor_callback : public rs2_frame_processor_callback
+    {
+        T on_frame_function;
+    public:
+        explicit frame_processor_callback(T on_frame) : on_frame_function(on_frame) {}
+
+        void on_frame(rs2_frame ** f, int count, rs2_source * source) override
+        {
+            frame_source src(source);
+            frameset frames(count);
+            for (int i = 0; i < count; i++)
+            {
+                frames[i] = std::move(frame(f[i]));
+            }
+            on_frame_function(std::move(frames), source);
+        }
+
+        void release() override { delete this; }
+    };
+
+    class processing_block
+    {
+    public:
+        template<class S>
+        void start(S on_frame)
+        {
+            rs2_error* e = nullptr;
+            rs2_start_processing(_block.get(), new frame_callback<S>(on_frame), &e);
+            error::handle(e);
+        }
+
+        void invoke(frameset frames) const
+        {
+            std::vector<rs2_frame*> refs(frames.size(), nullptr);
+            for (size_t i = 0; i < frames.size(); i++)
+            {
+                std::swap(refs[i], frames[i].frame_ref);
+            }
+
+            rs2_error* e = nullptr;
+            rs2_process_frames(_block.get(), refs.data(), (int)refs.size(), &e);
+            error::handle(e);
+        }
+
+        void operator()(frame f) const
+        {
+            frameset v(1);
+            v[0] = std::move(f);
+            invoke(std::move(v));
+        }
+
+    private:
+        friend class context;
+
+        processing_block(std::shared_ptr<rs2_processing_block> block)
+            : _block(block)
+        {
+        }
+
+        std::shared_ptr<rs2_processing_block> _block;
     };
 
     template<class T>
@@ -505,8 +661,6 @@ namespace rs2
         int max_x;
         int max_y;
     };
-
-    typedef std::vector<frame> frameset;
 
     class syncer
     {
@@ -962,7 +1116,7 @@ namespace rs2
             return roi;
         }
 
-        operator bool() const { return _sensor.get(); }
+        operator bool() const { return _sensor.get() != nullptr; }
     };
 
     class device
@@ -1311,6 +1465,21 @@ namespace rs2
                 new devices_changed_callback<T>(std::move(callback)), &e);
             error::handle(e);
         }
+
+        template<class T>
+        processing_block create_processing_block(T processing_function)
+        {
+            rs2_error* e = nullptr;
+            std::shared_ptr<rs2_processing_block> block(
+                rs2_create_processing_block(_context.get(),
+                    new frame_processor_callback<T>(processing_function),
+                    &e),
+                rs2_delete_processing_block);
+            error::handle(e);
+
+            return processing_block(block);
+        }
+
     protected:
         std::shared_ptr<rs2_context> _context;
     };
@@ -1400,6 +1569,22 @@ namespace rs2
             return{ frame_ref };
         }
 
+        frameset wait_for_frames() const
+        {
+            auto f = wait_for_frame();
+            auto comp = f.as<composite_frame>();
+            if (comp)
+            {
+                return std::move(comp.get_frames());
+            }
+            else
+            {
+                frameset res(1);
+                res[0] = std::move(f);
+                return std::move(res);
+            }
+        }
+
         /**
         * poll if a new frame is available and dequeue if it is
         * \param[out] f - frame handle
@@ -1413,6 +1598,26 @@ namespace rs2
             error::handle(e);
             if (res) *f = { frame_ref };
             return res > 0;
+        }
+
+        bool poll_for_frames(frameset* frames) const
+        {
+            frame f;
+            if (poll_for_frame(&f))
+            {
+                if (auto comp = f.as<composite_frame>())
+                {
+                    *frames = std::move(comp.get_frames());
+                }
+                else
+                {
+                    frameset res(1);
+                    res[0] = std::move(f);
+                    *frames = std::move(res);
+                }
+                return true;
+            }
+            return false;
         }
 
         void operator()(frame f) const

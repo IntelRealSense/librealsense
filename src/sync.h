@@ -26,7 +26,7 @@ namespace librealsense
     class syncer : public sync_interface
     {
     public:
-        explicit syncer(rs2_stream key_stream = RS2_STREAM_DEPTH)
+        explicit syncer(rs2_stream key_stream = RS2_STREAM_COLOR)
             : impl(new shared_impl())
         {
             impl->key_stream = key_stream;

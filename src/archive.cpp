@@ -80,8 +80,7 @@ namespace librealsense
                 log_frame_callback_end(f);
                 std::unique_lock<std::recursive_mutex> lock(mutex);
 
-                if (is_valid(frame->get_stream_type()))
-                    --published_frames_count;
+                --published_frames_count;
 
                 if (recycle_frames)
                 {
@@ -97,16 +96,15 @@ namespace librealsense
         {
             auto f = (T*)frame;
 
-            if (is_valid(f->get_stream_type()) &&
-                published_frames_count >= *max_frame_queue_size)
+            if (published_frames_count >= *max_frame_queue_size)
             {
-                LOG_DEBUG("stream_type is invalid OR user didn't release frame resource.");
+                LOG_DEBUG("User didn't release frame resource.");
                 return nullptr;
             }
             auto new_frame = published_frames.allocate();
             if (new_frame)
             {
-                if (is_valid(f->get_stream_type())) ++published_frames_count;
+                ++published_frames_count;
                 *new_frame = std::move(*f);
             }
 
@@ -226,6 +224,9 @@ namespace librealsense
         case RS2_EXTENSION_TYPE_VIDEO_FRAME:
             return std::make_shared<frame_archive<video_frame>>(in_max_frame_queue_size, ts, parsers);
 
+        case RS2_EXTENSION_TYPE_COMPOSITE_FRAME:
+            return std::make_shared<frame_archive<composite_frame>>(in_max_frame_queue_size, ts, parsers);
+
         default:
             throw std::runtime_error("Requested frame type is not supported!");
         }
@@ -241,7 +242,7 @@ void frame::release()
     }
 }
 
-frame* frame::publish(std::shared_ptr<archive_interface> new_owner)
+frame_interface* frame::publish(std::shared_ptr<archive_interface> new_owner)
 {
     owner = new_owner;
     return owner->publish_frame(this);
@@ -349,7 +350,7 @@ void rs2_frame::log_callback_end(rs2_time_t timestamp) const
 {
     if (get())
     {
-        auto callback_warning_duration = 1000.f / (get()->additional_data.fps + 1);
+        auto callback_warning_duration = 1000.f / (get()->get_framerate() + 1);
         auto callback_duration = timestamp - get()->get_frame_callback_start_time_point();
 
         LOG_DEBUG("CallbackFinished," << librealsense::get_string(get()->get_stream_type()) << "," << get()->get_frame_number() << ",DispatchedAt," << timestamp);
@@ -357,16 +358,16 @@ void rs2_frame::log_callback_end(rs2_time_t timestamp) const
         if (callback_duration > callback_warning_duration)
         {
             LOG_INFO("Frame Callback " << librealsense::get_string(get()->get_stream_type())
-                     << "#" << std::dec << get()->additional_data.frame_number
+                     << "#" << std::dec << get()->get_frame_number()
                      << "overdue. (Duration: " << callback_duration
-                     << "ms, FPS: " << get()->additional_data.fps << ", Max Duration: " << callback_warning_duration << "ms)");
+                     << "ms, FPS: " << get()->get_framerate() << ", Max Duration: " << callback_warning_duration << "ms)");
         }
     }
 }
 
 rs2_frame::rs2_frame() : frame_ptr(nullptr) {}
 
-rs2_frame::rs2_frame(frame* frame)
+rs2_frame::rs2_frame(frame_interface* frame)
     : frame_ptr(frame)
 {
     if (frame) frame->acquire();
@@ -410,4 +411,4 @@ void rs2_frame::disable_continuation() const
     if (frame_ptr) frame_ptr->disable_continuation();
 }
 
-frame* rs2_frame::get() const { return frame_ptr; }
+frame_interface* rs2_frame::get() const { return frame_ptr; }

@@ -209,7 +209,7 @@ if(WIN32)
         )
 
     source_group("Source Files\\Logging" FILES
-        third_party/easyloggingpp/src/easylogging++.cc
+        third-party/easyloggingpp/src/easylogging++.cc
         src/log.cpp
         )
 
@@ -290,6 +290,7 @@ if(WIN32)
 		src/core/info.h
 		src/core/options.h
 		src/core/extension.h
+        src/core/processing.h
         )
 
     source_group("Header Files\\Logging" FILES
