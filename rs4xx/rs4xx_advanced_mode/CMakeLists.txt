@@ -50,7 +50,6 @@ else()
 endif()
 
 set(RS4XX_SOURCES
-    src/verify.c
     src/rs2_advanced_mode.cpp
     src/json_loader.hpp
     )

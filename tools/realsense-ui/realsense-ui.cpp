@@ -302,19 +302,19 @@ void draw_general_tab(device_model& model, device_list& list,
     }
 }
 
-void draw_advanced_mode_tab(device& dev, advanced_mode_control& amc, bool& get_curr_advanced_controls, std::string& error_message)
+void draw_advanced_mode_tab(device& dev, advanced_mode_control& amc, bool& get_curr_advanced_controls)
 {
     auto is_advanced_mode = dev.is<advanced_mode>();
-    if (!is_advanced_mode)
-    {
-        error_message = "Device doesn't support Advanced Mode!";
-        return;
-    }
 
     if (ImGui::CollapsingHeader("Advanced Mode", nullptr, true, true))
     {
         try
         {
+            if (!is_advanced_mode)
+            {
+                ImGui::TextColored(ImVec4{255.0f, 0.0f, 0.0f, 1.0f}, "DEVICE DOESN'T SUPPORT ADVANCED-MODE!");
+            }
+
             auto advanced = dev.as<advanced_mode>();
             if (advanced.is_enabled())
             {
@@ -352,14 +352,19 @@ void draw_presets_combo(device& dev, int& preset_index, int& last_preset_index, 
 {
     if (ImGui::CollapsingHeader("Advanced-Mode Presets", nullptr, true, true))
     {
-        const char* presets[] = {"p1", "p2", "p3"};
+        std::vector<const char*> presets;
+        for (int i = 0; i < RS2_ADVANCED_MODE_PRESET_COUNT; ++i)
+        {
+            presets.push_back(rs2_advanced_mode_preset_to_string((rs2_advanced_mode_preset)i));
+        }
+
         ImGui::PushItemWidth(-1);
         if (ImGui::IsItemHovered())
         {
             ImGui::SetTooltip("Advanced-Mode Presets");
         }
 
-        if (ImGui::Combo("presets", &preset_index, presets, 3))
+        if (ImGui::Combo("presets", &preset_index, presets.data(), presets.size()))
         {
             last_preset_index = preset_index;
             if (dev.is<rs4xx::advanced_mode>())
@@ -367,7 +372,7 @@ void draw_presets_combo(device& dev, int& preset_index, int& last_preset_index, 
                 auto advanced = dev.as<rs4xx::advanced_mode>();
                 if (advanced.is_enabled())
                 {
-                    // TODO: Set Preset
+                    advanced.apply_preset((rs2_advanced_mode_preset)preset_index);
                 }
                 else
                 {
@@ -657,7 +662,7 @@ int main(int, char**) try
             }
             else if (last_tab_index == 1)
             {
-                draw_advanced_mode_tab(dev, amc, get_curr_advanced_controls, error_message);
+                draw_advanced_mode_tab(dev, amc, get_curr_advanced_controls);
             }
         }
 

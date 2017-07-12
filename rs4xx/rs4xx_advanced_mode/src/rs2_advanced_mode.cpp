@@ -7,8 +7,36 @@
 #include <librealsense/rs2.hpp>
 #include "core/advanced_mode.h"
 #include "api.h"
+#include "../../../src/types.h"
 
-const char * rs2_advanced_mode_preset_to_string(rs2_advanced_mode_preset preset){ return librealsense::get_string((rs2_notification_category)preset); } // TODO
+
+namespace librealsense
+{
+    RS2_ENUM_HELPERS(rs2_advanced_mode_preset, ADVANCED_MODE_PRESET)
+
+    const char* get_string(rs2_advanced_mode_preset value)
+    {
+        #define CASE(X) case RS2_ADVANCED_MODE_PRESET_##X: return #X;
+        switch (value)
+        {
+        CASE(1)
+        CASE(2)
+        default: assert(!is_valid(value)); return UNKNOWN;
+        }
+        #undef CASE
+    }
+}
+
+const char* rs2_advanced_mode_preset_to_string(rs2_advanced_mode_preset preset){ return get_string(preset); }
+
+void rs2_apply_preset(rs2_device* dev, rs2_advanced_mode_preset preset, rs2_error** error) try
+{
+    VALIDATE_NOT_NULL(dev);
+    VALIDATE_ENUM(preset);
+    auto advanced_mode = VALIDATE_INTERFACE(dev->device, librealsense::ds5_advanced_mode_base);
+    advanced_mode->apply_preset(preset);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, dev, preset)
 
 void rs2_toggle_advanced_mode(rs2_device* dev, int enable, rs2_error** error) try
 {

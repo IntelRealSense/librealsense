@@ -53,7 +53,9 @@ namespace librealsense
     public:
         virtual bool is_enabled() const = 0;
 
-        virtual void toggle_advanced_mode(bool enable) const = 0;
+        virtual void toggle_advanced_mode(bool enable) = 0;
+
+        virtual void apply_preset(rs2_advanced_mode_preset preset) = 0;
 
         virtual void get_depth_control_group(STDepthControlGroup* ptr, int mode = 0) const = 0;
         virtual void get_rsm(STRsm* ptr, int mode = 0) const = 0;
@@ -97,10 +99,15 @@ namespace librealsense
             return *(reinterpret_cast<uint32_t*>(results.data()) + 1) > 0;
         }
 
-        void toggle_advanced_mode(bool enable) const
+        void toggle_advanced_mode(bool enable)
         {
             send_recieve(encode_command(ds::fw_cmd::enable_advanced_mode, enable));
             send_recieve(encode_command(ds::fw_cmd::reset));
+        }
+
+        void apply_preset(rs2_advanced_mode_preset preset)
+        {
+            // TODO
         }
 
         void get_depth_control_group(STDepthControlGroup* ptr, int mode = 0) const
