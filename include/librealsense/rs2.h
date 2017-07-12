@@ -1076,7 +1076,7 @@ rs2_processing_block* rs2_create_processing_block(rs2_context* ctx, rs2_frame_pr
 
 void rs2_start_processing(rs2_processing_block* block, rs2_frame_callback* on_frame, rs2_error** error);
 
-void rs2_process_frames(rs2_processing_block* block, rs2_frame** frames, int count, rs2_error** error);
+void rs2_process_frame(rs2_processing_block* block, rs2_frame* frame, rs2_error** error);
 
 void rs2_delete_processing_block(rs2_processing_block* block);
 

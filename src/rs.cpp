@@ -1193,19 +1193,12 @@ void rs2_start_processing(rs2_processing_block* block, rs2_frame_callback* on_fr
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, block, on_frame)
 
-void rs2_process_frames(rs2_processing_block* block, rs2_frame** frames, int count, rs2_error** error) try
+void rs2_process_frame(rs2_processing_block* block, rs2_frame* frame, rs2_error** error) try
 {
     VALIDATE_NOT_NULL(block);
-    VALIDATE_NOT_NULL(frames);
+    VALIDATE_NOT_NULL(frame);
 
-    std::vector<librealsense::frame_holder> frame_holders;
-    for (int i = 0; i < count; i++)
-    {
-        VALIDATE_NOT_NULL(frames[i]);
-        frame_holders.push_back(frames[i]);
-    }
-    
-    block->block->invoke(std::move(frame_holders));
+    block->block->invoke(frame_holder(frame));
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, block, frames, count)
 

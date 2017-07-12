@@ -32,6 +32,13 @@ namespace rs2
             rs2_free_error(err);
         }
 
+        explicit error(const std::string& message) : runtime_error(message.c_str())
+        {
+            function = "";
+            args = "";
+            type = RS2_EXCEPTION_TYPE_UNKNOWN;
+        }
+
         const std::string& get_failed_function() const
         {
             return function;
@@ -447,7 +454,7 @@ namespace rs2
     {
     public:
         composite_frame(const frame& f)
-                : frame()
+            : frame(), _size(0)
         {
             rs2_error* e = nullptr;
             if(!f || (rs2_is_frame(f.get(), RS2_EXTENSION_TYPE_COMPOSITE_FRAME, &e) == 0 && !e))
@@ -459,26 +466,66 @@ namespace rs2
                 f.try_clone_ref(this);
             }
             error::handle(e);
+
+            if (frame_ref)
+            {
+                rs2_error* e = nullptr;
+                _size = rs2_embeded_frames_count(frame_ref, &e);
+                error::handle(e);
+            }
         }
 
-        frameset get_frames() const
+        frame first_or_default(rs2_stream s) const
         {
-            rs2_error* e = nullptr;
-            auto count = rs2_embeded_frames_count(frame_ref, &e);
-            error::handle(e);
+            frame result;
+            foreach([&result, s](frame f){
+                if (!result && f.get_stream_type() == s)
+                {
+                    result = std::move(f);
+                }
+            });
+            return result;
+        }
 
-            frameset res(count);
+        frame first(rs2_stream s) const
+        {
+            auto f = first_or_default(s);
+            if (!f) throw error("Frame of requested stream type was not found!");
+            return f;
+        }
 
+        size_t size() const
+        {
+            return _size;
+        }
+
+        template<class T>
+        void foreach(T action) const
+        {
+            auto count = size();
             for (int i = 0; i < count; i++)
             {
                 auto fref = rs2_extract_frame(frame_ref, i, &e);
                 error::handle(e);
 
-                res[i] = frame(fref);
+                action(frame(fref));
             }
+        }
+
+        frameset get_frames() const
+        {
+            frameset res;
+            res.reserve(size());
+
+            foreach([&res](frame f){
+                res.emplace_back(std::move(f));
+            });
 
             return std::move(res);
         }
+
+    private:
+        size_t _size;
     };
 
     template<class T>
@@ -552,15 +599,11 @@ namespace rs2
     public:
         explicit frame_processor_callback(T on_frame) : on_frame_function(on_frame) {}
 
-        void on_frame(rs2_frame ** f, int count, rs2_source * source) override
+        void on_frame(rs2_frame * f, rs2_source * source) override
         {
             frame_source src(source);
-            frameset frames(count);
-            for (int i = 0; i < count; i++)
-            {
-                frames[i] = std::move(frame(f[i]));
-            }
-            on_frame_function(std::move(frames), source);
+            frame frm(f);
+            on_frame_function(std::move(frames), std::move(frm));
         }
 
         void release() override { delete this; }
@@ -577,24 +620,19 @@ namespace rs2
             error::handle(e);
         }
 
-        void invoke(frameset frames) const
+        void invoke(frame f) const
         {
-            std::vector<rs2_frame*> refs(frames.size(), nullptr);
-            for (size_t i = 0; i < frames.size(); i++)
-            {
-                std::swap(refs[i], frames[i].frame_ref);
-            }
+            rs2_frame* ptr = nullptr;
+            std::swap(f.frame_ref, ptr);
 
             rs2_error* e = nullptr;
-            rs2_process_frames(_block.get(), refs.data(), (int)refs.size(), &e);
+            rs2_process_frame(_block.get(), ptr, &e);
             error::handle(e);
         }
 
         void operator()(frame f) const
         {
-            frameset v(1);
-            v[0] = std::move(f);
-            invoke(std::move(v));
+            invoke(std::move(f));
         }
 
     private:
