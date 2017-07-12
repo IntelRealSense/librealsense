@@ -55,13 +55,6 @@ namespace librealsense
     class device_serializer
     {
     public:
-        struct frame_box
-        {
-            std::chrono::nanoseconds timestamp;
-            uint32_t sensor_index;
-            std::shared_ptr <librealsense::frame_interface> frame;
-        };
-
         struct snapshot_box
         {
             std::chrono::nanoseconds timestamp;
@@ -73,8 +66,8 @@ namespace librealsense
         {
         public:
             virtual void write_device_description(const device_snapshot& device_description) = 0;
-            virtual void write(const frame_box& data) = 0;
-            //virtual void write(const snapshot_box& data) = 0;
+            virtual void write(std::chrono::nanoseconds timestamp, uint32_t sensor_index, librealsense::frame_holder&& frame) = 0;
+            virtual void write(const snapshot_box& data) = 0;
             virtual void reset() = 0;
             virtual ~writer() = default;
         };
@@ -82,7 +75,7 @@ namespace librealsense
         {
         public:
             virtual device_snapshot query_device_description() = 0;
-            virtual frame_box read() = 0;
+            virtual void read(std::chrono::nanoseconds& timestamp, uint32_t& sensor_index, librealsense::frame_holder& frame) = 0;
             virtual void seek_to_time(std::chrono::nanoseconds time) = 0;
             virtual std::chrono::nanoseconds query_duration() const = 0;
             virtual void reset() = 0;

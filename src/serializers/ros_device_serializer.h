@@ -9,6 +9,7 @@
 
 namespace librealsense
 {
+    //TODO:Ziv, merge ros_device_serializer with its writer and reader
     class ros_device_serializer: public device_serializer
     {
     public:

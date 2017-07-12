@@ -3,7 +3,7 @@
 #pragma once
 
 #include "../include/librealsense/rs2.h"
-
+#include "extension.h"
 namespace librealsense
 {
     struct option_range
@@ -14,7 +14,7 @@ namespace librealsense
         float def;
     };
 
-    class option //TODO: Ziv, public recordable<option>
+    class option //TODO: Ziv, : public recordable<option>
     {
     public:
         virtual void set(float value) = 0;
@@ -29,7 +29,7 @@ namespace librealsense
         virtual ~option() = default;
     };
 
-    class options_interface//TODO: Ziv, public recordable<options_interface>
+    class options_interface//TODO?: Ziv, public recordable<options_interface>
     {
     public:
         virtual option& get_option(rs2_option id) = 0;

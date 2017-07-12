@@ -135,4 +135,3 @@ EXPORTS
     rs2_create_device_serializer
     rs2_delete_device_serializer
     rs2_create_record_device 
-    rs2_delete_record_device 

@@ -170,7 +170,7 @@ namespace rs
                     //                        target = file_types::additional_image_encodings::NV12; break;
                     //                    case rs2_format::RS2_FORMAT_CUSTOM :
                     //                        target = file_types::additional_image_encodings::CUSTOM; break;
-                default: return false;
+                default: throw std::runtime_error(std::string("Failed to convert librealsense format to matching image encoding (") + std::to_string(source) + std::string(")"));
                 }
                 return true;
             }
@@ -211,7 +211,7 @@ namespace rs
                 //                    target = rs2_format::RS2_FORMAT_NV12;
                 //                else if(source == file_types::additional_image_encodings::CUSTOM)
                 //                    target = rs2_format::RS2_FORMAT_CUSTOM;
-                else return false;
+                else throw std::runtime_error(std::string("Failed to convert image encoding to matching librealsense format(") + source + std::string(")"));
 
                 return true;
             }
@@ -233,7 +233,7 @@ namespace rs
                     target = rs::file_format::file_types::stream_type::FISHEYE; break;
                     //                    case rs2_stream::RS2_STREAM_RECTIFIED_COLOR:
                     //                        target = rs::file_format::file_types::stream_type::RECTIFIED_COLOR; break;
-                default: return false;
+                default: throw std::runtime_error(std::string("Failed to convert librealsense stream to matching stream(") + std::to_string(source) + std::string(")"));
 
                 }
                 return true;
@@ -254,7 +254,7 @@ namespace rs
                     target = rs2_stream::RS2_STREAM_FISHEYE;
                 //                else if(source ==  rs::file_format::file_types::stream_type::RECTIFIED_COLOR)
                 //                    target = rs2_stream::RS2_STREAM_RECTIFIED_COLOR;
-                else return false;
+                else throw std::runtime_error(std::string("Failed to convert stream matching librealsense stream(") + source + std::string(")"));
                 return true;
             }
             inline bool convert(rs2_distortion source, std::string& target)
@@ -271,8 +271,7 @@ namespace rs
                     target = rs::file_format::file_types::distortion::DISTORTION_NONE; break;
                 case rs2_distortion::RS2_DISTORTION_BROWN_CONRADY:
                     target = rs::file_format::file_types::distortion::DISTORTION_UNMODIFIED_BROWN_CONRADY; break;
-                default: return false;
-
+                default: throw std::runtime_error(std::string("Failed to convert librealsense distortion to matching distortion(") + std::to_string(source) + std::string(")"));
                 }
                 return true;
             }
@@ -289,7 +288,7 @@ namespace rs
                     target = rs2_distortion::RS2_DISTORTION_NONE;
                 else if (source == rs::file_format::file_types::distortion::DISTORTION_UNMODIFIED_BROWN_CONRADY)
                     target = rs2_distortion::RS2_DISTORTION_BROWN_CONRADY;
-                else return false;
+                else throw std::runtime_error(std::string("Failed to convert distortion matching librealsense distortion(") + source + std::string(")"));
                 return true;
             }
             inline bool convert(file_types::compression_type source, std::string& target)
@@ -304,8 +303,8 @@ namespace rs
                     target = "jpeg"; break;
                 case file_types::png:
                     target = "png"; break;
-                default:
-                    return false;
+                default: throw std::runtime_error(std::string("Failed to convert librealsense compression_type to matching compression type(") + std::to_string(source) + std::string(")"));
+                    
                 }
                 return true;
             }
@@ -318,8 +317,7 @@ namespace rs
                     target = rs::file_format::file_types::motion_stream_type::ACCL; break;
                 case file_types::motion_type::gyro:
                     target = rs::file_format::file_types::motion_stream_type::GYRO; break;
-                default:
-                    return false;
+                default: throw std::runtime_error(std::string("Failed to convert librealsense motion_stream_type to matching motion_stream_type(") + std::to_string(source) + std::string(")"));
                 }
                 return true;
 
@@ -331,7 +329,7 @@ namespace rs
                     target = file_types::motion_type::accel;
                 else if (source == rs::file_format::file_types::motion_stream_type::GYRO)
                     target = file_types::motion_type::gyro;
-                else return false;
+                else throw std::runtime_error(std::string("Failed to convert motion type matching librealsense motion_type(") + source + std::string(")"));
                 return true;
             }
 

@@ -347,50 +347,51 @@ std::shared_ptr<ros_data_objects::compressed_image> stream_playback::create_comp
 std::shared_ptr<ros_data_objects::image> stream_playback::create_image(const rosbag::MessageInstance &image_data) const
 {
     sensor_msgs::ImagePtr msg = image_data.instantiate<sensor_msgs::Image>();
-    if (msg == nullptr)
-    {
-        return nullptr;
-    }
+    //if (msg == nullptr)
+    //{
+    //    return nullptr;
+    //}
     ros_data_objects::image_info info = {};
-    topic image_topic(image_data.getTopic());
-    auto device_str = topic(image_data.getTopic()).at(4);
-    info.device_id = static_cast<uint32_t>(std::stoll(device_str));
-    info.timestamp = seconds(msg->header.stamp.toSec());
-    info.stream = topic(image_data.getTopic()).at(2);
+    //topic image_topic(image_data.getTopic());
+    //auto device_str = topic(image_data.getTopic()).at(4);
+    //info.device_id = static_cast<uint32_t>(std::stoll(device_str));
+    //info.timestamp = seconds(msg->header.stamp.toSec());
+    //info.stream = topic(image_data.getTopic()).at(2);
 
-    info.frame_number = msg->header.seq;
-    if(conversions::convert(msg->encoding, info.format) == false)
-    {
-        return nullptr;
-    }
-    info.width = msg->width;
-    info.height = msg->height;
-    info.step = msg->step;
+    //info.frame_number = msg->header.seq;
+    //if(conversions::convert(msg->encoding, info.format) == false)
+    //{
+    //    return nullptr;
+    //}
+    //info.width = msg->width;
+    //info.height = msg->height;
+    //info.step = msg->step;
 
-    info.capture_time = nanoseconds(image_data.getTime().toNSec());
+    //info.capture_time = nanoseconds(image_data.getTime().toNSec());
 
-    info.data = std::shared_ptr<uint8_t>(new uint8_t[info.step * info.height],
-            [](uint8_t* ptr){delete[] ptr;});
-    memcpy(info.data.get(), &msg->data[0], msg->data.size());
-    auto info_topic = ros_data_objects::image::get_info_topic(image_topic.at(2), std::stoi(image_topic.at(4)));
-    rosbag::View view_info(m_file, rosbag::TopicQuery(info_topic), image_data.getTime());
-    if (view_info.begin() == view_info.end())
-    {
-        return nullptr;
-    }
-    realsense_msgs::frame_infoPtr info_msg = (*view_info.begin()).instantiate<realsense_msgs::frame_info>();
-    if (info_msg == nullptr)
-    {
-        return nullptr;
-    }
-    info.system_time = nanoseconds(info_msg->system_time);
-    info.timestamp_domain = static_cast<rs2_timestamp_domain>(info_msg->time_stamp_domain);
-    for(auto metadata : info_msg->frame_metadata)
-    {
-        //TODO: Ziv, make sure this works correctly
-        info.metadata[static_cast<rs2_frame_metadata>(metadata.type)] = metadata.data;
-    }
-    return std::make_shared<ros_data_objects::image>(info);
+    //info.data = std::shared_ptr<uint8_t>(new uint8_t[info.step * info.height],
+    //        [](uint8_t* ptr){delete[] ptr;});
+    //memcpy(info.data.get(), &msg->data[0], msg->data.size());
+    //auto info_topic = ros_data_objects::image::get_info_topic(image_topic.at(2), std::stoi(image_topic.at(4)));
+    //rosbag::View view_info(m_file, rosbag::TopicQuery(info_topic), image_data.getTime());
+    //if (view_info.begin() == view_info.end())
+    //{
+    //    return nullptr;
+    //}
+    //realsense_msgs::frame_infoPtr info_msg = (*view_info.begin()).instantiate<realsense_msgs::frame_info>();
+    //if (info_msg == nullptr)
+    //{
+    //    return nullptr;
+    //}
+    //info.system_time = nanoseconds(info_msg->system_time);
+    //info.timestamp_domain = static_cast<rs2_timestamp_domain>(info_msg->time_stamp_domain);
+    //for(auto metadata : info_msg->frame_metadata)
+    //{
+    //    //TODO: Ziv, make sure this works correctly
+    //    info.metadata[static_cast<rs2_frame_metadata>(metadata.type)] = metadata.data;
+    //}
+    // return std::make_shared<ros_data_objects::image>();
+    return nullptr;
 }
 
 std::shared_ptr<ros_data_objects::image_stream_info> stream_playback::create_image_stream_info(const rosbag::MessageInstance &info_msg) const

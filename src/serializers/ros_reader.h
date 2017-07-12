@@ -26,7 +26,7 @@ namespace librealsense
         {
             return m_device_description;
         }
-        device_serializer::frame_box read() override
+        void read(std::chrono::nanoseconds& timestamp, uint32_t& sensor_index, librealsense::frame_holder& frame) override
         {
             throw not_implemented_exception(__FUNCTION__);
         }

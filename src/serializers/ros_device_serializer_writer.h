@@ -54,19 +54,15 @@ namespace librealsense
 			internal_reset(true);
         }
 
-        void write(const librealsense::device_serializer::frame_box& data) override
+        void write(std::chrono::nanoseconds timestamp, uint32_t sensor_index, librealsense::frame_holder&& frame) override
         {
-            if (data.frame == nullptr)
+            auto timestamp_ns = rs::file_format::file_types::nanoseconds(timestamp);
+
+
+            if (Is<video_frame>(frame.frame->get()))
             {
-                throw invalid_value_exception("null frame");
-            }
-
-            auto timestamp_ns = rs::file_format::file_types::nanoseconds(data.timestamp);
-
-
-            if (Is<video_frame>(data.frame))
-            {
-                write_image(data);
+                auto image_obj = std::make_shared<rs::file_format::ros_data_objects::image>(timestamp, sensor_index, std::move(frame));
+                record(image_obj);
                 return;
             }
 
@@ -83,28 +79,28 @@ namespace librealsense
 //            }
         }
 
-        //void write(const librealsense::device_serializer::snapshot_box& data) override
-        //{
-        //    if (data.snapshot == nullptr)
-        //    {
-        //        throw invalid_value_exception("null frame");
-        //    }
-        //    if(Is<info_interface>(data.snapshot))
-        //    {
-        //        write_vendor_info(data);
-        //        return;
-        //    }
-        //    if(Is<options_interface>(data.snapshot.get()))
-        //    {
-        //        write_property(data);
-        //        return;
-        //    }
-        //    if(Is<debug_interface>(data.snapshot))
-        //    {
-        //        write_debug_info(data);
-        //        return;
-        //    }
-        //}
+        void write(const librealsense::device_serializer::snapshot_box& data) override
+        {
+            if (data.snapshot == nullptr)
+            {
+                throw invalid_value_exception("null frame");
+            }
+            if(Is<info_interface>(data.snapshot))
+            {
+                write_vendor_info(data);
+                return;
+            }
+            if(Is<options_interface>(data.snapshot))
+            {
+                //write_property(data);
+                return;
+            }
+            if(Is<debug_interface>(data.snapshot))
+            {
+                write_debug_info(data);
+                return;
+            }
+        }
 
     private:
 		void internal_reset(bool recreate_device)
@@ -151,30 +147,28 @@ namespace librealsense
 //            return error_code::no_error;
 //        }
 
-        void write_image(const device_serializer::frame_box& data)
-        {
-            auto image_obj = std::make_shared<rs::file_format::ros_data_objects::image>(data);
-            record(image_obj);
-        }
-
         void write_extension_snapshot(uint32_t id, std::shared_ptr<librealsense::extension_snapshot> snapshot)
         {    
             if (Is<librealsense::info_interface>(snapshot))
             {
-                std::cout << "Remove me !!! info_interface " << id << " : " << snapshot.get() << std::endl;
+                //std::cout << "Remove me !!! info_interface " << id << " : " << snapshot.get() << std::endl;
                 //write_vendor_info(snapshot, id);
+                return;
             }
             if (Is<librealsense::options_interface>(snapshot))
             {
-                std::cout << "Remove me !!! info_interface " << id << " : " << snapshot.get() << std::endl;
+                //std::cout << "Remove me !!! options_interface " << id << " : " << snapshot.get() << std::endl;
                 //write_vendor_info(snapshot, id);
+                return;
             }
             if (Is<librealsense::debug_interface>(snapshot))
             {
-                std::cout << "Remove me !!! debug_interface " << id << " : " << snapshot.get() << std::endl;
+                //std::cout << "Remove me !!! debug_interface " << id << " : " << snapshot.get() << std::endl;
                 //auto timestamp_ns = rs::file_format::file_types::nanoseconds(FIRST_FRAME_TIMESTAMP);
                 //write_property(snapshot, id, timestamp_ns);
+                return;
             }
+            //TODO: support all extensions
         }
         void write_debug_info(const device_serializer::snapshot_box& box)
         {

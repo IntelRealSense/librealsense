@@ -63,10 +63,10 @@ struct rs2_device_serializer
     std::shared_ptr<librealsense::device_serializer> device_serializer;
 };
 
-struct rs2_record_device
-{
-    std::shared_ptr<librealsense::record_device> record_device;
-};
+//struct rs2_record_device
+//{
+//    std::shared_ptr<librealsense::record_device> record_device;
+//};
 
 struct rs2_notification
 {
@@ -1183,20 +1183,24 @@ void rs2_delete_device_serializer(rs2_device_serializer * device_serializer) try
 NOEXCEPT_RETURN(, device_serializer)
 
 
-rs2_record_device* rs2_create_record_device(const rs2_device* device, rs2_device_serializer* serializer, rs2_error** error) try
+rs2_device* rs2_create_record_device(const rs2_device* device, rs2_device_serializer* serializer, rs2_error** error) try
 {
     VALIDATE_NOT_NULL(device);
     VALIDATE_NOT_NULL(serializer);
 
-    return new rs2_record_device( { std::make_shared<librealsense::record_device>(device->device, serializer->device_serializer->get_writer()) });
+    return new rs2_device( { 
+        device->ctx,
+        device->info,
+        std::make_shared<librealsense::record_device>(device->device, serializer->device_serializer->get_writer()) 
+    });
 }NOEXCEPT_RETURN(nullptr, device, serializer)
 
-void rs2_delete_record_device(rs2_record_device* device) try
-{
-    VALIDATE_NOT_NULL(device);
-    delete device;
-}
-NOEXCEPT_RETURN(, device)
+//void rs2_delete_record_device(rs2_record_device* device) try
+//{
+//    VALIDATE_NOT_NULL(device);
+//    delete device;
+//}
+//NOEXCEPT_RETURN(, device)
 
 rs2_frame* rs2_allocate_synthetic_video_frame(rs2_source* source, rs2_stream new_stream, rs2_frame* original, 
     rs2_format new_format, int new_bpp, int new_width, int new_height, int new_stride, rs2_error** error) try

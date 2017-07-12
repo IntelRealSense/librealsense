@@ -94,6 +94,8 @@ namespace rs2
     class device;
     class device_list;
     class syncer;
+    class recorder;
+    class roi_sensor;
 
     struct stream_profile
     {
@@ -1026,6 +1028,8 @@ namespace rs2
         friend context;
         friend device_list;
         friend device;
+        friend recorder;
+        friend roi_sensor;
 
         std::shared_ptr<rs2_sensor> _sensor;
         explicit sensor(std::shared_ptr<rs2_sensor> dev)
@@ -1038,7 +1042,7 @@ namespace rs2
     {
     public:
         roi_sensor(sensor s)
-            : _sensor(s.get())
+            : sensor(s.get())
         {
             rs2_error* e = nullptr;
             if(rs2_is_sensor(_sensor.get(), RS2_EXTENSION_TYPE_ROI, &e) == 0 && !e)
@@ -1067,8 +1071,6 @@ namespace rs2
         }
 
         operator bool() const { return _sensor.get() != nullptr; }
-	private:
-		std::shared_ptr<rs2_sensor> _sensor;
     };
 
     class device
@@ -1080,7 +1082,7 @@ namespace rs2
         * returns the list of adjacent devices, sharing the same physical parent composite device
         * \return            the list of adjacent devices
         */
-        std::vector<sensor> query_sensors() const
+        virtual std::vector<sensor> query_sensors() const
         {
             rs2_error* e = nullptr;
             std::shared_ptr<rs2_sensor_list> list(
@@ -1111,7 +1113,7 @@ namespace rs2
         * \param[in] info    the parameter to check for support
         * \return                true if the parameter both exist and well-defined for the specific device
         */
-        bool supports(rs2_camera_info info) const
+        virtual bool supports(rs2_camera_info info) const
         {
             rs2_error* e = nullptr;
             auto is_supported = rs2_supports_device_info(_dev.get(), info, &e);
@@ -1124,7 +1126,7 @@ namespace rs2
         * \param[in] info     camera info type to retrieve
         * \return             the requested camera info string, in a format specific to the device model
         */
-        const char* get_info(rs2_camera_info info) const
+        virtual const char* get_info(rs2_camera_info info) const
         {
             rs2_error* e = nullptr;
             auto result = rs2_get_device_info(_dev.get(), info, &e);
@@ -1135,7 +1137,7 @@ namespace rs2
         /**
         * send hardware reset request to the device
         */
-        void hardware_reset()
+        virtual void hardware_reset()
         {
             rs2_error* e = nullptr;
 
@@ -1157,11 +1159,11 @@ namespace rs2
         }
         device() : _dev(nullptr) {}
         
-        operator bool() const
+        virtual operator bool() const
         {
             return _dev != nullptr;
         }
-        const std::shared_ptr<rs2_device>& get() const
+        virtual const std::shared_ptr<rs2_device>& get() const
         {
             return _dev;
         }
@@ -1325,7 +1327,7 @@ namespace rs2
         std::shared_ptr<rs2_device_list> _list;
     };
 
-    class recorder
+    class recorder : public device
     {
     public:
         recorder(std::string file, rs2::device device) :
@@ -1338,12 +1340,37 @@ namespace rs2
             rs2::error::handle(e);
 
             e = nullptr;
-            m_record_device = std::shared_ptr<rs2_record_device>(
+            m_record_device = std::shared_ptr<rs2_device>(
                 rs2_create_record_device(device.get().get(), m_serializer.get(), &e),
-                rs2_delete_record_device);
+                rs2_delete_device);
             rs2::error::handle(e);
         }
 
+        std::vector<sensor> query_sensors() const override
+        {
+            rs2_error* e = nullptr;
+            std::shared_ptr<rs2_sensor_list> list(
+                rs2_query_sensors(m_record_device.get(), &e),
+                rs2_delete_sensor_list);
+            error::handle(e);
+
+            auto size = rs2_get_sensors_count(list.get(), &e);
+            error::handle(e);
+
+            std::vector<sensor> results;
+            for (auto i = 0; i < size; i++)
+            {
+                std::shared_ptr<rs2_sensor> dev(
+                    rs2_create_sensor(list.get(), i, &e),
+                    rs2_delete_sensor);
+                error::handle(e);
+
+                sensor rs2_dev(dev);
+                results.push_back(rs2_dev);
+            }
+
+            return results;
+        }
         bool pause()
         {
             throw std::runtime_error("Not Implemented");
@@ -1356,7 +1383,7 @@ namespace rs2
     private:
         std::string m_file;
         std::shared_ptr<rs2_device_serializer> m_serializer;
-        std::shared_ptr<rs2_record_device> m_record_device;
+        std::shared_ptr<rs2_device> m_record_device;
     };
 
     class event_information

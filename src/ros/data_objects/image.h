@@ -14,10 +14,10 @@ namespace rs
     {
         namespace ros_data_objects
         {
-
+            //TODO: remove image_info - ros_data_objects::image should only hold a ref to a frame
             struct image_info
             {
-                std::string stream;
+   /*             std::string stream;
                 uint32_t width;
                 uint32_t height;
                 rs2_format format;
@@ -29,39 +29,18 @@ namespace rs
                 uint32_t device_id;
                 uint32_t frame_number;
                 std::shared_ptr <uint8_t> data;
-                std::map <rs2_frame_metadata, std::vector<uint8_t>> metadata;
+                std::map <rs2_frame_metadata, std::vector<uint8_t>> metadata;*/
             };
 
 
             class image : public sample
             {
             public:
-                image(const image_info &info) :
-                    m_info(info) {
-
-                }
-                image(const librealsense::device_serializer::frame_box& data)
+                image(std::chrono::nanoseconds timestamp, uint32_t sensor_index, librealsense::frame_holder&& frame) :
+                    m_timestamp(timestamp),
+                    m_sensor_index(sensor_index),
+                    m_frame(std::move(frame))
                 {
-                    auto vid_frame = std::dynamic_pointer_cast<librealsense::video_frame>(data.frame);
-                    assert(vid_frame != nullptr);
-                    auto buffer_size = vid_frame->data.size();
-                    std::shared_ptr<uint8_t> buffer = std::shared_ptr<uint8_t>(new uint8_t[buffer_size],
-                                                                               [](uint8_t* ptr){delete[] ptr;});
-                    memcpy(buffer.get(), vid_frame->data.data(), vid_frame->data.size());
-                    rs::file_format::ros_data_objects::image_info info;
-                    info.device_id = data.sensor_index;
-                    rs::file_format::conversions::convert(vid_frame->get_stream_type(), info.stream);
-                    info.width = static_cast<uint32_t>(vid_frame->get_width());
-                    info.height = static_cast<uint32_t>(vid_frame->get_height());
-                    info.format = vid_frame->get_format();
-                    info.step = static_cast<uint32_t>(vid_frame->get_stride()); //TODO: Ziv, assert stride == pitch
-                    info.capture_time = data.timestamp;
-                    info.timestamp_domain = vid_frame->get_frame_timestamp_domain();
-                    std::chrono::duration<double, std::milli> timestamp_ms(vid_frame->get_frame_timestamp());
-                    info.timestamp = rs::file_format::file_types::seconds(timestamp_ms);
-                    info.frame_number = static_cast<uint32_t>(vid_frame->get_frame_number());
-                    info.data = buffer;
-                    copy_image_metadata(vid_frame, info.metadata);
                 }
 
                 file_types::sample_type get_type() const override
@@ -72,31 +51,42 @@ namespace rs
                 void write_data(ros_writer& file) override
                 {
                     sensor_msgs::Image image;
-                    image.height = m_info.height;
-                    image.width = m_info.width;
-                    image.step = m_info.step;
+                    auto vid_frame = dynamic_cast<librealsense::video_frame*>(m_frame.frame->get());
+                    assert(vid_frame != nullptr);
 
-                    if(conversions::convert(m_info.format, image.encoding) == false)
+                    std::string stream;
+                    rs::file_format::conversions::convert(vid_frame->get_stream_type(), stream);
+                    
+                    image.width = static_cast<uint32_t>(vid_frame->get_width());
+                    image.height = static_cast<uint32_t>(vid_frame->get_height());
+                    image.step = static_cast<uint32_t>(vid_frame->get_stride());
+                    if(conversions::convert(vid_frame->get_format(), image.encoding) == false)
                     {
                         //return status_param_unsupported;
+                        throw std::runtime_error("remove me, convert should throw");
                     }
 
                     image.is_bigendian = 0;
+                    auto size = vid_frame->get_stride() * vid_frame->get_height();
+                    auto p_data = vid_frame->get_frame_data();
+                    image.data.assign(p_data, p_data + size);
+                    image.header.seq = static_cast<uint32_t>(vid_frame->get_frame_number());
 
-                    image.data.assign(m_info.data.get(), m_info.data.get() + (m_info.step * m_info.height));
-                    image.header.seq = m_info.frame_number;
-                    image.header.stamp = ros::Time(m_info.timestamp.count());
+                    std::chrono::duration<double, std::milli> timestamp_ms(vid_frame->get_frame_timestamp());
+                    auto timestamp = rs::file_format::file_types::seconds(timestamp_ms);
+                    image.header.stamp = ros::Time(timestamp.count());
 
-                    auto image_topic = get_topic(m_info.stream, m_info.device_id);
+                    auto image_topic = get_topic(stream, m_sensor_index);
 
-                    file.write(image_topic, m_info.capture_time, image);
+                    file.write(image_topic, m_timestamp, image);
 
 
                     realsense_msgs::frame_info msg;
-                    msg.system_time = m_info.system_time.count();
-                    msg.time_stamp_domain = m_info.timestamp_domain;
-
-                    for(auto data : m_info.metadata)
+                    msg.system_time = 0;
+                    msg.time_stamp_domain = vid_frame->get_frame_timestamp_domain();
+                    std::map <rs2_frame_metadata, std::vector<uint8_t>> metadata;
+                    copy_image_metadata(vid_frame, metadata);
+                    for(auto data : metadata)
                     {
                         realsense_msgs::metadata metadata;
                         metadata.type = data.first;
@@ -106,17 +96,17 @@ namespace rs
                     }
 
                     auto info_topic = get_info_topic(topic(image_topic).at(2), std::stoi(topic(image_topic).at(4)));
-                    file.write(info_topic, m_info.capture_time, msg);
+                    file.write(info_topic, m_timestamp, msg);
                 }
 
                 const image_info& get_info() const
                 {
-                    return m_info;
+                    return image_info(); //TODO: remove
                 }
 
                 void set_info(const image_info& info)
                 {
-                    m_info = info;
+                    //m_info = info; //TODO: remove
                 }
 
                 static std::string get_topic(std::string stream, uint32_t device_id)
@@ -129,7 +119,7 @@ namespace rs
                     return "/camera/" + stream + "/rs_frame_info_ext/" + std::to_string(device_id);
                 }
 
-                static void copy_image_metadata(std::shared_ptr<librealsense::video_frame> source,
+                static void copy_image_metadata(librealsense::video_frame* source,
                                                 std::map<rs2_frame_metadata, std::vector<uint8_t>>& target)
                 {
                     for (int i = 0; i < static_cast<rs2_frame_metadata>(rs2_frame_metadata::RS2_FRAME_METADATA_COUNT); i++)
@@ -148,8 +138,10 @@ namespace rs
                     //TODO: Handle additional image metadata once available
                 }
             private:
-                image_info m_info;
-
+                //image_info m_info;
+                std::chrono::nanoseconds m_timestamp;
+                uint32_t m_sensor_index;
+                librealsense::frame_holder m_frame;
             };
         }
     }

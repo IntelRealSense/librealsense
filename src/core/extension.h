@@ -3,7 +3,8 @@
 
 #pragma once
 #include "../../include/librealsense/rs2.h" //TODO: Ziv, remove relative\file
-
+#include <memory>
+#include <functional>
 namespace librealsense
 {
 	template<typename T, typename P>
@@ -12,8 +13,13 @@ namespace librealsense
 		return std::dynamic_pointer_cast<T>(ptr) != nullptr;
 	}
 
-	class extendable_interface
+    template<typename T, typename P>
+    bool Is(P* ptr)
+    {
+        return dynamic_cast<T*>(ptr) != nullptr;
+    }
 
+	class extendable_interface
     {
     public:
         virtual bool extend_to(rs2_extension_type extension_type, void** ptr) = 0;
