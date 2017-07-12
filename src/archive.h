@@ -136,10 +136,14 @@ namespace librealsense
 
         archive_interface* get_owner() const override { return owner.get(); }
 
+        std::shared_ptr<sensor_interface> get_sensor() const override { return sensor.lock(); }
+        void set_sensor(std::shared_ptr<sensor_interface> s) override { sensor = s; }
+
     private:
         // TODO: check boost::intrusive_ptr or an alternative
         std::atomic<int> ref_count; // the reference count is on how many times this placeholder has been observed (not lifetime, not content)
         std::shared_ptr<archive_interface> owner; // pointer to the owner to be returned to by last observe
+        std::weak_ptr<sensor_interface> sensor;
         frame_continuation on_release;
     };
 
@@ -165,7 +169,7 @@ namespace librealsense
             return get_frame(0) ? get_frame(0)->get() : nullptr;
         }
 
-        int get_embeded_frames_count() const { return data.size() / sizeof(rs2_frame*); }
+        size_t get_embeded_frames_count() const { return data.size() / sizeof(rs2_frame*); }
 
         // In the next section we make the composite frame "look and feel" like the first of its children
         rs2_metadata_t get_frame_metadata(const rs2_frame_metadata& frame_metadata) const override

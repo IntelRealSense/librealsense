@@ -9,6 +9,11 @@
 
 namespace librealsense
 {
+    namespace uvc
+    {
+        class time_source;
+    }
+
     class stream_profile_interface
     {
     public:
@@ -50,6 +55,9 @@ namespace librealsense
         virtual void disable_continuation() = 0;
 
         virtual archive_interface* get_owner() const = 0;
+
+        virtual std::shared_ptr<sensor_interface> get_sensor() const = 0;
+        virtual void set_sensor(std::shared_ptr<sensor_interface> sensor) = 0;
 
         virtual ~frame_interface() = default;
     };

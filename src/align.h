@@ -42,7 +42,7 @@ namespace librealsense
 
         void set_processing_callback(frame_processor_callback callback) override;
         void set_output_callback(frame_callback_ptr callback) override;
-        void invoke(std::vector<frame_holder> frames) override;
+        void invoke(frame_holder frames) override;
 
         synthetic_source_interface& get_source() override { return _source_wrapper; }
 
@@ -51,5 +51,28 @@ namespace librealsense
         std::mutex _mutex;
         frame_processor_callback _callback;
         synthetic_source _source_wrapper;
+    };
+
+    class pointcloud : public processing_block
+    {
+    public:
+        pointcloud(std::shared_ptr<uvc::time_service> ts,
+                   const rs2_intrinsics* depth_intrinsics = nullptr,
+                   const float* depth_units = nullptr, 
+                   const rs2_intrinsics* mapped_intrinsics = nullptr,
+                   const rs2_extrinsics* extrinsics = nullptr);
+
+    private:
+        std::mutex              _mutex;
+
+        const rs2_intrinsics*   _depth_intrinsics_ptr;
+        const float*            _depth_units_ptr;
+        const rs2_intrinsics*   _mapped_intrinsics_ptr;
+        const rs2_extrinsics*   _extrinsics_ptr;
+
+        rs2_intrinsics          _depth_intrinsics;
+        rs2_intrinsics          _mapped_intrinsics;
+        float                   _depth_units;
+        rs2_extrinsics          _extrinsics;
     };
 }

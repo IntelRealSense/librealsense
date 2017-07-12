@@ -24,20 +24,17 @@ namespace librealsense
         _source.init(std::make_shared<metadata_parser_map>());
     }
 
-    void processing_block::invoke(std::vector<frame_holder> frames)
+    void processing_block::invoke(frame_holder f)
     {
         auto callback = _source.begin_callback();
         try
         {
             if (_callback)
             {
-                std::vector<rs2_frame*> frame_refs(frames.size(), nullptr);
-                for (size_t i = 0; i < frames.size(); i++)
-                {
-                    std::swap(frames[i].frame, frame_refs[i]);
-                }
+                rs2_frame* ptr = nullptr;
+                std::swap(f.frame, ptr);
 
-                _callback->on_frame(frame_refs.data(), (int)frame_refs.size(), _source_wrapper.get_c_wrapper());
+                _callback->on_frame(ptr, _source_wrapper.get_c_wrapper());
             }
         }
         catch(...)
@@ -173,6 +170,52 @@ namespace librealsense
         cf->attach_continuation(std::move(release_frames));
 
         return res;
+    }
+
+    pointcloud::pointcloud(std::shared_ptr<uvc::time_service> ts,
+                           const rs2_intrinsics* depth_intrinsics,
+                           const float* depth_units, 
+                           const rs2_intrinsics* mapped_intrinsics,
+                           const rs2_extrinsics* extrinsics)
+        : processing_block(ts),
+          _depth_intrinsics_ptr(depth_intrinsics),
+          _depth_units_ptr(depth_units),
+          _mapped_intrinsics_ptr(mapped_intrinsics),
+          _extrinsics_ptr(extrinsics)
+    {
+        if (depth_intrinsics) _depth_intrinsics = *depth_intrinsics;
+        if (depth_units) _depth_units = *depth_units;
+        if (mapped_intrinsics) _mapped_intrinsics = *mapped_intrinsics;
+        if (extrinsics) _extrinsics = *extrinsics;
+
+        auto on_frame = [this](rs2::frame f, const rs2::frame_source& source)
+        {
+            std::lock_guard<std::mutex> lock(_mutex);
+
+            if (auto composite = f.as<rs2::composite_frame>())
+            {
+                auto depth = composite.first_or_default(RS2_STREAM_DEPTH);
+                if (depth)
+                {
+                    std::lock_guard<std::mutex> lock(_mutex);
+                    if (!_depth_intrinsics_ptr)
+                    {
+                        auto sensor = depth.get()->get()->get_owner()->get_sensor();
+                        _depth_intrinsics = ((video_sensor*)sensor)->get_intrinsics();
+                        _depth_intrinsics_ptr = &_depth_intrinsics;
+                    }
+
+                    if (!_depth_units_ptr)
+                    {
+                        auto sensor = depth.get()->get()->get_owner()->get_sensor();
+                        _depth_units = ((video_sensor*)sensor)->get_option(RS2_OPTION_DEPTH_UNITS)->query();
+                        _depth_units_ptr = &_depth_units;
+                    }
+                }
+            }
+        };
+        auto callback = new rs2::frame_processor_callback<decltype(on_frame)>(on_frame);
+        set_processing_callback(std::shared_ptr<rs2_frame_processor_callback>(callback));
     }
 
     //void colorize::set_color_map(rs2_color_map cm)
