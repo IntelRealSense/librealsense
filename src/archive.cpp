@@ -51,7 +51,7 @@ namespace librealsense
 
             if (requires_memory)
             {
-                backbuffer.data.resize(size); // TODO: Allow users to provide a custom allocator for frame buffers
+                backbuffer.data.resize(size, 0); // TODO: Allow users to provide a custom allocator for frame buffers
             }
             backbuffer.additional_data = additional_data;
             return backbuffer;

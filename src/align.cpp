@@ -131,7 +131,7 @@ namespace librealsense
             auto frame_buff = comp->get_frames();
             for (int i = 0; i < comp->get_embeded_frames_count(); i++)
             {
-                *target = frame_buff[i];
+                std::swap(*target, frame_buff[i]);
                 target++;
             }
             from.frame->disable_continuation();
