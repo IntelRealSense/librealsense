@@ -481,13 +481,14 @@ namespace rs2
             result.frame_ref = nullptr;
         }
 
+        rs2_source* _source;
     private:
         template<class T>
         friend class frame_processor_callback;
-
+       
         frame_source(rs2_source* source) : _source(source) {}
         frame_source(const frame_source&) = delete;
-        rs2_source* _source;
+        
     };
 
     typedef std::vector<frame> frameset;
@@ -544,15 +545,42 @@ namespace rs2
             invoke(std::move(v));
         }
 
-    private:
-        friend class context;
+
 
         processing_block(std::shared_ptr<rs2_processing_block> block)
             : _block(block)
         {
         }
 
+    private:
+        friend class context;
+        friend class syncer_processing_block;
+
         std::shared_ptr<rs2_processing_block> _block;
+    };
+
+    class syncer_processing_block
+    {
+    public:
+        syncer_processing_block()
+        {
+            rs2_error* e = nullptr; 
+            _processing_block = std::make_shared<processing_block>(std::shared_ptr<rs2_processing_block>(rs2_create_sync_processing_block(&e)));
+            error::handle(e);
+
+        }
+        template<class S>
+        void start(S on_frame)
+        {
+            _processing_block->start(on_frame);
+        }
+
+        void operator()(frame f) const
+        {
+            _processing_block->operator()(std::move(f));
+        }
+    private:
+        std::shared_ptr<processing_block> _processing_block;
     };
 
     template<class T>
@@ -608,6 +636,7 @@ namespace rs2
         int max_x;
         int max_y;
     };
+
 
     class syncer
     {

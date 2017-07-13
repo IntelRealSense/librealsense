@@ -12,15 +12,16 @@
 
 namespace librealsense
 {
-    sensor_base::sensor_base(std::string name, std::shared_ptr<uvc::time_service> ts)
+    sensor_base::sensor_base(std::string name, std::shared_ptr<uvc::time_service> ts, device* owner)
         : _source(ts),
-          _is_streaming(false),
-          _is_opened(false),
-          _stream_profiles([this]() { return this->init_stream_profiles(); }),
-          _notifications_proccessor(std::shared_ptr<notifications_proccessor>(new notifications_proccessor())),
-          _metadata_parsers(std::make_shared<metadata_parser_map>()),
-          _on_before_frame_callback(nullptr),
-          _ts(ts)
+        _is_streaming(false),
+        _is_opened(false),
+        _stream_profiles([this]() { return this->init_stream_profiles(); }),
+        _notifications_proccessor(std::shared_ptr<notifications_proccessor>(new notifications_proccessor())),
+        _metadata_parsers(std::make_shared<metadata_parser_map>()),
+        _on_before_frame_callback(nullptr),
+        _ts(ts),
+        _owner_dev(owner)
     {
         register_option(RS2_OPTION_FRAMES_QUEUE_SIZE, _source.get_published_size_option());
 
@@ -225,7 +226,7 @@ namespace librealsense
             throw wrong_api_call_sequence_exception("open(...) failed. UVC device is already opened!");
 
         auto on = std::unique_ptr<power>(new power(shared_from_this()));
-        _source.init(RS2_EXTENSION_TYPE_VIDEO_FRAME, _metadata_parsers);
+        _source.init(RS2_EXTENSION_TYPE_VIDEO_FRAME, _metadata_parsers, _owner_dev->shared_from_this());
         auto mapping = resolve_requests(requests);
 
         auto timestamp_reader = _timestamp_reader.get();
@@ -339,7 +340,7 @@ namespace librealsense
                         _source.invoke_callback(std::move(pref));
                     }
                  }
-                }, _source.get_published_size_option()->query());
+                }, (int)_source.get_published_size_option()->query());
             }
             catch(...)
             {
@@ -653,7 +654,7 @@ namespace librealsense
             throw wrong_api_call_sequence_exception("start_streaming(...) failed. Hid device was not opened!");
 
         _source.set_callback(callback);
-        _source.init(RS2_EXTENSION_TYPE_MOTION_FRAME, _metadata_parsers);
+        _source.init(RS2_EXTENSION_TYPE_MOTION_FRAME, _metadata_parsers, _owner_dev->shared_from_this());
 
         _hid_device->start_capture([this](const uvc::sensor_data& sensor_data)
         {

@@ -20,6 +20,7 @@
 #include "ds5-active.h"
 #include "ds5-color.h"
 #include "ds5-motion.h"
+#include "sync.h"
 
 namespace librealsense
 {
@@ -87,6 +88,7 @@ namespace librealsense
             const std::vector<uvc::hid_device_info>& hid_info)
             : ds5_device(backend, dev_info, hwm_device, hid_info),
               ds5_active(backend, dev_info, hwm_device, hid_info) {}
+
     };
 
     // AWGT

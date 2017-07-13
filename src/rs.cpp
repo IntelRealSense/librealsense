@@ -75,10 +75,10 @@ struct rs2_notification
     const librealsense::notification* _notification;
 };
 
-struct rs2_syncer
-{
-    std::shared_ptr<librealsense::sync_interface> syncer;
-};
+//struct rs2_syncer
+//{
+//    std::shared_ptr<librealsense::sync_interface> syncer;
+//};
 
 struct frame_holder
 {
@@ -988,75 +988,75 @@ void rs2_get_region_of_interest(const rs2_sensor* sensor, int* min_x, int* min_y
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, sensor, min_x, min_y, max_x, max_y)
 
-rs2_syncer* rs2_create_syncer(rs2_error** error) try
-{
-    return new rs2_syncer{ std::make_shared<librealsense::syncer>() };
-}
-catch (...) { librealsense::translate_exception(__FUNCTION__, "", error); return nullptr; }
+//rs2_syncer* rs2_create_syncer(rs2_error** error) try
+//{
+//    return new rs2_syncer{ std::make_shared<librealsense::syncer>() };
+//}
+//catch (...) { librealsense::translate_exception(__FUNCTION__, "", error); return nullptr; }
 
-void rs2_start_syncer(const rs2_sensor* sensor, rs2_syncer* syncer, rs2_error** error) try
-{
-    VALIDATE_NOT_NULL(sensor);
-    VALIDATE_NOT_NULL(syncer);
-    librealsense::frame_callback_ptr callback(
-        new librealsense::frame_callback(rs2_sync_frame, syncer));
-    sensor->sensor->start(move(callback));
-}
-HANDLE_EXCEPTIONS_AND_RETURN(, sensor, syncer)
-
-void rs2_wait_for_frames(rs2_syncer* syncer, unsigned int timeout_ms, rs2_frame** output_array, rs2_error** error) try
-{
-    VALIDATE_NOT_NULL(syncer);
-    VALIDATE_NOT_NULL(output_array);
-    auto res = syncer->syncer->wait_for_frames(timeout_ms);
-    for (uint32_t i = 0; i < RS2_STREAM_COUNT; i++)
-    {
-        output_array[i] = nullptr;
-    }
-    for (auto&& holder : res)
-    {
-        output_array[holder.frame->get()->get_stream_type()] = holder.frame;
-        holder.frame = nullptr;
-    }
-}
-HANDLE_EXCEPTIONS_AND_RETURN(, syncer, timeout_ms, output_array)
-
-int rs2_poll_for_frames(rs2_syncer* syncer, rs2_frame** output_array, rs2_error** error) try
-{
-    VALIDATE_NOT_NULL(syncer);
-    VALIDATE_NOT_NULL(output_array);
-    librealsense::frameset res;
-    if (syncer->syncer->poll_for_frames(res))
-    {
-        for (uint32_t i = 0; i < RS2_STREAM_COUNT; i++)
-        {
-            output_array[i] = nullptr;
-        }
-        for (auto&& holder : res)
-        {
-            output_array[holder.frame->get()->get_stream_type()] = holder.frame;
-            holder.frame = nullptr;
-        }
-        return 1;
-    }
-    return 0;
-}
-HANDLE_EXCEPTIONS_AND_RETURN(0, syncer, output_array)
-
-void rs2_sync_frame(rs2_frame* frame, void* syncer) try
-{
-    VALIDATE_NOT_NULL(frame);
-    VALIDATE_NOT_NULL(syncer);
-    ((rs2_syncer*)syncer)->syncer->dispatch_frame(frame);
-}
-NOEXCEPT_RETURN(, frame, syncer)
-
-void rs2_delete_syncer(rs2_syncer* syncer) try
-{
-    VALIDATE_NOT_NULL(syncer);
-    delete syncer;
-}
-NOEXCEPT_RETURN(, syncer)
+//void rs2_start_syncer(const rs2_sensor* sensor, rs2_syncer* syncer, rs2_error** error) try
+//{
+//    VALIDATE_NOT_NULL(sensor);
+//    VALIDATE_NOT_NULL(syncer);
+//    librealsense::frame_callback_ptr callback(
+//        new librealsense::frame_callback(rs2_sync_frame, syncer));
+//    sensor->sensor->start(move(callback));
+//}
+//HANDLE_EXCEPTIONS_AND_RETURN(, sensor, syncer)
+//
+//void rs2_wait_for_frames(rs2_syncer* syncer, unsigned int timeout_ms, rs2_frame** output_array, rs2_error** error) try
+//{
+//    VALIDATE_NOT_NULL(syncer);
+//    VALIDATE_NOT_NULL(output_array);
+//    auto res = syncer->syncer->wait_for_frames(timeout_ms);
+//    for (uint32_t i = 0; i < RS2_STREAM_COUNT; i++)
+//    {
+//        output_array[i] = nullptr;
+//    }
+//    for (auto&& holder : res)
+//    {
+//        output_array[holder.frame->get()->get_stream_type()] = holder.frame;
+//        holder.frame = nullptr;
+//    }
+//}
+//HANDLE_EXCEPTIONS_AND_RETURN(, syncer, timeout_ms, output_array)
+//
+//int rs2_poll_for_frames(rs2_syncer* syncer, rs2_frame** output_array, rs2_error** error) try
+//{
+//    VALIDATE_NOT_NULL(syncer);
+//    VALIDATE_NOT_NULL(output_array);
+//    librealsense::frameset res;
+//    if (syncer->syncer->poll_for_frames(res))
+//    {
+//        for (uint32_t i = 0; i < RS2_STREAM_COUNT; i++)
+//        {
+//            output_array[i] = nullptr;
+//        }
+//        for (auto&& holder : res)
+//        {
+//            output_array[holder.frame->get()->get_stream_type()] = holder.frame;
+//            holder.frame = nullptr;
+//        }
+//        return 1;
+//    }
+//    return 0;
+//}
+//HANDLE_EXCEPTIONS_AND_RETURN(0, syncer, output_array)
+//
+//void rs2_sync_frame(rs2_frame* frame, void* syncer) try
+//{
+//    VALIDATE_NOT_NULL(frame);
+//    VALIDATE_NOT_NULL(syncer);
+//    ((rs2_syncer*)syncer)->syncer->dispatch_frame(frame);
+//}
+//NOEXCEPT_RETURN(, frame, syncer)
+//
+//void rs2_delete_syncer(rs2_syncer* syncer) try
+//{
+//    VALIDATE_NOT_NULL(syncer);
+//    delete syncer;
+//}
+//NOEXCEPT_RETURN(, syncer)
 
 void rs2_free_error(rs2_error * error) { if (error) delete error; }
 const char * rs2_get_failed_function(const rs2_error * error) { return error ? error->function : nullptr; }
@@ -1211,6 +1211,13 @@ rs2_processing_block* rs2_create_processing_block(rs2_context* ctx, rs2_extensio
     return new rs2_processing_block { block };
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, ctx, proc)
+
+rs2_processing_block* rs2_create_sync_processing_block(rs2_error ** error)
+{
+    auto block = std::make_shared<librealsense::syncer_proccess_unit>();
+    
+    return new rs2_processing_block{ block };
+}
 
 void rs2_start_processing(rs2_processing_block* block, rs2_frame_callback* on_frame, rs2_error** error) try
 {

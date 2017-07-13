@@ -61,3 +61,8 @@ rs2_extrinsics device::get_extrinsics(size_t from_subdevice, rs2_stream, size_t 
     (float3 &)extrin.translation = transform.position;
     return extrin;
 }
+
+std::shared_ptr<matcher> librealsense::device::create_matcher(rs2_stream stream) const
+{
+    return std::make_shared<identity_matcher>( stream_id((device_interface*)(this), stream));
+}

@@ -37,16 +37,17 @@ namespace librealsense
     public:
         processing_block(rs2_extension_type output_type, std::shared_ptr<uvc::time_service> ts);
 
-        void set_processing_callback(frame_processor_callback callback) override;
+        void set_processing_callback(frame_processor_callback_ptr callback) override;
         void set_output_callback(frame_callback_ptr callback) override;
         void invoke(std::vector<frame_holder> frames) override;
 
         synthetic_source_interface& get_source() override { return _source_wrapper; }
 
-    private:
+    protected:
         frame_source _source;
         std::mutex _mutex;
-        frame_processor_callback _callback;
+        frame_processor_callback_ptr _callback;
         synthetic_source _source_wrapper;
+        rs2_extension_type _output_type;
     };
 }

@@ -27,7 +27,7 @@ namespace librealsense
 
         auto color_ep = std::make_shared<uvc_sensor>("RGB Camera", backend.create_uvc_device(color_devices_info.front()),
             std::unique_ptr<frame_timestamp_reader>(new ds5_timestamp_reader_from_metadata(std::move(ds5_timestamp_reader_backup))),
-            backend.create_time_service());
+            backend.create_time_service() ,this);
 
         _color_device_idx = add_sensor(color_ep);
 

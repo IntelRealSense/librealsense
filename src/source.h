@@ -17,7 +17,7 @@ namespace librealsense
     public:
         frame_source(std::shared_ptr<uvc::time_service> ts);
 
-        void init(rs2_extension_type type, std::shared_ptr<metadata_parser_map> metadata_parsers);
+        void init(rs2_extension_type type, std::shared_ptr<metadata_parser_map> metadata_parsers, std::weak_ptr<device_interface> owner = std::shared_ptr<device_interface>(nullptr));
 
         callback_invocation_holder begin_callback();
 
@@ -35,9 +35,11 @@ namespace librealsense
 
         virtual ~frame_source() { flush(); }
 
-        double get_time() const { return _ts->get_time(); }
+        double get_time() const { return _ts?_ts->get_time():0; }
 
     private:
+        friend class syncer_proccess_unit;
+
         std::mutex _callback_mutex;
         std::shared_ptr<archive_interface> _archive;
         std::atomic<uint32_t> _max_publish_list_size;

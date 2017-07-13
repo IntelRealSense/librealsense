@@ -459,8 +459,6 @@ namespace librealsense
         return (a.profile == b.profile) && (a.pf == b.pf) && (a.unpacker == b.unpacker);
     }
 
-    class device;
-
     struct frame_holder
     {
         rs2_frame* frame;
@@ -674,7 +672,7 @@ namespace librealsense
     };
     typedef std::unique_ptr<rs2_log_callback, void(*)(rs2_log_callback*)> log_callback_ptr;
     typedef std::shared_ptr<rs2_frame_callback> frame_callback_ptr;
-    typedef std::shared_ptr<rs2_frame_processor_callback> frame_processor_callback;
+    typedef std::shared_ptr<rs2_frame_processor_callback> frame_processor_callback_ptr;
     typedef std::unique_ptr<rs2_notifications_callback, void(*)(rs2_notifications_callback*)> notifications_callback_ptr;
     typedef std::unique_ptr<rs2_devices_changed_callback, void(*)(rs2_devices_changed_callback*)> devices_changed_callback_ptr;
 

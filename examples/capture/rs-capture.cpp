@@ -57,11 +57,12 @@ int main(int argc, char * argv[])
                 source.frame_ready(std::move(result));
             });
 
-            syncer syncer;
-            stream.start(black);
+			syncer_processing_block syncer;
+            stream.start(syncer);
 
-            black.start(syncer);
-
+           // black.start(syncer);
+			frame_queue queue;
+			syncer.start(queue);
             texture_buffer buffers[RS2_STREAM_COUNT];
 
             // Open a GLFW window
@@ -79,25 +80,25 @@ int main(int argc, char * argv[])
                 glfwGetFramebufferSize(win, &w, &h);
 
                 auto index = 0;
-                auto frames = syncer.wait_for_frames(500);
-                // for consistent visualization, sort frames based on stream type:
-                sort(frames.begin(), frames.end(),
-                     [](const frame& a, const frame& b) -> bool
-                {
-                    return a.get_stream_type() < b.get_stream_type();
-                });
+				auto frame = queue.wait_for_frame();
+                //// for consistent visualization, sort frames based on stream type:
+                //sort(frames.begin(), frames.end(),
+                //     [](const frame& a, const frame& b) -> bool
+                //{
+                //    return a.get_stream_type() < b.get_stream_type();
+                //});
 
-                //dev.get_option(RS2_OPTION_LASER_POWER);
-                auto tiles_horisontal = static_cast<int>(ceil(sqrt(frames.size())));
-                auto tiles_vertical = ceil((float)frames.size() / tiles_horisontal);
+                ////dev.get_option(RS2_OPTION_LASER_POWER);
+                auto tiles_horisontal = static_cast<int>(ceil(sqrt(1)));
+                auto tiles_vertical = ceil((float)1 / tiles_horisontal);
                 auto tile_w = static_cast<float>((float)w / tiles_horisontal);
                 auto tile_h = static_cast<float>((float)h / tiles_vertical);
 
-                for (auto&& frame : frames)
-                {
+              /*  for (auto&& frame : frames)
+                {*/
                     auto stream_type = frame.get_stream_type();
                     buffers[stream_type].upload(frame);
-                }
+               /* }*/
 
                 // Wait for new images
                 glfwPollEvents();
@@ -112,16 +113,16 @@ int main(int argc, char * argv[])
                 glOrtho(0, w, h, 0, -1, +1);
 
                 index = 0;
-                for (auto&& frame : frames)
-                {
-                    auto stream_type = frame.get_stream_type();
+               /* for (auto&& frame : frames)
+                {*/
+                    stream_type = frame.get_stream_type();
                     auto col_id = index / tiles_horisontal;
                     auto row_id = index % tiles_horisontal;
 
                     buffers[stream_type].show({ row_id * tile_w, static_cast<float>(col_id * tile_h), tile_w, tile_h }, 1);
 
                     index++;
-                }
+               /* }*/
 
                 glPopMatrix();
                 glfwSwapBuffers(win);

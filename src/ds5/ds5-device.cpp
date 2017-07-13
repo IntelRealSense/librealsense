@@ -75,8 +75,8 @@ namespace librealsense
     public:
         explicit ds5_depth_sensor(const ds5_device* owner, std::shared_ptr<uvc::uvc_device> uvc_device,
             std::unique_ptr<frame_timestamp_reader> timestamp_reader,
-            std::shared_ptr<uvc::time_service> ts)
-            : uvc_sensor("Stereo Module", uvc_device, move(timestamp_reader), ts), _owner(owner)
+            std::shared_ptr<uvc::time_service> ts, device* owner_dev)
+            : uvc_sensor("Stereo Module", uvc_device, move(timestamp_reader), ts, owner_dev), _owner(owner)
         {}
 
         rs2_intrinsics get_intrinsics(const stream_profile& profile) const override
@@ -129,7 +129,7 @@ namespace librealsense
         std::unique_ptr<frame_timestamp_reader> ds5_timestamp_reader_backup(new ds5_timestamp_reader(backend.create_time_service()));
         auto depth_ep = std::make_shared<ds5_depth_sensor>(this, std::make_shared<uvc::multi_pins_uvc_device>(depth_devices),
                                                        std::unique_ptr<frame_timestamp_reader>(new ds5_timestamp_reader_from_metadata(std::move(ds5_timestamp_reader_backup))),
-                                                       backend.create_time_service());
+                                                       backend.create_time_service(), this);
         depth_ep->register_xu(depth_xu); // make sure the XU is initialized everytime we power the camera
 
 

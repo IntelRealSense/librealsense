@@ -13,6 +13,7 @@ struct rs2_source
 {
     librealsense::synthetic_source_interface* source;
 };
+class frame_source;
 
 namespace librealsense
 {
@@ -33,7 +34,7 @@ namespace librealsense
     class processing_block_interface
     {
     public:
-        virtual void set_processing_callback(frame_processor_callback callback) = 0;
+        virtual void set_processing_callback(frame_processor_callback_ptr callback) = 0;
         virtual void set_output_callback(frame_callback_ptr callback) = 0;
         virtual void invoke(std::vector<frame_holder> frames) = 0;
 

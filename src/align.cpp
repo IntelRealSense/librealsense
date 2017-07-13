@@ -5,7 +5,7 @@
 
 namespace librealsense
 {
-    void processing_block::set_processing_callback(frame_processor_callback callback)
+    void processing_block::set_processing_callback(frame_processor_callback_ptr callback)
     {
         std::lock_guard<std::mutex> lock(_mutex);
         _callback = callback;

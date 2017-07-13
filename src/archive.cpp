@@ -19,7 +19,8 @@ namespace librealsense
         std::recursive_mutex mutex;
         std::shared_ptr<uvc::time_service> _time_service;
         std::shared_ptr<metadata_parser_map> _metadata_parsers = nullptr;
-     
+        std::weak_ptr<device_interface> _owner;
+
         T alloc_frame(const size_t size, const frame_additional_data& additional_data, bool requires_memory)
         {
             T backbuffer;
@@ -117,7 +118,7 @@ namespace librealsense
         {
             if (frame)
             {
-                auto callback_ended = _time_service->get_time();
+                auto callback_ended = _time_service?_time_service->get_time():0;
                 auto callback_warning_duration = 1000 / (frame->additional_data.fps + 1);
                 auto callback_duration = callback_ended - frame->get_frame_callback_start_time_point();
 
@@ -141,14 +142,20 @@ namespace librealsense
     public:
         explicit frame_archive(std::atomic<uint32_t>* in_max_frame_queue_size,
                              std::shared_ptr<uvc::time_service> ts,
-                             std::shared_ptr<metadata_parser_map> parsers)
+                             std::shared_ptr<metadata_parser_map> parsers,
+                             std::weak_ptr<device_interface> owner)
             : max_frame_queue_size(in_max_frame_queue_size),
               mutex(), recycle_frames(true), _time_service(ts),
-              _metadata_parsers(parsers)
+              _metadata_parsers(parsers), _owner(owner)
         {
             published_frames_count = 0;
         }
      
+        std::weak_ptr<device_interface> get_device() override
+        {
+            return _owner;
+        }
+
         callback_invocation_holder begin_callback()
         {
             return { callback_inflight.allocate(), &callback_inflight };
@@ -219,12 +226,13 @@ namespace librealsense
     std::shared_ptr<archive_interface> make_archive(rs2_extension_type type, 
                                                     std::atomic<uint32_t>* in_max_frame_queue_size,
                                                     std::shared_ptr<uvc::time_service> ts,
-                                                    std::shared_ptr<metadata_parser_map> parsers)
+                                                    std::shared_ptr<metadata_parser_map> parsers,
+                                                    std::weak_ptr<device_interface> owner)
     {
         switch(type)
         {
         case RS2_EXTENSION_TYPE_VIDEO_FRAME:
-            return std::make_shared<frame_archive<video_frame>>(in_max_frame_queue_size, ts, parsers);
+            return std::make_shared<frame_archive<video_frame>>(in_max_frame_queue_size, ts, parsers, owner);
 
         default:
             throw std::runtime_error("Requested frame type is not supported!");

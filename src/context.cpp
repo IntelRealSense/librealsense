@@ -72,7 +72,7 @@ namespace librealsense
     public:
         platform_camera(std::shared_ptr<uvc::uvc_device> uvc, std::shared_ptr<uvc::time_service> ts)
         {
-            auto color_ep = std::make_shared<uvc_sensor>("RGB Camera", uvc, std::unique_ptr<ds5_timestamp_reader>(new ds5_timestamp_reader(ts)), ts);
+            auto color_ep = std::make_shared<uvc_sensor>("RGB Camera", uvc, std::unique_ptr<ds5_timestamp_reader>(new ds5_timestamp_reader(ts)), ts, this);
             add_sensor(color_ep);
 
             register_info(RS2_CAMERA_INFO_NAME, "Platform Camera");

@@ -50,9 +50,9 @@ namespace librealsense
             std::unique_ptr<frame_timestamp_reader> custom_hid_timestamp_reader,
             std::map<rs2_stream, std::map<unsigned, unsigned>> fps_and_sampling_frequency_per_rs2_stream,
             std::vector<std::pair<std::string, stream_profile>> sensor_name_and_hid_profiles,
-            std::shared_ptr<uvc::time_service> ts)
+            std::shared_ptr<uvc::time_service> ts, device* owner_dev)
             : hid_sensor(hid_device, move(hid_iio_timestamp_reader), move(custom_hid_timestamp_reader), 
-                fps_and_sampling_frequency_per_rs2_stream, sensor_name_and_hid_profiles, ts), _owner(owner)
+                fps_and_sampling_frequency_per_rs2_stream, sensor_name_and_hid_profiles, ts, owner_dev), _owner(owner)
         { 
         }
 
@@ -70,8 +70,8 @@ namespace librealsense
     public:
         explicit ds5_fisheye_sensor(const ds5_motion* owner, std::shared_ptr<uvc::uvc_device> uvc_device,
             std::unique_ptr<frame_timestamp_reader> timestamp_reader,
-            std::shared_ptr<uvc::time_service> ts)
-            : uvc_sensor("Wide FOV Camera", uvc_device, move(timestamp_reader), ts), _owner(owner)
+            std::shared_ptr<uvc::time_service> ts, device* owner_dev)
+            : uvc_sensor("Wide FOV Camera", uvc_device, move(timestamp_reader), ts, owner_dev), _owner(owner)
         {}
 
         rs2_intrinsics get_intrinsics(const stream_profile& profile) const override
@@ -176,7 +176,7 @@ namespace librealsense
                                                         std::unique_ptr<frame_timestamp_reader>(new ds5_custom_hid_timestamp_reader()),
                                                         fps_and_sampling_frequency_per_rs2_stream,
                                                         sensor_name_and_hid_profiles,
-                                                        backend.create_time_service());
+                                                        backend.create_time_service(), this);
         hid_ep->register_pixel_format(pf_accel_axes);
         hid_ep->register_pixel_format(pf_gyro_axes);
 
@@ -267,7 +267,7 @@ namespace librealsense
 
         auto fisheye_ep = std::make_shared<ds5_fisheye_sensor>(this, backend.create_uvc_device(fisheye_infos.front()),
                                                     std::unique_ptr<frame_timestamp_reader>(new ds5_timestamp_reader_from_metadata(std::move(ds5_timestamp_reader_backup))),
-                                                    backend.create_time_service());
+                                                    backend.create_time_service(), this);
 
         fisheye_ep->register_xu(fisheye_xu); // make sure the XU is initialized everytime we power the camera
         fisheye_ep->register_pixel_format(pf_raw8);

@@ -45,10 +45,10 @@ namespace librealsense
               _ts(ts)
     {}
 
-    void frame_source::init(rs2_extension_type type, std::shared_ptr<metadata_parser_map> metadata_parsers)
+    void frame_source::init(rs2_extension_type type, std::shared_ptr<metadata_parser_map> metadata_parsers, std::weak_ptr<device_interface> owner)
     {
         std::lock_guard<std::mutex> lock(_callback_mutex);
-        _archive = make_archive(type, &_max_publish_list_size, _ts, metadata_parsers);
+        _archive = make_archive(type, &_max_publish_list_size, _ts, metadata_parsers, owner);
     }
 
     callback_invocation_holder frame_source::begin_callback() { return _archive->begin_callback(); }
@@ -78,7 +78,7 @@ namespace librealsense
             auto callback = _archive->begin_callback();
             try
             {
-                frame->log_callback_start(_ts->get_time());
+                frame->log_callback_start(_ts?_ts->get_time():0);
                 if (_callback)
                 {
                     rs2_frame* ref = nullptr;

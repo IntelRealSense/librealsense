@@ -154,7 +154,7 @@ namespace librealsense
             explicit sr300_color_sensor(const sr300_camera* owner, std::shared_ptr<uvc::uvc_device> uvc_device,
                 std::unique_ptr<frame_timestamp_reader> timestamp_reader,
                 std::shared_ptr<uvc::time_service> ts)
-                : uvc_sensor("RGB Camera", uvc_device, move(timestamp_reader), ts), _owner(owner)
+                : uvc_sensor("RGB Camera", uvc_device, move(timestamp_reader), ts, (device*)owner), _owner(owner)
             {}
 
             rs2_intrinsics get_intrinsics(const stream_profile& profile) const override
@@ -171,7 +171,7 @@ namespace librealsense
             explicit sr300_depth_sensor(const sr300_camera* owner, std::shared_ptr<uvc::uvc_device> uvc_device,
                 std::unique_ptr<frame_timestamp_reader> timestamp_reader,
                 std::shared_ptr<uvc::time_service> ts)
-                : uvc_sensor("Coded-Light Depth Sensor", uvc_device, move(timestamp_reader), ts), _owner(owner)
+                : uvc_sensor("Coded-Light Depth Sensor", uvc_device, move(timestamp_reader), ts, (device*)owner), _owner(owner)
             {}
 
             rs2_intrinsics get_intrinsics(const stream_profile& profile) const override

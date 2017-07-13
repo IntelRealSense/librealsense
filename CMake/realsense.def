@@ -109,13 +109,6 @@ EXPORTS
     rs2_log_to_console
     rs2_log_to_file
 
-    rs2_create_syncer
-    rs2_start_syncer
-    rs2_wait_for_frames
-    rs2_poll_for_frames
-    rs2_sync_frame
-    rs2_delete_syncer
-
     rs2_get_api_version
     rs2_set_devices_changed_callback_cpp
     rs2_set_devices_changed_callback
@@ -131,3 +124,5 @@ EXPORTS
     rs2_start_processing
     rs2_process_frames
     rs2_delete_processing_block
+
+	rs2_create_sync_processing_block

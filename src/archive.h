@@ -4,6 +4,8 @@
 #pragma once
 
 #include "types.h"
+#include "core/streaming.h"
+
 #include <atomic>
 #include <array>
 #include <math.h>
@@ -184,12 +186,16 @@ namespace librealsense
 
         virtual frame* publish_frame(frame* frame) = 0;
         virtual void unpublish_frame(frame* frame) = 0;
-        
+
+        virtual std::weak_ptr<device_interface> get_device() = 0;
+
         virtual ~archive_interface() = default;
+
     };
 
     std::shared_ptr<archive_interface> make_archive(rs2_extension_type type, 
                                                     std::atomic<uint32_t>* in_max_frame_queue_size,
                                                     std::shared_ptr<uvc::time_service> ts,
-                                                    std::shared_ptr<metadata_parser_map> parsers);
+                                                    std::shared_ptr<metadata_parser_map> parsers, 
+                                                    std::weak_ptr<device_interface> owner);
 }

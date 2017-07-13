@@ -54,7 +54,8 @@ namespace librealsense
     class sensor_base : public virtual sensor_interface, public options_container, public virtual info_container
     {
     public:
-        explicit sensor_base(std::string name, std::shared_ptr<uvc::time_service> ts);
+        explicit sensor_base(std::string name, std::shared_ptr<uvc::time_service> ts, device* owner);
+
 
         virtual std::vector<uvc::stream_profile> init_stream_profiles() = 0;
         const std::vector<uvc::stream_profile>& get_stream_profiles() const
@@ -101,6 +102,7 @@ namespace librealsense
         std::shared_ptr<metadata_parser_map> _metadata_parsers = nullptr;
 
         frame_source _source;
+        device* _owner_dev;
 
     private:
         std::vector<native_pixel_format> _pixel_formats;
@@ -127,8 +129,8 @@ namespace librealsense
                             std::unique_ptr<frame_timestamp_reader> custom_hid_timestamp_reader,
                             std::map<rs2_stream, std::map<unsigned, unsigned>> fps_and_sampling_frequency_per_rs2_stream,
                             std::vector<std::pair<std::string, stream_profile>> sensor_name_and_hid_profiles,
-                            std::shared_ptr<uvc::time_service> ts)
-            : sensor_base("Motion Module", ts),_sensor_name_and_hid_profiles(sensor_name_and_hid_profiles),
+                            std::shared_ptr<uvc::time_service> ts, device* owner)
+            : sensor_base("Motion Module", ts, owner),_sensor_name_and_hid_profiles(sensor_name_and_hid_profiles),
               _fps_and_sampling_frequency_per_rs2_stream(fps_and_sampling_frequency_per_rs2_stream),
               _hid_device(hid_device),
               _is_configured_stream(RS2_STREAM_COUNT),
@@ -210,8 +212,8 @@ namespace librealsense
     public:
         explicit uvc_sensor(std::string name, std::shared_ptr<uvc::uvc_device> uvc_device,
                               std::unique_ptr<frame_timestamp_reader> timestamp_reader,
-                              std::shared_ptr<uvc::time_service> ts)
-            : sensor_base(name, ts),
+                              std::shared_ptr<uvc::time_service> ts, device* owner)
+            : sensor_base(name, ts, owner),
               _device(std::move(uvc_device)),
               _user_count(0),
               _timestamp_reader(std::move(timestamp_reader))
