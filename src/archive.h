@@ -136,8 +136,8 @@ namespace librealsense
 
         archive_interface* get_owner() const override { return owner.get(); }
 
-        std::shared_ptr<sensor_interface> get_sensor() const override { return sensor.lock(); }
-        void set_sensor(std::shared_ptr<sensor_interface> s) override { sensor = s; }
+        std::shared_ptr<sensor_interface> get_sensor() const override;
+        void set_sensor(std::shared_ptr<sensor_interface> s) override;
 
     private:
         // TODO: check boost::intrusive_ptr or an alternative
@@ -145,6 +145,14 @@ namespace librealsense
         std::shared_ptr<archive_interface> owner; // pointer to the owner to be returned to by last observe
         std::weak_ptr<sensor_interface> sensor;
         frame_continuation on_release;
+    };
+
+    class points : public frame
+    {
+    public:
+        float3* get_vertices();
+        size_t get_vertex_count() const;
+        int2* get_pixel_coordinates();
     };
 
     class composite_frame : public frame
@@ -218,6 +226,10 @@ namespace librealsense
         {
             return first()->get_framerate();
         }
+        std::shared_ptr<sensor_interface> get_sensor() const override
+        {
+            return first()->get_sensor();
+        }
     };
 
     class video_frame : public frame
@@ -246,7 +258,7 @@ namespace librealsense
 
     //TODO: Define Motion Frame
 
-    class archive_interface
+    class archive_interface : public sensor_part
     {
     public:
         virtual callback_invocation_holder begin_callback() = 0;
@@ -268,6 +280,6 @@ namespace librealsense
 
     std::shared_ptr<archive_interface> make_archive(rs2_extension_type type, 
                                                     std::atomic<uint32_t>* in_max_frame_queue_size,
-                                                    std::shared_ptr<uvc::time_service> ts,
+                                                    std::shared_ptr<platform::time_service> ts,
                                                     std::shared_ptr<metadata_parser_map> parsers);
 }

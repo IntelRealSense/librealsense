@@ -1089,12 +1089,13 @@ int rs2_is_device(const rs2_device* dev, rs2_extension_type extension_type, rs2_
     VALIDATE_ENUM(extension_type);
     switch (extension_type)
     {
-        case RS2_EXTENSION_TYPE_DEBUG:     return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::debug_interface);
-        case RS2_EXTENSION_TYPE_INFO:      return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::info_interface);
-        case RS2_EXTENSION_TYPE_MOTION:    return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::motion_sensor_interface);
-        case RS2_EXTENSION_TYPE_OPTIONS:   return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::options_interface);
-        case RS2_EXTENSION_TYPE_VIDEO:     return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::video_sensor_interface);
-        case RS2_EXTENSION_TYPE_ROI:       return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::roi_sensor_interface);
+        case RS2_EXTENSION_TYPE_DEBUG:              return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::debug_interface);
+        case RS2_EXTENSION_TYPE_INFO:               return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::info_interface);
+        case RS2_EXTENSION_TYPE_MOTION:             return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::motion_sensor_interface);
+        case RS2_EXTENSION_TYPE_OPTIONS:            return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::options_interface);
+        case RS2_EXTENSION_TYPE_VIDEO:              return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::video_sensor_interface);
+        case RS2_EXTENSION_TYPE_ROI:                return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::roi_sensor_interface);
+        case RS2_EXTENSION_TYPE_DEPTH_SENSOR:       return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::depth_sensor);
         default:
             return 0;
     }
@@ -1109,6 +1110,7 @@ int rs2_is_frame(const rs2_frame* f, rs2_extension_type extension_type, rs2_erro
     {
         case RS2_EXTENSION_TYPE_VIDEO_FRAME:     return VALIDATE_INTERFACE_NO_THROW(f->get(), librealsense::video_frame);
         case RS2_EXTENSION_TYPE_COMPOSITE_FRAME: return VALIDATE_INTERFACE_NO_THROW(f->get(), librealsense::composite_frame);
+        case RS2_EXTENSION_TYPE_POINTS: return VALIDATE_INTERFACE_NO_THROW(f->get(), librealsense::points);
         default:
             return 0;
     }
@@ -1200,7 +1202,7 @@ void rs2_process_frame(rs2_processing_block* block, rs2_frame* frame, rs2_error*
 
     block->block->invoke(frame_holder(frame));
 }
-HANDLE_EXCEPTIONS_AND_RETURN(, block, frames, count)
+HANDLE_EXCEPTIONS_AND_RETURN(, block, frame)
 
 void rs2_delete_processing_block(rs2_processing_block* block) try
 {
@@ -1251,3 +1253,45 @@ int rs2_embeded_frames_count(rs2_frame* composite, rs2_error** error) try
     return cf->get_embeded_frames_count();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, composite)
+
+rs2_vertex* rs2_get_vertices(const rs2_frame* frame, rs2_error** error) try
+{
+    VALIDATE_NOT_NULL(frame);
+    auto points = VALIDATE_INTERFACE(frame->get(), librealsense::points);
+    return (rs2_vertex*)points->get_vertices();
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, frame)
+
+rs2_pixel* rs2_get_pixel_coordinates(const rs2_frame* frame, rs2_error** error) try
+{
+    VALIDATE_NOT_NULL(frame);
+    auto points = VALIDATE_INTERFACE(frame->get(), librealsense::points);
+    return (rs2_pixel*)points->get_pixel_coordinates();
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, frame)
+
+int rs2_get_points_count(const rs2_frame* frame, rs2_error** error) try
+{
+    VALIDATE_NOT_NULL(frame);
+    auto points = VALIDATE_INTERFACE(frame->get(), librealsense::points);
+    return points->get_vertex_count();
+}
+HANDLE_EXCEPTIONS_AND_RETURN(0, frame)
+
+rs2_processing_block* rs2_create_pointcloud(rs2_context* ctx, rs2_error** error) try
+{
+    VALIDATE_NOT_NULL(ctx);
+
+    auto block = std::make_shared<librealsense::pointcloud>(ctx->ctx->get_time_service());
+
+    return new rs2_processing_block { block };
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, ctx)
+
+float rs2_get_depth_scale(rs2_sensor* sensor, rs2_error** error) try
+{
+    VALIDATE_NOT_NULL(sensor);
+    auto ds = VALIDATE_INTERFACE(sensor->sensor, librealsense::depth_sensor);
+    return ds->get_depth_scale();
+}
+HANDLE_EXCEPTIONS_AND_RETURN(0.f, sensor)

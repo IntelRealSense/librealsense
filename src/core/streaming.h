@@ -9,7 +9,7 @@
 
 namespace librealsense
 {
-    namespace uvc
+    namespace platform
     {
         class time_source;
     }
@@ -26,8 +26,17 @@ namespace librealsense
 
     class sensor_interface;
     class archive_interface;
+    class device_interface;
 
-    class frame_interface
+    class sensor_part
+    {
+    public:
+        virtual std::shared_ptr<sensor_interface> get_sensor() const = 0;
+        virtual void set_sensor(std::shared_ptr<sensor_interface> s) = 0;
+        virtual ~sensor_part() = default;
+    };
+
+    class frame_interface : public sensor_part
     {
     public:
         virtual rs2_metadata_t get_frame_metadata(const rs2_frame_metadata& frame_metadata) const = 0;
@@ -55,9 +64,6 @@ namespace librealsense
         virtual void disable_continuation() = 0;
 
         virtual archive_interface* get_owner() const = 0;
-
-        virtual std::shared_ptr<sensor_interface> get_sensor() const = 0;
-        virtual void set_sensor(std::shared_ptr<sensor_interface> sensor) = 0;
 
         virtual ~frame_interface() = default;
     };
@@ -88,6 +94,8 @@ namespace librealsense
 
         virtual bool is_streaming() const = 0;
 
+        virtual const device_interface& get_device() = 0;
+
 //        virtual rs2_stream   get_stream_type(unsigned int index) const = 0;
 //        virtual const char*  get_stream_desciption(unsigned int index) const = 0;
 //        virtual unsigned int get_streams_count() const = 0;
@@ -117,5 +125,12 @@ namespace librealsense
         virtual rs2_extrinsics get_extrinsics(size_t from, rs2_stream from_stream, size_t to, rs2_stream to_stream) const = 0;
 
         virtual ~device_interface() = default;
+    };
+
+    class depth_sensor
+    {
+    public:
+        virtual float get_depth_scale() const = 0;
+        virtual ~depth_sensor() = default;
     };
 }

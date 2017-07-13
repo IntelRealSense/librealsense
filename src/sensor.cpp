@@ -9,11 +9,13 @@
 #include <array>
 #include <set>
 #include <unordered_set>
+#include "device.h"
 
 namespace librealsense
 {
-    sensor_base::sensor_base(std::string name, std::shared_ptr<uvc::time_service> ts)
+    sensor_base::sensor_base(std::string name, std::shared_ptr<platform::time_service> ts, const device* dev)
         : _source(ts),
+          _device(dev),
           _is_streaming(false),
           _is_opened(false),
           _stream_profiles([this]() { return this->init_stream_profiles(); }),
@@ -39,7 +41,7 @@ namespace librealsense
         return _notifications_proccessor;
     }
 
-    bool sensor_base::try_get_pf(const uvc::stream_profile& p, native_pixel_format& result) const
+    bool sensor_base::try_get_pf(const platform::stream_profile& p, native_pixel_format& result) const
     {
         auto it = std::find_if(begin(_pixel_formats), end(_pixel_formats),
             [&p](const native_pixel_format& pf)
@@ -147,9 +149,9 @@ namespace librealsense
         }
     }
 
-    std::vector<uvc::stream_profile> uvc_sensor::init_stream_profiles()
+    std::vector<platform::stream_profile> uvc_sensor::init_stream_profiles()
     {
-        power on(shared_from_this());
+        power on(std::dynamic_pointer_cast<uvc_sensor>(shared_from_this()));
         return _device->get_profiles();
     }
 
@@ -216,6 +218,11 @@ namespace librealsense
         return res;
     }
 
+    const device_interface& sensor_base::get_device()
+    {
+        return *_device;
+    }
+
     void uvc_sensor::open(const std::vector<stream_profile>& requests)
     {
         std::lock_guard<std::mutex> lock(_configure_lock);
@@ -224,8 +231,9 @@ namespace librealsense
         else if (_is_opened)
             throw wrong_api_call_sequence_exception("open(...) failed. UVC device is already opened!");
 
-        auto on = std::unique_ptr<power>(new power(shared_from_this()));
+        auto on = std::unique_ptr<power>(new power(std::dynamic_pointer_cast<uvc_sensor>(shared_from_this())));
         _source.init(_metadata_parsers);
+        _source.set_sensor(this->shared_from_this());
         auto mapping = resolve_requests(requests);
 
         auto timestamp_reader = _timestamp_reader.get();
@@ -236,7 +244,7 @@ namespace librealsense
             try
             {
                 _device->probe_and_commit(mode.profile,
-                [this, mode, timestamp_reader, requests](uvc::stream_profile p, uvc::frame_object f, std::function<void()> continuation) mutable
+                [this, mode, timestamp_reader, requests](platform::stream_profile p, platform::frame_object f, std::function<void()> continuation) mutable
                 {
 
                 auto system_time = _ts->get_time();
@@ -397,7 +405,7 @@ namespace librealsense
         _is_opened = false;
     }
 
-    void uvc_sensor::register_xu(uvc::extension_unit xu)
+    void uvc_sensor::register_xu(platform::extension_unit xu)
     {
         _xus.push_back(std::move(xu));
     }
@@ -439,14 +447,14 @@ namespace librealsense
     {
         if (_user_count.fetch_add(1) == 0)
         {
-            _device->set_power_state(uvc::D0);
+            _device->set_power_state(platform::D0);
             for (auto& xu : _xus) _device->init_xu(xu);
         }
     }
 
     void uvc_sensor::release_power()
     {
-        if (_user_count.fetch_add(-1) == 1) _device->set_power_state(uvc::D3);
+        if (_user_count.fetch_add(-1) == 1) _device->set_power_state(platform::D3);
     }
 
     option& options_container::get_option(rs2_option id)
@@ -542,14 +550,14 @@ namespace librealsense
         }
     }
 
-    std::vector<uvc::stream_profile> hid_sensor::init_stream_profiles()
+    std::vector<platform::stream_profile> hid_sensor::init_stream_profiles()
     {
-        std::unordered_set<uvc::stream_profile> results;
+        std::unordered_set<platform::stream_profile> results;
         for (auto& elem : get_device_profiles())
         {
             results.insert({elem.width, elem.height, elem.fps, stream_to_fourcc(elem.stream)});
         }
-        return std::vector<uvc::stream_profile>(results.begin(), results.end());
+        return std::vector<platform::stream_profile>(results.begin(), results.end());
     }
 
     std::vector<stream_profile> hid_sensor::get_sensor_profiles(std::string sensor_name) const
@@ -605,10 +613,10 @@ namespace librealsense
             }
         }
 
-        std::vector<uvc::hid_profile> configured_hid_profiles;
+        std::vector<platform::hid_profile> configured_hid_profiles;
         for (auto& elem : _configured_profiles)
         {
-            configured_hid_profiles.push_back(uvc::hid_profile{elem.first, elem.second.fps});
+            configured_hid_profiles.push_back(platform::hid_profile{elem.first, elem.second.fps});
         }
         _hid_device->open(configured_hid_profiles);
         _is_opened = true;
@@ -654,8 +662,9 @@ namespace librealsense
 
         _source.set_callback(callback);
         _source.init(_metadata_parsers);
+        _source.set_sensor(this->shared_from_this());
 
-        _hid_device->start_capture([this](const uvc::sensor_data& sensor_data)
+        _hid_device->start_capture([this](const platform::sensor_data& sensor_data)
         {
             auto system_time = _ts->get_time();
             auto timestamp_reader = _hid_iio_timestamp_reader.get();

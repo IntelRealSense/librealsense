@@ -38,7 +38,7 @@ namespace librealsense
     class processing_block : public processing_block_interface
     {
     public:
-        processing_block(std::shared_ptr<uvc::time_service> ts);
+        processing_block(std::shared_ptr<platform::time_service> ts);
 
         void set_processing_callback(frame_processor_callback callback) override;
         void set_output_callback(frame_callback_ptr callback) override;
@@ -56,9 +56,10 @@ namespace librealsense
     class pointcloud : public processing_block
     {
     public:
-        pointcloud(std::shared_ptr<uvc::time_service> ts,
+        pointcloud(std::shared_ptr<platform::time_service> ts,
                    const rs2_intrinsics* depth_intrinsics = nullptr,
-                   const float* depth_units = nullptr, 
+                   const float* depth_units = nullptr,
+                   rs2_stream mapped_stream_type = RS2_STREAM_ANY,
                    const rs2_intrinsics* mapped_intrinsics = nullptr,
                    const rs2_extrinsics* extrinsics = nullptr);
 
@@ -74,5 +75,6 @@ namespace librealsense
         rs2_intrinsics          _mapped_intrinsics;
         float                   _depth_units;
         rs2_extrinsics          _extrinsics;
+        rs2_stream              _expected_mapped_stream;
     };
 }

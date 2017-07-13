@@ -217,9 +217,11 @@ typedef enum rs2_extension_type
     RS2_EXTENSION_TYPE_UNKNOWN,
     RS2_EXTENSION_TYPE_VIDEO,
     RS2_EXTENSION_TYPE_ROI,
+    RS2_EXTENSION_TYPE_DEPTH_SENSOR,
     RS2_EXTENSION_TYPE_VIDEO_FRAME,
     RS2_EXTENSION_TYPE_MOTION_FRAME,
     RS2_EXTENSION_TYPE_COMPOSITE_FRAME,
+    RS2_EXTENSION_TYPE_POINTS,
     RS2_EXTENSION_TYPE_COUNT
 } rs2_extension_type;
 
@@ -254,6 +256,16 @@ typedef struct rs2_extrinsics
     float rotation[9];    /**< Column-major 3x3 rotation matrix */
     float translation[3]; /**< Three-element translation vector, in meters */
 } rs2_extrinsics;
+
+typedef struct rs2_vertex
+{
+    float xyz[3];
+} rs2_vertex;
+
+typedef struct rs2_pixel
+{
+    int ij[2];
+} rs2_pixel;
 
 typedef struct rs2_device_info rs2_device_info;
 typedef struct rs2_context rs2_context;
@@ -646,6 +658,12 @@ const void* rs2_get_frame_data(const rs2_frame* frame, rs2_error** error);
 * \return               frame width in pixels
 */
 int rs2_get_frame_width(const rs2_frame* frame, rs2_error** error);
+
+rs2_vertex* rs2_get_vertices(const rs2_frame* frame, rs2_error** error);
+
+rs2_pixel* rs2_get_pixel_coordinates(const rs2_frame* frame, rs2_error** error);
+
+int rs2_get_points_count(const rs2_frame* frame, rs2_error** error);
 
 /**
 * retrieve frame height in pixels
@@ -1079,6 +1097,10 @@ void rs2_start_processing(rs2_processing_block* block, rs2_frame_callback* on_fr
 void rs2_process_frame(rs2_processing_block* block, rs2_frame* frame, rs2_error** error);
 
 void rs2_delete_processing_block(rs2_processing_block* block);
+
+rs2_processing_block* rs2_create_pointcloud(rs2_context* ctx, rs2_error** error);
+
+float rs2_get_depth_scale(rs2_sensor* sensor, rs2_error** error);
 
 #ifdef __cplusplus
 }

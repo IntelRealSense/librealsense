@@ -102,7 +102,7 @@ int lockf(int fd, int cmd, off_t length)
 
 namespace librealsense
 {
-    namespace uvc
+    namespace platform
     {
         named_mutex::named_mutex(const std::string& device_path, unsigned timeout)
             : _device_path(device_path),
@@ -1141,7 +1141,7 @@ namespace librealsense
 
         std::shared_ptr<uvc_device> v4l_backend::create_uvc_device(uvc_device_info info) const
         {
-            return std::make_shared<uvc::retry_controls_work_around>(
+            return std::make_shared<platform::retry_controls_work_around>(
                     std::make_shared<v4l_uvc_device>(info));
         }
         std::vector<uvc_device_info> v4l_backend::query_uvc_devices() const

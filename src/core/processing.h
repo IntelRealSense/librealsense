@@ -39,6 +39,8 @@ namespace librealsense
         virtual void set_output_callback(frame_callback_ptr callback) = 0;
         virtual void invoke(frame_holder frame) = 0;
 
+
+
         virtual synthetic_source_interface& get_source() = 0;
 
         virtual ~processing_block_interface() = default;

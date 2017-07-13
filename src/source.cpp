@@ -39,7 +39,7 @@ namespace librealsense
         return std::make_shared<frame_queue_size>(&_max_publish_list_size, option_range{ 0, 32, 1, 16 });
     }
 
-    frame_source::frame_source(std::shared_ptr<uvc::time_service> ts)
+    frame_source::frame_source(std::shared_ptr<platform::time_service> ts)
             : _callback(nullptr, [](rs2_frame_callback*) {}),
               _max_publish_list_size(16),
               _ts(ts)
@@ -78,6 +78,14 @@ namespace librealsense
         auto it = _archive.find(type);
         if (it == _archive.end()) throw wrong_api_call_sequence_exception("Requested frame type is not supported!");
         return it->second->alloc_and_track(size, additional_data, requires_memory);
+    }
+
+    void frame_source::set_sensor(std::shared_ptr<sensor_interface> s)
+    {
+        for (auto&& a : _archive)
+        {
+            a.second->set_sensor(s);
+        }
     }
 
     void frame_source::set_callback(frame_callback_ptr callback)

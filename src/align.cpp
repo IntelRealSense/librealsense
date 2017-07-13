@@ -3,7 +3,9 @@
 
 #include "../include/librealsense/rs2.hpp"
 
+#include "core/video.h"
 #include "align.h"
+#include "archive.h"
 
 namespace librealsense
 {
@@ -18,7 +20,7 @@ namespace librealsense
         _source.set_callback(callback);
     }
 
-    processing_block::processing_block(std::shared_ptr<uvc::time_service> ts)
+    processing_block::processing_block(std::shared_ptr<platform::time_service> ts)
             : _source(ts), _source_wrapper(_source)
     {
         _source.init(std::make_shared<metadata_parser_map>());
@@ -110,6 +112,7 @@ namespace librealsense
         if (!res) throw wrong_api_call_sequence_exception("Out of frame resources!");
         vf = (video_frame*)res->get();
         vf->assign(width, height, stride, bpp);
+        vf->set_sensor(f->get_sensor());
 
         return res;
     }
@@ -172,16 +175,18 @@ namespace librealsense
         return res;
     }
 
-    pointcloud::pointcloud(std::shared_ptr<uvc::time_service> ts,
+    pointcloud::pointcloud(std::shared_ptr<platform::time_service> ts,
                            const rs2_intrinsics* depth_intrinsics,
-                           const float* depth_units, 
+                           const float* depth_units,
+                           rs2_stream mapped_stream_type,
                            const rs2_intrinsics* mapped_intrinsics,
                            const rs2_extrinsics* extrinsics)
         : processing_block(ts),
           _depth_intrinsics_ptr(depth_intrinsics),
           _depth_units_ptr(depth_units),
           _mapped_intrinsics_ptr(mapped_intrinsics),
-          _extrinsics_ptr(extrinsics)
+          _extrinsics_ptr(extrinsics),
+          _expected_mapped_stream(mapped_stream_type)
     {
         if (depth_intrinsics) _depth_intrinsics = *depth_intrinsics;
         if (depth_units) _depth_units = *depth_units;
@@ -192,27 +197,147 @@ namespace librealsense
         {
             std::lock_guard<std::mutex> lock(_mutex);
 
+            auto on_depth_frame = [this](const rs2::frame& depth)
+            {
+                std::lock_guard<std::mutex> lock(_mutex);
+
+                bool found_depth_intrinsics = false;
+                bool found_depth_units = false;
+
+                if (!_depth_intrinsics_ptr)
+                {
+                    auto sensor = depth.get()->get()->get_sensor();
+                    if (auto video = dynamic_cast<video_sensor_interface*>(sensor.get()))
+                    {
+                        if (auto vf = dynamic_cast<video_frame*>(depth.get()->get()))
+                        {
+                            stream_profile sp {
+                                    vf->get_stream_type(),
+                                    (uint32_t)vf->get_width(), (uint32_t)vf->get_height(), (uint32_t)vf->get_framerate(),
+                                    vf->get_format() };
+
+                            _depth_intrinsics = video->get_intrinsics(sp);
+                            _depth_intrinsics_ptr = &_depth_intrinsics;
+                            found_depth_intrinsics = true;
+                        }
+                    }
+                }
+
+                if (!_depth_units_ptr)
+                {
+                    auto sensor = depth.get()->get()->get_sensor();
+                    _depth_units = sensor->get_option(RS2_OPTION_DEPTH_UNITS).query();
+                    _depth_units_ptr = &_depth_units;
+                    found_depth_units = true;
+                }
+
+                if (found_depth_units != found_depth_intrinsics)
+                {
+                    throw wrong_api_call_sequence_exception("Received depth frame that doesn't provide either intrinsics or depth units!");
+                }
+            };
+
+            auto on_other_frame = [this](const rs2::frame& other)
+            {
+                std::lock_guard<std::mutex> lock(_mutex);
+
+                bool assigned_stream_type = false;
+                if (_expected_mapped_stream == RS2_STREAM_ANY)
+                {
+                    _expected_mapped_stream = other.get_stream_type();
+                    assigned_stream_type = true;
+                }
+
+                if (_expected_mapped_stream == other.get_stream_type())
+                {
+                    bool found_mapped_intrinsics = false;
+                    bool found_extrinsics = false;
+
+                    if (!_mapped_intrinsics_ptr)
+                    {
+                        auto sensor = other.get()->get()->get_sensor();
+                        if (auto video = dynamic_cast<video_sensor_interface*>(sensor.get()))
+                        {
+                            if (auto vf = dynamic_cast<video_frame*>(other.get()->get()))
+                            {
+                                stream_profile sp {
+                                        vf->get_stream_type(),
+                                        (uint32_t)vf->get_width(), (uint32_t)vf->get_height(), (uint32_t)vf->get_framerate(),
+                                        vf->get_format() };
+
+                                _mapped_intrinsics = video->get_intrinsics(sp);
+                                _mapped_intrinsics_ptr = &_mapped_intrinsics;
+                                found_mapped_intrinsics = true;
+                            }
+                        }
+                        if (!found_mapped_intrinsics && assigned_stream_type)
+                        {
+                            // If unable to get extrinsics for this stream, undo stream assignment
+                            _expected_mapped_stream = RS2_STREAM_ANY;
+                        }
+                    }
+
+                    if (!_extrinsics_ptr)
+                    {
+                        auto sensor = other.get()->get()->get_sensor();
+                        if (sensor)
+                        {
+                            auto&& device = sensor->get_device();
+                            size_t mapped_idx = -1;
+                            size_t depth_idx = -1;
+                            for (size_t i = 0; i < device.get_sensors_count(); i++)
+                            {
+                                if (&device.get_sensor(i) == sensor.get())
+                                {
+                                    mapped_idx = i;
+                                }
+                                if (device.get_sensor(i).supports_option(RS2_OPTION_DEPTH_UNITS))
+                                {
+                                    depth_idx = i;
+                                }
+                            }
+
+                            if (mapped_idx != -1 && depth_idx != -1)
+                            {
+                                _extrinsics = device.get_extrinsics(depth_idx, RS2_STREAM_DEPTH, mapped_idx, _expected_mapped_stream);
+                                _extrinsics_ptr = &_extrinsics;
+                                found_extrinsics = true;
+                            }
+                        }
+                        if (!found_extrinsics && assigned_stream_type)
+                        {
+                            // If unable to get extrinsics for this stream, undo stream assignment
+                            _expected_mapped_stream = RS2_STREAM_ANY;
+                        }
+                    }
+                }
+            };
+
             if (auto composite = f.as<rs2::composite_frame>())
             {
                 auto depth = composite.first_or_default(RS2_STREAM_DEPTH);
                 if (depth)
                 {
-                    std::lock_guard<std::mutex> lock(_mutex);
-                    if (!_depth_intrinsics_ptr)
-                    {
-                        auto sensor = depth.get()->get()->get_owner()->get_sensor();
-                        _depth_intrinsics = ((video_sensor*)sensor)->get_intrinsics();
-                        _depth_intrinsics_ptr = &_depth_intrinsics;
-                    }
-
-                    if (!_depth_units_ptr)
-                    {
-                        auto sensor = depth.get()->get()->get_owner()->get_sensor();
-                        _depth_units = ((video_sensor*)sensor)->get_option(RS2_OPTION_DEPTH_UNITS)->query();
-                        _depth_units_ptr = &_depth_units;
-                    }
+                    on_depth_frame(depth);
+                }
+                else
+                {
+                    composite.foreach(on_other_frame);
                 }
             }
+            else
+            {
+                if (f.get_stream_type() == RS2_STREAM_DEPTH)
+                {
+                    on_depth_frame(f);
+                }
+                else
+                {
+                    on_other_frame(f);
+                }
+            }
+
+
         };
         auto callback = new rs2::frame_processor_callback<decltype(on_frame)>(on_frame);
         set_processing_callback(std::shared_ptr<rs2_frame_processor_callback>(callback));

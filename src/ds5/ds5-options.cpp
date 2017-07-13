@@ -47,7 +47,7 @@ namespace librealsense
         #pragma pack(pop)
 
         auto temperature_data = static_cast<temperature>(_ep.invoke_powered(
-            [this](uvc::uvc_device& dev)
+            [this](platform::uvc_device& dev)
             {
                 temperature temp{};
                 if (!dev.get_xu(ds::depth_xu,
@@ -116,7 +116,7 @@ namespace librealsense
         if (!is_enabled())
             throw wrong_api_call_sequence_exception("query option is allow only in streaming!");
 
-        static const auto report_field = uvc::custom_sensor_report_field::value;
+        static const auto report_field = platform::custom_sensor_report_field::value;
         auto data = _ep.get_custom_report_data(custom_sensor_name, report_name, report_field);
         if (data.empty())
             throw invalid_value_exception("query() motion_module_temperature_option failed! Empty buffer arrived.");
@@ -130,8 +130,8 @@ namespace librealsense
         if (!is_enabled())
             throw wrong_api_call_sequence_exception("get option range is allow only in streaming!");
 
-        static const auto min_report_field = uvc::custom_sensor_report_field::minimum;
-        static const auto max_report_field = uvc::custom_sensor_report_field::maximum;
+        static const auto min_report_field = platform::custom_sensor_report_field::minimum;
+        static const auto max_report_field = platform::custom_sensor_report_field::maximum;
         auto min_data = _ep.get_custom_report_data(custom_sensor_name, report_name, min_report_field);
         auto max_data = _ep.get_custom_report_data(custom_sensor_name, report_name, max_report_field);
         if (min_data.empty() || max_data.empty())

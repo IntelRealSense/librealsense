@@ -136,7 +136,7 @@ namespace librealsense
         }
 
         bool supports(const frame & frm) const override
-        { return (frm.additional_data.metadata_size >= uvc::uvc_header_size); }
+        { return (frm.additional_data.metadata_size >= platform::uvc_header_size); }
 
     private:
         md_uvc_header_parser() = delete;

@@ -118,8 +118,11 @@ namespace librealsense
             CASE(UNKNOWN)
             CASE(VIDEO)
             CASE(ROI)
+            CASE(DEPTH_SENSOR)
             CASE(VIDEO_FRAME)
             CASE(MOTION_FRAME)
+            CASE(COMPOSITE_FRAME)
+            CASE(POINTS)
         default: assert(!is_valid(value)); return unknown;
         }
         #undef CASE

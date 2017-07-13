@@ -374,6 +374,7 @@ namespace rs2
         friend class syncer;
         friend class frame_source;
         friend class processing_block;
+        friend class pointcloud_block;
 
         rs2_frame* frame_ref;
         frame(const frame&) = delete;
@@ -450,6 +451,59 @@ namespace rs2
         int get_bytes_per_pixel() const { return get_bits_per_pixel() / 8; }
     };
 
+    struct vertex { float xyz[3]; };
+    struct pixel { int ij[2]; };
+
+    class points : public frame
+    {
+    public:
+        points(const frame& f)
+                : frame(), _size(0)
+        {
+            rs2_error* e = nullptr;
+            if(!f || (rs2_is_frame(f.get(), RS2_EXTENSION_TYPE_POINTS, &e) == 0 && !e))
+            {
+                frame_ref = nullptr;
+            }
+            else
+            {
+                f.try_clone_ref(this);
+            }
+            error::handle(e);
+
+            if (frame_ref)
+            {
+                rs2_error* e = nullptr;
+                _size = rs2_embeded_frames_count(frame_ref, &e);
+                error::handle(e);
+            }
+        }
+
+        const vertex* get_vertices() const
+        {
+            rs2_error* e = nullptr;
+            auto res = rs2_get_vertices(frame_ref, &e);
+            error::handle(e);
+            return (const vertex*)res;
+        }
+
+        const pixel* get_pixel_coordinates() const
+        {
+            rs2_error* e = nullptr;
+            auto res = rs2_get_pixel_coordinates(frame_ref, &e);
+            error::handle(e);
+            return (const pixel*)res;
+        }
+
+        size_t size() const
+        {
+            return _size;
+        }
+
+    private:
+        size_t _size;
+    };
+
     class composite_frame : public frame
     {
     public:
@@ -502,6 +556,7 @@ namespace rs2
         template<class T>
         void foreach(T action) const
         {
+            rs2_error* e = nullptr;
             auto count = size();
             for (int i = 0; i < count; i++)
             {
@@ -603,7 +658,7 @@ namespace rs2
         {
             frame_source src(source);
             frame frm(f);
-            on_frame_function(std::move(frames), std::move(frm));
+            on_frame_function(std::move(frm), src);
         }
 
         void release() override { delete this; }
@@ -1159,6 +1214,31 @@ namespace rs2
         operator bool() const { return _sensor.get() != nullptr; }
     };
 
+    class depth_sensor : public sensor
+    {
+    public:
+        depth_sensor(sensor s)
+            : sensor(s.get())
+        {
+            rs2_error* e = nullptr;
+            if(rs2_is_sensor(_sensor.get(), RS2_EXTENSION_TYPE_DEPTH_SENSOR, &e) == 0 && !e)
+            {
+                _sensor = nullptr;
+            }
+            error::handle(e);
+        }
+
+        float get_depth_scale() const
+        {
+            rs2_error* e = nullptr;
+            auto res = rs2_get_depth_scale(_sensor.get(), &e);
+            error::handle(e);
+            return res;
+        }
+
+        operator bool() const { return _sensor.get() != nullptr; }
+    };
+
     class device
     {
     public:
@@ -1192,6 +1272,16 @@ namespace rs2
             }
 
             return results;
+        }
+
+        template<class T>
+        T first()
+        {
+            for (auto&& s : query_sensors())
+            {
+                if (auto t = s.as<T>()) return t;
+            }
+            throw rs2::error("Could not find requested sensor type!");
         }
 
         /**
@@ -1451,124 +1541,6 @@ namespace rs2
         device_list _added;
     };
 
-    /**
-    * default librealsense context class
-    * includes realsense API version as provided by RS2_API_VERSION macro
-    */
-    class context
-    {
-    public:
-        context()
-        {
-            rs2_error* e = nullptr;
-            _context = std::shared_ptr<rs2_context>(
-                rs2_create_context(RS2_API_VERSION, &e),
-                rs2_delete_context);
-            error::handle(e);
-        }
-
-        /**
-        * create a static snapshot of all connected devices at the time of the call
-        * \return            the list of devices connected devices at the time of the call
-        */
-        device_list query_devices() const
-        {
-            rs2_error* e = nullptr;
-            std::shared_ptr<rs2_device_list> list(
-                rs2_query_devices(_context.get(), &e),
-                rs2_delete_device_list);
-            error::handle(e);
-
-            return device_list(list);
-        }
-
-        /**
-        * \return            the time at specific time point, in live and redord contextes it will return the system time and in playback contextes it will return the recorded time
-        */
-        double get_time()
-        {
-            rs2_error* e = nullptr;
-            auto time = rs2_get_context_time(_context.get(), &e);
-
-            error::handle(e);
-
-            return time;
-        }
-
-        /**
-        * register devices changed callback
-        * \param[in] callback   devices changed callback
-        */
-        template<class T>
-        void set_devices_changed_callback(T callback) const
-        {
-            rs2_error * e = nullptr;
-            rs2_set_devices_changed_callback_cpp(_context.get(),
-                new devices_changed_callback<T>(std::move(callback)), &e);
-            error::handle(e);
-        }
-
-        template<class T>
-        processing_block create_processing_block(T processing_function)
-        {
-            rs2_error* e = nullptr;
-            std::shared_ptr<rs2_processing_block> block(
-                rs2_create_processing_block(_context.get(),
-                    new frame_processor_callback<T>(processing_function),
-                    &e),
-                rs2_delete_processing_block);
-            error::handle(e);
-
-            return processing_block(block);
-        }
-
-    protected:
-        std::shared_ptr<rs2_context> _context;
-    };
-
-
-
-    class recording_context : public context
-    {
-    public:
-        /**
-        * create librealsense context that will try to record all operations over librealsense into a file
-        * \param[in] filename string representing the name of the file to record
-        */
-        recording_context(const std::string& filename,
-                          const std::string& section = "",
-                          rs2_recording_mode mode = RS2_RECORDING_MODE_BEST_QUALITY)
-        {
-            rs2_error* e = nullptr;
-            _context = std::shared_ptr<rs2_context>(
-                rs2_create_recording_context(RS2_API_VERSION, filename.c_str(), section.c_str(), mode, &e),
-                rs2_delete_context);
-            error::handle(e);
-        }
-
-        recording_context() = delete;
-    };
-
-    class mock_context : public context
-    {
-    public:
-        /**
-        * create librealsense context that given a file will respond to calls exactly as the recording did
-        * if the user calls a method that was either not called during recording or violates causality of the recording error will be thrown
-        * \param[in] filename string of the name of the file
-        */
-        mock_context(const std::string& filename,
-                     const std::string& section = "")
-        {
-            rs2_error* e = nullptr;
-            _context = std::shared_ptr<rs2_context>(
-                rs2_create_mock_context(RS2_API_VERSION, filename.c_str(), section.c_str(), &e),
-                rs2_delete_context);
-            error::handle(e);
-        }
-
-        mock_context() = delete;
-    };
 
     class frame_queue
     {
@@ -1582,8 +1554,8 @@ namespace rs2
         {
             rs2_error* e = nullptr;
             _queue = std::shared_ptr<rs2_frame_queue>(
-                rs2_create_frame_queue(capacity, &e),
-                rs2_delete_frame_queue);
+                    rs2_create_frame_queue(capacity, &e),
+                    rs2_delete_frame_queue);
             error::handle(e);
         }
 
@@ -1669,6 +1641,157 @@ namespace rs2
 
     private:
         std::shared_ptr<rs2_frame_queue> _queue;
+    };
+
+    class pointcloud
+    {
+    public:
+        points calculate(frame depth)
+        {
+            _block.invoke(std::move(depth));
+            return _queue.wait_for_frame();
+        }
+
+    private:
+        friend class context;
+
+        pointcloud(processing_block block) : _block(block)
+        {
+            _block.start(_queue);
+        }
+
+        processing_block _block;
+        frame_queue _queue;
+    };
+
+    /**
+    * default librealsense context class
+    * includes realsense API version as provided by RS2_API_VERSION macro
+    */
+    class context
+    {
+    public:
+        context()
+        {
+            rs2_error* e = nullptr;
+            _context = std::shared_ptr<rs2_context>(
+                rs2_create_context(RS2_API_VERSION, &e),
+                rs2_delete_context);
+            error::handle(e);
+        }
+
+        /**
+        * create a static snapshot of all connected devices at the time of the call
+        * \return            the list of devices connected devices at the time of the call
+        */
+        device_list query_devices() const
+        {
+            rs2_error* e = nullptr;
+            std::shared_ptr<rs2_device_list> list(
+                rs2_query_devices(_context.get(), &e),
+                rs2_delete_device_list);
+            error::handle(e);
+
+            return device_list(list);
+        }
+
+        /**
+        * \return            the time at specific time point, in live and redord contextes it will return the system time and in playback contextes it will return the recorded time
+        */
+        double get_time()
+        {
+            rs2_error* e = nullptr;
+            auto time = rs2_get_context_time(_context.get(), &e);
+
+            error::handle(e);
+
+            return time;
+        }
+
+        /**
+        * register devices changed callback
+        * \param[in] callback   devices changed callback
+        */
+        template<class T>
+        void set_devices_changed_callback(T callback) const
+        {
+            rs2_error * e = nullptr;
+            rs2_set_devices_changed_callback_cpp(_context.get(),
+                new devices_changed_callback<T>(std::move(callback)), &e);
+            error::handle(e);
+        }
+
+        template<class T>
+        processing_block create_processing_block(T processing_function) const
+        {
+            rs2_error* e = nullptr;
+            std::shared_ptr<rs2_processing_block> block(
+                rs2_create_processing_block(_context.get(),
+                    new frame_processor_callback<T>(processing_function),
+                    &e),
+                rs2_delete_processing_block);
+            error::handle(e);
+
+            return processing_block(block);
+        }
+
+        pointcloud create_pointcloud() const
+        {
+            rs2_error* e = nullptr;
+            std::shared_ptr<rs2_processing_block> block(
+                    rs2_create_pointcloud(_context.get(), &e),
+                    rs2_delete_processing_block);
+            error::handle(e);
+
+            return pointcloud(processing_block{ block });
+        }
+
+    protected:
+        std::shared_ptr<rs2_context> _context;
+    };
+
+
+
+    class recording_context : public context
+    {
+    public:
+        /**
+        * create librealsense context that will try to record all operations over librealsense into a file
+        * \param[in] filename string representing the name of the file to record
+        */
+        recording_context(const std::string& filename,
+                          const std::string& section = "",
+                          rs2_recording_mode mode = RS2_RECORDING_MODE_BEST_QUALITY)
+        {
+            rs2_error* e = nullptr;
+            _context = std::shared_ptr<rs2_context>(
+                rs2_create_recording_context(RS2_API_VERSION, filename.c_str(), section.c_str(), mode, &e),
+                rs2_delete_context);
+            error::handle(e);
+        }
+
+        recording_context() = delete;
+    };
+
+    class mock_context : public context
+    {
+    public:
+        /**
+        * create librealsense context that given a file will respond to calls exactly as the recording did
+        * if the user calls a method that was either not called during recording or violates causality of the recording error will be thrown
+        * \param[in] filename string of the name of the file
+        */
+        mock_context(const std::string& filename,
+                     const std::string& section = "")
+        {
+            rs2_error* e = nullptr;
+            _context = std::shared_ptr<rs2_context>(
+                rs2_create_mock_context(RS2_API_VERSION, filename.c_str(), section.c_str(), &e),
+                rs2_delete_context);
+            error::handle(e);
+        }
+
+        mock_context() = delete;
     };
 
     inline void log_to_console(rs2_log_severity min_severity)

@@ -15,7 +15,7 @@ namespace librealsense
     class frame_source
     {
     public:
-        frame_source(std::shared_ptr<uvc::time_service> ts);
+        frame_source(std::shared_ptr<platform::time_service> ts);
 
         void init(std::shared_ptr<metadata_parser_map> metadata_parsers);
 
@@ -37,6 +37,8 @@ namespace librealsense
 
         double get_time() const { return _ts->get_time(); }
 
+        void set_sensor(std::shared_ptr<sensor_interface> s);
+
     private:
         std::mutex _callback_mutex;
 
@@ -44,6 +46,6 @@ namespace librealsense
 
         std::atomic<uint32_t> _max_publish_list_size;
         frame_callback_ptr _callback;
-        std::shared_ptr<uvc::time_service> _ts;
+        std::shared_ptr<platform::time_service> _ts;
     };
 }

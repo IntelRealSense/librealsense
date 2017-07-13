@@ -3,6 +3,31 @@
 
 namespace librealsense
 {
+    std::shared_ptr<sensor_interface> frame::get_sensor() const
+    {
+        auto res = sensor.lock();
+        if (!res) return get_owner()->get_sensor();
+    }
+    void frame::set_sensor(std::shared_ptr<sensor_interface> s) { sensor = s;}
+
+    float3* points::get_vertices()
+    {
+        auto xyz = (float3*)data.data();
+        return xyz;
+    }
+
+    size_t points::get_vertex_count() const
+    {
+        return data.size() / (sizeof(float3) + sizeof(int2));
+    }
+
+    int2* points::get_pixel_coordinates()
+    {
+        auto xyz = (float3*)data.data();
+        auto ijs = (int2*)(xyz + get_vertex_count());
+        return ijs;
+    }
+
     // Defines general frames storage model
     template<class T>
     class frame_archive : public std::enable_shared_from_this<frame_archive<T>>, public archive_interface
@@ -17,8 +42,12 @@ namespace librealsense
         std::atomic<bool> recycle_frames;
         int pending_frames = 0;
         std::recursive_mutex mutex;
-        std::shared_ptr<uvc::time_service> _time_service;
+        std::shared_ptr<platform::time_service> _time_service;
         std::shared_ptr<metadata_parser_map> _metadata_parsers = nullptr;
+
+        std::weak_ptr<sensor_interface> _sensor;
+        std::shared_ptr<sensor_interface> get_sensor() const override { return _sensor.lock(); }
+        void set_sensor(std::shared_ptr<sensor_interface> s) override { _sensor = s; }
      
         T alloc_frame(const size_t size, const frame_additional_data& additional_data, bool requires_memory)
         {
@@ -138,7 +167,7 @@ namespace librealsense
      
     public:
         explicit frame_archive(std::atomic<uint32_t>* in_max_frame_queue_size,
-                             std::shared_ptr<uvc::time_service> ts,
+                             std::shared_ptr<platform::time_service> ts,
                              std::shared_ptr<metadata_parser_map> parsers)
             : max_frame_queue_size(in_max_frame_queue_size),
               mutex(), recycle_frames(true), _time_service(ts),
@@ -216,7 +245,7 @@ namespace librealsense
 
     std::shared_ptr<archive_interface> make_archive(rs2_extension_type type, 
                                                     std::atomic<uint32_t>* in_max_frame_queue_size,
-                                                    std::shared_ptr<uvc::time_service> ts,
+                                                    std::shared_ptr<platform::time_service> ts,
                                                     std::shared_ptr<metadata_parser_map> parsers)
     {
         switch(type)

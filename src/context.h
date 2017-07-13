@@ -41,6 +41,7 @@ namespace librealsense
     class device_info;
 
 
+
     class device_info
     {
     public:
@@ -52,7 +53,7 @@ namespace librealsense
         virtual ~device_info() = default;
 
 
-        virtual uvc::devices_data get_device_data()const = 0;
+        virtual platform::backend_device_group get_device_data()const = 0;
 
         bool operator==(const device_info& other) const
         {
@@ -60,13 +61,13 @@ namespace librealsense
         }
 
     protected:
-        explicit device_info(std::shared_ptr<uvc::backend> backend)
+        explicit device_info(std::shared_ptr<platform::backend> backend)
             : _backend(std::move(backend))
         {}
 
-        virtual std::shared_ptr<device_interface> create(const uvc::backend& backend) const = 0;
+        virtual std::shared_ptr<device_interface> create(const platform::backend& backend) const = 0;
 
-        std::shared_ptr<uvc::backend> _backend;
+        std::shared_ptr<platform::backend> _backend;
     };
 
     enum class backend_type
@@ -80,7 +81,7 @@ namespace librealsense
     class recovery_info : public device_info
     {
     public:
-        std::shared_ptr<device_interface> create(const uvc::backend& /*backend*/) const override
+        std::shared_ptr<device_interface> create(const platform::backend& /*backend*/) const override
         {
             throw unrecoverable_exception(RECOVERY_MESSAGE,
                 RS2_EXCEPTION_TYPE_DEVICE_IN_RECOVERY_MODE);
@@ -92,8 +93,8 @@ namespace librealsense
         }
 
         static std::vector<std::shared_ptr<device_info>> pick_recovery_devices(
-            const std::shared_ptr<uvc::backend>& backend,
-            const std::vector<uvc::usb_device_info>& usb_devices)
+            const std::shared_ptr<platform::backend>& backend,
+            const std::vector<platform::usb_device_info>& usb_devices)
         {
             std::vector<std::shared_ptr<device_info>> list;
             for (auto&& usb : usb_devices)
@@ -106,28 +107,27 @@ namespace librealsense
             return list;
         }
 
-        explicit recovery_info(std::shared_ptr<uvc::backend> backend,
-            uvc::usb_device_info dfu)
+        explicit recovery_info(std::shared_ptr<platform::backend> backend, platform::usb_device_info dfu)
             : device_info(backend), _dfu(std::move(dfu)) {}
 
-        uvc::devices_data get_device_data()const override
+        platform::backend_device_group get_device_data()const override
         {
-            return uvc::devices_data({ _dfu });
+            return platform::backend_device_group({ _dfu });
         }
 
     private:
-        uvc::usb_device_info _dfu;
+        platform::usb_device_info _dfu;
         const char* RECOVERY_MESSAGE = "Selected RealSense device is in recovery mode!\nEither perform a firmware update or reconnect the camera to fall-back to last working firmware if available!";
     };
 
     class platform_camera_info : public device_info
     {
     public:
-        std::shared_ptr<device_interface> create(const uvc::backend& /*backend*/) const override;
+        std::shared_ptr<device_interface> create(const platform::backend& /*backend*/) const override;
 
         static std::vector<std::shared_ptr<device_info>> pick_uvc_devices(
-            const std::shared_ptr<uvc::backend>& backend,
-            const std::vector<uvc::uvc_device_info>& uvc_devices)
+            const std::shared_ptr<platform::backend>& backend,
+            const std::vector<platform::uvc_device_info>& uvc_devices)
         {
             std::vector<std::shared_ptr<device_info>> list;
             for (auto&& uvc : uvc_devices)
@@ -137,17 +137,17 @@ namespace librealsense
             return list;
         }
 
-        explicit platform_camera_info(std::shared_ptr<uvc::backend> backend,
-            uvc::uvc_device_info uvc)
+        explicit platform_camera_info(std::shared_ptr<platform::backend> backend,
+                                      platform::uvc_device_info uvc)
             : device_info(backend), _uvc(std::move(uvc)) {}
 
-        uvc::devices_data get_device_data() const override
+        platform::backend_device_group get_device_data() const override
         {
-            return uvc::devices_data();
+            return platform::backend_device_group();
         }
 
     private:
-        uvc::uvc_device_info _uvc;
+        platform::uvc_device_info _uvc;
     };
 
     typedef std::vector<std::shared_ptr<device_info>> devices_info;
@@ -162,27 +162,27 @@ namespace librealsense
 
         ~context();
         std::vector<std::shared_ptr<device_info>> query_devices() const;
-        const uvc::backend& get_backend() const { return *_backend; }
+        const platform::backend& get_backend() const { return *_backend; }
         double get_time();
 
-        std::shared_ptr<uvc::time_service> get_time_service() { return _ts; }
+        std::shared_ptr<platform::time_service> get_time_service() { return _ts; }
 
         void set_devices_changed_callback(devices_changed_callback_ptr callback);
 
-        std::vector<std::shared_ptr<device_info>> create_devices(uvc::devices_data devices) const;
+        std::vector<std::shared_ptr<device_info>> create_devices(platform::backend_device_group devices) const;
 
     private:
-        void on_device_changed(uvc::devices_data old, uvc::devices_data curr);
+        void on_device_changed(platform::backend_device_group old, platform::backend_device_group curr);
 
-        std::shared_ptr<uvc::backend> _backend;
-        std::shared_ptr<uvc::time_service> _ts;
-        std::shared_ptr<uvc::device_watcher> _device_watcher;
+        std::shared_ptr<platform::backend> _backend;
+        std::shared_ptr<platform::time_service> _ts;
+        std::shared_ptr<platform::device_watcher> _device_watcher;
         devices_changed_callback_ptr _devices_changed_callback;
     };
 
-    static std::vector<uvc::uvc_device_info> filter_by_product(const std::vector<uvc::uvc_device_info>& devices, const std::set<uint16_t>& pid_list)
+    static std::vector<platform::uvc_device_info> filter_by_product(const std::vector<platform::uvc_device_info>& devices, const std::set<uint16_t>& pid_list)
     {
-        std::vector<uvc::uvc_device_info> result;
+        std::vector<platform::uvc_device_info> result;
         for (auto&& info : devices)
         {
             if (pid_list.count(info.pid))
@@ -191,13 +191,13 @@ namespace librealsense
         return result;
     }
 
-    static std::vector<std::pair<std::vector<uvc::uvc_device_info>, std::vector<uvc::hid_device_info>>> group_devices_and_hids_by_unique_id(const std::vector<std::vector<uvc::uvc_device_info>>& devices,
-        const std::vector<uvc::hid_device_info>& hids)
+    static std::vector<std::pair<std::vector<platform::uvc_device_info>, std::vector<platform::hid_device_info>>> group_devices_and_hids_by_unique_id(const std::vector<std::vector<platform::uvc_device_info>>& devices,
+        const std::vector<platform::hid_device_info>& hids)
     {
-        std::vector<std::pair<std::vector<uvc::uvc_device_info>, std::vector<uvc::hid_device_info>>> results;
+        std::vector<std::pair<std::vector<platform::uvc_device_info>, std::vector<platform::hid_device_info>>> results;
         for (auto&& dev : devices)
         {
-            std::vector<uvc::hid_device_info> hid_group;
+            std::vector<platform::hid_device_info> hid_group;
             auto unique_id = dev.front().unique_id;
             for (auto&& hid : hids)
             {
@@ -209,14 +209,14 @@ namespace librealsense
         return results;
     }
 
-    static std::vector<std::vector<uvc::uvc_device_info>> group_devices_by_unique_id(const std::vector<uvc::uvc_device_info>& devices)
+    static std::vector<std::vector<platform::uvc_device_info>> group_devices_by_unique_id(const std::vector<platform::uvc_device_info>& devices)
     {
-        std::map<std::string, std::vector<uvc::uvc_device_info>> map;
+        std::map<std::string, std::vector<platform::uvc_device_info>> map;
         for (auto&& info : devices)
         {
             map[info.unique_id].push_back(info);
         }
-        std::vector<std::vector<uvc::uvc_device_info>> result;
+        std::vector<std::vector<platform::uvc_device_info>> result;
         for (auto&& kvp : map)
         {
             result.push_back(kvp.second);
@@ -224,19 +224,19 @@ namespace librealsense
         return result;
     }
 
-    static void trim_device_list(std::vector<uvc::uvc_device_info>& devices, const std::vector<uvc::uvc_device_info>& chosen)
+    static void trim_device_list(std::vector<platform::uvc_device_info>& devices, const std::vector<platform::uvc_device_info>& chosen)
     {
         if (chosen.empty())
             return;
 
-        auto was_chosen = [&chosen](const uvc::uvc_device_info& info)
+        auto was_chosen = [&chosen](const platform::uvc_device_info& info)
         {
             return find(chosen.begin(), chosen.end(), info) != chosen.end();
         };
         devices.erase(std::remove_if(devices.begin(), devices.end(), was_chosen), devices.end());
     }
 
-    static bool mi_present(const std::vector<uvc::uvc_device_info>& devices, uint32_t mi)
+    static bool mi_present(const std::vector<platform::uvc_device_info>& devices, uint32_t mi)
     {
         for (auto&& info : devices)
         {
@@ -246,7 +246,7 @@ namespace librealsense
         return false;
     }
 
-    static uvc::uvc_device_info get_mi(const std::vector<uvc::uvc_device_info>& devices, uint32_t mi)
+    static platform::uvc_device_info get_mi(const std::vector<platform::uvc_device_info>& devices, uint32_t mi)
     {
         for (auto&& info : devices)
         {
@@ -256,9 +256,9 @@ namespace librealsense
         throw invalid_value_exception("Interface not found!");
     }
 
-    static std::vector<uvc::uvc_device_info> filter_by_mi(const std::vector<uvc::uvc_device_info>& devices, uint32_t mi)
+    static std::vector<platform::uvc_device_info> filter_by_mi(const std::vector<platform::uvc_device_info>& devices, uint32_t mi)
     {
-        std::vector<uvc::uvc_device_info> results;
+        std::vector<platform::uvc_device_info> results;
         for (auto&& info : devices)
         {
             if (info.mi == mi)

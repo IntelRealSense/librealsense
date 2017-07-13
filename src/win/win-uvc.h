@@ -17,7 +17,7 @@
 
 namespace librealsense
 {
-    namespace uvc
+    namespace platform
     {
         class wmf_backend;
 

@@ -69,10 +69,10 @@ namespace librealsense
         // DS5 fisheye XU identifiers
         const uint8_t FISHEYE_EXPOSURE = 1;
 
-        const uvc::extension_unit depth_xu = { 0, 3, 2,
+        const platform::extension_unit depth_xu = { 0, 3, 2,
         { 0xC9606CCB, 0x594C, 0x4D25,{ 0xaf, 0x47, 0xcc, 0xc4, 0x96, 0x43, 0x59, 0x95 } } };
 
-        const uvc::extension_unit fisheye_xu = { 3, 12, 2,
+        const platform::extension_unit fisheye_xu = { 3, 12, 2,
         { 0xf6c3c3d1, 0x5cde, 0x4477,{ 0xad, 0xf0, 0x41, 0x33, 0xf5, 0x8d, 0xa6, 0xf4 } } };
 
         enum fw_cmd : uint8_t
@@ -218,7 +218,7 @@ namespace librealsense
 
         struct metadata
         {
-           uvc::uvc_header header;
+           platform::uvc_header header;
            metadata_capture_timing md_capture_timing;
         };
 
@@ -317,8 +317,8 @@ namespace librealsense
         rs2_intrinsics get_intrinsic_fisheye_table(const std::vector<uint8_t>& raw_data, uint32_t width, uint32_t height);
         pose get_fisheye_extrinsics_data(const std::vector<uint8_t>& raw_data);
 
-        bool try_fetch_usb_device(std::vector<uvc::usb_device_info>& devices,
-                                         const uvc::uvc_device_info& info, uvc::usb_device_info& result);
+        bool try_fetch_usb_device(std::vector<platform::usb_device_info>& devices,
+                                         const platform::uvc_device_info& info, platform::usb_device_info& result);
 
 
         enum ds5_notifications_types

@@ -355,7 +355,7 @@ namespace librealsense
 
     typedef std::tuple<uint32_t, int, size_t> native_pixel_format_tuple;
     typedef std::tuple<rs2_stream, rs2_format> output_tuple;
-    typedef std::tuple<uvc::stream_profile_tuple, native_pixel_format_tuple, std::vector<output_tuple>> request_mapping_tuple;
+    typedef std::tuple<platform::stream_profile_tuple, native_pixel_format_tuple, std::vector<output_tuple>> request_mapping_tuple;
 
     struct stream_profile
     {
@@ -435,7 +435,7 @@ namespace librealsense
 
     struct request_mapping
     {
-        uvc::stream_profile profile;
+        platform::stream_profile profile;
         native_pixel_format* pf;
         pixel_format_unpacker* unpacker;
 
@@ -1106,10 +1106,10 @@ namespace librealsense
     uint32_t calc_crc32(const uint8_t *buf, size_t bufsize);
 
 
-    class polling_device_watcher: public librealsense::uvc::device_watcher
+    class polling_device_watcher: public librealsense::platform::device_watcher
     {
     public:
-        polling_device_watcher(const uvc::backend* backend_ref):
+        polling_device_watcher(const platform::backend* backend_ref):
             _backend(backend_ref),_active_object([this](dispatcher::cancellable_timer cancellable_timer)
         {
             polling(cancellable_timer);
@@ -1127,11 +1127,11 @@ namespace librealsense
         {
             if(cancellable_timer.try_sleep(100))
             {
-               uvc::devices_data curr(_backend->query_uvc_devices(), _backend->query_usb_devices(), _backend->query_hid_devices());
+               platform::backend_device_group curr(_backend->query_uvc_devices(), _backend->query_usb_devices(), _backend->query_hid_devices());
 
-                if(list_changed(_devices_data._uvc_devices, curr._uvc_devices ) ||
-                   list_changed(_devices_data._usb_devices, curr._usb_devices ) ||
-                   list_changed(_devices_data._hid_devices, curr._hid_devices ))
+                if(list_changed(_devices_data.uvc_devices, curr.uvc_devices ) ||
+                   list_changed(_devices_data.usb_devices, curr.usb_devices ) ||
+                   list_changed(_devices_data.hid_devices, curr.hid_devices ))
                 {
                     callback_invocation_holder callback = { _callback_inflight.allocate(), &_callback_inflight };
                     if(callback)
@@ -1144,7 +1144,7 @@ namespace librealsense
             }
         }
 
-        void start(uvc::device_changed_callback callback) override
+        void start(platform::device_changed_callback callback) override
         {
             stop();
             _callback = std::move(callback);
@@ -1162,10 +1162,10 @@ namespace librealsense
         active_object<> _active_object;
 
         callbacks_heap _callback_inflight;
-        const uvc::backend* _backend;
+        const platform::backend* _backend;
 
-        uvc::devices_data _devices_data;
-        uvc::device_changed_callback _callback;
+        platform::backend_device_group _devices_data;
+        platform::device_changed_callback _callback;
 
     };
 }
@@ -1188,9 +1188,9 @@ namespace std {
     };
 
     template <>
-    struct hash<librealsense::uvc::stream_profile>
+    struct hash<librealsense::platform::stream_profile>
     {
-        size_t operator()(const librealsense::uvc::stream_profile& k) const
+        size_t operator()(const librealsense::platform::stream_profile& k) const
         {
             using std::hash;
 
@@ -1208,7 +1208,7 @@ namespace std {
         {
             using std::hash;
 
-            return (hash<librealsense::uvc::stream_profile>()(k.profile))
+            return (hash<librealsense::platform::stream_profile>()(k.profile))
                 ^ (hash<librealsense::pixel_format_unpacker*>()(k.unpacker))
                 ^ (hash<librealsense::native_pixel_format*>()(k.pf));
         }
