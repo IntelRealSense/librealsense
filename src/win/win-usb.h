@@ -12,7 +12,7 @@
 
 namespace librealsense
 {
-    namespace uvc
+    namespace platform
     {
         enum class pipe_direction
         {

@@ -14,7 +14,7 @@ using namespace rs2;
 # define SECTION_FROM_TEST_NAME space_to_underscore(Catch::getCurrentContext().getResultCapture()->getCurrentTestName()).c_str()
 //// disable in one place options that are sensitive to frame content
 //// this is done to make sure unit-tests are deterministic
-void disable_sensitive_options_for(device& dev)
+void disable_sensitive_options_for(sensor& dev)
 {
     if (dev.supports(RS2_OPTION_ERROR_POLLING_ENABLED))
         REQUIRE_NOTHROW(dev.set_option(RS2_OPTION_ERROR_POLLING_ENABLED, 0));
@@ -27,8 +27,12 @@ void disable_sensitive_options_for(device& dev)
         auto range = dev.get_option_range(RS2_OPTION_EXPOSURE);
         REQUIRE_NOTHROW(dev.set_option(RS2_OPTION_EXPOSURE, range.def));
     }
+}
 
-
+void disable_sensitive_options_for(device& dev)
+{
+    for (auto&& s : dev.query_sensors())
+        disable_sensitive_options_for(s);
 }
 
 TEST_CASE("Device metadata enumerates correctly", "[live]")
@@ -68,8 +72,8 @@ TEST_CASE("Start-Stop stream sequence", "[live]")
     if (make_context(SECTION_FROM_TEST_NAME, &ctx))
     {
 
-        std::vector<device> list;
-        REQUIRE_NOTHROW(list = ctx.query_devices());
+        std::vector<sensor> list;
+        REQUIRE_NOTHROW(list = ctx.query_all_sensors());
         REQUIRE(list.size() > 0);
 
         util::config config;
@@ -82,7 +86,7 @@ TEST_CASE("Start-Stop stream sequence", "[live]")
 
             // Configure all supported streams to run at 30 frames per second
             rs2::util::config::multistream streams;
-            REQUIRE_NOTHROW(streams = config.open(dev));
+            REQUIRE_NOTHROW(streams = config.open(ctx.get_sensor_parent(dev)));
 
             for (auto i = 0; i < 5; i++)
             {
@@ -106,8 +110,8 @@ TEST_CASE("no extrinsic transformation between a stream and itself", "[live]")
     rs2::context ctx;
     if (make_context(SECTION_FROM_TEST_NAME, &ctx))
     {
-        std::vector<device> list;
-        REQUIRE_NOTHROW(list = ctx.query_devices());
+        std::vector<sensor> list;
+        REQUIRE_NOTHROW(list = ctx.query_all_sensors());
         const size_t device_count = list.size();
         REQUIRE(device_count > 0);
 
@@ -136,8 +140,8 @@ TEST_CASE("extrinsic transformation between two streams is a rigid transform", "
     rs2::context ctx;
     if (make_context(SECTION_FROM_TEST_NAME, &ctx))
     {
-        std::vector<device> list;
-        REQUIRE_NOTHROW(list = ctx.query_devices());
+        std::vector<sensor> list;
+        REQUIRE_NOTHROW(list = ctx.query_all_sensors());
         const size_t device_count = list.size();
         REQUIRE(device_count > 0);
 
@@ -145,7 +149,7 @@ TEST_CASE("extrinsic transformation between two streams is a rigid transform", "
         for (int i = 0; i < device_count; ++i)
         {
             auto dev = list[i];
-            auto adj_devices = dev.get_adjacent_devices();
+            auto adj_devices = ctx.get_sensor_parent(dev).query_sensors();
             //REQUIRE(dev != nullptr);
 
             // For every pair of streams
@@ -187,14 +191,14 @@ TEST_CASE("extrinsic transformations are transitive", "[live]")
     rs2::context ctx;
     if (make_context(SECTION_FROM_TEST_NAME, &ctx))
     {
-        std::vector<device> list;
-        REQUIRE_NOTHROW(list = ctx.query_devices());
+        std::vector<sensor> list;
+        REQUIRE_NOTHROW(list = ctx.query_all_sensors());
         REQUIRE(list.size() > 0);
 
         // For each device
         for (auto&& dev : list)
         {
-            auto adj_devices = dev.get_adjacent_devices();
+            auto adj_devices = ctx.get_sensor_parent(dev).query_sensors();
 
             // For every set of subdevices
             for (auto a = 0; a < adj_devices.size(); ++a)
@@ -244,13 +248,13 @@ TEST_CASE("check width and height of stream intrinsics", "[live]")
     rs2::context ctx;
     if (make_context(SECTION_FROM_TEST_NAME, &ctx))
     {
-        std::vector<device> list;
-        REQUIRE_NOTHROW(list = ctx.query_devices());
+        std::vector<sensor> list;
+        REQUIRE_NOTHROW(list = ctx.query_all_sensors());
         REQUIRE(list.size() > 0);
 
         for (auto&& dev : list)
         {
-            auto module_name = dev.get_info(RS2_CAMERA_INFO_MODULE_NAME);
+            auto module_name = dev.get_info(RS2_CAMERA_INFO_NAME);
             // TODO: if FE
             std::vector<stream_profile> stream_profiles;
             REQUIRE_NOTHROW(stream_profiles = dev.get_stream_modes());
@@ -288,8 +292,8 @@ TEST_CASE("streaming modes sanity check", "[live]")
     rs2::context ctx;
     if (make_context(SECTION_FROM_TEST_NAME, &ctx))
     {
-        std::vector<device> list;
-        REQUIRE_NOTHROW(list = ctx.query_devices());
+        std::vector<sensor> list;
+        REQUIRE_NOTHROW(list = ctx.query_all_sensors());
         REQUIRE(list.size() > 0);
 
         // For each device
@@ -352,8 +356,8 @@ TEST_CASE("motion profiles sanity", "[live]")
     rs2::context ctx;
     if (make_context(SECTION_FROM_TEST_NAME, &ctx))
     {
-        std::vector<device> list;
-        REQUIRE_NOTHROW(list = ctx.query_devices());
+        std::vector<sensor> list;
+        REQUIRE_NOTHROW(list = ctx.query_all_sensors());
         REQUIRE(list.size() > 0);
 
         // For each device
@@ -412,8 +416,8 @@ TEST_CASE("check option API", "[live][options]")
     rs2::context ctx;
     if (make_context(SECTION_FROM_TEST_NAME, &ctx))
     {
-        std::vector<device> list;
-        REQUIRE_NOTHROW(list = ctx.query_devices());
+        std::vector<sensor> list;
+        REQUIRE_NOTHROW(list = ctx.query_all_sensors());
         REQUIRE(list.size() > 0);
 
         // for each device
@@ -545,8 +549,8 @@ TEST_CASE("a single subdevice can only be opened once, different subdevices can 
     rs2::context ctx;
     if (make_context(SECTION_FROM_TEST_NAME, &ctx))
     {
-        std::vector<device> list;
-        REQUIRE_NOTHROW(list = ctx.query_devices());
+        std::vector<sensor> list;
+        REQUIRE_NOTHROW(list = ctx.query_all_sensors());
         REQUIRE(list.size() > 0);
 
         SECTION("Single context")
@@ -578,9 +582,9 @@ TEST_CASE("a single subdevice can only be opened once, different subdevices can 
                         {
                             if (modes.size() == 1)
                             {
-                                WARN("device " << dev.get_info(RS2_CAMERA_INFO_DEVICE_NAME) << " S/N: " << dev.get_info(
-                                        RS2_CAMERA_INFO_DEVICE_SERIAL_NUMBER) << " w/ FW v" << dev.get_info(
-                                        RS2_CAMERA_INFO_CAMERA_FIRMWARE_VERSION) << ":");
+                                WARN("device " << dev.get_info(RS2_CAMERA_INFO_NAME) << " S/N: " << dev.get_info(
+                                        RS2_CAMERA_INFO_SERIAL_NUMBER) << " w/ FW v" << dev.get_info(
+                                        RS2_CAMERA_INFO_FIRMWARE_VERSION) << ":");
                                 WARN("subdevice has only 1 supported streaming mode. Skipping Same Subdevice, different modes test.");
                             }
                             else
@@ -598,10 +602,10 @@ TEST_CASE("a single subdevice can only be opened once, different subdevices can 
                     }
                     // TODO: Move
                     SECTION("opening different subdevices") {
-                        for (auto&& subdevice1 : dev.get_adjacent_devices())
+                        for (auto&& subdevice1 : ctx.get_sensor_parent(dev).query_sensors())
                         {
                             disable_sensitive_options_for(subdevice1);
-                            for (auto&& subdevice2 : dev.get_adjacent_devices())
+                            for (auto&& subdevice2 : ctx.get_sensor_parent(dev).query_sensors())
                             {
                                 disable_sensitive_options_for(subdevice2);
 
@@ -676,8 +680,8 @@ TEST_CASE("a single subdevice can only be opened once, different subdevices can 
         {
             rs2::context ctx2;
             REQUIRE(make_context("two_contexts", &ctx2));
-            std::vector<device> list2;
-            REQUIRE_NOTHROW(list2 = ctx2.query_devices());
+            std::vector<sensor> list2;
+            REQUIRE_NOTHROW(list2 = ctx2.query_all_sensors());
             REQUIRE(list2.size() == list.size());
             SECTION("subdevices on a single device")
             {
@@ -722,9 +726,9 @@ TEST_CASE("a single subdevice can only be opened once, different subdevices can 
                                 {
                                     if (modes1.size() == 1)
                                     {
-                                        WARN("device " << dev1.get_info(RS2_CAMERA_INFO_DEVICE_NAME) << " S/N: " << dev1.get_info(
-                                                RS2_CAMERA_INFO_DEVICE_SERIAL_NUMBER) << " w/ FW v" << dev1.get_info(
-                                                RS2_CAMERA_INFO_CAMERA_FIRMWARE_VERSION) << ":");
+                                        WARN("device " << dev1.get_info(RS2_CAMERA_INFO_NAME) << " S/N: " << dev1.get_info(
+                                                RS2_CAMERA_INFO_SERIAL_NUMBER) << " w/ FW v" << dev1.get_info(
+                                                RS2_CAMERA_INFO_FIRMWARE_VERSION) << ":");
                                         WARN("Device has only 1 supported streaming mode. Skipping Same Subdevice, different modes test.");
                                     }
                                     else
@@ -800,10 +804,10 @@ TEST_CASE("a single subdevice can only be opened once, different subdevices can 
 
                             // grab first lock
                             CAPTURE(modes1.front().stream);
-                            CAPTURE(dev1.get_info(RS2_CAMERA_INFO_DEVICE_NAME));
-                            CAPTURE(dev1.get_info(RS2_CAMERA_INFO_DEVICE_SERIAL_NUMBER));
-                            CAPTURE(dev2.get_info(RS2_CAMERA_INFO_DEVICE_NAME));
-                            CAPTURE(dev2.get_info(RS2_CAMERA_INFO_DEVICE_SERIAL_NUMBER));
+                            CAPTURE(dev1.get_info(RS2_CAMERA_INFO_NAME));
+                            CAPTURE(dev1.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER));
+                            CAPTURE(dev2.get_info(RS2_CAMERA_INFO_NAME));
+                            CAPTURE(dev2.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER));
                             REQUIRE_NOTHROW(dev1.open(modes1.front()));
 
                             // try to acquire second lock
@@ -845,8 +849,8 @@ TEST_CASE("All suggested profiles can be opened", "[live]") {
 
         const int num_of_profiles_for_each_subdevice = 2;
 
-        std::vector<device> list;
-        REQUIRE_NOTHROW(list = ctx.query_devices());
+        std::vector<sensor> list;
+        REQUIRE_NOTHROW(list = ctx.query_all_sensors());
         REQUIRE(list.size() > 0);
 
         for (auto && subdevice : list) {
@@ -857,7 +861,7 @@ TEST_CASE("All suggested profiles can be opened", "[live]") {
             REQUIRE_NOTHROW(modes = subdevice.get_stream_modes());
 
             REQUIRE(modes.size() > 0);
-            WARN(subdevice.get_info(RS2_CAMERA_INFO_MODULE_NAME));
+            WARN(subdevice.get_info(RS2_CAMERA_INFO_NAME));
             //the test will be done only on sub set of profile for each sub device
             for (int i = 0; i < modes.size(); i += (int)std::ceil((float)modes.size() / (float)num_of_profiles_for_each_subdevice)) {
                 //CAPTURE(rs2_subdevice(subdevice));
@@ -929,8 +933,8 @@ TEST_CASE("Per-frame metadata sanity check", "[live]") {
     rs2::context ctx;
     if (make_context(SECTION_FROM_TEST_NAME, &ctx))
     {
-        std::vector<device> list;
-        REQUIRE_NOTHROW(list = ctx.query_devices());
+        std::vector<sensor> list;
+        REQUIRE_NOTHROW(list = ctx.query_all_sensors());
         REQUIRE(list.size() > 0);
 
         const int frames_before_start_measure = 130;
@@ -944,7 +948,7 @@ TEST_CASE("Per-frame metadata sanity check", "[live]") {
             REQUIRE_NOTHROW(modes = subdevice.get_stream_modes());
 
             REQUIRE(modes.size() > 0);
-            WARN(subdevice.get_info(RS2_CAMERA_INFO_MODULE_NAME));
+            WARN(subdevice.get_info(RS2_CAMERA_INFO_NAME));
 
             //the test will be done only on sub set of profile for each sub device
             for (int i = 0; i < modes.size(); i += static_cast<int>(std::ceil((float)modes.size() / (float)num_of_profiles_for_each_subdevice)))
@@ -1081,7 +1085,7 @@ TEST_CASE("Per-frame metadata sanity check", "[live]") {
     }
 }
 
-void triger_error(device& dev, int num)
+void triger_error(const device& dev, int num)
 {
     std::vector<uint8_t> raw_data(24, 0);
     raw_data[0] = 0x14;
@@ -1089,7 +1093,8 @@ void triger_error(device& dev, int num)
     raw_data[3] = 0xcd;
     raw_data[4] = 0x4d;
     raw_data[8] = num;
-    dev.debug().send_and_receive_raw_data(raw_data);
+    if (auto debug = dev.as<debug_protocol>())
+        debug.send_and_receive_raw_data(raw_data);
 }
 
 TEST_CASE("Error handling sanity", "[live]") {
@@ -1100,8 +1105,8 @@ TEST_CASE("Error handling sanity", "[live]") {
     {
         const int num_of_errors = 4;
 
-        std::vector<device> list;
-        REQUIRE_NOTHROW(list = ctx.query_devices());
+        std::vector<sensor> list;
+        REQUIRE_NOTHROW(list = ctx.query_all_sensors());
         REQUIRE(list.size() > 0);
 
         std::string notification_description;
@@ -1135,7 +1140,7 @@ TEST_CASE("Error handling sanity", "[live]") {
                         cv.notify_one();
                     });
 
-                    triger_error(subdevice, i);
+                    triger_error(ctx.get_sensor_parent(subdevice), i);
                     std::unique_lock<std::mutex> lock(m);
                     CAPTURE(notification_description);
                     CAPTURE(severity);
@@ -1171,7 +1176,7 @@ TEST_CASE("Error handling sanity", "[live]") {
 
                     });
 
-                    triger_error(subdevice, i);
+                    triger_error(ctx.get_sensor_parent(subdevice), i);
                     std::this_thread::sleep_for(std::chrono::seconds(2));
                     CAPTURE(notification_description);
                     REQUIRE(got_error == false);
@@ -1194,8 +1199,8 @@ TEST_CASE("Auto exposure behavior", "[live]") {
     if (make_context(SECTION_FROM_TEST_NAME, &ctx))
     {
 
-        std::vector<device> list;
-        REQUIRE_NOTHROW(list = ctx.query_devices());
+        std::vector<sensor> list;
+        REQUIRE_NOTHROW(list = ctx.query_all_sensors());
         REQUIRE(list.size() > 0);
 
 
@@ -1217,7 +1222,7 @@ TEST_CASE("Auto exposure behavior", "[live]") {
 
                 float val{};
 
-                auto info = subdevice.get_info(RS2_CAMERA_INFO_MODULE_NAME);
+                auto info = subdevice.get_info(RS2_CAMERA_INFO_NAME);
                 CAPTURE(info);
 
                 REQUIRE_NOTHROW(subdevice.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, 1));
@@ -1294,7 +1299,7 @@ TEST_CASE("Disconnect events works", "[live]") {
 
         std::string serial;
 
-        REQUIRE_NOTHROW(serial = dev_strong->get_info(RS2_CAMERA_INFO_DEVICE_SERIAL_NUMBER));
+        REQUIRE_NOTHROW(serial = dev_strong->get_info(RS2_CAMERA_INFO_SERIAL_NUMBER));
 
         std::condition_variable cv;
         std::mutex m;
@@ -1316,8 +1321,10 @@ TEST_CASE("Disconnect events works", "[live]") {
 
                     for (auto d : info.get_new_devices())
                     {
-                        disable_sensitive_options_for(d);
-                        if (serial == d.get_info(RS2_CAMERA_INFO_DEVICE_SERIAL_NUMBER))
+                        for (auto&& s : d.query_sensors())
+                            disable_sensitive_options_for(s);
+
+                        if (serial == d.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER))
                         {
                             try
                             {
@@ -1345,7 +1352,7 @@ TEST_CASE("Disconnect events works", "[live]") {
         }
 
         //Check that after the library reported device disconnection, operations on old device object will return error
-        REQUIRE_THROWS(dev_strong->close());
+        REQUIRE_THROWS(dev_strong->query_sensors().front().close());
 
         {
             std::unique_lock<std::mutex> lock(m);
@@ -1369,7 +1376,7 @@ TEST_CASE("Connect events works", "[live]") {
 
         std::string serial;
 
-        REQUIRE_NOTHROW(serial = dev_strong->get_info(RS2_CAMERA_INFO_DEVICE_SERIAL_NUMBER));
+        REQUIRE_NOTHROW(serial = dev_strong->get_info(RS2_CAMERA_INFO_SERIAL_NUMBER));
 
         auto disconnected = false;
         auto connected = false;
@@ -1393,7 +1400,7 @@ TEST_CASE("Connect events works", "[live]") {
 
                     for (auto d : info.get_new_devices())
                     {
-                        if (serial == d.get_info(RS2_CAMERA_INFO_DEVICE_SERIAL_NUMBER))
+                        if (serial == d.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER))
                         {
                             try
                             {
@@ -1426,12 +1433,12 @@ TEST_CASE("Connect events works", "[live]") {
     }
 }
 
-std::shared_ptr<std::function<void(frame fref)>> check_stream_sanity(device& dev, int num_of_frames, bool infinite = false)
+std::shared_ptr<std::function<void(frame fref)>> check_stream_sanity(const context& ctx, const sensor& dev, int num_of_frames, bool infinite = false)
 {
     std::shared_ptr<std::condition_variable> cv = std::make_shared<std::condition_variable>();
     std::shared_ptr<std::mutex> m = std::make_shared<std::mutex>();
     std::shared_ptr<std::map<rs2_stream, int>> streams_frames = std::make_shared<std::map<rs2_stream, int>>();
-    std::vector<device> devs;
+    std::vector<sensor> devs;
 
     std::shared_ptr<std::function<void(frame fref)>>  func;
 
@@ -1440,7 +1447,7 @@ std::shared_ptr<std::function<void(frame fref)>> check_stream_sanity(device& dev
     {RS2_STREAM_DEPTH, 640, 480, 60, RS2_FORMAT_Z16},
     {RS2_STREAM_FISHEYE, 640, 480, 60, RS2_FORMAT_RAW8}};
 
-    for (auto sub:dev.get_adjacent_devices())
+    for (auto sub : ctx.get_sensor_parent(dev).query_sensors())
     {
         std::vector<stream_profile> modes;
         REQUIRE_NOTHROW(modes = sub.get_stream_modes());
@@ -1513,7 +1520,7 @@ TEST_CASE("Connect Disconnect events while streaming", "[live]") {
         auto dev_weak = dev.second;
 
 
-        REQUIRE_NOTHROW(serial = dev_strong->get_info(RS2_CAMERA_INFO_DEVICE_SERIAL_NUMBER));
+        REQUIRE_NOTHROW(serial = dev_strong->get_info(RS2_CAMERA_INFO_SERIAL_NUMBER));
 
 
         auto disconnected = false;
@@ -1538,7 +1545,7 @@ TEST_CASE("Connect Disconnect events while streaming", "[live]") {
 
                     for (auto d : info.get_new_devices())
                     {
-                        if (serial == d.get_info(RS2_CAMERA_INFO_DEVICE_SERIAL_NUMBER))
+                        if (serial == d.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER))
                         {
                             try
                             {
@@ -1560,7 +1567,8 @@ TEST_CASE("Connect Disconnect events while streaming", "[live]") {
 
             }}));
 
-        auto func = check_stream_sanity(*dev_strong, 1, true);
+        for (auto&& s : dev_strong->query_sensors())
+            auto func = check_stream_sanity(ctx, s, 1, true);
 
         for (auto i = 0; i < 3; i++)
         {
@@ -1575,7 +1583,8 @@ TEST_CASE("Connect Disconnect events while streaming", "[live]") {
                 REQUIRE(cv.wait_for(lock, std::chrono::seconds(10), [&]() {return connected; }));
             }
 
-            func = check_stream_sanity(*dev_strong, 10);
+            for (auto&& s : dev_strong->query_sensors())
+                auto func = check_stream_sanity(ctx, s, 10);
 
             disconnected = connected = false;
         }
@@ -1583,9 +1592,9 @@ TEST_CASE("Connect Disconnect events while streaming", "[live]") {
     }
 }
 
-void check_controlls_sanity(device& dev)
+void check_controlls_sanity(const context& ctx, const sensor& dev)
 {
-    for (auto d : dev.get_adjacent_devices())
+    for (auto d : ctx.get_sensor_parent(dev).query_sensors())
     {
         for (auto i = 0; i < RS2_OPTION_COUNT; i++)
         {
@@ -1595,7 +1604,8 @@ void check_controlls_sanity(device& dev)
     }
 }
 
-TEST_CASE("Connect Disconnect events while controlls", "[live]") {
+TEST_CASE("Connect Disconnect events while controlls", "[live]")
+{
     rs2::context ctx;
     if (make_context(SECTION_FROM_TEST_NAME, &ctx))
     {
@@ -1608,7 +1618,7 @@ TEST_CASE("Connect Disconnect events while controlls", "[live]") {
 
         std::string serial;
 
-        REQUIRE_NOTHROW(serial = dev_strong->get_info(RS2_CAMERA_INFO_DEVICE_SERIAL_NUMBER));
+        REQUIRE_NOTHROW(serial = dev_strong->get_info(RS2_CAMERA_INFO_SERIAL_NUMBER));
 
 
         auto disconnected = false;
@@ -1633,7 +1643,7 @@ TEST_CASE("Connect Disconnect events while controlls", "[live]") {
 
                     for (auto d : info.get_new_devices())
                     {
-                        if (serial == d.get_info(RS2_CAMERA_INFO_DEVICE_SERIAL_NUMBER))
+                        if (serial == d.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER))
                         {
                             try
                             {
@@ -1664,8 +1674,8 @@ TEST_CASE("Connect Disconnect events while controlls", "[live]") {
         //Check that after reset the device gets connected back within reasonable period of time
         REQUIRE(cv.wait_for(lock, std::chrono::seconds(10), [&]() {return connected; }));
 
-
-        check_controlls_sanity(*dev_strong);
+        for (auto&& s : dev_strong->query_sensors())
+            check_controlls_sanity(ctx, s);
     }
 
 }
@@ -1694,7 +1704,9 @@ TEST_CASE("device_hub", "[live]") {
 
         REQUIRE_NOTHROW(dev = std::make_shared<device>(hub.wait_for_device()));
         disable_sensitive_options_for(*dev);
-        check_controlls_sanity(*dev);
+
+        for (auto&& s : dev->query_sensors())
+            check_controlls_sanity(ctx, s);
     }
 }
 
@@ -1702,6 +1714,13 @@ TEST_CASE("device_hub", "[live]") {
 class AC_Mock_Device
 {
 public:
+    using SensorType = AC_Mock_Device;
+
+    std::vector<SensorType> query_sensors() const
+    {
+        return std::vector<SensorType>(1, *this);
+    }
+
     AC_Mock_Device(std::vector<stream_profile> modes, bool result) : result(result), modes(std::move(modes)), expected() {};
     void set_expected(std::vector<stream_profile> profiles) { expected = profiles; };
 
@@ -1721,10 +1740,12 @@ public:
     }
     const char * get_camera_info(rs2_camera_info info) const {
         switch (info) {
-        case RS2_CAMERA_INFO_MODULE_NAME: return "Dummy Module";
+        case RS2_CAMERA_INFO_NAME: return "Dummy Module";
         default: return "";
         }
     }
+
+    std::string get_info(rs2_camera_info info) const { return "Mock"; }
 
     template<class T>
     void start(T callback) const

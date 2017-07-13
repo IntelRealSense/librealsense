@@ -40,7 +40,7 @@
 
 namespace librealsense
 {
-    namespace uvc
+    namespace platform
     {
         struct hid_input_info
         {

@@ -3,6 +3,32 @@
 
 namespace librealsense
 {
+    std::shared_ptr<sensor_interface> frame::get_sensor() const
+    {
+        auto res = sensor.lock();
+        if (!res) return get_owner()->get_sensor();
+        return res;
+    }
+    void frame::set_sensor(std::shared_ptr<sensor_interface> s) { sensor = s;}
+
+    float3* points::get_vertices()
+    {
+        auto xyz = (float3*)data.data();
+        return xyz;
+    }
+
+    size_t points::get_vertex_count() const
+    {
+        return data.size() / (sizeof(float3) + sizeof(int2));
+    }
+
+    int2* points::get_pixel_coordinates()
+    {
+        auto xyz = (float3*)data.data();
+        auto ijs = (int2*)(xyz + get_vertex_count());
+        return ijs;
+    }
+
     // Defines general frames storage model
     template<class T>
     class frame_archive : public std::enable_shared_from_this<frame_archive<T>>, public archive_interface
@@ -12,13 +38,17 @@ namespace librealsense
         small_heap<T, RS2_USER_QUEUE_SIZE> published_frames;
         small_heap<rs2_frame, RS2_USER_QUEUE_SIZE> detached_refs;
         callbacks_heap callback_inflight;
-     
+
         std::vector<T> freelist; // return frames here
         std::atomic<bool> recycle_frames;
         int pending_frames = 0;
         std::recursive_mutex mutex;
-        std::shared_ptr<uvc::time_service> _time_service;
+        std::shared_ptr<platform::time_service> _time_service;
         std::shared_ptr<metadata_parser_map> _metadata_parsers = nullptr;
+
+        std::weak_ptr<sensor_interface> _sensor;
+        std::shared_ptr<sensor_interface> get_sensor() const override { return _sensor.lock(); }
+        void set_sensor(std::shared_ptr<sensor_interface> s) override { _sensor = s; }
      
         T alloc_frame(const size_t size, const frame_additional_data& additional_data, bool requires_memory)
         {
@@ -51,7 +81,7 @@ namespace librealsense
 
             if (requires_memory)
             {
-                backbuffer.data.resize(size); // TODO: Allow users to provide a custom allocator for frame buffers
+                backbuffer.data.resize(size, 0); // TODO: Allow users to provide a custom allocator for frame buffers
             }
             backbuffer.additional_data = additional_data;
             return backbuffer;
@@ -61,7 +91,7 @@ namespace librealsense
         {
             std::unique_lock<std::recursive_mutex> lock(mutex);
 
-            auto published_frame = f.publish(shared_from_this());
+            auto published_frame = f.publish(this->shared_from_this());
             if (published_frame)
             {
                 rs2_frame new_ref(published_frame); // allocate new frame_ref to ref-counter the now published frame
@@ -71,7 +101,7 @@ namespace librealsense
             LOG_DEBUG("publish(...) failed");
             return nullptr;
         }
-     
+
         void unpublish_frame(frame* frame)
         {
             if (frame)
@@ -80,8 +110,7 @@ namespace librealsense
                 log_frame_callback_end(f);
                 std::unique_lock<std::recursive_mutex> lock(mutex);
 
-                if (is_valid(frame->get_stream_type()))
-                    --published_frames_count;
+                --published_frames_count;
 
                 if (recycle_frames)
                 {
@@ -97,27 +126,26 @@ namespace librealsense
         {
             auto f = (T*)frame;
 
-            if (is_valid(f->get_stream_type()) &&
-                published_frames_count >= *max_frame_queue_size)
+            if (published_frames_count >= *max_frame_queue_size)
             {
-                LOG_DEBUG("stream_type is invalid OR user didn't release frame resource.");
+                LOG_DEBUG("User didn't release frame resource.");
                 return nullptr;
             }
             auto new_frame = published_frames.allocate();
             if (new_frame)
             {
-                if (is_valid(f->get_stream_type())) ++published_frames_count;
+                ++published_frames_count;
                 *new_frame = std::move(*f);
             }
 
             return new_frame;
         }
-     
+
         void log_frame_callback_end(T* frame) const
         {
             if (frame)
             {
-                auto callback_ended = _time_service->get_time();
+                auto callback_ended = _time_service?_time_service->get_time():0;
                 auto callback_warning_duration = 1000 / (frame->additional_data.fps + 1);
                 auto callback_duration = callback_ended - frame->get_frame_callback_start_time_point();
 
@@ -135,12 +163,12 @@ namespace librealsense
         }
 
         std::shared_ptr<metadata_parser_map> get_md_parsers() const { return _metadata_parsers; };
-     
+
         friend class frame;
-     
+
     public:
         explicit frame_archive(std::atomic<uint32_t>* in_max_frame_queue_size,
-                             std::shared_ptr<uvc::time_service> ts,
+                             std::shared_ptr<platform::time_service> ts,
                              std::shared_ptr<metadata_parser_map> parsers)
             : max_frame_queue_size(in_max_frame_queue_size),
               mutex(), recycle_frames(true), _time_service(ts),
@@ -148,12 +176,12 @@ namespace librealsense
         {
             published_frames_count = 0;
         }
-     
+
         callback_invocation_holder begin_callback()
         {
             return { callback_inflight.allocate(), &callback_inflight };
         }
-     
+
         rs2_frame* clone_frame(rs2_frame* frame)
         {
             auto new_ref = detached_refs.allocate();
@@ -168,13 +196,13 @@ namespace librealsense
         {
             detached_refs.deallocate(ref);
         }
-     
+
         rs2_frame* alloc_and_track(const size_t size, const frame_additional_data& additional_data, bool requires_memory)
         {
             auto frame = alloc_frame(size, additional_data, requires_memory);
             return track_frame(frame);
         }
-     
+
         void flush()
         {
             published_frames.stop_allocation();
@@ -204,7 +232,7 @@ namespace librealsense
             }
             // frames and their frame refs are not flushed, by design
         }
-     
+
         ~frame_archive()
         {
             if (pending_frames > 0)
@@ -216,15 +244,18 @@ namespace librealsense
 
     };
 
-    std::shared_ptr<archive_interface> make_archive(rs2_extension_type type, 
+    std::shared_ptr<archive_interface> make_archive(rs2_extension_type type,
                                                     std::atomic<uint32_t>* in_max_frame_queue_size,
-                                                    std::shared_ptr<uvc::time_service> ts,
+                                                    std::shared_ptr<platform::time_service> ts,
                                                     std::shared_ptr<metadata_parser_map> parsers)
     {
         switch(type)
         {
         case RS2_EXTENSION_TYPE_VIDEO_FRAME:
             return std::make_shared<frame_archive<video_frame>>(in_max_frame_queue_size, ts, parsers);
+
+        case RS2_EXTENSION_TYPE_COMPOSITE_FRAME:
+            return std::make_shared<frame_archive<composite_frame>>(in_max_frame_queue_size, ts, parsers);
 
         default:
             throw std::runtime_error("Requested frame type is not supported!");
@@ -241,7 +272,7 @@ void frame::release()
     }
 }
 
-frame* frame::publish(std::shared_ptr<archive_interface> new_owner)
+frame_interface* frame::publish(std::shared_ptr<archive_interface> new_owner)
 {
     owner = new_owner;
     return owner->publish_frame(this);
@@ -349,7 +380,7 @@ void rs2_frame::log_callback_end(rs2_time_t timestamp) const
 {
     if (get())
     {
-        auto callback_warning_duration = 1000.f / (get()->additional_data.fps + 1);
+        auto callback_warning_duration = 1000.f / (get()->get_framerate() + 1);
         auto callback_duration = timestamp - get()->get_frame_callback_start_time_point();
 
         LOG_DEBUG("CallbackFinished," << librealsense::get_string(get()->get_stream_type()) << "," << get()->get_frame_number() << ",DispatchedAt," << timestamp);
@@ -357,16 +388,16 @@ void rs2_frame::log_callback_end(rs2_time_t timestamp) const
         if (callback_duration > callback_warning_duration)
         {
             LOG_INFO("Frame Callback " << librealsense::get_string(get()->get_stream_type())
-                     << "#" << std::dec << get()->additional_data.frame_number
+                     << "#" << std::dec << get()->get_frame_number()
                      << "overdue. (Duration: " << callback_duration
-                     << "ms, FPS: " << get()->additional_data.fps << ", Max Duration: " << callback_warning_duration << "ms)");
+                     << "ms, FPS: " << get()->get_framerate() << ", Max Duration: " << callback_warning_duration << "ms)");
         }
     }
 }
 
 rs2_frame::rs2_frame() : frame_ptr(nullptr) {}
 
-rs2_frame::rs2_frame(frame* frame)
+rs2_frame::rs2_frame(frame_interface* frame)
     : frame_ptr(frame)
 {
     if (frame) frame->acquire();
@@ -410,4 +441,4 @@ void rs2_frame::disable_continuation() const
     if (frame_ptr) frame_ptr->disable_continuation();
 }
 
-frame* rs2_frame::get() const { return frame_ptr; }
+frame_interface* rs2_frame::get() const { return frame_ptr; }

@@ -43,7 +43,7 @@ const char* PROFILES_SELECT_ALL = "SELECT * FROM rs_profile WHERE section = ?";
 
 namespace librealsense
 {
-    namespace uvc
+    namespace platform
     {
         class playback_backend_exception : public backend_exception
         {
@@ -154,7 +154,7 @@ namespace librealsense
             call* next;
             do
             {
-                devices_data old, curr;
+                backend_device_group old, curr;
                 lookup_key k{ 0, call_type::device_watcher_event };
                 load_device_changed_data(old, curr, k);
                 _watcher->raise_callback(old, curr);
@@ -598,7 +598,7 @@ namespace librealsense
         {
             _owner->try_record([=](recording* rec1, lookup_key key1)
             {
-                _source_watcher->start([=](devices_data old, devices_data curr)
+                _source_watcher->start([=](backend_device_group old, backend_device_group curr)
                 {
                     _owner->try_record([=](recording* rec1, lookup_key key1)
                     {
@@ -1049,7 +1049,7 @@ namespace librealsense
         record_backend::record_backend(shared_ptr<backend> source,
             const char* filename, const char* section,
             rs2_recording_mode mode)
-            : _source(source), _rec(std::make_shared<uvc::recording>(create_time_service())), _entity_count(1),
+            : _source(source), _rec(std::make_shared<platform::recording>(create_time_service())), _entity_count(1),
             _filename(filename),
             _section(section), _compression(make_shared<compression_algorithm>()), _mode(mode)
         {}
@@ -1107,7 +1107,7 @@ namespace librealsense
 
         playback_backend::playback_backend(const char* filename, const char* section)
             : _device_watcher(new playback_device_watcher(0)),
-            _rec(uvc::recording::load(filename, section, _device_watcher))
+            _rec(platform::recording::load(filename, section, _device_watcher))
         {
 
             LOG_DEBUG("Starting section " << section);
@@ -1153,7 +1153,7 @@ namespace librealsense
             }
         }
 
-        void playback_device_watcher::raise_callback(devices_data old, devices_data curr)
+        void playback_device_watcher::raise_callback(backend_device_group old, backend_device_group curr)
         {
             _dispatcher.invoke([=](dispatcher::cancellable_timer t) {
                 _callback(old, curr);

@@ -45,7 +45,7 @@
 
 namespace librealsense
 {
-    namespace uvc
+    namespace platform
     {
         class named_mutex
         {

@@ -108,41 +108,47 @@ int main()
                 auto stream_type = kvp.first;
                 auto& frame = kvp.second;
 
-                stringstream ss;
-                ss << "rs-headless-output-" << stream_type << ".png";
-
-                cout << "Writing " << ss.str().data() << ", " << frame.get_width() << " x " << frame.get_height() << " pixels"   << endl;
-
-                auto pixels = frame.get_data();
-                auto bpp = frame.get_bytes_per_pixel();
-                vector<uint8_t> coloredDepth;
-
-                // Create nice color image from depth data
-                if (stream_type == RS2_STREAM_DEPTH)
+                if (auto vid_frame = frame.as<video_frame>())
                 {
-                    /* Transform Depth range map into color map */
-                    auto& depth = frames_by_stream[RS2_STREAM_DEPTH];
-                    const auto depth_size = depth.get_width() * depth.get_height() * 3;
-                    coloredDepth.resize(depth_size);
+                    stringstream ss;
+                    ss << "rs-headless-output-" << stream_type << ".png";
 
-                    /* Encode depth data into color image */
-                    make_depth_histogram(classic, coloredDepth.data(),
-                                         static_cast<const uint16_t*>(depth.get_data()),
-                                         depth.get_width(), depth.get_height(), true, 0, 0);
+                    cout << "Writing " << ss.str().data() << ", " << vid_frame.get_width() << " x " << vid_frame.get_height() << " pixels"   << endl;
 
-                    pixels = coloredDepth.data();
-                    bpp = 3;
+                    auto pixels = vid_frame.get_data();
+                    auto bpp = vid_frame.get_bytes_per_pixel();
+                    vector<uint8_t> coloredDepth;
+
+                    // Create nice color image from depth data
+                    if (stream_type == RS2_STREAM_DEPTH)
+                    {
+                        /* Transform Depth range map into color map */
+                        const auto depth_size = vid_frame.get_width() * vid_frame.get_height() * 3;
+                        coloredDepth.resize(depth_size);
+
+                        /* Encode depth data into color image */
+                        make_depth_histogram(classic, coloredDepth.data(),
+                                             static_cast<const uint16_t*>(vid_frame.get_data()),
+                                             vid_frame.get_width(), vid_frame.get_height(), true, 0, 0);
+
+                        pixels = coloredDepth.data();
+                        bpp = 3;
+                    }
+
+                    stbi_write_png(ss.str().data(),
+                                   vid_frame.get_width(), vid_frame.get_height(),
+                                   bpp,
+                                   pixels,
+                                   vid_frame.get_width() * bpp );
+
+                    /* Record per-frame metadata for UVC streams*/
+                    std::string metadata_file_name = rs2::to_string() << "cpp-headless-output-" << stream_type << "-metadata.csv";
+                    metadata_to_csv(frame, metadata_file_name);
                 }
-
-                stbi_write_png(ss.str().data(),
-                               frame.get_width(), frame.get_height(),
-                               bpp,
-                               pixels,
-                               frame.get_width() * bpp );
-
-                /* Record per-frame metadata for UVC streams*/
-                std::string metadata_file_name = rs2::to_string() << "cpp-headless-output-" << stream_type << "-metadata.csv";
-                metadata_to_csv(frame, metadata_file_name);
+                else
+                {
+                    cout << "Skipping frame of stream " << rs2_stream_to_string(frame.get_stream_type()) << " because it is not a video frame...";
+                }
             }
 
             frames_by_stream.clear();

@@ -19,11 +19,9 @@
 
 namespace librealsense
 {
-    ds5_active::ds5_active(const uvc::backend& backend,
-                           const std::vector<uvc::uvc_device_info>& dev_info,
-                           const std::vector<uvc::usb_device_info>& hwm_device,
-                           const std::vector<uvc::hid_device_info>& hid_info)
-        : ds5_device(backend, dev_info, hwm_device, hid_info)
+    ds5_active::ds5_active(const platform::backend& backend,
+                           const platform::backend_device_group& group)
+        : ds5_device(backend, group)
     {
         using namespace ds;
 
@@ -35,7 +33,22 @@ namespace librealsense
                 DS5_LASER_POWER, "Manual laser power in mw. applicable only when laser power mode is set to Manual"));
 
         get_depth_sensor().register_option(RS2_OPTION_PROJECTOR_TEMPERATURE,
-                                 std::make_shared<asic_and_projector_temperature_options>(get_depth_sensor(),
-                                                                                          RS2_OPTION_PROJECTOR_TEMPERATURE));
+            std::make_shared<asic_and_projector_temperature_options>(get_depth_sensor(),
+                RS2_OPTION_PROJECTOR_TEMPERATURE));
+    }
+
+    std::shared_ptr<matcher> ds5_active::create_matcher(rs2_stream stream) const
+    {
+        std::vector<std::shared_ptr<matcher>> matchers;
+
+        std::set<rs2_stream> streams = { RS2_STREAM_DEPTH , RS2_STREAM_COLOR, RS2_STREAM_INFRARED, RS2_STREAM_INFRARED2 };
+        if (streams.find(stream) != streams.end())
+        {
+            for (auto s : streams)
+                matchers.push_back(device::create_matcher(s));
+        }
+
+        return std::make_shared<frame_number_composite_matcher>(matchers);
+
     }
 }
