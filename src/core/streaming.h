@@ -117,6 +117,8 @@ namespace librealsense
         virtual ~sensor_interface() = default;
     };
 
+    class matcher;
+
     class device_interface : public virtual info_interface
     {
     public:
@@ -128,6 +130,7 @@ namespace librealsense
 
         virtual rs2_extrinsics get_extrinsics(size_t from, rs2_stream from_stream, size_t to, rs2_stream to_stream) const = 0;
 
+        virtual std::shared_ptr<matcher> create_matcher(rs2_stream stream) const = 0;
         virtual ~device_interface() = default;
     };
 

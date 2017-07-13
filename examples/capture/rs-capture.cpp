@@ -33,15 +33,12 @@ int main(int argc, char * argv[])
 
             auto stream = config.open(dev);
 
-            auto points = ctx.create_pointcloud();
-
-            syncer syncer;
+			syncer_processing_block syncer;
             stream.start(syncer);
 
-//            auto p = points.calculate();
-//            p.get_vertices();
-//            p.get_pixel_coordinates();
-
+           // black.start(syncer);
+			frame_queue queue;
+			syncer.start(queue);
             texture_buffer buffers[RS2_STREAM_COUNT];
 
             // Open a GLFW window
@@ -59,16 +56,15 @@ int main(int argc, char * argv[])
                 glfwGetFramebufferSize(win, &w, &h);
 
                 auto index = 0;
-                auto frames = syncer.wait_for_frames(500);
-
-                // for consistent visualization, sort frames based on stream type:
+				auto frames = queue.wait_for_frames();
+                //// for consistent visualization, sort frames based on stream type:
                 sort(frames.begin(), frames.end(),
                      [](const frame& a, const frame& b) -> bool
                 {
                     return a.get_stream_type() < b.get_stream_type();
                 });
 
-                //dev.get_option(RS2_OPTION_LASER_POWER);
+                ////dev.get_option(RS2_OPTION_LASER_POWER);
                 auto tiles_horisontal = static_cast<int>(ceil(sqrt(frames.size())));
                 auto tiles_vertical = ceil((float)frames.size() / tiles_horisontal);
                 auto tile_w = static_cast<float>((float)w / tiles_horisontal);

@@ -16,13 +16,13 @@ namespace librealsense
     sensor_base::sensor_base(std::string name, std::shared_ptr<platform::time_service> ts, const device* dev)
         : _source(ts),
           _device(dev),
-          _is_streaming(false),
-          _is_opened(false),
-          _stream_profiles([this]() { return this->init_stream_profiles(); }),
-          _notifications_proccessor(std::shared_ptr<notifications_proccessor>(new notifications_proccessor())),
-          _metadata_parsers(std::make_shared<metadata_parser_map>()),
-          _on_before_frame_callback(nullptr),
-          _ts(ts)
+        _is_streaming(false),
+        _is_opened(false),
+        _stream_profiles([this]() { return this->init_stream_profiles(); }),
+        _notifications_proccessor(std::shared_ptr<notifications_proccessor>(new notifications_proccessor())),
+        _metadata_parsers(std::make_shared<metadata_parser_map>()),
+        _on_before_frame_callback(nullptr),
+        _ts(ts)
     {
         register_option(RS2_OPTION_FRAMES_QUEUE_SIZE, _source.get_published_size_option());
 
@@ -43,7 +43,7 @@ namespace librealsense
 
     rs2_extrinsics sensor_base::get_extrinsics_to(rs2_stream from, const sensor_interface& other, rs2_stream to) const
     {
-        _device->get_extrinsics(_device->find_sensor_idx(*this), from, _device->find_sensor_idx(other), to);
+        return _device->get_extrinsics(_device->find_sensor_idx(*this), from, _device->find_sensor_idx(other), to);
     }
 
     bool sensor_base::try_get_pf(const platform::stream_profile& p, native_pixel_format& result) const
@@ -352,7 +352,7 @@ namespace librealsense
                         _source.invoke_callback(std::move(pref));
                     }
                  }
-                }, _source.get_published_size_option()->query());
+                }, (int)_source.get_published_size_option()->query());
             }
             catch(...)
             {

@@ -7,6 +7,7 @@ namespace librealsense
     {
         auto res = sensor.lock();
         if (!res) return get_owner()->get_sensor();
+        return res;
     }
     void frame::set_sensor(std::shared_ptr<sensor_interface> s) { sensor = s;}
 
@@ -144,7 +145,7 @@ namespace librealsense
         {
             if (frame)
             {
-                auto callback_ended = _time_service->get_time();
+                auto callback_ended = _time_service?_time_service->get_time():0;
                 auto callback_warning_duration = 1000 / (frame->additional_data.fps + 1);
                 auto callback_duration = callback_ended - frame->get_frame_callback_start_time_point();
 

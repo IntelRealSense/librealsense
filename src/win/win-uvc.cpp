@@ -47,7 +47,7 @@ The library will be compiled without the metadata support!\n")
 
 namespace librealsense
 {
-    namespace uvc
+    namespace platform
     {
         // we are using standard fourcc codes to represent formats, while MF is using GUIDs
         // occasionally there is a mismatch between the code and the guid data

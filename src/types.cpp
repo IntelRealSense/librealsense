@@ -23,6 +23,13 @@ namespace librealsense
         return to_string() << buffer;
     }
 
+    recoverable_exception::recoverable_exception(const std::string& msg,
+        rs2_exception_type exception_type) noexcept
+        : librealsense_exception(msg, exception_type)
+    {
+        LOG_WARNING(msg);
+    }
+
     bool file_exists(const char* filename)
     {
         std::ifstream f(filename);

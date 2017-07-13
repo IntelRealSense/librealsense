@@ -101,7 +101,7 @@ namespace librealsense
             auto callback = frame.frame->get()->get_owner()->begin_callback();
             try
             {
-                frame.frame->log_callback_start(_ts->get_time());
+                frame->log_callback_start(_ts ? _ts->get_time() : 0);
                 if (_callback)
                 {
                     rs2_frame* ref = nullptr;

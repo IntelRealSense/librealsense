@@ -122,6 +122,7 @@ set(REALSENSE_CPP
     src/win/win-usb.cpp
     src/win/win-hid.cpp
     src/win/win-backend.cpp
+    rs4xx/rs4xx_advanced_mode/src/rs2_advanced_mode.cpp
 
     third-party/easyloggingpp/src/easylogging++.cc
 
@@ -235,7 +236,6 @@ if(WIN32)
         include/librealsense/rs2_advanced_mode.hpp
         include/librealsense/rs2_advanced_mode_command.h
         CMake/realsense.def
-        CMake/advanced_mode.def
         )
 
     source_group("Header Files\\Recorder" FILES
@@ -247,6 +247,7 @@ if(WIN32)
     source_group("Source Files\\API" FILES
         src/rs.cpp
         src/verify.c
+        rs4xx/rs4xx_advanced_mode/src/rs2_advanced_mode.cpp
         )
 
     source_group("Source Files\\Recorder" FILES
@@ -274,7 +275,7 @@ if(WIN32)
         src/ds5/ds5-options.h
         src/ds5/ds5-private.h
         src/ds5/ds5-timestamp.h
-		src/ds5/ds5-factory.h
+        src/ds5/ds5-factory.h
         src/ds5/ds5-active.h
         src/ds5/ds5-motion.h
         src/ds5/ds5-rolling-shutter.h
@@ -282,16 +283,16 @@ if(WIN32)
         src/ivcam/sr300.h
         src/ivcam/ivcam-private.h
         )
-		
-	source_group("Header Files\\Core" FILES
+        
+    source_group("Header Files\\Core" FILES
         src/core/streaming.h
-         src/core/debug.h
-		src/core/roi.h
-		src/core/video.h
-		src/core/motion.h
-		src/core/info.h
-		src/core/options.h
-		src/core/extension.h
+        src/core/debug.h
+        src/core/roi.h
+        src/core/video.h
+        src/core/motion.h
+        src/core/info.h
+        src/core/options.h
+        src/core/extension.h
         src/core/processing.h
         )
 
@@ -316,7 +317,6 @@ endif()
 if(WIN32)
     set(BACKEND RS2_USE_WMF_BACKEND)
     set(REALSENSE_DEF CMake/realsense.def)
-    set(REALSENSE_DEF CMake/advanced_mode.def)
     # Makes VS15 find the DLL when trying to run examples/tests
     set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
     set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})

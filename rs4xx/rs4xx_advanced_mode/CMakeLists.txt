@@ -76,9 +76,6 @@ if(WIN32)
 
 endif()
 
-if(WIN32)
-    set(ADVANCED_DEF ${RS4XX_SOURCES} ${RS4XX_INCLUDES} ../../CMake/advanced_mode.def)
-endif()
 add_library(rs2-advanced-mode SHARED ${RS4XX_SOURCES} ${RS4XX_INCLUDES} ${ADVANCED_DEF})
 target_link_libraries(rs2-advanced-mode ${DEPENDENCIES})
 include_directories(rs2-advanced-mode include)

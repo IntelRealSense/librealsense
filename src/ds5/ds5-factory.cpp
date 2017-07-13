@@ -20,6 +20,7 @@
 #include "ds5-active.h"
 #include "ds5-color.h"
 #include "ds5-motion.h"
+#include "sync.h"
 
 namespace librealsense
 {
@@ -83,6 +84,7 @@ namespace librealsense
             : ds5_device(backend, group),
               ds5_active(backend, group),
               ds5_advanced_mode_base(ds5_device::_hw_monitor, get_depth_sensor())  {}
+
     };
 
     // AWGT

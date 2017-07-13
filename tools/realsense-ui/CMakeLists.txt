@@ -19,7 +19,7 @@ endif()
 if(BUILD_GRAPHICAL_EXAMPLES)
 
     # config-ui
-    add_executable(realsense-ui realsense-ui.cpp ../../third-party/imgui/imgui.cpp ../../third-party/imgui/imgui_draw.cpp ../../third-party/imgui/imgui_impl_glfw.cpp ../../common/example.hpp ../../common/model-views.h ../../common/model-views.cpp ../../rs4xx/rs4xx_advanced_mode/src/rs2_advanced_mode.cpp)
+    add_executable(realsense-ui realsense-ui.cpp ../../third-party/imgui/imgui.cpp ../../third-party/imgui/imgui_draw.cpp ../../third-party/imgui/imgui_impl_glfw.cpp ../../common/example.hpp ../../common/model-views.h ../../common/model-views.cpp)
     target_link_libraries(realsense-ui ${DEPENDENCIES})
     include_directories(realsense-ui ../../third-party/imgui ../../common)
     set_target_properties (realsense-ui PROPERTIES
