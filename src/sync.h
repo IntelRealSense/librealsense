@@ -13,20 +13,21 @@
 
 namespace librealsense
 {
-	typedef std::pair<device_interface*, rs2_stream> stream_id;
+	typedef std::pair<const device_interface*, rs2_stream> stream_id;
+    typedef std::function<void(frame_holder, synthetic_source_interface*)> sync_callback;
 
 	class matcher
 	{
 	public:
 		matcher();
 
-		virtual void dispatch(frame_holder f) = 0;
-		virtual void sync(frame_holder f);
-		virtual void set_callback(std::function<void(frame_holder)> f);
+		virtual void dispatch(frame_holder f, synthetic_source_interface* source) = 0;
+		virtual void sync(frame_holder f, synthetic_source_interface* source);
+		virtual void set_callback(sync_callback f);
 		virtual const std::vector<stream_id>& get_streams() const = 0;
 
 	protected:
-		std::function<void(frame_holder)> _callback;
+        sync_callback _callback;
 	};
 
 	class identity_matcher : public matcher
@@ -34,7 +35,7 @@ namespace librealsense
 	public:
 		identity_matcher(stream_id stream);
 
-		void dispatch(frame_holder f) override;
+		void dispatch(frame_holder f, synthetic_source_interface* source) override;
 		const std::vector<stream_id>& get_streams() const override;
 
 	private:
@@ -45,13 +46,13 @@ namespace librealsense
 	{
 	public:
 		composite_matcher(std::vector<std::shared_ptr<matcher>> matchers);
-		virtual void dispatch(frame_holder f) override;
+		virtual void dispatch(frame_holder f, synthetic_source_interface* source) override;
 
 		virtual bool are_equivalent(frame_holder& a, frame_holder& b) { return true; };
 		virtual bool is_smaller_than(frame_holder& a, frame_holder& b) { return true; };
 		virtual bool wait_for_stream(std::vector<matcher*> synced, matcher* missing) { return true; };
 
-		void sync(frame_holder f) override;
+		void sync(frame_holder f, synthetic_source_interface* source) override;
 		const std::vector<stream_id>& get_streams() const override;
 		std::shared_ptr<matcher> find_matcher(stream_id stream);
 
@@ -76,7 +77,7 @@ namespace librealsense
 		timestamp_composite_matcher(std::vector<std::shared_ptr<matcher>> matchers);
 		bool are_equivalent(frame_holder& a, frame_holder& b) override;
 		bool is_smaller_than(frame_holder& a, frame_holder& b) override;
-		void dispatch(frame_holder f) override;
+		void dispatch(frame_holder f, synthetic_source_interface* source) override;
 		bool wait_for_stream(std::vector<matcher*> synced, matcher* missing) override;
 
 	private:

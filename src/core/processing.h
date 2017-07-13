@@ -27,6 +27,8 @@ namespace librealsense
                                                 int new_height = 0, 
                                                 int new_stride = 0) = 0;
 
+        virtual rs2_frame* allocate_composite_frame(std::vector<frame_holder> frames) = 0;
+
         virtual void frame_ready(frame_holder result) = 0;
         virtual rs2_source* get_c_wrapper() = 0;
     };
@@ -36,7 +38,9 @@ namespace librealsense
     public:
         virtual void set_processing_callback(frame_processor_callback_ptr callback) = 0;
         virtual void set_output_callback(frame_callback_ptr callback) = 0;
-        virtual void invoke(std::vector<frame_holder> frames) = 0;
+        virtual void invoke(frame_holder frame) = 0;
+
+
 
         virtual synthetic_source_interface& get_source() = 0;
 

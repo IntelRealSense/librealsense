@@ -19,11 +19,9 @@
 
 namespace librealsense
 {
-    ds5_rolling_shutter::ds5_rolling_shutter(const uvc::backend& backend,
-                           const std::vector<uvc::uvc_device_info>& dev_info,
-                           const std::vector<uvc::usb_device_info>& hwm_device,
-                           const std::vector<uvc::hid_device_info>& hid_info)
-        : ds5_device(backend, dev_info, hwm_device, hid_info)
+    ds5_rolling_shutter::ds5_rolling_shutter(const platform::backend& backend,
+                                             const platform::backend_device_group& group)
+        : ds5_device(backend, group)
     {
         using namespace ds;
 

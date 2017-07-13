@@ -50,13 +50,13 @@ namespace librealsense
         switch(type)
         {
         case backend_type::standard:
-            _backend = uvc::create_backend();
+            _backend = platform::create_backend();
             break;
         case backend_type::record:
-            _backend = std::make_shared<uvc::record_backend>(uvc::create_backend(), filename, section, mode);
+            _backend = std::make_shared<platform::record_backend>(platform::create_backend(), filename, section, mode);
             break;
         case backend_type::playback:
-            _backend = std::make_shared<uvc::playback_backend>(filename, section);
+            _backend = std::make_shared<platform::playback_backend>(filename, section);
 
             break;
         default: throw invalid_value_exception(to_string() << "Undefined backend type " << static_cast<int>(type));
@@ -70,7 +70,7 @@ namespace librealsense
     class platform_camera : public device
     {
     public:
-        platform_camera(std::shared_ptr<uvc::uvc_device> uvc, std::shared_ptr<uvc::time_service> ts)
+        platform_camera(std::shared_ptr<platform::uvc_device> uvc, std::shared_ptr<platform::time_service> ts)
         {
             auto color_ep = std::make_shared<uvc_sensor>("RGB Camera", uvc, std::unique_ptr<ds5_timestamp_reader>(new ds5_timestamp_reader(ts)), ts, this);
             add_sensor(color_ep);
@@ -101,7 +101,7 @@ namespace librealsense
         }
     };
 
-    std::shared_ptr<device_interface> platform_camera_info::create(const uvc::backend& backend) const
+    std::shared_ptr<device_interface> platform_camera_info::create(const platform::backend& backend) const
     {
         return std::make_shared<platform_camera>(backend.create_uvc_device(_uvc), backend.create_time_service());
     }
@@ -114,32 +114,32 @@ namespace librealsense
     std::vector<std::shared_ptr<device_info>> context::query_devices() const
     {
 
-        uvc::devices_data devices(_backend->query_uvc_devices(), _backend->query_usb_devices(), _backend->query_hid_devices());
+        platform::backend_device_group devices(_backend->query_uvc_devices(), _backend->query_usb_devices(), _backend->query_hid_devices());
 
         return create_devices(devices);
     }
 
-    std::vector<std::shared_ptr<device_info>> context::create_devices(uvc::devices_data devices) const
+    std::vector<std::shared_ptr<device_info>> context::create_devices(platform::backend_device_group devices) const
     {
         std::vector<std::shared_ptr<device_info>> list;
 
-        auto sr300_devices = sr300_info::pick_sr300_devices(_backend, devices._uvc_devices, devices._usb_devices);
+        auto sr300_devices = sr300_info::pick_sr300_devices(_backend, devices.uvc_devices, devices.usb_devices);
         std::copy(begin(sr300_devices), end(sr300_devices), std::back_inserter(list));
 
-        auto ds5_devices = ds5_info::pick_ds5_devices(_backend, devices._uvc_devices, devices._usb_devices, devices._hid_devices);
+        auto ds5_devices = ds5_info::pick_ds5_devices(_backend, devices);
         std::copy(begin(ds5_devices), end(ds5_devices), std::back_inserter(list));
 
-        auto recovery_devices = recovery_info::pick_recovery_devices(_backend, devices._usb_devices);
+        auto recovery_devices = recovery_info::pick_recovery_devices(_backend, devices.usb_devices);
         std::copy(begin(recovery_devices), end(recovery_devices), std::back_inserter(list));
 
-        auto uvc_devices = platform_camera_info::pick_uvc_devices(_backend, devices._uvc_devices);
+        auto uvc_devices = platform_camera_info::pick_uvc_devices(_backend, devices.uvc_devices);
         std::copy(begin(uvc_devices), end(uvc_devices), std::back_inserter(list));
 
         return list;
     }
 
 
-    void context::on_device_changed(uvc::devices_data old, uvc::devices_data curr)
+    void context::on_device_changed(platform::backend_device_group old, platform::backend_device_group curr)
     {
         auto old_list = create_devices(old);
         auto new_list = create_devices(curr);
@@ -180,7 +180,7 @@ namespace librealsense
         _device_watcher->stop();
 
         _devices_changed_callback = std::move(callback);
-        _device_watcher->start([this](uvc::devices_data old, uvc::devices_data curr)
+        _device_watcher->start([this](platform::backend_device_group old, platform::backend_device_group curr)
         {
             on_device_changed(old, curr);
         });

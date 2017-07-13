@@ -56,7 +56,7 @@ const std::string HID_CUSTOM_PATH("/sys/bus/platform/drivers/hid_sensor_custom")
 
 namespace librealsense
 {
-    namespace uvc
+    namespace platform
     {
         hid_input::hid_input(const std::string& iio_device_path, const std::string& input_name)
         {

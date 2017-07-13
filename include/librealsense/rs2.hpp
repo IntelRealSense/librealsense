@@ -16,6 +16,7 @@
 #include <iostream>
 #include <atomic>
 #include <condition_variable>
+#include <iterator>
 
 namespace rs2
 {
@@ -30,6 +31,13 @@ namespace rs2
             args = (nullptr != rs2_get_failed_args(err)) ? rs2_get_failed_args(err) : std::string();
             type = rs2_get_librealsense_exception_type(err);
             rs2_free_error(err);
+        }
+
+        explicit error(const std::string& message) : runtime_error(message.c_str())
+        {
+            function = "";
+            args = "";
+            type = RS2_EXCEPTION_TYPE_UNKNOWN;
         }
 
         const std::string& get_failed_function() const
@@ -367,10 +375,13 @@ namespace rs2
         friend class syncer;
         friend class frame_source;
         friend class processing_block;
+        friend class pointcloud_block;
 
         rs2_frame* frame_ref;
         frame(const frame&) = delete;
     };
+
+    typedef std::vector<frame> frameset;
 
     class video_frame : public frame
     {
@@ -383,9 +394,11 @@ namespace rs2
             {
                 frame_ref = nullptr;
             }
+            else
+            {
+                f.try_clone_ref(this);
+            }
             error::handle(e);
-
-            if (f) f.try_clone_ref(this);
         }
 
         /**
@@ -439,6 +452,138 @@ namespace rs2
         int get_bytes_per_pixel() const { return get_bits_per_pixel() / 8; }
     };
 
+    struct vertex { float xyz[3]; };
+    struct pixel { int ij[2]; };
+
+    class points : public frame
+    {
+    public:
+        points(const frame& f)
+                : frame(), _size(0)
+        {
+            rs2_error* e = nullptr;
+            if(!f || (rs2_is_frame(f.get(), RS2_EXTENSION_TYPE_POINTS, &e) == 0 && !e))
+            {
+                frame_ref = nullptr;
+            }
+            else
+            {
+                f.try_clone_ref(this);
+            }
+            error::handle(e);
+
+            if (frame_ref)
+            {
+                rs2_error* e = nullptr;
+                _size = rs2_embeded_frames_count(frame_ref, &e);
+                error::handle(e);
+            }
+        }
+
+        const vertex* get_vertices() const
+        {
+            rs2_error* e = nullptr;
+            auto res = rs2_get_vertices(frame_ref, &e);
+            error::handle(e);
+            return (const vertex*)res;
+        }
+
+        const pixel* get_pixel_coordinates() const
+        {
+            rs2_error* e = nullptr;
+            auto res = rs2_get_pixel_coordinates(frame_ref, &e);
+            error::handle(e);
+            return (const pixel*)res;
+        }
+
+        size_t size() const
+        {
+            return _size;
+        }
+
+    private:
+        size_t _size;
+    };
+
+    class composite_frame : public frame
+    {
+    public:
+        composite_frame(const frame& f)
+            : frame(), _size(0)
+        {
+            rs2_error* e = nullptr;
+            if(!f || (rs2_is_frame(f.get(), RS2_EXTENSION_TYPE_COMPOSITE_FRAME, &e) == 0 && !e))
+            {
+                frame_ref = nullptr;
+            }
+            else
+            {
+                f.try_clone_ref(this);
+            }
+            error::handle(e);
+
+            if (frame_ref)
+            {
+                rs2_error* e = nullptr;
+                _size = rs2_embeded_frames_count(frame_ref, &e);
+                error::handle(e);
+            }
+        }
+
+        frame first_or_default(rs2_stream s) const
+        {
+            frame result;
+            foreach([&result, s](frame f){
+                if (!result && f.get_stream_type() == s)
+                {
+                    result = std::move(f);
+                }
+            });
+            return result;
+        }
+
+        frame first(rs2_stream s) const
+        {
+            auto f = first_or_default(s);
+            if (!f) throw error("Frame of requested stream type was not found!");
+            return f;
+        }
+
+        size_t size() const
+        {
+            return _size;
+        }
+
+        template<class T>
+        void foreach(T action) const
+        {
+            rs2_error* e = nullptr;
+            auto count = size();
+            for (int i = 0; i < count; i++)
+            {
+                auto fref = rs2_extract_frame(frame_ref, i, &e);
+                error::handle(e);
+
+                action(frame(fref));
+            }
+        }
+
+        frameset get_frames() const
+        {
+            frameset res;
+            res.reserve(size());
+
+            foreach([&res](frame f){
+                res.emplace_back(std::move(f));
+            });
+
+            return std::move(res);
+        }
+
+    private:
+        size_t _size;
+    };
+
     template<class T>
     class frame_callback : public rs2_frame_callback
     {
@@ -473,6 +618,19 @@ namespace rs2
             return result;
         }
 
+        frame allocate_composite_frame(std::vector<frame> frames) const
+        {
+            rs2_error* e = nullptr;
+
+            std::vector<rs2_frame*> refs(frames.size(), nullptr);
+            for (int i = 0; i < frames.size(); i++)
+                std::swap(refs[i], frames[i].frame_ref);
+
+            auto result = rs2_allocate_composite_frame(_source, refs.data(), refs.size(), &e);
+            error::handle(e);
+            return result;
+        }
+
         void frame_ready(frame result) const
         {
             rs2_error* e = nullptr;
@@ -491,8 +649,6 @@ namespace rs2
         
     };
 
-    typedef std::vector<frame> frameset;
-
     template<class T>
     class frame_processor_callback : public rs2_frame_processor_callback
     {
@@ -500,15 +656,11 @@ namespace rs2
     public:
         explicit frame_processor_callback(T on_frame) : on_frame_function(on_frame) {}
 
-        void on_frame(rs2_frame ** f, int count, rs2_source * source) override
+        void on_frame(rs2_frame * f, rs2_source * source) override
         {
             frame_source src(source);
-            frameset frames(count);
-            for (int i = 0; i < count; i++)
-            {
-                frames[i] = std::move(frame(f[i]));
-            }
-            on_frame_function(std::move(frames), source);
+            frame frm(f);
+            on_frame_function(std::move(frm), src);
         }
 
         void release() override { delete this; }
@@ -525,24 +677,19 @@ namespace rs2
             error::handle(e);
         }
 
-        void invoke(frameset frames) const
+        void invoke(frame f) const
         {
-            std::vector<rs2_frame*> refs(frames.size(), nullptr);
-            for (size_t i = 0; i < frames.size(); i++)
-            {
-                std::swap(refs[i], frames[i].frame_ref);
-            }
+            rs2_frame* ptr = nullptr;
+            std::swap(f.frame_ref, ptr);
 
             rs2_error* e = nullptr;
-            rs2_process_frames(_block.get(), refs.data(), refs.size(), &e);
+            rs2_process_frame(_block.get(), ptr, &e);
             error::handle(e);
         }
 
         void operator()(frame f) const
         {
-            frameset v(1);
-            v[0] = std::move(f);
-            invoke(std::move(v));
+            invoke(std::move(f));
         }
 
 
@@ -794,6 +941,24 @@ namespace rs2
             error::handle(e);
         }
 
+        rs2_extrinsics get_extrinsics_to(rs2_stream from, const sensor& other, rs2_stream to) const
+        {
+            rs2_extrinsics res;
+            rs2_error* e = nullptr;
+            rs2_get_extrinsics(this->_sensor.get(), from, other._sensor.get(), to, &res, &e);
+            error::handle(e);
+            return res;
+        }
+
+        rs2_extrinsics get_extrinsics_to(const sensor& other) const
+        {
+            rs2_extrinsics res;
+            rs2_error* e = nullptr;
+            rs2_get_extrinsics(this->_sensor.get(), RS2_STREAM_ANY, other._sensor.get(), RS2_STREAM_ANY, &res, &e);
+            error::handle(e);
+            return res;
+        }
+
         /**
         * close subdevice for exclusive access
         * this method should be used for releasing device resource
@@ -996,22 +1161,6 @@ namespace rs2
             return intrin;
         }
 
-        /** Retrieves mapping between the units of the depth image and meters
-         * This function is deprecated! Please use RS2_OPTION_DEPTH_UNITS instead
-         * \return depth in meters corresponding to a depth value of 1
-         */
-        #ifdef __GNUC__
-        __attribute__((deprecated))
-        #elif defined(_MSC_VER)
-        __declspec(deprecated)
-        #endif
-        float get_depth_scale() const
-        {
-            if (supports(RS2_OPTION_DEPTH_UNITS))
-                return get_option(RS2_OPTION_DEPTH_UNITS);
-            return 1.f;
-        }
-
         sensor& operator=(const std::shared_ptr<rs2_sensor> dev)
         {
             _sensor.reset();
@@ -1078,7 +1227,6 @@ namespace rs2
 
         void set_region_of_interest(const region_of_interest& roi)
         {
-            if (!_sensor) throw std::runtime_error("Sensor does not support Region-of-Interest!");
             rs2_error* e = nullptr;
             rs2_set_region_of_interest(_sensor.get(), roi.min_x, roi.min_y, roi.max_x, roi.max_y, &e);
             error::handle(e);
@@ -1086,7 +1234,6 @@ namespace rs2
 
         region_of_interest get_region_of_interest() const
         {
-            if (!_sensor) throw std::runtime_error("Sensor does not support Region-of-Interest!");
             region_of_interest roi {};
             rs2_error* e = nullptr;
             rs2_get_region_of_interest(_sensor.get(), &roi.min_x, &roi.min_y, &roi.max_x, &roi.max_y, &e);
@@ -1094,7 +1241,35 @@ namespace rs2
             return roi;
         }
 
-        operator bool() const { return _sensor.get(); }
+        operator bool() const { return _sensor.get() != nullptr; }
+    };
+
+    class depth_sensor : public sensor
+    {
+    public:
+        depth_sensor(sensor s)
+            : sensor(s.get())
+        {
+            rs2_error* e = nullptr;
+            if(rs2_is_sensor(_sensor.get(), RS2_EXTENSION_TYPE_DEPTH_SENSOR, &e) == 0 && !e)
+            {
+                _sensor = nullptr;
+            }
+            error::handle(e);
+        }
+
+        /** Retrieves mapping between the units of the depth image and meters
+         * \return depth in meters corresponding to a depth value of 1
+         */
+        float get_depth_scale() const
+        {
+            rs2_error* e = nullptr;
+            auto res = rs2_get_depth_scale(_sensor.get(), &e);
+            error::handle(e);
+            return res;
+        }
+
+        operator bool() const { return _sensor.get() != nullptr; }
     };
 
     class device
@@ -1130,6 +1305,16 @@ namespace rs2
             }
 
             return results;
+        }
+
+        template<class T>
+        T first()
+        {
+            for (auto&& s : query_sensors())
+            {
+                if (auto t = s.as<T>()) return t;
+            }
+            throw rs2::error("Could not find requested sensor type!");
         }
 
         /**
@@ -1232,8 +1417,6 @@ namespace rs2
 
         std::vector<uint8_t> send_and_receive_raw_data(const std::vector<uint8_t>& input) const
         {
-            if (!_dev) throw std::runtime_error("Device does not support Debug Protocol!");
-
             std::vector<uint8_t> results;
 
             rs2_error* e = nullptr;
@@ -1389,6 +1572,129 @@ namespace rs2
         device_list _added;
     };
 
+
+    class frame_queue
+    {
+    public:
+        /**
+        * create frame queue. frame queues are the simplest x-platform synchronization primitive provided by librealsense
+        * to help developers who are not using async APIs
+        * param[in] capacity size of the frame queue
+        */
+        explicit frame_queue(unsigned int capacity)
+        {
+            rs2_error* e = nullptr;
+            _queue = std::shared_ptr<rs2_frame_queue>(
+                    rs2_create_frame_queue(capacity, &e),
+                    rs2_delete_frame_queue);
+            error::handle(e);
+        }
+
+        frame_queue() : frame_queue(1) {}
+
+        /**
+        * enqueue new frame into a queue
+        * \param[in] f - frame handle to enqueue (this operation passed ownership to the queue)
+        */
+        void enqueue(frame f) const
+        {
+            rs2_enqueue_frame(f.frame_ref, _queue.get()); // noexcept
+            f.frame_ref = nullptr; // frame has been essentially moved from
+        }
+
+        /**
+        * wait until new frame becomes available in the queue and dequeue it
+        * \return frame handle to be released using rs2_release_frame
+        */
+        frame wait_for_frame() const
+        {
+            rs2_error* e = nullptr;
+            auto frame_ref = rs2_wait_for_frame(_queue.get(), &e);
+            error::handle(e);
+            return{ frame_ref };
+        }
+
+        frameset wait_for_frames() const
+        {
+            auto f = wait_for_frame();
+            auto comp = f.as<composite_frame>();
+            if (comp)
+            {
+                return std::move(comp.get_frames());
+            }
+            else
+            {
+                frameset res(1);
+                res[0] = std::move(f);
+                return std::move(res);
+            }
+        }
+
+        /**
+        * poll if a new frame is available and dequeue if it is
+        * \param[out] f - frame handle
+        * \return true if new frame was stored to f
+        */
+        bool poll_for_frame(frame* f) const
+        {
+            rs2_error* e = nullptr;
+            rs2_frame* frame_ref = nullptr;
+            auto res = rs2_poll_for_frame(_queue.get(), &frame_ref, &e);
+            error::handle(e);
+            if (res) *f = { frame_ref };
+            return res > 0;
+        }
+
+        bool poll_for_frames(frameset* frames) const
+        {
+            frame f;
+            if (poll_for_frame(&f))
+            {
+                if (auto comp = f.as<composite_frame>())
+                {
+                    *frames = std::move(comp.get_frames());
+                }
+                else
+                {
+                    frameset res(1);
+                    res[0] = std::move(f);
+                    *frames = std::move(res);
+                }
+                return true;
+            }
+            return false;
+        }
+
+        void operator()(frame f) const
+        {
+            enqueue(std::move(f));
+        }
+
+    private:
+        std::shared_ptr<rs2_frame_queue> _queue;
+    };
+
+    class pointcloud
+    {
+    public:
+        points calculate(frame depth)
+        {
+            _block.invoke(std::move(depth));
+            return _queue.wait_for_frame();
+        }
+
+    private:
+        friend class context;
+
+        pointcloud(processing_block block) : _block(block)
+        {
+            _block.start(_queue);
+        }
+
+        processing_block _block;
+        frame_queue _queue;
+    };
+
     /**
     * default librealsense context class
     * includes realsense API version as provided by RS2_API_VERSION macro
@@ -1421,6 +1727,21 @@ namespace rs2
         }
 
         /**
+         * @brief Generate a flat list of all available sensors from all RealSense devices
+         * @return List of sensors
+         */
+        std::vector<sensor> query_all_sensors() const
+        {
+            std::vector<sensor> results;
+            for (auto&& dev : query_devices())
+            {
+                auto sensors = dev.query_sensors();
+                std::copy(sensors.begin(), sensors.end(), std::back_inserter(results));
+            }
+            return results;
+        }
+
+        /**
         * \return            the time at specific time point, in live and redord contextes it will return the system time and in playback contextes it will return the recorded time
         */
         double get_time()
@@ -1431,6 +1752,20 @@ namespace rs2
             error::handle(e);
 
             return time;
+        }
+
+        device get_sensor_parent(const sensor& s) const
+        {
+            rs2_error* e = nullptr;
+            std::shared_ptr<rs2_device> dev(
+                rs2_create_device_from_sensor(s._sensor.get(), &e),
+                rs2_delete_device);
+            error::handle(e);
+        }
+
+        rs2_extrinsics get_extrinsics(const sensor& from, const sensor& to) const
+        {
+            return from.get_extrinsics_to(to);
         }
 
         /**
@@ -1447,18 +1782,28 @@ namespace rs2
         }
 
         template<class T>
-        processing_block create_processing_block(rs2_extension_type output_type, T processing_function)
+        processing_block create_processing_block(T processing_function) const
         {
             rs2_error* e = nullptr;
             std::shared_ptr<rs2_processing_block> block(
                 rs2_create_processing_block(_context.get(),
-                    output_type,
                     new frame_processor_callback<T>(processing_function),
                     &e),
                 rs2_delete_processing_block);
             error::handle(e);
 
             return processing_block(block);
+        }
+
+        pointcloud create_pointcloud() const
+        {
+            rs2_error* e = nullptr;
+            std::shared_ptr<rs2_processing_block> block(
+                    rs2_create_pointcloud(_context.get(), &e),
+                    rs2_delete_processing_block);
+            error::handle(e);
+
+            return pointcloud(processing_block{ block });
         }
 
     protected:
@@ -1507,71 +1852,6 @@ namespace rs2
         }
 
         mock_context() = delete;
-    };
-
-    class frame_queue
-    {
-    public:
-        /**
-        * create frame queue. frame queues are the simplest x-platform synchronization primitive provided by librealsense
-        * to help developers who are not using async APIs
-        * param[in] capacity size of the frame queue
-        */
-        explicit frame_queue(unsigned int capacity)
-        {
-            rs2_error* e = nullptr;
-            _queue = std::shared_ptr<rs2_frame_queue>(
-                rs2_create_frame_queue(capacity, &e),
-                rs2_delete_frame_queue);
-            error::handle(e);
-        }
-
-        frame_queue() : frame_queue(1) {}
-
-        /**
-        * enqueue new frame into a queue
-        * \param[in] f - frame handle to enqueue (this operation passed ownership to the queue)
-        */
-        void enqueue(frame f) const
-        {
-            rs2_enqueue_frame(f.frame_ref, _queue.get()); // noexcept
-            f.frame_ref = nullptr; // frame has been essentially moved from
-        }
-
-        /**
-        * wait until new frame becomes available in the queue and dequeue it
-        * \return frame handle to be released using rs2_release_frame
-        */
-        frame wait_for_frame() const
-        {
-            rs2_error* e = nullptr;
-            auto frame_ref = rs2_wait_for_frame(_queue.get(), &e);
-            error::handle(e);
-            return{ frame_ref };
-        }
-
-        /**
-        * poll if a new frame is available and dequeue if it is
-        * \param[out] f - frame handle
-        * \return true if new frame was stored to f
-        */
-        bool poll_for_frame(frame* f) const
-        {
-            rs2_error* e = nullptr;
-            rs2_frame* frame_ref = nullptr;
-            auto res = rs2_poll_for_frame(_queue.get(), &frame_ref, &e);
-            error::handle(e);
-            if (res) *f = { frame_ref };
-            return res > 0;
-        }
-
-        void operator()(frame f) const
-        {
-            enqueue(std::move(f));
-        }
-
-    private:
-        std::shared_ptr<rs2_frame_queue> _queue;
     };
 
     inline void log_to_console(rs2_log_severity min_severity)

@@ -20,7 +20,7 @@
 
 namespace librealsense
 {
-    namespace uvc
+    namespace platform
     {
         winusb_device::winusb_device(std::wstring lpDevicePath)
             : _lp_device_path(lpDevicePath),

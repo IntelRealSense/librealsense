@@ -122,7 +122,37 @@ EXPORTS
     rs2_synthetic_frame_ready
     rs2_create_processing_block
     rs2_start_processing
-    rs2_process_frames
+    rs2_process_frame
     rs2_delete_processing_block
+    rs2_create_sync_processing_block
+    rs2_embeded_frames_count
+    rs2_extract_frame
 
-	rs2_create_sync_processing_block
+    rs2_set_depth_control
+    rs2_get_depth_control
+    rs2_set_rsm
+    rs2_get_rsm
+    rs2_set_rau_support_vector_control
+    rs2_get_rau_support_vector_control
+    rs2_set_color_control
+    rs2_get_color_control
+    rs2_set_rau_thresholds_control
+    rs2_get_rau_thresholds_control
+    rs2_set_slo_color_thresholds_control
+    rs2_get_slo_color_thresholds_control
+    rs2_get_slo_penalty_control
+    rs2_set_slo_penalty_control
+    rs2_get_hdad
+    rs2_set_hdad
+    rs2_set_color_correction
+    rs2_get_color_correction
+    rs2_set_depth_table
+    rs2_get_depth_table
+    rs2_set_ae_control
+    rs2_get_ae_control
+    rs2_set_census
+    rs2_get_census
+    rs2_advanced_mode_preset_to_string
+    rs2_apply_preset
+    rs2_is_enabled
+    rs2_toggle_advanced_mode

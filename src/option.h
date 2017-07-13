@@ -47,7 +47,7 @@ namespace librealsense
         void set(float value) override
         {
             _ep.invoke_powered(
-                [this, value](uvc::uvc_device& dev)
+                [this, value](platform::uvc_device& dev)
                 {
                     T t = static_cast<T>(value);
                     if (!dev.set_xu(_xu, _id, reinterpret_cast<uint8_t*>(&t), sizeof(T)))
@@ -58,7 +58,7 @@ namespace librealsense
         float query() const override
         {
             return static_cast<float>(_ep.invoke_powered(
-                [this](uvc::uvc_device& dev)
+                [this](platform::uvc_device& dev)
                 {
                     T t;
                     if (!dev.get_xu(_xu, _id, reinterpret_cast<uint8_t*>(&t), sizeof(T)))
@@ -71,7 +71,7 @@ namespace librealsense
         option_range get_range() const override
         {
             auto uvc_range = _ep.invoke_powered(
-                [this](uvc::uvc_device& dev)
+                [this](platform::uvc_device& dev)
                 {
                     return dev.get_xu_range(_xu, _id, sizeof(T));
                 });
@@ -88,7 +88,7 @@ namespace librealsense
 
         bool is_enabled() const override { return true; }
 
-        uvc_xu_option(uvc_sensor& ep, uvc::extension_unit xu, uint8_t id, std::string description)
+        uvc_xu_option(uvc_sensor& ep, platform::extension_unit xu, uint8_t id, std::string description)
             : _ep(ep), _xu(xu), _id(id), _desciption(std::move(description))
         {}
 
@@ -99,7 +99,7 @@ namespace librealsense
 
     protected:
         uvc_sensor&       _ep;
-        uvc::extension_unit _xu;
+        platform::extension_unit _xu;
         uint8_t             _id;
         std::string         _desciption;
     };
@@ -168,19 +168,19 @@ namespace librealsense
             (struct_interface, field, range);
     }
 
-    class command_transfer_over_xu : public uvc::command_transfer
+    class command_transfer_over_xu : public platform::command_transfer
     {
     public:
         std::vector<uint8_t> send_receive(const std::vector<uint8_t>& data, int, bool require_response) override;
 
         command_transfer_over_xu(uvc_sensor& uvc,
-                             uvc::extension_unit xu, uint8_t ctrl)
+                                 platform::extension_unit xu, uint8_t ctrl)
             : _uvc(uvc), _xu(std::move(xu)), _ctrl(ctrl)
         {}
 
     private:
         uvc_sensor&       _uvc;
-        uvc::extension_unit _xu;
+        platform::extension_unit _xu;
         uint8_t             _ctrl;
     };
 

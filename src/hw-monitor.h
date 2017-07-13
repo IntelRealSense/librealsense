@@ -48,7 +48,7 @@ namespace librealsense
     class locked_transfer
     {
     public:
-        locked_transfer(std::shared_ptr<uvc::command_transfer> command_transfer, uvc_sensor& uvc_ep)
+        locked_transfer(std::shared_ptr<platform::command_transfer> command_transfer, uvc_sensor& uvc_ep)
             :_command_transfer(command_transfer),
              _uvc_sensor_base(uvc_ep)
         {}
@@ -60,15 +60,15 @@ namespace librealsense
         {
             std::lock_guard<std::recursive_mutex> lock(_local_mtx);
             return _uvc_sensor_base.invoke_powered([&]
-                (uvc::uvc_device& dev)
+                (platform::uvc_device& dev)
                 {
-                    std::lock_guard<uvc::uvc_device> lock(dev);
+                    std::lock_guard<platform::uvc_device> lock(dev);
                     return _command_transfer->send_receive(data, timeout_ms, require_response);
                 });
         }
 
     private:
-        std::shared_ptr<uvc::command_transfer> _command_transfer;
+        std::shared_ptr<platform::command_transfer> _command_transfer;
         uvc_sensor& _uvc_sensor_base;
         std::recursive_mutex _local_mtx;
     };

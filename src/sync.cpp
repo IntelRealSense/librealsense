@@ -14,23 +14,20 @@ namespace librealsense
 	public:
 		explicit internal_frame_processor_callback(T on_frame) : on_frame_function(on_frame) {}
 
-		void on_frame(rs2_frame ** f, int count, rs2_source * source) override
+		void on_frame(rs2_frame * f, rs2_source * source) override
 		{
-			if (count > 0)
-			{
-				frame_holder front(f[0]);
-				on_frame_function(std::move(front), source->source);
-			}
+			frame_holder front(f);
+			on_frame_function(std::move(front), source->source);
 		}
 
 		void release() override { delete this; }
 	};
 
     syncer_proccess_unit::syncer_proccess_unit()
-        : processing_block(RS2_EXTENSION_TYPE_VIDEO_FRAME, nullptr),
+        : processing_block(nullptr),
 		  _matcher({})
     {
-		_matcher.set_callback([this](frame_holder f)
+		_matcher.set_callback([this](frame_holder f, synthetic_source_interface* source)
 		{
 			// TODO: lock
 			get_source().frame_ready(std::move(f));
@@ -50,7 +47,7 @@ namespace librealsense
 			//		M.dispatch(move(f), &regratable_lock)
 
 			// TODO: lock
-			_matcher.dispatch(std::move(frame));
+			_matcher.dispatch(std::move(frame), source);
 		};
 		set_processing_callback(std::shared_ptr<rs2_frame_processor_callback>(
 			new internal_frame_processor_callback<decltype(f)>(f)));
@@ -59,14 +56,14 @@ namespace librealsense
 	matcher::matcher()
 	{}
 
-	void matcher::set_callback(std::function<void(frame_holder)> f)
+	void matcher::set_callback(sync_callback f)
 	{
 		_callback = f;
 	}
 
-	void  matcher::sync(frame_holder f)
+	void  matcher::sync(frame_holder f, synthetic_source_interface* source)
 	{
-		_callback(std::move(f));
+		_callback(std::move(f), source);
 	}
 
 	identity_matcher::identity_matcher(stream_id stream)
@@ -74,9 +71,9 @@ namespace librealsense
 		_stream = { stream };
 	}
 
-	void identity_matcher::dispatch(frame_holder f) 
+	void identity_matcher::dispatch(frame_holder f, synthetic_source_interface* source)
 	{ 
-		sync(std::move(f)); 
+		sync(std::move(f), source); 
 	}
 
 	const std::vector<stream_id>& identity_matcher::get_streams() const
@@ -90,9 +87,9 @@ namespace librealsense
 		{
 			for (auto&& stream : matcher->get_streams())
 			{
-				matcher->set_callback([&](frame_holder f)
+				matcher->set_callback([&](frame_holder f, synthetic_source_interface* source)
 				{
-					sync(std::move(f));
+					sync(std::move(f), source);
 				});
 				_matchers[stream] = matcher;
 				_streams.push_back(stream);
@@ -100,16 +97,26 @@ namespace librealsense
 		}
 	}
 
-	void composite_matcher::dispatch(frame_holder f)
+
+	const device_interface* get_device_from_frame(const frame_holder& f)
+	{
+		if (auto s = f.frame->get()->get_sensor())
+		{
+			return &s->get_device();
+		}
+		else
+		{
+			return nullptr;
+		}
+	}
+
+	void composite_matcher::dispatch(frame_holder f, synthetic_source_interface* source)
 	{
 		auto frame_ptr = f.frame->get();
 		auto stream = frame_ptr->get_stream_type();
 
-		auto dev = frame_ptr->get_owner()->get_device().lock();
-
-		auto matcher = find_matcher(stream_id(dev.get(), stream));
-
-		matcher->dispatch(std::move(f));
+		auto matcher = find_matcher(stream_id(get_device_from_frame(f), stream));
+		matcher->dispatch(std::move(f), source);
 	}
 
 	std::shared_ptr<matcher> composite_matcher::find_matcher(stream_id stream)
@@ -123,9 +130,9 @@ namespace librealsense
 			{
 				matcher = stream.first->create_matcher(stream.second);
 
-				matcher->set_callback([&](frame_holder f)
+				matcher->set_callback([&](frame_holder f, synthetic_source_interface* source)
 				{
-					sync(std::move(f));
+					sync(std::move(f), source);
 				});
 
 				for (auto stream : matcher->get_streams())
@@ -142,21 +149,21 @@ namespace librealsense
 				_matchers[stream] = std::make_shared<identity_matcher>(stream);
 				matcher = _matchers[stream];
 
-				matcher->set_callback([&](frame_holder f)
+				matcher->set_callback([&](frame_holder f, synthetic_source_interface* source)
 				{
-					sync(std::move(f));
+					sync(std::move(f), source);
 				});
 			}
 		}
 		return matcher;
 	}
 
-	void composite_matcher::sync(frame_holder f)
+	void composite_matcher::sync(frame_holder f, synthetic_source_interface* source)
 	{
 		auto frame_ptr = f.frame->get();
 		auto stream = frame_ptr->get_stream_type();
 
-		auto matcher = find_matcher(stream_id(frame_ptr->get_owner()->get_device().lock().get(), stream));
+		auto matcher = find_matcher(stream_id(get_device_from_frame(f), stream));
 		_frames_queue[matcher.get()].enqueue(std::move(f));
 		
 		std::vector<frame_holder*> frames;
@@ -167,85 +174,95 @@ namespace librealsense
 
 		std::vector<frame_holder> synced;
 
-		do
-		{
-			synced_frames.clear();
-			frames.clear();
+        do
+        {
+            synced_frames.clear();
+            frames.clear();
 
 
-			for (auto s = _frames_queue.begin(); s != _frames_queue.end(); s++)
-			{
-				frame_holder* f;
-				if (s->second.peek(&f))
-				{
-					frames.push_back(f);
-					frames_matcher.push_back(s->first);
-				}
-				else
-				{
-					missing_streams.push_back(s->first);
-				}
-			}
-			if(frames.size())
-				std::cout << "QUEUES: ";
-			for (auto f : frames)
-			{
-				std::cout << (*f)->get()->get_stream_type() << " " << (*f)->get()->get_frame_number() << " ";
-			}
-			std::cout << "\n";
-			if (frames.size() == 0)
-				break;
+            for (auto s = _frames_queue.begin(); s != _frames_queue.end(); s++)
+            {
+                frame_holder* f;
+                if (s->second.peek(&f))
+                {
+                    frames.push_back(f);
+                    frames_matcher.push_back(s->first);
+                }
+                else
+                {
+                    missing_streams.push_back(s->first);
+                }
+            }
+            if (frames.size())
+                std::cout << "QUEUES: ";
+            for (auto f : frames)
+            {
+                std::cout << (*f)->get()->get_stream_type() << " " << (*f)->get()->get_frame_number() << " ";
+            }
+            std::cout << "\n";
+            if (frames.size() == 0)
+                break;
 
-			frame_holder* curr_sync;
-			if (frames.size()> 0)
-			{
-				curr_sync = frames[0];
-				synced_frames.push_back(frames_matcher[0]);
-			}
-			for (auto i = 1; i < frames.size() ; i++)
-			{
-				if (are_equivalent(*curr_sync, *frames[i]))
-				{
-					synced_frames.push_back(frames_matcher[i]);
-				}
-				else
-				{
-					if (is_smaller_than(*frames[i] , *curr_sync))
-					{
-						synced_frames.clear();
-						synced_frames.push_back(frames_matcher[i]);
-						curr_sync = frames[i];
-					}
-				}
-			}
-			
-		
-			for (auto i : missing_streams)
-			{
-				if (wait_for_stream(synced_frames, i))
-				{
-					synced_frames.clear();
-					break;
-				}
-			}
-			if(synced_frames.size())
-				std::cout << "\nSynced: ";
-			for (auto index : synced_frames)
-			{
-				frame_holder frame;
-				_frames_queue[index].dequeue(&frame);
+            frame_holder* curr_sync;
+            if (frames.size() > 0)
+            {
+                curr_sync = frames[0];
+                synced_frames.push_back(frames_matcher[0]);
+            }
+            for (auto i = 1; i < frames.size(); i++)
+            {
+                if (are_equivalent(*curr_sync, *frames[i]))
+                {
+                    synced_frames.push_back(frames_matcher[i]);
+                }
+                else
+                {
+                    if (is_smaller_than(*frames[i], *curr_sync))
+                    {
+                        synced_frames.clear();
+                        synced_frames.push_back(frames_matcher[i]);
+                        curr_sync = frames[i];
+                    }
+                }
+            }
 
-				std::cout << frame->get()->get_stream_type() << " " << frame->get()->get_frame_number() << " " << frame->get()->get_frame_timestamp() << " ";
-				//TODO: create composite frame
-				synced.push_back(std::move(frame));
-			}
-				std::cout << "\n";
 
+            for (auto i : missing_streams)
+            {
+                if (wait_for_stream(synced_frames, i))
+                {
+                    synced_frames.clear();
+                    break;
+                }
+            }
+            if (synced_frames.size())
+            {
+                std::cout << "\nSynced: ";
+                std::vector<frame_holder> match;
+                match.reserve(synced_frames.size());
+
+                for (auto index : synced_frames)
+                {
+                    frame_holder frame;
+                    _frames_queue[index].dequeue(&frame);
+
+                    std::cout << frame->get()->get_stream_type() << " " << frame->get()->get_frame_number() << " " << frame->get()->get_frame_timestamp() << " ";
+                    //TODO: create composite frame
+                    //synced.push_back(std::move(frame));
+
+                    match.push_back(std::move(frame));
+                }
+
+                std::cout << "\n";
+
+                frame_holder composite = source->allocate_composite_frame(std::move(match));
+                synced.push_back(std::move(composite));
+            }
 		} while (synced_frames.size() > 0);
 
 		for (auto&& s : synced)
 		{
-			_callback(std::move(s));
+			_callback(std::move(s), source);
 		}
 	}
 
@@ -288,7 +305,7 @@ namespace librealsense
 		return  a->get()->get_frame_timestamp() < b->get()->get_frame_timestamp();
 	}
 
-	void timestamp_composite_matcher::dispatch(frame_holder f)
+	void timestamp_composite_matcher::dispatch(frame_holder f, synthetic_source_interface* source)
 	{
 		auto fps = f->get()->get_framerate();
 
@@ -307,7 +324,7 @@ namespace librealsense
 			_next_expected[std::make_pair(nullptr, stream)] = f->get()->get_frame_timestamp() + gap;
 		}*/
 
-		composite_matcher::dispatch(std::move(f));
+		composite_matcher::dispatch(std::move(f), source);
 	}
 
 	bool timestamp_composite_matcher::wait_for_stream(std::vector<matcher*> synced, matcher* missing)
