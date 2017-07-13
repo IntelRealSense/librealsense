@@ -106,8 +106,8 @@ set(REALSENSE_CPP
     src/linux/backend-hid.cpp
     src/backend.cpp
     src/verify.c
-	src/align.cpp
-	src/source.cpp
+    src/align.cpp
+    src/source.cpp
     src/ds5/ds5-options.cpp
     src/ds5/ds5-timestamp.cpp
     src/ds5/ds5-private.cpp
@@ -129,6 +129,8 @@ set(REALSENSE_CPP
     src/mock/sql.cpp
     src/mock/recorder.cpp
 
+    rs4xx/rs4xx_advanced_mode/src/presets.cpp
+    rs4xx/rs4xx_advanced_mode/src/advanced_mode.cpp
 )
 
 set(REALSENSE_HPP
@@ -149,8 +151,8 @@ set(REALSENSE_HPP
     src/core/video.h
     src/core/options.h
     src/core/info.h
-	src/core/extension.h
-	src/core/processing.h
+    src/core/extension.h
+    src/core/processing.h
 
     src/archive.h
     src/concurrency.h
@@ -158,7 +160,7 @@ set(REALSENSE_HPP
     src/sensor.h
     src/sync.h
     src/sensor.h
-	src/align.h
+    src/align.h
     src/algo.h
     src/option.h
     src/metadata.h
@@ -166,7 +168,7 @@ set(REALSENSE_HPP
     src/error-handling.h
     src/hw-monitor.h
     src/image.h
-	src/source.h
+    src/source.h
     src/ivcam/ivcam-private.h
     src/types.h
     src/backend.h
@@ -283,7 +285,7 @@ if(WIN32)
 		
 	source_group("Header Files\\Core" FILES
         src/core/streaming.h
-		src/core/debug.h
+         src/core/debug.h
 		src/core/roi.h
 		src/core/video.h
 		src/core/motion.h

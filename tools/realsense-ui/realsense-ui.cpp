@@ -348,46 +348,6 @@ void draw_advanced_mode_tab(device& dev, advanced_mode_control& amc, bool& get_c
     }
 }
 
-void draw_presets_combo(device& dev, int& preset_index, int& last_preset_index, std::string& error_message)
-{
-    if (ImGui::CollapsingHeader("Advanced-Mode Presets", nullptr, true, true))
-    {
-        std::vector<const char*> presets;
-        for (int i = 0; i < RS2_ADVANCED_MODE_PRESET_COUNT; ++i)
-        {
-            presets.push_back(rs2_advanced_mode_preset_to_string((rs2_advanced_mode_preset)i));
-        }
-
-        ImGui::PushItemWidth(-1);
-        if (ImGui::IsItemHovered())
-        {
-            ImGui::SetTooltip("Advanced-Mode Presets");
-        }
-
-        if (ImGui::Combo("presets", &preset_index, presets.data(), presets.size()))
-        {
-            last_preset_index = preset_index;
-            if (dev.is<rs4xx::advanced_mode>())
-            {
-                auto advanced = dev.as<rs4xx::advanced_mode>();
-                if (advanced.is_enabled())
-                {
-                    advanced.apply_preset((rs2_advanced_mode_preset)preset_index);
-                }
-                else
-                {
-                    error_message = "Advanced-Mode is Disabled!";
-                }
-            }
-            else
-            {
-                error_message = "Device doesn't support Advanced Mode!";
-            }
-        }
-
-        ImGui::PopItemWidth();
-    }
-}
 
 int main(int, char**) try
 {
@@ -655,7 +615,6 @@ int main(int, char**) try
 
         if (list.size() > 0)
         {
-            draw_presets_combo(dev, preset_index, last_preset_index, error_message);
             if (last_tab_index == 0)
             {
                 draw_general_tab(model, list, dev, label, hw_reset_enable, update_read_only_options, error_message);

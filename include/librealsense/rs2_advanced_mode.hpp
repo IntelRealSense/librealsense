@@ -32,13 +32,6 @@ namespace rs4xx
             rs2::error::handle(e);
         }
 
-        void apply_preset(rs2_advanced_mode_preset preset)
-        {
-            rs2_error* e = nullptr;
-            rs2_apply_preset(_dev.get(), preset, &e);
-            rs2::error::handle(e);
-        }
-
         bool is_enabled() const
         {
             rs2_error* e = nullptr;

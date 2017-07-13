@@ -50,6 +50,9 @@ else()
 endif()
 
 set(RS4XX_SOURCES
+    src/advanced_mode.cpp
+    src/presets.h
+    src/presets.cpp
     src/rs2_advanced_mode.cpp
     src/json_loader.hpp
     )

@@ -5,7 +5,9 @@
 #include "ds5/ds5-private.h"
 #include "hw-monitor.h"
 #include "streaming.h"
+#include "../option.h"
 #define RS4XX_ADVANCED_MODE_HPP
+#include "../../rs4xx/rs4xx_advanced_mode/src/presets.h"
 #include <librealsense/rs2_advanced_mode_command.h>
 #undef RS4XX_ADVANCED_MODE_HPP
 
@@ -55,7 +57,9 @@ namespace librealsense
 
         virtual void toggle_advanced_mode(bool enable) = 0;
 
-        virtual void apply_preset(rs2_advanced_mode_preset preset) = 0;
+        virtual void apply_preset(const std::string& pid,
+                                  const std::vector<platform::stream_profile>& configuration,
+                                  rs2_advanced_mode_preset preset) = 0;
 
         virtual void get_depth_control_group(STDepthControlGroup* ptr, int mode = 0) const = 0;
         virtual void get_rsm(STRsm* ptr, int mode = 0) const = 0;
@@ -86,11 +90,12 @@ namespace librealsense
         virtual ~ds5_advanced_mode_interface() = default;
     };
 
+    class advanced_mode_preset_option;
+
     class ds5_advanced_mode_base : public ds5_advanced_mode_interface
     {
     public:
-        explicit ds5_advanced_mode_base(std::shared_ptr<hw_monitor> hwm)
-            : _hw_monitor(hwm) {}
+        explicit ds5_advanced_mode_base(std::shared_ptr<hw_monitor> hwm, uvc_sensor& depth_sensor);
 
         bool is_enabled() const
         {
@@ -105,9 +110,611 @@ namespace librealsense
             send_recieve(encode_command(ds::fw_cmd::reset));
         }
 
-        void apply_preset(rs2_advanced_mode_preset preset)
+        std::string pid_to_str(uint16_t pid)
         {
-            // TODO
+            return std::string(hexify(pid>>8) + hexify(static_cast<uint8_t>(pid)));
+        }
+
+        enum res_type{
+            small,
+            vga,
+            full
+        };
+
+        res_type get_res_type(uint32_t width, uint32_t height)
+        {
+            if (width == 640 && height == 480)
+                return res_type::vga;
+            else if (width < 640 && height < 480)
+                return res_type::small;
+            else if (width > 640 && height > 480)
+                return res_type::full;
+
+            throw invalid_value_exception("Invalid resolution!");
+        }
+
+        void apply_preset(const std::string& pid,
+                          const std::vector<platform::stream_profile>& configuration,
+                          rs2_advanced_mode_preset preset)
+        {
+            auto p = get_all();
+
+
+            auto res = get_res_type(configuration.front().width, configuration.front().height);
+
+            switch (preset) {
+            case RS2_ADVANCED_MODE_PRESET_GENERIC_DEPTH:
+                if (pid == pid_to_str(ds::RS400_PID) || pid == pid_to_str(ds::RS400_MM_PID)) // Passive
+                {
+                    switch (res) {
+                    case small:
+                        generic_ds5_passive_small_seed_config(p);
+                        break;
+                    case vga:
+                        generic_ds5_passive_vga_seed_config(p);
+                        break;
+                    case full:
+                        generic_ds5_passive_full_seed_config(p);
+                        break;
+                    default:
+                        throw invalid_value_exception("Invalid resolution!");
+                    }
+                }
+                else if (pid == pid_to_str(ds::RS410_PID) || pid == pid_to_str(ds::RS410_MM_PID)) // Active
+                {
+                    switch (res) {
+                    case vga:
+                        generic_ds5_active_vga_generic_depth(p);
+                        break;
+                    case full:
+                        generic_ds5_active_full_generic_depth(p);
+                        break;
+                    default:
+                        throw invalid_value_exception("Invalid resolution!");
+                    }
+                }
+                else if (pid == pid_to_str(ds::RS430_MM_PID)) // AWG
+                {
+                    throw invalid_value_exception("Invalid resolution!");
+                }
+                else
+                    throw invalid_value_exception("Invalid pid!");
+                break;
+            case RS2_ADVANCED_MODE_PRESET_GENERIC_ACCURATE_DEPTH:
+                if (pid == pid_to_str(ds::RS400_PID) || pid == pid_to_str(ds::RS400_MM_PID)) // Passive
+                {
+                    switch (res) {
+                    case small:
+                        generic_ds5_passive_small_seed_config(p);
+                        break;
+                    case vga:
+                        generic_ds5_passive_vga_seed_config(p);
+                        break;
+                    case full:
+                        generic_ds5_passive_full_seed_config(p);
+                        break;
+                    default:
+                        throw invalid_value_exception("Invalid resolution!");
+                    }
+                }
+                else if (pid == pid_to_str(ds::RS410_PID) || pid == pid_to_str(ds::RS410_MM_PID)) // Active
+                {
+                    switch (res) {
+                    case small:
+
+                        break;
+                    case vga:
+
+                        break;
+                    case full:
+
+                        break;
+                    default:
+                        throw invalid_value_exception("Invalid resolution!");
+                    }
+                }
+                else if (pid == pid_to_str(ds::RS430_MM_PID)) // AWG
+                {
+                    switch (res) {
+                    case small:
+
+                        break;
+                    case vga:
+
+                        break;
+                    case full:
+
+                        break;
+                    default:
+                        throw invalid_value_exception("Invalid resolution!");
+                    }
+                }
+                else
+                    throw invalid_value_exception("Invalid pid!");
+                break;
+            case RS2_ADVANCED_MODE_PRESET_GENERIC_DENSE_DEPTH:
+                if (pid == pid_to_str(ds::RS400_PID) || pid == pid_to_str(ds::RS400_MM_PID)) // Passive
+                {
+                    switch (res) {
+                    case small:
+                        generic_ds5_passive_small_seed_config(p);
+                        break;
+                    case vga:
+                        generic_ds5_passive_vga_seed_config(p);
+                        break;
+                    case full:
+                        generic_ds5_passive_full_seed_config(p);
+                        break;
+                    default:
+                        throw invalid_value_exception("Invalid resolution!");
+                    }
+                }
+                else if (pid == pid_to_str(ds::RS410_PID) || pid == pid_to_str(ds::RS410_MM_PID)) // Active
+                {
+                    switch (res) {
+                    case small:
+
+                        break;
+                    case vga:
+
+                        break;
+                    case full:
+
+                        break;
+                    default:
+                        throw invalid_value_exception("Invalid resolution!");
+                    }
+                }
+                else if (pid == pid_to_str(ds::RS430_MM_PID)) // AWG
+                {
+                    switch (res) {
+                    case small:
+
+                        break;
+                    case vga:
+
+                        break;
+                    case full:
+
+                        break;
+                    default:
+                        throw invalid_value_exception("Invalid resolution!");
+                    }
+                }
+                else
+                    throw invalid_value_exception("Invalid pid!");
+                break;
+            case RS2_ADVANCED_MODE_PRESET_GENERIC_SUPER_DENSE_DEPTH:
+                if (pid == pid_to_str(ds::RS400_PID) || pid == pid_to_str(ds::RS400_MM_PID)) // Passive
+                {
+                    switch (res) {
+                    case small:
+                        generic_ds5_passive_small_seed_config(p);
+                        break;
+                    case vga:
+                        generic_ds5_passive_vga_seed_config(p);
+                        break;
+                    case full:
+                        generic_ds5_passive_full_seed_config(p);
+                        break;
+                    default:
+                        throw invalid_value_exception("Invalid resolution!");
+                    }
+                }
+                else if (pid == pid_to_str(ds::RS410_PID) || pid == pid_to_str(ds::RS410_MM_PID)) // Active
+                {
+                    switch (res) {
+                    case small:
+
+                        break;
+                    case vga:
+
+                        break;
+                    case full:
+
+                        break;
+                    default:
+                        throw invalid_value_exception("Invalid resolution!");
+                    }
+                }
+                else if (pid == pid_to_str(ds::RS430_MM_PID)) // AWG
+                {
+                    switch (res) {
+                    case small:
+
+                        break;
+                    case vga:
+
+                        break;
+                    case full:
+
+                        break;
+                    default:
+                        throw invalid_value_exception("Invalid resolution!");
+                    }
+                }
+                else
+                    throw invalid_value_exception("Invalid pid!");
+                break;
+            case RS2_ADVANCED_MODE_PRESET_FLOOR_LOW:
+                if (pid == pid_to_str(ds::RS400_PID) || pid == pid_to_str(ds::RS400_MM_PID)) // Passive
+                {
+                    switch (res) {
+                    case small:
+
+                        break;
+                    case vga:
+
+                        break;
+                    case full:
+
+                        break;
+                    default:
+                        throw invalid_value_exception("Invalid resolution!");
+                    }
+                }
+                else if (pid == pid_to_str(ds::RS410_PID) || pid == pid_to_str(ds::RS410_MM_PID)) // Active
+                {
+                    switch (res) {
+                    case small:
+
+                        break;
+                    case vga:
+
+                        break;
+                    case full:
+
+                        break;
+                    default:
+                        throw invalid_value_exception("Invalid resolution!");
+                    }
+                }
+                else if (pid == pid_to_str(ds::RS430_MM_PID)) // AWG
+                {
+                    switch (res) {
+                    case small:
+
+                        break;
+                    case vga:
+
+                        break;
+                    case full:
+
+                        switch (res) {
+                        case small:
+
+                            break;
+                        case vga:
+
+                            break;
+                        case full:
+
+                            break;
+                        default:
+                            throw invalid_value_exception("Invalid resolution!");
+                        }    break;
+                    default:
+                        throw invalid_value_exception("Invalid resolution!");
+                    }
+                }
+                else
+                    throw invalid_value_exception("Invalid pid!");
+                break;
+            case RS2_ADVANCED_MODE_PRESET_3D_BODY_SCAN:
+                if (pid == pid_to_str(ds::RS400_PID) || pid == pid_to_str(ds::RS400_MM_PID)) // Passive
+                {
+                    switch (res) {
+                    case small:
+
+                        break;
+                    case vga:
+
+                        break;
+                    case full:
+
+                        break;
+                    default:
+                        throw invalid_value_exception("Invalid resolution!");
+                    }
+                }
+                else if (pid == pid_to_str(ds::RS410_PID) || pid == pid_to_str(ds::RS410_MM_PID)) // Active
+                {
+                    switch (res) {
+                    case small:
+
+                        break;
+                    case vga:
+
+                        break;
+                    case full:
+
+                        break;
+                    default:
+                        throw invalid_value_exception("Invalid resolution!");
+                    }
+                }
+                else if (pid == pid_to_str(ds::RS430_MM_PID)) // AWG
+                {
+                    switch (res) {
+                    case small:
+
+                        break;
+                    case vga:
+
+                        break;
+                    case full:
+
+                        break;
+                    default:
+                        throw invalid_value_exception("Invalid resolution!");
+                    }
+                }
+                else
+                    throw invalid_value_exception("Invalid pid!");
+                break;
+            case RS2_ADVANCED_MODE_PRESET_INDOOR:
+                if (pid == pid_to_str(ds::RS400_PID) || pid == pid_to_str(ds::RS400_MM_PID)) // Passive
+                {
+                    switch (res) {
+                    case small:
+
+                        break;
+                    case vga:
+
+                        break;
+                    case full:
+
+                        break;
+                    default:
+                        throw invalid_value_exception("Invalid resolution!");
+                    }
+                }
+                else if (pid == pid_to_str(ds::RS410_PID) || pid == pid_to_str(ds::RS410_MM_PID)) // Active
+                {
+                    switch (res) {
+                    case small:
+
+                        break;
+                    case vga:
+
+                        break;
+                    case full:
+
+                        break;
+                    default:
+                        throw invalid_value_exception("Invalid resolution!");
+                    }
+                }
+                else if (pid == pid_to_str(ds::RS430_MM_PID)) // AWG
+                {
+                    switch (res) {
+                    case small:
+
+                        break;
+                    case vga:
+
+                        break;
+                    case full:
+
+                        break;
+                    default:
+                        throw invalid_value_exception("Invalid resolution!");
+                    }
+                }
+                else
+                    throw invalid_value_exception("Invalid pid!");
+                break;
+            case RS2_ADVANCED_MODE_PRESET_OUTDOOR:
+                if (pid == pid_to_str(ds::RS400_PID) || pid == pid_to_str(ds::RS400_MM_PID)) // Passive
+                {
+                    switch (res) {
+                    case small:
+
+                        break;
+                    case vga:
+
+                        break;
+                    case full:
+
+                        break;
+                    default:
+                        throw invalid_value_exception("Invalid resolution!");
+                    }
+                }
+                else if (pid == pid_to_str(ds::RS410_PID) || pid == pid_to_str(ds::RS410_MM_PID)) // Active
+                {
+                    switch (res) {
+                    case small:
+
+                        break;
+                    case vga:
+
+                        break;
+                    case full:
+
+                        break;
+                    default:
+                        throw invalid_value_exception("Invalid resolution!");
+                    }
+                }
+                else if (pid == pid_to_str(ds::RS430_MM_PID)) // AWG
+                {
+                    switch (res) {
+                    case small:
+
+                        break;
+                    case vga:
+
+                        break;
+                    case full:
+
+                        break;
+                    default:
+                        throw invalid_value_exception("Invalid resolution!");
+                    }
+                }
+                else
+                    throw invalid_value_exception("Invalid pid!");
+                break;
+            case RS2_ADVANCED_MODE_PRESET_HAND:
+                if (pid == pid_to_str(ds::RS400_PID) || pid == pid_to_str(ds::RS400_MM_PID)) // Passive
+                    switch (res) {
+                    case small:
+
+                        break;
+                    case vga:
+
+                        break;
+                    case full:
+
+                        break;
+                    default:
+                        throw invalid_value_exception("Invalid resolution!");
+                    }
+                else if (pid == pid_to_str(ds::RS410_PID) || pid == pid_to_str(ds::RS410_MM_PID)) // Active
+                {
+                    switch (res) {
+                    case small:
+
+                        break;
+                    case vga:
+
+                        break;
+                    case full:
+
+                        break;
+                    default:
+                        throw invalid_value_exception("Invalid resolution!");
+                    }
+                }
+                else if (pid == pid_to_str(ds::RS430_MM_PID)) // AWG
+                {
+                    switch (res) {
+                    case small:
+
+                        break;
+                    case vga:
+
+                        break;
+                    case full:
+
+                        break;
+                    default:
+                        throw invalid_value_exception("Invalid resolution!");
+                    }
+                }
+                else
+                    throw invalid_value_exception("Invalid pid!");
+                break;
+            case RS2_ADVANCED_MODE_PRESET_SHORT_RANGE:
+                if (pid == pid_to_str(ds::RS400_PID) || pid == pid_to_str(ds::RS400_MM_PID)) // Passive
+                {
+                    switch (res) {
+                    case small:
+
+                        break;
+                    case vga:
+
+                        break;
+                    case full:
+
+                        break;
+                    default:
+                        throw invalid_value_exception("Invalid resolution!");
+                    }
+                }
+                else if (pid == pid_to_str(ds::RS410_PID) || pid == pid_to_str(ds::RS410_MM_PID)) // Active
+                {
+                    switch (res) {
+                    case small:
+
+                        break;
+                    case vga:
+
+                        break;
+                    case full:
+
+                        break;
+                    default:
+                        throw invalid_value_exception("Invalid resolution!");
+                    }
+                }
+                else if (pid == pid_to_str(ds::RS430_MM_PID)) // AWG
+                {
+                    switch (res) {
+                    case small:
+
+                        break;
+                    case vga:
+
+                        break;
+                    case full:
+
+                        break;
+                    default:
+                        throw invalid_value_exception("Invalid resolution!");
+                    }
+                }
+                else
+                    throw invalid_value_exception("Invalid pid!");
+                break;
+            case RS2_ADVANCED_MODE_PRESET_BOX:
+                if (pid == pid_to_str(ds::RS400_PID) || pid == pid_to_str(ds::RS400_MM_PID)) // Passive
+                {
+                    switch (res) {
+                    case small:
+
+                        break;
+                    case vga:
+
+                        break;
+                    case full:
+
+                        break;
+                    default:
+                        throw invalid_value_exception("Invalid resolution!");
+                    }
+                }
+                else if (pid == pid_to_str(ds::RS410_PID) || pid == pid_to_str(ds::RS410_MM_PID)) // Active
+                {
+                    switch (res) {
+                    case small:
+
+                        break;
+                    case vga:
+
+                        break;
+                    case full:
+
+                        break;
+                    default:
+                        throw invalid_value_exception("Invalid resolution!");
+                    }
+                }
+                else if (pid == pid_to_str(ds::RS430_MM_PID)) // AWG
+                {
+                    switch (res) {
+                    case small:
+
+                        break;
+                    case vga:
+
+                        break;
+                    case full:
+
+                        break;
+                    default:
+                        throw invalid_value_exception("Invalid resolution!");
+                    }
+                }
+                else
+                    throw invalid_value_exception("Invalid pid!");
+                break;
+            default:
+                throw invalid_value_exception("Invalid preset!");
+            }
+
+            set_all(p);
         }
 
         void get_depth_control_group(STDepthControlGroup* ptr, int mode = 0) const
@@ -232,10 +839,57 @@ namespace librealsense
 
 
     private:
+        const std::map<float, std::string>& _description_per_value{{RS2_ADVANCED_MODE_PRESET_GENERIC_DEPTH,            "GENERIC_DEPTH"},
+                                                                   {RS2_ADVANCED_MODE_PRESET_GENERIC_ACCURATE_DEPTH,   "GENERIC_ACCURATE_DEPTH"},
+                                                                   {RS2_ADVANCED_MODE_PRESET_GENERIC_DENSE_DEPTH,      "GENERIC_DENSE_DEPTH"},
+                                                                   {RS2_ADVANCED_MODE_PRESET_GENERIC_SUPER_DENSE_DEPTH,"GENERIC_SUPER_DENSE_DEPTH"},
+                                                                   {RS2_ADVANCED_MODE_PRESET_FLOOR_LOW,                "FLOOR_LOW"},
+                                                                   {RS2_ADVANCED_MODE_PRESET_3D_BODY_SCAN,             "3D_BODY_SCAN"},
+                                                                   {RS2_ADVANCED_MODE_PRESET_INDOOR,                   "INDOOR"},
+                                                                   {RS2_ADVANCED_MODE_PRESET_OUTDOOR,                  "OUTDOOR"},
+                                                                   {RS2_ADVANCED_MODE_PRESET_HAND,                     "HAND"},
+                                                                   {RS2_ADVANCED_MODE_PRESET_SHORT_RANGE,              "SHORT_RANGE"},
+                                                                   {RS2_ADVANCED_MODE_PRESET_BOX,                      "BOX"}};
+
         std::shared_ptr<hw_monitor> _hw_monitor;
+        uvc_sensor& _depth_sensor;
 
         static const uint16_t HW_MONITOR_COMMAND_SIZE = 1000;
         static const uint16_t HW_MONITOR_BUFFER_SIZE = 1024;
+
+        preset get_all()
+        {
+            preset p;
+            get_depth_control_group(&p.depth_controls);
+            get_rsm(&p.rsm);
+            get_rau_support_vector_control(&p.rsvc);
+            get_color_control(&p.color_control);
+            get_rau_color_thresholds_control(&p.rctc);
+            get_slo_color_thresholds_control(&p.sctc);
+            get_slo_penalty_control(&p.spc);
+            get_hdad(&p.hdad);
+            get_color_correction(&p.cc);
+            get_depth_table_control(&p.depth_table);
+            get_ae_control(&p.ae);
+            get_census_radius(&p.census);
+            return p;
+        }
+
+        void set_all(const preset& p)
+        {
+            set_depth_control_group(p.depth_controls);
+            set_rsm(p.rsm);
+            set_rau_support_vector_control(p.rsvc);
+            set_color_control(p.color_control);
+            set_rau_color_thresholds_control(p.rctc);
+            set_slo_color_thresholds_control(p.sctc);
+            set_slo_penalty_control(p.spc);
+            set_hdad(p.hdad);
+            set_color_correction(p.cc);
+            set_depth_table_control(p.depth_table);
+            set_ae_control(p.ae);
+            set_census_radius(p.census);
+        }
 
         std::vector<uint8_t> send_recieve(const std::vector<uint8_t>& input) const
         {
@@ -334,5 +988,71 @@ namespace librealsense
             raw_data.resize(cur_index);
             return raw_data;
         }
+    };
+
+
+    class advanced_mode_preset_option : public option_base
+    {
+    public:
+        advanced_mode_preset_option(ds5_advanced_mode_base& advanced, uvc_sensor& ep, const option_range& opt_range,
+                                    const std::map<float, std::string>& description_per_value)
+            : option_base(opt_range),
+              _ep(ep),
+              _description_per_value(description_per_value),
+              _advanced(advanced)
+        {}
+
+        void set(float value) override
+        {
+            if (!is_valid(value))
+                throw invalid_value_exception(to_string() << "set(advanced_mode_preset_option) failed! Given value " << value << " is out of range.");
+
+            if (!_advanced.is_enabled())
+                throw wrong_api_call_sequence_exception(to_string() << "set(advanced_mode_preset_option) failed! Device is not is Advanced-Mode.");
+
+            if (!_ep.is_streaming())
+                throw wrong_api_call_sequence_exception(to_string() << "set(advanced_mode_preset_option) failed! Device must streaming in order to set a preset.");
+
+            auto pid = _ep.get_device().get_info(RS2_CAMERA_INFO_PRODUCT_ID);
+            auto configurations = _ep.get_curr_configurations();
+
+            _advanced.apply_preset(pid, configurations, (rs2_advanced_mode_preset)value);
+            _last_preset = (rs2_advanced_mode_preset)value;
+        }
+
+        float query() const override
+        {
+            if (!_advanced.is_enabled())
+                throw wrong_api_call_sequence_exception(to_string() << "set(advanced_mode_preset_option) failed! Device is not is Advanced-Mode.");
+
+            return _last_preset;
+        }
+
+        bool is_enabled() const override
+        {
+            return _advanced.is_enabled();
+        }
+
+        const char* get_description() const override
+        {
+            return "Advanced-Mode Preset";
+        }
+
+        const char* get_value_description(float val) const override
+        {
+            try{
+                return _description_per_value.at(val).c_str();
+            }
+            catch(std::out_of_range)
+            {
+                throw invalid_value_exception(to_string() << "advanced_mode_preset: get_value_description(...) failed! Description of value " << val << " is not found.");
+            }
+        }
+
+    private:
+        const std::map<float, std::string> _description_per_value;
+        rs2_advanced_mode_preset _last_preset{};
+        uvc_sensor& _ep;
+        ds5_advanced_mode_base& _advanced;
     };
 }
