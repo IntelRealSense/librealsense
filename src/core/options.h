@@ -2,6 +2,7 @@
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 #pragma once
 
+#include <map>
 #include "../include/librealsense/rs2.h"
 #include "extension.h"
 namespace librealsense
@@ -38,4 +39,18 @@ namespace librealsense
 
         virtual ~options_interface() = default;
     };
+
+    class options_container : public virtual options_interface
+    {
+    public:
+        option& get_option(rs2_option id) override;
+        const option& get_option(rs2_option id) const override;
+        bool supports_option(rs2_option id) const override;
+
+        void register_option(rs2_option id, std::shared_ptr<option> option);
+
+    private:
+        std::map<rs2_option, std::shared_ptr<option>> _options;
+    };
+
 }

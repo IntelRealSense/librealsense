@@ -1327,7 +1327,7 @@ namespace rs2
         std::shared_ptr<rs2_device_list> _list;
     };
 
-    class recorder : public device
+    class recorder // : public device
     {
     public:
         recorder(std::string file, rs2::device device) :
@@ -1346,7 +1346,7 @@ namespace rs2
             rs2::error::handle(e);
         }
 
-        std::vector<sensor> query_sensors() const override
+        std::vector<sensor> query_sensors() const
         {
             rs2_error* e = nullptr;
             std::shared_ptr<rs2_sensor_list> list(
@@ -1371,14 +1371,54 @@ namespace rs2
 
             return results;
         }
-        bool pause()
+
+
+        /**
+        * send hardware reset request to the device
+        */
+        virtual void hardware_reset()
         {
-            throw std::runtime_error("Not Implemented");
+            rs2_error* e = nullptr;
+
+            rs2_hardware_reset(m_record_device.get(), &e);
+            error::handle(e);
+        }
+        /**
+        * check if specific camera info is supported
+        * \param[in] info    the parameter to check for support
+        * \return                true if the parameter both exist and well-defined for the specific device
+        */
+        virtual bool supports(rs2_camera_info info) const
+        {
+            rs2_error* e = nullptr;
+            auto is_supported = rs2_supports_device_info(m_record_device.get(), info, &e);
+            error::handle(e);
+            return is_supported > 0;
         }
 
-        bool resume()
+        /**
+        * retrieve camera specific information, like versions of various internal components
+        * \param[in] info     camera info type to retrieve
+        * \return             the requested camera info string, in a format specific to the device model
+        */
+        virtual const char* get_info(rs2_camera_info info) const
         {
-            throw std::runtime_error("Not Implemented");
+            rs2_error* e = nullptr;
+            auto result = rs2_get_device_info(m_record_device.get(), info, &e);
+            error::handle(e);
+            return result;
+        }
+        void pause()
+        {
+            rs2_error* e = nullptr;
+            rs2_record_device_pause(m_record_device.get(), &e);
+            error::handle(e);
+        }
+        void resume()
+        {
+            rs2_error* e = nullptr;
+            rs2_record_device_resume(m_record_device.get(), &e);
+            error::handle(e);
         }
     private:
         std::string m_file;

@@ -33,17 +33,17 @@ namespace librealsense
 
         void write_device_description(const librealsense::device_snapshot& device_description) override
         {
-            for (auto&& device_extension_snapshot : device_description.get_device_extensions_snapshots())
+            for (auto&& device_extension_snapshot : device_description.get_device_extensions_snapshots().get_snapshots())
             {
-                write_extension_snapshot(DEVICE_INDEX, device_extension_snapshot);
+                write_extension_snapshot(DEVICE_INDEX, device_extension_snapshot.first, device_extension_snapshot.second);
             }
 
             uint32_t sensor_index = 0;
             for (auto&& sensors_snapshot : device_description.get_sensors_snapshots())
             {
-                for (auto&& sensor_extension_snapshot : sensors_snapshot.get_extensions_snapshots())
+                for (auto&& sensor_extension_snapshot : sensors_snapshot.get_sensor_extensions_snapshots().get_snapshots())
                 {
-                    write_extension_snapshot(sensor_index, sensor_extension_snapshot);
+                    write_extension_snapshot(sensor_index, sensor_extension_snapshot.first, sensor_extension_snapshot.second);
                 }
             }
             write_sensor_count(device_description.get_sensors_snapshots().size());
@@ -147,8 +147,34 @@ namespace librealsense
 //            return error_code::no_error;
 //        }
 
-        void write_extension_snapshot(uint32_t id, std::shared_ptr<librealsense::extension_snapshot> snapshot)
+        void write_extension_snapshot(uint32_t id, rs2_extension_type type, std::shared_ptr<librealsense::extension_snapshot> snapshot)
         {    
+            switch (type)
+            {
+            case RS2_EXTENSION_TYPE_UNKNOWN:
+                throw invalid_value_exception("Unknown extension");
+            case RS2_EXTENSION_TYPE_DEBUG:
+                break;
+            case RS2_EXTENSION_TYPE_INFO:
+                break;
+            case RS2_EXTENSION_TYPE_MOTION:
+                break;
+            case RS2_EXTENSION_TYPE_OPTIONS:
+                break;
+            case RS2_EXTENSION_TYPE_VIDEO:
+                break;
+            case RS2_EXTENSION_TYPE_ROI:
+                break;
+            case RS2_EXTENSION_TYPE_VIDEO_FRAME:
+                break;
+            case RS2_EXTENSION_TYPE_MOTION_FRAME:
+                break;
+            case RS2_EXTENSION_TYPE_COUNT:
+                break;
+            default:
+                throw invalid_value_exception("Unsupported extension");
+
+            }
             if (Is<librealsense::info_interface>(snapshot))
             {
                 //std::cout << "Remove me !!! info_interface " << id << " : " << snapshot.get() << std::endl;
@@ -168,7 +194,6 @@ namespace librealsense
                 //write_property(snapshot, id, timestamp_ns);
                 return;
             }
-            //TODO: support all extensions
         }
         void write_debug_info(const device_serializer::snapshot_box& box)
         {

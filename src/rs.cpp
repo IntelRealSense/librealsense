@@ -1193,14 +1193,21 @@ rs2_device* rs2_create_record_device(const rs2_device* device, rs2_device_serial
         device->info,
         std::make_shared<librealsense::record_device>(device->device, serializer->device_serializer->get_writer()) 
     });
-}NOEXCEPT_RETURN(nullptr, device, serializer)
+}HANDLE_EXCEPTIONS_AND_RETURN(nullptr, device, serializer)
 
-//void rs2_delete_record_device(rs2_record_device* device) try
-//{
-//    VALIDATE_NOT_NULL(device);
-//    delete device;
-//}
-//NOEXCEPT_RETURN(, device)
+void rs2_record_device_pause(const rs2_device* device, rs2_error** error) try
+{
+    VALIDATE_NOT_NULL(device);
+    auto record_device = std::static_pointer_cast<librealsense::record_device>(device->device);
+    record_device->pause_recording();
+}HANDLE_EXCEPTIONS_AND_RETURN(, device)
+
+void rs2_record_device_resume(const rs2_device* device, rs2_error** error) try
+{
+    VALIDATE_NOT_NULL(device);
+    auto record_device = std::static_pointer_cast<librealsense::record_device>(device->device);
+    record_device->resume_recording();
+}HANDLE_EXCEPTIONS_AND_RETURN(, device)
 
 rs2_frame* rs2_allocate_synthetic_video_frame(rs2_source* source, rs2_stream new_stream, rs2_frame* original, 
     rs2_format new_format, int new_bpp, int new_width, int new_height, int new_stride, rs2_error** error) try

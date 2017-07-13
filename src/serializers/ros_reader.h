@@ -38,13 +38,17 @@ namespace librealsense
         {
             throw not_implemented_exception(__FUNCTION__);
         }
-        void reset()
+        void reset() override
         {
             m_first_frame_time = FIRST_FRAME_TIMESTAMP;
 //            if(read_metadata(&m_device_description) != error_code::no_error)
 //            {
 //                throw std::runtime_error("Failed to read header");
 //            }
+        }
+        virtual void set_filter(uint32_t m_sensor_index, const std::vector<stream_profile>& vector) override
+        {
+            throw not_implemented_exception(__FUNCTION__);
         }
     private:
 

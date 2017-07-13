@@ -123,7 +123,9 @@ set(REALSENSE_CPP
     src/win/win-hid.cpp
     src/win/win-backend.cpp
     src/record_device.cpp
-        third-party/easyloggingpp/src/easylogging++.cc
+    src/playback_device.cpp
+    src/playback_sensor.cpp
+    third-party/easyloggingpp/src/easylogging++.cc
     third-party/sqlite/sqlite3.c
     src/mock/sql.cpp
     src/mock/recorder.cpp
@@ -183,6 +185,8 @@ set(REALSENSE_HPP
     src/win/win-hid.h
     src/win/win-backend.h
     src/record_device.h
+    src/playback_device.h
+    src/playback_sensor.h
     src/serializers/ros_device_serializer.h
     src/serializers/ros_reader.h
     src/serializers/ros_device_serializer_writer.h

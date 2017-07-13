@@ -23,16 +23,19 @@ namespace librealsense
     {
     public:
         virtual bool extend_to(rs2_extension_type extension_type, void** ptr) = 0;
+        virtual ~extendable_interface() = default;
     };
 
     /**
      * Extensions' snapshot implementations are expected to derive from this class in addition to the actual extension
      * Extensions' interfaces are no expected to derive from this class (//TODO Ziv, what if they do? - test that it works)
      */
-    class extension_snapshot //TODO: : Ziv, public std::enable_shared_from_this ?
+    //template <typename T>
+    class extension_snapshot  //TODO: : Ziv, : public T, public std::enable_shared_from_this ?
     {
     public:
         virtual void update(std::shared_ptr<extension_snapshot> ext) = 0;
+        virtual ~extension_snapshot() = default;
     };
 
     template <typename T>
@@ -63,6 +66,8 @@ namespace librealsense
     public:
         virtual void create_snapshot(std::shared_ptr<T>& snapshot) = 0;
         virtual void create_recordable(std::shared_ptr<T>& recordable, std::function<void(std::shared_ptr<extension_snapshot>)> record_action) = 0;
+        virtual ~recordable() = default;
+
     };
 
 }

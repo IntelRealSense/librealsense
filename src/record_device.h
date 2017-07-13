@@ -66,10 +66,11 @@ namespace librealsense
                                       size_t to,
                                       rs2_stream to_stream) const override;
 		bool extend_to(rs2_extension_type extension_type, void** ext) override;
-
+        void pause_recording();
+        void resume_recording();
     private:
         void write_header();
-        std::chrono::nanoseconds get_capture_time();
+        std::chrono::nanoseconds get_capture_time() const;
         void write_data(size_t sensor_index, frame_holder f/*, notifications_callback_ptr& sensor_notification_handler*/);
         std::vector<std::shared_ptr<record_sensor>> create_record_sensors(std::shared_ptr<device_interface> m_device);
         //std::function<void(dispatcher::cancellable_timer)> create_write_task(frame_holder&& frame, size_t sensor_index,
@@ -94,7 +95,7 @@ namespace librealsense
         uint64_t m_cached_data_size;
         std::once_flag m_first_call_flag;
         template <typename T>
-        std::vector<std::shared_ptr<extension_snapshot>> get_extensions_snapshots(T* extendable);
+        snapshot_collection get_extensions_snapshots(T* extendable);
     };
 }
 

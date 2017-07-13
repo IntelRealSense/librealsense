@@ -27,67 +27,6 @@ namespace librealsense
 
     typedef std::function<void(rs2_stream, rs2_frame&, callback_invocation_holder)> on_before_frame_callback;
 
-    class options_container : public virtual options_interface
-    {
-    public:
-        option& get_option(rs2_option id) override;
-        const option& get_option(rs2_option id) const override;
-        bool supports_option(rs2_option id) const override;
-
-        void register_option(rs2_option id, std::shared_ptr<option> option);
-
-    private:
-        std::map<rs2_option, std::shared_ptr<option>> _options;
-    };
-
-    class info_container : public virtual info_interface
-    {
-    public:
-        const std::string& get_info(rs2_camera_info info) const override;
-        bool supports_info(rs2_camera_info info) const override;
-
-        void register_info(rs2_camera_info info, const std::string& val);
-
-        void create_snapshot(std::shared_ptr<info_interface>& snapshot) override;
-        void create_recordable(std::shared_ptr<info_interface>& recordable,
-                               std::function<void(std::shared_ptr<extension_snapshot>)> record_action) override;
-    private:
-        std::map<rs2_camera_info, std::string> _camera_info;
-    };
-
-    //TODO: Ziv, CR this class, created as poc
-    class info_snapshot : public extension_snapshot_base<info_interface>, public info_container
-    {
-    public:
-        info_snapshot(info_interface* info_api)
-        {
-            update_self(info_api);
-        }
-    private:
-        void update_self(info_interface* info_api)
-        {
-            for (int i = 0; i < RS2_CAMERA_INFO_COUNT; ++i)
-            {
-                rs2_camera_info info = static_cast<rs2_camera_info>(i);
-                if(info_api->supports_info(info))
-                {
-                    register_info(info, info_api->get_info(info));
-                }
-            }
-        }
-    };
-
-    class debug_snapshot : public extension_snapshot, public debug_interface
-    {
-    public:
-        debug_snapshot(const std::vector<uint8_t>& input) : m_data(input)
-        {
-        }
-
-    private:
-        std::vector<uint8_t> m_data;
-    };
-
     class sensor_base : public virtual sensor_interface, public options_container, public virtual info_container
     {
     public:
