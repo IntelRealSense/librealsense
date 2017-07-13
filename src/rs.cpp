@@ -42,7 +42,7 @@ struct rs2_device
 
 struct rs2_sensor
 {
-    std::shared_ptr<librealsense::device_interface> device;
+    rs2_device parent;
     librealsense::sensor_interface* sensor;
     size_t index;
 };
@@ -88,6 +88,11 @@ struct rs2_frame_queue
     }
 
     single_consumer_queue<librealsense::frame_holder> queue;
+};
+
+struct rs2_sensor_list
+{
+    rs2_device dev;
 };
 
 
@@ -271,7 +276,7 @@ rs2_sensor_list* rs2_query_sensors(const rs2_device* device, rs2_error** error) 
         LOG_WARNING("Could not open device!");
     }
 
-    return new rs2_sensor_list{ device->device };
+    return new rs2_sensor_list{ *device };
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, device)
 
@@ -287,7 +292,7 @@ int rs2_get_sensors_count(const rs2_sensor_list* list, rs2_error** error) try
 {
     if (list == nullptr)
         return 0;
-    return static_cast<int>(list->dev->get_sensors_count());
+    return static_cast<int>(list->dev.device->get_sensors_count());
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, list)
 
@@ -327,11 +332,11 @@ NOEXCEPT_RETURN(, device)
 rs2_sensor* rs2_create_sensor(const rs2_sensor_list* list, int index, rs2_error** error) try
 {
     VALIDATE_NOT_NULL(list);
-    VALIDATE_RANGE(index, 0, (int)list->dev->get_sensors_count() - 1);
+    VALIDATE_RANGE(index, 0, (int)list->dev.device->get_sensors_count() - 1);
 
     return new rs2_sensor{
             list->dev,
-            &list->dev->get_sensor(index),
+            &list->dev.device->get_sensor(index),
             (size_t)index
     };
 }
@@ -854,10 +859,10 @@ void rs2_get_extrinsics(const rs2_sensor * from_dev, rs2_stream from_stream,
     VALIDATE_ENUM(from_stream);
     VALIDATE_ENUM(to_stream);
 
-    if (from_dev->device != to_dev->device)
+    if (from_dev->parent.device != to_dev->parent.device)
         throw librealsense::invalid_value_exception("Extrinsics between the selected devices are unknown!");
 
-    *extrin = from_dev->device->get_extrinsics(from_dev->index, from_stream, to_dev->index, to_stream);
+    *extrin = from_dev->parent.device->get_extrinsics(from_dev->index, from_stream, to_dev->index, to_stream);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, from_dev, from_stream, to_dev, to_stream, extrin)
 
@@ -1295,3 +1300,10 @@ float rs2_get_depth_scale(rs2_sensor* sensor, rs2_error** error) try
     return ds->get_depth_scale();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0.f, sensor)
+
+rs2_device* rs2_create_device_from_sensor(const rs2_sensor* sensor, rs2_error ** error) try
+{
+    VALIDATE_NOT_NULL(sensor);
+    return new rs2_device { sensor->parent };
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, sensor)

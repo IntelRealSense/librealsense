@@ -41,6 +41,11 @@ namespace librealsense
         return _notifications_proccessor;
     }
 
+    rs2_extrinsics sensor_base::get_extrinsics_to(rs2_stream from, const sensor_interface& other, rs2_stream to) const
+    {
+        _device->get_extrinsics(_device->find_sensor_idx(*this), from, _device->find_sensor_idx(other), to);
+    }
+
     bool sensor_base::try_get_pf(const platform::stream_profile& p, native_pixel_format& result) const
     {
         auto it = std::find_if(begin(_pixel_formats), end(_pixel_formats),

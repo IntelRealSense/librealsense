@@ -419,6 +419,8 @@ void rs2_get_extrinsics(const rs2_sensor * from_dev, rs2_stream from_stream,
                         const rs2_sensor * to_dev, rs2_stream to_stream,
                         rs2_extrinsics * extrin, rs2_error ** error);
 
+rs2_device* rs2_create_device_from_sensor(const rs2_sensor* sensor, rs2_error ** error);
+
 /**
  * returns the intrinsics of specific stream configuration
  * \param[in]  device    RealSense device to query

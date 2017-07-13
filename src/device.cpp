@@ -36,6 +36,17 @@ sensor_interface& device::get_sensor(size_t subdevice)
     }
 }
 
+size_t device::find_sensor_idx(const sensor_interface& s) const
+{
+    int idx = 0;
+    for (auto&& sensor : _sensors)
+    {
+        if (&s == sensor.get()) return idx;
+        idx++;
+    }
+    throw std::runtime_error("Sensor not found!");
+}
+
 const sensor_interface& device::get_sensor(size_t subdevice) const
 {
     try

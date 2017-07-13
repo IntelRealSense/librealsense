@@ -29,11 +29,6 @@ struct rs2_device_list
     std::vector<rs2_device_info> list;
 };
 
-struct rs2_sensor_list
-{
-    std::shared_ptr<librealsense::device_interface> dev;
-};
-
 namespace librealsense
 {
     class device;

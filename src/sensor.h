@@ -73,6 +73,8 @@ namespace librealsense
             return _is_streaming;
         }
 
+        rs2_extrinsics get_extrinsics_to(rs2_stream from, const sensor_interface& other, rs2_stream to) const override;
+
         void register_pixel_format(native_pixel_format pf)
         {
             _pixel_formats.push_back(pf);
@@ -111,7 +113,7 @@ namespace librealsense
         std::vector<native_pixel_format> _pixel_formats;
         lazy<std::vector<platform::stream_profile>> _stream_profiles;
         lazy<pose> _pose;
-        const device_interface* _device;
+        const device* _device;
     };
 
     struct frame_timestamp_reader

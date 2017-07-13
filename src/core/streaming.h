@@ -96,6 +96,8 @@ namespace librealsense
 
         virtual const device_interface& get_device() = 0;
 
+        virtual rs2_extrinsics get_extrinsics_to(rs2_stream from, const sensor_interface& other, rs2_stream to) const = 0;
+
 //        virtual rs2_stream   get_stream_type(unsigned int index) const = 0;
 //        virtual const char*  get_stream_desciption(unsigned int index) const = 0;
 //        virtual unsigned int get_streams_count() const = 0;

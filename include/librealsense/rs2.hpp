@@ -911,6 +911,24 @@ namespace rs2
             error::handle(e);
         }
 
+        rs2_extrinsics get_extrinsics_to(rs2_stream from, const sensor& other, rs2_stream to) const
+        {
+            rs2_extrinsics res;
+            rs2_error* e = nullptr;
+            rs2_get_extrinsics(this->_sensor.get(), from, other._sensor.get(), to, &res, &e);
+            error::handle(e);
+            return res;
+        }
+
+        rs2_extrinsics get_extrinsics_to(const sensor& other) const
+        {
+            rs2_extrinsics res;
+            rs2_error* e = nullptr;
+            rs2_get_extrinsics(this->_sensor.get(), RS2_STREAM_ANY, other._sensor.get(), RS2_STREAM_ANY, &res, &e);
+            error::handle(e);
+            return res;
+        }
+
         /**
         * close subdevice for exclusive access
         * this method should be used for releasing device resource
@@ -1113,22 +1131,6 @@ namespace rs2
             return intrin;
         }
 
-        /** Retrieves mapping between the units of the depth image and meters
-         * This function is deprecated! Please use RS2_OPTION_DEPTH_UNITS instead
-         * \return depth in meters corresponding to a depth value of 1
-         */
-        #ifdef __GNUC__
-        __attribute__((deprecated))
-        #elif defined(_MSC_VER)
-        __declspec(deprecated)
-        #endif
-        float get_depth_scale() const
-        {
-            if (supports(RS2_OPTION_DEPTH_UNITS))
-                return get_option(RS2_OPTION_DEPTH_UNITS);
-            return 1.f;
-        }
-
         sensor& operator=(const std::shared_ptr<rs2_sensor> dev)
         {
             _sensor.reset();
@@ -1228,6 +1230,9 @@ namespace rs2
             error::handle(e);
         }
 
+        /** Retrieves mapping between the units of the depth image and meters
+         * \return depth in meters corresponding to a depth value of 1
+         */
         float get_depth_scale() const
         {
             rs2_error* e = nullptr;
@@ -1696,6 +1701,21 @@ namespace rs2
         }
 
         /**
+         * @brief Generate a flat list of all available sensors from all RealSense devices
+         * @return List of sensors
+         */
+        std::vector<sensor> query_all_sensors() const
+        {
+            std::vector<sensor> results;
+            for (auto&& dev : query_devices())
+            {
+                auto sensors = dev.query_sensors();
+                std::copy(sensors.begin(), sensors.end(), std::back_inserter(results));
+            }
+            return results;
+        }
+
+        /**
         * \return            the time at specific time point, in live and redord contextes it will return the system time and in playback contextes it will return the recorded time
         */
         double get_time()
@@ -1706,6 +1726,20 @@ namespace rs2
             error::handle(e);
 
             return time;
+        }
+
+        device get_sensor_parent(const sensor& s) const
+        {
+            rs2_error* e = nullptr;
+            std::shared_ptr<rs2_device> dev(
+                rs2_create_device_from_sensor(s._sensor.get(), &e),
+                rs2_delete_device);
+            error::handle(e);
+        }
+
+        rs2_extrinsics get_extrinsics(const sensor& from, const sensor& to) const
+        {
+            return from.get_extrinsics_to(to);
         }
 
         /**
