@@ -1,41 +1,25 @@
+/* License: Apache 2.0. See LICENSE file in root directory.
+   Copyright(c) 2017 Intel Corporation. All Rights Reserved. */
+
 /**
- * @file   AdvancedModeCommand.h
+ * @file   advanced_mode_command.h
  * @brief  Advanced Mode Commands header file
  */
 
-#ifndef ADVANCED_MODE_COMMAND_H
-#define ADVANCED_MODE_COMMAND_H
+#ifndef RS2_ADVANCED_MODE_COMMAND_H
+#define RS2_ADVANCED_MODE_COMMAND_H
 
-#define ADVANCED_MODE_VER_MAJOR     1
-#define ADVANCED_MODE_VER_MINOR     1
-#define ADVANCED_MODE_VERSION_ID    (ADVANCED_MODE_VER_MAJOR << 8) | ADVANCED_MODE_VER_MINOR
+#include <stdint.h>
 
-typedef enum
+
+typedef enum rs2_advanced_mode_preset
 {
-    etDepthControl              = 0,
-    etRsm                       = 1,
-    etRauSupportVectorControl   = 2,
-    etColorControl              = 3,
-    etRauColorThresholdsControl = 4,
-    etSloColorThresholdsControl = 5,
-    etSloPenaltyControl         = 6,
-    etHdad                      = 7,
-    etColorCorrection           = 8,
-    etDepthTableControl         = 9,
-    etAEControl                 = 10,
-    etCencusRadius9             = 11,
-    etLastAdvancedModeGroup     = 12,       // Must be last
-}
-EtAdvancedModeRegGroup;
+    RS2_ADVANCED_MODE_PRESET_1,
+    RS2_ADVANCED_MODE_PRESET_2,
+    RS2_ADVANCED_MODE_PRESET_COUNT
+} rs2_advanced_mode_preset;
 
-typedef enum
-{
-    etAVCGetCurrent = 0,
-    etAVCGetMin,
-    etAVCGetMax,
-    etColorStep,
-}
-EtAdvancedModeCommandGetType;
+const char * rs2_advanced_mode_preset_to_string (rs2_advanced_mode_preset preset);
 
 typedef struct
 {
@@ -55,8 +39,8 @@ typedef struct
 typedef struct
 {
     uint32_t rsmBypass;
-    float diffThresh;
-    float sloRauDiffThresh;
+    float    diffThresh;
+    float    sloRauDiffThresh;
     uint32_t removeThresh;
 }STRsm;
 
@@ -108,8 +92,8 @@ typedef struct
 
 typedef struct
 {
-    float lambdaCensus;
-    float lambdaAD;
+    float    lambdaCensus;
+    float    lambdaAD;
     uint32_t ignoreSAD;
 }STHdad;
 
@@ -134,29 +118,20 @@ typedef struct
     uint32_t meanIntensitySetPoint;
 }STAEControl;
 
-
 typedef struct
 {
     uint32_t depthUnits;
-    int32_t depthClampMin;
-    int32_t depthClampMax;
+    int32_t  depthClampMin;
+    int32_t  depthClampMax;
     uint32_t disparityMode;
-    int32_t disparityShift;
+    int32_t  disparityShift;
 }STDepthTableControl;
-
 
 typedef struct
 {
     uint32_t uDiameter;
     uint32_t vDiameter;
 }STCensusRadius;
-
-#ifndef R400_ADVANCED_MODE_HPP
-ErrorTypes AdvancedModeCommandGet( TOpcodeParams* pParams );
-ErrorTypes AdvancedModeCommandSet( TOpcodeParams* pParams );
-uint16_t AdvancedModeVersionGet();
-
-#endif
 
 
 #ifdef __cplusplus
@@ -168,4 +143,4 @@ extern "C"{
 }
 #endif
 
-#endif /*ADVANCED_MODE_COMMAND_H*/
+#endif /*RS2_ADVANCED_MODE_COMMAND_H*/

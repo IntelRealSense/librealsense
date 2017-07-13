@@ -37,7 +37,7 @@ namespace librealsense
         small_heap<T, RS2_USER_QUEUE_SIZE> published_frames;
         small_heap<rs2_frame, RS2_USER_QUEUE_SIZE> detached_refs;
         callbacks_heap callback_inflight;
-     
+
         std::vector<T> freelist; // return frames here
         std::atomic<bool> recycle_frames;
         int pending_frames = 0;
@@ -100,7 +100,7 @@ namespace librealsense
             LOG_DEBUG("publish(...) failed");
             return nullptr;
         }
-     
+
         void unpublish_frame(frame* frame)
         {
             if (frame)
@@ -139,7 +139,7 @@ namespace librealsense
 
             return new_frame;
         }
-     
+
         void log_frame_callback_end(T* frame) const
         {
             if (frame)
@@ -162,9 +162,9 @@ namespace librealsense
         }
 
         std::shared_ptr<metadata_parser_map> get_md_parsers() const { return _metadata_parsers; };
-     
+
         friend class frame;
-     
+
     public:
         explicit frame_archive(std::atomic<uint32_t>* in_max_frame_queue_size,
                              std::shared_ptr<platform::time_service> ts,
@@ -175,12 +175,12 @@ namespace librealsense
         {
             published_frames_count = 0;
         }
-     
+
         callback_invocation_holder begin_callback()
         {
             return { callback_inflight.allocate(), &callback_inflight };
         }
-     
+
         rs2_frame* clone_frame(rs2_frame* frame)
         {
             auto new_ref = detached_refs.allocate();
@@ -195,13 +195,13 @@ namespace librealsense
         {
             detached_refs.deallocate(ref);
         }
-     
+
         rs2_frame* alloc_and_track(const size_t size, const frame_additional_data& additional_data, bool requires_memory)
         {
             auto frame = alloc_frame(size, additional_data, requires_memory);
             return track_frame(frame);
         }
-     
+
         void flush()
         {
             published_frames.stop_allocation();
@@ -231,7 +231,7 @@ namespace librealsense
             }
             // frames and their frame refs are not flushed, by design
         }
-     
+
         ~frame_archive()
         {
             if (pending_frames > 0)
@@ -243,7 +243,7 @@ namespace librealsense
 
     };
 
-    std::shared_ptr<archive_interface> make_archive(rs2_extension_type type, 
+    std::shared_ptr<archive_interface> make_archive(rs2_extension_type type,
                                                     std::atomic<uint32_t>* in_max_frame_queue_size,
                                                     std::shared_ptr<platform::time_service> ts,
                                                     std::shared_ptr<metadata_parser_map> parsers)

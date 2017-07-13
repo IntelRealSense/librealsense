@@ -1197,7 +1197,6 @@ namespace rs2
 
         void set_region_of_interest(const region_of_interest& roi)
         {
-            if (!_sensor) throw std::runtime_error("Sensor does not support Region-of-Interest!");
             rs2_error* e = nullptr;
             rs2_set_region_of_interest(_sensor.get(), roi.min_x, roi.min_y, roi.max_x, roi.max_y, &e);
             error::handle(e);
@@ -1205,7 +1204,6 @@ namespace rs2
 
         region_of_interest get_region_of_interest() const
         {
-            if (!_sensor) throw std::runtime_error("Sensor does not support Region-of-Interest!");
             region_of_interest roi {};
             rs2_error* e = nullptr;
             rs2_get_region_of_interest(_sensor.get(), &roi.min_x, &roi.min_y, &roi.max_x, &roi.max_y, &e);
@@ -1389,8 +1387,6 @@ namespace rs2
 
         std::vector<uint8_t> send_and_receive_raw_data(const std::vector<uint8_t>& input) const
         {
-            if (!_dev) throw std::runtime_error("Device does not support Debug Protocol!");
-
             std::vector<uint8_t> results;
 
             rs2_error* e = nullptr;

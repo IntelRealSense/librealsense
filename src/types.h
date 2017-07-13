@@ -42,6 +42,7 @@ const double DBL_EPSILON = 2.2204460492503131e-016;  // smallest such that 1.0+D
 
 namespace librealsense
 {
+    #define UNKNOWN "UNKNOWN"
 
     ///////////////////////////////////
     // Utility types for general use //
@@ -309,6 +310,7 @@ namespace librealsense
 #define RS2_ENUM_HELPERS(TYPE, PREFIX) const char * get_string(TYPE value); \
         inline bool is_valid(TYPE value) { return value >= 0 && value < RS2_##PREFIX##_COUNT; } \
         inline std::ostream & operator << (std::ostream & out, TYPE value) { if(is_valid(value)) return out << get_string(value); else return out << (int)value; }
+
     RS2_ENUM_HELPERS(rs2_stream, STREAM)
     RS2_ENUM_HELPERS(rs2_format, FORMAT)
     RS2_ENUM_HELPERS(rs2_distortion, DISTORTION)
@@ -321,7 +323,7 @@ namespace librealsense
     RS2_ENUM_HELPERS(rs2_exception_type, EXCEPTION_TYPE)
     RS2_ENUM_HELPERS(rs2_log_severity, LOG_SEVERITY)
     RS2_ENUM_HELPERS(rs2_notification_category, NOTIFICATION_CATEGORY)
-    #undef RS2_ENUM_HELPERS
+
 
     ////////////////////////////////////////////
     // World's tiniest linear algebra library //

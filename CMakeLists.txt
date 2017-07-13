@@ -137,17 +137,21 @@ set(REALSENSE_HPP
     include/librealsense/rscore2.hpp
     include/librealsense/rsutil2.h
     include/librealsense/rsutil2.hpp
+    include/librealsense/rs2_advanced_mode.h
+    include/librealsense/rs2_advanced_mode.hpp
+    include/librealsense/rs2_advanced_mode_command.h
 
     src/core/streaming.h
-	src/core/debug.h
-	src/core/roi.h
-	src/core/motion.h
-	src/core/video.h
-	src/core/options.h
-	src/core/info.h
+    src/core/debug.h
+    src/core/advanced_mode.h
+    src/core/roi.h
+    src/core/motion.h
+    src/core/video.h
+    src/core/options.h
+    src/core/info.h
 	src/core/extension.h
 	src/core/processing.h
-	
+
     src/archive.h
     src/concurrency.h
     src/context.h
@@ -184,6 +188,7 @@ set(REALSENSE_HPP
     src/win/win-usb.h
     src/win/win-hid.h
     src/win/win-backend.h
+    src/api.h
 
     third-party/easyloggingpp/src/easylogging++.h
     third-party/sqlite/sqlite3.h
@@ -224,7 +229,11 @@ if(WIN32)
         include/librealsense/rscore2.hpp
         include/librealsense/rsutil2.h
         include/librealsense/rsutil2.hpp
+        include/librealsense/rs2_advanced_mode.h
+        include/librealsense/rs2_advanced_mode.hpp
+        include/librealsense/rs2_advanced_mode_command.h
         CMake/realsense.def
+        CMake/advanced_mode.def
         )
 
     source_group("Header Files\\Recorder" FILES
@@ -235,7 +244,7 @@ if(WIN32)
 
     source_group("Source Files\\API" FILES
         src/rs.cpp
-		src/verify.c
+        src/verify.c
         )
 
     source_group("Source Files\\Recorder" FILES
@@ -305,6 +314,7 @@ endif()
 if(WIN32)
     set(BACKEND RS2_USE_WMF_BACKEND)
     set(REALSENSE_DEF CMake/realsense.def)
+    set(REALSENSE_DEF CMake/advanced_mode.def)
     # Makes VS15 find the DLL when trying to run examples/tests
     set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
     set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
@@ -407,7 +417,7 @@ if(${ROS_BUILD_TYPE})
         ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
     )
 
-    install(DIRECTORY ${PROJECT_SOURCE_DIR}/include/${PROJECT_NAME}/
+    install(DIRECTORY ${PROJECT_SOURCE_DIR}/include/librealsense/
         DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION})
 else()
     set(CMAKECONFIG_INSTALL_DIR "${CMAKE_INSTALL_LIBDIR}/cmake/realsense2")
@@ -433,17 +443,17 @@ else()
     install(CODE "execute_process(COMMAND ldconfig)")
 endif()
 
-option(BUILD_UNIT_TESTS "Build realsense unit tests." ON)
+option(BUILD_UNIT_TESTS "Build realsense unit tests." OFF) # TODO: Change back to ON
 option(BUILD_EXAMPLES "Build realsense examples and tools." ON)
 option(ENFORCE_METADATA "Require WinSDK with Metadata support during compilation. Windows OS Only" OFF)
-option(BUILD_RS400_EXTRAS "Build RS400 advanced APIs." ON)
+option(BUILD_RS4XX_EXTRAS "Build RS4xx advanced APIs." ON)
 option(BUILD_PYTHON_BINDINGS "Build Python bindings" OFF)
 
 # This parameter is meant for disabling graphical examples when building for
 # headless targets.
 option(BUILD_GRAPHICAL_EXAMPLES "Build graphical examples and tools." ON)
 
-if(((BUILD_EXAMPLES AND BUILD_GRAPHICAL_EXAMPLES) OR BUILD_RS400_EXTRAS) AND WIN32)
+if(((BUILD_EXAMPLES AND BUILD_GRAPHICAL_EXAMPLES) OR BUILD_RS4XX_EXTRAS) AND WIN32)
   add_subdirectory(third-party/glfw)
 endif()
 
@@ -456,8 +466,8 @@ if(BUILD_UNIT_TESTS)
   add_subdirectory(unit-tests)
 endif()
 
-if(BUILD_RS400_EXTRAS)
-  add_subdirectory(rs400/examples)
+if(BUILD_RS4XX_EXTRAS)
+  add_subdirectory(rs4xx/rs4xx_advanced_mode)
 endif()
 
 if (ENFORCE_METADATA)

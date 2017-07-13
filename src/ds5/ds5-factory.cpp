@@ -24,31 +24,34 @@
 namespace librealsense
 {
     // PSR
-    class rs400_device : public ds5_rolling_shutter
+    class rs400_device : public ds5_rolling_shutter, public ds5_advanced_mode_base
     {
     public:
         rs400_device(const platform::backend& backend,
                      const platform::backend_device_group& group)
             : ds5_device(backend, group),
-              ds5_rolling_shutter(backend, group) {}
+              ds5_rolling_shutter(backend, group),
+              ds5_advanced_mode_base(ds5_device::_hw_monitor) {}
     };
 
     // ASR
     class rs410_device : public ds5_rolling_shutter,
-                         public ds5_active
+                         public ds5_active, public ds5_advanced_mode_base
     {
     public:
         rs410_device(const platform::backend& backend,
                      const platform::backend_device_group& group)
             : ds5_device(backend, group),
               ds5_rolling_shutter(backend, group),
-              ds5_active(backend, group) {}
+              ds5_active(backend, group),
+              ds5_advanced_mode_base(ds5_device::_hw_monitor)  {}
     };
 
     // ASRC
     class rs415_device : public ds5_rolling_shutter,
                          public ds5_active,
-                         public ds5_color
+                         public ds5_color,
+                         public ds5_advanced_mode_base
     {
     public:
         rs415_device(const platform::backend& backend,
@@ -56,57 +59,65 @@ namespace librealsense
             : ds5_device(backend, group),
               ds5_rolling_shutter(backend, group),
               ds5_active(backend, group),
-              ds5_color(backend, group) {}
+              ds5_color(backend, group),
+              ds5_advanced_mode_base(ds5_device::_hw_monitor)  {}
     };
 
     // PWGT
-    class rs420_mm_device : public ds5_motion
+    class rs420_mm_device : public ds5_motion, public ds5_advanced_mode_base
     {
     public:
         rs420_mm_device(const platform::backend& backend,
                         const platform::backend_device_group& group)
             : ds5_device(backend, group),
-              ds5_motion(backend, group) {}
+              ds5_motion(backend, group),
+              ds5_advanced_mode_base(ds5_device::_hw_monitor)  {}
     };
 
     // AWG
-    class rs430_device : public ds5_active
+    class rs430_device : public ds5_active, public ds5_advanced_mode_base
     {
     public:
         rs430_device(const platform::backend& backend,
                      const platform::backend_device_group& group)
             : ds5_device(backend, group),
-              ds5_active(backend, group) {}
+              ds5_active(backend, group),
+              ds5_advanced_mode_base(ds5_device::_hw_monitor)  {}
     };
 
     // AWGT
     class rs430_mm_device : public ds5_active,
-                            public ds5_motion
+                            public ds5_motion,
+                            public ds5_advanced_mode_base
     {
     public:
         rs430_mm_device(const platform::backend& backend,
                         const platform::backend_device_group& group)
             : ds5_device(backend, group),
               ds5_active(backend, group),
-              ds5_motion(backend, group) {}
+              ds5_motion(backend, group),
+              ds5_advanced_mode_base(ds5_device::_hw_monitor)  {}
     };
 
     // AWGC
     class rs435_device : public ds5_active,
-                         public ds5_color
+                         public ds5_color,
+                         public ds5_advanced_mode_base
     {
     public:
         rs435_device(const platform::backend& backend,
                      const platform::backend_device_group& group)
             : ds5_device(backend, group),
               ds5_active(backend, group),
-              ds5_color(backend,  group) {}
+              ds5_color(backend,  group),
+              ds5_advanced_mode_base(ds5_device::_hw_monitor) {}
     };
 
     // AWGCT
     class rs430_rgb_mm_device : public ds5_active,
                                 public ds5_color,
-                                public ds5_motion
+                                public ds5_motion,
+                                public ds5_advanced_mode_base
     {
     public:
         rs430_rgb_mm_device(const platform::backend& backend,
@@ -114,7 +125,8 @@ namespace librealsense
             : ds5_device(backend, group),
               ds5_active(backend, group),
               ds5_color(backend,  group),
-              ds5_motion(backend, group) {}
+              ds5_motion(backend, group),
+              ds5_advanced_mode_base(ds5_device::_hw_monitor) {}
     };
 
     std::shared_ptr<device_interface> ds5_info::create(const platform::backend& backend) const

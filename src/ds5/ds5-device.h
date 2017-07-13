@@ -8,6 +8,8 @@
 #include "algo.h"
 #include "error-handling.h"
 #include "core/debug.h"
+#include "core/advanced_mode.h"
+
 
 namespace librealsense
 {
@@ -42,7 +44,8 @@ namespace librealsense
 
         bool is_camera_in_advanced_mode() const;
 
-        const uint8_t _depth_device_idx;
+        uint8_t _depth_device_idx;
+        std::shared_ptr<uvc_sensor> _depth_sensor;
 
         lazy<std::vector<uint8_t>> _coefficients_table_raw;
 

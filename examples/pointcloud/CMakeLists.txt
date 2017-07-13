@@ -18,19 +18,19 @@ endif()
 
 if(BUILD_GRAPHICAL_EXAMPLES)
     # pointcloud
-    add_executable(rs-pointcloud rs-pointcloud.cpp ../../third-party/imgui/imgui.cpp ../../third-party/imgui/imgui_draw.cpp ../../third-party/imgui/imgui_impl_glfw.cpp)
-    target_link_libraries(rs-pointcloud ${DEPENDENCIES})
-    include_directories(rs-pointcloud ../../common ../../third-party/imgui)
-    set_target_properties (rs-pointcloud PROPERTIES
-        FOLDER Examples
-    )
+#    add_executable(rs-pointcloud rs-pointcloud.cpp ../../third-party/imgui/imgui.cpp ../../third-party/imgui/imgui_draw.cpp ../../third-party/imgui/imgui_impl_glfw.cpp)
+#    target_link_libraries(rs-pointcloud ${DEPENDENCIES})
+#    include_directories(rs-pointcloud ../../common ../../third-party/imgui)
+#    set_target_properties (rs-pointcloud PROPERTIES
+#        FOLDER Examples
+#    )
 
-    install(
-        TARGETS
+#    install(
+#        TARGETS
 
-        rs-pointcloud
+#        rs-pointcloud
 
-        RUNTIME DESTINATION
-        ${CMAKE_INSTALL_PREFIX}/bin
-    )
+#        RUNTIME DESTINATION
+#        ${CMAKE_INSTALL_PREFIX}/bin
+#    )
 endif()

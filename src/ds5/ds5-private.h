@@ -88,6 +88,12 @@ namespace librealsense
             GETAEROI        = 0x45,     // get auto-exposure region of interest
             MMER            = 0x4F,     // MM EEPROM read ( from DS5 cache )
             GET_EXTRINSICS  = 0x53,     // get extrinsics
+
+            enable_advanced_mode = 0x2d,
+            advanced_mode_enabled = 0x30,
+            reset = 0x20,
+            set_advanced = 0x2B,
+            get_advanced = 0x2C,
         };
 
         const int etDepthTableControl = 9; // Identifier of the depth table control

@@ -222,6 +222,7 @@ typedef enum rs2_extension_type
     RS2_EXTENSION_TYPE_MOTION_FRAME,
     RS2_EXTENSION_TYPE_COMPOSITE_FRAME,
     RS2_EXTENSION_TYPE_POINTS,
+    RS2_EXTENSION_TYPE_ADVANCED_MODE,
     RS2_EXTENSION_TYPE_COUNT
 } rs2_extension_type;
 
@@ -1028,6 +1029,7 @@ const char * rs2_extension_type_to_string   (rs2_extension_type type);
 
 void rs2_log_to_console(rs2_log_severity min_severity, rs2_error ** error);
 void rs2_log_to_file(rs2_log_severity min_severity, const char * file_path, rs2_error ** error);
+
 
 /**
  * TODO: document
