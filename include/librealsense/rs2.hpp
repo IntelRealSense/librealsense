@@ -226,6 +226,11 @@ namespace rs2
             swap(other);
             return *this;
         }
+        frame(const frame& other)
+            : frame_ref(other.frame_ref)
+        {
+            add_ref();
+        }
         void swap(frame& other)
         {
             std::swap(frame_ref, other.frame_ref);
@@ -339,21 +344,6 @@ namespace rs2
             return s;
         }
 
-        /**
-        * create additional reference to a frame without duplicating frame data
-        * \param[out] result     new frame reference, release by destructor
-        * \return                true if cloning was successful
-        */
-        bool try_clone_ref(frame* result) const
-        {
-            rs2_error * e = nullptr;
-            auto s = rs2_clone_frame_ref(frame_ref, &e);
-            error::handle(e);
-            if (!s) return false;
-            *result = frame(s);
-            return true;
-        }
-
         template<class T>
         bool is() const
         {
@@ -371,6 +361,18 @@ namespace rs2
         rs2_frame* get() const { return frame_ref; }
 
     protected:
+        /**
+        * create additional reference to a frame without duplicating frame data
+        * \param[out] result     new frame reference, release by destructor
+        * \return                true if cloning was successful
+        */
+        void add_ref() const
+        {
+            rs2_error * e = nullptr;
+            rs2_frame_add_ref(frame_ref, &e);
+            error::handle(e);
+        }
+
         friend class frame_queue;
         friend class syncer;
         friend class frame_source;
@@ -378,7 +380,6 @@ namespace rs2
         friend class pointcloud_block;
 
         rs2_frame* frame_ref;
-        frame(const frame&) = delete;
     };
 
     typedef std::vector<frame> frameset;
@@ -387,16 +388,12 @@ namespace rs2
     {
     public:
         video_frame(const frame& f)
-            : frame()
+            : frame(f)
         {
             rs2_error* e = nullptr;
             if(!f || (rs2_is_frame(f.get(), RS2_EXTENSION_TYPE_VIDEO_FRAME, &e) == 0 && !e))
             {
                 frame_ref = nullptr;
-            }
-            else
-            {
-                f.try_clone_ref(this);
             }
             error::handle(e);
         }
@@ -459,16 +456,12 @@ namespace rs2
     {
     public:
         points(const frame& f)
-                : frame(), _size(0)
+                : frame(f), _size(0)
         {
             rs2_error* e = nullptr;
             if(!f || (rs2_is_frame(f.get(), RS2_EXTENSION_TYPE_POINTS, &e) == 0 && !e))
             {
                 frame_ref = nullptr;
-            }
-            else
-            {
-                f.try_clone_ref(this);
             }
             error::handle(e);
 
@@ -509,16 +502,12 @@ namespace rs2
     {
     public:
         composite_frame(const frame& f)
-            : frame(), _size(0)
+            : frame(f), _size(0)
         {
             rs2_error* e = nullptr;
             if(!f || (rs2_is_frame(f.get(), RS2_EXTENSION_TYPE_COMPOSITE_FRAME, &e) == 0 && !e))
             {
                 frame_ref = nullptr;
-            }
-            else
-            {
-                f.try_clone_ref(this);
             }
             error::handle(e);
 
@@ -712,7 +701,7 @@ namespace rs2
         syncer_processing_block()
         {
             rs2_error* e = nullptr; 
-            _processing_block = std::make_shared<processing_block>(std::shared_ptr<rs2_processing_block>(rs2_create_sync_processing_block(&e)));
+            _processing_block = std::make_shared<processing_block>(std::shared_ptr<rs2_processing_block>(rs2_create_sync_processing_block(&e), rs2_delete_processing_block));
             error::handle(e);
 
         }
@@ -782,83 +771,6 @@ namespace rs2
         int min_y;
         int max_x;
         int max_y;
-    };
-
-
-    class syncer
-    {
-    public:
-        syncer()
-        {
-            rs2_error* e = nullptr;
-            _syncer = std::shared_ptr<rs2_syncer>(
-                    rs2_create_syncer(&e),
-                    rs2_delete_syncer);
-            error::handle(e);
-        }
-
-        /**
-        * Wait until coherent set of frames becomes available
-        * \param[in] timeout_ms   Max time in milliseconds to wait until an exception will be thrown
-        * \return Set of coherent frames
-        */
-        frameset wait_for_frames(unsigned int timeout_ms = 5000) const
-        {
-            frameset results;
-            std::vector<rs2_frame*> frame_refs(RS2_STREAM_COUNT, nullptr);
-            rs2_error* e = nullptr;
-            rs2_wait_for_frames(_syncer.get(), timeout_ms, frame_refs.data(), &e);
-            error::handle(e);
-            for (rs2_frame* ref : frame_refs)
-            {
-                if (ref) results.emplace_back(ref);
-            }
-            return results;
-        }
-
-        /**
-        * Check if a coherent set of frames is available
-        * \param[out] result      New coherent frame-set
-        * \return true if new frame-set was stored to result
-        */
-        bool poll_for_frames(frameset* result) const
-        {
-            std::vector<rs2_frame*> frame_refs(RS2_STREAM_COUNT, nullptr);
-            rs2_error* e = nullptr;
-            auto res = rs2_poll_for_frames(_syncer.get(), frame_refs.data(), &e);
-            error::handle(e);
-
-            if (res)
-            {
-                result->clear();
-                for (rs2_frame* ref : frame_refs)
-                {
-                    if (ref) result->emplace_back(ref);
-                }
-                return true;
-            }
-            return false;
-        }
-
-        /**
-        * Syncronize new frame
-        * \param[in] f - frame handle to enqueue (this operation passed ownership to the syncer)
-        */
-        void enqueue(frame f) const
-        {
-            rs2_sync_frame(f.frame_ref, _syncer.get()); // noexcept
-            f.frame_ref = nullptr; // frame has been essentially moved from
-        }
-
-        void operator()(frame f) const
-        {
-            enqueue(std::move(f));
-        }
-    private:
-        friend class device;
-        std::shared_ptr<rs2_syncer> _syncer;
-
-        syncer(std::shared_ptr<rs2_syncer> s) : _syncer(s) {}
     };
 
     class sensor
@@ -1811,7 +1723,42 @@ namespace rs2
         std::shared_ptr<rs2_context> _context;
     };
 
+    class syncer
+    {
+    public:
+        syncer()
+        {
+            _sync.start(_results);
+        }
 
+        /**
+        * Wait until coherent set of frames becomes available
+        * \param[in] timeout_ms   Max time in milliseconds to wait until an exception will be thrown
+        * \return Set of coherent frames
+        */
+        frameset wait_for_frames(unsigned int timeout_ms = 5000) const
+        {
+            return _results.wait_for_frames();
+        }
+
+        /**
+        * Check if a coherent set of frames is available
+        * \param[out] result      New coherent frame-set
+        * \return true if new frame-set was stored to result
+        */
+        bool poll_for_frames(frameset* result) const
+        {
+            return _results.poll_for_frames(result);
+        }
+
+        void operator()(frame f) const
+        {
+            _sync(std::move(f));
+        }
+    private:
+        syncer_processing_block _sync;
+        frame_queue _results;
+    };
 
     class recording_context : public context
     {

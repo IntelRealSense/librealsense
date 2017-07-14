@@ -16,7 +16,7 @@ namespace librealsense
 
 		void on_frame(rs2_frame * f, rs2_source * source) override
 		{
-			frame_holder front(f);
+            frame_holder front((frame_interface*)f);
 			on_frame_function(std::move(front), source->source);
 		}
 
@@ -51,7 +51,7 @@ namespace librealsense
 		};
 		set_processing_callback(std::shared_ptr<rs2_frame_processor_callback>(
 			new internal_frame_processor_callback<decltype(f)>(f)));
-	};
+    }
 
 	matcher::matcher()
 	{}
@@ -100,7 +100,7 @@ namespace librealsense
 
 	const device_interface* get_device_from_frame(const frame_holder& f)
 	{
-		if (auto s = f.frame->get()->get_sensor())
+        if (auto s = f.frame->get_sensor())
 		{
 			return &s->get_device();
 		}
@@ -112,7 +112,7 @@ namespace librealsense
 
 	void composite_matcher::dispatch(frame_holder f, synthetic_source_interface* source)
 	{
-		auto frame_ptr = f.frame->get();
+        auto frame_ptr = f.frame;
 		auto stream = frame_ptr->get_stream_type();
 
 		auto matcher = find_matcher(stream_id(get_device_from_frame(f), stream));
@@ -160,7 +160,7 @@ namespace librealsense
 
 	void composite_matcher::sync(frame_holder f, synthetic_source_interface* source)
 	{
-		auto frame_ptr = f.frame->get();
+        auto frame_ptr = f.frame;
 		auto stream = frame_ptr->get_stream_type();
 
 		auto matcher = find_matcher(stream_id(get_device_from_frame(f), stream));
@@ -197,7 +197,7 @@ namespace librealsense
                 std::cout << "QUEUES: ";
             for (auto f : frames)
             {
-                std::cout << (*f)->get()->get_stream_type() << " " << (*f)->get()->get_frame_number() << " ";
+                std::cout << (*f)->get_stream_type() << " " << (*f)->get_frame_number() << " ";
             }
             std::cout << "\n";
             if (frames.size() == 0)
@@ -246,7 +246,7 @@ namespace librealsense
                     frame_holder frame;
                     _frames_queue[index].dequeue(&frame);
 
-                    std::cout << frame->get()->get_stream_type() << " " << frame->get()->get_frame_number() << " " << frame->get()->get_frame_timestamp() << " ";
+                    std::cout << frame->get_stream_type() << " " << frame->get_frame_number() << " " << frame->get_frame_timestamp() << " ";
                     //TODO: create composite frame
                     //synced.push_back(std::move(frame));
 
@@ -280,11 +280,11 @@ namespace librealsense
 
 	bool frame_number_composite_matcher::are_equivalent(frame_holder& a, frame_holder& b)
 	{
-		return a->get()->get_frame_number() == b->get()->get_frame_number();
+        return a->get_frame_number() == b->get_frame_number();
 	}
 	bool frame_number_composite_matcher::is_smaller_than(frame_holder & a, frame_holder & b)
 	{
-		return a->get()->get_frame_number() < b->get()->get_frame_number();
+        return a->get_frame_number() < b->get_frame_number();
 	}
 	timestamp_composite_matcher::timestamp_composite_matcher(std::vector<std::shared_ptr<matcher>> matchers)
 		:composite_matcher(matchers)
@@ -292,26 +292,26 @@ namespace librealsense
 	}
 	bool timestamp_composite_matcher::are_equivalent(frame_holder & a, frame_holder & b)
 	{
-		auto a_fps = a->get()->get_framerate();
-		auto b_fps = b->get()->get_framerate();
+        auto a_fps = a->get_framerate();
+        auto b_fps = b->get_framerate();
 
 		auto min_fps = std::min(a_fps, b_fps);
 
-		return  are_equivalent(a->get()->get_frame_timestamp(), b->get()->get_frame_timestamp(), min_fps);
+        return  are_equivalent(a->get_frame_timestamp(), b->get_frame_timestamp(), min_fps);
 	}
 
 	bool timestamp_composite_matcher::is_smaller_than(frame_holder & a, frame_holder & b)
 	{
-		return  a->get()->get_frame_timestamp() < b->get()->get_frame_timestamp();
+        return  a->get_frame_timestamp() < b->get_frame_timestamp();
 	}
 
 	void timestamp_composite_matcher::dispatch(frame_holder f, synthetic_source_interface* source)
 	{
-		auto fps = f->get()->get_framerate();
+        auto fps = f->get_framerate();
 
 		auto gap = 1000 / fps;
 
-		auto frame_ptr = f.frame->get();
+        auto frame_ptr = f.frame;
 		auto stream = frame_ptr->get_stream_type();
 
 
@@ -334,7 +334,7 @@ namespace librealsense
 		if (_frames_queue[synced[0]].peek(&synced_frame))
 		{
 			auto next_expected = _next_expected[missing];
-			return are_equivalent((*synced_frame)->get()->get_frame_timestamp(), next_expected, (*synced_frame)->get()->get_framerate());
+            return are_equivalent((*synced_frame)->get_frame_timestamp(), next_expected, (*synced_frame)->get_framerate());
 		}
 		return true;
 	}

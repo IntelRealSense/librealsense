@@ -63,6 +63,9 @@ namespace librealsense
         virtual void attach_continuation(frame_continuation&& continuation) = 0;
         virtual void disable_continuation() = 0;
 
+        virtual void log_callback_start(rs2_time_t timestamp) = 0;
+        virtual void log_callback_end(rs2_time_t timestamp) const = 0;
+
         virtual archive_interface* get_owner() const = 0;
 
         virtual ~frame_interface() = default;

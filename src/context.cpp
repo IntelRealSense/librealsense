@@ -123,11 +123,11 @@ namespace librealsense
     {
         std::vector<std::shared_ptr<device_info>> list;
 
-        auto sr300_devices = sr300_info::pick_sr300_devices(_backend, devices.uvc_devices, devices.usb_devices);
-        std::copy(begin(sr300_devices), end(sr300_devices), std::back_inserter(list));
-
         auto ds5_devices = ds5_info::pick_ds5_devices(_backend, devices);
         std::copy(begin(ds5_devices), end(ds5_devices), std::back_inserter(list));
+
+        auto sr300_devices = sr300_info::pick_sr300_devices(_backend, devices.uvc_devices, devices.usb_devices);
+        std::copy(begin(sr300_devices), end(sr300_devices), std::back_inserter(list));
 
         auto recovery_devices = recovery_info::pick_recovery_devices(_backend, devices.usb_devices);
         std::copy(begin(recovery_devices), end(recovery_devices), std::back_inserter(list));

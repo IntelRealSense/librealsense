@@ -25,7 +25,7 @@ namespace librealsense
 
         std::shared_ptr<option> get_published_size_option();
 
-        rs2_frame* alloc_frame(rs2_extension_type type, size_t size, frame_additional_data additional_data, bool requires_memory) const;
+        frame_interface* alloc_frame(rs2_extension_type type, size_t size, frame_additional_data additional_data, bool requires_memory) const;
 
         void set_callback(frame_callback_ptr callback);
 

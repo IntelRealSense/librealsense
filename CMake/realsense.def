@@ -57,7 +57,7 @@ EXPORTS
     rs2_get_frame_format
     rs2_get_frame_stream_type
     rs2_release_frame
-    rs2_clone_frame_ref
+    rs2_frame_add_ref
 
     rs2_get_option
     rs2_set_option

@@ -17,14 +17,14 @@ namespace librealsense
         {
         }
 
-        rs2_frame* allocate_video_frame(rs2_stream stream, rs2_frame* original, 
-                                        rs2_format new_format = RS2_FORMAT_ANY, 
-                                        int new_bpp = 0,
-                                        int new_width = 0, 
-                                        int new_height = 0, 
-                                        int new_stride = 0) override;
+        frame_interface* allocate_video_frame(rs2_stream stream, frame_interface* original,
+                                              rs2_format new_format = RS2_FORMAT_ANY,
+                                              int new_bpp = 0,
+                                              int new_width = 0,
+                                              int new_height = 0,
+                                              int new_stride = 0) override;
 
-        rs2_frame* allocate_composite_frame(std::vector<frame_holder> frames) override;
+        frame_interface* allocate_composite_frame(std::vector<frame_holder> frames) override;
 
         void frame_ready(frame_holder result) override;
 

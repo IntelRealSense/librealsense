@@ -500,7 +500,7 @@ namespace rs2
         rs2::frame last;
 
     public:
-        color_map* cm = &classic;
+        color_map* cm = &jet;
         bool equalize = true;
         float min_depth = 0.f;
         float max_depth = 16.f;
@@ -602,7 +602,7 @@ namespace rs2
             glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
             glBindTexture(GL_TEXTURE_2D, 0);
 
-            frame.try_clone_ref(&last);
+            last = frame;
         }
 
         void draw_axis()

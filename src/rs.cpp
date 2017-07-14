@@ -555,7 +555,7 @@ int rs2_supports_frame_metadata(const rs2_frame * frame, rs2_frame_metadata fram
 {
     VALIDATE_NOT_NULL(frame);
     VALIDATE_ENUM(frame_metadata);
-    return frame->get()->supports_frame_metadata(frame_metadata);
+    return ((frame_interface*)frame)->supports_frame_metadata(frame_metadata);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, frame, frame_metadata)
 
@@ -563,7 +563,7 @@ rs2_metadata_t rs2_get_frame_metadata(const rs2_frame * frame, rs2_frame_metadat
 {
     VALIDATE_NOT_NULL(frame);
     VALIDATE_ENUM(frame_metadata);
-    return frame->get()->get_frame_metadata(frame_metadata);
+    return ((frame_interface*)frame)->get_frame_metadata(frame_metadata);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, frame, frame_metadata)
 
@@ -617,28 +617,28 @@ HANDLE_EXCEPTIONS_AND_RETURN(false, removed, dev)
 rs2_time_t rs2_get_frame_timestamp(const rs2_frame * frame_ref, rs2_error ** error) try
 {
     VALIDATE_NOT_NULL(frame_ref);
-    return frame_ref->get()->get_frame_timestamp();
+    return ((frame_interface*)frame_ref)->get_frame_timestamp();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, frame_ref)
 
 rs2_timestamp_domain rs2_get_frame_timestamp_domain(const rs2_frame * frame_ref, rs2_error ** error) try
 {
     VALIDATE_NOT_NULL(frame_ref);
-    return frame_ref->get()->get_frame_timestamp_domain();
+    return ((frame_interface*)frame_ref)->get_frame_timestamp_domain();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(RS2_TIMESTAMP_DOMAIN_COUNT, frame_ref)
 
 const void * rs2_get_frame_data(const rs2_frame * frame_ref, rs2_error ** error) try
 {
     VALIDATE_NOT_NULL(frame_ref);
-    return frame_ref->get()->get_frame_data();
+    return ((frame_interface*)frame_ref)->get_frame_data();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, frame_ref)
 
 int rs2_get_frame_width(const rs2_frame * frame_ref, rs2_error ** error) try
 {
     VALIDATE_NOT_NULL(frame_ref);
-    auto vf = VALIDATE_INTERFACE(frame_ref->get(), librealsense::video_frame);
+    auto vf = VALIDATE_INTERFACE(((frame_interface*)frame_ref), librealsense::video_frame);
     return vf->get_width();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, frame_ref)
@@ -646,7 +646,7 @@ HANDLE_EXCEPTIONS_AND_RETURN(0, frame_ref)
 int rs2_get_frame_height(const rs2_frame * frame_ref, rs2_error ** error) try
 {
     VALIDATE_NOT_NULL(frame_ref);
-    auto vf = VALIDATE_INTERFACE(frame_ref->get(), librealsense::video_frame);
+    auto vf = VALIDATE_INTERFACE(((frame_interface*)frame_ref), librealsense::video_frame);
     return vf->get_height();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, frame_ref)
@@ -654,7 +654,7 @@ HANDLE_EXCEPTIONS_AND_RETURN(0, frame_ref)
 int rs2_get_frame_stride_in_bytes(const rs2_frame * frame_ref, rs2_error ** error) try
 {
     VALIDATE_NOT_NULL(frame_ref);
-    auto vf = VALIDATE_INTERFACE(frame_ref->get(), librealsense::video_frame);
+    auto vf = VALIDATE_INTERFACE(((frame_interface*)frame_ref), librealsense::video_frame);
     return vf->get_stride();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, frame_ref)
@@ -663,7 +663,7 @@ HANDLE_EXCEPTIONS_AND_RETURN(0, frame_ref)
 int rs2_get_frame_bits_per_pixel(const rs2_frame * frame_ref, rs2_error ** error) try
 {
     VALIDATE_NOT_NULL(frame_ref);
-    auto vf = VALIDATE_INTERFACE(frame_ref->get(), librealsense::video_frame);
+    auto vf = VALIDATE_INTERFACE(((frame_interface*)frame_ref), librealsense::video_frame);
     return vf->get_bpp();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, frame_ref)
@@ -671,14 +671,14 @@ HANDLE_EXCEPTIONS_AND_RETURN(0, frame_ref)
 rs2_format rs2_get_frame_format(const rs2_frame * frame_ref, rs2_error ** error) try
 {
     VALIDATE_NOT_NULL(frame_ref);
-    return frame_ref->get()->get_format();
+    return ((frame_interface*)frame_ref)->get_format();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(RS2_FORMAT_ANY, frame_ref)
 
 rs2_stream rs2_get_frame_stream_type(const rs2_frame * frame_ref, rs2_error ** error) try
 {
     VALIDATE_NOT_NULL(frame_ref);
-    return frame_ref->get()->get_stream_type();
+    return ((frame_interface*)frame_ref)->get_stream_type();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(RS2_STREAM_COUNT, frame_ref)
 
@@ -686,14 +686,14 @@ HANDLE_EXCEPTIONS_AND_RETURN(RS2_STREAM_COUNT, frame_ref)
 unsigned long long rs2_get_frame_number(const rs2_frame * frame, rs2_error ** error) try
 {
     VALIDATE_NOT_NULL(frame);
-    return frame->get()->get_frame_number();
+    return ((frame_interface*)frame)->get_frame_number();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, frame)
 
 void rs2_release_frame(rs2_frame * frame) try
 {
     VALIDATE_NOT_NULL(frame);
-    frame->get()->get_owner()->release_frame_ref(frame);
+    ((frame_interface*)frame)->release();
 }
 NOEXCEPT_RETURN(, frame)
 
@@ -705,12 +705,12 @@ const char* rs2_get_option_description(const rs2_sensor* sensor, rs2_option opti
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, sensor, option)
 
-rs2_frame* rs2_clone_frame_ref(rs2_frame* frame, rs2_error ** error) try
+void rs2_frame_add_ref(rs2_frame* frame, rs2_error ** error) try
 {
     VALIDATE_NOT_NULL(frame);
-    return frame->get()->get_owner()->clone_frame(frame);
+    ((frame_interface*)frame)->acquire();
 }
-HANDLE_EXCEPTIONS_AND_RETURN(nullptr, frame)
+HANDLE_EXCEPTIONS_AND_RETURN(, frame)
 
 const char* rs2_get_option_value_description(const rs2_sensor* sensor, rs2_option option, float value, rs2_error ** error) try
 {
@@ -742,9 +742,9 @@ rs2_frame* rs2_wait_for_frame(rs2_frame_queue* queue, rs2_error** error) try
         throw std::runtime_error("Frame did not arrive in time!");
     }
 
-    rs2_frame* result = nullptr;
+    frame_interface* result = nullptr;
     std::swap(result, fh.frame);
-    return result;
+    return (rs2_frame*)result;
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, queue)
 
@@ -755,9 +755,9 @@ int rs2_poll_for_frame(rs2_frame_queue* queue, rs2_frame** output_frame, rs2_err
     librealsense::frame_holder fh;
     if (queue->queue.try_dequeue(&fh))
     {
-        rs2_frame* result = nullptr;
+        frame_interface* result = nullptr;
         std::swap(result, fh.frame);
-        *output_frame = result;
+        *output_frame = (rs2_frame*)result;
         return true;
     }
 
@@ -771,7 +771,7 @@ void rs2_enqueue_frame(rs2_frame* frame, void* queue) try
     VALIDATE_NOT_NULL(queue);
     auto q = reinterpret_cast<rs2_frame_queue*>(queue);
     librealsense::frame_holder fh;
-    fh.frame = frame;
+    fh.frame = (frame_interface*)frame;
     q->queue.enqueue(std::move(fh));
 }
 NOEXCEPT_RETURN(, frame, queue)
@@ -1016,6 +1016,7 @@ int rs2_is_sensor(const rs2_sensor* sensor, rs2_extension_type extension_type, r
         case RS2_EXTENSION_TYPE_OPTIONS:       return VALIDATE_INTERFACE_NO_THROW(sensor->sensor, librealsense::options_interface);
         case RS2_EXTENSION_TYPE_VIDEO:         return VALIDATE_INTERFACE_NO_THROW(sensor->sensor, librealsense::video_sensor_interface);
         case RS2_EXTENSION_TYPE_ROI:           return VALIDATE_INTERFACE_NO_THROW(sensor->sensor, librealsense::roi_sensor_interface);
+        case RS2_EXTENSION_TYPE_DEPTH_SENSOR:  return VALIDATE_INTERFACE_NO_THROW(sensor->sensor, librealsense::depth_sensor);
         default:
             return 0;
     }
@@ -1048,9 +1049,9 @@ int rs2_is_frame(const rs2_frame* f, rs2_extension_type extension_type, rs2_erro
     VALIDATE_ENUM(extension_type);
     switch (extension_type)
     {
-        case RS2_EXTENSION_TYPE_VIDEO_FRAME:     return VALIDATE_INTERFACE_NO_THROW(f->get(), librealsense::video_frame);
-        case RS2_EXTENSION_TYPE_COMPOSITE_FRAME: return VALIDATE_INTERFACE_NO_THROW(f->get(), librealsense::composite_frame);
-        case RS2_EXTENSION_TYPE_POINTS: return VALIDATE_INTERFACE_NO_THROW(f->get(), librealsense::points);
+        case RS2_EXTENSION_TYPE_VIDEO_FRAME:     return VALIDATE_INTERFACE_NO_THROW((frame_interface*)f, librealsense::video_frame);
+        case RS2_EXTENSION_TYPE_COMPOSITE_FRAME: return VALIDATE_INTERFACE_NO_THROW((frame_interface*)f, librealsense::composite_frame);
+        case RS2_EXTENSION_TYPE_POINTS: return VALIDATE_INTERFACE_NO_THROW((frame_interface*)f, librealsense::points);
         default:
             return 0;
     }
@@ -1101,7 +1102,7 @@ rs2_frame* rs2_allocate_synthetic_video_frame(rs2_source* source, rs2_stream new
     VALIDATE_ENUM(new_stream);
     VALIDATE_ENUM(new_format);
 
-    return source->source->allocate_video_frame(new_stream, original, new_format, new_bpp, new_width, new_height, new_stride);
+    return (rs2_frame*)source->source->allocate_video_frame(new_stream, (frame_interface*)original, new_format, new_bpp, new_width, new_height, new_stride);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, source, new_stream, original, new_format, new_bpp, new_width, new_height, new_stride)
 
@@ -1109,7 +1110,7 @@ void rs2_synthetic_frame_ready(rs2_source* source, rs2_frame* frame, rs2_error**
 {
     VALIDATE_NOT_NULL(frame);
 
-    librealsense::frame_holder holder(frame);
+    librealsense::frame_holder holder((frame_interface*)frame);
     VALIDATE_NOT_NULL(source);
 
     source->source->frame_ready(std::move(holder));
@@ -1147,7 +1148,7 @@ void rs2_process_frame(rs2_processing_block* block, rs2_frame* frame, rs2_error*
     VALIDATE_NOT_NULL(block);
     VALIDATE_NOT_NULL(frame);
 
-    block->block->invoke(frame_holder(frame));
+    block->block->invoke(frame_holder((frame_interface*)frame));
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, block, frame)
 
@@ -1163,14 +1164,12 @@ rs2_frame* rs2_extract_frame(rs2_frame* composite, int index, rs2_error** error)
 {
     VALIDATE_NOT_NULL(composite);
 
-    auto cf = VALIDATE_INTERFACE(composite->get(), librealsense::composite_frame);
+    auto cf = VALIDATE_INTERFACE((frame_interface*)composite, librealsense::composite_frame);
 
     VALIDATE_RANGE(index, 0, cf->get_embeded_frames_count() - 1);
     auto res = cf->get_frame(index);
-
-    auto clone = res->get()->get_owner()->clone_frame(res);
-
-    return clone;
+    res->acquire();
+    return (rs2_frame*)res;
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, composite)
 
@@ -1183,11 +1182,11 @@ rs2_frame* rs2_allocate_composite_frame(rs2_source* source, rs2_frame** frames, 
     std::vector<frame_holder> holders(count);
     for (int i = 0; i < count; i++)
     {
-        holders[i] = std::move(frame_holder(frames[i]));
+        holders[i] = std::move(frame_holder((frame_interface*)frames[i]));
     }
     auto res = source->source->allocate_composite_frame(std::move(holders));
 
-    return res;
+    return (rs2_frame*)res;
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, frames, count)
 
@@ -1195,7 +1194,7 @@ int rs2_embeded_frames_count(rs2_frame* composite, rs2_error** error) try
 {
     VALIDATE_NOT_NULL(composite)
 
-    auto cf = VALIDATE_INTERFACE(composite->get(), librealsense::composite_frame);
+    auto cf = VALIDATE_INTERFACE((frame_interface*)composite, librealsense::composite_frame);
 
     return cf->get_embeded_frames_count();
 }
@@ -1204,7 +1203,7 @@ HANDLE_EXCEPTIONS_AND_RETURN(0, composite)
 rs2_vertex* rs2_get_vertices(const rs2_frame* frame, rs2_error** error) try
 {
     VALIDATE_NOT_NULL(frame);
-    auto points = VALIDATE_INTERFACE(frame->get(), librealsense::points);
+    auto points = VALIDATE_INTERFACE((frame_interface*)frame, librealsense::points);
     return (rs2_vertex*)points->get_vertices();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, frame)
@@ -1212,7 +1211,7 @@ HANDLE_EXCEPTIONS_AND_RETURN(nullptr, frame)
 rs2_pixel* rs2_get_pixel_coordinates(const rs2_frame* frame, rs2_error** error) try
 {
     VALIDATE_NOT_NULL(frame);
-    auto points = VALIDATE_INTERFACE(frame->get(), librealsense::points);
+    auto points = VALIDATE_INTERFACE((frame_interface*)frame, librealsense::points);
     return (rs2_pixel*)points->get_pixel_coordinates();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, frame)
@@ -1220,7 +1219,7 @@ HANDLE_EXCEPTIONS_AND_RETURN(nullptr, frame)
 int rs2_get_points_count(const rs2_frame* frame, rs2_error** error) try
 {
     VALIDATE_NOT_NULL(frame);
-    auto points = VALIDATE_INTERFACE(frame->get(), librealsense::points);
+    auto points = VALIDATE_INTERFACE((frame_interface*)frame, librealsense::points);
     return points->get_vertex_count();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, frame)

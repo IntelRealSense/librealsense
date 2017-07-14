@@ -90,13 +90,18 @@ namespace librealsense
     {
     public:
         explicit ds5_advanced_mode_base(std::shared_ptr<hw_monitor> hwm)
-            : _hw_monitor(hwm) {}
+            : _hw_monitor(hwm)
+        {
+            _enabled = [this](){
+                auto results = send_recieve(encode_command(ds::fw_cmd::advanced_mode_enabled));
+                assert_no_error(ds::fw_cmd::advanced_mode_enabled, results);
+                return *(reinterpret_cast<uint32_t*>(results.data()) + 1) > 0;
+            };
+        }
 
         bool is_enabled() const
         {
-            auto results = send_recieve(encode_command(ds::fw_cmd::advanced_mode_enabled));
-            assert_no_error(ds::fw_cmd::advanced_mode_enabled, results);
-            return *(reinterpret_cast<uint32_t*>(results.data()) + 1) > 0;
+            return *_enabled;
         }
 
         void toggle_advanced_mode(bool enable)
@@ -233,6 +238,7 @@ namespace librealsense
 
     private:
         std::shared_ptr<hw_monitor> _hw_monitor;
+        lazy<bool> _enabled;
 
         static const uint16_t HW_MONITOR_COMMAND_SIZE = 1000;
         static const uint16_t HW_MONITOR_BUFFER_SIZE = 1024;

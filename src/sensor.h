@@ -24,7 +24,7 @@ namespace librealsense
     class device;
     class option;
 
-    typedef std::function<void(rs2_stream, rs2_frame&, callback_invocation_holder)> on_before_frame_callback;
+    typedef std::function<void(rs2_stream, frame_interface*, callback_invocation_holder)> on_before_frame_callback;
 
     class options_container : public virtual options_interface
     {

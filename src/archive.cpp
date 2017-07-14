@@ -36,7 +36,7 @@ namespace librealsense
         std::atomic<uint32_t>* max_frame_queue_size;
         std::atomic<uint32_t> published_frames_count;
         small_heap<T, RS2_USER_QUEUE_SIZE> published_frames;
-        small_heap<rs2_frame, RS2_USER_QUEUE_SIZE> detached_refs;
+
         callbacks_heap callback_inflight;
 
         std::vector<T> freelist; // return frames here
@@ -87,22 +87,22 @@ namespace librealsense
             return backbuffer;
         }
 
-        rs2_frame* track_frame(frame& f)
+        frame_interface* track_frame(frame& f)
         {
             std::unique_lock<std::recursive_mutex> lock(mutex);
 
             auto published_frame = f.publish(this->shared_from_this());
             if (published_frame)
             {
-                rs2_frame new_ref(published_frame); // allocate new frame_ref to ref-counter the now published frame
-                return clone_frame(&new_ref);
+                published_frame->acquire();
+                return published_frame;
             }
 
             LOG_DEBUG("publish(...) failed");
             return nullptr;
         }
 
-        void unpublish_frame(frame* frame)
+        void unpublish_frame(frame_interface* frame)
         {
             if (frame)
             {
@@ -122,7 +122,7 @@ namespace librealsense
             }
         }
 
-        frame* publish_frame(frame* frame)
+        frame_interface* publish_frame(frame_interface* frame)
         {
             auto f = (T*)frame;
 
@@ -182,22 +182,12 @@ namespace librealsense
             return { callback_inflight.allocate(), &callback_inflight };
         }
 
-        rs2_frame* clone_frame(rs2_frame* frame)
+        void release_frame_ref(frame_interface* ref)
         {
-            auto new_ref = detached_refs.allocate();
-            if (new_ref)
-            {
-                *new_ref = *frame;
-            }
-            return new_ref;
+            ref->release();
         }
 
-        void release_frame_ref(rs2_frame* ref)
-        {
-            detached_refs.deallocate(ref);
-        }
-
-        rs2_frame* alloc_and_track(const size_t size, const frame_additional_data& additional_data, bool requires_memory)
+        frame_interface* alloc_and_track(const size_t size, const frame_additional_data& additional_data, bool requires_memory)
         {
             auto frame = alloc_frame(size, additional_data, requires_memory);
             return track_frame(frame);
@@ -206,7 +196,6 @@ namespace librealsense
         void flush()
         {
             published_frames.stop_allocation();
-            detached_refs.stop_allocation();
             callback_inflight.stop_allocation();
             recycle_frames = false;
 
@@ -367,78 +356,24 @@ rs2_time_t frame::get_frame_callback_start_time_point() const
     return additional_data.frame_callback_started;
 }
 
-void rs2_frame::log_callback_start(rs2_time_t timestamp) const
+void frame::log_callback_start(rs2_time_t timestamp)
 {
-    if (get())
+    update_frame_callback_start_ts(timestamp);
+    LOG_DEBUG("CallbackStarted," << librealsense::get_string(get_stream_type()) << "," << get_frame_number() << ",DispatchedAt," << timestamp);
+}
+
+void frame::log_callback_end(rs2_time_t timestamp) const
+{
+    auto callback_warning_duration = 1000.f / (get_framerate() + 1);
+    auto callback_duration = timestamp - get_frame_callback_start_time_point();
+
+    LOG_DEBUG("CallbackFinished," << librealsense::get_string(get_stream_type()) << "," << get_frame_number() << ",DispatchedAt," << timestamp);
+
+    if (callback_duration > callback_warning_duration)
     {
-        get()->update_frame_callback_start_ts(timestamp);
-        LOG_DEBUG("CallbackStarted," << librealsense::get_string(get()->get_stream_type()) << "," << get()->get_frame_number() << ",DispatchedAt," << timestamp);
+        LOG_INFO("Frame Callback " << librealsense::get_string(get_stream_type())
+                 << "#" << std::dec << get_frame_number()
+                 << "overdue. (Duration: " << callback_duration
+                 << "ms, FPS: " << get_framerate() << ", Max Duration: " << callback_warning_duration << "ms)");
     }
 }
-
-void rs2_frame::log_callback_end(rs2_time_t timestamp) const
-{
-    if (get())
-    {
-        auto callback_warning_duration = 1000.f / (get()->get_framerate() + 1);
-        auto callback_duration = timestamp - get()->get_frame_callback_start_time_point();
-
-        LOG_DEBUG("CallbackFinished," << librealsense::get_string(get()->get_stream_type()) << "," << get()->get_frame_number() << ",DispatchedAt," << timestamp);
-
-        if (callback_duration > callback_warning_duration)
-        {
-            LOG_INFO("Frame Callback " << librealsense::get_string(get()->get_stream_type())
-                     << "#" << std::dec << get()->get_frame_number()
-                     << "overdue. (Duration: " << callback_duration
-                     << "ms, FPS: " << get()->get_framerate() << ", Max Duration: " << callback_warning_duration << "ms)");
-        }
-    }
-}
-
-rs2_frame::rs2_frame() : frame_ptr(nullptr) {}
-
-rs2_frame::rs2_frame(frame_interface* frame)
-    : frame_ptr(frame)
-{
-    if (frame) frame->acquire();
-}
-
-rs2_frame::rs2_frame(const rs2_frame& other)
-    : frame_ptr(other.frame_ptr)
-{
-    if (frame_ptr) frame_ptr->acquire();
-}
-
-rs2_frame::rs2_frame(rs2_frame&& other)
-    : frame_ptr(other.frame_ptr)
-{
-    other.frame_ptr = nullptr;
-}
-
-rs2_frame& rs2_frame::operator=(rs2_frame other)
-{
-    swap(other);
-    return *this;
-}
-
-rs2_frame::~rs2_frame()
-{
-    if (frame_ptr) frame_ptr->release();
-}
-
-void rs2_frame::swap(rs2_frame& other)
-{
-    std::swap(frame_ptr, other.frame_ptr);
-}
-
-void rs2_frame::attach_continuation(librealsense::frame_continuation&& continuation) const
-{
-    if (frame_ptr) frame_ptr->attach_continuation(std::move(continuation));
-}
-
-void rs2_frame::disable_continuation() const
-{
-    if (frame_ptr) frame_ptr->disable_continuation();
-}
-
-frame_interface* rs2_frame::get() const { return frame_ptr; }

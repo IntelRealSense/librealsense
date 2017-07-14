@@ -457,27 +457,28 @@ namespace librealsense
         return (a.profile == b.profile) && (a.pf == b.pf) && (a.unpacker == b.unpacker);
     }
 
+    class frame_interface;
+
     struct frame_holder
     {
-        rs2_frame* frame;
+        frame_interface* frame;
 
-        rs2_frame* operator->()
+        frame_interface* operator->()
         {
             return frame;
         }
 
         operator bool() const { return frame != nullptr; }
 
-        operator rs2_frame*() const { return frame; }
+        operator frame_interface*() const { return frame; }
 
-        frame_holder(rs2_frame* f)
+        frame_holder(frame_interface* f)
         {
             frame = f;
         }
 
         ~frame_holder();
 
-        frame_holder(const frame_holder&) = delete;
         frame_holder(frame_holder&& other)
             : frame(other.frame)
         {
@@ -486,9 +487,13 @@ namespace librealsense
 
         frame_holder() : frame(nullptr) {}
 
-        frame_holder& operator=(const frame_holder&) = delete;
+
         frame_holder& operator=(frame_holder&& other);
 
+        frame_holder clone() const;
+    private:
+        frame_holder& operator=(const frame_holder& other) = delete;
+        frame_holder(const frame_holder& other);
     };
 
     class firmware_version

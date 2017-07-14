@@ -39,16 +39,27 @@ namespace librealsense
     frame_holder::~frame_holder()
     {
         if (frame)
-            frame->get()->get_owner()->release_frame_ref(frame);
+            frame->release();
     }
 
     frame_holder& frame_holder::operator=(frame_holder&& other)
     {
         if (frame)
-            frame->get()->get_owner()->release_frame_ref(frame);
+            frame->release();
         frame = other.frame;
         other.frame = nullptr;
         return *this;
+    }
+
+    frame_holder frame_holder::clone() const
+    {
+        return frame_holder(*this);
+    }
+
+    frame_holder::frame_holder(const frame_holder& other)
+        : frame(other.frame)
+    {
+        frame->acquire();
     }
 
     const char* get_string(rs2_exception_type value)

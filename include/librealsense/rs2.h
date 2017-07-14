@@ -715,7 +715,7 @@ rs2_stream rs2_get_frame_stream_type(const rs2_frame* frameset, rs2_error** erro
 * \param[out] error     if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return               new frame reference, has to be released by rs2_release_frame
 */
-rs2_frame* rs2_clone_frame_ref(rs2_frame* frame, rs2_error ** error);
+void rs2_frame_add_ref(rs2_frame* frame, rs2_error ** error);
 
 /**
 * relases the frame handle

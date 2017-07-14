@@ -13,7 +13,6 @@
 #include <array>
 #include "example.hpp"
 
-#define WHITE_SPACES std::string("                                        ")
 namespace ImGui {
 /*
     tabLabels: name of all tabs involved
@@ -228,6 +227,10 @@ namespace rs2
         void play(const std::vector<stream_profile>& profiles);
         void update(std::string& error_message);
 
+        bool is_paused() const;
+        void pause();
+        void resume();
+
         template<typename T>
         bool get_default_selection_index(const std::vector<T>& values, const T & def, int* index)
         {
@@ -283,6 +286,8 @@ namespace rs2
         float depth_units = 1.f;
 
         bool roi_checked = false;
+
+        std::atomic<bool> _pause;
     };
 
     class stream_model
@@ -321,7 +326,8 @@ namespace rs2
         bool _mid_click = false;
         float2 _middle_pos{0, 0};
         rect _normalized_zoom{0, 0, 1, 1};
-        int color_map_idx = 0;
+        int color_map_idx = 1;
+        bool show_stream_details = false;
     };
 
     class device_model
@@ -373,6 +379,7 @@ namespace rs2
         notification_model(const notification_data& n);
         double get_age_in_ms();
         void draw(int w, int y, notification_model& selected);
+        void set_color_scheme(float t);
 
         static const int MAX_LIFETIME_MS = 10000;
         int height = 60;

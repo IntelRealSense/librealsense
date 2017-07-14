@@ -180,9 +180,8 @@ namespace librealsense
         : option_base(opt_range), _is_enabled(true), _accel(accel), _gyro(gyro)
     {
         mm_ep->register_on_before_frame_callback(
-                    [this](rs2_stream stream, rs2_frame& f, callback_invocation_holder callback)
+                    [this](rs2_stream stream, frame_interface* fr, callback_invocation_holder callback)
         {
-            auto fr = f.get();
             if (_is_enabled.load() && fr->get_format() == RS2_FORMAT_MOTION_XYZ32F)
             {
                 auto xyz = (float*)(fr->get_frame_data());
@@ -241,14 +240,15 @@ namespace librealsense
           _auto_exposure(auto_exposure)
     {
         fisheye_ep->register_on_before_frame_callback(
-                    [this](rs2_stream stream, rs2_frame& f, callback_invocation_holder callback)
+                    [this](rs2_stream stream, frame_interface* f, callback_invocation_holder callback)
         {
             if (!_to_add_frames || stream != RS2_STREAM_FISHEYE)
                 return;
 
-            ((frame*)f.get())->additional_data.fisheye_ae_mode = true;
+            ((frame*)f)->additional_data.fisheye_ae_mode = true;
 
-            _auto_exposure->add_frame(f.get()->get_owner()->clone_frame(&f), std::move(callback));
+            f->acquire();
+            _auto_exposure->add_frame(f, std::move(callback));
         });
     }
 

@@ -50,30 +50,6 @@ struct frame_additional_data
     }
 };
 
-struct rs2_frame // esentially an intrusive shared_ptr<frame>
-{
-    rs2_frame();
-    explicit rs2_frame(librealsense::frame_interface* frame);
-    rs2_frame(const rs2_frame& other);
-    rs2_frame(rs2_frame&& other);
-
-    rs2_frame& operator=(rs2_frame other);
-    ~rs2_frame();
-
-    void swap(rs2_frame& other);
-
-    void attach_continuation(librealsense::frame_continuation&& continuation) const;
-    void disable_continuation() const;
-
-    librealsense::frame_interface* get() const;
-
-    void log_callback_start(rs2_time_t timestamp) const;
-    void log_callback_end(rs2_time_t timestamp) const;
-
-private:
-    librealsense::frame_interface* frame_ptr = nullptr;
-};
-
 namespace librealsense
 {
     typedef std::map<rs2_frame_metadata, std::shared_ptr<md_attribute_parser_base>> metadata_parser_map;
@@ -140,6 +116,10 @@ namespace librealsense
         std::shared_ptr<sensor_interface> get_sensor() const override;
         void set_sensor(std::shared_ptr<sensor_interface> s) override;
 
+
+        void log_callback_start(rs2_time_t timestamp) override;
+        void log_callback_end(rs2_time_t timestamp) const override;
+
     private:
         // TODO: check boost::intrusive_ptr or an alternative
         std::atomic<int> ref_count; // the reference count is on how many times this placeholder has been observed (not lifetime, not content)
@@ -161,21 +141,21 @@ namespace librealsense
     public:
         composite_frame() : frame() {}
 
-        rs2_frame* get_frame(int i) const
+        frame_interface* get_frame(int i) const
         {
             auto frames = get_frames();
             return frames[i];
         }
 
-        rs2_frame** get_frames() const { return (rs2_frame**)data.data(); }
+        frame_interface** get_frames() const { return (frame_interface**)data.data(); }
 
         const frame_interface* first() const
         {
-            return get_frame(0) ? get_frame(0)->get() : nullptr;
+            return get_frame(0);
         }
         frame_interface* first()
         {
-            return get_frame(0) ? get_frame(0)->get() : nullptr;
+            return get_frame(0);
         }
 
         size_t get_embeded_frames_count() const { return data.size() / sizeof(rs2_frame*); }
@@ -263,18 +243,15 @@ namespace librealsense
     {
     public:
         virtual callback_invocation_holder begin_callback() = 0;
-         
-        virtual rs2_frame* clone_frame(rs2_frame* frameset) = 0;
-        virtual void release_frame_ref(rs2_frame* ref) = 0;
         
-        virtual rs2_frame* alloc_and_track(const size_t size, const frame_additional_data& additional_data, bool requires_memory) = 0;
+        virtual frame_interface* alloc_and_track(const size_t size, const frame_additional_data& additional_data, bool requires_memory) = 0;
 
         virtual std::shared_ptr<metadata_parser_map> get_md_parsers() const = 0;
         
         virtual void flush() = 0;
 
-        virtual frame* publish_frame(frame* frame) = 0;
-        virtual void unpublish_frame(frame* frame) = 0;
+        virtual frame_interface* publish_frame(frame_interface* frame) = 0;
+        virtual void unpublish_frame(frame_interface* frame) = 0;
 
         virtual ~archive_interface() = default;
 

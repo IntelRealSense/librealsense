@@ -308,7 +308,7 @@ namespace librealsense
                     frame_holder frame = _source.alloc_frame(RS2_EXTENSION_TYPE_VIDEO_FRAME, width * height * bpp / 8, additional_data, requires_processing);
                     if (frame.frame)
                     {
-                        auto video = (video_frame*)frame.frame->get();
+                        auto video = (video_frame*)frame.frame;
                         video->assign(width, height, width * bpp / 8, bpp);
                         video->set_timestamp_domain(timestamp_domain);
                         dest.push_back(const_cast<byte*>(video->get_frame_data()));
@@ -340,13 +340,13 @@ namespace librealsense
 
                     // all the streams the unpacker generates are handled here.
                     // If it matches one of the streams the user requested, send it to the user.
-                    if (std::any_of(begin(requests), end(requests), [&pref](stream_profile request) { return request.stream == pref->get()->get_stream_type(); }))
+                    if (std::any_of(begin(requests), end(requests), [&pref](stream_profile request) { return request.stream == pref->get_stream_type(); }))
                     {
                         if (_on_before_frame_callback)
                         {
                             auto callback = _source.begin_callback();
-                            auto stream_type = pref->get()->get_stream_type();
-                            _on_before_frame_callback(stream_type, *pref, std::move(callback));
+                            auto stream_type = pref->get_stream_type();
+                            _on_before_frame_callback(stream_type, pref, std::move(callback));
                         }
 
                         _source.invoke_callback(std::move(pref));
@@ -740,14 +740,14 @@ namespace librealsense
                 return;
             }
 
-            std::vector<byte*> dest{const_cast<byte*>(frame->get()->get_frame_data())};
+            std::vector<byte*> dest{const_cast<byte*>(frame->get_frame_data())};
             mode.unpacker->unpack(dest.data(),(const byte*)sensor_data.fo.pixels, (int)data_size);
 
             if (_on_before_frame_callback)
             {
                 auto callback = _source.begin_callback();
-                auto stream_type = frame->get()->get_stream_type();
-                _on_before_frame_callback(stream_type, *frame, std::move(callback));
+                auto stream_type = frame->get_stream_type();
+                _on_before_frame_callback(stream_type, frame, std::move(callback));
             }
 
             _source.invoke_callback(std::move(frame));

@@ -13,6 +13,7 @@
 #include <array>
 #include <mutex>
 #include <set>
+#include <regex>
 
 #pragma comment(lib, "opengl32.lib")
 
@@ -25,17 +26,24 @@ struct user_data
     mouse_info* mouse = nullptr;
 };
 
-std::vector<std::string> get_device_info(const device& dev)
+std::vector<std::string> get_device_info(const device& dev, bool include_location = true)
 {
     std::vector<std::string> res;
     for (auto i = 0; i < RS2_CAMERA_INFO_COUNT; i++)
     {
         auto info = static_cast<rs2_camera_info>(i);
+
+        // When camera is being reset, either because of "hardware reset"
+        // or because of switch into advanced mode,
+        // we don't want to capture the info that is about to change
+        if ((info == RS2_CAMERA_INFO_LOCATION ||
+             info == RS2_CAMERA_INFO_ADVANCED_MODE)
+                && !include_location) continue;
+
         if (dev.supports(info))
         {
             auto value = dev.get_info(info);
             res.push_back(value);
-
         }
     }
     return res;
@@ -88,8 +96,12 @@ int find_device_index(const device_list& list ,std::vector<std::string> device_i
 
 void draw_general_tab(device_model& model, device_list& list,
                       device& dev, std::string& label, bool hw_reset_enable,
+                      std::vector<std::string>& restarting_info,
                       bool update_read_only_options, std::string& error_message)
 {
+    const float stream_all_button_width = 300;
+
+
     // Streaming Menu - Allow user to play different streams
     if (list.size()>0 && ImGui::CollapsingHeader("Streaming", nullptr, true, true))
     {
@@ -97,9 +109,6 @@ void draw_general_tab(device_model& model, device_list& list,
         {
             try
             {
-                const float stream_all_button_width = 290;
-                const float stream_all_button_height = 0;
-
                 auto anything_stream = false;
                 for (auto&& sub : model.subdevices)
                 {
@@ -109,7 +118,7 @@ void draw_general_tab(device_model& model, device_list& list,
                 {
                     label = to_string() << "Start All";
 
-                    if (ImGui::Button(label.c_str(), { stream_all_button_width, stream_all_button_height }))
+                    if (ImGui::Button(label.c_str(), { stream_all_button_width, 0 }))
                     {
                         for (auto&& sub : model.subdevices)
                         {
@@ -135,7 +144,7 @@ void draw_general_tab(device_model& model, device_list& list,
                 {
                     label = to_string() << "Stop All";
 
-                    if (ImGui::Button(label.c_str(), { stream_all_button_width, stream_all_button_height }))
+                    if (ImGui::Button(label.c_str(), { stream_all_button_width / 2 - 5, 0 }))
                     {
                         for (auto&& sub : model.subdevices)
                         {
@@ -146,6 +155,49 @@ void draw_general_tab(device_model& model, device_list& list,
                     {
                         ImGui::SetTooltip("Stop streaming from all subdevices");
                     }
+
+                    ImGui::SameLine();
+
+                    bool any_paused = false;
+                    for (auto&& sub : model.subdevices)
+                    {
+                        if (sub->streaming && sub->is_paused())
+                            any_paused = true;
+                    }
+
+                    if (any_paused)
+                    {
+                        label = to_string() << "Resume All";
+
+                        if (ImGui::Button(label.c_str(), { stream_all_button_width / 2, 0 }))
+                        {
+                            for (auto&& sub : model.subdevices)
+                            {
+                                if (sub->streaming) sub->resume();
+                            }
+                        }
+                        if (ImGui::IsItemHovered())
+                        {
+                            ImGui::SetTooltip("Resume streaming live data from all sub-devices");
+                        }
+                    }
+                    else
+                    {
+                        label = to_string() << "Pause All";
+
+                        if (ImGui::Button(label.c_str(), { stream_all_button_width / 2, 0 }))
+                        {
+                            for (auto&& sub : model.subdevices)
+                            {
+                                if (sub->streaming) sub->pause();
+                            }
+                        }
+                        if (ImGui::IsItemHovered())
+                        {
+                            ImGui::SetTooltip("Freeze the UI on the current frame. The camera will continue to work in the background");
+                        }
+                    }
+
                 }
             }
             catch(const error& e)
@@ -175,7 +227,7 @@ void draw_general_tab(device_model& model, device_list& list,
 
                         if (sub->is_selected_combination_supported())
                         {
-                            if (ImGui::Button(label.c_str()))
+                            if (ImGui::Button(label.c_str(), { stream_all_button_width, 0 }))
                             {
                                 auto profiles = sub->get_selected_profiles();
                                 sub->play(profiles);
@@ -197,14 +249,41 @@ void draw_general_tab(device_model& model, device_list& list,
                     }
                     else
                     {
-                        label = to_string() << "Stop " << sub->s.get_info(RS2_CAMERA_INFO_NAME);
-                        if (ImGui::Button(label.c_str()))
+                        label = to_string() << "Stop##" << sub->s.get_info(RS2_CAMERA_INFO_NAME);
+                        if (ImGui::Button(label.c_str(), { stream_all_button_width / 2 - 5, 0 }))
                         {
                             sub->stop();
                         }
                         if (ImGui::IsItemHovered())
                         {
                             ImGui::SetTooltip("Stop streaming data from selected sub-device");
+                        }
+
+                        ImGui::SameLine();
+
+                        if (sub->is_paused())
+                        {
+                            label = to_string() << "Resume >>##" << sub->s.get_info(RS2_CAMERA_INFO_NAME);
+                            if (ImGui::Button(label.c_str(), { stream_all_button_width / 2 - 5, 0 }))
+                            {
+                                sub->resume();
+                            }
+                            if (ImGui::IsItemHovered())
+                            {
+                                ImGui::SetTooltip("Resume live streaming from the sub-device");
+                            }
+                        }
+                        else
+                        {
+                            label = to_string() << "Pause ||##" << sub->s.get_info(RS2_CAMERA_INFO_NAME);
+                            if (ImGui::Button(label.c_str(), { stream_all_button_width / 2 - 5, 0 }))
+                            {
+                                sub->pause();
+                            }
+                            if (ImGui::IsItemHovered())
+                            {
+                                ImGui::SetTooltip("Freeze current frame. The sub-device will continue to work in the background");
+                            }
                         }
                     }
                 }
@@ -270,17 +349,18 @@ void draw_general_tab(device_model& model, device_list& list,
         }
     }
 
-    if (list.size()>0 && ImGui::CollapsingHeader("Hardware Commands", nullptr, true))
+    if (list.size() > 0 && ImGui::CollapsingHeader("Hardware Commands", nullptr, true, true))
     {
         label = to_string() << "Hardware Reset";
 
-        const float hardware_reset_button_width = 290;
+        const float hardware_reset_button_width = 300;
         const float hardware_reset_button_height = 0;
 
         if (ImGui::ButtonEx(label.c_str(), { hardware_reset_button_width, hardware_reset_button_height }, hw_reset_enable?0:ImGuiButtonFlags_Disabled))
         {
             try
             {
+                restarting_info = get_device_info(dev, false);
                 dev.hardware_reset();
             }
             catch(const error& e)
@@ -292,6 +372,10 @@ void draw_general_tab(device_model& model, device_list& list,
                 error_message = e.what();
             }
         }
+        if (ImGui::IsItemHovered())
+        {
+            ImGui::SetTooltip("Ask camera firmware to restart the device");
+        }
     }
 
     ImGui::Text("\n\n\n\n\n\n\n");
@@ -302,7 +386,9 @@ void draw_general_tab(device_model& model, device_list& list,
     }
 }
 
-void draw_advanced_mode_tab(device& dev, advanced_mode_control& amc, bool& get_curr_advanced_controls)
+void draw_advanced_mode_tab(device& dev, advanced_mode_control& amc,
+                            std::vector<std::string>& restarting_info,
+                            bool& get_curr_advanced_controls)
 {
     auto is_advanced_mode = dev.is<advanced_mode>();
 
@@ -312,7 +398,8 @@ void draw_advanced_mode_tab(device& dev, advanced_mode_control& amc, bool& get_c
         {
             if (!is_advanced_mode)
             {
-                ImGui::TextColored(ImVec4{255.0f, 0.0f, 0.0f, 1.0f}, "DEVICE DOESN'T SUPPORT ADVANCED-MODE!");
+                // TODO: Why are we showing the tab then??
+                ImGui::TextColored(ImVec4{1.0f, 0.0f, 0.0f, 1.0f}, "Selected device does not offer\nany advanced settings");
             }
 
             auto advanced = dev.as<advanced_mode>();
@@ -323,22 +410,30 @@ void draw_advanced_mode_tab(device& dev, advanced_mode_control& amc, bool& get_c
                     //if (yes_no_dialog()) // TODO
                     //{
                         advanced.toggle_advanced_mode(false);
-                        std::this_thread::sleep_for(std::chrono::seconds(1));
+                        restarting_info = get_device_info(dev, false);
                     //}
+                }
+                if (ImGui::IsItemHovered())
+                {
+                    ImGui::SetTooltip("Disabling advanced mode will reset depth generation to factory settings\nThis will not affect calibration");
                 }
                 draw_advanced_mode_controls(advanced, amc, get_curr_advanced_controls);
             }
             else
             {
-                if (ImGui::Button("Enable Advanced Mode", ImVec2{290, 0}))
+                if (ImGui::Button("Enable Advanced Mode", ImVec2{ 300, 0 }))
                 {
                     //if (yes_no_dialog()) // TODO
                     //{
                         advanced.toggle_advanced_mode(true);
-                        std::this_thread::sleep_for(std::chrono::seconds(1));
+                        restarting_info = get_device_info(dev, false);
                     //}
                 }
-                ImGui::TextColored(ImVec4{255.0f, 0.0f, 0.0f, 1.0f}, "DEVICE IS NOT IN ADVANCED-MODE!\nYOU CAN MOVE IT TO ADVANCED-MODE BY CLICK\nON THE BUTTON ABOVE.");
+                if (ImGui::IsItemHovered())
+                {
+                    ImGui::SetTooltip("Advanced mode is a persistent camera state unlocking calibration formats and depth generation controls\nYou can always reset the camera to factory defaults by disabling advanced mode");
+                }
+                ImGui::TextColored(ImVec4{1.0f, 0.0f, 0.0f, 1.0f}, "Device is not in advanced mode!\nTo access advanced functionality\nclick \"Enable Advanced Mode\"");
             }
         }
         catch(...)
@@ -399,7 +494,7 @@ int main(int, char**) try
         exit(1);
 
     // Create GUI Windows
-    auto window = glfwCreateWindow(1280, 720, "realsense-ui", nullptr, nullptr);
+    auto window = glfwCreateWindow(1280, 720, "RealSense Viewer", nullptr, nullptr);
     glfwMakeContextCurrent(window);
     ImGui_ImplGlfw_Init(window, true);
 
@@ -408,10 +503,19 @@ int main(int, char**) try
     // Create RealSense Context
     context ctx;
     auto refresh_device_list = true;
+    std::vector<std::string> restarting_device_info;
 
     auto device_index = 0;
 
     std::vector<std::string> device_names;
+
+    // The list of errors the user asked not to show again:
+    std::set<std::string> errors_not_to_show;
+    bool dont_show_this_error = false;
+    auto simplify_error_message = [](const std::string& s){
+        std::regex e ("\\b(0x)([^ ,]*)");
+        return std::regex_replace(s,e,"address");
+    };
 
     notifications_model not_model;
     std::string error_message{""};
@@ -464,7 +568,7 @@ int main(int, char**) try
             if(info.was_removed(dev))
             {
 
-                not_model.add_notification({get_device_name(dev) + "\ndisconnected",
+                not_model.add_notification({get_device_name(dev) + " Disconnected\n",
                                             timestamp,
                                             RS2_LOG_SEVERITY_INFO,
                                             RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR});
@@ -481,16 +585,17 @@ int main(int, char**) try
         {
             for(auto dev:info.get_new_devices())
             {
-                not_model.add_notification({get_device_name(dev) + "\nconnected",
+                not_model.add_notification({get_device_name(dev) + " Connected\n",
                                             timestamp,
                                             RS2_LOG_SEVERITY_INFO,
                                             RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR});
             }
         }
         catch(...)
-        {}
-        refresh_device_list = true;
+        {
 
+        }
+        refresh_device_list = true;
     });
 
     advanced_mode_control amc{};
@@ -511,7 +616,6 @@ int main(int, char**) try
             if(refresh_device_list)
             {
                 refresh_device_list = false;
-                get_curr_advanced_controls = true;
 
                 try
                 {
@@ -525,23 +629,42 @@ int main(int, char**) try
                     }
                     devs.clear();
 
-                    if( !dev_exist)
+                    if(!dev_exist)
                     {
                         device_index = 0;
                         dev = nullptr;
                         model.reset();
                        
-                        if(list.size()>0)
+                        if(list.size() > 0)
                         {
                             dev = list[device_index];                  // Access first device
                             model = device_model(dev, error_message);  // Initialize device model
                             active_device_info = get_device_info(dev);
                             dev_exist = true;
+                            get_curr_advanced_controls = true;
                         }
                     }
                     else
                     {
                         device_index = find_device_index(list, active_device_info);
+                    }
+
+                    for (size_t i = 0; i < list.size(); i++)
+                    {
+                        auto&& d = list[i];
+                        auto info = get_device_info(d, false);
+                        if (info == restarting_device_info)
+                        {
+                            device_index = i;
+                            model.reset();
+
+                            dev = d;
+                            model = device_model(dev, error_message);
+                            active_device_info = get_device_info(dev);
+                            dev_exist = true;
+                            restarting_device_info.clear();
+                            get_curr_advanced_controls = true;
+                        }
                     }
 
                     for (auto&& sub : list)
@@ -607,7 +730,7 @@ int main(int, char**) try
         if (list.size() > 0)
         {
             // Draw 3 tabs
-            const char* tabs[] = {"General", "Advanced Mode"};
+            const char* tabs[] = {"General", "Advanced"};
             if (ImGui::TabLabels(tabs, 2, tab_index))
                 last_tab_index = tab_index;
         }
@@ -658,17 +781,30 @@ int main(int, char**) try
             draw_presets_combo(dev, preset_index, last_preset_index, error_message);
             if (last_tab_index == 0)
             {
-                draw_general_tab(model, list, dev, label, hw_reset_enable, update_read_only_options, error_message);
+                draw_general_tab(model, list, dev, label, hw_reset_enable, restarting_device_info, update_read_only_options, error_message);
             }
             else if (last_tab_index == 1)
             {
-                draw_advanced_mode_tab(dev, amc, get_curr_advanced_controls);
+                draw_advanced_mode_tab(dev, amc, restarting_device_info, get_curr_advanced_controls);
             }
         }
 
 
         if (error_message != "")
-            ImGui::OpenPopup("Oops, something went wrong!");
+        {
+            if (errors_not_to_show.count(simplify_error_message(error_message)))
+            {
+                not_model.add_notification({error_message,
+                                            std::chrono::duration<double, std::milli>(std::chrono::system_clock::now().time_since_epoch()).count(),
+                                            RS2_LOG_SEVERITY_ERROR,
+                                            RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR});
+                error_message = "";
+            }
+            else
+            {
+                ImGui::OpenPopup("Oops, something went wrong!");
+            }
+        }
         if (ImGui::BeginPopupModal("Oops, something went wrong!", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
         {
             ImGui::Text("RealSense error calling:");
@@ -678,16 +814,22 @@ int main(int, char**) try
 
             if (ImGui::Button("OK", ImVec2(120, 0)))
             {
+                if (dont_show_this_error)
+                {
+                    errors_not_to_show.insert(simplify_error_message(error_message));
+                }
                 error_message = "";
                 ImGui::CloseCurrentPopup();
+                dont_show_this_error = false;
             }
+
+            ImGui::SameLine();
+            ImGui::Checkbox("Don't show this error again", &dont_show_this_error);
 
             ImGui::EndPopup();
         }
 
         ImGui::End();
-
-        not_model.draw(w, h, selected_notification);
 
         // Fetch frames from queue
         for (auto&& sub : model.subdevices)
@@ -749,20 +891,32 @@ int main(int, char**) try
             label = to_string() << "Stream of " << rs2_stream_to_string(stream);
             ImGui::Begin(label.c_str(), nullptr, flags);
 
-            label = to_string() << rs2_stream_to_string(stream) << " "
-                << stream_size.x << "x" << stream_size.y << ", "
-                << rs2_format_to_string(model.streams[stream].format) << ", "
-                << "Frame# " << model.streams[stream].frame_number << ", "
-                << "FPS:";
-
-            ImGui::Text("%s", label.c_str());
-            ImGui::SameLine();
-
-            label = to_string() << std::setprecision(2) << std::fixed << model.streams[stream].fps.get_fps();
-            ImGui::Text("%s", label.c_str());
-            if (ImGui::IsItemHovered())
+            if (model.streams[stream].show_stream_details)
             {
-                ImGui::SetTooltip("FPS is calculated based on timestamps and not viewer time");
+                label = to_string() << rs2_stream_to_string(stream) << " "
+                    << stream_size.x << "x" << stream_size.y << ", "
+                    << rs2_format_to_string(model.streams[stream].format) << ", "
+                    << "Frame# " << model.streams[stream].frame_number << ", "
+                    << "FPS:";
+            }
+            else
+            {
+                label = to_string() << rs2_stream_to_string(stream) << " (...)";
+            }
+
+            ImGui::Text("%s", label.c_str());
+            model.streams[stream].show_stream_details = ImGui::IsItemHovered();
+
+            if (model.streams[stream].show_stream_details)
+            {
+                ImGui::SameLine();
+
+                label = to_string() << std::setprecision(2) << std::fixed << model.streams[stream].fps.get_fps();
+                ImGui::Text("%s", label.c_str());
+                if (ImGui::IsItemHovered())
+                {
+                    ImGui::SetTooltip("FPS is calculated based on timestamps and not viewer time");
+                }
             }
 
             ImGui::SameLine((int)ImGui::GetWindowWidth() - 30);
@@ -791,54 +945,53 @@ int main(int, char**) try
                 }
             }
 
-            if (!layout.empty())
-            {
-                if (model.streams[stream].dev && model.streams[stream].dev->auto_exposure_enabled)
-                {
-                    ImGui::SameLine((int)ImGui::GetWindowWidth() - 160);
-                    ImGui::Checkbox("[ROI]", &model.streams[stream].dev->roi_checked);
-
-                    if (ImGui::IsItemHovered())
-                        ImGui::SetTooltip("Auto Exposure Region-of-Interest Selection");
-                }
-                else
-                    model.streams[stream].dev->roi_checked = false;
-            }
 
             // Control metadata overlay widget
-            ImGui::SameLine((int)ImGui::GetWindowWidth() - 90); // metadata GUI hint
+            ImGui::SameLine((int)ImGui::GetWindowWidth() - 135); // metadata GUI hint
             if (!layout.empty())
             {
-                ImGui::Checkbox("[MD]", &model.streams[stream].metadata_displayed);
+                if (model.streams[stream].metadata_displayed)
+                {
+                    if (ImGui::Button("Hide Metadata", { 100, 20 }))
+                        model.streams[stream].metadata_displayed = false;
+                }
+                else
+                {
+                    if (ImGui::Button("Show Metadata", { 100, 20 }))
+                        model.streams[stream].metadata_displayed = true;
+                }
 
                 if (ImGui::IsItemHovered())
                     ImGui::SetTooltip("Show per-frame metadata");
             }
 
-            label = to_string() << "Timestamp: " << std::fixed << std::setprecision(3) << model.streams[stream].timestamp
-                                << ", Domain:";
-            ImGui::Text("%s", label.c_str());
-
-            ImGui::SameLine();
-            auto domain = model.streams[stream].timestamp_domain;
-            label = to_string() << rs2_timestamp_domain_to_string(domain);
-
-            if (domain == RS2_TIMESTAMP_DOMAIN_SYSTEM_TIME)
+            if (model.streams[stream].show_stream_details)
             {
-                ImGui::PushStyleColor(ImGuiCol_Text, { 1.0f, 0.0f, 0.0f, 1.0f });
+                label = to_string() << "Timestamp: " << std::fixed << std::setprecision(3) << model.streams[stream].timestamp
+                                    << ", Domain:";
                 ImGui::Text("%s", label.c_str());
-                if (ImGui::IsItemHovered())
+
+                ImGui::SameLine();
+                auto domain = model.streams[stream].timestamp_domain;
+                label = to_string() << rs2_timestamp_domain_to_string(domain);
+
+                if (domain == RS2_TIMESTAMP_DOMAIN_SYSTEM_TIME)
                 {
-                    ImGui::SetTooltip("Hardware Timestamp unavailable! This is often an indication of inproperly applied Kernel patch.\nPlease refer to installation.md for mode information");
+                    ImGui::PushStyleColor(ImGuiCol_Text, { 1.0f, 0.0f, 0.0f, 1.0f });
+                    ImGui::Text("%s", label.c_str());
+                    if (ImGui::IsItemHovered())
+                    {
+                        ImGui::SetTooltip("Hardware Timestamp unavailable! This is often an indication of inproperly applied Kernel patch.\nPlease refer to installation.md for mode information");
+                    }
+                    ImGui::PopStyleColor();
                 }
-                ImGui::PopStyleColor();
-            }
-            else
-            {
-                ImGui::Text("%s", label.c_str());
-                if (ImGui::IsItemHovered())
+                else
                 {
-                    ImGui::SetTooltip("Specifies the clock-domain for the timestamp (hardware-clock / system-time)");
+                    ImGui::Text("%s", label.c_str());
+                    if (ImGui::IsItemHovered())
+                    {
+                        ImGui::SetTooltip("Specifies the clock-domain for the timestamp (hardware-clock / system-time)");
+                    }
                 }
             }
 
@@ -852,12 +1005,13 @@ int main(int, char**) try
             label = to_string() << "Footer for stream of " << rs2_stream_to_string(stream);
             ImGui::Begin(label.c_str(), nullptr, flags);
 
+            auto&& stream_mv = model.streams[stream];
+
             if (stream_rect.contains(mouse.cursor))
             {
                 std::stringstream ss;
                 rect cursor_rect { mouse.cursor.x, mouse.cursor.y };
                 auto ts = cursor_rect.normalize(stream_rect);
-                auto&& stream_mv = model.streams[stream];
                 auto pixels = ts.unnormalize(stream_mv._normalized_zoom.unnormalize(stream_mv.get_stream_bounds()));
                 auto x = (int)pixels.x;
                 auto y = (int)pixels.y;
@@ -880,7 +1034,9 @@ int main(int, char**) try
                 ImGui::Text("%s", label.c_str());
             }
 
-            if (stream == RS2_STREAM_DEPTH)
+            // Since applying color map involve some actual processing on the incoming frame
+            // we can't change the color map when the stream is frozen
+            if (stream == RS2_STREAM_DEPTH && stream_mv.dev && !stream_mv.dev->is_paused())
             {
                 ImGui::SameLine((int)ImGui::GetWindowWidth() - 150);
                 ImGui::PushItemWidth(-1);
@@ -902,6 +1058,8 @@ int main(int, char**) try
             if (model.streams[kvp.first].metadata_displayed)
                 model.streams[kvp.first].show_metadata(mouse);
         }
+
+        not_model.draw(w, h, selected_notification);
 
         ImGui::Render();
 

@@ -73,7 +73,7 @@ namespace librealsense
         }
     }
 
-    rs2_frame* frame_source::alloc_frame(rs2_extension_type type, size_t size, frame_additional_data additional_data, bool requires_memory) const
+    frame_interface* frame_source::alloc_frame(rs2_extension_type type, size_t size, frame_additional_data additional_data, bool requires_memory) const
     {
         auto it = _archive.find(type);
         if (it == _archive.end()) throw wrong_api_call_sequence_exception("Requested frame type is not supported!");
@@ -98,15 +98,15 @@ namespace librealsense
     {
         if (frame)
         {
-            auto callback = frame.frame->get()->get_owner()->begin_callback();
+            auto callback = frame.frame->get_owner()->begin_callback();
             try
             {
                 frame->log_callback_start(_ts ? _ts->get_time() : 0);
                 if (_callback)
                 {
-                    rs2_frame* ref = nullptr;
+                    frame_interface* ref = nullptr;
                     std::swap(frame.frame, ref);
-                    _callback->on_frame(ref);
+                    _callback->on_frame((rs2_frame*)ref);
                 }
             }
             catch(...)
