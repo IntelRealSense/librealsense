@@ -1096,6 +1096,8 @@ void rs2_synthetic_frame_ready(rs2_source* source, rs2_frame* frame, rs2_error**
 
 rs2_processing_block* rs2_create_processing_block(rs2_context* ctx, rs2_frame_processor_callback* proc, rs2_error** error);
 
+rs2_processing_block* rs2_create_sync_processing_block(rs2_error** error);
+
 void rs2_start_processing(rs2_processing_block* block, rs2_frame_callback* on_frame, rs2_error** error);
 
 void rs2_process_frame(rs2_processing_block* block, rs2_frame* frame, rs2_error** error);

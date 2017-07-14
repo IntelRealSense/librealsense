@@ -4,8 +4,6 @@
 #ifndef RS4XX_ADVANCED_MODE_H
 #define RS4XX_ADVANCED_MODE_H
 
-#include <stdint.h>
-
 #define RS4XX_ADVANCED_MODE_HPP
 #include <librealsense/rs2_advanced_mode_command.h>
 #undef RS4XX_ADVANCED_MODE_HPP

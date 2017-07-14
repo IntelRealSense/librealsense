@@ -35,11 +35,13 @@ namespace librealsense
 
         virtual ~frame_source() { flush(); }
 
-        double get_time() const { return _ts->get_time(); }
+        double get_time() const { return _ts ? _ts->get_time() : 0; }
 
         void set_sensor(std::shared_ptr<sensor_interface> s);
 
     private:
+        friend class syncer_proccess_unit;
+
         std::mutex _callback_mutex;
 
         std::map<rs2_extension_type, std::shared_ptr<archive_interface>> _archive;

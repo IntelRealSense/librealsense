@@ -3,12 +3,11 @@
 
 #include <thread>
 #include <sstream>
+
+#include "../../../src/types.h"
 #include <librealsense/rs2_advanced_mode.h>
-#include <librealsense/rs2.hpp>
 #include "core/advanced_mode.h"
 #include "api.h"
-#include "../../../src/types.h"
-
 
 namespace librealsense
 {

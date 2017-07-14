@@ -108,6 +108,7 @@ namespace librealsense
         std::shared_ptr<metadata_parser_map> _metadata_parsers = nullptr;
 
         frame_source _source;
+        device* _owner_dev;
 
     private:
         std::vector<native_pixel_format> _pixel_formats;

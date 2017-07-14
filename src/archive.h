@@ -5,6 +5,7 @@
 
 #include "types.h"
 #include "core/streaming.h"
+
 #include <atomic>
 #include <array>
 #include <math.h>
@@ -274,8 +275,9 @@ namespace librealsense
 
         virtual frame* publish_frame(frame* frame) = 0;
         virtual void unpublish_frame(frame* frame) = 0;
-        
+
         virtual ~archive_interface() = default;
+
     };
 
     std::shared_ptr<archive_interface> make_archive(rs2_extension_type type, 

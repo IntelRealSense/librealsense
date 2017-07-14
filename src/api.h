@@ -50,25 +50,6 @@ namespace librealsense
         catch (...) { if (error) *error = new rs2_error{ "unknown error", name, move(args) }; }
     }
 
-
-    void notifications_proccessor::raise_notification(const notification n)
-    {
-        _dispatcher.invoke([this, n](dispatcher::cancellable_timer ct)
-                           {
-                               std::lock_guard<std::mutex> lock(_callback_mutex);
-                               rs2_notification noti(&n);
-                               if (_callback)_callback->on_notification(&noti);
-                               else
-                               {
-    #ifdef DEBUG
-
-    #endif // !DEBUG
-
-                               }
-                           });
-    }
-
-
     #define NOEXCEPT_RETURN(R, ...) catch(...) { std::ostringstream ss; librealsense::stream_args(ss, #__VA_ARGS__, __VA_ARGS__); rs2_error* e; librealsense::translate_exception(__FUNCTION__, ss.str(), &e); LOG_WARNING(rs2_get_error_message(e)); rs2_free_error(e); return R; }
     #define HANDLE_EXCEPTIONS_AND_RETURN(R, ...) catch(...) { std::ostringstream ss; librealsense::stream_args(ss, #__VA_ARGS__, __VA_ARGS__); librealsense::translate_exception(__FUNCTION__, ss.str(), error); return R; }
     #define VALIDATE_NOT_NULL(ARG) if(!(ARG)) throw std::runtime_error("null pointer passed for argument \"" #ARG "\"");
