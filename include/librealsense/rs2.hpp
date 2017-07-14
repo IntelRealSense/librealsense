@@ -1731,6 +1731,7 @@ namespace rs2
                 rs2_create_device_from_sensor(s._sensor.get(), &e),
                 rs2_delete_device);
             error::handle(e);
+            return device{ dev };
         }
 
         rs2_extrinsics get_extrinsics(const sensor& from, const sensor& to) const
