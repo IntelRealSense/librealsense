@@ -34,6 +34,13 @@ namespace librealsense
     class info_snapshot : public extension_snapshot_base<info_interface>, public info_container
     {
     public:
+        info_snapshot(const std::map<rs2_camera_info, std::string>& values)
+        {
+            for (auto value : values)
+            {
+                register_info(value.first, value.second);
+            }
+        }
         info_snapshot(info_interface* info_api)
         {
             update_self(info_api);

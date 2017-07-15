@@ -7,18 +7,6 @@
 #include <functional>
 namespace librealsense
 {
-	template<typename T, typename P>
-	bool Is(std::shared_ptr<P> ptr)
-	{
-		return std::dynamic_pointer_cast<T>(ptr) != nullptr;
-	}
-
-    template<typename T, typename P>
-    bool Is(P* ptr)
-    {
-        return dynamic_cast<T*>(ptr) != nullptr;
-    }
-
 	class extendable_interface
     {
     public:
@@ -56,10 +44,10 @@ namespace librealsense
     };
 
     /**
- * Deriving classes are expected to return an extension_snapshot
- * We need this since Sensors will derive from multiple extensions and
- * @tparam T The interface that should be recorded
- */
+     * Deriving classes are expected to return an extension_snapshot
+     * We need this since Sensors will derive from multiple extensions and
+     * @tparam T The interface that should be recorded
+     */
     template <typename T>
     class recordable
     {
@@ -70,4 +58,37 @@ namespace librealsense
 
     };
 
+    /*
+     * Helper functions
+     *
+     */
+
+    template <typename To>
+    bool try_extend(std::shared_ptr<extension_snapshot> from, void** ext)
+    {
+        if (from == nullptr)
+        {
+            return false;
+        }
+
+        auto casted = std::dynamic_pointer_cast<To>(from);
+        if (casted == nullptr)
+        {
+            return false;
+        }
+        *ext = casted.get();
+        return true;
+    }
+
+    template<typename T, typename P>
+    bool Is(std::shared_ptr<P> ptr)
+    {
+        return std::dynamic_pointer_cast<T>(ptr) != nullptr;
+    }
+
+    template<typename T, typename P>
+    bool Is(P* ptr)
+    {
+        return dynamic_cast<T*>(ptr) != nullptr;
+    }
 }

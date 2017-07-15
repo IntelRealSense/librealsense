@@ -38,7 +38,7 @@ inline std::vector<std::string> get_topics(std::unique_ptr<rosbag::View>& view)
     return topics;
 }
 
-bool stream_playback::get_file_version_from_file(uint32_t& version)
+bool stream_playback::get_file_version_from_file(uint32_t& version) const
 {
     rosbag::View view(m_file, rosbag::TopicQuery(get_file_version_topic()));
     if (view.size() == 0)
@@ -57,7 +57,8 @@ bool stream_playback::get_file_version_from_file(uint32_t& version)
     return true;
 }
 
-stream_playback::stream_playback(const std::string &file_path)
+stream_playback::stream_playback(const std::string &file_path) : 
+    m_archive(librealsense::make_archive(RS2_EXTENSION_TYPE_VIDEO_FRAME, &m_max_frame_queue_size, std::make_shared<librealsense::uvc::os_time_service>(),{}))
 {
     if (file_path.empty())
     {
@@ -347,51 +348,55 @@ std::shared_ptr<ros_data_objects::compressed_image> stream_playback::create_comp
 std::shared_ptr<ros_data_objects::image> stream_playback::create_image(const rosbag::MessageInstance &image_data) const
 {
     sensor_msgs::ImagePtr msg = image_data.instantiate<sensor_msgs::Image>();
-    //if (msg == nullptr)
-    //{
-    //    return nullptr;
-    //}
-    ros_data_objects::image_info info = {};
-    //topic image_topic(image_data.getTopic());
-    //auto device_str = topic(image_data.getTopic()).at(4);
-    //info.device_id = static_cast<uint32_t>(std::stoll(device_str));
-    //info.timestamp = seconds(msg->header.stamp.toSec());
-    //info.stream = topic(image_data.getTopic()).at(2);
+    if (msg == nullptr)
+    {
+        return nullptr;
+    }
+    //TODO: Ziv, use archive here?
+    
+    
 
-    //info.frame_number = msg->header.seq;
-    //if(conversions::convert(msg->encoding, info.format) == false)
-    //{
-    //    return nullptr;
-    //}
-    //info.width = msg->width;
-    //info.height = msg->height;
-    //info.step = msg->step;
+    
+    topic image_topic(image_data.getTopic());
+    auto device_str = topic(image_data.getTopic()).at(4);
+    
+    frame_additional_data fad {};
+    std::chrono::duration<double, std::micro> timestamp_us = std::chrono::duration_cast<microseconds>(seconds(msg->header.stamp.toSec()));
+    fad.timestamp = timestamp_us.count();
+    fad.frame_number = msg->header.seq;                            
+    conversions::convert(msg->encoding, fad.format);
+    std::string stream = topic(image_data.getTopic()).at(2); 
+    conversions::convert(stream, fad.stream_type);
+    fad.frame_callback_started = 0; //TODO: What is this?        
+    fad.fps = 0;   //TODO:  why would a frame hold its fps?      
+    fad.fisheye_ae_mode = false; //TODO: where should this come from?
+    auto info_topic = ros_data_objects::image::get_info_topic(image_topic.at(2), std::stoi(image_topic.at(4)));
+    rosbag::View view_info(m_file, rosbag::TopicQuery(info_topic), image_data.getTime());
+    if (view_info.begin() == view_info.end())
+    {
+        return nullptr;
+    }
+    realsense_msgs::frame_infoPtr info_msg = (*view_info.begin()).instantiate<realsense_msgs::frame_info>();
+    if (info_msg == nullptr)
+    {
+        return nullptr;
+    }
+    fad.timestamp_domain = static_cast<rs2_timestamp_domain>(info_msg->time_stamp_domain); //TODO: Ziv, Need to change this - in case of changes to time_stamp_domain this will break
+    fad.system_time = nanoseconds(info_msg->system_time).count(); //TODO: Ziv - verify system time is in nanos
+    //TODO: Ziv, make sure this works correctly
+    //std::copy(info_msg->frame_metadata.data(), info_msg->frame_metadata.data() + std::min(static_cast<uint32_t>(info_msg->frame_metadata.size()), 255u), fad.metadata_blob.begin());
+    fad.metadata_size = std::min(static_cast<uint32_t>(info_msg->frame_metadata.size()), 255u);
 
-    //info.capture_time = nanoseconds(image_data.getTime().toNSec());
 
-    //info.data = std::shared_ptr<uint8_t>(new uint8_t[info.step * info.height],
-    //        [](uint8_t* ptr){delete[] ptr;});
-    //memcpy(info.data.get(), &msg->data[0], msg->data.size());
-    //auto info_topic = ros_data_objects::image::get_info_topic(image_topic.at(2), std::stoi(image_topic.at(4)));
-    //rosbag::View view_info(m_file, rosbag::TopicQuery(info_topic), image_data.getTime());
-    //if (view_info.begin() == view_info.end())
-    //{
-    //    return nullptr;
-    //}
-    //realsense_msgs::frame_infoPtr info_msg = (*view_info.begin()).instantiate<realsense_msgs::frame_info>();
-    //if (info_msg == nullptr)
-    //{
-    //    return nullptr;
-    //}
-    //info.system_time = nanoseconds(info_msg->system_time);
-    //info.timestamp_domain = static_cast<rs2_timestamp_domain>(info_msg->time_stamp_domain);
-    //for(auto metadata : info_msg->frame_metadata)
-    //{
-    //    //TODO: Ziv, make sure this works correctly
-    //    info.metadata[static_cast<rs2_frame_metadata>(metadata.type)] = metadata.data;
-    //}
-    // return std::make_shared<ros_data_objects::image>();
-    return nullptr;
+    rs2_frame* rs2frame = m_archive.get()->alloc_and_track(msg->data.size(), fad, true);
+    
+    librealsense::video_frame* frame = static_cast<librealsense::video_frame*>(rs2frame->get());
+    frame->assign(msg->width, msg->height, msg->step, msg->step / msg->width / 8); //TODO: Ziv, is bpp bytes or bits per pixel?
+    frame->data = msg->data;
+    uint32_t device_id = static_cast<uint32_t>(std::stoll(device_str));
+    auto capture_time = nanoseconds(image_data.getTime().toNSec());
+    librealsense::frame_holder fh{ rs2frame };
+    return std::make_shared<ros_data_objects::image>(capture_time, device_id, std::move(fh));
 }
 
 std::shared_ptr<ros_data_objects::image_stream_info> stream_playback::create_image_stream_info(const rosbag::MessageInstance &info_msg) const

@@ -2,6 +2,9 @@
 // Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 
 #include "playback_sensor.h"
+#include "core/motion.h"
+#include <map>
+#include "types.h"
 
 playback_sensor::playback_sensor(const sensor_snapshot& sensor_description, uint32_t sensor_id):
     m_sensor_description(sensor_description),
@@ -19,20 +22,42 @@ playback_sensor::~playback_sensor()
 
 std::vector<stream_profile> playback_sensor::get_principal_requests() 
 {
-    throw not_implemented_exception(__FUNCTION__);
+    //TODO: Remove this map once streaming info is recorded to file
+    static std::map<uint32_t, std::vector<stream_profile>> REMOVE_ME
+    {
+        { 0,
+            {
+                stream_profile{ RS2_STREAM_DEPTH, 640, 480, 30, RS2_FORMAT_Z16 },
+                stream_profile{ RS2_STREAM_INFRARED, 640, 480, 30, RS2_FORMAT_Y8 }
+            } 
+        },
+        { 1,
+            { 
+                stream_profile{ RS2_STREAM_COLOR, 640, 480, 30, RS2_FORMAT_RGBA8 } 
+            } 
+        }
+    };
+    return REMOVE_ME[m_sensor_id];
+   // return m_sensor_description.get_streamig_profiles();
 }
 
 void playback_sensor::open(const std::vector<stream_profile>& requests) 
 {
-    auto available_profiles = m_sensor_description.get_streamig_profiles();
-    for (auto&& r : requests)
+    //TODO: uncomment
+    //auto available_profiles = m_sensor_description.get_streamig_profiles();
+    //for (auto&& r : requests)
+    //{
+    //    if(std::find(std::begin(available_profiles), std::end(available_profiles), r) == std::end(available_profiles))
+    //    {
+    //        throw std::runtime_error("Failed to open sensor, requested profile is not available");
+    //    }
+    //}
+    for (auto&& profile : requests)
     {
-        if(std::find(std::begin(available_profiles), std::end(available_profiles), r) == std::end(available_profiles))
-        {
-            throw std::runtime_error("Failed to open sensor, requested profile is not available");
-        }
+        m_dispatchers.emplace(profile.stream, []() { return std::make_shared<dispatcher>(1); }); //TODO: what size the queue should be?
+        m_dispatchers[profile.stream]->get()->start();
     }
-    m_dispatchers[requests[0].stream]->get()->start();
+    
     opened(m_sensor_id, requests);
 }
 
@@ -80,14 +105,17 @@ void playback_sensor::start(frame_callback_ptr callback)
         m_user_callback = callback;
     }
 }
-
-void playback_sensor::stop()
+void playback_sensor::stop(bool invoke_required)
 {
     if (m_is_started == true)
     {
-        stopped(m_sensor_id);
+        stopped(m_sensor_id, invoke_required);
         m_is_started = false;
     }
+}
+void playback_sensor::stop()
+{
+    stop(true);
 }
 
 bool playback_sensor::is_streaming() const
@@ -96,18 +124,41 @@ bool playback_sensor::is_streaming() const
 }
 bool playback_sensor::extend_to(rs2_extension_type extension_type, void** ext)
 {
-    throw not_implemented_exception(__FUNCTION__);
-    //return false;
+    std::shared_ptr<extension_snapshot> e = m_sensor_description.get_sensor_extensions_snapshots().find(extension_type);
+    if(e == nullptr)
+    {
+        return false;
+    }
+    switch (extension_type)
+    {
+    case RS2_EXTENSION_TYPE_UNKNOWN: return false;
+    case RS2_EXTENSION_TYPE_DEBUG: return try_extend<debug_interface>(e, ext);
+    case RS2_EXTENSION_TYPE_INFO: return try_extend<info_interface>(e, ext);
+    case RS2_EXTENSION_TYPE_MOTION: return try_extend<motion_sensor_interface>(e, ext);;
+    case RS2_EXTENSION_TYPE_OPTIONS: return try_extend<options_interface>(e, ext);;
+    case RS2_EXTENSION_TYPE_VIDEO: return try_extend<video_sensor_interface>(e, ext);;
+    case RS2_EXTENSION_TYPE_ROI: return try_extend<roi_sensor_interface>(e, ext);;
+    case RS2_EXTENSION_TYPE_VIDEO_FRAME: return try_extend<video_frame>(e, ext);
+        //TODO: add: case RS2_EXTENSION_TYPE_MOTION_FRAME: return try_extend<motion_frame>(e, ext);
+    case RS2_EXTENSION_TYPE_COUNT:
+        //[[fallthrough]];
+    default:
+        LOG_WARNING("Unsupported extension type: " << extension_type);
+        return false;
+    }
 }
 
 void playback_sensor::handle_frame(frame_holder frame, bool is_real_time)
 {
     if(m_is_started)
     {
+        auto stream_type = frame.frame->get()->get_stream_type();
         auto pf = std::make_shared<frame_holder>(std::move(frame));
-        m_dispatchers[frame.frame->get()->get_stream_type()]->get()->invoke([this, pf](dispatcher::cancellable_timer t)
+        m_dispatchers.at(stream_type)->get()->invoke([this, pf](dispatcher::cancellable_timer t)
         {
-            m_user_callback->on_frame(std::move(*pf));
+            rs2_frame* pframe = nullptr;
+            std::swap((*pf).frame, pframe);
+            m_user_callback->on_frame(pframe);
         });
     }
 }

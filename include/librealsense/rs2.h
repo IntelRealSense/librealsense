@@ -1055,6 +1055,7 @@ void rs2_delete_device_serializer(rs2_device_serializer * device_serializer);
 rs2_device* rs2_create_record_device(const rs2_device* device, rs2_device_serializer* serializer, rs2_error** error);
 void rs2_record_device_pause(const rs2_device* device, rs2_error** error);
 void rs2_record_device_resume(const rs2_device* device, rs2_error** error);
+rs2_device* rs2_create_playback_device(rs2_device_serializer* serializer, rs2_error** error);
 
 rs2_frame* rs2_allocate_synthetic_video_frame(rs2_source* source, rs2_stream new_stream, rs2_frame* original, 
     rs2_format new_format, int new_bpp, int new_width, int new_height, int new_stride, rs2_error** error);

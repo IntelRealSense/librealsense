@@ -28,7 +28,7 @@ namespace librealsense
     public:
         using frame_interface_callback_t = std::function<void(frame_holder)>;
         signal<playback_sensor, uint32_t, frame_callback_ptr> started;
-        signal<playback_sensor, uint32_t> stopped;
+        signal<playback_sensor, uint32_t, bool> stopped;
         signal<playback_sensor, uint32_t, const std::vector<stream_profile>&> opened;
         signal<playback_sensor, uint32_t> closed;
 
@@ -49,13 +49,15 @@ namespace librealsense
         bool is_streaming() const override;
         bool extend_to(rs2_extension_type extension_type, void** ext) override;
         void handle_frame(frame_holder frame, bool is_real_time);
+        void stop(bool invoke_required);
+
     private:
         frame_callback_ptr m_user_callback;
         librealsense::notifications_callback_ptr m_user_notification_callback;
         std::map<rs2_stream, lazy<std::shared_ptr<dispatcher>>> m_dispatchers;
         std::atomic<bool> m_is_started;
         sensor_snapshot m_sensor_description;
-        size_t m_sensor_id;
+        uint32_t m_sensor_id;
         std::mutex m_mutex;
     };
 }

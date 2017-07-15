@@ -135,5 +135,6 @@ EXPORTS
     rs2_create_device_serializer
     rs2_delete_device_serializer
     rs2_create_record_device 
+    rs2_create_playback_device 
     rs2_record_device_pause
     rs2_record_device_resume

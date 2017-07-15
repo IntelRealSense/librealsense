@@ -203,6 +203,20 @@ public:
         _is_alive = false;
         _thread.join();
     }
+
+    void sync()
+    {
+        std::mutex m;
+        std::condition_variable cv;
+        bool invoked = false;
+        invoke([&](cancellable_timer t)
+        {
+            invoked = true;
+            cv.notify_one();
+        });
+        std::unique_lock<std::mutex> locker(m);
+        cv.wait(locker, [&]() { return invoked; });
+    }
 private:
     friend cancellable_timer;
     single_consumer_queue<std::function<void(cancellable_timer)>> _queue;

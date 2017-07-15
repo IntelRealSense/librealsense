@@ -31,27 +31,29 @@ int main(int argc, const char** argv) try
         return EXIT_FAILURE;
     }
     //Create a recorder from the device
-    recorder record_device(file_path.getValue(), devices[0]);
+    //recorder device(file_path.getValue(), devices[0]);
+    playback device(file_path.getValue());
     //From this point on we use the record_device and not the (live) device
 
-    std::cout << "Device: " << record_device.get_info(RS2_CAMERA_INFO_NAME) << std::endl;
+   // std::cout << "Device: " << device.get_info(RS2_CAMERA_INFO_NAME) << std::endl;
 
     //Declare profiles we want to play
     const std::vector<rs2::stream_profile> profiles_to_play_if_available{
         rs2::stream_profile{ RS2_STREAM_DEPTH, 640, 480, 30, RS2_FORMAT_Z16 },
         rs2::stream_profile{ RS2_STREAM_INFRARED, 640, 480, 30, RS2_FORMAT_Y8 },
-        rs2::stream_profile{ RS2_STREAM_FISHEYE, 640, 480, 30, RS2_FORMAT_RAW8 }
+        rs2::stream_profile{ RS2_STREAM_FISHEYE, 640, 480, 30, RS2_FORMAT_RAW8 },
+        rs2::stream_profile{ RS2_STREAM_COLOR, 640, 480, 30, RS2_FORMAT_RGBA8 }
     };
     
     std::vector<sensor> m_playing_sensors; //will hold the sensors that are playing
 
     //Go over the sensors and open start streaming
-    for (auto&& sensor : record_device.query_sensors())
+    for (auto&& sensor : device.query_sensors())
     {
-        if (sensor.supports(RS2_CAMERA_INFO_NAME))
-        {
-            std::cout << sensor.get_info(RS2_CAMERA_INFO_NAME) << std::endl;
-        }
+        //if (sensor.supports(RS2_CAMERA_INFO_NAME))
+        //{
+        //    std::cout << sensor.get_info(RS2_CAMERA_INFO_NAME) << std::endl;
+        //}
             
         std::vector<rs2::stream_profile> profiles_to_play_for_this_sensor;
         for (auto profile : sensor.get_stream_modes())
@@ -70,7 +72,7 @@ int main(int argc, const char** argv) try
         }
         sensor.open(profiles_to_play_for_this_sensor);
         sensor.start([](rs2::frame f) {
-            std::cout << "Got frame #" << f.get_frame_number() << rs2_stream_to_string(f.get_stream_type()) << std::endl;
+            std::cout << rs2_stream_to_string(f.get_stream_type()) << " frame #" << f.get_frame_number() <<  std::endl;
         });
         m_playing_sensors.push_back(sensor);
         try
@@ -82,8 +84,8 @@ int main(int argc, const char** argv) try
             std::cout << e.what() << std::endl;
         }
     }
-    
-    std::this_thread::sleep_for(std::chrono::seconds(10));
+    getchar();
+    //std::this_thread::sleep_for(std::chrono::seconds(5));
     
     for(auto sensor : m_playing_sensors)
     {

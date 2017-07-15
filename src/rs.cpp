@@ -12,6 +12,8 @@
 #include "record_device.h"
 #include <serializers/ros_device_serializer.h>
 #include "align.h"
+#include "playback_device.h"
+
 ////////////////////////
 // API implementation //
 ////////////////////////
@@ -1182,6 +1184,11 @@ void rs2_delete_device_serializer(rs2_device_serializer * device_serializer) try
 }
 NOEXCEPT_RETURN(, device_serializer)
 
+rs2_device* rs2_create_playback_device(rs2_device_serializer* serializer, rs2_error** error) try
+{
+    VALIDATE_NOT_NULL(serializer);
+    return new rs2_device{ nullptr, nullptr, std::make_shared<playback_device>(serializer->device_serializer->get_reader()) };
+}HANDLE_EXCEPTIONS_AND_RETURN(nullptr, serializer)
 
 rs2_device* rs2_create_record_device(const rs2_device* device, rs2_device_serializer* serializer, rs2_error** error) try
 {
@@ -1191,7 +1198,7 @@ rs2_device* rs2_create_record_device(const rs2_device* device, rs2_device_serial
     return new rs2_device( { 
         device->ctx,
         device->info,
-        std::make_shared<librealsense::record_device>(device->device, serializer->device_serializer->get_writer()) 
+        std::make_shared<record_device>(device->device, serializer->device_serializer->get_writer()) 
     });
 }HANDLE_EXCEPTIONS_AND_RETURN(nullptr, device, serializer)
 

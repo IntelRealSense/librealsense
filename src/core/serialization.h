@@ -9,6 +9,7 @@
 #include <map>
 #include "extension.h"
 #include "streaming.h"
+#include "ros/status.h"
 
 namespace librealsense
 {
@@ -118,7 +119,8 @@ namespace librealsense
         public:
             virtual device_snapshot query_device_description() = 0;
             //virtual void read(uint32_t sensor_index, std::chrono::nanoseconds& timestamp, frame_holder& frame) = 0;
-            virtual void read(std::chrono::nanoseconds& timestamp, uint32_t& sensor_index, frame_holder& frame) = 0;
+            //TODO: change return type of read
+            virtual rs::file_format::status read(std::chrono::nanoseconds& timestamp, uint32_t& sensor_index, frame_holder& frame) = 0;
             virtual void seek_to_time(std::chrono::nanoseconds time) = 0;
             virtual std::chrono::nanoseconds query_duration() const = 0;
             virtual void reset() = 0;

@@ -26,10 +26,25 @@ namespace librealsense
         {
             return m_device_description;
         }
-        void read(std::chrono::nanoseconds& timestamp, uint32_t& sensor_index, librealsense::frame_holder& frame) override
+        rs::file_format::status read(std::chrono::nanoseconds& timestamp, uint32_t& sensor_index, frame_holder& frame) override
         {
-            throw not_implemented_exception(__FUNCTION__);
+            std::unique_lock<std::mutex> locker(m_mutex);
+
+            ////read cached properties avaialble after seek
+            //if(m_cached_properties.empty() == false)
+            //{
+            //    cached_property properties_sensor_list = (*m_cached_properties.begin());
+            //    *obj = properties_sensor_list.property;
+            //    properties_sensor_list.property->add_ref();
+            //    sensor_index = properties_sensor_list.sensor_id;
+            //    timestamp = properties_sensor_list.timestamp;
+            //    m_cached_properties.pop_back();
+            //    return error_code::no_error;
+            //}
+
+            return read_sample(sensor_index, timestamp, frame);
         }
+
         void seek_to_time(std::chrono::nanoseconds time) override
         {
             throw not_implemented_exception(__FUNCTION__);
@@ -41,16 +56,25 @@ namespace librealsense
         void reset() override
         {
             m_first_frame_time = FIRST_FRAME_TIMESTAMP;
-//            if(read_metadata(&m_device_description) != error_code::no_error)
-//            {
-//                throw std::runtime_error("Failed to read header");
-//            }
+            m_device_description = read_metadata();
         }
         virtual void set_filter(uint32_t m_sensor_index, const std::vector<stream_profile>& vector) override
         {
-            throw not_implemented_exception(__FUNCTION__);
+            //TODO: Ziv, throw not_implemented_exception(__FUNCTION__);
         }
     private:
+        rs2_camera_info rs2_camera_info_from_string(const std::string& info)
+        {
+            if(info == rs2_camera_info_to_string(RS2_CAMERA_INFO_NAME            ) ) return RS2_CAMERA_INFO_NAME;
+            if(info == rs2_camera_info_to_string(RS2_CAMERA_INFO_SERIAL_NUMBER   ) ) return RS2_CAMERA_INFO_SERIAL_NUMBER;
+            if(info == rs2_camera_info_to_string(RS2_CAMERA_INFO_FIRMWARE_VERSION) ) return RS2_CAMERA_INFO_FIRMWARE_VERSION;
+            if(info == rs2_camera_info_to_string(RS2_CAMERA_INFO_LOCATION        ) ) return RS2_CAMERA_INFO_LOCATION;
+            if(info == rs2_camera_info_to_string(RS2_CAMERA_INFO_DEBUG_OP_CODE   ) ) return RS2_CAMERA_INFO_DEBUG_OP_CODE;
+            if(info == rs2_camera_info_to_string(RS2_CAMERA_INFO_ADVANCED_MODE   ) ) return RS2_CAMERA_INFO_ADVANCED_MODE;
+            if(info == rs2_camera_info_to_string(RS2_CAMERA_INFO_PRODUCT_ID      ) ) return RS2_CAMERA_INFO_PRODUCT_ID;
+            if(info == rs2_camera_info_to_string(RS2_CAMERA_INFO_CAMERA_LOCKED   ) ) return RS2_CAMERA_INFO_CAMERA_LOCKED;
+            throw std::runtime_error(info + " cannot be converted to rs2_camera_info");
+        }
 
 //        error_code seek_to_time(uint64_t time_microseconds)
 //        {
@@ -126,210 +150,66 @@ namespace librealsense
 //
 //        }
 //
-//        error_code read_metadata(core::device_description_interface **description)
-//        {
-//            if(description == nullptr)
-//            {
-//                return error_code::invalid_handle;
-//            }
-//            std::vector<rs::core::data_object*> device_objects;
-//            rs::utils::scope_guard device_objects_releaser([&]()
-//                                                           {
-//                                                               for (auto object : device_objects)
-//                                                               {
-//                                                                   object->release();
-//                                                               }
-//                                                           });
-//
-//            std::map<uint32_t, std::vector<rs::utils::ref_count_ptr<rs::core::data_object>>> properties;
-//            auto retval = read_properties_metadata(properties);
-//            if(retval != error_code::no_error)
-//            {
-//                return retval;
-//            }
-//
-//            std::map<uint32_t, rs::utils::ref_count_ptr<rs::core::data_object>> infos;
-//            retval = read_vendor_info(infos, m_sensor_count);
-//            if(retval != error_code::no_error)
-//            {
-//                return retval;
-//            }
-//
-//            std::map<uint32_t, std::vector<rs::utils::ref_count_ptr<rs::core::data_object>>> stream_infos;
-//            std::map<uint32_t, std::pair<rs::core::extrinsics, uint64_t>> extrinsics;
-//            retval = read_stream_info(stream_infos, extrinsics);
-//            if(retval != error_code::no_error)
-//            {
-//                return retval;
-//            }
-//
-//            std::map<uint32_t, rs::utils::ref_count_ptr<rs::core::data_object>> motion_infos;
-//            retval = read_motion_info(motion_infos, extrinsics);
-//            if(retval != error_code::no_error)
-//            {
-//                return retval;
-//            }
-//
-//            std::vector<rs::core::sensor_description_interface*> sensor_descriptions;
-//            rs::utils::scope_guard sensor_descriptions_releaser([&]()
-//                                                                {
-//                                                                    for (auto sensor_description : sensor_descriptions)
-//                                                                    {
-//                                                                        sensor_description->release();
-//                                                                    }
-//                                                                });
-//
-//            for (uint32_t sensor_index = 0; sensor_index < m_sensor_count; sensor_index++)
-//            {
-//                std::vector<rs::core::data_object*> sensor_objects;
-//                rs::utils::scope_guard sensor_objects_releaser([&]()
-//                                                               {
-//                                                                   for (auto object : sensor_objects)
-//                                                                   {
-//                                                                       object->release();
-//                                                                   }
-//                                                               });
-//
-//                if(properties.find(sensor_index) != properties.end())
-//                {
-//                    std::for_each(properties.at(sensor_index).begin(),
-//                                  properties.at(sensor_index).end(),
-//                                  [](rs::utils::ref_count_ptr<rs::core::data_object> &obj){ obj->add_ref(); });
-//                    sensor_objects.insert(sensor_objects.end(), properties.at(sensor_index).begin(), properties.at(sensor_index).end());
-//                }
-//                if(infos.find(sensor_index) != infos.end())
-//                {
-//                    infos.at(sensor_index)->add_ref();
-//                    sensor_objects.push_back(infos.at(sensor_index));
-//                }
-//                if(stream_infos.find(sensor_index) != stream_infos.end())
-//                {
-//                    std::for_each(stream_infos.at(sensor_index).begin(),
-//                                  stream_infos.at(sensor_index).end(),
-//                                  [](rs::utils::ref_count_ptr<rs::core::data_object> &obj){ obj->add_ref(); });
-//                    sensor_objects.insert(sensor_objects.end(), stream_infos.at(sensor_index).begin(),
-//                                          stream_infos.at(sensor_index).end());
-//                }
-//                if(motion_infos.find(sensor_index) != motion_infos.end())
-//                {
-//                    motion_infos.at(sensor_index)->add_ref();
-//                    sensor_objects.push_back(motion_infos.at(sensor_index));
-//                }
-//
-//                rs::utils::ref_count_ptr<rs::core::sensor_description_interface> sensor_description = nullptr;
-//                if (rs::storage::common::sensor_description::create(
-//                    sensor_objects.data(),
-//                    static_cast<uint32_t>(sensor_objects.size()),
-//                    &sensor_description) == false)
-//                    return error_code::read_failed;;
-//
-//                sensor_description->add_ref();
-//                sensor_descriptions.emplace_back(sensor_description);
-//            }
-//            uint32_t device_id = DEVICE_INDEX;
-//            if(properties.find(device_id) != properties.end())
-//            {
-//                std::for_each(properties.at(device_id).begin(),
-//                              properties.at(device_id).end(),
-//                              [](rs::utils::ref_count_ptr<rs::core::data_object> &obj){ obj->add_ref(); });
-//                device_objects.insert(device_objects.end(), properties.at(device_id).begin(), properties.at(device_id).end());
-//            }
-//
-//            if(infos.find(device_id) != infos.end())
-//            {
-//                infos.at(device_id)->add_ref();
-//                device_objects.push_back(infos.at(device_id));
-//            }
-//
-//
-//            //If there is any extrinsic not empty, then it's a valid extension otherwise it is default value and is not a device metadata
-//            if(std::any_of(extrinsics.begin(), extrinsics.end(), [](const std::pair<uint32_t, std::pair<rs::core::extrinsics, uint64_t>>& e) { return is_empty_extrinsics(e.second.first) == false; }))
-//            {
-//                rs::utils::ref_count_ptr<rs::core::data_object> extrinsics_data_object;
-//                if (create_extrinsics_object(extrinsics, &extrinsics_data_object) == true)
-//                {
-//                    extrinsics_data_object->add_ref();
-//                    device_objects.push_back(extrinsics_data_object);
-//                }
-//                else
-//                {
-//                    LOG_ERROR("falied to create extrinsics object");
-//                }
-//            }
-//            if (rs::storage::common::device_description::create(
-//                device_objects.data(),
-//                static_cast<uint32_t>(device_objects.size()),
-//                sensor_descriptions.data(),
-//                static_cast<uint32_t>(sensor_descriptions.size()),
-//                description) == false)
-//            {
-//                return error_code::read_failed;
-//            }
-//
-//            return error_code::no_error;
-//        }
-//
-//
-//        error_code read(uint32_t &sensor_index, uint64_t &timestamp, core::data_object **obj)
-//        {
-//            std::unique_lock<std::mutex> locker(m_mutex);
-//            if(m_reader == nullptr)
-//            {
-//                return read_failed;
-//            }
-//            if (obj == nullptr)
-//            {
-//                return error_code::invalid_handle;
-//            }
-//
-//            //read cached properties avaialble after seek
-//            if(m_cached_properties.empty() == false)
-//            {
-//                cached_property properties_sensor_list = (*m_cached_properties.begin());
-//                *obj = properties_sensor_list.property;
-//                properties_sensor_list.property->add_ref();
-//                sensor_index = properties_sensor_list.sensor_id;
-//                timestamp = properties_sensor_list.timestamp;
-//                m_cached_properties.pop_back();
-//                return error_code::no_error;
-//            }
-//
-//            return read_sample(sensor_index, timestamp, obj);
-//
-//        }
-//
-//        error_code read_sample(uint32_t &sensor_index, uint64_t &timestamp, core::data_object **obj)
-//        {
-//
-//            std::shared_ptr<rs::file_format::ros_data_objects::sample> sample;
-//            auto reader_retval = m_reader->read_next_sample(sample);
-//            if(sample == nullptr || reader_retval != rs::file_format::status_no_error)
-//            {
-//                return error_code::invalid_handle;
-//            }
-//
-//            if(sample->get_type() == rs::file_format::file_types::sample_type::st_image)
-//            {
-//                return read_image(std::static_pointer_cast<ros_data_objects::image>(sample),
-//                                  sensor_index, timestamp, obj);
-//            }
-//            else if(sample->get_type() == rs::file_format::file_types::sample_type::st_motion)
-//            {
-//                return read_motion(std::static_pointer_cast<ros_data_objects::motion_sample>(sample),
-//                                   sensor_index, timestamp, obj);
-//            }
-//            else if(sample->get_type() == rs::file_format::file_types::sample_type::st_property)
-//            {
-//                return read_property(std::static_pointer_cast<ros_data_objects::property>(sample),
-//                                     sensor_index, timestamp, obj);
-//            }
-//            else if (sample->get_type() == rs::file_format::file_types::sample_type::st_pose)
-//            {
-//                return read_pose(std::static_pointer_cast<ros_data_objects::pose>(sample),
-//                                 sensor_index, timestamp, obj);
-//            }
-//            return error_code::read_failed;
-//        }
+        device_snapshot read_metadata()
+        {
+            snapshot_collection device_extensions;
+
+            std::shared_ptr<info_snapshot> info = read_info_snapshot(DEVICE_INDEX);
+            device_extrinsics extrinsics = read_device_extrinsics();
+            device_extensions[RS2_EXTENSION_TYPE_INFO] = info;
+            std::vector<sensor_snapshot> sensor_descriptions;
+            uint32_t sensor_count = read_sensor_count();
+            for (uint32_t sensor_index = 0; sensor_index < sensor_count; sensor_index++)
+            {
+                snapshot_collection sensor_extensions;
+                std::vector<stream_profile> streaming_profiles = read_stream_info();
+
+               /* std::shared_ptr<options_snapshot> options = options_container read_options();
+                sensor_extensions[RS2_EXTENSION_TYPE_OPTIONS] = options;*/
+
+                std::shared_ptr<info_snapshot> sensor_info = read_info_snapshot(sensor_index);
+                sensor_extensions[RS2_EXTENSION_TYPE_INFO] = sensor_info;
+                sensor_descriptions.emplace_back(sensor_extensions, streaming_profiles);
+            }
+
+            return device_snapshot(device_extensions, sensor_descriptions, extrinsics);
+        }
+
+
+       
+        rs::file_format::status read_sample(uint32_t &sensor_index, std::chrono::nanoseconds& timestamp, frame_holder& frame)
+        {
+            std::shared_ptr<rs::file_format::ros_data_objects::sample> sample;
+            auto reader_retval = m_stream_playback.read_next_sample(sample);
+            if(reader_retval != rs::file_format::status_no_error)
+            {
+                return reader_retval;
+            }
+
+            if(sample->get_type() == rs::file_format::file_types::sample_type::st_image)
+            {
+                auto image = std::static_pointer_cast<rs::file_format::ros_data_objects::image>(sample);
+                image->get_data(sensor_index, timestamp, frame);
+                return rs::file_format::status::status_no_error;
+            }
+            //else if(sample->get_type() == rs::file_format::file_types::sample_type::st_motion)
+            //{
+            //    return read_motion(std::static_pointer_cast<ros_data_objects::motion_sample>(sample),
+            //                       sensor_index, timestamp, obj);
+            //}
+            //else if(sample->get_type() == rs::file_format::file_types::sample_type::st_property)
+            //{
+            //    return read_property(std::static_pointer_cast<ros_data_objects::property>(sample),
+            //                         sensor_index, timestamp, obj);
+            //}
+            //else if (sample->get_type() == rs::file_format::file_types::sample_type::st_pose)
+            //{
+            //    return read_pose(std::static_pointer_cast<ros_data_objects::pose>(sample),
+            //                     sensor_index, timestamp, obj);
+            //}
+            
+            return rs::file_format::status_param_unsupported;
+        }
 //
 //        error_code read_pose(std::shared_ptr<ros_data_objects::pose> sample,
 //                                                                           uint32_t &sensor_index, uint64_t &timestamp, core::data_object **obj)
@@ -510,88 +390,6 @@ namespace librealsense
 //            }
 //
 //            return true;
-//        }
-//
-//        error_code read_image(std::shared_ptr<ros_data_objects::image> sample,
-//                                                                            uint32_t &sensor_index, uint64_t &timestamp, core::data_object **obj)
-//        {
-//            if(sample == nullptr || obj == nullptr)
-//            {
-//                return error_code::invalid_handle;
-//            }
-//
-//            std::shared_ptr<rs::file_format::ros_data_objects::image> img =
-//                std::static_pointer_cast<ros_data_objects::image>(sample);
-//            ros_data_objects::image_info image_info = img->get_info();
-//            sensor_index = image_info.device_id;
-//            rs::core::pixel_format format;
-//
-//            if(conversions::convert(image_info.format, format) == false)
-//            {
-//                return error_code::invalid_handle;
-//            }
-//
-//            rs::core::image_info info{static_cast<int32_t>(image_info.width),
-//                                      static_cast<int32_t>(image_info.height),
-//                                      format,
-//                                      static_cast<int32_t>(image_info.step)};
-//
-//            int buffer_size = image_info.height * image_info.step;
-//            uint8_t* buffer = nullptr;
-//            rs::core::release_interface* data_releaser = nullptr;
-//            rs::utils::ref_count_ptr<rs::core::image_interface> img_int;
-//            rs::utils::scope_guard scope_data_releaser([&buffer, &data_releaser, &img_int]()
-//                                                       {
-//                                                           if(img_int == nullptr)
-//                                                           {
-//                                                               if(data_releaser != nullptr)
-//                                                               {
-//                                                                   data_releaser->release();
-//                                                               }
-//                                                               else
-//                                                               {
-//                                                                   if(buffer != nullptr)
-//                                                                   {
-//                                                                       delete[] buffer;
-//                                                                   }
-//                                                               }
-//                                                           }
-//                                                       });
-//
-//            buffer = new uint8_t[buffer_size];
-//            data_releaser = new rs::utils::self_releasing_array_data_releaser(buffer);
-//
-//            memcpy(buffer, image_info.data.get(), buffer_size);
-//            rs::core::stream_type stream;
-//            if(conversions::convert(image_info.stream, stream) == false)
-//            {
-//                return error_code::invalid_handle;
-//            }
-//            rs::core::timestamp_domain timestamp_domain;
-//            if(conversions::convert(image_info.timestamp_domain, timestamp_domain) == false)
-//            {
-//                return error_code::invalid_handle;
-//            }
-//            img_int = rs::utils::ref_count_ptr<rs::core::image_interface>::make_attached(
-//                rs::core::image_interface::create_instance_from_raw_data(&info,
-//                                                                         {buffer, data_releaser},
-//                                                                         stream,
-//                                                                         rs::core::image_interface::flag::any,
-//                                                                         image_info.timestamp.count() * 1000,
-//                                                                         image_info.frame_number,
-//                                                                         timestamp_domain));
-//            timestamp = image_info.capture_time.count() / 1000;
-//
-//            if(copy_image_metadata(image_info.metadata, img_int->query_metadata()) == false)
-//            {
-//                return error_code::read_failed;
-//            }
-//
-//            if(rs::data_objects::camera::image_data_object::create(img_int, obj) == false)
-//            {
-//                return error_code::data_object_creation_failed;
-//            }
-//            return error_code::no_error;
 //        }
 //
 //
@@ -984,6 +782,65 @@ namespace librealsense
 //
 //        }
 //
+
+        std::shared_ptr<info_snapshot> ros_reader::read_info_snapshot(uint32_t id)
+        {
+            std::vector<std::shared_ptr<rs::file_format::ros_data_objects::vendor_data>> vendor_data;
+            if (m_stream_playback.read_vendor_data(vendor_data, id) != rs::file_format::status_no_error)
+            {
+                return nullptr;
+            }
+            std::map<rs2_camera_info, std::string> values;
+            for (auto data : vendor_data)
+            {
+                try
+                {
+                    rs2_camera_info info = rs2_camera_info_from_string(data->get_info().name);
+                    values[info] = data->get_info().value;
+                }
+                catch (const std::exception& e)
+                {
+                    std::cerr << e.what() << std::endl;
+                }
+            }
+            return std::make_shared<info_snapshot>(values);
+        }
+
+        device_extrinsics ros_reader::read_device_extrinsics()
+        {
+            return {};
+        }
+
+        uint32_t ros_reader::read_sensor_count() const
+        {
+            std::vector<std::shared_ptr<rs::file_format::ros_data_objects::vendor_data>> vendor_data;
+            auto sts = m_stream_playback.read_vendor_data(vendor_data, DEVICE_INDEX);
+            if (sts == rs::file_format::status_item_unavailable)
+            {
+                return 0;
+            }
+
+            for (auto data : vendor_data)
+            {
+                if (data->get_info().name == SENSOR_COUNT)
+                {
+                    auto value = data->get_info().value;
+                    return std::stoi(value);
+                }
+            }
+            return 0;
+        }
+
+        std::vector<stream_profile> ros_reader::read_stream_info()
+        {
+            std::vector<stream_profile> profiles;
+            return profiles;
+        }
+
+        std::shared_ptr<options_container> ros_reader::read_options()
+        {
+            return nullptr;
+        }
         device_snapshot m_device_description;
         rs::file_format::file_types::microseconds m_first_frame_time;
         //std::vector <cached_property> m_cached_properties;
@@ -992,4 +849,6 @@ namespace librealsense
         uint32_t m_sensor_count;
         rs::file_format::stream_playback m_stream_playback;
     };
+
+
 }

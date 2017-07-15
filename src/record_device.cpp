@@ -61,7 +61,7 @@ librealsense::record_device::~record_device()
 }
 librealsense::sensor_interface& librealsense::record_device::get_sensor(size_t i)
 {
-    return *(m_sensors[i]);
+    return *(m_sensors.at(i));
 }
 size_t librealsense::record_device::get_sensors_count() const
 {
@@ -143,7 +143,7 @@ bool librealsense::record_device::supports_info(rs2_camera_info info) const
 }
 const librealsense::sensor_interface& librealsense::record_device::get_sensor(size_t i) const
 {
-    return *m_sensors[i];
+    return *m_sensors.at(i);
 }
 void librealsense::record_device::hardware_reset()
 {

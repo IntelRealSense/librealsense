@@ -25,7 +25,7 @@ namespace rs
         * @brief The stream_playback provides an interface for playing realsense format files
         *
         */
-        class stream_playback
+        class stream_playback //TODO: Rename - ros deserializer/reader
         {
         public:
             stream_playback(const std::string& file_path);
@@ -39,8 +39,7 @@ namespace rs
             * @return status_item_unavailable       No vendor info data of the requested device id is found in the file
             * @return status_file_read_failed       Failed to read from file
             */
-            virtual status read_vendor_data(std::vector<std::shared_ptr<ros_data_objects::vendor_data>>& vendor_data,
-                                            uint32_t device_id) const;
+            status read_vendor_data(std::vector<std::shared_ptr<ros_data_objects::vendor_data>>& vendor_data, uint32_t device_id) const;
 
             /**
             * @brief Sets the player to play only the requested topics
@@ -53,7 +52,7 @@ namespace rs
             * @return status_item_unavailable       At list one of the topics does not exist in the file
             * @return status_file_eof               The file reached the end
             */
-            virtual status set_filter(std::vector<std::string> topics);
+            status set_filter(std::vector<std::string> topics);
 
             /**
             * @brief Set the player to play from the requested timestamp.
@@ -65,7 +64,7 @@ namespace rs
             * @return status_no_error               Successful execution
             * @return status_invalid_argument       The begin argument is out of range
             */
-            virtual status seek_to_time(file_types::nanoseconds begin);
+            status seek_to_time(file_types::nanoseconds begin);
 
             /**
             * @brief Returns a vector of stream_info objects for the corresponding device and stream type
@@ -78,7 +77,7 @@ namespace rs
             * @return status_file_read_failed       Failed to read from file
             * @return status_param_unsupported      The sample type is not supported by the file format
             */
-            virtual status read_stream_infos(std::vector<std::shared_ptr<ros_data_objects::stream_info>>& stream_infos,
+            status read_stream_infos(std::vector<std::shared_ptr<ros_data_objects::stream_info>>& stream_infos,
                                              file_types::sample_type type, uint32_t device_id) const;
 
             /**
@@ -89,14 +88,14 @@ namespace rs
             * @return status_file_read_failed       Failed to read from file
             * @return status_file_eof               The file reached the end
             */
-            virtual status read_next_sample(std::shared_ptr<ros_data_objects::sample>& sample);
+            status read_next_sample(std::shared_ptr<ros_data_objects::sample>& sample);
 
             /**
              * @brief Returns the total duration of the file
              * @param[out] duration   On successful execution will hold the file duration (in nanoseconds)
              * @return status_no_error on successful execution
              */
-            virtual status get_file_duration(file_types::nanoseconds& duration) const;
+            status get_file_duration(file_types::nanoseconds& duration) const;
 
         private:
             std::shared_ptr<ros_data_objects::compressed_image> create_compressed_image(const rosbag::MessageInstance &image_data) const;
@@ -110,14 +109,15 @@ namespace rs
             std::shared_ptr<ros_data_objects::pose> create_six_dof(const rosbag::MessageInstance &message) const;
             std::shared_ptr<ros_data_objects::time_sample> create_time_sample(const rosbag::MessageInstance &message) const;
             std::shared_ptr<ros_data_objects::vendor_data> create_vendor_data(const rosbag::MessageInstance &message) const;
-            bool get_file_version_from_file(uint32_t& version);
+            bool get_file_version_from_file(uint32_t& version) const;
             status seek_to_time(file_types::nanoseconds seek_time, std::unique_ptr<rosbag::View>& samples_view) const;
-
+            std::shared_ptr<librealsense::archive_interface> m_archive;
             rosbag::Bag                     m_file;
             std::unique_ptr<rosbag::View>   m_samples_view;
             rosbag::View::iterator          m_samples_itrator;
             mutable std::mutex              m_mutex;
             std::vector<std::string>        m_topics;
+            std::atomic<uint32_t> m_max_frame_queue_size;
         };
     }
 }

@@ -14,25 +14,6 @@ namespace rs
     {
         namespace ros_data_objects
         {
-            //TODO: remove image_info - ros_data_objects::image should only hold a ref to a frame
-            struct image_info
-            {
-   /*             std::string stream;
-                uint32_t width;
-                uint32_t height;
-                rs2_format format;
-                uint32_t step;
-                rs::file_format::file_types::nanoseconds capture_time;
-                rs::file_format::file_types::seconds timestamp;
-                rs::file_format::file_types::nanoseconds system_time;
-                rs2_timestamp_domain timestamp_domain;
-                uint32_t device_id;
-                uint32_t frame_number;
-                std::shared_ptr <uint8_t> data;
-                std::map <rs2_frame_metadata, std::vector<uint8_t>> metadata;*/
-            };
-
-
             class image : public sample
             {
             public:
@@ -99,14 +80,11 @@ namespace rs
                     file.write(info_topic, m_timestamp, msg);
                 }
 
-                const image_info& get_info() const
+                void get_data(uint32_t& sensor_index, std::chrono::nanoseconds& timestamp, librealsense::frame_holder& frame)
                 {
-                    return image_info(); //TODO: remove
-                }
-
-                void set_info(const image_info& info)
-                {
-                    //m_info = info; //TODO: remove
+                    sensor_index = m_sensor_index;
+                    timestamp = m_timestamp;
+                    frame = std::move(m_frame);
                 }
 
                 static std::string get_topic(std::string stream, uint32_t device_id)
@@ -138,7 +116,6 @@ namespace rs
                     //TODO: Handle additional image metadata once available
                 }
             private:
-                //image_info m_info;
                 std::chrono::nanoseconds m_timestamp;
                 uint32_t m_sensor_index;
                 librealsense::frame_holder m_frame;

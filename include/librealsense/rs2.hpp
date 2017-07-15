@@ -94,7 +94,7 @@ namespace rs2
     class device;
     class device_list;
     class syncer;
-    class recorder;
+    class device_base;
     class roi_sensor;
 
     struct stream_profile
@@ -1028,7 +1028,7 @@ namespace rs2
         friend context;
         friend device_list;
         friend device;
-        friend recorder;
+        friend device_base;
         friend roi_sensor;
 
         std::shared_ptr<rs2_sensor> _sensor;
@@ -1073,21 +1073,17 @@ namespace rs2
         operator bool() const { return _sensor.get() != nullptr; }
     };
 
-    class device
+    class device_base
     {
     public:
-        using SensorType = sensor;
-
-        /**
-        * returns the list of adjacent devices, sharing the same physical parent composite device
-        * \return            the list of adjacent devices
-        */
+        device_base() : _dev(nullptr) {}
+        virtual ~device_base() = default;
         virtual std::vector<sensor> query_sensors() const
         {
             rs2_error* e = nullptr;
             std::shared_ptr<rs2_sensor_list> list(
-                    rs2_query_sensors(_dev.get(), &e),
-                    rs2_delete_sensor_list);
+                rs2_query_sensors(_dev.get(), &e),
+                rs2_delete_sensor_list);
             error::handle(e);
 
             auto size = rs2_get_sensors_count(list.get(), &e);
@@ -1097,8 +1093,8 @@ namespace rs2
             for (auto i = 0; i < size; i++)
             {
                 std::shared_ptr<rs2_sensor> dev(
-                        rs2_create_sensor(list.get(), i, &e),
-                        rs2_delete_sensor);
+                    rs2_create_sensor(list.get(), i, &e),
+                    rs2_delete_sensor);
                 error::handle(e);
 
                 sensor rs2_dev(dev);
@@ -1108,6 +1104,17 @@ namespace rs2
             return results;
         }
 
+
+        /**
+        * send hardware reset request to the device
+        */
+        virtual void hardware_reset()
+        {
+            rs2_error* e = nullptr;
+
+            rs2_hardware_reset(_dev.get(), &e);
+            error::handle(e);
+        }
         /**
         * check if specific camera info is supported
         * \param[in] info    the parameter to check for support
@@ -1133,17 +1140,15 @@ namespace rs2
             error::handle(e);
             return result;
         }
+    protected:
+        explicit device_base(std::shared_ptr<rs2_device> dev) : _dev(dev) {}
+        std::shared_ptr<rs2_device> _dev;
+    };
 
-        /**
-        * send hardware reset request to the device
-        */
-        virtual void hardware_reset()
-        {
-            rs2_error* e = nullptr;
-
-            rs2_hardware_reset(_dev.get(), &e);
-            error::handle(e);
-        }
+    class device : public device_base
+    {
+    public:
+        using SensorType = sensor;
 
         device& operator=(const std::shared_ptr<rs2_device> dev)
         {
@@ -1157,9 +1162,8 @@ namespace rs2
             _dev = dev._dev;
             return *this;
         }
-        device() : _dev(nullptr) {}
         
-        virtual operator bool() const
+        operator bool() const
         {
             return _dev != nullptr;
         }
@@ -1186,8 +1190,7 @@ namespace rs2
         friend context;
         friend device_list;
 
-        std::shared_ptr<rs2_device> _dev;
-        explicit device(std::shared_ptr<rs2_device> dev) : _dev(dev)
+        explicit device(std::shared_ptr<rs2_device> dev) : device_base(dev)
         {
         }
     };
@@ -1326,8 +1329,30 @@ namespace rs2
     private:
         std::shared_ptr<rs2_device_list> _list;
     };
+    
+    class playback : public device_base
+    {
+    public:
+        playback(std::string file) :
+            m_file(file)
+        {
+            rs2_error* e = nullptr;
+            m_serializer = std::shared_ptr<rs2_device_serializer>(
+                rs2_create_device_serializer(file.c_str(), &e),
+                rs2_delete_device_serializer);
+            rs2::error::handle(e);
 
-    class recorder // : public device
+            e = nullptr;
+            _dev = std::shared_ptr<rs2_device>(
+                rs2_create_playback_device(m_serializer.get(), &e),
+                rs2_delete_device);
+            rs2::error::handle(e);
+        }
+    private:
+        std::string m_file;
+        std::shared_ptr<rs2_device_serializer> m_serializer;
+    };
+    class recorder : public device_base
     {
     public:
         recorder(std::string file, rs2::device device) :
@@ -1340,90 +1365,27 @@ namespace rs2
             rs2::error::handle(e);
 
             e = nullptr;
-            m_record_device = std::shared_ptr<rs2_device>(
+            _dev = std::shared_ptr<rs2_device>(
                 rs2_create_record_device(device.get().get(), m_serializer.get(), &e),
                 rs2_delete_device);
             rs2::error::handle(e);
         }
 
-        std::vector<sensor> query_sensors() const
-        {
-            rs2_error* e = nullptr;
-            std::shared_ptr<rs2_sensor_list> list(
-                rs2_query_sensors(m_record_device.get(), &e),
-                rs2_delete_sensor_list);
-            error::handle(e);
-
-            auto size = rs2_get_sensors_count(list.get(), &e);
-            error::handle(e);
-
-            std::vector<sensor> results;
-            for (auto i = 0; i < size; i++)
-            {
-                std::shared_ptr<rs2_sensor> dev(
-                    rs2_create_sensor(list.get(), i, &e),
-                    rs2_delete_sensor);
-                error::handle(e);
-
-                sensor rs2_dev(dev);
-                results.push_back(rs2_dev);
-            }
-
-            return results;
-        }
-
-
-        /**
-        * send hardware reset request to the device
-        */
-        virtual void hardware_reset()
-        {
-            rs2_error* e = nullptr;
-
-            rs2_hardware_reset(m_record_device.get(), &e);
-            error::handle(e);
-        }
-        /**
-        * check if specific camera info is supported
-        * \param[in] info    the parameter to check for support
-        * \return                true if the parameter both exist and well-defined for the specific device
-        */
-        virtual bool supports(rs2_camera_info info) const
-        {
-            rs2_error* e = nullptr;
-            auto is_supported = rs2_supports_device_info(m_record_device.get(), info, &e);
-            error::handle(e);
-            return is_supported > 0;
-        }
-
-        /**
-        * retrieve camera specific information, like versions of various internal components
-        * \param[in] info     camera info type to retrieve
-        * \return             the requested camera info string, in a format specific to the device model
-        */
-        virtual const char* get_info(rs2_camera_info info) const
-        {
-            rs2_error* e = nullptr;
-            auto result = rs2_get_device_info(m_record_device.get(), info, &e);
-            error::handle(e);
-            return result;
-        }
         void pause()
         {
             rs2_error* e = nullptr;
-            rs2_record_device_pause(m_record_device.get(), &e);
+            rs2_record_device_pause(_dev.get(), &e);
             error::handle(e);
         }
         void resume()
         {
             rs2_error* e = nullptr;
-            rs2_record_device_resume(m_record_device.get(), &e);
+            rs2_record_device_resume(_dev.get(), &e);
             error::handle(e);
         }
     private:
         std::string m_file;
         std::shared_ptr<rs2_device_serializer> m_serializer;
-        std::shared_ptr<rs2_device> m_record_device;
     };
 
     class event_information

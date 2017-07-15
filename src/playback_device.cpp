@@ -62,25 +62,6 @@
  * <TODO: complete>                                                            *
  *******************************************************************************/
 
-
-//TODO: Collect all of these helpers to a single location
-template <typename To>
-bool try_extend(std::shared_ptr<extension_snapshot> from, void** ext)
-{
-    if (from == nullptr)
-    {
-        return false;
-    }
-
-    auto casted = std::dynamic_pointer_cast<To>(from);
-    if (casted == nullptr)
-    {
-        return false;
-    }
-    *ext = casted.get();
-    return true;
-}
-
 playback_device::playback_device(std::shared_ptr<device_serializer::reader> serializer) :
     m_is_started(false), 
     m_is_paused(false), 
@@ -93,7 +74,7 @@ playback_device::playback_device(std::shared_ptr<device_serializer::reader> seri
         throw invalid_value_exception("null serializer");
     }
 
-    serializer->reset();  
+    //serializer->reset();  
     m_reader = serializer;
     (*m_read_thread)->start();
     //Read header and build device from recorded device snapshot
@@ -133,9 +114,10 @@ std::map<uint32_t, std::shared_ptr<playback_sensor>> playback_device::create_pla
             });
         };
 
-        sensor->stopped += [this](uint32_t id) -> void
+        sensor->stopped += [this](uint32_t id, bool invoke_required) -> void
         {
-            (*m_read_thread)->invoke([this, id](dispatcher::cancellable_timer c)
+            //stopped could be called by the user (when calling sensor.stop(), main thread) or from the reader_thread when reaching eof (which means invoke is not required)
+            auto action = [this, id]()
             {
                 auto it = m_active_sensors.find(id);
                 if (it != m_active_sensors.end())
@@ -146,7 +128,15 @@ std::map<uint32_t, std::shared_ptr<playback_sensor>> playback_device::create_pla
                         stop();
                     }
                 }
-            });
+            };
+            if (invoke_required)
+            {
+                (*m_read_thread)->invoke([action](dispatcher::cancellable_timer c) { action(); });
+            }
+            else
+            {
+                action();
+            }
         };
 
         sensor->opened += [this](int32_t id, const std::vector<stream_profile>& requested_profiles) -> void
@@ -179,10 +169,12 @@ playback_device::~playback_device()
                 sensor.second->stop(); //TODO: make sure this works with this dispatcher
         }
     });
+    (*m_read_thread)->sync();
+    (*m_read_thread)->stop();
 }
 sensor_interface& playback_device::get_sensor(size_t i) 
 {
-    throw not_implemented_exception(__FUNCTION__);
+    return *m_sensors.at(i);
 }
 size_t playback_device::get_sensors_count() const 
 {
@@ -194,7 +186,13 @@ const std::string& playback_device::get_info(rs2_camera_info info) const
 }
 bool playback_device::supports_info(rs2_camera_info info) const 
 {
-    return std::dynamic_pointer_cast<librealsense::info_interface>(m_device_description.get_device_extensions_snapshots().get_snapshots()[RS2_EXTENSION_TYPE_INFO])->supports_info(info);
+    auto info_extension = m_device_description.get_device_extensions_snapshots().get_snapshots().at(RS2_EXTENSION_TYPE_INFO);
+    auto info_api = std::dynamic_pointer_cast<librealsense::info_interface>(info_extension);
+    if(info_api == nullptr)
+    {
+        throw invalid_value_exception("Failed to get info interface");
+    }
+    return info_api->supports_info(info);
 }
 const sensor_interface& playback_device::get_sensor(size_t i) const
 {
@@ -214,6 +212,10 @@ rs2_extrinsics playback_device::get_extrinsics(size_t from, rs2_stream from_stre
 bool playback_device::extend_to(rs2_extension_type extension_type, void** ext) 
 {
     std::shared_ptr<extension_snapshot> e = m_device_description.get_device_extensions_snapshots().find(extension_type);
+    if (e == nullptr)
+    {
+        return false;
+    }
     switch (extension_type)
     {
     case RS2_EXTENSION_TYPE_UNKNOWN: return false;
@@ -386,7 +388,18 @@ void playback_device::try_looping()
         bool is_valid_read = true;
         try
         {
-            m_reader->read(timestamp, sensor_index, frame);
+            auto retval = m_reader->read(timestamp, sensor_index, frame);
+            if (retval == rs::file_format::status_file_read_failed)
+            {
+                throw io_exception("Failed to read next sample from file");
+            }
+            if (retval == rs::file_format::status_file_eof)
+            {
+                //End frame reader
+                //TODO close frame reader and notify user
+                is_valid_read = false;
+            }
+            is_valid_read = (retval == rs::file_format::status_no_error);
         }
         catch (const std::exception& e)
         {
@@ -403,7 +416,7 @@ void playback_device::try_looping()
                     break;
 
                 //NOTE: calling stop will remove the sensor from m_active_sensors
-                m_active_sensors[0]->stop();
+                m_active_sensors[i]->stop(false);
             }
             //After all sensors were stopped stop() is called and flags m_is_started as false
             assert(m_is_started == false);
