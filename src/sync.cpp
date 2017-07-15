@@ -6,8 +6,7 @@
 
 namespace librealsense
 {
-
-	template<class T>
+   	template<class T>
 	class internal_frame_processor_callback : public rs2_frame_processor_callback
 	{
 		T on_frame_function;
@@ -17,7 +16,7 @@ namespace librealsense
 		void on_frame(rs2_frame * f, rs2_source * source) override
 		{
             frame_holder front((frame_interface*)f);
-			on_frame_function(std::move(front), source->source);
+            on_frame_function(std::move(front), source->source);
 		}
 
 		void release() override { delete this; }
@@ -27,8 +26,14 @@ namespace librealsense
         : processing_block(nullptr),
 		  _matcher({})
     {
-		_matcher.set_callback([this](frame_holder f, synthetic_source_interface* source)
+		_matcher.set_callback([this](frame_holder f, syncronization_environment env)
 		{
+            // This will unlock the processing unit (so we can start getting callbacks out)
+            // This relies on callbacks being the last thing we do
+            // Also, using this method we are guarantied not to unlock the data structure again
+            // during Dispatch cycle of another thread (since the state is managed on the stack of 
+            // current thread)
+            env.lock_ref.unlock_preemptively();
 			// TODO: lock
 			get_source().frame_ready(std::move(f));
 		});
@@ -47,7 +52,8 @@ namespace librealsense
 			//		M.dispatch(move(f), &regratable_lock)
 
 			// TODO: lock
-			_matcher.dispatch(std::move(frame), source);
+            sync_lock lock(_mutex);
+            _matcher.dispatch(std::move(frame), { source, lock });
 		};
 		set_processing_callback(std::shared_ptr<rs2_frame_processor_callback>(
 			new internal_frame_processor_callback<decltype(f)>(f)));
@@ -61,9 +67,9 @@ namespace librealsense
 		_callback = f;
 	}
 
-	void  matcher::sync(frame_holder f, synthetic_source_interface* source)
+	void  matcher::sync(frame_holder f, syncronization_environment env)
 	{
-		_callback(std::move(f), source);
+		_callback(std::move(f), env);
 	}
 
 	identity_matcher::identity_matcher(stream_id stream)
@@ -71,9 +77,9 @@ namespace librealsense
 		_stream = { stream };
 	}
 
-	void identity_matcher::dispatch(frame_holder f, synthetic_source_interface* source)
+	void identity_matcher::dispatch(frame_holder f, syncronization_environment env)
 	{ 
-		sync(std::move(f), source); 
+		sync(std::move(f), env); 
 	}
 
 	const std::vector<stream_id>& identity_matcher::get_streams() const
@@ -87,9 +93,9 @@ namespace librealsense
 		{
 			for (auto&& stream : matcher->get_streams())
 			{
-				matcher->set_callback([&](frame_holder f, synthetic_source_interface* source)
+				matcher->set_callback([&](frame_holder f, syncronization_environment env)
 				{
-					sync(std::move(f), source);
+					sync(std::move(f), env);
 				});
 				_matchers[stream] = matcher;
 				_streams.push_back(stream);
@@ -110,13 +116,13 @@ namespace librealsense
 		}
 	}
 
-	void composite_matcher::dispatch(frame_holder f, synthetic_source_interface* source)
+	void composite_matcher::dispatch(frame_holder f, syncronization_environment env)
 	{
         auto frame_ptr = f.frame;
 		auto stream = frame_ptr->get_stream_type();
 
 		auto matcher = find_matcher(stream_id(get_device_from_frame(f), stream));
-		matcher->dispatch(std::move(f), source);
+		matcher->dispatch(std::move(f), env);
 	}
 
 	std::shared_ptr<matcher> composite_matcher::find_matcher(stream_id stream)
@@ -130,9 +136,9 @@ namespace librealsense
 			{
 				matcher = stream.first->create_matcher(stream.second);
 
-				matcher->set_callback([&](frame_holder f, synthetic_source_interface* source)
+				matcher->set_callback([&](frame_holder f, syncronization_environment env)
 				{
-					sync(std::move(f), source);
+					sync(std::move(f), env);
 				});
 
 				for (auto stream : matcher->get_streams())
@@ -149,16 +155,16 @@ namespace librealsense
 				_matchers[stream] = std::make_shared<identity_matcher>(stream);
 				matcher = _matchers[stream];
 
-				matcher->set_callback([&](frame_holder f, synthetic_source_interface* source)
+				matcher->set_callback([&](frame_holder f, syncronization_environment env)
 				{
-					sync(std::move(f), source);
+					sync(std::move(f), env);
 				});
 			}
 		}
 		return matcher;
 	}
 
-	void composite_matcher::sync(frame_holder f, synthetic_source_interface* source)
+	void composite_matcher::sync(frame_holder f, syncronization_environment env)
 	{
         auto frame_ptr = f.frame;
 		auto stream = frame_ptr->get_stream_type();
@@ -255,14 +261,14 @@ namespace librealsense
 
                 std::cout << "\n";
 
-                frame_holder composite = source->allocate_composite_frame(std::move(match));
+                frame_holder composite = env.source->allocate_composite_frame(std::move(match));
                 synced.push_back(std::move(composite));
             }
 		} while (synced_frames.size() > 0);
 
 		for (auto&& s : synced)
 		{
-			_callback(std::move(s), source);
+			_callback(std::move(s), env);
 		}
 	}
 
@@ -305,7 +311,7 @@ namespace librealsense
         return  a->get_frame_timestamp() < b->get_frame_timestamp();
 	}
 
-	void timestamp_composite_matcher::dispatch(frame_holder f, synthetic_source_interface* source)
+	void timestamp_composite_matcher::dispatch(frame_holder f, syncronization_environment env)
 	{
         auto fps = f->get_framerate();
 
@@ -324,7 +330,7 @@ namespace librealsense
 			_next_expected[std::make_pair(nullptr, stream)] = f->get()->get_frame_timestamp() + gap;
 		}*/
 
-		composite_matcher::dispatch(std::move(f), source);
+		composite_matcher::dispatch(std::move(f), env);
 	}
 
 	bool timestamp_composite_matcher::wait_for_stream(std::vector<matcher*> synced, matcher* missing)

@@ -168,6 +168,12 @@ int main(int argc, char * argv[])
                 if (frames.size() == 0)
                     continue;
 
+                bool has_depth = false;
+                for (auto&& f : frames)
+                    if (f.get_stream_type() == RS2_STREAM_DEPTH)
+                        has_depth = true;
+                if (!has_depth) continue;
+
                 glPushAttrib(GL_ALL_ATTRIB_BITS);
 
                 for (auto&& frame : frames)
