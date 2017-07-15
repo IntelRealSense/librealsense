@@ -18,8 +18,6 @@ void rs2_toggle_advanced_mode(rs2_device* dev, int enable, rs2_error** error);
 
 void rs2_is_enabled(rs2_device* dev, int* enabled, rs2_error** error);
 
-void rs2_apply_preset(rs2_device* dev, rs2_advanced_mode_preset preset, rs2_error** error);
-
 /* Sets new values for Depth Control Group, returns 0 if success */
 void rs2_set_depth_control(rs2_device* dev, STDepthControlGroup* group, rs2_error** error);
 

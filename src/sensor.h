@@ -94,11 +94,21 @@ namespace librealsense
 
         const device_interface& get_device() override;
 
+        const std::vector<platform::stream_profile>& get_curr_configurations() const
+        {
+            if (!_is_streaming)
+                throw invalid_value_exception("get_curr_configurations() failed! Sensor doesn't streaming.");
+
+            return _configuration;
+        }
+
     protected:
 
         bool try_get_pf(const platform::stream_profile& p, native_pixel_format& result) const;
 
         std::vector<request_mapping> resolve_requests(std::vector<stream_profile> requests);
+
+        std::vector<platform::stream_profile> _configuration;
 
         std::atomic<bool> _is_streaming;
         std::atomic<bool> _is_opened;
@@ -291,7 +301,6 @@ namespace librealsense
         std::atomic<int> _user_count;
         std::mutex _power_lock;
         std::mutex _configure_lock;
-        std::vector<platform::stream_profile> _configuration;
         std::vector<platform::extension_unit> _xus;
         std::unique_ptr<power> _power;
         std::unique_ptr<frame_timestamp_reader> _timestamp_reader;

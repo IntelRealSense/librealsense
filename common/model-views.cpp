@@ -1177,13 +1177,13 @@ namespace rs2
         if (severity == RS2_LOG_SEVERITY_ERROR ||
             severity == RS2_LOG_SEVERITY_WARN)
         {
-            ImGui::PushStyleColor(ImGuiCol_WindowBg, { 0.3f, 0, 0, 1 - t });
+            ImGui::PushStyleColor(ImGuiCol_WindowBg, { 0.3f, 0.f, 0.f, 1 - t });
             ImGui::PushStyleColor(ImGuiCol_TitleBg, { 0.5f, 0.2f, 0.2f, 1 - t });
             ImGui::PushStyleColor(ImGuiCol_TitleBgActive, { 0.6f, 0.2f, 0.2f, 1 - t });
         }
         else
         {
-            ImGui::PushStyleColor(ImGuiCol_WindowBg, { 0.3, 0.3f, 0.3, 1 - t });
+            ImGui::PushStyleColor(ImGuiCol_WindowBg, { 0.3f, 0.3f, 0.3f, 1 - t });
             ImGui::PushStyleColor(ImGuiCol_TitleBg, { 0.4f, 0.4f, 0.4f, 1 - t });
             ImGui::PushStyleColor(ImGuiCol_TitleBgActive, { 0.6f, 0.6f, 0.6f, 1 - t });
         }

@@ -130,6 +130,8 @@ set(REALSENSE_CPP
     src/mock/sql.cpp
     src/mock/recorder.cpp
 
+    rs4xx/rs4xx_advanced_mode/src/presets.cpp
+    rs4xx/rs4xx_advanced_mode/src/advanced_mode.cpp
 )
 
 set(REALSENSE_HPP

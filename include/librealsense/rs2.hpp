@@ -701,7 +701,10 @@ namespace rs2
         syncer_processing_block()
         {
             rs2_error* e = nullptr; 
-            _processing_block = std::make_shared<processing_block>(std::shared_ptr<rs2_processing_block>(rs2_create_sync_processing_block(&e), rs2_delete_processing_block));
+            _processing_block = std::make_shared<processing_block>(
+                    std::shared_ptr<rs2_processing_block>(
+                                        rs2_create_sync_processing_block(&e),
+                                        rs2_delete_processing_block));
             error::handle(e);
 
         }

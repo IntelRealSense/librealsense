@@ -208,6 +208,6 @@ namespace librealsense
 
         get_depth_sensor().register_option(RS2_OPTION_DEPTH_UNITS,
                                            std::make_shared<const_value_option>("Number of meters represented by a single depth unit",
-                                                                                1000.f / (0xFFFF / c.Rmax)));
+                                                                                 (c.Rmax/ 1000 /0xFFFF )));
     }
 }

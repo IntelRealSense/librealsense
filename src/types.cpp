@@ -197,6 +197,7 @@ namespace librealsense
         CASE(MOTION_MODULE_TEMPERATURE)
         CASE(DEPTH_UNITS)
         CASE(ENABLE_MOTION_CORRECTION)
+        CASE(ADVANCED_MODE_PRESET)
         default: assert(!is_valid(value)); return UNKNOWN;
         }
         #undef CASE

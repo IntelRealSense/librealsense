@@ -113,6 +113,7 @@ EXPORTS
     rs2_set_devices_changed_callback_cpp
     rs2_set_devices_changed_callback
     rs2_device_list_contains
+    rs2_get_depth_scale
 
     rs2_is_sensor
     rs2_is_device
@@ -153,6 +154,5 @@ EXPORTS
     rs2_set_census
     rs2_get_census
     rs2_advanced_mode_preset_to_string
-    rs2_apply_preset
     rs2_is_enabled
     rs2_toggle_advanced_mode

@@ -18,8 +18,17 @@ namespace librealsense
         #define CASE(X) case RS2_ADVANCED_MODE_PRESET_##X: return #X;
         switch (value)
         {
-        CASE(1)
-        CASE(2)
+        CASE(GENERIC_DEPTH)
+        CASE(GENERIC_ACCURATE_DEPTH)
+        CASE(GENERIC_DENSE_DEPTH)
+        CASE(GENERIC_SUPER_DENSE_DEPTH)
+        CASE(FLOOR_LOW)
+        CASE(3D_BODY_SCAN)
+        CASE(INDOOR)
+        CASE(OUTDOOR)
+        CASE(HAND)
+        CASE(SHORT_RANGE)
+        CASE(BOX)
         default: assert(!is_valid(value)); return UNKNOWN;
         }
         #undef CASE
@@ -27,15 +36,6 @@ namespace librealsense
 }
 
 const char* rs2_advanced_mode_preset_to_string(rs2_advanced_mode_preset preset){ return get_string(preset); }
-
-void rs2_apply_preset(rs2_device* dev, rs2_advanced_mode_preset preset, rs2_error** error) try
-{
-    VALIDATE_NOT_NULL(dev);
-    VALIDATE_ENUM(preset);
-    auto advanced_mode = VALIDATE_INTERFACE(dev->device, librealsense::ds5_advanced_mode_base);
-    advanced_mode->apply_preset(preset);
-}
-HANDLE_EXCEPTIONS_AND_RETURN(, dev, preset)
 
 void rs2_toggle_advanced_mode(rs2_device* dev, int enable, rs2_error** error) try
 {

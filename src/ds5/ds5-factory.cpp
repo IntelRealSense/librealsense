@@ -32,7 +32,7 @@ namespace librealsense
                      const platform::backend_device_group& group)
             : ds5_device(backend, group),
               ds5_rolling_shutter(backend, group),
-              ds5_advanced_mode_base(ds5_device::_hw_monitor) {}
+              ds5_advanced_mode_base(ds5_device::_hw_monitor, get_depth_sensor()) {}
     };
 
     // ASR
@@ -45,7 +45,7 @@ namespace librealsense
             : ds5_device(backend, group),
               ds5_rolling_shutter(backend, group),
               ds5_active(backend, group),
-              ds5_advanced_mode_base(ds5_device::_hw_monitor)  {}
+              ds5_advanced_mode_base(ds5_device::_hw_monitor, get_depth_sensor())  {}
     };
 
     // ASRC
@@ -61,7 +61,7 @@ namespace librealsense
               ds5_rolling_shutter(backend, group),
               ds5_active(backend, group),
               ds5_color(backend, group),
-              ds5_advanced_mode_base(ds5_device::_hw_monitor)  {}
+              ds5_advanced_mode_base(ds5_device::_hw_monitor, get_depth_sensor())  {}
     };
 
     // PWGT
@@ -72,7 +72,7 @@ namespace librealsense
                         const platform::backend_device_group& group)
             : ds5_device(backend, group),
               ds5_motion(backend, group),
-              ds5_advanced_mode_base(ds5_device::_hw_monitor)  {}
+              ds5_advanced_mode_base(ds5_device::_hw_monitor, get_depth_sensor())  {}
     };
 
     // AWG
@@ -83,7 +83,7 @@ namespace librealsense
                      const platform::backend_device_group& group)
             : ds5_device(backend, group),
               ds5_active(backend, group),
-              ds5_advanced_mode_base(ds5_device::_hw_monitor)  {}
+              ds5_advanced_mode_base(ds5_device::_hw_monitor, get_depth_sensor())  {}
 
     };
 
@@ -98,7 +98,7 @@ namespace librealsense
             : ds5_device(backend, group),
               ds5_active(backend, group),
               ds5_motion(backend, group),
-              ds5_advanced_mode_base(ds5_device::_hw_monitor)  {}
+              ds5_advanced_mode_base(ds5_device::_hw_monitor, get_depth_sensor())  {}
     };
 
     // AWGC
@@ -112,7 +112,7 @@ namespace librealsense
             : ds5_device(backend, group),
               ds5_active(backend, group),
               ds5_color(backend,  group),
-              ds5_advanced_mode_base(ds5_device::_hw_monitor) {}
+              ds5_advanced_mode_base(ds5_device::_hw_monitor, get_depth_sensor()) {}
     };
 
     // AWGCT
@@ -128,7 +128,7 @@ namespace librealsense
               ds5_active(backend, group),
               ds5_color(backend,  group),
               ds5_motion(backend, group),
-              ds5_advanced_mode_base(ds5_device::_hw_monitor) {}
+              ds5_advanced_mode_base(ds5_device::_hw_monitor, get_depth_sensor()) {}
     };
 
     std::shared_ptr<device_interface> ds5_info::create(const platform::backend& backend) const
