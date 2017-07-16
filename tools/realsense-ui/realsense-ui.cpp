@@ -18,7 +18,7 @@
 #pragma comment(lib, "opengl32.lib")
 
 using namespace rs2;
-using namespace rs4xx;
+using namespace rs400;
 
 struct user_data
 {
@@ -655,7 +655,7 @@ int main(int, char**) try
         bool update_read_only_options = false;
         auto now = std::chrono::high_resolution_clock::now();
         auto duration = std::chrono::duration<double, std::milli>(now - last_time_point).count();
-        if (duration >= 5000)
+        if (duration >= 6000)
         {
             update_read_only_options = true;
             last_time_point = now;

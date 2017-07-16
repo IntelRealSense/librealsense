@@ -140,7 +140,7 @@ namespace librealsense
     }
 
 
-    void generic_ds5_active_full_dense_depth1(preset& p)
+    void generic_ds5_active_full_dense_depth(preset& p)
     {
         p.depth_controls.deepSeaMedianThreshold = 789;
         p.depth_controls.deepSeaNeighborThreshold = 12;
@@ -230,7 +230,7 @@ namespace librealsense
     }
 
 
-    void generic_ds5_active_full_dense_depth2(preset& p)
+    void generic_ds5_active_full_super_dense_depth(preset& p)
     {
         p.depth_controls.deepSeaMedianThreshold = 554;
         p.depth_controls.deepSeaNeighborThreshold = 126;

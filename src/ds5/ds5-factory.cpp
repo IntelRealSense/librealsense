@@ -174,7 +174,7 @@ namespace librealsense
         std::vector<platform::uvc_device_info> chosen;
         std::vector<std::shared_ptr<device_info>> results;
 
-        auto valid_pid = filter_by_product(group.uvc_devices, ds::rs4xx_sku_pid);
+        auto valid_pid = filter_by_product(group.uvc_devices, ds::rs400_sku_pid);
         auto group_devices = group_devices_and_hids_by_unique_id(group_devices_by_unique_id(valid_pid), group.hid_devices);
         for (auto& g : group_devices)
         {

@@ -7,9 +7,9 @@
 #include <librealsense/rs2.hpp>
 #include <librealsense/rs2_advanced_mode.h>
 
-inline std::ostream & operator << (std::ostream & o, rs2_advanced_mode_preset preset) { return o << rs2_advanced_mode_preset_to_string(preset); }
+inline std::ostream & operator << (std::ostream & o, rs2_rs400_visual_preset preset) { return o << rs2_advanced_mode_preset_to_string(preset); }
 
-namespace rs4xx
+namespace rs400
 {
     class advanced_mode : public rs2::device
     {
