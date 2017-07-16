@@ -288,7 +288,6 @@ typedef struct rs2_frame_callback rs2_frame_callback;
 typedef struct rs2_log_callback rs2_log_callback;
 typedef struct rs2_syncer rs2_syncer;
 typedef struct rs2_device_serializer rs2_device_serializer;
-//typedef struct rs2_record_device rs2_record_device;
 typedef struct rs2_source rs2_source;
 typedef struct rs2_processing_block rs2_processing_block;
 typedef struct rs2_frame_processor_callback rs2_frame_processor_callback;
@@ -1034,14 +1033,15 @@ void rs2_log_to_file(rs2_log_severity min_severity, const char * file_path, rs2_
 
 
 /**
- * TODO: Ziv, document
+ * TODO: document
  * \param device
  * \param extension_type
  * \return
  */
 int rs2_is_sensor(const rs2_sensor* sensor, rs2_extension_type extension_type, rs2_error ** error);
+
 /**
- * TODO: Ziv, document
+ * TODO: document
  * \param device
  * \param extension_type
  * \return
@@ -1064,13 +1064,13 @@ int rs2_is_frame(const rs2_frame* frame, rs2_extension_type extension_type, rs2_
  */
 rs2_device_serializer * rs2_create_device_serializer(const char* file, rs2_error ** error);
 /**
- * TODO: Ziv, document
+ * TODO: document
  * \param device_serializer
  */
 void rs2_delete_device_serializer(rs2_device_serializer * device_serializer);
 
 /**
- * TODO: Ziv, document
+ * TODO: document
  * \param device
  * \param serializer
  * \param error
