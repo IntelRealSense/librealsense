@@ -122,16 +122,17 @@ set(REALSENSE_CPP
     src/win/win-usb.cpp
     src/win/win-hid.cpp
     src/win/win-backend.cpp
-    rs4xx/rs4xx_advanced_mode/src/rs2_advanced_mode.cpp
-    rs4xx/rs4xx_advanced_mode/src/presets.cpp
-    rs4xx/rs4xx_advanced_mode/src/advanced_mode.cpp
-    
+
+    rs400/rs400_advanced_mode/src/rs2_advanced_mode.cpp
+    rs400/rs400_advanced_mode/src/presets.cpp
+    rs400/rs400_advanced_mode/src/advanced_mode.cpp
+
     third-party/easyloggingpp/src/easylogging++.cc
     third-party/sqlite/sqlite3.c
     
     src/mock/sql.cpp
     src/mock/recorder.cpp
-    
+
     src/record_device.cpp
     src/playback_device.cpp
     src/playback_sensor.cpp
@@ -287,7 +288,7 @@ if(WIN32)
     source_group("Source Files\\API" FILES
         src/rs.cpp
         src/verify.c
-        rs4xx/rs4xx_advanced_mode/src/rs2_advanced_mode.cpp
+        rs400/rs400_advanced_mode/src/rs2_advanced_mode.cpp
         )
 
     source_group("Source Files\\Recorder" FILES

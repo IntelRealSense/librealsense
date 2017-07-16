@@ -38,7 +38,7 @@ namespace librealsense
         const uint8_t DS5_ENABLE_AUTO_WHITE_BALANCE       = 0xA;
         const uint8_t DS5_ENABLE_AUTO_EXPOSURE            = 0xB;
 
-        static const std::set<std::uint16_t> rs4xx_sku_pid = {
+        static const std::set<std::uint16_t> rs400_sku_pid = {
             ds::RS400_PID,
             ds::RS400_MM_PID,
             ds::RS410_PID,
@@ -52,7 +52,7 @@ namespace librealsense
             ds::RS435_RGB_PID
         };
 
-        static const std::map<std::uint16_t, std::string> rs4xx_sku_names = {
+        static const std::map<std::uint16_t, std::string> rs400_sku_names = {
             { RS400_PID,    "Intel RealSense 400"},
             { RS400_MM_PID, "Intel RealSense 400 with Tracking Module"},
             { RS410_PID,    "Intel RealSense 410"},

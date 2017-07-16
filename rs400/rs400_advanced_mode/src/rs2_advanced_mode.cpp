@@ -11,11 +11,11 @@
 
 namespace librealsense
 {
-    RS2_ENUM_HELPERS(rs2_advanced_mode_preset, ADVANCED_MODE_PRESET)
+    RS2_ENUM_HELPERS(rs2_rs400_visual_preset, RS400_VISUAL_PRESET)
 
-    const char* get_string(rs2_advanced_mode_preset value)
+    const char* get_string(rs2_rs400_visual_preset value)
     {
-        #define CASE(X) case RS2_ADVANCED_MODE_PRESET_##X: return #X;
+        #define CASE(X) case RS2_RS400_VISUAL_PRESET_##X: return #X;
         switch (value)
         {
         CASE(GENERIC_DEPTH)
@@ -35,7 +35,7 @@ namespace librealsense
     }
 }
 
-const char* rs2_advanced_mode_preset_to_string(rs2_advanced_mode_preset preset){ return get_string(preset); }
+const char* rs2_advanced_mode_preset_to_string(rs2_rs400_visual_preset preset){ return get_string(preset); }
 
 void rs2_toggle_advanced_mode(rs2_device* dev, int enable, rs2_error** error) try
 {
