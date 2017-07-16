@@ -345,7 +345,34 @@ namespace librealsense
     inline float3 operator * (const pose & a, const float3 & b) { return a.orientation * b + a.position; }
     inline pose operator * (const pose & a, const pose & b) { return{ a.orientation * b.orientation, a * b.position }; }
     inline pose inverse(const pose & a) { auto inv = transpose(a.orientation); return{ inv, inv * a.position * -1 }; }
-
+    inline pose to_pose(const rs2_extrinsics& a)
+    {
+        pose r;
+        for (int i = 0; i < 3; i++) r.position[i] = a.translation[i];
+        for (int j = 0; j < 3; j++) 
+            for (int i = 0; i < 3; i++) 
+                r.orientation(i, j) = a.rotation[j * 3 + i];
+        return r;
+    }
+    inline rs2_extrinsics from_pose(pose& a)
+    {
+        rs2_extrinsics r;
+        for (int i = 0; i < 3; i++) r.translation[i] = a.position[i];
+        for (int j = 0; j < 3; j++) 
+            for (int i = 0; i < 3; i++) 
+                r.translation[j * 3 + i] = a.orientation(i, j);
+        return r;
+    }
+    inline rs2_extrinsics identity_matrix() { 
+        rs2_extrinsics r;
+        // Do it the silly way to avoid infite warnings about the dangers of memset
+        for (int i = 0; i < 3; i++) r.translation[i] = 0.f;
+        for (int j = 0; j < 3; j++) 
+            for (int i = 0; i < 3; i++) 
+                r.rotation[j * 3 + i] = (i == j) ? 1.f : 0.f;
+        return r;
+    }
+    inline rs2_extrinsics inverse(const rs2_extrinsics& a) { auto p = to_pose(a); return from_pose(inverse(p)); }
 
     ///////////////////
     // Pixel formats //

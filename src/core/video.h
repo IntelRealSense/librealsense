@@ -13,4 +13,10 @@ namespace librealsense
     public:
         virtual rs2_intrinsics get_intrinsics(const stream_profile& profile) const = 0;
     };
+
+    class video_stream_profile : public virtual stream_profile_interface
+    {
+    public:
+        virtual rs2_intrinsics get_intrinsics() const = 0;
+    };
 }

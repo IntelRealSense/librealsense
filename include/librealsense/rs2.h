@@ -198,7 +198,7 @@ typedef enum rs2_notification_category{
     RS2_NOTIFICATION_CATEGORY_HARDWARE_ERROR,   /**< Error reported from the device */
     RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR,    /**< Received unknown error from the device */
     RS2_NOTIFICATION_CATEGORY_COUNT             /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
-}rs2_notification_category;
+} rs2_notification_category;
 
 /** \brief Specifies the clock in relation to which the frame timestamp was measured. */
 typedef enum rs2_timestamp_domain
@@ -208,7 +208,7 @@ typedef enum rs2_timestamp_domain
     RS2_TIMESTAMP_DOMAIN_COUNT           /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
 } rs2_timestamp_domain;
 
-
+/** \brief Specifies advanced interfaces (capabilities) objects may implement */
 typedef enum rs2_extension_type
 {
     RS2_EXTENSION_TYPE_DEBUG,
@@ -259,11 +259,14 @@ typedef struct rs2_extrinsics
     float translation[3]; /**< Three-element translation vector, in meters */
 } rs2_extrinsics;
 
+/** \brief 3D coordinates with origin at topmost left corner of the lense,
+     with positive Z pointing away from the camera, positive X pointing camera right and positive Y pointing camera down */
 typedef struct rs2_vertex
 {
     float xyz[3];
 } rs2_vertex;
 
+/** \brief Pixel location within 2D image. (0,0) is the topmost, left corner. Positive X is right, positive Y is down */
 typedef struct rs2_pixel
 {
     int ij[2];
@@ -276,7 +279,8 @@ typedef struct rs2_device rs2_device;
 typedef struct rs2_sensor_list rs2_sensor_list;
 typedef struct rs2_sensor rs2_sensor;
 typedef struct rs2_error rs2_error;
-typedef struct rs2_stream_profile_list rs2_stream_modes_list;
+typedef struct rs2_stream_profile_list rs2_stream_profile_list;
+typedef struct rs2_stream_profile rs2_stream_profile;
 typedef struct rs2_raw_data_buffer rs2_raw_data_buffer;
 typedef struct rs2_frame rs2_frame;
 typedef struct rs2_frame_queue rs2_frame_queue;
@@ -394,7 +398,7 @@ int rs2_get_sensors_count(const rs2_sensor_list* info_list, rs2_error** error);
 
 /**
 * delete relasense sensor
-* \param[in] device realsense sensor to delete
+* \param[in] realsense sensor to delete
 */
 void rs2_delete_sensor(rs2_sensor* sensor);
 
@@ -407,33 +411,14 @@ void rs2_delete_sensor(rs2_sensor* sensor);
 rs2_sensor* rs2_create_sensor(const rs2_sensor_list* list, int index, rs2_error** error);
 
 /**
- * returns the extrinsics between a pair of RealSense devices
- * usually, extrnisics are available only between devices on the same USB port, like Depth and Fish-Eye
- * however, in theory extrinsics can be made available between any pair of devices through calibration
- * \param[in]  from_dev     RealSense device to calculate extrinsics from
- * \param[in]  from_stream  The viewport to calculate extrinsics from
- * \param[in]  to_dev       RealSense device to calculate extrinsics to
- * \param[in]  to_stream    The viewport to calculate extrinsics to
- * \param[out] extrin       Resulting translation and rotation (extrinsics)
+ * TODO
  * \param[out] error        if non-null, receives any error that occurs during this call, otherwise, errors are ignored
  */
-void rs2_get_extrinsics(const rs2_sensor * from_dev, rs2_stream from_stream,
-                        const rs2_sensor * to_dev, rs2_stream to_stream,
+void rs2_get_extrinsics(const rs2_stream_profile* from,
+                        const rs2_stream_profile* to,
                         rs2_extrinsics * extrin, rs2_error ** error);
 
 rs2_device* rs2_create_device_from_sensor(const rs2_sensor* sensor, rs2_error ** error);
-
-/**
- * returns the intrinsics of specific stream configuration
- * \param[in]  device    RealSense device to query
- * \param[in]  stream    type of stream
- * \param[in]  width     stream width
- * \param[in]  height    stream height
- * \param[in]  fps       stream fps (in most cases will not affect resulting intrinsics)
- * \param[in]  format    stream output format
- * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
- */
-void rs2_get_stream_intrinsics(const rs2_sensor * device, rs2_stream stream, int width, int height, int fps, rs2_format format, rs2_intrinsics * intrinsics, rs2_error ** error);
 
 /**
  * returns the intrinsics of specific stream configuration
@@ -455,20 +440,32 @@ void rs2_hardware_reset(const rs2_device * device, rs2_error ** error);
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return            list of stream profiles that given subdevice can provide, should be released by rs2_delete_profiles_list
 */
-rs2_stream_modes_list* rs2_get_stream_modes(rs2_sensor* device, rs2_error** error);
+rs2_stream_profile_list* rs2_get_stream_modes(rs2_sensor* device, rs2_error** error);
 
 /**
-* determine the properties of a specific streaming mode
+* Get pointer to specific stream profile
 * \param[in] list        the list of supported profiles returned by rs2_get_supported_profiles
 * \param[in] index       the zero based index of the streaming mode
-* \param[out] stream     the stream type
-* \param[out] width      the width of a frame image in pixels
-* \param[out] height     the height of a frame image in pixels
-* \param[out] fps  the number of frames which will be streamed per second
-* \param[out] format     the pixel format of a frame image
 * \param[out] error      if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 */
-void rs2_get_stream_mode(const rs2_stream_modes_list* list, int index, rs2_stream* stream, int* width, int* height, int* fps, rs2_format* format, rs2_error** error);
+const rs2_stream_profile* rs2_get_stream_mode(const rs2_stream_profile_list* list, int index, rs2_error** error);
+
+void rs2_get_stream_mode_data(const rs2_stream_profile* mode, rs2_stream* stream, rs2_format* format, int* index, int* framerate, rs2_error** error);
+
+void rs2_set_stream_mode_data(rs2_stream_profile* mode, rs2_stream stream, rs2_format format, rs2_error** error);
+
+rs2_stream_profile* rs2_clone_stream_mode(const rs2_stream_profile* mode, rs2_error** error);
+
+void rs2_delete_stream_mode(rs2_stream_profile* mode);
+
+int rs2_stream_mode_is(const rs2_stream_profile* mode, rs2_extension_type type, rs2_error** error);
+
+/**
+ * returns the intrinsics of specific stream configuration
+   TODO
+ * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ */
+void rs2_get_stream_intrinsics(const rs2_stream_profile* from, rs2_intrinsics * intrinsics, rs2_error ** error);
 
 /**
 * get the number of supported stream profiles
@@ -476,13 +473,13 @@ void rs2_get_stream_mode(const rs2_stream_modes_list* list, int index, rs2_strea
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return number of supported subdevice profiles
 */
-int rs2_get_modes_count(const rs2_stream_modes_list* list, rs2_error** error);
+int rs2_get_modes_count(const rs2_stream_profile_list* list, rs2_error** error);
 
 /**
 * delete stream profiles list
 * \param[in] list        the list of supported profiles returned by rs2_get_supported_profiles
 */
-void rs2_delete_modes_list(rs2_stream_modes_list* list);
+void rs2_delete_modes_list(rs2_stream_profile_list* list);
 
 /**
 * open subdevice for exclusive access, by committing to a configuration
@@ -663,12 +660,6 @@ const void* rs2_get_frame_data(const rs2_frame* frame, rs2_error** error);
 */
 int rs2_get_frame_width(const rs2_frame* frame, rs2_error** error);
 
-rs2_vertex* rs2_get_vertices(const rs2_frame* frame, rs2_error** error);
-
-rs2_pixel* rs2_get_pixel_coordinates(const rs2_frame* frame, rs2_error** error);
-
-int rs2_get_points_count(const rs2_frame* frame, rs2_error** error);
-
 /**
 * retrieve frame height in pixels
 * \param[in] frame      handle returned from a callback
@@ -725,8 +716,16 @@ void rs2_frame_add_ref(rs2_frame* frame, rs2_error ** error);
 */
 void rs2_release_frame(rs2_frame* frame);
 
+rs2_vertex* rs2_get_frame_vertices(const rs2_frame* frame, rs2_error** error);
+
+rs2_pixel* rs2_get_frame_pixel_coordinates(const rs2_frame* frame, rs2_error** error);
+
+int rs2_get_frame_points_count(const rs2_frame* frame, rs2_error** error);
+
+const rs2_stream_profile* rs2_get_frame_stream_mode(const rs2_frame* frame, rs2_error** error);
+
 /**
-* check if option is read-only
+* check if an option is read-only
 * \param[in] device   the RealSense device
 * \param[in] option   option id to be checked
 * \param[out] error   if non-null, receives any error that occurs during this call, otherwise, errors are ignored
@@ -869,7 +868,7 @@ void rs2_delete_frame_queue(rs2_frame_queue* queue);
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return frame handle to be released using rs2_release_frame
 */
-rs2_frame* rs2_wait_for_frame(rs2_frame_queue* queue, rs2_error** error);
+const rs2_frame* rs2_wait_for_frame(rs2_frame_queue* queue, rs2_error** error);
 
 /**
 * poll if a new frame is available and dequeue if it is
@@ -878,14 +877,14 @@ rs2_frame* rs2_wait_for_frame(rs2_frame_queue* queue, rs2_error** error);
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return true if new frame was stored to output_frame
 */
-int rs2_poll_for_frame(rs2_frame_queue* queue, rs2_frame** output_frame, rs2_error** error);
+int rs2_poll_for_frame(rs2_frame_queue* queue, const rs2_frame** output_frame, rs2_error** error);
 
 /**
 * enqueue new frame into a queue
 * \param[in] frame frame handle to enqueue (this operation passed ownership to the queue)
 * \param[in] queue the frame queue data structure
 */
-void rs2_enqueue_frame(rs2_frame* frame, void* queue);
+void rs2_enqueue_frame(const rs2_frame* frame, void* queue);
 
 /**
 * send raw data to device
@@ -895,7 +894,7 @@ void rs2_enqueue_frame(rs2_frame* frame, void* queue);
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return            rs2_raw_data_buffer, should be released by rs2_delete_raw_data
 */
-rs2_raw_data_buffer* rs2_send_and_receive_raw_data(rs2_device* device, void* raw_data_to_send, unsigned size_of_raw_data_to_send, rs2_error** error);
+const rs2_raw_data_buffer* rs2_send_and_receive_raw_data(rs2_device* device, void* raw_data_to_send, unsigned size_of_raw_data_to_send, rs2_error** error);
 
 /**
 * get the size of rs2_raw_data_buffer
@@ -909,7 +908,7 @@ int rs2_get_raw_data_size(const rs2_raw_data_buffer* buffer, rs2_error** error);
 * Delete rs2_raw_data_buffer
 * \param[in] buffer        rs2_raw_data_buffer returned by rs2_send_and_receive_raw_data
 */
-void rs2_delete_raw_data(rs2_raw_data_buffer* buffer);
+void rs2_delete_raw_data(const rs2_raw_data_buffer* buffer);
 
 /**
 * Retrieve char array from rs2_raw_data_buffer
@@ -918,55 +917,6 @@ void rs2_delete_raw_data(rs2_raw_data_buffer* buffer);
 * \return raw data
 */
 const unsigned char* rs2_get_raw_data(const rs2_raw_data_buffer* buffer, rs2_error** error);
-
-/**
- * \brief Create syncronization primitive to group frames into coherent frame-sets
- * \param[out] error     if non-null, receives any error that occurs during this call, otherwise, errors are ignored
- * \return
- */
-rs2_syncer* rs2_create_syncer(rs2_error** error);
-
-/**
- * \brief Start streaming from specified configured device of specific stream to frame queue
- * \param[in] device  RealSense device
- * \param[in] stream  specific stream type to start
- * \param[in] queue   frame-queue to store new frames into
- * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
- */
-void rs2_start_syncer(const rs2_sensor* device, rs2_syncer* syncer, rs2_error** error);
-
-/**
- * \brief[in] Wait until coherent set of frames becomes available
- * \param[in] syncer        Syncronization primitive used to group the frames
- * \param[in] timeout_ms    Max time in milliseconds to wait until exception is thrown
- * \param[in] output_array  Array of size RS2_STREAM_COUNT of frame handles
- *                          All not-null frame handles must be released using rs2_release_frame
- * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
- */
-void rs2_wait_for_frames(rs2_syncer* syncer, unsigned int timeout_ms, rs2_frame** output_array, rs2_error** error);
-
-/**
- * \brief Check if a coherent set of frames is available
- * \param[in] syncer        Syncronization primitive used to group the frames
- * \param[in] output_array  Array of size RS2_STREAM_COUNT of frame handles
- *                          All not-null frame handles must be released using rs2_release_frame
- * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
- * \return                  non-zero if frame-set was found
- */
-int rs2_poll_for_frames(rs2_syncer* syncer, rs2_frame** output_array, rs2_error** error);
-
-/**
- * Dispatch new frame into the syncer
- * \param[in] frame frame handle to enqueue (this operation passed ownership to the syncer)
- * \param[in] syncer the frame syncer data structure
- */
-void rs2_sync_frame(rs2_frame* frame, void* syncer);
-
-/**
- * \brief Releases any resources hold by a frame syncronization primitive
- * \param[in] syncer        Syncronization primitive
- */
-void rs2_delete_syncer(rs2_syncer* syncer);
 
 /**
  * librealsense Recorder is intended for effective unit-testing

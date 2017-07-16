@@ -22,11 +22,16 @@ struct rs2_device_info
     std::shared_ptr<librealsense::device_info> info;
 };
 
-
 struct rs2_device_list
 {
     std::shared_ptr<librealsense::context> ctx;
     std::vector<rs2_device_info> list;
+};
+
+struct rs2_stream_profile
+{
+    librealsense::stream_profile_interface* profile;
+    std::shared_ptr<librealsense::stream_profile_interface> clone;
 };
 
 namespace librealsense
@@ -34,8 +39,6 @@ namespace librealsense
     class device;
     class context;
     class device_info;
-
-
 
     class device_info
     {
@@ -72,79 +75,6 @@ namespace librealsense
         playback
     };
 
-
-    class recovery_info : public device_info
-    {
-    public:
-        std::shared_ptr<device_interface> create(const platform::backend& /*backend*/) const override
-        {
-            throw unrecoverable_exception(RECOVERY_MESSAGE,
-                RS2_EXCEPTION_TYPE_DEVICE_IN_RECOVERY_MODE);
-        }
-
-        static bool is_recovery_pid(uint16_t pid)
-        {
-            return pid == 0x0ADB || pid == 0x0AB3;
-        }
-
-        static std::vector<std::shared_ptr<device_info>> pick_recovery_devices(
-            const std::shared_ptr<platform::backend>& backend,
-            const std::vector<platform::usb_device_info>& usb_devices)
-        {
-            std::vector<std::shared_ptr<device_info>> list;
-            for (auto&& usb : usb_devices)
-            {
-                if (is_recovery_pid(usb.pid))
-                {
-                    list.push_back(std::make_shared<recovery_info>(backend, usb));
-                }
-            }
-            return list;
-        }
-
-        explicit recovery_info(std::shared_ptr<platform::backend> backend, platform::usb_device_info dfu)
-            : device_info(backend), _dfu(std::move(dfu)) {}
-
-        platform::backend_device_group get_device_data()const override
-        {
-            return platform::backend_device_group({ _dfu });
-        }
-
-    private:
-        platform::usb_device_info _dfu;
-        const char* RECOVERY_MESSAGE = "Selected RealSense device is in recovery mode!\nEither perform a firmware update or reconnect the camera to fall-back to last working firmware if available!";
-    };
-
-    class platform_camera_info : public device_info
-    {
-    public:
-        std::shared_ptr<device_interface> create(const platform::backend& /*backend*/) const override;
-
-        static std::vector<std::shared_ptr<device_info>> pick_uvc_devices(
-            const std::shared_ptr<platform::backend>& backend,
-            const std::vector<platform::uvc_device_info>& uvc_devices)
-        {
-            std::vector<std::shared_ptr<device_info>> list;
-            for (auto&& uvc : uvc_devices)
-            {
-                list.push_back(std::make_shared<platform_camera_info>(backend, uvc));
-            }
-            return list;
-        }
-
-        explicit platform_camera_info(std::shared_ptr<platform::backend> backend,
-                                      platform::uvc_device_info uvc)
-            : device_info(backend), _uvc(std::move(uvc)) {}
-
-        platform::backend_device_group get_device_data() const override
-        {
-            return platform::backend_device_group();
-        }
-
-    private:
-        platform::uvc_device_info _uvc;
-    };
-
     typedef std::vector<std::shared_ptr<device_info>> devices_info;
 
     class context : public std::enable_shared_from_this<context>
@@ -166,100 +96,172 @@ namespace librealsense
 
         std::vector<std::shared_ptr<device_info>> create_devices(platform::backend_device_group devices) const;
 
+        int generate_stream_id() { return _stream_id.fetch_add(1); }
+
+        void register_same_extrinsics(const stream_profile_interface& from, const stream_profile_interface& to)
+        {
+            auto id = std::make_shared<lazy<rs2_extrinsics>>([](){ 
+                return identity_matrix();
+            });
+            register_extrinsics(from, to, id);
+        }
+
+        void register_extrinsics(const stream_profile_interface& from, const stream_profile_interface& to, std::weak_ptr<lazy<rs2_extrinsics>> extr)
+        {
+            std::lock_guard<std::mutex> lock(_streams_mutex);
+            
+            // First, trim any dead stream, to make sure we are not keep gaining memory
+            cleanup_extrinsics();
+
+            // Second, register new extrinsics
+            auto from_idx = find_stream_profile(from);
+            // If this is a new index, add it to the map preemptively,
+            // This way find on to will be able to return another new index
+            if (_extrinsics.find(from_idx) == _extrinsics.end()) 
+                _extrinsics.insert({ from_idx, {} });
+
+            auto to_idx = find_stream_profile(to);
+
+            _extrinsics[from_idx][to_idx] = extr;
+            _extrinsics[to_idx][from_idx] = std::make_shared<lazy<rs2_extrinsics>>([extr](){ 
+                auto sp = extr.lock();
+                if (sp)
+                {
+                    return inverse(sp->operator*()); 
+                }
+                // This most definetly not supposed to ever happen
+                throw std::runtime_error("Could not calculate inverse extrinsics because the forward extrinsics are no longer available!");
+            });
+        }
+
+        bool try_fetch_extrinsics(const stream_profile_interface& from, const stream_profile_interface& to, rs2_extrinsics* extr)
+        {
+            std::lock_guard<std::mutex> lock(_streams_mutex);
+            cleanup_extrinsics();
+            auto from_idx = find_stream_profile(from);
+            auto to_idx = find_stream_profile(to);
+
+            if (from_idx == to_idx) 
+            {
+                *extr = identity_matrix();
+                return true;
+            }
+
+            std::vector<int> visited;
+            return try_fetch_extrinsics(from_idx, to_idx, visited, extr);
+        }
+
     private:
         void on_device_changed(platform::backend_device_group old, platform::backend_device_group curr);
+
+        int find_stream_profile(const stream_profile_interface& p) const
+        {
+            auto sp = p.shared_from_this();
+            auto max = 0;
+            for (auto&& kvp : _streams)
+            {
+                max = std::max(max, kvp.first);
+                if (kvp.second.lock().get() == sp.get()) return kvp.first;
+            }
+            return max + 1;
+        }
+
+        std::shared_ptr<lazy<rs2_extrinsics>> fetch_edge(int from, int to)
+        {
+            auto it = _extrinsics.find(from);
+            if (it != _extrinsics.end())
+            {
+                auto it2 = it->second.find(to);
+                if (it2 != it->second.end())
+                {
+                    return it2->second.lock();
+                }
+            }
+
+            return nullptr;
+        }
+
+        bool try_fetch_extrinsics(int from, int to, std::vector<int>& visited, rs2_extrinsics* extr)
+        {
+            auto it = _extrinsics.find(from);
+            if (it != _extrinsics.end())
+            {
+                auto back_edge = fetch_edge(to, from);
+                auto fwd_edge = fetch_edge(from, to);
+                // Make sure both parts of the edge are still available
+                if (fwd_edge.get() && back_edge.get())
+                {
+                    *extr = fwd_edge->operator*(); // Evaluate the expression
+                    return true;
+                }
+                else
+                {
+                    visited.push_back(from);
+                    for (auto&& kvp : it->second)
+                    {
+                        auto new_from = kvp.first;
+                        auto way = kvp.second;
+
+                        // Lock down the edge in both directions to ensure we can evaluate the extrinsics
+                        auto back_edge = fetch_edge(new_from, from);
+                        auto fwd_edge = fetch_edge(from, new_from);
+
+                        if (back_edge.get() && fwd_edge.get() && 
+                            try_fetch_extrinsics(new_from, to, visited, extr))
+                        {
+                            *extr = from_pose(to_pose(fwd_edge->operator*()) * to_pose(*extr));
+                            return true;
+                        }
+                    }
+                }
+            } // If there are no extrinsics from from, there are none to it, so it is completely isolated
+            return false;
+        }
+
+        void cleanup_extrinsics()
+        {
+            int counter = 0;
+            int dead_counter = 0;
+            for (auto&& kvp : _streams)
+            {
+                if (!kvp.second.lock())
+                {
+                    int dead_id = kvp.first;
+                    for (auto&& edge : _extrinsics[dead_id])
+                    {
+                        // First, delete any extrinsics going into the stream
+                        _extrinsics[edge.first].erase(dead_id);
+                        counter += 2;
+                    }
+                    // Then delete all extrinsics going out of this stream
+                    _extrinsics.erase(dead_id);
+                    dead_counter++;
+                }
+            }
+            if (dead_counter)
+                LOG_INFO("Found " << dead_counter << " unreachable streams, " << counter << " extrinsics deleted");
+        }
 
         std::shared_ptr<platform::backend> _backend;
         std::shared_ptr<platform::time_service> _ts;
         std::shared_ptr<platform::device_watcher> _device_watcher;
         devices_changed_callback_ptr _devices_changed_callback;
+
+        std::atomic<int> _stream_id;
+        std::map<int, std::weak_ptr<stream_profile_interface>> _streams;
+        std::map<int, std::map<int, std::weak_ptr<lazy<rs2_extrinsics>>>> _extrinsics;
+        std::mutex _streams_mutex;
     };
 
-    static std::vector<platform::uvc_device_info> filter_by_product(const std::vector<platform::uvc_device_info>& devices, const std::set<uint16_t>& pid_list)
-    {
-        std::vector<platform::uvc_device_info> result;
-        for (auto&& info : devices)
-        {
-            if (pid_list.count(info.pid))
-                result.push_back(info);
-        }
-        return result;
-    }
-
-    static std::vector<std::pair<std::vector<platform::uvc_device_info>, std::vector<platform::hid_device_info>>> group_devices_and_hids_by_unique_id(const std::vector<std::vector<platform::uvc_device_info>>& devices,
-        const std::vector<platform::hid_device_info>& hids)
-    {
-        std::vector<std::pair<std::vector<platform::uvc_device_info>, std::vector<platform::hid_device_info>>> results;
-        for (auto&& dev : devices)
-        {
-            std::vector<platform::hid_device_info> hid_group;
-            auto unique_id = dev.front().unique_id;
-            for (auto&& hid : hids)
-            {
-                if (hid.unique_id == unique_id || hid.unique_id == "*")
-                    hid_group.push_back(hid);
-            }
-            results.push_back(std::make_pair(dev, hid_group));
-        }
-        return results;
-    }
-
-    static std::vector<std::vector<platform::uvc_device_info>> group_devices_by_unique_id(const std::vector<platform::uvc_device_info>& devices)
-    {
-        std::map<std::string, std::vector<platform::uvc_device_info>> map;
-        for (auto&& info : devices)
-        {
-            map[info.unique_id].push_back(info);
-        }
-        std::vector<std::vector<platform::uvc_device_info>> result;
-        for (auto&& kvp : map)
-        {
-            result.push_back(kvp.second);
-        }
-        return result;
-    }
-
-    static void trim_device_list(std::vector<platform::uvc_device_info>& devices, const std::vector<platform::uvc_device_info>& chosen)
-    {
-        if (chosen.empty())
-            return;
-
-        auto was_chosen = [&chosen](const platform::uvc_device_info& info)
-        {
-            return find(chosen.begin(), chosen.end(), info) != chosen.end();
-        };
-        devices.erase(std::remove_if(devices.begin(), devices.end(), was_chosen), devices.end());
-    }
-
-    static bool mi_present(const std::vector<platform::uvc_device_info>& devices, uint32_t mi)
-    {
-        for (auto&& info : devices)
-        {
-            if (info.mi == mi)
-                return true;
-        }
-        return false;
-    }
-
-    static platform::uvc_device_info get_mi(const std::vector<platform::uvc_device_info>& devices, uint32_t mi)
-    {
-        for (auto&& info : devices)
-        {
-            if (info.mi == mi)
-                return info;
-        }
-        throw invalid_value_exception("Interface not found!");
-    }
-
-    static std::vector<platform::uvc_device_info> filter_by_mi(const std::vector<platform::uvc_device_info>& devices, uint32_t mi)
-    {
-        std::vector<platform::uvc_device_info> results;
-        for (auto&& info : devices)
-        {
-            if (info.mi == mi)
-                results.push_back(info);
-        }
-        return results;
-    }
+    // Helper functions for device list manipulation:
+    static std::vector<platform::uvc_device_info> filter_by_product(const std::vector<platform::uvc_device_info>& devices, const std::set<uint16_t>& pid_list);
+    static std::vector<std::pair<std::vector<platform::uvc_device_info>, std::vector<platform::hid_device_info>>> group_devices_and_hids_by_unique_id(
+        const std::vector<std::vector<platform::uvc_device_info>>& devices,
+        const std::vector<platform::hid_device_info>& hids);
+    static std::vector<std::vector<platform::uvc_device_info>> group_devices_by_unique_id(const std::vector<platform::uvc_device_info>& devices);
+    static void trim_device_list(std::vector<platform::uvc_device_info>& devices, const std::vector<platform::uvc_device_info>& chosen);
+    static bool mi_present(const std::vector<platform::uvc_device_info>& devices, uint32_t mi);
+    static platform::uvc_device_info get_mi(const std::vector<platform::uvc_device_info>& devices, uint32_t mi);
+    static std::vector<platform::uvc_device_info> filter_by_mi(const std::vector<platform::uvc_device_info>& devices, uint32_t mi);
 
 }
