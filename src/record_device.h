@@ -36,6 +36,9 @@ namespace librealsense
         void stop() override;
         bool is_streaming() const override;
         bool extend_to(rs2_extension_type extension_type, void** ext) override;
+        const device_interface& get_device() override;
+        rs2_extrinsics get_extrinsics_to(rs2_stream from, const sensor_interface& other, rs2_stream to) const  override;
+        const std::vector<platform::stream_profile>& get_curr_configurations() const  override;
     private:
         sensor_interface& m_sensor;
         librealsense::notifications_callback_ptr m_user_notification_callback;
@@ -43,6 +46,7 @@ namespace librealsense
         bool m_is_recording;
         bool m_is_pause;
         frame_callback_ptr m_frame_callback;
+        std::vector<platform::stream_profile> m_curr_configurations;
     };
 
     class record_device : public device_interface,
@@ -66,6 +70,8 @@ namespace librealsense
                                       size_t to,
                                       rs2_stream to_stream) const override;
 		bool extend_to(rs2_extension_type extension_type, void** ext) override;
+        virtual std::shared_ptr<matcher> create_matcher(rs2_stream stream) const override;
+
         void pause_recording();
         void resume_recording();
     private:

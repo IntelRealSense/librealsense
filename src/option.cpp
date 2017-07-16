@@ -8,7 +8,7 @@
 void librealsense::uvc_pu_option::set(float value)
 {
     _ep.invoke_powered(
-        [this, value](uvc::uvc_device& dev)
+        [this, value](platform::uvc_device& dev)
         {
             if (!dev.set_pu(_id, static_cast<int32_t>(value)))
                 throw invalid_value_exception(to_string() << "set_pu(id=" << std::to_string(_id) << ") failed!" << " Last Error: " << strerror(errno));
@@ -18,7 +18,7 @@ void librealsense::uvc_pu_option::set(float value)
 float librealsense::uvc_pu_option::query() const
 {
     return static_cast<float>(_ep.invoke_powered(
-        [this](uvc::uvc_device& dev)
+        [this](platform::uvc_device& dev)
         {
             int32_t value = 0;
             if (!dev.get_pu(_id, value))
@@ -31,7 +31,7 @@ float librealsense::uvc_pu_option::query() const
 librealsense::option_range librealsense::uvc_pu_option::get_range() const
 {
     auto uvc_range = _ep.invoke_powered(
-        [this](uvc::uvc_device& dev)
+        [this](platform::uvc_device& dev)
         {
             return dev.get_pu_range(_id);
         });
@@ -69,10 +69,10 @@ const char* librealsense::uvc_pu_option::get_description() const
 std::vector<uint8_t> librealsense::command_transfer_over_xu::send_receive(const std::vector<uint8_t>& data, int, bool require_response)
 {
     return _uvc.invoke_powered([this, &data, require_response]
-        (uvc::uvc_device& dev)
+        (platform::uvc_device& dev)
         {
             std::vector<uint8_t> result;
-            std::lock_guard<uvc::uvc_device> lock(dev);
+            std::lock_guard<platform::uvc_device> lock(dev);
 
             if (data.size() > HW_MONITOR_BUFFER_SIZE)
             {

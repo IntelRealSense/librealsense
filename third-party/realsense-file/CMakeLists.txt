@@ -29,12 +29,12 @@ source_group("Source Files\\3rd_party\\lz4" FILES
 source_group("Header Files\\3rd_party\\boost" REGULAR_EXPRESSION
          3rd_party/boost/boost/*.hpp
         )
-	
+
 add_library(${PROJECT_NAME} STATIC
-    	${AllSources}
-  		${HEADER_FILES_ROSBAG}
-  		${SOURCE_FILES_ROSBAG}
-  		${SOURCE_FILES_COMPRESSION}
+    ${AllSources}
+  	${HEADER_FILES_ROSBAG}
+  	${SOURCE_FILES_ROSBAG}
+  	${SOURCE_FILES_COMPRESSION}
 )
 
 #set_target_properties(${PROJECT_NAME} PROPERTIES VERSION "${LIBVERSION}" SOVERSION "${LIBSOVERSION}")

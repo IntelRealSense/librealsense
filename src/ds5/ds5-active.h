@@ -10,9 +10,10 @@ namespace librealsense
     class ds5_active : public virtual ds5_device
     {
     public:
-        ds5_active(const uvc::backend& backend,
-            const std::vector<uvc::uvc_device_info>& dev_info,
-            const std::vector<uvc::usb_device_info>& hwm_device,
-            const std::vector<uvc::hid_device_info>& hid_info);
+        ds5_active(const platform::backend& backend,
+                   const platform::backend_device_group& group);
+
+        std::shared_ptr<matcher> create_matcher(rs2_stream stream) const;
+       
     };
 }

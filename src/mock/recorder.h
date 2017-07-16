@@ -13,7 +13,7 @@
 
 namespace librealsense
 {
-    namespace uvc
+    namespace platform
     {
         enum class call_type
         {
@@ -174,34 +174,34 @@ namespace librealsense
                 }
                 return results;
             }
-            void save_device_changed_data(devices_data old, devices_data curr, lookup_key k)
+            void save_device_changed_data(backend_device_group old, backend_device_group curr, lookup_key k)
             {
                 std::lock_guard<std::recursive_mutex> lock(_mutex);
                 call c;
                 c.type = k.type;
                 c.entity_id = k.entity_id;
 
-                auto range = insert_list(old._uvc_devices, uvc_device_infos);
+                auto range = insert_list(old.uvc_devices, uvc_device_infos);
                 c.param1 = range.first;
                 c.param2 = range.second;
 
-                range = insert_list(old._usb_devices, usb_device_infos);
+                range = insert_list(old.usb_devices, usb_device_infos);
                 c.param3 = range.first;
                 c.param4 = range.second;
 
-                range = insert_list(old._hid_devices, hid_device_infos);
+                range = insert_list(old.hid_devices, hid_device_infos);
                 c.param5 = range.first;
                 c.param6 = range.second;
 
-                range = insert_list(curr._uvc_devices, uvc_device_infos);
+                range = insert_list(curr.uvc_devices, uvc_device_infos);
                 c.param7 = range.first;
                 c.param8 = range.second;
 
-                range = insert_list(curr._usb_devices, usb_device_infos);
+                range = insert_list(curr.usb_devices, usb_device_infos);
                 c.param9 = range.first;
                 c.param10 = range.second;
 
-                range = insert_list(curr._hid_devices, hid_device_infos);
+                range = insert_list(curr.hid_devices, hid_device_infos);
                 c.param11 = range.first;
                 c.param12 = range.second;
 
@@ -246,17 +246,17 @@ namespace librealsense
                 return load_list(stream_profiles, c);
             }
 
-            void load_device_changed_data(devices_data& old, devices_data& curr, lookup_key k)
+            void load_device_changed_data(backend_device_group& old, backend_device_group& curr, lookup_key k)
             {
                 auto&& c = find_call(k.type, k.entity_id);
 
-                old._uvc_devices = load_list(uvc_device_infos, c.param1, c.param2);
-                old._usb_devices = load_list(usb_device_infos, c.param3, c.param4);
-                old._hid_devices = load_list(hid_device_infos, c.param5, c.param6);
+                old.uvc_devices = load_list(uvc_device_infos, c.param1, c.param2);
+                old.usb_devices = load_list(usb_device_infos, c.param3, c.param4);
+                old.hid_devices = load_list(hid_device_infos, c.param5, c.param6);
 
-                curr._uvc_devices = load_list(uvc_device_infos, c.param7, c.param8);
-                curr._usb_devices = load_list(usb_device_infos, c.param9, c.param10);
-                curr._hid_devices = load_list(hid_device_infos, c.param11, c.param12);
+                curr.uvc_devices = load_list(uvc_device_infos, c.param7, c.param8);
+                curr.usb_devices = load_list(usb_device_infos, c.param9, c.param10);
+                curr.hid_devices = load_list(hid_device_infos, c.param11, c.param12);
 
             }
 
@@ -487,7 +487,7 @@ namespace librealsense
             void start(device_changed_callback callback) override;
             void stop() override;
 
-            void raise_callback(devices_data old, devices_data curr);
+            void raise_callback(backend_device_group old, backend_device_group curr);
 
         private:
             int _entity_id;
@@ -569,7 +569,7 @@ namespace librealsense
         private:
             std::shared_ptr<recording> _rec;
             std::mutex _callback_mutex;
-            uvc::hid_callback _callback;
+            platform::hid_callback _callback;
             int _entity_id;
             std::thread _callback_thread;
             std::atomic<bool> _alive;

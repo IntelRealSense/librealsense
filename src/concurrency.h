@@ -8,6 +8,7 @@
 #include <thread>
 #include <atomic>
 
+const int QUEUE_MAX_SIZE = 10;
 // Simplest implementation of a blocking concurrent queue for thread messaging
 template<class T>
 class single_consumer_queue
@@ -25,7 +26,7 @@ class single_consumer_queue
     std::condition_variable was_flushed_cv;
     std::mutex was_flushed_mutex;
 public:
-    explicit single_consumer_queue<T>(unsigned int cap)
+    explicit single_consumer_queue<T>(unsigned int cap = QUEUE_MAX_SIZE)
         : q(), mutex(), cv(), cap(cap), need_to_flush(false), was_flushed(false), accepting(true)
     {}
 
@@ -61,6 +62,18 @@ public:
         }
         *item = std::move(q.front());
         q.pop_front();
+        return true;
+    }
+
+    bool peek(T** item)
+    {
+        std::unique_lock<std::mutex> lock(mutex);
+        
+        if (q.size() <= 0)
+        {
+            return false;
+        }
+        *item = &q.front();
         return true;
     }
 

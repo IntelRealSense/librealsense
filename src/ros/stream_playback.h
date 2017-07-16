@@ -16,6 +16,7 @@
 #include "data_objects/occupancy_map.h"
 #include "data_objects/log.h"
 #include "rosbag/view.h"
+#include "source.h"
 
 namespace rs
 {
@@ -111,7 +112,8 @@ namespace rs
             std::shared_ptr<ros_data_objects::vendor_data> create_vendor_data(const rosbag::MessageInstance &message) const;
             bool get_file_version_from_file(uint32_t& version) const;
             status seek_to_time(file_types::nanoseconds seek_time, std::unique_ptr<rosbag::View>& samples_view) const;
-            std::shared_ptr<librealsense::archive_interface> m_archive;
+            //std::shared_ptr<librealsense::archive_interface> m_archive;
+            librealsense::frame_source m_frame_source;
             rosbag::Bag                     m_file;
             std::unique_ptr<rosbag::View>   m_samples_view;
             rosbag::View::iterator          m_samples_itrator;

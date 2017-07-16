@@ -235,6 +235,11 @@ bool playback_device::extend_to(rs2_extension_type extension_type, void** ext)
     }
 }
 
+std::shared_ptr<matcher> playback_device::create_matcher(rs2_stream stream) const
+{
+    return nullptr; //TOOD: WTD?
+}
+
 bool playback_device::set_frame_rate(double rate)
 {
     throw not_implemented_exception(__FUNCTION__);
@@ -242,13 +247,12 @@ bool playback_device::set_frame_rate(double rate)
 }
 bool playback_device::seek_to_time(uint64_t time) 
 {
-    throw not_implemented_exception(__FUNCTION__);
-
+    m_reader->seek_to_time(std::chrono::nanoseconds(time));
+    return true;//TODO : remove return value
 }
 playback_status playback_device::get_current_status() const 
 {
     throw not_implemented_exception(__FUNCTION__);
-
 }
 bool playback_device::get_duration(uint64_t& duration_microseconds) const 
 {

@@ -32,6 +32,10 @@ namespace librealsense
 
         rs2_extrinsics get_extrinsics(size_t from, rs2_stream from_stream, size_t to, rs2_stream to_stream) const override;
 
+        virtual std::shared_ptr<matcher> create_matcher(rs2_stream stream) const;
+
+        size_t find_sensor_idx(const sensor_interface& s) const;
+
     protected:
         int add_sensor(std::shared_ptr<sensor_interface> sensor_base);
 

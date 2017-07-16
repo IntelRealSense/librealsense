@@ -22,7 +22,7 @@ namespace librealsense {
         const uint8_t IVCAM_COLOR_ERROR = 3;
         const uint8_t IVCAM_COLOR_EXPOSURE_GRANULAR = 4;
 
-        const uvc::extension_unit depth_xu { 1, 6, 1,
+        const platform::extension_unit depth_xu { 1, 6, 1,
             { 0xA55751A1, 0xF3C5, 0x4A5E, { 0x8D, 0x5A, 0x68, 0x54, 0xB8, 0xFA, 0x27, 0x16 } } };
 
         struct camera_calib_params
@@ -101,8 +101,8 @@ namespace librealsense {
             module_serial_offset = 132
         };
 
-        bool try_fetch_usb_device(std::vector<uvc::usb_device_info>& devices,
-            const uvc::uvc_device_info& info, uvc::usb_device_info& result);
+        bool try_fetch_usb_device(std::vector<platform::usb_device_info>& devices,
+            const platform::uvc_device_info& info, platform::usb_device_info& result);
 
     } // librealsense::ivcam
 } // namespace librealsense

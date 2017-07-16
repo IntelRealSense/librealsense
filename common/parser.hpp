@@ -10,12 +10,13 @@
 #include <cstring>
 
 #include "rapidxml/rapidxml.hpp"
-#include "../src/hw-monitor.h"
 
 #define MAX_PARAMS 4
 
 struct section;
 typedef std::function<void(const uint8_t*, const section&, std::stringstream&)> xml_parser_function;
+
+const uint16_t  HW_MONITOR_BUFFER_SIZE = 1024;
 
 #pragma pack(push, 1)
 typedef struct

@@ -32,7 +32,7 @@ namespace rs
                 void write_data(ros_writer& file) override
                 {
                     sensor_msgs::Image image;
-                    auto vid_frame = dynamic_cast<librealsense::video_frame*>(m_frame.frame->get());
+                    auto vid_frame = dynamic_cast<librealsense::video_frame*>(m_frame.frame);
                     assert(vid_frame != nullptr);
 
                     std::string stream;

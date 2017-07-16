@@ -36,6 +36,17 @@ sensor_interface& device::get_sensor(size_t subdevice)
     }
 }
 
+size_t device::find_sensor_idx(const sensor_interface& s) const
+{
+    int idx = 0;
+    for (auto&& sensor : _sensors)
+    {
+        if (&s == sensor.get()) return idx;
+        idx++;
+    }
+    throw std::runtime_error("Sensor not found!");
+}
+
 const sensor_interface& device::get_sensor(size_t subdevice) const
 {
     try
@@ -60,4 +71,9 @@ rs2_extrinsics device::get_extrinsics(size_t from_subdevice, rs2_stream, size_t 
     (float3x3 &)extrin.rotation = transform.orientation;
     (float3 &)extrin.translation = transform.position;
     return extrin;
+}
+
+std::shared_ptr<matcher> librealsense::device::create_matcher(rs2_stream stream) const
+{
+    return std::make_shared<identity_matcher>( stream_id((device_interface*)(this), stream));
 }

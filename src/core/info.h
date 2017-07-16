@@ -16,6 +16,9 @@ namespace librealsense
 
         virtual ~info_interface() = default;
     };
+
+    DEFINE_MAPPING(RS2_EXTENSION_TYPE_INFO, librealsense::info_interface);
+
     class info_container : public virtual info_interface
     {
     public:
@@ -23,10 +26,10 @@ namespace librealsense
         bool supports_info(rs2_camera_info info) const override;
 
         void register_info(rs2_camera_info info, const std::string& val);
-
         void create_snapshot(std::shared_ptr<info_interface>& snapshot) override;
         void create_recordable(std::shared_ptr<info_interface>& recordable,
             std::function<void(std::shared_ptr<extension_snapshot>)> record_action) override;
+
     private:
         std::map<rs2_camera_info, std::string> _camera_info;
     };

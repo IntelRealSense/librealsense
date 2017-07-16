@@ -162,6 +162,7 @@ typedef enum rs2_option
     RS2_OPTION_MOTION_MODULE_TEMPERATURE                  , /**< Current Motion-Module Temperature */
     RS2_OPTION_DEPTH_UNITS                                , /**< Number of meters represented by a single depth unit */
     RS2_OPTION_ENABLE_MOTION_CORRECTION                   , /**< Enable/Disable automatic correction of the motion data */
+    RS2_OPTION_ADVANCED_MODE_PRESET                       , /**< Camera Advanced-Mode preset */
     RS2_OPTION_COUNT                                      , /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
 } rs2_option;
 
@@ -218,8 +219,12 @@ typedef enum rs2_extension_type
     RS2_EXTENSION_TYPE_OPTIONS,
     RS2_EXTENSION_TYPE_VIDEO,
     RS2_EXTENSION_TYPE_ROI,
+    RS2_EXTENSION_TYPE_DEPTH_SENSOR,
     RS2_EXTENSION_TYPE_VIDEO_FRAME,
     RS2_EXTENSION_TYPE_MOTION_FRAME,
+    RS2_EXTENSION_TYPE_COMPOSITE_FRAME,
+    RS2_EXTENSION_TYPE_POINTS,
+    RS2_EXTENSION_TYPE_ADVANCED_MODE,
     RS2_EXTENSION_TYPE_COUNT
 } rs2_extension_type;
 
@@ -254,6 +259,16 @@ typedef struct rs2_extrinsics
     float rotation[9];    /**< Column-major 3x3 rotation matrix */
     float translation[3]; /**< Three-element translation vector, in meters */
 } rs2_extrinsics;
+
+typedef struct rs2_vertex
+{
+    float xyz[3];
+} rs2_vertex;
+
+typedef struct rs2_pixel
+{
+    int ij[2];
+} rs2_pixel;
 
 typedef struct rs2_device_info rs2_device_info;
 typedef struct rs2_context rs2_context;
@@ -406,6 +421,8 @@ rs2_sensor* rs2_create_sensor(const rs2_sensor_list* list, int index, rs2_error*
 void rs2_get_extrinsics(const rs2_sensor * from_dev, rs2_stream from_stream,
                         const rs2_sensor * to_dev, rs2_stream to_stream,
                         rs2_extrinsics * extrin, rs2_error ** error);
+
+rs2_device* rs2_create_device_from_sensor(const rs2_sensor* sensor, rs2_error ** error);
 
 /**
  * returns the intrinsics of specific stream configuration
@@ -647,6 +664,12 @@ const void* rs2_get_frame_data(const rs2_frame* frame, rs2_error** error);
 */
 int rs2_get_frame_width(const rs2_frame* frame, rs2_error** error);
 
+rs2_vertex* rs2_get_vertices(const rs2_frame* frame, rs2_error** error);
+
+rs2_pixel* rs2_get_pixel_coordinates(const rs2_frame* frame, rs2_error** error);
+
+int rs2_get_points_count(const rs2_frame* frame, rs2_error** error);
+
 /**
 * retrieve frame height in pixels
 * \param[in] frame      handle returned from a callback
@@ -694,7 +717,7 @@ rs2_stream rs2_get_frame_stream_type(const rs2_frame* frameset, rs2_error** erro
 * \param[out] error     if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return               new frame reference, has to be released by rs2_release_frame
 */
-rs2_frame* rs2_clone_frame_ref(rs2_frame* frame, rs2_error ** error);
+void rs2_frame_add_ref(rs2_frame* frame, rs2_error ** error);
 
 /**
 * relases the frame handle
@@ -1009,6 +1032,7 @@ const char * rs2_extension_type_to_string   (rs2_extension_type type);
 void rs2_log_to_console(rs2_log_severity min_severity, rs2_error ** error);
 void rs2_log_to_file(rs2_log_severity min_severity, const char * file_path, rs2_error ** error);
 
+
 /**
  * TODO: Ziv, document
  * \param device
@@ -1060,15 +1084,27 @@ rs2_device* rs2_create_playback_device(rs2_device_serializer* serializer, rs2_er
 rs2_frame* rs2_allocate_synthetic_video_frame(rs2_source* source, rs2_stream new_stream, rs2_frame* original, 
     rs2_format new_format, int new_bpp, int new_width, int new_height, int new_stride, rs2_error** error);
 
+rs2_frame* rs2_allocate_composite_frame(rs2_source* source, rs2_frame** frames, int count, rs2_error** error);
+
+rs2_frame* rs2_extract_frame(rs2_frame* composite, int index, rs2_error** error);
+
+int rs2_embeded_frames_count(rs2_frame* composite, rs2_error** error);
+
 void rs2_synthetic_frame_ready(rs2_source* source, rs2_frame* frame, rs2_error** error);
 
-rs2_processing_block* rs2_create_processing_block(rs2_context* ctx, rs2_extension_type output_type, rs2_frame_processor_callback* proc, rs2_error** error);
+rs2_processing_block* rs2_create_processing_block(rs2_context* ctx, rs2_frame_processor_callback* proc, rs2_error** error);
+
+rs2_processing_block* rs2_create_sync_processing_block(rs2_error** error);
 
 void rs2_start_processing(rs2_processing_block* block, rs2_frame_callback* on_frame, rs2_error** error);
 
-void rs2_process_frames(rs2_processing_block* block, rs2_frame** frames, int count, rs2_error** error);
+void rs2_process_frame(rs2_processing_block* block, rs2_frame* frame, rs2_error** error);
 
 void rs2_delete_processing_block(rs2_processing_block* block);
+
+rs2_processing_block* rs2_create_pointcloud(rs2_context* ctx, rs2_error** error);
+
+float rs2_get_depth_scale(rs2_sensor* sensor, rs2_error** error);
 
 #ifdef __cplusplus
 }

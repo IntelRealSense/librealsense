@@ -70,13 +70,13 @@ namespace librealsense
         _hw_monitor->send(cmd);
     }
 
-    class ds5_depth_sensor : public uvc_sensor, public video_sensor_interface
+    class ds5_depth_sensor : public uvc_sensor, public video_sensor_interface, public depth_sensor
     {
     public:
-        explicit ds5_depth_sensor(const ds5_device* owner, std::shared_ptr<uvc::uvc_device> uvc_device,
+        explicit ds5_depth_sensor(const ds5_device* owner, std::shared_ptr<platform::uvc_device> uvc_device,
             std::unique_ptr<frame_timestamp_reader> timestamp_reader,
-            std::shared_ptr<uvc::time_service> ts)
-            : uvc_sensor("Stereo Module", uvc_device, move(timestamp_reader), ts), _owner(owner)
+            std::shared_ptr<platform::time_service> ts)
+            : uvc_sensor("Stereo Module", uvc_device, move(timestamp_reader), ts, owner), _owner(owner)
         {}
 
         rs2_intrinsics get_intrinsics(const stream_profile& profile) const override
@@ -86,6 +86,8 @@ namespace librealsense
                 ds::calibration_table_id::coefficients_table_id,
                 profile.width, profile.height);
         }
+
+        float get_depth_scale() const override { return get_option(RS2_OPTION_DEPTH_UNITS).query(); }
     private:
         const ds5_device* _owner;
     };
@@ -116,18 +118,18 @@ namespace librealsense
         return _hw_monitor->send(cmd);
     }
 
-    std::shared_ptr<uvc_sensor> ds5_device::create_depth_device(const uvc::backend& backend,
-                                                                  const std::vector<uvc::uvc_device_info>& all_device_infos)
+    std::shared_ptr<uvc_sensor> ds5_device::create_depth_device(const platform::backend& backend,
+                                                                  const std::vector<platform::uvc_device_info>& all_device_infos)
     {
         using namespace ds;
 
-        std::vector<std::shared_ptr<uvc::uvc_device>> depth_devices;
+        std::vector<std::shared_ptr<platform::uvc_device>> depth_devices;
         for (auto&& info : filter_by_mi(all_device_infos, 0)) // Filter just mi=0, DEPTH
             depth_devices.push_back(backend.create_uvc_device(info));
 
 
         std::unique_ptr<frame_timestamp_reader> ds5_timestamp_reader_backup(new ds5_timestamp_reader(backend.create_time_service()));
-        auto depth_ep = std::make_shared<ds5_depth_sensor>(this, std::make_shared<uvc::multi_pins_uvc_device>(depth_devices),
+        auto depth_ep = std::make_shared<ds5_depth_sensor>(this, std::make_shared<platform::multi_pins_uvc_device>(depth_devices),
                                                        std::unique_ptr<frame_timestamp_reader>(new ds5_timestamp_reader_from_metadata(std::move(ds5_timestamp_reader_backup))),
                                                        backend.create_time_service());
         depth_ep->register_xu(depth_xu); // make sure the XU is initialized everytime we power the camera
@@ -144,19 +146,17 @@ namespace librealsense
         return depth_ep;
     }
 
-    ds5_device::ds5_device(const uvc::backend& backend,
-                           const std::vector<uvc::uvc_device_info>& dev_info,
-                           const std::vector<uvc::usb_device_info>& hwm_device,
-                           const std::vector<uvc::hid_device_info>& hid_info)
-        : _depth_device_idx(add_sensor(create_depth_device(backend, dev_info)))
+    ds5_device::ds5_device(const platform::backend& backend,
+                           const platform::backend_device_group& group)
+        : _depth_device_idx(add_sensor(create_depth_device(backend, group.uvc_devices)))
     {
         using namespace ds;
 
-        if(hwm_device.size()>0)
+        if(group.usb_devices.size()>0)
         {
             _hw_monitor = std::make_shared<hw_monitor>(
                                      std::make_shared<locked_transfer>(
-                                        backend.create_usb_device(hwm_device.front()), get_depth_sensor()));
+                                        backend.create_usb_device(group.usb_devices.front()), get_depth_sensor()));
         }
         else
         {
@@ -169,7 +169,7 @@ namespace librealsense
 
         _coefficients_table_raw = [this]() { return get_raw_calibration_table(coefficients_table_id); };
 
-        std::string device_name = (rs4xx_sku_names.end() != rs4xx_sku_names.find(dev_info.front().pid)) ? rs4xx_sku_names.at(dev_info.front().pid) : "RS4xx";
+        std::string device_name = (rs4xx_sku_names.end() != rs4xx_sku_names.find(group.uvc_devices.front().pid)) ? rs4xx_sku_names.at(group.uvc_devices.front().pid) : "RS4xx";
         _fw_version = firmware_version(_hw_monitor->get_firmware_version_string(GVD, camera_fw_version_offset));
         auto serial = _hw_monitor->get_module_serial_string(GVD, module_serial_offset);
 
@@ -181,7 +181,7 @@ namespace librealsense
             depth_ep.register_pixel_format(pf_y12i); // L+R - Calibration not rectified
         }
 
-        auto pid = dev_info.front().pid;
+        auto pid = group.uvc_devices.front().pid;
         auto pid_hex_str = hexify(pid>>8) + hexify(static_cast<uint8_t>(pid));
 
         std::string is_camera_locked{""};
@@ -192,7 +192,7 @@ namespace librealsense
 
 #ifdef HWM_OVER_XU
             //if hw_monitor was created by usb replace it xu
-            if(hwm_device.size() > 0)
+            if(group.usb_devices.size() > 0)
             {
                 _hw_monitor = std::make_shared<hw_monitor>(
                                 std::make_shared<locked_transfer>(
@@ -257,7 +257,7 @@ namespace librealsense
             depth_ep.register_option(RS2_OPTION_DEPTH_UNITS, std::make_shared<const_value_option>("Number of meters represented by a single depth unit",
                                                                                                   0.001f));
         // Metadata registration
-        depth_ep.register_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP,    make_uvc_header_parser(&uvc::uvc_header::timestamp));
+        depth_ep.register_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP,    make_uvc_header_parser(&platform::uvc_header::timestamp));
 
         // attributes of md_capture_timing
         auto md_prop_offset = offsetof(metadata_raw, mode) +
@@ -265,7 +265,7 @@ namespace librealsense
                 offsetof(md_depth_y_normal_mode, intel_capture_timing);
 
         depth_ep.register_metadata(RS2_FRAME_METADATA_FRAME_COUNTER,    make_attribute_parser(&md_capture_timing::frame_counter, md_capture_timing_attributes::frame_counter_attribute,md_prop_offset));
-        depth_ep.register_metadata(RS2_FRAME_METADATA_SENSOR_TIMESTAMP, make_rs4xx_sensor_ts_parser(make_uvc_header_parser(&uvc::uvc_header::timestamp),
+        depth_ep.register_metadata(RS2_FRAME_METADATA_SENSOR_TIMESTAMP, make_rs4xx_sensor_ts_parser(make_uvc_header_parser(&platform::uvc_header::timestamp),
                 make_attribute_parser(&md_capture_timing::sensor_timestamp, md_capture_timing_attributes::sensor_timestamp_attribute, md_prop_offset)));
 
         // attributes of md_capture_stats
@@ -296,7 +296,7 @@ namespace librealsense
         register_info(RS2_CAMERA_INFO_NAME,              device_name);
         register_info(RS2_CAMERA_INFO_SERIAL_NUMBER,     serial);
         register_info(RS2_CAMERA_INFO_FIRMWARE_VERSION,  _fw_version);
-        register_info(RS2_CAMERA_INFO_LOCATION,          dev_info.front().device_path);
+        register_info(RS2_CAMERA_INFO_LOCATION,          group.uvc_devices.front().device_path);
         register_info(RS2_CAMERA_INFO_DEBUG_OP_CODE,     std::to_string(static_cast<int>(fw_cmd::GLD)));
         register_info(RS2_CAMERA_INFO_ADVANCED_MODE,            ((advanced_mode)?"YES":"NO"));
         register_info(RS2_CAMERA_INFO_PRODUCT_ID,               pid_hex_str);

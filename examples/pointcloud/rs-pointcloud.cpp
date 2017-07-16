@@ -71,7 +71,7 @@ int main(int argc, char * argv[])
     {
         try{
             auto dev = devs.wait_for_device();
-
+            auto depth_camera = dev.first<depth_sensor>();
 
             // Configure streams to run at 30 frames per second
             util::config config;
@@ -168,6 +168,12 @@ int main(int argc, char * argv[])
                 if (frames.size() == 0)
                     continue;
 
+                bool has_depth = false;
+                for (auto&& f : frames)
+                    if (f.get_stream_type() == RS2_STREAM_DEPTH)
+                        has_depth = true;
+                if (!has_depth) continue;
+
                 glPushAttrib(GL_ALL_ATTRIB_BITS);
 
                 for (auto&& frame : frames)
@@ -211,9 +217,7 @@ int main(int argc, char * argv[])
                 auto max_depth = *max_element(depth,depth+640*480);
 
                 // Determine depth value corresponding to one meter
-                auto depth_units = 1.f;
-                if (dev.supports(RS2_OPTION_DEPTH_UNITS))
-                    depth_units = dev.get_option(RS2_OPTION_DEPTH_UNITS);
+                auto depth_units = depth_camera.get_depth_scale();
 
                 vector<uint8_t> image;
                 auto points = depth_to_points(image, depth_intrin, depth, depth_units);
@@ -258,7 +262,7 @@ int main(int argc, char * argv[])
                 if (ImGui::Combo(" texture", &selected_stream, stream_names.data(), stream_names.size()))
                 {
                     stream.stop();
-                    dev.close();
+                    stream.close();
                     auto&& selected = available_streams[selected_stream];
                     util::config config;
                     config.enable_stream(RS2_STREAM_DEPTH, preset::best_quality);

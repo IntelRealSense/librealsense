@@ -15,7 +15,7 @@ struct rs2_frame_callback
 
 struct rs2_frame_processor_callback
 {
-    virtual void                            on_frame(rs2_frame ** f, int count, rs2_source * source) = 0;
+    virtual void                            on_frame(rs2_frame * f, rs2_source * source) = 0;
     virtual void                            release() = 0;
     virtual                                 ~rs2_frame_processor_callback() {}
 };

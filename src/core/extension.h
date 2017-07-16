@@ -5,6 +5,16 @@
 #include "../../include/librealsense/rs2.h" //TODO: Ziv, remove relative\file
 #include <memory>
 #include <functional>
+
+//Preprocessor Macro to define mapping between rs2_extension_type and their respective interface (and vice versa)
+#define DEFINE_MAPPING(E, T)                              \
+    template<> struct ExtensionsToTypes<E> {              \
+        using type = T;                                   \
+    };                                                    \
+    template<> struct TypeToExtensionn<T> {               \
+        static constexpr rs2_extension_type value = E;    \
+    };
+
 namespace librealsense
 {
 	class extendable_interface
@@ -45,7 +55,7 @@ namespace librealsense
 
     /**
      * Deriving classes are expected to return an extension_snapshot
-     * We need this since Sensors will derive from multiple extensions and
+     * We need this since Sensors will derive from multiple extensions and C++ does not allow function overloads by return type
      * @tparam T The interface that should be recorded
      */
     template <typename T>
@@ -91,4 +101,8 @@ namespace librealsense
     {
         return dynamic_cast<T*>(ptr) != nullptr;
     }
+
+    //Creating Helper functions to map rs2_extension_type enums to actual interface
+    template<rs2_extension_type> struct ExtensionsToTypes;
+    template<typename T> struct TypeToExtensionn;
 }

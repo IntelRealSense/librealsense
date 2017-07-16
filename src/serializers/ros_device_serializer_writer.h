@@ -62,7 +62,7 @@ namespace librealsense
             auto timestamp_ns = rs::file_format::file_types::nanoseconds(timestamp);
 
 
-            if (Is<video_frame>(frame.frame->get()))
+            if (Is<video_frame>(frame.frame))
             {
                 auto image_obj = std::make_shared<rs::file_format::ros_data_objects::image>(timestamp, sensor_index, std::move(frame));
                 record(image_obj);

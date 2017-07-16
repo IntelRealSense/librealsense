@@ -3,7 +3,7 @@
 #pragma once
 
 #include "streaming.h"
-
+#include "extension.h"
 #include <vector>
 
 namespace librealsense
@@ -13,6 +13,8 @@ namespace librealsense
     public:
         virtual std::vector<uint8_t> send_receive_raw_data(const std::vector<uint8_t>& input) = 0;
     };
+
+    DEFINE_MAPPING(RS2_EXTENSION_TYPE_DEBUG, librealsense::debug_interface);
 
     class debug_snapshot : public extension_snapshot, public debug_interface
     {
@@ -24,5 +26,6 @@ namespace librealsense
     private:
         std::vector<uint8_t> m_data;
     };
+
 
 }

@@ -13,4 +13,6 @@ namespace librealsense
     public:
         virtual rs2_motion_device_intrinsic get_motion_intrinsics(rs2_stream stream) const = 0;
     };
+    
+    DEFINE_MAPPING(RS2_EXTENSION_TYPE_MOTION, librealsense::motion_sensor_interface);
 }

@@ -29,6 +29,7 @@ namespace librealsense
         void hardware_reset() override;
         rs2_extrinsics get_extrinsics(size_t from,rs2_stream from_stream,size_t to,rs2_stream to_stream) const override;
         bool extend_to(rs2_extension_type extension_type, void** ext) override;
+        std::shared_ptr<matcher> create_matcher(rs2_stream stream) const override;
 
         bool set_frame_rate(double rate);
         bool seek_to_time(uint64_t time);
@@ -38,7 +39,7 @@ namespace librealsense
         bool resume();
         bool set_real_time(bool real_time);
         bool is_real_time() const;
-
+        
     private:
         void update_time_base(uint64_t base_timestamp);
         int64_t calc_sleep_time(const uint64_t& timestamp) const;

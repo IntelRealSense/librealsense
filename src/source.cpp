@@ -39,30 +39,53 @@ namespace librealsense
         return std::make_shared<frame_queue_size>(&_max_publish_list_size, option_range{ 0, 32, 1, 16 });
     }
 
-    frame_source::frame_source(std::shared_ptr<uvc::time_service> ts)
+    frame_source::frame_source(std::shared_ptr<platform::time_service> ts)
             : _callback(nullptr, [](rs2_frame_callback*) {}),
               _max_publish_list_size(16),
               _ts(ts)
     {}
 
-    void frame_source::init(rs2_extension_type type, std::shared_ptr<metadata_parser_map> metadata_parsers)
+    void frame_source::init(std::shared_ptr<metadata_parser_map> metadata_parsers)
     {
         std::lock_guard<std::mutex> lock(_callback_mutex);
-        _archive = make_archive(type, &_max_publish_list_size, _ts, metadata_parsers);
+
+        std::vector<rs2_extension_type> supported { RS2_EXTENSION_TYPE_VIDEO_FRAME,
+                                                    RS2_EXTENSION_TYPE_COMPOSITE_FRAME };
+
+        for (auto type : supported)
+        {
+            _archive[type] = make_archive(type, &_max_publish_list_size, _ts, metadata_parsers);
+        }
     }
 
-    callback_invocation_holder frame_source::begin_callback() { return _archive->begin_callback(); }
+    callback_invocation_holder frame_source::begin_callback()
+    {
+        return _archive[RS2_EXTENSION_TYPE_VIDEO_FRAME]->begin_callback();
+    }
 
     void frame_source::reset()
     {
         std::lock_guard<std::mutex> lock(_callback_mutex);
         _callback.reset();
-        _archive.reset();
+        for (auto&& kvp : _archive)
+        {
+            kvp.second.reset();
+        }
     }
 
-    rs2_frame* frame_source::alloc_frame(size_t size, frame_additional_data additional_data, bool requires_memory) const
+    frame_interface* frame_source::alloc_frame(rs2_extension_type type, size_t size, frame_additional_data additional_data, bool requires_memory) const
     {
-        return _archive->alloc_and_track(size, additional_data, requires_memory);
+        auto it = _archive.find(type);
+        if (it == _archive.end()) throw wrong_api_call_sequence_exception("Requested frame type is not supported!");
+        return it->second->alloc_and_track(size, additional_data, requires_memory);
+    }
+
+    void frame_source::set_sensor(std::shared_ptr<sensor_interface> s)
+    {
+        for (auto&& a : _archive)
+        {
+            a.second->set_sensor(s);
+        }
     }
 
     void frame_source::set_callback(frame_callback_ptr callback)
@@ -75,15 +98,15 @@ namespace librealsense
     {
         if (frame)
         {
-            auto callback = _archive->begin_callback();
+            auto callback = frame.frame->get_owner()->begin_callback();
             try
             {
-                frame->log_callback_start(_ts->get_time());
+                frame->log_callback_start(_ts ? _ts->get_time() : 0);
                 if (_callback)
                 {
-                    rs2_frame* ref = nullptr;
+                    frame_interface* ref = nullptr;
                     std::swap(frame.frame, ref);
-                    _callback->on_frame(ref);
+                    _callback->on_frame((rs2_frame*)ref);
                 }
             }
             catch(...)
@@ -95,8 +118,11 @@ namespace librealsense
 
     void frame_source::flush() const
     {
-        if (_archive.get())
-            _archive->flush();
+        for (auto&& kvp : _archive)
+        {
+            if (kvp.second)
+                kvp.second->flush();
+        }
     }
 }
 

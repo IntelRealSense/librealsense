@@ -91,8 +91,8 @@ std::chrono::nanoseconds librealsense::record_device::get_capture_time() const
 
 void librealsense::record_device::write_data(size_t sensor_index, librealsense::frame_holder frame/*, notifications_callback_ptr& sensor_notification_handler*/)
 {
-    uint64_t data_size = frame.frame->get()->get_frame_data_size();
-    uint64_t cached_data_size = m_cached_data_size + data_size;
+    //TODO: restore: uint64_t data_size = frame.frame->get_frame_data_size();
+    uint64_t cached_data_size = m_cached_data_size /*+ data_size*/;
     if (cached_data_size > MAX_CACHED_DATA_SIZE)
     {
 
@@ -105,9 +105,10 @@ void librealsense::record_device::write_data(size_t sensor_index, librealsense::
 
     m_cached_data_size = cached_data_size;
     auto capture_time = get_capture_time();
+    //TODO: Ziv, remove usage of shared pointer when frame_holder is copyable
     auto frame_holder_ptr = std::make_shared<frame_holder>();
     *frame_holder_ptr = std::move(frame);
-    auto worker = [this, frame_holder_ptr, sensor_index, capture_time, data_size](dispatcher::cancellable_timer t) {
+    auto worker = [this, frame_holder_ptr, sensor_index, capture_time/*, data_size*/](dispatcher::cancellable_timer t) {
         if (m_is_recording == false)
         {
             return; //Recording is paused
@@ -125,7 +126,7 @@ void librealsense::record_device::write_data(size_t sensor_index, librealsense::
         });
         m_ros_writer->write(capture_time, static_cast<uint32_t>(sensor_index), std::move(*frame_holder_ptr));
         std::lock_guard<std::mutex> locker(m_mutex);
-        m_cached_data_size -= data_size;
+        /*m_cached_data_size -= data_size;*/
     };
     
     (*m_write_thread)->invoke(worker);
@@ -301,6 +302,7 @@ std::vector<librealsense::stream_profile> librealsense::record_sensor::get_princ
 void librealsense::record_sensor::open(const std::vector<librealsense::stream_profile>& requests)
 {
     m_sensor.open(requests);
+    //m_curr_configurations = requests;
     //TODO: write to file
 }
 void librealsense::record_sensor::close()
@@ -362,7 +364,7 @@ public:
 
     void on_frame(rs2_frame * fref) override
     {
-        on_frame_function({ fref });
+        on_frame_function({ (frame_interface*)fref });
     }
 
     void release() override { delete this; }
@@ -375,12 +377,12 @@ void librealsense::record_sensor::start(frame_callback_ptr callback)
     }
 
     //TODO: Handle case where live sensor is already streaming
-    auto record_cb = [this, callback](frame_holder f)
+    auto record_cb = [this, callback](frame_holder frame)
     {
-        m_record_callback({ f->get()->get_owner()->clone_frame(f) });
-        rs2_frame* pf = nullptr;
-        std::swap(f.frame, pf);
-        callback->on_frame(pf);
+        m_record_callback(frame.clone());
+        frame_interface* ref = nullptr;
+        std::swap(frame.frame, ref);
+        callback->on_frame((rs2_frame*)ref);
     };
     m_frame_callback = std::make_shared<my_frame_callback>(record_cb);
 
@@ -430,4 +432,24 @@ bool librealsense::record_sensor::extend_to(rs2_extension_type extension_type, v
             throw invalid_value_exception(std::string("extension_type ") + std::to_string(extension_type) + " is not supported");
     }
     return false;
+}
+
+const device_interface& record_sensor::get_device()
+{
+    throw not_implemented_exception(__FUNCTION__);
+}
+
+rs2_extrinsics record_sensor::get_extrinsics_to(rs2_stream from, const sensor_interface& other, rs2_stream to) const
+{
+    throw not_implemented_exception(__FUNCTION__);
+}
+
+const std::vector<platform::stream_profile>& record_sensor::get_curr_configurations() const
+{
+    return m_curr_configurations;
+}
+
+std::shared_ptr<matcher> record_device::create_matcher(rs2_stream stream) const
+{
+    return m_device->create_matcher(stream);
 }

@@ -59,7 +59,7 @@ endif()
 
 
 add_subdirectory(capture)
-add_subdirectory(headless)
+#add_subdirectory(headless)
 add_subdirectory(multicam)
 add_subdirectory(pointcloud)
 add_subdirectory(recording)

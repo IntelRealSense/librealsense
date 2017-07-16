@@ -10,13 +10,11 @@ namespace librealsense
     class ds5_color : public virtual ds5_device
     {
     public:
-        std::shared_ptr<uvc_sensor> create_color_device(const uvc::backend& backend,
-                                                          const std::vector<uvc::uvc_device_info>& all_device_infos);
+        std::shared_ptr<uvc_sensor> create_color_device(const platform::backend& backend,
+                                                          const std::vector<platform::uvc_device_info>& all_device_infos);
 
-        ds5_color(const uvc::backend& backend,
-            const std::vector<uvc::uvc_device_info>& dev_info,
-            const std::vector<uvc::usb_device_info>& hwm_device,
-            const std::vector<uvc::hid_device_info>& hid_info);
+        ds5_color(const platform::backend& backend,
+                  const platform::backend_device_group& group);
 
     private:
         uint8_t _color_device_idx = -1;

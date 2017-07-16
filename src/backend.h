@@ -61,7 +61,7 @@ namespace librealsense
     }
 
 
-    namespace uvc
+    namespace platform
     {
         struct control_range
         {
@@ -507,48 +507,48 @@ namespace librealsense
 
         class device_watcher;
 
-        struct devices_data
+        struct backend_device_group
         {
-            devices_data(){}
+            backend_device_group(){}
 
-            devices_data(const std::vector<uvc_device_info>& uvc_devices, const std::vector<usb_device_info>& usb_devices, const std::vector<hid_device_info>& hid_devices)
-                :_uvc_devices(uvc_devices), _usb_devices(usb_devices), _hid_devices(hid_devices) {}
+            backend_device_group(const std::vector<uvc_device_info>& uvc_devices, const std::vector<usb_device_info>& usb_devices, const std::vector<hid_device_info>& hid_devices)
+                :uvc_devices(uvc_devices), usb_devices(usb_devices), hid_devices(hid_devices) {}
 
-            devices_data(const std::vector<usb_device_info>& usb_devices)
-                :_usb_devices(usb_devices) {}
+            backend_device_group(const std::vector<usb_device_info>& usb_devices)
+                :usb_devices(usb_devices) {}
 
-            devices_data(const std::vector<uvc_device_info>& uvc_devices, const std::vector<usb_device_info>& usb_devices)
-                :_uvc_devices(uvc_devices), _usb_devices(usb_devices) {}
+            backend_device_group(const std::vector<uvc_device_info>& uvc_devices, const std::vector<usb_device_info>& usb_devices)
+                :uvc_devices(uvc_devices), usb_devices(usb_devices) {}
 
-            std::vector<uvc_device_info> _uvc_devices;
-            std::vector<usb_device_info> _usb_devices;
-            std::vector<hid_device_info> _hid_devices;
+            std::vector<uvc_device_info> uvc_devices;
+            std::vector<usb_device_info> usb_devices;
+            std::vector<hid_device_info> hid_devices;
 
-            bool operator == (const devices_data& other)
+            bool operator == (const backend_device_group& other)
             {
-                return !list_changed(_uvc_devices, other._uvc_devices) &&
-                    !list_changed(_hid_devices, other._hid_devices);
+                return !list_changed(uvc_devices, other.uvc_devices) &&
+                    !list_changed(hid_devices, other.hid_devices);
             }
 
             operator std::string()
             {
                 std::string s;
-                s = _uvc_devices.size()>0 ? "uvc devices:\n" : "";
-                for (auto uvc : _uvc_devices)
+                s = uvc_devices.size()>0 ? "uvc devices:\n" : "";
+                for (auto uvc : uvc_devices)
                 {
                     s += uvc;
                     s += "\n\n";
                 }
 
-                s += _usb_devices.size()>0 ? "usb devices:\n" : "";
-                for (auto usb : _usb_devices)
+                s += usb_devices.size()>0 ? "usb devices:\n" : "";
+                for (auto usb : usb_devices)
                 {
                     s += usb;
                     s += "\n\n";
                 }
 
-                s += _hid_devices.size()>0 ? "hid devices: \n" : "";
-                for (auto hid : _hid_devices)
+                s += hid_devices.size()>0 ? "hid devices: \n" : "";
+                for (auto hid : hid_devices)
                 {
                     s += hid;
                     s += "\n\n";
@@ -559,7 +559,7 @@ namespace librealsense
 
 
 
-        typedef std::function<void(devices_data old, devices_data curr)> device_changed_callback;
+        typedef std::function<void(backend_device_group old, backend_device_group curr)> device_changed_callback;
 
         class backend
         {

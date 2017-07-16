@@ -58,7 +58,7 @@ bool stream_playback::get_file_version_from_file(uint32_t& version) const
 }
 
 stream_playback::stream_playback(const std::string &file_path) : 
-    m_archive(librealsense::make_archive(RS2_EXTENSION_TYPE_VIDEO_FRAME, &m_max_frame_queue_size, std::make_shared<librealsense::uvc::os_time_service>(),{}))
+    m_frame_source(std::make_shared<librealsense::platform::os_time_service>())
 {
     if (file_path.empty())
     {
@@ -359,16 +359,16 @@ std::shared_ptr<ros_data_objects::image> stream_playback::create_image(const ros
     topic image_topic(image_data.getTopic());
     auto device_str = topic(image_data.getTopic()).at(4);
     
-    frame_additional_data fad {};
+    frame_additional_data additional_data {};
     std::chrono::duration<double, std::micro> timestamp_us = std::chrono::duration_cast<microseconds>(seconds(msg->header.stamp.toSec()));
-    fad.timestamp = timestamp_us.count();
-    fad.frame_number = msg->header.seq;                            
-    conversions::convert(msg->encoding, fad.format);
+    additional_data.timestamp = timestamp_us.count();
+    additional_data.frame_number = msg->header.seq;                            
+    conversions::convert(msg->encoding, additional_data.format);
     std::string stream = topic(image_data.getTopic()).at(2); 
-    conversions::convert(stream, fad.stream_type);
-    fad.frame_callback_started = 0; //TODO: What is this?        
-    fad.fps = 0;   //TODO:  why would a frame hold its fps?      
-    fad.fisheye_ae_mode = false; //TODO: where should this come from?
+    conversions::convert(stream, additional_data.stream_type);
+    additional_data.frame_callback_started = 0; //TODO: What is this?        
+    additional_data.fps = 0;   //TODO:  why would a frame hold its fps?      
+    additional_data.fisheye_ae_mode = false; //TODO: where should this come from?
     auto info_topic = ros_data_objects::image::get_info_topic(image_topic.at(2), std::stoi(image_topic.at(4)));
     rosbag::View view_info(m_file, rosbag::TopicQuery(info_topic), image_data.getTime());
     if (view_info.begin() == view_info.end())
@@ -380,21 +380,21 @@ std::shared_ptr<ros_data_objects::image> stream_playback::create_image(const ros
     {
         return nullptr;
     }
-    fad.timestamp_domain = static_cast<rs2_timestamp_domain>(info_msg->time_stamp_domain); //TODO: Ziv, Need to change this - in case of changes to time_stamp_domain this will break
-    fad.system_time = nanoseconds(info_msg->system_time).count(); //TODO: Ziv - verify system time is in nanos
+    additional_data.timestamp_domain = static_cast<rs2_timestamp_domain>(info_msg->time_stamp_domain); //TODO: Ziv, Need to change this - in case of changes to time_stamp_domain this will break
+    additional_data.system_time = nanoseconds(info_msg->system_time).count(); //TODO: Ziv - verify system time is in nanos
     //TODO: Ziv, make sure this works correctly
     //std::copy(info_msg->frame_metadata.data(), info_msg->frame_metadata.data() + std::min(static_cast<uint32_t>(info_msg->frame_metadata.size()), 255u), fad.metadata_blob.begin());
-    fad.metadata_size = std::min(static_cast<uint32_t>(info_msg->frame_metadata.size()), 255u);
+    additional_data.metadata_size = std::min(static_cast<uint32_t>(info_msg->frame_metadata.size()), 255u);
 
-
-    rs2_frame* rs2frame = m_archive.get()->alloc_and_track(msg->data.size(), fad, true);
     
-    librealsense::video_frame* frame = static_cast<librealsense::video_frame*>(rs2frame->get());
-    frame->assign(msg->width, msg->height, msg->step, msg->step / msg->width / 8); //TODO: Ziv, is bpp bytes or bits per pixel?
-    frame->data = msg->data;
+    frame_interface* frame = m_frame_source.alloc_frame(RS2_EXTENSION_TYPE_VIDEO_FRAME, msg->data.size(), additional_data, true);
+    
+    librealsense::video_frame* video_frame = static_cast<librealsense::video_frame*>(frame);
+    video_frame->assign(msg->width, msg->height, msg->step, msg->step / msg->width / 8); //TODO: Ziv, is bpp bytes or bits per pixel?
+    video_frame->data = msg->data;
     uint32_t device_id = static_cast<uint32_t>(std::stoll(device_str));
     auto capture_time = nanoseconds(image_data.getTime().toNSec());
-    librealsense::frame_holder fh{ rs2frame };
+    librealsense::frame_holder fh{ video_frame };
     return std::make_shared<ros_data_objects::image>(capture_time, device_id, std::move(fh));
 }
 
