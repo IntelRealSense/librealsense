@@ -32,5 +32,5 @@ namespace librealsense
         virtual void set_roi_method(std::shared_ptr<region_of_interest_method> roi_method) = 0;
     };
 
-    DEFINE_MAPPING(RS2_EXTENSION_TYPE_ROI, librealsense::roi_sensor_interface);
+    MAP_EXTENSION(RS2_EXTENSION_TYPE_ROI, librealsense::roi_sensor_interface);
 }

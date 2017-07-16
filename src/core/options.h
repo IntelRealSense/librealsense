@@ -42,7 +42,7 @@ namespace librealsense
         virtual ~options_interface() = default;
     };
 
-    DEFINE_MAPPING(RS2_EXTENSION_TYPE_OPTIONS, librealsense::options_interface);
+    MAP_EXTENSION(RS2_EXTENSION_TYPE_OPTIONS, librealsense::options_interface);
 
     class options_container : public virtual options_interface
     {

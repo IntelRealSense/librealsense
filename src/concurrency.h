@@ -217,7 +217,7 @@ public:
         _thread.join();
     }
 
-    void sync()
+    void flush()
     {
         std::mutex m;
         std::condition_variable cv;

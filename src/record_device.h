@@ -92,8 +92,6 @@ namespace librealsense
         std::chrono::high_resolution_clock::duration m_record_pause_time;
         std::chrono::high_resolution_clock::time_point m_time_of_pause;
 
-        friend struct mylambda;
-
         std::mutex m_mutex;
         bool m_is_recording;
         std::once_flag m_first_frame_flag;

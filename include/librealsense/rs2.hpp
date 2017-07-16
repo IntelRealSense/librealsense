@@ -1201,7 +1201,7 @@ namespace rs2
         * returns the list of adjacent devices, sharing the same physical parent composite device
         * \return            the list of adjacent devices
         */
-        virtual std::vector<sensor> query_sensors() const
+        std::vector<sensor> query_sensors() const
         {
             rs2_error* e = nullptr;
             std::shared_ptr<rs2_sensor_list> list(
@@ -1242,7 +1242,7 @@ namespace rs2
         * \param[in] info    the parameter to check for support
         * \return                true if the parameter both exist and well-defined for the specific device
         */
-        virtual bool supports(rs2_camera_info info) const
+        bool supports(rs2_camera_info info) const
         {
             rs2_error* e = nullptr;
             auto is_supported = rs2_supports_device_info(_dev.get(), info, &e);
@@ -1255,7 +1255,7 @@ namespace rs2
         * \param[in] info     camera info type to retrieve
         * \return             the requested camera info string, in a format specific to the device model
         */
-        virtual const char* get_info(rs2_camera_info info) const
+        const char* get_info(rs2_camera_info info) const
         {
             rs2_error* e = nullptr;
             auto result = rs2_get_device_info(_dev.get(), info, &e);
@@ -1266,7 +1266,7 @@ namespace rs2
         /**
         * send hardware reset request to the device
         */
-        virtual void hardware_reset()
+        void hardware_reset()
         {
             rs2_error* e = nullptr;
 
@@ -1288,7 +1288,7 @@ namespace rs2
         }
         device() : _dev(nullptr) {}
 
-        virtual operator bool() const
+        operator bool() const
         {
             return _dev != nullptr;
         }

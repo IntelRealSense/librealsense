@@ -7,7 +7,7 @@
 #include <functional>
 
 //Preprocessor Macro to define mapping between rs2_extension_type and their respective interface (and vice versa)
-#define DEFINE_MAPPING(E, T)                              \
+#define MAP_EXTENSION(E, T)                              \
     template<> struct ExtensionsToTypes<E> {              \
         using type = T;                                   \
     };                                                    \

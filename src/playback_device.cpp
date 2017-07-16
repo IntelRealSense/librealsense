@@ -169,7 +169,7 @@ playback_device::~playback_device()
                 sensor.second->stop(); //TODO: make sure this works with this dispatcher
         }
     });
-    (*m_read_thread)->sync();
+    (*m_read_thread)->flush();
     (*m_read_thread)->stop();
 }
 sensor_interface& playback_device::get_sensor(size_t i) 
