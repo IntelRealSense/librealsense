@@ -121,54 +121,11 @@ namespace librealsense
 		std::map<matcher*, double> _next_expected;
 	};
 
-	//class matcher_child
-	//{
-	//	matcher* m;
-	//	single_consumer_queue<rs2_frame> queue;
-	//	// last_frame_time
-	//	// next_expected
-	//};
-
-	//TODO:
-	//class regratable_lock
-	//{
-	//public:
-	//	regratable_lock(mutex& m)
-	//	{
-	//		m.lock();
-	//	}
-
-	//	void early_unlock()
-	//	{
-	//		need_to_unlock = false;
-	//		m.unlock();
-	//	}
-
-	//	~regratable_lock()
-	//	{
-	//		if (need_to_unlock) m.unlock();
-	//	}
-
-	//private:
-	//	mutex& m;
-	//	bool need_to_unlock = true;
-	//};
-
 	class syncer_proccess_unit : public processing_block
 	{
 	public:
 		syncer_proccess_unit();
-		//{
-			// Create single composite matcher M with no children
-			// M.set_callback([](f, regratable_lock&){
-			//    regratable_lock.early_unlock();
-			//    call outside callback(f) // TODO: TRY&CATCH
-			// }
 
-			// set_processing_funct( f:
-			//		regratable_lock l(m)
-			//		M.dispatch(move(f), &regratable_lock)
-		//}
 	private:
 		timestamp_composite_matcher _matcher;
         std::mutex _mutex;
