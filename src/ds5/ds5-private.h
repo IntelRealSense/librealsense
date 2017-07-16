@@ -335,5 +335,5 @@ namespace librealsense
             flag_B_laser_disable = 3 // reported to error depth XU control
         };
 
-    } // rsimpl::ds
-} // namespace rsimpl
+    } // librealsense::ds
+} // namespace librealsense

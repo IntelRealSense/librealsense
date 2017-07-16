@@ -1,6 +1,6 @@
 #include "../src/types.h"
 
-using namespace rsimpl2;
+using namespace librealsense;
 
 namespace pybackend2 {
     enum class command

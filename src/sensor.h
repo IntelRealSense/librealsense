@@ -18,6 +18,7 @@
 #include <limits.h>
 #include <atomic>
 #include <functional>
+#include <core/debug.h>
 
 namespace librealsense
 {
@@ -25,31 +26,6 @@ namespace librealsense
     class option;
 
     typedef std::function<void(rs2_stream, frame_interface*, callback_invocation_holder)> on_before_frame_callback;
-
-    class options_container : public virtual options_interface
-    {
-    public:
-        option& get_option(rs2_option id) override;
-        const option& get_option(rs2_option id) const override;
-        bool supports_option(rs2_option id) const override;
-
-        void register_option(rs2_option id, std::shared_ptr<option> option);
-
-    private:
-        std::map<rs2_option, std::shared_ptr<option>> _options;
-    };
-
-    class info_container : public virtual info_interface
-    {
-    public:
-        const std::string& get_info(rs2_camera_info info) const override;
-        bool supports_info(rs2_camera_info info) const override;
-
-        void register_info(rs2_camera_info info, const std::string& val);
-
-    private:
-        std::map<rs2_camera_info, std::string> _camera_info;
-    };
 
     class sensor_base : public std::enable_shared_from_this<sensor_base>,
                         public virtual sensor_interface, public options_container, public virtual info_container

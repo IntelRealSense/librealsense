@@ -83,7 +83,6 @@ namespace librealsense
         }
 
         virtual ~frame() { on_release.reset(); }
-
         rs2_metadata_t get_frame_metadata(const rs2_frame_metadata& frame_metadata) const override;
         bool supports_frame_metadata(const rs2_frame_metadata& frame_metadata) const override;
         const byte* get_frame_data() const override;
@@ -135,6 +134,8 @@ namespace librealsense
         size_t get_vertex_count() const;
         int2* get_pixel_coordinates();
     };
+
+    MAP_EXTENSION(RS2_EXTENSION_TYPE_POINTS, librealsense::points);
 
     class composite_frame : public frame
     {
@@ -212,6 +213,8 @@ namespace librealsense
             return first()->get_sensor();
         }
     };
+    
+    MAP_EXTENSION(RS2_EXTENSION_TYPE_COMPOSITE_FRAME, librealsense::composite_frame);
 
     class video_frame : public frame
     {
@@ -236,6 +239,8 @@ namespace librealsense
     private:
         int _width, _height, _bpp, _stride;
     };
+    
+    MAP_EXTENSION(RS2_EXTENSION_TYPE_VIDEO_FRAME, librealsense::video_frame);
 
     //TODO: Define Motion Frame
 

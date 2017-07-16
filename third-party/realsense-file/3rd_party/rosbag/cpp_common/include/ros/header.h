@@ -70,14 +70,14 @@ public:
   /**
    * \brief Parse a header out of a buffer of data
    */
-  bool parse(const std::shared_ptr<std::vector<uint8_t>>& buffer, uint32_t size, std::string& error_msg);
+  bool parse(const std::vector<uint8_t>& buffer, uint32_t size, std::string& error_msg);
 
   /**
    * \brief Parse a header out of a buffer of data
    */
-  bool parse(uint8_t* buffer, uint32_t size, std::string& error_msg);
+  bool parse(const uint8_t* buffer, uint32_t size, std::string& error_msg);
 
-  static void write(const M_string& key_vals, std::shared_ptr<std::vector<uint8_t>>& buffer, uint32_t& size);
+  static void write(const M_string& key_vals, std::vector<uint8_t>& buffer, uint32_t& size);
 
 private:
 

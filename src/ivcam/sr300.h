@@ -326,7 +326,9 @@ namespace librealsense
                     //set_auto_range(ar_requests[preset]);
             }
         }
-
+        void create_snapshot(std::shared_ptr<debug_interface>& snapshot) override;
+        void create_recordable(std::shared_ptr<debug_interface>& recordable,
+                               std::function<void(std::shared_ptr<extension_snapshot>)> record_action) override;
     private:
         const uint8_t _depth_device_idx;
         const uint8_t _color_device_idx;

@@ -34,7 +34,7 @@
 
 #include <string>
 #include "boost/enable_if.hpp"
-#include "boost/type_traits/remove_const.hpp"
+
 #include <memory.h>
 #include <boost/type_traits/remove_reference.hpp>
 

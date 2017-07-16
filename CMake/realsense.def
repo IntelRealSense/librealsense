@@ -157,3 +157,10 @@ EXPORTS
     rs2_advanced_mode_preset_to_string
     rs2_is_enabled
     rs2_toggle_advanced_mode
+
+    rs2_create_device_serializer
+    rs2_delete_device_serializer
+    rs2_create_record_device 
+    rs2_create_playback_device 
+    rs2_record_device_pause
+    rs2_record_device_resume

@@ -122,16 +122,20 @@ set(REALSENSE_CPP
     src/win/win-usb.cpp
     src/win/win-hid.cpp
     src/win/win-backend.cpp
+
     rs400/rs400_advanced_mode/src/rs2_advanced_mode.cpp
+    rs400/rs400_advanced_mode/src/presets.cpp
+    rs400/rs400_advanced_mode/src/advanced_mode.cpp
 
     third-party/easyloggingpp/src/easylogging++.cc
-
     third-party/sqlite/sqlite3.c
+    
     src/mock/sql.cpp
     src/mock/recorder.cpp
 
-    rs400/rs400_advanced_mode/src/presets.cpp
-    rs400/rs400_advanced_mode/src/advanced_mode.cpp
+    src/record_device.cpp
+    src/playback_device.cpp
+    src/playback_sensor.cpp
 )
 
 set(REALSENSE_HPP
@@ -192,11 +196,48 @@ set(REALSENSE_HPP
     src/win/win-hid.h
     src/win/win-backend.h
     src/api.h
+    src/core/advanced_mode.h
+    src/core/serialization.h
+        
+    src/record_device.h
+    src/playback_device.h
+    src/playback_sensor.h
+    src/serializers/ros_device_serializer.h
+    src/serializers/ros_reader.h
+    src/serializers/ros_device_serializer_writer.h
 
     third-party/easyloggingpp/src/easylogging++.h
     third-party/sqlite/sqlite3.h
     src/mock/sql.h
     src/mock/recorder.h
+
+    src/ros/data_objects/pose.h
+    src/ros/data_objects/vendor_data.h
+    src/ros/data_objects/image.h
+    src/ros/data_objects/motion_stream_info.h
+    src/ros/data_objects/property.h
+    src/ros/data_objects/log.h
+    src/ros/data_objects/motion_sample.h
+    src/ros/data_objects/time_sample.h
+    src/ros/data_objects/compressed_image.h
+    src/ros/data_objects/occupancy_map.h
+    src/ros/data_objects/stream_data.h
+    src/ros/data_objects/image_stream_info.h
+    src/ros/stream_playback.h
+    src/ros/file_types.h
+    src/ros/status.h
+    src/ros/stream_playback.h
+    src/ros/ros_writer.h
+    src/ros/stream_playback.cpp
+    src/ros/topic.h
+)
+
+# Add additional include directories to allow file to include rosbag headers
+include(${CMAKE_CURRENT_LIST_DIR}/third-party/realsense-file/3rd_party/config.cmake)
+include_directories(
+        ${ROSBAG_HEADER_DIRS}
+        ${BOOST_INCLUDE_PATH}
+        ${LZ4_INCLUDE_PATH}
 )
 
 if(WIN32)

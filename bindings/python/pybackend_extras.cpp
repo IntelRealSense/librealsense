@@ -1,7 +1,7 @@
 #include "pybackend_extras.h"
 #include <cinttypes>
 
-using namespace rsimpl2;
+using namespace librealsense;
 
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "../examples/third_party/stb_image_write.h"

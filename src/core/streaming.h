@@ -4,7 +4,7 @@
 
 #include "options.h"
 #include "types.h"
-
+#include "info.h"
 #include <functional>
 
 namespace librealsense
@@ -42,6 +42,7 @@ namespace librealsense
         virtual rs2_metadata_t get_frame_metadata(const rs2_frame_metadata& frame_metadata) const = 0;
         virtual bool supports_frame_metadata(const rs2_frame_metadata& frame_metadata) const = 0;
         virtual const byte* get_frame_data() const = 0;
+        //TODO: add virtual uint64_t get_frame_data_size() const = 0;
         virtual rs2_time_t get_frame_timestamp() const = 0;
         virtual rs2_timestamp_domain get_frame_timestamp_domain() const = 0;
         virtual void set_timestamp(double new_ts) = 0;
@@ -73,15 +74,6 @@ namespace librealsense
 
     using on_frame = std::function<void(frame_interface*)>;
     using stream_profiles = std::vector<std::shared_ptr<stream_profile_interface>>;
-
-    class info_interface
-    {
-    public:
-        virtual const std::string& get_info(rs2_camera_info info) const = 0;
-        virtual bool supports_info(rs2_camera_info info) const = 0;
-
-        virtual ~info_interface() = default;
-    };
 
     class sensor_interface : public virtual info_interface, public virtual options_interface
     {
@@ -126,7 +118,9 @@ namespace librealsense
     {
     public:
         virtual sensor_interface& get_sensor(size_t i) = 0;
+
         virtual const sensor_interface& get_sensor(size_t i) const = 0;
+
         virtual size_t get_sensors_count() const = 0;
 
         virtual void hardware_reset() = 0;
@@ -143,4 +137,6 @@ namespace librealsense
         virtual float get_depth_scale() const = 0;
         virtual ~depth_sensor() = default;
     };
+    
+    MAP_EXTENSION(RS2_EXTENSION_TYPE_DEPTH_SENSOR, librealsense::depth_sensor);
 }

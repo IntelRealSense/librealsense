@@ -90,6 +90,8 @@ namespace librealsense
         virtual ~ds5_advanced_mode_interface() = default;
     };
 
+    MAP_EXTENSION(RS2_EXTENSION_TYPE_ADVANCED_MODE, librealsense::ds5_advanced_mode_interface);
+
     class advanced_mode_preset_option;
 
     class ds5_advanced_mode_base : public ds5_advanced_mode_interface
