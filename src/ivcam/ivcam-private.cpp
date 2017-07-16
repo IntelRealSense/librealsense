@@ -8,8 +8,8 @@ namespace librealsense
 {
     namespace ivcam
     {
-        bool try_fetch_usb_device(std::vector<uvc::usb_device_info>& devices,
-            const uvc::uvc_device_info& info, uvc::usb_device_info& result)
+        bool try_fetch_usb_device(std::vector<platform::usb_device_info>& devices,
+            const platform::uvc_device_info& info, platform::usb_device_info& result)
         {
             for (auto it = devices.begin(); it != devices.end(); ++it)
             {

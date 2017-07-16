@@ -28,7 +28,7 @@
 
 namespace librealsense
 {
-    namespace uvc
+    namespace platform
     {
         class sensor_events : public ISensorEvents
         {

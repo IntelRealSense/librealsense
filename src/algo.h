@@ -51,7 +51,7 @@ namespace librealsense
     class auto_exposure_algorithm {
     public:
         void modify_exposure(float& exposure_value, bool& exp_modified, float& gain_value, bool& gain_modified); // exposure_value in milliseconds
-        bool analyze_image(const rs2_frame* image);
+        bool analyze_image(const frame_interface* image);
         auto_exposure_algorithm(const auto_exposure_state& auto_exposure_state);
         void update_options(const auto_exposure_state& options);
         void update_roi(const region_of_interest& ae_roi);

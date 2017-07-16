@@ -106,8 +106,8 @@ set(REALSENSE_CPP
     src/linux/backend-hid.cpp
     src/backend.cpp
     src/verify.c
-	src/align.cpp
-	src/source.cpp
+    src/align.cpp
+    src/source.cpp
     src/ds5/ds5-options.cpp
     src/ds5/ds5-timestamp.cpp
     src/ds5/ds5-private.cpp
@@ -122,6 +122,7 @@ set(REALSENSE_CPP
     src/win/win-usb.cpp
     src/win/win-hid.cpp
     src/win/win-backend.cpp
+    rs4xx/rs4xx_advanced_mode/src/rs2_advanced_mode.cpp
 
     third-party/easyloggingpp/src/easylogging++.cc
 
@@ -129,6 +130,8 @@ set(REALSENSE_CPP
     src/mock/sql.cpp
     src/mock/recorder.cpp
 
+    rs4xx/rs4xx_advanced_mode/src/presets.cpp
+    rs4xx/rs4xx_advanced_mode/src/advanced_mode.cpp
 )
 
 set(REALSENSE_HPP
@@ -137,24 +140,28 @@ set(REALSENSE_HPP
     include/librealsense/rscore2.hpp
     include/librealsense/rsutil2.h
     include/librealsense/rsutil2.hpp
+    include/librealsense/rs2_advanced_mode.h
+    include/librealsense/rs2_advanced_mode.hpp
+    include/librealsense/rs2_advanced_mode_command.h
 
     src/core/streaming.h
-	src/core/debug.h
-	src/core/roi.h
-	src/core/motion.h
-	src/core/video.h
-	src/core/options.h
-	src/core/info.h
-	src/core/extension.h
-	src/core/processing.h
-	
+    src/core/debug.h
+    src/core/advanced_mode.h
+    src/core/roi.h
+    src/core/motion.h
+    src/core/video.h
+    src/core/options.h
+    src/core/info.h
+    src/core/extension.h
+    src/core/processing.h
+
     src/archive.h
     src/concurrency.h
     src/context.h
     src/sensor.h
     src/sync.h
     src/sensor.h
-	src/align.h
+    src/align.h
     src/algo.h
     src/option.h
     src/metadata.h
@@ -162,7 +169,7 @@ set(REALSENSE_HPP
     src/error-handling.h
     src/hw-monitor.h
     src/image.h
-	src/source.h
+    src/source.h
     src/ivcam/ivcam-private.h
     src/types.h
     src/backend.h
@@ -184,6 +191,7 @@ set(REALSENSE_HPP
     src/win/win-usb.h
     src/win/win-hid.h
     src/win/win-backend.h
+    src/api.h
 
     third-party/easyloggingpp/src/easylogging++.h
     third-party/sqlite/sqlite3.h
@@ -204,7 +212,7 @@ if(WIN32)
         )
 
     source_group("Source Files\\Logging" FILES
-        third_party/easyloggingpp/src/easylogging++.cc
+        third-party/easyloggingpp/src/easylogging++.cc
         src/log.cpp
         )
 
@@ -224,6 +232,9 @@ if(WIN32)
         include/librealsense/rscore2.hpp
         include/librealsense/rsutil2.h
         include/librealsense/rsutil2.hpp
+        include/librealsense/rs2_advanced_mode.h
+        include/librealsense/rs2_advanced_mode.hpp
+        include/librealsense/rs2_advanced_mode_command.h
         CMake/realsense.def
         )
 
@@ -235,7 +246,8 @@ if(WIN32)
 
     source_group("Source Files\\API" FILES
         src/rs.cpp
-		src/verify.c
+        src/verify.c
+        rs4xx/rs4xx_advanced_mode/src/rs2_advanced_mode.cpp
         )
 
     source_group("Source Files\\Recorder" FILES
@@ -263,7 +275,7 @@ if(WIN32)
         src/ds5/ds5-options.h
         src/ds5/ds5-private.h
         src/ds5/ds5-timestamp.h
-		src/ds5/ds5-factory.h
+        src/ds5/ds5-factory.h
         src/ds5/ds5-active.h
         src/ds5/ds5-motion.h
         src/ds5/ds5-rolling-shutter.h
@@ -271,16 +283,17 @@ if(WIN32)
         src/ivcam/sr300.h
         src/ivcam/ivcam-private.h
         )
-		
-	source_group("Header Files\\Core" FILES
+        
+    source_group("Header Files\\Core" FILES
         src/core/streaming.h
-		src/core/debug.h
-		src/core/roi.h
-		src/core/video.h
-		src/core/motion.h
-		src/core/info.h
-		src/core/options.h
-		src/core/extension.h
+        src/core/debug.h
+        src/core/roi.h
+        src/core/video.h
+        src/core/motion.h
+        src/core/info.h
+        src/core/options.h
+        src/core/extension.h
+        src/core/processing.h
         )
 
     source_group("Header Files\\Logging" FILES
@@ -406,7 +419,7 @@ if(${ROS_BUILD_TYPE})
         ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
     )
 
-    install(DIRECTORY ${PROJECT_SOURCE_DIR}/include/${PROJECT_NAME}/
+    install(DIRECTORY ${PROJECT_SOURCE_DIR}/include/librealsense/
         DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION})
 else()
     set(CMAKECONFIG_INSTALL_DIR "${CMAKE_INSTALL_LIBDIR}/cmake/realsense2")
@@ -432,17 +445,16 @@ else()
     install(CODE "execute_process(COMMAND ldconfig)")
 endif()
 
-option(BUILD_UNIT_TESTS "Build realsense unit tests." ON)
+option(BUILD_UNIT_TESTS "Build realsense unit tests." OFF) # TODO: Change back to ON
 option(BUILD_EXAMPLES "Build realsense examples and tools." ON)
 option(ENFORCE_METADATA "Require WinSDK with Metadata support during compilation. Windows OS Only" OFF)
-option(BUILD_RS400_EXTRAS "Build RS400 advanced APIs." ON)
 option(BUILD_PYTHON_BINDINGS "Build Python bindings" OFF)
 
 # This parameter is meant for disabling graphical examples when building for
 # headless targets.
 option(BUILD_GRAPHICAL_EXAMPLES "Build graphical examples and tools." ON)
 
-if(((BUILD_EXAMPLES AND BUILD_GRAPHICAL_EXAMPLES) OR BUILD_RS400_EXTRAS) AND WIN32)
+if((BUILD_EXAMPLES AND BUILD_GRAPHICAL_EXAMPLES) AND WIN32)
   add_subdirectory(third-party/glfw)
 endif()
 
@@ -453,10 +465,6 @@ endif()
 
 if(BUILD_UNIT_TESTS)
   add_subdirectory(unit-tests)
-endif()
-
-if(BUILD_RS400_EXTRAS)
-  add_subdirectory(rs400/examples)
 endif()
 
 if (ENFORCE_METADATA)

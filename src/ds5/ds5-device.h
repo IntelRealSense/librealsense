@@ -8,6 +8,8 @@
 #include "algo.h"
 #include "error-handling.h"
 #include "core/debug.h"
+#include "core/advanced_mode.h"
+
 
 namespace librealsense
 {
@@ -16,18 +18,16 @@ namespace librealsense
     public:
         rs2_extrinsics get_extrinsics(size_t from_subdevice, rs2_stream, size_t to_subdevice, rs2_stream) const override;
 
-        std::shared_ptr<uvc_sensor> create_depth_device(const uvc::backend& backend,
-                                                        const std::vector<uvc::uvc_device_info>& all_device_infos);
+        std::shared_ptr<uvc_sensor> create_depth_device(const platform::backend& backend,
+                                                        const std::vector<platform::uvc_device_info>& all_device_infos);
 
         uvc_sensor& get_depth_sensor()
         {
             return dynamic_cast<uvc_sensor&>(get_sensor(_depth_device_idx));
         }
 
-        ds5_device(const uvc::backend& backend,
-            const std::vector<uvc::uvc_device_info>& dev_info,
-            const std::vector<uvc::usb_device_info>& hwm_device,
-            const std::vector<uvc::hid_device_info>& hid_info);
+        ds5_device(const platform::backend& backend,
+                   const platform::backend_device_group& group);
 
         std::vector<uint8_t> send_receive_raw_data(const std::vector<uint8_t>& input) override;
 
@@ -44,7 +44,8 @@ namespace librealsense
 
         bool is_camera_in_advanced_mode() const;
 
-        const uint8_t _depth_device_idx;
+        uint8_t _depth_device_idx;
+        std::shared_ptr<uvc_sensor> _depth_sensor;
 
         lazy<std::vector<uint8_t>> _coefficients_table_raw;
 

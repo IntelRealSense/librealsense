@@ -108,6 +108,31 @@ namespace rs2
                 }
                 ImGui::PopItemWidth();
             }
+
+            if (opt == RS2_OPTION_ENABLE_AUTO_EXPOSURE && dev->auto_exposure_enabled && dev->streaming)
+            {
+                ImGui::SameLine(0, 60);
+
+                if (!dev->roi_checked)
+                {
+                    std::string caption = to_string() << "Set ROI##" << label;
+                    if (ImGui::Button(caption.c_str(), { 65, 0 }))
+                    {
+                        dev->roi_checked = true;
+                    }
+                }
+                else
+                {
+                    std::string caption = to_string() << "Cancel##" << label;
+                    if (ImGui::Button(caption.c_str(), { 65, 0 }))
+                    {
+                        dev->roi_checked = false;
+                    }
+                }
+
+                if (ImGui::IsItemHovered())
+                    ImGui::SetTooltip("Select custom region of interest for the auto-exposure algorithm\nClick the button, then draw a rect on the frame");
+            }
         }
     }
 
@@ -180,7 +205,7 @@ namespace rs2
 
     subdevice_model::subdevice_model(device& dev, sensor& s, std::string& error_message)
         : s(s), dev(dev), streaming(false), queues(RS2_STREAM_COUNT),
-          selected_shared_fps_id(0)
+          selected_shared_fps_id(0), _pause(false)
     {
         for (auto& elem : queues)
         {
@@ -219,7 +244,7 @@ namespace rs2
             metadata.id = ss.str();
             metadata.opt = opt;
             metadata.endpoint = s;
-            metadata.label = rs2_option_to_string(opt) + WHITE_SPACES + ss.str();
+            metadata.label = rs2_option_to_string(opt) + std::string("##") + ss.str();
             metadata.invalidate_flag = &options_invalidated;
             metadata.dev = this;
 
@@ -576,6 +601,7 @@ namespace rs2
     void subdevice_model::stop()
     {
         streaming = false;
+        _pause = false;
 
         s.stop();
 
@@ -586,6 +612,21 @@ namespace rs2
         }
 
         s.close();
+    }
+
+    bool subdevice_model::is_paused() const
+    {
+        return _pause.load();
+    }
+
+    void subdevice_model::pause()
+    {
+        _pause = true;
+    }
+
+    void subdevice_model::resume()
+    {
+        _pause = false;
     }
 
     void subdevice_model::play(const std::vector<stream_profile>& profiles)
@@ -660,6 +701,8 @@ namespace rs2
 
     void stream_model::upload_frame(frame&& f)
     {
+        if (dev && dev->is_paused()) return;
+
         last_frame = std::chrono::high_resolution_clock::now();
 
         auto image = f.as<video_frame>();
@@ -708,6 +751,8 @@ namespace rs2
 
     float stream_model::get_stream_alpha()
     {
+        if (dev && dev->is_paused()) return 1.f;
+
         using namespace std::chrono;
         auto now = high_resolution_clock::now();
         auto diff = now - last_frame;
@@ -719,6 +764,12 @@ namespace rs2
 
     bool stream_model::is_stream_visible()
     {
+        if (dev && dev->is_paused())
+        {
+            last_frame = std::chrono::high_resolution_clock::now();
+            return true;
+        }
+
         using namespace std::chrono;
         auto now = high_resolution_clock::now();
         auto diff = now - last_frame;
@@ -809,6 +860,8 @@ namespace rs2
                         error_message = error_to_string(e);
                     }
                 }
+
+                dev->roi_checked = false;
             }
             // If we left stream bounds while capturing, stop capturing
             if (capturing_roi && !stream_rect.contains(mouse.cursor))
@@ -950,7 +1003,7 @@ namespace rs2
         {
             ImGui::SetTooltip("%s", device_names_chars[new_index]);
         }
-        return ImGui::Combo("", &new_index, device_names_chars.data(), static_cast<int>(device_names.size()));
+        return ImGui::Combo("device_model", &new_index, device_names_chars.data(), static_cast<int>(device_names.size()));
         ImGui::PopItemWidth();
     }
 
@@ -1111,13 +1164,29 @@ namespace rs2
         timestamp  = n.get_timestamp();
         severity = n.get_severity();
         created_time = std::chrono::high_resolution_clock::now();
-
     }
 
     double notification_model::get_age_in_ms()
     {
         auto age = std::chrono::high_resolution_clock::now() - created_time;
         return std::chrono::duration_cast<std::chrono::milliseconds>(age).count();
+    }
+
+    void notification_model::set_color_scheme(float t)
+    {
+        if (severity == RS2_LOG_SEVERITY_ERROR ||
+            severity == RS2_LOG_SEVERITY_WARN)
+        {
+            ImGui::PushStyleColor(ImGuiCol_WindowBg, { 0.3f, 0.f, 0.f, 1 - t });
+            ImGui::PushStyleColor(ImGuiCol_TitleBg, { 0.5f, 0.2f, 0.2f, 1 - t });
+            ImGui::PushStyleColor(ImGuiCol_TitleBgActive, { 0.6f, 0.2f, 0.2f, 1 - t });
+        }
+        else
+        {
+            ImGui::PushStyleColor(ImGuiCol_WindowBg, { 0.3f, 0.3f, 0.3f, 1 - t });
+            ImGui::PushStyleColor(ImGuiCol_TitleBg, { 0.4f, 0.4f, 0.4f, 1 - t });
+            ImGui::PushStyleColor(ImGuiCol_TitleBgActive, { 0.6f, 0.6f, 0.6f, 1 - t });
+        }
     }
 
     void notification_model::draw(int w, int y, notification_model& selected)
@@ -1129,21 +1198,15 @@ namespace rs2
         auto ms = get_age_in_ms() / MAX_LIFETIME_MS;
         auto t = smoothstep(static_cast<float>(ms), 0.7f, 1.0f);
 
-        ImGui::PushStyleColor(ImGuiCol_WindowBg, { 0.3f, 0, 0, 1 - t });
-        ImGui::PushStyleColor(ImGuiCol_TitleBg, { 0.5f, 0.2f, 0.2f, 1 - t });
-        ImGui::PushStyleColor(ImGuiCol_TitleBgActive, { 0.6f, 0.2f, 0.2f, 1 - t });
+        set_color_scheme(t);
         ImGui::PushStyleColor(ImGuiCol_Text, { 1, 1, 1, 1 - t });
-
-
 
         auto lines = std::count(message.begin(), message.end(), '\n')+1;
         ImGui::SetNextWindowPos({ float(w - 430), float(y) });
-        ImGui::SetNextWindowSize({ float(500), float(lines*50) });
+        ImGui::SetNextWindowSize({ float(415), float(lines*50) });
         height = lines*50 +10;
         std::string label = to_string() << "Hardware Notification #" << index;
         ImGui::Begin(label.c_str(), nullptr, flags);
-
-
 
         ImGui::Text("%s", message.c_str());
 
@@ -1210,9 +1273,7 @@ namespace rs2
         ImGui::PushStyleColor(ImGuiCol_WindowBg, { 0, 0, 0, 0 });
         ImGui::Begin("Notification parent window", nullptr, flags);
 
-        ImGui::PushStyleColor(ImGuiCol_WindowBg, { 0.1f, 0, 0, 1 });
-        ImGui::PushStyleColor(ImGuiCol_TitleBg, { 0.3f, 0.1f, 0.1f, 1 });
-        ImGui::PushStyleColor(ImGuiCol_TitleBgActive, { 0.5f, 0.1f, 0.1f, 1 });
+        selected.set_color_scheme(0.f);
         ImGui::PushStyleColor(ImGuiCol_Text, { 1, 1, 1, 1 });
 
         if (selected.message != "")

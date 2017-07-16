@@ -13,7 +13,7 @@
 
 #include "backend.h"
 
-void librealsense::uvc::control_range::populate_raw_data(std::vector<uint8_t>& vec, int32_t value)
+void librealsense::platform::control_range::populate_raw_data(std::vector<uint8_t>& vec, int32_t value)
 {
     vec.resize(sizeof(value));
     auto data = reinterpret_cast<const uint8_t*>(&value);

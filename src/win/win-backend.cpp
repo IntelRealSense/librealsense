@@ -13,9 +13,10 @@
 #include "../types.h"
 #include <mfapi.h>
 #include <chrono>
+
 namespace librealsense
 {
-    namespace uvc
+    namespace platform
     {
         wmf_backend::wmf_backend()
         {

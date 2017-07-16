@@ -23,31 +23,31 @@ namespace librealsense
 
         bool has_metadata(const request_mapping& mode, const void * metadata, size_t metadata_size);
 
-        rs2_time_t get_frame_timestamp(const request_mapping& mode, const uvc::frame_object& fo) override;
+        rs2_time_t get_frame_timestamp(const request_mapping& mode, const platform::frame_object& fo) override;
 
-        unsigned long long get_frame_counter(const request_mapping & mode, const uvc::frame_object& fo) const override;
+        unsigned long long get_frame_counter(const request_mapping & mode, const platform::frame_object& fo) const override;
 
         void reset() override;
 
-        rs2_timestamp_domain get_frame_timestamp_domain(const request_mapping & mode, const uvc::frame_object& fo) const override;
+        rs2_timestamp_domain get_frame_timestamp_domain(const request_mapping & mode, const platform::frame_object& fo) const override;
     };
 
     class ds5_timestamp_reader : public frame_timestamp_reader
     {
         static const int pins = 2;
         mutable std::vector<int64_t> counter;
-        std::shared_ptr<uvc::time_service> _ts;
+        std::shared_ptr<platform::time_service> _ts;
         mutable std::recursive_mutex _mtx;
     public:
-        ds5_timestamp_reader(std::shared_ptr<uvc::time_service> ts);
+        ds5_timestamp_reader(std::shared_ptr<platform::time_service> ts);
 
         void reset() override;
 
-        rs2_time_t get_frame_timestamp(const request_mapping& mode, const uvc::frame_object& fo) override;
+        rs2_time_t get_frame_timestamp(const request_mapping& mode, const platform::frame_object& fo) override;
 
-        unsigned long long get_frame_counter(const request_mapping & mode, const uvc::frame_object& fo) const override;
+        unsigned long long get_frame_counter(const request_mapping & mode, const platform::frame_object& fo) const override;
 
-        rs2_timestamp_domain get_frame_timestamp_domain(const request_mapping & mode, const uvc::frame_object& fo) const override;
+        rs2_timestamp_domain get_frame_timestamp_domain(const request_mapping & mode, const platform::frame_object& fo) const override;
     };
 
     class ds5_iio_hid_timestamp_reader : public frame_timestamp_reader
@@ -61,13 +61,13 @@ namespace librealsense
 
         void reset() override;
 
-        rs2_time_t get_frame_timestamp(const request_mapping& mode, const uvc::frame_object& fo) override;
+        rs2_time_t get_frame_timestamp(const request_mapping& mode, const platform::frame_object& fo) override;
 
         bool has_metadata(const request_mapping& mode, const void * metadata, size_t metadata_size) const;
 
-        unsigned long long get_frame_counter(const request_mapping & mode, const uvc::frame_object& fo) const override;
+        unsigned long long get_frame_counter(const request_mapping & mode, const platform::frame_object& fo) const override;
 
-        rs2_timestamp_domain get_frame_timestamp_domain(const request_mapping & mode, const uvc::frame_object& fo) const;
+        rs2_timestamp_domain get_frame_timestamp_domain(const request_mapping & mode, const platform::frame_object& fo) const;
     };
 
     class ds5_custom_hid_timestamp_reader : public frame_timestamp_reader
@@ -81,12 +81,12 @@ namespace librealsense
 
         void reset() override;
 
-        rs2_time_t get_frame_timestamp(const request_mapping& mode, const uvc::frame_object& fo) override;
+        rs2_time_t get_frame_timestamp(const request_mapping& mode, const platform::frame_object& fo) override;
 
         bool has_metadata(const request_mapping& mode, const void * metadata, size_t metadata_size) const;
 
-        unsigned long long get_frame_counter(const request_mapping & mode, const uvc::frame_object& fo) const override;
+        unsigned long long get_frame_counter(const request_mapping & mode, const platform::frame_object& fo) const override;
 
-        rs2_timestamp_domain get_frame_timestamp_domain(const request_mapping & mode, const uvc::frame_object& fo) const;
+        rs2_timestamp_domain get_frame_timestamp_domain(const request_mapping & mode, const platform::frame_object& fo) const;
     };
 }

@@ -10,18 +10,16 @@ namespace librealsense
     class ds5_motion : public virtual ds5_device
     {
     public:
-        std::shared_ptr<hid_sensor> create_hid_device(const uvc::backend& backend,
-                                                        const std::vector<uvc::hid_device_info>& all_hid_infos,
+        std::shared_ptr<hid_sensor> create_hid_device(const platform::backend& backend,
+                                                        const std::vector<platform::hid_device_info>& all_hid_infos,
                                                         const firmware_version& camera_fw_version);
 
-        ds5_motion(const uvc::backend& backend,
-            const std::vector<uvc::uvc_device_info>& dev_info,
-            const std::vector<uvc::usb_device_info>& hwm_device,
-            const std::vector<uvc::hid_device_info>& hid_info);
+        ds5_motion(const platform::backend& backend,
+                   const platform::backend_device_group& group);
 
         rs2_motion_device_intrinsic get_motion_intrinsics(rs2_stream) const;
 
-        std::shared_ptr<auto_exposure_mechanism> register_auto_exposure_options(uvc_sensor* uvc_ep, const uvc::extension_unit* fisheye_xu);
+        std::shared_ptr<auto_exposure_mechanism> register_auto_exposure_options(uvc_sensor* uvc_ep, const platform::extension_unit* fisheye_xu);
 
     private:
         friend class ds5_fisheye_sensor;

@@ -4,6 +4,8 @@
 #pragma once
 
 #include "types.h"
+#include "core/streaming.h"
+
 #include <atomic>
 #include <array>
 #include <math.h>
@@ -48,36 +50,12 @@ struct frame_additional_data
     }
 };
 
-struct rs2_frame // esentially an intrusive shared_ptr<frame>
-{
-    rs2_frame();
-    explicit rs2_frame(librealsense::frame* frame);
-    rs2_frame(const rs2_frame& other);
-    rs2_frame(rs2_frame&& other);
-
-    rs2_frame& operator=(rs2_frame other);
-    ~rs2_frame();
-
-    void swap(rs2_frame& other);
-
-    void attach_continuation(librealsense::frame_continuation&& continuation) const;
-    void disable_continuation() const;
-
-    librealsense::frame* get() const;
-
-    void log_callback_start(rs2_time_t timestamp) const;
-    void log_callback_end(rs2_time_t timestamp) const;
-
-private:
-    librealsense::frame* frame_ptr = nullptr;
-};
-
 namespace librealsense
 {
     typedef std::map<rs2_frame_metadata, std::shared_ptr<md_attribute_parser_base>> metadata_parser_map;
 
     // Define a movable but explicitly noncopyable buffer type to hold our frame data
-    class frame
+    class frame : public frame_interface
     {
     public:
         std::vector<byte> data;
@@ -106,40 +84,133 @@ namespace librealsense
 
         virtual ~frame() { on_release.reset(); }
 
-        rs2_metadata_t get_frame_metadata(const rs2_frame_metadata& frame_metadata) const;
-        bool supports_frame_metadata(const rs2_frame_metadata& frame_metadata) const;
-        const byte* get_frame_data() const;
-        rs2_time_t get_frame_timestamp() const;
-        rs2_timestamp_domain get_frame_timestamp_domain() const;
-        void set_timestamp(double new_ts) { additional_data.timestamp = new_ts; }
-        unsigned long long get_frame_number() const;
+        rs2_metadata_t get_frame_metadata(const rs2_frame_metadata& frame_metadata) const override;
+        bool supports_frame_metadata(const rs2_frame_metadata& frame_metadata) const override;
+        const byte* get_frame_data() const override;
+        rs2_time_t get_frame_timestamp() const override;
+        rs2_timestamp_domain get_frame_timestamp_domain() const override;
+        void set_timestamp(double new_ts) override { additional_data.timestamp = new_ts; }
+        unsigned long long get_frame_number() const override;
 
-        void set_timestamp_domain(rs2_timestamp_domain timestamp_domain)
+        void set_timestamp_domain(rs2_timestamp_domain timestamp_domain) override
         {
             additional_data.timestamp_domain = timestamp_domain;
         }
 
-        rs2_time_t get_frame_system_time() const;
-        rs2_format get_format() const;
-        rs2_stream get_stream_type() const;
-        int frame::get_framerate() const;
+        rs2_time_t get_frame_system_time() const override;
+        rs2_format get_format() const override;
+        rs2_stream get_stream_type() const override;
+        int get_framerate() const override;
 
-        rs2_time_t get_frame_callback_start_time_point() const;
-        void update_frame_callback_start_ts(rs2_time_t ts);
+        rs2_time_t get_frame_callback_start_time_point() const override;
+        void update_frame_callback_start_ts(rs2_time_t ts) override;
 
-        void acquire() { ref_count.fetch_add(1); }
-        void release();
-        frame* publish(std::shared_ptr<librealsense::archive_interface> new_owner);
-        void attach_continuation(librealsense::frame_continuation&& continuation) { on_release = std::move(continuation); }
-        void disable_continuation() { on_release.reset(); }
+        void acquire() override { ref_count.fetch_add(1); }
+        void release() override;
+        frame_interface* publish(std::shared_ptr<archive_interface> new_owner) override;
+        void attach_continuation(frame_continuation&& continuation) override { on_release = std::move(continuation); }
+        void disable_continuation() override { on_release.reset(); }
 
-        librealsense::archive_interface* get_owner() const { return owner.get(); }
+        archive_interface* get_owner() const override { return owner.get(); }
+
+        std::shared_ptr<sensor_interface> get_sensor() const override;
+        void set_sensor(std::shared_ptr<sensor_interface> s) override;
+
+
+        void log_callback_start(rs2_time_t timestamp) override;
+        void log_callback_end(rs2_time_t timestamp) const override;
 
     private:
         // TODO: check boost::intrusive_ptr or an alternative
         std::atomic<int> ref_count; // the reference count is on how many times this placeholder has been observed (not lifetime, not content)
-        std::shared_ptr<librealsense::archive_interface> owner; // pointer to the owner to be returned to by last observe
-        librealsense::frame_continuation on_release;
+        std::shared_ptr<archive_interface> owner; // pointer to the owner to be returned to by last observe
+        std::weak_ptr<sensor_interface> sensor;
+        frame_continuation on_release;
+    };
+
+    class points : public frame
+    {
+    public:
+        float3* get_vertices();
+        size_t get_vertex_count() const;
+        int2* get_pixel_coordinates();
+    };
+
+    class composite_frame : public frame
+    {
+    public:
+        composite_frame() : frame() {}
+
+        frame_interface* get_frame(int i) const
+        {
+            auto frames = get_frames();
+            return frames[i];
+        }
+
+        frame_interface** get_frames() const { return (frame_interface**)data.data(); }
+
+        const frame_interface* first() const
+        {
+            return get_frame(0);
+        }
+        frame_interface* first()
+        {
+            return get_frame(0);
+        }
+
+        size_t get_embeded_frames_count() const { return data.size() / sizeof(rs2_frame*); }
+
+        // In the next section we make the composite frame "look and feel" like the first of its children
+        rs2_metadata_t get_frame_metadata(const rs2_frame_metadata& frame_metadata) const override
+        {
+            return first()->get_frame_metadata(frame_metadata);
+        }
+        bool supports_frame_metadata(const rs2_frame_metadata& frame_metadata) const override
+        {
+            return first()->supports_frame_metadata(frame_metadata);
+        }
+        const byte* get_frame_data() const override
+        {
+            return first()->get_frame_data();
+        }
+        rs2_time_t get_frame_timestamp() const override
+        {
+            return first()->get_frame_timestamp();
+        }
+        rs2_timestamp_domain get_frame_timestamp_domain() const override
+        {
+            return first()->get_frame_timestamp_domain();
+        }
+        unsigned long long get_frame_number() const override
+        {
+            if (first())
+                return first()->get_frame_number();
+            else
+                return frame::get_frame_number();
+        }
+        rs2_time_t get_frame_system_time() const override
+        {
+            return first()->get_frame_system_time();
+        }
+        rs2_format get_format() const override
+        {
+            return first()->get_format();
+        }
+        rs2_stream get_stream_type() const override
+        {
+            if (first())
+                return first()->get_stream_type();
+            else
+                return frame::get_stream_type();
+        }
+        int get_framerate() const override
+        {
+            return first()->get_framerate();
+        }
+        std::shared_ptr<sensor_interface> get_sensor() const override
+        {
+            return first()->get_sensor();
+        }
     };
 
     class video_frame : public frame
@@ -168,28 +239,26 @@ namespace librealsense
 
     //TODO: Define Motion Frame
 
-    class archive_interface
+    class archive_interface : public sensor_part
     {
     public:
         virtual callback_invocation_holder begin_callback() = 0;
-         
-        virtual rs2_frame* clone_frame(rs2_frame* frameset) = 0;
-        virtual void release_frame_ref(rs2_frame* ref) = 0;
         
-        virtual rs2_frame* alloc_and_track(const size_t size, const frame_additional_data& additional_data, bool requires_memory) = 0;
+        virtual frame_interface* alloc_and_track(const size_t size, const frame_additional_data& additional_data, bool requires_memory) = 0;
 
         virtual std::shared_ptr<metadata_parser_map> get_md_parsers() const = 0;
         
         virtual void flush() = 0;
 
-        virtual frame* publish_frame(frame* frame) = 0;
-        virtual void unpublish_frame(frame* frame) = 0;
-        
+        virtual frame_interface* publish_frame(frame_interface* frame) = 0;
+        virtual void unpublish_frame(frame_interface* frame) = 0;
+
         virtual ~archive_interface() = default;
+
     };
 
     std::shared_ptr<archive_interface> make_archive(rs2_extension_type type, 
                                                     std::atomic<uint32_t>* in_max_frame_queue_size,
-                                                    std::shared_ptr<uvc::time_service> ts,
+                                                    std::shared_ptr<platform::time_service> ts,
                                                     std::shared_ptr<metadata_parser_map> parsers);
 }

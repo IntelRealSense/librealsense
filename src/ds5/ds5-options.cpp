@@ -47,7 +47,7 @@ namespace librealsense
         #pragma pack(pop)
 
         auto temperature_data = static_cast<temperature>(_ep.invoke_powered(
-            [this](uvc::uvc_device& dev)
+            [this](platform::uvc_device& dev)
             {
                 temperature temp{};
                 if (!dev.get_xu(ds::depth_xu,
@@ -116,7 +116,7 @@ namespace librealsense
         if (!is_enabled())
             throw wrong_api_call_sequence_exception("query option is allow only in streaming!");
 
-        static const auto report_field = uvc::custom_sensor_report_field::value;
+        static const auto report_field = platform::custom_sensor_report_field::value;
         auto data = _ep.get_custom_report_data(custom_sensor_name, report_name, report_field);
         if (data.empty())
             throw invalid_value_exception("query() motion_module_temperature_option failed! Empty buffer arrived.");
@@ -130,8 +130,8 @@ namespace librealsense
         if (!is_enabled())
             throw wrong_api_call_sequence_exception("get option range is allow only in streaming!");
 
-        static const auto min_report_field = uvc::custom_sensor_report_field::minimum;
-        static const auto max_report_field = uvc::custom_sensor_report_field::maximum;
+        static const auto min_report_field = platform::custom_sensor_report_field::minimum;
+        static const auto max_report_field = platform::custom_sensor_report_field::maximum;
         auto min_data = _ep.get_custom_report_data(custom_sensor_name, report_name, min_report_field);
         auto max_data = _ep.get_custom_report_data(custom_sensor_name, report_name, max_report_field);
         if (min_data.empty() || max_data.empty())
@@ -180,9 +180,8 @@ namespace librealsense
         : option_base(opt_range), _is_enabled(true), _accel(accel), _gyro(gyro)
     {
         mm_ep->register_on_before_frame_callback(
-                    [this](rs2_stream stream, rs2_frame& f, callback_invocation_holder callback)
+                    [this](rs2_stream stream, frame_interface* fr, callback_invocation_holder callback)
         {
-            auto fr = f.get();
             if (_is_enabled.load() && fr->get_format() == RS2_FORMAT_MOTION_XYZ32F)
             {
                 auto xyz = (float*)(fr->get_frame_data());
@@ -241,14 +240,15 @@ namespace librealsense
           _auto_exposure(auto_exposure)
     {
         fisheye_ep->register_on_before_frame_callback(
-                    [this](rs2_stream stream, rs2_frame& f, callback_invocation_holder callback)
+                    [this](rs2_stream stream, frame_interface* f, callback_invocation_holder callback)
         {
             if (!_to_add_frames || stream != RS2_STREAM_FISHEYE)
                 return;
 
-            f.get()->additional_data.fisheye_ae_mode = true;
+            ((frame*)f)->additional_data.fisheye_ae_mode = true;
 
-            _auto_exposure->add_frame(f.get()->get_owner()->clone_frame(&f), std::move(callback));
+            f->acquire();
+            _auto_exposure->add_frame(f, std::move(callback));
         });
     }
 

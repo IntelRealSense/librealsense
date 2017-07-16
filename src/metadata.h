@@ -402,7 +402,7 @@ namespace librealsense
      *  layout as transmitted and recieved by backend */
     struct metadata_raw
     {
-       uvc::uvc_header   header;
+       platform::uvc_header   header;
        md_modes          mode;
     };
 
