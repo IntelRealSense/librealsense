@@ -24,9 +24,9 @@ namespace librealsense
     void generic_ds5_passive_full_seed_config(preset& p);
     void generic_ds5_passive_vga_seed_config(preset& p);
     void generic_ds5_passive_small_seed_config(preset& p);
-    void generic_ds5_active_full_dense_depth1(preset& p);
+    void generic_ds5_active_full_dense_depth(preset& p);
     void generic_ds5_active_full_generic_depth(preset& p);
-    void generic_ds5_active_full_dense_depth2(preset& p);
+    void generic_ds5_active_full_super_dense_depth(preset& p);
     void generic_ds5_active_full_accurate_depth(preset& p);
     void generic_ds5_active_vga_generic_depth(preset& p);
     void generic_ds5_active_vga_dense_depth(preset& p);

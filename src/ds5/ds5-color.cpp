@@ -62,7 +62,7 @@ namespace librealsense
 
         auto color_devs_info = filter_by_mi(group.uvc_devices, 3); // TODO check
         if (color_devs_info.size() != 1)
-            throw invalid_value_exception(to_string() << "RS4XX with RGB models are expected to include a single color device! - "
+            throw invalid_value_exception(to_string() << "RS400 with RGB models are expected to include a single color device! - "
                 << color_devs_info.size() << " found");
 
         color_ep = create_color_device(backend, color_devs_info);

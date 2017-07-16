@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 2.8.3)
 
-project(RS4XX_Advanced_Mode)
+project(RS400_Advanced_Mode)
 
 # Save the command line compile commands in the build output
 set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
@@ -49,7 +49,7 @@ else()
     include_directories(${GLFW_INCLUDE_DIR})
 endif()
 
-set(RS4XX_SOURCES
+set(RS400_SOURCES
     src/advanced_mode.cpp
     src/presets.h
     src/presets.cpp
@@ -57,7 +57,7 @@ set(RS4XX_SOURCES
     src/json_loader.hpp
     )
 
-set(RS4XX_INCLUDES
+set(RS400_INCLUDES
     ../../include/librealsense/rs2_advanced_mode.h
     ../../include/librealsense/rs2_advanced_mode.hpp
     ../../include/librealsense/rs2_advanced_mode_command.h
@@ -76,12 +76,12 @@ if(WIN32)
 
 endif()
 
-add_library(rs2-advanced-mode SHARED ${RS4XX_SOURCES} ${RS4XX_INCLUDES} ${ADVANCED_DEF})
+add_library(rs2-advanced-mode SHARED ${RS400_SOURCES} ${RS400_INCLUDES} ${ADVANCED_DEF})
 target_link_libraries(rs2-advanced-mode ${DEPENDENCIES})
 include_directories(rs2-advanced-mode include)
 
 set_target_properties (rs2-advanced-mode PROPERTIES
-    FOLDER "RS4XX Advanced Mode"
+    FOLDER "RS400 Advanced Mode"
 )
 
 file(GLOB JSONS

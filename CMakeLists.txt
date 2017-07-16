@@ -122,7 +122,7 @@ set(REALSENSE_CPP
     src/win/win-usb.cpp
     src/win/win-hid.cpp
     src/win/win-backend.cpp
-    rs4xx/rs4xx_advanced_mode/src/rs2_advanced_mode.cpp
+    rs400/rs400_advanced_mode/src/rs2_advanced_mode.cpp
 
     third-party/easyloggingpp/src/easylogging++.cc
 
@@ -130,8 +130,8 @@ set(REALSENSE_CPP
     src/mock/sql.cpp
     src/mock/recorder.cpp
 
-    rs4xx/rs4xx_advanced_mode/src/presets.cpp
-    rs4xx/rs4xx_advanced_mode/src/advanced_mode.cpp
+    rs400/rs400_advanced_mode/src/presets.cpp
+    rs400/rs400_advanced_mode/src/advanced_mode.cpp
 )
 
 set(REALSENSE_HPP
@@ -247,7 +247,7 @@ if(WIN32)
     source_group("Source Files\\API" FILES
         src/rs.cpp
         src/verify.c
-        rs4xx/rs4xx_advanced_mode/src/rs2_advanced_mode.cpp
+        rs400/rs400_advanced_mode/src/rs2_advanced_mode.cpp
         )
 
     source_group("Source Files\\Recorder" FILES
@@ -448,14 +448,14 @@ endif()
 option(BUILD_UNIT_TESTS "Build realsense unit tests." OFF) # TODO: Change back to ON
 option(BUILD_EXAMPLES "Build realsense examples and tools." ON)
 option(ENFORCE_METADATA "Require WinSDK with Metadata support during compilation. Windows OS Only" OFF)
-option(BUILD_RS4XX_EXTRAS "Build RS4xx advanced APIs." ON)
+option(BUILD_RS400_EXTRAS "Build RS4xx advanced APIs." ON)
 option(BUILD_PYTHON_BINDINGS "Build Python bindings" OFF)
 
 # This parameter is meant for disabling graphical examples when building for
 # headless targets.
 option(BUILD_GRAPHICAL_EXAMPLES "Build graphical examples and tools." ON)
 
-if(((BUILD_EXAMPLES AND BUILD_GRAPHICAL_EXAMPLES) OR BUILD_RS4XX_EXTRAS) AND WIN32)
+if(((BUILD_EXAMPLES AND BUILD_GRAPHICAL_EXAMPLES) OR BUILD_RS400_EXTRAS) AND WIN32)
   add_subdirectory(third-party/glfw)
 endif()
 
@@ -468,8 +468,8 @@ if(BUILD_UNIT_TESTS)
   add_subdirectory(unit-tests)
 endif()
 
-if(BUILD_RS4XX_EXTRAS)
-  add_subdirectory(rs4xx/rs4xx_advanced_mode)
+if(BUILD_RS400_EXTRAS)
+  add_subdirectory(rs400/rs400_advanced_mode)
 endif()
 
 if (ENFORCE_METADATA)

@@ -337,12 +337,12 @@ namespace rs2
     class color_map
     {
     public:
-        color_map(std::map<float, float3> map, int steps = 64) : _map(map) 
+        color_map(std::map<float, float3> map, int steps = 4000) : _map(map)
         {
             initialize(steps);
         }
 
-        color_map(const std::vector<float3>& values, int steps = 64)
+        color_map(const std::vector<float3>& values, int steps = 4000)
         {
             for (int i = 0; i < values.size(); i++)
             {

@@ -111,21 +111,21 @@ typedef enum rs2_distortion
 } rs2_distortion;
 
 /** \brief For SR300 devices: provides optimized settings (presets) for specific types of usage. */
-typedef enum rs2_ivcam_preset
+typedef enum rs2_ivcam_visual_preset
 {
-    RS2_VISUAL_PRESET_SHORT_RANGE             , /**< Preset for short range */
-    RS2_VISUAL_PRESET_LONG_RANGE              , /**< Preset for long range */
-    RS2_VISUAL_PRESET_BACKGROUND_SEGMENTATION , /**< Preset for background segmentation */
-    RS2_VISUAL_PRESET_GESTURE_RECOGNITION     , /**< Preset for gesture recognition */
-    RS2_VISUAL_PRESET_OBJECT_SCANNING         , /**< Preset for object scanning */
-    RS2_VISUAL_PRESET_FACE_ANALYTICS          , /**< Preset for face analytics */
-    RS2_VISUAL_PRESET_FACE_LOGIN              , /**< Preset for face login */
-    RS2_VISUAL_PRESET_GR_CURSOR               , /**< Preset for GR cursor */
-    RS2_VISUAL_PRESET_DEFAULT                 , /**< Preset for default */
-    RS2_VISUAL_PRESET_MID_RANGE               , /**< Preset for mid-range */
-    RS2_VISUAL_PRESET_IR_ONLY                 , /**< Preset for IR only */
-    RS2_VISUAL_PRESET_COUNT                     /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
-} rs2_visual_preset;
+    RS2_IVCAM_VISUAL_PRESET_SHORT_RANGE             , /**< Preset for short range */
+    RS2_IVCAM_VISUAL_PRESET_LONG_RANGE              , /**< Preset for long range */
+    RS2_IVCAM_VISUAL_PRESET_BACKGROUND_SEGMENTATION , /**< Preset for background segmentation */
+    RS2_IVCAM_VISUAL_PRESET_GESTURE_RECOGNITION     , /**< Preset for gesture recognition */
+    RS2_IVCAM_VISUAL_PRESET_OBJECT_SCANNING         , /**< Preset for object scanning */
+    RS2_IVCAM_VISUAL_PRESET_FACE_ANALYTICS          , /**< Preset for face analytics */
+    RS2_IVCAM_VISUAL_PRESET_FACE_LOGIN              , /**< Preset for face login */
+    RS2_IVCAM_VISUAL_PRESET_GR_CURSOR               , /**< Preset for GR cursor */
+    RS2_IVCAM_VISUAL_PRESET_DEFAULT                 , /**< Preset for default */
+    RS2_IVCAM_VISUAL_PRESET_MID_RANGE               , /**< Preset for mid-range */
+    RS2_IVCAM_VISUAL_PRESET_IR_ONLY                 , /**< Preset for IR only */
+    RS2_IVCAM_VISUAL_PRESET_COUNT                     /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
+} rs2_ivcam_visual_preset;
 
 /** \brief Defines general configuration controls.
    These can generally be mapped to camera UVC controls, and unless stated otherwise, can be set/queried at any time. */
@@ -1022,9 +1022,9 @@ const char * rs2_camera_info_to_string      (rs2_camera_info info);
 const char * rs2_frame_metadata_to_string   (rs2_frame_metadata metadata);
 const char * rs2_timestamp_domain_to_string (rs2_timestamp_domain info);
 const char * rs2_notification_category_to_string(rs2_notification_category category);
-const char * rs2_visual_preset_to_string    (rs2_visual_preset preset);
+const char * rs2_visual_preset_to_string    (rs2_ivcam_visual_preset preset);
 const char * rs2_log_severity_to_string     (rs2_log_severity info);
-const char * rs2_visual_preset_to_string    (rs2_visual_preset preset);
+const char * rs2_visual_preset_to_string    (rs2_ivcam_visual_preset preset);
 const char * rs2_exception_type_to_string   (rs2_exception_type type);
 const char * rs2_extension_type_to_string   (rs2_extension_type type);
 
