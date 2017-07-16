@@ -113,6 +113,7 @@ EXPORTS
     rs2_set_devices_changed_callback_cpp
     rs2_set_devices_changed_callback
     rs2_device_list_contains
+    rs2_create_device_from_sensor
     rs2_get_depth_scale
 
     rs2_is_sensor
