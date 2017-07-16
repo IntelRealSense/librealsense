@@ -51,9 +51,9 @@ namespace librealsense
             std::map<rs2_stream, std::map<unsigned, unsigned>> fps_and_sampling_frequency_per_rs2_stream,
             std::vector<std::pair<std::string, stream_profile>> sensor_name_and_hid_profiles,
             std::shared_ptr<platform::time_service> ts)
-            : hid_sensor(hid_device, move(hid_iio_timestamp_reader), move(custom_hid_timestamp_reader), 
+            : hid_sensor(hid_device, move(hid_iio_timestamp_reader), move(custom_hid_timestamp_reader),
                 fps_and_sampling_frequency_per_rs2_stream, sensor_name_and_hid_profiles, ts, owner), _owner(owner)
-        { 
+        {
         }
 
         rs2_motion_device_intrinsic get_motion_intrinsics(rs2_stream stream) const override

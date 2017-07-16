@@ -220,7 +220,7 @@ namespace librealsense
     {
     public:
         video_frame()
-            : frame(), _width(0), _height(0), _bpp(0), _stride(0) 
+            : frame(), _width(0), _height(0), _bpp(0), _stride(0)
         {}
 
         int get_width() const { return _width; }
@@ -248,11 +248,11 @@ namespace librealsense
     {
     public:
         virtual callback_invocation_holder begin_callback() = 0;
-        
+
         virtual frame_interface* alloc_and_track(const size_t size, const frame_additional_data& additional_data, bool requires_memory) = 0;
 
         virtual std::shared_ptr<metadata_parser_map> get_md_parsers() const = 0;
-        
+
         virtual void flush() = 0;
 
         virtual frame_interface* publish_frame(frame_interface* frame) = 0;
@@ -262,7 +262,7 @@ namespace librealsense
 
     };
 
-    std::shared_ptr<archive_interface> make_archive(rs2_extension_type type, 
+    std::shared_ptr<archive_interface> make_archive(rs2_extension_type type,
                                                     std::atomic<uint32_t>* in_max_frame_queue_size,
                                                     std::shared_ptr<platform::time_service> ts,
                                                     std::shared_ptr<metadata_parser_map> parsers);

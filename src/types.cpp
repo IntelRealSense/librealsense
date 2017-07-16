@@ -144,7 +144,7 @@ namespace librealsense
         }
         #undef CASE
     }
-       
+
     const char* get_string(rs2_log_severity value)
     {
         #define CASE(X) case RS2_LOG_SEVERITY_##X: return #X;

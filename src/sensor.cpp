@@ -424,7 +424,7 @@ namespace librealsense
             throw wrong_api_call_sequence_exception("start_streaming(...) failed. UVC device was not opened!");
 
         _source.set_callback(callback);
-        
+
         _is_streaming = true;
         _device->start_callbacks();
     }

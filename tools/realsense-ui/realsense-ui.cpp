@@ -580,7 +580,7 @@ int main(int, char**) try
                 try
                 {
                     list = ctx.query_devices();
-                    
+
                     device_names = get_devices_names(list);
 
                     for(auto dev: devs)
@@ -594,7 +594,7 @@ int main(int, char**) try
                         device_index = 0;
                         dev = nullptr;
                         model.reset();
-                       
+
                         if(list.size() > 0)
                         {
                             dev = list[device_index];                  // Access first device
@@ -638,7 +638,6 @@ int main(int, char**) try
                                                        });
                         }
                     }
-                    
                 }
                 catch (const error& e)
                 {
@@ -957,7 +956,6 @@ int main(int, char**) try
             ImGui::End();
             ImGui::PopStyleColor();
 
-            
             ImGui::PushStyleColor(ImGuiCol_WindowBg, { 0, 0, 0, 0 });
             ImGui::SetNextWindowPos({ stream_rect.x, stream_rect.y + stream_rect.h - 30 });
             ImGui::SetNextWindowSize({ stream_rect.w, 30 });
@@ -1008,7 +1006,7 @@ int main(int, char**) try
 
             ImGui::End();
             ImGui::PopStyleColor();
-            
+
         }
 
         // Metadata overlay windows shall be drawn after textures to preserve z-buffer functionality

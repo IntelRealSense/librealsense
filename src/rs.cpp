@@ -1114,7 +1114,7 @@ void rs2_record_device_resume(const rs2_device* device, rs2_error** error) try
     record_device->resume_recording();
 }HANDLE_EXCEPTIONS_AND_RETURN(, device)
 
-rs2_frame* rs2_allocate_synthetic_video_frame(rs2_source* source, rs2_stream new_stream, rs2_frame* original, 
+rs2_frame* rs2_allocate_synthetic_video_frame(rs2_source* source, rs2_stream new_stream, rs2_frame* original,
     rs2_format new_format, int new_bpp, int new_width, int new_height, int new_stride, rs2_error** error) try
 {
     VALIDATE_NOT_NULL(source);
@@ -1143,7 +1143,7 @@ rs2_processing_block* rs2_create_processing_block(rs2_context* ctx, rs2_frame_pr
 
     auto block = std::make_shared<librealsense::processing_block>(ctx->ctx->get_time_service());
     block->set_processing_callback({ proc, [](rs2_frame_processor_callback* p) { p->release(); } });
-    
+
     return new rs2_processing_block { block };
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, ctx, proc)
@@ -1151,14 +1151,14 @@ HANDLE_EXCEPTIONS_AND_RETURN(nullptr, ctx, proc)
 rs2_processing_block* rs2_create_sync_processing_block(rs2_error ** error)
 {
     auto block = std::make_shared<librealsense::syncer_proccess_unit>();
-    
+
     return new rs2_processing_block{ block };
 }
 
 void rs2_start_processing(rs2_processing_block* block, rs2_frame_callback* on_frame, rs2_error** error) try
 {
     VALIDATE_NOT_NULL(block);
-    
+
     block->block->set_output_callback({ on_frame, [](rs2_frame_callback* p) { p->release(); } });
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, block, on_frame)
@@ -1175,7 +1175,7 @@ HANDLE_EXCEPTIONS_AND_RETURN(, block, frame)
 void rs2_delete_processing_block(rs2_processing_block* block) try
 {
     VALIDATE_NOT_NULL(block);
-    
+
     delete block;
 }
 NOEXCEPT_RETURN(, block)

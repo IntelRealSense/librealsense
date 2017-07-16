@@ -95,7 +95,7 @@ namespace librealsense
             color_ep->set_pose(lazy<pose>([](){pose p = {{ { 1,0,0 },{ 0,1,0 },{ 0,0,1 } },{ 0,0,0 }}; return p; }));
         }
 
-        virtual rs2_intrinsics get_intrinsics(unsigned int subdevice, const stream_profile& profile) const 
+        virtual rs2_intrinsics get_intrinsics(unsigned int subdevice, const stream_profile& profile) const
         {
             return rs2_intrinsics {};
         }

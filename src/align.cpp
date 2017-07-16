@@ -107,7 +107,7 @@ namespace librealsense
         {
             height = vf->get_height();
         }
-        
+
         auto res = _actual_source.alloc_frame(RS2_EXTENSION_TYPE_VIDEO_FRAME, stride * height, data, true);
         if (!res) throw wrong_api_call_sequence_exception("Out of frame resources!");
         vf = (video_frame*)res;
@@ -351,7 +351,7 @@ namespace librealsense
     //    std::lock_guard<std::mutex> lock(_mutex);
     //    switch(cm)
     //    {
-    //    case RS2_COLOR_MAP_CLASSIC: 
+    //    case RS2_COLOR_MAP_CLASSIC:
     //        _cm = &classic;
     //        break;
     //    case RS2_COLOR_MAP_JET:

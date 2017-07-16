@@ -324,7 +324,7 @@ if(WIN32)
         src/ivcam/sr300.h
         src/ivcam/ivcam-private.h
         )
-        
+
     source_group("Header Files\\Core" FILES
         src/core/streaming.h
         src/core/debug.h

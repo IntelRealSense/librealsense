@@ -368,9 +368,9 @@ namespace rs2
         float3 calc(float value) const
         {
             if (_map.size() == 0) return { value, value, value };
-            // if we have exactly this value in the map, just return it                                                                                                                                                                 
+            // if we have exactly this value in the map, just return it
             if( _map.find(value) != _map.end() ) return _map.at(value);
-            // if we are beyond the limits, return the first/last element                                                                                                                                                               
+            // if we are beyond the limits, return the first/last element
             if( value < _map.begin()->first )   return _map.begin()->second;
             if( value > _map.rbegin()->first )  return _map.rbegin()->second;
 
@@ -923,7 +923,6 @@ namespace rs2
                     }
                 }
             }
-            
         }
     };
 

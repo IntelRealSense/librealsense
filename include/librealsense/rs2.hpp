@@ -594,16 +594,16 @@ namespace rs2
     {
     public:
 
-        frame allocate_video_frame(rs2_stream new_stream, 
-                                   const frame& original, 
+        frame allocate_video_frame(rs2_stream new_stream,
+                                   const frame& original,
                                    rs2_format new_format = RS2_FORMAT_ANY,
                                    int new_bpp = 0,
                                    int new_width = 0,
                                    int new_height = 0,
-                                   int new_stride = 0) const 
+                                   int new_stride = 0) const
         {
             rs2_error* e = nullptr;
-            auto result = rs2_allocate_synthetic_video_frame(_source, new_stream, 
+            auto result = rs2_allocate_synthetic_video_frame(_source, new_stream,
                 original.get(), new_format, new_bpp, new_width, new_height, new_stride, &e);
             error::handle(e);
             return result;
@@ -634,10 +634,10 @@ namespace rs2
     private:
         template<class T>
         friend class frame_processor_callback;
-       
+
         frame_source(rs2_source* source) : _source(source) {}
         frame_source(const frame_source&) = delete;
-        
+
     };
 
     template<class T>
@@ -702,7 +702,7 @@ namespace rs2
     public:
         syncer_processing_block()
         {
-            rs2_error* e = nullptr; 
+            rs2_error* e = nullptr;
             _processing_block = std::make_shared<processing_block>(
                     std::shared_ptr<rs2_processing_block>(
                                         rs2_create_sync_processing_block(&e),
