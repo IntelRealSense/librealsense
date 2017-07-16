@@ -58,7 +58,7 @@ namespace librealsense
     private:
         frame_callback_ptr m_user_callback;
         librealsense::notifications_callback_ptr m_user_notification_callback;
-        std::map<rs2_stream, lazy<std::shared_ptr<dispatcher>>> m_dispatchers;
+        std::map<rs2_stream, std::shared_ptr<dispatcher>> m_dispatchers;
         std::atomic<bool> m_is_started;
         sensor_snapshot m_sensor_description;
         uint32_t m_sensor_id;

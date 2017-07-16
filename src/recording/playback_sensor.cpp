@@ -22,40 +22,23 @@ playback_sensor::~playback_sensor()
 
 std::vector<stream_profile> playback_sensor::get_principal_requests() 
 {
-    //TODO: Remove this map once streaming info is recorded to file
-    static std::map<uint32_t, std::vector<stream_profile>> REMOVE_ME
-    {
-        { 0,
-            {
-                stream_profile{ RS2_STREAM_DEPTH, 640, 480, 30, RS2_FORMAT_Z16 },
-                stream_profile{ RS2_STREAM_INFRARED, 640, 480, 30, RS2_FORMAT_Y8 }
-            } 
-        },
-        { 1,
-            { 
-                stream_profile{ RS2_STREAM_COLOR, 640, 480, 30, RS2_FORMAT_RGBA8 } 
-            } 
-        }
-    };
-    return REMOVE_ME[m_sensor_id];
-   // return m_sensor_description.get_streamig_profiles();
+    return m_sensor_description.get_streamig_profiles();
 }
 
 void playback_sensor::open(const std::vector<stream_profile>& requests) 
 {
-    //TODO: uncomment
-    //auto available_profiles = m_sensor_description.get_streamig_profiles();
-    //for (auto&& r : requests)
-    //{
-    //    if(std::find(std::begin(available_profiles), std::end(available_profiles), r) == std::end(available_profiles))
-    //    {
-    //        throw std::runtime_error("Failed to open sensor, requested profile is not available");
-    //    }
-    //}
+    auto available_profiles = m_sensor_description.get_streamig_profiles();
+    for (auto&& r : requests)
+    {
+        if(std::find(std::begin(available_profiles), std::end(available_profiles), r) == std::end(available_profiles))
+        {
+            throw std::runtime_error("Failed to open sensor, requested profile is not available");
+        }
+    }
     for (auto&& profile : requests)
     {
-        m_dispatchers.emplace(profile.stream, []() { return std::make_shared<dispatcher>(1); }); //TODO: what size the queue should be?
-        m_dispatchers[profile.stream]->get()->start();
+        m_dispatchers.emplace(std::make_pair(profile.stream, std::make_shared<dispatcher>(1))); //TODO: what size the queue should be?
+        m_dispatchers[profile.stream]->start();
     }
     
     opened(m_sensor_id, requests);
@@ -63,6 +46,7 @@ void playback_sensor::open(const std::vector<stream_profile>& requests)
 
 void playback_sensor::close()
 {
+    m_dispatchers.clear();
     closed(m_sensor_id);
 }
 
@@ -170,7 +154,7 @@ void playback_sensor::handle_frame(frame_holder frame, bool is_real_time)
         auto stream_type = frame.frame->get_stream_type();
         //TODO: Ziv, remove usage of shared_ptr when frame_holder is cpoyable
         auto pf = std::make_shared<frame_holder>(std::move(frame));
-        m_dispatchers.at(stream_type)->get()->invoke([this, pf](dispatcher::cancellable_timer t)
+        m_dispatchers.at(stream_type)->invoke([this, pf](dispatcher::cancellable_timer t)
         {
             frame_interface* pframe = nullptr;
             std::swap((*pf).frame, pframe);

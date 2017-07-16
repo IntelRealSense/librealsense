@@ -7,14 +7,14 @@
 #include <string>
 
 #include "core/serialization.h"
-#include "ros/file_types.h"
+#include "recording/ros/file_types.h"
 #include "core/debug.h"
 #include "archive.h"
-#include "ros/data_objects/vendor_data.h"
-#include "ros/data_objects/image.h"
-#include "ros/data_objects/stream_data.h"
-#include "ros/ros_writer.h"
-#include "ros/data_objects/image_stream_info.h"
+#include "recording/ros/data_objects/vendor_data.h"
+#include "recording/ros/data_objects/image.h"
+#include "recording/ros/data_objects/stream_data.h"
+#include "recording/ros/ros_writer.h"
+#include "recording/ros/data_objects/image_stream_info.h"
 
 namespace librealsense
 {

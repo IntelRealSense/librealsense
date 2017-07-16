@@ -2,19 +2,19 @@
 // Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 #pragma once
 #include <mutex>
-#include <ros/data_objects/vendor_data.h>
+#include <recording/ros/data_objects/vendor_data.h>
 
 #include "stream_playback.h"
-#include "data_objects/compressed_image.h"
-#include "data_objects/image.h"
-#include "data_objects/image_stream_info.h"
-#include "data_objects/motion_stream_info.h"
-#include "data_objects/motion_sample.h"
-#include "data_objects/time_sample.h"
-#include "data_objects/property.h"
-#include "data_objects/pose.h"
-#include "data_objects/occupancy_map.h"
-#include "data_objects/log.h"
+#include "recording/ros/data_objects/compressed_image.h"
+#include "recording/ros/data_objects/image.h"
+#include "recording/ros/data_objects/image_stream_info.h"
+#include "recording/ros/data_objects/motion_stream_info.h"
+#include "recording/ros/data_objects/motion_sample.h"
+#include "recording/ros/data_objects/time_sample.h"
+#include "recording/ros/data_objects/property.h"
+#include "recording/ros/data_objects/pose.h"
+#include "recording/ros/data_objects/occupancy_map.h"
+#include "recording/ros/data_objects/log.h"
 #include "rosbag/view.h"
 #include "source.h"
 

@@ -56,7 +56,6 @@ std::vector<std::shared_ptr<record_sensor>> record_device::create_record_sensors
 
 librealsense::record_device::~record_device()
 {
-    std::cout << "~record_device";
     (*m_write_thread)->stop();
 }
 librealsense::sensor_interface& librealsense::record_device::get_sensor(size_t i)
@@ -221,9 +220,17 @@ snapshot_collection librealsense::record_device::get_extensions_snapshots(T* ext
             }
             case RS2_EXTENSION_TYPE_UNKNOWN: 
                 //[[fallthrough]];
+            case RS2_EXTENSION_TYPE_DEPTH_SENSOR://TODO: Ziv, handle these extensiosn
+                //[[fallthrough]];
             case RS2_EXTENSION_TYPE_VIDEO_FRAME:
                 //[[fallthrough]];
             case RS2_EXTENSION_TYPE_MOTION_FRAME:
+                //[[fallthrough]];
+            case RS2_EXTENSION_TYPE_COMPOSITE_FRAME:
+                //[[fallthrough]];
+            case RS2_EXTENSION_TYPE_POINTS:
+                //[[fallthrough]];
+            case RS2_EXTENSION_TYPE_ADVANCED_MODE:
                 //[[fallthrough]];
             case RS2_EXTENSION_TYPE_COUNT:
                 continue;
@@ -291,7 +298,6 @@ librealsense::record_sensor::record_sensor(sensor_interface& sensor,
 
 librealsense::record_sensor::~record_sensor()
 {
-    std::cout << "~record_sensor";
 }
 
 std::vector<librealsense::stream_profile> librealsense::record_sensor::get_principal_requests()

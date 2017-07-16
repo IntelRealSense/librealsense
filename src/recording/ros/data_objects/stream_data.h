@@ -3,8 +3,8 @@
 
 #pragma once
 #include <memory>
-#include <ros/status.h>
-#include <ros/ros_writer.h>
+#include <recording/ros/status.h>
+#include <recording/ros/ros_writer.h>
 
 namespace rs
 {

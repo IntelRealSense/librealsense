@@ -4,7 +4,7 @@
 #pragma once
 
 #include <string>
-#include <ros/file_types.h>
+#include <recording/ros/file_types.h>
 #include <rosgraph_msgs/Log.h>
 #include "stream_data.h"
 

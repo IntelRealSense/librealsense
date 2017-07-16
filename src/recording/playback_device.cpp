@@ -453,6 +453,7 @@ void playback_device::try_looping()
             return;
         }
         //Pass the object to the
+
         m_sensors[sensor_index]->handle_frame(std::move(frame), m_real_time);
         
     };

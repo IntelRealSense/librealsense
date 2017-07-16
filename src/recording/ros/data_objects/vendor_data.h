@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include <ros/data_objects/stream_data.h>
+#include <recording/ros/data_objects/stream_data.h>
 #include "realsense_msgs/vendor_data.h"
 namespace rs
 {

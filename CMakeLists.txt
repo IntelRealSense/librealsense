@@ -133,9 +133,9 @@ set(REALSENSE_CPP
     src/mock/sql.cpp
     src/mock/recorder.cpp
 
-    src/record_device.cpp
-    src/playback_device.cpp
-    src/playback_sensor.cpp
+    src/recording/record_device.cpp
+    src/recording/playback_device.cpp
+    src/recording/playback_sensor.cpp
 )
 
 set(REALSENSE_HPP
@@ -198,38 +198,38 @@ set(REALSENSE_HPP
     src/api.h
     src/core/advanced_mode.h
     src/core/serialization.h
-        
-    src/record_device.h
-    src/playback_device.h
-    src/playback_sensor.h
-    src/serializers/ros_device_serializer.h
-    src/serializers/ros_reader.h
-    src/serializers/ros_device_serializer_writer.h
+
+    src/recording/record_device.h
+    src/recording/playback_device.h
+    src/recording/playback_sensor.h
+    src/recording/serializers/ros_device_serializer.h
+    src/recording/serializers/ros_reader.h
+    src/recording/serializers/ros_device_serializer_writer.h
 
     third-party/easyloggingpp/src/easylogging++.h
     third-party/sqlite/sqlite3.h
     src/mock/sql.h
     src/mock/recorder.h
 
-    src/ros/data_objects/pose.h
-    src/ros/data_objects/vendor_data.h
-    src/ros/data_objects/image.h
-    src/ros/data_objects/motion_stream_info.h
-    src/ros/data_objects/property.h
-    src/ros/data_objects/log.h
-    src/ros/data_objects/motion_sample.h
-    src/ros/data_objects/time_sample.h
-    src/ros/data_objects/compressed_image.h
-    src/ros/data_objects/occupancy_map.h
-    src/ros/data_objects/stream_data.h
-    src/ros/data_objects/image_stream_info.h
-    src/ros/stream_playback.h
-    src/ros/file_types.h
-    src/ros/status.h
-    src/ros/stream_playback.h
-    src/ros/ros_writer.h
-    src/ros/stream_playback.cpp
-    src/ros/topic.h
+    src/recording/ros/data_objects/pose.h
+    src/recording/ros/data_objects/vendor_data.h
+    src/recording/ros/data_objects/image.h
+    src/recording/ros/data_objects/motion_stream_info.h
+    src/recording/ros/data_objects/property.h
+    src/recording/ros/data_objects/log.h
+    src/recording/ros/data_objects/motion_sample.h
+    src/recording/ros/data_objects/time_sample.h
+    src/recording/ros/data_objects/compressed_image.h
+    src/recording/ros/data_objects/occupancy_map.h
+    src/recording/ros/data_objects/stream_data.h
+    src/recording/ros/data_objects/image_stream_info.h
+    src/recording/ros/stream_playback.h
+    src/recording/ros/file_types.h
+    src/recording/ros/status.h
+    src/recording/ros/stream_playback.h
+    src/recording/ros/ros_writer.h
+    src/recording/ros/stream_playback.cpp
+    src/recording/ros/topic.h
 )
 
 # Add additional include directories to allow file to include rosbag headers
