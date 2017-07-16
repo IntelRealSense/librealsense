@@ -352,7 +352,6 @@ std::shared_ptr<ros_data_objects::image> stream_playback::create_image(const ros
     {
         return nullptr;
     }
-    //TODO: Ziv, use archive here?
     
     
 
@@ -409,7 +408,7 @@ std::shared_ptr<ros_data_objects::image_stream_info> stream_playback::create_ima
     ros_data_objects::image_stream_data info = {};
     auto device_str = topic(info_msg.getTopic()).at(3);
     info.device_id = static_cast<uint32_t>(std::stoll(device_str));
-    info.type = msg->stream_type;
+    conversions::convert(msg->stream_type, info.type);
     info.fps = msg->fps;
     info.width = msg->width;
     info.height = msg->height;

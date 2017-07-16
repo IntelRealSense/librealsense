@@ -14,6 +14,7 @@
 #include "ros/data_objects/image.h"
 #include "ros/data_objects/stream_data.h"
 #include "ros/ros_writer.h"
+#include "ros/data_objects/image_stream_info.h"
 
 namespace librealsense
 {
@@ -45,6 +46,8 @@ namespace librealsense
                 {
                     write_extension_snapshot(sensor_index, sensor_extension_snapshot.first, sensor_extension_snapshot.second);
                 }
+                write_streaming_info(sensor_index, sensors_snapshot.get_streamig_profiles());
+                sensor_index++;
             }
             write_sensor_count(device_description.get_sensors_snapshots().size());
         }
@@ -147,6 +150,30 @@ namespace librealsense
 //            return error_code::no_error;
 //        }
 
+        void write_streaming_info(uint32_t sensor_index, const std::vector<stream_profile>& profiles)
+        {
+            for (auto profile : profiles)
+            {
+                rs::file_format::ros_data_objects::image_stream_data image_stream_info{};
+                image_stream_info.device_id = sensor_index;
+                image_stream_info.fps = profile.fps;
+                image_stream_info.height = profile.height;
+                image_stream_info.width = profile.width;
+                image_stream_info.type = profile.stream;
+                image_stream_info.format = profile.format;
+                
+                //TODO: fill extrinsics
+                //image_stream_info.stream_extrinsics.extrinsics_data = extrinsics
+                //image_stream_info.stream_extrinsics.reference_point_id = ref_point;
+
+                //TODO: fill intrinsics
+                //set model to None instead of empty string to allow empty intrinsics
+                image_stream_info.intrinsics.model = rs2_distortion::RS2_DISTORTION_NONE;
+                //image_stream_info.intrinsics = {};
+                auto msg = std::make_shared<rs::file_format::ros_data_objects::image_stream_info>(image_stream_info);
+                record(msg);
+            }
+        }
         void write_extension_snapshot(uint32_t id, rs2_extension_type type, std::shared_ptr<librealsense::extension_snapshot> snapshot)
         {    
             switch (type)
@@ -178,7 +205,7 @@ namespace librealsense
             if (Is<librealsense::info_interface>(snapshot))
             {
                 //std::cout << "Remove me !!! info_interface " << id << " : " << snapshot.get() << std::endl;
-                //write_vendor_info(snapshot, id);
+                write_vendor_info({ std::chrono::nanoseconds(0), id, snapshot });
                 return;
             }
             if (Is<librealsense::options_interface>(snapshot))

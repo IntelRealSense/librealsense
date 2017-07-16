@@ -18,7 +18,7 @@ namespace rs
                 rs2_intrinsics intrinsics;
                 file_types::stream_extrinsics stream_extrinsics;
                 uint32_t device_id;
-                std::string type;
+                rs2_stream type;
                 uint32_t fps;
                 rs2_format format;
             };
@@ -37,7 +37,7 @@ namespace rs
                 void write_data(ros_writer& file) override
                 {
                     realsense_msgs::stream_info msg;
-                    msg.stream_type = m_info.type;
+                    conversions::convert(m_info.type, msg.stream_type);
                     msg.fps = m_info.fps;
                     msg.width = m_info.width;
                     msg.height = m_info.height;

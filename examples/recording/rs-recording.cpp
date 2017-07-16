@@ -35,7 +35,7 @@ int main(int argc, const char** argv) try
     playback device(file_path.getValue());
     //From this point on we use the record_device and not the (live) device
 
-   // std::cout << "Device: " << device.get_info(RS2_CAMERA_INFO_NAME) << std::endl;
+    std::cout << "Device: " << device.get_info(RS2_CAMERA_INFO_NAME) << std::endl;
 
     //Declare profiles we want to play
     const std::vector<rs2::stream_profile> profiles_to_play_if_available{
@@ -46,14 +46,15 @@ int main(int argc, const char** argv) try
     };
     
     std::vector<sensor> m_playing_sensors; //will hold the sensors that are playing
-
+    int sensor_id = 0;
     //Go over the sensors and open start streaming
     for (auto&& sensor : device.query_sensors())
     {
-        //if (sensor.supports(RS2_CAMERA_INFO_NAME))
-        //{
-        //    std::cout << sensor.get_info(RS2_CAMERA_INFO_NAME) << std::endl;
-        //}
+        sensor_id++;
+        if (sensor.supports(RS2_CAMERA_INFO_NAME))
+        {
+            std::cout << "Sensor #" << sensor_id << ": " << sensor.get_info(RS2_CAMERA_INFO_NAME) << std::endl;
+        }
             
         std::vector<rs2::stream_profile> profiles_to_play_for_this_sensor;
         for (auto profile : sensor.get_stream_modes())

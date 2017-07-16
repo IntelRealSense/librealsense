@@ -162,7 +162,7 @@ namespace librealsense
             for (uint32_t sensor_index = 0; sensor_index < sensor_count; sensor_index++)
             {
                 snapshot_collection sensor_extensions;
-                std::vector<stream_profile> streaming_profiles = read_stream_info();
+                std::vector<stream_profile> streaming_profiles = read_stream_info(sensor_index);
 
                /* std::shared_ptr<options_snapshot> options = options_container read_options();
                 sensor_extensions[RS2_EXTENSION_TYPE_OPTIONS] = options;*/
@@ -175,8 +175,6 @@ namespace librealsense
             return device_snapshot(device_extensions, sensor_descriptions, extrinsics);
         }
 
-
-       
         rs::file_format::status read_sample(uint32_t &sensor_index, std::chrono::nanoseconds& timestamp, frame_holder& frame)
         {
             std::shared_ptr<rs::file_format::ros_data_objects::sample> sample;
@@ -831,9 +829,46 @@ namespace librealsense
             return 0;
         }
 
-        std::vector<stream_profile> ros_reader::read_stream_info()
+        std::vector<stream_profile> ros_reader::read_stream_info(uint32_t sensor_id)
         {
             std::vector<stream_profile> profiles;
+            std::vector<rs2_intrinsics> intrinsics_info;
+            std::vector<rs2_stream> streams;
+
+            std::vector<std::shared_ptr<rs::file_format::ros_data_objects::stream_info>> stream_info;
+            auto ros_retval = m_stream_playback.read_stream_infos(stream_info, rs::file_format::file_types::sample_type::st_image, sensor_id);
+            if (ros_retval != rs::file_format::status::status_no_error)
+            {
+                throw io_exception("Failed to read stream profiles");
+            }
+     
+            for(auto item : stream_info)
+            {
+                std::shared_ptr<rs::file_format::ros_data_objects::image_stream_info> image_item =
+                    std::static_pointer_cast<rs::file_format::ros_data_objects::image_stream_info>(item);
+                rs::file_format::ros_data_objects::image_stream_data info = image_item->get_info();
+                stream_profile profile {};
+                profile.fps = info.fps;
+                profile.height = info.height;
+                profile.width = info.width;
+                profile.format = info.format;
+                profile.stream = info.type;
+
+                rs2_intrinsics intrinsics_item = info.intrinsics;
+                intrinsics_item.height = info.height;
+                intrinsics_item.width = info.width;
+                profiles.push_back(profile);
+                intrinsics_info.push_back(intrinsics_item);
+                streams.push_back(profile.stream);
+                //TODO: get intrinsics
+                //if(extrinsics.find(sensor_index) == extrinsics.end())
+                //{
+                //    std::pair<rs::core::extrinsics, uint64_t> extrinsics_pair;
+                //    extrinsics_pair.first = conversions::convert(info.stream_extrinsics.extrinsics_data);
+                //    extrinsics_pair.second = info.stream_extrinsics.reference_point_id;
+                //    extrinsics[sensor_index] = extrinsics_pair;
+                //}
+            }
             return profiles;
         }
 
@@ -846,7 +881,6 @@ namespace librealsense
         //std::vector <cached_property> m_cached_properties;
         //std::map <uint32_t, std::vector<rs::core::guid>> m_propertiesper_sensor;
         std::mutex m_mutex;
-        uint32_t m_sensor_count;
         rs::file_format::stream_playback m_stream_playback;
     };
 
