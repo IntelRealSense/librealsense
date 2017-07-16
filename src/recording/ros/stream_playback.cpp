@@ -5,7 +5,7 @@
 
 #include "stream_playback.h"
 #include "rosbag/view.h"
-#include "ros/file_types.h"
+#include "file_types.h"
 #include "realsense_msgs/compressed_frame_info.h"
 #include "realsense_msgs/frame_info.h"
 #include "realsense_msgs/stream_info.h"
@@ -21,7 +21,7 @@
 #include "sensor_msgs/TimeReference.h"
 
 #include "std_msgs/Float64.h"
-#include "ros/topic.h"
+#include "topic.h"
 
 #include "std_msgs/UInt32.h"
 
@@ -58,7 +58,7 @@ bool stream_playback::get_file_version_from_file(uint32_t& version) const
 }
 
 stream_playback::stream_playback(const std::string &file_path) : 
-    m_frame_source(std::make_shared<librealsense::platform::os_time_service>())
+    m_frame_source(nullptr)
 {
     if (file_path.empty())
     {
@@ -81,6 +81,8 @@ stream_playback::stream_playback(const std::string &file_path) :
     m_samples_view = std::unique_ptr<rosbag::View>(new rosbag::View(m_file));
     m_samples_itrator = m_samples_view->begin();
     m_topics = get_topics(m_samples_view);
+    m_frame_source.init(nullptr);
+
 }
 
 status stream_playback::set_filter(std::vector<std::string> topics)
@@ -386,7 +388,7 @@ std::shared_ptr<ros_data_objects::image> stream_playback::create_image(const ros
     //std::copy(info_msg->frame_metadata.data(), info_msg->frame_metadata.data() + std::min(static_cast<uint32_t>(info_msg->frame_metadata.size()), 255u), fad.metadata_blob.begin());
     additional_data.metadata_size = std::min(static_cast<uint32_t>(info_msg->frame_metadata.size()), 255u);
 
-    
+
     frame_interface* frame = m_frame_source.alloc_frame(RS2_EXTENSION_TYPE_VIDEO_FRAME, msg->data.size(), additional_data, true);
     
     librealsense::video_frame* video_frame = static_cast<librealsense::video_frame*>(frame);

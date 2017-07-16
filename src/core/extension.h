@@ -13,7 +13,7 @@
     };                                                    \
     template<> struct TypeToExtensionn<T> {               \
         static constexpr rs2_extension_type value = E;    \
-    };
+    }
 
 namespace librealsense
 {

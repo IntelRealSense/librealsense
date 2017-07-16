@@ -10,11 +10,11 @@
 #include "core/debug.h"
 #include "core/motion.h"
 #include "core/extension.h"
-#include "record_device.h"
-#include <serializers/ros_device_serializer.h>
+#include "recording/record_device.h"
+#include <recording/serializers/ros_device_serializer.h>
 #include "core/advanced_mode.h"
 #include "align.h"
-#include "playback_device.h"
+#include "recording/playback_device.h"
 
 ////////////////////////
 // API implementation //

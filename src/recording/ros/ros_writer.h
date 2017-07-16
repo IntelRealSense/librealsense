@@ -5,8 +5,8 @@
 #include <string>
 #include <memory>
 #include "ros_writer.h"
-#include "ros/status.h"
-#include "ros/file_types.h"
+#include "status.h"
+#include "file_types.h"
 #include "ros/exception.h"
 #include "rosbag/bag.h"
 #include "types.h"

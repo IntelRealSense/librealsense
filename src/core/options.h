@@ -78,7 +78,7 @@ namespace librealsense
             return *it->second;
         }
         
-        void options_container::register_option(rs2_option id, std::shared_ptr<option> option)
+        void register_option(rs2_option id, std::shared_ptr<option> option)
         {
             _options[id] = option;
         }

@@ -1,13 +1,11 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 
-#include <librealsense/rs2.hpp>
+
 #include <iostream>
 #include <iomanip>
-#include <core/streaming.h> //TODO: remove
-#include <sensor.h>
-#include <record_device.h>
-
+#include <thread>
+#include <librealsense/rs2.hpp>
 #include "tclap/CmdLine.h"
 
 using namespace std;
@@ -16,12 +14,21 @@ using namespace rs2;
 
 int main(int argc, const char** argv) try
 {
-    CmdLine cmd("librealsense cpp-record example", ' ', RS2_API_VERSION_STR);
+    //Add switches to this example to allow user to indicate play mode, and file path
+    CmdLine cmd("librealsense rs-recording example", ' ', RS2_API_VERSION_STR);
+
     ValueArg<std::string> file_path("f", "file_path", "File path for recording output", false, "record_example.bag", "string");
     cmd.add( file_path );
-    cmd.parse(argc, argv);
 
-    std::cout << "Recording to file: " << file_path.getValue() << std::endl;
+    vector<string> allowed_modes;
+    allowed_modes.push_back("record");
+    allowed_modes.push_back("playback");
+    allowed_modes.push_back("live");
+    ValuesConstraint<string> modes( allowed_modes );
+    ValueArg<string> nameArg("m","mode","Indicate the mode to run this example", true, "record",&modes);
+    cmd.add( nameArg );
+
+    cmd.parse(argc, argv);
 
     context ctx;
     auto devices = ctx.query_devices();
@@ -30,10 +37,29 @@ int main(int argc, const char** argv) try
         std::cerr << "No device connected" << std::endl;
         return EXIT_FAILURE;
     }
-    //Create a recorder from the device
-    //recorder device(file_path.getValue(), devices[0]);
-    playback device(file_path.getValue());
-    //From this point on we use the record_device and not the (live) device
+
+    device device;
+    if(nameArg.getValue()== "record")
+    {
+        //Create a recorder from the device
+        device = recorder(file_path.getValue(), devices[0]);
+        std::cout << "Recording to file: " << file_path.getValue() << std::endl;
+    }
+    else if(nameArg.getValue() == "playback")
+    {
+        //Create a playback device from file
+        device = playback(file_path.getValue());
+        std::cout << "Playing from file: " << file_path.getValue() << std::endl;
+    }
+    else if(nameArg.getValue() == "live")
+    {
+        device = devices[0];
+        std::cout << "Streaming from actual device" << std::endl;
+    }
+    else
+    {
+        throw std::runtime_error(modes.description() + " is not a supported mode");
+    }
 
     std::cout << "Device: " << device.get_info(RS2_CAMERA_INFO_NAME) << std::endl;
 
@@ -85,8 +111,8 @@ int main(int argc, const char** argv) try
             std::cout << e.what() << std::endl;
         }
     }
-    getchar();
-    //std::this_thread::sleep_for(std::chrono::seconds(5));
+
+    std::this_thread::sleep_for(std::chrono::seconds(10));
     
     for(auto sensor : m_playing_sensors)
     {

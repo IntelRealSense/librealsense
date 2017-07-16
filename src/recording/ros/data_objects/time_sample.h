@@ -3,8 +3,8 @@
 
 #pragma once
 
-#include <ros/data_objects/stream_data.h>
-#include <ros/data_objects/property.h>
+#include <recording/ros/data_objects/stream_data.h>
+#include <recording/ros/data_objects/property.h>
 #include <sensor_msgs/TimeReference.h>
 namespace rs
 {

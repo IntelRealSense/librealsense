@@ -4,7 +4,7 @@
 #pragma once
 
 #include <core/serialization.h>
-#include <ros/stream_playback.h>
+#include <recording/ros/stream_playback.h>
 
 namespace librealsense
 {
@@ -781,7 +781,7 @@ namespace librealsense
 //        }
 //
 
-        std::shared_ptr<info_snapshot> ros_reader::read_info_snapshot(uint32_t id)
+        std::shared_ptr<info_snapshot> read_info_snapshot(uint32_t id)
         {
             std::vector<std::shared_ptr<rs::file_format::ros_data_objects::vendor_data>> vendor_data;
             if (m_stream_playback.read_vendor_data(vendor_data, id) != rs::file_format::status_no_error)
@@ -804,12 +804,12 @@ namespace librealsense
             return std::make_shared<info_snapshot>(values);
         }
 
-        device_extrinsics ros_reader::read_device_extrinsics()
+        device_extrinsics read_device_extrinsics()
         {
             return {};
         }
 
-        uint32_t ros_reader::read_sensor_count() const
+        uint32_t read_sensor_count() const
         {
             std::vector<std::shared_ptr<rs::file_format::ros_data_objects::vendor_data>> vendor_data;
             auto sts = m_stream_playback.read_vendor_data(vendor_data, DEVICE_INDEX);
@@ -829,7 +829,7 @@ namespace librealsense
             return 0;
         }
 
-        std::vector<stream_profile> ros_reader::read_stream_info(uint32_t sensor_id)
+        std::vector<stream_profile> read_stream_info(uint32_t sensor_id)
         {
             std::vector<stream_profile> profiles;
             std::vector<rs2_intrinsics> intrinsics_info;
@@ -872,7 +872,7 @@ namespace librealsense
             return profiles;
         }
 
-        std::shared_ptr<options_container> ros_reader::read_options()
+        std::shared_ptr<options_container> read_options()
         {
             return nullptr;
         }

@@ -41,10 +41,7 @@ namespace rs
                     msg.fps = m_info.fps;
                     msg.width = m_info.width;
                     msg.height = m_info.height;
-                    if(conversions::convert(m_info.format, msg.encoding) == false)
-                    {
-                        //return status_param_unsupported;
-                    }
+                    conversions::convert(m_info.format, msg.encoding);
                     msg.camera_info.height = m_info.height;
                     msg.camera_info.width  = m_info.width;
                     msg.camera_info.K[0]   = m_info.intrinsics.fx;
@@ -54,8 +51,8 @@ namespace rs
                     msg.camera_info.K[5] = m_info.intrinsics.ppy;
                     msg.camera_info.K[8] = 1;
                     msg.camera_info.D.assign(m_info.intrinsics.coeffs, m_info.intrinsics.coeffs + 5);
-                    msg.camera_info.distortion_model = m_info.intrinsics.model;
 
+                    conversions::convert(m_info.intrinsics.model, msg.camera_info.distortion_model);
                     conversions::convert(m_info.stream_extrinsics.extrinsics_data, msg.stream_extrinsics.extrinsics);
                     msg.stream_extrinsics.reference_point_id = m_info.stream_extrinsics.reference_point_id;
                     file.write(get_topic(m_info.device_id), file_types::nanoseconds::min(), msg);
