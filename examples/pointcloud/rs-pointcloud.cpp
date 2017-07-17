@@ -191,8 +191,9 @@ int main(int argc, char * argv[])
 
             const rs2_intrinsics depth_intrin = stream.get_intrinsics(RS2_STREAM_DEPTH);
 
-            bool rgb_rotation_btn = val_in_range(std::string(dev.get_info(RS2_CAMERA_INFO_NAME)),
-                { std::string("0AD3") ,std::string("0B07") });
+            bool rgb_rotation_btn = (val_in_range(std::string(dev.get_info(RS2_CAMERA_INFO_PRODUCT_ID)),
+                                { std::string("0AD3") ,std::string("0B07") }));
+
             bool texture_wrapping_on = true;
             GLint texture_border_mode = GL_CLAMP_TO_EDGE; // GL_CLAMP_TO_BORDER
             float tex_border_color[] = { 0.8f, 0.8f, 0.8f, 0.8f };
