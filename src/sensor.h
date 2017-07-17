@@ -18,6 +18,7 @@
 #include <limits.h>
 #include <atomic>
 #include <functional>
+#include <core/debug.h>
 
 namespace librealsense
 {
@@ -25,31 +26,6 @@ namespace librealsense
     class option;
 
     typedef std::function<void(rs2_stream, frame_interface*, callback_invocation_holder)> on_before_frame_callback;
-
-    class options_container : public virtual options_interface
-    {
-    public:
-        option& get_option(rs2_option id) override;
-        const option& get_option(rs2_option id) const override;
-        bool supports_option(rs2_option id) const override;
-
-        void register_option(rs2_option id, std::shared_ptr<option> option);
-
-    private:
-        std::map<rs2_option, std::shared_ptr<option>> _options;
-    };
-
-    class info_container : public virtual info_interface
-    {
-    public:
-        const std::string& get_info(rs2_camera_info info) const override;
-        bool supports_info(rs2_camera_info info) const override;
-
-        void register_info(rs2_camera_info info, const std::string& val);
-
-    private:
-        std::map<rs2_camera_info, std::string> _camera_info;
-    };
 
     class sensor_base : public std::enable_shared_from_this<sensor_base>,
                         public virtual sensor_interface, public options_container, public virtual info_container
@@ -100,9 +76,10 @@ namespace librealsense
 
         bool try_get_pf(const platform::stream_profile& p, native_pixel_format& result) const;
 
-        std::vector<request_mapping> resolve_requests(std::vector<stream_profile> requests);
+        std::vector<request_mapping> resolve_requests(std::vector<stream_profile_interface*> requests);
 
         std::vector<stream_profile_interface*> _configuration;
+        std::vector<platform::stream_profile> _internal_config;
 
         std::atomic<bool> _is_streaming;
         std::atomic<bool> _is_opened;
@@ -178,11 +155,11 @@ namespace librealsense
         std::unique_ptr<frame_timestamp_reader> _hid_iio_timestamp_reader;
         std::unique_ptr<frame_timestamp_reader> _custom_hid_timestamp_reader;
 
-        std::vector<stream_profile> get_sensor_profiles(std::string sensor_name) const;
+        std::vector<stream_profile_interface*> get_sensor_profiles(std::string sensor_name) const;
 
         std::vector<platform::stream_profile> init_stream_profiles() override;
 
-        std::vector<stream_profile> get_device_profiles();
+        std::vector<stream_profile_interface*> get_device_profiles();
 
         const std::string& rs2_stream_to_sensor_name(rs2_stream stream) const;
 

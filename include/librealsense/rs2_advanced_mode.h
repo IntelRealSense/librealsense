@@ -1,12 +1,12 @@
 /* License: Apache 2.0. See LICENSE file in root directory.
    Copyright(c) 2017 Intel Corporation. All Rights Reserved. */
 
-#ifndef RS4XX_ADVANCED_MODE_H
-#define RS4XX_ADVANCED_MODE_H
+#ifndef RS400_ADVANCED_MODE_H
+#define RS400_ADVANCED_MODE_H
 
-#define RS4XX_ADVANCED_MODE_HPP
+#define RS400_ADVANCED_MODE_HPP
 #include <librealsense/rs2_advanced_mode_command.h>
-#undef RS4XX_ADVANCED_MODE_HPP
+#undef RS400_ADVANCED_MODE_HPP
 
 #include <librealsense/rs2.h>
 
@@ -14,8 +14,10 @@
 extern "C" {
 #endif
 
+/* Enable/Disable Advanced-Mode */
 void rs2_toggle_advanced_mode(rs2_device* dev, int enable, rs2_error** error);
 
+/* Check if Advanced-Mode is enabled */
 void rs2_is_enabled(rs2_device* dev, int* enabled, rs2_error** error);
 
 /* Sets new values for Depth Control Group, returns 0 if success */

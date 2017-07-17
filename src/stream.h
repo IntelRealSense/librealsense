@@ -26,10 +26,10 @@ namespace librealsense
         rs2_stream _type = RS2_STREAM_ANY;
     };
 
-    class stream_profile1 : public stream_profile_interface
+    class stream_profile_base : public stream_profile_interface
     {
     public:
-        explicit stream_profile1(std::shared_ptr<context> ctx);
+        explicit stream_profile_base(std::shared_ptr<context> ctx);
 
         context& get_context() const override;
 

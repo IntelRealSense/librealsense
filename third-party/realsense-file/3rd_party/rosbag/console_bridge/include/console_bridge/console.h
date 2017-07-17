@@ -40,8 +40,9 @@
 #include <string>
 
 #include "exportdecl.h"
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+
 #ifdef __GNUC__
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 #define CONSOLE_BRIDGE_DEPRECATED __attribute__ ((deprecated))
 #elif defined(_MSC_VER)
 #define CONSOLE_BRIDGE_DEPRECATED __declspec(deprecated)
@@ -86,17 +87,17 @@ static inline void CONSOLE_BRIDGE_DEPRECATED console_bridge_deprecated() {}
 #define CONSOLE_BRIDGE_logDebug(fmt, ...)  \
   console_bridge::log(__FILE__, __LINE__, console_bridge::CONSOLE_BRIDGE_LOG_DEBUG, fmt, ##__VA_ARGS__)
 
-#define logError(fmt, ...)  \
-  console_bridge::log_deprecated(__FILE__, __LINE__, console_bridge::CONSOLE_BRIDGE_LOG_ERROR, fmt, ##__VA_ARGS__)
-
-#define logWarn(fmt, ...)   \
-  console_bridge::log_deprecated(__FILE__, __LINE__, console_bridge::CONSOLE_BRIDGE_LOG_WARN,  fmt, ##__VA_ARGS__)
-
-#define logInform(fmt, ...) \
-  console_bridge::log_deprecated(__FILE__, __LINE__, console_bridge::CONSOLE_BRIDGE_LOG_INFO,  fmt, ##__VA_ARGS__)
-
-#define logDebug(fmt, ...)  \
-  console_bridge::log_deprecated(__FILE__, __LINE__, console_bridge::CONSOLE_BRIDGE_LOG_DEBUG, fmt, ##__VA_ARGS__)
+//#define logError(fmt, ...)  \
+//  console_bridge::log_deprecated(__FILE__, __LINE__, console_bridge::CONSOLE_BRIDGE_LOG_ERROR, fmt, ##__VA_ARGS__)
+//
+//#define logWarn(fmt, ...)   \
+//  console_bridge::log_deprecated(__FILE__, __LINE__, console_bridge::CONSOLE_BRIDGE_LOG_WARN,  fmt, ##__VA_ARGS__)
+//
+//#define logInform(fmt, ...) \
+//  console_bridge::log_deprecated(__FILE__, __LINE__, console_bridge::CONSOLE_BRIDGE_LOG_INFO,  fmt, ##__VA_ARGS__)
+//
+//#define logDebug(fmt, ...)  \
+//  console_bridge::log_deprecated(__FILE__, __LINE__, console_bridge::CONSOLE_BRIDGE_LOG_DEBUG, fmt, ##__VA_ARGS__)
 
 
 /** \brief Message namespace. This contains classes needed to

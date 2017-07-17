@@ -123,16 +123,20 @@ set(REALSENSE_CPP
     src/win/win-usb.cpp
     src/win/win-hid.cpp
     src/win/win-backend.cpp
-    rs4xx/rs4xx_advanced_mode/src/rs2_advanced_mode.cpp
+
+    rs400/rs400_advanced_mode/src/rs2_advanced_mode.cpp
+    rs400/rs400_advanced_mode/src/presets.cpp
+    rs400/rs400_advanced_mode/src/advanced_mode.cpp
 
     third-party/easyloggingpp/src/easylogging++.cc
-
     third-party/sqlite/sqlite3.c
+    
     src/mock/sql.cpp
     src/mock/recorder.cpp
 
-    rs4xx/rs4xx_advanced_mode/src/presets.cpp
-    rs4xx/rs4xx_advanced_mode/src/advanced_mode.cpp
+    src/recording/record_device.cpp
+    src/recording/playback_device.cpp
+    src/recording/playback_sensor.cpp
 )
 
 set(REALSENSE_HPP
@@ -194,11 +198,48 @@ set(REALSENSE_HPP
     src/win/win-hid.h
     src/win/win-backend.h
     src/api.h
+    src/core/advanced_mode.h
+    src/core/serialization.h
+
+    src/recording/record_device.h
+    src/recording/playback_device.h
+    src/recording/playback_sensor.h
+    src/recording/serializers/ros_device_serializer.h
+    src/recording/serializers/ros_reader.h
+    src/recording/serializers/ros_device_serializer_writer.h
 
     third-party/easyloggingpp/src/easylogging++.h
     third-party/sqlite/sqlite3.h
     src/mock/sql.h
     src/mock/recorder.h
+
+    src/recording/ros/data_objects/pose.h
+    src/recording/ros/data_objects/vendor_data.h
+    src/recording/ros/data_objects/image.h
+    src/recording/ros/data_objects/motion_stream_info.h
+    src/recording/ros/data_objects/property.h
+    src/recording/ros/data_objects/log.h
+    src/recording/ros/data_objects/motion_sample.h
+    src/recording/ros/data_objects/time_sample.h
+    src/recording/ros/data_objects/compressed_image.h
+    src/recording/ros/data_objects/occupancy_map.h
+    src/recording/ros/data_objects/stream_data.h
+    src/recording/ros/data_objects/image_stream_info.h
+    src/recording/ros/stream_playback.h
+    src/recording/ros/file_types.h
+    src/recording/ros/status.h
+    src/recording/ros/stream_playback.h
+    src/recording/ros/ros_writer.h
+    src/recording/ros/stream_playback.cpp
+    src/recording/ros/topic.h
+)
+
+# Add additional include directories to allow file to include rosbag headers
+include(${CMAKE_CURRENT_LIST_DIR}/third-party/realsense-file/3rd_party/config.cmake)
+include_directories(
+        ${ROSBAG_HEADER_DIRS}
+        ${BOOST_INCLUDE_PATH}
+        ${LZ4_INCLUDE_PATH}
 )
 
 if(WIN32)
@@ -249,7 +290,7 @@ if(WIN32)
     source_group("Source Files\\API" FILES
         src/rs.cpp
         src/verify.c
-        rs4xx/rs4xx_advanced_mode/src/rs2_advanced_mode.cpp
+        rs400/rs400_advanced_mode/src/rs2_advanced_mode.cpp
         )
 
     source_group("Source Files\\Recorder" FILES
