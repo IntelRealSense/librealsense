@@ -25,6 +25,7 @@ namespace librealsense
     class option;
 
     typedef std::function<void(rs2_stream, frame_interface*, callback_invocation_holder)> on_before_frame_callback;
+    typedef std::function<void(std::vector<platform::stream_profile>)> on_open;
 
     class options_container : public virtual options_interface
     {
@@ -87,6 +88,11 @@ namespace librealsense
         void set_pose(lazy<pose> p) { _pose = std::move(p); }
         pose get_pose() const { return *_pose; }
 
+        void register_on_open(on_open callback)
+        {
+            _on_open = callback;
+        }
+
         void register_on_before_frame_callback(on_before_frame_callback callback)
         {
             _on_before_frame_callback = callback;
@@ -115,6 +121,7 @@ namespace librealsense
         std::shared_ptr<platform::time_service> _ts;
         std::shared_ptr<notifications_proccessor> _notifications_proccessor;
         on_before_frame_callback _on_before_frame_callback;
+        on_open _on_open;
         std::shared_ptr<metadata_parser_map> _metadata_parsers = nullptr;
 
         frame_source _source;

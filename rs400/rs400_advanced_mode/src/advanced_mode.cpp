@@ -786,22 +786,27 @@ namespace librealsense
         if (!_advanced.is_enabled())
             throw wrong_api_call_sequence_exception(to_string() << "set(advanced_mode_preset_option) failed! Device is not is Advanced-Mode.");
 
+        auto preset = to_preset(value);
+        if (preset == RS2_RS400_VISUAL_PRESET_CUSTOM)
+        {
+            _last_preset = preset;
+            return;
+        }
+
+        auto pid = _ep.get_device().get_info(RS2_CAMERA_INFO_PRODUCT_ID);
         if (!_ep.is_streaming())
         {
-            // TODO: Lazy
-            throw wrong_api_call_sequence_exception(to_string() << "set(advanced_mode_preset_option) failed! Device must streaming in order to set a preset.");
+            _last_preset = preset;
+            _ep.register_on_open([this, pid](std::vector<platform::stream_profile> configurations){
+                if (_last_preset != RS2_RS400_VISUAL_PRESET_CUSTOM)
+                    _advanced.apply_preset(pid, configurations, _last_preset);
+            });
+            return;
         }
 
-
-        if (to_preset(value) != RS2_RS400_VISUAL_PRESET_CUSTOM)
-        {
-            auto pid = _ep.get_device().get_info(RS2_CAMERA_INFO_PRODUCT_ID);
-            auto configurations = _ep.get_curr_configurations();
-
-            _advanced.apply_preset(pid, configurations, to_preset(value));
-        }
-
-        _last_preset = to_preset(value);
+        auto configurations = _ep.get_curr_configurations();
+        _advanced.apply_preset(pid, configurations, preset);
+        _last_preset = preset;
     }
 
     float advanced_mode_preset_option::query() const
