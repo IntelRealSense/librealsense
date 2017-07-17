@@ -18,6 +18,7 @@ namespace librealsense
         #define CASE(X) case RS2_RS400_VISUAL_PRESET_##X: return #X;
         switch (value)
         {
+        CASE(CUSTOM)
         CASE(GENERIC_DEPTH)
         CASE(GENERIC_ACCURATE_DEPTH)
         CASE(GENERIC_DENSE_DEPTH)
