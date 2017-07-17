@@ -2,7 +2,7 @@
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 #pragma once
 
-#include "streaming.h"
+#include "stream.h"
 
 namespace librealsense
 {
@@ -14,10 +14,17 @@ namespace librealsense
         virtual rs2_intrinsics get_intrinsics(const stream_profile& profile) const = 0;
     };
 
-    class video_stream_profile : public virtual stream_profile_interface
+    class video_stream_profile : public virtual stream_profile_base
     {
     public:
         virtual rs2_intrinsics get_intrinsics() const = 0;
+
+        uint32_t get_width();
+        uint32_t get_height();
+
+    private:
+        uint32_t _height;
+        uint32_t _width;
     };
 
     MAP_EXTENSION(RS2_EXTENSION_TYPE_VIDEO, librealsense::video_sensor_interface);

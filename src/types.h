@@ -360,7 +360,7 @@ namespace librealsense
                 r.orientation(i, j) = a.rotation[j * 3 + i];
         return r;
     }
-    inline rs2_extrinsics from_pose(pose& a)
+    inline rs2_extrinsics from_pose(pose a)
     {
         rs2_extrinsics r;
         for (int i = 0; i < 3; i++) r.translation[i] = a.position[i];

@@ -76,9 +76,10 @@ namespace librealsense
 
         bool try_get_pf(const platform::stream_profile& p, native_pixel_format& result) const;
 
-        std::vector<request_mapping> resolve_requests(std::vector<stream_profile> requests);
+        std::vector<request_mapping> resolve_requests(std::vector<stream_profile_interface*> requests);
 
         std::vector<stream_profile_interface*> _configuration;
+        std::vector<platform::stream_profile> _internal_config;
 
         std::atomic<bool> _is_streaming;
         std::atomic<bool> _is_opened;
@@ -154,11 +155,11 @@ namespace librealsense
         std::unique_ptr<frame_timestamp_reader> _hid_iio_timestamp_reader;
         std::unique_ptr<frame_timestamp_reader> _custom_hid_timestamp_reader;
 
-        std::vector<stream_profile> get_sensor_profiles(std::string sensor_name) const;
+        std::vector<stream_profile_interface*> get_sensor_profiles(std::string sensor_name) const;
 
         std::vector<platform::stream_profile> init_stream_profiles() override;
 
-        std::vector<stream_profile> get_device_profiles();
+        std::vector<stream_profile_interface*> get_device_profiles();
 
         const std::string& rs2_stream_to_sensor_name(rs2_stream stream) const;
 
