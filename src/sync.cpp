@@ -34,24 +34,11 @@ namespace librealsense
             // during Dispatch cycle of another thread (since the state is managed on the stack of 
             // current thread)
             env.lock_ref.unlock_preemptively();
-			// TODO: lock
 			get_source().frame_ready(std::move(f));
 		});
 
 		auto f = [&](frame_holder frame, synthetic_source_interface* source)
 		{
-			
-			// Create single composite matcher M with no children
-			// M.set_callback([](f, regratable_lock&){
-			//    regratable_lock.early_unlock();
-			//    call outside callback(f) // TODO: TRY&CATCH
-			// }
-
-			// set_processing_funct( f:
-			//		regratable_lock l(m)
-			//		M.dispatch(move(f), &regratable_lock)
-
-			// TODO: lock
             sync_lock lock(_mutex);
             _matcher.dispatch(std::move(frame), { source, lock });
 		};
@@ -122,6 +109,7 @@ namespace librealsense
 		auto stream = frame_ptr->get_stream_type();
 
 		auto matcher = find_matcher(stream_id(get_device_from_frame(f), stream));
+        std::cout << "DISPATCH: " << this << " " << f->get_stream_type() << " " << f->get_frame_number() <<std::fixed<< " " << f->get_frame_timestamp() << "\n";
 		matcher->dispatch(std::move(f), env);
 	}
 
@@ -175,13 +163,15 @@ namespace librealsense
 		std::vector<frame_holder*> frames;
 		std::vector<librealsense::matcher*> frames_matcher;
 		std::vector<librealsense::matcher*> synced_frames;
-
+       
 		std::vector<librealsense::matcher*> missing_streams;
 
 		std::vector<frame_holder> synced;
 
         do
         {
+            auto old_frames = false;
+
             synced_frames.clear();
             frames.clear();
 
@@ -199,13 +189,13 @@ namespace librealsense
                     missing_streams.push_back(s->first);
                 }
             }
-            if (frames.size())
-                std::cout << "QUEUES: ";
+          /*  if (frames.size())
+                std::cout << "QUEUES: " << this << " ";
             for (auto f : frames)
             {
                 std::cout << (*f)->get_stream_type() << " " << (*f)->get_frame_number() << " ";
             }
-            std::cout << "\n";
+            std::cout << "\n";*/
             if (frames.size() == 0)
                 break;
 
@@ -225,6 +215,7 @@ namespace librealsense
                 {
                     if (is_smaller_than(*frames[i], *curr_sync))
                     {
+                        old_frames = true;
                         synced_frames.clear();
                         synced_frames.push_back(frames_matcher[i]);
                         curr_sync = frames[i];
@@ -232,18 +223,21 @@ namespace librealsense
                 }
             }
 
-
-            for (auto i : missing_streams)
+            if (!old_frames)
             {
-                if (wait_for_stream(synced_frames, i))
+                for (auto i : missing_streams)
                 {
-                    synced_frames.clear();
-                    break;
+                    if (wait_for_stream(synced_frames, i))
+                    {
+                        synced_frames.clear();
+                        break;
+                    }
                 }
             }
+           
             if (synced_frames.size())
             {
-                std::cout << "\nSynced: ";
+                std::cout << "\nSynced: " << this<<" ";
                 std::vector<frame_holder> match;
                 match.reserve(synced_frames.size());
 
@@ -335,13 +329,13 @@ namespace librealsense
 
 	bool timestamp_composite_matcher::wait_for_stream(std::vector<matcher*> synced, matcher* missing)
 	{
-		frame_holder* synced_frame;
+		/*frame_holder* synced_frame;
 
 		if (_frames_queue[synced[0]].peek(&synced_frame))
 		{
 			auto next_expected = _next_expected[missing];
             return are_equivalent((*synced_frame)->get_frame_timestamp(), next_expected, (*synced_frame)->get_framerate());
-		}
+		}*/
 		return true;
 	}
 
@@ -349,7 +343,10 @@ namespace librealsense
 	{
 		auto gap = 1000 / fps;
 
-		return std::abs(a - b )< gap / 2;
+        auto res = std::abs(a - b);
+        std::cout << "GAP: " << res << "\n";
+        auto res1 = res < gap;
+		return std::abs(a - b )< gap ;
 	}
 }
 

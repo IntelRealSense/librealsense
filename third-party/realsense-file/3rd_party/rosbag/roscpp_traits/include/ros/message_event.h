@@ -70,7 +70,7 @@ class MessageEvent
 {
 public:
   typedef typename boost::add_const<M>::type ConstMessage;
-  typedef typename boost::remove_const<M>::type Message;
+  typedef typename std::remove_const<M>::type Message;
   typedef std::shared_ptr<Message> MessagePtr;
   typedef std::shared_ptr<ConstMessage> ConstMessagePtr;
   typedef boost::function<MessagePtr()> CreateFunction;

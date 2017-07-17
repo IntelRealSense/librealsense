@@ -113,6 +113,9 @@ namespace librealsense
               ds5_active(backend, group),
               ds5_color(backend,  group),
               ds5_advanced_mode_base(ds5_device::_hw_monitor, get_depth_sensor()) {}
+
+        std::shared_ptr<matcher> create_matcher(rs2_stream stream) const override;
+
     };
 
     // AWGCT
@@ -171,7 +174,7 @@ namespace librealsense
         std::vector<platform::uvc_device_info> chosen;
         std::vector<std::shared_ptr<device_info>> results;
 
-        auto valid_pid = filter_by_product(group.uvc_devices, ds::rs4xx_sku_pid);
+        auto valid_pid = filter_by_product(group.uvc_devices, ds::rs400_sku_pid);
         auto group_devices = group_devices_and_hids_by_unique_id(group_devices_by_unique_id(valid_pid), group.hid_devices);
         for (auto& g : group_devices)
         {
@@ -210,5 +213,21 @@ namespace librealsense
         trim_device_list(group.uvc_devices, chosen);
 
         return results;
+    }
+    std::shared_ptr<matcher> rs435_device::create_matcher(rs2_stream stream) const
+    {
+        std::vector<std::shared_ptr<matcher>> depth_matchers;
+
+        std::set<rs2_stream> streams = { RS2_STREAM_DEPTH , RS2_STREAM_INFRARED, RS2_STREAM_INFRARED2 };
+       
+        for (auto s : streams)
+            depth_matchers.push_back(device::create_matcher(s));
+        
+
+        std::vector<std::shared_ptr<matcher>> matchers;
+        matchers.push_back( std::make_shared<frame_number_composite_matcher>(depth_matchers));
+        matchers.push_back(device::create_matcher(RS2_STREAM_COLOR));
+
+        return std::make_shared<timestamp_composite_matcher>(matchers);
     }
 }

@@ -55,6 +55,7 @@
 #  define BOOST_NO_CXX11_EXTERN_TEMPLATE
 // Variadic macros do not exist for VC7.1 and lower
 #  define BOOST_NO_CXX11_VARIADIC_MACROS
+#  define BOOST_NO_CXX11_LOCAL_CLASS_TEMPLATE_PARAMETERS
 #endif
 
 #if _MSC_VER < 1500  // 140X == VC++ 8.0
@@ -62,25 +63,10 @@
 #endif
 
 #if _MSC_VER < 1600  // 150X == VC++ 9.0
-   // A bug in VC9:
+// A bug in VC9:
 #  define BOOST_NO_ADL_BARRIER
 #endif
 
-
-// MSVC (including the latest checked version) has not yet completely
-// implemented value-initialization, as is reported:
-// "VC++ does not value-initialize members of derived classes without
-// user-declared constructor", reported in 2009 by Sylvester Hesp:
-// https://connect.microsoft.com/VisualStudio/feedback/details/484295
-// "Presence of copy constructor breaks member class initialization",
-// reported in 2009 by Alex Vakulenko:
-// https://connect.microsoft.com/VisualStudio/feedback/details/499606
-// "Value-initialization in new-expression", reported in 2005 by
-// Pavel Kuznetsov (MetaCommunications Engineering):
-// https://connect.microsoft.com/VisualStudio/feedback/details/100744
-// See also: http://www.boost.org/libs/utility/value_init.htm#compiler_issues
-// (Niels Dekker, LKEB, May 2010)
-#  define BOOST_NO_COMPLETE_VALUE_INITIALIZATION
 
 #ifndef _NATIVE_WCHAR_T_DEFINED
 #  define BOOST_NO_INTRINSIC_WCHAR_T
@@ -172,9 +158,14 @@
 #  define BOOST_NO_CXX11_DECLTYPE_N3276
 #endif
 
-// C++11 features supported by VC++ 14 (aka 2015) Preview
+#if _MSC_FULL_VER >= 180020827
+#define BOOST_HAS_EXPM1
+#define BOOST_HAS_LOG1P
+#endif
+
+// C++11 features supported by VC++ 14 (aka 2015)
 //
-#if (_MSC_FULL_VER < 190022310)
+#if (_MSC_FULL_VER < 190023026)
 #  define BOOST_NO_CXX11_NOEXCEPT
 #  define BOOST_NO_CXX11_REF_QUALIFIERS
 #  define BOOST_NO_CXX11_USER_DEFINED_LITERALS
@@ -188,25 +179,64 @@
 #  define BOOST_NO_CXX14_RETURN_TYPE_DEDUCTION
 #  define BOOST_NO_CXX14_BINARY_LITERALS
 #  define BOOST_NO_CXX14_GENERIC_LAMBDAS
+#  define BOOST_NO_CXX14_DIGIT_SEPARATORS
+#  define BOOST_NO_CXX11_THREAD_LOCAL
+#endif
+// C++11 features supported by VC++ 14 update 3 (aka 2015)
+//
+#if (_MSC_FULL_VER < 190024210)
+#  define BOOST_NO_CXX14_VARIABLE_TEMPLATES
+#  define BOOST_NO_SFINAE_EXPR
+#  define BOOST_NO_CXX11_CONSTEXPR
 #endif
 
-// C++11 features not supported by any versions
-#define BOOST_NO_CXX11_CONSTEXPR
-#define BOOST_NO_SFINAE_EXPR
-#define BOOST_NO_TWO_PHASE_NAME_LOOKUP
-
-// C++ 14:
-#if !defined(__cpp_aggregate_nsdmi) || (__cpp_aggregate_nsdmi < 201304)
+// C++14 features supported by VC++ 14.1 (Visual Studio 2017)
+//
+#if (_MSC_VER < 1910)
 #  define BOOST_NO_CXX14_AGGREGATE_NSDMI
-#endif
-#if !defined(__cpp_constexpr) || (__cpp_constexpr < 201304)
 #  define BOOST_NO_CXX14_CONSTEXPR
 #endif
-#if (__cplusplus < 201304) // There's no SD6 check for this....
-#  define BOOST_NO_CXX14_DIGIT_SEPARATORS
+
+// MSVC including version 14 has not yet completely
+// implemented value-initialization, as is reported:
+// "VC++ does not value-initialize members of derived classes without
+// user-declared constructor", reported in 2009 by Sylvester Hesp:
+// https://connect.microsoft.com/VisualStudio/feedback/details/484295
+// "Presence of copy constructor breaks member class initialization",
+// reported in 2009 by Alex Vakulenko:
+// https://connect.microsoft.com/VisualStudio/feedback/details/499606
+// "Value-initialization in new-expression", reported in 2005 by
+// Pavel Kuznetsov (MetaCommunications Engineering):
+// https://connect.microsoft.com/VisualStudio/feedback/details/100744
+// Reported again by John Maddock in 2015 for VC14:
+// https://connect.microsoft.com/VisualStudio/feedback/details/1582233/c-subobjects-still-not-value-initialized-correctly
+// See also: http://www.boost.org/libs/utility/value_init.htm#compiler_issues
+// (Niels Dekker, LKEB, May 2010)
+#define BOOST_NO_COMPLETE_VALUE_INITIALIZATION
+//
+// C++ 11:
+//
+#define BOOST_NO_TWO_PHASE_NAME_LOOKUP
+#define BOOST_NO_CXX11_SFINAE_EXPR
+
+//
+// Things that don't work in clr mode:
+//
+#ifdef _M_CEE
+#ifndef BOOST_NO_CXX11_THREAD_LOCAL
+#  define BOOST_NO_CXX11_THREAD_LOCAL
 #endif
-#if !defined(__cpp_variable_templates) || (__cpp_variable_templates < 201304)
-#  define BOOST_NO_CXX14_VARIABLE_TEMPLATES
+#ifndef BOOST_NO_SFINAE_EXPR
+#  define BOOST_NO_SFINAE_EXPR
+#endif
+#ifndef BOOST_NO_CXX11_REF_QUALIFIERS
+#  define BOOST_NO_CXX11_REF_QUALIFIERS
+#endif
+#endif
+#ifdef _M_CEE_PURE
+#ifndef BOOST_NO_CXX11_CONSTEXPR
+#  define BOOST_NO_CXX11_CONSTEXPR
+#endif
 #endif
 
 //
@@ -228,7 +258,7 @@
 // IOW, you can't use these 'versions' in any sensible way. Sorry.
 # if defined(UNDER_CE)
 #   if _MSC_VER < 1400
-      // Note: I'm not aware of any CE compiler with version 13xx
+// Note: I'm not aware of any CE compiler with version 13xx
 #      if defined(BOOST_ASSERT_CONFIG)
 #         error "Unknown EVC++ compiler version - please run the configure tests and report the results"
 #      else
@@ -255,7 +285,7 @@
 #   endif
 # else
 #   if _MSC_VER < 1310
-      // Note: Versions up to 7.0 aren't supported.
+// Note: Versions up to 7.0 aren't supported.
 #     define BOOST_COMPILER_VERSION 5.0
 #   elif _MSC_VER < 1300
 #     define BOOST_COMPILER_VERSION 6.0
@@ -273,8 +303,10 @@
 #     define BOOST_COMPILER_VERSION 11.0
 #   elif _MSC_VER < 1900
 #     define BOOST_COMPILER_VERSION 12.0
-#   elif _MSC_VER < 2000
+#   elif _MSC_VER < 1910
 #     define BOOST_COMPILER_VERSION 14.0
+#   elif _MSC_VER < 1920
+#     define BOOST_COMPILER_VERSION 14.1
 #   else
 #     define BOOST_COMPILER_VERSION _MSC_VER
 #   endif
@@ -284,8 +316,8 @@
 #endif
 
 //
-// last known and checked version is 19.00.23918 (VC++ 2015 Update 2):
-#if (_MSC_VER > 1800 && _MSC_FULL_VER > 190023918)
+// last known and checked version is 19.10.25017 (VC++ 2017):
+#if (_MSC_VER > 1910)
 #  if defined(BOOST_ASSERT_CONFIG)
 #     error "Unknown compiler version - please run the configure tests and report the results"
 #  else

@@ -38,7 +38,7 @@ namespace ros
 class ROSCPP_SERIALIZATION_DECL SerializedMessage
 {
 public:
-  std::shared_ptr<std::vector<uint8_t>> buf;
+  std::vector<uint8_t> buf;
   size_t num_bytes;
   uint8_t* message_start;
 
@@ -46,16 +46,16 @@ public:
   const std::type_info* type_info;
 
   SerializedMessage()
-  : buf(std::shared_ptr<std::vector<uint8_t>>())
+  : buf(std::vector<uint8_t>())
   , num_bytes(0)
   , message_start(0)
   , type_info(0)
   {}
 
-  SerializedMessage(std::shared_ptr<std::vector<uint8_t>> buf, size_t num_bytes)
+  SerializedMessage(std::vector<uint8_t> buf, size_t num_bytes)
   : buf(buf)
   , num_bytes(num_bytes)
-  , message_start(buf ? buf->data() :0)
+  , message_start(buf.empty() ? 0 : buf.data())
   , type_info(0)
   {}
 };

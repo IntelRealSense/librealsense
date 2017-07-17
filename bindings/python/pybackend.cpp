@@ -23,7 +23,7 @@
 namespace py = pybind11;
 using namespace pybind11::literals;
 
-using namespace rsimpl2;
+using namespace librealsense;
 using namespace pybackend2;
 
 // Prevents expensive copies of pixel buffers into python

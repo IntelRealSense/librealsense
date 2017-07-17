@@ -134,7 +134,7 @@ namespace librealsense
             const char* get_value_description(float val) const override
             {
                 return rs2_visual_preset_to_string(
-                    static_cast<rs2_visual_preset>(
+                    static_cast<rs2_ivcam_visual_preset>(
                         static_cast<int>(val)));
             }
 
@@ -144,7 +144,7 @@ namespace librealsense
             {}
 
         private:
-            float last_value = RS2_VISUAL_PRESET_DEFAULT;
+            float last_value = RS2_IVCAM_VISUAL_PRESET_DEFAULT;
             sr300_camera& _owner;
         };
 
@@ -238,7 +238,7 @@ namespace librealsense
                 "Set the filter to apply to each depth frame.\nEach one of the filter is optimized per the application requirements");
 
             depth_ep->register_option(RS2_OPTION_VISUAL_PRESET, std::make_shared<preset_option>(*this,
-                                                                                                option_range{0, RS2_VISUAL_PRESET_COUNT, 1, RS2_VISUAL_PRESET_DEFAULT}));
+                                                                                                option_range{0, RS2_IVCAM_VISUAL_PRESET_COUNT, 1, RS2_IVCAM_VISUAL_PRESET_DEFAULT}));
 
             return depth_ep;
         }
@@ -272,7 +272,7 @@ namespace librealsense
                 RS2_OPTION_MOTION_RANGE
             };
 
-            //const ivcam::cam_auto_range_request ar_requests[RS2_VISUAL_PRESET_COUNT] =
+            //const ivcam::cam_auto_range_request ar_requests[RS2_IVCAM_VISUAL_PRESET_COUNT] =
             //{
             //    { 1,     1, 180,  303,  180,   2,  16,  -1, 1000, 450 }, /* ShortRange                */
             //    { 1,     0, 303,  605,  303,  -1,  -1,  -1, 1250, 975 }, /* LongRange                 */
@@ -287,7 +287,7 @@ namespace librealsense
             //    { 2,     0,  40, 1600,  800,  -1,  -1,  -1,   -1,  -1 }, /* IROnly                    */
             //};
 
-            const float arr_values[RS2_VISUAL_PRESET_COUNT][DEPTH_CONTROLS] = {
+            const float arr_values[RS2_IVCAM_VISUAL_PRESET_COUNT][DEPTH_CONTROLS] = {
                 { 1,    1,   5,   1,  -1 }, /* ShortRange                */
                 { 1,    1,   7,   0,  -1 }, /* LongRange                 */
                 { 16,   1,   6,   2,  22 }, /* BackgroundSegmentation    */
@@ -304,7 +304,7 @@ namespace librealsense
             // The Default preset is handled differently from all the rest,
             // When the user applies the Default preset the camera is expected to return to
             // Default values of depth options:
-            if (preset == RS2_VISUAL_PRESET_DEFAULT)
+            if (preset == RS2_IVCAM_VISUAL_PRESET_DEFAULT)
             {
                 for (auto opt : arr_options)
                 {
@@ -326,7 +326,9 @@ namespace librealsense
                     //set_auto_range(ar_requests[preset]);
             }
         }
-
+        void create_snapshot(std::shared_ptr<debug_interface>& snapshot) override;
+        void create_recordable(std::shared_ptr<debug_interface>& recordable,
+                               std::function<void(std::shared_ptr<extension_snapshot>)> record_action) override;
     private:
         const uint8_t _depth_device_idx;
         const uint8_t _color_device_idx;

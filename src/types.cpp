@@ -101,9 +101,9 @@ namespace librealsense
         #undef CASE
     }
 
-    const char* get_string(rs2_visual_preset value)
+    const char* get_string(rs2_ivcam_visual_preset value)
     {
-        #define CASE(X) case RS2_VISUAL_PRESET_##X: return #X;
+        #define CASE(X) case RS2_IVCAM_VISUAL_PRESET_##X: return #X;
         switch (value)
         {
             CASE(SHORT_RANGE)

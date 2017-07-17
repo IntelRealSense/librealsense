@@ -26,5 +26,5 @@ namespace librealsense
             }
             return false;
         }
-    } // namespace rsimpl::ivcam
-} // namespace rsimpl
+    } // namespace librealsense::ivcam
+} // namespace librealsense

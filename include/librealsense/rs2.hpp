@@ -101,6 +101,8 @@ namespace rs2
     class device;
     class device_list;
     class syncer;
+    class device_base;
+    class roi_sensor;
 
     struct stream_profile
     {
@@ -1118,6 +1120,8 @@ namespace rs2
         friend context;
         friend device_list;
         friend device;
+        friend device_base;
+        friend roi_sensor;
 
         std::shared_ptr<rs2_sensor> _sensor;
         explicit sensor(std::shared_ptr<rs2_sensor> dev)
@@ -1166,7 +1170,7 @@ namespace rs2
             : sensor(s.get())
         {
             rs2_error* e = nullptr;
-            if(rs2_is_sensor(_sensor.get(), RS2_EXTENSION_TYPE_DEPTH_SENSOR, &e) == 0 && !e)
+            if (rs2_is_sensor(_sensor.get(), RS2_EXTENSION_TYPE_DEPTH_SENSOR, &e) == 0 && !e)
             {
                 _sensor = nullptr;
             }
@@ -1174,8 +1178,8 @@ namespace rs2
         }
 
         /** Retrieves mapping between the units of the depth image and meters
-         * \return depth in meters corresponding to a depth value of 1
-         */
+        * \return depth in meters corresponding to a depth value of 1
+        */
         float get_depth_scale() const
         {
             rs2_error* e = nullptr;
@@ -1186,6 +1190,7 @@ namespace rs2
 
         operator bool() const { return _sensor.get() != nullptr; }
     };
+
 
     class device
     {
@@ -1200,8 +1205,8 @@ namespace rs2
         {
             rs2_error* e = nullptr;
             std::shared_ptr<rs2_sensor_list> list(
-                    rs2_query_sensors(_dev.get(), &e),
-                    rs2_delete_sensor_list);
+                rs2_query_sensors(_dev.get(), &e),
+                rs2_delete_sensor_list);
             error::handle(e);
 
             auto size = rs2_get_sensors_count(list.get(), &e);
@@ -1211,8 +1216,8 @@ namespace rs2
             for (auto i = 0; i < size; i++)
             {
                 std::shared_ptr<rs2_sensor> dev(
-                        rs2_create_sensor(list.get(), i, &e),
-                        rs2_delete_sensor);
+                    rs2_create_sensor(list.get(), i, &e),
+                    rs2_delete_sensor);
                 error::handle(e);
 
                 sensor rs2_dev(dev);
@@ -1282,7 +1287,7 @@ namespace rs2
             return *this;
         }
         device() : _dev(nullptr) {}
-        
+
         operator bool() const
         {
             return _dev != nullptr;
@@ -1448,7 +1453,76 @@ namespace rs2
     private:
         std::shared_ptr<rs2_device_list> _list;
     };
+    
+    class playback : public device
+    {
+    public:
+        playback(std::string file) :
+            m_file(file)
+        {
+            rs2_error* e = nullptr;
+            m_serializer = std::shared_ptr<rs2_device_serializer>(
+                rs2_create_device_serializer(file.c_str(), &e),
+                rs2_delete_device_serializer);
+            rs2::error::handle(e);
 
+            e = nullptr;
+            _dev = std::shared_ptr<rs2_device>(
+                rs2_create_playback_device(m_serializer.get(), &e),
+                rs2_delete_device);
+            rs2::error::handle(e);
+        }
+        void pause()
+        {
+            rs2_error* e = nullptr;
+            //rs2_playback_device_pause(_dev.get(), &e);
+            error::handle(e);
+        }
+        void resume()
+        {
+            rs2_error* e = nullptr;
+            //rs2_playback_device_resume(_dev.get(), &e);
+            error::handle(e);
+        }
+    private:
+        std::string m_file;
+        std::shared_ptr<rs2_device_serializer> m_serializer;
+    };
+    class recorder : public device
+    {
+    public:
+        recorder(std::string file, rs2::device device) :
+            m_file(file)
+        {
+            rs2_error* e = nullptr;
+            m_serializer = std::shared_ptr<rs2_device_serializer>(
+                rs2_create_device_serializer(file.c_str(), &e),
+                rs2_delete_device_serializer);
+            rs2::error::handle(e);
+
+            e = nullptr;
+            _dev = std::shared_ptr<rs2_device>(
+                rs2_create_record_device(device.get().get(), m_serializer.get(), &e),
+                rs2_delete_device);
+            rs2::error::handle(e);
+        }
+
+        void pause()
+        {
+            rs2_error* e = nullptr;
+            rs2_record_device_pause(_dev.get(), &e);
+            error::handle(e);
+        }
+        void resume()
+        {
+            rs2_error* e = nullptr;
+            rs2_record_device_resume(_dev.get(), &e);
+            error::handle(e);
+        }
+    private:
+        std::string m_file;
+        std::shared_ptr<rs2_device_serializer> m_serializer;
+    };
 
     class event_information
     {
@@ -1829,7 +1903,7 @@ inline std::ostream & operator << (std::ostream & o, rs2_camera_info camera_info
 inline std::ostream & operator << (std::ostream & o, rs2_frame_metadata metadata) { return o << rs2_frame_metadata_to_string(metadata); }
 inline std::ostream & operator << (std::ostream & o, rs2_timestamp_domain domain) { return o << rs2_timestamp_domain_to_string(domain); }
 inline std::ostream & operator << (std::ostream & o, rs2_notification_category notificaton) { return o << rs2_notification_category_to_string(notificaton); }
-inline std::ostream & operator << (std::ostream & o, rs2_visual_preset preset) { return o << rs2_visual_preset_to_string(preset); }
+inline std::ostream & operator << (std::ostream & o, rs2_ivcam_visual_preset preset) { return o << rs2_visual_preset_to_string(preset); }
 inline std::ostream & operator << (std::ostream & o, rs2_exception_type exception_type) { return o << rs2_exception_type_to_string(exception_type); }
 
 #endif // LIBREALSENSE_RS2_HPP

@@ -24,6 +24,7 @@ namespace librealsense
 
         sensor_interface& get_sensor(size_t subdevice) override;
         const sensor_interface& get_sensor(size_t subdevice) const override;
+
         virtual void hardware_reset()
         {
             throw not_implemented_exception(to_string() << __FUNCTION__ << " is not implemented for this device!");
@@ -43,6 +44,4 @@ namespace librealsense
     private:
         std::vector<std::shared_ptr<sensor_interface>> _sensors;
     };
-
-
 }
