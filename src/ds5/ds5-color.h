@@ -10,10 +10,10 @@ namespace librealsense
     class ds5_color : public virtual ds5_device
     {
     public:
-        std::shared_ptr<uvc_sensor> create_color_device(const platform::backend& backend,
+        std::shared_ptr<uvc_sensor> create_color_device(const std::shared_ptr<context>& ctx,
                                                           const std::vector<platform::uvc_device_info>& all_device_infos);
 
-        ds5_color(const platform::backend& backend,
+        ds5_color(const std::shared_ptr<context>& ctx,
                   const platform::backend_device_group& group);
 
     private:

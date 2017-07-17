@@ -20,28 +20,29 @@ playback_sensor::~playback_sensor()
 
 }
 
-std::vector<stream_profile> playback_sensor::get_principal_requests() 
+stream_profiles playback_sensor::get_stream_profiles()
 {
-    return m_sensor_description.get_streamig_profiles();
+    throw;
+    //return m_sensor_description.get_streamig_profiles();
 }
 
-void playback_sensor::open(const std::vector<stream_profile>& requests) 
+void playback_sensor::open(const stream_profiles& requests)
 {
-    auto available_profiles = m_sensor_description.get_streamig_profiles();
-    for (auto&& r : requests)
-    {
-        if(std::find(std::begin(available_profiles), std::end(available_profiles), r) == std::end(available_profiles))
-        {
-            throw std::runtime_error("Failed to open sensor, requested profile is not available");
-        }
-    }
-    for (auto&& profile : requests)
-    {
-        m_dispatchers.emplace(std::make_pair(profile.stream, std::make_shared<dispatcher>(1))); //TODO: what size the queue should be?
-        m_dispatchers[profile.stream]->start();
-    }
-    
-    opened(m_sensor_id, requests);
+    //auto available_profiles = m_sensor_description.get_streamig_profiles();
+    //for (auto&& r : requests)
+    //{
+    //    if(std::find(std::begin(available_profiles), std::end(available_profiles), r) == std::end(available_profiles))
+    //    {
+    //        throw std::runtime_error("Failed to open sensor, requested profile is not available");
+    //    }
+    //}
+    //for (auto&& profile : requests)
+    //{
+    //    m_dispatchers.emplace(std::make_pair(profile.stream, std::make_shared<dispatcher>(1))); //TODO: what size the queue should be?
+    //    m_dispatchers[profile.stream]->start();
+    //}
+    //
+    //opened(m_sensor_id, requests);
 }
 
 void playback_sensor::close()
@@ -142,7 +143,7 @@ rs2_extrinsics playback_sensor::get_extrinsics_to(rs2_stream from, const sensor_
     throw not_implemented_exception(__FUNCTION__);
 }
 
-const std::vector<platform::stream_profile>& playback_sensor::get_curr_configurations() const
+const stream_profiles& playback_sensor::get_curr_configurations() const
 {
     throw not_implemented_exception(__FUNCTION__);
 }

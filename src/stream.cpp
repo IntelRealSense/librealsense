@@ -77,9 +77,14 @@ namespace librealsense
         _format = format;
     }
 
-    int stream_profile_base::get_framerate() const
+    uint32_t stream_profile_base::get_framerate() const
     {
         return _framerate;
+    }
+
+    void stream_profile_base::set_framerate(uint32_t val)
+    {
+        _framerate = val;
     }
 
     bool stream_profile_base::is_recommended() const

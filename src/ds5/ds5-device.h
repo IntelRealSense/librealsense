@@ -18,7 +18,7 @@ namespace librealsense
     public:
         rs2_extrinsics get_extrinsics(size_t from_subdevice, rs2_stream, size_t to_subdevice, rs2_stream) const override;
 
-        std::shared_ptr<uvc_sensor> create_depth_device(const platform::backend& backend,
+        std::shared_ptr<uvc_sensor> create_depth_device(const std::shared_ptr<context>& ctx,
                                                         const std::vector<platform::uvc_device_info>& all_device_infos);
 
         uvc_sensor& get_depth_sensor()
@@ -26,7 +26,7 @@ namespace librealsense
             return dynamic_cast<uvc_sensor&>(get_sensor(_depth_device_idx));
         }
 
-        ds5_device(const platform::backend& backend,
+        ds5_device(const std::shared_ptr<context>& ctx,
                    const platform::backend_device_group& group);
 
         std::vector<uint8_t> send_receive_raw_data(const std::vector<uint8_t>& input) override;

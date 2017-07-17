@@ -614,7 +614,7 @@ namespace rs2
             rs2_error* e = nullptr;
 
             std::vector<rs2_frame*> refs(frames.size(), nullptr);
-            for (int i = 0; i < frames.size(); i++)
+            for (size_t i = 0; i < frames.size(); i++)
                 std::swap(refs[i], frames[i].frame_ref);
 
             auto result = rs2_allocate_composite_frame(_source, refs.data(), refs.size(), &e);
@@ -860,20 +860,22 @@ namespace rs2
 
         rs2_extrinsics get_extrinsics_to(rs2_stream from, const sensor& other, rs2_stream to) const
         {
-            rs2_extrinsics res;
-            rs2_error* e = nullptr;
-            rs2_get_extrinsics(this->_sensor.get(), from, other._sensor.get(), to, &res, &e);
-            error::handle(e);
-            return res;
+            throw;
+            //rs2_extrinsics res;
+            //rs2_error* e = nullptr;
+            //rs2_get_extrinsics(this->_sensor.get(), from, other._sensor.get(), to, &res, &e);
+            //error::handle(e);
+            //return res;
         }
 
         rs2_extrinsics get_extrinsics_to(const sensor& other) const
         {
-            rs2_extrinsics res;
+            throw;
+            /*rs2_extrinsics res;
             rs2_error* e = nullptr;
             rs2_get_extrinsics(this->_sensor.get(), RS2_STREAM_ANY, other._sensor.get(), RS2_STREAM_ANY, &res, &e);
             error::handle(e);
-            return res;
+            return res;*/
         }
 
         /**

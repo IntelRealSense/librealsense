@@ -79,20 +79,20 @@ namespace librealsense
     class sr300_info : public device_info
     {
     public:
-        std::shared_ptr<device_interface> create(const platform::backend& backend) const override;
+        std::shared_ptr<device_interface> create(const std::shared_ptr<context>& ctx) const override;
 
-        sr300_info(std::shared_ptr<platform::backend> backend,
-            platform::uvc_device_info color,
-            platform::uvc_device_info depth,
-            platform::usb_device_info hwm)
-            : device_info(std::move(backend)), _color(std::move(color)),
+        sr300_info(std::shared_ptr<context> ctx,
+                    platform::uvc_device_info color,
+                    platform::uvc_device_info depth,
+                    platform::usb_device_info hwm)
+            : device_info(std::move(ctx)), _color(std::move(color)),
              _depth(std::move(depth)), _hwm(std::move(hwm))
         {
 
         }
 
         static std::vector<std::shared_ptr<device_info>> pick_sr300_devices(
-            std::shared_ptr<platform::backend> backend,
+            std::shared_ptr<context> ctx,
             std::vector<platform::uvc_device_info>& platform,
             std::vector<platform::usb_device_info>& usb);
 
@@ -151,10 +151,10 @@ namespace librealsense
         class sr300_color_sensor : public uvc_sensor, public video_sensor_interface
         {
         public:
-            explicit sr300_color_sensor(const sr300_camera* owner, std::shared_ptr<platform::uvc_device> uvc_device,
+            explicit sr300_color_sensor(sr300_camera* owner, std::shared_ptr<platform::uvc_device> uvc_device,
                 std::unique_ptr<frame_timestamp_reader> timestamp_reader,
-                std::shared_ptr<platform::time_service> ts)
-                : uvc_sensor("RGB Camera", uvc_device, move(timestamp_reader), ts, owner), _owner(owner)
+                std::shared_ptr<context> ctx)
+                : uvc_sensor("RGB Camera", uvc_device, move(timestamp_reader), owner), _owner(owner)
             {}
 
             rs2_intrinsics get_intrinsics(const stream_profile& profile) const override
@@ -168,10 +168,10 @@ namespace librealsense
         class sr300_depth_sensor : public uvc_sensor, public video_sensor_interface, public depth_sensor
         {
         public:
-            explicit sr300_depth_sensor(const sr300_camera* owner, std::shared_ptr<platform::uvc_device> uvc_device,
+            explicit sr300_depth_sensor(sr300_camera* owner, std::shared_ptr<platform::uvc_device> uvc_device,
                 std::unique_ptr<frame_timestamp_reader> timestamp_reader,
-                std::shared_ptr<platform::time_service> ts)
-                : uvc_sensor("Coded-Light Depth Sensor", uvc_device, move(timestamp_reader), ts, owner), _owner(owner)
+                std::shared_ptr<context> ctx)
+                : uvc_sensor("Coded-Light Depth Sensor", uvc_device, move(timestamp_reader), owner), _owner(owner)
             {}
 
             rs2_intrinsics get_intrinsics(const stream_profile& profile) const override
@@ -184,12 +184,12 @@ namespace librealsense
             const sr300_camera* _owner;
         };
 
-        std::shared_ptr<uvc_sensor> create_color_device(const platform::backend& backend,
+        std::shared_ptr<uvc_sensor> create_color_device(const std::shared_ptr<context>& ctx,
                                                         const platform::uvc_device_info& color)
         {
-            auto color_ep = std::make_shared<sr300_color_sensor>(this, backend.create_uvc_device(color),
+            auto color_ep = std::make_shared<sr300_color_sensor>(this, ctx->get_backend().create_uvc_device(color),
                                                            std::unique_ptr<frame_timestamp_reader>(new sr300_timestamp_reader()),
-                                                           backend.create_time_service());
+                                                           ctx);
             color_ep->register_pixel_format(pf_yuy2);
             color_ep->register_pixel_format(pf_yuyv);
 
@@ -212,15 +212,17 @@ namespace librealsense
             return color_ep;
         }
 
-        std::shared_ptr<uvc_sensor> create_depth_device(const platform::backend& backend,
+        std::shared_ptr<uvc_sensor> create_depth_device(const std::shared_ptr<context>& ctx,
                                                         const platform::uvc_device_info& depth)
         {
             using namespace ivcam;
 
+            auto&& backend = ctx->get_backend();
+
             // create uvc-endpoint from backend uvc-device
             auto depth_ep = std::make_shared<sr300_depth_sensor>(this, backend.create_uvc_device(depth),
                                                            std::unique_ptr<frame_timestamp_reader>(new sr300_timestamp_reader()),
-                                                           backend.create_time_service());
+                                                           ctx);
             depth_ep->register_xu(depth_xu); // make sure the XU is initialized everytime we power the camera
             depth_ep->register_pixel_format(pf_invz);
             depth_ep->register_pixel_format(pf_sr300_inzi);
@@ -256,7 +258,7 @@ namespace librealsense
         uvc_sensor& get_depth_sensor() { return dynamic_cast<uvc_sensor&>(get_sensor(_depth_device_idx)); }
 
 
-        sr300_camera(const platform::backend& backend,
+        sr300_camera(const std::shared_ptr<context>& ctx,
             const platform::uvc_device_info& color,
             const platform::uvc_device_info& depth,
             const platform::usb_device_info& hwm_device);

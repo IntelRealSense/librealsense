@@ -73,10 +73,10 @@ namespace librealsense
     class ds5_depth_sensor : public uvc_sensor, public video_sensor_interface, public depth_sensor
     {
     public:
-        explicit ds5_depth_sensor(const ds5_device* owner, std::shared_ptr<platform::uvc_device> uvc_device,
+        explicit ds5_depth_sensor(ds5_device* owner, std::shared_ptr<platform::uvc_device> uvc_device,
             std::unique_ptr<frame_timestamp_reader> timestamp_reader,
             std::shared_ptr<platform::time_service> ts)
-            : uvc_sensor("Stereo Module", uvc_device, move(timestamp_reader), ts, owner), _owner(owner)
+            : uvc_sensor("Stereo Module", uvc_device, move(timestamp_reader), owner), _owner(owner)
         {}
 
         rs2_intrinsics get_intrinsics(const stream_profile& profile) const override
@@ -118,10 +118,12 @@ namespace librealsense
         return _hw_monitor->send(cmd);
     }
 
-    std::shared_ptr<uvc_sensor> ds5_device::create_depth_device(const platform::backend& backend,
+    std::shared_ptr<uvc_sensor> ds5_device::create_depth_device(const std::shared_ptr<context>& ctx,
                                                                   const std::vector<platform::uvc_device_info>& all_device_infos)
     {
         using namespace ds;
+
+        auto&& backend = ctx->get_backend();
 
         std::vector<std::shared_ptr<platform::uvc_device>> depth_devices;
         for (auto&& info : filter_by_mi(all_device_infos, 0)) // Filter just mi=0, DEPTH
@@ -146,17 +148,19 @@ namespace librealsense
         return depth_ep;
     }
 
-    ds5_device::ds5_device(const platform::backend& backend,
+    ds5_device::ds5_device(const std::shared_ptr<context>& ctx,
                            const platform::backend_device_group& group)
-        : _depth_device_idx(add_sensor(create_depth_device(backend, group.uvc_devices)))
+        : _depth_device_idx(add_sensor(create_depth_device(ctx, group.uvc_devices)))
     {
         using namespace ds;
+
+        auto&& backend = ctx->get_backend();
 
         if(group.usb_devices.size()>0)
         {
             _hw_monitor = std::make_shared<hw_monitor>(
                                      std::make_shared<locked_transfer>(
-                                        backend.create_usb_device(group.usb_devices.front()), get_depth_sensor()));
+                                         backend.create_usb_device(group.usb_devices.front()), get_depth_sensor()));
         }
         else
         {

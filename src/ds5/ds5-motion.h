@@ -10,11 +10,11 @@ namespace librealsense
     class ds5_motion : public virtual ds5_device
     {
     public:
-        std::shared_ptr<hid_sensor> create_hid_device(const platform::backend& backend,
-                                                        const std::vector<platform::hid_device_info>& all_hid_infos,
-                                                        const firmware_version& camera_fw_version);
+        std::shared_ptr<hid_sensor> create_hid_device(const std::shared_ptr<context>& ctx,
+                                                      const std::vector<platform::hid_device_info>& all_hid_infos,
+                                                      const firmware_version& camera_fw_version);
 
-        ds5_motion(const platform::backend& backend,
+        ds5_motion(const std::shared_ptr<context>& ctx,
                    const platform::backend_device_group& group);
 
         rs2_motion_device_intrinsic get_motion_intrinsics(rs2_stream) const;

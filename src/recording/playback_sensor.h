@@ -35,8 +35,8 @@ namespace librealsense
         playback_sensor(const sensor_snapshot& sensor_description, uint32_t sensor_id);
         virtual ~playback_sensor();
 
-        std::vector<stream_profile> get_principal_requests() override;
-        void open(const std::vector<stream_profile>& requests) override;
+        stream_profiles get_stream_profiles() override;
+        void open(const stream_profiles& requests) override;
         void close() override;
         option& get_option(rs2_option id) override;
         const option& get_option(rs2_option id) const override;
@@ -50,7 +50,7 @@ namespace librealsense
         bool extend_to(rs2_extension_type extension_type, void** ext) override;
         const device_interface& get_device() override;
         rs2_extrinsics get_extrinsics_to(rs2_stream from, const sensor_interface& other, rs2_stream to) const  override;
-        const std::vector<platform::stream_profile>& get_curr_configurations() const  override;
+        const stream_profiles& get_curr_configurations() const  override;
 
         void handle_frame(frame_holder frame, bool is_real_time);
         void stop(bool invoke_required);

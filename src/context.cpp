@@ -71,7 +71,7 @@ namespace librealsense
     class recovery_info : public device_info
     {
     public:
-        std::shared_ptr<device_interface> create(const platform::backend& /*backend*/) const override
+        std::shared_ptr<device_interface> create(const std::shared_ptr<context>& /*backend*/) const override
         {
             throw unrecoverable_exception(RECOVERY_MESSAGE,
                 RS2_EXCEPTION_TYPE_DEVICE_IN_RECOVERY_MODE);
@@ -83,7 +83,7 @@ namespace librealsense
         }
 
         static std::vector<std::shared_ptr<device_info>> pick_recovery_devices(
-            const std::shared_ptr<platform::backend>& backend,
+            const std::shared_ptr<context>& ctx,
             const std::vector<platform::usb_device_info>& usb_devices)
         {
             std::vector<std::shared_ptr<device_info>> list;
@@ -91,14 +91,14 @@ namespace librealsense
             {
                 if (is_recovery_pid(usb.pid))
                 {
-                    list.push_back(std::make_shared<recovery_info>(backend, usb));
+                    list.push_back(std::make_shared<recovery_info>(ctx, usb));
                 }
             }
             return list;
         }
 
-        explicit recovery_info(std::shared_ptr<platform::backend> backend, platform::usb_device_info dfu)
-            : device_info(backend), _dfu(std::move(dfu)) {}
+        explicit recovery_info(std::shared_ptr<context> ctx, platform::usb_device_info dfu)
+            : device_info(ctx), _dfu(std::move(dfu)) {}
 
         platform::backend_device_group get_device_data()const override
         {
@@ -113,23 +113,23 @@ namespace librealsense
     class platform_camera_info : public device_info
     {
     public:
-        std::shared_ptr<device_interface> create(const platform::backend& /*backend*/) const override;
+        std::shared_ptr<device_interface> create(const std::shared_ptr<context>& /*backend*/) const override;
 
         static std::vector<std::shared_ptr<device_info>> pick_uvc_devices(
-            const std::shared_ptr<platform::backend>& backend,
+            const std::shared_ptr<context>& ctx,
             const std::vector<platform::uvc_device_info>& uvc_devices)
         {
             std::vector<std::shared_ptr<device_info>> list;
             for (auto&& uvc : uvc_devices)
             {
-                list.push_back(std::make_shared<platform_camera_info>(backend, uvc));
+                list.push_back(std::make_shared<platform_camera_info>(ctx, uvc));
             }
             return list;
         }
 
-        explicit platform_camera_info(std::shared_ptr<platform::backend> backend,
+        explicit platform_camera_info(std::shared_ptr<context> ctx,
                                       platform::uvc_device_info uvc)
-            : device_info(backend), _uvc(std::move(uvc)) {}
+            : device_info(ctx), _uvc(std::move(uvc)) {}
 
         platform::backend_device_group get_device_data() const override
         {
@@ -143,9 +143,9 @@ namespace librealsense
     class platform_camera : public device
     {
     public:
-        platform_camera(std::shared_ptr<platform::uvc_device> uvc, std::shared_ptr<platform::time_service> ts)
+        platform_camera(std::shared_ptr<platform::uvc_device> uvc, std::shared_ptr<context> ctx)
         {
-            auto color_ep = std::make_shared<uvc_sensor>("RGB Camera", uvc, std::unique_ptr<ds5_timestamp_reader>(new ds5_timestamp_reader(ts)), ts, this);
+            auto color_ep = std::make_shared<uvc_sensor>("RGB Camera", uvc, std::unique_ptr<ds5_timestamp_reader>(new ds5_timestamp_reader(ctx->get_time_service())), this);
             add_sensor(color_ep);
 
             register_info(RS2_CAMERA_INFO_NAME, "Platform Camera");
@@ -174,9 +174,10 @@ namespace librealsense
         }
     };
 
-    std::shared_ptr<device_interface> platform_camera_info::create(const platform::backend& backend) const
+    std::shared_ptr<device_interface> platform_camera_info::create(const std::shared_ptr<context>& ctx) const
     {
-        return std::make_shared<platform_camera>(backend.create_uvc_device(_uvc), backend.create_time_service());
+        auto&& backend = ctx->get_backend();
+        return std::make_shared<platform_camera>(backend.create_uvc_device(_uvc), ctx);
     }
 
     context::~context()
@@ -196,16 +197,20 @@ namespace librealsense
     {
         std::vector<std::shared_ptr<device_info>> list;
 
-        auto ds5_devices = ds5_info::pick_ds5_devices(_backend, devices);
+        auto t = const_cast<context*>(this); // While generally a bad idea, we need to provide mutable reference to the devices
+        // to allow them to modify context later on
+        auto ctx = t->shared_from_this();
+
+        auto ds5_devices = ds5_info::pick_ds5_devices(ctx, devices);
         std::copy(begin(ds5_devices), end(ds5_devices), std::back_inserter(list));
 
-        auto sr300_devices = sr300_info::pick_sr300_devices(_backend, devices.uvc_devices, devices.usb_devices);
+        auto sr300_devices = sr300_info::pick_sr300_devices(ctx, devices.uvc_devices, devices.usb_devices);
         std::copy(begin(sr300_devices), end(sr300_devices), std::back_inserter(list));
 
-        auto recovery_devices = recovery_info::pick_recovery_devices(_backend, devices.usb_devices);
+        auto recovery_devices = recovery_info::pick_recovery_devices(ctx, devices.usb_devices);
         std::copy(begin(recovery_devices), end(recovery_devices), std::back_inserter(list));
 
-        auto uvc_devices = platform_camera_info::pick_uvc_devices(_backend, devices.uvc_devices);
+        auto uvc_devices = platform_camera_info::pick_uvc_devices(ctx, devices.uvc_devices);
         std::copy(begin(uvc_devices), end(uvc_devices), std::back_inserter(list));
 
         return list;
@@ -280,14 +285,14 @@ namespace librealsense
 
             auto devices_info_removed = subtract_sets(old_list, new_list);
 
-            for (auto i=0; i<devices_info_removed.size(); i++)
+            for (size_t i = 0; i < devices_info_removed.size(); i++)
             {
                 rs2_devices_info_removed.push_back({ shared_from_this(), devices_info_removed[i] });
                 LOG_DEBUG("\nDevice disconnected:\n\n" << std::string(devices_info_removed[i]->get_device_data()));
             }
 
             auto devices_info_added = subtract_sets(new_list, old_list);
-            for (auto i = 0; i<devices_info_added.size(); i++)
+            for (size_t i = 0; i < devices_info_added.size(); i++)
             {
                 rs2_devices_info_added.push_back({ shared_from_this(), devices_info_added[i] });
                 LOG_DEBUG("\nDevice sconnected:\n\n" << std::string(devices_info_added[i]->get_device_data()));
@@ -388,7 +393,7 @@ namespace librealsense
         LOG_INFO("Found " << dead_counter << " unreachable streams, " << counter << " extrinsics deleted");
     }
 
-    double context::get_time()
+    double context::get_time() const
     {
         return _ts->get_time();
     }

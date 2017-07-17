@@ -32,13 +32,13 @@ namespace librealsense
     {
     public:
         explicit sensor_base(std::string name,
-                             std::shared_ptr<platform::time_service> ts,
-                             const device* device);
+                             device* device);
 
-        virtual std::vector<platform::stream_profile> init_stream_profiles() = 0;
-        const std::vector<platform::stream_profile>& get_stream_profiles() const
+        virtual stream_profiles init_stream_profiles() = 0;
+
+        stream_profiles get_stream_profiles() override
         {
-            return *_stream_profiles;
+            return *_profiles;
         }
 
         void register_notifications_callback(notifications_callback_ptr callback) override;
@@ -65,7 +65,7 @@ namespace librealsense
 
         const device_interface& get_device() override;
 
-        const std::vector<stream_profile_interface*>& get_curr_configurations() const override;
+        const stream_profiles& get_curr_configurations() const override;
 
         void register_pixel_format(native_pixel_format pf)
         {
@@ -76,25 +76,23 @@ namespace librealsense
 
         bool try_get_pf(const platform::stream_profile& p, native_pixel_format& result) const;
 
-        std::vector<request_mapping> resolve_requests(std::vector<stream_profile_interface*> requests);
+        std::vector<request_mapping> resolve_requests(stream_profiles requests);
 
-        std::vector<stream_profile_interface*> _configuration;
+        stream_profiles _configuration;
         std::vector<platform::stream_profile> _internal_config;
 
         std::atomic<bool> _is_streaming;
         std::atomic<bool> _is_opened;
-        std::shared_ptr<platform::time_service> _ts;
         std::shared_ptr<notifications_proccessor> _notifications_proccessor;
         on_before_frame_callback _on_before_frame_callback;
         std::shared_ptr<metadata_parser_map> _metadata_parsers = nullptr;
 
         frame_source _source;
-        device* _owner_dev;
+        device* _owner;
 
     private:
-        lazy<std::vector<platform::stream_profile>> _stream_profiles;
+        lazy<stream_profiles> _profiles;
         lazy<pose> _pose;
-        const device* _device;
         std::vector<native_pixel_format> _pixel_formats;
     };
 
@@ -116,14 +114,11 @@ namespace librealsense
                             std::unique_ptr<frame_timestamp_reader> custom_hid_timestamp_reader,
                             std::map<rs2_stream, std::map<unsigned, unsigned>> fps_and_sampling_frequency_per_rs2_stream,
                             std::vector<std::pair<std::string, stream_profile>> sensor_name_and_hid_profiles,
-                            std::shared_ptr<platform::time_service> ts,
-                            const device* dev);
+                            device* dev);
 
         ~hid_sensor();
 
-        std::vector<stream_profile_interface*> get_principal_requests() override;
-
-        void open(const std::vector<stream_profile_interface*>& requests) override;
+        void open(const stream_profiles& requests) override;
 
         void close() override;
 
@@ -155,11 +150,9 @@ namespace librealsense
         std::unique_ptr<frame_timestamp_reader> _hid_iio_timestamp_reader;
         std::unique_ptr<frame_timestamp_reader> _custom_hid_timestamp_reader;
 
-        std::vector<stream_profile_interface*> get_sensor_profiles(std::string sensor_name) const;
+        stream_profiles get_sensor_profiles(std::string sensor_name) const;
 
-        std::vector<platform::stream_profile> init_stream_profiles() override;
-
-        std::vector<stream_profile_interface*> get_device_profiles();
+        stream_profiles init_stream_profiles() override;
 
         const std::string& rs2_stream_to_sensor_name(rs2_stream stream) const;
 
@@ -173,9 +166,8 @@ namespace librealsense
     {
     public:
         explicit uvc_sensor(std::string name, std::shared_ptr<platform::uvc_device> uvc_device,
-                            std::unique_ptr<frame_timestamp_reader> timestamp_reader,
-                            std::shared_ptr<platform::time_service> ts, const device* dev)
-            : sensor_base(name, ts, dev),
+                            std::unique_ptr<frame_timestamp_reader> timestamp_reader, device* dev)
+            : sensor_base(name, dev),
               _device(move(uvc_device)),
               _user_count(0),
               _timestamp_reader(std::move(timestamp_reader))
@@ -183,20 +175,10 @@ namespace librealsense
 
         ~uvc_sensor();
 
-        region_of_interest_method& get_roi_method() const
-        {
-            if (!_roi_method.get())
-                throw librealsense::not_implemented_exception("Region-of-interest is not implemented for this device!");
-            return *_roi_method;
-        }
-        void set_roi_method(std::shared_ptr<region_of_interest_method> roi_method)
-        {
-            _roi_method = roi_method;
-        }
+        region_of_interest_method& get_roi_method() const override;
+        void set_roi_method(std::shared_ptr<region_of_interest_method> roi_method) override;
 
-        std::vector<stream_profile_interface*> get_principal_requests() override;
-
-        void open(const std::vector<stream_profile_interface*>& requests) override;
+        void open(const stream_profiles& requests) override;
 
         void close() override;
 
@@ -217,7 +199,7 @@ namespace librealsense
         void stop() override;
 
     private:
-        std::vector<platform::stream_profile> init_stream_profiles() override;
+        stream_profiles init_stream_profiles() override;
 
         void acquire_power();
 

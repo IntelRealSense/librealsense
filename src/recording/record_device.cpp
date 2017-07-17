@@ -76,7 +76,7 @@ void librealsense::record_device::write_header()
     {
         auto& sensor = m_device->get_sensor(j);
         auto sensor_extensions_md = get_extensions_snapshots(&sensor);
-        sensors_md.emplace_back(sensor_extensions_md, sensor.get_principal_requests());
+        sensors_md.emplace_back(sensor_extensions_md, sensor.get_stream_profiles());
     }
 
     m_ros_writer->write_device_description({device_extensions_md, sensors_md, {/*TODO: get extrinsics*/}});
@@ -300,12 +300,12 @@ librealsense::record_sensor::~record_sensor()
 {
 }
 
-std::vector<librealsense::stream_profile> librealsense::record_sensor::get_principal_requests()
+stream_profiles librealsense::record_sensor::get_stream_profiles()
 {
-	return m_sensor.get_principal_requests();
+	return m_sensor.get_stream_profiles();
 }
 
-void librealsense::record_sensor::open(const std::vector<librealsense::stream_profile>& requests)
+void librealsense::record_sensor::open(const stream_profiles& requests)
 {
     m_sensor.open(requests);
     //m_curr_configurations = requests;
@@ -450,7 +450,7 @@ rs2_extrinsics record_sensor::get_extrinsics_to(rs2_stream from, const sensor_in
     throw not_implemented_exception(__FUNCTION__);
 }
 
-const std::vector<platform::stream_profile>& record_sensor::get_curr_configurations() const
+const stream_profiles& record_sensor::get_curr_configurations() const
 {
     return m_curr_configurations;
 }

@@ -59,6 +59,11 @@ const sensor_interface& device::get_sensor(size_t subdevice) const
     }
 }
 
+void device::hardware_reset()
+{
+    throw not_implemented_exception(to_string() << __FUNCTION__ << " is not implemented for this device!");
+}
+
 rs2_extrinsics device::get_extrinsics(size_t from_subdevice, rs2_stream, size_t to_subdevice, rs2_stream) const
 {
     auto from = dynamic_cast<const sensor_base&>(get_sensor(from_subdevice)).get_pose(), 

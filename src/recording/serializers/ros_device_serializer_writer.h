@@ -15,6 +15,7 @@
 #include "recording/ros/data_objects/stream_data.h"
 #include "recording/ros/ros_writer.h"
 #include "recording/ros/data_objects/image_stream_info.h"
+#include "stream.h"
 
 namespace librealsense
 {
@@ -46,7 +47,7 @@ namespace librealsense
                 {
                     write_extension_snapshot(sensor_index, sensor_extension_snapshot.first, sensor_extension_snapshot.second);
                 }
-                write_streaming_info(sensor_index, sensors_snapshot.get_streamig_profiles());
+                write_streaming_info(sensor_index, to_profiles(sensors_snapshot.get_streamig_profiles()));
                 sensor_index++;
             }
             write_sensor_count(device_description.get_sensors_snapshots().size());

@@ -45,11 +45,10 @@ namespace librealsense
     public:
         std::shared_ptr<device_interface> create_device() const
         {
-            return create(*_backend);
+            return create(_ctx);
         }
 
         virtual ~device_info() = default;
-
 
         virtual platform::backend_device_group get_device_data()const = 0;
 
@@ -59,13 +58,13 @@ namespace librealsense
         }
 
     protected:
-        explicit device_info(std::shared_ptr<platform::backend> backend)
-            : _backend(std::move(backend))
+        explicit device_info(std::shared_ptr<context> backend)
+            : _ctx(move(backend))
         {}
 
-        virtual std::shared_ptr<device_interface> create(const platform::backend& backend) const = 0;
+        virtual std::shared_ptr<device_interface> create(const std::shared_ptr<context>& ctx) const = 0;
 
-        std::shared_ptr<platform::backend> _backend;
+        std::shared_ptr<context> _ctx;
     };
 
     enum class backend_type
@@ -88,7 +87,7 @@ namespace librealsense
         ~context();
         std::vector<std::shared_ptr<device_info>> query_devices() const;
         const platform::backend& get_backend() const { return *_backend; }
-        double get_time();
+        double get_time() const;
 
         std::shared_ptr<platform::time_service> get_time_service() const { return _ts; }
 
@@ -122,14 +121,14 @@ namespace librealsense
     };
 
     // Helper functions for device list manipulation:
-    static std::vector<platform::uvc_device_info> filter_by_product(const std::vector<platform::uvc_device_info>& devices, const std::set<uint16_t>& pid_list);
-    static std::vector<std::pair<std::vector<platform::uvc_device_info>, std::vector<platform::hid_device_info>>> group_devices_and_hids_by_unique_id(
+    std::vector<platform::uvc_device_info> filter_by_product(const std::vector<platform::uvc_device_info>& devices, const std::set<uint16_t>& pid_list);
+    std::vector<std::pair<std::vector<platform::uvc_device_info>, std::vector<platform::hid_device_info>>> group_devices_and_hids_by_unique_id(
         const std::vector<std::vector<platform::uvc_device_info>>& devices,
         const std::vector<platform::hid_device_info>& hids);
-    static std::vector<std::vector<platform::uvc_device_info>> group_devices_by_unique_id(const std::vector<platform::uvc_device_info>& devices);
-    static void trim_device_list(std::vector<platform::uvc_device_info>& devices, const std::vector<platform::uvc_device_info>& chosen);
-    static bool mi_present(const std::vector<platform::uvc_device_info>& devices, uint32_t mi);
-    static platform::uvc_device_info get_mi(const std::vector<platform::uvc_device_info>& devices, uint32_t mi);
-    static std::vector<platform::uvc_device_info> filter_by_mi(const std::vector<platform::uvc_device_info>& devices, uint32_t mi);
+    std::vector<std::vector<platform::uvc_device_info>> group_devices_by_unique_id(const std::vector<platform::uvc_device_info>& devices);
+    void trim_device_list(std::vector<platform::uvc_device_info>& devices, const std::vector<platform::uvc_device_info>& chosen);
+    bool mi_present(const std::vector<platform::uvc_device_info>& devices, uint32_t mi);
+    platform::uvc_device_info get_mi(const std::vector<platform::uvc_device_info>& devices, uint32_t mi);
+    std::vector<platform::uvc_device_info> filter_by_mi(const std::vector<platform::uvc_device_info>& devices, uint32_t mi);
 
 }

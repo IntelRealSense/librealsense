@@ -3,6 +3,7 @@
 #pragma once
 
 #include "core/streaming.h"
+#include "core/video.h"
 #include "context.h"
 
 namespace librealsense
@@ -26,7 +27,7 @@ namespace librealsense
         rs2_stream _type = RS2_STREAM_ANY;
     };
 
-    class stream_profile_base : public stream_profile_interface
+    class stream_profile_base : public virtual stream_profile_interface
     {
     public:
         explicit stream_profile_base(std::shared_ptr<context> ctx);
@@ -42,7 +43,8 @@ namespace librealsense
         rs2_format get_format() const override;
         void set_format(rs2_format format) override;
 
-        int get_framerate() const override;
+        uint32_t get_framerate() const override;
+        void set_framerate(uint32_t val) override;
 
         bool is_recommended() const override;
         void make_recommended() override;
@@ -60,9 +62,51 @@ namespace librealsense
         int _index = 0;
         rs2_stream _type = RS2_STREAM_ANY;
         rs2_format _format = RS2_FORMAT_ANY;
-        int _framerate = 0;
+        uint32_t _framerate = 0;
         bool _is_recommended = false;
         rs2_stream_profile _c_wrapper;
         rs2_stream_profile* _c_ptr = nullptr;
     };
+
+    class video_stream_profile : public virtual video_stream_profile_interface, public stream_profile_base
+    {
+    public:
+        explicit video_stream_profile(const std::shared_ptr<context>& ctx)
+            : stream_profile_base(ctx), 
+              _calc_intrinsics([]() -> rs2_intrinsics { throw not_implemented_exception("No intrinsics are available for this stream profile!"); }),
+              _width(0), _height(0)
+        {
+        }
+
+        rs2_intrinsics get_intrinsics() const override { return _calc_intrinsics(); }
+        void set_intrinsics(std::function<rs2_intrinsics()> calc) { _calc_intrinsics = calc; }
+        
+        uint32_t get_width() const override { return _width; }
+        uint32_t get_height() const override { return _height; }
+        void set_dims(uint32_t width, uint32_t height) override 
+        { 
+            _width = width;
+            _height = height;
+        }
+    private:
+        std::function<rs2_intrinsics()> _calc_intrinsics;
+        uint32_t _width, _height;
+    };
+
+    inline stream_profile to_profile(const stream_profile_interface* sp)
+    {
+        auto fps = static_cast<uint32_t>(sp->get_framerate());
+        if (auto vid = dynamic_cast<const video_stream_profile*>(sp))
+        {
+            return{ sp->get_stream_type(), vid->get_width(), vid->get_height(), fps, sp->get_format() };
+        }
+        return{ sp->get_stream_type(), 0, 0, fps, sp->get_format() };
+    }
+
+    inline std::vector<stream_profile> to_profiles(const std::vector<std::shared_ptr<stream_profile_interface>>& vec)
+    {
+        std::vector<stream_profile> res;
+        for (auto&& p : vec) res.push_back(to_profile(p.get()));
+        return res;
+    }
 }

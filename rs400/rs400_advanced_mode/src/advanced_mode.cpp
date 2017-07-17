@@ -2,6 +2,7 @@
 // Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 
 #include "../../../src/core/advanced_mode.h"
+#include "stream.h"
 
 namespace librealsense
 {
@@ -54,7 +55,7 @@ namespace librealsense
     }
 
     void ds5_advanced_mode_base::apply_preset(const std::string& pid,
-                      const std::vector<platform::stream_profile>& configuration,
+                      const std::vector<stream_profile>& configuration,
                       rs2_rs400_visual_preset preset)
     {
         auto p = get_all();
@@ -791,8 +792,13 @@ namespace librealsense
 
         auto pid = _ep.get_device().get_info(RS2_CAMERA_INFO_PRODUCT_ID);
         auto configurations = _ep.get_curr_configurations();
+        std::vector<stream_profile> profiles;
+        for (auto&& c : configurations)
+        {
+            profiles.push_back(to_profile(c.get()));
+        }
 
-        _advanced.apply_preset(pid, configurations, to_preset(value));
+        _advanced.apply_preset(pid, profiles, to_preset(value));
         _last_preset = to_preset(value);
     }
 

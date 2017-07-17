@@ -10,19 +10,19 @@
 #include <set>
 #include <unordered_set>
 #include "device.h"
+#include "stream.h"
 
 namespace librealsense
 {
-    sensor_base::sensor_base(std::string name, std::shared_ptr<platform::time_service> ts, const device* dev)
-        : _source(ts),
-          _device(dev),
-        _is_streaming(false),
-        _is_opened(false),
-        _stream_profiles([this]() { return this->init_stream_profiles(); }),
-        _notifications_proccessor(std::shared_ptr<notifications_proccessor>(new notifications_proccessor())),
-        _metadata_parsers(std::make_shared<metadata_parser_map>()),
-        _on_before_frame_callback(nullptr),
-        _ts(ts)
+    sensor_base::sensor_base(std::string name, device* dev)
+        : _is_streaming(false),
+          _is_opened(false),
+          _notifications_proccessor(std::shared_ptr<notifications_proccessor>(new notifications_proccessor())),
+          _on_before_frame_callback(nullptr),
+          _metadata_parsers(std::make_shared<metadata_parser_map>()),
+          _source(dev->get_context()->get_time_service()),
+          _owner(dev),
+          _profiles([this]() { return this->init_stream_profiles(); })
     {
         register_option(RS2_OPTION_FRAMES_QUEUE_SIZE, _source.get_published_size_option());
 
@@ -43,7 +43,7 @@ namespace librealsense
 
     rs2_extrinsics sensor_base::get_extrinsics_to(rs2_stream from, const sensor_interface& other, rs2_stream to) const
     {
-        return _device->get_extrinsics(_device->find_sensor_idx(*this), from, _device->find_sensor_idx(other), to);
+        return _owner->get_extrinsics(_owner->find_sensor_idx(*this), from, _owner->find_sensor_idx(other), to);
     }
 
     bool sensor_base::try_get_pf(const platform::stream_profile& p, native_pixel_format& result) const
@@ -61,20 +61,19 @@ namespace librealsense
         return false;
     }
 
-    std::vector<request_mapping> sensor_base::resolve_requests(std::vector<stream_profile_interface*> requests)
+    std::vector<request_mapping> sensor_base::resolve_requests(stream_profiles requests)
     {
         // per requested profile, find all 4ccs that support that request.
         std::map<rs2_stream, std::set<uint32_t>> legal_fourccs;
         auto profiles = get_stream_profiles();
-        for (auto&& r : requests) {
-            auto request = dynamic_cast<video_stream_profile*>(r);
-            if (!request) {
-                // TODO: Log Error?
-                continue;
-            }
-            for (auto&& mode : profiles) {
-                if (mode.fps == request->get_framerate() && mode.height == request->get_height() && mode.width == request->get_width())
-                    legal_fourccs[request->get_stream_type()].insert(mode.format);
+        for (auto&& r : requests) 
+        {
+            auto sp = to_profile(r.get());
+            for (auto&& mode : profiles) 
+            {
+                auto m = to_profile(mode.get());
+                if (m.fps == sp.fps && m.height == sp.height && m.width == sp.width)
+                    legal_fourccs[sp.stream].insert(m.format); // TODO: Stread ID???
             }
         }
 
@@ -95,11 +94,11 @@ namespace librealsense
                 for (auto&& unpacker : pf.unpackers)
                 {
                     auto count = static_cast<int>(std::count_if(begin(requests), end(requests),
-                        [&pf, &legal_fourccs, &unpacker](stream_profile_interface* r)
+                        [&pf, &legal_fourccs, &unpacker](const std::shared_ptr<stream_profile_interface>& r)
                     {
                         // only count if the 4cc can be unpacked into the relevant stream/format
                         // and also, the pixel format can be streamed in the requested dimensions/fps.
-                        return unpacker.satisfies(r) && legal_fourccs[r->get_stream_type()].count(pf.fourcc);
+                        return unpacker.satisfies(to_profile(r.get())) && legal_fourccs[r->get_stream_type()].count(pf.fourcc);
                     }));
 
                     // Here we check if the current pixel format / unpacker combination is better than the current best.
@@ -122,11 +121,11 @@ namespace librealsense
             if (max == 0) break;
 
             requests.erase(std::remove_if(begin(requests), end(requests),
-                [best_unpacker, best_pf, &results, &legal_fourccs, this](stream_profile_interface* r)
+                [best_unpacker, best_pf, &results, &legal_fourccs, this](const std::shared_ptr<stream_profile_interface>& r)
             {
-                if (best_unpacker->satisfies(r) && legal_fourccs[r->get_stream_type()].count(best_pf->fourcc))
+                if (best_unpacker->satisfies(to_profile(r.get())) && legal_fourccs[r->get_stream_type()].count(best_pf->fourcc))
                 {
-                    auto request = dynamic_cast<video_stream_profile*>(r);
+                    auto request = dynamic_cast<const video_stream_profile*>(r.get());
                     if (!request) {
                         // TODO: Log error?
                         return false;
@@ -164,19 +163,26 @@ namespace librealsense
         }
     }
 
-    std::vector<platform::stream_profile> uvc_sensor::init_stream_profiles()
+    region_of_interest_method& uvc_sensor::get_roi_method() const
     {
-        power on(std::dynamic_pointer_cast<uvc_sensor>(shared_from_this()));
-        return _device->get_profiles();
+        if (!_roi_method.get())
+            throw librealsense::not_implemented_exception("Region-of-interest is not implemented for this device!");
+        return *_roi_method;
     }
 
-    std::vector<stream_profile_interface*> uvc_sensor::get_principal_requests()
+    void uvc_sensor::set_roi_method(std::shared_ptr<region_of_interest_method> roi_method)
     {
-        std::unordered_set<stream_profile> results;
+        _roi_method = roi_method;
+    }
+
+    stream_profiles uvc_sensor::init_stream_profiles()
+    {
+        std::unordered_set<std::shared_ptr<video_stream_profile>> results;
         std::set<uint32_t> unutilized_formats;
         std::set<uint32_t> supported_formats;
 
-        auto profiles = get_stream_profiles();
+        power on(std::dynamic_pointer_cast<uvc_sensor>(shared_from_this()));
+        auto profiles = _device->get_profiles();
         for (auto&& p : profiles)
         {
             supported_formats.insert(p.format);
@@ -187,7 +193,12 @@ namespace librealsense
                 {
                     for (auto&& output : unpacker.outputs)
                     {
-                        results.insert({ output.first, p.width, p.height, p.fps, output.second });
+                        auto profile = std::make_shared<video_stream_profile>(_owner->get_context());
+                        profile->set_dims(p.width, p.height);
+                        profile->set_stream_type(output.first);
+                        profile->set_format(output.second);
+                        profile->set_framerate(p.fps);
+                        results.insert(profile);
                     }
                 }
             }
@@ -221,7 +232,7 @@ namespace librealsense
         }
 
         // Sort the results to make sure that the user will receive predictable deterministic output from the API
-        std::vector<stream_profile> res{ begin(results), end(results) };
+        stream_profiles res{ begin(results), end(results) };
         std::sort(res.begin(), res.end(), [](const stream_profile& a, const stream_profile& b)
         {
             auto at = std::make_tuple(a.stream, a.width, a.height, a.fps, a.format);
@@ -235,18 +246,18 @@ namespace librealsense
 
     const device_interface& sensor_base::get_device()
     {
-        return *_device;
+        return *_owner;
     }
 
-    const std::vector<stream_profile_interface*>& sensor_base::get_curr_configurations() const
+    const stream_profiles& sensor_base::get_curr_configurations() const
     {
         if (!_is_streaming)
-            throw invalid_value_exception("get_curr_configurations() failed! Sensor doesn't streaming.");
+            throw wrong_api_call_sequence_exception("The sensor isn't streaming!");
 
         return _configuration;
     }
 
-    void uvc_sensor::open(const std::vector<stream_profile_interface*>& requests)
+    void uvc_sensor::open(const stream_profiles& requests)
     {
         std::lock_guard<std::mutex> lock(_configure_lock);
         if (_is_streaming)
@@ -270,7 +281,7 @@ namespace librealsense
                 [this, mode, timestamp_reader, requests](platform::stream_profile p, platform::frame_object f, std::function<void()> continuation) mutable
                 {
 
-                auto system_time = _ts->get_time();
+                auto system_time = _owner->get_context()->get_time();
 
                 if (!this->is_streaming())
                 {
@@ -358,7 +369,10 @@ namespace librealsense
 
                     // all the streams the unpacker generates are handled here.
                     // If it matches one of the streams the user requested, send it to the user.
-                    if (std::any_of(begin(requests), end(requests), [&pref](stream_profile_interface* request) { return request->get_stream_type() == pref->get_stream_type(); }))
+                    if (std::any_of(begin(requests), end(requests), [&pref](const std::shared_ptr<stream_profile_interface>& request)
+                    {
+                        return request->get_stream_type() == pref->get_stream_type();
+                    }))
                     {
                         if (_on_before_frame_callback)
                         {
@@ -532,8 +546,8 @@ namespace librealsense
         std::unique_ptr<frame_timestamp_reader> custom_hid_timestamp_reader, 
         std::map<rs2_stream, std::map<unsigned, unsigned>> fps_and_sampling_frequency_per_rs2_stream, 
         std::vector<std::pair<std::string, stream_profile>> sensor_name_and_hid_profiles, 
-        std::shared_ptr<platform::time_service> ts, const device* dev)
-    : sensor_base("Motion Module", ts, dev), _sensor_name_and_hid_profiles(sensor_name_and_hid_profiles),
+        device* dev)
+    : sensor_base("Motion Module", dev), _sensor_name_and_hid_profiles(sensor_name_and_hid_profiles),
       _fps_and_sampling_frequency_per_rs2_stream(fps_and_sampling_frequency_per_rs2_stream),
       _hid_device(hid_device),
       _is_configured_stream(RS2_STREAM_COUNT),
@@ -572,36 +586,26 @@ namespace librealsense
         }
     }
 
-    std::vector<platform::stream_profile> hid_sensor::init_stream_profiles()
+    stream_profiles hid_sensor::get_sensor_profiles(std::string sensor_name) const
     {
-        std::unordered_set<platform::stream_profile> results;
-        for (auto& elem : get_device_profiles())
-        {
-            results.insert({elem.width, elem.height, elem->get_framerate(), stream_to_fourcc(elem->get_stream_type())});
-        }
-        return std::vector<platform::stream_profile>(results.begin(), results.end());
-    }
-
-    std::vector<stream_profile_interface*> hid_sensor::get_sensor_profiles(std::string sensor_name) const
-    {
-        std::vector<stream_profile> profiles{};
+        stream_profiles profiles{};
         for (auto& elem : _sensor_name_and_hid_profiles)
         {
             if (!elem.first.compare(sensor_name))
             {
-                profiles.push_back(elem.second);
+                auto p = elem.second;
+                auto profile = std::make_shared<stream_profile_base>(_owner->get_context());
+                profile->set_stream_type(p.stream);
+                profile->set_format(p.format);
+                profile->set_framerate(p.fps);
+                profiles.push_back(profile);
             }
         }
 
         return profiles;
     }
 
-    std::vector<stream_profile_interface*> hid_sensor::get_principal_requests()
-    {
-        return get_device_profiles();
-    }
-
-    void hid_sensor::open(const std::vector<stream_profile_interface*>& requests)
+    void hid_sensor::open(const stream_profiles& requests)
     {
         std::lock_guard<std::mutex> lock(_configure_lock);
         if (_is_streaming)
@@ -625,8 +629,8 @@ namespace librealsense
                 {
                     _configured_profiles.insert(std::make_pair(sensor_name,
                                                                stream_profile{request->get_stream_type(),
-                                                                              request.width,
-                                                                              request.height,
+                                                                              0,
+                                                                              0,
                                                                               fps_to_sampling_frequency(request->get_stream_type(), request->get_framerate()),
                                                                               request->get_format()}));
                     _is_configured_stream[request->get_stream_type()] = true;
@@ -688,7 +692,7 @@ namespace librealsense
 
         _hid_device->start_capture([this](const platform::sensor_data& sensor_data)
         {
-            auto system_time = _ts->get_time();
+            auto system_time = _owner->get_context()->get_time();
             auto timestamp_reader = _hid_iio_timestamp_reader.get();
 
             // TODO:
@@ -795,9 +799,9 @@ namespace librealsense
     }
 
 
-    std::vector<stream_profile_interface*> hid_sensor::get_device_profiles()
+    stream_profiles hid_sensor::init_stream_profiles()
     {
-        std::vector<stream_profile_interface*> stream_requests;
+        stream_profiles stream_requests;
         for (auto it = _hid_sensors.rbegin(); it != _hid_sensors.rend(); ++it)
         {
             auto profiles = get_sensor_profiles(it->name);

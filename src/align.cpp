@@ -130,7 +130,7 @@ namespace librealsense
         if (auto comp = dynamic_cast<composite_frame*>(from.frame))
         {
             auto frame_buff = comp->get_frames();
-            for (int i = 0; i < comp->get_embeded_frames_count(); i++)
+            for (size_t i = 0; i < comp->get_embeded_frames_count(); i++)
             {
                 std::swap(*target, frame_buff[i]);
                 target++;

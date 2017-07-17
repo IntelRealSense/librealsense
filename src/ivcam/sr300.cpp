@@ -6,13 +6,13 @@
 
 namespace librealsense
 {
-    std::shared_ptr<device_interface> sr300_info::create(const platform::backend& backend) const
+    std::shared_ptr<device_interface> sr300_info::create(const std::shared_ptr<context>& ctx) const
     {
-        return std::make_shared<sr300_camera>(backend, _color, _depth, _hwm);
+        return std::make_shared<sr300_camera>(ctx, _color, _depth, _hwm);
     }
 
     std::vector<std::shared_ptr<device_info>> sr300_info::pick_sr300_devices(
-        std::shared_ptr<platform::backend> backend,
+        std::shared_ptr<context> ctx,
         std::vector<platform::uvc_device_info>& uvc,
         std::vector<platform::usb_device_info>& usb)
     {
@@ -33,7 +33,7 @@ namespace librealsense
 
                 if (ivcam::try_fetch_usb_device(usb, color, hwm))
                 {
-                    auto info = std::make_shared<sr300_info>(backend, color, depth, hwm);
+                    auto info = std::make_shared<sr300_info>(ctx, color, depth, hwm);
                     chosen.push_back(color);
                     chosen.push_back(depth);
                     results.push_back(info);
@@ -177,11 +177,11 @@ namespace librealsense
         return rawCalib.CalibrationParameters;
     }
 
-    sr300_camera::sr300_camera(const platform::backend &backend, const platform::uvc_device_info &color,
+    sr300_camera::sr300_camera(const std::shared_ptr<context> &ctx, const platform::uvc_device_info &color,
                                const platform::uvc_device_info &depth, const platform::usb_device_info &hwm_device)
-            : _depth_device_idx(add_sensor(create_depth_device(backend, depth))),
-              _color_device_idx(add_sensor(create_color_device(backend, color))),
-              _hw_monitor(std::make_shared<hw_monitor>(std::make_shared<locked_transfer>(backend.create_usb_device(hwm_device), get_depth_sensor())))
+            : _depth_device_idx(add_sensor(create_depth_device(ctx, depth))),
+              _color_device_idx(add_sensor(create_color_device(ctx, color))),
+              _hw_monitor(std::make_shared<hw_monitor>(std::make_shared<locked_transfer>(ctx->get_backend().create_usb_device(hwm_device), get_depth_sensor())))
     {
         using namespace ivcam;
         static const char* device_name = "Intel RealSense SR300";

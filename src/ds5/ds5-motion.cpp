@@ -45,14 +45,13 @@ namespace librealsense
     class ds5_hid_sensor : public hid_sensor, public motion_sensor_interface
     {
     public:
-        explicit ds5_hid_sensor(const ds5_motion* owner, std::shared_ptr<platform::hid_device> hid_device,
+        explicit ds5_hid_sensor(ds5_motion* owner, std::shared_ptr<platform::hid_device> hid_device,
             std::unique_ptr<frame_timestamp_reader> hid_iio_timestamp_reader,
             std::unique_ptr<frame_timestamp_reader> custom_hid_timestamp_reader,
             std::map<rs2_stream, std::map<unsigned, unsigned>> fps_and_sampling_frequency_per_rs2_stream,
-            std::vector<std::pair<std::string, stream_profile>> sensor_name_and_hid_profiles,
-            std::shared_ptr<platform::time_service> ts)
+            std::vector<std::pair<std::string, stream_profile>> sensor_name_and_hid_profiles)
             : hid_sensor(hid_device, move(hid_iio_timestamp_reader), move(custom_hid_timestamp_reader), 
-                fps_and_sampling_frequency_per_rs2_stream, sensor_name_and_hid_profiles, ts, owner), _owner(owner)
+                fps_and_sampling_frequency_per_rs2_stream, sensor_name_and_hid_profiles, owner), _owner(owner)
         { 
         }
 
@@ -68,10 +67,9 @@ namespace librealsense
     class ds5_fisheye_sensor : public uvc_sensor, public video_sensor_interface
     {
     public:
-        explicit ds5_fisheye_sensor(const ds5_motion* owner, std::shared_ptr<platform::uvc_device> uvc_device,
-            std::unique_ptr<frame_timestamp_reader> timestamp_reader,
-            std::shared_ptr<platform::time_service> ts)
-            : uvc_sensor("Wide FOV Camera", uvc_device, move(timestamp_reader), ts, owner), _owner(owner)
+        explicit ds5_fisheye_sensor(ds5_motion* owner, std::shared_ptr<platform::uvc_device> uvc_device,
+            std::unique_ptr<frame_timestamp_reader> timestamp_reader)
+            : uvc_sensor("Wide FOV Camera", uvc_device, move(timestamp_reader), owner), _owner(owner)
         {}
 
         rs2_intrinsics get_intrinsics(const stream_profile& profile) const override
@@ -151,7 +149,7 @@ namespace librealsense
         return _hw_monitor->send(cmd);
     }
 
-    std::shared_ptr<hid_sensor> ds5_motion::create_hid_device(const platform::backend& backend,
+    std::shared_ptr<hid_sensor> ds5_motion::create_hid_device(const std::shared_ptr<context>& ctx,
                                                                 const std::vector<platform::hid_device_info>& all_hid_infos,
                                                                 const firmware_version& camera_fw_version)
     {
@@ -171,12 +169,11 @@ namespace librealsense
             std::copy(custom_sensor_profiles.begin(), custom_sensor_profiles.end(), std::back_inserter(sensor_name_and_hid_profiles));
         }
 
-        auto hid_ep = std::make_shared<ds5_hid_sensor>(this, backend.create_hid_device(all_hid_infos.front()),
+        auto hid_ep = std::make_shared<ds5_hid_sensor>(this, ctx->get_backend().create_hid_device(all_hid_infos.front()),
                                                         std::unique_ptr<frame_timestamp_reader>(new ds5_iio_hid_timestamp_reader()),
                                                         std::unique_ptr<frame_timestamp_reader>(new ds5_custom_hid_timestamp_reader()),
                                                         fps_and_sampling_frequency_per_rs2_stream,
-                                                        sensor_name_and_hid_profiles,
-                                                        backend.create_time_service());
+                                                        sensor_name_and_hid_profiles);
         hid_ep->register_pixel_format(pf_accel_axes);
         hid_ep->register_pixel_format(pf_gyro_axes);
 
@@ -239,11 +236,13 @@ namespace librealsense
         return auto_exposure;
     }
 
-    ds5_motion::ds5_motion(const platform::backend& backend,
+    ds5_motion::ds5_motion(const std::shared_ptr<context>& ctx,
                            const platform::backend_device_group& group)
-        : ds5_device(backend, group)
+        : ds5_device(ctx, group)
     {
         using namespace ds;
+
+        auto&& backend = ctx->get_backend();
 
         _fisheye_intrinsics_raw = [this]() { return get_raw_fisheye_intrinsics_table(); };
         _fisheye_extrinsics_raw = [this]() { return get_raw_fisheye_extrinsics_table(); };
@@ -261,11 +260,10 @@ namespace librealsense
         if (fisheye_infos.size() != 1)
             throw invalid_value_exception("RS450 model is expected to include a single fish-eye device!");
 
-        std::unique_ptr<frame_timestamp_reader> ds5_timestamp_reader_backup(new ds5_timestamp_reader(backend.create_time_service()));
+        std::unique_ptr<frame_timestamp_reader> ds5_timestamp_reader_backup(new ds5_timestamp_reader(ctx->get_time_service()));
 
         auto fisheye_ep = std::make_shared<ds5_fisheye_sensor>(this, backend.create_uvc_device(fisheye_infos.front()),
-                                                    std::unique_ptr<frame_timestamp_reader>(new ds5_timestamp_reader_from_metadata(std::move(ds5_timestamp_reader_backup))),
-                                                    backend.create_time_service());
+                                                    std::unique_ptr<frame_timestamp_reader>(new ds5_timestamp_reader_from_metadata(std::move(ds5_timestamp_reader_backup))));
 
         fisheye_ep->register_xu(fisheye_xu); // make sure the XU is initialized everytime we power the camera
         fisheye_ep->register_pixel_format(pf_raw8);
@@ -331,7 +329,7 @@ namespace librealsense
         fisheye_ep->set_pose(lazy<pose>([this](){return get_device_position(_fisheye_device_idx);}));
 
         // Add hid endpoint
-        auto hid_ep = create_hid_device(backend, group.hid_devices, _fw_version);
+        auto hid_ep = create_hid_device(ctx, group.hid_devices, _fw_version);
         _motion_module_device_idx = add_sensor(hid_ep);
 
         try

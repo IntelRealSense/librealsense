@@ -26,7 +26,7 @@ struct rs2_raw_data_buffer
 
 struct rs2_stream_profile_list
 {
-    std::vector<librealsense::stream_profile> list;
+    std::vector<std::shared_ptr<stream_profile_interface>> list;
 };
 
 struct rs2_sensor
@@ -293,47 +293,37 @@ void rs2_delete_sensor(rs2_sensor* device) try
 }
 NOEXCEPT_RETURN(, device)
 
-rs2_stream_modes_list* rs2_get_stream_modes(rs2_sensor* sensor, rs2_error** error) try
+rs2_stream_profile_list* rs2_get_stream_modes(rs2_sensor* sensor, rs2_error** error) try
 {
     VALIDATE_NOT_NULL(sensor);
-    return new rs2_stream_modes_list{ sensor->sensor->get_principal_requests() };
+    return new rs2_stream_profile_list{ sensor->sensor->get_stream_profiles() };
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, sensor)
 
-void rs2_get_stream_mode(const rs2_stream_modes_list* list, int index, rs2_stream* stream, int* width, int* height, int* fps, rs2_format* format, rs2_error** error) try
+const rs2_stream_profile* rs2_get_stream_mode(const rs2_stream_profile_list* list, int index, rs2_error** error) try
 {
     VALIDATE_NOT_NULL(list);
     VALIDATE_RANGE(index, 0, (int)list->list.size() - 1);
 
-    VALIDATE_NOT_NULL(stream);
-    VALIDATE_NOT_NULL(width);
-    VALIDATE_NOT_NULL(height);
-    VALIDATE_NOT_NULL(fps);
-    VALIDATE_NOT_NULL(format);
-
-    *stream = list->list[index].stream;
-    *width = list->list[index].width;
-    *height = list->list[index].height;
-    *fps = list->list[index].fps;
-    *format = list->list[index].format;
+    return list->list[index]->get_c_wrapper();
 }
-HANDLE_EXCEPTIONS_AND_RETURN(, list, index, width, height, fps, format)
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, list, index)
 
-int rs2_get_modes_count(const rs2_stream_modes_list* list, rs2_error** error) try
+int rs2_get_modes_count(const rs2_stream_profile_list* list, rs2_error** error) try
 {
     VALIDATE_NOT_NULL(list);
     return static_cast<int>(list->list.size());
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, list)
 
-void rs2_delete_modes_list(rs2_stream_modes_list* list) try
+void rs2_delete_modes_list(rs2_stream_profile_list* list) try
 {
     VALIDATE_NOT_NULL(list);
     delete list;
 }
 NOEXCEPT_RETURN(, list)
 
-rs2_raw_data_buffer* rs2_send_and_receive_raw_data(rs2_device* device, void* raw_data_to_send, unsigned size_of_raw_data_to_send, rs2_error** error) try
+const rs2_raw_data_buffer* rs2_send_and_receive_raw_data(rs2_device* device, void* raw_data_to_send, unsigned size_of_raw_data_to_send, rs2_error** error) try
 {
     VALIDATE_NOT_NULL(device);
 
@@ -360,47 +350,38 @@ int rs2_get_raw_data_size(const rs2_raw_data_buffer* buffer, rs2_error** error) 
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, buffer)
 
-void rs2_delete_raw_data(rs2_raw_data_buffer* buffer) try
+void rs2_delete_raw_data(const rs2_raw_data_buffer* buffer) try
 {
     VALIDATE_NOT_NULL(buffer);
     delete buffer;
 }
 NOEXCEPT_RETURN(, buffer)
 
-void rs2_open(rs2_sensor* sensor, rs2_stream stream,
-              int width, int height, int fps, rs2_format format, rs2_error** error) try
+void rs2_open(rs2_sensor* sensor, const rs2_stream_profile* profile, rs2_error** error) try
 {
     VALIDATE_NOT_NULL(sensor);
-    VALIDATE_ENUM(format);
-    VALIDATE_ENUM(stream);
+    VALIDATE_NOT_NULL(profile);
 
-    std::vector<librealsense::stream_profile> request;
-    request.push_back({ stream, static_cast<uint32_t>(width),
-            static_cast<uint32_t>(height), static_cast<uint32_t>(fps), format });
+    std::vector<std::shared_ptr<stream_profile_interface>> request;
+    request.push_back(std::dynamic_pointer_cast<stream_profile_interface>(profile->profile->shared_from_this()));
     sensor->sensor->open(request);
 }
-HANDLE_EXCEPTIONS_AND_RETURN(, sensor, stream, width, height, fps, format)
+HANDLE_EXCEPTIONS_AND_RETURN(, sensor, profile)
 
 void rs2_open_multiple(rs2_sensor* sensor,
-    const rs2_stream* stream, const int* width, const int* height, const int* fps,
-    const rs2_format* format, int count, rs2_error** error) try
+    const rs2_stream_profile** profiles, int count, rs2_error** error) try
 {
     VALIDATE_NOT_NULL(sensor);
-    VALIDATE_NOT_NULL(stream);
-    VALIDATE_NOT_NULL(width);
-    VALIDATE_NOT_NULL(height);
-    VALIDATE_NOT_NULL(fps);
-    VALIDATE_NOT_NULL(format);
+    VALIDATE_NOT_NULL(profiles);
 
-    std::vector<librealsense::stream_profile> request;
+    std::vector<std::shared_ptr<stream_profile_interface>> request;
     for (auto i = 0; i < count; i++)
     {
-        request.push_back({ stream[i], static_cast<uint32_t>(width[i]),
-                            static_cast<uint32_t>(height[i]), static_cast<uint32_t>(fps[i]), format[i] });
+        request.push_back(std::dynamic_pointer_cast<stream_profile_interface>(profiles[i]->profile->shared_from_this()));
     }
     sensor->sensor->open(request);
 }
-HANDLE_EXCEPTIONS_AND_RETURN(, sensor, stream, width, height, fps, format)
+HANDLE_EXCEPTIONS_AND_RETURN(, sensor, profiles, count)
 
 void rs2_close(const rs2_sensor* sensor, rs2_error ** error) try
 {
@@ -1186,7 +1167,7 @@ rs2_frame* rs2_extract_frame(rs2_frame* composite, int index, rs2_error** error)
 
     auto cf = VALIDATE_INTERFACE((frame_interface*)composite, librealsense::composite_frame);
 
-    VALIDATE_RANGE(index, 0, cf->get_embeded_frames_count() - 1);
+    VALIDATE_RANGE(index, 0, (int)cf->get_embeded_frames_count() - 1);
     auto res = cf->get_frame(index);
     res->acquire();
     return (rs2_frame*)res;
