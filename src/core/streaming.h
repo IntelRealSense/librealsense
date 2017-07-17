@@ -28,16 +28,26 @@ namespace librealsense
 
     class context;
 
-    class stream_profile_interface : public std::enable_shared_from_this<stream_profile_interface>
+    class stream_interface : public std::enable_shared_from_this<stream_interface>
     {
     public:
+        virtual ~stream_interface() = default;
         virtual context& get_context() const = 0;
 
+        virtual int get_stream_index() const = 0;
+        virtual void set_stream_index(int index) = 0;
+
         virtual rs2_stream get_stream_type() const = 0;
-        virtual rs2_format get_format() const = 0;
-        virtual int get_framerate() const = 0;
         virtual void set_stream_type(rs2_stream stream) = 0;
+    };
+
+    class stream_profile_interface : public stream_interface
+    {
+    public:
+        virtual rs2_format get_format() const = 0;
         virtual void set_format(rs2_format format) = 0;
+
+        virtual int get_framerate() const = 0;
 
         virtual bool is_recommended() const = 0;
         virtual void make_recommended() = 0;
@@ -114,20 +124,6 @@ namespace librealsense
         virtual rs2_extrinsics get_extrinsics_to(rs2_stream from, const sensor_interface& other, rs2_stream to) const = 0;
 
         virtual const std::vector<stream_profile_interface*>& get_curr_configurations() const = 0;
-
-//        virtual rs2_stream   get_stream_type(unsigned int index) const = 0;
-//        virtual const char*  get_stream_desciption(unsigned int index) const = 0;
-//        virtual unsigned int get_streams_count() const = 0;
-
-//        virtual stream_profiles get_profiles() const = 0;
-
-//        virtual void start(const stream_profile_interface& profile) = 0;
-
-//        virtual void stop() = 0;
-
-//        virtual void set_callback(on_frame callback) = 0;
-
-//        virtual bool is_streaming() const = 0;
 
         virtual ~sensor_interface() = default;
     };

@@ -476,7 +476,7 @@ namespace rs2
         const vertex* get_vertices() const
         {
             rs2_error* e = nullptr;
-            auto res = rs2_get_vertices(frame_ref, &e);
+            auto res = rs2_get_frame_vertices(frame_ref, &e);
             error::handle(e);
             return (const vertex*)res;
         }
@@ -484,7 +484,7 @@ namespace rs2
         const pixel* get_pixel_coordinates() const
         {
             rs2_error* e = nullptr;
-            auto res = rs2_get_pixel_coordinates(frame_ref, &e);
+            auto res = rs2_get_frame_pixel_coordinates(frame_ref, &e);
             error::handle(e);
             return (const pixel*)res;
         }
@@ -1021,7 +1021,7 @@ namespace rs2
             std::vector<stream_profile> results;
 
             rs2_error* e = nullptr;
-            std::shared_ptr<rs2_stream_modes_list> list(
+            std::shared_ptr<rs2_stream_profile_list> list(
                 rs2_get_stream_modes(_sensor.get(), &e),
                 rs2_delete_modes_list);
             error::handle(e);

@@ -93,6 +93,7 @@ set(REALSENSE_CPP
     src/sensor.cpp
     src/algo.cpp
     src/sync.cpp
+	src/stream.cpp
     src/option.cpp
     src/error-handling.cpp
     src/hw-monitor.cpp
@@ -161,6 +162,7 @@ set(REALSENSE_HPP
     src/sensor.h
     src/sync.h
     src/sensor.h
+	src/stream.h
     src/align.h
     src/algo.h
     src/option.h

@@ -868,7 +868,7 @@ void rs2_delete_frame_queue(rs2_frame_queue* queue);
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return frame handle to be released using rs2_release_frame
 */
-const rs2_frame* rs2_wait_for_frame(rs2_frame_queue* queue, rs2_error** error);
+rs2_frame* rs2_wait_for_frame(rs2_frame_queue* queue, rs2_error** error);
 
 /**
 * poll if a new frame is available and dequeue if it is
@@ -877,7 +877,7 @@ const rs2_frame* rs2_wait_for_frame(rs2_frame_queue* queue, rs2_error** error);
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return true if new frame was stored to output_frame
 */
-int rs2_poll_for_frame(rs2_frame_queue* queue, const rs2_frame** output_frame, rs2_error** error);
+int rs2_poll_for_frame(rs2_frame_queue* queue, rs2_frame** output_frame, rs2_error** error);
 
 /**
 * enqueue new frame into a queue

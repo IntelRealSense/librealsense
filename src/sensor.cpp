@@ -160,7 +160,7 @@ namespace librealsense
         return _device->get_profiles();
     }
 
-    std::vector<stream_profile> uvc_sensor::get_principal_requests()
+    std::vector<stream_profile_interface*> uvc_sensor::get_principal_requests()
     {
         std::unordered_set<stream_profile> results;
         std::set<uint32_t> unutilized_formats;
@@ -228,7 +228,15 @@ namespace librealsense
         return *_device;
     }
 
-    void uvc_sensor::open(const std::vector<stream_profile>& requests)
+    const std::vector<stream_profile_interface*>& sensor_base::get_curr_configurations() const
+    {
+        if (!_is_streaming)
+            throw invalid_value_exception("get_curr_configurations() failed! Sensor doesn't streaming.");
+
+        return _configuration;
+    }
+
+    void uvc_sensor::open(const std::vector<stream_profile_interface*>& requests)
     {
         std::lock_guard<std::mutex> lock(_configure_lock);
         if (_is_streaming)
@@ -365,10 +373,7 @@ namespace librealsense
             commited.push_back(mode);
         }
 
-        for (auto& mode : mapping)
-        {
-            _configuration.push_back(mode.profile);
-        }
+        _configuration = requests;
         _power = move(on);
         _is_opened = true;
 
@@ -539,6 +544,34 @@ namespace librealsense
         _metadata_parsers.get()->insert(std::pair<rs2_frame_metadata, std::shared_ptr<md_attribute_parser_base>>(metadata, metadata_parser));
     }
 
+    hid_sensor::hid_sensor(std::shared_ptr<platform::hid_device> hid_device, std::unique_ptr<frame_timestamp_reader> hid_iio_timestamp_reader, 
+        std::unique_ptr<frame_timestamp_reader> custom_hid_timestamp_reader, 
+        std::map<rs2_stream, std::map<unsigned, unsigned>> fps_and_sampling_frequency_per_rs2_stream, 
+        std::vector<std::pair<std::string, stream_profile>> sensor_name_and_hid_profiles, 
+        std::shared_ptr<platform::time_service> ts, const device* dev)
+    : sensor_base("Motion Module", ts, dev), _sensor_name_and_hid_profiles(sensor_name_and_hid_profiles),
+      _fps_and_sampling_frequency_per_rs2_stream(fps_and_sampling_frequency_per_rs2_stream),
+      _hid_device(hid_device),
+      _is_configured_stream(RS2_STREAM_COUNT),
+      _hid_iio_timestamp_reader(move(hid_iio_timestamp_reader)),
+      _custom_hid_timestamp_reader(move(custom_hid_timestamp_reader))
+    {
+        std::map<std::string, uint32_t> frequency_per_sensor;
+        for (auto& elem : sensor_name_and_hid_profiles)
+            frequency_per_sensor.insert(make_pair(elem.first, elem.second.fps));
+
+        std::vector<platform::hid_profile> profiles_vector;
+        for (auto& elem : frequency_per_sensor)
+            profiles_vector.push_back(platform::hid_profile{elem.first, elem.second});
+
+
+        _hid_device->open(profiles_vector);
+        for (auto& elem : _hid_device->get_sensors())
+            _hid_sensors.push_back(elem);
+
+        _hid_device->close();
+    }
+
     hid_sensor::~hid_sensor()
     {
         try
@@ -579,12 +612,12 @@ namespace librealsense
         return profiles;
     }
 
-    std::vector<stream_profile> hid_sensor::get_principal_requests()
+    std::vector<stream_profile_interface*> hid_sensor::get_principal_requests()
     {
         return get_device_profiles();
     }
 
-    void hid_sensor::open(const std::vector<stream_profile>& requests)
+    void hid_sensor::open(const std::vector<stream_profile_interface*>& requests)
     {
         std::lock_guard<std::mutex> lock(_configure_lock);
         if (_is_streaming)
@@ -769,6 +802,12 @@ namespace librealsense
         _source.reset();
         _hid_iio_timestamp_reader->reset();
         _custom_hid_timestamp_reader->reset();
+    }
+
+    std::vector<uint8_t> hid_sensor::get_custom_report_data(const std::string& custom_sensor_name, 
+        const std::string& report_name, platform::custom_sensor_report_field report_field) const
+    {
+        return _hid_device->get_custom_report_data(custom_sensor_name, report_name, report_field);
     }
 
 
