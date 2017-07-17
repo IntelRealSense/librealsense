@@ -1,17 +1,17 @@
 cmake_minimum_required(VERSION 2.8.3)
 
 set(HEADER_FILES_ROSTIME
-  rosbag/rostime/include/ros/duration.h
-  rosbag/rostime/include/ros/impl
-  rosbag/rostime/include/ros/rate.h
-  rosbag/rostime/include/ros/rostime_decl.h
-  rosbag/rostime/include/ros/time.h
-  rosbag/rostime/include/ros/impl/time.h
-  rosbag/rostime/include/ros/impl/duration.h
+  ${CMAKE_CURRENT_LIST_DIR}/include/ros/duration.h
+  ${CMAKE_CURRENT_LIST_DIR}/include/ros/impl
+  ${CMAKE_CURRENT_LIST_DIR}/include/ros/rate.h
+  ${CMAKE_CURRENT_LIST_DIR}/include/ros/rostime_decl.h
+  ${CMAKE_CURRENT_LIST_DIR}/include/ros/time.h
+  ${CMAKE_CURRENT_LIST_DIR}/include/ros/impl/time.h
+  ${CMAKE_CURRENT_LIST_DIR}/include/ros/impl/duration.h
 )
 
 set(SOURCE_FILES_ROSTIME
-  rosbag/rostime/src/duration.cpp
-  rosbag/rostime/src/rate.cpp
-  rosbag/rostime/src/time.cpp
+  ${CMAKE_CURRENT_LIST_DIR}/src/duration.cpp
+  ${CMAKE_CURRENT_LIST_DIR}/src/rate.cpp
+  ${CMAKE_CURRENT_LIST_DIR}/src/time.cpp
 )

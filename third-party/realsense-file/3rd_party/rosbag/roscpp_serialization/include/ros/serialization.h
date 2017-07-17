@@ -846,9 +846,9 @@ inline SerializedMessage serializeMessage(const M& message)
   SerializedMessage m;
   uint32_t len = serializationLength(message);
   m.num_bytes = len + 4;
-  m.buf.reset(new uint8_t[m.num_bytes]);
+  m.buf.resize(m.num_bytes);
 
-  OStream s(m.buf.get(), (uint32_t)m.num_bytes);
+  OStream s(m.buf.data(), (uint32_t)m.num_bytes);
   serialize(s, (uint32_t)m.num_bytes - 4);
   m.message_start = s.getData();
   serialize(s, message);
@@ -868,9 +868,9 @@ inline SerializedMessage serializeServiceResponse(bool ok, const M& message)
   {
     uint32_t len = serializationLength(message);
     m.num_bytes = len + 5;
-    m.buf.reset(new uint8_t[m.num_bytes]);
+    m.buf.resize(m.num_bytes);
 
-    OStream s(m.buf.get(), (uint32_t)m.num_bytes);
+    OStream s(m.buf.data(), (uint32_t)m.num_bytes);
     serialize(s, (uint8_t)ok);
     serialize(s, (uint32_t)m.num_bytes - 5);
     serialize(s, message);
@@ -879,9 +879,9 @@ inline SerializedMessage serializeServiceResponse(bool ok, const M& message)
   {
     uint32_t len = serializationLength(message);
     m.num_bytes = len + 1;
-    m.buf.reset(new uint8_t[m.num_bytes]);
+    m.buf.resize(m.num_bytes);
 
-    OStream s(m.buf.get(), (uint32_t)m.num_bytes);
+    OStream s(m.buf.data(), (uint32_t)m.num_bytes);
     serialize(s, (uint8_t)ok);
     serialize(s, message);
   }
@@ -895,7 +895,7 @@ inline SerializedMessage serializeServiceResponse(bool ok, const M& message)
 template<typename M>
 inline void deserializeMessage(const SerializedMessage& m, M& message)
 {
-  IStream s(m.message_start, m.num_bytes - (m.message_start - m.buf->data()));
+  IStream s(m.message_start, m.num_bytes - (m.message_start - m.buf.data()));
   deserialize(s, message);
 }
 

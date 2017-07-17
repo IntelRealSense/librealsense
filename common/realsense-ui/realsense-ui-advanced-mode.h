@@ -86,7 +86,7 @@ struct advanced_mode_control
     param_group<STCensusRadius> census;
 };
 
-inline void draw_advanced_mode_controls(rs4xx::advanced_mode& advanced, advanced_mode_control& amc, bool& get_curr_advanced_controls)
+inline void draw_advanced_mode_controls(rs400::advanced_mode& advanced, advanced_mode_control& amc, bool& get_curr_advanced_controls)
 {
     if (ImGui::CollapsingHeader("Depth Control", nullptr, true, true))
     {

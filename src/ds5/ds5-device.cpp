@@ -169,7 +169,7 @@ namespace librealsense
 
         _coefficients_table_raw = [this]() { return get_raw_calibration_table(coefficients_table_id); };
 
-        std::string device_name = (rs4xx_sku_names.end() != rs4xx_sku_names.find(group.uvc_devices.front().pid)) ? rs4xx_sku_names.at(group.uvc_devices.front().pid) : "RS4xx";
+        std::string device_name = (rs400_sku_names.end() != rs400_sku_names.find(group.uvc_devices.front().pid)) ? rs400_sku_names.at(group.uvc_devices.front().pid) : "RS4xx";
         _fw_version = firmware_version(_hw_monitor->get_firmware_version_string(GVD, camera_fw_version_offset));
         auto serial = _hw_monitor->get_module_serial_string(GVD, module_serial_offset);
 
@@ -265,7 +265,7 @@ namespace librealsense
                 offsetof(md_depth_y_normal_mode, intel_capture_timing);
 
         depth_ep.register_metadata(RS2_FRAME_METADATA_FRAME_COUNTER,    make_attribute_parser(&md_capture_timing::frame_counter, md_capture_timing_attributes::frame_counter_attribute,md_prop_offset));
-        depth_ep.register_metadata(RS2_FRAME_METADATA_SENSOR_TIMESTAMP, make_rs4xx_sensor_ts_parser(make_uvc_header_parser(&platform::uvc_header::timestamp),
+        depth_ep.register_metadata(RS2_FRAME_METADATA_SENSOR_TIMESTAMP, make_rs400_sensor_ts_parser(make_uvc_header_parser(&platform::uvc_header::timestamp),
                 make_attribute_parser(&md_capture_timing::sensor_timestamp, md_capture_timing_attributes::sensor_timestamp_attribute, md_prop_offset)));
 
         // attributes of md_capture_stats
@@ -338,5 +338,14 @@ namespace librealsense
             }
         }
         return device::get_extrinsics(from_subdevice, from_stream, to_subdevice, to_stream);
+    }
+    void ds5_device::create_snapshot(std::shared_ptr<debug_interface>& snapshot)
+    {
+
+    }
+    void ds5_device::create_recordable(std::shared_ptr<debug_interface>& recordable,
+                                       std::function<void(std::shared_ptr<extension_snapshot>)> record_action)
+    {
+
     }
 }

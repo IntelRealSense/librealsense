@@ -360,7 +360,7 @@ namespace librealsense
                         _source.invoke_callback(std::move(pref));
                     }
                  }
-                }, (int)_source.get_published_size_option()->query());
+                }, static_cast<int>(_source.get_published_size_option()->query()));
             }
             catch(...)
             {
@@ -467,37 +467,6 @@ namespace librealsense
         if (_user_count.fetch_add(-1) == 1) _device->set_power_state(platform::D3);
     }
 
-    option& options_container::get_option(rs2_option id)
-    {
-        auto it = _options.find(id);
-        if (it == _options.end())
-        {
-            throw invalid_value_exception(to_string()
-                << "Device does not support option "
-                << rs2_option_to_string(id) << "!");
-        }
-        return *it->second;
-    }
-
-    const option& options_container::get_option(rs2_option id) const
-    {
-        auto it = _options.find(id);
-        if (it == _options.end())
-        {
-            throw invalid_value_exception(to_string()
-                << "Device does not support option "
-                << rs2_option_to_string(id) << "!");
-        }
-        return *it->second;
-    }
-
-    bool options_container::supports_option(rs2_option id) const
-    {
-        auto it = _options.find(id);
-        if (it == _options.end()) return false;
-        return it->second->is_enabled();
-    }
-
     bool info_container::supports_info(rs2_camera_info info) const
     {
         auto it = _camera_info.find(info);
@@ -524,10 +493,14 @@ namespace librealsense
 
         return it->second;
     }
-
-    void options_container::register_option(rs2_option id, std::shared_ptr<option> option)
+    void info_container::create_snapshot(std::shared_ptr<info_interface>& snapshot)
     {
-        _options[id] = option;
+        snapshot = std::make_shared<info_snapshot>(this);
+    }
+    void info_container::create_recordable(std::shared_ptr<info_interface>& recordable,
+                                           std::function<void(std::shared_ptr<extension_snapshot>)> record_action)
+    {
+        recordable = std::make_shared<info_container>(*this);
     }
 
     void uvc_sensor::register_pu(rs2_option id)
@@ -860,4 +833,5 @@ namespace librealsense
         else
             return fps;
     }
+
 }
