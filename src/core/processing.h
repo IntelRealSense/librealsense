@@ -21,10 +21,10 @@ namespace librealsense
     {
     public:
         virtual frame_interface* allocate_video_frame(rs2_stream new_stream, frame_interface* original,
-                                                rs2_format new_format = RS2_FORMAT_ANY, 
+                                                rs2_format new_format = RS2_FORMAT_ANY,
                                                 int new_bpp = 0,
-                                                int new_width = 0, 
-                                                int new_height = 0, 
+                                                int new_width = 0,
+                                                int new_height = 0,
                                                 int new_stride = 0) = 0;
 
         virtual frame_interface* allocate_composite_frame(std::vector<frame_holder> frames) = 0;

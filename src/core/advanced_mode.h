@@ -98,6 +98,7 @@ namespace librealsense
     {
     public:
         explicit ds5_advanced_mode_base(std::shared_ptr<hw_monitor> hwm, uvc_sensor& depth_sensor);
+        virtual ~ds5_advanced_mode_base() = default;
 
         bool is_enabled() const;
         void toggle_advanced_mode(bool enable);
@@ -151,7 +152,7 @@ namespace librealsense
         preset get_all();
         void set_all(const preset& p);
 
-        std::vector<uint8_t> send_recieve(const std::vector<uint8_t>& input) const;
+        std::vector<uint8_t> send_receive(const std::vector<uint8_t>& input) const;
 
         template<class T>
         void set(const T& strct, EtAdvancedModeRegGroup cmd) const
@@ -160,7 +161,7 @@ namespace librealsense
             std::vector<uint8_t> data(ptr, ptr + sizeof(T));
 
             assert_no_error(ds::fw_cmd::set_advanced,
-                send_recieve(encode_command(ds::fw_cmd::set_advanced, static_cast<uint32_t>(cmd), 0, 0, 0, data)));
+                send_receive(encode_command(ds::fw_cmd::set_advanced, static_cast<uint32_t>(cmd), 0, 0, 0, data)));
             std::this_thread::sleep_for(std::chrono::milliseconds(20));
         }
 
@@ -169,7 +170,7 @@ namespace librealsense
         {
             T res;
             auto data = assert_no_error(ds::fw_cmd::get_advanced,
-                send_recieve(encode_command(ds::fw_cmd::get_advanced,
+                send_receive(encode_command(ds::fw_cmd::get_advanced,
                 static_cast<uint32_t>(cmd), mode)));
             if (data.size() < sizeof(T))
             {

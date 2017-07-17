@@ -368,9 +368,9 @@ namespace rs2
         float3 calc(float value) const
         {
             if (_map.size() == 0) return { value, value, value };
-            // if we have exactly this value in the map, just return it                                                                                                                                                                 
+            // if we have exactly this value in the map, just return it
             if( _map.find(value) != _map.end() ) return _map.at(value);
-            // if we are beyond the limits, return the first/last element                                                                                                                                                               
+            // if we are beyond the limits, return the first/last element
             if( value < _map.begin()->first )   return _map.begin()->second;
             if( value > _map.rbegin()->first )  return _map.rbegin()->second;
 
@@ -406,7 +406,7 @@ namespace rs2
         std::map<float, float3> _map;
         std::vector<float3> _cache;
         float _min, _max;
-        int _size; float3* _data;
+        size_t _size; float3* _data;
     };
 
     static color_map classic {{
@@ -923,7 +923,6 @@ namespace rs2
                     }
                 }
             }
-            
         }
     };
 
@@ -950,5 +949,46 @@ namespace rs2
     {
         if (version / 10000 == 0) return to_string() << version;
         return to_string() << (version / 10000) << "." << (version % 10000) / 100 << "." << (version % 100);
+    }
+
+    // Comparing parameter against a range of values of the same type
+    // https://stackoverflow.com/questions/15181579/c-most-efficient-way-to-compare-a-variable-to-multiple-values
+    template <typename T>
+    bool val_in_range(const T& val, const std::initializer_list<T>& list)
+    {
+        for (const auto& i : list) {
+            if (val == i) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // RS4xx with RealTec RGB sensor may additionally require sensor orientation control to make runtime adjustments
+    inline void rotate_rgb_image(device& dev,uint32_t res_width)
+    {
+        static bool flip = true;
+        uint8_t hor_flip_val{}, ver_flip_val{};
+
+        if (flip)
+        {
+            hor_flip_val = ((res_width < 1280) ? (uint8_t)0x84 : (uint8_t)0x20);
+            ver_flip_val = ((res_width < 1280) ? (uint8_t)0x47 : (uint8_t)0x46);
+        }
+        else
+        {
+            hor_flip_val = ((res_width < 1280) ? (uint8_t)0x82 : (uint8_t)0x86);
+            ver_flip_val = ((res_width < 1280) ? (uint8_t)0x41 : (uint8_t)0x40);
+        }
+
+        std::vector<uint8_t> hor_flip{ 0x14, 0, 0xab, 0xcd, 0x29, 0, 0, 0, 0x20, 0x38, 0x0, 0x0,
+            hor_flip_val, 0,0,0,0,0,0,0,0,0,0,0 };
+        std::vector<uint8_t> ver_flip{ 0x14, 0, 0xab, 0xcd, 0x29, 0, 0, 0, 0x21, 0x38, 0x0, 0x0,
+            ver_flip_val, 0,0,0,0,0,0,0,0,0,0,0 };
+
+        dev.as<debug_protocol>().send_and_receive_raw_data(hor_flip);
+        dev.as<debug_protocol>().send_and_receive_raw_data(ver_flip);
+
+        flip = !flip;
     }
 }

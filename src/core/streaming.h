@@ -137,6 +137,6 @@ namespace librealsense
         virtual float get_depth_scale() const = 0;
         virtual ~depth_sensor() = default;
     };
-    
+
     MAP_EXTENSION(RS2_EXTENSION_TYPE_DEPTH_SENSOR, librealsense::depth_sensor);
 }

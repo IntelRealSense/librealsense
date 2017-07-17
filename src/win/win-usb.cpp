@@ -406,9 +406,9 @@ namespace librealsense
             return (sts) ? true : false;
         }
 
-        bool usb_interface::write_pipe(unsigned char* buffer, ULONG bufferLength, PULONG lengthTransferred, LPOVERLAPPED hOvl) const
+        bool usb_interface::write_pipe(const unsigned char* buffer, ULONG bufferLength, PULONG lengthTransferred, LPOVERLAPPED hOvl) const
         {
-            auto sts = WinUsb_WritePipe(_interface_handle, _out_pipe_id, buffer, bufferLength, lengthTransferred, hOvl);
+            auto sts = WinUsb_WritePipe(_interface_handle, _out_pipe_id, const_cast<unsigned char*>(buffer), bufferLength, lengthTransferred, hOvl);
             return (sts) ? true : false;
         }
 
@@ -465,8 +465,8 @@ namespace librealsense
               _named_mutex(usb_enumerate::get_camera_id(_lp_device_path.c_str()).c_str(), WAIT_FOR_MUTEX_TIME_OUT)
         { }
 
-        void winusb_bulk_transfer::write_to_pipe_and_read_response(unsigned char* buffer, int bufferLength,
-            unsigned char* outputBuffer, ULONG& bufferSize, DWORD TimeOut, bool isWriteOnly)
+        void winusb_bulk_transfer::write_to_pipe_and_read_response(const std::vector<uint8_t>& input,
+            std::vector<uint8_t>&  output, DWORD TimeOut, bool isWriteOnly)
         {
             std::lock_guard<named_mutex> lock(_named_mutex);
             winusb_device usbDevice(_lp_device_path);
@@ -480,9 +480,9 @@ namespace librealsense
             auto_reset_event evnt;
             hOvl.hEvent = evnt.get_handle();
 
-            ULONG lengthWritten;
+            ULONG lengthWritten{};
             auto isExitOnTimeout = false;
-            auto res = usbDevice.get_interface().write_pipe(buffer, bufferLength, &lengthWritten, &hOvl);
+            auto res = usbDevice.get_interface().write_pipe(input.data(), static_cast<ULONG>(input.size()), &lengthWritten, &hOvl);
             if (!res)
             {
                 auto lastError = GetLastError();
@@ -501,6 +501,7 @@ namespace librealsense
                 return;
 
             DWORD timeSlice = 4000;
+            ULONG bytesReceived = 0;
             auto readRes = false;
             if (TimeOut > timeSlice)
             {
@@ -508,7 +509,7 @@ namespace librealsense
 
                 while (timeLeft > timeSlice && !readRes)
                 {
-                    readRes = read_pipe_sync(&usbDevice, outputBuffer, HW_MONITOR_BUFFER_SIZE, bufferSize, timeSlice);
+                    readRes = read_pipe_sync(&usbDevice, output.data(), HW_MONITOR_BUFFER_SIZE, bytesReceived, timeSlice);
 
                     // Passed 5 sec on long-running HW-Monitor command... Keep waiting...
                     timeLeft -= timeSlice;
@@ -521,16 +522,18 @@ namespace librealsense
                 if (!readRes)
                 {
                     usbDevice.recreate_interface();
-                    readRes = read_pipe_sync(&usbDevice, outputBuffer, HW_MONITOR_BUFFER_SIZE, bufferSize, timeLeft);
+                    readRes = read_pipe_sync(&usbDevice, output.data(), HW_MONITOR_BUFFER_SIZE, bytesReceived, timeLeft);
                 }
             }
             else
             {
-                readRes = read_pipe_sync(&usbDevice, outputBuffer, HW_MONITOR_BUFFER_SIZE, bufferSize, TimeOut);
+                readRes = read_pipe_sync(&usbDevice, output.data(), HW_MONITOR_BUFFER_SIZE, bytesReceived, TimeOut);
             }
 
             if (!readRes)
                 throw std::runtime_error("USB command timed-out!");
+
+            output.resize(bytesReceived);
         }
 
         bool winusb_bulk_transfer::read_pipe_sync(winusb_device* usbDevice, unsigned char* buffer, int bufferLength, ULONG& lengthTransferred, DWORD TimeOut)
@@ -567,15 +570,11 @@ namespace librealsense
         std::vector<uint8_t> winusb_bulk_transfer::send_receive(const std::vector<uint8_t>& data, int timeout_ms, bool require_response)
         {
             ULONG buffSize = 0;
-            BYTE tempOutputBuffer[HW_MONITOR_BUFFER_SIZE];
+            std::vector<uint8_t> output(HW_MONITOR_BUFFER_SIZE);
 
-            write_to_pipe_and_read_response(const_cast<unsigned char*>(data.data()),
-                static_cast<int>(data.size()),
-                tempOutputBuffer,
-                buffSize,
-                timeout_ms, !require_response);
+            write_to_pipe_and_read_response(data, output, timeout_ms, !require_response);
 
-            return std::vector<uint8_t>(tempOutputBuffer, tempOutputBuffer + buffSize);
+            return output;
         }
 
         const wchar_t* winusb_bulk_transfer::get_path() const

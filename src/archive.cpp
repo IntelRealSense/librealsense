@@ -49,7 +49,7 @@ namespace librealsense
         std::weak_ptr<sensor_interface> _sensor;
         std::shared_ptr<sensor_interface> get_sensor() const override { return _sensor.lock(); }
         void set_sensor(std::shared_ptr<sensor_interface> s) override { _sensor = s; }
-     
+
         T alloc_frame(const size_t size, const frame_additional_data& additional_data, bool requires_memory)
         {
             T backbuffer;

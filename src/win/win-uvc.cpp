@@ -31,7 +31,7 @@ The library will be compiled without the metadata support!\n")
 #include <limits>
 #include "mfapi.h"
 #include <vidcap.h>
-#include <ksmedia.h>    // Metadata Extention
+#include <ksmedia.h>    // Metadata Extension
 #include <Mferror.h>
 
 #pragma comment(lib, "Shlwapi.lib")
@@ -54,9 +54,10 @@ namespace librealsense
         const std::unordered_map<uint32_t, uint32_t> fourcc_map = {
             { 0x59382020, 0x47524559 },    /* 'GREY' from 'Y8  ' */
             { 0x52573130, 0x70524141 },    /* 'pRAA' from 'RW10'.*/
-            { 0x32000000, 0x47524559 },    /* 'GREY' from 'L8  '   */
-            { 0x50000000, 0x5a313620 },    /* 'Z16'  from 'D16 '    */
-            { 0x52415738, 0x47524559 }     /* 'GREY' from 'RAW8 '    */
+            { 0x32000000, 0x47524559 },    /* 'GREY' from 'L8  ' */
+            { 0x50000000, 0x5a313620 },    /* 'Z16'  from 'D16 ' */
+            { 0x52415738, 0x47524559 },    /* 'GREY' from 'RAW8' */
+            { 0x52573136, 0x42595232 }     /* 'RW16' from 'BYR2' */
         };
 
 #ifdef METADATA_SUPPORT
@@ -315,7 +316,7 @@ namespace librealsense
                 return false;
 
             if (bytes_received != len)
-                throw std::runtime_error(to_string() << "XU partial read: received " << bytes_received << "/" << len);
+                throw std::runtime_error(to_string() << "Get XU n:" << (int)ctrl << " received " << bytes_received << "/" << len << " bytes");
 
             CHECK_HR(hr);
             return true;
@@ -457,16 +458,17 @@ namespace librealsense
 
         struct pu_control { rs2_option option; long property; bool enable_auto; };
         static const pu_control pu_controls[] = {
-            { RS2_OPTION_BACKLIGHT_COMPENSATION, VideoProcAmp_BacklightCompensation },
-            { RS2_OPTION_BRIGHTNESS, VideoProcAmp_Brightness },
-            { RS2_OPTION_CONTRAST, VideoProcAmp_Contrast },
-            { RS2_OPTION_GAIN, VideoProcAmp_Gain },
-            { RS2_OPTION_GAMMA, VideoProcAmp_Gamma },
-            { RS2_OPTION_HUE, VideoProcAmp_Hue },
-            { RS2_OPTION_SATURATION, VideoProcAmp_Saturation },
-            { RS2_OPTION_SHARPNESS, VideoProcAmp_Sharpness },
-            { RS2_OPTION_WHITE_BALANCE, VideoProcAmp_WhiteBalance },
-            { RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE, VideoProcAmp_WhiteBalance, true },
+            { RS2_OPTION_BRIGHTNESS,                    KSPROPERTY_VIDEOPROCAMP_BRIGHTNESS },
+            { RS2_OPTION_CONTRAST,                      KSPROPERTY_VIDEOPROCAMP_CONTRAST },
+            { RS2_OPTION_HUE,                           KSPROPERTY_VIDEOPROCAMP_HUE },
+            { RS2_OPTION_SATURATION,                    KSPROPERTY_VIDEOPROCAMP_SATURATION },
+            { RS2_OPTION_SHARPNESS,                     KSPROPERTY_VIDEOPROCAMP_SHARPNESS },
+            { RS2_OPTION_GAMMA,                         KSPROPERTY_VIDEOPROCAMP_GAMMA },
+            { RS2_OPTION_WHITE_BALANCE,                 KSPROPERTY_VIDEOPROCAMP_WHITEBALANCE },
+            { RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE,     KSPROPERTY_VIDEOPROCAMP_WHITEBALANCE, true },
+            { RS2_OPTION_BACKLIGHT_COMPENSATION,        KSPROPERTY_VIDEOPROCAMP_BACKLIGHT_COMPENSATION },
+            { RS2_OPTION_GAIN,                          KSPROPERTY_VIDEOPROCAMP_GAIN },
+            { RS2_OPTION_POWER_LINE_FREQUENCY,          KSPROPERTY_VIDEOPROCAMP_POWERLINE_FREQUENCY }
         };
 
         bool wmf_uvc_device::get_pu(rs2_option opt, int32_t& value) const
@@ -660,7 +662,7 @@ namespace librealsense
 
         void wmf_uvc_device::set_power_state(power_state state)
         {
-            auto rs2 = is_win10_redstone2();
+            static auto rs2 = is_win10_redstone2();
 
             // This is temporary work-around for Windows 10 Red-Stone2 build
             // There seem to be issues re-creating Media Foundation objects frequently
@@ -884,7 +886,9 @@ namespace librealsense
                 if (_source)
                 {
                     _ks_controls.clear();
+                    _camera_control.Release();
                     _camera_control = nullptr;
+                    _video_proc.Release();
                     _video_proc = nullptr;
                     _source.Release();
                     _source = nullptr;

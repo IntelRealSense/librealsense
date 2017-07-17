@@ -205,7 +205,7 @@ namespace librealsense
         uint32_t fps_to_sampling_frequency(rs2_stream stream, uint32_t fps) const;
     };
 
-    class uvc_sensor : public sensor_base, 
+    class uvc_sensor : public sensor_base,
                        public roi_sensor_interface
     {
     public:
@@ -268,7 +268,10 @@ namespace librealsense
                 : _owner(owner)
             {
                 auto strong = _owner.lock();
-                if (strong) strong->acquire_power();
+                if (strong)
+                {
+                    strong->acquire_power();
+                }
             }
 
             ~power()

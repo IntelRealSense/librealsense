@@ -32,12 +32,12 @@ int main(int argc, char * argv[])
 
             auto stream = config.open(dev);
 
-			syncer_processing_block syncer;
+            syncer_processing_block syncer;
             stream.start(syncer);
 
            // black.start(syncer);
-			frame_queue queue;
-			syncer.start(queue);
+            frame_queue queue;
+            syncer.start(queue);
             texture_buffer buffers[RS2_STREAM_COUNT];
 
             // Open a GLFW window
@@ -50,12 +50,12 @@ int main(int argc, char * argv[])
 
             while (hub.is_connected(dev) && !glfwWindowShouldClose(win))
             {
-                
+
                 int w, h;
                 glfwGetFramebufferSize(win, &w, &h);
 
                 auto index = 0;
-				auto frames = queue.wait_for_frames();
+                auto frames = queue.wait_for_frames();
                 //// for consistent visualization, sort frames based on stream type:
                 sort(frames.begin(), frames.end(),
                      [](const frame& a, const frame& b) -> bool
@@ -103,12 +103,9 @@ int main(int argc, char * argv[])
                 glfwSwapBuffers(win);
             }
 
-
             if (glfwWindowShouldClose(win))
                 finished = true;
 
-
-            
         }
         catch (const error & e)
         {
@@ -123,4 +120,3 @@ int main(int argc, char * argv[])
     }
     return EXIT_SUCCESS;
 }
-

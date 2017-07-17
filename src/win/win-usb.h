@@ -29,7 +29,7 @@ namespace librealsense
             void wait_for_async_op(OVERLAPPED &hOvl, ULONG &lengthTransferred, DWORD TimeOut, pipe_direction pipeDirection, bool* isExitOnTimeout) const;
             bool wait_for_async_op_interrupt(OVERLAPPED &hOvl, ULONG &lengthTransferred) const;
             bool read_pipe(unsigned char* buffer, ULONG bufferLength, PULONG lengthTransferred, LPOVERLAPPED hOvl) const;
-            bool write_pipe(unsigned char* buffer, ULONG bufferLength, PULONG lengthTransferred, LPOVERLAPPED hOvl) const;
+            bool write_pipe(const unsigned char* buffer, ULONG bufferLength, PULONG lengthTransferred, LPOVERLAPPED hOvl) const;
             void reset_pipe(pipe_direction outPipe) const;
             bool read_interupt_pipe(unsigned char* buffer, ULONG bufferLength, PULONG lengthTransferred, LPOVERLAPPED hOvl) const;
             void reset_interrupt_pipe() const;
@@ -87,8 +87,8 @@ namespace librealsense
             const wchar_t* get_path() const;
 
         private:
-            void write_to_pipe_and_read_response(unsigned char* buffer, int bufferLength,
-                unsigned char* outputBuffer, ULONG& bufferSize,
+            void write_to_pipe_and_read_response(const std::vector<uint8_t>& input,
+                std::vector<uint8_t>&  output,
                 DWORD TimeOut, bool readResponse = true);
 
             static bool read_pipe_sync(winusb_device* usbDevice, unsigned char* buffer, int bufferLength, ULONG& lengthTransferred, DWORD TimeOut);

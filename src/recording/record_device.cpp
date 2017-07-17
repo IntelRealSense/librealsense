@@ -302,7 +302,7 @@ librealsense::record_sensor::~record_sensor()
 
 std::vector<librealsense::stream_profile> librealsense::record_sensor::get_principal_requests()
 {
-	return m_sensor.get_principal_requests();
+    return m_sensor.get_principal_requests();
 }
 
 void librealsense::record_sensor::open(const std::vector<librealsense::stream_profile>& requests)
