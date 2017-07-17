@@ -10,7 +10,7 @@ namespace librealsense
           _depth_sensor(depth_sensor)
     {
         _enabled = [this](){
-            auto results = send_recieve(encode_command(ds::fw_cmd::advanced_mode_enabled));
+            auto results = send_receive(encode_command(ds::fw_cmd::advanced_mode_enabled));
             assert_no_error(ds::fw_cmd::advanced_mode_enabled, results);
             return *(reinterpret_cast<uint32_t*>(results.data()) + 1) > 0;
         };
@@ -31,8 +31,8 @@ namespace librealsense
 
     void ds5_advanced_mode_base::toggle_advanced_mode(bool enable)
     {
-        send_recieve(encode_command(ds::fw_cmd::enable_advanced_mode, enable));
-        send_recieve(encode_command(ds::fw_cmd::reset));
+        send_receive(encode_command(ds::fw_cmd::enable_advanced_mode, enable));
+        send_receive(encode_command(ds::fw_cmd::reset));
     }
 
     std::string ds5_advanced_mode_base::pid_to_str(uint16_t pid)
@@ -692,7 +692,7 @@ namespace librealsense
         set_census_radius(p.census);
     }
 
-    std::vector<uint8_t> ds5_advanced_mode_base::send_recieve(const std::vector<uint8_t>& input) const
+    std::vector<uint8_t> ds5_advanced_mode_base::send_receive(const std::vector<uint8_t>& input) const
     {
         auto res = _hw_monitor->send(input);
         if (res.empty())
@@ -801,7 +801,7 @@ namespace librealsense
         if (!_advanced.is_enabled())
             throw wrong_api_call_sequence_exception(to_string() << "set(advanced_mode_preset_option) failed! Device is not is Advanced-Mode.");
 
-        return _last_preset;
+        return static_cast<float>(_last_preset);
     }
 
     bool advanced_mode_preset_option::is_enabled() const

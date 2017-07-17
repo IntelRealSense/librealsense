@@ -12,7 +12,7 @@ namespace rs
     {
         namespace ros_data_objects
         {
-			
+
             struct time_sample_info
             {
                 file_types::nanoseconds capture_time;

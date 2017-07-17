@@ -159,7 +159,7 @@ namespace librealsense
             return get_frame(0);
         }
 
-        size_t get_embeded_frames_count() const { return data.size() / sizeof(rs2_frame*); }
+        size_t get_embedded_frames_count() const { return data.size() / sizeof(rs2_frame*); }
 
         // In the next section we make the composite frame "look and feel" like the first of its children
         rs2_metadata_t get_frame_metadata(const rs2_frame_metadata& frame_metadata) const override

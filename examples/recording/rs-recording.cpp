@@ -70,7 +70,7 @@ int main(int argc, const char** argv) try
         rs2::stream_profile{ RS2_STREAM_FISHEYE, 640, 480, 30, RS2_FORMAT_RAW8 },
         rs2::stream_profile{ RS2_STREAM_COLOR, 640, 480, 30, RS2_FORMAT_RGBA8 }
     };
-    
+
     std::vector<sensor> m_playing_sensors; //will hold the sensors that are playing
     int sensor_id = 0;
     //Go over the sensors and open start streaming
@@ -81,11 +81,11 @@ int main(int argc, const char** argv) try
         {
             std::cout << "Sensor #" << sensor_id << ": " << sensor.get_info(RS2_CAMERA_INFO_NAME) << std::endl;
         }
-            
+
         std::vector<rs2::stream_profile> profiles_to_play_for_this_sensor;
         for (auto profile : sensor.get_stream_modes())
         {
-            if (std::find(std::begin(profiles_to_play_if_available), 
+            if (std::find(std::begin(profiles_to_play_if_available),
                 std::end(profiles_to_play_if_available), profile) != std::end(profiles_to_play_if_available))
             {
                 profiles_to_play_for_this_sensor.push_back(profile);
@@ -113,13 +113,13 @@ int main(int argc, const char** argv) try
     }
 
     std::this_thread::sleep_for(std::chrono::seconds(10));
-    
+
     for(auto sensor : m_playing_sensors)
     {
         sensor.stop();
         sensor.close();
     }
-    
+
     return 0;
 }
 catch (const rs2::error & e)

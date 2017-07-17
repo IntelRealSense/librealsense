@@ -1252,7 +1252,7 @@ namespace librealsense
 
     private:
         signal(const signal& other);            // non construction-copyable
-        signal& operator=(const signal&);		// non copyable
+        signal& operator=(const signal&);       // non copyable
 
         bool raise(Args... args)
         {

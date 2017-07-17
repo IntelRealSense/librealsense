@@ -1452,7 +1452,7 @@ namespace rs2
     private:
         std::shared_ptr<rs2_device_list> _list;
     };
-    
+
     class playback : public device
     {
     public:

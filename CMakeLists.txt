@@ -132,7 +132,7 @@ set(REALSENSE_CPP
 
     third-party/easyloggingpp/src/easylogging++.cc
     third-party/sqlite/sqlite3.c
-    
+
     src/mock/sql.cpp
     src/mock/recorder.cpp
 

@@ -121,7 +121,7 @@ namespace librealsense
     {
         if (f == nullptr) return 0;
         if (auto c = dynamic_cast<composite_frame*>(f))
-            return c->get_embeded_frames_count();
+            return static_cast<int>(c->get_embedded_frames_count());
         return 1;
     }
 
@@ -130,7 +130,7 @@ namespace librealsense
         if (auto comp = dynamic_cast<composite_frame*>(from.frame))
         {
             auto frame_buff = comp->get_frames();
-            for (int i = 0; i < comp->get_embeded_frames_count(); i++)
+            for (int i = 0; i < comp->get_embedded_frames_count(); i++)
             {
                 std::swap(*target, frame_buff[i]);
                 target++;

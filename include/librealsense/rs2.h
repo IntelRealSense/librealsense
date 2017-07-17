@@ -212,7 +212,7 @@ typedef enum rs2_timestamp_domain
 
 typedef enum rs2_extension_type
 {
-    RS2_EXTENSION_TYPE_UNKNOWN, 
+    RS2_EXTENSION_TYPE_UNKNOWN,
     RS2_EXTENSION_TYPE_DEBUG,
     RS2_EXTENSION_TYPE_INFO,
     RS2_EXTENSION_TYPE_MOTION,

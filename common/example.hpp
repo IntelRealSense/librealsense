@@ -971,7 +971,7 @@ namespace rs2
         uint8_t hor_flip_val{}, ver_flip_val{};
 
         if (flip)
-        { 
+        {
             hor_flip_val = ((res_width < 1280) ? (uint8_t)0x84 : (uint8_t)0x20);
             ver_flip_val = ((res_width < 1280) ? (uint8_t)0x47 : (uint8_t)0x46);
         }
