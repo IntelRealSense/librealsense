@@ -133,18 +133,6 @@ namespace librealsense
         void set_census_radius(const STCensusRadius& val);
 
     private:
-        const std::map<float, std::string>  _description_per_value{{RS2_RS400_VISUAL_PRESET_GENERIC_DEPTH,             "GENERIC_DEPTH"},
-                                                                   {RS2_RS400_VISUAL_PRESET_GENERIC_ACCURATE_DEPTH,    "GENERIC_ACCURATE_DEPTH"},
-                                                                   {RS2_RS400_VISUAL_PRESET_GENERIC_DENSE_DEPTH,       "GENERIC_DENSE_DEPTH"},
-                                                                   {RS2_RS400_VISUAL_PRESET_GENERIC_SUPER_DENSE_DEPTH, "GENERIC_SUPER_DENSE_DEPTH"},
-                                                                   {RS2_RS400_VISUAL_PRESET_FLOOR_LOW,                 "FLOOR_LOW"},
-                                                                   {RS2_RS400_VISUAL_PRESET_3D_BODY_SCAN,              "3D_BODY_SCAN"},
-                                                                   {RS2_RS400_VISUAL_PRESET_INDOOR,                    "INDOOR"},
-                                                                   {RS2_RS400_VISUAL_PRESET_OUTDOOR,                   "OUTDOOR"},
-                                                                   {RS2_RS400_VISUAL_PRESET_HAND,                      "HAND"},
-                                                                   {RS2_RS400_VISUAL_PRESET_SHORT_RANGE,               "SHORT_RANGE"},
-                                                                   {RS2_RS400_VISUAL_PRESET_BOX,                       "BOX"}};
-
         std::shared_ptr<hw_monitor> _hw_monitor;
         uvc_sensor& _depth_sensor;
         lazy<bool> _enabled;
@@ -209,8 +197,7 @@ namespace librealsense
     {
     public:
         advanced_mode_preset_option(ds5_advanced_mode_base& advanced, uvc_sensor& ep,
-                                    const option_range& opt_range,
-                                    const std::map<float, std::string>& description_per_value);
+                                    const option_range& opt_range);
 
         static rs2_rs400_visual_preset to_preset(float x);
         void set(float value) override;
@@ -220,9 +207,9 @@ namespace librealsense
         const char* get_value_description(float val) const override;
 
     private:
-        const std::map<float, std::string> _description_per_value;
-        rs2_rs400_visual_preset _last_preset{};
+        std::mutex _mtx;
         uvc_sensor& _ep;
         ds5_advanced_mode_base& _advanced;
+        rs2_rs400_visual_preset _last_preset;
     };
 }

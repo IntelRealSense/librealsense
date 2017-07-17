@@ -15,6 +15,7 @@
 /** \brief For RS400 devices: provides optimized settings (presets) for specific types of usage. */
 typedef enum rs2_rs400_visual_preset
 {
+    RS2_RS400_VISUAL_PRESET_CUSTOM,
     RS2_RS400_VISUAL_PRESET_GENERIC_DEPTH,
     RS2_RS400_VISUAL_PRESET_GENERIC_ACCURATE_DEPTH,
     RS2_RS400_VISUAL_PRESET_GENERIC_DENSE_DEPTH,

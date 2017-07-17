@@ -22,6 +22,7 @@ namespace librealsense
         _notifications_proccessor(std::shared_ptr<notifications_proccessor>(new notifications_proccessor())),
         _metadata_parsers(std::make_shared<metadata_parser_map>()),
         _on_before_frame_callback(nullptr),
+        _on_open(nullptr),
         _ts(ts)
     {
         register_option(RS2_OPTION_FRAMES_QUEUE_SIZE, _source.get_published_size_option());
@@ -371,6 +372,10 @@ namespace librealsense
         {
             _configuration.push_back(mode.profile);
         }
+
+        if (_on_open)
+            _on_open(_configuration);
+
         _power = move(on);
         _is_opened = true;
 
