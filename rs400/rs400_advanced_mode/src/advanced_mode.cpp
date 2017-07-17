@@ -20,7 +20,7 @@ namespace librealsense
                                                                                     option_range{0,
                                                                                                  RS2_RS400_VISUAL_PRESET_COUNT - 1,
                                                                                                  1,
-                                                                                                 0},
+                                                                                                 RS2_RS400_VISUAL_PRESET_CUSTOM},
                                                                                     _description_per_value));
     }
 
@@ -775,7 +775,7 @@ namespace librealsense
 
     rs2_rs400_visual_preset advanced_mode_preset_option::to_preset(float x)
     {
-        return (rs2_rs400_visual_preset)((int)x);
+        return (static_cast<rs2_rs400_visual_preset>(x));
     }
 
     void advanced_mode_preset_option::set(float value)
@@ -787,12 +787,20 @@ namespace librealsense
             throw wrong_api_call_sequence_exception(to_string() << "set(advanced_mode_preset_option) failed! Device is not is Advanced-Mode.");
 
         if (!_ep.is_streaming())
+        {
+            // TODO: Lazy
             throw wrong_api_call_sequence_exception(to_string() << "set(advanced_mode_preset_option) failed! Device must streaming in order to set a preset.");
+        }
 
-        auto pid = _ep.get_device().get_info(RS2_CAMERA_INFO_PRODUCT_ID);
-        auto configurations = _ep.get_curr_configurations();
 
-        _advanced.apply_preset(pid, configurations, to_preset(value));
+        if (to_preset(value) != RS2_RS400_VISUAL_PRESET_CUSTOM)
+        {
+            auto pid = _ep.get_device().get_info(RS2_CAMERA_INFO_PRODUCT_ID);
+            auto configurations = _ep.get_curr_configurations();
+
+            _advanced.apply_preset(pid, configurations, to_preset(value));
+        }
+
         _last_preset = to_preset(value);
     }
 

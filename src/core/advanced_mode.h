@@ -130,7 +130,8 @@ namespace librealsense
         void set_census_radius(const STCensusRadius& val);
 
     private:
-        const std::map<float, std::string>& _description_per_value{{RS2_RS400_VISUAL_PRESET_GENERIC_DEPTH,             "GENERIC_DEPTH"},
+        const std::map<float, std::string>& _description_per_value{{RS2_RS400_VISUAL_PRESET_CUSTOM,                    "CUSTOM"},
+                                                                   {RS2_RS400_VISUAL_PRESET_GENERIC_DEPTH,             "GENERIC_DEPTH"},
                                                                    {RS2_RS400_VISUAL_PRESET_GENERIC_ACCURATE_DEPTH,    "GENERIC_ACCURATE_DEPTH"},
                                                                    {RS2_RS400_VISUAL_PRESET_GENERIC_DENSE_DEPTH,       "GENERIC_DENSE_DEPTH"},
                                                                    {RS2_RS400_VISUAL_PRESET_GENERIC_SUPER_DENSE_DEPTH, "GENERIC_SUPER_DENSE_DEPTH"},
