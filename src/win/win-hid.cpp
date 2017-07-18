@@ -309,6 +309,7 @@ namespace librealsense
                                             //    info.pid = std::string(pv.pwszVal, pv.pwszVal + wcslen(pv.pwszVal));
                                             //}
                                         }
+                                        PropVariantClear(&pv);
                                     }
                                 }
                             }
