@@ -3,13 +3,14 @@
 
 #pragma once
 
+//#include "metadata.h"
 #include "backend.h"
 #include "types.h"
 
 #include <map>
 #include <iomanip>
 
-const double TIMESTAMP_TO_MILLISECONDS = 0.001;
+const double TIMESTAMP_USEC_TO_MSEC = 0.001;
 
 namespace librealsense
 {
@@ -84,17 +85,12 @@ namespace librealsense
             OBW             = 0x29,     // OVT bypass write
             SET_ADV         = 0x2B,     // set advanced mode control
             GET_ADV         = 0x2C,     // get advanced mode control
+            EN_ADV          = 0x2D,     // enable advanced mode
             UAMG            = 0X30,     // get advanced mode status
             SETAEROI        = 0x44,     // set auto-exposure region of interest
             GETAEROI        = 0x45,     // get auto-exposure region of interest
             MMER            = 0x4F,     // MM EEPROM read ( from DS5 cache )
             GET_EXTRINSICS  = 0x53,     // get extrinsics
-
-            enable_advanced_mode = 0x2d,
-            advanced_mode_enabled = 0x30,
-            reset = 0x20,
-            set_advanced = 0x2B,
-            get_advanced = 0x2C,
         };
 
         const int etDepthTableControl = 9; // Identifier of the depth table control
@@ -222,32 +218,6 @@ namespace librealsense
             float3x3            rotation_matrix_rect;       // Rotation matrix for rectification of RGB
             float3              translation_rect;           // Translation vector for rectification
             float               reserved[24];
-        };
-
-        struct metadata_header
-        {
-            uint32_t    metaDataID;
-            uint32_t    size;
-        };
-
-
-        struct metadata_capture_timing
-        {
-            metadata_header  metaDataIdHeader;
-            uint32_t    version;
-            uint32_t    flag;
-            int         frameCounter;
-            uint32_t    opticalTimestamp;   //In millisecond unit
-            uint32_t    readoutTime;        //The readout time in millisecond second unit
-            uint32_t    exposureTime;       //The exposure time in millisecond second unit
-            uint32_t    frameInterval ;     //The frame interval in millisecond second unit
-            uint32_t    pipeLatency;        //The latency between start of frame to frame ready in USB buffer
-        };
-
-        struct metadata
-        {
-           platform::uvc_header header;
-           metadata_capture_timing md_capture_timing;
         };
 
         struct imu_intrinsics

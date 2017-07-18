@@ -164,8 +164,9 @@ namespace librealsense
     std::vector<stream_profile> uvc_sensor::get_principal_requests()
     {
         std::unordered_set<stream_profile> results;
-        std::set<uint32_t> unutilized_formats;
+        std::set<uint32_t> unregistered_formats;
         std::set<uint32_t> supported_formats;
+        std::set<uint32_t> registered_formats;
 
         auto profiles = get_stream_profiles();
         for (auto&& p : profiles)
@@ -179,30 +180,21 @@ namespace librealsense
                     for (auto&& output : unpacker.outputs)
                     {
                         results.insert({ output.first, p.width, p.height, p.fps, output.second });
+                        registered_formats.insert(p.format);
                     }
                 }
             }
             else
             {
-                unutilized_formats.insert(p.format);
+                unregistered_formats.insert(p.format);
             }
         }
 
-        if (unutilized_formats.size())
+        if (unregistered_formats.size())
         {
             std::stringstream ss;
-            ss << "Unused media formats : ";
-            for (auto& elem : unutilized_formats)
-            {
-                uint32_t device_fourcc = reinterpret_cast<const big_endian<uint32_t>&>(elem);
-                char fourcc[sizeof(device_fourcc) + 1];
-            librealsense::copy(fourcc, &device_fourcc, sizeof(device_fourcc));
-                fourcc[sizeof(device_fourcc)] = 0;
-                ss << fourcc << " ";
-            }
-
-            ss << "; Device-supported: ";
-            for (auto& elem : supported_formats)
+            ss << "Unregistered Media formats : [ ";
+            for (auto& elem : unregistered_formats)
             {
                 uint32_t device_fourcc = reinterpret_cast<const big_endian<uint32_t>&>(elem);
                 char fourcc[sizeof(device_fourcc) + 1];
@@ -210,6 +202,17 @@ namespace librealsense
                 fourcc[sizeof(device_fourcc)] = 0;
                 ss << fourcc << " ";
             }
+
+            ss << "]; Supported: [ ";
+            for (auto& elem : registered_formats)
+            {
+                uint32_t device_fourcc = reinterpret_cast<const big_endian<uint32_t>&>(elem);
+                char fourcc[sizeof(device_fourcc) + 1];
+                librealsense::copy(fourcc, &device_fourcc, sizeof(device_fourcc));
+                fourcc[sizeof(device_fourcc)] = 0;
+                ss << fourcc << " ";
+            }
+            ss << "]";
             LOG_WARNING(ss.str());
         }
 
@@ -294,7 +297,7 @@ namespace librealsense
                 auto&& unpacker = *mode.unpacker;
                 for (auto&& output : unpacker.outputs)
                 {
-                    LOG_DEBUG("FrameAccepted," << librealsense::get_string(output.first) << "," << frame_counter
+                    LOG_DEBUG("FrameAccepted," << librealsense::get_string(output.first) << "," << std::dec << frame_counter
                         << ",Arrived," << std::fixed << system_time
                         << ",TS," << std::fixed << timestamp << ",TS_Domain," << rs2_timestamp_domain_to_string(timestamp_domain));
 
@@ -712,8 +715,7 @@ namespace librealsense
             additional_data.frame_number = frame_counter;
             additional_data.timestamp_domain = timestamp_reader->get_frame_timestamp_domain(mode, sensor_data.fo);
             additional_data.system_time = system_time;
-
-            LOG_DEBUG("FrameAccepted," << get_string(additional_data.stream_type) << "," << frame_counter
+            LOG_DEBUG("FrameAccepted," << get_string(additional_data.stream_type) << "," << std::dec << frame_counter
                       << ",Arrived," << std::fixed << system_time
                       << ",TS," << std::fixed << timestamp
                       << ",TS_Domain," << rs2_timestamp_domain_to_string(additional_data.timestamp_domain));

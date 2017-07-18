@@ -50,20 +50,17 @@ int main(int argc, char * argv[])
 
             while (hub.is_connected(dev) && !glfwWindowShouldClose(win))
             {
-
                 int w, h;
                 glfwGetFramebufferSize(win, &w, &h);
 
                 auto index = 0;
                 auto frames = queue.wait_for_frames();
-                //// for consistent visualization, sort frames based on stream type:
-                sort(frames.begin(), frames.end(),
-                     [](const frame& a, const frame& b) -> bool
+                // for consistent visualization, sort frames based on stream type:
+                sort(frames.begin(), frames.end(), [](const frame& a, const frame& b) -> bool
                 {
                     return a.get_stream_type() < b.get_stream_type();
                 });
 
-                ////dev.get_option(RS2_OPTION_LASER_POWER);
                 auto tiles_horisontal = static_cast<int>(ceil(sqrt(frames.size())));
                 auto tiles_vertical = ceil((float)frames.size() / tiles_horisontal);
                 auto tile_w = static_cast<float>((float)w / tiles_horisontal);

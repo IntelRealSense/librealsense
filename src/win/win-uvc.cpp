@@ -20,8 +20,9 @@ The library will be compiled without the metadata support!\n")
 #define METADATA_SUPPORT
 #endif      // (WinSDK 8.1)
 
-
+#ifndef NOMINMAX
 #define NOMINMAX
+#endif
 
 #include "win-uvc.h"
 #include "../types.h"
