@@ -9,7 +9,7 @@
 #include "error-handling.h"
 #include "core/debug.h"
 #include "core/advanced_mode.h"
-
+#include "device.h"
 
 namespace librealsense
 {

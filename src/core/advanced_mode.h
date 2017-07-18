@@ -11,6 +11,7 @@
 #include <librealsense/rs2_advanced_mode_command.h>
 #undef RS400_ADVANCED_MODE_HPP
 
+
 typedef enum
 {
     etDepthControl              = 0,
@@ -57,8 +58,7 @@ namespace librealsense
 
         virtual void toggle_advanced_mode(bool enable) = 0;
 
-        virtual void apply_preset(const std::string& pid,
-                                  const std::vector<platform::stream_profile>& configuration,
+        virtual void apply_preset(const std::vector<platform::stream_profile>& configuration,
                                   rs2_rs400_visual_preset preset) = 0;
 
         virtual void get_depth_control_group(STDepthControlGroup* ptr, int mode = 0) const = 0;
@@ -102,8 +102,7 @@ namespace librealsense
 
         bool is_enabled() const;
         void toggle_advanced_mode(bool enable);
-        void apply_preset(const std::string& pid,
-                          const std::vector<platform::stream_profile>& configuration,
+        void apply_preset(const std::vector<platform::stream_profile>& configuration,
                           rs2_rs400_visual_preset preset);
 
         void get_depth_control_group(STDepthControlGroup* ptr, int mode = 0) const;
@@ -146,7 +145,6 @@ namespace librealsense
         static const uint16_t HW_MONITOR_COMMAND_SIZE = 1000;
         static const uint16_t HW_MONITOR_BUFFER_SIZE = 1024;
 
-        std::string pid_to_str(uint16_t pid);
         res_type get_res_type(uint32_t width, uint32_t height);
 
         preset get_all();
