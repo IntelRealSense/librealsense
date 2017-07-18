@@ -707,6 +707,43 @@ namespace rs2
         }
     }
 
+    void subdevice_model::draw_options(const std::vector<rs2_option>& drawing_order,
+                                       bool update_read_only_options, std::string& error_message)
+    {
+        for (auto& opt : drawing_order)
+        {
+            draw_option(opt, update_read_only_options, error_message);
+        }
+
+        for (auto i = 0; i < RS2_OPTION_COUNT; i++)
+        {
+            auto opt = static_cast<rs2_option>(i);
+            if(std::find(drawing_order.begin(), drawing_order.end(), opt) == drawing_order.end())
+            {
+                draw_option(opt, update_read_only_options, error_message);
+            }
+        }
+    }
+
+    void subdevice_model::draw_option(rs2_option opt, bool update_read_only_options,
+                                      std::string& error_message)
+    {
+        auto&& metadata = options_metadata[opt];
+        if (update_read_only_options)
+        {
+            metadata.update_supported(error_message);
+            if (metadata.supported && streaming)
+            {
+                metadata.update_read_only(error_message);
+                if (metadata.read_only)
+                {
+                    metadata.update_all(error_message);
+                }
+            }
+        }
+        metadata.draw(error_message);
+    }
+
     stream_model::stream_model()
         : texture ( std::unique_ptr<texture_buffer>(new texture_buffer()))
     {}
