@@ -30,22 +30,30 @@ namespace librealsense
             if (!_is_locked) return;
             _mutex.unlock();
             _is_locked = false;
+            
         }
 
         ~sync_lock()
         {
-            if (_is_locked) _mutex.unlock();
+            if (_is_locked)
+            {
+                _mutex.unlock();
+                
+            }
         }
-
+        
     private:
         bool _is_locked = true;
+        
         std::mutex& _mutex;
     };
+    //sync_lock::ref = 0;
 
     struct syncronization_environment
     {
         synthetic_source_interface* source;
-        sync_lock& lock_ref;
+        //sync_lock& lock_ref;
+        single_consumer_queue<frame_holder>& matches;
     };
 
 
