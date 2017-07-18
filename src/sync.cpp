@@ -37,7 +37,7 @@ namespace librealsense
 
             std::stringstream ss; 
             auto composite = dynamic_cast<composite_frame*>(f.frame);
-            for (int i = 0; i < composite->get_embeded_frames_count(); i++)
+            for (int i = 0; i < composite->get_embedded_frames_count(); i++)
             {
                 auto matched = composite->get_frame(i);
                 ss << matched->get_stream_type() << " " << matched->get_frame_number() << ", ";

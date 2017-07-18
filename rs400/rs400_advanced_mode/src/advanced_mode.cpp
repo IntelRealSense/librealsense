@@ -780,7 +780,7 @@ namespace librealsense
 
     rs2_rs400_visual_preset advanced_mode_preset_option::to_preset(float x)
     {
-        return (static_cast<rs2_rs400_visual_preset>(x));
+        return (static_cast<rs2_rs400_visual_preset>((int)x));
     }
 
     void advanced_mode_preset_option::set(float value)
