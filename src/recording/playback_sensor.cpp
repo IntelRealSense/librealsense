@@ -6,18 +6,16 @@
 #include <map>
 #include "types.h"
 
-playback_sensor::playback_sensor(const sensor_snapshot& sensor_description, uint32_t sensor_id):
+playback_sensor::playback_sensor(const device_interface& parent_device, const sensor_snapshot& sensor_description, uint32_t sensor_id):
     m_sensor_description(sensor_description),
     m_sensor_id(sensor_id),
     m_is_started(false),
-    m_user_notification_callback(nullptr, [](rs2_notifications_callback* n) {})
-//TODO: initialize rest of members
+    m_user_notification_callback(nullptr, [](rs2_notifications_callback* n) {}),
+    m_parent_device(parent_device)
 {
-    //TODO: make sure sensor_description has info ,options and streaming
 }
 playback_sensor::~playback_sensor()
 {
-
 }
 
 std::vector<stream_profile> playback_sensor::get_principal_requests() 
@@ -72,12 +70,18 @@ bool playback_sensor::supports_info(rs2_camera_info info) const
 
 bool playback_sensor::supports_option(rs2_option id) const
 {
-    return std::dynamic_pointer_cast<librealsense::options_interface>(m_sensor_description.get_sensor_extensions_snapshots().get_snapshots()[RS2_EXTENSION_TYPE_OPTIONS])->supports_option(id);
+    auto snapshot = m_sensor_description.get_sensor_extensions_snapshots().find(RS2_EXTENSION_TYPE_OPTIONS);
+    if (snapshot == nullptr)
+        return false;
+    auto option = std::dynamic_pointer_cast<librealsense::options_interface>(snapshot);
+    if (option == nullptr)
+        return false;
+    return option->supports_option(id);
 }
 
 void playback_sensor::register_notifications_callback(notifications_callback_ptr callback)
 {
-    throw not_implemented_exception(__FUNCTION__);
+    m_user_notification_callback = std::move(callback);
 }
 
 void playback_sensor::start(frame_callback_ptr callback)
@@ -123,18 +127,19 @@ bool playback_sensor::extend_to(rs2_extension_type extension_type, void** ext)
     case RS2_EXTENSION_TYPE_VIDEO: return try_extend<video_sensor_interface>(e, ext);;
     case RS2_EXTENSION_TYPE_ROI: return try_extend<roi_sensor_interface>(e, ext);;
     case RS2_EXTENSION_TYPE_VIDEO_FRAME: return try_extend<video_frame>(e, ext);
-        //TODO: add: case RS2_EXTENSION_TYPE_MOTION_FRAME: return try_extend<motion_frame>(e, ext);
+ //TODO: RS2_EXTENSION_TYPE_MOTION_FRAME: return try_extend<motion_frame>(e, ext);
     case RS2_EXTENSION_TYPE_COUNT:
         //[[fallthrough]];
     default:
         LOG_WARNING("Unsupported extension type: " << extension_type);
+        assert(0);
         return false;
     }
 }
 
 const device_interface& playback_sensor::get_device()
 {
-    throw not_implemented_exception(__FUNCTION__);
+    return m_parent_device;
 }
 
 rs2_extrinsics playback_sensor::get_extrinsics_to(rs2_stream from, const sensor_interface& other, rs2_stream to) const
@@ -152,6 +157,11 @@ void playback_sensor::handle_frame(frame_holder frame, bool is_real_time)
     if(m_is_started)
     {
         auto stream_type = frame.frame->get_stream_type();
+		//TODO: remove this once filter is implemented (which will only read streams that were 'open'ed 
+    	if(m_dispatchers.find(stream_type) == m_dispatchers.end())
+		{
+			return;
+		}
         //TODO: Ziv, remove usage of shared_ptr when frame_holder is cpoyable
         auto pf = std::make_shared<frame_holder>(std::move(frame));
         m_dispatchers.at(stream_type)->invoke([this, pf](dispatcher::cancellable_timer t)

@@ -9,46 +9,10 @@
 #include "archive.h"
 #include "concurrency.h"
 #include "sensor.h"
+#include "record_sensor.h"
 
 namespace librealsense
 {
-    class record_sensor : public sensor_interface,
-                          public extendable_interface,  //Allows extension for any of the given device's extensions
-                          public info_container,//TODO: Ziv, does it make sense to inherit here?, maybe construct the item as recordable
-                          public options_container//TODO: Ziv, does it make sense to inherit here?
-    {
-    public:
-        using frame_interface_callback_t = std::function<void(frame_holder)>;
-
-        record_sensor(sensor_interface& sensor, frame_interface_callback_t on_frame);
-        virtual ~record_sensor();
-
-        std::vector<stream_profile> get_principal_requests() override;
-        void open(const std::vector<stream_profile>& requests) override;
-        void close() override;
-        option& get_option(rs2_option id) override;
-        const option& get_option(rs2_option id) const override;
-        const std::string& get_info(rs2_camera_info info) const override;
-        bool supports_info(rs2_camera_info info) const override;
-        bool supports_option(rs2_option id) const override;
-        void register_notifications_callback(notifications_callback_ptr callback) override;
-        void start(frame_callback_ptr callback) override;
-        void stop() override;
-        bool is_streaming() const override;
-        bool extend_to(rs2_extension_type extension_type, void** ext) override;
-        const device_interface& get_device() override;
-        rs2_extrinsics get_extrinsics_to(rs2_stream from, const sensor_interface& other, rs2_stream to) const  override;
-        const std::vector<platform::stream_profile>& get_curr_configurations() const  override;
-    private:
-        sensor_interface& m_sensor;
-        librealsense::notifications_callback_ptr m_user_notification_callback;
-        frame_interface_callback_t m_record_callback;
-        bool m_is_recording;
-        bool m_is_pause;
-        frame_callback_ptr m_frame_callback;
-        std::vector<platform::stream_profile> m_curr_configurations;
-    };
-
     class record_device : public device_interface,
                           public extendable_interface,
                           public info_container//TODO: Ziv, does it make sense to inherit from container
@@ -74,14 +38,15 @@ namespace librealsense
 
         void pause_recording();
         void resume_recording();
+        
     private:
         void write_header();
         std::chrono::nanoseconds get_capture_time() const;
         void write_data(size_t sensor_index, frame_holder f/*, notifications_callback_ptr& sensor_notification_handler*/);
+        void write_extension_snapshot(rs2_extension_type ext, const std::shared_ptr<extension_snapshot>& snapshot);
         std::vector<std::shared_ptr<record_sensor>> create_record_sensors(std::shared_ptr<device_interface> m_device);
-        //std::function<void(dispatcher::cancellable_timer)> create_write_task(frame_holder&& frame, size_t sensor_index,
-        //    std::chrono::nanoseconds capture_time, uint64_t data_size);
-    private:
+        template <typename T> snapshot_collection get_extensions_snapshots(T* extendable);
+
         std::shared_ptr<device_interface> m_device;
         std::vector<std::shared_ptr<record_sensor>> m_sensors;
 
@@ -98,8 +63,6 @@ namespace librealsense
 
         uint64_t m_cached_data_size;
         std::once_flag m_first_call_flag;
-        template <typename T>
-        snapshot_collection get_extensions_snapshots(T* extendable);
     };
 }
 

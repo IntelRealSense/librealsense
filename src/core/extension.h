@@ -26,7 +26,7 @@ namespace librealsense
 
     /**
      * Extensions' snapshot implementations are expected to derive from this class in addition to the actual extension
-     * Extensions' interfaces are no expected to derive from this class (//TODO Ziv, what if they do? - test that it works)
+     * Extensions' interfaces are not expected to derive from this class (//TODO Ziv, what if they do? - test that it works)
      */
     //template <typename T>
     class extension_snapshot  //TODO: : Ziv, : public T, public std::enable_shared_from_this ?
