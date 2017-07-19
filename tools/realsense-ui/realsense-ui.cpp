@@ -409,6 +409,13 @@ void draw_general_tab(device_model& model, device_list& list,
                     error_message = e.what();
                 }
 
+                static const std::vector<rs2_option> options_order{RS2_OPTION_ADVANCED_MODE_PRESET,
+                                                                   RS2_OPTION_ENABLE_AUTO_EXPOSURE,
+                                                                   RS2_OPTION_EXPOSURE,
+                                                                   RS2_OPTION_EMITTER_ENABLED,
+                                                                   RS2_OPTION_LASER_POWER};
+                sub->draw_options(options_order, update_read_only_options, error_message);
+
                 auto&& de_opt = sub->options_metadata[RS2_OPTION_DEPTH_UNITS];
                 if (de_opt.supported)
                 {
@@ -436,26 +443,6 @@ void draw_general_tab(device_model& model, device_list& list,
                             std::swap(model.streams[RS2_STREAM_DEPTH].texture->max_depth, model.streams[RS2_STREAM_DEPTH].texture->min_depth);
                         }
                     }
-                }
-
-
-                for (auto i = 0; i < RS2_OPTION_COUNT; i++)
-                {
-                    auto opt = static_cast<rs2_option>(i);
-                    auto&& metadata = sub->options_metadata[opt];
-                    if (update_read_only_options)
-                    {
-                        metadata.update_supported(error_message);
-                        if (metadata.supported && sub->streaming)
-                        {
-                            metadata.update_read_only(error_message);
-                            if (metadata.read_only)
-                            {
-                                metadata.update_all(error_message);
-                            }
-                        }
-                    }
-                    metadata.draw(error_message);
                 }
             }
             ImGui::Text("\n");
