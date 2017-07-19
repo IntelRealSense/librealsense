@@ -8,6 +8,7 @@
 #include <cmath>
 #include "unit-tests-common.h"
 #include <librealsense/rsutil2.hpp>
+#include <librealsense/rs2_advanced_mode.hpp>
 
 using namespace rs2;
 
@@ -1187,25 +1188,23 @@ TEST_CASE("Error handling sanity", "[live]") {
     }
 }
 
-TEST_CASE("Auto exposure behavior", "[live]") {
-
+TEST_CASE("Auto disabling control behavior", "[live]") {
     std::string SR300_PID = "0x0aa5";
     std::stringstream s;
     s << SR300_PID;
     int sr300_pid;
     s >> std::hex >> sr300_pid;
+
     //Require at least one device to be plugged in
     rs2::context ctx;
     if (make_context(SECTION_FROM_TEST_NAME, &ctx))
     {
-
         std::vector<sensor> list;
         REQUIRE_NOTHROW(list = ctx.query_all_sensors());
         REQUIRE(list.size() > 0);
 
-
-        //enable error polling
-        for (auto && subdevice : list) {
+        for (auto && subdevice : list)
+        {
             if (!subdevice.supports(RS2_CAMERA_INFO_PRODUCT_ID))
             {
                 continue;
@@ -1216,28 +1215,43 @@ TEST_CASE("Auto exposure behavior", "[live]") {
             int curr_pid;
             s >> std::hex >> curr_pid;
 
+            auto info = subdevice.get_info(RS2_CAMERA_INFO_NAME);
+            CAPTURE(info);
+
+            option_range range{};
+            float val{};
             if (curr_pid != sr300_pid && subdevice.supports(RS2_OPTION_ENABLE_AUTO_EXPOSURE))
             {
-                option_range range{};
-
-                float val{};
-
-                auto info = subdevice.get_info(RS2_CAMERA_INFO_NAME);
-                CAPTURE(info);
-
-                REQUIRE_NOTHROW(subdevice.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, 1));
-
-                SECTION("Disable auto exposure whan setting a value")
+                SECTION("Disable auto exposure when setting a value")
                 {
-
+                    REQUIRE_NOTHROW(subdevice.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, 1));
                     REQUIRE_NOTHROW(range = subdevice.get_option_range(RS2_OPTION_EXPOSURE));
                     REQUIRE_NOTHROW(subdevice.set_option(RS2_OPTION_EXPOSURE, range.max));
                     CAPTURE(range.max);
                     REQUIRE_NOTHROW(val = subdevice.get_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE));
                     REQUIRE(val == 0);
                 }
+            }
 
-                SECTION("Disable white balance whan setting a value")
+            if (subdevice.supports(RS2_OPTION_EMITTER_ENABLED))
+            {
+                SECTION("Disable emitter when setting a value")
+                {
+                    for (auto elem : {0, 2})
+                    {
+                        REQUIRE_NOTHROW(subdevice.set_option(RS2_OPTION_EMITTER_ENABLED, elem));
+                        REQUIRE_NOTHROW(range = subdevice.get_option_range(RS2_OPTION_LASER_POWER));
+                        REQUIRE_NOTHROW(subdevice.set_option(RS2_OPTION_LASER_POWER, range.max));
+                        CAPTURE(range.max);
+                        REQUIRE_NOTHROW(val = subdevice.get_option(RS2_OPTION_EMITTER_ENABLED));
+                        REQUIRE(val == 1);
+                    }
+                }
+            }
+
+            if (subdevice.supports(RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE))
+            {
+                SECTION("Disable white balance when setting a value")
                 {
                     if (subdevice.supports(RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE) && subdevice.supports(RS2_OPTION_WHITE_BALANCE))
                     {
@@ -1248,13 +1262,173 @@ TEST_CASE("Auto exposure behavior", "[live]") {
                         REQUIRE_NOTHROW(val = subdevice.get_option(RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE));
                         REQUIRE(val == 0);
                     }
-
                 }
+            }
+        }
+    }
+}
 
+TEST_CASE("Advanced Mode controls", "[live]") {
+    rs2::context ctx;
+    if (make_context(SECTION_FROM_TEST_NAME, &ctx))
+    {
+        device_list list;
+        REQUIRE_NOTHROW(list = ctx.query_devices());
+        REQUIRE(list.size() > 0);
+
+        auto dev = list.front();
+
+        auto info = dev.get_info(RS2_CAMERA_INFO_NAME);
+        CAPTURE(info);
+        if (dev.is<rs400::advanced_mode>())
+        {
+            rs400::advanced_mode advanced = dev.as<rs400::advanced_mode>();
+            REQUIRE(advanced.is_enabled());
+
+            {
+            STDepthControlGroup ctrl_curr{};
+            REQUIRE_NOTHROW(ctrl_curr = advanced.get_depth_control(0));
+            STDepthControlGroup ctrl_min{};
+            REQUIRE_NOTHROW(ctrl_min = advanced.get_depth_control(1));
+            STDepthControlGroup ctrl_max{};
+            REQUIRE_NOTHROW(ctrl_max = advanced.get_depth_control(2));
+            REQUIRE_NOTHROW(advanced.set_depth_control(ctrl_min));
+            REQUIRE_NOTHROW(ctrl_curr = advanced.get_depth_control(0));
+            REQUIRE(ctrl_curr == ctrl_min);
             }
 
-        }
+            {
+            STRsm ctrl_curr{};
+            REQUIRE_NOTHROW(ctrl_curr = advanced.get_rsm(0));
+            STRsm ctrl_min{};
+            REQUIRE_NOTHROW(ctrl_min = advanced.get_rsm(1));
+            STRsm ctrl_max{};
+            REQUIRE_NOTHROW(ctrl_max = advanced.get_rsm(2));
+            REQUIRE_NOTHROW(advanced.set_rsm(ctrl_min));
+            REQUIRE_NOTHROW(ctrl_curr = advanced.get_rsm(0));
+            REQUIRE(ctrl_curr == ctrl_min);
+            }
 
+            {
+            STRauSupportVectorControl ctrl_curr{};
+            REQUIRE_NOTHROW(ctrl_curr = advanced.get_rau_support_vector_control(0));
+            STRauSupportVectorControl ctrl_min{};
+            REQUIRE_NOTHROW(ctrl_min = advanced.get_rau_support_vector_control(1));
+            STRauSupportVectorControl ctrl_max{};
+            REQUIRE_NOTHROW(ctrl_max = advanced.get_rau_support_vector_control(2));
+            REQUIRE_NOTHROW(advanced.set_rau_support_vector_control(ctrl_min));
+            REQUIRE_NOTHROW(ctrl_curr = advanced.get_rau_support_vector_control(0));
+            REQUIRE(ctrl_curr == ctrl_min);
+            }
+
+            {
+            STColorControl ctrl_curr{};
+            REQUIRE_NOTHROW(ctrl_curr = advanced.get_color_control(0));
+            STColorControl ctrl_min{};
+            REQUIRE_NOTHROW(ctrl_min = advanced.get_color_control(1));
+            STColorControl ctrl_max{};
+            REQUIRE_NOTHROW(ctrl_max = advanced.get_color_control(2));
+            REQUIRE_NOTHROW(advanced.set_color_control(ctrl_min));
+            REQUIRE_NOTHROW(ctrl_curr = advanced.get_color_control(0));
+            REQUIRE(ctrl_curr == ctrl_min);
+            }
+
+            {
+            STRauColorThresholdsControl ctrl_curr{};
+            REQUIRE_NOTHROW(ctrl_curr = advanced.get_rau_thresholds_control(0));
+            STRauColorThresholdsControl ctrl_min{};
+            REQUIRE_NOTHROW(ctrl_min = advanced.get_rau_thresholds_control(1));
+            STRauColorThresholdsControl ctrl_max{};
+            REQUIRE_NOTHROW(ctrl_max = advanced.get_rau_thresholds_control(2));
+            REQUIRE_NOTHROW(advanced.set_rau_thresholds_control(ctrl_min));
+            REQUIRE_NOTHROW(ctrl_curr = advanced.get_rau_thresholds_control(0));
+            REQUIRE(ctrl_curr == ctrl_min);
+            }
+
+            {
+            STSloColorThresholdsControl ctrl_curr{};
+            REQUIRE_NOTHROW(ctrl_curr = advanced.get_slo_color_thresholds_control(0));
+            STSloColorThresholdsControl ctrl_min{};
+            REQUIRE_NOTHROW(ctrl_min = advanced.get_slo_color_thresholds_control(1));
+            STSloColorThresholdsControl ctrl_max{};
+            REQUIRE_NOTHROW(ctrl_max = advanced.get_slo_color_thresholds_control(2));
+            REQUIRE_NOTHROW(advanced.set_slo_color_thresholds_control(ctrl_min));
+            REQUIRE_NOTHROW(ctrl_curr = advanced.get_slo_color_thresholds_control(0));
+            REQUIRE(ctrl_curr == ctrl_min);
+            }
+
+            {
+            STSloPenaltyControl ctrl_curr{};
+            REQUIRE_NOTHROW(ctrl_curr = advanced.get_slo_penalty_control(0));
+            STSloPenaltyControl ctrl_min{};
+            REQUIRE_NOTHROW(ctrl_min = advanced.get_slo_penalty_control(1));
+            STSloPenaltyControl ctrl_max{};
+            REQUIRE_NOTHROW(ctrl_max = advanced.get_slo_penalty_control(2));
+            REQUIRE_NOTHROW(advanced.set_slo_penalty_control(ctrl_min));
+            REQUIRE_NOTHROW(ctrl_curr = advanced.get_slo_penalty_control(0));
+            REQUIRE(ctrl_curr == ctrl_min);
+            }
+
+            {
+            STHdad ctrl_curr{};
+            REQUIRE_NOTHROW(ctrl_curr = advanced.get_hdad(0));
+            STHdad ctrl_min{};
+            REQUIRE_NOTHROW(ctrl_min = advanced.get_hdad(1));
+            STHdad ctrl_max{};
+            REQUIRE_NOTHROW(ctrl_max = advanced.get_hdad(2));
+            REQUIRE_NOTHROW(advanced.set_hdad(ctrl_min));
+            REQUIRE_NOTHROW(ctrl_curr = advanced.get_hdad(0));
+            REQUIRE(ctrl_curr == ctrl_min);
+            }
+
+            {
+            STColorCorrection ctrl_curr{};
+            REQUIRE_NOTHROW(ctrl_curr = advanced.get_color_correction(0));
+            STColorCorrection ctrl_min{};
+            REQUIRE_NOTHROW(ctrl_min = advanced.get_color_correction(1));
+            STColorCorrection ctrl_max{};
+            REQUIRE_NOTHROW(ctrl_max = advanced.get_color_correction(2));
+            REQUIRE_NOTHROW(advanced.set_color_correction(ctrl_min));
+            REQUIRE_NOTHROW(ctrl_curr = advanced.get_color_correction(0));
+            REQUIRE(ctrl_curr == ctrl_min);
+            }
+
+            {
+            STAEControl ctrl_curr{};
+            REQUIRE_NOTHROW(ctrl_curr = advanced.get_ae_control(0));
+            STAEControl ctrl_min{};
+            REQUIRE_NOTHROW(ctrl_min = advanced.get_ae_control(1));
+            STAEControl ctrl_max{};
+            REQUIRE_NOTHROW(ctrl_max = advanced.get_ae_control(2));
+            REQUIRE_NOTHROW(advanced.set_ae_control(ctrl_min));
+            REQUIRE_NOTHROW(ctrl_curr = advanced.get_ae_control(0));
+            REQUIRE(ctrl_curr == ctrl_min);
+            }
+
+            {
+            STDepthTableControl ctrl_curr{};
+            REQUIRE_NOTHROW(ctrl_curr = advanced.get_depth_table(0));
+            STDepthTableControl ctrl_min{};
+            REQUIRE_NOTHROW(ctrl_min = advanced.get_depth_table(1));
+            STDepthTableControl ctrl_max{};
+            REQUIRE_NOTHROW(ctrl_max = advanced.get_depth_table(2));
+            REQUIRE_NOTHROW(advanced.set_depth_table(ctrl_min));
+            REQUIRE_NOTHROW(ctrl_curr = advanced.get_depth_table(0));
+            REQUIRE(ctrl_curr == ctrl_min);
+            }
+
+            {
+            STCensusRadius ctrl_curr{};
+            REQUIRE_NOTHROW(ctrl_curr = advanced.get_census(0));
+            STCensusRadius ctrl_min{};
+            REQUIRE_NOTHROW(ctrl_min = advanced.get_census(1));
+            STCensusRadius ctrl_max{};
+            REQUIRE_NOTHROW(ctrl_max = advanced.get_census(2));
+            REQUIRE_NOTHROW(advanced.set_census(ctrl_min));
+            REQUIRE_NOTHROW(ctrl_curr = advanced.get_census(0));
+            REQUIRE(ctrl_curr == ctrl_min);
+            }
+        }
     }
 }
 

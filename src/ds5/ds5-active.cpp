@@ -33,8 +33,6 @@ namespace librealsense
                                                                      depth_xu,
                                                                      DS5_LASER_POWER,
                                                                      "Manual laser power in mw. applicable only when laser power mode is set to Manual");
-        depth_ep.register_option(RS2_OPTION_LASER_POWER, laser_power);
-
         depth_ep.register_option(RS2_OPTION_LASER_POWER,
                                  std::make_shared<auto_disabling_control>(
                                  laser_power,
