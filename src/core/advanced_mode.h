@@ -98,6 +98,7 @@ namespace librealsense
     {
     public:
         explicit ds5_advanced_mode_base(std::shared_ptr<hw_monitor> hwm, uvc_sensor& depth_sensor);
+        virtual ~ds5_advanced_mode_base() = default;
 
         bool is_enabled() const;
         void toggle_advanced_mode(bool enable);
@@ -132,18 +133,6 @@ namespace librealsense
         void set_census_radius(const STCensusRadius& val);
 
     private:
-        const std::map<float, std::string>& _description_per_value{{RS2_RS400_VISUAL_PRESET_GENERIC_DEPTH,             "GENERIC_DEPTH"},
-                                                                   {RS2_RS400_VISUAL_PRESET_GENERIC_ACCURATE_DEPTH,    "GENERIC_ACCURATE_DEPTH"},
-                                                                   {RS2_RS400_VISUAL_PRESET_GENERIC_DENSE_DEPTH,       "GENERIC_DENSE_DEPTH"},
-                                                                   {RS2_RS400_VISUAL_PRESET_GENERIC_SUPER_DENSE_DEPTH, "GENERIC_SUPER_DENSE_DEPTH"},
-                                                                   {RS2_RS400_VISUAL_PRESET_FLOOR_LOW,                 "FLOOR_LOW"},
-                                                                   {RS2_RS400_VISUAL_PRESET_3D_BODY_SCAN,              "3D_BODY_SCAN"},
-                                                                   {RS2_RS400_VISUAL_PRESET_INDOOR,                    "INDOOR"},
-                                                                   {RS2_RS400_VISUAL_PRESET_OUTDOOR,                   "OUTDOOR"},
-                                                                   {RS2_RS400_VISUAL_PRESET_HAND,                      "HAND"},
-                                                                   {RS2_RS400_VISUAL_PRESET_SHORT_RANGE,               "SHORT_RANGE"},
-                                                                   {RS2_RS400_VISUAL_PRESET_BOX,                       "BOX"}};
-
         std::shared_ptr<hw_monitor> _hw_monitor;
         uvc_sensor& _depth_sensor;
         lazy<bool> _enabled;
@@ -163,7 +152,7 @@ namespace librealsense
         preset get_all();
         void set_all(const preset& p);
 
-        std::vector<uint8_t> send_recieve(const std::vector<uint8_t>& input) const;
+        std::vector<uint8_t> send_receive(const std::vector<uint8_t>& input) const;
 
         template<class T>
         void set(const T& strct, EtAdvancedModeRegGroup cmd) const
@@ -172,7 +161,7 @@ namespace librealsense
             std::vector<uint8_t> data(ptr, ptr + sizeof(T));
 
             assert_no_error(ds::fw_cmd::set_advanced,
-                send_recieve(encode_command(ds::fw_cmd::set_advanced, static_cast<uint32_t>(cmd), 0, 0, 0, data)));
+                send_receive(encode_command(ds::fw_cmd::set_advanced, static_cast<uint32_t>(cmd), 0, 0, 0, data)));
             std::this_thread::sleep_for(std::chrono::milliseconds(20));
         }
 
@@ -181,7 +170,7 @@ namespace librealsense
         {
             T res;
             auto data = assert_no_error(ds::fw_cmd::get_advanced,
-                send_recieve(encode_command(ds::fw_cmd::get_advanced,
+                send_receive(encode_command(ds::fw_cmd::get_advanced,
                 static_cast<uint32_t>(cmd), mode)));
             if (data.size() < sizeof(T))
             {
@@ -208,8 +197,7 @@ namespace librealsense
     {
     public:
         advanced_mode_preset_option(ds5_advanced_mode_base& advanced, uvc_sensor& ep,
-                                    const option_range& opt_range,
-                                    const std::map<float, std::string>& description_per_value);
+                                    const option_range& opt_range);
 
         static rs2_rs400_visual_preset to_preset(float x);
         void set(float value) override;
@@ -219,9 +207,9 @@ namespace librealsense
         const char* get_value_description(float val) const override;
 
     private:
-        const std::map<float, std::string> _description_per_value;
-        rs2_rs400_visual_preset _last_preset{};
+        std::mutex _mtx;
         uvc_sensor& _ep;
         ds5_advanced_mode_base& _advanced;
+        rs2_rs400_visual_preset _last_preset;
     };
 }

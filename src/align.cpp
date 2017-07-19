@@ -107,7 +107,7 @@ namespace librealsense
         {
             height = vf->get_height();
         }
-        
+
         auto res = _actual_source.alloc_frame(RS2_EXTENSION_TYPE_VIDEO_FRAME, stride * height, data, true);
         if (!res) throw wrong_api_call_sequence_exception("Out of frame resources!");
         vf = (video_frame*)res;
@@ -121,7 +121,7 @@ namespace librealsense
     {
         if (f == nullptr) return 0;
         if (auto c = dynamic_cast<composite_frame*>(f))
-            return c->get_embeded_frames_count();
+            return static_cast<int>(c->get_embedded_frames_count());
         return 1;
     }
 
@@ -130,7 +130,7 @@ namespace librealsense
         if (auto comp = dynamic_cast<composite_frame*>(from.frame))
         {
             auto frame_buff = comp->get_frames();
-            for (int i = 0; i < comp->get_embeded_frames_count(); i++)
+            for (int i = 0; i < comp->get_embedded_frames_count(); i++)
             {
                 std::swap(*target, frame_buff[i]);
                 target++;
@@ -351,7 +351,7 @@ namespace librealsense
     //    std::lock_guard<std::mutex> lock(_mutex);
     //    switch(cm)
     //    {
-    //    case RS2_COLOR_MAP_CLASSIC: 
+    //    case RS2_COLOR_MAP_CLASSIC:
     //        _cm = &classic;
     //        break;
     //    case RS2_COLOR_MAP_JET:

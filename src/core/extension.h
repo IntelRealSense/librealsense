@@ -17,7 +17,7 @@
 
 namespace librealsense
 {
-	class extendable_interface
+    class extendable_interface
     {
     public:
         virtual bool extend_to(rs2_extension_type extension_type, void** ptr) = 0;

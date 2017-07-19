@@ -10,7 +10,7 @@ namespace librealsense
           _depth_sensor(depth_sensor)
     {
         _enabled = [this](){
-            auto results = send_recieve(encode_command(ds::fw_cmd::advanced_mode_enabled));
+            auto results = send_receive(encode_command(ds::fw_cmd::advanced_mode_enabled));
             assert_no_error(ds::fw_cmd::advanced_mode_enabled, results);
             return *(reinterpret_cast<uint32_t*>(results.data()) + 1) > 0;
         };
@@ -20,8 +20,7 @@ namespace librealsense
                                                                                     option_range{0,
                                                                                                  RS2_RS400_VISUAL_PRESET_COUNT - 1,
                                                                                                  1,
-                                                                                                 0},
-                                                                                    _description_per_value));
+                                                                                                 RS2_RS400_VISUAL_PRESET_CUSTOM}));
     }
 
     bool ds5_advanced_mode_base::is_enabled() const
@@ -31,8 +30,8 @@ namespace librealsense
 
     void ds5_advanced_mode_base::toggle_advanced_mode(bool enable)
     {
-        send_recieve(encode_command(ds::fw_cmd::enable_advanced_mode, enable));
-        send_recieve(encode_command(ds::fw_cmd::reset));
+        send_receive(encode_command(ds::fw_cmd::enable_advanced_mode, enable));
+        send_receive(encode_command(ds::fw_cmd::reset));
     }
 
     std::string ds5_advanced_mode_base::pid_to_str(uint16_t pid)
@@ -692,7 +691,7 @@ namespace librealsense
         set_census_radius(p.census);
     }
 
-    std::vector<uint8_t> ds5_advanced_mode_base::send_recieve(const std::vector<uint8_t>& input) const
+    std::vector<uint8_t> ds5_advanced_mode_base::send_receive(const std::vector<uint8_t>& input) const
     {
         auto res = _hw_monitor->send(input);
         if (res.empty())
@@ -765,35 +764,45 @@ namespace librealsense
     }
 
     advanced_mode_preset_option::advanced_mode_preset_option(ds5_advanced_mode_base& advanced,
-                                                             uvc_sensor& ep, const option_range& opt_range,
-                                                             const std::map<float, std::string>& description_per_value)
+                                                             uvc_sensor& ep, const option_range& opt_range)
         : option_base(opt_range),
           _ep(ep),
-          _description_per_value(description_per_value),
-          _advanced(advanced)
-    {}
+          _advanced(advanced),
+          _last_preset(RS2_RS400_VISUAL_PRESET_CUSTOM)
+    {
+        _ep.register_on_open([this](std::vector<platform::stream_profile> configurations){
+            std::lock_guard<std::mutex> lock(_mtx);
+                auto pid = _ep.get_device().get_info(RS2_CAMERA_INFO_PRODUCT_ID);
+            if (_last_preset != RS2_RS400_VISUAL_PRESET_CUSTOM)
+                _advanced.apply_preset(pid, configurations, _last_preset);
+        });
+    }
 
     rs2_rs400_visual_preset advanced_mode_preset_option::to_preset(float x)
     {
-        return (rs2_rs400_visual_preset)((int)x);
+        return (static_cast<rs2_rs400_visual_preset>((int)x));
     }
 
     void advanced_mode_preset_option::set(float value)
     {
+        std::lock_guard<std::mutex> lock(_mtx);
         if (!is_valid(value))
             throw invalid_value_exception(to_string() << "set(advanced_mode_preset_option) failed! Given value " << value << " is out of range.");
 
         if (!_advanced.is_enabled())
             throw wrong_api_call_sequence_exception(to_string() << "set(advanced_mode_preset_option) failed! Device is not is Advanced-Mode.");
 
-        if (!_ep.is_streaming())
-            throw wrong_api_call_sequence_exception(to_string() << "set(advanced_mode_preset_option) failed! Device must streaming in order to set a preset.");
+        auto preset = to_preset(value);
+        if (preset == RS2_RS400_VISUAL_PRESET_CUSTOM || !_ep.is_streaming())
+        {
+            _last_preset = preset;
+            return;
+        }
 
         auto pid = _ep.get_device().get_info(RS2_CAMERA_INFO_PRODUCT_ID);
         auto configurations = _ep.get_curr_configurations();
-
-        _advanced.apply_preset(pid, configurations, to_preset(value));
-        _last_preset = to_preset(value);
+        _advanced.apply_preset(pid, configurations, preset);
+        _last_preset = preset;
     }
 
     float advanced_mode_preset_option::query() const
@@ -801,7 +810,7 @@ namespace librealsense
         if (!_advanced.is_enabled())
             throw wrong_api_call_sequence_exception(to_string() << "set(advanced_mode_preset_option) failed! Device is not is Advanced-Mode.");
 
-        return _last_preset;
+        return static_cast<float>(_last_preset);
     }
 
     bool advanced_mode_preset_option::is_enabled() const
@@ -817,7 +826,7 @@ namespace librealsense
     const char* advanced_mode_preset_option::get_value_description(float val) const
     {
         try{
-            return _description_per_value.at(val).c_str();
+            return rs2_advanced_mode_preset_to_string(to_preset(val));
         }
         catch(std::out_of_range)
         {

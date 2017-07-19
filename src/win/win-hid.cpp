@@ -21,7 +21,6 @@
 #include <initguid.h>
 #include <propkeydef.h>
 #include <comutil.h>
-#include <iostream>
 
 #pragma comment(lib, "Sensorsapi.lib")
 #pragma comment(lib, "PortableDeviceGuids.lib")

@@ -115,7 +115,7 @@ namespace sql
         public:
             column_value operator[](int column) const
             {
-                assert_good(); 
+                assert_good();
                 return column_value(m_owner, column);
             }
         };
@@ -130,8 +130,8 @@ namespace sql
 
             friend class statement;
         public:
-            void operator++() 
-            { 
+            void operator++()
+            {
                 m_end = !m_owner->step();
             }
 

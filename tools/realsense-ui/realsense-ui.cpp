@@ -716,7 +716,7 @@ int main(int, char**) try
                         dev = nullptr;
                         model.reset();
 
-                        if (list.size() > 0)
+                        if(list.size() > 0)
                         {
                             dev = list[device_index];                  // Access first device
                             model = device_model(dev, error_message);  // Initialize device model
@@ -759,7 +759,6 @@ int main(int, char**) try
                             });
                         }
                     }
-
                 }
                 catch (const error& e)
                 {
@@ -1086,8 +1085,6 @@ int main(int, char**) try
 
             ImGui::End();
             ImGui::PopStyleColor();
-
-
             ImGui::PushStyleColor(ImGuiCol_WindowBg, { 0, 0, 0, 0 });
             ImGui::SetNextWindowPos({ stream_rect.x, stream_rect.y + stream_rect.h - 30 });
             ImGui::SetNextWindowSize({ stream_rect.w, 30 });

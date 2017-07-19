@@ -22,6 +22,7 @@ namespace librealsense
         _notifications_proccessor(std::shared_ptr<notifications_proccessor>(new notifications_proccessor())),
         _metadata_parsers(std::make_shared<metadata_parser_map>()),
         _on_before_frame_callback(nullptr),
+        _on_open(nullptr),
         _ts(ts)
     {
         register_option(RS2_OPTION_FRAMES_QUEUE_SIZE, _source.get_published_size_option());
@@ -187,27 +188,29 @@ namespace librealsense
             }
         }
 
-        for (auto& elem : unutilized_formats)
-        {
-            uint32_t device_fourcc = reinterpret_cast<const big_endian<uint32_t>&>(elem);
-            char fourcc[sizeof(device_fourcc) + 1];
-            librealsense::copy(fourcc, &device_fourcc, sizeof(device_fourcc));
-            fourcc[sizeof(device_fourcc)] = 0;
-            LOG_WARNING("Unutilized format " << fourcc);
-        }
-
-        if (!unutilized_formats.empty())
+        if (unutilized_formats.size())
         {
             std::stringstream ss;
+            ss << "Unused media formats : ";
+            for (auto& elem : unutilized_formats)
+            {
+                uint32_t device_fourcc = reinterpret_cast<const big_endian<uint32_t>&>(elem);
+                char fourcc[sizeof(device_fourcc) + 1];
+            librealsense::copy(fourcc, &device_fourcc, sizeof(device_fourcc));
+                fourcc[sizeof(device_fourcc)] = 0;
+                ss << fourcc << " ";
+            }
+
+            ss << "; Device-supported: ";
             for (auto& elem : supported_formats)
             {
                 uint32_t device_fourcc = reinterpret_cast<const big_endian<uint32_t>&>(elem);
                 char fourcc[sizeof(device_fourcc) + 1];
                 librealsense::copy(fourcc, &device_fourcc, sizeof(device_fourcc));
                 fourcc[sizeof(device_fourcc)] = 0;
-                ss << fourcc << std::endl;
+                ss << fourcc << " ";
             }
-            LOG_WARNING("\nDevice supported formats:\n" << ss.str());
+            LOG_WARNING(ss.str());
         }
 
         // Sort the results to make sure that the user will receive predictable deterministic output from the API
@@ -369,6 +372,10 @@ namespace librealsense
         {
             _configuration.push_back(mode.profile);
         }
+
+        if (_on_open)
+            _on_open(_configuration);
+
         _power = move(on);
         _is_opened = true;
 
@@ -424,7 +431,7 @@ namespace librealsense
             throw wrong_api_call_sequence_exception("start_streaming(...) failed. UVC device was not opened!");
 
         _source.set_callback(callback);
-        
+
         _is_streaming = true;
         _device->start_callbacks();
     }
@@ -450,6 +457,7 @@ namespace librealsense
 
     void uvc_sensor::acquire_power()
     {
+        std::lock_guard<std::mutex> lock(_power_lock);
         if (_user_count.fetch_add(1) == 0)
         {
             _device->set_power_state(platform::D0);
@@ -459,7 +467,11 @@ namespace librealsense
 
     void uvc_sensor::release_power()
     {
-        if (_user_count.fetch_add(-1) == 1) _device->set_power_state(platform::D3);
+        std::lock_guard<std::mutex> lock(_power_lock);
+        if (_user_count.fetch_add(-1) == 1)
+        {
+            _device->set_power_state(platform::D3);
+        }
     }
 
     bool info_container::supports_info(rs2_camera_info info) const
