@@ -58,31 +58,14 @@ bool stream_playback::get_file_version_from_file(uint32_t& version) const
 }
 
 stream_playback::stream_playback(const std::string &file_path) : 
-    m_frame_source(nullptr)
+    m_frame_source(nullptr),
+    m_file_path(file_path)
 {
     if (file_path.empty())
     {
         throw std::invalid_argument("file_path");
     }
-
-    m_file.open(file_path, rosbag::BagMode::Read);
-
-    uint32_t version = 0;
-    if(get_file_version_from_file(version) == false)
-    {
-        throw std::runtime_error("failed to read file version");
-    }
-
-    if(version != get_file_version())
-    {
-        throw std::runtime_error("unsupported file version");
-    }
-
-    m_samples_view = std::unique_ptr<rosbag::View>(new rosbag::View(m_file));
-    m_samples_itrator = m_samples_view->begin();
-    m_topics = get_topics(m_samples_view);
-    m_frame_source.init(nullptr);
-
+    reset();
 }
 
 status stream_playback::set_filter(std::vector<std::string> topics)
@@ -271,10 +254,6 @@ status stream_playback::read_next_sample(std::shared_ptr<ros_data_objects::sampl
         {
             sample = create_occupancy_map(sample_msg);
         }
-        else if(sample_msg.isType<rosgraph_msgs::Log>())
-        {
-            sample = create_log(sample_msg);
-        }
         else
         {
             continue;
@@ -390,7 +369,9 @@ std::shared_ptr<ros_data_objects::image> stream_playback::create_image(const ros
 
 
     frame_interface* frame = m_frame_source.alloc_frame(RS2_EXTENSION_TYPE_VIDEO_FRAME, msg->data.size(), additional_data, true);
-    
+    if (frame == nullptr)
+        return nullptr;
+
     librealsense::video_frame* video_frame = static_cast<librealsense::video_frame*>(frame);
     video_frame->assign(msg->width, msg->height, msg->step, msg->step / msg->width / 8); //TODO: Ziv, is bpp bytes or bits per pixel?
     video_frame->data = msg->data;
@@ -429,18 +410,6 @@ std::shared_ptr<ros_data_objects::image_stream_info> stream_playback::create_ima
     info.stream_extrinsics.reference_point_id = msg->stream_extrinsics.reference_point_id;
 
     return std::make_shared<ros_data_objects::image_stream_info>(info);
-}
-
-std::shared_ptr<ros_data_objects::log> stream_playback::create_log(const rosbag::MessageInstance &message) const
-{
-    rosgraph_msgs::LogPtr msg = message.instantiate<rosgraph_msgs::Log>();
-    ros_data_objects::log_info info = {};
-    info.level = msg->level;
-    info.message = msg->msg;
-    info.file = msg->file;
-    info.function = msg->function;
-    info.line =  msg->line;
-    return std::make_shared<ros_data_objects::log>(info);
 }
 
 std::shared_ptr<ros_data_objects::motion_sample> stream_playback::create_motion_sample(const rosbag::MessageInstance &message) const
@@ -618,4 +587,27 @@ status stream_playback::get_file_duration(file_types::nanoseconds& duration) con
     auto total_time = samples_view->getEndTime() - first_frame_time;
     duration = file_types::nanoseconds(total_time.toNSec());
     return status_no_error;
+}
+
+void stream_playback::reset()
+{
+    m_file.close();
+    m_file.open(m_file_path, rosbag::BagMode::Read);
+
+    uint32_t version = 0;
+    if (get_file_version_from_file(version) == false)
+    {
+        throw std::runtime_error("failed to read file version");
+    }
+
+    if (version != get_file_version())
+    {
+        throw std::runtime_error("unsupported file version");
+    }
+
+    m_samples_view = std::unique_ptr<rosbag::View>(new rosbag::View(m_file));
+    m_samples_itrator = m_samples_view->begin();
+    m_topics = get_topics(m_samples_view);
+    m_frame_source.reset();
+    m_frame_source.init(nullptr);
 }

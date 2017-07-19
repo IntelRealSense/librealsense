@@ -1195,7 +1195,7 @@ namespace rs2
     {
     public:
         using SensorType = sensor;
-
+        
         /**
         * returns the list of adjacent devices, sharing the same physical parent composite device
         * \return            the list of adjacent devices
@@ -1309,7 +1309,9 @@ namespace rs2
             T extension(*this);
             return extension;
         }
-
+        virtual ~device()
+        {
+        }
     protected:
         friend context;
         friend device_list;
@@ -1456,7 +1458,7 @@ namespace rs2
     class playback : public device
     {
     public:
-        playback(std::string file) :
+        playback(const std::string& file) :
             m_file(file)
         {
             rs2_error* e = nullptr;
@@ -1490,7 +1492,7 @@ namespace rs2
     class recorder : public device
     {
     public:
-        recorder(std::string file, rs2::device device) :
+        recorder(const std::string& file, rs2::device device) :
             m_file(file)
         {
             rs2_error* e = nullptr;
