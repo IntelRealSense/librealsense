@@ -1,11 +1,11 @@
 cmake_minimum_required(VERSION 2.8.9)
 project(realsense-file)
 
-include(3rd_party/config.cmake)
+include(config.cmake)
 
 FILE(GLOB_RECURSE AllSources
-        ${LZ4_DIR}/lib/lz4.h
-        ${LZ4_DIR}/lib/lz4.c
+        ${LZ4_DIR}/lz4.h
+        ${LZ4_DIR}/lz4.c
         ${BOOST_DIR}
         ${ROSBAG_DIR}/*.h
         ${ROSBAG_DIR}/*.cpp
@@ -19,15 +19,15 @@ include_directories(
         )
 
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
-source_group("Header Files\\3rd_party\\lz4" FILES
-        3rd_party/lz4/lib/lz4.h
+source_group("Header Files\\lz4" FILES
+        lz4/lz4.h
         )
-source_group("Source Files\\3rd_party\\lz4" FILES
-        3rd_party/lz4/lib/lz4.c
+source_group("Source Files\\lz4" FILES
+        lz4/lz4.c
         )
 
-source_group("Header Files\\3rd_party\\boost" REGULAR_EXPRESSION
-         3rd_party/boost/boost/*.hpp
+source_group("Header Files\\boost" REGULAR_EXPRESSION
+         boost/boost/*.hpp
         )
 
 add_library(${PROJECT_NAME} STATIC

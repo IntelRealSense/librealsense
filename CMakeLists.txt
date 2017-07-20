@@ -238,7 +238,7 @@ set(REALSENSE_HPP
 )
 
 # Add additional include directories to allow file to include rosbag headers
-include(${CMAKE_CURRENT_LIST_DIR}/third-party/realsense-file/3rd_party/config.cmake)
+include(${CMAKE_CURRENT_LIST_DIR}/third-party/realsense-file/config.cmake)
 include_directories(
         ${ROSBAG_HEADER_DIRS}
         ${BOOST_INCLUDE_PATH}
