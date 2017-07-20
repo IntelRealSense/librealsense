@@ -340,11 +340,12 @@ namespace librealsense
 
 
 
+        struct request_mapping;
 
         class uvc_device
         {
         public:
-            virtual void probe_and_commit(stream_profile profile, frame_callback callback, int buffers = DEFAULT_FRAME_BUFFERS) = 0;
+            virtual void probe_and_commit( stream_profile profile, bool zero_copy,  frame_callback callback, int buffers = DEFAULT_FRAME_BUFFERS) = 0;
             virtual void stream_on(std::function<void(const notification& n)> error_handler = [](const notification& n){}) = 0;
             virtual void start_callbacks() = 0;
             virtual void stop_callbacks() = 0;
@@ -382,9 +383,9 @@ namespace librealsense
             explicit retry_controls_work_around(std::shared_ptr<uvc_device> dev)
                 : _dev(dev) {}
 
-            void probe_and_commit(stream_profile profile, frame_callback callback, int buffers) override
+            void probe_and_commit( stream_profile profile, bool zero_copy,  frame_callback callback, int buffers) override
             {
-                _dev->probe_and_commit(profile, callback, buffers);
+                _dev->probe_and_commit(profile, zero_copy, callback, buffers);
             }
 
             void stream_on(std::function<void(const notification& n)> error_handler = [](const notification& n){}) override
@@ -631,12 +632,13 @@ namespace librealsense
                 : _dev(dev)
             {}
 
-            void probe_and_commit(stream_profile profile, frame_callback callback, int buffers) override
+            void probe_and_commit( stream_profile profile, bool zero_copy,  frame_callback callback, int buffers) override
             {
                 auto dev_index = get_dev_index_by_profiles(profile);
                 _configured_indexes.insert(dev_index);
-                _dev[dev_index]->probe_and_commit(profile, callback, buffers);
+                _dev[dev_index]->probe_and_commit(profile, zero_copy, callback, buffers);
             }
+
 
             void stream_on(std::function<void(const notification& n)> error_handler = [](const notification& n){}) override
             {

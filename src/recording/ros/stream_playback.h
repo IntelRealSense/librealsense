@@ -14,7 +14,6 @@
 #include "recording/ros/data_objects/property.h"
 #include "recording/ros/data_objects/pose.h"
 #include "recording/ros/data_objects/occupancy_map.h"
-#include "recording/ros/data_objects/log.h"
 #include "rosbag/view.h"
 #include "source.h"
 
@@ -97,12 +96,13 @@ namespace rs
              * @return status_no_error on successful execution
              */
             status get_file_duration(file_types::nanoseconds& duration) const;
+            void reset();
 
         private:
             std::shared_ptr<ros_data_objects::compressed_image> create_compressed_image(const rosbag::MessageInstance &image_data) const;
             std::shared_ptr<ros_data_objects::image> create_image(const rosbag::MessageInstance &image_data) const;
             std::shared_ptr<ros_data_objects::image_stream_info> create_image_stream_info(const rosbag::MessageInstance &info_msg) const;
-            std::shared_ptr<ros_data_objects::log> create_log(const rosbag::MessageInstance &message) const;
+            
             std::shared_ptr<ros_data_objects::motion_sample> create_motion_sample(const rosbag::MessageInstance &message) const;
             std::shared_ptr<ros_data_objects::motion_stream_info> create_motion_info(const rosbag::MessageInstance &message) const;
             std::shared_ptr<ros_data_objects::occupancy_map> create_occupancy_map(const rosbag::MessageInstance &message) const;
@@ -120,6 +120,7 @@ namespace rs
             mutable std::mutex              m_mutex;
             std::vector<std::string>        m_topics;
             std::atomic<uint32_t> m_max_frame_queue_size;
+            std::string m_file_path;
         };
     }
 }

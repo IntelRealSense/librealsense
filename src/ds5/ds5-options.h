@@ -32,7 +32,7 @@ namespace librealsense
 
     private:
         uvc_sensor&                 _ep;
-        rs2_option                    _option;
+        rs2_option                  _option;
     };
 
     class motion_module_temperature_option : public readonly_option

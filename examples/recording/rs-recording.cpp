@@ -58,7 +58,7 @@ int main(int argc, const char** argv) try
     }
     else
     {
-        throw std::runtime_error(modes.description() + " is not a supported mode");
+        throw std::runtime_error(nameArg.getValue() + " is not a supported mode");
     }
 
     std::cout << "Device: " << device.get_info(RS2_CAMERA_INFO_NAME) << std::endl;
@@ -71,7 +71,8 @@ int main(int argc, const char** argv) try
         rs2::stream_profile{ RS2_STREAM_COLOR, 640, 480, 30, RS2_FORMAT_RGBA8 }
     };
 
-    std::vector<sensor> m_playing_sensors; //will hold the sensors that are playing
+    std::vector<sensor> streaming_sensors; //will hold the sensors that are playing
+
     int sensor_id = 0;
     //Go over the sensors and open start streaming
     for (auto&& sensor : device.query_sensors())
@@ -97,11 +98,15 @@ int main(int argc, const char** argv) try
             //This sensor does not support any of the requested profiles
             continue;
         }
+        sensor.set_notifications_callback([](notification n)
+        {
+            std::cout << "Nofication: " << n.get_description() << std::endl;
+        });
         sensor.open(profiles_to_play_for_this_sensor);
         sensor.start([](rs2::frame f) {
             std::cout << rs2_stream_to_string(f.get_stream_type()) << " frame #" << f.get_frame_number() <<  std::endl;
         });
-        m_playing_sensors.push_back(sensor);
+        streaming_sensors.push_back(sensor);
         try
         {
             roi_sensor x(sensor);
@@ -114,7 +119,7 @@ int main(int argc, const char** argv) try
 
     std::this_thread::sleep_for(std::chrono::seconds(10));
 
-    for(auto sensor : m_playing_sensors)
+    for(auto sensor : streaming_sensors)
     {
         sensor.stop();
         sensor.close();

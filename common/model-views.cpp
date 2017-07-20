@@ -708,6 +708,43 @@ namespace rs2
         }
     }
 
+    void subdevice_model::draw_options(const std::vector<rs2_option>& drawing_order,
+                                       bool update_read_only_options, std::string& error_message)
+    {
+        for (auto& opt : drawing_order)
+        {
+            draw_option(opt, update_read_only_options, error_message);
+        }
+
+        for (auto i = 0; i < RS2_OPTION_COUNT; i++)
+        {
+            auto opt = static_cast<rs2_option>(i);
+            if(std::find(drawing_order.begin(), drawing_order.end(), opt) == drawing_order.end())
+            {
+                draw_option(opt, update_read_only_options, error_message);
+            }
+        }
+    }
+
+    void subdevice_model::draw_option(rs2_option opt, bool update_read_only_options,
+                                      std::string& error_message)
+    {
+        auto&& metadata = options_metadata[opt];
+        if (update_read_only_options)
+        {
+            metadata.update_supported(error_message);
+            if (metadata.supported && streaming)
+            {
+                metadata.update_read_only(error_message);
+                if (metadata.read_only)
+                {
+                    metadata.update_all(error_message);
+                }
+            }
+        }
+        metadata.draw(error_message);
+    }
+
     stream_model::stream_model()
         : texture ( std::unique_ptr<texture_buffer>(new texture_buffer()))
     {}
@@ -996,6 +1033,7 @@ namespace rs2
     {
         subdevices.resize(0);
         streams.clear();
+        _recorder.reset();
     }
 
     device_model::device_model(device& dev, std::string& error_message)
@@ -1101,6 +1139,56 @@ namespace rs2
     {
         auto stream_type = f.get_stream_type();
         streams[stream_type].upload_frame(std::move(f));
+    }
+
+    void device_model::start_recording(device& dev, const std::string& path, std::string& error_message)
+    {
+        if (_recorder != nullptr)
+        {
+            return; //already recording
+        }
+        
+        _recorder = std::make_shared<recorder>(path, dev);
+        live_subdevices = subdevices;
+        subdevices.clear();
+        for (auto&& sub : _recorder->query_sensors())
+        {
+            auto model = std::make_shared<subdevice_model>(dev, sub, error_message);
+            subdevices.push_back(model);
+        }
+		assert(live_subdevices.size() == subdevices.size());
+	    for(int i=0; i< live_subdevices.size(); i++)
+	    {
+			//TODO: change this
+			subdevices[i]->selected_res_id = live_subdevices[i]->selected_res_id;
+			subdevices[i]->selected_shared_fps_id = live_subdevices[i]->selected_shared_fps_id;
+			subdevices[i]->selected_format_id = live_subdevices[i]->selected_format_id;
+			subdevices[i]->show_single_fps_list = live_subdevices[i]->show_single_fps_list;
+			subdevices[i]->fpses_per_stream = live_subdevices[i]->fpses_per_stream;
+			subdevices[i]->selected_fps_id = live_subdevices[i]->selected_fps_id;
+			subdevices[i]->stream_enabled = live_subdevices[i]->stream_enabled;
+			subdevices[i]->fps_values_per_stream = live_subdevices[i]->fps_values_per_stream;
+			subdevices[i]->format_values = live_subdevices[i]->format_values;
+	    }
+    }
+
+    void device_model::stop_recording()
+    {
+        subdevices.clear();
+        subdevices = live_subdevices;
+        live_subdevices.clear();
+        //this->streams.clear();
+        _recorder.reset();
+    }
+
+    void device_model::pause_record()
+    {
+        _recorder->pause();
+    }
+
+    void device_model::resume_record()
+    {
+        _recorder->resume();
     }
 
     std::map<rs2_stream, rect> device_model::get_interpolated_layout(const std::map<rs2_stream, rect>& l)

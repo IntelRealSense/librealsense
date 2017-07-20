@@ -2,7 +2,6 @@ cmake_minimum_required(VERSION 2.8.3)
 
 set(HEADER_FILES_ROSTIME
   ${CMAKE_CURRENT_LIST_DIR}/include/ros/duration.h
-  ${CMAKE_CURRENT_LIST_DIR}/include/ros/impl
   ${CMAKE_CURRENT_LIST_DIR}/include/ros/rate.h
   ${CMAKE_CURRENT_LIST_DIR}/include/ros/rostime_decl.h
   ${CMAKE_CURRENT_LIST_DIR}/include/ros/time.h

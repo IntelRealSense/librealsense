@@ -250,11 +250,12 @@ namespace librealsense
         auto timestamp_reader = _timestamp_reader.get();
 
         std::vector<request_mapping> commited;
-        for (auto& mode : mapping)
+
+        for (auto&& mode : mapping)
         {
             try
             {
-                _device->probe_and_commit(mode.profile,
+                _device->probe_and_commit(mode.profile, !mode.requires_processing(),
                 [this, mode, timestamp_reader, requests](platform::stream_profile p, platform::frame_object f, std::function<void()> continuation) mutable
                 {
 
@@ -358,7 +359,8 @@ namespace librealsense
                         _source.invoke_callback(std::move(pref));
                     }
                  }
-                }, static_cast<int>(_source.get_published_size_option()->query()));
+                },
+                static_cast<int>(_source.get_published_size_option()->query()));
             }
             catch(...)
             {

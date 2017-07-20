@@ -40,7 +40,7 @@ namespace librealsense
             for (int i = 0; i < composite->get_embedded_frames_count(); i++)
             {
                 auto matched = composite->get_frame(i);
-                ss << matched->get_stream_type() << " " << matched->get_frame_number() << ", ";
+                ss << matched->get_stream_type() << " " << matched->get_frame_number() << ", "<< matched->get_frame_timestamp();
             }
             LOG_WARNING(ss.str());
             env.matches.enqueue(std::move(f));
@@ -257,7 +257,7 @@ namespace librealsense
             if (synced_frames.size())
             {
                 std::stringstream ss;
-                ss << "DispatchSyncFrame: " << this << " ";
+                //ss << "DispatchSyncFrame: " << this << " ";
                 std::vector<frame_holder> match;
                 match.reserve(synced_frames.size());
 
@@ -276,7 +276,7 @@ namespace librealsense
                     match.push_back(std::move(frame));
                 }
 
-                LOG_DEBUG(ss.str());
+                //LOG_DEBUG(ss.str());
                 //std::cout << ss.str() << "\n";
 
                 frame_holder composite = env.source->allocate_composite_frame(std::move(match));
@@ -370,6 +370,6 @@ namespace librealsense
         auto res = std::abs(a - b);
         std::cout << "GAP: " << res << "\n";
         auto res1 = res < gap;
-        return std::abs(a - b )< gap ;
+        return std::abs(a - b )< (gap/2) ;
     }
 }
