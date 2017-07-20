@@ -22,7 +22,6 @@ namespace librealsense
 			} )
         {
         }
-
         std::shared_ptr<writer> get_writer() override
         {
             return *m_writer;

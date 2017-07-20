@@ -226,6 +226,10 @@ namespace rs2
         void stop();
         void play(const std::vector<stream_profile>& profiles);
         void update(std::string& error_message);
+        void draw_options(const std::vector<rs2_option>& drawing_order,
+                          bool update_read_only_options, std::string& error_message);
+        void draw_option(rs2_option opt, bool update_read_only_options,
+                         std::string& error_message);
 
         bool is_paused() const;
         void pause();
@@ -341,6 +345,10 @@ namespace rs2
         void draw_device_details(device& dev);
         std::map<rs2_stream, rect> calc_layout(float x0, float y0, float width, float height);
         void upload_frame(frame&& f);
+        void start_recording(device& dev, const std::string& path, std::string& error_message);
+        void stop_recording();
+        void pause_record();
+        void resume_record();
 
         std::vector<std::shared_ptr<subdevice_model>> subdevices;
         std::map<rs2_stream, stream_model> streams;
@@ -354,6 +362,8 @@ namespace rs2
         streams_layout _layout;
         streams_layout _old_layout;
         std::chrono::high_resolution_clock::time_point _transition_start_time;
+        std::shared_ptr<recorder> _recorder;
+        std::vector<std::shared_ptr<subdevice_model>> live_subdevices;
     };
 
 

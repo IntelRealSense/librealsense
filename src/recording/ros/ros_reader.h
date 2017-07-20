@@ -55,6 +55,7 @@ namespace librealsense
         }
         void reset() override
         {
+            m_stream_playback.reset();
             m_first_frame_time = FIRST_FRAME_TIMESTAMP;
             m_device_description = read_metadata();
         }

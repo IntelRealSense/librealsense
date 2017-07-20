@@ -26,6 +26,69 @@ struct user_data
     mouse_info* mouse = nullptr;
 };
 
+class DragDropManager
+{
+    static std::string get_file_name(const std::string& path)
+    {
+        std::string file_name;
+        for (auto rit = path.rbegin(); rit != path.rend(); ++rit)
+        {
+            if(*rit == '\\' || *rit == '/')
+                break;
+            file_name += *rit;
+        }
+        std::reverse(file_name.begin(), file_name.end());
+        return file_name;
+    }
+    std::function<void(const std::string&)> device_added_handler = [](const std::string& s){ /*Do nothing*/};
+public:
+    std::map<std::string, playback> playback_devices;
+    std::vector<std::string> files;
+    std::vector<std::string> devices_names;
+
+    void add(const std::string& path)
+    {
+        if(playback_devices.find(path) != playback_devices.end())
+        {
+            return; //already exists
+        }
+        try
+        {
+            auto p = playback(path);
+            files.push_back(path);
+            std::string dev_name;
+            if (p.supports(RS2_CAMERA_INFO_NAME))
+                dev_name = to_string() << "Playback file \"" << get_file_name(path) << "\" (" << p.get_info(RS2_CAMERA_INFO_NAME) << ")";
+            else
+                dev_name = to_string() << "Playback file \"" << get_file_name(path) << "\"";
+            
+            devices_names.push_back(dev_name);
+            playback_devices.emplace(std::make_pair(path, std::move(p)));
+            device_added_handler(dev_name);
+        }
+        catch(std::exception& e)
+        {
+            std::cerr << "Failed to create playback from file: " << path << ". Reason: " << e.what() << std::endl;
+        }
+    }
+
+    void OnPlaybackDeviceAdded(std::function<void(const std::string&)> handle)
+    {
+        device_added_handler = handle;
+    }
+};
+DragDropManager drag_drop_manager;
+
+void handle_dropped_file(GLFWwindow* window, int count, const char** paths)
+{
+    if (count <= 0)
+        return;
+
+    for (int i = 0; i < count; i++)
+    {
+        drag_drop_manager.add(paths[i]);
+    }
+}
 std::vector<std::string> get_device_info(const device& dev, bool include_location = true)
 {
     std::vector<std::string> res;
@@ -37,8 +100,8 @@ std::vector<std::string> get_device_info(const device& dev, bool include_locatio
         // or because of switch into advanced mode,
         // we don't want to capture the info that is about to change
         if ((info == RS2_CAMERA_INFO_LOCATION ||
-             info == RS2_CAMERA_INFO_ADVANCED_MODE)
-                && !include_location) continue;
+            info == RS2_CAMERA_INFO_ADVANCED_MODE)
+            && !include_location) continue;
 
         if (dev.supports(info))
         {
@@ -52,7 +115,7 @@ std::vector<std::string> get_device_info(const device& dev, bool include_locatio
 std::string get_device_name(device& dev)
 {
     // retrieve device name
-    std::string name = (dev.supports(RS2_CAMERA_INFO_NAME))? dev.get_info(RS2_CAMERA_INFO_NAME) : "Unknown";
+    std::string name = (dev.supports(RS2_CAMERA_INFO_NAME)) ? dev.get_info(RS2_CAMERA_INFO_NAME) : "Unknown";
 
     // retrieve device serial number
     std::string serial = (dev.supports(RS2_CAMERA_INFO_SERIAL_NUMBER)) ? dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER) : "Unknown";
@@ -78,48 +141,53 @@ std::vector<std::string> get_devices_names(const device_list& list)
             device_names.push_back(to_string() << "Unknown Device #" << i);
         }
     }
+    //Adding playback devices
+    device_names.insert(device_names.end(), drag_drop_manager.devices_names.begin(), drag_drop_manager.devices_names.end());
     return device_names;
 }
 
-int find_device_index(const device_list& list ,std::vector<std::string> device_info)
+int find_device_index(const device_list& list, std::vector<std::string> device_info)
 {
     std::vector<std::vector<std::string>> devices_info;
 
-    for (auto l:list)
+    for (auto l : list)
     {
         devices_info.push_back(get_device_info(l));
     }
 
-    auto it = std::find(devices_info.begin(),devices_info.end(), device_info);
+    auto it = std::find(devices_info.begin(), devices_info.end(), device_info);
     return std::distance(devices_info.begin(), it);
 }
 
 void draw_general_tab(device_model& model, device_list& list,
-                      device& dev, std::string& label, bool hw_reset_enable,
-                      std::vector<std::string>& restarting_info,
-                      bool update_read_only_options, std::string& error_message)
+    device& dev, std::string& label, bool hw_reset_enable,
+    std::vector<std::string>& restarting_info,
+    bool update_read_only_options, std::string& error_message)
 {
     const float stream_all_button_width = 300;
-
+    static bool is_recording = false;
+    static char input_file_name[256] = "recorded_streams.bag";
 
     // Streaming Menu - Allow user to play different streams
-    if (list.size()>0 && ImGui::CollapsingHeader("Streaming", nullptr, true, true))
+    if ((drag_drop_manager.playback_devices.empty() == false || list.size()>0) 
+        && ImGui::CollapsingHeader("Streaming", nullptr, true, true))
     {
         if (model.subdevices.size() > 1)
         {
             try
             {
-                auto anything_stream = false;
-                for (auto&& sub : model.subdevices)
-                {
-                    if (sub->streaming) anything_stream = true;
-                }
+                auto anything_stream = std::any_of(model.subdevices.begin(), model.subdevices.end(), [](std::shared_ptr<subdevice_model> sub) {
+                    return sub->streaming;
+                });
                 if (!anything_stream)
                 {
                     label = to_string() << "Start All";
-
                     if (ImGui::Button(label.c_str(), { stream_all_button_width, 0 }))
                     {
+                        if (is_recording)
+                        {
+							model.start_recording(dev, input_file_name, error_message);
+                        }
                         for (auto&& sub : model.subdevices)
                         {
                             if (sub->is_selected_combination_supported())
@@ -133,11 +201,15 @@ void draw_general_tab(device_model& model, device_list& list,
                                 }
                             }
                         }
-
                     }
                     if (ImGui::IsItemHovered())
                     {
                         ImGui::SetTooltip("Start streaming from all subdevices");
+                    }
+                    ImGui::Checkbox("Enable Recording", &is_recording);
+                    if (is_recording)
+                    {
+                        ImGui::Text("Save to:"); ImGui::InputText("file_path", input_file_name, 256, ImGuiInputTextFlags_CharsNoBlank);
                     }
                 }
                 else
@@ -149,6 +221,21 @@ void draw_general_tab(device_model& model, device_list& list,
                         for (auto&& sub : model.subdevices)
                         {
                             if (sub->streaming) sub->stop();
+                        }
+                        if (is_recording)
+                        {
+                            model.stop_recording();
+                            for (auto&& sub : model.subdevices)
+                            {
+                                if (sub->is_selected_combination_supported())
+                                {
+                                    auto profiles = sub->get_selected_profiles();
+                                    for (auto&& profile : profiles)
+                                    {
+                                        model.streams[profile.stream].dev = sub;
+                                    }
+                                }
+                            }
                         }
                     }
                     if (ImGui::IsItemHovered())
@@ -197,14 +284,35 @@ void draw_general_tab(device_model& model, device_list& list,
                             ImGui::SetTooltip("Freeze the UI on the current frame. The camera will continue to work in the background");
                         }
                     }
-
+                    if (ImGui::CollapsingHeader("Recording Options", &is_recording))
+                    {
+                        static bool is_paused = false;
+                        if (!is_paused && ImGui::Button("Pause"))
+                        {
+                            model.pause_record();
+                            is_paused = !is_paused;
+                        }
+                        if (ImGui::IsItemHovered())
+                        {
+                            ImGui::SetTooltip("Pause recording to file, Streaming will continue");
+                        }
+                        if (is_paused && ImGui::Button("Resume"))
+                        {
+                            model.resume_record();
+                            is_paused = !is_paused;
+                        }
+                        if (ImGui::IsItemHovered())
+                        {
+                            ImGui::SetTooltip("Continue recording");
+                        }
+                    }
                 }
             }
-            catch(const error& e)
+            catch (const error& e)
             {
                 error_message = error_to_string(e);
             }
-            catch(const std::exception& e)
+            catch (const std::exception& e)
             {
                 error_message = e.what();
             }
@@ -229,6 +337,10 @@ void draw_general_tab(device_model& model, device_list& list,
                         {
                             if (ImGui::Button(label.c_str(), { stream_all_button_width, 0 }))
                             {
+                                if (is_recording)
+                                {
+                                    model.start_recording(dev, input_file_name, error_message);
+                                }
                                 auto profiles = sub->get_selected_profiles();
                                 sub->play(profiles);
 
@@ -253,6 +365,7 @@ void draw_general_tab(device_model& model, device_list& list,
                         if (ImGui::Button(label.c_str(), { stream_all_button_width / 2 - 5, 0 }))
                         {
                             sub->stop();
+                            //TODO: stop recording if all are stopped
                         }
                         if (ImGui::IsItemHovered())
                         {
@@ -287,14 +400,21 @@ void draw_general_tab(device_model& model, device_list& list,
                         }
                     }
                 }
-                catch(const error& e)
+                catch (const error& e)
                 {
                     error_message = error_to_string(e);
                 }
-                catch(const std::exception& e)
+                catch (const std::exception& e)
                 {
                     error_message = e.what();
                 }
+
+                static const std::vector<rs2_option> options_order{RS2_OPTION_ADVANCED_MODE_PRESET,
+                                                                   RS2_OPTION_ENABLE_AUTO_EXPOSURE,
+                                                                   RS2_OPTION_EXPOSURE,
+                                                                   RS2_OPTION_EMITTER_ENABLED,
+                                                                   RS2_OPTION_LASER_POWER};
+                sub->draw_options(options_order, update_read_only_options, error_message);
 
                 auto&& de_opt = sub->options_metadata[RS2_OPTION_DEPTH_UNITS];
                 if (de_opt.supported)
@@ -324,26 +444,6 @@ void draw_general_tab(device_model& model, device_list& list,
                         }
                     }
                 }
-
-
-                for (auto i = 0; i < RS2_OPTION_COUNT; i++)
-                {
-                    auto opt = static_cast<rs2_option>(i);
-                    auto&& metadata = sub->options_metadata[opt];
-                    if (update_read_only_options)
-                    {
-                        metadata.update_supported(error_message);
-                        if (metadata.supported && sub->streaming)
-                        {
-                            metadata.update_read_only(error_message);
-                            if (metadata.read_only)
-                            {
-                                metadata.update_all(error_message);
-                            }
-                        }
-                    }
-                    metadata.draw(error_message);
-                }
             }
             ImGui::Text("\n");
         }
@@ -356,18 +456,18 @@ void draw_general_tab(device_model& model, device_list& list,
         const float hardware_reset_button_width = 300;
         const float hardware_reset_button_height = 0;
 
-        if (ImGui::ButtonEx(label.c_str(), { hardware_reset_button_width, hardware_reset_button_height }, hw_reset_enable?0:ImGuiButtonFlags_Disabled))
+        if (ImGui::ButtonEx(label.c_str(), { hardware_reset_button_width, hardware_reset_button_height }, hw_reset_enable ? 0 : ImGuiButtonFlags_Disabled))
         {
             try
             {
                 restarting_info = get_device_info(dev, false);
                 dev.hardware_reset();
             }
-            catch(const error& e)
+            catch (const error& e)
             {
                 error_message = error_to_string(e);
             }
-            catch(const std::exception& e)
+            catch (const std::exception& e)
             {
                 error_message = e.what();
             }
@@ -387,8 +487,8 @@ void draw_general_tab(device_model& model, device_list& list,
 }
 
 void draw_advanced_mode_tab(device& dev, advanced_mode_control& amc,
-                            std::vector<std::string>& restarting_info,
-                            bool& get_curr_advanced_controls)
+    std::vector<std::string>& restarting_info,
+    bool& get_curr_advanced_controls)
 {
     auto is_advanced_mode = dev.is<advanced_mode>();
 
@@ -399,18 +499,18 @@ void draw_advanced_mode_tab(device& dev, advanced_mode_control& amc,
             if (!is_advanced_mode)
             {
                 // TODO: Why are we showing the tab then??
-                ImGui::TextColored(ImVec4{1.0f, 0.0f, 0.0f, 1.0f}, "Selected device does not offer\nany advanced settings");
+                ImGui::TextColored(ImVec4{ 1.0f, 0.0f, 0.0f, 1.0f }, "Selected device does not offer\nany advanced settings");
             }
 
             auto advanced = dev.as<advanced_mode>();
             if (advanced.is_enabled())
             {
-                if (ImGui::Button("Disable Advanced Mode", ImVec2{290, 0}))
+                if (ImGui::Button("Disable Advanced Mode", ImVec2{ 290, 0 }))
                 {
                     //if (yes_no_dialog()) // TODO
                     //{
-                        advanced.toggle_advanced_mode(false);
-                        restarting_info = get_device_info(dev, false);
+                    advanced.toggle_advanced_mode(false);
+                    restarting_info = get_device_info(dev, false);
                     //}
                 }
                 if (ImGui::IsItemHovered())
@@ -425,24 +525,23 @@ void draw_advanced_mode_tab(device& dev, advanced_mode_control& amc,
                 {
                     //if (yes_no_dialog()) // TODO
                     //{
-                        advanced.toggle_advanced_mode(true);
-                        restarting_info = get_device_info(dev, false);
+                    advanced.toggle_advanced_mode(true);
+                    restarting_info = get_device_info(dev, false);
                     //}
                 }
                 if (ImGui::IsItemHovered())
                 {
                     ImGui::SetTooltip("Advanced mode is a persistent camera state unlocking calibration formats and depth generation controls\nYou can always reset the camera to factory defaults by disabling advanced mode");
                 }
-                ImGui::TextColored(ImVec4{1.0f, 0.0f, 0.0f, 1.0f}, "Device is not in advanced mode!\nTo access advanced functionality\nclick \"Enable Advanced Mode\"");
+                ImGui::TextColored(ImVec4{ 1.0f, 0.0f, 0.0f, 1.0f }, "Device is not in advanced mode!\nTo access advanced functionality\nclick \"Enable Advanced Mode\"");
             }
         }
-        catch(...)
+        catch (...)
         {
             // TODO
         }
     }
 }
-
 
 int main(int, char**) try
 {
@@ -472,24 +571,33 @@ int main(int, char**) try
     // The list of errors the user asked not to show again:
     std::set<std::string> errors_not_to_show;
     bool dont_show_this_error = false;
-    auto simplify_error_message = [](const std::string& s){
-        std::regex e ("\\b(0x)([^ ,]*)");
-        return std::regex_replace(s,e,"address");
+    auto simplify_error_message = [](const std::string& s) {
+        std::regex e("\\b(0x)([^ ,]*)");
+        return std::regex_replace(s, e, "address");
     };
 
     notifications_model not_model;
-    std::string error_message{""};
+    std::string error_message{ "" };
     notification_model selected_notification;
     // Initialize list with each device name and serial number
-    std::string label{""};
+    std::string label{ "" };
+
+    drag_drop_manager.OnPlaybackDeviceAdded([&refresh_device_list,&not_model](const std::string& device_name)
+    {
+        not_model.add_notification({ to_string() << "Device Added: " << device_name,
+            std::chrono::duration_cast<std::chrono::duration<double, std::micro>>(std::chrono::high_resolution_clock::now().time_since_epoch()).count(),
+            RS2_LOG_SEVERITY_INFO,
+            RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR });
+        refresh_device_list = true;
+    });
 
     mouse_info mouse;
 
     user_data data;
     data.curr_window = window;
     data.mouse = &mouse;
-
-
+    
+    glfwSetDropCallback(window, handle_dropped_file);
     glfwSetWindowUserPointer(window, &data);
 
     glfwSetCursorPosCallback(window, [](GLFWwindow* w, double cx, double cy)
@@ -515,43 +623,43 @@ int main(int, char**) try
     std::vector<device> devs;
     std::mutex m;
 
-    auto timestamp =  std::chrono::duration<double, std::milli>(std::chrono::system_clock::now().time_since_epoch()).count();
+    auto timestamp = std::chrono::duration<double, std::milli>(std::chrono::system_clock::now().time_since_epoch()).count();
 
     ctx.set_devices_changed_callback([&](event_information& info)
     {
-        timestamp =  std::chrono::duration<double, std::milli>(std::chrono::system_clock::now().time_since_epoch()).count();
+        timestamp = std::chrono::duration<double, std::milli>(std::chrono::system_clock::now().time_since_epoch()).count();
 
         std::lock_guard<std::mutex> lock(m);
 
-        for(auto dev:devs)
+        for (auto dev : devs)
         {
-            if(info.was_removed(dev))
+            if (info.was_removed(dev))
             {
 
-                not_model.add_notification({get_device_name(dev) + " Disconnected\n",
-                                            timestamp,
-                                            RS2_LOG_SEVERITY_INFO,
-                                            RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR});
+                not_model.add_notification({ get_device_name(dev) + " Disconnected\n",
+                    timestamp,
+                    RS2_LOG_SEVERITY_INFO,
+                    RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR });
             }
         }
 
 
-        if(info.was_removed(dev))
+        if (info.was_removed(dev))
         {
             dev_exist = false;
         }
 
         try
         {
-            for(auto dev:info.get_new_devices())
+            for (auto dev : info.get_new_devices())
             {
-                not_model.add_notification({get_device_name(dev) + " Connected\n",
-                                            timestamp,
-                                            RS2_LOG_SEVERITY_INFO,
-                                            RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR});
+                not_model.add_notification({ get_device_name(dev) + " Connected\n",
+                    timestamp,
+                    RS2_LOG_SEVERITY_INFO,
+                    RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR });
             }
         }
-        catch(...)
+        catch (...)
         {
 
         }
@@ -573,7 +681,7 @@ int main(int, char**) try
         {
             std::lock_guard<std::mutex> lock(m);
 
-            if(refresh_device_list)
+            if (refresh_device_list)
             {
                 refresh_device_list = false;
 
@@ -582,14 +690,14 @@ int main(int, char**) try
                     list = ctx.query_devices();
 
                     device_names = get_devices_names(list);
-
-                    for(auto dev: devs)
+                    
+                    for (auto dev : devs)
                     {
                         dev = nullptr;
                     }
                     devs.clear();
 
-                    if(!dev_exist)
+                    if (!dev_exist)
                     {
                         device_index = 0;
                         dev = nullptr;
@@ -633,9 +741,9 @@ int main(int, char**) try
                         for (auto&& s : sub.query_sensors())
                         {
                             s.set_notifications_callback([&](const notification& n)
-                                                       {
-                                                           not_model.add_notification({n.get_description(), n.get_timestamp(), n.get_severity(), n.get_category()});
-                                                       });
+                            {
+                                not_model.add_notification({ n.get_description(), n.get_timestamp(), n.get_severity(), n.get_category() });
+                            });
                         }
                     }
                 }
@@ -685,26 +793,25 @@ int main(int, char**) try
         rs2_error* e = nullptr;
         label = to_string() << "VERSION: " << api_version_to_string(rs2_get_api_version(&e));
         ImGui::Text("%s", label.c_str());
-
-        if (list.size() > 0)
+        bool any_device_exists = (list.size() > 0 || drag_drop_manager.playback_devices.empty() == false);
+        if (any_device_exists)
         {
             // Draw 3 tabs
-            const char* tabs[] = {"General", "Advanced"};
+            const char* tabs[] = { "General", "Advanced" };
             if (ImGui::TabLabels(tabs, 2, tab_index))
                 last_tab_index = tab_index;
         }
 
-        if (list.size() == 0)
+        if (any_device_exists == false)
         {
             ImGui::Text("No device detected.");
         }
         // Device Details Menu - Elaborate details on connected devices
-        if (list.size() > 0 && ImGui::CollapsingHeader("Device Details", nullptr, true, true))
+        if (any_device_exists > 0 && ImGui::CollapsingHeader("Device Details", nullptr, true, true))
         {
-            // Draw a combo-box with the list of connected devices
-
-
+            // Draw a combo-box with the list of connected devices        
             auto new_index = device_index;
+            
             if (model.draw_combo_box(device_names, new_index))
             {
                 for (auto&& sub : model.subdevices)
@@ -715,7 +822,17 @@ int main(int, char**) try
 
                 try
                 {
-                    dev = list[new_index];
+                    if (new_index < list.size())
+                    {
+                        dev = list[new_index];
+                    }
+                    else                          
+                    {                            
+                        int playback_devices_index = new_index - list.size();
+                        auto it = drag_drop_manager.playback_devices.begin();
+                        std::advance(it, playback_devices_index);
+                        dev = it->second;
+                    }
                     device_index = new_index;
                     model = device_model(dev, error_message);
                     active_device_info = get_device_info(dev);
@@ -752,10 +869,10 @@ int main(int, char**) try
         {
             if (errors_not_to_show.count(simplify_error_message(error_message)))
             {
-                not_model.add_notification({error_message,
-                                            std::chrono::duration<double, std::milli>(std::chrono::system_clock::now().time_since_epoch()).count(),
-                                            RS2_LOG_SEVERITY_ERROR,
-                                            RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR});
+                not_model.add_notification({ error_message,
+                    std::chrono::duration<double, std::milli>(std::chrono::system_clock::now().time_since_epoch()).count(),
+                    RS2_LOG_SEVERITY_ERROR,
+                    RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR });
                 error_message = "";
             }
             else
@@ -802,12 +919,12 @@ int main(int, char**) try
                         model.upload_frame(std::move(f));
                     }
                 }
-                catch(const error& e)
+                catch (const error& e)
                 {
                     error_message = error_to_string(e);
-                     sub->stop();
+                    sub->stop();
                 }
-                catch(const std::exception& e)
+                catch (const std::exception& e)
                 {
                     error_message = e.what();
                     sub->stop();
@@ -818,8 +935,8 @@ int main(int, char**) try
 
         // Rendering
         glViewport(0, 0,
-                   static_cast<int>(ImGui::GetIO().DisplaySize.x),
-                   static_cast<int>(ImGui::GetIO().DisplaySize.y));
+            static_cast<int>(ImGui::GetIO().DisplaySize.x),
+            static_cast<int>(ImGui::GetIO().DisplaySize.y));
         glClearColor(clear_color.x, clear_color.y, clear_color.z, clear_color.w);
         glClear(GL_COLOR_BUFFER_BIT);
 
@@ -926,7 +1043,7 @@ int main(int, char**) try
             if (model.streams[stream].show_stream_details)
             {
                 label = to_string() << "Timestamp: " << std::fixed << std::setprecision(3) << model.streams[stream].timestamp
-                                    << ", Domain:";
+                    << ", Domain:";
                 ImGui::Text("%s", label.c_str());
 
                 ImGui::SameLine();
@@ -955,7 +1072,6 @@ int main(int, char**) try
 
             ImGui::End();
             ImGui::PopStyleColor();
-
             ImGui::PushStyleColor(ImGuiCol_WindowBg, { 0, 0, 0, 0 });
             ImGui::SetNextWindowPos({ stream_rect.x, stream_rect.y + stream_rect.h - 30 });
             ImGui::SetNextWindowSize({ stream_rect.w, 30 });
@@ -967,7 +1083,7 @@ int main(int, char**) try
             if (stream_rect.contains(mouse.cursor))
             {
                 std::stringstream ss;
-                rect cursor_rect { mouse.cursor.x, mouse.cursor.y };
+                rect cursor_rect{ mouse.cursor.x, mouse.cursor.y };
                 auto ts = cursor_rect.normalize(stream_rect);
                 auto pixels = ts.unnormalize(stream_mv._normalized_zoom.unnormalize(stream_mv.get_stream_bounds()));
                 auto x = (int)pixels.x;

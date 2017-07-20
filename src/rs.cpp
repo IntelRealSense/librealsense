@@ -11,7 +11,7 @@
 #include "core/motion.h"
 #include "core/extension.h"
 #include "recording/record_device.h"
-#include <recording/serializers/ros_device_serializer.h>
+#include <recording/ros/ros_device_serializer.h>
 #include "core/advanced_mode.h"
 #include "align.h"
 #include "recording/playback_device.h"

@@ -21,9 +21,9 @@ namespace librealsense
     };
 
     class playback_sensor : public sensor_interface,
-        public extendable_interface,  //Allows extension for any of the given device's extensions
-        public info_container,//TODO: Ziv, does it make sense to inherit here?, maybe construct the item as recordable
-        public options_container//TODO: Ziv, does it make sense to inherit here?
+        public extendable_interface,
+        public info_container,    
+        public options_container
     {
     public:
         using frame_interface_callback_t = std::function<void(frame_holder)>;
@@ -31,8 +31,9 @@ namespace librealsense
         signal<playback_sensor, uint32_t, bool> stopped;
         signal<playback_sensor, uint32_t, const std::vector<stream_profile>&> opened;
         signal<playback_sensor, uint32_t> closed;
+        
 
-        playback_sensor(const sensor_snapshot& sensor_description, uint32_t sensor_id);
+        playback_sensor(const device_interface& parent_device, const sensor_snapshot& sensor_description, uint32_t sensor_id);
         virtual ~playback_sensor();
 
         std::vector<stream_profile> get_principal_requests() override;
@@ -63,5 +64,6 @@ namespace librealsense
         sensor_snapshot m_sensor_description;
         uint32_t m_sensor_id;
         std::mutex m_mutex;
+        const device_interface& m_parent_device;
     };
 }

@@ -3,6 +3,10 @@
 
 #pragma once
 
+#include <map>
+#include <memory>
+#include "../core/extension.h"
+
 namespace librealsense
 {
     class snapshot_collection

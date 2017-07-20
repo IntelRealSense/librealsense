@@ -30,7 +30,7 @@ typedef enum rs2_rs400_visual_preset
     RS2_RS400_VISUAL_PRESET_COUNT
 } rs2_rs400_visual_preset;
 
-const char* rs2_advanced_mode_preset_to_string (rs2_rs400_visual_preset preset);
+const char* rs2_advanced_mode_preset_to_string(rs2_rs400_visual_preset preset);
 
 typedef struct
 {
@@ -143,7 +143,6 @@ typedef struct
     uint32_t uDiameter;
     uint32_t vDiameter;
 }STCensusRadius;
-
 
 #ifdef __cplusplus
 extern "C"{
