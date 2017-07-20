@@ -48,7 +48,7 @@ namespace librealsense
         void start(frame_callback_ptr callback) override;
         void stop() override;
         bool is_streaming() const override;
-        bool extend_to(rs2_extension_type extension_type, void** ext) override;
+        bool extend_to(rs2_extension extension_type, void** ext) override;
         const device_interface& get_device() override;
         rs2_extrinsics get_extrinsics_to(rs2_stream from, const sensor_interface& other, rs2_stream to) const  override;
         const std::vector<platform::stream_profile>& get_curr_configurations() const  override;

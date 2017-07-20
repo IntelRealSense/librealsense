@@ -116,9 +116,9 @@ EXPORTS
     rs2_create_device_from_sensor
     rs2_get_depth_scale
 
-    rs2_is_sensor
-    rs2_is_device
-    rs2_is_frame
+    rs2_is_sensor_extendable_to
+    rs2_is_device_extendable_to
+    rs2_is_frame_extendable_to
 
     rs2_allocate_synthetic_video_frame
     rs2_synthetic_frame_ready
@@ -158,8 +158,6 @@ EXPORTS
     rs2_is_enabled
     rs2_toggle_advanced_mode
 
-    rs2_create_device_serializer
-    rs2_delete_device_serializer
     rs2_create_record_device 
     rs2_create_playback_device 
     rs2_record_device_pause

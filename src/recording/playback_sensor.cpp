@@ -110,7 +110,7 @@ bool playback_sensor::is_streaming() const
 {
     return m_is_started;
 }
-bool playback_sensor::extend_to(rs2_extension_type extension_type, void** ext)
+bool playback_sensor::extend_to(rs2_extension extension_type, void** ext)
 {
     std::shared_ptr<extension_snapshot> e = m_sensor_description.get_sensor_extensions_snapshots().find(extension_type);
     if(e == nullptr)

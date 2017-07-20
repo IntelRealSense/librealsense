@@ -7,7 +7,7 @@
 librealsense::record_sensor::record_sensor(const device_interface& device,
                                             sensor_interface& sensor, 
                                             frame_interface_callback_t on_frame, 
-                                            std::function<void(rs2_extension_type, const std::shared_ptr<extension_snapshot>&)>) :
+                                            std::function<void(rs2_extension, const std::shared_ptr<extension_snapshot>&)>) :
     m_device_record_snapshot_handler(),
     m_sensor(sensor),
     m_user_notification_callback(nullptr, [](rs2_notifications_callback* n) {}),
@@ -105,7 +105,7 @@ bool librealsense::record_sensor::is_streaming() const
     return m_sensor.is_streaming();
 }
 
-bool librealsense::record_sensor::extend_to(rs2_extension_type extension_type, void** ext)
+bool librealsense::record_sensor::extend_to(rs2_extension extension_type, void** ext)
 {
     switch (extension_type)
     {
@@ -160,7 +160,7 @@ void record_sensor::raise_user_notification(const std::string& str)
     if(m_user_notification_callback) m_user_notification_callback->on_notification(&rs2_noti);
 }
 
-void librealsense::record_sensor::record_snapshot(rs2_extension_type extension_type, const std::shared_ptr<extension_snapshot>& snapshot)
+void librealsense::record_sensor::record_snapshot(rs2_extension extension_type, const std::shared_ptr<extension_snapshot>& snapshot)
 {
     m_device_record_snapshot_handler(extension_type, snapshot);
 }

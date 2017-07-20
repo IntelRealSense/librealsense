@@ -262,7 +262,7 @@ namespace librealsense
 
     };
 
-    std::shared_ptr<archive_interface> make_archive(rs2_extension_type type,
+    std::shared_ptr<archive_interface> make_archive(rs2_extension type,
                                                     std::atomic<uint32_t>* in_max_frame_queue_size,
                                                     std::shared_ptr<platform::time_service> ts,
                                                     std::shared_ptr<metadata_parser_map> parsers);

@@ -122,7 +122,7 @@ namespace librealsense
         #undef CASE
     }
 
-    const char* get_string(rs2_extension_type value)
+    const char* get_string(rs2_extension value)
     {
         #define CASE(X) case RS2_EXTENSION_TYPE_##X: return #X;
         switch (value)

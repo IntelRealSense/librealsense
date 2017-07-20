@@ -392,7 +392,7 @@ namespace rs2
             : frame(f)
         {
             rs2_error* e = nullptr;
-            if(!f || (rs2_is_frame(f.get(), RS2_EXTENSION_TYPE_VIDEO_FRAME, &e) == 0 && !e))
+            if(!f || (rs2_is_frame_extendable_to(f.get(), RS2_EXTENSION_TYPE_VIDEO_FRAME, &e) == 0 && !e))
             {
                 frame_ref = nullptr;
             }
@@ -460,7 +460,7 @@ namespace rs2
                 : frame(f), _size(0)
         {
             rs2_error* e = nullptr;
-            if(!f || (rs2_is_frame(f.get(), RS2_EXTENSION_TYPE_POINTS, &e) == 0 && !e))
+            if(!f || (rs2_is_frame_extendable_to(f.get(), RS2_EXTENSION_TYPE_POINTS, &e) == 0 && !e))
             {
                 frame_ref = nullptr;
             }
@@ -506,7 +506,7 @@ namespace rs2
             : frame(f), _size(0)
         {
             rs2_error* e = nullptr;
-            if(!f || (rs2_is_frame(f.get(), RS2_EXTENSION_TYPE_COMPOSITE_FRAME, &e) == 0 && !e))
+            if(!f || (rs2_is_frame_extendable_to(f.get(), RS2_EXTENSION_TYPE_COMPOSITE_FRAME, &e) == 0 && !e))
             {
                 frame_ref = nullptr;
             }
@@ -1136,7 +1136,7 @@ namespace rs2
             : sensor(s.get())
         {
             rs2_error* e = nullptr;
-            if(rs2_is_sensor(_sensor.get(), RS2_EXTENSION_TYPE_ROI, &e) == 0 && !e)
+            if(rs2_is_sensor_extendable_to(_sensor.get(), RS2_EXTENSION_TYPE_ROI, &e) == 0 && !e)
             {
                 _sensor = nullptr;
             }
@@ -1169,7 +1169,7 @@ namespace rs2
             : sensor(s.get())
         {
             rs2_error* e = nullptr;
-            if (rs2_is_sensor(_sensor.get(), RS2_EXTENSION_TYPE_DEPTH_SENSOR, &e) == 0 && !e)
+            if (rs2_is_sensor_extendable_to(_sensor.get(), RS2_EXTENSION_TYPE_DEPTH_SENSOR, &e) == 0 && !e)
             {
                 _sensor = nullptr;
             }
@@ -1329,7 +1329,7 @@ namespace rs2
                 : device(d.get())
         {
             rs2_error* e = nullptr;
-            if(rs2_is_device(_dev.get(), RS2_EXTENSION_TYPE_DEBUG, &e) == 0 && !e)
+            if(rs2_is_device_extendable_to(_dev.get(), RS2_EXTENSION_TYPE_DEBUG, &e) == 0 && !e)
             {
                 _dev = nullptr;
             }
@@ -1462,14 +1462,8 @@ namespace rs2
             m_file(file)
         {
             rs2_error* e = nullptr;
-            m_serializer = std::shared_ptr<rs2_device_serializer>(
-                rs2_create_device_serializer(file.c_str(), &e),
-                rs2_delete_device_serializer);
-            rs2::error::handle(e);
-
-            e = nullptr;
             _dev = std::shared_ptr<rs2_device>(
-                rs2_create_playback_device(m_serializer.get(), &e),
+                rs2_create_playback_device(file.c_str(), &e),
                 rs2_delete_device);
             rs2::error::handle(e);
         }
@@ -1487,7 +1481,6 @@ namespace rs2
         }
     private:
         std::string m_file;
-        std::shared_ptr<rs2_device_serializer> m_serializer;
     };
     class recorder : public device
     {
@@ -1496,14 +1489,8 @@ namespace rs2
             m_file(file)
         {
             rs2_error* e = nullptr;
-            m_serializer = std::shared_ptr<rs2_device_serializer>(
-                rs2_create_device_serializer(file.c_str(), &e),
-                rs2_delete_device_serializer);
-            rs2::error::handle(e);
-
-            e = nullptr;
             _dev = std::shared_ptr<rs2_device>(
-                rs2_create_record_device(device.get().get(), m_serializer.get(), &e),
+                rs2_create_record_device(device.get().get(), file.c_str(), &e),
                 rs2_delete_device);
             rs2::error::handle(e);
         }
@@ -1522,7 +1509,6 @@ namespace rs2
         }
     private:
         std::string m_file;
-        std::shared_ptr<rs2_device_serializer> m_serializer;
     };
 
     class event_information

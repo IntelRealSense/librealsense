@@ -49,7 +49,7 @@ namespace librealsense
     {
         std::lock_guard<std::mutex> lock(_callback_mutex);
 
-        std::vector<rs2_extension_type> supported { RS2_EXTENSION_TYPE_VIDEO_FRAME,
+        std::vector<rs2_extension> supported { RS2_EXTENSION_TYPE_VIDEO_FRAME,
                                                     RS2_EXTENSION_TYPE_COMPOSITE_FRAME };
 
         for (auto type : supported)
@@ -73,7 +73,7 @@ namespace librealsense
         }
     }
 
-    frame_interface* frame_source::alloc_frame(rs2_extension_type type, size_t size, frame_additional_data additional_data, bool requires_memory) const
+    frame_interface* frame_source::alloc_frame(rs2_extension type, size_t size, frame_additional_data additional_data, bool requires_memory) const
     {
         auto it = _archive.find(type);
         if (it == _archive.end()) throw wrong_api_call_sequence_exception("Requested frame type is not supported!");

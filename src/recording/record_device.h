@@ -33,7 +33,7 @@ namespace librealsense
                                       rs2_stream from_stream,
                                       size_t to,
                                       rs2_stream to_stream) const override;
-		bool extend_to(rs2_extension_type extension_type, void** ext) override;
+		bool extend_to(rs2_extension extension_type, void** ext) override;
         virtual std::shared_ptr<matcher> create_matcher(rs2_stream stream) const override;
 
         void pause_recording();
@@ -43,7 +43,7 @@ namespace librealsense
         void write_header();
         std::chrono::nanoseconds get_capture_time() const;
         void write_data(size_t sensor_index, frame_holder f/*, notifications_callback_ptr& sensor_notification_handler*/);
-        void write_extension_snapshot(rs2_extension_type ext, const std::shared_ptr<extension_snapshot>& snapshot);
+        void write_extension_snapshot(rs2_extension ext, const std::shared_ptr<extension_snapshot>& snapshot);
         std::vector<std::shared_ptr<record_sensor>> create_record_sensors(std::shared_ptr<device_interface> m_device);
         template <typename T> snapshot_collection get_extensions_snapshots(T* extendable);
 

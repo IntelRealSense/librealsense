@@ -41,7 +41,7 @@ std::vector<std::shared_ptr<record_sensor>> record_device::create_record_sensors
             {
                 write_data(sensor_index, std::move(f)/*,sensor_notification_handler*/);
             },
-            [this](rs2_extension_type ext, const std::shared_ptr<extension_snapshot>& snapshot)
+            [this](rs2_extension ext, const std::shared_ptr<extension_snapshot>& snapshot)
             {
                 this->write_extension_snapshot(ext, snapshot);
             });
@@ -136,7 +136,7 @@ void librealsense::record_device::write_data(size_t sensor_index, librealsense::
         
 }
 
-void record_device::write_extension_snapshot(rs2_extension_type ext, const std::shared_ptr<extension_snapshot>& snapshot)
+void record_device::write_extension_snapshot(rs2_extension ext, const std::shared_ptr<extension_snapshot>& snapshot)
 {
 
 }
@@ -176,11 +176,11 @@ rs2_extrinsics librealsense::record_device::get_extrinsics(size_t from,
 template<typename T>
 snapshot_collection librealsense::record_device::get_extensions_snapshots(T* extendable)
 {
-    //No support for extensions with more than a single type - i.e every extension has exactly one type in rs2_extension_type
+    //No support for extensions with more than a single type - i.e every extension has exactly one type in rs2_extension
     snapshot_collection snapshots;
     for (int i = 0; i < static_cast<int>(RS2_EXTENSION_TYPE_COUNT); ++i)
     {
-        rs2_extension_type ext = static_cast<rs2_extension_type>(i);
+        rs2_extension ext = static_cast<rs2_extension>(i);
         switch(ext)
         {
             case RS2_EXTENSION_TYPE_DEBUG:
@@ -250,7 +250,7 @@ snapshot_collection librealsense::record_device::get_extensions_snapshots(T* ext
     }
     return snapshots;
 }
-bool librealsense::record_device::extend_to(rs2_extension_type extension_type, void** ext)
+bool librealsense::record_device::extend_to(rs2_extension extension_type, void** ext)
 {
     return false;
 }

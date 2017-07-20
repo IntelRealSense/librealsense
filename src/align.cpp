@@ -62,7 +62,7 @@ namespace librealsense
         if (new_bpp == 0 || (new_width == 0 && new_stride == 0) || new_height == 0)
         {
             // If the user wants to delegate width, height and etc to original frame, it must be a video frame
-            if (!rs2_is_frame((rs2_frame*)original, RS2_EXTENSION_TYPE_VIDEO_FRAME, nullptr))
+            if (!rs2_is_frame_extendable_to((rs2_frame*)original, RS2_EXTENSION_TYPE_VIDEO_FRAME, nullptr))
             {
                 throw std::runtime_error("If original frame is not video frame, you must specify new bpp, width/stide and height!");
             }
