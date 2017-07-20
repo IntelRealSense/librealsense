@@ -105,6 +105,8 @@ rs_context_base::rs_context_base()
 
         std::string filename = get_usb_hub_name(*device);
 
+        devices.clear();
+
         set_hub_power(filename, false, 1500);
         set_hub_power(filename, true, 8500);
 
