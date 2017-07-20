@@ -174,7 +174,7 @@ namespace librealsense
                 record(msg);
             }
         }
-        void write_extension_snapshot(uint32_t id, rs2_extension_type type, std::shared_ptr<librealsense::extension_snapshot> snapshot)
+        void write_extension_snapshot(uint32_t id, rs2_extension type, std::shared_ptr<librealsense::extension_snapshot> snapshot)
         {    
             switch (type)
             {

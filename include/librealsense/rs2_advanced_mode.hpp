@@ -18,7 +18,7 @@ namespace rs400
                 : rs2::device(d.get())
         {
             rs2_error* e = nullptr;
-            if(rs2_is_device(_dev.get(), RS2_EXTENSION_TYPE_ADVANCED_MODE, &e) == 0 && !e)
+            if(rs2_is_device_extendable_to(_dev.get(), RS2_EXTENSION_TYPE_ADVANCED_MODE, &e) == 0 && !e)
             {
                 _dev = nullptr;
             }

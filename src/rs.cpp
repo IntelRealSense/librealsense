@@ -997,7 +997,7 @@ const char * rs2_notification_category_to_string(rs2_notification_category categ
 const char * rs2_visual_preset_to_string(rs2_ivcam_visual_preset preset) { return librealsense::get_string(preset); }
 const char * rs2_log_severity_to_string(rs2_log_severity severity) { return librealsense::get_string(severity); }
 const char * rs2_exception_type_to_string(rs2_exception_type type) { return librealsense::get_string(type); }
-const char * rs2_extension_type_to_string(rs2_extension_type type) { return librealsense::get_string(type); }
+const char * rs2_extension_type_to_string(rs2_extension type) { return librealsense::get_string(type); }
 
 void rs2_log_to_console(rs2_log_severity min_severity, rs2_error ** error) try
 {
@@ -1011,7 +1011,7 @@ void rs2_log_to_file(rs2_log_severity min_severity, const char * file_path, rs2_
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, min_severity, file_path)
 
-int rs2_is_sensor(const rs2_sensor* sensor, rs2_extension_type extension_type, rs2_error ** error) try
+int rs2_is_sensor_extendable_to(const rs2_sensor* sensor, rs2_extension extension_type, rs2_error ** error) try
 {
     VALIDATE_NOT_NULL(sensor);
     VALIDATE_ENUM(extension_type);
@@ -1030,7 +1030,7 @@ int rs2_is_sensor(const rs2_sensor* sensor, rs2_extension_type extension_type, r
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, sensor, extension_type)
 
-int rs2_is_device(const rs2_device* dev, rs2_extension_type extension_type, rs2_error ** error) try
+int rs2_is_device_extendable_to(const rs2_device* dev, rs2_extension extension_type, rs2_error ** error) try
 {
     VALIDATE_NOT_NULL(dev);
     VALIDATE_ENUM(extension_type);
@@ -1051,7 +1051,7 @@ int rs2_is_device(const rs2_device* dev, rs2_extension_type extension_type, rs2_
 HANDLE_EXCEPTIONS_AND_RETURN(0, dev, extension_type)
 
 
-int rs2_is_frame(const rs2_frame* f, rs2_extension_type extension_type, rs2_error ** error) try
+int rs2_is_frame_extendable_to(const rs2_frame* f, rs2_extension extension_type, rs2_error ** error) try
 {
     VALIDATE_NOT_NULL(f);
     VALIDATE_ENUM(extension_type);
@@ -1068,37 +1068,23 @@ int rs2_is_frame(const rs2_frame* f, rs2_extension_type extension_type, rs2_erro
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, f, extension_type)
 
-rs2_device_serializer * rs2_create_device_serializer(const char* file, rs2_error ** error) try
+rs2_device* rs2_create_playback_device(const char* file, rs2_error** error) try
 {
     VALIDATE_NOT_NULL(file);
-    return new rs2_device_serializer{ std::make_shared<librealsense::ros_device_serializer>(file) };
-}
-HANDLE_EXCEPTIONS_AND_RETURN(nullptr, file)
+    return new rs2_device{ nullptr, nullptr, std::make_shared<playback_device>(std::make_shared<ros_device_serializer>(file)->get_reader()) };
+}HANDLE_EXCEPTIONS_AND_RETURN(nullptr, file)
 
-void rs2_delete_device_serializer(rs2_device_serializer * device_serializer) try
-{
-    VALIDATE_NOT_NULL(device_serializer);
-    delete device_serializer;
-}
-NOEXCEPT_RETURN(, device_serializer)
-
-rs2_device* rs2_create_playback_device(rs2_device_serializer* serializer, rs2_error** error) try
-{
-    VALIDATE_NOT_NULL(serializer);
-    return new rs2_device{ nullptr, nullptr, std::make_shared<playback_device>(serializer->device_serializer->get_reader()) };
-}HANDLE_EXCEPTIONS_AND_RETURN(nullptr, serializer)
-
-rs2_device* rs2_create_record_device(const rs2_device* device, rs2_device_serializer* serializer, rs2_error** error) try
+rs2_device* rs2_create_record_device(const rs2_device* device, const char* file, rs2_error** error) try
 {
     VALIDATE_NOT_NULL(device);
-    VALIDATE_NOT_NULL(serializer);
-
+    VALIDATE_NOT_NULL(file);
+    
     return new rs2_device( {
         device->ctx,
         device->info,
-        std::make_shared<record_device>(device->device, serializer->device_serializer->get_writer())
+        std::make_shared<record_device>(device->device, std::make_shared<librealsense::ros_device_serializer>(file)->get_writer())
     });
-}HANDLE_EXCEPTIONS_AND_RETURN(nullptr, device, serializer)
+}HANDLE_EXCEPTIONS_AND_RETURN(nullptr, device, file)
 
 void rs2_record_device_pause(const rs2_device* device, rs2_error** error) try
 {

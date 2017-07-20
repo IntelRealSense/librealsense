@@ -264,6 +264,7 @@ if(WIN32)
 
     source_group("Source Files\\Media" FILES
         src/recording/record_device.cpp
+        src/recording/record_sensor.cpp
         src/recording/playback_device.cpp
         src/recording/playback_sensor.cpp
         src/recording/ros/stream_playback.cpp

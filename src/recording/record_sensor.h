@@ -14,13 +14,13 @@ namespace librealsense
 {
     class record_sensor : public sensor_interface,
         public extendable_interface,  //Allows extension for any of the given device's extensions
-        public info_container,//TODO: Ziv, does it make sense to inherit here?, maybe construct the item as recordable
-        public options_container//TODO: Ziv, does it make sense to inherit here?
+        public info_container,
+        public options_container
     {
     public:
         using frame_interface_callback_t = std::function<void(frame_holder)>;
 
-        record_sensor(const device_interface& device, sensor_interface& sensor, frame_interface_callback_t on_frame, std::function<void(rs2_extension_type, const std::shared_ptr<extension_snapshot>&)> on_snapshot);
+        record_sensor(const device_interface& device, sensor_interface& sensor, frame_interface_callback_t on_frame, std::function<void(rs2_extension, const std::shared_ptr<extension_snapshot>&)> on_snapshot);
         virtual ~record_sensor();
 
         std::vector<stream_profile> get_principal_requests() override;
@@ -35,16 +35,16 @@ namespace librealsense
         void start(frame_callback_ptr callback) override;
         void stop() override;
         bool is_streaming() const override;
-        bool extend_to(rs2_extension_type extension_type, void** ext) override;
+        bool extend_to(rs2_extension extension_type, void** ext) override;
         const device_interface& get_device() override;
         rs2_extrinsics get_extrinsics_to(rs2_stream from, const sensor_interface& other, rs2_stream to) const  override;
         const std::vector<platform::stream_profile>& get_curr_configurations() const  override;
     private:
         void raise_user_notification(const std::string& str);
-        void record_snapshot(rs2_extension_type extension_type, const std::shared_ptr<extension_snapshot>& snapshot);
+        void record_snapshot(rs2_extension extension_type, const std::shared_ptr<extension_snapshot>& snapshot);
         std::vector<platform::stream_profile> convert_profiles(const std::vector<stream_profile>& vector);
         
-        std::function<void(rs2_extension_type, const std::shared_ptr<extension_snapshot>&)> m_device_record_snapshot_handler;
+        std::function<void(rs2_extension, const std::shared_ptr<extension_snapshot>&)> m_device_record_snapshot_handler;
         sensor_interface& m_sensor;
         librealsense::notifications_callback_ptr m_user_notification_callback;
         frame_interface_callback_t m_record_callback;

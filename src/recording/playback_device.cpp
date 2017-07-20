@@ -209,7 +209,7 @@ rs2_extrinsics playback_device::get_extrinsics(size_t from, rs2_stream from_stre
     //std::dynamic_pointer_cast<librealsense::info_interface>(m_device_description.get_device_extensions_snapshots().get_snapshots()[RS2_EXTENSION_TYPE_EXTRINSICS])->supports_info(info);
 }
 
-bool playback_device::extend_to(rs2_extension_type extension_type, void** ext) 
+bool playback_device::extend_to(rs2_extension extension_type, void** ext) 
 {
     std::shared_ptr<extension_snapshot> e = m_device_description.get_device_extensions_snapshots().find(extension_type);
     if (e == nullptr)
