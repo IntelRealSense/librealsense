@@ -247,11 +247,12 @@ namespace librealsense
         auto timestamp_reader = _timestamp_reader.get();
 
         std::vector<request_mapping> commited;
-        for (auto& mode : mapping)
+
+        for (auto&& mode : mapping)
         {
             try
             {
-                _device->probe_and_commit(mode.profile,
+                _device->probe_and_commit(mode.profile, !mode.requires_processing(),
                 [this, mode, timestamp_reader, requests](platform::stream_profile p, platform::frame_object f, std::function<void()> continuation) mutable
                 {
 
@@ -294,7 +295,7 @@ namespace librealsense
                 auto&& unpacker = *mode.unpacker;
                 for (auto&& output : unpacker.outputs)
                 {
-                    LOG_DEBUG("FrameAccepted," << librealsense::get_string(output.first) << "," << frame_counter
+                    LOG_DEBUG("FrameAccepted," << std::dec<< librealsense::get_string(output.first) << "," << frame_counter
                         << ",Arrived," << std::fixed << system_time
                         << ",TS," << std::fixed << timestamp << ",TS_Domain," << rs2_timestamp_domain_to_string(timestamp_domain));
 
@@ -355,7 +356,8 @@ namespace librealsense
                         _source.invoke_callback(std::move(pref));
                     }
                  }
-                }, static_cast<int>(_source.get_published_size_option()->query()));
+                },
+                static_cast<int>(_source.get_published_size_option()->query()));
             }
             catch(...)
             {
@@ -713,7 +715,7 @@ namespace librealsense
             additional_data.timestamp_domain = timestamp_reader->get_frame_timestamp_domain(mode, sensor_data.fo);
             additional_data.system_time = system_time;
 
-            LOG_DEBUG("FrameAccepted," << get_string(additional_data.stream_type) << "," << frame_counter
+            LOG_DEBUG("FrameAccepted," << std::dec<< get_string(additional_data.stream_type) << "," << frame_counter
                       << ",Arrived," << std::fixed << system_time
                       << ",TS," << std::fixed << timestamp
                       << ",TS_Domain," << rs2_timestamp_domain_to_string(additional_data.timestamp_domain));

@@ -37,7 +37,7 @@ namespace librealsense
             wmf_uvc_device(const uvc_device_info& info, std::shared_ptr<const wmf_backend> backend);
             ~wmf_uvc_device();
 
-            void probe_and_commit(stream_profile profile, frame_callback callback, int buffers) override;
+            void probe_and_commit( stream_profile profile, bool zero_copy,  frame_callback callback, int buffers) override;
             void stream_on(std::function<void(const notification& n)> error_handler = [](const notification& n){}) override;
             void start_callbacks() override;
             void stop_callbacks() override;
