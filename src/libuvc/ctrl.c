@@ -118,7 +118,7 @@ int uvc_set_ctrl(uvc_device_handle_t *devh, uint8_t unit, uint8_t ctrl, void *da
     unit << 8,
     data,
     len,
-    0 /* timeout */);
+    1000 /* timeout */);
 }
 
 /***** INTERFACE CONTROLS *****/
