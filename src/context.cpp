@@ -60,12 +60,15 @@ namespace rsimpl { namespace uvc
 
 using namespace rsimpl::uvc;
 
+namespace rsimpl {
+    extern int rs_exception_count;
+}
+
 const int USB_PORT_FEAT_POWER   = 8;
 const int USB_HUB_TIMEOUT       = 5000;
 
-static void set_hub_power(device &device, bool enable, int timeout)
+static void set_hub_power(const std::string& filename, bool enable, int timeout)
 {
-    std::string filename = get_usb_hub_name(device);
     int fd = open(filename.c_str(), O_RDWR);
 
     usbdevfs_ctrltransfer ctrl;
@@ -100,8 +103,10 @@ rs_context_base::rs_context_base()
     {
         LOG_WARNING("Failed to read camera info - cycling hub power");
 
-        set_hub_power(*device, false, 1500);
-        set_hub_power(*device, true, 8500);
+        std::string filename = get_usb_hub_name(*device);
+
+        set_hub_power(filename, false, 1500);
+        set_hub_power(filename, true, 8500);
 
         create_devices();
     }
@@ -175,6 +180,16 @@ void rs_context_base::release_instance()
 rs_context_base::~rs_context_base()
 {
     assert(ref_count == 0);
+
+    if(rsimpl::rs_exception_count)
+    {
+        LOG_WARNING("Exception(s) caught while running - cycling hub power");
+
+	std::string filename = "/dev/bus/usb/002/001";
+
+        set_hub_power(filename, false, 1500);
+        set_hub_power(filename, true, 8500);
+    }
 }
 
 size_t rs_context_base::get_device_count() const
