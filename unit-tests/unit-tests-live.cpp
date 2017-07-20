@@ -1508,15 +1508,12 @@ TEST_CASE("Advanced Mode controls", "[live]") {
             }
 
             {
-            STHdad ctrl_curr{};
-            REQUIRE_NOTHROW(ctrl_curr = advanced.get_hdad(0));
-            STHdad ctrl_min{};
-            REQUIRE_NOTHROW(ctrl_min = advanced.get_hdad(1));
-            STHdad ctrl_max{};
-            REQUIRE_NOTHROW(ctrl_max = advanced.get_hdad(2));
-            REQUIRE_NOTHROW(advanced.set_hdad(ctrl_min));
-            REQUIRE_NOTHROW(ctrl_curr = advanced.get_hdad(0));
-            REQUIRE(ctrl_curr == ctrl_min);
+            STHdad ctrl_curr1{};
+            REQUIRE_NOTHROW(ctrl_curr1 = advanced.get_hdad(0));
+            REQUIRE_NOTHROW(advanced.set_hdad(ctrl_curr1));
+            STHdad ctrl_curr2{};
+            REQUIRE_NOTHROW(ctrl_curr2 = advanced.get_hdad(0));
+            REQUIRE(ctrl_curr1 == ctrl_curr2);
             }
 
             {
@@ -1532,15 +1529,12 @@ TEST_CASE("Advanced Mode controls", "[live]") {
             }
 
             {
-            STAEControl ctrl_curr{};
-            REQUIRE_NOTHROW(ctrl_curr = advanced.get_ae_control(0));
-            STAEControl ctrl_min{};
-            REQUIRE_NOTHROW(ctrl_min = advanced.get_ae_control(1));
-            STAEControl ctrl_max{};
-            REQUIRE_NOTHROW(ctrl_max = advanced.get_ae_control(2));
-            REQUIRE_NOTHROW(advanced.set_ae_control(ctrl_min));
-            REQUIRE_NOTHROW(ctrl_curr = advanced.get_ae_control(0));
-            REQUIRE(ctrl_curr == ctrl_min);
+            STAEControl ctrl_curr1{};
+            REQUIRE_NOTHROW(ctrl_curr1 = advanced.get_ae_control(0));
+            REQUIRE_NOTHROW(advanced.set_ae_control(ctrl_curr1));
+            STAEControl ctrl_curr2{};
+            REQUIRE_NOTHROW(ctrl_curr2 = advanced.get_ae_control(0));
+            REQUIRE(ctrl_curr1 == ctrl_curr2);
             }
 
             {
