@@ -158,8 +158,8 @@ namespace librealsense
             auto ptr = (uint8_t*)(&strct);
             std::vector<uint8_t> data(ptr, ptr + sizeof(T));
 
-            assert_no_error(ds::fw_cmd::set_advanced,
-                send_receive(encode_command(ds::fw_cmd::set_advanced, static_cast<uint32_t>(cmd), 0, 0, 0, data)));
+            assert_no_error(ds::fw_cmd::SET_ADV,
+                send_receive(encode_command(ds::fw_cmd::SET_ADV, static_cast<uint32_t>(cmd), 0, 0, 0, data)));
             std::this_thread::sleep_for(std::chrono::milliseconds(20));
         }
 
@@ -167,8 +167,8 @@ namespace librealsense
         T get(EtAdvancedModeRegGroup cmd, T* ptr = static_cast<T*>(nullptr), int mode = 0) const
         {
             T res;
-            auto data = assert_no_error(ds::fw_cmd::get_advanced,
-                send_receive(encode_command(ds::fw_cmd::get_advanced,
+            auto data = assert_no_error(ds::fw_cmd::GET_ADV,
+                send_receive(encode_command(ds::fw_cmd::GET_ADV,
                 static_cast<uint32_t>(cmd), mode)));
             if (data.size() < sizeof(T))
             {

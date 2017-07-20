@@ -12,8 +12,8 @@ namespace librealsense
           _depth_sensor(depth_sensor)
     {
         _enabled = [this](){
-            auto results = send_receive(encode_command(ds::fw_cmd::advanced_mode_enabled));
-            assert_no_error(ds::fw_cmd::advanced_mode_enabled, results);
+            auto results = send_receive(encode_command(ds::fw_cmd::UAMG));
+            assert_no_error(ds::fw_cmd::UAMG, results);
             return *(reinterpret_cast<uint32_t*>(results.data()) + 1) > 0;
         };
         _depth_sensor.register_option(RS2_OPTION_ADVANCED_MODE_PRESET,
@@ -32,8 +32,8 @@ namespace librealsense
 
     void ds5_advanced_mode_base::toggle_advanced_mode(bool enable)
     {
-        send_receive(encode_command(ds::fw_cmd::enable_advanced_mode, enable));
-        send_receive(encode_command(ds::fw_cmd::reset));
+        send_receive(encode_command(ds::fw_cmd::EN_ADV, enable));
+        send_receive(encode_command(ds::fw_cmd::HWRST));
     }
 
     ds5_advanced_mode_base::res_type ds5_advanced_mode_base::get_res_type(uint32_t width, uint32_t height)
@@ -752,7 +752,7 @@ namespace librealsense
         auto write_ptr = raw_data.data();
         auto header_size = 4;
 
-        auto cur_index = 2;
+        size_t cur_index = 2;
         *reinterpret_cast<uint16_t *>(write_ptr + cur_index) = pre_header_data;
         cur_index += sizeof(uint16_t);
         *reinterpret_cast<unsigned int *>(write_ptr + cur_index) = cmd_op_code;

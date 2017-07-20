@@ -781,7 +781,7 @@ namespace librealsense
     const native_pixel_format pf_y12i       = { 'Y12I', 1, 3,{  { true,  &unpack_y16_y16_from_y12i_10,                   { { RS2_STREAM_INFRARED, RS2_FORMAT_Y16 },{ RS2_STREAM_INFRARED2, RS2_FORMAT_Y16 } } } } };
     const native_pixel_format pf_z16        = { 'Z16 ', 1, 2,{  { false, &copy_pixels<2>,                                { { RS2_STREAM_DEPTH,    RS2_FORMAT_Z16 } } },
                                                                 { false, &copy_pixels<2>,                                { { RS2_STREAM_DEPTH,    RS2_FORMAT_DISPARITY16 } } } } };
-    const native_pixel_format pf_invz       = { 'INVZ', 1, 2, { { false, &copy_pixels<2>,                                { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16 } } } } };
+    const native_pixel_format pf_invz       = { 'Z16 ', 1, 2, { { false, &copy_pixels<2>,                                { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16 } } } } };
     const native_pixel_format pf_f200_invi  = { 'INVI', 1, 1, { { false, &copy_pixels<1>,                                { { RS2_STREAM_INFRARED, RS2_FORMAT_Y8  } } },
                                                                 { true,  &unpack_y16_from_y8,                            { { RS2_STREAM_INFRARED, RS2_FORMAT_Y16 } } } } };
     const native_pixel_format pf_f200_inzi  = { 'INZI', 1, 3,{  { true,  &unpack_z16_y8_from_f200_inzi,                  { { RS2_STREAM_DEPTH,    RS2_FORMAT_Z16 },{ RS2_STREAM_INFRARED, RS2_FORMAT_Y8 } } },

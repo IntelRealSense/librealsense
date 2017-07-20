@@ -82,9 +82,10 @@ namespace rs2
                     else if (is_all_integers())
                     {
                         auto int_value = static_cast<int>(value);
-                        if (ImGui::SliderInt(id.c_str(), &int_value,
+                        if (ImGui::SliderIntWithSteps(id.c_str(), &int_value,
                             static_cast<int>(range.min),
-                            static_cast<int>(range.max)))
+                            static_cast<int>(range.max),
+                            static_cast<int>(range.step)))
                         {
                             // TODO: Round to step?
                             value = static_cast<float>(int_value);
