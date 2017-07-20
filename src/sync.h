@@ -98,7 +98,7 @@ namespace librealsense
 
         void sync(frame_holder f, syncronization_environment env) override;
         const std::vector<stream_id>& get_streams() const override;
-        std::shared_ptr<matcher> find_matcher(stream_id stream);
+        std::shared_ptr<matcher> find_matcher(const frame_holder& f);
 
     private:
         std::map<stream_id, std::shared_ptr<matcher>> _matchers;

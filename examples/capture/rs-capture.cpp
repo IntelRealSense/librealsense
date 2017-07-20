@@ -43,7 +43,7 @@ int main(int argc, char * argv[])
             frame_queue queue;
             syncer.start(queue);
             texture_buffer buffers[RS2_STREAM_COUNT];
-
+            bool is_stream_active[RS2_STREAM_COUNT] = {false};
             // Open a GLFW window
             glfwInit();
             ostringstream ss;
@@ -78,6 +78,7 @@ int main(int argc, char * argv[])
                 {
                     auto stream_type = frame.get_stream_type();
                     buffers[stream_type].upload(frame);
+                    is_stream_active[stream_type] = true;
                 }
 
                 // Wait for new images
@@ -93,15 +94,16 @@ int main(int argc, char * argv[])
                 glOrtho(0, w, h, 0, -1, +1);
 
                 index = 0;
-                for (auto&& frame : frames)
+                for (auto i = 0; i< RS2_STREAM_COUNT; i++)
                 {
-                    auto stream_type = frame.get_stream_type();
                     auto col_id = index / tiles_horisontal;
                     auto row_id = index % tiles_horisontal;
 
-                    buffers[stream_type].show({ row_id * tile_w, static_cast<float>(col_id * tile_h), tile_w, tile_h }, 1);
-
-                    index++;
+                    if(is_stream_active[i])
+                    {
+                        buffers[i].show({ row_id * tile_w, static_cast<float>(col_id * tile_h), tile_w, tile_h }, 1);
+                        index++;
+                    }
                 }
 
                 glPopMatrix();

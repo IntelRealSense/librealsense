@@ -114,7 +114,7 @@ namespace librealsense
               ds5_color(backend,  group),
               ds5_advanced_mode_base(ds5_device::_hw_monitor, get_depth_sensor()) {}
 
-        std::shared_ptr<matcher> create_matcher(rs2_stream stream) const override;
+        std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;
 
     };
 
@@ -214,18 +214,25 @@ namespace librealsense
 
         return results;
     }
-    std::shared_ptr<matcher> rs435_device::create_matcher(rs2_stream stream) const
+    std::shared_ptr<matcher> rs435_device::create_matcher(const frame_holder& frame) const
     {
+        if(!frame.frame->supports_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER))
+        {
+            return device::create_matcher(frame);
+        }
+
         std::vector<std::shared_ptr<matcher>> depth_matchers;
 
         std::set<rs2_stream> streams = { RS2_STREAM_DEPTH , RS2_STREAM_INFRARED, RS2_STREAM_INFRARED2 };
 
         for (auto s : streams)
-            depth_matchers.push_back(device::create_matcher(s));
+            depth_matchers.push_back(std::make_shared<identity_matcher>( stream_id((device_interface*)(this), s)));
 
         std::vector<std::shared_ptr<matcher>> matchers;
         matchers.push_back( std::make_shared<frame_number_composite_matcher>(depth_matchers));
-        matchers.push_back(device::create_matcher(RS2_STREAM_COLOR));
+
+        auto color_matcher = std::make_shared<identity_matcher>( stream_id((device_interface*)(this), RS2_STREAM_COLOR));
+        matchers.push_back(color_matcher);
 
         return std::make_shared<timestamp_composite_matcher>(matchers);
     }

@@ -30,6 +30,7 @@ namespace librealsense
     {
         bool started;
         uint64_t total;
+
         uint32_t last_timestamp;
         mutable uint64_t counter;
         mutable std::recursive_mutex _mtx;
@@ -53,12 +54,14 @@ namespace librealsense
             if (!started)
             {
                 total = last_timestamp = rolling_timestamp;
+                last_timestamp = rolling_timestamp;
                 started = true;
             }
 
             const int delta = rolling_timestamp - last_timestamp; // NOTE: Relies on undefined behavior: signed int wraparound
             last_timestamp = rolling_timestamp;
             total += delta;
+
             return total * 0.00001; // to msec
         }
 
@@ -390,6 +393,8 @@ namespace librealsense
         void create_snapshot(std::shared_ptr<debug_interface>& snapshot) override;
         void create_recordable(std::shared_ptr<debug_interface>& recordable,
                                std::function<void(std::shared_ptr<extension_snapshot>)> record_action) override;
+
+        virtual std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;
     private:
         const uint8_t _depth_device_idx;
         const uint8_t _color_device_idx;

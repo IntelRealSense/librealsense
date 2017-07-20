@@ -28,19 +28,13 @@ namespace librealsense
     {
         _matcher.set_callback([this](frame_holder f, syncronization_environment env)
         {
-            // This will unlock the processing unit (so we can start getting callbacks out)
-            // This relies on callbacks being the last thing we do
-            // Also, using this method we are guarantied not to unlock the data structure again
-            // during Dispatch cycle of another thread (since the state is managed on the stack of
-            // current thread)
-            //env.lock_ref.unlock_preemptively();
 
             std::stringstream ss; 
             auto composite = dynamic_cast<composite_frame*>(f.frame);
             for (int i = 0; i < composite->get_embedded_frames_count(); i++)
             {
                 auto matched = composite->get_frame(i);
-                ss << matched->get_stream_type() << " " << matched->get_frame_number() << ", "<< matched->get_frame_timestamp();
+                ss << matched->get_stream_type() << " " << matched->get_frame_number() << ", "<< matched->get_frame_timestamp()<<" ";
             }
             LOG_WARNING(ss.str());
             env.matches.enqueue(std::move(f));
@@ -122,24 +116,22 @@ namespace librealsense
 
     void composite_matcher::dispatch(frame_holder f, syncronization_environment env)
     {
-        auto frame_ptr = f.frame;
-        auto stream = frame_ptr->get_stream_type();
-
-        auto matcher = find_matcher(stream_id(get_device_from_frame(f), stream));
+        auto matcher = find_matcher(f);
        // std::cout << "DISPATCH: " << this << " " << f->get_stream_type() << " " << f->get_frame_number() <<std::fixed<< " " << f->get_frame_timestamp() << "\n";
         matcher->dispatch(std::move(f), env);
     }
 
-    std::shared_ptr<matcher> composite_matcher::find_matcher(stream_id stream)
+    std::shared_ptr<matcher> composite_matcher::find_matcher(const frame_holder& frame)
     {
         std::shared_ptr<matcher> matcher;
+        auto stream = stream_id(get_device_from_frame(frame), frame.frame->get_stream_type());
 
         if(stream.first)
         {
             matcher = _matchers[stream];
             if (!matcher)
             {
-                matcher = stream.first->create_matcher(stream.second);
+                matcher = stream.first->create_matcher(frame);
 
                 matcher->set_callback([&](frame_holder f, syncronization_environment env)
                 {
@@ -171,10 +163,7 @@ namespace librealsense
 
     void composite_matcher::sync(frame_holder f, syncronization_environment env)
     {
-        auto frame_ptr = f.frame;
-        auto stream = frame_ptr->get_stream_type();
-
-        auto matcher = find_matcher(stream_id(get_device_from_frame(f), stream));
+        auto matcher = find_matcher(f);
         _frames_queue[matcher.get()].enqueue(std::move(f));
         
         std::vector<frame_holder*> frames;

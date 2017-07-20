@@ -280,7 +280,7 @@ void librealsense::record_device::resume_recording()
     });
 }
 
-std::shared_ptr<matcher> record_device::create_matcher(rs2_stream stream) const
+std::shared_ptr<matcher> record_device::create_matcher(const frame_holder& frame) const
 {
-    return m_device->create_matcher(stream);
+    return m_device->create_matcher(frame);
 }

@@ -28,8 +28,9 @@ namespace librealsense
         const sensor_interface& get_sensor(size_t i) const override;
         void hardware_reset() override;
         rs2_extrinsics get_extrinsics(size_t from,rs2_stream from_stream,size_t to,rs2_stream to_stream) const override;
+
         bool extend_to(rs2_extension extension_type, void** ext) override;
-        std::shared_ptr<matcher> create_matcher(rs2_stream stream) const override;
+        std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;
 
         bool set_frame_rate(double rate);
         bool seek_to_time(uint64_t time);
