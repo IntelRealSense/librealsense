@@ -36,12 +36,12 @@ namespace rs
                     assert(vid_frame != nullptr);
 
                     std::string stream;
-                    rs::file_format::conversions::convert(vid_frame->get_stream_type(), stream);
+                    rs::file_format::conversions::convert(vid_frame->get_stream()->get_stream_type(), stream);
                     
                     image.width = static_cast<uint32_t>(vid_frame->get_width());
                     image.height = static_cast<uint32_t>(vid_frame->get_height());
                     image.step = static_cast<uint32_t>(vid_frame->get_stride());
-                    if(conversions::convert(vid_frame->get_format(), image.encoding) == false)
+                    if(conversions::convert(vid_frame->get_stream()->get_format(), image.encoding) == false)
                     {
                         //return status_param_unsupported;
                         throw std::runtime_error("remove me, convert should throw");

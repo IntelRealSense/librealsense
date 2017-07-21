@@ -147,6 +147,7 @@ namespace rs2
     template<typename T>
     T unnormalizeT(const T& in_val, const T& min, const T& max)
     {
+        if (min == max) return min;
         return ((in_val * (max - min)) + min);
     }
 
@@ -344,7 +345,7 @@ namespace rs2
 
         color_map(const std::vector<float3>& values, int steps = 4000)
         {
-            for (int i = 0; i < values.size(); i++)
+            for (size_t i = 0; i < values.size(); i++)
             {
                 _map[(float)i/(values.size()-1)] = values[i];
             }
@@ -455,9 +456,9 @@ namespace rs2
                     auto f = histogram[d] / (float)histogram[0xFFFF]; // 0-255 based on histogram location
 
                     auto c = map.get(f);
-                    rgb_image[i * 3 + 0] = c.x;
-                    rgb_image[i * 3 + 1] = c.y;
-                    rgb_image[i * 3 + 2] = c.z;
+                    rgb_image[i * 3 + 0] = (uint8_t)c.x;
+                    rgb_image[i * 3 + 1] = (uint8_t)c.y;
+                    rgb_image[i * 3 + 2] = (uint8_t)c.z;
                 }
                 else
                 {
@@ -478,9 +479,9 @@ namespace rs2
                     auto f = (d - min) / (max - min);
 
                     auto c = map.get(f);
-                    rgb_image[i * 3 + 0] = c.x;
-                    rgb_image[i * 3 + 1] = c.y;
-                    rgb_image[i * 3 + 2] = c.z;
+                    rgb_image[i * 3 + 0] = (uint8_t)c.x;
+                    rgb_image[i * 3 + 1] = (uint8_t)c.y;
+                    rgb_image[i * 3 + 2] = (uint8_t)c.z;
                 }
                 else
                 {
@@ -518,7 +519,7 @@ namespace rs2
             int width = 0;
             int height = 0;
             int stride = 0;
-            auto format = frame.get_format();
+            auto format = frame.get_profile().format();
             auto data = frame.get_data();
 
             auto image = frame.as<video_frame>();
@@ -812,7 +813,7 @@ namespace rs2
             auto image = last.as<video_frame>();
             if (!image) return false;
 
-            auto format = last.get_format();
+            auto format = last.get_profile().fps();
             switch (format)
             {
             case RS2_FORMAT_Z16:
@@ -902,7 +903,7 @@ namespace rs2
 
             if (last)
             {
-                if (last.get_stream_type() == RS2_STREAM_DEPTH)
+                if (last.get_profile().stream_type() == RS2_STREAM_DEPTH)
                 {
                     const int segments = 16;
                     for (int i = 1; i <= segments; i++)

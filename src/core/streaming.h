@@ -72,11 +72,10 @@ namespace librealsense
         virtual unsigned long long get_frame_number() const = 0;
 
         virtual void set_timestamp_domain(rs2_timestamp_domain timestamp_domain) = 0;
-
         virtual rs2_time_t get_frame_system_time() const = 0;
-        virtual rs2_format get_format() const = 0;
-        virtual rs2_stream get_stream_type() const = 0;
-        virtual int get_framerate() const = 0;
+        
+        virtual std::shared_ptr<stream_profile_interface> get_stream() const = 0;
+        virtual void set_stream(std::shared_ptr<stream_profile_interface> sp) = 0;
 
         virtual rs2_time_t get_frame_callback_start_time_point() const = 0;
         virtual void update_frame_callback_start_ts(rs2_time_t ts) = 0;
@@ -114,8 +113,6 @@ namespace librealsense
 
         virtual const device_interface& get_device() = 0;
 
-        virtual rs2_extrinsics get_extrinsics_to(rs2_stream from, const sensor_interface& other, rs2_stream to) const = 0;
-
         virtual const stream_profiles& get_curr_configurations() const = 0;
 
         virtual ~sensor_interface() = default;
@@ -133,8 +130,6 @@ namespace librealsense
         virtual size_t get_sensors_count() const = 0;
 
         virtual void hardware_reset() = 0;
-
-        virtual rs2_extrinsics get_extrinsics(size_t from, rs2_stream from_stream, size_t to, rs2_stream to_stream) const = 0;
 
         virtual std::shared_ptr<matcher> create_matcher(rs2_stream stream) const = 0;
 

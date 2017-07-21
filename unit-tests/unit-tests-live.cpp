@@ -987,7 +987,7 @@ TEST_CASE("Per-frame metadata sanity check", "[live]") {
                                                      f.get_frame_number(),
                                                      f.get_frame_timestamp_domain(),
                                                      f.get_stream_type(),
-                                                     f.get_format() };
+                                                     f.format() };
 
                         // Store frame metadata attributes, verify API behavior correctness
                         for (auto i = 0; i < RS2_FRAME_METADATA_COUNT; i++)

@@ -16,18 +16,52 @@
 #include "ds5-private.h"
 #include "ds5-options.h"
 #include "ds5-timestamp.h"
+#include "stream.h"
 
 namespace librealsense
 {
-    std::shared_ptr<uvc_sensor> ds5_color::create_color_device(const std::shared_ptr<context>& ctx,
+    class ds5_color_sensor : public uvc_sensor, public video_sensor_interface
+    {
+    public:
+        explicit ds5_color_sensor(ds5_color* owner,
+            std::shared_ptr<platform::uvc_device> uvc_device,
+            std::unique_ptr<frame_timestamp_reader> timestamp_reader)
+            : uvc_sensor("RGB Camera", uvc_device, move(timestamp_reader), owner), _owner(owner)
+        {}
+
+        rs2_intrinsics get_intrinsics(const stream_profile& profile) const override
+        {
+            throw not_implemented_exception("Color Intrinsics are not available!");
+        }
+
+        stream_profiles init_stream_profiles() override
+        {
+            auto results = uvc_sensor::init_stream_profiles();
+
+            for (auto p : results)
+            {
+                // Register stream types
+                if (p->get_stream_type() == RS2_STREAM_COLOR)
+                {
+                    assign_stream(_owner->_color_stream, p);
+                }
+            }
+
+            return results;
+        }
+
+    private:
+        const ds5_color* _owner;
+    };
+
+    std::shared_ptr<uvc_sensor> ds5_color::create_color_device(std::shared_ptr<context> ctx,
         const std::vector<platform::uvc_device_info>& color_devices_info)
     {
         auto&& backend = ctx->get_backend();
         std::unique_ptr<frame_timestamp_reader> ds5_timestamp_reader_backup(new ds5_timestamp_reader(backend.create_time_service()));
 
-        auto color_ep = std::make_shared<uvc_sensor>("RGB Camera", backend.create_uvc_device(color_devices_info.front()),
-            std::unique_ptr<frame_timestamp_reader>(new ds5_timestamp_reader_from_metadata(std::move(ds5_timestamp_reader_backup))),
-            this);
+        auto color_ep = std::make_shared<ds5_color_sensor>(this, backend.create_uvc_device(color_devices_info.front()),
+            std::unique_ptr<frame_timestamp_reader>(new ds5_timestamp_reader_from_metadata(move(ds5_timestamp_reader_backup))));
 
         _color_device_idx = add_sensor(color_ep);
 
@@ -51,9 +85,9 @@ namespace librealsense
         return color_ep;
     }
 
-    ds5_color::ds5_color(const std::shared_ptr<context>& ctx,
+    ds5_color::ds5_color(std::shared_ptr<context> ctx,
                          const platform::backend_device_group& group)
-        : ds5_device(ctx, group)
+        : device(ctx), ds5_device(ctx, group), _color_stream(new stream(ctx))
     {
         using namespace ds;
 
@@ -65,7 +99,8 @@ namespace librealsense
             throw invalid_value_exception(to_string() << "RS400 with RGB models are expected to include a single color device! - "
                 << color_devs_info.size() << " found");
 
-        color_ep = create_color_device(ctx, color_devs_info);
-        color_ep->set_pose(lazy<pose>([]() {return pose{ { { 1,0,0 },{ 0,1,0 },{ 0,0,1 } },{ 0,0,0 } }; })); // TODO: Fetch calibration extrinsic
+        create_color_device(ctx, color_devs_info);
+
+        // TODO: Set depth to color extrinsics
     }
 }

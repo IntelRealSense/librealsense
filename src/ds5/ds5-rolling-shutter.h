@@ -10,7 +10,7 @@ namespace librealsense
     class ds5_rolling_shutter : public virtual ds5_device
     {
     public:
-        ds5_rolling_shutter(const std::shared_ptr<context>& ctx,
+        ds5_rolling_shutter(std::shared_ptr<context> ctx,
                             const platform::backend_device_group& group);
     };
 }

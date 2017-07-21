@@ -106,10 +106,10 @@ namespace librealsense
 	void composite_matcher::dispatch(frame_holder f, syncronization_environment env)
 	{
         auto frame_ptr = f.frame;
-		auto stream = frame_ptr->get_stream_type();
+		auto stream = frame_ptr->get_stream()->get_stream_type();
 
 		auto matcher = find_matcher(stream_id(get_device_from_frame(f), stream));
-        std::cout << "DISPATCH: " << this << " " << f->get_stream_type() << " " << f->get_frame_number() <<std::fixed<< " " << f->get_frame_timestamp() << "\n";
+        std::cout << "DISPATCH: " << this << " " << f->get_stream()->get_stream_type() << " " << f->get_frame_number() <<std::fixed<< " " << f->get_frame_timestamp() << "\n";
 		matcher->dispatch(std::move(f), env);
 	}
 
@@ -155,7 +155,7 @@ namespace librealsense
 	void composite_matcher::sync(frame_holder f, syncronization_environment env)
 	{
         auto frame_ptr = f.frame;
-		auto stream = frame_ptr->get_stream_type();
+		auto stream = frame_ptr->get_stream()->get_stream_type();
 
 		auto matcher = find_matcher(stream_id(get_device_from_frame(f), stream));
 		_frames_queue[matcher.get()].enqueue(std::move(f));
@@ -205,7 +205,7 @@ namespace librealsense
                 curr_sync = frames[0];
                 synced_frames.push_back(frames_matcher[0]);
             }
-            for (auto i = 1; i < frames.size(); i++)
+            for (size_t i = 1; i < frames.size(); i++)
             {
                 if (are_equivalent(*curr_sync, *frames[i]))
                 {
@@ -246,7 +246,7 @@ namespace librealsense
                     frame_holder frame;
                     _frames_queue[index].dequeue(&frame);
 
-                    std::cout << frame->get_stream_type() << " " << frame->get_frame_number() << " " << frame->get_frame_timestamp() << " ";
+                    std::cout << frame->get_stream()->get_stream_type() << " " << frame->get_frame_number() << " " << frame->get_frame_timestamp() << " ";
                     //TODO: create composite frame
                     //synced.push_back(std::move(frame));
 
@@ -292,8 +292,8 @@ namespace librealsense
 	}
 	bool timestamp_composite_matcher::are_equivalent(frame_holder & a, frame_holder & b)
 	{
-        auto a_fps = a->get_framerate();
-        auto b_fps = b->get_framerate();
+        auto a_fps = a->get_stream()->get_framerate();
+        auto b_fps = b->get_stream()->get_framerate();
 
 		auto min_fps = std::min(a_fps, b_fps);
 
@@ -307,12 +307,12 @@ namespace librealsense
 
 	void timestamp_composite_matcher::dispatch(frame_holder f, syncronization_environment env)
 	{
-        auto fps = f->get_framerate();
+        auto fps = f->get_stream()->get_framerate();
 
 		auto gap = 1000 / fps;
 
         auto frame_ptr = f.frame;
-		auto stream = frame_ptr->get_stream_type();
+		auto stream = frame_ptr->get_stream()->get_stream_type();
 
 
 		/*if (auto dev = frame_ptr->get_owner()->get_device().lock())

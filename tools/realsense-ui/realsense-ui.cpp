@@ -129,7 +129,7 @@ void draw_general_tab(device_model& model, device_list& list,
 
                                 for (auto&& profile : profiles)
                                 {
-                                    model.streams[profile.stream].dev = sub;
+                                    model.streams[profile.stream_index()].dev = sub;
                                 }
                             }
                         }
@@ -234,7 +234,7 @@ void draw_general_tab(device_model& model, device_list& list,
 
                                 for (auto&& profile : profiles)
                                 {
-                                    model.streams[profile.stream].dev = sub;
+                                    model.streams[profile.stream_index()].dev = sub;
                                 }
                             }
                             if (ImGui::IsItemHovered())
@@ -847,12 +847,12 @@ int main(int, char**) try
             ImGui::PushStyleColor(ImGuiCol_WindowBg, { 0, 0, 0, 0 });
             ImGui::SetNextWindowPos({ stream_rect.x, stream_rect.y });
             ImGui::SetNextWindowSize({ stream_rect.w, 50 });
-            label = to_string() << "Stream of " << rs2_stream_to_string(stream);
+            label = to_string() << "Stream of " << stream;
             ImGui::Begin(label.c_str(), nullptr, flags);
 
             if (model.streams[stream].show_stream_details)
             {
-                label = to_string() << rs2_stream_to_string(stream) << " "
+                label = to_string() << model.streams[stream].stream << " "
                     << stream_size.x << "x" << stream_size.y << ", "
                     << rs2_format_to_string(model.streams[stream].format) << ", "
                     << "Frame# " << model.streams[stream].frame_number << ", "
@@ -860,7 +860,7 @@ int main(int, char**) try
             }
             else
             {
-                label = to_string() << rs2_stream_to_string(stream) << " (...)";
+                label = to_string() << model.streams[stream].stream << " (...)";
             }
 
             ImGui::Text("%s", label.c_str());
@@ -885,7 +885,7 @@ int main(int, char**) try
                 if (ImGui::Button("[+]", { 26, 20 }))
                 {
                     model.fullscreen = true;
-                    model.selected_stream = stream;
+                    model.selected_stream = &model.streams[stream];
                 }
                 if (ImGui::IsItemHovered())
                 {
@@ -961,7 +961,7 @@ int main(int, char**) try
             ImGui::PushStyleColor(ImGuiCol_WindowBg, { 0, 0, 0, 0 });
             ImGui::SetNextWindowPos({ stream_rect.x, stream_rect.y + stream_rect.h - 30 });
             ImGui::SetNextWindowSize({ stream_rect.w, 30 });
-            label = to_string() << "Footer for stream of " << rs2_stream_to_string(stream);
+            label = to_string() << "Footer for stream of " << stream;
             ImGui::Begin(label.c_str(), nullptr, flags);
 
             auto&& stream_mv = model.streams[stream];

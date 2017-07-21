@@ -6,7 +6,7 @@
 
 namespace librealsense
 {
-    std::shared_ptr<device_interface> sr300_info::create(const std::shared_ptr<context>& ctx) const
+    std::shared_ptr<device_interface> sr300_info::create(std::shared_ptr<context> ctx) const
     {
         return std::make_shared<sr300_camera>(ctx, _color, _depth, _hwm);
     }
@@ -177,14 +177,15 @@ namespace librealsense
         return rawCalib.CalibrationParameters;
     }
 
-    sr300_camera::sr300_camera(const std::shared_ptr<context> &ctx, const platform::uvc_device_info &color,
+    sr300_camera::sr300_camera(std::shared_ptr<context> ctx, const platform::uvc_device_info &color,
                                const platform::uvc_device_info &depth, const platform::usb_device_info &hwm_device)
-            : _depth_device_idx(add_sensor(create_depth_device(ctx, depth))),
+            : device(ctx), _depth_device_idx(add_sensor(create_depth_device(ctx, depth))),
               _color_device_idx(add_sensor(create_color_device(ctx, color))),
-              _hw_monitor(std::make_shared<hw_monitor>(std::make_shared<locked_transfer>(ctx->get_backend().create_usb_device(hwm_device), get_depth_sensor())))
+              _hw_monitor(std::make_shared<hw_monitor>(std::make_shared<locked_transfer>(ctx->get_backend().create_usb_device(hwm_device), get_depth_sensor()))),
+              _depth_stream(new stream(ctx)), _ir_stream(new stream(ctx)), _color_stream(new stream(ctx))
     {
         using namespace ivcam;
-        static const char* device_name = "Intel RealSense SR300";
+        static auto device_name = "Intel RealSense SR300";
 
         auto fw_version = _hw_monitor->get_firmware_version_string(GVD, fw_version_offset);
         auto serial = _hw_monitor->get_module_serial_string(GVD, module_serial_offset);
@@ -198,17 +199,26 @@ namespace librealsense
 
         register_autorange_options();
 
-        auto c = get_calibration();
-        pose depth_to_color = {
+        _depth_to_color_extrinsics = std::make_shared<lazy<rs2_extrinsics>>([this]()
+        {
+            auto c = get_calibration();
+            pose depth_to_color = {
                 transpose(reinterpret_cast<const float3x3 &>(c.Rt)),
                 reinterpret_cast<const float3 &>(c.Tt) * 0.001f
-        };
+            };
 
-        get_depth_sensor().set_pose(lazy<pose>([depth_to_color](){return inverse(depth_to_color); }));
+            return from_pose(depth_to_color);
+        });
+
+        ctx->register_same_extrinsics(*_depth_stream, *_ir_stream);
+        ctx->register_extrinsics(*_depth_stream, *_color_stream, _depth_to_color_extrinsics);
 
         get_depth_sensor().register_option(RS2_OPTION_DEPTH_UNITS,
                                            std::make_shared<const_value_option>("Number of meters represented by a single depth unit",
-                                                                                 (c.Rmax/ 1000 /0xFFFF )));
+                                            lazy<float>([this]() {
+                                                auto c = get_calibration();
+                                                return (c.Rmax / 1000 / 0xFFFF);
+                                            })));
     }
     void sr300_camera::create_snapshot(std::shared_ptr<debug_interface>& snapshot)
     {

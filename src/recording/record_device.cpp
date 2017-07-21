@@ -149,13 +149,6 @@ void librealsense::record_device::hardware_reset()
 {
     m_device->hardware_reset();
 }
-rs2_extrinsics librealsense::record_device::get_extrinsics(size_t from,
-                                                      rs2_stream from_stream,
-                                                      size_t to,
-                                                      rs2_stream to_stream) const
-{
-    throw not_implemented_exception(__FUNCTION__);
-}
 
 /**
  * Go over the extendable instance and find all extensions
@@ -441,11 +434,6 @@ bool librealsense::record_sensor::extend_to(rs2_extension_type extension_type, v
 }
 
 const device_interface& record_sensor::get_device()
-{
-    throw not_implemented_exception(__FUNCTION__);
-}
-
-rs2_extrinsics record_sensor::get_extrinsics_to(rs2_stream from, const sensor_interface& other, rs2_stream to) const
 {
     throw not_implemented_exception(__FUNCTION__);
 }

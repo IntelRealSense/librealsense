@@ -49,7 +49,6 @@ namespace librealsense
         bool is_streaming() const override;
         bool extend_to(rs2_extension_type extension_type, void** ext) override;
         const device_interface& get_device() override;
-        rs2_extrinsics get_extrinsics_to(rs2_stream from, const sensor_interface& other, rs2_stream to) const  override;
         const stream_profiles& get_curr_configurations() const  override;
 
         void handle_frame(frame_holder frame, bool is_real_time);

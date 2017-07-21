@@ -62,7 +62,7 @@ namespace librealsense
             : _ctx(move(backend))
         {}
 
-        virtual std::shared_ptr<device_interface> create(const std::shared_ptr<context>& ctx) const = 0;
+        virtual std::shared_ptr<device_interface> create(std::shared_ptr<context> ctx) const = 0;
 
         std::shared_ptr<context> _ctx;
     };

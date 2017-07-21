@@ -188,7 +188,7 @@ namespace rs2
         std::array<std::pair<bool,rs2_metadata_t>,RS2_FRAME_METADATA_COUNT> md_attributes{};
     };
 
-    typedef std::map<rs2_stream, rect> streams_layout;
+    typedef std::map<int, rect> streams_layout;
 
     class option_model
     {
@@ -255,23 +255,24 @@ namespace rs2
         sensor s;
         device dev;
 
-        std::map<rs2_option, option_model> options_metadata;
+        std::map<int, option_model> options_metadata;
         std::vector<std::string> resolutions;
-        std::map<rs2_stream, std::vector<std::string>> fpses_per_stream;
+        std::map<int, std::vector<std::string>> fpses_per_stream;
         std::vector<std::string> shared_fpses;
-        std::map<rs2_stream, std::vector<std::string>> formats;
-        std::map<rs2_stream, bool> stream_enabled;
+        std::map<int, std::vector<std::string>> formats;
+        std::map<int, bool> stream_enabled;
+        std::map<int, rs2_stream> stream_types;
 
         int selected_res_id = 0;
-        std::map<rs2_stream, int> selected_fps_id;
+        std::map<int, int> selected_fps_id;
         int selected_shared_fps_id = 0;
-        std::map<rs2_stream, int> selected_format_id;
+        std::map<int, int> selected_format_id;
 
         std::vector<std::pair<int, int>> res_values;
-        std::map<rs2_stream, std::vector<int>> fps_values_per_stream;
+        std::map<int, std::vector<int>> fps_values_per_stream;
         std::vector<int> shared_fps_values;
         bool show_single_fps_list = false;
-        std::map<rs2_stream, std::vector<rs2_format>> format_values;
+        std::map<int, std::vector<rs2_format>> format_values;
 
         std::vector<stream_profile> profiles;
 
@@ -338,17 +339,17 @@ namespace rs2
         explicit device_model(device& dev, std::string& error_message);
         bool draw_combo_box(const std::vector<std::string>& device_names, int& new_index);
         void draw_device_details(device& dev);
-        std::map<rs2_stream, rect> calc_layout(float x0, float y0, float width, float height);
+        std::map<int, rect> calc_layout(float x0, float y0, float width, float height);
         void upload_frame(frame&& f);
 
         std::vector<std::shared_ptr<subdevice_model>> subdevices;
-        std::map<rs2_stream, stream_model> streams;
+        std::map<int, stream_model> streams;
         bool fullscreen = false;
         bool metadata_supported = false;
-        rs2_stream selected_stream = RS2_STREAM_ANY;
+        stream_model* selected_stream = nullptr;
 
     private:
-        std::map<rs2_stream, rect> get_interpolated_layout(const std::map<rs2_stream, rect>& l);
+        std::map<int, rect> get_interpolated_layout(const std::map<int, rect>& l);
 
         streams_layout _layout;
         streams_layout _old_layout;

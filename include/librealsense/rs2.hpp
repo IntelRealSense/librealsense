@@ -92,7 +92,6 @@ namespace rs2
                 throw device_in_recovery_mode_error(e);
             default:
                 throw error(e);
-                break;
             }
         }
     }
@@ -104,53 +103,21 @@ namespace rs2
     class device_base;
     class roi_sensor;
 
-    struct stream_profile
-    {
-        rs2_stream stream;
-        int width;
-        int height;
-        int fps;
-        rs2_format format;
+    //struct stream_profile
+    //{
+    //    rs2_stream stream;
+    //    int width;
+    //    int height;
+    //    int fps;
+    //    rs2_format format;
 
-        bool match(const stream_profile& other) const
-        {
-            if (stream != RS2_STREAM_ANY && other.stream != RS2_STREAM_ANY && (stream != other.stream))
-                return false;
-            if (format != RS2_FORMAT_ANY && other.format != RS2_FORMAT_ANY && (format != other.format))
-                return false;
-            if (fps != 0 && other.fps != 0 && (fps != other.fps))
-                return false;
-            if (width != 0 && other.width != 0 && (width != other.width))
-                return false;
-            if (height != 0 && other.height != 0 && (height != other.height))
-                return false;
-            return true;
-        }
 
-        bool contradicts(const std::vector<stream_profile>& requests) const
-        {
-            for (auto request : requests)
-            {
-                if (fps != 0 && request.fps != 0 && (fps != request.fps))
-                    return true;
-                if (width != 0 && request.width != 0 && (width != request.width))
-                    return true;
-                if (height != 0 && request.height != 0 && (height != request.height))
-                    return true;
-            }
-            return false;
-        }
+    //};
 
-        bool has_wildcards() const
-        {
-            return (fps == 0 || width == 0 || height == 0 || stream == rs2_stream::RS2_STREAM_ANY || format == RS2_FORMAT_ANY);
-        }
-    };
-
-    inline bool operator==(const stream_profile& a, const stream_profile& b)
-    {
-        return (a.width == b.width) && (a.height == b.height) && (a.fps == b.fps) && (a.format == b.format) && (a.stream == b.stream);
-    }
+    //inline bool operator==(const stream_profile& a, const stream_profile& b)
+    //{
+    //    return (a.width == b.width) && (a.height == b.height) && (a.fps == b.fps) && (a.format == b.format) && (a.stream == b.stream);
+    //}
 
     class notification
     {
@@ -217,12 +184,177 @@ namespace rs2
         rs2_notification_category _category;
     };
 
+    class stream_profile
+    {
+    public:
+        stream_profile() : _profile(nullptr) {}
+
+        int stream_index() const { return _index; }
+        rs2_stream stream_type() const { return _type; }
+        rs2_format format() const { return _format; }
+
+        int fps() const { return _framerate; }
+
+        stream_profile clone(rs2_stream type, rs2_format format) const
+        {
+            rs2_error* e = nullptr;
+            auto ref = rs2_clone_stream_profile(_profile, &e);
+            error::handle(e);
+            stream_profile res(ref);
+            res._clone = std::shared_ptr<rs2_stream_profile>(ref, [](rs2_stream_profile* r) { rs2_delete_stream_profile(r); });
+
+            rs2_set_stream_profile_data(ref, type, format, &e);
+            error::handle(e);
+
+            return res;
+        }
+
+        template<class T>
+        bool is() const
+        {
+            T extension(*this);
+            return extension;
+        }
+
+        template<class T>
+        T as() const
+        {
+            T extension(*this);
+            return extension;
+        }
+
+        operator bool() const { return _profile != nullptr; }
+
+        const rs2_stream_profile* get() const { return _profile; }
+
+    protected:
+        friend class sensor;
+        friend class frame;
+
+        explicit stream_profile(const rs2_stream_profile* profile) : _profile(profile)
+        {
+            rs2_error* e = nullptr;
+            rs2_get_stream_profile_data(_profile, &_type, &_format, &_index, &_framerate, &e);
+            error::handle(e);
+        }
+
+        const rs2_stream_profile* _profile;
+        std::shared_ptr<rs2_stream_profile> _clone;
+             
+        int _index = 0;
+        int _framerate = 0;
+        rs2_format _format = RS2_FORMAT_ANY;
+        rs2_stream _type = RS2_STREAM_ANY;
+    };
+
+    class video_stream_profile : public stream_profile
+    {
+    public:
+        explicit video_stream_profile(const stream_profile& sp)
+            : stream_profile(sp)
+        {
+            rs2_error* e = nullptr;
+            if ((rs2_stream_profile_is(sp.get(), RS2_EXTENSION_TYPE_VIDEO_PROFILE, &e) == 0 && !e))
+            {
+                _profile = nullptr;
+            }
+            error::handle(e);
+
+            rs2_get_video_stream_resolution(_profile, &_width, &_height, &e);
+            error::handle(e);
+        }
+
+
+        int get_width() const
+        {
+            return _width;
+        }
+
+        int get_height() const
+        {
+            return _height;
+        }
+
+        rs2_intrinsics get_intrinsics() const
+        {
+            rs2_error* e = nullptr;
+            rs2_intrinsics intr;
+            rs2_get_video_stream_intrinsics(_profile, &intr, &e);
+            error::handle(e);
+            return intr;
+        }
+
+    private:
+        int _width = 0;
+        int _height = 0;
+    };
+
+    inline bool match(const stream_profile& a, const stream_profile& b)
+    {
+        if (a.stream_type() != RS2_STREAM_ANY && b.stream_type() != RS2_STREAM_ANY && (a.stream_type() != b.stream_type()))
+            return false;
+        if (a.format() != RS2_FORMAT_ANY && b.format() != RS2_FORMAT_ANY && (a.format() != b.format()))
+            return false;
+        if (a.fps() != 0 && b.fps() != 0 && (a.fps() != b.fps()))
+            return false;
+
+        if (auto vid_a = a.as<video_stream_profile>())
+        {
+            if (auto vid_b = b.as<video_stream_profile>())
+            {
+                if (vid_a.get_width() != 0 && vid_b.get_width() != 0 && (vid_a.get_width() != vid_b.get_width()))
+                    return false;
+                if (vid_a.get_height() != 0 && vid_b.get_height() != 0 && (vid_a.get_height() != vid_b.get_height()))
+                    return false;
+            }
+            else return false;
+        }
+
+        return true;
+    }
+
+    inline bool contradicts(const stream_profile& a, const std::vector<stream_profile>& others)
+    {
+        for (auto request : others)
+        {
+            if (a.fps() != 0 && request.fps() != 0 && (a.fps() != request.fps()))
+                return true;
+        }
+
+        if (auto vid_a = a.as<video_stream_profile>())
+        {
+            for (auto request : others)
+            {
+                if (auto vid_b = request.as<video_stream_profile>())
+                {
+                    if (vid_a.get_width() != 0 && vid_b.get_width() != 0 && (vid_a.get_width() != vid_b.get_width()))
+                        return true;
+                    if (vid_a.fps() != 0 && vid_b.fps() != 0 && (vid_a.fps() != vid_b.fps()))
+                        return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    inline bool has_wildcards(const stream_profile& a)
+    {
+        if (a.fps() == 0 || a.stream_type() == rs2_stream::RS2_STREAM_ANY || a.format() == RS2_FORMAT_ANY) return true;
+        if (auto vid_a = a.as<video_stream_profile>())
+        {
+            if (vid_a.get_width() == 0 || vid_a.get_height() == 0) return true;
+        }
+        return false;
+    }
+
+
     class frame
     {
     public:
         frame() : frame_ref(nullptr) {}
         frame(rs2_frame * frame_ref) : frame_ref(frame_ref) {}
-        frame(frame&& other) : frame_ref(other.frame_ref) { other.frame_ref = nullptr; }
+        frame(frame&& other) noexcept : frame_ref(other.frame_ref) { other.frame_ref = nullptr; }
         frame& operator=(frame other)
         {
             swap(other);
@@ -322,28 +454,12 @@ namespace rs2
             return r;
         }
 
-        /**
-        * retrieve pixel format of the frame
-        * \return               pixel format as described in rs2_format enum
-        */
-        rs2_format get_format() const
+        stream_profile get_profile() const
         {
             rs2_error * e = nullptr;
-            auto r = rs2_get_frame_format(frame_ref, &e);
+            auto s = rs2_get_frame_stream_profile(frame_ref, &e);
             error::handle(e);
-            return r;
-        }
-
-        /**
-        * retrieve the origin stream type that produced the frame
-        * \return               stream type of the frame
-        */
-        rs2_stream get_stream_type() const
-        {
-            rs2_error * e = nullptr;
-            auto s = rs2_get_frame_stream_type(frame_ref, &e);
-            error::handle(e);
-            return s;
+            return stream_profile(s);
         }
 
         template<class T>
@@ -525,7 +641,7 @@ namespace rs2
         {
             frame result;
             foreach([&result, s](frame f){
-                if (!result && f.get_stream_type() == s)
+                if (!result && f.get_profile().stream_type() == s)
                 {
                     result = std::move(f);
                 }
@@ -550,7 +666,7 @@ namespace rs2
         {
             rs2_error* e = nullptr;
             auto count = size();
-            for (int i = 0; i < count; i++)
+            for (size_t i = 0; i < count; i++)
             {
                 auto fref = rs2_extract_frame(frame_ref, i, &e);
                 error::handle(e);
@@ -594,7 +710,7 @@ namespace rs2
     {
     public:
 
-        frame allocate_video_frame(rs2_stream new_stream, 
+        frame allocate_video_frame(const stream_profile& profile,
                                    const frame& original, 
                                    rs2_format new_format = RS2_FORMAT_ANY,
                                    int new_bpp = 0,
@@ -603,8 +719,8 @@ namespace rs2
                                    int new_stride = 0) const 
         {
             rs2_error* e = nullptr;
-            auto result = rs2_allocate_synthetic_video_frame(_source, new_stream, 
-                original.get(), new_format, new_bpp, new_width, new_height, new_stride, &e);
+            auto result = rs2_allocate_synthetic_video_frame(_source, profile.get(),
+                original.get(), new_bpp, new_width, new_height, new_stride, &e);
             error::handle(e);
             return result;
         }
@@ -789,11 +905,7 @@ namespace rs2
         {
             rs2_error* e = nullptr;
             rs2_open(_sensor.get(),
-                profile.stream,
-                profile.width,
-                profile.height,
-                profile.fps,
-                profile.format,
+                profile.get(),
                 &e);
             error::handle(e);
         }
@@ -833,26 +945,15 @@ namespace rs2
         {
             rs2_error* e = nullptr;
 
-            std::vector<rs2_format> formats;
-            std::vector<int> widths;
-            std::vector<int> heights;
-            std::vector<int> fpss;
-            std::vector<rs2_stream> streams;
+            std::vector<const rs2_stream_profile*> profs;
+            profs.reserve(profiles.size());
             for (auto& p : profiles)
             {
-                formats.push_back(p.format);
-                widths.push_back(p.width);
-                heights.push_back(p.height);
-                fpss.push_back(p.fps);
-                streams.push_back(p.stream);
+                profs.push_back(p.get());
             }
 
             rs2_open_multiple(_sensor.get(),
-                streams.data(),
-                widths.data(),
-                heights.data(),
-                fpss.data(),
-                formats.data(),
+                profs.data(),
                 static_cast<int>(profiles.size()),
                 &e);
             error::handle(e);
@@ -1020,13 +1121,13 @@ namespace rs2
         * check if physical subdevice is supported
         * \return   list of stream profiles that given subdevice can provide, should be released by rs2_delete_profiles_list
         */
-        std::vector<stream_profile> get_stream_modes() const
+        std::vector<stream_profile> get_stream_profiles() const
         {
             std::vector<stream_profile> results;
 
             rs2_error* e = nullptr;
             std::shared_ptr<rs2_stream_profile_list> list(
-                rs2_get_stream_modes(_sensor.get(), &e),
+                rs2_get_stream_profiles(_sensor.get(), &e),
                 rs2_delete_modes_list);
             error::handle(e);
 
@@ -1035,37 +1136,12 @@ namespace rs2
 
             for (auto i = 0; i < size; i++)
             {
-                stream_profile profile;
-                rs2_get_stream_mode(list.get(), i,
-                    &profile.stream,
-                    &profile.width,
-                    &profile.height,
-                    &profile.fps,
-                    &profile.format,
-                    &e);
+                stream_profile profile(rs2_get_stream_profile(list.get(), i, &e));
                 error::handle(e);
                 results.push_back(profile);
             }
 
             return results;
-        }
-
-        /*
-        * retrieve stream intrinsics
-        * \param[in] profile the stream profile to calculate the intrinsics for
-        * \return intrinsics object
-        */
-        rs2_intrinsics get_intrinsics(stream_profile profile) const {
-            rs2_error *e = nullptr;
-            rs2_intrinsics intrinsics;
-            rs2_get_stream_intrinsics(_sensor.get(),
-                                      profile.stream,
-                                      profile.width,
-                                      profile.height,
-                                      profile.fps,
-                                      profile.format, &intrinsics, &e);
-            error::handle(e);
-            return intrinsics;
         }
 
         /**
@@ -1342,7 +1418,7 @@ namespace rs2
             std::vector<uint8_t> results;
 
             rs2_error* e = nullptr;
-            std::shared_ptr<rs2_raw_data_buffer> list(
+            std::shared_ptr<const rs2_raw_data_buffer> list(
                     rs2_send_and_receive_raw_data(_dev.get(), (void*)input.data(), (uint32_t)input.size(), &e),
                     rs2_delete_raw_data);
             error::handle(e);

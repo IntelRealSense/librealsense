@@ -16,6 +16,7 @@
 #include "ds5-options.h"
 #include "ds5-motion.h"
 #include "core/motion.h"
+#include "stream.h"
 
 namespace librealsense
 {
@@ -60,6 +61,19 @@ namespace librealsense
             return _owner->get_motion_intrinsics(stream);
         }
 
+        stream_profiles init_stream_profiles() override
+        {
+            auto results = hid_sensor::init_stream_profiles();
+
+            for (auto p : results)
+            {
+                // Register stream types
+                assign_stream(_owner->_streams.find(p->get_stream_type())->second, p);
+            }
+
+            return results;
+        }
+
     private:
         const ds5_motion* _owner;
     };
@@ -79,6 +93,30 @@ namespace librealsense
                 ds::calibration_table_id::fisheye_calibration_id,
                 profile.width, profile.height);
         }
+
+        stream_profiles init_stream_profiles() override
+        {
+            auto results = uvc_sensor::init_stream_profiles();
+
+            for (auto p : results)
+            {
+                // Register stream types
+                if (p->get_stream_type() == RS2_STREAM_FISHEYE)
+                {
+                    assign_stream(_owner->_streams.find(RS2_STREAM_FISHEYE)->second, p);
+                }
+
+                // Register intrinsics
+                auto video = dynamic_cast<video_stream_profile_interface*>(p.get());
+                auto profile = to_profile(p.get());
+                video->set_intrinsics([profile, this]()
+                {
+                    return get_intrinsics(profile);
+                });
+            }
+
+            return results;
+        }
     private:
         const ds5_motion* _owner;
     };
@@ -92,33 +130,6 @@ namespace librealsense
             return create_motion_intrinsics(*_gyro_intrinsics);
 
         throw std::runtime_error(to_string() << "Motion Intrinsics unknown for stream " << rs2_stream_to_string(stream) << "!");
-    }
-
-    pose ds5_motion::get_device_position(unsigned int subdevice) const
-    {
-        if (subdevice == _fisheye_device_idx)
-        {
-            auto extr = librealsense::ds::get_fisheye_extrinsics_data(*_fisheye_extrinsics_raw);
-            return inverse(extr);
-        }
-
-        if (subdevice == _motion_module_device_idx)
-        {
-            // Fist, get Fish-eye pose
-            auto fe_pose = get_device_position(_fisheye_device_idx);
-
-            auto motion_extr = *_motion_module_extrinsics_raw;
-
-            auto rot = motion_extr.rotation;
-            auto trans = motion_extr.translation;
-
-            pose ex = {{rot(0,0), rot(1,0),rot(2,0),rot(1,0), rot(1,1),rot(2,1),rot(0,2), rot(1,2),rot(2,2)},
-                       {trans[0], trans[1], trans[2]}};
-
-            return fe_pose * ex;
-        }
-
-        return ds5_device::get_device_position(subdevice);
     }
 
     std::vector<uint8_t> ds5_motion::get_raw_fisheye_intrinsics_table() const
@@ -149,7 +160,7 @@ namespace librealsense
         return _hw_monitor->send(cmd);
     }
 
-    std::shared_ptr<hid_sensor> ds5_motion::create_hid_device(const std::shared_ptr<context>& ctx,
+    std::shared_ptr<hid_sensor> ds5_motion::create_hid_device(std::shared_ptr<context> ctx,
                                                                 const std::vector<platform::hid_device_info>& all_hid_infos,
                                                                 const firmware_version& camera_fw_version)
     {
@@ -162,10 +173,10 @@ namespace librealsense
         if (camera_fw_version >= firmware_version(custom_sensor_fw_ver))
         {
             static const std::vector<std::pair<std::string, stream_profile>> custom_sensor_profiles =
-                {{std::string("custom"), {RS2_STREAM_GPIO1, 1, 1, 1, RS2_FORMAT_GPIO_RAW}},
-                 {std::string("custom"), {RS2_STREAM_GPIO2, 1, 1, 1, RS2_FORMAT_GPIO_RAW}},
-                 {std::string("custom"), {RS2_STREAM_GPIO3, 1, 1, 1, RS2_FORMAT_GPIO_RAW}},
-                 {std::string("custom"), {RS2_STREAM_GPIO4, 1, 1, 1, RS2_FORMAT_GPIO_RAW}}};
+                {{std::string("custom"), {0, RS2_STREAM_GPIO1, 1, 1, 1, RS2_FORMAT_GPIO_RAW}},
+                 {std::string("custom"), {0, RS2_STREAM_GPIO2, 1, 1, 1, RS2_FORMAT_GPIO_RAW}},
+                 {std::string("custom"), {0, RS2_STREAM_GPIO3, 1, 1, 1, RS2_FORMAT_GPIO_RAW}},
+                 {std::string("custom"), {0, RS2_STREAM_GPIO4, 1, 1, 1, RS2_FORMAT_GPIO_RAW}}};
             std::copy(custom_sensor_profiles.begin(), custom_sensor_profiles.end(), std::back_inserter(sensor_name_and_hid_profiles));
         }
 
@@ -176,9 +187,6 @@ namespace librealsense
                                                         sensor_name_and_hid_profiles);
         hid_ep->register_pixel_format(pf_accel_axes);
         hid_ep->register_pixel_format(pf_gyro_axes);
-
-
-        hid_ep->set_pose(lazy<pose>([](){pose p = {{ { 1,0,0 },{ 0,1,0 },{ 0,0,1 } },{ 0,0,0 }}; return p; }));
 
         if (camera_fw_version >= firmware_version(custom_sensor_fw_ver))
         {
@@ -236,11 +244,19 @@ namespace librealsense
         return auto_exposure;
     }
 
-    ds5_motion::ds5_motion(const std::shared_ptr<context>& ctx,
+    ds5_motion::ds5_motion(std::shared_ptr<context> ctx,
                            const platform::backend_device_group& group)
-        : ds5_device(ctx, group)
+        : device(ctx), ds5_device(ctx, group)
     {
         using namespace ds;
+
+        _streams[RS2_STREAM_FISHEYE] = std::make_shared<stream>(ctx);
+        _streams[RS2_STREAM_ACCEL] = std::make_shared<stream>(ctx);
+        _streams[RS2_STREAM_GYRO] = std::make_shared<stream>(ctx);
+        _streams[RS2_STREAM_GPIO1] = std::make_shared<stream>(ctx);
+        _streams[RS2_STREAM_GPIO2] = std::make_shared<stream>(ctx);
+        _streams[RS2_STREAM_GPIO3] = std::make_shared<stream>(ctx);
+        _streams[RS2_STREAM_GPIO4] = std::make_shared<stream>(ctx);
 
         auto&& backend = ctx->get_backend();
 
@@ -326,7 +342,35 @@ namespace librealsense
         // Add fisheye endpoint
         _fisheye_device_idx = add_sensor(fisheye_ep);
 
-        fisheye_ep->set_pose(lazy<pose>([this](){return get_device_position(_fisheye_device_idx);}));
+        _depth_to_fisheye = std::make_shared<lazy<rs2_extrinsics>>([this]()
+        {
+            auto extr = get_fisheye_extrinsics_data(*_fisheye_extrinsics_raw);
+            return from_pose(inverse(extr));
+        });
+
+        _fisheye_to_imu = std::make_shared<lazy<rs2_extrinsics>>([this]()
+        {
+            auto motion_extr = *_motion_module_extrinsics_raw;
+
+            auto rot = motion_extr.rotation;
+            auto trans = motion_extr.translation;
+
+            pose ex = { { rot(0,0), rot(1,0),rot(2,0),rot(1,0), rot(1,1),rot(2,1),rot(0,2), rot(1,2),rot(2,2) },
+            { trans[0], trans[1], trans[2] } };
+
+            return from_pose(ex);
+        });
+
+        ctx->register_extrinsics(*_depth_stream, *_streams[RS2_STREAM_FISHEYE], _depth_to_fisheye);
+        ctx->register_extrinsics(*_streams[RS2_STREAM_FISHEYE], *_streams[RS2_STREAM_ACCEL], _fisheye_to_imu);
+
+        // Make sure all MM streams are positioned with the same extrinsics
+        ctx->register_same_extrinsics(*_streams[RS2_STREAM_ACCEL], *_streams[RS2_STREAM_GYRO]);
+        ctx->register_same_extrinsics(*_streams[RS2_STREAM_ACCEL], *_streams[RS2_STREAM_GPIO1]);
+        ctx->register_same_extrinsics(*_streams[RS2_STREAM_ACCEL], *_streams[RS2_STREAM_GPIO2]);
+        ctx->register_same_extrinsics(*_streams[RS2_STREAM_ACCEL], *_streams[RS2_STREAM_GPIO3]);
+        ctx->register_same_extrinsics(*_streams[RS2_STREAM_ACCEL], *_streams[RS2_STREAM_GPIO4]);
+
 
         // Add hid endpoint
         auto hid_ep = create_hid_device(ctx, group.hid_devices, _fw_version);
@@ -344,8 +388,6 @@ namespace librealsense
         {
             LOG_ERROR("Motion Device is not calibrated! Motion Data Correction will not be available! Error: " << ex.what());
         }
-
-        hid_ep->set_pose(lazy<pose>([this](){return get_device_position(_motion_module_device_idx); }));
 
         if (!motion_module_fw_version.empty())
             register_info(RS2_CAMERA_INFO_FIRMWARE_VERSION, motion_module_fw_version);

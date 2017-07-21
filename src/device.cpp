@@ -64,20 +64,6 @@ void device::hardware_reset()
     throw not_implemented_exception(to_string() << __FUNCTION__ << " is not implemented for this device!");
 }
 
-rs2_extrinsics device::get_extrinsics(size_t from_subdevice, rs2_stream, size_t to_subdevice, rs2_stream) const
-{
-    auto from = dynamic_cast<const sensor_base&>(get_sensor(from_subdevice)).get_pose(), 
-         to   = dynamic_cast<const sensor_base&>(get_sensor(to_subdevice)).get_pose();
-    if (from == to)
-        return { {1,0,0,0,1,0,0,0,1}, {0,0,0} }; // identity transformation
-
-    auto transform = inverse(from) * to;
-    rs2_extrinsics extrin;
-    (float3x3 &)extrin.rotation = transform.orientation;
-    (float3 &)extrin.translation = transform.position;
-    return extrin;
-}
-
 std::shared_ptr<matcher> librealsense::device::create_matcher(rs2_stream stream) const
 {
     return std::make_shared<identity_matcher>( stream_id((device_interface*)(this), stream));

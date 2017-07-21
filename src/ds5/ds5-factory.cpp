@@ -28,9 +28,10 @@ namespace librealsense
     class rs400_device : public ds5_rolling_shutter, public ds5_advanced_mode_base
     {
     public:
-        rs400_device(const std::shared_ptr<context>& ctx,
+        rs400_device(std::shared_ptr<context> ctx,
                      const platform::backend_device_group& group)
-            : ds5_device(ctx, group),
+            : device(ctx), 
+              ds5_device(ctx, group),
               ds5_rolling_shutter(ctx, group),
               ds5_advanced_mode_base(ds5_device::_hw_monitor, get_depth_sensor()) {}
     };
@@ -40,9 +41,10 @@ namespace librealsense
                          public ds5_active, public ds5_advanced_mode_base
     {
     public:
-        rs410_device(const std::shared_ptr<context>& ctx,
+        rs410_device(std::shared_ptr<context> ctx,
                      const platform::backend_device_group& group)
-            : ds5_device(ctx, group),
+            : device(ctx), 
+              ds5_device(ctx, group),
               ds5_rolling_shutter(ctx, group),
               ds5_active(ctx, group),
               ds5_advanced_mode_base(ds5_device::_hw_monitor, get_depth_sensor())  {}
@@ -55,9 +57,10 @@ namespace librealsense
                          public ds5_advanced_mode_base
     {
     public:
-        rs415_device(const std::shared_ptr<context>& ctx,
+        rs415_device(std::shared_ptr<context> ctx,
                      const platform::backend_device_group& group)
-            : ds5_device(ctx, group),
+            : device(ctx), 
+              ds5_device(ctx, group),
               ds5_rolling_shutter(ctx, group),
               ds5_active(ctx, group),
               ds5_color(ctx, group),
@@ -68,9 +71,10 @@ namespace librealsense
     class rs420_mm_device : public ds5_motion, public ds5_advanced_mode_base
     {
     public:
-        rs420_mm_device(const std::shared_ptr<context>& ctx,
+        rs420_mm_device(std::shared_ptr<context> ctx,
                         const platform::backend_device_group& group)
-            : ds5_device(ctx, group),
+            : device(ctx), 
+              ds5_device(ctx, group),
               ds5_motion(ctx, group),
               ds5_advanced_mode_base(ds5_device::_hw_monitor, get_depth_sensor())  {}
     };
@@ -79,9 +83,10 @@ namespace librealsense
     class rs430_device : public ds5_active, public ds5_advanced_mode_base
     {
     public:
-        rs430_device(const std::shared_ptr<context>& ctx,
+        rs430_device(std::shared_ptr<context> ctx,
                      const platform::backend_device_group& group)
-            : ds5_device(ctx, group),
+            : device(ctx), 
+              ds5_device(ctx, group),
               ds5_active(ctx, group),
               ds5_advanced_mode_base(ds5_device::_hw_monitor, get_depth_sensor())  {}
 
@@ -93,9 +98,10 @@ namespace librealsense
                             public ds5_advanced_mode_base
     {
     public:
-        rs430_mm_device(const std::shared_ptr<context>& ctx, 
+        rs430_mm_device(std::shared_ptr<context> ctx, 
                         const platform::backend_device_group& group)
-            : ds5_device(ctx, group),
+            : device(ctx), 
+              ds5_device(ctx, group),
               ds5_active(ctx, group),
               ds5_motion(ctx, group),
               ds5_advanced_mode_base(ds5_device::_hw_monitor, get_depth_sensor())  {}
@@ -107,9 +113,10 @@ namespace librealsense
                          public ds5_advanced_mode_base
     {
     public:
-        rs435_device(const std::shared_ptr<context>& ctx, 
+        rs435_device(std::shared_ptr<context> ctx, 
                      const platform::backend_device_group& group)
-            : ds5_device(ctx, group),
+            : device(ctx), 
+              ds5_device(ctx, group),
               ds5_active(ctx, group),
               ds5_color(ctx,  group),
               ds5_advanced_mode_base(ds5_device::_hw_monitor, get_depth_sensor()) {}
@@ -125,16 +132,17 @@ namespace librealsense
                                 public ds5_advanced_mode_base
     {
     public:
-        rs430_rgb_mm_device(const std::shared_ptr<context>& ctx,
+        rs430_rgb_mm_device(std::shared_ptr<context> ctx,
                             const platform::backend_device_group& group)
-            : ds5_device(ctx, group),
+            : device(ctx),
+              ds5_device(ctx, group),
               ds5_active(ctx, group),
               ds5_color(ctx,  group),
               ds5_motion(ctx, group),
               ds5_advanced_mode_base(ds5_device::_hw_monitor, get_depth_sensor()) {}
     };
 
-    std::shared_ptr<device_interface> ds5_info::create(const std::shared_ptr<context>& ctx) const
+    std::shared_ptr<device_interface> ds5_info::create(std::shared_ptr<context> ctx) const
     {
         using namespace ds;
 

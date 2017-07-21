@@ -9,13 +9,13 @@ namespace librealsense
     class ds5_info : public device_info
     {
     public:
-        std::shared_ptr<device_interface> create(const std::shared_ptr<context>& ctx) const override;
+        std::shared_ptr<device_interface> create(std::shared_ptr<context> ctx) const override;
 
         ds5_info(std::shared_ptr<context> ctx,
                  std::vector<platform::uvc_device_info> depth,
                  std::vector<platform::usb_device_info> hwm,
                  std::vector<platform::hid_device_info> hid)
-            : device_info(std::move(ctx)), _depth(std::move(depth)),
+            : device_info(ctx), _depth(std::move(depth)),
               _hwm(std::move(hwm)), _hid(std::move(hid)) {}
 
         static std::vector<std::shared_ptr<device_info>> pick_ds5_devices(

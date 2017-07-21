@@ -45,6 +45,8 @@ namespace librealsense
         : _devices_changed_callback(nullptr , [](rs2_devices_changed_callback*){})
     {
 
+        _stream_id = 0;
+
         LOG_DEBUG("Librealsense " << std::string(std::begin(rs2_api_version),std::end(rs2_api_version)));
 
         switch(type)
@@ -71,7 +73,7 @@ namespace librealsense
     class recovery_info : public device_info
     {
     public:
-        std::shared_ptr<device_interface> create(const std::shared_ptr<context>& /*backend*/) const override
+        std::shared_ptr<device_interface> create(std::shared_ptr<context> /*backend*/) const override
         {
             throw unrecoverable_exception(RECOVERY_MESSAGE,
                 RS2_EXCEPTION_TYPE_DEVICE_IN_RECOVERY_MODE);
@@ -83,7 +85,7 @@ namespace librealsense
         }
 
         static std::vector<std::shared_ptr<device_info>> pick_recovery_devices(
-            const std::shared_ptr<context>& ctx,
+            std::shared_ptr<context> ctx,
             const std::vector<platform::usb_device_info>& usb_devices)
         {
             std::vector<std::shared_ptr<device_info>> list;
@@ -113,10 +115,10 @@ namespace librealsense
     class platform_camera_info : public device_info
     {
     public:
-        std::shared_ptr<device_interface> create(const std::shared_ptr<context>& /*backend*/) const override;
+        std::shared_ptr<device_interface> create(std::shared_ptr<context> /*backend*/) const override;
 
         static std::vector<std::shared_ptr<device_info>> pick_uvc_devices(
-            const std::shared_ptr<context>& ctx,
+            std::shared_ptr<context> ctx,
             const std::vector<platform::uvc_device_info>& uvc_devices)
         {
             std::vector<std::shared_ptr<device_info>> list;
@@ -144,6 +146,7 @@ namespace librealsense
     {
     public:
         platform_camera(std::shared_ptr<platform::uvc_device> uvc, std::shared_ptr<context> ctx)
+            : device(ctx)
         {
             auto color_ep = std::make_shared<uvc_sensor>("RGB Camera", uvc, std::unique_ptr<ds5_timestamp_reader>(new ds5_timestamp_reader(ctx->get_time_service())), this);
             add_sensor(color_ep);
@@ -164,8 +167,6 @@ namespace librealsense
             color_ep->register_pu(RS2_OPTION_WHITE_BALANCE);
             color_ep->register_pu(RS2_OPTION_ENABLE_AUTO_EXPOSURE);
             color_ep->register_pu(RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE);
-
-            color_ep->set_pose(lazy<pose>([](){pose p = {{ { 1,0,0 },{ 0,1,0 },{ 0,0,1 } },{ 0,0,0 }}; return p; }));
         }
 
         virtual rs2_intrinsics get_intrinsics(unsigned int subdevice, const stream_profile& profile) const 
@@ -174,7 +175,7 @@ namespace librealsense
         }
     };
 
-    std::shared_ptr<device_interface> platform_camera_info::create(const std::shared_ptr<context>& ctx) const
+    std::shared_ptr<device_interface> platform_camera_info::create(std::shared_ptr<context> ctx) const
     {
         auto&& backend = ctx->get_backend();
         return std::make_shared<platform_camera>(backend.create_uvc_device(_uvc), ctx);
@@ -409,7 +410,7 @@ namespace librealsense
         });
     }
 
-        static std::vector<platform::uvc_device_info> filter_by_product(const std::vector<platform::uvc_device_info>& devices, const std::set<uint16_t>& pid_list)
+    std::vector<platform::uvc_device_info> filter_by_product(const std::vector<platform::uvc_device_info>& devices, const std::set<uint16_t>& pid_list)
     {
         std::vector<platform::uvc_device_info> result;
         for (auto&& info : devices)

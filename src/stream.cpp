@@ -5,7 +5,7 @@
 
 namespace librealsense
 {
-    stream::stream(std::shared_ptr<context> ctx): _ctx(move(ctx))
+    stream::stream(std::shared_ptr<context> ctx): _ctx(ctx)
     {
         _index = ctx->generate_stream_id();
     }
@@ -35,7 +35,8 @@ namespace librealsense
         _type = stream;
     }
 
-    stream_profile_base::stream_profile_base(std::shared_ptr<context> ctx): _ctx(move(ctx))
+    stream_profile_base::stream_profile_base(std::shared_ptr<context> ctx, platform::stream_profile sp)
+        : backend_stream_profile(std::move(sp)), _ctx(ctx)
     {
         _c_ptr = &_c_wrapper;
         _c_wrapper.profile = this;
@@ -104,7 +105,7 @@ namespace librealsense
 
     std::shared_ptr<stream_profile_interface> stream_profile_base::clone() const
     {
-        return std::make_shared<stream_profile_base>(_ctx);
+        return std::make_shared<stream_profile_base>(_ctx, get_backend_profile());
     }
 
     rs2_stream_profile* stream_profile_base::get_c_wrapper() const

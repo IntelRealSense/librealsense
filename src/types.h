@@ -390,10 +390,10 @@ namespace librealsense
 
     struct stream_profile
     {
+        int index;
         rs2_stream stream;
         uint32_t width, height, fps;
         rs2_format format;
-
     };
 
 
@@ -404,7 +404,7 @@ namespace librealsense
             (a.height == b.height) &&
             (a.fps == b.fps) &&
             (a.format == b.format) &&
-            (a.stream == b.stream);
+            (a.index == b.index);
     }
 
     struct pixel_format_unpacker
@@ -464,11 +464,16 @@ namespace librealsense
         }
     };
 
+    class stream_profile_interface;
+
     struct request_mapping
     {
         platform::stream_profile profile;
         native_pixel_format* pf;
         pixel_format_unpacker* unpacker;
+
+        // The request lists is there just for lookup and is not involved in object comparison
+        mutable std::vector<std::shared_ptr<stream_profile_interface>> original_requests;
 
         operator request_mapping_tuple() const
         {

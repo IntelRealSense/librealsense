@@ -19,9 +19,9 @@
 
 namespace librealsense
 {
-    ds5_rolling_shutter::ds5_rolling_shutter(const platform::backend& backend,
+    ds5_rolling_shutter::ds5_rolling_shutter(std::shared_ptr<context> ctx,
                                              const platform::backend_device_group& group)
-        : ds5_device(backend, group)
+        : device(ctx), ds5_device(ctx, group)
     {
         using namespace ds;
 

@@ -49,14 +49,9 @@ namespace librealsense
             return _is_streaming;
         }
 
-        rs2_extrinsics get_extrinsics_to(rs2_stream from, const sensor_interface& other, rs2_stream to) const override;
-
         virtual ~sensor_base() { _source.flush(); }
 
-        void register_metadata(rs2_frame_metadata metadata, std::shared_ptr<md_attribute_parser_base> metadata_parser);
-
-        void set_pose(lazy<pose> p) { _pose = std::move(p); }
-        pose get_pose() const { return *_pose; }
+        void register_metadata(rs2_frame_metadata metadata, std::shared_ptr<md_attribute_parser_base> metadata_parser) const;
 
         void register_on_before_frame_callback(on_before_frame_callback callback)
         {
@@ -73,8 +68,10 @@ namespace librealsense
         }
 
     protected:
-
         bool try_get_pf(const platform::stream_profile& p, native_pixel_format& result) const;
+
+        void assign_stream(const std::shared_ptr<stream_interface>& stream,
+                           std::shared_ptr<stream_profile_interface>& target) const;
 
         std::vector<request_mapping> resolve_requests(stream_profiles requests);
 
@@ -92,7 +89,6 @@ namespace librealsense
 
     private:
         lazy<stream_profiles> _profiles;
-        lazy<pose> _pose;
         std::vector<native_pixel_format> _pixel_formats;
     };
 
@@ -130,8 +126,10 @@ namespace librealsense
                                                     const std::string& report_name,
                                                     platform::custom_sensor_report_field report_field) const;
 
-    private:
+    protected:
+        stream_profiles init_stream_profiles() override;
 
+    private:
         const std::map<rs2_stream, uint32_t> stream_and_fourcc = {{RS2_STREAM_GYRO,  'GYRO'},
                                                                   {RS2_STREAM_ACCEL, 'ACCL'},
                                                                   {RS2_STREAM_GPIO1, 'GPIO'},
@@ -152,8 +150,6 @@ namespace librealsense
 
         stream_profiles get_sensor_profiles(std::string sensor_name) const;
 
-        stream_profiles init_stream_profiles() override;
-
         const std::string& rs2_stream_to_sensor_name(rs2_stream stream) const;
 
         uint32_t stream_to_fourcc(rs2_stream stream) const;
@@ -166,12 +162,7 @@ namespace librealsense
     {
     public:
         explicit uvc_sensor(std::string name, std::shared_ptr<platform::uvc_device> uvc_device,
-                            std::unique_ptr<frame_timestamp_reader> timestamp_reader, device* dev)
-            : sensor_base(name, dev),
-              _device(move(uvc_device)),
-              _user_count(0),
-              _timestamp_reader(std::move(timestamp_reader))
-        {}
+                            std::unique_ptr<frame_timestamp_reader> timestamp_reader, device* dev);
 
         ~uvc_sensor();
 
@@ -198,9 +189,10 @@ namespace librealsense
 
         void stop() override;
 
-    private:
+    protected:
         stream_profiles init_stream_profiles() override;
 
+    private:
         void acquire_power();
 
         void release_power();
@@ -233,5 +225,6 @@ namespace librealsense
         std::unique_ptr<power> _power;
         std::unique_ptr<frame_timestamp_reader> _timestamp_reader;
         std::shared_ptr<region_of_interest_method> _roi_method = nullptr;
+        std::shared_ptr<stream_interface> _default_stream;
     };
 }

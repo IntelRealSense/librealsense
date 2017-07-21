@@ -19,9 +19,9 @@
 
 namespace librealsense
 {
-    ds5_active::ds5_active(const std::shared_ptr<context>& ctx,
+    ds5_active::ds5_active(std::shared_ptr<context> ctx,
                            const platform::backend_device_group& group)
-        : ds5_device(ctx, group)
+        : device(ctx), ds5_device(ctx, group)
     {
         using namespace ds;
 

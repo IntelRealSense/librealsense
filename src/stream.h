@@ -27,10 +27,22 @@ namespace librealsense
         rs2_stream _type = RS2_STREAM_ANY;
     };
 
-    class stream_profile_base : public virtual stream_profile_interface
+    class backend_stream_profile
     {
     public:
-        explicit stream_profile_base(std::shared_ptr<context> ctx);
+        explicit backend_stream_profile(platform::stream_profile sp) : _sp(std::move(sp)) {}
+
+        platform::stream_profile get_backend_profile() const { return _sp; }
+
+        virtual ~backend_stream_profile() = default;
+    private:
+        platform::stream_profile _sp;
+    };
+
+    class stream_profile_base : public virtual stream_profile_interface, public backend_stream_profile
+    {
+    public:
+        stream_profile_base(std::shared_ptr<context> ctx, platform::stream_profile sp);
 
         context& get_context() const override;
 
@@ -71,15 +83,15 @@ namespace librealsense
     class video_stream_profile : public virtual video_stream_profile_interface, public stream_profile_base
     {
     public:
-        explicit video_stream_profile(const std::shared_ptr<context>& ctx)
-            : stream_profile_base(ctx), 
+        explicit video_stream_profile(std::shared_ptr<context> ctx, platform::stream_profile sp)
+            : stream_profile_base(ctx, std::move(sp)), 
               _calc_intrinsics([]() -> rs2_intrinsics { throw not_implemented_exception("No intrinsics are available for this stream profile!"); }),
               _width(0), _height(0)
         {
         }
 
         rs2_intrinsics get_intrinsics() const override { return _calc_intrinsics(); }
-        void set_intrinsics(std::function<rs2_intrinsics()> calc) { _calc_intrinsics = calc; }
+        void set_intrinsics(std::function<rs2_intrinsics()> calc) override { _calc_intrinsics = calc; }
         
         uint32_t get_width() const override { return _width; }
         uint32_t get_height() const override { return _height; }
@@ -98,9 +110,9 @@ namespace librealsense
         auto fps = static_cast<uint32_t>(sp->get_framerate());
         if (auto vid = dynamic_cast<const video_stream_profile*>(sp))
         {
-            return{ sp->get_stream_type(), vid->get_width(), vid->get_height(), fps, sp->get_format() };
+            return{ sp->get_stream_index(), sp->get_stream_type(), vid->get_width(), vid->get_height(), fps, sp->get_format() };
         }
-        return{ sp->get_stream_type(), 0, 0, fps, sp->get_format() };
+        return{ sp->get_stream_index(), sp->get_stream_type(), 0, 0, fps, sp->get_format() };
     }
 
     inline std::vector<stream_profile> to_profiles(const std::vector<std::shared_ptr<stream_profile_interface>>& vec)

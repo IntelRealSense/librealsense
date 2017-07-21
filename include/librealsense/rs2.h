@@ -225,6 +225,7 @@ typedef enum rs2_extension_type
     RS2_EXTENSION_TYPE_COMPOSITE_FRAME,
     RS2_EXTENSION_TYPE_POINTS,
     RS2_EXTENSION_TYPE_ADVANCED_MODE,
+    RS2_EXTENSION_TYPE_VIDEO_PROFILE,
     RS2_EXTENSION_TYPE_COUNT
 } rs2_extension_type;
 
@@ -414,7 +415,8 @@ rs2_sensor* rs2_create_sensor(const rs2_sensor_list* list, int index, rs2_error*
  * TODO
  * \param[out] error        if non-null, receives any error that occurs during this call, otherwise, errors are ignored
  */
-void rs2_get_extrinsics(const rs2_stream_profile* from,
+void rs2_get_extrinsics(rs2_context* ctx,
+                        const rs2_stream_profile* from,
                         const rs2_stream_profile* to,
                         rs2_extrinsics * extrin, rs2_error ** error);
 
@@ -440,7 +442,7 @@ void rs2_hardware_reset(const rs2_device * device, rs2_error ** error);
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return            list of stream profiles that given subdevice can provide, should be released by rs2_delete_profiles_list
 */
-rs2_stream_profile_list* rs2_get_stream_modes(rs2_sensor* device, rs2_error** error);
+rs2_stream_profile_list* rs2_get_stream_profiles(rs2_sensor* device, rs2_error** error);
 
 /**
 * Get pointer to specific stream profile
@@ -448,24 +450,26 @@ rs2_stream_profile_list* rs2_get_stream_modes(rs2_sensor* device, rs2_error** er
 * \param[in] index       the zero based index of the streaming mode
 * \param[out] error      if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 */
-const rs2_stream_profile* rs2_get_stream_mode(const rs2_stream_profile_list* list, int index, rs2_error** error);
+const rs2_stream_profile* rs2_get_stream_profile(const rs2_stream_profile_list* list, int index, rs2_error** error);
 
-void rs2_get_stream_mode_data(const rs2_stream_profile* mode, rs2_stream* stream, rs2_format* format, int* index, int* framerate, rs2_error** error);
+void rs2_get_stream_profile_data(const rs2_stream_profile* mode, rs2_stream* stream, rs2_format* format, int* index, int* framerate, rs2_error** error);
 
-void rs2_set_stream_mode_data(rs2_stream_profile* mode, rs2_stream stream, rs2_format format, rs2_error** error);
+void rs2_set_stream_profile_data(rs2_stream_profile* mode, rs2_stream stream, rs2_format format, rs2_error** error);
 
-rs2_stream_profile* rs2_clone_stream_mode(const rs2_stream_profile* mode, rs2_error** error);
+rs2_stream_profile* rs2_clone_stream_profile(const rs2_stream_profile* mode, rs2_error** error);
 
-void rs2_delete_stream_mode(rs2_stream_profile* mode);
+void rs2_delete_stream_profile(rs2_stream_profile* mode);
 
-int rs2_stream_mode_is(const rs2_stream_profile* mode, rs2_extension_type type, rs2_error** error);
+int rs2_stream_profile_is(const rs2_stream_profile* mode, rs2_extension_type type, rs2_error** error);
 
 /**
  * returns the intrinsics of specific stream configuration
    TODO
  * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
  */
-void rs2_get_stream_intrinsics(const rs2_stream_profile* from, rs2_intrinsics * intrinsics, rs2_error ** error);
+void rs2_get_video_stream_intrinsics(const rs2_stream_profile* from, rs2_intrinsics * intrinsics, rs2_error ** error);
+
+void rs2_get_video_stream_resolution(const rs2_stream_profile* from, int* width, int* height, rs2_error** error);
 
 /**
 * get the number of supported stream profiles
@@ -484,29 +488,20 @@ void rs2_delete_modes_list(rs2_stream_profile_list* list);
 /**
 * open subdevice for exclusive access, by committing to a configuration
 * \param[in] device relevant RealSense device
-* \param[in] stream     the stream type
-* \param[in] width      the width of a frame image in pixels
-* \param[in] height     the height of a frame image in pixels
-* \param[in] fps  the number of frames which will be streamed per second
-* \param[in] format     the pixel format of a frame image
+* \param[in] profile TODO
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 */
-void rs2_open(rs2_sensor* device, rs2_stream stream, int width, int height, int fps, rs2_format format, rs2_error** error);
+void rs2_open(rs2_sensor* device, const rs2_stream_profile* profile, rs2_error** error);
 
 /**
 * open subdevice for exclusive access, by committing to composite configuration, specifying one or more stream profiles
 * this method should be used for interdependent  streams, such as depth and infrared, that have to be configured together
 * \param[in] device relevant RealSense device
-* \param[in] stream     the stream type
-* \param[in] width      the width of a frame image in pixels
-* \param[in] height     the height of a frame image in pixels
-* \param[in] fps  the number of frames which will be streamed per second
-* \param[in] format     the pixel format of a frame image
+TODO
 * \param[in] count      number of simultaneous  stream profiles to configure
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 */
-void rs2_open_multiple(rs2_sensor* device, const rs2_stream* stream, const int* width,
-    const int* height, const int* fps, const rs2_format* format, int count, rs2_error** error);
+void rs2_open_multiple(rs2_sensor* device, const rs2_stream_profile** profiles, int count, rs2_error** error);
 
 /**
 * stop any streaming from specified subdevice
@@ -686,22 +681,6 @@ int rs2_get_frame_stride_in_bytes(const rs2_frame* frame, rs2_error** error);
 int rs2_get_frame_bits_per_pixel(const rs2_frame* frame, rs2_error** error);
 
 /**
-* retrieve pixel format of the frame
-* \param[in] frame      handle returned from a callback
-* \param[out] error     if non-null, receives any error that occurs during this call, otherwise, errors are ignored
-* \return               pixel format as described in rs2_format enum
-*/
-rs2_format rs2_get_frame_format(const rs2_frame* frame, rs2_error** error);
-
-/**
-* retrieve the origin stream type that produced the frame
-* \param[in] frame      handle returned from a callback
-* \param[out] error     if non-null, receives any error that occurs during this call, otherwise, errors are ignored
-* \return               stream type of the frame
-*/
-rs2_stream rs2_get_frame_stream_type(const rs2_frame* frameset, rs2_error** error);
-
-/**
 * create additional reference to a frame without duplicating frame data
 * \param[in] frame      handle returned from a callback
 * \param[out] error     if non-null, receives any error that occurs during this call, otherwise, errors are ignored
@@ -722,7 +701,7 @@ rs2_pixel* rs2_get_frame_pixel_coordinates(const rs2_frame* frame, rs2_error** e
 
 int rs2_get_frame_points_count(const rs2_frame* frame, rs2_error** error);
 
-const rs2_stream_profile* rs2_get_frame_stream_mode(const rs2_frame* frame, rs2_error** error);
+const rs2_stream_profile* rs2_get_frame_stream_profile(const rs2_frame* frame, rs2_error** error);
 
 /**
 * check if an option is read-only
@@ -1031,8 +1010,8 @@ void rs2_record_device_pause(const rs2_device* device, rs2_error** error);
 void rs2_record_device_resume(const rs2_device* device, rs2_error** error);
 rs2_device* rs2_create_playback_device(rs2_device_serializer* serializer, rs2_error** error);
 
-rs2_frame* rs2_allocate_synthetic_video_frame(rs2_source* source, rs2_stream new_stream, rs2_frame* original, 
-    rs2_format new_format, int new_bpp, int new_width, int new_height, int new_stride, rs2_error** error);
+rs2_frame* rs2_allocate_synthetic_video_frame(rs2_source* source, const rs2_stream_profile* new_stream, rs2_frame* original, 
+    int new_bpp, int new_width, int new_height, int new_stride, rs2_error** error);
 
 rs2_frame* rs2_allocate_composite_frame(rs2_source* source, rs2_frame** frames, int count, rs2_error** error);
 

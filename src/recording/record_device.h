@@ -37,7 +37,6 @@ namespace librealsense
         bool is_streaming() const override;
         bool extend_to(rs2_extension_type extension_type, void** ext) override;
         const device_interface& get_device() override;
-        rs2_extrinsics get_extrinsics_to(rs2_stream from, const sensor_interface& other, rs2_stream to) const  override;
         const stream_profiles& get_curr_configurations() const  override;
     private:
         sensor_interface& m_sensor;
@@ -59,16 +58,15 @@ namespace librealsense
         record_device(std::shared_ptr<device_interface> device, std::shared_ptr<device_serializer::writer> serializer);
         virtual ~record_device();
 
+        std::shared_ptr<context> get_context() const override { return nullptr; } //TODO: Add context
+
         sensor_interface& get_sensor(size_t i) override;
         size_t get_sensors_count() const override;
         const std::string& get_info(rs2_camera_info info) const override;
         bool supports_info(rs2_camera_info info) const override;
         const sensor_interface& get_sensor(size_t i) const override;
         void hardware_reset() override;
-        rs2_extrinsics get_extrinsics(size_t from,
-                                      rs2_stream from_stream,
-                                      size_t to,
-                                      rs2_stream to_stream) const override;
+
 		bool extend_to(rs2_extension_type extension_type, void** ext) override;
         virtual std::shared_ptr<matcher> create_matcher(rs2_stream stream) const override;
 

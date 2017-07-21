@@ -807,7 +807,7 @@ namespace librealsense
         if (!_advanced.is_enabled())
             throw wrong_api_call_sequence_exception(to_string() << "set(advanced_mode_preset_option) failed! Device is not is Advanced-Mode.");
 
-        return _last_preset;
+        return static_cast<float>(_last_preset);
     }
 
     bool advanced_mode_preset_option::is_enabled() const

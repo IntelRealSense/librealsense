@@ -21,9 +21,6 @@ struct frame_additional_data
 {
     rs2_time_t timestamp = 0;
     unsigned long long frame_number = 0;
-    unsigned int    fps = 0;
-    rs2_format      format = RS2_FORMAT_ANY;
-    rs2_stream      stream_type = RS2_STREAM_COUNT;
     rs2_timestamp_domain timestamp_domain = RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK;
     rs2_time_t      system_time = 0;
     rs2_time_t      frame_callback_started = 0;
@@ -33,15 +30,10 @@ struct frame_additional_data
 
     frame_additional_data() {};
 
-    frame_additional_data(double in_timestamp, unsigned long long in_frame_number, double in_system_time,
-        const rs2_format in_format, rs2_stream in_stream_type, unsigned int fps,
-        uint8_t md_size, const uint8_t* md_buf)
+    frame_additional_data(double in_timestamp, unsigned long long in_frame_number, double in_system_time, uint8_t md_size, const uint8_t* md_buf)
         : timestamp(in_timestamp),
           frame_number(in_frame_number),
           system_time(in_system_time),
-          fps(fps),
-          format(in_format),
-          stream_type(in_stream_type),
           metadata_size(md_size)
     {
         // Copy up to 255 bytes to preserve metadata as raw data
@@ -97,9 +89,9 @@ namespace librealsense
         }
 
         rs2_time_t get_frame_system_time() const override;
-        rs2_format get_format() const override;
-        rs2_stream get_stream_type() const override;
-        int get_framerate() const override;
+
+        std::shared_ptr<stream_profile_interface> get_stream() const override { return stream; }
+        void set_stream(std::shared_ptr<stream_profile_interface> sp) override { stream = std::move(sp); }
 
         rs2_time_t get_frame_callback_start_time_point() const override;
         void update_frame_callback_start_ts(rs2_time_t ts) override;
@@ -125,6 +117,7 @@ namespace librealsense
         std::shared_ptr<archive_interface> owner; // pointer to the owner to be returned to by last observe
         std::weak_ptr<sensor_interface> sensor;
         frame_continuation on_release;
+        std::shared_ptr<stream_profile_interface> stream;
     };
 
     class points : public frame
@@ -192,21 +185,6 @@ namespace librealsense
         rs2_time_t get_frame_system_time() const override
         {
             return first()->get_frame_system_time();
-        }
-        rs2_format get_format() const override
-        {
-            return first()->get_format();
-        }
-        rs2_stream get_stream_type() const override
-        {
-            if (first())
-                return first()->get_stream_type();
-            else
-                return frame::get_stream_type();
-        }
-        int get_framerate() const override
-        {
-            return first()->get_framerate();
         }
         std::shared_ptr<sensor_interface> get_sensor() const override
         {

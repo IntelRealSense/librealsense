@@ -18,6 +18,7 @@ namespace librealsense
     {
     public:
         virtual rs2_intrinsics get_intrinsics() const = 0;
+        virtual void set_intrinsics(std::function<rs2_intrinsics()> calc) = 0;
 
         virtual uint32_t get_width() const = 0;
         virtual uint32_t get_height() const = 0;
@@ -25,4 +26,5 @@ namespace librealsense
     };
 
     MAP_EXTENSION(RS2_EXTENSION_TYPE_VIDEO, librealsense::video_sensor_interface);
+    MAP_EXTENSION(RS2_EXTENSION_TYPE_VIDEO_PROFILE, librealsense::video_stream_profile_interface);
 }

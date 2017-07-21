@@ -169,7 +169,9 @@ namespace librealsense
 
                 std::shared_ptr<info_snapshot> sensor_info = read_info_snapshot(sensor_index);
                 sensor_extensions[RS2_EXTENSION_TYPE_INFO] = sensor_info;
-                sensor_descriptions.emplace_back(sensor_extensions, streaming_profiles);
+
+                // TODO: Handle stream profiles
+                //sensor_descriptions.emplace_back(sensor_extensions, streaming_profiles);
             }
 
             return device_snapshot(device_extensions, sensor_descriptions, extrinsics);

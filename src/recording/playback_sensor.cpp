@@ -138,11 +138,6 @@ const device_interface& playback_sensor::get_device()
     throw not_implemented_exception(__FUNCTION__);
 }
 
-rs2_extrinsics playback_sensor::get_extrinsics_to(rs2_stream from, const sensor_interface& other, rs2_stream to) const
-{
-    throw not_implemented_exception(__FUNCTION__);
-}
-
 const stream_profiles& playback_sensor::get_curr_configurations() const
 {
     throw not_implemented_exception(__FUNCTION__);
@@ -152,7 +147,7 @@ void playback_sensor::handle_frame(frame_holder frame, bool is_real_time)
 {
     if(m_is_started)
     {
-        auto stream_type = frame.frame->get_stream_type();
+        auto stream_type = frame.frame->get_stream()->get_stream_type();
         //TODO: Ziv, remove usage of shared_ptr when frame_holder is cpoyable
         auto pf = std::make_shared<frame_holder>(std::move(frame));
         m_dispatchers.at(stream_type)->invoke([this, pf](dispatcher::cancellable_timer t)

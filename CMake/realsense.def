@@ -20,11 +20,10 @@ EXPORTS
     rs2_delete_sensor
     
     rs2_get_extrinsics
-    rs2_get_stream_intrinsics
     rs2_get_motion_intrinsics
 
-    rs2_get_stream_modes
-    rs2_get_stream_mode
+    rs2_get_stream_profiles
+    rs2_get_stream_profile
     rs2_get_modes_count
     rs2_delete_modes_list
 
@@ -54,8 +53,7 @@ EXPORTS
     rs2_get_frame_height
     rs2_get_frame_stride_in_bytes
     rs2_get_frame_bits_per_pixel
-    rs2_get_frame_format
-    rs2_get_frame_stream_type
+    rs2_get_frame_stream_profile
     rs2_release_frame
     rs2_frame_add_ref
 
@@ -119,6 +117,12 @@ EXPORTS
     rs2_is_sensor
     rs2_is_device
     rs2_is_frame
+    rs2_stream_profile_is
+
+    rs2_set_stream_profile_data
+    rs2_get_stream_profile_data
+    rs2_get_video_stream_resolution
+    rs2_get_video_stream_intrinsics
 
     rs2_allocate_synthetic_video_frame
     rs2_synthetic_frame_ready

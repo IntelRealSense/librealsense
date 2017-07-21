@@ -156,7 +156,7 @@ namespace rs2
                 if (require_all) {
                     std::set<rs2_stream> all_streams;
                     for (auto && kvp : mapping)
-                        all_streams.insert(kvp.second.stream);
+                        all_streams.insert(kvp.second.stream_type());
 
                     for (auto && kvp : _presets)
                         if (!all_streams.count(kvp.first))
@@ -175,8 +175,8 @@ namespace rs2
                 auto sensors = dev.query_sensors();
                 for (auto && kvp : mapping) {
                     dev_to_profiles[kvp.first].push_back(kvp.second);
-                    stream_to_dev.emplace(kvp.second.stream, sensors[kvp.first]);
-                    stream_to_profile[kvp.second.stream] = kvp.second;
+                    stream_to_dev.emplace(kvp.second.stream_type(), sensors[kvp.first]);
+                    stream_to_profile[kvp.second.stream_type()] = kvp.second;
                 }
 
                 // TODO: make sure it works
@@ -192,35 +192,44 @@ namespace rs2
 
         private:
             static bool sort_highest_framerate(const stream_profile& lhs, const stream_profile &rhs) {
-                return lhs.fps < rhs.fps;
+                return lhs.fps() < rhs.fps();
             }
 
             static bool sort_largest_image(const stream_profile& lhs, const stream_profile &rhs) {
-                return lhs.width*lhs.height < rhs.width*rhs.height;
+                if (auto a = lhs.as<video_stream_profile>())
+                    if (auto b = rhs.as<video_stream_profile>())
+                        return a.get_width()*a.get_height() < b.get_width()*b.get_height();
+                return sort_highest_framerate(lhs, rhs);
             }
 
             static bool sort_best_quality(const stream_profile& lhs, const stream_profile& rhs) {
-                return std::make_tuple((lhs.width == 640 && lhs.height == 480), (lhs.fps == 30), (lhs.format == RS2_FORMAT_Y8), (lhs.format == RS2_FORMAT_RGB8), int(lhs.format))
-                     < std::make_tuple((rhs.width == 640 && rhs.height == 480), (rhs.fps == 30), (rhs.format == RS2_FORMAT_Y8), (rhs.format == RS2_FORMAT_RGB8), int(rhs.format));
+                if (auto a = lhs.as<video_stream_profile>())
+                {
+                    if (auto b = rhs.as<video_stream_profile>())
+                    {
+                        return std::make_tuple((a.get_width() == 640 && a.get_height() == 480), (lhs.fps() == 30), (lhs.format() == RS2_FORMAT_Z16), (lhs.format() == RS2_FORMAT_Y8), (lhs.format() == RS2_FORMAT_RGB8), int(lhs.format()))
+                             < std::make_tuple((b.get_width() == 640 && b.get_height() == 480), (rhs.fps() == 30), (rhs.format() == RS2_FORMAT_Z16), (rhs.format() == RS2_FORMAT_Y8), (rhs.format() == RS2_FORMAT_RGB8), int(rhs.format()));
 
-
+                    }
+                }
+                return sort_highest_framerate(lhs, rhs);
             }
 
             static void auto_complete(std::vector<stream_profile> &requests, typename Dev::SensorType &target)
             {
-                auto candidates = target.get_stream_modes();
+                auto candidates = target.get_stream_profiles();
                 for (auto & request : requests)
                 {
-                    if (!request.has_wildcards()) continue;
+                    if (!has_wildcards(request)) continue;
                     for (auto candidate : candidates)
                     {
-                        if (candidate.match(request) && !candidate.contradicts(requests))
+                        if (match(candidate, request) && !contradicts(candidate, requests))
                         {
                             request = candidate;
                             break;
                         }
                     }
-                    if (request.has_wildcards())
+                    if (has_wildcards(request))
                         throw std::runtime_error(std::string("Couldn't autocomplete request for subdevice ") + target.get_info(RS2_CAMERA_INFO_NAME));
                 }
             }
@@ -232,11 +241,11 @@ namespace rs2
                 // Algorithm assumes get_adjacent_devices always
                 // returns the devices in the same order
                 auto devs = dev.query_sensors();
-                for (auto i = 0; i < devs.size(); ++i)
+                for (size_t i = 0; i < devs.size(); ++i)
                 {
                     auto sub = devs[i];
                     std::vector<stream_profile> targets;
-                    auto profiles = sub.get_stream_modes();
+                    auto profiles = sub.get_stream_profiles();
 
                     // deal with explicit requests
                     for (auto && kvp : _requests)
@@ -247,7 +256,7 @@ namespace rs2
                         if (std::any_of(begin(profiles), end(profiles),
                             [&kvp](const stream_profile &profile)
                             {
-                                return profile.match(kvp.second);
+                                return match(profile, kvp.second);
                             }))
                         {
                             targets.push_back(kvp.second); // store that this request is going to this subdevice
@@ -261,33 +270,36 @@ namespace rs2
                     {
                         if (satisfied_streams.count(kvp.first)) continue; // skip satisfied streams
 
-                        stream_profile result = { RS2_STREAM_COUNT, 0, 0, 0, RS2_FORMAT_ANY };
-                        switch (kvp.second)
+                        auto result = [&]() -> stream_profile
                         {
-                        case preset::best_quality:
-                            std::sort(begin(profiles), end(profiles), sort_best_quality);
-                            break;
-                        case preset::largest_image:
-                            std::sort(begin(profiles), end(profiles), sort_largest_image);
-                            break;
-                        case preset::highest_framerate:
-                            std::sort(begin(profiles), end(profiles), sort_highest_framerate);
-                            break;
-                        default: throw std::runtime_error("Unknown preset selected");
-                        }
-
-                        for (auto itr = profiles.rbegin(); itr != profiles.rend(); ++itr) {
-                            if (itr->stream == kvp.first) {
-                                result = *itr;
+                            switch (kvp.second)
+                            {
+                            case preset::best_quality:
+                                std::sort(begin(profiles), end(profiles), sort_best_quality);
                                 break;
+                            case preset::largest_image:
+                                std::sort(begin(profiles), end(profiles), sort_largest_image);
+                                break;
+                            case preset::highest_framerate:
+                                std::sort(begin(profiles), end(profiles), sort_highest_framerate);
+                                break;
+                            default: throw std::runtime_error("Unknown preset selected");
                             }
-                        }
+
+                            for (auto itr = profiles.rbegin(); itr != profiles.rend(); ++itr) {
+                                if (itr->stream_type() == kvp.first) {
+                                    return stream_profile(*itr);
+                                }
+                            }
+
+                            return stream_profile();
+                        }();
 
                         // RS2_STREAM_COUNT signals subdevice can't handle this stream
-                        if (result.stream != RS2_STREAM_COUNT)
+                        if (result)
                         {
                             targets.push_back(result);
-                            satisfied_streams.insert(result.stream);
+                            satisfied_streams.insert(result.stream_type());
                         }
                     }
 

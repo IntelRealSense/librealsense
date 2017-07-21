@@ -15,6 +15,7 @@
 #include "image.h"
 
 #include "core/debug.h"
+#include "stream.h"
 
 namespace librealsense
 {
@@ -79,13 +80,13 @@ namespace librealsense
     class sr300_info : public device_info
     {
     public:
-        std::shared_ptr<device_interface> create(const std::shared_ptr<context>& ctx) const override;
+        std::shared_ptr<device_interface> create(std::shared_ptr<context> ctx) const override;
 
         sr300_info(std::shared_ptr<context> ctx,
                     platform::uvc_device_info color,
                     platform::uvc_device_info depth,
                     platform::usb_device_info hwm)
-            : device_info(std::move(ctx)), _color(std::move(color)),
+            : device_info(ctx), _color(std::move(color)),
              _depth(std::move(depth)), _hwm(std::move(hwm))
         {
 
@@ -161,6 +162,30 @@ namespace librealsense
             {
                 return make_color_intrinsics(_owner->get_calibration(), { int(profile.width), int(profile.height) });
             }
+
+            stream_profiles init_stream_profiles() override
+            {
+                auto results = uvc_sensor::init_stream_profiles();
+
+                for (auto p : results)
+                {
+                    // Register stream types
+                    if (p->get_stream_type() == RS2_STREAM_COLOR)
+                    {
+                        assign_stream(_owner->_color_stream, p);
+                    }
+
+                    // Register intrinsics
+                    auto video = dynamic_cast<video_stream_profile_interface*>(p.get());
+                    auto profile = to_profile(p.get());
+                    video->set_intrinsics([profile, this]()
+                    {
+                        return get_intrinsics(profile);
+                    });
+                }
+
+                return results;
+            }
         private:
             const sr300_camera* _owner;
         };
@@ -179,12 +204,40 @@ namespace librealsense
                 return make_depth_intrinsics(_owner->get_calibration(), { int(profile.width), int(profile.height) });
             }
 
+            stream_profiles init_stream_profiles() override
+            {
+                auto results = uvc_sensor::init_stream_profiles();
+
+                for (auto p : results)
+                {
+                    // Register stream types
+                    if (p->get_stream_type() == RS2_STREAM_DEPTH)
+                    {
+                        assign_stream(_owner->_depth_stream, p);
+                    }
+                    else if (p->get_stream_type() == RS2_STREAM_INFRARED)
+                    {
+                        assign_stream(_owner->_ir_stream, p);
+                    }
+
+                    // Register intrinsics
+                    auto video = dynamic_cast<video_stream_profile_interface*>(p.get());
+                    auto profile = to_profile(p.get());
+                    video->set_intrinsics([profile, this]()
+                    {
+                        return get_intrinsics(profile);
+                    });
+                }
+
+                return results;
+            }
+
             float get_depth_scale() const override { return get_option(RS2_OPTION_DEPTH_UNITS).query(); }
         private:
             const sr300_camera* _owner;
         };
 
-        std::shared_ptr<uvc_sensor> create_color_device(const std::shared_ptr<context>& ctx,
+        std::shared_ptr<uvc_sensor> create_color_device(std::shared_ptr<context> ctx,
                                                         const platform::uvc_device_info& color)
         {
             auto color_ep = std::make_shared<sr300_color_sensor>(this, ctx->get_backend().create_uvc_device(color),
@@ -206,13 +259,10 @@ namespace librealsense
             color_ep->register_pu(RS2_OPTION_ENABLE_AUTO_EXPOSURE);
             color_ep->register_pu(RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE);
 
-
-            color_ep->set_pose(lazy<pose>([](){pose p = {{ { 1,0,0 },{ 0,1,0 },{ 0,0,1 } },{ 0,0,0 }}; return p; }));
-
             return color_ep;
         }
 
-        std::shared_ptr<uvc_sensor> create_depth_device(const std::shared_ptr<context>& ctx,
+        std::shared_ptr<uvc_sensor> create_depth_device(std::shared_ptr<context> ctx,
                                                         const platform::uvc_device_info& depth)
         {
             using namespace ivcam;
@@ -258,7 +308,7 @@ namespace librealsense
         uvc_sensor& get_depth_sensor() { return dynamic_cast<uvc_sensor&>(get_sensor(_depth_device_idx)); }
 
 
-        sr300_camera(const std::shared_ptr<context>& ctx,
+        sr300_camera(std::shared_ptr<context> ctx,
             const platform::uvc_device_info& color,
             const platform::uvc_device_info& depth,
             const platform::usb_device_info& hwm_device);
@@ -372,5 +422,10 @@ namespace librealsense
         void set_auto_range(const ivcam::cam_auto_range_request& c) const;
 
         ivcam::camera_calib_params get_calibration() const;
+
+        std::shared_ptr<stream_interface> _depth_stream;
+        std::shared_ptr<stream_interface> _ir_stream;
+        std::shared_ptr<stream_interface> _color_stream;
+        std::shared_ptr<lazy<rs2_extrinsics>> _depth_to_color_extrinsics;
     };
 }
