@@ -50,27 +50,27 @@ void playback_sensor::close()
 
 option& playback_sensor::get_option(rs2_option id)
 {
-    return std::dynamic_pointer_cast<librealsense::options_interface>(m_sensor_description.get_sensor_extensions_snapshots().get_snapshots()[RS2_EXTENSION_TYPE_OPTIONS])->get_option(id);
+    return std::dynamic_pointer_cast<librealsense::options_interface>(m_sensor_description.get_sensor_extensions_snapshots().get_snapshots()[RS2_EXTENSION_OPTIONS ])->get_option(id);
 }
 
 const option& playback_sensor::get_option(rs2_option id) const
 {
-    return std::dynamic_pointer_cast<librealsense::options_interface>(m_sensor_description.get_sensor_extensions_snapshots().get_snapshots()[RS2_EXTENSION_TYPE_OPTIONS])->get_option(id);
+    return std::dynamic_pointer_cast<librealsense::options_interface>(m_sensor_description.get_sensor_extensions_snapshots().get_snapshots()[RS2_EXTENSION_OPTIONS ])->get_option(id);
 }
 
 const std::string& playback_sensor::get_info(rs2_camera_info info) const
 {
-    return std::dynamic_pointer_cast<librealsense::info_interface>(m_sensor_description.get_sensor_extensions_snapshots().get_snapshots()[RS2_EXTENSION_TYPE_INFO])->get_info(info);
+    return std::dynamic_pointer_cast<librealsense::info_interface>(m_sensor_description.get_sensor_extensions_snapshots().get_snapshots()[RS2_EXTENSION_INFO ])->get_info(info);
 }
 
 bool playback_sensor::supports_info(rs2_camera_info info) const
 {
-    return std::dynamic_pointer_cast<librealsense::info_interface>(m_sensor_description.get_sensor_extensions_snapshots().get_snapshots()[RS2_EXTENSION_TYPE_INFO])->supports_info(info);
+    return std::dynamic_pointer_cast<librealsense::info_interface>(m_sensor_description.get_sensor_extensions_snapshots().get_snapshots()[RS2_EXTENSION_INFO ])->supports_info(info);
 }
 
 bool playback_sensor::supports_option(rs2_option id) const
 {
-    auto snapshot = m_sensor_description.get_sensor_extensions_snapshots().find(RS2_EXTENSION_TYPE_OPTIONS);
+    auto snapshot = m_sensor_description.get_sensor_extensions_snapshots().find(RS2_EXTENSION_OPTIONS );
     if (snapshot == nullptr)
         return false;
     auto option = std::dynamic_pointer_cast<librealsense::options_interface>(snapshot);
@@ -119,16 +119,16 @@ bool playback_sensor::extend_to(rs2_extension extension_type, void** ext)
     }
     switch (extension_type)
     {
-    case RS2_EXTENSION_TYPE_UNKNOWN: return false;
-    case RS2_EXTENSION_TYPE_DEBUG: return try_extend<debug_interface>(e, ext);
-    case RS2_EXTENSION_TYPE_INFO: return try_extend<info_interface>(e, ext);
-    case RS2_EXTENSION_TYPE_MOTION: return try_extend<motion_sensor_interface>(e, ext);;
-    case RS2_EXTENSION_TYPE_OPTIONS: return try_extend<options_interface>(e, ext);;
-    case RS2_EXTENSION_TYPE_VIDEO: return try_extend<video_sensor_interface>(e, ext);;
-    case RS2_EXTENSION_TYPE_ROI: return try_extend<roi_sensor_interface>(e, ext);;
-    case RS2_EXTENSION_TYPE_VIDEO_FRAME: return try_extend<video_frame>(e, ext);
- //TODO: RS2_EXTENSION_TYPE_MOTION_FRAME: return try_extend<motion_frame>(e, ext);
-    case RS2_EXTENSION_TYPE_COUNT:
+    case RS2_EXTENSION_UNKNOWN: return false;
+    case RS2_EXTENSION_DEBUG : return try_extend<debug_interface>(e, ext);
+    case RS2_EXTENSION_INFO : return try_extend<info_interface>(e, ext);
+    case RS2_EXTENSION_MOTION : return try_extend<motion_sensor_interface>(e, ext);;
+    case RS2_EXTENSION_OPTIONS : return try_extend<options_interface>(e, ext);;
+    case RS2_EXTENSION_VIDEO : return try_extend<video_sensor_interface>(e, ext);;
+    case RS2_EXTENSION_ROI : return try_extend<roi_sensor_interface>(e, ext);;
+    case RS2_EXTENSION_VIDEO_FRAME : return try_extend<video_frame>(e, ext);
+ //TODO: RS2_EXTENSION_MOTION_FRAME : return try_extend<motion_frame>(e, ext);
+    case RS2_EXTENSION_COUNT :
         //[[fallthrough]];
     default:
         LOG_WARNING("Unsupported extension type: " << extension_type);
@@ -170,5 +170,12 @@ void playback_sensor::handle_frame(frame_holder frame, bool is_real_time)
             std::swap((*pf).frame, pframe);
             m_user_callback->on_frame((rs2_frame*)pframe);
         });
+    }
+}
+void playback_sensor::flush_pending_frames()
+{
+    for (auto&& dispatcher : m_dispatchers)
+    {
+        dispatcher.second->flush();
     }
 }

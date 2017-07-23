@@ -109,7 +109,7 @@ bool librealsense::record_sensor::extend_to(rs2_extension extension_type, void**
 {
     switch (extension_type)
     {
-    case RS2_EXTENSION_TYPE_DEBUG:
+    case RS2_EXTENSION_DEBUG :
     {
         auto ptr = dynamic_cast<debug_interface*>(&m_sensor);
         if (!ptr)
@@ -125,13 +125,13 @@ bool librealsense::record_sensor::extend_to(rs2_extension extension_type, void**
         *ext = api.get();
         return true;
     }
-    case RS2_EXTENSION_TYPE_INFO: *ext = this; return true;
-    case RS2_EXTENSION_TYPE_MOTION:break;
-    case RS2_EXTENSION_TYPE_OPTIONS:*ext = this; return true; 
-    case RS2_EXTENSION_TYPE_VIDEO:break;
-    case RS2_EXTENSION_TYPE_ROI:break;
-    case RS2_EXTENSION_TYPE_UNKNOWN:
-    case RS2_EXTENSION_TYPE_COUNT:
+    case RS2_EXTENSION_INFO : *ext = this; return true;
+    case RS2_EXTENSION_MOTION :break;
+    case RS2_EXTENSION_OPTIONS :*ext = this; return true;
+    case RS2_EXTENSION_VIDEO :break;
+    case RS2_EXTENSION_ROI :break;
+    case RS2_EXTENSION_UNKNOWN:
+    case RS2_EXTENSION_COUNT :
     default:
         throw invalid_value_exception(std::string("extension_type ") + std::to_string(extension_type) + " is not supported");
     }

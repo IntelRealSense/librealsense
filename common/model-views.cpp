@@ -1159,7 +1159,7 @@ namespace rs2
 		assert(live_subdevices.size() == subdevices.size());
 	    for(int i=0; i< live_subdevices.size(); i++)
 	    {
-			//TODO: change this
+			//TODO: Ziv, change this
 			subdevices[i]->selected_res_id = live_subdevices[i]->selected_res_id;
 			subdevices[i]->selected_shared_fps_id = live_subdevices[i]->selected_shared_fps_id;
 			subdevices[i]->selected_format_id = live_subdevices[i]->selected_format_id;

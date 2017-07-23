@@ -8,7 +8,7 @@
 
 #pragma once
 
-namespace rs
+namespace librealsense
 {
     namespace file_format
     {

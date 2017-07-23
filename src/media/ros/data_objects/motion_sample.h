@@ -5,7 +5,7 @@
 
 #include <sensor_msgs/Imu.h>
 #include "stream_data.h"
-namespace rs
+namespace librealsense
 {
     namespace file_format
     {
@@ -45,7 +45,7 @@ namespace rs
                     std::memcpy(m_info.data, info.data, sizeof(m_info.data));
                 }
 
-                virtual void write_data(ros_writer& file) override
+                virtual void write_data(data_object_writer& file) override
                 {
                     std::string topic = get_topic(m_info.type, m_info.device_id);
                     std::string type_str;

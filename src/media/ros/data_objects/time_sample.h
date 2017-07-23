@@ -3,10 +3,10 @@
 
 #pragma once
 
-#include <recording/ros/data_objects/stream_data.h>
-#include <recording/ros/data_objects/property.h>
+#include <media/ros/data_objects/stream_data.h>
+#include <media/ros/data_objects/property.h>
 #include <sensor_msgs/TimeReference.h>
-namespace rs
+namespace librealsense
 {
     namespace file_format
     {
@@ -43,7 +43,7 @@ namespace rs
                     return file_types::st_time;
                 }
 
-                void write_data(ros_writer& file) override
+                void write_data(data_object_writer& file) override
                 {
                     std::string topic = "/time/" + std::to_string(m_info.device_id);
                     sensor_msgs::TimeReference msg;

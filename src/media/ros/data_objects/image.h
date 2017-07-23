@@ -3,12 +3,12 @@
 #pragma once
 #include "sensor_msgs/Image.h"
 #include "realsense_msgs/frame_info.h"
-#include "recording/ros/topic.h"
+#include "media/ros/topic.h"
 #include "stream_data.h"
 #include "core/serialization.h"
 #include "archive.h"
-#include "recording/ros/file_types.h"
-namespace rs
+#include "media/ros/file_types.h"
+namespace librealsense
 {
     namespace file_format
     {
@@ -29,14 +29,14 @@ namespace rs
                     return file_types::st_image;
                 }
 
-                void write_data(ros_writer& file) override
+                void write_data(data_object_writer& file) override
                 {
                     sensor_msgs::Image image;
                     auto vid_frame = dynamic_cast<librealsense::video_frame*>(m_frame.frame);
                     assert(vid_frame != nullptr);
 
                     std::string stream;
-                    rs::file_format::conversions::convert(vid_frame->get_stream_type(), stream);
+                   file_format::conversions::convert(vid_frame->get_stream_type(), stream);
                     
                     image.width = static_cast<uint32_t>(vid_frame->get_width());
                     image.height = static_cast<uint32_t>(vid_frame->get_height());
@@ -54,7 +54,7 @@ namespace rs
                     image.header.seq = static_cast<uint32_t>(vid_frame->get_frame_number());
 
                     std::chrono::duration<double, std::milli> timestamp_ms(vid_frame->get_frame_timestamp());
-                    auto timestamp = rs::file_format::file_types::seconds(timestamp_ms);
+                    auto timestamp =file_format::file_types::seconds(timestamp_ms);
                     image.header.stamp = ros::Time(timestamp.count());
 
                     auto image_topic = get_topic(stream, m_sensor_index);

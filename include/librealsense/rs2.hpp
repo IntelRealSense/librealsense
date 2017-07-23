@@ -392,7 +392,7 @@ namespace rs2
             : frame(f)
         {
             rs2_error* e = nullptr;
-            if(!f || (rs2_is_frame_extendable_to(f.get(), RS2_EXTENSION_TYPE_VIDEO_FRAME, &e) == 0 && !e))
+            if(!f || (rs2_is_frame_extendable_to(f.get(), RS2_EXTENSION_VIDEO_FRAME, &e) == 0 && !e))
             {
                 frame_ref = nullptr;
             }
@@ -460,7 +460,7 @@ namespace rs2
                 : frame(f), _size(0)
         {
             rs2_error* e = nullptr;
-            if(!f || (rs2_is_frame_extendable_to(f.get(), RS2_EXTENSION_TYPE_POINTS, &e) == 0 && !e))
+            if(!f || (rs2_is_frame_extendable_to(f.get(), RS2_EXTENSION_POINTS, &e) == 0 && !e))
             {
                 frame_ref = nullptr;
             }
@@ -506,7 +506,7 @@ namespace rs2
             : frame(f), _size(0)
         {
             rs2_error* e = nullptr;
-            if(!f || (rs2_is_frame_extendable_to(f.get(), RS2_EXTENSION_TYPE_COMPOSITE_FRAME, &e) == 0 && !e))
+            if(!f || (rs2_is_frame_extendable_to(f.get(), RS2_EXTENSION_COMPOSITE_FRAME, &e) == 0 && !e))
             {
                 frame_ref = nullptr;
             }
@@ -1136,7 +1136,7 @@ namespace rs2
             : sensor(s.get())
         {
             rs2_error* e = nullptr;
-            if(rs2_is_sensor_extendable_to(_sensor.get(), RS2_EXTENSION_TYPE_ROI, &e) == 0 && !e)
+            if(rs2_is_sensor_extendable_to(_sensor.get(), RS2_EXTENSION_ROI, &e) == 0 && !e)
             {
                 _sensor = nullptr;
             }
@@ -1169,7 +1169,7 @@ namespace rs2
             : sensor(s.get())
         {
             rs2_error* e = nullptr;
-            if (rs2_is_sensor_extendable_to(_sensor.get(), RS2_EXTENSION_TYPE_DEPTH_SENSOR, &e) == 0 && !e)
+            if (rs2_is_sensor_extendable_to(_sensor.get(), RS2_EXTENSION_DEPTH_SENSOR, &e) == 0 && !e)
             {
                 _sensor = nullptr;
             }
@@ -1329,7 +1329,7 @@ namespace rs2
                 : device(d.get())
         {
             rs2_error* e = nullptr;
-            if(rs2_is_device_extendable_to(_dev.get(), RS2_EXTENSION_TYPE_DEBUG, &e) == 0 && !e)
+            if(rs2_is_device_extendable_to(_dev.get(), RS2_EXTENSION_DEBUG, &e) == 0 && !e)
             {
                 _dev = nullptr;
             }
@@ -1458,6 +1458,8 @@ namespace rs2
     class playback : public device
     {
     public:
+        playback(device d) : playback(d.get()) {}
+
         playback(const std::string& file) :
             m_file(file)
         {
@@ -1470,14 +1472,72 @@ namespace rs2
         void pause()
         {
             rs2_error* e = nullptr;
-            //rs2_playback_device_pause(_dev.get(), &e);
+            rs2_playback_device_pause(_dev.get(), &e);
             error::handle(e);
         }
         void resume()
         {
             rs2_error* e = nullptr;
-            //rs2_playback_device_resume(_dev.get(), &e);
+            rs2_playback_device_resume(_dev.get(), &e);
             error::handle(e);
+        }
+
+        std::string file_name() const
+        {
+            return m_file; //retrieved in construction
+        }
+        uint64_t get_position() const
+        {
+            rs2_error* e = nullptr;
+            uint64_t pos = rs2_playback_get_position(_dev.get(), &e);
+            error::handle(e);
+            return pos;
+        }
+        std::chrono::nanoseconds get_duration() const
+        {
+            rs2_error* e = nullptr;
+            std::chrono::nanoseconds duration(rs2_playback_get_duration(_dev.get(), &e));
+            error::handle(e);
+            return duration;
+        }
+        void seek(std::chrono::nanoseconds time)
+        {
+            rs2_error* e = nullptr;
+            rs2_playback_seek(_dev.get(), time.count(), &e);
+            error::handle(e);
+        }
+
+        bool is_real_time() const
+        {
+            rs2_error* e = nullptr;
+            bool real_time = rs2_playback_device_is_real_time(_dev.get(), &e) == 0 ? false : true;
+            error::handle(e);
+            return real_time;
+        }
+
+        void set_real_time(bool real_time) const
+        {
+            rs2_error* e = nullptr;
+            rs2_playback_device_set_real_time(_dev.get(), (real_time ? 1 : 0), &e);
+            error::handle(e);
+        }
+    protected:
+        friend context;
+        explicit playback(std::shared_ptr<rs2_device> dev) : device(dev)
+        {
+            rs2_error* e = nullptr;
+            if(rs2_is_device_extendable_to(_dev.get(), RS2_EXTENSION_PLAYBACK, &e) == 0 && !e)
+            {
+                _dev = nullptr;
+            }
+            error::handle(e);
+
+            if(_dev)
+            {
+                e = nullptr;
+                m_file = rs2_playback_device_get_file_path(_dev.get(), &e);
+                error::handle(e);
+            }
         }
     private:
         std::string m_file;
@@ -1783,6 +1843,30 @@ namespace rs2
             return pointcloud(processing_block{ block });
         }
 
+        /**
+         * Creates a device from a RealSense file
+         *
+         * On successful load, the device will be appended to the context and a devices_changed event would be triggered
+         * @param file  Path to a RealSense File
+         * @return A playback device matching the given file
+         */
+        playback load_device(const std::string& file)
+        {
+            rs2_error* e = nullptr;
+            auto device = std::shared_ptr<rs2_device>(
+                rs2_context_add_device(_context.get(), file.c_str(), &e),
+                rs2_delete_device);
+            rs2::error::handle(e);
+
+            return playback { device };
+        }
+
+        void unload_device(const std::string& file)
+        {
+            rs2_error* e = nullptr;
+            rs2_context_remove_device(_context.get(), file.c_str(), &e);
+            rs2::error::handle(e);
+        }
     protected:
         std::shared_ptr<rs2_context> _context;
     };

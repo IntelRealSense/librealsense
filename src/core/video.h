@@ -14,5 +14,5 @@ namespace librealsense
         virtual rs2_intrinsics get_intrinsics(const stream_profile& profile) const = 0;
     };
 
-    MAP_EXTENSION(RS2_EXTENSION_TYPE_VIDEO, librealsense::video_sensor_interface);
+    MAP_EXTENSION(RS2_EXTENSION_VIDEO, librealsense::video_sensor_interface);
 }
