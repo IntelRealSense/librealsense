@@ -13,7 +13,6 @@
 #include <functional>
 #include <exception>
 #include <ostream>
-#include <iostream>
 #include <atomic>
 #include <condition_variable>
 #include <iterator>
@@ -393,7 +392,7 @@ namespace rs2
             : frame(f)
         {
             rs2_error* e = nullptr;
-            if(!f || (rs2_is_frame(f.get(), RS2_EXTENSION_TYPE_VIDEO_FRAME, &e) == 0 && !e))
+            if(!f || (rs2_is_frame_extendable_to(f.get(), RS2_EXTENSION_TYPE_VIDEO_FRAME, &e) == 0 && !e))
             {
                 frame_ref = nullptr;
             }
@@ -461,7 +460,7 @@ namespace rs2
                 : frame(f), _size(0)
         {
             rs2_error* e = nullptr;
-            if(!f || (rs2_is_frame(f.get(), RS2_EXTENSION_TYPE_POINTS, &e) == 0 && !e))
+            if(!f || (rs2_is_frame_extendable_to(f.get(), RS2_EXTENSION_TYPE_POINTS, &e) == 0 && !e))
             {
                 frame_ref = nullptr;
             }
@@ -470,7 +469,7 @@ namespace rs2
             if (frame_ref)
             {
                 rs2_error* e = nullptr;
-                _size = rs2_embeded_frames_count(frame_ref, &e);
+                _size = rs2_embedded_frames_count(frame_ref, &e);
                 error::handle(e);
             }
         }
@@ -507,7 +506,7 @@ namespace rs2
             : frame(f), _size(0)
         {
             rs2_error* e = nullptr;
-            if(!f || (rs2_is_frame(f.get(), RS2_EXTENSION_TYPE_COMPOSITE_FRAME, &e) == 0 && !e))
+            if(!f || (rs2_is_frame_extendable_to(f.get(), RS2_EXTENSION_TYPE_COMPOSITE_FRAME, &e) == 0 && !e))
             {
                 frame_ref = nullptr;
             }
@@ -516,7 +515,7 @@ namespace rs2
             if (frame_ref)
             {
                 rs2_error* e = nullptr;
-                _size = rs2_embeded_frames_count(frame_ref, &e);
+                _size = rs2_embedded_frames_count(frame_ref, &e);
                 error::handle(e);
             }
         }
@@ -594,16 +593,16 @@ namespace rs2
     {
     public:
 
-        frame allocate_video_frame(rs2_stream new_stream, 
-                                   const frame& original, 
+        frame allocate_video_frame(rs2_stream new_stream,
+                                   const frame& original,
                                    rs2_format new_format = RS2_FORMAT_ANY,
                                    int new_bpp = 0,
                                    int new_width = 0,
                                    int new_height = 0,
-                                   int new_stride = 0) const 
+                                   int new_stride = 0) const
         {
             rs2_error* e = nullptr;
-            auto result = rs2_allocate_synthetic_video_frame(_source, new_stream, 
+            auto result = rs2_allocate_synthetic_video_frame(_source, new_stream,
                 original.get(), new_format, new_bpp, new_width, new_height, new_stride, &e);
             error::handle(e);
             return result;
@@ -617,7 +616,7 @@ namespace rs2
             for (int i = 0; i < frames.size(); i++)
                 std::swap(refs[i], frames[i].frame_ref);
 
-            auto result = rs2_allocate_composite_frame(_source, refs.data(), refs.size(), &e);
+            auto result = rs2_allocate_composite_frame(_source, refs.data(), (int)refs.size(), &e);
             error::handle(e);
             return result;
         }
@@ -634,10 +633,10 @@ namespace rs2
     private:
         template<class T>
         friend class frame_processor_callback;
-       
+
         frame_source(rs2_source* source) : _source(source) {}
         frame_source(const frame_source&) = delete;
-        
+
     };
 
     template<class T>
@@ -702,7 +701,7 @@ namespace rs2
     public:
         syncer_processing_block()
         {
-            rs2_error* e = nullptr; 
+            rs2_error* e = nullptr;
             _processing_block = std::make_shared<processing_block>(
                     std::shared_ptr<rs2_processing_block>(
                                         rs2_create_sync_processing_block(&e),
@@ -1137,7 +1136,7 @@ namespace rs2
             : sensor(s.get())
         {
             rs2_error* e = nullptr;
-            if(rs2_is_sensor(_sensor.get(), RS2_EXTENSION_TYPE_ROI, &e) == 0 && !e)
+            if(rs2_is_sensor_extendable_to(_sensor.get(), RS2_EXTENSION_TYPE_ROI, &e) == 0 && !e)
             {
                 _sensor = nullptr;
             }
@@ -1170,7 +1169,7 @@ namespace rs2
             : sensor(s.get())
         {
             rs2_error* e = nullptr;
-            if (rs2_is_sensor(_sensor.get(), RS2_EXTENSION_TYPE_DEPTH_SENSOR, &e) == 0 && !e)
+            if (rs2_is_sensor_extendable_to(_sensor.get(), RS2_EXTENSION_TYPE_DEPTH_SENSOR, &e) == 0 && !e)
             {
                 _sensor = nullptr;
             }
@@ -1196,7 +1195,7 @@ namespace rs2
     {
     public:
         using SensorType = sensor;
-
+        
         /**
         * returns the list of adjacent devices, sharing the same physical parent composite device
         * \return            the list of adjacent devices
@@ -1310,7 +1309,9 @@ namespace rs2
             T extension(*this);
             return extension;
         }
-
+        virtual ~device()
+        {
+        }
     protected:
         friend context;
         friend device_list;
@@ -1328,7 +1329,7 @@ namespace rs2
                 : device(d.get())
         {
             rs2_error* e = nullptr;
-            if(rs2_is_device(_dev.get(), RS2_EXTENSION_TYPE_DEBUG, &e) == 0 && !e)
+            if(rs2_is_device_extendable_to(_dev.get(), RS2_EXTENSION_TYPE_DEBUG, &e) == 0 && !e)
             {
                 _dev = nullptr;
             }
@@ -1453,22 +1454,16 @@ namespace rs2
     private:
         std::shared_ptr<rs2_device_list> _list;
     };
-    
+
     class playback : public device
     {
     public:
-        playback(std::string file) :
+        playback(const std::string& file) :
             m_file(file)
         {
             rs2_error* e = nullptr;
-            m_serializer = std::shared_ptr<rs2_device_serializer>(
-                rs2_create_device_serializer(file.c_str(), &e),
-                rs2_delete_device_serializer);
-            rs2::error::handle(e);
-
-            e = nullptr;
             _dev = std::shared_ptr<rs2_device>(
-                rs2_create_playback_device(m_serializer.get(), &e),
+                rs2_create_playback_device(file.c_str(), &e),
                 rs2_delete_device);
             rs2::error::handle(e);
         }
@@ -1486,23 +1481,16 @@ namespace rs2
         }
     private:
         std::string m_file;
-        std::shared_ptr<rs2_device_serializer> m_serializer;
     };
     class recorder : public device
     {
     public:
-        recorder(std::string file, rs2::device device) :
+        recorder(const std::string& file, rs2::device device) :
             m_file(file)
         {
             rs2_error* e = nullptr;
-            m_serializer = std::shared_ptr<rs2_device_serializer>(
-                rs2_create_device_serializer(file.c_str(), &e),
-                rs2_delete_device_serializer);
-            rs2::error::handle(e);
-
-            e = nullptr;
             _dev = std::shared_ptr<rs2_device>(
-                rs2_create_record_device(device.get().get(), m_serializer.get(), &e),
+                rs2_create_record_device(device.get().get(), file.c_str(), &e),
                 rs2_delete_device);
             rs2::error::handle(e);
         }
@@ -1521,7 +1509,6 @@ namespace rs2
         }
     private:
         std::string m_file;
-        std::shared_ptr<rs2_device_serializer> m_serializer;
     };
 
     class event_information

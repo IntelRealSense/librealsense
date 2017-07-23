@@ -6700,6 +6700,23 @@ bool ImGui::SliderInt4(const char* label, int v[4], int v_min, int v_max, const 
     return SliderIntN(label, v, 4, v_min, v_max, display_format);
 }
 
+/* Provide GUI slider with values according to interval steps */
+bool ImGui::SliderIntWithSteps(const char* label, int * v, int v_min, int v_max, int v_step, const char* display_format)
+{
+    if (!display_format)
+        display_format = "%d";
+
+    int tmp_val = *v;
+    bool value_changed = ImGui::SliderInt(label, &tmp_val, v_min, v_max, display_format);
+
+    // Round the actual slider value to the cloasest bound interval
+    if (v_step > 1)
+        tmp_val -= (tmp_val - v_min) % v_step;
+    *v = tmp_val;
+
+    return value_changed;
+}
+
 bool ImGui::DragBehavior(const ImRect& frame_bb, ImGuiID id, float* v, float v_speed, float v_min, float v_max, int decimal_precision, float power)
 {
     ImGuiContext& g = *GImGui;

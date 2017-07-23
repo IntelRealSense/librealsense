@@ -5,8 +5,7 @@
 #include <chrono>
 #include <memory>
 #include <vector>
-#include <archive.h>
-#include <map>
+#include "types.h"
 #include "extension.h"
 #include "streaming.h"
 #include "../recording/device_snapshot.h"
@@ -36,13 +35,13 @@ namespace librealsense
         class reader
         {
         public:
+            virtual ~reader() = default;
             virtual device_snapshot query_device_description() = 0;
             //TODO: change return type of read
             virtual rs::file_format::status read(std::chrono::nanoseconds& timestamp, uint32_t& sensor_index, frame_holder& frame) = 0;
             virtual void seek_to_time(std::chrono::nanoseconds time) = 0;
             virtual std::chrono::nanoseconds query_duration() const = 0;
             virtual void reset() = 0;
-            virtual ~reader() = default;
             virtual void set_filter(uint32_t m_sensor_index, const std::vector<stream_profile>& vector) = 0;
         };
 

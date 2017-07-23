@@ -16,7 +16,7 @@
 namespace librealsense
 {
     ds5_timestamp_reader_from_metadata::ds5_timestamp_reader_from_metadata(std::unique_ptr<frame_timestamp_reader> backup_timestamp_reader)
-        :_backup_timestamp_reader(std::move(backup_timestamp_reader)), _has_metadata(pins)
+        :_backup_timestamp_reader(std::move(backup_timestamp_reader)), _has_metadata(pins), one_time_note(false)
     {
         reset();
     }
@@ -54,15 +54,15 @@ namespace librealsense
 
         if(_has_metadata[pin_index])
         {
-            auto md = (librealsense::ds::metadata*)(fo.metadata);
-            return (double)(md->header.timestamp)*TIMESTAMP_TO_MILLISECONS;
+            auto md = (librealsense::metadata_intel_basic*)(fo.metadata);
+            return (double)(md->header.timestamp)*TIMESTAMP_USEC_TO_MSEC;
         }
         else
         {
-            if (!started)
+            if (!one_time_note)
             {
-                LOG_WARNING("UVC timestamp not found! please apply UVC metadata patch.");
-                started = true;
+                LOG_WARNING("UVC metadata payloads not available. Please refer to installation chapter for details.");
+                one_time_note = true;
             }
             return _backup_timestamp_reader->get_frame_timestamp(mode, fo);
         }
@@ -77,19 +77,18 @@ namespace librealsense
 
         if(_has_metadata[pin_index] && fo.metadata_size > platform::uvc_header_size)
         {
-            auto md = (librealsense::ds::metadata*)(fo.metadata);
-            return md->md_capture_timing.frameCounter;
+            auto md = (librealsense::metadata_intel_basic*)(fo.metadata);
+            if (md->capture_valid())
+                return md->payload.frame_counter;
         }
-        else
-        {
-            return _backup_timestamp_reader->get_frame_counter(mode, fo);
-        }
+
+        return _backup_timestamp_reader->get_frame_counter(mode, fo);
     }
 
     void ds5_timestamp_reader_from_metadata::reset()
     {
         std::lock_guard<std::recursive_mutex> lock(_mtx);
-        started = false;
+        one_time_note = false;
         for (auto i = 0; i < pins; ++i)
         {
             _has_metadata[i] = false;
@@ -166,7 +165,7 @@ namespace librealsense
         if(has_metadata(mode, fo.metadata, fo.metadata_size))
         {
             auto timestamp = *((uint64_t*)((const uint8_t*)fo.metadata));
-            return static_cast<rs2_time_t>(timestamp) * TIMESTAMP_TO_MILLISECONS;
+            return static_cast<rs2_time_t>(timestamp) * TIMESTAMP_USEC_TO_MSEC;
         }
 
         if (!started)
@@ -228,7 +227,7 @@ namespace librealsense
         static const uint8_t timestamp_offset = 17;
 
         auto timestamp = *((uint64_t*)((const uint8_t*)fo.pixels + timestamp_offset));
-        return static_cast<rs2_time_t>(timestamp) * TIMESTAMP_TO_MILLISECONS;
+        return static_cast<rs2_time_t>(timestamp) * TIMESTAMP_USEC_TO_MSEC;
     }
 
     bool ds5_custom_hid_timestamp_reader::has_metadata(const request_mapping& /*mode*/, const void * /*metadata*/, size_t /*metadata_size*/) const

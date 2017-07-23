@@ -82,9 +82,10 @@ namespace rs2
                     else if (is_all_integers())
                     {
                         auto int_value = static_cast<int>(value);
-                        if (ImGui::SliderInt(id.c_str(), &int_value,
+                        if (ImGui::SliderIntWithSteps(id.c_str(), &int_value,
                             static_cast<int>(range.min),
-                            static_cast<int>(range.max)))
+                            static_cast<int>(range.max),
+                            static_cast<int>(range.step)))
                         {
                             // TODO: Round to step?
                             value = static_cast<float>(int_value);
@@ -231,6 +232,11 @@ namespace rs2
         {
 
         }
+
+        // For Realtec sensors
+        rgb_rotation_btn = (val_in_range(std::string(dev.get_info(RS2_CAMERA_INFO_PRODUCT_ID)),
+                            { std::string("0AD3") ,std::string("0B07") }) &&
+                            val_in_range(std::string(s.get_info(RS2_CAMERA_INFO_NAME)), { std::string("RGB Camera") }));
 
         for (auto i = 0; i < RS2_OPTION_COUNT; i++)
         {
@@ -518,6 +524,13 @@ namespace rs2
                 }
             }
             ImGui::PopItemWidth();
+
+            if (streaming && rgb_rotation_btn && ImGui::Button("Flip Stream Orientation", ImVec2(160, 20)))
+            {
+                rotate_rgb_image(dev, res_values[selected_res_id].first);
+                if (ImGui::IsItemHovered())
+                    ImGui::SetTooltip("Rotate Sensor 180 deg");
+            }
         }
     }
 
@@ -671,10 +684,10 @@ namespace rs2
                         if (s.is<roi_sensor>())
                         {
                             auto r = s.as<roi_sensor>().get_region_of_interest();
-                            roi_rect.x = r.min_x;
-                            roi_rect.y = r.min_y;
-                            roi_rect.w = r.max_x - r.min_x;
-                            roi_rect.h = r.max_y - r.min_y;
+                            roi_rect.x = static_cast<float>(r.min_x);
+                            roi_rect.y = static_cast<float>(r.min_y);
+                            roi_rect.w = static_cast<float>(r.max_x - r.min_x);
+                            roi_rect.h = static_cast<float>(r.max_y - r.min_y);
                         }
                     }
                     catch (...)
@@ -693,6 +706,43 @@ namespace rs2
 
             next_option++;
         }
+    }
+
+    void subdevice_model::draw_options(const std::vector<rs2_option>& drawing_order,
+                                       bool update_read_only_options, std::string& error_message)
+    {
+        for (auto& opt : drawing_order)
+        {
+            draw_option(opt, update_read_only_options, error_message);
+        }
+
+        for (auto i = 0; i < RS2_OPTION_COUNT; i++)
+        {
+            auto opt = static_cast<rs2_option>(i);
+            if(std::find(drawing_order.begin(), drawing_order.end(), opt) == drawing_order.end())
+            {
+                draw_option(opt, update_read_only_options, error_message);
+            }
+        }
+    }
+
+    void subdevice_model::draw_option(rs2_option opt, bool update_read_only_options,
+                                      std::string& error_message)
+    {
+        auto&& metadata = options_metadata[opt];
+        if (update_read_only_options)
+        {
+            metadata.update_supported(error_message);
+            if (metadata.supported && streaming)
+            {
+                metadata.update_read_only(error_message);
+                if (metadata.read_only)
+                {
+                    metadata.update_all(error_message);
+                }
+            }
+        }
+        metadata.draw(error_message);
     }
 
     stream_model::stream_model()
@@ -983,6 +1033,7 @@ namespace rs2
     {
         subdevices.resize(0);
         streams.clear();
+        _recorder.reset();
     }
 
     device_model::device_model(device& dev, std::string& error_message)
@@ -1090,6 +1141,56 @@ namespace rs2
         streams[stream_type].upload_frame(std::move(f));
     }
 
+    void device_model::start_recording(device& dev, const std::string& path, std::string& error_message)
+    {
+        if (_recorder != nullptr)
+        {
+            return; //already recording
+        }
+        
+        _recorder = std::make_shared<recorder>(path, dev);
+        live_subdevices = subdevices;
+        subdevices.clear();
+        for (auto&& sub : _recorder->query_sensors())
+        {
+            auto model = std::make_shared<subdevice_model>(dev, sub, error_message);
+            subdevices.push_back(model);
+        }
+		assert(live_subdevices.size() == subdevices.size());
+	    for(int i=0; i< live_subdevices.size(); i++)
+	    {
+			//TODO: change this
+			subdevices[i]->selected_res_id = live_subdevices[i]->selected_res_id;
+			subdevices[i]->selected_shared_fps_id = live_subdevices[i]->selected_shared_fps_id;
+			subdevices[i]->selected_format_id = live_subdevices[i]->selected_format_id;
+			subdevices[i]->show_single_fps_list = live_subdevices[i]->show_single_fps_list;
+			subdevices[i]->fpses_per_stream = live_subdevices[i]->fpses_per_stream;
+			subdevices[i]->selected_fps_id = live_subdevices[i]->selected_fps_id;
+			subdevices[i]->stream_enabled = live_subdevices[i]->stream_enabled;
+			subdevices[i]->fps_values_per_stream = live_subdevices[i]->fps_values_per_stream;
+			subdevices[i]->format_values = live_subdevices[i]->format_values;
+	    }
+    }
+
+    void device_model::stop_recording()
+    {
+        subdevices.clear();
+        subdevices = live_subdevices;
+        live_subdevices.clear();
+        //this->streams.clear();
+        _recorder.reset();
+    }
+
+    void device_model::pause_record()
+    {
+        _recorder->pause();
+    }
+
+    void device_model::resume_record()
+    {
+        _recorder->resume();
+    }
+
     std::map<rs2_stream, rect> device_model::get_interpolated_layout(const std::map<rs2_stream, rect>& l)
     {
         using namespace std::chrono;
@@ -1168,8 +1269,7 @@ namespace rs2
 
     double notification_model::get_age_in_ms()
     {
-        auto age = std::chrono::high_resolution_clock::now() - created_time;
-        return std::chrono::duration_cast<std::chrono::milliseconds>(age).count();
+        return std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now() - created_time).count();
     }
 
     void notification_model::set_color_scheme(float t)
@@ -1201,7 +1301,7 @@ namespace rs2
         set_color_scheme(t);
         ImGui::PushStyleColor(ImGuiCol_Text, { 1, 1, 1, 1 - t });
 
-        auto lines = std::count(message.begin(), message.end(), '\n')+1;
+        auto lines = static_cast<int>(std::count(message.begin(), message.end(), '\n') + 1);
         ImGui::SetNextWindowPos({ float(w - 430), float(y) });
         ImGui::SetNextWindowSize({ float(415), float(lines*50) });
         height = lines*50 +10;

@@ -44,6 +44,7 @@
 #include <sys/signalfd.h>
 #include <signal.h>
 
+
 #pragma GCC diagnostic ignored "-Woverflow"
 
 const size_t MAX_DEV_PARENT_DIR = 10;
@@ -516,8 +517,11 @@ namespace librealsense
             if (_thread) _thread->join();
         }
 
-        void v4l_uvc_device::probe_and_commit(stream_profile profile, frame_callback callback, int buffers)
+        void v4l_uvc_device::probe_and_commit( stream_profile profile, bool zero_copy,  frame_callback callback, int buffers)
         {
+            if(!zero_copy)
+                buffers = 1;
+
             if(!_is_capturing && !_callback)
             {
                 v4l2_format fmt = {};
@@ -555,17 +559,17 @@ namespace librealsense
                     else
                         throw linux_backend_exception("xioctl(VIDIOC_REQBUFS) failed");
                 }
-                if(req.count < 2)
-                {
-                    throw linux_backend_exception(to_string() << "Insufficient buffer memory on " << _name);
-                }
+//                if(req.count < 2)
+//                {
+//                    throw linux_backend_exception(to_string() << "Insufficient buffer memory on " << _name);
+//                }
 
                 for(size_t i = 0; i < buffers; ++i)
                 {
                     _buffers.push_back(std::make_shared<buffer>(_fd, _use_memory_map, i));
                 }
 
-                _profile = profile;
+                _profile =  profile;
                 _callback = callback;
             }
             else
@@ -1025,7 +1029,10 @@ namespace librealsense
                         "00000032-0000-0010-8000-00aa003",
                     };
 
-                    if (known_problematic_formats.count((const char*)pixel_format.description) == 0)
+                    if (std::find(known_problematic_formats.begin(),
+                                  known_problematic_formats.end(),
+                                  (const char*)pixel_format.description) ==
+                        known_problematic_formats.end())
                     {
                         const std::string s(to_string() << "!" << pixel_format.description);
                         std::regex rgx("!([0-9a-f]+)-.*");
@@ -1110,6 +1117,7 @@ namespace librealsense
             case RS2_OPTION_WHITE_BALANCE: return V4L2_CID_WHITE_BALANCE_TEMPERATURE;
             case RS2_OPTION_ENABLE_AUTO_EXPOSURE: return V4L2_CID_EXPOSURE_AUTO; // Automatic gain/exposure control
             case RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE: return V4L2_CID_AUTO_WHITE_BALANCE;
+            case RS2_OPTION_POWER_LINE_FREQUENCY : return V4L2_CID_POWER_LINE_FREQUENCY;
             default: throw linux_backend_exception(to_string() << "no v4l2 cid for option " << option);
             }
         }

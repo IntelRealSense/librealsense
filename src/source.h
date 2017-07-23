@@ -25,7 +25,7 @@ namespace librealsense
 
         std::shared_ptr<option> get_published_size_option();
 
-        frame_interface* alloc_frame(rs2_extension_type type, size_t size, frame_additional_data additional_data, bool requires_memory) const;
+        frame_interface* alloc_frame(rs2_extension type, size_t size, frame_additional_data additional_data, bool requires_memory) const;
 
         void set_callback(frame_callback_ptr callback);
 
@@ -44,7 +44,7 @@ namespace librealsense
 
         std::mutex _callback_mutex;
 
-        std::map<rs2_extension_type, std::shared_ptr<archive_interface>> _archive;
+        std::map<rs2_extension, std::shared_ptr<archive_interface>> _archive;
 
         std::atomic<uint32_t> _max_publish_list_size;
         frame_callback_ptr _callback;

@@ -3,18 +3,22 @@
 
 #pragma once
 
+#include <map>
+#include <memory>
+#include "../core/extension.h"
+
 namespace librealsense
 {
     class snapshot_collection
     {
     public:
         snapshot_collection() {}
-        snapshot_collection(const std::map<rs2_extension_type, std::shared_ptr<extension_snapshot>>& snapshots) :
+        snapshot_collection(const std::map<rs2_extension, std::shared_ptr<extension_snapshot>>& snapshots) :
             m_snapshots(snapshots)
         {
         }
 
-        std::shared_ptr<extension_snapshot> find(rs2_extension_type t)
+        std::shared_ptr<extension_snapshot> find(rs2_extension t)
         {
             auto snapshot_it = m_snapshots.find(t);
             if(snapshot_it == std::end(m_snapshots))
@@ -23,22 +27,22 @@ namespace librealsense
             }
             return snapshot_it->second;
         }
-        std::map<rs2_extension_type, std::shared_ptr<extension_snapshot>> get_snapshots() const
+        std::map<rs2_extension, std::shared_ptr<extension_snapshot>> get_snapshots() const
         {
             return m_snapshots;
         }
 
-        const std::shared_ptr<extension_snapshot>& operator[](rs2_extension_type extension) const
+        const std::shared_ptr<extension_snapshot>& operator[](rs2_extension extension) const
         {
             return m_snapshots.at(extension);
         }
 
-        std::shared_ptr<extension_snapshot>& operator[](rs2_extension_type extension)
+        std::shared_ptr<extension_snapshot>& operator[](rs2_extension extension)
         {
             return m_snapshots[extension];
         }
     private:
-        std::map<rs2_extension_type, std::shared_ptr<extension_snapshot>> m_snapshots;
+        std::map<rs2_extension, std::shared_ptr<extension_snapshot>> m_snapshots;
     };
     class sensor_snapshot
     {

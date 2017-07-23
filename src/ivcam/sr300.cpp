@@ -2,6 +2,7 @@
 // Copyright(c) 2016 Intel Corporation. All Rights Reserved.
 
 #include "sr300.h"
+#include "metadata.h"
 #include "hw-monitor.h"
 
 namespace librealsense
@@ -190,11 +191,14 @@ namespace librealsense
         auto serial = _hw_monitor->get_module_serial_string(GVD, module_serial_offset);
         enable_timestamp(true, true);
 
-        register_info(RS2_CAMERA_INFO_NAME,              device_name);
-        register_info(RS2_CAMERA_INFO_SERIAL_NUMBER,     serial);
-        register_info(RS2_CAMERA_INFO_FIRMWARE_VERSION,  fw_version);
-        register_info(RS2_CAMERA_INFO_LOCATION,          depth.device_path);
-        register_info(RS2_CAMERA_INFO_DEBUG_OP_CODE,     std::to_string(static_cast<int>(fw_cmd::GLD)));
+        auto pid_hex_str = hexify(color.pid>>8) + hexify(static_cast<uint8_t>(color.pid));
+
+        register_info(RS2_CAMERA_INFO_NAME,             device_name);
+        register_info(RS2_CAMERA_INFO_SERIAL_NUMBER,    serial);
+        register_info(RS2_CAMERA_INFO_FIRMWARE_VERSION, fw_version);
+        register_info(RS2_CAMERA_INFO_LOCATION,         depth.device_path);
+        register_info(RS2_CAMERA_INFO_DEBUG_OP_CODE,    std::to_string(static_cast<int>(fw_cmd::GLD)));
+        register_info(RS2_CAMERA_INFO_PRODUCT_ID,       pid_hex_str);
 
         register_autorange_options();
 
@@ -216,9 +220,59 @@ namespace librealsense
         throw std::runtime_error("Not Implemented");
     }
     void sr300_camera::create_recordable(std::shared_ptr<debug_interface>& recordable,
-                                         std::function<void(std::shared_ptr<extension_snapshot>)> record_action)
+        std::function<void(std::shared_ptr<extension_snapshot>)> record_action)
     {
         //TODO: implement
         throw std::runtime_error("Not Implemented");
+    }
+
+    rs2_time_t sr300_timestamp_reader_from_metadata::get_frame_timestamp(const request_mapping& mode, const platform::frame_object& fo)
+    {
+        std::lock_guard<std::recursive_mutex> lock(_mtx);
+
+        if(has_metadata_ts(fo))
+        {
+            auto md = (librealsense::metadata_raw*)(fo.metadata);
+            return (double)(ts_wrap.calc(md->header.timestamp))*TIMESTAMP_10NSEC_TO_MSEC;
+        }
+        else
+        {
+            if (!one_time_note)
+            {
+                LOG_WARNING("UVC metadata payloads are not available for stream " 
+                    << std::hex << mode.pf->fourcc << std::dec << (mode.profile.format)
+                    << ". Please refer to installation chapter for details.");
+                one_time_note = true;
+            }
+            return _backup_timestamp_reader->get_frame_timestamp(mode, fo);
+        }
+    }
+
+    unsigned long long sr300_timestamp_reader_from_metadata::get_frame_counter(const request_mapping & mode, const platform::frame_object& fo) const
+    {
+        std::lock_guard<std::recursive_mutex> lock(_mtx);
+
+        if (has_metadata_fc(fo))
+        {
+            auto md = (librealsense::metadata_raw*)(fo.metadata);
+            return md->mode.sr300_rgb_mode.frame_counter; // The attribute offset is identical for all sr300-supported streams
+        }
+
+        return _backup_timestamp_reader->get_frame_counter(mode, fo);
+    }
+
+    void sr300_timestamp_reader_from_metadata::reset()
+    {
+        std::lock_guard<std::recursive_mutex> lock(_mtx);
+        one_time_note = false;
+        _backup_timestamp_reader->reset();
+        ts_wrap.reset();
+    }
+
+    rs2_timestamp_domain sr300_timestamp_reader_from_metadata::get_frame_timestamp_domain(const request_mapping & mode, const platform::frame_object& fo) const
+    {
+        std::lock_guard<std::recursive_mutex> lock(_mtx);
+
+        return (has_metadata_ts(fo))? RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK : _backup_timestamp_reader->get_frame_timestamp_domain(mode,fo);
     }
 }

@@ -62,6 +62,7 @@ const char* librealsense::uvc_pu_option::get_description() const
     case RS2_OPTION_WHITE_BALANCE: return "Controls white balance of color image. Setting any value will disable auto white balance";
     case RS2_OPTION_ENABLE_AUTO_EXPOSURE: return "Enable / disable auto-exposure";
     case RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE: return "Enable / disable auto-white-balance";
+    case RS2_OPTION_POWER_LINE_FREQUENCY: return "Power Line Frequency";
     default: return rs2_option_to_string(_id);
     }
 }

@@ -22,6 +22,7 @@ namespace librealsense
         _notifications_proccessor(std::shared_ptr<notifications_proccessor>(new notifications_proccessor())),
         _metadata_parsers(std::make_shared<metadata_parser_map>()),
         _on_before_frame_callback(nullptr),
+        _on_open(nullptr),
         _ts(ts)
     {
         register_option(RS2_OPTION_FRAMES_QUEUE_SIZE, _source.get_published_size_option());
@@ -163,8 +164,9 @@ namespace librealsense
     std::vector<stream_profile> uvc_sensor::get_principal_requests()
     {
         std::unordered_set<stream_profile> results;
-        std::set<uint32_t> unutilized_formats;
+        std::set<uint32_t> unregistered_formats;
         std::set<uint32_t> supported_formats;
+        std::set<uint32_t> registered_formats;
 
         auto profiles = get_stream_profiles();
         for (auto&& p : profiles)
@@ -178,36 +180,40 @@ namespace librealsense
                     for (auto&& output : unpacker.outputs)
                     {
                         results.insert({ output.first, p.width, p.height, p.fps, output.second });
+                        registered_formats.insert(p.format);
                     }
                 }
             }
             else
             {
-                unutilized_formats.insert(p.format);
+                unregistered_formats.insert(p.format);
             }
         }
 
-        for (auto& elem : unutilized_formats)
-        {
-            uint32_t device_fourcc = reinterpret_cast<const big_endian<uint32_t>&>(elem);
-            char fourcc[sizeof(device_fourcc) + 1];
-            librealsense::copy(fourcc, &device_fourcc, sizeof(device_fourcc));
-            fourcc[sizeof(device_fourcc)] = 0;
-            LOG_WARNING("Unutilized format " << fourcc);
-        }
-
-        if (!unutilized_formats.empty())
+        if (unregistered_formats.size())
         {
             std::stringstream ss;
-            for (auto& elem : supported_formats)
+            ss << "Unregistered Media formats : [ ";
+            for (auto& elem : unregistered_formats)
             {
                 uint32_t device_fourcc = reinterpret_cast<const big_endian<uint32_t>&>(elem);
                 char fourcc[sizeof(device_fourcc) + 1];
                 librealsense::copy(fourcc, &device_fourcc, sizeof(device_fourcc));
                 fourcc[sizeof(device_fourcc)] = 0;
-                ss << fourcc << std::endl;
+                ss << fourcc << " ";
             }
-            LOG_WARNING("\nDevice supported formats:\n" << ss.str());
+
+            ss << "]; Supported: [ ";
+            for (auto& elem : registered_formats)
+            {
+                uint32_t device_fourcc = reinterpret_cast<const big_endian<uint32_t>&>(elem);
+                char fourcc[sizeof(device_fourcc) + 1];
+                librealsense::copy(fourcc, &device_fourcc, sizeof(device_fourcc));
+                fourcc[sizeof(device_fourcc)] = 0;
+                ss << fourcc << " ";
+            }
+            ss << "]";
+            LOG_WARNING(ss.str());
         }
 
         // Sort the results to make sure that the user will receive predictable deterministic output from the API
@@ -244,11 +250,12 @@ namespace librealsense
         auto timestamp_reader = _timestamp_reader.get();
 
         std::vector<request_mapping> commited;
-        for (auto& mode : mapping)
+
+        for (auto&& mode : mapping)
         {
             try
             {
-                _device->probe_and_commit(mode.profile,
+                _device->probe_and_commit(mode.profile, !mode.requires_processing(),
                 [this, mode, timestamp_reader, requests](platform::stream_profile p, platform::frame_object f, std::function<void()> continuation) mutable
                 {
 
@@ -291,7 +298,7 @@ namespace librealsense
                 auto&& unpacker = *mode.unpacker;
                 for (auto&& output : unpacker.outputs)
                 {
-                    LOG_DEBUG("FrameAccepted," << librealsense::get_string(output.first) << "," << frame_counter
+                    LOG_DEBUG("FrameAccepted," << librealsense::get_string(output.first) << "," << std::dec << frame_counter
                         << ",Arrived," << std::fixed << system_time
                         << ",TS," << std::fixed << timestamp << ",TS_Domain," << rs2_timestamp_domain_to_string(timestamp_domain));
 
@@ -352,7 +359,8 @@ namespace librealsense
                         _source.invoke_callback(std::move(pref));
                     }
                  }
-                }, static_cast<int>(_source.get_published_size_option()->query()));
+                },
+                static_cast<int>(_source.get_published_size_option()->query()));
             }
             catch(...)
             {
@@ -369,6 +377,10 @@ namespace librealsense
         {
             _configuration.push_back(mode.profile);
         }
+
+        if (_on_open)
+            _on_open(_configuration);
+
         _power = move(on);
         _is_opened = true;
 
@@ -424,7 +436,7 @@ namespace librealsense
             throw wrong_api_call_sequence_exception("start_streaming(...) failed. UVC device was not opened!");
 
         _source.set_callback(callback);
-        
+
         _is_streaming = true;
         _device->start_callbacks();
     }
@@ -450,6 +462,7 @@ namespace librealsense
 
     void uvc_sensor::acquire_power()
     {
+        std::lock_guard<std::mutex> lock(_power_lock);
         if (_user_count.fetch_add(1) == 0)
         {
             _device->set_power_state(platform::D0);
@@ -459,7 +472,11 @@ namespace librealsense
 
     void uvc_sensor::release_power()
     {
-        if (_user_count.fetch_add(-1) == 1) _device->set_power_state(platform::D3);
+        std::lock_guard<std::mutex> lock(_power_lock);
+        if (_user_count.fetch_add(-1) == 1)
+        {
+            _device->set_power_state(platform::D3);
+        }
     }
 
     bool info_container::supports_info(rs2_camera_info info) const
@@ -700,8 +717,7 @@ namespace librealsense
             additional_data.frame_number = frame_counter;
             additional_data.timestamp_domain = timestamp_reader->get_frame_timestamp_domain(mode, sensor_data.fo);
             additional_data.system_time = system_time;
-
-            LOG_DEBUG("FrameAccepted," << get_string(additional_data.stream_type) << "," << frame_counter
+            LOG_DEBUG("FrameAccepted," << get_string(additional_data.stream_type) << "," << std::dec << frame_counter
                       << ",Arrived," << std::fixed << system_time
                       << ",TS," << std::fixed << timestamp
                       << ",TS_Domain," << rs2_timestamp_domain_to_string(additional_data.timestamp_domain));

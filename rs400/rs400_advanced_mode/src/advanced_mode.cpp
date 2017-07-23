@@ -2,6 +2,8 @@
 // Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 
 #include "../../../src/core/advanced_mode.h"
+#include "../../../src/ds5/ds5-active.h"
+#include "../../../src/ds5/ds5-rolling-shutter.h"
 
 namespace librealsense
 {
@@ -10,8 +12,8 @@ namespace librealsense
           _depth_sensor(depth_sensor)
     {
         _enabled = [this](){
-            auto results = send_recieve(encode_command(ds::fw_cmd::advanced_mode_enabled));
-            assert_no_error(ds::fw_cmd::advanced_mode_enabled, results);
+            auto results = send_receive(encode_command(ds::fw_cmd::UAMG));
+            assert_no_error(ds::fw_cmd::UAMG, results);
             return *(reinterpret_cast<uint32_t*>(results.data()) + 1) > 0;
         };
         _depth_sensor.register_option(RS2_OPTION_ADVANCED_MODE_PRESET,
@@ -20,8 +22,7 @@ namespace librealsense
                                                                                     option_range{0,
                                                                                                  RS2_RS400_VISUAL_PRESET_COUNT - 1,
                                                                                                  1,
-                                                                                                 0},
-                                                                                    _description_per_value));
+                                                                                                 RS2_RS400_VISUAL_PRESET_CUSTOM}));
     }
 
     bool ds5_advanced_mode_base::is_enabled() const
@@ -31,15 +32,9 @@ namespace librealsense
 
     void ds5_advanced_mode_base::toggle_advanced_mode(bool enable)
     {
-        send_recieve(encode_command(ds::fw_cmd::enable_advanced_mode, enable));
-        send_recieve(encode_command(ds::fw_cmd::reset));
+        send_receive(encode_command(ds::fw_cmd::EN_ADV, enable));
+        send_receive(encode_command(ds::fw_cmd::HWRST));
     }
-
-    std::string ds5_advanced_mode_base::pid_to_str(uint16_t pid)
-    {
-        return std::string(hexify(pid>>8) + hexify(static_cast<uint8_t>(pid)));
-    }
-
 
     ds5_advanced_mode_base::res_type ds5_advanced_mode_base::get_res_type(uint32_t width, uint32_t height)
     {
@@ -53,17 +48,35 @@ namespace librealsense
         throw invalid_value_exception(to_string() << "Invalid resolution! " << width << "x" << height);
     }
 
-    void ds5_advanced_mode_base::apply_preset(const std::string& pid,
-                      const std::vector<platform::stream_profile>& configuration,
-                      rs2_rs400_visual_preset preset)
+    void ds5_advanced_mode_base::apply_preset(const std::vector<platform::stream_profile>& configuration,
+                                              rs2_rs400_visual_preset preset)
     {
         auto p = get_all();
+
+        auto rolling_shutter_cam = dynamic_cast<const ds5_rolling_shutter*>(&_depth_sensor.get_device());
+        auto active_cam = dynamic_cast<const ds5_active*>(&_depth_sensor.get_device());
+
+        enum cam_type{
+            passive,
+            active,
+            awg
+        };
+
+        cam_type cam;
+        if (active_cam && rolling_shutter_cam)
+            cam = cam_type::active;
+        else if (rolling_shutter_cam)
+            cam = cam_type::passive;
+        else if (!rolling_shutter_cam)
+            cam = cam_type::awg;
+        else
+            throw("apply_preset(...) failed! Unknown camera type.");
 
         auto res = get_res_type(configuration.front().width, configuration.front().height);
 
         switch (preset) {
         case RS2_RS400_VISUAL_PRESET_GENERIC_DEPTH: // 5/generic
-            if (pid == pid_to_str(ds::RS400_PID) || pid == pid_to_str(ds::RS400_MM_PID)) // Passive
+            if (cam == cam_type::passive) // Passive
             {
                 switch (res)
                 {
@@ -80,7 +93,7 @@ namespace librealsense
                     throw invalid_value_exception("apply_preset(...) Failed! RS400/RS400_MM doesn't support GENERIC_DEPTH preset with current streaming resolution!");
                 }
             }
-            else if (pid == pid_to_str(ds::RS410_PID) || pid == pid_to_str(ds::RS410_MM_PID)) // Active
+            else if (cam == cam_type::active) // Active
             {
                 switch (res)
                 {
@@ -94,19 +107,19 @@ namespace librealsense
                     throw invalid_value_exception("apply_preset(...) Failed! RS410/RS410_MM doesn't support GENERIC_DEPTH preset with current streaming resolution!");
                 }
             }
-            else if (pid == pid_to_str(ds::RS430_MM_PID)) // AWG
+            else if (cam == cam_type::awg) // AWG
             {
                 throw invalid_value_exception("apply_preset(...) Failed! RS430_MM doesn't support GENERIC_DEPTH preset!");
             }
             else
-                throw invalid_value_exception(to_string() << "apply_preset(RS2_RS400_VISUAL_PRESET_GENERIC_DEPTH) Failed! Invalid PID! " << pid);
+                throw invalid_value_exception(to_string() << "apply_preset(RS2_RS400_VISUAL_PRESET_GENERIC_DEPTH) Failed! Invalid SKU!");
             break;
         case RS2_RS400_VISUAL_PRESET_GENERIC_ACCURATE_DEPTH: // 25
-            if (pid == pid_to_str(ds::RS400_PID) || pid == pid_to_str(ds::RS400_MM_PID)) // Passive
+            if (cam == cam_type::passive) // Passive
             {
                 throw invalid_value_exception(to_string() << "apply_preset(...) Failed! RS400/RS400_MM doesn't support GENERIC_ACCURATE_DEPTH preset!");
             }
-            else if (pid == pid_to_str(ds::RS410_PID) || pid == pid_to_str(ds::RS410_MM_PID)) // Active
+            else if (cam == cam_type::active) // Active
             {
                 switch (res)
                 {
@@ -120,19 +133,19 @@ namespace librealsense
                     throw invalid_value_exception("apply_preset(...) Failed! RS410/RS410_MM doesn't support GENERIC_ACCURATE_DEPTH preset with current streaming resolution!");
                 }
             }
-            else if (pid == pid_to_str(ds::RS430_MM_PID)) // AWG
+            else if (cam == cam_type::awg) // AWG
             {
                 throw invalid_value_exception("RS430_MM doesn't support GENERIC_ACCURATE_DEPTH preset!");
             }
             else
-                throw invalid_value_exception(to_string() << "apply_preset(RS2_RS400_VISUAL_PRESET_GENERIC_ACCURATE_DEPTH) Failed! Invalid PID! " << pid);
+                throw invalid_value_exception(to_string() << "apply_preset(RS2_RS400_VISUAL_PRESET_GENERIC_ACCURATE_DEPTH) Failed! Invalid SKU!");
             break;
         case RS2_RS400_VISUAL_PRESET_GENERIC_DENSE_DEPTH: // 75
-            if (pid == pid_to_str(ds::RS400_PID) || pid == pid_to_str(ds::RS400_MM_PID)) // Passive
+            if (cam == cam_type::passive) // Passive
             {
                 throw invalid_value_exception(to_string() << "apply_preset(...) Failed! RS400/RS400_MM doesn't support GENERIC_DENSE_DEPTH preset!");
             }
-            else if (pid == pid_to_str(ds::RS410_PID) || pid == pid_to_str(ds::RS410_MM_PID)) // Active
+            else if (cam == cam_type::active) // Active
             {
                 switch (res)
                 {
@@ -149,7 +162,7 @@ namespace librealsense
                     throw invalid_value_exception("apply_preset(...) Failed! RS410/RS410_MM doesn't support GENERIC_DENSE_DEPTH preset with current streaming resolution!");
                 }
             }
-            else if (pid == pid_to_str(ds::RS430_MM_PID)) // AWG
+            else if (cam == cam_type::awg) // AWG
             {
                 switch (res)
                 {
@@ -168,15 +181,15 @@ namespace librealsense
             }
             else
             {
-                throw invalid_value_exception(to_string() << "apply_preset(RS2_RS400_VISUAL_PRESET_GENERIC_DENSE_DEPTH) Failed! Invalid PID! " << pid);
+                throw invalid_value_exception(to_string() << "apply_preset(RS2_RS400_VISUAL_PRESET_GENERIC_DENSE_DEPTH) Failed! Invalid SKU!");
             }
             break;
         case RS2_RS400_VISUAL_PRESET_GENERIC_SUPER_DENSE_DEPTH: // 125
-            if (pid == pid_to_str(ds::RS400_PID) || pid == pid_to_str(ds::RS400_MM_PID)) // Passive
+            if (cam == cam_type::passive) // Passive
             {
                 throw invalid_value_exception("RS400/RS400_MM doesn't support GENERIC_SUPER_DENSE_DEPTH preset!");
             }
-            else if (pid == pid_to_str(ds::RS410_PID) || pid == pid_to_str(ds::RS410_MM_PID)) // Active
+            else if (cam == cam_type::active) // Active
             {
                 switch (res)
                 {
@@ -187,21 +200,21 @@ namespace librealsense
                     throw invalid_value_exception("apply_preset(...) Failed! RS410/RS410_MM doesn't support GENERIC_SUPER_DENSE_DEPTH preset with current streaming resolution!");
                 }
             }
-            else if (pid == pid_to_str(ds::RS430_MM_PID)) // AWG
+            else if (cam == cam_type::awg) // AWG
             {
                 throw invalid_value_exception(to_string() << "apply_preset(...) Failed! RS430_MM doesn't support GENERIC_SUPER_DENSE_DEPTH preset!");
             }
             else
             {
-                throw invalid_value_exception(to_string() << "apply_preset(RS2_RS400_VISUAL_PRESET_GENERIC_SUPER_DENSE_DEPTH) Failed! Invalid PID! " << pid);
+                throw invalid_value_exception(to_string() << "apply_preset(RS2_RS400_VISUAL_PRESET_GENERIC_SUPER_DENSE_DEPTH) Failed! Invalid SKU!");
             }
             break;
         case RS2_RS400_VISUAL_PRESET_FLOOR_LOW:
-            if (pid == pid_to_str(ds::RS400_PID) || pid == pid_to_str(ds::RS400_MM_PID)) // Passive
+            if (cam == cam_type::passive) // Passive
             {
                 throw invalid_value_exception(to_string() << "apply_preset(...) Failed! RS400/RS400_MM doesn't support FLOOR_LOW preset!");
             }
-            else if (pid == pid_to_str(ds::RS410_PID) || pid == pid_to_str(ds::RS410_MM_PID)) // Active
+            else if (cam == cam_type::active) // Active
             {
                 switch (res)
                 {
@@ -212,21 +225,21 @@ namespace librealsense
                     throw invalid_value_exception("apply_preset(...) Failed! RS410/RS410_MM doesn't support FLOOR_LOW preset with current streaming resolution!");
                 }
             }
-            else if (pid == pid_to_str(ds::RS430_MM_PID)) // AWG
+            else if (cam == cam_type::awg) // AWG
             {
                 throw invalid_value_exception(to_string() << "apply_preset(...) Failed! RS430_MM doesn't support FLOOR_LOW preset!");
             }
             else
             {
-                throw invalid_value_exception(to_string() << "apply_preset(RS2_RS400_VISUAL_PRESET_FLOOR_LOW) Failed! Invalid PID! " << pid);
+                throw invalid_value_exception(to_string() << "apply_preset(RS2_RS400_VISUAL_PRESET_FLOOR_LOW) Failed! Invalid SKU!");
             }
             break;
         case RS2_RS400_VISUAL_PRESET_3D_BODY_SCAN:
-            if (pid == pid_to_str(ds::RS400_PID) || pid == pid_to_str(ds::RS400_MM_PID)) // Passive
+            if (cam == cam_type::passive) // Passive
             {
                 throw invalid_value_exception(to_string() << "apply_preset(...) Failed! RS400/RS400_MM doesn't support 3D_BODY_SCAN preset!");
             }
-            else if (pid == pid_to_str(ds::RS410_PID) || pid == pid_to_str(ds::RS410_MM_PID)) // Active
+            else if (cam == cam_type::active) // Active
             {
                 switch (res)
                 {
@@ -237,17 +250,17 @@ namespace librealsense
                     throw invalid_value_exception("apply_preset(...) Failed! RS410/RS410_MM doesn't support 3D_BODY_SCAN preset with current streaming resolution!");
                 }
             }
-            else if (pid == pid_to_str(ds::RS430_MM_PID)) // AWG
+            else if (cam == cam_type::awg) // AWG
             {
                 throw invalid_value_exception(to_string() << "apply_preset(...) Failed! RS430_MM doesn't support 3D_BODY_SCAN preset!");
             }
             else
             {
-                throw invalid_value_exception(to_string() << "apply_preset(RS2_RS400_VISUAL_PRESET_3D_BODY_SCAN) Failed! Invalid PID! " << pid);
+                throw invalid_value_exception(to_string() << "apply_preset(RS2_RS400_VISUAL_PRESET_3D_BODY_SCAN) Failed! Invalid SKU!");
             }
             break;
         case RS2_RS400_VISUAL_PRESET_INDOOR:
-            if (pid == pid_to_str(ds::RS400_PID) || pid == pid_to_str(ds::RS400_MM_PID)) // Passive
+            if (cam == cam_type::passive) // Passive
             {
                 switch (res)
                 {
@@ -264,7 +277,7 @@ namespace librealsense
                     throw invalid_value_exception("apply_preset(...) Failed! RS400/RS400_MM doesn't support INDOOR preset with current streaming resolution!");
                 }
             }
-            else if (pid == pid_to_str(ds::RS410_PID) || pid == pid_to_str(ds::RS410_MM_PID)) // Active
+            else if (cam == cam_type::active) // Active
             {
                 switch (res)
                 {
@@ -281,7 +294,7 @@ namespace librealsense
                     throw invalid_value_exception("apply_preset(...) Failed! RS410/RS410_MM doesn't support INDOOR preset with current streaming resolution!");
                 }
             }
-            else if (pid == pid_to_str(ds::RS430_MM_PID)) // AWG
+            else if (cam == cam_type::awg) // AWG
             {
                 switch (res)
                 {
@@ -300,11 +313,11 @@ namespace librealsense
             }
             else
             {
-                throw invalid_value_exception(to_string() << "apply_preset(RS2_RS400_VISUAL_PRESET_INDOOR) Failed! Invalid PID! " << pid);
+                throw invalid_value_exception(to_string() << "apply_preset(RS2_RS400_VISUAL_PRESET_INDOOR) Failed! Invalid SKU!");
             }
             break;
         case RS2_RS400_VISUAL_PRESET_OUTDOOR:
-            if (pid == pid_to_str(ds::RS400_PID) || pid == pid_to_str(ds::RS400_MM_PID)) // Passive
+            if (cam == cam_type::passive) // Passive
             {
                 switch (res)
                 {
@@ -321,7 +334,7 @@ namespace librealsense
                     throw invalid_value_exception("apply_preset(...) Failed! RS400/RS400_MM doesn't support OUTDOOR preset with current streaming resolution!");
                 }
             }
-            else if (pid == pid_to_str(ds::RS410_PID) || pid == pid_to_str(ds::RS410_MM_PID)) // Active
+            else if (cam == cam_type::active) // Active
             {
                 switch (res)
                 {
@@ -338,7 +351,7 @@ namespace librealsense
                     throw invalid_value_exception("apply_preset(...) Failed! RS410/RS410_MM doesn't support OUTDOOR preset with current streaming resolution!");
                 }
             }
-            else if (pid == pid_to_str(ds::RS430_MM_PID)) // AWG
+            else if (cam == cam_type::awg) // AWG
             {
                 switch (res)
                 {
@@ -357,11 +370,11 @@ namespace librealsense
             }
             else
             {
-                throw invalid_value_exception(to_string() << "apply_preset(RS2_RS400_VISUAL_PRESET_OUTDOOR) Failed! Invalid PID! " << pid);
+                throw invalid_value_exception(to_string() << "apply_preset(RS2_RS400_VISUAL_PRESET_OUTDOOR) Failed! Invalid SKU!");
             }
             break;
         case RS2_RS400_VISUAL_PRESET_HAND:
-            if (pid == pid_to_str(ds::RS400_PID) || pid == pid_to_str(ds::RS400_MM_PID)) // Passive
+            if (cam == cam_type::passive) // Passive
                 switch (res)
                 {
                 case small_resolution:
@@ -376,7 +389,7 @@ namespace librealsense
                 default:
                     throw invalid_value_exception("apply_preset(...) Failed! RS400/RS400_MM doesn't support HAND preset with current streaming resolution!");
                 }
-            else if (pid == pid_to_str(ds::RS410_PID) || pid == pid_to_str(ds::RS410_MM_PID)) // Active
+            else if (cam == cam_type::active) // Active
             {
                 switch (res)
                 {
@@ -393,7 +406,7 @@ namespace librealsense
                     throw invalid_value_exception("apply_preset(...) Failed! RS410/RS410_MM doesn't support HAND preset with current streaming resolution!");
                 }
             }
-            else if (pid == pid_to_str(ds::RS430_MM_PID)) // AWG
+            else if (cam == cam_type::awg) // AWG
             {
                 switch (res)
                 {
@@ -412,11 +425,11 @@ namespace librealsense
             }
             else
             {
-                throw invalid_value_exception(to_string() << "apply_preset(RS2_RS400_VISUAL_PRESET_HAND) Failed! Invalid PID! " << pid);
+                throw invalid_value_exception(to_string() << "apply_preset(RS2_RS400_VISUAL_PRESET_HAND) Failed! Invalid SKU!");
             }
             break;
         case RS2_RS400_VISUAL_PRESET_SHORT_RANGE:
-            if (pid == pid_to_str(ds::RS400_PID) || pid == pid_to_str(ds::RS400_MM_PID)) // Passive
+            if (cam == cam_type::passive) // Passive
             {
                 switch (res)
                 {
@@ -434,7 +447,7 @@ namespace librealsense
                     throw invalid_value_exception("apply_preset(...) Failed! RS400/RS400_MM doesn't support SHORT_RANGE preset with current streaming resolution!");
                 }
             }
-            else if (pid == pid_to_str(ds::RS410_PID) || pid == pid_to_str(ds::RS410_MM_PID)) // Active
+            else if (cam == cam_type::active) // Active
             {
                 switch (res)
                 {
@@ -451,7 +464,7 @@ namespace librealsense
                     throw invalid_value_exception("apply_preset(...) Failed! RS410/RS410_MM doesn't support SHORT_RANGE preset with current streaming resolution!");
                 }
             }
-            else if (pid == pid_to_str(ds::RS430_MM_PID)) // AWG
+            else if (cam == cam_type::awg) // AWG
             {
                 switch (res)
                 {
@@ -470,11 +483,11 @@ namespace librealsense
             }
             else
             {
-                throw invalid_value_exception(to_string() << "apply_preset(RS2_RS400_VISUAL_PRESET_SHORT_RANGE) Failed! Invalid PID! " << pid);
+                throw invalid_value_exception(to_string() << "apply_preset(RS2_RS400_VISUAL_PRESET_SHORT_RANGE) Failed! Invalid SKU!");
             }
             break;
         case RS2_RS400_VISUAL_PRESET_BOX:
-            if (pid == pid_to_str(ds::RS400_PID) || pid == pid_to_str(ds::RS400_MM_PID)) // Passive
+            if (cam == cam_type::passive) // Passive
             {
                 switch (res)
                 {
@@ -492,7 +505,7 @@ namespace librealsense
                     throw invalid_value_exception("apply_preset(...) Failed! RS400/RS400_MM doesn't support BOX preset with current streaming resolution!");
                 }
             }
-            else if (pid == pid_to_str(ds::RS410_PID) || pid == pid_to_str(ds::RS410_MM_PID)) // Active
+            else if (cam == cam_type::active) // Active
             {
                 switch (res)
                 {
@@ -509,7 +522,7 @@ namespace librealsense
                     throw invalid_value_exception("apply_preset(...) Failed! RS410/RS410_MM doesn't support BOX preset with current streaming resolution!");
                 }
             }
-            else if (pid == pid_to_str(ds::RS430_MM_PID)) // AWG
+            else if (cam == cam_type::awg) // AWG
             {
                 switch (res)
                 {
@@ -528,7 +541,7 @@ namespace librealsense
             }
             else
             {
-                throw invalid_value_exception(to_string() << "apply_preset(RS2_RS400_VISUAL_PRESET_BOX) Failed! Invalid PID! " << pid);
+                throw invalid_value_exception(to_string() << "apply_preset(RS2_RS400_VISUAL_PRESET_BOX) Failed! Invalid SKU!");
             }
             break;
         default:
@@ -692,7 +705,7 @@ namespace librealsense
         set_census_radius(p.census);
     }
 
-    std::vector<uint8_t> ds5_advanced_mode_base::send_recieve(const std::vector<uint8_t>& input) const
+    std::vector<uint8_t> ds5_advanced_mode_base::send_receive(const std::vector<uint8_t>& input) const
     {
         auto res = _hw_monitor->send(input);
         if (res.empty())
@@ -739,7 +752,7 @@ namespace librealsense
         auto write_ptr = raw_data.data();
         auto header_size = 4;
 
-        auto cur_index = 2;
+        size_t cur_index = 2;
         *reinterpret_cast<uint16_t *>(write_ptr + cur_index) = pre_header_data;
         cur_index += sizeof(uint16_t);
         *reinterpret_cast<unsigned int *>(write_ptr + cur_index) = cmd_op_code;
@@ -765,48 +778,53 @@ namespace librealsense
     }
 
     advanced_mode_preset_option::advanced_mode_preset_option(ds5_advanced_mode_base& advanced,
-                                                             uvc_sensor& ep, const option_range& opt_range,
-                                                             const std::map<float, std::string>& description_per_value)
+                                                             uvc_sensor& ep, const option_range& opt_range)
         : option_base(opt_range),
           _ep(ep),
-          _description_per_value(description_per_value),
-          _advanced(advanced)
-    {}
+          _advanced(advanced),
+          _last_preset(RS2_RS400_VISUAL_PRESET_CUSTOM)
+    {
+        _ep.register_on_open([this](std::vector<platform::stream_profile> configurations){
+            std::lock_guard<std::mutex> lock(_mtx);
+            if (_last_preset != RS2_RS400_VISUAL_PRESET_CUSTOM)
+                _advanced.apply_preset(configurations, _last_preset);
+        });
+    }
 
     rs2_rs400_visual_preset advanced_mode_preset_option::to_preset(float x)
     {
-        return (rs2_rs400_visual_preset)((int)x);
+        return (static_cast<rs2_rs400_visual_preset>((int)x));
     }
 
     void advanced_mode_preset_option::set(float value)
     {
+        std::lock_guard<std::mutex> lock(_mtx);
         if (!is_valid(value))
             throw invalid_value_exception(to_string() << "set(advanced_mode_preset_option) failed! Given value " << value << " is out of range.");
 
         if (!_advanced.is_enabled())
-            throw wrong_api_call_sequence_exception(to_string() << "set(advanced_mode_preset_option) failed! Device is not is Advanced-Mode.");
+            throw wrong_api_call_sequence_exception(to_string() << "set(advanced_mode_preset_option) failed! Device is not in Advanced-Mode.");
 
-        if (!_ep.is_streaming())
-            throw wrong_api_call_sequence_exception(to_string() << "set(advanced_mode_preset_option) failed! Device must streaming in order to set a preset.");
+        auto preset = to_preset(value);
+        if (preset == RS2_RS400_VISUAL_PRESET_CUSTOM || !_ep.is_streaming())
+        {
+            _last_preset = preset;
+            return;
+        }
 
-        auto pid = _ep.get_device().get_info(RS2_CAMERA_INFO_PRODUCT_ID);
         auto configurations = _ep.get_curr_configurations();
-
-        _advanced.apply_preset(pid, configurations, to_preset(value));
-        _last_preset = to_preset(value);
+        _advanced.apply_preset(configurations, preset);
+        _last_preset = preset;
     }
 
     float advanced_mode_preset_option::query() const
     {
-        if (!_advanced.is_enabled())
-            throw wrong_api_call_sequence_exception(to_string() << "set(advanced_mode_preset_option) failed! Device is not is Advanced-Mode.");
-
-        return _last_preset;
+        return static_cast<float>(_last_preset);
     }
 
     bool advanced_mode_preset_option::is_enabled() const
     {
-        return _advanced.is_enabled();
+        return true;
     }
 
     const char* advanced_mode_preset_option::get_description() const
@@ -817,7 +835,7 @@ namespace librealsense
     const char* advanced_mode_preset_option::get_value_description(float val) const
     {
         try{
-            return _description_per_value.at(val).c_str();
+            return rs2_advanced_mode_preset_to_string(to_preset(val));
         }
         catch(std::out_of_range)
         {

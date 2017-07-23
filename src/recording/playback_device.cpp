@@ -90,7 +90,7 @@ std::map<uint32_t, std::shared_ptr<playback_sensor>> playback_device::create_pla
     for (auto sensor_snapshot : device_description.get_sensors_snapshots())
     {
         //Each sensor will know its capabilities from the sensor_snapshot
-        auto sensor = std::make_shared<playback_sensor>(sensor_snapshot, sensor_id);
+        auto sensor = std::make_shared<playback_sensor>(*this, sensor_snapshot, sensor_id);
  
         sensor->started += [this](uint32_t id, frame_callback_ptr user_callback) -> void
         {
@@ -209,7 +209,7 @@ rs2_extrinsics playback_device::get_extrinsics(size_t from, rs2_stream from_stre
     //std::dynamic_pointer_cast<librealsense::info_interface>(m_device_description.get_device_extensions_snapshots().get_snapshots()[RS2_EXTENSION_TYPE_EXTRINSICS])->supports_info(info);
 }
 
-bool playback_device::extend_to(rs2_extension_type extension_type, void** ext) 
+bool playback_device::extend_to(rs2_extension extension_type, void** ext) 
 {
     std::shared_ptr<extension_snapshot> e = m_device_description.get_device_extensions_snapshots().find(extension_type);
     if (e == nullptr)
@@ -336,24 +336,21 @@ void playback_device::stop()
     Paused  ---->  stop()    set m_is_started to False ----> Stopped
     Stopped ---->  stop()    set m_is_started to False ----> Do nothing
     */
-    if (m_is_started == false)
-        return; //nothing to do
-
-    m_is_started = false;
-
-    //m_read_thread->invoke([this]()
+    //(*m_read_thread)->invoke([this](dispatcher::cancellable_timer c)
     //{
-    //    if (m_is_started == false)
-    //        return; //nothing to do
+        if (m_is_started == false)
+            return; //nothing to do
 
-    //    m_is_started = false;
-    //    //Wait for any remaining sensor callbacks to return
-    //    for (auto sensor : m_sensors)
-    //    {
-    //        sensor->sync_data_callbacks();
-    //    }
-    //    m_playback_status_signal(playback_status::stopped);
+
+        m_is_started = false;
+        for (auto sensor : m_sensors)
+        {
+           //TODO: sensor.second->flush_frame_callbacks();
+        }
+        m_reader->reset();
+        //TODO: m_playback_status_signal(playback_status::stopped);
     //});
+    //(*m_read_thread)->flush();
 }
 template <typename T>
 void playback_device::do_loop(T action)

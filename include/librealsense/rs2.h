@@ -154,7 +154,7 @@ typedef enum rs2_option
     RS2_OPTION_FRAMES_QUEUE_SIZE                          , /**< Number of frames the user is allowed to keep per stream. Trying to hold-on to more frames will cause frame-drops.*/
     RS2_OPTION_TOTAL_FRAME_DROPS                          , /**< Total number of detected frame drops from all streams */
     RS2_OPTION_AUTO_EXPOSURE_MODE                         , /**< Auto-Exposure modes: Static, Anti-Flicker and Hybrid */
-    RS2_OPTION_AUTO_EXPOSURE_ANTIFLICKER_RATE             , /**< Auto-Exposure anti-flicker rate, can be 50 or 60 Hz */
+    RS2_OPTION_POWER_LINE_FREQUENCY                       , /**< Power Line Frequency control for anti-flickering Off/50Hz/60Hz/Auto */
     RS2_OPTION_ASIC_TEMPERATURE                           , /**< Current Asic Temperature */
     RS2_OPTION_ERROR_POLLING_ENABLED                      , /**< disable error handling */
     RS2_OPTION_PROJECTOR_TEMPERATURE                      , /**< Current Projector Temperature */
@@ -210,9 +210,9 @@ typedef enum rs2_timestamp_domain
 } rs2_timestamp_domain;
 
 
-typedef enum rs2_extension_type
+typedef enum rs2_extension
 {
-    RS2_EXTENSION_TYPE_UNKNOWN, 
+    RS2_EXTENSION_TYPE_UNKNOWN,
     RS2_EXTENSION_TYPE_DEBUG,
     RS2_EXTENSION_TYPE_INFO,
     RS2_EXTENSION_TYPE_MOTION,
@@ -226,7 +226,7 @@ typedef enum rs2_extension_type
     RS2_EXTENSION_TYPE_POINTS,
     RS2_EXTENSION_TYPE_ADVANCED_MODE,
     RS2_EXTENSION_TYPE_COUNT
-} rs2_extension_type;
+} rs2_extension;
 
 /** \brief Video stream intrinsics */
 typedef struct rs2_intrinsics
@@ -394,7 +394,7 @@ int rs2_get_sensors_count(const rs2_sensor_list* info_list, rs2_error** error);
 
 /**
 * delete relasense sensor
-* \param[in] device realsense sensor to delete
+* \param[in] sensor realsense sensor to delete
 */
 void rs2_delete_sensor(rs2_sensor* sensor);
 
@@ -486,7 +486,7 @@ void rs2_delete_modes_list(rs2_stream_modes_list* list);
 
 /**
 * open subdevice for exclusive access, by committing to a configuration
-* \param[in] device relevant RealSense device
+* \param[in] sensor relevant RealSense device
 * \param[in] stream     the stream type
 * \param[in] width      the width of a frame image in pixels
 * \param[in] height     the height of a frame image in pixels
@@ -494,12 +494,12 @@ void rs2_delete_modes_list(rs2_stream_modes_list* list);
 * \param[in] format     the pixel format of a frame image
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 */
-void rs2_open(rs2_sensor* device, rs2_stream stream, int width, int height, int fps, rs2_format format, rs2_error** error);
+void rs2_open(rs2_sensor* sensor, rs2_stream stream, int width, int height, int fps, rs2_format format, rs2_error** error);
 
 /**
 * open subdevice for exclusive access, by committing to composite configuration, specifying one or more stream profiles
 * this method should be used for interdependent  streams, such as depth and infrared, that have to be configured together
-* \param[in] device relevant RealSense device
+* \param[in] sensor relevant RealSense device
 * \param[in] stream     the stream type
 * \param[in] width      the width of a frame image in pixels
 * \param[in] height     the height of a frame image in pixels
@@ -508,56 +508,56 @@ void rs2_open(rs2_sensor* device, rs2_stream stream, int width, int height, int 
 * \param[in] count      number of simultaneous  stream profiles to configure
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 */
-void rs2_open_multiple(rs2_sensor* device, const rs2_stream* stream, const int* width,
+void rs2_open_multiple(rs2_sensor* sensor, const rs2_stream* stream, const int* width,
     const int* height, const int* fps, const rs2_format* format, int count, rs2_error** error);
 
 /**
 * stop any streaming from specified subdevice
-* \param[in] device     RealSense device
+* \param[in] sensor     RealSense device
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 */
-void rs2_close(const rs2_sensor* device, rs2_error** error);
+void rs2_close(const rs2_sensor* sensor, rs2_error** error);
 
 /**
-* start streaming from specified configured device
-* \param[in] device  RealSense device
+* start streaming from specified configured sensor
+* \param[in] sensor  RealSense device
 * \param[in] on_frame function pointer to register as per-frame callback
 * \param[in] user auxiliary  data the user wishes to receive together with every frame callback
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 */
-void rs2_start(const rs2_sensor* device, rs2_frame_callback_ptr on_frame, void* user, rs2_error** error);
+void rs2_start(const rs2_sensor* sensor, rs2_frame_callback_ptr on_frame, void* user, rs2_error** error);
 
 /**
-* set callback to get notifications from specified device
-* \param[in] device  RealSense device
+* set callback to get notifications from specified sensor
+* \param[in] sensor  RealSense device
 * \param[in] device  RealSense device
 * \param[in] callback function pointer to register as per-notifications callback
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 */
-void rs2_set_notifications_callback(const rs2_sensor* device, rs2_notification_callback_ptr on_notification, void* user, rs2_error** error);
+void rs2_set_notifications_callback(const rs2_sensor* sensor, rs2_notification_callback_ptr on_notification, void* user, rs2_error** error);
 
 /**
-* start streaming from specified configured device
-* \param[in] device  RealSense device
+* start streaming from specified configured sensor
+* \param[in] sensor  RealSense device
 * \param[in] callback callback object created from c++ application. ownership over the callback object is moved into the relevant streaming lock
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 */
-void rs2_start_cpp(const rs2_sensor* device, rs2_frame_callback* callback, rs2_error** error);
+void rs2_start_cpp(const rs2_sensor* sensor, rs2_frame_callback* callback, rs2_error** error);
 
 /**
 * stops streaming from specified configured device
-* \param[in] device  RealSense device
+* \param[in] sensor  RealSense sensor
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 */
-void rs2_stop(const rs2_sensor* device, rs2_error** error);
+void rs2_stop(const rs2_sensor* sensor, rs2_error** error);
 
 /**
 * set callback to get notifications from specified device
-* \param[in] device  RealSense device
+* \param[in] sensor  RealSense sensor
 * \param[in] callback callback object created from c++ application. ownership over the callback object is moved into the relevant subdevice lock
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 */
-void rs2_set_notifications_callback_cpp(const rs2_sensor* device, rs2_notifications_callback* callback, rs2_error** error);
+void rs2_set_notifications_callback_cpp(const rs2_sensor* sensor, rs2_notifications_callback* callback, rs2_error** error);
 
 
 /**
@@ -727,43 +727,43 @@ void rs2_release_frame(rs2_frame* frame);
 
 /**
 * check if option is read-only
-* \param[in] device   the RealSense device
+* \param[in] sensor   the RealSense sensor
 * \param[in] option   option id to be checked
 * \param[out] error   if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return true if option is read-only
 */
-int rs2_is_option_read_only(const rs2_sensor* device, rs2_option option, rs2_error** error);
+int rs2_is_option_read_only(const rs2_sensor* sensor, rs2_option option, rs2_error** error);
 
 /**
-* read option value from the device
-* \param[in] device   the RealSense device
+* read option value from the sensor
+* \param[in] sensor   the RealSense sensor
 * \param[in] option   option id to be queried
 * \param[out] error   if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return value of the option
 */
-float rs2_get_option(const rs2_sensor* device, rs2_option option, rs2_error** error);
+float rs2_get_option(const rs2_sensor* sensor, rs2_option option, rs2_error** error);
 
 /**
-* write new value to device option
-* \param[in] device     the RealSense device
+* write new value to sensor option
+* \param[in] sensor     the RealSense sensor
 * \param[in] option     option id to be queried
 * \param[in] value      new value for the option
 * \param[out] error     if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 */
-void rs2_set_option(const rs2_sensor* device, rs2_option option, float value, rs2_error** error);
+void rs2_set_option(const rs2_sensor* sensor, rs2_option option, float value, rs2_error** error);
 
 /**
 * check if particular option is supported by a subdevice
-* \param[in] device     the RealSense device
+* \param[in] sensor     the RealSense sensor
 * \param[in] option     option id to be checked
 * \param[out] error     if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return true if option is supported
 */
-int rs2_supports_option(const rs2_sensor* device, rs2_option option, rs2_error** error);
+int rs2_supports_option(const rs2_sensor* sensor, rs2_option option, rs2_error** error);
 
 /**
 * retrieve the available range of values of a supported option
-* \param[in] device  the RealSense device
+* \param[in] sensor  the RealSense device
 * \param[in] option  the option whose range should be queried
 * \param[out] min    the minimum value which will be accepted for this option
 * \param[out] max    the maximum value which will be accepted for this option
@@ -771,16 +771,16 @@ int rs2_supports_option(const rs2_sensor* device, rs2_option option, rs2_error**
 * \param[out] def    the default value of the option
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 */
-void rs2_get_option_range(const rs2_sensor* device, rs2_option option, float* min, float* max, float* step, float* def, rs2_error** error);
+void rs2_get_option_range(const rs2_sensor* sensor, rs2_option option, float* min, float* max, float* step, float* def, rs2_error** error);
 
 /**
 * get option description
-* \param[in] device     the RealSense device
+* \param[in] sensor     the RealSense sensor
 * \param[in] option     option id to be checked
 * \param[out] error     if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return human-readable option description
 */
-const char* rs2_get_option_description(const rs2_sensor* device, rs2_option option, rs2_error ** error);
+const char* rs2_get_option_description(const rs2_sensor* sensor, rs2_option option, rs2_error ** error);
 
 /**
 * get option value description (in case specific option value hold special meaning)
@@ -790,29 +790,29 @@ const char* rs2_get_option_description(const rs2_sensor* device, rs2_option opti
 * \param[out] error     if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return human-readable description of a specific value of an option or null if no special meaning
 */
-const char* rs2_get_option_value_description(const rs2_sensor* device, rs2_option option, float value, rs2_error ** error);
+const char* rs2_get_option_value_description(const rs2_sensor* sensor, rs2_option option, float value, rs2_error ** error);
 
 /**
  * \brief sets the active region of interest to be used by auto-exposure algorithm
- * \param[in] device     the RealSense device
+ * \param[in] sensor     the RealSense sensor
  * \param[in] min_x      lower horizontal bound in pixels
  * \param[in] min_y      lower vertical bound in pixels
  * \param[in] max_x      upper horizontal bound in pixels
  * \param[in] max_y      upper vertical bound in pixels
  * \param[out] error     if non-null, receives any error that occurs during this call, otherwise, errors are ignored
  */
-void rs2_set_region_of_interest(const rs2_sensor* device, int min_x, int min_y, int max_x, int max_y, rs2_error ** error);
+void rs2_set_region_of_interest(const rs2_sensor* sensor, int min_x, int min_y, int max_x, int max_y, rs2_error ** error);
 
 /**
  * \brief gets the active region of interest to be used by auto-exposure algorithm
- * \param[in] device     the RealSense device
+ * \param[in] sensor     the RealSense sensor
  * \param[out] min_x     lower horizontal bound in pixels
  * \param[out] min_y     lower vertical bound in pixels
  * \param[out] max_x     upper horizontal bound in pixels
  * \param[out] max_y     upper vertical bound in pixels
  * \param[out] error     if non-null, receives any error that occurs during this call, otherwise, errors are ignored
  */
-void rs2_get_region_of_interest(const rs2_sensor* device, int* min_x, int* min_y, int* max_x, int* max_y, rs2_error ** error);
+void rs2_get_region_of_interest(const rs2_sensor* sensor, int* min_x, int* min_y, int* max_x, int* max_y, rs2_error ** error);
 
 /**
 * retrieve camera specific information, like versions of various internal components
@@ -832,21 +832,21 @@ const char* rs2_get_device_info(const rs2_device* device, rs2_camera_info info, 
 int rs2_supports_device_info(const rs2_device* device, rs2_camera_info info, rs2_error** error);
 
 /**
-* retrieve camera specific information, like versions of various internal components
-* \param[in] device     the RealSense device
+* retrieve sensor specific information, like versions of various internal components
+* \param[in] sensor     the RealSense sensor
 * \param[in] info       camera info type to retrieve
 * \param[out] error     if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return               the requested camera info string, in a format specific to the device model
 */
-const char* rs2_get_sensor_info(const rs2_sensor* device, rs2_camera_info info, rs2_error** error);
+const char* rs2_get_sensor_info(const rs2_sensor* sensor, rs2_camera_info info, rs2_error** error);
 
 /**
-* check if specific camera info is supported
+* check if specific sensor info is supported
 * \param[in] info    the parameter to check for support
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return                true if the parameter both exist and well-defined for the specific device
 */
-int rs2_supports_sensor_info(const rs2_sensor* device, rs2_camera_info info, rs2_error** error);
+int rs2_supports_sensor_info(const rs2_sensor* sensor, rs2_camera_info info, rs2_error** error);
 
 /**
 * create frame queue. frame queues are the simplest x-platform synchronization primitive provided by librealsense
@@ -927,13 +927,13 @@ const unsigned char* rs2_get_raw_data(const rs2_raw_data_buffer* buffer, rs2_err
 rs2_syncer* rs2_create_syncer(rs2_error** error);
 
 /**
- * \brief Start streaming from specified configured device of specific stream to frame queue
- * \param[in] device  RealSense device
+ * \brief Start streaming from specified configured sensor of specific stream to frame queue
+ * \param[in] sensor  RealSense sensor
  * \param[in] stream  specific stream type to start
  * \param[in] queue   frame-queue to store new frames into
  * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
  */
-void rs2_start_syncer(const rs2_sensor* device, rs2_syncer* syncer, rs2_error** error);
+void rs2_start_syncer(const rs2_sensor* sensor, rs2_syncer* syncer, rs2_error** error);
 
 /**
  * \brief[in] Wait until coherent set of frames becomes available
@@ -1026,69 +1026,80 @@ const char * rs2_visual_preset_to_string    (rs2_ivcam_visual_preset preset);
 const char * rs2_log_severity_to_string     (rs2_log_severity info);
 const char * rs2_visual_preset_to_string    (rs2_ivcam_visual_preset preset);
 const char * rs2_exception_type_to_string   (rs2_exception_type type);
-const char * rs2_extension_type_to_string   (rs2_extension_type type);
+const char * rs2_extension_type_to_string   (rs2_extension type);
 
 void rs2_log_to_console(rs2_log_severity min_severity, rs2_error ** error);
 void rs2_log_to_file(rs2_log_severity min_severity, const char * file_path, rs2_error ** error);
 
+/**
+ * Test if the given sensor can be extended to the requested extension
+ * \param[in] sensor  Realsense sensor
+ * \param[in] extension The extension to which the sensor should be tested if it is extendable
+ * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ * \return non-zero value iff the sensor can be extended to the given extension
+ */
+int rs2_is_sensor_extendable_to(const rs2_sensor* sensor, rs2_extension extension, rs2_error ** error);
 
 /**
- * TODO: document
- * \param device
- * \param extension_type
- * \return
- */
-int rs2_is_sensor(const rs2_sensor* sensor, rs2_extension_type extension_type, rs2_error ** error);
+* Test if the given device can be extended to the requested extension
+* \param[in]  device     Realsense device
+* \param[in]  extension  The extension to which the device should be tested if it is extendable
+* \param[out] error      If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return non-zero value iff the device can be extended to the given extension
+*/
+int rs2_is_device_extendable_to(const rs2_device* device, rs2_extension extension_type, rs2_error ** error);
 
 /**
- * TODO: document
- * \param device
- * \param extension_type
- * \return
- */
-int rs2_is_device(const rs2_device* dev, rs2_extension_type extension_type, rs2_error ** error);
+* Test if the given frame can be extended to the requested extension
+* \param[in]  frame      Realsense frame
+* \param[in]  extension  The extension to which the frame should be tested if it is extendable
+* \param[out] error      If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return non-zero value iff the frame can be extended to the given extension
+*/
+int rs2_is_frame_extendable_to(const rs2_frame* frame, rs2_extension extension_type, rs2_error ** error);
 
 /**
- * TODO: document
- * \param frame
- * \param extension_type
- * \return
+ * Creates a recording device to record the given device and save it to the given file
+ * \param[in]  device    The device to record
+ * \param[in]  file      The desired path to which the recorder should save the data
+ * \param[out] error     If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ * \return A pointer to a device that records its data to file, or null in case of failure
  */
-int rs2_is_frame(const rs2_frame* frame, rs2_extension_type extension_type, rs2_error ** error);
+
+rs2_device* rs2_create_record_device(const rs2_device* device, const char* file, rs2_error** error);
 
 /**
- * TODO: document
- * \param file
- * \param error
- * \return
- */
-rs2_device_serializer * rs2_create_device_serializer(const char* file, rs2_error ** error);
-/**
- * TODO: document
- * \param device_serializer
- */
-void rs2_delete_device_serializer(rs2_device_serializer * device_serializer);
-
-/**
- * TODO: document
- * \param device
- * \param serializer
- * \param error
- * \return
- */
-rs2_device* rs2_create_record_device(const rs2_device* device, rs2_device_serializer* serializer, rs2_error** error);
+* Pause the recording device without stopping the actual device from streaming. 
+* Pausing will cause the device to stop writing new data to the file, in particular, frames and changes to extensions
+* \param[in]  device    A recording device
+* \param[out] error     If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
 void rs2_record_device_pause(const rs2_device* device, rs2_error** error);
-void rs2_record_device_resume(const rs2_device* device, rs2_error** error);
-rs2_device* rs2_create_playback_device(rs2_device_serializer* serializer, rs2_error** error);
 
-rs2_frame* rs2_allocate_synthetic_video_frame(rs2_source* source, rs2_stream new_stream, rs2_frame* original, 
+/**
+* Unpause the recording device. Resume will cause the device to continue writing new data to the file, in particular, frames and changes to extensions
+* \param[in]  device    A recording device
+* \param[out] error     If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+void rs2_record_device_resume(const rs2_device* device, rs2_error** error);
+
+
+/**
+* Creates a playback device to play the content of the given file
+* \param[in]  file      Path to the file to play
+* \param[out] error     If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return A pointer to a device that plays data from the file, or null in case of failure
+*/
+rs2_device* rs2_create_playback_device(const char* file, rs2_error** error);
+
+rs2_frame* rs2_allocate_synthetic_video_frame(rs2_source* source, rs2_stream new_stream, rs2_frame* original,
     rs2_format new_format, int new_bpp, int new_width, int new_height, int new_stride, rs2_error** error);
 
 rs2_frame* rs2_allocate_composite_frame(rs2_source* source, rs2_frame** frames, int count, rs2_error** error);
 
 rs2_frame* rs2_extract_frame(rs2_frame* composite, int index, rs2_error** error);
 
-int rs2_embeded_frames_count(rs2_frame* composite, rs2_error** error);
+int rs2_embedded_frames_count(rs2_frame* composite, rs2_error** error);
 
 void rs2_synthetic_frame_ready(rs2_source* source, rs2_frame* frame, rs2_error** error);
 

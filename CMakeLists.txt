@@ -73,15 +73,26 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
 #set(CMAKE_VERBOSE_MAKEFILE on)
 
 include(CheckCXXCompilerFlag)
+CHECK_CXX_COMPILER_FLAG("-std=c11" COMPILER_SUPPORTS_C11)
 CHECK_CXX_COMPILER_FLAG("-std=c++11" COMPILER_SUPPORTS_CXX11)
 CHECK_CXX_COMPILER_FLAG("-std=c++0x" COMPILER_SUPPORTS_CXX0X)
-if(COMPILER_SUPPORTS_CXX11)
+if(COMPILER_SUPPORTS_C11)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c11")
+endif()
+if(COMPILER_SUPPORTS_CXX11)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 elseif(COMPILER_SUPPORTS_CXX0X)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
 else()
     message(STATUS "The compiler ${CMAKE_CXX_COMPILER} has no C++11 support. Please use a different C++ compiler.")
+endif()
+
+FIND_PACKAGE( OpenMP REQUIRED)
+if(OPENMP_FOUND)
+    message("OPENMP FOUND")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
 endif()
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/CMake)
@@ -129,11 +140,12 @@ set(REALSENSE_CPP
 
     third-party/easyloggingpp/src/easylogging++.cc
     third-party/sqlite/sqlite3.c
-    
+
     src/mock/sql.cpp
     src/mock/recorder.cpp
 
     src/recording/record_device.cpp
+    src/recording/record_sensor.cpp
     src/recording/playback_device.cpp
     src/recording/playback_sensor.cpp
 )
@@ -200,11 +212,13 @@ set(REALSENSE_HPP
     src/core/serialization.h
 
     src/recording/record_device.h
+    src/recording/record_sensor.h
     src/recording/playback_device.h
     src/recording/playback_sensor.h
-    src/recording/serializers/ros_device_serializer.h
-    src/recording/serializers/ros_reader.h
-    src/recording/serializers/ros_device_serializer_writer.h
+    src/recording/device_snapshot.h
+    src/recording/ros/ros_device_serializer.h
+    src/recording/ros/ros_reader.h
+    src/recording/ros/ros_device_serializer_writer.h
 
     third-party/easyloggingpp/src/easylogging++.h
     third-party/sqlite/sqlite3.h
@@ -216,7 +230,6 @@ set(REALSENSE_HPP
     src/recording/ros/data_objects/image.h
     src/recording/ros/data_objects/motion_stream_info.h
     src/recording/ros/data_objects/property.h
-    src/recording/ros/data_objects/log.h
     src/recording/ros/data_objects/motion_sample.h
     src/recording/ros/data_objects/time_sample.h
     src/recording/ros/data_objects/compressed_image.h
@@ -233,7 +246,7 @@ set(REALSENSE_HPP
 )
 
 # Add additional include directories to allow file to include rosbag headers
-include(${CMAKE_CURRENT_LIST_DIR}/third-party/realsense-file/3rd_party/config.cmake)
+include(${CMAKE_CURRENT_LIST_DIR}/third-party/realsense-file/config.cmake)
 include_directories(
         ${ROSBAG_HEADER_DIRS}
         ${BOOST_INCLUDE_PATH}
@@ -255,6 +268,14 @@ if(WIN32)
     source_group("Source Files\\Logging" FILES
         third-party/easyloggingpp/src/easylogging++.cc
         src/log.cpp
+        )
+
+    source_group("Source Files\\Media" FILES
+        src/recording/record_device.cpp
+        src/recording/record_sensor.cpp
+        src/recording/playback_device.cpp
+        src/recording/playback_sensor.cpp
+        src/recording/ros/stream_playback.cpp
         )
 
     source_group("Header Files\\Backend" FILES
@@ -291,10 +312,32 @@ if(WIN32)
         rs400/rs400_advanced_mode/src/rs2_advanced_mode.cpp
         )
 
-    source_group("Source Files\\Recorder" FILES
-        third-party/sqlite/sqlite3.c
-        src/mock/sql.cpp
-        src/mock/recorder.cpp
+    source_group("Header Files\\Media" FILES
+        src/recording/record_device.h
+        src/recording/playback_device.h
+        src/recording/playback_sensor.h
+        )
+    source_group("Header Files\\Media\\Ros_Serializer" FILES
+        src/recording/ros/ros_device_serializer.h
+        src/recording/ros/ros_reader.h
+        src/recording/ros/ros_device_serializer_writer.h
+        src/recording/ros/data_objects/pose.h
+        src/recording/ros/data_objects/vendor_data.h
+        src/recording/ros/data_objects/image.h
+        src/recording/ros/data_objects/motion_stream_info.h
+        src/recording/ros/data_objects/property.h
+        src/recording/ros/data_objects/motion_sample.h
+        src/recording/ros/data_objects/time_sample.h
+        src/recording/ros/data_objects/compressed_image.h
+        src/recording/ros/data_objects/occupancy_map.h
+        src/recording/ros/data_objects/stream_data.h
+        src/recording/ros/data_objects/image_stream_info.h
+        src/recording/ros/stream_playback.h
+        src/recording/ros/file_types.h
+        src/recording/ros/status.h
+        src/recording/ros/stream_playback.h
+        src/recording/ros/ros_writer.h
+        src/recording/ros/topic.h
         )
 
     source_group("Source Files\\Devices" FILES
@@ -324,7 +367,7 @@ if(WIN32)
         src/ivcam/sr300.h
         src/ivcam/ivcam-private.h
         )
-        
+
     source_group("Header Files\\Core" FILES
         src/core/streaming.h
         src/core/debug.h
@@ -340,6 +383,7 @@ if(WIN32)
     source_group("Header Files\\Logging" FILES
         third-party/easyloggingpp/src/easylogging++.h
         )
+
 
     foreach(flag_var
             CMAKE_CXX_FLAGS CMAKE_CXX_FLAGS_DEBUG CMAKE_CXX_FLAGS_RELEASE
@@ -361,6 +405,9 @@ if(WIN32)
     # Makes VS15 find the DLL when trying to run examples/tests
     set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
     set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
+    # build with multiple cores
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /MP")
     add_definitions(-D__SSSE3__ -D_CRT_SECURE_NO_WARNINGS)
 
     set_property(GLOBAL PROPERTY USE_FOLDERS ON)
