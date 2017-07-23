@@ -45,6 +45,10 @@ namespace librealsense
                 {
                     assign_stream(_owner->_color_stream, p);
                 }
+
+                auto video = dynamic_cast<video_stream_profile_interface*>(p.get());
+                if (video->get_width() == 640 && video->get_height() == 480)
+                    video->make_recommended();
             }
 
             return results;
@@ -87,7 +91,7 @@ namespace librealsense
 
     ds5_color::ds5_color(std::shared_ptr<context> ctx,
                          const platform::backend_device_group& group)
-        : device(ctx), ds5_device(ctx, group), _color_stream(new stream(ctx))
+        : device(ctx), ds5_device(ctx, group), _color_stream(new stream(ctx, RS2_STREAM_COLOR))
     {
         using namespace ds;
 

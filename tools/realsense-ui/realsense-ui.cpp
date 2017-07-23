@@ -129,7 +129,7 @@ void draw_general_tab(device_model& model, device_list& list,
 
                                 for (auto&& profile : profiles)
                                 {
-                                    model.streams[profile.stream_index()].dev = sub;
+                                    model.streams[profile.unique_id()].dev = sub;
                                 }
                             }
                         }
@@ -234,7 +234,7 @@ void draw_general_tab(device_model& model, device_list& list,
 
                                 for (auto&& profile : profiles)
                                 {
-                                    model.streams[profile.stream_index()].dev = sub;
+                                    model.streams[profile.unique_id()].dev = sub;
                                 }
                             }
                             if (ImGui::IsItemHovered())
@@ -793,28 +793,27 @@ int main(int, char**) try
         // Fetch frames from queue
         for (auto&& sub : model.subdevices)
         {
-            for (auto& queue : sub->queues)
+            sub->queues.foreach([&](frame_queue& queue)
             {
                 try
                 {
                     frame f;
-                    if (queue->poll_for_frame(&f))
+                    if (queue.poll_for_frame(&f))
                     {
                         model.upload_frame(std::move(f));
                     }
                 }
-                catch(const error& e)
+                catch(const error& ex)
                 {
-                    error_message = error_to_string(e);
+                    error_message = error_to_string(ex);
                      sub->stop();
                 }
-                catch(const std::exception& e)
+                catch(const std::exception& ex)
                 {
-                    error_message = e.what();
+                    error_message = ex.what();
                     sub->stop();
                 }
-            }
-
+            });
         }
 
         // Rendering
@@ -852,15 +851,15 @@ int main(int, char**) try
 
             if (model.streams[stream].show_stream_details)
             {
-                label = to_string() << model.streams[stream].stream << " "
+                label = to_string() << model.streams[stream].profile.stream_name() << " "
                     << stream_size.x << "x" << stream_size.y << ", "
-                    << rs2_format_to_string(model.streams[stream].format) << ", "
+                    << rs2_format_to_string(model.streams[stream].profile.format()) << ", "
                     << "Frame# " << model.streams[stream].frame_number << ", "
                     << "FPS:";
             }
             else
             {
-                label = to_string() << model.streams[stream].stream << " (...)";
+                label = to_string() << model.streams[stream].profile.stream_name() << " (...)";
             }
 
             ImGui::Text("%s", label.c_str());

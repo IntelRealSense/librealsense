@@ -5,13 +5,14 @@
 #include "core/streaming.h"
 #include "core/video.h"
 #include "context.h"
+#include "image.h"
 
 namespace librealsense
 {
     class stream : public stream_interface
     {
     public:
-        explicit stream(std::shared_ptr<context> ctx);
+        stream(std::shared_ptr<context> ctx, rs2_stream stream_type, int index = 0);
 
         context& get_context() const override;
 
@@ -21,9 +22,13 @@ namespace librealsense
         rs2_stream get_stream_type() const override;
         void set_stream_type(rs2_stream stream) override;
 
+        int get_unique_id() const override { return _uid; }
+        void set_unique_id(int uid) override { _uid = uid; };
+
     private:
         std::shared_ptr<context> _ctx;
         int _index = 0;
+        int _uid = 0;
         rs2_stream _type = RS2_STREAM_ANY;
     };
 
@@ -61,6 +66,9 @@ namespace librealsense
         bool is_recommended() const override;
         void make_recommended() override;
 
+        int get_unique_id() const override { return _uid; }
+        void set_unique_id(int uid) override { _uid = uid; };
+
         size_t get_size() const override;
 
         std::shared_ptr<stream_profile_interface> clone() const override;
@@ -71,7 +79,8 @@ namespace librealsense
 
     private:
         std::shared_ptr<context> _ctx;
-        int _index = 0;
+        int _index = 1;
+        int _uid = 0;
         rs2_stream _type = RS2_STREAM_ANY;
         rs2_format _format = RS2_FORMAT_ANY;
         uint32_t _framerate = 0;
@@ -100,6 +109,8 @@ namespace librealsense
             _width = width;
             _height = height;
         }
+
+        size_t get_size() const override { return get_width() * get_height() * get_framerate() * get_image_bpp(get_format()) / 8; }
     private:
         std::function<rs2_intrinsics()> _calc_intrinsics;
         uint32_t _width, _height;
@@ -110,9 +121,9 @@ namespace librealsense
         auto fps = static_cast<uint32_t>(sp->get_framerate());
         if (auto vid = dynamic_cast<const video_stream_profile*>(sp))
         {
-            return{ sp->get_stream_index(), sp->get_stream_type(), vid->get_width(), vid->get_height(), fps, sp->get_format() };
+            return{ sp->get_stream_type(), sp->get_stream_index(), vid->get_width(), vid->get_height(), fps, sp->get_format() };
         }
-        return{ sp->get_stream_index(), sp->get_stream_type(), 0, 0, fps, sp->get_format() };
+        return{ sp->get_stream_type(), sp->get_stream_index(), 0, 0, fps, sp->get_format() };
     }
 
     inline std::vector<stream_profile> to_profiles(const std::vector<std::shared_ptr<stream_profile_interface>>& vec)

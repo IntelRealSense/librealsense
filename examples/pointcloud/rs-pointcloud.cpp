@@ -170,7 +170,7 @@ int main(int argc, char * argv[])
 
                 bool has_depth = false;
                 for (auto&& f : frames)
-                    if (f.get_stream_type() == RS2_STREAM_DEPTH)
+                    if (f.get_profile().stream_type() == RS2_STREAM_DEPTH)
                         has_depth = true;
                 if (!has_depth) continue;
 
@@ -178,12 +178,12 @@ int main(int argc, char * argv[])
 
                 for (auto&& frame : frames)
                 {
-                    if (frame.get_stream_type() == RS2_STREAM_DEPTH)
+                    if (frame.get_profile().stream_type() == RS2_STREAM_DEPTH)
                     {
                         depth = reinterpret_cast<const uint16_t *>(frame.get_data());
                     }
 
-                    if (frame.get_stream_type() == mapped)
+                    if (frame.get_profile().stream_type() == mapped)
                     {
                         mapped_tex.upload(frame);
                     }

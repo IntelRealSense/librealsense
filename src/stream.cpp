@@ -5,9 +5,10 @@
 
 namespace librealsense
 {
-    stream::stream(std::shared_ptr<context> ctx): _ctx(ctx)
+    stream::stream(std::shared_ptr<context> ctx, rs2_stream stream_type, int index)
+        : _ctx(ctx), _index(index), _type(stream_type)
     {
-        _index = ctx->generate_stream_id();
+        _uid = ctx->generate_stream_id();
     }
 
     context& stream::get_context() const
@@ -100,7 +101,7 @@ namespace librealsense
 
     size_t stream_profile_base::get_size() const
     {
-        return 0;
+        return get_image_bpp(get_format()) * get_framerate();
     }
 
     std::shared_ptr<stream_profile_interface> stream_profile_base::clone() const

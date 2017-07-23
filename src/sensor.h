@@ -132,10 +132,7 @@ namespace librealsense
     private:
         const std::map<rs2_stream, uint32_t> stream_and_fourcc = {{RS2_STREAM_GYRO,  'GYRO'},
                                                                   {RS2_STREAM_ACCEL, 'ACCL'},
-                                                                  {RS2_STREAM_GPIO1, 'GPIO'},
-                                                                  {RS2_STREAM_GPIO2, 'GPIO'},
-                                                                  {RS2_STREAM_GPIO3, 'GPIO'},
-                                                                  {RS2_STREAM_GPIO4, 'GPIO'}};
+                                                                  {RS2_STREAM_GPIO,  'GPIO'}};
 
         const std::vector<std::pair<std::string, stream_profile>> _sensor_name_and_hid_profiles;
         std::map<rs2_stream, std::map<uint32_t, uint32_t>> _fps_and_sampling_frequency_per_rs2_stream;

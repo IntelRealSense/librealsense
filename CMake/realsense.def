@@ -24,8 +24,8 @@ EXPORTS
 
     rs2_get_stream_profiles
     rs2_get_stream_profile
-    rs2_get_modes_count
-    rs2_delete_modes_list
+    rs2_get_stream_profiles_count
+    rs2_delete_stream_profiles_list
 
     rs2_open
     rs2_open_multiple
@@ -123,6 +123,9 @@ EXPORTS
     rs2_get_stream_profile_data
     rs2_get_video_stream_resolution
     rs2_get_video_stream_intrinsics
+
+    rs2_get_stream_profile_size
+    rs2_is_stream_profile_recommended
 
     rs2_allocate_synthetic_video_frame
     rs2_synthetic_frame_ready

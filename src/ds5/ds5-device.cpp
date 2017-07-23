@@ -100,20 +100,21 @@ namespace librealsense
                 {
                     assign_stream(_owner->_depth_stream, p);
                 }
-                else if (p->get_stream_type() == RS2_STREAM_INFRARED)
+                else if (p->get_stream_type() == RS2_STREAM_INFRARED && p->get_stream_index() < 2)
                 {
                     assign_stream(_owner->_left_ir_stream, p);
                 }
-                else if (p->get_stream_type() == RS2_STREAM_INFRARED2)
+                else if (p->get_stream_type() == RS2_STREAM_INFRARED  && p->get_stream_index() == 2)
                 {
                     assign_stream(_owner->_right_ir_stream, p);
-                    p->set_stream_type(RS2_STREAM_INFRARED);
                 }
+                auto video = dynamic_cast<video_stream_profile_interface*>(p.get());
+                if (video->get_width() == 640 && video->get_height() == 480)
+                    video->make_recommended();
 
                 // Register intrinsics
                 if (p->get_format() != RS2_FORMAT_Y16) // Y16 format indicate unrectified images, no intrinsics are available for these
                 {
-                    auto video = dynamic_cast<video_stream_profile_interface*>(p.get());
                     auto profile = to_profile(p.get());
                     video->set_intrinsics([profile, this]()
                     {
@@ -168,16 +169,17 @@ namespace librealsense
         depth_ep->register_pixel_format(pf_z16); // Depth
         depth_ep->register_pixel_format(pf_y8); // Left Only - Luminance
         depth_ep->register_pixel_format(pf_yuyv); // Left Only
-        depth_ep->register_pixel_format(pf_uyvyl); // Color from Depth
-        depth_ep->register_pixel_format(pf_rgb888);
 
         return depth_ep;
     }
 
     ds5_device::ds5_device(std::shared_ptr<context> ctx,
                            const platform::backend_device_group& group)
-        : device(ctx), _depth_device_idx(add_sensor(create_depth_device(ctx, group.uvc_devices))),
-          _depth_stream(new stream(ctx)), _left_ir_stream(new stream(ctx)), _right_ir_stream(new stream(ctx))
+        : device(ctx), 
+          _depth_stream(new stream(ctx, RS2_STREAM_DEPTH)),
+          _left_ir_stream(new stream(ctx, RS2_STREAM_INFRARED, 1)), 
+          _right_ir_stream(new stream(ctx, RS2_STREAM_INFRARED, 2)),
+          _depth_device_idx(add_sensor(create_depth_device(ctx, group.uvc_devices)))
     {
         using namespace ds;
 

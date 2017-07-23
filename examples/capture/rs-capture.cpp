@@ -59,19 +59,19 @@ int main(int argc, char * argv[])
                 sort(frames.begin(), frames.end(),
                      [](const frame& a, const frame& b) -> bool
                 {
-                    return a.get_profile().stream_index() < b.get_profile().stream_index();
+                    return a.get_profile().unique_id() < b.get_profile().unique_id();
                 });
 
 
                 for (auto&& frame : frames)
                 {
-                    buffers[frame.get_profile().stream_index()].upload(frame);
+                    buffers[frame.get_profile().unique_id()].upload(frame);
                 }
 
                 auto tiles_horisontal = static_cast<int>(ceil(sqrt(buffers.size())));
-                auto tiles_vertical = ceil((float)buffers.size() / tiles_horisontal);
-                auto tile_w = static_cast<float>((float)w / tiles_horisontal);
-                auto tile_h = static_cast<float>((float)h / tiles_vertical);
+                auto tiles_vertical = ceil(static_cast<float>(buffers.size()) / tiles_horisontal);
+                auto tile_w = static_cast<float>(static_cast<float>(w) / tiles_horisontal);
+                auto tile_h = static_cast<float>(static_cast<float>(h) / tiles_vertical);
 
                 // Wait for new images
                 glfwPollEvents();
@@ -87,8 +87,7 @@ int main(int argc, char * argv[])
 
                 for (auto&& frame : frames)
                 {
-                    auto stream_index = frame.get_profile().stream_index();
-                    auto stream_type = frame.get_profile().stream_type();
+                    auto stream_index = frame.get_profile().unique_id();
 
                     auto index = distance(begin(buffers), buffers.find(stream_index));
                     auto col_id = index / tiles_horisontal;

@@ -41,7 +41,7 @@ namespace librealsense
     {
         std::vector<std::shared_ptr<matcher>> matchers;
 
-        std::set<rs2_stream> streams = { RS2_STREAM_DEPTH , RS2_STREAM_COLOR, RS2_STREAM_INFRARED, RS2_STREAM_INFRARED2 };
+        std::set<rs2_stream> streams = { RS2_STREAM_DEPTH , RS2_STREAM_COLOR, RS2_STREAM_INFRARED };
         if (streams.find(stream) != streams.end())
         {
             for (auto s : streams)

@@ -385,13 +385,13 @@ namespace librealsense
     ///////////////////
 
     typedef std::tuple<uint32_t, int, size_t> native_pixel_format_tuple;
-    typedef std::tuple<rs2_stream, rs2_format> output_tuple;
+    typedef std::tuple<rs2_stream, int, rs2_format> output_tuple;
     typedef std::tuple<platform::stream_profile_tuple, native_pixel_format_tuple, std::vector<output_tuple>> request_mapping_tuple;
 
     struct stream_profile
     {
-        int index;
         rs2_stream stream;
+        int index;
         uint32_t width, height, fps;
         rs2_format format;
     };
@@ -407,30 +407,39 @@ namespace librealsense
             (a.index == b.index);
     }
 
+    struct stream_descriptor
+    {
+        stream_descriptor() : type(RS2_STREAM_ANY), index(0) {}
+        stream_descriptor(rs2_stream type, int index = 0) : type(type), index(index) {}
+
+        rs2_stream type;
+        int index;
+    };
+
     struct pixel_format_unpacker
     {
         bool requires_processing;
         void(*unpack)(byte * const dest[], const byte * source, int count);
-        std::vector<std::pair<rs2_stream, rs2_format>> outputs;
+        std::vector<std::pair<stream_descriptor, rs2_format>> outputs;
 
         bool satisfies(const stream_profile& request) const
         {
-            return provides_stream(request.stream) &&
-                get_format(request.stream) == request.format;
+            return provides_stream(request.stream, request.index) &&
+                get_format(request.stream, request.index) == request.format;
         }
 
-        bool provides_stream(rs2_stream stream) const
+        bool provides_stream(rs2_stream stream, int index) const
         {
             for (auto & o : outputs)
-                if (o.first == stream)
+                if (o.first.type == stream && o.first.index == index)
                     return true;
 
             return false;
         }
-        rs2_format get_format(rs2_stream stream) const
+        rs2_format get_format(rs2_stream stream, int index) const
         {
             for (auto & o : outputs)
-                if (o.first == stream)
+                if (o.first.type == stream && o.first.index == index)
                     return o.second;
 
             throw invalid_value_exception("missing output");
@@ -442,7 +451,7 @@ namespace librealsense
 
             for (auto output : outputs)
             {
-                tuple_outputs.push_back(std::make_tuple(output.first, output.second));
+                tuple_outputs.push_back(std::make_tuple(output.first.type, output.first.index, output.second));
             }
             return tuple_outputs;
         }

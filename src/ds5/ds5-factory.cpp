@@ -226,7 +226,7 @@ namespace librealsense
     {
         std::vector<std::shared_ptr<matcher>> depth_matchers;
 
-        std::set<rs2_stream> streams = { RS2_STREAM_DEPTH , RS2_STREAM_INFRARED, RS2_STREAM_INFRARED2 };
+        std::set<rs2_stream> streams = { RS2_STREAM_DEPTH , RS2_STREAM_INFRARED };
        
         for (auto s : streams)
             depth_matchers.push_back(device::create_matcher(s));

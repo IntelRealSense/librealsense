@@ -32,6 +32,10 @@ namespace librealsense
                                                          depth_xu,
                                                          DS5_ENABLE_AUTO_WHITE_BALANCE,
                                                          "Enable Auto White Balance"));
+
+            // RS400 rolling-shutter Skus allow to get low-quality color image from the same viewport as the depth
+            get_depth_sensor().register_pixel_format(pf_uyvyl); 
+            get_depth_sensor().register_pixel_format(pf_rgb888);
         }
     }
 }

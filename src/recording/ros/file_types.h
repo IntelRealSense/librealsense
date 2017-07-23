@@ -225,14 +225,10 @@ namespace rs
                     case rs2_stream::RS2_STREAM_DEPTH     : target = rs::file_format::file_types::stream_type::DEPTH     ; break;
                     case rs2_stream::RS2_STREAM_COLOR     : target = rs::file_format::file_types::stream_type::COLOR     ; break;
                     case rs2_stream::RS2_STREAM_INFRARED  : target = rs::file_format::file_types::stream_type::INFRARED  ; break;
-                    case rs2_stream::RS2_STREAM_INFRARED2 : target = rs::file_format::file_types::stream_type::INFRARED2 ; break;
                     case rs2_stream::RS2_STREAM_FISHEYE   : target = rs::file_format::file_types::stream_type::FISHEYE   ; break;
                     case rs2_stream::RS2_STREAM_GYRO      : target = rs::file_format::file_types::stream_type::GYRO      ; break;
                     case rs2_stream::RS2_STREAM_ACCEL     : target = rs::file_format::file_types::stream_type::ACCEL     ; break;
-                    case rs2_stream::RS2_STREAM_GPIO1     : target = rs::file_format::file_types::stream_type::GPIO1     ; break;
-                    case rs2_stream::RS2_STREAM_GPIO2     : target = rs::file_format::file_types::stream_type::GPIO2     ; break;
-                    case rs2_stream::RS2_STREAM_GPIO3     : target = rs::file_format::file_types::stream_type::GPIO3     ; break;
-                    case rs2_stream::RS2_STREAM_GPIO4     : target = rs::file_format::file_types::stream_type::GPIO4     ; break;
+                    case rs2_stream::RS2_STREAM_GPIO      : target = rs::file_format::file_types::stream_type::GPIO1     ; break;
                     case rs2_stream::RS2_STREAM_COUNT:
                         //[[fallthrough]];
                     default: throw std::runtime_error(std::string("Failed to convert librealsense stream to matching stream(") + std::to_string(source) + std::string(")"));
@@ -245,14 +241,13 @@ namespace rs
                 if (source == rs::file_format::file_types::stream_type::DEPTH)         target = rs2_stream::RS2_STREAM_DEPTH;
                 else if (source == rs::file_format::file_types::stream_type::COLOR)    target = rs2_stream::RS2_STREAM_COLOR;
                 else if (source == rs::file_format::file_types::stream_type::INFRARED) target = rs2_stream::RS2_STREAM_INFRARED;
-                else if (source == rs::file_format::file_types::stream_type::INFRARED2)target = rs2_stream::RS2_STREAM_INFRARED2;
                 else if (source == rs::file_format::file_types::stream_type::FISHEYE)  target = rs2_stream::RS2_STREAM_FISHEYE;
                 else if (source == rs::file_format::file_types::stream_type::GYRO )    target = rs2_stream::RS2_STREAM_GYRO;
                 else if (source == rs::file_format::file_types::stream_type::ACCEL)    target = rs2_stream::RS2_STREAM_ACCEL;
-                else if (source == rs::file_format::file_types::stream_type::GPIO1)    target = rs2_stream::RS2_STREAM_GPIO1;
-                else if (source == rs::file_format::file_types::stream_type::GPIO2)    target = rs2_stream::RS2_STREAM_GPIO2;
-                else if (source == rs::file_format::file_types::stream_type::GPIO3)    target = rs2_stream::RS2_STREAM_GPIO3;
-                else if (source == rs::file_format::file_types::stream_type::GPIO4)    target = rs2_stream::RS2_STREAM_GPIO4;
+                else if (source == rs::file_format::file_types::stream_type::GPIO1)    target = rs2_stream::RS2_STREAM_GPIO;
+                else if (source == rs::file_format::file_types::stream_type::GPIO2)    target = rs2_stream::RS2_STREAM_GPIO;
+                else if (source == rs::file_format::file_types::stream_type::GPIO3)    target = rs2_stream::RS2_STREAM_GPIO;
+                else if (source == rs::file_format::file_types::stream_type::GPIO4)    target = rs2_stream::RS2_STREAM_GPIO;
                 else throw std::runtime_error(std::string("Failed to convert stream matching librealsense stream(") + source + std::string(")"));
                 return true;
             }

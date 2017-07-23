@@ -213,8 +213,8 @@ namespace librealsense
                         if (auto vf = dynamic_cast<video_frame*>(depth_frame))
                         {
                             stream_profile sp {
-                                    vf->get_stream()->get_stream_index(),
                                     vf->get_stream()->get_stream_type(),
+                                    vf->get_stream()->get_stream_index(),
                                     (uint32_t)vf->get_width(), (uint32_t)vf->get_height(), (uint32_t)vf->get_stream()->get_framerate(),
                                     vf->get_stream()->get_format() };
 
@@ -264,8 +264,8 @@ namespace librealsense
                             if (auto vf = dynamic_cast<video_frame*>(other_frame))
                             {
                                 stream_profile sp {
-                                        vf->get_stream()->get_stream_index(),
                                         vf->get_stream()->get_stream_type(),
+                                        vf->get_stream()->get_stream_index(),
                                         (uint32_t)vf->get_width(), (uint32_t)vf->get_height(), (uint32_t)vf->get_stream()->get_framerate(),
                                         vf->get_stream()->get_format() };
 

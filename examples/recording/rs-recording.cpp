@@ -65,9 +65,9 @@ int main(int argc, const char** argv) try
 
     //Declare profiles we want to play
     const std::vector<rs2::stream_profile> profiles_to_play_if_available{
-        rs2::stream_profile{ RS2_STREAM_DEPTH, 640, 480, 30, RS2_FORMAT_Z16 },
+        rs2::stream_profile{ RS2_STREAM_DEPTH,    640, 480, 30, RS2_FORMAT_Z16 },
         rs2::stream_profile{ RS2_STREAM_INFRARED, 640, 480, 30, RS2_FORMAT_Y8 },
-        rs2::stream_profile{ RS2_STREAM_FISHEYE, 640, 480, 30, RS2_FORMAT_RAW8 },
+        rs2::stream_profile{ RS2_STREAM_FISHEYE,   640, 480, 30, RS2_FORMAT_RAW8 },
         rs2::stream_profile{ RS2_STREAM_COLOR, 640, 480, 30, RS2_FORMAT_RGBA8 }
     };
     
@@ -83,7 +83,7 @@ int main(int argc, const char** argv) try
         }
             
         std::vector<rs2::stream_profile> profiles_to_play_for_this_sensor;
-        for (auto profile : sensor.get_stream_modes())
+        for (auto profile : sensor.get_stream_profiles())
         {
             if (std::find(std::begin(profiles_to_play_if_available), 
                 std::end(profiles_to_play_if_available), profile) != std::end(profiles_to_play_if_available))
@@ -99,7 +99,7 @@ int main(int argc, const char** argv) try
         }
         sensor.open(profiles_to_play_for_this_sensor);
         sensor.start([](rs2::frame f) {
-            std::cout << rs2_stream_to_string(f.get_stream_type()) << " frame #" << f.get_frame_number() <<  std::endl;
+            std::cout << rs2_stream_to_string(f.get_profile().stream_type()) << " frame #" << f.get_frame_number() <<  std::endl;
         });
         m_playing_sensors.push_back(sensor);
         try

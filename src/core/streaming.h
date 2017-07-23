@@ -37,6 +37,9 @@ namespace librealsense
         virtual int get_stream_index() const = 0;
         virtual void set_stream_index(int index) = 0;
 
+        virtual int get_unique_id() const = 0;
+        virtual void set_unique_id(int uid) = 0;
+
         virtual rs2_stream get_stream_type() const = 0;
         virtual void set_stream_type(rs2_stream stream) = 0;
     };

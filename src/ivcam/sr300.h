@@ -177,6 +177,10 @@ namespace librealsense
 
                     // Register intrinsics
                     auto video = dynamic_cast<video_stream_profile_interface*>(p.get());
+
+                    if (video->get_width() == 640 && video->get_height() == 480)
+                        video->make_recommended();
+
                     auto profile = to_profile(p.get());
                     video->set_intrinsics([profile, this]()
                     {
@@ -222,6 +226,10 @@ namespace librealsense
 
                     // Register intrinsics
                     auto video = dynamic_cast<video_stream_profile_interface*>(p.get());
+
+                    if (video->get_width() == 640 && video->get_height() == 480)
+                        video->make_recommended();
+
                     auto profile = to_profile(p.get());
                     video->set_intrinsics([profile, this]()
                     {

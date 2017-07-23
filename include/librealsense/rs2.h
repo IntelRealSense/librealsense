@@ -50,14 +50,10 @@ typedef enum rs2_stream
     RS2_STREAM_DEPTH                            , /**< Native stream of depth data produced by RealSense device */
     RS2_STREAM_COLOR                            , /**< Native stream of color data captured by RealSense device */
     RS2_STREAM_INFRARED                         , /**< Native stream of infrared data captured by RealSense device */
-    RS2_STREAM_INFRARED2                        , /**< Native stream of infrared data captured from a second viewpoint by RealSense device */
     RS2_STREAM_FISHEYE                          , /**< Native stream of fish-eye (wide) data captured from the dedicate motion camera */
     RS2_STREAM_GYRO                             , /**< Native stream of gyroscope motion data produced by RealSense device */
     RS2_STREAM_ACCEL                            , /**< Native stream of accelerometer motion data produced by RealSense device */
-    RS2_STREAM_GPIO1                            , /**< Signals from external device connected through GPIO1 */
-    RS2_STREAM_GPIO2                            , /**< Signals from external device connected through GPIO2 */
-    RS2_STREAM_GPIO3                            , /**< Signals from external device connected through GPIO3 */
-    RS2_STREAM_GPIO4                            , /**< Signals from external device connected through GPIO4 */
+    RS2_STREAM_GPIO                             , /**< Signals from external device connected through GPIO */
     RS2_STREAM_COUNT
 } rs2_stream;
 
@@ -452,9 +448,9 @@ rs2_stream_profile_list* rs2_get_stream_profiles(rs2_sensor* device, rs2_error**
 */
 const rs2_stream_profile* rs2_get_stream_profile(const rs2_stream_profile_list* list, int index, rs2_error** error);
 
-void rs2_get_stream_profile_data(const rs2_stream_profile* mode, rs2_stream* stream, rs2_format* format, int* index, int* framerate, rs2_error** error);
+void rs2_get_stream_profile_data(const rs2_stream_profile* mode, rs2_stream* stream, rs2_format* format, int* index, int* unique_id, int* framerate, rs2_error** error);
 
-void rs2_set_stream_profile_data(rs2_stream_profile* mode, rs2_stream stream, rs2_format format, rs2_error** error);
+void rs2_set_stream_profile_data(rs2_stream_profile* mode, rs2_stream stream, int index, rs2_format format, rs2_error** error);
 
 rs2_stream_profile* rs2_clone_stream_profile(const rs2_stream_profile* mode, rs2_error** error);
 
@@ -471,19 +467,22 @@ void rs2_get_video_stream_intrinsics(const rs2_stream_profile* from, rs2_intrins
 
 void rs2_get_video_stream_resolution(const rs2_stream_profile* from, int* width, int* height, rs2_error** error);
 
+int rs2_get_stream_profile_size(const rs2_stream_profile* profile, rs2_error** error);
+int rs2_is_stream_profile_recommended(const rs2_stream_profile* profile, rs2_error** error);
+
 /**
 * get the number of supported stream profiles
 * \param[in] list        the list of supported profiles returned by rs2_get_supported_profiles
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return number of supported subdevice profiles
 */
-int rs2_get_modes_count(const rs2_stream_profile_list* list, rs2_error** error);
+int rs2_get_stream_profiles_count(const rs2_stream_profile_list* list, rs2_error** error);
 
 /**
 * delete stream profiles list
 * \param[in] list        the list of supported profiles returned by rs2_get_supported_profiles
 */
-void rs2_delete_modes_list(rs2_stream_profile_list* list);
+void rs2_delete_stream_profiles_list(rs2_stream_profile_list* list);
 
 /**
 * open subdevice for exclusive access, by committing to a configuration

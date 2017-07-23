@@ -36,7 +36,7 @@ namespace rs2
                 multistream() {}
 
                 explicit multistream(std::vector<typename Dev::SensorType> results,
-                                     std::map<rs2_stream, stream_profile> profiles,
+                                     std::map<rs2_stream, typename Dev::ProfileType> profiles,
                                      std::map<rs2_stream, typename Dev::SensorType> devices)
                     : profiles(std::move(profiles)),
                       devices(std::move(devices)),
@@ -80,14 +80,14 @@ namespace rs2
                     throw std::runtime_error(std::string("config doesnt have extrinsics for ") + rs2_stream_to_string(from) + "->" + rs2_stream_to_string(to));
                 }
 
-                std::map<rs2_stream, stream_profile> get_profiles() const
+                std::map<rs2_stream, typename Dev::ProfileType> get_profiles() const
                 {
                     return profiles;
                 }
             private:
                 friend class Config;
 
-                std::map<rs2_stream, stream_profile> profiles;
+                std::map<rs2_stream, typename Dev::ProfileType> profiles;
                 std::map<rs2_stream, typename Dev::SensorType> devices;
                 std::vector<typename Dev::SensorType> results;
             };
@@ -167,10 +167,10 @@ namespace rs2
                 }
 
                 // Unpack the data returned by assign
-                std::map<int, std::vector<stream_profile> > dev_to_profiles;
+                std::map<int, std::vector<typename Dev::ProfileType> > dev_to_profiles;
                 std::vector<typename Dev::SensorType> devices;
                 std::map<rs2_stream, typename Dev::SensorType> stream_to_dev;
-                std::map<rs2_stream, stream_profile> stream_to_profile;
+                std::map<rs2_stream, typename Dev::ProfileType> stream_to_profile;
 
                 auto sensors = dev.query_sensors();
                 for (auto && kvp : mapping) {
@@ -191,31 +191,31 @@ namespace rs2
             }
 
         private:
-            static bool sort_highest_framerate(const stream_profile& lhs, const stream_profile &rhs) {
+            static bool sort_highest_framerate(const typename Dev::ProfileType& lhs, const typename Dev::ProfileType &rhs) {
                 return lhs.fps() < rhs.fps();
             }
 
-            static bool sort_largest_image(const stream_profile& lhs, const stream_profile &rhs) {
+            static bool sort_largest_image(const typename Dev::ProfileType& lhs, const typename Dev::ProfileType &rhs) {
                 if (auto a = lhs.as<video_stream_profile>())
                     if (auto b = rhs.as<video_stream_profile>())
-                        return a.get_width()*a.get_height() < b.get_width()*b.get_height();
+                        return a.width()*a.height() < b.width()*b.height();
                 return sort_highest_framerate(lhs, rhs);
             }
 
-            static bool sort_best_quality(const stream_profile& lhs, const stream_profile& rhs) {
+            static bool sort_best_quality(const typename Dev::ProfileType& lhs, const typename Dev::ProfileType& rhs) {
                 if (auto a = lhs.as<video_stream_profile>())
                 {
                     if (auto b = rhs.as<video_stream_profile>())
                     {
-                        return std::make_tuple((a.get_width() == 640 && a.get_height() == 480), (lhs.fps() == 30), (lhs.format() == RS2_FORMAT_Z16), (lhs.format() == RS2_FORMAT_Y8), (lhs.format() == RS2_FORMAT_RGB8), int(lhs.format()))
-                             < std::make_tuple((b.get_width() == 640 && b.get_height() == 480), (rhs.fps() == 30), (rhs.format() == RS2_FORMAT_Z16), (rhs.format() == RS2_FORMAT_Y8), (rhs.format() == RS2_FORMAT_RGB8), int(rhs.format()));
+                        return std::make_tuple((a.width() == 640 && a.height() == 480), (lhs.fps() == 30), (lhs.format() == RS2_FORMAT_Z16), (lhs.format() == RS2_FORMAT_Y8), (lhs.format() == RS2_FORMAT_RGB8), int(lhs.format()))
+                             < std::make_tuple((b.width() == 640 && b.height() == 480), (rhs.fps() == 30), (rhs.format() == RS2_FORMAT_Z16), (rhs.format() == RS2_FORMAT_Y8), (rhs.format() == RS2_FORMAT_RGB8), int(rhs.format()));
 
                     }
                 }
                 return sort_highest_framerate(lhs, rhs);
             }
 
-            static void auto_complete(std::vector<stream_profile> &requests, typename Dev::SensorType &target)
+            static void auto_complete(std::vector<typename Dev::ProfileType> &requests, typename Dev::SensorType &target)
             {
                 auto candidates = target.get_stream_profiles();
                 for (auto & request : requests)
@@ -234,8 +234,8 @@ namespace rs2
                 }
             }
 
-            std::multimap<int, stream_profile> map_streams(Dev dev) const {
-                std::multimap<int, stream_profile> out;
+            std::multimap<int, typename Dev::ProfileType> map_streams(Dev dev) const {
+                std::multimap<int, typename Dev::ProfileType> out;
                 std::set<rs2_stream> satisfied_streams;
 
                 // Algorithm assumes get_adjacent_devices always
@@ -244,7 +244,7 @@ namespace rs2
                 for (size_t i = 0; i < devs.size(); ++i)
                 {
                     auto sub = devs[i];
-                    std::vector<stream_profile> targets;
+                    std::vector<typename Dev::ProfileType> targets;
                     auto profiles = sub.get_stream_profiles();
 
                     // deal with explicit requests
@@ -254,7 +254,7 @@ namespace rs2
 
                         // if any profile on the subdevice can supply this request, consider it satisfiable
                         if (std::any_of(begin(profiles), end(profiles),
-                            [&kvp](const stream_profile &profile)
+                            [&kvp](const typename Dev::ProfileType &profile)
                             {
                                 return match(profile, kvp.second);
                             }))
@@ -270,7 +270,7 @@ namespace rs2
                     {
                         if (satisfied_streams.count(kvp.first)) continue; // skip satisfied streams
 
-                        auto result = [&]() -> stream_profile
+                        auto result = [&]() -> typename Dev::ProfileType
                         {
                             switch (kvp.second)
                             {
@@ -288,11 +288,11 @@ namespace rs2
 
                             for (auto itr = profiles.rbegin(); itr != profiles.rend(); ++itr) {
                                 if (itr->stream_type() == kvp.first) {
-                                    return stream_profile(*itr);
+                                    return typename Dev::ProfileType(*itr);
                                 }
                             }
 
-                            return stream_profile();
+                            return typename Dev::ProfileType();
                         }();
 
                         // RS2_STREAM_COUNT signals subdevice can't handle this stream
@@ -317,7 +317,7 @@ namespace rs2
 
             }
 
-            std::map<rs2_stream, stream_profile> _requests;
+            std::map<rs2_stream, typename Dev::ProfileType> _requests;
             std::map<rs2_stream, preset> _presets;
             bool require_all;
         };

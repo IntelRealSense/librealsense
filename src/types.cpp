@@ -88,14 +88,10 @@ namespace librealsense
         CASE(DEPTH)
         CASE(COLOR)
         CASE(INFRARED)
-        CASE(INFRARED2)
         CASE(FISHEYE)
         CASE(GYRO)
         CASE(ACCEL)
-        CASE(GPIO1)
-        CASE(GPIO2)
-        CASE(GPIO3)
-        CASE(GPIO4)
+        CASE(GPIO)
         default: assert(!is_valid(value)); return UNKNOWN;
         }
         #undef CASE

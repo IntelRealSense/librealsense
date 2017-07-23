@@ -380,7 +380,7 @@ inline void frame_callback(rs2::device &dev, rs2::frame frame, void * user)
     auto data = (user_data*)user;
     bool stop = true;
 
-    auto stream_type = frame.get_stream_type();
+    auto stream_type = frame.get_profile().stream_type();
 
     for (auto& elem : data->number_of_frames_per_stream)
     {

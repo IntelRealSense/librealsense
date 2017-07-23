@@ -12,6 +12,7 @@
 #include <set>
 #include <array>
 #include "example.hpp"
+#include <unordered_map>
 
 namespace ImGui {
 /*
@@ -177,6 +178,25 @@ namespace rs2
     class subdevice_model;
 
     template<class T>
+    void sort_together(std::vector<T>& vec, std::vector<std::string>& names)
+    {
+        std::vector<std::pair<T, std::string>> pairs(vec.size());
+        for (size_t i = 0; i < vec.size(); i++) pairs[i] = std::make_pair(vec[i], names[i]);
+
+        std::sort(begin(pairs), end(pairs),
+        [](const std::pair<T, std::string>& lhs,
+           const std::pair<T, std::string>& rhs) {
+            return lhs.first < rhs.first;
+        });
+        
+        for (size_t i = 0; i < vec.size(); i++)
+        {
+            vec[i] = pairs[i].first;
+            names[i] = pairs[i].second;
+        }
+    }
+
+    template<class T>
     void push_back_if_not_exists(std::vector<T>& vec, T value)
     {
         auto it = std::find(vec.begin(), vec.end(), value);
@@ -213,6 +233,32 @@ namespace rs2
         bool is_all_integers() const;
         bool is_enum() const;
         bool is_checkbox() const;
+    };
+
+    class frame_queues
+    {
+    public:
+        frame_queue& at(int id)
+        {
+            std::lock_guard<std::mutex> lock(_lookup_mutex);
+            if (_queues.find(id) == _queues.end())
+            {
+                _queues[id] = frame_queue(4);
+            }
+            return _queues[id];
+        }
+
+        template<class T>
+        void foreach(T action)
+        {
+            std::lock_guard<std::mutex> lock(_lookup_mutex);
+            for (auto&& kvp : _queues)
+                action(kvp.second);
+        }
+
+    private:
+        std::unordered_map<int, frame_queue> _queues;
+        std::mutex _lookup_mutex;
     };
 
     class subdevice_model
@@ -261,7 +307,7 @@ namespace rs2
         std::vector<std::string> shared_fpses;
         std::map<int, std::vector<std::string>> formats;
         std::map<int, bool> stream_enabled;
-        std::map<int, rs2_stream> stream_types;
+        std::map<int, std::string> stream_display_names;
 
         int selected_res_id = 0;
         std::map<int, int> selected_fps_id;
@@ -276,7 +322,8 @@ namespace rs2
 
         std::vector<stream_profile> profiles;
 
-        std::vector<std::unique_ptr<frame_queue>> queues;
+        frame_queues queues;
+        std::mutex _queue_lock;
         bool options_invalidated = false;
         int next_option = RS2_OPTION_COUNT;
         bool streaming = false;
@@ -309,8 +356,7 @@ namespace rs2
         float2 size;
         rect get_stream_bounds() const { return { 0, 0, size.x, size.y }; }
 
-        rs2_stream stream;
-        rs2_format format;
+        stream_profile profile;
         std::chrono::high_resolution_clock::time_point last_frame;
         double              timestamp;
         unsigned long long  frame_number;
@@ -378,9 +424,9 @@ namespace rs2
     {
         notification_model();
         notification_model(const notification_data& n);
-        double get_age_in_ms();
+        double get_age_in_ms() const;
         void draw(int w, int y, notification_model& selected);
-        void set_color_scheme(float t);
+        void set_color_scheme(float t) const;
 
         static const int MAX_LIFETIME_MS = 10000;
         int height = 60;

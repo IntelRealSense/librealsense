@@ -68,7 +68,12 @@ namespace librealsense
             for (auto p : results)
             {
                 // Register stream types
-                assign_stream(_owner->_streams.find(p->get_stream_type())->second, p);
+                if (p->get_stream_type() == RS2_STREAM_ACCEL)
+                    assign_stream(_owner->_accel_stream, p);
+                if (p->get_stream_type() == RS2_STREAM_GYRO)
+                    assign_stream(_owner->_gyro_stream, p);
+                if (p->get_stream_type() == RS2_STREAM_GPIO)
+                    assign_stream(_owner->_gpio_streams[p->get_stream_index()], p);
             }
 
             return results;
@@ -102,12 +107,13 @@ namespace librealsense
             {
                 // Register stream types
                 if (p->get_stream_type() == RS2_STREAM_FISHEYE)
-                {
-                    assign_stream(_owner->_streams.find(RS2_STREAM_FISHEYE)->second, p);
-                }
+                    assign_stream(_owner->_fisheye_stream, p);
+
+                auto video = dynamic_cast<video_stream_profile_interface*>(p.get());
+                if (video->get_width() == 640 && video->get_height() == 480)
+                    video->make_recommended();
 
                 // Register intrinsics
-                auto video = dynamic_cast<video_stream_profile_interface*>(p.get());
                 auto profile = to_profile(p.get());
                 video->set_intrinsics([profile, this]()
                 {
@@ -173,10 +179,10 @@ namespace librealsense
         if (camera_fw_version >= firmware_version(custom_sensor_fw_ver))
         {
             static const std::vector<std::pair<std::string, stream_profile>> custom_sensor_profiles =
-                {{std::string("custom"), {0, RS2_STREAM_GPIO1, 1, 1, 1, RS2_FORMAT_GPIO_RAW}},
-                 {std::string("custom"), {0, RS2_STREAM_GPIO2, 1, 1, 1, RS2_FORMAT_GPIO_RAW}},
-                 {std::string("custom"), {0, RS2_STREAM_GPIO3, 1, 1, 1, RS2_FORMAT_GPIO_RAW}},
-                 {std::string("custom"), {0, RS2_STREAM_GPIO4, 1, 1, 1, RS2_FORMAT_GPIO_RAW}}};
+                {{std::string("custom"), { RS2_STREAM_GPIO, 1, 1, 1, 1, RS2_FORMAT_GPIO_RAW}},
+                 {std::string("custom"), { RS2_STREAM_GPIO, 2, 1, 1, 1, RS2_FORMAT_GPIO_RAW}},
+                 {std::string("custom"), { RS2_STREAM_GPIO, 3, 1, 1, 1, RS2_FORMAT_GPIO_RAW}},
+                 {std::string("custom"), { RS2_STREAM_GPIO, 4, 1, 1, 1, RS2_FORMAT_GPIO_RAW}}};
             std::copy(custom_sensor_profiles.begin(), custom_sensor_profiles.end(), std::back_inserter(sensor_name_and_hid_profiles));
         }
 
@@ -246,17 +252,15 @@ namespace librealsense
 
     ds5_motion::ds5_motion(std::shared_ptr<context> ctx,
                            const platform::backend_device_group& group)
-        : device(ctx), ds5_device(ctx, group)
+        : device(ctx), ds5_device(ctx, group),
+          _fisheye_stream(new stream(ctx, RS2_STREAM_FISHEYE)),
+          _accel_stream(new stream(ctx, RS2_STREAM_ACCEL)),
+          _gyro_stream(new stream(ctx, RS2_STREAM_GYRO))
     {
         using namespace ds;
 
-        _streams[RS2_STREAM_FISHEYE] = std::make_shared<stream>(ctx);
-        _streams[RS2_STREAM_ACCEL] = std::make_shared<stream>(ctx);
-        _streams[RS2_STREAM_GYRO] = std::make_shared<stream>(ctx);
-        _streams[RS2_STREAM_GPIO1] = std::make_shared<stream>(ctx);
-        _streams[RS2_STREAM_GPIO2] = std::make_shared<stream>(ctx);
-        _streams[RS2_STREAM_GPIO3] = std::make_shared<stream>(ctx);
-        _streams[RS2_STREAM_GPIO4] = std::make_shared<stream>(ctx);
+        for (auto i = 0; i < 4; i++)
+            _gpio_streams[i] = std::make_shared<stream>(ctx, RS2_STREAM_GPIO, i+1);
 
         auto&& backend = ctx->get_backend();
 
@@ -361,16 +365,13 @@ namespace librealsense
             return from_pose(ex);
         });
 
-        ctx->register_extrinsics(*_depth_stream, *_streams[RS2_STREAM_FISHEYE], _depth_to_fisheye);
-        ctx->register_extrinsics(*_streams[RS2_STREAM_FISHEYE], *_streams[RS2_STREAM_ACCEL], _fisheye_to_imu);
+        ctx->register_extrinsics(*_depth_stream, *_fisheye_stream, _depth_to_fisheye);
+        ctx->register_extrinsics(*_fisheye_stream, *_accel_stream, _fisheye_to_imu);
 
         // Make sure all MM streams are positioned with the same extrinsics
-        ctx->register_same_extrinsics(*_streams[RS2_STREAM_ACCEL], *_streams[RS2_STREAM_GYRO]);
-        ctx->register_same_extrinsics(*_streams[RS2_STREAM_ACCEL], *_streams[RS2_STREAM_GPIO1]);
-        ctx->register_same_extrinsics(*_streams[RS2_STREAM_ACCEL], *_streams[RS2_STREAM_GPIO2]);
-        ctx->register_same_extrinsics(*_streams[RS2_STREAM_ACCEL], *_streams[RS2_STREAM_GPIO3]);
-        ctx->register_same_extrinsics(*_streams[RS2_STREAM_ACCEL], *_streams[RS2_STREAM_GPIO4]);
-
+        ctx->register_same_extrinsics(*_accel_stream, *_gyro_stream);
+        for (auto i = 0; i < 4; i++)
+            ctx->register_same_extrinsics(*_accel_stream, *_gpio_streams[i]);
 
         // Add hid endpoint
         auto hid_ep = create_hid_device(ctx, group.hid_devices, _fw_version);

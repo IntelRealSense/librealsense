@@ -223,7 +223,7 @@ int main(int argc, char** argv)
 
                 frame_data data;
                 data.frame_number = f.get_frame_number();
-                data.strean_type = f.get_stream_type();
+                data.strean_type = f.get_profile().stream_type();
                 data.ts = f.get_timestamp();
                 data.domain = f.get_frame_timestamp_domain();
                 data.arrival_time = arrival_time.count();
@@ -241,7 +241,7 @@ int main(int argc, char** argv)
 
                 for(auto&& profile : camera.get_profiles())
                 {
-                    if(buffer[(int) profile.second.stream].size() < MAX_FRAMES_NUMBER)
+                    if(buffer[(int) profile.second.stream_type()].size() < MAX_FRAMES_NUMBER)
                         return false;
                 }
                 succeed = true;

@@ -182,7 +182,9 @@ namespace librealsense
             : device(ctx), _depth_device_idx(add_sensor(create_depth_device(ctx, depth))),
               _color_device_idx(add_sensor(create_color_device(ctx, color))),
               _hw_monitor(std::make_shared<hw_monitor>(std::make_shared<locked_transfer>(ctx->get_backend().create_usb_device(hwm_device), get_depth_sensor()))),
-              _depth_stream(new stream(ctx)), _ir_stream(new stream(ctx)), _color_stream(new stream(ctx))
+              _depth_stream(new stream(ctx, RS2_STREAM_DEPTH)), 
+              _ir_stream(new stream(ctx, RS2_STREAM_INFRARED)), 
+              _color_stream(new stream(ctx, RS2_STREAM_COLOR))
     {
         using namespace ivcam;
         static auto device_name = "Intel RealSense SR300";

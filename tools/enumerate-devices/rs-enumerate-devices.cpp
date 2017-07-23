@@ -164,12 +164,17 @@ int main(int argc, char** argv) try
                 cout << setw(55) << " Supported modes:" << setw(10) << "stream" << setw(10)
                      << " resolution" << setw(6) << " fps" << setw(10) << " format" << endl;
                 // Show which streams are supported by this device
-                for (auto&& profile : sensor.get_stream_modes()) {
-                    cout << "    " << profile.stream << "\t  " << profile.width << "x"
-                         << profile.height << "\t@ " << profile.fps << "Hz\t" << profile.format << endl;
-
-                    // Show horizontal and vertical field of view, in degrees
-                    //cout << "\t" << setprecision(3) << intrin.hfov() << " x " << intrin.vfov() << " degrees\n";
+                for (auto&& profile : sensor.get_stream_profiles()) 
+                {
+                    if (auto video = profile.as<video_stream_profile>())
+                    {
+                        cout << "    " << profile.stream_name() << "\t  " << video.width() << "x"
+                            << video.height() << "\t@ " << profile.fps() << "Hz\t" << profile.format() << endl;
+                    }
+                    else
+                    {
+                        cout << "    " << profile.stream_name() << "\t@ " << profile.fps() << "Hz\t" << profile.format() << endl;
+                    }
                 }
 
                 cout << endl;
@@ -184,24 +189,14 @@ int main(int argc, char** argv) try
                 cout << "Intrinsics provided by " << sensor.get_info(RS2_CAMERA_INFO_NAME) << endl;
 
                 // Intrinsics
-                for (auto&& profile : sensor.get_stream_modes())
+                for (auto&& profile : sensor.get_stream_profiles())
                 {
-                    if (profile.stream == RS2_STREAM_GPIO1 ||
-                        profile.stream == RS2_STREAM_GPIO2 ||
-                        profile.stream == RS2_STREAM_GPIO3 ||
-                        profile.stream == RS2_STREAM_GPIO4)
-                        continue;
+                    if (auto video = profile.as<video_stream_profile>())
+                    {
+                        cout << "Intrinsics of " << profile.stream_name() << "\t  " << video.width() << "x"
+                            << video.height() << "\t@ " << profile.fps() << "Hz\t" << profile.format() << endl;
 
-                    cout << "Intrinsics of " << profile.stream << "\t  " << profile.width << "\tx "
-                         << profile.height << "\t@ " << profile.fps << "Hz\t" << profile.format << endl;
-
-                    if (profile.stream == RS2_STREAM_GYRO ||
-                        profile.stream == RS2_STREAM_ACCEL) {
-                        auto intrinsics = sensor.get_motion_intrinsics(profile.stream);
-                        print(intrinsics);
-                    } else {
-                        auto intrinsics = sensor.get_intrinsics(profile);
-                        print(intrinsics);
+                        print(video.get_intrinsics());
                     }
                 }
             }
