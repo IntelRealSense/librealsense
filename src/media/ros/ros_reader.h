@@ -744,11 +744,30 @@ namespace librealsense
 
         void seek_to_time(std::chrono::nanoseconds time) override
         {
-            throw not_implemented_exception(__FUNCTION__);
+            auto seek_time = m_first_frame_time + file_format::file_types::nanoseconds(time);
+            auto time_interval = file_format::file_types::nanoseconds(seek_time);
+
+            std::unique_lock<std::mutex> locker(m_mutex);
+//            auto retval = set_properties_state(seek_time.count());
+//            if(retval != device_data_serializer::error_code::no_error)
+//            {
+//                LOG_ERROR("Failed to seek_to_time " << time_microseconds << ", set_properties_state returned " << retval);
+//                return retval;
+//            }
+            auto sts = m_stream_playback.seek_to_time(time_interval);
+            if(sts != file_format::status_no_error)
+            {
+                throw invalid_value_exception(to_string() << "Failed to seek_to_time " << time.count() << ", m_reader->seek_to_time(" <<  time_interval.count() << ") returned " << sts);
+            }
         }
         std::chrono::nanoseconds query_duration() const override
         {
-            throw not_implemented_exception(__FUNCTION__);
+            file_types::nanoseconds time;
+            if(m_stream_playback.get_file_duration(time) != file_format::status::status_no_error)
+            {
+                throw invalid_value_exception("Failed to get file duration");
+            }
+            return std::chrono::duration_cast<std::chrono::nanoseconds>(time);
         }
         void reset() override
         {

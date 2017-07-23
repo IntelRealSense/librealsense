@@ -874,20 +874,23 @@ int main(int, char**) try
                 }
                 else
                 {
-                    static int seek_progress = 0;
-                    static float progress = 0;
-                    p.get_position();
-                    seek_progress = static_cast<int>(std::max(0.0f, std::min(progress, 1.0f)) * 100);
+                    static int64_t total_duration = p.get_duration().count();
+                    static int seek_pos = 0;
+                    static int64_t progress = 0;
+                    progress = p.get_position();
 
-                    int prev_seek_progress = seek_progress;
+                    double part = (1.0 * progress) / total_duration;
+                    seek_pos = static_cast<int>(std::max(0.0, std::min(part, 1.0)) * 100);
 
-                    ImGui::SeekSlider("Seek Bar", &seek_progress);
-                    if (prev_seek_progress != seek_progress)
+                    int prev_seek_progress = seek_pos;
+
+                    ImGui::SeekSlider("Seek Bar", &seek_pos);
+                    if (prev_seek_progress != seek_pos)
                     {
+                        seek_pos = prev_seek_progress;
                         //Seek was dragged
-                        std::chrono::nanoseconds total_duration(p.get_duration());
-                        auto single_percent = total_duration.count() / 100;
-                        p.seek(std::chrono::nanoseconds(seek_progress * single_percent));
+                        //auto single_percent = total_duration / 100;
+                        //p.seek(std::chrono::nanoseconds(seek_pos * single_percent));
                     }
                 }
 

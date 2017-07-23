@@ -1486,11 +1486,12 @@ namespace rs2
         {
             return m_file; //retrieved in construction
         }
-        void get_position() const
+        uint64_t get_position() const
         {
             rs2_error* e = nullptr;
-            rs2_playback_get_position(_dev.get(), &e);
+            uint64_t pos = rs2_playback_get_position(_dev.get(), &e);
             error::handle(e);
+            return pos;
         }
         std::chrono::nanoseconds get_duration() const
         {
