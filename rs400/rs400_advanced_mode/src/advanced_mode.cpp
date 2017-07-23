@@ -4,6 +4,7 @@
 #include "../../../src/core/advanced_mode.h"
 #include "../../../src/ds5/ds5-active.h"
 #include "../../../src/ds5/ds5-rolling-shutter.h"
+#include "json_loader.hpp"
 
 namespace librealsense
 {
@@ -681,7 +682,7 @@ namespace librealsense
     void ds5_advanced_mode_base::apply_controls_from_json(const std::string& json_content)
     {
         auto p = get_all();
-        // update_structs(json_content, p);
+        update_structs(json_content, p);
         set_all(p);
     }
 

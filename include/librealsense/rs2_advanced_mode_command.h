@@ -46,7 +46,6 @@ typedef struct
     uint32_t lrAgreeThreshold;
 }STDepthControlGroup;
 
-
 typedef struct
 {
     uint32_t rsmBypass;
