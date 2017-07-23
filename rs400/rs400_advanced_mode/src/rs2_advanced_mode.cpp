@@ -36,6 +36,11 @@ namespace librealsense
     }
 }
 
+struct rs2_json_data
+{
+    std::string content;
+};
+
 const char* rs2_advanced_mode_preset_to_string(rs2_rs400_visual_preset preset){ return get_string(preset); }
 
 void rs2_toggle_advanced_mode(rs2_device* dev, int enable, rs2_error** error) try
@@ -270,3 +275,41 @@ void rs2_get_census(rs2_device* dev, STCensusRadius* group, int mode, rs2_error*
     advanced_mode->get_census_radius(group, mode);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, dev, group, mode)
+
+void rs2_apply_controls_from_json_content(rs2_device* dev, const void* json_content, unsigned content_size, rs2_error** error) try
+{
+    VALIDATE_NOT_NULL(dev);
+    VALIDATE_NOT_NULL(json_content);
+    auto advanced_mode = VALIDATE_INTERFACE(dev->device, librealsense::ds5_advanced_mode_interface);
+    advanced_mode->apply_controls_from_json(std::string(static_cast<const char*>(json_content), content_size));
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, dev, json_content, content_size)
+
+rs2_json_data* rs2_generate_json_data(rs2_device* dev, rs2_error** error) try
+{
+    VALIDATE_NOT_NULL(dev);
+    auto advanced_mode = VALIDATE_INTERFACE(dev->device, librealsense::ds5_advanced_mode_interface);
+    return new rs2_json_data{ advanced_mode->generate_json_data() };
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, dev)
+
+const char* rs2_get_json_content(rs2_json_data* json_data, rs2_error** error) try
+{
+    VALIDATE_NOT_NULL(json_data);
+    return json_data->content.data();
+}
+HANDLE_EXCEPTIONS_AND_RETURN(0, json_data)
+
+unsigned rs2_get_json_content_size(rs2_json_data* json_data, rs2_error** error) try
+{
+    VALIDATE_NOT_NULL(json_data);
+    return static_cast<unsigned>(json_data->content.size());
+}
+HANDLE_EXCEPTIONS_AND_RETURN(0, json_data)
+
+void rs2_delete_json_data(rs2_json_data* json_data) try
+{
+    VALIDATE_NOT_NULL(json_data);
+    delete json_data;
+}
+NOEXCEPT_RETURN(, json_data)

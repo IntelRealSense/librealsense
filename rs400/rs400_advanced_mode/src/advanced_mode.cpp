@@ -671,7 +671,21 @@ namespace librealsense
         set(val, advanced_mode_traits<STCensusRadius>::group);
     }
 
-    preset ds5_advanced_mode_base::get_all()
+    std::string ds5_advanced_mode_base::generate_json_data() const
+    {
+        auto p = get_all();
+        // auto json_str = generate_json(p);
+        // return json_str;
+    }
+
+    void ds5_advanced_mode_base::apply_controls_from_json(const std::string& json_content)
+    {
+        auto p = get_all();
+        // update_structs(json_content, p);
+        set_all(p);
+    }
+
+    preset ds5_advanced_mode_base::get_all() const
     {
         preset p;
         get_depth_control_group(&p.depth_controls);

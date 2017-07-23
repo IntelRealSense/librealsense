@@ -355,6 +355,37 @@ namespace rs400
 
             return group;
         }
+
+        std::string generate_json_data() const
+        {
+            std::string results;
+
+            rs2_error* e = nullptr;
+            std::shared_ptr<rs2_json_data> json_data(
+                    rs2_generate_json_data(_dev.get(), &e),
+                    rs2_delete_json_data);
+            rs2::error::handle(e);
+
+            auto size = rs2_get_json_content_size(json_data.get(), &e);
+            rs2::error::handle(e);
+
+            auto start = rs2_get_json_content(json_data.get(), &e);
+            rs2::error::handle(e);
+
+            results.insert(results.begin(), start, start + size);
+
+            return results;
+        }
+
+        void apply_controls_from_json_content(const std::string& json_content)
+        {
+            rs2_error* e = nullptr;
+            rs2_apply_controls_from_json_content(_dev.get(),
+                                                 json_content.data(),
+                                                 json_content.size(),
+                                                 &e);
+            rs2::error::handle(e);
+        }
     };
 }
 #endif // R4XX_ADVANCED_MODE_HPP

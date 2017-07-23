@@ -1070,7 +1070,7 @@ TEST_CASE("Per-frame metadata sanity check", "[live]") {
                     // Verify per-frame metadata attributes
                     metadata_verification(frames_additional_data);
 
-                    std::cout << modes[i].format << " MODE: " << modes[i].fps << " " << modes[i].height << " " << modes[i].width << " " << modes[i].stream << " succeed\n";
+                    std::cout << (int)modes[i].format << " MODE: " << modes[i].fps << " " << modes[i].height << " " << modes[i].width << " " << (int)modes[i].stream << " succeed\n";
                 }
             }
         }
