@@ -134,7 +134,7 @@ PYBIND11_PLUGIN(NAME) {
           .value("frames_queue_size", RS2_OPTION_FRAMES_QUEUE_SIZE)
           .value("total_frame_drops", RS2_OPTION_TOTAL_FRAME_DROPS)
           .value("auto_exposure_mode", RS2_OPTION_AUTO_EXPOSURE_MODE)
-          .value("auto_exposure_antiflicker_rate", RS2_OPTION_AUTO_EXPOSURE_ANTIFLICKER_RATE)
+          .value("power_line_frequency", RS2_OPTION_POWER_LINE_FREQUENCY)
           .value("asic_temperature", RS2_OPTION_ASIC_TEMPERATURE)
           .value("error_polling_enabled", RS2_OPTION_ERROR_POLLING_ENABLED)
           .value("projector_temperature", RS2_OPTION_PROJECTOR_TEMPERATURE)

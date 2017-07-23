@@ -71,12 +71,19 @@ namespace librealsense
     class platform_camera : public device
     {
     public:
-        platform_camera(std::shared_ptr<platform::uvc_device> uvc, std::shared_ptr<platform::time_service> ts)
+        platform_camera(const platform::backend& backend,const  platform::uvc_device_info uvc_info, std::shared_ptr<platform::time_service> ts)
         {
-            auto color_ep = std::make_shared<uvc_sensor>("RGB Camera", uvc, std::unique_ptr<ds5_timestamp_reader>(new ds5_timestamp_reader(ts)), ts, this);
+            auto uvc_dev = backend.create_uvc_device(uvc_info);
+            auto color_ep = std::make_shared<uvc_sensor>("RGB Camera", uvc_dev, std::unique_ptr<ds5_timestamp_reader>(new ds5_timestamp_reader(ts)), ts, this);
             add_sensor(color_ep);
 
             register_info(RS2_CAMERA_INFO_NAME, "Platform Camera");
+            std::string pid_str(to_string() << std::setfill('0') << std::setw(4) << std::hex << uvc_info.pid);
+            std::transform(pid_str.begin(), pid_str.end(), pid_str.begin(), ::toupper);
+
+            register_info(RS2_CAMERA_INFO_SERIAL_NUMBER, uvc_info.unique_id);
+            register_info(RS2_CAMERA_INFO_LOCATION, uvc_info.device_path);
+            register_info(RS2_CAMERA_INFO_PRODUCT_ID, pid_str);
 
             color_ep->register_pixel_format(pf_yuy2);
             color_ep->register_pixel_format(pf_yuyv);
@@ -104,7 +111,7 @@ namespace librealsense
 
     std::shared_ptr<device_interface> platform_camera_info::create(const platform::backend& backend) const
     {
-        return std::make_shared<platform_camera>(backend.create_uvc_device(_uvc), backend.create_time_service());
+        return std::make_shared<platform_camera>(backend, _uvc, backend.create_time_service());
     }
 
     context::~context()

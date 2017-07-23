@@ -20,8 +20,9 @@ The library will be compiled without the metadata support!\n")
 #define METADATA_SUPPORT
 #endif      // (WinSDK 8.1)
 
-
+#ifndef NOMINMAX
 #define NOMINMAX
+#endif
 
 #include "win-uvc.h"
 #include "../types.h"
@@ -908,7 +909,7 @@ namespace librealsense
             }
         }
 
-        void wmf_uvc_device::probe_and_commit(stream_profile profile, frame_callback callback, int /*buffers*/)
+        void wmf_uvc_device::probe_and_commit( stream_profile profile, bool zero_copy,  frame_callback callback, int /*buffers*/)
         {
             if (_streaming)
                 throw std::runtime_error("Device is already streaming!");

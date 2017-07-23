@@ -359,7 +359,7 @@ rs2_time_t frame::get_frame_callback_start_time_point() const
 void frame::log_callback_start(rs2_time_t timestamp)
 {
     update_frame_callback_start_ts(timestamp);
-    LOG_DEBUG("CallbackStarted," << librealsense::get_string(get_stream_type()) << "," << get_frame_number() << ",DispatchedAt," << timestamp);
+    LOG_DEBUG("CallbackStarted," << std::dec<< librealsense::get_string(get_stream_type()) << "," << get_frame_number() << ",DispatchedAt," << timestamp);
 }
 
 void frame::log_callback_end(rs2_time_t timestamp) const

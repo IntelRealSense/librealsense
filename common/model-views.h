@@ -226,6 +226,10 @@ namespace rs2
         void stop();
         void play(const std::vector<stream_profile>& profiles);
         void update(std::string& error_message);
+        void draw_options(const std::vector<rs2_option>& drawing_order,
+                          bool update_read_only_options, std::string& error_message);
+        void draw_option(rs2_option opt, bool update_read_only_options,
+                         std::string& error_message);
 
         bool is_paused() const;
         void pause();

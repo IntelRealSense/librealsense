@@ -128,7 +128,8 @@ namespace librealsense
             std::vector<std::shared_ptr<device_info>> list;
             for (auto&& uvc : uvc_devices)
             {
-                list.push_back(std::make_shared<platform_camera_info>(backend, uvc));
+                if (uvc.vid != VID_INTEL_CAMERA)
+                    list.push_back(std::make_shared<platform_camera_info>(backend, uvc));
             }
             return list;
         }

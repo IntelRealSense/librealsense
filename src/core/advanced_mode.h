@@ -11,6 +11,7 @@
 #include <librealsense/rs2_advanced_mode_command.h>
 #undef RS400_ADVANCED_MODE_HPP
 
+
 typedef enum
 {
     etDepthControl              = 0,
@@ -57,8 +58,7 @@ namespace librealsense
 
         virtual void toggle_advanced_mode(bool enable) = 0;
 
-        virtual void apply_preset(const std::string& pid,
-                                  const std::vector<platform::stream_profile>& configuration,
+        virtual void apply_preset(const std::vector<platform::stream_profile>& configuration,
                                   rs2_rs400_visual_preset preset) = 0;
 
         virtual void get_depth_control_group(STDepthControlGroup* ptr, int mode = 0) const = 0;
@@ -102,8 +102,7 @@ namespace librealsense
 
         bool is_enabled() const;
         void toggle_advanced_mode(bool enable);
-        void apply_preset(const std::string& pid,
-                          const std::vector<platform::stream_profile>& configuration,
+        void apply_preset(const std::vector<platform::stream_profile>& configuration,
                           rs2_rs400_visual_preset preset);
 
         void get_depth_control_group(STDepthControlGroup* ptr, int mode = 0) const;
@@ -146,7 +145,6 @@ namespace librealsense
         static const uint16_t HW_MONITOR_COMMAND_SIZE = 1000;
         static const uint16_t HW_MONITOR_BUFFER_SIZE = 1024;
 
-        std::string pid_to_str(uint16_t pid);
         res_type get_res_type(uint32_t width, uint32_t height);
 
         preset get_all();
@@ -160,8 +158,8 @@ namespace librealsense
             auto ptr = (uint8_t*)(&strct);
             std::vector<uint8_t> data(ptr, ptr + sizeof(T));
 
-            assert_no_error(ds::fw_cmd::set_advanced,
-                send_receive(encode_command(ds::fw_cmd::set_advanced, static_cast<uint32_t>(cmd), 0, 0, 0, data)));
+            assert_no_error(ds::fw_cmd::SET_ADV,
+                send_receive(encode_command(ds::fw_cmd::SET_ADV, static_cast<uint32_t>(cmd), 0, 0, 0, data)));
             std::this_thread::sleep_for(std::chrono::milliseconds(20));
         }
 
@@ -169,8 +167,8 @@ namespace librealsense
         T get(EtAdvancedModeRegGroup cmd, T* ptr = static_cast<T*>(nullptr), int mode = 0) const
         {
             T res;
-            auto data = assert_no_error(ds::fw_cmd::get_advanced,
-                send_receive(encode_command(ds::fw_cmd::get_advanced,
+            auto data = assert_no_error(ds::fw_cmd::GET_ADV,
+                send_receive(encode_command(ds::fw_cmd::GET_ADV,
                 static_cast<uint32_t>(cmd), mode)));
             if (data.size() < sizeof(T))
             {

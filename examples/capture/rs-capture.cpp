@@ -20,7 +20,7 @@ int main(int argc, char * argv[])
 
     auto finished = false;
     GLFWwindow* win;
-	log_to_file(RS2_LOG_SEVERITY_DEBUG);
+    log_to_file(RS2_LOG_SEVERITY_DEBUG);
 
     while (!finished)
     {
@@ -37,7 +37,7 @@ int main(int argc, char * argv[])
             syncer_processing_block syncer;
             stream.start(syncer);
 
-			size_t max_frames = 0;
+            size_t max_frames = 0;
 
            // black.start(syncer);
             frame_queue queue;
@@ -54,14 +54,13 @@ int main(int argc, char * argv[])
 
             while (hub.is_connected(dev) && !glfwWindowShouldClose(win))
             {
-
                 int w, h;
                 glfwGetFramebufferSize(win, &w, &h);
 
                 auto index = 0;
                 auto frames = queue.wait_for_frames();
 
-				max_frames = std::max(max_frames, frames.size());
+                max_frames = std::max(max_frames, frames.size());
 
                 //// for consistent visualization, sort frames based on stream type:
                 sort(frames.begin(), frames.end(),
@@ -70,7 +69,6 @@ int main(int argc, char * argv[])
                     return a.get_stream_type() < b.get_stream_type();
                 });
 
-                ////dev.get_option(RS2_OPTION_LASER_POWER);
                 auto tiles_horisontal = static_cast<int>(ceil(sqrt(max_frames)));
                 auto tiles_vertical = ceil((float)max_frames / tiles_horisontal);
                 auto tile_w = static_cast<float>((float)w / tiles_horisontal);

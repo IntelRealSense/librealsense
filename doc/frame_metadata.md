@@ -103,8 +103,12 @@ Linux OS -  the standard Linux UVC driver does not provide metadata support.
 `librealsense2` package includes metadata patch for `uvcvideo` kernel object. The patches are intended to be deployed with Ubuntu 14 and Ubuntu 16.01 LTS with kernel version 4.4.0-xx., and are applied as part of Linux backend installation . See [Linux installation-guide](./installation.md) for more details.
 The patches were also successfully ported to Yocto-based distribution and made available for Yocto Reference Kit based on Poky 2.1.2 with kernel version 4.4.26.
 
-Supporting metadata extraction on Windows is scheduled for future releases.
+Windows OS - the metadata is enabled if following requirements are met (see [installation manual](./installation_windows.md) for details):
+- Windows10 RedStone1 or later.
+- WinSDK 10.0586 is installed
+- Dedicated registry keys are present for each camera device.
 
+**Note** Windows10 has a known bug with providing metadata for multi-pin device - the metadata is available for the first pin only. In case of RS4XX device, the metadata for the Depth stream will be provided ,but not for the Infrared1/2 streams.
 
 ## Metadata attributes in RS4xx Devices
 Support for metadata attributes for Depth, Infrared and Fisheye streams is provided with firmware version 5.5.0 or later.  
