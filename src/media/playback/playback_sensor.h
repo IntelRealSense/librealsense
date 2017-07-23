@@ -56,6 +56,7 @@ namespace librealsense
         void handle_frame(frame_holder frame, bool is_real_time);
         void stop(bool invoke_required);
 
+        void flush_pending_frames();
     private:
         frame_callback_ptr m_user_callback;
         librealsense::notifications_callback_ptr m_user_notification_callback;

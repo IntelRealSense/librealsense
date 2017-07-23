@@ -1098,6 +1098,62 @@ const char* rs2_playback_device_get_file_path(const rs2_device* device, rs2_erro
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, device)
 
+unsigned long long int rs2_playback_get_duration(const rs2_device* device, rs2_error** error) try
+{
+    VALIDATE_NOT_NULL(device);
+    auto playback = VALIDATE_INTERFACE(device->device, librealsense::playback_device);
+    return playback->get_duration();
+}
+HANDLE_EXCEPTIONS_AND_RETURN(0, device)
+
+void rs2_playback_seek(const rs2_device* device, unsigned long long int time, rs2_error** error) try
+{
+    VALIDATE_NOT_NULL(device);
+    auto playback = VALIDATE_INTERFACE(device->device, librealsense::playback_device);
+    playback->seek_to_time(time);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, device)
+
+unsigned long long int rs2_playback_get_position(const rs2_device* device, rs2_error** error) try
+{
+    VALIDATE_NOT_NULL(device);
+    auto playback = VALIDATE_INTERFACE(device->device, librealsense::playback_device);
+    return playback->get_position();
+}
+HANDLE_EXCEPTIONS_AND_RETURN(0, device)
+
+void rs2_playback_device_resume(const rs2_device* device, rs2_error** error) try
+{
+    VALIDATE_NOT_NULL(device);
+    auto playback = VALIDATE_INTERFACE(device->device, librealsense::playback_device);
+    playback->resume();
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, device)
+
+void rs2_playback_device_pause(const rs2_device* device, rs2_error** error) try
+{
+    VALIDATE_NOT_NULL(device);
+    auto playback = VALIDATE_INTERFACE(device->device, librealsense::playback_device);
+    return playback->pause();
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, device)
+
+void rs2_playback_device_set_real_time(const rs2_device* device, int real_time, rs2_error** error) try
+{
+    VALIDATE_NOT_NULL(device);
+    auto playback = VALIDATE_INTERFACE(device->device, librealsense::playback_device);
+    playback->set_real_time(real_time == 0 ? false : true);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, device)
+
+int rs2_playback_device_is_real_time(const rs2_device* device, rs2_error** error) try
+{
+    VALIDATE_NOT_NULL(device);
+    auto playback = VALIDATE_INTERFACE(device->device, librealsense::playback_device);
+    return playback->is_real_time() ? 1 : 0;
+}
+HANDLE_EXCEPTIONS_AND_RETURN(0, device)
+
 rs2_device* rs2_create_record_device(const rs2_device* device, const char* file, rs2_error** error) try
 {
     VALIDATE_NOT_NULL(device);

@@ -1118,6 +1118,65 @@ rs2_device* rs2_context_add_device(rs2_context* ctx, const char* file, rs2_error
  */
 void rs2_context_remove_device(rs2_context* ctx, const char* file, rs2_error** error);
 
+/**
+ * Gets the total duration of the file in units of nanoseconds
+ * \param[in] device     A playback device
+ * \param[out] error     If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ * \return Total duration of the file in units of nanoseconds
+ */
+unsigned long long int rs2_playback_get_duration(const rs2_device* device, rs2_error** error);
+
+/**
+ * Set the playback to a specified time point of the played data
+ * \param[in] device     A playback device.
+ * \param[in] time       The time point to which playback should seek, expressed in units of nanoseconds (zero value = start)
+ * \param[out] error     If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ */
+void rs2_playback_seek(const rs2_device* device, unsigned long long int time, rs2_error** error);
+
+/**
+ * Gets the current position of the playback in the file in terms of time. Units are expressed in nanoseconds
+ * \param[in] device     A playback device
+ * \param[out] error     If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ */
+unsigned long long int rs2_playback_get_position(const rs2_device* device, rs2_error** error);
+
+/**
+ * Pauses the playback
+ * Calling pause() in "Paused" status does nothing
+ * If pause() is called while "Playing" or "Stopped", the playback will not play until resume() is called
+ * \param[in] device A playback device
+ * \param[out] error     If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ */
+void rs2_playback_device_resume(const rs2_device* device, rs2_error** error);
+
+/**
+ * Un-pauses the playback
+ * Calling resume(), when in "Playing" or "Stopped" status, does nothing
+ * \param[in] device A playback device
+ * \param[out] error     If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ */
+void rs2_playback_device_pause(const rs2_device* device, rs2_error** error);
+
+/**
+ * Set the playback to work in real time or non real time
+ *
+ * In real time mode, playback will play the same way the file was recorded.
+ * In real time mode if the application takes too long to handle the callback, frames may be dropped.
+ * In non real time mode, playback will wait for each callback to finish handling the data before
+ * reading the next frame. In this mode no frames will be dropped, and the application controls the
+ * frame rate of the playback (according to the callback handler duration).
+ * \param real_time  Indicates if real time is requested, 0 means false, otherwise true
+ * \return True on successfully setting the requested mode
+ */
+void rs2_playback_device_set_real_time(const rs2_device* device, int real_time, rs2_error** error);
+
+/**
+ * Indicates if playback is in real time mode or non real time
+ * \return True iff playback is in real time mode. 0 means false, otherwise true
+ */
+int rs2_playback_device_is_real_time(const rs2_device* device, rs2_error** error);
+
 rs2_frame* rs2_allocate_synthetic_video_frame(rs2_source* source, rs2_stream new_stream, rs2_frame* original,
     rs2_format new_format, int new_bpp, int new_width, int new_height, int new_stride, rs2_error** error);
 

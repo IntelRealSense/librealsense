@@ -876,7 +876,7 @@ int main(int, char**) try
                 {
                     static int seek_progress = 0;
                     static float progress = 0;
-                    //TOOD: p.get_position();
+                    p.get_position();
                     seek_progress = static_cast<int>(std::max(0.0f, std::min(progress, 1.0f)) * 100);
 
                     int prev_seek_progress = seek_progress;
@@ -885,10 +885,9 @@ int main(int, char**) try
                     if (prev_seek_progress != seek_progress)
                     {
                         //Seek was dragged
-                        //TODO: auto duration = p.get_duration();
-                        //TODO: auto single_percent = duration.count / 100;
-                        //TODO: p.seek(std::chrono::nanoseconds(seek_progress * single_percent));
-                        progress = static_cast<float>(seek_progress / 100.0f);
+                        std::chrono::nanoseconds total_duration(p.get_duration());
+                        auto single_percent = total_duration.count() / 100;
+                        p.seek(std::chrono::nanoseconds(seek_progress * single_percent));
                     }
                 }
 

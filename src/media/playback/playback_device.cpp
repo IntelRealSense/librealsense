@@ -67,6 +67,7 @@ playback_device::playback_device(std::shared_ptr<device_serializer::reader> seri
     m_is_paused(false), 
     m_sample_rate(1), 
     m_real_time(false),
+    m_prev_timestamp(0),
     m_read_thread([]() {return std::make_shared<dispatcher>(std::numeric_limits<unsigned int>::max()); })
 {
     if (serializer == nullptr)
@@ -240,44 +241,90 @@ std::shared_ptr<matcher> playback_device::create_matcher(rs2_stream stream) cons
     return nullptr; //TOOD: WTD?
 }
 
-bool playback_device::set_frame_rate(double rate)
+void playback_device::set_frame_rate(double rate)
 {
-    throw not_implemented_exception(__FUNCTION__);
-
+    if(rate < 0)
+    {
+        throw invalid_value_exception(to_string() << "Failed to set frame rate to " << std::to_string(rate) << ", value is less than 0");
+    }
+    m_sample_rate = rate;
 }
-bool playback_device::seek_to_time(uint64_t time) 
+
+void playback_device::seek_to_time(uint64_t time)
 {
     m_reader->seek_to_time(std::chrono::nanoseconds(time));
-    return true;//TODO : remove return value
 }
+
 playback_status playback_device::get_current_status() const 
 {
-    throw not_implemented_exception(__FUNCTION__);
+    playback_status current_status = playback_status::stopped;
+    (*m_read_thread)->invoke([this,&current_status](dispatcher::cancellable_timer t)
+    {
+        return m_is_started
+               ? (m_is_paused
+                  ? playback_status::paused
+                  : playback_status::playing)
+               : playback_status::stopped;
+    });
+    (*m_read_thread)->flush();
+    return current_status;
 }
-bool playback_device::get_duration(uint64_t& duration_microseconds) const 
-{
-    throw not_implemented_exception(__FUNCTION__);
 
-}
-bool playback_device::pause() 
+uint64_t playback_device::get_duration() const
 {
-    throw not_implemented_exception(__FUNCTION__);
-
+    auto nanos = m_reader->query_duration();
+    auto unanos = std::chrono::duration_cast<file_format::file_types::nanoseconds>(nanos);
+    return unanos.count();
 }
-bool playback_device::resume() 
+void playback_device::pause()
 {
-    throw not_implemented_exception(__FUNCTION__);
+    /*
+        Playing ---->  pause()   set m_is_paused  to True  ----> Paused
+        Paused  ---->  pause()   set m_is_paused  to True  ----> Do nothing
+        Stopped ---->  pause()   set m_is_paused  to True  ----> Do nothing
+    */
+    (*m_read_thread)->invoke([this](dispatcher::cancellable_timer t)
+    {
+       if (m_is_paused)
+           return;
 
+       m_is_paused = true;
+
+       if(m_is_started)
+       {
+           //Wait for any remaining sensor callbacks to return
+           for (auto sensor : m_sensors)
+           {
+               sensor.second->flush_pending_frames();
+           }
+           //TODO: m_playback_status_signal(playback_status::paused);
+       }
+    });
+    (*m_read_thread)->flush();
 }
-bool playback_device::set_real_time(bool real_time) 
+
+void playback_device::resume()
 {
-    throw not_implemented_exception(__FUNCTION__);
+    (*m_read_thread)->invoke([this](dispatcher::cancellable_timer t)
+    {
+        if (m_is_paused == false)
+           return;
 
+        m_is_paused = false;
+
+        try_looping();
+    });
+    (*m_read_thread)->flush();
 }
+
+void playback_device::set_real_time(bool real_time)
+{
+    m_real_time = real_time;
+}
+
 bool playback_device::is_real_time() const 
 {
-    throw not_implemented_exception(__FUNCTION__);
-
+    return m_real_time;
 }
 
 
@@ -384,6 +431,7 @@ void playback_device::try_looping()
         //Read next data from the serializer, on success: 'obj' will be a valid object that came from
         // sensor number 'sensor_index' with a timestamp equal to 'timestamp'
         uint32_t sensor_index;
+        //TODO: change timestamp type to file_type::nanoseconds
         std::chrono::nanoseconds timestamp = std::chrono::nanoseconds::max();
         frame_holder frame;
         bool is_valid_read = true;
@@ -423,6 +471,7 @@ void playback_device::try_looping()
             assert(m_is_started == false);
             return; //Should stop the loop
         }
+        m_prev_timestamp = timestamp;
         auto timestamp_micros = std::chrono::duration_cast<std::chrono::microseconds>(timestamp);
         //Objects with timestamp of 0 are non streams.
         if (m_base_timestamp == 0)
@@ -466,4 +515,8 @@ void playback_device::set_filter(int32_t id, const std::vector<stream_profile>& 
 const std::string& playback_device::get_file_name() const
 {
     return m_reader->get_file_name();
+}
+uint64_t playback_device::get_position()
+{
+    return m_prev_timestamp.count();
 }

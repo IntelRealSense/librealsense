@@ -1472,19 +1472,53 @@ namespace rs2
         void pause()
         {
             rs2_error* e = nullptr;
-            //rs2_playback_device_pause(_dev.get(), &e);
+            rs2_playback_device_pause(_dev.get(), &e);
             error::handle(e);
         }
         void resume()
         {
             rs2_error* e = nullptr;
-            //rs2_playback_device_resume(_dev.get(), &e);
+            rs2_playback_device_resume(_dev.get(), &e);
             error::handle(e);
         }
 
-        std::string file_name()
+        std::string file_name() const
         {
-            return m_file;
+            return m_file; //retrieved in construction
+        }
+        void get_position() const
+        {
+            rs2_error* e = nullptr;
+            rs2_playback_get_position(_dev.get(), &e);
+            error::handle(e);
+        }
+        std::chrono::nanoseconds get_duration() const
+        {
+            rs2_error* e = nullptr;
+            std::chrono::nanoseconds duration(rs2_playback_get_duration(_dev.get(), &e));
+            error::handle(e);
+            return duration;
+        }
+        void seek(std::chrono::nanoseconds time)
+        {
+            rs2_error* e = nullptr;
+            rs2_playback_seek(_dev.get(), time.count(), &e);
+            error::handle(e);
+        }
+
+        bool is_real_time() const
+        {
+            rs2_error* e = nullptr;
+            bool real_time = rs2_playback_device_is_real_time(_dev.get(), &e) == 0 ? false : true;
+            error::handle(e);
+            return real_time;
+        }
+
+        void set_real_time(bool real_time) const
+        {
+            rs2_error* e = nullptr;
+            rs2_playback_device_set_real_time(_dev.get(), (real_time ? 1 : 0), &e);
+            error::handle(e);
         }
     protected:
         friend context;

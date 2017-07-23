@@ -172,3 +172,10 @@ void playback_sensor::handle_frame(frame_holder frame, bool is_real_time)
         });
     }
 }
+void playback_sensor::flush_pending_frames()
+{
+    for (auto&& dispatcher : m_dispatchers)
+    {
+        dispatcher.second->flush();
+    }
+}
