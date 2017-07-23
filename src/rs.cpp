@@ -1110,7 +1110,7 @@ void rs2_playback_seek(const rs2_device* device, unsigned long long int time, rs
 {
     VALIDATE_NOT_NULL(device);
     auto playback = VALIDATE_INTERFACE(device->device, librealsense::playback_device);
-    playback->seek_to_time(time);
+    playback->seek_to_time(std::chrono::nanoseconds(time));
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device)
 
@@ -1153,6 +1153,16 @@ int rs2_playback_device_is_real_time(const rs2_device* device, rs2_error** error
     return playback->is_real_time() ? 1 : 0;
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, device)
+
+void rs2_playback_device_set_status_changed_callback(const rs2_device* device, rs2_playback_status_changed_callback* callback, rs2_error** error) try
+{
+    VALIDATE_NOT_NULL(device);
+    VALIDATE_NOT_NULL(callback);
+    auto playback = VALIDATE_INTERFACE(device->device, librealsense::playback_device);
+    auto cb = std::shared_ptr<rs2_playback_status_changed_callback>(callback, [](rs2_playback_status_changed_callback* p) { if(p) p->release();});
+    playback->playback_status_changed += [cb](rs2_playback_status status){ cb->on_playback_status_changed(status);};
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, device, callback)
 
 rs2_device* rs2_create_record_device(const rs2_device* device, const char* file, rs2_error** error) try
 {

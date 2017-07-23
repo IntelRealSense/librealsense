@@ -867,6 +867,7 @@ int main(int, char**) try
             model.draw_device_details(dev);
             if(dev.is<playback>())
             {
+
                 auto p = dev.as<playback>();
                 if (ImGui::SmallButton("Remove Device"))
                 {
@@ -887,13 +888,45 @@ int main(int, char**) try
                     ImGui::SeekSlider("Seek Bar", &seek_pos);
                     if (prev_seek_progress != seek_pos)
                     {
-                        seek_pos = prev_seek_progress;
                         //Seek was dragged
-                        //auto single_percent = total_duration / 100;
-                        //p.seek(std::chrono::nanoseconds(seek_pos * single_percent));
+                        auto duration_db =
+                            std::chrono::duration_cast<std::chrono::duration<double,
+                                                                             std::nano>>(p.get_duration());
+                        auto single_percent = duration_db.count() / 100;
+                        auto seek_time = std::chrono::duration<double, std::nano>(seek_pos * single_percent);
+                        p.seek(std::chrono::duration_cast<std::chrono::nanoseconds>(seek_time));
                     }
+//                    if (ImGui::CollapsingHeader("Playback Options"))
+//                    {
+//                        static bool is_paused = false;
+//                        if (!is_paused && ImGui::Button("Pause"))
+//                        {
+//                            p.pause();
+//                            for (auto&& sub : model.subdevices)
+//                            {
+//                                if (sub->streaming) sub->pause();
+//                            }
+//                            is_paused = !is_paused;
+//                        }
+//                        if (ImGui::IsItemHovered())
+//                        {
+//                            ImGui::SetTooltip("Pause playback");
+//                        }
+//                        if (is_paused && ImGui::Button("Resume"))
+//                        {
+//                            p.resume();
+//                            for (auto&& sub : model.subdevices)
+//                            {
+//                                if (sub->streaming) sub->resume();
+//                            }
+//                            is_paused = !is_paused;
+//                        }
+//                        if (ImGui::IsItemHovered())
+//                        {
+//                            ImGui::SetTooltip("Continue playback");
+//                        }
+//                    }
                 }
-
             }
         }
 

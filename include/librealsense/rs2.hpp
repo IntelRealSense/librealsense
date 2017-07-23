@@ -1455,6 +1455,21 @@ namespace rs2
         std::shared_ptr<rs2_device_list> _list;
     };
 
+    template<class T>
+    class status_changed_callback : public rs2_playback_status_changed_callback
+    {
+        T on_status_changed_function;
+    public:
+        explicit status_changed_callback(T on_status_changed) : on_status_changed_function(on_status_changed) {}
+
+        void on_playback_status_changed(rs2_playback_status status) override
+        {
+            on_status_changed_function(status);
+        }
+
+        void release() override { delete this; }
+    };
+
     class playback : public device
     {
     public:
@@ -1519,6 +1534,13 @@ namespace rs2
         {
             rs2_error* e = nullptr;
             rs2_playback_device_set_real_time(_dev.get(), (real_time ? 1 : 0), &e);
+            error::handle(e);
+        }
+        template <typename T>
+        void set_status_changed_callback(T callback)
+        {
+            rs2_error * e = nullptr;
+            rs2_playback_device_set_status_changed_callback(_dev.get(), new status_changed_callback<T>(std::move(callback)), &e);
             error::handle(e);
         }
     protected:

@@ -33,16 +33,16 @@ namespace librealsense
         std::shared_ptr<matcher> create_matcher(rs2_stream stream) const override;
 
         void set_frame_rate(double rate);
-        void seek_to_time(uint64_t time);
-        playback_status get_current_status() const;
+        void seek_to_time(std::chrono::nanoseconds time);
+        rs2_playback_status get_current_status() const;
         uint64_t get_duration() const;
         void pause();
         void resume();
         void set_real_time(bool real_time);
         bool is_real_time() const;
         const std::string& get_file_name() const;
-
-        uint64_t get_position();
+        uint64_t get_position() const;
+        signal<playback_device, rs2_playback_status> playback_status_changed;
     private:
         void update_time_base(uint64_t base_timestamp);
         int64_t calc_sleep_time(const uint64_t& timestamp) const;
@@ -62,7 +62,6 @@ namespace librealsense
         uint64_t m_base_timestamp;
         std::map<uint32_t, std::shared_ptr<playback_sensor>> m_sensors;
         std::map<uint32_t, std::shared_ptr<playback_sensor>> m_active_sensors;
-        //TODO: Use rs_notification for signaling playback status changes?
         std::atomic<double> m_sample_rate;
         std::atomic_bool m_real_time;
         file_format::file_types::nanoseconds m_prev_timestamp;

@@ -13,13 +13,6 @@
 
 namespace librealsense
 {
-    enum playback_status
-    {
-        playing, /**< One or more sensors were started, playback is reading and raising data */
-        paused,  /**< One or more sensors were started, but playback paused reading and paused raising data*/
-        stopped  /**< All sensors were stopped, or playback has ended (all data was read). This is the initial playback status*/
-    };
-
     class playback_sensor : public sensor_interface,
         public extendable_interface,
         public info_container,    

@@ -250,21 +250,26 @@ void playback_device::set_frame_rate(double rate)
     m_sample_rate = rate;
 }
 
-void playback_device::seek_to_time(uint64_t time)
+void playback_device::seek_to_time(std::chrono::nanoseconds time)
 {
-    m_reader->seek_to_time(std::chrono::nanoseconds(time));
+    (*m_read_thread)->invoke([this, time](dispatcher::cancellable_timer t)
+    {
+        m_reader->seek_to_time(time);
+        m_base_timestamp = 0;
+    });
+    (*m_read_thread)->flush();
 }
 
-playback_status playback_device::get_current_status() const 
+rs2_playback_status playback_device::get_current_status() const
 {
-    playback_status current_status = playback_status::stopped;
+    rs2_playback_status current_status = RS2_PLAYBACK_STATUS_STOPPED;
     (*m_read_thread)->invoke([this,&current_status](dispatcher::cancellable_timer t)
     {
         return m_is_started
                ? (m_is_paused
-                  ? playback_status::paused
-                  : playback_status::playing)
-               : playback_status::stopped;
+                  ? RS2_PLAYBACK_STATUS_PAUSED
+                  : RS2_PLAYBACK_STATUS_PLAYING)
+               : RS2_PLAYBACK_STATUS_STOPPED;
     });
     (*m_read_thread)->flush();
     return current_status;
@@ -297,7 +302,7 @@ void playback_device::pause()
            {
                sensor.second->flush_pending_frames();
            }
-           //TODO: m_playback_status_signal(playback_status::paused);
+           playback_status_changed(RS2_PLAYBACK_STATUS_PAUSED);
        }
     });
     (*m_read_thread)->flush();
@@ -327,12 +332,12 @@ bool playback_device::is_real_time() const
     return m_real_time;
 }
 
-
 void playback_device::update_time_base(uint64_t base_timestamp)
 {
     m_base_sys_time = std::chrono::high_resolution_clock::now();
     m_base_timestamp = base_timestamp;
 }
+
 int64_t playback_device::calc_sleep_time(const uint64_t& timestamp) const
 {
     //The time to sleep returned here equals to the difference between the file recording time
@@ -348,6 +353,7 @@ int64_t playback_device::calc_sleep_time(const uint64_t& timestamp) const
     int64_t sleep_time = (recorded_time - play_time);
     return sleep_time;
 }
+
 void playback_device::start()
 {
     //Start reading from the file
@@ -375,30 +381,22 @@ void playback_device::start()
     //    return true;
     //});
 }
+
 void playback_device::stop()
 {
-    //Stop should not reset the reader
-    /*
-    Playing ---->  stop()    set m_is_started to False ----> Stopped
-    Paused  ---->  stop()    set m_is_started to False ----> Stopped
-    Stopped ---->  stop()    set m_is_started to False ----> Do nothing
-    */
-    //(*m_read_thread)->invoke([this](dispatcher::cancellable_timer c)
-    //{
-        if (m_is_started == false)
-            return; //nothing to do
+    if (m_is_started == false)
+        return; //nothing to do
 
 
-        m_is_started = false;
-        for (auto sensor : m_sensors)
-        {
-           //TODO: sensor.second->flush_frame_callbacks();
-        }
-        m_reader->reset();
-        //TODO: m_playback_status_signal(playback_status::stopped);
-    //});
-    //(*m_read_thread)->flush();
+    m_is_started = false;
+    for (auto sensor : m_sensors)
+    {
+        //TODO: sensor.second->flush_frame_callbacks();
+    }
+    m_reader->reset();
+    playback_status_changed(RS2_PLAYBACK_STATUS_STOPPED);
 }
+
 template <typename T>
 void playback_device::do_loop(T action)
 {
@@ -419,11 +417,11 @@ void playback_device::try_looping()
         //Notify subscribers that playback status changed
         if (m_is_paused)
         {
-            //TODO: m_playback_status_signal(playback_status::paused);
+            playback_status_changed(RS2_PLAYBACK_STATUS_PAUSED);
         }
         else
         {
-            //TODO: m_playback_status_signal(playback_status::playing);
+            playback_status_changed(RS2_PLAYBACK_STATUS_PLAYING);
         }
     }
     auto read_action = [this]() 
@@ -505,6 +503,7 @@ void playback_device::try_looping()
     };
     do_loop(read_action);
 }
+
 void playback_device::set_filter(int32_t id, const std::vector<stream_profile>& requested_profiles)
 {
     (*m_read_thread)->invoke([this, id, requested_profiles](dispatcher::cancellable_timer c)
@@ -512,11 +511,13 @@ void playback_device::set_filter(int32_t id, const std::vector<stream_profile>& 
         m_reader->set_filter(id, requested_profiles);
     });
 }
+
 const std::string& playback_device::get_file_name() const
 {
     return m_reader->get_file_name();
 }
-uint64_t playback_device::get_position()
+
+uint64_t playback_device::get_position() const
 {
     return m_prev_timestamp.count();
 }
