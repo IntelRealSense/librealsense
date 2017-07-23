@@ -39,6 +39,7 @@ namespace librealsense
         bool resume();
         bool set_real_time(bool real_time);
         bool is_real_time() const;
+        const std::string& get_file_name() const;
         
     private:
         void update_time_base(uint64_t base_timestamp);
@@ -63,6 +64,8 @@ namespace librealsense
         std::atomic<double> m_sample_rate;
         std::atomic_bool m_real_time;
     };
+
+    MAP_EXTENSION(RS2_EXTENSION_PLAYBACK, playback_device);
 }
 
 

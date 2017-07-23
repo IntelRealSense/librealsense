@@ -212,20 +212,22 @@ typedef enum rs2_timestamp_domain
 
 typedef enum rs2_extension
 {
-    RS2_EXTENSION_TYPE_UNKNOWN,
-    RS2_EXTENSION_TYPE_DEBUG,
-    RS2_EXTENSION_TYPE_INFO,
-    RS2_EXTENSION_TYPE_MOTION,
-    RS2_EXTENSION_TYPE_OPTIONS,
-    RS2_EXTENSION_TYPE_VIDEO,
-    RS2_EXTENSION_TYPE_ROI,
-    RS2_EXTENSION_TYPE_DEPTH_SENSOR,
-    RS2_EXTENSION_TYPE_VIDEO_FRAME,
-    RS2_EXTENSION_TYPE_MOTION_FRAME,
-    RS2_EXTENSION_TYPE_COMPOSITE_FRAME,
-    RS2_EXTENSION_TYPE_POINTS,
-    RS2_EXTENSION_TYPE_ADVANCED_MODE,
-    RS2_EXTENSION_TYPE_COUNT
+    RS2_EXTENSION_UNKNOWN,
+    RS2_EXTENSION_DEBUG,
+    RS2_EXTENSION_INFO,
+    RS2_EXTENSION_MOTION,
+    RS2_EXTENSION_OPTIONS,
+    RS2_EXTENSION_VIDEO,
+    RS2_EXTENSION_ROI,
+    RS2_EXTENSION_DEPTH_SENSOR,
+    RS2_EXTENSION_VIDEO_FRAME,
+    RS2_EXTENSION_MOTION_FRAME,
+    RS2_EXTENSION_COMPOSITE_FRAME,
+    RS2_EXTENSION_POINTS,
+    RS2_EXTENSION_ADVANCED_MODE,
+    RS2_EXTENSION_RECORD,
+    RS2_EXTENSION_PLAYBACK,
+    RS2_EXTENSION_COUNT
 } rs2_extension;
 
 /** \brief Video stream intrinsics */
@@ -1083,7 +1085,6 @@ void rs2_record_device_pause(const rs2_device* device, rs2_error** error);
 */
 void rs2_record_device_resume(const rs2_device* device, rs2_error** error);
 
-
 /**
 * Creates a playback device to play the content of the given file
 * \param[in]  file      Path to the file to play
@@ -1091,6 +1092,31 @@ void rs2_record_device_resume(const rs2_device* device, rs2_error** error);
 * \return A pointer to a device that plays data from the file, or null in case of failure
 */
 rs2_device* rs2_create_playback_device(const char* file, rs2_error** error);
+
+/**
+ * Gets the path of the file used by the playback device
+ * \param[in] device A playback device
+ * \param[out] error     If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ * \return Path to the file used by the playback device
+ */
+const char* rs2_playback_device_get_file_path(const rs2_device* device, rs2_error** error);
+
+/**
+ * Create a new device and add it to the context
+ * \param ctx   The context to which the new device will be added
+ * \param file  The file from which the device should be created
+ * \param[out] error     If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ * @return  A pointer to a device that plays data from the file, or null in case of failure
+ */
+rs2_device* rs2_context_add_device(rs2_context* ctx, const char* file, rs2_error** error);
+
+/**
+ * Removes a playback device from the context, if exists
+ * \param[in]  ctx       The context from which the device should be removed
+ * \param[in]  file      The file name that was used to add the device
+ * \param[out] error     If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ */
+void rs2_context_remove_device(rs2_context* ctx, const char* file, rs2_error** error);
 
 rs2_frame* rs2_allocate_synthetic_video_frame(rs2_source* source, rs2_stream new_stream, rs2_frame* original,
     rs2_format new_format, int new_bpp, int new_width, int new_height, int new_stride, rs2_error** error);

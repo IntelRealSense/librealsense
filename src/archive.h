@@ -135,7 +135,7 @@ namespace librealsense
         int2* get_pixel_coordinates();
     };
 
-    MAP_EXTENSION(RS2_EXTENSION_TYPE_POINTS, librealsense::points);
+    MAP_EXTENSION(RS2_EXTENSION_POINTS, librealsense::points);
 
     class composite_frame : public frame
     {
@@ -214,7 +214,7 @@ namespace librealsense
         }
     };
     
-    MAP_EXTENSION(RS2_EXTENSION_TYPE_COMPOSITE_FRAME, librealsense::composite_frame);
+    MAP_EXTENSION(RS2_EXTENSION_COMPOSITE_FRAME, librealsense::composite_frame);
 
     class video_frame : public frame
     {
@@ -240,7 +240,7 @@ namespace librealsense
         int _width, _height, _bpp, _stride;
     };
     
-    MAP_EXTENSION(RS2_EXTENSION_TYPE_VIDEO_FRAME, librealsense::video_frame);
+    MAP_EXTENSION(RS2_EXTENSION_VIDEO_FRAME, librealsense::video_frame);
 
     //TODO: Define Motion Frame
 

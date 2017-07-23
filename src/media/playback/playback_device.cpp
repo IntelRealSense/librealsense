@@ -79,7 +79,7 @@ playback_device::playback_device(std::shared_ptr<device_serializer::reader> seri
     (*m_read_thread)->start();
     //Read header and build device from recorded device snapshot
     m_device_description = m_reader->query_device_description();
-
+    //TODO: add support for file info
     //Create playback sensor that simulate the recorded sensors
     m_sensors = create_playback_sensors(m_device_description); 
 }
@@ -182,11 +182,11 @@ size_t playback_device::get_sensors_count() const
 }
 const std::string& playback_device::get_info(rs2_camera_info info) const 
 {
-    return std::dynamic_pointer_cast<librealsense::info_interface>(m_device_description.get_device_extensions_snapshots().get_snapshots()[RS2_EXTENSION_TYPE_INFO])->get_info(info);
+    return std::dynamic_pointer_cast<librealsense::info_interface>(m_device_description.get_device_extensions_snapshots().get_snapshots()[RS2_EXTENSION_INFO ])->get_info(info);
 }
 bool playback_device::supports_info(rs2_camera_info info) const 
 {
-    auto info_extension = m_device_description.get_device_extensions_snapshots().get_snapshots().at(RS2_EXTENSION_TYPE_INFO);
+    auto info_extension = m_device_description.get_device_extensions_snapshots().get_snapshots().at(RS2_EXTENSION_INFO );
     auto info_api = std::dynamic_pointer_cast<librealsense::info_interface>(info_extension);
     if(info_api == nullptr)
     {
@@ -206,7 +206,7 @@ void playback_device::hardware_reset()
 rs2_extrinsics playback_device::get_extrinsics(size_t from, rs2_stream from_stream, size_t to, rs2_stream to_stream) const 
 {
     throw not_implemented_exception(__FUNCTION__);
-    //std::dynamic_pointer_cast<librealsense::info_interface>(m_device_description.get_device_extensions_snapshots().get_snapshots()[RS2_EXTENSION_TYPE_EXTRINSICS])->supports_info(info);
+    //std::dynamic_pointer_cast<librealsense::info_interface>(m_device_description.get_device_extensions_snapshots().get_snapshots()[RS2_EXTENSION_EXTRINSICS ])->supports_info(info);
 }
 
 bool playback_device::extend_to(rs2_extension extension_type, void** ext) 
@@ -218,16 +218,16 @@ bool playback_device::extend_to(rs2_extension extension_type, void** ext)
     }
     switch (extension_type)
     {
-    case RS2_EXTENSION_TYPE_UNKNOWN: return false;
-    case RS2_EXTENSION_TYPE_DEBUG: return try_extend<debug_interface>(e, ext);
-    case RS2_EXTENSION_TYPE_INFO: return try_extend<info_interface>(e, ext);
-    case RS2_EXTENSION_TYPE_MOTION: return try_extend<motion_sensor_interface>(e, ext);;
-    case RS2_EXTENSION_TYPE_OPTIONS: return try_extend<options_interface>(e, ext);;
-    case RS2_EXTENSION_TYPE_VIDEO: return try_extend<video_sensor_interface>(e, ext);;
-    case RS2_EXTENSION_TYPE_ROI: return try_extend<roi_sensor_interface>(e, ext);;
-    case RS2_EXTENSION_TYPE_VIDEO_FRAME: return try_extend<video_frame>(e, ext);
-    //TODO: add: case RS2_EXTENSION_TYPE_MOTION_FRAME: return try_extend<motion_frame>(e, ext);
-    case RS2_EXTENSION_TYPE_COUNT: 
+    case RS2_EXTENSION_UNKNOWN: return false;
+    case RS2_EXTENSION_DEBUG : return try_extend<debug_interface>(e, ext);
+    case RS2_EXTENSION_INFO : return try_extend<info_interface>(e, ext);
+    case RS2_EXTENSION_MOTION : return try_extend<motion_sensor_interface>(e, ext);;
+    case RS2_EXTENSION_OPTIONS : return try_extend<options_interface>(e, ext);;
+    case RS2_EXTENSION_VIDEO : return try_extend<video_sensor_interface>(e, ext);;
+    case RS2_EXTENSION_ROI : return try_extend<roi_sensor_interface>(e, ext);;
+    case RS2_EXTENSION_VIDEO_FRAME : return try_extend<video_frame>(e, ext);
+    //TODO: add: case RS2_EXTENSION_MOTION_FRAME : return try_extend<motion_frame>(e, ext);
+    case RS2_EXTENSION_COUNT :
         //[[fallthrough]];
     default: 
         LOG_WARNING("Unsupported extension type: " << extension_type);
@@ -390,17 +390,17 @@ void playback_device::try_looping()
         try
         {
             auto retval = m_reader->read(timestamp, sensor_index, frame);
-            if (retval == rs::file_format::status_file_read_failed)
+            if (retval ==file_format::status_file_read_failed)
             {
                 throw io_exception("Failed to read next sample from file");
             }
-            if (retval == rs::file_format::status_file_eof)
+            if (retval ==file_format::status_file_eof)
             {
                 //End frame reader
                 //TODO close frame reader and notify user
                 is_valid_read = false;
             }
-            is_valid_read = (retval == rs::file_format::status_no_error);
+            is_valid_read = (retval ==file_format::status_no_error);
         }
         catch (const std::exception& e)
         {
@@ -462,4 +462,8 @@ void playback_device::set_filter(int32_t id, const std::vector<stream_profile>& 
     {
         m_reader->set_filter(id, requested_profiles);
     });
+}
+const std::string& playback_device::get_file_name() const
+{
+    return m_reader->get_file_name();
 }

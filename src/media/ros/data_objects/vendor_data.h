@@ -3,9 +3,9 @@
 
 #pragma once
 
-#include <recording/ros/data_objects/stream_data.h>
+#include <media/ros/data_objects/stream_data.h>
 #include "realsense_msgs/vendor_data.h"
-namespace rs
+namespace librealsense
 {
     namespace file_format
     {
@@ -17,6 +17,7 @@ namespace rs
                 std::string value;
                 uint32_t device_id;
             };
+
 
             class vendor_data : public stream_data
             {
@@ -33,7 +34,7 @@ namespace rs
                     m_info = info;
                 }
 
-                void write_data(ros_writer& file) override
+                void write_data(data_object_writer& file) override
                 {
                     realsense_msgs::vendor_data msg;
                     msg.value = m_info.value;
