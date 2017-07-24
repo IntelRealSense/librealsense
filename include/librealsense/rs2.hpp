@@ -1525,7 +1525,7 @@ namespace rs2
         bool is_real_time() const
         {
             rs2_error* e = nullptr;
-            bool real_time = rs2_playback_device_is_real_time(_dev.get(), &e) == 0 ? false : true;
+            bool real_time = rs2_playback_device_is_real_time(_dev.get(), &e) != 0;
             error::handle(e);
             return real_time;
         }
@@ -1542,6 +1542,14 @@ namespace rs2
             rs2_error * e = nullptr;
             rs2_playback_device_set_status_changed_callback(_dev.get(), new status_changed_callback<T>(std::move(callback)), &e);
             error::handle(e);
+        }
+
+        rs2_playback_status current_status() const
+        {
+            rs2_error* e = nullptr;
+            rs2_playback_status sts = rs2_playback_device_get_current_status(_dev.get(), &e);
+            error::handle(e);
+            return sts;
         }
     protected:
         friend context;
@@ -1998,5 +2006,6 @@ inline std::ostream & operator << (std::ostream & o, rs2_timestamp_domain domain
 inline std::ostream & operator << (std::ostream & o, rs2_notification_category notificaton) { return o << rs2_notification_category_to_string(notificaton); }
 inline std::ostream & operator << (std::ostream & o, rs2_ivcam_visual_preset preset) { return o << rs2_visual_preset_to_string(preset); }
 inline std::ostream & operator << (std::ostream & o, rs2_exception_type exception_type) { return o << rs2_exception_type_to_string(exception_type); }
+inline std::ostream & operator << (std::ostream & o, rs2_playback_status status) { return o << rs2_playback_status_to_string(status); }
 
 #endif // LIBREALSENSE_RS2_HPP

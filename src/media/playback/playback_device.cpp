@@ -63,9 +63,9 @@
  *******************************************************************************/
 
 playback_device::playback_device(std::shared_ptr<device_serializer::reader> serializer) :
-    m_is_started(false), 
-    m_is_paused(false), 
-    m_sample_rate(1), 
+    m_is_started(false),
+    m_is_paused(false),
+    m_sample_rate(1),
     m_real_time(false),
     m_prev_timestamp(0),
     m_read_thread([]() {return std::make_shared<dispatcher>(std::numeric_limits<unsigned int>::max()); })
@@ -82,7 +82,7 @@ playback_device::playback_device(std::shared_ptr<device_serializer::reader> seri
     m_device_description = m_reader->query_device_description();
     //TODO: add support for file info
     //Create playback sensor that simulate the recorded sensors
-    m_sensors = create_playback_sensors(m_device_description); 
+    m_sensors = create_playback_sensors(m_device_description);
 }
 std::map<uint32_t, std::shared_ptr<playback_sensor>> playback_device::create_playback_sensors(const device_snapshot& device_description)
 {
@@ -92,7 +92,7 @@ std::map<uint32_t, std::shared_ptr<playback_sensor>> playback_device::create_pla
     {
         //Each sensor will know its capabilities from the sensor_snapshot
         auto sensor = std::make_shared<playback_sensor>(*this, sensor_snapshot, sensor_id);
- 
+
         sensor->started += [this](uint32_t id, frame_callback_ptr user_callback) -> void
         {
             (*m_read_thread)->invoke([this, id, user_callback](dispatcher::cancellable_timer c)
@@ -155,7 +155,7 @@ std::map<uint32_t, std::shared_ptr<playback_sensor>> playback_device::create_pla
                 set_filter(id, {});
             });
         };
-        
+
         sensors[sensor_id++] = sensor;
     }
     return sensors;
@@ -173,19 +173,19 @@ playback_device::~playback_device()
     (*m_read_thread)->flush();
     (*m_read_thread)->stop();
 }
-sensor_interface& playback_device::get_sensor(size_t i) 
+sensor_interface& playback_device::get_sensor(size_t i)
 {
     return *m_sensors.at(i);
 }
-size_t playback_device::get_sensors_count() const 
+size_t playback_device::get_sensors_count() const
 {
     return m_sensors.size();
 }
-const std::string& playback_device::get_info(rs2_camera_info info) const 
+const std::string& playback_device::get_info(rs2_camera_info info) const
 {
     return std::dynamic_pointer_cast<librealsense::info_interface>(m_device_description.get_device_extensions_snapshots().get_snapshots()[RS2_EXTENSION_INFO ])->get_info(info);
 }
-bool playback_device::supports_info(rs2_camera_info info) const 
+bool playback_device::supports_info(rs2_camera_info info) const
 {
     auto info_extension = m_device_description.get_device_extensions_snapshots().get_snapshots().at(RS2_EXTENSION_INFO );
     auto info_api = std::dynamic_pointer_cast<librealsense::info_interface>(info_extension);
@@ -200,17 +200,17 @@ const sensor_interface& playback_device::get_sensor(size_t i) const
     auto sensor = m_sensors.at(static_cast<uint32_t>(i));
     return *std::dynamic_pointer_cast<sensor_interface>(sensor);
 }
-void playback_device::hardware_reset() 
+void playback_device::hardware_reset()
 {
     //Nothing to see here folks
 }
-rs2_extrinsics playback_device::get_extrinsics(size_t from, rs2_stream from_stream, size_t to, rs2_stream to_stream) const 
+rs2_extrinsics playback_device::get_extrinsics(size_t from, rs2_stream from_stream, size_t to, rs2_stream to_stream) const
 {
     throw not_implemented_exception(__FUNCTION__);
     //std::dynamic_pointer_cast<librealsense::info_interface>(m_device_description.get_device_extensions_snapshots().get_snapshots()[RS2_EXTENSION_EXTRINSICS ])->supports_info(info);
 }
 
-bool playback_device::extend_to(rs2_extension extension_type, void** ext) 
+bool playback_device::extend_to(rs2_extension extension_type, void** ext)
 {
     std::shared_ptr<extension_snapshot> e = m_device_description.get_device_extensions_snapshots().find(extension_type);
     if (e == nullptr)
@@ -230,7 +230,7 @@ bool playback_device::extend_to(rs2_extension extension_type, void** ext)
     //TODO: add: case RS2_EXTENSION_MOTION_FRAME : return try_extend<motion_frame>(e, ext);
     case RS2_EXTENSION_COUNT :
         //[[fallthrough]];
-    default: 
+    default:
         LOG_WARNING("Unsupported extension type: " << extension_type);
         return false;
     }
@@ -262,17 +262,9 @@ void playback_device::seek_to_time(std::chrono::nanoseconds time)
 
 rs2_playback_status playback_device::get_current_status() const
 {
-    rs2_playback_status current_status = RS2_PLAYBACK_STATUS_STOPPED;
-    (*m_read_thread)->invoke([this,&current_status](dispatcher::cancellable_timer t)
-    {
-        return m_is_started
-               ? (m_is_paused
-                  ? RS2_PLAYBACK_STATUS_PAUSED
-                  : RS2_PLAYBACK_STATUS_PLAYING)
-               : RS2_PLAYBACK_STATUS_STOPPED;
-    });
-    (*m_read_thread)->flush();
-    return current_status;
+    return m_is_started ?
+           m_is_paused ? RS2_PLAYBACK_STATUS_PAUSED : RS2_PLAYBACK_STATUS_PLAYING
+                        : RS2_PLAYBACK_STATUS_STOPPED;
 }
 
 uint64_t playback_device::get_duration() const
@@ -327,7 +319,7 @@ void playback_device::set_real_time(bool real_time)
     m_real_time = real_time;
 }
 
-bool playback_device::is_real_time() const 
+bool playback_device::is_real_time() const
 {
     return m_real_time;
 }
@@ -424,7 +416,7 @@ void playback_device::try_looping()
             playback_status_changed(RS2_PLAYBACK_STATUS_PLAYING);
         }
     }
-    auto read_action = [this]() 
+    auto read_action = [this]()
     {
         //Read next data from the serializer, on success: 'obj' will be a valid object that came from
         // sensor number 'sensor_index' with a timestamp equal to 'timestamp'
@@ -436,17 +428,16 @@ void playback_device::try_looping()
         try
         {
             auto retval = m_reader->read(timestamp, sensor_index, frame);
-            if (retval ==file_format::status_file_read_failed)
+            if (retval == file_format::status_file_read_failed)
             {
-                throw io_exception("Failed to read next sample from file");
+
+                LOG_ERROR("Failed to read next sample from file");
             }
             if (retval ==file_format::status_file_eof)
             {
-                //End frame reader
-                //TODO close frame reader and notify user
-                is_valid_read = false;
+                //is_valid_read = false;
             }
-            is_valid_read = (retval ==file_format::status_no_error);
+            is_valid_read = (retval == file_format::status_no_error);
         }
         catch (const std::exception& e)
         {
@@ -476,7 +467,7 @@ void playback_device::try_looping()
         {
             //As long as m_base_timestamp is 0, update it to object's timestamp.
             //Once a streaming object arrive, the base will change from 0
-            
+
             update_time_base(timestamp_micros.count());
         }
 
@@ -490,7 +481,7 @@ void playback_device::try_looping()
             }
         }
 
-        
+
         if (sensor_index >= m_sensors.size())
         {
             LOG_ERROR("Unexpected sensor index while playing file, sensor index = " << sensor_index);
@@ -499,7 +490,7 @@ void playback_device::try_looping()
         //Pass the object to the
 
         m_sensors[sensor_index]->handle_frame(std::move(frame), m_real_time);
-        
+
     };
     do_loop(read_action);
 }

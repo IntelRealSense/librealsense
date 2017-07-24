@@ -994,6 +994,7 @@ const char * rs2_visual_preset_to_string(rs2_ivcam_visual_preset preset) { retur
 const char * rs2_log_severity_to_string(rs2_log_severity severity) { return librealsense::get_string(severity); }
 const char * rs2_exception_type_to_string(rs2_exception_type type) { return librealsense::get_string(type); }
 const char * rs2_extension_type_to_string(rs2_extension type) { return librealsense::get_string(type); }
+const char * rs2_playback_status_to_string(rs2_playback_status status) { return librealsense::get_string(status); }
 
 void rs2_log_to_console(rs2_log_severity min_severity, rs2_error ** error) try
 {
@@ -1163,6 +1164,15 @@ void rs2_playback_device_set_status_changed_callback(const rs2_device* device, r
     playback->playback_status_changed += [cb](rs2_playback_status status){ cb->on_playback_status_changed(status);};
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device, callback)
+
+
+rs2_playback_status rs2_playback_device_get_current_status(const rs2_device* device, rs2_error** error) try
+{
+    VALIDATE_NOT_NULL(device);
+    auto playback = VALIDATE_INTERFACE(device->device, librealsense::playback_device);
+    return playback->get_current_status();
+}
+HANDLE_EXCEPTIONS_AND_RETURN(RS2_PLAYBACK_STATUS_UNKNOWN, device)
 
 rs2_device* rs2_create_record_device(const rs2_device* device, const char* file, rs2_error** error) try
 {

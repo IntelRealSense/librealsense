@@ -165,13 +165,14 @@ void draw_general_tab(device_model& model, device_list& list,
     // Streaming Menu - Allow user to play different streams
     if ( (list.size()>0) && ImGui::CollapsingHeader("Streaming", nullptr, true, true))
     {
+        auto anything_stream = std::any_of(model.subdevices.begin(), model.subdevices.end(), [](std::shared_ptr<subdevice_model> sub) {
+            return sub->streaming;
+        });
+
         if (model.subdevices.size() > 1)
         {
             try
             {
-                auto anything_stream = std::any_of(model.subdevices.begin(), model.subdevices.end(), [](std::shared_ptr<subdevice_model> sub) {
-                    return sub->streaming;
-                });
                 if (!anything_stream)
                 {
                     label = to_string() << "Start All";
@@ -198,11 +199,6 @@ void draw_general_tab(device_model& model, device_list& list,
                     if (ImGui::IsItemHovered())
                     {
                         ImGui::SetTooltip("Start streaming from all subdevices");
-                    }
-                    ImGui::Checkbox("Enable Recording", &is_recording);
-                    if (is_recording)
-                    {
-                        ImGui::Text("Save to:"); ImGui::InputText("file_path", input_file_name, 256, ImGuiInputTextFlags_CharsNoBlank);
                     }
                 }
                 else
@@ -310,7 +306,15 @@ void draw_general_tab(device_model& model, device_list& list,
                 error_message = e.what();
             }
         }
-
+        if (!anything_stream)
+        {
+            ImGui::Checkbox("Enable Recording", &is_recording);
+            if (is_recording)
+            {
+                ImGui::Text("Save to:");
+                ImGui::InputText("file_path", input_file_name, 256, ImGuiInputTextFlags_CharsNoBlank);
+            }
+        }
         // Draw menu foreach subdevice with its properties
         for (auto&& sub : model.subdevices)
         {
@@ -598,21 +602,22 @@ int main(int, char**) try
     notification_model selected_notification;
     // Initialize list with each device name and serial number
     std::string label{ "" };
-
-    drop_manager.register_to_playback_device_added([&refresh_device_list, &not_model, &ctx](const std::string& path)
-   {
-       try
-       {
-           auto p = ctx.load_device(path);
-       }
-       catch(rs2::error& e)
-       {
-           not_model.add_notification({to_string() << "Failed to create playback from file: " << path << ". Reason: " << e.what(),
-                                       std::chrono::duration_cast<std::chrono::duration<double,std::micro>>(std::chrono::high_resolution_clock::now().time_since_epoch()).count(),
-                                       RS2_LOG_SEVERITY_ERROR,
-                                       RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR});
-       }
-   });
+    bool new_device_loaded = false;
+    drop_manager.register_to_playback_device_added([&refresh_device_list, &not_model, &ctx, &new_device_loaded](const std::string& path)
+    {
+        try
+        {
+            auto p = ctx.load_device(path);
+            new_device_loaded = true;
+        }
+        catch(rs2::error& e)
+        {
+            not_model.add_notification({to_string() << "Failed to create playback from file: " << path << ". Reason: " << e.what(),
+                                        std::chrono::duration_cast<std::chrono::duration<double,std::micro>>(std::chrono::high_resolution_clock::now().time_since_epoch()).count(),
+                                        RS2_LOG_SEVERITY_ERROR,
+                                        RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR});
+        }
+    });
 
     mouse_info mouse;
 
@@ -835,10 +840,18 @@ int main(int, char**) try
         // Device Details Menu - Elaborate details on connected devices
         if (any_device_exists > 0 && ImGui::CollapsingHeader("Device Details", nullptr, true, true))
         {
-            // Draw a combo-box with the list of connected devices        
+            bool switch_to_newly_loaded_device = false;
+            if(new_device_loaded && refresh_device_list == false)
+            {
+                device_index = list.size() - 1;
+                new_device_loaded = false;
+                switch_to_newly_loaded_device = true;
+            }
+
+            // Draw a combo-box with the list of connected devices
             auto new_index = device_index;
-            
-            if (model.draw_combo_box(device_names, new_index))
+
+            if (model.draw_combo_box(device_names, new_index) || switch_to_newly_loaded_device)
             {
                 for (auto&& sub : model.subdevices)
                 {
@@ -852,6 +865,23 @@ int main(int, char**) try
                     device_index = new_index;
                     model = device_model(dev, error_message);
                     active_device_info = get_device_info(dev);
+                    if(dev.is<playback>()) //TODO: remove this and make sub->streaming a function that queries the sensor
+                    {
+                        dev.as<playback>().set_status_changed_callback([&model](rs2_playback_status status)
+                                                                       {
+                                                                           if(status == RS2_PLAYBACK_STATUS_STOPPED)
+                                                                           {
+                                                                               for (auto sub : model.subdevices)
+                                                                               {
+                                                                                   if (sub->streaming)
+                                                                                   {
+                                                                                       sub->stop();
+                                                                                   }
+                                                                               }
+                                                                           }
+                                                                       });
+                    }
+
                 }
                 catch (const error& e)
                 {
@@ -864,70 +894,7 @@ int main(int, char**) try
             }
 
             // Show all device details - name, module name, serial number, FW version and location
-            model.draw_device_details(dev);
-            if(dev.is<playback>())
-            {
-
-                auto p = dev.as<playback>();
-                if (ImGui::SmallButton("Remove Device"))
-                {
-                    ctx.unload_device(p.file_name());
-                }
-                else
-                {
-                    static int64_t total_duration = p.get_duration().count();
-                    static int seek_pos = 0;
-                    static int64_t progress = 0;
-                    progress = p.get_position();
-
-                    double part = (1.0 * progress) / total_duration;
-                    seek_pos = static_cast<int>(std::max(0.0, std::min(part, 1.0)) * 100);
-
-                    int prev_seek_progress = seek_pos;
-
-                    ImGui::SeekSlider("Seek Bar", &seek_pos);
-                    if (prev_seek_progress != seek_pos)
-                    {
-                        //Seek was dragged
-                        auto duration_db =
-                            std::chrono::duration_cast<std::chrono::duration<double,
-                                                                             std::nano>>(p.get_duration());
-                        auto single_percent = duration_db.count() / 100;
-                        auto seek_time = std::chrono::duration<double, std::nano>(seek_pos * single_percent);
-                        p.seek(std::chrono::duration_cast<std::chrono::nanoseconds>(seek_time));
-                    }
-//                    if (ImGui::CollapsingHeader("Playback Options"))
-//                    {
-//                        static bool is_paused = false;
-//                        if (!is_paused && ImGui::Button("Pause"))
-//                        {
-//                            p.pause();
-//                            for (auto&& sub : model.subdevices)
-//                            {
-//                                if (sub->streaming) sub->pause();
-//                            }
-//                            is_paused = !is_paused;
-//                        }
-//                        if (ImGui::IsItemHovered())
-//                        {
-//                            ImGui::SetTooltip("Pause playback");
-//                        }
-//                        if (is_paused && ImGui::Button("Resume"))
-//                        {
-//                            p.resume();
-//                            for (auto&& sub : model.subdevices)
-//                            {
-//                                if (sub->streaming) sub->resume();
-//                            }
-//                            is_paused = !is_paused;
-//                        }
-//                        if (ImGui::IsItemHovered())
-//                        {
-//                            ImGui::SetTooltip("Continue playback");
-//                        }
-//                    }
-                }
-            }
+            model.draw_device_details(dev, ctx);
         }
 
 

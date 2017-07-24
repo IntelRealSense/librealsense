@@ -329,7 +329,7 @@ namespace librealsense
     RS2_ENUM_HELPERS(rs2_exception_type, EXCEPTION_TYPE)
     RS2_ENUM_HELPERS(rs2_log_severity, LOG_SEVERITY)
     RS2_ENUM_HELPERS(rs2_notification_category, NOTIFICATION_CATEGORY)
-
+    RS2_ENUM_HELPERS(rs2_playback_status, PLAYBACK_STATUS)
 
     ////////////////////////////////////////////
     // World's tiniest linear algebra library //

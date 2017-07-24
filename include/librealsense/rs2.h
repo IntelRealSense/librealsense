@@ -232,9 +232,11 @@ typedef enum rs2_extension
 
 typedef enum rs2_playback_status
 {
+    RS2_PLAYBACK_STATUS_UNKNOWN, /**< Unknown state */
     RS2_PLAYBACK_STATUS_PLAYING, /**< One or more sensors were started, playback is reading and raising data */
     RS2_PLAYBACK_STATUS_PAUSED,  /**< One or more sensors were started, but playback paused reading and paused raising data*/
-    RS2_PLAYBACK_STATUS_STOPPED  /**< All sensors were stopped, or playback has ended (all data was read). This is the initial playback status*/
+    RS2_PLAYBACK_STATUS_STOPPED, /**< All sensors were stopped, or playback has ended (all data was read). This is the initial playback status*/
+    RS2_PLAYBACK_STATUS_COUNT
 } rs2_playback_status;
 
 /** \brief Video stream intrinsics */
@@ -1038,6 +1040,7 @@ const char * rs2_log_severity_to_string     (rs2_log_severity info);
 const char * rs2_visual_preset_to_string    (rs2_ivcam_visual_preset preset);
 const char * rs2_exception_type_to_string   (rs2_exception_type type);
 const char * rs2_extension_type_to_string   (rs2_extension type);
+const char * rs2_playback_status_to_string  (rs2_playback_status status);
 
 void rs2_log_to_console(rs2_log_severity min_severity, rs2_error ** error);
 void rs2_log_to_file(rs2_log_severity min_severity, const char * file_path, rs2_error ** error);
@@ -1200,6 +1203,14 @@ int rs2_playback_device_is_real_time(const rs2_device* device, rs2_error** error
  * \param[out] error     If non-null, receives any error that occurs during this call, otherwise, errors are ignored
  */
 void rs2_playback_device_set_status_changed_callback(const rs2_device* device, rs2_playback_status_changed_callback* callback, rs2_error** error);
+
+/**
+ * Returns the current state of the playback device
+ * \param[in] device     A playback device
+ * \param[out] error     If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ * \return Current state of the playback
+ */
+rs2_playback_status rs2_playback_device_get_current_status(const rs2_device* device, rs2_error** error);
 
 rs2_frame* rs2_allocate_synthetic_video_frame(rs2_source* source, rs2_stream new_stream, rs2_frame* original,
     rs2_format new_format, int new_bpp, int new_width, int new_height, int new_stride, rs2_error** error);

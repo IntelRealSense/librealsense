@@ -714,9 +714,16 @@ namespace librealsense
        file_format::file_types::microseconds FIRST_FRAME_TIMESTAMP { 0 };
     public:
         ros_reader(const std::string& file) :
-            m_stream_playback(file)
+            m_stream_playback(file),
+            m_first_frame_time(0),
+            m_total_duration(0)
         {
             reset();
+            auto status =  m_stream_playback.get_file_duration(m_total_duration);
+            if(status != status_no_error)
+            {
+                throw librealsense::io_exception("Failed create reader (Could not extract file duration");
+            }
         }
 
         device_snapshot query_device_description() override
@@ -744,6 +751,10 @@ namespace librealsense
 
         void seek_to_time(std::chrono::nanoseconds time) override
         {
+            if(time < m_first_frame_time || time > m_total_duration)
+            {
+                throw invalid_value_exception(to_string() << "Requested time is out of bound of playback file. (Requested = " << time.count() << ", Duration = " << m_total_duration.count() << ")");
+            }
             auto seek_time = m_first_frame_time + file_format::file_types::nanoseconds(time);
             auto time_interval = file_format::file_types::nanoseconds(seek_time);
 
@@ -762,12 +773,7 @@ namespace librealsense
         }
         std::chrono::nanoseconds query_duration() const override
         {
-            file_types::nanoseconds time;
-            if(m_stream_playback.get_file_duration(time) != file_format::status::status_no_error)
-            {
-                throw invalid_value_exception("Failed to get file duration");
-            }
-            return std::chrono::duration_cast<std::chrono::nanoseconds>(time);
+            return m_total_duration;
         }
         void reset() override
         {
@@ -1600,7 +1606,8 @@ namespace librealsense
             return nullptr;
         }
         device_snapshot m_device_description;
-        file_format::file_types::microseconds m_first_frame_time;
+        file_format::file_types::nanoseconds m_first_frame_time;
+        file_format::file_types::nanoseconds m_total_duration;
         //std::vector <cached_property> m_cached_properties;
         //std::map <uint32_t, std::vector<core::guid>> m_propertiesper_sensor;
         std::mutex m_mutex;

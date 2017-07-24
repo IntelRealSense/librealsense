@@ -170,6 +170,10 @@ void playback_sensor::handle_frame(frame_holder frame, bool is_real_time)
             std::swap((*pf).frame, pframe);
             m_user_callback->on_frame((rs2_frame*)pframe);
         });
+        if(is_real_time)
+        {
+            m_dispatchers.at(stream_type)->flush();
+        }
     }
 }
 void playback_sensor::flush_pending_frames()

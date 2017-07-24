@@ -2,6 +2,7 @@
 // Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 
 #pragma once
+#include <atomic>
 #include <core/roi.h>
 #include <core/extension.h>
 #include <core/serialization.h>
@@ -56,8 +57,8 @@ namespace librealsense
         lazy<std::shared_ptr<dispatcher>> m_read_thread;
         std::shared_ptr<device_serializer::reader> m_reader;
         device_snapshot m_device_description;
-        bool m_is_started;
-        bool m_is_paused;
+        std::atomic_bool m_is_started;
+        std::atomic_bool m_is_paused;
         std::chrono::high_resolution_clock::time_point m_base_sys_time;
         uint64_t m_base_timestamp;
         std::map<uint32_t, std::shared_ptr<playback_sensor>> m_sensors;
