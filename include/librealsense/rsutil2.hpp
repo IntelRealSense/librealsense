@@ -196,16 +196,16 @@ namespace rs2
             }
 
             static bool sort_largest_image(const typename Dev::ProfileType& lhs, const typename Dev::ProfileType &rhs) {
-                if (auto a = lhs.as<video_stream_profile>())
-                    if (auto b = rhs.as<video_stream_profile>())
+                if (auto a = lhs.template as<video_stream_profile>())
+                    if (auto b = rhs.template as<video_stream_profile>())
                         return a.width()*a.height() < b.width()*b.height();
                 return sort_highest_framerate(lhs, rhs);
             }
 
             static bool sort_best_quality(const typename Dev::ProfileType& lhs, const typename Dev::ProfileType& rhs) {
-                if (auto a = lhs.as<video_stream_profile>())
+                if (auto a = lhs.template as<video_stream_profile>())
                 {
-                    if (auto b = rhs.as<video_stream_profile>())
+                    if (auto b = rhs.template as<video_stream_profile>())
                     {
                         return std::make_tuple((a.width() == 640 && a.height() == 480), (lhs.fps() == 30), (lhs.format() == RS2_FORMAT_Z16), (lhs.format() == RS2_FORMAT_Y8), (lhs.format() == RS2_FORMAT_RGB8), int(lhs.format()))
                              < std::make_tuple((b.width() == 640 && b.height() == 480), (rhs.fps() == 30), (rhs.format() == RS2_FORMAT_Z16), (rhs.format() == RS2_FORMAT_Y8), (rhs.format() == RS2_FORMAT_RGB8), int(rhs.format()));

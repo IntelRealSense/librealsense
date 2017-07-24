@@ -322,9 +322,9 @@ namespace rs2
         if (a.fps() != 0 && b.fps() != 0 && (a.fps() != b.fps()))
             return false;
 
-        if (auto vid_a = a.as<video_stream_profile>())
+        if (auto vid_a = a.template as<video_stream_profile>())
         {
-            if (auto vid_b = b.as<video_stream_profile>())
+            if (auto vid_b = b.template as<video_stream_profile>())
             {
                 if (vid_a.width() != 0 && vid_b.width() != 0 && (vid_a.width() != vid_b.width()))
                     return false;
@@ -346,11 +346,11 @@ namespace rs2
                 return true;
         }
 
-        if (auto vid_a = a.as<video_stream_profile>())
+        if (auto vid_a = a.template as<video_stream_profile>())
         {
             for (auto request : others)
             {
-                if (auto vid_b = request.as<video_stream_profile>())
+                if (auto vid_b = request.template as<video_stream_profile>())
                 {
                     if (vid_a.width() != 0 && vid_b.width() != 0 && (vid_a.width() != vid_b.width()))
                         return true;
@@ -367,7 +367,7 @@ namespace rs2
     bool has_wildcards(const Stream_Profile& a)
     {
         if (a.fps() == 0 || a.stream_type() == RS2_STREAM_ANY || a.format() == RS2_FORMAT_ANY) return true;
-        if (auto vid_a = a.as<video_stream_profile>())
+        if (auto vid_a = a.template as<video_stream_profile>())
         {
             if (vid_a.width() == 0 || vid_a.height() == 0) return true;
         }
