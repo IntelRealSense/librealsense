@@ -130,101 +130,169 @@ namespace librealsense
         return f;
     }
 
+    inline std::string generate_json(const preset& in_preset)
+    {
+        json j;
+        j["plusIncrement"]              = in_preset.depth_controls.plusIncrement;
+        j["minusDecrement"]             = in_preset.depth_controls.minusDecrement;
+        j["deepSeaMedianThreshold"]     = in_preset.depth_controls.deepSeaMedianThreshold;
+        j["scoreThreshA"]               = in_preset.depth_controls.scoreThreshA;
+        j["scoreThreshB"]               = in_preset.depth_controls.scoreThreshB;
+        j["textureDifferenceThreshold"] = in_preset.depth_controls.textureDifferenceThreshold;
+        j["textureCountThreshold"]      = in_preset.depth_controls.textureCountThreshold;
+        j["deepSeaSecondPeakThreshold"] = in_preset.depth_controls.deepSeaSecondPeakThreshold;
+        j["deepSeaNeighborThreshold"]   = in_preset.depth_controls.deepSeaNeighborThreshold;
+        j["lrAgreeThreshold"]           = in_preset.depth_controls.lrAgreeThreshold;
+        j["rsmBypass"]                  = in_preset.rsm.rsmBypass;
+        j["diffThresh"]                 = in_preset.rsm.diffThresh;
+        j["sloRauDiffThresh"]           = in_preset.rsm.sloRauDiffThresh;
+        j["removeThresh"]               = in_preset.rsm.removeThresh;
+        j["minWest"]                    = in_preset.rsvc.minWest;
+        j["minEast"]                    = in_preset.rsvc.minEast;
+        j["minWEsum"]                   = in_preset.rsvc.minWEsum;
+        j["minNorth"]                   = in_preset.rsvc.minNorth;
+        j["minSouth"]                   = in_preset.rsvc.minSouth;
+        j["minNSsum"]                   = in_preset.rsvc.minNSsum;
+        j["uShrink"]                    = in_preset.rsvc.uShrink;
+        j["vShrink"]                    = in_preset.rsvc.vShrink;
+        j["disableSADColor"]            = in_preset.color_control.disableSADColor;
+        j["disableRAUColor"]            = in_preset.color_control.disableRAUColor;
+        j["disableSLORightColor"]       = in_preset.color_control.disableSLORightColor;
+        j["disableSLOLeftColor"]        = in_preset.color_control.disableSLOLeftColor;
+        j["disableSADNormalize"]        = in_preset.color_control.disableSADNormalize;
+        j["rauDiffThresholdRed"]        = in_preset.rctc.rauDiffThresholdRed;
+        j["rauDiffThresholdGreen"]      = in_preset.rctc.rauDiffThresholdGreen;
+        j["rauDiffThresholdBlue"]       = in_preset.rctc.rauDiffThresholdBlue;
+        j["diffThresholdRed"]           = in_preset.sctc.diffThresholdRed;
+        j["diffThresholdGreen"]         = in_preset.sctc.diffThresholdGreen;
+        j["diffThresholdBlue"]          = in_preset.sctc.diffThresholdBlue;
+        j["sloK1Penalty"]               = in_preset.spc.sloK1Penalty;
+        j["sloK2Penalty"]               = in_preset.spc.sloK2Penalty;
+        j["sloK1PenaltyMod1"]           = in_preset.spc.sloK1PenaltyMod1;
+        j["sloK2PenaltyMod1"]           = in_preset.spc.sloK2PenaltyMod1;
+        j["sloK1PenaltyMod2"]           = in_preset.spc.sloK1PenaltyMod2;
+        j["sloK2PenaltyMod2"]           = in_preset.spc.sloK2PenaltyMod2;
+        j["lambdaCensus"]               = in_preset.hdad.lambdaCensus;
+        j["lambdaAD"]                   = in_preset.hdad.lambdaAD;
+        j["ignoreSAD"]                  = in_preset.hdad.ignoreSAD;
+        j["colorCorrection1"]           = in_preset.cc.colorCorrection1;
+        j["colorCorrection2"]           = in_preset.cc.colorCorrection2;
+        j["colorCorrection3"]           = in_preset.cc.colorCorrection3;
+        j["colorCorrection4"]           = in_preset.cc.colorCorrection4;
+        j["colorCorrection5"]           = in_preset.cc.colorCorrection5;
+        j["colorCorrection6"]           = in_preset.cc.colorCorrection6;
+        j["colorCorrection7"]           = in_preset.cc.colorCorrection7;
+        j["colorCorrection8"]           = in_preset.cc.colorCorrection8;
+        j["colorCorrection9"]           = in_preset.cc.colorCorrection9;
+        j["colorCorrection10"]          = in_preset.cc.colorCorrection10;
+        j["colorCorrection11"]          = in_preset.cc.colorCorrection11;
+        j["colorCorrection12"]          = in_preset.cc.colorCorrection12;
+        j["meanIntensitySetPoint"]      = in_preset.ae.meanIntensitySetPoint;
+        j["depthUnits"]                 = in_preset.depth_table.depthUnits;
+        j["depthClampMin"]              = in_preset.depth_table.depthClampMin;
+        j["depthClampMax"]              = in_preset.depth_table.depthClampMax;
+        j["disparityMode"]              = in_preset.depth_table.disparityMode;
+        j["disparityShift"]             = in_preset.depth_table.disparityShift;
+        j["uDiameter"]                  = in_preset.census.uDiameter;
+        j["vDiameter"]                  = in_preset.census.vDiameter;
+        return j.dump();
+    }
+
     inline void update_structs(const std::string& content, preset& in_preset)
     {
         preset_param_group p = in_preset;
         json j = json::parse(content);
-        std::map<std::string, std::shared_ptr<json_feild>> feilds = {
-            // Depth Control
-            { "param-leftrightthreshold", make_feild(p.depth_controls, &STDepthControlGroup::lrAgreeThreshold) },
-            { "param-maxscorethreshb", make_feild(p.depth_controls, &STDepthControlGroup::scoreThreshB) },
-            { "param-medianthreshold", make_feild(p.depth_controls, &STDepthControlGroup::deepSeaMedianThreshold) },
-            { "param-minscorethresha", make_feild(p.depth_controls, &STDepthControlGroup::scoreThreshA) },
-            { "param-neighborthresh", make_feild(p.depth_controls, &STDepthControlGroup::deepSeaNeighborThreshold) },
-            { "param-secondpeakdelta", make_feild(p.depth_controls, &STDepthControlGroup::deepSeaSecondPeakThreshold) },
-            { "param-texturecountthresh", make_feild(p.depth_controls, &STDepthControlGroup::textureCountThreshold) },
-            { "param-robbinsmonrodecrement", make_feild(p.depth_controls, &STDepthControlGroup::minusDecrement) },
-            { "param-robbinsmonroincrement", make_feild(p.depth_controls, &STDepthControlGroup::plusIncrement) },
+        std::map<std::string, std::shared_ptr<json_feild>> fields = {
+                // Depth Control
+                { "lrAgreeThreshold",           make_feild(p.depth_controls, &STDepthControlGroup::lrAgreeThreshold) },
+                { "scoreThreshB",               make_feild(p.depth_controls, &STDepthControlGroup::scoreThreshB) },
+                { "deepSeaMedianThreshold",     make_feild(p.depth_controls, &STDepthControlGroup::deepSeaMedianThreshold) },
+                { "scoreThreshA",               make_feild(p.depth_controls, &STDepthControlGroup::scoreThreshA) },
+                { "deepSeaNeighborThreshold",   make_feild(p.depth_controls, &STDepthControlGroup::deepSeaNeighborThreshold) },
+                { "deepSeaSecondPeakThreshold", make_feild(p.depth_controls, &STDepthControlGroup::deepSeaSecondPeakThreshold) },
+                { "textureDifferenceThreshold", make_feild(p.depth_controls, &STDepthControlGroup::textureDifferenceThreshold) },
+                { "textureCountThreshold",      make_feild(p.depth_controls, &STDepthControlGroup::textureCountThreshold) },
+                { "minusDecrement",             make_feild(p.depth_controls, &STDepthControlGroup::minusDecrement) },
+                { "plusIncrement",              make_feild(p.depth_controls, &STDepthControlGroup::plusIncrement) },
 
-            // RSM
-            { "param-usersm", make_invert_feild(p.rsm, &STRsm::rsmBypass) },
-            { "param-rsmdiffthreshold", make_feild(p.rsm, &STRsm::diffThresh) },
-            { "param-rsmrauslodiffthreshold", make_feild(p.rsm, &STRsm::sloRauDiffThresh) },
-            { "param-rsmremovethreshold", make_feild(p.rsm, &STRsm::removeThresh, 168) },
+                // RSM
+                { "rsmBypass",        make_invert_feild(p.rsm, &STRsm::rsmBypass) },
+                { "diffThresh",       make_feild(p.rsm, &STRsm::diffThresh) },
+                { "sloRauDiffThresh", make_feild(p.rsm, &STRsm::sloRauDiffThresh) },
+                { "removeThresh",     make_feild(p.rsm, &STRsm::removeThresh) },
 
-            // RAU Support Vector Control
-            { "param-raumine", make_feild(p.rsvc, &STRauSupportVectorControl::minEast) },
-            { "param-rauminn", make_feild(p.rsvc, &STRauSupportVectorControl::minNorth) },
-            { "param-rauminnssum", make_feild(p.rsvc, &STRauSupportVectorControl::minNSsum) },
-            { "param-raumins", make_feild(p.rsvc, &STRauSupportVectorControl::minSouth) },
-            { "param-rauminw", make_feild(p.rsvc, &STRauSupportVectorControl::minWest) },
-            { "param-rauminwesum", make_feild(p.rsvc, &STRauSupportVectorControl::minWEsum) },
-            { "param-regionshrinku", make_feild(p.rsvc, &STRauSupportVectorControl::uShrink) },
-            { "param-regionshrinkv", make_feild(p.rsvc, &STRauSupportVectorControl::vShrink) },
+                // RAU Support Vector Control
+                { "minEast",  make_feild(p.rsvc, &STRauSupportVectorControl::minEast) },
+                { "minNorth", make_feild(p.rsvc, &STRauSupportVectorControl::minNorth) },
+                { "minNSsum", make_feild(p.rsvc, &STRauSupportVectorControl::minNSsum) },
+                { "minSouth", make_feild(p.rsvc, &STRauSupportVectorControl::minSouth) },
+                { "minWest",  make_feild(p.rsvc, &STRauSupportVectorControl::minWest) },
+                { "minWEsum", make_feild(p.rsvc, &STRauSupportVectorControl::minWEsum) },
+                { "uShrink",  make_feild(p.rsvc, &STRauSupportVectorControl::uShrink) },
+                { "vShrink",  make_feild(p.rsvc, &STRauSupportVectorControl::vShrink) },
 
-            // Color Controls
-            { "param-disableraucolor", make_feild(p.color_control, &STColorControl::disableRAUColor) },
-            { "param-disablesadcolor", make_feild(p.color_control, &STColorControl::disableSADColor) },
-            { "param-disablesadnormalize", make_feild(p.color_control, &STColorControl::disableSADNormalize) },
-            { "param-disablesloleftcolor", make_feild(p.color_control, &STColorControl::disableSLOLeftColor) },
-            { "param-disableslorightcolor", make_feild(p.color_control, &STColorControl::disableSLORightColor) },
+                // Color Controls
+                { "disableRAUColor",      make_feild(p.color_control, &STColorControl::disableRAUColor) },
+                { "disableSADColor",      make_feild(p.color_control, &STColorControl::disableSADColor) },
+                { "disableSADNormalize",  make_feild(p.color_control, &STColorControl::disableSADNormalize) },
+                { "disableSLOLeftColor",  make_feild(p.color_control, &STColorControl::disableSLOLeftColor) },
+                { "disableSLORightColor", make_feild(p.color_control, &STColorControl::disableSLORightColor) },
 
-            // RAU Color Thresholds Control
-            { "param-regioncolorthresholdb", make_feild(p.rctc, &STRauColorThresholdsControl::rauDiffThresholdBlue, 1022) },
-            { "param-regioncolorthresholdg", make_feild(p.rctc, &STRauColorThresholdsControl::rauDiffThresholdGreen, 1022) },
-            { "param-regioncolorthresholdr", make_feild(p.rctc, &STRauColorThresholdsControl::rauDiffThresholdRed, 1022) },
+                // RAU Color Thresholds Control
+                { "rauDiffThresholdBlue",  make_feild(p.rctc, &STRauColorThresholdsControl::rauDiffThresholdBlue) },
+                { "rauDiffThresholdGreen", make_feild(p.rctc, &STRauColorThresholdsControl::rauDiffThresholdGreen) },
+                { "rauDiffThresholdRed",   make_feild(p.rctc, &STRauColorThresholdsControl::rauDiffThresholdRed) },
 
-            // SLO Color Thresholds Control
-            { "param-scanlineedgetaub", make_feild(p.sctc, &STSloColorThresholdsControl::diffThresholdBlue) },
-            { "param-scanlineedgetaug", make_feild(p.sctc, &STSloColorThresholdsControl::diffThresholdGreen) },
-            { "param-scanlineedgetaur", make_feild(p.sctc, &STSloColorThresholdsControl::diffThresholdRed) },
+                // SLO Color Thresholds Control
+                { "diffThresholdBlue",  make_feild(p.sctc, &STSloColorThresholdsControl::diffThresholdBlue) },
+                { "diffThresholdGreen", make_feild(p.sctc, &STSloColorThresholdsControl::diffThresholdGreen) },
+                { "diffThresholdRed",   make_feild(p.sctc, &STSloColorThresholdsControl::diffThresholdRed) },
 
-            // SLO Penalty Control
-            { "param-scanlinep1", make_feild(p.spc, &STSloPenaltyControl::sloK1Penalty) },
-            { "param-scanlinep1onediscon", make_feild(p.spc, &STSloPenaltyControl::sloK1PenaltyMod1) },
-            { "param-scanlinep1twodiscon", make_feild(p.spc, &STSloPenaltyControl::sloK1PenaltyMod2) },
-            { "param-scanlinep2", make_feild(p.spc, &STSloPenaltyControl::sloK2Penalty) },
-            { "param-scanlinep2onediscon", make_feild(p.spc, &STSloPenaltyControl::sloK2PenaltyMod1) },
-            { "param-scanlinep2twodiscon", make_feild(p.spc, &STSloPenaltyControl::sloK2PenaltyMod2) },
+                // SLO Penalty Control
+                { "sloK1Penalty",     make_feild(p.spc, &STSloPenaltyControl::sloK1Penalty) },
+                { "sloK1PenaltyMod1", make_feild(p.spc, &STSloPenaltyControl::sloK1PenaltyMod1) },
+                { "sloK1PenaltyMod2", make_feild(p.spc, &STSloPenaltyControl::sloK1PenaltyMod2) },
+                { "sloK2Penalty",     make_feild(p.spc, &STSloPenaltyControl::sloK2Penalty) },
+                { "sloK2PenaltyMod1", make_feild(p.spc, &STSloPenaltyControl::sloK2PenaltyMod1) },
+                { "sloK2PenaltyMod2", make_feild(p.spc, &STSloPenaltyControl::sloK2PenaltyMod2) },
 
-            // HDAD
-            { "param-lambdaad", make_feild(p.hdad, &STHdad::lambdaAD) },
-            { "param-lambdacensus", make_feild(p.hdad, &STHdad::lambdaCensus) },
-            { "ignoreSAD", make_feild(p.hdad, &STHdad::ignoreSAD) },
+                // HDAD
+                { "lambdaAD",     make_feild(p.hdad, &STHdad::lambdaAD) },
+                { "lambdaCensus", make_feild(p.hdad, &STHdad::lambdaCensus) },
+                { "ignoreSAD",    make_feild(p.hdad, &STHdad::ignoreSAD) },
 
-            // SLO Penalty Control
-            { "param-colorcorrection1", make_feild(p.cc, &STColorCorrection::colorCorrection1) },
-            { "param-colorcorrection2", make_feild(p.cc, &STColorCorrection::colorCorrection2) },
-            { "param-colorcorrection3", make_feild(p.cc, &STColorCorrection::colorCorrection3) },
-            { "param-colorcorrection4", make_feild(p.cc, &STColorCorrection::colorCorrection4) },
-            { "param-colorcorrection5", make_feild(p.cc, &STColorCorrection::colorCorrection5) },
-            { "param-colorcorrection6", make_feild(p.cc, &STColorCorrection::colorCorrection6) },
-            { "param-colorcorrection7", make_feild(p.cc, &STColorCorrection::colorCorrection7) },
-            { "param-colorcorrection8", make_feild(p.cc, &STColorCorrection::colorCorrection8) },
-            { "param-colorcorrection9", make_feild(p.cc, &STColorCorrection::colorCorrection9) },
-            { "param-colorcorrection10", make_feild(p.cc, &STColorCorrection::colorCorrection10) },
-            { "param-colorcorrection11", make_feild(p.cc, &STColorCorrection::colorCorrection11) },
-            { "param-colorcorrection12", make_feild(p.cc, &STColorCorrection::colorCorrection12) },
+                // SLO Penalty Control
+                { "colorCorrection1",  make_feild(p.cc, &STColorCorrection::colorCorrection1) },
+                { "colorCorrection2",  make_feild(p.cc, &STColorCorrection::colorCorrection2) },
+                { "colorCorrection3",  make_feild(p.cc, &STColorCorrection::colorCorrection3) },
+                { "colorCorrection4",  make_feild(p.cc, &STColorCorrection::colorCorrection4) },
+                { "colorCorrection5",  make_feild(p.cc, &STColorCorrection::colorCorrection5) },
+                { "colorCorrection6",  make_feild(p.cc, &STColorCorrection::colorCorrection6) },
+                { "colorCorrection7",  make_feild(p.cc, &STColorCorrection::colorCorrection7) },
+                { "colorCorrection8",  make_feild(p.cc, &STColorCorrection::colorCorrection8) },
+                { "colorCorrection9",  make_feild(p.cc, &STColorCorrection::colorCorrection9) },
+                { "colorCorrection10", make_feild(p.cc, &STColorCorrection::colorCorrection10) },
+                { "colorCorrection11", make_feild(p.cc, &STColorCorrection::colorCorrection11) },
+                { "colorCorrection12", make_feild(p.cc, &STColorCorrection::colorCorrection12) },
 
-            // Depth Table
-            { "param-depthunits", make_feild(p.depth_table, &STDepthTableControl::depthUnits) },
-            { "param-depthclampmin", make_feild(p.depth_table, &STDepthTableControl::depthClampMin) },
-            { "param-depthclampmax", make_feild(p.depth_table, &STDepthTableControl::depthClampMax) },
-            { "param-disparitymode", make_feild(p.depth_table, &STDepthTableControl::disparityMode) },
-            { "param-disparityshift", make_feild(p.depth_table, &STDepthTableControl::disparityShift) },
+                // Depth Table
+                { "depthUnits",     make_feild(p.depth_table, &STDepthTableControl::depthUnits) },
+                { "depthClampMin",  make_feild(p.depth_table, &STDepthTableControl::depthClampMin) },
+                { "depthClampMax",  make_feild(p.depth_table, &STDepthTableControl::depthClampMax) },
+                { "disparityMode",  make_feild(p.depth_table, &STDepthTableControl::disparityMode) },
+                { "disparityShift", make_feild(p.depth_table, &STDepthTableControl::disparityShift) },
 
-            // Auto-Exposure
-            { "param-autoexposure-setpoint", make_feild(p.ae, &STAEControl::meanIntensitySetPoint) },
+                // Auto-Exposure
+                { "meanIntensitySetPoint", make_feild(p.ae, &STAEControl::meanIntensitySetPoint) },
 
-            // Census
-            { "param-censusenablereg-udiameter", make_feild(p.census, &STCensusRadius::uDiameter) },
-            { "param-censusenablereg-vdiameter", make_feild(p.census, &STCensusRadius::vDiameter) },
-        };
+                // Census
+                { "uDiameter", make_feild(p.census, &STCensusRadius::uDiameter) },
+                { "vDiameter", make_feild(p.census, &STCensusRadius::vDiameter) }};
 
         for (auto it = j.begin(); it != j.end(); ++it)
         {
-            auto kvp = feilds.find(it.key());
-            if (kvp != feilds.end())
+            auto kvp = fields.find(it.key());
+            if (kvp != fields.end())
             {
                 try
                 {

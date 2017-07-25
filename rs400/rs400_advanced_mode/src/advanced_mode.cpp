@@ -675,8 +675,7 @@ namespace librealsense
     std::string ds5_advanced_mode_base::generate_json_data() const
     {
         auto p = get_all();
-        // auto json_str = generate_json(p);
-        // return json_str;
+        return generate_json(p);
     }
 
     void ds5_advanced_mode_base::apply_controls_from_json(const std::string& json_content)

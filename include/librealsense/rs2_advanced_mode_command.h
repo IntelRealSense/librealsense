@@ -109,18 +109,18 @@ typedef struct
 
 typedef struct
 {
-    float colorCorrection1;
-    float colorCorrection2;
-    float colorCorrection3;
-    float colorCorrection4;
-    float colorCorrection5;
-    float colorCorrection6;
-    float colorCorrection7;
-    float colorCorrection8;
-    float colorCorrection9;
-    float colorCorrection10;
-    float colorCorrection11;
-    float colorCorrection12;
+    float    colorCorrection1;
+    float    colorCorrection2;
+    float    colorCorrection3;
+    float    colorCorrection4;
+    float    colorCorrection5;
+    float    colorCorrection6;
+    float    colorCorrection7;
+    float    colorCorrection8;
+    float    colorCorrection9;
+    float    colorCorrection10;
+    float    colorCorrection11;
+    float    colorCorrection12;
 }STColorCorrection;
 
 typedef struct
