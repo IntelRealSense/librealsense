@@ -5,63 +5,6 @@
 #include "playback_device.h"
 #include "core/motion.h"
 
-
-/**
-*
-*  Initial state is "Stopped"
-*
-*  Internal members meaning:
-*
-*               m_is_started  |     True     |      False
-*  m_is_paused                |              |
-*  ---------------------------|--------------|---------------
-*      True                   |    Paused    |   Stopped
-*      False                  |    Playing   |   Stopped
-*
-*
-*  State Changes:
-*
-*      Playing ---->  start()   set m_is_started to True  ----> Do nothing
-*      Playing ---->  stop()    set m_is_started to False ----> Stopped
-*      Playing ---->  pause()   set m_is_paused  to True  ----> Paused
-*      Playing ---->  resume()  set m_is_paused  to False ----> Do nothing
-*
-*      Paused  ---->  start()   set m_is_started to True  ----> Do nothing
-*      Paused  ---->  stop()    set m_is_started to False ----> Stopped
-*      Paused  ---->  pause()   set m_is_paused  to True  ----> Do nothing
-*      Paused  ---->  resume()  set m_is_paused  to False ----> Playing
-*
-*      Stopped ---->  start()   set m_is_started to True  ----> Paused/Playing (depends on m_is_paused)
-*      Stopped ---->  stop()    set m_is_started to False ----> Do nothing
-*      Stopped ---->  pause()   set m_is_paused  to True  ----> Do nothing
-*      Stopped ---->  resume()  set m_is_paused  to False ----> Do nothing
-*
-*/
-
-/*******************************************************************************
- *TODO: Revise                  Playback Device                                *
- *                              ***************                                *
- *                                                                             *
- * playback device is an implementation of device interface which reads from a *
- * file to simulate a real device.                                             * 
- *                                                                             *
- * playback device holds playback sensors which simulate real sensors.         *
- *                                                                             *
- * when creating the playback device, it will read all of the device           *
- * description (device_snapshot) from the file to map itself and its sensors   *
- * in matters of functionality and data provided.                              *
- * when creating each sensor, the device will create a sensor from the         *
- * sensor's description inside the device_snapshot.                            *
- * In addition, each sensor will be given a "view" of the file which will allow*
- * the sensor to read only data that is relevant to it (e.g - first sensor will*
- * be given a view of the file that shows only the depth and ir frames stored  *
- * in the file). all views will be synchronized at the device level to provide *
- * chronologic order of the data.                                              *
- * to allow sensor's snapshot to be updated even when they are not streaming,  *
- * another view                                                                *
- * <TODO: complete>                                                            *
- *******************************************************************************/
-
 playback_device::playback_device(std::shared_ptr<device_serializer::reader> serializer) :
     m_is_started(false),
     m_is_paused(false),
@@ -78,9 +21,10 @@ playback_device::playback_device(std::shared_ptr<device_serializer::reader> seri
     //serializer->reset();  
     m_reader = serializer;
     (*m_read_thread)->start();
+
     //Read header and build device from recorded device snapshot
     m_device_description = m_reader->query_device_description();
-    //TODO: add support for file info
+
     //Create playback sensor that simulate the recorded sensors
     m_sensors = create_playback_sensors(m_device_description);
 }
@@ -105,11 +49,6 @@ std::map<uint32_t, std::shared_ptr<playback_sensor>> playback_device::create_pla
                     if (m_active_sensors.size() == 1) //On the first sensor that starts, start the reading thread
                     {
                         start();
-                        //if ( == false)
-                        //{
-                        //    //TODO: notify user and close thread
-                        //    //s->stop();
-                        //}
                     }
                 }
             });
@@ -361,17 +300,6 @@ void playback_device::start()
     m_is_started = true;
     m_base_timestamp = 0;
     try_looping();
-    //return m_read_thread->invoke<bool>([this]()
-    //{
-    //    if (m_is_started)
-    //        return true; //nothing to do
-
-    //    m_is_started = true;
-    //    m_base_timestamp = 0;
-
-    //    try_looping();
-    //    return true;
-    //});
 }
 
 void playback_device::stop()
@@ -394,13 +322,21 @@ void playback_device::do_loop(T action)
 {
     (*m_read_thread)->invoke([this, action](dispatcher::cancellable_timer c)
     {
-        action();
-        if (m_is_started == true && m_is_paused == false)
+        try
         {
-            do_loop(action);
+            action();
+            if (m_is_started == true && m_is_paused == false)
+            {
+                do_loop(action);
+            }
+        }
+        catch(...)
+        {
+            //TODO: Notify user here
         }
     });
 }
+
 void playback_device::try_looping()
 {
     //try_looping is called from start() or resume()

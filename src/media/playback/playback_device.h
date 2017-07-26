@@ -15,6 +15,17 @@
 
 namespace librealsense
 {
+    /*
+     * Internal members meaning:
+     *
+     *               m_is_started  |     True     |      False
+     *  m_is_paused                |              |
+     *  ---------------------------|--------------|---------------
+     *      True                   |    Paused    |   Stopped
+     *      False                  |    Playing   |   Stopped
+     *
+     */
+
     class playback_device : public device_interface,
         public extendable_interface,
         public info_container//TODO: Ziv, does it make sense to inherit from container

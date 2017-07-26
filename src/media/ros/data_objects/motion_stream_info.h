@@ -18,7 +18,7 @@ namespace librealsense
                 uint32_t fps;
                 rs2_motion_device_intrinsic intrinsics;
                 file_types::stream_extrinsics stream_extrinsics;
-                uint32_t device_id;
+                std::string device_id;
             };
 
             class motion_stream_info : public stream_info
@@ -55,9 +55,9 @@ namespace librealsense
                     file.write(get_topic(m_info.device_id), file_types::nanoseconds::min(), msg);
                 }
 
-                static std::string get_topic(uint32_t device_id)
+                static std::string get_topic(const std::string& device_id)
                 {
-                    return "/camera/rs_motion_stream_info/" + std::to_string(device_id);
+                    return "/camera/rs_motion_stream_info/" + device_id;
                 }
 
             private:
