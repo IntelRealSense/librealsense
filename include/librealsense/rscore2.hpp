@@ -41,4 +41,10 @@ struct rs2_devices_changed_callback
     virtual                                 ~rs2_devices_changed_callback() {}
 };
 
+struct rs2_playback_status_changed_callback
+{
+    virtual void                            on_playback_status_changed(rs2_playback_status status) = 0;
+    virtual void                            release() = 0;
+    virtual                                 ~rs2_playback_status_changed_callback() {}
+};
 #endif

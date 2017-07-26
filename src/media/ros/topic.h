@@ -5,7 +5,7 @@
 #include <string>
 #include<stdarg.h>
 
-namespace rs
+namespace librealsense
 {
     namespace file_format
     {

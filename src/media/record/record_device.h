@@ -64,6 +64,8 @@ namespace librealsense
         uint64_t m_cached_data_size;
         std::once_flag m_first_call_flag;
     };
+
+    MAP_EXTENSION(RS2_EXTENSION_RECORD, record_device);
 }
 
 

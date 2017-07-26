@@ -2,9 +2,11 @@
 // Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 
 #pragma once
+#include <atomic>
 #include <core/roi.h>
 #include <core/extension.h>
 #include <core/serialization.h>
+#include <media/ros/file_types.h>
 #include "core/streaming.h"
 #include "archive.h"
 #include "concurrency.h"
@@ -31,15 +33,17 @@ namespace librealsense
         bool extend_to(rs2_extension extension_type, void** ext) override;
         std::shared_ptr<matcher> create_matcher(rs2_stream stream) const override;
 
-        bool set_frame_rate(double rate);
-        bool seek_to_time(uint64_t time);
-        playback_status get_current_status() const;
-        bool get_duration(uint64_t& duration_microseconds) const;
-        bool pause();
-        bool resume();
-        bool set_real_time(bool real_time);
+        void set_frame_rate(double rate);
+        void seek_to_time(std::chrono::nanoseconds time);
+        rs2_playback_status get_current_status() const;
+        uint64_t get_duration() const;
+        void pause();
+        void resume();
+        void set_real_time(bool real_time);
         bool is_real_time() const;
-        
+        const std::string& get_file_name() const;
+        uint64_t get_position() const;
+        signal<playback_device, rs2_playback_status> playback_status_changed;
     private:
         void update_time_base(uint64_t base_timestamp);
         int64_t calc_sleep_time(const uint64_t& timestamp) const;
@@ -53,16 +57,18 @@ namespace librealsense
         lazy<std::shared_ptr<dispatcher>> m_read_thread;
         std::shared_ptr<device_serializer::reader> m_reader;
         device_snapshot m_device_description;
-        bool m_is_started;
-        bool m_is_paused;
+        std::atomic_bool m_is_started;
+        std::atomic_bool m_is_paused;
         std::chrono::high_resolution_clock::time_point m_base_sys_time;
         uint64_t m_base_timestamp;
         std::map<uint32_t, std::shared_ptr<playback_sensor>> m_sensors;
         std::map<uint32_t, std::shared_ptr<playback_sensor>> m_active_sensors;
-        //TODO: Use rs_notification for signaling playback status changes?
         std::atomic<double> m_sample_rate;
         std::atomic_bool m_real_time;
+        file_format::file_types::nanoseconds m_prev_timestamp;
     };
+
+    MAP_EXTENSION(RS2_EXTENSION_PLAYBACK, playback_device);
 }
 
 

@@ -312,7 +312,7 @@ namespace librealsense
                         static_cast<uint8_t>(f.metadata_size),
                         (const uint8_t*)f.metadata);
 
-                    frame_holder frame = _source.alloc_frame(RS2_EXTENSION_TYPE_VIDEO_FRAME, width * height * bpp / 8, additional_data, requires_processing);
+                    frame_holder frame = _source.alloc_frame(RS2_EXTENSION_VIDEO_FRAME, width * height * bpp / 8, additional_data, requires_processing);
                     if (frame.frame)
                     {
                         auto video = (video_frame*)frame.frame;
@@ -722,7 +722,7 @@ namespace librealsense
                       << ",TS," << std::fixed << timestamp
                       << ",TS_Domain," << rs2_timestamp_domain_to_string(additional_data.timestamp_domain));
 
-            auto frame = _source.alloc_frame(RS2_EXTENSION_TYPE_MOTION_FRAME, data_size, additional_data, true);
+            auto frame = _source.alloc_frame(RS2_EXTENSION_MOTION_FRAME, data_size, additional_data, true);
             if (!frame)
             {
                 LOG_INFO("Dropped frame. alloc_frame(...) returned nullptr");

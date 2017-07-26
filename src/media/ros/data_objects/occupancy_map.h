@@ -5,7 +5,7 @@
 
 #include <realsense_msgs/occupancy_map.h>
 #include "stream_data.h"
-namespace rs
+namespace librealsense
 {
     namespace file_format
     {
@@ -40,7 +40,7 @@ namespace rs
                 {
                     return file_types::st_occupancy_map;
                 }
-                void write_data(ros_writer& file) override
+                void write_data(data_object_writer& file) override
                 {
                     realsense_msgs::occupancy_map msg;
                     msg.accuracy = m_info.accuracy;

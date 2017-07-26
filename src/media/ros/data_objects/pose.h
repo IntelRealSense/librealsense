@@ -5,7 +5,7 @@
 
 #include <realsense_msgs/pose.h>
 #include "stream_data.h"
-namespace rs
+namespace librealsense
 {
     namespace file_format
     {
@@ -33,7 +33,7 @@ namespace rs
                 {
                 }
 
-                void write_data(ros_writer& file) override
+                void write_data(data_object_writer& file) override
                 {
                     realsense_msgs::pose msg;
 

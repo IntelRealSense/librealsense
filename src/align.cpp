@@ -62,7 +62,7 @@ namespace librealsense
         if (new_bpp == 0 || (new_width == 0 && new_stride == 0) || new_height == 0)
         {
             // If the user wants to delegate width, height and etc to original frame, it must be a video frame
-            if (!rs2_is_frame_extendable_to((rs2_frame*)original, RS2_EXTENSION_TYPE_VIDEO_FRAME, nullptr))
+            if (!rs2_is_frame_extendable_to((rs2_frame*)original, RS2_EXTENSION_VIDEO_FRAME, nullptr))
             {
                 throw std::runtime_error("If original frame is not video frame, you must specify new bpp, width/stide and height!");
             }
@@ -108,7 +108,7 @@ namespace librealsense
             height = vf->get_height();
         }
 
-        auto res = _actual_source.alloc_frame(RS2_EXTENSION_TYPE_VIDEO_FRAME, stride * height, data, true);
+        auto res = _actual_source.alloc_frame(RS2_EXTENSION_VIDEO_FRAME, stride * height, data, true);
         if (!res) throw wrong_api_call_sequence_exception("Out of frame resources!");
         vf = (video_frame*)res;
         vf->assign(width, height, stride, bpp);
@@ -153,7 +153,7 @@ namespace librealsense
         for (auto&& f : holders)
             req_size += get_embeded_frames_size(f.frame);
 
-        auto res = _actual_source.alloc_frame(RS2_EXTENSION_TYPE_COMPOSITE_FRAME, req_size * sizeof(rs2_frame*), d, true);
+        auto res = _actual_source.alloc_frame(RS2_EXTENSION_COMPOSITE_FRAME, req_size * sizeof(rs2_frame*), d, true);
         if (!res) throw wrong_api_call_sequence_exception("Out of frame resources!");
         auto cf = (composite_frame*)res;
 
@@ -372,7 +372,7 @@ namespace librealsense
     //}
 
     //colorize::colorize(std::shared_ptr<uvc::time_service> ts)
-    //    : processing_block(RS2_EXTENSION_TYPE_VIDEO_FRAME, ts), _cm(&classic), _equalize(true)
+    //    : processing_block(RS2_EXTENSION_VIDEO_FRAME, ts), _cm(&classic), _equalize(true)
     //{
     //    auto on_frame = [this](std::vector<rs2::frame> frames, const rs2::frame_source& source)
     //    {

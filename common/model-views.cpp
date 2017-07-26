@@ -1058,7 +1058,7 @@ namespace rs2
         ImGui::PopItemWidth();
     }
 
-    void device_model::draw_device_details(device& dev)
+    void device_model::draw_device_details(device& dev, context& ctx)
     {
         for (auto i = 0; i < RS2_CAMERA_INFO_COUNT; i++)
         {
@@ -1082,6 +1082,76 @@ namespace rs2
                 {
                     ImGui::SetTooltip("%s", value);
                 }
+            }
+        }
+        if(dev.is<playback>())
+        {
+            auto p = dev.as<playback>();
+            if (ImGui::SmallButton("Remove Device"))
+            {
+                for (auto&& subdevice : subdevices)
+                {
+                    subdevice->stop();
+                }
+                ctx.unload_device(p.file_name());
+            }
+            else
+            {
+                int64_t total_duration = p.get_duration().count();
+                static int seek_pos = 0;
+                static int64_t progress = 0;
+                progress = p.get_position();
+
+                double part = (1.0 * progress) / total_duration;
+                seek_pos = static_cast<int>(std::max(0.0, std::min(part, 1.0)) * 100);
+
+                if(seek_pos != 0 && p.current_status() == RS2_PLAYBACK_STATUS_STOPPED)
+                {
+                    seek_pos = 0;
+                }
+                int prev_seek_progress = seek_pos;
+
+                ImGui::SeekSlider("Seek Bar", &seek_pos);
+                if (prev_seek_progress != seek_pos)
+                {
+                    //Seek was dragged
+                    auto duration_db =
+                        std::chrono::duration_cast<std::chrono::duration<double,
+                                                                         std::nano>>(p.get_duration());
+                    auto single_percent = duration_db.count() / 100;
+                    auto seek_time = std::chrono::duration<double, std::nano>(seek_pos * single_percent);
+                    p.seek(std::chrono::duration_cast<std::chrono::nanoseconds>(seek_time));
+                }
+//                    if (ImGui::CollapsingHeader("Playback Options"))
+//                    {
+//                        static bool is_paused = false;
+//                        if (!is_paused && ImGui::Button("Pause"))
+//                        {
+//                            p.pause();
+//                            for (auto&& sub : model.subdevices)
+//                            {
+//                                if (sub->streaming) sub->pause();
+//                            }
+//                            is_paused = !is_paused;
+//                        }
+//                        if (ImGui::IsItemHovered())
+//                        {
+//                            ImGui::SetTooltip("Pause playback");
+//                        }
+//                        if (is_paused && ImGui::Button("Resume"))
+//                        {
+//                            p.resume();
+//                            for (auto&& sub : model.subdevices)
+//                            {
+//                                if (sub->streaming) sub->resume();
+//                            }
+//                            is_paused = !is_paused;
+//                        }
+//                        if (ImGui::IsItemHovered())
+//                        {
+//                            ImGui::SetTooltip("Continue playback");
+//                        }
+//                    }
             }
         }
     }
@@ -1159,7 +1229,7 @@ namespace rs2
 		assert(live_subdevices.size() == subdevices.size());
 	    for(int i=0; i< live_subdevices.size(); i++)
 	    {
-			//TODO: change this
+			//TODO: Ziv, change this
 			subdevices[i]->selected_res_id = live_subdevices[i]->selected_res_id;
 			subdevices[i]->selected_shared_fps_id = live_subdevices[i]->selected_shared_fps_id;
 			subdevices[i]->selected_format_id = live_subdevices[i]->selected_format_id;

@@ -325,11 +325,11 @@ namespace librealsense
     RS2_ENUM_HELPERS(rs2_frame_metadata, FRAME_METADATA)
     RS2_ENUM_HELPERS(rs2_timestamp_domain, TIMESTAMP_DOMAIN)
     RS2_ENUM_HELPERS(rs2_ivcam_visual_preset, IVCAM_VISUAL_PRESET)
-    RS2_ENUM_HELPERS(rs2_extension, EXTENSION_TYPE)
+    RS2_ENUM_HELPERS(rs2_extension, EXTENSION)
     RS2_ENUM_HELPERS(rs2_exception_type, EXCEPTION_TYPE)
     RS2_ENUM_HELPERS(rs2_log_severity, LOG_SEVERITY)
     RS2_ENUM_HELPERS(rs2_notification_category, NOTIFICATION_CATEGORY)
-
+    RS2_ENUM_HELPERS(rs2_playback_status, PLAYBACK_STATUS)
 
     ////////////////////////////////////////////
     // World's tiniest linear algebra library //
@@ -687,6 +687,7 @@ namespace librealsense
         }
         void release() override { delete this; }
     };
+
     typedef std::unique_ptr<rs2_log_callback, void(*)(rs2_log_callback*)> log_callback_ptr;
     typedef std::shared_ptr<rs2_frame_callback> frame_callback_ptr;
     typedef std::shared_ptr<rs2_frame_processor_callback> frame_processor_callback_ptr;

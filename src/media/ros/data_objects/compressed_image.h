@@ -3,17 +3,17 @@
 
 #pragma once
 #include <map>
-#include <recording/ros/file_types.h>
+#include <media/ros/file_types.h>
 #include <memory>
 #include <vector>
-#include "recording/ros/status.h"
+#include "media/ros/status.h"
 #include "sensor_msgs/CompressedImage.h"
 #include "realsense_msgs/compressed_frame_info.h"
-#include "recording/ros/topic.h"
+#include "media/ros/topic.h"
 #include "stream_data.h"
 
 
-namespace rs
+namespace librealsense
 {
     namespace file_format
     {
@@ -38,7 +38,7 @@ namespace rs
                 std::map<rs2_frame_metadata, std::vector<uint8_t>> metadata;
             };
 
-            class compressed_image : public rs::file_format::ros_data_objects::sample
+            class compressed_image : public file_format::ros_data_objects::sample
             {
             public:
                 compressed_image(const compressed_image_info &info) :
@@ -48,18 +48,18 @@ namespace rs
                 }
 
 
-                rs::file_format::file_types::sample_type get_type() const override
+               file_format::file_types::sample_type get_type() const override
                 {
                     return file_types::st_compressed_image;
                 }
 
 
-                void write_data(ros_writer& file) override
+                void write_data(data_object_writer& file) override
                 {
 
                     sensor_msgs::CompressedImage image;
 
-                    if(rs::file_format::conversions::convert(m_info.compression_type, image.format) == false)
+                    if(file_format::conversions::convert(m_info.compression_type, image.format) == false)
                     {
                         //return status_param_unsupported;
                     }

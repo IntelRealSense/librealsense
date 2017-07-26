@@ -240,10 +240,10 @@ namespace librealsense
     {
         switch(type)
         {
-        case RS2_EXTENSION_TYPE_VIDEO_FRAME:
+        case RS2_EXTENSION_VIDEO_FRAME :
             return std::make_shared<frame_archive<video_frame>>(in_max_frame_queue_size, ts, parsers);
 
-        case RS2_EXTENSION_TYPE_COMPOSITE_FRAME:
+        case RS2_EXTENSION_COMPOSITE_FRAME :
             return std::make_shared<frame_archive<composite_frame>>(in_max_frame_queue_size, ts, parsers);
 
         default:

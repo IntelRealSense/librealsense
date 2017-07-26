@@ -124,7 +124,7 @@ namespace librealsense
 
     const char* get_string(rs2_extension value)
     {
-        #define CASE(X) case RS2_EXTENSION_TYPE_##X: return #X;
+        #define CASE(X) case RS2_EXTENSION_ ##X: return #X;
         switch (value)
         {
             CASE(DEBUG)
@@ -145,6 +145,19 @@ namespace librealsense
         #undef CASE
     }
 
+    const char* get_string(rs2_playback_status value)
+    {
+#define CASE(X) case RS2_PLAYBACK_STATUS_ ##X: return #X;
+        switch (value)
+        {
+            CASE(UNKNOWN)
+            CASE(STOPPED)
+            CASE(PAUSED)
+            CASE(PLAYING)
+            default: assert(!is_valid(value)); return UNKNOWN;
+        }
+#undef CASE
+    }
     const char* get_string(rs2_log_severity value)
     {
         #define CASE(X) case RS2_LOG_SEVERITY_##X: return #X;

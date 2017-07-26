@@ -6,7 +6,7 @@
 #include <realsense_msgs/motion_stream_info.h>
 #include "stream_data.h"
 
-namespace rs
+namespace librealsense
 {
     namespace file_format
     {
@@ -38,7 +38,7 @@ namespace rs
                     assign(info, m_info);
                 }
 
-                void write_data(rs::file_format::ros_writer& file) override
+                void write_data(data_object_writer& file) override
                 {
                     realsense_msgs::motion_stream_info msg;
                     msg.fps = m_info.fps;

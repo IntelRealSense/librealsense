@@ -27,8 +27,26 @@ struct user_data
     mouse_info* mouse = nullptr;
 };
 
-class DragDropManager
+class drag_drop_manager
 {
+    std::function<void(const std::string&)> device_added_handler = [](const std::string& s){ /*Do nothing*/};
+    std::vector<std::string> files;
+public:
+    void add_device(const std::string& path)
+    {
+        if(std::find(files.begin(), files.end(), path) != files.end())
+        {
+            return; //already exists
+        }
+        files.push_back(path);
+        device_added_handler(path);
+    }
+
+    void register_to_playback_device_added(std::function<void(const std::string&)> handle)
+    {
+        device_added_handler = handle;
+    }
+
     static std::string get_file_name(const std::string& path)
     {
         std::string file_name;
@@ -41,44 +59,13 @@ class DragDropManager
         std::reverse(file_name.begin(), file_name.end());
         return file_name;
     }
-    std::function<void(const std::string&)> device_added_handler = [](const std::string& s){ /*Do nothing*/};
-public:
-    std::map<std::string, playback> playback_devices;
-    std::vector<std::string> files;
-    std::vector<std::string> devices_names;
-
-    void add(const std::string& path)
+    void remove_device(const std::string& file)
     {
-        if(playback_devices.find(path) != playback_devices.end())
-        {
-            return; //already exists
-        }
-        try
-        {
-            auto p = playback(path);
-            files.push_back(path);
-            std::string dev_name;
-            if (p.supports(RS2_CAMERA_INFO_NAME))
-                dev_name = to_string() << "Playback file \"" << get_file_name(path) << "\" (" << p.get_info(RS2_CAMERA_INFO_NAME) << ")";
-            else
-                dev_name = to_string() << "Playback file \"" << get_file_name(path) << "\"";
-            
-            devices_names.push_back(dev_name);
-            playback_devices.emplace(std::make_pair(path, std::move(p)));
-            device_added_handler(dev_name);
-        }
-        catch(std::exception& e)
-        {
-            std::cerr << "Failed to create playback from file: " << path << ". Reason: " << e.what() << std::endl;
-        }
-    }
-
-    void OnPlaybackDeviceAdded(std::function<void(const std::string&)> handle)
-    {
-        device_added_handler = handle;
+        auto it = std::find(files.begin(),files.end(), file);
+        files.erase(it);
     }
 };
-DragDropManager drag_drop_manager;
+drag_drop_manager drop_manager;
 
 void handle_dropped_file(GLFWwindow* window, int count, const char** paths)
 {
@@ -87,7 +74,7 @@ void handle_dropped_file(GLFWwindow* window, int count, const char** paths)
 
     for (int i = 0; i < count; i++)
     {
-        drag_drop_manager.add(paths[i]);
+        drop_manager.add_device(paths[i]);
     }
 }
 std::vector<std::string> get_device_info(const device& dev, bool include_location = true)
@@ -122,6 +109,14 @@ std::string get_device_name(device& dev)
     std::string serial = (dev.supports(RS2_CAMERA_INFO_SERIAL_NUMBER)) ? dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER) : "Unknown";
 
     std::stringstream s;
+
+    if(dev.is<playback>())
+    {
+        auto playback_dev = dev.as<playback>();
+
+        s << "Playback device: ";
+        name += (to_string() << " (File: " << drag_drop_manager::get_file_name(playback_dev.file_name()) << ")");
+    }
     s << std::setw(25) << std::left << name << " Sn# " << serial;
     return s.str();        // push name and sn to list
 }
@@ -136,14 +131,13 @@ std::vector<std::string> get_devices_names(const device_list& list)
         {
             auto dev = list[i];
             device_names.push_back(get_device_name(dev));        // push name and sn to list
+
         }
         catch (...)
         {
             device_names.push_back(to_string() << "Unknown Device #" << i);
         }
     }
-    //Adding playback devices
-    device_names.insert(device_names.end(), drag_drop_manager.devices_names.begin(), drag_drop_manager.devices_names.end());
     return device_names;
 }
 
@@ -160,26 +154,26 @@ int find_device_index(const device_list& list, std::vector<std::string> device_i
     return std::distance(devices_info.begin(), it);
 }
 
+const float stream_all_button_width = 300;
 void draw_general_tab(device_model& model, device_list& list,
     device& dev, std::string& label, bool hw_reset_enable,
     std::vector<std::string>& restarting_info,
     bool update_read_only_options, std::string& error_message)
 {
-    const float stream_all_button_width = 300;
     static bool is_recording = false;
     static char input_file_name[256] = "recorded_streams.bag";
 
     // Streaming Menu - Allow user to play different streams
-    if ((drag_drop_manager.playback_devices.empty() == false || list.size()>0) 
-        && ImGui::CollapsingHeader("Streaming", nullptr, true, true))
+    if ( (list.size()>0) && ImGui::CollapsingHeader("Streaming", nullptr, true, true))
     {
+        auto anything_stream = std::any_of(model.subdevices.begin(), model.subdevices.end(), [](std::shared_ptr<subdevice_model> sub) {
+            return sub->streaming;
+        });
+
         if (model.subdevices.size() > 1)
         {
             try
             {
-                auto anything_stream = std::any_of(model.subdevices.begin(), model.subdevices.end(), [](std::shared_ptr<subdevice_model> sub) {
-                    return sub->streaming;
-                });
                 if (!anything_stream)
                 {
                     label = to_string() << "Start All";
@@ -206,11 +200,6 @@ void draw_general_tab(device_model& model, device_list& list,
                     if (ImGui::IsItemHovered())
                     {
                         ImGui::SetTooltip("Start streaming from all subdevices");
-                    }
-                    ImGui::Checkbox("Enable Recording", &is_recording);
-                    if (is_recording)
-                    {
-                        ImGui::Text("Save to:"); ImGui::InputText("file_path", input_file_name, 256, ImGuiInputTextFlags_CharsNoBlank);
                     }
                 }
                 else
@@ -318,7 +307,15 @@ void draw_general_tab(device_model& model, device_list& list,
                 error_message = e.what();
             }
         }
-
+        if (!anything_stream)
+        {
+            ImGui::Checkbox("Enable Recording", &is_recording);
+            if (is_recording)
+            {
+                ImGui::Text("Save to:");
+                ImGui::InputText("file_path", input_file_name, 256, ImGuiInputTextFlags_CharsNoBlank);
+            }
+        }
         // Draw menu foreach subdevice with its properties
         for (auto&& sub : model.subdevices)
         {
@@ -366,7 +363,31 @@ void draw_general_tab(device_model& model, device_list& list,
                         if (ImGui::Button(label.c_str(), { stream_all_button_width / 2 - 5, 0 }))
                         {
                             sub->stop();
-                            //TODO: stop recording if all are stopped
+                            if (is_recording)
+                            {
+                                auto streaming_sensors_count = std::count_if(model.subdevices.begin(),
+                                                                     model.subdevices.end(),
+                                                                     [](std::shared_ptr<subdevice_model> sub)
+                                                                     {
+                                                                         return sub->streaming;
+                                                                     });
+                                if (streaming_sensors_count == 0)
+                                {
+                                    //TODO: move this inside model
+                                    model.stop_recording();
+                                    for (auto&& sub : model.subdevices)
+                                    {
+                                        if (sub->is_selected_combination_supported())
+                                        {
+                                            auto profiles = sub->get_selected_profiles();
+                                            for (auto&& profile : profiles)
+                                            {
+                                                model.streams[profile.stream].dev = sub;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
                         }
                         if (ImGui::IsItemHovered())
                         {
@@ -397,43 +418,6 @@ void draw_general_tab(device_model& model, device_list& list,
                             if (ImGui::IsItemHovered())
                             {
                                 ImGui::SetTooltip("Freeze current frame. The sub-device will continue to work in the background");
-                            }
-                        }
-                    }
-
-                    auto is_advanced_mode = dev.is<advanced_mode>();
-                    if (is_advanced_mode)
-                    {
-                        auto advanced = dev.as<advanced_mode>();
-                        if (advanced.is_enabled())
-                        {
-                            ImGui::Text("JSON File Path:");
-                            char json_path[256] = "./preset.json";
-                            ImGui::InputText("json_path", json_path, 256);
-                            if (ImGui::Button("Load JSON", { stream_all_button_width / 2 - 5, 0 }))
-                            {
-                                std::ifstream json_file(json_path);
-                                if (json_file.is_open())
-                                {
-                                    auto content = std::string(std::istreambuf_iterator<char>(json_file), std::istreambuf_iterator<char>());
-                                    advanced.apply_controls_from_json_content(content);
-                                }
-                                else
-                                    error_message = to_string() << "\"" << json_path << "\"" << " not found!";
-
-                            }
-                            ImGui::SameLine();
-                            if (ImGui::Button("Save JSON", { stream_all_button_width / 2 - 5, 0 }))
-                            {
-                                std::ofstream json_file(json_path);
-                                if (json_file.is_open())
-                                {
-                                    auto content = advanced.generate_json_data();
-                                    json_file << content;
-                                    json_file.close();
-                                }
-                                else
-                                    error_message = to_string() << "\"" << json_path << "\"" << " isn't created!";
                             }
                         }
                     }
@@ -526,10 +510,10 @@ void draw_general_tab(device_model& model, device_list& list,
 
 void draw_advanced_mode_tab(device& dev, advanced_mode_control& amc,
     std::vector<std::string>& restarting_info,
-    bool& get_curr_advanced_controls)
+    bool& get_curr_advanced_controls,
+    std::string& error_message)
 {
     auto is_advanced_mode = dev.is<advanced_mode>();
-
     if (ImGui::CollapsingHeader("Advanced Mode", nullptr, true, true))
     {
         try
@@ -555,6 +539,36 @@ void draw_advanced_mode_tab(device& dev, advanced_mode_control& amc,
                 {
                     ImGui::SetTooltip("Disabling advanced mode will reset depth generation to factory settings\nThis will not affect calibration");
                 }
+
+                ImGui::Text("JSON File Path:");
+                char json_path[256] = "./preset.json";
+                ImGui::InputText("json_path", json_path, 256);
+                if (ImGui::Button("Load JSON", { stream_all_button_width / 2 - 5, 0 }))
+                {
+                    std::ifstream json_file(json_path);
+                    if (json_file.is_open())
+                    {
+                        auto content = std::string(std::istreambuf_iterator<char>(json_file), std::istreambuf_iterator<char>());
+                        advanced.apply_controls_from_json_content(content);
+                    }
+                    else
+                        error_message = to_string() << "\"" << json_path << "\"" << " not found!";
+
+                }
+                ImGui::SameLine();
+                if (ImGui::Button("Save JSON", { stream_all_button_width / 2 - 5, 0 }))
+                {
+                    std::ofstream json_file(json_path);
+                    if (json_file.is_open())
+                    {
+                        auto content = advanced.generate_json_data();
+                        json_file << content;
+                        json_file.close();
+                    }
+                    else
+                        error_message = to_string() << "\"" << json_path << "\"" << " isn't created!";
+                }
+
                 draw_advanced_mode_controls(advanced, amc, get_curr_advanced_controls);
             }
             else
@@ -619,14 +633,21 @@ int main(int, char**) try
     notification_model selected_notification;
     // Initialize list with each device name and serial number
     std::string label{ "" };
-
-    drag_drop_manager.OnPlaybackDeviceAdded([&refresh_device_list,&not_model](const std::string& device_name)
+    bool new_device_loaded = false;
+    drop_manager.register_to_playback_device_added([&refresh_device_list, &not_model, &ctx, &new_device_loaded](const std::string& path)
     {
-        not_model.add_notification({ to_string() << "Device Added: " << device_name,
-            std::chrono::duration_cast<std::chrono::duration<double, std::micro>>(std::chrono::high_resolution_clock::now().time_since_epoch()).count(),
-            RS2_LOG_SEVERITY_INFO,
-            RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR });
-        refresh_device_list = true;
+        try
+        {
+            auto p = ctx.load_device(path);
+            new_device_loaded = true;
+        }
+        catch(rs2::error& e)
+        {
+            not_model.add_notification({to_string() << "Failed to create playback from file: " << path << ". Reason: " << e.what(),
+                                        std::chrono::duration_cast<std::chrono::duration<double,std::micro>>(std::chrono::high_resolution_clock::now().time_since_epoch()).count(),
+                                        RS2_LOG_SEVERITY_ERROR,
+                                        RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR});
+        }
     });
 
     mouse_info mouse;
@@ -673,11 +694,15 @@ int main(int, char**) try
         {
             if (info.was_removed(dev))
             {
-
                 not_model.add_notification({ get_device_name(dev) + " Disconnected\n",
                     timestamp,
                     RS2_LOG_SEVERITY_INFO,
                     RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR });
+
+                if(dev.is<playback>())
+                {
+                    drop_manager.remove_device(dev.as<playback>().file_name());
+                }
             }
         }
 
@@ -831,7 +856,7 @@ int main(int, char**) try
         rs2_error* e = nullptr;
         label = to_string() << "VERSION: " << api_version_to_string(rs2_get_api_version(&e));
         ImGui::Text("%s", label.c_str());
-        bool any_device_exists = (list.size() > 0 || drag_drop_manager.playback_devices.empty() == false);
+        bool any_device_exists = (list.size() > 0);
         if (any_device_exists)
         {
             // Draw 3 tabs
@@ -839,18 +864,25 @@ int main(int, char**) try
             if (ImGui::TabLabels(tabs, 2, tab_index))
                 last_tab_index = tab_index;
         }
-
-        if (any_device_exists == false)
+        else
         {
             ImGui::Text("No device detected.");
         }
         // Device Details Menu - Elaborate details on connected devices
         if (any_device_exists > 0 && ImGui::CollapsingHeader("Device Details", nullptr, true, true))
         {
-            // Draw a combo-box with the list of connected devices        
+            bool switch_to_newly_loaded_device = false;
+            if(new_device_loaded && refresh_device_list == false)
+            {
+                device_index = list.size() - 1;
+                new_device_loaded = false;
+                switch_to_newly_loaded_device = true;
+            }
+
+            // Draw a combo-box with the list of connected devices
             auto new_index = device_index;
-            
-            if (model.draw_combo_box(device_names, new_index))
+
+            if (model.draw_combo_box(device_names, new_index) || switch_to_newly_loaded_device)
             {
                 for (auto&& sub : model.subdevices)
                 {
@@ -860,20 +892,27 @@ int main(int, char**) try
 
                 try
                 {
-                    if (new_index < list.size())
-                    {
-                        dev = list[new_index];
-                    }
-                    else                          
-                    {                            
-                        int playback_devices_index = new_index - list.size();
-                        auto it = drag_drop_manager.playback_devices.begin();
-                        std::advance(it, playback_devices_index);
-                        dev = it->second;
-                    }
+                    dev = list[new_index];
                     device_index = new_index;
                     model = device_model(dev, error_message);
                     active_device_info = get_device_info(dev);
+                    if(dev.is<playback>()) //TODO: remove this and make sub->streaming a function that queries the sensor
+                    {
+                        dev.as<playback>().set_status_changed_callback([&model](rs2_playback_status status)
+                                                                       {
+                                                                           if(status == RS2_PLAYBACK_STATUS_STOPPED)
+                                                                           {
+                                                                               for (auto sub : model.subdevices)
+                                                                               {
+                                                                                   if (sub->streaming)
+                                                                                   {
+                                                                                       sub->stop();
+                                                                                   }
+                                                                               }
+                                                                           }
+                                                                       });
+                    }
+
                 }
                 catch (const error& e)
                 {
@@ -886,7 +925,7 @@ int main(int, char**) try
             }
 
             // Show all device details - name, module name, serial number, FW version and location
-            model.draw_device_details(dev);
+            model.draw_device_details(dev, ctx);
         }
 
 
@@ -898,7 +937,7 @@ int main(int, char**) try
             }
             else if (last_tab_index == 1)
             {
-                draw_advanced_mode_tab(dev, amc, restarting_device_info, get_curr_advanced_controls);
+                draw_advanced_mode_tab(dev, amc, restarting_device_info, get_curr_advanced_controls, error_message);
             }
         }
 
