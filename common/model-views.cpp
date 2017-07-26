@@ -1365,6 +1365,8 @@ namespace rs2
             ImGuiWindowFlags_NoMove |
             ImGuiWindowFlags_NoCollapse;
 
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 5);
+
         auto ms = get_age_in_ms() / MAX_LIFETIME_MS;
         auto t = smoothstep(static_cast<float>(ms), 0.7f, 1.0f);
 
@@ -1392,6 +1394,8 @@ namespace rs2
 
         ImGui::End();
 
+        ImGui::PopStyleVar();
+
         ImGui::PopStyleColor();
         ImGui::PopStyleColor();
         ImGui::PopStyleColor();
@@ -1409,6 +1413,8 @@ namespace rs2
 
         if (pending_notifications.size() > MAX_SIZE)
             pending_notifications.erase(pending_notifications.begin());
+
+        log.push_back(n.get_description());
     }
 
     void notifications_model::draw(int w, int h, notification_model& selected)
@@ -1425,7 +1431,7 @@ namespace rs2
             }), end(pending_notifications));
 
             int idx = 0;
-            auto height = 30;
+            auto height = 55;
             for (auto& noti : pending_notifications)
             {
                 noti.draw(w, height, selected);

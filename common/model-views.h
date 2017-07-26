@@ -408,9 +408,25 @@ namespace rs2
         void add_notification(const notification_data& n);
         void draw(int w, int h, notification_model& selected);
 
+        std::string get_log() 
+        {
+            std::string result;
+            std::lock_guard<std::mutex> lock(m);
+            for (auto&& l : log) std::copy(l.begin(), l.end(), std::back_inserter(result)); 
+            return result;
+        }
+
+        void add_log(const std::string& line)
+        {
+            std::lock_guard<std::mutex> lock(m);
+            log.push_back(line);
+        }
+
         std::vector<notification_model> pending_notifications;
         int index = 1;
         const int MAX_SIZE = 6;
         std::mutex m;
+
+        std::vector<std::string> log;
     };
 }

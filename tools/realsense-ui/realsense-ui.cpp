@@ -20,6 +20,65 @@
 using namespace rs2;
 using namespace rs400;
 
+ImVec4 from_rgba(uint8_t r, uint8_t g, uint8_t b, uint8_t a)
+{
+    return ImVec4(r / (float)255, g / (float)255, b / (float)255, a / (float)255);
+}
+
+// From https://github.com/procedural/gpulib/blob/master/gpulib_imgui.h
+struct ImVec3 { float x, y, z; ImVec3(float _x = 0.0f, float _y = 0.0f, float _z = 0.0f) { x = _x; y = _y; z = _z; } };
+
+void imgui_easy_theming()
+{
+    ImGuiStyle& style = ImGui::GetStyle();
+
+    style.WindowRounding = 0.0f;
+
+    //style.Colors[ImGuiCol_Text] =                   from_rgba( R,    G,    B,    A );
+    //style.Colors[ImGuiCol_TextDisabled] =           from_rgba( R,    G,    B,    A );
+    style.Colors[ImGuiCol_WindowBg] = from_rgba(9, 11, 13, 255);
+    //style.Colors[ImGuiCol_ChildWindowBg] =          from_rgba( 255,    0,    0,    255 );
+    style.Colors[ImGuiCol_Border] = from_rgba(0, 0, 0, 255);
+    style.Colors[ImGuiCol_BorderShadow] = from_rgba(100, 100, 150, 0);
+    style.Colors[ImGuiCol_FrameBg] = from_rgba(9, 11, 13, 255);
+    //style.Colors[ImGuiCol_FrameBgHovered] =         from_rgba( R,    G,    B,    A );
+    //style.Colors[ImGuiCol_FrameBgActive] =          from_rgba( R,    G,    B,    A );
+    style.Colors[ImGuiCol_TitleBg] = from_rgba(27, 33, 38, 255);
+    style.Colors[ImGuiCol_TitleBgCollapsed] = from_rgba(27, 33, 38, 255);
+    style.Colors[ImGuiCol_TitleBgActive] = from_rgba(62, 77, 89, 255);
+    //style.Colors[ImGuiCol_MenuBarBg] =              from_rgba( R,    G,    B,    A );
+    style.Colors[ImGuiCol_ScrollbarBg] = from_rgba(14, 17, 20, 255);
+    style.Colors[ImGuiCol_ScrollbarGrab] = from_rgba(54, 66, 67, 255);
+    style.Colors[ImGuiCol_ScrollbarGrabHovered] = from_rgba(54 + 10, 66 + 10, 67 + 10, 255);
+    style.Colors[ImGuiCol_ScrollbarGrabActive] = from_rgba(54, 66, 67, 255);
+    style.Colors[ImGuiCol_ComboBg] = from_rgba(9, 11, 13, 255);
+    style.Colors[ImGuiCol_CheckMark] =              from_rgba( 0,    115,    200,    255 );
+    style.Colors[ImGuiCol_SliderGrab] =             from_rgba( 0,    115,    200,    200 );
+    style.Colors[ImGuiCol_SliderGrabActive] =       from_rgba( 0,    115,    200,    255 );
+    style.Colors[ImGuiCol_Button] = from_rgba(62, 77, 89, 255);
+    style.Colors[ImGuiCol_ButtonHovered] = from_rgba(62 + 20, 77 + 20, 89 + 20, 255); // TODO: Check with Yaron
+    style.Colors[ImGuiCol_ButtonActive] = from_rgba(62 - 10, 77 - 10, 89 - 10, 255);
+    style.Colors[ImGuiCol_Header] = from_rgba(62, 77, 89, 255);
+    style.Colors[ImGuiCol_HeaderHovered] = from_rgba(62, 77, 89, 255); // TODO: Check with Yaron
+    style.Colors[ImGuiCol_HeaderActive] = from_rgba(62, 77, 89, 255);
+    //style.Colors[ImGuiCol_Column] =                 from_rgba( R,    G,    B,    A );
+    //style.Colors[ImGuiCol_ColumnHovered] =          from_rgba( R,    G,    B,    A );
+    //style.Colors[ImGuiCol_ColumnActive] =           from_rgba( R,    G,    B,    A );
+    //style.Colors[ImGuiCol_ResizeGrip] =             from_rgba( R,    G,    B,    A );
+    //style.Colors[ImGuiCol_ResizeGripHovered] =      from_rgba( R,    G,    B,    A );
+    //style.Colors[ImGuiCol_ResizeGripActive] =       from_rgba( R,    G,    B,    A );
+    //style.Colors[ImGuiCol_CloseButton] =            from_rgba( R,    G,    B,    A );
+    //style.Colors[ImGuiCol_CloseButtonHovered] =     from_rgba( R,    G,    B,    A );
+    //style.Colors[ImGuiCol_CloseButtonActive] =      from_rgba( R,    G,    B,    A );
+    //style.Colors[ImGuiCol_PlotLines] =              from_rgba( R,    G,    B,    A );
+    //style.Colors[ImGuiCol_PlotLinesHovered] =       from_rgba( R,    G,    B,    A );
+    //style.Colors[ImGuiCol_PlotHistogram] =          from_rgba( R,    G,    B,    A );
+    //style.Colors[ImGuiCol_PlotHistogramHovered] =   from_rgba( R,    G,    B,    A );
+    //style.Colors[ImGuiCol_TextSelectedBg] =         from_rgba( R,    G,    B,    A );
+    style.Colors[ImGuiCol_PopupBg] =                from_rgba(62, 77, 89, 255);
+    //style.Colors[ImGuiCol_ModalWindowDarkening] =   from_rgba( R,    G,    B,    A );
+}
+
 struct user_data
 {
     GLFWwindow* curr_window = nullptr;
@@ -28,12 +87,12 @@ struct user_data
 
 class drag_drop_manager
 {
-    std::function<void(const std::string&)> device_added_handler = [](const std::string& s){ /*Do nothing*/};
+    std::function<void(const std::string&)> device_added_handler = [](const std::string& s) { /*Do nothing*/};
     std::vector<std::string> files;
 public:
     void add_device(const std::string& path)
     {
-        if(std::find(files.begin(), files.end(), path) != files.end())
+        if (std::find(files.begin(), files.end(), path) != files.end())
         {
             return; //already exists
         }
@@ -51,7 +110,7 @@ public:
         std::string file_name;
         for (auto rit = path.rbegin(); rit != path.rend(); ++rit)
         {
-            if(*rit == '\\' || *rit == '/')
+            if (*rit == '\\' || *rit == '/')
                 break;
             file_name += *rit;
         }
@@ -60,7 +119,7 @@ public:
     }
     void remove_device(const std::string& file)
     {
-        auto it = std::find(files.begin(),files.end(), file);
+        auto it = std::find(files.begin(), files.end(), file);
         files.erase(it);
     }
 };
@@ -109,7 +168,7 @@ std::string get_device_name(device& dev)
 
     std::stringstream s;
 
-    if(dev.is<playback>())
+    if (dev.is<playback>())
     {
         auto playback_dev = dev.as<playback>();
 
@@ -151,360 +210,6 @@ int find_device_index(const device_list& list, std::vector<std::string> device_i
 
     auto it = std::find(devices_info.begin(), devices_info.end(), device_info);
     return std::distance(devices_info.begin(), it);
-}
-
-void draw_general_tab(device_model& model, device_list& list,
-    device& dev, std::string& label, bool hw_reset_enable,
-    std::vector<std::string>& restarting_info,
-    bool update_read_only_options, std::string& error_message)
-{
-    const float stream_all_button_width = 300;
-    static bool is_recording = false;
-    static char input_file_name[256] = "recorded_streams.bag";
-
-    // Streaming Menu - Allow user to play different streams
-    if ( (list.size()>0) && ImGui::CollapsingHeader("Streaming", nullptr, true, true))
-    {
-        auto anything_stream = std::any_of(model.subdevices.begin(), model.subdevices.end(), [](std::shared_ptr<subdevice_model> sub) {
-            return sub->streaming;
-        });
-
-        if (model.subdevices.size() > 1)
-        {
-            try
-            {
-                if (!anything_stream)
-                {
-                    label = to_string() << "Start All";
-                    if (ImGui::Button(label.c_str(), { stream_all_button_width, 0 }))
-                    {
-                        if (is_recording)
-                        {
-							model.start_recording(dev, input_file_name, error_message);
-                        }
-                        for (auto&& sub : model.subdevices)
-                        {
-                            if (sub->is_selected_combination_supported())
-                            {
-                                auto profiles = sub->get_selected_profiles();
-                                sub->play(profiles);
-
-                                for (auto&& profile : profiles)
-                                {
-                                    model.streams[profile.stream].dev = sub;
-                                }
-                            }
-                        }
-                    }
-                    if (ImGui::IsItemHovered())
-                    {
-                        ImGui::SetTooltip("Start streaming from all subdevices");
-                    }
-                }
-                else
-                {
-                    label = to_string() << "Stop All";
-
-                    if (ImGui::Button(label.c_str(), { stream_all_button_width / 2 - 5, 0 }))
-                    {
-                        for (auto&& sub : model.subdevices)
-                        {
-                            if (sub->streaming) sub->stop();
-                        }
-                        if (is_recording)
-                        {
-                            model.stop_recording();
-                            for (auto&& sub : model.subdevices)
-                            {
-                                if (sub->is_selected_combination_supported())
-                                {
-                                    auto profiles = sub->get_selected_profiles();
-                                    for (auto&& profile : profiles)
-                                    {
-                                        model.streams[profile.stream].dev = sub;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    if (ImGui::IsItemHovered())
-                    {
-                        ImGui::SetTooltip("Stop streaming from all subdevices");
-                    }
-
-                    ImGui::SameLine();
-
-                    bool any_paused = false;
-                    for (auto&& sub : model.subdevices)
-                    {
-                        if (sub->streaming && sub->is_paused())
-                            any_paused = true;
-                    }
-
-                    if (any_paused)
-                    {
-                        label = to_string() << "Resume All";
-
-                        if (ImGui::Button(label.c_str(), { stream_all_button_width / 2, 0 }))
-                        {
-                            for (auto&& sub : model.subdevices)
-                            {
-                                if (sub->streaming) sub->resume();
-                            }
-                        }
-                        if (ImGui::IsItemHovered())
-                        {
-                            ImGui::SetTooltip("Resume streaming live data from all sub-devices");
-                        }
-                    }
-                    else
-                    {
-                        label = to_string() << "Pause All";
-
-                        if (ImGui::Button(label.c_str(), { stream_all_button_width / 2, 0 }))
-                        {
-                            for (auto&& sub : model.subdevices)
-                            {
-                                if (sub->streaming) sub->pause();
-                            }
-                        }
-                        if (ImGui::IsItemHovered())
-                        {
-                            ImGui::SetTooltip("Freeze the UI on the current frame. The camera will continue to work in the background");
-                        }
-                    }
-                    if (ImGui::CollapsingHeader("Recording Options", &is_recording))
-                    {
-                        static bool is_paused = false;
-                        if (!is_paused && ImGui::Button("Pause"))
-                        {
-                            model.pause_record();
-                            is_paused = !is_paused;
-                        }
-                        if (ImGui::IsItemHovered())
-                        {
-                            ImGui::SetTooltip("Pause recording to file, Streaming will continue");
-                        }
-                        if (is_paused && ImGui::Button("Resume"))
-                        {
-                            model.resume_record();
-                            is_paused = !is_paused;
-                        }
-                        if (ImGui::IsItemHovered())
-                        {
-                            ImGui::SetTooltip("Continue recording");
-                        }
-                    }
-                }
-            }
-            catch (const error& e)
-            {
-                error_message = error_to_string(e);
-            }
-            catch (const std::exception& e)
-            {
-                error_message = e.what();
-            }
-        }
-        if (!anything_stream)
-        {
-            ImGui::Checkbox("Enable Recording", &is_recording);
-            if (is_recording)
-            {
-                ImGui::Text("Save to:");
-                ImGui::InputText("file_path", input_file_name, 256, ImGuiInputTextFlags_CharsNoBlank);
-            }
-        }
-        // Draw menu foreach subdevice with its properties
-        for (auto&& sub : model.subdevices)
-        {
-
-            label = to_string() << sub->s.get_info(RS2_CAMERA_INFO_NAME);
-            if (ImGui::CollapsingHeader(label.c_str(), nullptr, true, true))
-            {
-                sub->draw_stream_selection();
-
-                try
-                {
-                    if (!sub->streaming)
-                    {
-                        label = to_string() << "Start " << sub->s.get_info(RS2_CAMERA_INFO_NAME);
-
-                        if (sub->is_selected_combination_supported())
-                        {
-                            if (ImGui::Button(label.c_str(), { stream_all_button_width, 0 }))
-                            {
-                                if (is_recording)
-                                {
-                                    model.start_recording(dev, input_file_name, error_message);
-                                }
-                                auto profiles = sub->get_selected_profiles();
-                                sub->play(profiles);
-
-                                for (auto&& profile : profiles)
-                                {
-                                    model.streams[profile.stream].dev = sub;
-                                }
-                            }
-                            if (ImGui::IsItemHovered())
-                            {
-                                ImGui::SetTooltip("Start streaming data from selected sub-device");
-                            }
-                        }
-                        else
-                        {
-                            ImGui::TextDisabled("%s", label.c_str());
-                        }
-                    }
-                    else
-                    {
-                        label = to_string() << "Stop##" << sub->s.get_info(RS2_CAMERA_INFO_NAME);
-                        if (ImGui::Button(label.c_str(), { stream_all_button_width / 2 - 5, 0 }))
-                        {
-                            sub->stop();
-                            if (is_recording)
-                            {
-                                auto streaming_sensors_count = std::count_if(model.subdevices.begin(),
-                                                                     model.subdevices.end(),
-                                                                     [](std::shared_ptr<subdevice_model> sub)
-                                                                     {
-                                                                         return sub->streaming;
-                                                                     });
-                                if (streaming_sensors_count == 0)
-                                {
-                                    //TODO: move this inside model
-                                    model.stop_recording();
-                                    for (auto&& sub : model.subdevices)
-                                    {
-                                        if (sub->is_selected_combination_supported())
-                                        {
-                                            auto profiles = sub->get_selected_profiles();
-                                            for (auto&& profile : profiles)
-                                            {
-                                                model.streams[profile.stream].dev = sub;
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                        if (ImGui::IsItemHovered())
-                        {
-                            ImGui::SetTooltip("Stop streaming data from selected sub-device");
-                        }
-
-                        ImGui::SameLine();
-
-                        if (sub->is_paused())
-                        {
-                            label = to_string() << "Resume >>##" << sub->s.get_info(RS2_CAMERA_INFO_NAME);
-                            if (ImGui::Button(label.c_str(), { stream_all_button_width / 2 - 5, 0 }))
-                            {
-                                sub->resume();
-                            }
-                            if (ImGui::IsItemHovered())
-                            {
-                                ImGui::SetTooltip("Resume live streaming from the sub-device");
-                            }
-                        }
-                        else
-                        {
-                            label = to_string() << "Pause ||##" << sub->s.get_info(RS2_CAMERA_INFO_NAME);
-                            if (ImGui::Button(label.c_str(), { stream_all_button_width / 2 - 5, 0 }))
-                            {
-                                sub->pause();
-                            }
-                            if (ImGui::IsItemHovered())
-                            {
-                                ImGui::SetTooltip("Freeze current frame. The sub-device will continue to work in the background");
-                            }
-                        }
-                    }
-                }
-                catch (const error& e)
-                {
-                    error_message = error_to_string(e);
-                }
-                catch (const std::exception& e)
-                {
-                    error_message = e.what();
-                }
-
-                static const std::vector<rs2_option> options_order{RS2_OPTION_ADVANCED_MODE_PRESET,
-                                                                   RS2_OPTION_ENABLE_AUTO_EXPOSURE,
-                                                                   RS2_OPTION_EXPOSURE,
-                                                                   RS2_OPTION_EMITTER_ENABLED,
-                                                                   RS2_OPTION_LASER_POWER};
-                sub->draw_options(options_order, update_read_only_options, error_message);
-
-                auto&& de_opt = sub->options_metadata[RS2_OPTION_DEPTH_UNITS];
-                if (de_opt.supported)
-                {
-                    if (ImGui::Checkbox("Histogram Equalization", &model.streams[RS2_STREAM_DEPTH].texture->equalize))
-                    {
-                        auto depth_units = de_opt.value;
-                        model.streams[RS2_STREAM_DEPTH].texture->min_depth = 0;
-                        model.streams[RS2_STREAM_DEPTH].texture->max_depth = 6 / depth_units;
-                    }
-                    if (!model.streams[RS2_STREAM_DEPTH].texture->equalize)
-                    {
-                        auto depth_units = de_opt.value;
-                        auto val = model.streams[RS2_STREAM_DEPTH].texture->min_depth * depth_units;
-                        if (ImGui::SliderFloat("Near (m)", &val, 0, 16))
-                        {
-                            model.streams[RS2_STREAM_DEPTH].texture->min_depth = val / depth_units;
-                        }
-                        val = model.streams[RS2_STREAM_DEPTH].texture->max_depth * depth_units;
-                        if (ImGui::SliderFloat("Far  (m)", &val, 0, 16))
-                        {
-                            model.streams[RS2_STREAM_DEPTH].texture->max_depth = val / depth_units;
-                        }
-                        if (model.streams[RS2_STREAM_DEPTH].texture->min_depth > model.streams[RS2_STREAM_DEPTH].texture->max_depth)
-                        {
-                            std::swap(model.streams[RS2_STREAM_DEPTH].texture->max_depth, model.streams[RS2_STREAM_DEPTH].texture->min_depth);
-                        }
-                    }
-                }
-            }
-            ImGui::Text("\n");
-        }
-    }
-
-    if (list.size() > 0 && ImGui::CollapsingHeader("Hardware Commands", nullptr, true, true))
-    {
-        label = to_string() << "Hardware Reset";
-
-        const float hardware_reset_button_width = 300;
-        const float hardware_reset_button_height = 0;
-
-        if (ImGui::ButtonEx(label.c_str(), { hardware_reset_button_width, hardware_reset_button_height }, hw_reset_enable ? 0 : ImGuiButtonFlags_Disabled))
-        {
-            try
-            {
-                restarting_info = get_device_info(dev, false);
-                dev.hardware_reset();
-            }
-            catch (const error& e)
-            {
-                error_message = error_to_string(e);
-            }
-            catch (const std::exception& e)
-            {
-                error_message = e.what();
-            }
-        }
-        if (ImGui::IsItemHovered())
-        {
-            ImGui::SetTooltip("Ask camera firmware to restart the device");
-        }
-    }
-
-    ImGui::Text("\n\n\n\n\n\n\n");
-
-    for (auto&& sub : model.subdevices)
-    {
-        sub->update(error_message);
-    }
 }
 
 void draw_advanced_mode_tab(device& dev, advanced_mode_control& amc,
@@ -573,10 +278,15 @@ int main(int, char**) try
     if (!glfwInit())
         exit(1);
 
+    rs2_error* e = nullptr;
+    std::string title = to_string() << "RealSense Viewer v" << api_version_to_string(rs2_get_api_version(&e));
+
     // Create GUI Windows
-    auto window = glfwCreateWindow(1280, 720, "RealSense Viewer", nullptr, nullptr);
+    auto window = glfwCreateWindow(1280, 720, title.c_str(), nullptr, nullptr);
     glfwMakeContextCurrent(window);
     ImGui_ImplGlfw_Init(window, true);
+
+    imgui_easy_theming();
 
     ImVec4 clear_color = ImColor(10, 0, 0);
 
@@ -586,6 +296,8 @@ int main(int, char**) try
     std::vector<std::string> restarting_device_info;
 
     auto device_index = 0;
+    bool is_3d_view = false;
+    bool is_output_collapsed = false;
 
     std::vector<std::string> device_names;
 
@@ -610,21 +322,24 @@ int main(int, char**) try
             auto p = ctx.load_device(path);
             new_device_loaded = true;
         }
-        catch(rs2::error& e)
+        catch (rs2::error& e)
         {
-            not_model.add_notification({to_string() << "Failed to create playback from file: " << path << ". Reason: " << e.what(),
+            not_model.add_notification({ to_string() << "Failed to create playback from file: " << path << ". Reason: " << e.what(),
                                         std::chrono::duration_cast<std::chrono::duration<double,std::micro>>(std::chrono::high_resolution_clock::now().time_since_epoch()).count(),
                                         RS2_LOG_SEVERITY_ERROR,
-                                        RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR});
+                                        RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR });
         }
     });
+
+
+    not_model.add_log(to_string() << "librealsense version: " << api_version_to_string(rs2_get_api_version(&e)));
 
     mouse_info mouse;
 
     user_data data;
     data.curr_window = window;
     data.mouse = &mouse;
-    
+
     glfwSetDropCallback(window, handle_dropped_file);
     glfwSetWindowUserPointer(window, &data);
 
@@ -668,7 +383,7 @@ int main(int, char**) try
                     RS2_LOG_SEVERITY_INFO,
                     RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR });
 
-                if(dev.is<playback>())
+                if (dev.is<playback>())
                 {
                     drop_manager.remove_device(dev.as<playback>().file_name());
                 }
@@ -722,7 +437,7 @@ int main(int, char**) try
                     list = ctx.query_devices();
 
                     device_names = get_devices_names(list);
-                    
+
                     for (auto dev : devs)
                     {
                         dev = nullptr;
@@ -735,10 +450,11 @@ int main(int, char**) try
                         dev = nullptr;
                         model.reset();
 
-                        if(list.size() > 0)
+                        if (list.size() > 0)
                         {
                             dev = list[device_index];                  // Access first device
                             model = device_model(dev, error_message);  // Initialize device model
+                            not_model.add_log(to_string() << dev.get_info(RS2_CAMERA_INFO_NAME) << " was selected as default device");
                             active_device_info = get_device_info(dev);
                             dev_exist = true;
                             get_curr_advanced_controls = true;
@@ -810,38 +526,152 @@ int main(int, char**) try
         ImGui_ImplGlfw_NewFrame();
 
         // Flags for pop-up window - no window resize, move or collaps
-        auto flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse;
+        auto flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove |
+            ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar |
+            ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_ShowBorders;
 
-        const float panel_size = 320;
-        // Set window position and size
+        const float panel_width = 279.f;
+        const float panel_y = 44.f;
+        const float default_log_h = 80.f;
+
         ImGui::SetNextWindowPos({ 0, 0 });
-        ImGui::SetNextWindowSize({ panel_size, static_cast<float>(h) });
+        ImGui::SetNextWindowSize({ panel_width, panel_y });
+
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
+        ImGui::Begin("Add Device Panel", nullptr, flags);
+
+        bool switch_to_newly_loaded_device = false;
+        if (new_device_loaded && refresh_device_list == false)
+        {
+            device_index = list.size() - 1;
+            new_device_loaded = false;
+            switch_to_newly_loaded_device = true;
+        }
+
+        ImGui::PushStyleColor(ImGuiCol_WindowBg, from_rgba(230, 230, 230, 255));
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(5, 5));
+        ImGui::SetNextWindowPos({ 0, panel_y });
+        ImGui::SetNextWindowSize({ panel_width, ImGui::GetTextLineHeight() * device_names.size() + 10 });
+
+        if (ImGui::Button("Add Source...", { panel_width, panel_y }))
+            ImGui::OpenPopup("select");
+        if (ImGui::BeginPopup("select"))
+        {
+            for (size_t i = 0; i < device_names.size(); i++)
+            {
+                if (ImGui::Selectable(device_names[i].c_str()) || switch_to_newly_loaded_device)
+                {
+                    for (auto&& sub : model.subdevices)
+                    {
+                        if (sub->streaming)
+                            sub->stop();
+                    }
+
+                    try
+                    {
+                        dev = list[i];
+                        device_index = i;
+                        model = device_model(dev, error_message);
+                        active_device_info = get_device_info(dev);
+                        if (dev.is<playback>()) //TODO: remove this and make sub->streaming a function that queries the sensor
+                        {
+                            dev.as<playback>().set_status_changed_callback([&model](rs2_playback_status status)
+                            {
+                                if (status == RS2_PLAYBACK_STATUS_STOPPED)
+                                {
+                                    for (auto sub : model.subdevices)
+                                    {
+                                        if (sub->streaming)
+                                        {
+                                            sub->stop();
+                                        }
+                                    }
+                                }
+                            });
+                        }
+
+                    }
+                    catch (const error& e)
+                    {
+                        error_message = error_to_string(e);
+                    }
+                    catch (const std::exception& e)
+                    {
+                        error_message = e.what();
+                    }
+                }
+            }
+            ImGui::EndPopup();
+        }
+
+        ImGui::PopStyleVar();
+        ImGui::PopStyleColor();
+
+        ImGui::End();
+        ImGui::PopStyleVar();
+
+
+        ImGui::SetNextWindowPos({ panel_width, 0 });
+        ImGui::SetNextWindowSize({ w - panel_width, panel_y });
+
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
+        ImGui::PushStyleColor(ImGuiCol_WindowBg, from_rgba(62, 77, 89, 255));
+        ImGui::Begin("Toolbar Panel", nullptr, flags);
+
+        ImGui::PushStyleColor(ImGuiCol_Border, { 0,0,0,0 });
+        ImGui::SetCursorPosX(w - panel_width - panel_y * 3);
+        ImGui::PushStyleColor(ImGuiCol_Text, is_3d_view ? ImVec4{ 0.5f,0.5f,0.5f,1.f } : ImVec4{ 1.f,1.f,1.f,1.f });
+        if (ImGui::Button("2D", { panel_y,panel_y })) is_3d_view = false;
+        ImGui::PopStyleColor();
+        ImGui::SameLine();
+        ImGui::SetCursorPosX(w - panel_width - panel_y * 2);
+        ImGui::PushStyleColor(ImGuiCol_Text, !is_3d_view ? ImVec4{ 0.5f,0.5f,0.5f,1.f } : ImVec4{ 1.f,1.f,1.f,1.f });
+        if (ImGui::Button("3D", { panel_y,panel_y })) is_3d_view = true;
+        ImGui::PopStyleColor();
+        ImGui::PopStyleColor();
+
+        ImGui::End();
+        ImGui::PopStyleColor();
+        ImGui::PopStyleVar();
+
+        flags |= ImGuiWindowFlags_AlwaysVerticalScrollbar;
+
+        ImGui::SetNextWindowPos({ panel_width, h - (is_output_collapsed ? default_log_h : 20) });
+        ImGui::SetNextWindowSize({ w - panel_width, default_log_h });
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
+        is_output_collapsed = ImGui::Begin("Output", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove |
+            ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_ShowBorders);
+        auto log = not_model.get_log();
+        ImGui::InputTextMultiline("##Log", const_cast<char*>(log.c_str()),
+            log.size() + 1, { w - panel_width, default_log_h - 20 }, ImGuiInputTextFlags_ReadOnly);
+
+        ImGui::End();
+        ImGui::PopStyleVar();
+
+        // Set window position and size
+        ImGui::SetNextWindowPos({ 0, panel_y });
+        ImGui::SetNextWindowSize({ panel_width, h - panel_y });
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
 
         // *********************
         // Creating window menus
         // *********************
         ImGui::Begin("Control Panel", nullptr, flags);
 
-        rs2_error* e = nullptr;
-        label = to_string() << "VERSION: " << api_version_to_string(rs2_get_api_version(&e));
-        ImGui::Text("%s", label.c_str());
         bool any_device_exists = (list.size() > 0);
-        if (any_device_exists)
-        {
-            // Draw 3 tabs
-            const char* tabs[] = { "General", "Advanced" };
-            if (ImGui::TabLabels(tabs, 2, tab_index))
-                last_tab_index = tab_index;
-        }
-        else
+        if (!any_device_exists)
         {
             ImGui::Text("No device detected.");
         }
+
         // Device Details Menu - Elaborate details on connected devices
-        if (any_device_exists > 0 && ImGui::CollapsingHeader("Device Details", nullptr, true, true))
+        if (any_device_exists > 0 && ImGui::CollapsingHeader("Device Details", nullptr, true, false))
         {
+            //ImGui::PushStyleColor(ImGuiCol_FrameBg, from_rgba(27, 33, 38, 255));
+            //ImGui::BeginChildFrame(ImGui::GetID("dev_info"), { 0, 0 }, ImGuiWindowFlags_ShowBorders);
+
             bool switch_to_newly_loaded_device = false;
-            if(new_device_loaded && refresh_device_list == false)
+            if (new_device_loaded && refresh_device_list == false)
             {
                 device_index = list.size() - 1;
                 new_device_loaded = false;
@@ -851,65 +681,415 @@ int main(int, char**) try
             // Draw a combo-box with the list of connected devices
             auto new_index = device_index;
 
-            if (model.draw_combo_box(device_names, new_index) || switch_to_newly_loaded_device)
-            {
-                for (auto&& sub : model.subdevices)
-                {
-                    if (sub->streaming)
-                        sub->stop();
-                }
+            //if (model.draw_combo_box(device_names, new_index) || switch_to_newly_loaded_device)
+            //{
+            //    for (auto&& sub : model.subdevices)
+            //    {
+            //        if (sub->streaming)
+            //            sub->stop();
+            //    }
 
-                try
-                {
-                    dev = list[new_index];
-                    device_index = new_index;
-                    model = device_model(dev, error_message);
-                    active_device_info = get_device_info(dev);
-                    if(dev.is<playback>()) //TODO: remove this and make sub->streaming a function that queries the sensor
-                    {
-                        dev.as<playback>().set_status_changed_callback([&model](rs2_playback_status status)
-                                                                       {
-                                                                           if(status == RS2_PLAYBACK_STATUS_STOPPED)
-                                                                           {
-                                                                               for (auto sub : model.subdevices)
-                                                                               {
-                                                                                   if (sub->streaming)
-                                                                                   {
-                                                                                       sub->stop();
-                                                                                   }
-                                                                               }
-                                                                           }
-                                                                       });
-                    }
+            //    try
+            //    {
+            //        dev = list[new_index];
+            //        device_index = new_index;
+            //        model = device_model(dev, error_message);
+            //        active_device_info = get_device_info(dev);
+            //        if (dev.is<playback>()) //TODO: remove this and make sub->streaming a function that queries the sensor
+            //        {
+            //            dev.as<playback>().set_status_changed_callback([&model](rs2_playback_status status)
+            //            {
+            //                if (status == RS2_PLAYBACK_STATUS_STOPPED)
+            //                {
+            //                    for (auto sub : model.subdevices)
+            //                    {
+            //                        if (sub->streaming)
+            //                        {
+            //                            sub->stop();
+            //                        }
+            //                    }
+            //                }
+            //            });
+            //        }
 
-                }
-                catch (const error& e)
-                {
-                    error_message = error_to_string(e);
-                }
-                catch (const std::exception& e)
-                {
-                    error_message = e.what();
-                }
-            }
+            //    }
+            //    catch (const error& e)
+            //    {
+            //        error_message = error_to_string(e);
+            //    }
+            //    catch (const std::exception& e)
+            //    {
+            //        error_message = e.what();
+            //    }
+            //}
 
             // Show all device details - name, module name, serial number, FW version and location
             model.draw_device_details(dev, ctx);
+
+            //ImGui::EndChildFrame();
+            //ImGui::PopStyleColor();
         }
 
-
-        if (list.size() > 0)
+        if (any_device_exists)
         {
-            if (last_tab_index == 0)
+            const float stream_all_button_width = 300;
+            static bool is_recording = false;
+            static char input_file_name[256] = "recorded_streams.bag";
+
+            // Streaming Menu - Allow user to play different streams
+            if (list.size() > 0)
             {
-                draw_general_tab(model, list, dev, label, hw_reset_enable, restarting_device_info, update_read_only_options, error_message);
+                //ImGui::PushStyleColor(ImGuiCol_FrameBg, from_rgba(27, 33, 38, 255));
+                //ImGui::BeginChildFrame(ImGui::GetID("testing"), { 0, 0 }, ImGuiWindowFlags_ShowBorders);
+
+                auto anything_stream = std::any_of(model.subdevices.begin(), model.subdevices.end(), [](std::shared_ptr<subdevice_model> sub) {
+                    return sub->streaming;
+                });
+
+                /* if (model.subdevices.size() > 1)
+                 {
+                     try
+                     {
+                         if (!anything_stream)
+                         {
+                             label = to_string() << "Start All";
+                             if (ImGui::Button(label.c_str(), { stream_all_button_width, 0 }))
+                             {
+                                 if (is_recording)
+                                 {
+                                     model.start_recording(dev, input_file_name, error_message);
+                                 }
+                                 for (auto&& sub : model.subdevices)
+                                 {
+                                     if (sub->is_selected_combination_supported())
+                                     {
+                                         auto profiles = sub->get_selected_profiles();
+                                         sub->play(profiles);
+
+                                         for (auto&& profile : profiles)
+                                         {
+                                             model.streams[profile.stream].dev = sub;
+                                         }
+                                     }
+                                 }
+                             }
+                             if (ImGui::IsItemHovered())
+                             {
+                                 ImGui::SetTooltip("Start streaming from all subdevices");
+                             }
+                         }
+                         else
+                         {
+                             label = to_string() << "Stop All";
+
+                             if (ImGui::Button(label.c_str(), { stream_all_button_width / 2 - 5, 0 }))
+                             {
+                                 for (auto&& sub : model.subdevices)
+                                 {
+                                     if (sub->streaming) sub->stop();
+                                 }
+                                 if (is_recording)
+                                 {
+                                     model.stop_recording();
+                                     for (auto&& sub : model.subdevices)
+                                     {
+                                         if (sub->is_selected_combination_supported())
+                                         {
+                                             auto profiles = sub->get_selected_profiles();
+                                             for (auto&& profile : profiles)
+                                             {
+                                                 model.streams[profile.stream].dev = sub;
+                                             }
+                                         }
+                                     }
+                                 }
+                             }
+                             if (ImGui::IsItemHovered())
+                             {
+                                 ImGui::SetTooltip("Stop streaming from all subdevices");
+                             }
+
+                             ImGui::SameLine();
+
+                             bool any_paused = false;
+                             for (auto&& sub : model.subdevices)
+                             {
+                                 if (sub->streaming && sub->is_paused())
+                                     any_paused = true;
+                             }
+
+                             if (any_paused)
+                             {
+                                 label = to_string() << "Resume All";
+
+                                 if (ImGui::Button(label.c_str(), { stream_all_button_width / 2, 0 }))
+                                 {
+                                     for (auto&& sub : model.subdevices)
+                                     {
+                                         if (sub->streaming) sub->resume();
+                                     }
+                                 }
+                                 if (ImGui::IsItemHovered())
+                                 {
+                                     ImGui::SetTooltip("Resume streaming live data from all sub-devices");
+                                 }
+                             }
+                             else
+                             {
+                                 label = to_string() << "Pause All";
+
+                                 if (ImGui::Button(label.c_str(), { stream_all_button_width / 2, 0 }))
+                                 {
+                                     for (auto&& sub : model.subdevices)
+                                     {
+                                         if (sub->streaming) sub->pause();
+                                     }
+                                 }
+                                 if (ImGui::IsItemHovered())
+                                 {
+                                     ImGui::SetTooltip("Freeze the UI on the current frame. The camera will continue to work in the background");
+                                 }
+                             }
+                             if (ImGui::CollapsingHeader("Recording Options", &is_recording))
+                             {
+                                 static bool is_paused = false;
+                                 if (!is_paused && ImGui::Button("Pause"))
+                                 {
+                                     model.pause_record();
+                                     is_paused = !is_paused;
+                                 }
+                                 if (ImGui::IsItemHovered())
+                                 {
+                                     ImGui::SetTooltip("Pause recording to file, Streaming will continue");
+                                 }
+                                 if (is_paused && ImGui::Button("Resume"))
+                                 {
+                                     model.resume_record();
+                                     is_paused = !is_paused;
+                                 }
+                                 if (ImGui::IsItemHovered())
+                                 {
+                                     ImGui::SetTooltip("Continue recording");
+                                 }
+                             }
+                         }
+                     }
+                     catch (const error& e)
+                     {
+                         error_message = error_to_string(e);
+                     }
+                     catch (const std::exception& e)
+                     {
+                         error_message = e.what();
+                     }
+                 }
+                 if (!anything_stream)
+                 {
+                     ImGui::Checkbox("Enable Recording", &is_recording);
+                     if (is_recording)
+                     {
+                         ImGui::Text("Save to:");
+                         ImGui::InputText("file_path", input_file_name, 256, ImGuiInputTextFlags_CharsNoBlank);
+                     }
+                 }*/
+
+                 // Draw menu foreach subdevice with its properties
+                for (auto&& sub : model.subdevices)
+                {
+
+                    label = to_string() << sub->s.get_info(RS2_CAMERA_INFO_NAME);
+                    if (ImGui::CollapsingHeader(label.c_str(), nullptr, true, false))
+                    {
+                        sub->draw_stream_selection();
+
+                        try
+                        {
+                            if (!sub->streaming)
+                            {
+                                label = to_string() << "Start " << sub->s.get_info(RS2_CAMERA_INFO_NAME);
+
+                                if (sub->is_selected_combination_supported())
+                                {
+                                    if (ImGui::Button(label.c_str(), { stream_all_button_width, 0 }))
+                                    {
+                                        if (is_recording)
+                                        {
+                                            model.start_recording(dev, input_file_name, error_message);
+                                        }
+                                        auto profiles = sub->get_selected_profiles();
+                                        sub->play(profiles);
+
+                                        for (auto&& profile : profiles)
+                                        {
+                                            model.streams[profile.stream].dev = sub;
+                                        }
+                                    }
+                                    if (ImGui::IsItemHovered())
+                                    {
+                                        ImGui::SetTooltip("Start streaming data from selected sub-device");
+                                    }
+                                }
+                                else
+                                {
+                                    ImGui::TextDisabled("%s", label.c_str());
+                                }
+                            }
+                            else
+                            {
+                                label = to_string() << "Stop##" << sub->s.get_info(RS2_CAMERA_INFO_NAME);
+                                if (ImGui::Button(label.c_str(), { stream_all_button_width / 2 - 5, 0 }))
+                                {
+                                    sub->stop();
+                                    if (is_recording)
+                                    {
+                                        auto streaming_sensors_count = std::count_if(model.subdevices.begin(),
+                                            model.subdevices.end(),
+                                            [](std::shared_ptr<subdevice_model> sub)
+                                        {
+                                            return sub->streaming;
+                                        });
+                                        if (streaming_sensors_count == 0)
+                                        {
+                                            //TODO: move this inside model
+                                            model.stop_recording();
+                                            for (auto&& sub : model.subdevices)
+                                            {
+                                                if (sub->is_selected_combination_supported())
+                                                {
+                                                    auto profiles = sub->get_selected_profiles();
+                                                    for (auto&& profile : profiles)
+                                                    {
+                                                        model.streams[profile.stream].dev = sub;
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                                if (ImGui::IsItemHovered())
+                                {
+                                    ImGui::SetTooltip("Stop streaming data from selected sub-device");
+                                }
+
+                                ImGui::SameLine();
+
+                                if (sub->is_paused())
+                                {
+                                    label = to_string() << "Resume >>##" << sub->s.get_info(RS2_CAMERA_INFO_NAME);
+                                    if (ImGui::Button(label.c_str(), { stream_all_button_width / 2 - 5, 0 }))
+                                    {
+                                        sub->resume();
+                                    }
+                                    if (ImGui::IsItemHovered())
+                                    {
+                                        ImGui::SetTooltip("Resume live streaming from the sub-device");
+                                    }
+                                }
+                                else
+                                {
+                                    label = to_string() << "Pause ||##" << sub->s.get_info(RS2_CAMERA_INFO_NAME);
+                                    if (ImGui::Button(label.c_str(), { stream_all_button_width / 2 - 5, 0 }))
+                                    {
+                                        sub->pause();
+                                    }
+                                    if (ImGui::IsItemHovered())
+                                    {
+                                        ImGui::SetTooltip("Freeze current frame. The sub-device will continue to work in the background");
+                                    }
+                                }
+                            }
+                        }
+                        catch (const error& e)
+                        {
+                            error_message = error_to_string(e);
+                        }
+                        catch (const std::exception& e)
+                        {
+                            error_message = e.what();
+                        }
+
+                        label = to_string() << "Extra Controls ##" << sub->s.get_info(RS2_CAMERA_INFO_NAME);
+                        if (ImGui::CollapsingHeader(label.c_str(), nullptr, true, false))
+                        {
+                            static const std::vector<rs2_option> options_order{ RS2_OPTION_ADVANCED_MODE_PRESET,
+                                                                               RS2_OPTION_ENABLE_AUTO_EXPOSURE,
+                                                                               RS2_OPTION_EXPOSURE,
+                                                                               RS2_OPTION_EMITTER_ENABLED,
+                                                                               RS2_OPTION_LASER_POWER };
+                            sub->draw_options(options_order, update_read_only_options, error_message);
+
+                            auto&& de_opt = sub->options_metadata[RS2_OPTION_DEPTH_UNITS];
+                            if (de_opt.supported)
+                            {
+                                if (ImGui::Checkbox("Histogram Equalization", &model.streams[RS2_STREAM_DEPTH].texture->equalize))
+                                {
+                                    auto depth_units = de_opt.value;
+                                    model.streams[RS2_STREAM_DEPTH].texture->min_depth = 0;
+                                    model.streams[RS2_STREAM_DEPTH].texture->max_depth = 6 / depth_units;
+                                }
+                                if (!model.streams[RS2_STREAM_DEPTH].texture->equalize)
+                                {
+                                    auto depth_units = de_opt.value;
+                                    auto val = model.streams[RS2_STREAM_DEPTH].texture->min_depth * depth_units;
+                                    if (ImGui::SliderFloat("Near (m)", &val, 0, 16))
+                                    {
+                                        model.streams[RS2_STREAM_DEPTH].texture->min_depth = val / depth_units;
+                                    }
+                                    val = model.streams[RS2_STREAM_DEPTH].texture->max_depth * depth_units;
+                                    if (ImGui::SliderFloat("Far  (m)", &val, 0, 16))
+                                    {
+                                        model.streams[RS2_STREAM_DEPTH].texture->max_depth = val / depth_units;
+                                    }
+                                    if (model.streams[RS2_STREAM_DEPTH].texture->min_depth > model.streams[RS2_STREAM_DEPTH].texture->max_depth)
+                                    {
+                                        std::swap(model.streams[RS2_STREAM_DEPTH].texture->max_depth, model.streams[RS2_STREAM_DEPTH].texture->min_depth);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
             }
-            else if (last_tab_index == 1)
+
+            //ImGui::EndChildFrame();
+            //ImGui::PopStyleColor();
+
+            //if (list.size() > 0 && ImGui::CollapsingHeader("Hardware Commands", nullptr, true, true))
+            //{
+            //    label = to_string() << "Hardware Reset";
+
+            //    const float hardware_reset_button_width = 300;
+            //    const float hardware_reset_button_height = 0;
+
+            //    if (ImGui::ButtonEx(label.c_str(), { hardware_reset_button_width, hardware_reset_button_height }, hw_reset_enable ? 0 : ImGuiButtonFlags_Disabled))
+            //    {
+            //        try
+            //        {
+            //            restarting_device_info = get_device_info(dev, false);
+            //            dev.hardware_reset();
+            //        }
+            //        catch (const error& e)
+            //        {
+            //            error_message = error_to_string(e);
+            //        }
+            //        catch (const std::exception& e)
+            //        {
+            //            error_message = e.what();
+            //        }
+            //    }
+            //    if (ImGui::IsItemHovered())
+            //    {
+            //        ImGui::SetTooltip("Ask camera firmware to restart the device");
+            //    }
+            //}
+
+            //ImGui::Text("\n\n\n\n\n\n\n");
+
+            for (auto&& sub : model.subdevices)
             {
-                draw_advanced_mode_tab(dev, amc, restarting_device_info, get_curr_advanced_controls);
+                sub->update(error_message);
             }
         }
-
 
         if (error_message != "")
         {
@@ -951,6 +1131,7 @@ int main(int, char**) try
         }
 
         ImGui::End();
+        ImGui::PopStyleVar();
 
         // Fetch frames from queue
         for (auto&& sub : model.subdevices)
@@ -990,7 +1171,7 @@ int main(int, char**) try
         glLoadIdentity();
         glOrtho(0, w, h, 0, -1, +1);
 
-        auto layout = model.calc_layout(panel_size, 0.f, w - panel_size, (float)h);
+        auto layout = model.calc_layout(panel_width, panel_y, w - panel_width, (float)h - panel_y - (is_output_collapsed ? default_log_h : 20));
 
         for (auto &&kvp : layout)
         {
