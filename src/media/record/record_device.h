@@ -46,7 +46,7 @@ namespace librealsense
         void write_extension_snapshot(rs2_extension ext, const std::shared_ptr<extension_snapshot>& snapshot);
         std::vector<std::shared_ptr<record_sensor>> create_record_sensors(std::shared_ptr<device_interface> m_device);
         template <typename T> snapshot_collection get_extensions_snapshots(T* extendable);
-
+        template <typename T, typename Ext> void try_add_snapshot(T* extendable, snapshot_collection& snapshots);
         std::shared_ptr<device_interface> m_device;
         std::vector<std::shared_ptr<record_sensor>> m_sensors;
 

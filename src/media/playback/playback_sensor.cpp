@@ -35,7 +35,7 @@ void playback_sensor::open(const std::vector<stream_profile>& requests)
     }
     for (auto&& profile : requests)
     {
-        m_dispatchers.emplace(std::make_pair(profile.stream, std::make_shared<dispatcher>(1))); //TODO: what size the queue should be?
+        m_dispatchers.emplace(std::make_pair(profile.stream, std::make_shared<dispatcher>(10))); //TODO: what size the queue should be?
         m_dispatchers[profile.stream]->start();
     }
     
@@ -44,6 +44,10 @@ void playback_sensor::open(const std::vector<stream_profile>& requests)
 
 void playback_sensor::close()
 {
+    for (auto dispatcher : m_dispatchers)
+    {
+        dispatcher.second->flush();
+    }
     m_dispatchers.clear();
     closed(m_sensor_id);
 }

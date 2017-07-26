@@ -2,6 +2,8 @@
 // Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 
 #include <core/debug.h>
+#include <core/motion.h>
+#include <core/advanced_mode.h>
 #include "record_device.h"
 
 
@@ -52,6 +54,7 @@ std::vector<std::shared_ptr<record_sensor>> record_device::create_record_sensors
 
 librealsense::record_device::~record_device()
 {
+    (*m_write_thread)->flush();
     (*m_write_thread)->stop();
 }
 librealsense::sensor_interface& librealsense::record_device::get_sensor(size_t i)
@@ -72,7 +75,9 @@ void librealsense::record_device::write_header()
     {
         auto& sensor = m_device->get_sensor(j);
         auto sensor_extensions_md = get_extensions_snapshots(&sensor);
-        sensors_md.emplace_back(sensor_extensions_md, sensor.get_principal_requests());
+        //TODO: Ziv, remove supported_profiles. Only streaming profiles should be written when open() is called
+        auto supported_profiles = sensor.get_principal_requests();
+        sensors_md.emplace_back(sensor_extensions_md, supported_profiles);
     }
 
     m_ros_writer->write_device_description({device_extensions_md, sensors_md, {/*TODO: get extrinsics*/}});
@@ -164,7 +169,27 @@ rs2_extrinsics librealsense::record_device::get_extrinsics(size_t from,
                                                       size_t to,
                                                       rs2_stream to_stream) const
 {
-    throw not_implemented_exception(__FUNCTION__);
+    return m_device->get_extrinsics(from, from_stream, to, to_stream);
+}
+
+template <typename T, typename Ext>
+void librealsense::record_device::try_add_snapshot(T* extendable, snapshot_collection& snapshots)
+{
+    auto api = dynamic_cast<Ext*>(extendable);
+    if (api != nullptr)
+    {
+        std::shared_ptr<Ext> p;
+        api->create_snapshot(p); //might need to add: "recordable<Ext>::"
+        auto snapshot = std::dynamic_pointer_cast<extension_snapshot>(p);
+        if (snapshot != nullptr)
+        {
+            snapshots[TypeToExtensionn<Ext>::value] = snapshot;
+        }
+        else
+        {
+            LOG_ERROR("Failed to downcast snapshot of type " << TypeToExtensionn<Ext>::type_str);
+        }
+    }
 }
 
 /**
@@ -181,72 +206,26 @@ snapshot_collection librealsense::record_device::get_extensions_snapshots(T* ext
     for (int i = 0; i < static_cast<int>(RS2_EXTENSION_COUNT ); ++i)
     {
         rs2_extension ext = static_cast<rs2_extension>(i);
-        switch(ext)
+        switch (ext)
         {
-            case RS2_EXTENSION_DEBUG :
-            {
-                auto api = dynamic_cast<librealsense::debug_interface*>(extendable);
-                if (api)
-                {
-                    //std::shared_ptr<debug_interface> p;
-                    //TODO: Ziv, use api->create_snapshot(p); //recordable<debug_interface>::
-                    //TODO: Ziv, Make sure dynamic cast indeed works
-                    //snapshots.push_back(std::dynamic_pointer_cast<extension_snapshot>(p));
-                }
-                break;
-            }
-            case RS2_EXTENSION_INFO :
-            {
-                auto api = dynamic_cast<librealsense::info_interface*>(extendable);
-                if (api)
-                {
-                    std::shared_ptr<info_interface> p;
-                    api->create_snapshot(p); //recordable<info_interface>::
-                    //TODO: Ziv, Make sure dynamic cast indeed works
-                    snapshots[ext] = std::dynamic_pointer_cast<extension_snapshot>(p);
-                }
-                break;
-            }
-            case RS2_EXTENSION_MOTION :
-            {
-                //librealsense::motion_sensor_interface
-                break;
-            }
-            case RS2_EXTENSION_OPTIONS :
-            {
-                //librealsense::options_interface
-                //TODO: Ziv, handle
-                break;
-            }
-            case RS2_EXTENSION_VIDEO :
-            {
-                //librealsense::video_sensor_interface
-                break;
-            }
-            case RS2_EXTENSION_ROI :
-            {
-                //librealsense::roi_sensor_interface
-                break;
-            }
-            case RS2_EXTENSION_UNKNOWN:
-                //[[fallthrough]];
-            case RS2_EXTENSION_DEPTH_SENSOR ://TODO: Ziv, handle these extensiosn
-                //[[fallthrough]];
-            case RS2_EXTENSION_VIDEO_FRAME :
-                //[[fallthrough]];
-            case RS2_EXTENSION_MOTION_FRAME :
-                //[[fallthrough]];
-            case RS2_EXTENSION_COMPOSITE_FRAME :
-                //[[fallthrough]];
-            case RS2_EXTENSION_POINTS :
-                //[[fallthrough]];
-            case RS2_EXTENSION_ADVANCED_MODE :
-                //[[fallthrough]];
-            case RS2_EXTENSION_COUNT :
-                //[[fallthrough]];
-            default:
-                continue;
-
+            case RS2_EXTENSION_UNKNOWN         : break;
+//TODO: uncomment            case RS2_EXTENSION_DEBUG           : try_add_snapshot<T, ExtensionsToTypes<RS2_EXTENSION_DEBUG          >::type>(extendable, snapshots); 
+            case RS2_EXTENSION_INFO            : try_add_snapshot<T, ExtensionsToTypes<RS2_EXTENSION_INFO           >::type>(extendable, snapshots); 
+//TODO: uncomment            case RS2_EXTENSION_MOTION          : try_add_snapshot<T, ExtensionsToTypes<RS2_EXTENSION_MOTION         >::type>(extendable, snapshots); 
+//TODO: uncomment            case RS2_EXTENSION_OPTIONS         : try_add_snapshot<T, ExtensionsToTypes<RS2_EXTENSION_OPTIONS        >::type>(extendable, snapshots); 
+//TODO: uncomment            case RS2_EXTENSION_VIDEO           : try_add_snapshot<T, ExtensionsToTypes<RS2_EXTENSION_VIDEO          >::type>(extendable, snapshots); 
+//TODO: uncomment            case RS2_EXTENSION_ROI             : try_add_snapshot<T, ExtensionsToTypes<RS2_EXTENSION_ROI            >::type>(extendable, snapshots); 
+//TODO: uncomment            case RS2_EXTENSION_DEPTH_SENSOR    : try_add_snapshot<T, ExtensionsToTypes<RS2_EXTENSION_DEPTH_SENSOR   >::type>(extendable, snapshots); 
+            case RS2_EXTENSION_VIDEO_FRAME     : break;
+            case RS2_EXTENSION_MOTION_FRAME    : break;
+            case RS2_EXTENSION_COMPOSITE_FRAME : break;
+            case RS2_EXTENSION_POINTS          : break;
+//TODO: uncomment            case RS2_EXTENSION_ADVANCED_MODE   : try_add_snapshot<T, ExtensionsToTypes<RS2_EXTENSION_ADVANCED_MODE  >::type>(extendable, snapshots); 
+            case RS2_EXTENSION_RECORD          : break;
+            case RS2_EXTENSION_PLAYBACK        : break;
+            case RS2_EXTENSION_COUNT           : break;
+            default: 
+                LOG_WARNING("Extensions type is unhandled: " << static_cast<int>(ext));
         }
     }
     return snapshots;

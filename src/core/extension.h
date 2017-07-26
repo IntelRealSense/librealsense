@@ -6,13 +6,15 @@
 #include <memory>
 #include <functional>
 
-//Preprocessor Macro to define mapping between rs2_extension and their respective interface (and vice versa)
+/*! Preprocessor Macro to define mapping between rs2_extension and their respective interface (and vice versa) */
 #define MAP_EXTENSION(E, T)                        \
     template<> struct ExtensionsToTypes<E> {       \
         using type = T;                            \
+        static constexpr char* type_str = #T;      \
     };                                             \
     template<> struct TypeToExtensionn<T> {        \
         static constexpr rs2_extension value = E;  \
+        static constexpr char* type_str = #T;      \
     }
 
 namespace librealsense
