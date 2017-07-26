@@ -14,6 +14,7 @@
 #include <mutex>
 #include <set>
 #include <regex>
+#include <fstream>
 
 #pragma comment(lib, "opengl32.lib")
 
@@ -396,6 +397,43 @@ void draw_general_tab(device_model& model, device_list& list,
                             if (ImGui::IsItemHovered())
                             {
                                 ImGui::SetTooltip("Freeze current frame. The sub-device will continue to work in the background");
+                            }
+                        }
+                    }
+
+                    auto is_advanced_mode = dev.is<advanced_mode>();
+                    if (is_advanced_mode)
+                    {
+                        auto advanced = dev.as<advanced_mode>();
+                        if (advanced.is_enabled())
+                        {
+                            ImGui::Text("JSON File Path:");
+                            char json_path[256] = "./preset.json";
+                            ImGui::InputText("json_path", json_path, 256);
+                            if (ImGui::Button("Load JSON", { stream_all_button_width / 2 - 5, 0 }))
+                            {
+                                std::ifstream json_file(json_path);
+                                if (json_file.is_open())
+                                {
+                                    auto content = std::string(std::istreambuf_iterator<char>(json_file), std::istreambuf_iterator<char>());
+                                    advanced.apply_controls_from_json_content(content);
+                                }
+                                else
+                                    error_message = to_string() << "\"" << json_path << "\"" << " not found!";
+
+                            }
+                            ImGui::SameLine();
+                            if (ImGui::Button("Save JSON", { stream_all_button_width / 2 - 5, 0 }))
+                            {
+                                std::ofstream json_file(json_path);
+                                if (json_file.is_open())
+                                {
+                                    auto content = advanced.generate_json_data();
+                                    json_file << content;
+                                    json_file.close();
+                                }
+                                else
+                                    error_message = to_string() << "\"" << json_path << "\"" << " isn't created!";
                             }
                         }
                     }
