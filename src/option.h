@@ -6,37 +6,15 @@
 #include "backend.h"
 #include "archive.h"
 #include "hw-monitor.h"
-#include "subdevice.h"
+#include "sensor.h"
+#include "core/streaming.h"
 
 #include <chrono>
 #include <memory>
 #include <vector>
 
-namespace rsimpl2
+namespace librealsense
 {
-    struct option_range
-    {
-        float min;
-        float max;
-        float step;
-        float def;
-    };
-
-    class option
-    {
-    public:
-        virtual void set(float value) = 0;
-        virtual float query() const = 0;
-        virtual option_range get_range() const = 0;
-        virtual bool is_enabled() const = 0;
-        virtual bool is_read_only() const { return false; }
-
-        virtual const char* get_description() const = 0;
-        virtual const char* get_value_description(float) const { return nullptr; }
-
-        virtual ~option() = default;
-    };
-
     class uvc_pu_option : public option
     {
     public:
@@ -51,7 +29,12 @@ namespace rsimpl2
             return true;
         }
 
-        uvc_pu_option(uvc_endpoint& ep, rs2_option id, const std::map<float, std::string>& description_per_value = {})
+        uvc_pu_option(uvc_sensor& ep, rs2_option id)
+            : _ep(ep), _id(id)
+        {
+        }
+
+        uvc_pu_option(uvc_sensor& ep, rs2_option id, const std::map<float, std::string>& description_per_value)
             : _ep(ep), _id(id), _description_per_value(description_per_value)
         {
         }
@@ -66,7 +49,7 @@ namespace rsimpl2
         }
 
     private:
-        uvc_endpoint& _ep;
+        uvc_sensor& _ep;
         rs2_option _id;
         const std::map<float, std::string> _description_per_value;
     };
@@ -78,7 +61,7 @@ namespace rsimpl2
         void set(float value) override
         {
             _ep.invoke_powered(
-                [this, value](uvc::uvc_device& dev)
+                [this, value](platform::uvc_device& dev)
                 {
                     T t = static_cast<T>(value);
                     if (!dev.set_xu(_xu, _id, reinterpret_cast<uint8_t*>(&t), sizeof(T)))
@@ -89,7 +72,7 @@ namespace rsimpl2
         float query() const override
         {
             return static_cast<float>(_ep.invoke_powered(
-                [this](uvc::uvc_device& dev)
+                [this](platform::uvc_device& dev)
                 {
                     T t;
                     if (!dev.get_xu(_xu, _id, reinterpret_cast<uint8_t*>(&t), sizeof(T)))
@@ -102,7 +85,7 @@ namespace rsimpl2
         option_range get_range() const override
         {
             auto uvc_range = _ep.invoke_powered(
-                [this](uvc::uvc_device& dev)
+                [this](platform::uvc_device& dev)
                 {
                     return dev.get_xu_range(_xu, _id, sizeof(T));
                 });
@@ -119,7 +102,7 @@ namespace rsimpl2
 
         bool is_enabled() const override { return true; }
 
-        uvc_xu_option(uvc_endpoint& ep, uvc::extension_unit xu, uint8_t id, std::string description)
+        uvc_xu_option(uvc_sensor& ep, platform::extension_unit xu, uint8_t id, std::string description)
             : _ep(ep), _xu(xu), _id(id), _desciption(std::move(description))
         {}
 
@@ -129,8 +112,8 @@ namespace rsimpl2
         }
 
     protected:
-        uvc_endpoint&       _ep;
-        uvc::extension_unit _xu;
+        uvc_sensor&       _ep;
+        platform::extension_unit _xu;
         uint8_t             _id;
         std::string         _desciption;
     };
@@ -199,19 +182,19 @@ namespace rsimpl2
             (struct_interface, field, range);
     }
 
-    class command_transfer_over_xu : public uvc::command_transfer
+    class command_transfer_over_xu : public platform::command_transfer
     {
     public:
         std::vector<uint8_t> send_receive(const std::vector<uint8_t>& data, int, bool require_response) override;
 
-        command_transfer_over_xu(uvc_endpoint& uvc,
-                             uvc::extension_unit xu, uint8_t ctrl)
+        command_transfer_over_xu(uvc_sensor& uvc,
+                                 platform::extension_unit xu, uint8_t ctrl)
             : _uvc(uvc), _xu(std::move(xu)), _ctrl(ctrl)
         {}
 
     private:
-        uvc_endpoint&       _uvc;
-        uvc::extension_unit _xu;
+        uvc_sensor&       _uvc;
+        platform::extension_unit _xu;
         uint8_t             _ctrl;
     };
 
@@ -243,7 +226,7 @@ namespace rsimpl2
     };
 
     /** \brief auto_disabling_control class provided a control
-    * that disable auto exposure whan changing the auto disabling control value */
+    * that disable auto-control when changing the auto disabling control value */
    class auto_disabling_control : public option
    {
    public:
@@ -260,12 +243,19 @@ namespace rsimpl2
           auto strong = _auto_exposure.lock();
           assert(strong);
 
-          auto is_auto = strong->query();
+          auto move_to_manual = false;
+          auto val = strong->query();
 
-          if(strong && is_auto)
+          if (std::find(_move_to_manual_values.begin(),
+                        _move_to_manual_values.end(), val) != _move_to_manual_values.end())
           {
-              LOG_DEBUG("Move auto exposure to manual mode in order set value to gain controll");
-              strong->set(0);
+              move_to_manual = true;
+          }
+
+          if (strong && move_to_manual)
+          {
+              LOG_DEBUG("Move option to manual mode in order to set a value");
+              strong->set(_manual_value);
           }
           _auto_disabling_control->set(value);
        }
@@ -290,16 +280,20 @@ namespace rsimpl2
            return  _auto_disabling_control->is_read_only();
        }
 
-
        explicit auto_disabling_control(std::shared_ptr<option> auto_disabling,
-                                       std::shared_ptr<option> auto_exposure)
+                                       std::shared_ptr<option> auto_exposure,
+                                       std::vector<float> move_to_manual_values = {1.f},
+                                       float manual_value = 0.f)
 
-           :_auto_disabling_control(auto_disabling), _auto_exposure(auto_exposure)
+           : _auto_disabling_control(auto_disabling), _auto_exposure(auto_exposure),
+             _move_to_manual_values(move_to_manual_values), _manual_value(manual_value)
        {}
 
    private:
        std::shared_ptr<option> _auto_disabling_control;
-       std::weak_ptr<option> _auto_exposure;
+       std::weak_ptr<option>   _auto_exposure;
+       std::vector<float>      _move_to_manual_values;
+       float                   _manual_value;
    };
 
    class readonly_option : public option
@@ -330,10 +324,10 @@ namespace rsimpl2
        std::string _desc;
    };
 
-   class librealsense_option : public option
+   class option_base : public option
    {
    public:
-       librealsense_option(const option_range& opt_range)
+       option_base(const option_range& opt_range)
            : _opt_range(opt_range)
        {}
 

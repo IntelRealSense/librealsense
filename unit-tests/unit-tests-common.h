@@ -259,7 +259,7 @@ struct frame_metadata
 };
 
 
-struct frame_additional_data
+struct internal_frame_additional_data
 {
     double                  timestamp;
     unsigned long long      frame_number;
@@ -268,7 +268,7 @@ struct frame_additional_data
     rs2_format              format;
     frame_metadata          frame_md;       // Metadata attributes
 
-    frame_additional_data(const double &ts, const unsigned long long frame_num, const rs2_timestamp_domain& ts_domain, const rs2_stream& strm, const rs2_format& fmt) :
+    internal_frame_additional_data(const double &ts, const unsigned long long frame_num, const rs2_timestamp_domain& ts_domain, const rs2_stream& strm, const rs2_format& fmt) :
         timestamp(ts),
         frame_number(frame_num),
         timestamp_domain(ts_domain),
@@ -499,7 +499,7 @@ inline void frame_callback(rs2::device &dev, rs2::frame frame, void * user)
 //    }
 //}
 
-inline void test_option(rs2::device &device, rs2_option option, std::initializer_list<int> good_values, std::initializer_list<int> bad_values)
+inline void test_option(rs2::sensor &device, rs2_option option, std::initializer_list<int> good_values, std::initializer_list<int> bad_values)
 {
     // Test reading the current value
     float first_value;
@@ -532,5 +532,47 @@ inline void test_option(rs2::device &device, rs2_option option, std::initializer
     // Test that we can reset the option to its original value
     REQUIRE_NOTHROW(device.set_option(option, first_value));
     REQUIRE(device.get_option(option) == first_value);
+}
+
+enum res_type{
+    small_resolution,
+    vga_resolution,
+    full_resolution
+};
+
+inline bool try_get_res_type(uint32_t width, uint32_t height, res_type& res)
+{
+    if (width == 640 && height == 480)
+    {
+        res = res_type::vga_resolution;
+        return true;
+    }
+    else if (width < 640 && height < 480)
+    {
+        res = res_type::small_resolution;
+        return true;
+    }
+    else if (width > 640 && height > 480)
+    {
+        res = res_type::full_resolution;
+        return true;
+    }
+
+    return false;
+}
+
+inline rs2::stream_profile get_profile_by_resolution_type(rs2::sensor& s, res_type res)
+{
+    auto sp = s.get_stream_modes();
+    for (rs2::stream_profile p : sp)
+    {
+        res_type out_res;
+        if (try_get_res_type(p.width, p.height, out_res) &&
+            (res == out_res))
+        {
+            return p;
+        }
+    }
+    throw std::runtime_error("Stream profile not found!");
 }
 #endif

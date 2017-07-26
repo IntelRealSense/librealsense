@@ -10,9 +10,9 @@
 
 #define HW_MONITOR_BUFFER_SIZE   (1024)
 
-namespace rsimpl2
+namespace librealsense
 {
-    namespace uvc
+    namespace platform
     {
         enum class pipe_direction
         {

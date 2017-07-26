@@ -32,9 +32,9 @@ DEFINE_GUID(GUID_DEVINTERFACE_IMAGE, 0x6bdd1fc6L, 0x810f, 0x11d0, 0xbe, 0xc7, 0x
 
 #define CREATE_MUTEX_RETRY_NUM  (5)
 
-namespace rsimpl2
+namespace librealsense
 {
-    namespace uvc
+    namespace platform
     {
         std::string hr_to_string(HRESULT hr)
         {

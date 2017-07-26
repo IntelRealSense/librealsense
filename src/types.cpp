@@ -11,9 +11,7 @@
 #include <fstream>
 #include <cmath>
 
-#define unknown "UNKNOWN"
-
-namespace rsimpl2
+namespace librealsense
 {
     std::string datetime_string()
     {
@@ -25,6 +23,13 @@ namespace rsimpl2
         return to_string() << buffer;
     }
 
+    recoverable_exception::recoverable_exception(const std::string& msg,
+        rs2_exception_type exception_type) noexcept
+        : librealsense_exception(msg, exception_type)
+    {
+        LOG_WARNING(msg);
+    }
+
     bool file_exists(const char* filename)
     {
         std::ifstream f(filename);
@@ -34,19 +39,30 @@ namespace rsimpl2
     frame_holder::~frame_holder()
     {
         if (frame)
-            frame->get()->get_owner()->release_frame_ref(frame);
+            frame->release();
     }
 
     frame_holder& frame_holder::operator=(frame_holder&& other)
     {
         if (frame)
-            frame->get()->get_owner()->release_frame_ref(frame);
+            frame->release();
         frame = other.frame;
         other.frame = nullptr;
         return *this;
     }
 
-    const char * get_string(rs2_exception_type value)
+    frame_holder frame_holder::clone() const
+    {
+        return frame_holder(*this);
+    }
+
+    frame_holder::frame_holder(const frame_holder& other)
+        : frame(other.frame)
+    {
+        frame->acquire();
+    }
+
+    const char* get_string(rs2_exception_type value)
     {
         #define CASE(X) case RS2_EXCEPTION_TYPE_##X: return #X;
         switch(value)
@@ -58,12 +74,12 @@ namespace rsimpl2
         CASE(WRONG_API_CALL_SEQUENCE)
         CASE(NOT_IMPLEMENTED)
         CASE(DEVICE_IN_RECOVERY_MODE)
-        default: assert(!is_valid(value)); return unknown;
+        default: assert(!is_valid(value)); return UNKNOWN;
         }
         #undef CASE
     }
 
-    const char * get_string(rs2_stream value)
+    const char* get_string(rs2_stream value)
     {
         #define CASE(X) case RS2_STREAM_##X: return #X;
         switch(value)
@@ -80,14 +96,14 @@ namespace rsimpl2
         CASE(GPIO2)
         CASE(GPIO3)
         CASE(GPIO4)
-        default: assert(!is_valid(value)); return unknown;
+        default: assert(!is_valid(value)); return UNKNOWN;
         }
         #undef CASE
     }
 
-    const char * get_string(rs2_visual_preset value)
+    const char* get_string(rs2_ivcam_visual_preset value)
     {
-        #define CASE(X) case RS2_VISUAL_PRESET_##X: return #X;
+        #define CASE(X) case RS2_IVCAM_VISUAL_PRESET_##X: return #X;
         switch (value)
         {
             CASE(SHORT_RANGE)
@@ -101,11 +117,48 @@ namespace rsimpl2
             CASE(DEFAULT)
             CASE(MID_RANGE)
             CASE(IR_ONLY)
-        default: assert(!is_valid(value)); return unknown;
+        default: assert(!is_valid(value)); return UNKNOWN;
         }
         #undef CASE
     }
-       const char * get_string(rs2_log_severity value)
+
+    const char* get_string(rs2_extension value)
+    {
+        #define CASE(X) case RS2_EXTENSION_ ##X: return #X;
+        switch (value)
+        {
+            CASE(DEBUG)
+            CASE(INFO)
+            CASE(MOTION)
+            CASE(OPTIONS)
+            CASE(UNKNOWN)
+            CASE(VIDEO)
+            CASE(ROI)
+            CASE(DEPTH_SENSOR)
+            CASE(VIDEO_FRAME)
+            CASE(MOTION_FRAME)
+            CASE(COMPOSITE_FRAME)
+            CASE(POINTS)
+            CASE(ADVANCED_MODE)
+        default: assert(!is_valid(value)); return UNKNOWN;
+        }
+        #undef CASE
+    }
+
+    const char* get_string(rs2_playback_status value)
+    {
+#define CASE(X) case RS2_PLAYBACK_STATUS_ ##X: return #X;
+        switch (value)
+        {
+            CASE(UNKNOWN)
+            CASE(STOPPED)
+            CASE(PAUSED)
+            CASE(PLAYING)
+            default: assert(!is_valid(value)); return UNKNOWN;
+        }
+#undef CASE
+    }
+    const char* get_string(rs2_log_severity value)
     {
         #define CASE(X) case RS2_LOG_SEVERITY_##X: return #X;
         switch (value)
@@ -117,11 +170,12 @@ namespace rsimpl2
             CASE(FATAL)
             CASE(NONE)
             CASE(COUNT)
-        default: assert(!is_valid(value)); return unknown;
+        default: assert(!is_valid(value)); return UNKNOWN;
         }
         #undef CASE
     }
-    const char * get_string(rs2_option value)
+
+    const char* get_string(rs2_option value)
     {
         #define CASE(X) case RS2_OPTION_##X: return #X;
         switch(value)
@@ -156,12 +210,13 @@ namespace rsimpl2
         CASE(MOTION_MODULE_TEMPERATURE)
         CASE(DEPTH_UNITS)
         CASE(ENABLE_MOTION_CORRECTION)
-        default: assert(!is_valid(value)); return unknown;
+        CASE(ADVANCED_MODE_PRESET)
+        default: assert(!is_valid(value)); return UNKNOWN;
         }
         #undef CASE
     }
 
-    const char * get_string(rs2_format value)
+    const char* get_string(rs2_format value)
     {
         #define CASE(X) case RS2_FORMAT_##X: return #X;
         switch(value)
@@ -184,12 +239,12 @@ namespace rsimpl2
         CASE(MOTION_RAW)
         CASE(MOTION_XYZ32F)
         CASE(GPIO_RAW)
-        default: assert(!is_valid(value)); return unknown;
+        default: assert(!is_valid(value)); return UNKNOWN;
         }
         #undef CASE
     }
 
-    const char * get_string(rs2_distortion value)
+    const char* get_string(rs2_distortion value)
     {
         #define CASE(X) case RS2_DISTORTION_##X: return #X;
         switch(value)
@@ -199,33 +254,31 @@ namespace rsimpl2
         CASE(INVERSE_BROWN_CONRADY)
         CASE(FTHETA)
         CASE(BROWN_CONRADY)
-        default: assert(!is_valid(value)); return unknown;
+        default: assert(!is_valid(value)); return UNKNOWN;
         }
         #undef CASE
     }
 
 
-    const char * get_string(rs2_camera_info value)
+    const char* get_string(rs2_camera_info value)
     {
         #define CASE(X) case RS2_CAMERA_INFO_##X: return #X;
         switch(value)
         {
-        CASE(DEVICE_NAME)
-        CASE(MODULE_NAME)
-        CASE(DEVICE_SERIAL_NUMBER)
-        CASE(CAMERA_FIRMWARE_VERSION)
-        CASE(DEVICE_LOCATION)
-        CASE(DEVICE_DEBUG_OP_CODE)
+        CASE(NAME)
+        CASE(SERIAL_NUMBER)
+        CASE(FIRMWARE_VERSION)
+        CASE(LOCATION)
+        CASE(DEBUG_OP_CODE)
         CASE(ADVANCED_MODE)
         CASE(PRODUCT_ID)
-        CASE(MOTION_MODULE_FIRMWARE_VERSION)
-        CASE(IS_CAMERA_LOCKED)
-        default: assert(!is_valid(value)); return unknown;
+        CASE(CAMERA_LOCKED)
+        default: assert(!is_valid(value)); return UNKNOWN;
         }
         #undef CASE
     }
 
-    const char * get_string(rs2_frame_metadata value)
+    const char* get_string(rs2_frame_metadata value)
     {
         #define CASE(X) case RS2_FRAME_METADATA_##X: return #X;
         switch (value)
@@ -238,24 +291,24 @@ namespace rsimpl2
         CASE(AUTO_EXPOSURE)
         CASE(WHITE_BALANCE)
         CASE(TIME_OF_ARRIVAL)
-        default: assert(!is_valid(value)); return unknown;
+        default: assert(!is_valid(value)); return UNKNOWN;
         }
         #undef CASE
     }
 
-    const char * get_string(rs2_timestamp_domain value)
+    const char* get_string(rs2_timestamp_domain value)
     {
         #define CASE(X) case RS2_TIMESTAMP_DOMAIN_##X: return #X;
         switch (value)
         {
         CASE(HARDWARE_CLOCK)
         CASE(SYSTEM_TIME)
-        default: assert(!is_valid(value)); return unknown;
+        default: assert(!is_valid(value)); return UNKNOWN;
         }
         #undef CASE
     }
 
-    const char * get_string(rs2_notification_category value)
+    const char* get_string(rs2_notification_category value)
     {
         #define CASE(X) case RS2_NOTIFICATION_CATEGORY_##X: return #X;
         switch (value)
@@ -264,7 +317,7 @@ namespace rsimpl2
         CASE(FRAME_CORRUPTED)
         CASE(HARDWARE_ERROR)
         CASE(UNKNOWN_ERROR)
-        default: assert(!is_valid(value)); return unknown;
+        default: assert(!is_valid(value)); return UNKNOWN;
         }
         #undef CASE
     }
@@ -437,5 +490,9 @@ namespace rsimpl2
         _dispatcher.start();
     }
 
-
+    void copy(void* dst, void const* src, size_t size)
+    {
+        auto from = reinterpret_cast<uint8_t const*>(src);
+        std::copy(from, from + size, reinterpret_cast<uint8_t*>(dst));
+    }
 }

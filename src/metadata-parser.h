@@ -8,9 +8,9 @@
 #include "archive.h"
 #include "metadata.h"
 
-using namespace rsimpl2;
+using namespace librealsense;
 
-namespace rsimpl2
+namespace librealsense
 {
 /** \brief Metadata fields that are utilized internally by librealsense
     Provides extention to the r2_frame_metadata list of attributes*/
@@ -141,7 +141,7 @@ namespace rsimpl2
         }
 
         bool supports(const frame & frm) const override
-        { return (frm.additional_data.metadata_size >= uvc::uvc_header_size); }
+        { return (frm.additional_data.metadata_size >= platform::uvc_header_size); }
 
     private:
         md_uvc_header_parser() = delete;
@@ -191,17 +191,17 @@ namespace rsimpl2
     }
 
     /**\brief Optical timestamp for RS4xx devices is calculated internally*/
-    class md_rs4xx_sensor_timestamp : public md_attribute_parser_base
+    class md_rs400_sensor_timestamp : public md_attribute_parser_base
     {
         std::shared_ptr<md_attribute_parser_base> _sensor_ts_parser = nullptr;
         std::shared_ptr<md_attribute_parser_base> _frame_ts_parser = nullptr;
 
     public:
-        explicit md_rs4xx_sensor_timestamp(std::shared_ptr<md_attribute_parser_base> sensor_ts_parser,
+        explicit md_rs400_sensor_timestamp(std::shared_ptr<md_attribute_parser_base> sensor_ts_parser,
             std::shared_ptr<md_attribute_parser_base> frame_ts_parser) :
             _sensor_ts_parser(sensor_ts_parser), _frame_ts_parser(frame_ts_parser) {};
 
-        virtual ~md_rs4xx_sensor_timestamp() { _sensor_ts_parser = nullptr; _frame_ts_parser = nullptr; };
+        virtual ~md_rs400_sensor_timestamp() { _sensor_ts_parser = nullptr; _frame_ts_parser = nullptr; };
 
         // The sensor's timestamp is defined as the middle of exposure time. Sensor_ts= Frame_ts - (Actual_Exposure/2)
         // For RS4xx the metadata payload holds only the (Actual_Exposure/2) offset, and the actual value needs to be calculated
@@ -217,10 +217,10 @@ namespace rsimpl2
     };
 
     /**\brief A helper function to create a specialized parser for RS4xx sensor timestamp*/
-    inline std::shared_ptr<md_attribute_parser_base> make_rs4xx_sensor_ts_parser(std::shared_ptr<md_attribute_parser_base> frame_ts_parser,
+    inline std::shared_ptr<md_attribute_parser_base> make_rs400_sensor_ts_parser(std::shared_ptr<md_attribute_parser_base> frame_ts_parser,
         std::shared_ptr<md_attribute_parser_base> sensor_ts_parser)
     {
-        std::shared_ptr<md_rs4xx_sensor_timestamp> parser(new md_rs4xx_sensor_timestamp(sensor_ts_parser, frame_ts_parser));
+        std::shared_ptr<md_rs400_sensor_timestamp> parser(new md_rs400_sensor_timestamp(sensor_ts_parser, frame_ts_parser));
         return parser;
     }
 
@@ -244,7 +244,7 @@ namespace rsimpl2
 
         bool supports(const frame & frm) const override
         {
-            return (frm.additional_data.metadata_size >= (sizeof(S) + uvc::uvc_header_size));
+            return (frm.additional_data.metadata_size >= (sizeof(S) + platform::uvc_header_size));
         }
 
     private:

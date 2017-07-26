@@ -73,15 +73,26 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
 #set(CMAKE_VERBOSE_MAKEFILE on)
 
 include(CheckCXXCompilerFlag)
+CHECK_CXX_COMPILER_FLAG("-std=c11" COMPILER_SUPPORTS_C11)
 CHECK_CXX_COMPILER_FLAG("-std=c++11" COMPILER_SUPPORTS_CXX11)
 CHECK_CXX_COMPILER_FLAG("-std=c++0x" COMPILER_SUPPORTS_CXX0X)
-if(COMPILER_SUPPORTS_CXX11)
+if(COMPILER_SUPPORTS_C11)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c11")
+endif()
+if(COMPILER_SUPPORTS_CXX11)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 elseif(COMPILER_SUPPORTS_CXX0X)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
 else()
     message(STATUS "The compiler ${CMAKE_CXX_COMPILER} has no C++11 support. Please use a different C++ compiler.")
+endif()
+
+FIND_PACKAGE( OpenMP REQUIRED)
+if(OPENMP_FOUND)
+    message("OPENMP FOUND")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
 endif()
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/CMake)
@@ -90,38 +101,53 @@ set(REALSENSE_CPP
     src/archive.cpp
     src/context.cpp
     src/device.cpp
-    src/subdevice.cpp
+    src/sensor.cpp
     src/algo.cpp
     src/sync.cpp
     src/option.cpp
     src/error-handling.cpp
     src/hw-monitor.cpp
     src/image.cpp
-    src/ivcam-private.cpp
+    src/ivcam/ivcam-private.cpp
     src/log.cpp
     src/rs.cpp
-    src/sr300.cpp
+    src/ivcam/sr300.cpp
     src/types.cpp
-    src/backend-v4l2.cpp
-    src/backend-hid.cpp
+    src/linux/backend-v4l2.cpp
+    src/linux/backend-hid.cpp
     src/backend.cpp
     src/verify.c
-    src/ds5.cpp
-    src/ds5-options.cpp
-    src/ds5-timestamp.cpp
-    src/ds5-private.cpp
+    src/align.cpp
+    src/source.cpp
+    src/ds5/ds5-options.cpp
+    src/ds5/ds5-timestamp.cpp
+    src/ds5/ds5-private.cpp
+    src/ds5/ds5-motion.cpp
+    src/ds5/ds5-rolling-shutter.cpp
+    src/ds5/ds5-device.cpp
+    src/ds5/ds5-color.cpp
+    src/ds5/ds5-active.cpp
+    src/ds5/ds5-factory.cpp
     src/win/win-helpers.cpp
     src/win/win-uvc.cpp
     src/win/win-usb.cpp
     src/win/win-hid.cpp
     src/win/win-backend.cpp
 
-    third_party/easyloggingpp/src/easylogging++.cc
+    rs400/rs400_advanced_mode/src/rs2_advanced_mode.cpp
+    rs400/rs400_advanced_mode/src/presets.cpp
+    rs400/rs400_advanced_mode/src/advanced_mode.cpp
 
-    third_party/sqlite/sqlite3.c
-    src/sql.cpp
-    src/recorder.cpp
+    third-party/easyloggingpp/src/easylogging++.cc
+    third-party/sqlite/sqlite3.c
 
+    src/mock/sql.cpp
+    src/mock/recorder.cpp
+
+    src/media/record/record_device.cpp
+    src/media/record/record_sensor.cpp
+    src/media/playback/playback_device.cpp
+    src/media/playback/playback_sensor.cpp
 )
 
 set(REALSENSE_HPP
@@ -130,13 +156,28 @@ set(REALSENSE_HPP
     include/librealsense/rscore2.hpp
     include/librealsense/rsutil2.h
     include/librealsense/rsutil2.hpp
+    include/librealsense/rs2_advanced_mode.h
+    include/librealsense/rs2_advanced_mode.hpp
+    include/librealsense/rs2_advanced_mode_command.h
+
+    src/core/streaming.h
+    src/core/debug.h
+    src/core/advanced_mode.h
+    src/core/roi.h
+    src/core/motion.h
+    src/core/video.h
+    src/core/options.h
+    src/core/info.h
+    src/core/extension.h
+    src/core/processing.h
 
     src/archive.h
     src/concurrency.h
     src/context.h
-    src/device.h
+    src/sensor.h
     src/sync.h
-    src/subdevice.h
+    src/sensor.h
+    src/align.h
     src/algo.h
     src/option.h
     src/metadata.h
@@ -144,26 +185,67 @@ set(REALSENSE_HPP
     src/error-handling.h
     src/hw-monitor.h
     src/image.h
-    src/ivcam-private.h
+    src/source.h
+    src/ivcam/ivcam-private.h
     src/types.h
     src/backend.h
-    src/sr300.h
-    src/ds5.h
-    src/ds5-options.h
-    src/ds5-private.h
-    src/ds5-timestamp.h
-    src/backend-v4l2.h
-    src/backend-hid.h
+    src/device.h
+    src/ivcam/sr300.h
+    src/ds5/ds5-factory.h
+    src/ds5/ds5-device.h
+    src/ds5/ds5-options.h
+    src/ds5/ds5-private.h
+    src/ds5/ds5-timestamp.h
+    src/ds5/ds5-active.h
+    src/ds5/ds5-motion.h
+    src/ds5/ds5-rolling-shutter.h
+    src/ds5/ds5-color.h
+    src/linux/backend-v4l2.h
+    src/linux/backend-hid.h
     src/win/win-helpers.h
     src/win/win-uvc.h
     src/win/win-usb.h
     src/win/win-hid.h
     src/win/win-backend.h
+    src/api.h
+    src/core/advanced_mode.h
+    src/core/serialization.h
 
-    third_party/easyloggingpp/src/easylogging++.h
-    third_party/sqlite/sqlite3.h
-    src/sql.h
-    src/recorder.h
+    src/media/record/record_device.h
+    src/media/record/record_sensor.h
+    src/media/playback/playback_device.h
+    src/media/playback/playback_sensor.h
+    src/media/device_snapshot.h
+    src/media/ros/ros_reader.h
+    src/media/ros/ros_writer.h
+
+    third-party/easyloggingpp/src/easylogging++.h
+    third-party/sqlite/sqlite3.h
+    src/mock/sql.h
+    src/mock/recorder.h
+
+    src/media/ros/data_objects/pose.h
+    src/media/ros/data_objects/vendor_data.h
+    src/media/ros/data_objects/image.h
+    src/media/ros/data_objects/motion_stream_info.h
+    src/media/ros/data_objects/property.h
+    src/media/ros/data_objects/motion_sample.h
+    src/media/ros/data_objects/time_sample.h
+    src/media/ros/data_objects/compressed_image.h
+    src/media/ros/data_objects/occupancy_map.h
+    src/media/ros/data_objects/stream_data.h
+    src/media/ros/data_objects/image_stream_info.h
+    src/media/ros/file_types.h
+    src/media/ros/status.h
+    src/media/ros/topic.h
+)
+
+# Add additional include directories to allow file to include rosbag headers
+include(${CMAKE_CURRENT_LIST_DIR}/third-party/realsense-file/config.cmake)
+include_directories(
+        ${ROSBAG_HEADER_DIRS}
+        ${BOOST_INCLUDE_PATH}
+        ${LZ4_INCLUDE_PATH}
 )
 
 if(WIN32)
@@ -173,14 +255,21 @@ if(WIN32)
         src/win/win-usb.cpp
         src/win/win-hid.cpp
         src/win/win-backend.cpp
-        src/backend-v4l2.cpp
-        src/backend-hid.cpp
+        src/linux/backend-v4l2.cpp
+        src/linux/backend-hid.cpp
         src/backend.cpp
-        src/verify.c)
+        )
 
     source_group("Source Files\\Logging" FILES
-        third_party/easyloggingpp/src/easylogging++.cc
+        third-party/easyloggingpp/src/easylogging++.cc
         src/log.cpp
+        )
+
+    source_group("Source Files\\Media" FILES
+        src/media/record/record_device.cpp
+        src/media/record/record_sensor.cpp
+        src/media/playback/playback_device.cpp
+        src/media/playback/playback_sensor.cpp
         )
 
     source_group("Header Files\\Backend" FILES
@@ -189,8 +278,8 @@ if(WIN32)
         src/win/win-usb.h
         src/win/win-hid.h
         src/win/win-backend.h
-        src/backend-v4l2.h
-        src/backend-hid.h
+        src/linux/backend-v4l2.h
+        src/linux/backend-hid.h
         src/backend.h)
 
     source_group("Header Files\\API" FILES
@@ -199,46 +288,92 @@ if(WIN32)
         include/librealsense/rscore2.hpp
         include/librealsense/rsutil2.h
         include/librealsense/rsutil2.hpp
+        include/librealsense/rs2_advanced_mode.h
+        include/librealsense/rs2_advanced_mode.hpp
+        include/librealsense/rs2_advanced_mode_command.h
         CMake/realsense.def
         )
 
     source_group("Header Files\\Recorder" FILES
-        third_party/sqlite/sqlite3.h
-        src/sql.h
-        src/recorder.h
+        third-party/sqlite/sqlite3.h
+        src/mock/sql.h
+        src/mock/recorder.h
         )
 
     source_group("Source Files\\API" FILES
         src/rs.cpp
+        src/verify.c
+        rs400/rs400_advanced_mode/src/rs2_advanced_mode.cpp
         )
 
-    source_group("Source Files\\Recorder" FILES
-        third_party/sqlite/sqlite3.c
-        src/sql.cpp
-        src/recorder.cpp
+    source_group("Header Files\\Media" FILES
+        src/media/record/record_device.h
+        src/media/playback/playback_device.h
+        src/media/playback/playback_sensor.h
+        )
+    source_group("Header Files\\Media\\Ros_Serializer" FILES
+        src/media/ros/ros_reader.h
+        src/media/ros/ros_writer.h
+        src/media/ros/data_objects/pose.h
+        src/media/ros/data_objects/vendor_data.h
+        src/media/ros/data_objects/image.h
+        src/media/ros/data_objects/motion_stream_info.h
+        src/media/ros/data_objects/property.h
+        src/media/ros/data_objects/motion_sample.h
+        src/media/ros/data_objects/time_sample.h
+        src/media/ros/data_objects/compressed_image.h
+        src/media/ros/data_objects/occupancy_map.h
+        src/media/ros/data_objects/stream_data.h
+        src/media/ros/data_objects/image_stream_info.h
+        src/media/ros/file_types.h
+        src/media/ros/status.h
+        src/media/ros/topic.h
         )
 
     source_group("Source Files\\Devices" FILES
-        src/ds5.cpp
-        src/ds5-options.cpp
-        src/ds5-private.cpp
-        src/ds5-timestamp.cpp
-        src/sr300.cpp
-        src/ivcam-private.cpp
+        src/ds5/ds5-device.cpp
+        src/ds5/ds5-factory.cpp
+        src/ds5/ds5-options.cpp
+        src/ds5/ds5-private.cpp
+        src/ds5/ds5-timestamp.cpp
+        src/ds5/ds5-motion.cpp
+        src/ds5/ds5-rolling-shutter.cpp
+        src/ds5/ds5-color.cpp
+        src/ds5/ds5-active.cpp
+        src/ivcam/sr300.cpp
+        src/ivcam/ivcam-private.cpp
         )
 
     source_group("Header Files\\Devices" FILES
-        src/ds5.h
-        src/ds5-options.h
-        src/ds5-private.h
-        src/ds5-timestamp.h
-        src/sr300.h
-        src/ivcam-private.h
+        src/ds5/ds5-device.h
+        src/ds5/ds5-options.h
+        src/ds5/ds5-private.h
+        src/ds5/ds5-timestamp.h
+        src/ds5/ds5-factory.h
+        src/ds5/ds5-active.h
+        src/ds5/ds5-motion.h
+        src/ds5/ds5-rolling-shutter.h
+        src/ds5/ds5-color.h
+        src/ivcam/sr300.h
+        src/ivcam/ivcam-private.h
+        )
+
+    source_group("Header Files\\Core" FILES
+        src/core/streaming.h
+        src/core/debug.h
+        src/core/roi.h
+        src/core/video.h
+        src/core/motion.h
+        src/core/info.h
+        src/core/options.h
+        src/core/extension.h
+        src/core/processing.h
         )
 
     source_group("Header Files\\Logging" FILES
-        third_party/easyloggingpp/src/easylogging++.h
+        third-party/easyloggingpp/src/easylogging++.h
         )
+
 
     foreach(flag_var
             CMAKE_CXX_FLAGS CMAKE_CXX_FLAGS_DEBUG CMAKE_CXX_FLAGS_RELEASE
@@ -326,6 +461,7 @@ if(HWM_OVER_XU)
     add_definitions(-DHWM_OVER_XU)
 endif()
 
+add_subdirectory(third-party/realsense-file)
 
 option(BUILD_SHARED_LIBS "Build shared library" ON)
 if(BUILD_SHARED_LIBS)
@@ -336,12 +472,12 @@ endif()
 
 set_target_properties(realsense2 PROPERTIES VERSION ${REALSENSE_VERSION_STRING}
                                 SOVERSION ${REALSENSE_VERSION_MAJOR})
-target_link_libraries(realsense2 ${LIBUSB1_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(realsense2 realsense-file ${LIBUSB1_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
 list(APPEND librealsense_PKG_LIBS ${CMAKE_THREAD_LIBS_INIT})
 
 add_definitions(-DELPP_THREAD_SAFE)
 add_definitions(-DELPP_NO_DEFAULT_LOG_FILE)
-
+include_directories(realsense2 src)
 
 set_target_properties (realsense2 PROPERTIES
     FOLDER Library
@@ -361,7 +497,7 @@ if(${ROS_BUILD_TYPE})
         ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
     )
 
-    install(DIRECTORY ${PROJECT_SOURCE_DIR}/include/${PROJECT_NAME}/
+    install(DIRECTORY ${PROJECT_SOURCE_DIR}/include/librealsense/
         DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION})
 else()
     set(CMAKECONFIG_INSTALL_DIR "${CMAKE_INSTALL_LIBDIR}/cmake/realsense2")
@@ -387,32 +523,35 @@ else()
     install(CODE "execute_process(COMMAND ldconfig)")
 endif()
 
-option(BUILD_UNIT_TESTS "Build realsense unit tests." ON)
-option(BUILD_EXAMPLES "Build realsense examples." OFF)
+option(BUILD_UNIT_TESTS "Build realsense unit tests." OFF) # TODO: Change back to ON
+option(BUILD_EXAMPLES "Build realsense examples and tools." ON)
 option(ENFORCE_METADATA "Require WinSDK with Metadata support during compilation. Windows OS Only" OFF)
-option(BUILD_RS400_EXTRAS "Build RS400 advanced APIs." ON)
+option(BUILD_PYTHON_BINDINGS "Build Python bindings" OFF)
 
-if(((BUILD_EXAMPLES AND BUILD_GRAPHICAL_EXAMPLES) OR BUILD_RS400_EXTRAS) AND WIN32)
-    add_subdirectory(examples/third_party/glfw)
+# This parameter is meant for disabling graphical examples when building for
+# headless targets.
+option(BUILD_GRAPHICAL_EXAMPLES "Build graphical examples and tools." ON)
+
+if((BUILD_EXAMPLES AND BUILD_GRAPHICAL_EXAMPLES) AND WIN32)
+  add_subdirectory(third-party/glfw)
 endif()
 
 if(BUILD_EXAMPLES)
   add_subdirectory(examples)
+  add_subdirectory(tools)
 endif()
 
 if(BUILD_UNIT_TESTS)
   add_subdirectory(unit-tests)
 endif()
 
-if(BUILD_RS400_EXTRAS)
-  add_subdirectory(rs400/examples)
-endif()
-
 if (ENFORCE_METADATA)
   add_definitions(-DENFORCE_METADATA)
 endif()
 
-add_subdirectory(bindings)
+if (BUILD_PYTHON_BINDINGS)
+  add_subdirectory(bindings/python)
+endif()
 
 # Check for unreferenced files
 FILE(GLOB_RECURSE AllSources RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}

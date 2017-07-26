@@ -7,14 +7,17 @@
 
 #include <cmath>
 #include "unit-tests-common.h"
-#include <librealsense/rsutil2.hpp>
+#include <librealsense/rs2_advanced_mode.hpp>
+#include "../src/ds5/ds5-active.h"
+#include "../src/ds5/ds5-rolling-shutter.h"
 
 using namespace rs2;
+using namespace librealsense;
 
 # define SECTION_FROM_TEST_NAME space_to_underscore(Catch::getCurrentContext().getResultCapture()->getCurrentTestName()).c_str()
 //// disable in one place options that are sensitive to frame content
 //// this is done to make sure unit-tests are deterministic
-void disable_sensitive_options_for(device& dev)
+void disable_sensitive_options_for(sensor& dev)
 {
     if (dev.supports(RS2_OPTION_ERROR_POLLING_ENABLED))
         REQUIRE_NOTHROW(dev.set_option(RS2_OPTION_ERROR_POLLING_ENABLED, 0));
@@ -27,8 +30,12 @@ void disable_sensitive_options_for(device& dev)
         auto range = dev.get_option_range(RS2_OPTION_EXPOSURE);
         REQUIRE_NOTHROW(dev.set_option(RS2_OPTION_EXPOSURE, range.def));
     }
+}
 
-
+void disable_sensitive_options_for(rs2::device& dev)
+{
+    for (auto&& s : dev.query_sensors())
+        disable_sensitive_options_for(s);
 }
 
 TEST_CASE("Device metadata enumerates correctly", "[live]")
@@ -36,7 +43,7 @@ TEST_CASE("Device metadata enumerates correctly", "[live]")
     rs2::context ctx;
     if (make_context(SECTION_FROM_TEST_NAME, &ctx))
     {       // Require at least one device to be plugged in
-        std::vector<device> list;
+        std::vector<rs2::device> list;
         REQUIRE_NOTHROW(list = ctx.query_devices());
         REQUIRE(list.size() > 0);
 
@@ -48,8 +55,8 @@ TEST_CASE("Device metadata enumerates correctly", "[live]")
                 for (auto j = 0; j < RS2_CAMERA_INFO_COUNT; ++j) {
                     auto is_supported = false;
                     REQUIRE_NOTHROW(is_supported = dev.supports(rs2_camera_info(j)));
-                    if (is_supported) REQUIRE(dev.get_camera_info(rs2_camera_info(j)) != nullptr);
-                    else REQUIRE_THROWS_AS(dev.get_camera_info(rs2_camera_info(j)), error);
+                    if (is_supported) REQUIRE(dev.get_info(rs2_camera_info(j)) != nullptr);
+                    else REQUIRE_THROWS_AS(dev.get_info(rs2_camera_info(j)), error);
                 }
             }
         }
@@ -68,12 +75,12 @@ TEST_CASE("Start-Stop stream sequence", "[live]")
     if (make_context(SECTION_FROM_TEST_NAME, &ctx))
     {
 
-        std::vector<device> list;
-        REQUIRE_NOTHROW(list = ctx.query_devices());
+        std::vector<sensor> list;
+        REQUIRE_NOTHROW(list = ctx.query_all_sensors());
         REQUIRE(list.size() > 0);
 
         util::config config;
-        REQUIRE_NOTHROW(config.enable_all(preset::best_quality));
+        REQUIRE_NOTHROW(config.enable_all(rs2::preset::best_quality));
 
         // For each device
         for (auto&& dev : list)
@@ -82,12 +89,12 @@ TEST_CASE("Start-Stop stream sequence", "[live]")
 
             // Configure all supported streams to run at 30 frames per second
             rs2::util::config::multistream streams;
-            REQUIRE_NOTHROW(streams = config.open(dev));
+            REQUIRE_NOTHROW(streams = config.open(ctx.get_sensor_parent(dev)));
 
             for (auto i = 0; i < 5; i++)
             {
                 // Test sequence
-                REQUIRE_NOTHROW(streams.start([](frame fref) {}));
+                REQUIRE_NOTHROW(streams.start([](rs2::frame fref) {}));
                 REQUIRE_NOTHROW(streams.stop());
             }
 
@@ -106,8 +113,8 @@ TEST_CASE("no extrinsic transformation between a stream and itself", "[live]")
     rs2::context ctx;
     if (make_context(SECTION_FROM_TEST_NAME, &ctx))
     {
-        std::vector<device> list;
-        REQUIRE_NOTHROW(list = ctx.query_devices());
+        std::vector<sensor> list;
+        REQUIRE_NOTHROW(list = ctx.query_all_sensors());
         const size_t device_count = list.size();
         REQUIRE(device_count > 0);
 
@@ -136,8 +143,8 @@ TEST_CASE("extrinsic transformation between two streams is a rigid transform", "
     rs2::context ctx;
     if (make_context(SECTION_FROM_TEST_NAME, &ctx))
     {
-        std::vector<device> list;
-        REQUIRE_NOTHROW(list = ctx.query_devices());
+        std::vector<sensor> list;
+        REQUIRE_NOTHROW(list = ctx.query_all_sensors());
         const size_t device_count = list.size();
         REQUIRE(device_count > 0);
 
@@ -145,7 +152,7 @@ TEST_CASE("extrinsic transformation between two streams is a rigid transform", "
         for (int i = 0; i < device_count; ++i)
         {
             auto dev = list[i];
-            auto adj_devices = dev.get_adjacent_devices();
+            auto adj_devices = ctx.get_sensor_parent(dev).query_sensors();
             //REQUIRE(dev != nullptr);
 
             // For every pair of streams
@@ -187,14 +194,14 @@ TEST_CASE("extrinsic transformations are transitive", "[live]")
     rs2::context ctx;
     if (make_context(SECTION_FROM_TEST_NAME, &ctx))
     {
-        std::vector<device> list;
-        REQUIRE_NOTHROW(list = ctx.query_devices());
+        std::vector<sensor> list;
+        REQUIRE_NOTHROW(list = ctx.query_all_sensors());
         REQUIRE(list.size() > 0);
 
         // For each device
         for (auto&& dev : list)
         {
-            auto adj_devices = dev.get_adjacent_devices();
+            auto adj_devices = ctx.get_sensor_parent(dev).query_sensors();
 
             // For every set of subdevices
             for (auto a = 0; a < adj_devices.size(); ++a)
@@ -244,15 +251,15 @@ TEST_CASE("check width and height of stream intrinsics", "[live]")
     rs2::context ctx;
     if (make_context(SECTION_FROM_TEST_NAME, &ctx))
     {
-        std::vector<device> list;
-        REQUIRE_NOTHROW(list = ctx.query_devices());
+        std::vector<sensor> list;
+        REQUIRE_NOTHROW(list = ctx.query_all_sensors());
         REQUIRE(list.size() > 0);
 
         for (auto&& dev : list)
         {
-            auto module_name = dev.get_camera_info(RS2_CAMERA_INFO_MODULE_NAME);
+            auto module_name = dev.get_info(RS2_CAMERA_INFO_NAME);
             // TODO: if FE
-            std::vector<stream_profile> stream_profiles;
+            std::vector<rs2::stream_profile> stream_profiles;
             REQUIRE_NOTHROW(stream_profiles = dev.get_stream_modes());
             REQUIRE(stream_profiles.size() > 0);
 
@@ -288,8 +295,8 @@ TEST_CASE("streaming modes sanity check", "[live]")
     rs2::context ctx;
     if (make_context(SECTION_FROM_TEST_NAME, &ctx))
     {
-        std::vector<device> list;
-        REQUIRE_NOTHROW(list = ctx.query_devices());
+        std::vector<sensor> list;
+        REQUIRE_NOTHROW(list = ctx.query_all_sensors());
         REQUIRE(list.size() > 0);
 
         // For each device
@@ -298,7 +305,7 @@ TEST_CASE("streaming modes sanity check", "[live]")
             disable_sensitive_options_for(dev);
 
             // make sure they provide at least one streaming mode
-            std::vector<stream_profile> stream_profiles;
+            std::vector<rs2::stream_profile> stream_profiles;
             REQUIRE_NOTHROW(stream_profiles = dev.get_stream_modes());
             REQUIRE(stream_profiles.size() > 0);
 
@@ -318,7 +325,7 @@ TEST_CASE("streaming modes sanity check", "[live]")
                     // require that we can start streaming this mode
                     REQUIRE_NOTHROW(dev.open({ profile }));
                     // TODO: make callback confirm stream format/dimensions/framerate
-                    REQUIRE_NOTHROW(dev.start([](frame fref) {}));
+                    REQUIRE_NOTHROW(dev.start([](rs2::frame fref) {}));
 
                     // Require that we can disable the stream afterwards
                     REQUIRE_NOTHROW(dev.stop());
@@ -352,8 +359,8 @@ TEST_CASE("motion profiles sanity", "[live]")
     rs2::context ctx;
     if (make_context(SECTION_FROM_TEST_NAME, &ctx))
     {
-        std::vector<device> list;
-        REQUIRE_NOTHROW(list = ctx.query_devices());
+        std::vector<sensor> list;
+        REQUIRE_NOTHROW(list = ctx.query_all_sensors());
         REQUIRE(list.size() > 0);
 
         // For each device
@@ -362,7 +369,7 @@ TEST_CASE("motion profiles sanity", "[live]")
             disable_sensitive_options_for(dev);
 
             // make sure they provide at least one streaming mode
-            std::vector<stream_profile> stream_profiles;
+            std::vector<rs2::stream_profile> stream_profiles;
             REQUIRE_NOTHROW(stream_profiles = dev.get_stream_modes());
             REQUIRE(stream_profiles.size() > 0);
 
@@ -412,8 +419,8 @@ TEST_CASE("check option API", "[live][options]")
     rs2::context ctx;
     if (make_context(SECTION_FROM_TEST_NAME, &ctx))
     {
-        std::vector<device> list;
-        REQUIRE_NOTHROW(list = ctx.query_devices());
+        std::vector<sensor> list;
+        REQUIRE_NOTHROW(list = ctx.query_all_sensors());
         REQUIRE(list.size() > 0);
 
         // for each device
@@ -435,7 +442,7 @@ TEST_CASE("check option API", "[live][options]")
                     }
                     else
                     {
-                        option_range range;
+                        rs2::option_range range;
                         REQUIRE_NOTHROW(range = dev.get_option_range(opt));
 
                         // a couple sanity checks
@@ -545,8 +552,8 @@ TEST_CASE("a single subdevice can only be opened once, different subdevices can 
     rs2::context ctx;
     if (make_context(SECTION_FROM_TEST_NAME, &ctx))
     {
-        std::vector<device> list;
-        REQUIRE_NOTHROW(list = ctx.query_devices());
+        std::vector<sensor> list;
+        REQUIRE_NOTHROW(list = ctx.query_all_sensors());
         REQUIRE(list.size() > 0);
 
         SECTION("Single context")
@@ -570,7 +577,7 @@ TEST_CASE("a single subdevice can only be opened once, different subdevices can 
                             REQUIRE_THROWS_AS(dev.open({ modes.front() }), error);
 
                             // streaming
-                            REQUIRE_NOTHROW(dev.start([](frame fref) {}));
+                            REQUIRE_NOTHROW(dev.start([](rs2::frame fref) {}));
                             REQUIRE_THROWS_AS(dev.open({ modes.front() }), error);
                         }
 
@@ -578,7 +585,9 @@ TEST_CASE("a single subdevice can only be opened once, different subdevices can 
                         {
                             if (modes.size() == 1)
                             {
-                                WARN("device " << dev.get_camera_info(RS2_CAMERA_INFO_DEVICE_NAME) << " S/N: " << dev.get_camera_info(RS2_CAMERA_INFO_DEVICE_SERIAL_NUMBER) << " w/ FW v" << dev.get_camera_info(RS2_CAMERA_INFO_CAMERA_FIRMWARE_VERSION) << ":");
+                                WARN("device " << dev.get_info(RS2_CAMERA_INFO_NAME) << " S/N: " << dev.get_info(
+                                        RS2_CAMERA_INFO_SERIAL_NUMBER) << " w/ FW v" << dev.get_info(
+                                        RS2_CAMERA_INFO_FIRMWARE_VERSION) << ":");
                                 WARN("subdevice has only 1 supported streaming mode. Skipping Same Subdevice, different modes test.");
                             }
                             else
@@ -587,7 +596,7 @@ TEST_CASE("a single subdevice can only be opened once, different subdevices can 
                                 REQUIRE_THROWS_AS(dev.open({ modes[1] }), error);
 
                                 // streaming
-                                REQUIRE_NOTHROW(dev.start([](frame fref) {}));
+                                REQUIRE_NOTHROW(dev.start([](rs2::frame fref) {}));
                                 REQUIRE_THROWS_AS(dev.open({ modes[1] }), error);
                             }
                         }
@@ -596,10 +605,10 @@ TEST_CASE("a single subdevice can only be opened once, different subdevices can 
                     }
                     // TODO: Move
                     SECTION("opening different subdevices") {
-                        for (auto&& subdevice1 : dev.get_adjacent_devices())
+                        for (auto&& subdevice1 : ctx.get_sensor_parent(dev).query_sensors())
                         {
                             disable_sensitive_options_for(subdevice1);
-                            for (auto&& subdevice2 : dev.get_adjacent_devices())
+                            for (auto&& subdevice2 : ctx.get_sensor_parent(dev).query_sensors())
                             {
                                 disable_sensitive_options_for(subdevice2);
 
@@ -613,16 +622,16 @@ TEST_CASE("a single subdevice can only be opened once, different subdevices can 
                                 {
                                     CAPTURE(subdevice2.get_stream_modes().front().stream);
                                     REQUIRE_NOTHROW(subdevice2.open(subdevice2.get_stream_modes().front()));
-                                    REQUIRE_NOTHROW(subdevice2.start([](frame fref) {}));
+                                    REQUIRE_NOTHROW(subdevice2.start([](rs2::frame fref) {}));
                                     REQUIRE_NOTHROW(subdevice2.stop());
                                     REQUIRE_NOTHROW(subdevice2.close());
                                 }
 
                                 // streaming
                                 {
-                                    REQUIRE_NOTHROW(subdevice1.start([](frame fref) {}));
+                                    REQUIRE_NOTHROW(subdevice1.start([](rs2::frame fref) {}));
                                     REQUIRE_NOTHROW(subdevice2.open(subdevice2.get_stream_modes().front()));
-                                    REQUIRE_NOTHROW(subdevice2.start([](frame fref) {}));
+                                    REQUIRE_NOTHROW(subdevice2.start([](rs2::frame fref) {}));
                                     // stop streaming in opposite order just to be sure that works too
                                     REQUIRE_NOTHROW(subdevice1.stop());
                                     REQUIRE_NOTHROW(subdevice2.stop());
@@ -657,8 +666,8 @@ TEST_CASE("a single subdevice can only be opened once, different subdevices can 
                             REQUIRE_NOTHROW(dev1.open(dev1.get_stream_modes().front()));
                             REQUIRE_NOTHROW(dev2.open(dev2.get_stream_modes().front()));
 
-                            REQUIRE_NOTHROW(dev1.start([](frame fref) {}));
-                            REQUIRE_NOTHROW(dev2.start([](frame fref) {}));
+                            REQUIRE_NOTHROW(dev1.start([](rs2::frame fref) {}));
+                            REQUIRE_NOTHROW(dev2.start([](rs2::frame fref) {}));
                             REQUIRE_NOTHROW(dev1.stop());
                             REQUIRE_NOTHROW(dev2.stop());
 
@@ -674,8 +683,8 @@ TEST_CASE("a single subdevice can only be opened once, different subdevices can 
         {
             rs2::context ctx2;
             REQUIRE(make_context("two_contexts", &ctx2));
-            std::vector<device> list2;
-            REQUIRE_NOTHROW(list2 = ctx2.query_devices());
+            std::vector<sensor> list2;
+            REQUIRE_NOTHROW(list2 = ctx2.query_all_sensors());
             REQUIRE(list2.size() == list.size());
             SECTION("subdevices on a single device")
             {
@@ -690,14 +699,14 @@ TEST_CASE("a single subdevice can only be opened once, different subdevices can 
                         {
                             SECTION("same subdevice") {
                                 // get modes
-                                std::vector<stream_profile> modes1, modes2;
+                                std::vector<rs2::stream_profile> modes1, modes2;
                                 REQUIRE_NOTHROW(modes1 = dev1.get_stream_modes());
                                 REQUIRE_NOTHROW(modes2 = dev2.get_stream_modes());
                                 REQUIRE(modes1.size() > 0);
                                 REQUIRE(modes1.size() == modes2.size());
                                 // require that the lists are the same (disregarding order)
                                 for (auto profile : modes1) {
-                                    REQUIRE(std::any_of(begin(modes2), end(modes2), [&profile](const stream_profile & p)
+                                    REQUIRE(std::any_of(begin(modes2), end(modes2), [&profile](const rs2::stream_profile & p)
                                     {
                                         return profile == p;
                                     }));
@@ -713,14 +722,16 @@ TEST_CASE("a single subdevice can only be opened once, different subdevices can 
                                     REQUIRE_THROWS_AS(dev2.open({ modes1.front() }), error);
 
                                     // streaming
-                                    REQUIRE_NOTHROW(dev1.start([](frame fref) {}));
+                                    REQUIRE_NOTHROW(dev1.start([](rs2::frame fref) {}));
                                     REQUIRE_THROWS_AS(dev2.open({ modes1.front() }), error);
                                 }
                                 SECTION("different modes")
                                 {
                                     if (modes1.size() == 1)
                                     {
-                                        WARN("device " << dev1.get_camera_info(RS2_CAMERA_INFO_DEVICE_NAME) << " S/N: " << dev1.get_camera_info(RS2_CAMERA_INFO_DEVICE_SERIAL_NUMBER) << " w/ FW v" << dev1.get_camera_info(RS2_CAMERA_INFO_CAMERA_FIRMWARE_VERSION) << ":");
+                                        WARN("device " << dev1.get_info(RS2_CAMERA_INFO_NAME) << " S/N: " << dev1.get_info(
+                                                RS2_CAMERA_INFO_SERIAL_NUMBER) << " w/ FW v" << dev1.get_info(
+                                                RS2_CAMERA_INFO_FIRMWARE_VERSION) << ":");
                                         WARN("Device has only 1 supported streaming mode. Skipping Same Subdevice, different modes test.");
                                     }
                                     else
@@ -729,7 +740,7 @@ TEST_CASE("a single subdevice can only be opened once, different subdevices can 
                                         REQUIRE_THROWS_AS(dev2.open({ modes1[1] }), error);
 
                                         // streaming
-                                        REQUIRE_NOTHROW(dev1.start([](frame fref) {}));
+                                        REQUIRE_NOTHROW(dev1.start([](rs2::frame fref) {}));
                                         REQUIRE_THROWS_AS(dev2.open({ modes1[1] }), error);
                                     }
                                 }
@@ -747,16 +758,16 @@ TEST_CASE("a single subdevice can only be opened once, different subdevices can 
                                 {
                                     CAPTURE(dev2.get_stream_modes().front().stream);
                                     REQUIRE_NOTHROW(dev2.open(dev2.get_stream_modes().front()));
-                                    REQUIRE_NOTHROW(dev2.start([](frame fref) {}));
+                                    REQUIRE_NOTHROW(dev2.start([](rs2::frame fref) {}));
                                     REQUIRE_NOTHROW(dev2.stop());
                                     REQUIRE_NOTHROW(dev2.close());
                                 }
 
                                 // streaming
                                 {
-                                    REQUIRE_NOTHROW(dev1.start([](frame fref) {}));
+                                    REQUIRE_NOTHROW(dev1.start([](rs2::frame fref) {}));
                                     REQUIRE_NOTHROW(dev2.open(dev2.get_stream_modes().front()));
-                                    REQUIRE_NOTHROW(dev2.start([](frame fref) {}));
+                                    REQUIRE_NOTHROW(dev2.start([](rs2::frame fref) {}));
                                     // stop streaming in opposite order just to be sure that works too
                                     REQUIRE_NOTHROW(dev1.stop());
                                     REQUIRE_NOTHROW(dev2.stop());
@@ -788,7 +799,7 @@ TEST_CASE("a single subdevice can only be opened once, different subdevices can 
                                 continue;
 
                             // get modes
-                            std::vector<stream_profile> modes1, modes2;
+                            std::vector<rs2::stream_profile> modes1, modes2;
                             REQUIRE_NOTHROW(modes1 = dev1.get_stream_modes());
                             REQUIRE_NOTHROW(modes2 = dev2.get_stream_modes());
                             REQUIRE(modes1.size() > 0);
@@ -796,10 +807,10 @@ TEST_CASE("a single subdevice can only be opened once, different subdevices can 
 
                             // grab first lock
                             CAPTURE(modes1.front().stream);
-                            CAPTURE(dev1.get_camera_info(RS2_CAMERA_INFO_DEVICE_NAME));
-                            CAPTURE(dev1.get_camera_info(RS2_CAMERA_INFO_DEVICE_SERIAL_NUMBER));
-                            CAPTURE(dev2.get_camera_info(RS2_CAMERA_INFO_DEVICE_NAME));
-                            CAPTURE(dev2.get_camera_info(RS2_CAMERA_INFO_DEVICE_SERIAL_NUMBER));
+                            CAPTURE(dev1.get_info(RS2_CAMERA_INFO_NAME));
+                            CAPTURE(dev1.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER));
+                            CAPTURE(dev2.get_info(RS2_CAMERA_INFO_NAME));
+                            CAPTURE(dev2.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER));
                             REQUIRE_NOTHROW(dev1.open(modes1.front()));
 
                             // try to acquire second lock
@@ -807,16 +818,16 @@ TEST_CASE("a single subdevice can only be opened once, different subdevices can 
                             // selected, but not streaming
                             {
                                 REQUIRE_NOTHROW(dev2.open({ modes2.front() }));
-                                REQUIRE_NOTHROW(dev2.start([](frame fref) {}));
+                                REQUIRE_NOTHROW(dev2.start([](rs2::frame fref) {}));
                                 REQUIRE_NOTHROW(dev2.stop());
                                 REQUIRE_NOTHROW(dev2.close());
                             }
 
                             // streaming
                             {
-                                REQUIRE_NOTHROW(dev1.start([](frame fref) {}));
+                                REQUIRE_NOTHROW(dev1.start([](rs2::frame fref) {}));
                                 REQUIRE_NOTHROW(dev2.open({ modes2.front() }));
-                                REQUIRE_NOTHROW(dev2.start([](frame fref) {}));
+                                REQUIRE_NOTHROW(dev2.start([](rs2::frame fref) {}));
                                 // stop streaming in opposite order just to be sure that works too
                                 REQUIRE_NOTHROW(dev1.stop());
                                 REQUIRE_NOTHROW(dev2.stop());
@@ -841,19 +852,19 @@ TEST_CASE("All suggested profiles can be opened", "[live]") {
 
         const int num_of_profiles_for_each_subdevice = 2;
 
-        std::vector<device> list;
-        REQUIRE_NOTHROW(list = ctx.query_devices());
+        std::vector<sensor> list;
+        REQUIRE_NOTHROW(list = ctx.query_all_sensors());
         REQUIRE(list.size() > 0);
 
         for (auto && subdevice : list) {
 
             disable_sensitive_options_for(subdevice);
 
-            std::vector<stream_profile> modes;
+            std::vector<rs2::stream_profile> modes;
             REQUIRE_NOTHROW(modes = subdevice.get_stream_modes());
 
             REQUIRE(modes.size() > 0);
-            WARN(subdevice.get_camera_info(RS2_CAMERA_INFO_MODULE_NAME));
+            WARN(subdevice.get_info(RS2_CAMERA_INFO_NAME));
             //the test will be done only on sub set of profile for each sub device
             for (int i = 0; i < modes.size(); i += (int)std::ceil((float)modes.size() / (float)num_of_profiles_for_each_subdevice)) {
                 //CAPTURE(rs2_subdevice(subdevice));
@@ -863,7 +874,7 @@ TEST_CASE("All suggested profiles can be opened", "[live]") {
                 CAPTURE(modes[i].width);
                 CAPTURE(modes[i].stream);
                 REQUIRE_NOTHROW(subdevice.open({ modes[i] }));
-                REQUIRE_NOTHROW(subdevice.start([](frame fref) {}));
+                REQUIRE_NOTHROW(subdevice.start([](rs2::frame fref) {}));
                 REQUIRE_NOTHROW(subdevice.stop());
                 REQUIRE_NOTHROW(subdevice.close());
             }
@@ -872,7 +883,7 @@ TEST_CASE("All suggested profiles can be opened", "[live]") {
 }
 
 /* Apply heuristic test to check metadata attributes for sanity*/
-void metadata_verification(const std::vector<frame_additional_data>& data)
+void metadata_verification(const std::vector<internal_frame_additional_data>& data)
 {
     // Heuristics that we use to verify metadata
     // Metadata sanity
@@ -917,8 +928,8 @@ TEST_CASE("Per-frame metadata sanity check", "[live]") {
     rs2::context ctx;
     if (make_context(SECTION_FROM_TEST_NAME, &ctx))
     {
-        std::vector<device> list;
-        REQUIRE_NOTHROW(list = ctx.query_devices());
+        std::vector<sensor> list;
+        REQUIRE_NOTHROW(list = ctx.query_all_sensors());
         REQUIRE(list.size() > 0);
 
         const int frames_before_start_measure = 30;
@@ -928,11 +939,11 @@ TEST_CASE("Per-frame metadata sanity check", "[live]") {
         const float max_diff_between_real_and_metadata_fps = 0.2f;
 
         for (auto && subdevice : list) {
-            std::vector<stream_profile> modes;
+            std::vector<rs2::stream_profile> modes;
             REQUIRE_NOTHROW(modes = subdevice.get_stream_modes());
 
             REQUIRE(modes.size() > 0);
-            WARN(subdevice.get_camera_info(RS2_CAMERA_INFO_MODULE_NAME));
+            WARN(subdevice.get_info(RS2_CAMERA_INFO_NAME));
 
             //the test will be done only on sub set of profile for each sub device
             for (int i = 0; i < modes.size(); i += static_cast<int>(std::ceil((float)modes.size() / (float)num_of_profiles_for_each_subdevice)))
@@ -947,7 +958,7 @@ TEST_CASE("Per-frame metadata sanity check", "[live]") {
                 CAPTURE(modes[i].width);
                 CAPTURE(modes[i].stream);
 
-                std::vector<frame_additional_data> frames_additional_data;
+                std::vector<internal_frame_additional_data> frames_additional_data;
                 auto frames = 0;
                 double start;
                 std::condition_variable cv;
@@ -957,7 +968,7 @@ TEST_CASE("Per-frame metadata sanity check", "[live]") {
                 REQUIRE_NOTHROW(subdevice.open({ modes[i] }));
                 disable_sensitive_options_for(subdevice);
 
-                REQUIRE_NOTHROW(subdevice.start([&](frame f)
+                REQUIRE_NOTHROW(subdevice.start([&](rs2::frame f)
                 {
                     if ((frames >= frames_before_start_measure) && (frames_additional_data.size() < frames_for_fps_measure))
                     {
@@ -967,14 +978,14 @@ TEST_CASE("Per-frame metadata sanity check", "[live]") {
                         }
                         first = false;
 
-                        frame_additional_data data{ f.get_timestamp(),
+                        internal_frame_additional_data data{ f.get_timestamp(),
                                                      f.get_frame_number(),
                                                      f.get_frame_timestamp_domain(),
                                                      f.get_stream_type(),
                                                      f.get_format() };
 
                         // Store frame metadata attributes, verify API behavior correctness
-                        for (auto i = 0; i < RS2_FRAME_METADATA_COUNT; i++)
+                        for (auto i = 0; i < rs2_frame_metadata::RS2_FRAME_METADATA_COUNT; i++)
                         {
                             bool supported = false;
                             REQUIRE_NOTHROW(supported = f.supports_frame_metadata((rs2_frame_metadata)i));
@@ -1066,7 +1077,7 @@ TEST_CASE("Per-frame metadata sanity check", "[live]") {
     }
 }
 
-void triger_error(device& dev, int num)
+void triger_error(const rs2::device& dev, int num)
 {
     std::vector<uint8_t> raw_data(24, 0);
     raw_data[0] = 0x14;
@@ -1074,7 +1085,8 @@ void triger_error(device& dev, int num)
     raw_data[3] = 0xcd;
     raw_data[4] = 0x4d;
     raw_data[8] = num;
-    dev.debug().send_and_receive_raw_data(raw_data);
+    if (auto debug = dev.as<debug_protocol>())
+        debug.send_and_receive_raw_data(raw_data);
 }
 
 TEST_CASE("Error handling sanity", "[live]") {
@@ -1085,8 +1097,8 @@ TEST_CASE("Error handling sanity", "[live]") {
     {
         const int num_of_errors = 4;
 
-        std::vector<device> list;
-        REQUIRE_NOTHROW(list = ctx.query_devices());
+        std::vector<sensor> list;
+        REQUIRE_NOTHROW(list = ctx.query_all_sensors());
         REQUIRE(list.size() > 0);
 
         std::string notification_description;
@@ -1110,7 +1122,7 @@ TEST_CASE("Error handling sanity", "[live]") {
                 {
                     disable_sensitive_options_for(subdevice);
                     REQUIRE_NOTHROW(subdevice.set_option(RS2_OPTION_ERROR_POLLING_ENABLED, 1));
-                    subdevice.set_notifications_callback([&](notification n)
+                    subdevice.set_notifications_callback([&](rs2::notification n)
                     {
 
                         std::unique_lock<std::mutex> lock(m);
@@ -1120,7 +1132,7 @@ TEST_CASE("Error handling sanity", "[live]") {
                         cv.notify_one();
                     });
 
-                    triger_error(subdevice, i);
+                    triger_error(ctx.get_sensor_parent(subdevice), i);
                     std::unique_lock<std::mutex> lock(m);
                     CAPTURE(notification_description);
                     CAPTURE(severity);
@@ -1149,14 +1161,14 @@ TEST_CASE("Error handling sanity", "[live]") {
                 {
                     disable_sensitive_options_for(subdevice);
                     REQUIRE_NOTHROW(subdevice.set_option(RS2_OPTION_ERROR_POLLING_ENABLED, 0));
-                    subdevice.set_notifications_callback([&](notification n)
+                    subdevice.set_notifications_callback([&](rs2::notification n)
                     {
                         got_error = true;
                         notification_description = n.get_description();
 
                     });
 
-                    triger_error(subdevice, i);
+                    triger_error(ctx.get_sensor_parent(subdevice), i);
                     std::this_thread::sleep_for(std::chrono::seconds(2));
                     CAPTURE(notification_description);
                     REQUIRE(got_error == false);
@@ -1167,57 +1179,206 @@ TEST_CASE("Error handling sanity", "[live]") {
     }
 }
 
-TEST_CASE("Auto exposure behavior", "[live]") {
+TEST_CASE("Advanced Mode presets", "[live]") {
+    enum cam_type{
+        passive,
+        active,
+        awg
+    };
 
+    static std::map<cam_type, std::map<res_type, std::vector<rs2_rs400_visual_preset>>> presets =
+    {{passive, {{small_resolution, {{RS2_RS400_VISUAL_PRESET_GENERIC_DEPTH},
+                                    {RS2_RS400_VISUAL_PRESET_INDOOR},
+                                    {RS2_RS400_VISUAL_PRESET_OUTDOOR},
+                                    {RS2_RS400_VISUAL_PRESET_HAND},
+                                    {RS2_RS400_VISUAL_PRESET_SHORT_RANGE},
+                                    {RS2_RS400_VISUAL_PRESET_BOX}}},
+                {vga_resolution,   {{RS2_RS400_VISUAL_PRESET_GENERIC_DEPTH},
+                                    {RS2_RS400_VISUAL_PRESET_INDOOR},
+                                    {RS2_RS400_VISUAL_PRESET_OUTDOOR},
+                                    {RS2_RS400_VISUAL_PRESET_HAND},
+                                    {RS2_RS400_VISUAL_PRESET_SHORT_RANGE},
+                                    {RS2_RS400_VISUAL_PRESET_BOX}}},
+                {full_resolution,  {{RS2_RS400_VISUAL_PRESET_GENERIC_DEPTH},
+                                    {RS2_RS400_VISUAL_PRESET_INDOOR},
+                                    {RS2_RS400_VISUAL_PRESET_OUTDOOR},
+                                    {RS2_RS400_VISUAL_PRESET_HAND},
+                                    {RS2_RS400_VISUAL_PRESET_SHORT_RANGE},
+                                    {RS2_RS400_VISUAL_PRESET_BOX}}}}},
+     {active,  {{small_resolution, {{RS2_RS400_VISUAL_PRESET_GENERIC_DENSE_DEPTH},
+                                    {RS2_RS400_VISUAL_PRESET_FLOOR_LOW},
+                                    {RS2_RS400_VISUAL_PRESET_INDOOR},
+                                    {RS2_RS400_VISUAL_PRESET_OUTDOOR},
+                                    {RS2_RS400_VISUAL_PRESET_HAND},
+                                    {RS2_RS400_VISUAL_PRESET_SHORT_RANGE},
+                                    {RS2_RS400_VISUAL_PRESET_BOX}}},
+                {vga_resolution,   {{RS2_RS400_VISUAL_PRESET_GENERIC_DEPTH},
+                                    {RS2_RS400_VISUAL_PRESET_GENERIC_ACCURATE_DEPTH},
+                                    {RS2_RS400_VISUAL_PRESET_GENERIC_DENSE_DEPTH},
+                                    {RS2_RS400_VISUAL_PRESET_INDOOR},
+                                    {RS2_RS400_VISUAL_PRESET_OUTDOOR},
+                                    {RS2_RS400_VISUAL_PRESET_HAND},
+                                    {RS2_RS400_VISUAL_PRESET_SHORT_RANGE},
+                                    {RS2_RS400_VISUAL_PRESET_BOX}}},
+                {full_resolution,  {{RS2_RS400_VISUAL_PRESET_GENERIC_DENSE_DEPTH},
+                                    {RS2_RS400_VISUAL_PRESET_GENERIC_DEPTH},
+                                    {RS2_RS400_VISUAL_PRESET_GENERIC_ACCURATE_DEPTH},
+                                    {RS2_RS400_VISUAL_PRESET_GENERIC_SUPER_DENSE_DEPTH},
+                                    {RS2_RS400_VISUAL_PRESET_3D_BODY_SCAN},
+                                    {RS2_RS400_VISUAL_PRESET_INDOOR},
+                                    {RS2_RS400_VISUAL_PRESET_OUTDOOR},
+                                    {RS2_RS400_VISUAL_PRESET_HAND},
+                                    {RS2_RS400_VISUAL_PRESET_SHORT_RANGE},
+                                    {RS2_RS400_VISUAL_PRESET_BOX}}}}},
+     {awg,     {{small_resolution, {{RS2_RS400_VISUAL_PRESET_GENERIC_DENSE_DEPTH},
+                                    {RS2_RS400_VISUAL_PRESET_INDOOR},
+                                    {RS2_RS400_VISUAL_PRESET_OUTDOOR},
+                                    {RS2_RS400_VISUAL_PRESET_HAND},
+                                    {RS2_RS400_VISUAL_PRESET_SHORT_RANGE},
+                                    {RS2_RS400_VISUAL_PRESET_BOX}}},
+                {vga_resolution,   {{RS2_RS400_VISUAL_PRESET_GENERIC_DENSE_DEPTH},
+                                    {RS2_RS400_VISUAL_PRESET_INDOOR},
+                                    {RS2_RS400_VISUAL_PRESET_OUTDOOR},
+                                    {RS2_RS400_VISUAL_PRESET_HAND},
+                                    {RS2_RS400_VISUAL_PRESET_SHORT_RANGE},
+                                    {RS2_RS400_VISUAL_PRESET_BOX}}},
+                {full_resolution,  {{RS2_RS400_VISUAL_PRESET_GENERIC_DENSE_DEPTH},
+                                    {RS2_RS400_VISUAL_PRESET_INDOOR},
+                                    {RS2_RS400_VISUAL_PRESET_OUTDOOR},
+                                    {RS2_RS400_VISUAL_PRESET_HAND},
+                                    {RS2_RS400_VISUAL_PRESET_SHORT_RANGE},
+                                    {RS2_RS400_VISUAL_PRESET_BOX}}}}}};
+
+    rs2::context ctx;
+    if (make_context(SECTION_FROM_TEST_NAME, &ctx))
+    {
+        device_list list;
+        REQUIRE_NOTHROW(list = ctx.query_devices());
+        REQUIRE(list.size() > 0);
+
+        auto dev = list.front();
+
+        auto info = dev.get_info(RS2_CAMERA_INFO_NAME);
+        CAPTURE(info);
+        if (dev.is<rs400::advanced_mode>())
+        {
+            auto advanced = dev.as<rs400::advanced_mode>();
+            REQUIRE(advanced.is_enabled());
+            auto sensors = dev.query_sensors();
+
+            sensor presets_sensor;
+            for (sensor& elem : sensors)
+            {
+                auto supports = false;
+                REQUIRE_NOTHROW(supports = elem.supports(RS2_OPTION_ADVANCED_MODE_PRESET));
+                if (supports)
+                {
+                    presets_sensor = elem;
+                    break;
+                }
+            }
+
+            //auto rolling_shutter_cam = dynamic_cast<const ds5_rolling_shutter*>(&presets_sensor.get_device());
+            //auto active_cam = dynamic_cast<const ds5_active*>(&presets_sensor.get_device());
+            // TODO:
+            auto rolling_shutter_cam = true;
+            auto active_cam = true;
+
+            cam_type cam;
+            if (active_cam && rolling_shutter_cam)
+                cam = cam_type::active;
+            else if (rolling_shutter_cam)
+                cam = cam_type::passive;
+            else if (!rolling_shutter_cam)
+                cam = cam_type::awg;
+            else
+                throw("Unknown camera type.");
+
+
+            auto& presets_map = presets.at(cam);
+            for (auto& presets_by_res : presets_map)
+            {
+                std::vector<rs2::stream_profile> sp = {get_profile_by_resolution_type(presets_sensor, presets_by_res.first)};
+                presets_sensor.open(sp);
+                presets_sensor.start([](rs2::frame){});
+                for (auto& preset : presets_by_res.second)
+                {
+                    REQUIRE_NOTHROW(presets_sensor.set_option(RS2_OPTION_ADVANCED_MODE_PRESET, preset));
+                    float ret_preset;
+                    REQUIRE_NOTHROW(ret_preset = presets_sensor.get_option(RS2_OPTION_ADVANCED_MODE_PRESET));
+                    REQUIRE(preset == (rs2_rs400_visual_preset)ret_preset);
+                }
+                presets_sensor.stop();
+                presets_sensor.close();
+            }
+        }
+    }
+}
+
+TEST_CASE("Auto disabling control behavior", "[live]") {
     std::string SR300_PID = "0x0aa5";
     std::stringstream s;
     s << SR300_PID;
     int sr300_pid;
     s >> std::hex >> sr300_pid;
+
     //Require at least one device to be plugged in
     rs2::context ctx;
     if (make_context(SECTION_FROM_TEST_NAME, &ctx))
     {
-
-        std::vector<device> list;
-        REQUIRE_NOTHROW(list = ctx.query_devices());
+        std::vector<sensor> list;
+        REQUIRE_NOTHROW(list = ctx.query_all_sensors());
         REQUIRE(list.size() > 0);
 
-
-        //enable error polling
-        for (auto && subdevice : list) {
+        for (auto && subdevice : list)
+        {
             if (!subdevice.supports(RS2_CAMERA_INFO_PRODUCT_ID))
             {
                 continue;
             }
-            std::string pid = subdevice.get_camera_info(RS2_CAMERA_INFO_PRODUCT_ID);
+            std::string pid = subdevice.get_info(RS2_CAMERA_INFO_PRODUCT_ID);
             std::stringstream s;
             s << pid;
             int curr_pid;
             s >> std::hex >> curr_pid;
 
+            auto info = subdevice.get_info(RS2_CAMERA_INFO_NAME);
+            CAPTURE(info);
+
+            rs2::option_range range{};
+            float val{};
             if (curr_pid != sr300_pid && subdevice.supports(RS2_OPTION_ENABLE_AUTO_EXPOSURE))
             {
-                option_range range{};
-
-                float val{};
-
-                auto info = subdevice.get_camera_info(RS2_CAMERA_INFO_MODULE_NAME);
-                CAPTURE(info);
-
-                REQUIRE_NOTHROW(subdevice.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, 1));
-
-                SECTION("Disable auto exposure whan setting a value")
+                SECTION("Disable auto exposure when setting a value")
                 {
-
+                    REQUIRE_NOTHROW(subdevice.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, 1));
                     REQUIRE_NOTHROW(range = subdevice.get_option_range(RS2_OPTION_EXPOSURE));
                     REQUIRE_NOTHROW(subdevice.set_option(RS2_OPTION_EXPOSURE, range.max));
                     CAPTURE(range.max);
                     REQUIRE_NOTHROW(val = subdevice.get_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE));
                     REQUIRE(val == 0);
                 }
+            }
 
-                SECTION("Disable white balance whan setting a value")
+            if (subdevice.supports(RS2_OPTION_EMITTER_ENABLED))
+            {
+                SECTION("Disable emitter when setting a value")
+                {
+                    for (auto elem : {0, 2})
+                    {
+                        REQUIRE_NOTHROW(subdevice.set_option(RS2_OPTION_EMITTER_ENABLED, elem));
+                        REQUIRE_NOTHROW(range = subdevice.get_option_range(RS2_OPTION_LASER_POWER));
+                        REQUIRE_NOTHROW(subdevice.set_option(RS2_OPTION_LASER_POWER, range.max));
+                        CAPTURE(range.max);
+                        REQUIRE_NOTHROW(val = subdevice.get_option(RS2_OPTION_EMITTER_ENABLED));
+                        REQUIRE(val == 1);
+                    }
+                }
+            }
+
+            if (subdevice.supports(RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE))
+            {
+                SECTION("Disable white balance when setting a value")
                 {
                     if (subdevice.supports(RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE) && subdevice.supports(RS2_OPTION_WHITE_BALANCE))
                     {
@@ -1228,35 +1389,189 @@ TEST_CASE("Auto exposure behavior", "[live]") {
                         REQUIRE_NOTHROW(val = subdevice.get_option(RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE));
                         REQUIRE(val == 0);
                     }
-
                 }
-
             }
-
         }
-
     }
 }
 
-std::pair<std::shared_ptr<device>, std::weak_ptr<device>> make_device(device_list& list)
+TEST_CASE("Advanced Mode controls", "[live]") {
+    rs2::context ctx;
+    if (make_context(SECTION_FROM_TEST_NAME, &ctx))
+    {
+        device_list list;
+        REQUIRE_NOTHROW(list = ctx.query_devices());
+        REQUIRE(list.size() > 0);
+
+        auto dev = list.front();
+
+        auto info = dev.get_info(RS2_CAMERA_INFO_NAME);
+        CAPTURE(info);
+        if (dev.is<rs400::advanced_mode>())
+        {
+            rs400::advanced_mode advanced = dev.as<rs400::advanced_mode>();
+            REQUIRE(advanced.is_enabled());
+
+            {
+            STDepthControlGroup ctrl_curr{};
+            REQUIRE_NOTHROW(ctrl_curr = advanced.get_depth_control(0));
+            STDepthControlGroup ctrl_min{};
+            REQUIRE_NOTHROW(ctrl_min = advanced.get_depth_control(1));
+            STDepthControlGroup ctrl_max{};
+            REQUIRE_NOTHROW(ctrl_max = advanced.get_depth_control(2));
+            REQUIRE_NOTHROW(advanced.set_depth_control(ctrl_min));
+            REQUIRE_NOTHROW(ctrl_curr = advanced.get_depth_control(0));
+            REQUIRE(ctrl_curr == ctrl_min);
+            }
+
+            {
+            STRsm ctrl_curr{};
+            REQUIRE_NOTHROW(ctrl_curr = advanced.get_rsm(0));
+            STRsm ctrl_min{};
+            REQUIRE_NOTHROW(ctrl_min = advanced.get_rsm(1));
+            STRsm ctrl_max{};
+            REQUIRE_NOTHROW(ctrl_max = advanced.get_rsm(2));
+            REQUIRE_NOTHROW(advanced.set_rsm(ctrl_min));
+            REQUIRE_NOTHROW(ctrl_curr = advanced.get_rsm(0));
+            REQUIRE(ctrl_curr == ctrl_min);
+            }
+
+            {
+            STRauSupportVectorControl ctrl_curr{};
+            REQUIRE_NOTHROW(ctrl_curr = advanced.get_rau_support_vector_control(0));
+            STRauSupportVectorControl ctrl_min{};
+            REQUIRE_NOTHROW(ctrl_min = advanced.get_rau_support_vector_control(1));
+            STRauSupportVectorControl ctrl_max{};
+            REQUIRE_NOTHROW(ctrl_max = advanced.get_rau_support_vector_control(2));
+            REQUIRE_NOTHROW(advanced.set_rau_support_vector_control(ctrl_min));
+            REQUIRE_NOTHROW(ctrl_curr = advanced.get_rau_support_vector_control(0));
+            REQUIRE(ctrl_curr == ctrl_min);
+            }
+
+            {
+            STColorControl ctrl_curr{};
+            REQUIRE_NOTHROW(ctrl_curr = advanced.get_color_control(0));
+            STColorControl ctrl_min{};
+            REQUIRE_NOTHROW(ctrl_min = advanced.get_color_control(1));
+            STColorControl ctrl_max{};
+            REQUIRE_NOTHROW(ctrl_max = advanced.get_color_control(2));
+            REQUIRE_NOTHROW(advanced.set_color_control(ctrl_min));
+            REQUIRE_NOTHROW(ctrl_curr = advanced.get_color_control(0));
+            REQUIRE(ctrl_curr == ctrl_min);
+            }
+
+            {
+            STRauColorThresholdsControl ctrl_curr{};
+            REQUIRE_NOTHROW(ctrl_curr = advanced.get_rau_thresholds_control(0));
+            STRauColorThresholdsControl ctrl_min{};
+            REQUIRE_NOTHROW(ctrl_min = advanced.get_rau_thresholds_control(1));
+            STRauColorThresholdsControl ctrl_max{};
+            REQUIRE_NOTHROW(ctrl_max = advanced.get_rau_thresholds_control(2));
+            REQUIRE_NOTHROW(advanced.set_rau_thresholds_control(ctrl_min));
+            REQUIRE_NOTHROW(ctrl_curr = advanced.get_rau_thresholds_control(0));
+            REQUIRE(ctrl_curr == ctrl_min);
+            }
+
+            {
+            STSloColorThresholdsControl ctrl_curr{};
+            REQUIRE_NOTHROW(ctrl_curr = advanced.get_slo_color_thresholds_control(0));
+            STSloColorThresholdsControl ctrl_min{};
+            REQUIRE_NOTHROW(ctrl_min = advanced.get_slo_color_thresholds_control(1));
+            STSloColorThresholdsControl ctrl_max{};
+            REQUIRE_NOTHROW(ctrl_max = advanced.get_slo_color_thresholds_control(2));
+            REQUIRE_NOTHROW(advanced.set_slo_color_thresholds_control(ctrl_min));
+            REQUIRE_NOTHROW(ctrl_curr = advanced.get_slo_color_thresholds_control(0));
+            REQUIRE(ctrl_curr == ctrl_min);
+            }
+
+            {
+            STSloPenaltyControl ctrl_curr{};
+            REQUIRE_NOTHROW(ctrl_curr = advanced.get_slo_penalty_control(0));
+            STSloPenaltyControl ctrl_min{};
+            REQUIRE_NOTHROW(ctrl_min = advanced.get_slo_penalty_control(1));
+            STSloPenaltyControl ctrl_max{};
+            REQUIRE_NOTHROW(ctrl_max = advanced.get_slo_penalty_control(2));
+            REQUIRE_NOTHROW(advanced.set_slo_penalty_control(ctrl_min));
+            REQUIRE_NOTHROW(ctrl_curr = advanced.get_slo_penalty_control(0));
+            REQUIRE(ctrl_curr == ctrl_min);
+            }
+
+            {
+            STHdad ctrl_curr1{};
+            REQUIRE_NOTHROW(ctrl_curr1 = advanced.get_hdad(0));
+            REQUIRE_NOTHROW(advanced.set_hdad(ctrl_curr1));
+            STHdad ctrl_curr2{};
+            REQUIRE_NOTHROW(ctrl_curr2 = advanced.get_hdad(0));
+            REQUIRE(ctrl_curr1 == ctrl_curr2);
+            }
+
+            {
+            STColorCorrection ctrl_curr{};
+            REQUIRE_NOTHROW(ctrl_curr = advanced.get_color_correction(0));
+            STColorCorrection ctrl_min{};
+            REQUIRE_NOTHROW(ctrl_min = advanced.get_color_correction(1));
+            STColorCorrection ctrl_max{};
+            REQUIRE_NOTHROW(ctrl_max = advanced.get_color_correction(2));
+            REQUIRE_NOTHROW(advanced.set_color_correction(ctrl_min));
+            REQUIRE_NOTHROW(ctrl_curr = advanced.get_color_correction(0));
+            REQUIRE(ctrl_curr == ctrl_min);
+            }
+
+            {
+            STAEControl ctrl_curr1{};
+            REQUIRE_NOTHROW(ctrl_curr1 = advanced.get_ae_control(0));
+            REQUIRE_NOTHROW(advanced.set_ae_control(ctrl_curr1));
+            STAEControl ctrl_curr2{};
+            REQUIRE_NOTHROW(ctrl_curr2 = advanced.get_ae_control(0));
+            REQUIRE(ctrl_curr1 == ctrl_curr2);
+            }
+
+            {
+            STDepthTableControl ctrl_curr{};
+            REQUIRE_NOTHROW(ctrl_curr = advanced.get_depth_table(0));
+            STDepthTableControl ctrl_min{};
+            REQUIRE_NOTHROW(ctrl_min = advanced.get_depth_table(1));
+            STDepthTableControl ctrl_max{};
+            REQUIRE_NOTHROW(ctrl_max = advanced.get_depth_table(2));
+            REQUIRE_NOTHROW(advanced.set_depth_table(ctrl_min));
+            REQUIRE_NOTHROW(ctrl_curr = advanced.get_depth_table(0));
+            REQUIRE(ctrl_curr == ctrl_min);
+            }
+
+            {
+            STCensusRadius ctrl_curr{};
+            REQUIRE_NOTHROW(ctrl_curr = advanced.get_census(0));
+            STCensusRadius ctrl_min{};
+            REQUIRE_NOTHROW(ctrl_min = advanced.get_census(1));
+            STCensusRadius ctrl_max{};
+            REQUIRE_NOTHROW(ctrl_max = advanced.get_census(2));
+            REQUIRE_NOTHROW(advanced.set_census(ctrl_min));
+            REQUIRE_NOTHROW(ctrl_curr = advanced.get_census(0));
+            REQUIRE(ctrl_curr == ctrl_min);
+            }
+        }
+    }
+}
+
+std::pair<std::shared_ptr<rs2::device>, std::weak_ptr<rs2::device>> make_device(device_list& list)
 {
     REQUIRE(list.size() > 0);
 
-    std::shared_ptr<device> dev;
-    REQUIRE_NOTHROW(dev = std::make_shared<device>(list[0]));
-    std::weak_ptr<device> weak_dev(dev);
+    std::shared_ptr<rs2::device> dev;
+    REQUIRE_NOTHROW(dev = std::make_shared<rs2::device>(list[0]));
+    std::weak_ptr<rs2::device> weak_dev(dev);
 
     disable_sensitive_options_for(*dev);
 
-    return std::pair<std::shared_ptr<device>, std::weak_ptr<device>>(dev, weak_dev);
+    return std::pair<std::shared_ptr<rs2::device>, std::weak_ptr<rs2::device>>(dev, weak_dev);
 }
 
-void reset_device(std::shared_ptr<device>& strong, std::weak_ptr<device>& weak, device_list& list, const device& new_dev)
+void reset_device(std::shared_ptr<rs2::device>& strong, std::weak_ptr<rs2::device>& weak, device_list& list, const rs2::device& new_dev)
 {
     strong.reset();
     weak.reset();
     list = nullptr;
-    strong = std::make_shared<device>(new_dev);
+    strong = std::make_shared<rs2::device>(new_dev);
     weak = strong;
     disable_sensitive_options_for(*strong);
 }
@@ -1279,7 +1594,7 @@ TEST_CASE("Disconnect events works", "[live]") {
 
         std::string serial;
 
-        REQUIRE_NOTHROW(serial = dev_strong->get_camera_info(RS2_CAMERA_INFO_DEVICE_SERIAL_NUMBER));
+        REQUIRE_NOTHROW(serial = dev_strong->get_info(RS2_CAMERA_INFO_SERIAL_NUMBER));
 
         std::condition_variable cv;
         std::mutex m;
@@ -1301,8 +1616,10 @@ TEST_CASE("Disconnect events works", "[live]") {
 
                     for (auto d : info.get_new_devices())
                     {
-                        disable_sensitive_options_for(d);
-                        if (serial == d.get_camera_info(RS2_CAMERA_INFO_DEVICE_SERIAL_NUMBER))
+                        for (auto&& s : d.query_sensors())
+                            disable_sensitive_options_for(s);
+
+                        if (serial == d.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER))
                         {
                             try
                             {
@@ -1330,7 +1647,7 @@ TEST_CASE("Disconnect events works", "[live]") {
         }
 
         //Check that after the library reported device disconnection, operations on old device object will return error
-        REQUIRE_THROWS(dev_strong->close());
+        REQUIRE_THROWS(dev_strong->query_sensors().front().close());
 
         {
             std::unique_lock<std::mutex> lock(m);
@@ -1354,7 +1671,7 @@ TEST_CASE("Connect events works", "[live]") {
 
         std::string serial;
 
-        REQUIRE_NOTHROW(serial = dev_strong->get_camera_info(RS2_CAMERA_INFO_DEVICE_SERIAL_NUMBER));
+        REQUIRE_NOTHROW(serial = dev_strong->get_info(RS2_CAMERA_INFO_SERIAL_NUMBER));
 
         auto disconnected = false;
         auto connected = false;
@@ -1378,7 +1695,7 @@ TEST_CASE("Connect events works", "[live]") {
 
                     for (auto d : info.get_new_devices())
                     {
-                        if (serial == d.get_camera_info(RS2_CAMERA_INFO_DEVICE_SERIAL_NUMBER))
+                        if (serial == d.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER))
                         {
                             try
                             {
@@ -1411,28 +1728,28 @@ TEST_CASE("Connect events works", "[live]") {
     }
 }
 
-std::shared_ptr<std::function<void(frame fref)>> check_stream_sanity(device& dev, int num_of_frames, bool infinite = false)
+std::shared_ptr<std::function<void(rs2::frame fref)>> check_stream_sanity(const context& ctx, const sensor& dev, int num_of_frames, bool infinite = false)
 {
     std::shared_ptr<std::condition_variable> cv = std::make_shared<std::condition_variable>();
     std::shared_ptr<std::mutex> m = std::make_shared<std::mutex>();
     std::shared_ptr<std::map<rs2_stream, int>> streams_frames = std::make_shared<std::map<rs2_stream, int>>();
-    std::vector<device> devs;
+    std::vector<sensor> devs;
 
-    std::shared_ptr<std::function<void(frame fref)>>  func;
+    std::shared_ptr<std::function<void(rs2::frame fref)>>  func;
 
 
-    std::vector<stream_profile> profiles = {
+    std::vector<rs2::stream_profile> profiles = {
     {RS2_STREAM_DEPTH, 640, 480, 60, RS2_FORMAT_Z16},
     {RS2_STREAM_FISHEYE, 640, 480, 60, RS2_FORMAT_RAW8}};
 
-    for (auto sub:dev.get_adjacent_devices())
+    for (auto sub : ctx.get_sensor_parent(dev).query_sensors())
     {
-        std::vector<stream_profile> modes;
+        std::vector<rs2::stream_profile> modes;
         REQUIRE_NOTHROW(modes = sub.get_stream_modes());
 
         for(auto p:profiles )
         {
-            if(std::find_if(modes.begin(), modes.end(), [&](stream_profile profile){return p==profile;}) < modes.end())
+            if(std::find_if(modes.begin(), modes.end(), [&](rs2::stream_profile profile){return p==profile;}) < modes.end())
             {
 
                 (*streams_frames)[p.stream] = 0;
@@ -1440,7 +1757,7 @@ std::shared_ptr<std::function<void(frame fref)>> check_stream_sanity(device& dev
                 REQUIRE_NOTHROW(sub.open(p));
                 devs.push_back(sub);
 
-                func = std::make_shared< std::function<void(frame fref)>>([devs, num_of_frames, m, streams_frames, cv](frame fref) mutable
+                func = std::make_shared< std::function<void(rs2::frame fref)>>([devs, num_of_frames, m, streams_frames, cv](rs2::frame fref) mutable
                     {
                         std::unique_lock<std::mutex> lock(*m);
                         auto stream = fref.get_stream_type();
@@ -1498,7 +1815,7 @@ TEST_CASE("Connect Disconnect events while streaming", "[live]") {
         auto dev_weak = dev.second;
 
 
-        REQUIRE_NOTHROW(serial = dev_strong->get_camera_info(RS2_CAMERA_INFO_DEVICE_SERIAL_NUMBER));
+        REQUIRE_NOTHROW(serial = dev_strong->get_info(RS2_CAMERA_INFO_SERIAL_NUMBER));
 
 
         auto disconnected = false;
@@ -1523,7 +1840,7 @@ TEST_CASE("Connect Disconnect events while streaming", "[live]") {
 
                     for (auto d : info.get_new_devices())
                     {
-                        if (serial == d.get_camera_info(RS2_CAMERA_INFO_DEVICE_SERIAL_NUMBER))
+                        if (serial == d.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER))
                         {
                             try
                             {
@@ -1545,7 +1862,8 @@ TEST_CASE("Connect Disconnect events while streaming", "[live]") {
 
             }}));
 
-        auto func = check_stream_sanity(*dev_strong, 1, true);
+        for (auto&& s : dev_strong->query_sensors())
+            auto func = check_stream_sanity(ctx, s, 1, true);
 
         for (auto i = 0; i < 3; i++)
         {
@@ -1560,7 +1878,8 @@ TEST_CASE("Connect Disconnect events while streaming", "[live]") {
                 REQUIRE(cv.wait_for(lock, std::chrono::seconds(10), [&]() {return connected; }));
             }
 
-            func = check_stream_sanity(*dev_strong, 10);
+            for (auto&& s : dev_strong->query_sensors())
+                auto func = check_stream_sanity(ctx, s, 10);
 
             disconnected = connected = false;
         }
@@ -1568,9 +1887,9 @@ TEST_CASE("Connect Disconnect events while streaming", "[live]") {
     }
 }
 
-void check_controlls_sanity(device& dev)
+void check_controlls_sanity(const context& ctx, const sensor& dev)
 {
-    for (auto d : dev.get_adjacent_devices())
+    for (auto d : ctx.get_sensor_parent(dev).query_sensors())
     {
         for (auto i = 0; i < RS2_OPTION_COUNT; i++)
         {
@@ -1580,7 +1899,8 @@ void check_controlls_sanity(device& dev)
     }
 }
 
-TEST_CASE("Connect Disconnect events while controlls", "[live]") {
+TEST_CASE("Connect Disconnect events while controlls", "[live]")
+{
     rs2::context ctx;
     if (make_context(SECTION_FROM_TEST_NAME, &ctx))
     {
@@ -1593,7 +1913,7 @@ TEST_CASE("Connect Disconnect events while controlls", "[live]") {
 
         std::string serial;
 
-        REQUIRE_NOTHROW(serial = dev_strong->get_camera_info(RS2_CAMERA_INFO_DEVICE_SERIAL_NUMBER));
+        REQUIRE_NOTHROW(serial = dev_strong->get_info(RS2_CAMERA_INFO_SERIAL_NUMBER));
 
 
         auto disconnected = false;
@@ -1618,7 +1938,7 @@ TEST_CASE("Connect Disconnect events while controlls", "[live]") {
 
                     for (auto d : info.get_new_devices())
                     {
-                        if (serial == d.get_camera_info(RS2_CAMERA_INFO_DEVICE_SERIAL_NUMBER))
+                        if (serial == d.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER))
                         {
                             try
                             {
@@ -1649,8 +1969,8 @@ TEST_CASE("Connect Disconnect events while controlls", "[live]") {
         //Check that after reset the device gets connected back within reasonable period of time
         REQUIRE(cv.wait_for(lock, std::chrono::seconds(10), [&]() {return connected; }));
 
-
-        check_controlls_sanity(*dev_strong);
+        for (auto&& s : dev_strong->query_sensors())
+            check_controlls_sanity(ctx, s);
     }
 
 }
@@ -1659,14 +1979,14 @@ TEST_CASE("device_hub", "[live]") {
 
     rs2::context ctx;
 
-    std::shared_ptr<device> dev;
+    std::shared_ptr<rs2::device> dev;
 
     if (make_context(SECTION_FROM_TEST_NAME, &ctx))
     {
         rs2::util::device_hub hub(ctx);
-        REQUIRE_NOTHROW(dev = std::make_shared<device>(hub.wait_for_device()));
+        REQUIRE_NOTHROW(dev = std::make_shared<rs2::device>(hub.wait_for_device()));
 
-        std::weak_ptr<device> weak(dev);
+        std::weak_ptr<rs2::device> weak(dev);
 
         disable_sensitive_options_for(*dev);
 
@@ -1677,9 +1997,11 @@ TEST_CASE("device_hub", "[live]") {
             std::this_thread::sleep_for(std::chrono::milliseconds(10));
         }
 
-        REQUIRE_NOTHROW(dev = std::make_shared<device>(hub.wait_for_device()));
+        REQUIRE_NOTHROW(dev = std::make_shared<rs2::device>(hub.wait_for_device()));
         disable_sensitive_options_for(*dev);
-        check_controlls_sanity(*dev);
+
+        for (auto&& s : dev->query_sensors())
+            check_controlls_sanity(ctx, s);
     }
 }
 
@@ -1687,29 +2009,38 @@ TEST_CASE("device_hub", "[live]") {
 class AC_Mock_Device
 {
 public:
-    AC_Mock_Device(std::vector<stream_profile> modes, bool result) : result(result), modes(std::move(modes)), expected() {};
-    void set_expected(std::vector<stream_profile> profiles) { expected = profiles; };
+    using SensorType = AC_Mock_Device;
+
+    std::vector<SensorType> query_sensors() const
+    {
+        return std::vector<SensorType>(1, *this);
+    }
+
+    AC_Mock_Device(std::vector<rs2::stream_profile> modes, bool result) : result(result), modes(std::move(modes)), expected() {};
+    void set_expected(std::vector<rs2::stream_profile> profiles) { expected = profiles; };
 
     std::vector<AC_Mock_Device> get_adjacent_devices() const { return{ *this }; }
-    std::vector<stream_profile> get_stream_modes() const { return modes; };
-    bool open(std::vector<stream_profile> profiles) const {
+    std::vector<rs2::stream_profile> get_stream_modes() const { return modes; };
+    bool open(std::vector<rs2::stream_profile> profiles) const {
         for (auto & profile : profiles) {
             if (profile.has_wildcards()) return false;
-            if (std::none_of(begin(expected), end(expected), [&profile](const stream_profile &p) {return p.match(profile); }))
+            if (std::none_of(begin(expected), end(expected), [&profile](const rs2::stream_profile &p) {return p.match(profile); }))
                 return false;
         }
         return true;
     }
 
-    rs2_intrinsics get_intrinsics(stream_profile profile) const {
+    rs2_intrinsics get_intrinsics(rs2::stream_profile profile) const {
         return{ 0, 0, 0.0, 0.0, 0.0, 0.0, RS2_DISTORTION_COUNT,{ 0.0, 0.0, 0.0, 0.0, 0.0 } };
     }
     const char * get_camera_info(rs2_camera_info info) const {
         switch (info) {
-        case RS2_CAMERA_INFO_MODULE_NAME: return "Dummy Module";
+        case RS2_CAMERA_INFO_NAME: return "Dummy Module";
         default: return "";
         }
     }
+
+    std::string get_info(rs2_camera_info info) const { return "Mock"; }
 
     template<class T>
     void start(T callback) const
@@ -1728,7 +2059,7 @@ public:
     }
 
 private:
-    std::vector<stream_profile> modes, expected;
+    std::vector<rs2::stream_profile> modes, expected;
     bool result;
 };
 
@@ -1748,7 +2079,7 @@ TEST_CASE("Auto-complete feature works", "[offline][util::config]") {
     util::Config<AC_Mock_Device> config;
 
     struct Test {
-        std::vector<stream_profile> given,       // We give these profiles to the config class
+        std::vector<rs2::stream_profile> given,       // We give these profiles to the config class
             expected;    // pool of profiles the config class can return. Leave empty if auto-completer is expected to fail
     };
     std::vector<Test> tests = {

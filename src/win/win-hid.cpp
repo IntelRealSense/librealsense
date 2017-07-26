@@ -21,14 +21,13 @@
 #include <initguid.h>
 #include <propkeydef.h>
 #include <comutil.h>
-#include <iostream>
 
 #pragma comment(lib, "Sensorsapi.lib")
 #pragma comment(lib, "PortableDeviceGuids.lib")
 
-namespace rsimpl2
+namespace librealsense
 {
-    namespace uvc
+    namespace platform
     {
         class sensor_events : public ISensorEvents
         {

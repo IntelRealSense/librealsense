@@ -9,9 +9,9 @@
 
 #define WAIT_FOR_MUTEX_TIME_OUT  (5000)
 
-namespace rsimpl2
+namespace librealsense
 {
-    namespace uvc
+    namespace platform
     {
         bool check(const char * call, HRESULT hr, bool to_throw = true);
 #define CHECK_HR(x) check(#x, x);

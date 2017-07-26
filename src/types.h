@@ -16,6 +16,7 @@
 #include "../include/librealsense/rs2.h"     // Inherit all type definitions in the public API
 #include "../include/librealsense/rscore2.hpp"
 
+#include <stdint.h>
 #include <cassert>                          // For assert
 #include <cstring>                          // For memcmp
 #include <vector>                           // For vector
@@ -31,20 +32,21 @@
 
 #include "concurrency.h"
 
-#include "../third_party/easyloggingpp/src/easylogging++.h"
+#include "../third-party/easyloggingpp/src/easylogging++.h"
 
 typedef unsigned char byte;
 
-const int RS2_USER_QUEUE_SIZE = 64;
-const int RS2_MAX_EVENT_QUEUE_SIZE = 500;
-const int RS2_MAX_EVENT_TINE_OUT = 10;
+const int RS2_USER_QUEUE_SIZE = 128;
 
 #ifndef DBL_EPSILON
 const double DBL_EPSILON = 2.2204460492503131e-016;  // smallest such that 1.0+DBL_EPSILON != 1.0
 #endif
 
-namespace rsimpl2
+#pragma warning(disable: 4250)
+
+namespace librealsense
 {
+    #define UNKNOWN "UNKNOWN"
 
     ///////////////////////////////////
     // Utility types for general use //
@@ -56,11 +58,7 @@ namespace rsimpl2
         operator std::string() const { return ss.str(); }
     };
 
-    inline void copy(void* dst, void const* src, size_t size)
-    {
-        auto from = reinterpret_cast<uint8_t const*>(src);
-        std::copy(from, from + size, reinterpret_cast<uint8_t*>(dst));
-    }
+    void copy(void* dst, void const* src, size_t size);
 
     ///////////////////////
     // Logging mechanism //
@@ -115,11 +113,7 @@ namespace rsimpl2
     {
     public:
         recoverable_exception(const std::string& msg,
-                              rs2_exception_type exception_type) noexcept
-            : librealsense_exception(msg, exception_type)
-        {
-            LOG_WARNING(msg);
-        }
+            rs2_exception_type exception_type) noexcept;
     };
 
     class unrecoverable_exception : public librealsense_exception
@@ -132,7 +126,13 @@ namespace rsimpl2
             LOG_ERROR(msg);
         }
     };
-
+    class io_exception : public unrecoverable_exception
+    {
+    public:
+        io_exception(const std::string& msg) noexcept
+            : unrecoverable_exception(msg, RS2_EXCEPTION_TYPE_IO)
+        {}
+    };
     class camera_disconnected_exception : public unrecoverable_exception
     {
     public:
@@ -218,6 +218,11 @@ namespace rsimpl2
     public:
         lazy() : _init([]() { T t{}; return t; }) {}
         lazy(std::function<T()> initializer) : _init(std::move(initializer)) {}
+
+        T* operator->() const
+        {
+            return operate();
+        }
 
         T& operator*()
         {
@@ -311,6 +316,7 @@ namespace rsimpl2
 #define RS2_ENUM_HELPERS(TYPE, PREFIX) const char * get_string(TYPE value); \
         inline bool is_valid(TYPE value) { return value >= 0 && value < RS2_##PREFIX##_COUNT; } \
         inline std::ostream & operator << (std::ostream & out, TYPE value) { if(is_valid(value)) return out << get_string(value); else return out << (int)value; }
+
     RS2_ENUM_HELPERS(rs2_stream, STREAM)
     RS2_ENUM_HELPERS(rs2_format, FORMAT)
     RS2_ENUM_HELPERS(rs2_distortion, DISTORTION)
@@ -318,11 +324,12 @@ namespace rsimpl2
     RS2_ENUM_HELPERS(rs2_camera_info, CAMERA_INFO)
     RS2_ENUM_HELPERS(rs2_frame_metadata, FRAME_METADATA)
     RS2_ENUM_HELPERS(rs2_timestamp_domain, TIMESTAMP_DOMAIN)
-    RS2_ENUM_HELPERS(rs2_visual_preset, VISUAL_PRESET)
+    RS2_ENUM_HELPERS(rs2_ivcam_visual_preset, IVCAM_VISUAL_PRESET)
+    RS2_ENUM_HELPERS(rs2_extension, EXTENSION)
     RS2_ENUM_HELPERS(rs2_exception_type, EXCEPTION_TYPE)
     RS2_ENUM_HELPERS(rs2_log_severity, LOG_SEVERITY)
     RS2_ENUM_HELPERS(rs2_notification_category, NOTIFICATION_CATEGORY)
-    #undef RS2_ENUM_HELPERS
+    RS2_ENUM_HELPERS(rs2_playback_status, PLAYBACK_STATUS)
 
     ////////////////////////////////////////////
     // World's tiniest linear algebra library //
@@ -356,7 +363,7 @@ namespace rsimpl2
 
     typedef std::tuple<uint32_t, int, size_t> native_pixel_format_tuple;
     typedef std::tuple<rs2_stream, rs2_format> output_tuple;
-    typedef std::tuple<uvc::stream_profile_tuple, native_pixel_format_tuple, std::vector<output_tuple>> request_mapping_tuple;
+    typedef std::tuple<platform::stream_profile_tuple, native_pixel_format_tuple, std::vector<output_tuple>> request_mapping_tuple;
 
     struct stream_profile
     {
@@ -436,7 +443,7 @@ namespace rsimpl2
 
     struct request_mapping
     {
-        uvc::stream_profile profile;
+        platform::stream_profile profile;
         native_pixel_format* pf;
         pixel_format_unpacker* unpacker;
 
@@ -460,29 +467,28 @@ namespace rsimpl2
         return (a.profile == b.profile) && (a.pf == b.pf) && (a.unpacker == b.unpacker);
     }
 
-    class device;
+    class frame_interface;
 
     struct frame_holder
     {
-        rs2_frame* frame;
+        frame_interface* frame;
 
-        rs2_frame* operator->()
+        frame_interface* operator->()
         {
             return frame;
         }
 
         operator bool() const { return frame != nullptr; }
 
-        operator rs2_frame*() const { return frame; }
+        operator frame_interface*() const { return frame; }
 
-        frame_holder(rs2_frame* f)
+        frame_holder(frame_interface* f)
         {
             frame = f;
         }
 
         ~frame_holder();
 
-        frame_holder(const frame_holder&) = delete;
         frame_holder(frame_holder&& other)
             : frame(other.frame)
         {
@@ -491,9 +497,13 @@ namespace rsimpl2
 
         frame_holder() : frame(nullptr) {}
 
-        frame_holder& operator=(const frame_holder&) = delete;
+
         frame_holder& operator=(frame_holder&& other);
 
+        frame_holder clone() const;
+    private:
+        frame_holder& operator=(const frame_holder& other) = delete;
+        frame_holder(const frame_holder& other);
     };
 
     class firmware_version
@@ -548,21 +558,11 @@ namespace rsimpl2
         {
             return string_representation.c_str();
         }
-    };
 
-    struct supported_capability
-    {
-        rs2_stream           capability;
-        firmware_version    from;
-        firmware_version    until;
-        rs2_camera_info      firmware_type;
-
-        supported_capability(rs2_stream capability, firmware_version from,
-            firmware_version until, rs2_camera_info firmware_type = RS2_CAMERA_INFO_CAMERA_FIRMWARE_VERSION)
-            : capability(capability), from(from), until(until), firmware_type(firmware_type) {}
-
-        explicit supported_capability(rs2_stream capability)
-            : capability(capability), from(), until(), firmware_type(RS2_CAMERA_INFO_CAMERA_FIRMWARE_VERSION) {}
+        operator std::string() const
+        {
+            return string_representation.c_str();
+        }
     };
 
     // This class is used to buffer up several writes to a structure-valued XU control, and send the entire structure all at once
@@ -615,12 +615,6 @@ namespace rsimpl2
     private:
         T last_input;
         S accumulated;
-    };
-
-    struct static_device_info
-    {
-        std::vector<rs2_frame_metadata> supported_metadata_vector;
-        std::vector<supported_capability> capabilities_vector;
     };
 
     typedef void(*frame_callback_function_ptr)(rs2_frame * frame, void * user);
@@ -693,8 +687,10 @@ namespace rsimpl2
         }
         void release() override { delete this; }
     };
+
     typedef std::unique_ptr<rs2_log_callback, void(*)(rs2_log_callback*)> log_callback_ptr;
     typedef std::shared_ptr<rs2_frame_callback> frame_callback_ptr;
+    typedef std::shared_ptr<rs2_frame_processor_callback> frame_processor_callback_ptr;
     typedef std::unique_ptr<rs2_notifications_callback, void(*)(rs2_notifications_callback*)> notifications_callback_ptr;
     typedef std::unique_ptr<rs2_devices_changed_callback, void(*)(rs2_devices_changed_callback*)> devices_changed_callback_ptr;
 
@@ -720,6 +716,7 @@ namespace rsimpl2
     class notification_decoder
     {
     public:
+        virtual ~notification_decoder() = default;
         virtual notification decode(int value) = 0;
     };
 
@@ -1000,7 +997,7 @@ namespace rsimpl2
         std::chrono::high_resolution_clock::time_point ended;
     };
 
-    typedef rsimpl2::small_heap<callback_invocation, 1> callbacks_heap;
+    typedef librealsense::small_heap<callback_invocation, 1> callbacks_heap;
 
     struct callback_invocation_holder
     {
@@ -1125,10 +1122,10 @@ namespace rsimpl2
     uint32_t calc_crc32(const uint8_t *buf, size_t bufsize);
 
 
-    class polling_device_watcher: public rsimpl2::uvc::device_watcher
+    class polling_device_watcher: public librealsense::platform::device_watcher
     {
     public:
-        polling_device_watcher(const uvc::backend* backend_ref):
+        polling_device_watcher(const platform::backend* backend_ref):
             _backend(backend_ref),_active_object([this](dispatcher::cancellable_timer cancellable_timer)
         {
             polling(cancellable_timer);
@@ -1146,11 +1143,11 @@ namespace rsimpl2
         {
             if(cancellable_timer.try_sleep(100))
             {
-               uvc::devices_data curr(_backend->query_uvc_devices(), _backend->query_usb_devices(), _backend->query_hid_devices());
+               platform::backend_device_group curr(_backend->query_uvc_devices(), _backend->query_usb_devices(), _backend->query_hid_devices());
 
-                if(list_changed(_devices_data._uvc_devices, curr._uvc_devices ) ||
-                   list_changed(_devices_data._usb_devices, curr._usb_devices ) ||
-                   list_changed(_devices_data._hid_devices, curr._hid_devices ))
+                if(list_changed(_devices_data.uvc_devices, curr.uvc_devices ) ||
+                   list_changed(_devices_data.usb_devices, curr.usb_devices ) ||
+                   list_changed(_devices_data.hid_devices, curr.hid_devices ))
                 {
                     callback_invocation_holder callback = { _callback_inflight.allocate(), &_callback_inflight };
                     if(callback)
@@ -1163,7 +1160,7 @@ namespace rsimpl2
             }
         }
 
-        void start(uvc::device_changed_callback callback) override
+        void start(platform::device_changed_callback callback) override
         {
             stop();
             _callback = std::move(callback);
@@ -1181,20 +1178,137 @@ namespace rsimpl2
         active_object<> _active_object;
 
         callbacks_heap _callback_inflight;
-        const uvc::backend* _backend;
+        const platform::backend* _backend;
 
-        uvc::devices_data _devices_data;
-        uvc::device_changed_callback _callback;
+        platform::backend_device_group _devices_data;
+        platform::device_changed_callback _callback;
 
+    };
+
+
+    template<typename HostingClass, typename... Args>
+    class signal
+    {
+        friend HostingClass;
+    public:
+        signal()
+        {
+        }
+
+        signal(signal&& other)
+        {
+            std::lock_guard<std::mutex> locker(other.m_mutex);
+            m_subscribers = std::move(other.m_subscribers);
+
+            other.m_subscribers.clear();
+        }
+
+        signal& operator=(signal&& other)
+        {
+            std::lock_guard<std::mutex> locker(other.m_mutex);
+            m_subscribers = std::move(other.m_subscribers);
+
+            other.m_subscribers.clear();
+            return *this;
+        }
+
+        int subscribe(const std::function<void(Args...)>& func)
+        {
+            std::lock_guard<std::mutex> locker(m_mutex);
+
+            int token = -1;
+            for (int i = 0; i < (std::numeric_limits<int>::max)(); i++)
+            {
+                if (m_subscribers.find(i) == m_subscribers.end())
+                {
+                    token = i;
+                    break;
+                }
+            }
+
+            if (token != -1)
+            {
+                m_subscribers.emplace(token, func);
+            }
+
+            return token;
+        }
+
+        bool unsubscribe(int token)
+        {
+            std::lock_guard<std::mutex> locker(m_mutex);
+
+            bool retVal = false;
+            typename std::map<int, std::function<void(Args...)>>::iterator it = m_subscribers.find(token);
+            if (it != m_subscribers.end())
+            {
+                m_subscribers.erase(token);
+                retVal = true;
+            }
+
+            return retVal;
+        }
+
+        int operator+=(const std::function<void(Args...)>& func)
+        {
+            return subscribe(func);
+        }
+
+        bool operator-=(int token)
+        {
+            return unsubscribe(token);
+        }
+
+    private:
+        signal(const signal& other);            // non construction-copyable
+        signal& operator=(const signal&);       // non copyable
+
+        bool raise(Args... args)
+        {
+            std::vector<std::function<void(Args...)>> functions;
+            bool retVal = false;
+
+            std::unique_lock<std::mutex> locker(m_mutex);
+            if (m_subscribers.size() > 0)
+            {
+                typename std::map<int, std::function<void(Args...)>>::iterator it = m_subscribers.begin();
+                while (it != m_subscribers.end())
+                {
+                    functions.emplace_back(it->second);
+                    ++it;
+                }
+            }
+            locker.unlock();
+
+            if (functions.size() > 0)
+            {
+                for (auto func : functions)
+                {
+                    func(args...);
+                }
+
+                retVal = true;
+            }
+
+            return retVal;
+        }
+
+        bool operator()(Args... args)
+        {
+            return raise(std::forward<Args>(args)...);
+        }
+
+        std::mutex m_mutex;
+        std::map<int, std::function<void(Args...)>> m_subscribers;
     };
 }
 
 namespace std {
 
     template <>
-    struct hash<rsimpl2::stream_profile>
+    struct hash<librealsense::stream_profile>
     {
-        size_t operator()(const rsimpl2::stream_profile& k) const
+        size_t operator()(const librealsense::stream_profile& k) const
         {
             using std::hash;
 
@@ -1207,9 +1321,9 @@ namespace std {
     };
 
     template <>
-    struct hash<rsimpl2::uvc::stream_profile>
+    struct hash<librealsense::platform::stream_profile>
     {
-        size_t operator()(const rsimpl2::uvc::stream_profile& k) const
+        size_t operator()(const librealsense::platform::stream_profile& k) const
         {
             using std::hash;
 
@@ -1221,19 +1335,17 @@ namespace std {
     };
 
     template <>
-    struct hash<rsimpl2::request_mapping>
+    struct hash<librealsense::request_mapping>
     {
-        size_t operator()(const rsimpl2::request_mapping& k) const
+        size_t operator()(const librealsense::request_mapping& k) const
         {
             using std::hash;
 
-            return (hash<rsimpl2::uvc::stream_profile>()(k.profile))
-                ^ (hash<rsimpl2::pixel_format_unpacker*>()(k.unpacker))
-                ^ (hash<rsimpl2::native_pixel_format*>()(k.pf));
+            return (hash<librealsense::platform::stream_profile>()(k.profile))
+                ^ (hash<librealsense::pixel_format_unpacker*>()(k.unpacker))
+                ^ (hash<librealsense::native_pixel_format*>()(k.pf));
         }
     };
-
-
 }
 
 
@@ -1245,11 +1357,7 @@ std::vector<std::shared_ptr<T>> subtract_sets(const std::vector<std::shared_ptr<
     {
         if (std::find_if(second.begin(), second.end(), [&](std::shared_ptr<T> new_dev) {return *new_dev == *data; }) == second.end())
         {
-            for (auto i = 0; i < data->get_subdevice_count(); i++)
-            {
-                results.push_back(data);
-            }
-
+            results.push_back(data);
         }
     });
     return results;

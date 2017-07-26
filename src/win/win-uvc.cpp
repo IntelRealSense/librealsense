@@ -46,9 +46,9 @@ The library will be compiled without the metadata support!\n")
 
 #define DEVICE_NOT_READY_ERROR _HRESULT_TYPEDEF_(0x80070015L)
 
-namespace rsimpl2
+namespace librealsense
 {
-    namespace uvc
+    namespace platform
     {
         // we are using standard fourcc codes to represent formats, while MF is using GUIDs
         // occasionally there is a mismatch between the code and the guid data
@@ -355,13 +355,13 @@ namespace rsimpl2
 
                 auto pStruct = next_struct;
                 cfg.step.resize(option_range_size);
-                rsimpl2::copy(cfg.step.data(), pStruct, field_width);
+                librealsense::copy(cfg.step.data(), pStruct, field_width);
                 pStruct += length;
                 cfg.min.resize(option_range_size);
-                rsimpl2::copy(cfg.min.data(), pStruct, field_width);
+                librealsense::copy(cfg.min.data(), pStruct, field_width);
                 pStruct += length;
                 cfg.max.resize(option_range_size);
-                rsimpl2::copy(cfg.max.data(), pStruct, field_width);
+                librealsense::copy(cfg.max.data(), pStruct, field_width);
                 return;
             }
             case KSPROPERTY_MEMBER_VALUES:
@@ -379,7 +379,7 @@ namespace rsimpl2
                     }
 
                     cfg.def.resize(option_range_size);
-                    rsimpl2::copy(cfg.def.data(), next_struct, field_width);
+                    librealsense::copy(cfg.def.data(), next_struct, field_width);
                 }
                 return;
             }
@@ -887,7 +887,9 @@ namespace rsimpl2
                 if (_source)
                 {
                     _ks_controls.clear();
+                    _camera_control.Release();
                     _camera_control = nullptr;
+                    _video_proc.Release();
                     _video_proc = nullptr;
                     _source.Release();
                     _source = nullptr;
@@ -907,7 +909,7 @@ namespace rsimpl2
             }
         }
 
-        void wmf_uvc_device::probe_and_commit(stream_profile profile, frame_callback callback, int /*buffers*/)
+        void wmf_uvc_device::probe_and_commit( stream_profile profile, bool zero_copy,  frame_callback callback, int /*buffers*/)
         {
             if (_streaming)
                 throw std::runtime_error("Device is already streaming!");

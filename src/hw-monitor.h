@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include "subdevice.h"
+#include "sensor.h"
 #include <mutex>
 
 const uint8_t   IV_COMMAND_FIRMWARE_UPDATE_MODE = 0x01;
@@ -41,16 +41,16 @@ const uint16_t  SIZE_OF_HW_MONITOR_HEADER       = 4;
 
 
 
-namespace rsimpl2
+namespace librealsense
 {
-    class uvc_endpoint;
+    class uvc_sensor;
 
     class locked_transfer
     {
     public:
-        locked_transfer(std::shared_ptr<uvc::command_transfer> command_transfer, uvc_endpoint& uvc_ep)
+        locked_transfer(std::shared_ptr<platform::command_transfer> command_transfer, uvc_sensor& uvc_ep)
             :_command_transfer(command_transfer),
-             _uvc_endpoint(uvc_ep)
+             _uvc_sensor_base(uvc_ep)
         {}
 
         std::vector<uint8_t> send_receive(
@@ -59,17 +59,17 @@ namespace rsimpl2
             bool require_response = true)
         {
             std::lock_guard<std::recursive_mutex> lock(_local_mtx);
-            return _uvc_endpoint.invoke_powered([&]
-                (uvc::uvc_device& dev)
+            return _uvc_sensor_base.invoke_powered([&]
+                (platform::uvc_device& dev)
                 {
-                    std::lock_guard<uvc::uvc_device> lock(dev);
+                    std::lock_guard<platform::uvc_device> lock(dev);
                     return _command_transfer->send_receive(data, timeout_ms, require_response);
                 });
         }
 
     private:
-        std::shared_ptr<uvc::command_transfer> _command_transfer;
-        uvc_endpoint& _uvc_endpoint;
+        std::shared_ptr<platform::command_transfer> _command_transfer;
+        uvc_sensor& _uvc_sensor_base;
         std::recursive_mutex _local_mtx;
     };
 
@@ -136,7 +136,7 @@ namespace rsimpl2
                   oneDirection(!cmd.require_response),
                   receivedCommandDataLength(0)
             {
-                rsimpl2::copy(data, cmd.data.data(), sizeOfSendCommandData);
+                librealsense::copy(data, cmd.data.data(), sizeOfSendCommandData);
             }
         };
 

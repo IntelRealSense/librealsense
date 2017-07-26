@@ -2,23 +2,23 @@
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
 #include "option.h"
-#include "subdevice.h"
+#include "sensor.h"
 #include "error-handling.h"
 
-void rsimpl2::uvc_pu_option::set(float value)
+void librealsense::uvc_pu_option::set(float value)
 {
     _ep.invoke_powered(
-        [this, value](uvc::uvc_device& dev)
+        [this, value](platform::uvc_device& dev)
         {
             if (!dev.set_pu(_id, static_cast<int32_t>(value)))
                 throw invalid_value_exception(to_string() << "set_pu(id=" << std::to_string(_id) << ") failed!" << " Last Error: " << strerror(errno));
         });
 }
 
-float rsimpl2::uvc_pu_option::query() const
+float librealsense::uvc_pu_option::query() const
 {
     return static_cast<float>(_ep.invoke_powered(
-        [this](uvc::uvc_device& dev)
+        [this](platform::uvc_device& dev)
         {
             int32_t value = 0;
             if (!dev.get_pu(_id, value))
@@ -28,10 +28,10 @@ float rsimpl2::uvc_pu_option::query() const
         }));
 }
 
-rsimpl2::option_range rsimpl2::uvc_pu_option::get_range() const
+librealsense::option_range librealsense::uvc_pu_option::get_range() const
 {
     auto uvc_range = _ep.invoke_powered(
-        [this](uvc::uvc_device& dev)
+        [this](platform::uvc_device& dev)
         {
             return dev.get_pu_range(_id);
         });
@@ -46,7 +46,7 @@ rsimpl2::option_range rsimpl2::uvc_pu_option::get_range() const
                         static_cast<float>(def)};
 }
 
-const char* rsimpl2::uvc_pu_option::get_description() const
+const char* librealsense::uvc_pu_option::get_description() const
 {
     switch(_id)
     {
@@ -67,13 +67,13 @@ const char* rsimpl2::uvc_pu_option::get_description() const
     }
 }
 
-std::vector<uint8_t> rsimpl2::command_transfer_over_xu::send_receive(const std::vector<uint8_t>& data, int, bool require_response)
+std::vector<uint8_t> librealsense::command_transfer_over_xu::send_receive(const std::vector<uint8_t>& data, int, bool require_response)
 {
     return _uvc.invoke_powered([this, &data, require_response]
-        (uvc::uvc_device& dev)
+        (platform::uvc_device& dev)
         {
             std::vector<uint8_t> result;
-            std::lock_guard<uvc::uvc_device> lock(dev);
+            std::lock_guard<platform::uvc_device> lock(dev);
 
             if (data.size() > HW_MONITOR_BUFFER_SIZE)
             {
@@ -102,7 +102,7 @@ std::vector<uint8_t> rsimpl2::command_transfer_over_xu::send_receive(const std::
         });
 }
 
-void rsimpl2::polling_errors_disable::set(float value)
+void librealsense::polling_errors_disable::set(float value)
 {
     if (value < 0)
         throw invalid_value_exception("Invalid polling errors disable request " + std::to_string(value));
@@ -119,27 +119,27 @@ void rsimpl2::polling_errors_disable::set(float value)
     }
 }
 
-float rsimpl2::polling_errors_disable::query() const
+float librealsense::polling_errors_disable::query() const
 {
     return _value;
 }
 
-rsimpl2::option_range rsimpl2::polling_errors_disable::get_range() const
+librealsense::option_range librealsense::polling_errors_disable::get_range() const
 {
     return option_range{0, 1, 1, 1};
 }
 
-bool rsimpl2::polling_errors_disable::is_enabled() const
+bool librealsense::polling_errors_disable::is_enabled() const
 {
     return true;
 }
 
-const char * rsimpl2::polling_errors_disable::get_description() const
+const char * librealsense::polling_errors_disable::get_description() const
 {
     return "Enable / disable polling of camera internal errors";
 }
 
-const char * rsimpl2::polling_errors_disable::get_value_description(float value) const
+const char * librealsense::polling_errors_disable::get_value_description(float value) const
 {
     if (value == 0)
     {

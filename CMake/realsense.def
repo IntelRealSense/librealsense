@@ -6,14 +6,21 @@ EXPORTS
     rs2_create_recording_context
     rs2_create_mock_context
     rs2_get_context_time
-    
+    rs2_context_add_device
+    rs2_context_remove_device
+
     rs2_query_devices
     rs2_get_device_count
     rs2_delete_device_list
-
     rs2_create_device
-    rs2_query_adjacent_devices
     rs2_delete_device
+
+    rs2_query_sensors
+    rs2_get_sensors_count
+    rs2_delete_sensor_list
+    rs2_create_sensor
+    rs2_delete_sensor
+    
     rs2_get_extrinsics
     rs2_get_stream_intrinsics
     rs2_get_motion_intrinsics
@@ -28,12 +35,8 @@ EXPORTS
     rs2_close
 
     rs2_start
-    rs2_start_stream
     rs2_start_cpp
-    rs2_start_stream_cpp
-    rs2_start_queue
     rs2_stop
-    rs2_stop_stream
     rs2_hardware_reset
 
     rs2_set_notifications_callback
@@ -56,7 +59,7 @@ EXPORTS
     rs2_get_frame_format
     rs2_get_frame_stream_type
     rs2_release_frame
-    rs2_clone_frame_ref
+    rs2_frame_add_ref
 
     rs2_get_option
     rs2_set_option
@@ -74,8 +77,10 @@ EXPORTS
     rs2_delete_raw_data
     rs2_get_raw_data
 
-    rs2_get_camera_info
-    rs2_supports_camera_info
+    rs2_get_device_info
+    rs2_supports_device_info
+    rs2_get_sensor_info
+    rs2_supports_sensor_info
 
     rs2_create_frame_queue
     rs2_delete_frame_queue
@@ -90,6 +95,8 @@ EXPORTS
     rs2_free_error
     rs2_get_librealsense_exception_type
     rs2_exception_type_to_string
+    rs2_extension_type_to_string
+    rs2_playback_status_to_string
     rs2_log_severity_to_string
 
     rs2_stream_to_string
@@ -105,14 +112,67 @@ EXPORTS
     rs2_log_to_console
     rs2_log_to_file
 
-    rs2_create_syncer
-    rs2_start_syncer
-    rs2_wait_for_frames
-    rs2_poll_for_frames
-    rs2_sync_frame
-    rs2_delete_syncer
-
     rs2_get_api_version
     rs2_set_devices_changed_callback_cpp
     rs2_set_devices_changed_callback
     rs2_device_list_contains
+    rs2_create_device_from_sensor
+    rs2_get_depth_scale
+
+    rs2_is_sensor_extendable_to
+    rs2_is_device_extendable_to
+    rs2_is_frame_extendable_to
+
+    rs2_allocate_synthetic_video_frame
+    rs2_synthetic_frame_ready
+    rs2_create_processing_block
+    rs2_start_processing
+    rs2_process_frame
+    rs2_delete_processing_block
+    rs2_create_sync_processing_block
+    rs2_embedded_frames_count
+    rs2_extract_frame
+
+    rs2_set_depth_control
+    rs2_get_depth_control
+    rs2_set_rsm
+    rs2_get_rsm
+    rs2_set_rau_support_vector_control
+    rs2_get_rau_support_vector_control
+    rs2_set_color_control
+    rs2_get_color_control
+    rs2_set_rau_thresholds_control
+    rs2_get_rau_thresholds_control
+    rs2_set_slo_color_thresholds_control
+    rs2_get_slo_color_thresholds_control
+    rs2_get_slo_penalty_control
+    rs2_set_slo_penalty_control
+    rs2_get_hdad
+    rs2_set_hdad
+    rs2_set_color_correction
+    rs2_get_color_correction
+    rs2_set_depth_table
+    rs2_get_depth_table
+    rs2_set_ae_control
+    rs2_get_ae_control
+    rs2_set_census
+    rs2_get_census
+    rs2_advanced_mode_preset_to_string
+    rs2_is_enabled
+    rs2_toggle_advanced_mode
+
+    rs2_create_record_device 
+    rs2_create_playback_device 
+    rs2_record_device_pause
+    rs2_record_device_resume
+
+    rs2_playback_device_get_file_path
+    rs2_playback_get_duration
+    rs2_playback_seek
+    rs2_playback_get_position
+    rs2_playback_device_resume
+    rs2_playback_device_pause
+    rs2_playback_device_set_real_time
+    rs2_playback_device_is_real_time
+    rs2_playback_device_set_status_changed_callback
+    rs2_playback_device_get_current_status

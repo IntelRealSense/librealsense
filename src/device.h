@@ -3,68 +3,45 @@
 
 #pragma once
 
-#include "backend.h"
-#include "archive.h"
 #include <chrono>
 #include <memory>
 #include <vector>
+
+#include "backend.h"
+#include "archive.h"
 #include "hw-monitor.h"
 #include "option.h"
-#include "subdevice.h"
+#include "sensor.h"
 #include "sync.h"
+#include "core/streaming.h"
 
-namespace rsimpl2
+namespace librealsense
 {
-    class device
+    class device : public virtual device_interface, public info_container
     {
     public:
-        virtual ~device() = default;
+        size_t get_sensors_count() const override;
 
-        unsigned int get_endpoints_count() const { return static_cast<unsigned int>(_endpoints.size()); }
-        endpoint& get_endpoint(unsigned subdevice)
-        {
-            try
-            {
-                return *(_endpoints.at(subdevice));
-            }
-            catch (std::out_of_range)
-            {
-                throw invalid_value_exception("invalid subdevice value");
-            }
-        }
+        sensor_interface& get_sensor(size_t subdevice) override;
+        const sensor_interface& get_sensor(size_t subdevice) const override;
 
-        virtual rs2_extrinsics get_extrinsics(int from, rs2_stream from_stream, int to, rs2_stream to_stream);
-
-        virtual rs2_intrinsics get_intrinsics(unsigned int subdevice, const stream_profile& profile) const = 0;
-        virtual rs2_motion_device_intrinsic get_motion_intrinsics(rs2_stream) const
+        virtual void hardware_reset()
         {
             throw not_implemented_exception(to_string() << __FUNCTION__ << " is not implemented for this device!");
         }
 
-        virtual void hardware_reset() = 0;
+        rs2_extrinsics get_extrinsics(size_t from, rs2_stream from_stream, size_t to, rs2_stream to_stream) const override;
 
-        virtual std::vector<uint8_t> send_receive_raw_data(const std::vector<uint8_t>& input)
-        {
-            throw not_implemented_exception(to_string() << __FUNCTION__ << " is not implemented for this device!");
-        }
+        virtual std::shared_ptr<matcher> create_matcher(rs2_stream stream) const;
 
-        virtual std::shared_ptr<sync_interface> create_syncer()
-        {
-            return std::make_shared<syncer>();
-        }
+        size_t find_sensor_idx(const sensor_interface& s) const;
 
     protected:
-        int add_endpoint(std::shared_ptr<endpoint> endpoint);
+        int add_sensor(std::shared_ptr<sensor_interface> sensor_base);
 
-        uvc_endpoint& get_uvc_endpoint(int subdevice);
+        uvc_sensor& get_uvc_sensor(int subdevice);
 
-        void register_endpoint_info(int sub, std::map<rs2_camera_info, std::string> camera_info);
-
-        void declare_capability(supported_capability cap);
     private:
-        std::vector<std::shared_ptr<endpoint>> _endpoints;
-        static_device_info _static_info;
+        std::vector<std::shared_ptr<sensor_interface>> _sensors;
     };
-
-
 }

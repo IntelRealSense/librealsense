@@ -13,6 +13,13 @@ struct rs2_frame_callback
     virtual                                 ~rs2_frame_callback() {}
 };
 
+struct rs2_frame_processor_callback
+{
+    virtual void                            on_frame(rs2_frame * f, rs2_source * source) = 0;
+    virtual void                            release() = 0;
+    virtual                                 ~rs2_frame_processor_callback() {}
+};
+
 struct rs2_notifications_callback
 {
     virtual void                            on_notification(rs2_notification* n) = 0;
@@ -34,4 +41,10 @@ struct rs2_devices_changed_callback
     virtual                                 ~rs2_devices_changed_callback() {}
 };
 
+struct rs2_playback_status_changed_callback
+{
+    virtual void                            on_playback_status_changed(rs2_playback_status status) = 0;
+    virtual void                            release() = 0;
+    virtual                                 ~rs2_playback_status_changed_callback() {}
+};
 #endif

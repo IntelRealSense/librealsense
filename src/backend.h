@@ -29,7 +29,7 @@ const uint16_t DELAY_FOR_RETRIES     = 50;
 const uint8_t MAX_META_DATA_SIZE      = 0xff; // UVC Metadata total length
                                             // is limited by (UVC Bulk) design to 255 bytes
 
-namespace rsimpl2
+namespace librealsense
 {
     struct notification;
 
@@ -61,7 +61,7 @@ namespace rsimpl2
     }
 
 
-    namespace uvc
+    namespace platform
     {
         struct control_range
         {
@@ -85,12 +85,7 @@ namespace rsimpl2
             std::vector<uint8_t> def;
 
         private:
-            void populate_raw_data(std::vector<uint8_t>& vec, int32_t value)
-            {
-                vec.resize(sizeof(value));
-                auto data = reinterpret_cast<const uint8_t*>(&value);
-                std::copy(data, data + sizeof(value), vec.begin());
-            }
+            void populate_raw_data(std::vector<uint8_t>& vec, int32_t value);
         };
 
         class time_service
@@ -345,11 +340,12 @@ namespace rsimpl2
 
 
 
+        struct request_mapping;
 
         class uvc_device
         {
         public:
-            virtual void probe_and_commit(stream_profile profile, frame_callback callback, int buffers = DEFAULT_FRAME_BUFFERS) = 0;
+            virtual void probe_and_commit( stream_profile profile, bool zero_copy,  frame_callback callback, int buffers = DEFAULT_FRAME_BUFFERS) = 0;
             virtual void stream_on(std::function<void(const notification& n)> error_handler = [](const notification& n){}) = 0;
             virtual void start_callbacks() = 0;
             virtual void stop_callbacks() = 0;
@@ -387,9 +383,9 @@ namespace rsimpl2
             explicit retry_controls_work_around(std::shared_ptr<uvc_device> dev)
                 : _dev(dev) {}
 
-            void probe_and_commit(stream_profile profile, frame_callback callback, int buffers) override
+            void probe_and_commit( stream_profile profile, bool zero_copy,  frame_callback callback, int buffers) override
             {
-                _dev->probe_and_commit(profile, callback, buffers);
+                _dev->probe_and_commit(profile, zero_copy, callback, buffers);
             }
 
             void stream_on(std::function<void(const notification& n)> error_handler = [](const notification& n){}) override
@@ -512,48 +508,48 @@ namespace rsimpl2
 
         class device_watcher;
 
-        struct devices_data
+        struct backend_device_group
         {
-            devices_data(){}
+            backend_device_group(){}
 
-            devices_data(const std::vector<uvc_device_info>& uvc_devices, const std::vector<usb_device_info>& usb_devices, const std::vector<hid_device_info>& hid_devices)
-                :_uvc_devices(uvc_devices), _usb_devices(usb_devices), _hid_devices(hid_devices) {}
+            backend_device_group(const std::vector<uvc_device_info>& uvc_devices, const std::vector<usb_device_info>& usb_devices, const std::vector<hid_device_info>& hid_devices)
+                :uvc_devices(uvc_devices), usb_devices(usb_devices), hid_devices(hid_devices) {}
 
-            devices_data(const std::vector<usb_device_info>& usb_devices)
-                :_usb_devices(usb_devices) {}
+            backend_device_group(const std::vector<usb_device_info>& usb_devices)
+                :usb_devices(usb_devices) {}
 
-            devices_data(const std::vector<uvc_device_info>& uvc_devices, const std::vector<usb_device_info>& usb_devices)
-                :_uvc_devices(uvc_devices), _usb_devices(usb_devices) {}
+            backend_device_group(const std::vector<uvc_device_info>& uvc_devices, const std::vector<usb_device_info>& usb_devices)
+                :uvc_devices(uvc_devices), usb_devices(usb_devices) {}
 
-            std::vector<uvc_device_info> _uvc_devices;
-            std::vector<usb_device_info> _usb_devices;
-            std::vector<hid_device_info> _hid_devices;
+            std::vector<uvc_device_info> uvc_devices;
+            std::vector<usb_device_info> usb_devices;
+            std::vector<hid_device_info> hid_devices;
 
-            bool operator == (const devices_data& other)
+            bool operator == (const backend_device_group& other)
             {
-                return !list_changed(_uvc_devices, other._uvc_devices) &&
-                    !list_changed(_hid_devices, other._hid_devices);
+                return !list_changed(uvc_devices, other.uvc_devices) &&
+                    !list_changed(hid_devices, other.hid_devices);
             }
 
             operator std::string()
             {
                 std::string s;
-                s = _uvc_devices.size()>0 ? "uvc devices:\n" : "";
-                for (auto uvc : _uvc_devices)
+                s = uvc_devices.size()>0 ? "uvc devices:\n" : "";
+                for (auto uvc : uvc_devices)
                 {
                     s += uvc;
                     s += "\n\n";
                 }
 
-                s += _usb_devices.size()>0 ? "usb devices:\n" : "";
-                for (auto usb : _usb_devices)
+                s += usb_devices.size()>0 ? "usb devices:\n" : "";
+                for (auto usb : usb_devices)
                 {
                     s += usb;
                     s += "\n\n";
                 }
 
-                s += _hid_devices.size()>0 ? "hid devices: \n" : "";
-                for (auto hid : _hid_devices)
+                s += hid_devices.size()>0 ? "hid devices: \n" : "";
+                for (auto hid : hid_devices)
                 {
                     s += hid;
                     s += "\n\n";
@@ -564,7 +560,7 @@ namespace rsimpl2
 
 
 
-        typedef std::function<void(devices_data old, devices_data curr)> device_changed_callback;
+        typedef std::function<void(backend_device_group old, backend_device_group curr)> device_changed_callback;
 
         class backend
         {
@@ -636,12 +632,13 @@ namespace rsimpl2
                 : _dev(dev)
             {}
 
-            void probe_and_commit(stream_profile profile, frame_callback callback, int buffers) override
+            void probe_and_commit( stream_profile profile, bool zero_copy,  frame_callback callback, int buffers) override
             {
                 auto dev_index = get_dev_index_by_profiles(profile);
                 _configured_indexes.insert(dev_index);
-                _dev[dev_index]->probe_and_commit(profile, callback, buffers);
+                _dev[dev_index]->probe_and_commit(profile, zero_copy, callback, buffers);
             }
+
 
             void stream_on(std::function<void(const notification& n)> error_handler = [](const notification& n){}) override
             {

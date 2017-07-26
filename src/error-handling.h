@@ -4,7 +4,7 @@
 #include "option.h"
 #include "types.h"
 
-namespace rsimpl2
+namespace librealsense
 {
     class polling_error_handler
     {

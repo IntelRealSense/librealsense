@@ -4,37 +4,65 @@
 #include "device.h"
 #include "image.h"
 
-using namespace rsimpl2;
+using namespace librealsense;
 #include <functional>
 
 
-int device::add_endpoint(std::shared_ptr<endpoint> endpoint)
+int device::add_sensor(std::shared_ptr<sensor_interface> sensor_base)
 {
-    _endpoints.push_back(endpoint);
-    return (int)_endpoints.size() - 1;
+    _sensors.push_back(sensor_base);
+    return (int)_sensors.size() - 1;
 }
 
-void device::register_endpoint_info(int sub, std::map<rs2_camera_info, std::string> camera_info)
+uvc_sensor& device::get_uvc_sensor(int sub)
 {
-    for (auto& elem : camera_info)
+    return dynamic_cast<uvc_sensor&>(*_sensors[sub]);
+}
+
+size_t device::get_sensors_count() const
+{
+    return static_cast<unsigned int>(_sensors.size());
+}
+
+sensor_interface& device::get_sensor(size_t subdevice)
+{
+    try
     {
-        get_uvc_endpoint(sub).register_info(elem.first, std::move(elem.second));
+        return *(_sensors.at(subdevice));
+    }
+    catch (std::out_of_range)
+    {
+        throw invalid_value_exception("invalid subdevice value");
     }
 }
 
-uvc_endpoint& device::get_uvc_endpoint(int sub)
+size_t device::find_sensor_idx(const sensor_interface& s) const
 {
-    return static_cast<uvc_endpoint&>(*_endpoints[sub]);
+    int idx = 0;
+    for (auto&& sensor : _sensors)
+    {
+        if (&s == sensor.get()) return idx;
+        idx++;
+    }
+    throw std::runtime_error("Sensor not found!");
 }
 
-void device::declare_capability(supported_capability cap)
+const sensor_interface& device::get_sensor(size_t subdevice) const
 {
-    _static_info.capabilities_vector.push_back(cap);
+    try
+    {
+        return *(_sensors.at(subdevice));
+    }
+    catch (std::out_of_range)
+    {
+        throw invalid_value_exception("invalid subdevice value");
+    }
 }
 
-rs2_extrinsics device::get_extrinsics(int from_subdevice, rs2_stream, int to_subdevice, rs2_stream)
+rs2_extrinsics device::get_extrinsics(size_t from_subdevice, rs2_stream, size_t to_subdevice, rs2_stream) const
 {
-    auto from = get_endpoint(from_subdevice).get_pose(), to = get_endpoint(to_subdevice).get_pose();
+    auto from = dynamic_cast<const sensor_base&>(get_sensor(from_subdevice)).get_pose(),
+         to   = dynamic_cast<const sensor_base&>(get_sensor(to_subdevice)).get_pose();
     if (from == to)
         return { {1,0,0,0,1,0,0,0,1}, {0,0,0} }; // identity transformation
 
@@ -43,4 +71,9 @@ rs2_extrinsics device::get_extrinsics(int from_subdevice, rs2_stream, int to_sub
     (float3x3 &)extrin.rotation = transform.orientation;
     (float3 &)extrin.translation = transform.position;
     return extrin;
+}
+
+std::shared_ptr<matcher> librealsense::device::create_matcher(rs2_stream stream) const
+{
+    return std::make_shared<identity_matcher>( stream_id((device_interface*)(this), stream));
 }

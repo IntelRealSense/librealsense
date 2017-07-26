@@ -7,7 +7,7 @@
 
 #include "types.h"
 
-namespace rsimpl2
+namespace librealsense
 {
 
     size_t           get_image_size                 (int width, int height, rs2_format format);

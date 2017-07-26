@@ -11,7 +11,7 @@
 #endif
 
 #pragma pack(push, 1) // All structs in this file are assumed to be byte-packed
-namespace rsimpl2
+namespace librealsense
 {
 
     ////////////////////////////
@@ -71,7 +71,7 @@ namespace rsimpl2
         float axes[3] = {static_cast<float>((hid->x) * factor),
                          static_cast<float>((hid->y) * factor),
                          static_cast<float>((hid->z) * factor)};
-        rsimpl2::copy(dest[0], axes, sizeof(axes));
+        librealsense::copy(dest[0], axes, sizeof(axes));
     }
 
     template<size_t SIZE> void unpack_accel_axes(byte * const dest[], const byte * source, int count)
@@ -89,10 +89,10 @@ namespace rsimpl2
 
     void unpack_hid_raw_data(byte * const dest[], const byte * source, int count)
     {
-        rsimpl2::copy(dest[0] + 0, source + 0, 2);
-        rsimpl2::copy(dest[0] + 2, source + 4, 2);
-        rsimpl2::copy(dest[0] + 4, source + 8, 2);
-        rsimpl2::copy(dest[0] + 6, source + 16, 8);
+        librealsense::copy(dest[0] + 0, source + 0, 2);
+        librealsense::copy(dest[0] + 2, source + 4, 2);
+        librealsense::copy(dest[0] + 4, source + 8, 2);
+        librealsense::copy(dest[0] + 6, source + 16, 8);
     }
 
     void unpack_input_reports_data(byte * const dest[], const byte * source, int count)
@@ -105,17 +105,17 @@ namespace rsimpl2
         // uint8_t  usbCounter
         static const int input_reports_size = 9;
         static const int input_reports_offset = 15;
-        rsimpl2::copy(dest[0], source + input_reports_offset, input_reports_size);
+        librealsense::copy(dest[0], source + input_reports_offset, input_reports_size);
     }
 
     template<size_t SIZE> void copy_pixels(byte * const dest[], const byte * source, int count)
     {
-        rsimpl2::copy(dest[0], source, SIZE * count);
+        librealsense::copy(dest[0], source, SIZE * count);
     }
 
     void copy_raw10(byte * const dest[], const byte * source, int count)
     {
-        rsimpl2::copy(dest[0], source, (5 * (count/4)));
+        librealsense::copy(dest[0], source, (5 * (count/4)));
     }
 
     template<class SOURCE, class UNPACK> void unpack_pixels(byte * const dest[], int count, const SOURCE * source, UNPACK unpack)
@@ -170,7 +170,8 @@ namespace rsimpl2
 #ifdef __SSSE3__
         auto src = reinterpret_cast<const __m128i *>(s);
         auto dst = reinterpret_cast<__m128i *>(d[0]);
-        for(; n; n -= 16)
+        #pragma omp parallel for
+        for(int i = 0; i < n/16; i++)
         {
             const __m128i zero = _mm_set1_epi8(0);
             const __m128i n100 = _mm_set1_epi16(100 << 4);
@@ -181,15 +182,15 @@ namespace rsimpl2
             const __m128i evens_odds = _mm_setr_epi8(0, 2, 4, 6, 8, 10, 12, 14, 1, 3, 5, 7, 9, 11, 13, 15);
 
             // Load 8 YUY2 pixels each into two 16-byte registers
-            __m128i s0 = _mm_loadu_si128(src++);
-            __m128i s1 = _mm_loadu_si128(src++);
+            __m128i s0 = _mm_loadu_si128(&src[i*2]);
+            __m128i s1 = _mm_loadu_si128(&src[i*2+1]);
 
             if(FORMAT == RS2_FORMAT_Y8)
             {
                 // Align all Y components and output 16 pixels (16 bytes) at once
                 __m128i y0 = _mm_shuffle_epi8(s0, _mm_setr_epi8(1, 3, 5, 7, 9, 11, 13, 15,   0, 2, 4, 6, 8, 10, 12, 14));
                 __m128i y1 = _mm_shuffle_epi8(s1, _mm_setr_epi8(0, 2, 4, 6, 8, 10, 12, 14,   1, 3, 5, 7, 9, 11, 13, 15));
-                _mm_storeu_si128(dst++, _mm_alignr_epi8(y0, y1, 8));
+                _mm_storeu_si128(&dst[i], _mm_alignr_epi8(y0, y1, 8));
                 continue;
             }
 
@@ -205,8 +206,8 @@ namespace rsimpl2
             if(FORMAT == RS2_FORMAT_Y16)
             {
                 // Output 16 pixels (32 bytes) at once
-                _mm_storeu_si128(dst++, _mm_slli_epi16(y16__0_7, 8));
-                _mm_storeu_si128(dst++, _mm_slli_epi16(y16__8_F, 8));
+                _mm_storeu_si128(&dst[i*2], _mm_slli_epi16(y16__0_7, 8));
+                _mm_storeu_si128(&dst[i*2+1], _mm_slli_epi16(y16__8_F, 8));
                 continue;
             }
 
@@ -251,10 +252,10 @@ namespace rsimpl2
                 if(FORMAT == RS2_FORMAT_RGBA8)
                 {
                     // Store 16 pixels (64 bytes) at once
-                    _mm_storeu_si128(dst++, rgba_0_3);
-                    _mm_storeu_si128(dst++, rgba_4_7);
-                    _mm_storeu_si128(dst++, rgba_8_B);
-                    _mm_storeu_si128(dst++, rgba_C_F);
+                    _mm_storeu_si128(&dst[i*4], rgba_0_3);
+                    _mm_storeu_si128(&dst[i*4 + 1], rgba_4_7);
+                    _mm_storeu_si128(&dst[i*4 + 2], rgba_8_B);
+                    _mm_storeu_si128(&dst[i*4 + 3], rgba_C_F);
                 }
 
                 if(FORMAT == RS2_FORMAT_RGB8)
@@ -266,9 +267,9 @@ namespace rsimpl2
                     __m128i rgb3 = _mm_shuffle_epi8(rgba_C_F, _mm_setr_epi8(0, 1, 2, 4, 5, 6, 8, 9, 10, 12, 13, 14,   3, 7, 11, 15  ));
 
                     // Align registers and store 16 pixels (48 bytes) at once
-                    _mm_storeu_si128(dst++, _mm_alignr_epi8(rgb1, rgb0, 4));
-                    _mm_storeu_si128(dst++, _mm_alignr_epi8(rgb2, rgb1, 8));
-                    _mm_storeu_si128(dst++, _mm_alignr_epi8(rgb3, rgb2, 12));
+                    _mm_storeu_si128(&dst[i*3], _mm_alignr_epi8(rgb1, rgb0, 4));
+                    _mm_storeu_si128(&dst[i*3 + 1], _mm_alignr_epi8(rgb2, rgb1, 8));
+                    _mm_storeu_si128(&dst[i*3 + 2], _mm_alignr_epi8(rgb3, rgb2, 12));
                 }
             }
 
@@ -288,10 +289,10 @@ namespace rsimpl2
                 if(FORMAT == RS2_FORMAT_BGRA8)
                 {
                     // Store 16 pixels (64 bytes) at once
-                    _mm_storeu_si128(dst++, bgra_0_3);
-                    _mm_storeu_si128(dst++, bgra_4_7);
-                    _mm_storeu_si128(dst++, bgra_8_B);
-                    _mm_storeu_si128(dst++, bgra_C_F);
+                    _mm_storeu_si128(&dst[i*4], bgra_0_3);
+                    _mm_storeu_si128(&dst[i*4 + 1], bgra_4_7);
+                    _mm_storeu_si128(&dst[i*4 + 2], bgra_8_B);
+                    _mm_storeu_si128(&dst[i*4 + 3], bgra_C_F);
                 }
 
                 if(FORMAT == RS2_FORMAT_BGR8)
@@ -303,9 +304,9 @@ namespace rsimpl2
                     __m128i bgr3 = _mm_shuffle_epi8(bgra_C_F, _mm_setr_epi8(0, 1, 2, 4, 5, 6, 8, 9, 10, 12, 13, 14,   3, 7, 11, 15  ));
 
                     // Align registers and store 16 pixels (48 bytes) at once
-                    _mm_storeu_si128(dst++, _mm_alignr_epi8(bgr1, bgr0, 4));
-                    _mm_storeu_si128(dst++, _mm_alignr_epi8(bgr2, bgr1, 8));
-                    _mm_storeu_si128(dst++, _mm_alignr_epi8(bgr3, bgr2, 12));
+                    _mm_storeu_si128(&dst[i*3], _mm_alignr_epi8(bgr1, bgr0, 4));
+                    _mm_storeu_si128(&dst[i*3+1], _mm_alignr_epi8(bgr2, bgr1, 8));
+                    _mm_storeu_si128(&dst[i*3+2], _mm_alignr_epi8(bgr3, bgr2, 12));
                 }
             }
         }
@@ -322,7 +323,7 @@ namespace rsimpl2
                     src[16], src[18], src[20], src[22],
                     src[24], src[26], src[28], src[30],
                 };
-                rsimpl2::copy(dst, out, sizeof out);
+                librealsense::copy(dst, out, sizeof out);
                 dst += sizeof out;
                 continue;
             }
@@ -336,7 +337,7 @@ namespace rsimpl2
                     0, src[16], 0, src[18], 0, src[20], 0, src[22],
                     0, src[24], 0, src[26], 0, src[28], 0, src[30],
                 };
-                rsimpl2::copy(dst, out, sizeof out);
+                librealsense::copy(dst, out, sizeof out);
                 dst += sizeof out;
                 continue;
             }
@@ -385,7 +386,7 @@ namespace rsimpl2
                     r[12], g[12], b[12], r[13], g[13], b[13],
                     r[14], g[14], b[14], r[15], g[15], b[15],
                 };
-                rsimpl2::copy(dst, out, sizeof out);
+                librealsense::copy(dst, out, sizeof out);
                 dst += sizeof out;
                 continue;
             }
@@ -402,7 +403,7 @@ namespace rsimpl2
                     b[12], g[12], r[12], b[13], g[13], r[13],
                     b[14], g[14], r[14], b[15], g[15], r[15],
                 };
-                rsimpl2::copy(dst, out, sizeof out);
+                librealsense::copy(dst, out, sizeof out);
                 dst += sizeof out;
                 continue;
             }
@@ -419,7 +420,7 @@ namespace rsimpl2
                     r[12], g[12], b[12], 255, r[13], g[13], b[13], 255,
                     r[14], g[14], b[14], 255, r[15], g[15], b[15], 255,
                 };
-                rsimpl2::copy(dst, out, sizeof out);
+                librealsense::copy(dst, out, sizeof out);
                 dst += sizeof out;
                 continue;
             }
@@ -436,7 +437,7 @@ namespace rsimpl2
                     b[12], g[12], r[12], 255, b[13], g[13], r[13], 255,
                     b[14], g[14], r[14], 255, b[15], g[15], r[15], 255,
                 };
-                rsimpl2::copy(dst, out, sizeof out);
+                librealsense::copy(dst, out, sizeof out);
                 dst += sizeof out;
                 continue;
             }
@@ -625,7 +626,7 @@ namespace rsimpl2
                     r[12], g[12], b[12], r[13], g[13], b[13],
                     r[14], g[14], b[14], r[15], g[15], b[15],
                 };
-                rsimpl2::copy(dst, out, sizeof out);
+                librealsense::copy(dst, out, sizeof out);
                 dst += sizeof out;
                 continue;
             }
@@ -642,7 +643,7 @@ namespace rsimpl2
                     b[12], g[12], r[12], b[13], g[13], r[13],
                     b[14], g[14], r[14], b[15], g[15], r[15],
                 };
-                rsimpl2::copy(dst, out, sizeof out);
+                librealsense::copy(dst, out, sizeof out);
                 dst += sizeof out;
                 continue;
             }
@@ -659,7 +660,7 @@ namespace rsimpl2
                     r[12], g[12], b[12], 255, r[13], g[13], b[13], 255,
                     r[14], g[14], b[14], 255, r[15], g[15], b[15], 255,
                 };
-                rsimpl2::copy(dst, out, sizeof out);
+                librealsense::copy(dst, out, sizeof out);
                 dst += sizeof out;
                 continue;
             }
@@ -676,7 +677,7 @@ namespace rsimpl2
                     b[12], g[12], r[12], 255, b[13], g[13], r[13], 255,
                     b[14], g[14], r[14], 255, b[15], g[15], r[15], 255,
                 };
-                rsimpl2::copy(dst, out, sizeof out);
+                librealsense::copy(dst, out, sizeof out);
                 dst += sizeof out;
                 continue;
             }
@@ -735,7 +736,7 @@ namespace rsimpl2
         auto in = reinterpret_cast<const uint16_t *>(source);
         auto out_ir = reinterpret_cast<uint8_t *>(dest[1]);
         for(int i=0; i<count; ++i) *out_ir++ = *in++ >> 2;
-        rsimpl2::copy(dest[0], in, count*2);
+        librealsense::copy(dest[0], in, count*2);
     }
 
     void unpack_z16_y16_from_sr300_inzi (byte * const dest[], const byte * source, int count)
@@ -743,7 +744,7 @@ namespace rsimpl2
         auto in = reinterpret_cast<const uint16_t *>(source);
         auto out_ir = reinterpret_cast<uint16_t *>(dest[1]);
         for(int i=0; i<count; ++i) *out_ir++ = *in++ << 6;
-        rsimpl2::copy(dest[0], in, count*2);
+        librealsense::copy(dest[0], in, count*2);
     }
 
     void unpack_rgb_from_bgr(byte * const dest[], const byte * source, int count)
@@ -751,7 +752,7 @@ namespace rsimpl2
         auto in = reinterpret_cast<const uint8_t *>(source);
         auto out = reinterpret_cast<uint8_t *>(dest[0]);
 
-        rsimpl2::copy(out, in, count * 3);
+        librealsense::copy(out, in, count * 3);
         for (auto i = 0; i < count; i++)
         {
             std::swap(out[i * 3], out[i * 3 + 2]);
@@ -768,7 +769,8 @@ namespace rsimpl2
     const native_pixel_format pf_rw10       = { 'pRAA', 1, 1,{  { false, &copy_raw10,                                    { { RS2_STREAM_COLOR,    RS2_FORMAT_RAW10 } } } } };
 
     const native_pixel_format pf_yuy2       = { 'YUY2', 1, 2,{  { true,  &unpack_yuy2<RS2_FORMAT_RGB8 >,                  { { RS2_STREAM_COLOR,    RS2_FORMAT_RGB8 } } },
-                                                                { false, &copy_pixels<2>,                                { { RS2_STREAM_COLOR,    RS2_FORMAT_YUYV } } },
+                                                                { true,  &unpack_yuy2<RS2_FORMAT_Y16>,                    { { RS2_STREAM_COLOR,    RS2_FORMAT_Y16 } } },
+                                                                { false, &copy_pixels<2>,                                 { { RS2_STREAM_COLOR,    RS2_FORMAT_YUYV } } },
                                                                 { true,  &unpack_yuy2<RS2_FORMAT_RGBA8>,                  { { RS2_STREAM_COLOR,    RS2_FORMAT_RGBA8 } } },
                                                                 { true,  &unpack_yuy2<RS2_FORMAT_BGR8 >,                  { { RS2_STREAM_COLOR,    RS2_FORMAT_BGR8 } } },
                                                                 { true,  &unpack_yuy2<RS2_FORMAT_BGRA8>,                  { { RS2_STREAM_COLOR,    RS2_FORMAT_BGRA8 } } } } };
@@ -790,7 +792,8 @@ namespace rsimpl2
                                                                 { true,  &unpack_z16_y16_from_sr300_inzi,                { { RS2_STREAM_DEPTH,    RS2_FORMAT_Z16 },{ RS2_STREAM_INFRARED, RS2_FORMAT_Y16 } } } } };
 
     const native_pixel_format pf_uyvyl      = { 'UYVY', 1, 2,{  { true,  &unpack_uyvy<RS2_FORMAT_RGB8 >,                  { { RS2_STREAM_INFRARED, RS2_FORMAT_RGB8 } } },
-                                                                { false, &copy_pixels<2>,                                { { RS2_STREAM_INFRARED, RS2_FORMAT_UYVY } } },
+                                                                { true,  &unpack_yuy2<RS2_FORMAT_Y16>,                    { { RS2_STREAM_INFRARED,    RS2_FORMAT_Y16 } } },
+                                                                { false, &copy_pixels<2>,                                 { { RS2_STREAM_INFRARED, RS2_FORMAT_UYVY } } },
                                                                 { true,  &unpack_uyvy<RS2_FORMAT_RGBA8>,                  { { RS2_STREAM_INFRARED, RS2_FORMAT_RGBA8} } },
                                                                 { true,  &unpack_uyvy<RS2_FORMAT_BGR8 >,                  { { RS2_STREAM_INFRARED, RS2_FORMAT_BGR8 } } },
                                                                 { true,  &unpack_uyvy<RS2_FORMAT_BGRA8>,                  { { RS2_STREAM_INFRARED, RS2_FORMAT_BGRA8} } } } };
@@ -799,6 +802,7 @@ namespace rsimpl2
 
 
     const native_pixel_format pf_yuyv       = { 'YUYV', 1, 2,{  { true,  &unpack_yuy2<RS2_FORMAT_RGB8 >,                  { { RS2_STREAM_COLOR,    RS2_FORMAT_RGB8 } } },
+                                                                { true,  &unpack_yuy2<RS2_FORMAT_Y16>,                    { { RS2_STREAM_COLOR,    RS2_FORMAT_Y16 } } },
                                                                 { false, &copy_pixels<2>,                                 { { RS2_STREAM_COLOR,    RS2_FORMAT_YUYV } } },
                                                                 { true,  &unpack_yuy2<RS2_FORMAT_RGBA8>,                  { { RS2_STREAM_COLOR,    RS2_FORMAT_RGBA8 } } },
                                                                 { true,  &unpack_yuy2<RS2_FORMAT_BGR8 >,                  { { RS2_STREAM_COLOR,    RS2_FORMAT_BGR8 } } },

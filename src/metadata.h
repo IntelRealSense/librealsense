@@ -14,7 +14,7 @@
     };
 
 
-namespace rsimpl2
+namespace librealsense
 {
     template<class T>
     struct md_type_trait;
@@ -543,7 +543,7 @@ namespace rsimpl2
      *  layout as transmitted and received by backend */
     struct metadata_raw
     {
-        uvc::uvc_header   header;
+       platform::uvc_header   header;
         md_modes          mode;
     };
 
@@ -553,12 +553,12 @@ namespace rsimpl2
      *    the essential sensor attributes only */
     struct metadata_intel_basic
     {
-        uvc::uvc_header   header;
+        platform::uvc_header   header;
         md_capture_timing payload;
 
         inline bool capture_valid() const
         {
-            return ((header.length > uvc::uvc_header_size) && 
+            return ((header.length > platform::uvc_header_size) && 
                 (payload.header.md_size == md_capture_timing_size) && 
                 (payload.header.md_type_id == md_type::META_DATA_INTEL_CAPTURE_TIMING_ID));
         }

@@ -33,11 +33,3 @@ target_link_libraries(live-test ${DEPENDENCIES})
 set_target_properties (live-test PROPERTIES
     FOLDER "Unit-Tests"
 )
-
-install(
-    TARGETS
-
-    live-test
-    RUNTIME DESTINATION
-    ${CMAKE_INSTALL_PREFIX}/bin
-)

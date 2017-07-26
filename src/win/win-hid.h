@@ -8,9 +8,9 @@
 #include <Sensorsapi.h>
 #include <atlcomcli.h>
 
-namespace rsimpl2
+namespace librealsense
 {
-    namespace uvc
+    namespace platform
     {
         class wmf_hid_device : public hid_device
         {
