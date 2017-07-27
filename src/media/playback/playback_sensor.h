@@ -13,13 +13,6 @@
 
 namespace librealsense
 {
-    enum playback_status
-    {
-        playing, /**< One or more sensors were started, playback is reading and raising data */
-        paused,  /**< One or more sensors were started, but playback paused reading and paused raising data*/
-        stopped  /**< All sensors were stopped, or playback has ended (all data was read). This is the initial playback status*/
-    };
-
     class playback_sensor : public sensor_interface,
         public extendable_interface,
         public info_container,    
@@ -56,6 +49,7 @@ namespace librealsense
         void handle_frame(frame_holder frame, bool is_real_time);
         void stop(bool invoke_required);
 
+        void flush_pending_frames();
     private:
         frame_callback_ptr m_user_callback;
         librealsense::notifications_callback_ptr m_user_notification_callback;

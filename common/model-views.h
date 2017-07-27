@@ -339,10 +339,11 @@ namespace rs2
     {
     public:
         device_model(){}
+
         void reset();
         explicit device_model(device& dev, std::string& error_message);
         bool draw_combo_box(const std::vector<std::string>& device_names, int& new_index);
-        void draw_device_details(device& dev);
+        void draw_device_details(device& dev, context& ctx);
         std::map<rs2_stream, rect> calc_layout(float x0, float y0, float width, float height);
         void upload_frame(frame&& f);
         void start_recording(device& dev, const std::string& path, std::string& error_message);

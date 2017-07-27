@@ -178,12 +178,12 @@ snapshot_collection librealsense::record_device::get_extensions_snapshots(T* ext
 {
     //No support for extensions with more than a single type - i.e every extension has exactly one type in rs2_extension
     snapshot_collection snapshots;
-    for (int i = 0; i < static_cast<int>(RS2_EXTENSION_TYPE_COUNT); ++i)
+    for (int i = 0; i < static_cast<int>(RS2_EXTENSION_COUNT ); ++i)
     {
         rs2_extension ext = static_cast<rs2_extension>(i);
         switch(ext)
         {
-            case RS2_EXTENSION_TYPE_DEBUG:
+            case RS2_EXTENSION_DEBUG :
             {
                 auto api = dynamic_cast<librealsense::debug_interface*>(extendable);
                 if (api)
@@ -195,7 +195,7 @@ snapshot_collection librealsense::record_device::get_extensions_snapshots(T* ext
                 }
                 break;
             }
-            case RS2_EXTENSION_TYPE_INFO:
+            case RS2_EXTENSION_INFO :
             {
                 auto api = dynamic_cast<librealsense::info_interface*>(extendable);
                 if (api)
@@ -207,45 +207,46 @@ snapshot_collection librealsense::record_device::get_extensions_snapshots(T* ext
                 }
                 break;
             }
-            case RS2_EXTENSION_TYPE_MOTION:
+            case RS2_EXTENSION_MOTION :
             {
                 //librealsense::motion_sensor_interface
                 break;
             }
-            case RS2_EXTENSION_TYPE_OPTIONS:
+            case RS2_EXTENSION_OPTIONS :
             {
                 //librealsense::options_interface
                 //TODO: Ziv, handle
                 break;
             }
-            case RS2_EXTENSION_TYPE_VIDEO:
+            case RS2_EXTENSION_VIDEO :
             {
                 //librealsense::video_sensor_interface
                 break;
             }
-            case RS2_EXTENSION_TYPE_ROI:
+            case RS2_EXTENSION_ROI :
             {
                 //librealsense::roi_sensor_interface
                 break;
             }
-            case RS2_EXTENSION_TYPE_UNKNOWN: 
+            case RS2_EXTENSION_UNKNOWN:
                 //[[fallthrough]];
-            case RS2_EXTENSION_TYPE_DEPTH_SENSOR://TODO: Ziv, handle these extensiosn
+            case RS2_EXTENSION_DEPTH_SENSOR ://TODO: Ziv, handle these extensiosn
                 //[[fallthrough]];
-            case RS2_EXTENSION_TYPE_VIDEO_FRAME:
+            case RS2_EXTENSION_VIDEO_FRAME :
                 //[[fallthrough]];
-            case RS2_EXTENSION_TYPE_MOTION_FRAME:
+            case RS2_EXTENSION_MOTION_FRAME :
                 //[[fallthrough]];
-            case RS2_EXTENSION_TYPE_COMPOSITE_FRAME:
+            case RS2_EXTENSION_COMPOSITE_FRAME :
                 //[[fallthrough]];
-            case RS2_EXTENSION_TYPE_POINTS:
+            case RS2_EXTENSION_POINTS :
                 //[[fallthrough]];
-            case RS2_EXTENSION_TYPE_ADVANCED_MODE:
+            case RS2_EXTENSION_ADVANCED_MODE :
                 //[[fallthrough]];
-            case RS2_EXTENSION_TYPE_COUNT:
-                continue;
+            case RS2_EXTENSION_COUNT :
+                //[[fallthrough]];
             default:
-                throw invalid_value_exception("record_device::get_extensions_snapshots: No such extension type");
+                continue;
+
         }
     }
     return snapshots;

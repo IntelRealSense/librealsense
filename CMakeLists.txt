@@ -144,10 +144,10 @@ set(REALSENSE_CPP
     src/mock/sql.cpp
     src/mock/recorder.cpp
 
-    src/recording/record_device.cpp
-    src/recording/record_sensor.cpp
-    src/recording/playback_device.cpp
-    src/recording/playback_sensor.cpp
+    src/media/record/record_device.cpp
+    src/media/record/record_sensor.cpp
+    src/media/playback/playback_device.cpp
+    src/media/playback/playback_sensor.cpp
 )
 
 set(REALSENSE_HPP
@@ -211,38 +211,33 @@ set(REALSENSE_HPP
     src/core/advanced_mode.h
     src/core/serialization.h
 
-    src/recording/record_device.h
-    src/recording/record_sensor.h
-    src/recording/playback_device.h
-    src/recording/playback_sensor.h
-    src/recording/device_snapshot.h
-    src/recording/ros/ros_device_serializer.h
-    src/recording/ros/ros_reader.h
-    src/recording/ros/ros_device_serializer_writer.h
+    src/media/record/record_device.h
+    src/media/record/record_sensor.h
+    src/media/playback/playback_device.h
+    src/media/playback/playback_sensor.h
+    src/media/device_snapshot.h
+    src/media/ros/ros_reader.h
+    src/media/ros/ros_writer.h
 
     third-party/easyloggingpp/src/easylogging++.h
     third-party/sqlite/sqlite3.h
     src/mock/sql.h
     src/mock/recorder.h
 
-    src/recording/ros/data_objects/pose.h
-    src/recording/ros/data_objects/vendor_data.h
-    src/recording/ros/data_objects/image.h
-    src/recording/ros/data_objects/motion_stream_info.h
-    src/recording/ros/data_objects/property.h
-    src/recording/ros/data_objects/motion_sample.h
-    src/recording/ros/data_objects/time_sample.h
-    src/recording/ros/data_objects/compressed_image.h
-    src/recording/ros/data_objects/occupancy_map.h
-    src/recording/ros/data_objects/stream_data.h
-    src/recording/ros/data_objects/image_stream_info.h
-    src/recording/ros/stream_playback.h
-    src/recording/ros/file_types.h
-    src/recording/ros/status.h
-    src/recording/ros/stream_playback.h
-    src/recording/ros/ros_writer.h
-    src/recording/ros/stream_playback.cpp
-    src/recording/ros/topic.h
+    src/media/ros/data_objects/pose.h
+    src/media/ros/data_objects/vendor_data.h
+    src/media/ros/data_objects/image.h
+    src/media/ros/data_objects/motion_stream_info.h
+    src/media/ros/data_objects/property.h
+    src/media/ros/data_objects/motion_sample.h
+    src/media/ros/data_objects/time_sample.h
+    src/media/ros/data_objects/compressed_image.h
+    src/media/ros/data_objects/occupancy_map.h
+    src/media/ros/data_objects/stream_data.h
+    src/media/ros/data_objects/image_stream_info.h
+    src/media/ros/file_types.h
+    src/media/ros/status.h
+    src/media/ros/topic.h
 )
 
 # Add additional include directories to allow file to include rosbag headers
@@ -271,11 +266,10 @@ if(WIN32)
         )
 
     source_group("Source Files\\Media" FILES
-        src/recording/record_device.cpp
-        src/recording/record_sensor.cpp
-        src/recording/playback_device.cpp
-        src/recording/playback_sensor.cpp
-        src/recording/ros/stream_playback.cpp
+        src/media/record/record_device.cpp
+        src/media/record/record_sensor.cpp
+        src/media/playback/playback_device.cpp
+        src/media/playback/playback_sensor.cpp
         )
 
     source_group("Header Files\\Backend" FILES
@@ -313,31 +307,27 @@ if(WIN32)
         )
 
     source_group("Header Files\\Media" FILES
-        src/recording/record_device.h
-        src/recording/playback_device.h
-        src/recording/playback_sensor.h
+        src/media/record/record_device.h
+        src/media/playback/playback_device.h
+        src/media/playback/playback_sensor.h
         )
     source_group("Header Files\\Media\\Ros_Serializer" FILES
-        src/recording/ros/ros_device_serializer.h
-        src/recording/ros/ros_reader.h
-        src/recording/ros/ros_device_serializer_writer.h
-        src/recording/ros/data_objects/pose.h
-        src/recording/ros/data_objects/vendor_data.h
-        src/recording/ros/data_objects/image.h
-        src/recording/ros/data_objects/motion_stream_info.h
-        src/recording/ros/data_objects/property.h
-        src/recording/ros/data_objects/motion_sample.h
-        src/recording/ros/data_objects/time_sample.h
-        src/recording/ros/data_objects/compressed_image.h
-        src/recording/ros/data_objects/occupancy_map.h
-        src/recording/ros/data_objects/stream_data.h
-        src/recording/ros/data_objects/image_stream_info.h
-        src/recording/ros/stream_playback.h
-        src/recording/ros/file_types.h
-        src/recording/ros/status.h
-        src/recording/ros/stream_playback.h
-        src/recording/ros/ros_writer.h
-        src/recording/ros/topic.h
+        src/media/ros/ros_reader.h
+        src/media/ros/ros_writer.h
+        src/media/ros/data_objects/pose.h
+        src/media/ros/data_objects/vendor_data.h
+        src/media/ros/data_objects/image.h
+        src/media/ros/data_objects/motion_stream_info.h
+        src/media/ros/data_objects/property.h
+        src/media/ros/data_objects/motion_sample.h
+        src/media/ros/data_objects/time_sample.h
+        src/media/ros/data_objects/compressed_image.h
+        src/media/ros/data_objects/occupancy_map.h
+        src/media/ros/data_objects/stream_data.h
+        src/media/ros/data_objects/image_stream_info.h
+        src/media/ros/file_types.h
+        src/media/ros/status.h
+        src/media/ros/topic.h
         )
 
     source_group("Source Files\\Devices" FILES

@@ -5,7 +5,7 @@
 
 #include <realsense_msgs/stream_info.h>
 #include "stream_data.h"
-namespace rs
+namespace librealsense
 {
     namespace file_format
     {
@@ -34,7 +34,7 @@ namespace rs
                 {
                     return "/camera/rs_stream_info/" + std::to_string(device_id);
                 }
-                void write_data(ros_writer& file) override
+                void write_data(data_object_writer& file) override
                 {
                     realsense_msgs::stream_info msg;
                     conversions::convert(m_info.type, msg.stream_type);

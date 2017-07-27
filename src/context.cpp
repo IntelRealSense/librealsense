@@ -14,6 +14,7 @@
 #include "backend.h"
 #include "mock/recorder.h"
 #include <chrono>
+#include <media/ros/ros_reader.h>
 #include "types.h"
 #include "context.h"
 
@@ -123,10 +124,11 @@ namespace librealsense
 
         platform::backend_device_group devices(_backend->query_uvc_devices(), _backend->query_usb_devices(), _backend->query_hid_devices());
 
-        return create_devices(devices);
+        return create_devices(devices, _playback_devices);
     }
 
-    std::vector<std::shared_ptr<device_info>> context::create_devices(platform::backend_device_group devices) const
+    std::vector<std::shared_ptr<device_info>> context::create_devices(platform::backend_device_group devices,
+                                                                      const std::map<std::string, std::shared_ptr<device_info>>& playback_devices) const
     {
         std::vector<std::shared_ptr<device_info>> list;
 
@@ -142,14 +144,22 @@ namespace librealsense
         auto uvc_devices = platform_camera_info::pick_uvc_devices(_backend, devices.uvc_devices);
         std::copy(begin(uvc_devices), end(uvc_devices), std::back_inserter(list));
 
+        for (auto&& item : playback_devices)
+        {
+            list.push_back(item.second);
+        }
+
         return list;
     }
 
 
-    void context::on_device_changed(platform::backend_device_group old, platform::backend_device_group curr)
+    void context::on_device_changed(platform::backend_device_group old,
+                                    platform::backend_device_group curr,
+                                    const std::map<std::string, std::shared_ptr<device_info>>& old_playback_devices,
+                                    const std::map<std::string, std::shared_ptr<device_info>>& new_playback_devices)
     {
-        auto old_list = create_devices(old);
-        auto new_list = create_devices(curr);
+        auto old_list = create_devices(old, old_playback_devices);
+        auto new_list = create_devices(curr, new_playback_devices);
 
         if (librealsense::list_changed<std::shared_ptr<device_info>>(old_list, new_list, [](std::shared_ptr<device_info> first, std::shared_ptr<device_info> second) {return *first == *second; }))
         {
@@ -189,7 +199,35 @@ namespace librealsense
         _devices_changed_callback = std::move(callback);
         _device_watcher->start([this](platform::backend_device_group old, platform::backend_device_group curr)
         {
-            on_device_changed(old, curr);
+            on_device_changed(old, curr, _playback_devices, _playback_devices);
         });
+    }
+
+    std::shared_ptr<device_interface> context::add_device(const std::string& file)
+    {
+        if(_playback_devices.find(file) != _playback_devices.end())
+        {
+            //Already exists
+            throw librealsense::invalid_value_exception(to_string() << "File \"" << file << "\" already loaded to context");
+        }
+        auto playack_dev = std::make_shared<playback_device>(std::make_shared<ros_reader>(file));
+        auto dinfo = std::make_shared<playback_device_info>(playack_dev);
+        auto prev_playback_devices =_playback_devices;
+        _playback_devices[file] = dinfo;
+        on_device_changed({},{}, prev_playback_devices, _playback_devices);
+        return playack_dev;
+    }
+
+    void context::remove_device(const std::string& file)
+    {
+        auto it = _playback_devices.find(file);
+        if(it == _playback_devices.end())
+        {
+            //Not found
+            return;
+        }
+        auto prev_playback_devices =_playback_devices;
+        _playback_devices.erase(it);
+        on_device_changed({},{}, prev_playback_devices, _playback_devices);
     }
 }

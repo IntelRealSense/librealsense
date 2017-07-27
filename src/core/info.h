@@ -17,7 +17,7 @@ namespace librealsense
         virtual ~info_interface() = default;
     };
 
-    MAP_EXTENSION(RS2_EXTENSION_TYPE_INFO, librealsense::info_interface);
+    MAP_EXTENSION(RS2_EXTENSION_INFO, librealsense::info_interface);
 
     class info_container : public virtual info_interface
     {

@@ -49,8 +49,8 @@ namespace librealsense
     {
         std::lock_guard<std::mutex> lock(_callback_mutex);
 
-        std::vector<rs2_extension> supported { RS2_EXTENSION_TYPE_VIDEO_FRAME,
-                                                    RS2_EXTENSION_TYPE_COMPOSITE_FRAME };
+        std::vector<rs2_extension> supported { RS2_EXTENSION_VIDEO_FRAME,
+                                                    RS2_EXTENSION_COMPOSITE_FRAME  };
 
         for (auto type : supported)
         {
@@ -60,7 +60,7 @@ namespace librealsense
 
     callback_invocation_holder frame_source::begin_callback()
     {
-        return _archive[RS2_EXTENSION_TYPE_VIDEO_FRAME]->begin_callback();
+        return _archive[RS2_EXTENSION_VIDEO_FRAME ]->begin_callback();
     }
 
     void frame_source::reset()
