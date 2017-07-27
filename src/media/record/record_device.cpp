@@ -53,7 +53,10 @@ std::vector<std::shared_ptr<record_sensor>> record_device::create_record_sensors
 
 librealsense::record_device::~record_device()
 {
-    (*m_write_thread)->flush();
+    if((*m_write_thread)->flush() == false)
+    {
+        LOG_ERROR("Error - timeout waiting for flush, possible deadlock detected");
+    }
     (*m_write_thread)->stop();
 }
 

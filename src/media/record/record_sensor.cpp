@@ -30,6 +30,7 @@ std::vector<librealsense::stream_profile> librealsense::record_sensor::get_princ
 void librealsense::record_sensor::open(const std::vector<librealsense::stream_profile>& requests)
 {
     m_sensor.open(requests);
+    m_is_recording = true;
     m_curr_configurations = convert_profiles(requests);
     //TODO: record this operation
 }
@@ -37,6 +38,7 @@ void librealsense::record_sensor::open(const std::vector<librealsense::stream_pr
 void librealsense::record_sensor::close()
 {
     m_sensor.close();
+    m_is_recording = false;
 }
 
 librealsense::option& librealsense::record_sensor::get_option(rs2_option id)

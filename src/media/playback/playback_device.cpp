@@ -110,7 +110,10 @@ playback_device::~playback_device()
                 sensor.second->stop(); //TODO: make sure this works with this dispatcher
         }
     });
-    (*m_read_thread)->flush();
+    if((*m_read_thread)->flush() == false)
+    {
+        LOG_ERROR("Error - timeout waiting for flush, possible deadlock detected");
+    }
     (*m_read_thread)->stop();
 }
 
@@ -429,7 +432,7 @@ void playback_device::try_looping()
 //        {
 //            //TODO: we should probably jump forward here to align with the play time (frame will be dropped, blood will be shed...)
 //        }
-        
+
         if (sensor_index >= m_sensors.size())
         {
             throw invalid_value_exception(to_string() << "Unexpected sensor index while playing file (Read index = " << sensor_index << ")");

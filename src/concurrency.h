@@ -217,7 +217,7 @@ public:
         _thread.join();
     }
 
-    void flush()
+    bool flush()
     {
         std::mutex m;
         std::condition_variable cv;
@@ -228,7 +228,7 @@ public:
             cv.notify_one();
         });
         std::unique_lock<std::mutex> locker(m);
-        cv.wait(locker, [&]() { return invoked; });
+        return cv.wait_for(locker, std::chrono::seconds(10), [&]() { return invoked || _was_stopped; });
     }
 private:
     friend cancellable_timer;
