@@ -29,20 +29,24 @@ struct metrics
 {
     double avg_dist;
     double std;
+    double _percentage_of_non_null_pixels;
 };
 
 metrics analyze_depth_image(const rs2::video_frame& frame, float units)
 {
     auto pixels = (const uint16_t*)frame.get_data();
     double sum_of_all_distances = 0;
-    int num_of_examined_distances = 0;
     double mean_of_all_distances;
     //vector<double> all_squared_differences;
     double sum_of_all_squared_differences = 0;
     double standard_deviation;
-
+    double number_of_non_null_pixels = 0;
+    double percentage_of_non_null_pixels = 0;
     const auto w = frame.get_width();
     const auto h = frame.get_height();
+    long long int num_of_examined_pixels = w*h;
+
+
 
     for (int y = 0; y < h; y++)
         for (int x = 0; x < w; x++)
@@ -55,13 +59,16 @@ metrics analyze_depth_image(const rs2::video_frame& frame, float units)
                 // units is float
                 auto distance = depth_raw * units;
                 sum_of_all_distances += distance;
-                ++num_of_examined_distances;
+                ++number_of_non_null_pixels;
             }
+
 
             //std::cout << distance << std::endl;
         }
 
-    mean_of_all_distances = sum_of_all_distances / num_of_examined_distances;
+
+    mean_of_all_distances = sum_of_all_distances / number_of_non_null_pixels;
+    percentage_of_non_null_pixels = (number_of_non_null_pixels/ num_of_examined_pixels)*100;
 
     for (int y = 0; y < h; y++)
         for (int x = 0; x < w; x++)
@@ -77,10 +84,11 @@ metrics analyze_depth_image(const rs2::video_frame& frame, float units)
             }
         }
 
-    standard_deviation = std::sqrt(sum_of_all_squared_differences/num_of_examined_distances);
+    standard_deviation = std::sqrt(sum_of_all_squared_differences/num_of_examined_pixels);
     metrics result{};
     result.avg_dist = mean_of_all_distances;
     result.std = standard_deviation;
+    result._percentage_of_non_null_pixels = percentage_of_non_null_pixels;
     return result;
 }
 
@@ -230,6 +238,7 @@ int main(int argc, char * argv[])
                         latest_stat = analyze_depth_image(frame, units);
                         cout << "Average distance is : " << latest_stat.avg_dist << endl;
                         cout << "Standard_deviation is : " << latest_stat.std << endl;
+                        cout << "percentage_of_non_null_pixels is : " << latest_stat._percentage_of_non_null_pixels << endl;
                     }
 
                     buffers[stream_type].upload(frame);
@@ -257,12 +266,25 @@ int main(int argc, char * argv[])
 
                 // Draw GUI:
                 ImGui::PushStyleColor(ImGuiCol_WindowBg, { 0, 0, 0, 0.5f });
-                ImGui::SetNextWindowPos({ 10, 10 });
-                ImGui::SetNextWindowSize({ 200.f, 120.f });
+                //ImGui::SetNextWindowPos({ 10, 10 });
+                ImGui::SetNextWindowPos({ w/100, h/100 });
+                ImGui::SetNextWindowSize({ w/10.f, h/100.f });
+
+//                ImGui::SetNextWindowPos({ 410, 360 });
+//                ImGui::SetNextWindowSize({ 400.f, 350.f });
                 ImGui::Begin("Stream Selector", nullptr,
                              ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize);
 
                 rs2_error* e = nullptr;
+
+                //ImFont* fnt;
+                // Base font scale, multiplied by the per-window font scale which you can adjust with SetFontScale()
+                //fnt->Scale=3.f;
+                //ImGui::PushFont(fnt);
+
+                ImGui::SetWindowFontScale(w/1000);
+
+
                 ImGui::Text("SDK version: %s", api_version_to_string(rs2_get_api_version(&e)).c_str());
                 //rs2_camera_info_to_string(rs2_camera_info(RS2_CAMERA_INFO_FIRMWARE_VERSION)));
                 ImGui::Text("Firmware: %s", dev.get_info(RS2_CAMERA_INFO_FIRMWARE_VERSION));
@@ -284,6 +306,7 @@ int main(int argc, char * argv[])
                     stream = config.open(dev);
                     stream.start(syncer);
                 }
+
 
 
 
@@ -320,7 +343,6 @@ int main(int argc, char * argv[])
 
                 }
 
-
                 ImGui::PopItemWidth();
 
 
@@ -344,13 +366,26 @@ int main(int argc, char * argv[])
                     ImGui::EndPopup();
                 }
 
-                ImGui::End();
-                ImGui::PopStyleColor();
+               ImGui::End();
+               ImGui::PopStyleColor();
 
-                //TODO:
-                // Open new Imgui window and print out
-                // latest_stat
 
+               ImGui::PushStyleColor(ImGuiCol_WindowBg, { 0, 0, 0, 0.5f });
+               ImGui::SetNextWindowPos({ 0.85*w, 0.85*h });
+               ImGui::SetNextWindowSize({ (.1*w), (.1*h)});
+
+//               ImGui::SetNextWindowPos({ 1530, 930 });
+//               ImGui::SetNextWindowSize({ 300.f, 370.f });
+
+               ImGui::Begin("latest_stat", nullptr,
+                                          ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize);
+               ImGui::SetWindowFontScale(w/1000);
+
+               ImGui::Text("Average: %.3f", latest_stat.avg_dist);
+               ImGui::Text("STD: %.3f", latest_stat.std);
+               ImGui::Text("Non null pixels: %.3f", latest_stat._percentage_of_non_null_pixels);
+               ImGui::End();
+               ImGui::PopStyleColor();
 
 
                 ImGui::Render();
