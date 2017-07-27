@@ -291,7 +291,6 @@ std::chrono::microseconds playback_device::calc_sleep_time(std::chrono::microsec
     auto time_diff = timestamp - m_base_timestamp;
     if (time_diff.count() < 0)
     {
-        assert(0); //This should not happen
         return std::chrono::microseconds(0);
     }
 
