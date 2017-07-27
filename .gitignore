@@ -32,6 +32,12 @@ librealsense.xc/build
 
 local_ignore/
 
+#Visual Studio Project
+.vs/*
+
+#Clion Project
+.idea/*
+
 # QTCreator Project
 /.qmake.cache
 /.qmake.stash
@@ -74,6 +80,7 @@ librealsense-log.txt
 *.dll
 *.list
 *.txt
+!CMakeLists.txt
 *.cmake
 !config.cmake
 *.json
