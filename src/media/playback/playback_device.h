@@ -56,8 +56,8 @@ namespace librealsense
         uint64_t get_position() const;
         signal<playback_device, rs2_playback_status> playback_status_changed;
     private:
-        void update_time_base(uint64_t base_timestamp);
-        int64_t calc_sleep_time(const uint64_t& timestamp) const;
+        void update_time_base(std::chrono::microseconds base_timestamp);
+        std::chrono::microseconds calc_sleep_time(std::chrono::microseconds timestamp) const;
         void start();
         void stop();
         void try_looping();
@@ -70,13 +70,14 @@ namespace librealsense
         device_snapshot m_device_description;
         std::atomic_bool m_is_started;
         std::atomic_bool m_is_paused;
-        std::chrono::high_resolution_clock::time_point m_base_sys_time;
-        uint64_t m_base_timestamp;
+        std::chrono::high_resolution_clock::time_point m_base_sys_time; // !< System time when reading began (first frame was read)
+        std::chrono::microseconds m_base_timestamp; // !< Timestamp of the first frame that has a real timestamp (different than 0)
         std::map<uint32_t, std::shared_ptr<playback_sensor>> m_sensors;
         std::map<uint32_t, std::shared_ptr<playback_sensor>> m_active_sensors;
         std::atomic<double> m_sample_rate;
         std::atomic_bool m_real_time;
         file_format::file_types::nanoseconds m_prev_timestamp;
+        void catch_up();
     };
 
     MAP_EXTENSION(RS2_EXTENSION_PLAYBACK, playback_device);
