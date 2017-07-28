@@ -175,6 +175,7 @@ inline IMGUI_API bool TabLabels(const char **tabLabels, int tabSize, int &tabInd
 namespace rs2
 {
     class subdevice_model;
+    struct notifications_model;
 
     template<class T>
     void push_back_if_not_exists(std::vector<T>& vec, T value)
@@ -188,6 +189,8 @@ namespace rs2
         std::array<std::pair<bool,rs2_metadata_t>,RS2_FRAME_METADATA_COUNT> md_attributes{};
     };
 
+    struct notification_model;
+
     typedef std::map<rs2_stream, rect> streams_layout;
 
     class option_model
@@ -195,8 +198,8 @@ namespace rs2
     public:
         void draw(std::string& error_message);
         void update_supported(std::string& error_message);
-        void update_read_only(std::string& error_message);
-        void update_all(std::string& error_message);
+        void update_read_only_status(std::string& error_message);
+        void update_all_feilds(std::string& error_message, notifications_model& model);
 
         rs2_option opt;
         option_range range;
@@ -225,11 +228,12 @@ namespace rs2
         std::vector<stream_profile> get_selected_profiles();
         void stop();
         void play(const std::vector<stream_profile>& profiles);
-        void update(std::string& error_message);
+        void update(std::string& error_message, notifications_model& model);
         void draw_options(const std::vector<rs2_option>& drawing_order,
-                          bool update_read_only_options, std::string& error_message);
+                          bool update_read_only_options, std::string& error_message,
+                          notifications_model& model);
         void draw_option(rs2_option opt, bool update_read_only_options,
-                         std::string& error_message);
+                         std::string& error_message, notifications_model& model);
 
         bool is_paused() const;
         void pause();

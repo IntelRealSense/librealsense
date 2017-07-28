@@ -149,7 +149,7 @@ namespace rs2
         }
     }
 
-    void option_model::update_read_only(std::string& error_message)
+    void option_model::update_read_only_status(std::string& error_message)
     {
         try
         {
@@ -161,7 +161,7 @@ namespace rs2
         }
     }
 
-    void option_model::update_all(std::string& error_message)
+    void option_model::update_all_feilds(std::string& error_message, notifications_model& model)
     {
         try
         {
@@ -174,7 +174,15 @@ namespace rs2
         }
         catch (const error& e)
         {
-            error_message = error_to_string(e);
+            if (read_only){
+                auto timestamp = std::chrono::duration<double, std::milli>(std::chrono::system_clock::now().time_since_epoch()).count();
+                model.add_notification({ to_string() << "Could not refresh read-only option " << rs2_option_to_string(opt) << ": " << e.what(),
+                    timestamp,
+                    RS2_LOG_SEVERITY_WARN,
+                    RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR });
+            }
+            else
+                error_message = error_to_string(e);
         }
     }
 
@@ -660,7 +668,7 @@ namespace rs2
         streaming = true;
     }
 
-    void subdevice_model::update(std::string& error_message)
+    void subdevice_model::update(std::string& error_message, notifications_model& notifications)
     {
         if (options_invalidated)
         {
@@ -670,7 +678,7 @@ namespace rs2
         if (next_option < RS2_OPTION_COUNT)
         {
             auto& opt_md = options_metadata[static_cast<rs2_option>(next_option)];
-            opt_md.update_all(error_message);
+            opt_md.update_all_feilds(error_message, notifications);
 
             if (next_option == RS2_OPTION_ENABLE_AUTO_EXPOSURE)
             {
@@ -709,11 +717,12 @@ namespace rs2
     }
 
     void subdevice_model::draw_options(const std::vector<rs2_option>& drawing_order,
-                                       bool update_read_only_options, std::string& error_message)
+                                       bool update_read_only_options, std::string& error_message,
+                                       notifications_model& notifications)
     {
         for (auto& opt : drawing_order)
         {
-            draw_option(opt, update_read_only_options, error_message);
+            draw_option(opt, update_read_only_options, error_message, notifications);
         }
 
         for (auto i = 0; i < RS2_OPTION_COUNT; i++)
@@ -721,13 +730,13 @@ namespace rs2
             auto opt = static_cast<rs2_option>(i);
             if(std::find(drawing_order.begin(), drawing_order.end(), opt) == drawing_order.end())
             {
-                draw_option(opt, update_read_only_options, error_message);
+                draw_option(opt, update_read_only_options, error_message, notifications);
             }
         }
     }
 
     void subdevice_model::draw_option(rs2_option opt, bool update_read_only_options,
-                                      std::string& error_message)
+                                      std::string& error_message, notifications_model& model)
     {
         auto&& metadata = options_metadata[opt];
         if (update_read_only_options)
@@ -735,10 +744,10 @@ namespace rs2
             metadata.update_supported(error_message);
             if (metadata.supported && streaming)
             {
-                metadata.update_read_only(error_message);
+                metadata.update_read_only_status(error_message);
                 if (metadata.read_only)
                 {
-                    metadata.update_all(error_message);
+                    metadata.update_all_feilds(error_message, model);
                 }
             }
         }

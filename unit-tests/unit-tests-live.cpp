@@ -8,11 +8,8 @@
 #include <cmath>
 #include "unit-tests-common.h"
 #include <librealsense/rs2_advanced_mode.hpp>
-#include "../src/ds5/ds5-active.h"
-#include "../src/ds5/ds5-rolling-shutter.h"
 
 using namespace rs2;
-using namespace librealsense;
 
 # define SECTION_FROM_TEST_NAME space_to_underscore(Catch::getCurrentContext().getResultCapture()->getCurrentTestName()).c_str()
 //// disable in one place options that are sensitive to frame content
@@ -1306,7 +1303,7 @@ TEST_CASE("Advanced Mode presets", "[live]") {
                     REQUIRE_NOTHROW(presets_sensor.set_option(RS2_OPTION_ADVANCED_MODE_PRESET, preset));
                     float ret_preset;
                     REQUIRE_NOTHROW(ret_preset = presets_sensor.get_option(RS2_OPTION_ADVANCED_MODE_PRESET));
-                    REQUIRE(preset == (rs2_rs400_visual_preset)ret_preset);
+                    REQUIRE(preset == (rs2_rs400_visual_preset)((int)ret_preset));
                 }
                 presets_sensor.stop();
                 presets_sensor.close();

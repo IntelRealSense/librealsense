@@ -19,7 +19,16 @@ endif()
 if(BUILD_GRAPHICAL_EXAMPLES)
 
     # config-ui
-    add_executable(realsense-ui realsense-ui.cpp ../../third-party/imgui/imgui.cpp ../../third-party/imgui/imgui_draw.cpp ../../third-party/imgui/imgui_impl_glfw.cpp ../../common/example.hpp ../../common/model-views.h ../../common/model-views.cpp)
+    add_executable(realsense-ui 
+        realsense-ui.cpp 
+        ../../third-party/imgui/imgui.cpp 
+        ../../third-party/imgui/imgui_draw.cpp 
+        ../../third-party/imgui/imgui_impl_glfw.cpp 
+        ../../third-party/imgui/imgui-fonts-karla.hpp
+        ../../third-party/imgui/imgui-fonts-fontawesome.hpp
+        ../../common/example.hpp 
+        ../../common/model-views.h 
+        ../../common/model-views.cpp)
     target_link_libraries(realsense-ui ${DEPENDENCIES})
     include_directories(realsense-ui ../../third-party/imgui ../../common)
     set_target_properties (realsense-ui PROPERTIES

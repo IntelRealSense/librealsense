@@ -3,6 +3,9 @@
 #include "model-views.h"
 #include "../common/realsense-ui/realsense-ui-advanced-mode.h"
 
+#include "imgui-fonts-karla.hpp"
+#include "imgui-fonts-fontawesome.hpp"
+
 #include <cstdarg>
 #include <thread>
 #include <iostream>
@@ -28,11 +31,38 @@ ImVec4 from_rgba(uint8_t r, uint8_t g, uint8_t b, uint8_t a)
 // From https://github.com/procedural/gpulib/blob/master/gpulib_imgui.h
 struct ImVec3 { float x, y, z; ImVec3(float _x = 0.0f, float _y = 0.0f, float _z = 0.0f) { x = _x; y = _y; z = _z; } };
 
+ImFont* font_16;
+ImFont* font_12;
+
 void imgui_easy_theming()
 {
     ImGuiStyle& style = ImGui::GetStyle();
 
+    ImGuiIO& io = ImGui::GetIO();
+
+    static const ImWchar icons_ranges[] = { 0xf000, 0xf3ff, 0 }; // will not be copied by AddFont* so keep in scope.
+        
+
+    {
+        font_16 = io.Fonts->AddFontFromMemoryCompressedTTF(karla_regular_compressed_data, karla_regular_compressed_size, 16.f);
+    
+        ImFontConfig config;
+        config.MergeMode = true;
+        font_16 = io.Fonts->AddFontFromMemoryCompressedTTF(font_awesome_compressed_data, 
+            font_awesome_compressed_size, 16.f, &config, icons_ranges);
+    }
+
+    {
+        font_12 = io.Fonts->AddFontFromMemoryCompressedTTF(karla_regular_compressed_data, karla_regular_compressed_size, 12.f);
+   
+        ImFontConfig config;
+        config.MergeMode = true;
+        font_12 = io.Fonts->AddFontFromMemoryCompressedTTF(font_awesome_compressed_data, 
+            font_awesome_compressed_size, 12.f, &config, icons_ranges);
+    }
+
     style.WindowRounding = 0.0f;
+    style.ScrollbarRounding = 0.0f;
 
     //style.Colors[ImGuiCol_Text] =                   from_rgba( R,    G,    B,    A );
     //style.Colors[ImGuiCol_TextDisabled] =           from_rgba( R,    G,    B,    A );
@@ -55,9 +85,9 @@ void imgui_easy_theming()
     style.Colors[ImGuiCol_CheckMark] =              from_rgba( 0,    115,    200,    255 );
     style.Colors[ImGuiCol_SliderGrab] =             from_rgba( 0,    115,    200,    200 );
     style.Colors[ImGuiCol_SliderGrabActive] =       from_rgba( 0,    115,    200,    255 );
-    style.Colors[ImGuiCol_Button] = from_rgba(62, 77, 89, 255);
-    style.Colors[ImGuiCol_ButtonHovered] = from_rgba(62 + 20, 77 + 20, 89 + 20, 255); // TODO: Check with Yaron
-    style.Colors[ImGuiCol_ButtonActive] = from_rgba(62 - 10, 77 - 10, 89 - 10, 255);
+    style.Colors[ImGuiCol_Button] = from_rgba(0x2d,0x37,0x40,0xff);
+    style.Colors[ImGuiCol_ButtonHovered] = from_rgba(0x2d + 10, 0x37 + 10, 0x40 + 10, 0xff); // TODO: Check with Yaron
+    style.Colors[ImGuiCol_ButtonActive] = from_rgba(0x2d - 10, 0x37 - 10, 0x40 - 10, 0xff);
     style.Colors[ImGuiCol_Header] = from_rgba(62, 77, 89, 255);
     style.Colors[ImGuiCol_HeaderHovered] = from_rgba(62, 77, 89, 255); // TODO: Check with Yaron
     style.Colors[ImGuiCol_HeaderActive] = from_rgba(62, 77, 89, 255);
@@ -332,7 +362,7 @@ int main(int, char**) try
     });
 
 
-    not_model.add_log(to_string() << "librealsense version: " << api_version_to_string(rs2_get_api_version(&e)));
+    not_model.add_log(to_string() << "librealsense version: " << api_version_to_string(rs2_get_api_version(&e)) << "\n");
 
     mouse_info mouse;
 
@@ -528,7 +558,7 @@ int main(int, char**) try
         // Flags for pop-up window - no window resize, move or collaps
         auto flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove |
             ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar |
-            ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_ShowBorders;
+            ImGuiWindowFlags_NoSavedSettings;
 
         const float panel_width = 279.f;
         const float panel_y = 44.f;
@@ -548,15 +578,19 @@ int main(int, char**) try
             switch_to_newly_loaded_device = true;
         }
 
-        ImGui::PushStyleColor(ImGuiCol_WindowBg, from_rgba(230, 230, 230, 255));
+        ImGui::PushFont(font_16);
+        ImGui::PushStyleColor(ImGuiCol_PopupBg, from_rgba(230, 230, 230, 255));
+        ImGui::PushStyleColor(ImGuiCol_HeaderHovered, from_rgba(0, 0xae, 0xff, 255));
+        ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, from_rgba(255, 255, 255, 255));
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(5, 5));
         ImGui::SetNextWindowPos({ 0, panel_y });
-        ImGui::SetNextWindowSize({ panel_width, ImGui::GetTextLineHeight() * device_names.size() + 10 });
+        ImGui::SetNextWindowSize({ panel_width, ImGui::GetTextLineHeight() * (device_names.size() + 1) + 20 });
 
-        if (ImGui::Button("Add Source...", { panel_width, panel_y }))
+        if (ImGui::Button(u8"Add Source\t\t\t\t\t\t\t\t\t\t\t\t\uf055", { panel_width-1, panel_y }))
             ImGui::OpenPopup("select");
         if (ImGui::BeginPopup("select"))
         {
+            ImGui::PushStyleColor(ImGuiCol_Text, from_rgba(30, 30, 30, 255));
             for (size_t i = 0; i < device_names.size(); i++)
             {
                 if (ImGui::Selectable(device_names[i].c_str()) || switch_to_newly_loaded_device)
@@ -601,11 +635,22 @@ int main(int, char**) try
                     }
                 }
             }
+
+            ImGui::Separator();
+            if (ImGui::Selectable("From File..."))
+            {
+
+            }
+
+            ImGui::PopStyleColor();
             ImGui::EndPopup();
         }
 
         ImGui::PopStyleVar();
         ImGui::PopStyleColor();
+        ImGui::PopStyleColor();
+        ImGui::PopStyleColor();
+        ImGui::PopFont();
 
         ImGui::End();
         ImGui::PopStyleVar();
@@ -615,7 +660,7 @@ int main(int, char**) try
         ImGui::SetNextWindowSize({ w - panel_width, panel_y });
 
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
-        ImGui::PushStyleColor(ImGuiCol_WindowBg, from_rgba(62, 77, 89, 255));
+        ImGui::PushStyleColor(ImGuiCol_WindowBg, from_rgba(0x2d,0x37,0x40,0xff));
         ImGui::Begin("Toolbar Panel", nullptr, flags);
 
         ImGui::PushStyleColor(ImGuiCol_Border, { 0,0,0,0 });
@@ -629,6 +674,10 @@ int main(int, char**) try
         if (ImGui::Button("3D", { panel_y,panel_y })) is_3d_view = true;
         ImGui::PopStyleColor();
         ImGui::PopStyleColor();
+
+        ImGui::SameLine();
+        ImGui::SetCursorPosX(w - panel_width - panel_y);
+        ImGui::Button(u8"\uf013\uf0d7", { panel_y,panel_y });
 
         ImGui::End();
         ImGui::PopStyleColor();
@@ -664,71 +713,73 @@ int main(int, char**) try
             ImGui::Text("No device detected.");
         }
 
-        // Device Details Menu - Elaborate details on connected devices
-        if (any_device_exists > 0 && ImGui::CollapsingHeader("Device Details", nullptr, true, false))
+        if (any_device_exists > 0)
         {
-            //ImGui::PushStyleColor(ImGuiCol_FrameBg, from_rgba(27, 33, 38, 255));
-            //ImGui::BeginChildFrame(ImGui::GetID("dev_info"), { 0, 0 }, ImGuiWindowFlags_ShowBorders);
-
-            bool switch_to_newly_loaded_device = false;
-            if (new_device_loaded && refresh_device_list == false)
-            {
-                device_index = list.size() - 1;
-                new_device_loaded = false;
-                switch_to_newly_loaded_device = true;
-            }
-
-            // Draw a combo-box with the list of connected devices
-            auto new_index = device_index;
-
-            //if (model.draw_combo_box(device_names, new_index) || switch_to_newly_loaded_device)
-            //{
-            //    for (auto&& sub : model.subdevices)
-            //    {
-            //        if (sub->streaming)
-            //            sub->stop();
-            //    }
-
-            //    try
-            //    {
-            //        dev = list[new_index];
-            //        device_index = new_index;
-            //        model = device_model(dev, error_message);
-            //        active_device_info = get_device_info(dev);
-            //        if (dev.is<playback>()) //TODO: remove this and make sub->streaming a function that queries the sensor
-            //        {
-            //            dev.as<playback>().set_status_changed_callback([&model](rs2_playback_status status)
-            //            {
-            //                if (status == RS2_PLAYBACK_STATUS_STOPPED)
-            //                {
-            //                    for (auto sub : model.subdevices)
-            //                    {
-            //                        if (sub->streaming)
-            //                        {
-            //                            sub->stop();
-            //                        }
-            //                    }
-            //                }
-            //            });
-            //        }
-
-            //    }
-            //    catch (const error& e)
-            //    {
-            //        error_message = error_to_string(e);
-            //    }
-            //    catch (const std::exception& e)
-            //    {
-            //        error_message = e.what();
-            //    }
-            //}
-
-            // Show all device details - name, module name, serial number, FW version and location
-            model.draw_device_details(dev, ctx);
-
-            //ImGui::EndChildFrame();
-            //ImGui::PopStyleColor();
+            ImGui::PushFont(font_12);
+            ImGui::PushStyleColor(ImGuiCol_Button, from_rgba(0x3e,0x4d,0x59,0xff));
+            label = to_string() << u8"\uf03d  " << dev.get_info(RS2_CAMERA_INFO_NAME) << "\tS/N: " << (dev.supports(RS2_CAMERA_INFO_SERIAL_NUMBER) ? dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER) : "Unknown");
+            ImGui::Button(label.c_str(), { panel_width, panel_y } );
+            ImGui::PopStyleColor();
+            ImGui::PopFont();
         }
+
+        //// Device Details Menu - Elaborate details on connected devices
+        //if (any_device_exists > 0 && ImGui::CollapsingHeader("Device Details", nullptr, true, false))
+        //{
+        //    //ImGui::PushStyleColor(ImGuiCol_FrameBg, from_rgba(27, 33, 38, 255));
+        //    //ImGui::BeginChildFrame(ImGui::GetID("dev_info"), { 0, 0 }, ImGuiWindowFlags_ShowBorders);
+
+        //    // Draw a combo-box with the list of connected devices
+        //    auto new_index = device_index;
+
+        //    //if (model.draw_combo_box(device_names, new_index) || switch_to_newly_loaded_device)
+        //    //{
+        //    //    for (auto&& sub : model.subdevices)
+        //    //    {
+        //    //        if (sub->streaming)
+        //    //            sub->stop();
+        //    //    }
+
+        //    //    try
+        //    //    {
+        //    //        dev = list[new_index];
+        //    //        device_index = new_index;
+        //    //        model = device_model(dev, error_message);
+        //    //        active_device_info = get_device_info(dev);
+        //    //        if (dev.is<playback>()) //TODO: remove this and make sub->streaming a function that queries the sensor
+        //    //        {
+        //    //            dev.as<playback>().set_status_changed_callback([&model](rs2_playback_status status)
+        //    //            {
+        //    //                if (status == RS2_PLAYBACK_STATUS_STOPPED)
+        //    //                {
+        //    //                    for (auto sub : model.subdevices)
+        //    //                    {
+        //    //                        if (sub->streaming)
+        //    //                        {
+        //    //                            sub->stop();
+        //    //                        }
+        //    //                    }
+        //    //                }
+        //    //            });
+        //    //        }
+
+        //    //    }
+        //    //    catch (const error& e)
+        //    //    {
+        //    //        error_message = error_to_string(e);
+        //    //    }
+        //    //    catch (const std::exception& e)
+        //    //    {
+        //    //        error_message = e.what();
+        //    //    }
+        //    //}
+
+        //    // Show all device details - name, module name, serial number, FW version and location
+        //    //model.draw_device_details(dev, ctx);
+
+        //    //ImGui::EndChildFrame();
+        //    //ImGui::PopStyleColor();
+        //}
 
         if (any_device_exists)
         {
@@ -898,7 +949,8 @@ int main(int, char**) try
                 {
 
                     label = to_string() << sub->s.get_info(RS2_CAMERA_INFO_NAME);
-                    if (ImGui::CollapsingHeader(label.c_str(), nullptr, true, false))
+                    ImGui::PushStyleColor(ImGuiCol_Header, from_rgba(0x3e,0x4d,0x59,0xff));
+                    if (ImGui::TreeNode(label.c_str()))
                     {
                         sub->draw_stream_selection();
 
@@ -1016,7 +1068,7 @@ int main(int, char**) try
                                                                                RS2_OPTION_EXPOSURE,
                                                                                RS2_OPTION_EMITTER_ENABLED,
                                                                                RS2_OPTION_LASER_POWER };
-                            sub->draw_options(options_order, update_read_only_options, error_message);
+                            sub->draw_options(options_order, update_read_only_options, error_message, not_model);
 
                             auto&& de_opt = sub->options_metadata[RS2_OPTION_DEPTH_UNITS];
                             if (de_opt.supported)
@@ -1047,7 +1099,10 @@ int main(int, char**) try
                                 }
                             }
                         }
+
+                        ImGui::TreePop();
                     }
+                    ImGui::PopStyleColor();
                 }
             }
 
@@ -1087,9 +1142,12 @@ int main(int, char**) try
 
             for (auto&& sub : model.subdevices)
             {
-                sub->update(error_message);
+                sub->update(error_message, not_model);
             }
         }
+
+        ImGui::End();
+        ImGui::PopStyleVar();
 
         if (error_message != "")
         {
@@ -1129,9 +1187,6 @@ int main(int, char**) try
 
             ImGui::EndPopup();
         }
-
-        ImGui::End();
-        ImGui::PopStyleVar();
 
         // Fetch frames from queue
         for (auto&& sub : model.subdevices)

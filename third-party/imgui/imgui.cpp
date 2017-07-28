@@ -8536,7 +8536,9 @@ bool ImGui::Selectable(const char* label, bool selected, ImGuiSelectableFlags fl
     }
 
     if (flags & ImGuiSelectableFlags_Disabled) PushStyleColor(ImGuiCol_Text, g.Style.Colors[ImGuiCol_TextDisabled]);
+    if (hovered || selected) PushStyleColor(ImGuiCol_Text, g.Style.Colors[ImGuiCol_TextSelectedBg]);
     RenderTextClipped(bb.Min, bb_with_spacing.Max, label, NULL, &label_size);
+    if (hovered || selected) PopStyleColor();
     if (flags & ImGuiSelectableFlags_Disabled) PopStyleColor();
 
     // Automatically close popups
