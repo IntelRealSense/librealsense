@@ -32,7 +32,7 @@ namespace librealsense
 
     private:
         uvc_sensor&                 _ep;
-        rs2_option                    _option;
+        rs2_option                  _option;
     };
 
     class motion_module_temperature_option : public readonly_option
@@ -174,7 +174,7 @@ namespace librealsense
         }
 
     private:
-        ds::depth_table_control get_depth_table(ds::advnaced_query_mode mode) const;
+        ds::depth_table_control get_depth_table(ds::advanced_query_mode mode) const;
 
         lazy<option_range> _range;
         hw_monitor& _hwm;

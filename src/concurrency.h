@@ -68,7 +68,7 @@ public:
     bool peek(T** item)
     {
         std::unique_lock<std::mutex> lock(mutex);
-        
+
         if (q.size() <= 0)
         {
             return false;

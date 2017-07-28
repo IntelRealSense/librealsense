@@ -10,11 +10,12 @@
 #include "core/debug.h"
 #include "core/motion.h"
 #include "core/extension.h"
-#include "recording/record_device.h"
-#include <recording/serializers/ros_device_serializer.h>
+#include "media/record/record_device.h"
+#include <media/ros/ros_writer.h>
+#include <media/ros/ros_reader.h>
 #include "core/advanced_mode.h"
 #include "align.h"
-#include "recording/playback_device.h"
+#include "media/playback/playback_device.h"
 #include "stream.h"
 
 ////////////////////////
@@ -41,11 +42,6 @@ struct rs2_sensor
 struct rs2_context
 {
     std::shared_ptr<librealsense::context> ctx;
-};
-
-struct rs2_device_serializer
-{
-    std::shared_ptr<librealsense::device_serializer> device_serializer;
 };
 
 //struct rs2_record_device
@@ -830,22 +826,20 @@ void rs2_flush_queue(rs2_frame_queue* queue, rs2_error** error) try
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, queue)
 
-void rs2_get_extrinsics(rs2_context* ctx, 
-    const rs2_stream_profile* from,
+void rs2_get_extrinsics(const rs2_stream_profile* from,
     const rs2_stream_profile* to,
     rs2_extrinsics * extrin, rs2_error ** error) try
 {
-    VALIDATE_NOT_NULL(ctx);
     VALIDATE_NOT_NULL(from);
     VALIDATE_NOT_NULL(to);
     VALIDATE_NOT_NULL(extrin);
 
-    if (!ctx->ctx->try_fetch_extrinsics(*from->profile, *to->profile, extrin))
+    if (!from->profile->get_context().try_fetch_extrinsics(*from->profile, *to->profile, extrin))
     {
         throw not_implemented_exception("Requested extrinsics are not available!");
     }
 }
-HANDLE_EXCEPTIONS_AND_RETURN(, ctx, from, to, extrin)
+HANDLE_EXCEPTIONS_AND_RETURN(, from, to, extrin)
 
 void rs2_get_motion_intrinsics(const rs2_sensor * sensor, rs2_stream stream, rs2_motion_device_intrinsic * intrinsics, rs2_error ** error) try
 {
@@ -1018,7 +1012,7 @@ const char * rs2_notification_category_to_string(rs2_notification_category categ
 const char * rs2_visual_preset_to_string(rs2_ivcam_visual_preset preset) { return librealsense::get_string(preset); }
 const char * rs2_log_severity_to_string(rs2_log_severity severity) { return librealsense::get_string(severity); }
 const char * rs2_exception_type_to_string(rs2_exception_type type) { return librealsense::get_string(type); }
-const char * rs2_extension_type_to_string(rs2_extension_type type) { return librealsense::get_string(type); }
+const char * rs2_extension_type_to_string(rs2_extension type) { return librealsense::get_string(type); }
 
 void rs2_log_to_console(rs2_log_severity min_severity, rs2_error ** error) try
 {
@@ -1032,121 +1026,194 @@ void rs2_log_to_file(rs2_log_severity min_severity, const char * file_path, rs2_
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, min_severity, file_path)
 
-int rs2_is_sensor(const rs2_sensor* sensor, rs2_extension_type extension_type, rs2_error ** error) try
+int rs2_is_sensor_extendable_to(const rs2_sensor* sensor, rs2_extension extension_type, rs2_error ** error) try
 {
     VALIDATE_NOT_NULL(sensor);
     VALIDATE_ENUM(extension_type);
-	switch (extension_type)
-	{
-        case RS2_EXTENSION_TYPE_DEBUG:         return VALIDATE_INTERFACE_NO_THROW(sensor->sensor, librealsense::debug_interface) != nullptr;
-        case RS2_EXTENSION_TYPE_INFO:	       return VALIDATE_INTERFACE_NO_THROW(sensor->sensor, librealsense::info_interface) != nullptr;
-        case RS2_EXTENSION_TYPE_MOTION:	       return VALIDATE_INTERFACE_NO_THROW(sensor->sensor, librealsense::motion_sensor_interface) != nullptr;
-        case RS2_EXTENSION_TYPE_OPTIONS:       return VALIDATE_INTERFACE_NO_THROW(sensor->sensor, librealsense::options_interface) != nullptr;
-        case RS2_EXTENSION_TYPE_VIDEO:	       return VALIDATE_INTERFACE_NO_THROW(sensor->sensor, librealsense::video_sensor_interface) != nullptr;
-        case RS2_EXTENSION_TYPE_ROI:	       return VALIDATE_INTERFACE_NO_THROW(sensor->sensor, librealsense::roi_sensor_interface) != nullptr;
-        case RS2_EXTENSION_TYPE_DEPTH_SENSOR:  return VALIDATE_INTERFACE_NO_THROW(sensor->sensor, librealsense::depth_sensor) != nullptr;
-	    default:
-	        return 0;
-	}
+    switch (extension_type)
+    {
+        case RS2_EXTENSION_DEBUG :         return VALIDATE_INTERFACE_NO_THROW(sensor->sensor, librealsense::debug_interface) != nullptr;
+        case RS2_EXTENSION_INFO :          return VALIDATE_INTERFACE_NO_THROW(sensor->sensor, librealsense::info_interface) != nullptr;
+        case RS2_EXTENSION_MOTION :        return VALIDATE_INTERFACE_NO_THROW(sensor->sensor, librealsense::motion_sensor_interface) != nullptr;
+        case RS2_EXTENSION_OPTIONS :       return VALIDATE_INTERFACE_NO_THROW(sensor->sensor, librealsense::options_interface) != nullptr;
+        case RS2_EXTENSION_VIDEO :         return VALIDATE_INTERFACE_NO_THROW(sensor->sensor, librealsense::video_sensor_interface) != nullptr;
+        case RS2_EXTENSION_ROI :           return VALIDATE_INTERFACE_NO_THROW(sensor->sensor, librealsense::roi_sensor_interface) != nullptr;
+        case RS2_EXTENSION_DEPTH_SENSOR :  return VALIDATE_INTERFACE_NO_THROW(sensor->sensor, librealsense::depth_sensor) != nullptr;
+        default:
+            return 0;
+    }
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, sensor, extension_type)
 
-int rs2_is_device(const rs2_device* dev, rs2_extension_type extension_type, rs2_error ** error) try
+int rs2_is_device_extendable_to(const rs2_device* dev, rs2_extension extension_type, rs2_error ** error) try
 {
     VALIDATE_NOT_NULL(dev);
     VALIDATE_ENUM(extension_type);
-	switch (extension_type)
-	{
-        case RS2_EXTENSION_TYPE_DEBUG:         return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::debug_interface)             != nullptr;
-        case RS2_EXTENSION_TYPE_INFO:          return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::info_interface)              != nullptr;
-        case RS2_EXTENSION_TYPE_MOTION:        return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::motion_sensor_interface)     != nullptr;
-        case RS2_EXTENSION_TYPE_OPTIONS:       return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::options_interface)           != nullptr;
-        case RS2_EXTENSION_TYPE_VIDEO:         return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::video_sensor_interface)      != nullptr;
-        case RS2_EXTENSION_TYPE_ROI:           return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::roi_sensor_interface)        != nullptr;
-        case RS2_EXTENSION_TYPE_DEPTH_SENSOR:  return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::depth_sensor)                != nullptr;
-        case RS2_EXTENSION_TYPE_ADVANCED_MODE: return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::ds5_advanced_mode_interface) != nullptr;
-	    default:
-	        return 0;
-	}
+    switch (extension_type)
+    {
+        case RS2_EXTENSION_DEBUG         : return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::debug_interface)             != nullptr;
+        case RS2_EXTENSION_INFO          : return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::info_interface)              != nullptr;
+        case RS2_EXTENSION_MOTION        : return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::motion_sensor_interface)     != nullptr;
+        case RS2_EXTENSION_OPTIONS       : return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::options_interface)           != nullptr;
+        case RS2_EXTENSION_VIDEO         : return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::video_sensor_interface)      != nullptr;
+        case RS2_EXTENSION_ROI           : return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::roi_sensor_interface)        != nullptr;
+        case RS2_EXTENSION_DEPTH_SENSOR  : return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::depth_sensor)                != nullptr;
+        case RS2_EXTENSION_ADVANCED_MODE : return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::ds5_advanced_mode_interface) != nullptr;
+        case RS2_EXTENSION_RECORD        : return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::record_device)               != nullptr;
+        case RS2_EXTENSION_PLAYBACK      : return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::playback_device)             != nullptr;
+        default:
+            return 0;
+    }
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, dev, extension_type)
 
 
-int rs2_is_frame(const rs2_frame* f, rs2_extension_type extension_type, rs2_error ** error) try
-{
-    VALIDATE_NOT_NULL(f);
-    VALIDATE_ENUM(extension_type);
-	switch (extension_type)
-	{
-        case RS2_EXTENSION_TYPE_VIDEO_FRAME:     return VALIDATE_INTERFACE_NO_THROW((frame_interface*)f, librealsense::video_frame) != nullptr;
-        case RS2_EXTENSION_TYPE_COMPOSITE_FRAME: return VALIDATE_INTERFACE_NO_THROW((frame_interface*)f, librealsense::composite_frame) != nullptr;
-        case RS2_EXTENSION_TYPE_POINTS:          return VALIDATE_INTERFACE_NO_THROW((frame_interface*)f, librealsense::points) != nullptr;
-	    //case RS2_EXTENSION_TYPE_MOTION_FRAME:  return VALIDATE_INTERFACE_NO_THROW((frame_interface*)f, librealsense::motion_frame) != nullptr;
-
-	default:
-		return 0;
-	}
-}
-HANDLE_EXCEPTIONS_AND_RETURN(0, f, extension_type)
-
-int rs2_stream_profile_is(const rs2_stream_profile* f, rs2_extension_type extension_type, rs2_error ** error) try
+int rs2_is_frame_extendable_to(const rs2_frame* f, rs2_extension extension_type, rs2_error ** error) try
 {
     VALIDATE_NOT_NULL(f);
     VALIDATE_ENUM(extension_type);
     switch (extension_type)
     {
-    case RS2_EXTENSION_TYPE_VIDEO_PROFILE:   return VALIDATE_INTERFACE_NO_THROW(f->profile, librealsense::video_stream_profile_interface) != nullptr;
+        case RS2_EXTENSION_VIDEO_FRAME :     return VALIDATE_INTERFACE_NO_THROW((frame_interface*)f, librealsense::video_frame) != nullptr;
+        case RS2_EXTENSION_COMPOSITE_FRAME : return VALIDATE_INTERFACE_NO_THROW((frame_interface*)f, librealsense::composite_frame) != nullptr;
+        case RS2_EXTENSION_POINTS :          return VALIDATE_INTERFACE_NO_THROW((frame_interface*)f, librealsense::points) != nullptr;
+        //case RS2_EXTENSION_MOTION_FRAME :  return VALIDATE_INTERFACE_NO_THROW((frame_interface*)f, librealsense::motion_frame) != nullptr;
+
     default:
         return 0;
     }
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, f, extension_type)
 
-rs2_device_serializer * rs2_create_device_serializer(const char* file, rs2_error ** error) try
+int rs2_stream_profile_is(const rs2_stream_profile* f, rs2_extension extension_type, rs2_error ** error) try
+{
+    VALIDATE_NOT_NULL(f);
+    VALIDATE_ENUM(extension_type);
+    switch (extension_type)
+    {
+    case RS2_EXTENSION_VIDEO_PROFILE:   return VALIDATE_INTERFACE_NO_THROW(f->profile, librealsense::video_stream_profile_interface) != nullptr;
+    default:
+        return 0;
+    }
+}
+HANDLE_EXCEPTIONS_AND_RETURN(0, f, extension_type)
+
+rs2_device* rs2_context_add_device(rs2_context* ctx, const char* file, rs2_error** error) try
+{
+    VALIDATE_NOT_NULL(ctx);
+    VALIDATE_NOT_NULL(file);
+
+    return new rs2_device{  ctx->ctx, /*TODO: how does this affect the new device*/ nullptr, ctx->ctx->add_device(file) };
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, ctx, file)
+
+void rs2_context_remove_device(rs2_context* ctx, const char* file, rs2_error** error) try
+{
+    VALIDATE_NOT_NULL(ctx);
+    VALIDATE_NOT_NULL(file);
+    ctx->ctx->remove_device(file);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, ctx, file)
+
+rs2_device* rs2_create_playback_device(const char* file, rs2_error** error) try
 {
     VALIDATE_NOT_NULL(file);
-    return new rs2_device_serializer{ std::make_shared<librealsense::ros_device_serializer>(file) };
+    return new rs2_device{ nullptr, nullptr, std::make_shared<playback_device>(std::make_shared<ros_reader>(file)) };
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, file)
 
-void rs2_delete_device_serializer(rs2_device_serializer * device_serializer) try
-{
-    VALIDATE_NOT_NULL(device_serializer);
-    delete device_serializer;
-}
-NOEXCEPT_RETURN(, device_serializer)
-
-rs2_device* rs2_create_playback_device(rs2_device_serializer* serializer, rs2_error** error) try
-{
-    VALIDATE_NOT_NULL(serializer);
-    return new rs2_device{ nullptr, nullptr, std::make_shared<playback_device>(serializer->device_serializer->get_reader()) };
-}HANDLE_EXCEPTIONS_AND_RETURN(nullptr, serializer)
-
-rs2_device* rs2_create_record_device(const rs2_device* device, rs2_device_serializer* serializer, rs2_error** error) try
+const char* rs2_playback_device_get_file_path(const rs2_device* device, rs2_error** error) try
 {
     VALIDATE_NOT_NULL(device);
-    VALIDATE_NOT_NULL(serializer);
+    auto playback = VALIDATE_INTERFACE(device->device, librealsense::playback_device);
+    return playback->get_file_name().c_str();
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, device)
 
-    return new rs2_device( { 
+unsigned long long int rs2_playback_get_duration(const rs2_device* device, rs2_error** error) try
+{
+    VALIDATE_NOT_NULL(device);
+    auto playback = VALIDATE_INTERFACE(device->device, librealsense::playback_device);
+    return playback->get_duration();
+}
+HANDLE_EXCEPTIONS_AND_RETURN(0, device)
+
+void rs2_playback_seek(const rs2_device* device, unsigned long long int time, rs2_error** error) try
+{
+    VALIDATE_NOT_NULL(device);
+    auto playback = VALIDATE_INTERFACE(device->device, librealsense::playback_device);
+    playback->seek_to_time(time);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, device)
+
+unsigned long long int rs2_playback_get_position(const rs2_device* device, rs2_error** error) try
+{
+    VALIDATE_NOT_NULL(device);
+    auto playback = VALIDATE_INTERFACE(device->device, librealsense::playback_device);
+    return playback->get_position();
+}
+HANDLE_EXCEPTIONS_AND_RETURN(0, device)
+
+void rs2_playback_device_resume(const rs2_device* device, rs2_error** error) try
+{
+    VALIDATE_NOT_NULL(device);
+    auto playback = VALIDATE_INTERFACE(device->device, librealsense::playback_device);
+    playback->resume();
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, device)
+
+void rs2_playback_device_pause(const rs2_device* device, rs2_error** error) try
+{
+    VALIDATE_NOT_NULL(device);
+    auto playback = VALIDATE_INTERFACE(device->device, librealsense::playback_device);
+    return playback->pause();
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, device)
+
+void rs2_playback_device_set_real_time(const rs2_device* device, int real_time, rs2_error** error) try
+{
+    VALIDATE_NOT_NULL(device);
+    auto playback = VALIDATE_INTERFACE(device->device, librealsense::playback_device);
+    playback->set_real_time(real_time == 0 ? false : true);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, device)
+
+int rs2_playback_device_is_real_time(const rs2_device* device, rs2_error** error) try
+{
+    VALIDATE_NOT_NULL(device);
+    auto playback = VALIDATE_INTERFACE(device->device, librealsense::playback_device);
+    return playback->is_real_time() ? 1 : 0;
+}
+HANDLE_EXCEPTIONS_AND_RETURN(0, device)
+
+rs2_device* rs2_create_record_device(const rs2_device* device, const char* file, rs2_error** error) try
+{
+    VALIDATE_NOT_NULL(device);
+    VALIDATE_NOT_NULL(file);
+    
+    return new rs2_device( {
         device->ctx,
         device->info,
-        std::make_shared<record_device>(device->device, serializer->device_serializer->get_writer()) 
+        std::make_shared<record_device>(device->device, std::make_shared<ros_writer>(file))
     });
-}HANDLE_EXCEPTIONS_AND_RETURN(nullptr, device, serializer)
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, device, file)
 
 void rs2_record_device_pause(const rs2_device* device, rs2_error** error) try
 {
     VALIDATE_NOT_NULL(device);
-    auto record_device = std::static_pointer_cast<librealsense::record_device>(device->device);
+    auto record_device = VALIDATE_INTERFACE(device->device, librealsense::record_device);
     record_device->pause_recording();
-}HANDLE_EXCEPTIONS_AND_RETURN(, device)
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, device)
 
 void rs2_record_device_resume(const rs2_device* device, rs2_error** error) try
 {
     VALIDATE_NOT_NULL(device);
-    auto record_device = std::static_pointer_cast<librealsense::record_device>(device->device);
+    auto record_device = VALIDATE_INTERFACE(device->device, librealsense::record_device);
     record_device->resume_recording();
-}HANDLE_EXCEPTIONS_AND_RETURN(, device)
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, device)
 
 rs2_frame* rs2_allocate_synthetic_video_frame(rs2_source* source, const rs2_stream_profile* new_stream, rs2_frame* original,
     int new_bpp, int new_width, int new_height, int new_stride, rs2_error** error) try
@@ -1179,7 +1246,7 @@ rs2_processing_block* rs2_create_processing_block(rs2_context* ctx, rs2_frame_pr
 
     auto block = std::make_shared<librealsense::processing_block>(ctx->ctx->get_time_service());
     block->set_processing_callback({ proc, [](rs2_frame_processor_callback* p) { p->release(); } });
-    
+
     return new rs2_processing_block { block };
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, ctx, proc)
@@ -1187,14 +1254,14 @@ HANDLE_EXCEPTIONS_AND_RETURN(nullptr, ctx, proc)
 rs2_processing_block* rs2_create_sync_processing_block(rs2_error ** error)
 {
     auto block = std::make_shared<librealsense::syncer_proccess_unit>();
-    
+
     return new rs2_processing_block{ block };
 }
 
 void rs2_start_processing(rs2_processing_block* block, rs2_frame_callback* on_frame, rs2_error** error) try
 {
     VALIDATE_NOT_NULL(block);
-    
+
     block->block->set_output_callback({ on_frame, [](rs2_frame_callback* p) { p->release(); } });
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, block, on_frame)
@@ -1211,7 +1278,7 @@ HANDLE_EXCEPTIONS_AND_RETURN(, block, frame)
 void rs2_delete_processing_block(rs2_processing_block* block) try
 {
     VALIDATE_NOT_NULL(block);
-    
+
     delete block;
 }
 NOEXCEPT_RETURN(, block)
@@ -1222,7 +1289,7 @@ rs2_frame* rs2_extract_frame(rs2_frame* composite, int index, rs2_error** error)
 
     auto cf = VALIDATE_INTERFACE((frame_interface*)composite, librealsense::composite_frame);
 
-    VALIDATE_RANGE(index, 0, (int)cf->get_embeded_frames_count() - 1);
+    VALIDATE_RANGE(index, 0, (int)cf->get_embedded_frames_count() - 1);
     auto res = cf->get_frame(index);
     res->acquire();
     return (rs2_frame*)res;
@@ -1246,13 +1313,13 @@ rs2_frame* rs2_allocate_composite_frame(rs2_source* source, rs2_frame** frames, 
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, frames, count)
 
-int rs2_embeded_frames_count(rs2_frame* composite, rs2_error** error) try
+int rs2_embedded_frames_count(rs2_frame* composite, rs2_error** error) try
 {
     VALIDATE_NOT_NULL(composite)
 
     auto cf = VALIDATE_INTERFACE((frame_interface*)composite, librealsense::composite_frame);
 
-    return cf->get_embeded_frames_count();
+    return static_cast<int>(cf->get_embedded_frames_count());
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, composite)
 
@@ -1276,7 +1343,7 @@ int rs2_get_points_count(const rs2_frame* frame, rs2_error** error) try
 {
     VALIDATE_NOT_NULL(frame);
     auto points = VALIDATE_INTERFACE((frame_interface*)frame, librealsense::points);
-    return points->get_vertex_count();
+    return static_cast<int>(points->get_vertex_count());
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, frame)
 

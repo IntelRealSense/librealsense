@@ -118,9 +118,9 @@ namespace librealsense
         #undef CASE
     }
 
-    const char* get_string(rs2_extension_type value)
+    const char* get_string(rs2_extension value)
     {
-        #define CASE(X) case RS2_EXTENSION_TYPE_##X: return #X;
+        #define CASE(X) case RS2_EXTENSION_ ##X: return #X;
         switch (value)
         {
             CASE(DEBUG)
@@ -140,7 +140,7 @@ namespace librealsense
         }
         #undef CASE
     }
-       
+
     const char* get_string(rs2_log_severity value)
     {
         #define CASE(X) case RS2_LOG_SEVERITY_##X: return #X;
@@ -185,7 +185,7 @@ namespace librealsense
         CASE(TOTAL_FRAME_DROPS)
         CASE(EMITTER_ENABLED)
         CASE(AUTO_EXPOSURE_MODE)
-        CASE(AUTO_EXPOSURE_ANTIFLICKER_RATE)
+        CASE(POWER_LINE_FREQUENCY)
         CASE(ASIC_TEMPERATURE)
         CASE(ERROR_POLLING_ENABLED)
         CASE(PROJECTOR_TEMPERATURE)
@@ -339,8 +339,9 @@ namespace librealsense
 
     /// Convert orientation angles stored in rodrigues conventions to rotation matrix
     /// for details: http://mesh.brown.edu/en193s08-2003/notes/en193s08-rots.pdf
-    float3x3 calc_rodrigues_matrix(const std::vector<double> rot)
+    float3x3 calc_rotation_from_rodrigues_angles(const std::vector<double> rot)
     {
+        assert(3 == rot.size());
         float3x3 rot_mat{};
 
         double theta = sqrt(std::inner_product(rot.begin(), rot.end(), rot.begin(), 0.0));

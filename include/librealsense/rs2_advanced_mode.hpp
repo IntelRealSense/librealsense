@@ -9,6 +9,116 @@
 
 inline std::ostream & operator << (std::ostream & o, rs2_rs400_visual_preset preset) { return o << rs2_advanced_mode_preset_to_string(preset); }
 
+bool operator==(const STDepthControlGroup& a, const STDepthControlGroup& b)
+{
+    return (a.plusIncrement              == b.plusIncrement &&
+            a.minusDecrement             == b.minusDecrement &&
+            a.deepSeaMedianThreshold     == b.deepSeaMedianThreshold &&
+            a.scoreThreshA               == b.scoreThreshA &&
+            a.scoreThreshB               == b.scoreThreshB &&
+            a.textureDifferenceThreshold == b.textureDifferenceThreshold &&
+            a.textureCountThreshold      == b.textureCountThreshold &&
+            a.deepSeaSecondPeakThreshold == b.deepSeaSecondPeakThreshold &&
+            a.deepSeaNeighborThreshold   == b.deepSeaNeighborThreshold &&
+            a.lrAgreeThreshold           == b.lrAgreeThreshold);
+}
+
+bool operator==(const STRsm& a, const STRsm& b)
+{
+    return (a.rsmBypass        == b.rsmBypass        &&
+            a.diffThresh       == b.diffThresh       &&
+            a.sloRauDiffThresh == b.sloRauDiffThresh &&
+            a.removeThresh     == b.removeThresh);
+}
+
+bool operator==(const STRauSupportVectorControl& a, const STRauSupportVectorControl& b)
+{
+    return (a.minWest  == b.minWest  &&
+            a.minEast  == b.minEast  &&
+            a.minWEsum == b.minWEsum &&
+            a.minNorth == b.minNorth &&
+            a.minSouth == b.minSouth &&
+            a.minNSsum == b.minNSsum &&
+            a.uShrink  == b.uShrink  &&
+            a.vShrink  == b.vShrink);
+}
+
+bool operator==(const STColorControl& a, const STColorControl& b)
+{
+    return (a.disableSADColor      == b.disableSADColor      &&
+            a.disableRAUColor      == b.disableRAUColor      &&
+            a.disableSLORightColor == b.disableSLORightColor &&
+            a.disableSLOLeftColor  == b.disableSLOLeftColor  &&
+            a.disableSADNormalize  == b.disableSADNormalize);
+}
+
+bool operator==(const STRauColorThresholdsControl& a, const STRauColorThresholdsControl& b)
+{
+    return (a.rauDiffThresholdRed   == b.rauDiffThresholdRed   &&
+            a.rauDiffThresholdGreen == b.rauDiffThresholdGreen &&
+            a.rauDiffThresholdBlue  == b.rauDiffThresholdBlue);
+}
+
+bool operator==(const STSloColorThresholdsControl& a, const STSloColorThresholdsControl& b)
+{
+    return (a.diffThresholdRed   == b.diffThresholdRed   &&
+            a.diffThresholdGreen == b.diffThresholdGreen &&
+            a.diffThresholdBlue  == b.diffThresholdBlue);
+}
+
+bool operator==(const STSloPenaltyControl& a, const STSloPenaltyControl& b)
+{
+    return (a.sloK1Penalty     == b.sloK1Penalty     &&
+            a.sloK2Penalty     == b.sloK2Penalty     &&
+            a.sloK1PenaltyMod1 == b.sloK1PenaltyMod1 &&
+            a.sloK2PenaltyMod1 == b.sloK2PenaltyMod1 &&
+            a.sloK1PenaltyMod2 == b.sloK1PenaltyMod2 &&
+            a.sloK2PenaltyMod2 == b.sloK2PenaltyMod2);
+}
+
+bool operator==(const STHdad& a, const STHdad& b)
+{
+    return (a.lambdaCensus == b.lambdaCensus &&
+            a.lambdaAD     == b.lambdaAD     &&
+            a.ignoreSAD    == b.ignoreSAD);
+}
+
+bool operator==(const STColorCorrection& a, const STColorCorrection& b)
+{
+    return (a.colorCorrection1  == b.colorCorrection1  &&
+            a.colorCorrection2  == b.colorCorrection2  &&
+            a.colorCorrection3  == b.colorCorrection3  &&
+            a.colorCorrection4  == b.colorCorrection4  &&
+            a.colorCorrection5  == b.colorCorrection5  &&
+            a.colorCorrection6  == b.colorCorrection6  &&
+            a.colorCorrection7  == b.colorCorrection7  &&
+            a.colorCorrection8  == b.colorCorrection8  &&
+            a.colorCorrection9  == b.colorCorrection9  &&
+            a.colorCorrection10 == b.colorCorrection10 &&
+            a.colorCorrection11 == b.colorCorrection11 &&
+            a.colorCorrection12 == b.colorCorrection12);
+}
+
+bool operator==(const STAEControl& a, const STAEControl& b)
+{
+    return (a.meanIntensitySetPoint == b.meanIntensitySetPoint);
+}
+
+bool operator==(const STDepthTableControl& a, const STDepthTableControl& b)
+{
+    return (a.depthUnits     == b.depthUnits     &&
+            a.depthClampMin  == b.depthClampMin  &&
+            a.depthClampMax  == b.depthClampMax  &&
+            a.disparityMode  == b.disparityMode  &&
+            a.disparityShift == b.disparityShift);
+}
+
+bool operator==(const STCensusRadius& a, const STCensusRadius& b)
+{
+    return (a.uDiameter == b.uDiameter &&
+            a.vDiameter == b.vDiameter);
+}
+
 namespace rs400
 {
     class advanced_mode : public rs2::device
@@ -18,7 +128,7 @@ namespace rs400
                 : rs2::device(d.get())
         {
             rs2_error* e = nullptr;
-            if(rs2_is_device(_dev.get(), RS2_EXTENSION_TYPE_ADVANCED_MODE, &e) == 0 && !e)
+            if(rs2_is_device_extendable_to(_dev.get(), RS2_EXTENSION_ADVANCED_MODE, &e) == 0 && !e)
             {
                 _dev = nullptr;
             }

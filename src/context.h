@@ -9,6 +9,7 @@
 #include "core/streaming.h"
 
 #include <vector>
+#include <media/playback/playback_device.h>
 
 namespace librealsense
 {
@@ -43,7 +44,7 @@ namespace librealsense
     class device_info
     {
     public:
-        std::shared_ptr<device_interface> create_device() const
+        virtual std::shared_ptr<device_interface> create_device() const
         {
             return create(_ctx);
         }
@@ -52,7 +53,7 @@ namespace librealsense
 
         virtual platform::backend_device_group get_device_data()const = 0;
 
-        bool operator==(const device_info& other) const
+        virtual bool operator==(const device_info& other) const
         {
             return other.get_device_data() == get_device_data();
         }
@@ -74,6 +75,32 @@ namespace librealsense
         playback
     };
 
+
+    class playback_device_info : public device_info
+    {
+        std::shared_ptr<playback_device> _dev;
+    public:
+        explicit playback_device_info(std::shared_ptr<playback_device> dev)
+            : device_info(nullptr), _dev(dev)
+        {
+
+        }
+
+        std::shared_ptr<device_interface> create_device() const override
+        {
+            return _dev;
+        }
+        platform::backend_device_group get_device_data() const override
+        {
+            return {}; //TODO: WTD?
+        }
+
+        std::shared_ptr<device_interface> create(std::shared_ptr<context>) const override
+        {
+            return _dev;
+        }
+    };
+
     typedef std::vector<std::shared_ptr<device_info>> devices_info;
 
     class context : public std::enable_shared_from_this<context>
@@ -93,16 +120,18 @@ namespace librealsense
 
         void set_devices_changed_callback(devices_changed_callback_ptr callback);
 
-        std::vector<std::shared_ptr<device_info>> create_devices(platform::backend_device_group devices) const;
+        std::vector<std::shared_ptr<device_info>> create_devices(platform::backend_device_group devices, const std::map<std::string, std::shared_ptr<device_info>>& playback_devices) const;
 
         int generate_stream_id() { return _stream_id.fetch_add(1); }
 
+        std::shared_ptr<device_interface> add_device(const std::string& file);
+        void remove_device(const std::string& file);
         void register_same_extrinsics(const stream_interface& from, const stream_interface& to);
         void register_extrinsics(const stream_interface& from, const stream_interface& to, std::weak_ptr<lazy<rs2_extrinsics>> extr);
         bool try_fetch_extrinsics(const stream_interface& from, const stream_interface& to, rs2_extrinsics* extr);
 
     private:
-        void on_device_changed(platform::backend_device_group old, platform::backend_device_group curr);
+        void on_device_changed(platform::backend_device_group old, platform::backend_device_group curr, const std::map<std::string, std::shared_ptr<device_info>>& old_playback_devices, const std::map<std::string, std::shared_ptr<device_info>>& new_playback_devices);
 
         int find_stream_profile(const stream_interface& p) const;
         std::shared_ptr<lazy<rs2_extrinsics>> fetch_edge(int from, int to);
@@ -112,6 +141,7 @@ namespace librealsense
         std::shared_ptr<platform::backend> _backend;
         std::shared_ptr<platform::time_service> _ts;
         std::shared_ptr<platform::device_watcher> _device_watcher;
+        std::map<std::string, std::shared_ptr<device_info>> _playback_devices;
         devices_changed_callback_ptr _devices_changed_callback;
 
         std::atomic<int> _stream_id;

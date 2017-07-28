@@ -34,10 +34,24 @@ namespace librealsense
         {
         }
 
+        uvc_pu_option(uvc_sensor& ep, rs2_option id, const std::map<float, std::string>& description_per_value)
+            : _ep(ep), _id(id), _description_per_value(description_per_value)
+        {
+        }
+
         const char* get_description() const override;
+
+        const char* get_value_description(float val) const override
+        {
+            if (_description_per_value.find(val) != _description_per_value.end())
+                return _description_per_value.at(val).c_str();
+            return nullptr;
+        }
+
     private:
         uvc_sensor& _ep;
         rs2_option _id;
+        const std::map<float, std::string> _description_per_value;
     };
 
     template<typename T>
@@ -212,7 +226,7 @@ namespace librealsense
     };
 
     /** \brief auto_disabling_control class provided a control
-    * that disable auto exposure whan changing the auto disabling control value */
+    * that disable auto-control when changing the auto disabling control value */
    class auto_disabling_control : public option
    {
    public:
@@ -229,12 +243,19 @@ namespace librealsense
           auto strong = _auto_exposure.lock();
           assert(strong);
 
-          auto is_auto = strong->query();
+          auto move_to_manual = false;
+          auto val = strong->query();
 
-          if(strong && is_auto)
+          if (std::find(_move_to_manual_values.begin(),
+                        _move_to_manual_values.end(), val) != _move_to_manual_values.end())
           {
-              LOG_DEBUG("Move auto exposure to manual mode in order set value to gain controll");
-              strong->set(0);
+              move_to_manual = true;
+          }
+
+          if (strong && move_to_manual)
+          {
+              LOG_DEBUG("Move option to manual mode in order to set a value");
+              strong->set(_manual_value);
           }
           _auto_disabling_control->set(value);
        }
@@ -259,16 +280,20 @@ namespace librealsense
            return  _auto_disabling_control->is_read_only();
        }
 
-
        explicit auto_disabling_control(std::shared_ptr<option> auto_disabling,
-                                       std::shared_ptr<option> auto_exposure)
+                                       std::shared_ptr<option> auto_exposure,
+                                       std::vector<float> move_to_manual_values = {1.f},
+                                       float manual_value = 0.f)
 
-           :_auto_disabling_control(auto_disabling), _auto_exposure(auto_exposure)
+           : _auto_disabling_control(auto_disabling), _auto_exposure(auto_exposure),
+             _move_to_manual_values(move_to_manual_values), _manual_value(manual_value)
        {}
 
    private:
        std::shared_ptr<option> _auto_disabling_control;
-       std::weak_ptr<option> _auto_exposure;
+       std::weak_ptr<option>   _auto_exposure;
+       std::vector<float>      _move_to_manual_values;
+       float                   _manual_value;
    };
 
    class readonly_option : public option

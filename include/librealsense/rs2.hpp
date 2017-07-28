@@ -240,6 +240,15 @@ namespace rs2
 
         const rs2_stream_profile* get() const { return _profile; }
 
+        rs2_extrinsics get_extrinsics_to(const stream_profile& to) const
+        {
+            rs2_error* e = nullptr;
+            rs2_extrinsics res;
+            rs2_get_extrinsics(get(), to.get(), &res, &e);
+            error::handle(e);
+            return res;
+        }
+
     protected:
         friend class sensor;
         friend class frame;
@@ -277,7 +286,7 @@ namespace rs2
             : stream_profile(sp)
         {
             rs2_error* e = nullptr;
-            if ((rs2_stream_profile_is(sp.get(), RS2_EXTENSION_TYPE_VIDEO_PROFILE, &e) == 0 && !e))
+            if ((rs2_stream_profile_is(sp.get(), RS2_EXTENSION_VIDEO_PROFILE, &e) == 0 && !e))
             {
                 _profile = nullptr;
             }
@@ -286,7 +295,6 @@ namespace rs2
             rs2_get_video_stream_resolution(_profile, &_width, &_height, &e);
             error::handle(e);
         }
-
 
         int width() const
         {
@@ -311,69 +319,6 @@ namespace rs2
         int _width = 0;
         int _height = 0;
     };
-
-    template<class Stream_Profile>
-    bool match(const Stream_Profile& a, const Stream_Profile& b)
-    {
-        if (a.stream_type() != RS2_STREAM_ANY && b.stream_type() != RS2_STREAM_ANY && (a.stream_type() != b.stream_type()))
-            return false;
-        if (a.format() != RS2_FORMAT_ANY && b.format() != RS2_FORMAT_ANY && (a.format() != b.format()))
-            return false;
-        if (a.fps() != 0 && b.fps() != 0 && (a.fps() != b.fps()))
-            return false;
-
-        if (auto vid_a = a.template as<video_stream_profile>())
-        {
-            if (auto vid_b = b.template as<video_stream_profile>())
-            {
-                if (vid_a.width() != 0 && vid_b.width() != 0 && (vid_a.width() != vid_b.width()))
-                    return false;
-                if (vid_a.height() != 0 && vid_b.height() != 0 && (vid_a.height() != vid_b.height()))
-                    return false;
-            }
-            else return false;
-        }
-
-        return true;
-    }
-
-    template<class StreamProfile>
-    bool contradicts(const StreamProfile& a, const std::vector<StreamProfile>& others)
-    {
-        for (auto request : others)
-        {
-            if (a.fps() != 0 && request.fps() != 0 && (a.fps() != request.fps()))
-                return true;
-        }
-
-        if (auto vid_a = a.template as<video_stream_profile>())
-        {
-            for (auto request : others)
-            {
-                if (auto vid_b = request.template as<video_stream_profile>())
-                {
-                    if (vid_a.width() != 0 && vid_b.width() != 0 && (vid_a.width() != vid_b.width()))
-                        return true;
-                    if (vid_a.fps() != 0 && vid_b.fps() != 0 && (vid_a.fps() != vid_b.fps()))
-                        return true;
-                }
-            }
-        }
-
-        return false;
-    }
-
-    template<class Stream_Profile>
-    bool has_wildcards(const Stream_Profile& a)
-    {
-        if (a.fps() == 0 || a.stream_type() == RS2_STREAM_ANY || a.format() == RS2_FORMAT_ANY) return true;
-        if (auto vid_a = a.template as<video_stream_profile>())
-        {
-            if (vid_a.width() == 0 || vid_a.height() == 0) return true;
-        }
-        return false;
-    }
-
 
     class frame
     {
@@ -535,7 +480,7 @@ namespace rs2
             : frame(f)
         {
             rs2_error* e = nullptr;
-            if(!f || (rs2_is_frame(f.get(), RS2_EXTENSION_TYPE_VIDEO_FRAME, &e) == 0 && !e))
+            if(!f || (rs2_is_frame_extendable_to(f.get(), RS2_EXTENSION_VIDEO_FRAME, &e) == 0 && !e))
             {
                 frame_ref = nullptr;
             }
@@ -603,7 +548,7 @@ namespace rs2
                 : frame(f), _size(0)
         {
             rs2_error* e = nullptr;
-            if(!f || (rs2_is_frame(f.get(), RS2_EXTENSION_TYPE_POINTS, &e) == 0 && !e))
+            if(!f || (rs2_is_frame_extendable_to(f.get(), RS2_EXTENSION_POINTS, &e) == 0 && !e))
             {
                 frame_ref = nullptr;
             }
@@ -612,7 +557,7 @@ namespace rs2
             if (frame_ref)
             {
                 rs2_error* e = nullptr;
-                _size = rs2_embeded_frames_count(frame_ref, &e);
+                _size = rs2_embedded_frames_count(frame_ref, &e);
                 error::handle(e);
             }
         }
@@ -649,7 +594,7 @@ namespace rs2
             : frame(f), _size(0)
         {
             rs2_error* e = nullptr;
-            if(!f || (rs2_is_frame(f.get(), RS2_EXTENSION_TYPE_COMPOSITE_FRAME, &e) == 0 && !e))
+            if(!f || (rs2_is_frame_extendable_to(f.get(), RS2_EXTENSION_COMPOSITE_FRAME, &e) == 0 && !e))
             {
                 frame_ref = nullptr;
             }
@@ -658,7 +603,7 @@ namespace rs2
             if (frame_ref)
             {
                 rs2_error* e = nullptr;
-                _size = rs2_embeded_frames_count(frame_ref, &e);
+                _size = rs2_embedded_frames_count(frame_ref, &e);
                 error::handle(e);
             }
         }
@@ -737,12 +682,12 @@ namespace rs2
     public:
 
         frame allocate_video_frame(const stream_profile& profile,
-                                   const frame& original, 
+                                   const frame& original,
                                    rs2_format new_format = RS2_FORMAT_ANY,
                                    int new_bpp = 0,
                                    int new_width = 0,
                                    int new_height = 0,
-                                   int new_stride = 0) const 
+                                   int new_stride = 0) const
         {
             rs2_error* e = nullptr;
             auto result = rs2_allocate_synthetic_video_frame(_source, profile.get(),
@@ -759,7 +704,7 @@ namespace rs2
             for (size_t i = 0; i < frames.size(); i++)
                 std::swap(refs[i], frames[i].frame_ref);
 
-            auto result = rs2_allocate_composite_frame(_source, refs.data(), refs.size(), &e);
+            auto result = rs2_allocate_composite_frame(_source, refs.data(), (int)refs.size(), &e);
             error::handle(e);
             return result;
         }
@@ -776,10 +721,10 @@ namespace rs2
     private:
         template<class T>
         friend class frame_processor_callback;
-       
+
         frame_source(rs2_source* source) : _source(source) {}
         frame_source(const frame_source&) = delete;
-        
+
     };
 
     template<class T>
@@ -844,7 +789,7 @@ namespace rs2
     public:
         syncer_processing_block()
         {
-            rs2_error* e = nullptr; 
+            rs2_error* e = nullptr;
             _processing_block = std::make_shared<processing_block>(
                     std::shared_ptr<rs2_processing_block>(
                                         rs2_create_sync_processing_block(&e),
@@ -1221,7 +1166,7 @@ namespace rs2
             : sensor(s.get())
         {
             rs2_error* e = nullptr;
-            if(rs2_is_sensor(_sensor.get(), RS2_EXTENSION_TYPE_ROI, &e) == 0 && !e)
+            if(rs2_is_sensor_extendable_to(_sensor.get(), RS2_EXTENSION_ROI, &e) == 0 && !e)
             {
                 _sensor = nullptr;
             }
@@ -1254,7 +1199,7 @@ namespace rs2
             : sensor(s.get())
         {
             rs2_error* e = nullptr;
-            if (rs2_is_sensor(_sensor.get(), RS2_EXTENSION_TYPE_DEPTH_SENSOR, &e) == 0 && !e)
+            if (rs2_is_sensor_extendable_to(_sensor.get(), RS2_EXTENSION_DEPTH_SENSOR, &e) == 0 && !e)
             {
                 _sensor = nullptr;
             }
@@ -1281,7 +1226,7 @@ namespace rs2
     public:
         using SensorType = sensor;
         using ProfileType = stream_profile;
-
+        
         /**
         * returns the list of adjacent devices, sharing the same physical parent composite device
         * \return            the list of adjacent devices
@@ -1395,7 +1340,9 @@ namespace rs2
             T extension(*this);
             return extension;
         }
-
+        virtual ~device()
+        {
+        }
     protected:
         friend context;
         friend device_list;
@@ -1413,7 +1360,7 @@ namespace rs2
                 : device(d.get())
         {
             rs2_error* e = nullptr;
-            if(rs2_is_device(_dev.get(), RS2_EXTENSION_TYPE_DEBUG, &e) == 0 && !e)
+            if(rs2_is_device_extendable_to(_dev.get(), RS2_EXTENSION_DEBUG, &e) == 0 && !e)
             {
                 _dev = nullptr;
             }
@@ -1538,56 +1485,103 @@ namespace rs2
     private:
         std::shared_ptr<rs2_device_list> _list;
     };
-    
+
     class playback : public device
     {
     public:
-        playback(std::string file) :
+        playback(device d) : playback(d.get()) {}
+
+        playback(const std::string& file) :
             m_file(file)
         {
             rs2_error* e = nullptr;
-            m_serializer = std::shared_ptr<rs2_device_serializer>(
-                rs2_create_device_serializer(file.c_str(), &e),
-                rs2_delete_device_serializer);
-            rs2::error::handle(e);
-
-            e = nullptr;
             _dev = std::shared_ptr<rs2_device>(
-                rs2_create_playback_device(m_serializer.get(), &e),
+                rs2_create_playback_device(file.c_str(), &e),
                 rs2_delete_device);
             rs2::error::handle(e);
         }
         void pause()
         {
             rs2_error* e = nullptr;
-            //rs2_playback_device_pause(_dev.get(), &e);
+            rs2_playback_device_pause(_dev.get(), &e);
             error::handle(e);
         }
         void resume()
         {
             rs2_error* e = nullptr;
-            //rs2_playback_device_resume(_dev.get(), &e);
+            rs2_playback_device_resume(_dev.get(), &e);
             error::handle(e);
+        }
+
+        std::string file_name() const
+        {
+            return m_file; //retrieved in construction
+        }
+        uint64_t get_position() const
+        {
+            rs2_error* e = nullptr;
+            uint64_t pos = rs2_playback_get_position(_dev.get(), &e);
+            error::handle(e);
+            return pos;
+        }
+        std::chrono::nanoseconds get_duration() const
+        {
+            rs2_error* e = nullptr;
+            std::chrono::nanoseconds duration(rs2_playback_get_duration(_dev.get(), &e));
+            error::handle(e);
+            return duration;
+        }
+        void seek(std::chrono::nanoseconds time)
+        {
+            rs2_error* e = nullptr;
+            rs2_playback_seek(_dev.get(), time.count(), &e);
+            error::handle(e);
+        }
+
+        bool is_real_time() const
+        {
+            rs2_error* e = nullptr;
+            bool real_time = rs2_playback_device_is_real_time(_dev.get(), &e) == 0 ? false : true;
+            error::handle(e);
+            return real_time;
+        }
+
+        void set_real_time(bool real_time) const
+        {
+            rs2_error* e = nullptr;
+            rs2_playback_device_set_real_time(_dev.get(), (real_time ? 1 : 0), &e);
+            error::handle(e);
+        }
+    protected:
+        friend context;
+        explicit playback(std::shared_ptr<rs2_device> dev) : device(dev)
+        {
+            rs2_error* e = nullptr;
+            if(rs2_is_device_extendable_to(_dev.get(), RS2_EXTENSION_PLAYBACK, &e) == 0 && !e)
+            {
+                _dev = nullptr;
+            }
+            error::handle(e);
+
+            if(_dev)
+            {
+                e = nullptr;
+                m_file = rs2_playback_device_get_file_path(_dev.get(), &e);
+                error::handle(e);
+            }
         }
     private:
         std::string m_file;
-        std::shared_ptr<rs2_device_serializer> m_serializer;
     };
     class recorder : public device
     {
     public:
-        recorder(std::string file, rs2::device device) :
+        recorder(const std::string& file, rs2::device device) :
             m_file(file)
         {
             rs2_error* e = nullptr;
-            m_serializer = std::shared_ptr<rs2_device_serializer>(
-                rs2_create_device_serializer(file.c_str(), &e),
-                rs2_delete_device_serializer);
-            rs2::error::handle(e);
-
-            e = nullptr;
             _dev = std::shared_ptr<rs2_device>(
-                rs2_create_record_device(device.get().get(), m_serializer.get(), &e),
+                rs2_create_record_device(device.get().get(), file.c_str(), &e),
                 rs2_delete_device);
             rs2::error::handle(e);
         }
@@ -1606,7 +1600,6 @@ namespace rs2
         }
     private:
         std::string m_file;
-        std::shared_ptr<rs2_device_serializer> m_serializer;
     };
 
     class event_information
@@ -1848,7 +1841,7 @@ namespace rs2
         {
             rs2_error* e = nullptr;
             rs2_extrinsics res;
-            rs2_get_extrinsics(_context.get(), from.get(), to.get(), &res, &e);
+            rs2_get_extrinsics(from.get(), to.get(), &res, &e);
             error::handle(e);
             return res;
         }
@@ -1891,6 +1884,30 @@ namespace rs2
             return pointcloud(processing_block{ block });
         }
 
+        /**
+         * Creates a device from a RealSense file
+         *
+         * On successful load, the device will be appended to the context and a devices_changed event would be triggered
+         * @param file  Path to a RealSense File
+         * @return A playback device matching the given file
+         */
+        playback load_device(const std::string& file)
+        {
+            rs2_error* e = nullptr;
+            auto device = std::shared_ptr<rs2_device>(
+                rs2_context_add_device(_context.get(), file.c_str(), &e),
+                rs2_delete_device);
+            rs2::error::handle(e);
+
+            return playback { device };
+        }
+
+        void unload_device(const std::string& file)
+        {
+            rs2_error* e = nullptr;
+            rs2_context_remove_device(_context.get(), file.c_str(), &e);
+            rs2::error::handle(e);
+        }
     protected:
         std::shared_ptr<rs2_context> _context;
     };

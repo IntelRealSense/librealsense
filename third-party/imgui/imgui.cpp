@@ -6473,12 +6473,18 @@ bool ImGui::SliderBehavior(const ImRect& frame_bb, ImGuiID id, float* v, float v
     return value_changed;
 }
 
+bool ImGui::SeekSlider(const char* label, int* v)
+{
+    return SliderInt(label, v, 0, 100, "%.0f%%",true);
+}
+
 // Use power!=1.0 for logarithmic sliders.
 // Adjust display_format to decorate the value with a prefix or a suffix.
 //   "%.3f"         1.234
 //   "%5.2f secs"   01.23 secs
 //   "Gold: %.0f"   Gold: 1
-bool ImGui::SliderFloat(const char* label, float* v, float v_min, float v_max, const char* display_format, float power)
+//bool ImGui::SliderFloat(const char* label, float* v, float v_min, float v_max, const char* display_format, float power)
+bool ImGui::SliderFloat(const char* label, float* v, float v_min, float v_max, const char* display_format, float power, bool render_bg)
 {
     ImGuiWindow* window = GetCurrentWindow();
     if (window->SkipItems)
@@ -6525,6 +6531,11 @@ bool ImGui::SliderFloat(const char* label, float* v, float v_min, float v_max, c
     if (start_text_input || (g.ActiveId == id && g.ScalarAsInputTextId == id))
         return InputScalarAsWidgetReplacement(frame_bb, label, ImGuiDataType_Float, v, id, decimal_precision);
 
+    if (render_bg)
+    {
+        const ImVec2 fill_br = ImVec2(ImLerp(frame_bb.Min.x, frame_bb.Max.x, *v / 100), frame_bb.Max.y);
+        RenderFrame(frame_bb.Min, fill_br, GetColorU32(ImGuiCol_PlotHistogram), false, style.FrameRounding);
+    }
     ItemSize(total_bb, style.FramePadding.y);
 
     // Actual slider behavior + render grab
@@ -6595,12 +6606,12 @@ bool ImGui::SliderAngle(const char* label, float* v_rad, float v_degrees_min, fl
     return value_changed;
 }
 
-bool ImGui::SliderInt(const char* label, int* v, int v_min, int v_max, const char* display_format)
+bool ImGui::SliderInt(const char* label, int* v, int v_min, int v_max, const char* display_format, bool render_bg)
 {
     if (!display_format)
         display_format = "%.0f";
     float v_f = (float)*v;
-    bool value_changed = SliderFloat(label, &v_f, (float)v_min, (float)v_max, display_format, 1.0f);
+    bool value_changed = SliderFloat(label, &v_f, (float)v_min, (float)v_max, display_format, 1.0f, render_bg);
     *v = (int)v_f;
     return value_changed;
 }
@@ -6698,6 +6709,23 @@ bool ImGui::SliderInt3(const char* label, int v[3], int v_min, int v_max, const 
 bool ImGui::SliderInt4(const char* label, int v[4], int v_min, int v_max, const char* display_format)
 {
     return SliderIntN(label, v, 4, v_min, v_max, display_format);
+}
+
+/* Provide GUI slider with values according to interval steps */
+bool ImGui::SliderIntWithSteps(const char* label, int * v, int v_min, int v_max, int v_step, const char* display_format)
+{
+    if (!display_format)
+        display_format = "%d";
+
+    int tmp_val = *v;
+    bool value_changed = ImGui::SliderInt(label, &tmp_val, v_min, v_max, display_format);
+
+    // Round the actual slider value to the cloasest bound interval
+    if (v_step > 1)
+        tmp_val -= (tmp_val - v_min) % v_step;
+    *v = tmp_val;
+
+    return value_changed;
 }
 
 bool ImGui::DragBehavior(const ImRect& frame_bb, ImGuiID id, float* v, float v_speed, float v_min, float v_max, int decimal_precision, float power)

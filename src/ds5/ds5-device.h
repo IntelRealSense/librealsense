@@ -9,7 +9,7 @@
 #include "error-handling.h"
 #include "core/debug.h"
 #include "core/advanced_mode.h"
-
+#include "device.h"
 
 namespace librealsense
 {
@@ -42,6 +42,8 @@ namespace librealsense
         std::shared_ptr<stream_interface> _depth_stream;
         std::shared_ptr<stream_interface> _left_ir_stream;
         std::shared_ptr<stream_interface> _right_ir_stream;
+        std::vector<uint8_t> get_raw_calibration_table(ds::calibration_table_id table_id) const;
+
     private:
 
         bool is_camera_in_advanced_mode() const;
@@ -50,8 +52,6 @@ namespace librealsense
         std::shared_ptr<uvc_sensor> _depth_sensor;
 
         lazy<std::vector<uint8_t>> _coefficients_table_raw;
-
-        std::vector<uint8_t> get_raw_calibration_table(ds::calibration_table_id table_id) const;
 
         std::unique_ptr<polling_error_handler> _polling_error_handler;
 

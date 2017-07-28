@@ -11,6 +11,7 @@
 #include <librealsense/rs2_advanced_mode_command.h>
 #undef RS400_ADVANCED_MODE_HPP
 
+
 typedef enum
 {
     etDepthControl              = 0,
@@ -57,8 +58,7 @@ namespace librealsense
 
         virtual void toggle_advanced_mode(bool enable) = 0;
 
-        virtual void apply_preset(const std::string& pid,
-                                  const std::vector<stream_profile>& configuration,
+        virtual void apply_preset(const std::vector<platform::stream_profile>& configuration,
                                   rs2_rs400_visual_preset preset) = 0;
 
         virtual void get_depth_control_group(STDepthControlGroup* ptr, int mode = 0) const = 0;
@@ -90,7 +90,7 @@ namespace librealsense
         virtual ~ds5_advanced_mode_interface() = default;
     };
 
-    MAP_EXTENSION(RS2_EXTENSION_TYPE_ADVANCED_MODE, librealsense::ds5_advanced_mode_interface);
+    MAP_EXTENSION(RS2_EXTENSION_ADVANCED_MODE, librealsense::ds5_advanced_mode_interface);
 
     class advanced_mode_preset_option;
 
@@ -98,11 +98,11 @@ namespace librealsense
     {
     public:
         explicit ds5_advanced_mode_base(std::shared_ptr<hw_monitor> hwm, uvc_sensor& depth_sensor);
+        virtual ~ds5_advanced_mode_base() = default;
 
         bool is_enabled() const override;
         void toggle_advanced_mode(bool enable) override;
-        void apply_preset(const std::string& pid,
-                          const std::vector<stream_profile>& configuration,
+        void apply_preset(const std::vector<platform::stream_profile>& configuration,
                           rs2_rs400_visual_preset preset) override;
 
         void get_depth_control_group(STDepthControlGroup* ptr, int mode = 0) const override;
@@ -132,18 +132,6 @@ namespace librealsense
         void set_census_radius(const STCensusRadius& val) override;
 
     private:
-        const std::map<float, std::string> _description_per_value{{RS2_RS400_VISUAL_PRESET_GENERIC_DEPTH,             "GENERIC_DEPTH"},
-                                                                   {RS2_RS400_VISUAL_PRESET_GENERIC_ACCURATE_DEPTH,    "GENERIC_ACCURATE_DEPTH"},
-                                                                   {RS2_RS400_VISUAL_PRESET_GENERIC_DENSE_DEPTH,       "GENERIC_DENSE_DEPTH"},
-                                                                   {RS2_RS400_VISUAL_PRESET_GENERIC_SUPER_DENSE_DEPTH, "GENERIC_SUPER_DENSE_DEPTH"},
-                                                                   {RS2_RS400_VISUAL_PRESET_FLOOR_LOW,                 "FLOOR_LOW"},
-                                                                   {RS2_RS400_VISUAL_PRESET_3D_BODY_SCAN,              "3D_BODY_SCAN"},
-                                                                   {RS2_RS400_VISUAL_PRESET_INDOOR,                    "INDOOR"},
-                                                                   {RS2_RS400_VISUAL_PRESET_OUTDOOR,                   "OUTDOOR"},
-                                                                   {RS2_RS400_VISUAL_PRESET_HAND,                      "HAND"},
-                                                                   {RS2_RS400_VISUAL_PRESET_SHORT_RANGE,               "SHORT_RANGE"},
-                                                                   {RS2_RS400_VISUAL_PRESET_BOX,                       "BOX"}};
-
         std::shared_ptr<hw_monitor> _hw_monitor;
         uvc_sensor& _depth_sensor;
         lazy<bool> _enabled;
@@ -157,13 +145,12 @@ namespace librealsense
         static const uint16_t HW_MONITOR_COMMAND_SIZE = 1000;
         static const uint16_t HW_MONITOR_BUFFER_SIZE = 1024;
 
-        std::string pid_to_str(uint16_t pid);
         res_type get_res_type(uint32_t width, uint32_t height);
 
         preset get_all();
         void set_all(const preset& p);
 
-        std::vector<uint8_t> send_recieve(const std::vector<uint8_t>& input) const;
+        std::vector<uint8_t> send_receive(const std::vector<uint8_t>& input) const;
 
         template<class T>
         void set(const T& strct, EtAdvancedModeRegGroup cmd) const
@@ -171,8 +158,8 @@ namespace librealsense
             auto ptr = (uint8_t*)(&strct);
             std::vector<uint8_t> data(ptr, ptr + sizeof(T));
 
-            assert_no_error(ds::fw_cmd::set_advanced,
-                send_recieve(encode_command(ds::fw_cmd::set_advanced, static_cast<uint32_t>(cmd), 0, 0, 0, data)));
+            assert_no_error(ds::fw_cmd::SET_ADV,
+                send_receive(encode_command(ds::fw_cmd::SET_ADV, static_cast<uint32_t>(cmd), 0, 0, 0, data)));
             std::this_thread::sleep_for(std::chrono::milliseconds(20));
         }
 
@@ -180,8 +167,8 @@ namespace librealsense
         T get(EtAdvancedModeRegGroup cmd, T* ptr = static_cast<T*>(nullptr), int mode = 0) const
         {
             T res;
-            auto data = assert_no_error(ds::fw_cmd::get_advanced,
-                send_recieve(encode_command(ds::fw_cmd::get_advanced,
+            auto data = assert_no_error(ds::fw_cmd::GET_ADV,
+                send_receive(encode_command(ds::fw_cmd::GET_ADV,
                 static_cast<uint32_t>(cmd), mode)));
             if (data.size() < sizeof(T))
             {
@@ -208,8 +195,7 @@ namespace librealsense
     {
     public:
         advanced_mode_preset_option(ds5_advanced_mode_base& advanced, uvc_sensor& ep,
-                                    const option_range& opt_range,
-                                    const std::map<float, std::string>& description_per_value);
+                                    const option_range& opt_range);
 
         static rs2_rs400_visual_preset to_preset(float x);
         void set(float value) override;
@@ -219,9 +205,9 @@ namespace librealsense
         const char* get_value_description(float val) const override;
 
     private:
-        const std::map<float, std::string> _description_per_value;
-        rs2_rs400_visual_preset _last_preset{};
+        std::mutex _mtx;
         uvc_sensor& _ep;
         ds5_advanced_mode_base& _advanced;
+        rs2_rs400_visual_preset _last_preset;
     };
 }

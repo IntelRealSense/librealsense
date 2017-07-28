@@ -15,7 +15,7 @@ namespace librealsense
        std::unique_ptr<frame_timestamp_reader> _backup_timestamp_reader;
        static const int pins = 2;
        std::vector<std::atomic<bool>> _has_metadata;
-       bool started;
+       bool one_time_note;
        mutable std::recursive_mutex _mtx;
 
     public:

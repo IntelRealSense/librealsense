@@ -288,7 +288,8 @@ ELPP_INTERNAL_DEBUGGING_OUT_INFO << ELPP_INTERNAL_DEBUGGING_MSG(internalInfoStre
 #else
 #define ELPP_LOGGING_ENABLED 1
 #endif
-#if (!defined(ELPP_DISABLE_DEBUG_LOGS) && (ELPP_LOGGING_ENABLED) && ((defined(_DEBUG)) || (!defined(NDEBUG))))
+// Enable logging of debug level messages regardless of the build type
+#if (!defined(ELPP_DISABLE_DEBUG_LOGS) && (ELPP_LOGGING_ENABLED) /*&& ((defined(_DEBUG)) || (!defined(NDEBUG)))*/)
 #  define ELPP_DEBUG_LOG 1
 #else
 #  define ELPP_DEBUG_LOG 0

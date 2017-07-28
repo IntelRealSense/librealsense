@@ -20,6 +20,7 @@ namespace librealsense
           _notifications_proccessor(std::shared_ptr<notifications_proccessor>(new notifications_proccessor())),
           _on_before_frame_callback(nullptr),
           _metadata_parsers(std::make_shared<metadata_parser_map>()),
+        _on_open(nullptr),
           _source(dev->get_context()->get_time_service()),
           _owner(dev),
           _profiles([this]() { return this->init_stream_profiles(); })
@@ -190,8 +191,9 @@ namespace librealsense
     stream_profiles uvc_sensor::init_stream_profiles()
     {
         std::unordered_set<std::shared_ptr<video_stream_profile>> results;
-        std::set<uint32_t> unutilized_formats;
+        std::set<uint32_t> unregistered_formats;
         std::set<uint32_t> supported_formats;
+        std::set<uint32_t> registered_formats;
 
         power on(std::dynamic_pointer_cast<uvc_sensor>(shared_from_this()));
         auto profiles = _device->get_profiles();
@@ -221,31 +223,34 @@ namespace librealsense
             }
             else
             {
-                unutilized_formats.insert(p.format);
+                unregistered_formats.insert(p.format);
             }
         }
 
-        for (auto& elem : unutilized_formats)
-        {
-            uint32_t device_fourcc = reinterpret_cast<const big_endian<uint32_t>&>(elem);
-            char fourcc[sizeof(device_fourcc) + 1];
-            librealsense::copy(fourcc, &device_fourcc, sizeof(device_fourcc));
-            fourcc[sizeof(device_fourcc)] = 0;
-            LOG_WARNING("Unutilized format " << fourcc);
-        }
-
-        if (!unutilized_formats.empty())
+        if (unregistered_formats.size())
         {
             std::stringstream ss;
-            for (auto& elem : supported_formats)
+            ss << "Unregistered Media formats : [ ";
+            for (auto& elem : unregistered_formats)
             {
                 uint32_t device_fourcc = reinterpret_cast<const big_endian<uint32_t>&>(elem);
                 char fourcc[sizeof(device_fourcc) + 1];
                 librealsense::copy(fourcc, &device_fourcc, sizeof(device_fourcc));
                 fourcc[sizeof(device_fourcc)] = 0;
-                ss << fourcc << std::endl;
+                ss << fourcc << " ";
             }
-            LOG_WARNING("\nDevice supported formats:\n" << ss.str());
+
+            ss << "]; Supported: [ ";
+            for (auto& elem : registered_formats)
+            {
+                uint32_t device_fourcc = reinterpret_cast<const big_endian<uint32_t>&>(elem);
+                char fourcc[sizeof(device_fourcc) + 1];
+                librealsense::copy(fourcc, &device_fourcc, sizeof(device_fourcc));
+                fourcc[sizeof(device_fourcc)] = 0;
+                ss << fourcc << " ";
+            }
+            ss << "]";
+            LOG_WARNING(ss.str());
         }
 
         // Sort the results to make sure that the user will receive predictable deterministic output from the API
@@ -270,14 +275,6 @@ namespace librealsense
         return *_owner;
     }
 
-    const stream_profiles& sensor_base::get_curr_configurations() const
-    {
-        if (!_is_streaming)
-            throw wrong_api_call_sequence_exception("The sensor isn't streaming!");
-
-        return _configuration;
-    }
-
     void uvc_sensor::open(const stream_profiles& requests)
     {
         std::lock_guard<std::mutex> lock(_configure_lock);
@@ -294,11 +291,12 @@ namespace librealsense
         auto timestamp_reader = _timestamp_reader.get();
 
         std::vector<platform::stream_profile> commited;
-        for (auto& mode : mapping)
+
+        for (auto&& mode : mapping)
         {
             try
             {
-                _device->probe_and_commit(mode.profile,
+                _device->probe_and_commit(mode.profile, !mode.requires_processing(),
                 [this, mode, timestamp_reader, requests](platform::stream_profile p, platform::frame_object f, std::function<void()> continuation) mutable
                 {
                     auto system_time = _owner->get_context()->get_time();
@@ -332,7 +330,7 @@ namespace librealsense
                     auto&& unpacker = *mode.unpacker;
                     for (auto&& output : unpacker.outputs)
                     {
-                        LOG_DEBUG("FrameAccepted," << librealsense::get_string(output.first.type)
+                    LOG_DEBUG("FrameAccepted," << librealsense::get_string(output.first.type) << "," << std::dec << frame_counter
                             << output.first.index << "," << frame_counter
                             << ",Arrived," << std::fixed << system_time
                             << ",TS," << std::fixed << timestamp << ",TS_Domain," << rs2_timestamp_domain_to_string(timestamp_domain));
@@ -356,7 +354,7 @@ namespace librealsense
                             static_cast<uint8_t>(f.metadata_size),
                             (const uint8_t*)f.metadata);
 
-                        frame_holder frame = _source.alloc_frame(RS2_EXTENSION_TYPE_VIDEO_FRAME, width * height * bpp / 8, additional_data, requires_processing);
+                        frame_holder frame = _source.alloc_frame(RS2_EXTENSION_VIDEO_FRAME, width * height * bpp / 8, additional_data, requires_processing);
                         if (frame.frame)
                         {
                             auto video = (video_frame*)frame.frame;
@@ -399,7 +397,8 @@ namespace librealsense
 
                         _source.invoke_callback(std::move(pref));
                     }
-                }, static_cast<int>(_source.get_published_size_option()->query()));
+                },
+                static_cast<int>(_source.get_published_size_option()->query()));
             }
             catch(...)
             {
@@ -412,8 +411,11 @@ namespace librealsense
             commited.push_back(mode.profile);
         }
 
-        _configuration = requests;
         _internal_config = commited;
+
+        if (_on_open)
+            _on_open(_internal_config);
+
         _power = move(on);
         _is_opened = true;
 
@@ -469,7 +471,7 @@ namespace librealsense
             throw wrong_api_call_sequence_exception("start_streaming(...) failed. UVC device was not opened!");
 
         _source.set_callback(callback);
-        
+
         _is_streaming = true;
         _device->start_callbacks();
     }
@@ -488,13 +490,13 @@ namespace librealsense
     void uvc_sensor::reset_streaming()
     {
         _source.flush();
-        _configuration.clear();
         _source.reset();
         _timestamp_reader->reset();
     }
 
     void uvc_sensor::acquire_power()
     {
+        std::lock_guard<std::mutex> lock(_power_lock);
         if (_user_count.fetch_add(1) == 0)
         {
             _device->set_power_state(platform::D0);
@@ -504,7 +506,11 @@ namespace librealsense
 
     void uvc_sensor::release_power()
     {
-        if (_user_count.fetch_add(-1) == 1) _device->set_power_state(platform::D3);
+        std::lock_guard<std::mutex> lock(_power_lock);
+        if (_user_count.fetch_add(-1) == 1)
+        {
+            _device->set_power_state(platform::D3);
+        }
     }
 
     bool info_container::supports_info(rs2_camera_info info) const
@@ -756,13 +762,12 @@ namespace librealsense
             additional_data.frame_number = frame_counter;
             additional_data.timestamp_domain = timestamp_reader->get_frame_timestamp_domain(mode, sensor_data.fo);
             additional_data.system_time = system_time;
-
-            LOG_DEBUG("FrameAccepted," << get_string(request->get_stream_type()) << "," << frame_counter
+            LOG_DEBUG("FrameAccepted," << get_string(request->get_stream_type()) << "," << std::dec << frame_counter
                       << ",Arrived," << std::fixed << system_time
                       << ",TS," << std::fixed << timestamp
                       << ",TS_Domain," << rs2_timestamp_domain_to_string(additional_data.timestamp_domain));
 
-            auto frame = _source.alloc_frame(RS2_EXTENSION_TYPE_MOTION_FRAME, data_size, additional_data, true);
+            auto frame = _source.alloc_frame(RS2_EXTENSION_MOTION_FRAME, data_size, additional_data, true);
             frame->set_stream(request);
             if (!frame)
             {

@@ -21,16 +21,16 @@ bool yes_no_dialog()
 }
 
 template<class T, class S>
-inline void slider_int(const char* id, T* val, S T::* feild, bool& to_set)
+inline void slider_int(const char* id, T* val, S T::* field, bool& to_set)
 {
     ImGui::Text("%s", id);
-    int temp = val->*feild;
-    int min = (val + 1)->*feild;
-    int max = (val + 2)->*feild;
+    int temp = val->*field;
+    int min = (val + 1)->*field;
+    int max = (val + 2)->*field;
 
     if (ImGui::SliderInt(id, &temp, min, max))
     {
-        val->*feild = temp;
+        val->*field = temp;
         to_set = true;
     }
 }
@@ -48,16 +48,16 @@ inline void checkbox(const char* id, T* val, S T::* f, bool& to_set)
 }
 
 template<class T, class S>
-inline void slider_float(const char* id, T* val, S T::* feild, bool& to_set)
+inline void slider_float(const char* id, T* val, S T::* field, bool& to_set)
 {
     ImGui::Text("%s", id);
-    float temp = val->*feild;
-    float min = (val + 1)->*feild;
-    float max = (val + 2)->*feild;
+    float temp = val->*field;
+    float min = (val + 1)->*field;
+    float max = (val + 2)->*field;
 
     if (ImGui::SliderFloat(id, &temp, min, max))
     {
-        val->*feild = temp;
+        val->*field = temp;
         to_set = true;
     }
 }

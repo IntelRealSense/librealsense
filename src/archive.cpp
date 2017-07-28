@@ -49,7 +49,7 @@ namespace librealsense
         std::weak_ptr<sensor_interface> _sensor;
         std::shared_ptr<sensor_interface> get_sensor() const override { return _sensor.lock(); }
         void set_sensor(std::shared_ptr<sensor_interface> s) override { _sensor = s; }
-     
+
         T alloc_frame(const size_t size, const frame_additional_data& additional_data, bool requires_memory)
         {
             T backbuffer;
@@ -233,17 +233,17 @@ namespace librealsense
 
     };
 
-    std::shared_ptr<archive_interface> make_archive(rs2_extension_type type,
+    std::shared_ptr<archive_interface> make_archive(rs2_extension type,
                                                     std::atomic<uint32_t>* in_max_frame_queue_size,
                                                     std::shared_ptr<platform::time_service> ts,
                                                     std::shared_ptr<metadata_parser_map> parsers)
     {
         switch(type)
         {
-        case RS2_EXTENSION_TYPE_VIDEO_FRAME:
+        case RS2_EXTENSION_VIDEO_FRAME :
             return std::make_shared<frame_archive<video_frame>>(in_max_frame_queue_size, ts, parsers);
 
-        case RS2_EXTENSION_TYPE_COMPOSITE_FRAME:
+        case RS2_EXTENSION_COMPOSITE_FRAME :
             return std::make_shared<frame_archive<composite_frame>>(in_max_frame_queue_size, ts, parsers);
 
         default:
@@ -345,7 +345,7 @@ rs2_time_t frame::get_frame_callback_start_time_point() const
 void frame::log_callback_start(rs2_time_t timestamp)
 {
     update_frame_callback_start_ts(timestamp);
-    LOG_DEBUG("CallbackStarted," << librealsense::get_string(get_stream()->get_stream_type()) << "," << get_frame_number() << ",DispatchedAt," << timestamp);
+    LOG_DEBUG("CallbackStarted," << std::dec << librealsense::get_string(get_stream()->get_stream_type()) << "," << get_frame_number() << ",DispatchedAt," << timestamp);
 }
 
 void frame::log_callback_end(rs2_time_t timestamp) const

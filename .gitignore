@@ -1,6 +1,8 @@
 bin/
 lib/
 
+ubuntu-xenial/
+
 # CMake
 build/
 
@@ -33,10 +35,8 @@ local_ignore/
 # QTCreator Project
 /.qmake.cache
 /.qmake.stash
-*.pro.user
-*.pro.user.*
-*.qbs.user
-*.qbs.user.*
+*.user
+*.user.*
 *.moc
 moc_*.cpp
 qrc_*.cpp
@@ -45,7 +45,6 @@ Makefile*
 *-build-*
 librealsense-log.txt
 
-*.vcxproj.user
 *.pyproj
 *.orig
 *.psess
@@ -74,3 +73,10 @@ librealsense-log.txt
 *.check_cache
 *.dll
 *.list
+*.txt
+*.cmake
+!config.cmake
+*.json
+*.ini
+*.cxx
+

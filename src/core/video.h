@@ -25,6 +25,6 @@ namespace librealsense
         virtual void set_dims(uint32_t width, uint32_t height) = 0;
     };
 
-    MAP_EXTENSION(RS2_EXTENSION_TYPE_VIDEO, librealsense::video_sensor_interface);
-    MAP_EXTENSION(RS2_EXTENSION_TYPE_VIDEO_PROFILE, librealsense::video_stream_profile_interface);
+    MAP_EXTENSION(RS2_EXTENSION_VIDEO, librealsense::video_sensor_interface);
+    MAP_EXTENSION(RS2_EXTENSION_VIDEO_PROFILE, librealsense::video_stream_profile_interface);
 }

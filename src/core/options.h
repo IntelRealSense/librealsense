@@ -42,7 +42,7 @@ namespace librealsense
         virtual ~options_interface() = default;
     };
 
-    MAP_EXTENSION(RS2_EXTENSION_TYPE_OPTIONS, librealsense::options_interface);
+    MAP_EXTENSION(RS2_EXTENSION_OPTIONS, librealsense::options_interface);
 
     class options_container : public virtual options_interface
     {
@@ -77,7 +77,7 @@ namespace librealsense
             }
             return *it->second;
         }
-        
+
         void register_option(rs2_option id, std::shared_ptr<option> option)
         {
             _options[id] = option;

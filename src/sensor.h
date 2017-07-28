@@ -26,6 +26,7 @@ namespace librealsense
     class option;
 
     typedef std::function<void(rs2_stream, frame_interface*, callback_invocation_holder)> on_before_frame_callback;
+    typedef std::function<void(std::vector<platform::stream_profile>)> on_open;
 
     class sensor_base : public std::enable_shared_from_this<sensor_base>,
                         public virtual sensor_interface, public options_container, public virtual info_container
@@ -53,14 +54,17 @@ namespace librealsense
 
         void register_metadata(rs2_frame_metadata metadata, std::shared_ptr<md_attribute_parser_base> metadata_parser) const;
 
+        void register_on_open(on_open callback)
+        {
+            _on_open = callback;
+        }
+
         void register_on_before_frame_callback(on_before_frame_callback callback)
         {
             _on_before_frame_callback = callback;
         }
 
         const device_interface& get_device() override;
-
-        const stream_profiles& get_curr_configurations() const override;
 
         void register_pixel_format(native_pixel_format pf)
         {
@@ -75,13 +79,13 @@ namespace librealsense
 
         std::vector<request_mapping> resolve_requests(stream_profiles requests);
 
-        stream_profiles _configuration;
         std::vector<platform::stream_profile> _internal_config;
 
         std::atomic<bool> _is_streaming;
         std::atomic<bool> _is_opened;
         std::shared_ptr<notifications_proccessor> _notifications_proccessor;
         on_before_frame_callback _on_before_frame_callback;
+        on_open _on_open;
         std::shared_ptr<metadata_parser_map> _metadata_parsers = nullptr;
 
         frame_source _source;
@@ -154,7 +158,7 @@ namespace librealsense
         uint32_t fps_to_sampling_frequency(rs2_stream stream, uint32_t fps) const;
     };
 
-    class uvc_sensor : public sensor_base, 
+    class uvc_sensor : public sensor_base,
                        public roi_sensor_interface
     {
     public:
@@ -169,6 +173,8 @@ namespace librealsense
         void open(const stream_profiles& requests) override;
 
         void close() override;
+
+        std::vector<platform::stream_profile> get_configuration() const { return _internal_config; }
 
         void register_xu(platform::extension_unit xu);
 
@@ -202,7 +208,10 @@ namespace librealsense
                 : _owner(owner)
             {
                 auto strong = _owner.lock();
-                if (strong) strong->acquire_power();
+                if (strong)
+                {
+                    strong->acquire_power();
+                }
             }
 
             ~power()

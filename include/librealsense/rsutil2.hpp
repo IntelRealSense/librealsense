@@ -30,14 +30,114 @@ namespace rs2
         class Config
         {
         public:
+            struct request_type
+            {
+                rs2_stream stream;
+                int stream_index;
+                int width, height;
+                rs2_format format; 
+                int fps;
+            };
+
+            struct index_type
+            {
+                rs2_stream stream;
+                int index;
+            };
+
+            template<class Stream_Profile>
+            static bool match(const Stream_Profile& a, const Stream_Profile& b)
+            {
+                if (a.stream_type() != RS2_STREAM_ANY && b.stream_type() != RS2_STREAM_ANY && (a.stream_type() != b.stream_type()))
+                    return false;
+                if (a.format() != RS2_FORMAT_ANY && b.format() != RS2_FORMAT_ANY && (a.format() != b.format()))
+                    return false;
+                if (a.fps() != 0 && b.fps() != 0 && (a.fps() != b.fps()))
+                    return false;
+
+                if (auto vid_a = a.template as<video_stream_profile>())
+                {
+                    if (auto vid_b = b.template as<video_stream_profile>())
+                    {
+                        if (vid_a.width() != 0 && vid_b.width() != 0 && (vid_a.width() != vid_b.width()))
+                            return false;
+                        if (vid_a.height() != 0 && vid_b.height() != 0 && (vid_a.height() != vid_b.height()))
+                            return false;
+                    }
+                    else return false;
+                }
+
+                return true;
+            }
+
+            template<class Stream_Profile>
+            static bool match(const Stream_Profile& a, const request_type& b)
+            {
+                if (a.stream_type() != RS2_STREAM_ANY && b.stream != RS2_STREAM_ANY && (a.stream_type() != b.stream))
+                    return false;
+                if (a.stream_index() != 0 && b.stream_index != 0 && (a.stream_index() != b.stream_index))
+                    return false;
+                if (a.format() != RS2_FORMAT_ANY && b.format != RS2_FORMAT_ANY && (a.format() != b.format))
+                    return false;
+                if (a.fps() != 0 && b.fps != 0 && (a.fps() != b.fps))
+                    return false;
+
+                if (auto vid_a = a.template as<video_stream_profile>())
+                {
+                    if (vid_a.width() != 0 && b.width != 0 && (vid_a.width() != b.width))
+                        return false;
+                    if (vid_a.height() != 0 && b.height != 0 && (vid_a.height() != b.height))
+                        return false;
+                }
+
+                return true;
+            }
+
+            template<class StreamProfile>
+            static bool contradicts(const StreamProfile& a, const std::vector<StreamProfile>& others)
+            {
+                for (auto request : others)
+                {
+                    if (a.fps() != 0 && request.fps() != 0 && (a.fps() != request.fps()))
+                        return true;
+                }
+
+                if (auto vid_a = a.template as<video_stream_profile>())
+                {
+                    for (auto request : others)
+                    {
+                        if (auto vid_b = request.template as<video_stream_profile>())
+                        {
+                            if (vid_a.width() != 0 && vid_b.width() != 0 && (vid_a.width() != vid_b.width()))
+                                return true;
+                            if (vid_a.fps() != 0 && vid_b.fps() != 0 && (vid_a.fps() != vid_b.fps()))
+                                return true;
+                        }
+                    }
+                }
+
+                return false;
+            }
+
+            template<class Stream_Profile>
+            static bool has_wildcards(const Stream_Profile& a)
+            {
+                if (a.fps() == 0 || a.stream_type() == RS2_STREAM_ANY || a.format() == RS2_FORMAT_ANY) return true;
+                if (auto vid_a = a.template as<video_stream_profile>())
+                {
+                    if (vid_a.width() == 0 || vid_a.height() == 0) return true;
+                }
+                return false;
+            }
+
             class multistream
             {
             public:
                 multistream() {}
 
                 explicit multistream(std::vector<typename Dev::SensorType> results,
-                                     std::map<rs2_stream, typename Dev::ProfileType> profiles,
-                                     std::map<rs2_stream, typename Dev::SensorType> devices)
+                                     std::map<index_type, typename Dev::ProfileType> profiles,
+                                     std::map<index_type, typename Dev::SensorType> devices)
                     : profiles(std::move(profiles)),
                       devices(std::move(devices)),
                       results(std::move(results))
@@ -62,9 +162,9 @@ namespace rs2
                         dev.close();
                 }
 
-                rs2_intrinsics get_intrinsics(rs2_stream stream) try
+                rs2_intrinsics get_intrinsics(rs2_stream stream, int index = 0) try
                 {
-                    return devices.at(stream).get_intrinsics(profiles.at(stream));
+                    return profiles.at({ stream, index }).template as<video_stream_profile>().get_intrinsics();
                 }
                 catch (std::out_of_range)
                 {
@@ -73,31 +173,47 @@ namespace rs2
 
                 rs2_extrinsics get_extrinsics(rs2_stream from, rs2_stream to) const try
                 {
-                    return devices.at(from).get_extrinsics_to(from, devices.at(to), to);
+                    return profiles.at({ from, 0 }).get_extrinsics_to(profiles.at({ to, 0 }));
                 }
                 catch (std::out_of_range)
                 {
                     throw std::runtime_error(std::string("config doesnt have extrinsics for ") + rs2_stream_to_string(from) + "->" + rs2_stream_to_string(to));
                 }
 
-                std::map<rs2_stream, typename Dev::ProfileType> get_profiles() const
+                rs2_extrinsics get_extrinsics(index_type from, index_type to) const try
+                {
+                    return profiles.at(from).get_extrinsics_to(profiles.at(to));
+                }
+                catch (std::out_of_range)
+                {
+                    throw std::runtime_error(std::string("config doesnt have extrinsics for ") + rs2_stream_to_string(from) + "->" + rs2_stream_to_string(to));
+                }
+
+                std::map<index_type, typename Dev::ProfileType> get_profiles() const
                 {
                     return profiles;
                 }
             private:
                 friend class Config;
 
-                std::map<rs2_stream, typename Dev::ProfileType> profiles;
-                std::map<rs2_stream, typename Dev::SensorType> devices;
+                std::map<index_type, typename Dev::ProfileType> profiles;
+                std::map<index_type, typename Dev::SensorType> devices;
                 std::vector<typename Dev::SensorType> results;
             };
 
             Config() : require_all(true) {}
 
-            void enable_stream(rs2_stream stream, int width, int height, int fps, rs2_format format)
+            void enable_stream(rs2_stream stream, int width, int height, rs2_format format, int fps)
             {
-                _presets.erase(stream);
-                _requests[stream] = { stream, width, height, fps, format };
+                _presets.erase({ stream, 0 });
+                _requests[{stream, 0}] = request_type{ stream, 0, width, height, format, fps };
+                require_all = true;
+            }
+
+            void enable_stream(rs2_stream stream, int index, int width, int height, rs2_format format, int fps)
+            {
+                _presets.erase({ stream, index });
+                _requests[{stream, index}] = request_type{ stream, index, width, height, format, fps };
                 require_all = true;
             }
 
@@ -116,11 +232,19 @@ namespace rs2
                 _presets[stream] = preset;
                 require_all = true;
             }
+
+            void enable_stream(rs2_stream stream, int index, preset preset)
+            {
+                _requests.erase(stream);
+                _presets[{stream, index}] = preset;
+                require_all = true;
+            }
+
             void enable_all(preset p)
             {
                 for (int i = RS2_STREAM_DEPTH; i < RS2_STREAM_COUNT; i++)
                 {
-                    enable_stream(static_cast<rs2_stream>(i), p);
+                    enable_stream(static_cast<rs2_stream>(i), 0, p);
                 }
                 require_all = false;
             }
@@ -142,21 +266,21 @@ namespace rs2
                 Config<Dev> c(*this);
                 c.enable_stream(stream, args...);
                 for (auto && kvp : c.map_streams(dev))
-                    if (kvp.second.stream == stream)
+                    if (kvp.second.stream_type() == stream)
                         return true;
                 return false;
             }
 
             multistream open(Dev dev)
             {
-                auto mapping = map_streams(dev);
+                 auto mapping = map_streams(dev);
 
                 // If required, make sure we've succeeded at opening
                 // all the requested streams
                 if (require_all) {
-                    std::set<rs2_stream> all_streams;
+                    std::set<index_type> all_streams;
                     for (auto && kvp : mapping)
-                        all_streams.insert(kvp.second.stream_type());
+                        all_streams.insert({ kvp.second.stream_type(), kvp.second.stream_index() });
 
                     for (auto && kvp : _presets)
                         if (!all_streams.count(kvp.first))
@@ -169,14 +293,15 @@ namespace rs2
                 // Unpack the data returned by assign
                 std::map<int, std::vector<typename Dev::ProfileType> > dev_to_profiles;
                 std::vector<typename Dev::SensorType> devices;
-                std::map<rs2_stream, typename Dev::SensorType> stream_to_dev;
-                std::map<rs2_stream, typename Dev::ProfileType> stream_to_profile;
+                std::map<index_type, typename Dev::SensorType> stream_to_dev;
+                std::map<index_type, typename Dev::ProfileType> stream_to_profile;
 
                 auto sensors = dev.query_sensors();
                 for (auto && kvp : mapping) {
                     dev_to_profiles[kvp.first].push_back(kvp.second);
-                    stream_to_dev.emplace(kvp.second.stream_type(), sensors[kvp.first]);
-                    stream_to_profile[kvp.second.stream_type()] = kvp.second;
+                    index_type idx{ kvp.second.stream_type(), kvp.second.stream_index() };
+                    stream_to_dev.emplace(idx, sensors[kvp.first]);
+                    stream_to_profile[idx] = kvp.second;
                 }
 
                 // TODO: make sure it works
@@ -234,9 +359,10 @@ namespace rs2
                 }
             }
 
-            std::multimap<int, typename Dev::ProfileType> map_streams(Dev dev) const {
+            std::multimap<int, typename Dev::ProfileType> map_streams(Dev dev) const 
+            {
                 std::multimap<int, typename Dev::ProfileType> out;
-                std::set<rs2_stream> satisfied_streams;
+                std::set<index_type> satisfied_streams;
 
                 // Algorithm assumes get_adjacent_devices always
                 // returns the devices in the same order
@@ -253,13 +379,14 @@ namespace rs2
                         if (satisfied_streams.count(kvp.first)) continue; // skip satisfied requests
 
                         // if any profile on the subdevice can supply this request, consider it satisfiable
-                        if (std::any_of(begin(profiles), end(profiles),
+                        auto it = std::find_if(begin(profiles), end(profiles),
                             [&kvp](const typename Dev::ProfileType &profile)
-                            {
-                                return match(profile, kvp.second);
-                            }))
                         {
-                            targets.push_back(kvp.second); // store that this request is going to this subdevice
+                            return match(profile, kvp.second);
+                        });
+                        if (it != end(profiles))
+                        {
+                            targets.push_back(*it); // store that this request is going to this subdevice
                             satisfied_streams.insert(kvp.first); // mark stream as satisfied
                         }
                     }
@@ -317,8 +444,8 @@ namespace rs2
 
             }
 
-            std::map<rs2_stream, typename Dev::ProfileType> _requests;
-            std::map<rs2_stream, preset> _presets;
+            std::map<index_type, request_type> _requests;
+            std::map<index_type, preset> _presets;
             bool require_all;
         };
 
@@ -330,7 +457,7 @@ namespace rs2
         class device_hub
         {
         public:
-            device_hub(const context& ctx)
+            explicit device_hub(const context& ctx)
                 : _ctx(ctx)
             {
                 _device_list = _ctx.query_devices();

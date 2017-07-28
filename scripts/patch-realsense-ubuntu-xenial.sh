@@ -25,7 +25,6 @@ LINUX_BRANCH=$(uname -r)
 kernel_branch=$(choose_kernel_branch $LINUX_BRANCH)
 kernel_name="ubuntu-xenial-$kernel_branch"
 
-
 # Get the linux kernel and change into source tree
 [ ! -d ${kernel_name} ] && git clone -b $kernel_branch git://kernel.ubuntu.com/ubuntu/ubuntu-xenial.git --depth 1 ./${kernel_name}
 cd ${kernel_name}
@@ -49,8 +48,8 @@ then
 		echo -e "\e[32mUpdate the folder content with the latest from mainline branch\e[0m"
 		git fetch origin $kernel_branch --depth 1
 		printf "Resetting local changes in %s folder\n " ${kernel_name}
-		git reset --hard origin/$kernel_branch
-		git gc
+		git reset --hard $kernel_branch
+		#git gc
 	fi
 fi
 
@@ -63,11 +62,13 @@ then
 else
 	# Patching kernel for RealSense devices
 	echo -e "\e[32mApplying realsense-uvc patch\e[0m"
-	patch -p1 < ../scripts/realsense-camera-formats_ubuntu-xenial.patch
+	patch -p1 < ../scripts/realsense-camera-formats_ubuntu-xenial-${kernel_branch}.patch
 	echo -e "\e[32mApplying realsense-metadata patch\e[0m"
 	patch -p1 < ../scripts/realsense-metadata-ubuntu-xenial.patch
 	echo -e "\e[32mApplying realsense-hid patch\e[0m"
 	patch -p1 < ../scripts/realsense-hid-ubuntu-xenial-${kernel_branch}.patch
+	echo -e "\e[32mApplying realsense-powerlinefrequency-fix patch\e[0m"
+	patch -p1 < ../scripts/realsense-powerlinefrequency-control-fix.patch
 fi
 
 # Copy configuration

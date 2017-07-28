@@ -126,7 +126,7 @@ util::config configure_stream(bool is_file_set, bool& is_valid, string fn = "")
 
         // correctness check
         parse_configuration(row, stream_type, width, height, format, fps);
-        config.enable_stream(stream_type, width, height, fps, format);
+        config.enable_stream(stream_type, width, height, format, fps);
     }
     return config;
 }

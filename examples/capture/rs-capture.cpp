@@ -20,6 +20,8 @@ int main(int argc, char * argv[])
 
     auto finished = false;
     GLFWwindow* win;
+    log_to_file(RS2_LOG_SEVERITY_DEBUG);
+
     while (!finished)
     {
         try
@@ -32,12 +34,14 @@ int main(int argc, char * argv[])
 
             auto stream = config.open(dev);
 
-			syncer_processing_block syncer;
+            syncer_processing_block syncer;
             stream.start(syncer);
 
+            size_t max_frames = 0;
+
            // black.start(syncer);
-			frame_queue queue;
-			syncer.start(queue);
+            frame_queue queue;
+            syncer.start(queue);
             map<int, texture_buffer> buffers;
 
             // Open a GLFW window
@@ -50,11 +54,13 @@ int main(int argc, char * argv[])
 
             while (hub.is_connected(dev) && !glfwWindowShouldClose(win))
             {
-                
                 int w, h;
                 glfwGetFramebufferSize(win, &w, &h);
 
-				auto frames = queue.wait_for_frames();
+                auto frames = queue.wait_for_frames();
+
+                max_frames = std::max(max_frames, frames.size());
+
                 //// for consistent visualization, sort frames based on stream type:
                 sort(frames.begin(), frames.end(),
                      [](const frame& a, const frame& b) -> bool
@@ -100,7 +106,6 @@ int main(int argc, char * argv[])
                 glfwSwapBuffers(win);
             }
 
-
             if (glfwWindowShouldClose(win))
                 finished = true;
         }
@@ -117,4 +122,3 @@ int main(int argc, char * argv[])
     }
     return EXIT_SUCCESS;
 }
-

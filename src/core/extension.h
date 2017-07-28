@@ -2,34 +2,33 @@
 // Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 
 #pragma once
-#include "../../include/librealsense/rs2.h" //TODO: Ziv, remove relative\file
+#include "../../include/librealsense/rs2.h"
 #include <memory>
 #include <functional>
 
-//Preprocessor Macro to define mapping between rs2_extension_type and their respective interface (and vice versa)
-#define MAP_EXTENSION(E, T)                              \
-    template<> struct ExtensionsToTypes<E> {              \
-        using type = T;                                   \
-    };                                                    \
-    template<> struct TypeToExtensionn<T> {               \
-        static constexpr rs2_extension_type value = E;    \
+//Preprocessor Macro to define mapping between rs2_extension and their respective interface (and vice versa)
+#define MAP_EXTENSION(E, T)                        \
+    template<> struct ExtensionsToTypes<E> {       \
+        using type = T;                            \
+    };                                             \
+    template<> struct TypeToExtensionn<T> {        \
+        static constexpr rs2_extension value = E;  \
     }
 
 namespace librealsense
 {
-	class extendable_interface
+    class extendable_interface
     {
     public:
-        virtual bool extend_to(rs2_extension_type extension_type, void** ptr) = 0;
+        virtual bool extend_to(rs2_extension extension_type, void** ptr) = 0;
         virtual ~extendable_interface() = default;
     };
 
     /**
-     * Extensions' snapshot implementations are expected to derive from this class in addition to the actual extension
-     * Extensions' interfaces are no expected to derive from this class (//TODO Ziv, what if they do? - test that it works)
+     * Extensions' snapshots implementations are expected to derive from this class in addition to the actual extensions' 
+     * interfaces. Extensions are not expected to derive from this class.
      */
-    //template <typename T>
-    class extension_snapshot  //TODO: : Ziv, : public T, public std::enable_shared_from_this ?
+    class extension_snapshot
     {
     public:
         virtual void update(std::shared_ptr<extension_snapshot> ext) = 0;
@@ -102,7 +101,7 @@ namespace librealsense
         return dynamic_cast<T*>(ptr) != nullptr;
     }
 
-    //Creating Helper functions to map rs2_extension_type enums to actual interface
-    template<rs2_extension_type> struct ExtensionsToTypes;
+    //Creating Helper functions to map rs2_extension enums to actual interface
+    template<rs2_extension> struct ExtensionsToTypes;
     template<typename T> struct TypeToExtensionn;
 }

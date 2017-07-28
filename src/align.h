@@ -51,7 +51,7 @@ namespace librealsense
         std::mutex _mutex;
         frame_processor_callback_ptr _callback;
         synthetic_source _source_wrapper;
-        rs2_extension_type _output_type;
+        rs2_extension _output_type;
     };
 
     class pointcloud : public processing_block

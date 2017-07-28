@@ -12,7 +12,9 @@
 #include "backend.h"
 #include "ivcam-private.h"
 #include "hw-monitor.h"
+#include "metadata-parser.h"
 #include "image.h"
+#include <cstddef>
 
 #include "core/debug.h"
 #include "stream.h"
@@ -21,14 +23,16 @@ namespace librealsense
 {
     const uint16_t SR300_PID = 0x0aa5;
 
+    const double TIMESTAMP_10NSEC_TO_MSEC = 0.00001;
+
     class sr300_camera;
 
     class sr300_timestamp_reader : public frame_timestamp_reader
     {
         bool started;
-        int64_t total;
-        int last_timestamp;
-        mutable int64_t counter;
+        uint64_t total;
+        uint32_t last_timestamp;
+        mutable uint64_t counter;
         mutable std::recursive_mutex _mtx;
     public:
         sr300_timestamp_reader() : started(false), total(0), last_timestamp(0), counter(0) {}
@@ -45,20 +49,18 @@ namespace librealsense
         double get_frame_timestamp(const request_mapping& /*mode*/, const platform::frame_object& fo) override
         {
             std::lock_guard<std::recursive_mutex> lock(_mtx);
-            // Timestamps are encoded within the first 32 bits of the image
-            int rolling_timestamp = *reinterpret_cast<const int32_t *>(fo.pixels);
-
+            // Timestamps are encoded within the first 32 bits of the image and provided in 10nsec units
+            uint32_t rolling_timestamp = *reinterpret_cast<const uint32_t *>(fo.pixels);
             if (!started)
             {
-                last_timestamp = rolling_timestamp;
+                total = last_timestamp = rolling_timestamp;
                 started = true;
             }
 
             const int delta = rolling_timestamp - last_timestamp; // NOTE: Relies on undefined behavior: signed int wraparound
             last_timestamp = rolling_timestamp;
             total += delta;
-            const int timestamp = static_cast<int>(total / 100000);
-            return timestamp;
+            return total * 0.00001; // to msec
         }
 
         unsigned long long get_frame_counter(const request_mapping & /*mode*/, const platform::frame_object& fo) const override
@@ -69,12 +71,56 @@ namespace librealsense
 
         rs2_timestamp_domain get_frame_timestamp_domain(const request_mapping & mode, const platform::frame_object& fo) const override
         {
-            if(fo.metadata_size > 0 )
+            if(fo.metadata_size >= platform::uvc_header_size )
                 return RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK;
-
             else
                 return RS2_TIMESTAMP_DOMAIN_SYSTEM_TIME;
         }
+    };
+
+    class sr300_timestamp_reader_from_metadata : public frame_timestamp_reader
+    {
+       std::unique_ptr<sr300_timestamp_reader> _backup_timestamp_reader;
+       bool one_time_note;
+       mutable std::recursive_mutex _mtx;
+       arithmetic_wraparound<uint32_t,uint64_t > ts_wrap;
+
+    protected:
+
+        bool has_metadata_ts(const platform::frame_object& fo) const
+        {
+            // Metadata support for a specific stream is immutable
+            const bool has_md_ts = [&]{ std::lock_guard<std::recursive_mutex> lock(_mtx);
+                return ((fo.metadata != nullptr) && (fo.metadata_size >= platform::uvc_header_size) && ((byte*)fo.metadata)[0] >= platform::uvc_header_size);
+            }();
+
+            return has_md_ts;
+        }
+
+        bool has_metadata_fc(const platform::frame_object& fo) const
+        {
+            // Metadata support for a specific stream is immutable
+            const bool has_md_frame_counter = [&] { std::lock_guard<std::recursive_mutex> lock(_mtx);
+            return ((fo.metadata != nullptr) && (fo.metadata_size > platform::uvc_header_size) && ((byte*)fo.metadata)[0] > platform::uvc_header_size);
+            }();
+
+            return has_md_frame_counter;
+        }
+
+    public:
+        sr300_timestamp_reader_from_metadata() :_backup_timestamp_reader(nullptr), one_time_note(false)
+        {
+            _backup_timestamp_reader = std::unique_ptr<sr300_timestamp_reader>(new sr300_timestamp_reader());
+            reset();
+        }
+
+        rs2_time_t get_frame_timestamp(const request_mapping& mode, const platform::frame_object& fo) override;
+
+        unsigned long long get_frame_counter(const request_mapping & mode, const platform::frame_object& fo) const override;
+
+        void reset() override;
+
+        rs2_timestamp_domain get_frame_timestamp_domain(const request_mapping & mode, const platform::frame_object& fo) const override;
     };
 
     class sr300_info : public device_info
@@ -87,10 +133,7 @@ namespace librealsense
                     platform::uvc_device_info depth,
                     platform::usb_device_info hwm)
             : device_info(ctx), _color(std::move(color)),
-             _depth(std::move(depth)), _hwm(std::move(hwm))
-        {
-
-        }
+             _depth(std::move(depth)), _hwm(std::move(hwm)) {}
 
         static std::vector<std::shared_ptr<device_info>> pick_sr300_devices(
             std::shared_ptr<context> ctx,
@@ -267,6 +310,16 @@ namespace librealsense
             color_ep->register_pu(RS2_OPTION_ENABLE_AUTO_EXPOSURE);
             color_ep->register_pu(RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE);
 
+            auto md_offset = offsetof(metadata_raw, mode);
+            color_ep->register_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP, make_uvc_header_parser(&platform::uvc_header::timestamp,
+                [](rs2_metadata_t param) { return static_cast<rs2_metadata_t>(param * TIMESTAMP_10NSEC_TO_MSEC); }));
+            color_ep->register_metadata(RS2_FRAME_METADATA_FRAME_COUNTER,   make_sr300_attribute_parser(&md_sr300_rgb::frame_counter, md_offset));
+            color_ep->register_metadata(RS2_FRAME_METADATA_SENSOR_TIMESTAMP,make_sr300_attribute_parser(&md_sr300_rgb::frame_latency, md_offset));
+            color_ep->register_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE, make_sr300_attribute_parser(&md_sr300_rgb::actual_exposure, md_offset, [](rs2_metadata_t param) { return param*100; }));
+            color_ep->register_metadata(RS2_FRAME_METADATA_AUTO_EXPOSURE,   make_sr300_attribute_parser(&md_sr300_rgb::auto_exp_mode, md_offset, [](rs2_metadata_t param) { return (param !=1); }));
+            color_ep->register_metadata(RS2_FRAME_METADATA_GAIN_LEVEL,      make_sr300_attribute_parser(&md_sr300_rgb::gain, md_offset));
+            color_ep->register_metadata(RS2_FRAME_METADATA_WHITE_BALANCE,   make_sr300_attribute_parser(&md_sr300_rgb::color_temperature, md_offset));
+
             return color_ep;
         }
 
@@ -283,8 +336,9 @@ namespace librealsense
                                                            ctx);
             depth_ep->register_xu(depth_xu); // make sure the XU is initialized everytime we power the camera
             depth_ep->register_pixel_format(pf_invz);
-            depth_ep->register_pixel_format(pf_sr300_inzi);
+            depth_ep->register_pixel_format(pf_y8);
             depth_ep->register_pixel_format(pf_sr300_invi);
+            depth_ep->register_pixel_format(pf_sr300_inzi);
 
             register_depth_xu<uint8_t>(*depth_ep, RS2_OPTION_LASER_POWER, IVCAM_DEPTH_LASER_POWER,
                 "Power of the SR300 projector, with 0 meaning projector off");
@@ -299,6 +353,14 @@ namespace librealsense
 
             depth_ep->register_option(RS2_OPTION_VISUAL_PRESET, std::make_shared<preset_option>(*this,
                                                                                                 option_range{0, RS2_IVCAM_VISUAL_PRESET_COUNT, 1, RS2_IVCAM_VISUAL_PRESET_DEFAULT}));
+
+            auto md_offset = offsetof(metadata_raw, mode);
+
+            depth_ep->register_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP, make_uvc_header_parser(&platform::uvc_header::timestamp,
+                [](rs2_metadata_t param) { return static_cast<rs2_metadata_t>(param * TIMESTAMP_10NSEC_TO_MSEC); }));
+            depth_ep->register_metadata(RS2_FRAME_METADATA_FRAME_COUNTER,   make_sr300_attribute_parser(&md_sr300_depth::frame_counter, md_offset));
+            depth_ep->register_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE, make_sr300_attribute_parser(&md_sr300_depth::actual_exposure, md_offset,
+                [](rs2_metadata_t param) { return param * 100; }));
 
             return depth_ep;
         }

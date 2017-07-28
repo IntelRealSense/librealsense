@@ -116,8 +116,6 @@ namespace librealsense
 
         virtual const device_interface& get_device() = 0;
 
-        virtual const stream_profiles& get_curr_configurations() const = 0;
-
         virtual ~sensor_interface() = default;
     };
 
@@ -147,6 +145,6 @@ namespace librealsense
         virtual float get_depth_scale() const = 0;
         virtual ~depth_sensor() = default;
     };
-    
-    MAP_EXTENSION(RS2_EXTENSION_TYPE_DEPTH_SENSOR, librealsense::depth_sensor);
+
+    MAP_EXTENSION(RS2_EXTENSION_DEPTH_SENSOR, librealsense::depth_sensor);
 }
