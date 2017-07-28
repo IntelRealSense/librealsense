@@ -8390,7 +8390,7 @@ bool ImGui::Combo(const char* label, int* current_item, bool (*items_getter)(voi
     {
         const char* item_text;
         if (items_getter(data, *current_item, &item_text))
-            RenderTextClipped(frame_bb.Min + style.FramePadding, value_bb.Max, item_text, NULL, NULL);
+            RenderTextClipped(frame_bb.Min + style.FramePadding, value_bb.Max, item_text, NULL, NULL, ImGuiAlign_Center);
     }
 
     if (label_size.x > 0)

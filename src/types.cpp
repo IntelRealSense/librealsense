@@ -11,8 +11,35 @@
 #include <fstream>
 #include <cmath>
 
+#define STRCASE(T, X) case RS2_##T##_##X: {\
+        static std::string s##T##_##X##_str = make_less_screamy(#X);\
+        return s##T##_##X##_str.c_str(); }
+
 namespace librealsense
 {
+    std::string make_less_screamy(const char* str)
+    {
+        std::string res = str;
+
+        bool first = true;
+        for (auto i = 0; i < res.size(); i++)
+        {
+            if (res[i] != '_')
+            {
+                if (!first) res[i] = tolower(res[i]);
+                first = false;
+            }
+            else
+            {
+                res[i] = ' ';
+                first = true;
+            }
+        }
+
+        return res;
+    }
+
+
     std::string datetime_string()
     {
         auto t = time(nullptr);
@@ -64,7 +91,7 @@ namespace librealsense
 
     const char* get_string(rs2_exception_type value)
     {
-        #define CASE(X) case RS2_EXCEPTION_TYPE_##X: return #X;
+        #define CASE(X) STRCASE(EXCEPTION_TYPE, X)
         switch(value)
         {
         CASE(UNKNOWN)
@@ -74,36 +101,36 @@ namespace librealsense
         CASE(WRONG_API_CALL_SEQUENCE)
         CASE(NOT_IMPLEMENTED)
         CASE(DEVICE_IN_RECOVERY_MODE)
-        default: assert(!is_valid(value)); return UNKNOWN;
+        default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
         #undef CASE
     }
 
     const char* get_string(rs2_stream value)
     {
-        #define CASE(X) case RS2_STREAM_##X: return #X;
+        #define CASE(X) STRCASE(STREAM, X)
         switch(value)
         {
-        CASE(ANY)
-        CASE(DEPTH)
-        CASE(COLOR)
-        CASE(INFRARED)
-        CASE(INFRARED2)
-        CASE(FISHEYE)
-        CASE(GYRO)
-        CASE(ACCEL)
-        CASE(GPIO1)
-        CASE(GPIO2)
-        CASE(GPIO3)
-        CASE(GPIO4)
-        default: assert(!is_valid(value)); return UNKNOWN;
+        STRCASE(STREAM, ANY)
+        STRCASE(STREAM, DEPTH)
+        STRCASE(STREAM, COLOR)
+        STRCASE(STREAM, INFRARED)
+        STRCASE(STREAM, INFRARED2)
+        STRCASE(STREAM, FISHEYE)
+        STRCASE(STREAM, GYRO)
+        STRCASE(STREAM, ACCEL)
+        STRCASE(STREAM, GPIO1)
+        STRCASE(STREAM, GPIO2)
+        STRCASE(STREAM, GPIO3)
+        STRCASE(STREAM, GPIO4)
+        default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
         #undef CASE
     }
 
     const char* get_string(rs2_ivcam_visual_preset value)
     {
-        #define CASE(X) case RS2_IVCAM_VISUAL_PRESET_##X: return #X;
+        #define CASE(X) STRCASE(IVCAM_VISUAL_PRESET, X)
         switch (value)
         {
             CASE(SHORT_RANGE)
@@ -117,14 +144,14 @@ namespace librealsense
             CASE(DEFAULT)
             CASE(MID_RANGE)
             CASE(IR_ONLY)
-        default: assert(!is_valid(value)); return UNKNOWN;
+        default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
         #undef CASE
     }
 
     const char* get_string(rs2_extension value)
     {
-        #define CASE(X) case RS2_EXTENSION_ ##X: return #X;
+        #define CASE(X) STRCASE(EXTENSION, X)
         switch (value)
         {
             CASE(DEBUG)
@@ -140,27 +167,27 @@ namespace librealsense
             CASE(COMPOSITE_FRAME)
             CASE(POINTS)
             CASE(ADVANCED_MODE)
-        default: assert(!is_valid(value)); return UNKNOWN;
+        default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
         #undef CASE
     }
 
     const char* get_string(rs2_playback_status value)
     {
-#define CASE(X) case RS2_PLAYBACK_STATUS_ ##X: return #X;
+#define CASE(X) STRCASE(PLAYBACK_STATUS, X)
         switch (value)
         {
             CASE(UNKNOWN)
             CASE(STOPPED)
             CASE(PAUSED)
             CASE(PLAYING)
-            default: assert(!is_valid(value)); return UNKNOWN;
+            default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
 #undef CASE
     }
     const char* get_string(rs2_log_severity value)
     {
-        #define CASE(X) case RS2_LOG_SEVERITY_##X: return #X;
+#define CASE(X) STRCASE(LOG_SEVERITY, X)
         switch (value)
         {
             CASE(DEBUG)
@@ -170,14 +197,14 @@ namespace librealsense
             CASE(FATAL)
             CASE(NONE)
             CASE(COUNT)
-        default: assert(!is_valid(value)); return UNKNOWN;
+        default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
         #undef CASE
     }
 
     const char* get_string(rs2_option value)
     {
-        #define CASE(X) case RS2_OPTION_##X: return #X;
+#define CASE(X) STRCASE(OPTION, X)
         switch(value)
         {
         CASE(BACKLIGHT_COMPENSATION)
@@ -211,14 +238,14 @@ namespace librealsense
         CASE(DEPTH_UNITS)
         CASE(ENABLE_MOTION_CORRECTION)
         CASE(ADVANCED_MODE_PRESET)
-        default: assert(!is_valid(value)); return UNKNOWN;
+        default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
         #undef CASE
     }
 
     const char* get_string(rs2_format value)
     {
-        #define CASE(X) case RS2_FORMAT_##X: return #X;
+#define CASE(X) STRCASE(FORMAT, X)
         switch(value)
         {
         CASE(ANY)
@@ -239,14 +266,14 @@ namespace librealsense
         CASE(MOTION_RAW)
         CASE(MOTION_XYZ32F)
         CASE(GPIO_RAW)
-        default: assert(!is_valid(value)); return UNKNOWN;
+        default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
         #undef CASE
     }
 
     const char* get_string(rs2_distortion value)
     {
-        #define CASE(X) case RS2_DISTORTION_##X: return #X;
+#define CASE(X) STRCASE(DISTORTION, X)
         switch(value)
         {
         CASE(NONE)
@@ -254,7 +281,7 @@ namespace librealsense
         CASE(INVERSE_BROWN_CONRADY)
         CASE(FTHETA)
         CASE(BROWN_CONRADY)
-        default: assert(!is_valid(value)); return UNKNOWN;
+        default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
         #undef CASE
     }
@@ -262,7 +289,7 @@ namespace librealsense
 
     const char* get_string(rs2_camera_info value)
     {
-        #define CASE(X) case RS2_CAMERA_INFO_##X: return #X;
+#define CASE(X) STRCASE(CAMERA_INFO, X)
         switch(value)
         {
         CASE(NAME)
@@ -273,14 +300,14 @@ namespace librealsense
         CASE(ADVANCED_MODE)
         CASE(PRODUCT_ID)
         CASE(CAMERA_LOCKED)
-        default: assert(!is_valid(value)); return UNKNOWN;
+        default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
         #undef CASE
     }
 
     const char* get_string(rs2_frame_metadata value)
     {
-        #define CASE(X) case RS2_FRAME_METADATA_##X: return #X;
+#define CASE(X) STRCASE(FRAME_METADATA, X)
         switch (value)
         {
         CASE(FRAME_COUNTER)
@@ -291,33 +318,33 @@ namespace librealsense
         CASE(AUTO_EXPOSURE)
         CASE(WHITE_BALANCE)
         CASE(TIME_OF_ARRIVAL)
-        default: assert(!is_valid(value)); return UNKNOWN;
+        default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
         #undef CASE
     }
 
     const char* get_string(rs2_timestamp_domain value)
     {
-        #define CASE(X) case RS2_TIMESTAMP_DOMAIN_##X: return #X;
+#define CASE(X) STRCASE(TIMESTAMP_DOMAIN, X)
         switch (value)
         {
         CASE(HARDWARE_CLOCK)
         CASE(SYSTEM_TIME)
-        default: assert(!is_valid(value)); return UNKNOWN;
+        default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
         #undef CASE
     }
 
     const char* get_string(rs2_notification_category value)
     {
-        #define CASE(X) case RS2_NOTIFICATION_CATEGORY_##X: return #X;
+#define CASE(X) STRCASE(NOTIFICATION_CATEGORY, X)
         switch (value)
         {
         CASE(FRAMES_TIMEOUT)
         CASE(FRAME_CORRUPTED)
         CASE(HARDWARE_ERROR)
         CASE(UNKNOWN_ERROR)
-        default: assert(!is_valid(value)); return UNKNOWN;
+        default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
         #undef CASE
     }

@@ -18,6 +18,8 @@
 #include <set>
 #include <regex>
 
+#include <imgui_internal.h>
+
 #pragma comment(lib, "opengl32.lib")
 
 using namespace rs2;
@@ -53,12 +55,12 @@ void imgui_easy_theming()
     }
 
     {
-        font_12 = io.Fonts->AddFontFromMemoryCompressedTTF(karla_regular_compressed_data, karla_regular_compressed_size, 12.f);
+        font_12 = io.Fonts->AddFontFromMemoryCompressedTTF(karla_regular_compressed_data, karla_regular_compressed_size, 14.f);
    
         ImFontConfig config;
         config.MergeMode = true;
         font_12 = io.Fonts->AddFontFromMemoryCompressedTTF(font_awesome_compressed_data, 
-            font_awesome_compressed_size, 12.f, &config, icons_ranges);
+            font_awesome_compressed_size, 14.f, &config, icons_ranges);
     }
 
     style.WindowRounding = 0.0f;
@@ -188,7 +190,7 @@ std::vector<std::string> get_device_info(const device& dev, bool include_locatio
     return res;
 }
 
-std::string get_device_name(device& dev)
+std::pair<std::string, std::string> get_device_name(device& dev)
 {
     // retrieve device name
     std::string name = (dev.supports(RS2_CAMERA_INFO_NAME)) ? dev.get_info(RS2_CAMERA_INFO_NAME) : "Unknown";
@@ -205,13 +207,13 @@ std::string get_device_name(device& dev)
         s << "Playback device: ";
         name += (to_string() << " (File: " << drag_drop_manager::get_file_name(playback_dev.file_name()) << ")");
     }
-    s << std::setw(25) << std::left << name << " Sn# " << serial;
-    return s.str();        // push name and sn to list
+    s << std::setw(25) << std::left << name;
+    return std::make_pair(s.str(), serial);        // push name and sn to list
 }
 
-std::vector<std::string> get_devices_names(const device_list& list)
+std::vector<std::pair<std::string, std::string>> get_devices_names(const device_list& list)
 {
-    std::vector<std::string> device_names;
+    std::vector<std::pair<std::string, std::string>> device_names;
 
     for (uint32_t i = 0; i < list.size(); i++)
     {
@@ -219,11 +221,10 @@ std::vector<std::string> get_devices_names(const device_list& list)
         {
             auto dev = list[i];
             device_names.push_back(get_device_name(dev));        // push name and sn to list
-
         }
         catch (...)
         {
-            device_names.push_back(to_string() << "Unknown Device #" << i);
+            device_names.push_back(std::pair<std::string, std::string>(to_string() << "Unknown Device #" << i, ""));
         }
     }
     return device_names;
@@ -329,7 +330,7 @@ int main(int, char**) try
     bool is_3d_view = false;
     bool is_output_collapsed = false;
 
-    std::vector<std::string> device_names;
+    std::vector<std::pair<std::string, std::string>> device_names;
 
     // The list of errors the user asked not to show again:
     std::set<std::string> errors_not_to_show;
@@ -408,7 +409,7 @@ int main(int, char**) try
         {
             if (info.was_removed(dev))
             {
-                not_model.add_notification({ get_device_name(dev) + " Disconnected\n",
+                not_model.add_notification({ get_device_name(dev).first + " Disconnected\n",
                     timestamp,
                     RS2_LOG_SEVERITY_INFO,
                     RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR });
@@ -430,7 +431,7 @@ int main(int, char**) try
         {
             for (auto dev : info.get_new_devices())
             {
-                not_model.add_notification({ get_device_name(dev) + " Connected\n",
+                not_model.add_notification({ get_device_name(dev).first + " Connected\n",
                     timestamp,
                     RS2_LOG_SEVERITY_INFO,
                     RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR });
@@ -584,16 +585,19 @@ int main(int, char**) try
         ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, from_rgba(255, 255, 255, 255));
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(5, 5));
         ImGui::SetNextWindowPos({ 0, panel_y });
-        ImGui::SetNextWindowSize({ panel_width, ImGui::GetTextLineHeight() * (device_names.size() + 1) + 20 });
 
-        if (ImGui::Button(u8"Add Source\t\t\t\t\t\t\t\t\t\t\t\t\uf055", { panel_width-1, panel_y }))
+        if (ImGui::Button(u8"Add Source\t\t\t\t\t\t\t\t\t\t\t\t\t\uf055", { panel_width-1, panel_y }))
             ImGui::OpenPopup("select");
+
+        ImGui::PushFont(font_12);
+        ImGui::SetNextWindowSize({ panel_width, 20.f * (device_names.size() + 1) + 8 });
         if (ImGui::BeginPopup("select"))
         {
             ImGui::PushStyleColor(ImGuiCol_Text, from_rgba(30, 30, 30, 255));
+            ImGui::Columns(2, "DevicesList", false);
             for (size_t i = 0; i < device_names.size(); i++)
             {
-                if (ImGui::Selectable(device_names[i].c_str()) || switch_to_newly_loaded_device)
+                if (ImGui::Selectable(device_names[i].first.c_str(), false, ImGuiSelectableFlags_SpanAllColumns) || switch_to_newly_loaded_device)
                 {
                     for (auto&& sub : model.subdevices)
                     {
@@ -634,18 +638,37 @@ int main(int, char**) try
                         error_message = e.what();
                     }
                 }
+
+                if (ImGui::IsItemHovered())
+                {
+                    ImGui::PushStyleColor(ImGuiCol_Text, from_rgba(255, 255, 255, 255));
+                    ImGui::NextColumn();
+                    ImGui::Text("S/N: %s", device_names[i].second.c_str());
+                    ImGui::NextColumn();
+                    ImGui::PopStyleColor();
+                }
+                else
+                {
+                    ImGui::NextColumn();
+                    ImGui::Text("S/N: %s", device_names[i].second.c_str());
+                    ImGui::NextColumn();
+                }
+
             }
 
             ImGui::Separator();
-            if (ImGui::Selectable("From File..."))
+            if (ImGui::Selectable("From File...", false, ImGuiSelectableFlags_SpanAllColumns))
             {
 
             }
+            ImGui::NextColumn();
+            ImGui::Text("");
+            ImGui::NextColumn();
 
             ImGui::PopStyleColor();
             ImGui::EndPopup();
         }
-
+        ImGui::PopFont();
         ImGui::PopStyleVar();
         ImGui::PopStyleColor();
         ImGui::PopStyleColor();
@@ -685,17 +708,20 @@ int main(int, char**) try
 
         flags |= ImGuiWindowFlags_AlwaysVerticalScrollbar;
 
+        ImGui::PushFont(font_12);
         ImGui::SetNextWindowPos({ panel_width, h - (is_output_collapsed ? default_log_h : 20) });
         ImGui::SetNextWindowSize({ w - panel_width, default_log_h });
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
         is_output_collapsed = ImGui::Begin("Output", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove |
             ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_ShowBorders);
         auto log = not_model.get_log();
+        ImGui::PushStyleColor(ImGuiCol_Text, from_rgba(0xc3, 0xd5, 0xe5, 0xff));
         ImGui::InputTextMultiline("##Log", const_cast<char*>(log.c_str()),
             log.size() + 1, { w - panel_width, default_log_h - 20 }, ImGuiInputTextFlags_ReadOnly);
-
+        ImGui::PopStyleColor();
         ImGui::End();
         ImGui::PopStyleVar();
+        ImGui::PopFont();
 
         // Set window position and size
         ImGui::SetNextWindowPos({ 0, panel_y });
@@ -716,9 +742,35 @@ int main(int, char**) try
         if (any_device_exists > 0)
         {
             ImGui::PushFont(font_12);
+            auto pos = ImGui::GetCursorScreenPos();
+            ImGui::GetWindowDrawList()->AddRectFilled(pos, { pos.x + panel_width, pos.y + panel_y }, ImColor(from_rgba(0x3e, 0x4d, 0x59, 0xff)));
+            ImGui::GetWindowDrawList()->AddLine({ pos.x,pos.y }, { pos.x + panel_width,pos.y }, ImColor(from_rgba(0, 0, 0, 0xff)));
+
             ImGui::PushStyleColor(ImGuiCol_Button, from_rgba(0x3e,0x4d,0x59,0xff));
-            label = to_string() << u8"\uf03d  " << dev.get_info(RS2_CAMERA_INFO_NAME) << "\tS/N: " << (dev.supports(RS2_CAMERA_INFO_SERIAL_NUMBER) ? dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER) : "Unknown");
-            ImGui::Button(label.c_str(), { panel_width, panel_y } );
+            ImGui::Columns(2, "DeviceInfo", false);
+            ImGui::SetCursorPos({ 5, 14 });
+            label = to_string() << u8"\uf03d  " << dev.get_info(RS2_CAMERA_INFO_NAME);
+            ImGui::Text(label.c_str());
+            ImGui::NextColumn();
+            ImGui::SetCursorPos({ ImGui::GetCursorPosX(), 14 });
+            label = to_string() << "S/N: " << (dev.supports(RS2_CAMERA_INFO_SERIAL_NUMBER) ? dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER) : "Unknown");
+            ImGui::Text(label.c_str());
+            
+            ImGui::Columns(1);
+            ImGui::SetCursorPos({ panel_width - 45, 11 });
+            ImGui::Button(u8"\uf013\uf0d7", { 25,25 });
+
+            ImGui::SetCursorPos({ 0, panel_y });
+            
+            /*ImGui::PushStyleColor(ImGuiCol_Text, { 0.5f,0.5f,0.5f,1.f });
+            ImGui::Image(ImGui::GetIO().Fonts->TexID, ImVec2(panel_width, 100), ImGui::GetFontTexUvWhitePixel(), ImGui::GetFontTexUvWhitePixel());
+            ImGui::PopStyleColor();
+            ImGui::SetCursorPosY(0);*/
+
+            //ImGui::Text("Hello");
+            
+
+            //ImGui::Button(label.c_str(), { panel_width, panel_y } );
             ImGui::PopStyleColor();
             ImGui::PopFont();
         }
@@ -786,6 +838,15 @@ int main(int, char**) try
             const float stream_all_button_width = 300;
             static bool is_recording = false;
             static char input_file_name[256] = "recorded_streams.bag";
+
+            const ImVec2 pos = ImGui::GetCursorScreenPos();
+            ImRect bb(pos, ImVec2(pos.x + ImGui::GetContentRegionAvail().x, pos.y + ImGui::GetContentRegionAvail().y));
+            ImGui::GetWindowDrawList()->AddRectFilled(bb.GetTL(), bb.GetBR(), ImColor(from_rgba(0x1b, 0x21, 0x25, 0xff)));
+
+            ImGui::PushStyleColor(ImGuiCol_HeaderHovered, from_rgba(0x1b, 0x21, 0x25, 0xff));
+            ImGui::PushStyleColor(ImGuiCol_Text, from_rgba(0xc3, 0xd5, 0xe5, 0xff));
+            ImGui::PushFont(font_12);
+            ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, { 5, 5 });
 
             // Streaming Menu - Allow user to play different streams
             if (list.size() > 0)
@@ -947,9 +1008,12 @@ int main(int, char**) try
                  // Draw menu foreach subdevice with its properties
                 for (auto&& sub : model.subdevices)
                 {
+                    const ImVec2 pos = ImGui::GetCursorScreenPos();
+                    ImGui::GetWindowDrawList()->AddLine({ pos.x,pos.y }, { pos.x + panel_width,pos.y }, ImColor(from_rgba(0, 0, 0, 0xff)));
 
                     label = to_string() << sub->s.get_info(RS2_CAMERA_INFO_NAME);
                     ImGui::PushStyleColor(ImGuiCol_Header, from_rgba(0x3e,0x4d,0x59,0xff));
+
                     if (ImGui::TreeNode(label.c_str()))
                     {
                         sub->draw_stream_selection();
@@ -1060,15 +1124,27 @@ int main(int, char**) try
                             error_message = e.what();
                         }
 
-                        label = to_string() << "Extra Controls ##" << sub->s.get_info(RS2_CAMERA_INFO_NAME);
-                        if (ImGui::CollapsingHeader(label.c_str(), nullptr, true, false))
+                        static const std::vector<rs2_option> drawing_order{ 
+                            RS2_OPTION_ADVANCED_MODE_PRESET,
+                            RS2_OPTION_EMITTER_ENABLED,
+                            RS2_OPTION_ENABLE_AUTO_EXPOSURE };
+
+                        for (auto& opt : drawing_order)
                         {
-                            static const std::vector<rs2_option> options_order{ RS2_OPTION_ADVANCED_MODE_PRESET,
-                                                                               RS2_OPTION_ENABLE_AUTO_EXPOSURE,
-                                                                               RS2_OPTION_EXPOSURE,
-                                                                               RS2_OPTION_EMITTER_ENABLED,
-                                                                               RS2_OPTION_LASER_POWER };
-                            sub->draw_options(options_order, update_read_only_options, error_message, not_model);
+                            sub->draw_option(opt, update_read_only_options, error_message, not_model);
+                        }
+
+                        label = to_string() << "Advanced Controls ##" << sub->s.get_info(RS2_CAMERA_INFO_NAME);
+                        if (ImGui::TreeNode(label.c_str()))
+                        {
+                            for (auto i = 0; i < RS2_OPTION_COUNT; i++)
+                            {
+                                auto opt = static_cast<rs2_option>(i);
+                                if (std::find(drawing_order.begin(), drawing_order.end(), opt) == drawing_order.end())
+                                {
+                                    sub->draw_option(opt, update_read_only_options, error_message, not_model);
+                                }
+                            }
 
                             auto&& de_opt = sub->options_metadata[RS2_OPTION_DEPTH_UNITS];
                             if (de_opt.supported)
@@ -1098,10 +1174,13 @@ int main(int, char**) try
                                     }
                                 }
                             }
+
+                            ImGui::TreePop();
                         }
 
                         ImGui::TreePop();
                     }
+
                     ImGui::PopStyleColor();
                 }
             }
@@ -1145,6 +1224,15 @@ int main(int, char**) try
                 sub->update(error_message, not_model);
             }
         }
+
+        ImGui::PopStyleColor(2);
+        ImGui::PopFont();
+        ImGui::PopStyleVar();
+
+        const ImVec2 pos = ImGui::GetCursorScreenPos();
+        ImGui::GetWindowDrawList()->AddLine({ pos.x,pos.y }, { pos.x + panel_width,pos.y }, ImColor(from_rgba(0, 0, 0, 0xff)));
+        ImRect bb(pos, ImVec2(pos.x + ImGui::GetContentRegionAvail().x, pos.y + ImGui::GetContentRegionAvail().y));
+        ImGui::GetWindowDrawList()->AddRectFilled(bb.GetTL(), bb.GetBR(), ImColor(from_rgba(9, 11, 13, 255)));
 
         ImGui::End();
         ImGui::PopStyleVar();

@@ -46,7 +46,7 @@ const double DBL_EPSILON = 2.2204460492503131e-016;  // smallest such that 1.0+D
 
 namespace librealsense
 {
-    #define UNKNOWN "UNKNOWN"
+    #define UNKNOWN_VALUE "UNKNOWN"
 
     ///////////////////////////////////
     // Utility types for general use //
@@ -59,6 +59,8 @@ namespace librealsense
     };
 
     void copy(void* dst, void const* src, size_t size);
+
+    std::string make_less_screamy(const char* str);
 
     ///////////////////////
     // Logging mechanism //
