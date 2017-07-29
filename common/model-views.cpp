@@ -116,6 +116,7 @@ namespace rs2
                         labels.push_back(endpoint.get_option_value_description(opt, i));
                     }
                     ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, { 1,1,1,1 });
+
                     if (ImGui::Combo(id.c_str(), &selected, labels.data(),
                         static_cast<int>(labels.size())))
                     {
@@ -276,7 +277,7 @@ namespace rs2
             auto opt = static_cast<rs2_option>(i);
 
             std::stringstream ss;
-            ss << dev.get_info(RS2_CAMERA_INFO_NAME)
+            ss << "##" << dev.get_info(RS2_CAMERA_INFO_NAME)
                 << "/" << s.get_info(RS2_CAMERA_INFO_NAME)
                 << "/" << rs2_option_to_string(opt);
             metadata.id = ss.str();
@@ -1217,6 +1218,8 @@ namespace rs2
 
     std::map<rs2_stream, rect> device_model::calc_layout(float x0, float y0, float width, float height)
     {
+        const int top_bar_height = 32;
+
         std::set<rs2_stream> active_streams;
         for (auto i = 0; i < RS2_STREAM_COUNT; i++)
         {
@@ -1236,7 +1239,7 @@ namespace rs2
 
         if (fullscreen)
         {
-            results[selected_stream] = { static_cast<float>(x0), static_cast<float>(y0), static_cast<float>(width), static_cast<float>(height) };
+            results[selected_stream] = { static_cast<float>(x0), static_cast<float>(y0 + top_bar_height), static_cast<float>(width), static_cast<float>(height - top_bar_height) };
         }
         else
         {
@@ -1253,8 +1256,8 @@ namespace rs2
                 {
                     if (it == active_streams.end()) break;
 
-                    rect r = { x0 + x * cell_width, y0 + y * cell_height,
-                        cell_width, cell_height };
+                    rect r = { x0 + x * cell_width, y0 + y * cell_height + top_bar_height,
+                        cell_width, cell_height - top_bar_height };
                     results[*it] = r;
                     it++;
                 }

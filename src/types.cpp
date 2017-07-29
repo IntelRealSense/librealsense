@@ -245,7 +245,7 @@ namespace librealsense
 
     const char* get_string(rs2_format value)
     {
-#define CASE(X) STRCASE(FORMAT, X)
+#define CASE(X) case RS2_FORMAT_##X: return #X;
         switch(value)
         {
         CASE(ANY)
