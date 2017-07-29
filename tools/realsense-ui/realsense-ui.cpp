@@ -719,11 +719,33 @@ int main(int, char**) try
         ImGui::SameLine();
         ImGui::SetCursorPosX(w - panel_width - panel_y);
 
-
-        ImGui::PushStyleColor(ImGuiCol_Text, { 1.f,1.f,1.f,1.f });
         ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, { 1.f,1.f,1.f,1.f });
-        ImGui::Button(u8"\uf013\uf0d7", { panel_y,panel_y });
-        ImGui::PopStyleColor(2);
+        //if (ImGui::Button(u8"\uf013\uf0d7", { 25,25 }))
+        ImGui::PushStyleColor(ImGuiCol_PopupBg, from_rgba(230, 230, 230, 255));
+        ImGui::PushStyleColor(ImGuiCol_HeaderHovered, from_rgba(0, 0xae, 0xff, 255));
+        ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, from_rgba(255, 255, 255, 255));
+  
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(5, 5));
+        //ImGui::SetNextWindowPos({ 0, panel_y });
+
+        if (ImGui::Button(u8"\uf013\uf0d7", { panel_y,panel_y }))
+            ImGui::OpenPopup("global_menu");
+
+        ImGui::PushFont(font_12);
+        //ImGui::SetNextWindowSize({ panel_width, 20.f * (device_names.size() + 1) + 8 });
+        if (ImGui::BeginPopup("global_menu"))
+        {
+            ImGui::PushStyleColor(ImGuiCol_Text, from_rgba(30, 30, 30, 255));
+            if (ImGui::Selectable("About RealSense Viewer"))
+            {
+            }
+
+            ImGui::PopStyleColor();
+            ImGui::EndPopup();
+        }
+        ImGui::PopFont();
+        ImGui::PopStyleVar();
+        ImGui::PopStyleColor(4);
 
         ImGui::End();
         ImGui::PopStyleColor();
@@ -784,8 +806,70 @@ int main(int, char**) try
             ImGui::SetCursorPos({ panel_width - 45, 11 });
 
             ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, { 1.f,1.f,1.f,1.f });
-            ImGui::Button(u8"\uf013\uf0d7", { 25,25 });
-            ImGui::PopStyleColor();
+            //if (ImGui::Button(u8"\uf013\uf0d7", { 25,25 }))
+            ImGui::PushStyleColor(ImGuiCol_PopupBg, from_rgba(230, 230, 230, 255));
+            ImGui::PushStyleColor(ImGuiCol_HeaderHovered, from_rgba(0, 0xae, 0xff, 255));
+            ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, from_rgba(255, 255, 255, 255));
+  
+            ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(5, 5));
+            //ImGui::SetNextWindowPos({ 0, panel_y });
+
+            if (ImGui::Button(u8"\uf013\uf0d7", { 25,25 }))
+                ImGui::OpenPopup("device_menu");
+
+            ImGui::PushFont(font_12);
+            //ImGui::SetNextWindowSize({ panel_width, 20.f * (device_names.size() + 1) + 8 });
+            if (ImGui::BeginPopup("device_menu"))
+            {
+                ImGui::PushStyleColor(ImGuiCol_Text, from_rgba(30, 30, 30, 255));
+                if (ImGui::Selectable("Show Device Details..."))
+                {
+                    
+                }
+
+                if (ImGui::Selectable("Collapse All"))
+                {
+                    
+                }
+
+                ImGui::Separator();
+
+                if (ImGui::Selectable("Load Settings", false, ImGuiSelectableFlags_SpanAllColumns))
+                {
+                    const char *ret;
+                    ret = noc_file_dialog_open(NOC_FILE_DIALOG_OPEN,
+                                               "JSON\0*.json\0", NULL, NULL);
+                
+                }
+
+                if (ImGui::Selectable("Save Settings", false, ImGuiSelectableFlags_SpanAllColumns))
+                {
+                    const char *ret;
+                    ret = noc_file_dialog_open(NOC_FILE_DIALOG_SAVE,
+                                               "JSON\0*.json\0", NULL, NULL);
+                
+                }
+
+                ImGui::Separator();
+
+                if (ImGui::Selectable("Hardware Reset"))
+                {
+                    
+                }
+
+                ImGui::Separator();
+
+                if (ImGui::Selectable("Remove Source"))
+                {
+                    
+                }
+
+                ImGui::PopStyleColor();
+                ImGui::EndPopup();
+            }
+            ImGui::PopFont();
+            ImGui::PopStyleVar();
+            ImGui::PopStyleColor(4);
 
             ImGui::SetCursorPos({ 0, panel_y });
             
@@ -1473,6 +1557,8 @@ int main(int, char**) try
 
                 if (model.streams[stream].dev->is_paused())
                 {
+                    ImGui::PushStyleColor(ImGuiCol_Text, from_rgba(0, 174, 239, 255));
+                    ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, from_rgba(0xc3, 0xd5, 0xe5, 0xff));
                     label = to_string() << u8"\uf04b" << "##Resume " << rs2_stream_to_string(stream);
                     if (ImGui::Button(label.c_str(), { 24, top_bar_height }))
                     {
@@ -1482,6 +1568,7 @@ int main(int, char**) try
                     {
                         ImGui::SetTooltip("Resume sensor");
                     }
+                    ImGui::PopStyleColor(2);
                 }
                 else
                 {
