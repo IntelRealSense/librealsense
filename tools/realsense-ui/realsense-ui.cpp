@@ -1472,6 +1472,10 @@ int main(int, char**) try
                     {
                         model.streams[stream].dev->resume();
                     }
+                    if (ImGui::IsItemHovered())
+                    {
+                        ImGui::SetTooltip("Resume sensor");
+                    }
                 }
                 else
                 {
@@ -1480,16 +1484,27 @@ int main(int, char**) try
                     {
                         model.streams[stream].dev->pause();
                     }
+                    if (ImGui::IsItemHovered())
+                    {
+                        ImGui::SetTooltip("Pause sensor");
+                    }
                 }
-
                 ImGui::SameLine();
 
                 label = to_string() << u8"\uf030" << "##Snapshot " << rs2_stream_to_string(stream);
                 ImGui::Button(label.c_str(), { 24, top_bar_height });
+                if (ImGui::IsItemHovered())
+                {
+                    ImGui::SetTooltip("Save snapshot");
+                }
                 ImGui::SameLine();
 
                 label = to_string() << u8"\uf05a" << "##Info " << rs2_stream_to_string(stream);
                 ImGui::Button(label.c_str(), { 24, top_bar_height });
+                if (ImGui::IsItemHovered())
+                {
+                    ImGui::SetTooltip("Show info overlay");
+                }
                 ImGui::SameLine();
 
                 if (!layout.empty() && !model.fullscreen)
@@ -1518,7 +1533,7 @@ int main(int, char**) try
                     }
                     if (ImGui::IsItemHovered())
                     {
-                        ImGui::SetTooltip("Minimize stream to tile-view");
+                        ImGui::SetTooltip("Restore tile view");
                     }
 
                     ImGui::SameLine();
@@ -1528,6 +1543,10 @@ int main(int, char**) try
                 if (ImGui::Button(label.c_str(), { 24, top_bar_height }))
                 {
                     model.streams[stream].dev->stop();
+                }
+                if (ImGui::IsItemHovered())
+                {
+                    ImGui::SetTooltip("Stop this sensor");
                 }
                 ImGui::SameLine();
 
