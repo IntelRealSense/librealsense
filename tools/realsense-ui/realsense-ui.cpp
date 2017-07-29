@@ -20,6 +20,9 @@
 
 #include <imgui_internal.h>
 
+#define NOC_FILE_DIALOG_IMPLEMENTATION
+#include <noc_file_dialog.h>
+
 #pragma comment(lib, "opengl32.lib")
 
 using namespace rs2;
@@ -670,7 +673,10 @@ int main(int, char**) try
             ImGui::Separator();
             if (ImGui::Selectable("From File...", false, ImGuiSelectableFlags_SpanAllColumns))
             {
-
+                const char *ret;
+                ret = noc_file_dialog_open(NOC_FILE_DIALOG_OPEN,
+                                           "ROS-bag\0*.bag\0", NULL, NULL);
+                
             }
             ImGui::NextColumn();
             ImGui::Text("");
