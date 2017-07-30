@@ -180,7 +180,7 @@ void draw_general_tab(device_model& model, device_list& list,
                     {
                         if (is_recording)
                         {
-							model.start_recording(dev, input_file_name, error_message);
+                            model.start_recording(dev, input_file_name, error_message);
                         }
                         for (auto&& sub : model.subdevices)
                         {
@@ -624,7 +624,7 @@ int main(int, char**) try
     user_data data;
     data.curr_window = window;
     data.mouse = &mouse;
-    
+
     glfwSetDropCallback(window, handle_dropped_file);
     glfwSetWindowUserPointer(window, &data);
 
@@ -722,7 +722,7 @@ int main(int, char**) try
                     list = ctx.query_devices();
 
                     device_names = get_devices_names(list);
-                    
+
                     for (auto dev : devs)
                     {
                         dev = nullptr;

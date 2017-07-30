@@ -20,11 +20,6 @@
 ////////////////////////
 // API implementation //
 ////////////////////////
-struct rs2_raw_data_buffer
-{
-    std::vector<uint8_t> buffer;
-};
-
 struct rs2_stream_profile_list
 {
     std::vector<librealsense::stream_profile> list;

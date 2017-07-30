@@ -1,8 +1,7 @@
-/* License: Apache 2.0. See LICENSE file in root directory.
-   Copyright(c) 2017 Intel Corporation. All Rights Reserved. */
+// License: Apache 2.0. See LICENSE file in root directory.
+// Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 
-// This sample uses the advanced mode to set the algo controls of DS5.
-// It can be useful for loading settings saved from IPDev.
+#pragma once
 
 #include <fstream>
 
@@ -11,342 +10,324 @@
 #include <sstream>
 #include <map>
 #include <string>
+#include <iomanip>
 
-#include "../third-party/json.hpp"
-#include <librealsense/rs2_advanced_mode.hpp>
+#include "json.hpp"
+#include <librealsense/rs2_advanced_mode_command.h>
+#include "types.h"
+#include "presets.h"
 
-using json = nlohmann::json;
-
-template<class T>
-struct param_group
+namespace librealsense
 {
-    using group_type = T;
-    T vals[3];
-    bool update = false;
-};
+    using json = nlohmann::json;
 
-struct stream_profile
-{
-    int width;
-    int height;
-    int fps;
-    std::string depth_format;
-    std::string ir_format;
-};
-
-struct laser_control
-{
-    std::string laser_state;
-    int laser_power;
-};
-
-struct roi_control
-{
-    int roi_top;
-    int roi_bottom;
-    int roi_left;
-    int roi_right;
-};
-
-struct exposure_control
-{
-    std::string auto_exposure;
-    int exposure;
-};
-
-struct camera_state
-{
-    param_group<::STDepthControlGroup> depth_controls;
-    param_group<::STRsm> rsm;
-    param_group<::STRauSupportVectorControl> rsvc;
-    param_group<::STColorControl> color_control;
-    param_group<::STRauColorThresholdsControl> rctc;
-    param_group<::STSloColorThresholdsControl> sctc;
-    param_group<::STSloPenaltyControl> spc;
-    param_group<::STHdad> hdad;
-    param_group<::STColorCorrection> cc;
-    param_group<::STDepthTableControl> depth_table;
-    param_group<::STAEControl> ae;
-    param_group<::STCensusRadius> census;
-    param_group<stream_profile> profile;
-    param_group<laser_control> laser;
-    param_group<roi_control> roi;
-    param_group<exposure_control> exposure;
-
-    void reset()
+    template<class T>
+    struct param_group
     {
-        depth_controls.update = false;
-        rsm.update = false;
-        rsvc.update = false;
-        color_control.update = false;
-        rctc.update = false;
-        sctc.update = false;
-        spc.update = false;
-        hdad.update = false;
-        cc.update = false;
-        depth_table.update = false;
-        ae.update = false;
-        census.update = false;
-        profile.update = false;
-        laser.update = false;
-        roi.update = false;
-        exposure.update = false;
-
-        profile.vals[0].depth_format = "Z16";
-        profile.vals[0].ir_format = "COUNT";
-    }
-};
-
-struct json_field
-{
-    virtual ~json_field() = default;
-
-    bool was_set = false;
-
-    virtual void load(const std::string& value) = 0;
-};
-
-template<class T, class S>
-struct json_struct_field : json_field
-{
-    T* strct;
-    S T::group_type::* field;
-    float scale = 1.0f;
-    bool check_ranges = true;
-
-    void range_check(float value)
-    {
-        if (check_ranges)
-        {
-            auto min = ((strct->vals + 1)->*field);
-            auto max = ((strct->vals + 2)->*field);
-            if (value > max || value < min)
-            {
-                std::stringstream ss;
-                ss << "value " << value << " is not in range [" << min << ", " << max << "]!";
-                throw std::runtime_error(ss.str());
-            }
-        }
-    }
-
-    void load(const std::string& str) override
-    {
-        float value = ::atof(str.c_str());
-        range_check(scale * value);
-        (strct->vals[0].*field) = scale * value;
-        strct->update = true;
-    }
-};
-
-template<class T, class S>
-struct json_string_struct_field : json_field
-{
-    T* strct;
-    S T::group_type::* field;
-
-    void load(const std::string& value) override
-    {
-        (strct->vals[0].*field) = value;
-        strct->update = true;
-    }
-};
-
-template<class T, class S>
-struct json_invert_struct_field : json_struct_field<T, S>
-{
-    using json_struct_field<T, S>::range_check;
-    using json_struct_field<T, S>::strct;
-    using json_struct_field<T, S>::field;
-
-    void load(const std::string& str) override
-    {
-        float value = ::atof(str.c_str());
-        range_check(value);
-        (strct->vals[0].*field) = (value > 0) ? 0 : 1;
-        strct->update = true;
-    }
-};
-
-template<class T, class S>
-std::shared_ptr<json_field> make_field(T& strct, S T::group_type::* field, double scale = 1.0f)
-{
-    std::shared_ptr<json_struct_field<T, S>> f(new json_struct_field<T, S>());
-    f->field = field;
-    f->strct = &strct;
-    f->scale = scale;
-    return f;
-}
-
-template<class T, class S>
-std::shared_ptr<json_field> make_string_field(T& strct, S T::group_type::* field, double scale = 1.0f)
-{
-    std::shared_ptr<json_string_struct_field<T, S>> f(new json_string_struct_field<T, S>());
-    f->field = field;
-    f->strct = &strct;
-    return f;
-}
-
-template<class T, class S>
-std::shared_ptr<json_field> make_invert_field(T& strct, S T::group_type::* field)
-{
-    std::shared_ptr<json_invert_struct_field<T, S>> f(new json_invert_struct_field<T, S>());
-    f->field = field;
-    f->strct = &strct;
-    return f;
-}
-
-
-inline void load_json(const std::string& filename, camera_state& state)
-{
-    std::stringstream errors;
-    std::stringstream warnings;
-
-    // Read JSON file
-    std::ifstream i(filename);
-    json j;
-    i >> j;
-
-    std::map<std::string, std::shared_ptr<json_field>> fields = {
-        // Depth Control
-        { "param-leftrightthreshold", make_field(state.depth_controls, &STDepthControlGroup::lrAgreeThreshold) },
-        { "param-maxscorethreshb", make_field(state.depth_controls, &STDepthControlGroup::scoreThreshB) },
-        { "param-medianthreshold", make_field(state.depth_controls, &STDepthControlGroup::deepSeaMedianThreshold) },
-        { "param-minscorethresha", make_field(state.depth_controls, &STDepthControlGroup::scoreThreshA) },
-        { "param-neighborthresh", make_field(state.depth_controls, &STDepthControlGroup::deepSeaNeighborThreshold) },
-        { "param-secondpeakdelta", make_field(state.depth_controls, &STDepthControlGroup::deepSeaSecondPeakThreshold) },
-        { "param-texturecountthresh", make_field(state.depth_controls, &STDepthControlGroup::textureCountThreshold) },
-        { "param-robbinsmonrodecrement", make_field(state.depth_controls, &STDepthControlGroup::minusDecrement) },
-        { "param-robbinsmonroincrement", make_field(state.depth_controls, &STDepthControlGroup::plusIncrement) },
-
-        // RSM
-        { "param-usersm", make_invert_field(state.rsm, &STRsm::rsmBypass) },
-        { "param-rsmdiffthreshold", make_field(state.rsm, &STRsm::diffThresh) },
-        { "param-rsmrauslodiffthreshold", make_field(state.rsm, &STRsm::sloRauDiffThresh) },
-        { "param-rsmremovethreshold", make_field(state.rsm, &STRsm::removeThresh, 168) },
-
-        // RAU Support Vector Control
-        { "param-raumine", make_field(state.rsvc, &STRauSupportVectorControl::minEast) },
-        { "param-rauminn", make_field(state.rsvc, &STRauSupportVectorControl::minNorth) },
-        { "param-rauminnssum", make_field(state.rsvc, &STRauSupportVectorControl::minNSsum) },
-        { "param-raumins", make_field(state.rsvc, &STRauSupportVectorControl::minSouth) },
-        { "param-rauminw", make_field(state.rsvc, &STRauSupportVectorControl::minWest) },
-        { "param-rauminwesum", make_field(state.rsvc, &STRauSupportVectorControl::minWEsum) },
-        { "param-regionshrinku", make_field(state.rsvc, &STRauSupportVectorControl::uShrink) },
-        { "param-regionshrinkv", make_field(state.rsvc, &STRauSupportVectorControl::vShrink) },
-
-        // Color Controls
-        { "param-disableraucolor", make_field(state.color_control, &STColorControl::disableRAUColor) },
-        { "param-disablesadcolor", make_field(state.color_control, &STColorControl::disableSADColor) },
-        { "param-disablesadnormalize", make_field(state.color_control, &STColorControl::disableSADNormalize) },
-        { "param-disablesloleftcolor", make_field(state.color_control, &STColorControl::disableSLOLeftColor) },
-        { "param-disableslorightcolor", make_field(state.color_control, &STColorControl::disableSLORightColor) },
-
-        // RAU Color Thresholds Control
-        { "param-regioncolorthresholdb", make_field(state.rctc, &STRauColorThresholdsControl::rauDiffThresholdBlue, 1022) },
-        { "param-regioncolorthresholdg", make_field(state.rctc, &STRauColorThresholdsControl::rauDiffThresholdGreen, 1022) },
-        { "param-regioncolorthresholdr", make_field(state.rctc, &STRauColorThresholdsControl::rauDiffThresholdRed, 1022) },
-
-        // SLO Color Thresholds Control
-        { "param-scanlineedgetaub", make_field(state.sctc, &STSloColorThresholdsControl::diffThresholdBlue) },
-        { "param-scanlineedgetaug", make_field(state.sctc, &STSloColorThresholdsControl::diffThresholdGreen) },
-        { "param-scanlineedgetaur", make_field(state.sctc, &STSloColorThresholdsControl::diffThresholdRed) },
-
-        // SLO Penalty Control
-        { "param-scanlinep1", make_field(state.spc, &STSloPenaltyControl::sloK1Penalty) },
-        { "param-scanlinep1onediscon", make_field(state.spc, &STSloPenaltyControl::sloK1PenaltyMod1) },
-        { "param-scanlinep1twodiscon", make_field(state.spc, &STSloPenaltyControl::sloK1PenaltyMod2) },
-        { "param-scanlinep2", make_field(state.spc, &STSloPenaltyControl::sloK2Penalty) },
-        { "param-scanlinep2onediscon", make_field(state.spc, &STSloPenaltyControl::sloK2PenaltyMod1) },
-        { "param-scanlinep2twodiscon", make_field(state.spc, &STSloPenaltyControl::sloK2PenaltyMod2) },
-
-        // HDAD
-        { "param-lambdaad", make_field(state.hdad, &STHdad::lambdaAD) },
-        { "param-lambdacensus", make_field(state.hdad, &STHdad::lambdaCensus) },
-        { "ignoreSAD", make_field(state.hdad, &STHdad::ignoreSAD) },
-
-        // SLO Penalty Control
-        { "param-colorcorrection1", make_field(state.cc, &STColorCorrection::colorCorrection1) },
-        { "param-colorcorrection2", make_field(state.cc, &STColorCorrection::colorCorrection2) },
-        { "param-colorcorrection3", make_field(state.cc, &STColorCorrection::colorCorrection3) },
-        { "param-colorcorrection4", make_field(state.cc, &STColorCorrection::colorCorrection4) },
-        { "param-colorcorrection5", make_field(state.cc, &STColorCorrection::colorCorrection5) },
-        { "param-colorcorrection6", make_field(state.cc, &STColorCorrection::colorCorrection6) },
-        { "param-colorcorrection7", make_field(state.cc, &STColorCorrection::colorCorrection7) },
-        { "param-colorcorrection8", make_field(state.cc, &STColorCorrection::colorCorrection8) },
-        { "param-colorcorrection9", make_field(state.cc, &STColorCorrection::colorCorrection9) },
-        { "param-colorcorrection10", make_field(state.cc, &STColorCorrection::colorCorrection10) },
-        { "param-colorcorrection11", make_field(state.cc, &STColorCorrection::colorCorrection11) },
-        { "param-colorcorrection12", make_field(state.cc, &STColorCorrection::colorCorrection12) },
-
-        // Depth Table
-        { "param-depthunits", make_field(state.depth_table, &STDepthTableControl::depthUnits) },
-        { "param-depthclampmin", make_field(state.depth_table, &STDepthTableControl::depthClampMin) },
-        { "param-depthclampmax", make_field(state.depth_table, &STDepthTableControl::depthClampMax) },
-        { "param-disparitymode", make_field(state.depth_table, &STDepthTableControl::disparityMode) },
-        { "param-disparityshift", make_field(state.depth_table, &STDepthTableControl::disparityShift) },
-
-        // Auto-Exposure
-        { "param-autoexposure-setpoint", make_field(state.ae, &STAEControl::meanIntensitySetPoint) },
-
-        // Census
-        { "param-censusenablereg-udiameter", make_field(state.census, &STCensusRadius::uDiameter) },
-        { "param-censusenablereg-vdiameter", make_field(state.census, &STCensusRadius::vDiameter) },
-
-        // Stream Profile
-        { "stream-width", make_field(state.profile, &stream_profile::width) },
-        { "stream-height", make_field(state.profile, &stream_profile::height) },
-        { "stream-fps", make_field(state.profile, &stream_profile::fps) },
-        { "stream-depth-format", make_string_field(state.profile, &stream_profile::depth_format) },
-        { "stream-ir-format", make_string_field(state.profile, &stream_profile::ir_format) },
-
-        // Controls Group
-        { "controls-laserstate", make_string_field(state.laser, &laser_control::laser_state) },
-        { "controls-laserpower", make_field(state.laser, &laser_control::laser_power) },
-
-        { "controls-autoexposure-roi-top", make_field(state.roi, &roi_control::roi_top) },
-        { "controls-autoexposure-roi-bottom", make_field(state.roi, &roi_control::roi_bottom) },
-        { "controls-autoexposure-roi-left", make_field(state.roi, &roi_control::roi_left) },
-        { "controls-autoexposure-roi-right", make_field(state.roi, &roi_control::roi_right) },
-
-        { "controls-autoexposure-auto", make_string_field(state.exposure, &exposure_control::auto_exposure) },
-        { "controls-autoexposure-manual", make_field(state.exposure, &exposure_control::exposure) },
+        using group_type = T;
+        T vals[3];
+        bool update = false;
     };
 
-    for (auto it = j.begin(); it != j.end(); ++it)
-    {
-        auto kvp = fields.find(it.key());
-        if (kvp != fields.end())
+    struct preset_param_group{
+        param_group<STDepthControlGroup>         depth_controls;
+        param_group<STRsm>                       rsm;
+        param_group<STRauSupportVectorControl>   rsvc;
+        param_group<STColorControl>              color_control;
+        param_group<STRauColorThresholdsControl> rctc;
+        param_group<STSloColorThresholdsControl> sctc;
+        param_group<STSloPenaltyControl>         spc;
+        param_group<STHdad>                      hdad;
+        param_group<STColorCorrection>           cc;
+        param_group<STDepthTableControl>         depth_table;
+        param_group<STAEControl>                 ae;
+        param_group<STCensusRadius>              census;
+
+        preset_param_group(const preset& other)
         {
-            try
-            {
-                if (it.value().type() != nlohmann::basic_json<>::value_t::string)
-                {
-                    float val = it.value();
-                    std::stringstream ss;
-                    ss << val;
-                    kvp->second->load(ss.str());
-                }
-                else
-                {
-                    kvp->second->load(it.value());
-                }
-                kvp->second->was_set = true;
-            }
-            catch (const std::runtime_error& err)
-            {
-                errors << "Couldn't set \"" << it.key() << "\":" << err.what() << "\n";
-            }
+            copy(other);
         }
+
+        preset_param_group& operator=(const preset& other)
+        {
+            copy(other);
+            return *this;
+        }
+    private:
+        void copy(const preset& other)
+        {
+            depth_controls.vals[0] = other.depth_controls;
+            rsm.vals[0] = other.rsm;
+            rsvc.vals[0] = other.rsvc;
+            color_control.vals[0] = other.color_control;
+            rctc.vals[0] = other.rctc;
+            sctc.vals[0] = other.sctc;
+            spc.vals[0] = other.spc;
+            hdad.vals[0] = other.hdad;
+            cc.vals[0] = other.cc;
+            depth_table.vals[0] = other.depth_table;
+            ae.vals[0] = other.ae;
+            census.vals[0] = other.census;
+        }
+    };
+
+    struct json_feild
+    {
+        virtual ~json_feild() = default;
+
+        bool was_set = false;
+
+        virtual void load(const std::string& value) = 0;
+    };
+
+    template<class T, class S>
+    struct json_struct_feild : json_feild
+    {
+        T* strct;
+        S T::group_type::* field;
+        float scale = 1.0f;
+        bool check_ranges = true;
+
+        void load(const std::string& str) override
+        {
+            float value = ::atof(str.c_str());
+            strct->vals[0].*field = (scale * value);
+            strct->update = true;
+        }
+    };
+
+
+    template<class T, class S>
+    struct json_invert_struct_feild : json_struct_feild<T, S>
+    {
+        using json_struct_feild<T, S>::strct;
+        using json_struct_feild<T, S>::field;
+
+        void load(const std::string& str) override
+        {
+            float value = ::atof(str.c_str());
+            (strct->vals[0].*field) = (value > 0) ? 0 : 1;
+            strct->update = true;
+        }
+    };
+
+    template<class T, class S>
+    std::shared_ptr<json_feild> make_feild(T& strct, S T::group_type::* feild, double scale = 1.0f)
+    {
+        std::shared_ptr<json_struct_feild<T, S>> f(new json_struct_feild<T, S>());
+        f->field = feild;
+        f->strct = &strct;
+        f->scale = scale;
+        return f;
     }
 
-    for (auto& kvp : fields)
+    template<class T, class S>
+    std::shared_ptr<json_feild> make_invert_feild(T& strct, S T::group_type::* feild)
     {
-        if (!kvp.second->was_set)
-        {
-            warnings << "(Warning) Parameter \"" << kvp.first << "\" was not set!\n";
-        }
+        std::shared_ptr<json_invert_struct_feild<T, S>> f(new json_invert_struct_feild<T, S>());
+        f->field = feild;
+        f->strct = &strct;
+        return f;
     }
 
-    auto err = errors.str();
-    if (err != "") throw std::runtime_error(err + warnings.str());
+    inline std::vector<uint8_t> generate_json(const preset& in_preset)
+    {
+        json j;
+        j["plusIncrement"]              = in_preset.depth_controls.plusIncrement;
+        j["minusDecrement"]             = in_preset.depth_controls.minusDecrement;
+        j["deepSeaMedianThreshold"]     = in_preset.depth_controls.deepSeaMedianThreshold;
+        j["scoreThreshA"]               = in_preset.depth_controls.scoreThreshA;
+        j["scoreThreshB"]               = in_preset.depth_controls.scoreThreshB;
+        j["textureDifferenceThreshold"] = in_preset.depth_controls.textureDifferenceThreshold;
+        j["textureCountThreshold"]      = in_preset.depth_controls.textureCountThreshold;
+        j["deepSeaSecondPeakThreshold"] = in_preset.depth_controls.deepSeaSecondPeakThreshold;
+        j["deepSeaNeighborThreshold"]   = in_preset.depth_controls.deepSeaNeighborThreshold;
+        j["lrAgreeThreshold"]           = in_preset.depth_controls.lrAgreeThreshold;
+        j["rsmBypass"]                  = in_preset.rsm.rsmBypass;
+        j["diffThresh"]                 = in_preset.rsm.diffThresh;
+        j["sloRauDiffThresh"]           = in_preset.rsm.sloRauDiffThresh;
+        j["removeThresh"]               = in_preset.rsm.removeThresh;
+        j["minWest"]                    = in_preset.rsvc.minWest;
+        j["minEast"]                    = in_preset.rsvc.minEast;
+        j["minWEsum"]                   = in_preset.rsvc.minWEsum;
+        j["minNorth"]                   = in_preset.rsvc.minNorth;
+        j["minSouth"]                   = in_preset.rsvc.minSouth;
+        j["minNSsum"]                   = in_preset.rsvc.minNSsum;
+        j["uShrink"]                    = in_preset.rsvc.uShrink;
+        j["vShrink"]                    = in_preset.rsvc.vShrink;
+        j["disableSADColor"]            = in_preset.color_control.disableSADColor;
+        j["disableRAUColor"]            = in_preset.color_control.disableRAUColor;
+        j["disableSLORightColor"]       = in_preset.color_control.disableSLORightColor;
+        j["disableSLOLeftColor"]        = in_preset.color_control.disableSLOLeftColor;
+        j["disableSADNormalize"]        = in_preset.color_control.disableSADNormalize;
+        j["rauDiffThresholdRed"]        = in_preset.rctc.rauDiffThresholdRed;
+        j["rauDiffThresholdGreen"]      = in_preset.rctc.rauDiffThresholdGreen;
+        j["rauDiffThresholdBlue"]       = in_preset.rctc.rauDiffThresholdBlue;
+        j["diffThresholdRed"]           = in_preset.sctc.diffThresholdRed;
+        j["diffThresholdGreen"]         = in_preset.sctc.diffThresholdGreen;
+        j["diffThresholdBlue"]          = in_preset.sctc.diffThresholdBlue;
+        j["sloK1Penalty"]               = in_preset.spc.sloK1Penalty;
+        j["sloK2Penalty"]               = in_preset.spc.sloK2Penalty;
+        j["sloK1PenaltyMod1"]           = in_preset.spc.sloK1PenaltyMod1;
+        j["sloK2PenaltyMod1"]           = in_preset.spc.sloK2PenaltyMod1;
+        j["sloK1PenaltyMod2"]           = in_preset.spc.sloK1PenaltyMod2;
+        j["sloK2PenaltyMod2"]           = in_preset.spc.sloK2PenaltyMod2;
+        j["lambdaCensus"]               = in_preset.hdad.lambdaCensus;
+        j["lambdaAD"]                   = in_preset.hdad.lambdaAD;
+        j["ignoreSAD"]                  = in_preset.hdad.ignoreSAD;
+        j["colorCorrection1"]           = in_preset.cc.colorCorrection1;
+        j["colorCorrection2"]           = in_preset.cc.colorCorrection2;
+        j["colorCorrection3"]           = in_preset.cc.colorCorrection3;
+        j["colorCorrection4"]           = in_preset.cc.colorCorrection4;
+        j["colorCorrection5"]           = in_preset.cc.colorCorrection5;
+        j["colorCorrection6"]           = in_preset.cc.colorCorrection6;
+        j["colorCorrection7"]           = in_preset.cc.colorCorrection7;
+        j["colorCorrection8"]           = in_preset.cc.colorCorrection8;
+        j["colorCorrection9"]           = in_preset.cc.colorCorrection9;
+        j["colorCorrection10"]          = in_preset.cc.colorCorrection10;
+        j["colorCorrection11"]          = in_preset.cc.colorCorrection11;
+        j["colorCorrection12"]          = in_preset.cc.colorCorrection12;
+        j["meanIntensitySetPoint"]      = in_preset.ae.meanIntensitySetPoint;
+        j["depthUnits"]                 = in_preset.depth_table.depthUnits;
+        j["depthClampMin"]              = in_preset.depth_table.depthClampMin;
+        j["depthClampMax"]              = in_preset.depth_table.depthClampMax;
+        j["disparityMode"]              = in_preset.depth_table.disparityMode;
+        j["disparityShift"]             = in_preset.depth_table.disparityShift;
+        j["uDiameter"]                  = in_preset.census.uDiameter;
+        j["vDiameter"]                  = in_preset.census.vDiameter;
+        auto str = j.dump();
+        return std::vector<uint8_t>(str.begin(), str.end());
+    }
+
+    inline void update_structs(const std::string& content, preset& in_preset)
+    {
+        preset_param_group p = in_preset;
+        json j = json::parse(content);
+        std::map<std::string, std::shared_ptr<json_feild>> fields = {
+                // Depth Control
+                { "lrAgreeThreshold",           make_feild(p.depth_controls, &STDepthControlGroup::lrAgreeThreshold) },
+                { "scoreThreshB",               make_feild(p.depth_controls, &STDepthControlGroup::scoreThreshB) },
+                { "deepSeaMedianThreshold",     make_feild(p.depth_controls, &STDepthControlGroup::deepSeaMedianThreshold) },
+                { "scoreThreshA",               make_feild(p.depth_controls, &STDepthControlGroup::scoreThreshA) },
+                { "deepSeaNeighborThreshold",   make_feild(p.depth_controls, &STDepthControlGroup::deepSeaNeighborThreshold) },
+                { "deepSeaSecondPeakThreshold", make_feild(p.depth_controls, &STDepthControlGroup::deepSeaSecondPeakThreshold) },
+                { "textureDifferenceThreshold", make_feild(p.depth_controls, &STDepthControlGroup::textureDifferenceThreshold) },
+                { "textureCountThreshold",      make_feild(p.depth_controls, &STDepthControlGroup::textureCountThreshold) },
+                { "minusDecrement",             make_feild(p.depth_controls, &STDepthControlGroup::minusDecrement) },
+                { "plusIncrement",              make_feild(p.depth_controls, &STDepthControlGroup::plusIncrement) },
+
+                // RSM
+                { "rsmBypass",        make_invert_feild(p.rsm, &STRsm::rsmBypass) },
+                { "diffThresh",       make_feild(p.rsm, &STRsm::diffThresh) },
+                { "sloRauDiffThresh", make_feild(p.rsm, &STRsm::sloRauDiffThresh) },
+                { "removeThresh",     make_feild(p.rsm, &STRsm::removeThresh) },
+
+                // RAU Support Vector Control
+                { "minEast",  make_feild(p.rsvc, &STRauSupportVectorControl::minEast) },
+                { "minNorth", make_feild(p.rsvc, &STRauSupportVectorControl::minNorth) },
+                { "minNSsum", make_feild(p.rsvc, &STRauSupportVectorControl::minNSsum) },
+                { "minSouth", make_feild(p.rsvc, &STRauSupportVectorControl::minSouth) },
+                { "minWest",  make_feild(p.rsvc, &STRauSupportVectorControl::minWest) },
+                { "minWEsum", make_feild(p.rsvc, &STRauSupportVectorControl::minWEsum) },
+                { "uShrink",  make_feild(p.rsvc, &STRauSupportVectorControl::uShrink) },
+                { "vShrink",  make_feild(p.rsvc, &STRauSupportVectorControl::vShrink) },
+
+                // Color Controls
+                { "disableRAUColor",      make_feild(p.color_control, &STColorControl::disableRAUColor) },
+                { "disableSADColor",      make_feild(p.color_control, &STColorControl::disableSADColor) },
+                { "disableSADNormalize",  make_feild(p.color_control, &STColorControl::disableSADNormalize) },
+                { "disableSLOLeftColor",  make_feild(p.color_control, &STColorControl::disableSLOLeftColor) },
+                { "disableSLORightColor", make_feild(p.color_control, &STColorControl::disableSLORightColor) },
+
+                // RAU Color Thresholds Control
+                { "rauDiffThresholdBlue",  make_feild(p.rctc, &STRauColorThresholdsControl::rauDiffThresholdBlue) },
+                { "rauDiffThresholdGreen", make_feild(p.rctc, &STRauColorThresholdsControl::rauDiffThresholdGreen) },
+                { "rauDiffThresholdRed",   make_feild(p.rctc, &STRauColorThresholdsControl::rauDiffThresholdRed) },
+
+                // SLO Color Thresholds Control
+                { "diffThresholdBlue",  make_feild(p.sctc, &STSloColorThresholdsControl::diffThresholdBlue) },
+                { "diffThresholdGreen", make_feild(p.sctc, &STSloColorThresholdsControl::diffThresholdGreen) },
+                { "diffThresholdRed",   make_feild(p.sctc, &STSloColorThresholdsControl::diffThresholdRed) },
+
+                // SLO Penalty Control
+                { "sloK1Penalty",     make_feild(p.spc, &STSloPenaltyControl::sloK1Penalty) },
+                { "sloK1PenaltyMod1", make_feild(p.spc, &STSloPenaltyControl::sloK1PenaltyMod1) },
+                { "sloK1PenaltyMod2", make_feild(p.spc, &STSloPenaltyControl::sloK1PenaltyMod2) },
+                { "sloK2Penalty",     make_feild(p.spc, &STSloPenaltyControl::sloK2Penalty) },
+                { "sloK2PenaltyMod1", make_feild(p.spc, &STSloPenaltyControl::sloK2PenaltyMod1) },
+                { "sloK2PenaltyMod2", make_feild(p.spc, &STSloPenaltyControl::sloK2PenaltyMod2) },
+
+                // HDAD
+                { "lambdaAD",     make_feild(p.hdad, &STHdad::lambdaAD) },
+                { "lambdaCensus", make_feild(p.hdad, &STHdad::lambdaCensus) },
+                { "ignoreSAD",    make_feild(p.hdad, &STHdad::ignoreSAD) },
+
+                // SLO Penalty Control
+                { "colorCorrection1",  make_feild(p.cc, &STColorCorrection::colorCorrection1) },
+                { "colorCorrection2",  make_feild(p.cc, &STColorCorrection::colorCorrection2) },
+                { "colorCorrection3",  make_feild(p.cc, &STColorCorrection::colorCorrection3) },
+                { "colorCorrection4",  make_feild(p.cc, &STColorCorrection::colorCorrection4) },
+                { "colorCorrection5",  make_feild(p.cc, &STColorCorrection::colorCorrection5) },
+                { "colorCorrection6",  make_feild(p.cc, &STColorCorrection::colorCorrection6) },
+                { "colorCorrection7",  make_feild(p.cc, &STColorCorrection::colorCorrection7) },
+                { "colorCorrection8",  make_feild(p.cc, &STColorCorrection::colorCorrection8) },
+                { "colorCorrection9",  make_feild(p.cc, &STColorCorrection::colorCorrection9) },
+                { "colorCorrection10", make_feild(p.cc, &STColorCorrection::colorCorrection10) },
+                { "colorCorrection11", make_feild(p.cc, &STColorCorrection::colorCorrection11) },
+                { "colorCorrection12", make_feild(p.cc, &STColorCorrection::colorCorrection12) },
+
+                // Depth Table
+                { "depthUnits",     make_feild(p.depth_table, &STDepthTableControl::depthUnits) },
+                { "depthClampMin",  make_feild(p.depth_table, &STDepthTableControl::depthClampMin) },
+                { "depthClampMax",  make_feild(p.depth_table, &STDepthTableControl::depthClampMax) },
+                { "disparityMode",  make_feild(p.depth_table, &STDepthTableControl::disparityMode) },
+                { "disparityShift", make_feild(p.depth_table, &STDepthTableControl::disparityShift) },
+
+                // Auto-Exposure
+                { "meanIntensitySetPoint", make_feild(p.ae, &STAEControl::meanIntensitySetPoint) },
+
+                // Census
+                { "uDiameter", make_feild(p.census, &STCensusRadius::uDiameter) },
+                { "vDiameter", make_feild(p.census, &STCensusRadius::vDiameter) }};
+
+        for (auto it = j.begin(); it != j.end(); ++it)
+        {
+            auto kvp = fields.find(it.key());
+            if (kvp != fields.end())
+            {
+                try
+                {
+                    if (it.value().type() != nlohmann::basic_json<>::value_t::string)
+                    {
+                        float val = it.value();
+                        std::stringstream ss;
+                        ss << val;
+                        kvp->second->load(ss.str());
+                    }
+                    else
+                    {
+                        kvp->second->load(it.value());
+                    }
+                    kvp->second->was_set = true;
+                }
+                catch (...)
+                {
+                    throw invalid_value_exception(to_string() << "Couldn't set \"" << it.key());
+                }
+            }
+        }
+
+        in_preset.depth_controls = p.depth_controls.vals[0];
+        in_preset.rsm = p.rsm.vals[0];
+        in_preset.rsvc = p.rsvc.vals[0];
+        in_preset.color_control = p.color_control.vals[0];
+        in_preset.rctc = p.rctc.vals[0];
+        in_preset.sctc = p.sctc.vals[0];
+        in_preset.spc = p.spc.vals[0];
+        in_preset.hdad = p.hdad.vals[0];
+        in_preset.cc = p.cc.vals[0];
+        in_preset.depth_table = p.depth_table.vals[0];
+        in_preset.ae = p.ae.vals[0];
+        in_preset.census = p.census.vals[0];
+    }
 }
