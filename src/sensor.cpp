@@ -718,6 +718,7 @@ namespace librealsense
             additional_data.timestamp_domain = timestamp_reader->get_frame_timestamp_domain(mode, sensor_data.fo);
             additional_data.system_time = system_time;
             LOG_DEBUG("FrameAccepted," << get_string(additional_data.stream_type) << "," << std::dec << frame_counter
+            LOG_DEBUG("FrameAccepted," << get_string(additional_data.stream_type) << "," << std::dec << frame_counter
                       << ",Arrived," << std::fixed << system_time
                       << ",TS," << std::fixed << timestamp
                       << ",TS_Domain," << rs2_timestamp_domain_to_string(additional_data.timestamp_domain));

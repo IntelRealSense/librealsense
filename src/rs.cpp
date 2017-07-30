@@ -40,6 +40,7 @@ struct rs2_sensor
 
 struct rs2_context
 {
+    ~rs2_context() { ctx->stop(); }
     std::shared_ptr<librealsense::context> ctx;
 };
 
