@@ -33,8 +33,7 @@ ImVec4 from_rgba(uint8_t r, uint8_t g, uint8_t b, uint8_t a)
     return ImVec4(r / (float)255, g / (float)255, b / (float)255, a / (float)255);
 }
 
-// From https://github.com/procedural/gpulib/blob/master/gpulib_imgui.h
-struct ImVec3 { float x, y, z; ImVec3(float _x = 0.0f, float _y = 0.0f, float _z = 0.0f) { x = _x; y = _y; z = _z; } };
+static ImVec4 light_blue = from_rgba(0, 174, 239, 255);
 
 ImFont* font_16;
 ImFont* font_12;
@@ -46,82 +45,284 @@ void imgui_easy_theming()
     ImGuiIO& io = ImGui::GetIO();
 
     static const ImWchar icons_ranges[] = { 0xf000, 0xf3ff, 0 }; // will not be copied by AddFont* so keep in scope.
-        
 
+    // Load 16px size fonts
     {
         ImFontConfig config_words;
         config_words.OversampleV = 8;
         config_words.OversampleH = 8;
         font_16 = io.Fonts->AddFontFromMemoryCompressedTTF(karla_regular_compressed_data, karla_regular_compressed_size, 16.f, &config_words);
-    
+
         ImFontConfig config_glyphs;
         config_glyphs.MergeMode = true;
         config_glyphs.OversampleV = 8;
         config_glyphs.OversampleH = 8;
-        font_16 = io.Fonts->AddFontFromMemoryCompressedTTF(font_awesome_compressed_data, 
+        font_16 = io.Fonts->AddFontFromMemoryCompressedTTF(font_awesome_compressed_data,
             font_awesome_compressed_size, 16.f, &config_glyphs, icons_ranges);
     }
 
+    // Load 14px size fonts
     {
         ImFontConfig config_words;
         config_words.OversampleV = 8;
         config_words.OversampleH = 8;
         font_12 = io.Fonts->AddFontFromMemoryCompressedTTF(karla_regular_compressed_data, karla_regular_compressed_size, 14.f);
-   
+
         ImFontConfig config_glyphs;
         config_glyphs.MergeMode = true;
         config_glyphs.OversampleV = 8;
         config_glyphs.OversampleH = 8;
-        font_12 = io.Fonts->AddFontFromMemoryCompressedTTF(font_awesome_compressed_data, 
+        font_12 = io.Fonts->AddFontFromMemoryCompressedTTF(font_awesome_compressed_data,
             font_awesome_compressed_size, 14.f, &config_glyphs, icons_ranges);
     }
 
     style.WindowRounding = 0.0f;
     style.ScrollbarRounding = 0.0f;
 
-    //style.Colors[ImGuiCol_Text] =                   from_rgba( R,    G,    B,    A );
-    //style.Colors[ImGuiCol_TextDisabled] =           from_rgba( R,    G,    B,    A );
     style.Colors[ImGuiCol_WindowBg] = from_rgba(9, 11, 13, 255);
-    //style.Colors[ImGuiCol_ChildWindowBg] =          from_rgba( 255,    0,    0,    255 );
     style.Colors[ImGuiCol_Border] = from_rgba(0, 0, 0, 255);
     style.Colors[ImGuiCol_BorderShadow] = from_rgba(100, 100, 150, 0);
     style.Colors[ImGuiCol_FrameBg] = from_rgba(9, 11, 13, 255);
-    //style.Colors[ImGuiCol_FrameBgHovered] =         from_rgba( R,    G,    B,    A );
-    //style.Colors[ImGuiCol_FrameBgActive] =          from_rgba( R,    G,    B,    A );
     style.Colors[ImGuiCol_TitleBg] = from_rgba(27, 33, 38, 255);
     style.Colors[ImGuiCol_TitleBgCollapsed] = from_rgba(27, 33, 38, 255);
     style.Colors[ImGuiCol_TitleBgActive] = from_rgba(62, 77, 89, 255);
-    //style.Colors[ImGuiCol_MenuBarBg] =              from_rgba( R,    G,    B,    A );
     style.Colors[ImGuiCol_ScrollbarBg] = from_rgba(14, 17, 20, 255);
     style.Colors[ImGuiCol_ScrollbarGrab] = from_rgba(54, 66, 67, 255);
     style.Colors[ImGuiCol_ScrollbarGrabHovered] = from_rgba(54 + 10, 66 + 10, 67 + 10, 255);
     style.Colors[ImGuiCol_ScrollbarGrabActive] = from_rgba(54, 66, 67, 255);
     style.Colors[ImGuiCol_ComboBg] = from_rgba(9, 11, 13, 255);
-    style.Colors[ImGuiCol_CheckMark] =              from_rgba( 0,    115,    200,    255 );
-    style.Colors[ImGuiCol_SliderGrab] =             from_rgba( 0,    115,    200,    200 );
-    style.Colors[ImGuiCol_SliderGrabActive] =       from_rgba( 0,    115,    200,    255 );
-    style.Colors[ImGuiCol_Button] = from_rgba(0x2d,0x37,0x40,0xff);
-    style.Colors[ImGuiCol_ButtonHovered] = from_rgba(0x2d + 10, 0x37 + 10, 0x40 + 10, 0xff); // TODO: Check with Yaron
+    style.Colors[ImGuiCol_CheckMark] = from_rgba(0, 115, 200, 255);
+    style.Colors[ImGuiCol_SliderGrab] = from_rgba(0, 115, 200, 200);
+    style.Colors[ImGuiCol_SliderGrabActive] = from_rgba(0, 115, 200, 255);
+    style.Colors[ImGuiCol_Button] = from_rgba(0x2d, 0x37, 0x40, 0xff);
+    style.Colors[ImGuiCol_ButtonHovered] = from_rgba(0x2d + 10, 0x37 + 10, 0x40 + 10, 0xff);
     style.Colors[ImGuiCol_ButtonActive] = from_rgba(0x2d - 10, 0x37 - 10, 0x40 - 10, 0xff);
     style.Colors[ImGuiCol_Header] = from_rgba(62, 77, 89, 255);
-    style.Colors[ImGuiCol_HeaderHovered] = from_rgba(62, 77, 89, 255); // TODO: Check with Yaron
+    style.Colors[ImGuiCol_HeaderHovered] = from_rgba(62, 77, 89, 255);
     style.Colors[ImGuiCol_HeaderActive] = from_rgba(62, 77, 89, 255);
-    //style.Colors[ImGuiCol_Column] =                 from_rgba( R,    G,    B,    A );
-    //style.Colors[ImGuiCol_ColumnHovered] =          from_rgba( R,    G,    B,    A );
-    //style.Colors[ImGuiCol_ColumnActive] =           from_rgba( R,    G,    B,    A );
-    //style.Colors[ImGuiCol_ResizeGrip] =             from_rgba( R,    G,    B,    A );
-    //style.Colors[ImGuiCol_ResizeGripHovered] =      from_rgba( R,    G,    B,    A );
-    //style.Colors[ImGuiCol_ResizeGripActive] =       from_rgba( R,    G,    B,    A );
-    //style.Colors[ImGuiCol_CloseButton] =            from_rgba( R,    G,    B,    A );
-    //style.Colors[ImGuiCol_CloseButtonHovered] =     from_rgba( R,    G,    B,    A );
-    //style.Colors[ImGuiCol_CloseButtonActive] =      from_rgba( R,    G,    B,    A );
-    //style.Colors[ImGuiCol_PlotLines] =              from_rgba( R,    G,    B,    A );
-    //style.Colors[ImGuiCol_PlotLinesHovered] =       from_rgba( R,    G,    B,    A );
-    //style.Colors[ImGuiCol_PlotHistogram] =          from_rgba( R,    G,    B,    A );
-    //style.Colors[ImGuiCol_PlotHistogramHovered] =   from_rgba( R,    G,    B,    A );
-    //style.Colors[ImGuiCol_TextSelectedBg] =         from_rgba( R,    G,    B,    A );
-    style.Colors[ImGuiCol_PopupBg] =                from_rgba(62, 77, 89, 255);
-    //style.Colors[ImGuiCol_ModalWindowDarkening] =   from_rgba( R,    G,    B,    A );
+    style.Colors[ImGuiCol_PopupBg] = from_rgba(62, 77, 89, 255);
+}
+
+void show_stream_header(rs2::rect stream_rect, stream_model& model, viewer_model& viewer)
+{
+    const auto top_bar_height = 32.f;
+
+    auto flags = ImGuiWindowFlags_NoResize |
+        ImGuiWindowFlags_NoMove |
+        ImGuiWindowFlags_NoCollapse |
+        ImGuiWindowFlags_NoTitleBar;
+
+    ImGui::PushFont(font_12);
+    ImGui::PushStyleColor(ImGuiCol_Text, from_rgba(0xc3, 0xd5, 0xe5, 0xff));
+    ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, from_rgba(0xff, 0xff, 0xff, 0xff));
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, { 0, 0 });
+
+    ImGui::PushStyleColor(ImGuiCol_Button, from_rgba(0x1b, 0x21, 0x25, 0xff));
+    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, from_rgba(0x1b, 0x21, 0x25, 0xff));
+    ImGui::PushStyleColor(ImGuiCol_ButtonActive, from_rgba(0x1b, 0x21, 0x25, 0xff));
+    ImGui::PushStyleColor(ImGuiCol_WindowBg, from_rgba(0x1b, 0x21, 0x25, 0xff));
+    ImGui::SetNextWindowPos({ stream_rect.x, stream_rect.y - top_bar_height });
+    ImGui::SetNextWindowSize({ stream_rect.w, top_bar_height });
+    std::string label = to_string() << "Stream of " << rs2_stream_to_string(model.stream);
+    ImGui::Begin(label.c_str(), nullptr, flags);
+
+    ImGui::SetCursorPosX(stream_rect.w - 32 * 5);
+
+    if (model.dev->is_paused())
+    {
+        ImGui::PushStyleColor(ImGuiCol_Text, from_rgba(0, 174, 239, 255));
+        ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, from_rgba(0, 174, 239, 255));
+        label = to_string() << u8"\uf04b" << "##Resume " << rs2_stream_to_string(model.stream);
+        if (ImGui::Button(label.c_str(), { 24, top_bar_height }))
+        {
+            model.dev->resume();
+        }
+        if (ImGui::IsItemHovered())
+        {
+            ImGui::SetTooltip("Resume sensor");
+        }
+        ImGui::PopStyleColor(2);
+    }
+    else
+    {
+        label = to_string() << u8"\uf04c" << "##Pause " << rs2_stream_to_string(model.stream);
+        if (ImGui::Button(label.c_str(), { 24, top_bar_height }))
+        {
+            model.dev->pause();
+        }
+        if (ImGui::IsItemHovered())
+        {
+            ImGui::SetTooltip("Pause sensor");
+        }
+    }
+    ImGui::SameLine();
+
+    label = to_string() << u8"\uf030" << "##Snapshot " << rs2_stream_to_string(model.stream);
+    ImGui::Button(label.c_str(), { 24, top_bar_height });
+    if (ImGui::IsItemHovered())
+    {
+        ImGui::SetTooltip("Save snapshot");
+    }
+    ImGui::SameLine();
+
+    label = to_string() << u8"\uf05a" << "##Info " << rs2_stream_to_string(model.stream);
+    ImGui::Button(label.c_str(), { 24, top_bar_height });
+    if (ImGui::IsItemHovered())
+    {
+        ImGui::SetTooltip("Show info overlay");
+    }
+    ImGui::SameLine();
+
+    if (!viewer.fullscreen)
+    {
+        label = to_string() << u8"\uf2d0" << "##Maximize " << rs2_stream_to_string(model.stream);
+
+        if (ImGui::Button(label.c_str(), { 24, top_bar_height }))
+        {
+            viewer.fullscreen = true;
+            viewer.selected_stream = model.stream;
+        }
+        if (ImGui::IsItemHovered())
+        {
+            ImGui::SetTooltip("Maximize stream to full-screen");
+        }
+
+        ImGui::SameLine();
+    }
+    else if (viewer.fullscreen)
+    {
+        label = to_string() << u8"\uf2d2" << "##Restore " << rs2_stream_to_string(model.stream);
+
+        if (ImGui::Button(label.c_str(), { 24, top_bar_height }))
+        {
+            viewer.fullscreen = false;
+        }
+        if (ImGui::IsItemHovered())
+        {
+            ImGui::SetTooltip("Restore tile view");
+        }
+
+        ImGui::SameLine();
+    }
+
+    label = to_string() << u8"\uf00d" << "##Stop " << rs2_stream_to_string(model.stream);
+    if (ImGui::Button(label.c_str(), { 24, top_bar_height }))
+    {
+        model.dev->stop();
+    }
+    if (ImGui::IsItemHovered())
+    {
+        ImGui::SetTooltip("Stop this sensor");
+    }
+    ImGui::SameLine();
+
+    //if (model.streams[stream].show_stream_details)
+    //{
+    //    label = to_string() << rs2_stream_to_string(stream) << " "
+    //        << stream_size.x << "x" << stream_size.y << ", "
+    //        << rs2_format_to_string(model.streams[stream].format) << ", "
+    //        << "Frame# " << model.streams[stream].frame_number << ", "
+    //        << "FPS:";
+    //}
+    //else
+    //{
+    //    label = to_string() << rs2_stream_to_string(stream) << " (...)";
+    //}
+
+    //ImGui::Text("%s", label.c_str());
+    //model.streams[stream].show_stream_details = ImGui::IsItemHovered();
+
+    //if (model.streams[stream].show_stream_details)
+    //{
+    //    ImGui::SameLine();
+
+    //    label = to_string() << std::setprecision(2) << std::fixed << model.streams[stream].fps.get_fps();
+    //    ImGui::Text("%s", label.c_str());
+    //    if (ImGui::IsItemHovered())
+    //    {
+    //        ImGui::SetTooltip("FPS is calculated based on timestamps and not viewer time");
+    //    }
+    //}
+
+    //ImGui::SameLine((int)ImGui::GetWindowWidth() - 35);
+
+    //if (!layout.empty() && !model.fullscreen)
+    //{
+    //    if (ImGui::Button("[+]", { 26, 20 }))
+    //    {
+    //        model.fullscreen = true;
+    //        model.selected_stream = stream;
+    //    }
+    //    if (ImGui::IsItemHovered())
+    //    {
+    //        ImGui::SetTooltip("Maximize stream to full-screen");
+    //    }
+    //}
+    //else if (model.fullscreen)
+    //{
+    //    if (ImGui::Button("[-]", { 26, 20 }))
+    //    {
+    //        model.fullscreen = false;
+    //    }
+    //    if (ImGui::IsItemHovered())
+    //    {
+    //        ImGui::SetTooltip("Minimize stream to tile-view");
+    //    }
+    //}
+
+
+    //// Control metadata overlay widget
+    //ImGui::SameLine((int)ImGui::GetWindowWidth() - 140); // metadata GUI hint
+    //if (!layout.empty())
+    //{
+    //    if (model.streams[stream].metadata_displayed)
+    //    {
+    //        if (ImGui::Button("Hide Metadata", { 100, 20 }))
+    //            model.streams[stream].metadata_displayed = false;
+    //    }
+    //    else
+    //    {
+    //        if (ImGui::Button("Show Metadata", { 100, 20 }))
+    //            model.streams[stream].metadata_displayed = true;
+    //    }
+
+    //    if (ImGui::IsItemHovered())
+    //        ImGui::SetTooltip("Show per-frame metadata");
+    //}
+
+    //if (model.streams[stream].show_stream_details)
+    //{
+    //    label = to_string() << "Timestamp: " << std::fixed << std::setprecision(3) << model.streams[stream].timestamp
+    //        << ", Domain:";
+    //    ImGui::Text("%s", label.c_str());
+
+    //    ImGui::SameLine();
+    //    auto domain = model.streams[stream].timestamp_domain;
+    //    label = to_string() << rs2_timestamp_domain_to_string(domain);
+
+    //    if (domain == RS2_TIMESTAMP_DOMAIN_SYSTEM_TIME)
+    //    {
+    //        ImGui::PushStyleColor(ImGuiCol_Text, { 1.0f, 0.0f, 0.0f, 1.0f });
+    //        ImGui::Text("%s", label.c_str());
+    //        if (ImGui::IsItemHovered())
+    //        {
+    //            ImGui::SetTooltip("Hardware Timestamp unavailable! This is often an indication of inproperly applied Kernel patch.\nPlease refer to installation.md for mode information");
+    //        }
+    //        ImGui::PopStyleColor();
+    //    }
+    //    else
+    //    {
+    //        ImGui::Text("%s", label.c_str());
+    //        if (ImGui::IsItemHovered())
+    //        {
+    //            ImGui::SetTooltip("Specifies the clock-domain for the timestamp (hardware-clock / system-time)");
+    //        }
+    //    }
+    //}
+
+    ImGui::End();
+    ImGui::PopStyleColor(5);
+    ImGui::PopStyleVar();
 }
 
 struct user_data
@@ -260,9 +461,10 @@ void draw_advanced_mode_tab(device& dev, advanced_mode_control& amc,
     std::vector<std::string>& restarting_info,
     bool& get_curr_advanced_controls)
 {
-    auto is_advanced_mode = dev.is<advanced_mode>();
+    ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, { 0.9f, 0.9f, 0.9f, 1 });
 
-    if (ImGui::CollapsingHeader("Advanced Mode", nullptr, true, true))
+    auto is_advanced_mode = dev.is<advanced_mode>();
+    if (ImGui::TreeNode("Advanced Mode"))
     {
         try
         {
@@ -271,46 +473,52 @@ void draw_advanced_mode_tab(device& dev, advanced_mode_control& amc,
                 // TODO: Why are we showing the tab then??
                 ImGui::TextColored(ImVec4{ 1.0f, 0.0f, 0.0f, 1.0f }, "Selected device does not offer\nany advanced settings");
             }
-
-            auto advanced = dev.as<advanced_mode>();
-            if (advanced.is_enabled())
-            {
-                if (ImGui::Button("Disable Advanced Mode", ImVec2{ 290, 0 }))
-                {
-                    //if (yes_no_dialog()) // TODO
-                    //{
-                    advanced.toggle_advanced_mode(false);
-                    restarting_info = get_device_info(dev, false);
-                    //}
-                }
-                if (ImGui::IsItemHovered())
-                {
-                    ImGui::SetTooltip("Disabling advanced mode will reset depth generation to factory settings\nThis will not affect calibration");
-                }
-                draw_advanced_mode_controls(advanced, amc, get_curr_advanced_controls);
-            }
             else
             {
-                if (ImGui::Button("Enable Advanced Mode", ImVec2{ 300, 0 }))
+                auto advanced = dev.as<advanced_mode>();
+                if (advanced.is_enabled())
                 {
-                    //if (yes_no_dialog()) // TODO
-                    //{
-                    advanced.toggle_advanced_mode(true);
-                    restarting_info = get_device_info(dev, false);
-                    //}
+                    if (ImGui::Button("Disable Advanced Mode", ImVec2{ 180, 0 }))
+                    {
+                        //if (yes_no_dialog()) // TODO
+                        //{
+                        advanced.toggle_advanced_mode(false);
+                        restarting_info = get_device_info(dev, false);
+                        //}
+                    }
+                    if (ImGui::IsItemHovered())
+                    {
+                        ImGui::SetTooltip("Disabling advanced mode will reset depth generation to factory settings\nThis will not affect calibration");
+                    }
+                    draw_advanced_mode_controls(advanced, amc, get_curr_advanced_controls);
                 }
-                if (ImGui::IsItemHovered())
+                else
                 {
-                    ImGui::SetTooltip("Advanced mode is a persistent camera state unlocking calibration formats and depth generation controls\nYou can always reset the camera to factory defaults by disabling advanced mode");
+                    if (ImGui::Button("Enable Advanced Mode", ImVec2{ 180, 0 }))
+                    {
+                        //if (yes_no_dialog()) // TODO
+                        //{
+                        advanced.toggle_advanced_mode(true);
+                        restarting_info = get_device_info(dev, false);
+                        //}
+                    }
+                    if (ImGui::IsItemHovered())
+                    {
+                        ImGui::SetTooltip("Advanced mode is a persistent camera state unlocking calibration formats and depth generation controls\nYou can always reset the camera to factory defaults by disabling advanced mode");
+                    }
+                    ImGui::TextColored(ImVec4{ 1.0f, 0.0f, 0.0f, 1.0f }, "Device is not in advanced mode!\nTo access advanced functionality\nclick \"Enable Advanced Mode\"");
                 }
-                ImGui::TextColored(ImVec4{ 1.0f, 0.0f, 0.0f, 1.0f }, "Device is not in advanced mode!\nTo access advanced functionality\nclick \"Enable Advanced Mode\"");
             }
         }
         catch (...)
         {
             // TODO
         }
+
+        ImGui::TreePop();
     }
+
+    ImGui::PopStyleColor();
 }
 
 int main(int, char**) try
@@ -403,6 +611,7 @@ int main(int, char**) try
 
     device dev;
     device_model model;
+    viewer_model viewer_model;
     device_list list;
     std::vector<std::string> active_device_info;
     auto dev_exist = false;
@@ -600,7 +809,7 @@ int main(int, char**) try
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(5, 5));
         ImGui::SetNextWindowPos({ 0, panel_y });
 
-        if (ImGui::Button(u8"Add Source\t\t\t\t\t\t\t\t\t\t\t\t\t\uf055", { panel_width-1, panel_y }))
+        if (ImGui::Button(u8"Add Source\t\t\t\t\t\t\t\t\t\t\t\t\t\uf055", { panel_width - 1, panel_y }))
             ImGui::OpenPopup("select");
 
         ImGui::PushFont(font_12);
@@ -675,8 +884,8 @@ int main(int, char**) try
             {
                 const char *ret;
                 ret = noc_file_dialog_open(NOC_FILE_DIALOG_OPEN,
-                                           "ROS-bag\0*.bag\0", NULL, NULL);
-                
+                    "ROS-bag\0*.bag\0", NULL, NULL);
+
             }
             ImGui::NextColumn();
             ImGui::Text("");
@@ -700,7 +909,7 @@ int main(int, char**) try
         ImGui::SetNextWindowSize({ w - panel_width, panel_y });
 
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
-        ImGui::PushStyleColor(ImGuiCol_WindowBg, from_rgba(0x2d,0x37,0x40,0xff));
+        ImGui::PushStyleColor(ImGuiCol_WindowBg, from_rgba(0x2d, 0x37, 0x40, 0xff));
         ImGui::Begin("Toolbar Panel", nullptr, flags);
 
         ImGui::PushStyleColor(ImGuiCol_Border, { 0,0,0,0 });
@@ -724,7 +933,7 @@ int main(int, char**) try
         ImGui::PushStyleColor(ImGuiCol_PopupBg, from_rgba(230, 230, 230, 255));
         ImGui::PushStyleColor(ImGuiCol_HeaderHovered, from_rgba(0, 0xae, 0xff, 255));
         ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, from_rgba(255, 255, 255, 255));
-  
+
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(5, 5));
         //ImGui::SetNextWindowPos({ 0, panel_y });
 
@@ -792,7 +1001,7 @@ int main(int, char**) try
             ImGui::GetWindowDrawList()->AddRectFilled(pos, { pos.x + panel_width, pos.y + panel_y }, ImColor(from_rgba(0x3e, 0x4d, 0x59, 0xff)));
             ImGui::GetWindowDrawList()->AddLine({ pos.x,pos.y }, { pos.x + panel_width,pos.y }, ImColor(from_rgba(0, 0, 0, 0xff)));
 
-            ImGui::PushStyleColor(ImGuiCol_Button, from_rgba(0x3e,0x4d,0x59,0xff));
+            ImGui::PushStyleColor(ImGuiCol_Button, from_rgba(0x3e, 0x4d, 0x59, 0xff));
             ImGui::Columns(2, "DeviceInfo", false);
             ImGui::SetCursorPos({ 5, 14 });
             label = to_string() << u8"\uf03d  " << dev.get_info(RS2_CAMERA_INFO_NAME);
@@ -801,7 +1010,7 @@ int main(int, char**) try
             ImGui::SetCursorPos({ ImGui::GetCursorPosX(), 14 });
             label = to_string() << "S/N: " << (dev.supports(RS2_CAMERA_INFO_SERIAL_NUMBER) ? dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER) : "Unknown");
             ImGui::Text(label.c_str());
-            
+
             ImGui::Columns(1);
             ImGui::SetCursorPos({ panel_width - 45, 11 });
 
@@ -810,7 +1019,7 @@ int main(int, char**) try
             ImGui::PushStyleColor(ImGuiCol_PopupBg, from_rgba(230, 230, 230, 255));
             ImGui::PushStyleColor(ImGuiCol_HeaderHovered, from_rgba(0, 0xae, 0xff, 255));
             ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, from_rgba(255, 255, 255, 255));
-  
+
             ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(5, 5));
             //ImGui::SetNextWindowPos({ 0, panel_y });
 
@@ -819,17 +1028,19 @@ int main(int, char**) try
 
             ImGui::PushFont(font_12);
             //ImGui::SetNextWindowSize({ panel_width, 20.f * (device_names.size() + 1) + 8 });
+
+
             if (ImGui::BeginPopup("device_menu"))
             {
                 ImGui::PushStyleColor(ImGuiCol_Text, from_rgba(30, 30, 30, 255));
                 if (ImGui::Selectable("Show Device Details..."))
                 {
-                    
+
                 }
 
                 if (ImGui::Selectable("Collapse All"))
                 {
-                    
+
                 }
 
                 ImGui::Separator();
@@ -838,30 +1049,42 @@ int main(int, char**) try
                 {
                     const char *ret;
                     ret = noc_file_dialog_open(NOC_FILE_DIALOG_OPEN,
-                                               "JSON\0*.json\0", NULL, NULL);
-                
+                        "JSON\0*.json\0", NULL, NULL);
+
                 }
 
                 if (ImGui::Selectable("Save Settings", false, ImGuiSelectableFlags_SpanAllColumns))
                 {
                     const char *ret;
                     ret = noc_file_dialog_open(NOC_FILE_DIALOG_SAVE,
-                                               "JSON\0*.json\0", NULL, NULL);
-                
+                        "JSON\0*.json\0", NULL, NULL);
+
                 }
 
                 ImGui::Separator();
 
                 if (ImGui::Selectable("Hardware Reset"))
                 {
-                    
+                    try
+                    {
+                        restarting_device_info = get_device_info(dev, false);
+                        dev.hardware_reset();
+                    }
+                    catch (const error& e)
+                    {
+                        error_message = error_to_string(e);
+                    }
+                    catch (const std::exception& e)
+                    {
+                        error_message = e.what();
+                    }
                 }
 
                 ImGui::Separator();
 
                 if (ImGui::Selectable("Remove Source"))
                 {
-                    
+
                 }
 
                 ImGui::PopStyleColor();
@@ -872,85 +1095,14 @@ int main(int, char**) try
             ImGui::PopStyleColor(4);
 
             ImGui::SetCursorPos({ 0, panel_y });
-            
-            /*ImGui::PushStyleColor(ImGuiCol_Text, { 0.5f,0.5f,0.5f,1.f });
-            ImGui::Image(ImGui::GetIO().Fonts->TexID, ImVec2(panel_width, 100), ImGui::GetFontTexUvWhitePixel(), ImGui::GetFontTexUvWhitePixel());
-            ImGui::PopStyleColor();
-            ImGui::SetCursorPosY(0);*/
 
-            //ImGui::Text("Hello");
-            
-
-            //ImGui::Button(label.c_str(), { panel_width, panel_y } );
             ImGui::PopStyleColor();
             ImGui::PopFont();
         }
 
-        //const ImVec2 pos = ImGui::GetCursorScreenPos();
-        //ImRect bb(pos, ImVec2(pos.x + ImGui::GetContentRegionAvail().x, pos.y + ImGui::GetContentRegionAvail().y));
-        //ImGui::GetWindowDrawList()->AddRectFilled(bb.GetTL(), bb.GetBR(), ImColor(from_rgba(0x1b, 0x21, 0x25, 0xff)));
-
         auto windows_width = ImGui::GetContentRegionMax().x;
         auto sensor_top_y = ImGui::GetCursorPosY();
         ImGui::SetContentRegionWidth(windows_width - 36);
-
-        //// Device Details Menu - Elaborate details on connected devices
-        //if (any_device_exists > 0 && ImGui::CollapsingHeader("Device Details", nullptr, true, false))
-        //{
-        //    //ImGui::PushStyleColor(ImGuiCol_FrameBg, from_rgba(27, 33, 38, 255));
-        //    //ImGui::BeginChildFrame(ImGui::GetID("dev_info"), { 0, 0 }, ImGuiWindowFlags_ShowBorders);
-
-        //    // Draw a combo-box with the list of connected devices
-        //    auto new_index = device_index;
-
-        //    //if (model.draw_combo_box(device_names, new_index) || switch_to_newly_loaded_device)
-        //    //{
-        //    //    for (auto&& sub : model.subdevices)
-        //    //    {
-        //    //        if (sub->streaming)
-        //    //            sub->stop();
-        //    //    }
-
-        //    //    try
-        //    //    {
-        //    //        dev = list[new_index];
-        //    //        device_index = new_index;
-        //    //        model = device_model(dev, error_message);
-        //    //        active_device_info = get_device_info(dev);
-        //    //        if (dev.is<playback>()) //TODO: remove this and make sub->streaming a function that queries the sensor
-        //    //        {
-        //    //            dev.as<playback>().set_status_changed_callback([&model](rs2_playback_status status)
-        //    //            {
-        //    //                if (status == RS2_PLAYBACK_STATUS_STOPPED)
-        //    //                {
-        //    //                    for (auto sub : model.subdevices)
-        //    //                    {
-        //    //                        if (sub->streaming)
-        //    //                        {
-        //    //                            sub->stop();
-        //    //                        }
-        //    //                    }
-        //    //                }
-        //    //            });
-        //    //        }
-
-        //    //    }
-        //    //    catch (const error& e)
-        //    //    {
-        //    //        error_message = error_to_string(e);
-        //    //    }
-        //    //    catch (const std::exception& e)
-        //    //    {
-        //    //        error_message = e.what();
-        //    //    }
-        //    //}
-
-        //    // Show all device details - name, module name, serial number, FW version and location
-        //    //model.draw_device_details(dev, ctx);
-
-        //    //ImGui::EndChildFrame();
-        //    //ImGui::PopStyleColor();
-        //}
 
         std::map<subdevice_model*, float> model_to_y;
         std::map<subdevice_model*, float> model_to_abs_y;
@@ -968,168 +1120,17 @@ int main(int, char**) try
             // Streaming Menu - Allow user to play different streams
             if (list.size() > 0)
             {
-                //auto anything_stream = std::any_of(model.subdevices.begin(), model.subdevices.end(), [](std::shared_ptr<subdevice_model> sub) {
-                //    return sub->streaming;
-                //});
-
-                /* if (model.subdevices.size() > 1)
-                 {
-                     try
-                     {
-                         if (!anything_stream)
-                         {
-                             label = to_string() << "Start All";
-                             if (ImGui::Button(label.c_str(), { stream_all_button_width, 0 }))
-                             {
-                                 if (is_recording)
-                                 {
-                                     model.start_recording(dev, input_file_name, error_message);
-                                 }
-                                 for (auto&& sub : model.subdevices)
-                                 {
-                                     if (sub->is_selected_combination_supported())
-                                     {
-                                         auto profiles = sub->get_selected_profiles();
-                                         sub->play(profiles);
-
-                                         for (auto&& profile : profiles)
-                                         {
-                                             model.streams[profile.stream].dev = sub;
-                                         }
-                                     }
-                                 }
-                             }
-                             if (ImGui::IsItemHovered())
-                             {
-                                 ImGui::SetTooltip("Start streaming from all subdevices");
-                             }
-                         }
-                         else
-                         {
-                             label = to_string() << "Stop All";
-
-                             if (ImGui::Button(label.c_str(), { stream_all_button_width / 2 - 5, 0 }))
-                             {
-                                 for (auto&& sub : model.subdevices)
-                                 {
-                                     if (sub->streaming) sub->stop();
-                                 }
-                                 if (is_recording)
-                                 {
-                                     model.stop_recording();
-                                     for (auto&& sub : model.subdevices)
-                                     {
-                                         if (sub->is_selected_combination_supported())
-                                         {
-                                             auto profiles = sub->get_selected_profiles();
-                                             for (auto&& profile : profiles)
-                                             {
-                                                 model.streams[profile.stream].dev = sub;
-                                             }
-                                         }
-                                     }
-                                 }
-                             }
-                             if (ImGui::IsItemHovered())
-                             {
-                                 ImGui::SetTooltip("Stop streaming from all subdevices");
-                             }
-
-                             ImGui::SameLine();
-
-                             bool any_paused = false;
-                             for (auto&& sub : model.subdevices)
-                             {
-                                 if (sub->streaming && sub->is_paused())
-                                     any_paused = true;
-                             }
-
-                             if (any_paused)
-                             {
-                                 label = to_string() << "Resume All";
-
-                                 if (ImGui::Button(label.c_str(), { stream_all_button_width / 2, 0 }))
-                                 {
-                                     for (auto&& sub : model.subdevices)
-                                     {
-                                         if (sub->streaming) sub->resume();
-                                     }
-                                 }
-                                 if (ImGui::IsItemHovered())
-                                 {
-                                     ImGui::SetTooltip("Resume streaming live data from all sub-devices");
-                                 }
-                             }
-                             else
-                             {
-                                 label = to_string() << "Pause All";
-
-                                 if (ImGui::Button(label.c_str(), { stream_all_button_width / 2, 0 }))
-                                 {
-                                     for (auto&& sub : model.subdevices)
-                                     {
-                                         if (sub->streaming) sub->pause();
-                                     }
-                                 }
-                                 if (ImGui::IsItemHovered())
-                                 {
-                                     ImGui::SetTooltip("Freeze the UI on the current frame. The camera will continue to work in the background");
-                                 }
-                             }
-                             if (ImGui::CollapsingHeader("Recording Options", &is_recording))
-                             {
-                                 static bool is_paused = false;
-                                 if (!is_paused && ImGui::Button("Pause"))
-                                 {
-                                     model.pause_record();
-                                     is_paused = !is_paused;
-                                 }
-                                 if (ImGui::IsItemHovered())
-                                 {
-                                     ImGui::SetTooltip("Pause recording to file, Streaming will continue");
-                                 }
-                                 if (is_paused && ImGui::Button("Resume"))
-                                 {
-                                     model.resume_record();
-                                     is_paused = !is_paused;
-                                 }
-                                 if (ImGui::IsItemHovered())
-                                 {
-                                     ImGui::SetTooltip("Continue recording");
-                                 }
-                             }
-                         }
-                     }
-                     catch (const error& e)
-                     {
-                         error_message = error_to_string(e);
-                     }
-                     catch (const std::exception& e)
-                     {
-                         error_message = e.what();
-                     }
-                 }
-                 if (!anything_stream)
-                 {
-                     ImGui::Checkbox("Enable Recording", &is_recording);
-                     if (is_recording)
-                     {
-                         ImGui::Text("Save to:");
-                         ImGui::InputText("file_path", input_file_name, 256, ImGuiInputTextFlags_CharsNoBlank);
-                     }
-                 }*/
-
-                 // Draw menu foreach subdevice with its properties
+                // Draw menu foreach subdevice with its properties
                 for (auto&& sub : model.subdevices)
                 {
                     const ImVec2 pos = ImGui::GetCursorPos();
                     const ImVec2 abs_pos = ImGui::GetCursorScreenPos();
                     model_to_y[sub.get()] = pos.y;
                     model_to_abs_y[sub.get()] = abs_pos.y;
-                    ImGui::GetWindowDrawList()->AddLine({ abs_pos.x,abs_pos.y - 2 }, { abs_pos.x + panel_width,abs_pos.y-2 }, ImColor(from_rgba(0, 0, 0, 0xff)), 2.f);
+                    ImGui::GetWindowDrawList()->AddLine({ abs_pos.x,abs_pos.y - 2 }, { abs_pos.x + panel_width,abs_pos.y - 2 }, ImColor(from_rgba(0, 0, 0, 0xff)), 2.f);
 
                     label = to_string() << sub->s.get_info(RS2_CAMERA_INFO_NAME);
-                    ImGui::PushStyleColor(ImGuiCol_Header, from_rgba(0x3e,0x4d,0x59,0xff));
+                    ImGui::PushStyleColor(ImGuiCol_Header, from_rgba(0x3e, 0x4d, 0x59, 0xff));
 
                     ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, { 10, 10 });
                     ImGui::PushStyleVar(ImGuiStyleVar_ItemInnerSpacing, { 0, 0 });
@@ -1142,7 +1143,7 @@ int main(int, char**) try
                         sub->draw_stream_selection();
 
 
-                        static const std::vector<rs2_option> drawing_order{ 
+                        static const std::vector<rs2_option> drawing_order{
                             RS2_OPTION_ADVANCED_MODE_PRESET,
                             RS2_OPTION_EMITTER_ENABLED,
                             RS2_OPTION_ENABLE_AUTO_EXPOSURE };
@@ -1152,7 +1153,7 @@ int main(int, char**) try
                             sub->draw_option(opt, update_read_only_options, error_message, not_model);
                         }
 
-                        label = to_string() << "Advanced Controls ##" << sub->s.get_info(RS2_CAMERA_INFO_NAME);
+                        label = to_string() << "Controls ##" << sub->s.get_info(RS2_CAMERA_INFO_NAME);
                         if (ImGui::TreeNode(label.c_str()))
                         {
                             for (auto i = 0; i < RS2_OPTION_COUNT; i++)
@@ -1164,43 +1165,20 @@ int main(int, char**) try
                                 }
                             }
 
-                            auto&& de_opt = sub->options_metadata[RS2_OPTION_DEPTH_UNITS];
-                            if (de_opt.supported)
-                            {
-                                if (ImGui::Checkbox("Histogram Equalization", &model.streams[RS2_STREAM_DEPTH].texture->equalize))
-                                {
-                                    auto depth_units = de_opt.value;
-                                    model.streams[RS2_STREAM_DEPTH].texture->min_depth = 0;
-                                    model.streams[RS2_STREAM_DEPTH].texture->max_depth = 6 / depth_units;
-                                }
-                                if (!model.streams[RS2_STREAM_DEPTH].texture->equalize)
-                                {
-                                    auto depth_units = de_opt.value;
-                                    auto val = model.streams[RS2_STREAM_DEPTH].texture->min_depth * depth_units;
-                                    if (ImGui::SliderFloat("##Near (m)", &val, 0, 16))
-                                    {
-                                        model.streams[RS2_STREAM_DEPTH].texture->min_depth = val / depth_units;
-                                    }
-                                    val = model.streams[RS2_STREAM_DEPTH].texture->max_depth * depth_units;
-                                    if (ImGui::SliderFloat("##Far  (m)", &val, 0, 16))
-                                    {
-                                        model.streams[RS2_STREAM_DEPTH].texture->max_depth = val / depth_units;
-                                    }
-                                    if (model.streams[RS2_STREAM_DEPTH].texture->min_depth > model.streams[RS2_STREAM_DEPTH].texture->max_depth)
-                                    {
-                                        std::swap(model.streams[RS2_STREAM_DEPTH].texture->max_depth, model.streams[RS2_STREAM_DEPTH].texture->min_depth);
-                                    }
-                                }
-                            }
+                            if (auto ds = sub->s.as<depth_sensor>())
+                                viewer_model.draw_histogram_options(ds.get_depth_scale());
 
                             ImGui::TreePop();
                         }
+
+                        if (dev.is<advanced_mode>())
+                            draw_advanced_mode_tab(dev, amc, restarting_device_info, get_curr_advanced_controls);
 
                         ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
 
                         ImGui::TreePop();
                     }
-                    
+
                     ImGui::PopStyleVar();
                     ImGui::PopStyleVar();
                     ImGui::PopStyleColor();
@@ -1304,7 +1282,7 @@ int main(int, char**) try
 
                             for (auto&& profile : profiles)
                             {
-                                model.streams[profile.stream].dev = sub;
+                                viewer_model.streams[profile.stream].dev = sub;
                             }
                         }
                         if (ImGui::IsItemHovered())
@@ -1324,66 +1302,14 @@ int main(int, char**) try
                     ImGui::PushStyleColor(ImGuiCol_Text, from_rgba(0, 174, 239, 255));
                     ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, from_rgba(10, 180, 250, 255));
 
-                    if (ImGui::Button(label.c_str(), { 30,30 })) 
+                    if (ImGui::Button(label.c_str(), { 30,30 }))
                     {
                         sub->stop();
-                        //if (is_recording) // TODO: Fix
-                        //{
-                        //    auto streaming_sensors_count = std::count_if(model.subdevices.begin(),
-                        //        model.subdevices.end(),
-                        //        [](std::shared_ptr<subdevice_model> sub)
-                        //    {
-                        //        return sub->streaming;
-                        //    });
-                        //    if (streaming_sensors_count == 0)
-                        //    {
-                        //        //TODO: move this inside model
-                        //        model.stop_recording();
-                        //        for (auto&& sub : model.subdevices)
-                        //        {
-                        //            if (sub->is_selected_combination_supported())
-                        //            {
-                        //                auto profiles = sub->get_selected_profiles();
-                        //                for (auto&& profile : profiles)
-                        //                {
-                        //                    model.streams[profile.stream].dev = sub;
-                        //                }
-                        //            }
-                        //        }
-                        //    }
-                        //}
                     }
                     if (ImGui::IsItemHovered())
                     {
                         ImGui::SetTooltip("Stop streaming data from selected sub-device");
                     }
-
-                    //ImGui::SameLine();
-
-                    //if (sub->is_paused())
-                    //{
-                    //    label = to_string() << "Resume >>##" << sub->s.get_info(RS2_CAMERA_INFO_NAME);
-                    //    if (ImGui::Button(label.c_str(), { stream_all_button_width / 2 - 5, 0 }))
-                    //    {
-                    //        sub->resume();
-                    //    }
-                    //    if (ImGui::IsItemHovered())
-                    //    {
-                    //        ImGui::SetTooltip("Resume live streaming from the sub-device");
-                    //    }
-                    //}
-                    //else
-                    //{
-                    //    label = to_string() << "Pause ||##" << sub->s.get_info(RS2_CAMERA_INFO_NAME);
-                    //    if (ImGui::Button(label.c_str(), { stream_all_button_width / 2 - 5, 0 }))
-                    //    {
-                    //        sub->pause();
-                    //    }
-                    //    if (ImGui::IsItemHovered())
-                    //    {
-                    //        ImGui::SetTooltip("Freeze current frame. The sub-device will continue to work in the background");
-                    //    }
-                    //}
                 }
             }
             catch (const error& e)
@@ -1491,7 +1417,7 @@ int main(int, char**) try
                     frame f;
                     if (queue->poll_for_frame(&f))
                     {
-                        model.upload_frame(std::move(f));
+                        viewer_model.upload_frame(std::move(f));
                     }
                 }
                 catch (const error& e)
@@ -1521,235 +1447,20 @@ int main(int, char**) try
             glLoadIdentity();
             glOrtho(0, w, h, 0, -1, +1);
 
-            auto layout = model.calc_layout(panel_width, panel_y, w - panel_width, (float)h - panel_y - (is_output_collapsed ? default_log_h : 20));
+            auto layout = viewer_model.calc_layout(panel_width, panel_y, w - panel_width, (float)h - panel_y - (is_output_collapsed ? default_log_h : 20));
 
             for (auto &&kvp : layout)
             {
-                const auto top_bar_height = 32.f;
+                
 
                 auto&& view_rect = kvp.second;
                 auto stream = kvp.first;
-                auto&& stream_size = model.streams[stream].size;
+                auto&& stream_size = viewer_model.streams[stream].size;
                 auto stream_rect = view_rect.adjust_ratio(stream_size);
 
-                model.streams[stream].show_frame(stream_rect, mouse, error_message);
+                viewer_model.streams[stream].show_frame(stream_rect, mouse, error_message);
 
-                flags = ImGuiWindowFlags_NoResize |
-                    ImGuiWindowFlags_NoMove |
-                    ImGuiWindowFlags_NoCollapse |
-                    ImGuiWindowFlags_NoTitleBar;
-
-                ImGui::PushFont(font_12);
-                ImGui::PushStyleColor(ImGuiCol_Text, from_rgba(0xc3, 0xd5, 0xe5, 0xff));
-                ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, from_rgba(0xff,0xff,0xff,0xff));
-                ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, { 0, 0 });
-
-                ImGui::PushStyleColor(ImGuiCol_Button, from_rgba(0x1b, 0x21, 0x25, 0xff));
-                ImGui::PushStyleColor(ImGuiCol_ButtonHovered, from_rgba(0x1b, 0x21, 0x25, 0xff));
-                ImGui::PushStyleColor(ImGuiCol_ButtonActive, from_rgba(0x1b, 0x21, 0x25, 0xff));
-                ImGui::PushStyleColor(ImGuiCol_WindowBg, from_rgba(0x1b, 0x21, 0x25, 0xff));
-                ImGui::SetNextWindowPos({ stream_rect.x, stream_rect.y - top_bar_height });
-                ImGui::SetNextWindowSize({ stream_rect.w, top_bar_height });
-                label = to_string() << "Stream of " << rs2_stream_to_string(stream);
-                ImGui::Begin(label.c_str(), nullptr, flags);
-
-                ImGui::SetCursorPosX(stream_rect.w - 32 * 5);
-
-                if (model.streams[stream].dev->is_paused())
-                {
-                    ImGui::PushStyleColor(ImGuiCol_Text, from_rgba(0, 174, 239, 255));
-                    ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, from_rgba(0xc3, 0xd5, 0xe5, 0xff));
-                    label = to_string() << u8"\uf04b" << "##Resume " << rs2_stream_to_string(stream);
-                    if (ImGui::Button(label.c_str(), { 24, top_bar_height }))
-                    {
-                        model.streams[stream].dev->resume();
-                    }
-                    if (ImGui::IsItemHovered())
-                    {
-                        ImGui::SetTooltip("Resume sensor");
-                    }
-                    ImGui::PopStyleColor(2);
-                }
-                else
-                {
-                    label = to_string() << u8"\uf04c" << "##Pause " << rs2_stream_to_string(stream);
-                    if (ImGui::Button(label.c_str(), { 24, top_bar_height }))
-                    {
-                        model.streams[stream].dev->pause();
-                    }
-                    if (ImGui::IsItemHovered())
-                    {
-                        ImGui::SetTooltip("Pause sensor");
-                    }
-                }
-                ImGui::SameLine();
-
-                label = to_string() << u8"\uf030" << "##Snapshot " << rs2_stream_to_string(stream);
-                ImGui::Button(label.c_str(), { 24, top_bar_height });
-                if (ImGui::IsItemHovered())
-                {
-                    ImGui::SetTooltip("Save snapshot");
-                }
-                ImGui::SameLine();
-
-                label = to_string() << u8"\uf05a" << "##Info " << rs2_stream_to_string(stream);
-                ImGui::Button(label.c_str(), { 24, top_bar_height });
-                if (ImGui::IsItemHovered())
-                {
-                    ImGui::SetTooltip("Show info overlay");
-                }
-                ImGui::SameLine();
-
-                if (!layout.empty() && !model.fullscreen)
-                {
-                    label = to_string() << u8"\uf2d0" << "##Maximize " << rs2_stream_to_string(stream);
-                    
-                    if (ImGui::Button(label.c_str(), { 24, top_bar_height }))
-                    {
-                        model.fullscreen = true;
-                        model.selected_stream = stream;
-                    }
-                    if (ImGui::IsItemHovered())
-                    {
-                        ImGui::SetTooltip("Maximize stream to full-screen");
-                    }
-
-                    ImGui::SameLine();
-                }
-                else if (model.fullscreen)
-                {
-                    label = to_string() << u8"\uf2d2" << "##Restore " << rs2_stream_to_string(stream);
-
-                    if (ImGui::Button(label.c_str(), { 24, top_bar_height }))
-                    {
-                        model.fullscreen = false;
-                    }
-                    if (ImGui::IsItemHovered())
-                    {
-                        ImGui::SetTooltip("Restore tile view");
-                    }
-
-                    ImGui::SameLine();
-                }
-
-                label = to_string() << u8"\uf00d" << "##Stop " << rs2_stream_to_string(stream);
-                if (ImGui::Button(label.c_str(), { 24, top_bar_height }))
-                {
-                    model.streams[stream].dev->stop();
-                }
-                if (ImGui::IsItemHovered())
-                {
-                    ImGui::SetTooltip("Stop this sensor");
-                }
-                ImGui::SameLine();
-
-                //if (model.streams[stream].show_stream_details)
-                //{
-                //    label = to_string() << rs2_stream_to_string(stream) << " "
-                //        << stream_size.x << "x" << stream_size.y << ", "
-                //        << rs2_format_to_string(model.streams[stream].format) << ", "
-                //        << "Frame# " << model.streams[stream].frame_number << ", "
-                //        << "FPS:";
-                //}
-                //else
-                //{
-                //    label = to_string() << rs2_stream_to_string(stream) << " (...)";
-                //}
-
-                //ImGui::Text("%s", label.c_str());
-                //model.streams[stream].show_stream_details = ImGui::IsItemHovered();
-
-                //if (model.streams[stream].show_stream_details)
-                //{
-                //    ImGui::SameLine();
-
-                //    label = to_string() << std::setprecision(2) << std::fixed << model.streams[stream].fps.get_fps();
-                //    ImGui::Text("%s", label.c_str());
-                //    if (ImGui::IsItemHovered())
-                //    {
-                //        ImGui::SetTooltip("FPS is calculated based on timestamps and not viewer time");
-                //    }
-                //}
-
-                //ImGui::SameLine((int)ImGui::GetWindowWidth() - 35);
-
-                //if (!layout.empty() && !model.fullscreen)
-                //{
-                //    if (ImGui::Button("[+]", { 26, 20 }))
-                //    {
-                //        model.fullscreen = true;
-                //        model.selected_stream = stream;
-                //    }
-                //    if (ImGui::IsItemHovered())
-                //    {
-                //        ImGui::SetTooltip("Maximize stream to full-screen");
-                //    }
-                //}
-                //else if (model.fullscreen)
-                //{
-                //    if (ImGui::Button("[-]", { 26, 20 }))
-                //    {
-                //        model.fullscreen = false;
-                //    }
-                //    if (ImGui::IsItemHovered())
-                //    {
-                //        ImGui::SetTooltip("Minimize stream to tile-view");
-                //    }
-                //}
-
-
-                //// Control metadata overlay widget
-                //ImGui::SameLine((int)ImGui::GetWindowWidth() - 140); // metadata GUI hint
-                //if (!layout.empty())
-                //{
-                //    if (model.streams[stream].metadata_displayed)
-                //    {
-                //        if (ImGui::Button("Hide Metadata", { 100, 20 }))
-                //            model.streams[stream].metadata_displayed = false;
-                //    }
-                //    else
-                //    {
-                //        if (ImGui::Button("Show Metadata", { 100, 20 }))
-                //            model.streams[stream].metadata_displayed = true;
-                //    }
-
-                //    if (ImGui::IsItemHovered())
-                //        ImGui::SetTooltip("Show per-frame metadata");
-                //}
-
-                //if (model.streams[stream].show_stream_details)
-                //{
-                //    label = to_string() << "Timestamp: " << std::fixed << std::setprecision(3) << model.streams[stream].timestamp
-                //        << ", Domain:";
-                //    ImGui::Text("%s", label.c_str());
-
-                //    ImGui::SameLine();
-                //    auto domain = model.streams[stream].timestamp_domain;
-                //    label = to_string() << rs2_timestamp_domain_to_string(domain);
-
-                //    if (domain == RS2_TIMESTAMP_DOMAIN_SYSTEM_TIME)
-                //    {
-                //        ImGui::PushStyleColor(ImGuiCol_Text, { 1.0f, 0.0f, 0.0f, 1.0f });
-                //        ImGui::Text("%s", label.c_str());
-                //        if (ImGui::IsItemHovered())
-                //        {
-                //            ImGui::SetTooltip("Hardware Timestamp unavailable! This is often an indication of inproperly applied Kernel patch.\nPlease refer to installation.md for mode information");
-                //        }
-                //        ImGui::PopStyleColor();
-                //    }
-                //    else
-                //    {
-                //        ImGui::Text("%s", label.c_str());
-                //        if (ImGui::IsItemHovered())
-                //        {
-                //            ImGui::SetTooltip("Specifies the clock-domain for the timestamp (hardware-clock / system-time)");
-                //        }
-                //    }
-                //}
-
-                ImGui::End();
-                ImGui::PopStyleColor(5);
-                ImGui::PopStyleVar();
+                show_stream_header(stream_rect, viewer_model.streams[stream], viewer_model);
 
                 ImGui::PushStyleColor(ImGuiCol_WindowBg, { 0, 0, 0, 0 });
                 ImGui::SetNextWindowPos({ stream_rect.x, stream_rect.y + stream_rect.h - 30 });
@@ -1757,7 +1468,7 @@ int main(int, char**) try
                 label = to_string() << "Footer for stream of " << rs2_stream_to_string(stream);
                 ImGui::Begin(label.c_str(), nullptr, flags);
 
-                auto&& stream_mv = model.streams[stream];
+                auto&& stream_mv = viewer_model.streams[stream];
 
                 if (stream_rect.contains(mouse.cursor))
                 {
@@ -1792,9 +1503,9 @@ int main(int, char**) try
                 {
                     ImGui::SameLine((int)ImGui::GetWindowWidth() - 150);
                     ImGui::PushItemWidth(-1);
-                    if (ImGui::Combo("Color Map:", &model.streams[stream].color_map_idx, color_maps_names.data(), color_maps_names.size()))
+                    if (ImGui::Combo("Color Map:", &viewer_model.streams[stream].color_map_idx, color_maps_names.data(), color_maps_names.size()))
                     {
-                        model.streams[stream].texture->cm = color_maps[model.streams[stream].color_map_idx];
+                        viewer_model.streams[stream].texture->cm = color_maps[viewer_model.streams[stream].color_map_idx];
                     }
                     ImGui::PopItemWidth();
                 }
@@ -1808,11 +1519,11 @@ int main(int, char**) try
             // Metadata overlay windows shall be drawn after textures to preserve z-buffer functionality
             for (auto &&kvp : layout)
             {
-                if (model.streams[kvp.first].metadata_displayed)
-                    model.streams[kvp.first].show_metadata(mouse);
+                if (viewer_model.streams[kvp.first].metadata_displayed)
+                    viewer_model.streams[kvp.first].show_metadata(mouse);
             }
         }
-       
+
         not_model.draw(w, h, selected_notification);
         ImGui::Render();
         glfwSwapBuffers(window);

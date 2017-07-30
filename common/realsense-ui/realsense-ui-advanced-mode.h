@@ -28,7 +28,9 @@ inline void slider_int(const char* id, T* val, S T::* field, bool& to_set)
     int min = (val + 1)->*field;
     int max = (val + 2)->*field;
 
-    if (ImGui::SliderInt(id, &temp, min, max))
+    std::string slider_id = to_string() << "##" << id;
+
+    if (ImGui::SliderInt(slider_id.c_str(), &temp, min, max))
     {
         val->*field = temp;
         to_set = true;
@@ -55,7 +57,9 @@ inline void slider_float(const char* id, T* val, S T::* field, bool& to_set)
     float min = (val + 1)->*field;
     float max = (val + 2)->*field;
 
-    if (ImGui::SliderFloat(id, &temp, min, max))
+    std::string slider_id = to_string() << "##" << id;
+
+    if (ImGui::SliderFloat(slider_id.c_str(), &temp, min, max))
     {
         val->*field = temp;
         to_set = true;
@@ -88,29 +92,29 @@ struct advanced_mode_control
 
 inline void draw_advanced_mode_controls(rs400::advanced_mode& advanced, advanced_mode_control& amc, bool& get_curr_advanced_controls)
 {
-    if (ImGui::CollapsingHeader("Depth Control", nullptr, true, true))
+    if (get_curr_advanced_controls)
     {
-        if (get_curr_advanced_controls)
+        for (int k = 0; k < 3; ++k)
         {
-            for (int k = 0; k < 3; ++k)
-            {
-                // Get Current Algo Control Values
-                amc.depth_controls.vals[k] = advanced.get_depth_control(k);
-                amc.rsm.vals[k] = advanced.get_rsm(k);
-                amc.rsvc.vals[k] = advanced.get_rau_support_vector_control(k);
-                amc.color_control.vals[k] = advanced.get_color_control(k);
-                amc.rctc.vals[k] = advanced.get_rau_thresholds_control(k);
-                amc.sctc.vals[k] = advanced.get_slo_color_thresholds_control(k);
-                amc.spc.vals[k] = advanced.get_slo_penalty_control(k);
-                amc.cc.vals[k] = advanced.get_color_correction(k);
-                amc.depth_table.vals[k] = advanced.get_depth_table(k);
-                amc.census.vals[k] = advanced.get_census(k);
-            }
-            amc.hdad.vals[0] = advanced.get_hdad();
-            amc.ae.vals[0] =  advanced.get_ae_control();
-            get_curr_advanced_controls = false;
+            // Get Current Algo Control Values
+            amc.depth_controls.vals[k] = advanced.get_depth_control(k);
+            amc.rsm.vals[k] = advanced.get_rsm(k);
+            amc.rsvc.vals[k] = advanced.get_rau_support_vector_control(k);
+            amc.color_control.vals[k] = advanced.get_color_control(k);
+            amc.rctc.vals[k] = advanced.get_rau_thresholds_control(k);
+            amc.sctc.vals[k] = advanced.get_slo_color_thresholds_control(k);
+            amc.spc.vals[k] = advanced.get_slo_penalty_control(k);
+            amc.cc.vals[k] = advanced.get_color_correction(k);
+            amc.depth_table.vals[k] = advanced.get_depth_table(k);
+            amc.census.vals[k] = advanced.get_census(k);
         }
+        amc.hdad.vals[0] = advanced.get_hdad();
+        amc.ae.vals[0] = advanced.get_ae_control();
+        get_curr_advanced_controls = false;
+    }
 
+    if (ImGui::TreeNode("Depth Control"))
+    {
         ImGui::PushItemWidth(-1);
 
         auto to_set = false;
@@ -130,9 +134,11 @@ inline void draw_advanced_mode_controls(rs400::advanced_mode& advanced, advanced
 
         if (to_set)
             advanced.set_depth_control(amc.depth_controls.vals[0]);
+
+        ImGui::TreePop();
     }
 
-    if (ImGui::CollapsingHeader("Rsm", nullptr, true, false))
+    if (ImGui::TreeNode("Rsm"))
     {
         ImGui::PushItemWidth(-1);
 
@@ -147,10 +153,12 @@ inline void draw_advanced_mode_controls(rs400::advanced_mode& advanced, advanced
 
         if (to_set)
             advanced.set_rsm(amc.rsm.vals[0]);
+
+        ImGui::TreePop();
     }
 
 
-    if (ImGui::CollapsingHeader("Rau Support Vector Control", nullptr, true, false))
+    if (ImGui::TreeNode("Rau Support Vector Control"))
     {
         ImGui::PushItemWidth(-1);
 
@@ -169,9 +177,11 @@ inline void draw_advanced_mode_controls(rs400::advanced_mode& advanced, advanced
 
         if (to_set)
             advanced.set_rau_support_vector_control(amc.rsvc.vals[0]);
+
+        ImGui::TreePop();
     }
 
-    if (ImGui::CollapsingHeader("Color Control", nullptr, true, false))
+    if (ImGui::TreeNode("Color Control"))
     {
         ImGui::PushItemWidth(-1);
 
@@ -187,9 +197,11 @@ inline void draw_advanced_mode_controls(rs400::advanced_mode& advanced, advanced
 
         if (to_set)
             advanced.set_color_control(amc.color_control.vals[0]);
+
+        ImGui::TreePop();
     }
 
-    if (ImGui::CollapsingHeader("Rau Color Thresholds Control", nullptr, true, false))
+    if (ImGui::TreeNode("Rau Color Thresholds Control"))
     {
         ImGui::PushItemWidth(-1);
 
@@ -203,9 +215,11 @@ inline void draw_advanced_mode_controls(rs400::advanced_mode& advanced, advanced
 
         if (to_set)
             advanced.set_rau_thresholds_control(amc.rctc.vals[0]);
+
+        ImGui::TreePop();
     }
 
-    if (ImGui::CollapsingHeader("SLO Color Thresholds Control", nullptr, true, false))
+    if (ImGui::TreeNode("SLO Color Thresholds Control"))
     {
         ImGui::PushItemWidth(-1);
 
@@ -219,9 +233,11 @@ inline void draw_advanced_mode_controls(rs400::advanced_mode& advanced, advanced
 
         if (to_set)
             advanced.set_slo_color_thresholds_control(amc.sctc.vals[0]);
+
+        ImGui::TreePop();
     }
 
-    if (ImGui::CollapsingHeader("SLO Penalty Control", nullptr, true, false))
+    if (ImGui::TreeNode("SLO Penalty Control"))
     {
         ImGui::PushItemWidth(-1);
 
@@ -238,9 +254,11 @@ inline void draw_advanced_mode_controls(rs400::advanced_mode& advanced, advanced
 
         if (to_set)
             advanced.set_slo_penalty_control(amc.spc.vals[0]);
+
+        ImGui::TreePop();
     }
 
-    if (ImGui::CollapsingHeader("HDAD", nullptr, true, false))
+    if (ImGui::TreeNode("HDAD"))
     {
         ImGui::PushItemWidth(-1);
 
@@ -256,9 +274,11 @@ inline void draw_advanced_mode_controls(rs400::advanced_mode& advanced, advanced
 
         if (to_set)
             advanced.set_hdad(amc.hdad.vals[0]);
+
+        ImGui::TreePop();
     }
 
-    if (ImGui::CollapsingHeader("Color Correction", nullptr, true, false))
+    if (ImGui::TreeNode("Color Correction"))
     {
         ImGui::PushItemWidth(-1);
 
@@ -281,9 +301,11 @@ inline void draw_advanced_mode_controls(rs400::advanced_mode& advanced, advanced
 
         if (to_set)
             advanced.set_color_correction(amc.cc.vals[0]);
+
+        ImGui::TreePop();
     }
 
-    if (ImGui::CollapsingHeader("Depth Table", nullptr, true, false))
+    if (ImGui::TreeNode("Depth Table"))
     {
         ImGui::PushItemWidth(-1);
 
@@ -299,9 +321,11 @@ inline void draw_advanced_mode_controls(rs400::advanced_mode& advanced, advanced
 
         if (to_set)
             advanced.set_depth_control(amc.depth_controls.vals[0]);
+
+        ImGui::TreePop();
     }
 
-    if (ImGui::CollapsingHeader("AE Control", nullptr, true, false))
+    if (ImGui::TreeNode("AE Control"))
     {
         ImGui::PushItemWidth(-1);
 
@@ -313,9 +337,11 @@ inline void draw_advanced_mode_controls(rs400::advanced_mode& advanced, advanced
 
         if (to_set)
             advanced.set_ae_control(amc.ae.vals[0]);
+
+        ImGui::TreePop();
     }
 
-    if (ImGui::CollapsingHeader("Census Enable Reg", nullptr, true, false))
+    if (ImGui::TreeNode("Census Enable Reg"))
     {
         ImGui::PushItemWidth(-1);
 
@@ -328,6 +354,8 @@ inline void draw_advanced_mode_controls(rs400::advanced_mode& advanced, advanced
 
         if (to_set)
             advanced.set_census(amc.census.vals[0]);
+
+        ImGui::TreePop();
     }
 }
 

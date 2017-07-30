@@ -235,6 +235,7 @@ namespace rs2
         void draw_option(rs2_option opt, bool update_read_only_options,
                          std::string& error_message, notifications_model& model);
 
+       
         bool is_paused() const;
         void pause();
         void resume();
@@ -348,29 +349,37 @@ namespace rs2
         explicit device_model(device& dev, std::string& error_message);
         bool draw_combo_box(const std::vector<std::string>& device_names, int& new_index);
         void draw_device_details(device& dev, context& ctx);
-        std::map<rs2_stream, rect> calc_layout(float x0, float y0, float width, float height);
-        void upload_frame(frame&& f);
         void start_recording(device& dev, const std::string& path, std::string& error_message);
         void stop_recording();
         void pause_record();
         void resume_record();
 
         std::vector<std::shared_ptr<subdevice_model>> subdevices;
+        
+        bool metadata_supported = false;
+    private:
+        std::shared_ptr<recorder> _recorder;
+        std::vector<std::shared_ptr<subdevice_model>> live_subdevices;
+    };
+
+    class viewer_model
+    {
+    public:
+        void upload_frame(frame&& f);
+        void draw_histogram_options(float depth_scale);
+
+        std::map<rs2_stream, rect> calc_layout(float x0, float y0, float width, float height);
+
         std::map<rs2_stream, stream_model> streams;
         bool fullscreen = false;
-        bool metadata_supported = false;
         rs2_stream selected_stream = RS2_STREAM_ANY;
-
     private:
         std::map<rs2_stream, rect> get_interpolated_layout(const std::map<rs2_stream, rect>& l);
 
         streams_layout _layout;
         streams_layout _old_layout;
         std::chrono::high_resolution_clock::time_point _transition_start_time;
-        std::shared_ptr<recorder> _recorder;
-        std::vector<std::shared_ptr<subdevice_model>> live_subdevices;
     };
-
 
     struct notification_data
     {

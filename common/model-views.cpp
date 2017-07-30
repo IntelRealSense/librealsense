@@ -117,13 +117,21 @@ namespace rs2
                     }
                     ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, { 1,1,1,1 });
 
-                    if (ImGui::Combo(id.c_str(), &selected, labels.data(),
-                        static_cast<int>(labels.size())))
+                    try 
                     {
-                        value = range.min + range.step * selected;
-                        endpoint.set_option(opt, value);
-                        *invalidate_flag = true;
+                        if (ImGui::Combo(id.c_str(), &selected, labels.data(),
+                            static_cast<int>(labels.size())))
+                        {
+                            value = range.min + range.step * selected;
+                            endpoint.set_option(opt, value);
+                            *invalidate_flag = true;
+                        }
                     }
+                    catch (const error& e)
+                    {
+                        error_message = error_to_string(e);
+                    }
+
                     ImGui::PopStyleColor();
 
                     ImGui::PopItemWidth();
@@ -137,12 +145,13 @@ namespace rs2
 
             if (opt == RS2_OPTION_ENABLE_AUTO_EXPOSURE && dev->auto_exposure_enabled && dev->streaming)
             {
-                ImGui::SameLine(0, 60);
+                ImGui::SameLine(0, 10);
 
+                ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, { 1.f,1.f,1.f,1.f });
                 if (!dev->roi_checked)
                 {
                     std::string caption = to_string() << "Set ROI##" << label;
-                    if (ImGui::Button(caption.c_str(), { 65, 0 }))
+                    if (ImGui::Button(caption.c_str(), { 55, 0 }))
                     {
                         dev->roi_checked = true;
                     }
@@ -150,11 +159,12 @@ namespace rs2
                 else
                 {
                     std::string caption = to_string() << "Cancel##" << label;
-                    if (ImGui::Button(caption.c_str(), { 65, 0 }))
+                    if (ImGui::Button(caption.c_str(), { 55, 0 }))
                     {
                         dev->roi_checked = false;
                     }
                 }
+                ImGui::PopStyleColor();
 
                 if (ImGui::IsItemHovered())
                     ImGui::SetTooltip("Select custom region of interest for the auto-exposure algorithm\nClick the button, then draw a rect on the frame");
@@ -236,6 +246,31 @@ namespace rs2
             range.step == 1.0f;
     }
 
+    void viewer_model::draw_histogram_options(float depth_units)
+    {
+        if (ImGui::Checkbox("Histogram Equalization", &streams[RS2_STREAM_DEPTH].texture->equalize))
+        {
+            streams[RS2_STREAM_DEPTH].texture->min_depth = 0;
+            streams[RS2_STREAM_DEPTH].texture->max_depth = 6 / depth_units;
+        }
+        if (!streams[RS2_STREAM_DEPTH].texture->equalize)
+        {
+            auto val = streams[RS2_STREAM_DEPTH].texture->min_depth * depth_units;
+            if (ImGui::SliderFloat("##Near (m)", &val, 0, 16))
+            {
+                streams[RS2_STREAM_DEPTH].texture->min_depth = val / depth_units;
+            }
+            val = streams[RS2_STREAM_DEPTH].texture->max_depth * depth_units;
+            if (ImGui::SliderFloat("##Far  (m)", &val, 0, 16))
+            {
+                streams[RS2_STREAM_DEPTH].texture->max_depth = val / depth_units;
+            }
+            if (streams[RS2_STREAM_DEPTH].texture->min_depth > streams[RS2_STREAM_DEPTH].texture->max_depth)
+            {
+                std::swap(streams[RS2_STREAM_DEPTH].texture->max_depth, streams[RS2_STREAM_DEPTH].texture->min_depth);
+            }
+        }
+    }
 
     subdevice_model::subdevice_model(device& dev, sensor& s, std::string& error_message)
         : s(s), dev(dev), streaming(false), queues(RS2_STREAM_COUNT),
@@ -1092,7 +1127,6 @@ namespace rs2
     void device_model::reset()
     {
         subdevices.resize(0);
-        streams.clear();
         _recorder.reset();
     }
 
@@ -1216,7 +1250,7 @@ namespace rs2
         }
     }
 
-    std::map<rs2_stream, rect> device_model::calc_layout(float x0, float y0, float width, float height)
+    std::map<rs2_stream, rect> viewer_model::calc_layout(float x0, float y0, float width, float height)
     {
         const int top_bar_height = 32;
 
@@ -1267,7 +1301,7 @@ namespace rs2
         return get_interpolated_layout(results);
     }
 
-    void device_model::upload_frame(frame&& f)
+    void viewer_model::upload_frame(frame&& f)
     {
         auto stream_type = f.get_stream_type();
         streams[stream_type].upload_frame(std::move(f));
@@ -1323,7 +1357,7 @@ namespace rs2
         _recorder->resume();
     }
 
-    std::map<rs2_stream, rect> device_model::get_interpolated_layout(const std::map<rs2_stream, rect>& l)
+    std::map<rs2_stream, rect> viewer_model::get_interpolated_layout(const std::map<rs2_stream, rect>& l)
     {
         using namespace std::chrono;
         auto now = high_resolution_clock::now();
