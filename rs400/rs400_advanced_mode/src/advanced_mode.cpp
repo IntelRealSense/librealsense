@@ -1,9 +1,9 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 
-#include "../../../src/core/advanced_mode.h"
-#include "../../../src/ds5/ds5-active.h"
-#include "../../../src/ds5/ds5-rolling-shutter.h"
+#include "core/advanced_mode.h"
+#include "ds5/ds5-active.h"
+#include "ds5/ds5-rolling-shutter.h"
 #include "json_loader.hpp"
 
 namespace librealsense
@@ -672,13 +672,13 @@ namespace librealsense
         set(val, advanced_mode_traits<STCensusRadius>::group);
     }
 
-    std::string ds5_advanced_mode_base::generate_json_data() const
+    std::vector<uint8_t> ds5_advanced_mode_base::serialize_json() const
     {
         auto p = get_all();
         return generate_json(p);
     }
 
-    void ds5_advanced_mode_base::apply_controls_from_json(const std::string& json_content)
+    void ds5_advanced_mode_base::load_json(const std::string& json_content)
     {
         auto p = get_all();
         update_structs(json_content, p);

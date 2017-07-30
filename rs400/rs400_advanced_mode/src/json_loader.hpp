@@ -14,7 +14,7 @@
 
 #include "json.hpp"
 #include <librealsense/rs2_advanced_mode_command.h>
-#include "../../../src/types.h"
+#include "types.h"
 #include "presets.h"
 
 namespace librealsense
@@ -130,7 +130,7 @@ namespace librealsense
         return f;
     }
 
-    inline std::string generate_json(const preset& in_preset)
+    inline std::vector<uint8_t> generate_json(const preset& in_preset)
     {
         json j;
         j["plusIncrement"]              = in_preset.depth_controls.plusIncrement;
@@ -195,7 +195,8 @@ namespace librealsense
         j["disparityShift"]             = in_preset.depth_table.disparityShift;
         j["uDiameter"]                  = in_preset.census.uDiameter;
         j["vDiameter"]                  = in_preset.census.vDiameter;
-        return j.dump();
+        auto str = j.dump();
+        return std::vector<uint8_t>(str.begin(), str.end());
     }
 
     inline void update_structs(const std::string& content, preset& in_preset)

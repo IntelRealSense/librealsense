@@ -7,6 +7,11 @@
 #include "core/extension.h"
 #include "device.h"
 
+struct rs2_raw_data_buffer
+{
+    std::vector<uint8_t> buffer;
+};
+
 struct rs2_error
 {
     std::string message;

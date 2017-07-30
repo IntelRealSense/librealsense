@@ -14,7 +14,6 @@
 #include <mutex>
 #include <set>
 #include <regex>
-#include <fstream>
 
 #pragma comment(lib, "opengl32.lib")
 
@@ -154,12 +153,12 @@ int find_device_index(const device_list& list, std::vector<std::string> device_i
     return std::distance(devices_info.begin(), it);
 }
 
-const float stream_all_button_width = 300;
 void draw_general_tab(device_model& model, device_list& list,
     device& dev, std::string& label, bool hw_reset_enable,
     std::vector<std::string>& restarting_info,
     bool update_read_only_options, std::string& error_message)
 {
+    const float stream_all_button_width = 300;
     static bool is_recording = false;
     static char input_file_name[256] = "recorded_streams.bag";
 
@@ -181,7 +180,7 @@ void draw_general_tab(device_model& model, device_list& list,
                     {
                         if (is_recording)
                         {
-							model.start_recording(dev, input_file_name, error_message);
+                            model.start_recording(dev, input_file_name, error_message);
                         }
                         for (auto&& sub : model.subdevices)
                         {
@@ -510,10 +509,10 @@ void draw_general_tab(device_model& model, device_list& list,
 
 void draw_advanced_mode_tab(device& dev, advanced_mode_control& amc,
     std::vector<std::string>& restarting_info,
-    bool& get_curr_advanced_controls,
-    std::string& error_message)
+    bool& get_curr_advanced_controls)
 {
     auto is_advanced_mode = dev.is<advanced_mode>();
+
     if (ImGui::CollapsingHeader("Advanced Mode", nullptr, true, true))
     {
         try
@@ -539,36 +538,6 @@ void draw_advanced_mode_tab(device& dev, advanced_mode_control& amc,
                 {
                     ImGui::SetTooltip("Disabling advanced mode will reset depth generation to factory settings\nThis will not affect calibration");
                 }
-
-                ImGui::Text("JSON File Path:");
-                char json_path[256] = "./preset.json";
-                ImGui::InputText("json_path", json_path, 256);
-                if (ImGui::Button("Load JSON", { stream_all_button_width / 2 - 5, 0 }))
-                {
-                    std::ifstream json_file(json_path);
-                    if (json_file.is_open())
-                    {
-                        auto content = std::string(std::istreambuf_iterator<char>(json_file), std::istreambuf_iterator<char>());
-                        advanced.apply_controls_from_json_content(content);
-                    }
-                    else
-                        error_message = to_string() << "\"" << json_path << "\"" << " not found!";
-
-                }
-                ImGui::SameLine();
-                if (ImGui::Button("Save JSON", { stream_all_button_width / 2 - 5, 0 }))
-                {
-                    std::ofstream json_file(json_path);
-                    if (json_file.is_open())
-                    {
-                        auto content = advanced.generate_json_data();
-                        json_file << content;
-                        json_file.close();
-                    }
-                    else
-                        error_message = to_string() << "\"" << json_path << "\"" << " isn't created!";
-                }
-
                 draw_advanced_mode_controls(advanced, amc, get_curr_advanced_controls);
             }
             else
@@ -655,7 +624,7 @@ int main(int, char**) try
     user_data data;
     data.curr_window = window;
     data.mouse = &mouse;
-    
+
     glfwSetDropCallback(window, handle_dropped_file);
     glfwSetWindowUserPointer(window, &data);
 
@@ -753,7 +722,7 @@ int main(int, char**) try
                     list = ctx.query_devices();
 
                     device_names = get_devices_names(list);
-                    
+
                     for (auto dev : devs)
                     {
                         dev = nullptr;
@@ -937,7 +906,7 @@ int main(int, char**) try
             }
             else if (last_tab_index == 1)
             {
-                draw_advanced_mode_tab(dev, amc, restarting_device_info, get_curr_advanced_controls, error_message);
+                draw_advanced_mode_tab(dev, amc, restarting_device_info, get_curr_advanced_controls);
             }
         }
 

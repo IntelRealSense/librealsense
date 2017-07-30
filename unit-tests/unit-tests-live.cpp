@@ -8,11 +8,8 @@
 #include <cmath>
 #include "unit-tests-common.h"
 #include <librealsense/rs2_advanced_mode.hpp>
-#include "../src/ds5/ds5-active.h"
-#include "../src/ds5/ds5-rolling-shutter.h"
 
 using namespace rs2;
-using namespace librealsense;
 
 # define SECTION_FROM_TEST_NAME space_to_underscore(Catch::getCurrentContext().getResultCapture()->getCurrentTestName()).c_str()
 //// disable in one place options that are sensitive to frame content
@@ -1070,7 +1067,7 @@ TEST_CASE("Per-frame metadata sanity check", "[live]") {
                     // Verify per-frame metadata attributes
                     metadata_verification(frames_additional_data);
 
-                    std::cout << (int)modes[i].format << " MODE: " << modes[i].fps << " " << modes[i].height << " " << modes[i].width << " " << (int)modes[i].stream << " succeed\n";
+                    std::cout << modes[i].format << " MODE: " << modes[i].fps << " " << modes[i].height << " " << modes[i].width << " " << modes[i].stream << " succeed\n";
                 }
             }
         }
