@@ -11,11 +11,13 @@
 #include <memory>
 #include <string>
 #include <cmath>
-
+#include "../common/realsense-ui/realsense-ui-advanced-mode.h"
+#include "model-views.h"
 
 
 using namespace rs2;
 using namespace std;
+using namespace rs400;
 
 
 vector<int> resolutions_by_fps_rewrite_it_as_lambda(int width,int height)
@@ -32,7 +34,7 @@ struct metrics
     double _percentage_of_non_null_pixels;
 };
 
-metrics analyze_depth_image(const rs2::video_frame& frame, float units)
+metrics analyze_depth_image(const rs2::video_frame& frame, float units,const rs2_intrinsics * intrin)
 {
     auto pixels = (const uint16_t*)frame.get_data();
     double sum_of_all_distances = 0;
@@ -46,7 +48,8 @@ metrics analyze_depth_image(const rs2::video_frame& frame, float units)
     const auto h = frame.get_height();
     long long int num_of_examined_pixels = w*h;
 
-
+    vector<float3> coordinates_of_all_pixels;
+    coordinates_of_all_pixels.reserve(w*h);
 
     for (int y = 0; y < h; y++)
         for (int x = 0; x < w; x++)
@@ -54,11 +57,27 @@ metrics analyze_depth_image(const rs2::video_frame& frame, float units)
             //std::cout << "Accessing index " << (y*w + x) << std::endl;
             auto depth_raw = pixels[y*w + x];
 
+
             if (depth_raw)
             {
                 // units is float
+                float pixel[2] = { x, y };
+                float check_pixel[2] = { 0.f, 0.f };
+                float point[3];
+                float3 current_coordinates;
                 auto distance = depth_raw * units;
                 sum_of_all_distances += distance;
+
+                rs2_deproject_pixel_to_point(point,intrin,pixel,distance);
+                current_coordinates.x = point[0];
+                current_coordinates.y = point[1];
+                current_coordinates.z = point[2];
+
+                //rs2_project_point_to_pixel(check_pixel,intrin,point);
+                // for sanity, assert check_pixel == pixel
+
+                coordinates_of_all_pixels.push_back(current_coordinates);
+
                 ++number_of_non_null_pixels;
             }
 
@@ -84,13 +103,39 @@ metrics analyze_depth_image(const rs2::video_frame& frame, float units)
             }
         }
 
-    standard_deviation = std::sqrt(sum_of_all_squared_differences/num_of_examined_pixels);
+    //standard_deviation = std::sqrt(sum_of_all_squared_differences/num_of_examined_pixels);
+    standard_deviation = std::sqrt(sum_of_all_squared_differences/number_of_non_null_pixels);
     metrics result{};
     result.avg_dist = mean_of_all_distances;
     result.std = standard_deviation;
     result._percentage_of_non_null_pixels = percentage_of_non_null_pixels;
     return result;
 }
+
+
+std::vector<std::string> get_device_info(const device& dev, bool include_location = true)
+{
+    std::vector<std::string> res;
+    for (auto i = 0; i < RS2_CAMERA_INFO_COUNT; i++)
+    {
+        auto info = static_cast<rs2_camera_info>(i);
+
+        // When camera is being reset, either because of "hardware reset"
+        // or because of switch into advanced mode,
+        // we don't want to capture the info that is about to change
+        if ((info == RS2_CAMERA_INFO_LOCATION ||
+            info == RS2_CAMERA_INFO_ADVANCED_MODE)
+            && !include_location) continue;
+
+        if (dev.supports(info))
+        {
+            auto value = dev.get_info(info);
+            res.push_back(value);
+        }
+    }
+    return res;
+}
+
 
 int main(int argc, char * argv[])
 {
@@ -102,6 +147,12 @@ int main(int argc, char * argv[])
     GLFWwindow* win;
 
     map<pair<int,int>,vector<int>> supported_fps_by_resolution;
+    std::vector<std::string> restarting_device_info;
+
+    advanced_mode_control amc{};
+    bool get_curr_advanced_controls = true;
+
+    const auto margin = 15.f;
 
     while (!finished)
     {
@@ -187,6 +238,8 @@ int main(int argc, char * argv[])
             config.enable_stream(RS2_STREAM_DEPTH, default_width, default_height, 30, RS2_FORMAT_Z16);
             //config.enable_stream(RS2_STREAM_DEPTH, 640, 360, 30, RS2_FORMAT_Z16);
             auto stream = config.open(dev);
+            rs2_intrinsics current_frame_intrinsics = stream.get_intrinsics(RS2_STREAM_DEPTH);
+
 
             syncer_processing_block syncer;
             stream.start(syncer);
@@ -206,7 +259,50 @@ int main(int argc, char * argv[])
 
             //dev.get_info(RS2_CAMERA_INFO_FIRMWARE_VERSION)
 
+            bool options_invalidated = false;
+            std::string error_message;
+            subdevice_model sub_mod_depth(dev, dpt, error_message);
 
+            option_model metadata;
+
+            for (auto i = 0; i < RS2_OPTION_COUNT; i++)
+            {
+
+                auto opt = static_cast<rs2_option>(i);
+                if (opt == rs2_option::RS2_OPTION_ENABLE_AUTO_EXPOSURE )
+                {
+                    std::stringstream ss;
+                    ss << dev.get_info(RS2_CAMERA_INFO_NAME)
+                        << "/" << dpt.get_info(RS2_CAMERA_INFO_NAME)
+                        << "/" << rs2_option_to_string(opt);
+                    metadata.id = ss.str();
+                    metadata.opt = opt;
+                    //metadata.endpoint = s;
+                    metadata.endpoint=dpt;
+                    metadata.label = rs2_option_to_string(opt) + std::string("##") + ss.str();
+                    metadata.invalidate_flag = &options_invalidated;
+                    //metadata.dev = this;
+                    metadata.dev =&sub_mod_depth;
+                    metadata.supported = dpt.supports(opt);
+                    if (metadata.supported)
+                    {
+                        try
+                        {
+                            metadata.range = dpt.get_option_range(opt);
+                            metadata.read_only = dpt.is_option_read_only(opt);
+                            if (!metadata.read_only)
+                                metadata.value = dpt.get_option(opt);
+                        }
+                        catch (const error& e)
+                        {
+                            metadata.range = { 0, 1, 0, 0 };
+                            metadata.value = 0;
+                            error_message = error_to_string(e);
+                        }
+                    }
+                    break;
+                }
+            }
 
 
             win = glfwCreateWindow(1280, 720, ss.str().c_str(), nullptr, nullptr);
@@ -219,7 +315,7 @@ int main(int argc, char * argv[])
             metrics latest_stat{};
             latest_stat.avg_dist = 0.0;
             latest_stat.std = 0.0;
-
+            latest_stat._percentage_of_non_null_pixels = 0.0;
             while (hub.is_connected(dev) && !glfwWindowShouldClose(win))
             {
                 
@@ -235,10 +331,10 @@ int main(int argc, char * argv[])
 
                     if (stream_type == RS2_STREAM_DEPTH)
                     {
-                        latest_stat = analyze_depth_image(frame, units);
+                        latest_stat = analyze_depth_image(frame, units, &current_frame_intrinsics);
                         cout << "Average distance is : " << latest_stat.avg_dist << endl;
                         cout << "Standard_deviation is : " << latest_stat.std << endl;
-                        cout << "percentage_of_non_null_pixels is : " << latest_stat._percentage_of_non_null_pixels << endl;
+                        cout << "Percentage_of_non_null_pixels is : " << latest_stat._percentage_of_non_null_pixels << endl;
                     }
 
                     buffers[stream_type].upload(frame);
@@ -267,8 +363,8 @@ int main(int argc, char * argv[])
                 // Draw GUI:
                 ImGui::PushStyleColor(ImGuiCol_WindowBg, { 0, 0, 0, 0.5f });
                 //ImGui::SetNextWindowPos({ 10, 10 });
-                ImGui::SetNextWindowPos({ w/100, h/100 });
-                ImGui::SetNextWindowSize({ w/10.f, h/100.f });
+                ImGui::SetNextWindowPos({ margin, margin });
+                ImGui::SetNextWindowSize({ 300, 150 });
 
 //                ImGui::SetNextWindowPos({ 410, 360 });
 //                ImGui::SetNextWindowSize({ 400.f, 350.f });
@@ -281,9 +377,6 @@ int main(int argc, char * argv[])
                 // Base font scale, multiplied by the per-window font scale which you can adjust with SetFontScale()
                 //fnt->Scale=3.f;
                 //ImGui::PushFont(fnt);
-
-                ImGui::SetWindowFontScale(w/1000);
-
 
                 ImGui::Text("SDK version: %s", api_version_to_string(rs2_get_api_version(&e)).c_str());
                 //rs2_camera_info_to_string(rs2_camera_info(RS2_CAMERA_INFO_FIRMWARE_VERSION)));
@@ -305,6 +398,7 @@ int main(int argc, char * argv[])
                                          selected_resolution.second, fps, RS2_FORMAT_Z16);
                     stream = config.open(dev);
                     stream.start(syncer);
+
                 }
 
 
@@ -339,9 +433,9 @@ int main(int argc, char * argv[])
                     {
                         error_message = e.what();
                     }
-
-
                 }
+
+                metadata.draw(error_message);
 
                 ImGui::PopItemWidth();
 
@@ -371,27 +465,38 @@ int main(int argc, char * argv[])
 
 
                ImGui::PushStyleColor(ImGuiCol_WindowBg, { 0, 0, 0, 0.5f });
-               ImGui::SetNextWindowPos({ 0.85*w, 0.85*h });
-               ImGui::SetNextWindowSize({ (.1*w), (.1*h)});
+
+               ImGui::SetNextWindowPos({ w - 200 - margin, h - 80 - margin });
+               ImGui::SetNextWindowSize({ 200, 80 });
+
+//               ImGui::SetNextWindowPos({ 0.85*w, 0.90*h });
+//               ImGui::SetNextWindowSize({ (.1*w), (.1*h)});
 
 //               ImGui::SetNextWindowPos({ 1530, 930 });
 //               ImGui::SetNextWindowSize({ 300.f, 370.f });
 
                ImGui::Begin("latest_stat", nullptr,
                                           ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize);
-               ImGui::SetWindowFontScale(w/1000);
+               //ImGui::SetWindowFontScale(w/1000);
 
-               ImGui::Text("Average: %.3f", latest_stat.avg_dist);
-               ImGui::Text("STD: %.3f", latest_stat.std);
-               ImGui::Text("Non null pixels: %.3f", latest_stat._percentage_of_non_null_pixels);
+               ImGui::Text("Average: %.3f(m)", latest_stat.avg_dist);
+               ImGui::Text("STD: %.3f(m)", latest_stat.std);
+               ImGui::Text("Non null pixels: %.3f%%", latest_stat._percentage_of_non_null_pixels);
                ImGui::End();
                ImGui::PopStyleColor();
+
 
 
                 ImGui::Render();
                 glPopMatrix();
                 glfwSwapBuffers(win);
+
+
+
+
             }
+
+
 
 
             if (glfwWindowShouldClose(win))
