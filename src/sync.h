@@ -94,17 +94,20 @@ namespace librealsense
 
         virtual bool are_equivalent(frame_holder& a, frame_holder& b) { return true; };
         virtual bool is_smaller_than(frame_holder& a, frame_holder& b) { return true; };
-        virtual bool wait_for_stream(std::vector<matcher*> synced, matcher* missing) { return true; };
+        virtual bool skip_missing_stream(std::vector<matcher*> synced, matcher* missing) { return false; };
 
         void sync(frame_holder f, syncronization_environment env) override;
         const std::vector<stream_id>& get_streams() const override;
-        std::shared_ptr<matcher> find_matcher(stream_id stream);
+        std::shared_ptr<matcher> find_matcher(const frame_holder& f);
 
     private:
-        std::map<stream_id, std::shared_ptr<matcher>> _matchers;
         std::vector<stream_id> _streams;
+        void update_next_expected(const frame_holder& f);
+
     protected:
         std::map<matcher*, single_consumer_queue<frame_holder>> _frames_queue;
+        std::map<stream_id, std::shared_ptr<matcher>> _matchers;
+        std::map<matcher*, double> _next_expected;
     };
 
     class frame_number_composite_matcher : public composite_matcher
@@ -122,11 +125,11 @@ namespace librealsense
         bool are_equivalent(frame_holder& a, frame_holder& b) override;
         bool is_smaller_than(frame_holder& a, frame_holder& b) override;
         void dispatch(frame_holder f, syncronization_environment env) override;
-        bool wait_for_stream(std::vector<matcher*> synced, matcher* missing) override;
+        bool skip_missing_stream(std::vector<matcher*> synced, matcher* missing) override;
 
     private:
         bool are_equivalent(double a, double b, int fps);
-        std::map<matcher*, double> _next_expected;
+
     };
 
     class syncer_proccess_unit : public processing_block

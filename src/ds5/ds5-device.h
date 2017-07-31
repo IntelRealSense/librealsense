@@ -35,6 +35,9 @@ namespace librealsense
         void create_snapshot(std::shared_ptr<debug_interface>& snapshot) override;
         void create_recordable(std::shared_ptr<debug_interface>& recordable,
                                std::function<void(std::shared_ptr<extension_snapshot>)> record_action) override;
+
+        std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;
+
     protected:
         std::shared_ptr<hw_monitor> _hw_monitor;
         firmware_version _fw_version;

@@ -13,7 +13,6 @@ namespace librealsense
         ds5_active(const platform::backend& backend,
                    const platform::backend_device_group& group);
 
-        std::shared_ptr<matcher> create_matcher(rs2_stream stream) const;
 
     };
 }

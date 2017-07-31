@@ -348,4 +348,24 @@ namespace librealsense
     {
 
     }
+
+    std::shared_ptr<matcher> ds5_device::create_matcher(const frame_holder& frame) const
+    {
+        if(!frame.frame->supports_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER))
+        {
+            return device::create_matcher(frame);
+        }
+
+        std::vector<std::shared_ptr<matcher>> matchers;
+
+        std::set<rs2_stream> streams = { RS2_STREAM_DEPTH, RS2_STREAM_INFRARED, RS2_STREAM_INFRARED2 };
+        if (streams.find(frame.frame->get_stream_type()) != streams.end())
+        {
+            for (auto s : streams)
+                matchers.push_back(device::create_matcher(frame));
+        }
+
+        return std::make_shared<frame_number_composite_matcher>(matchers);
+
+    }
 }

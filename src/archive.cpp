@@ -246,6 +246,8 @@ namespace librealsense
         case RS2_EXTENSION_COMPOSITE_FRAME :
             return std::make_shared<frame_archive<composite_frame>>(in_max_frame_queue_size, ts, parsers);
 
+        case RS2_EXTENSION_MOTION_FRAME:
+            return std::make_shared<frame_archive<frame>>(in_max_frame_queue_size, ts, parsers);
         default:
             throw std::runtime_error("Requested frame type is not supported!");
         }

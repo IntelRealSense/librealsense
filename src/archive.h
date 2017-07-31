@@ -206,7 +206,14 @@ namespace librealsense
         }
         int get_framerate() const override
         {
-            return first()->get_framerate();
+            auto frames = get_frames();
+
+            auto max_fps = first()->get_framerate();
+            for(auto i = 1; i < get_embedded_frames_count(); i++)
+            {
+                max_fps = std::max(max_fps, frames[i]->get_framerate());
+            }
+            return max_fps;
         }
         std::shared_ptr<sensor_interface> get_sensor() const override
         {
