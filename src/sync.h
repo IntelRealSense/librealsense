@@ -102,6 +102,7 @@ namespace librealsense
 
     private:
         std::vector<stream_id> _streams;
+        void update_next_expected(const frame_holder& f);
 
     protected:
         std::map<matcher*, single_consumer_queue<frame_holder>> _frames_queue;

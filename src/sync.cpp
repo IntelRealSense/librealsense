@@ -47,7 +47,6 @@ namespace librealsense
 
             {
                 std::lock_guard<std::mutex> lock(_mutex);
-                //std::cout<<"frame\n";
                 _matcher.dispatch(std::move(frame), { source, matches });
             }
 
@@ -174,6 +173,17 @@ namespace librealsense
         return matcher;
     }
 
+    void composite_matcher::update_next_expected(const frame_holder & f)
+    {
+        auto fps = f.frame->get_framerate();
+
+        auto gap = 1000 / fps;
+
+        auto matcher = find_matcher(f);
+
+        _next_expected[matcher.get()] = f.frame->get_frame_timestamp() + gap;
+    }
+
     void composite_matcher::sync(frame_holder f, syncronization_environment env)
     {
         auto matcher = find_matcher(f);
@@ -258,13 +268,7 @@ namespace librealsense
                     frame_holder frame;
                     _frames_queue[index].dequeue(&frame);
 
-                    auto fps = frame->get_framerate();
-
-                    auto gap = 1000 / fps;
-
-                    auto matcher = find_matcher(frame);
-
-                    _next_expected[matcher.get()] = frame->get_frame_timestamp() + gap;
+                    update_next_expected(frame);
 
                     match.push_back(std::move(frame));
                 }
@@ -335,7 +339,7 @@ namespace librealsense
         //next expected of the missing stream didn't updated yet
         if((*synced_frame)->get_frame_timestamp()> next_expected)
         {
-            //clean matchers that are not relevant
+            //remove matchers that are not relevant
             if(((*synced_frame)->get_frame_timestamp()- next_expected) > 1000)
             {
                 _frames_queue.erase(missing);
@@ -352,6 +356,7 @@ namespace librealsense
                 {
                     _matchers.erase(id);
                 });
+                LOG_INFO(missing << " matcher was removed");
                 return true;
             }
 
