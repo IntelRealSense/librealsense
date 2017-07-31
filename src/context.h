@@ -16,6 +16,8 @@ struct rs_context_base : rs_context
                                                     rs_context_base();
                                                     ~rs_context_base();
 
+    void                                            create_devices();
+
     static rs_context*                              acquire_instance();
     static void                                     release_instance();
 
