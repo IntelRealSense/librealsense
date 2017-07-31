@@ -143,7 +143,7 @@ namespace librealsense
 
         void log_frame_callback_end(T* frame) const
         {
-            if (frame)
+            if (frame && frame->get_stream())
             {
                 auto callback_ended = _time_service?_time_service->get_time():0;
                 auto callback_warning_duration = 1000 / (frame->get_stream()->get_framerate() + 1);

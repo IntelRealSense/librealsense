@@ -1166,7 +1166,7 @@ int main(int, char**) try
                             }
 
                             if (auto ds = sub->s.as<depth_sensor>())
-                                viewer_model.draw_histogram_options(ds.get_depth_scale());
+                                viewer_model.draw_histogram_options(ds.get_depth_scale(), *sub);
 
                             ImGui::TreePop();
                         }

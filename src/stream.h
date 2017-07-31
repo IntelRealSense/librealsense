@@ -76,7 +76,6 @@ namespace librealsense
         rs2_stream_profile* get_c_wrapper() const override;
 
         void set_c_wrapper(rs2_stream_profile* wrapper) override;
-
     private:
         std::shared_ptr<context> _ctx;
         int _index = 1;
@@ -110,6 +109,19 @@ namespace librealsense
             _height = height;
         }
 
+
+        bool operator==(const video_stream_profile& other) const
+        {
+            return get_height() == other.get_height() &&
+                get_width() == other.get_width() &&
+                get_framerate() == other.get_framerate() &&
+                get_stream_index() == other.get_stream_index() &&
+                get_stream_type() == other.get_stream_type() &&
+                get_unique_id() == other.get_unique_id() &&
+                get_format() == other.get_format();
+        }
+
+
         size_t get_size() const override { return get_width() * get_height() * get_framerate() * get_image_bpp(get_format()) / 8; }
     private:
         std::function<rs2_intrinsics()> _calc_intrinsics;
@@ -131,5 +143,31 @@ namespace librealsense
         std::vector<stream_profile> res;
         for (auto&& p : vec) res.push_back(to_profile(p.get()));
         return res;
+    }
+}
+
+namespace std
+{
+    template<>
+    struct hash<std::shared_ptr<librealsense::video_stream_profile>>
+    {
+        size_t operator()(const std::shared_ptr<librealsense::video_stream_profile>& k) const
+        {
+            using std::hash;
+
+            return (hash<uint32_t>()(k->get_height()))
+                ^ (hash<uint32_t>()(k->get_width()))
+                ^ (hash<uint32_t>()(k->get_framerate()))
+                ^ (hash<uint32_t>()(k->get_stream_index()))
+                ^ (hash<uint32_t>()(k->get_stream_type()))
+                ^ (hash<uint32_t>()(k->get_unique_id()))
+                ^ (hash<uint32_t>()(k->get_format()));
+        }
+    };
+
+    inline bool operator==(const std::shared_ptr<librealsense::video_stream_profile>& a, const std::shared_ptr<librealsense::video_stream_profile>& b)
+    {
+        if (!a.get() || !b.get()) return a.get() == b.get();
+        return *a == *b;
     }
 }

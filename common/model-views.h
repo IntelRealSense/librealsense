@@ -413,7 +413,7 @@ namespace rs2
     {
     public:
         void upload_frame(frame&& f);
-        void draw_histogram_options(float depth_scale);
+        void draw_histogram_options(float depth_scale, const subdevice_model& sensor);
 
         std::map<int, rect> calc_layout(float x0, float y0, float width, float height);
 

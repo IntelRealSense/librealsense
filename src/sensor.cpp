@@ -330,7 +330,7 @@ namespace librealsense
                     auto&& unpacker = *mode.unpacker;
                     for (auto&& output : unpacker.outputs)
                     {
-                    LOG_DEBUG("FrameAccepted," << librealsense::get_string(output.first.type) << "," << std::dec << frame_counter
+                        LOG_DEBUG("FrameAccepted," << librealsense::get_string(output.first.type) << "," << std::dec << frame_counter
                             << output.first.index << "," << frame_counter
                             << ",Arrived," << std::fixed << system_time
                             << ",TS," << std::fixed << timestamp << ",TS_Domain," << rs2_timestamp_domain_to_string(timestamp_domain));
@@ -345,7 +345,6 @@ namespace librealsense
                                 request = original_prof;
                             }
                         }
-                        if (!request) return;
 
                         auto bpp = get_image_bpp(output.second);
                         frame_additional_data additional_data(timestamp,
@@ -395,7 +394,8 @@ namespace librealsense
                             _on_before_frame_callback(stream_type, pref, std::move(callback));
                         }
 
-                        _source.invoke_callback(std::move(pref));
+                        if (pref->get_stream().get())
+                            _source.invoke_callback(std::move(pref));
                     }
                 },
                 static_cast<int>(_source.get_published_size_option()->query()));

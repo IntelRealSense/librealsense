@@ -246,28 +246,56 @@ namespace rs2
             range.step == 1.0f;
     }
 
-    void viewer_model::draw_histogram_options(float depth_units)
+    void viewer_model::draw_histogram_options(float depth_units, const subdevice_model& sensor)
     {
-        if (ImGui::Checkbox("Histogram Equalization", &streams[RS2_STREAM_DEPTH].texture->equalize))
+        std::vector<int> depth_streams_ids;
+        for (auto&& s : streams)
         {
-            streams[RS2_STREAM_DEPTH].texture->min_depth = 0;
-            streams[RS2_STREAM_DEPTH].texture->max_depth = 6 / depth_units;
+            if (s.second.dev.get() == &sensor && s.second.profile.stream_type() == RS2_STREAM_DEPTH)
+            {
+                depth_streams_ids.push_back(s.second.profile.unique_id());
+            }
         }
-        if (!streams[RS2_STREAM_DEPTH].texture->equalize)
+
+        if (!depth_streams_ids.size()) return;
+
+        auto&& first_depth_stream = streams[depth_streams_ids.front()];
+        bool equalize = first_depth_stream.texture->equalize;
+
+        if (ImGui::Checkbox("Histogram Equalization", &equalize))
         {
-            auto val = streams[RS2_STREAM_DEPTH].texture->min_depth * depth_units;
+            for (auto id : depth_streams_ids)
+            {
+                streams[id].texture->equalize = equalize;
+                streams[id].texture->min_depth = 0;
+                streams[id].texture->max_depth = 6 / depth_units;
+            }
+        }
+
+        if (!equalize)
+        {
+            auto val = first_depth_stream.texture->min_depth * depth_units;
             if (ImGui::SliderFloat("##Near (m)", &val, 0, 16))
             {
-                streams[RS2_STREAM_DEPTH].texture->min_depth = val / depth_units;
+                for (auto id : depth_streams_ids)
+                {
+                    streams[id].texture->min_depth = val / depth_units;
+                }
             }
-            val = streams[RS2_STREAM_DEPTH].texture->max_depth * depth_units;
+            val = first_depth_stream.texture->max_depth * depth_units;
             if (ImGui::SliderFloat("##Far  (m)", &val, 0, 16))
             {
-                streams[RS2_STREAM_DEPTH].texture->max_depth = val / depth_units;
+                for (auto id : depth_streams_ids)
+                {
+                    streams[id].texture->max_depth = val / depth_units;
+                }
             }
-            if (streams[RS2_STREAM_DEPTH].texture->min_depth > streams[RS2_STREAM_DEPTH].texture->max_depth)
+            for (auto id : depth_streams_ids)
             {
-                std::swap(streams[RS2_STREAM_DEPTH].texture->max_depth, streams[RS2_STREAM_DEPTH].texture->min_depth);
+                if (streams[id].texture->min_depth > streams[id].texture->max_depth)
+                {
+                    std::swap(streams[id].texture->max_depth, streams[id].texture->min_depth);
+                }
             }
         }
     }
@@ -528,9 +556,9 @@ namespace rs2
         }
 
         if (!streaming)
-        for (auto&& f : formats)
         {
-            if (f.second.size() > 0)
+            ImGui::Text("Available Streams:");
+            ImGui::NextColumn();
             ImGui::NextColumn();
         }
 

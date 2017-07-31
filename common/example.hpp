@@ -901,7 +901,7 @@ namespace rs2
                 glEnd();
             }
 
-            if (last)
+            /*if (last)
             {
                 if (last.get_profile().stream_type() == RS2_STREAM_DEPTH)
                 {
@@ -923,7 +923,7 @@ namespace rs2
                         glEnd();
                     }
                 }
-            }
+            }*/
         }
     };
 
