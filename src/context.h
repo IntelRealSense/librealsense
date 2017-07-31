@@ -111,6 +111,7 @@ namespace librealsense
             const char* section = nullptr,
             rs2_recording_mode mode = RS2_RECORDING_MODE_COUNT);
 
+        void stop(){_device_watcher->stop();}
         ~context();
         std::vector<std::shared_ptr<device_info>> query_devices() const;
         const platform::backend& get_backend() const { return *_backend; }

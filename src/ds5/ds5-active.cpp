@@ -43,19 +43,4 @@ namespace librealsense
                 std::make_shared<asic_and_projector_temperature_options>(depth_ep,
                 RS2_OPTION_PROJECTOR_TEMPERATURE));
     }
-
-    std::shared_ptr<matcher> ds5_active::create_matcher(rs2_stream stream) const
-    {
-        std::vector<std::shared_ptr<matcher>> matchers;
-
-        std::set<rs2_stream> streams = { RS2_STREAM_DEPTH , RS2_STREAM_COLOR, RS2_STREAM_INFRARED };
-        if (streams.find(stream) != streams.end())
-        {
-            for (auto s : streams)
-                matchers.push_back(device::create_matcher(s));
-        }
-
-        return std::make_shared<frame_number_composite_matcher>(matchers);
-
-    }
 }

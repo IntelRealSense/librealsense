@@ -88,6 +88,12 @@ void rs2_set_census(rs2_device* dev, STCensusRadius* group, rs2_error** error);
 
 void rs2_get_census(rs2_device* dev, STCensusRadius* group, int mode, rs2_error** error);
 
+/* Load JSON and apply advanced-mode controls, returns 0 if success */
+void rs2_load_json(rs2_device* dev, const void* json_content, unsigned content_size, rs2_error** error);
+
+/* Serialize JSON content, returns 0 if success */
+rs2_raw_data_buffer* rs2_serialize_json(rs2_device* dev, rs2_error** error);
+
 #ifdef __cplusplus
 }
 #endif

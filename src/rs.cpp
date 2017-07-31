@@ -21,11 +21,6 @@
 ////////////////////////
 // API implementation //
 ////////////////////////
-struct rs2_raw_data_buffer
-{
-    std::vector<uint8_t> buffer;
-};
-
 struct rs2_stream_profile_list
 {
     std::vector<std::shared_ptr<stream_profile_interface>> list;
@@ -41,6 +36,7 @@ struct rs2_sensor
 
 struct rs2_context
 {
+    ~rs2_context() { ctx->stop(); }
     std::shared_ptr<librealsense::context> ctx;
 };
 

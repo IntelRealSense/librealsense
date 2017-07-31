@@ -238,6 +238,7 @@ namespace librealsense
         throw std::runtime_error("Not Implemented");
     }
 
+
     rs2_time_t sr300_timestamp_reader_from_metadata::get_frame_timestamp(const request_mapping& mode, const platform::frame_object& fo)
     {
         std::lock_guard<std::recursive_mutex> lock(_mtx);
@@ -286,5 +287,28 @@ namespace librealsense
         std::lock_guard<std::recursive_mutex> lock(_mtx);
 
         return (has_metadata_ts(fo))? RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK : _backup_timestamp_reader->get_frame_timestamp_domain(mode,fo);
+    }
+
+    std::shared_ptr<matcher> sr300_camera::create_matcher(const frame_holder& frame) const
+    {
+        if(!frame.frame->supports_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER))
+        {
+            return device::create_matcher(frame);
+        }
+        std::vector<std::shared_ptr<matcher>> depth_matchers;
+
+        std::set<rs2_stream> streams = { RS2_STREAM_DEPTH , RS2_STREAM_INFRARED};
+
+        for (auto s : streams)
+            depth_matchers.push_back(std::make_shared<identity_matcher>( stream_id((device_interface*)(this), s)));
+
+        std::vector<std::shared_ptr<matcher>> matchers;
+        matchers.push_back( std::make_shared<frame_number_composite_matcher>(depth_matchers));
+
+        auto color_matcher = std::make_shared<identity_matcher>( stream_id((device_interface*)(this), RS2_STREAM_COLOR));
+        matchers.push_back(color_matcher);
+
+        return std::make_shared<timestamp_composite_matcher>(matchers);
+
     }
 }

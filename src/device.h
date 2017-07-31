@@ -27,7 +27,7 @@ namespace librealsense
 
         void hardware_reset() override;
 
-        std::shared_ptr<matcher> create_matcher(rs2_stream stream) const override;
+        virtual std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;
 
         size_t find_sensor_idx(const sensor_interface& s) const;
 
