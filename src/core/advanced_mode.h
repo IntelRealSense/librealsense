@@ -5,7 +5,7 @@
 #include "ds5/ds5-private.h"
 #include "hw-monitor.h"
 #include "streaming.h"
-#include "../option.h"
+#include "option.h"
 #define RS400_ADVANCED_MODE_HPP
 #include "../../rs400/rs400_advanced_mode/src/presets.h"
 #include <librealsense/rs2_advanced_mode_command.h>
@@ -87,6 +87,9 @@ namespace librealsense
         virtual void set_ae_control(const STAEControl& val) = 0;
         virtual void set_census_radius(const STCensusRadius& val) = 0;
 
+        virtual std::vector<uint8_t> serialize_json() const = 0;
+        virtual void load_json(const std::string& json_content) = 0;
+
         virtual ~ds5_advanced_mode_interface() = default;
     };
 
@@ -131,6 +134,9 @@ namespace librealsense
         void set_ae_control(const STAEControl& val);
         void set_census_radius(const STCensusRadius& val);
 
+        std::vector<uint8_t> serialize_json() const;
+        void load_json(const std::string& json_content);
+
     private:
         std::shared_ptr<hw_monitor> _hw_monitor;
         uvc_sensor& _depth_sensor;
@@ -147,7 +153,7 @@ namespace librealsense
 
         res_type get_res_type(uint32_t width, uint32_t height);
 
-        preset get_all();
+        preset get_all() const;
         void set_all(const preset& p);
 
         std::vector<uint8_t> send_receive(const std::vector<uint8_t>& input) const;

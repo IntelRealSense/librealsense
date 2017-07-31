@@ -10,7 +10,6 @@
 #include <librealsense/rs2_advanced_mode.hpp>
 
 using namespace rs2;
-//using namespace librealsense;
 
 # define SECTION_FROM_TEST_NAME space_to_underscore(Catch::getCurrentContext().getResultCapture()->getCurrentTestName()).c_str()
 //// disable in one place options that are sensitive to frame content

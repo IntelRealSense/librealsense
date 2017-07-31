@@ -136,6 +136,8 @@ set(REALSENSE_CPP
 
     rs400/rs400_advanced_mode/src/rs2_advanced_mode.cpp
     rs400/rs400_advanced_mode/src/presets.cpp
+    rs400/rs400_advanced_mode/src/json.hpp
+    rs400/rs400_advanced_mode/src/json_loader.hpp
     rs400/rs400_advanced_mode/src/advanced_mode.cpp
 
     third-party/easyloggingpp/src/easylogging++.cc
