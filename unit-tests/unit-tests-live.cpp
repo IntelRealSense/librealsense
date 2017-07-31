@@ -8,11 +8,9 @@
 #include <cmath>
 #include "unit-tests-common.h"
 #include <librealsense/rs2_advanced_mode.hpp>
-#include "../src/ds5/ds5-active.h"
-#include "../src/ds5/ds5-rolling-shutter.h"
 
 using namespace rs2;
-using namespace librealsense;
+//using namespace librealsense;
 
 # define SECTION_FROM_TEST_NAME space_to_underscore(Catch::getCurrentContext().getResultCapture()->getCurrentTestName()).c_str()
 //// disable in one place options that are sensitive to frame content
@@ -2133,5 +2131,106 @@ TEST_CASE("Auto-complete feature works", "[offline][util::config]") {
             results.stop();
             REQUIRE_NOTHROW(config.open(dev));
         }
+    }
+}
+
+#include <librealsense/rsutil2.hpp>
+std::vector<rs2::stream_profile> configure_all_supported_streams(rs2::device& dev, util::config& config)
+{
+    std::vector<rs2::stream_profile> profiles;
+
+    if (config.can_enable_stream(dev, RS2_STREAM_DEPTH, 640, 480, 60, RS2_FORMAT_Z16))
+    {
+        REQUIRE_NOTHROW(config.enable_stream( RS2_STREAM_DEPTH, 640, 480, 60, RS2_FORMAT_Z16));
+        profiles.push_back({RS2_STREAM_DEPTH, 640, 480, 60, RS2_FORMAT_Z16});
+    }
+    if (config.can_enable_stream(dev, RS2_STREAM_COLOR, 640, 480, 60, RS2_FORMAT_RGB8))
+    {
+        REQUIRE_NOTHROW(config.enable_stream( RS2_STREAM_COLOR, 640, 480, 60, RS2_FORMAT_RGB8));
+        profiles.push_back({RS2_STREAM_COLOR, 640, 480, 60, RS2_FORMAT_RGB8});
+    }
+    if (config.can_enable_stream(dev, RS2_STREAM_INFRARED, 640, 480, 60, RS2_FORMAT_Y8))
+    {
+        REQUIRE_NOTHROW(config.enable_stream(  RS2_STREAM_INFRARED, 640, 480, 60, RS2_FORMAT_Y8));
+        profiles.push_back({ RS2_STREAM_INFRARED, 640, 480, 60, RS2_FORMAT_Y8});
+    }
+    if (config.can_enable_stream(dev, RS2_STREAM_INFRARED2, 640, 480, 60, RS2_FORMAT_Y8))
+    {
+        REQUIRE_NOTHROW(config.enable_stream(  RS2_STREAM_INFRARED2, 640, 480, 60, RS2_FORMAT_Y8));
+        profiles.push_back({ RS2_STREAM_INFRARED2, 640, 480, 60, RS2_FORMAT_Y8});
+    }
+    if (config.can_enable_stream(dev, RS2_STREAM_FISHEYE, 640, 480, 60, RS2_FORMAT_RAW8))
+    {
+        REQUIRE_NOTHROW(config.enable_stream( RS2_STREAM_FISHEYE, 640, 480, 60, RS2_FORMAT_RAW8));
+        profiles.push_back({RS2_STREAM_FISHEYE, 640, 480, 60, RS2_FORMAT_RAW8});
+    }
+    if (config.can_enable_stream(dev, RS2_STREAM_GYRO, 0, 0, 0, RS2_FORMAT_MOTION_XYZ32F))
+    {
+        REQUIRE_NOTHROW(config.enable_stream( RS2_STREAM_GYRO,  1, 1, 1000, RS2_FORMAT_MOTION_XYZ32F));
+        profiles.push_back({RS2_STREAM_GYRO,  0, 0, 0, RS2_FORMAT_MOTION_XYZ32F});
+    }
+    if (config.can_enable_stream(dev, RS2_STREAM_ACCEL,  0, 0, 0, RS2_FORMAT_MOTION_XYZ32F))
+    {
+        REQUIRE_NOTHROW(config.enable_stream( RS2_STREAM_ACCEL, 1, 1, 1000,  RS2_FORMAT_MOTION_XYZ32F));
+        profiles.push_back({RS2_STREAM_ACCEL,  0, 0, 0, RS2_FORMAT_MOTION_XYZ32F});
+    }
+    return profiles;
+}
+
+TEST_CASE("Sync sanity", "[live]") {
+
+    const double DELTA = 20;
+    rs2::context ctx;
+
+    if (make_context(SECTION_FROM_TEST_NAME, &ctx))
+    {
+        auto list = ctx.query_devices();
+        auto dev = list[0];
+
+        disable_sensitive_options_for(dev);
+
+        util::config config;
+        auto profiles = configure_all_supported_streams(dev, config);
+
+        auto stream = config.open(dev);
+        syncer syncer;
+        stream.start(syncer);
+
+
+        for(auto i=0; i<30; i++)
+        {
+            auto frames = syncer.wait_for_frames(500);
+        }
+
+        std::vector<std::vector<double>> all_timestamps;
+
+        for(auto i=0; i<30; i++)
+        {
+            auto frames = syncer.wait_for_frames(500);
+            REQUIRE(frames.size() >  0);
+
+
+            std::vector<double> timestamps;
+            for(auto&& f: frames)
+            {
+                timestamps.push_back(f.get_timestamp());
+            }
+            all_timestamps.push_back(timestamps);
+
+        }
+
+        auto num_of_partial_sync_sets = 0;
+        for(auto set_timestamps: all_timestamps)
+        {
+            if(set_timestamps.size() < profiles.size())
+                num_of_partial_sync_sets++;
+
+            if(set_timestamps.size() <= 1)
+                continue;
+
+            std::sort(set_timestamps.begin(), set_timestamps.end());
+            REQUIRE(set_timestamps[set_timestamps.size()-1] - set_timestamps[0] <= DELTA);
+        }
+         REQUIRE((float)num_of_partial_sync_sets/(float)all_timestamps.size() < 0.80);
     }
 }

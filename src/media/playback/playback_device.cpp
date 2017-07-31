@@ -236,7 +236,7 @@ bool playback_device::extend_to(rs2_extension extension_type, void** ext)
     }
 }
 
-std::shared_ptr<matcher> playback_device::create_matcher(const frame_holder&) const
+std::shared_ptr<matcher> playback_device::create_matcher(const frame_holder& frame) const
 {
     return nullptr; //TOOD: WTD?
 }

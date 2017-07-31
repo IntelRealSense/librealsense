@@ -176,7 +176,6 @@ namespace librealsense
     void composite_matcher::update_next_expected(const frame_holder & f)
     {
         auto fps = f.frame->get_framerate();
-
         auto gap = 1000 / fps;
 
         auto matcher = find_matcher(f);

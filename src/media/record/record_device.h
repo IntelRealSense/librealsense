@@ -33,8 +33,9 @@ namespace librealsense
                                       rs2_stream from_stream,
                                       size_t to,
                                       rs2_stream to_stream) const override;
+
 		bool extend_to(rs2_extension extension_type, void** ext) override;
-        virtual std::shared_ptr<matcher> create_matcher(const frame_holder&) const override;
+        virtual std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;
 
         void pause_recording();
         void resume_recording();
