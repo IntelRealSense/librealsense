@@ -19,9 +19,9 @@
 
 namespace librealsense
 {
-    ds5_active::ds5_active(const platform::backend& backend,
+    ds5_active::ds5_active(std::shared_ptr<context> ctx,
                            const platform::backend_device_group& group)
-        : ds5_device(backend, group)
+        : device(ctx), ds5_device(ctx, group)
     {
         using namespace ds;
 
@@ -48,7 +48,7 @@ namespace librealsense
     {
         std::vector<std::shared_ptr<matcher>> matchers;
 
-        std::set<rs2_stream> streams = { RS2_STREAM_DEPTH , RS2_STREAM_COLOR, RS2_STREAM_INFRARED, RS2_STREAM_INFRARED2 };
+        std::set<rs2_stream> streams = { RS2_STREAM_DEPTH , RS2_STREAM_COLOR, RS2_STREAM_INFRARED };
         if (streams.find(stream) != streams.end())
         {
             for (auto s : streams)

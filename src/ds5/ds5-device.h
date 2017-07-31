@@ -16,9 +16,7 @@ namespace librealsense
     class ds5_device : public virtual device, public debug_interface
     {
     public:
-        rs2_extrinsics get_extrinsics(size_t from_subdevice, rs2_stream, size_t to_subdevice, rs2_stream) const override;
-
-        std::shared_ptr<uvc_sensor> create_depth_device(const platform::backend& backend,
+        std::shared_ptr<uvc_sensor> create_depth_device(std::shared_ptr<context> ctx,
                                                         const std::vector<platform::uvc_device_info>& all_device_infos);
 
         uvc_sensor& get_depth_sensor()
@@ -26,7 +24,7 @@ namespace librealsense
             return dynamic_cast<uvc_sensor&>(get_sensor(_depth_device_idx));
         }
 
-        ds5_device(const platform::backend& backend,
+        ds5_device(std::shared_ptr<context> ctx,
                    const platform::backend_device_group& group);
 
         std::vector<uint8_t> send_receive_raw_data(const std::vector<uint8_t>& input) override;
@@ -36,15 +34,17 @@ namespace librealsense
         void create_recordable(std::shared_ptr<debug_interface>& recordable,
                                std::function<void(std::shared_ptr<extension_snapshot>)> record_action) override;
     protected:
+        friend class ds5_depth_sensor;
+
         std::shared_ptr<hw_monitor> _hw_monitor;
         firmware_version _fw_version;
 
-        pose get_device_position(unsigned int subdevice) const;
-
+        std::shared_ptr<stream_interface> _depth_stream;
+        std::shared_ptr<stream_interface> _left_ir_stream;
+        std::shared_ptr<stream_interface> _right_ir_stream;
         std::vector<uint8_t> get_raw_calibration_table(ds::calibration_table_id table_id) const;
 
     private:
-        friend class ds5_depth_sensor;
 
         bool is_camera_in_advanced_mode() const;
 
@@ -54,6 +54,8 @@ namespace librealsense
         lazy<std::vector<uint8_t>> _coefficients_table_raw;
 
         std::unique_ptr<polling_error_handler> _polling_error_handler;
+
+        std::shared_ptr<lazy<rs2_extrinsics>> _left_right_extrinsics;
     };
 
     class ds5_notification_decoder : public notification_decoder

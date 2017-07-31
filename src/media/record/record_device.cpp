@@ -72,7 +72,7 @@ void librealsense::record_device::write_header()
     {
         auto& sensor = m_device->get_sensor(j);
         auto sensor_extensions_md = get_extensions_snapshots(&sensor);
-        sensors_md.emplace_back(sensor_extensions_md, sensor.get_principal_requests());
+        sensors_md.emplace_back(sensor_extensions_md, sensor.get_stream_profiles());
     }
 
     m_ros_writer->write_device_description({device_extensions_md, sensors_md, {/*TODO: get extrinsics*/}});
@@ -158,13 +158,6 @@ const librealsense::sensor_interface& librealsense::record_device::get_sensor(si
 void librealsense::record_device::hardware_reset()
 {
     m_device->hardware_reset();
-}
-rs2_extrinsics librealsense::record_device::get_extrinsics(size_t from,
-                                                      rs2_stream from_stream,
-                                                      size_t to,
-                                                      rs2_stream to_stream) const
-{
-    throw not_implemented_exception(__FUNCTION__);
 }
 
 /**

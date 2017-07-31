@@ -100,36 +100,36 @@ namespace librealsense
         explicit ds5_advanced_mode_base(std::shared_ptr<hw_monitor> hwm, uvc_sensor& depth_sensor);
         virtual ~ds5_advanced_mode_base() = default;
 
-        bool is_enabled() const;
-        void toggle_advanced_mode(bool enable);
+        bool is_enabled() const override;
+        void toggle_advanced_mode(bool enable) override;
         void apply_preset(const std::vector<platform::stream_profile>& configuration,
-                          rs2_rs400_visual_preset preset);
+                          rs2_rs400_visual_preset preset) override;
 
-        void get_depth_control_group(STDepthControlGroup* ptr, int mode = 0) const;
-        void get_rsm(STRsm* ptr, int mode = 0) const;
-        void get_rau_support_vector_control(STRauSupportVectorControl* ptr, int mode = 0) const;
-        void get_color_control(STColorControl* ptr, int mode = 0) const;
-        void get_rau_color_thresholds_control(STRauColorThresholdsControl* ptr, int mode = 0) const;
-        void get_slo_color_thresholds_control(STSloColorThresholdsControl* ptr, int mode = 0) const;
-        void get_slo_penalty_control(STSloPenaltyControl* ptr, int mode = 0) const;
-        void get_hdad(STHdad* ptr, int mode = 0) const;
-        void get_color_correction(STColorCorrection* ptr, int mode = 0) const;
-        void get_depth_table_control(STDepthTableControl* ptr, int mode = 0) const;
-        void get_ae_control(STAEControl* ptr, int mode = 0) const;
-        void get_census_radius(STCensusRadius* ptr, int mode = 0) const;
+        void get_depth_control_group(STDepthControlGroup* ptr, int mode = 0) const override;
+        void get_rsm(STRsm* ptr, int mode = 0) const override;
+        void get_rau_support_vector_control(STRauSupportVectorControl* ptr, int mode = 0) const override;
+        void get_color_control(STColorControl* ptr, int mode = 0) const override;
+        void get_rau_color_thresholds_control(STRauColorThresholdsControl* ptr, int mode = 0) const override;
+        void get_slo_color_thresholds_control(STSloColorThresholdsControl* ptr, int mode = 0) const override;
+        void get_slo_penalty_control(STSloPenaltyControl* ptr, int mode = 0) const override;
+        void get_hdad(STHdad* ptr, int mode = 0) const override;
+        void get_color_correction(STColorCorrection* ptr, int mode = 0) const override;
+        void get_depth_table_control(STDepthTableControl* ptr, int mode = 0) const override;
+        void get_ae_control(STAEControl* ptr, int mode = 0) const override;
+        void get_census_radius(STCensusRadius* ptr, int mode = 0) const override;
 
-        void set_depth_control_group(const STDepthControlGroup& val);
-        void set_rsm(const STRsm& val);
-        void set_rau_support_vector_control(const STRauSupportVectorControl& val);
-        void set_color_control(const STColorControl& val);
-        void set_rau_color_thresholds_control(const STRauColorThresholdsControl& val);
-        void set_slo_color_thresholds_control(const STSloColorThresholdsControl& val);
-        void set_slo_penalty_control(const STSloPenaltyControl& val);
-        void set_hdad(const STHdad& val);
-        void set_color_correction(const STColorCorrection& val);
-        void set_depth_table_control(const STDepthTableControl& val);
-        void set_ae_control(const STAEControl& val);
-        void set_census_radius(const STCensusRadius& val);
+        void set_depth_control_group(const STDepthControlGroup& val) override;
+        void set_rsm(const STRsm& val) override;
+        void set_rau_support_vector_control(const STRauSupportVectorControl& val) override;
+        void set_color_control(const STColorControl& val) override;
+        void set_rau_color_thresholds_control(const STRauColorThresholdsControl& val) override;
+        void set_slo_color_thresholds_control(const STSloColorThresholdsControl& val) override;
+        void set_slo_penalty_control(const STSloPenaltyControl& val) override;
+        void set_hdad(const STHdad& val) override;
+        void set_color_correction(const STColorCorrection& val) override;
+        void set_depth_table_control(const STDepthTableControl& val) override;
+        void set_ae_control(const STAEControl& val) override;
+        void set_census_radius(const STCensusRadius& val) override;
 
     private:
         std::shared_ptr<hw_monitor> _hw_monitor;

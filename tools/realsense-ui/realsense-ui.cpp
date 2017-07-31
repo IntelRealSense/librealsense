@@ -123,7 +123,7 @@ void show_stream_header(rs2::rect stream_rect, stream_model& model, viewer_model
     ImGui::PushStyleColor(ImGuiCol_WindowBg, from_rgba(0x1b, 0x21, 0x25, 0xff));
     ImGui::SetNextWindowPos({ stream_rect.x, stream_rect.y - top_bar_height });
     ImGui::SetNextWindowSize({ stream_rect.w, top_bar_height });
-    std::string label = to_string() << "Stream of " << rs2_stream_to_string(model.stream);
+    std::string label = to_string() << "Stream of " << model.profile.unique_id();
     ImGui::Begin(label.c_str(), nullptr, flags);
 
     ImGui::SetCursorPosX(stream_rect.w - 32 * 5);
@@ -132,7 +132,7 @@ void show_stream_header(rs2::rect stream_rect, stream_model& model, viewer_model
     {
         ImGui::PushStyleColor(ImGuiCol_Text, from_rgba(0, 174, 239, 255));
         ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, from_rgba(0, 174, 239, 255));
-        label = to_string() << u8"\uf04b" << "##Resume " << rs2_stream_to_string(model.stream);
+        label = to_string() << u8"\uf04b" << "##Resume " << model.profile.unique_id();
         if (ImGui::Button(label.c_str(), { 24, top_bar_height }))
         {
             model.dev->resume();
@@ -145,7 +145,7 @@ void show_stream_header(rs2::rect stream_rect, stream_model& model, viewer_model
     }
     else
     {
-        label = to_string() << u8"\uf04c" << "##Pause " << rs2_stream_to_string(model.stream);
+        label = to_string() << u8"\uf04c" << "##Pause " << model.profile.unique_id();
         if (ImGui::Button(label.c_str(), { 24, top_bar_height }))
         {
             model.dev->pause();
@@ -157,7 +157,7 @@ void show_stream_header(rs2::rect stream_rect, stream_model& model, viewer_model
     }
     ImGui::SameLine();
 
-    label = to_string() << u8"\uf030" << "##Snapshot " << rs2_stream_to_string(model.stream);
+    label = to_string() << u8"\uf030" << "##Snapshot " << model.profile.unique_id();
     ImGui::Button(label.c_str(), { 24, top_bar_height });
     if (ImGui::IsItemHovered())
     {
@@ -165,7 +165,7 @@ void show_stream_header(rs2::rect stream_rect, stream_model& model, viewer_model
     }
     ImGui::SameLine();
 
-    label = to_string() << u8"\uf05a" << "##Info " << rs2_stream_to_string(model.stream);
+    label = to_string() << u8"\uf05a" << "##Info " << model.profile.unique_id();
     ImGui::Button(label.c_str(), { 24, top_bar_height });
     if (ImGui::IsItemHovered())
     {
@@ -175,12 +175,12 @@ void show_stream_header(rs2::rect stream_rect, stream_model& model, viewer_model
 
     if (!viewer.fullscreen)
     {
-        label = to_string() << u8"\uf2d0" << "##Maximize " << rs2_stream_to_string(model.stream);
+        label = to_string() << u8"\uf2d0" << "##Maximize " << model.profile.unique_id();
 
         if (ImGui::Button(label.c_str(), { 24, top_bar_height }))
         {
             viewer.fullscreen = true;
-            viewer.selected_stream = model.stream;
+            viewer.selected_stream = &model;
         }
         if (ImGui::IsItemHovered())
         {
@@ -191,7 +191,7 @@ void show_stream_header(rs2::rect stream_rect, stream_model& model, viewer_model
     }
     else if (viewer.fullscreen)
     {
-        label = to_string() << u8"\uf2d2" << "##Restore " << rs2_stream_to_string(model.stream);
+        label = to_string() << u8"\uf2d2" << "##Restore " << model.profile.unique_id();
 
         if (ImGui::Button(label.c_str(), { 24, top_bar_height }))
         {
@@ -205,7 +205,7 @@ void show_stream_header(rs2::rect stream_rect, stream_model& model, viewer_model
         ImGui::SameLine();
     }
 
-    label = to_string() << u8"\uf00d" << "##Stop " << rs2_stream_to_string(model.stream);
+    label = to_string() << u8"\uf00d" << "##Stop " << model.profile.unique_id();
     if (ImGui::Button(label.c_str(), { 24, top_bar_height }))
     {
         model.dev->stop();
@@ -1282,7 +1282,7 @@ int main(int, char**) try
 
                             for (auto&& profile : profiles)
                             {
-                                viewer_model.streams[profile.stream].dev = sub;
+                                viewer_model.streams[profile.unique_id()].dev = sub;
                             }
                         }
                         if (ImGui::IsItemHovered())
@@ -1410,28 +1410,27 @@ int main(int, char**) try
         // Fetch frames from queue
         for (auto&& sub : model.subdevices)
         {
-            for (auto& queue : sub->queues)
+            sub->queues.foreach([&](frame_queue& queue)
             {
                 try
                 {
                     frame f;
-                    if (queue->poll_for_frame(&f))
+                    if (queue.poll_for_frame(&f))
                     {
                         viewer_model.upload_frame(std::move(f));
                     }
                 }
-                catch (const error& e)
+                catch(const error& ex)
                 {
-                    error_message = error_to_string(e);
+                    error_message = error_to_string(ex);
                     sub->stop();
                 }
-                catch (const std::exception& e)
+                catch(const std::exception& ex)
                 {
-                    error_message = e.what();
+                    error_message = ex.what();
                     sub->stop();
                 }
-            }
-
+            });
         }
 
         // Rendering
@@ -1465,7 +1464,7 @@ int main(int, char**) try
                 ImGui::PushStyleColor(ImGuiCol_WindowBg, { 0, 0, 0, 0 });
                 ImGui::SetNextWindowPos({ stream_rect.x, stream_rect.y + stream_rect.h - 30 });
                 ImGui::SetNextWindowSize({ stream_rect.w, 30 });
-                label = to_string() << "Footer for stream of " << rs2_stream_to_string(stream);
+                label = to_string() << "Footer for stream of " << stream;
                 ImGui::Begin(label.c_str(), nullptr, flags);
 
                 auto&& stream_mv = viewer_model.streams[stream];

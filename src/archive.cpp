@@ -146,18 +146,18 @@ namespace librealsense
             if (frame)
             {
                 auto callback_ended = _time_service?_time_service->get_time():0;
-                auto callback_warning_duration = 1000 / (frame->additional_data.fps + 1);
+                auto callback_warning_duration = 1000 / (frame->get_stream()->get_framerate() + 1);
                 auto callback_duration = callback_ended - frame->get_frame_callback_start_time_point();
 
-                LOG_DEBUG("CallbackFinished," << librealsense::get_string(frame->get_stream_type()) << "," << frame->get_frame_number()
+                LOG_DEBUG("CallbackFinished," << librealsense::get_string(frame->get_stream()->get_stream_type()) << "," << frame->get_frame_number()
                     << ",DispatchedAt," << callback_ended);
 
                 if (callback_duration > callback_warning_duration)
                 {
-                    LOG_DEBUG("Frame Callback [" << librealsense::get_string(frame->get_stream_type())
+                    LOG_DEBUG("Frame Callback [" << librealsense::get_string(frame->get_stream()->get_stream_type())
                              << "#" << std::dec << frame->additional_data.frame_number
                              << "] overdue. (Duration: " << callback_duration
-                             << "ms, FPS: " << frame->additional_data.fps << ", Max Duration: " << callback_warning_duration << "ms)");
+                             << "ms, FPS: " << frame->get_stream()->get_framerate() << ", Max Duration: " << callback_warning_duration << "ms)");
                 }
             }
         }
@@ -273,13 +273,13 @@ rs2_metadata_t frame::get_frame_metadata(const rs2_frame_metadata& frame_metadat
 
     if (!md_parsers)
         throw invalid_value_exception(to_string() << "metadata not available for "
-                                      << get_string(get_stream_type())<<" stream");
+                                      << get_string(get_stream()->get_stream_type())<<" stream");
 
     auto it = md_parsers.get()->find(frame_metadata);
     if (it == md_parsers.get()->end())          // Possible user error - md attribute is not supported by this frame type
         throw invalid_value_exception(to_string() << get_string(frame_metadata)
                                       << " attribute is not applicable for "
-                                      << get_string(get_stream_type()) << " stream ");
+                                      << get_string(get_stream()->get_stream_type()) << " stream ");
 
     // Proceed to parse and extract the required data attribute
     return it->second->get(*this);
@@ -332,23 +332,9 @@ rs2_time_t frame::get_frame_system_time() const
     return additional_data.system_time;
 }
 
-int frame::get_framerate() const
-{
-    return additional_data.fps;
-}
-
 void frame::update_frame_callback_start_ts(rs2_time_t ts)
 {
     additional_data.frame_callback_started = ts;
-}
-
-rs2_format frame::get_format() const
-{
-    return additional_data.format;
-}
-rs2_stream frame::get_stream_type() const
-{
-    return additional_data.stream_type;
 }
 
 rs2_time_t frame::get_frame_callback_start_time_point() const
@@ -359,21 +345,21 @@ rs2_time_t frame::get_frame_callback_start_time_point() const
 void frame::log_callback_start(rs2_time_t timestamp)
 {
     update_frame_callback_start_ts(timestamp);
-    LOG_DEBUG("CallbackStarted," << std::dec<< librealsense::get_string(get_stream_type()) << "," << get_frame_number() << ",DispatchedAt," << timestamp);
+    LOG_DEBUG("CallbackStarted," << std::dec << librealsense::get_string(get_stream()->get_stream_type()) << "," << get_frame_number() << ",DispatchedAt," << timestamp);
 }
 
 void frame::log_callback_end(rs2_time_t timestamp) const
 {
-    auto callback_warning_duration = 1000.f / (get_framerate() + 1);
+    auto callback_warning_duration = 1000.f / (get_stream()->get_framerate() + 1);
     auto callback_duration = timestamp - get_frame_callback_start_time_point();
 
-    LOG_DEBUG("CallbackFinished," << librealsense::get_string(get_stream_type()) << "," << get_frame_number() << ",DispatchedAt," << timestamp);
+    LOG_DEBUG("CallbackFinished," << librealsense::get_string(get_stream()->get_stream_type()) << "," << get_frame_number() << ",DispatchedAt," << timestamp);
 
     if (callback_duration > callback_warning_duration)
     {
-        LOG_INFO("Frame Callback " << librealsense::get_string(get_stream_type())
+        LOG_INFO("Frame Callback " << librealsense::get_string(get_stream()->get_stream_type())
                  << "#" << std::dec << get_frame_number()
                  << "overdue. (Duration: " << callback_duration
-                 << "ms, FPS: " << get_framerate() << ", Max Duration: " << callback_warning_duration << "ms)");
+                 << "ms, FPS: " << get_stream()->get_framerate() << ", Max Duration: " << callback_warning_duration << "ms)");
     }
 }

@@ -19,9 +19,9 @@
 
 namespace librealsense
 {
-    ds5_rolling_shutter::ds5_rolling_shutter(const platform::backend& backend,
+    ds5_rolling_shutter::ds5_rolling_shutter(std::shared_ptr<context> ctx,
                                              const platform::backend_device_group& group)
-        : ds5_device(backend, group)
+        : device(ctx), ds5_device(ctx, group)
     {
         using namespace ds;
 
@@ -32,6 +32,10 @@ namespace librealsense
                                                          depth_xu,
                                                          DS5_ENABLE_AUTO_WHITE_BALANCE,
                                                          "Enable Auto White Balance"));
+
+            // RS400 rolling-shutter Skus allow to get low-quality color image from the same viewport as the depth
+            get_depth_sensor().register_pixel_format(pf_uyvyl); 
+            get_depth_sensor().register_pixel_format(pf_rgb888);
         }
     }
 }

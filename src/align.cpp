@@ -50,12 +50,12 @@ namespace librealsense
         _actual_source.invoke_callback(std::move(result));
     }
 
-    frame_interface* synthetic_source::allocate_video_frame(rs2_stream stream, frame_interface* original,
-                                                          rs2_format new_format,
-                                                          int new_bpp,
-                                                          int new_width,
-                                                          int new_height,
-                                                          int new_stride)
+    frame_interface* synthetic_source::allocate_video_frame(std::shared_ptr<stream_profile_interface> stream, 
+                                                            frame_interface* original,
+                                                            int new_bpp,
+                                                            int new_width,
+                                                            int new_height,
+                                                            int new_stride)
     {
         video_frame* vf = nullptr;
 
@@ -66,23 +66,20 @@ namespace librealsense
             {
                 throw std::runtime_error("If original frame is not video frame, you must specify new bpp, width/stide and height!");
             }
-            vf = (video_frame*)original;
+            vf = static_cast<video_frame*>(original);
         }
 
         frame_additional_data data{};
-        data.stream_type = stream;
-        data.format = (new_format == RS2_FORMAT_ANY) ? original->get_format() : new_format;
         data.frame_number = original->get_frame_number();
         data.timestamp = original->get_frame_timestamp();
         data.timestamp_domain = original->get_frame_timestamp_domain();
-        data.fps = original->get_framerate();
         data.metadata_size = 0;
         data.system_time = _actual_source.get_time();
 
-        int width = new_width;
-        int height = new_height;
-        int bpp = new_bpp * 8;
-        int stride = new_stride;
+        auto width = new_width;
+        auto height = new_height;
+        auto bpp = new_bpp * 8;
+        auto stride = new_stride;
 
         if (bpp == 0)
         {
@@ -110,9 +107,10 @@ namespace librealsense
 
         auto res = _actual_source.alloc_frame(RS2_EXTENSION_VIDEO_FRAME, stride * height, data, true);
         if (!res) throw wrong_api_call_sequence_exception("Out of frame resources!");
-        vf = (video_frame*)res;
+        vf = static_cast<video_frame*>(res);
         vf->assign(width, height, stride, bpp);
         vf->set_sensor(original->get_sensor());
+        res->set_stream(stream);
 
         return res;
     }
@@ -130,7 +128,7 @@ namespace librealsense
         if (auto comp = dynamic_cast<composite_frame*>(from.frame))
         {
             auto frame_buff = comp->get_frames();
-            for (int i = 0; i < comp->get_embedded_frames_count(); i++)
+            for (size_t i = 0; i < comp->get_embedded_frames_count(); i++)
             {
                 std::swap(*target, frame_buff[i]);
                 target++;
@@ -155,7 +153,7 @@ namespace librealsense
 
         auto res = _actual_source.alloc_frame(RS2_EXTENSION_COMPOSITE_FRAME, req_size * sizeof(rs2_frame*), d, true);
         if (!res) throw wrong_api_call_sequence_exception("Out of frame resources!");
-        auto cf = (composite_frame*)res;
+        auto cf = static_cast<composite_frame*>(res);
 
         auto frames = cf->get_frames();
         for (auto&& f : holders)
@@ -164,7 +162,7 @@ namespace librealsense
 
         auto releaser = [frames, req_size]()
         {
-            for (int i = 0; i < req_size; i++)
+            for (auto i = 0; i < req_size; i++)
             {
                 frames[i]->release();
                 frames[i] = nullptr;
@@ -172,6 +170,7 @@ namespace librealsense
         };
         frame_continuation release_frames(releaser, nullptr);
         cf->attach_continuation(std::move(release_frames));
+        cf->set_stream(cf->first()->get_stream());
 
         return res;
     }
@@ -214,9 +213,10 @@ namespace librealsense
                         if (auto vf = dynamic_cast<video_frame*>(depth_frame))
                         {
                             stream_profile sp {
-                                    vf->get_stream_type(),
-                                    (uint32_t)vf->get_width(), (uint32_t)vf->get_height(), (uint32_t)vf->get_framerate(),
-                                    vf->get_format() };
+                                    vf->get_stream()->get_stream_type(),
+                                    vf->get_stream()->get_stream_index(),
+                                    (uint32_t)vf->get_width(), (uint32_t)vf->get_height(), (uint32_t)vf->get_stream()->get_framerate(),
+                                    vf->get_stream()->get_format() };
 
                             _depth_intrinsics = video->get_intrinsics(sp);
                             _depth_intrinsics_ptr = &_depth_intrinsics;
@@ -247,11 +247,11 @@ namespace librealsense
                 bool assigned_stream_type = false;
                 if (_expected_mapped_stream == RS2_STREAM_ANY)
                 {
-                    _expected_mapped_stream = other.get_stream_type();
+                    _expected_mapped_stream = other.get_profile().stream_type();
                     assigned_stream_type = true;
                 }
 
-                if (_expected_mapped_stream == other.get_stream_type())
+                if (_expected_mapped_stream == other.get_profile().stream_type())
                 {
                     bool found_mapped_intrinsics = false;
                     bool found_extrinsics = false;
@@ -264,9 +264,10 @@ namespace librealsense
                             if (auto vf = dynamic_cast<video_frame*>(other_frame))
                             {
                                 stream_profile sp {
-                                        vf->get_stream_type(),
-                                        (uint32_t)vf->get_width(), (uint32_t)vf->get_height(), (uint32_t)vf->get_framerate(),
-                                        vf->get_format() };
+                                        vf->get_stream()->get_stream_type(),
+                                        vf->get_stream()->get_stream_index(),
+                                        (uint32_t)vf->get_width(), (uint32_t)vf->get_height(), (uint32_t)vf->get_stream()->get_framerate(),
+                                        vf->get_stream()->get_format() };
 
                                 _mapped_intrinsics = video->get_intrinsics(sp);
                                 _mapped_intrinsics_ptr = &_mapped_intrinsics;
@@ -302,7 +303,8 @@ namespace librealsense
 
                             if (mapped_idx != -1 && depth_idx != -1)
                             {
-                                _extrinsics = device.get_extrinsics(depth_idx, RS2_STREAM_DEPTH, mapped_idx, _expected_mapped_stream);
+                                // TODO: get extrinsics
+                                //_extrinsics = device.get_extrinsics(depth_idx, RS2_STREAM_DEPTH, mapped_idx, _expected_mapped_stream);
                                 _extrinsics_ptr = &_extrinsics;
                                 found_extrinsics = true;
                             }
@@ -330,7 +332,7 @@ namespace librealsense
             }
             else
             {
-                if (f.get_stream_type() == RS2_STREAM_DEPTH)
+                if (f.get_profile().stream_type() == RS2_STREAM_DEPTH)
                 {
                     on_depth_frame(f);
                 }
@@ -343,7 +345,7 @@ namespace librealsense
 
         };
         auto callback = new rs2::frame_processor_callback<decltype(on_frame)>(on_frame);
-        set_processing_callback(std::shared_ptr<rs2_frame_processor_callback>(callback));
+        processing_block::set_processing_callback(std::shared_ptr<rs2_frame_processor_callback>(callback));
     }
 
     //void colorize::set_color_map(rs2_color_map cm)

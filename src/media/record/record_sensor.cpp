@@ -3,6 +3,7 @@
 
 #include "record_sensor.h"
 #include "api.h"
+#include "stream.h"
 
 librealsense::record_sensor::record_sensor(const device_interface& device,
                                             sensor_interface& sensor, 
@@ -22,15 +23,15 @@ librealsense::record_sensor::~record_sensor()
 {
 }
 
-std::vector<librealsense::stream_profile> librealsense::record_sensor::get_principal_requests()
+stream_profiles record_sensor::get_stream_profiles()
 {
-    return m_sensor.get_principal_requests();
+    return m_sensor.get_stream_profiles();
 }
 
-void librealsense::record_sensor::open(const std::vector<librealsense::stream_profile>& requests)
+void librealsense::record_sensor::open(const stream_profiles& requests)
 {
     m_sensor.open(requests);
-    m_curr_configurations = convert_profiles(requests);
+    m_curr_configurations = convert_profiles(to_profiles(requests));
     //raise_user_notification("Opened sensor");
     //TODO: write to file
 }
@@ -141,16 +142,6 @@ bool librealsense::record_sensor::extend_to(rs2_extension extension_type, void**
 const device_interface& record_sensor::get_device()
 {
     return m_parent_device;
-}
-
-rs2_extrinsics record_sensor::get_extrinsics_to(rs2_stream from, const sensor_interface& other, rs2_stream to) const
-{
-    return m_sensor.get_extrinsics_to(from, other, to);
-}
-
-const std::vector<platform::stream_profile>& record_sensor::get_curr_configurations() const
-{
-    return m_curr_configurations;
 }
 
 void record_sensor::raise_user_notification(const std::string& str)

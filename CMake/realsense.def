@@ -22,13 +22,12 @@ EXPORTS
     rs2_delete_sensor
     
     rs2_get_extrinsics
-    rs2_get_stream_intrinsics
     rs2_get_motion_intrinsics
 
-    rs2_get_stream_modes
-    rs2_get_stream_mode
-    rs2_get_modes_count
-    rs2_delete_modes_list
+    rs2_get_stream_profiles
+    rs2_get_stream_profile
+    rs2_get_stream_profiles_count
+    rs2_delete_stream_profiles_list
 
     rs2_open
     rs2_open_multiple
@@ -56,8 +55,7 @@ EXPORTS
     rs2_get_frame_height
     rs2_get_frame_stride_in_bytes
     rs2_get_frame_bits_per_pixel
-    rs2_get_frame_format
-    rs2_get_frame_stream_type
+    rs2_get_frame_stream_profile
     rs2_release_frame
     rs2_frame_add_ref
 
@@ -122,6 +120,15 @@ EXPORTS
     rs2_is_sensor_extendable_to
     rs2_is_device_extendable_to
     rs2_is_frame_extendable_to
+    rs2_stream_profile_is
+
+    rs2_set_stream_profile_data
+    rs2_get_stream_profile_data
+    rs2_get_video_stream_resolution
+    rs2_get_video_stream_intrinsics
+
+    rs2_get_stream_profile_size
+    rs2_is_stream_profile_recommended
 
     rs2_allocate_synthetic_video_frame
     rs2_synthetic_frame_ready
@@ -166,13 +173,14 @@ EXPORTS
     rs2_record_device_pause
     rs2_record_device_resume
 
-    rs2_playback_device_get_file_path
-    rs2_playback_get_duration
-    rs2_playback_seek
-    rs2_playback_get_position
-    rs2_playback_device_resume
-    rs2_playback_device_pause
+    rs2_context_add_device
+    rs2_context_remove_device
+
     rs2_playback_device_set_real_time
     rs2_playback_device_is_real_time
     rs2_playback_device_set_status_changed_callback
     rs2_playback_device_get_current_status
+    rs2_playback_device_get_file_path
+    rs2_playback_get_duration
+    rs2_playback_get_position
+    rs2_playback_seek

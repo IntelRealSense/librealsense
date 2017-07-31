@@ -1,0 +1,135 @@
+// License: Apache 2.0. See LICENSE file in root directory.
+// Copyright(c) 2015 Intel Corporation. All Rights Reserved.
+#pragma once
+
+#include "core/streaming.h"
+#include "core/video.h"
+#include "context.h"
+#include "image.h"
+
+namespace librealsense
+{
+    class stream : public stream_interface
+    {
+    public:
+        stream(std::shared_ptr<context> ctx, rs2_stream stream_type, int index = 0);
+
+        context& get_context() const override;
+
+        int get_stream_index() const override;
+        void set_stream_index(int index) override;
+
+        rs2_stream get_stream_type() const override;
+        void set_stream_type(rs2_stream stream) override;
+
+        int get_unique_id() const override { return _uid; }
+        void set_unique_id(int uid) override { _uid = uid; };
+
+    private:
+        std::shared_ptr<context> _ctx;
+        int _index = 0;
+        int _uid = 0;
+        rs2_stream _type = RS2_STREAM_ANY;
+    };
+
+    class backend_stream_profile
+    {
+    public:
+        explicit backend_stream_profile(platform::stream_profile sp) : _sp(std::move(sp)) {}
+
+        platform::stream_profile get_backend_profile() const { return _sp; }
+
+        virtual ~backend_stream_profile() = default;
+    private:
+        platform::stream_profile _sp;
+    };
+
+    class stream_profile_base : public virtual stream_profile_interface, public backend_stream_profile
+    {
+    public:
+        stream_profile_base(std::shared_ptr<context> ctx, platform::stream_profile sp);
+
+        context& get_context() const override;
+
+        int get_stream_index() const override;
+        void set_stream_index(int index) override;
+
+        rs2_stream get_stream_type() const override;
+        void set_stream_type(rs2_stream stream) override;
+
+        rs2_format get_format() const override;
+        void set_format(rs2_format format) override;
+
+        uint32_t get_framerate() const override;
+        void set_framerate(uint32_t val) override;
+
+        bool is_recommended() const override;
+        void make_recommended() override;
+
+        int get_unique_id() const override { return _uid; }
+        void set_unique_id(int uid) override { _uid = uid; };
+
+        size_t get_size() const override;
+
+        std::shared_ptr<stream_profile_interface> clone() const override;
+
+        rs2_stream_profile* get_c_wrapper() const override;
+
+        void set_c_wrapper(rs2_stream_profile* wrapper) override;
+
+    private:
+        std::shared_ptr<context> _ctx;
+        int _index = 1;
+        int _uid = 0;
+        rs2_stream _type = RS2_STREAM_ANY;
+        rs2_format _format = RS2_FORMAT_ANY;
+        uint32_t _framerate = 0;
+        bool _is_recommended = false;
+        rs2_stream_profile _c_wrapper;
+        rs2_stream_profile* _c_ptr = nullptr;
+    };
+
+    class video_stream_profile : public virtual video_stream_profile_interface, public stream_profile_base
+    {
+    public:
+        explicit video_stream_profile(std::shared_ptr<context> ctx, platform::stream_profile sp)
+            : stream_profile_base(ctx, std::move(sp)), 
+              _calc_intrinsics([]() -> rs2_intrinsics { throw not_implemented_exception("No intrinsics are available for this stream profile!"); }),
+              _width(0), _height(0)
+        {
+        }
+
+        rs2_intrinsics get_intrinsics() const override { return _calc_intrinsics(); }
+        void set_intrinsics(std::function<rs2_intrinsics()> calc) override { _calc_intrinsics = calc; }
+        
+        uint32_t get_width() const override { return _width; }
+        uint32_t get_height() const override { return _height; }
+        void set_dims(uint32_t width, uint32_t height) override 
+        { 
+            _width = width;
+            _height = height;
+        }
+
+        size_t get_size() const override { return get_width() * get_height() * get_framerate() * get_image_bpp(get_format()) / 8; }
+    private:
+        std::function<rs2_intrinsics()> _calc_intrinsics;
+        uint32_t _width, _height;
+    };
+
+    inline stream_profile to_profile(const stream_profile_interface* sp)
+    {
+        auto fps = static_cast<uint32_t>(sp->get_framerate());
+        if (auto vid = dynamic_cast<const video_stream_profile*>(sp))
+        {
+            return{ sp->get_stream_type(), sp->get_stream_index(), vid->get_width(), vid->get_height(), fps, sp->get_format() };
+        }
+        return{ sp->get_stream_type(), sp->get_stream_index(), 0, 0, fps, sp->get_format() };
+    }
+
+    inline std::vector<stream_profile> to_profiles(const std::vector<std::shared_ptr<stream_profile_interface>>& vec)
+    {
+        std::vector<stream_profile> res;
+        for (auto&& p : vec) res.push_back(to_profile(p.get()));
+        return res;
+    }
+}

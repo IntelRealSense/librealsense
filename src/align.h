@@ -17,8 +17,8 @@ namespace librealsense
         {
         }
 
-        frame_interface* allocate_video_frame(rs2_stream stream, frame_interface* original,
-                                              rs2_format new_format = RS2_FORMAT_ANY,
+        frame_interface* allocate_video_frame(std::shared_ptr<stream_profile_interface> stream, 
+                                              frame_interface* original,
                                               int new_bpp = 0,
                                               int new_width = 0,
                                               int new_height = 0,

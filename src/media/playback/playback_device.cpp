@@ -204,12 +204,6 @@ void playback_device::hardware_reset()
 {
     //Nothing to see here folks
 }
-rs2_extrinsics playback_device::get_extrinsics(size_t from, rs2_stream from_stream, size_t to, rs2_stream to_stream) const
-{
-    throw not_implemented_exception(__FUNCTION__);
-    //std::dynamic_pointer_cast<librealsense::info_interface>(m_device_description.get_device_extensions_snapshots().get_snapshots()[RS2_EXTENSION_EXTRINSICS ])->supports_info(info);
-}
-
 bool playback_device::extend_to(rs2_extension extension_type, void** ext)
 {
     std::shared_ptr<extension_snapshot> e = m_device_description.get_device_extensions_snapshots().find(extension_type);

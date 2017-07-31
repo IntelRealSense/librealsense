@@ -418,11 +418,11 @@ namespace librealsense
             std::chrono::duration<double, std::micro> timestamp_us = std::chrono::duration_cast<microseconds>(seconds(msg->header.stamp.toSec()));
             additional_data.timestamp = timestamp_us.count();
             additional_data.frame_number = msg->header.seq;
-            conversions::convert(msg->encoding, additional_data.format);
+            //conversions::convert(msg->encoding, additional_data.format); // TODO: Ziv fix pls
             std::string stream = topic(image_data.getTopic()).at(2);
-            conversions::convert(stream, additional_data.stream_type);
+            //conversions::convert(stream, additional_data.stream_type); // TODO
             additional_data.frame_callback_started = 0; //TODO: What is this?
-            additional_data.fps = 0;   //TODO:  why would a frame hold its fps?
+            //additional_data.fps = 0;   //TODO:  why would a frame hold its fps?
             additional_data.fisheye_ae_mode = false; //TODO: where should this come from?
             auto info_topic = ros_data_objects::image::get_info_topic(image_topic.at(2), std::stoi(image_topic.at(4)));
             rosbag::View view_info(m_file, rosbag::TopicQuery(info_topic), image_data.getTime());
@@ -898,7 +898,9 @@ namespace librealsense
 
                 std::shared_ptr<info_snapshot> sensor_info = read_info_snapshot(sensor_index);
                 sensor_extensions[RS2_EXTENSION_INFO ] = sensor_info;
-                sensor_descriptions.emplace_back(sensor_extensions, streaming_profiles);
+
+                // TODO: Ziv
+                //sensor_descriptions.emplace_back(sensor_extensions, streaming_profiles);
             }
 
             return device_snapshot(device_extensions, sensor_descriptions, extrinsics);

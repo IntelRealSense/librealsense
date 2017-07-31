@@ -273,14 +273,9 @@ namespace rs2
     }
 
     subdevice_model::subdevice_model(device& dev, sensor& s, std::string& error_message)
-        : s(s), dev(dev), streaming(false), queues(RS2_STREAM_COUNT),
+        : s(s), dev(dev), streaming(false), 
           selected_shared_fps_id(0), _pause(false)
     {
-        for (auto& elem : queues)
-        {
-            elem = std::unique_ptr<frame_queue>(new frame_queue(5));
-        }
-
         try
         {
             if (s.supports(RS2_OPTION_ENABLE_AUTO_EXPOSURE))
@@ -344,25 +339,30 @@ namespace rs2
 
         try
         {
-            auto uvc_profiles = s.get_stream_modes();
-            std::reverse(std::begin(uvc_profiles), std::end(uvc_profiles));
+            auto uvc_profiles = s.get_stream_profiles();
+            reverse(begin(uvc_profiles), end(uvc_profiles));
             for (auto&& profile : uvc_profiles)
             {
                 std::stringstream res;
-                res << profile.width << " x " << profile.height;
-                push_back_if_not_exists(res_values, std::pair<int, int>(profile.width, profile.height));
-                push_back_if_not_exists(resolutions, res.str());
+                if (auto vid_prof = profile.as<video_stream_profile>())
+                {
+                    res << vid_prof.width() << " x " << vid_prof.height();
+                    push_back_if_not_exists(res_values, std::pair<int, int>(vid_prof.width(), vid_prof.height()));
+                    push_back_if_not_exists(resolutions, res.str());
+                }
+
                 std::stringstream fps;
-                fps << profile.fps;
-                push_back_if_not_exists(fps_values_per_stream[profile.stream], profile.fps);
-                push_back_if_not_exists(shared_fps_values, profile.fps);
-                push_back_if_not_exists(fpses_per_stream[profile.stream], fps.str());
+                fps << profile.fps();
+                push_back_if_not_exists(fps_values_per_stream[profile.unique_id()], profile.fps());
+                push_back_if_not_exists(shared_fps_values, profile.fps());
+                push_back_if_not_exists(fpses_per_stream[profile.unique_id()], fps.str());
                 push_back_if_not_exists(shared_fpses, fps.str());
+                stream_display_names[profile.unique_id()] = profile.stream_name();
 
-                std::string format = rs2_format_to_string(profile.format);
+                std::string format = rs2_format_to_string(profile.format());
 
-                push_back_if_not_exists(formats[profile.stream], format);
-                push_back_if_not_exists(format_values[profile.stream], profile.format);
+                push_back_if_not_exists(formats[profile.unique_id()], format);
+                push_back_if_not_exists(format_values[profile.unique_id()], profile.format());
 
                 auto any_stream_enabled = false;
                 for (auto it : stream_enabled)
@@ -375,20 +375,23 @@ namespace rs2
                 }
                 if (!any_stream_enabled)
                 {
-                    stream_enabled[profile.stream] = true;
+                    stream_enabled[profile.unique_id()] = true;
                 }
 
                 profiles.push_back(profile);
             }
 
+            for (auto&& fps_list : fps_values_per_stream)
+            {
+                sort_together(fps_list.second, fpses_per_stream[fps_list.first]);
+            }
+            sort_together(shared_fps_values, shared_fpses);
+            sort_together(res_values, resolutions);
+
             show_single_fps_list = is_there_common_fps();
 
             // set default selections
             int selection_index;
-
-            get_default_selection_index(res_values, std::pair<int,int>(640,480), &selection_index);
-            selected_res_id = selection_index;
-
 
             if (!show_single_fps_list)
             {
@@ -409,10 +412,10 @@ namespace rs2
 
             for (auto format_array : format_values)
             {
-                for (auto format : { rs2_format::RS2_FORMAT_RGB8,
-                                     rs2_format::RS2_FORMAT_Z16,
-                                     rs2_format::RS2_FORMAT_Y8,
-                                     rs2_format::RS2_FORMAT_MOTION_XYZ32F } )
+                for (auto format : { RS2_FORMAT_RGB8,
+                                     RS2_FORMAT_Z16,
+                                     RS2_FORMAT_Y8,
+                                     RS2_FORMAT_MOTION_XYZ32F } )
                 {
                     if (get_default_selection_index(format_array.second, format, &selection_index))
                     {
@@ -421,6 +424,11 @@ namespace rs2
                     }
                 }
             }
+
+            get_default_selection_index(res_values, std::make_pair(0, 0), &selection_index);
+            selected_res_id = selection_index;
+
+            while (selected_res_id >= 0 && !is_selected_combination_supported()) selected_res_id--;
         }
         catch (const error& e)
         {
@@ -520,48 +528,43 @@ namespace rs2
         }
 
         if (!streaming)
+        for (auto&& f : formats)
         {
-            ImGui::Text("Available Streams");
-            ImGui::NextColumn();
+            if (f.second.size() > 0)
             ImGui::NextColumn();
         }
 
         // Draw combo-box with all format options for current device
-        for (auto i = 0; i < RS2_STREAM_COUNT; i++)
+        for (auto&& f : formats)
         {
-            auto stream = static_cast<rs2_stream>(i);
-
             // Format
-            if (formats[stream].size() == 0)
+            if (f.second.size() == 0)
                 continue;
 
-            auto formats_chars = get_string_pointers(formats[stream]);
-            if (!streaming || (streaming && stream_enabled[stream]))
+            auto formats_chars = get_string_pointers(f.second);
+            if (!streaming || (streaming && stream_enabled[f.first]))
             {
                 if (streaming)
                 {
-                    label = to_string() << rs2_stream_to_string(stream) << (show_single_fps_list ? "" : " stream:");
+                    label = to_string() << stream_display_names[f.first] << (show_single_fps_list ? "" : " stream:");
                     ImGui::Text("%s", label.c_str());
                 }
                 else
                 {
-                    label = to_string() << rs2_stream_to_string(stream) << (show_single_fps_list ? "" : " stream:")
-                        << "##" << dev.get_info(RS2_CAMERA_INFO_NAME)
-                        << s.get_info(RS2_CAMERA_INFO_NAME);
-
-                    ImGui::Checkbox(label.c_str(), &stream_enabled[stream]);
+                    label = to_string() << stream_display_names[f.first] << "##" << f.first;
+                    ImGui::Checkbox(label.c_str(), &stream_enabled[f.first]);
                 }
 
                 ImGui::NextColumn();
             }
 
-            if (stream_enabled[stream])
+            if (stream_enabled[f.first])
             {
                 //if (show_single_fps_list) ImGui::SameLine();
 
                 label = to_string() << "##" << dev.get_info(RS2_CAMERA_INFO_NAME)
                     << s.get_info(RS2_CAMERA_INFO_NAME)
-                    << " " << rs2_stream_to_string(stream) << " format";
+                    << " " << f.first << " format";
 
                 if (!show_single_fps_list)
                 {
@@ -571,13 +574,13 @@ namespace rs2
 
                 if (streaming)
                 {
-                    ImGui::Text("%s", formats_chars[selected_format_id[stream]]);
+                    ImGui::Text("%s", formats_chars[selected_format_id[f.first]]);
                 }
                 else
                 {
                     ImGui::PushItemWidth(-1);
                     ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, { 1,1,1,1 });
-                    ImGui::Combo(label.c_str(), &selected_format_id[stream], formats_chars.data(),
+                    ImGui::Combo(label.c_str(), &selected_format_id[f.first], formats_chars.data(),
                         static_cast<int>(formats_chars.size()));
                     ImGui::PopStyleColor();
                     ImGui::PopItemWidth();
@@ -586,25 +589,25 @@ namespace rs2
 
                 // FPS
                 // Draw combo-box with all FPS options for this device
-                if (!show_single_fps_list && !fpses_per_stream[stream].empty() && stream_enabled[stream])
+                if (!show_single_fps_list && !fpses_per_stream[f.first].empty() && stream_enabled[f.first])
                 {
-                    auto fps_chars = get_string_pointers(fpses_per_stream[stream]);
+                    auto fps_chars = get_string_pointers(fpses_per_stream[f.first]);
                     ImGui::Text("Frame Rate (FPS):");
                     ImGui::NextColumn();
 
                     label = to_string() << s.get_info(RS2_CAMERA_INFO_NAME)
                         << s.get_info(RS2_CAMERA_INFO_NAME)
-                        << rs2_stream_to_string(stream) << " fps";
+                        << f.first << " fps";
 
                     if (streaming)
                     {
-                        ImGui::Text("%s", fps_chars[selected_fps_id[stream]]);
+                        ImGui::Text("%s", fps_chars[selected_fps_id[f.first]]);
                     }
                     else
                     {
                         ImGui::PushItemWidth(-1);
                         ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, { 1,1,1,1 });
-                        ImGui::Combo(label.c_str(), &selected_fps_id[stream], fps_chars.data(),
+                        ImGui::Combo(label.c_str(), &selected_fps_id[f.first], fps_chars.data(),
                             static_cast<int>(fps_chars.size()));
                         ImGui::PopStyleColor();
                         ImGui::PopItemWidth();
@@ -632,9 +635,9 @@ namespace rs2
     {
         std::vector<stream_profile> results;
 
-        for (auto i = 0; i < RS2_STREAM_COUNT; i++)
+        for (auto&& f : formats)
         {
-            auto stream = static_cast<rs2_stream>(i);
+            auto stream = f.first;
             if (stream_enabled[stream])
             {
                 auto width = res_values[selected_res_id].first;
@@ -650,8 +653,22 @@ namespace rs2
 
                 for (auto&& p : profiles)
                 {
-                    if (p.width == width && p.height == height && p.fps == fps && p.format == format)
-                        results.push_back(p);
+                    if (auto vid_prof = p.as<video_stream_profile>())
+                    {
+                        if (vid_prof.width() == width && 
+                            vid_prof.height() == height && 
+                            p.unique_id() == stream &&
+                            p.fps() == fps && 
+                            p.format() == format)
+                            results.push_back(p);
+                    }
+                    else
+                    {
+                        if (p.fps() == fps && 
+                            p.unique_id() == stream &&
+                            p.format() == format)
+                            results.push_back(p);
+                    }
                 }
             }
         }
@@ -665,9 +682,9 @@ namespace rs2
         std::stringstream error_message;
         error_message << "The profile ";
 
-        for (auto i = 0; i < RS2_STREAM_COUNT; i++)
+        for (auto&& f : formats)
         {
-            auto stream = static_cast<rs2_stream>(i);
+            auto stream = f.first;
             if (stream_enabled[stream])
             {
                 auto width = res_values[selected_res_id].first;
@@ -682,18 +699,28 @@ namespace rs2
 
 
 
-                error_message << "\n{" << rs2_stream_to_string(stream) << ","
+                error_message << "\n{" << stream_display_names[stream] << ","
                     << width << "x" << height << " at " << fps << "Hz, "
                     << rs2_format_to_string(format) << "} ";
 
                 for (auto&& p : profiles)
                 {
-                    if (p.width == width &&
-                        p.height == height &&
-                        p.fps == fps &&
-                        p.format == format &&
-                        p.stream == stream)
-                        results.push_back(p);
+                    if (auto vid_prof = p.as<video_stream_profile>())
+                    {
+                        if (vid_prof.width() == width &&
+                            vid_prof.height() == height &&
+                            p.unique_id() == stream &&
+                            p.fps() == fps &&
+                            p.format() == format)
+                            results.push_back(p);
+                    }
+                    else
+                    {
+                        if (p.fps() == fps &&
+                            p.unique_id() == stream &&
+                            p.format() == format)
+                            results.push_back(p);
+                    }
                 }
             }
         }
@@ -712,11 +739,11 @@ namespace rs2
 
         s.stop();
 
-        for (auto& elem : queues)
+        queues.foreach([&](frame_queue& q)
         {
             frame f;
-            while (elem->poll_for_frame(&f));
-        }
+            while (q.poll_for_frame(&f));
+        });
 
         s.close();
     }
@@ -741,8 +768,8 @@ namespace rs2
         s.open(profiles);
         try {
             s.start([&](frame f){
-                auto stream_type = f.get_stream_type();
-                queues[(int)stream_type]->enqueue(std::move(f));
+                auto index = f.get_profile().unique_id();
+                queues.at(index).enqueue(std::move(f));
             });
         }
         catch (...)
@@ -855,8 +882,7 @@ namespace rs2
         auto height = (image) ? image.get_height() : 480.f;
 
         size = { static_cast<float>(width), static_cast<float>(height)};
-        stream = f.get_stream_type();
-        format = f.get_format();
+        profile = f.get_profile();
         frame_number = f.get_frame_number();
         timestamp_domain = f.get_frame_timestamp_domain();
         timestamp = f.get_timestamp();
@@ -1067,7 +1093,7 @@ namespace rs2
         auto zoom_val = 1.f;
         if (stream_rect.contains(g.cursor))
         {
-            static const float wheel_step = 0.1f;
+            static const auto wheel_step = 0.1f;
             auto mouse_wheel_value = -ImGui::GetIO().MouseWheel;
             if (mouse_wheel_value > wheel_step)
                 zoom_val += wheel_step;
@@ -1103,7 +1129,7 @@ namespace rs2
         ImGui::PushStyleColor(ImGuiCol_TitleBgActive, { 0.f, 0.3f, 0.8f, 1 });
         ImGui::PushStyleColor(ImGuiCol_Text, { 1, 1, 1, 1 });
 
-        std::string label = to_string() << rs2_stream_to_string(stream) << " Stream Metadata #";
+        std::string label = to_string() << profile.stream_name() << " Stream Metadata";
         ImGui::Begin(label.c_str(), nullptr, flags);
 
         // Print all available frame metadata attributes
@@ -1250,17 +1276,18 @@ namespace rs2
         }
     }
 
-    std::map<rs2_stream, rect> viewer_model::calc_layout(float x0, float y0, float width, float height)
+    std::map<int, rect> viewer_model::calc_layout(float x0, float y0, float width, float height)
     {
         const int top_bar_height = 32;
 
-        std::set<rs2_stream> active_streams;
-        for (auto i = 0; i < RS2_STREAM_COUNT; i++)
+        std::set<stream_model*> active_streams;
+        std::map<stream_model*, int> stream_index;
+        for (auto&& stream : streams)
         {
-            auto stream = static_cast<rs2_stream>(i);
-            if (streams[stream].is_stream_visible())
+            if (stream.second.is_stream_visible())
             {
-                active_streams.insert(stream);
+                active_streams.insert(&stream.second);
+                stream_index[&stream.second] = stream.first;
             }
         }
 
@@ -1269,11 +1296,12 @@ namespace rs2
             if (active_streams.count(selected_stream) == 0) fullscreen = false;
         }
 
-        std::map<rs2_stream, rect> results;
+        std::map<int, rect> results;
 
         if (fullscreen)
         {
-            results[selected_stream] = { static_cast<float>(x0), static_cast<float>(y0 + top_bar_height), static_cast<float>(width), static_cast<float>(height - top_bar_height) };
+            results[stream_index[selected_stream]] = { static_cast<float>(x0), static_cast<float>(y0 + top_bar_height), 
+                                                       static_cast<float>(width), static_cast<float>(height - top_bar_height) };
         }
         else
         {
@@ -1292,7 +1320,7 @@ namespace rs2
 
                     rect r = { x0 + x * cell_width, y0 + y * cell_height + top_bar_height,
                         cell_width, cell_height - top_bar_height };
-                    results[*it] = r;
+                    results[stream_index[*it]] = r;
                     it++;
                 }
             }
@@ -1303,8 +1331,8 @@ namespace rs2
 
     void viewer_model::upload_frame(frame&& f)
     {
-        auto stream_type = f.get_stream_type();
-        streams[stream_type].upload_frame(std::move(f));
+        auto index = f.get_profile().unique_id();
+        streams[index].upload_frame(std::move(f));
     }
 
     void device_model::start_recording(device& dev, const std::string& path, std::string& error_message)
@@ -1357,7 +1385,7 @@ namespace rs2
         _recorder->resume();
     }
 
-    std::map<rs2_stream, rect> viewer_model::get_interpolated_layout(const std::map<rs2_stream, rect>& l)
+    std::map<int, rect> viewer_model::get_interpolated_layout(const std::map<int, rect>& l)
     {
         using namespace std::chrono;
         auto now = high_resolution_clock::now();
@@ -1374,7 +1402,7 @@ namespace rs2
         auto ms = duration_cast<milliseconds>(diff).count();
         auto t = smoothstep(static_cast<float>(ms), 0, 100);
 
-        std::map<rs2_stream, rect> results;
+        std::map<int, rect> results;
         for (auto&& kvp : l)
         {
             auto stream = kvp.first;
@@ -1433,12 +1461,12 @@ namespace rs2
         created_time = std::chrono::high_resolution_clock::now();
     }
 
-    double notification_model::get_age_in_ms()
+    double notification_model::get_age_in_ms() const
     {
         return std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now() - created_time).count();
     }
 
-    void notification_model::set_color_scheme(float t)
+    void notification_model::set_color_scheme(float t) const
     {
         if (severity == RS2_LOG_SEVERITY_ERROR ||
             severity == RS2_LOG_SEVERITY_WARN)
