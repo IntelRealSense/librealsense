@@ -73,16 +73,11 @@ auto stream = config.open(dev);
 stream.start([](rs2::frame) {});
 ```
 
-## Synthetic streams
-
-librealsense will no longer provide the services of software rectification, alignment and projection. All the information required for these will continue to be available through camera intrinsics and extrinsics. However, applying these calculations to every pixel can be implemented much more efficiently at higher software levels, using OpenCL or any other compute technology.
-[Intel RealSense Linux SDK](https://github.com/IntelRealSense/realsense_sdk), published seperately from librealsense will provide projection services for the RS400 out-of-the-box.
-
 ## Motion-tracking
 Motion-tracking is a first-class citizen in librealsense2. Motion data can be acquired using the same APIs as depth and visual data:
 ```cpp
 // Configure the accelerometer to run at 500 frames per second
-dev.open({ RS2_STREAM_ACCEL, 0, 0, 500, RS2_FORMAT_MOTION_XYZ32F });
+dev.open({ RS2_STREAM_ACCEL, 0, 0, RS2_FORMAT_MOTION_XYZ32F, 500 });
 rs2::frame_queue queue(1);
 dev.start(queue);
 // Wait for next motion sample
@@ -97,7 +92,7 @@ std::cout << axes.x << "," << axes.y << "," <<  axes.z << "\n";
 
 * librealsense2 will be shipped with built-in Python bindings for easier integration.
 * New troubleshooting tools are now part of the package, including a tool for hardware-logs collection.
-* librealsense2 will be capable of handling device disconnects and discovery of new devices at runtime.
+* librealsense2 is capable of handling device disconnects and discovery of new devices at runtime.
 
 ## Transition to CMake
 librealsense2 will no longer provide hand-written Visual Studio, QT-Creator and XCode project files. Instead you can build librealsense with the IDE of your choice using portable CMake scripts.  
@@ -106,4 +101,3 @@ librealsense2 will no longer provide hand-written Visual Studio, QT-Creator and 
 
 * RS400 series does not require any kernel patches for streaming (starting with kernel 4.4.0.59)
 * Advanced camera features may still require kernel patches. Currently, getting **hardware timestamps** is dependent on a patch that has not been up-streamed yet. When not applied you can still use the camera, but you are going to receive system-time instead of optical timestamp.
-* Recently discovered bug in uvcvideo Kernel Module is likely to cause problems when working with exposure and auto-white-balance options. While fix is being up-streamed, librealsense will provide the fix as a Kernel patch.

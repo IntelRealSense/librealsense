@@ -16,18 +16,14 @@
 #include "core/advanced_mode.h"
 #include "align.h"
 #include "media/playback/playback_device.h"
+#include "stream.h"
 
 ////////////////////////
 // API implementation //
 ////////////////////////
-struct rs2_raw_data_buffer
-{
-    std::vector<uint8_t> buffer;
-};
-
 struct rs2_stream_profile_list
 {
-    std::vector<librealsense::stream_profile> list;
+    std::vector<std::shared_ptr<stream_profile_interface>> list;
 };
 
 struct rs2_sensor
@@ -40,6 +36,7 @@ struct rs2_sensor
 
 struct rs2_context
 {
+    ~rs2_context() { ctx->stop(); }
     std::shared_ptr<librealsense::context> ctx;
 };
 
@@ -289,47 +286,101 @@ void rs2_delete_sensor(rs2_sensor* device) try
 }
 NOEXCEPT_RETURN(, device)
 
-rs2_stream_modes_list* rs2_get_stream_modes(rs2_sensor* sensor, rs2_error** error) try
+rs2_stream_profile_list* rs2_get_stream_profiles(rs2_sensor* sensor, rs2_error** error) try
 {
     VALIDATE_NOT_NULL(sensor);
-    return new rs2_stream_modes_list{ sensor->sensor->get_principal_requests() };
+    return new rs2_stream_profile_list{ sensor->sensor->get_stream_profiles() };
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, sensor)
 
-void rs2_get_stream_mode(const rs2_stream_modes_list* list, int index, rs2_stream* stream, int* width, int* height, int* fps, rs2_format* format, rs2_error** error) try
+const rs2_stream_profile* rs2_get_stream_profile(const rs2_stream_profile_list* list, int index, rs2_error** error) try
 {
     VALIDATE_NOT_NULL(list);
     VALIDATE_RANGE(index, 0, (int)list->list.size() - 1);
 
-    VALIDATE_NOT_NULL(stream);
-    VALIDATE_NOT_NULL(width);
-    VALIDATE_NOT_NULL(height);
-    VALIDATE_NOT_NULL(fps);
-    VALIDATE_NOT_NULL(format);
-
-    *stream = list->list[index].stream;
-    *width = list->list[index].width;
-    *height = list->list[index].height;
-    *fps = list->list[index].fps;
-    *format = list->list[index].format;
+    return list->list[index]->get_c_wrapper();
 }
-HANDLE_EXCEPTIONS_AND_RETURN(, list, index, width, height, fps, format)
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, list, index)
 
-int rs2_get_modes_count(const rs2_stream_modes_list* list, rs2_error** error) try
+int rs2_get_stream_profiles_count(const rs2_stream_profile_list* list, rs2_error** error) try
 {
     VALIDATE_NOT_NULL(list);
     return static_cast<int>(list->list.size());
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, list)
 
-void rs2_delete_modes_list(rs2_stream_modes_list* list) try
+void rs2_delete_stream_profiles_list(rs2_stream_profile_list* list) try
 {
     VALIDATE_NOT_NULL(list);
     delete list;
 }
 NOEXCEPT_RETURN(, list)
 
-rs2_raw_data_buffer* rs2_send_and_receive_raw_data(rs2_device* device, void* raw_data_to_send, unsigned size_of_raw_data_to_send, rs2_error** error) try
+void rs2_get_video_stream_intrinsics(const rs2_stream_profile* from, rs2_intrinsics* intr, rs2_error** error) try
+{
+    VALIDATE_NOT_NULL(from);
+    VALIDATE_NOT_NULL(intr);
+
+    auto vid = VALIDATE_INTERFACE(from->profile, librealsense::video_stream_profile_interface);
+
+    *intr = vid->get_intrinsics();
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, from, intr)
+
+void rs2_get_video_stream_resolution(const rs2_stream_profile* from, int* width, int* height, rs2_error** error) try
+{
+    VALIDATE_NOT_NULL(from);
+
+    auto vid = VALIDATE_INTERFACE(from->profile, librealsense::video_stream_profile_interface);
+
+    if (width)  *width = vid->get_width();
+    if (height) *height = vid->get_height();
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, from, width, height)
+
+int rs2_get_stream_profile_size(const rs2_stream_profile* profile, rs2_error** error) try
+{
+    VALIDATE_NOT_NULL(profile);
+    return profile->profile->get_size();
+}
+HANDLE_EXCEPTIONS_AND_RETURN(0, profile)
+
+int rs2_is_stream_profile_recommended(const rs2_stream_profile* profile, rs2_error** error) try
+{
+    VALIDATE_NOT_NULL(profile);
+    return profile->profile->is_recommended() ? 1 : 0;
+}
+HANDLE_EXCEPTIONS_AND_RETURN(0, profile)
+
+void rs2_get_stream_profile_data(const rs2_stream_profile* mode, rs2_stream* stream, rs2_format* format, int* index, int* unique_id, int* framerate, rs2_error** error) try
+{
+    VALIDATE_NOT_NULL(mode);
+    VALIDATE_NOT_NULL(stream);
+    VALIDATE_NOT_NULL(format);
+    VALIDATE_NOT_NULL(index);
+    VALIDATE_NOT_NULL(unique_id);
+
+    *framerate = mode->profile->get_framerate();
+    *format = mode->profile->get_format();
+    *index = mode->profile->get_stream_index();
+    *stream = mode->profile->get_stream_type();
+    *unique_id = mode->profile->get_unique_id();
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, mode, stream, format, index, framerate)
+
+void rs2_set_stream_profile_data(rs2_stream_profile* mode, rs2_stream stream, int index, rs2_format format, rs2_error** error) try
+{
+    VALIDATE_NOT_NULL(mode);
+    VALIDATE_ENUM(stream);
+    VALIDATE_ENUM(format);
+
+    mode->profile->set_format(format);
+    mode->profile->set_stream_type(stream);
+    mode->profile->set_stream_index(index);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, mode, stream, format)
+
+const rs2_raw_data_buffer* rs2_send_and_receive_raw_data(rs2_device* device, void* raw_data_to_send, unsigned size_of_raw_data_to_send, rs2_error** error) try
 {
     VALIDATE_NOT_NULL(device);
 
@@ -356,47 +407,38 @@ int rs2_get_raw_data_size(const rs2_raw_data_buffer* buffer, rs2_error** error) 
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, buffer)
 
-void rs2_delete_raw_data(rs2_raw_data_buffer* buffer) try
+void rs2_delete_raw_data(const rs2_raw_data_buffer* buffer) try
 {
     VALIDATE_NOT_NULL(buffer);
     delete buffer;
 }
 NOEXCEPT_RETURN(, buffer)
 
-void rs2_open(rs2_sensor* sensor, rs2_stream stream,
-              int width, int height, int fps, rs2_format format, rs2_error** error) try
+void rs2_open(rs2_sensor* sensor, const rs2_stream_profile* profile, rs2_error** error) try
 {
     VALIDATE_NOT_NULL(sensor);
-    VALIDATE_ENUM(format);
-    VALIDATE_ENUM(stream);
+    VALIDATE_NOT_NULL(profile);
 
-    std::vector<librealsense::stream_profile> request;
-    request.push_back({ stream, static_cast<uint32_t>(width),
-            static_cast<uint32_t>(height), static_cast<uint32_t>(fps), format });
+    std::vector<std::shared_ptr<stream_profile_interface>> request;
+    request.push_back(std::dynamic_pointer_cast<stream_profile_interface>(profile->profile->shared_from_this()));
     sensor->sensor->open(request);
 }
-HANDLE_EXCEPTIONS_AND_RETURN(, sensor, stream, width, height, fps, format)
+HANDLE_EXCEPTIONS_AND_RETURN(, sensor, profile)
 
 void rs2_open_multiple(rs2_sensor* sensor,
-    const rs2_stream* stream, const int* width, const int* height, const int* fps,
-    const rs2_format* format, int count, rs2_error** error) try
+    const rs2_stream_profile** profiles, int count, rs2_error** error) try
 {
     VALIDATE_NOT_NULL(sensor);
-    VALIDATE_NOT_NULL(stream);
-    VALIDATE_NOT_NULL(width);
-    VALIDATE_NOT_NULL(height);
-    VALIDATE_NOT_NULL(fps);
-    VALIDATE_NOT_NULL(format);
+    VALIDATE_NOT_NULL(profiles);
 
-    std::vector<librealsense::stream_profile> request;
+    std::vector<std::shared_ptr<stream_profile_interface>> request;
     for (auto i = 0; i < count; i++)
     {
-        request.push_back({ stream[i], static_cast<uint32_t>(width[i]),
-                            static_cast<uint32_t>(height[i]), static_cast<uint32_t>(fps[i]), format[i] });
+        request.push_back(std::dynamic_pointer_cast<stream_profile_interface>(profiles[i]->profile->shared_from_this()));
     }
     sensor->sensor->open(request);
 }
-HANDLE_EXCEPTIONS_AND_RETURN(, sensor, stream, width, height, fps, format)
+HANDLE_EXCEPTIONS_AND_RETURN(, sensor, profiles, count)
 
 void rs2_close(const rs2_sensor* sensor, rs2_error ** error) try
 {
@@ -665,6 +707,12 @@ int rs2_get_frame_stride_in_bytes(const rs2_frame * frame_ref, rs2_error ** erro
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, frame_ref)
 
+const rs2_stream_profile* rs2_get_frame_stream_profile(const rs2_frame* frame_ref, rs2_error** error) try
+{
+    VALIDATE_NOT_NULL(frame_ref);
+    return ((frame_interface*)frame_ref)->get_stream()->get_c_wrapper();
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, frame_ref)
 
 int rs2_get_frame_bits_per_pixel(const rs2_frame * frame_ref, rs2_error ** error) try
 {
@@ -673,21 +721,6 @@ int rs2_get_frame_bits_per_pixel(const rs2_frame * frame_ref, rs2_error ** error
     return vf->get_bpp();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, frame_ref)
-
-rs2_format rs2_get_frame_format(const rs2_frame * frame_ref, rs2_error ** error) try
-{
-    VALIDATE_NOT_NULL(frame_ref);
-    return ((frame_interface*)frame_ref)->get_format();
-}
-HANDLE_EXCEPTIONS_AND_RETURN(RS2_FORMAT_ANY, frame_ref)
-
-rs2_stream rs2_get_frame_stream_type(const rs2_frame * frame_ref, rs2_error ** error) try
-{
-    VALIDATE_NOT_NULL(frame_ref);
-    return ((frame_interface*)frame_ref)->get_stream_type();
-}
-HANDLE_EXCEPTIONS_AND_RETURN(RS2_STREAM_COUNT, frame_ref)
-
 
 unsigned long long rs2_get_frame_number(const rs2_frame * frame, rs2_error ** error) try
 {
@@ -771,7 +804,7 @@ int rs2_poll_for_frame(rs2_frame_queue* queue, rs2_frame** output_frame, rs2_err
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, queue, output_frame)
 
-void rs2_enqueue_frame(rs2_frame* frame, void* queue) try
+void rs2_enqueue_frame(const rs2_frame* frame, void* queue) try
 {
     VALIDATE_NOT_NULL(frame);
     VALIDATE_NOT_NULL(queue);
@@ -789,22 +822,20 @@ void rs2_flush_queue(rs2_frame_queue* queue, rs2_error** error) try
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, queue)
 
-void rs2_get_extrinsics(const rs2_sensor * from_dev, rs2_stream from_stream,
-    const rs2_sensor * to_dev, rs2_stream to_stream,
+void rs2_get_extrinsics(const rs2_stream_profile* from,
+    const rs2_stream_profile* to,
     rs2_extrinsics * extrin, rs2_error ** error) try
 {
-    VALIDATE_NOT_NULL(from_dev);
-    VALIDATE_NOT_NULL(to_dev);
+    VALIDATE_NOT_NULL(from);
+    VALIDATE_NOT_NULL(to);
     VALIDATE_NOT_NULL(extrin);
-    VALIDATE_ENUM(from_stream);
-    VALIDATE_ENUM(to_stream);
 
-    if (from_dev->parent.device != to_dev->parent.device)
-        throw librealsense::invalid_value_exception("Extrinsics between the selected devices are unknown!");
-
-    *extrin = from_dev->parent.device->get_extrinsics(from_dev->index, from_stream, to_dev->index, to_stream);
+    if (!from->profile->get_context().try_fetch_extrinsics(*from->profile, *to->profile, extrin))
+    {
+        throw not_implemented_exception("Requested extrinsics are not available!");
+    }
 }
-HANDLE_EXCEPTIONS_AND_RETURN(, from_dev, from_stream, to_dev, to_stream, extrin)
+HANDLE_EXCEPTIONS_AND_RETURN(, from, to, extrin)
 
 void rs2_get_motion_intrinsics(const rs2_sensor * sensor, rs2_stream stream, rs2_motion_device_intrinsic * intrinsics, rs2_error ** error) try
 {
@@ -816,22 +847,6 @@ void rs2_get_motion_intrinsics(const rs2_sensor * sensor, rs2_stream stream, rs2
     *intrinsics = motion->get_motion_intrinsics(stream);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, sensor, stream, intrinsics)
-
-void rs2_get_stream_intrinsics(const rs2_sensor * sensor, rs2_stream stream, int width, int height, int fps,
-    rs2_format format, rs2_intrinsics * intrinsics, rs2_error ** error) try
-{
-    VALIDATE_NOT_NULL(sensor);
-    VALIDATE_ENUM(stream);
-    VALIDATE_ENUM(format);
-    VALIDATE_NOT_NULL(intrinsics);
-
-    auto video = VALIDATE_INTERFACE(sensor->sensor, librealsense::video_sensor_interface);
-
-    // cast because i've been getting errors. (int->uint32_t requires narrowing conversion)
-    *intrinsics = video->get_intrinsics({ stream, uint32_t(width), uint32_t(height), uint32_t(fps), format });
-}
-HANDLE_EXCEPTIONS_AND_RETURN(, sensor, intrinsics)
-
 
 void rs2_hardware_reset(const rs2_device * device, rs2_error ** error) try
 {
@@ -1067,6 +1082,19 @@ int rs2_is_frame_extendable_to(const rs2_frame* f, rs2_extension extension_type,
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, f, extension_type)
 
+int rs2_stream_profile_is(const rs2_stream_profile* f, rs2_extension extension_type, rs2_error ** error) try
+{
+    VALIDATE_NOT_NULL(f);
+    VALIDATE_ENUM(extension_type);
+    switch (extension_type)
+    {
+    case RS2_EXTENSION_VIDEO_PROFILE:   return VALIDATE_INTERFACE_NO_THROW(f->profile, librealsense::video_stream_profile_interface) != nullptr;
+    default:
+        return 0;
+    }
+}
+HANDLE_EXCEPTIONS_AND_RETURN(0, f, extension_type)
+
 rs2_device* rs2_context_add_device(rs2_context* ctx, const char* file, rs2_error** error) try
 {
     VALIDATE_NOT_NULL(ctx);
@@ -1203,17 +1231,19 @@ void rs2_record_device_resume(const rs2_device* device, rs2_error** error) try
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device)
 
-rs2_frame* rs2_allocate_synthetic_video_frame(rs2_source* source, rs2_stream new_stream, rs2_frame* original,
-    rs2_format new_format, int new_bpp, int new_width, int new_height, int new_stride, rs2_error** error) try
+rs2_frame* rs2_allocate_synthetic_video_frame(rs2_source* source, const rs2_stream_profile* new_stream, rs2_frame* original,
+    int new_bpp, int new_width, int new_height, int new_stride, rs2_error** error) try
 {
     VALIDATE_NOT_NULL(source);
     VALIDATE_NOT_NULL(original);
-    VALIDATE_ENUM(new_stream);
-    VALIDATE_ENUM(new_format);
+    VALIDATE_NOT_NULL(new_stream);
 
-    return (rs2_frame*)source->source->allocate_video_frame(new_stream, (frame_interface*)original, new_format, new_bpp, new_width, new_height, new_stride);
+    auto recovered_profile = std::dynamic_pointer_cast<stream_profile_interface>(new_stream->profile->shared_from_this());
+
+    return (rs2_frame*)source->source->allocate_video_frame(recovered_profile,
+        (frame_interface*)original, new_bpp, new_width, new_height, new_stride);
 }
-HANDLE_EXCEPTIONS_AND_RETURN(nullptr, source, new_stream, original, new_format, new_bpp, new_width, new_height, new_stride)
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, source, new_stream, original, new_bpp, new_width, new_height, new_stride)
 
 void rs2_synthetic_frame_ready(rs2_source* source, rs2_frame* frame, rs2_error** error) try
 {
@@ -1275,7 +1305,7 @@ rs2_frame* rs2_extract_frame(rs2_frame* composite, int index, rs2_error** error)
 
     auto cf = VALIDATE_INTERFACE((frame_interface*)composite, librealsense::composite_frame);
 
-    VALIDATE_RANGE(index, 0, cf->get_embedded_frames_count() - 1);
+    VALIDATE_RANGE(index, 0, (int)cf->get_embedded_frames_count() - 1);
     auto res = cf->get_frame(index);
     res->acquire();
     return (rs2_frame*)res;

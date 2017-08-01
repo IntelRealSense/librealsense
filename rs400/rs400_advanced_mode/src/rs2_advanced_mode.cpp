@@ -4,10 +4,14 @@
 #include <thread>
 #include <sstream>
 
-#include "../../../src/types.h"
+#include "types.h"
 #include <librealsense/rs2_advanced_mode.h>
 #include "core/advanced_mode.h"
 #include "api.h"
+
+#define STRCASE(T, X) case RS2_##T##_##X: {\
+        static std::string s##T##_##X##_str = make_less_screamy(#X);\
+        return s##T##_##X##_str.c_str(); }
 
 namespace librealsense
 {
@@ -15,7 +19,7 @@ namespace librealsense
 
     const char* get_string(rs2_rs400_visual_preset value)
     {
-        #define CASE(X) case RS2_RS400_VISUAL_PRESET_##X: return #X;
+        #define CASE(X) STRCASE(RS400_VISUAL_PRESET, X)
         switch (value)
         {
         CASE(CUSTOM)
@@ -30,7 +34,7 @@ namespace librealsense
         CASE(HAND)
         CASE(SHORT_RANGE)
         CASE(BOX)
-        default: assert(!is_valid(value)); return UNKNOWN;
+        default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
         #undef CASE
     }
@@ -42,7 +46,7 @@ void rs2_toggle_advanced_mode(rs2_device* dev, int enable, rs2_error** error) tr
 {
     VALIDATE_NOT_NULL(dev);
     auto advanced_mode = VALIDATE_INTERFACE(dev->device, librealsense::ds5_advanced_mode_interface);
-    advanced_mode->toggle_advanced_mode(enable);
+    advanced_mode->toggle_advanced_mode(enable > 0);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, dev, enable)
 
@@ -270,3 +274,20 @@ void rs2_get_census(rs2_device* dev, STCensusRadius* group, int mode, rs2_error*
     advanced_mode->get_census_radius(group, mode);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, dev, group, mode)
+
+void rs2_load_json(rs2_device* dev, const void* json_content, unsigned content_size, rs2_error** error) try
+{
+    VALIDATE_NOT_NULL(dev);
+    VALIDATE_NOT_NULL(json_content);
+    auto advanced_mode = VALIDATE_INTERFACE(dev->device, librealsense::ds5_advanced_mode_interface);
+    advanced_mode->load_json(std::string(static_cast<const char*>(json_content), content_size));
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, dev, json_content, content_size)
+
+rs2_raw_data_buffer* rs2_serialize_json(rs2_device* dev, rs2_error** error) try
+{
+    VALIDATE_NOT_NULL(dev);
+    auto advanced_mode = VALIDATE_INTERFACE(dev->device, librealsense::ds5_advanced_mode_interface);
+    return new rs2_raw_data_buffer{ advanced_mode->serialize_json() };
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, dev)

@@ -80,8 +80,7 @@ void librealsense::record_device::write_header()
         auto& sensor = m_device->get_sensor(j);
         auto sensor_extensions_md = get_extensions_snapshots(&sensor);
         //TODO: Ziv, remove supported_profiles. Only streaming profiles should be written when open() is called
-        auto supported_profiles = sensor.get_principal_requests();
-        sensors_md.emplace_back(sensor_extensions_md, supported_profiles);
+        sensors_md.emplace_back(sensor_extensions_md, sensor.get_stream_profiles());
     }
 
     m_ros_writer->write_device_description({device_extensions_md, sensors_md, {/*TODO: get extrinsics*/}});
@@ -183,13 +182,6 @@ void librealsense::record_device::hardware_reset()
 {
     m_device->hardware_reset();
 }
-rs2_extrinsics librealsense::record_device::get_extrinsics(size_t from,
-                                                      rs2_stream from_stream,
-                                                      size_t to,
-                                                      rs2_stream to_stream) const
-{
-    return m_device->get_extrinsics(from, from_stream, to, to_stream);
-}
 
 template <typename T, typename Ext>
 void librealsense::record_device::try_add_snapshot(T* extendable, snapshot_collection& snapshots)
@@ -282,9 +274,9 @@ void librealsense::record_device::resume_recording()
     });
 }
 
-std::shared_ptr<matcher> record_device::create_matcher(rs2_stream stream) const
+std::shared_ptr<matcher> record_device::create_matcher(const frame_holder& frame) const
 {
-    return m_device->create_matcher(stream);
+    return m_device->create_matcher(frame);
 }
 
 void record_device::initialize_recording()

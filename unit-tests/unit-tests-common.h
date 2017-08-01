@@ -380,7 +380,7 @@ inline void frame_callback(rs2::device &dev, rs2::frame frame, void * user)
     auto data = (user_data*)user;
     bool stop = true;
 
-    auto stream_type = frame.get_stream_type();
+    auto stream_type = frame.get_profile().stream_type();
 
     for (auto& elem : data->number_of_frames_per_stream)
     {
@@ -563,15 +563,16 @@ inline bool try_get_res_type(uint32_t width, uint32_t height, res_type& res)
 
 inline rs2::stream_profile get_profile_by_resolution_type(rs2::sensor& s, res_type res)
 {
-    auto sp = s.get_stream_modes();
-    for (rs2::stream_profile p : sp)
+    auto sp = s.get_stream_profiles();
+    for (auto&& p : sp)
     {
         res_type out_res;
-        if (try_get_res_type(p.width, p.height, out_res) &&
-            (res == out_res))
-        {
-            return p;
-        }
+        if (auto video = p.as<rs2::video_stream_profile>())
+            if (try_get_res_type(video.width(), video.height(), out_res) &&
+                (res == out_res))
+            {
+                return p;
+            }
     }
     throw std::runtime_error("Stream profile not found!");
 }

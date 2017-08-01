@@ -16,13 +16,14 @@
 #include "ds5-private.h"
 #include "ds5-options.h"
 #include "ds5-timestamp.h"
+#include "stream.h"
 
 namespace librealsense
 {
     class ds5_auto_exposure_roi_method : public region_of_interest_method
     {
     public:
-        ds5_auto_exposure_roi_method(const hw_monitor& hwm) : _hw_monitor(hwm) {}
+        explicit ds5_auto_exposure_roi_method(const hw_monitor& hwm) : _hw_monitor(hwm) {}
 
         void set(const region_of_interest& roi) override
         {
@@ -73,10 +74,11 @@ namespace librealsense
     class ds5_depth_sensor : public uvc_sensor, public video_sensor_interface, public depth_sensor
     {
     public:
-        explicit ds5_depth_sensor(const ds5_device* owner, std::shared_ptr<platform::uvc_device> uvc_device,
-            std::unique_ptr<frame_timestamp_reader> timestamp_reader,
-            std::shared_ptr<platform::time_service> ts)
-            : uvc_sensor("Stereo Module", uvc_device, move(timestamp_reader), ts, owner), _owner(owner)
+        explicit ds5_depth_sensor(ds5_device* owner, 
+            std::shared_ptr<platform::uvc_device> uvc_device,
+            std::unique_ptr<frame_timestamp_reader> timestamp_reader)
+
+        : uvc_sensor("Stereo Module", uvc_device, move(timestamp_reader), owner), _owner(owner)
         {}
 
         rs2_intrinsics get_intrinsics(const stream_profile& profile) const override
@@ -87,19 +89,47 @@ namespace librealsense
                 profile.width, profile.height);
         }
 
+        stream_profiles init_stream_profiles() override
+        {
+            auto results = uvc_sensor::init_stream_profiles();
+
+            for (auto p : results)
+            {
+                // Register stream types
+                if (p->get_stream_type() == RS2_STREAM_DEPTH)
+                {
+                    assign_stream(_owner->_depth_stream, p);
+                }
+                else if (p->get_stream_type() == RS2_STREAM_INFRARED && p->get_stream_index() < 2)
+                {
+                    assign_stream(_owner->_left_ir_stream, p);
+                }
+                else if (p->get_stream_type() == RS2_STREAM_INFRARED  && p->get_stream_index() == 2)
+                {
+                    assign_stream(_owner->_right_ir_stream, p);
+                }
+                auto video = dynamic_cast<video_stream_profile_interface*>(p.get());
+                if (video->get_width() == 640 && video->get_height() == 480)
+                    video->make_recommended();
+
+                // Register intrinsics
+                if (p->get_format() != RS2_FORMAT_Y16) // Y16 format indicate unrectified images, no intrinsics are available for these
+                {
+                    auto profile = to_profile(p.get());
+                    video->set_intrinsics([profile, this]()
+                    {
+                        return get_intrinsics(profile);
+                    });
+                }
+            }
+
+            return results;
+        }
+
         float get_depth_scale() const override { return get_option(RS2_OPTION_DEPTH_UNITS).query(); }
     private:
         const ds5_device* _owner;
     };
-
-    pose ds5_device::get_device_position(unsigned int subdevice) const
-    {
-        if (subdevice >= get_sensors_count())
-            throw invalid_value_exception(to_string() << "Requested subdevice " <<
-                                          subdevice << " is unsupported.");
-
-        throw not_implemented_exception("Not Implemented");
-    }
 
     bool ds5_device::is_camera_in_advanced_mode() const
     {
@@ -118,10 +148,12 @@ namespace librealsense
         return _hw_monitor->send(cmd);
     }
 
-    std::shared_ptr<uvc_sensor> ds5_device::create_depth_device(const platform::backend& backend,
+    std::shared_ptr<uvc_sensor> ds5_device::create_depth_device(std::shared_ptr<context> ctx,
                                                                   const std::vector<platform::uvc_device_info>& all_device_infos)
     {
         using namespace ds;
+
+        auto&& backend = ctx->get_backend();
 
         std::vector<std::shared_ptr<platform::uvc_device>> depth_devices;
         for (auto&& info : filter_by_mi(all_device_infos, 0)) // Filter just mi=0, DEPTH
@@ -130,42 +162,55 @@ namespace librealsense
 
         std::unique_ptr<frame_timestamp_reader> ds5_timestamp_reader_backup(new ds5_timestamp_reader(backend.create_time_service()));
         auto depth_ep = std::make_shared<ds5_depth_sensor>(this, std::make_shared<platform::multi_pins_uvc_device>(depth_devices),
-                                                       std::unique_ptr<frame_timestamp_reader>(new ds5_timestamp_reader_from_metadata(std::move(ds5_timestamp_reader_backup))),
-                                                       backend.create_time_service());
+                                                       std::unique_ptr<frame_timestamp_reader>(new ds5_timestamp_reader_from_metadata(std::move(ds5_timestamp_reader_backup))));
         depth_ep->register_xu(depth_xu); // make sure the XU is initialized everytime we power the camera
 
 
         depth_ep->register_pixel_format(pf_z16); // Depth
         depth_ep->register_pixel_format(pf_y8); // Left Only - Luminance
         depth_ep->register_pixel_format(pf_yuyv); // Left Only
-        depth_ep->register_pixel_format(pf_uyvyl); // Color from Depth
-        depth_ep->register_pixel_format(pf_rgb888);
-
-        depth_ep->set_pose(lazy<pose>([](){pose p = {{ { 1,0,0 },{ 0,1,0 },{ 0,0,1 } },{ 0,0,0 }}; return p; }));
 
         return depth_ep;
     }
 
-    ds5_device::ds5_device(const platform::backend& backend,
+    ds5_device::ds5_device(std::shared_ptr<context> ctx,
                            const platform::backend_device_group& group)
-        : _depth_device_idx(add_sensor(create_depth_device(backend, group.uvc_devices)))
+        : device(ctx), 
+          _depth_stream(new stream(ctx, RS2_STREAM_DEPTH)),
+          _left_ir_stream(new stream(ctx, RS2_STREAM_INFRARED, 1)), 
+          _right_ir_stream(new stream(ctx, RS2_STREAM_INFRARED, 2)),
+          _depth_device_idx(add_sensor(create_depth_device(ctx, group.uvc_devices)))
     {
         using namespace ds;
+
+        auto&& backend = ctx->get_backend();
 
         if(group.usb_devices.size()>0)
         {
             _hw_monitor = std::make_shared<hw_monitor>(
                                      std::make_shared<locked_transfer>(
-                                        backend.create_usb_device(group.usb_devices.front()), get_depth_sensor()));
+                                         backend.create_usb_device(group.usb_devices.front()), get_depth_sensor()));
         }
         else
         {
             _hw_monitor = std::make_shared<hw_monitor>(
                             std::make_shared<locked_transfer>(
                                 std::make_shared<command_transfer_over_xu>(
-                                    get_depth_sensor(), librealsense::ds::depth_xu, librealsense::ds::DS5_HWMONITOR),
+                                    get_depth_sensor(), depth_xu, DS5_HWMONITOR),
                                 get_depth_sensor()));
         }
+
+        // Define Left-Right extrinsics calculation (lazy)
+        _left_right_extrinsics = std::make_shared<lazy<rs2_extrinsics>>([this]()
+        {
+            rs2_extrinsics ext;
+            auto table = check_calib<coefficients_table>(*_coefficients_table_raw);
+            ext.translation[0] = -0.001f * table->baseline;
+            return ext;
+        });
+
+        ctx->register_same_extrinsics(*_depth_stream, *_left_ir_stream);
+        ctx->register_extrinsics(*_depth_stream, *_right_ir_stream, _left_right_extrinsics);
 
         _coefficients_table_raw = [this]() { return get_raw_calibration_table(coefficients_table_id); };
 
@@ -255,7 +300,7 @@ namespace librealsense
             depth_ep.register_option(RS2_OPTION_DEPTH_UNITS, std::make_shared<depth_scale_option>(*_hw_monitor));
         else
             depth_ep.register_option(RS2_OPTION_DEPTH_UNITS, std::make_shared<const_value_option>("Number of meters represented by a single depth unit",
-                                                                                                  0.001f));
+                lazy<float>([]() { return 0.001f; })));
         // Metadata registration
         depth_ep.register_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP,    make_uvc_header_parser(&platform::uvc_header::timestamp));
 
@@ -316,29 +361,6 @@ namespace librealsense
         return{ RS2_NOTIFICATION_CATEGORY_HARDWARE_ERROR, value, RS2_LOG_SEVERITY_NONE, "Unknown error!" };
     }
 
-    rs2_extrinsics ds5_device::get_extrinsics(size_t from_subdevice, rs2_stream from_stream, size_t to_subdevice, rs2_stream to_stream) const
-    {
-        auto is_left = [](rs2_stream s) { return s == RS2_STREAM_INFRARED || s == RS2_STREAM_DEPTH; };
-
-        if (from_subdevice == to_subdevice && from_subdevice == 0)
-        {
-            rs2_extrinsics ext { {1,0,0,0,1,0,0,0,1}, {0,0,0} };
-
-            if (is_left(to_stream) && from_stream == RS2_STREAM_INFRARED2)
-            {
-                auto table = ds::check_calib<ds::coefficients_table>(*_coefficients_table_raw);
-                ext.translation[0] = -0.001f * table->baseline;
-                return ext;
-            }
-            else if (to_stream == RS2_STREAM_INFRARED2 && is_left(from_stream))
-            {
-                auto table = ds::check_calib<ds::coefficients_table>(*_coefficients_table_raw);
-                ext.translation[0] = 0.001f * table->baseline;
-                return ext;
-            }
-        }
-        return device::get_extrinsics(from_subdevice, from_stream, to_subdevice, to_stream);
-    }
     void ds5_device::create_snapshot(std::shared_ptr<debug_interface>& snapshot)
     {
 
@@ -346,6 +368,26 @@ namespace librealsense
     void ds5_device::create_recordable(std::shared_ptr<debug_interface>& recordable,
                                        std::function<void(std::shared_ptr<extension_snapshot>)> record_action)
     {
+
+    }
+
+    std::shared_ptr<matcher> ds5_device::create_matcher(const frame_holder& frame) const
+    {
+        if(!frame.frame->supports_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER))
+        {
+            return device::create_matcher(frame);
+        }
+
+        std::vector<std::shared_ptr<matcher>> matchers;
+
+        std::set<rs2_stream> streams = { RS2_STREAM_DEPTH, RS2_STREAM_INFRARED };
+        if (streams.find(frame.frame->get_stream()->get_stream_type()) != streams.end())
+        {
+            for (auto s : streams)
+                matchers.push_back(device::create_matcher(frame));
+        }
+
+        return std::make_shared<frame_number_composite_matcher>(matchers);
 
     }
 }

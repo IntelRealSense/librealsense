@@ -27,8 +27,8 @@ namespace librealsense
                       snapshot_callback_t on_snapshot);
         virtual ~record_sensor();
 
-        std::vector<stream_profile> get_principal_requests() override;
-        void open(const std::vector<stream_profile>& requests) override;
+        stream_profiles get_stream_profiles() override;
+        void open(const stream_profiles& requests) override;
         void close() override;
         option& get_option(rs2_option id) override;
         const option& get_option(rs2_option id) const override;
@@ -41,8 +41,6 @@ namespace librealsense
         bool is_streaming() const override;
         bool extend_to(rs2_extension extension_type, void** ext) override;
         const device_interface& get_device() override;
-        rs2_extrinsics get_extrinsics_to(rs2_stream from, const sensor_interface& other, rs2_stream to) const  override;
-        const std::vector<platform::stream_profile>& get_curr_configurations() const  override;
     private:
         void raise_user_notification(const std::string& str);
         void record_snapshot(rs2_extension extension_type, const std::shared_ptr<extension_snapshot>& snapshot);

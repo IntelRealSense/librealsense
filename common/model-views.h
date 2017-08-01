@@ -12,6 +12,7 @@
 #include <set>
 #include <array>
 #include "example.hpp"
+#include <unordered_map>
 
 namespace ImGui {
 /*
@@ -175,6 +176,26 @@ inline IMGUI_API bool TabLabels(const char **tabLabels, int tabSize, int &tabInd
 namespace rs2
 {
     class subdevice_model;
+    struct notifications_model;
+
+    template<class T>
+    void sort_together(std::vector<T>& vec, std::vector<std::string>& names)
+    {
+        std::vector<std::pair<T, std::string>> pairs(vec.size());
+        for (size_t i = 0; i < vec.size(); i++) pairs[i] = std::make_pair(vec[i], names[i]);
+
+        std::sort(begin(pairs), end(pairs),
+        [](const std::pair<T, std::string>& lhs,
+           const std::pair<T, std::string>& rhs) {
+            return lhs.first < rhs.first;
+        });
+        
+        for (size_t i = 0; i < vec.size(); i++)
+        {
+            vec[i] = pairs[i].first;
+            names[i] = pairs[i].second;
+        }
+    }
 
     template<class T>
     void push_back_if_not_exists(std::vector<T>& vec, T value)
@@ -188,15 +209,17 @@ namespace rs2
         std::array<std::pair<bool,rs2_metadata_t>,RS2_FRAME_METADATA_COUNT> md_attributes{};
     };
 
-    typedef std::map<rs2_stream, rect> streams_layout;
+    struct notification_model;
+    typedef std::map<int, rect> streams_layout;
+
 
     class option_model
     {
     public:
         void draw(std::string& error_message);
         void update_supported(std::string& error_message);
-        void update_read_only(std::string& error_message);
-        void update_all(std::string& error_message);
+        void update_read_only_status(std::string& error_message);
+        void update_all_feilds(std::string& error_message, notifications_model& model);
 
         rs2_option opt;
         option_range range;
@@ -215,6 +238,32 @@ namespace rs2
         bool is_checkbox() const;
     };
 
+    class frame_queues
+    {
+    public:
+        frame_queue& at(int id)
+        {
+            std::lock_guard<std::mutex> lock(_lookup_mutex);
+            if (_queues.find(id) == _queues.end())
+            {
+                _queues[id] = frame_queue(4);
+            }
+            return _queues[id];
+        }
+
+        template<class T>
+        void foreach(T action)
+        {
+            std::lock_guard<std::mutex> lock(_lookup_mutex);
+            for (auto&& kvp : _queues)
+                action(kvp.second);
+        }
+
+    private:
+        std::unordered_map<int, frame_queue> _queues;
+        std::mutex _lookup_mutex;
+    };
+
     class subdevice_model
     {
     public:
@@ -225,12 +274,14 @@ namespace rs2
         std::vector<stream_profile> get_selected_profiles();
         void stop();
         void play(const std::vector<stream_profile>& profiles);
-        void update(std::string& error_message);
+        void update(std::string& error_message, notifications_model& model);
         void draw_options(const std::vector<rs2_option>& drawing_order,
-                          bool update_read_only_options, std::string& error_message);
+                          bool update_read_only_options, std::string& error_message,
+                          notifications_model& model);
         void draw_option(rs2_option opt, bool update_read_only_options,
-                         std::string& error_message);
+                         std::string& error_message, notifications_model& model);
 
+       
         bool is_paused() const;
         void pause();
         void resume();
@@ -259,27 +310,29 @@ namespace rs2
         sensor s;
         device dev;
 
-        std::map<rs2_option, option_model> options_metadata;
+        std::map<int, option_model> options_metadata;
         std::vector<std::string> resolutions;
-        std::map<rs2_stream, std::vector<std::string>> fpses_per_stream;
+        std::map<int, std::vector<std::string>> fpses_per_stream;
         std::vector<std::string> shared_fpses;
-        std::map<rs2_stream, std::vector<std::string>> formats;
-        std::map<rs2_stream, bool> stream_enabled;
+        std::map<int, std::vector<std::string>> formats;
+        std::map<int, bool> stream_enabled;
+        std::map<int, std::string> stream_display_names;
 
         int selected_res_id = 0;
-        std::map<rs2_stream, int> selected_fps_id;
+        std::map<int, int> selected_fps_id;
         int selected_shared_fps_id = 0;
-        std::map<rs2_stream, int> selected_format_id;
+        std::map<int, int> selected_format_id;
 
         std::vector<std::pair<int, int>> res_values;
-        std::map<rs2_stream, std::vector<int>> fps_values_per_stream;
+        std::map<int, std::vector<int>> fps_values_per_stream;
         std::vector<int> shared_fps_values;
         bool show_single_fps_list = false;
-        std::map<rs2_stream, std::vector<rs2_format>> format_values;
+        std::map<int, std::vector<rs2_format>> format_values;
 
         std::vector<stream_profile> profiles;
 
-        std::vector<std::unique_ptr<frame_queue>> queues;
+        frame_queues queues;
+        std::mutex _queue_lock;
         bool options_invalidated = false;
         int next_option = RS2_OPTION_COUNT;
         bool streaming = false;
@@ -313,8 +366,7 @@ namespace rs2
         float2 size;
         rect get_stream_bounds() const { return { 0, 0, size.x, size.y }; }
 
-        rs2_stream stream;
-        rs2_format format;
+        stream_profile profile;
         std::chrono::high_resolution_clock::time_point last_frame;
         double              timestamp;
         unsigned long long  frame_number;
@@ -344,29 +396,37 @@ namespace rs2
         explicit device_model(device& dev, std::string& error_message);
         bool draw_combo_box(const std::vector<std::string>& device_names, int& new_index);
         void draw_device_details(device& dev, context& ctx);
-        std::map<rs2_stream, rect> calc_layout(float x0, float y0, float width, float height);
-        void upload_frame(frame&& f);
         void start_recording(device& dev, const std::string& path, std::string& error_message);
         void stop_recording();
         void pause_record();
         void resume_record();
 
         std::vector<std::shared_ptr<subdevice_model>> subdevices;
-        std::map<rs2_stream, stream_model> streams;
-        bool fullscreen = false;
+        
         bool metadata_supported = false;
-        rs2_stream selected_stream = RS2_STREAM_ANY;
-
     private:
-        std::map<rs2_stream, rect> get_interpolated_layout(const std::map<rs2_stream, rect>& l);
-
-        streams_layout _layout;
-        streams_layout _old_layout;
-        std::chrono::high_resolution_clock::time_point _transition_start_time;
         std::shared_ptr<recorder> _recorder;
         std::vector<std::shared_ptr<subdevice_model>> live_subdevices;
     };
 
+    class viewer_model
+    {
+    public:
+        void upload_frame(frame&& f);
+        void draw_histogram_options(float depth_scale, const subdevice_model& sensor);
+
+        std::map<int, rect> calc_layout(float x0, float y0, float width, float height);
+
+        std::map<int, stream_model> streams;
+        bool fullscreen = false;
+        stream_model* selected_stream = nullptr;
+    private:
+        std::map<int, rect> get_interpolated_layout(const std::map<int, rect>& l);
+
+        streams_layout _layout;
+        streams_layout _old_layout;
+        std::chrono::high_resolution_clock::time_point _transition_start_time;
+    };
 
     struct notification_data
     {
@@ -389,9 +449,9 @@ namespace rs2
     {
         notification_model();
         notification_model(const notification_data& n);
-        double get_age_in_ms();
+        double get_age_in_ms() const;
         void draw(int w, int y, notification_model& selected);
-        void set_color_scheme(float t);
+        void set_color_scheme(float t) const;
 
         static const int MAX_LIFETIME_MS = 10000;
         int height = 60;
@@ -408,9 +468,25 @@ namespace rs2
         void add_notification(const notification_data& n);
         void draw(int w, int h, notification_model& selected);
 
+        std::string get_log() 
+        {
+            std::string result;
+            std::lock_guard<std::mutex> lock(m);
+            for (auto&& l : log) std::copy(l.begin(), l.end(), std::back_inserter(result)); 
+            return result;
+        }
+
+        void add_log(const std::string& line)
+        {
+            std::lock_guard<std::mutex> lock(m);
+            log.push_back(line);
+        }
+
         std::vector<notification_model> pending_notifications;
         int index = 1;
         const int MAX_SIZE = 6;
         std::mutex m;
+
+        std::vector<std::string> log;
     };
 }

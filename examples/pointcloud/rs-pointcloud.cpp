@@ -59,8 +59,9 @@ float2 project_to_texcoord(const rs2_intrinsics *intrin, const float3 & point) {
 struct texture_stream
 {
     rs2_stream stream;
+    int index;
     rs2_format format;
-    std::string title;
+    string title;
 };
 
 int main(int argc, char * argv[])
@@ -95,25 +96,25 @@ int main(int argc, char * argv[])
 
             // try to open color stream, but fall back to IR if the camera doesn't support it
             rs2_stream mapped;
-            if (config.can_enable_stream(dev, RS2_STREAM_FISHEYE, 0, 0, 0, RS2_FORMAT_RAW8))
+            if (config.can_enable_stream(dev, RS2_STREAM_FISHEYE, 0, 0, RS2_FORMAT_RAW8, 0))
             {
-                available_streams.push_back({ RS2_STREAM_FISHEYE, RS2_FORMAT_RAW8, "Fish-Eye" });
+                available_streams.push_back({ RS2_STREAM_FISHEYE, 0, RS2_FORMAT_RAW8, "Fish-Eye" });
             }
-            if (config.can_enable_stream(dev, RS2_STREAM_COLOR, 0, 0, 0, RS2_FORMAT_RGB8))
+            if (config.can_enable_stream(dev, RS2_STREAM_COLOR, 0, 0, RS2_FORMAT_RGB8, 0))
             {
-                available_streams.push_back({ RS2_STREAM_COLOR, RS2_FORMAT_RGB8, "Color" });
+                available_streams.push_back({ RS2_STREAM_COLOR, 0, RS2_FORMAT_RGB8, "Color" });
             }
-            if (config.can_enable_stream(dev, RS2_STREAM_INFRARED, 0, 0, 0, RS2_FORMAT_RGB8))
+            if (config.can_enable_stream(dev, RS2_STREAM_INFRARED, 0, 0, RS2_FORMAT_RGB8, 0))
             {
-                available_streams.push_back({ RS2_STREAM_INFRARED, RS2_FORMAT_RGB8, "Artifical Color" });
+                available_streams.push_back({ RS2_STREAM_INFRARED, 0, RS2_FORMAT_RGB8, "Artifical Color" });
             }
-            if (config.can_enable_stream(dev, RS2_STREAM_INFRARED, 0, 0, 0, RS2_FORMAT_Y8))
+            if (config.can_enable_stream(dev, RS2_STREAM_INFRARED, 0, 0, RS2_FORMAT_Y8, 0))
             {
-                available_streams.push_back({ RS2_STREAM_INFRARED, RS2_FORMAT_Y8, "Infrared" });
+                available_streams.push_back({ RS2_STREAM_INFRARED, 0, RS2_FORMAT_Y8, "Infrared" });
             }
-            if (config.can_enable_stream(dev, RS2_STREAM_INFRARED2, 0, 0, 0, RS2_FORMAT_Y8))
+            if (config.can_enable_stream(dev, RS2_STREAM_INFRARED, 2, 0, 0, RS2_FORMAT_Y8, 0))
             {
-                available_streams.push_back({ RS2_STREAM_INFRARED2, RS2_FORMAT_Y8, "Infrared2" });
+                available_streams.push_back({ RS2_STREAM_INFRARED, 2, RS2_FORMAT_Y8, "Infrared2" });
             }
 
             if (available_streams.size() == 0)
@@ -124,7 +125,7 @@ int main(int argc, char * argv[])
             for (auto&& s : available_streams) stream_names.push_back(s.title.c_str());
 
             auto&& selected = available_streams[selected_stream];
-            config.enable_stream(selected.stream, 0, 0, 0, selected.format);
+            config.enable_stream(selected.stream, 0, 0, selected.format, 0);
             mapped = selected.stream;
             auto stream = config.open(dev);
 
@@ -209,7 +210,7 @@ int main(int argc, char * argv[])
 
                 bool has_depth = false;
                 for (auto&& f : frames)
-                    if (f.get_stream_type() == RS2_STREAM_DEPTH)
+                    if (f.get_profile().stream_type() == RS2_STREAM_DEPTH)
                         has_depth = true;
                 if (!has_depth) continue;
 
@@ -217,12 +218,12 @@ int main(int argc, char * argv[])
 
                 for (auto&& frame : frames)
                 {
-                    if (frame.get_stream_type() == RS2_STREAM_DEPTH)
+                    if (frame.get_profile().stream_type() == RS2_STREAM_DEPTH)
                     {
                         depth = reinterpret_cast<const uint16_t *>(frame.get_data());
                     }
 
-                    if (frame.get_stream_type() == mapped)
+                    if (frame.get_profile().stream_type() == mapped)
                     {
                         mapped_tex.upload(frame);
                     }
@@ -305,7 +306,7 @@ int main(int argc, char * argv[])
                     auto&& selected = available_streams[selected_stream];
                     util::config config;
                     config.enable_stream(RS2_STREAM_DEPTH, preset::best_quality);
-                    config.enable_stream(selected.stream, 0, 0, 0, selected.format);
+                    config.enable_stream(selected.stream, 0, 0, selected.format, 0);
                     mapped = selected.stream;
                     stream = config.open(dev);
                     stream.start(syncer);

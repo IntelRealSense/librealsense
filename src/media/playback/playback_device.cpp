@@ -79,7 +79,7 @@ std::map<uint32_t, std::shared_ptr<playback_sensor>> playback_device::create_pla
             }
         };
 
-        sensor->opened += [this](int32_t id, const std::vector<stream_profile>& requested_profiles) -> void
+        sensor->opened += [this](int32_t id, const stream_profiles& requested_profiles) -> void
         {
             (*m_read_thread)->invoke([this, id, requested_profiles](dispatcher::cancellable_timer c)
             {
@@ -154,12 +154,6 @@ void playback_device::hardware_reset()
     //Nothing to see here folks
 }
 
-rs2_extrinsics playback_device::get_extrinsics(size_t from, rs2_stream from_stream, size_t to, rs2_stream to_stream) const
-{
-    throw not_implemented_exception(__FUNCTION__);
-    //std::dynamic_pointer_cast<librealsense::info_interface>(m_device_description.get_device_extensions_snapshots().get_snapshots()[RS2_EXTENSION_EXTRINSICS ])->supports_info(info);
-}
-
 bool playback_device::extend_to(rs2_extension extension_type, void** ext)
 {
     std::shared_ptr<extension_snapshot> e = m_device_description.get_device_extensions_snapshots().find(extension_type);
@@ -186,7 +180,7 @@ bool playback_device::extend_to(rs2_extension extension_type, void** ext)
     }
 }
 
-std::shared_ptr<matcher> playback_device::create_matcher(rs2_stream stream) const
+std::shared_ptr<matcher> playback_device::create_matcher(const frame_holder& frame) const
 {
     return nullptr; //TOOD: WTD?
 }
@@ -444,7 +438,7 @@ void playback_device::try_looping()
     do_loop(read_action);
 }
 
-void playback_device::set_filter(int32_t id, const std::vector<stream_profile>& requested_profiles)
+void playback_device::set_filter(int32_t id, const stream_profiles& requested_profiles)
 {
     (*m_read_thread)->invoke([this, id, requested_profiles](dispatcher::cancellable_timer c)
     {

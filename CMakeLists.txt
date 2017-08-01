@@ -83,13 +83,10 @@ if(COMPILER_SUPPORTS_CXX11)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 elseif(COMPILER_SUPPORTS_CXX0X)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
-else()
-    message(STATUS "The compiler ${CMAKE_CXX_COMPILER} has no C++11 support. Please use a different C++ compiler.")
 endif()
 
-FIND_PACKAGE( OpenMP REQUIRED)
+find_package(OpenMP REQUIRED)
 if(OPENMP_FOUND)
-    message("OPENMP FOUND")
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
@@ -104,6 +101,7 @@ set(REALSENSE_CPP
     src/sensor.cpp
     src/algo.cpp
     src/sync.cpp
+	src/stream.cpp
     src/option.cpp
     src/error-handling.cpp
     src/hw-monitor.cpp
@@ -136,6 +134,8 @@ set(REALSENSE_CPP
 
     rs400/rs400_advanced_mode/src/rs2_advanced_mode.cpp
     rs400/rs400_advanced_mode/src/presets.cpp
+    rs400/rs400_advanced_mode/src/json.hpp
+    rs400/rs400_advanced_mode/src/json_loader.hpp
     rs400/rs400_advanced_mode/src/advanced_mode.cpp
 
     third-party/easyloggingpp/src/easylogging++.cc
@@ -177,6 +177,7 @@ set(REALSENSE_HPP
     src/sensor.h
     src/sync.h
     src/sensor.h
+	src/stream.h
     src/align.h
     src/algo.h
     src/option.h

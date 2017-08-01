@@ -16,12 +16,36 @@ elseif(COMPILER_SUPPORTS_CXX0X)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
 endif()
 
+if(UNIX)
+    find_package(PkgConfig REQUIRED)
+    pkg_check_modules(GTK3 REQUIRED gtk+-3.0)
+
+    include_directories(${GTK3_INCLUDE_DIRS})
+    link_directories(${GTK3_LIBRARY_DIRS})
+    add_definitions(${GTK3_CFLAGS_OTHER})
+
+    add_definitions(-DNOC_FILE_DIALOG_GTK)
+elseif(WIN32)
+    add_definitions(-DNOC_FILE_DIALOG_WIN32)
+elseif(APPLE)
+    add_definitions(-DNOC_FILE_DIALOG_OSX)
+endif()
+
 if(BUILD_GRAPHICAL_EXAMPLES)
 
     # config-ui
-    add_executable(realsense-ui realsense-ui.cpp ../../third-party/imgui/imgui.cpp ../../third-party/imgui/imgui_draw.cpp ../../third-party/imgui/imgui_impl_glfw.cpp ../../common/example.hpp ../../common/model-views.h ../../common/model-views.cpp)
-    target_link_libraries(realsense-ui ${DEPENDENCIES})
-    include_directories(realsense-ui ../../third-party/imgui ../../common)
+    add_executable(realsense-ui 
+        realsense-ui.cpp 
+        ../../third-party/imgui/imgui.cpp 
+        ../../third-party/imgui/imgui_draw.cpp 
+        ../../third-party/imgui/imgui_impl_glfw.cpp 
+        ../../third-party/imgui/imgui-fonts-karla.hpp
+        ../../third-party/imgui/imgui-fonts-fontawesome.hpp
+        ../../common/example.hpp 
+        ../../common/model-views.h 
+        ../../common/model-views.cpp)
+    target_link_libraries(realsense-ui ${DEPENDENCIES} ${GTK3_LIBRARIES})
+    include_directories(realsense-ui ../../third-party/imgui ../../common ../../third-party)
     set_target_properties (realsense-ui PROPERTIES
         FOLDER Tools
     )
