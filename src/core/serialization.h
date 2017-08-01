@@ -19,7 +19,8 @@ namespace librealsense
         struct snapshot_box
         {
             std::chrono::nanoseconds timestamp;
-            uint32_t sensor_index;
+            std::string sensor_index;
+            rs2_extension extension_type;
             std::shared_ptr<extension_snapshot> snapshot;
         };
 
@@ -42,7 +43,7 @@ namespace librealsense
             virtual void seek_to_time(std::chrono::nanoseconds time) = 0;
             virtual std::chrono::nanoseconds query_duration() const = 0;
             virtual void reset() = 0;
-            virtual void set_filter(uint32_t m_sensor_index, const std::vector<stream_profile>& vector) = 0;
+            virtual void set_filter(uint32_t m_sensor_index, const stream_profiles& profiles) = 0;
             virtual const std::string& get_file_name() const = 0;
         };
     }

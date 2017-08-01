@@ -15,6 +15,17 @@
 
 namespace librealsense
 {
+    /*
+     * Internal members meaning:
+     *
+     *               m_is_started  |     True     |      False
+     *  m_is_paused                |              |
+     *  ---------------------------|--------------|---------------
+     *      True                   |    Paused    |   Stopped
+     *      False                  |    Playing   |   Stopped
+     *
+     */
+
     class playback_device : public device_interface,
         public extendable_interface,
         public info_container//TODO: Ziv, does it make sense to inherit from container
@@ -47,27 +58,28 @@ namespace librealsense
         uint64_t get_position() const;
         signal<playback_device, rs2_playback_status> playback_status_changed;
     private:
-        void update_time_base(uint64_t base_timestamp);
-        int64_t calc_sleep_time(const uint64_t& timestamp) const;
+        void update_time_base(std::chrono::microseconds base_timestamp);
+        std::chrono::microseconds calc_sleep_time(std::chrono::microseconds timestamp) const;
         void start();
         void stop();
         void try_looping();
         template <typename T> void do_loop(T op);
         std::map<uint32_t, std::shared_ptr<playback_sensor>> create_playback_sensors(const device_snapshot& device_description);
-        void set_filter(int32_t id, const std::vector<stream_profile>& requested_profiles);
+        void set_filter(int32_t id, const stream_profiles& requested_profiles);
     private:
         lazy<std::shared_ptr<dispatcher>> m_read_thread;
         std::shared_ptr<device_serializer::reader> m_reader;
         device_snapshot m_device_description;
         std::atomic_bool m_is_started;
         std::atomic_bool m_is_paused;
-        std::chrono::high_resolution_clock::time_point m_base_sys_time;
-        uint64_t m_base_timestamp;
+        std::chrono::high_resolution_clock::time_point m_base_sys_time; // !< System time when reading began (first frame was read)
+        std::chrono::microseconds m_base_timestamp; // !< Timestamp of the first frame that has a real timestamp (different than 0)
         std::map<uint32_t, std::shared_ptr<playback_sensor>> m_sensors;
         std::map<uint32_t, std::shared_ptr<playback_sensor>> m_active_sensors;
         std::atomic<double> m_sample_rate;
         std::atomic_bool m_real_time;
         file_format::file_types::nanoseconds m_prev_timestamp;
+        void catch_up();
     };
 
     MAP_EXTENSION(RS2_EXTENSION_PLAYBACK, playback_device);

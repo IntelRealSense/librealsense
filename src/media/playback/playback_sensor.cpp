@@ -26,25 +26,32 @@ stream_profiles playback_sensor::get_stream_profiles()
 
 void playback_sensor::open(const stream_profiles& requests)
 {
-    //auto available_profiles = m_sensor_description.get_streamig_profiles();
-    //for (auto&& r : requests)
-    //{
-    //    if(std::find(std::begin(available_profiles), std::end(available_profiles), r) == std::end(available_profiles))
-    //    {
-    //        throw std::runtime_error("Failed to open sensor, requested profile is not available");
-    //    }
-    //}
-    //for (auto&& profile : requests)
-    //{
-    //    m_dispatchers.emplace(std::make_pair(profile.stream, std::make_shared<dispatcher>(1))); //TODO: what size the queue should be?
-    //    m_dispatchers[profile.stream]->start();
-    //}
-    //
-    //opened(m_sensor_id, requests);
+	//Playback can only play the streams that were recorded. 
+	//Go over the requested profiles and see if they are available
+    auto available_profiles = m_sensor_description.get_streamig_profiles();
+    for (auto&& r : requests)
+    {
+        if(std::find(std::begin(available_profiles), std::end(available_profiles), r) == std::end(available_profiles))
+        {
+            throw std::runtime_error("Failed to open sensor, requested profile is not available");
+        }
+    }
+	//For each stream, create a dedicated dispatching thread
+    for (auto&& profile : requests)
+    {
+        m_dispatchers.emplace(std::make_pair(profile->get_unique_id(), std::make_shared<dispatcher>(10))); //TODO: what size the queue should be?
+        m_dispatchers[profile->get_unique_id()]->start();
+    }
+    
+    opened(m_sensor_id, requests);
 }
 
 void playback_sensor::close()
 {
+    for (auto dispatcher : m_dispatchers)
+    {
+        dispatcher.second->flush();
+    }
     m_dispatchers.clear();
     closed(m_sensor_id);
 }
@@ -147,15 +154,15 @@ void playback_sensor::handle_frame(frame_holder frame, bool is_real_time)
 {
     if(m_is_started)
     {
-        auto stream_type = frame.frame->get_stream()->get_stream_type();
+        auto stream_id = frame.frame->get_stream()->get_unique_id();
 		//TODO: remove this once filter is implemented (which will only read streams that were 'open'ed 
-    	if(m_dispatchers.find(stream_type) == m_dispatchers.end())
+    	if(m_dispatchers.find(stream_id) == m_dispatchers.end())
 		{
 			return;
 		}
         //TODO: Ziv, remove usage of shared_ptr when frame_holder is cpoyable
         auto pf = std::make_shared<frame_holder>(std::move(frame));
-        m_dispatchers.at(stream_type)->invoke([this, pf](dispatcher::cancellable_timer t)
+        m_dispatchers.at(stream_id)->invoke([this, pf](dispatcher::cancellable_timer t)
         {
             frame_interface* pframe = nullptr;
             std::swap((*pf).frame, pframe);
@@ -163,7 +170,7 @@ void playback_sensor::handle_frame(frame_holder frame, bool is_real_time)
         });
         if(is_real_time)
         {
-            m_dispatchers.at(stream_type)->flush();
+            m_dispatchers.at(stream_id)->flush();
         }
     }
 }

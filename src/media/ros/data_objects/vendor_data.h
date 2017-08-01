@@ -15,9 +15,8 @@ namespace librealsense
             {
                 std::string name;
                 std::string value;
-                uint32_t device_id;
+                std::string device_id;
             };
-
 
             class vendor_data : public stream_data
             {
@@ -42,9 +41,9 @@ namespace librealsense
                     file.write(get_topic(m_info.device_id), file_types::nanoseconds::min(), msg);
                 }
 
-                static std::string get_topic(const uint32_t& device_id = -1)
+                static std::string get_topic(const std::string& device_id)
                 {
-                    return "/info/" + std::to_string(device_id);
+                    return "/info/" + device_id;
                 }
             private:
                 vendor_info m_info;

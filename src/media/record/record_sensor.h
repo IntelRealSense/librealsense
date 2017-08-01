@@ -15,12 +15,16 @@ namespace librealsense
     class record_sensor : public sensor_interface,
         public extendable_interface,  //Allows extension for any of the given device's extensions
         public info_container,
-        public options_container
+        public options_container//TODO: consider deriving from recordable_options_container
     {
     public:
-        using frame_interface_callback_t = std::function<void(frame_holder)>;
+        using frame_interface_callback_t = std::function<void(frame_holder, std::function<void(const std::string&)>)>;
+        using snapshot_callback_t = std::function<void(rs2_extension, const std::shared_ptr<extension_snapshot>&, std::function<void(const std::string&)>)>;
 
-        record_sensor(const device_interface& device, sensor_interface& sensor, frame_interface_callback_t on_frame, std::function<void(rs2_extension, const std::shared_ptr<extension_snapshot>&)> on_snapshot);
+        record_sensor(const device_interface& device,
+                      sensor_interface& sensor,
+                      frame_interface_callback_t on_frame,
+                      snapshot_callback_t on_snapshot);
         virtual ~record_sensor();
 
         stream_profiles get_stream_profiles() override;
@@ -41,16 +45,19 @@ namespace librealsense
         void raise_user_notification(const std::string& str);
         void record_snapshot(rs2_extension extension_type, const std::shared_ptr<extension_snapshot>& snapshot);
         std::vector<platform::stream_profile> convert_profiles(const std::vector<stream_profile>& vector);
-        
-        std::function<void(rs2_extension, const std::shared_ptr<extension_snapshot>&)> m_device_record_snapshot_handler;
+
+        snapshot_callback_t m_device_record_snapshot_handler;
         sensor_interface& m_sensor;
         librealsense::notifications_callback_ptr m_user_notification_callback;
         frame_interface_callback_t m_record_callback;
-        bool m_is_recording;
+        std::atomic_bool m_is_recording;
         bool m_is_pause;
         frame_callback_ptr m_frame_callback;
         std::vector<platform::stream_profile> m_curr_configurations;
         const device_interface& m_parent_device;
+        std::map<rs2_option, std::shared_ptr<option>> m_recordable_options_cache;
+        void stop_with_error(const std::string& basic_string);
+        void record_frame(frame_holder holder);
     };
 
     class notification_callback : public rs2_notifications_callback

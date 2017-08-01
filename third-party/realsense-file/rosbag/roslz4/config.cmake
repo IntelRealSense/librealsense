@@ -6,7 +6,6 @@ set(HEADER_FILES_ROSLZ4
 
 set(SOURCE_FILES_ROSLZ4
   ${CMAKE_CURRENT_LIST_DIR}/src/lz4s.c
-#  ${CMAKE_CURRENT_LIST_DIR}/src/_roslz4module.c
   ${CMAKE_CURRENT_LIST_DIR}/src/xxhash.c
   ${CMAKE_CURRENT_LIST_DIR}/src/xxhash.h
 )

@@ -176,11 +176,13 @@ EXPORTS
     rs2_context_add_device
     rs2_context_remove_device
 
+	rs2_playback_device_get_file_path
+    rs2_playback_get_duration
+    rs2_playback_seek
+    rs2_playback_get_position
+    rs2_playback_device_resume
+    rs2_playback_device_pause
     rs2_playback_device_set_real_time
     rs2_playback_device_is_real_time
     rs2_playback_device_set_status_changed_callback
     rs2_playback_device_get_current_status
-    rs2_playback_device_get_file_path
-    rs2_playback_get_duration
-    rs2_playback_get_position
-    rs2_playback_seek

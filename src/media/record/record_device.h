@@ -42,11 +42,11 @@ namespace librealsense
     private:
         void write_header();
         std::chrono::nanoseconds get_capture_time() const;
-        void write_data(size_t sensor_index, frame_holder f/*, notifications_callback_ptr& sensor_notification_handler*/);
-        void write_extension_snapshot(rs2_extension ext, const std::shared_ptr<extension_snapshot>& snapshot);
+        void write_data(size_t sensor_index, frame_holder f, std::function<void(std::string const&)> on_error);
+        void write_extension_snapshot(size_t sensor_index, rs2_extension ext, const std::shared_ptr<extension_snapshot>& snapshot, std::function<void(std::string const&)> on_error);
         std::vector<std::shared_ptr<record_sensor>> create_record_sensors(std::shared_ptr<device_interface> m_device);
         template <typename T> snapshot_collection get_extensions_snapshots(T* extendable);
-
+        template <typename T, typename Ext> void try_add_snapshot(T* extendable, snapshot_collection& snapshots);
         std::shared_ptr<device_interface> m_device;
         std::vector<std::shared_ptr<record_sensor>> m_sensors;
 
@@ -63,6 +63,8 @@ namespace librealsense
 
         uint64_t m_cached_data_size;
         std::once_flag m_first_call_flag;
+        void initialize_recording();
+        void stop_gracefully(to_string error_msg);
     };
 
     MAP_EXTENSION(RS2_EXTENSION_RECORD, record_device);

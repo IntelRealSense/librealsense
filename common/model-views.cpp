@@ -1270,36 +1270,42 @@ namespace rs2
                     auto seek_time = std::chrono::duration<double, std::nano>(seek_pos * single_percent);
                     p.seek(std::chrono::duration_cast<std::chrono::nanoseconds>(seek_time));
                 }
-//                    if (ImGui::CollapsingHeader("Playback Options"))
-//                    {
-//                        static bool is_paused = false;
-//                        if (!is_paused && ImGui::Button("Pause"))
-//                        {
-//                            p.pause();
-//                            for (auto&& sub : model.subdevices)
-//                            {
-//                                if (sub->streaming) sub->pause();
-//                            }
-//                            is_paused = !is_paused;
-//                        }
-//                        if (ImGui::IsItemHovered())
-//                        {
-//                            ImGui::SetTooltip("Pause playback");
-//                        }
-//                        if (is_paused && ImGui::Button("Resume"))
-//                        {
-//                            p.resume();
-//                            for (auto&& sub : model.subdevices)
-//                            {
-//                                if (sub->streaming) sub->resume();
-//                            }
-//                            is_paused = !is_paused;
-//                        }
-//                        if (ImGui::IsItemHovered())
-//                        {
-//                            ImGui::SetTooltip("Continue playback");
-//                        }
-//                    }
+                    if (ImGui::CollapsingHeader("Playback Options"))
+                    {
+                        static bool is_paused = p.current_status() == RS2_PLAYBACK_STATUS_PAUSED;
+                        if (!is_paused)
+                        {
+                            if(ImGui::Button("Pause"))
+                            {
+                                p.pause();
+                                for (auto&& sub : subdevices)
+                                {
+                                    if (sub->streaming) sub->pause();
+                                }
+                                is_paused = !is_paused;
+                            }
+                            if (ImGui::IsItemHovered())
+                            {
+                                ImGui::SetTooltip("Pause playback");
+                            }
+                        }
+                        if (is_paused )
+                        {
+                            if(ImGui::Button("Resume"))
+                            {
+                                p.resume();
+                                for (auto&& sub : subdevices)
+                                {
+                                    if (sub->streaming) sub->resume();
+                                }
+                                is_paused = !is_paused;
+                            }
+                            if (ImGui::IsItemHovered())
+                            {
+                                ImGui::SetTooltip("Continue playback");
+                            }
+                        }
+                    }
             }
         }
     }

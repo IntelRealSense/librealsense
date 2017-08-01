@@ -17,7 +17,7 @@ namespace librealsense
                 uint32_t height;
                 rs2_intrinsics intrinsics;
                 file_types::stream_extrinsics stream_extrinsics;
-                uint32_t device_id;
+                std::string device_id;
                 rs2_stream type;
                 uint32_t fps;
                 rs2_format format;
@@ -30,9 +30,9 @@ namespace librealsense
                 {
                     assign(info, m_info);
                 }
-                static std::string get_topic(const uint32_t& device_id)
+                static std::string get_topic(const std::string& device_id)
                 {
-                    return "/camera/rs_stream_info/" + std::to_string(device_id);
+                    return "/camera/rs_stream_info/" + device_id;
                 }
                 void write_data(data_object_writer& file) override
                 {

@@ -2,6 +2,8 @@
 // Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 
 #include <core/debug.h>
+#include <core/motion.h>
+#include <core/advanced_mode.h>
 #include "record_device.h"
 
 
@@ -11,7 +13,6 @@ librealsense::record_device::record_device(std::shared_ptr<librealsense::device_
     m_is_recording(true),
     m_record_pause_time(0)
 {
-    //TODO: validation can probably be removed
     if (device == nullptr)
     {
         throw invalid_value_exception("device is null");
@@ -26,7 +27,6 @@ librealsense::record_device::record_device(std::shared_ptr<librealsense::device_
     m_device = device;
     m_ros_writer = serializer;
     m_sensors = create_record_sensors(m_device);
-    assert(m_sensors.empty() == false);
 }
 
 std::vector<std::shared_ptr<record_sensor>> record_device::create_record_sensors(std::shared_ptr<device_interface> device)
@@ -34,30 +34,37 @@ std::vector<std::shared_ptr<record_sensor>> record_device::create_record_sensors
     std::vector<std::shared_ptr<record_sensor>> record_sensors;
     for (size_t sensor_index = 0; sensor_index < device->get_sensors_count(); sensor_index++)
     {
-        auto& sensor = device->get_sensor(sensor_index);
+        auto& live_sensor = device->get_sensor(sensor_index);
+        auto sensor_frame_handler = [this, sensor_index](frame_holder f, std::function<void(std::string const&)> on_error)
+        {
+            write_data(sensor_index, std::move(f), on_error);
+        };
 
-        auto recording_sensor = std::make_shared<record_sensor>(*this, sensor,
-            [this, sensor_index](frame_holder f/*, notifications_callback_ptr& sensor_notification_handler*/)
-            {
-                write_data(sensor_index, std::move(f)/*,sensor_notification_handler*/);
-            },
-            [this](rs2_extension ext, const std::shared_ptr<extension_snapshot>& snapshot)
-            {
-                this->write_extension_snapshot(ext, snapshot);
-            });
-        record_sensors.push_back(recording_sensor);
+        auto sensor_snapshot_changes_handler = [this, sensor_index](rs2_extension ext, const std::shared_ptr<extension_snapshot>& snapshot, std::function<void(std::string const&)> on_error)
+        {
+            write_extension_snapshot(sensor_index, ext, snapshot, on_error);
+        };
+
+        auto recording_sensor = std::make_shared<record_sensor>(*this, live_sensor, sensor_frame_handler, sensor_snapshot_changes_handler);
+        record_sensors.emplace_back(recording_sensor);
     }
     return record_sensors;
 }
 
 librealsense::record_device::~record_device()
 {
+    if((*m_write_thread)->flush() == false)
+    {
+        LOG_ERROR("Error - timeout waiting for flush, possible deadlock detected");
+    }
     (*m_write_thread)->stop();
 }
+
 librealsense::sensor_interface& librealsense::record_device::get_sensor(size_t i)
 {
     return *(m_sensors.at(i));
 }
+
 size_t librealsense::record_device::get_sensors_count() const
 {
     return m_sensors.size();
@@ -72,46 +79,43 @@ void librealsense::record_device::write_header()
     {
         auto& sensor = m_device->get_sensor(j);
         auto sensor_extensions_md = get_extensions_snapshots(&sensor);
+        //TODO: Ziv, remove supported_profiles. Only streaming profiles should be written when open() is called
         sensors_md.emplace_back(sensor_extensions_md, sensor.get_stream_profiles());
     }
 
     m_ros_writer->write_device_description({device_extensions_md, sensors_md, {/*TODO: get extrinsics*/}});
 }
 
+//Returns the time relative to beginning of the recording
 std::chrono::nanoseconds librealsense::record_device::get_capture_time() const
 {
     auto now = std::chrono::high_resolution_clock::now();
     return (now - m_capture_time_base) - m_record_pause_time;
 }
 
-void librealsense::record_device::write_data(size_t sensor_index, librealsense::frame_holder frame/*, notifications_callback_ptr& sensor_notification_handler*/)
+void librealsense::record_device::write_data(size_t sensor_index, librealsense::frame_holder frame, std::function<void(std::string const&)> on_error)
 {
-    //Should be called when the live sensor raises a frame
+    //write_data is called from the sensors, when the live sensor raises a frame
+
     std::call_once(m_first_call_flag, [this]()
     {
-        //Initialize
-        m_capture_time_base = std::chrono::high_resolution_clock::now();
-        m_cached_data_size = 0;
-        (*m_write_thread)->start();
+        initialize_recording();
     });
 
     //TODO: restore: uint64_t data_size = frame.frame->get_frame_data_size();
-    uint64_t cached_data_size = m_cached_data_size /*+ data_size*/;
+    uint64_t cached_data_size = m_cached_data_size; //TODO: restore: (+ data_size)
     if (cached_data_size > MAX_CACHED_DATA_SIZE)
     {
-        //notification n { RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR, 0, RS2_LOG_SEVERITY_WARN, "Recorder reached maximum cache size, frame dropped"};
-        //rs2_notification noti(&n);
-        //sensor_notification_handler->on_notification(&noti);
-        LOG_ERROR("Recorder reached maximum cache size, frame dropped");
+        LOG_WARNING("Recorder reached maximum cache size, frame dropped");
         return;
     }
 
     m_cached_data_size = cached_data_size;
     auto capture_time = get_capture_time();
-    //TODO: Ziv, remove usage of shared pointer when frame_holder is copyable
+    //TODO: remove usage of shared pointer when frame_holder is copyable
     auto frame_holder_ptr = std::make_shared<frame_holder>();
     *frame_holder_ptr = std::move(frame);   
-    (*m_write_thread)->invoke([this, frame_holder_ptr, sensor_index, capture_time/*, data_size*/](dispatcher::cancellable_timer t) {
+    (*m_write_thread)->invoke([this, frame_holder_ptr, sensor_index, capture_time/*, data_size*/, on_error](dispatcher::cancellable_timer t) {
         if (m_is_recording == false)
         {
             return; //Recording is paused
@@ -120,25 +124,44 @@ void librealsense::record_device::write_data(size_t sensor_index, librealsense::
         {
             try
             {
-                write_header(); //TODO: This could throw an exception - notify and close recorder
+                write_header();
             }
             catch (const std::exception& e)
             {
                 LOG_ERROR("Failed to write header. " << e.what());
-                std::cout << e.what() << std::endl;
+                on_error(to_string() << "Failed to write header. " << e.what());
             }
         });
 
-        m_ros_writer->write(capture_time, static_cast<uint32_t>(sensor_index), std::move(*frame_holder_ptr));
-        std::lock_guard<std::mutex> locker(m_mutex);
-        /*m_cached_data_size -= data_size;*/
+        try
+        {
+            m_ros_writer->write(capture_time, static_cast<uint32_t>(sensor_index), std::move(*frame_holder_ptr));
+            //TODO: restore: std::lock_guard<std::mutex> locker(m_mutex);  m_cached_data_size -= data_size;
+        }
+        catch(std::exception& e)
+        {
+            on_error(to_string() << "Failed to write frame. " << e.what());
+        }
     });
-        
 }
 
-void record_device::write_extension_snapshot(rs2_extension ext, const std::shared_ptr<extension_snapshot>& snapshot)
+void record_device::write_extension_snapshot(size_t sensor_index,
+                                             rs2_extension ext,
+                                             const std::shared_ptr<extension_snapshot>& snapshot,
+                                             std::function<void(std::string const&)> on_error)
 {
-
+    auto capture_time = get_capture_time();
+    (*m_write_thread)->invoke([this, sensor_index, capture_time, ext, snapshot, on_error](dispatcher::cancellable_timer t)
+                              {
+                                  try
+                                  {
+                                      m_ros_writer->write({capture_time, std::to_string(sensor_index), ext, snapshot });
+                                  }
+                                  catch(const std::exception& e)
+                                  {
+                                      on_error(e.what());
+                                  }
+                              });
 }
 
 const std::string& librealsense::record_device::get_info(rs2_camera_info info) const
@@ -160,6 +183,26 @@ void librealsense::record_device::hardware_reset()
     m_device->hardware_reset();
 }
 
+template <typename T, typename Ext>
+void librealsense::record_device::try_add_snapshot(T* extendable, snapshot_collection& snapshots)
+{
+    auto api = dynamic_cast<Ext*>(extendable);
+    if (api != nullptr)
+    {
+        std::shared_ptr<Ext> p;
+        api->create_snapshot(p); //might need to add: "recordable<Ext>::"
+        auto snapshot = std::dynamic_pointer_cast<extension_snapshot>(p);
+        if (snapshot != nullptr)
+        {
+            snapshots[TypeToExtensionn<Ext>::value] = snapshot;
+        }
+        else
+        {
+            LOG_ERROR("Failed to downcast snapshot of type " << TypeToExtensionn<Ext>::to_string());
+        }
+    }
+}
+
 /**
  * Go over the extendable instance and find all extensions
  * @tparam T
@@ -174,80 +217,36 @@ snapshot_collection librealsense::record_device::get_extensions_snapshots(T* ext
     for (int i = 0; i < static_cast<int>(RS2_EXTENSION_COUNT ); ++i)
     {
         rs2_extension ext = static_cast<rs2_extension>(i);
-        switch(ext)
+        switch (ext)
         {
-            case RS2_EXTENSION_DEBUG :
-            {
-                auto api = dynamic_cast<librealsense::debug_interface*>(extendable);
-                if (api)
-                {
-                    //std::shared_ptr<debug_interface> p;
-                    //TODO: Ziv, use api->create_snapshot(p); //recordable<debug_interface>::
-                    //TODO: Ziv, Make sure dynamic cast indeed works
-                    //snapshots.push_back(std::dynamic_pointer_cast<extension_snapshot>(p));
-                }
-                break;
-            }
-            case RS2_EXTENSION_INFO :
-            {
-                auto api = dynamic_cast<librealsense::info_interface*>(extendable);
-                if (api)
-                {
-                    std::shared_ptr<info_interface> p;
-                    api->create_snapshot(p); //recordable<info_interface>::
-                    //TODO: Ziv, Make sure dynamic cast indeed works
-                    snapshots[ext] = std::dynamic_pointer_cast<extension_snapshot>(p);
-                }
-                break;
-            }
-            case RS2_EXTENSION_MOTION :
-            {
-                //librealsense::motion_sensor_interface
-                break;
-            }
-            case RS2_EXTENSION_OPTIONS :
-            {
-                //librealsense::options_interface
-                //TODO: Ziv, handle
-                break;
-            }
-            case RS2_EXTENSION_VIDEO :
-            {
-                //librealsense::video_sensor_interface
-                break;
-            }
-            case RS2_EXTENSION_ROI :
-            {
-                //librealsense::roi_sensor_interface
-                break;
-            }
-            case RS2_EXTENSION_UNKNOWN:
-                //[[fallthrough]];
-            case RS2_EXTENSION_DEPTH_SENSOR ://TODO: Ziv, handle these extensiosn
-                //[[fallthrough]];
-            case RS2_EXTENSION_VIDEO_FRAME :
-                //[[fallthrough]];
-            case RS2_EXTENSION_MOTION_FRAME :
-                //[[fallthrough]];
-            case RS2_EXTENSION_COMPOSITE_FRAME :
-                //[[fallthrough]];
-            case RS2_EXTENSION_POINTS :
-                //[[fallthrough]];
-            case RS2_EXTENSION_ADVANCED_MODE :
-                //[[fallthrough]];
-            case RS2_EXTENSION_COUNT :
-                //[[fallthrough]];
-            default:
-                continue;
-
+            case RS2_EXTENSION_UNKNOWN         : break;
+//TODO: uncomment            case RS2_EXTENSION_DEBUG           : try_add_snapshot<T, ExtensionsToTypes<RS2_EXTENSION_DEBUG          >::type>(extendable, snapshots); 
+            case RS2_EXTENSION_INFO            : try_add_snapshot<T, ExtensionsToTypes<RS2_EXTENSION_INFO           >::type>(extendable, snapshots); 
+//TODO: uncomment            case RS2_EXTENSION_MOTION          : try_add_snapshot<T, ExtensionsToTypes<RS2_EXTENSION_MOTION         >::type>(extendable, snapshots); 
+//TODO: uncomment            case RS2_EXTENSION_OPTIONS         : try_add_snapshot<T, ExtensionsToTypes<RS2_EXTENSION_OPTIONS        >::type>(extendable, snapshots); 
+//TODO: uncomment            case RS2_EXTENSION_VIDEO           : try_add_snapshot<T, ExtensionsToTypes<RS2_EXTENSION_VIDEO          >::type>(extendable, snapshots); 
+//TODO: uncomment            case RS2_EXTENSION_ROI             : try_add_snapshot<T, ExtensionsToTypes<RS2_EXTENSION_ROI            >::type>(extendable, snapshots); 
+//TODO: uncomment            case RS2_EXTENSION_DEPTH_SENSOR    : try_add_snapshot<T, ExtensionsToTypes<RS2_EXTENSION_DEPTH_SENSOR   >::type>(extendable, snapshots); 
+            case RS2_EXTENSION_VIDEO_FRAME     : break;
+            case RS2_EXTENSION_MOTION_FRAME    : break;
+            case RS2_EXTENSION_COMPOSITE_FRAME : break;
+            case RS2_EXTENSION_POINTS          : break;
+//TODO: uncomment            case RS2_EXTENSION_ADVANCED_MODE   : try_add_snapshot<T, ExtensionsToTypes<RS2_EXTENSION_ADVANCED_MODE  >::type>(extendable, snapshots); 
+            case RS2_EXTENSION_RECORD          : break;
+            case RS2_EXTENSION_PLAYBACK        : break;
+            case RS2_EXTENSION_COUNT           : break;
+            default: 
+                LOG_WARNING("Extensions type is unhandled: " << static_cast<int>(ext));
         }
     }
     return snapshots;
 }
+
 bool librealsense::record_device::extend_to(rs2_extension extension_type, void** ext)
 {
     return false;
 }
+
 void librealsense::record_device::pause_recording()
 {
     (*m_write_thread)->invoke([this](dispatcher::cancellable_timer c)
@@ -260,6 +259,7 @@ void librealsense::record_device::pause_recording()
         m_time_of_pause = std::chrono::high_resolution_clock::now();
         m_is_recording = false;
     });
+    (*m_write_thread)->flush();
 }
 void librealsense::record_device::resume_recording()
 {
@@ -277,4 +277,21 @@ void librealsense::record_device::resume_recording()
 std::shared_ptr<matcher> record_device::create_matcher(const frame_holder& frame) const
 {
     return m_device->create_matcher(frame);
+}
+
+void record_device::initialize_recording()
+{
+    //Expected to be called once when recording to file actually starts
+    m_capture_time_base = std::chrono::high_resolution_clock::now();
+    m_cached_data_size = 0;
+    (*m_write_thread)->start();
+}
+void record_device::stop_gracefully(to_string error_msg)
+{
+    for (auto&& sensor : m_sensors)
+    {
+        sensor->stop();
+        sensor->close();
+    }
+
 }

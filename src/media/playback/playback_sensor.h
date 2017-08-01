@@ -22,7 +22,7 @@ namespace librealsense
         using frame_interface_callback_t = std::function<void(frame_holder)>;
         signal<playback_sensor, uint32_t, frame_callback_ptr> started;
         signal<playback_sensor, uint32_t, bool> stopped;
-        signal<playback_sensor, uint32_t, const std::vector<stream_profile>&> opened;
+        signal<playback_sensor, uint32_t, const stream_profiles&> opened;
         signal<playback_sensor, uint32_t> closed;
         
 
@@ -51,7 +51,8 @@ namespace librealsense
     private:
         frame_callback_ptr m_user_callback;
         librealsense::notifications_callback_ptr m_user_notification_callback;
-        std::map<rs2_stream, std::shared_ptr<dispatcher>> m_dispatchers;
+		using stream_unique_id = int;
+        std::map<stream_unique_id, std::shared_ptr<dispatcher>> m_dispatchers;
         std::atomic<bool> m_is_started;
         sensor_snapshot m_sensor_description;
         uint32_t m_sensor_id;
