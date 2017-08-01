@@ -14,7 +14,6 @@
 #include "../common/realsense-ui/realsense-ui-advanced-mode.h"
 #include "model-views.h"
 
-
 using namespace rs2;
 using namespace std;
 using namespace rs400;
@@ -22,35 +21,120 @@ using namespace rs400;
 
 vector<int> resolutions_by_fps_rewrite_it_as_lambda(int width,int height)
 {
-
+    return{};
 }
 
 
 std::string error_message{""};
+struct box {
+    int x;
+    int y;
+    int size;
+    double avg_dist;
+    double std;
+    double non_null_pct;
+
+    double abs_avg_dist;
+    double abs_std;
+    float abs_fit;
+
+    float fit;
+};
+
+
 struct metrics
 {
+    int width;
+    int height;
     double avg_dist;
     double std;
     double _percentage_of_non_null_pixels;
+    std::vector<box> boxes;
 };
 
-metrics analyze_depth_image(const rs2::video_frame& frame, float units,const rs2_intrinsics * intrin)
+struct plane
+{
+    double a;
+    double b;
+    double c;
+    double d;
+};
+inline bool operator==(const plane& lhs, const plane& rhs) { return lhs.a == rhs.a && lhs.b == rhs.b && lhs.c == rhs.c && lhs.d == rhs.d; }
+
+plane plane_from_point_and_normal(const float3& point, const float3& normal)
+{
+    return{ normal.x, normal.y, normal.z, -(normal.x*point.x + normal.y*point.y + normal.z*point.z) };
+}
+
+plane plane_from_points(const std::vector<float3> points)
+{
+    if (points.size() < 3) throw std::runtime_error("Not enough points to calculate plane");
+
+    float3 sum = { 0,0,0 };
+    for (auto point : points) sum = sum + point;
+    
+    float3 centroid = sum / points.size();
+
+    double xx = 0, xy = 0, xz = 0, yy = 0, yz = 0, zz = 0;
+    for (auto point : points) {
+        float3 temp = point - centroid;
+        xx += temp.x * temp.x;
+        xy += temp.x * temp.y;
+        xz += temp.x * temp.z;
+        yy += temp.y * temp.y;
+        yz += temp.y * temp.z;
+        zz += temp.z * temp.z;
+    }
+
+    double det_x = yy*zz - yz*yz;
+    double det_y = xx*zz - xz*xz;
+    double det_z = xx*yy - xy*xy;
+
+    double det_max = max({ det_x, det_y, det_z });
+    if (det_max <= 0) return{ 0, 0, 0, 0 };
+
+    float3 dir;
+    if (det_max == det_x)
+    {
+        float a = (xz*yz - xy*zz) / det_x;
+        float b = (xy*yz - xz*yy) / det_x;
+        dir = { 1, a, b };
+    }
+    else if (det_max == det_y)
+    {
+        float a = (yz*xz - xy*zz) / det_y;
+        float b = (xy*xz - yz*xx) / det_y;
+        dir = { a, 1, b };
+    }
+    else
+    {
+        float a = (yz*xy - xz*yy) / det_z;
+        float b = (xz*xy - yz*xx) / det_z;
+        dir = { a, b, 1 };
+    }
+
+    return plane_from_point_and_normal(centroid, dir.normalize());
+}
+
+metrics analyze_depth_image(const rs2::video_frame& frame, float units, const rs2_intrinsics * intrin, int box_size=10)
 {
     auto pixels = (const uint16_t*)frame.get_data();
-    double sum_of_all_distances = 0;
-    double mean_of_all_distances;
-    //vector<double> all_squared_differences;
-    double sum_of_all_squared_differences = 0;
-    double standard_deviation;
-    double number_of_non_null_pixels = 0;
-    double percentage_of_non_null_pixels = 0;
     const auto w = frame.get_width();
     const auto h = frame.get_height();
-    long long int num_of_examined_pixels = w*h;
+    const int n_groups = std::ceil(w / double(box_size)) * std::ceil(h / double(box_size));
 
-    vector<float3> coordinates_of_all_pixels;
-    coordinates_of_all_pixels.reserve(w*h);
+    metrics result{ w, h, 0, 0, 0, std::vector<box>(n_groups, {0, 0, box_size, 0, 0, 0, 0, 0, 1, 1})};
 
+    double sum_of_all_distances = 0;
+    double sum_of_all_squared_differences = 0;
+    double number_of_non_null_pixels = 0;
+    long long num_processed_pixels = 0;
+    
+    std::mutex m;
+
+    std::vector<std::vector<float3>> groups_of_pixels(n_groups);
+
+#pragma omp parallel for
     for (int y = 0; y < h; y++)
         for (int x = 0; x < w; x++)
         {
@@ -66,7 +150,6 @@ metrics analyze_depth_image(const rs2::video_frame& frame, float units,const rs2
                 float point[3];
                 float3 current_coordinates;
                 auto distance = depth_raw * units;
-                sum_of_all_distances += distance;
 
                 rs2_deproject_pixel_to_point(point,intrin,pixel,distance);
                 current_coordinates.x = point[0];
@@ -76,7 +159,9 @@ metrics analyze_depth_image(const rs2::video_frame& frame, float units,const rs2
                 //rs2_project_point_to_pixel(check_pixel,intrin,point);
                 // for sanity, assert check_pixel == pixel
 
-                coordinates_of_all_pixels.push_back(current_coordinates);
+                int group = int(y / double(box_size))*std::ceil(w / double(box_size)) + int(x / double(box_size));
+                lock_guard<mutex> lock(m);
+                groups_of_pixels[group].push_back(current_coordinates);
 
                 ++number_of_non_null_pixels;
             }
@@ -85,30 +170,64 @@ metrics analyze_depth_image(const rs2::video_frame& frame, float units,const rs2
             //std::cout << distance << std::endl;
         }
 
+    //std::cout << number_of_non_null_pixels << std::endl;
 
-    mean_of_all_distances = sum_of_all_distances / number_of_non_null_pixels;
-    percentage_of_non_null_pixels = (number_of_non_null_pixels/ num_of_examined_pixels)*100;
+#pragma omp parallel for
+    for (int i = 0; i < n_groups; ++i) {
+        result.boxes[i].x = (i % int(std::ceil(w / double(box_size)))) * box_size;
+        result.boxes[i].y = (i / int(std::ceil(w / double(box_size)))) * box_size;
 
-    for (int y = 0; y < h; y++)
-        for (int x = 0; x < w; x++)
+        if (groups_of_pixels[i].size() < 3) {
+           // std::cout << "not enough pixels in group " << i << " (" << groups_of_pixels[i].size() << ")" << std::endl;
+            result.boxes[i].fit = 1;
+            result.boxes[i].abs_fit = 1;
+        }
+        else
         {
-            //std::cout << "Accessing index " << (y*w + x) << std::endl;
-            auto depth_raw = pixels[y*w + x];
+            plane p = plane_from_points(groups_of_pixels[i]);
 
-            if (depth_raw)
+            if (p == plane{ 0, 0, 0, 0 }) {
+                result.boxes[i].fit = 1;
+                result.boxes[i].abs_fit = 1;
+            }
+            else
             {
-                // units is float
-                auto distance = depth_raw * units;
-                sum_of_all_squared_differences+= std::pow((distance - mean_of_all_distances),2);
+
+                double total_distance = 0, abs_total_distance = 0;
+                for (auto point : groups_of_pixels[i])
+                {
+                    total_distance += abs(p.a*point.x + p.b*point.y + p.c*point.z + p.d);
+                    abs_total_distance += point.z;
+                }
+                result.boxes[i].avg_dist = total_distance / groups_of_pixels[i].size();
+                result.boxes[i].abs_avg_dist = abs_total_distance / groups_of_pixels[i].size();
+
+                double total_sq_diffs = 0, abs_total_sq_diffs = 0;
+                for (auto point : groups_of_pixels[i])
+                {
+                    total_sq_diffs += std::pow(abs(p.a*point.x + p.b*point.y + p.c*point.z + p.d) - result.boxes[i].avg_dist, 2);
+                    abs_total_sq_diffs += std::pow(abs(point.z - result.boxes[i].abs_avg_dist), 2);
+                }
+                result.boxes[i].std = std::sqrt(total_sq_diffs / groups_of_pixels[i].size());
+                result.boxes[i].abs_std = std::sqrt(abs_total_sq_diffs / groups_of_pixels[i].size());
+
+                result.boxes[i].non_null_pct = groups_of_pixels[i].size() / double((std::min(w, result.boxes[i].x + box_size) - result.boxes[i].x)*(std::min(h, result.boxes[i].y + box_size) - result.boxes[i].y));
+
+                result.boxes[i].fit = result.boxes[i].std * 100;
+                result.boxes[i].abs_fit = result.boxes[i].abs_std * 100;
+
+                lock_guard<mutex> lock(m);
+                sum_of_all_distances += total_distance;
+                sum_of_all_squared_differences += total_sq_diffs;
+                num_processed_pixels += groups_of_pixels[i].size();
             }
         }
+    }
 
-    //standard_deviation = std::sqrt(sum_of_all_squared_differences/num_of_examined_pixels);
-    standard_deviation = std::sqrt(sum_of_all_squared_differences/number_of_non_null_pixels);
-    metrics result{};
-    result.avg_dist = mean_of_all_distances;
-    result.std = standard_deviation;
-    result._percentage_of_non_null_pixels = percentage_of_non_null_pixels;
+    result.avg_dist = sum_of_all_distances / num_processed_pixels;;
+    //result.std = std::sqrt(sum_of_all_squared_differences/num_of_examined_pixels);
+    result.std = std::sqrt(sum_of_all_squared_differences / num_processed_pixels);;
+    result._percentage_of_non_null_pixels = (number_of_non_null_pixels / (w*h)) * 100;
     return result;
 }
 
@@ -136,9 +255,39 @@ std::vector<std::string> get_device_info(const device& dev, bool include_locatio
     return res;
 }
 
+void visualize(metrics stats, int w, int h, bool plane)
+{
+    float x_scale = w / float(stats.width);
+    float y_scale = h / float(stats.height);
+    for (auto &&area : stats.boxes) {
+        //ImGui::PushStyleColor(ImGuiCol_WindowBg, );
+        //ImGui::SetNextWindowPos({ float(area.x), float(area.y) });
+        //ImGui::SetNextWindowSize({ float(area.size), float(area.size) });
+
+        ImGui::GetWindowDrawList()->AddRectFilled({ float(area.x)*x_scale, float(area.y)*y_scale }, { float(area.x + area.size)*x_scale, float(area.y + area.size)*y_scale },
+            ImGui::ColorConvertFloat4ToU32(ImVec4( 0.f + ((plane)? area.fit:area.abs_fit), 1.f - ((plane)? area.fit:area.abs_fit), 0, 0.25f )), 5.f, 15.f);
+
+        stringstream ss; ss << area.x << ", " << area.y;
+        auto s = ss.str();
+        /*ImGui::Begin(s.c_str(), nullptr,
+            ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize);*/
+
+        
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip(s.c_str());
+
+        //ImGui::End();
+        //ImGui::PopStyleColor();
+    }
+}
+
+color_map my_map({ { 255, 255, 255 }, { 0, 0, 0 } });
 
 int main(int argc, char * argv[])
 {
+    bool use_rect_fitting = true;
+    int box_size = 50;
+
     context ctx;
     
     util::device_hub hub(ctx);
@@ -240,15 +389,21 @@ int main(int argc, char * argv[])
             auto stream = config.open(dev);
             rs2_intrinsics current_frame_intrinsics = stream.get_intrinsics(RS2_STREAM_DEPTH);
 
+            frame_queue calc_queue(1);
+            frame_queue display_queue(1);
 
-            syncer_processing_block syncer;
-            stream.start(syncer);
+            stream.start([&](rs2::frame f)
+            {
+                calc_queue.enqueue(f);
+                display_queue.enqueue(f);
+            });
 
             // black.start(syncer);
-            frame_queue queue;
-            syncer.start(queue);
+            
+
             texture_buffer buffers[RS2_STREAM_COUNT];
             buffers[RS2_STREAM_DEPTH].equalize = false;
+            buffers[RS2_STREAM_DEPTH].cm = &my_map;
             buffers[RS2_STREAM_DEPTH].min_depth = 0.2 / dpt.get_depth_scale();
             buffers[RS2_STREAM_DEPTH].max_depth = 1.5 / dpt.get_depth_scale();
 
@@ -311,11 +466,34 @@ int main(int argc, char * argv[])
 
             ImGui_ImplGlfw_Init(win, true);
 
-
             metrics latest_stat{};
+            latest_stat.width = 1280;
+            latest_stat.height = 720;
             latest_stat.avg_dist = 0.0;
             latest_stat.std = 0.0;
             latest_stat._percentage_of_non_null_pixels = 0.0;
+            std::mutex m;
+
+            std::thread t([&m, &finished, &calc_queue, &units, &current_frame_intrinsics, &latest_stat, &box_size]() {
+                while (!finished)
+                {
+                    auto f = calc_queue.wait_for_frame();
+
+                    auto stream_type = f.get_stream_type();
+
+                    if (stream_type == RS2_STREAM_DEPTH)
+                    {
+                        auto stats = analyze_depth_image(f, units, &current_frame_intrinsics, box_size);
+                        
+                        lock_guard<mutex> lock(m);
+                        latest_stat = stats;
+                        //cout << "Average distance is : " << latest_stat.avg_dist << endl;
+                        //cout << "Standard_deviation is : " << latest_stat.std << endl;
+                        //cout << "Percentage_of_non_null_pixels is : " << latest_stat._percentage_of_non_null_pixels << endl;
+                    }
+                }
+            });
+
             while (hub.is_connected(dev) && !glfwWindowShouldClose(win))
             {
                 
@@ -323,22 +501,7 @@ int main(int argc, char * argv[])
                 glfwGetFramebufferSize(win, &w, &h);
 
                 auto index = 0;
-                auto frames = queue.wait_for_frames();
-
-                for (auto&& frame : frames)
-                {
-                    auto stream_type = frame.get_stream_type();
-
-                    if (stream_type == RS2_STREAM_DEPTH)
-                    {
-                        latest_stat = analyze_depth_image(frame, units, &current_frame_intrinsics);
-                        cout << "Average distance is : " << latest_stat.avg_dist << endl;
-                        cout << "Standard_deviation is : " << latest_stat.std << endl;
-                        cout << "Percentage_of_non_null_pixels is : " << latest_stat._percentage_of_non_null_pixels << endl;
-                    }
-
-                    buffers[stream_type].upload(frame);
-                }
+                
 
                 // Wait for new images
                 glfwPollEvents();
@@ -353,18 +516,39 @@ int main(int argc, char * argv[])
                 glfwGetWindowSize(win, &w, &h);
                 glOrtho(0, w, h, 0, -1, +1);
 
-                for (auto&& frame : frames)
+                auto f = display_queue.wait_for_frame();
+
+                auto stream_type = f.get_stream_type();
+
+                if (stream_type == RS2_STREAM_DEPTH)
                 {
-                    auto stream_type = frame.get_stream_type();
-                    buffers[stream_type].show({ 0, 0, (float)w, (float)h }, 1);
+                    buffers[stream_type].upload(f);
                 }
 
+                buffers[RS2_STREAM_DEPTH].show({ 0, 0, (float)w, (float)h }, 1);
+
+                metrics stats_copy;
+                {
+                    lock_guard<mutex> lock(m);
+                    stats_copy = latest_stat;
+                }
+
+                ImGui::PushStyleColor(ImGuiCol_WindowBg, { 0,0,0,0 });
+                ImGui::SetNextWindowPos({ 0, 0 });
+                ImGui::SetNextWindowSize({ (float)w, (float)h });
+                ImGui::Begin("global", nullptr,
+                    ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoBringToFrontOnFocus);
+
+                visualize(stats_copy, w, h, use_rect_fitting);
+
+                ImGui::End();
+                ImGui::PopStyleColor();
 
                 // Draw GUI:
-                ImGui::PushStyleColor(ImGuiCol_WindowBg, { 0, 0, 0, 0.5f });
+                ImGui::PushStyleColor(ImGuiCol_WindowBg, { 0, 0, 0, 0.8f });
                 //ImGui::SetNextWindowPos({ 10, 10 });
                 ImGui::SetNextWindowPos({ margin, margin });
-                ImGui::SetNextWindowSize({ 300, 150 });
+                ImGui::SetNextWindowSize({ 300, 200 });
 
 //                ImGui::SetNextWindowPos({ 410, 360 });
 //                ImGui::SetNextWindowSize({ 400.f, 350.f });
@@ -397,13 +581,13 @@ int main(int argc, char * argv[])
                     config.enable_stream(RS2_STREAM_DEPTH, selected_resolution.first,
                                          selected_resolution.second, fps, RS2_FORMAT_Z16);
                     stream = config.open(dev);
-                    stream.start(syncer);
+                    stream.start([&](rs2::frame f)
+                    {
+                        calc_queue.enqueue(f);
+                        display_queue.enqueue(f);
+                    });
 
                 }
-
-
-
-
                 ImGui::Text("Preset:"); ImGui::SameLine();
                 ImGui::PushItemWidth(-1);
                 if (ImGui::Combo("Preset", &index_of_selected_preset, presets_labels.data(), presets_labels.size()))
@@ -437,6 +621,9 @@ int main(int argc, char * argv[])
 
                 metadata.draw(error_message);
 
+                ImGui::Checkbox("Use Plane-Fitting", &use_rect_fitting);
+                ImGui::SliderInt("Windows Size", &box_size, 10, 175);
+
                 ImGui::PopItemWidth();
 
 
@@ -463,11 +650,10 @@ int main(int argc, char * argv[])
                ImGui::End();
                ImGui::PopStyleColor();
 
+               ImGui::PushStyleColor(ImGuiCol_WindowBg, { 0, 0, 0, 0.8f });
 
-               ImGui::PushStyleColor(ImGuiCol_WindowBg, { 0, 0, 0, 0.5f });
-
-               ImGui::SetNextWindowPos({ w - 200 - margin, h - 80 - margin });
-               ImGui::SetNextWindowSize({ 200, 80 });
+               ImGui::SetNextWindowPos({ w - 200 - margin, h - 180 - margin });
+               ImGui::SetNextWindowSize({ 200, 180 });
 
 //               ImGui::SetNextWindowPos({ 0.85*w, 0.90*h });
 //               ImGui::SetNextWindowSize({ (.1*w), (.1*h)});
@@ -479,11 +665,44 @@ int main(int argc, char * argv[])
                                           ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize);
                //ImGui::SetWindowFontScale(w/1000);
 
-               ImGui::Text("Average: %.3f(m)", latest_stat.avg_dist);
-               ImGui::Text("STD: %.3f(m)", latest_stat.std);
-               ImGui::Text("Non null pixels: %.3f%%", latest_stat._percentage_of_non_null_pixels);
+
+               const int graph_size = 100;
+               static float avgs[graph_size];
+               static float stds[graph_size];
+               static float fill[graph_size];
+               static int avg_idx = 0;
+               static int std_idx = 0;
+               static int fill_idx = 0;
+
+               avgs[avg_idx] = stats_copy.avg_dist * 100;
+               avg_idx = (avg_idx + 1) % graph_size;
+
+               stds[std_idx] = stats_copy.std * 100;
+               std_idx = (std_idx + 1) % graph_size;
+
+               fill[fill_idx] = stats_copy._percentage_of_non_null_pixels;
+               fill_idx = (fill_idx + 1) % graph_size;
+
+               stringstream ss_avg;
+               ss_avg << "AVG = " << stats_copy.avg_dist * 100 << "(cm)";
+               auto s_avg = ss_avg.str();
+               ImGui::PlotLines("##AVG", avgs, graph_size, avg_idx, s_avg.c_str(), 0.f, 1.f, { 180, 50 });
+
+               stringstream ss_std;
+               ss_std << "STD = " << stats_copy.std * 100 << "(cm)";
+               auto s_std = ss_std.str();
+               ImGui::PlotLines("##STD", stds, graph_size, std_idx, s_std.c_str(), 0.f, 1.f, { 180, 50 });
+
+               stringstream ss_fill;
+               ss_fill << "FILL = " << stats_copy._percentage_of_non_null_pixels << "%";
+               auto s_fill = ss_fill.str();
+               ImGui::PlotLines("##STD", fill, graph_size, fill_idx, s_fill.c_str(), 0.f, 100.f, { 180, 50 });
+
+               /*ImGui::Text("STD: %.3f(m)", stats_copy.std);*/
                ImGui::End();
                ImGui::PopStyleColor();
+
+               
 
 
 
@@ -496,13 +715,10 @@ int main(int argc, char * argv[])
 
             }
 
-
-
-
             if (glfwWindowShouldClose(win))
                 finished = true;
 
-
+            t.join();
             
         }
         catch (const error & e)
