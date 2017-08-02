@@ -41,36 +41,84 @@ namespace rs2
             }
             else
             {
-                std::string txt = to_string() << rs2_option_to_string(opt) << ":";
-                ImGui::Text("%s", txt.c_str());
-
-                ImGui::SameLine();
-                ImGui::PushStyleColor(ImGuiCol_Text, { 0.5f, 0.5f, 0.5f, 1.f });
-                ImGui::Text("(?)");
-                ImGui::PopStyleColor();
-                if (ImGui::IsItemHovered() && desc)
+                if (!is_enum())
                 {
-                    ImGui::SetTooltip("%s", desc);
-                }
+                    std::string txt = to_string() << rs2_option_to_string(opt) << ":";
+                    ImGui::Text("%s", txt.c_str());
 
-                ImGui::PushItemWidth(-1);
-
-                try
-                {
-                    if (read_only)
+                    ImGui::SameLine();
+                    ImGui::PushStyleColor(ImGuiCol_Text, { 0.5f, 0.5f, 0.5f, 1.f });
+                    ImGui::Text("(?)");
+                    ImGui::PopStyleColor();
+                    if (ImGui::IsItemHovered() && desc)
                     {
-                        ImVec2 vec{0, 14};
-                        ImGui::ProgressBar(value/100.f, vec, std::to_string((int)value).c_str());
+                        ImGui::SetTooltip("%s", desc);
                     }
-                    else if (is_enum())
+
+                    ImGui::PushItemWidth(-1);
+
+                    try
                     {
-                        std::vector<const char*> labels;
-                        auto selected = 0, counter = 0;
-                        for (auto i = range.min; i <= range.max; i += range.step, counter++)
+                        if (read_only)
                         {
-                            if (abs(i - value) < 0.001f) selected = counter;
-                            labels.push_back(endpoint.get_option_value_description(opt, i));
+                            ImVec2 vec{ 0, 14 };
+                            ImGui::ProgressBar(value / 100.f, vec, std::to_string((int)value).c_str());
                         }
+                        else if (is_all_integers())
+                        {
+                            auto int_value = static_cast<int>(value);
+                            if (ImGui::SliderIntWithSteps(id.c_str(), &int_value,
+                                static_cast<int>(range.min),
+                                static_cast<int>(range.max),
+                                static_cast<int>(range.step)))
+                            {
+                                // TODO: Round to step?
+                                value = static_cast<float>(int_value);
+                                endpoint.set_option(opt, value);
+                                *invalidate_flag = true;
+                            }
+                        }
+                        else
+                        {
+                            if (ImGui::SliderFloat(id.c_str(), &value,
+                                range.min, range.max, "%.4f"))
+                            {
+                                endpoint.set_option(opt, value);
+                                *invalidate_flag = true;
+                            }
+                        }
+                    }
+                    catch (const error& e)
+                    {
+                        error_message = error_to_string(e);
+                    }
+                }
+                else
+                {
+                    std::string txt = to_string() << rs2_option_to_string(opt) << ":";
+                    auto col_id = id + "columns";
+                    ImGui::Columns(2, col_id.c_str(), false);
+                    ImGui::Text("%s", txt.c_str());
+                    if (ImGui::IsItemHovered() && desc)
+                    {
+                        ImGui::SetTooltip("%s", desc);
+                    }
+
+                    ImGui::NextColumn();
+
+                    ImGui::PushItemWidth(-1);
+
+                    std::vector<const char*> labels;
+                    auto selected = 0, counter = 0;
+                    for (auto i = range.min; i <= range.max; i += range.step, counter++)
+                    {
+                        if (abs(i - value) < 0.001f) selected = counter;
+                        labels.push_back(endpoint.get_option_value_description(opt, i));
+                    }
+                    ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, { 1,1,1,1 });
+
+                    try 
+                    {
                         if (ImGui::Combo(id.c_str(), &selected, labels.data(),
                             static_cast<int>(labels.size())))
                         {
@@ -79,45 +127,31 @@ namespace rs2
                             *invalidate_flag = true;
                         }
                     }
-                    else if (is_all_integers())
+                    catch (const error& e)
                     {
-                        auto int_value = static_cast<int>(value);
-                        if (ImGui::SliderIntWithSteps(id.c_str(), &int_value,
-                            static_cast<int>(range.min),
-                            static_cast<int>(range.max),
-                            static_cast<int>(range.step)))
-                        {
-                            // TODO: Round to step?
-                            value = static_cast<float>(int_value);
-                            endpoint.set_option(opt, value);
-                            *invalidate_flag = true;
-                        }
+                        error_message = error_to_string(e);
                     }
-                    else
-                    {
-                        if (ImGui::SliderFloat(id.c_str(), &value,
-                            range.min, range.max, "%.4f"))
-                        {
-                            endpoint.set_option(opt, value);
-                            *invalidate_flag = true;
-                        }
-                    }
+
+                    ImGui::PopStyleColor();
+
+                    ImGui::PopItemWidth();
+
+                    ImGui::NextColumn();
+                    ImGui::Columns(1);
                 }
-                catch (const error& e)
-                {
-                    error_message = error_to_string(e);
-                }
-                ImGui::PopItemWidth();
+
+                
             }
 
             if (opt == RS2_OPTION_ENABLE_AUTO_EXPOSURE && dev->auto_exposure_enabled && dev->streaming)
             {
-                ImGui::SameLine(0, 60);
+                ImGui::SameLine(0, 10);
 
+                ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, { 1.f,1.f,1.f,1.f });
                 if (!dev->roi_checked)
                 {
                     std::string caption = to_string() << "Set ROI##" << label;
-                    if (ImGui::Button(caption.c_str(), { 65, 0 }))
+                    if (ImGui::Button(caption.c_str(), { 55, 0 }))
                     {
                         dev->roi_checked = true;
                     }
@@ -125,11 +159,12 @@ namespace rs2
                 else
                 {
                     std::string caption = to_string() << "Cancel##" << label;
-                    if (ImGui::Button(caption.c_str(), { 65, 0 }))
+                    if (ImGui::Button(caption.c_str(), { 55, 0 }))
                     {
                         dev->roi_checked = false;
                     }
                 }
+                ImGui::PopStyleColor();
 
                 if (ImGui::IsItemHovered())
                     ImGui::SetTooltip("Select custom region of interest for the auto-exposure algorithm\nClick the button, then draw a rect on the frame");
@@ -149,7 +184,7 @@ namespace rs2
         }
     }
 
-    void option_model::update_read_only(std::string& error_message)
+    void option_model::update_read_only_status(std::string& error_message)
     {
         try
         {
@@ -161,7 +196,7 @@ namespace rs2
         }
     }
 
-    void option_model::update_all(std::string& error_message)
+    void option_model::update_all_feilds(std::string& error_message, notifications_model& model)
     {
         try
         {
@@ -174,7 +209,15 @@ namespace rs2
         }
         catch (const error& e)
         {
-            error_message = error_to_string(e);
+            if (read_only){
+                auto timestamp = std::chrono::duration<double, std::milli>(std::chrono::system_clock::now().time_since_epoch()).count();
+                model.add_notification({ to_string() << "Could not refresh read-only option " << rs2_option_to_string(opt) << ": " << e.what(),
+                    timestamp,
+                    RS2_LOG_SEVERITY_WARN,
+                    RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR });
+            }
+            else
+                error_message = error_to_string(e);
         }
     }
 
@@ -203,6 +246,31 @@ namespace rs2
             range.step == 1.0f;
     }
 
+    void viewer_model::draw_histogram_options(float depth_units)
+    {
+        if (ImGui::Checkbox("Histogram Equalization", &streams[RS2_STREAM_DEPTH].texture->equalize))
+        {
+            streams[RS2_STREAM_DEPTH].texture->min_depth = 0;
+            streams[RS2_STREAM_DEPTH].texture->max_depth = 6 / depth_units;
+        }
+        if (!streams[RS2_STREAM_DEPTH].texture->equalize)
+        {
+            auto val = streams[RS2_STREAM_DEPTH].texture->min_depth * depth_units;
+            if (ImGui::SliderFloat("##Near (m)", &val, 0, 16))
+            {
+                streams[RS2_STREAM_DEPTH].texture->min_depth = val / depth_units;
+            }
+            val = streams[RS2_STREAM_DEPTH].texture->max_depth * depth_units;
+            if (ImGui::SliderFloat("##Far  (m)", &val, 0, 16))
+            {
+                streams[RS2_STREAM_DEPTH].texture->max_depth = val / depth_units;
+            }
+            if (streams[RS2_STREAM_DEPTH].texture->min_depth > streams[RS2_STREAM_DEPTH].texture->max_depth)
+            {
+                std::swap(streams[RS2_STREAM_DEPTH].texture->max_depth, streams[RS2_STREAM_DEPTH].texture->min_depth);
+            }
+        }
+    }
 
     subdevice_model::subdevice_model(device& dev, sensor& s, std::string& error_message)
         : s(s), dev(dev), streaming(false), queues(RS2_STREAM_COUNT),
@@ -244,7 +312,7 @@ namespace rs2
             auto opt = static_cast<rs2_option>(i);
 
             std::stringstream ss;
-            ss << dev.get_info(RS2_CAMERA_INFO_NAME)
+            ss << "##" << dev.get_info(RS2_CAMERA_INFO_NAME)
                 << "/" << s.get_info(RS2_CAMERA_INFO_NAME)
                 << "/" << rs2_option_to_string(opt);
             metadata.id = ss.str();
@@ -400,33 +468,39 @@ namespace rs2
 
     void subdevice_model::draw_stream_selection()
     {
+        std::string label = to_string() << "Stream Selection Columns##" << dev.get_info(RS2_CAMERA_INFO_NAME)
+            << s.get_info(RS2_CAMERA_INFO_NAME);
+
+        ImGui::Columns(2, label.c_str(), false);
         // Draw combo-box with all resolution options for this device
         auto res_chars = get_string_pointers(resolutions);
-        ImGui::PushItemWidth(-1);
         ImGui::Text("Resolution:");
-        ImGui::SameLine();
-        std::string label = to_string() << dev.get_info(RS2_CAMERA_INFO_NAME)
+        ImGui::NextColumn();
+
+        label = to_string() << "##" << dev.get_info(RS2_CAMERA_INFO_NAME)
             << s.get_info(RS2_CAMERA_INFO_NAME) << " resolution";
         if (streaming)
             ImGui::Text("%s", res_chars[selected_res_id]);
         else
         {
+            ImGui::PushItemWidth(-1);
+            ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, { 1,1,1,1 });
             ImGui::Combo(label.c_str(), &selected_res_id, res_chars.data(),
                 static_cast<int>(res_chars.size()));
+            ImGui::PopStyleColor();
+            ImGui::PopItemWidth();
         }
-
-        ImGui::PopItemWidth();
+        ImGui::NextColumn();
 
         // FPS
         if (show_single_fps_list)
         {
             auto fps_chars = get_string_pointers(shared_fpses);
-            ImGui::Text("FPS:       ");
-            label = to_string() << dev.get_info(RS2_CAMERA_INFO_NAME)
-                << s.get_info(RS2_CAMERA_INFO_NAME) << " fps";
+            ImGui::Text("Frame Rate (FPS):");
+            ImGui::NextColumn();
 
-            ImGui::SameLine();
-            ImGui::PushItemWidth(-1);
+            label = to_string() << "##" << dev.get_info(RS2_CAMERA_INFO_NAME)
+                << s.get_info(RS2_CAMERA_INFO_NAME) << " fps";
 
             if (streaming)
             {
@@ -434,20 +508,22 @@ namespace rs2
             }
             else
             {
+                ImGui::PushItemWidth(-1);
+                ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, { 1,1,1,1 });
                 ImGui::Combo(label.c_str(), &selected_shared_fps_id, fps_chars.data(),
                     static_cast<int>(fps_chars.size()));
+                ImGui::PopStyleColor();
+                ImGui::PopItemWidth();
             }
 
-            ImGui::PopItemWidth();
+            ImGui::NextColumn();
         }
 
-        // Check which streams are live in current device
-        auto live_streams = 0;
-        for (auto i = 0; i < RS2_STREAM_COUNT; i++)
+        if (!streaming)
         {
-            auto stream = static_cast<rs2_stream>(i);
-            if (formats[stream].size() > 0)
-                live_streams++;
+            ImGui::Text("Available Streams");
+            ImGui::NextColumn();
+            ImGui::NextColumn();
         }
 
         // Draw combo-box with all format options for current device
@@ -459,35 +535,38 @@ namespace rs2
             if (formats[stream].size() == 0)
                 continue;
 
-            ImGui::PushItemWidth(-1);
             auto formats_chars = get_string_pointers(formats[stream]);
             if (!streaming || (streaming && stream_enabled[stream]))
             {
-                if (live_streams > 1)
+                if (streaming)
                 {
-                    label = to_string() << rs2_stream_to_string(stream);
-                    if (!show_single_fps_list)
-                        label += " stream:";
-
-                    if (streaming)
-                        ImGui::Text("%s", label.c_str());
-                    else
-                        ImGui::Checkbox(label.c_str(), &stream_enabled[stream]);
+                    label = to_string() << rs2_stream_to_string(stream) << (show_single_fps_list ? "" : " stream:");
+                    ImGui::Text("%s", label.c_str());
                 }
+                else
+                {
+                    label = to_string() << rs2_stream_to_string(stream) << (show_single_fps_list ? "" : " stream:")
+                        << "##" << dev.get_info(RS2_CAMERA_INFO_NAME)
+                        << s.get_info(RS2_CAMERA_INFO_NAME);
+
+                    ImGui::Checkbox(label.c_str(), &stream_enabled[stream]);
+                }
+
+                ImGui::NextColumn();
             }
 
             if (stream_enabled[stream])
             {
-                if (show_single_fps_list) ImGui::SameLine();
+                //if (show_single_fps_list) ImGui::SameLine();
 
-                label = to_string() << dev.get_info(RS2_CAMERA_INFO_NAME)
+                label = to_string() << "##" << dev.get_info(RS2_CAMERA_INFO_NAME)
                     << s.get_info(RS2_CAMERA_INFO_NAME)
                     << " " << rs2_stream_to_string(stream) << " format";
 
                 if (!show_single_fps_list)
                 {
-                    ImGui::Text("Format:    ");
-                    ImGui::SameLine();
+                    ImGui::Text("Format:");
+                    ImGui::NextColumn();
                 }
 
                 if (streaming)
@@ -496,17 +575,22 @@ namespace rs2
                 }
                 else
                 {
+                    ImGui::PushItemWidth(-1);
+                    ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, { 1,1,1,1 });
                     ImGui::Combo(label.c_str(), &selected_format_id[stream], formats_chars.data(),
                         static_cast<int>(formats_chars.size()));
+                    ImGui::PopStyleColor();
+                    ImGui::PopItemWidth();
                 }
+                ImGui::NextColumn();
 
                 // FPS
                 // Draw combo-box with all FPS options for this device
                 if (!show_single_fps_list && !fpses_per_stream[stream].empty() && stream_enabled[stream])
                 {
                     auto fps_chars = get_string_pointers(fpses_per_stream[stream]);
-                    ImGui::Text("FPS:       ");
-                    ImGui::SameLine();
+                    ImGui::Text("Frame Rate (FPS):");
+                    ImGui::NextColumn();
 
                     label = to_string() << s.get_info(RS2_CAMERA_INFO_NAME)
                         << s.get_info(RS2_CAMERA_INFO_NAME)
@@ -518,20 +602,30 @@ namespace rs2
                     }
                     else
                     {
+                        ImGui::PushItemWidth(-1);
+                        ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, { 1,1,1,1 });
                         ImGui::Combo(label.c_str(), &selected_fps_id[stream], fps_chars.data(),
                             static_cast<int>(fps_chars.size()));
+                        ImGui::PopStyleColor();
+                        ImGui::PopItemWidth();
                     }
+                    ImGui::NextColumn();
                 }
             }
-            ImGui::PopItemWidth();
-
-            if (streaming && rgb_rotation_btn && ImGui::Button("Flip Stream Orientation", ImVec2(160, 20)))
+            else
             {
-                rotate_rgb_image(dev, res_values[selected_res_id].first);
-                if (ImGui::IsItemHovered())
-                    ImGui::SetTooltip("Rotate Sensor 180 deg");
+                ImGui::NextColumn();
             }
+
+            //if (streaming && rgb_rotation_btn && ImGui::Button("Flip Stream Orientation", ImVec2(160, 20)))
+            //{
+            //    rotate_rgb_image(dev, res_values[selected_res_id].first);
+            //    if (ImGui::IsItemHovered())
+            //        ImGui::SetTooltip("Rotate Sensor 180 deg");
+            //}
         }
+
+        ImGui::Columns(1);
     }
 
     bool subdevice_model::is_selected_combination_supported()
@@ -660,7 +754,7 @@ namespace rs2
         streaming = true;
     }
 
-    void subdevice_model::update(std::string& error_message)
+    void subdevice_model::update(std::string& error_message, notifications_model& notifications)
     {
         if (options_invalidated)
         {
@@ -670,7 +764,7 @@ namespace rs2
         if (next_option < RS2_OPTION_COUNT)
         {
             auto& opt_md = options_metadata[static_cast<rs2_option>(next_option)];
-            opt_md.update_all(error_message);
+            opt_md.update_all_feilds(error_message, notifications);
 
             if (next_option == RS2_OPTION_ENABLE_AUTO_EXPOSURE)
             {
@@ -709,11 +803,12 @@ namespace rs2
     }
 
     void subdevice_model::draw_options(const std::vector<rs2_option>& drawing_order,
-                                       bool update_read_only_options, std::string& error_message)
+                                       bool update_read_only_options, std::string& error_message,
+                                       notifications_model& notifications)
     {
         for (auto& opt : drawing_order)
         {
-            draw_option(opt, update_read_only_options, error_message);
+            draw_option(opt, update_read_only_options, error_message, notifications);
         }
 
         for (auto i = 0; i < RS2_OPTION_COUNT; i++)
@@ -721,13 +816,13 @@ namespace rs2
             auto opt = static_cast<rs2_option>(i);
             if(std::find(drawing_order.begin(), drawing_order.end(), opt) == drawing_order.end())
             {
-                draw_option(opt, update_read_only_options, error_message);
+                draw_option(opt, update_read_only_options, error_message, notifications);
             }
         }
     }
 
     void subdevice_model::draw_option(rs2_option opt, bool update_read_only_options,
-                                      std::string& error_message)
+                                      std::string& error_message, notifications_model& model)
     {
         auto&& metadata = options_metadata[opt];
         if (update_read_only_options)
@@ -735,10 +830,10 @@ namespace rs2
             metadata.update_supported(error_message);
             if (metadata.supported && streaming)
             {
-                metadata.update_read_only(error_message);
+                metadata.update_read_only_status(error_message);
                 if (metadata.read_only)
                 {
-                    metadata.update_all(error_message);
+                    metadata.update_all_feilds(error_message, model);
                 }
             }
         }
@@ -1032,7 +1127,6 @@ namespace rs2
     void device_model::reset()
     {
         subdevices.resize(0);
-        streams.clear();
         _recorder.reset();
     }
 
@@ -1156,8 +1250,10 @@ namespace rs2
         }
     }
 
-    std::map<rs2_stream, rect> device_model::calc_layout(float x0, float y0, float width, float height)
+    std::map<rs2_stream, rect> viewer_model::calc_layout(float x0, float y0, float width, float height)
     {
+        const int top_bar_height = 32;
+
         std::set<rs2_stream> active_streams;
         for (auto i = 0; i < RS2_STREAM_COUNT; i++)
         {
@@ -1177,7 +1273,7 @@ namespace rs2
 
         if (fullscreen)
         {
-            results[selected_stream] = { static_cast<float>(x0), static_cast<float>(y0), static_cast<float>(width), static_cast<float>(height) };
+            results[selected_stream] = { static_cast<float>(x0), static_cast<float>(y0 + top_bar_height), static_cast<float>(width), static_cast<float>(height - top_bar_height) };
         }
         else
         {
@@ -1194,8 +1290,8 @@ namespace rs2
                 {
                     if (it == active_streams.end()) break;
 
-                    rect r = { x0 + x * cell_width, y0 + y * cell_height,
-                        cell_width, cell_height };
+                    rect r = { x0 + x * cell_width, y0 + y * cell_height + top_bar_height,
+                        cell_width, cell_height - top_bar_height };
                     results[*it] = r;
                     it++;
                 }
@@ -1205,7 +1301,7 @@ namespace rs2
         return get_interpolated_layout(results);
     }
 
-    void device_model::upload_frame(frame&& f)
+    void viewer_model::upload_frame(frame&& f)
     {
         auto stream_type = f.get_stream_type();
         streams[stream_type].upload_frame(std::move(f));
@@ -1261,7 +1357,7 @@ namespace rs2
         _recorder->resume();
     }
 
-    std::map<rs2_stream, rect> device_model::get_interpolated_layout(const std::map<rs2_stream, rect>& l)
+    std::map<rs2_stream, rect> viewer_model::get_interpolated_layout(const std::map<rs2_stream, rect>& l)
     {
         using namespace std::chrono;
         auto now = high_resolution_clock::now();
@@ -1365,6 +1461,8 @@ namespace rs2
             ImGuiWindowFlags_NoMove |
             ImGuiWindowFlags_NoCollapse;
 
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 5);
+
         auto ms = get_age_in_ms() / MAX_LIFETIME_MS;
         auto t = smoothstep(static_cast<float>(ms), 0.7f, 1.0f);
 
@@ -1392,6 +1490,8 @@ namespace rs2
 
         ImGui::End();
 
+        ImGui::PopStyleVar();
+
         ImGui::PopStyleColor();
         ImGui::PopStyleColor();
         ImGui::PopStyleColor();
@@ -1409,6 +1509,8 @@ namespace rs2
 
         if (pending_notifications.size() > MAX_SIZE)
             pending_notifications.erase(pending_notifications.begin());
+
+        log.push_back(n.get_description());
     }
 
     void notifications_model::draw(int w, int h, notification_model& selected)
@@ -1425,7 +1527,7 @@ namespace rs2
             }), end(pending_notifications));
 
             int idx = 0;
-            auto height = 30;
+            auto height = 55;
             for (auto& noti : pending_notifications)
             {
                 noti.draw(w, height, selected);

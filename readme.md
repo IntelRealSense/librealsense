@@ -1,4 +1,4 @@
-# Intel® RealSense™ Cross Platform API
+# Intel® RealSense™ Cross Platform SDK
 
 [Whats new?](./doc/rs400_support.md) - Summary of changes in librealsense2, including RS400 support, API changes and new functionality.
 
@@ -7,9 +7,8 @@ Platform | Build Status |
 Linux and OS X | [![Build Status](https://travis-ci.org/IntelRealSense/librealsense.svg?branch=master)](https://travis-ci.org/IntelRealSense/librealsense) |
 Windows | [![Build status](https://ci.appveyor.com/api/projects/status/y9f8qcebnb9v41y4?svg=true)](https://ci.appveyor.com/project/ddiakopoulos/librealsense) |
 
-This project is a cross-platform library (Linux, Windows, Mac) for capturing data from the Intel® RealSense™ SR300 and RS4XX depth cameras.
-
-Developer kits containing the necessary hardware to use this library are available for purchase at [this link](http://click.intel.com/realsense.html). This project is separate from the production software stack available in the [Intel® RealSense™ SDK](https://software.intel.com/en-us/intel-realsense-sdk), namely that this library only encompasses camera capture functionality without additional computer vision algorithms.
+This project is a cross-platform library (Linux, Windows, Mac) for working with Intel® RealSense™ depth cameras.
+Developer kits containing the necessary hardware to use this library are available for purchase at [this link](http://click.intel.com/realsense.html). 
 
 ## Table of Contents
 * Installation Guides:
@@ -39,11 +38,8 @@ A comprehensive suite of sample and tutorial applications are provided in the `/
 * To build documentation locally from sources, on Ubuntu run the following commands:
   * `sudo apt-get install doxygen`
   * `doxygen doc/doxygen/doxyfile`
-* [C API](./include/librealsense2/rs.h) - With doxygen-style API comments
 * [Frame Management](./doc/frame_lifetime.md) - Frame Memory Management, Threading Model and Syncronization
 * [Frame Metadata](./doc/frame_metadata.md) - support for frame-metadata attributes
-* [Python Bindings](./doc/python.md) - official python bindings for librealsense
-* [What's New?](./doc/rs400_support.md) - changes in librealsense2
 * [Getting Started](./doc/stepbystep/getting_started_with_openCV.md) - Getting started with OpenCV
 * [Troubleshooting](./doc/troubleshooting.md) - Useful tips when debugging issues related to the camera
 * [Error Handling](./doc/error_handling.md) - Documents librealsense error handling policy
@@ -53,17 +49,16 @@ A comprehensive suite of sample and tutorial applications are provided in the `/
 
 ## Functionality
 
-1. Native streams: depth, color, infrared and fisheye.
-2. Synthetic streams: rectified images, depth aligned to color and vice versa, etc.
+1. Native streams: depth, color, infrared, fisheye, motion-tracking.
+2. Synthetic streams: depth aligned to color and vice versa, pointcloud.
 3. Intrinsic/extrinsic calibration information.
 4. Majority of hardware-specific functionality for individual camera generations (UVC XU controls).
 5. Multi-camera capture across heterogeneous camera architectures
-6. Motion-tracking sensors acquisition
 
 ## Compatible Devices
 
 1. RealSense SR300
-2. RealSense RS400/410/430/450
+2. RealSense RS400 series
 
 ## Compatible Platforms
 
@@ -72,8 +67,6 @@ The library is written in standards-conforming C++11 and relies only on the C89 
 1. Ubuntu 14/16 LTS (GCC 4.9 toolchain)
 2. Windows 10 (Visual Studio 2015 Update 3)
 3. Mac OS X 10.7+ (Clang toolchain) **Temporarily unavailable**
-4. [Ostro](https://ostroproject.org/)
-
 
 ## Hardware Requirements
 Developer kits containing the necessary hardware to use this library are available for purchase at [this link](http://click.intel.com/realsense.html). In addition, several consumer tablets and laptops with integrated cameras may also function, such as the [HP Spectre x2 with R200](http://store.hp.com/us/en/ContentView?storeId=10151&langId=-1&catalogId=10051&eSpotName=new-detachable).
@@ -97,16 +90,4 @@ Additional language bindings (experimental, community maintained):
 
 ## License
 
-Copyright 2016 Intel Corporation
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this project except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
+This project is licensed under the Apache License, Version 2.0 - see the [LICENSE](LICENSE) file for details

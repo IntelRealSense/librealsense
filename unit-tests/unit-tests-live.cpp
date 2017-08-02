@@ -1303,7 +1303,7 @@ TEST_CASE("Advanced Mode presets", "[live]") {
                     REQUIRE_NOTHROW(presets_sensor.set_option(RS2_OPTION_ADVANCED_MODE_PRESET, preset));
                     float ret_preset;
                     REQUIRE_NOTHROW(ret_preset = presets_sensor.get_option(RS2_OPTION_ADVANCED_MODE_PRESET));
-                    REQUIRE(preset == (rs2_rs400_visual_preset)ret_preset);
+                    REQUIRE(preset == (rs2_rs400_visual_preset)((int)ret_preset));
                 }
                 presets_sensor.stop();
                 presets_sensor.close();

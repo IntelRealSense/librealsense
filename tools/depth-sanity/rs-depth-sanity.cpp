@@ -14,6 +14,8 @@
 #include "../common/realsense-ui/realsense-ui-advanced-mode.h"
 #include "model-views.h"
 
+#include "imgui-fonts-karla.hpp"
+
 using namespace rs2;
 using namespace std;
 using namespace rs400;
@@ -135,8 +137,8 @@ metrics analyze_depth_image(const rs2::video_frame& frame, float units, const rs
     std::vector<std::vector<float3>> groups_of_pixels(n_groups);
 
 #pragma omp parallel for
-    for (int y = 0; y < h; y++)
-        for (int x = 0; x < w; x++)
+    for (int y = 50; y < h - 50; y++)
+        for (int x = 50; x < w - 50; x++)
         {
             //std::cout << "Accessing index " << (y*w + x) << std::endl;
             auto depth_raw = pixels[y*w + x];
@@ -213,7 +215,17 @@ metrics analyze_depth_image(const rs2::video_frame& frame, float units, const rs
 
                 result.boxes[i].non_null_pct = groups_of_pixels[i].size() / double((std::min(w, result.boxes[i].x + box_size) - result.boxes[i].x)*(std::min(h, result.boxes[i].y + box_size) - result.boxes[i].y));
 
-                result.boxes[i].fit = result.boxes[i].std * 100;
+                auto cos_theta = abs(p.c / sqrt(p.a*p.a + p.b*p.b + p.c*p.c));
+                auto theta = acos(cos_theta);
+
+                if (abs(theta / M_PI) * 180 < 45)
+                {
+                    result.boxes[i].fit = result.boxes[i].std * 100;
+                }
+                else
+                {
+                    result.boxes[i].fit = 1;
+                }
                 result.boxes[i].abs_fit = result.boxes[i].abs_std * 100;
 
                 lock_guard<mutex> lock(m);
@@ -264,8 +276,14 @@ void visualize(metrics stats, int w, int h, bool plane)
         //ImGui::SetNextWindowPos({ float(area.x), float(area.y) });
         //ImGui::SetNextWindowSize({ float(area.size), float(area.size) });
 
-        ImGui::GetWindowDrawList()->AddRectFilled({ float(area.x)*x_scale, float(area.y)*y_scale }, { float(area.x + area.size)*x_scale, float(area.y + area.size)*y_scale },
-            ImGui::ColorConvertFloat4ToU32(ImVec4( 0.f + ((plane)? area.fit:area.abs_fit), 1.f - ((plane)? area.fit:area.abs_fit), 0, 0.25f )), 5.f, 15.f);
+        auto fit = ((plane) ? area.fit : area.abs_fit);
+
+        if (fit < 0.4f)
+        {
+            ImGui::GetWindowDrawList()->AddRectFilled({ float(area.x)*x_scale, float(area.y)*y_scale }, { float(area.x + area.size)*x_scale, float(area.y + area.size)*y_scale },
+                ImGui::ColorConvertFloat4ToU32(ImVec4(0.f, 1.f - fit, 0, 0.6f - 0.5f * fit)), 5.f, 15.f);
+        }
+
 
         stringstream ss; ss << area.x << ", " << area.y;
         auto s = ss.str();
@@ -281,12 +299,19 @@ void visualize(metrics stats, int w, int h, bool plane)
     }
 }
 
-color_map my_map({ { 255, 255, 255 }, { 0, 0, 0 } });
+color_map my_map({ { 255, 255, 255 },{ 120, 100, 180 },{ 60, 70, 130 },{ 0, 0, 0 } });
 
 int main(int argc, char * argv[])
 {
+    ImGuiIO& io = ImGui::GetIO();
+
+    ImFontConfig config_words;
+    config_words.OversampleV = 8;
+    config_words.OversampleH = 8;
+    io.Fonts->AddFontFromMemoryCompressedTTF(karla_regular_compressed_data, karla_regular_compressed_size, 20.f, &config_words);
+
     bool use_rect_fitting = true;
-    int box_size = 50;
+    int box_size = 40;
 
     context ctx;
     
@@ -402,7 +427,7 @@ int main(int argc, char * argv[])
             
 
             texture_buffer buffers[RS2_STREAM_COUNT];
-            buffers[RS2_STREAM_DEPTH].equalize = false;
+            buffers[RS2_STREAM_DEPTH].equalize = true;
             buffers[RS2_STREAM_DEPTH].cm = &my_map;
             buffers[RS2_STREAM_DEPTH].min_depth = 0.2 / dpt.get_depth_scale();
             buffers[RS2_STREAM_DEPTH].max_depth = 1.5 / dpt.get_depth_scale();
@@ -548,7 +573,7 @@ int main(int argc, char * argv[])
                 ImGui::PushStyleColor(ImGuiCol_WindowBg, { 0, 0, 0, 0.8f });
                 //ImGui::SetNextWindowPos({ 10, 10 });
                 ImGui::SetNextWindowPos({ margin, margin });
-                ImGui::SetNextWindowSize({ 300, 200 });
+                ImGui::SetNextWindowSize({ 400, 300 });
 
 //                ImGui::SetNextWindowPos({ 410, 360 });
 //                ImGui::SetNextWindowSize({ 400.f, 350.f });
@@ -622,7 +647,8 @@ int main(int argc, char * argv[])
                 metadata.draw(error_message);
 
                 ImGui::Checkbox("Use Plane-Fitting", &use_rect_fitting);
-                ImGui::SliderInt("Windows Size", &box_size, 10, 175);
+                ImGui::Text("Plane Size:");
+                ImGui::SliderInt("##Windows Size", &box_size, 30, 150);
 
                 ImGui::PopItemWidth();
 
@@ -652,8 +678,8 @@ int main(int argc, char * argv[])
 
                ImGui::PushStyleColor(ImGuiCol_WindowBg, { 0, 0, 0, 0.8f });
 
-               ImGui::SetNextWindowPos({ w - 200 - margin, h - 180 - margin });
-               ImGui::SetNextWindowSize({ 200, 180 });
+               ImGui::SetNextWindowPos({ w - 250 - margin, h - 180 - margin });
+               ImGui::SetNextWindowSize({ 250, 180 });
 
 //               ImGui::SetNextWindowPos({ 0.85*w, 0.90*h });
 //               ImGui::SetNextWindowSize({ (.1*w), (.1*h)});

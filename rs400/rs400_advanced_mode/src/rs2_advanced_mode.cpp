@@ -9,13 +9,17 @@
 #include "core/advanced_mode.h"
 #include "api.h"
 
+#define STRCASE(T, X) case RS2_##T##_##X: {\
+        static std::string s##T##_##X##_str = make_less_screamy(#X);\
+        return s##T##_##X##_str.c_str(); }
+
 namespace librealsense
 {
     RS2_ENUM_HELPERS(rs2_rs400_visual_preset, RS400_VISUAL_PRESET)
 
     const char* get_string(rs2_rs400_visual_preset value)
     {
-        #define CASE(X) case RS2_RS400_VISUAL_PRESET_##X: return #X;
+        #define CASE(X) STRCASE(RS400_VISUAL_PRESET, X)
         switch (value)
         {
         CASE(CUSTOM)
@@ -30,7 +34,7 @@ namespace librealsense
         CASE(HAND)
         CASE(SHORT_RANGE)
         CASE(BOX)
-        default: assert(!is_valid(value)); return UNKNOWN;
+        default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
         #undef CASE
     }
