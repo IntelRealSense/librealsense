@@ -20,6 +20,33 @@ using namespace rs400;
 std::string error_message{""};
 color_map my_map({ { 255, 255, 255 },{ 0, 0, 0 } });
 
+class PlotMetric
+{
+private:
+    /*int size;*/
+    int idx;
+    float vals[100];
+    float min, max;
+    std::string id, label;
+    ImVec2 size;
+
+public:
+    PlotMetric(const std::string& name, float min, float max, ImVec2 size) : idx(0), vals(),  min(min), max(max), id("##" + name), label(name + " = "), size(size) {}
+    ~PlotMetric() {}
+
+    void add_value(float val)
+    {
+        vals[idx] = val;
+        idx = (idx + 1) % 100;
+    }
+    void plot()
+    {
+        std::stringstream ss;
+        ss << label << vals[(100 + idx - 1)%100];
+        ImGui::PlotLines(id.c_str(), vals, 100, idx, ss.str().c_str(), min, max, size);
+    }
+};
+
 struct metrics
 {
     double avg_dist;
@@ -212,7 +239,7 @@ img_metrics analyze_depth_image(const rs2::video_frame& frame, float units, cons
     result.plane = calculate_plane_metrics(roi_pixels, p);
     result.depth = calculate_depth_metrics(roi_pixels);
 
-    result.non_null_pct = roi_pixels.size() / double((roi.max_x - roi.min_x)*(roi.max_y - roi.min_y));
+    result.non_null_pct = roi_pixels.size() / double((roi.max_x - roi.min_x)*(roi.max_y - roi.min_y)) * 100;
 
     return result;
 }
@@ -269,6 +296,7 @@ int main(int argc, char * argv[])
 {
     bool use_rect_fitting = true;
     float roi_x_begin = 0, roi_y_begin = 0, roi_x_end = 0, roi_y_end = 0;
+    PlotMetric avg_plot("AVG", 0, 1, { 180, 50 }), std_plot("STD", 0, 1, { 180, 50 }), fill_plot("FILL", 0, 100, { 180, 50 });
 
     context ctx;
     
@@ -662,40 +690,15 @@ int main(int argc, char * argv[])
                                           ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize);
                //ImGui::SetWindowFontScale(w/1000);
 
-
-               const int graph_size = 100;
-               static float avgs[graph_size];
-               static float stds[graph_size];
-               static float fill[graph_size];
-               static int avg_idx = 0;
-               static int std_idx = 0;
-               static int fill_idx = 0;
-
                metrics data = use_rect_fitting? stats_copy.plane:stats_copy.depth;
 
-               avgs[avg_idx] = data.avg_dist * 100;
-               avg_idx = (avg_idx + 1) % graph_size;
+               avg_plot.add_value(data.avg_dist * 100);
+               std_plot.add_value(data.std_dev * 100);
+               fill_plot.add_value(stats_copy.non_null_pct);
 
-               stds[std_idx] = data.std_dev * 100;
-               std_idx = (std_idx + 1) % graph_size;
-
-               fill[fill_idx] = stats_copy.non_null_pct;
-               fill_idx = (fill_idx + 1) % graph_size;
-
-               std::stringstream ss_avg;
-               ss_avg << "AVG = " << data.avg_dist * 100 << "(cm)";
-               auto s_avg = ss_avg.str();
-               ImGui::PlotLines("##AVG", avgs, graph_size, avg_idx, s_avg.c_str(), 0.f, 1.f, { 180, 50 });
-
-               std::stringstream ss_std;
-               ss_std << "STD = " << data.std_dev * 100 << "(cm)";
-               auto s_std = ss_std.str();
-               ImGui::PlotLines("##STD", stds, graph_size, std_idx, s_std.c_str(), 0.f, 1.f, { 180, 50 });
-
-               std::stringstream ss_fill;
-               ss_fill << "FILL = " << stats_copy.non_null_pct << "%";
-               auto s_fill = ss_fill.str();
-               ImGui::PlotLines("##STD", fill, graph_size, fill_idx, s_fill.c_str(), 0.f, 100.f, { 180, 50 });
+               avg_plot.plot();
+               std_plot.plot();
+               fill_plot.plot();
 
                ImGui::End();
                ImGui::PopStyleColor();
