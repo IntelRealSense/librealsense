@@ -17,6 +17,7 @@
 #include <media/ros/ros_reader.h>
 #include "types.h"
 #include "context.h"
+#include "stream.h"
 
 template<unsigned... Is> struct seq{};
 template<unsigned N, unsigned... Is>
@@ -144,6 +145,37 @@ namespace librealsense
         platform::uvc_device_info _uvc;
     };
 
+    class platform_camera_sensor : public uvc_sensor
+    {
+    public:
+        platform_camera_sensor(const std::shared_ptr<context>& ctx,
+            device* owner,
+            std::shared_ptr<platform::uvc_device> uvc_device,
+            std::unique_ptr<frame_timestamp_reader> timestamp_reader)
+            : uvc_sensor("RGB Camera", uvc_device, move(timestamp_reader), owner),
+              _default_stream(new stream(ctx, RS2_STREAM_COLOR))
+        {
+        }
+
+        stream_profiles init_stream_profiles() override
+        {
+            auto results = uvc_sensor::init_stream_profiles();
+
+            for (auto p : results)
+            {
+                // Register stream types
+                assign_stream(_default_stream, p);
+                _default_stream->get_context().register_same_extrinsics(*_default_stream, *p);
+            }
+
+            return results;
+        }
+
+
+    private:
+        std::shared_ptr<stream_interface> _default_stream;
+    };
+
     class platform_camera : public device
     {
     public:
@@ -151,7 +183,7 @@ namespace librealsense
             : device(ctx)
         {
             auto uvc_device = ctx->get_backend().create_uvc_device(uvc_info);
-            auto color_ep = std::make_shared<uvc_sensor>("RGB Camera", uvc_device, std::unique_ptr<ds5_timestamp_reader>(new ds5_timestamp_reader(ctx->get_time_service())), this);
+            auto color_ep = std::make_shared<platform_camera_sensor>(ctx, this, uvc_device, std::unique_ptr<ds5_timestamp_reader>(new ds5_timestamp_reader(ctx->get_time_service())));
             add_sensor(color_ep);
 
             register_info(RS2_CAMERA_INFO_NAME, "Platform Camera");

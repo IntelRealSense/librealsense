@@ -208,12 +208,6 @@ int main(int argc, char * argv[])
                 if (frames.size() == 0)
                     continue;
 
-                bool has_depth = false;
-                for (auto&& f : frames)
-                    if (f.get_profile().stream_type() == RS2_STREAM_DEPTH)
-                        has_depth = true;
-                if (!has_depth) continue;
-
                 glPushAttrib(GL_ALL_ATTRIB_BITS);
 
                 for (auto&& frame : frames)
@@ -228,6 +222,12 @@ int main(int argc, char * argv[])
                         mapped_tex.upload(frame);
                     }
                 }
+
+                bool has_depth = false;
+                for (auto&& f : frames)
+                    if (f.get_profile().stream_type() == RS2_STREAM_DEPTH)
+                        has_depth = true;
+                if (!has_depth) continue;
 
                 int width, height;
                 glfwGetFramebufferSize(win, &width, &height);

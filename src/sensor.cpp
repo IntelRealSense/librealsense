@@ -214,9 +214,6 @@ namespace librealsense
                         profile->set_format(output.second);
                         profile->set_framerate(p.fps);
                         
-                        profile->set_unique_id(_default_stream->get_unique_id());
-                        _owner->get_context()->register_same_extrinsics(*_default_stream, *profile);
-
                         results.insert(profile);
                     }
                 }
@@ -867,8 +864,7 @@ namespace librealsense
         : sensor_base(name, dev),
           _device(move(uvc_device)),
           _user_count(0),
-          _timestamp_reader(std::move(timestamp_reader)),
-          _default_stream(new stream(dev->get_context(), RS2_STREAM_COLOR))
+          _timestamp_reader(std::move(timestamp_reader))
     {
     }
 }

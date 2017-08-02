@@ -43,6 +43,18 @@ namespace rs2
             {
                 rs2_stream stream;
                 int index;
+
+                bool operator<(const index_type& other) const
+                {
+                    return std::make_pair(stream, index) < 
+                        std::make_pair(other.stream, other.index);
+                }
+
+                bool operator==(const index_type& other) const
+                {
+                    return std::make_pair(stream, index) == 
+                        std::make_pair(other.stream, other.index);
+                }
             };
 
             template<class Stream_Profile>
@@ -119,6 +131,29 @@ namespace rs2
                 return false;
             }
 
+            template<class StreamProfile>
+            static bool contradicts(const StreamProfile& a, const std::vector<request_type>& others)
+            {
+                for (auto request : others)
+                {
+                    if (a.fps() != 0 && request.fps != 0 && (a.fps() != request.fps))
+                        return true;
+                }
+
+                if (auto vid_a = a.template as<video_stream_profile>())
+                {
+                    for (auto request : others)
+                    {
+                        if (vid_a.width() != 0 && request.width != 0 && (vid_a.width() != request.width))
+                            return true;
+                        if (vid_a.height() != 0 && request.height != 0 && (vid_a.height() != request.height))
+                            return true;
+                    }
+                }
+
+                return false;
+            }
+
             template<class Stream_Profile>
             static bool has_wildcards(const Stream_Profile& a)
             {
@@ -127,6 +162,14 @@ namespace rs2
                 {
                     if (vid_a.width() == 0 || vid_a.height() == 0) return true;
                 }
+                return false;
+            }
+
+            template<>
+            static bool has_wildcards(const request_type& a)
+            {
+                if (a.fps == 0 || a.stream == RS2_STREAM_ANY || a.format == RS2_FORMAT_ANY) return true;
+                if (a.width == 0 || a.height == 0) return true;
                 return false;
             }
 
@@ -228,8 +271,8 @@ namespace rs2
             }
             void enable_stream(rs2_stream stream, preset preset)
             {
-                _requests.erase(stream);
-                _presets[stream] = preset;
+                _requests.erase({ stream, 0 });
+                _presets[{ stream, 0 }] = preset;
                 require_all = true;
             }
 
@@ -340,7 +383,7 @@ namespace rs2
                 return sort_highest_framerate(lhs, rhs);
             }
 
-            static void auto_complete(std::vector<typename Dev::ProfileType> &requests, typename Dev::SensorType &target)
+            static void auto_complete(std::vector<request_type> &requests, typename Dev::SensorType &target)
             {
                 auto candidates = target.get_stream_profiles();
                 for (auto & request : requests)
@@ -350,13 +393,33 @@ namespace rs2
                     {
                         if (match(candidate, request) && !contradicts(candidate, requests))
                         {
-                            request = candidate;
+                            request = to_request(candidate);
                             break;
                         }
                     }
                     if (has_wildcards(request))
                         throw std::runtime_error(std::string("Couldn't autocomplete request for subdevice ") + target.get_info(RS2_CAMERA_INFO_NAME));
                 }
+            }
+
+            static request_type to_request(typename Dev::ProfileType profile)
+            {
+                request_type r;
+                r.fps = profile.fps();
+                r.stream = profile.stream_type();
+                r.format = profile.format();
+                r.stream_index = profile.stream_index();
+                if (auto vid = profile.template as<video_stream_profile>())
+                {
+                    r.width = vid.width();
+                    r.height = vid.height();
+                }
+                else
+                {
+                    r.width = 1;
+                    r.height = 1;
+                }
+                return r;
             }
 
             std::multimap<int, typename Dev::ProfileType> map_streams(Dev dev) const 
@@ -370,7 +433,7 @@ namespace rs2
                 for (size_t i = 0; i < devs.size(); ++i)
                 {
                     auto sub = devs[i];
-                    std::vector<typename Dev::ProfileType> targets;
+                    std::vector<request_type> targets;
                     auto profiles = sub.get_stream_profiles();
 
                     // deal with explicit requests
@@ -386,7 +449,7 @@ namespace rs2
                         });
                         if (it != end(profiles))
                         {
-                            targets.push_back(*it); // store that this request is going to this subdevice
+                            targets.push_back(kvp.second); // store that this request is going to this subdevice
                             satisfied_streams.insert(kvp.first); // mark stream as satisfied
                         }
                     }
@@ -397,7 +460,7 @@ namespace rs2
                     {
                         if (satisfied_streams.count(kvp.first)) continue; // skip satisfied streams
 
-                        auto result = [&]() -> typename Dev::ProfileType
+                        auto result = [&]() -> request_type
                         {
                             switch (kvp.second)
                             {
@@ -413,20 +476,21 @@ namespace rs2
                             default: throw std::runtime_error("Unknown preset selected");
                             }
 
-                            for (auto itr = profiles.rbegin(); itr != profiles.rend(); ++itr) {
-                                if (itr->stream_type() == kvp.first) {
-                                    return typename Dev::ProfileType(*itr);
+                            for (auto itr = profiles.rbegin(); itr != profiles.rend(); ++itr) 
+                            {
+                                if (itr->stream_type() == kvp.first.stream && itr->stream_index() == kvp.first.index) {
+                                    return to_request(typename Dev::ProfileType(*itr));
                                 }
                             }
 
-                            return typename Dev::ProfileType();
+                            return { RS2_STREAM_ANY, 0, 0, 0, RS2_FORMAT_ANY, 0 };
                         }();
 
                         // RS2_STREAM_COUNT signals subdevice can't handle this stream
-                        if (result)
+                        if (result.stream != RS2_STREAM_ANY)
                         {
                             targets.push_back(result);
-                            satisfied_streams.insert(result.stream_type());
+                            satisfied_streams.insert({ result.stream, result.stream_index });
                         }
                     }
 
@@ -435,8 +499,17 @@ namespace rs2
                         auto_complete(targets, sub);
 
                         for (auto && t : targets)
-                            out.emplace(i, t);
-
+                        {
+                            for (auto && p : profiles)
+                            {
+                                if (match(p, t))
+                                {
+                                    out.emplace(i, p);
+                                    break;
+                                }
+                            }
+                        }
+                            
                     }
                 }
 

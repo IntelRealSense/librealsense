@@ -208,21 +208,12 @@ namespace librealsense
 
                 if (!_depth_intrinsics_ptr)
                 {
-                    auto sensor = depth_frame->get_sensor();
-                    if (auto video = dynamic_cast<video_sensor_interface*>(sensor.get()))
+                    auto stream_profile = depth_frame->get_stream();
+                    if (auto video = dynamic_cast<video_stream_profile_interface*>(stream_profile.get()))
                     {
-                        if (auto vf = dynamic_cast<video_frame*>(depth_frame))
-                        {
-                            stream_profile sp {
-                                    vf->get_stream()->get_stream_type(),
-                                    vf->get_stream()->get_stream_index(),
-                                    (uint32_t)vf->get_width(), (uint32_t)vf->get_height(), (uint32_t)vf->get_stream()->get_framerate(),
-                                    vf->get_stream()->get_format() };
-
-                            _depth_intrinsics = video->get_intrinsics(sp);
-                            _depth_intrinsics_ptr = &_depth_intrinsics;
-                            found_depth_intrinsics = true;
-                        }
+                        _depth_intrinsics = video->get_intrinsics();
+                        _depth_intrinsics_ptr = &_depth_intrinsics;
+                        found_depth_intrinsics = true;
                     }
                 }
 
@@ -259,21 +250,12 @@ namespace librealsense
 
                     if (!_mapped_intrinsics_ptr)
                     {
-                        auto sensor = other_frame->get_sensor();
-                        if (auto video = dynamic_cast<video_sensor_interface*>(sensor.get()))
+                        auto stream_profile = other_frame->get_stream();
+                        if (auto video = dynamic_cast<video_stream_profile_interface*>(stream_profile.get()))
                         {
-                            if (auto vf = dynamic_cast<video_frame*>(other_frame))
-                            {
-                                stream_profile sp {
-                                        vf->get_stream()->get_stream_type(),
-                                        vf->get_stream()->get_stream_index(),
-                                        (uint32_t)vf->get_width(), (uint32_t)vf->get_height(), (uint32_t)vf->get_stream()->get_framerate(),
-                                        vf->get_stream()->get_format() };
-
-                                _mapped_intrinsics = video->get_intrinsics(sp);
-                                _mapped_intrinsics_ptr = &_mapped_intrinsics;
-                                found_mapped_intrinsics = true;
-                            }
+                            _mapped_intrinsics = video->get_intrinsics();
+                            _mapped_intrinsics_ptr = &_mapped_intrinsics;
+                            found_mapped_intrinsics = true;
                         }
                         if (!found_mapped_intrinsics && assigned_stream_type)
                         {
