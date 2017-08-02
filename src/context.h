@@ -134,9 +134,9 @@ namespace librealsense
     private:
         void on_device_changed(platform::backend_device_group old, platform::backend_device_group curr, const std::map<std::string, std::shared_ptr<device_info>>& old_playback_devices, const std::map<std::string, std::shared_ptr<device_info>>& new_playback_devices);
 
-        int find_stream_profile(const stream_interface& p) const;
+        int find_stream_profile(const stream_interface& p);
         std::shared_ptr<lazy<rs2_extrinsics>> fetch_edge(int from, int to);
-        bool try_fetch_extrinsics(int from, int to, std::vector<int>& visited, rs2_extrinsics* extr);
+        bool try_fetch_extrinsics(int from, int to, std::set<int>& visited, rs2_extrinsics* extr);
         void cleanup_extrinsics();
 
         std::shared_ptr<platform::backend> _backend;
@@ -146,9 +146,11 @@ namespace librealsense
         devices_changed_callback_ptr _devices_changed_callback;
 
         std::atomic<int> _stream_id;
-        std::map<int, std::weak_ptr<stream_profile_interface>> _streams;
+        std::map<int, std::weak_ptr<stream_interface>> _streams;
         std::map<int, std::map<int, std::weak_ptr<lazy<rs2_extrinsics>>>> _extrinsics;
         std::mutex _streams_mutex;
+
+        std::shared_ptr<lazy<rs2_extrinsics>> _id;
     };
 
     // Helper functions for device list manipulation:

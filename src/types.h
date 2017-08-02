@@ -372,7 +372,7 @@ namespace librealsense
         for (int i = 0; i < 3; i++) r.translation[i] = a.position[i];
         for (int j = 0; j < 3; j++) 
             for (int i = 0; i < 3; i++) 
-                r.translation[j * 3 + i] = a.orientation(i, j);
+                r.rotation[j * 3 + i] = a.orientation(i, j);
         return r;
     }
     inline rs2_extrinsics identity_matrix() { 

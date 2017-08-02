@@ -46,7 +46,6 @@ namespace librealsense
                      rs2_recording_mode mode)
         : _devices_changed_callback(nullptr , [](rs2_devices_changed_callback*){})
     {
-
         _stream_id = 0;
 
         LOG_DEBUG("Librealsense " << std::string(std::begin(rs2_api_version),std::end(rs2_api_version)));
@@ -69,6 +68,11 @@ namespace librealsense
        _ts = _backend->create_time_service();
 
        _device_watcher = _backend->create_device_watcher();
+
+       _id = std::make_shared<lazy<rs2_extrinsics>>([]()
+       {
+           return identity_matrix();
+       });
     }
 
     
@@ -267,11 +271,7 @@ namespace librealsense
 
     void context::register_same_extrinsics(const stream_interface& from, const stream_interface& to)
     {
-        auto id = std::make_shared<lazy<rs2_extrinsics>>([]()
-        {
-            return identity_matrix();
-        });
-        register_extrinsics(from, to, id);
+        register_extrinsics(from, to, _id);
     }
 
     void context::register_extrinsics(const stream_interface& from, const stream_interface& to, std::weak_ptr<lazy<rs2_extrinsics>> extr)
@@ -291,16 +291,7 @@ namespace librealsense
         auto to_idx = find_stream_profile(to);
 
         _extrinsics[from_idx][to_idx] = extr;
-        _extrinsics[to_idx][from_idx] = std::make_shared<lazy<rs2_extrinsics>>([extr]()
-        {
-            auto sp = extr.lock();
-            if (sp)
-            {
-                return inverse(sp->operator*());
-            }
-            // This most definetly not supposed to ever happen
-            throw std::runtime_error("Could not calculate inverse extrinsics because the forward extrinsics are no longer available!");
-        });
+        _extrinsics[to_idx][from_idx] = std::shared_ptr<lazy<rs2_extrinsics>>(nullptr);
     }
 
     bool context::try_fetch_extrinsics(const stream_interface& from, const stream_interface& to, rs2_extrinsics* extr)
@@ -316,7 +307,7 @@ namespace librealsense
             return true;
         }
 
-        std::vector<int> visited;
+        std::set<int> visited;
         return try_fetch_extrinsics(from_idx, to_idx, visited, extr);
     }
 
@@ -354,7 +345,7 @@ namespace librealsense
         }
     }
 
-    int context::find_stream_profile(const stream_interface& p) const
+    int context::find_stream_profile(const stream_interface& p)
     {
         auto sp = p.shared_from_this();
         auto max = 0;
@@ -363,6 +354,7 @@ namespace librealsense
             max = std::max(max, kvp.first);
             if (kvp.second.lock().get() == sp.get()) return kvp.first;
         }
+        _streams[max + 1] = sp;
         return max + 1;
     }
 
@@ -381,8 +373,10 @@ namespace librealsense
         return nullptr;
     }
 
-    bool context::try_fetch_extrinsics(int from, int to, std::vector<int>& visited, rs2_extrinsics* extr)
+    bool context::try_fetch_extrinsics(int from, int to, std::set<int>& visited, rs2_extrinsics* extr)
     {
+        if (visited.count(from)) return false;
+
         auto it = _extrinsics.find(from);
         if (it != _extrinsics.end())
         {
@@ -390,14 +384,18 @@ namespace librealsense
             auto fwd_edge = fetch_edge(from, to);
 
             // Make sure both parts of the edge are still available
-            if (fwd_edge.get() && back_edge.get())
+            if (fwd_edge.get() || back_edge.get())
             {
-                *extr = fwd_edge->operator*(); // Evaluate the expression
+                if (fwd_edge.get())
+                    *extr = fwd_edge->operator*(); // Evaluate the expression
+                else
+                    *extr = inverse(back_edge->operator*());
+
                 return true;
             }
             else
             {
-                visited.push_back(from);
+                visited.insert(from);
                 for (auto&& kvp : it->second)
                 {
                     auto new_from = kvp.first;
@@ -407,10 +405,17 @@ namespace librealsense
                     back_edge = fetch_edge(new_from, from);
                     fwd_edge = fetch_edge(from, new_from);
 
-                    if (back_edge.get() && fwd_edge.get() &&
+                    if ((back_edge.get() || fwd_edge.get()) &&
                         try_fetch_extrinsics(new_from, to, visited, extr))
                     {
-                        auto pose = to_pose(fwd_edge->operator*()) * to_pose(*extr);
+                        const auto local = [&]() {
+                            if (fwd_edge.get())
+                                return fwd_edge->operator*(); // Evaluate the expression
+                            else
+                                return inverse(back_edge->operator*());
+                        }();
+
+                        auto pose = to_pose(local) * to_pose(*extr);
                         *extr = from_pose(pose);
                         return true;
                     }
