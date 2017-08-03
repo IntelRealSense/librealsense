@@ -15,41 +15,60 @@
 #include "model-views.h"
 
 using namespace rs2;
-using namespace std;
 using namespace rs400;
 
-
-vector<int> resolutions_by_fps_rewrite_it_as_lambda(int width,int height)
-{
-    return{};
-}
-
-
 std::string error_message{""};
-struct box {
-    int x;
-    int y;
-    int size;
-    double avg_dist;
-    double std;
-    double non_null_pct;
+color_map my_map({ { 255, 255, 255 },{ 0, 0, 0 } });
 
-    double abs_avg_dist;
-    double abs_std;
-    float abs_fit;
+class PlotMetric
+{
+private:
+    /*int size;*/
+    int idx;
+    float vals[100];
+    float min, max;
+    std::string id, label, tail;
+    ImVec2 size;
 
-    float fit;
+public:
+    PlotMetric(const std::string& name, float min, float max, ImVec2 size, const std::string& tail) : idx(0), vals(),  min(min), max(max), id("##" + name), label(name + " = "), tail(tail), size(size) {}
+    ~PlotMetric() {}
+
+    void add_value(float val)
+    {
+        vals[idx] = val;
+        idx = (idx + 1) % 100;
+    }
+    void plot()
+    {
+        std::stringstream ss;
+        ss << label << vals[(100 + idx - 1)%100] << tail;
+        ImGui::PlotLines(id.c_str(), vals, 100, idx, ss.str().c_str(), min, max, size);
+    }
 };
-
 
 struct metrics
 {
+    double avg_dist;
+    double std_dev;
+    double fit;
+    double distance;
+    double angle;
+    std::vector<float3> outliers;
+    double outlier_pct;
+};
+
+struct img_metrics
+{
     int width;
     int height;
-    double avg_dist;
-    double std;
-    double _percentage_of_non_null_pixels;
-    std::vector<box> boxes;
+
+    region_of_interest roi;
+
+    metrics plane;
+    metrics depth;
+
+    double non_null_pct;
 };
 
 struct plane
@@ -60,6 +79,18 @@ struct plane
     double d;
 };
 inline bool operator==(const plane& lhs, const plane& rhs) { return lhs.a == rhs.a && lhs.b == rhs.b && lhs.c == rhs.c && lhs.d == rhs.d; }
+
+struct option_data
+{
+    bool supported;
+    union { bool b; float f; } value;
+    option_range range;
+
+    option_data(depth_sensor s, rs2_option o, bool isBool = false) : supported(s.supports(o)), range(supported ? s.get_option_range(o) : option_range{0, 1, 0, 1}) {
+        if (isBool) value.b = (supported ? s.get_option(o) : 0);
+        else value.f = (supported ? s.get_option(o) : 0);
+    }
+};
 
 plane plane_from_point_and_normal(const float3& point, const float3& normal)
 {
@@ -90,7 +121,7 @@ plane plane_from_points(const std::vector<float3> points)
     double det_y = xx*zz - xz*xz;
     double det_z = xx*yy - xy*xy;
 
-    double det_max = max({ det_x, det_y, det_z });
+    double det_max = std::max({ det_x, det_y, det_z });
     if (det_max <= 0) return{ 0, 0, 0, 0 };
 
     float3 dir;
@@ -116,121 +147,128 @@ plane plane_from_points(const std::vector<float3> points)
     return plane_from_point_and_normal(centroid, dir.normalize());
 }
 
-metrics analyze_depth_image(const rs2::video_frame& frame, float units, const rs2_intrinsics * intrin, int box_size=10)
+metrics calculate_plane_metrics(const std::vector<float3>& points, plane p, float outlier_crop = 2.5, float std_devs = 2)
+{
+    metrics result;
+
+    std::vector<double> distances;
+    distances.reserve(points.size());
+    for (auto point : points)
+    {
+        distances.push_back(std::abs(p.a*point.x + p.b*point.y + p.c*point.z + p.d) * 1000);
+    }
+    
+    std::sort(distances.begin(), distances.end());
+    int n_outliers = distances.size() * (outlier_crop / 100);
+    auto begin = distances.begin() + n_outliers, end = distances.end() - n_outliers;
+
+    double total_distance = 0;
+    for (auto itr = begin; itr < end; ++itr) total_distance += *itr;
+    result.avg_dist = total_distance / (distances.size() - 2 * n_outliers);
+
+    double total_sq_diffs = 0;
+    for (auto itr = begin; itr < end; ++itr)
+    {
+        total_sq_diffs += std::pow(*itr - result.avg_dist, 2);
+    }
+    result.std_dev = std::sqrt(total_sq_diffs / points.size());
+
+    result.fit = result.std_dev / 10;
+
+    result.distance = -p.d;
+
+    result.angle = std::acos(std::abs(p.c))/ M_PI * 180;
+
+    for (auto point : points) if (std::abs(std::abs(p.a*point.x + p.b*point.y + p.c*point.z + p.d) * 1000 - result.avg_dist) > result.std_dev * std_devs) result.outliers.push_back(point);
+
+    result.outlier_pct = result.outliers.size() / float(distances.size()) * 100;
+
+    return result;
+}
+
+metrics calculate_depth_metrics(const std::vector<float3>& points)
+{
+    metrics result;
+
+    double total_distance = 0;
+    for (auto point : points)
+    {
+        total_distance += point.z * 1000;
+    }
+    result.avg_dist = total_distance / points.size();
+
+    double total_sq_diffs = 0;
+    for (auto point : points)
+    {
+        total_sq_diffs += std::pow(abs(point.z*1000 - result.avg_dist), 2);
+    }
+    result.std_dev = std::sqrt(total_sq_diffs / points.size());
+
+    result.fit = result.std_dev / 10;
+
+    result.distance = points[0].z;
+
+    result.angle = 0;
+
+    return result;
+}
+
+img_metrics analyze_depth_image(const rs2::video_frame& frame, float units, const rs2_intrinsics * intrin, region_of_interest roi)
 {
     auto pixels = (const uint16_t*)frame.get_data();
     const auto w = frame.get_width();
     const auto h = frame.get_height();
-    const int n_groups = std::ceil(w / double(box_size)) * std::ceil(h / double(box_size));
 
-    metrics result{ w, h, 0, 0, 0, std::vector<box>(n_groups, {0, 0, box_size, 0, 0, 0, 0, 0, 1, 1})};
+    img_metrics result{ w, h, roi, {0, 0, 0}, {0, 0, 0}, 0 };
 
-    double sum_of_all_distances = 0;
-    double sum_of_all_squared_differences = 0;
-    double number_of_non_null_pixels = 0;
-    long long num_processed_pixels = 0;
-    
     std::mutex m;
 
-    std::vector<std::vector<float3>> groups_of_pixels(n_groups);
+    std::vector<float3> roi_pixels;
 
 #pragma omp parallel for
-    for (int y = 0; y < h; y++)
-        for (int x = 0; x < w; x++)
+    for (int y = roi.min_y; y < roi.max_y; ++y)
+        for (int x = roi.min_x; x < roi.max_x; ++x)
         {
             //std::cout << "Accessing index " << (y*w + x) << std::endl;
             auto depth_raw = pixels[y*w + x];
-
 
             if (depth_raw)
             {
                 // units is float
                 float pixel[2] = { x, y };
-                float check_pixel[2] = { 0.f, 0.f };
                 float point[3];
-                float3 current_coordinates;
                 auto distance = depth_raw * units;
 
-                rs2_deproject_pixel_to_point(point,intrin,pixel,distance);
-                current_coordinates.x = point[0];
-                current_coordinates.y = point[1];
-                current_coordinates.z = point[2];
+                rs2_deproject_pixel_to_point(point, intrin, pixel, distance);
 
-                //rs2_project_point_to_pixel(check_pixel,intrin,point);
+                // float check_pixel[2] = { 0.f, 0.f };
+                // rs2_project_point_to_pixel(check_pixel, intrin, point);
                 // for sanity, assert check_pixel == pixel
 
-                int group = int(y / double(box_size))*std::ceil(w / double(box_size)) + int(x / double(box_size));
-                lock_guard<mutex> lock(m);
-                groups_of_pixels[group].push_back(current_coordinates);
-
-                ++number_of_non_null_pixels;
-            }
-
-
-            //std::cout << distance << std::endl;
-        }
-
-    //std::cout << number_of_non_null_pixels << std::endl;
-
-#pragma omp parallel for
-    for (int i = 0; i < n_groups; ++i) {
-        result.boxes[i].x = (i % int(std::ceil(w / double(box_size)))) * box_size;
-        result.boxes[i].y = (i / int(std::ceil(w / double(box_size)))) * box_size;
-
-        if (groups_of_pixels[i].size() < 3) {
-           // std::cout << "not enough pixels in group " << i << " (" << groups_of_pixels[i].size() << ")" << std::endl;
-            result.boxes[i].fit = 1;
-            result.boxes[i].abs_fit = 1;
-        }
-        else
-        {
-            plane p = plane_from_points(groups_of_pixels[i]);
-
-            if (p == plane{ 0, 0, 0, 0 }) {
-                result.boxes[i].fit = 1;
-                result.boxes[i].abs_fit = 1;
-            }
-            else
-            {
-
-                double total_distance = 0, abs_total_distance = 0;
-                for (auto point : groups_of_pixels[i])
-                {
-                    total_distance += abs(p.a*point.x + p.b*point.y + p.c*point.z + p.d);
-                    abs_total_distance += point.z;
-                }
-                result.boxes[i].avg_dist = total_distance / groups_of_pixels[i].size();
-                result.boxes[i].abs_avg_dist = abs_total_distance / groups_of_pixels[i].size();
-
-                double total_sq_diffs = 0, abs_total_sq_diffs = 0;
-                for (auto point : groups_of_pixels[i])
-                {
-                    total_sq_diffs += std::pow(abs(p.a*point.x + p.b*point.y + p.c*point.z + p.d) - result.boxes[i].avg_dist, 2);
-                    abs_total_sq_diffs += std::pow(abs(point.z - result.boxes[i].abs_avg_dist), 2);
-                }
-                result.boxes[i].std = std::sqrt(total_sq_diffs / groups_of_pixels[i].size());
-                result.boxes[i].abs_std = std::sqrt(abs_total_sq_diffs / groups_of_pixels[i].size());
-
-                result.boxes[i].non_null_pct = groups_of_pixels[i].size() / double((std::min(w, result.boxes[i].x + box_size) - result.boxes[i].x)*(std::min(h, result.boxes[i].y + box_size) - result.boxes[i].y));
-
-                result.boxes[i].fit = result.boxes[i].std * 100;
-                result.boxes[i].abs_fit = result.boxes[i].abs_std * 100;
-
-                lock_guard<mutex> lock(m);
-                sum_of_all_distances += total_distance;
-                sum_of_all_squared_differences += total_sq_diffs;
-                num_processed_pixels += groups_of_pixels[i].size();
+                std::lock_guard<std::mutex> lock(m);
+                roi_pixels.push_back({ point[0], point[1], point[2] });
             }
         }
+
+    if (roi_pixels.size() < 3) {
+        // std::cout << "Not enough pixels in RoI to fit a plane." << std::endl;
+        return result;
     }
 
-    result.avg_dist = sum_of_all_distances / num_processed_pixels;;
-    //result.std = std::sqrt(sum_of_all_squared_differences/num_of_examined_pixels);
-    result.std = std::sqrt(sum_of_all_squared_differences / num_processed_pixels);;
-    result._percentage_of_non_null_pixels = (number_of_non_null_pixels / (w*h)) * 100;
+    plane p = plane_from_points(roi_pixels);
+
+    if (p == plane{ 0, 0, 0, 0 }) {
+        // std::cout << "The points in RoI don't span a plane." << std::endl;
+        return result;
+    }
+
+    result.plane = calculate_plane_metrics(roi_pixels, p);
+    result.depth = calculate_depth_metrics(roi_pixels);
+
+    result.non_null_pct = roi_pixels.size() / double((roi.max_x - roi.min_x)*(roi.max_y - roi.min_y)) * 100;
+
     return result;
 }
-
 
 std::vector<std::string> get_device_info(const device& dev, bool include_location = true)
 {
@@ -255,38 +293,43 @@ std::vector<std::string> get_device_info(const device& dev, bool include_locatio
     return res;
 }
 
-void visualize(metrics stats, int w, int h, bool plane)
+void visualize(img_metrics stats, int w, int h, bool plane)
 {
     float x_scale = w / float(stats.width);
     float y_scale = h / float(stats.height);
-    for (auto &&area : stats.boxes) {
-        //ImGui::PushStyleColor(ImGuiCol_WindowBg, );
-        //ImGui::SetNextWindowPos({ float(area.x), float(area.y) });
-        //ImGui::SetNextWindowSize({ float(area.size), float(area.size) });
+    //ImGui::PushStyleColor(ImGuiCol_WindowBg, );
+    //ImGui::SetNextWindowPos({ float(area.x), float(area.y) });
+    //ImGui::SetNextWindowSize({ float(area.size), float(area.size) });
 
-        ImGui::GetWindowDrawList()->AddRectFilled({ float(area.x)*x_scale, float(area.y)*y_scale }, { float(area.x + area.size)*x_scale, float(area.y + area.size)*y_scale },
-            ImGui::ColorConvertFloat4ToU32(ImVec4( 0.f + ((plane)? area.fit:area.abs_fit), 1.f - ((plane)? area.fit:area.abs_fit), 0, 0.25f )), 5.f, 15.f);
+    ImGui::GetWindowDrawList()->AddRectFilled({ float(stats.roi.min_x)*x_scale, float(stats.roi.min_y)*y_scale }, { float(stats.roi.max_x)*x_scale, float(stats.roi.max_y)*y_scale },
+        ImGui::ColorConvertFloat4ToU32(ImVec4( 0.f + ((plane)? stats.plane.fit:stats.depth.fit), 1.f - ((plane)? stats.plane.fit:stats.depth.fit), 0, 0.25f )), 5.f, 15.f);
 
-        stringstream ss; ss << area.x << ", " << area.y;
-        auto s = ss.str();
-        /*ImGui::Begin(s.c_str(), nullptr,
-            ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize);*/
+    //std::stringstream ss; ss << stats.roi.min_x << ", " << stats.roi.min_y;
+    //auto s = ss.str();
+    /*ImGui::Begin(s.c_str(), nullptr,
+        ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize);*/
 
         
-        if (ImGui::IsItemHovered())
-            ImGui::SetTooltip(s.c_str());
+    /*if (ImGui::IsItemHovered())
+        ImGui::SetTooltip(s.c_str());*/
 
-        //ImGui::End();
-        //ImGui::PopStyleColor();
-    }
+    //ImGui::End();
+    //ImGui::PopStyleColor();
 }
-
-color_map my_map({ { 255, 255, 255 }, { 0, 0, 0 } });
 
 int main(int argc, char * argv[])
 {
+
+    // UI option variables
     bool use_rect_fitting = true;
-    int box_size = 50;
+
+    // Data display plots
+    PlotMetric avg_plot("AVG", 0, 10, { 180, 50 }, " (mm)");
+    PlotMetric std_plot("STD", 0, 10, { 180, 50 }, " (mm)");
+    PlotMetric fill_plot("FILL", 0, 100, { 180, 50 }, "%");
+    PlotMetric dist_plot("DIST", 0, 5, { 180, 50 }, " (m)");
+    PlotMetric angle_plot("ANGLE", 0, 180, { 180, 50 }, " (deg)");
+    PlotMetric out_plot("OUTLIERS", 0, 100, { 180, 50 }, "%");
 
     context ctx;
     
@@ -295,7 +338,7 @@ int main(int argc, char * argv[])
     auto finished = false;
     GLFWwindow* win;
 
-    map<pair<int,int>,vector<int>> supported_fps_by_resolution;
+    std::map<std::pair<int, int>, std::vector<int>> supported_fps_by_resolution;
     std::vector<std::string> restarting_device_info;
 
     advanced_mode_control amc{};
@@ -307,16 +350,20 @@ int main(int argc, char * argv[])
     {
         try
         {
-            std::set<pair<int,int>> resolutions;
+            std::set<std::pair<int, int>> resolutions;
             std::vector<std::string> resolutions_strs;
             std::vector<const char*> resolutions_chars;
 
-            int default_width,default_height;
+            int default_width, default_height;
 
             auto dev = hub.wait_for_device();
             auto dpt = dev.first<depth_sensor>();
 
-
+            option_data ae(dpt, RS2_OPTION_ENABLE_AUTO_EXPOSURE, true);
+            option_data exposure(dpt, RS2_OPTION_EXPOSURE);
+            option_data emitter(dpt, RS2_OPTION_EMITTER_ENABLED, true);
+            option_data laser(dpt, RS2_OPTION_LASER_POWER);
+            
 
             auto modes = dpt.get_stream_modes();
             for (auto&& profile : dpt.get_stream_modes())
@@ -324,8 +371,8 @@ int main(int argc, char * argv[])
                 if (profile.stream == RS2_STREAM_DEPTH &&
                     profile.format == RS2_FORMAT_Z16)
                 {
-                    resolutions.insert(make_pair(profile.width,profile.height));
-                    supported_fps_by_resolution[make_pair(profile.width,profile.height)].push_back(profile.fps);
+                    resolutions.insert(std::make_pair(profile.width, profile.height));
+                    supported_fps_by_resolution[std::make_pair(profile.width, profile.height)].push_back(profile.fps);
                 }
             }
 
@@ -360,7 +407,7 @@ int main(int argc, char * argv[])
             }
 
 
-            std::vector<pair<int,int>> resolutions_vec(resolutions.begin(), resolutions.end());
+            std::vector<std::pair<int, int>> resolutions_vec(resolutions.begin(), resolutions.end());
 
 
 
@@ -409,56 +456,13 @@ int main(int argc, char * argv[])
 
             // Open a GLFW window
             glfwInit();
-            ostringstream ss;
+            std::ostringstream ss;
             ss << "Depth Sanity (" << dev.get_info(RS2_CAMERA_INFO_NAME) << ")";
 
             //dev.get_info(RS2_CAMERA_INFO_FIRMWARE_VERSION)
 
             bool options_invalidated = false;
             std::string error_message;
-            subdevice_model sub_mod_depth(dev, dpt, error_message);
-
-            option_model metadata;
-
-            for (auto i = 0; i < RS2_OPTION_COUNT; i++)
-            {
-
-                auto opt = static_cast<rs2_option>(i);
-                if (opt == rs2_option::RS2_OPTION_ENABLE_AUTO_EXPOSURE )
-                {
-                    std::stringstream ss;
-                    ss << dev.get_info(RS2_CAMERA_INFO_NAME)
-                        << "/" << dpt.get_info(RS2_CAMERA_INFO_NAME)
-                        << "/" << rs2_option_to_string(opt);
-                    metadata.id = ss.str();
-                    metadata.opt = opt;
-                    //metadata.endpoint = s;
-                    metadata.endpoint=dpt;
-                    metadata.label = rs2_option_to_string(opt) + std::string("##") + ss.str();
-                    metadata.invalidate_flag = &options_invalidated;
-                    //metadata.dev = this;
-                    metadata.dev =&sub_mod_depth;
-                    metadata.supported = dpt.supports(opt);
-                    if (metadata.supported)
-                    {
-                        try
-                        {
-                            metadata.range = dpt.get_option_range(opt);
-                            metadata.read_only = dpt.is_option_read_only(opt);
-                            if (!metadata.read_only)
-                                metadata.value = dpt.get_option(opt);
-                        }
-                        catch (const error& e)
-                        {
-                            metadata.range = { 0, 1, 0, 0 };
-                            metadata.value = 0;
-                            error_message = error_to_string(e);
-                        }
-                    }
-                    break;
-                }
-            }
-
 
             win = glfwCreateWindow(1280, 720, ss.str().c_str(), nullptr, nullptr);
             glfwMakeContextCurrent(win);
@@ -466,15 +470,12 @@ int main(int argc, char * argv[])
 
             ImGui_ImplGlfw_Init(win, true);
 
-            metrics latest_stat{};
-            latest_stat.width = 1280;
-            latest_stat.height = 720;
-            latest_stat.avg_dist = 0.0;
-            latest_stat.std = 0.0;
-            latest_stat._percentage_of_non_null_pixels = 0.0;
+            float roi_x_begin = default_width * (1.f / 3.f), roi_y_begin = default_height * (1.f / 3.f), roi_x_end = default_width * (2.f / 3.f), roi_y_end = default_height * (2.f / 3.f);
+            region_of_interest roi{ roi_x_begin, roi_y_begin, roi_x_end, roi_y_end };
+            img_metrics latest_stat{ 1280, 720, roi, { 0, 0, 0 }, { 0, 0, 0 }, 0 };
             std::mutex m;
 
-            std::thread t([&m, &finished, &calc_queue, &units, &current_frame_intrinsics, &latest_stat, &box_size]() {
+            std::thread t([&m, &finished, &calc_queue, &units, &current_frame_intrinsics, &latest_stat, &roi]() {
                 while (!finished)
                 {
                     auto f = calc_queue.wait_for_frame();
@@ -483,13 +484,13 @@ int main(int argc, char * argv[])
 
                     if (stream_type == RS2_STREAM_DEPTH)
                     {
-                        auto stats = analyze_depth_image(f, units, &current_frame_intrinsics, box_size);
+                        auto stats = analyze_depth_image(f, units, &current_frame_intrinsics, roi);
                         
-                        lock_guard<mutex> lock(m);
+                        std::lock_guard<std::mutex> lock(m);
                         latest_stat = stats;
                         //cout << "Average distance is : " << latest_stat.avg_dist << endl;
                         //cout << "Standard_deviation is : " << latest_stat.std << endl;
-                        //cout << "Percentage_of_non_null_pixels is : " << latest_stat._percentage_of_non_null_pixels << endl;
+                        //cout << "Percentage_of_non_null_pixels is : " << latest_stat.non_null_pct << endl;
                     }
                 }
             });
@@ -527,9 +528,9 @@ int main(int argc, char * argv[])
 
                 buffers[RS2_STREAM_DEPTH].show({ 0, 0, (float)w, (float)h }, 1);
 
-                metrics stats_copy;
+                img_metrics stats_copy;
                 {
-                    lock_guard<mutex> lock(m);
+                    std::lock_guard<std::mutex> lock(m);
                     stats_copy = latest_stat;
                 }
 
@@ -539,6 +540,23 @@ int main(int argc, char * argv[])
                 ImGui::Begin("global", nullptr,
                     ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoBringToFrontOnFocus);
 
+                ImGuiIO& io = ImGui::GetIO();
+
+                if (ImGui::IsWindowFocused() && ImGui::IsMouseClicked(0))
+                {
+                    auto pos = ImGui::GetIO().MousePos;
+                    roi_x_begin = roi_x_end = pos.x;
+                    roi_y_begin = roi_y_end = pos.y;
+                }
+
+                if (ImGui::IsWindowFocused() && ImGui::IsMouseDragging())
+                {
+                    roi_x_end += ImGui::GetIO().MouseDelta.x;
+                    roi_y_end += ImGui::GetIO().MouseDelta.y;
+                }
+
+                roi = { int(std::max(std::min(roi_x_begin, roi_x_end), 0.f)), int(std::max(std::min(roi_y_begin, roi_y_end), 0.f)), int(std::min(std::max(roi_x_begin, roi_x_end), float(stats_copy.width))), int(std::min(std::max(roi_y_begin, roi_y_end), float(stats_copy.height))) };
+
                 visualize(stats_copy, w, h, use_rect_fitting);
 
                 ImGui::End();
@@ -546,6 +564,7 @@ int main(int argc, char * argv[])
 
                 // Draw GUI:
                 ImGui::PushStyleColor(ImGuiCol_WindowBg, { 0, 0, 0, 0.8f });
+
                 //ImGui::SetNextWindowPos({ 10, 10 });
                 ImGui::SetNextWindowPos({ margin, margin });
                 ImGui::SetNextWindowSize({ 300, 200 });
@@ -554,6 +573,7 @@ int main(int argc, char * argv[])
 //                ImGui::SetNextWindowSize({ 400.f, 350.f });
                 ImGui::Begin("Stream Selector", nullptr,
                              ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize);
+
 
                 rs2_error* e = nullptr;
 
@@ -619,10 +639,73 @@ int main(int argc, char * argv[])
                     }
                 }
 
-                metadata.draw(error_message);
+                if (ae.supported && ImGui::Checkbox("Enable Auto Exposure", &ae.value.b))
+                {
+                    try
+                    {
+                        dpt.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, ae.value.b);
+                    }
+                    catch (const error& e)
+                    {
+                        error_message = error_to_string(e);
+                    }
+                    catch (const std::exception& e)
+                    {
+                        error_message = e.what();
+                    }
+                }
+
+                if (exposure.supported && ImGui::SliderFloat("Exposure", &exposure.value.f, exposure.range.min, exposure.range.max, "%.3f"))
+                {
+                    try
+                    {
+                        if (ae.supported) dpt.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, false);
+                        dpt.set_option(RS2_OPTION_EXPOSURE, exposure.value.f);
+                    }
+                    catch (const error& e)
+                    {
+                        error_message = error_to_string(e);
+                    }
+                    catch (const std::exception& e)
+                    {
+                        error_message = e.what();
+                    }
+                }
+
+                if (emitter.supported && ImGui::Checkbox("Emitter Powered", &emitter.value.b))
+                {
+                    try
+                    {
+                        dpt.set_option(RS2_OPTION_EMITTER_ENABLED, emitter.value.b);
+                    }
+                    catch (const error& e)
+                    {
+                        error_message = error_to_string(e);
+                    }
+                    catch (const std::exception& e)
+                    {
+                        error_message = e.what();
+                    }
+                }
+
+                if (laser.supported && ImGui::SliderFloat("Laser Power", &laser.value.f, laser.range.min, laser.range.max, "%.3f"))
+                {
+                    try
+                    {
+                        if (emitter.value.b)
+                            dpt.set_option(RS2_OPTION_LASER_POWER, laser.value.f);
+                    }
+                    catch (const error& e)
+                    {
+                        error_message = error_to_string(e);
+                    }
+                    catch (const std::exception& e)
+                    {
+                        error_message = e.what();
+                    }
+                }
 
                 ImGui::Checkbox("Use Plane-Fitting", &use_rect_fitting);
-                ImGui::SliderInt("Windows Size", &box_size, 10, 175);
 
                 ImGui::PopItemWidth();
 
@@ -650,10 +733,10 @@ int main(int argc, char * argv[])
                ImGui::End();
                ImGui::PopStyleColor();
 
-               ImGui::PushStyleColor(ImGuiCol_WindowBg, { 0, 0, 0, 0.8f });
+               ImGui::PushStyleColor(ImGuiCol_WindowBg, { 0, 0, 0, 0.9f });
 
-               ImGui::SetNextWindowPos({ w - 200 - margin, h - 180 - margin });
-               ImGui::SetNextWindowSize({ 200, 180 });
+               ImGui::SetNextWindowPos({ w - 196 - margin, h - 336 - margin });
+               ImGui::SetNextWindowSize({ 196, 336 });
 
 //               ImGui::SetNextWindowPos({ 0.85*w, 0.90*h });
 //               ImGui::SetNextWindowSize({ (.1*w), (.1*h)});
@@ -665,54 +748,40 @@ int main(int argc, char * argv[])
                                           ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize);
                //ImGui::SetWindowFontScale(w/1000);
 
+               metrics data = use_rect_fitting? stats_copy.plane:stats_copy.depth;
 
-               const int graph_size = 100;
-               static float avgs[graph_size];
-               static float stds[graph_size];
-               static float fill[graph_size];
-               static int avg_idx = 0;
-               static int std_idx = 0;
-               static int fill_idx = 0;
+               avg_plot.add_value(data.avg_dist);
+               std_plot.add_value(data.std_dev);
+               fill_plot.add_value(stats_copy.non_null_pct);
+               dist_plot.add_value(data.distance);
+               angle_plot.add_value(data.angle);
+               out_plot.add_value(data.outlier_pct);
 
-               avgs[avg_idx] = stats_copy.avg_dist * 100;
-               avg_idx = (avg_idx + 1) % graph_size;
+               avg_plot.plot();
+               std_plot.plot();
+               fill_plot.plot();
+               dist_plot.plot();
+               angle_plot.plot();
+               out_plot.plot();
 
-               stds[std_idx] = stats_copy.std * 100;
-               std_idx = (std_idx + 1) % graph_size;
-
-               fill[fill_idx] = stats_copy._percentage_of_non_null_pixels;
-               fill_idx = (fill_idx + 1) % graph_size;
-
-               stringstream ss_avg;
-               ss_avg << "AVG = " << stats_copy.avg_dist * 100 << "(cm)";
-               auto s_avg = ss_avg.str();
-               ImGui::PlotLines("##AVG", avgs, graph_size, avg_idx, s_avg.c_str(), 0.f, 1.f, { 180, 50 });
-
-               stringstream ss_std;
-               ss_std << "STD = " << stats_copy.std * 100 << "(cm)";
-               auto s_std = ss_std.str();
-               ImGui::PlotLines("##STD", stds, graph_size, std_idx, s_std.c_str(), 0.f, 1.f, { 180, 50 });
-
-               stringstream ss_fill;
-               ss_fill << "FILL = " << stats_copy._percentage_of_non_null_pixels << "%";
-               auto s_fill = ss_fill.str();
-               ImGui::PlotLines("##STD", fill, graph_size, fill_idx, s_fill.c_str(), 0.f, 100.f, { 180, 50 });
-
-               /*ImGui::Text("STD: %.3f(m)", stats_copy.std);*/
                ImGui::End();
                ImGui::PopStyleColor();
 
-               
+               ImGui::PushStyleColor(ImGuiCol_WindowBg, { 0, 0, 0, 0.7f });
 
+               ImGui::SetNextWindowPos({ float((w - 345) / 2), margin });
+               ImGui::SetNextWindowSize({ 345, 28 });
 
+               ImGui::Begin("##help", nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize);
 
-                ImGui::Render();
-                glPopMatrix();
-                glfwSwapBuffers(win);
+               ImGui::Text("Click and drag to select the Region of Interest");
 
+               ImGui::End();
+               ImGui::PopStyleColor();
 
-
-
+               ImGui::Render();
+               glPopMatrix();
+               glfwSwapBuffers(win);
             }
 
             if (glfwWindowShouldClose(win))
@@ -723,11 +792,11 @@ int main(int argc, char * argv[])
         }
         catch (const error & e)
         {
-            cerr << "RealSense error calling " << e.get_failed_function() << "(" << e.get_failed_args() << "):\n    " << e.what() << endl;
+            std::cerr << "RealSense error calling " << e.get_failed_function() << "(" << e.get_failed_args() << "):\n    " << e.what() << std::endl;
         }
-        catch (const exception & e)
+        catch (const std::exception & e)
         {
-            cerr << e.what() << endl;
+            std::cerr << e.what() << std::endl;
         }
 
         ImGui_ImplGlfw_Shutdown();
