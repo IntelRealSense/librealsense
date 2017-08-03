@@ -27,11 +27,11 @@ private:
     int idx;
     float vals[100];
     float min, max;
-    std::string id, label;
+    std::string id, label, tail;
     ImVec2 size;
 
 public:
-    PlotMetric(const std::string& name, float min, float max, ImVec2 size) : idx(0), vals(),  min(min), max(max), id("##" + name), label(name + " = "), size(size) {}
+    PlotMetric(const std::string& name, float min, float max, ImVec2 size, const std::string& tail) : idx(0), vals(),  min(min), max(max), id("##" + name), label(name + " = "), tail(tail), size(size) {}
     ~PlotMetric() {}
 
     void add_value(float val)
@@ -42,7 +42,7 @@ public:
     void plot()
     {
         std::stringstream ss;
-        ss << label << vals[(100 + idx - 1)%100];
+        ss << label << vals[(100 + idx - 1)%100] << tail;
         ImGui::PlotLines(id.c_str(), vals, 100, idx, ss.str().c_str(), min, max, size);
     }
 };
@@ -54,6 +54,8 @@ struct metrics
     double fit;
     double distance;
     double angle;
+    std::vector<float3> outliers;
+    double outlier_pct;
 };
 
 struct img_metrics
@@ -133,29 +135,41 @@ plane plane_from_points(const std::vector<float3> points)
     return plane_from_point_and_normal(centroid, dir.normalize());
 }
 
-metrics calculate_plane_metrics(const std::vector<float3>& points, plane p)
+metrics calculate_plane_metrics(const std::vector<float3>& points, plane p, float outlier_crop = 2.5, float std_devs = 2)
 {
     metrics result;
 
-    double total_distance = 0;
+    std::vector<double> distances;
+    distances.reserve(points.size());
     for (auto point : points)
     {
-        total_distance += std::abs(p.a*point.x + p.b*point.y + p.c*point.z + p.d);
+        distances.push_back(std::abs(p.a*point.x + p.b*point.y + p.c*point.z + p.d) * 1000);
     }
-    result.avg_dist = total_distance / points.size();
+    
+    std::sort(distances.begin(), distances.end());
+    int n_outliers = distances.size() * (outlier_crop / 100);
+    auto begin = distances.begin() + n_outliers, end = distances.end() - n_outliers;
+
+    double total_distance = 0;
+    for (auto itr = begin; itr < end; ++itr) total_distance += *itr;
+    result.avg_dist = total_distance / (distances.size() - 2 * n_outliers);
 
     double total_sq_diffs = 0;
-    for (auto point : points)
+    for (auto itr = begin; itr < end; ++itr)
     {
-        total_sq_diffs += std::pow(abs(p.a*point.x + p.b*point.y + p.c*point.z + p.d) - result.avg_dist, 2);
+        total_sq_diffs += std::pow(*itr - result.avg_dist, 2);
     }
     result.std_dev = std::sqrt(total_sq_diffs / points.size());
 
-    result.fit = result.std_dev * 100;
+    result.fit = result.std_dev / 10;
 
-    result.distance = p.d;
+    result.distance = -p.d;
 
-    result.angle = std::acos(p.c / std::sqrt(p.a*p.a + p.b*p.b + p.c*p.c + p.d*p.d))/ M_PI * 180;
+    result.angle = std::acos(std::abs(p.c))/ M_PI * 180;
+
+    for (auto point : points) if (std::abs(std::abs(p.a*point.x + p.b*point.y + p.c*point.z + p.d) * 1000 - result.avg_dist) > result.std_dev * std_devs) result.outliers.push_back(point);
+
+    result.outlier_pct = result.outliers.size() / float(distances.size()) * 100;
 
     return result;
 }
@@ -167,18 +181,18 @@ metrics calculate_depth_metrics(const std::vector<float3>& points)
     double total_distance = 0;
     for (auto point : points)
     {
-        total_distance += point.z;
+        total_distance += point.z * 1000;
     }
     result.avg_dist = total_distance / points.size();
 
     double total_sq_diffs = 0;
     for (auto point : points)
     {
-        total_sq_diffs += std::pow(abs(point.z - result.avg_dist), 2);
+        total_sq_diffs += std::pow(abs(point.z*1000 - result.avg_dist), 2);
     }
     result.std_dev = std::sqrt(total_sq_diffs / points.size());
 
-    result.fit = result.std_dev * 100;
+    result.fit = result.std_dev / 10;
 
     result.distance = points[0].z;
 
@@ -244,7 +258,6 @@ img_metrics analyze_depth_image(const rs2::video_frame& frame, float units, cons
     return result;
 }
 
-
 std::vector<std::string> get_device_info(const device& dev, bool include_location = true)
 {
     std::vector<std::string> res;
@@ -294,9 +307,17 @@ void visualize(img_metrics stats, int w, int h, bool plane)
 
 int main(int argc, char * argv[])
 {
+
+    // UI option variables
     bool use_rect_fitting = true;
-    float roi_x_begin = 0, roi_y_begin = 0, roi_x_end = 0, roi_y_end = 0;
-    PlotMetric avg_plot("AVG", 0, 1, { 180, 50 }), std_plot("STD", 0, 1, { 180, 50 }), fill_plot("FILL", 0, 100, { 180, 50 });
+
+    // Data display plots
+    PlotMetric avg_plot("AVG", 0, 10, { 180, 50 }, " (mm)");
+    PlotMetric std_plot("STD", 0, 10, { 180, 50 }, " (mm)");
+    PlotMetric fill_plot("FILL", 0, 100, { 180, 50 }, "%");
+    PlotMetric dist_plot("DIST", 0, 5, { 180, 50 }, " (m)");
+    PlotMetric angle_plot("ANGLE", 0, 180, { 180, 50 }, " (deg)");
+    PlotMetric out_plot("OUTLIERS", 0, 100, { 180, 50 }, "%");
 
     context ctx;
     
@@ -476,10 +497,10 @@ int main(int argc, char * argv[])
 
             ImGui_ImplGlfw_Init(win, true);
 
-            img_metrics latest_stat{ 1280, 720, { 0, 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 }, 0 };
+            float roi_x_begin = default_width * (1.f / 3.f), roi_y_begin = default_height * (1.f / 3.f), roi_x_end = default_width * (2.f / 3.f), roi_y_end = default_height * (2.f / 3.f);
+            region_of_interest roi{ roi_x_begin, roi_y_begin, roi_x_end, roi_y_end };
+            img_metrics latest_stat{ 1280, 720, roi, { 0, 0, 0 }, { 0, 0, 0 }, 0 };
             std::mutex m;
-
-            region_of_interest roi{ 0, 0, 0, 0 };
 
             std::thread t([&m, &finished, &calc_queue, &units, &current_frame_intrinsics, &latest_stat, &roi]() {
                 while (!finished)
@@ -561,7 +582,7 @@ int main(int argc, char * argv[])
                     roi_y_end += ImGui::GetIO().MouseDelta.y;
                 }
 
-                roi = { int(std::max(std::min(roi_x_begin, roi_x_end), 0.f)), int(std::max(std::min(roi_y_begin, roi_y_end), 0.f)), int(std::min(std::max(roi_x_begin, roi_x_end), float(stats_copy.width))), int(std::min(std::max(roi_y_begin, roi_y_end), float(stats_copy.width))) };
+                roi = { int(std::max(std::min(roi_x_begin, roi_x_end), 0.f)), int(std::max(std::min(roi_y_begin, roi_y_end), 0.f)), int(std::min(std::max(roi_x_begin, roi_x_end), float(stats_copy.width))), int(std::min(std::max(roi_y_begin, roi_y_end), float(stats_copy.height))) };
 
                 visualize(stats_copy, w, h, use_rect_fitting);
 
@@ -675,10 +696,10 @@ int main(int argc, char * argv[])
                ImGui::End();
                ImGui::PopStyleColor();
 
-               ImGui::PushStyleColor(ImGuiCol_WindowBg, { 0, 0, 0, 0.8f });
+               ImGui::PushStyleColor(ImGuiCol_WindowBg, { 0, 0, 0, 0.9f });
 
-               ImGui::SetNextWindowPos({ w - 200 - margin, h - 180 - margin });
-               ImGui::SetNextWindowSize({ 200, 180 });
+               ImGui::SetNextWindowPos({ w - 196 - margin, h - 336 - margin });
+               ImGui::SetNextWindowSize({ 196, 336 });
 
 //               ImGui::SetNextWindowPos({ 0.85*w, 0.90*h });
 //               ImGui::SetNextWindowSize({ (.1*w), (.1*h)});
@@ -692,13 +713,19 @@ int main(int argc, char * argv[])
 
                metrics data = use_rect_fitting? stats_copy.plane:stats_copy.depth;
 
-               avg_plot.add_value(data.avg_dist * 100);
-               std_plot.add_value(data.std_dev * 100);
+               avg_plot.add_value(data.avg_dist);
+               std_plot.add_value(data.std_dev);
                fill_plot.add_value(stats_copy.non_null_pct);
+               dist_plot.add_value(data.distance);
+               angle_plot.add_value(data.angle);
+               out_plot.add_value(data.outlier_pct);
 
                avg_plot.plot();
                std_plot.plot();
                fill_plot.plot();
+               dist_plot.plot();
+               angle_plot.plot();
+               out_plot.plot();
 
                ImGui::End();
                ImGui::PopStyleColor();
