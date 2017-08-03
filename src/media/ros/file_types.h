@@ -14,16 +14,6 @@ namespace librealsense
 {
     namespace file_format
     {
-        static const std::string get_file_version_topic()
-        {
-            return "/FILE_VERSION";
-        }
-
-        static constexpr uint32_t get_file_version()
-        {
-            return 1;
-        }
-
         namespace file_types
         {
 
@@ -358,6 +348,31 @@ namespace librealsense
                 memcpy(&target.translation[0], source.translation, sizeof(source.translation));
             }
 
+        }
+
+        inline std::string get_file_version_topic()
+        {
+            return "/FILE_VERSION";
+        }
+
+        inline constexpr uint32_t get_file_version()
+        {
+            return 1;
+        }
+
+        inline std::string get_device_index()
+        {
+            return "4294967295"; // std::numeric_limits<uint32_t>::max
+        }
+
+        inline std::string get_sensor_count_topic()
+        {
+            return "sensor_count";
+        }
+
+        inline file_format::file_types::nanoseconds get_first_frame_timestamp()
+        {
+            return file_format::file_types::nanoseconds(0);
         }
     }
 }

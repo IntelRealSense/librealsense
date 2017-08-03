@@ -19,7 +19,8 @@ namespace librealsense
         struct snapshot_box
         {
             std::chrono::nanoseconds timestamp;
-            uint32_t sensor_index;
+            std::string sensor_index;
+            rs2_extension extension_type;
             std::shared_ptr<extension_snapshot> snapshot;
         };
 
