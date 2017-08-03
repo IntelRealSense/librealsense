@@ -169,14 +169,15 @@ int main(int argc, char * argv[])
 
 
 
-            auto modes = dpt.get_stream_modes();
-            for (auto&& profile : dpt.get_stream_modes())
+            auto modes = ((depth_sensor)dpt).get_stream_profiles();
+            for (auto&& profile : modes)
             {
-                if (profile.stream == RS2_STREAM_DEPTH &&
-                    profile.format == RS2_FORMAT_Z16)
+                auto video_sp = profile.as<video_stream_profile>();
+                if (video_sp.stream_type() == RS2_STREAM_DEPTH &&
+                    video_sp.format() == RS2_FORMAT_Z16)
                 {
-                    resolutions.insert(make_pair(profile.width,profile.height));
-                    supported_fps_by_resolution[make_pair(profile.width,profile.height)].push_back(profile.fps);
+                    resolutions.insert(make_pair(video_sp.width(), video_sp.height()));
+                    supported_fps_by_resolution[make_pair(video_sp.width(), video_sp.height())].push_back(video_sp.fps());
                 }
             }
 
@@ -235,7 +236,7 @@ int main(int argc, char * argv[])
 
             // Configure depth stream to run at 30 frames per second
             util::config config;
-            config.enable_stream(RS2_STREAM_DEPTH, default_width, default_height, 30, RS2_FORMAT_Z16);
+            config.enable_stream(RS2_STREAM_DEPTH, default_width, default_height, RS2_FORMAT_Z16, 30);
             //config.enable_stream(RS2_STREAM_DEPTH, 640, 360, 30, RS2_FORMAT_Z16);
             auto stream = config.open(dev);
             rs2_intrinsics current_frame_intrinsics = stream.get_intrinsics(RS2_STREAM_DEPTH);
@@ -327,7 +328,7 @@ int main(int argc, char * argv[])
 
                 for (auto&& frame : frames)
                 {
-                    auto stream_type = frame.get_stream_type();
+                    auto stream_type = frame.get_profile().stream_type();
 
                     if (stream_type == RS2_STREAM_DEPTH)
                     {
@@ -355,7 +356,7 @@ int main(int argc, char * argv[])
 
                 for (auto&& frame : frames)
                 {
-                    auto stream_type = frame.get_stream_type();
+                    auto stream_type = frame.get_profile().stream_type();
                     buffers[stream_type].show({ 0, 0, (float)w, (float)h }, 1);
                 }
 
@@ -395,7 +396,7 @@ int main(int argc, char * argv[])
                     // TODO: if you can find 30, use it
                     // else use whatever
                     config.enable_stream(RS2_STREAM_DEPTH, selected_resolution.first,
-                                         selected_resolution.second, fps, RS2_FORMAT_Z16);
+                                         selected_resolution.second, RS2_FORMAT_Z16, fps);
                     stream = config.open(dev);
                     stream.start(syncer);
 

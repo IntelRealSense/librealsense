@@ -146,7 +146,7 @@ namespace librealsense
         devices_changed_callback_ptr _devices_changed_callback;
 
         std::atomic<int> _stream_id;
-        std::map<int, std::weak_ptr<stream_interface>> _streams;
+        std::map<int, std::weak_ptr<const stream_interface>> _streams;
         std::map<int, std::map<int, std::weak_ptr<lazy<rs2_extrinsics>>>> _extrinsics;
         std::mutex _streams_mutex;
 
