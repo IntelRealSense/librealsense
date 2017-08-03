@@ -80,6 +80,18 @@ struct plane
 };
 inline bool operator==(const plane& lhs, const plane& rhs) { return lhs.a == rhs.a && lhs.b == rhs.b && lhs.c == rhs.c && lhs.d == rhs.d; }
 
+struct option_data
+{
+    bool supported;
+    union { bool b; float f; } value;
+    option_range range;
+
+    option_data(depth_sensor s, rs2_option o, bool isBool = false) : supported(s.supports(o)), range(supported ? s.get_option_range(o) : option_range{0, 1, 0, 1}) {
+        if (isBool) value.b = (supported ? s.get_option(o) : 0);
+        else value.f = (supported ? s.get_option(o) : 0);
+    }
+};
+
 plane plane_from_point_and_normal(const float3& point, const float3& normal)
 {
     return{ normal.x, normal.y, normal.z, -(normal.x*point.x + normal.y*point.y + normal.z*point.z) };
@@ -347,7 +359,11 @@ int main(int argc, char * argv[])
             auto dev = hub.wait_for_device();
             auto dpt = dev.first<depth_sensor>();
 
-
+            option_data ae(dpt, RS2_OPTION_ENABLE_AUTO_EXPOSURE, true);
+            option_data exposure(dpt, RS2_OPTION_EXPOSURE);
+            option_data emitter(dpt, RS2_OPTION_EMITTER_ENABLED, true);
+            option_data laser(dpt, RS2_OPTION_LASER_POWER);
+            
 
             auto modes = dpt.get_stream_modes();
             for (auto&& profile : dpt.get_stream_modes())
@@ -447,49 +463,6 @@ int main(int argc, char * argv[])
 
             bool options_invalidated = false;
             std::string error_message;
-            subdevice_model sub_mod_depth(dev, dpt, error_message);
-
-            option_model metadata;
-
-            for (auto i = 0; i < RS2_OPTION_COUNT; i++)
-            {
-
-                auto opt = static_cast<rs2_option>(i);
-                if (opt == rs2_option::RS2_OPTION_ENABLE_AUTO_EXPOSURE )
-                {
-                    std::stringstream ss;
-                    ss << dev.get_info(RS2_CAMERA_INFO_NAME)
-                        << "/" << dpt.get_info(RS2_CAMERA_INFO_NAME)
-                        << "/" << rs2_option_to_string(opt);
-                    metadata.id = ss.str();
-                    metadata.opt = opt;
-                    //metadata.endpoint = s;
-                    metadata.endpoint=dpt;
-                    metadata.label = rs2_option_to_string(opt) + std::string("##") + ss.str();
-                    metadata.invalidate_flag = &options_invalidated;
-                    //metadata.dev = this;
-                    metadata.dev =&sub_mod_depth;
-                    metadata.supported = dpt.supports(opt);
-                    if (metadata.supported)
-                    {
-                        try
-                        {
-                            metadata.range = dpt.get_option_range(opt);
-                            metadata.read_only = dpt.is_option_read_only(opt);
-                            if (!metadata.read_only)
-                                metadata.value = dpt.get_option(opt);
-                        }
-                        catch (const error& e)
-                        {
-                            metadata.range = { 0, 1, 0, 0 };
-                            metadata.value = 0;
-                            error_message = error_to_string(e);
-                        }
-                    }
-                    break;
-                }
-            }
-
 
             win = glfwCreateWindow(1280, 720, ss.str().c_str(), nullptr, nullptr);
             glfwMakeContextCurrent(win);
@@ -666,7 +639,71 @@ int main(int argc, char * argv[])
                     }
                 }
 
-                metadata.draw(error_message);
+                if (ae.supported && ImGui::Checkbox("Enable Auto Exposure", &ae.value.b))
+                {
+                    try
+                    {
+                        dpt.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, ae.value.b);
+                    }
+                    catch (const error& e)
+                    {
+                        error_message = error_to_string(e);
+                    }
+                    catch (const std::exception& e)
+                    {
+                        error_message = e.what();
+                    }
+                }
+
+                if (exposure.supported && ImGui::SliderFloat("Exposure", &exposure.value.f, exposure.range.min, exposure.range.max, "%.3f"))
+                {
+                    try
+                    {
+                        if (ae.supported) dpt.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, false);
+                        dpt.set_option(RS2_OPTION_EXPOSURE, exposure.value.f);
+                    }
+                    catch (const error& e)
+                    {
+                        error_message = error_to_string(e);
+                    }
+                    catch (const std::exception& e)
+                    {
+                        error_message = e.what();
+                    }
+                }
+
+                if (emitter.supported && ImGui::Checkbox("Emitter Powered", &emitter.value.b))
+                {
+                    try
+                    {
+                        dpt.set_option(RS2_OPTION_EMITTER_ENABLED, emitter.value.b);
+                    }
+                    catch (const error& e)
+                    {
+                        error_message = error_to_string(e);
+                    }
+                    catch (const std::exception& e)
+                    {
+                        error_message = e.what();
+                    }
+                }
+
+                if (laser.supported && ImGui::SliderFloat("Laser Power", &laser.value.f, laser.range.min, laser.range.max, "%.3f"))
+                {
+                    try
+                    {
+                        if (emitter.value.b)
+                            dpt.set_option(RS2_OPTION_LASER_POWER, laser.value.f);
+                    }
+                    catch (const error& e)
+                    {
+                        error_message = error_to_string(e);
+                    }
+                    catch (const std::exception& e)
+                    {
+                        error_message = e.what();
+                    }
+                }
 
                 ImGui::Checkbox("Use Plane-Fitting", &use_rect_fitting);
 
@@ -726,6 +763,18 @@ int main(int argc, char * argv[])
                dist_plot.plot();
                angle_plot.plot();
                out_plot.plot();
+
+               ImGui::End();
+               ImGui::PopStyleColor();
+
+               ImGui::PushStyleColor(ImGuiCol_WindowBg, { 0, 0, 0, 0.7f });
+
+               ImGui::SetNextWindowPos({ float((w - 345) / 2), margin });
+               ImGui::SetNextWindowSize({ 345, 28 });
+
+               ImGui::Begin("##help", nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize);
+
+               ImGui::Text("Click and drag to select the Region of Interest");
 
                ImGui::End();
                ImGui::PopStyleColor();
