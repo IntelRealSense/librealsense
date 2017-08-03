@@ -352,7 +352,8 @@ namespace librealsense
         for (auto&& kvp : _streams)
         {
             max = std::max(max, kvp.first);
-            if (kvp.second.lock().get() == sp.get()) return kvp.first;
+            if (kvp.second.lock().get() == sp.get())
+                return kvp.first;
         }
         _streams[max + 1] = sp;
         return max + 1;
