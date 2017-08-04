@@ -4,6 +4,7 @@
 #pragma once
 
 #include <librealsense/rs2_advanced_mode.hpp>
+#include "types.h"
 
 bool yes_no_dialog()
 {
@@ -28,7 +29,7 @@ inline void slider_int(const char* id, T* val, S T::* field, bool& to_set)
     int min = (val + 1)->*field;
     int max = (val + 2)->*field;
 
-    std::string slider_id = to_string() << "##" << id;
+    std::string slider_id = librealsense::to_string() << "##" << id;
 
     if (ImGui::SliderInt(slider_id.c_str(), &temp, min, max))
     {
@@ -57,7 +58,7 @@ inline void slider_float(const char* id, T* val, S T::* field, bool& to_set)
     float min = (val + 1)->*field;
     float max = (val + 2)->*field;
 
-    std::string slider_id = to_string() << "##" << id;
+    std::string slider_id = librealsense::to_string() << "##" << id;
 
     if (ImGui::SliderFloat(slider_id.c_str(), &temp, min, max))
     {

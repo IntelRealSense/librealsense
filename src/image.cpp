@@ -43,6 +43,9 @@ namespace librealsense
         case RS2_FORMAT_RAW16: return 16;
         case RS2_FORMAT_RAW8: return 8;
         case RS2_FORMAT_UYVY: return 16;
+        case RS2_FORMAT_GPIO_RAW: return 1;
+        case RS2_FORMAT_MOTION_RAW: return 1;
+        case RS2_FORMAT_MOTION_XYZ32F: return 1;
         default: assert(false); return 0;
         }
     }

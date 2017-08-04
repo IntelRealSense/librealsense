@@ -165,7 +165,6 @@ namespace rs2
                 return false;
             }
 
-            template<>
             static bool has_wildcards(const request_type& a)
             {
                 if (a.fps == 0 || a.stream == RS2_STREAM_ANY || a.format == RS2_FORMAT_ANY) return true;
@@ -278,7 +277,7 @@ namespace rs2
 
             void enable_stream(rs2_stream stream, int index, preset preset)
             {
-                _requests.erase(stream);
+                _requests.erase({stream, index});
                 _presets[{stream, index}] = preset;
                 require_all = true;
             }
