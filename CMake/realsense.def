@@ -56,6 +56,9 @@ EXPORTS
     rs2_get_frame_stride_in_bytes
     rs2_get_frame_bits_per_pixel
     rs2_get_frame_stream_profile
+    rs2_get_frame_vertices
+    rs2_get_frame_texture_coordinates
+    rs2_get_frame_points_count
     rs2_release_frame
     rs2_frame_add_ref
 
@@ -137,6 +140,7 @@ EXPORTS
     rs2_process_frame
     rs2_delete_processing_block
     rs2_create_sync_processing_block
+    rs2_create_pointcloud
     rs2_embedded_frames_count
     rs2_extract_frame
 

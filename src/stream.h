@@ -109,6 +109,12 @@ namespace librealsense
             _height = height;
         }
 
+        std::shared_ptr<stream_profile_interface> clone() const override
+        {
+            auto res = std::make_shared<video_stream_profile>(get_context().shared_from_this(), platform::stream_profile{});
+            res->set_dims(get_width(), get_height());
+            return res;
+        }
 
         bool operator==(const video_stream_profile& other) const
         {

@@ -334,7 +334,7 @@ namespace rs2
         frame(const frame& other)
             : frame_ref(other.frame_ref)
         {
-            add_ref();
+            if (frame_ref) add_ref();
         }
         void swap(frame& other)
         {
@@ -462,12 +462,22 @@ namespace rs2
             error::handle(e);
         }
 
+        void reset()
+        {
+            if (frame_ref)
+            {
+                rs2_release_frame(frame_ref);
+            }
+            frame_ref = nullptr;
+        }
+
         friend class frame_queue;
         friend class syncer;
         friend class frame_source;
         friend class processing_block;
         friend class pointcloud_block;
 
+    private:
         rs2_frame* frame_ref;
     };
 
@@ -482,7 +492,7 @@ namespace rs2
             rs2_error* e = nullptr;
             if(!f || (rs2_is_frame_extendable_to(f.get(), RS2_EXTENSION_VIDEO_FRAME, &e) == 0 && !e))
             {
-                frame_ref = nullptr;
+                reset();
             }
             error::handle(e);
         }
@@ -494,7 +504,7 @@ namespace rs2
         int get_width() const
         {
             rs2_error * e = nullptr;
-            auto r = rs2_get_frame_width(frame_ref, &e);
+            auto r = rs2_get_frame_width(get(), &e);
             error::handle(e);
             return r;
         }
@@ -506,7 +516,7 @@ namespace rs2
         int get_height() const
         {
             rs2_error * e = nullptr;
-            auto r = rs2_get_frame_height(frame_ref, &e);
+            auto r = rs2_get_frame_height(get(), &e);
             error::handle(e);
             return r;
         }
@@ -518,7 +528,7 @@ namespace rs2
         int get_stride_in_bytes() const
         {
             rs2_error * e = nullptr;
-            auto r = rs2_get_frame_stride_in_bytes(frame_ref, &e);
+            auto r = rs2_get_frame_stride_in_bytes(get(), &e);
             error::handle(e);
             return r;
         }
@@ -530,7 +540,7 @@ namespace rs2
         int get_bits_per_pixel() const
         {
             rs2_error * e = nullptr;
-            auto r = rs2_get_frame_bits_per_pixel(frame_ref, &e);
+            auto r = rs2_get_frame_bits_per_pixel(get(), &e);
             error::handle(e);
             return r;
         }
@@ -538,8 +548,14 @@ namespace rs2
         int get_bytes_per_pixel() const { return get_bits_per_pixel() / 8; }
     };
 
-    struct vertex { float xyz[3]; };
-    struct pixel { int ij[2]; };
+    struct vertex {
+        float x, y, z; 
+        operator const float*() const { return &x; }
+    };
+    struct texture_coordinate { 
+        float u, v; 
+        operator const float*() const { return &u; }
+    };
 
     class points : public frame
     {
@@ -550,14 +566,14 @@ namespace rs2
             rs2_error* e = nullptr;
             if(!f || (rs2_is_frame_extendable_to(f.get(), RS2_EXTENSION_POINTS, &e) == 0 && !e))
             {
-                frame_ref = nullptr;
+                reset();
             }
             error::handle(e);
 
-            if (frame_ref)
+            if (get())
             {
                 rs2_error* e = nullptr;
-                _size = rs2_embedded_frames_count(frame_ref, &e);
+                _size = rs2_get_frame_points_count(get(), &e);
                 error::handle(e);
             }
         }
@@ -565,17 +581,17 @@ namespace rs2
         const vertex* get_vertices() const
         {
             rs2_error* e = nullptr;
-            auto res = rs2_get_frame_vertices(frame_ref, &e);
+            auto res = rs2_get_frame_vertices(get(), &e);
             error::handle(e);
             return (const vertex*)res;
         }
 
-        const pixel* get_pixel_coordinates() const
+        const texture_coordinate* get_texture_coordinates() const
         {
             rs2_error* e = nullptr;
-            auto res = rs2_get_frame_pixel_coordinates(frame_ref, &e);
+            auto res = rs2_get_frame_texture_coordinates(get(), &e);
             error::handle(e);
-            return (const pixel*)res;
+            return (const texture_coordinate*)res;
         }
 
         size_t size() const
@@ -596,14 +612,14 @@ namespace rs2
             rs2_error* e = nullptr;
             if(!f || (rs2_is_frame_extendable_to(f.get(), RS2_EXTENSION_COMPOSITE_FRAME, &e) == 0 && !e))
             {
-                frame_ref = nullptr;
+                reset();
             }
             error::handle(e);
 
-            if (frame_ref)
+            if (get())
             {
                 rs2_error* e = nullptr;
-                _size = rs2_embedded_frames_count(frame_ref, &e);
+                _size = rs2_embedded_frames_count(get(), &e);
                 error::handle(e);
             }
         }
@@ -639,7 +655,7 @@ namespace rs2
             auto count = size();
             for (size_t i = 0; i < count; i++)
             {
-                auto fref = rs2_extract_frame(frame_ref, i, &e);
+                auto fref = rs2_extract_frame(get(), i, &e);
                 error::handle(e);
 
                 action(frame(fref));
@@ -1780,10 +1796,14 @@ namespace rs2
             return _queue.wait_for_frame();
         }
 
+        void map_to(frame mapped)
+        {
+            _block.invoke(std::move(mapped));
+        }
     private:
         friend class context;
 
-        pointcloud(processing_block block) : _block(block)
+        pointcloud(processing_block block) : _block(block), _queue(1)
         {
             _block.start(_queue);
         }

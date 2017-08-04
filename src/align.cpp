@@ -2,13 +2,40 @@
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
 #include "../include/librealsense/rs2.hpp"
+#include "../include/librealsense/rsutil2.h"
 
 #include "core/video.h"
 #include "align.h"
 #include "archive.h"
+#include "context.h"
 
 namespace librealsense
 {
+    template<class MAP_DEPTH> void deproject_depth(float * points, const rs2_intrinsics & intrin, const uint16_t * depth, MAP_DEPTH map_depth)
+    {
+        for (int y = 0; y<intrin.height; ++y)
+        {
+            for (int x = 0; x<intrin.width; ++x)
+            {
+                const float pixel[] = { (float)x, (float)y };
+                rs2_deproject_pixel_to_point(points, &intrin, pixel, map_depth(*depth++));
+                points += 3;
+            }
+        }
+    }
+
+    const float3 * depth_to_points(uint8_t* image, const rs2_intrinsics &depth_intrinsics, const uint16_t * depth_image, float depth_scale)
+    {
+        deproject_depth(reinterpret_cast<float *>(image), depth_intrinsics, depth_image, [depth_scale](uint16_t z) { return depth_scale * z; });
+
+        return reinterpret_cast<float3 *>(image);
+    }
+
+    float3 transform(const rs2_extrinsics *extrin, const float3 &point) { float3 p = {}; rs2_transform_point_to_point(&p.x, extrin, &point.x); return p; }
+    float2 project(const rs2_intrinsics *intrin, const float3 & point) { float2 pixel = {}; rs2_project_point_to_pixel(&pixel.x, intrin, &point.x); return pixel; }
+    float2 pixel_to_texcoord(const rs2_intrinsics *intrin, const float2 & pixel) { return{ (pixel.x + 0.5f) / intrin->width, (pixel.y + 0.5f) / intrin->height }; }
+    float2 project_to_texcoord(const rs2_intrinsics *intrin, const float3 & point) { return pixel_to_texcoord(intrin, project(intrin, point)); }
+
     void processing_block::set_processing_callback(frame_processor_callback_ptr callback)
     {
         std::lock_guard<std::mutex> lock(_mutex);
@@ -48,6 +75,27 @@ namespace librealsense
     void synthetic_source::frame_ready(frame_holder result)
     {
         _actual_source.invoke_callback(std::move(result));
+    }
+
+    frame_interface* synthetic_source::allocate_points(std::shared_ptr<stream_profile_interface> stream, frame_interface* original)
+    {
+        auto vid_stream = dynamic_cast<video_stream_profile_interface*>(stream.get());
+        if (vid_stream)
+        {
+            frame_additional_data data{};
+            data.frame_number = original->get_frame_number();
+            data.timestamp = original->get_frame_timestamp();
+            data.timestamp_domain = original->get_frame_timestamp_domain();
+            data.metadata_size = 0;
+            data.system_time = _actual_source.get_time();
+
+            auto res = _actual_source.alloc_frame(RS2_EXTENSION_POINTS, vid_stream->get_width() * vid_stream->get_height() * sizeof(float) * 5, data, true);
+            if (!res) throw wrong_api_call_sequence_exception("Out of frame resources!");
+            res->set_sensor(original->get_sensor());
+            res->set_stream(stream);
+            return res;
+        }
+        return nullptr;
     }
 
     frame_interface* synthetic_source::allocate_video_frame(std::shared_ptr<stream_profile_interface> stream, 
@@ -176,29 +224,17 @@ namespace librealsense
         return res;
     }
 
-    pointcloud::pointcloud(std::shared_ptr<platform::time_service> ts,
-                           const rs2_intrinsics* depth_intrinsics,
-                           const float* depth_units,
-                           rs2_stream mapped_stream_type,
-                           const rs2_intrinsics* mapped_intrinsics,
-                           const rs2_extrinsics* extrinsics)
+    pointcloud::pointcloud(std::shared_ptr<platform::time_service> ts)
         : processing_block(ts),
-          _depth_intrinsics_ptr(depth_intrinsics),
-          _depth_units_ptr(depth_units),
-          _mapped_intrinsics_ptr(mapped_intrinsics),
-          _extrinsics_ptr(extrinsics),
-          _expected_mapped_stream(mapped_stream_type)
+          _depth_intrinsics_ptr(nullptr),
+          _depth_units_ptr(nullptr),
+          _mapped_intrinsics_ptr(nullptr),
+          _extrinsics_ptr(nullptr),
+          _mapped(nullptr)
     {
-        if (depth_intrinsics) _depth_intrinsics = *depth_intrinsics;
-        if (depth_units) _depth_units = *depth_units;
-        if (mapped_intrinsics) _mapped_intrinsics = *mapped_intrinsics;
-        if (extrinsics) _extrinsics = *extrinsics;
-
         auto on_frame = [this](rs2::frame f, const rs2::frame_source& source)
         {
-            std::lock_guard<std::mutex> lock(_mutex);
-
-            auto on_depth_frame = [this](const rs2::frame& depth)
+            auto inspect_depth_frame = [this](const rs2::frame& depth)
             {
                 auto depth_frame = (frame_interface*)depth.get();
                 std::lock_guard<std::mutex> lock(_mutex);
@@ -229,76 +265,79 @@ namespace librealsense
                 {
                     throw wrong_api_call_sequence_exception("Received depth frame that doesn't provide either intrinsics or depth units!");
                 }
+
+                if (!_stream.get())
+                {
+                    _stream = depth_frame->get_stream()->clone();
+                    _stream->get_context().register_same_extrinsics(*_stream, *depth_frame->get_stream());
+                }
             };
 
-            auto on_other_frame = [this](const rs2::frame& other)
+            auto inspect_other_frame = [this](const rs2::frame& other)
             {
                 auto other_frame = (frame_interface*)other.get();
                 std::lock_guard<std::mutex> lock(_mutex);
 
-                bool assigned_stream_type = false;
-                if (_expected_mapped_stream == RS2_STREAM_ANY)
+                if (_mapped.get() != other_frame->get_stream().get())
                 {
-                    _expected_mapped_stream = other.get_profile().stream_type();
-                    assigned_stream_type = true;
+                    _mapped = other_frame->get_stream();
                 }
 
-                if (_expected_mapped_stream == other.get_profile().stream_type())
+                if (!_mapped_intrinsics_ptr)
                 {
-                    bool found_mapped_intrinsics = false;
-                    bool found_extrinsics = false;
-
-                    if (!_mapped_intrinsics_ptr)
+                    if (auto video = dynamic_cast<video_stream_profile_interface*>(_mapped.get()))
                     {
-                        auto stream_profile = other_frame->get_stream();
-                        if (auto video = dynamic_cast<video_stream_profile_interface*>(stream_profile.get()))
-                        {
-                            _mapped_intrinsics = video->get_intrinsics();
-                            _mapped_intrinsics_ptr = &_mapped_intrinsics;
-                            found_mapped_intrinsics = true;
-                        }
-                        if (!found_mapped_intrinsics && assigned_stream_type)
-                        {
-                            // If unable to get extrinsics for this stream, undo stream assignment
-                            _expected_mapped_stream = RS2_STREAM_ANY;
-                        }
+                        _mapped_intrinsics = video->get_intrinsics();
+                        _mapped_intrinsics_ptr = &_mapped_intrinsics;
                     }
+                }
 
-                    if (!_extrinsics_ptr)
+                if (_stream && !_extrinsics_ptr)
+                {
+                    if (other_frame->get_stream()->get_context().try_fetch_extrinsics(
+                        *_stream, *other_frame->get_stream(), &_extrinsics
+                    ))
                     {
-                        auto sensor = other_frame->get_sensor();
-                        if (sensor)
-                        {
-                            auto&& device = sensor->get_device();
-                            size_t mapped_idx = -1;
-                            size_t depth_idx = -1;
-                            for (size_t i = 0; i < device.get_sensors_count(); i++)
-                            {
-                                if (&device.get_sensor(i) == sensor.get())
-                                {
-                                    mapped_idx = i;
-                                }
-                                if (device.get_sensor(i).supports_option(RS2_OPTION_DEPTH_UNITS))
-                                {
-                                    depth_idx = i;
-                                }
-                            }
+                        _extrinsics_ptr = &_extrinsics;
+                    }
+                }
+            };
 
-                            if (mapped_idx != -1 && depth_idx != -1)
-                            {
-                                // TODO: get extrinsics
-                                //_extrinsics = device.get_extrinsics(depth_idx, RS2_STREAM_DEPTH, mapped_idx, _expected_mapped_stream);
-                                _extrinsics_ptr = &_extrinsics;
-                                found_extrinsics = true;
-                            }
-                        }
-                        if (!found_extrinsics && assigned_stream_type)
+            auto process_depth_frame = [this](const rs2::frame& depth)
+            {
+                frame_holder res = get_source().allocate_points(_stream, (frame_interface*)depth.get());
+
+                auto pframe = (points*)(res.frame);
+
+                auto points = depth_to_points((uint8_t*)pframe->get_vertices(), *_depth_intrinsics_ptr, (const uint16_t*)depth.get_data(), *_depth_units_ptr);
+
+                auto vid_frame = depth.as<rs2::video_frame>();
+                float2* tex_ptr = pframe->get_texture_coordinates();
+
+                if (_extrinsics_ptr && _mapped_intrinsics_ptr)
+                {
+                    for (int y = 0; y < vid_frame.get_height(); ++y)
+                    {
+                        for (int x = 0; x < vid_frame.get_width(); ++x)
                         {
-                            // If unable to get extrinsics for this stream, undo stream assignment
-                            _expected_mapped_stream = RS2_STREAM_ANY;
+                            if (points->z)
+                            {
+                                auto trans = transform(_extrinsics_ptr, *points);
+                                auto tex_xy = project_to_texcoord(_mapped_intrinsics_ptr, trans);
+
+                                *tex_ptr = tex_xy;
+                            }
+                            else
+                            {
+                                *tex_ptr = { 0.f, 0.f };
+                            }
+                            ++points;
+                            ++tex_ptr;
                         }
                     }
                 }
+
+                get_source().frame_ready(std::move(res));
             };
 
             if (auto composite = f.as<rs2::composite_frame>())
@@ -306,26 +345,26 @@ namespace librealsense
                 auto depth = composite.first_or_default(RS2_STREAM_DEPTH);
                 if (depth)
                 {
-                    on_depth_frame(depth);
+                    inspect_depth_frame(depth);
+                    process_depth_frame(depth);
                 }
                 else
                 {
-                    composite.foreach(on_other_frame);
+                    composite.foreach(inspect_other_frame);
                 }
             }
             else
             {
                 if (f.get_profile().stream_type() == RS2_STREAM_DEPTH)
                 {
-                    on_depth_frame(f);
+                    inspect_depth_frame(f);
+                    process_depth_frame(f);
                 }
                 else
                 {
-                    on_other_frame(f);
+                    inspect_other_frame(f);
                 }
             }
-
-
         };
         auto callback = new rs2::frame_processor_callback<decltype(on_frame)>(on_frame);
         processing_block::set_processing_callback(std::shared_ptr<rs2_frame_processor_callback>(callback));

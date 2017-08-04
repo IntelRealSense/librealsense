@@ -1339,7 +1339,7 @@ int rs2_embedded_frames_count(rs2_frame* composite, rs2_error** error) try
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, composite)
 
-rs2_vertex* rs2_get_vertices(const rs2_frame* frame, rs2_error** error) try
+rs2_vertex* rs2_get_frame_vertices(const rs2_frame* frame, rs2_error** error) try
 {
     VALIDATE_NOT_NULL(frame);
     auto points = VALIDATE_INTERFACE((frame_interface*)frame, librealsense::points);
@@ -1347,15 +1347,15 @@ rs2_vertex* rs2_get_vertices(const rs2_frame* frame, rs2_error** error) try
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, frame)
 
-rs2_pixel* rs2_get_pixel_coordinates(const rs2_frame* frame, rs2_error** error) try
+rs2_pixel* rs2_get_frame_texture_coordinates(const rs2_frame* frame, rs2_error** error) try
 {
     VALIDATE_NOT_NULL(frame);
     auto points = VALIDATE_INTERFACE((frame_interface*)frame, librealsense::points);
-    return (rs2_pixel*)points->get_pixel_coordinates();
+    return (rs2_pixel*)points->get_texture_coordinates();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, frame)
 
-int rs2_get_points_count(const rs2_frame* frame, rs2_error** error) try
+int rs2_get_frame_points_count(const rs2_frame* frame, rs2_error** error) try
 {
     VALIDATE_NOT_NULL(frame);
     auto points = VALIDATE_INTERFACE((frame_interface*)frame, librealsense::points);
