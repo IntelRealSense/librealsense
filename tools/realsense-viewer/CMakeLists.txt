@@ -1,7 +1,7 @@
 # ubuntu 16.04 LTS cmake version 3.5.1
 cmake_minimum_required(VERSION 2.8.3)
 
-project(RealsenseToolsRealSenseUI)
+project(RealsenseToolsRealSenseViewer)
 
 # Save the command line compile commands in the build output
 set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
@@ -34,8 +34,8 @@ endif()
 if(BUILD_GRAPHICAL_EXAMPLES)
 
     # config-ui
-    add_executable(realsense-ui 
-        realsense-ui.cpp 
+    add_executable(realsense-viewer 
+        realsense-viewer.cpp 
         ../../third-party/imgui/imgui.cpp 
         ../../third-party/imgui/imgui_draw.cpp 
         ../../third-party/imgui/imgui_impl_glfw.cpp 
@@ -44,16 +44,16 @@ if(BUILD_GRAPHICAL_EXAMPLES)
         ../../common/example.hpp 
         ../../common/model-views.h 
         ../../common/model-views.cpp)
-    target_link_libraries(realsense-ui ${DEPENDENCIES} ${GTK3_LIBRARIES})
-    include_directories(realsense-ui ../../third-party/imgui ../../common ../../third-party)
-    set_target_properties (realsense-ui PROPERTIES
+    target_link_libraries(realsense-viewer ${DEPENDENCIES} ${GTK3_LIBRARIES})
+    include_directories(realsense-viewer ../../third-party/imgui ../../common ../../third-party)
+    set_target_properties (realsense-viewer PROPERTIES
         FOLDER Tools
     )
 
     install(
         TARGETS
 
-        realsense-ui
+        realsense-viewer
 
         RUNTIME DESTINATION
         ${CMAKE_INSTALL_PREFIX}/bin

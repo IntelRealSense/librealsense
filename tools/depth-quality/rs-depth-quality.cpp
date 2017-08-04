@@ -11,6 +11,7 @@
 #include <memory>
 #include <string>
 #include <cmath>
+#include <thread>
 #include "../common/realsense-ui/realsense-ui-advanced-mode.h"
 #include "model-views.h"
 
@@ -365,14 +366,15 @@ int main(int argc, char * argv[])
             option_data laser(dpt, RS2_OPTION_LASER_POWER);
             
 
-            auto modes = dpt.get_stream_modes();
-            for (auto&& profile : dpt.get_stream_modes())
+            auto modes = dpt.get_stream_profiles();
+            for (auto&& profile : modes)
             {
-                if (profile.stream == RS2_STREAM_DEPTH &&
-                    profile.format == RS2_FORMAT_Z16)
+                if (profile.stream_type() == RS2_STREAM_DEPTH &&
+                    profile.format() == RS2_FORMAT_Z16)
                 {
-                    resolutions.insert(std::make_pair(profile.width, profile.height));
-                    supported_fps_by_resolution[std::make_pair(profile.width, profile.height)].push_back(profile.fps);
+                    auto video_profile = profile.as<video_stream_profile>();
+                    resolutions.insert(std::make_pair(video_profile.width(), video_profile.height()));
+                    supported_fps_by_resolution[std::make_pair(video_profile.width(), video_profile.height())].push_back(profile.fps());
                 }
             }
 
@@ -431,7 +433,7 @@ int main(int argc, char * argv[])
 
             // Configure depth stream to run at 30 frames per second
             util::config config;
-            config.enable_stream(RS2_STREAM_DEPTH, default_width, default_height, 30, RS2_FORMAT_Z16);
+            config.enable_stream(RS2_STREAM_DEPTH, default_width, default_height, RS2_FORMAT_Z16, 30);
             //config.enable_stream(RS2_STREAM_DEPTH, 640, 360, 30, RS2_FORMAT_Z16);
             auto stream = config.open(dev);
             rs2_intrinsics current_frame_intrinsics = stream.get_intrinsics(RS2_STREAM_DEPTH);
@@ -480,7 +482,7 @@ int main(int argc, char * argv[])
                 {
                     auto f = calc_queue.wait_for_frame();
 
-                    auto stream_type = f.get_stream_type();
+                    auto stream_type = f.get_profile().stream_type();
 
                     if (stream_type == RS2_STREAM_DEPTH)
                     {
@@ -519,7 +521,7 @@ int main(int argc, char * argv[])
 
                 auto f = display_queue.wait_for_frame();
 
-                auto stream_type = f.get_stream_type();
+                auto stream_type = f.get_profile().stream_type();
 
                 if (stream_type == RS2_STREAM_DEPTH)
                 {
@@ -599,7 +601,7 @@ int main(int argc, char * argv[])
                     // TODO: if you can find 30, use it
                     // else use whatever
                     config.enable_stream(RS2_STREAM_DEPTH, selected_resolution.first,
-                                         selected_resolution.second, fps, RS2_FORMAT_Z16);
+                                         selected_resolution.second, RS2_FORMAT_Z16, fps);
                     stream = config.open(dev);
                     stream.start([&](rs2::frame f)
                     {

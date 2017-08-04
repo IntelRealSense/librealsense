@@ -2158,44 +2158,44 @@ TEST_CASE("Auto-complete feature works", "[offline][util::config]") {
 }
 
 #include <librealsense/rsutil2.hpp>
-std::vector<rs2::stream_profile> configure_all_supported_streams(rs2::device& dev, util::config& config)
+std::vector<rs2::util::config::request_type> configure_all_supported_streams(rs2::device& dev, util::config& config)
 {
-    std::vector<rs2::stream_profile> profiles;
+    std::vector<rs2::util::config::request_type> profiles;
 
-    if (config.can_enable_stream(dev, RS2_STREAM_DEPTH, 640, 480, 60, RS2_FORMAT_Z16))
+    if (config.can_enable_stream(dev, RS2_STREAM_DEPTH, 640, 480, RS2_FORMAT_Z16, 60))
     {
-        REQUIRE_NOTHROW(config.enable_stream( RS2_STREAM_DEPTH, 640, 480, 60, RS2_FORMAT_Z16));
-        profiles.push_back({RS2_STREAM_DEPTH, 640, 480, 60, RS2_FORMAT_Z16});
+        REQUIRE_NOTHROW(config.enable_stream( RS2_STREAM_DEPTH, 640, 480, RS2_FORMAT_Z16, 60));
+        profiles.push_back({RS2_STREAM_DEPTH, 0, 640, 480, RS2_FORMAT_Z16, 60});
     }
-    if (config.can_enable_stream(dev, RS2_STREAM_COLOR, 640, 480, 60, RS2_FORMAT_RGB8))
+    if (config.can_enable_stream(dev, RS2_STREAM_COLOR, 640, 480, RS2_FORMAT_RGB8, 60))
     {
-        REQUIRE_NOTHROW(config.enable_stream( RS2_STREAM_COLOR, 640, 480, 60, RS2_FORMAT_RGB8));
-        profiles.push_back({RS2_STREAM_COLOR, 640, 480, 60, RS2_FORMAT_RGB8});
+        REQUIRE_NOTHROW(config.enable_stream( RS2_STREAM_COLOR, 640, 480, RS2_FORMAT_RGB8, 60));
+        profiles.push_back({RS2_STREAM_COLOR, 0, 640, 480, RS2_FORMAT_RGB8, 60});
     }
-    if (config.can_enable_stream(dev, RS2_STREAM_INFRARED, 640, 480, 60, RS2_FORMAT_Y8))
+    if (config.can_enable_stream(dev, RS2_STREAM_INFRARED, 640, 480, RS2_FORMAT_Y8, 60))
     {
-        REQUIRE_NOTHROW(config.enable_stream(  RS2_STREAM_INFRARED, 640, 480, 60, RS2_FORMAT_Y8));
-        profiles.push_back({ RS2_STREAM_INFRARED, 640, 480, 60, RS2_FORMAT_Y8});
+        REQUIRE_NOTHROW(config.enable_stream(  RS2_STREAM_INFRARED, 640, 480, RS2_FORMAT_Y8, 60));
+        profiles.push_back({ RS2_STREAM_INFRARED, 1, 640, 480, RS2_FORMAT_Y8, 60});
     }
-    if (config.can_enable_stream(dev, RS2_STREAM_INFRARED2, 640, 480, 60, RS2_FORMAT_Y8))
+    if (config.can_enable_stream(dev, RS2_STREAM_INFRARED, 2, 640, 480, RS2_FORMAT_Y8, 60))
     {
-        REQUIRE_NOTHROW(config.enable_stream(  RS2_STREAM_INFRARED2, 640, 480, 60, RS2_FORMAT_Y8));
-        profiles.push_back({ RS2_STREAM_INFRARED2, 640, 480, 60, RS2_FORMAT_Y8});
+        REQUIRE_NOTHROW(config.enable_stream(  RS2_STREAM_INFRARED, 2, 640, 480, RS2_FORMAT_Y8, 60));
+        profiles.push_back({ RS2_STREAM_INFRARED, 2, 640, 480, RS2_FORMAT_Y8, 60});
     }
-    if (config.can_enable_stream(dev, RS2_STREAM_FISHEYE, 640, 480, 60, RS2_FORMAT_RAW8))
+    if (config.can_enable_stream(dev, RS2_STREAM_FISHEYE, 640, 480, RS2_FORMAT_RAW8, 60))
     {
-        REQUIRE_NOTHROW(config.enable_stream( RS2_STREAM_FISHEYE, 640, 480, 60, RS2_FORMAT_RAW8));
-        profiles.push_back({RS2_STREAM_FISHEYE, 640, 480, 60, RS2_FORMAT_RAW8});
+        REQUIRE_NOTHROW(config.enable_stream( RS2_STREAM_FISHEYE, 640, 480, RS2_FORMAT_RAW8, 60));
+        profiles.push_back({RS2_STREAM_FISHEYE, 0, 640, 480, RS2_FORMAT_RAW8, 60});
     }
-    if (config.can_enable_stream(dev, RS2_STREAM_GYRO, 0, 0, 0, RS2_FORMAT_MOTION_XYZ32F))
+    if (config.can_enable_stream(dev, RS2_STREAM_GYRO, 0, 0, RS2_FORMAT_MOTION_XYZ32F, 0))
     {
-        REQUIRE_NOTHROW(config.enable_stream( RS2_STREAM_GYRO,  1, 1, 1000, RS2_FORMAT_MOTION_XYZ32F));
-        profiles.push_back({RS2_STREAM_GYRO,  0, 0, 0, RS2_FORMAT_MOTION_XYZ32F});
+        REQUIRE_NOTHROW(config.enable_stream( RS2_STREAM_GYRO,  1, 1, RS2_FORMAT_MOTION_XYZ32F, 1000));
+        profiles.push_back({RS2_STREAM_GYRO, 0,  0, 0, RS2_FORMAT_MOTION_XYZ32F, 0});
     }
-    if (config.can_enable_stream(dev, RS2_STREAM_ACCEL,  0, 0, 0, RS2_FORMAT_MOTION_XYZ32F))
+    if (config.can_enable_stream(dev, RS2_STREAM_ACCEL,  0, 0, RS2_FORMAT_MOTION_XYZ32F, 0))
     {
-        REQUIRE_NOTHROW(config.enable_stream( RS2_STREAM_ACCEL, 1, 1, 1000,  RS2_FORMAT_MOTION_XYZ32F));
-        profiles.push_back({RS2_STREAM_ACCEL,  0, 0, 0, RS2_FORMAT_MOTION_XYZ32F});
+        REQUIRE_NOTHROW(config.enable_stream( RS2_STREAM_ACCEL, 1, 1, RS2_FORMAT_MOTION_XYZ32F, 1000));
+        profiles.push_back({RS2_STREAM_ACCEL, 0,  0, 0, RS2_FORMAT_MOTION_XYZ32F, 0});
     }
     return profiles;
 }

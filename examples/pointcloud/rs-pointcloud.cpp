@@ -266,8 +266,12 @@ int main(int argc, char * argv[])
 
                 for (int i = 0; i < points.size(); i++)
                 {
-                    glVertex3fv(vertices[i]);
-                    glTexCoord2fv(tex_coords[i]);
+                    if (vertices[i].z)
+                    {
+                        glVertex3fv(vertices[i]);
+                        glTexCoord2fv(tex_coords[i]);
+                    }
+
                 }
 
                 glEnd();
