@@ -420,6 +420,8 @@ namespace rs2
         std::map<int, stream_model> streams;
         bool fullscreen = false;
         stream_model* selected_stream = nullptr;
+
+        points model_3d;
     private:
         std::map<int, rect> get_interpolated_layout(const std::map<int, rect>& l);
 

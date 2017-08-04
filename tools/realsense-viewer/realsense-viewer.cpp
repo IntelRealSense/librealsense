@@ -325,10 +325,13 @@ void show_stream_header(rs2::rect stream_rect, stream_model& model, viewer_model
     ImGui::PopStyleVar();
 }
 
+struct renderer_state { double yaw, pitch, last_x, last_y; bool ml; float offset_x, offset_y; device * dev; };
+
 struct user_data
 {
     GLFWwindow* curr_window = nullptr;
     mouse_info* mouse = nullptr;
+    renderer_state* render_state = nullptr;
 };
 
 class drag_drop_manager
@@ -587,25 +590,6 @@ int main(int, char**) try
 
     not_model.add_log(to_string() << "librealsense version: " << api_version_to_string(rs2_get_api_version(&e)) << "\n");
 
-    mouse_info mouse;
-
-    user_data data;
-    data.curr_window = window;
-    data.mouse = &mouse;
-
-    glfwSetDropCallback(window, handle_dropped_file);
-    glfwSetWindowUserPointer(window, &data);
-
-    glfwSetCursorPosCallback(window, [](GLFWwindow* w, double cx, double cy)
-    {
-        reinterpret_cast<user_data*>(glfwGetWindowUserPointer(w))->mouse->cursor = { (float)cx, (float)cy };
-    });
-    glfwSetMouseButtonCallback(window, [](GLFWwindow* w, int button, int action, int mods)
-    {
-        auto data = reinterpret_cast<user_data*>(glfwGetWindowUserPointer(w));
-        data->mouse->mouse_down = (button == GLFW_MOUSE_BUTTON_1) && (action != GLFW_RELEASE);
-    });
-
     auto last_time_point = std::chrono::high_resolution_clock::now();
 
 
@@ -621,6 +605,48 @@ int main(int, char**) try
     std::mutex m;
 
     auto timestamp = std::chrono::duration<double, std::milli>(std::chrono::system_clock::now().time_since_epoch()).count();
+
+    mouse_info mouse;
+    renderer_state app_state = { 0, 0, 0, 0, false, 0, 0, &dev };
+
+    user_data data;
+    data.curr_window = window;
+    data.mouse = &mouse;
+    data.render_state = &app_state;
+
+    glfwSetDropCallback(window, handle_dropped_file);
+    glfwSetWindowUserPointer(window, &data);
+
+    glfwSetCursorPosCallback(window, [](GLFWwindow* w, double cx, double cy)
+    {
+        auto data = reinterpret_cast<user_data*>(glfwGetWindowUserPointer(w));
+        data->mouse->cursor = { (float)cx, (float)cy };
+        auto s = data->render_state;
+        if (s->ml)
+        {
+            s->yaw -= (cx - s->last_x);
+            s->yaw = std::max(s->yaw, -120.0);
+            s->yaw = std::min(s->yaw, +120.0);
+            s->pitch += (cy - s->last_y);
+            s->pitch = std::max(s->pitch, -80.0);
+            s->pitch = std::min(s->pitch, +80.0);
+        }
+        s->last_x = cx;
+        s->last_y = cy;
+    });
+    glfwSetMouseButtonCallback(window, [](GLFWwindow* w, int button, int action, int mods)
+    {
+        auto data = reinterpret_cast<user_data*>(glfwGetWindowUserPointer(w));
+        data->mouse->mouse_down = (button == GLFW_MOUSE_BUTTON_1) && (action != GLFW_RELEASE);
+        if (button == GLFW_MOUSE_BUTTON_LEFT) data->render_state->ml = action == GLFW_PRESS;
+    });
+    glfwSetScrollCallback(window, [](GLFWwindow * win, double xoffset, double yoffset)
+    {
+        auto s = (user_data *)glfwGetWindowUserPointer(win);
+        s->render_state->offset_x += static_cast<float>(xoffset);
+        s->render_state->offset_y += static_cast<float>(yoffset);
+    });
+
 
     ctx.set_devices_changed_callback([&](event_information& info)
     {
@@ -666,6 +692,8 @@ int main(int, char**) try
         }
         refresh_device_list = true;
     });
+
+    auto pc = ctx.create_pointcloud();
 
     advanced_mode_control amc{};
     bool get_curr_advanced_controls = true;
@@ -1185,40 +1213,6 @@ int main(int, char**) try
                 }
             }
 
-            //ImGui::EndChildFrame();
-            //ImGui::PopStyleColor();
-
-            //if (list.size() > 0 && ImGui::CollapsingHeader("Hardware Commands", nullptr, true, true))
-            //{
-            //    label = to_string() << "Hardware Reset";
-
-            //    const float hardware_reset_button_width = 300;
-            //    const float hardware_reset_button_height = 0;
-
-            //    if (ImGui::ButtonEx(label.c_str(), { hardware_reset_button_width, hardware_reset_button_height }, hw_reset_enable ? 0 : ImGuiButtonFlags_Disabled))
-            //    {
-            //        try
-            //        {
-            //            restarting_device_info = get_device_info(dev, false);
-            //            dev.hardware_reset();
-            //        }
-            //        catch (const error& e)
-            //        {
-            //            error_message = error_to_string(e);
-            //        }
-            //        catch (const std::exception& e)
-            //        {
-            //            error_message = e.what();
-            //        }
-            //    }
-            //    if (ImGui::IsItemHovered())
-            //    {
-            //        ImGui::SetTooltip("Ask camera firmware to restart the device");
-            //    }
-            //}
-
-            //ImGui::Text("\n\n\n\n\n\n\n");
-
             for (auto&& sub : model.subdevices)
             {
                 sub->update(error_message, not_model);
@@ -1417,6 +1411,15 @@ int main(int, char**) try
                     frame f;
                     if (queue.poll_for_frame(&f))
                     {
+                        if (f.get_profile().stream_type() == RS2_STREAM_DEPTH)
+                        {
+                            viewer_model.model_3d = pc.calculate(f);
+                        }
+                        else
+                        {
+                            pc.map_to(f);
+                        }
+
                         viewer_model.upload_frame(std::move(f));
                     }
                 }
@@ -1450,8 +1453,6 @@ int main(int, char**) try
 
             for (auto &&kvp : layout)
             {
-                
-
                 auto&& view_rect = kvp.second;
                 auto stream = kvp.first;
                 auto&& stream_size = viewer_model.streams[stream].size;
@@ -1522,6 +1523,63 @@ int main(int, char**) try
                     viewer_model.streams[kvp.first].show_metadata(mouse);
             }
         }
+        else
+        {
+            glfwGetFramebufferSize(window, &w, &h);
+            glViewport(0, 0, w, h);
+            glClearColor(0,0,0,1);
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+            glMatrixMode(GL_PROJECTION);
+            glPushMatrix();
+            gluPerspective(60, (float)w / h, 0.01f, 10.0f);
+
+            glMatrixMode(GL_MODELVIEW);
+            glPushMatrix();
+            gluLookAt(0, 0, 0, 0, 0, 1, 0, -1, 0);
+
+            glTranslatef(0, 0, +0.5f + app_state.offset_y*0.05f);
+            glRotated(app_state.pitch, 1, 0, 0);
+            glRotated(app_state.yaw, 0, 1, 0);
+            glTranslatef(0, 0, -0.5f);
+
+
+
+            if (auto points = viewer_model.model_3d)
+            {
+                glPointSize((float)w / points.get_profile().as<video_stream_profile>().width());
+                glEnable(GL_DEPTH_TEST);
+                
+                glEnable(GL_TEXTURE_2D);
+                glBindTexture(GL_TEXTURE_2D, viewer_model.streams.begin()->second.texture->get_gl_handle());
+
+                //glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, tex_border_color);
+                //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, texture_border_mode);
+                //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, texture_border_mode);
+                glBegin(GL_POINTS);
+
+                auto vertices = points.get_vertices();
+                auto tex_coords = points.get_texture_coordinates();
+
+                for (int i = 0; i < points.size(); i++)
+                {
+                    if (vertices[i].z)
+                    {
+                        glVertex3fv(vertices[i]);
+                        glTexCoord2fv(tex_coords[i]);
+                    }
+
+                }
+
+                glEnd();
+                glDisable(GL_DEPTH_TEST);
+            }
+
+            glPopMatrix();
+            glMatrixMode(GL_PROJECTION);
+            glPopMatrix();
+            glPopAttrib();
+        }
 
         not_model.draw(w, h, selected_notification);
         ImGui::Render();
@@ -1546,3 +1604,12 @@ catch (const error & e)
     std::cerr << "RealSense error calling " << e.get_failed_function() << "(" << e.get_failed_args() << "):\n    " << e.what() << std::endl;
     return EXIT_FAILURE;
 }
+
+#ifdef WIN32
+int CALLBACK WinMain(
+    _In_ HINSTANCE hInstance,
+    _In_ HINSTANCE hPrevInstance,
+    _In_ LPSTR     lpCmdLine,
+    _In_ int       nCmdShow
+) { main(0, nullptr); }
+#endif

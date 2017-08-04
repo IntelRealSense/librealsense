@@ -560,6 +560,8 @@ namespace rs2
     class points : public frame
     {
     public:
+        points() : frame(), _size(0) {}
+
         points(const frame& f)
                 : frame(f), _size(0)
         {

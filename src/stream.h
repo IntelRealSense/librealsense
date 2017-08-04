@@ -128,7 +128,7 @@ namespace librealsense
         }
 
 
-        size_t get_size() const override { return get_width() * get_height() * get_framerate() * get_image_bpp(get_format()) / 8; }
+        size_t get_size() const override { return 0; }
     private:
         std::function<rs2_intrinsics()> _calc_intrinsics;
         uint32_t _width, _height;

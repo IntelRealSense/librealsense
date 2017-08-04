@@ -33,17 +33,27 @@ endif()
 
 if(BUILD_GRAPHICAL_EXAMPLES)
 
+    set(RS_VIEWER_CPP 
+            realsense-viewer.cpp 
+            ../../third-party/imgui/imgui.cpp 
+            ../../third-party/imgui/imgui_draw.cpp 
+            ../../third-party/imgui/imgui_impl_glfw.cpp 
+            ../../third-party/imgui/imgui-fonts-karla.hpp
+            ../../third-party/imgui/imgui-fonts-fontawesome.hpp
+            ../../common/example.hpp 
+            ../../common/model-views.h 
+            ../../common/model-views.cpp
+        )
+
     # config-ui
-    add_executable(realsense-viewer 
-        realsense-viewer.cpp 
-        ../../third-party/imgui/imgui.cpp 
-        ../../third-party/imgui/imgui_draw.cpp 
-        ../../third-party/imgui/imgui_impl_glfw.cpp 
-        ../../third-party/imgui/imgui-fonts-karla.hpp
-        ../../third-party/imgui/imgui-fonts-fontawesome.hpp
-        ../../common/example.hpp 
-        ../../common/model-views.h 
-        ../../common/model-views.cpp)
+    if(WIN32)
+        add_executable(realsense-viewer WIN32
+            ${RS_VIEWER_CPP})
+    else()
+        add_executable(realsense-viewer 
+            ${RS_VIEWER_CPP})
+    endif()
+
     target_link_libraries(realsense-viewer ${DEPENDENCIES} ${GTK3_LIBRARIES})
     include_directories(realsense-viewer ../../third-party/imgui ../../common ../../third-party)
     set_target_properties (realsense-viewer PROPERTIES
