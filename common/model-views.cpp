@@ -666,7 +666,7 @@ namespace rs2
         for (auto&& f : formats)
         {
             auto stream = f.first;
-            if (stream_enabled[stream])
+            if (stream_enabled[stream] && res_values.size() > 0)
             {
                 auto width = res_values[selected_res_id].first;
                 auto height = res_values[selected_res_id].second;
@@ -1122,10 +1122,10 @@ namespace rs2
         if (stream_rect.contains(g.cursor))
         {
             static const auto wheel_step = 0.1f;
-            auto mouse_wheel_value = -ImGui::GetIO().MouseWheel;
-            if (mouse_wheel_value > wheel_step)
+            auto mouse_wheel_value = -g.mouse_wheel * 0.1f;
+            if (mouse_wheel_value > 0)
                 zoom_val += wheel_step;
-            else if (mouse_wheel_value < -wheel_step)
+            else if (mouse_wheel_value < 0)
                 zoom_val -= wheel_step;
         }
 

@@ -79,7 +79,7 @@ namespace librealsense
         }
 
         if (0 == temperature_data.*is_valid_field)
-            throw invalid_value_exception(to_string() << rs2_option_to_string(_option) << " value is not valid!");
+            LOG_ERROR(rs2_option_to_string(_option) << " value is not valid!");
 
         return temperature_data.*field;
     }

@@ -23,6 +23,9 @@
 #define NOC_FILE_DIALOG_IMPLEMENTATION
 #include <noc_file_dialog.h>
 
+#define ARCBALL_CAMERA_IMPLEMENTATION
+#include "arcball_camera.h"
+
 #pragma comment(lib, "opengl32.lib")
 
 using namespace rs2;
@@ -101,6 +104,51 @@ void imgui_easy_theming()
     style.Colors[ImGuiCol_HeaderHovered] = from_rgba(62, 77, 89, 255);
     style.Colors[ImGuiCol_HeaderActive] = from_rgba(62, 77, 89, 255);
     style.Colors[ImGuiCol_PopupBg] = from_rgba(62, 77, 89, 255);
+}
+
+void show_stream_footer(rect stream_rect, stream_model& stream_mv, mouse_info& mouse)
+{
+    auto flags = ImGuiWindowFlags_NoResize |
+        ImGuiWindowFlags_NoMove |
+        ImGuiWindowFlags_NoCollapse |
+        ImGuiWindowFlags_NoTitleBar;
+
+    ImGui::PushStyleColor(ImGuiCol_WindowBg, { 0, 0, 0, 0 });
+    ImGui::SetNextWindowPos({ stream_rect.x, stream_rect.y + stream_rect.h - 30 });
+    ImGui::SetNextWindowSize({ stream_rect.w, 30 });
+    std::string label = to_string() << "Footer for stream of " << stream_mv.profile.unique_id();
+    ImGui::Begin(label.c_str(), nullptr, flags);
+
+    if (stream_rect.contains(mouse.cursor))
+    {
+        std::stringstream ss;
+        rect cursor_rect{ mouse.cursor.x, mouse.cursor.y };
+        auto ts = cursor_rect.normalize(stream_rect);
+        auto pixels = ts.unnormalize(stream_mv._normalized_zoom.unnormalize(stream_mv.get_stream_bounds()));
+        auto x = (int)pixels.x;
+        auto y = (int)pixels.y;
+
+        ss << std::fixed << std::setprecision(0) << x << ", " << y;
+
+        float val{};
+        if (stream_mv.texture->try_pick(x, y, &val))
+        {
+            ss << ", *p: 0x" << std::hex << val;
+            if (stream_mv.profile.stream_type() == RS2_STREAM_DEPTH && val > 0)
+            {
+                auto meters = (val * stream_mv.dev->depth_units);
+                ss << std::dec << ", ~"
+                    << std::setprecision(2) << meters << " meters";
+            }
+        }
+
+        label = ss.str();
+        ImGui::Text("%s", label.c_str());
+    }
+
+    ImGui::End();
+    ImGui::PopStyleColor();
+    ImGui::PopFont();
 }
 
 void show_stream_header(rs2::rect stream_rect, stream_model& model, viewer_model& viewer)
@@ -214,7 +262,6 @@ void show_stream_header(rs2::rect stream_rect, stream_model& model, viewer_model
     {
         ImGui::SetTooltip("Stop this sensor");
     }
-    ImGui::SameLine();
 
     //if (model.streams[stream].show_stream_details)
     //{
@@ -321,11 +368,17 @@ void show_stream_header(rs2::rect stream_rect, stream_model& model, viewer_model
     //}
 
     ImGui::End();
-    ImGui::PopStyleColor(5);
+    ImGui::PopStyleColor(6);
     ImGui::PopStyleVar();
 }
 
-struct renderer_state { double yaw, pitch, last_x, last_y; bool ml; float offset_x, offset_y; device * dev; };
+struct renderer_state { 
+    double yaw, pitch, last_x, last_y; 
+    bool ml; 
+    float offset_x, offset_y; 
+    device * dev; 
+    bool* active; 
+};
 
 struct user_data
 {
@@ -524,6 +577,36 @@ void draw_advanced_mode_tab(device& dev, advanced_mode_control& amc,
     ImGui::PopStyleColor();
 }
 
+void reset_camera(float3& pos, float3& target, float3& up)
+{
+    pos = { 0.0f, 0.0f, -1.5f };
+    target = { 0.0f, 0.0f, 0.0f };
+
+    // initialize "up" to be tangent to the sphere!
+    // up = cross(cross(look, world_up), look)
+    {
+        float3 look = { target.x - pos.x, target.y - pos.y, target.z - pos.z };
+        look = look.normalize();
+
+        float world_up[3] = { 0.0f, 1.0f, 0.0f };
+
+        float across[3] = {
+            look.y * world_up[2] - look.z * world_up[1],
+            look.z * world_up[0] - look.x * world_up[2],
+            look.x * world_up[1] - look.y * world_up[0],
+        };
+
+        up.x = across[1] * look.z - across[2] * look.y;
+        up.y = across[2] * look.x - across[0] * look.z;
+        up.z = across[0] * look.y - across[1] * look.x;
+
+        float up_len = up.length();
+        up.x /= -up_len;
+        up.y /= -up_len;
+        up.z /= -up_len;
+    }
+}
+
 int main(int, char**) try
 {
     // activate logging to console
@@ -607,7 +690,7 @@ int main(int, char**) try
     auto timestamp = std::chrono::duration<double, std::milli>(std::chrono::system_clock::now().time_since_epoch()).count();
 
     mouse_info mouse;
-    renderer_state app_state = { 0, 0, 0, 0, false, 0, 0, &dev };
+    renderer_state app_state = { 0, 0, 0, 0, false, 0, 0, &dev, &is_3d_view };
 
     user_data data;
     data.curr_window = window;
@@ -622,7 +705,7 @@ int main(int, char**) try
         auto data = reinterpret_cast<user_data*>(glfwGetWindowUserPointer(w));
         data->mouse->cursor = { (float)cx, (float)cy };
         auto s = data->render_state;
-        if (s->ml)
+        if (*s->active && s->ml)
         {
             s->yaw -= (cx - s->last_x);
             s->yaw = std::max(s->yaw, -120.0);
@@ -631,6 +714,7 @@ int main(int, char**) try
             s->pitch = std::max(s->pitch, -80.0);
             s->pitch = std::min(s->pitch, +80.0);
         }
+
         s->last_x = cx;
         s->last_y = cy;
     });
@@ -643,10 +727,14 @@ int main(int, char**) try
     glfwSetScrollCallback(window, [](GLFWwindow * win, double xoffset, double yoffset)
     {
         auto s = (user_data *)glfwGetWindowUserPointer(win);
-        s->render_state->offset_x += static_cast<float>(xoffset);
-        s->render_state->offset_y += static_cast<float>(yoffset);
+        if (*s->render_state->active)
+        {
+            s->render_state->offset_x += static_cast<float>(xoffset);
+            s->render_state->offset_y += static_cast<float>(yoffset);
+        }
+        
+        s->mouse->mouse_wheel = yoffset;
     });
-
 
     ctx.set_devices_changed_callback([&](event_information& info)
     {
@@ -693,6 +781,15 @@ int main(int, char**) try
         refresh_device_list = true;
     });
 
+    float3 pos = { 0.0f, 0.0f, -0.5f };
+    float3 target = { 0.0f, 0.0f, 0.0f };
+    float3 up;
+    reset_camera(pos, target, up);
+    bool texture_wrapping_on = true;
+    GLint texture_border_mode = GL_CLAMP_TO_EDGE; // GL_CLAMP_TO_BORDER
+    float tex_border_color[] = { 0.8f, 0.8f, 0.8f, 0.8f };
+
+    float2 oldcursor{ 0.f, 0.f };
     auto pc = ctx.create_pointcloud();
 
     advanced_mode_control amc{};
@@ -792,6 +889,7 @@ int main(int, char**) try
         bool update_read_only_options = false;
         auto now = std::chrono::high_resolution_clock::now();
         auto duration = std::chrono::duration<double, std::milli>(now - last_time_point).count();
+        auto view_clock = std::chrono::high_resolution_clock::now();
         if (duration >= 6000)
         {
             update_read_only_options = true;
@@ -1217,10 +1315,10 @@ int main(int, char**) try
             {
                 sub->update(error_message, not_model);
             }
-        }
 
-        ImGui::PopStyleColor(2);
-        ImGui::PopFont();
+            ImGui::PopStyleColor(2);
+            ImGui::PopFont();
+        }
 
         ImGui::SetContentRegionWidth(windows_width);
 
@@ -1411,15 +1509,6 @@ int main(int, char**) try
                     frame f;
                     if (queue.poll_for_frame(&f))
                     {
-                        if (f.get_profile().stream_type() == RS2_STREAM_DEPTH)
-                        {
-                            viewer_model.model_3d = pc.calculate(f);
-                        }
-                        else
-                        {
-                            pc.map_to(f);
-                        }
-
                         viewer_model.upload_frame(std::move(f));
                     }
                 }
@@ -1455,65 +1544,14 @@ int main(int, char**) try
             {
                 auto&& view_rect = kvp.second;
                 auto stream = kvp.first;
-                auto&& stream_size = viewer_model.streams[stream].size;
+                auto&& stream_mv = viewer_model.streams[stream];
+                auto&& stream_size = stream_mv.size;
                 auto stream_rect = view_rect.adjust_ratio(stream_size);
 
-                viewer_model.streams[stream].show_frame(stream_rect, mouse, error_message);
+                stream_mv.show_frame(stream_rect, mouse, error_message);
 
-                show_stream_header(stream_rect, viewer_model.streams[stream], viewer_model);
-
-                ImGui::PushStyleColor(ImGuiCol_WindowBg, { 0, 0, 0, 0 });
-                ImGui::SetNextWindowPos({ stream_rect.x, stream_rect.y + stream_rect.h - 30 });
-                ImGui::SetNextWindowSize({ stream_rect.w, 30 });
-                label = to_string() << "Footer for stream of " << stream;
-                ImGui::Begin(label.c_str(), nullptr, flags);
-
-                auto&& stream_mv = viewer_model.streams[stream];
-
-                if (stream_rect.contains(mouse.cursor))
-                {
-                    std::stringstream ss;
-                    rect cursor_rect{ mouse.cursor.x, mouse.cursor.y };
-                    auto ts = cursor_rect.normalize(stream_rect);
-                    auto pixels = ts.unnormalize(stream_mv._normalized_zoom.unnormalize(stream_mv.get_stream_bounds()));
-                    auto x = (int)pixels.x;
-                    auto y = (int)pixels.y;
-
-                    ss << std::fixed << std::setprecision(0) << x << ", " << y;
-
-                    float val{};
-                    if (stream_mv.texture->try_pick(x, y, &val))
-                    {
-                        ss << ", *p: 0x" << std::hex << val;
-                        if (stream == RS2_STREAM_DEPTH && val > 0)
-                        {
-                            auto meters = (val * stream_mv.dev->depth_units);
-                            ss << std::dec << ", ~"
-                                << std::setprecision(2) << meters << " meters";
-                        }
-                    }
-
-                    label = ss.str();
-                    ImGui::Text("%s", label.c_str());
-                }
-
-                // Since applying color map involve some actual processing on the incoming frame
-                // we can't change the color map when the stream is frozen
-                if (stream == RS2_STREAM_DEPTH && stream_mv.dev && !stream_mv.dev->is_paused())
-                {
-                    ImGui::SameLine((int)ImGui::GetWindowWidth() - 150);
-                    ImGui::PushItemWidth(-1);
-                    if (ImGui::Combo("Color Map:", &viewer_model.streams[stream].color_map_idx, color_maps_names.data(), color_maps_names.size()))
-                    {
-                        viewer_model.streams[stream].texture->cm = color_maps[viewer_model.streams[stream].color_map_idx];
-                    }
-                    ImGui::PopItemWidth();
-                }
-
-                ImGui::End();
-                ImGui::PopStyleColor(2);
-                ImGui::PopFont();
-
+                show_stream_header(stream_rect, stream_mv, viewer_model);
+                show_stream_footer(stream_rect, stream_mv, mouse);
             }
 
             // Metadata overlay windows shall be drawn after textures to preserve z-buffer functionality
@@ -1525,25 +1563,63 @@ int main(int, char**) try
         }
         else
         {
+            static int tex_id = 0;
+            static auto last_frame_number = 0;
+            for (auto&& s : viewer_model.streams)
+            {
+                if (s.second.profile.stream_type() == RS2_STREAM_DEPTH && s.second.texture->last)
+                {
+                    auto frame_number = s.second.texture->last.get_frame_number();
+
+                    if (last_frame_number == frame_number) break;
+                    last_frame_number = frame_number;
+
+                    for (auto&& s : viewer_model.streams)
+                    {
+                        if (s.second.profile.stream_type() != RS2_STREAM_DEPTH && s.second.texture->last)
+                        {
+                            tex_id = s.second.texture->get_gl_handle();
+                            pc.map_to(s.second.texture->last);
+                            break;
+                        }
+                    }
+
+                    viewer_model.model_3d = pc.calculate(s.second.texture->last);
+                    break;
+                }
+            }
+
             glfwGetFramebufferSize(window, &w, &h);
             glViewport(0, 0, w, h);
             glClearColor(0,0,0,1);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+            auto sec_since_update = std::chrono::duration<double, std::milli>(now - view_clock).count();
+            view_clock = now;
+
+            float view[16];
+            arcball_camera_update(
+                (float*)&pos, (float*)&target, (float*)&up, view,
+                sec_since_update,
+                0.1f, // zoom per tick
+                0.8f, // pan speed
+                3.0f, // rotation multiplier
+                w, h, // screen (window) size
+                oldcursor.x, mouse.cursor.x,
+                oldcursor.y, mouse.cursor.y,
+                ImGui::GetIO().MouseDown[2],
+                ImGui::GetIO().MouseDown[0],
+                mouse.mouse_wheel,
+                0);
+
             glMatrixMode(GL_PROJECTION);
             glPushMatrix();
+            glLoadIdentity();
             gluPerspective(60, (float)w / h, 0.01f, 10.0f);
 
             glMatrixMode(GL_MODELVIEW);
             glPushMatrix();
-            gluLookAt(0, 0, 0, 0, 0, 1, 0, -1, 0);
-
-            glTranslatef(0, 0, +0.5f + app_state.offset_y*0.05f);
-            glRotated(app_state.pitch, 1, 0, 0);
-            glRotated(app_state.yaw, 0, 1, 0);
-            glTranslatef(0, 0, -0.5f);
-
-
+            glLoadMatrixf(view);
 
             if (auto points = viewer_model.model_3d)
             {
@@ -1551,11 +1627,14 @@ int main(int, char**) try
                 glEnable(GL_DEPTH_TEST);
                 
                 glEnable(GL_TEXTURE_2D);
-                glBindTexture(GL_TEXTURE_2D, viewer_model.streams.begin()->second.texture->get_gl_handle());
+                glBindTexture(GL_TEXTURE_2D, tex_id);
 
-                //glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, tex_border_color);
-                //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, texture_border_mode);
-                //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, texture_border_mode);
+                glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, tex_border_color);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, texture_border_mode);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, texture_border_mode);
+
+                glTranslatef(0, 0, -1);
+
                 glBegin(GL_POINTS);
 
                 auto vertices = points.get_vertices();
@@ -1575,15 +1654,42 @@ int main(int, char**) try
                 glDisable(GL_DEPTH_TEST);
             }
 
+            if (ImGui::IsKeyPressed('R') || ImGui::IsKeyPressed('r'))
+            {
+                reset_camera(pos, target, up);
+            }
+
             glPopMatrix();
             glMatrixMode(GL_PROJECTION);
             glPopMatrix();
             glPopAttrib();
         }
 
+        static bool paused = false;
+        if (ImGui::IsKeyPressed(' '))
+        {
+            if (paused)
+            {
+                for (auto&& s : viewer_model.streams)
+                {
+                    if (s.second.dev) s.second.dev->resume();
+                }
+            }
+            else
+            {
+                for (auto&& s : viewer_model.streams)
+                {
+                    if (s.second.dev) s.second.dev->pause();
+                }
+            }
+            paused = !paused;
+        }
+
         not_model.draw(w, h, selected_notification);
         ImGui::Render();
         glfwSwapBuffers(window);
+        mouse.mouse_wheel = 0;
+        oldcursor = mouse.cursor;
     }
 
     // Stop all subdevices

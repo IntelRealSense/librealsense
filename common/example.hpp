@@ -17,6 +17,15 @@
 #include <cmath>
 #include <map>
 
+#ifdef _MSC_VER
+#ifndef GL_CLAMP_TO_BORDER
+#define GL_CLAMP_TO_BORDER  0x812D
+#endif
+#ifndef GL_CLAMP_TO_EDGE
+#define GL_CLAMP_TO_EDGE    0x812F
+#endif
+#endif
+
 namespace rs2
 {
     class fps_calc
@@ -153,6 +162,7 @@ namespace rs2
     {
         float2 cursor;
         bool mouse_down = false;
+        int mouse_wheel = 0;
     };
 
     template<typename T>
@@ -515,9 +525,9 @@ namespace rs2
     {
         GLuint texture;
         std::vector<uint8_t> rgb;
-        rs2::frame last;
 
     public:
+        rs2::frame last;
         color_map* cm = &jet;
         bool equalize = true;
         float min_depth = 0.f;
@@ -830,7 +840,7 @@ namespace rs2
             auto image = last.as<video_frame>();
             if (!image) return false;
 
-            auto format = last.get_profile().fps();
+            auto format = last.get_profile().format();
             switch (format)
             {
             case RS2_FORMAT_Z16:

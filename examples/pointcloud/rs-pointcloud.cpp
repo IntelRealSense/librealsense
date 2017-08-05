@@ -12,15 +12,6 @@
 #include <sstream>
 #include <algorithm>
 
-#ifdef _MSC_VER
-#ifndef GL_CLAMP_TO_BORDER
-#define GL_CLAMP_TO_BORDER  0x812D
-#endif
-#ifndef GL_CLAMP_TO_EDGE
-#define GL_CLAMP_TO_EDGE    0x812F
-#endif
-#endif
-
 using namespace rs2;
 using namespace std;
 

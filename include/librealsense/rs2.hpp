@@ -292,8 +292,11 @@ namespace rs2
             }
             error::handle(e);
 
-            rs2_get_video_stream_resolution(_profile, &_width, &_height, &e);
-            error::handle(e);
+            if (_profile)
+            {
+                rs2_get_video_stream_resolution(_profile, &_width, &_height, &e);
+                error::handle(e);
+            }
         }
 
         int width() const
