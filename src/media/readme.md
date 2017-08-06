@@ -533,28 +533,6 @@ The playback device holds a single reading thread that reads the next frame in a
 TODO: Describe snapshot changes mechanism                                                            
 
 
-#### Playback status
-
-Initial state is "Stopped"
-
-State Changes:
-
-    Playing ---->   start()   ----> Do nothing
-    Playing ---->   stop()    ----> Stopped
-    Playing ---->   pause()   ----> Paused
-    Playing ---->   resume()  ----> Do nothing
-
-    Paused  ---->   start()   ----> Do nothing
-    Paused  ---->   stop()    ----> Stopped
-    Paused  ---->   pause()   ----> Do nothing
-    Paused  ---->   resume()  ----> Playing
-
-    Stopped ---->   start()   ----> Paused/Playing (depends on m_is_paused)
-    Stopped ---->   stop()    ----> Do nothing
-    Stopped ---->   pause()   ----> Do nothing
-    Stopped ---->   resume()  ----> Do nothing
-
-
 
 ## Screenshots
 

@@ -4,6 +4,7 @@
 #include <cmath>
 #include "playback_device.h"
 #include "core/motion.h"
+#include "stream.h"
 
 playback_device::playback_device(std::shared_ptr<device_serializer::reader> serializer) :
     m_is_started(false),
@@ -78,20 +79,26 @@ std::map<uint32_t, std::shared_ptr<playback_sensor>> playback_device::create_pla
                 action();
             }
         };
-
-        sensor->opened += [this](int32_t id, const stream_profiles& requested_profiles) -> void
+        
+        sensor->opened += [this](const std::vector<stream_filter>& filters) -> void
         {
-            (*m_read_thread)->invoke([this, id, requested_profiles](dispatcher::cancellable_timer c)
+            (*m_read_thread)->invoke([this, filters](dispatcher::cancellable_timer c)
             {
-                set_filter(id, requested_profiles);
+                for (auto filter : filters)
+                {
+                    m_reader->set_filter({get_device_index(), filter.sensor_index, filter.stream_type, filter.stream_index });
+                }
             });
         };
 
-        sensor->closed += [this](uint32_t id) -> void
+        sensor->closed += [this](const std::vector<stream_filter>& filters) -> void
         {
-            (*m_read_thread)->invoke([this, id](dispatcher::cancellable_timer c)
+            (*m_read_thread)->invoke([this, filters](dispatcher::cancellable_timer c)
             {
-                set_filter(id, {});
+                for (auto filter : filters)
+                {
+                    m_reader->clear_filter({ get_device_index(), filter.sensor_index, filter.stream_type, filter.stream_index });
+                }
             });
         };
 
@@ -213,9 +220,7 @@ rs2_playback_status playback_device::get_current_status() const
 
 uint64_t playback_device::get_duration() const
 {
-    auto nanos = m_reader->query_duration();
-    auto unanos = std::chrono::duration_cast<file_format::file_types::nanoseconds>(nanos);
-    return unanos.count();
+    return m_reader->query_duration().count();
 }
 
 void playback_device::pause()
@@ -343,6 +348,7 @@ void playback_device::do_loop(T action)
             action_succeeded = false; //will make the scope_guard stop the sensors, must return.
         }
 
+        //On failure, exit thread
         if(action_succeeded == false)
         {
             //Go over the sensors and stop them
@@ -359,6 +365,7 @@ void playback_device::do_loop(T action)
             assert(m_is_started == false);
         }
 
+        //Continue looping?
         if (m_is_started == true && m_is_paused == false)
         {
             do_loop(action);
@@ -385,18 +392,16 @@ void playback_device::try_looping()
     {
         //Read next data from the serializer, on success: 'obj' will be a valid object that came from
         // sensor number 'sensor_index' with a timestamp equal to 'timestamp'
-        uint32_t sensor_index;
+        device_serializer::stream_identifier stream_id;
         //TODO: change timestamp type to file_type::nanoseconds
-        std::chrono::nanoseconds timestamp = std::chrono::nanoseconds::max();
+        device_serializer::nanoseconds timestamp = device_serializer::nanoseconds::max();
         frame_holder frame;
-        bool is_valid_read = true;
-
-        auto retval = m_reader->read(timestamp, sensor_index, frame);
-        if (retval == file_format::status_file_eof)
+        auto retval = m_reader->read_frame(timestamp, stream_id, frame);
+        if (retval == device_serializer::status_file_eof)
         {
             return false;
         }
-        if(retval != file_format::status_no_error || timestamp == std::chrono::nanoseconds::max())
+        if(retval != device_serializer::status_no_error || timestamp == std::chrono::nanoseconds::max())
         {
             throw librealsense::io_exception("Failed to read frame");
         }
@@ -421,29 +426,21 @@ void playback_device::try_looping()
             }
         }
 
-//        if (sleep_time.count() < 0)
-//        {
-//            //TODO: we should probably jump forward here to align with the play time (frame will be dropped, blood will be shed...)
-//        }
-
-        if (sensor_index >= m_sensors.size())
+        if (sleep_time.count() < 0)
         {
-            throw invalid_value_exception(to_string() << "Unexpected sensor index while playing file (Read index = " << sensor_index << ")");
+            //TODO: we should probably jump forward here to align with the play time (frame will be dropped, blood will be shed...)
+        }
+
+        if (stream_id.device_index != get_device_index() || stream_id.sensor_index >= m_sensors.size())
+        {
+            throw invalid_value_exception(to_string() << "Unexpected sensor index while playing file (Read index = " << stream_id.sensor_index << ")");
         }
 
         //Dispatch frame to the relevant sensor
-        m_sensors[sensor_index]->handle_frame(std::move(frame), m_real_time);
+        m_sensors[stream_id.sensor_index]->handle_frame(std::move(frame), m_real_time);
         return true;
     };
     do_loop(read_action);
-}
-
-void playback_device::set_filter(int32_t id, const stream_profiles& requested_profiles)
-{
-    (*m_read_thread)->invoke([this, id, requested_profiles](dispatcher::cancellable_timer c)
-    {
-        m_reader->set_filter(id, requested_profiles);
-    });
 }
 
 const std::string& playback_device::get_file_name() const

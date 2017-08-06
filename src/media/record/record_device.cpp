@@ -74,16 +74,15 @@ void librealsense::record_device::write_header()
 {
     auto device_extensions_md = get_extensions_snapshots(m_device.get());
 
-    std::vector<sensor_snapshot> sensors_md;
+    std::vector<sensor_snapshot> sensors_snapshot;
     for (size_t j = 0; j < m_device->get_sensors_count(); ++j)
     {
         auto& sensor = m_device->get_sensor(j);
-        auto sensor_extensions_md = get_extensions_snapshots(&sensor);
-        //TODO: Ziv, remove supported_profiles. Only streaming profiles should be written when open() is called
-        sensors_md.emplace_back(sensor_extensions_md, sensor.get_stream_profiles());
+        auto sensor_extensions_snapshots = get_extensions_snapshots(&sensor);
+        sensors_snapshot.emplace_back(sensor_extensions_snapshots);
     }
 
-    m_ros_writer->write_device_description({device_extensions_md, sensors_md, {/*TODO: get extrinsics*/}});
+    m_ros_writer->write_device_description({ device_extensions_md, sensors_snapshot });
 }
 
 //Returns the time relative to beginning of the recording
@@ -135,7 +134,10 @@ void librealsense::record_device::write_data(size_t sensor_index, librealsense::
 
         try
         {
-            m_ros_writer->write(capture_time, static_cast<uint32_t>(sensor_index), std::move(*frame_holder_ptr));
+            const uint32_t device_index = 0;
+            auto stream_type = frame_holder_ptr->frame->get_stream()->get_stream_type();
+            auto stream_index = static_cast<uint32_t>(frame_holder_ptr->frame->get_stream()->get_stream_index());
+            m_ros_writer->write_frame({ device_index, static_cast<uint32_t>(sensor_index), stream_type, stream_index }, capture_time, std::move(*frame_holder_ptr));
             //TODO: restore: std::lock_guard<std::mutex> locker(m_mutex);  m_cached_data_size -= data_size;
         }
         catch(std::exception& e)
@@ -155,7 +157,8 @@ void record_device::write_extension_snapshot(size_t sensor_index,
                               {
                                   try
                                   {
-                                      m_ros_writer->write({capture_time, std::to_string(sensor_index), ext, snapshot });
+                                      const uint32_t device_index = 0;
+                                      m_ros_writer->write_snapshot({ device_index, static_cast<uint32_t>(sensor_index) },capture_time, ext, snapshot);
                                   }
                                   catch(const std::exception& e)
                                   {

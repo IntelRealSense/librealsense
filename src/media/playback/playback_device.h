@@ -65,7 +65,6 @@ namespace librealsense
         void try_looping();
         template <typename T> void do_loop(T op);
         std::map<uint32_t, std::shared_ptr<playback_sensor>> create_playback_sensors(const device_snapshot& device_description);
-        void set_filter(int32_t id, const stream_profiles& requested_profiles);
     private:
         lazy<std::shared_ptr<dispatcher>> m_read_thread;
         std::shared_ptr<device_serializer::reader> m_reader;
@@ -78,7 +77,7 @@ namespace librealsense
         std::map<uint32_t, std::shared_ptr<playback_sensor>> m_active_sensors;
         std::atomic<double> m_sample_rate;
         std::atomic_bool m_real_time;
-        file_format::file_types::nanoseconds m_prev_timestamp;
+        device_serializer::nanoseconds m_prev_timestamp;
         void catch_up();
     };
 

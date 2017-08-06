@@ -13,6 +13,19 @@ playback_sensor::playback_sensor(const device_interface& parent_device, const se
     m_user_notification_callback(nullptr, [](rs2_notifications_callback* n) {}),
     m_parent_device(parent_device)
 {
+    for (auto stream_snapshots : m_sensor_description.get_streams_snapshots())
+    {
+        for (auto snapshot : stream_snapshots.get_snapshots())
+        {
+            auto ext_type = snapshot.first;
+            auto snap = snapshot.second;
+            if(ext_type == RS2_EXTENSION_VIDEO_PROFILE)
+            {
+                auto p = As<ExtensionsToTypes<RS2_EXTENSION_VIDEO_PROFILE>::type>(snap);
+                m_available_profiles.emplace_back(p);
+            }
+        }
+    }
 }
 playback_sensor::~playback_sensor()
 {
@@ -28,32 +41,47 @@ void playback_sensor::open(const stream_profiles& requests)
 {
 	//Playback can only play the streams that were recorded. 
 	//Go over the requested profiles and see if they are available
-    auto available_profiles = m_sensor_description.get_streamig_profiles();
+
     for (auto&& r : requests)
     {
-        if(std::find(std::begin(available_profiles), std::end(available_profiles), r) == std::end(available_profiles))
+        if (std::find_if(std::begin(m_available_profiles),
+            std::end(m_available_profiles),
+            [r](const std::shared_ptr<stream_profile_interface>& s) { return r->get_unique_id() == s->get_unique_id(); }) == std::end(m_available_profiles))
         {
             throw std::runtime_error("Failed to open sensor, requested profile is not available");
         }
     }
+    std::vector<stream_filter> opened_streams;
 	//For each stream, create a dedicated dispatching thread
     for (auto&& profile : requests)
     {
         m_dispatchers.emplace(std::make_pair(profile->get_unique_id(), std::make_shared<dispatcher>(10))); //TODO: what size the queue should be?
         m_dispatchers[profile->get_unique_id()]->start();
+        stream_filter f{ m_sensor_id, profile->get_stream_type(), profile->get_stream_index() };
+        opened_streams.push_back(f);
     }
-    
-    opened(m_sensor_id, requests);
+
+    opened(opened_streams);
 }
 
 void playback_sensor::close()
 {
+    std::vector<stream_filter> closed_streams;
     for (auto dispatcher : m_dispatchers)
     {
         dispatcher.second->flush();
+        for (auto available_profile : m_available_profiles)
+        {
+            if(available_profile->get_unique_id() == dispatcher.first)
+            {
+                stream_filter f{ m_sensor_id, available_profile->get_stream_type(), available_profile->get_stream_index() };
+                closed_streams.push_back(f);
+            }
+        }      
     }
     m_dispatchers.clear();
-    closed(m_sensor_id);
+    m_available_profiles.clear();
+    closed(closed_streams);
 }
 
 option& playback_sensor::get_option(rs2_option id)
@@ -154,6 +182,7 @@ void playback_sensor::handle_frame(frame_holder frame, bool is_real_time)
 {
     if(m_is_started)
     {
+        frame->set_sensor(shared_from_this());
         auto stream_id = frame.frame->get_stream()->get_unique_id();
 		//TODO: remove this once filter is implemented (which will only read streams that were 'open'ed 
     	if(m_dispatchers.find(stream_id) == m_dispatchers.end())

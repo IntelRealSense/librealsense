@@ -44,7 +44,7 @@ namespace librealsense
         virtual void set_stream_type(rs2_stream stream) = 0;
     };
 
-    class stream_profile_interface : public stream_interface
+    class stream_profile_interface : public stream_interface, public recordable<stream_profile_interface>
     {
     public:
         virtual rs2_format get_format() const = 0;
