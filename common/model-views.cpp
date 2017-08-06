@@ -3,9 +3,75 @@
 
 #include "model-views.h"
 
+void imgui_easy_theming(ImFont*& font_14, ImFont*& font_18)
+{
+    ImGuiStyle& style = ImGui::GetStyle();
+
+    ImGuiIO& io = ImGui::GetIO();
+
+    static const ImWchar icons_ranges[] = { 0xf000, 0xf3ff, 0 }; // will not be copied by AddFont* so keep in scope.
+
+                                                                 // Load 18px size fonts
+    {
+        ImFontConfig config_words;
+        config_words.OversampleV = 8;
+        config_words.OversampleH = 8;
+        font_18 = io.Fonts->AddFontFromMemoryCompressedTTF(karla_regular_compressed_data, karla_regular_compressed_size, 18.f, &config_words);
+
+        ImFontConfig config_glyphs;
+        config_glyphs.MergeMode = true;
+        config_glyphs.OversampleV = 8;
+        config_glyphs.OversampleH = 8;
+        font_18 = io.Fonts->AddFontFromMemoryCompressedTTF(font_awesome_compressed_data,
+            font_awesome_compressed_size, 18.f, &config_glyphs, icons_ranges);
+    }
+
+    // Load 14px size fonts
+    {
+        ImFontConfig config_words;
+        config_words.OversampleV = 8;
+        config_words.OversampleH = 8;
+        font_14 = io.Fonts->AddFontFromMemoryCompressedTTF(karla_regular_compressed_data, karla_regular_compressed_size, 14.f);
+
+        ImFontConfig config_glyphs;
+        config_glyphs.MergeMode = true;
+        config_glyphs.OversampleV = 8;
+        config_glyphs.OversampleH = 8;
+        font_14 = io.Fonts->AddFontFromMemoryCompressedTTF(font_awesome_compressed_data,
+            font_awesome_compressed_size, 14.f, &config_glyphs, icons_ranges);
+    }
+
+    style.WindowRounding = 0.0f;
+    style.ScrollbarRounding = 0.0f;
+
+    style.Colors[ImGuiCol_WindowBg] = dark_window_background;
+    style.Colors[ImGuiCol_Border] = black;
+    style.Colors[ImGuiCol_BorderShadow] = black;
+    style.Colors[ImGuiCol_FrameBg] = dark_window_background;
+    style.Colors[ImGuiCol_ScrollbarBg] = scrollbar_bg;
+    style.Colors[ImGuiCol_ScrollbarGrab] = scrollbar_grab;
+    style.Colors[ImGuiCol_ScrollbarGrabHovered] = scrollbar_grab + 0.1f;
+    style.Colors[ImGuiCol_ScrollbarGrabActive] = scrollbar_grab + (-0.1f);
+    style.Colors[ImGuiCol_ComboBg] = dark_window_background;
+    style.Colors[ImGuiCol_CheckMark] = regular_blue;
+    style.Colors[ImGuiCol_SliderGrab] = regular_blue;
+    style.Colors[ImGuiCol_SliderGrabActive] = regular_blue;
+    style.Colors[ImGuiCol_Button] = button_color;
+    style.Colors[ImGuiCol_ButtonHovered] = button_color + 0.1f;
+    style.Colors[ImGuiCol_ButtonActive] = button_color + (-0.1f);
+    style.Colors[ImGuiCol_Header] = header_color;
+    style.Colors[ImGuiCol_HeaderActive] = header_color + (-0.1f);
+    style.Colors[ImGuiCol_HeaderHovered] = header_color + 0.1f;
+    style.Colors[ImGuiCol_TitleBg] = title_color;
+    style.Colors[ImGuiCol_TitleBgCollapsed] = title_color;
+    style.Colors[ImGuiCol_TitleBgActive] = header_color;
+}
+
+
+
 namespace rs2
 {
-    inline std::vector<const char*> get_string_pointers(const std::vector<std::string>& vec)
+    std::vector<const char*> get_string_pointers(const std::vector<std::string>& vec)
     {
         std::vector<const char*> res;
         for (auto&& s : vec) res.push_back(s.c_str());
@@ -1082,6 +1148,272 @@ namespace rs2
         }
     }
 
+    void stream_model::show_stream_header(ImFont* font, rs2::rect stream_rect, viewer_model& viewer)
+    {
+        const auto top_bar_height = 32.f;
+
+        auto flags = ImGuiWindowFlags_NoResize |
+            ImGuiWindowFlags_NoMove |
+            ImGuiWindowFlags_NoCollapse |
+            ImGuiWindowFlags_NoTitleBar;
+
+        ImGui::PushFont(font);
+        ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
+        ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, { 0, 0 });
+
+        ImGui::PushStyleColor(ImGuiCol_Button, header_window_bg);
+        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, header_window_bg);
+        ImGui::PushStyleColor(ImGuiCol_ButtonActive, header_window_bg);
+        ImGui::PushStyleColor(ImGuiCol_WindowBg, header_window_bg);
+        ImGui::SetNextWindowPos({ stream_rect.x, stream_rect.y - top_bar_height });
+        ImGui::SetNextWindowSize({ stream_rect.w, top_bar_height });
+        std::string label = to_string() << "Stream of " << profile.unique_id();
+        ImGui::Begin(label.c_str(), nullptr, flags);
+
+        ImGui::SetCursorPosX(stream_rect.w - 32 * 5);
+
+        if (dev->is_paused())
+        {
+            ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
+            ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue);
+            label = to_string() << u8"\uf04b" << "##Resume " << profile.unique_id();
+            if (ImGui::Button(label.c_str(), { 24, top_bar_height }))
+            {
+                dev->resume();
+            }
+            if (ImGui::IsItemHovered())
+            {
+                ImGui::SetTooltip("Resume sensor");
+            }
+            ImGui::PopStyleColor(2);
+        }
+        else
+        {
+            label = to_string() << u8"\uf04c" << "##Pause " << profile.unique_id();
+            if (ImGui::Button(label.c_str(), { 24, top_bar_height }))
+            {
+                dev->pause();
+            }
+            if (ImGui::IsItemHovered())
+            {
+                ImGui::SetTooltip("Pause sensor");
+            }
+        }
+        ImGui::SameLine();
+
+        label = to_string() << u8"\uf030" << "##Snapshot " << profile.unique_id();
+        ImGui::Button(label.c_str(), { 24, top_bar_height });
+        if (ImGui::IsItemHovered())
+        {
+            ImGui::SetTooltip("Save snapshot");
+        }
+        ImGui::SameLine();
+
+        label = to_string() << u8"\uf05a" << "##Info " << profile.unique_id();
+        ImGui::Button(label.c_str(), { 24, top_bar_height });
+        if (ImGui::IsItemHovered())
+        {
+            ImGui::SetTooltip("Show info overlay");
+        }
+        ImGui::SameLine();
+
+        if (!viewer.fullscreen)
+        {
+            label = to_string() << u8"\uf2d0" << "##Maximize " << profile.unique_id();
+
+            if (ImGui::Button(label.c_str(), { 24, top_bar_height }))
+            {
+                viewer.fullscreen = true;
+                viewer.selected_stream = this;
+            }
+            if (ImGui::IsItemHovered())
+            {
+                ImGui::SetTooltip("Maximize stream to full-screen");
+            }
+
+            ImGui::SameLine();
+        }
+        else if (viewer.fullscreen)
+        {
+            label = to_string() << u8"\uf2d2" << "##Restore " << profile.unique_id();
+
+            if (ImGui::Button(label.c_str(), { 24, top_bar_height }))
+            {
+                viewer.fullscreen = false;
+            }
+            if (ImGui::IsItemHovered())
+            {
+                ImGui::SetTooltip("Restore tile view");
+            }
+
+            ImGui::SameLine();
+        }
+
+        label = to_string() << u8"\uf00d" << "##Stop " << profile.unique_id();
+        if (ImGui::Button(label.c_str(), { 24, top_bar_height }))
+        {
+            dev->stop();
+        }
+        if (ImGui::IsItemHovered())
+        {
+            ImGui::SetTooltip("Stop this sensor");
+        }
+
+        //if (model.streams[stream].show_stream_details)
+        //{
+        //    label = to_string() << rs2_stream_to_string(stream) << " "
+        //        << stream_size.x << "x" << stream_size.y << ", "
+        //        << rs2_format_to_string(model.streams[stream].format) << ", "
+        //        << "Frame# " << model.streams[stream].frame_number << ", "
+        //        << "FPS:";
+        //}
+        //else
+        //{
+        //    label = to_string() << rs2_stream_to_string(stream) << " (...)";
+        //}
+
+        //ImGui::Text("%s", label.c_str());
+        //model.streams[stream].show_stream_details = ImGui::IsItemHovered();
+
+        //if (model.streams[stream].show_stream_details)
+        //{
+        //    ImGui::SameLine();
+
+        //    label = to_string() << std::setprecision(2) << std::fixed << model.streams[stream].fps.get_fps();
+        //    ImGui::Text("%s", label.c_str());
+        //    if (ImGui::IsItemHovered())
+        //    {
+        //        ImGui::SetTooltip("FPS is calculated based on timestamps and not viewer time");
+        //    }
+        //}
+
+        //ImGui::SameLine((int)ImGui::GetWindowWidth() - 35);
+
+        //if (!layout.empty() && !model.fullscreen)
+        //{
+        //    if (ImGui::Button("[+]", { 26, 20 }))
+        //    {
+        //        model.fullscreen = true;
+        //        model.selected_stream = stream;
+        //    }
+        //    if (ImGui::IsItemHovered())
+        //    {
+        //        ImGui::SetTooltip("Maximize stream to full-screen");
+        //    }
+        //}
+        //else if (model.fullscreen)
+        //{
+        //    if (ImGui::Button("[-]", { 26, 20 }))
+        //    {
+        //        model.fullscreen = false;
+        //    }
+        //    if (ImGui::IsItemHovered())
+        //    {
+        //        ImGui::SetTooltip("Minimize stream to tile-view");
+        //    }
+        //}
+
+
+        //// Control metadata overlay widget
+        //ImGui::SameLine((int)ImGui::GetWindowWidth() - 140); // metadata GUI hint
+        //if (!layout.empty())
+        //{
+        //    if (model.streams[stream].metadata_displayed)
+        //    {
+        //        if (ImGui::Button("Hide Metadata", { 100, 20 }))
+        //            model.streams[stream].metadata_displayed = false;
+        //    }
+        //    else
+        //    {
+        //        if (ImGui::Button("Show Metadata", { 100, 20 }))
+        //            model.streams[stream].metadata_displayed = true;
+        //    }
+
+        //    if (ImGui::IsItemHovered())
+        //        ImGui::SetTooltip("Show per-frame metadata");
+        //}
+
+        //if (model.streams[stream].show_stream_details)
+        //{
+        //    label = to_string() << "Timestamp: " << std::fixed << std::setprecision(3) << model.streams[stream].timestamp
+        //        << ", Domain:";
+        //    ImGui::Text("%s", label.c_str());
+
+        //    ImGui::SameLine();
+        //    auto domain = model.streams[stream].timestamp_domain;
+        //    label = to_string() << rs2_timestamp_domain_to_string(domain);
+
+        //    if (domain == RS2_TIMESTAMP_DOMAIN_SYSTEM_TIME)
+        //    {
+        //        ImGui::PushStyleColor(ImGuiCol_Text, { 1.0f, 0.0f, 0.0f, 1.0f });
+        //        ImGui::Text("%s", label.c_str());
+        //        if (ImGui::IsItemHovered())
+        //        {
+        //            ImGui::SetTooltip("Hardware Timestamp unavailable! This is often an indication of inproperly applied Kernel patch.\nPlease refer to installation.md for mode information");
+        //        }
+        //        ImGui::PopStyleColor();
+        //    }
+        //    else
+        //    {
+        //        ImGui::Text("%s", label.c_str());
+        //        if (ImGui::IsItemHovered())
+        //        {
+        //            ImGui::SetTooltip("Specifies the clock-domain for the timestamp (hardware-clock / system-time)");
+        //        }
+        //    }
+        //}
+
+        ImGui::End();
+        ImGui::PopStyleColor(6);
+        ImGui::PopStyleVar();
+    }
+
+    void stream_model::show_stream_footer(rect stream_rect, mouse_info& mouse)
+    {
+        auto flags = ImGuiWindowFlags_NoResize |
+            ImGuiWindowFlags_NoMove |
+            ImGuiWindowFlags_NoCollapse |
+            ImGuiWindowFlags_NoTitleBar;
+
+        ImGui::PushStyleColor(ImGuiCol_WindowBg, transparent);
+        ImGui::SetNextWindowPos({ stream_rect.x, stream_rect.y + stream_rect.h - 30 });
+        ImGui::SetNextWindowSize({ stream_rect.w, 30 });
+        std::string label = to_string() << "Footer for stream of " << profile.unique_id();
+        ImGui::Begin(label.c_str(), nullptr, flags);
+
+        if (stream_rect.contains(mouse.cursor))
+        {
+            std::stringstream ss;
+            rect cursor_rect{ mouse.cursor.x, mouse.cursor.y };
+            auto ts = cursor_rect.normalize(stream_rect);
+            auto pixels = ts.unnormalize(_normalized_zoom.unnormalize(get_stream_bounds()));
+            auto x = (int)pixels.x;
+            auto y = (int)pixels.y;
+
+            ss << std::fixed << std::setprecision(0) << x << ", " << y;
+
+            float val{};
+            if (texture->try_pick(x, y, &val))
+            {
+                ss << ", *p: 0x" << std::hex << val;
+                if (profile.stream_type() == RS2_STREAM_DEPTH && val > 0)
+                {
+                    auto meters = (val * dev->depth_units);
+                    ss << std::dec << ", ~"
+                        << std::setprecision(2) << meters << " meters";
+                }
+            }
+
+            label = ss.str();
+            ImGui::Text("%s", label.c_str());
+        }
+
+        ImGui::End();
+        ImGui::PopStyleColor();
+        ImGui::PopFont();
+    }
+
     rect stream_model::get_normalized_zoom(const rect& stream_rect, const mouse_info& g, bool is_middle_clicked, float zoom_val)
     {
         rect zoomed_rect = dev->normalized_zoom.unnormalize(stream_rect);
@@ -1308,6 +1640,51 @@ namespace rs2
                     }
             }
         }
+    }
+
+    void viewer_model::show_paused_icon(ImFont* font_18, int x, int y, int id)
+    {
+        auto flags = ImGuiWindowFlags_NoResize |
+            ImGuiWindowFlags_NoMove |
+            ImGuiWindowFlags_NoCollapse |
+            ImGuiWindowFlags_NoTitleBar;
+
+        ImGui::PushFont(font_18);
+        ImGui::PushStyleColor(ImGuiCol_WindowBg, transparent);
+        ImGui::SetNextWindowPos({ (float)x, (float)y });
+        ImGui::SetNextWindowSize({ 32.f, 32.f });
+        std::string label = to_string() << "paused_icon" << id;
+        ImGui::Begin(label.c_str(), nullptr, flags);
+
+        ImGui::PushStyleColor(ImGuiCol_Text, white);
+        ImGui::Text(u8"\uf04c");
+        ImGui::PopStyleColor();
+
+        ImGui::End();
+        ImGui::PopStyleColor();
+        ImGui::PopFont();
+    }
+
+    void viewer_model::show_no_stream_overlay(ImFont* font_18, int min_x, int min_y, int max_x, int max_y)
+    {
+        auto flags = ImGuiWindowFlags_NoResize |
+            ImGuiWindowFlags_NoMove |
+            ImGuiWindowFlags_NoCollapse |
+            ImGuiWindowFlags_NoTitleBar;
+
+        ImGui::PushFont(font_18);
+        ImGui::PushStyleColor(ImGuiCol_WindowBg, transparent);
+        ImGui::SetNextWindowPos({ (min_x + max_x) / 2.f - 150, (min_y + max_y) / 2.f - 20 });
+        ImGui::SetNextWindowSize({ float(max_x - min_x), 50.f });
+        ImGui::Begin("nostreaming_popup", nullptr, flags);
+
+        ImGui::PushStyleColor(ImGuiCol_Text, sensor_header_light_blue);
+        ImGui::Text(u8"Nothing is streaming! Toggle \uf204 to start");
+        ImGui::PopStyleColor();
+
+        ImGui::End();
+        ImGui::PopStyleColor();
+        ImGui::PopFont();
     }
 
     std::map<int, rect> viewer_model::calc_layout(float x0, float y0, float width, float height)

@@ -3,9 +3,6 @@
 #include "model-views.h"
 #include "../common/realsense-ui/realsense-ui-advanced-mode.h"
 
-#include "imgui-fonts-karla.hpp"
-#include "imgui-fonts-fontawesome.hpp"
-
 #include <cstdarg>
 #include <thread>
 #include <iostream>
@@ -31,127 +28,9 @@
 using namespace rs2;
 using namespace rs400;
 
-ImVec4 from_rgba(uint8_t r, uint8_t g, uint8_t b, uint8_t a)
-{
-    return ImVec4(r / (float)255, g / (float)255, b / (float)255, a / (float)255);
-}
 
-static ImVec4 light_blue = from_rgba(0, 174, 239, 255);
 
-ImFont* font_16;
-ImFont* font_12;
-
-void imgui_easy_theming()
-{
-    ImGuiStyle& style = ImGui::GetStyle();
-
-    ImGuiIO& io = ImGui::GetIO();
-
-    static const ImWchar icons_ranges[] = { 0xf000, 0xf3ff, 0 }; // will not be copied by AddFont* so keep in scope.
-
-    // Load 16px size fonts
-    {
-        ImFontConfig config_words;
-        config_words.OversampleV = 8;
-        config_words.OversampleH = 8;
-        font_16 = io.Fonts->AddFontFromMemoryCompressedTTF(karla_regular_compressed_data, karla_regular_compressed_size, 16.f, &config_words);
-
-        ImFontConfig config_glyphs;
-        config_glyphs.MergeMode = true;
-        config_glyphs.OversampleV = 8;
-        config_glyphs.OversampleH = 8;
-        font_16 = io.Fonts->AddFontFromMemoryCompressedTTF(font_awesome_compressed_data,
-            font_awesome_compressed_size, 16.f, &config_glyphs, icons_ranges);
-    }
-
-    // Load 14px size fonts
-    {
-        ImFontConfig config_words;
-        config_words.OversampleV = 8;
-        config_words.OversampleH = 8;
-        font_12 = io.Fonts->AddFontFromMemoryCompressedTTF(karla_regular_compressed_data, karla_regular_compressed_size, 14.f);
-
-        ImFontConfig config_glyphs;
-        config_glyphs.MergeMode = true;
-        config_glyphs.OversampleV = 8;
-        config_glyphs.OversampleH = 8;
-        font_12 = io.Fonts->AddFontFromMemoryCompressedTTF(font_awesome_compressed_data,
-            font_awesome_compressed_size, 14.f, &config_glyphs, icons_ranges);
-    }
-
-    style.WindowRounding = 0.0f;
-    style.ScrollbarRounding = 0.0f;
-
-    style.Colors[ImGuiCol_WindowBg] = from_rgba(9, 11, 13, 255);
-    style.Colors[ImGuiCol_Border] = from_rgba(0, 0, 0, 255);
-    style.Colors[ImGuiCol_BorderShadow] = from_rgba(100, 100, 150, 0);
-    style.Colors[ImGuiCol_FrameBg] = from_rgba(9, 11, 13, 255);
-    style.Colors[ImGuiCol_TitleBg] = from_rgba(27, 33, 38, 255);
-    style.Colors[ImGuiCol_TitleBgCollapsed] = from_rgba(27, 33, 38, 255);
-    style.Colors[ImGuiCol_TitleBgActive] = from_rgba(62, 77, 89, 255);
-    style.Colors[ImGuiCol_ScrollbarBg] = from_rgba(14, 17, 20, 255);
-    style.Colors[ImGuiCol_ScrollbarGrab] = from_rgba(54, 66, 67, 255);
-    style.Colors[ImGuiCol_ScrollbarGrabHovered] = from_rgba(54 + 10, 66 + 10, 67 + 10, 255);
-    style.Colors[ImGuiCol_ScrollbarGrabActive] = from_rgba(54, 66, 67, 255);
-    style.Colors[ImGuiCol_ComboBg] = from_rgba(9, 11, 13, 255);
-    style.Colors[ImGuiCol_CheckMark] = from_rgba(0, 115, 200, 255);
-    style.Colors[ImGuiCol_SliderGrab] = from_rgba(0, 115, 200, 200);
-    style.Colors[ImGuiCol_SliderGrabActive] = from_rgba(0, 115, 200, 255);
-    style.Colors[ImGuiCol_Button] = from_rgba(0x2d, 0x37, 0x40, 0xff);
-    style.Colors[ImGuiCol_ButtonHovered] = from_rgba(0x2d + 10, 0x37 + 10, 0x40 + 10, 0xff);
-    style.Colors[ImGuiCol_ButtonActive] = from_rgba(0x2d - 10, 0x37 - 10, 0x40 - 10, 0xff);
-    style.Colors[ImGuiCol_Header] = from_rgba(62, 77, 89, 255);
-    style.Colors[ImGuiCol_HeaderHovered] = from_rgba(62, 77, 89, 255);
-    style.Colors[ImGuiCol_HeaderActive] = from_rgba(62, 77, 89, 255);
-    style.Colors[ImGuiCol_PopupBg] = from_rgba(62, 77, 89, 255);
-}
-
-void show_stream_footer(rect stream_rect, stream_model& stream_mv, mouse_info& mouse)
-{
-    auto flags = ImGuiWindowFlags_NoResize |
-        ImGuiWindowFlags_NoMove |
-        ImGuiWindowFlags_NoCollapse |
-        ImGuiWindowFlags_NoTitleBar;
-
-    ImGui::PushStyleColor(ImGuiCol_WindowBg, { 0, 0, 0, 0 });
-    ImGui::SetNextWindowPos({ stream_rect.x, stream_rect.y + stream_rect.h - 30 });
-    ImGui::SetNextWindowSize({ stream_rect.w, 30 });
-    std::string label = to_string() << "Footer for stream of " << stream_mv.profile.unique_id();
-    ImGui::Begin(label.c_str(), nullptr, flags);
-
-    if (stream_rect.contains(mouse.cursor))
-    {
-        std::stringstream ss;
-        rect cursor_rect{ mouse.cursor.x, mouse.cursor.y };
-        auto ts = cursor_rect.normalize(stream_rect);
-        auto pixels = ts.unnormalize(stream_mv._normalized_zoom.unnormalize(stream_mv.get_stream_bounds()));
-        auto x = (int)pixels.x;
-        auto y = (int)pixels.y;
-
-        ss << std::fixed << std::setprecision(0) << x << ", " << y;
-
-        float val{};
-        if (stream_mv.texture->try_pick(x, y, &val))
-        {
-            ss << ", *p: 0x" << std::hex << val;
-            if (stream_mv.profile.stream_type() == RS2_STREAM_DEPTH && val > 0)
-            {
-                auto meters = (val * stream_mv.dev->depth_units);
-                ss << std::dec << ", ~"
-                    << std::setprecision(2) << meters << " meters";
-            }
-        }
-
-        label = ss.str();
-        ImGui::Text("%s", label.c_str());
-    }
-
-    ImGui::End();
-    ImGui::PopStyleColor();
-    ImGui::PopFont();
-}
-
-void show_stream_header(rs2::rect stream_rect, stream_model& model, viewer_model& viewer)
+void show_3dviewer_header(ImFont* font, rs2::rect stream_rect, viewer_model& viewer)
 {
     const auto top_bar_height = 32.f;
 
@@ -160,216 +39,26 @@ void show_stream_header(rs2::rect stream_rect, stream_model& model, viewer_model
         ImGuiWindowFlags_NoCollapse |
         ImGuiWindowFlags_NoTitleBar;
 
-    ImGui::PushFont(font_12);
-    ImGui::PushStyleColor(ImGuiCol_Text, from_rgba(0xc3, 0xd5, 0xe5, 0xff));
-    ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, from_rgba(0xff, 0xff, 0xff, 0xff));
+    ImGui::PushFont(font);
+    ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
+    ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, { 0, 0 });
 
-    ImGui::PushStyleColor(ImGuiCol_Button, from_rgba(0x1b, 0x21, 0x25, 0xff));
-    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, from_rgba(0x1b, 0x21, 0x25, 0xff));
-    ImGui::PushStyleColor(ImGuiCol_ButtonActive, from_rgba(0x1b, 0x21, 0x25, 0xff));
-    ImGui::PushStyleColor(ImGuiCol_WindowBg, from_rgba(0x1b, 0x21, 0x25, 0xff));
-    ImGui::SetNextWindowPos({ stream_rect.x, stream_rect.y - top_bar_height });
+    ImGui::PushStyleColor(ImGuiCol_Button, header_window_bg);
+    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, header_window_bg);
+    ImGui::PushStyleColor(ImGuiCol_ButtonActive, header_window_bg);
+    ImGui::PushStyleColor(ImGuiCol_WindowBg, header_window_bg);
+    ImGui::SetNextWindowPos({ stream_rect.x, stream_rect.y });
     ImGui::SetNextWindowSize({ stream_rect.w, top_bar_height });
-    std::string label = to_string() << "Stream of " << model.profile.unique_id();
+    std::string label = to_string() << "header of 3dviewer";
     ImGui::Begin(label.c_str(), nullptr, flags);
 
-    ImGui::SetCursorPosX(stream_rect.w - 32 * 5);
 
-    if (model.dev->is_paused())
-    {
-        ImGui::PushStyleColor(ImGuiCol_Text, from_rgba(0, 174, 239, 255));
-        ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, from_rgba(0, 174, 239, 255));
-        label = to_string() << u8"\uf04b" << "##Resume " << model.profile.unique_id();
-        if (ImGui::Button(label.c_str(), { 24, top_bar_height }))
-        {
-            model.dev->resume();
-        }
-        if (ImGui::IsItemHovered())
-        {
-            ImGui::SetTooltip("Resume sensor");
-        }
-        ImGui::PopStyleColor(2);
-    }
-    else
-    {
-        label = to_string() << u8"\uf04c" << "##Pause " << model.profile.unique_id();
-        if (ImGui::Button(label.c_str(), { 24, top_bar_height }))
-        {
-            model.dev->pause();
-        }
-        if (ImGui::IsItemHovered())
-        {
-            ImGui::SetTooltip("Pause sensor");
-        }
-    }
-    ImGui::SameLine();
-
-    label = to_string() << u8"\uf030" << "##Snapshot " << model.profile.unique_id();
-    ImGui::Button(label.c_str(), { 24, top_bar_height });
-    if (ImGui::IsItemHovered())
-    {
-        ImGui::SetTooltip("Save snapshot");
-    }
-    ImGui::SameLine();
-
-    label = to_string() << u8"\uf05a" << "##Info " << model.profile.unique_id();
-    ImGui::Button(label.c_str(), { 24, top_bar_height });
-    if (ImGui::IsItemHovered())
-    {
-        ImGui::SetTooltip("Show info overlay");
-    }
-    ImGui::SameLine();
-
-    if (!viewer.fullscreen)
-    {
-        label = to_string() << u8"\uf2d0" << "##Maximize " << model.profile.unique_id();
-
-        if (ImGui::Button(label.c_str(), { 24, top_bar_height }))
-        {
-            viewer.fullscreen = true;
-            viewer.selected_stream = &model;
-        }
-        if (ImGui::IsItemHovered())
-        {
-            ImGui::SetTooltip("Maximize stream to full-screen");
-        }
-
-        ImGui::SameLine();
-    }
-    else if (viewer.fullscreen)
-    {
-        label = to_string() << u8"\uf2d2" << "##Restore " << model.profile.unique_id();
-
-        if (ImGui::Button(label.c_str(), { 24, top_bar_height }))
-        {
-            viewer.fullscreen = false;
-        }
-        if (ImGui::IsItemHovered())
-        {
-            ImGui::SetTooltip("Restore tile view");
-        }
-
-        ImGui::SameLine();
-    }
-
-    label = to_string() << u8"\uf00d" << "##Stop " << model.profile.unique_id();
-    if (ImGui::Button(label.c_str(), { 24, top_bar_height }))
-    {
-        model.dev->stop();
-    }
-    if (ImGui::IsItemHovered())
-    {
-        ImGui::SetTooltip("Stop this sensor");
-    }
-
-    //if (model.streams[stream].show_stream_details)
-    //{
-    //    label = to_string() << rs2_stream_to_string(stream) << " "
-    //        << stream_size.x << "x" << stream_size.y << ", "
-    //        << rs2_format_to_string(model.streams[stream].format) << ", "
-    //        << "Frame# " << model.streams[stream].frame_number << ", "
-    //        << "FPS:";
-    //}
-    //else
-    //{
-    //    label = to_string() << rs2_stream_to_string(stream) << " (...)";
-    //}
-
-    //ImGui::Text("%s", label.c_str());
-    //model.streams[stream].show_stream_details = ImGui::IsItemHovered();
-
-    //if (model.streams[stream].show_stream_details)
-    //{
-    //    ImGui::SameLine();
-
-    //    label = to_string() << std::setprecision(2) << std::fixed << model.streams[stream].fps.get_fps();
-    //    ImGui::Text("%s", label.c_str());
-    //    if (ImGui::IsItemHovered())
-    //    {
-    //        ImGui::SetTooltip("FPS is calculated based on timestamps and not viewer time");
-    //    }
-    //}
-
-    //ImGui::SameLine((int)ImGui::GetWindowWidth() - 35);
-
-    //if (!layout.empty() && !model.fullscreen)
-    //{
-    //    if (ImGui::Button("[+]", { 26, 20 }))
-    //    {
-    //        model.fullscreen = true;
-    //        model.selected_stream = stream;
-    //    }
-    //    if (ImGui::IsItemHovered())
-    //    {
-    //        ImGui::SetTooltip("Maximize stream to full-screen");
-    //    }
-    //}
-    //else if (model.fullscreen)
-    //{
-    //    if (ImGui::Button("[-]", { 26, 20 }))
-    //    {
-    //        model.fullscreen = false;
-    //    }
-    //    if (ImGui::IsItemHovered())
-    //    {
-    //        ImGui::SetTooltip("Minimize stream to tile-view");
-    //    }
-    //}
-
-
-    //// Control metadata overlay widget
-    //ImGui::SameLine((int)ImGui::GetWindowWidth() - 140); // metadata GUI hint
-    //if (!layout.empty())
-    //{
-    //    if (model.streams[stream].metadata_displayed)
-    //    {
-    //        if (ImGui::Button("Hide Metadata", { 100, 20 }))
-    //            model.streams[stream].metadata_displayed = false;
-    //    }
-    //    else
-    //    {
-    //        if (ImGui::Button("Show Metadata", { 100, 20 }))
-    //            model.streams[stream].metadata_displayed = true;
-    //    }
-
-    //    if (ImGui::IsItemHovered())
-    //        ImGui::SetTooltip("Show per-frame metadata");
-    //}
-
-    //if (model.streams[stream].show_stream_details)
-    //{
-    //    label = to_string() << "Timestamp: " << std::fixed << std::setprecision(3) << model.streams[stream].timestamp
-    //        << ", Domain:";
-    //    ImGui::Text("%s", label.c_str());
-
-    //    ImGui::SameLine();
-    //    auto domain = model.streams[stream].timestamp_domain;
-    //    label = to_string() << rs2_timestamp_domain_to_string(domain);
-
-    //    if (domain == RS2_TIMESTAMP_DOMAIN_SYSTEM_TIME)
-    //    {
-    //        ImGui::PushStyleColor(ImGuiCol_Text, { 1.0f, 0.0f, 0.0f, 1.0f });
-    //        ImGui::Text("%s", label.c_str());
-    //        if (ImGui::IsItemHovered())
-    //        {
-    //            ImGui::SetTooltip("Hardware Timestamp unavailable! This is often an indication of inproperly applied Kernel patch.\nPlease refer to installation.md for mode information");
-    //        }
-    //        ImGui::PopStyleColor();
-    //    }
-    //    else
-    //    {
-    //        ImGui::Text("%s", label.c_str());
-    //        if (ImGui::IsItemHovered())
-    //        {
-    //            ImGui::SetTooltip("Specifies the clock-domain for the timestamp (hardware-clock / system-time)");
-    //        }
-    //    }
-    //}
 
     ImGui::End();
     ImGui::PopStyleColor(6);
     ImGui::PopStyleVar();
+    ImGui::PopFont();
 }
 
 struct renderer_state { 
@@ -624,7 +313,10 @@ int main(int, char**) try
     glfwMakeContextCurrent(window);
     ImGui_ImplGlfw_Init(window, true);
 
-    imgui_easy_theming();
+    ImFont* font_18;
+    ImFont* font_14;
+
+    imgui_easy_theming(font_14, font_18);
 
     ImVec4 clear_color = ImColor(10, 0, 0);
 
@@ -683,6 +375,23 @@ int main(int, char**) try
     std::vector<std::string> active_device_info;
     auto dev_exist = false;
     auto hw_reset_enable = true;
+    auto pc = ctx.create_pointcloud();
+    int rendered_tex_id = 0;
+    std::atomic<bool> keep_calculating_pointcloud = true;
+    frame_queue depth_frames_to_render(1);
+    frame_queue resulting_3d_models(1);
+    bool paused = false;
+
+    std::thread pointcloud_thread([&]() {
+        while (keep_calculating_pointcloud)
+        {
+            frame f;
+            if (depth_frames_to_render.poll_for_frame(&f))
+            {
+                resulting_3d_models.enqueue(pc.calculate(f));
+            }
+        }
+    });
 
     std::vector<device> devs;
     std::mutex m;
@@ -788,9 +497,7 @@ int main(int, char**) try
     bool texture_wrapping_on = true;
     GLint texture_border_mode = GL_CLAMP_TO_EDGE; // GL_CLAMP_TO_BORDER
     float tex_border_color[] = { 0.8f, 0.8f, 0.8f, 0.8f };
-
     float2 oldcursor{ 0.f, 0.f };
-    auto pc = ctx.create_pointcloud();
 
     advanced_mode_control amc{};
     bool get_curr_advanced_controls = true;
@@ -910,7 +617,7 @@ int main(int, char**) try
             ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar |
             ImGuiWindowFlags_NoSavedSettings;
 
-        const float panel_width = 279.f;
+        const float panel_width = 320.f;
         const float panel_y = 44.f;
         const float default_log_h = 80.f;
 
@@ -928,7 +635,7 @@ int main(int, char**) try
             switch_to_newly_loaded_device = true;
         }
 
-        ImGui::PushFont(font_16);
+        ImGui::PushFont(font_18);
         ImGui::PushStyleColor(ImGuiCol_PopupBg, from_rgba(230, 230, 230, 255));
         ImGui::PushStyleColor(ImGuiCol_HeaderHovered, from_rgba(0, 0xae, 0xff, 255));
         ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, from_rgba(255, 255, 255, 255));
@@ -938,11 +645,11 @@ int main(int, char**) try
         if (ImGui::Button(u8"Add Source\t\t\t\t\t\t\t\t\t\t\t\t\t\uf055", { panel_width - 1, panel_y }))
             ImGui::OpenPopup("select");
 
-        ImGui::PushFont(font_12);
+        ImGui::PushFont(font_14);
         ImGui::SetNextWindowSize({ panel_width, 20.f * (device_names.size() + 1) + 8 });
         if (ImGui::BeginPopup("select"))
         {
-            ImGui::PushStyleColor(ImGuiCol_Text, from_rgba(30, 30, 30, 255));
+            ImGui::PushStyleColor(ImGuiCol_Text, dark_grey);
             ImGui::Columns(2, "DevicesList", false);
             for (size_t i = 0; i < device_names.size(); i++)
             {
@@ -1038,39 +745,36 @@ int main(int, char**) try
         ImGui::PushStyleColor(ImGuiCol_WindowBg, from_rgba(0x2d, 0x37, 0x40, 0xff));
         ImGui::Begin("Toolbar Panel", nullptr, flags);
 
-        ImGui::PushStyleColor(ImGuiCol_Border, { 0,0,0,0 });
+        ImGui::PushStyleColor(ImGuiCol_Border, black);
         ImGui::SetCursorPosX(w - panel_width - panel_y * 3);
-        ImGui::PushStyleColor(ImGuiCol_Text, is_3d_view ? ImVec4{ 0.5f,0.5f,0.5f,1.f } : ImVec4{ 1.f,1.f,1.f,1.f });
-        ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, is_3d_view ? ImVec4{ 0.5f,0.5f,0.5f,1.f } : ImVec4{ 1.f,1.f,1.f,1.f });
+        ImGui::PushStyleColor(ImGuiCol_Text, is_3d_view ? grey : white);
+        ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, is_3d_view ? grey : white);
         if (ImGui::Button("2D", { panel_y,panel_y })) is_3d_view = false;
         ImGui::PopStyleColor(2);
         ImGui::SameLine();
         ImGui::SetCursorPosX(w - panel_width - panel_y * 2);
-        ImGui::PushStyleColor(ImGuiCol_Text, !is_3d_view ? ImVec4{ 0.5f,0.5f,0.5f,1.f } : ImVec4{ 1.f,1.f,1.f,1.f });
-        ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, !is_3d_view ? ImVec4{ 0.5f,0.5f,0.5f,1.f } : ImVec4{ 1.f,1.f,1.f,1.f });
+        ImGui::PushStyleColor(ImGuiCol_Text, !is_3d_view ? grey : white);
+        ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, !is_3d_view ? grey : white);
         if (ImGui::Button("3D", { panel_y,panel_y })) is_3d_view = true;
         ImGui::PopStyleColor(3);
 
         ImGui::SameLine();
         ImGui::SetCursorPosX(w - panel_width - panel_y);
 
-        ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, { 1.f,1.f,1.f,1.f });
-        //if (ImGui::Button(u8"\uf013\uf0d7", { 25,25 }))
-        ImGui::PushStyleColor(ImGuiCol_PopupBg, from_rgba(230, 230, 230, 255));
-        ImGui::PushStyleColor(ImGuiCol_HeaderHovered, from_rgba(0, 0xae, 0xff, 255));
-        ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, from_rgba(255, 255, 255, 255));
+        ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
+        ImGui::PushStyleColor(ImGuiCol_PopupBg, almost_white_bg);
+        ImGui::PushStyleColor(ImGuiCol_HeaderHovered, light_blue);
+        ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
 
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(5, 5));
-        //ImGui::SetNextWindowPos({ 0, panel_y });
 
         if (ImGui::Button(u8"\uf013\uf0d7", { panel_y,panel_y }))
             ImGui::OpenPopup("global_menu");
 
-        ImGui::PushFont(font_12);
-        //ImGui::SetNextWindowSize({ panel_width, 20.f * (device_names.size() + 1) + 8 });
+        ImGui::PushFont(font_14);
         if (ImGui::BeginPopup("global_menu"))
         {
-            ImGui::PushStyleColor(ImGuiCol_Text, from_rgba(30, 30, 30, 255));
+            ImGui::PushStyleColor(ImGuiCol_Text, dark_grey);
             if (ImGui::Selectable("About RealSense Viewer"))
             {
             }
@@ -1088,14 +792,14 @@ int main(int, char**) try
 
         flags |= ImGuiWindowFlags_AlwaysVerticalScrollbar;
 
-        ImGui::PushFont(font_12);
+        ImGui::PushFont(font_14);
         ImGui::SetNextWindowPos({ panel_width, h - (is_output_collapsed ? default_log_h : 20) });
         ImGui::SetNextWindowSize({ w - panel_width, default_log_h });
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
         is_output_collapsed = ImGui::Begin("Output", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove |
             ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_ShowBorders);
         auto log = not_model.get_log();
-        ImGui::PushStyleColor(ImGuiCol_Text, from_rgba(0xc3, 0xd5, 0xe5, 0xff));
+        ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
         ImGui::InputTextMultiline("##Log", const_cast<char*>(log.c_str()),
             log.size() + 1, { w - panel_width, default_log_h - 20 }, ImGuiInputTextFlags_ReadOnly);
         ImGui::PopStyleColor();
@@ -1119,15 +823,14 @@ int main(int, char**) try
         {
             ImGui::Text("No device detected.");
         }
-
-        if (any_device_exists > 0)
+        else
         {
-            ImGui::PushFont(font_12);
+            ImGui::PushFont(font_14);
             auto pos = ImGui::GetCursorScreenPos();
-            ImGui::GetWindowDrawList()->AddRectFilled(pos, { pos.x + panel_width, pos.y + panel_y }, ImColor(from_rgba(0x3e, 0x4d, 0x59, 0xff)));
-            ImGui::GetWindowDrawList()->AddLine({ pos.x,pos.y }, { pos.x + panel_width,pos.y }, ImColor(from_rgba(0, 0, 0, 0xff)));
+            ImGui::GetWindowDrawList()->AddRectFilled(pos, { pos.x + panel_width, pos.y + panel_y }, ImColor(sensor_header_light_blue));
+            ImGui::GetWindowDrawList()->AddLine({ pos.x,pos.y }, { pos.x + panel_width,pos.y }, ImColor(black));
 
-            ImGui::PushStyleColor(ImGuiCol_Button, from_rgba(0x3e, 0x4d, 0x59, 0xff));
+            ImGui::PushStyleColor(ImGuiCol_Button, sensor_header_light_blue);
             ImGui::Columns(2, "DeviceInfo", false);
             ImGui::SetCursorPos({ 5, 14 });
             label = to_string() << u8"\uf03d  " << dev.get_info(RS2_CAMERA_INFO_NAME);
@@ -1140,11 +843,11 @@ int main(int, char**) try
             ImGui::Columns(1);
             ImGui::SetCursorPos({ panel_width - 45, 11 });
 
-            ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, { 1.f,1.f,1.f,1.f });
+            ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
             //if (ImGui::Button(u8"\uf013\uf0d7", { 25,25 }))
-            ImGui::PushStyleColor(ImGuiCol_PopupBg, from_rgba(230, 230, 230, 255));
+            ImGui::PushStyleColor(ImGuiCol_PopupBg, almost_white_bg);
             ImGui::PushStyleColor(ImGuiCol_HeaderHovered, from_rgba(0, 0xae, 0xff, 255));
-            ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, from_rgba(255, 255, 255, 255));
+            ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
 
             ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(5, 5));
             //ImGui::SetNextWindowPos({ 0, panel_y });
@@ -1152,13 +855,13 @@ int main(int, char**) try
             if (ImGui::Button(u8"\uf013\uf0d7", { 25,25 }))
                 ImGui::OpenPopup("device_menu");
 
-            ImGui::PushFont(font_12);
+            ImGui::PushFont(font_14);
             //ImGui::SetNextWindowSize({ panel_width, 20.f * (device_names.size() + 1) + 8 });
 
 
             if (ImGui::BeginPopup("device_menu"))
             {
-                ImGui::PushStyleColor(ImGuiCol_Text, from_rgba(30, 30, 30, 255));
+                ImGui::PushStyleColor(ImGuiCol_Text, dark_grey);
                 if (ImGui::Selectable("Show Device Details..."))
                 {
 
@@ -1174,17 +877,13 @@ int main(int, char**) try
                 if (ImGui::Selectable("Load Settings", false, ImGuiSelectableFlags_SpanAllColumns))
                 {
                     const char *ret;
-                    ret = noc_file_dialog_open(NOC_FILE_DIALOG_OPEN,
-                        "JSON\0*.json\0", NULL, NULL);
-
+                    ret = noc_file_dialog_open(NOC_FILE_DIALOG_OPEN, "JSON\0*.json\0", NULL, NULL);
                 }
 
                 if (ImGui::Selectable("Save Settings", false, ImGuiSelectableFlags_SpanAllColumns))
                 {
                     const char *ret;
-                    ret = noc_file_dialog_open(NOC_FILE_DIALOG_SAVE,
-                        "JSON\0*.json\0", NULL, NULL);
-
+                    ret = noc_file_dialog_open(NOC_FILE_DIALOG_SAVE, "JSON\0*.json\0", NULL, NULL);
                 }
 
                 ImGui::Separator();
@@ -1241,7 +940,7 @@ int main(int, char**) try
 
             ImGui::PushStyleColor(ImGuiCol_HeaderHovered, from_rgba(0x1b, 0x21, 0x25, 0xff));
             ImGui::PushStyleColor(ImGuiCol_Text, from_rgba(0xc3, 0xd5, 0xe5, 0xff));
-            ImGui::PushFont(font_12);
+            ImGui::PushFont(font_14);
 
             // Streaming Menu - Allow user to play different streams
             if (list.size() > 0)
@@ -1253,10 +952,12 @@ int main(int, char**) try
                     const ImVec2 abs_pos = ImGui::GetCursorScreenPos();
                     model_to_y[sub.get()] = pos.y;
                     model_to_abs_y[sub.get()] = abs_pos.y;
-                    ImGui::GetWindowDrawList()->AddLine({ abs_pos.x,abs_pos.y - 2 }, { abs_pos.x + panel_width,abs_pos.y - 2 }, ImColor(from_rgba(0, 0, 0, 0xff)), 2.f);
+                    ImGui::GetWindowDrawList()->AddLine({ abs_pos.x, abs_pos.y - 2 }, 
+                                                        { abs_pos.x + panel_width, abs_pos.y - 2 }, 
+                                                        ImColor(black), 2.f);
 
                     label = to_string() << sub->s.get_info(RS2_CAMERA_INFO_NAME);
-                    ImGui::PushStyleColor(ImGuiCol_Header, from_rgba(0x3e, 0x4d, 0x59, 0xff));
+                    ImGui::PushStyleColor(ImGuiCol_Header, sensor_header_light_blue);
 
                     ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, { 10, 10 });
                     ImGui::PushStyleVar(ImGuiStyleVar_ItemInnerSpacing, { 0, 0 });
@@ -1297,7 +998,7 @@ int main(int, char**) try
                             ImGui::TreePop();
                         }
 
-                        if (dev.is<advanced_mode>())
+                        if (dev.is<advanced_mode>() && sub->s.is<depth_sensor>())
                             draw_advanced_mode_tab(dev, amc, restarting_device_info, get_curr_advanced_controls);
 
                         ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
@@ -1329,7 +1030,7 @@ int main(int, char**) try
             {
                 ImGui::GetWindowDrawList()->AddLine({ pos.x,pos.y }, { pos.x + panel_width,pos.y }, ImColor(from_rgba(0, 0, 0, 0xff)));
                 ImRect bb(pos, ImVec2(pos.x + ImGui::GetContentRegionAvail().x, pos.y + ImGui::GetContentRegionAvail().y));
-                ImGui::GetWindowDrawList()->AddRectFilled(bb.GetTL(), bb.GetBR(), ImColor(from_rgba(9, 11, 13, 255)));
+                ImGui::GetWindowDrawList()->AddRectFilled(bb.GetTL(), bb.GetBR(), ImColor(dark_window_background));
             }
         }
 
@@ -1341,24 +1042,24 @@ int main(int, char**) try
                 t += 0.03f; // TODO: change to something more elegant
 
                 ImGui::SetCursorPos({ windows_width - 32, model_to_y[sub.get()] + 3 });
-                ImGui::PushFont(font_12);
+                ImGui::PushFont(font_14);
                 if (sub.get() == model.subdevices.begin()->get() && !anything_started)
                 {
                     ImGui::PushStyleColor(ImGuiCol_Button, from_rgba(0x1b + abs(sin(t)) * 40, 0x21 + abs(sin(t)) * 20, 0x25 + abs(sin(t)) * 30, 0xff));
                 }
                 else
                 {
-                    ImGui::PushStyleColor(ImGuiCol_Button, from_rgba(0x1b, 0x21, 0x25, 0xff));
+                    ImGui::PushStyleColor(ImGuiCol_Button, sensor_bg);
                 }
-                ImGui::PushStyleColor(ImGuiCol_ButtonHovered, from_rgba(0x1b, 0x21, 0x25, 0xff));
-                ImGui::PushStyleColor(ImGuiCol_ButtonActive, from_rgba(0x1b, 0x21, 0x25, 0xff));
+                ImGui::PushStyleColor(ImGuiCol_ButtonHovered, sensor_bg);
+                ImGui::PushStyleColor(ImGuiCol_ButtonActive, sensor_bg);
 
                 if (!sub->streaming)
                 {
                     label = to_string() << u8"  \uf204\noff   ##" << sub->s.get_info(RS2_CAMERA_INFO_NAME);
 
-                    ImGui::PushStyleColor(ImGuiCol_Text, from_rgba(255, 46, 54, 255));
-                    ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, from_rgba(255, 66, 77, 255));
+                    ImGui::PushStyleColor(ImGuiCol_Text, redish);
+                    ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, redish + 0.1f);
 
                     if (sub->is_selected_combination_supported())
                     {
@@ -1391,8 +1092,8 @@ int main(int, char**) try
                 else
                 {
                     label = to_string() << u8"  \uf205\n    on##" << sub->s.get_info(RS2_CAMERA_INFO_NAME);
-                    ImGui::PushStyleColor(ImGuiCol_Text, from_rgba(0, 174, 239, 255));
-                    ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, from_rgba(10, 180, 250, 255));
+                    ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
+                    ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue + 0.1f);
 
                     if (ImGui::Button(label.c_str(), { 30,30 }))
                     {
@@ -1540,6 +1241,11 @@ int main(int, char**) try
 
             auto layout = viewer_model.calc_layout(panel_width, panel_y, w - panel_width, (float)h - panel_y - (is_output_collapsed ? default_log_h : 20));
 
+            if (layout.size() == 0 && any_device_exists)
+            {
+                viewer_model.show_no_stream_overlay(font_18, panel_width, panel_y, w, (float)h - (is_output_collapsed ? default_log_h : 20));
+            }
+
             for (auto &&kvp : layout)
             {
                 auto&& view_rect = kvp.second;
@@ -1550,8 +1256,11 @@ int main(int, char**) try
 
                 stream_mv.show_frame(stream_rect, mouse, error_message);
 
-                show_stream_header(stream_rect, stream_mv, viewer_model);
-                show_stream_footer(stream_rect, stream_mv, mouse);
+                if (stream_mv.dev->is_paused())
+                    viewer_model.show_paused_icon(font_18, stream_rect.x + 5, stream_rect.y + 5, stream_mv.profile.unique_id());
+
+                stream_mv.show_stream_header(font_14, stream_rect, viewer_model);
+                stream_mv.show_stream_footer(stream_rect, mouse);
             }
 
             // Metadata overlay windows shall be drawn after textures to preserve z-buffer functionality
@@ -1563,7 +1272,8 @@ int main(int, char**) try
         }
         else
         {
-            static int tex_id = 0;
+            show_3dviewer_header(font_14, { panel_width, panel_y, w - panel_width, h - panel_y }, viewer_model);
+
             static auto last_frame_number = 0;
             for (auto&& s : viewer_model.streams)
             {
@@ -1578,15 +1288,25 @@ int main(int, char**) try
                     {
                         if (s.second.profile.stream_type() != RS2_STREAM_DEPTH && s.second.texture->last)
                         {
-                            tex_id = s.second.texture->get_gl_handle();
+                            rendered_tex_id = s.second.texture->get_gl_handle();
                             pc.map_to(s.second.texture->last);
                             break;
                         }
                     }
 
-                    viewer_model.model_3d = pc.calculate(s.second.texture->last);
+                    if (s.second.dev && !s.second.dev->is_paused())
+                        depth_frames_to_render.enqueue(s.second.texture->last);
                     break;
                 }
+            }
+
+            if (paused)
+                viewer_model.show_paused_icon(font_18, panel_width + 15, panel_y + 15 + 32, 0);
+
+            frame f;
+            if (resulting_3d_models.poll_for_frame(&f))
+            {
+                viewer_model.model_3d = f;
             }
 
             glfwGetFramebufferSize(window, &w, &h);
@@ -1601,8 +1321,8 @@ int main(int, char**) try
             arcball_camera_update(
                 (float*)&pos, (float*)&target, (float*)&up, view,
                 sec_since_update,
-                0.1f, // zoom per tick
-                0.8f, // pan speed
+                0.2f, // zoom per tick
+                1.5f, // pan speed
                 3.0f, // rotation multiplier
                 w, h, // screen (window) size
                 oldcursor.x, mouse.cursor.x,
@@ -1615,25 +1335,45 @@ int main(int, char**) try
             glMatrixMode(GL_PROJECTION);
             glPushMatrix();
             glLoadIdentity();
-            gluPerspective(60, (float)w / h, 0.01f, 10.0f);
+            gluPerspective(60, (float)w / h, 0.001f, 100.0f);
 
             glMatrixMode(GL_MODELVIEW);
             glPushMatrix();
             glLoadMatrixf(view);
 
+            glDisable(GL_TEXTURE_2D);
+
+            glEnable(GL_DEPTH_TEST);
+            
+            glLineWidth(1);
+            glBegin(GL_LINES);
+            glColor4f(0.4f, 0.4f, 0.4f, 1.f);
+
+            glTranslatef(0, 0, -1);
+
+            for (int i = 0; i <= 6; i++)
+            {
+                glVertex3f(i-3, 1, 0);
+                glVertex3f(i-3, 1, 6);
+                glVertex3f(-3, 1, i);
+                glVertex3f(3, 1, i);
+            }
+            glEnd();
+
+            texture_buffer::draw_axis(0.1, 1);
+
+            glColor4f(1.f, 1.f, 1.f, 1.f);
+            glEnable(GL_TEXTURE_2D);
+
             if (auto points = viewer_model.model_3d)
             {
                 glPointSize((float)w / points.get_profile().as<video_stream_profile>().width());
-                glEnable(GL_DEPTH_TEST);
-                
-                glEnable(GL_TEXTURE_2D);
-                glBindTexture(GL_TEXTURE_2D, tex_id);
+
+                glBindTexture(GL_TEXTURE_2D, rendered_tex_id);
 
                 glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, tex_border_color);
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, texture_border_mode);
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, texture_border_mode);
-
-                glTranslatef(0, 0, -1);
 
                 glBegin(GL_POINTS);
 
@@ -1651,21 +1391,23 @@ int main(int, char**) try
                 }
 
                 glEnd();
-                glDisable(GL_DEPTH_TEST);
             }
+
+            glDisable(GL_DEPTH_TEST);
+
+            glPopMatrix();
+            glMatrixMode(GL_PROJECTION);
+            glPopMatrix();
+            glPopAttrib();
+
 
             if (ImGui::IsKeyPressed('R') || ImGui::IsKeyPressed('r'))
             {
                 reset_camera(pos, target, up);
             }
 
-            glPopMatrix();
-            glMatrixMode(GL_PROJECTION);
-            glPopMatrix();
-            glPopAttrib();
         }
 
-        static bool paused = false;
         if (ImGui::IsKeyPressed(' '))
         {
             if (paused)
@@ -1691,6 +1433,9 @@ int main(int, char**) try
         mouse.mouse_wheel = 0;
         oldcursor = mouse.cursor;
     }
+
+    keep_calculating_pointcloud = false;
+    pointcloud_thread.join();
 
     // Stop all subdevices
     for (auto&& sub : model.subdevices)
