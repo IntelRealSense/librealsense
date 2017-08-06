@@ -5,12 +5,12 @@
 #include "image.h"
 #include "algo.h"
 #include "metadata-parser.h"
+#include "stream.h"
 
 #include <array>
 #include <set>
 #include <unordered_set>
-#include "device.h"
-#include "stream.h"
+
 
 namespace librealsense
 {

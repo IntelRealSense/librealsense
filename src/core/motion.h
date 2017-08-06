@@ -2,7 +2,6 @@
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 #pragma once
 
-#include "../include/librealsense/rs2.h"
 
 #include "streaming.h"
 

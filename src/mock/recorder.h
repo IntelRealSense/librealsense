@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include "../../include/librealsense/h/rs2_record_playback.h"
 #include "backend.h"
 #include "context.h"
 #include <vector>
