@@ -1967,6 +1967,21 @@ namespace rs2
         std::shared_ptr<rs2_context> _context;
     };
 
+    class pipeline
+    {
+    public:
+        pipeline(context ctx = context()){}
+        void start(){}
+        frameset wait_for_frames(unsigned int timeout_ms = 5000) const
+        {
+            frameset res;
+            return res;
+        };
+
+    private:
+        std::shared_ptr<rs2_context> _context;
+    };
+
     class syncer
     {
     public:

@@ -40,6 +40,11 @@ struct rs2_context
     std::shared_ptr<librealsense::context> ctx;
 };
 
+struct rs2_pipeline
+{
+    std::shared_ptr<librealsense::pipeline> pipe;
+};
+
 //struct rs2_record_device
 //{
 //    std::shared_ptr<librealsense::record_device> record_device;

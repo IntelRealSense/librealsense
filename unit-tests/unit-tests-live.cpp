@@ -2625,3 +2625,142 @@ TEST_CASE("Sync connect disconnect", "[live]") {
         t.join();
     }
 }
+
+struct profile
+{
+    rs2_stream stream;
+    int width;
+    int height;
+
+    bool operator==(const profile& other) const
+    {
+        return stream == other.stream && width == other.width && height == other.height;
+    }
+
+    bool operator!=(const profile& other) const
+    {
+        return !(*this == other);
+    }
+    bool operator<(const profile& other) const
+    {
+        return stream < other.stream;
+    }
+
+};
+
+struct device_requsets
+{
+    std::vector<profile> streams;
+    int fps;
+    bool sync;
+};
+
+void validate(std::vector<frameset> frames, device_requsets requsets)
+{
+    REQUIRE(frames.size() > 0);
+
+    int successful = 0;
+
+    auto gap = 1000/requsets.fps;
+
+    auto ts = 0;
+
+    for(auto i=0; i<frames.size(); i++)
+    {
+        auto frame = frames[i];
+
+        if(frame.size() == 0)
+            continue;
+
+        std::vector<double> timestamps;
+        std::vector<profile> stream_arrived;
+
+        for(auto f: frame)
+        {
+            auto image = f.as<rs2::video_frame>();
+
+            stream_arrived.push_back({image.get_profile().stream_type(), image.get_width(), image.get_height()});
+            timestamps.push_back(f.get_timestamp());
+        }
+
+        std::sort(timestamps.begin(), timestamps.end());
+
+
+        if( ts && (timestamps[0] - ts) > gap)
+            continue;
+
+        ts = timestamps[0];
+
+        if(timestamps[timestamps.size()-1] - timestamps[0] > gap/2)
+        {
+            continue;
+        }
+        if(stream_arrived.size() != requsets.streams.size())
+            continue;
+
+        std::sort(stream_arrived.begin(), stream_arrived.end());
+        std::sort(requsets.streams.begin(), requsets.streams.end());
+
+        auto equals = true;
+        for( auto i =0; i< requsets.streams.size(); i++)
+        {
+            if(stream_arrived[i] != requsets.streams[i])
+            {
+                equals = false;
+                break;
+            }
+
+        }
+        if(!equals)
+            continue;
+
+        successful++;
+
+    }
+    REQUIRE(successful/frames.size() > 0.8);
+}
+
+TEST_CASE("Pipline", "[live]") {
+
+    std::map<std::string, device_requsets> dev_requsets;
+
+    dev_requsets["0B07"] =
+    {
+        {{RS2_STREAM_DEPTH, 1280, 720}, {RS2_STREAM_COLOR, 1920, 1080}},
+        30,
+        true
+    };
+
+    dev_requsets["0AA5"] =
+    {
+        {{RS2_STREAM_DEPTH, 640, 480}, {RS2_STREAM_COLOR, 1920, 1080}},
+        30,
+        true
+    };
+
+    rs2::context ctx;
+
+    if (make_context(SECTION_FROM_TEST_NAME, &ctx))
+    {
+        auto list = ctx.query_devices();
+        REQUIRE(list.size());
+        auto dev = list[0];
+
+        std::string PID = dev.get_info(RS2_CAMERA_INFO_PRODUCT_ID);
+
+        REQUIRE(dev_requsets[PID].streams.size()>0);
+
+        rs2::pipeline pipe(ctx);
+        pipe.start();
+
+        std::vector<frameset> frames;
+
+        while(frames.size()<10)
+            frames.push_back(pipe.wait_for_frames());
+
+
+        validate(frames, dev_requsets[PID]);
+
+
+    }
+}

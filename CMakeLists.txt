@@ -95,13 +95,15 @@ endif()
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/CMake)
 
 set(REALSENSE_CPP
+    src/device_hub.cpp
+    src/pipeline.cpp
     src/archive.cpp
     src/context.cpp
     src/device.cpp
     src/sensor.cpp
     src/algo.cpp
     src/sync.cpp
-	src/stream.cpp
+    src/stream.cpp
     src/option.cpp
     src/error-handling.cpp
     src/hw-monitor.cpp
@@ -171,13 +173,15 @@ set(REALSENSE_HPP
     src/core/extension.h
     src/core/processing.h
 
+    src/device_hub.h
+    src/pipeline.h
     src/archive.h
     src/concurrency.h
     src/context.h
     src/sensor.h
     src/sync.h
     src/sensor.h
-	src/stream.h
+    src/stream.h
     src/align.h
     src/algo.h
     src/option.h
