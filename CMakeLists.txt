@@ -225,19 +225,7 @@ set(REALSENSE_HPP
     src/mock/sql.h
     src/mock/recorder.h
 
-    src/media/ros/data_objects/pose.h
-    src/media/ros/data_objects/vendor_data.h
-    src/media/ros/data_objects/image.h
-    src/media/ros/data_objects/motion_stream_info.h
-    src/media/ros/data_objects/property.h
-    src/media/ros/data_objects/motion_sample.h
-    src/media/ros/data_objects/time_sample.h
-    src/media/ros/data_objects/compressed_image.h
-    src/media/ros/data_objects/occupancy_map.h
-    src/media/ros/data_objects/stream_data.h
-    src/media/ros/data_objects/image_stream_info.h
     src/media/ros/file_types.h
-    src/media/ros/status.h
     src/media/ros/topic.h
 )
 
