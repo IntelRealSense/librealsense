@@ -118,7 +118,7 @@ namespace librealsense
         STRCASE(STREAM, FISHEYE)
         STRCASE(STREAM, GYRO)
         STRCASE(STREAM, ACCEL)
-        
+        STRCASE(STREAM, GPIO)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
         #undef CASE

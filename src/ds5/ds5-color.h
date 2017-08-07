@@ -16,11 +16,14 @@ namespace librealsense
         ds5_color(std::shared_ptr<context> ctx,
                   const platform::backend_device_group& group);
 
+    protected:
+        std::shared_ptr<stream_interface> _color_stream;
+
     private:
         friend class ds5_color_sensor;
 
         uint8_t _color_device_idx = -1;
-        std::shared_ptr<stream_interface> _color_stream;
+
 
         lazy<std::vector<uint8_t>> _color_calib_table_raw;
         std::shared_ptr<lazy<rs2_extrinsics>> _color_extrinsic;

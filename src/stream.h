@@ -67,7 +67,10 @@ namespace librealsense
         void make_recommended() override;
 
         int get_unique_id() const override { return _uid; }
-        void set_unique_id(int uid) override { _uid = uid; };
+        void set_unique_id(int uid) override
+        {
+            _uid = uid;
+        };
 
         size_t get_size() const override;
 
