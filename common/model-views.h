@@ -100,7 +100,7 @@ namespace rs2
     class option_model
     {
     public:
-        void draw(std::string& error_message);
+        bool draw(std::string& error_message);
         void update_supported(std::string& error_message);
         void update_read_only_status(std::string& error_message);
         void update_all_feilds(std::string& error_message, notifications_model& model);
@@ -162,7 +162,7 @@ namespace rs2
         void draw_options(const std::vector<rs2_option>& drawing_order,
                           bool update_read_only_options, std::string& error_message,
                           notifications_model& model);
-        void draw_option(rs2_option opt, bool update_read_only_options,
+        bool draw_option(rs2_option opt, bool update_read_only_options,
                          std::string& error_message, notifications_model& model);
 
        
@@ -234,6 +234,14 @@ namespace rs2
 
     class viewer_model;
 
+    inline bool ends_with(const std::string& s, const std::string& suffix)
+    {
+        auto i = s.rbegin(), j = suffix.rbegin();
+        for (; i != s.rend() && j != suffix.rend() && *i == *j; 
+            i++, j++);
+        return j == suffix.rend();
+    }
+
     class stream_model
     {
     public:
@@ -276,11 +284,11 @@ namespace rs2
         bool show_stream_details = false;
     };
 
+    std::pair<std::string, std::string> get_device_name(const device& dev);
+
     class device_model
     {
     public:
-        device_model(){}
-
         void reset();
         explicit device_model(device& dev, std::string& error_message);
         bool draw_combo_box(const std::vector<std::string>& device_names, int& new_index);
@@ -293,34 +301,12 @@ namespace rs2
         std::vector<std::shared_ptr<subdevice_model>> subdevices;
         
         bool metadata_supported = false;
+
+        device dev;
+        std::string id;
     private:
         std::shared_ptr<recorder> _recorder;
         std::vector<std::shared_ptr<subdevice_model>> live_subdevices;
-    };
-
-    class viewer_model
-    {
-    public:
-        void upload_frame(frame&& f);
-        void draw_histogram_options(float depth_scale, const subdevice_model& sensor);
-
-        std::map<int, rect> calc_layout(float x0, float y0, float width, float height);
-
-        void show_no_stream_overlay(ImFont* font, int min_x, int min_y, int max_x, int max_y);
-
-        void show_paused_icon(ImFont* font, int x, int y, int id);
-
-        std::map<int, stream_model> streams;
-        bool fullscreen = false;
-        stream_model* selected_stream = nullptr;
-
-        points model_3d;
-    private:
-        std::map<int, rect> get_interpolated_layout(const std::map<int, rect>& l);
-
-        streams_layout _layout;
-        streams_layout _old_layout;
-        std::chrono::high_resolution_clock::time_point _transition_start_time;
     };
 
     struct notification_data
@@ -349,7 +335,7 @@ namespace rs2
         void set_color_scheme(float t) const;
 
         static const int MAX_LIFETIME_MS = 10000;
-        int height = 60;
+        int height = 40;
         int index;
         std::string message;
         double timestamp;
@@ -361,7 +347,7 @@ namespace rs2
     struct notifications_model
     {
         void add_notification(const notification_data& n);
-        void draw(int w, int h, notification_model& selected);
+        void draw(ImFont* font, int w, int h);
 
         std::string get_log() 
         {
@@ -371,9 +357,11 @@ namespace rs2
             return result;
         }
 
-        void add_log(const std::string& line)
+        void add_log(std::string line)
         {
             std::lock_guard<std::mutex> lock(m);
+            if (!line.size()) return;
+            if (line[line.size() - 1] != '\n') line += "\n";
             log.push_back(line);
         }
 
@@ -383,5 +371,44 @@ namespace rs2
         std::mutex m;
 
         std::vector<std::string> log;
+        notification_model selected;
+    };
+
+    class viewer_model
+    {
+    public:
+        viewer_model()
+        {
+            rs2_error* e = nullptr;
+            not_model.add_log(to_string() << "librealsense version: " << api_version_to_string(rs2_get_api_version(&e)) << "\n");
+        }
+
+        void upload_frame(frame&& f);
+        void draw_histogram_options(float depth_scale, const subdevice_model& sensor);
+
+        std::map<int, rect> calc_layout(float x0, float y0, float width, float height);
+
+        void show_no_stream_overlay(ImFont* font, int min_x, int min_y, int max_x, int max_y);
+
+        void show_paused_icon(ImFont* font, int x, int y, int id);
+
+        void popup_if_error(ImFont* font, std::string& error_message);
+
+        void show_event_log(ImFont* font_14, float x, float y, float w, float h);
+
+        std::map<int, stream_model> streams;
+        bool fullscreen = false;
+        stream_model* selected_stream = nullptr;
+
+        points model_3d;
+
+        notifications_model not_model;
+        bool is_output_collapsed = false;
+    private:
+        std::map<int, rect> get_interpolated_layout(const std::map<int, rect>& l);
+
+        streams_layout _layout;
+        streams_layout _old_layout;
+        std::chrono::high_resolution_clock::time_point _transition_start_time;
     };
 }
