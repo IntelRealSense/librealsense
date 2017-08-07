@@ -51,7 +51,7 @@ public:
         accepting = true;
         was_flushed = false;
         const auto ready = [this]() { return (q.size() > 0) || need_to_flush; };
-        if (!ready() && !cv.wait_for(lock, std::chrono::seconds(5000000), ready))
+        if (!ready() && !cv.wait_for(lock, std::chrono::seconds(5000), ready))
         {
             return false;
         }
