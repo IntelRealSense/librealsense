@@ -17,6 +17,15 @@
 #include <cmath>
 #include <map>
 
+#ifdef _MSC_VER
+#ifndef GL_CLAMP_TO_BORDER
+#define GL_CLAMP_TO_BORDER  0x812D
+#endif
+#ifndef GL_CLAMP_TO_EDGE
+#define GL_CLAMP_TO_EDGE    0x812F
+#endif
+#endif
+
 namespace rs2
 {
     class fps_calc
@@ -93,6 +102,13 @@ namespace rs2
     struct float3
     {
         float x, y, z;
+
+        float length() const { return sqrt(x*x + y*y + z*z); }
+
+        float3 normalize() const
+        {
+            return (length() > 0)? float3{ x / length(), y / length(), z / length() }:*this;
+        }
     };
 
     inline float3 operator*(const float3& a, float t)
@@ -100,9 +116,19 @@ namespace rs2
         return { a.x * t, a.y * t, a.z * t };
     }
 
+    inline float3 operator/(const float3& a, float t)
+    {
+        return { a.x / t, a.y / t, a.z / t };
+    }
+
     inline float3 operator+(const float3& a, const float3& b)
     {
         return { a.x + b.x, a.y + b.y, a.z + b.z };
+    }
+
+    inline float3 operator-(const float3& a, const float3& b)
+    {
+        return { a.x - b.x, a.y - b.y, a.z - b.z };
     }
 
     inline float3 lerp(const float3& a, const float3& b, float t)
@@ -136,6 +162,7 @@ namespace rs2
     {
         float2 cursor;
         bool mouse_down = false;
+        int mouse_wheel = 0;
     };
 
     template<typename T>
@@ -498,9 +525,9 @@ namespace rs2
     {
         GLuint texture;
         std::vector<uint8_t> rgb;
-        rs2::frame last;
 
     public:
+        rs2::frame last;
         color_map* cm = &jet;
         bool equalize = true;
         float min_depth = 0.f;
@@ -606,40 +633,39 @@ namespace rs2
             last = frame;
         }
 
-        void draw_axis()
+        static void draw_axis(float axis_size = 1.f, float axisWidth = 4.f)
         {
 
             // Traingles For X axis
             glBegin(GL_TRIANGLES);
             glColor3f(1.0f, 0.0f, 0.0f);
-            glVertex3f(1.1f, 0.0f, 0.0f);
-            glVertex3f(1.0f, 0.05f, 0.0f);
-            glVertex3f(1.0f, -0.05f, 0.0f);
+            glVertex3f(axis_size * 1.1f, 0.0f, 0.0f);
+            glVertex3f(axis_size, axis_size * 0.05f, 0.0f);
+            glVertex3f(axis_size, -0.05f * axis_size, 0.0f);
             glEnd();
 
             // Traingles For Y axis
             glBegin(GL_TRIANGLES);
             glColor3f(0.0f, 1.0f, 0.0f);
-            glVertex3f(0.0f, -1.1f, 0.0f);
-            glVertex3f(0.0f, -1.0f, 0.05f);
-            glVertex3f(0.0f, -1.0f, -0.05f);
+            glVertex3f(0.0f, -1.1f * axis_size, 0.0f);
+            glVertex3f(0.0f, -1.0f * axis_size, 0.05f * axis_size);
+            glVertex3f(0.0f, -1.0f * axis_size, -0.05f * axis_size);
             glEnd();
             glBegin(GL_TRIANGLES);
             glColor3f(0.0f, 1.0f, 0.0f);
-            glVertex3f(0.0f, -1.1f, 0.0f);
-            glVertex3f(0.05f, -1.0f, 0.0f);
-            glVertex3f(-0.05f, -1.0f, 0.0f);
+            glVertex3f(0.0f, -1.1f * axis_size, 0.0f);
+            glVertex3f(0.05f * axis_size, -1.0f * axis_size, 0.0f);
+            glVertex3f(-0.05f * axis_size, -1.0f * axis_size, 0.0f);
             glEnd();
 
             // Traingles For Z axis
             glBegin(GL_TRIANGLES);
             glColor3f(0.0f, 0.0f, 1.0f);
-            glVertex3f(0.0f, 0.0f, 1.1f);
-            glVertex3f(0.0f, 0.05f, 1.0f);
-            glVertex3f(0.0f, -0.05f, 1.0f);
+            glVertex3f(0.0f, 0.0f, 1.1f * axis_size);
+            glVertex3f(0.0f, 0.05f * axis_size, 1.0f * axis_size);
+            glVertex3f(0.0f, -0.05f * axis_size, 1.0f * axis_size);
             glEnd();
 
-            auto axisWidth = 4.f;
             glLineWidth(axisWidth);
 
             // Drawing Axis
@@ -647,17 +673,17 @@ namespace rs2
             // X axis - Red
             glColor3f(1.0f, 0.0f, 0.0f);
             glVertex3f(0.0f, 0.0f, 0.0f);
-            glVertex3f(1.0f, 0.0f, 0.0f);
+            glVertex3f(axis_size, 0.0f, 0.0f);
 
             // Y axis - Green
             glColor3f(0.0f, 1.0f, 0.0f);
             glVertex3f(0.0f, 0.0f, 0.0f);
-            glVertex3f(0.0f, -1.0f, 0.0f);
+            glVertex3f(0.0f, -axis_size, 0.0f);
 
             // Z axis - White
             glColor3f(0.0f, 0.0f, 1.0f);
             glVertex3f(0.0f, 0.0f, 0.0f);
-            glVertex3f(0.0f, 0.0f, 1.0f);
+            glVertex3f(0.0f, 0.0f, axis_size);
             glEnd();
         }
 
@@ -813,7 +839,7 @@ namespace rs2
             auto image = last.as<video_frame>();
             if (!image) return false;
 
-            auto format = last.get_profile().fps();
+            auto format = last.get_profile().format();
             switch (format)
             {
             case RS2_FORMAT_Z16:

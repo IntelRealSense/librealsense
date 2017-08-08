@@ -3,6 +3,7 @@
 
 #pragma once
 #include <librealsense/rs2.hpp>
+#include "example.hpp"
 
 #define GLFW_INCLUDE_GLU
 #include <GLFW/glfw3.h>
@@ -11,167 +12,50 @@
 #include <map>
 #include <set>
 #include <array>
-#include "example.hpp"
 #include <unordered_map>
 
-namespace ImGui {
-/*
-    tabLabels: name of all tabs involved
-    tabSize: number of elements
-    tabIndex: holds the current active tab
-    tabOrder: optional array of integers from 0 to tabSize-1 that maps the tab label order. If one of the numbers is replaced by -1 the tab label is not visible (closed). It can be read/modified at runtime.
-
-    // USAGE EXAMPLE
-    static const char* tabNames[] = {"First tab","Second tab","Third tab"};
-    static int tabOrder[] = {0,1,2};
-    static int tabSelected = 0;
-    const bool tabChanged = ImGui::TabLabels(tabNames,sizeof(tabNames)/sizeof(tabNames[0]),tabSelected,tabOrder);
-    ImGui::Text("\nTab Page For Tab: \"%s\" here.\n",tabNames[tabSelected]);
-*/
-
-inline IMGUI_API bool TabLabels(const char **tabLabels, int tabSize, int &tabIndex, int *tabOrder=NULL) {
-    ImGuiStyle& style = ImGui::GetStyle();
-
-    const ImVec2 itemSpacing =  style.ItemSpacing;
-    const ImVec4 color =        style.Colors[ImGuiCol_Button];
-    const ImVec4 colorActive =  style.Colors[ImGuiCol_ButtonActive];
-    const ImVec4 colorHover =   style.Colors[ImGuiCol_ButtonHovered];
-    const ImVec4 colorText =    style.Colors[ImGuiCol_Text];
-    style.ItemSpacing.x =       1;
-    style.ItemSpacing.y =       1;
-    const ImVec4 colorSelectedTab = ImVec4(color.x,color.y,color.z,color.w*0.5f);
-    const ImVec4 colorSelectedTabHovered = ImVec4(colorHover.x,colorHover.y,colorHover.z,colorHover.w*0.5f);
-    const ImVec4 colorSelectedTabText = ImVec4(colorText.x*0.8f,colorText.y*0.8f,colorText.z*0.8f,colorText.w*0.8f);
-
-    if (tabSize>0 && (tabIndex<0 || tabIndex>=tabSize)) {
-        if (!tabOrder)  tabIndex = 0;
-        else tabIndex = -1;
-    }
-
-    float windowWidth = 0.f,sumX=0.f;
-    windowWidth = ImGui::GetWindowWidth() - style.WindowPadding.x - (ImGui::GetScrollMaxY()>0 ? style.ScrollbarSize : 0.f);
-
-    static int draggingTabIndex = -1;int draggingTabTargetIndex = -1;   // These are indices inside tabOrder
-    static ImVec2 draggingtabSize(0,0);
-    static ImVec2 draggingTabOffset(0,0);
-
-    const bool isMMBreleased = ImGui::IsMouseReleased(2);
-    const bool isMouseDragging = ImGui::IsMouseDragging(0,2.f);
-    int justClosedTabIndex = -1,newtabIndex = tabIndex;
+#include "imgui-fonts-karla.hpp"
+#include "imgui-fonts-fontawesome.hpp"
 
 
-    bool selection_changed = false;bool noButtonDrawn = true;
-    for (int j = 0,i; j < tabSize; j++)
-    {
-        i = tabOrder ? tabOrder[j] : j;
-        if (i==-1) continue;
 
-        if (sumX > 0.f) {
-            sumX+=style.ItemSpacing.x;   // Maybe we can skip it if we use SameLine(0,0) below
-            sumX+=ImGui::CalcTextSize(tabLabels[i]).x+2.f*style.FramePadding.x;
-            if (sumX>windowWidth) sumX = 0.f;
-            else ImGui::SameLine();
-        }
-
-        if (i != tabIndex) {
-            // Push the style
-            style.Colors[ImGuiCol_Button] =         colorSelectedTab;
-            style.Colors[ImGuiCol_ButtonActive] =   colorSelectedTab;
-            style.Colors[ImGuiCol_ButtonHovered] =  colorSelectedTabHovered;
-            style.Colors[ImGuiCol_Text] =           colorSelectedTabText;
-        }
-        // Draw the button
-        ImGui::PushID(i);   // otherwise two tabs with the same name would clash.
-        if (ImGui::Button(tabLabels[i]))   {selection_changed = (tabIndex!=i);newtabIndex = i;}
-        ImGui::PopID();
-        if (i != tabIndex) {
-            // Reset the style
-            style.Colors[ImGuiCol_Button] =         color;
-            style.Colors[ImGuiCol_ButtonActive] =   colorActive;
-            style.Colors[ImGuiCol_ButtonHovered] =  colorHover;
-            style.Colors[ImGuiCol_Text] =           colorText;
-        }
-        noButtonDrawn = false;
-
-        if (sumX==0.f) sumX = style.WindowPadding.x + ImGui::GetItemRectSize().x; // First element of a line
-
-        if (ImGui::IsItemHoveredRect()) {
-            if (tabOrder)  {
-                // tab reordering
-                if (isMouseDragging) {
-                    if (draggingTabIndex==-1) {
-                        draggingTabIndex = j;
-                        draggingtabSize = ImGui::GetItemRectSize();
-                        const ImVec2& mp = ImGui::GetIO().MousePos;
-                        const ImVec2 draggingTabCursorPos = ImGui::GetCursorPos();
-                        draggingTabOffset=ImVec2(
-                                    mp.x+draggingtabSize.x*0.5f-sumX+ImGui::GetScrollX(),
-                                    mp.y+draggingtabSize.y*0.5f-draggingTabCursorPos.y+ImGui::GetScrollY()
-                                    );
-
-                    }
-                }
-                else if (draggingTabIndex>=0 && draggingTabIndex<tabSize && draggingTabIndex!=j){
-                    draggingTabTargetIndex = j; // For some odd reasons this seems to get called only when draggingTabIndex < i ! (Probably during mouse dragging ImGui owns the mouse someway and sometimes ImGui::IsItemHovered() is not getting called)
-                }
-            }
-        }
-
-    }
-
-    tabIndex = newtabIndex;
-
-    // Draw tab label while mouse drags it
-    if (draggingTabIndex>=0 && draggingTabIndex<tabSize) {
-        const ImVec2& mp = ImGui::GetIO().MousePos;
-        const ImVec2 wp = ImGui::GetWindowPos();
-        ImVec2 start(wp.x+mp.x-draggingTabOffset.x-draggingtabSize.x*0.5f,wp.y+mp.y-draggingTabOffset.y-draggingtabSize.y*0.5f);
-        const ImVec2 end(start.x+draggingtabSize.x,start.y+draggingtabSize.y);
-        ImDrawList* drawList = ImGui::GetWindowDrawList();
-        const float draggedBtnAlpha = 0.65f;
-        const ImVec4& btnColor = style.Colors[ImGuiCol_Button];
-        drawList->AddRectFilled(start,end,ImColor(btnColor.x,btnColor.y,btnColor.z,btnColor.w*draggedBtnAlpha),style.FrameRounding);
-        start.x+=style.FramePadding.x;start.y+=style.FramePadding.y;
-        const ImVec4& txtColor = style.Colors[ImGuiCol_Text];
-        drawList->AddText(start,ImColor(txtColor.x,txtColor.y,txtColor.z,txtColor.w*draggedBtnAlpha),tabLabels[tabOrder[draggingTabIndex]]);
-
-        ImGui::SetMouseCursor(ImGuiMouseCursor_Move);
-    }
-
-    // Drop tab label
-    if (draggingTabTargetIndex!=-1) {
-        // swap draggingTabIndex and draggingTabTargetIndex in tabOrder
-        const int tmp = tabOrder[draggingTabTargetIndex];
-        tabOrder[draggingTabTargetIndex] = tabOrder[draggingTabIndex];
-        tabOrder[draggingTabIndex] = tmp;
-        //fprintf(stderr,"%d %d\n",draggingTabIndex,draggingTabTargetIndex);
-        draggingTabTargetIndex = draggingTabIndex = -1;
-    }
-
-    // Reset draggingTabIndex if necessary
-    if (!isMouseDragging) draggingTabIndex = -1;
-
-    // Change selected tab when user closes the selected tab
-    if (tabIndex == justClosedTabIndex && tabIndex>=0)    {
-        tabIndex = -1;
-        for (int j = 0,i; j < tabSize; j++) {
-            i = tabOrder ? tabOrder[j] : j;
-            if (i==-1) continue;
-            tabIndex = i;
-            break;
-        }
-    }
-
-    // Restore the style
-    style.Colors[ImGuiCol_Button] =         color;
-    style.Colors[ImGuiCol_ButtonActive] =   colorActive;
-    style.Colors[ImGuiCol_ButtonHovered] =  colorHover;
-    style.Colors[ImGuiCol_Text] =           colorText;
-    style.ItemSpacing =                     itemSpacing;
-
-    return selection_changed;
+inline ImVec4 from_rgba(uint8_t r, uint8_t g, uint8_t b, uint8_t a)
+{
+    return ImVec4(r / (float)255, g / (float)255, b / (float)255, a / (float)255);
 }
-} // namespace ImGui
+
+inline ImVec4 operator+(const ImVec4& c, float v)
+{
+    return ImVec4(
+        std::max(0.f, std::min(1.f, c.x + v)),
+        std::max(0.f, std::min(1.f, c.y + v)),
+        std::max(0.f, std::min(1.f, c.z + v)),
+        std::max(0.f, std::min(1.f, c.w))
+    );
+}
+
+
+static const ImVec4 light_blue = from_rgba(0, 174, 239, 255); // Light blue color for selected elements such as play button glyph when paused
+static const ImVec4 regular_blue = from_rgba(0, 115, 200, 255); // Checkbox mark, slider grabber
+static const ImVec4 light_grey = from_rgba(0xc3, 0xd5, 0xe5, 0xff); // Text
+static const ImVec4 dark_window_background = from_rgba(9, 11, 13, 255);
+static const ImVec4 almost_white_bg = from_rgba(230, 230, 230, 255);
+static const ImVec4 black = from_rgba(0, 0, 0, 255);
+static const ImVec4 transparent = from_rgba(0, 0, 0, 0);
+static const ImVec4 white = from_rgba(0xff, 0xff, 0xff, 0xff);
+static const ImVec4 scrollbar_bg = from_rgba(14, 17, 20, 255);
+static const ImVec4 scrollbar_grab = from_rgba(54, 66, 67, 255);
+static const ImVec4 grey{ 0.5f,0.5f,0.5f,1.f };
+static const ImVec4 dark_grey = from_rgba(30, 30, 30, 255);
+static const ImVec4 sensor_header_light_blue = from_rgba(0x3e, 0x4d, 0x59, 0xff);
+static const ImVec4 sensor_bg = from_rgba(0x1b, 0x21, 0x25, 0xff);
+static const ImVec4 redish = from_rgba(255, 46, 54, 255);
+static const ImVec4 button_color = from_rgba(0x2d, 0x37, 0x40, 0xff);
+static const ImVec4 header_window_bg = from_rgba(0x1b, 0x21, 0x25, 0xff);
+static const ImVec4 header_color = from_rgba(62, 77, 89, 255);
+static const ImVec4 title_color = from_rgba(27, 33, 38, 255);
+
+void imgui_easy_theming(ImFont*& font_14, ImFont*& font_18);
 
 namespace rs2
 {
@@ -216,7 +100,7 @@ namespace rs2
     class option_model
     {
     public:
-        void draw(std::string& error_message);
+        bool draw(std::string& error_message);
         void update_supported(std::string& error_message);
         void update_read_only_status(std::string& error_message);
         void update_all_feilds(std::string& error_message, notifications_model& model);
@@ -278,7 +162,7 @@ namespace rs2
         void draw_options(const std::vector<rs2_option>& drawing_order,
                           bool update_read_only_options, std::string& error_message,
                           notifications_model& model);
-        void draw_option(rs2_option opt, bool update_read_only_options,
+        bool draw_option(rs2_option opt, bool update_read_only_options,
                          std::string& error_message, notifications_model& model);
 
        
@@ -348,6 +232,16 @@ namespace rs2
         std::atomic<bool> _pause;
     };
 
+    class viewer_model;
+
+    inline bool ends_with(const std::string& s, const std::string& suffix)
+    {
+        auto i = s.rbegin(), j = suffix.rbegin();
+        for (; i != s.rend() && j != suffix.rend() && *i == *j; 
+            i++, j++);
+        return j == suffix.rend();
+    }
+
     class stream_model
     {
     public:
@@ -361,6 +255,9 @@ namespace rs2
         void show_metadata(const mouse_info& g);
         rect get_normalized_zoom(const rect& stream_rect, const mouse_info& g, bool is_middle_clicked, float zoom_val);
 
+        void show_stream_footer(rect stream_rect, mouse_info& mouse);
+        void show_stream_header(ImFont* font, rs2::rect stream_rect, viewer_model& viewer);
+        
         rect layout;
         std::unique_ptr<texture_buffer> texture;
         float2 size;
@@ -387,11 +284,11 @@ namespace rs2
         bool show_stream_details = false;
     };
 
+    std::pair<std::string, std::string> get_device_name(const device& dev);
+
     class device_model
     {
     public:
-        device_model(){}
-
         void reset();
         explicit device_model(device& dev, std::string& error_message);
         bool draw_combo_box(const std::vector<std::string>& device_names, int& new_index);
@@ -404,28 +301,12 @@ namespace rs2
         std::vector<std::shared_ptr<subdevice_model>> subdevices;
         
         bool metadata_supported = false;
+
+        device dev;
+        std::string id;
     private:
         std::shared_ptr<recorder> _recorder;
         std::vector<std::shared_ptr<subdevice_model>> live_subdevices;
-    };
-
-    class viewer_model
-    {
-    public:
-        void upload_frame(frame&& f);
-        void draw_histogram_options(float depth_scale, const subdevice_model& sensor);
-
-        std::map<int, rect> calc_layout(float x0, float y0, float width, float height);
-
-        std::map<int, stream_model> streams;
-        bool fullscreen = false;
-        stream_model* selected_stream = nullptr;
-    private:
-        std::map<int, rect> get_interpolated_layout(const std::map<int, rect>& l);
-
-        streams_layout _layout;
-        streams_layout _old_layout;
-        std::chrono::high_resolution_clock::time_point _transition_start_time;
     };
 
     struct notification_data
@@ -454,7 +335,7 @@ namespace rs2
         void set_color_scheme(float t) const;
 
         static const int MAX_LIFETIME_MS = 10000;
-        int height = 60;
+        int height = 40;
         int index;
         std::string message;
         double timestamp;
@@ -466,7 +347,7 @@ namespace rs2
     struct notifications_model
     {
         void add_notification(const notification_data& n);
-        void draw(int w, int h, notification_model& selected);
+        void draw(ImFont* font, int w, int h);
 
         std::string get_log() 
         {
@@ -476,9 +357,11 @@ namespace rs2
             return result;
         }
 
-        void add_log(const std::string& line)
+        void add_log(std::string line)
         {
             std::lock_guard<std::mutex> lock(m);
+            if (!line.size()) return;
+            if (line[line.size() - 1] != '\n') line += "\n";
             log.push_back(line);
         }
 
@@ -488,5 +371,44 @@ namespace rs2
         std::mutex m;
 
         std::vector<std::string> log;
+        notification_model selected;
+    };
+
+    class viewer_model
+    {
+    public:
+        viewer_model()
+        {
+            rs2_error* e = nullptr;
+            not_model.add_log(to_string() << "librealsense version: " << api_version_to_string(rs2_get_api_version(&e)) << "\n");
+        }
+
+        void upload_frame(frame&& f);
+        void draw_histogram_options(float depth_scale, const subdevice_model& sensor);
+
+        std::map<int, rect> calc_layout(float x0, float y0, float width, float height);
+
+        void show_no_stream_overlay(ImFont* font, int min_x, int min_y, int max_x, int max_y);
+
+        void show_paused_icon(ImFont* font, int x, int y, int id);
+
+        void popup_if_error(ImFont* font, std::string& error_message);
+
+        void show_event_log(ImFont* font_14, float x, float y, float w, float h);
+
+        std::map<int, stream_model> streams;
+        bool fullscreen = false;
+        stream_model* selected_stream = nullptr;
+
+        points model_3d;
+
+        notifications_model not_model;
+        bool is_output_collapsed = false;
+    private:
+        std::map<int, rect> get_interpolated_layout(const std::map<int, rect>& l);
+
+        streams_layout _layout;
+        streams_layout _old_layout;
+        std::chrono::high_resolution_clock::time_point _transition_start_time;
     };
 }

@@ -231,6 +231,5 @@ namespace librealsense
         std::unique_ptr<power> _power;
         std::unique_ptr<frame_timestamp_reader> _timestamp_reader;
         std::shared_ptr<region_of_interest_method> _roi_method = nullptr;
-        std::shared_ptr<stream_interface> _default_stream;
     };
 }

@@ -22,10 +22,10 @@ namespace librealsense
         return data.size() / (sizeof(float3) + sizeof(int2));
     }
 
-    int2* points::get_pixel_coordinates()
+    float2* points::get_texture_coordinates()
     {
         auto xyz = (float3*)data.data();
-        auto ijs = (int2*)(xyz + get_vertex_count());
+        auto ijs = (float2*)(xyz + get_vertex_count());
         return ijs;
     }
 
@@ -248,6 +248,10 @@ namespace librealsense
 
         case RS2_EXTENSION_MOTION_FRAME:
             return std::make_shared<frame_archive<frame>>(in_max_frame_queue_size, ts, parsers);
+
+        case RS2_EXTENSION_POINTS:
+            return std::make_shared<frame_archive<points>>(in_max_frame_queue_size, ts, parsers);
+
         default:
             throw std::runtime_error("Requested frame type is not supported!");
         }

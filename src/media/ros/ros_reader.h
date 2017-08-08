@@ -282,7 +282,8 @@ namespace librealsense
             auto sts = seek_to_time(device_serializer::nanoseconds(first_non_frame_time), samples_view);
             if(sts != device_serializer::status_no_error)
             {
-                return sts;
+                duration = device_serializer::nanoseconds(0);
+                return device_serializer::status_no_error;
             }
             auto samples_itrator = samples_view->begin();
             auto first_frame_time = samples_itrator->getTime();

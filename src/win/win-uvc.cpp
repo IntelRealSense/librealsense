@@ -663,7 +663,7 @@ namespace librealsense
 
         void wmf_uvc_device::set_power_state(power_state state)
         {
-            static auto rs2 = is_win10_redstone2();
+            static auto rs2 = false;
 
             // This is temporary work-around for Windows 10 Red-Stone2 build
             // There seem to be issues re-creating Media Foundation objects frequently

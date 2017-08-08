@@ -113,7 +113,7 @@ int main(int argc, char * argv[])
                 for (auto&& frame : frames)
                 {
                     buffers[frame.get_profile().unique_id()].upload(frame);
-                    is_stream_active[stream_type] = true;
+                    is_stream_active[frame.get_profile().stream_type()] = true;
                 }
 
                 auto tiles_horisontal = static_cast<int>(ceil(sqrt(buffers.size())));
@@ -135,7 +135,7 @@ int main(int argc, char * argv[])
 
                 for (auto i = 0; i< RS2_STREAM_COUNT; i++)
                 {
-                    auto stream_index = frame.get_profile().unique_id();
+                    auto stream_index = i;
 
                     auto index = distance(begin(buffers), buffers.find(stream_index));
                     auto col_id = index / tiles_horisontal;
@@ -143,9 +143,7 @@ int main(int argc, char * argv[])
 
                     buffers[stream_index].show({ row_id * tile_w, static_cast<float>(col_id * tile_h), tile_w, tile_h }, 1);
                         buffers[i].show({ row_id * tile_w, static_cast<float>(col_id * tile_h), tile_w, tile_h }, 1);
-                    }
                 }
-
                 glPopMatrix();
                 glfwSwapBuffers(win);
             }

@@ -29,6 +29,7 @@ namespace librealsense
 
         _color_calib_table_raw = [this]() { return get_raw_calibration_table(rgb_calibration_id); };
         _color_extrinsic = std::make_shared<lazy<rs2_extrinsics>>([this]() { return from_pose(get_color_stream_extrinsic(*_color_calib_table_raw)); });
+        ctx->register_extrinsics(*_color_stream, *_depth_stream, _color_extrinsic);
 
         auto color_devs_info = filter_by_mi(group.uvc_devices, 3); // TODO check
         if (color_devs_info.size() != 1)
@@ -68,6 +69,12 @@ namespace librealsense
                 }
 
                 auto video = dynamic_cast<video_stream_profile_interface*>(p.get());
+                auto profile = to_profile(p.get());
+                video->set_intrinsics([profile, this]()
+                {
+                    return get_intrinsics(profile);
+                });
+
                 if (video->get_width() == 640 && video->get_height() == 480)
                     video->make_recommended();
             }

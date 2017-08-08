@@ -67,7 +67,10 @@ namespace librealsense
         void make_recommended() override;
 
         int get_unique_id() const override { return _uid; }
-        void set_unique_id(int uid) override { _uid = uid; };
+        void set_unique_id(int uid) override
+        {
+            _uid = uid;
+        };
 
         size_t get_size() const override;
 
@@ -119,6 +122,12 @@ namespace librealsense
             _height = height;
         }
 
+        std::shared_ptr<stream_profile_interface> clone() const override
+        {
+            auto res = std::make_shared<video_stream_profile>(get_context().shared_from_this(), platform::stream_profile{});
+            res->set_dims(get_width(), get_height());
+            return res;
+        }
 
         bool operator==(const video_stream_profile& other) const
         {
@@ -131,13 +140,11 @@ namespace librealsense
                 get_format() == other.get_format();
         }
 
-
-        size_t get_size() const override { return get_width() * get_height() * get_framerate() * get_image_bpp(get_format()) / 8; }
-
         void update(std::shared_ptr<extension_snapshot> ext) override
         {
             return; //TODO: apply changes here
         }
+        size_t get_size() const override { return 0; }
     private:
         std::function<rs2_intrinsics()> _calc_intrinsics;
         uint32_t _width, _height;

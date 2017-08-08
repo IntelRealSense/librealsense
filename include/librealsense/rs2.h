@@ -708,7 +708,7 @@ void rs2_release_frame(rs2_frame* frame);
 
 rs2_vertex* rs2_get_frame_vertices(const rs2_frame* frame, rs2_error** error);
 
-rs2_pixel* rs2_get_frame_pixel_coordinates(const rs2_frame* frame, rs2_error** error);
+rs2_pixel* rs2_get_frame_texture_coordinates(const rs2_frame* frame, rs2_error** error);
 
 int rs2_get_frame_points_count(const rs2_frame* frame, rs2_error** error);
 

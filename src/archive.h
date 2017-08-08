@@ -125,7 +125,7 @@ namespace librealsense
     public:
         float3* get_vertices();
         size_t get_vertex_count() const;
-        int2* get_pixel_coordinates();
+        float2* get_texture_coordinates();
     };
 
     MAP_EXTENSION(RS2_EXTENSION_POINTS, librealsense::points);

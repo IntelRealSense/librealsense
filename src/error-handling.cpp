@@ -41,11 +41,26 @@ namespace librealsense
              {
                  val = static_cast<int>(_option->query());
 
-                 if (val != 0)
+                 if (val != 0 && !_silenced)
                  {
-                     auto notification = _decoder->decode(val);
+                     auto n = _decoder->decode(val);
                      auto strong = _notifications_proccessor.lock();
-                     if (strong)strong->raise_notification(notification);
+                     if (strong) strong->raise_notification(n);
+
+                     val = static_cast<int>(_option->query());
+                     if (val != 0)
+                     {
+                         // Reading from last-error control is supposed to set it to zero in the firmware
+                         // If this is not happening there is some issue
+                         notification postcondition_failed{
+                             RS2_NOTIFICATION_CATEGORY_HARDWARE_ERROR,
+                             0,
+                             RS2_LOG_SEVERITY_WARN,
+                             "Error polling loop is not behaving as expected!\nThis can indicate an issue with camera firmware or the underlying OS..."
+                         };
+                         if (strong) strong->raise_notification(postcondition_failed);
+                         _silenced = true;
+                     }
                  }
              }
              catch (const std::exception& ex)

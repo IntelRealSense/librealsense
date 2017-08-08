@@ -26,6 +26,8 @@ namespace librealsense
 
         frame_interface* allocate_composite_frame(std::vector<frame_holder> frames) override;
 
+        frame_interface* allocate_points(std::shared_ptr<stream_profile_interface> stream, frame_interface* original) override;
+
         void frame_ready(frame_holder result) override;
 
         rs2_source* get_c_wrapper() override { return _c_wrapper.get(); }
@@ -58,12 +60,7 @@ namespace librealsense
     class pointcloud : public processing_block
     {
     public:
-        pointcloud(std::shared_ptr<platform::time_service> ts,
-                   const rs2_intrinsics* depth_intrinsics = nullptr,
-                   const float* depth_units = nullptr,
-                   rs2_stream mapped_stream_type = RS2_STREAM_ANY,
-                   const rs2_intrinsics* mapped_intrinsics = nullptr,
-                   const rs2_extrinsics* extrinsics = nullptr);
+        pointcloud(std::shared_ptr<platform::time_service> ts);
 
     private:
         std::mutex              _mutex;
@@ -77,6 +74,7 @@ namespace librealsense
         rs2_intrinsics          _mapped_intrinsics;
         float                   _depth_units;
         rs2_extrinsics          _extrinsics;
-        rs2_stream              _expected_mapped_stream;
+
+        std::shared_ptr<stream_profile_interface> _stream, _mapped;
     };
 }
