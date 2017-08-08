@@ -5,10 +5,8 @@
 #include <string>
 #include <chrono>
 #include "librealsense/rs2.h"
-#include "std_msgs/Float32.h"
 #include "std_msgs/String.h"
 #include "sensor_msgs/image_encodings.h"
-#include "geometry_msgs/Point.h"
 #include "geometry_msgs/Transform.h"
 
 namespace librealsense
@@ -16,45 +14,6 @@ namespace librealsense
 
     namespace file_types
     {
-        /**
-        * @brief Motion stream type - represented with string
-        */
-        namespace motion_stream_type
-        {
-            const std::string GYRO = "GYROMETER";
-            const std::string ACCL = "ACCLEROMETER";
-        }
-
-        /**
-        * @brief Stream type
-        */
-        namespace stream_type
-        {
-            const std::string DEPTH = "DEPTH";                      /**< Native stream of depth data produced by the device */
-            const std::string COLOR = "COLOR";                      /**< Native stream of color data captured by the device */
-            const std::string INFRARED = "INFRARED";                /**< Native stream of infrared data captured by the device */
-            const std::string INFRARED2 = "INFRARED2";              /**< Native stream of infrared data captured from a second viewpoint by the device */
-            const std::string FISHEYE = "FISHEYE";                  /**< Native stream of fish-eye (wide) data captured from the dedicate motion camera */
-            const std::string RECTIFIED_COLOR = "RECTIFIED_COLOR";  /**< Synthetic stream containing undistorted color data with no extrinsic rotation from the depth stream */
-            const std::string GYRO  = "GYRO";
-            const std::string ACCEL = "ACCEL";
-            const std::string GPIO1 = "GPIO1";
-            const std::string GPIO2 = "GPIO2";
-            const std::string GPIO3 = "GPIO3";
-            const std::string GPIO4 = "GPIO4";
-        }
-
-        /**
-        * @brief Distortion model types
-        */
-        namespace distortion
-        {
-            const std::string DISTORTION_NONE = "DISTORTION_NONE";                                          /**< Rectilinear images. No distortion compensation required. */
-            const std::string DISTORTION_MODIFIED_BROWN_CONRADY = "DISTORTION_MODIFIED_BROWN_CONRADY";      /**< Equivalent to Brown-Conrady distortion, except that tangential distortion is applied to radially distorted points */
-            const std::string DISTORTION_UNMODIFIED_BROWN_CONRADY = "DISTORTION_UNMODIFIED_BROWN_CONRADY";  /**< Unmodified Brown-Conrady distortion model */
-            const std::string DISTORTION_INVERSE_BROWN_CONRADY = "DISTORTION_INVERSE_BROWN_CONRADY";        /**< Equivalent to Brown-Conrady distortion, except undistorts image instead of distorting it */
-            const std::string DISTORTION_FTHETA = "DISTORTION_FTHETA";                                      /**< F-Theta fish-eye distortion model */
-        }
 
         /**
         * @brief Additional pixel format that are not supported by ros, not included in the file
@@ -138,110 +97,64 @@ namespace librealsense
 
         inline bool convert(const std::string& source, rs2_format& target)
         {
-            if (source == sensor_msgs::image_encodings::MONO16)
-                target = rs2_format::RS2_FORMAT_Z16;
-            else if (source == file_types::additional_image_encodings::DISPARITY16)
-                target = rs2_format::RS2_FORMAT_DISPARITY16;
-            else if (source == file_types::additional_image_encodings::XYZ32F)
-                target = rs2_format::RS2_FORMAT_XYZ32F;
-            else if (source == file_types::additional_image_encodings::YUYV)
-                target = rs2_format::RS2_FORMAT_YUYV;
-            else if (source == sensor_msgs::image_encodings::RGB8)
-                target = rs2_format::RS2_FORMAT_RGB8;
-            else if (source == sensor_msgs::image_encodings::BGR8)
-                target = rs2_format::RS2_FORMAT_BGR8;
-            else if (source == sensor_msgs::image_encodings::RGBA8)
-                target = rs2_format::RS2_FORMAT_RGBA8;
-            else if (source == sensor_msgs::image_encodings::BGRA8)
-                target = rs2_format::RS2_FORMAT_BGRA8;
-            else if (source == sensor_msgs::image_encodings::TYPE_8UC1)
-                target = rs2_format::RS2_FORMAT_Y8;
-            else if (source == sensor_msgs::image_encodings::TYPE_16UC1)
-                target = rs2_format::RS2_FORMAT_Y16;
-            else if (source == sensor_msgs::image_encodings::MONO8)
-                target = rs2_format::RS2_FORMAT_RAW8;
-            else if (source == file_types::additional_image_encodings::RAW10)
-                target = rs2_format::RS2_FORMAT_RAW10;
-            else if (source == file_types::additional_image_encodings::RAW16)
-                target = rs2_format::RS2_FORMAT_RAW16;
-            else if (source == sensor_msgs::image_encodings::YUV422)
-                target = rs2_format::RS2_FORMAT_UYVY;
-            else if(source == "RS2_FORMAT_MOTION_RAW")
-                target = rs2_format::RS2_FORMAT_MOTION_RAW;
-            else if(source == "RS2_FORMAT_MOTION_XYZ32F")
-                target = rs2_format::RS2_FORMAT_MOTION_XYZ32F;
-            else if(source == "RS2_FORMAT_GPIO_RAW")
-                target = rs2_format::RS2_FORMAT_GPIO_RAW;
+            //TODO: Ziv, make order
+            if (source == sensor_msgs::image_encodings::MONO16)                       target = rs2_format::RS2_FORMAT_Z16;
+            else if (source == file_types::additional_image_encodings::DISPARITY16)   target = rs2_format::RS2_FORMAT_DISPARITY16;
+            else if (source == file_types::additional_image_encodings::XYZ32F)        target = rs2_format::RS2_FORMAT_XYZ32F;
+            else if (source == file_types::additional_image_encodings::YUYV)          target = rs2_format::RS2_FORMAT_YUYV;
+            else if (source == sensor_msgs::image_encodings::RGB8)                    target = rs2_format::RS2_FORMAT_RGB8;
+            else if (source == sensor_msgs::image_encodings::BGR8)                    target = rs2_format::RS2_FORMAT_BGR8;
+            else if (source == sensor_msgs::image_encodings::RGBA8)                   target = rs2_format::RS2_FORMAT_RGBA8;
+            else if (source == sensor_msgs::image_encodings::BGRA8)                   target = rs2_format::RS2_FORMAT_BGRA8;
+            else if (source == sensor_msgs::image_encodings::TYPE_8UC1)               target = rs2_format::RS2_FORMAT_Y8;
+            else if (source == sensor_msgs::image_encodings::TYPE_16UC1)              target = rs2_format::RS2_FORMAT_Y16;
+            else if (source == sensor_msgs::image_encodings::MONO8)                   target = rs2_format::RS2_FORMAT_RAW8;
+            else if (source == file_types::additional_image_encodings::RAW10)         target = rs2_format::RS2_FORMAT_RAW10;
+            else if (source == file_types::additional_image_encodings::RAW16)         target = rs2_format::RS2_FORMAT_RAW16;
+            else if (source == sensor_msgs::image_encodings::YUV422)                  target = rs2_format::RS2_FORMAT_UYVY;
+            else if (source == rs2_format_to_string(RS2_FORMAT_ANY))            target = RS2_FORMAT_ANY;
+            else if (source == rs2_format_to_string(RS2_FORMAT_Z16))            target = RS2_FORMAT_Z16;
+            else if (source == rs2_format_to_string(RS2_FORMAT_DISPARITY16))    target = RS2_FORMAT_DISPARITY16;
+            else if (source == rs2_format_to_string(RS2_FORMAT_XYZ32F))         target = RS2_FORMAT_XYZ32F;
+            else if (source == rs2_format_to_string(RS2_FORMAT_YUYV))           target = RS2_FORMAT_YUYV;
+            else if (source == rs2_format_to_string(RS2_FORMAT_RGB8))           target = RS2_FORMAT_RGB8;
+            else if (source == rs2_format_to_string(RS2_FORMAT_BGR8))           target = RS2_FORMAT_BGR8;
+            else if (source == rs2_format_to_string(RS2_FORMAT_RGBA8))          target = RS2_FORMAT_RGBA8;
+            else if (source == rs2_format_to_string(RS2_FORMAT_BGRA8))          target = RS2_FORMAT_BGRA8;
+            else if (source == rs2_format_to_string(RS2_FORMAT_Y8))             target = RS2_FORMAT_Y8;
+            else if (source == rs2_format_to_string(RS2_FORMAT_Y16))            target = RS2_FORMAT_Y16;
+            else if (source == rs2_format_to_string(RS2_FORMAT_RAW10))          target = RS2_FORMAT_RAW10;
+            else if (source == rs2_format_to_string(RS2_FORMAT_RAW16))          target = RS2_FORMAT_RAW16;
+            else if (source == rs2_format_to_string(RS2_FORMAT_RAW8))           target = RS2_FORMAT_RAW8;
+            else if (source == rs2_format_to_string(RS2_FORMAT_UYVY))           target = RS2_FORMAT_UYVY;
+            else if (source == rs2_format_to_string(RS2_FORMAT_MOTION_RAW))     target = RS2_FORMAT_MOTION_RAW;
+            else if (source == rs2_format_to_string(RS2_FORMAT_MOTION_XYZ32F))  target = RS2_FORMAT_MOTION_XYZ32F;
+            else if (source == rs2_format_to_string(RS2_FORMAT_GPIO_RAW))       target = RS2_FORMAT_GPIO_RAW;
+
             else throw std::runtime_error(std::string("Failed to convert image encoding to matching librealsense format(") + source + std::string(")"));
 
             return true;
         }
 
-        inline bool convert(rs2_stream source, std::string& target)
+        inline void convert(const std::string& source, rs2_stream& target)
         {
-            switch (source)
-            {
-                case rs2_stream::RS2_STREAM_DEPTH     : target = file_types::stream_type::DEPTH     ; break;
-                case rs2_stream::RS2_STREAM_COLOR     : target = file_types::stream_type::COLOR     ; break;
-                case rs2_stream::RS2_STREAM_INFRARED  : target = file_types::stream_type::INFRARED  ; break;
-                case rs2_stream::RS2_STREAM_FISHEYE   : target = file_types::stream_type::FISHEYE   ; break;
-                case rs2_stream::RS2_STREAM_GYRO      : target = file_types::stream_type::GYRO      ; break;
-                case rs2_stream::RS2_STREAM_ACCEL     : target = file_types::stream_type::ACCEL     ; break;
-                case rs2_stream::RS2_STREAM_GPIO      : target = file_types::stream_type::GPIO1     ; break;
-                case rs2_stream::RS2_STREAM_COUNT:
-                    //[[fallthrough]];
-                default: throw std::runtime_error(std::string("Failed to convert librealsense stream to matching stream(") + std::to_string(source) + std::string(")"));
-            }
-            return true;
-        }
-
-        inline bool convert(const std::string& source, rs2_stream& target)
-        {
-            if (source == file_types::stream_type::DEPTH)         target = rs2_stream::RS2_STREAM_DEPTH;
-            else if (source == file_types::stream_type::COLOR)    target = rs2_stream::RS2_STREAM_COLOR;
-            else if (source == file_types::stream_type::INFRARED) target = rs2_stream::RS2_STREAM_INFRARED;
-            else if (source == file_types::stream_type::FISHEYE)  target = rs2_stream::RS2_STREAM_FISHEYE;
-            else if (source == file_types::stream_type::GYRO )    target = rs2_stream::RS2_STREAM_GYRO;
-            else if (source == file_types::stream_type::ACCEL)    target = rs2_stream::RS2_STREAM_ACCEL;
-            else if (source == file_types::stream_type::GPIO1)    target = rs2_stream::RS2_STREAM_GPIO;
-            else if (source == file_types::stream_type::GPIO2)    target = rs2_stream::RS2_STREAM_GPIO;
-            else if (source == file_types::stream_type::GPIO3)    target = rs2_stream::RS2_STREAM_GPIO;
-            else if (source == file_types::stream_type::GPIO4)    target = rs2_stream::RS2_STREAM_GPIO;
+            if      (source == rs2_stream_to_string(RS2_STREAM_DEPTH))    target = RS2_STREAM_DEPTH;
+            else if (source == rs2_stream_to_string(RS2_STREAM_COLOR))    target = RS2_STREAM_COLOR;
+            else if (source == rs2_stream_to_string(RS2_STREAM_INFRARED)) target = RS2_STREAM_INFRARED;
+            else if (source == rs2_stream_to_string(RS2_STREAM_FISHEYE))  target = RS2_STREAM_FISHEYE;
+            else if (source == rs2_stream_to_string(RS2_STREAM_GYRO))     target = RS2_STREAM_GYRO;
+            else if (source == rs2_stream_to_string(RS2_STREAM_ACCEL))    target = RS2_STREAM_ACCEL;
+            else if (source == rs2_stream_to_string(RS2_STREAM_GPIO))     target = RS2_STREAM_GPIO;
             else throw std::runtime_error(std::string("Failed to convert stream matching librealsense stream(") + source + std::string(")"));
-            return true;
-        }
-
-        inline bool convert(rs2_distortion source, std::string& target)
-        {
-            switch (source)
-            {
-            case rs2_distortion::RS2_DISTORTION_FTHETA:
-                target = file_types::distortion::DISTORTION_FTHETA; break;
-            case rs2_distortion::RS2_DISTORTION_INVERSE_BROWN_CONRADY:
-                target = file_types::distortion::DISTORTION_INVERSE_BROWN_CONRADY; break;
-            case rs2_distortion::RS2_DISTORTION_MODIFIED_BROWN_CONRADY:
-                target = file_types::distortion::DISTORTION_MODIFIED_BROWN_CONRADY; break;
-            case rs2_distortion::RS2_DISTORTION_NONE:
-                target = file_types::distortion::DISTORTION_NONE; break;
-            case rs2_distortion::RS2_DISTORTION_BROWN_CONRADY:
-                target = file_types::distortion::DISTORTION_UNMODIFIED_BROWN_CONRADY; break;
-            default: throw std::runtime_error(std::string("Failed to convert librealsense distortion to matching distortion(") + std::to_string(source) + std::string(")"));
-            }
-            return true;
         }
 
         inline bool convert(const std::string& source, rs2_distortion& target)
         {
-            if (source == file_types::distortion::DISTORTION_FTHETA)
-                target = rs2_distortion::RS2_DISTORTION_FTHETA;
-            else if (source == file_types::distortion::DISTORTION_INVERSE_BROWN_CONRADY)
-                target = rs2_distortion::RS2_DISTORTION_INVERSE_BROWN_CONRADY;
-            else if (source == file_types::distortion::DISTORTION_MODIFIED_BROWN_CONRADY)
-                target = rs2_distortion::RS2_DISTORTION_MODIFIED_BROWN_CONRADY;
-            else if (source == file_types::distortion::DISTORTION_NONE)
-                target = rs2_distortion::RS2_DISTORTION_NONE;
-            else if (source == file_types::distortion::DISTORTION_UNMODIFIED_BROWN_CONRADY)
-                target = rs2_distortion::RS2_DISTORTION_BROWN_CONRADY;
+            if      (source == rs2_distortion_to_string(RS2_DISTORTION_FTHETA))                 target = RS2_DISTORTION_FTHETA;
+            else if (source == rs2_distortion_to_string(RS2_DISTORTION_INVERSE_BROWN_CONRADY))  target = RS2_DISTORTION_INVERSE_BROWN_CONRADY;
+            else if (source == rs2_distortion_to_string(RS2_DISTORTION_MODIFIED_BROWN_CONRADY)) target = RS2_DISTORTION_MODIFIED_BROWN_CONRADY;
+            else if (source == rs2_distortion_to_string(RS2_DISTORTION_NONE))                   target = RS2_DISTORTION_NONE;
+            else if (source == rs2_distortion_to_string(RS2_DISTORTION_BROWN_CONRADY))          target = RS2_DISTORTION_BROWN_CONRADY;
             else throw std::runtime_error(std::string("Failed to convert distortion matching librealsense distortion(") + source + std::string(")"));
             return true;
         }
@@ -276,43 +189,41 @@ namespace librealsense
 
         inline void convert(const std::string& source, rs2_frame_metadata& target)
         {
-            if (source == "RS2_FRAME_METADATA_FRAME_COUNTER")
-            {
-                target = RS2_FRAME_METADATA_FRAME_COUNTER;
-            }
-            else if (source == "RS2_FRAME_METADATA_FRAME_TIMESTAMP")
-            {
-                target = RS2_FRAME_METADATA_FRAME_TIMESTAMP;
-            }
-            else if (source == "RS2_FRAME_METADATA_SENSOR_TIMESTAMP")
-            {
-                target = RS2_FRAME_METADATA_SENSOR_TIMESTAMP;
-            }
-            else if (source == "RS2_FRAME_METADATA_ACTUAL_EXPOSURE")
-            {
-                target = RS2_FRAME_METADATA_ACTUAL_EXPOSURE;
-            }
-            else if (source == "RS2_FRAME_METADATA_GAIN_LEVEL")
-            {
-                target = RS2_FRAME_METADATA_GAIN_LEVEL;
-            }
-            else if (source == "RS2_FRAME_METADATA_AUTO_EXPOSURE")
-            {
-                target = RS2_FRAME_METADATA_AUTO_EXPOSURE;
-            }
-            else if (source == "RS2_FRAME_METADATA_WHITE_BALANCE")
-            {
-                target = RS2_FRAME_METADATA_WHITE_BALANCE;
-            }
-            else if (source == "RS2_FRAME_METADATA_TIME_OF_ARRIVAL")
-            {
-                target = RS2_FRAME_METADATA_TIME_OF_ARRIVAL;
-            }
+            if      (source == rs2_frame_metadata_to_string(RS2_FRAME_METADATA_FRAME_COUNTER))       target = RS2_FRAME_METADATA_FRAME_COUNTER;
+            else if (source == rs2_frame_metadata_to_string(RS2_FRAME_METADATA_FRAME_TIMESTAMP))     target = RS2_FRAME_METADATA_FRAME_TIMESTAMP;
+            else if (source == rs2_frame_metadata_to_string(RS2_FRAME_METADATA_SENSOR_TIMESTAMP))    target = RS2_FRAME_METADATA_SENSOR_TIMESTAMP;
+            else if (source == rs2_frame_metadata_to_string(RS2_FRAME_METADATA_ACTUAL_EXPOSURE))     target = RS2_FRAME_METADATA_ACTUAL_EXPOSURE;
+            else if (source == rs2_frame_metadata_to_string(RS2_FRAME_METADATA_GAIN_LEVEL))          target = RS2_FRAME_METADATA_GAIN_LEVEL;
+            else if (source == rs2_frame_metadata_to_string(RS2_FRAME_METADATA_AUTO_EXPOSURE))       target = RS2_FRAME_METADATA_AUTO_EXPOSURE;
+            else if (source == rs2_frame_metadata_to_string(RS2_FRAME_METADATA_WHITE_BALANCE))       target = RS2_FRAME_METADATA_WHITE_BALANCE;
+            else if (source == rs2_frame_metadata_to_string(RS2_FRAME_METADATA_TIME_OF_ARRIVAL))     target = RS2_FRAME_METADATA_TIME_OF_ARRIVAL;
             else
             {
-                throw std::runtime_error(to_string() << "Failed to convert metadata matching librealsense metadata(" << source << ")");
+                throw std::runtime_error(to_string() << "Failed to convert \"" << source << "\" to rs2_frame_metadata");
             }
         }
+
+        inline void convert(const std::string& source, rs2_camera_info& target)
+        {
+            if (source == rs2_camera_info_to_string(RS2_CAMERA_INFO_NAME))                  { target = RS2_CAMERA_INFO_NAME;             return; }
+            if (source == rs2_camera_info_to_string(RS2_CAMERA_INFO_SERIAL_NUMBER))         { target = RS2_CAMERA_INFO_SERIAL_NUMBER;    return; }
+            if (source == rs2_camera_info_to_string(RS2_CAMERA_INFO_FIRMWARE_VERSION))      { target = RS2_CAMERA_INFO_FIRMWARE_VERSION; return; }
+            if (source == rs2_camera_info_to_string(RS2_CAMERA_INFO_LOCATION))              { target = RS2_CAMERA_INFO_LOCATION;         return; }
+            if (source == rs2_camera_info_to_string(RS2_CAMERA_INFO_DEBUG_OP_CODE))         { target = RS2_CAMERA_INFO_DEBUG_OP_CODE;    return; }
+            if (source == rs2_camera_info_to_string(RS2_CAMERA_INFO_ADVANCED_MODE))         { target = RS2_CAMERA_INFO_ADVANCED_MODE;    return; }
+            if (source == rs2_camera_info_to_string(RS2_CAMERA_INFO_PRODUCT_ID))            { target = RS2_CAMERA_INFO_PRODUCT_ID;       return; }
+            if (source == rs2_camera_info_to_string(RS2_CAMERA_INFO_CAMERA_LOCKED))         { target = RS2_CAMERA_INFO_CAMERA_LOCKED;    return; }
+            throw std::runtime_error(to_string() <<"\"" << source << "\" cannot be converted to rs2_camera_info");
+        }
+
+        inline void convert(const std::string& source, rs2_timestamp_domain& target)
+        {
+            if (source == rs2_timestamp_domain_to_string(RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK)) { target = RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK;  return; }
+            if (source == rs2_timestamp_domain_to_string(RS2_TIMESTAMP_DOMAIN_SYSTEM_TIME))    { target = RS2_TIMESTAMP_DOMAIN_SYSTEM_TIME;     return; }
+            throw std::runtime_error(to_string() << "\"" << source << "\" cannot be converted to rs2_timestamp_domain");
+        }
+
+        
     }
 
     inline std::string get_file_version_topic()
@@ -320,12 +231,12 @@ namespace librealsense
         return "/FILE_VERSION";
     }
 
-    inline constexpr uint32_t get_file_version()
+    constexpr uint32_t get_file_version()
     {
         return 2;
     }
 
-    inline uint32_t get_device_index()
+    constexpr uint32_t get_device_index()
     {
         return 0; //TODO: change once SDK file supports multiple devices
     }

@@ -316,9 +316,11 @@ namespace librealsense
                 rs2_devices_info_added.push_back({ shared_from_this(), devices_info_added[i] });
                 LOG_DEBUG("\nDevice connected:\n\n" << std::string(devices_info_added[i]->get_device_data()));
             }
-
-            _devices_changed_callback->on_devices_changed(  new rs2_device_list({ shared_from_this(), rs2_devices_info_removed }),
-                                                            new rs2_device_list({ shared_from_this(), rs2_devices_info_added }));
+            if (_devices_changed_callback)
+            {
+                _devices_changed_callback->on_devices_changed(new rs2_device_list({ shared_from_this(), rs2_devices_info_removed }),
+                                                              new rs2_device_list({ shared_from_this(), rs2_devices_info_added }));
+            }
         }
     }
 
@@ -465,7 +467,7 @@ namespace librealsense
             //Already exists
             throw librealsense::invalid_value_exception(to_string() << "File \"" << file << "\" already loaded to context");
         }
-        auto playack_dev = std::make_shared<playback_device>(std::make_shared<ros_reader>(file));
+        auto playack_dev = std::make_shared<playback_device>(shared_from_this(), std::make_shared<ros_reader>(file));
         auto dinfo = std::make_shared<playback_device_info>(playack_dev);
         auto prev_playback_devices = _playback_devices;
         _playback_devices[file] = dinfo;

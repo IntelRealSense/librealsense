@@ -39,8 +39,7 @@ namespace librealsense
         {
             for (auto&& device_extension_snapshot : device_description.get_device_extensions_snapshots().get_snapshots())
             {
-                auto ignored = 0u;
-                write_extension_snapshot(get_device_index(), ignored, STATIC_INFO_TIMESTAMP, device_extension_snapshot.first, device_extension_snapshot.second);
+                write_extension_snapshot(get_device_index(), STATIC_INFO_TIMESTAMP, device_extension_snapshot.first, device_extension_snapshot.second);
             }
             uint32_t sensor_index = 0;
             for (auto&& sensors_snapshot : device_description.get_sensors_snapshots())
@@ -122,7 +121,7 @@ namespace librealsense
             image.width = static_cast<uint32_t>(vid_frame->get_width());
             image.height = static_cast<uint32_t>(vid_frame->get_height());
             image.step = static_cast<uint32_t>(vid_frame->get_stride());
-            image.encoding = rs2_format_to_string(vid_frame->get_stream()->get_format());
+            conversions::convert(vid_frame->get_stream()->get_format(), image.encoding);
             image.is_bigendian = 0;
             auto size = vid_frame->get_stride() * vid_frame->get_height();
             auto p_data = vid_frame->get_frame_data();
@@ -140,7 +139,7 @@ namespace librealsense
             write_message(metadata_topic, timestamp, system_time);
 
             diagnostic_msgs::KeyValue timestamp_domain;
-            timestamp_domain.key = "time_stamp_domain";
+            timestamp_domain.key = "timestamp_domain";
             timestamp_domain.value = to_string() << vid_frame->get_frame_timestamp_domain();
             write_message(metadata_topic, timestamp, timestamp_domain);
 
@@ -161,42 +160,50 @@ namespace librealsense
         void write_streaming_info(device_serializer::nanoseconds timestamp, const device_serializer::sensor_identifier& sensor_id, std::shared_ptr<video_stream_profile_interface> profile)
         {
             realsense_msgs::StreamInfo stream_info_msg;
-            stream_info_msg.unique_id = std::to_string(profile->get_unique_id());
-            conversions::convert(profile->get_stream_type(), stream_info_msg.encoding);
+            stream_info_msg.is_recommended = profile->is_recommended();
+            conversions::convert(profile->get_format(), stream_info_msg.encoding);
             stream_info_msg.fps = profile->get_framerate();
             write_message(ros_topic::stream_info_topic({ sensor_id.device_index, sensor_id.sensor_index, profile->get_stream_type(), static_cast<uint32_t>(profile->get_stream_index()) }), timestamp, stream_info_msg);
 
             sensor_msgs::CameraInfo camera_info_msg;
             camera_info_msg.width = profile->get_width();
             camera_info_msg.height = profile->get_height();
-            camera_info_msg.distortion_model = profile->get_intrinsics().model;
-            camera_info_msg.K[0] = profile->get_intrinsics().fx;
-            camera_info_msg.K[2] = profile->get_intrinsics().ppx;
-            camera_info_msg.K[4] = profile->get_intrinsics().fy;
-            camera_info_msg.K[5] = profile->get_intrinsics().ppy;
+            auto intrinsics = profile->get_intrinsics();
+            camera_info_msg.K[0] = intrinsics.fx;
+            camera_info_msg.K[2] = intrinsics.ppx;
+            camera_info_msg.K[4] = intrinsics.fy;
+            camera_info_msg.K[5] = intrinsics.ppy;
             camera_info_msg.K[8] = 1;
-            camera_info_msg.D.assign(profile->get_intrinsics().coeffs, profile->get_intrinsics().coeffs + 5);
-            conversions::convert(profile->get_intrinsics().model, camera_info_msg.distortion_model);
-            write_message(ros_topic::stream_info_topic({ sensor_id.device_index, sensor_id.sensor_index, profile->get_stream_type(), static_cast<uint32_t>(profile->get_stream_index()) }), timestamp, camera_info_msg);
+            camera_info_msg.D.assign(std::begin(intrinsics.coeffs), std::end(intrinsics.coeffs));
+            camera_info_msg.distortion_model = rs2_distortion_to_string(profile->get_intrinsics().model);
+            write_message(ros_topic::video_stream_info_topic({ sensor_id.device_index, sensor_id.sensor_index, profile->get_stream_type(), static_cast<uint32_t>(profile->get_stream_index()) }), timestamp, camera_info_msg);
         }
-
+        void write_extension_snapshot(uint32_t device_id, const device_serializer::nanoseconds& timestamp, rs2_extension type, std::shared_ptr<librealsense::extension_snapshot> snapshot)
+        {
+            const auto ignored = 0u;
+            write_extension_snapshot(device_id, ignored, timestamp, type, snapshot, true);
+        }
         void write_extension_snapshot(uint32_t device_id, uint32_t sensor_id, const device_serializer::nanoseconds& timestamp, rs2_extension type, std::shared_ptr<librealsense::extension_snapshot> snapshot)
         {
-            bool is_device_snapshot = Is<device_interface>(snapshot);
+            write_extension_snapshot(device_id, sensor_id, timestamp, type, snapshot, false);
+        }
+
+        void write_extension_snapshot(uint32_t device_id, uint32_t sensor_id, const device_serializer::nanoseconds& timestamp, rs2_extension type, std::shared_ptr<librealsense::extension_snapshot> snapshot, bool is_device)
+        {
             switch (type)
             {
             case RS2_EXTENSION_UNKNOWN:
                 throw invalid_value_exception("Unknown extension");
-            case RS2_EXTENSION_DEBUG :
+            case RS2_EXTENSION_DEBUG:
                 break;
-            case RS2_EXTENSION_INFO :
+            case RS2_EXTENSION_INFO:
             {
                 auto info = As<info_interface>(snapshot);
-                if(info == nullptr)
+                if (info == nullptr)
                 {
                     throw invalid_value_exception(to_string() << "Failed to cast snapshot with given type \"" << type << "\" to \"" << TypeToExtensionn<info_interface>::to_string() << "\"");
                 }
-                if (is_device_snapshot) 
+                if (is_device)
                 {
                     write_vendor_info(timestamp, device_id, info);
                 }
@@ -206,31 +213,32 @@ namespace librealsense
                 }
                 break;
             }
-            case RS2_EXTENSION_MOTION :
+            case RS2_EXTENSION_MOTION:
                 break;
-            case RS2_EXTENSION_OPTIONS :
+            case RS2_EXTENSION_OPTIONS:
                 break;
-            case RS2_EXTENSION_VIDEO :
+            case RS2_EXTENSION_VIDEO:
                 break;
-            case RS2_EXTENSION_ROI :
+            case RS2_EXTENSION_ROI:
                 break;
-            case RS2_EXTENSION_VIDEO_FRAME :
+            case RS2_EXTENSION_VIDEO_FRAME:
                 break;
-            case RS2_EXTENSION_MOTION_FRAME :
+            case RS2_EXTENSION_MOTION_FRAME:
                 break;
-            case RS2_EXTENSION_COUNT :
+            case RS2_EXTENSION_COUNT:
                 break;
             case RS2_EXTENSION_VIDEO_PROFILE:
-            {   
+            {
                 auto profile = As<video_stream_profile_interface>(snapshot);
                 if (profile == nullptr)
                 {
                     throw invalid_value_exception(to_string() << "Failed to cast snapshot with given type \"" << type << "\" to \"" << TypeToExtensionn<info_interface>::to_string() << "\"");
                 }
                 write_streaming_info(timestamp, { device_id, sensor_id }, profile);
+                break;
             }
             default:
-                throw invalid_value_exception("Unsupported extension");
+                throw invalid_value_exception(to_string() << "Failed to Write Extension Snapshot: Unsupported extension \"" << type << "\"");
 
             }
         }
@@ -253,8 +261,8 @@ namespace librealsense
                 if (info_snapshot->supports_info(camera_info))
                 {
                     diagnostic_msgs::KeyValue msg;
-                    msg.key = info_snapshot->get_info(camera_info);
-                    msg.value = rs2_camera_info_to_string(camera_info);
+                    msg.key = rs2_camera_info_to_string(camera_info); 
+                    msg.value = info_snapshot->get_info(camera_info);
                     write_message(topic, timestamp, msg);
                 }
             }

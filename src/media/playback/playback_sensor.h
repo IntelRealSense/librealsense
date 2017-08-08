@@ -60,6 +60,7 @@ namespace librealsense
         sensor_snapshot m_sensor_description;
         uint32_t m_sensor_id;
         std::mutex m_mutex;
+        std::map<device_serializer::stream_identifier, std::shared_ptr<stream_profile_interface>> m_streams;
         const device_interface& m_parent_device;
         stream_profiles m_available_profiles;
     };

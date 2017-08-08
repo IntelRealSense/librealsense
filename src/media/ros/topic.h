@@ -14,15 +14,15 @@ namespace librealsense
 
         static uint32_t get_device_index(const std::string& topic)
         {
-            return get_id("device_", get<0>(topic));
+            return get_id("device_", get<1>(topic));
         }
         static uint32_t get_sensor_index(const std::string& topic)
         {
-            return get_id("sensor_", get<1>(topic));
+            return get_id("sensor_", get<2>(topic));
         }
         static rs2_stream get_stream_type(const std::string& topic)
         {
-            auto stream_with_id = get<2>(topic);
+            auto stream_with_id = get<3>(topic);
             rs2_stream type;
             conversions::convert(stream_with_id.substr(0, stream_with_id.find_first_of("_")), type);
             return type;
@@ -30,8 +30,8 @@ namespace librealsense
 
         static uint32_t get_stream_index(const std::string& topic)
         {
-            auto stream_with_id = get<2>(topic);
-            return get_id(stream_with_id.substr(0, stream_with_id.find_first_of("_") + 1), get<2>(topic));
+            auto stream_with_id = get<3>(topic);
+            return get_id(stream_with_id.substr(0, stream_with_id.find_first_of("_") + 1), get<3>(topic));
         }
 
         static device_serializer::stream_identifier get_stream_identifier(const std::string& topic)
@@ -82,6 +82,11 @@ namespace librealsense
         static std::string  additional_info_topic()
         {
             return create_from({ "additional_info" });
+        }
+
+        static std::string stream_full_prefix(const device_serializer::stream_identifier& stream_id)
+        {
+            return create_from({ device_prefix(stream_id.device_index), sensor_prefix(stream_id.sensor_index), stream_prefix(stream_id.stream_type, stream_id.stream_index) }).substr(1); //substr(1) to remove the first "/"
         }
     private:
 
@@ -142,11 +147,6 @@ namespace librealsense
         static std::string stream_prefix(rs2_stream type, uint32_t stream_id)
         {
             return std::string(rs2_stream_to_string(type)) + "_" + std::to_string(stream_id);
-        }
-
-        static std::string stream_full_prefix(const device_serializer::stream_identifier& stream_id)
-        {
-            return create_from({ device_prefix(stream_id.device_index), sensor_prefix(stream_id.sensor_index), stream_prefix(stream_id.stream_type, stream_id.stream_index) });
         }
     };
 }

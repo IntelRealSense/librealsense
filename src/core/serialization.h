@@ -51,6 +51,17 @@ namespace librealsense
             rs2_stream stream_type;
             uint32_t stream_index;
         };
+        inline bool operator==(const stream_identifier& lhs, const stream_identifier& rhs)
+        {
+            return lhs.device_index == rhs.device_index &&
+                   lhs.sensor_index == rhs.sensor_index &&
+                   lhs.stream_type  == rhs.stream_type  &&
+                   lhs.stream_index == rhs.stream_index;
+        }
+        inline bool operator<(const stream_identifier& lhs, const stream_identifier& rhs)
+        {
+            return std::make_tuple(lhs.device_index, lhs.sensor_index, lhs.stream_type, lhs.stream_index) < std::make_tuple(rhs.device_index, rhs.sensor_index, rhs.stream_type, rhs.stream_index);
+        }
 
         using nanoseconds = std::chrono::duration<uint64_t, std::nano>;
 

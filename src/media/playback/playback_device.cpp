@@ -6,7 +6,8 @@
 #include "core/motion.h"
 #include "stream.h"
 
-playback_device::playback_device(std::shared_ptr<device_serializer::reader> serializer) :
+playback_device::playback_device(std::shared_ptr<context> ctx, std::shared_ptr<device_serializer::reader> serializer) :
+    m_context(ctx),
     m_is_started(false),
     m_is_paused(false),
     m_sample_rate(1),
@@ -124,9 +125,14 @@ playback_device::~playback_device()
     (*m_read_thread)->stop();
 }
 
+std::shared_ptr<context> playback_device::get_context() const
+{
+    return m_context;
+}
+
 sensor_interface& playback_device::get_sensor(size_t i)
 {
-    return *m_sensors.at(i);
+    return *m_sensors.at(static_cast<uint32_t>(i));
 }
 
 size_t playback_device::get_sensors_count() const
@@ -401,7 +407,7 @@ void playback_device::try_looping()
         {
             return false;
         }
-        if(retval != device_serializer::status_no_error || timestamp == std::chrono::nanoseconds::max())
+        if(retval != device_serializer::status_no_error || timestamp == std::chrono::nanoseconds::max() || frame == nullptr)
         {
             throw librealsense::io_exception("Failed to read frame");
         }

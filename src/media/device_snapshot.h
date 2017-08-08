@@ -49,22 +49,22 @@ namespace librealsense
     {
     public:
         sensor_snapshot(const snapshot_collection& sensor_extensions) : m_snapshots(sensor_extensions) {}
-        sensor_snapshot(const snapshot_collection& sensor_extensions, std::vector<snapshot_collection> streams_snapshots) :
+        sensor_snapshot(const snapshot_collection& sensor_extensions, stream_profiles streams) :
             m_snapshots(sensor_extensions),
-            m_streams_snapshots(streams_snapshots)
+            m_streams(streams)
         {
         }
         snapshot_collection get_sensor_extensions_snapshots() const
         {
             return m_snapshots;
         }
-        std::vector<snapshot_collection> get_streams_snapshots() const
+        stream_profiles get_stream_profiles() const
         {
-            return m_streams_snapshots;
+            return m_streams;
         }
     private:
         snapshot_collection m_snapshots;
-        std::vector<snapshot_collection> m_streams_snapshots;
+        stream_profiles m_streams;
     };
     using device_extrinsics = std::map<std::tuple<size_t, rs2_stream, size_t, rs2_stream>, rs2_extrinsics>;
 

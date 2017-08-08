@@ -1112,13 +1112,6 @@ void rs2_context_remove_device(rs2_context* ctx, const char* file, rs2_error** e
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, ctx, file)
 
-rs2_device* rs2_create_playback_device(const char* file, rs2_error** error) try
-{
-    VALIDATE_NOT_NULL(file);
-    return new rs2_device{ nullptr, nullptr, std::make_shared<playback_device>(std::make_shared<ros_reader>(file)) };
-}
-HANDLE_EXCEPTIONS_AND_RETURN(nullptr, file)
-
 const char* rs2_playback_device_get_file_path(const rs2_device* device, rs2_error** error) try
 {
     VALIDATE_NOT_NULL(device);

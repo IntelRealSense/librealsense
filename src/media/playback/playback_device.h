@@ -31,10 +31,10 @@ namespace librealsense
         public info_container//TODO: Ziv, does it make sense to inherit from container
     {
     public:
-        playback_device(std::shared_ptr<device_serializer::reader> serializer);
+        playback_device(std::shared_ptr<context> context, std::shared_ptr<device_serializer::reader> serializer);
         virtual ~playback_device();
 
-        std::shared_ptr<context> get_context() const override { return nullptr; } //TODO: Add context
+        std::shared_ptr<context> get_context() const override;
 
         sensor_interface& get_sensor(size_t i) override;
         size_t get_sensors_count() const override;
@@ -78,6 +78,7 @@ namespace librealsense
         std::atomic<double> m_sample_rate;
         std::atomic_bool m_real_time;
         device_serializer::nanoseconds m_prev_timestamp;
+        std::shared_ptr<context> m_context;
         void catch_up();
     };
 

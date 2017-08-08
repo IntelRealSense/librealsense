@@ -1506,15 +1506,6 @@ namespace rs2
     public:
         playback(device d) : playback(d.get()) {}
 
-        playback(const std::string& file) :
-            m_file(file)
-        {
-            rs2_error* e = nullptr;
-            _dev = std::shared_ptr<rs2_device>(
-                rs2_create_playback_device(file.c_str(), &e),
-                rs2_delete_device);
-            rs2::error::handle(e);
-        }
         void pause()
         {
             rs2_error* e = nullptr;

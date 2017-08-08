@@ -27,6 +27,7 @@ librealsense::record_device::record_device(std::shared_ptr<librealsense::device_
     m_device = device;
     m_ros_writer = serializer;
     m_sensors = create_record_sensors(m_device);
+    (*m_write_thread)->start();
 }
 
 std::vector<std::shared_ptr<record_sensor>> record_device::create_record_sensors(std::shared_ptr<device_interface> device)
@@ -172,11 +173,13 @@ const std::string& librealsense::record_device::get_info(rs2_camera_info info) c
     //info has no setter, it does not change - nothing to record
     return m_device->get_info(info);
 }
+
 bool librealsense::record_device::supports_info(rs2_camera_info info) const
 {
     //info has no setter, it does not change - nothing to record
     return m_device->supports_info(info);
 }
+
 const librealsense::sensor_interface& librealsense::record_device::get_sensor(size_t i) const
 {
     return *m_sensors.at(i);
@@ -287,7 +290,6 @@ void record_device::initialize_recording()
     //Expected to be called once when recording to file actually starts
     m_capture_time_base = std::chrono::high_resolution_clock::now();
     m_cached_data_size = 0;
-    (*m_write_thread)->start();
 }
 void record_device::stop_gracefully(to_string error_msg)
 {

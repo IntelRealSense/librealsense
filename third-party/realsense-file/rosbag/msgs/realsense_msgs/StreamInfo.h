@@ -24,27 +24,27 @@ struct StreamInfo_
   typedef StreamInfo_<ContainerAllocator> Type;
 
   StreamInfo_()
-    : unique_id()
-    , fps(0)
-    , encoding()  {
+    : fps(0)
+    , encoding()
+    , is_recommended(false)  {
     }
   StreamInfo_(const ContainerAllocator& _alloc)
-    : unique_id(_alloc)
-    , fps(0)
-    , encoding(_alloc)  {
+    : fps(0)
+    , encoding(_alloc)
+    , is_recommended(false)  {
   (void)_alloc;
     }
 
 
-
-   typedef std::basic_string<char, std::char_traits<char>, typename ContainerAllocator::template rebind<char>::other >  _unique_id_type;
-  _unique_id_type unique_id;
 
    typedef uint32_t _fps_type;
   _fps_type fps;
 
    typedef std::basic_string<char, std::char_traits<char>, typename ContainerAllocator::template rebind<char>::other >  _encoding_type;
   _encoding_type encoding;
+
+   typedef uint8_t _is_recommended_type;
+  _is_recommended_type is_recommended;
 
 
 
@@ -123,12 +123,12 @@ struct MD5Sum< ::realsense_msgs::StreamInfo_<ContainerAllocator> >
 {
   static const char* value()
   {
-    return "66ffb3d2e1104a326b299d7cbcc91cd5";
+    return "311d7e24eac31bb87271d041bf70ff7d";
   }
 
   static const char* value(const ::realsense_msgs::StreamInfo_<ContainerAllocator>&) { return value(); }
-  static const uint64_t static_value1 = 0x66ffb3d2e1104a32ULL;
-  static const uint64_t static_value2 = 0x6b299d7cbcc91cd5ULL;
+  static const uint64_t static_value1 = 0x311d7e24eac31bb8ULL;
+  static const uint64_t static_value2 = 0x7271d041bf70ff7dULL;
 };
 
 template<class ContainerAllocator>
@@ -148,10 +148,11 @@ struct Definition< ::realsense_msgs::StreamInfo_<ContainerAllocator> >
   static const char* value()
   {
     return "# This message defines meta information for a stream\n\
+# The stream type is expressed in the topic name\n\
 \n\
-string unique_id  # A unique identifier\n\
 uint32 fps        # The nominal streaming rate, defined in Hz\n\
-string encoding   # The format\n\
+string encoding   # Stream's data format\n\
+bool is_recommended # Is this stream recommended by RealSense SDK\n\
 ";
   }
 
@@ -170,9 +171,9 @@ namespace serialization
   {
     template<typename Stream, typename T> inline static void allInOne(Stream& stream, T m)
     {
-      stream.next(m.unique_id);
       stream.next(m.fps);
       stream.next(m.encoding);
+      stream.next(m.is_recommended);
     }
 
     ROS_DECLARE_ALLINONE_SERIALIZER
@@ -191,12 +192,12 @@ struct Printer< ::realsense_msgs::StreamInfo_<ContainerAllocator> >
 {
   template<typename Stream> static void stream(Stream& s, const std::string& indent, const ::realsense_msgs::StreamInfo_<ContainerAllocator>& v)
   {
-    s << indent << "unique_id: ";
-    Printer<std::basic_string<char, std::char_traits<char>, typename ContainerAllocator::template rebind<char>::other > >::stream(s, indent + "  ", v.unique_id);
     s << indent << "fps: ";
     Printer<uint32_t>::stream(s, indent + "  ", v.fps);
     s << indent << "encoding: ";
     Printer<std::basic_string<char, std::char_traits<char>, typename ContainerAllocator::template rebind<char>::other > >::stream(s, indent + "  ", v.encoding);
+    s << indent << "is_recommended: ";
+    Printer<uint8_t>::stream(s, indent + "  ", v.is_recommended);
   }
 };
 

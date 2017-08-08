@@ -1025,14 +1025,6 @@ void rs2_record_device_pause(const rs2_device* device, rs2_error** error);
 void rs2_record_device_resume(const rs2_device* device, rs2_error** error);
 
 /**
-* Creates a playback device to play the content of the given file
-* \param[in]  file      Path to the file to play
-* \param[out] error     If non-null, receives any error that occurs during this call, otherwise, errors are ignored
-* \return A pointer to a device that plays data from the file, or null in case of failure
-*/
-rs2_device* rs2_create_playback_device(const char* file, rs2_error** error);
-
-/**
  * Gets the path of the file used by the playback device
  * \param[in] device A playback device
  * \param[out] error     If non-null, receives any error that occurs during this call, otherwise, errors are ignored
