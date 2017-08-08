@@ -1,4 +1,4 @@
-// License: Apache 2.0. See LICENSE file in root directory.
+// License: Apache 2.0 See LICENSE file in root directory.
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
 #include <functional>   // For function
@@ -15,6 +15,7 @@
 #include <media/ros/ros_reader.h>
 #include "core/advanced_mode.h"
 #include "align.h"
+#include "colorizer.h"
 #include "media/playback/playback_device.h"
 #include "stream.h"
 
@@ -1370,6 +1371,16 @@ rs2_processing_block* rs2_create_pointcloud(rs2_context* ctx, rs2_error** error)
     auto block = std::make_shared<librealsense::pointcloud>(ctx->ctx->get_time_service());
 
     return new rs2_processing_block { block };
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, ctx)
+
+rs2_processing_block* rs2_create_colorizer(rs2_context* ctx, rs2_error** error) try 
+{
+    VALIDATE_NOT_NULL(ctx);
+
+    auto block = std::make_shared<librealsense::colorizer>(ctx->ctx->get_time_service());
+
+    return new rs2_processing_block{ block };
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, ctx)
 

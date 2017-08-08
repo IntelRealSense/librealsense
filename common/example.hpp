@@ -464,7 +464,7 @@ namespace rs2
     static std::vector<color_map*> color_maps { &classic, &jet, &hsv };
     static std::vector<const char*> color_maps_names { "Classic", "Jet", "HSV" };
 
-    inline void make_depth_histogram(const color_map& map, uint8_t rgb_image[], const uint16_t depth_image[], int width, int height, bool equalize, float min, float max)
+/*    inline void make_depth_histogram(const color_map& map, uint8_t rgb_image[], const uint16_t depth_image[], int width, int height, bool equalize, float min, float max)
     {
         const auto max_depth = 0x10000;
         if (equalize)
@@ -518,7 +518,7 @@ namespace rs2
                 }
             }
         }
-    }
+    } */
 
 
     class texture_buffer
@@ -532,8 +532,9 @@ namespace rs2
         bool equalize = true;
         float min_depth = 0.f;
         float max_depth = 16.f;
+        rs2::colorizer colorizer;
 
-        texture_buffer() : texture() {}
+        texture_buffer() : texture(), colorizer(rs2::context().create_colorizer()) {}
 
         GLuint get_gl_handle() const { return texture; }
 
@@ -561,15 +562,17 @@ namespace rs2
             glBindTexture(GL_TEXTURE_2D, texture);
             stride = stride == 0 ? width : stride;
             //glPixelStorei(GL_UNPACK_ROW_LENGTH, stride);
-
+            rs2::video_frame f = nullptr;
+            const uint8_t* ptr;
             switch (format)
             {
             case RS2_FORMAT_ANY:
                 throw std::runtime_error("not a valid format");
             case RS2_FORMAT_Z16:
             case RS2_FORMAT_DISPARITY16:
-                rgb.resize(width * height * 4);
-                make_depth_histogram(*cm, rgb.data(), reinterpret_cast<const uint16_t *>(data), width, height, equalize, min_depth, max_depth);
+                f = colorizer.colorize(frame);
+                ptr = reinterpret_cast<const uint8_t*>(f.get_data());
+                rgb = std::vector<uint8_t>(ptr, ptr + f.get_stride_in_bytes()*f.get_height());
                 glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, rgb.data());
                 break;
             case RS2_FORMAT_XYZ32F:

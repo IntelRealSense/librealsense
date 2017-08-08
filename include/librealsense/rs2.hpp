@@ -1817,6 +1817,36 @@ namespace rs2
         frame_queue _queue;
     };
 
+    class colorizer
+    {
+    public:
+        video_frame colorize(frame depth)
+        {
+            _block.invoke(std::move(depth));
+            return _queue.wait_for_frame();
+        }
+
+        //void set_bounds(float min, float max)
+        //{
+        //    rs2_colorizer_set_bounds
+        //}
+
+        //void set_equalize(bool equalize)
+        //{
+
+        //}
+    private:
+        friend class context;
+
+        colorizer(processing_block block) : _block(block), _queue(1)
+        {
+            _block.start(_queue);
+        }
+
+        processing_block _block;
+        frame_queue _queue;
+    };
+
     /**
     * default librealsense context class
     * includes realsense API version as provided by RS2_API_VERSION macro
@@ -1937,6 +1967,17 @@ namespace rs2
             error::handle(e);
 
             return pointcloud(processing_block{ block });
+        }
+
+        colorizer create_colorizer() const
+        {
+            rs2_error* e = nullptr;
+            std::shared_ptr<rs2_processing_block> block(
+                rs2_create_colorizer(_context.get(), &e),
+                rs2_delete_processing_block);
+            error::handle(e);
+
+            return colorizer(processing_block{ block });
         }
 
         /**
