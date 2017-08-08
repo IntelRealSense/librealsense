@@ -99,6 +99,16 @@ namespace librealsense
         _is_recommended = true;
     }
 
+    bool stream_profile_base::is_default() const
+    {
+        return _is_default;
+    }
+
+    void stream_profile_base::make_default()
+    {
+        _is_default = true;
+    }
+
     size_t stream_profile_base::get_size() const
     {
         return get_image_bpp(get_format()) * get_framerate();

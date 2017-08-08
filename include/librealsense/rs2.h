@@ -299,6 +299,7 @@ typedef struct rs2_devices_changed_callback rs2_devices_changed_callback;
 typedef struct rs2_frame_callback rs2_frame_callback;
 typedef struct rs2_log_callback rs2_log_callback;
 typedef struct rs2_syncer rs2_syncer;
+typedef struct rs2_pipeline rs2_pipeline;
 typedef struct rs2_device_serializer rs2_device_serializer;
 typedef struct rs2_source rs2_source;
 typedef struct rs2_processing_block rs2_processing_block;
@@ -1149,6 +1150,16 @@ rs2_frame* rs2_extract_frame(rs2_frame* composite, int index, rs2_error** error)
 int rs2_embedded_frames_count(rs2_frame* composite, rs2_error** error);
 
 void rs2_synthetic_frame_ready(rs2_source* source, rs2_frame* frame, rs2_error** error);
+
+rs2_pipeline* rs2_create_pipeline(rs2_context* ctx, rs2_error ** error);
+
+void rs2_start_pipeline_with_callback(rs2_pipeline* pipe, rs2_frame_callback* on_frame, rs2_error ** error);
+
+void rs2_start_pipeline(rs2_pipeline* pipe, rs2_error ** error);
+
+rs2_frame* rs2_pipeline_wait_for_frames(rs2_pipeline* pipe, rs2_error ** error);
+
+void rs2_delete_pipeline(rs2_pipeline* block);
 
 rs2_processing_block* rs2_create_processing_block(rs2_context* ctx, rs2_frame_processor_callback* proc, rs2_error** error);
 

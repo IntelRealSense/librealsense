@@ -74,6 +74,9 @@ namespace librealsense
                     assign_stream(_owner->_gyro_stream, p);
                 if (p->get_stream_type() == RS2_STREAM_GPIO)
                     assign_stream(_owner->_gpio_streams[p->get_stream_index()], p);
+                if (p->get_framerate() == 1000)
+                    p->make_default();
+
             }
 
             return results;
@@ -112,6 +115,9 @@ namespace librealsense
                 auto video = dynamic_cast<video_stream_profile_interface*>(p.get());
                 if (video->get_width() == 640 && video->get_height() == 480)
                     video->make_recommended();
+
+                if (video->get_width() == 640 && video->get_height() == 480 && video->get_format() == RS2_FORMAT_RAW8 && video->get_framerate() == 30)
+                    video->make_default();
 
                 // Register intrinsics
                 auto profile = to_profile(p.get());

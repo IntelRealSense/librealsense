@@ -6,7 +6,7 @@
 
 namespace librealsense
 {
-    #define callback rs2::devices_changed_callback<std::function<void(rs2::event_information& info)>>
+    #define devices_changed_callbacl rs2::devices_changed_callback<std::function<void(rs2::event_information& info)>>
 
     device_hub::device_hub(context& ctx)
         : _ctx(ctx)
@@ -14,7 +14,7 @@ namespace librealsense
         _device_list = _ctx.query_devices();
 
 
-        auto cb = new callback([&](rs2::event_information& info)
+        auto cb = new devices_changed_callbacl([&](rs2::event_information& info)
                    {
                        std::unique_lock<std::mutex> lock(_mutex);
                        _device_list = _ctx.query_devices();
@@ -77,22 +77,28 @@ namespace librealsense
     /**
     * Checks if device is still connected
     */
-    bool device_hub::is_connected(const device& dev)
-    {
+    bool device_hub::is_connected(const device_interface& dev)
+    { 
         return true;
-    //    rs2_error* e = nullptr;
+//        rs2_error* e = nullptr;
 
-    //    if (!dev)
-    //        return false;
+//        if (!dev)
+//            return false;
 
-    //    try
-    //    {
-    //        std::unique_lock<std::mutex> lock(_mutex);
-    //        auto result = rs2_device_list_contains(_device_list.get_list(), dev.get().get(), &e);
-    //        if (e) return false;
-    //        return result > 0;
-    //    }
-    //    catch (...)  { return false; }
+//        try
+//        {
+//            std::unique_lock<std::mutex> lock(_mutex);
+
+//            for (auto d : _device_list)
+//            {
+//                if (d.->get_device_data() == d)
+//                {
+//                    return 1;
+//                }
+//            }
+//            return 0;
+//        }
+//        catch (...)  { return false; }
     };
 }
 

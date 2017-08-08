@@ -53,58 +53,62 @@ using namespace std;
 //    }
 //    return profiles;
 //}
+#include "pipeline.h"
 
 int main(int argc, char * argv[])
 {
-    context ctx;
-    util::device_hub hub(ctx);
+    //context ctx;
+   rs2:: pipeline p;
+    p.start();
+    using namespace rs2;
+//    util::device_hub hub(ctx);
 
     auto finished = false;
     GLFWwindow* win;
-    log_to_file(RS2_LOG_SEVERITY_DEBUG);
+//    log_to_file(RS2_LOG_SEVERITY_DEBUG);
 
     while (!finished)
     {
         try
         {
-            auto dev = hub.wait_for_device();
+//            auto dev = hub.wait_for_device();
 
-            // Configure all supported streams to run at 30 frames per second
-            util::config config;
-            config.enable_all(preset::best_quality);
-            //configure_all_supported_streams(dev, config);
-            auto stream = config.open(dev);
+//            // Configure all supported streams to run at 30 frames per second
+//            util::config config;
+//            config.enable_all(preset::best_quality);
+//            //configure_all_supported_streams(dev, config);
+//            auto stream = config.open(dev);
 
-            syncer_processing_block syncer;
-            stream.start(syncer);
+//            syncer_processing_block syncer;
+//            stream.start(syncer);
 
             size_t max_frames = 0;
 
-           // black.start(syncer);
-            frame_queue queue;
-            syncer.start(queue);
+//           // black.start(syncer);
+//            frame_queue queue;
+//            syncer.start(queue);
             map<int, texture_buffer> buffers;
             bool is_stream_active[RS2_STREAM_COUNT] = {false};
             // Open a GLFW window
             glfwInit();
             ostringstream ss;
-            ss << "CPP Capture Example (" << dev.get_info(RS2_CAMERA_INFO_NAME) << ")";
+            ss << "CPP Capture Example ("/* << dev.get_info(RS2_CAMERA_INFO_NAME) <<*/ ")";
 
             win = glfwCreateWindow(1280, 720, ss.str().c_str(), nullptr, nullptr);
             glfwMakeContextCurrent(win);
 
-            while (hub.is_connected(dev) && !glfwWindowShouldClose(win))
+            while (/*hub.is_connected(dev) && */!glfwWindowShouldClose(win))
             {
                 int w, h;
                 glfwGetFramebufferSize(win, &w, &h);
 
-                auto frames = queue.wait_for_frames();
-
+                //auto frames = queue.wait_for_frames();
+                auto frames = p.wait_for_frames();
                 max_frames = std::max(max_frames, frames.size());
 
                 //// for consistent visualization, sort frames based on stream type:
                 sort(frames.begin(), frames.end(),
-                     [](const frame& a, const frame& b) -> bool
+                     [](const rs2::frame& a, const rs2::frame& b) -> bool
                 {
                     return a.get_profile().unique_id() < b.get_profile().unique_id();
                 });

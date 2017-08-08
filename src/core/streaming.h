@@ -55,6 +55,10 @@ namespace librealsense
 
         virtual bool is_recommended() const = 0;
         virtual void make_recommended() = 0;
+
+        virtual bool is_default() const = 0;
+        virtual void make_default() = 0;
+
         virtual size_t get_size() const = 0;
 
         virtual std::shared_ptr<stream_profile_interface> clone() const = 0;

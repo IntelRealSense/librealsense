@@ -15,6 +15,8 @@
 #include "sync.h"
 #include "core/streaming.h"
 
+#include "context.h"
+
 namespace librealsense
 {
     class device : public virtual device_interface, public info_container
@@ -33,15 +35,17 @@ namespace librealsense
 
         std::shared_ptr<context> get_context() const override { return _context; }
 
+
     protected:
         int add_sensor(std::shared_ptr<sensor_interface> sensor_base);
 
         uvc_sensor& get_uvc_sensor(int subdevice);
 
-        explicit device(std::shared_ptr<context> ctx) : _context(ctx) {}
+        explicit device(std::shared_ptr<context> ctx, const device_info& info): _context(ctx),_info(info)  {}
 
     private:
         std::vector<std::shared_ptr<sensor_interface>> _sensors;
         std::shared_ptr<context> _context;
+        const device_info& _info;
     };
 }

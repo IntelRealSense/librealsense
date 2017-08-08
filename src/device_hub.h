@@ -25,7 +25,7 @@ namespace librealsense
         /**
         * Checks if device is still connected
         */
-        bool is_connected(const device& dev);
+        bool is_connected(const device_interface& dev);
 
     private:
         context& _ctx;

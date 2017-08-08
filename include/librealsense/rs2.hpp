@@ -484,6 +484,8 @@ namespace rs2
         rs2_frame* frame_ref;
     };
 
+
+
     typedef std::vector<frame> frameset;
 
     class video_frame : public frame
@@ -682,6 +684,8 @@ namespace rs2
     private:
         size_t _size;
     };
+
+
 
     template<class T>
     class frame_callback : public rs2_frame_callback
@@ -1964,24 +1968,57 @@ namespace rs2
             rs2::error::handle(e);
         }
     protected:
+        friend class pipeline;
         std::shared_ptr<rs2_context> _context;
     };
 
     class pipeline
     {
     public:
-        pipeline(context ctx = context()){}
-        void start(){}
+        pipeline(context ctx = context())
+        {
+            rs2_error* e = nullptr;
+            _pipeline = std::shared_ptr<rs2_pipeline>(
+                rs2_create_pipeline(ctx._context.get(), &e),
+                rs2_delete_pipeline);
+            error::handle(e);
+        }
+
+        void start()
+        {
+            rs2_error* e = nullptr;
+            rs2_start_pipeline(_pipeline.get(), &e);
+            error::handle(e);
+        }
+
         frameset wait_for_frames(unsigned int timeout_ms = 5000) const
         {
+//            rs2_error* e = nullptr;
+//            frame f( rs2_pipeline_wait_for_frames(_pipeline.get(), &e));
+//            error::handle(e);
+//            return {std::move(f)};
             frameset res;
+            rs2_error* e = nullptr;
+            frame f (rs2_pipeline_wait_for_frames(_pipeline.get(), &e));
+
+            auto comp = f.as<composite_frame>();
+            if (comp)
+            {
+                return std::move(comp.get_frames());
+            }
+            else
+            {
+                frameset res(1);
+                res[0] = std::move(f);
+                return std::move(res);
+            }
+            error::handle(e);
             return res;
         };
 
     private:
-        std::shared_ptr<rs2_context> _context;
+        std::shared_ptr<rs2_pipeline> _pipeline;
     };
-
     class syncer
     {
     public:

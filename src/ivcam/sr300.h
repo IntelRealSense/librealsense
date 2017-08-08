@@ -227,6 +227,9 @@ namespace librealsense
                     if (video->get_width() == 640 && video->get_height() == 480)
                         video->make_recommended();
 
+                    if (video->get_width() == 1920 && video->get_height() == 1080 && video->get_format() == RS2_FORMAT_RGB8 && video->get_framerate() == 30)
+                        video->make_default();
+
                     auto profile = to_profile(p.get());
                     video->set_intrinsics([profile, this]()
                     {
@@ -275,6 +278,9 @@ namespace librealsense
 
                     if (video->get_width() == 640 && video->get_height() == 480)
                         video->make_recommended();
+
+                    if (video->get_width() == 640 && video->get_height() == 480 && video->get_format() == RS2_FORMAT_RGB8 && video->get_framerate() == 30)
+                        video->make_default();
 
                     auto profile = to_profile(p.get());
                     video->set_intrinsics([profile, this]()

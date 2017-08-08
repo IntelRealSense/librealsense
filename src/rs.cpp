@@ -17,6 +17,7 @@
 #include "align.h"
 #include "media/playback/playback_device.h"
 #include "stream.h"
+#include "pipeline.h"
 
 ////////////////////////
 // API implementation //
@@ -1260,6 +1261,52 @@ void rs2_synthetic_frame_ready(rs2_source* source, rs2_frame* frame, rs2_error**
     source->source->frame_ready(std::move(holder));
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, source, frame)
+
+rs2_pipeline* rs2_create_pipeline(rs2_context* ctx, rs2_error ** error) try
+{
+    VALIDATE_NOT_NULL(ctx);
+
+    auto pipe = std::make_shared<librealsense::pipeline>(*ctx->ctx);
+
+    return new rs2_pipeline{ pipe };
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, ctx)
+
+void rs2_start_pipeline_with_callback(rs2_pipeline* pipe, rs2_frame_callback* callback, rs2_error ** error) try
+{
+    VALIDATE_NOT_NULL(pipe);
+
+    pipe->pipe->start({ callback, [](rs2_frame_callback* p) { p->release(); } });
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, pipe)
+
+void rs2_start_pipeline(rs2_pipeline* pipe, rs2_error ** error) try
+{
+    VALIDATE_NOT_NULL(pipe);
+
+    pipe->pipe->start();
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, pipe)
+
+rs2_frame* rs2_pipeline_wait_for_frames(rs2_pipeline* pipe, rs2_error ** error) try
+{
+    VALIDATE_NOT_NULL(pipe);
+
+    auto f = pipe->pipe->wait_for_frames();
+    auto frame = f.frame;
+    f.frame = nullptr;
+    return (rs2_frame*)(frame);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, pipe)
+
+void rs2_delete_pipeline(rs2_pipeline* pipe) try
+{
+    VALIDATE_NOT_NULL(pipe);
+
+    delete pipe;
+}
+NOEXCEPT_RETURN(, pipe)
+
 
 rs2_processing_block* rs2_create_processing_block(rs2_context* ctx, rs2_frame_processor_callback* proc, rs2_error** error) try
 {
