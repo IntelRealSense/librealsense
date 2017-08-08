@@ -732,8 +732,12 @@ int main(int, char**) try
         // *********************
         ImGui::Begin("Control Panel", nullptr, flags | ImGuiWindowFlags_AlwaysVerticalScrollbar);
 
-        if (list.size() > 0)
+        if (device_models.size() > 0)
         {
+            std::map<subdevice_model*, float> model_to_y;
+            std::map<subdevice_model*, float> model_to_abs_y;
+            auto windows_width = ImGui::GetContentRegionMax().x;
+
             for (auto&& dev_model : device_models)
             {
                 ImGui::PushFont(font_14);
@@ -741,18 +745,19 @@ int main(int, char**) try
                 ImGui::GetWindowDrawList()->AddRectFilled(pos, { pos.x + panel_width, pos.y + panel_y }, ImColor(sensor_header_light_blue));
                 ImGui::GetWindowDrawList()->AddLine({ pos.x,pos.y }, { pos.x + panel_width,pos.y }, ImColor(black));
 
+                pos = ImGui::GetCursorPos();
                 ImGui::PushStyleColor(ImGuiCol_Button, sensor_header_light_blue);
                 ImGui::Columns(2, "DeviceInfo", false);
-                ImGui::SetCursorPos({ 5, 14 });
-                label = to_string() << u8"\uf03d  " << dev_model.dev.get_info(RS2_CAMERA_INFO_NAME);
+                ImGui::SetCursorPos({ 5, pos.y + 14 });
+                label = to_string() << u8" \uf03d  " << dev_model.dev.get_info(RS2_CAMERA_INFO_NAME);
                 ImGui::Text(label.c_str());
                 ImGui::NextColumn();
-                ImGui::SetCursorPos({ ImGui::GetCursorPosX(), 14 });
+                ImGui::SetCursorPos({ ImGui::GetCursorPosX(), pos.y + 14 });
                 label = to_string() << "S/N: " << (dev_model.dev.supports(RS2_CAMERA_INFO_SERIAL_NUMBER) ? dev_model.dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER) : "Unknown");
                 ImGui::Text(label.c_str());
 
                 ImGui::Columns(1);
-                ImGui::SetCursorPos({ panel_width - 45, 11 });
+                ImGui::SetCursorPos({ panel_width - 45, pos.y + 11 });
 
                 ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
                 ImGui::PushStyleColor(ImGuiCol_PopupBg, almost_white_bg);
@@ -853,18 +858,14 @@ int main(int, char**) try
                 ImGui::PopStyleVar();
                 ImGui::PopStyleColor(4);
 
-                ImGui::SetCursorPos({ 0, panel_y });
+                ImGui::SetCursorPos({ 0, pos.y + panel_y });
 
                 ImGui::PopStyleColor();
                 ImGui::PopFont();
 
 
-                auto windows_width = ImGui::GetContentRegionMax().x;
                 auto sensor_top_y = ImGui::GetCursorPosY();
                 ImGui::SetContentRegionWidth(windows_width - 36);
-
-                std::map<subdevice_model*, float> model_to_y;
-                std::map<subdevice_model*, float> model_to_abs_y;
 
                 static bool is_recording = false;
                 static char input_file_name[256] = "recorded_streams.bag";
@@ -880,11 +881,11 @@ int main(int, char**) try
                     const ImVec2 abs_pos = ImGui::GetCursorScreenPos();
                     model_to_y[sub.get()] = pos.y;
                     model_to_abs_y[sub.get()] = abs_pos.y;
-                    ImGui::GetWindowDrawList()->AddLine({ abs_pos.x, abs_pos.y - 2 },
-                    { abs_pos.x + panel_width, abs_pos.y - 2 },
-                        ImColor(black), 2.f);
+                    ImGui::GetWindowDrawList()->AddLine({ abs_pos.x, abs_pos.y - 1 },
+                    { abs_pos.x + panel_width, abs_pos.y - 1 },
+                        ImColor(black), 1.f);
 
-                    label = to_string() << sub->s.get_info(RS2_CAMERA_INFO_NAME);
+                    label = to_string() << sub->s.get_info(RS2_CAMERA_INFO_NAME) << "##" << dev_model.id;
                     ImGui::PushStyleColor(ImGuiCol_Header, sensor_header_light_blue);
 
                     ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, { 10, 10 });
@@ -911,7 +912,7 @@ int main(int, char**) try
                             }
                         }
 
-                        label = to_string() << "Controls ##" << sub->s.get_info(RS2_CAMERA_INFO_NAME);
+                        label = to_string() << "Controls ##" << sub->s.get_info(RS2_CAMERA_INFO_NAME) << "," << dev_model.id;;
                         if (ImGui::TreeNode(label.c_str()))
                         {
                             for (auto i = 0; i < RS2_OPTION_COUNT; i++)
@@ -945,100 +946,15 @@ int main(int, char**) try
                     ImGui::PopStyleColor();
                 }
 
-                for (auto&& device_model : device_models)
-                    for (auto&& sub : device_model.subdevices)
-                    {
-                        sub->update(error_message, viewer_model.not_model);
-                    }
+                for (auto&& sub : dev_model.subdevices)
+                {
+                    sub->update(error_message, viewer_model.not_model);
+                }
 
                 ImGui::PopStyleColor(2);
                 ImGui::PopFont();
 
-                ImGui::SetContentRegionWidth(windows_width);
-
-                for (auto&& sub : dev_model.subdevices)
-                {
-                    try
-                    {
-                        static float t = 0.f;
-                        t += 0.03f; // TODO: change to something more elegant
-
-                        ImGui::SetCursorPos({ windows_width - 32, model_to_y[sub.get()] + 3 });
-                        ImGui::PushFont(font_14);
-                        if (sub.get() == dev_model.subdevices.begin()->get() && !anything_started)
-                        {
-                            ImGui::PushStyleColor(ImGuiCol_Button, from_rgba(0x1b + abs(sin(t)) * 40, 0x21 + abs(sin(t)) * 20, 0x25 + abs(sin(t)) * 30, 0xff));
-                        }
-                        else
-                        {
-                            ImGui::PushStyleColor(ImGuiCol_Button, sensor_bg);
-                        }
-                        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, sensor_bg);
-                        ImGui::PushStyleColor(ImGuiCol_ButtonActive, sensor_bg);
-
-                        if (!sub->streaming)
-                        {
-                            label = to_string() << u8"  \uf204\noff   ##" << sub->s.get_info(RS2_CAMERA_INFO_NAME);
-
-                            ImGui::PushStyleColor(ImGuiCol_Text, redish);
-                            ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, redish + 0.1f);
-
-                            if (sub->is_selected_combination_supported())
-                            {
-                                if (ImGui::Button(label.c_str(), { 30,30 }))
-                                {
-                                    anything_started = true;
-                                    //if (is_recording)
-                                    //{
-                                    //    model.start_recording(dev, input_file_name, error_message);
-                                    //}
-                                    auto profiles = sub->get_selected_profiles();
-                                    sub->play(profiles);
-
-                                    for (auto&& profile : profiles)
-                                    {
-                                        viewer_model.streams[profile.unique_id()].dev = sub;
-                                    }
-                                }
-                                if (ImGui::IsItemHovered())
-                                {
-                                    ImGui::SetTooltip("Start streaming data from this sensor");
-                                    anything_started = true;
-                                }
-                            }
-                            else
-                            {
-                                ImGui::TextDisabled(u8"  \uf204\noff   ");
-                            }
-                        }
-                        else
-                        {
-                            label = to_string() << u8"  \uf205\n    on##" << sub->s.get_info(RS2_CAMERA_INFO_NAME);
-                            ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
-                            ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue + 0.1f);
-
-                            if (ImGui::Button(label.c_str(), { 30,30 }))
-                            {
-                                sub->stop();
-                            }
-                            if (ImGui::IsItemHovered())
-                            {
-                                ImGui::SetTooltip("Stop streaming data from selected sub-device");
-                            }
-                        }
-                    }
-                    catch (const error& e)
-                    {
-                        error_message = error_to_string(e);
-                    }
-                    catch (const std::exception& e)
-                    {
-                        error_message = e.what();
-                    }
-
-                    ImGui::PopStyleColor(5);
-                    ImGui::PopFont();
-                }
+                
             }
 
             if (device_to_remove)
@@ -1047,10 +963,10 @@ int main(int, char**) try
                     [&](const device_model& other) { return get_device_name(other.dev) == get_device_name(device_to_remove->dev); }));
                 device_to_remove = nullptr;
             }
-        }
 
-        {
-            const ImVec2 pos = ImGui::GetCursorScreenPos();
+            ImGui::SetContentRegionWidth(windows_width);
+
+            auto pos = ImGui::GetCursorScreenPos();
             auto h = ImGui::GetWindowHeight();
             if (h > pos.y)
             {
@@ -1058,6 +974,99 @@ int main(int, char**) try
                 ImRect bb(pos, ImVec2(pos.x + ImGui::GetContentRegionAvail().x, pos.y + ImGui::GetContentRegionAvail().y));
                 ImGui::GetWindowDrawList()->AddRectFilled(bb.GetTL(), bb.GetBR(), ImColor(dark_window_background));
             }
+
+            for (auto&& dev_model : device_models)
+            for (auto&& sub : dev_model.subdevices)
+            {
+                try
+                {
+                    static float t = 0.f;
+                    t += 0.03f; // TODO: change to something more elegant
+
+                    ImGui::SetCursorPos({ windows_width - 32, model_to_y[sub.get()] + 3 });
+                    ImGui::PushFont(font_14);
+                    if (sub.get() == dev_model.subdevices.begin()->get() && !anything_started)
+                    {
+                        ImGui::PushStyleColor(ImGuiCol_Button, from_rgba(0x1b + abs(sin(t)) * 40, 0x21 + abs(sin(t)) * 20, 0x25 + abs(sin(t)) * 30, 0xff));
+                    }
+                    else
+                    {
+                        ImGui::PushStyleColor(ImGuiCol_Button, sensor_bg);
+                    }
+                    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, sensor_bg);
+                    ImGui::PushStyleColor(ImGuiCol_ButtonActive, sensor_bg);
+
+                    if (!sub->streaming)
+                    {
+                        label = to_string() << u8"  \uf204\noff   ##" << sub->s.get_info(RS2_CAMERA_INFO_NAME);
+
+                        ImGui::PushStyleColor(ImGuiCol_Text, redish);
+                        ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, redish + 0.1f);
+
+                        if (sub->is_selected_combination_supported())
+                        {
+                            if (ImGui::Button(label.c_str(), { 30,30 }))
+                            {
+                                anything_started = true;
+                                //if (is_recording)
+                                //{
+                                //    model.start_recording(dev, input_file_name, error_message);
+                                //}
+                                auto profiles = sub->get_selected_profiles();
+                                sub->play(profiles);
+
+                                for (auto&& profile : profiles)
+                                {
+                                    viewer_model.streams[profile.unique_id()].dev = sub;
+                                }
+                            }
+                            if (ImGui::IsItemHovered())
+                            {
+                                ImGui::SetTooltip("Start streaming data from this sensor");
+                                anything_started = true;
+                            }
+                        }
+                        else
+                        {
+                            ImGui::TextDisabled(u8"  \uf204\noff   ");
+                        }
+                    }
+                    else
+                    {
+                        label = to_string() << u8"  \uf205\n    on##" << sub->s.get_info(RS2_CAMERA_INFO_NAME);
+                        ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
+                        ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue + 0.1f);
+
+                        if (ImGui::Button(label.c_str(), { 30,30 }))
+                        {
+                            sub->stop();
+                        }
+                        if (ImGui::IsItemHovered())
+                        {
+                            ImGui::SetTooltip("Stop streaming data from selected sub-device");
+                        }
+                    }
+                }
+                catch (const error& e)
+                {
+                    error_message = error_to_string(e);
+                }
+                catch (const std::exception& e)
+                {
+                    error_message = e.what();
+                }
+
+                ImGui::PopStyleColor(5);
+                ImGui::PopFont();
+            }
+        }
+        else
+        {
+            const ImVec2 pos = ImGui::GetCursorScreenPos();
+            ImRect bb(pos, ImVec2(pos.x + ImGui::GetContentRegionAvail().x, pos.y + ImGui::GetContentRegionAvail().y));
+            ImGui::GetWindowDrawList()->AddRectFilled(bb.GetTL(), bb.GetBR(), ImColor(dark_window_background));
+
+            // Draw no device selected indicator
         }
 
         ImGui::End();
