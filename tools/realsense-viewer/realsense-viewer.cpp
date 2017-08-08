@@ -60,7 +60,7 @@ void export_to_ply(notifications_model& ns, points points, video_frame texture)
         out << "ply\n";
         out << "format binary_little_endian 1.0\n";
         out << "comment pointcloud saved from Realsense Viewer\n";
-        if (texture) out << "comment TextureFile " << texfname.substr(texfname.find_last_of("\\")+1) << "\n";
+        if (texture) out << "comment TextureFile " << texfname.substr(texfname.find_last_of("\\/")+1) << "\n";
         out << "element vertex " << new_vertices.size() << "\n";
         out << "property float" << sizeof(float) * 8 << " x\n";
         out << "property float" << sizeof(float) * 8 << " y\n";
