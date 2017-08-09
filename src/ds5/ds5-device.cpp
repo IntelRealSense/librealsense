@@ -358,7 +358,7 @@ namespace librealsense
         if (value == ds::ds5_notifications_types::flag_B_laser_disable)
             return{ RS2_NOTIFICATION_CATEGORY_HARDWARE_ERROR, value, RS2_LOG_SEVERITY_ERROR, "Flag B laser disable" };
 
-        return{ RS2_NOTIFICATION_CATEGORY_HARDWARE_ERROR, value, RS2_LOG_SEVERITY_NONE, "Unknown error!" };
+        return{ RS2_NOTIFICATION_CATEGORY_HARDWARE_ERROR, value, RS2_LOG_SEVERITY_WARN, "Unknown error!" };
     }
 
     void ds5_device::create_snapshot(std::shared_ptr<debug_interface>& snapshot)

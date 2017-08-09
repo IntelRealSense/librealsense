@@ -3,6 +3,10 @@
 
 #include "model-views.h"
 
+#include <librealsense/rs2_advanced_mode.hpp>
+
+#include <regex>
+
 void imgui_easy_theming(ImFont*& font_14, ImFont*& font_18)
 {
     ImGuiStyle& style = ImGui::GetStyle();
@@ -78,8 +82,9 @@ namespace rs2
         return res;
     }
 
-    void option_model::draw(std::string& error_message)
+    bool option_model::draw(std::string& error_message)
     {
+        auto res = false;
         if (supported)
         {
             auto desc = endpoint.get_option_description(opt);
@@ -89,6 +94,7 @@ namespace rs2
                 auto bool_value = value > 0.0f;
                 if (ImGui::Checkbox(label.c_str(), &bool_value))
                 {
+                    res = true;
                     value = bool_value ? 1.0f : 0.0f;
                     try
                     {
@@ -142,6 +148,7 @@ namespace rs2
                                 value = static_cast<float>(int_value);
                                 endpoint.set_option(opt, value);
                                 *invalidate_flag = true;
+                                res = true;
                             }
                         }
                         else
@@ -151,6 +158,7 @@ namespace rs2
                             {
                                 endpoint.set_option(opt, value);
                                 *invalidate_flag = true;
+                                res = true;
                             }
                         }
                     }
@@ -191,6 +199,7 @@ namespace rs2
                             value = range.min + range.step * selected;
                             endpoint.set_option(opt, value);
                             *invalidate_flag = true;
+                            res = true;
                         }
                     }
                     catch (const error& e)
@@ -236,6 +245,8 @@ namespace rs2
                     ImGui::SetTooltip("Select custom region of interest for the auto-exposure algorithm\nClick the button, then draw a rect on the frame");
             }
         }
+
+        return res;
     }
 
     void option_model::update_supported(std::string& error_message)
@@ -942,7 +953,7 @@ namespace rs2
         }
     }
 
-    void subdevice_model::draw_option(rs2_option opt, bool update_read_only_options,
+    bool subdevice_model::draw_option(rs2_option opt, bool update_read_only_options,
                                       std::string& error_message, notifications_model& model)
     {
         auto&& metadata = options_metadata[opt];
@@ -958,7 +969,7 @@ namespace rs2
                 }
             }
         }
-        metadata.draw(error_message);
+        return metadata.draw(error_message);
     }
 
     stream_model::stream_model()
@@ -1516,12 +1527,53 @@ namespace rs2
         _recorder.reset();
     }
 
+    std::pair<std::string, std::string> get_device_name(const device& dev)
+    {
+        // retrieve device name
+        std::string name = (dev.supports(RS2_CAMERA_INFO_NAME)) ? dev.get_info(RS2_CAMERA_INFO_NAME) : "Unknown";
+
+        // retrieve device serial number
+        std::string serial = (dev.supports(RS2_CAMERA_INFO_SERIAL_NUMBER)) ? dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER) : "Unknown";
+
+        std::stringstream s;
+
+        if (dev.is<playback>())
+        {
+            auto playback_dev = dev.as<playback>();
+
+            s << "Playback device: ";
+            name += (to_string() << " (File: " << playback_dev.file_name() << ")");
+        }
+        s << std::setw(25) << std::left << name;
+        return std::make_pair(s.str(), serial);        // push name and sn to list
+    }
+
     device_model::device_model(device& dev, std::string& error_message)
+        : dev(dev)
     {
         for (auto&& sub : dev.query_sensors())
         {
             auto model = std::make_shared<subdevice_model>(dev, sub, error_message);
             subdevices.push_back(model);
+        }
+        auto name = get_device_name(dev);
+        id = to_string() << name.first << ", " << name.second;
+
+        if (dev.is<playback>()) //TODO: remove this and make sub->streaming a function that queries the sensor
+        {
+            dev.as<playback>().set_status_changed_callback([this](rs2_playback_status status)
+            {
+                if (status == RS2_PLAYBACK_STATUS_STOPPED)
+                {
+                    for (auto sub : subdevices)
+                    {
+                        if (sub->streaming)
+                        {
+                            sub->stop();
+                        }
+                    }
+                }
+            });
         }
     }
 
@@ -1640,6 +1692,96 @@ namespace rs2
                     }
             }
         }
+    }
+
+    void viewer_model::show_event_log(ImFont* font_14, float x, float y, float w, float h)
+    {
+        auto flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove |
+            ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar |
+            ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysVerticalScrollbar;
+
+        ImGui::PushFont(font_14);
+        ImGui::SetNextWindowPos({ x, y });
+        ImGui::SetNextWindowSize({ w, h });
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
+        is_output_collapsed = ImGui::Begin("Output", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove |
+            ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_ShowBorders);
+        auto log = not_model.get_log();
+        ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
+        ImGui::InputTextMultiline("##Log", const_cast<char*>(log.c_str()),
+            log.size() + 1, { w, h - 20 }, ImGuiInputTextFlags_ReadOnly);
+        ImGui::PopStyleColor();
+        ImGui::End();
+        ImGui::PopStyleVar();
+        ImGui::PopFont();
+    }
+
+    void viewer_model::popup_if_error(ImFont* font_14, std::string& error_message)
+    {
+        auto flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove |
+            ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar |
+            ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysVerticalScrollbar;
+
+        ImGui::PushFont(font_14);
+        ImGui::PushStyleColor(ImGuiCol_PopupBg, sensor_bg);
+        ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
+        ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(3, 3));
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 4);
+
+        // The list of errors the user asked not to show again:
+        static std::set<std::string> errors_not_to_show;
+        static bool dont_show_this_error = false;
+        auto simplify_error_message = [](const std::string& s) {
+            std::regex e("\\b(0x)([^ ,]*)");
+            return std::regex_replace(s, e, "address");
+        };
+
+        std::string name = u8"\uf071 Oops, something went wrong!";
+
+        if (error_message != "")
+        {
+            if (errors_not_to_show.count(simplify_error_message(error_message)))
+            {
+                not_model.add_notification({ error_message,
+                    std::chrono::duration<double, std::milli>(std::chrono::system_clock::now().time_since_epoch()).count(),
+                    RS2_LOG_SEVERITY_ERROR,
+                    RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR });
+                error_message = "";
+            }
+            else
+            {
+                ImGui::OpenPopup(name.c_str());
+            }
+        }
+        if (ImGui::BeginPopupModal(name.c_str(), nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+        {
+            ImGui::Text("RealSense error calling:");
+            ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, regular_blue);
+            ImGui::InputTextMultiline("error", const_cast<char*>(error_message.c_str()),
+                error_message.size() + 1, { 500,100 }, ImGuiInputTextFlags_AutoSelectAll);
+            ImGui::PopStyleColor();
+
+            if (ImGui::Button("OK", ImVec2(120, 0)))
+            {
+                if (dont_show_this_error)
+                {
+                    errors_not_to_show.insert(simplify_error_message(error_message));
+                }
+                error_message = "";
+                ImGui::CloseCurrentPopup();
+                dont_show_this_error = false;
+            }
+
+            ImGui::SameLine();
+            ImGui::Checkbox("Don't show this error again", &dont_show_this_error);
+
+            ImGui::EndPopup();
+        }
+
+        ImGui::PopStyleColor(3);
+        ImGui::PopStyleVar(2);
+        ImGui::PopFont();
     }
 
     void viewer_model::show_paused_icon(ImFont* font_18, int x, int y, int id)
@@ -1796,6 +1938,112 @@ namespace rs2
         _recorder->resume();
     }
 
+    std::vector<std::string> get_device_info(const device& dev, bool include_location)
+    {
+        std::vector<std::string> res;
+        for (auto i = 0; i < RS2_CAMERA_INFO_COUNT; i++)
+        {
+            auto info = static_cast<rs2_camera_info>(i);
+
+            // When camera is being reset, either because of "hardware reset"
+            // or because of switch into advanced mode,
+            // we don't want to capture the info that is about to change
+            if ((info == RS2_CAMERA_INFO_LOCATION ||
+                info == RS2_CAMERA_INFO_ADVANCED_MODE)
+                && !include_location) continue;
+
+            if (dev.supports(info))
+            {
+                auto value = dev.get_info(info);
+                res.push_back(value);
+            }
+        }
+        return res;
+    }
+
+    std::vector<std::pair<std::string, std::string>> get_devices_names(const device_list& list)
+    {
+        std::vector<std::pair<std::string, std::string>> device_names;
+
+        for (uint32_t i = 0; i < list.size(); i++)
+        {
+            try
+            {
+                auto dev = list[i];
+                device_names.push_back(get_device_name(dev));        // push name and sn to list
+            }
+            catch (...)
+            {
+                device_names.push_back(std::pair<std::string, std::string>(to_string() << "Unknown Device #" << i, ""));
+            }
+        }
+        return device_names;
+    }
+
+    void device_model::draw_advanced_mode_tab(device& dev,
+        std::vector<std::string>& restarting_info)
+    {
+        using namespace rs400;
+        ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, { 0.9f, 0.9f, 0.9f, 1 });
+
+        auto is_advanced_mode = dev.is<advanced_mode>();
+        if (ImGui::TreeNode("Advanced Mode"))
+        {
+            try
+            {
+                if (!is_advanced_mode)
+                {
+                    // TODO: Why are we showing the tab then??
+                    ImGui::TextColored(ImVec4{ 1.0f, 0.0f, 0.0f, 1.0f }, "Selected device does not offer\nany advanced settings");
+                }
+                else
+                {
+                    auto advanced = dev.as<advanced_mode>();
+                    if (advanced.is_enabled())
+                    {
+                        if (ImGui::Button("Disable Advanced Mode", ImVec2{ 180, 0 }))
+                        {
+                            //if (yes_no_dialog()) // TODO
+                            //{
+                            advanced.toggle_advanced_mode(false);
+                            restarting_info = get_device_info(dev, false);
+                            //}
+                        }
+                        if (ImGui::IsItemHovered())
+                        {
+                            ImGui::SetTooltip("Disabling advanced mode will reset depth generation to factory settings\nThis will not affect calibration");
+                        }
+                        draw_advanced_mode_controls(advanced, amc, get_curr_advanced_controls);
+                    }
+                    else
+                    {
+                        if (ImGui::Button("Enable Advanced Mode", ImVec2{ 180, 0 }))
+                        {
+                            //if (yes_no_dialog()) // TODO
+                            //{
+                            advanced.toggle_advanced_mode(true);
+                            restarting_info = get_device_info(dev, false);
+                            //}
+                        }
+                        if (ImGui::IsItemHovered())
+                        {
+                            ImGui::SetTooltip("Advanced mode is a persistent camera state unlocking calibration formats and depth generation controls\nYou can always reset the camera to factory defaults by disabling advanced mode");
+                        }
+                        ImGui::TextColored(ImVec4{ 1.0f, 0.0f, 0.0f, 1.0f }, "Device is not in advanced mode!\nTo access advanced functionality\nclick \"Enable Advanced Mode\"");
+                    }
+                }
+            }
+            catch (...)
+            {
+                // TODO
+            }
+
+            ImGui::TreePop();
+        }
+
+        ImGui::PopStyleColor();
+    }
+
     std::map<int, rect> viewer_model::get_interpolated_layout(const std::map<int, rect>& l)
     {
         using namespace std::chrono;
@@ -1909,9 +2157,9 @@ namespace rs2
         ImGui::PushStyleColor(ImGuiCol_Text, { 1, 1, 1, 1 - t });
 
         auto lines = static_cast<int>(std::count(message.begin(), message.end(), '\n') + 1);
-        ImGui::SetNextWindowPos({ float(w - 430), float(y) });
-        ImGui::SetNextWindowSize({ float(415), float(lines*50) });
-        height = lines*50 +10;
+        ImGui::SetNextWindowPos({ float(w - 330), float(y) });
+        height = float(lines * 30 + 20);
+        ImGui::SetNextWindowSize({ float(315), float(height) });
         std::string label = to_string() << "Hardware Notification #" << index;
         ImGui::Begin(label.c_str(), nullptr, flags);
 
@@ -1944,6 +2192,7 @@ namespace rs2
 
         notification_model m(n);
         m.index = index++;
+        m.timestamp = std::chrono::duration<double, std::milli>(std::chrono::system_clock::now().time_since_epoch()).count();
         pending_notifications.push_back(m);
 
         if (pending_notifications.size() > MAX_SIZE)
@@ -1952,8 +2201,9 @@ namespace rs2
         log.push_back(n.get_description());
     }
 
-    void notifications_model::draw(int w, int h, notification_model& selected)
+    void notifications_model::draw(ImFont* font, int w, int h)
     {
+        ImGui::PushFont(font);
         std::lock_guard<std::mutex> lock(m);
         if (pending_notifications.size() > 0)
         {
@@ -1970,7 +2220,7 @@ namespace rs2
             for (auto& noti : pending_notifications)
             {
                 noti.draw(w, height, selected);
-                height += noti.height;
+                height += noti.height + 4;
                 idx++;
             }
         }
@@ -1985,18 +2235,28 @@ namespace rs2
         ImGui::Begin("Notification parent window", nullptr, flags);
 
         selected.set_color_scheme(0.f);
-        ImGui::PushStyleColor(ImGuiCol_Text, { 1, 1, 1, 1 });
+        ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
+        ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
+        ImGui::PushStyleColor(ImGuiCol_PopupBg, sensor_bg);
+
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(3, 3));
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 4);
 
         if (selected.message != "")
             ImGui::OpenPopup("Notification from Hardware");
         if (ImGui::BeginPopupModal("Notification from Hardware", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
         {
             ImGui::Text("Received the following notification:");
-            std::stringstream s;
-            s<<"Timestamp: "<<std::fixed<<selected.timestamp<<"\n"<<"Severity: "<<selected.severity<<"\nDescription: "<<const_cast<char*>(selected.message.c_str());
-            ImGui::InputTextMultiline("notification", const_cast<char*>(s.str().c_str()),
-                selected.message.size() + 1, { 500,100 }, ImGuiInputTextFlags_AutoSelectAll);
-            ImGui::Separator();
+            std::stringstream ss;
+            ss  << "Timestamp: "
+                << std::fixed << selected.timestamp 
+                << "\nSeverity: " << selected.severity 
+                << "\nDescription: " << selected.message;
+            auto s = ss.str();
+            ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, regular_blue);
+            ImGui::InputTextMultiline("notification", const_cast<char*>(s.c_str()),
+                s.size() + 1, { 500,100 }, ImGuiInputTextFlags_AutoSelectAll);
+            ImGui::PopStyleColor();
 
             if (ImGui::Button("OK", ImVec2(120, 0)))
             {
@@ -2007,13 +2267,12 @@ namespace rs2
             ImGui::EndPopup();
         }
 
-        ImGui::PopStyleColor();
-        ImGui::PopStyleColor();
-        ImGui::PopStyleColor();
-        ImGui::PopStyleColor();
+        ImGui::PopStyleVar(2);
+        ImGui::PopStyleColor(6);
 
         ImGui::End();
 
         ImGui::PopStyleColor();
+        ImGui::PopFont();
     }
 }

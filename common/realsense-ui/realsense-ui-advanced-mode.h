@@ -6,21 +6,6 @@
 #include <librealsense/rs2_advanced_mode.hpp>
 #include "types.h"
 
-bool yes_no_dialog()
-{
-    ImGui::OpenPopup("Advanced Mode");
-    if (ImGui::BeginPopupModal("Advanced Mode", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
-    {
-        ImGui::Text("The device is going to reset, in order to move from/to Advanced-Mode.\nDo you want to proceed?");
-
-        if (ImGui::Button("YES", ImVec2(120, 40))) { ImGui::CloseCurrentPopup(); return true;}
-        ImGui::SameLine();
-        if (ImGui::Button("NO", ImVec2(120, 40))) { ImGui::CloseCurrentPopup(); return false; }
-        ImGui::EndPopup();
-    }
-    return false;
-}
-
 template<class T, class S>
 inline void slider_int(const char* id, T* val, S T::* field, bool& to_set)
 {
