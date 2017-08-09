@@ -118,6 +118,7 @@ set(REALSENSE_CPP
     src/backend.cpp
     src/verify.c
     src/align.cpp
+    src/colorizer.cpp
     src/source.cpp
     src/ds5/ds5-options.cpp
     src/ds5/ds5-timestamp.cpp
@@ -183,6 +184,7 @@ set(REALSENSE_HPP
     src/sensor.h
     src/stream.h
     src/align.h
+    src/colorizer.h
     src/algo.h
     src/option.h
     src/metadata.h
@@ -379,6 +381,13 @@ if(WIN32)
         third-party/easyloggingpp/src/easylogging++.h
         )
 
+    source_group("Source Files\\Processing Blocks" FILES
+        src/colorizer.cpp
+        )
+
+    source_group("Header Files\\Processing Blocks" FILES
+        src/colorizer.h
+        )
 
     foreach(flag_var
             CMAKE_CXX_FLAGS CMAKE_CXX_FLAGS_DEBUG CMAKE_CXX_FLAGS_RELEASE

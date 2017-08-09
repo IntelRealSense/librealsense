@@ -1173,6 +1173,8 @@ void rs2_delete_processing_block(rs2_processing_block* block);
 
 rs2_processing_block* rs2_create_pointcloud(rs2_context* ctx, rs2_error** error);
 
+rs2_processing_block* rs2_create_colorizer(rs2_context* ctx, rs2_error** error);
+
 float rs2_get_depth_scale(rs2_sensor* sensor, rs2_error** error);
 
 #ifdef __cplusplus

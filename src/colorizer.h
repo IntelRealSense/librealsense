@@ -1,0 +1,108 @@
+// License: Apache 2.0. See LICENSE file in root directory.
+// Copyright(c) 2017 Intel Corporation. All Rights Reserved.
+
+#pragma once
+
+#include "align.h"
+
+#include <map>
+#include <vector>
+
+namespace librealsense {
+
+    class color_map
+    {
+    public:
+        color_map(std::map<float, float3> map, int steps = 4000) : _map(map)
+        {
+            initialize(steps);
+        }
+
+        color_map(const std::vector<float3>& values, int steps = 4000)
+        {
+            for (size_t i = 0; i < values.size(); i++)
+            {
+                _map[(float)i / (values.size() - 1)] = values[i];
+            }
+            initialize(steps);
+        }
+
+        color_map() {}
+
+        float3 get(float value) const
+        {
+            if (_max == _min) return *_data;
+            auto t = (value - _min) / (_max - _min);
+            t = std::min(std::max(t, 0.f), 1.f);
+            return _data[(int)(t * (_size - 1))];
+        }
+
+        float min_key() const { return _min; }
+        float max_key() const { return _max; }
+
+    private:
+        inline float3 lerp(const float3& a, const float3& b, float t) const
+        {
+            return b * t + a * (1 - t);
+        }
+
+        float3 calc(float value) const
+        {
+            if (_map.size() == 0) return{ value, value, value };
+            // if we have exactly this value in the map, just return it
+            if (_map.find(value) != _map.end()) return _map.at(value);
+            // if we are beyond the limits, return the first/last element
+            if (value < _map.begin()->first)   return _map.begin()->second;
+            if (value > _map.rbegin()->first)  return _map.rbegin()->second;
+
+            auto lower = _map.lower_bound(value) == _map.begin() ? _map.begin() : --(_map.lower_bound(value));
+            auto upper = _map.upper_bound(value);
+
+            auto t = (value - lower->first) / (upper->first - lower->first);
+            auto c1 = lower->second;
+            auto c2 = upper->second;
+            return lerp(c1, c2, t);
+        }
+
+        void initialize(int steps)
+        {
+            if (_map.size() == 0) return;
+
+            _min = _map.begin()->first;
+            _max = _map.rbegin()->first;
+
+            _cache.resize(steps + 1);
+            for (int i = 0; i <= steps; i++)
+            {
+                auto t = (float)i / steps;
+                auto x = _min + t*(_max - _min);
+                _cache[i] = calc(x);
+            }
+
+            // Save size and data to avoid STL checks penalties in DEBUG
+            _size = _cache.size();
+            _data = _cache.data();
+        }
+
+        std::map<float, float3> _map;
+        std::vector<float3> _cache;
+        float _min, _max;
+        size_t _size; float3* _data;
+    };
+
+    class colorizer : public processing_block
+    {
+    public:
+        colorizer(std::shared_ptr<platform::time_service> ts);
+
+        void set_bounds(float min, float max);
+        void set_equalize(bool equalize);
+        void set_color_map(color_map map);
+
+    private:
+        float _min, _max;
+        bool _equalize;
+        color_map _map;
+    };
+
+}
