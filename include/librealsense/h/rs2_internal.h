@@ -1,7 +1,7 @@
 /* License: Apache 2.0. See LICENSE file in root directory.
    Copyright(c) 2017 Intel Corporation. All Rights Reserved. */
 
-/** \file rs2_frame.h
+/** \file rs2_internal.h
 * \brief
 * Exposes RealSense internal functionality for C compilers
 */
@@ -15,6 +15,18 @@ extern "C" {
 #endif
 #include "rs2_types.h"
 #include "rs2_context.h"
+
+/**
+ * librealsense Recorder is intended for effective unit-testing
+ * Currently supports three modes of operation:
+ */
+typedef enum rs2_recording_mode
+{
+    RS2_RECORDING_MODE_BLANK_FRAMES, /* frame metadata will be recorded, but pixel data will be replaced with zeros to save space */
+    RS2_RECORDING_MODE_COMPRESSED,   /* frames will be encoded using a proprietary lossy encoding, aiming at x5 compression at some CPU expense */
+    RS2_RECORDING_MODE_BEST_QUALITY, /* frames will not be compressed, but rather stored as-is. This gives best quality and low CPU overhead, but you might run out of memory */
+    RS2_RECORDING_MODE_COUNT
+} rs2_recording_mode;
 
 /**
  * Create librealsense context that will try to record all operations over librealsense into a file

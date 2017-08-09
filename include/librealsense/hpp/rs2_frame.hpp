@@ -5,10 +5,171 @@
 #define LIBREALSENSE_RS2_FRAME_HPP
 
 #include "rs2_types.hpp"
-#include "rs2_streaming.hpp"
+#include "rs2_sensor.hpp"
 
 namespace rs2
 {
+    class frame
+    {
+    public:
+        frame() : frame_ref(nullptr) {}
+        frame(rs2_frame* frame_ref) : frame_ref(frame_ref) {}
+        frame(frame&& other) noexcept : frame_ref(other.frame_ref) { other.frame_ref = nullptr; }
+        frame& operator=(frame other)
+        {
+            swap(other);
+            return *this;
+        }
+        frame(const frame& other)
+            : frame_ref(other.frame_ref)
+        {
+            if (frame_ref) add_ref();
+        }
+        void swap(frame& other)
+        {
+            std::swap(frame_ref, other.frame_ref);
+        }
+
+        /**
+        * relases the frame handle
+        */
+        ~frame()
+        {
+            if (frame_ref)
+            {
+                rs2_release_frame(frame_ref);
+            }
+        }
+
+        operator bool() const { return frame_ref != nullptr; }
+
+        /**
+        * retrieve the time at which the frame was captured
+        * \return            the timestamp of the frame, in milliseconds since the device was started
+        */
+        double get_timestamp() const
+        {
+            rs2_error* e = nullptr;
+            auto r = rs2_get_frame_timestamp(frame_ref, &e);
+            error::handle(e);
+            return r;
+        }
+
+        /** retrieve the timestamp domain
+        * \return            timestamp domain (clock name) for timestamp values
+        */
+        rs2_timestamp_domain get_frame_timestamp_domain() const
+        {
+            rs2_error* e = nullptr;
+            auto r = rs2_get_frame_timestamp_domain(frame_ref, &e);
+            error::handle(e);
+            return r;
+        }
+
+        /** retrieve the current value of a single frame_metadata
+        * \param[in] frame_metadata  the frame_metadata whose value should be retrieved
+        * \return            the value of the frame_metadata
+        */
+        rs2_metadata_t get_frame_metadata(rs2_frame_metadata frame_metadata) const
+        {
+            rs2_error* e = nullptr;
+            auto r = rs2_get_frame_metadata(frame_ref, frame_metadata, &e);
+            error::handle(e);
+            return r;
+        }
+
+        /** determine if the device allows a specific metadata to be queried
+        * \param[in] frame_metadata  the frame_metadata to check for support
+        * \return            true if the frame_metadata can be queried
+        */
+        bool supports_frame_metadata(rs2_frame_metadata frame_metadata) const
+        {
+            rs2_error* e = nullptr;
+            auto r = rs2_supports_frame_metadata(frame_ref, frame_metadata, &e);
+            error::handle(e);
+            return r != 0;
+        }
+
+        /**
+        * retrieve frame number (from frame handle)
+        * \return               the frame nubmer of the frame, in milliseconds since the device was started
+        */
+        unsigned long long get_frame_number() const
+        {
+            rs2_error* e = nullptr;
+            auto r = rs2_get_frame_number(frame_ref, &e);
+            error::handle(e);
+            return r;
+        }
+
+        /**
+        * retrieve data from frame handle
+        * \return               the pointer to the start of the frame data
+        */
+        const void* get_data() const
+        {
+            rs2_error* e = nullptr;
+            auto r = rs2_get_frame_data(frame_ref, &e);
+            error::handle(e);
+            return r;
+        }
+
+        stream_profile get_profile() const
+        {
+            rs2_error* e = nullptr;
+            auto s = rs2_get_frame_stream_profile(frame_ref, &e);
+            error::handle(e);
+            return stream_profile(s);
+        }
+
+        template<class T>
+        bool is() const
+        {
+            T extension(*this);
+            return extension;
+        }
+
+        template<class T>
+        T as() const
+        {
+            T extension(*this);
+            return extension;
+        }
+
+        rs2_frame* get() const { return frame_ref; }
+
+    protected:
+        /**
+        * create additional reference to a frame without duplicating frame data
+        * \param[out] result     new frame reference, release by destructor
+        * \return                true if cloning was successful
+        */
+        void add_ref() const
+        {
+            rs2_error* e = nullptr;
+            rs2_frame_add_ref(frame_ref, &e);
+            error::handle(e);
+        }
+
+        void reset()
+        {
+            if (frame_ref)
+            {
+                rs2_release_frame(frame_ref);
+            }
+            frame_ref = nullptr;
+        }
+
+        friend class frame_queue;
+        friend class syncer;
+        friend class frame_source;
+        friend class processing_block;
+        friend class pointcloud_block;
+
+    private:
+        rs2_frame* frame_ref;
+    };
+
     class video_frame : public frame
     {
     public:
@@ -204,21 +365,6 @@ namespace rs2
 
     private:
         size_t _size;
-    };
-
-    template<class T>
-    class frame_callback : public rs2_frame_callback
-    {
-        T on_frame_function;
-    public:
-        explicit frame_callback(T on_frame) : on_frame_function(on_frame) {}
-
-        void on_frame(rs2_frame* fref) override
-        {
-            on_frame_function(frame{ fref });
-        }
-
-        void release() override { delete this; }
     };
 
     class frame_source

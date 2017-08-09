@@ -162,18 +162,15 @@ set(REALSENSE_HPP
     include/librealsense/h/rs2_processing.h
     include/librealsense/h/rs2_record_playback.h
     include/librealsense/h/rs2_sensor.h
-    include/librealsense/h/rs2_streaming.h
     include/librealsense/h/rs2_internal.h
 
     include/librealsense/hpp/rs2_types.hpp
     include/librealsense/hpp/rs2_context.hpp
     include/librealsense/hpp/rs2_device.hpp
     include/librealsense/hpp/rs2_frame.hpp
-    include/librealsense/hpp/rs2_option.hpp
     include/librealsense/hpp/rs2_processing.hpp
     include/librealsense/hpp/rs2_record_playback.hpp
     include/librealsense/hpp/rs2_sensor.hpp
-    include/librealsense/hpp/rs2_streaming.hpp
     include/librealsense/hpp/rs2_internal.hpp
 
     include/librealsense/rsutil2.h
@@ -317,18 +314,15 @@ if(WIN32)
         include/librealsense/h/rs2_processing.h
         include/librealsense/h/rs2_record_playback.h
         include/librealsense/h/rs2_sensor.h
-        include/librealsense/h/rs2_streaming.h
         include/librealsense/h/rs2_internal.h
 
         include/librealsense/hpp/rs2_types.hpp
         include/librealsense/hpp/rs2_context.hpp
         include/librealsense/hpp/rs2_device.hpp
         include/librealsense/hpp/rs2_frame.hpp
-        include/librealsense/hpp/rs2_option.hpp
         include/librealsense/hpp/rs2_processing.hpp
         include/librealsense/hpp/rs2_record_playback.hpp
         include/librealsense/hpp/rs2_sensor.hpp
-        include/librealsense/hpp/rs2_streaming.hpp
         include/librealsense/hpp/rs2_internal.hpp
 
         include/librealsense/rsutil2.h

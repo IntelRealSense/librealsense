@@ -16,18 +16,6 @@ extern "C" {
 
 #include "rs2_types.h"
 
-/**
- * librealsense Recorder is intended for effective unit-testing
- * Currently supports three modes of operation:
- */
-typedef enum rs2_recording_mode
-{
-    RS2_RECORDING_MODE_BLANK_FRAMES, /* frame metadata will be recorded, but pixel data will be replaced with zeros to save space */
-    RS2_RECORDING_MODE_COMPRESSED,   /* frames will be encoded using a proprietary lossy encoding, aiming at x5 compression at some CPU expense */
-    RS2_RECORDING_MODE_BEST_QUALITY, /* frames will not be compressed, but rather stored as-is. This gives best quality and low CPU overhead, but you might run out of memory */
-    RS2_RECORDING_MODE_COUNT
-} rs2_recording_mode;
-
 typedef enum rs2_playback_status
 {
     RS2_PLAYBACK_STATUS_UNKNOWN, /**< Unknown state */
@@ -36,7 +24,6 @@ typedef enum rs2_playback_status
     RS2_PLAYBACK_STATUS_STOPPED, /**< All sensors were stopped, or playback has ended (all data was read). This is the initial playback status*/
     RS2_PLAYBACK_STATUS_COUNT
 } rs2_playback_status;
-
 const char* rs2_playback_status_to_string(rs2_playback_status status);
 
 typedef void (*rs2_playback_status_changed_callback_ptr)(rs2_playback_status);

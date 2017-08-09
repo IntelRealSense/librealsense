@@ -20,7 +20,6 @@ extern "C" {
 #include <librealsense/h/rs2_processing.h>
 #include <librealsense/h/rs2_record_playback.h>
 #include <librealsense/h/rs2_sensor.h>
-#include <librealsense/h/rs2_streaming.h>
 
 #define RS2_API_MAJOR_VERSION    2
 #define RS2_API_MINOR_VERSION    7

@@ -75,13 +75,12 @@ rs2_device* rs2_context_add_device(rs2_context* ctx, const char* file, rs2_error
 void rs2_context_remove_device(rs2_context* ctx, const char* file, rs2_error** error);
 
 /**
-* Test if the given device can be extended to the requested extension
-* \param[in]  device     Realsense device
-* \param[in]  extension  The extension to which the device should be tested if it is extendable
-* \param[out] error      If non-null, receives any error that occurs during this call, otherwise, errors are ignored
-* \return non-zero value iff the device can be extended to the given extension
+* create a static snapshot of all connected devices at the time of the call
+* \param context     Object representing librealsense session
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return            the list of devices, should be released by rs2_delete_device_list
 */
-int rs2_is_device_extendable_to(const rs2_device* device, rs2_extension extension_type, rs2_error ** error);
+rs2_device_list* rs2_query_devices(const rs2_context* context, rs2_error** error);
 
 #ifdef __cplusplus
 }

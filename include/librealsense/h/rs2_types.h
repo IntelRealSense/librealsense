@@ -13,6 +13,16 @@
 extern "C" {
 #endif
 
+/** \brief Category of the librealsense notifications */
+typedef enum rs2_notification_category{
+    RS2_NOTIFICATION_CATEGORY_FRAMES_TIMEOUT,   /**< Frames didn't arrived within 5 seconds */
+    RS2_NOTIFICATION_CATEGORY_FRAME_CORRUPTED,  /**< Received partial/incomplete frame */
+    RS2_NOTIFICATION_CATEGORY_HARDWARE_ERROR,   /**< Error reported from the device */
+    RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR,    /**< Received unknown error from the device */
+    RS2_NOTIFICATION_CATEGORY_COUNT             /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
+} rs2_notification_category;
+const char* rs2_notification_category_to_string(rs2_notification_category category);
+
 /** \brief Exception types are the different categories of errors that RealSense API might return */
 typedef enum rs2_exception_type
 {
@@ -26,6 +36,7 @@ typedef enum rs2_exception_type
     RS2_EXCEPTION_TYPE_IO,                       /**< IO Device failure */
     RS2_EXCEPTION_TYPE_COUNT                     /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
 } rs2_exception_type;
+const char* rs2_exception_type_to_string(rs2_exception_type type);
 
 /** \brief Distortion model: defines how pixel coordinates should be mapped to sensor coordinates. */
 typedef enum rs2_distortion
@@ -37,6 +48,20 @@ typedef enum rs2_distortion
     RS2_DISTORTION_BROWN_CONRADY         , /**< Unmodified Brown-Conrady distortion model */
     RS2_DISTORTION_COUNT                 , /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
 } rs2_distortion;
+const char* rs2_distortion_to_string(rs2_distortion distortion);
+
+/** \brief Video stream intrinsics */
+typedef struct rs2_intrinsics
+{
+    int           width;     /**< Width of the image in pixels */
+    int           height;    /**< Height of the image in pixels */
+    float         ppx;       /**< Horizontal coordinate of the principal point of the image, as a pixel offset from the left edge */
+    float         ppy;       /**< Vertical coordinate of the principal point of the image, as a pixel offset from the top edge */
+    float         fx;        /**< Focal length of the image plane, as a multiple of pixel width */
+    float         fy;        /**< Focal length of the image plane, as a multiple of pixel height */
+    rs2_distortion model;     /**< Distortion model of the image */
+    float         coeffs[5]; /**< Distortion coefficients */
+} rs2_intrinsics;
 
 /** \brief For SR300 devices: provides optimized settings (presets) for specific types of usage. */
 typedef enum rs2_ivcam_visual_preset
@@ -54,7 +79,7 @@ typedef enum rs2_ivcam_visual_preset
     RS2_IVCAM_VISUAL_PRESET_IR_ONLY                 , /**< Preset for IR only */
     RS2_IVCAM_VISUAL_PRESET_COUNT                     /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
 } rs2_ivcam_visual_preset;
-
+const char* rs2_visual_preset_to_string(rs2_ivcam_visual_preset preset);
 
 /** \brief Defines general configuration controls.
    These can generally be mapped to camera UVC controls, and unless stated otherwise, can be set/queried at any time. */
@@ -93,6 +118,7 @@ typedef enum rs2_option
     RS2_OPTION_ADVANCED_MODE_PRESET                       , /**< Camera Advanced-Mode preset */
     RS2_OPTION_COUNT                                      , /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
 } rs2_option;
+const char* rs2_option_to_string(rs2_option option);
 
 /** \brief Severity of the librealsense logger */
 typedef enum rs2_log_severity {
@@ -104,6 +130,7 @@ typedef enum rs2_log_severity {
     RS2_LOG_SEVERITY_NONE , /**< No logging will occur */
     RS2_LOG_SEVERITY_COUNT  /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
 } rs2_log_severity;
+const char* rs2_log_severity_to_string(rs2_log_severity info);
 
 /** \brief Specifies advanced interfaces (capabilities) objects may implement */
 typedef enum rs2_extension
@@ -126,6 +153,7 @@ typedef enum rs2_extension
     RS2_EXTENSION_PLAYBACK,
     RS2_EXTENSION_COUNT
 } rs2_extension;
+const char* rs2_extension_type_to_string(rs2_extension type);
 
 typedef struct rs2_device_info rs2_device_info;
 typedef struct rs2_device rs2_device;
@@ -163,13 +191,6 @@ const char* rs2_get_failed_function            (const rs2_error* error);
 const char* rs2_get_failed_args                (const rs2_error* error);
 const char* rs2_get_error_message              (const rs2_error* error);
 void        rs2_free_error                     (rs2_error* error);
-const char* rs2_exception_type_to_string       (rs2_exception_type type);
-const char* rs2_extension_type_to_string       (rs2_extension type);
-const char* rs2_visual_preset_to_string        (rs2_ivcam_visual_preset preset);
-const char* rs2_visual_preset_to_string        (rs2_ivcam_visual_preset preset);
-const char* rs2_distortion_to_string           (rs2_distortion distortion);
-const char* rs2_log_severity_to_string         (rs2_log_severity info);
-const char* rs2_option_to_string               (rs2_option option);
 
 #ifdef __cplusplus
 }

@@ -14,22 +14,7 @@
 extern "C" {
 #endif
 #include "rs2_types.h"
-#include "rs2_streaming.h"
-
-/** \brief Read-only strings that can be queried from the device.
-   Not all information attributes are available on all camera types.
-   This information is mainly available for camera debug and troubleshooting and should not be used in applications. */
-typedef enum rs2_camera_info {
-    RS2_CAMERA_INFO_NAME                           , /**< Friendly name */
-    RS2_CAMERA_INFO_SERIAL_NUMBER                  , /**< Device serial number */
-    RS2_CAMERA_INFO_FIRMWARE_VERSION               , /**< Primary firmware version */
-    RS2_CAMERA_INFO_LOCATION                       , /**< Unique identifier of the port the device is connected to (platform specific) */
-    RS2_CAMERA_INFO_DEBUG_OP_CODE                  , /**< If device supports firmware logging, this is the command to send to get logs from firmware */
-    RS2_CAMERA_INFO_ADVANCED_MODE                  , /**< True iff the device is in advanced mode */
-    RS2_CAMERA_INFO_PRODUCT_ID                     , /**< Product ID as reported in the USB descriptor */
-    RS2_CAMERA_INFO_CAMERA_LOCKED                  , /**< True iff EEPROM is locked */
-    RS2_CAMERA_INFO_COUNT                            /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
-} rs2_camera_info;
+#include "rs2_sensor.h"
 
 /** \brief Motion device intrinsics: scale, bias, and variances */
 typedef struct rs2_motion_device_intrinsic
@@ -42,16 +27,6 @@ typedef struct rs2_motion_device_intrinsic
     float noise_variances[3];  /**< Variance of noise for X, Y, and Z axis */
     float bias_variances[3];   /**< Variance of bias for X, Y, and Z axis */
 } rs2_motion_device_intrinsic;
-
-const char* rs2_camera_info_to_string(rs2_camera_info info);
-
-/**
-* create a static snapshot of all connected devices at the time of the call
-* \param context     Object representing librealsense session
-* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
-* \return            the list of devices, should be released by rs2_delete_device_list
-*/
-rs2_device_list* rs2_query_devices(const rs2_context* context, rs2_error** error);
 
 /**
 * Determines number of devices in a list
@@ -130,6 +105,23 @@ const rs2_raw_data_buffer* rs2_send_and_receive_raw_data(rs2_device* device, voi
  * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
  */
 void rs2_get_motion_intrinsics(const rs2_sensor * device, rs2_stream stream, rs2_motion_device_intrinsic * intrinsics, rs2_error ** error);
+
+/**
+* Test if the given device can be extended to the requested extension
+* \param[in]  device     Realsense device
+* \param[in]  extension  The extension to which the device should be tested if it is extendable
+* \param[out] error      If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return non-zero value iff the device can be extended to the given extension
+*/
+int rs2_is_device_extendable_to(const rs2_device* device, rs2_extension extension_type, rs2_error ** error);
+
+/**
+* create a static snapshot of all connected sensors within specific device
+* \param devuice     Specific RealSense device
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return            the list of devices, should be released by rs2_delete_device_list
+*/
+rs2_sensor_list* rs2_query_sensors(const rs2_device* device, rs2_error** error);
 
 #ifdef __cplusplus
 }

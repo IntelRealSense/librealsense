@@ -12,8 +12,6 @@
 #include "hpp/rs2_processing.hpp"
 #include "hpp/rs2_record_playback.hpp"
 #include "hpp/rs2_sensor.hpp"
-#include "hpp/rs2_streaming.hpp"
-#include "hpp/rs2_option.hpp"
 
 namespace rs2
 {
