@@ -1387,3 +1387,11 @@ rs2_device* rs2_create_device_from_sensor(const rs2_sensor* sensor, rs2_error **
     return new rs2_device { sensor->parent };
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, sensor)
+
+float rs2_depth_frame_get_distance(const rs2_frame* frame_ref, int x, int y, rs2_error** error) try
+{
+    VALIDATE_NOT_NULL(frame_ref);
+    auto df = VALIDATE_INTERFACE(((frame_interface*)frame_ref), librealsense::depth_frame);
+    return df->get_distance(x, y);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(0, frame_ref, x, y)

@@ -252,6 +252,9 @@ namespace librealsense
         case RS2_EXTENSION_POINTS:
             return std::make_shared<frame_archive<points>>(in_max_frame_queue_size, ts, parsers);
 
+        case RS2_EXTENSION_DEPTH_FRAME:
+            return std::make_shared<frame_archive<depth_frame>>(in_max_frame_queue_size, ts, parsers);
+
         default:
             throw std::runtime_error("Requested frame type is not supported!");
         }

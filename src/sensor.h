@@ -195,6 +195,8 @@ namespace librealsense
     protected:
         stream_profiles init_stream_profiles() override;
 
+        rs2_extension stream_to_frame_types(rs2_stream stream) const;
+
     private:
         void acquire_power();
 

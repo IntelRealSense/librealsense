@@ -220,6 +220,28 @@ namespace librealsense
     
     MAP_EXTENSION(RS2_EXTENSION_VIDEO_FRAME, librealsense::video_frame);
 
+    class depth_frame : public video_frame
+    {
+    public:
+        depth_frame()
+            : video_frame(), _depth_units([this]() { return query_units(); })
+        {}
+
+        float get_distance(int x, int y) const {
+            return data[y*get_width() + x] * *_depth_units;
+        }
+
+        float get_units() const { return *_depth_units; }
+        void reset_units() { _depth_units = lazy<float>([this](){ return query_units(); }); }
+
+    private:
+        float query_units() const { return this->get_sensor()->get_option(RS2_OPTION_DEPTH_UNITS).query(); }
+
+        lazy<float> _depth_units;
+    };
+
+    MAP_EXTENSION(RS2_EXTENSION_DEPTH_FRAME, librealsense::depth_frame);
+
     //TODO: Define Motion Frame
 
     class archive_interface : public sensor_part

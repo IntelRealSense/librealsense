@@ -267,6 +267,16 @@ namespace librealsense
         return res;
     }
 
+    rs2_extension uvc_sensor::stream_to_frame_types(rs2_stream stream) const
+    {
+        // TODO: explicitly return video_frame for relevant streams and default to an error?
+        switch (stream)
+        {
+        case RS2_STREAM_DEPTH:  return RS2_EXTENSION_DEPTH_FRAME;
+        default:                return RS2_EXTENSION_VIDEO_FRAME;
+        }
+    }
+
     const device_interface& sensor_base::get_device()
     {
         return *_owner;
@@ -350,7 +360,7 @@ namespace librealsense
                             static_cast<uint8_t>(f.metadata_size),
                             (const uint8_t*)f.metadata);
 
-                        frame_holder frame = _source.alloc_frame(RS2_EXTENSION_VIDEO_FRAME, width * height * bpp / 8, additional_data, requires_processing);
+                        frame_holder frame = _source.alloc_frame(stream_to_frame_types(output.first.type), width * height * bpp / 8, additional_data, requires_processing);
                         if (frame.frame)
                         {
                             auto video = (video_frame*)frame.frame;
@@ -359,6 +369,7 @@ namespace librealsense
                             dest.push_back(const_cast<byte*>(video->get_frame_data()));
                             frame->set_stream(request);
                             refs.push_back(std::move(frame));
+                            if (output.first.type == RS2_STREAM_DEPTH) dynamic_cast<depth_frame*>(frame.frame)->reset_units();
                         }
                         else
                         {
