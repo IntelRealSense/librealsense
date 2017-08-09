@@ -5,7 +5,7 @@
 #include "core/motion.h"
 #include <map>
 #include "types.h"
-
+#include "context.h"
 playback_sensor::playback_sensor(const device_interface& parent_device, const sensor_snapshot& sensor_description, uint32_t sensor_id):
     m_sensor_description(sensor_description),
     m_sensor_id(sensor_id),
@@ -13,39 +13,68 @@ playback_sensor::playback_sensor(const device_interface& parent_device, const se
     m_user_notification_callback(nullptr, [](rs2_notifications_callback* n) {}),
     m_parent_device(parent_device)
 {
+    for (auto profile: m_sensor_description.get_stream_profiles())
+    {    
+        profile->set_unique_id(m_parent_device.get_context()->generate_stream_id());
+        //TODO:        m_parent_device.get_context()->register_extrinsics()
+        m_available_profiles.push_back(profile);
+        m_streams[device_serializer::stream_identifier{ 0,0, profile->get_stream_type(), static_cast<uint32_t>(profile->get_stream_index())}] = profile;
+    }
 }
 playback_sensor::~playback_sensor()
 {
 }
 
-std::vector<stream_profile> playback_sensor::get_principal_requests() 
+stream_profiles playback_sensor::get_stream_profiles()
 {
-    return m_sensor_description.get_streamig_profiles();
+    return m_available_profiles;
 }
 
-void playback_sensor::open(const std::vector<stream_profile>& requests) 
+void playback_sensor::open(const stream_profiles& requests)
 {
-    auto available_profiles = m_sensor_description.get_streamig_profiles();
+	//Playback can only play the streams that were recorded. 
+	//Go over the requested profiles and see if they are available
+
     for (auto&& r : requests)
     {
-        if(std::find(std::begin(available_profiles), std::end(available_profiles), r) == std::end(available_profiles))
+        if (std::find_if(std::begin(m_available_profiles),
+            std::end(m_available_profiles),
+            [r](const std::shared_ptr<stream_profile_interface>& s) { return r->get_unique_id() == s->get_unique_id(); }) == std::end(m_available_profiles))
         {
             throw std::runtime_error("Failed to open sensor, requested profile is not available");
         }
     }
+    std::vector<stream_filter> opened_streams;
+	//For each stream, create a dedicated dispatching thread
     for (auto&& profile : requests)
     {
-        m_dispatchers.emplace(std::make_pair(profile.stream, std::make_shared<dispatcher>(1))); //TODO: what size the queue should be?
-        m_dispatchers[profile.stream]->start();
+        m_dispatchers.emplace(std::make_pair(profile->get_unique_id(), std::make_shared<dispatcher>(10))); //TODO: what size the queue should be?
+        m_dispatchers[profile->get_unique_id()]->start();
+        stream_filter f{ m_sensor_id, profile->get_stream_type(), static_cast<uint32_t>(profile->get_stream_index()) };
+        opened_streams.push_back(f);
     }
-    
-    opened(m_sensor_id, requests);
+
+    opened(opened_streams);
 }
 
 void playback_sensor::close()
 {
+    std::vector<stream_filter> closed_streams;
+    for (auto dispatcher : m_dispatchers)
+    {
+        dispatcher.second->flush();
+        for (auto available_profile : m_available_profiles)
+        {
+            if(available_profile->get_unique_id() == dispatcher.first)
+            {
+                stream_filter f{ m_sensor_id, available_profile->get_stream_type(), static_cast<uint32_t>(available_profile->get_stream_index()) };
+                closed_streams.push_back(f);
+            }
+        }      
+    }
     m_dispatchers.clear();
-    closed(m_sensor_id);
+    m_available_profiles.clear();
+    closed(closed_streams);
 }
 
 option& playback_sensor::get_option(rs2_option id)
@@ -142,29 +171,27 @@ const device_interface& playback_sensor::get_device()
     return m_parent_device;
 }
 
-rs2_extrinsics playback_sensor::get_extrinsics_to(rs2_stream from, const sensor_interface& other, rs2_stream to) const
-{
-    throw not_implemented_exception(__FUNCTION__);
-}
-
-const std::vector<platform::stream_profile>& playback_sensor::get_curr_configurations() const
-{
-    throw not_implemented_exception(__FUNCTION__);
-}
-
 void playback_sensor::handle_frame(frame_holder frame, bool is_real_time)
 {
+    if(frame == nullptr)
+    {
+        throw invalid_value_exception("null frame passed to handle_frame");
+    }
     if(m_is_started)
     {
-        auto stream_type = frame.frame->get_stream_type();
+        auto type = frame->get_stream()->get_stream_type();
+        auto index = static_cast<uint32_t>(frame->get_stream()->get_stream_index());
+        frame->set_stream(m_streams[device_serializer::stream_identifier{ 0, 0, type, index }]);
+        frame->set_sensor(shared_from_this());
+        auto stream_id = frame.frame->get_stream()->get_unique_id();
 		//TODO: remove this once filter is implemented (which will only read streams that were 'open'ed 
-    	if(m_dispatchers.find(stream_type) == m_dispatchers.end())
+    	if(m_dispatchers.find(stream_id) == m_dispatchers.end())
 		{
 			return;
 		}
         //TODO: Ziv, remove usage of shared_ptr when frame_holder is cpoyable
         auto pf = std::make_shared<frame_holder>(std::move(frame));
-        m_dispatchers.at(stream_type)->invoke([this, pf](dispatcher::cancellable_timer t)
+        m_dispatchers.at(stream_id)->invoke([this, pf](dispatcher::cancellable_timer t)
         {
             frame_interface* pframe = nullptr;
             std::swap((*pf).frame, pframe);
@@ -172,7 +199,7 @@ void playback_sensor::handle_frame(frame_holder frame, bool is_real_time)
         });
         if(is_real_time)
         {
-            m_dispatchers.at(stream_type)->flush();
+            m_dispatchers.at(stream_id)->flush();
         }
     }
 }

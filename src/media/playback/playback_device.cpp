@@ -4,65 +4,10 @@
 #include <cmath>
 #include "playback_device.h"
 #include "core/motion.h"
+#include "stream.h"
 
-
-/**
-*
-*  Initial state is "Stopped"
-*
-*  Internal members meaning:
-*
-*               m_is_started  |     True     |      False
-*  m_is_paused                |              |
-*  ---------------------------|--------------|---------------
-*      True                   |    Paused    |   Stopped
-*      False                  |    Playing   |   Stopped
-*
-*
-*  State Changes:
-*
-*      Playing ---->  start()   set m_is_started to True  ----> Do nothing
-*      Playing ---->  stop()    set m_is_started to False ----> Stopped
-*      Playing ---->  pause()   set m_is_paused  to True  ----> Paused
-*      Playing ---->  resume()  set m_is_paused  to False ----> Do nothing
-*
-*      Paused  ---->  start()   set m_is_started to True  ----> Do nothing
-*      Paused  ---->  stop()    set m_is_started to False ----> Stopped
-*      Paused  ---->  pause()   set m_is_paused  to True  ----> Do nothing
-*      Paused  ---->  resume()  set m_is_paused  to False ----> Playing
-*
-*      Stopped ---->  start()   set m_is_started to True  ----> Paused/Playing (depends on m_is_paused)
-*      Stopped ---->  stop()    set m_is_started to False ----> Do nothing
-*      Stopped ---->  pause()   set m_is_paused  to True  ----> Do nothing
-*      Stopped ---->  resume()  set m_is_paused  to False ----> Do nothing
-*
-*/
-
-/*******************************************************************************
- *TODO: Revise                  Playback Device                                *
- *                              ***************                                *
- *                                                                             *
- * playback device is an implementation of device interface which reads from a *
- * file to simulate a real device.                                             * 
- *                                                                             *
- * playback device holds playback sensors which simulate real sensors.         *
- *                                                                             *
- * when creating the playback device, it will read all of the device           *
- * description (device_snapshot) from the file to map itself and its sensors   *
- * in matters of functionality and data provided.                              *
- * when creating each sensor, the device will create a sensor from the         *
- * sensor's description inside the device_snapshot.                            *
- * In addition, each sensor will be given a "view" of the file which will allow*
- * the sensor to read only data that is relevant to it (e.g - first sensor will*
- * be given a view of the file that shows only the depth and ir frames stored  *
- * in the file). all views will be synchronized at the device level to provide *
- * chronologic order of the data.                                              *
- * to allow sensor's snapshot to be updated even when they are not streaming,  *
- * another view                                                                *
- * <TODO: complete>                                                            *
- *******************************************************************************/
-
-playback_device::playback_device(std::shared_ptr<device_serializer::reader> serializer) :
+playback_device::playback_device(std::shared_ptr<context> ctx, std::shared_ptr<device_serializer::reader> serializer) :
+    m_context(ctx),
     m_is_started(false),
     m_is_paused(false),
     m_sample_rate(1),
@@ -78,9 +23,10 @@ playback_device::playback_device(std::shared_ptr<device_serializer::reader> seri
     //serializer->reset();  
     m_reader = serializer;
     (*m_read_thread)->start();
+
     //Read header and build device from recorded device snapshot
     m_device_description = m_reader->query_device_description();
-    //TODO: add support for file info
+
     //Create playback sensor that simulate the recorded sensors
     m_sensors = create_playback_sensors(m_device_description);
 }
@@ -105,11 +51,6 @@ std::map<uint32_t, std::shared_ptr<playback_sensor>> playback_device::create_pla
                     if (m_active_sensors.size() == 1) //On the first sensor that starts, start the reading thread
                     {
                         start();
-                        //if ( == false)
-                        //{
-                        //    //TODO: notify user and close thread
-                        //    //s->stop();
-                        //}
                     }
                 }
             });
@@ -139,20 +80,26 @@ std::map<uint32_t, std::shared_ptr<playback_sensor>> playback_device::create_pla
                 action();
             }
         };
-
-        sensor->opened += [this](int32_t id, const std::vector<stream_profile>& requested_profiles) -> void
+        
+        sensor->opened += [this](const std::vector<stream_filter>& filters) -> void
         {
-            (*m_read_thread)->invoke([this, id, requested_profiles](dispatcher::cancellable_timer c)
+            (*m_read_thread)->invoke([this, filters](dispatcher::cancellable_timer c)
             {
-                set_filter(id, requested_profiles);
+                for (auto filter : filters)
+                {
+                    m_reader->enable_stream({get_device_index(), filter.sensor_index, filter.stream_type, filter.stream_index });
+                }
             });
         };
 
-        sensor->closed += [this](uint32_t id) -> void
+        sensor->closed += [this](const std::vector<stream_filter>& filters) -> void
         {
-            (*m_read_thread)->invoke([this, id](dispatcher::cancellable_timer c)
+            (*m_read_thread)->invoke([this, filters](dispatcher::cancellable_timer c)
             {
-                set_filter(id, {});
+                for (auto filter : filters)
+                {
+                    m_reader->disable_stream({ get_device_index(), filter.sensor_index, filter.stream_type, filter.stream_index });
+                }
             });
         };
 
@@ -160,6 +107,7 @@ std::map<uint32_t, std::shared_ptr<playback_sensor>> playback_device::create_pla
     }
     return sensors;
 }
+
 playback_device::~playback_device()
 {
     (*m_read_thread)->invoke([this](dispatcher::cancellable_timer c)
@@ -170,21 +118,33 @@ playback_device::~playback_device()
                 sensor.second->stop(); //TODO: make sure this works with this dispatcher
         }
     });
-    (*m_read_thread)->flush();
+    if((*m_read_thread)->flush() == false)
+    {
+        LOG_ERROR("Error - timeout waiting for flush, possible deadlock detected");
+    }
     (*m_read_thread)->stop();
 }
+
+std::shared_ptr<context> playback_device::get_context() const
+{
+    return m_context;
+}
+
 sensor_interface& playback_device::get_sensor(size_t i)
 {
-    return *m_sensors.at(i);
+    return *m_sensors.at(static_cast<uint32_t>(i));
 }
+
 size_t playback_device::get_sensors_count() const
 {
     return m_sensors.size();
 }
+
 const std::string& playback_device::get_info(rs2_camera_info info) const
 {
     return std::dynamic_pointer_cast<librealsense::info_interface>(m_device_description.get_device_extensions_snapshots().get_snapshots()[RS2_EXTENSION_INFO ])->get_info(info);
 }
+
 bool playback_device::supports_info(rs2_camera_info info) const
 {
     auto info_extension = m_device_description.get_device_extensions_snapshots().get_snapshots().at(RS2_EXTENSION_INFO );
@@ -195,19 +155,16 @@ bool playback_device::supports_info(rs2_camera_info info) const
     }
     return info_api->supports_info(info);
 }
+
 const sensor_interface& playback_device::get_sensor(size_t i) const
 {
     auto sensor = m_sensors.at(static_cast<uint32_t>(i));
     return *std::dynamic_pointer_cast<sensor_interface>(sensor);
 }
+
 void playback_device::hardware_reset()
 {
     //Nothing to see here folks
-}
-rs2_extrinsics playback_device::get_extrinsics(size_t from, rs2_stream from_stream, size_t to, rs2_stream to_stream) const
-{
-    throw not_implemented_exception(__FUNCTION__);
-    //std::dynamic_pointer_cast<librealsense::info_interface>(m_device_description.get_device_extensions_snapshots().get_snapshots()[RS2_EXTENSION_EXTRINSICS ])->supports_info(info);
 }
 
 bool playback_device::extend_to(rs2_extension extension_type, void** ext)
@@ -255,7 +212,7 @@ void playback_device::seek_to_time(std::chrono::nanoseconds time)
     (*m_read_thread)->invoke([this, time](dispatcher::cancellable_timer t)
     {
         m_reader->seek_to_time(time);
-        m_base_timestamp = 0;
+        catch_up();
     });
     (*m_read_thread)->flush();
 }
@@ -269,10 +226,9 @@ rs2_playback_status playback_device::get_current_status() const
 
 uint64_t playback_device::get_duration() const
 {
-    auto nanos = m_reader->query_duration();
-    auto unanos = std::chrono::duration_cast<file_format::file_types::nanoseconds>(nanos);
-    return unanos.count();
+    return m_reader->query_duration().count();
 }
+
 void playback_device::pause()
 {
     /*
@@ -308,6 +264,7 @@ void playback_device::resume()
            return;
 
         m_is_paused = false;
+        catch_up();
 
         try_looping();
     });
@@ -324,25 +281,26 @@ bool playback_device::is_real_time() const
     return m_real_time;
 }
 
-void playback_device::update_time_base(uint64_t base_timestamp)
+void playback_device::update_time_base(std::chrono::microseconds base_timestamp)
 {
     m_base_sys_time = std::chrono::high_resolution_clock::now();
     m_base_timestamp = base_timestamp;
 }
 
-int64_t playback_device::calc_sleep_time(const uint64_t& timestamp) const
+std::chrono::microseconds playback_device::calc_sleep_time(std::chrono::microseconds timestamp) const
 {
     //The time to sleep returned here equals to the difference between the file recording time
     // and the playback time.
     auto now = std::chrono::high_resolution_clock::now();
-    auto play_time = std::chrono::duration_cast<std::chrono::microseconds>(now - m_base_sys_time).count();
-    int64_t time_diff = timestamp - m_base_timestamp;
-    if (time_diff < 0)
+    auto play_time = std::chrono::duration_cast<std::chrono::microseconds>(now - m_base_sys_time);
+    auto time_diff = timestamp - m_base_timestamp;
+    if (time_diff.count() < 0)
     {
-        return 0;
+        return std::chrono::microseconds(0);
     }
-    auto recorded_time = std::llround(static_cast<double>(time_diff) / m_sample_rate);
-    int64_t sleep_time = (recorded_time - play_time);
+
+    auto recorded_time = std::chrono::duration_cast<std::chrono::microseconds>(time_diff / m_sample_rate.load());//std::llround(static_cast<double>(time_diff.count()) / m_sample_rate);
+    auto sleep_time = (recorded_time - play_time);
     return sleep_time;
 }
 
@@ -359,19 +317,8 @@ void playback_device::start()
         return ; //nothing to do
 
     m_is_started = true;
-    m_base_timestamp = 0;
+    catch_up();
     try_looping();
-    //return m_read_thread->invoke<bool>([this]()
-    //{
-    //    if (m_is_started)
-    //        return true; //nothing to do
-
-    //    m_is_started = true;
-    //    m_base_timestamp = 0;
-
-    //    try_looping();
-    //    return true;
-    //});
 }
 
 void playback_device::stop()
@@ -394,13 +341,44 @@ void playback_device::do_loop(T action)
 {
     (*m_read_thread)->invoke([this, action](dispatcher::cancellable_timer c)
     {
-        action();
+        bool action_succeeded = false;
+        try
+        {
+            action_succeeded = action();
+        }
+        catch(const std::exception& e)
+        {
+            std::cerr << "Failed to read next frame: " << e.what() << std::endl;
+            LOG_ERROR("Failed to read next frame from file: " << e.what());
+            //TODO: notify user that playback unexpectedly ended
+            action_succeeded = false; //will make the scope_guard stop the sensors, must return.
+        }
+
+        //On failure, exit thread
+        if(action_succeeded == false)
+        {
+            //Go over the sensors and stop them
+            size_t active_sensors_count = m_active_sensors.size();
+            for (size_t i = 0; i<active_sensors_count; i++)
+            {
+                if (m_active_sensors.size() == 0)
+                    break;
+
+                //NOTE: calling stop will remove the sensor from m_active_sensors
+                m_active_sensors[i]->stop(false);
+            }
+            //After all sensors were stopped stop() is called and flags m_is_started as false
+            assert(m_is_started == false);
+        }
+
+        //Continue looping?
         if (m_is_started == true && m_is_paused == false)
         {
             do_loop(action);
         }
     });
 }
+
 void playback_device::try_looping()
 {
     //try_looping is called from start() or resume()
@@ -416,64 +394,37 @@ void playback_device::try_looping()
             playback_status_changed(RS2_PLAYBACK_STATUS_PLAYING);
         }
     }
-    auto read_action = [this]()
+    auto read_action = [this]() -> bool
     {
         //Read next data from the serializer, on success: 'obj' will be a valid object that came from
         // sensor number 'sensor_index' with a timestamp equal to 'timestamp'
-        uint32_t sensor_index;
+        device_serializer::stream_identifier stream_id;
         //TODO: change timestamp type to file_type::nanoseconds
-        std::chrono::nanoseconds timestamp = std::chrono::nanoseconds::max();
+        device_serializer::nanoseconds timestamp = device_serializer::nanoseconds::max();
         frame_holder frame;
-        bool is_valid_read = true;
-        try
+        auto retval = m_reader->read_frame(timestamp, stream_id, frame);
+        if (retval == device_serializer::status_file_eof)
         {
-            auto retval = m_reader->read(timestamp, sensor_index, frame);
-            if (retval == file_format::status_file_read_failed)
-            {
+            return false;
+        }
+        if(retval != device_serializer::status_no_error || timestamp == std::chrono::nanoseconds::max() || frame == nullptr)
+        {
+            throw librealsense::io_exception("Failed to read frame");
+        }
 
-                LOG_ERROR("Failed to read next sample from file");
-            }
-            if (retval ==file_format::status_file_eof)
-            {
-                //is_valid_read = false;
-            }
-            is_valid_read = (retval == file_format::status_no_error);
-        }
-        catch (const std::exception& e)
-        {
-            std::cerr << "Failed to read next frame: " << e.what() << std::endl;
-            is_valid_read = false;
-        }
-        if(is_valid_read == false || timestamp == std::chrono::nanoseconds::max())
-        {
-            //Go over the sensors and stop them
-            size_t active_sensors_count = m_active_sensors.size();
-            for (size_t i = 0; i<active_sensors_count; i++)
-            {
-                if (m_active_sensors.size() == 0)
-                    break;
-
-                //NOTE: calling stop will remove the sensor from m_active_sensors
-                m_active_sensors[i]->stop(false);
-            }
-            //After all sensors were stopped stop() is called and flags m_is_started as false
-            assert(m_is_started == false);
-            return; //Should stop the loop
-        }
         m_prev_timestamp = timestamp;
         auto timestamp_micros = std::chrono::duration_cast<std::chrono::microseconds>(timestamp);
         //Objects with timestamp of 0 are non streams.
-        if (m_base_timestamp == 0)
+        if (m_base_timestamp.count() == 0)
         {
             //As long as m_base_timestamp is 0, update it to object's timestamp.
             //Once a streaming object arrive, the base will change from 0
-
-            update_time_base(timestamp_micros.count());
+            update_time_base(timestamp_micros);
         }
 
         //Calculate the duration for the reader to sleep (i.e wait for next frame)
-        auto sleep_time = calc_sleep_time(timestamp_micros.count());
-        if (sleep_time > 0)
+        auto sleep_time = calc_sleep_time(timestamp_micros);
+        if (sleep_time.count() > 0)
         {
             if (m_sample_rate > 0)
             {
@@ -481,26 +432,21 @@ void playback_device::try_looping()
             }
         }
 
-
-        if (sensor_index >= m_sensors.size())
+        if (sleep_time.count() < 0)
         {
-            LOG_ERROR("Unexpected sensor index while playing file, sensor index = " << sensor_index);
-            return;
+            //TODO: we should probably jump forward here to align with the play time (frame will be dropped, blood will be shed...)
         }
-        //Pass the object to the
 
-        m_sensors[sensor_index]->handle_frame(std::move(frame), m_real_time);
+        if (stream_id.device_index != get_device_index() || stream_id.sensor_index >= m_sensors.size())
+        {
+            throw invalid_value_exception(to_string() << "Unexpected sensor index while playing file (Read index = " << stream_id.sensor_index << ")");
+        }
 
+        //Dispatch frame to the relevant sensor
+        m_sensors[stream_id.sensor_index]->handle_frame(std::move(frame), m_real_time);
+        return true;
     };
     do_loop(read_action);
-}
-
-void playback_device::set_filter(int32_t id, const std::vector<stream_profile>& requested_profiles)
-{
-    (*m_read_thread)->invoke([this, id, requested_profiles](dispatcher::cancellable_timer c)
-    {
-        m_reader->set_filter(id, requested_profiles);
-    });
 }
 
 const std::string& playback_device::get_file_name() const
@@ -511,4 +457,8 @@ const std::string& playback_device::get_file_name() const
 uint64_t playback_device::get_position() const
 {
     return m_prev_timestamp.count();
+}
+void playback_device::catch_up()
+{
+    m_base_timestamp = std::chrono::microseconds(0);
 }

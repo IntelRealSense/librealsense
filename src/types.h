@@ -357,22 +357,49 @@ namespace librealsense
     inline float3 operator * (const pose & a, const float3 & b) { return a.orientation * b + a.position; }
     inline pose operator * (const pose & a, const pose & b) { return{ a.orientation * b.orientation, a * b.position }; }
     inline pose inverse(const pose & a) { auto inv = transpose(a.orientation); return{ inv, inv * a.position * -1 }; }
-
+    inline pose to_pose(const rs2_extrinsics& a)
+    {
+        pose r;
+        for (int i = 0; i < 3; i++) r.position[i] = a.translation[i];
+        for (int j = 0; j < 3; j++) 
+            for (int i = 0; i < 3; i++) 
+                r.orientation(i, j) = a.rotation[j * 3 + i];
+        return r;
+    }
+    inline rs2_extrinsics from_pose(pose a)
+    {
+        rs2_extrinsics r;
+        for (int i = 0; i < 3; i++) r.translation[i] = a.position[i];
+        for (int j = 0; j < 3; j++) 
+            for (int i = 0; i < 3; i++) 
+                r.rotation[j * 3 + i] = a.orientation(i, j);
+        return r;
+    }
+    inline rs2_extrinsics identity_matrix() { 
+        rs2_extrinsics r;
+        // Do it the silly way to avoid infite warnings about the dangers of memset
+        for (int i = 0; i < 3; i++) r.translation[i] = 0.f;
+        for (int j = 0; j < 3; j++) 
+            for (int i = 0; i < 3; i++) 
+                r.rotation[j * 3 + i] = (i == j) ? 1.f : 0.f;
+        return r;
+    }
+    inline rs2_extrinsics inverse(const rs2_extrinsics& a) { auto p = to_pose(a); return from_pose(inverse(p)); }
 
     ///////////////////
     // Pixel formats //
     ///////////////////
 
     typedef std::tuple<uint32_t, int, size_t> native_pixel_format_tuple;
-    typedef std::tuple<rs2_stream, rs2_format> output_tuple;
+    typedef std::tuple<rs2_stream, int, rs2_format> output_tuple;
     typedef std::tuple<platform::stream_profile_tuple, native_pixel_format_tuple, std::vector<output_tuple>> request_mapping_tuple;
 
     struct stream_profile
     {
         rs2_stream stream;
+        int index;
         uint32_t width, height, fps;
         rs2_format format;
-
     };
 
 
@@ -383,33 +410,42 @@ namespace librealsense
             (a.height == b.height) &&
             (a.fps == b.fps) &&
             (a.format == b.format) &&
-            (a.stream == b.stream);
+            (a.index == b.index);
     }
+
+    struct stream_descriptor
+    {
+        stream_descriptor() : type(RS2_STREAM_ANY), index(0) {}
+        stream_descriptor(rs2_stream type, int index = 0) : type(type), index(index) {}
+
+        rs2_stream type;
+        int index;
+    };
 
     struct pixel_format_unpacker
     {
         bool requires_processing;
         void(*unpack)(byte * const dest[], const byte * source, int count);
-        std::vector<std::pair<rs2_stream, rs2_format>> outputs;
+        std::vector<std::pair<stream_descriptor, rs2_format>> outputs;
 
         bool satisfies(const stream_profile& request) const
         {
-            return provides_stream(request.stream) &&
-                get_format(request.stream) == request.format;
+            return provides_stream(request.stream, request.index) &&
+                get_format(request.stream, request.index) == request.format;
         }
 
-        bool provides_stream(rs2_stream stream) const
+        bool provides_stream(rs2_stream stream, int index) const
         {
             for (auto & o : outputs)
-                if (o.first == stream)
+                if (o.first.type == stream && o.first.index == index)
                     return true;
 
             return false;
         }
-        rs2_format get_format(rs2_stream stream) const
+        rs2_format get_format(rs2_stream stream, int index) const
         {
             for (auto & o : outputs)
-                if (o.first == stream)
+                if (o.first.type == stream && o.first.index == index)
                     return o.second;
 
             throw invalid_value_exception("missing output");
@@ -421,7 +457,7 @@ namespace librealsense
 
             for (auto output : outputs)
             {
-                tuple_outputs.push_back(std::make_tuple(output.first, output.second));
+                tuple_outputs.push_back(std::make_tuple(output.first.type, output.first.index, output.second));
             }
             return tuple_outputs;
         }
@@ -443,11 +479,16 @@ namespace librealsense
         }
     };
 
+    class stream_profile_interface;
+
     struct request_mapping
     {
         platform::stream_profile profile;
         native_pixel_format* pf;
         pixel_format_unpacker* unpacker;
+
+        // The request lists is there just for lookup and is not involved in object comparison
+        mutable std::vector<std::shared_ptr<stream_profile_interface>> original_requests;
 
         operator request_mapping_tuple() const
         {

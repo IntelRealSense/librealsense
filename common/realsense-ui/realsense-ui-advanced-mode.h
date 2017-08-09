@@ -4,6 +4,7 @@
 #pragma once
 
 #include <librealsense/rs2_advanced_mode.hpp>
+#include "types.h"
 
 bool yes_no_dialog()
 {

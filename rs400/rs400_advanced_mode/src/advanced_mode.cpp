@@ -3,6 +3,7 @@
 
 #include "core/advanced_mode.h"
 #include "ds5/ds5-active.h"
+#include "stream.h"
 #include "ds5/ds5-rolling-shutter.h"
 #include "json_loader.hpp"
 
@@ -826,7 +827,9 @@ namespace librealsense
             return;
         }
 
-        auto configurations = _ep.get_curr_configurations();
+        auto uvc_sensor = dynamic_cast<librealsense::uvc_sensor*>(&_ep);
+
+        auto configurations = uvc_sensor->get_configuration();
         _advanced.apply_preset(configurations, preset);
         _last_preset = preset;
     }

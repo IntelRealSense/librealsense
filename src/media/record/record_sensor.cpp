@@ -3,12 +3,13 @@
 
 #include "record_sensor.h"
 #include "api.h"
+#include "stream.h"
 
 librealsense::record_sensor::record_sensor(const device_interface& device,
                                             sensor_interface& sensor, 
-                                            frame_interface_callback_t on_frame, 
-                                            std::function<void(rs2_extension, const std::shared_ptr<extension_snapshot>&)>) :
-    m_device_record_snapshot_handler(),
+                                            frame_interface_callback_t on_frame,
+                                            snapshot_callback_t on_snapshot) :
+    m_device_record_snapshot_handler(on_snapshot),
     m_sensor(sensor),
     m_user_notification_callback(nullptr, [](rs2_notifications_callback* n) {}),
     m_record_callback(on_frame),
@@ -22,29 +23,44 @@ librealsense::record_sensor::~record_sensor()
 {
 }
 
-std::vector<librealsense::stream_profile> librealsense::record_sensor::get_principal_requests()
+stream_profiles record_sensor::get_stream_profiles()
 {
-    return m_sensor.get_principal_requests();
+    return m_sensor.get_stream_profiles();
 }
 
-void librealsense::record_sensor::open(const std::vector<librealsense::stream_profile>& requests)
+void librealsense::record_sensor::open(const stream_profiles& requests)
 {
     m_sensor.open(requests);
-    m_curr_configurations = convert_profiles(requests);
-    //raise_user_notification("Opened sensor");
-    //TODO: write to file
+
+    m_is_recording = true;
+    m_curr_configurations = convert_profiles(to_profiles(requests));
+    for (auto request : requests)
+    {
+        std::shared_ptr<stream_profile_interface> snapshot;
+        request->create_snapshot(snapshot);
+        m_device_record_snapshot_handler(RS2_EXTENSION_VIDEO_PROFILE, std::dynamic_pointer_cast<extension_snapshot>(snapshot), [this](const std::string& err) { stop_with_error(err); });
+    }
 }
+
 void librealsense::record_sensor::close()
 {
     m_sensor.close();
+    m_is_recording = false;
 }
+
 librealsense::option& librealsense::record_sensor::get_option(rs2_option id)
 {
-    //std::shared_ptr<option> o;
-    //m_sensor.get_option(id).create_recordable(o, [this](std::shared_ptr<extension_snapshot> e) {
-    //    m_record_callback();
-    //});
-    //return o;
+//    auto option_it = m_recordable_options_cache.find(id);
+//    if(option_it != m_recordable_options_cache.end())
+//    {
+//        return *option_it->second;
+//    }
+//    std::shared_ptr<option> option;
+//    m_sensor.get_option(id).create_recordable(option, [this](std::shared_ptr<extension_snapshot> snapshot) {
+//        record_snapshot(RS2_EXTENSION_OPTION, snapshot);
+//    });
+//    m_recordable_options_cache[id] = option;
+//    return *option;
     return m_sensor.get_option(id);
 }
 const librealsense::option& librealsense::record_sensor::get_option(rs2_option id) const
@@ -82,18 +98,22 @@ void librealsense::record_sensor::start(frame_callback_ptr callback)
         return; //already started
     }
     
-    //TODO: Handle case where live sensor is already streaming
+    //TODO: Also handle case where live sensor is already streaming
+
     auto record_cb = [this, callback](frame_holder frame)
     {
-        m_record_callback(frame.clone());
+        record_frame(frame.clone());
+
+        //Raise to user callback
         frame_interface* ref = nullptr;
         std::swap(frame.frame, ref);
         callback->on_frame((rs2_frame*)ref);
     };
-    m_frame_callback = std::make_shared<frame_holder_callback>(record_cb);
 
+    m_frame_callback = std::make_shared<frame_holder_callback>(record_cb);
     m_sensor.start(m_frame_callback);
 }
+
 void librealsense::record_sensor::stop()
 {
     m_sensor.stop();
@@ -107,6 +127,8 @@ bool librealsense::record_sensor::is_streaming() const
 
 bool librealsense::record_sensor::extend_to(rs2_extension extension_type, void** ext)
 {
+    //extend_to is called when the device\sensor above the hour glass are expected to provide some extension interface
+    //In this case we should return a recordable version of that extension
     switch (extension_type)
     {
     case RS2_EXTENSION_DEBUG :
@@ -121,7 +143,7 @@ bool librealsense::record_sensor::extend_to(rs2_extension extension_type, void**
         {
             record_snapshot(extension_type, e);
         });
-        //TODO: Ziv, Verify this doesn't result in memory leaks
+        //TODO: Ziv, Verify this doesn't result in memory leaks / memory corruptions
         *ext = api.get();
         return true;
     }
@@ -132,8 +154,9 @@ bool librealsense::record_sensor::extend_to(rs2_extension extension_type, void**
     case RS2_EXTENSION_ROI :break;
     case RS2_EXTENSION_UNKNOWN:
     case RS2_EXTENSION_COUNT :
+        //TODO: support all extensions
     default:
-        throw invalid_value_exception(std::string("extension_type ") + std::to_string(extension_type) + " is not supported");
+        throw invalid_value_exception(to_string() <<"extension_type " << extension_type << " is not supported");
     }
     return false;
 }
@@ -141,16 +164,6 @@ bool librealsense::record_sensor::extend_to(rs2_extension extension_type, void**
 const device_interface& record_sensor::get_device()
 {
     return m_parent_device;
-}
-
-rs2_extrinsics record_sensor::get_extrinsics_to(rs2_stream from, const sensor_interface& other, rs2_stream to) const
-{
-    return m_sensor.get_extrinsics_to(from, other, to);
-}
-
-const std::vector<platform::stream_profile>& record_sensor::get_curr_configurations() const
-{
-    return m_curr_configurations;
 }
 
 void record_sensor::raise_user_notification(const std::string& str)
@@ -162,7 +175,11 @@ void record_sensor::raise_user_notification(const std::string& str)
 
 void librealsense::record_sensor::record_snapshot(rs2_extension extension_type, const std::shared_ptr<extension_snapshot>& snapshot)
 {
-    m_device_record_snapshot_handler(extension_type, snapshot);
+    if(m_is_recording)
+    {    //Send to recording thread
+        m_device_record_snapshot_handler(extension_type, snapshot, [this](const std::string& err)
+        { stop_with_error(err); });
+    }
 }
 
 std::vector<platform::stream_profile> record_sensor::convert_profiles(const std::vector<stream_profile>& profiles)
@@ -170,4 +187,17 @@ std::vector<platform::stream_profile> record_sensor::convert_profiles(const std:
     std::vector<platform::stream_profile> platform_profiles;
     //TODO: Implement
     return platform_profiles;
+}
+void record_sensor::stop_with_error(const std::string& error_msg)
+{
+    m_is_recording = false;
+    raise_user_notification(to_string() << "Stopping recording for sensor (streaming will continue). (Error: " << error_msg << ")");
+}
+void record_sensor::record_frame(frame_holder frame)
+{
+    if(m_is_recording)
+    {
+        //Send to recording thread
+        m_record_callback(std::move(frame), [this](const std::string& err){ stop_with_error(err); });
+    }
 }

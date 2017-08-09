@@ -46,7 +46,7 @@ void rs2_toggle_advanced_mode(rs2_device* dev, int enable, rs2_error** error) tr
 {
     VALIDATE_NOT_NULL(dev);
     auto advanced_mode = VALIDATE_INTERFACE(dev->device, librealsense::ds5_advanced_mode_interface);
-    advanced_mode->toggle_advanced_mode(enable);
+    advanced_mode->toggle_advanced_mode(enable > 0);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, dev, enable)
 

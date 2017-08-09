@@ -1,7 +1,7 @@
 # ubuntu 16.04 LTS cmake version 3.5.1
 cmake_minimum_required(VERSION 2.8.3)
 
-project(RealsenseToolsRealSenseUI)
+project(RealsenseToolsRealSenseViewer)
 
 # Save the command line compile commands in the build output
 set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
@@ -33,27 +33,37 @@ endif()
 
 if(BUILD_GRAPHICAL_EXAMPLES)
 
+    set(RS_VIEWER_CPP 
+            realsense-viewer.cpp 
+            ../../third-party/imgui/imgui.cpp 
+            ../../third-party/imgui/imgui_draw.cpp 
+            ../../third-party/imgui/imgui_impl_glfw.cpp 
+            ../../third-party/imgui/imgui-fonts-karla.hpp
+            ../../third-party/imgui/imgui-fonts-fontawesome.hpp
+            ../../common/example.hpp 
+            ../../common/model-views.h 
+            ../../common/model-views.cpp
+        )
+
     # config-ui
-    add_executable(realsense-ui 
-        realsense-ui.cpp 
-        ../../third-party/imgui/imgui.cpp 
-        ../../third-party/imgui/imgui_draw.cpp 
-        ../../third-party/imgui/imgui_impl_glfw.cpp 
-        ../../third-party/imgui/imgui-fonts-karla.hpp
-        ../../third-party/imgui/imgui-fonts-fontawesome.hpp
-        ../../common/example.hpp 
-        ../../common/model-views.h 
-        ../../common/model-views.cpp)
-    target_link_libraries(realsense-ui ${DEPENDENCIES} ${GTK3_LIBRARIES})
-    include_directories(realsense-ui ../../third-party/imgui ../../common ../../third-party)
-    set_target_properties (realsense-ui PROPERTIES
+    if(WIN32)
+        add_executable(realsense-viewer WIN32
+            ${RS_VIEWER_CPP})
+    else()
+        add_executable(realsense-viewer 
+            ${RS_VIEWER_CPP})
+    endif()
+
+    target_link_libraries(realsense-viewer ${DEPENDENCIES} ${GTK3_LIBRARIES})
+    include_directories(realsense-viewer ../../third-party/imgui ../../common ../../third-party)
+    set_target_properties (realsense-viewer PROPERTIES
         FOLDER Tools
     )
 
     install(
         TARGETS
 
-        realsense-ui
+        realsense-viewer
 
         RUNTIME DESTINATION
         ${CMAKE_INSTALL_PREFIX}/bin

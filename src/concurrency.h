@@ -51,7 +51,7 @@ public:
         accepting = true;
         was_flushed = false;
         const auto ready = [this]() { return (q.size() > 0) || need_to_flush; };
-        if (!ready() && !cv.wait_for(lock, std::chrono::seconds(5), ready))
+        if (!ready() && !cv.wait_for(lock, std::chrono::seconds(5000), ready))
         {
             return false;
         }
@@ -217,7 +217,7 @@ public:
         _thread.join();
     }
 
-    void flush()
+    bool flush()
     {
         std::mutex m;
         std::condition_variable cv;
@@ -228,7 +228,7 @@ public:
             cv.notify_one();
         });
         std::unique_lock<std::mutex> locker(m);
-        cv.wait(locker, [&]() { return invoked; });
+        return cv.wait_for(locker, std::chrono::seconds(10), [&]() { return invoked || _was_stopped; });
     }
 private:
     friend cancellable_timer;

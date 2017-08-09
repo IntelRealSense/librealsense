@@ -43,6 +43,9 @@ namespace librealsense
         case RS2_FORMAT_RAW16: return 16;
         case RS2_FORMAT_RAW8: return 8;
         case RS2_FORMAT_UYVY: return 16;
+        case RS2_FORMAT_GPIO_RAW: return 1;
+        case RS2_FORMAT_MOTION_RAW: return 1;
+        case RS2_FORMAT_MOTION_XYZ32F: return 1;
         default: assert(false); return 0;
         }
     }
@@ -775,24 +778,24 @@ namespace librealsense
                                                                 { true,  &unpack_yuy2<RS2_FORMAT_BGR8 >,                  { { RS2_STREAM_COLOR,    RS2_FORMAT_BGR8 } } },
                                                                 { true,  &unpack_yuy2<RS2_FORMAT_BGRA8>,                  { { RS2_STREAM_COLOR,    RS2_FORMAT_BGRA8 } } } } };
 
-    const native_pixel_format pf_y8         = { 'GREY', 1, 1,{  { false, &copy_pixels<1>,                                { { RS2_STREAM_INFRARED, RS2_FORMAT_Y8  } } } } };
-    const native_pixel_format pf_y16        = { 'Y16 ', 1, 2,{  { true,  &unpack_y16_from_y16_10,                        { { RS2_STREAM_INFRARED, RS2_FORMAT_Y16 } } } } };
-    const native_pixel_format pf_y8i        = { 'Y8I ', 1, 2,{  { true,  &unpack_y8_y8_from_y8i,                         { { RS2_STREAM_INFRARED, RS2_FORMAT_Y8  },{ RS2_STREAM_INFRARED2, RS2_FORMAT_Y8 } } } } };
-    const native_pixel_format pf_y12i       = { 'Y12I', 1, 3,{  { true,  &unpack_y16_y16_from_y12i_10,                   { { RS2_STREAM_INFRARED, RS2_FORMAT_Y16 },{ RS2_STREAM_INFRARED2, RS2_FORMAT_Y16 } } } } };
+    const native_pixel_format pf_y8         = { 'GREY', 1, 1,{  { false, &copy_pixels<1>,                                { { { RS2_STREAM_INFRARED, 1 }, RS2_FORMAT_Y8  } } } } };
+    const native_pixel_format pf_y16        = { 'Y16 ', 1, 2,{  { true,  &unpack_y16_from_y16_10,                        { { { RS2_STREAM_INFRARED, 1 }, RS2_FORMAT_Y16 } } } } };
+    const native_pixel_format pf_y8i        = { 'Y8I ', 1, 2,{  { true,  &unpack_y8_y8_from_y8i,                         { { { RS2_STREAM_INFRARED, 1 }, RS2_FORMAT_Y8  },{ { RS2_STREAM_INFRARED, 2 }, RS2_FORMAT_Y8 } } } } };
+    const native_pixel_format pf_y12i       = { 'Y12I', 1, 3,{  { true,  &unpack_y16_y16_from_y12i_10,                   { { { RS2_STREAM_INFRARED, 1 }, RS2_FORMAT_Y16 },{ { RS2_STREAM_INFRARED, 2 }, RS2_FORMAT_Y16 } } } } };
     const native_pixel_format pf_z16        = { 'Z16 ', 1, 2,{  { false, &copy_pixels<2>,                                { { RS2_STREAM_DEPTH,    RS2_FORMAT_Z16 } } },
                                                                 { false, &copy_pixels<2>,                                { { RS2_STREAM_DEPTH,    RS2_FORMAT_DISPARITY16 } } } } };
     const native_pixel_format pf_invz       = { 'Z16 ', 1, 2, { { false, &copy_pixels<2>,                                { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16 } } } } };
-    const native_pixel_format pf_f200_invi  = { 'INVI', 1, 1, { { false, &copy_pixels<1>,                                { { RS2_STREAM_INFRARED, RS2_FORMAT_Y8  } } },
-                                                                { true,  &unpack_y16_from_y8,                            { { RS2_STREAM_INFRARED, RS2_FORMAT_Y16 } } } } };
-    const native_pixel_format pf_f200_inzi  = { 'INZI', 1, 3,{  { true,  &unpack_z16_y8_from_f200_inzi,                  { { RS2_STREAM_DEPTH,    RS2_FORMAT_Z16 },{ RS2_STREAM_INFRARED, RS2_FORMAT_Y8 } } },
-                                                                { true,  &unpack_z16_y16_from_f200_inzi,                 { { RS2_STREAM_DEPTH,    RS2_FORMAT_Z16 },{ RS2_STREAM_INFRARED, RS2_FORMAT_Y16 } } } } };
-    const native_pixel_format pf_sr300_invi = { 'INVI', 1, 2,{  { true,  &unpack_y8_from_y16_10,                         { { RS2_STREAM_INFRARED, RS2_FORMAT_Y8  } } },
-                                                                { true,  &unpack_y16_from_y16_10,                        { { RS2_STREAM_INFRARED, RS2_FORMAT_Y16 } } } } };
-    const native_pixel_format pf_sr300_inzi = { 'INZI', 2, 2,{  { true,  &unpack_z16_y8_from_sr300_inzi,                 { { RS2_STREAM_DEPTH,    RS2_FORMAT_Z16 },{ RS2_STREAM_INFRARED, RS2_FORMAT_Y8 } } },
-                                                                { true,  &unpack_z16_y16_from_sr300_inzi,                { { RS2_STREAM_DEPTH,    RS2_FORMAT_Z16 },{ RS2_STREAM_INFRARED, RS2_FORMAT_Y16 } } } } };
+    const native_pixel_format pf_f200_invi  = { 'INVI', 1, 1, { { false, &copy_pixels<1>,                                { { { RS2_STREAM_INFRARED, 1 }, RS2_FORMAT_Y8  } } },
+                                                                { true,  &unpack_y16_from_y8,                            { { { RS2_STREAM_INFRARED, 1 }, RS2_FORMAT_Y16 } } } } };
+    const native_pixel_format pf_f200_inzi  = { 'INZI', 1, 3,{  { true,  &unpack_z16_y8_from_f200_inzi,                  { { RS2_STREAM_DEPTH,    RS2_FORMAT_Z16 },{ { RS2_STREAM_INFRARED, 1 }, RS2_FORMAT_Y8 } } },
+                                                                { true,  &unpack_z16_y16_from_f200_inzi,                 { { RS2_STREAM_DEPTH,    RS2_FORMAT_Z16 },{ { RS2_STREAM_INFRARED, 1 }, RS2_FORMAT_Y16 } } } } };
+    const native_pixel_format pf_sr300_invi = { 'INVI', 1, 2,{  { true,  &unpack_y8_from_y16_10,                         { { { RS2_STREAM_INFRARED, 1 }, RS2_FORMAT_Y8  } } },
+                                                                { true,  &unpack_y16_from_y16_10,                        { { { RS2_STREAM_INFRARED, 1 }, RS2_FORMAT_Y16 } } } } };
+    const native_pixel_format pf_sr300_inzi = { 'INZI', 2, 2,{  { true,  &unpack_z16_y8_from_sr300_inzi,                 { { RS2_STREAM_DEPTH,    RS2_FORMAT_Z16 },{ { RS2_STREAM_INFRARED, 1 }, RS2_FORMAT_Y8 } } },
+                                                                { true,  &unpack_z16_y16_from_sr300_inzi,                { { RS2_STREAM_DEPTH,    RS2_FORMAT_Z16 },{ { RS2_STREAM_INFRARED, 1 }, RS2_FORMAT_Y16 } } } } };
 
     const native_pixel_format pf_uyvyl      = { 'UYVY', 1, 2,{  { true,  &unpack_uyvy<RS2_FORMAT_RGB8 >,                  { { RS2_STREAM_INFRARED, RS2_FORMAT_RGB8 } } },
-                                                                { true,  &unpack_yuy2<RS2_FORMAT_Y16>,                    { { RS2_STREAM_INFRARED,    RS2_FORMAT_Y16 } } },
+                                                                { true,  &unpack_yuy2<RS2_FORMAT_Y16>,                    { { RS2_STREAM_INFRARED, RS2_FORMAT_Y16 } } },
                                                                 { false, &copy_pixels<2>,                                 { { RS2_STREAM_INFRARED, RS2_FORMAT_UYVY } } },
                                                                 { true,  &unpack_uyvy<RS2_FORMAT_RGBA8>,                  { { RS2_STREAM_INFRARED, RS2_FORMAT_RGBA8} } },
                                                                 { true,  &unpack_uyvy<RS2_FORMAT_BGR8 >,                  { { RS2_STREAM_INFRARED, RS2_FORMAT_BGR8 } } },
@@ -812,10 +815,10 @@ namespace librealsense
                                                                 { false, &unpack_hid_raw_data,                            { { RS2_STREAM_ACCEL,    RS2_FORMAT_MOTION_RAW  } } }}};
     const native_pixel_format pf_gyro_axes  = { 'GYRO', 1, 1,{  { true,  &unpack_gyro_axes<RS2_FORMAT_MOTION_XYZ32F>,     { { RS2_STREAM_GYRO,     RS2_FORMAT_MOTION_XYZ32F } } },
                                                                 { false, &unpack_hid_raw_data,                            { { RS2_STREAM_GYRO,     RS2_FORMAT_MOTION_RAW  } } }}};
-    const native_pixel_format pf_gpio_timestamp = { 'GPIO', 1, 1,{  { false, &unpack_input_reports_data,                  { { RS2_STREAM_GPIO1,    RS2_FORMAT_GPIO_RAW },
-                                                                                                                            { RS2_STREAM_GPIO2,    RS2_FORMAT_GPIO_RAW },
-                                                                                                                            { RS2_STREAM_GPIO3,    RS2_FORMAT_GPIO_RAW },
-                                                                                                                            { RS2_STREAM_GPIO4,    RS2_FORMAT_GPIO_RAW }} } } };
+    const native_pixel_format pf_gpio_timestamp = { 'GPIO', 1, 1,{  { false, &unpack_input_reports_data,                  { { { RS2_STREAM_GPIO, 1 },    RS2_FORMAT_GPIO_RAW },
+                                                                                                                            { { RS2_STREAM_GPIO, 2 },    RS2_FORMAT_GPIO_RAW },
+                                                                                                                            { { RS2_STREAM_GPIO, 3 },    RS2_FORMAT_GPIO_RAW },
+                                                                                                                            { { RS2_STREAM_GPIO, 4 },    RS2_FORMAT_GPIO_RAW }} } } };
 
 }
 

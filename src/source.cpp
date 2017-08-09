@@ -50,7 +50,8 @@ namespace librealsense
         std::lock_guard<std::mutex> lock(_callback_mutex);
 
         std::vector<rs2_extension> supported { RS2_EXTENSION_VIDEO_FRAME,
-                                                    RS2_EXTENSION_COMPOSITE_FRAME  };
+                                               RS2_EXTENSION_COMPOSITE_FRAME, 
+                                               RS2_EXTENSION_POINTS };
 
         for (auto type : supported)
         {

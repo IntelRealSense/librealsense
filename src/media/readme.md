@@ -516,6 +516,24 @@ There are two parts to a .msg file: fields and constants. Fields are the data th
 </table>
 
 
+## Playback
+
+Playback device is an implementation of device interface which reads from a 
+file to simulate a real device.                                              
+                                                                          
+Playback device holds playback sensors which simulate real sensors.         
+                                                                          
+When creating the playback device, it will read the initial device snapshot from the file in order to map itself and 
+its sensors in matters of functionality and data provided.                              
+When creating each sensor, the device will create a sensor from the         
+sensor's initial snapshot.                            
+Each sensor will hold a single thread for each of the sensor's streams which is used to raise frames to the user.
+The playback device holds a single reading thread that reads the next frame in a loop and dispatches the frame to the relevant sensor.
+                 
+TODO: Describe snapshot changes mechanism                                                            
+
+
+
 ## Screenshots
 
 >TODO:

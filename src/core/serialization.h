@@ -9,27 +9,69 @@
 #include "extension.h"
 #include "streaming.h"
 #include "../media/device_snapshot.h"
-#include "../media/ros/status.h"
 
 namespace librealsense
 {
     namespace device_serializer
     {
-
-        struct snapshot_box
+        /** @brief
+        *  Defines return codes that SDK interfaces
+        *  use.  Negative values indicate errors, a zero value indicates success,
+        *  and positive values indicate warnings.
+        */
+        enum status
         {
-            std::chrono::nanoseconds timestamp;
-            uint32_t sensor_index;
-            std::shared_ptr<extension_snapshot> snapshot;
+            /* success */
+            status_no_error = 0,                /**< Operation succeeded without any warning */
+
+            /* errors */
+            status_feature_unsupported = -1,    /**< Unsupported feature */
+            status_param_unsupported = -2,      /**< Unsupported parameter(s) */
+            status_item_unavailable = -3,       /**< Item not found/not available */
+            status_key_already_exists = -4,     /**< Key already exists in the data structure */
+            status_invalid_argument = -5,       /**< Argument passed to the method is invalid */
+            status_allocation_failled = -6,     /**< Failure in allocation */
+
+            status_file_write_failed = -401,    /**< Failure in open file in WRITE mode */
+            status_file_read_failed = -402,     /**< Failure in open file in READ mode */
+            status_file_close_failed = -403,    /**< Failure in close a file handle */
+            status_file_eof = -404,             /**< EOF */
+
         };
+
+        struct sensor_identifier
+        {
+            uint32_t device_index;
+            uint32_t sensor_index;
+        };
+        struct stream_identifier
+        {
+            uint32_t device_index;
+            uint32_t sensor_index;
+            rs2_stream stream_type;
+            uint32_t stream_index;
+        };
+        inline bool operator==(const stream_identifier& lhs, const stream_identifier& rhs)
+        {
+            return lhs.device_index == rhs.device_index &&
+                   lhs.sensor_index == rhs.sensor_index &&
+                   lhs.stream_type  == rhs.stream_type  &&
+                   lhs.stream_index == rhs.stream_index;
+        }
+        inline bool operator<(const stream_identifier& lhs, const stream_identifier& rhs)
+        {
+            return std::make_tuple(lhs.device_index, lhs.sensor_index, lhs.stream_type, lhs.stream_index) < std::make_tuple(rhs.device_index, rhs.sensor_index, rhs.stream_type, rhs.stream_index);
+        }
+
+        using nanoseconds = std::chrono::duration<uint64_t, std::nano>;
 
         class writer
         {
         public:
             virtual void write_device_description(const device_snapshot& device_description) = 0;
-            virtual void write(std::chrono::nanoseconds timestamp, uint32_t sensor_index, frame_holder&& frame) = 0;
-            virtual void write(const snapshot_box& data) = 0;
-            virtual void reset() = 0;
+            virtual void write_frame(const stream_identifier& stream_id, const nanoseconds& timestamp, frame_holder&& frame) = 0;
+            virtual void write_snapshot(uint32_t device_index, const nanoseconds& timestamp, rs2_extension type, const std::shared_ptr<extension_snapshot > snapshot) = 0;
+            virtual void write_snapshot(const sensor_identifier& sensor_id, const nanoseconds& timestamp, rs2_extension type, const std::shared_ptr<extension_snapshot > snapshot) = 0;
             virtual ~writer() = default;
         };
         class reader
@@ -37,12 +79,12 @@ namespace librealsense
         public:
             virtual ~reader() = default;
             virtual device_snapshot query_device_description() = 0;
-            //TODO: Ziv change return type of read
-            virtual file_format::status read(std::chrono::nanoseconds& timestamp, uint32_t& sensor_index, frame_holder& frame) = 0;
-            virtual void seek_to_time(std::chrono::nanoseconds time) = 0;
-            virtual std::chrono::nanoseconds query_duration() const = 0;
+            virtual status read_frame(nanoseconds& timestamp, stream_identifier& sensor_index, frame_holder& frame) = 0;
+            virtual void seek_to_time(const nanoseconds& time) = 0;
+            virtual nanoseconds query_duration() const = 0;
             virtual void reset() = 0;
-            virtual void set_filter(uint32_t m_sensor_index, const std::vector<stream_profile>& vector) = 0;
+            virtual void enable_stream(const device_serializer::stream_identifier& stream_id) = 0;
+            virtual void disable_stream(const device_serializer::stream_identifier& stream_id) = 0;
             virtual const std::string& get_file_name() const = 0;
         };
     }

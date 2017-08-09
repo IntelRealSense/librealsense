@@ -79,7 +79,7 @@ namespace librealsense
         }
 
         if (0 == temperature_data.*is_valid_field)
-            throw invalid_value_exception(to_string() << rs2_option_to_string(_option) << " value is not valid!");
+            LOG_ERROR(rs2_option_to_string(_option) << " value is not valid!");
 
         return temperature_data.*field;
     }
@@ -182,7 +182,7 @@ namespace librealsense
         mm_ep->register_on_before_frame_callback(
                     [this](rs2_stream stream, frame_interface* fr, callback_invocation_holder callback)
         {
-            if (_is_enabled.load() && fr->get_format() == RS2_FORMAT_MOTION_XYZ32F)
+            if (_is_enabled.load() && fr->get_stream()->get_format() == RS2_FORMAT_MOTION_XYZ32F)
             {
                 auto xyz = (float*)(fr->get_frame_data());
 

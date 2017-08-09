@@ -356,9 +356,9 @@ namespace rs400
             return group;
         }
 
-        std::vector<uint8_t> serialize_json() const
+        std::string serialize_json() const
         {
-            std::vector<uint8_t> results;
+            std::string results;
 
             rs2_error* e = nullptr;
             std::shared_ptr<rs2_raw_data_buffer> json_data(

@@ -57,7 +57,7 @@ namespace librealsense
     };
 
 
-    typedef std::pair<const device_interface*, rs2_stream> stream_id;
+    typedef int stream_id;
     typedef std::function<void(frame_holder, syncronization_environment)> sync_callback;
 
     class matcher
@@ -102,9 +102,11 @@ namespace librealsense
 
     private:
         std::vector<stream_id> _streams;
-        void update_next_expected(const frame_holder& f);
+
 
     protected:
+        virtual void update_next_expected(const frame_holder& f) = 0;
+
         std::map<matcher*, single_consumer_queue<frame_holder>> _frames_queue;
         std::map<stream_id, std::shared_ptr<matcher>> _matchers;
         std::map<matcher*, double> _next_expected;
@@ -116,6 +118,8 @@ namespace librealsense
         frame_number_composite_matcher(std::vector<std::shared_ptr<matcher>> matchers);
         bool are_equivalent(frame_holder& a, frame_holder& b) override;
         bool is_smaller_than(frame_holder& a, frame_holder& b) override;
+        bool skip_missing_stream(std::vector<matcher*> synced, matcher* missing) override;
+        void update_next_expected(const frame_holder& f) override;
     };
 
     class timestamp_composite_matcher : public composite_matcher
@@ -126,6 +130,7 @@ namespace librealsense
         bool is_smaller_than(frame_holder& a, frame_holder& b) override;
         void dispatch(frame_holder f, syncronization_environment env) override;
         bool skip_missing_stream(std::vector<matcher*> synced, matcher* missing) override;
+        void update_next_expected(const frame_holder & f) override;
 
     private:
         bool are_equivalent(double a, double b, int fps);
@@ -141,60 +146,4 @@ namespace librealsense
         timestamp_composite_matcher _matcher;
         std::mutex _mutex;
     };
-
-    //typedef std::vector<frame_holder> frameset;
-    //class sync_interface
-    //{
-    //public:
-    //    virtual void dispatch_frame(frame_holder f) = 0;
-    //    virtual frameset wait_for_frames(int timeout_ms = 5000) = 0;
-    //    virtual bool poll_for_frames(frameset& frames) = 0;
-    //    virtual ~sync_interface() = default;
-    //};
-
-    //class syncer : public sync_interface
-    //{
-    //public:
-    //    explicit syncer(rs2_stream key_stream = RS2_STREAM_COLOR)
-    //        : impl(new shared_impl())
-    //    {
-    //        impl->key_stream = key_stream;
-    //    }
-
-    //    void set_key_stream(rs2_stream stream)
-    //    {
-    //        impl->key_stream = stream;
-    //    }
-
-    //    void dispatch_frame(frame_holder f) override;
-
-    //    frameset wait_for_frames(int timeout_ms = 5000) override;
-
-    //    bool poll_for_frames(frameset& frames) override;
-    //private:
-    //    struct stream_pipe
-    //    {
-    //        stream_pipe() : queue(4) {}
-    //        frame_holder front;
-    //        single_consumer_queue<frame_holder> queue;
-
-    //        ~stream_pipe()
-    //        {
-    //        }
-    //    };
-
-    //    struct shared_impl
-    //    {
-    //        std::recursive_mutex mutex;
-    //        std::condition_variable_any cv;
-    //        rs2_stream key_stream;
-    //        stream_pipe streams[RS2_STREAM_COUNT];
-    //    };
-
-    //    std::shared_ptr<shared_impl> impl;
-
-    //    double dist(const frame_holder& a, const frame_holder& b) const;
-
-    //    void get_frameset(frameset* frames) const;
-    //};
 }

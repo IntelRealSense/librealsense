@@ -6,13 +6,15 @@
 #include <memory>
 #include <functional>
 
-//Preprocessor Macro to define mapping between rs2_extension and their respective interface (and vice versa)
-#define MAP_EXTENSION(E, T)                        \
-    template<> struct ExtensionsToTypes<E> {       \
-        using type = T;                            \
-    };                                             \
-    template<> struct TypeToExtensionn<T> {        \
-        static constexpr rs2_extension value = E;  \
+/*! Preprocessor Macro to define mapping between rs2_extension and their respective interface (and vice versa) */
+#define MAP_EXTENSION(E, T)                                      \
+    template<> struct ExtensionsToTypes<E> {                     \
+        using type = T;                                          \
+        static constexpr const char* to_string() { return #T; }; \
+    };                                                           \
+    template<> struct TypeToExtensionn<T> {                      \
+        static constexpr rs2_extension value = E;                \
+        static constexpr const char* to_string() { return #T; }; \
     }
 
 namespace librealsense
@@ -73,7 +75,7 @@ namespace librealsense
      */
 
     template <typename To>
-    bool try_extend(std::shared_ptr<extension_snapshot> from, void** ext)
+    inline bool try_extend(std::shared_ptr<extension_snapshot> from, void** ext)
     {
         if (from == nullptr)
         {
@@ -90,17 +92,28 @@ namespace librealsense
     }
 
     template<typename T, typename P>
-    bool Is(std::shared_ptr<P> ptr)
+    inline std::shared_ptr<T> As(std::shared_ptr<P> ptr)
     {
-        return std::dynamic_pointer_cast<T>(ptr) != nullptr;
+        return std::dynamic_pointer_cast<T>(ptr);
     }
 
     template<typename T, typename P>
-    bool Is(P* ptr)
+    inline T* As(P* ptr)
     {
-        return dynamic_cast<T*>(ptr) != nullptr;
+        return dynamic_cast<T*>(ptr);
     }
 
+    template<typename T, typename P>
+    inline bool Is(std::shared_ptr<P> ptr)
+    {
+        return As<T>(ptr) != nullptr;
+    }
+
+    template<typename T, typename P>
+    inline bool Is(P* ptr)
+    {
+        return As<T>(ptr) != nullptr;
+    }
     //Creating Helper functions to map rs2_extension enums to actual interface
     template<rs2_extension> struct ExtensionsToTypes;
     template<typename T> struct TypeToExtensionn;

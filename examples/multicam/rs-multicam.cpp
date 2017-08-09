@@ -37,7 +37,7 @@ int main(int argc, char * argv[]) try
     {
         cout << "Starting " << dev.get_info(RS2_CAMERA_INFO_NAME) << "... ";
         auto sensor = dev.query_sensors().front();
-        auto modes = sensor.get_stream_modes();
+        auto modes = sensor.get_stream_profiles();
         sensor.open(modes.back());
         syncers.emplace_back();
         sensor.start(syncers.back());

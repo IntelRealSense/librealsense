@@ -13,24 +13,27 @@
 
 namespace librealsense
 {
+    using stream_filter = struct { uint32_t sensor_index; rs2_stream stream_type; uint32_t stream_index; };
+
     class playback_sensor : public sensor_interface,
         public extendable_interface,
         public info_container,    
-        public options_container
+        public options_container,
+        public std::enable_shared_from_this<playback_sensor>
     {
     public:
         using frame_interface_callback_t = std::function<void(frame_holder)>;
         signal<playback_sensor, uint32_t, frame_callback_ptr> started;
         signal<playback_sensor, uint32_t, bool> stopped;
-        signal<playback_sensor, uint32_t, const std::vector<stream_profile>&> opened;
-        signal<playback_sensor, uint32_t> closed;
+        signal<playback_sensor, const std::vector<stream_filter>& > opened;
+        signal<playback_sensor, const std::vector<stream_filter>& > closed;
         
 
         playback_sensor(const device_interface& parent_device, const sensor_snapshot& sensor_description, uint32_t sensor_id);
         virtual ~playback_sensor();
 
-        std::vector<stream_profile> get_principal_requests() override;
-        void open(const std::vector<stream_profile>& requests) override;
+        stream_profiles get_stream_profiles() override;
+        void open(const stream_profiles& requests) override;
         void close() override;
         option& get_option(rs2_option id) override;
         const option& get_option(rs2_option id) const override;
@@ -43,8 +46,6 @@ namespace librealsense
         bool is_streaming() const override;
         bool extend_to(rs2_extension extension_type, void** ext) override;
         const device_interface& get_device() override;
-        rs2_extrinsics get_extrinsics_to(rs2_stream from, const sensor_interface& other, rs2_stream to) const  override;
-        const std::vector<platform::stream_profile>& get_curr_configurations() const  override;
 
         void handle_frame(frame_holder frame, bool is_real_time);
         void stop(bool invoke_required);
@@ -53,11 +54,14 @@ namespace librealsense
     private:
         frame_callback_ptr m_user_callback;
         librealsense::notifications_callback_ptr m_user_notification_callback;
-        std::map<rs2_stream, std::shared_ptr<dispatcher>> m_dispatchers;
+		using stream_unique_id = int;
+        std::map<stream_unique_id, std::shared_ptr<dispatcher>> m_dispatchers;
         std::atomic<bool> m_is_started;
         sensor_snapshot m_sensor_description;
         uint32_t m_sensor_id;
         std::mutex m_mutex;
+        std::map<device_serializer::stream_identifier, std::shared_ptr<stream_profile_interface>> m_streams;
         const device_interface& m_parent_device;
+        stream_profiles m_available_profiles;
     };
 }

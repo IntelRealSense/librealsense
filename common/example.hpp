@@ -17,6 +17,15 @@
 #include <cmath>
 #include <map>
 
+#ifdef _MSC_VER
+#ifndef GL_CLAMP_TO_BORDER
+#define GL_CLAMP_TO_BORDER  0x812D
+#endif
+#ifndef GL_CLAMP_TO_EDGE
+#define GL_CLAMP_TO_EDGE    0x812F
+#endif
+#endif
+
 namespace rs2
 {
     class fps_calc
@@ -153,6 +162,7 @@ namespace rs2
     {
         float2 cursor;
         bool mouse_down = false;
+        int mouse_wheel = 0;
     };
 
     template<typename T>
@@ -164,6 +174,7 @@ namespace rs2
     template<typename T>
     T unnormalizeT(const T& in_val, const T& min, const T& max)
     {
+        if (min == max) return min;
         return ((in_val * (max - min)) + min);
     }
 
@@ -361,7 +372,7 @@ namespace rs2
 
         color_map(const std::vector<float3>& values, int steps = 4000)
         {
-            for (int i = 0; i < values.size(); i++)
+            for (size_t i = 0; i < values.size(); i++)
             {
                 _map[(float)i/(values.size()-1)] = values[i];
             }
@@ -472,9 +483,9 @@ namespace rs2
                     auto f = histogram[d] / (float)histogram[0xFFFF]; // 0-255 based on histogram location
 
                     auto c = map.get(f);
-                    rgb_image[i * 3 + 0] = c.x;
-                    rgb_image[i * 3 + 1] = c.y;
-                    rgb_image[i * 3 + 2] = c.z;
+                    rgb_image[i * 3 + 0] = (uint8_t)c.x;
+                    rgb_image[i * 3 + 1] = (uint8_t)c.y;
+                    rgb_image[i * 3 + 2] = (uint8_t)c.z;
                 }
                 else
                 {
@@ -495,9 +506,9 @@ namespace rs2
                     auto f = (d - min) / (max - min);
 
                     auto c = map.get(f);
-                    rgb_image[i * 3 + 0] = c.x;
-                    rgb_image[i * 3 + 1] = c.y;
-                    rgb_image[i * 3 + 2] = c.z;
+                    rgb_image[i * 3 + 0] = (uint8_t)c.x;
+                    rgb_image[i * 3 + 1] = (uint8_t)c.y;
+                    rgb_image[i * 3 + 2] = (uint8_t)c.z;
                 }
                 else
                 {
@@ -514,9 +525,9 @@ namespace rs2
     {
         GLuint texture;
         std::vector<uint8_t> rgb;
-        rs2::frame last;
 
     public:
+        rs2::frame last;
         color_map* cm = &jet;
         bool equalize = true;
         float min_depth = 0.f;
@@ -535,7 +546,7 @@ namespace rs2
             int width = 0;
             int height = 0;
             int stride = 0;
-            auto format = frame.get_format();
+            auto format = frame.get_profile().format();
             auto data = frame.get_data();
 
             auto image = frame.as<video_frame>();
@@ -622,40 +633,39 @@ namespace rs2
             last = frame;
         }
 
-        void draw_axis()
+        static void draw_axis(float axis_size = 1.f, float axisWidth = 4.f)
         {
 
             // Traingles For X axis
             glBegin(GL_TRIANGLES);
             glColor3f(1.0f, 0.0f, 0.0f);
-            glVertex3f(1.1f, 0.0f, 0.0f);
-            glVertex3f(1.0f, 0.05f, 0.0f);
-            glVertex3f(1.0f, -0.05f, 0.0f);
+            glVertex3f(axis_size * 1.1f, 0.0f, 0.0f);
+            glVertex3f(axis_size, axis_size * 0.05f, 0.0f);
+            glVertex3f(axis_size, -0.05f * axis_size, 0.0f);
             glEnd();
 
             // Traingles For Y axis
             glBegin(GL_TRIANGLES);
             glColor3f(0.0f, 1.0f, 0.0f);
-            glVertex3f(0.0f, -1.1f, 0.0f);
-            glVertex3f(0.0f, -1.0f, 0.05f);
-            glVertex3f(0.0f, -1.0f, -0.05f);
+            glVertex3f(0.0f, -1.1f * axis_size, 0.0f);
+            glVertex3f(0.0f, -1.0f * axis_size, 0.05f * axis_size);
+            glVertex3f(0.0f, -1.0f * axis_size, -0.05f * axis_size);
             glEnd();
             glBegin(GL_TRIANGLES);
             glColor3f(0.0f, 1.0f, 0.0f);
-            glVertex3f(0.0f, -1.1f, 0.0f);
-            glVertex3f(0.05f, -1.0f, 0.0f);
-            glVertex3f(-0.05f, -1.0f, 0.0f);
+            glVertex3f(0.0f, -1.1f * axis_size, 0.0f);
+            glVertex3f(0.05f * axis_size, -1.0f * axis_size, 0.0f);
+            glVertex3f(-0.05f * axis_size, -1.0f * axis_size, 0.0f);
             glEnd();
 
             // Traingles For Z axis
             glBegin(GL_TRIANGLES);
             glColor3f(0.0f, 0.0f, 1.0f);
-            glVertex3f(0.0f, 0.0f, 1.1f);
-            glVertex3f(0.0f, 0.05f, 1.0f);
-            glVertex3f(0.0f, -0.05f, 1.0f);
+            glVertex3f(0.0f, 0.0f, 1.1f * axis_size);
+            glVertex3f(0.0f, 0.05f * axis_size, 1.0f * axis_size);
+            glVertex3f(0.0f, -0.05f * axis_size, 1.0f * axis_size);
             glEnd();
 
-            auto axisWidth = 4.f;
             glLineWidth(axisWidth);
 
             // Drawing Axis
@@ -663,17 +673,17 @@ namespace rs2
             // X axis - Red
             glColor3f(1.0f, 0.0f, 0.0f);
             glVertex3f(0.0f, 0.0f, 0.0f);
-            glVertex3f(1.0f, 0.0f, 0.0f);
+            glVertex3f(axis_size, 0.0f, 0.0f);
 
             // Y axis - Green
             glColor3f(0.0f, 1.0f, 0.0f);
             glVertex3f(0.0f, 0.0f, 0.0f);
-            glVertex3f(0.0f, -1.0f, 0.0f);
+            glVertex3f(0.0f, -axis_size, 0.0f);
 
             // Z axis - White
             glColor3f(0.0f, 0.0f, 1.0f);
             glVertex3f(0.0f, 0.0f, 0.0f);
-            glVertex3f(0.0f, 0.0f, 1.0f);
+            glVertex3f(0.0f, 0.0f, axis_size);
             glEnd();
         }
 
@@ -829,7 +839,7 @@ namespace rs2
             auto image = last.as<video_frame>();
             if (!image) return false;
 
-            auto format = last.get_format();
+            auto format = last.get_profile().format();
             switch (format)
             {
             case RS2_FORMAT_Z16:
@@ -917,9 +927,9 @@ namespace rs2
                 glEnd();
             }
 
-            if (last)
+            /*if (last)
             {
-                if (last.get_stream_type() == RS2_STREAM_DEPTH)
+                if (last.get_profile().stream_type() == RS2_STREAM_DEPTH)
                 {
                     const int segments = 16;
                     for (int i = 1; i <= segments; i++)
@@ -939,7 +949,7 @@ namespace rs2
                         glEnd();
                     }
                 }
-            }
+            }*/
         }
     };
 

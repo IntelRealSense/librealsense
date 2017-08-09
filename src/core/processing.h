@@ -20,14 +20,18 @@ namespace librealsense
     class synthetic_source_interface
     {
     public:
-        virtual frame_interface* allocate_video_frame(rs2_stream new_stream, frame_interface* original,
-                                                rs2_format new_format = RS2_FORMAT_ANY,
-                                                int new_bpp = 0,
-                                                int new_width = 0,
-                                                int new_height = 0,
-                                                int new_stride = 0) = 0;
+        virtual ~synthetic_source_interface() = default;
+
+        virtual frame_interface* allocate_video_frame(std::shared_ptr<stream_profile_interface> stream, 
+                                                      frame_interface* original,
+                                                      int new_bpp = 0,
+                                                      int new_width = 0, 
+                                                      int new_height = 0, 
+                                                      int new_stride = 0) = 0;
 
         virtual frame_interface* allocate_composite_frame(std::vector<frame_holder> frames) = 0;
+
+        virtual frame_interface* allocate_points(std::shared_ptr<stream_profile_interface> stream, frame_interface* original) = 0;
 
         virtual void frame_ready(frame_holder result) = 0;
         virtual rs2_source* get_c_wrapper() = 0;
@@ -39,8 +43,6 @@ namespace librealsense
         virtual void set_processing_callback(frame_processor_callback_ptr callback) = 0;
         virtual void set_output_callback(frame_callback_ptr callback) = 0;
         virtual void invoke(frame_holder frame) = 0;
-
-
 
         virtual synthetic_source_interface& get_source() = 0;
 

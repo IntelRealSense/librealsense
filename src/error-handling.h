@@ -20,6 +20,7 @@ namespace librealsense
         void polling(dispatcher::cancellable_timer cancellable_timer);
 
         unsigned int _poll_intervals_ms;
+        bool _silenced = false;
         std::unique_ptr<option> _option;
         active_object<> _active_object;
         std::weak_ptr<notifications_proccessor> _notifications_proccessor;

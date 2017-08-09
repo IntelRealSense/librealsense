@@ -10,7 +10,7 @@ namespace librealsense
     class ds5_active : public virtual ds5_device
     {
     public:
-        ds5_active(const platform::backend& backend,
+        ds5_active(std::shared_ptr<context> ctx,
                    const platform::backend_device_group& group);
 
 

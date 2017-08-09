@@ -12,15 +12,6 @@
 #include <sstream>
 #include <algorithm>
 
-#ifdef _MSC_VER
-#ifndef GL_CLAMP_TO_BORDER
-#define GL_CLAMP_TO_BORDER  0x812D
-#endif
-#ifndef GL_CLAMP_TO_EDGE
-#define GL_CLAMP_TO_EDGE    0x812F
-#endif
-#endif
-
 using namespace rs2;
 using namespace std;
 
@@ -59,8 +50,9 @@ float2 project_to_texcoord(const rs2_intrinsics *intrin, const float3 & point) {
 struct texture_stream
 {
     rs2_stream stream;
+    int index;
     rs2_format format;
-    std::string title;
+    string title;
 };
 
 int main(int argc, char * argv[])
@@ -95,25 +87,25 @@ int main(int argc, char * argv[])
 
             // try to open color stream, but fall back to IR if the camera doesn't support it
             rs2_stream mapped;
-            if (config.can_enable_stream(dev, RS2_STREAM_FISHEYE, 0, 0, 0, RS2_FORMAT_RAW8))
+            if (config.can_enable_stream(dev, RS2_STREAM_FISHEYE, 0, 0, RS2_FORMAT_RAW8, 0))
             {
-                available_streams.push_back({ RS2_STREAM_FISHEYE, RS2_FORMAT_RAW8, "Fish-Eye" });
+                available_streams.push_back({ RS2_STREAM_FISHEYE, 0, RS2_FORMAT_RAW8, "Fish-Eye" });
             }
-            if (config.can_enable_stream(dev, RS2_STREAM_COLOR, 0, 0, 0, RS2_FORMAT_RGB8))
+            if (config.can_enable_stream(dev, RS2_STREAM_COLOR, 0, 0, RS2_FORMAT_RGB8, 0))
             {
-                available_streams.push_back({ RS2_STREAM_COLOR, RS2_FORMAT_RGB8, "Color" });
+                available_streams.push_back({ RS2_STREAM_COLOR, 0, RS2_FORMAT_RGB8, "Color" });
             }
-            if (config.can_enable_stream(dev, RS2_STREAM_INFRARED, 0, 0, 0, RS2_FORMAT_RGB8))
+            if (config.can_enable_stream(dev, RS2_STREAM_INFRARED, 0, 0, RS2_FORMAT_RGB8, 0))
             {
-                available_streams.push_back({ RS2_STREAM_INFRARED, RS2_FORMAT_RGB8, "Artifical Color" });
+                available_streams.push_back({ RS2_STREAM_INFRARED, 0, RS2_FORMAT_RGB8, "Artifical Color" });
             }
-            if (config.can_enable_stream(dev, RS2_STREAM_INFRARED, 0, 0, 0, RS2_FORMAT_Y8))
+            if (config.can_enable_stream(dev, RS2_STREAM_INFRARED, 0, 0, RS2_FORMAT_Y8, 0))
             {
-                available_streams.push_back({ RS2_STREAM_INFRARED, RS2_FORMAT_Y8, "Infrared" });
+                available_streams.push_back({ RS2_STREAM_INFRARED, 0, RS2_FORMAT_Y8, "Infrared" });
             }
-            if (config.can_enable_stream(dev, RS2_STREAM_INFRARED2, 0, 0, 0, RS2_FORMAT_Y8))
+            if (config.can_enable_stream(dev, RS2_STREAM_INFRARED, 2, 0, 0, RS2_FORMAT_Y8, 0))
             {
-                available_streams.push_back({ RS2_STREAM_INFRARED2, RS2_FORMAT_Y8, "Infrared2" });
+                available_streams.push_back({ RS2_STREAM_INFRARED, 2, RS2_FORMAT_Y8, "Infrared2" });
             }
 
             if (available_streams.size() == 0)
@@ -124,7 +116,7 @@ int main(int argc, char * argv[])
             for (auto&& s : available_streams) stream_names.push_back(s.title.c_str());
 
             auto&& selected = available_streams[selected_stream];
-            config.enable_stream(selected.stream, 0, 0, 0, selected.format);
+            config.enable_stream(selected.stream, 640, 480, selected.format, 0);
             mapped = selected.stream;
             auto stream = config.open(dev);
 
@@ -180,11 +172,12 @@ int main(int argc, char * argv[])
                 }
             });
 
+            pointcloud pc = ctx.create_pointcloud();
             syncer syncer;
             stream.start(syncer);
 
             texture_buffer mapped_tex;
-            const uint16_t * depth;
+            
 
             extrin = stream.get_extrinsics(RS2_STREAM_DEPTH, mapped);
             mapped_intrin = stream.get_intrinsics(mapped);
@@ -203,30 +196,33 @@ int main(int argc, char * argv[])
                 glfwPollEvents();
                 ImGui_ImplGlfw_NewFrame();
 
-                auto frames = syncer.wait_for_frames(500);
+                auto frames = syncer.wait_for_frames(500000);
                 if (frames.size() == 0)
                     continue;
 
-                bool has_depth = false;
-                for (auto&& f : frames)
-                    if (f.get_stream_type() == RS2_STREAM_DEPTH)
-                        has_depth = true;
-                if (!has_depth) continue;
-
                 glPushAttrib(GL_ALL_ATTRIB_BITS);
+
+                frame depth_frame, mapped_frame;
 
                 for (auto&& frame : frames)
                 {
-                    if (frame.get_stream_type() == RS2_STREAM_DEPTH)
+                    if (frame.get_profile().stream_type() == RS2_STREAM_DEPTH)
                     {
-                        depth = reinterpret_cast<const uint16_t *>(frame.get_data());
+                        depth_frame = frame;
                     }
 
-                    if (frame.get_stream_type() == mapped)
+                    if (frame.get_profile().stream_type() == mapped)
                     {
                         mapped_tex.upload(frame);
+                        mapped_frame = frame;
                     }
                 }
+
+                if (mapped_frame) pc.map_to(mapped_frame);
+
+                if (!depth_frame) continue;
+
+                auto points = pc.calculate(depth_frame);
 
                 int width, height;
                 glfwGetFramebufferSize(win, &width, &height);
@@ -256,26 +252,17 @@ int main(int argc, char * argv[])
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, texture_border_mode);
                 glBegin(GL_POINTS);
 
-                // Determine depth value corresponding to one meter
-                auto depth_units = depth_camera.get_depth_scale();
+                auto vertices = points.get_vertices();
+                auto tex_coords = points.get_texture_coordinates();
 
-                vector<uint8_t> image;
-                auto points = depth_to_points(image, depth_intrin, depth, depth_units);
-
-                for (int y=0; y<depth_intrin.height; ++y)
+                for (int i = 0; i < points.size(); i++)
                 {
-                    for(int x=0; x<depth_intrin.width; ++x)
+                    if (vertices[i].z)
                     {
-                        if(points->z)
-                        {
-                            auto trans = transform(&extrin, *points);
-                            auto tex_xy = project_to_texcoord(&mapped_intrin, trans);
-
-                            glTexCoord(tex_xy);
-                            glVertex(*points);
-                        }
-                        ++points;
+                        glVertex3fv(vertices[i]);
+                        glTexCoord2fv(tex_coords[i]);
                     }
+
                 }
 
                 glEnd();
@@ -305,7 +292,7 @@ int main(int argc, char * argv[])
                     auto&& selected = available_streams[selected_stream];
                     util::config config;
                     config.enable_stream(RS2_STREAM_DEPTH, preset::best_quality);
-                    config.enable_stream(selected.stream, 0, 0, 0, selected.format);
+                    config.enable_stream(selected.stream, 0, 0, selected.format, 0);
                     mapped = selected.stream;
                     stream = config.open(dev);
                     stream.start(syncer);

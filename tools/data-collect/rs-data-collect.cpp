@@ -27,7 +27,7 @@ struct frame_data
     double ts;
     long long arrival_time;
     rs2_timestamp_domain domain;
-    rs2_stream strean_type;
+    rs2_stream stream_type;
 };
 
 enum Config_Params { STREAM_TYPE = 0, RES_WIDTH, RES_HEIGHT, FPS, FORMAT };
@@ -126,7 +126,7 @@ util::config configure_stream(bool is_file_set, bool& is_valid, string fn = "")
 
         // correctness check
         parse_configuration(row, stream_type, width, height, format, fps);
-        config.enable_stream(stream_type, width, height, fps, format);
+        config.enable_stream(stream_type, width, height, format, fps);
     }
     return config;
 }
@@ -140,11 +140,12 @@ void save_data_to_file(list<frame_data> buffer[], string filename = ".\\frames_d
 
     for (int stream_index = 0; stream_index < NUM_OF_STREAMS; stream_index++)
     {
-        for (unsigned int i = 0; i < buffer[stream_index].size(); i++)
+        unsigned int buffer_size = buffer[stream_index].size();
+        for (unsigned int i = 0; i < buffer_size; i++)
         {
             ostringstream line;
             auto data = buffer[stream_index].front();
-            line << rs2_stream_to_string(data.strean_type) << "," << data.frame_number << "," << data.ts << "," << data.arrival_time << "\n";
+            line << rs2_stream_to_string(data.stream_type) << "," << data.frame_number << "," << data.ts << "," << data.arrival_time << "\n";
             buffer[stream_index].pop_front();
             csv << line.str();
         }
@@ -223,13 +224,13 @@ int main(int argc, char** argv)
 
                 frame_data data;
                 data.frame_number = f.get_frame_number();
-                data.strean_type = f.get_stream_type();
+                data.stream_type = f.get_profile().stream_type();
                 data.ts = f.get_timestamp();
                 data.domain = f.get_frame_timestamp_domain();
                 data.arrival_time = arrival_time.count();
 
-                if (buffer[(int)data.strean_type].size() < max_frames_number)
-                    buffer[(int)data.strean_type].push_back(data);
+                if (buffer[(int)data.stream_type].size() < max_frames_number)
+                    buffer[(int)data.stream_type].push_back(data);
                 else
                     cv.notify_one();
             });
@@ -241,7 +242,7 @@ int main(int argc, char** argv)
 
                 for(auto&& profile : camera.get_profiles())
                 {
-                    if(buffer[(int) profile.second.stream].size() < MAX_FRAMES_NUMBER)
+                    if(buffer[(int) profile.second.stream_type()].size() < max_frames_number)
                         return false;
                 }
                 succeed = true;

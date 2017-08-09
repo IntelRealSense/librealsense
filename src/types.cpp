@@ -115,14 +115,10 @@ namespace librealsense
         STRCASE(STREAM, DEPTH)
         STRCASE(STREAM, COLOR)
         STRCASE(STREAM, INFRARED)
-        STRCASE(STREAM, INFRARED2)
         STRCASE(STREAM, FISHEYE)
         STRCASE(STREAM, GYRO)
         STRCASE(STREAM, ACCEL)
-        STRCASE(STREAM, GPIO1)
-        STRCASE(STREAM, GPIO2)
-        STRCASE(STREAM, GPIO3)
-        STRCASE(STREAM, GPIO4)
+        STRCASE(STREAM, GPIO)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
         #undef CASE

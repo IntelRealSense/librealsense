@@ -1,7 +1,7 @@
 # ubuntu 16.04 LTS cmake version 3.5.1
 cmake_minimum_required(VERSION 2.8.3)
 
-project(RealsenseExamplesCapture)
+project(RealsenseToolsDepthQuality)
 
 # Save the command line compile commands in the build output
 set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
@@ -17,17 +17,17 @@ elseif(COMPILER_SUPPORTS_CXX0X)
 endif()
 
 if(BUILD_GRAPHICAL_EXAMPLES)
-    add_executable(rs-depth-sanity rs-depth-sanity.cpp ../../third-party/imgui/imgui.cpp ../../third-party/imgui/imgui_draw.cpp ../../third-party/imgui/imgui_impl_glfw.cpp ../../common/example.hpp ../../common/model-views.h ../../common/model-views.cpp)
-    target_link_libraries(rs-depth-sanity ${DEPENDENCIES})
-    include_directories(rs-depth-sanity ../../common ../../third-party/tclap/include ../../third-party/imgui)
-    set_target_properties (rs-depth-sanity PROPERTIES
+    add_executable(rs-depth-quality rs-depth-quality.cpp ../../third-party/imgui/imgui.cpp ../../third-party/imgui/imgui_draw.cpp ../../third-party/imgui/imgui_impl_glfw.cpp ../../common/example.hpp)
+    target_link_libraries(rs-depth-quality ${DEPENDENCIES})
+    include_directories(rs-depth-quality ../../common ../../third-party/tclap/include ../../third-party/imgui)
+    set_target_properties (rs-depth-quality PROPERTIES
         FOLDER "Tools"
     )
 
     install(
         TARGETS
 
-        rs-depth-sanity
+        rs-depth-quality
 
         RUNTIME DESTINATION
         ${CMAKE_INSTALL_PREFIX}/bin

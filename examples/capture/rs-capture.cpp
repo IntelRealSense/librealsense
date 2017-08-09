@@ -83,7 +83,7 @@ int main(int argc, char * argv[])
            // black.start(syncer);
             frame_queue queue;
             syncer.start(queue);
-            texture_buffer buffers[RS2_STREAM_COUNT];
+            map<int, texture_buffer> buffers;
             bool is_stream_active[RS2_STREAM_COUNT] = {false};
             // Open a GLFW window
             glfwInit();
@@ -98,7 +98,6 @@ int main(int argc, char * argv[])
                 int w, h;
                 glfwGetFramebufferSize(win, &w, &h);
 
-                auto index = 0;
                 auto frames = queue.wait_for_frames();
 
                 max_frames = std::max(max_frames, frames.size());
@@ -107,20 +106,20 @@ int main(int argc, char * argv[])
                 sort(frames.begin(), frames.end(),
                      [](const frame& a, const frame& b) -> bool
                 {
-                    return a.get_stream_type() < b.get_stream_type();
+                    return a.get_profile().unique_id() < b.get_profile().unique_id();
                 });
 
-                auto tiles_horisontal = static_cast<int>(ceil(sqrt(max_frames)));
-                auto tiles_vertical = ceil((float)max_frames / tiles_horisontal);
-                auto tile_w = static_cast<float>((float)w / tiles_horisontal);
-                auto tile_h = static_cast<float>((float)h / tiles_vertical);
 
                 for (auto&& frame : frames)
                 {
-                    auto stream_type = frame.get_stream_type();
-                    buffers[stream_type].upload(frame);
-                    is_stream_active[stream_type] = true;
+                    buffers[frame.get_profile().unique_id()].upload(frame);
+                    is_stream_active[frame.get_profile().stream_type()] = true;
                 }
+
+                auto tiles_horisontal = static_cast<int>(ceil(sqrt(buffers.size())));
+                auto tiles_vertical = ceil(static_cast<float>(buffers.size()) / tiles_horisontal);
+                auto tile_w = static_cast<float>(static_cast<float>(w) / tiles_horisontal);
+                auto tile_h = static_cast<float>(static_cast<float>(h) / tiles_vertical);
 
                 // Wait for new images
                 glfwPollEvents();
@@ -134,26 +133,23 @@ int main(int argc, char * argv[])
                 glfwGetWindowSize(win, &w, &h);
                 glOrtho(0, w, h, 0, -1, +1);
 
-                index = 0;
                 for (auto i = 0; i< RS2_STREAM_COUNT; i++)
                 {
+                    auto stream_index = i;
+
+                    auto index = distance(begin(buffers), buffers.find(stream_index));
                     auto col_id = index / tiles_horisontal;
                     auto row_id = index % tiles_horisontal;
 
-                    if(is_stream_active[i])
-                    {
+                    buffers[stream_index].show({ row_id * tile_w, static_cast<float>(col_id * tile_h), tile_w, tile_h }, 1);
                         buffers[i].show({ row_id * tile_w, static_cast<float>(col_id * tile_h), tile_w, tile_h }, 1);
-                        index++;
-                    }
                 }
-
                 glPopMatrix();
                 glfwSwapBuffers(win);
             }
 
             if (glfwWindowShouldClose(win))
                 finished = true;
-        dev.hardware_reset();
         }
         catch (const error & e)
         {

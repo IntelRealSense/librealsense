@@ -310,17 +310,17 @@ namespace librealsense
    class const_value_option : public readonly_option
    {
    public:
-       const_value_option(std::string desc, float val)
-            : _desc(std::move(desc)), _val(val) {}
+       const_value_option(std::string desc, lazy<float> val)
+            : _val(std::move(val)), _desc(std::move(desc)) {}
 
-       float query() const override { return _val; }
-       option_range get_range() const override { return { _val, _val, 0, _val }; }
+       float query() const override { return *_val; }
+       option_range get_range() const override { return { *_val, *_val, 0, *_val }; }
        bool is_enabled() const override { return true; }
 
        const char* get_description() const override { return _desc.c_str(); }
 
    private:
-       float _val;
+       lazy<float> _val;
        std::string _desc;
    };
 
