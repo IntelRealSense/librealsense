@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include <librealsense/rs2_advanced_mode.hpp>
+#include <librealsense2/rs_advanced_mode.hpp>
 #include "types.h"
 
 template<class T, class S>

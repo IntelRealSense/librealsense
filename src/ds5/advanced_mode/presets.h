@@ -2,7 +2,7 @@
 // Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 
 #pragma once
-#include <librealsense/h/rs2_advanced_mode_command.h>
+#include "../../../include/librealsense2/h/rs_advanced_mode_command.h"
 
 namespace librealsense
 {

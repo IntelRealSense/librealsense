@@ -4,8 +4,8 @@
 #ifndef LIBREALSENSE_RS2_FRAME_HPP
 #define LIBREALSENSE_RS2_FRAME_HPP
 
-#include "rs2_types.hpp"
-#include "rs2_sensor.hpp"
+#include "rs_types.hpp"
+#include "rs_sensor.hpp"
 
 namespace rs2
 {

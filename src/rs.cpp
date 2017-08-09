@@ -20,8 +20,6 @@
 #include "stream.h"
 
 #include "pipeline.h"
-#include "../include/librealsense/rs2.h"
-#include "../include/librealsense/h/rs2_internal.h"
 
 ////////////////////////
 // API implementation //

@@ -13,7 +13,7 @@
 #define NOMINMAX
 #endif
 
-#include "../include/librealsense/hpp/rs2_types.hpp"
+#include "../include/librealsense2/hpp/rs_types.hpp"
 
 #include <stdint.h>
 #include <cassert>                          // For assert

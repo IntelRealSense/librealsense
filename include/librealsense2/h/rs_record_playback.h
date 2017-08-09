@@ -14,7 +14,7 @@
 extern "C" {
 #endif
 
-#include "rs2_types.h"
+#include "rs_types.h"
 
 typedef enum rs2_playback_status
 {

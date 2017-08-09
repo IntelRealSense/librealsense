@@ -3,7 +3,7 @@
 
 #include "model-views.h"
 
-#include <librealsense/rs2_advanced_mode.hpp>
+#include <librealsense2/rs_advanced_mode.hpp>
 
 #include <regex>
 

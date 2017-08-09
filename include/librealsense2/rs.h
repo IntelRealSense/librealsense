@@ -1,7 +1,7 @@
 /* License: Apache 2.0. See LICENSE file in root directory.
    Copyright(c) 2017 Intel Corporation. All Rights Reserved. */
 
-/** \file rs2.h
+/** \file rs.h
 * \brief
 * Exposes librealsense functionality for C compilers
 */
@@ -13,14 +13,14 @@
 extern "C" {
 #endif
 
-#include <librealsense/h/rs2_types.h>
-#include <librealsense/h/rs2_context.h>
-#include <librealsense/h/rs2_device.h>
-#include <librealsense/h/rs2_frame.h>
-#include <librealsense/h/rs2_option.h>
-#include <librealsense/h/rs2_processing.h>
-#include <librealsense/h/rs2_record_playback.h>
-#include <librealsense/h/rs2_sensor.h>
+#include "h/rs_types.h"
+#include "h/rs_context.h"
+#include "h/rs_device.h"
+#include "h/rs_frame.h"
+#include "h/rs_option.h"
+#include "h/rs_processing.h"
+#include "h/rs_record_playback.h"
+#include "h/rs_sensor.h"
 
 #define RS2_API_MAJOR_VERSION    2
 #define RS2_API_MINOR_VERSION    7

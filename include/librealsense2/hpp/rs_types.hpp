@@ -4,14 +4,14 @@
 #ifndef LIBREALSENSE_RS2_TYPES_HPP
 #define LIBREALSENSE_RS2_TYPES_HPP
 
-#include "../rs2.h"
-#include "../h/rs2_context.h"
-#include "../h/rs2_device.h"
-#include "../h/rs2_frame.h"
-#include "../h/rs2_processing.h"
-#include "../h/rs2_record_playback.h"
-#include "../h/rs2_sensor.h"
-#include "../h/rs2_pipeline.h"
+#include "../rs.h"
+#include "../h/rs_context.h"
+#include "../h/rs_device.h"
+#include "../h/rs_frame.h"
+#include "../h/rs_processing.h"
+#include "../h/rs_record_playback.h"
+#include "../h/rs_sensor.h"
+#include "../h/rs_pipeline.h"
 
 #include <string>
 #include <vector>

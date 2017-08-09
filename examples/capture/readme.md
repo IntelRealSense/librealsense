@@ -12,7 +12,7 @@ We will use OpenGL for cross-platform rendering and GLFW for window management. 
 
 We start by including Intel® RealSense™ Cross-Platform API. All but advanced functionality is provided through a single header:
 ```cpp
-#include <librealsense/rs2.hpp> // Include RealSense Cross Platform API
+#include <librealsense2/rs.hpp> // Include RealSense Cross Platform API
 ```
 
 Next, we prepared a [very short helper library](../example.hpp) encapsulating OpenGL rendering and window management:

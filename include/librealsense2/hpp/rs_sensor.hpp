@@ -4,7 +4,7 @@
 #ifndef LIBREALSENSE_RS2_SENSOR_HPP
 #define LIBREALSENSE_RS2_SENSOR_HPP
 
-#include "rs2_types.hpp"
+#include "rs_types.hpp"
 
 namespace rs2
 {

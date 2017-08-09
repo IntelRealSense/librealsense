@@ -13,7 +13,7 @@
 #include <iomanip>
 
 #include "../../../third-party/json.hpp"
-#include <librealsense/h/rs2_advanced_mode_command.h>
+#include <librealsense2/h/rs_advanced_mode_command.h>
 #include "types.h"
 #include "presets.h"
 

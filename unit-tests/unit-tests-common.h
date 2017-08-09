@@ -5,9 +5,9 @@
 #define LIBREALSENSE_UNITTESTS_COMMON_H
 
 #include "catch/catch.hpp"
-#include <librealsense/rs2.hpp>
-#include <librealsense/rsutil2.hpp>
-#include <librealsense/hpp/rs2_internal.hpp>
+#include "../include/librealsense2/rs.hpp"
+#include "../include/librealsense2/rsutil.hpp"
+#include "../include/librealsense2/hpp/rs_internal.hpp"
 #include <limits> // For std::numeric_limits
 #include <cmath> // For std::sqrt
 #include <cassert> // For assert

@@ -4,8 +4,8 @@
 #ifndef LIBREALSENSE_RS2_INTERNAL_HPP
 #define LIBREALSENSE_RS2_INTERNAL_HPP
 
-#include "rs2_types.hpp"
-#include "../h/rs2_internal.h"
+#include "rs_types.hpp"
+#include "../h/rs_internal.h"
 
 namespace rs2
 {

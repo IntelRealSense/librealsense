@@ -13,8 +13,8 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-#include "rs2_types.h"
-#include "rs2_sensor.h"
+#include "rs_types.h"
+#include "rs_sensor.h"
 
 /** \brief Motion device intrinsics: scale, bias, and variances */
 typedef struct rs2_motion_device_intrinsic

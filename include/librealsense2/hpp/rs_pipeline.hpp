@@ -4,9 +4,9 @@
 #ifndef LIBREALSENSE_RS2_PIPELINE_HPP
 #define LIBREALSENSE_RS2_PIPELINE_HPP
 
-#include "rs2_types.hpp"
-#include "rs2_frame.hpp"
-#include "rs2_context.hpp"
+#include "rs_types.hpp"
+#include "rs_frame.hpp"
+#include "rs_context.hpp"
 
 
 namespace rs2

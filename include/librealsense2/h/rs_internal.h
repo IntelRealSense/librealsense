@@ -13,8 +13,8 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-#include "rs2_types.h"
-#include "rs2_context.h"
+#include "rs_types.h"
+#include "rs_context.h"
 
 /**
  * librealsense Recorder is intended for effective unit-testing

@@ -4,9 +4,9 @@
 #ifndef LIBREALSENSE_RS2_CONTEXT_HPP
 #define LIBREALSENSE_RS2_CONTEXT_HPP
 
-#include "rs2_types.hpp"
-#include "rs2_record_playback.hpp"
-#include "rs2_processing.hpp"
+#include "rs_types.hpp"
+#include "rs_record_playback.hpp"
+#include "rs_processing.hpp"
 
 
 namespace rs2

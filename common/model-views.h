@@ -2,7 +2,7 @@
 // Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 
 #pragma once
-#include <librealsense/rs2.hpp>
+#include <librealsense2/rs.hpp>
 
 #include "rendering.h"
 #include "parser.hpp"

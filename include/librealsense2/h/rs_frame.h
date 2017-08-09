@@ -13,7 +13,7 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-#include "rs2_types.h"
+#include "rs_types.h"
 
 /** \brief Specifies the clock in relation to which the frame timestamp was measured. */
 typedef enum rs2_timestamp_domain

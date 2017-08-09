@@ -7,8 +7,8 @@
 
 #include <cmath>
 #include "unit-tests-common.h"
-#include <librealsense/rs2_advanced_mode.hpp>
-#include <librealsense/hpp/rs2_frame.hpp>
+#include "../include/librealsense2/rs_advanced_mode.hpp"
+#include <librealsense2/hpp/rs_frame.hpp>
 
 using namespace rs2;
 
@@ -2203,7 +2203,7 @@ TEST_CASE("Auto-complete feature works", "[offline][util::config]") {
     }
 }
 
-//#include <librealsense/rsutil2.hpp>
+//#include <librealsense2/rsutil.hpp>
 
 std::vector<rs2::util::config::request_type> configure_all_supported_streams(rs2::device& dev, util::config& config , int width = 640,  int height = 480, int fps = 30)
 {

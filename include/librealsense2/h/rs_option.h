@@ -14,7 +14,7 @@
 extern "C" {
 #endif
 
-#include "rs2_types.h"
+#include "rs_types.h"
 
 /** \brief Defines general configuration controls.
     These can generally be mapped to camera UVC controls, and unless stated otherwise, can be set/queried at any time. 

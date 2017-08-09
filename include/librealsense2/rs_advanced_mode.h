@@ -5,10 +5,10 @@
 #define RS400_ADVANCED_MODE_H
 
 #define RS400_ADVANCED_MODE_HPP
-#include <librealsense/h/rs2_advanced_mode_command.h>
+#include "h/rs_advanced_mode_command.h"
 #undef RS400_ADVANCED_MODE_HPP
 
-#include <librealsense/h/rs2_types.h>
+#include "h/rs_types.h"
 
 #ifdef __cplusplus
 extern "C" {

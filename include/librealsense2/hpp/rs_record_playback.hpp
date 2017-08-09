@@ -4,8 +4,8 @@
 #ifndef LIBREALSENSE_RS2_RECORD_PLAYBACK_HPP
 #define LIBREALSENSE_RS2_RECORD_PLAYBACK_HPP
 
-#include "rs2_types.hpp"
-#include "rs2_device.hpp"
+#include "rs_types.hpp"
+#include "rs_device.hpp"
 
 namespace rs2
 {

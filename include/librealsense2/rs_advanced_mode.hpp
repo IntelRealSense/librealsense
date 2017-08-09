@@ -4,8 +4,8 @@
 #ifndef R4XX_ADVANCED_MODE_HPP
 #define R4XX_ADVANCED_MODE_HPP
 
-#include <librealsense/rs2.hpp>
-#include <librealsense/rs2_advanced_mode.h>
+#include "rs.hpp"
+#include "rs_advanced_mode.h"
 
 namespace rs400
 {

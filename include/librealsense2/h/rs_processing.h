@@ -14,7 +14,7 @@
 extern "C" {
 #endif
 
-#include "rs2_types.h"
+#include "rs_types.h"
 
 /**
 * Creates Depth-Colorizer processing block that can be used to quickly visualize the depth data

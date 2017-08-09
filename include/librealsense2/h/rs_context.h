@@ -13,7 +13,7 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-#include "rs2_types.h"
+#include "rs_types.h"
 
 /**
 * \brief Creates RealSense context that is required for the rest of the API.

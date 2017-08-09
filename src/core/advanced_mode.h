@@ -8,7 +8,7 @@
 #include "option.h"
 #define RS400_ADVANCED_MODE_HPP
 #include "ds5/advanced_mode/presets.h"
-#include <librealsense/h/rs2_advanced_mode_command.h>
+#include "../../include/librealsense2/h/rs_advanced_mode_command.h"
 #undef RS400_ADVANCED_MODE_HPP
 
 
