@@ -553,6 +553,18 @@ namespace rs2
 
     class depth_frame : public video_frame
     {
+    public:
+        depth_frame(const frame& f)
+            : video_frame(f)
+        {
+            rs2_error* e = nullptr;
+            if (!f || (rs2_is_frame_extendable_to(f.get(), RS2_EXTENSION_DEPTH_FRAME, &e) == 0 && !e))
+            {
+                reset();
+            }
+            error::handle(e);
+        }
+
         float get_distance(int x, int y) const
         {
             rs2_error * e = nullptr;

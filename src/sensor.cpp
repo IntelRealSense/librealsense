@@ -368,8 +368,8 @@ namespace librealsense
                             video->set_timestamp_domain(timestamp_domain);
                             dest.push_back(const_cast<byte*>(video->get_frame_data()));
                             frame->set_stream(request);
+                            if (stream_to_frame_types(output.first.type) == RS2_EXTENSION_DEPTH_FRAME) dynamic_cast<depth_frame*>(frame.frame)->reset_units();
                             refs.push_back(std::move(frame));
-                            if (output.first.type == RS2_STREAM_DEPTH) dynamic_cast<depth_frame*>(frame.frame)->reset_units();
                         }
                         else
                         {
