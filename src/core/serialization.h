@@ -72,7 +72,6 @@ namespace librealsense
             virtual void write_frame(const stream_identifier& stream_id, const nanoseconds& timestamp, frame_holder&& frame) = 0;
             virtual void write_snapshot(uint32_t device_index, const nanoseconds& timestamp, rs2_extension type, const std::shared_ptr<extension_snapshot > snapshot) = 0;
             virtual void write_snapshot(const sensor_identifier& sensor_id, const nanoseconds& timestamp, rs2_extension type, const std::shared_ptr<extension_snapshot > snapshot) = 0;
-            virtual void reset() = 0;
             virtual ~writer() = default;
         };
         class reader
@@ -81,7 +80,6 @@ namespace librealsense
             virtual ~reader() = default;
             virtual device_snapshot query_device_description() = 0;
             virtual status read_frame(nanoseconds& timestamp, stream_identifier& sensor_index, frame_holder& frame) = 0;
-            //TODO: Add read_snapshot(...)
             virtual void seek_to_time(const nanoseconds& time) = 0;
             virtual nanoseconds query_duration() const = 0;
             virtual void reset() = 0;

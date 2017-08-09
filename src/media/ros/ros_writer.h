@@ -29,10 +29,11 @@ namespace librealsense
     {
         const device_serializer::nanoseconds STATIC_INFO_TIMESTAMP = device_serializer::nanoseconds::min();
     public:
-        ros_writer(const std::string& file) :
-            m_file_path(file)
+        explicit ros_writer(const std::string& file)
         {
-            reset();
+            m_bag.open(file, rosbag::BagMode::Write);
+            m_bag.setCompression(rosbag::CompressionType::LZ4);
+            write_file_version();
         }
 
         void write_device_description(const librealsense::device_snapshot& device_description) override
@@ -50,26 +51,6 @@ namespace librealsense
                 }
                 sensor_index++;
             }
-        }
-
-        void reset() override
-        {
-            try
-            {
-                m_bag.close();
-                m_bag.open(m_file_path, rosbag::BagMode::Write);
-                m_bag.setCompression(rosbag::CompressionType::LZ4);
-                write_file_version();
-            }
-            catch(rosbag::BagIOException& e)
-            {
-                throw librealsense::invalid_value_exception(e.what());
-            }
-            catch(std::exception& e)
-            {
-                throw librealsense::invalid_value_exception(to_string() << "Failed to initialize writer. " << e.what());
-            }
-            m_first_frame_time = get_first_frame_timestamp();
         }
 
         void write_frame(const device_serializer::stream_identifier& stream_id, const device_serializer::nanoseconds& timestamp, frame_holder&& frame) override
@@ -103,14 +84,13 @@ namespace librealsense
             write_extension_snapshot(sensor_id.device_index, sensor_id.sensor_index, timestamp, type, snapshot);
         }
 
+    private:
         void write_file_version()
         {
             std_msgs::UInt32 msg;
             msg.data = get_file_version();
             write_message(get_file_version_topic(), STATIC_INFO_TIMESTAMP, msg);
         }
-
-    private:
 
         void write_video_frame(device_serializer::stream_identifier stream_id, const device_serializer::nanoseconds& timestamp, const frame_holder& frame)
         {
@@ -122,20 +102,27 @@ namespace librealsense
             image.height = static_cast<uint32_t>(vid_frame->get_height());
             image.step = static_cast<uint32_t>(vid_frame->get_stride());
             conversions::convert(vid_frame->get_stream()->get_format(), image.encoding);
-            image.is_bigendian = 0;
+            image.is_bigendian = is_big_endian();
             auto size = vid_frame->get_stride() * vid_frame->get_height();
             auto p_data = vid_frame->get_frame_data();
             image.data.assign(p_data, p_data + size);
             image.header.seq = static_cast<uint32_t>(vid_frame->get_frame_number());
             std::chrono::duration<double, std::milli> timestamp_ms(vid_frame->get_frame_timestamp());
             image.header.stamp = ros::Time(std::chrono::duration<double>(timestamp_ms).count());
+            std::string TODO_CORRECT_ME = "0";
+            image.header.frame_id = TODO_CORRECT_ME;
             auto image_topic = ros_topic::image_data_topic(stream_id);
             write_message(image_topic, timestamp, image);
+            
+            write_image_metadata(stream_id, timestamp, vid_frame);
+        }
 
+        void write_image_metadata(const device_serializer::stream_identifier& stream_id, const device_serializer::nanoseconds& timestamp, video_frame* vid_frame)
+        {
             auto metadata_topic = ros_topic::image_metadata_topic(stream_id);
             diagnostic_msgs::KeyValue system_time;
             system_time.key = "system_time";
-            system_time.value = "0";
+            system_time.value = std::to_string(vid_frame->get_frame_system_time());
             write_message(metadata_topic, timestamp, system_time);
 
             diagnostic_msgs::KeyValue timestamp_domain;
@@ -146,9 +133,9 @@ namespace librealsense
             for (int i = 0; i < static_cast<rs2_frame_metadata>(rs2_frame_metadata::RS2_FRAME_METADATA_COUNT); i++)
             {
                 rs2_frame_metadata type = static_cast<rs2_frame_metadata>(i);
-                if (frame.frame->supports_frame_metadata(type))
+                if (vid_frame->supports_frame_metadata(type))
                 {
-                    auto md = frame.frame->get_frame_metadata(type);
+                    auto md = vid_frame->get_frame_metadata(type);
                     diagnostic_msgs::KeyValue md_msg;
                     md_msg.key = to_string() << type;
                     md_msg.value = std::to_string(md);
@@ -178,11 +165,13 @@ namespace librealsense
             camera_info_msg.distortion_model = rs2_distortion_to_string(profile->get_intrinsics().model);
             write_message(ros_topic::video_stream_info_topic({ sensor_id.device_index, sensor_id.sensor_index, profile->get_stream_type(), static_cast<uint32_t>(profile->get_stream_index()) }), timestamp, camera_info_msg);
         }
+        
         void write_extension_snapshot(uint32_t device_id, const device_serializer::nanoseconds& timestamp, rs2_extension type, std::shared_ptr<librealsense::extension_snapshot> snapshot)
         {
             const auto ignored = 0u;
             write_extension_snapshot(device_id, ignored, timestamp, type, snapshot, true);
         }
+        
         void write_extension_snapshot(uint32_t device_id, uint32_t sensor_id, const device_serializer::nanoseconds& timestamp, rs2_extension type, std::shared_ptr<librealsense::extension_snapshot> snapshot)
         {
             write_extension_snapshot(device_id, sensor_id, timestamp, type, snapshot, false);
@@ -192,10 +181,6 @@ namespace librealsense
         {
             switch (type)
             {
-            case RS2_EXTENSION_UNKNOWN:
-                throw invalid_value_exception("Unknown extension");
-            case RS2_EXTENSION_DEBUG:
-                break;
             case RS2_EXTENSION_INFO:
             {
                 auto info = As<info_interface>(snapshot);
@@ -205,27 +190,19 @@ namespace librealsense
                 }
                 if (is_device)
                 {
-                    write_vendor_info(timestamp, device_id, info);
+                    write_vendor_info(ros_topic::device_info_topic(device_id), timestamp, info);
                 }
                 else
                 {
-                    write_vendor_info(timestamp, { device_id, sensor_id }, info);
+                    write_vendor_info(ros_topic::sensor_info_topic({ device_id, sensor_id }), timestamp, info);
                 }
                 break;
             }
+            case RS2_EXTENSION_DEBUG:
             case RS2_EXTENSION_MOTION:
-                break;
             case RS2_EXTENSION_OPTIONS:
-                break;
             case RS2_EXTENSION_VIDEO:
-                break;
             case RS2_EXTENSION_ROI:
-                break;
-            case RS2_EXTENSION_VIDEO_FRAME:
-                break;
-            case RS2_EXTENSION_MOTION_FRAME:
-                break;
-            case RS2_EXTENSION_COUNT:
                 break;
             case RS2_EXTENSION_VIDEO_PROFILE:
             {
@@ -243,16 +220,6 @@ namespace librealsense
             }
         }
 
-        void write_vendor_info(device_serializer::nanoseconds timestamp, uint32_t device_index, std::shared_ptr<info_interface> info_snapshot)
-        {
-            write_vendor_info(ros_topic::device_info_topic(device_index), timestamp, info_snapshot);
-        }
-
-        void write_vendor_info(device_serializer::nanoseconds timestamp, const device_serializer::sensor_identifier& sensor_id, std::shared_ptr<info_interface> info_snapshot)
-        {
-            write_vendor_info(ros_topic::sensor_info_topic(sensor_id), timestamp, info_snapshot);
-        }
-        
         void write_vendor_info(const std::string& topic, device_serializer::nanoseconds timestamp, std::shared_ptr<info_interface> info_snapshot)
         {
             for (uint32_t i = 0; i < static_cast<uint32_t>(RS2_CAMERA_INFO_COUNT); i++)
@@ -279,21 +246,22 @@ namespace librealsense
                 }
                 else
                 {
-                    //TODO: simply convert time to <double, sec>
-                    std::chrono::duration<uint32_t> sec = std::chrono::duration_cast<std::chrono::duration<uint32_t>>(time);
-                    device_serializer::nanoseconds nanos = time - std::chrono::duration_cast<device_serializer::nanoseconds>(sec);
-                    auto unanos = std::chrono::duration_cast<std::chrono::duration<uint32_t, std::nano>>(nanos);
-                    ros::Time capture_time = ros::Time(sec.count(), unanos.count());
-                    m_bag.write(topic, capture_time, msg);
+                    auto secs = std::chrono::duration_cast<std::chrono::duration<double>>(time);
+                    m_bag.write(topic, ros::Time(secs.count()), msg);
                 }
             }
             catch (rosbag::BagIOException& e)
             {
-                throw io_exception(to_string() << "Ros Writer: Failed to write topic: \"" << topic << "\" to file. (rosbag error: " << e.what() << ")");
+                throw io_exception(to_string() << "Ros Writer failed to write topic: \"" << topic << "\" to file. (Exception message: " << e.what() << ")");
             }
         }
 
-        device_serializer::nanoseconds m_first_frame_time;
+        static uint8_t is_big_endian()
+        {
+            int num = 1;
+            return (*reinterpret_cast<char*>(&num) == 1) ? 0 : 1; //Little Endian: (char)0x0001 => 0x01, Big Endian: (char)0x0001 => 0x00,
+        }
+
         std::string m_file_path;
         rosbag::Bag m_bag;
     };

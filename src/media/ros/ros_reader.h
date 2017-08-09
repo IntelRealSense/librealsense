@@ -323,7 +323,7 @@ namespace librealsense
                 }
                 else if (key_val_msg->key == "system_time") //TODO: use constants
                 {
-                    additional_data.system_time = std::stoll(key_val_msg->value);
+                    additional_data.system_time = std::stod(key_val_msg->value);
                 }
                 else
                 {
