@@ -390,7 +390,8 @@ namespace librealsense
         sr300_camera(std::shared_ptr<context> ctx,
             const platform::uvc_device_info& color,
             const platform::uvc_device_info& depth,
-            const platform::usb_device_info& hwm_device);
+            const platform::usb_device_info& hwm_device,
+            const platform::backend_device_group& group);
 
         void rs2_apply_ivcam_preset(int preset)
         {

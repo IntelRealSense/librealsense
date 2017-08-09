@@ -35,17 +35,21 @@ namespace librealsense
 
         std::shared_ptr<context> get_context() const override { return _context; }
 
+        platform::backend_device_group get_device_data() const override
+        {
+            return _group;
+        }
 
     protected:
         int add_sensor(std::shared_ptr<sensor_interface> sensor_base);
 
         uvc_sensor& get_uvc_sensor(int subdevice);
 
-        explicit device(std::shared_ptr<context> ctx, const device_info& info): _context(ctx),_info(info)  {}
+        explicit device(std::shared_ptr<context> ctx, const platform::backend_device_group group): _context(ctx),_group(group)  {}
 
     private:
         std::vector<std::shared_ptr<sensor_interface>> _sensors;
         std::shared_ptr<context> _context;
-        const device_info& _info;
+        const platform::backend_device_group _group;
     };
 }

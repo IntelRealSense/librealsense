@@ -15,7 +15,7 @@ namespace librealsense
         void start(frame_callback_ptr callback);
         void start();
 
-        frame_holder wait_for_frames();
+        frame_holder wait_for_frames(unsigned int timeout_ms = 5000);
         ~pipeline();
 
      private:

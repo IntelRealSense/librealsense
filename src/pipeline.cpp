@@ -82,20 +82,25 @@ namespace librealsense
            _sensors.push_back(&sensor);
         }
     }
-    frame_holder pipeline::wait_for_frames()
+    frame_holder pipeline::wait_for_frames(unsigned int timeout_ms)
     {
+        frame_holder f;
+        if(_queue.dequeue(&f, timeout_ms))
+        {
+             return f;
+        }
+
         if(!_hub.is_connected(*_dev))
         {
             _dev = _hub.wait_for_device();
             _sensors.clear();
             _queue.clear();
+            start();
         }
-
-        start();
-
-        frame_holder f;
-        _queue.dequeue(&f);
-        return f;
+        else
+        {
+            throw std::runtime_error(to_string() <<"Frame didn't arrived within "<< timeout_ms);
+        }
     }
 
     pipeline::~pipeline()

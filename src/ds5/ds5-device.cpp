@@ -178,7 +178,7 @@ namespace librealsense
 
     ds5_device::ds5_device(std::shared_ptr<context> ctx,
                            const platform::backend_device_group& group)
-        : device(ctx), 
+        : device(ctx, group),
           _depth_stream(new stream(ctx, RS2_STREAM_DEPTH)),
           _left_ir_stream(new stream(ctx, RS2_STREAM_INFRARED, 1)), 
           _right_ir_stream(new stream(ctx, RS2_STREAM_INFRARED, 2)),

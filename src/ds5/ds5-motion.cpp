@@ -258,7 +258,7 @@ namespace librealsense
 
     ds5_motion::ds5_motion(std::shared_ptr<context> ctx,
                            const platform::backend_device_group& group)
-        : device(ctx), ds5_device(ctx, group),
+        : device(ctx, group), ds5_device(ctx, group),
           _fisheye_stream(new stream(ctx, RS2_STREAM_FISHEYE)),
           _accel_stream(new stream(ctx, RS2_STREAM_ACCEL)),
           _gyro_stream(new stream(ctx, RS2_STREAM_GYRO))

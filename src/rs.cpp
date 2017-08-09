@@ -1288,11 +1288,11 @@ void rs2_start_pipeline(rs2_pipeline* pipe, rs2_error ** error) try
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, pipe)
 
-rs2_frame* rs2_pipeline_wait_for_frames(rs2_pipeline* pipe, rs2_error ** error) try
+rs2_frame* rs2_pipeline_wait_for_frames(rs2_pipeline* pipe, unsigned int timeout_ms, rs2_error ** error) try
 {
     VALIDATE_NOT_NULL(pipe);
 
-    auto f = pipe->pipe->wait_for_frames();
+    auto f = pipe->pipe->wait_for_frames(timeout_ms);
     auto frame = f.frame;
     f.frame = nullptr;
     return (rs2_frame*)(frame);

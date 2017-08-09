@@ -140,7 +140,10 @@ namespace librealsense
 
         virtual std::shared_ptr<context> get_context() const = 0;
 
+        virtual platform::backend_device_group get_device_data() const = 0;
+
         virtual ~device_interface() = default;
+
     };
 
     class depth_sensor

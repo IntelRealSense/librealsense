@@ -79,26 +79,20 @@ namespace librealsense
     */
     bool device_hub::is_connected(const device_interface& dev)
     { 
-        return true;
-//        rs2_error* e = nullptr;
+        try
+        {
+            std::unique_lock<std::mutex> lock(_mutex);
 
-//        if (!dev)
-//            return false;
-
-//        try
-//        {
-//            std::unique_lock<std::mutex> lock(_mutex);
-
-//            for (auto d : _device_list)
-//            {
-//                if (d.->get_device_data() == d)
-//                {
-//                    return 1;
-//                }
-//            }
-//            return 0;
-//        }
-//        catch (...)  { return false; }
-    };
+            for (auto d : _device_list)
+            {
+                if (d->get_device_data() == dev.get_device_data())
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+        catch (...)  { return false; }
+    }
 }
 

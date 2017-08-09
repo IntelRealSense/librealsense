@@ -22,7 +22,7 @@ namespace librealsense
 {
     ds5_color::ds5_color(std::shared_ptr<context> ctx,
         const platform::backend_device_group& group)
-        : ds5_device(ctx, group), device(ctx),
+        : ds5_device(ctx, group), device(ctx, group),
           _color_stream(new stream(ctx, RS2_STREAM_COLOR))
     {
         using namespace ds;

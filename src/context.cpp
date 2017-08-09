@@ -183,8 +183,8 @@ namespace librealsense
     class platform_camera : public device
     {
     public:
-        platform_camera(const std::shared_ptr<context>& ctx, const  platform::uvc_device_info uvc_info)
-            : device(ctx)
+        platform_camera(const std::shared_ptr<context>& ctx, const  platform::uvc_device_info uvc_info, const platform::backend_device_group& group)
+            : device(ctx, group)
         {
             auto uvc_device = ctx->get_backend().create_uvc_device(uvc_info);
             auto color_ep = std::make_shared<platform_camera_sensor>(ctx, this, uvc_device, std::unique_ptr<ds5_timestamp_reader>(new ds5_timestamp_reader(ctx->get_time_service())));
@@ -223,7 +223,7 @@ namespace librealsense
     std::shared_ptr<device_interface> platform_camera_info::create(std::shared_ptr<context> ctx) const
     {
         auto&& backend = ctx->get_backend();
-        return std::make_shared<platform_camera>(ctx, _uvc);
+        return std::make_shared<platform_camera>(ctx, _uvc, this->get_device_data());
     }
 
     context::~context()

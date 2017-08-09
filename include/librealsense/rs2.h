@@ -1157,7 +1157,7 @@ void rs2_start_pipeline_with_callback(rs2_pipeline* pipe, rs2_frame_callback* on
 
 void rs2_start_pipeline(rs2_pipeline* pipe, rs2_error ** error);
 
-rs2_frame* rs2_pipeline_wait_for_frames(rs2_pipeline* pipe, rs2_error ** error);
+rs2_frame* rs2_pipeline_wait_for_frames(rs2_pipeline* pipe, unsigned int timeout_ms, rs2_error ** error);
 
 void rs2_delete_pipeline(rs2_pipeline* block);
 

@@ -57,6 +57,7 @@ namespace librealsense
         const std::string& get_file_name() const;
         uint64_t get_position() const;
         signal<playback_device, rs2_playback_status> playback_status_changed;
+        platform::backend_device_group get_device_data() const override {return {}; } //ZIV: what to do?
     private:
         void update_time_base(std::chrono::microseconds base_timestamp);
         std::chrono::microseconds calc_sleep_time(std::chrono::microseconds timestamp) const;

@@ -38,7 +38,7 @@ namespace librealsense
 
         void pause_recording();
         void resume_recording();
-        
+        platform::backend_device_group get_device_data() const override {return {}; } //ZIV: what to do?
     private:
         void write_header();
         std::chrono::nanoseconds get_capture_time() const;

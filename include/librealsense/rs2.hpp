@@ -1975,7 +1975,10 @@ namespace rs2
     class pipeline
     {
     public:
+        context _ctx;
+
         pipeline(context ctx = context())
+            : _ctx(ctx)
         {
             rs2_error* e = nullptr;
             _pipeline = std::shared_ptr<rs2_pipeline>(
@@ -1999,7 +2002,11 @@ namespace rs2
 //            return {std::move(f)};
             frameset res;
             rs2_error* e = nullptr;
-            frame f (rs2_pipeline_wait_for_frames(_pipeline.get(), &e));
+            frame f (rs2_pipeline_wait_for_frames(_pipeline.get(), timeout_ms, &e));
+            if(!f)
+            {
+                return res;
+            }
 
             auto comp = f.as<composite_frame>();
             if (comp)

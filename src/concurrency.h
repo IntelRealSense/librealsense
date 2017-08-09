@@ -45,13 +45,13 @@ public:
         cv.notify_one();
     }
 
-    bool dequeue(T* item)
+    bool dequeue(T* item ,unsigned int timeout_ms = 5000)
     {
         std::unique_lock<std::mutex> lock(mutex);
         accepting = true;
         was_flushed = false;
         const auto ready = [this]() { return (q.size() > 0) || need_to_flush; };
-        if (!ready() && !cv.wait_for(lock, std::chrono::seconds(5000), ready))
+        if (!ready() && !cv.wait_for(lock, std::chrono::seconds(timeout_ms/1000), ready))
         {
             return false;
         }
