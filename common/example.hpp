@@ -534,7 +534,7 @@ namespace rs2
         float max_depth = 16.f;
         rs2::colorizer colorizer;
 
-        texture_buffer() : texture(), colorizer(rs2::context().create_colorizer()) {}
+        texture_buffer() : texture(), colorizer(/*rs2::context().create_colorizer()*/) {}
 
         GLuint get_gl_handle() const { return texture; }
 

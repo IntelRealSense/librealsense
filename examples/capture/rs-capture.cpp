@@ -5,11 +5,9 @@
 #define GLFW_INCLUDE_GLU
 #include <GLFW/glfw3.h>
 #include <librealsense/rs2.hpp>
-#include <librealsense/rsutil2.hpp>
 
 #include <sstream>
 #include <iostream>
-#include <memory>
 
 using namespace rs2;
 using namespace std;
@@ -55,72 +53,52 @@ public:
         case RS2_FORMAT_ANY:
             throw std::runtime_error("not a valid format");
 
-        case RS2_FORMAT_Z16:
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_LUMINANCE, GL_UNSIGNED_SHORT, data);
-            break;
-
-        case RS2_FORMAT_RGB8: case RS2_FORMAT_BGR8: // Display both RGB and BGR by interpreting them RGB, to show the flipped byte ordering. Obviously, GL_BGR could be used on OpenGL 1.2+
+        case RS2_FORMAT_Z16: case RS2_FORMAT_RGB8: case RS2_FORMAT_BGR8: // Display both RGB and BGR by interpreting them RGB, to show the flipped byte ordering. Obviously, GL_BGR could be used on OpenGL 1.2+
             glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
             break;
         default:
-            throw std::runtime_error("The requested format is not suported for rendering");
+            throw std::runtime_error("The requested format is not suported by this demo!");
         }
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
-        glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
-        glBindTexture(GL_TEXTURE_2D, 0);
 
+        glBindTexture(GL_TEXTURE_2D, 0);
     }
 
 
-    void draw_texture(const rect& s, const rect& t) const
+    void draw_texture(const rect& t) const
     {
         glBegin(GL_QUAD_STRIP);
         {
-            glTexCoord2f(s.x, s.y + s.h); glVertex2f(t.x, t.y + t.h);
-            glTexCoord2f(s.x, s.y); glVertex2f(t.x, t.y);
-            glTexCoord2f(s.x + s.w, s.y + s.h); glVertex2f(t.x + t.w, t.y + t.h);
-            glTexCoord2f(s.x + s.w, s.y); glVertex2f(t.x + t.w, t.y);
+            glTexCoord2f(0.f, 1.f); glVertex2f(t.x, t.y + t.h);
+            glTexCoord2f(0.f, 0.f); glVertex2f(t.x, t.y);
+            glTexCoord2f(1.f, 1.f); glVertex2f(t.x + t.w, t.y + t.h);
+            glTexCoord2f(1.f, 0.f); glVertex2f(t.x + t.w, t.y);
         }
         glEnd();
     }
 
-    void show(const rect& r, float alpha, const rect& normalized_zoom = rect{0, 0, 1, 1}) const
+    void show(const rect& r) const
     {
-        glEnable(GL_BLEND);
-
-        glBlendFunc(GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA);
-        glBegin(GL_QUADS);
-        glColor4f(1.0f, 1.0f, 1.0f, 1 - alpha);
-        glEnd();
-
         glBindTexture(GL_TEXTURE_2D, texture);
         glEnable(GL_TEXTURE_2D);
-        draw_texture(normalized_zoom, r);
+        draw_texture(r);
 
         glDisable(GL_TEXTURE_2D);
         glBindTexture(GL_TEXTURE_2D, 0);
-
-        glDisable(GL_BLEND);
     }
 };
+
 
 int main(int argc, char * argv[]) try
 {
     rs2::pipeline p;
     p.start();
 
-    //colorizer depth_colorizer;
+    colorizer depth_colorizer;
 
-    auto finished = false;
     GLFWwindow* win;
     //    log_to_file(RS2_LOG_SEVERITY_DEBUG);
 
-
-    size_t max_frames = 0;
-    map<int, texture_buffer> buffers;
+    texture_buffer textures[RS2_STREAM_COUNT];
 
     // Open a GLFW window
     glfwInit();
@@ -141,6 +119,12 @@ int main(int argc, char * argv[]) try
 
         frames = p.wait_for_frames();
 
+        auto depth = frames.get_depth();
+        auto color = frames.get_color();
+
+        render(colorize(depth));
+        render(color);
+
         //auto d = frames.get<depth_frame>();
         // d.get_distance(10,10);
         //auto colored_depth = depth_colorizer(d);
@@ -157,7 +141,9 @@ int main(int argc, char * argv[]) try
 
         for (auto&& frame : frames)
         {
-            buffers[frame.get_profile().stream_type()].upload(frame);
+            //if(frame.get_profile().stream_type() == RS2_STREAM_DEPTH)
+            auto colored_depth = depth_colorizer.colorize(frame);
+            buffers[frame.get_profile().stream_type()].upload(colored_depth);
         }
 
         auto tiles_horisontal = static_cast<int>(ceil(sqrt(buffers.size())));

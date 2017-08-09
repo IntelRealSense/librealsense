@@ -1426,15 +1426,12 @@ rs2_processing_block* rs2_create_pointcloud(rs2_context* ctx, rs2_error** error)
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, ctx)
 
-rs2_processing_block* rs2_create_colorizer(rs2_context* ctx, rs2_error** error) try 
+rs2_processing_block* rs2_create_colorizer(rs2_error** error)
 {
-    VALIDATE_NOT_NULL(ctx);
-
-    auto block = std::make_shared<librealsense::colorizer>(ctx->ctx->get_time_service());
+    auto block = std::make_shared<librealsense::colorizer>();
 
     return new rs2_processing_block{ block };
 }
-HANDLE_EXCEPTIONS_AND_RETURN(nullptr, ctx)
 
 float rs2_get_depth_scale(rs2_sensor* sensor, rs2_error** error) try
 {

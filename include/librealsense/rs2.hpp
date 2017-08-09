@@ -1824,9 +1824,23 @@ namespace rs2
     class colorizer
     {
     public:
+        colorizer():
+            _queue(1)
+        {
+            rs2_error* e = nullptr;
+            _block = std::make_shared<processing_block>(
+                    std::shared_ptr<rs2_processing_block>(
+                                        rs2_create_colorizer(&e),
+                                        rs2_delete_processing_block));
+            error::handle(e);
+
+            _block->start(_queue);
+        }
+
+
         video_frame colorize(frame depth)
         {
-            _block.invoke(std::move(depth));
+            _block->invoke(std::move(depth));
             return _queue.wait_for_frame();
         }
 
@@ -1840,14 +1854,7 @@ namespace rs2
 
         //}
     private:
-        friend class context;
-
-        colorizer(processing_block block) : _block(block), _queue(1)
-        {
-            _block.start(_queue);
-        }
-
-        processing_block _block;
+        std::shared_ptr<processing_block> _block;
         frame_queue _queue;
     };
 
@@ -1973,16 +1980,16 @@ namespace rs2
             return pointcloud(processing_block{ block });
         }
 
-        colorizer create_colorizer() const
-        {
-            rs2_error* e = nullptr;
-            std::shared_ptr<rs2_processing_block> block(
-                rs2_create_colorizer(_context.get(), &e),
-                rs2_delete_processing_block);
-            error::handle(e);
+//        colorizer create_colorizer() const
+//        {
+//            rs2_error* e = nullptr;
+//            std::shared_ptr<rs2_processing_block> block(
+//                rs2_create_colorizer(_context.get(), &e),
+//                rs2_delete_processing_block);
+//            error::handle(e);
 
-            return colorizer(processing_block{ block });
-        }
+//            return colorizer(processing_block{ block });
+//        }
 
         /**
          * Creates a device from a RealSense file
@@ -2013,6 +2020,14 @@ namespace rs2
         std::shared_ptr<rs2_context> _context;
     };
 
+//    class frame_set
+//    {
+//    public:
+//        frame
+//    private:
+//        frame f;
+//    };
+
     class pipeline
     {
     public:
@@ -2037,10 +2052,6 @@ namespace rs2
 
         frameset wait_for_frames(unsigned int timeout_ms = 5000) const
         {
-//            rs2_error* e = nullptr;
-//            frame f( rs2_pipeline_wait_for_frames(_pipeline.get(), &e));
-//            error::handle(e);
-//            return {std::move(f)};
             frameset res;
             rs2_error* e = nullptr;
             frame f (rs2_pipeline_wait_for_frames(_pipeline.get(), timeout_ms, &e));

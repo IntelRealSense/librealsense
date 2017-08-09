@@ -268,6 +268,11 @@ namespace librealsense
                     match.push_back(std::move(frame));
                 }
 
+                std::sort(match.begin(), match.end(), [](frame_holder& f1, frame_holder& f2)
+                {
+                    return f1->get_stream()->get_unique_id()> f2->get_stream()->get_unique_id();
+                });
+
                 frame_holder composite = env.source->allocate_composite_frame(std::move(match));
 
                 _callback(std::move(composite), env);

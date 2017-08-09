@@ -93,7 +93,7 @@ namespace librealsense {
     class colorizer : public processing_block
     {
     public:
-        colorizer(std::shared_ptr<platform::time_service> ts);
+        colorizer();
 
         void set_bounds(float min, float max);
         void set_equalize(bool equalize);

@@ -14,8 +14,8 @@ namespace librealsense
             { 50, 0, 0 },
         }};
 
-    colorizer::colorizer(std::shared_ptr<platform::time_service> ts)
-        : processing_block(ts), _min(0.f), _max(16.f), _equalize(true), _map(jet)
+    colorizer::colorizer()
+        : processing_block(nullptr), _min(0.f), _max(16.f), _equalize(true), _map(jet)
     {
         auto on_frame = [this](rs2::frame f, const rs2::frame_source& source)
         {
