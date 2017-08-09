@@ -107,7 +107,7 @@ EXPORTS
     rs2_camera_info_to_string
     rs2_frame_metadata_to_string
     rs2_timestamp_domain_to_string
-    rs2_visual_preset_to_string
+    rs2_sr300_visual_preset_to_string
     rs2_notification_category_to_string
 
     rs2_log_to_console
@@ -168,7 +168,7 @@ EXPORTS
     rs2_get_ae_control
     rs2_set_census
     rs2_get_census
-    rs2_advanced_mode_preset_to_string
+    rs2_rs400_visual_preset_to_string
     rs2_is_enabled
     rs2_toggle_advanced_mode
     rs2_load_json

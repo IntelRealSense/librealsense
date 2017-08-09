@@ -39,7 +39,7 @@ inline std::ostream & operator << (std::ostream & o, rs2_camera_info camera_info
 inline std::ostream & operator << (std::ostream & o, rs2_frame_metadata metadata) { return o << rs2_frame_metadata_to_string(metadata); }
 inline std::ostream & operator << (std::ostream & o, rs2_timestamp_domain domain) { return o << rs2_timestamp_domain_to_string(domain); }
 inline std::ostream & operator << (std::ostream & o, rs2_notification_category notificaton) { return o << rs2_notification_category_to_string(notificaton); }
-inline std::ostream & operator << (std::ostream & o, rs2_ivcam_visual_preset preset) { return o << rs2_visual_preset_to_string(preset); }
+inline std::ostream & operator << (std::ostream & o, rs2_sr300_visual_preset preset) { return o << rs2_sr300_visual_preset_to_string(preset); }
 inline std::ostream & operator << (std::ostream & o, rs2_exception_type exception_type) { return o << rs2_exception_type_to_string(exception_type); }
 inline std::ostream & operator << (std::ostream & o, rs2_playback_status status) { return o << rs2_playback_status_to_string(status); }
 

@@ -825,7 +825,7 @@ int main(int, char**) try
 
 
                         static const std::vector<rs2_option> drawing_order{
-                            RS2_OPTION_ADVANCED_MODE_PRESET,
+                            RS2_OPTION_VISUAL_PRESET,
                             RS2_OPTION_EMITTER_ENABLED,
                             RS2_OPTION_ENABLE_AUTO_EXPOSURE };
 

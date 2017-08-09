@@ -277,7 +277,7 @@ namespace rs400
     };
 }
 
-inline std::ostream & operator << (std::ostream & o, rs2_rs400_visual_preset preset) { return o << rs2_advanced_mode_preset_to_string(preset); }
+inline std::ostream & operator << (std::ostream & o, rs2_rs400_visual_preset preset) { return o << rs2_rs400_visual_preset_to_string(preset); }
 
 inline bool operator==(const STDepthControlGroup& a, const STDepthControlGroup& b)
 {

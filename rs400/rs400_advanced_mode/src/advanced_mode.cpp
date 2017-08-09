@@ -18,7 +18,7 @@ namespace librealsense
             assert_no_error(ds::fw_cmd::UAMG, results);
             return *(reinterpret_cast<uint32_t*>(results.data()) + 1) > 0;
         };
-        _depth_sensor.register_option(RS2_OPTION_ADVANCED_MODE_PRESET,
+        _depth_sensor.register_option(RS2_OPTION_VISUAL_PRESET,
                                       std::make_shared<advanced_mode_preset_option>(*this,
                                                                                     _depth_sensor,
                                                                                     option_range{0,
@@ -852,7 +852,7 @@ namespace librealsense
     const char* advanced_mode_preset_option::get_value_description(float val) const
     {
         try{
-            return rs2_advanced_mode_preset_to_string(to_preset(val));
+            return rs2_rs400_visual_preset_to_string(to_preset(val));
         }
         catch(std::out_of_range)
         {

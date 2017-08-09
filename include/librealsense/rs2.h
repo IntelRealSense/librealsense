@@ -12,6 +12,7 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+
 #include <librealsense/h/rs2_types.h>
 #include <librealsense/h/rs2_context.h>
 #include <librealsense/h/rs2_device.h>
