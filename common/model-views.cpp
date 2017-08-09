@@ -3,6 +3,8 @@
 
 #include "model-views.h"
 
+#include <librealsense/rs2_advanced_mode.hpp>
+
 #include <regex>
 
 void imgui_easy_theming(ImFont*& font_14, ImFont*& font_18)
@@ -1556,6 +1558,23 @@ namespace rs2
         }
         auto name = get_device_name(dev);
         id = to_string() << name.first << ", " << name.second;
+
+        if (dev.is<playback>()) //TODO: remove this and make sub->streaming a function that queries the sensor
+        {
+            dev.as<playback>().set_status_changed_callback([this](rs2_playback_status status)
+            {
+                if (status == RS2_PLAYBACK_STATUS_STOPPED)
+                {
+                    for (auto sub : subdevices)
+                    {
+                        if (sub->streaming)
+                        {
+                            sub->stop();
+                        }
+                    }
+                }
+            });
+        }
     }
 
     bool device_model::draw_combo_box(const std::vector<std::string>& device_names, int& new_index)
@@ -1919,6 +1938,112 @@ namespace rs2
         _recorder->resume();
     }
 
+    std::vector<std::string> get_device_info(const device& dev, bool include_location)
+    {
+        std::vector<std::string> res;
+        for (auto i = 0; i < RS2_CAMERA_INFO_COUNT; i++)
+        {
+            auto info = static_cast<rs2_camera_info>(i);
+
+            // When camera is being reset, either because of "hardware reset"
+            // or because of switch into advanced mode,
+            // we don't want to capture the info that is about to change
+            if ((info == RS2_CAMERA_INFO_LOCATION ||
+                info == RS2_CAMERA_INFO_ADVANCED_MODE)
+                && !include_location) continue;
+
+            if (dev.supports(info))
+            {
+                auto value = dev.get_info(info);
+                res.push_back(value);
+            }
+        }
+        return res;
+    }
+
+    std::vector<std::pair<std::string, std::string>> get_devices_names(const device_list& list)
+    {
+        std::vector<std::pair<std::string, std::string>> device_names;
+
+        for (uint32_t i = 0; i < list.size(); i++)
+        {
+            try
+            {
+                auto dev = list[i];
+                device_names.push_back(get_device_name(dev));        // push name and sn to list
+            }
+            catch (...)
+            {
+                device_names.push_back(std::pair<std::string, std::string>(to_string() << "Unknown Device #" << i, ""));
+            }
+        }
+        return device_names;
+    }
+
+    void device_model::draw_advanced_mode_tab(device& dev,
+        std::vector<std::string>& restarting_info)
+    {
+        using namespace rs400;
+        ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, { 0.9f, 0.9f, 0.9f, 1 });
+
+        auto is_advanced_mode = dev.is<advanced_mode>();
+        if (ImGui::TreeNode("Advanced Mode"))
+        {
+            try
+            {
+                if (!is_advanced_mode)
+                {
+                    // TODO: Why are we showing the tab then??
+                    ImGui::TextColored(ImVec4{ 1.0f, 0.0f, 0.0f, 1.0f }, "Selected device does not offer\nany advanced settings");
+                }
+                else
+                {
+                    auto advanced = dev.as<advanced_mode>();
+                    if (advanced.is_enabled())
+                    {
+                        if (ImGui::Button("Disable Advanced Mode", ImVec2{ 180, 0 }))
+                        {
+                            //if (yes_no_dialog()) // TODO
+                            //{
+                            advanced.toggle_advanced_mode(false);
+                            restarting_info = get_device_info(dev, false);
+                            //}
+                        }
+                        if (ImGui::IsItemHovered())
+                        {
+                            ImGui::SetTooltip("Disabling advanced mode will reset depth generation to factory settings\nThis will not affect calibration");
+                        }
+                        draw_advanced_mode_controls(advanced, amc, get_curr_advanced_controls);
+                    }
+                    else
+                    {
+                        if (ImGui::Button("Enable Advanced Mode", ImVec2{ 180, 0 }))
+                        {
+                            //if (yes_no_dialog()) // TODO
+                            //{
+                            advanced.toggle_advanced_mode(true);
+                            restarting_info = get_device_info(dev, false);
+                            //}
+                        }
+                        if (ImGui::IsItemHovered())
+                        {
+                            ImGui::SetTooltip("Advanced mode is a persistent camera state unlocking calibration formats and depth generation controls\nYou can always reset the camera to factory defaults by disabling advanced mode");
+                        }
+                        ImGui::TextColored(ImVec4{ 1.0f, 0.0f, 0.0f, 1.0f }, "Device is not in advanced mode!\nTo access advanced functionality\nclick \"Enable Advanced Mode\"");
+                    }
+                }
+            }
+            catch (...)
+            {
+                // TODO
+            }
+
+            ImGui::TreePop();
+        }
+
+        ImGui::PopStyleColor();
+    }
+
     std::map<int, rect> viewer_model::get_interpolated_layout(const std::map<int, rect>& l)
     {
         using namespace std::chrono;
@@ -2067,6 +2192,7 @@ namespace rs2
 
         notification_model m(n);
         m.index = index++;
+        m.timestamp = std::chrono::duration<double, std::milli>(std::chrono::system_clock::now().time_since_epoch()).count();
         pending_notifications.push_back(m);
 
         if (pending_notifications.size() > MAX_SIZE)

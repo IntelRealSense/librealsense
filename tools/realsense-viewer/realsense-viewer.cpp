@@ -2,7 +2,6 @@
 #include "example.hpp"
 #include "parser.hpp"
 #include "model-views.h"
-#include "../common/realsense-ui/realsense-ui-advanced-mode.h"
 
 #include <cstdarg>
 #include <thread>
@@ -117,124 +116,7 @@ void handle_dropped_file(GLFWwindow* window, int count, const char** paths)
         drop_manager.add_device(paths[i]);
     }
 }
-std::vector<std::string> get_device_info(const device& dev, bool include_location = true)
-{
-    std::vector<std::string> res;
-    for (auto i = 0; i < RS2_CAMERA_INFO_COUNT; i++)
-    {
-        auto info = static_cast<rs2_camera_info>(i);
 
-        // When camera is being reset, either because of "hardware reset"
-        // or because of switch into advanced mode,
-        // we don't want to capture the info that is about to change
-        if ((info == RS2_CAMERA_INFO_LOCATION ||
-            info == RS2_CAMERA_INFO_ADVANCED_MODE)
-            && !include_location) continue;
-
-        if (dev.supports(info))
-        {
-            auto value = dev.get_info(info);
-            res.push_back(value);
-        }
-    }
-    return res;
-}
-
-std::vector<std::pair<std::string, std::string>> get_devices_names(const device_list& list)
-{
-    std::vector<std::pair<std::string, std::string>> device_names;
-
-    for (uint32_t i = 0; i < list.size(); i++)
-    {
-        try
-        {
-            auto dev = list[i];
-            device_names.push_back(get_device_name(dev));        // push name and sn to list
-        }
-        catch (...)
-        {
-            device_names.push_back(std::pair<std::string, std::string>(to_string() << "Unknown Device #" << i, ""));
-        }
-    }
-    return device_names;
-}
-
-int find_device_index(const device_list& list, std::vector<std::string> device_info)
-{
-    std::vector<std::vector<std::string>> devices_info;
-
-    for (auto l : list)
-    {
-        devices_info.push_back(get_device_info(l));
-    }
-
-    auto it = std::find(devices_info.begin(), devices_info.end(), device_info);
-    return std::distance(devices_info.begin(), it);
-}
-
-void draw_advanced_mode_tab(device& dev, advanced_mode_control& amc,
-    std::vector<std::string>& restarting_info,
-    bool& get_curr_advanced_controls)
-{
-    ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, { 0.9f, 0.9f, 0.9f, 1 });
-
-    auto is_advanced_mode = dev.is<advanced_mode>();
-    if (ImGui::TreeNode("Advanced Mode"))
-    {
-        try
-        {
-            if (!is_advanced_mode)
-            {
-                // TODO: Why are we showing the tab then??
-                ImGui::TextColored(ImVec4{ 1.0f, 0.0f, 0.0f, 1.0f }, "Selected device does not offer\nany advanced settings");
-            }
-            else
-            {
-                auto advanced = dev.as<advanced_mode>();
-                if (advanced.is_enabled())
-                {
-                    if (ImGui::Button("Disable Advanced Mode", ImVec2{ 180, 0 }))
-                    {
-                        //if (yes_no_dialog()) // TODO
-                        //{
-                        advanced.toggle_advanced_mode(false);
-                        restarting_info = get_device_info(dev, false);
-                        //}
-                    }
-                    if (ImGui::IsItemHovered())
-                    {
-                        ImGui::SetTooltip("Disabling advanced mode will reset depth generation to factory settings\nThis will not affect calibration");
-                    }
-                    draw_advanced_mode_controls(advanced, amc, get_curr_advanced_controls);
-                }
-                else
-                {
-                    if (ImGui::Button("Enable Advanced Mode", ImVec2{ 180, 0 }))
-                    {
-                        //if (yes_no_dialog()) // TODO
-                        //{
-                        advanced.toggle_advanced_mode(true);
-                        restarting_info = get_device_info(dev, false);
-                        //}
-                    }
-                    if (ImGui::IsItemHovered())
-                    {
-                        ImGui::SetTooltip("Advanced mode is a persistent camera state unlocking calibration formats and depth generation controls\nYou can always reset the camera to factory defaults by disabling advanced mode");
-                    }
-                    ImGui::TextColored(ImVec4{ 1.0f, 0.0f, 0.0f, 1.0f }, "Device is not in advanced mode!\nTo access advanced functionality\nclick \"Enable Advanced Mode\"");
-                }
-            }
-        }
-        catch (...)
-        {
-            // TODO
-        }
-
-        ImGui::TreePop();
-    }
-
-    ImGui::PopStyleColor();
-}
 
 void reset_camera(float3& pos, float3& target, float3& up)
 {
@@ -268,12 +150,8 @@ void reset_camera(float3& pos, float3& target, float3& up)
 
 int main(int, char**) try
 {
-    // activate logging to console
-    log_to_console(RS2_LOG_SEVERITY_WARN);
-
     // Init GUI
-    if (!glfwInit())
-        exit(1);
+    if (!glfwInit()) exit(1);
 
     rs2_error* e = nullptr;
     std::string title = to_string() << "RealSense Viewer v" << api_version_to_string(rs2_get_api_version(&e));
@@ -283,12 +161,8 @@ int main(int, char**) try
     glfwMakeContextCurrent(window);
     ImGui_ImplGlfw_Init(window, true);
 
-    ImFont* font_18;
-    ImFont* font_14;
-
+    ImFont *font_18, *font_14;
     imgui_easy_theming(font_14, font_18);
-
-    ImVec4 clear_color = ImColor(10, 0, 0);
 
     // Create RealSense Context
     context ctx;
@@ -301,10 +175,7 @@ int main(int, char**) try
     std::vector<std::pair<std::string, std::string>> device_names;
 
     std::string error_message{ "" };
-
     std::string label{ "" };
-    bool new_device_loaded = false;
-
 
     auto last_time_point = std::chrono::high_resolution_clock::now();
 
@@ -313,9 +184,6 @@ int main(int, char**) try
 
     viewer_model viewer_model;
     device_list list;
-    std::vector<std::string> active_device_info;
-    auto dev_exist = false;
-    auto hw_reset_enable = true;
     auto pc = ctx.create_pointcloud();
     int rendered_tex_id = 0;
     std::atomic<bool> keep_calculating_pointcloud = true;
@@ -336,8 +204,6 @@ int main(int, char**) try
 
     std::vector<device> devs;
     std::mutex m;
-
-    auto timestamp = std::chrono::duration<double, std::milli>(std::chrono::system_clock::now().time_since_epoch()).count();
 
     mouse_info mouse;
 
@@ -364,71 +230,54 @@ int main(int, char**) try
         data->mouse->mouse_wheel = yoffset;
     });
 
-    //ctx.set_devices_changed_callback([&](event_information& info)
-    //{
-    //    timestamp = std::chrono::duration<double, std::milli>(std::chrono::system_clock::now().time_since_epoch()).count();
+    ctx.set_devices_changed_callback([&](event_information& info)
+    {
+        std::lock_guard<std::mutex> lock(m);
 
-    //    std::lock_guard<std::mutex> lock(m);
+        for (auto dev : devs)
+        {
+            if (info.was_removed(dev))
+            {
+                viewer_model.not_model.add_notification({ get_device_name(dev).first + " Disconnected\n",
+                    0, RS2_LOG_SEVERITY_INFO, RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR });
 
-    //    for (auto dev : devs)
-    //    {
-    //        if (info.was_removed(dev))
-    //        {
-    //            viewer_model.not_model.add_notification({ get_device_name(dev).first + " Disconnected\n",
-    //                timestamp,
-    //                RS2_LOG_SEVERITY_INFO,
-    //                RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR });
+                if (dev.is<playback>())
+                {
+                    drop_manager.remove_device(dev.as<playback>().file_name());
+                }
+            }
+        }
 
-    //            if (dev.is<playback>())
-    //            {
-    //                drop_manager.remove_device(dev.as<playback>().file_name());
-    //            }
-    //        }
-    //    }
+        try
+        {
+            for (auto dev : info.get_new_devices())
+            {
+                viewer_model.not_model.add_notification({ get_device_name(dev).first + " Connected\n",
+                    0, RS2_LOG_SEVERITY_INFO, RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR });
+            }
+        }
+        catch (...)
+        {
 
-
-    //    if (info.was_removed(dev))
-    //    {
-    //        dev_exist = false;
-    //    }
-
-    //    try
-    //    {
-    //        for (auto dev : info.get_new_devices())
-    //        {
-    //            viewer_model.not_model.add_notification({ get_device_name(dev).first + " Connected\n",
-    //                timestamp,
-    //                RS2_LOG_SEVERITY_INFO,
-    //                RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR });
-    //        }
-    //    }
-    //    catch (...)
-    //    {
-
-    //    }
-    //    refresh_device_list = true;
-    //});
+        }
+        refresh_device_list = true;
+    });
 
     // 3D-Viewer state
     float3 pos = { 0.0f, 0.0f, -0.5f };
     float3 target = { 0.0f, 0.0f, 0.0f };
     float3 up;
     float view[16];
-
     reset_camera(pos, target, up);
     bool texture_wrapping_on = true;
     GLint texture_border_mode = GL_CLAMP_TO_EDGE; // GL_CLAMP_TO_BORDER
     float tex_border_color[] = { 0.8f, 0.8f, 0.8f, 0.8f };
     float2 oldcursor{ 0.f, 0.f };
 
-    advanced_mode_control amc{};
-    bool get_curr_advanced_controls = true;
+    //advanced_mode_control amc{};
 
     int last_tab_index = 0;
     int tab_index = 0;
-
-    int last_preset_index = 0;
-    int preset_index = -1;
 
     // Closing the window
     while (!glfwWindowShouldClose(window))
@@ -442,9 +291,17 @@ int main(int, char**) try
 
                 try
                 {
+                    auto prev_size = list.size();
                     list = ctx.query_devices();
 
                     device_names = get_devices_names(list);
+
+                    if (device_models.size() == 0 && list.size() > 0 && prev_size == 0)
+                    {
+                        auto model = device_model(list.front(), error_message);
+                        device_models.push_back(model);
+                        viewer_model.not_model.add_log(to_string() << model.dev.get_info(RS2_CAMERA_INFO_NAME) << " was selected as a default device");
+                    }
 
                     //for (auto dev : devs)
                     //{
@@ -491,6 +348,7 @@ int main(int, char**) try
                     //    }
                     //}
 
+                    devs.clear();
                     for (auto&& sub : list)
                     {
                         devs.push_back(sub);
@@ -502,6 +360,27 @@ int main(int, char**) try
                             });
                         }
                     }
+
+
+                    device_to_remove = nullptr;
+                    while(true)
+                    {
+                        for (auto&& dev_model : device_models)
+                        {
+                            bool still_around = false;
+                            for (auto&& dev : devs)
+                                if (get_device_name(dev_model.dev) == get_device_name(dev))
+                                    still_around = true;
+                            if (!still_around) device_to_remove = &dev_model;
+                        }
+                        if (device_to_remove)
+                        {
+                            device_models.erase(std::find_if(begin(device_models), end(device_models),
+                                [&](const device_model& other) { return get_device_name(other.dev) == get_device_name(device_to_remove->dev); }));
+                            device_to_remove = nullptr;
+                        }
+                        else break;
+                    }
                 }
                 catch (const error& e)
                 {
@@ -511,8 +390,6 @@ int main(int, char**) try
                 {
                     error_message = e.what();
                 }
-
-                hw_reset_enable = true;
             }
         }
         bool update_read_only_options = false;
@@ -549,14 +426,6 @@ int main(int, char**) try
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
         ImGui::Begin("Add Device Panel", nullptr, flags);
 
-        //bool switch_to_newly_loaded_device = false;
-        //if (new_device_loaded && refresh_device_list == false)
-        //{
-        //    device_index = list.size() - 1;
-        //    new_device_loaded = false;
-        //    switch_to_newly_loaded_device = true;
-        //}
-
         ImGui::PushFont(font_18);
         ImGui::PushStyleColor(ImGuiCol_PopupBg, from_rgba(230, 230, 230, 255));
         ImGui::PushStyleColor(ImGuiCol_HeaderHovered, from_rgba(0, 0xae, 0xff, 255));
@@ -592,24 +461,6 @@ int main(int, char**) try
                         auto dev = list[i];
                         auto model = device_model(dev, error_message);
                         device_models.push_back(model);
-                        active_device_info = get_device_info(dev);
-                        if (dev.is<playback>()) //TODO: remove this and make sub->streaming a function that queries the sensor
-                        {
-                            dev.as<playback>().set_status_changed_callback([&model](rs2_playback_status status)
-                            {
-                                if (status == RS2_PLAYBACK_STATUS_STOPPED)
-                                {
-                                    for (auto sub : model.subdevices)
-                                    {
-                                        if (sub->streaming)
-                                        {
-                                            sub->stop();
-                                        }
-                                    }
-                                }
-                            });
-                        }
-
                     }
                     catch (const error& e)
                     {
@@ -767,8 +618,9 @@ int main(int, char**) try
                 ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(5, 5));
 
                 label = to_string() << "device_menu" << dev_model.id;
+                std::string settings_button_name = to_string() << u8"\uf013\uf0d7##" << dev_model.id;
 
-                if (ImGui::Button(u8"\uf013\uf0d7", { 25,25 }))
+                if (ImGui::Button(settings_button_name.c_str(), { 25,25 }))
                     ImGui::OpenPopup(label.c_str());
 
                 ImGui::PushFont(font_14);
@@ -800,7 +652,7 @@ int main(int, char**) try
                                                 std::istreambuf_iterator<char>());
 
                                 adv.load_json(str);
-                                get_curr_advanced_controls = true;
+                                dev_model.get_curr_advanced_controls = true;
                             }
                         }
 
@@ -908,7 +760,7 @@ int main(int, char**) try
                         {
                             if (sub->draw_option(opt, update_read_only_options, error_message, viewer_model.not_model))
                             {
-                                get_curr_advanced_controls = true;
+                                dev_model.get_curr_advanced_controls = true;
                             }
                         }
 
@@ -922,7 +774,7 @@ int main(int, char**) try
                                 {
                                     if (sub->draw_option(opt, update_read_only_options, error_message, viewer_model.not_model))
                                     {
-                                        get_curr_advanced_controls = true;
+                                        dev_model.get_curr_advanced_controls = true;
                                     }
                                 }
                             }
@@ -934,7 +786,7 @@ int main(int, char**) try
                         }
 
                         if (dev_model.dev.is<advanced_mode>() && sub->s.is<depth_sensor>())
-                            draw_advanced_mode_tab(dev_model.dev, amc, restarting_device_info, get_curr_advanced_controls);
+                            dev_model.draw_advanced_mode_tab(dev_model.dev, restarting_device_info);
 
                         ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
 
@@ -998,7 +850,7 @@ int main(int, char**) try
 
                     if (!sub->streaming)
                     {
-                        label = to_string() << u8"  \uf204\noff   ##" << sub->s.get_info(RS2_CAMERA_INFO_NAME);
+                        label = to_string() << u8"  \uf204\noff   ##" << dev_model.id << "," << sub->s.get_info(RS2_CAMERA_INFO_NAME);
 
                         ImGui::PushStyleColor(ImGuiCol_Text, redish);
                         ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, redish + 0.1f);
@@ -1033,7 +885,7 @@ int main(int, char**) try
                     }
                     else
                     {
-                        label = to_string() << u8"  \uf205\n    on##" << sub->s.get_info(RS2_CAMERA_INFO_NAME);
+                        label = to_string() << u8"  \uf205\n    on##" << dev_model.id << "," << sub->s.get_info(RS2_CAMERA_INFO_NAME);
                         ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
                         ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue + 0.1f);
 
@@ -1104,7 +956,7 @@ int main(int, char**) try
         glViewport(0, 0,
             static_cast<int>(ImGui::GetIO().DisplaySize.x),
             static_cast<int>(ImGui::GetIO().DisplaySize.y));
-        glClearColor(clear_color.x, clear_color.y, clear_color.z, clear_color.w);
+        glClearColor(0,0,0,1);
         glClear(GL_COLOR_BUFFER_BIT);
 
         auto output_height = (viewer_model.is_output_collapsed ? default_log_h : 20);
