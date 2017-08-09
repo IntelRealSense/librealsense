@@ -171,6 +171,8 @@ EXPORTS
     rs2_advanced_mode_preset_to_string
     rs2_is_enabled
     rs2_toggle_advanced_mode
+    rs2_load_json
+    rs2_serialize_json
 
     rs2_create_record_device 
     rs2_create_playback_device 

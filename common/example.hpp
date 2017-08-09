@@ -633,40 +633,39 @@ namespace rs2
             last = frame;
         }
 
-        void draw_axis()
+        static void draw_axis(float axis_size = 1.f, float axisWidth = 4.f)
         {
 
             // Traingles For X axis
             glBegin(GL_TRIANGLES);
             glColor3f(1.0f, 0.0f, 0.0f);
-            glVertex3f(1.1f, 0.0f, 0.0f);
-            glVertex3f(1.0f, 0.05f, 0.0f);
-            glVertex3f(1.0f, -0.05f, 0.0f);
+            glVertex3f(axis_size * 1.1f, 0.0f, 0.0f);
+            glVertex3f(axis_size, axis_size * 0.05f, 0.0f);
+            glVertex3f(axis_size, -0.05f * axis_size, 0.0f);
             glEnd();
 
             // Traingles For Y axis
             glBegin(GL_TRIANGLES);
             glColor3f(0.0f, 1.0f, 0.0f);
-            glVertex3f(0.0f, -1.1f, 0.0f);
-            glVertex3f(0.0f, -1.0f, 0.05f);
-            glVertex3f(0.0f, -1.0f, -0.05f);
+            glVertex3f(0.0f, -1.1f * axis_size, 0.0f);
+            glVertex3f(0.0f, -1.0f * axis_size, 0.05f * axis_size);
+            glVertex3f(0.0f, -1.0f * axis_size, -0.05f * axis_size);
             glEnd();
             glBegin(GL_TRIANGLES);
             glColor3f(0.0f, 1.0f, 0.0f);
-            glVertex3f(0.0f, -1.1f, 0.0f);
-            glVertex3f(0.05f, -1.0f, 0.0f);
-            glVertex3f(-0.05f, -1.0f, 0.0f);
+            glVertex3f(0.0f, -1.1f * axis_size, 0.0f);
+            glVertex3f(0.05f * axis_size, -1.0f * axis_size, 0.0f);
+            glVertex3f(-0.05f * axis_size, -1.0f * axis_size, 0.0f);
             glEnd();
 
             // Traingles For Z axis
             glBegin(GL_TRIANGLES);
             glColor3f(0.0f, 0.0f, 1.0f);
-            glVertex3f(0.0f, 0.0f, 1.1f);
-            glVertex3f(0.0f, 0.05f, 1.0f);
-            glVertex3f(0.0f, -0.05f, 1.0f);
+            glVertex3f(0.0f, 0.0f, 1.1f * axis_size);
+            glVertex3f(0.0f, 0.05f * axis_size, 1.0f * axis_size);
+            glVertex3f(0.0f, -0.05f * axis_size, 1.0f * axis_size);
             glEnd();
 
-            auto axisWidth = 4.f;
             glLineWidth(axisWidth);
 
             // Drawing Axis
@@ -674,17 +673,17 @@ namespace rs2
             // X axis - Red
             glColor3f(1.0f, 0.0f, 0.0f);
             glVertex3f(0.0f, 0.0f, 0.0f);
-            glVertex3f(1.0f, 0.0f, 0.0f);
+            glVertex3f(axis_size, 0.0f, 0.0f);
 
             // Y axis - Green
             glColor3f(0.0f, 1.0f, 0.0f);
             glVertex3f(0.0f, 0.0f, 0.0f);
-            glVertex3f(0.0f, -1.0f, 0.0f);
+            glVertex3f(0.0f, -axis_size, 0.0f);
 
             // Z axis - White
             glColor3f(0.0f, 0.0f, 1.0f);
             glVertex3f(0.0f, 0.0f, 0.0f);
-            glVertex3f(0.0f, 0.0f, 1.0f);
+            glVertex3f(0.0f, 0.0f, axis_size);
             glEnd();
         }
 

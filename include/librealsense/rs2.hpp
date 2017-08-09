@@ -15,6 +15,14 @@
 
 namespace rs2
 {
+        bool contains(const device& dev) const
+        {
+            rs2_error* e = nullptr;
+            auto res = rs2_device_list_contains(_list.get(), dev.get().get(), &e);
+            error::handle(e);
+            return res;
+        }
+
     inline void log_to_console(rs2_log_severity min_severity)
     {
         rs2_error* e = nullptr;

@@ -297,15 +297,18 @@ namespace librealsense
         }
         std::vector<std::shared_ptr<matcher>> depth_matchers;
 
-        std::set<rs2_stream> streams = { RS2_STREAM_DEPTH , RS2_STREAM_INFRARED};
+
+
+
+        std::vector<stream_interface*> streams = { _depth_stream.get(), _ir_stream.get()};
 
         for (auto s : streams)
-            depth_matchers.push_back(std::make_shared<identity_matcher>( stream_id((device_interface*)(this), s)));
+            depth_matchers.push_back(std::make_shared<identity_matcher>( s->get_unique_id()));
 
         std::vector<std::shared_ptr<matcher>> matchers;
         matchers.push_back( std::make_shared<frame_number_composite_matcher>(depth_matchers));
 
-        auto color_matcher = std::make_shared<identity_matcher>( stream_id((device_interface*)(this), RS2_STREAM_COLOR));
+        auto color_matcher = std::make_shared<identity_matcher>( _color_stream->get_unique_id());
         matchers.push_back(color_matcher);
 
         return std::make_shared<timestamp_composite_matcher>(matchers);
