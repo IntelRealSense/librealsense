@@ -13,7 +13,7 @@
 #include <iomanip>
 
 #include "json.hpp"
-#include <librealsense/rs2_advanced_mode_command.h>
+#include <librealsense/h/rs2_advanced_mode_command.h>
 #include "types.h"
 #include "presets.h"
 

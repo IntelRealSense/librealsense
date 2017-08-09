@@ -29,7 +29,6 @@ typedef enum rs2_rs400_visual_preset
     RS2_RS400_VISUAL_PRESET_BOX,
     RS2_RS400_VISUAL_PRESET_COUNT
 } rs2_rs400_visual_preset;
-
 const char* rs2_advanced_mode_preset_to_string(rs2_rs400_visual_preset preset);
 
 typedef struct

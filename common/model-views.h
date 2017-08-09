@@ -3,6 +3,7 @@
 
 #pragma once
 #include <librealsense/rs2.hpp>
+
 #include "example.hpp"
 
 #define GLFW_INCLUDE_GLU
@@ -17,7 +18,7 @@
 #include "imgui-fonts-karla.hpp"
 #include "imgui-fonts-fontawesome.hpp"
 
-
+#include "realsense-ui/realsense-ui-advanced-mode.h"
 
 inline ImVec4 from_rgba(uint8_t r, uint8_t g, uint8_t b, uint8_t a)
 {
@@ -96,6 +97,8 @@ namespace rs2
     struct notification_model;
     typedef std::map<int, rect> streams_layout;
 
+    std::vector<std::pair<std::string, std::string>> get_devices_names(const device_list& list);
+    std::vector<std::string> get_device_info(const device& dev, bool include_location = true);
 
     class option_model
     {
@@ -298,13 +301,17 @@ namespace rs2
         void pause_record();
         void resume_record();
 
+        void draw_advanced_mode_tab(device& dev, std::vector<std::string>& restarting_info);
+
         std::vector<std::shared_ptr<subdevice_model>> subdevices;
         
         bool metadata_supported = false;
-
+        bool get_curr_advanced_controls = true;
         device dev;
         std::string id;
     private:
+        advanced_mode_control amc;
+
         std::shared_ptr<recorder> _recorder;
         std::vector<std::shared_ptr<subdevice_model>> live_subdevices;
     };

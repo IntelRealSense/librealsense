@@ -4,8 +4,8 @@
 #ifndef LIBREALSENSE_RSUTIL2_HPP
 #define LIBREALSENSE_RSUTIL2_HPP
 
-#include "rs2.hpp"
-#include "rsutil2.h"
+#include <librealsense/rs2.hpp>
+#include <librealsense/rsutil2.h>
 
 #include <map>
 #include <mutex>
