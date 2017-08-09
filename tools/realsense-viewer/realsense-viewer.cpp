@@ -257,7 +257,7 @@ int main(int, char**) try
     device_list list;
     auto pc = ctx.create_pointcloud();
     int rendered_tex_id = 0;
-    std::atomic<bool> keep_calculating_pointcloud = true;
+    std::atomic<bool> keep_calculating_pointcloud(true);
     frame_queue depth_frames_to_render(1);
     frame_queue resulting_3d_models(1);
     bool paused = false;
@@ -369,7 +369,8 @@ int main(int, char**) try
 
                     if (device_models.size() == 0 && list.size() > 0 && prev_size == 0)
                     {
-                        auto model = device_model(list.front(), error_message);
+                        auto dev = list.front();
+                        auto model = device_model(dev, error_message);
                         device_models.push_back(model);
                         viewer_model.not_model.add_log(to_string() << model.dev.get_info(RS2_CAMERA_INFO_NAME) << " was selected as a default device");
                     }
