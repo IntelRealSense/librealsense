@@ -3,6 +3,9 @@
 #include "parser.hpp"
 #include "model-views.h"
 
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include "../third-party/stb_image_write.h"
+
 #include <cstdarg>
 #include <thread>
 #include <iostream>
@@ -27,9 +30,75 @@
 using namespace rs2;
 using namespace rs400;
 
+void export_to_ply(notifications_model& ns, points points, video_frame texture)
+{
+    const char *ret;
+    ret = noc_file_dialog_open(NOC_FILE_DIALOG_SAVE, "PLY\0*.ply\0", NULL, NULL);
+    if (!ret) return; // user cancelled dialog. Don't save image.
+    const std::string fname(ret);
 
+    std::thread([&ns, points, texture, fname]() {
+        std::string texfname(fname);
+        texfname += ".png";
 
-void show_3dviewer_header(ImFont* font, rs2::rect stream_rect, viewer_model& viewer)
+        const auto vertices = points.get_vertices();
+        const auto texcoords = points.get_texture_coordinates();
+        std::vector<vertex> new_vertices;
+        std::vector<texture_coordinate> new_texcoords;
+        new_vertices.reserve(points.size());
+        new_texcoords.reserve(points.size());
+
+        for (int i=0; i < points.size(); ++i)
+            if (std::abs(vertices[i].x) >= 1e-6 || std::abs(vertices[i].y) >= 1e-6 || std::abs(vertices[i].z) >= 1e-6)
+            {
+                new_vertices.push_back(vertices[i]);
+                if (texture) new_texcoords.push_back(texcoords[i]);
+            }
+
+        std::ofstream out(fname);
+        out << "ply\n";
+        out << "format binary_little_endian 1.0\n";
+        out << "comment pointcloud saved from Realsense Viewer\n";
+        if (texture) out << "comment TextureFile " << texfname.substr(texfname.find_last_of("\\/")+1) << "\n";
+        out << "element vertex " << new_vertices.size() << "\n";
+        out << "property float" << sizeof(float) * 8 << " x\n";
+        out << "property float" << sizeof(float) * 8 << " y\n";
+        out << "property float" << sizeof(float) * 8 << " z\n";
+        if (texture)
+        {
+            out << "property float" << sizeof(float) * 8 << " u\n";
+            out << "property float" << sizeof(float) * 8 << " v\n";
+        }
+        out << "end_header\n";
+        out.close();
+
+        out.open(fname, std::ios_base::app|std::ios_base::binary);
+        for (int i=0; i < new_vertices.size(); ++i)
+        {
+            // we assume little endian architecture on your device
+            out.write(reinterpret_cast<const char*>(&(new_vertices[i].x)), sizeof(float));
+            out.write(reinterpret_cast<const char*>(&(new_vertices[i].y)), sizeof(float));
+            out.write(reinterpret_cast<const char*>(&(new_vertices[i].z)), sizeof(float));
+            if (texture)
+            {
+                out.write(reinterpret_cast<const char*>(&(new_texcoords[i].u)), sizeof(float));
+                out.write(reinterpret_cast<const char*>(&(new_texcoords[i].v)), sizeof(float));
+            }
+        }
+
+        /* save texture to texfname */
+        if (texture) stbi_write_png(texfname.data(), texture.get_width(), texture.get_height(), texture.get_bytes_per_pixel(), texture.get_data(), texture.get_width() * texture.get_bytes_per_pixel());
+
+        ns.add_notification({ to_string() << "Finished saving 3D view " << (texture? "to ":"without texture to ") << fname,
+            std::chrono::duration_cast<std::chrono::duration<double,std::micro>>(std::chrono::high_resolution_clock::now().time_since_epoch()).count(),
+            RS2_LOG_SEVERITY_INFO,
+            RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR });
+    }).detach();
+
+    
+}
+
+void show_3dviewer_header(ImFont* font, rs2::rect stream_rect, viewer_model& viewer, notifications_model& not_model, video_frame texture)
 {
     const auto top_bar_height = 32.f;
 
@@ -52,7 +121,9 @@ void show_3dviewer_header(ImFont* font, rs2::rect stream_rect, viewer_model& vie
     std::string label = to_string() << "header of 3dviewer";
     ImGui::Begin(label.c_str(), nullptr, flags);
 
-
+    if (ImGui::Button("Save 3D View", { 30, 30 })) {
+        export_to_ply(not_model, viewer.model_3d, texture);
+    }
 
     ImGui::End();
     ImGui::PopStyleColor(6);
@@ -496,6 +567,7 @@ int main(int, char**) try
                 const char *ret;
                 ret = noc_file_dialog_open(NOC_FILE_DIALOG_OPEN,
                     "ROS-bag\0*.bag\0", NULL, NULL);
+                int i = 3;
 
             }
             ImGui::NextColumn();
@@ -1000,9 +1072,9 @@ int main(int, char**) try
         }
         else
         {
+            frame texture_map;
             rect viewer_rect = { panel_width, panel_y, w - panel_width, h - panel_y - output_height };
-            show_3dviewer_header(font_14, viewer_rect, viewer_model);
-
+            
             static auto last_frame_number = 0;
             for (auto&& s : viewer_model.streams)
             {
@@ -1018,7 +1090,8 @@ int main(int, char**) try
                         if (s.second.profile.stream_type() != RS2_STREAM_DEPTH && s.second.texture->last)
                         {
                             rendered_tex_id = s.second.texture->get_gl_handle();
-                            pc.map_to(s.second.texture->last);
+                            texture_map = s.second.texture->last; // also save it for later
+                            pc.map_to(texture_map);
                             break;
                         }
                     }
@@ -1037,6 +1110,8 @@ int main(int, char**) try
             {
                 viewer_model.model_3d = f;
             }
+
+            show_3dviewer_header(font_14, viewer_rect, viewer_model, viewer_model.not_model, texture_map);
 
             glfwGetFramebufferSize(window, &w, &h);
             glViewport(0, 0, w, h);
