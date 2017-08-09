@@ -26,6 +26,8 @@ public:
 
     void upload(const rs2::frame& frame)
     {
+        if(!frame)
+            return;
         // If the frame timestamp has changed since the last time show(...) was called, re-upload the texture
         if (!texture)
             glGenTextures(1, &texture);
@@ -59,7 +61,11 @@ public:
         default:
             throw std::runtime_error("The requested format is not suported by this demo!");
         }
-
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+        glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
         glBindTexture(GL_TEXTURE_2D, 0);
     }
 
@@ -78,6 +84,9 @@ public:
 
     void show(const rect& r) const
     {
+        if (!texture)
+            return;
+
         glBindTexture(GL_TEXTURE_2D, texture);
         glEnable(GL_TEXTURE_2D);
         draw_texture(r);
@@ -87,6 +96,29 @@ public:
     }
 };
 
+void render(int index, const texture_buffer& texture, GLFWwindow* win)
+{
+
+    int w, h;
+    glfwGetFramebufferSize(win, &w, &h);
+
+    auto tile_w = static_cast<float>(static_cast<float>(w) / 2);
+    auto tile_h = static_cast<float>(static_cast<float>(h));
+
+    // Clear the framebuffer
+    glViewport(0, 0, w, h);
+    glClear(GL_COLOR_BUFFER_BIT);
+
+    // Draw the images
+    glPushMatrix();
+    glfwGetWindowSize(win, &w, &h);
+    glOrtho(0, w, h, 0, -1, +1);
+
+    texture.show({ index * tile_w,  0, tile_w, tile_h });
+
+    glPopMatrix();
+    glfwSwapBuffers(win);
+}
 
 int main(int argc, char * argv[]) try
 {
@@ -113,63 +145,21 @@ int main(int argc, char * argv[]) try
         // Wait for new images
         glfwPollEvents();
 
-        int w, h;
-        glfwGetFramebufferSize(win, &w, &h);
-        frameset frames;
-
-        frames = p.wait_for_frames();
-
-        auto depth = frames.get_depth();
-        auto color = frames.get_color();
-
-        render(colorize(depth));
-        render(color);
-
-        //auto d = frames.get<depth_frame>();
-        // d.get_distance(10,10);
-        //auto colored_depth = depth_colorizer(d);
-
-        // auto color_frame = frames.get<rgb_frame>();
-
-        //render(colored_depth);
-        //render(color_frame);
-
+        auto frames = p.wait_for_frames();
 
         if(frames.size() == 0)
             continue;
 
+        auto depth = frames.get_depth();
+        depth = depth? depth_colorizer.colorize(depth) : depth;
+        auto color = frames.get_color();
 
-        for (auto&& frame : frames)
-        {
-            //if(frame.get_profile().stream_type() == RS2_STREAM_DEPTH)
-            auto colored_depth = depth_colorizer.colorize(frame);
-            buffers[frame.get_profile().stream_type()].upload(colored_depth);
-        }
+        textures[RS2_STREAM_DEPTH].upload(depth);
+        textures[RS2_STREAM_COLOR].upload(color);
 
-        auto tiles_horisontal = static_cast<int>(ceil(sqrt(buffers.size())));
-        auto tiles_vertical = ceil(static_cast<float>(buffers.size()) / tiles_horisontal);
-        auto tile_w = static_cast<float>(static_cast<float>(w) / tiles_horisontal);
-        auto tile_h = static_cast<float>(static_cast<float>(h) / tiles_vertical);
 
-        // Clear the framebuffer
-        glViewport(0, 0, w, h);
-        glClear(GL_COLOR_BUFFER_BIT);
-
-        // Draw the images
-        glPushMatrix();
-        glfwGetWindowSize(win, &w, &h);
-        glOrtho(0, w, h, 0, -1, +1);
-
-        for (auto buffer = buffers.begin(); buffer != buffers.end(); ++buffer)
-        {
-            auto index = std::distance(buffers.begin(), buffer);
-            auto col_id = index / tiles_horisontal;
-            auto row_id = index % tiles_horisontal;
-
-            buffer->second.show({ row_id * tile_w, static_cast<float>(col_id * tile_h), tile_w, tile_h }, 1);
-        }
-        glPopMatrix();
-        glfwSwapBuffers(win);
+        render(0, textures[RS2_STREAM_DEPTH], win);
+        render(1, textures[RS2_STREAM_COLOR], win);
     }
 
     glfwDestroyWindow(win);

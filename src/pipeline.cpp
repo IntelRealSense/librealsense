@@ -95,6 +95,7 @@ namespace librealsense
             _dev = _hub.wait_for_device();
             _sensors.clear();
             _queue.clear();
+            _queue.start();
             start();
         }
         else
