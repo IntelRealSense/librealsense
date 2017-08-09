@@ -6,13 +6,16 @@
 
 namespace librealsense
 {
-    const static color_map classic{ {
-        { 255, 0, 0 },
-        { 0, 0, 255 },
-        } };
+    const static color_map jet {{
+            { 0, 0, 255 },
+            { 0, 255, 255 },
+            { 255, 255, 0 },
+            { 255, 0, 0 },
+            { 50, 0, 0 },
+        }};
 
     colorizer::colorizer(std::shared_ptr<platform::time_service> ts)
-        : processing_block(ts), _min(0.f), _max(16.f), _equalize(true), _map(classic)
+        : processing_block(ts), _min(0.f), _max(16.f), _equalize(true), _map(jet)
     {
         auto on_frame = [this](rs2::frame f, const rs2::frame_source& source)
         {
