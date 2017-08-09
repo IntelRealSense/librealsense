@@ -13,8 +13,7 @@
 #define NOMINMAX
 #endif
 
-#include "../include/librealsense/rs2.h"     // Inherit all type definitions in the public API
-#include "../include/librealsense/rscore2.hpp"
+#include "../include/librealsense/hpp/rs2_types.hpp"
 
 #include <stdint.h>
 #include <cassert>                          // For assert
@@ -315,7 +314,7 @@ namespace librealsense
     // Enumerated type support //
     /////////////////////////////
 
-#define RS2_ENUM_HELPERS(TYPE, PREFIX) const char * get_string(TYPE value); \
+#define RS2_ENUM_HELPERS(TYPE, PREFIX) const char* get_string(TYPE value); \
         inline bool is_valid(TYPE value) { return value >= 0 && value < RS2_##PREFIX##_COUNT; } \
         inline std::ostream & operator << (std::ostream & out, TYPE value) { if(is_valid(value)) return out << get_string(value); else return out << (int)value; }
 
