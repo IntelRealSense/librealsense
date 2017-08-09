@@ -5,6 +5,7 @@
 #include <librealsense/rs2.hpp>
 
 #include "example.hpp"
+#include "parser.hpp"
 
 #define GLFW_INCLUDE_GLU
 #include <GLFW/glfw3.h>
@@ -285,6 +286,7 @@ namespace rs2
         rect _normalized_zoom{0, 0, 1, 1};
         int color_map_idx = 1;
         bool show_stream_details = false;
+        
     };
 
     std::pair<std::string, std::string> get_device_name(const device& dev);
@@ -418,4 +420,7 @@ namespace rs2
         streams_layout _old_layout;
         std::chrono::high_resolution_clock::time_point _transition_start_time;
     };
+
+    void export_to_ply(notifications_model& ns, points points, video_frame texture);
 }
+
