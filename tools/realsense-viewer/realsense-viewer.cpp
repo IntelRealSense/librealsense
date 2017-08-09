@@ -377,7 +377,7 @@ int main(int, char**) try
     auto hw_reset_enable = true;
     auto pc = ctx.create_pointcloud();
     int rendered_tex_id = 0;
-    std::atomic<bool> keep_calculating_pointcloud = true;
+    std::atomic<bool> keep_calculating_pointcloud(true);
     frame_queue depth_frames_to_render(1);
     frame_queue resulting_3d_models(1);
     bool paused = false;

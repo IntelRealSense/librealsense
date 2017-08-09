@@ -97,7 +97,7 @@ namespace librealsense {
 
         void set_bounds(float min, float max);
         void set_equalize(bool equalize);
-        void colorizer::set_color_map(color_map map);
+        void set_color_map(color_map map);
 
     private:
         float _min, _max;

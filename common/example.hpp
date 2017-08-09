@@ -562,7 +562,7 @@ namespace rs2
             glBindTexture(GL_TEXTURE_2D, texture);
             stride = stride == 0 ? width : stride;
             //glPixelStorei(GL_UNPACK_ROW_LENGTH, stride);
-            rs2::video_frame f = nullptr;
+            rs2:video_frame f(nullptr);
             const uint8_t* ptr;
             switch (format)
             {
