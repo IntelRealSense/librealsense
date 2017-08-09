@@ -224,6 +224,7 @@ typedef enum rs2_extension
     RS2_EXTENSION_RECORD,
     RS2_EXTENSION_VIDEO_PROFILE,
     RS2_EXTENSION_PLAYBACK,
+    RS2_EXTENSION_DEPTH_FRAME,
     RS2_EXTENSION_COUNT
 } rs2_extension;
 
@@ -1176,6 +1177,8 @@ rs2_processing_block* rs2_create_pointcloud(rs2_context* ctx, rs2_error** error)
 rs2_processing_block* rs2_create_colorizer(rs2_error** error);
 
 float rs2_get_depth_scale(rs2_sensor* sensor, rs2_error** error);
+
+float rs2_depth_frame_get_distance(const rs2_frame* frame_ref, int x, int y, rs2_error** error);
 
 #ifdef __cplusplus
 }

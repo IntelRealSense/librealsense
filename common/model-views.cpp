@@ -1397,10 +1397,10 @@ namespace rs2
             if (texture->try_pick(x, y, &val))
             {
                 ss << ", *p: 0x" << std::hex << val;
-                if (profile.stream_type() == RS2_STREAM_DEPTH && val > 0)
+                if (texture->last.is<depth_frame>() && val > 0)
                 {
-                    auto meters = (val * dev->depth_units);
-                    ss << std::dec << ", ~"
+                    auto meters = texture->last.as<depth_frame>().get_distance(x, y);
+                    ss << std::dec << ", "
                         << std::setprecision(2) << meters << " meters";
                 }
             }

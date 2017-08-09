@@ -553,6 +553,29 @@ namespace rs2
         int get_bytes_per_pixel() const { return get_bits_per_pixel() / 8; }
     };
 
+    class depth_frame : public video_frame
+    {
+    public:
+        depth_frame(const frame& f)
+            : video_frame(f)
+        {
+            rs2_error* e = nullptr;
+            if (!f || (rs2_is_frame_extendable_to(f.get(), RS2_EXTENSION_DEPTH_FRAME, &e) == 0 && !e))
+            {
+                reset();
+            }
+            error::handle(e);
+        }
+
+        float get_distance(int x, int y) const
+        {
+            rs2_error * e = nullptr;
+            auto r = rs2_depth_frame_get_distance(get(), x, y, &e);
+            error::handle(e);
+            return r;
+        }
+    };
+
     struct vertex {
         float x, y, z; 
         operator const float*() const { return &x; }

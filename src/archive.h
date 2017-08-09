@@ -220,6 +220,46 @@ namespace librealsense
     
     MAP_EXTENSION(RS2_EXTENSION_VIDEO_FRAME, librealsense::video_frame);
 
+    class depth_frame : public video_frame
+    {
+    public:
+        depth_frame()
+            : video_frame(), _depth_units([this]() { return query_units(); })
+        {}
+
+        float get_distance(int x, int y) const
+        {
+            uint64_t pixel;
+            switch (get_bpp()/8) // bits per pixel
+            {
+            case 1: pixel = get_frame_data()[y*get_width() + x];                                    break;
+            case 2: pixel = reinterpret_cast<const uint16_t*>(get_frame_data())[y*get_width() + x]; break;
+            case 4: pixel = reinterpret_cast<const uint32_t*>(get_frame_data())[y*get_width() + x]; break;
+            case 8: pixel = reinterpret_cast<const uint64_t*>(get_frame_data())[y*get_width() + x]; break;
+            default: throw std::runtime_error("Unrecognized depth format");
+            }
+
+            return pixel * *_depth_units;
+        }
+
+        float get_units() const { return *_depth_units; }
+        void reset_units() { _depth_units = lazy<float>([this](){ return query_units(); }); }
+
+    private:
+        float query_units() const
+        {
+            if (auto sensor = this->get_sensor())
+                return sensor->get_option(RS2_OPTION_DEPTH_UNITS).query();
+            else
+                //throw std::runtime_error("No sensor to query for depth units");
+                return 0;
+        }
+
+        lazy<float> _depth_units;
+    };
+
+    MAP_EXTENSION(RS2_EXTENSION_DEPTH_FRAME, librealsense::depth_frame);
+
     //TODO: Define Motion Frame
 
     class archive_interface : public sensor_part

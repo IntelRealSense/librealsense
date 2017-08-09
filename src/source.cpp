@@ -51,7 +51,8 @@ namespace librealsense
 
         std::vector<rs2_extension> supported { RS2_EXTENSION_VIDEO_FRAME,
                                                RS2_EXTENSION_COMPOSITE_FRAME, 
-                                               RS2_EXTENSION_POINTS };
+                                               RS2_EXTENSION_POINTS,
+                                               RS2_EXTENSION_DEPTH_FRAME };
 
         for (auto type : supported)
         {
@@ -61,7 +62,8 @@ namespace librealsense
 
     callback_invocation_holder frame_source::begin_callback()
     {
-        return _archive[RS2_EXTENSION_VIDEO_FRAME ]->begin_callback();
+        return _archive[RS2_EXTENSION_VIDEO_FRAME]->begin_callback();
+//        return _archive[RS2_EXTENSION_DEPTH_FRAME]->begin_callback();
     }
 
     void frame_source::reset()
