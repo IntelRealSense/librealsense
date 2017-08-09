@@ -15,7 +15,7 @@ namespace librealsense
 {
     class record_device : public device_interface,
                           public extendable_interface,
-                          public info_container//TODO: Ziv, does it make sense to inherit from container
+                          public info_container
     {
     public:
         static const uint64_t MAX_CACHED_DATA_SIZE = 1920 * 1080 * 4 * 30; // ~1 sec of HD video @ 30 FPS

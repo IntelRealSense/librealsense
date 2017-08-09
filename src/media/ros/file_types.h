@@ -241,8 +241,8 @@ namespace librealsense
         return 0; //TODO: change once SDK file supports multiple devices
     }
 
-    inline device_serializer::nanoseconds get_first_frame_timestamp()
+    constexpr device_serializer::nanoseconds get_static_file_info_timestamp()
     {
-        return device_serializer::nanoseconds(0);
+        return device_serializer::nanoseconds::min();
     }
 }

@@ -28,7 +28,7 @@ namespace librealsense
 
     class playback_device : public device_interface,
         public extendable_interface,
-        public info_container//TODO: Ziv, does it make sense to inherit from container
+        public info_container
     {
     public:
         playback_device(std::shared_ptr<context> context, std::shared_ptr<device_serializer::reader> serializer);

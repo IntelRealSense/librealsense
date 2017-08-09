@@ -87,7 +87,7 @@ std::map<uint32_t, std::shared_ptr<playback_sensor>> playback_device::create_pla
             {
                 for (auto filter : filters)
                 {
-                    m_reader->set_filter({get_device_index(), filter.sensor_index, filter.stream_type, filter.stream_index });
+                    m_reader->enable_stream({get_device_index(), filter.sensor_index, filter.stream_type, filter.stream_index });
                 }
             });
         };
@@ -98,7 +98,7 @@ std::map<uint32_t, std::shared_ptr<playback_sensor>> playback_device::create_pla
             {
                 for (auto filter : filters)
                 {
-                    m_reader->clear_filter({ get_device_index(), filter.sensor_index, filter.stream_type, filter.stream_index });
+                    m_reader->disable_stream({ get_device_index(), filter.sensor_index, filter.stream_type, filter.stream_index });
                 }
             });
         };

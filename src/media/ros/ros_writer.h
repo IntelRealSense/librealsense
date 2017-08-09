@@ -27,7 +27,6 @@ namespace librealsense
 {
     class ros_writer: public device_serializer::writer
     {
-        const device_serializer::nanoseconds STATIC_INFO_TIMESTAMP = device_serializer::nanoseconds::min();
     public:
         explicit ros_writer(const std::string& file)
         {
@@ -40,14 +39,14 @@ namespace librealsense
         {
             for (auto&& device_extension_snapshot : device_description.get_device_extensions_snapshots().get_snapshots())
             {
-                write_extension_snapshot(get_device_index(), STATIC_INFO_TIMESTAMP, device_extension_snapshot.first, device_extension_snapshot.second);
+                write_extension_snapshot(get_device_index(), get_static_file_info_timestamp(), device_extension_snapshot.first, device_extension_snapshot.second);
             }
             uint32_t sensor_index = 0;
             for (auto&& sensors_snapshot : device_description.get_sensors_snapshots())
             {
                 for (auto&& sensor_extension_snapshot : sensors_snapshot.get_sensor_extensions_snapshots().get_snapshots())
                 {
-                    write_extension_snapshot(get_device_index(), sensor_index, STATIC_INFO_TIMESTAMP, sensor_extension_snapshot.first, sensor_extension_snapshot.second); 
+                    write_extension_snapshot(get_device_index(), sensor_index, get_static_file_info_timestamp(), sensor_extension_snapshot.first, sensor_extension_snapshot.second);
                 }
                 sensor_index++;
             }
@@ -89,7 +88,7 @@ namespace librealsense
         {
             std_msgs::UInt32 msg;
             msg.data = get_file_version();
-            write_message(get_file_version_topic(), STATIC_INFO_TIMESTAMP, msg);
+            write_message(get_file_version_topic(), get_static_file_info_timestamp(), msg);
         }
 
         void write_video_frame(device_serializer::stream_identifier stream_id, const device_serializer::nanoseconds& timestamp, const frame_holder& frame)
@@ -240,7 +239,7 @@ namespace librealsense
         {
             try
             {
-                if (time == STATIC_INFO_TIMESTAMP)
+                if (time == get_static_file_info_timestamp())
                 {
                     m_bag.write(topic, ros::TIME_MIN, msg);
                 }

@@ -23,7 +23,6 @@ librealsense::record_device::record_device(std::shared_ptr<librealsense::device_
         throw invalid_value_exception("serializer is null");
     }
 
-    serializer->reset();
     m_device = device;
     m_ros_writer = serializer;
     m_sensors = create_record_sensors(m_device);

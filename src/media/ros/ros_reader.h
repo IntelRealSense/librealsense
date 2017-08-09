@@ -107,22 +107,12 @@ namespace librealsense
     {
     public:
         ros_reader(const std::string& file) :
-            m_first_frame_time(0),
             m_total_duration(0),
             m_file_path(file),
             m_frame_source(nullptr)
         {
-
-            if (file.empty())
-            {
-                throw std::invalid_argument("file_path");
-            }
-            ros_reader::reset();
-            auto status = get_file_duration(m_total_duration);
-            if(status != device_serializer::status_no_error)
-            {
-                throw librealsense::io_exception("Failed create reader (Could not extract file duration");
-            }
+            reset(); //Note: calling a virtual function inside c'tor, safe while base function is pure virtual
+            m_total_duration = get_file_duration();
         }
 
         device_snapshot query_device_description() override
@@ -156,23 +146,22 @@ namespace librealsense
             return device_serializer::status_file_eof;
         }
 
-        void seek_to_time(const device_serializer::nanoseconds& time) override
+        void seek_to_time(const device_serializer::nanoseconds& seek_time) override
         {
-            if(time < m_first_frame_time || time > m_total_duration)
+            if (seek_time > m_total_duration)
             {
-                throw invalid_value_exception(to_string() << "Requested time is out of bound of playback file. (Requested = " << time.count() << ", Duration = " << m_total_duration.count() << ")");
+                throw invalid_value_exception(to_string() << "Requested time is out of playback length. (Requested = " << seek_time.count() << ", Duration = " << m_total_duration.count() << ")");
             }
-            auto seek_time = m_first_frame_time + device_serializer::nanoseconds(time);
-            auto time_interval = device_serializer::nanoseconds(seek_time);
+            auto seek_time_as_secs = std::chrono::duration_cast<std::chrono::duration<double>>(seek_time);
+            auto seek_time_as_rostime = ros::Time(seek_time_as_secs.count());
 
-            std::unique_ptr<rosbag::View> samples_view;
-            auto sts = seek_to_time(seek_time, samples_view);
-            if(sts != device_serializer::status_no_error)
+            auto enabled_streams_topics = get_topics(m_samples_view);
+            m_samples_view.reset(new rosbag::View(m_file));
+            for (auto topic : enabled_streams_topics)
             {
-                throw invalid_value_exception(to_string() << "Failed to seek_to_time " << time.count() << ", m_reader->seek_to_time(" <<  time_interval.count() << ") returned " << sts);
+                m_samples_view->addQuery(m_file, rosbag::TopicQuery(topic), seek_time_as_rostime);
             }
-            m_samples_view = std::move(samples_view);
-            m_samples_itrator = m_samples_view->begin();
+            m_samples_itrator = m_samples_view->begin();           
         }
 
         device_serializer::nanoseconds query_duration() const override
@@ -208,17 +197,13 @@ namespace librealsense
             }
             
             m_samples_view = nullptr;
-            //m_samples_itrator
-            //m_topics = get_topics(m_samples_view);
             m_frame_source.reset();
             m_metadata_parser_map = create_metadata_parser_map();
             m_frame_source.init(m_metadata_parser_map);
-            m_first_frame_time = get_first_frame_timestamp();
             m_device_description = read_device_description();
         }
 
-        //TODO: Rename to enable_stream
-        virtual void set_filter(const device_serializer::stream_identifier& stream_id) override
+        virtual void enable_stream(const device_serializer::stream_identifier& stream_id) override
         {
             ros::Time curr_time = ros::TIME_MIN;
             if(m_samples_view == nullptr)
@@ -237,10 +222,8 @@ namespace librealsense
             m_samples_itrator = m_samples_view->begin();
         }
 
-        //TODO: rename to disable_stream
-        virtual void clear_filter(const device_serializer::stream_identifier& stream_id) override
+        virtual void disable_stream(const device_serializer::stream_identifier& stream_id) override
         {
-            //TODO: go over all current topics and remove the ones matching this stream id
             if(m_samples_view == nullptr)
             {
                 return;
@@ -275,21 +258,11 @@ namespace librealsense
         }
     private:
 
-        device_serializer::status get_file_duration(device_serializer::nanoseconds& duration) const
+        device_serializer::nanoseconds get_file_duration() const
         {
-            std::unique_ptr<rosbag::View> samples_view;
-            auto first_non_frame_time = ros::TIME_MIN.toNSec()+1;
-            auto sts = seek_to_time(device_serializer::nanoseconds(first_non_frame_time), samples_view);
-            if(sts != device_serializer::status_no_error)
-            {
-                duration = device_serializer::nanoseconds(0);
-                return device_serializer::status_no_error;
-            }
-            auto samples_itrator = samples_view->begin();
-            auto first_frame_time = samples_itrator->getTime();
-            auto total_time = samples_view->getEndTime() - first_frame_time;
-            duration = device_serializer::nanoseconds(total_time.toNSec());
-            return device_serializer::status_no_error;
+            rosbag::View all_frames_view(m_file, FrameQuery());
+            auto streaming_duration = all_frames_view.getEndTime() - all_frames_view.getBeginTime();
+            return device_serializer::nanoseconds(streaming_duration.toNSec());
         }
 
         frame_holder read_image_from_message(const rosbag::MessageInstance &image_data) const
@@ -388,37 +361,6 @@ namespace librealsense
             version = msg->data;
 
             return true;
-        }
-
-        device_serializer::status seek_to_time(const device_serializer::nanoseconds& seek_time, std::unique_ptr<rosbag::View>& samples_view) const
-        {
-            ros::Time to_time = ros::TIME_MIN;
-            if(seek_time.count() != 0)
-            {
-                std::chrono::duration<uint32_t> sec = std::chrono::duration_cast<std::chrono::duration<uint32_t>>(seek_time);
-                device_serializer::nanoseconds range = seek_time - std::chrono::duration_cast<device_serializer::nanoseconds>(sec);
-                to_time = ros::Time(sec.count(), std::chrono::duration_cast<std::chrono::duration<uint32_t, std::nano>>(range).count());
-            }
-
-            if(m_topics.empty() == true)
-            {
-                samples_view = std::unique_ptr<rosbag::View>(new rosbag::View(m_file));
-            }
-            else
-            {
-                samples_view = std::unique_ptr<rosbag::View>(new rosbag::View());
-                for(auto topic : m_topics)
-                {
-                    samples_view->addQuery(m_file, rosbag::TopicQuery(topic), to_time);
-                }
-            }
-            if(samples_view->begin() == samples_view->end())
-            {
-                return device_serializer::status_invalid_argument;
-            }
-
-            return device_serializer::status_no_error;
-
         }
 
         device_snapshot read_device_description() const
@@ -576,14 +518,12 @@ namespace librealsense
         }
 
         device_snapshot                         m_device_description;
-        device_serializer::nanoseconds          m_first_frame_time;
         device_serializer::nanoseconds          m_total_duration;
         std::string                             m_file_path;
         librealsense::frame_source              m_frame_source;
         rosbag::Bag                             m_file;
         std::unique_ptr<rosbag::View>           m_samples_view;
         rosbag::View::iterator                  m_samples_itrator;
-        std::vector<std::string>                m_topics;
         std::shared_ptr<metadata_parser_map>    m_metadata_parser_map;
     };
 
