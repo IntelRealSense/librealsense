@@ -725,16 +725,6 @@ namespace rsimpl
 
         std::vector<std::shared_ptr<device>> query_devices(std::shared_ptr<context> context)
         {
-            // Check if the uvcvideo kernel module is loaded
-	    struct stat info;
-	    int err = stat("/sys/module/uvcvideo/", &info);
-
-	    if (err == -1  // errno==ENOENT, typically
-		|| (info.st_mode & S_IFMT != S_IFDIR))
-            {
-                throw std::runtime_error("uvcvideo kernel module is not loaded");
-            }
-
             // Enumerate all subdevices present on the system
             std::vector<std::unique_ptr<subdevice>> subdevices;
             DIR * dir = opendir("/sys/class/video4linux");
