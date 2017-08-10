@@ -2,7 +2,7 @@
 // Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 
 #pragma once
-#include "../../include/librealsense/rs2.h"
+#include "../../include/librealsense/h/rs2_types.h"
 #include <memory>
 #include <functional>
 
@@ -75,7 +75,7 @@ namespace librealsense
      */
 
     template <typename To>
-    bool try_extend(std::shared_ptr<extension_snapshot> from, void** ext)
+    inline bool try_extend(std::shared_ptr<extension_snapshot> from, void** ext)
     {
         if (from == nullptr)
         {
@@ -92,17 +92,28 @@ namespace librealsense
     }
 
     template<typename T, typename P>
-    bool Is(std::shared_ptr<P> ptr)
+    inline std::shared_ptr<T> As(std::shared_ptr<P> ptr)
     {
-        return std::dynamic_pointer_cast<T>(ptr) != nullptr;
+        return std::dynamic_pointer_cast<T>(ptr);
     }
 
     template<typename T, typename P>
-    bool Is(P* ptr)
+    inline T* As(P* ptr)
     {
-        return dynamic_cast<T*>(ptr) != nullptr;
+        return dynamic_cast<T*>(ptr);
     }
 
+    template<typename T, typename P>
+    inline bool Is(std::shared_ptr<P> ptr)
+    {
+        return As<T>(ptr) != nullptr;
+    }
+
+    template<typename T, typename P>
+    inline bool Is(P* ptr)
+    {
+        return As<T>(ptr) != nullptr;
+    }
     //Creating Helper functions to map rs2_extension enums to actual interface
     template<rs2_extension> struct ExtensionsToTypes;
     template<typename T> struct TypeToExtensionn;

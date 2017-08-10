@@ -13,8 +13,7 @@
 #define NOMINMAX
 #endif
 
-#include "../include/librealsense/rs2.h"     // Inherit all type definitions in the public API
-#include "../include/librealsense/rscore2.hpp"
+#include "../include/librealsense/hpp/rs2_types.hpp"
 
 #include <stdint.h>
 #include <cassert>                          // For assert
@@ -315,7 +314,7 @@ namespace librealsense
     // Enumerated type support //
     /////////////////////////////
 
-#define RS2_ENUM_HELPERS(TYPE, PREFIX) const char * get_string(TYPE value); \
+#define RS2_ENUM_HELPERS(TYPE, PREFIX) const char* get_string(TYPE value); \
         inline bool is_valid(TYPE value) { return value >= 0 && value < RS2_##PREFIX##_COUNT; } \
         inline std::ostream & operator << (std::ostream & out, TYPE value) { if(is_valid(value)) return out << get_string(value); else return out << (int)value; }
 
@@ -326,7 +325,7 @@ namespace librealsense
     RS2_ENUM_HELPERS(rs2_camera_info, CAMERA_INFO)
     RS2_ENUM_HELPERS(rs2_frame_metadata, FRAME_METADATA)
     RS2_ENUM_HELPERS(rs2_timestamp_domain, TIMESTAMP_DOMAIN)
-    RS2_ENUM_HELPERS(rs2_ivcam_visual_preset, IVCAM_VISUAL_PRESET)
+    RS2_ENUM_HELPERS(rs2_sr300_visual_preset, SR300_VISUAL_PRESET)
     RS2_ENUM_HELPERS(rs2_extension, EXTENSION)
     RS2_ENUM_HELPERS(rs2_exception_type, EXCEPTION_TYPE)
     RS2_ENUM_HELPERS(rs2_log_severity, LOG_SEVERITY)

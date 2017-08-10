@@ -34,7 +34,12 @@ void librealsense::record_sensor::open(const stream_profiles& requests)
 
     m_is_recording = true;
     m_curr_configurations = convert_profiles(to_profiles(requests));
-    //TODO: write to file
+    for (auto request : requests)
+    {
+        std::shared_ptr<stream_profile_interface> snapshot;
+        request->create_snapshot(snapshot);
+        m_device_record_snapshot_handler(RS2_EXTENSION_VIDEO_PROFILE, std::dynamic_pointer_cast<extension_snapshot>(snapshot), [this](const std::string& err) { stop_with_error(err); });
+    }
 }
 
 void librealsense::record_sensor::close()

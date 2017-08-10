@@ -82,6 +82,16 @@ namespace librealsense
         rs2_stream_profile* get_c_wrapper() const override;
 
         void set_c_wrapper(rs2_stream_profile* wrapper) override;
+
+        void create_snapshot(std::shared_ptr<stream_profile_interface>& snapshot) override
+        {
+            snapshot = std::dynamic_pointer_cast<stream_profile_interface>(shared_from_this());
+        }
+        void create_recordable(std::shared_ptr<stream_profile_interface>& recordable, std::function<void(std::shared_ptr<extension_snapshot>)> record_action) override
+        {
+            //TODO: implement or remove inheritance from recordable<T>
+            throw not_implemented_exception(__FUNCTION__);
+        }
     private:
         std::shared_ptr<context> _ctx;
         int _index = 1;
@@ -95,7 +105,7 @@ namespace librealsense
         rs2_stream_profile* _c_ptr = nullptr;
     };
 
-    class video_stream_profile : public virtual video_stream_profile_interface, public stream_profile_base
+    class video_stream_profile : public virtual video_stream_profile_interface, public stream_profile_base, public extension_snapshot
     {
     public:
         explicit video_stream_profile(std::shared_ptr<context> ctx, platform::stream_profile sp)
@@ -134,7 +144,10 @@ namespace librealsense
                 get_format() == other.get_format();
         }
 
-
+        void update(std::shared_ptr<extension_snapshot> ext) override
+        {
+            return; //TODO: apply changes here
+        }
         size_t get_size() const override { return 0; }
     private:
         std::function<rs2_intrinsics()> _calc_intrinsics;

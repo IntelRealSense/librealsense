@@ -381,30 +381,14 @@ int main(int argc, char * argv[])
 
             std::vector<const char*> presets_labels;
             std::vector<float> presets_numbers;
-            /**
-            * read option value from the device
-            * \param[in] option   option id to be queried
-            * \return float value of the option
-            */
-            //auto p = dpt.get_option(RS2_OPTION_ADVANCED_MODE_PRESET);
-            //.set_option(RS2_OPTION_ADVANCED_MODE_PRESET, p);
-            //auto text = dpt.get_option_value_description(RS2_OPTION_ADVANCED_MODE_PRESET, 1.f);
-            auto range = dpt.get_option_range(RS2_OPTION_ADVANCED_MODE_PRESET);
+
+            auto range = dpt.get_option_range(RS2_OPTION_VISUAL_PRESET);
             auto index_of_selected_preset = 0, counter = 0;
             auto units = dpt.get_depth_scale();
 
             for (auto i = range.min; i <= range.max; i += range.step, counter++)
             {
-                 //if (range.step < 0.001f) return false;
-                // what if (endpoint.get_option_value_description(RS2_OPTION_ADVANCED_MODE_PRESET, i) == nullptr)?
-
-                /**
-                   * get option value description (in case specific option value hold special meaning)
-                   * \param[in] option     option id to be checked
-                   * \param[in] value      value of the option
-                   * \return human-readable (const char*) description of a specific value of an option or null if no special meaning
-                   */
-                presets_labels.push_back(dpt.get_option_value_description(RS2_OPTION_ADVANCED_MODE_PRESET, i));
+                presets_labels.push_back(dpt.get_option_value_description(RS2_OPTION_VISUAL_PRESET, i));
                 presets_numbers.push_back(i);
             }
 
@@ -434,7 +418,7 @@ int main(int argc, char * argv[])
             // Configure depth stream to run at 30 frames per second
             util::config config;
             config.enable_stream(RS2_STREAM_DEPTH, default_width, default_height, RS2_FORMAT_Z16, 30);
-            //config.enable_stream(RS2_STREAM_DEPTH, 640, 360, 30, RS2_FORMAT_Z16);
+
             auto stream = config.open(dev);
             rs2_intrinsics current_frame_intrinsics = stream.get_intrinsics(RS2_STREAM_DEPTH);
 
@@ -447,9 +431,6 @@ int main(int argc, char * argv[])
                 display_queue.enqueue(f);
             });
 
-            // black.start(syncer);
-            
-
             texture_buffer buffers[RS2_STREAM_COUNT];
             buffers[RS2_STREAM_DEPTH].equalize = false;
             buffers[RS2_STREAM_DEPTH].cm = &my_map;
@@ -460,8 +441,6 @@ int main(int argc, char * argv[])
             glfwInit();
             std::ostringstream ss;
             ss << "Depth Sanity (" << dev.get_info(RS2_CAMERA_INFO_NAME) << ")";
-
-            //dev.get_info(RS2_CAMERA_INFO_FIRMWARE_VERSION)
 
             bool options_invalidated = false;
             std::string error_message;
@@ -629,7 +608,7 @@ int main(int argc, char * argv[])
 
                     try
                     {
-                        dpt.set_option(RS2_OPTION_ADVANCED_MODE_PRESET, selected_preset);
+                        dpt.set_option(RS2_OPTION_VISUAL_PRESET, selected_preset);
                     }
                     catch (const error& e)
                     {

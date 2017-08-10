@@ -44,24 +44,27 @@ namespace librealsense
     private:
         std::map<rs2_extension, std::shared_ptr<extension_snapshot>> m_snapshots;
     };
+
     class sensor_snapshot
     {
     public:
-        sensor_snapshot(const snapshot_collection& sensor_extensions, const stream_profiles& streaming_profiles) :
-            m_snapshots(sensor_extensions), m_available_profiles(streaming_profiles)
+        sensor_snapshot(const snapshot_collection& sensor_extensions) : m_snapshots(sensor_extensions) {}
+        sensor_snapshot(const snapshot_collection& sensor_extensions, stream_profiles streams) :
+            m_snapshots(sensor_extensions),
+            m_streams(streams)
         {
         }
         snapshot_collection get_sensor_extensions_snapshots() const
         {
             return m_snapshots;
         }
-        stream_profiles get_streamig_profiles() const
+        stream_profiles get_stream_profiles() const
         {
-            return m_available_profiles;
+            return m_streams;
         }
     private:
         snapshot_collection m_snapshots;
-        stream_profiles m_available_profiles;
+        stream_profiles m_streams;
     };
     using device_extrinsics = std::map<std::tuple<size_t, rs2_stream, size_t, rs2_stream>, rs2_extrinsics>;
 
@@ -69,10 +72,9 @@ namespace librealsense
     {
     public:
         device_snapshot() {}
-        device_snapshot(const snapshot_collection& device_extensios, const std::vector<sensor_snapshot>& sensors_snapshot, const device_extrinsics& extrinsics) :
+        device_snapshot(const snapshot_collection& device_extensios, const std::vector<sensor_snapshot>& sensors_snapshot) :
             m_device_snapshots(device_extensios),
-            m_sensors_snapshot(sensors_snapshot),
-            m_extrinsics(extrinsics)
+            m_sensors_snapshot(sensors_snapshot)
         {
 
         }
@@ -87,6 +89,5 @@ namespace librealsense
     private:
         snapshot_collection m_device_snapshots;
         std::vector<sensor_snapshot> m_sensors_snapshot;
-        device_extrinsics m_extrinsics;
     };
 }

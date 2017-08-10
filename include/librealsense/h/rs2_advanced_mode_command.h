@@ -11,27 +11,6 @@
 
 #include <stdint.h>
 
-
-/** \brief For RS400 devices: provides optimized settings (presets) for specific types of usage. */
-typedef enum rs2_rs400_visual_preset
-{
-    RS2_RS400_VISUAL_PRESET_CUSTOM,
-    RS2_RS400_VISUAL_PRESET_GENERIC_DEPTH,
-    RS2_RS400_VISUAL_PRESET_GENERIC_ACCURATE_DEPTH,
-    RS2_RS400_VISUAL_PRESET_GENERIC_DENSE_DEPTH,
-    RS2_RS400_VISUAL_PRESET_GENERIC_SUPER_DENSE_DEPTH,
-    RS2_RS400_VISUAL_PRESET_FLOOR_LOW,
-    RS2_RS400_VISUAL_PRESET_3D_BODY_SCAN,
-    RS2_RS400_VISUAL_PRESET_INDOOR,
-    RS2_RS400_VISUAL_PRESET_OUTDOOR,
-    RS2_RS400_VISUAL_PRESET_HAND,
-    RS2_RS400_VISUAL_PRESET_SHORT_RANGE,
-    RS2_RS400_VISUAL_PRESET_BOX,
-    RS2_RS400_VISUAL_PRESET_COUNT
-} rs2_rs400_visual_preset;
-
-const char* rs2_advanced_mode_preset_to_string(rs2_rs400_visual_preset preset);
-
 typedef struct
 {
     uint32_t plusIncrement;

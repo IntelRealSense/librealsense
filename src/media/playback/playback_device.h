@@ -28,13 +28,13 @@ namespace librealsense
 
     class playback_device : public device_interface,
         public extendable_interface,
-        public info_container//TODO: Ziv, does it make sense to inherit from container
+        public info_container
     {
     public:
-        playback_device(std::shared_ptr<device_serializer::reader> serializer);
+        playback_device(std::shared_ptr<context> context, std::shared_ptr<device_serializer::reader> serializer);
         virtual ~playback_device();
 
-        std::shared_ptr<context> get_context() const override { return nullptr; } //TODO: Add context
+        std::shared_ptr<context> get_context() const override;
 
         sensor_interface& get_sensor(size_t i) override;
         size_t get_sensors_count() const override;
@@ -66,7 +66,6 @@ namespace librealsense
         void try_looping();
         template <typename T> void do_loop(T op);
         std::map<uint32_t, std::shared_ptr<playback_sensor>> create_playback_sensors(const device_snapshot& device_description);
-        void set_filter(int32_t id, const stream_profiles& requested_profiles);
     private:
         lazy<std::shared_ptr<dispatcher>> m_read_thread;
         std::shared_ptr<device_serializer::reader> m_reader;
@@ -79,7 +78,8 @@ namespace librealsense
         std::map<uint32_t, std::shared_ptr<playback_sensor>> m_active_sensors;
         std::atomic<double> m_sample_rate;
         std::atomic_bool m_real_time;
-        file_format::file_types::nanoseconds m_prev_timestamp;
+        device_serializer::nanoseconds m_prev_timestamp;
+        std::shared_ptr<context> m_context;
         void catch_up();
     };
 

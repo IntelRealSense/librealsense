@@ -124,9 +124,9 @@ namespace librealsense
         #undef CASE
     }
 
-    const char* get_string(rs2_ivcam_visual_preset value)
+    const char* get_string(rs2_sr300_visual_preset value)
     {
-        #define CASE(X) STRCASE(IVCAM_VISUAL_PRESET, X)
+        #define CASE(X) STRCASE(SR300_VISUAL_PRESET, X)
         switch (value)
         {
             CASE(SHORT_RANGE)
@@ -233,7 +233,6 @@ namespace librealsense
         CASE(MOTION_MODULE_TEMPERATURE)
         CASE(DEPTH_UNITS)
         CASE(ENABLE_MOTION_CORRECTION)
-        CASE(ADVANCED_MODE_PRESET)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
         #undef CASE

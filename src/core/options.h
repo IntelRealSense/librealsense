@@ -3,7 +3,7 @@
 #pragma once
 
 #include <map>
-#include "../include/librealsense/rs2.h"
+#include "../include/librealsense/h/rs2_option.h"
 #include "extension.h"
 #include "types.h"
 

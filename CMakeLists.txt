@@ -156,12 +156,33 @@ set(REALSENSE_CPP
 set(REALSENSE_HPP
     include/librealsense/rs2.hpp
     include/librealsense/rs2.h
-    include/librealsense/rscore2.hpp
+
+    include/librealsense/h/rs2_types.h
+    include/librealsense/h/rs2_context.h
+    include/librealsense/h/rs2_device.h
+    include/librealsense/h/rs2_frame.h
+    include/librealsense/h/rs2_option.h
+    include/librealsense/h/rs2_processing.h
+    include/librealsense/h/rs2_record_playback.h
+    include/librealsense/h/rs2_sensor.h
+    include/librealsense/h/rs2_internal.h
+    include/librealsense/h/rs2_pipeline.h
+
+    include/librealsense/hpp/rs2_types.hpp
+    include/librealsense/hpp/rs2_context.hpp
+    include/librealsense/hpp/rs2_device.hpp
+    include/librealsense/hpp/rs2_frame.hpp
+    include/librealsense/hpp/rs2_processing.hpp
+    include/librealsense/hpp/rs2_record_playback.hpp
+    include/librealsense/hpp/rs2_sensor.hpp
+    include/librealsense/hpp/rs2_internal.hpp
+    include/librealsense/hpp/rs2_pipeline.hpp
+
     include/librealsense/rsutil2.h
     include/librealsense/rsutil2.hpp
     include/librealsense/rs2_advanced_mode.h
     include/librealsense/rs2_advanced_mode.hpp
-    include/librealsense/rs2_advanced_mode_command.h
+    include/librealsense/h/rs2_advanced_mode_command.h
 
     src/core/streaming.h
     src/core/debug.h
@@ -231,19 +252,7 @@ set(REALSENSE_HPP
     src/mock/sql.h
     src/mock/recorder.h
 
-    src/media/ros/data_objects/pose.h
-    src/media/ros/data_objects/vendor_data.h
-    src/media/ros/data_objects/image.h
-    src/media/ros/data_objects/motion_stream_info.h
-    src/media/ros/data_objects/property.h
-    src/media/ros/data_objects/motion_sample.h
-    src/media/ros/data_objects/time_sample.h
-    src/media/ros/data_objects/compressed_image.h
-    src/media/ros/data_objects/occupancy_map.h
-    src/media/ros/data_objects/stream_data.h
-    src/media/ros/data_objects/image_stream_info.h
     src/media/ros/file_types.h
-    src/media/ros/status.h
     src/media/ros/topic.h
 )
 
@@ -292,12 +301,31 @@ if(WIN32)
     source_group("Header Files\\API" FILES
         include/librealsense/rs2.hpp
         include/librealsense/rs2.h
-        include/librealsense/rscore2.hpp
+
+        include/librealsense/h/rs2_types.h
+        include/librealsense/h/rs2_context.h
+        include/librealsense/h/rs2_device.h
+        include/librealsense/h/rs2_frame.h
+        include/librealsense/h/rs2_option.h
+        include/librealsense/h/rs2_processing.h
+        include/librealsense/h/rs2_record_playback.h
+        include/librealsense/h/rs2_sensor.h
+        include/librealsense/h/rs2_internal.h
+
+        include/librealsense/hpp/rs2_types.hpp
+        include/librealsense/hpp/rs2_context.hpp
+        include/librealsense/hpp/rs2_device.hpp
+        include/librealsense/hpp/rs2_frame.hpp
+        include/librealsense/hpp/rs2_processing.hpp
+        include/librealsense/hpp/rs2_record_playback.hpp
+        include/librealsense/hpp/rs2_sensor.hpp
+        include/librealsense/hpp/rs2_internal.hpp
+
         include/librealsense/rsutil2.h
         include/librealsense/rsutil2.hpp
         include/librealsense/rs2_advanced_mode.h
         include/librealsense/rs2_advanced_mode.hpp
-        include/librealsense/rs2_advanced_mode_command.h
+        include/librealsense/h/rs2_advanced_mode_command.h
         CMake/realsense.def
         )
 

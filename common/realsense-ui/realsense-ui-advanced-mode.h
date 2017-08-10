@@ -6,21 +6,6 @@
 #include <librealsense/rs2_advanced_mode.hpp>
 #include "types.h"
 
-bool yes_no_dialog()
-{
-    ImGui::OpenPopup("Advanced Mode");
-    if (ImGui::BeginPopupModal("Advanced Mode", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
-    {
-        ImGui::Text("The device is going to reset, in order to move from/to Advanced-Mode.\nDo you want to proceed?");
-
-        if (ImGui::Button("YES", ImVec2(120, 40))) { ImGui::CloseCurrentPopup(); return true;}
-        ImGui::SameLine();
-        if (ImGui::Button("NO", ImVec2(120, 40))) { ImGui::CloseCurrentPopup(); return false; }
-        ImGui::EndPopup();
-    }
-    return false;
-}
-
 template<class T, class S>
 inline void slider_int(const char* id, T* val, S T::* field, bool& to_set)
 {
@@ -29,7 +14,7 @@ inline void slider_int(const char* id, T* val, S T::* field, bool& to_set)
     int min = (val + 1)->*field;
     int max = (val + 2)->*field;
 
-    std::string slider_id = librealsense::to_string() << "##" << id;
+    std::string slider_id = rs2::to_string() << "##" << id;
 
     if (ImGui::SliderInt(slider_id.c_str(), &temp, min, max))
     {
@@ -58,7 +43,7 @@ inline void slider_float(const char* id, T* val, S T::* field, bool& to_set)
     float min = (val + 1)->*field;
     float max = (val + 2)->*field;
 
-    std::string slider_id = librealsense::to_string() << "##" << id;
+    std::string slider_id = rs2::to_string() << "##" << id;
 
     if (ImGui::SliderFloat(slider_id.c_str(), &temp, min, max))
     {

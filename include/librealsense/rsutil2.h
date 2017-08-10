@@ -4,7 +4,7 @@
 #ifndef LIBREALSENSE_RSUTIL2_H
 #define LIBREALSENSE_RSUTIL2_H
 
-#include "rs2.h"
+#include "librealsense/h/rs2_types.h"
 #include "assert.h"
 
 #include <math.h>

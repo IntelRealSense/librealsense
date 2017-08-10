@@ -1267,7 +1267,7 @@ TEST_CASE("Advanced Mode presets", "[live]") {
             for (sensor& elem : sensors)
             {
                 auto supports = false;
-                REQUIRE_NOTHROW(supports = elem.supports(RS2_OPTION_ADVANCED_MODE_PRESET));
+                REQUIRE_NOTHROW(supports = elem.supports(RS2_OPTION_VISUAL_PRESET));
                 if (supports)
                 {
                     presets_sensor = elem;
@@ -1300,9 +1300,9 @@ TEST_CASE("Advanced Mode presets", "[live]") {
                 presets_sensor.start([](rs2::frame){});
                 for (auto& preset : presets_by_res.second)
                 {
-                    REQUIRE_NOTHROW(presets_sensor.set_option(RS2_OPTION_ADVANCED_MODE_PRESET, preset));
+                    REQUIRE_NOTHROW(presets_sensor.set_option(RS2_OPTION_VISUAL_PRESET, preset));
                     float ret_preset;
-                    REQUIRE_NOTHROW(ret_preset = presets_sensor.get_option(RS2_OPTION_ADVANCED_MODE_PRESET));
+                    REQUIRE_NOTHROW(ret_preset = presets_sensor.get_option(RS2_OPTION_VISUAL_PRESET));
                     REQUIRE(preset == (rs2_rs400_visual_preset)((int)ret_preset));
                 }
                 presets_sensor.stop();
