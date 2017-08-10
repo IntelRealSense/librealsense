@@ -49,7 +49,6 @@ then
 		git fetch origin $kernel_branch --depth 1
 		printf "Resetting local changes in %s folder\n " ${kernel_name}
 		git reset --hard $kernel_branch
-		#git gc
 	fi
 fi
 
@@ -58,7 +57,7 @@ fi
 
 if [ $reset_driver -eq 1 ];
 then 
-	echo -e "\e[43mUser requested to rebuild and reinstall ubuntu-xenial stock drivers\e[0m"	
+	echo -e "\e[43mUser requested to rebuild and reinstall ubuntu-xenial stock drivers\e[0m"
 else
 	# Patching kernel for RealSense devices
 	echo -e "\e[32mApplying realsense-uvc patch\e[0m"
@@ -74,10 +73,19 @@ sudo cp /usr/src/linux-headers-$(uname -r)/Module.symvers .
 echo -e "\e[32mPrepare kernel modules configuration\e[0m"
 sudo make silentoldconfig modules_prepare
 
+#Kernel module vermagic identity is enforced for kernels 4.10+
+IFS='.' read -a kernel_version <<< "$LINUX_BRANCH"
+if [ ${kernel_version[1]} > 9 ];
+then
+	sudo sed -i "s/\".*\"/\"$LINUX_BRANCH\"/g" ./include/generated/utsrelease.h
+	sudo sed -i "s/.*/$LINUX_BRANCH/g" ./include/config/kernel.release
+fi
+
 # Build the uvc module
 KBASE=`pwd`
 cd drivers/media/usb/uvc
 sudo cp $KBASE/Module.symvers .
+
 echo -e "\e[32mCompiling uvc module\e[0m"
 sudo make -j -C $KBASE M=$KBASE/drivers/media/usb/uvc/ modules
 

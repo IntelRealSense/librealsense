@@ -28,7 +28,7 @@ function choose_kernel_branch {
         echo hwe
         ;;
     *)
-        echo -e "\e[31mUnsupported kernel version $1 . The patchs supports Ubuntu kernels 4.4 and 4.8 only\e[0m"
+        echo -e "\e[31mUnsupported kernel version $1 . The patchs supports Ubuntu LTS kernels 4.4,4.8 and 4.10 only\e[0m"
 		exit 1
         ;;
 	esac
@@ -103,7 +103,7 @@ function try_module_insert {
 
 	# copy the patched module to target location	
 	sudo cp ${src_ko} ${tgt_ko}
-	
+
 	# try to load the new module
 	modprobe_failed=0
 	printf "\e[32mApplying the patched module ... \e[0m"
