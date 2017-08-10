@@ -46,7 +46,7 @@ A comprehensive suite of sample and tutorial applications are provided in the `/
 * Device specific topics:
   * [RS400 and External Devices](./doc/rs400/external_devices.md) - Notes on integrating RS400 with external devices
   * [RS400 Advanced Mode](./doc/rs400/rs400_advanced_mode.md) - Overview of the Advanced Mode APIs
-  * [Realsense Record and Playback](./src/media/readme.md) - SDK Record and Playback functionality using ROSbag file format
+* [Realsense Record and Playback](./src/media/readme.md) - SDK Record and Playback functionality using ROSbag file format
 ## Functionality
 
 1. Native streams: depth, color, infrared, fisheye, motion-tracking.
