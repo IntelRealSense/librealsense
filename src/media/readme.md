@@ -153,7 +153,7 @@ The following table is depicts the topics that are supported by RealSense file f
   <tr>
     <td>Image Data</td>
     <td>/device_&lt;device_id&gt;/sensor_&lt;sensor_id&gt;/&lt;stream_type&gt;_&lt;stream_id&gt;/image/data</td>
-    <td><a href="http://docs.ros.org/api/sensor_msgs/html/msg/Image.html>sensor_msgs::Image</a></td>
+    <td><a href="http://docs.ros.org/api/sensor_msgs/html/msg/Image.html">sensor_msgs::Image</a></td>
     <td>The data of a single image. A single messages to a single topic</td>
   </tr>
   <tr>
