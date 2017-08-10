@@ -4,49 +4,54 @@ Realsense Record and Playback
 
 Overview
 -------------
-In addition to streaming video and other data from <mark>TODO</mark>[devices and sensors](TODO:-link-to_device-readme), the realsense SDK provides the ability to record a live session of streaming to a file. Recorded files can later be loaded by the SDK and to create a device with "read-only" abilities of the recorded device ( we will explain what "read-only" abilities mean later on).
-A well written application should be able to end up with a single switch-case at the start of the program, while the remaining code is the same, for a live, record or playback device.
+In addition to streaming video and other data from devices and sensors, the realsense SDK provides the ability to record a live session of streaming to a file. Recorded files can later be loaded by the SDK and to create a device with "read-only" abilities of the recorded device ( we will explain what "read-only" abilities mean later on).
+The SDK is recording a single device to a single [rosbag file](http://wiki.ros.org/rosbag), using mostly standard ROS messages. This allows files recorded by the SDK to be played using any ROS tools \ application.
+
 
 ----------
-#### Example: `rs2::recorder`
 
-> If you are not familiar with how the basic streaming examples, please follow them before moving on
+#### Code Example: `rs2::recorder`
 
-To enable recording on any device, simply create a **recorder** from it and provide a path to the desired output file:
+> :bangbang: If you are not familiar with the basic streaming examples, please follow them before moving on
+
+To enable recording on any device, simply create a **rs2::recorder** from it and provide a path to the desired output file:
 ```cpp
 //Create a context and get the first device
-context ctx;
+rs2::context ctx;
 auto devices = ctx.query_devices();
 if (devices.size() > 0)
 {
-	//Create a recorder from the device
-	device record_device = recorder(file_path, devices[0]);
+	//Create a rs2::recorder from the first device, and desired file name
+	//'.bag' is the common extension for rosbag files
+	rs2::recorder device("my_file_name.bag", devices[0]); 	
 	//recorder "is a" device, so just use it like any other device now
 }
 ```
 A **recorder** has the same functionality as a "real" device, with additional control for recording, such as Pause and Resume.
-Pausing a recorder will cause it to stop writing new data to the file, in particular, frames and changes to <mark>TODO</mark>[extensions](TODO:_add_link) (such as sensor options) will not appear in the recorded file. 
+Pausing a recorder will cause it to stop writing new data to the file, in particular, frames and changes to extensions  (such as sensor options) will not appear in the recorded file. 
 After calling Resume on a paused recorder, it will resume writing data and changes to the file. 
 
 ----------
 #### Example: `rs2::playback`
 
-> If you are not familiar with how the basic streaming examples, please follow them before moving on
+> :bangbang: If you are not familiar with the basic streaming examples, please follow them before moving on
 
-Recorded files can be loaded and used to create a playback device by simply create a **playback** device:
+Recorded files can be loaded and used to create a playback device by simply loading a file to the context:
 ```cpp
-//Create a playback device from file
-device playback_device = playback(file_path)
+//Create a context
+rs2::context ctx;
+//Load the recorded file to the context
+rs2::playback device = ctx.load_device("my_file_name.bag");
 //playback "is a" device, so just use it like any other device now
 ```
 The above code creates a playback device, which can be used is any device, but has the obvious limitation of only playing the recorded streams. Playback devices can be used to query information on the device and it sensors, and can be extended to which ever extension the "real" device could.
-A **playback** provides additional functionality such as Seek, Pause, Resume and RealTime.
+A **playback** provides additional functionality such as Seek, Pause, Resume and RealTime playing.
 
 
 ------
 
 
-### Terminology & Basics
+### Basics Terminology
 
 A **Device** is a container of Sensors with some correlation between them (e.g - all sensors are on a single board, sensors are mounted on a robot and share calibration information, etc.). A **Sensor** is a data streaming object, that provides one or more Streams.
 **Stream** is a representation of a single type of data, meaning that a stream contains one type of data that it provides. Streams are exposed to the user via frames that the Sensor raises These frames are made available sequentially over time. A Stream can be thought of as data items on a conveyor belt being packed into a frame one at a time and raised by the sensor.
@@ -54,28 +59,9 @@ A **Device** is a container of Sensors with some correlation between them (e.g -
  A **Stream** represents a single data type that is sequentially made available over time and is exposed via frames that the Sensor raises. A stream can be thought of as data items on a conveyor belt being packed into a frame one at a time, where each frame is delivered to the user via the sensor.
 We call the device's sensors and stream, the **topology** of the device. 
 
-Devices and Sensors can have **Extensions** that provide additional functionality. Each extension's functionality is either constant  or non constant (get or set usually). A **Snapshot** of an Extension is a snapshot of the data that is available by the extension at some point of time, it is a sort of "read-only" version of the extension. For example, say we have a `DigitalClockExtension`, that can set the time and show the time. If we take a snapshot of that extension at noon, whenever we ask it to show the time it will show "12:00", and trying to set its time will fail.
+Devices and Sensors can have **Extensions** that provide additional functionality. A **Snapshot** of an Extension is a snapshot of the data that is available by the extension at some point of time, it is a sort of "read-only" version of the extension. For example, say we have a `DigitalClockExtension`, that can set and show the time. If we take a snapshot of that extension at noon, then whenever we ask the snapshot to show the time it will show "12:00", and trying to set its time will fail.
 
 Finally, we will refer to a an actual implementation of devices and sensors as "live" or "real" devices and sensors.
-
-Recording
-----------
-Recording is performed at the Device level, meaning that the device, its sensors, their streams' data (frames) and all extensions are saved to file.
-To allow for a seamless experience when switching between a live device and a record or playback device we save the device's topology and all of the extensions' snapshots to the file, in addition to the streaming frames. 
-
-A record device is like a wrapper around a real device, that delegates actions to the device and sensors while recording new data in between actions. 
-When a record device is created, a record sensor is created per real sensor of the real device. 
-A record sensor will record newly arriving frames for each of its streams, and changes to extensions data (snapshots). 
-
-#### Recording Frames
-Frame are usually merely a container of raw data. 
-Frames are stored with the time stamp of arrival to the sensor, and a sensor ID. 
-By storing this data to the file, when reading a frame, we will know which sensor should dispatch it and when.
-
-#### Recording Snapshots 
-Upon creation, the record device goes over all of the extensions of the real device and its sensors, and save a snapshot of those extensions to the file. These snapshots will allow the playback device to recreate the topology of the recorded device, and will serve as the initial data of their extensions.
-To allow record sensors to save changes to extensions' data over the life time of the program, when a user asks a record sensor for an extension, a record-able extension would be provide. It's worth mentioning that we expect extensions to provide this recordable version of themselves <mark>TODO</mark>[(see more details in the class diagram ahead)](TODO-link-to-diagram).
-A record-able version of an extension holds an action to perform whenever the extension's data changes. This action is provided by the record sensor, and will usually be the action of writing the extension's snapshot to file.
 
 ### Rosbag
 
@@ -102,7 +88,6 @@ The flow to find a message on topic “A”:
 #### Dependencies
 The SDK depends on ROS packages that are used for recording and playing the bag file.
 The dependencies are:
-<mark>TODO verfiy list is complete</mark>
 - rosbag_storage
 - roscpp_serialization
 - cpp_common
@@ -114,109 +99,128 @@ The dependencies are:
 
 #### Topics
 
-The following section is devoted for topics that will be supported by RealSense file format.
-The next section will elaborate on message types.
+The following table is depicts the topics that are supported by RealSense file format:
 
-##### General Topics
 <table>
   <tr>
     <th>Topic</th>
-    <th>Name</th>
+    <th>Published Name</th>
     <th>Message Type</th>
     <th>Description</th>
   </tr>
   <tr>
-    <td>Version </td>
+    <td>File Version</td>
     <td>/file_version</td>
     <td><a href="http://docs.ros.org/api/std_msgs/html/msg/UInt32.html">std_msgs::UInt32</a></td>
-    <td>The RealSense file version</td>
+    <td>version of file format<br>A single message for entire file</td>
   </tr>
   <tr>
-    <td>IHV specific data</td>
-    <td>/info/vendor_info/&lt;device_id&gt;</td>
+    <td>Device Information</td>
+    <td>/device_&lt;device_id&gt;/info</td>
     <td><a href="http://docs.ros.org/api/diagnostic_msgs/html/msg/KeyValue.html">diagnostic_msgs/KeyValue.msg</a></td>
-    <td>Custom vendor information</td>
+    <td>device information<br>Many messages to a single topic</td>
   </tr>
   <tr>
-    <td>Properties</td>
-    <td>/camera/property/&lt;IHV_specific_property&gt;/&lt;device_id&gt;</td>
-    <td><a href="http://docs.ros.org/api/std_msgs/html/msg/Float64.html">std_msgs::Float64</a></td>
-    <td>Each topic represents a property</td>
-  </tr>
-    <tr>
-    <td>Time Stream</td>
-    <td>/time/&lt;device_id&gt;</td>
-    <td> 
-    <a href="http://docs.ros.org/jade/api/sensor_msgs/html/msg/TimeReference.html">
-    sensor_msgs::TimeReference
-    </a> 
-    </td>
-    <td><mark>TODO</mark> </td>
-  </tr>
-</table>
-
-
-##### Image Stream topics
-<table>
-  <tr>
-    <th>Topic</th>
-    <th>Name</th>
-    <th>Message Type</th>
-    <th>Description</th>
+    <td>Sensor Information</td>
+    <td>/device_&lt;device_id&gt;/info</td>
+    <td><a href="http://docs.ros.org/api/diagnostic_msgs/html/msg/KeyValue.html">diagnostic_msgs/KeyValue.msg</a></td>
+    <td>sensor information<br>Many messages to a single topic</td>
   </tr>
   <tr>
     <td>Stream Information</td>
-    <td>/camera/rs_stream_info/&lt;device_id&gt;</td>
-    <td>realsense_msgs::stream_info</td>
-    <td>This topic contains all the necessary data for each stream type.</td>
+    <td>/device_&lt;device_id&gt;/sensor_&lt;sensor_id&gt;/&lt;stream_type&gt;_&lt;stream_id&gt;/info</td>
+    <td><a href="#stream-info">realsense_msg::StreamInfo</a></td>
+    <td>generic-stream information<br>A single messages to a single topic</td>
+  </tr>
+  <tr>
+    <td>Video Stream Info</td>
+    <td>/device_&lt;device_id&gt;/sensor_&lt;sensor_id&gt;/&lt;stream_type&gt;_&lt;stream_id&gt;/info/camera_info</td>
+    <td><a href="http://docs.ros.org/api/sensor_msgs/html/msg/CameraInfo.html">sensor_msgs::camera_info</a></td>
+    <td>Image information<br>A single messages to a single topic</td>
+  </tr>
+  <tr>
+    <td>IMU Intrinsics</td>
+    <td>/device_&lt;device_id&gt;/sensor_&lt;sensor_id&gt;/&lt;stream_type&gt;_&lt;stream_id&gt;/info/imu_intrinsic</td>
+    <td><a href="#imu-intrinsic">realsense_msgs::ImuIntrinsic</a></td>
+    <td>Intrinsic of a motion stream<br>A single messages to a single topic</td>
+  </tr>
+  <tr>
+    <td>Properties</td>
+    <td>/device_&lt;device_id&gt;/sensor_&lt;sensor_id&gt;/property</td>
+    <td><a href="http://docs.ros.org/api/diagnostic_msgs/html/msg/KeyValue.html">diagnostic_msgs/KeyValue.msg</a></td>
+    <td><br>Properties of a sensor<br>Many messages to a single topic<br></td>
   </tr>
   <tr>
     <td>Image Data</td>
-    <td>/camera/&lt;stream_type&gt;/image_raw/&lt;device_id&gt;</td>
+    <td>/device_&lt;device_id&gt;/sensor_&lt;sensor_id&gt;/&lt;stream_type&gt;_&lt;stream_id&gt;/image/data</td>
     <td><a href="http://docs.ros.org/api/sensor_msgs/html/msg/Image.html>sensor_msgs::Image</a></td>
-    <td>These are multiple topics, each topic represents image<br>data</td>
+    <td>The data of a single image. A single messages to a single topic</td>
   </tr>
   <tr>
-    <td>Compressed Image Data</td>
-    <td>/camera/&lt;stream_type&gt;/compressed_image /&lt;device_id&gt;</td>
-    <td><a href="http://docs.ros.org/jade/api/sensor_msgs/html/msg/CompressedImage.html>sensor_msgs::CompressedImage</a></td>
-    <td>These are multiple topics, each topic represents compressed<br>image data</td>
+    <td>Image Information</td>
+    <td>/device_&lt;device_id&gt;/sensor_&lt;sensor_id&gt;/&lt;stream_type&gt;_&lt;stream_id&gt;/image/metadata</td>
+    <td><a href="http://docs.ros.org/api/diagnostic_msgs/html/msg/KeyValue.html">diagnostic_msgs/KeyValue.msg</a></td>
+    <td>Additional information of a single image. Many message to a single topic</td>
   </tr>
   <tr>
-    <td>Additional Frame Information</td>
-    <td>/camera/&lt;stream_type&gt;/rs_frame_info_ext/&lt;device_id&gt;</td>
-    <td>realsense_msgs::frame_info<br></td>
-    <td>The following topic contains data that is saved by the SDK but is<br>missing from the sensor_msgs::Image message.</td>
+    <td>IMU Data</td>
+    <td>/device_&lt;device_id&gt;/sensor_&lt;sensor_id&gt;/&lt;stream_type&gt;_&lt;stream_id&gt;/imu/data</td>
+    <td><a href="http://docs.ros.org/api/sensor_msgs/html/msg/Imu.html">sensor_msgs::Imu</a></td>
+    <td>The data of a single imu frame.<br>A single messages to a single topic</td>
   </tr>
   <tr>
-    <td>Additional Compressed Frame Information</td>
-    <td>/camera/&lt;stream_type&gt;/rs_compressed_frame_info_ext/&lt;device_id&gt;</td>
-    <td>realsense_msgs::compressed_frame_info</td>
-    <td>The following topic contains data that is saved by the SDK but is<br>missing from the sensor_msgs::CompressedImage,message.</td>
+    <td>IMU Information</td>
+    <td>/device_&lt;device_id&gt;/sensor_&lt;sensor_id&gt;/&lt;stream_type&gt;_&lt;stream_id&gt;/imu/metadata</td>
+    <td><a href="http://docs.ros.org/api/diagnostic_msgs/html/msg/KeyValue.html">diagnostic_msgs/KeyValue.msg</a></td>
+    <td>Additional information of a single imu frame. Many message to a single topic</td>
   </tr>
   <tr>
-    <td>Motion Data</td>
-    <td>/imu//imu_raw/&lt;device_id&gt;</td>
-    <td><a href="http://docs.ros.org/api/sensor_msgs/html/msg/Imu.html">sensor_msgs::Imu</td>
-    <td>These are multiple topics, each topic represents motion<br>data</td>
-  </tr>
-  <tr>
-    <td>Motion Stream Information</td>
-    <td>/imu/rs_motion_stream_info/&lt;device_id&gt;</td>
-    <td>realsense_msgs::motion_stream_info</td>
-    <td>This topic contains all the necessary data for each motion type.</td>
-  </tr>
-  <tr>
-    <td>6DOF stream</td>
-    <td>/camera/rs_6DoF/&lt;device_id&gt;</td>
+    <td>6DOF Data</td>
+    <td>/device_&lt;device_id&gt;/sensor_&lt;sensor_id&gt;/&lt;stream_type&gt;_&lt;stream_id&gt;/6dof/data</td>
     <td>realsense_msgs::6DoF</td>
-    <td>The following topic represent the latest pose of the camera relative to<br>its initial position.</td>
+    <td>Six DOF data</td>
   </tr>
   <tr>
-    <td>Occupancy Map</td>
-    <td>/camera/rs_occupancy_map/&lt;device_id&gt;</td>
-    <td>realsense_msgs::occupancy_map</td>
-    <td>The following topic represent new real world tiles detected by the SLAM<br>middleware. Tiles are represented in location relative to the device’s initial.</td>
+    <td>6DOF Information</td>
+    <td>/device_&lt;device_id&gt;/sensor_&lt;sensor_id&gt;/&lt;stream_type&gt;_&lt;stream_id&gt;/6dof/metadata</td>
+    <td><a href="http://docs.ros.org/api/diagnostic_msgs/html/msg/KeyValue.html">diagnostic_msgs/KeyValue.msg</a></td>
+    <td>Additional information of a single image. Many message to a single topic</td>
+  </tr>
+  <tr>
+    <td>Occupancy Map Data</td>
+    <td>/device_&lt;device_id&gt;/sensor_&lt;sensor_id&gt;/&lt;stream_type&gt;_&lt;stream_id&gt;/occupancy_map/data</td>
+    <td><a href="http://docs.ros.org/api/nav_msgs/html/msg/OccupancyGrid.html">nav_msgs/OccupancyGrid</a></td>
+    <td></td>
+  </tr>
+  <tr>
+    <td>Occupancy Map Information</td>
+    <td>/device_&lt;device_id&gt;/sensor_&lt;sensor_id&gt;/&lt;stream_type&gt;_&lt;stream_id&gt;/occupancy_map/metadata</td>
+    <td><a href="http://docs.ros.org/api/diagnostic_msgs/html/msg/KeyValue.html">diagnostic_msgs/KeyValue.msg</a></td>
+    <td>Additional </td>
+  </tr>
+  <tr>
+    <td>Time Stream</td>
+    <td>/device_&lt;device_id&gt;/sensor_&lt;sensor_id&gt;/time</td>
+    <td><a href="http://docs.ros.org/jade/api/sensor_msgs/html/msg/TimeReference.html">sensor_msgs::TimeReference</a></td>
+    <td></td>
+  </tr>
+  <tr>
+    <td>Log</td>
+    <td>/log</td>
+    <td><a href="http://docs.ros.org/jade/api/rosgraph_msgs/html/msg/Log.html">rosgraph_msgs::Log</a></td>
+    <td>Log messages</td>
+  </tr>
+  <tr>
+    <td>Stream Exntrinsics</td>
+    <td>/device_&lt;device_id&gt;/sensor_&lt;sensor_id&gt;/&lt;stream_type&gt;_&lt;stream_id&gt;/tf</td>
+    <td><a href="http://docs.ros.org/jade/api/geometry_msgs/html/msg/Transform.html">geometry_msgs/Transform Message</a></td>
+    <td>Extrinsic transformation between a specific stream to another</td>
+  </tr>
+  <tr>
+    <td>Additional Info</td>
+    <td>/additional_info</td>
+    <td><a href="http://docs.ros.org/api/diagnostic_msgs/html/msg/KeyValue.html">diagnostic_msgs/KeyValue.msg</a></td>
+    <td>Additinal information of any kind. Can be useful for application that require additional metadata on the recorded file (such as program name, version etc...)</td>
   </tr>
 </table>
 
@@ -226,7 +230,16 @@ There are two parts to a .msg file: fields and constants. Fields are the data th
 
 --------------
 
-#### realsense_msgs::stream_info
+### RealSense Proprietary  Messages
+
+In addition to the standard ROS messsages, the SDK writes additional proprietary messages (available in the 3rd party folder) for new data types that are recorded.
+The following are the new messages created by the SDK:
+
+ - [realsense_msgs::StreamInfo](#stream-info)
+ - [realsense_msgs::ImuIntrinsic](#motion-intrinsic)
+
+--------------
+#### **Stream Info**
 
 <table>
   <tr>
@@ -234,286 +247,105 @@ There are two parts to a .msg file: fields and constants. Fields are the data th
     <th>Description</th>
     <th>Format</th>
   </tr>
+    <tr>
+      <td>is_recommended</td>
+      <td>Indicates if this stream is recommended by RealSense SDK</td>
+      <td>bool</td>
+    </tr>
   <tr>
     <td>fps</td>
     <td>Frame per second value</td>
     <td>uint32</td>
   </tr>
   <tr>
-    <td>stream_type</td>
-    <td>Stream type enum value</td>
-    <td>string</td>
-  </tr>
-  <tr>
-    <td>camera_info</td>
-    <td>Camera info including stream intrinsics and distortion data<br>  More information on camera_info in <a href="http://docs.ros.org/api/sensor_msgs/html/msg/CameraInfo.html">this link</a><br>  Supported distortion_model types are in <a href="http://docs.ros.org/jade/api/sensor_msgs/html/distortion__models_8h.html">this link</a><br>  The used fields are:<br>  - string distortion_model<br>  - float64[] D<br>  - float64[9] K<br>  </td>
-    <td>sensor_msgs::camera_info</td>
-  </tr>
-  <tr>
-    <td>extrinsics</td>
-    <td>Camera extrinsics</td>
-    <td>realsense_msgs::stream_extrinsics</td>
-  </tr>
-  <tr>
-    <td>width</td>
-    <td>Stream resolution width</td>
-    <td>uint32</td>
-  </tr>
-  <tr>
-    <td>height</td>
-    <td>Stream resolution height</td>
-    <td>uint32</td>
-  </tr>
-  <tr>
     <td>encoding</td>
-    <td>Stream's pixel format<br>Supported encoding types are in <a href="http://docs.ros.org/jade/api/sensor_msgs/html/namespacesensor__msgs_1_1image__encodings.html">this link</a></td>
+    <td>Stream's data format<br>
+    [Supported encoding are listed below](#supported-encoding)</td>
     <td>string</td>
   </tr>
 </table>
 
+##### Supported Encoding
 
-#### realsense_msgs::stream_extrinsics
+For video streams, the supported encoding types can be found at <a href="http://docs.ros.org/jade/api/sensor_msgs/html/namespacesensor__msgs_1_1image__encodings.html">ros documentation</a><br>
+
+--------------
+
+#### Motion Intrinsics
 
 <table>
-  <tr>
-    <th>Name</th>
-    <th>Description</th>
-    <th>Format </th>
-  </tr>
-  <tr>
-    <td>extrinsics</td>
-    <td>Stream exstisics</td>
-    <td>realsense_msgs::extrinsics</td>
-  </tr>
-  <tr>
-    <td>reference_point_id</td>
-    <td>Identifier for the extrinsics reference point, as sensor index<br>  </td>
-    <td><br>  Uint64<br>  </td>
-  </tr>
+   <tbody>
+      <tr>
+         <th>Name</th>
+         <th>Description</th>
+         <th>Format</th>
+      </tr>
+      <tr>
+         <td>&nbsp;data</td>
+         <td>
+            <p>Interpret data array values. <br>3x4 Row-major matrix:</p>
+            <table>
+               <tbody>
+                  <tr>
+                     <td>Scale X</td>
+                     <td>Cross Axis</td>
+                     <td>Cross Axis</td>
+                     <td>Bias X</td>
+                  </tr>
+                  <tr>
+                     <td>Cross Axis</td>
+                     <td>Scale Y</td>
+                     <td>Cross Axis</td>
+                     <td>Bias Y</td>
+                  </tr>
+                  <tr>
+                     <td>Cross Axis</td>
+                     <td>Cross Axis</td>
+                     <td>Scale Z</td>
+                     <td>Cross Axis</td>
+                  </tr>
+               </tbody>
+            </table>
+         </td>
+         <td>float32[12]</td>
+      </tr>
+      <tr>
+         <td>noise_variances</td>
+         <td>Variance of noise for X, Y, and Z axis</td>
+         <td>float32[3]</td>
+      </tr>
+      <tr>
+         <td>bias_variances</td>
+         <td>Variance of bias for X, Y, and Z axis</td>
+         <td>float32[3]</td>
+      </tr>
+   </tbody>
 </table>
-
-
-#### realsense_msgs::extrinsics
-<table>
-  <tr>
-    <th>Name</th>
-    <th>Description</th>
-    <th>Format</th>
-  </tr>
-  <tr>
-    <td>rotation</td>
-    <td>column-major 3x3 rotation matrix</td>
-    <td>float32[9]</td>
-  </tr>
-  <tr>
-    <td>translation</td>
-    <td>3 element translation vector, in meters</td>
-    <td>float32[3]</td>
-  </tr>
-</table>
-
 
 ----------
 
 
-#### realsense_msgs::frame_info
-<table>
-  <tr>
-    <th>Name</th>
-    <th>Description</th>
-    <th>Format</th>
-  </tr>
-  <tr>
-    <td>system_time</td>
-    <td>System time value</td>
-    <td>uint64</td>
-  </tr>
-  <tr>
-    <td>time_stamp_domain</td>
-    <td>Time stamp domain value</td>
-    <td>uint32</td>
-  </tr>
-  <tr>
-    <td>frame_metadata</td>
-    <td>Array of additionalframe data </td>
-    <td>realsense_msgs:metadata[]</td>
-  </tr>
-</table>
+Recording
+----------
+Recording is performed at the Device level, meaning that the device, its sensors, their streams' data (frames) and all extensions are saved to file.
+To allow for a seamless experience when switching between a live device and a record or playback device we save the device's topology and all of the extensions' snapshots to the file, in addition to the streaming frames. 
 
-#### realsense_msgs::metadata
+A record device is like a wrapper around a real device, that delegates actions to the device and sensors while recording new data in between actions. 
+When a record device is created, a record sensor is created per real sensor of the real device. 
+A record sensor will record newly arriving frames for each of its streams, and changes to extensions' data (snapshots). 
 
-<table>
-  <tr>
-    <th>Name</th>
-    <th>Description</th>
-    <th>Format</th>
-  </tr>
-  <tr>
-    <td>type</td>
-    <td>Metadata type</td>
-    <td>uint64</td>
-  </tr>
-  <tr>
-    <td>Data</td>
-    <td>Metadata content</td>
-    <td>uint8[]</td>
-  </tr>
-</table>
+#### Recording Frames
+Frame are usually merely a container of raw data. 
+Each frames is stored to file with all of its additional information (such as metadata, timestamp, etc...).
+
+
+#### Recording Snapshots 
+Upon creation, the record device goes over all of the extensions of the real device and its sensors, and saves a snapshot of those extensions to the file. These snapshots will allow the playback device to recreate the topology of the recorded device, and will serve as the initial data of their extensions.
+To allow record sensors to save changes to extensions' data over the life time of the program, when a user asks a record sensor for an extension, a record-able extension would be provided. It's worth mentioning that we expect extensions to provide this recordable version of themselves.
+A record-able version of an extension holds an action to perform whenever the extension's data changes. This action is provided by the record sensor, and will usually be the action of writing the extension's snapshot to file.
 
 
 ----------
-
-
-#### realsense_msgs::compressed_frame_info
-<table>
-  <tr>
-    <th>Name</th>
-    <th>Description</th>
-    <th>Format</th>
-  </tr>
-  <tr>
-    <td>system_time</td>
-    <td>System time value</td>
-    <td>uint64</td>
-  </tr>
-  <tr>
-    <td>time_stamp_domain</td>
-    <td>Time stamp domain value</td>
-    <td>uint32</td>
-  </tr>
-  <tr>
-    <td>frame_metadata</td>
-    <td>Array of additionalframe data </td>
-    <td>realsense_msgs:metadata[]</td>
-  </tr>
-  <tr>
-    <td>width</td>
-    <td>Stream resolution width</td>
-    <td>uint32</td>
-  </tr>
-  <tr>
-    <td>height</td>
-    <td>Streamresolution height</td>
-    <td>uint32</td>
-  </tr>
-  <tr>
-    <td>encoding</td>
-    <td>Stream pixel format</td>
-    <td>String</td>
-  </tr>
-  <tr>
-    <td>is_bigendian</td>
-    <td>is this data bigendian</td>
-    <td>uint8</td>
-  </tr>
-  <tr>
-    <td>step </td>
-    <td>Full row length in bytes</td>
-    <td>uint32</td>
-  </tr>
-</table>
-
-#### realsense_msgs::motion_stream_info
-<table>
-  <tr>
-    <th>Name</th>
-    <th>Description</th>
-    <th>Format</th>
-  </tr>
-  <tr>
-    <td>motion_type</td>
-    <td>Motion type</td>
-    <td>string</td>
-  </tr>
-  <tr>
-    <td>fps</td>
-    <td>Frame per second</td>
-    <td>uint32</td>
-  </tr>
-  <tr>
-    <td>motion_device_intrinsic</td>
-    <td>Sensor intrinsics</td>
-    <td>realsense_msgs::motion_intrinsic</td>
-  </tr>
-  <tr>
-    <td>motion_device_extrinsics</td>
-    <td>Sensor extrinsics values, world coordinates are the depth cameracoordinates</td>
-    <td>realsense_msgs::stream_extrinsics</td>
-  </tr>
-</table>
-
-#### realsense_msgs::6DoF
-<table>
-  <tr>
-    <th>Name</th>
-    <th>Description</th>
-    <th>Format</th>
-  </tr>
-  <tr>
-    <td>translation</td>
-    <td>Translation, in meters(relative to initial position)</td>
-    <td>float32[3]</td>
-  </tr>
-  <tr>
-    <td>rotation</td>
-    <td>Rotation as represented in quaternion rotation(relative to initial position)</td>
-    <td>float32[4]</td>
-  </tr>
-  <tr>
-    <td>velocity</td>
-    <td>Device velocity. x,y,z represented in m/s</td>
-    <td>geometry_msgs/Vector3</td>
-  </tr>
-  <tr>
-    <td>angular_velocity</td>
-    <td>Device angular velocityyaw, pitch, roll represented in RAD/s </td>
-    <td>geometry_msgs/Vector3</td>
-  </tr>
-  <tr>
-    <td>acceleration</td>
-    <td>Devic eacceleration. x,y,z represented in m/s^2</td>
-    <td>geometry_msgs/Vector3</td>
-  </tr>
-  <tr>
-    <td>angular_ acceleration</td>
-    <td>Device angular acceleration. yaw, pitch, roll represented in RAD/ </td>
-    <td>geometry_msgs/Vector3</td>
-  </tr>
-  <tr>
-    <td>timestamp</td>
-    <td>Timestamp of pose, measured in nanoseconds since device system initialization</td>
-    <td>Uint64</td>
-  </tr>
-</table>
-
-#### realsense_msgs::occupancy_map
-<table>
-  <tr>
-    <th>Name</th>
-    <th>Description</th>
-    <th>Format</th>
-  </tr>
-  <tr>
-    <td>accuracy</td>
-    <td>Accuracy of occupancy map calculation:<br>0x0 – low accuracy<br>0x1 – medium accuracy<br>0x2 – high accuracy</td>
-    <td>Uint8</td>
-  </tr>
-  <tr>
-    <td>reserved</td>
-    <td>reserved, must be 0</td>
-    <td>byte</td>
-  </tr>
-  <tr>
-    <td>tile_count</td>
-    <td>Number of tiles in thefollowing array (= N</td>
-    <td>Uint16</td>
-  </tr>
-  <tr>
-    <td>tiles</td>
-    <td>Array of tiles, in meters (relative to initial position)</td>
-    <td>Float32MultiArray </td>
-  </tr>
-</table>
 
 
 ## Playback
@@ -529,22 +361,3 @@ When creating each sensor, the device will create a sensor from the
 sensor's initial snapshot.                            
 Each sensor will hold a single thread for each of the sensor's streams which is used to raise frames to the user.
 The playback device holds a single reading thread that reads the next frame in a loop and dispatches the frame to the relevant sensor.
-                 
-TODO: Describe snapshot changes mechanism                                                            
-
-
-
-## Screenshots
-
->TODO:
-
-
-
-
-
-
-
-
-
-
-

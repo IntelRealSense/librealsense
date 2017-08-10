@@ -226,11 +226,6 @@ namespace librealsense
         
     }
 
-    inline std::string get_file_version_topic()
-    {
-        return "/FILE_VERSION";
-    }
-
     constexpr uint32_t get_file_version()
     {
         return 2;
