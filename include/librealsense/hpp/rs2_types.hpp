@@ -11,6 +11,7 @@
 #include "../h/rs2_processing.h"
 #include "../h/rs2_record_playback.h"
 #include "../h/rs2_sensor.h"
+#include "../h/rs2_pipeline.h"
 
 #include <string>
 #include <vector>

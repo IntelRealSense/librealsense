@@ -135,20 +135,9 @@ namespace rs2
             return{ frame_ref };
         }
 
-        frameset wait_for_frames() const
+        frame_set wait_for_frames() const
         {
-            auto f = wait_for_frame();
-            auto comp = f.as<composite_frame>();
-            if (comp)
-            {
-                return std::move(comp.get_frames());
-            }
-            else
-            {
-                frameset res(1);
-                res[0] = std::move(f);
-                return std::move(res);
-            }
+            return wait_for_frame();
         }
 
         /**
@@ -166,21 +155,12 @@ namespace rs2
             return res > 0;
         }
 
-        bool poll_for_frames(frameset* frames) const
+        bool poll_for_frames(frame_set* frames) const
         {
             frame f;
             if (poll_for_frame(&f))
             {
-                if (auto comp = f.as<composite_frame>())
-                {
-                    *frames = std::move(comp.get_frames());
-                }
-                else
-                {
-                    frameset res(1);
-                    res[0] = std::move(f);
-                    *frames = std::move(res);
-                }
+                *frames = f;
                 return true;
             }
             return false;
@@ -233,7 +213,7 @@ namespace rs2
         * \param[in] timeout_ms   Max time in milliseconds to wait until an exception will be thrown
         * \return Set of coherent frames
         */
-        frameset wait_for_frames(unsigned int timeout_ms = 5000) const
+        frame_set wait_for_frames(unsigned int timeout_ms = 5000) const
         {
             return _results.wait_for_frames();
         }
@@ -243,7 +223,7 @@ namespace rs2
         * \param[out] result      New coherent frame-set
         * \return true if new frame-set was stored to result
         */
-        bool poll_for_frames(frameset* result) const
+        bool poll_for_frames(frame_set* result) const
         {
             return _results.poll_for_frames(result);
         }
@@ -255,108 +235,6 @@ namespace rs2
     private:
         syncer_processing_block _sync;
         frame_queue _results;
-    };
-
-    class depth_frame : public video_frame
-    {
-    public:
-        depth_frame(const frame& f)
-            : video_frame(f)
-        {
-            rs2_error* e = nullptr;
-            if (!f || (rs2_is_frame_extendable_to(f.get(), RS2_EXTENSION_DEPTH_FRAME, &e) == 0 && !e))
-            {
-                reset();
-            }
-            error::handle(e);
-        }
-
-        float get_distance(int x, int y) const
-        {
-            rs2_error * e = nullptr;
-            auto r = rs2_depth_frame_get_distance(get(), x, y, &e);
-            error::handle(e);
-            return r;
-        }
-    };
-    class frame_set
-    {
-    public:
-        unsigned int size()
-        {
-            if(!_frame)
-            {
-                return 0;
-            }
-
-            auto comp = _frame.as<composite_frame>();
-            if (comp)
-            {
-                return comp.size();
-            }
-        }
-
-        frame get_depth()
-        {
-            frame res;
-            if(!_frame)
-            {
-                return res;
-            }
-
-            auto comp = _frame.as<composite_frame>();
-            if (comp)
-            {
-                for(auto&& f:comp.get_frames())
-                {
-                   auto depth = f.as<depth_frame>();
-                   if(depth)
-                       return depth;
-                }
-            }
-            else
-            {
-                auto depth = _frame.as<depth_frame>();
-                if(depth)
-                    return depth;
-
-            }
-            return res;
-        }
-
-        frame get_color()
-        {
-            frame res;
-            if(!_frame)
-            {
-                return res;
-            }
-
-            auto comp = _frame.as<composite_frame>();
-            if (comp)
-            {
-                for(auto&& f:comp.get_frames())
-                {
-                   if(f.get_profile().stream_type() == RS2_STREAM_COLOR ||
-                           (f.get_profile().stream_type() == RS2_STREAM_INFRARED && f.get_profile().format() == RS2_FORMAT_RGB8))
-                       return f;
-
-                }
-            }
-            else
-            {
-                if(_frame.get_profile().stream_type() == RS2_STREAM_COLOR ||
-                        (_frame.get_profile().stream_type() == RS2_STREAM_INFRARED && _frame.get_profile().format() == RS2_FORMAT_RGB8))
-                    return _frame;
-
-            }
-            return res;
-        }
-    private:
-        friend class pipeline;
-        frame_set(frame f):_frame(f){}
-        frame _frame;
-
     };
 
     class colorizer

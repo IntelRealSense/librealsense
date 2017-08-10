@@ -351,17 +351,30 @@ namespace rs2
             }
         }
 
-        frameset get_frames() const
+        frame operator[](int index) const
         {
-            frameset res;
-            res.reserve(size());
+            rs2_error* e = nullptr;
+            if(index < size())
+            {
+                 auto fref = rs2_extract_frame(get(), index, &e);
+                 error::handle(e);
+                 return frame(fref);
+            }
 
-            foreach([&res](frame f){
-                res.emplace_back(std::move(f));
-            });
-
-            return std::move(res);
+            throw error("Requested index is out of range!");
         }
+
+//        frameset get_frames() const
+//        {
+//            frameset res;
+//            res.reserve(size());
+
+//            foreach([&res](frame f){
+//                res.emplace_back(std::move(f));
+//            });
+
+//            return std::move(res);
+//        }
 
     private:
         size_t _size;
@@ -416,5 +429,149 @@ namespace rs2
         frame_source(const frame_source&) = delete;
 
     };
+
+    class depth_frame : public video_frame
+    {
+    public:
+        depth_frame(const frame& f)
+            : video_frame(f)
+        {
+            rs2_error* e = nullptr;
+            if (!f || (rs2_is_frame_extendable_to(f.get(), RS2_EXTENSION_DEPTH_FRAME, &e) == 0 && !e))
+            {
+                reset();
+            }
+            error::handle(e);
+        }
+
+        float get_distance(int x, int y) const
+        {
+            rs2_error * e = nullptr;
+            auto r = rs2_depth_frame_get_distance(get(), x, y, &e);
+            error::handle(e);
+            return r;
+        }
+    };
+
+    class frame_set
+    {
+    public:
+        frame_set():_frame(nullptr){}
+
+        unsigned int size() const
+        {
+            if(!_frame)
+            {
+                return 0;
+            }
+
+            auto comp = _frame.as<composite_frame>();
+            if (comp)
+            {
+                return comp.size();
+            }
+        }
+
+
+        frame get_depth()
+        {
+            frame res;
+            if(!_frame)
+            {
+                return res;
+            }
+
+            auto comp = _frame.as<composite_frame>();
+            if (comp)
+            {
+                for(auto i =0; i< comp.size(); i++)
+                {
+                    return comp[i].as<depth_frame>();
+                }
+            }
+            else
+            {
+                return _frame.as<depth_frame>();
+
+            }
+            return res;
+        }
+
+        frame get_color()
+        {
+            frame res;
+            if(!_frame)
+            {
+                return res;
+            }
+
+            auto comp = _frame.as<composite_frame>();
+            if (comp)
+            {
+                for(auto i =0; i< comp.size(); i++)
+                {
+                    if(comp[i].get_profile().stream_type() == RS2_STREAM_COLOR ||
+                            (comp[i].get_profile().stream_type() == RS2_STREAM_INFRARED && comp[i].get_profile().format() == RS2_FORMAT_RGB8))
+                        return comp[i];
+
+                }
+            }
+            else
+            {
+                if(_frame.get_profile().stream_type() == RS2_STREAM_COLOR ||
+                        (_frame.get_profile().stream_type() == RS2_STREAM_INFRARED && _frame.get_profile().format() == RS2_FORMAT_RGB8))
+                    return _frame;
+
+            }
+            return res;
+        }
+
+        frame operator[](int index)
+        {
+            return get(index);
+        }
+
+        frame get(int index)
+        {
+            auto comp = _frame.as<composite_frame>();
+            if (comp)
+            {
+                return comp[index];
+            }
+            else
+            {
+                if(index > 0)
+                    throw error("index out of range!");
+
+                return _frame;
+            }
+        }
+        class iterator
+        {
+        public:
+            iterator(frame_set* owner, int index = 0):_owner(owner), _index(index){}
+            iterator& operator++() {++_index; return *this;}
+            bool operator==(const iterator& other)const {return _index == other._index;}
+            bool operator!=(const iterator& other)const {return !(*this == other);}
+
+            frame operator*(){return _owner->get(_index);}
+
+        private:
+            int _index = 0;
+            frame_set* _owner;
+        };
+
+        iterator begin(){return iterator(this);}
+        iterator end(){return iterator(this, size());}
+
+    private:
+        friend class frame_queue;
+        friend class pipeline;
+
+        frame_set(frame f):_frame(f){}
+        frame _frame;
+
+    };
+
 }
 #endif // LIBREALSENSE_RS2_FRAME_HPP

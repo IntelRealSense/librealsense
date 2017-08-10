@@ -67,6 +67,8 @@ int rs2_poll_for_frame(rs2_frame_queue* queue, rs2_frame** output_frame, rs2_err
 */
 void rs2_enqueue_frame(const rs2_frame* frame, void* queue);
 
+rs2_processing_block* rs2_create_colorizer(rs2_error** error);
+
 #ifdef __cplusplus
 }
 #endif

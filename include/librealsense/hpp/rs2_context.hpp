@@ -158,6 +158,7 @@ namespace rs2
             rs2::error::handle(e);
         }
     protected:
+        friend class pipeline;
         std::shared_ptr<rs2_context> _context;
     };
 }

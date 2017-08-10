@@ -2480,7 +2480,7 @@ TEST_CASE("Sync start stop", "[live]") {
         syncer syncer;
         stream.start(syncer);
 
-        frameset frames;
+        frame_set frames;
         for(auto i=0; i<30; i++)
         {
             frames = syncer.wait_for_frames(500);
@@ -2489,7 +2489,7 @@ TEST_CASE("Sync start stop", "[live]") {
 
         stream.stop();
         config.disable_all();
-        frameset old_frames;
+        frame_set old_frames;
 
         config.close(stream);
 
@@ -2603,8 +2603,7 @@ TEST_CASE("Sync connect disconnect", "[live]") {
         {
             for(auto i=0; i<500; i++)
             {
-                frameset frames;
-                frames = syncer.wait_for_frames(5000);
+                auto frames = syncer.wait_for_frames(5000);
                 REQUIRE(frames.size()>0);
             }});
 

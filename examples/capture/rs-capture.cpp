@@ -96,9 +96,8 @@ public:
     }
 };
 
-void render(const rs2::frame frame,  int index,  texture_buffer& texture, GLFWwindow* win)
+void render(const rs2::frame frame, int index, texture_buffer& texture, GLFWwindow* win)
 {
-
     int w, h;
     glfwGetFramebufferSize(win, &w, &h);
 

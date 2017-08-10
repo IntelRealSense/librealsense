@@ -13,9 +13,7 @@ namespace rs2
 {
     class pipeline
     {
-    public:
-        context _ctx;
-
+    public:  
         pipeline(context ctx = context())
             : _ctx(ctx)
         {
@@ -35,7 +33,6 @@ namespace rs2
 
         frame_set wait_for_frames(unsigned int timeout_ms = 5000) const
         {
-            frameset res;
             rs2_error* e = nullptr;
             frame f (rs2_pipeline_wait_for_frames(_pipeline.get(), timeout_ms, &e));
             error::handle(e);
@@ -44,6 +41,7 @@ namespace rs2
         }
 
     private:
+        context _ctx;
         std::shared_ptr<rs2_pipeline> _pipeline;
     };
 }
