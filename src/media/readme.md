@@ -12,7 +12,7 @@ The SDK is recording a single device to a single [rosbag file](http://wiki.ros.o
 
 #### Code Example: `rs2::recorder`
 
-> :bangbang: If you are not familiar with the basic streaming examples, please follow them before moving on
+> :exclamation: If you are not familiar with the basic streaming examples, please follow them before moving on
 
 To enable recording on any device, simply create a **rs2::recorder** from it and provide a path to the desired output file:
 ```cpp
@@ -34,7 +34,7 @@ After calling Resume on a paused recorder, it will resume writing data and chang
 ----------
 #### Example: `rs2::playback`
 
-> :bangbang: If you are not familiar with the basic streaming examples, please follow them before moving on
+> :exclamation: If you are not familiar with the basic streaming examples, please follow them before moving on
 
 Recorded files can be loaded and used to create a playback device by simply loading a file to the context:
 ```cpp
@@ -141,7 +141,7 @@ The following table is depicts the topics that are supported by RealSense file f
   <tr>
     <td>IMU Intrinsics</td>
     <td>/device_&lt;device_id&gt;/sensor_&lt;sensor_id&gt;/&lt;stream_type&gt;_&lt;stream_id&gt;/info/imu_intrinsic</td>
-    <td><a href="#imu-intrinsic">realsense_msgs::ImuIntrinsic</a></td>
+    <td><a href="#motion-intrinsic">realsense_msgs::ImuIntrinsic</a></td>
     <td>Intrinsic of a motion stream<br>A single messages to a single topic</td>
   </tr>
   <tr>
@@ -271,7 +271,7 @@ For video streams, the supported encoding types can be found at <a href="http://
 
 --------------
 
-#### Motion Intrinsics
+#### Motion Intrinsic
 
 <table>
    <tbody>
