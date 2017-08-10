@@ -1863,8 +1863,12 @@ namespace rs2
 
         video_frame colorize(frame depth)
         {
-            _block->invoke(std::move(depth));
-            return _queue.wait_for_frame();
+            if(depth)
+            {
+                _block->invoke(std::move(depth));
+                return _queue.wait_for_frame();
+            }
+            return depth;
         }
 
         //void set_bounds(float min, float max)
@@ -2043,13 +2047,85 @@ namespace rs2
         std::shared_ptr<rs2_context> _context;
     };
 
-//    class frame_set
-//    {
-//    public:
-//        frame
-//    private:
-//        frame f;
-//    };
+    class frame_set
+    {
+    public:
+        unsigned int size()
+        {
+            if(!_frame)
+            {
+                return 0;
+            }
+
+            auto comp = _frame.as<composite_frame>();
+            if (comp)
+            {
+                return comp.size();
+            }
+        }
+
+        frame get_depth()
+        {
+            frame res;
+            if(!_frame)
+            {
+                return res;
+            }
+
+            auto comp = _frame.as<composite_frame>();
+            if (comp)
+            {
+                for(auto&& f:comp.get_frames())
+                {
+                   auto depth = f.as<depth_frame>();
+                   if(depth)
+                       return depth;
+                }
+            }
+            else
+            {
+                auto depth = _frame.as<depth_frame>();
+                if(depth)
+                    return depth;
+
+            }
+            return res;
+        }
+
+        frame get_color()
+        {
+            frame res;
+            if(!_frame)
+            {
+                return res;
+            }
+
+            auto comp = _frame.as<composite_frame>();
+            if (comp)
+            {
+                for(auto&& f:comp.get_frames())
+                {
+                   if(f.get_profile().stream_type() == RS2_STREAM_COLOR ||
+                           (f.get_profile().stream_type() == RS2_STREAM_INFRARED && f.get_profile().format() == RS2_FORMAT_RGB8))
+                       return f;
+
+                }
+            }
+            else
+            {
+                if(_frame.get_profile().stream_type() == RS2_STREAM_COLOR ||
+                        (_frame.get_profile().stream_type() == RS2_STREAM_INFRARED && _frame.get_profile().format() == RS2_FORMAT_RGB8))
+                    return _frame;
+
+            }
+            return res;
+        }
+    private:
+        friend class pipeline;
+        frame_set(frame f):_frame(f){}
+        frame _frame;
+
+    };
 
     class pipeline
     {
@@ -2073,29 +2149,14 @@ namespace rs2
             error::handle(e);
         }
 
-        frameset wait_for_frames(unsigned int timeout_ms = 5000) const
+        frame_set wait_for_frames(unsigned int timeout_ms = 5000) const
         {
             frameset res;
             rs2_error* e = nullptr;
             frame f (rs2_pipeline_wait_for_frames(_pipeline.get(), timeout_ms, &e));
-            if(!f)
-            {
-                return res;
-            }
-
-            auto comp = f.as<composite_frame>();
-            if (comp)
-            {
-                return std::move(comp.get_frames());
-            }
-            else
-            {
-                frameset res(1);
-                res[0] = std::move(f);
-                return std::move(res);
-            }
             error::handle(e);
-            return res;
+
+            return frame_set(f);
         };
 
     private:
