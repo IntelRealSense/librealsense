@@ -28,8 +28,6 @@ if (devices.size() > 0)
 }
 ```
 A **recorder** has the same functionality as a "real" device, with additional control for recording, such as pausing and resuming record.
-Note that while the recorder is paused, changes to extensions will not be saved, even if you resume recording afterwards. For example, if you change the camera’s exposure level from 0 to 1 while recording is paused, then in playback, the exposure level will always show 0.
-After calling Resume on a paused recorder, it will resume writing data and changes to the file. 
 
 ----------
 #### Example: `rs2::playback`
@@ -343,9 +341,9 @@ Each frames is stored to file with all of its additional information (such as me
 
 #### Recording Snapshots 
 Upon creation, the record device goes over all of the extensions of the real device and its sensors, and saves snapshots of those extensions to the file. These snapshots will allow the playback device to recreate the topology of the recorded device, and will serve as the initial data of their extensions.
-To allow record sensors to save changes to extensions' data over the life time of the program, when a user asks a record sensor for an extension, a record-able extension would be provided. It's worth mentioning that we expect extensions to provide this recordable version of themselves.
+To allow record sensors to save changes to extensions' data over the life time of the program, when a user asks a record sensor for an extension, a record-able extension would be provided. 
 A record-able version of an extension holds an action to perform whenever the extension's data changes. This action is provided by the record sensor, and will usually be the action of writing the extension's snapshot to file.
-
+Note: After resuming a paused recordig, the states of the device and its extensions are not updated to their current state. Thus, only changes made after resuming recording will appear in the file when playing it.
 
 ----------
 
