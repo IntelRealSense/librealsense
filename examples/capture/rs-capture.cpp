@@ -98,6 +98,7 @@ public:
 
 void render(const rs2::frame frame,  int index,  texture_buffer& texture, GLFWwindow* win)
 {
+
     int w, h;
     glfwGetFramebufferSize(win, &w, &h);
 
@@ -113,7 +114,7 @@ void render(const rs2::frame frame,  int index,  texture_buffer& texture, GLFWwi
 int main(int argc, char * argv[]) try
 {
     rs2::pipeline pipe;
-    p.start();
+    pipe.start();
 
     colorizer depth_colorizer;
 
@@ -136,6 +137,7 @@ int main(int argc, char * argv[]) try
     {
         // Wait for new images
         glfwPollEvents();
+
 
         auto frames = pipe.wait_for_frames();
 
