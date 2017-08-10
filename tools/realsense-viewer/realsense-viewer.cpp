@@ -15,9 +15,6 @@
 
 #include <imgui_internal.h>
 
-#define ARCBALL_CAMERA_IMPLEMENTATION
-#include <arcball_camera.h>
-
 #include <noc_file_dialog.h>
 
 #pragma comment(lib, "opengl32.lib")
@@ -25,76 +22,6 @@
 using namespace rs2;
 using namespace rs400;
 
-void show_3dviewer_header(ImFont* font, rs2::rect stream_rect, viewer_model& viewer, notifications_model& not_model, video_frame texture)
-{
-    const auto top_bar_height = 32.f;
-
-    auto flags = ImGuiWindowFlags_NoResize |
-        ImGuiWindowFlags_NoMove |
-        ImGuiWindowFlags_NoCollapse |
-        ImGuiWindowFlags_NoTitleBar;
-
-    ImGui::PushFont(font);
-    ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
-    ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, { 0, 0 });
-
-    ImGui::PushStyleColor(ImGuiCol_Button, header_window_bg);
-    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, header_window_bg);
-    ImGui::PushStyleColor(ImGuiCol_ButtonActive, header_window_bg);
-    ImGui::PushStyleColor(ImGuiCol_WindowBg, header_window_bg);
-    ImGui::SetNextWindowPos({ stream_rect.x, stream_rect.y });
-    ImGui::SetNextWindowSize({ stream_rect.w, top_bar_height });
-    std::string label = to_string() << "header of 3dviewer";
-    ImGui::Begin(label.c_str(), nullptr, flags);
-
-    if (ImGui::Button("Save 3D View", { 30, 30 })) {
-        export_to_ply(not_model, viewer.model_3d, texture);
-    }
-
-    ImGui::End();
-    ImGui::PopStyleColor(6);
-    ImGui::PopStyleVar();
-
-    ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
-    ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, { 3, 3 });
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 5);
-
-    ImGui::PushStyleColor(ImGuiCol_Button, header_window_bg);
-    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, header_window_bg);
-    ImGui::PushStyleColor(ImGuiCol_ButtonActive, header_window_bg);
-    ImGui::PushStyleColor(ImGuiCol_WindowBg, from_rgba(9, 11, 13, 150));
-    ImGui::SetNextWindowPos({ stream_rect.x + 5, stream_rect.y + top_bar_height + 5 });
-    ImGui::SetNextWindowSize({ 250, 60 });
-    ImGui::Begin("3D Info box", nullptr, flags);
-
-    ImGui::Columns(2, 0, false);
-
-    ImGui::Text("Rotate Camera:");
-    ImGui::NextColumn();
-    ImGui::Text("Left Mouse Button");
-    ImGui::NextColumn();
-
-    ImGui::Text("Pan:");
-    ImGui::NextColumn();
-    ImGui::Text("Middle Mouse Button");
-    ImGui::NextColumn();
-
-    ImGui::Text("Zoom In/Out:");
-    ImGui::NextColumn();
-    ImGui::Text("Mouse Wheel");
-    ImGui::NextColumn();
-
-    ImGui::Columns();
-
-    ImGui::End();
-    ImGui::PopStyleColor(6);
-    ImGui::PopStyleVar(2);
-
-
-    ImGui::PopFont();
-}
 
 struct user_data
 {
@@ -150,37 +77,6 @@ void handle_dropped_file(GLFWwindow* window, int count, const char** paths)
     for (int i = 0; i < count; i++)
     {
         drop_manager.add_device(paths[i]);
-    }
-}
-
-
-void reset_camera(float3& pos, float3& target, float3& up)
-{
-    pos = { 0.0f, 0.0f, -1.5f };
-    target = { 0.0f, 0.0f, 0.0f };
-
-    // initialize "up" to be tangent to the sphere!
-    // up = cross(cross(look, world_up), look)
-    {
-        float3 look = { target.x - pos.x, target.y - pos.y, target.z - pos.z };
-        look = look.normalize();
-
-        float world_up[3] = { 0.0f, 1.0f, 0.0f };
-
-        float across[3] = {
-            look.y * world_up[2] - look.z * world_up[1],
-            look.z * world_up[0] - look.x * world_up[2],
-            look.x * world_up[1] - look.y * world_up[0],
-        };
-
-        up.x = across[1] * look.z - across[2] * look.y;
-        up.y = across[2] * look.x - across[0] * look.z;
-        up.z = across[0] * look.y - across[1] * look.x;
-
-        float up_len = up.length();
-        up.x /= -up_len;
-        up.y /= -up_len;
-        up.z /= -up_len;
     }
 }
 
@@ -298,17 +194,6 @@ int main(int, char**) try
         }
         refresh_device_list = true;
     });
-
-    // 3D-Viewer state
-    float3 pos = { 0.0f, 0.0f, -0.5f };
-    float3 target = { 0.0f, 0.0f, 0.0f };
-    float3 up;
-    float view[16];
-    reset_camera(pos, target, up);
-    bool texture_wrapping_on = true;
-    GLint texture_border_mode = GL_CLAMP_TO_EDGE; // GL_CLAMP_TO_BORDER
-    float tex_border_color[] = { 0.8f, 0.8f, 0.8f, 0.8f };
-    float2 oldcursor{ 0.f, 0.f };
 
     //advanced_mode_control amc{};
 
@@ -432,7 +317,7 @@ int main(int, char**) try
         bool update_read_only_options = false;
         auto now = std::chrono::high_resolution_clock::now();
         auto duration = std::chrono::duration<double, std::milli>(now - last_time_point).count();
-        auto view_clock = std::chrono::high_resolution_clock::now();
+        
         if (duration >= 6000)
         {
             update_read_only_options = true;
@@ -1077,104 +962,11 @@ int main(int, char**) try
                 viewer_model.model_3d = f;
             }
 
-            show_3dviewer_header(font_14, viewer_rect, viewer_model, viewer_model.not_model, texture_map);
+            viewer_model.show_3dviewer_header(font_14, viewer_rect, texture_map, paused);
 
-            glfwGetFramebufferSize(window, &w, &h);
-            glViewport(0, 0, w, h);
-            glClearColor(0, 0, 0, 1);
-            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+            viewer_model.update_3d_camera(viewer_rect, mouse.cursor.x, mouse.cursor.y, mouse.mouse_wheel);
 
-            auto sec_since_update = std::chrono::duration<double, std::milli>(now - view_clock).count();
-            view_clock = now;
-
-            if (viewer_rect.contains({ mouse.cursor.x, mouse.cursor.y }))
-                arcball_camera_update(
-                (float*)&pos, (float*)&target, (float*)&up, view,
-                    sec_since_update,
-                    0.2f, // zoom per tick
-                    1.5f, // pan speed
-                    3.0f, // rotation multiplier
-                    w, h, // screen (window) size
-                    oldcursor.x, mouse.cursor.x,
-                    oldcursor.y, mouse.cursor.y,
-                    ImGui::GetIO().MouseDown[2],
-                    ImGui::GetIO().MouseDown[0],
-                    mouse.mouse_wheel,
-                    0);
-
-            glMatrixMode(GL_PROJECTION);
-            glPushMatrix();
-            glLoadIdentity();
-            gluPerspective(60, (float)w / h, 0.001f, 100.0f);
-
-            glMatrixMode(GL_MODELVIEW);
-            glPushMatrix();
-            glLoadMatrixf(view);
-
-            glDisable(GL_TEXTURE_2D);
-
-            glEnable(GL_DEPTH_TEST);
-
-            glLineWidth(1);
-            glBegin(GL_LINES);
-            glColor4f(0.4f, 0.4f, 0.4f, 1.f);
-
-            glTranslatef(0, 0, -1);
-
-            for (int i = 0; i <= 6; i++)
-            {
-                glVertex3f(i - 3, 1, 0);
-                glVertex3f(i - 3, 1, 6);
-                glVertex3f(-3, 1, i);
-                glVertex3f(3, 1, i);
-            }
-            glEnd();
-
-            texture_buffer::draw_axis(0.1, 1);
-
-            glColor4f(1.f, 1.f, 1.f, 1.f);
-            glEnable(GL_TEXTURE_2D);
-
-            if (auto points = viewer_model.model_3d)
-            {
-                glPointSize((float)w / points.get_profile().as<video_stream_profile>().width());
-
-                glBindTexture(GL_TEXTURE_2D, rendered_tex_id);
-
-                glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, tex_border_color);
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, texture_border_mode);
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, texture_border_mode);
-
-                glBegin(GL_POINTS);
-
-                auto vertices = points.get_vertices();
-                auto tex_coords = points.get_texture_coordinates();
-
-                for (int i = 0; i < points.size(); i++)
-                {
-                    if (vertices[i].z)
-                    {
-                        glVertex3fv(vertices[i]);
-                        glTexCoord2fv(tex_coords[i]);
-                    }
-
-                }
-
-                glEnd();
-            }
-
-            glDisable(GL_DEPTH_TEST);
-
-            glPopMatrix();
-            glMatrixMode(GL_PROJECTION);
-            glPopMatrix();
-            glPopAttrib();
-
-
-            if (ImGui::IsKeyPressed('R') || ImGui::IsKeyPressed('r'))
-            {
-                reset_camera(pos, target, up);
-            }
+            viewer_model.render_3d_view(viewer_rect);
 
         }
 
@@ -1204,7 +996,7 @@ int main(int, char**) try
         ImGui::Render();
         glfwSwapBuffers(window);
         mouse.mouse_wheel = 0;
-        oldcursor = mouse.cursor;
+        
     }
 
     keep_calculating_pointcloud = false;

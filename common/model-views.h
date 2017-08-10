@@ -386,8 +386,11 @@ namespace rs2
     class viewer_model
     {
     public:
+        void reset_camera();
+
         viewer_model()
         {
+            reset_camera();
             rs2_error* e = nullptr;
             not_model.add_log(to_string() << "librealsense version: " << api_version_to_string(rs2_get_api_version(&e)) << "\n");
         }
@@ -405,6 +408,12 @@ namespace rs2
 
         void show_event_log(ImFont* font_14, float x, float y, float w, float h);
 
+        void show_3dviewer_header(ImFont* font, rs2::rect stream_rect, video_frame texture, bool& paused);
+
+        void update_3d_camera(const rect& viewer_rect, float x, float y, float wheel);
+
+        void render_3d_view(const rect& view_rect);
+
         std::map<int, stream_model> streams;
         bool fullscreen = false;
         stream_model* selected_stream = nullptr;
@@ -419,6 +428,15 @@ namespace rs2
         streams_layout _layout;
         streams_layout _old_layout;
         std::chrono::high_resolution_clock::time_point _transition_start_time;
+
+        // 3D-Viewer state
+        float3 pos = { 0.0f, 0.0f, -0.5f };
+        float3 target = { 0.0f, 0.0f, 0.0f };
+        float3 up;
+        float view[16];
+        bool texture_wrapping_on = true;
+        GLint texture_border_mode = GL_CLAMP_TO_EDGE; // GL_CLAMP_TO_BORDER
+        float2 oldcursor{ 0.f, 0.f };
     };
 
     void export_to_ply(notifications_model& ns, points points, video_frame texture);

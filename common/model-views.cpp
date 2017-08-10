@@ -14,7 +14,8 @@
 #define NOC_FILE_DIALOG_IMPLEMENTATION
 #include <noc_file_dialog.h>
 
-
+#define ARCBALL_CAMERA_IMPLEMENTATION
+#include <arcball_camera.h>
 
 void imgui_easy_theming(ImFont*& font_14, ImFont*& font_18)
 {
@@ -1235,6 +1236,132 @@ namespace rs2
         }
     }
 
+    void viewer_model::show_3dviewer_header(ImFont* font, rs2::rect stream_rect, video_frame texture, bool& paused)
+    {
+        const auto top_bar_height = 32.f;
+        const auto num_of_buttons = 3;
+
+        auto flags = ImGuiWindowFlags_NoResize |
+            ImGuiWindowFlags_NoMove |
+            ImGuiWindowFlags_NoCollapse |
+            ImGuiWindowFlags_NoTitleBar;
+
+        ImGui::PushFont(font);
+        ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
+        ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, { 0, 0 });
+
+        ImGui::PushStyleColor(ImGuiCol_Button, header_window_bg);
+        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, header_window_bg);
+        ImGui::PushStyleColor(ImGuiCol_ButtonActive, header_window_bg);
+        ImGui::PushStyleColor(ImGuiCol_WindowBg, header_window_bg);
+        ImGui::SetNextWindowPos({ stream_rect.x, stream_rect.y });
+        ImGui::SetNextWindowSize({ stream_rect.w, top_bar_height });
+        std::string label = to_string() << "header of 3dviewer";
+        ImGui::Begin(label.c_str(), nullptr, flags);
+
+        ImGui::SetCursorPos({ stream_rect.w - 32 * num_of_buttons - 5, 0 });
+
+        if (paused)
+        {
+            ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
+            ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue);
+            label = to_string() << u8"\uf04b" << "##Resume 3d";
+            if (ImGui::Button(label.c_str(), { 24, top_bar_height }))
+            {
+                paused = false;
+                for (auto&& s : streams)
+                {
+                    if (s.second.dev) s.second.dev->resume();
+                }
+            }
+            if (ImGui::IsItemHovered())
+            {
+                ImGui::SetTooltip("Resume All");
+            }
+            ImGui::PopStyleColor(2);
+        }
+        else
+        {
+            label = to_string() << u8"\uf04c" << "##Pause 3d";
+            if (ImGui::Button(label.c_str(), { 24, top_bar_height }))
+            {
+                paused = true;
+                for (auto&& s : streams)
+                {
+                    if (s.second.dev) s.second.dev->pause();
+                }
+            }
+            if (ImGui::IsItemHovered())
+            {
+                ImGui::SetTooltip("Pause All");
+            }
+        }
+
+        ImGui::SameLine();
+
+        if (ImGui::Button(u8"\uf0c7", { 30, top_bar_height }))
+        {
+            export_to_ply(not_model, model_3d, texture);
+        }
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip("Export 3D model to PLY format");
+
+        ImGui::SameLine();
+
+        if (ImGui::Button(u8"\uf021", { 30, top_bar_height }))
+        {
+            reset_camera();
+        }
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip("Reset View");
+
+        ImGui::End();
+        ImGui::PopStyleColor(6);
+        ImGui::PopStyleVar();
+
+        ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
+        ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, { 3, 3 });
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 5);
+
+        ImGui::PushStyleColor(ImGuiCol_Button, header_window_bg);
+        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, header_window_bg);
+        ImGui::PushStyleColor(ImGuiCol_ButtonActive, header_window_bg);
+        ImGui::PushStyleColor(ImGuiCol_WindowBg, from_rgba(0x1b, 0x21, 0x25, 200));
+        ImGui::SetNextWindowPos({ stream_rect.x + stream_rect.w - 255, stream_rect.y + top_bar_height + 5 });
+        ImGui::SetNextWindowSize({ 250, 60 });
+        ImGui::Begin("3D Info box", nullptr, flags);
+
+        ImGui::Columns(2, 0, false);
+        ImGui::SetColumnOffset(1, 100);
+
+        ImGui::Text("Rotate Camera:");
+        ImGui::NextColumn();
+        ImGui::Text("Left Mouse Button");
+        ImGui::NextColumn();
+
+        ImGui::Text("Pan:");
+        ImGui::NextColumn();
+        ImGui::Text("Middle Mouse Button");
+        ImGui::NextColumn();
+
+        ImGui::Text("Zoom In/Out:");
+        ImGui::NextColumn();
+        ImGui::Text("Mouse Wheel");
+        ImGui::NextColumn();
+
+        ImGui::Columns();
+
+        ImGui::End();
+        ImGui::PopStyleColor(6);
+        ImGui::PopStyleVar(2);
+
+
+        ImGui::PopFont();
+    }
+
+
     void stream_model::show_stream_header(ImFont* font, rs2::rect stream_rect, viewer_model& viewer)
     {
         const auto top_bar_height = 32.f;
@@ -1442,8 +1569,8 @@ namespace rs2
             ImGui::PushStyleColor(ImGuiCol_ButtonHovered, header_window_bg);
             ImGui::PushStyleColor(ImGuiCol_ButtonActive, header_window_bg);
             ImGui::PushStyleColor(ImGuiCol_WindowBg, from_rgba(9, 11, 13, 100));
-            ImGui::SetNextWindowPos({ stream_rect.x + stream_rect.w - 305, stream_rect.y + 5 });
-            ImGui::SetNextWindowSize({ 300, 40 });
+            ImGui::SetNextWindowPos({ stream_rect.x + stream_rect.w - 255, stream_rect.y + 5 });
+            ImGui::SetNextWindowSize({ 250, 40 });
             std::string label = to_string() << "Stream Info of " << profile.unique_id();
             ImGui::Begin(label.c_str(), nullptr, flags);
 
@@ -1465,6 +1592,7 @@ namespace rs2
             ImGui::Text("%s", label.c_str());
 
             ImGui::Columns(2, 0, false);
+            ImGui::SetColumnOffset(1, 100);
             label = to_string() << "Timestamp: " << std::fixed << std::setprecision(3) << timestamp;
             ImGui::Text("%s", label.c_str());
             ImGui::NextColumn();
@@ -2002,6 +2130,141 @@ namespace rs2
         }
 
         return get_interpolated_layout(results);
+    }
+
+    void viewer_model::reset_camera()
+    {
+        pos = { 0.0f, 0.0f, -1.5f };
+        target = { 0.0f, 0.0f, 0.0f };
+
+        // initialize "up" to be tangent to the sphere!
+        // up = cross(cross(look, world_up), look)
+        {
+            float3 look = { target.x - pos.x, target.y - pos.y, target.z - pos.z };
+            look = look.normalize();
+
+            float world_up[3] = { 0.0f, 1.0f, 0.0f };
+
+            float across[3] = {
+                look.y * world_up[2] - look.z * world_up[1],
+                look.z * world_up[0] - look.x * world_up[2],
+                look.x * world_up[1] - look.y * world_up[0],
+            };
+
+            up.x = across[1] * look.z - across[2] * look.y;
+            up.y = across[2] * look.x - across[0] * look.z;
+            up.z = across[0] * look.y - across[1] * look.x;
+
+            float up_len = up.length();
+            up.x /= -up_len;
+            up.y /= -up_len;
+            up.z /= -up_len;
+        }
+    }
+
+    void viewer_model::render_3d_view(const rect& viewer_rect)
+    {
+        glClearColor(0, 0, 0, 1);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        glMatrixMode(GL_PROJECTION);
+        glPushMatrix();
+        glLoadIdentity();
+        gluPerspective(60, (float)viewer_rect.w / viewer_rect.h, 0.001f, 100.0f);
+
+        glMatrixMode(GL_MODELVIEW);
+        glPushMatrix();
+        glLoadMatrixf(view);
+
+        glDisable(GL_TEXTURE_2D);
+
+        glEnable(GL_DEPTH_TEST);
+
+        glLineWidth(1);
+        glBegin(GL_LINES);
+        glColor4f(0.4f, 0.4f, 0.4f, 1.f);
+
+        glTranslatef(0, 0, -1);
+
+        for (int i = 0; i <= 6; i++)
+        {
+            glVertex3f(i - 3, 1, 0);
+            glVertex3f(i - 3, 1, 6);
+            glVertex3f(-3, 1, i);
+            glVertex3f(3, 1, i);
+        }
+        glEnd();
+
+        texture_buffer::draw_axis(0.1, 1);
+
+        glColor4f(1.f, 1.f, 1.f, 1.f);
+        glEnable(GL_TEXTURE_2D);
+
+        if (auto points = model_3d)
+        {
+            glPointSize((float)viewer_rect.w / points.get_profile().as<video_stream_profile>().width());
+
+            //glBindTexture(GL_TEXTURE_2D, rendered_tex_id);
+
+            //glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, tex_border_color);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, texture_border_mode);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, texture_border_mode);
+
+            glBegin(GL_POINTS);
+
+            auto vertices = points.get_vertices();
+            auto tex_coords = points.get_texture_coordinates();
+
+            for (int i = 0; i < points.size(); i++)
+            {
+                if (vertices[i].z)
+                {
+                    glVertex3fv(vertices[i]);
+                    glTexCoord2fv(tex_coords[i]);
+                }
+
+            }
+
+            glEnd();
+        }
+
+        glDisable(GL_DEPTH_TEST);
+
+        glPopMatrix();
+        glMatrixMode(GL_PROJECTION);
+        glPopMatrix();
+        glPopAttrib();
+
+
+        if (ImGui::IsKeyPressed('R') || ImGui::IsKeyPressed('r'))
+        {
+            reset_camera();
+        }
+    }
+
+    void viewer_model::update_3d_camera(const rect& viewer_rect, float x, float y, float wheel)
+    {
+        auto now = std::chrono::high_resolution_clock::now();
+        static auto view_clock = std::chrono::high_resolution_clock::now();
+        auto sec_since_update = std::chrono::duration<double, std::milli>(now - view_clock).count();
+        view_clock = now;
+
+        if (viewer_rect.contains({ x, y }))
+            arcball_camera_update(
+            (float*)&pos, (float*)&target, (float*)&up, view,
+                sec_since_update,
+                0.2f, // zoom per tick
+                1.5f, // pan speed
+                3.0f, // rotation multiplier
+                viewer_rect.w, viewer_rect.h, // screen (window) size
+                oldcursor.x, x,
+                oldcursor.y, y,
+                ImGui::GetIO().MouseDown[2],
+                ImGui::GetIO().MouseDown[0],
+                wheel,
+                0);
+        oldcursor.x = x;
+        oldcursor.y = y;
     }
 
     void viewer_model::upload_frame(frame&& f)
