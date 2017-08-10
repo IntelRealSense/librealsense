@@ -49,7 +49,6 @@ then
 		git fetch origin $kernel_branch --depth 1
 		printf "Resetting local changes in %s folder\n " ${kernel_name}
 		git reset --hard $kernel_branch
-		#git gc
 	fi
 fi
 
@@ -80,10 +79,19 @@ sudo cp /usr/src/linux-headers-$(uname -r)/Module.symvers .
 echo -e "\e[32mPrepare kernel modules configuration\e[0m"
 sudo make silentoldconfig modules_prepare
 
+#Vermagic identity is required since kernel 4.10
+IFS='.' read -a kernel_version <<< "$LINUX_BRANCH"
+if [ ${kernel_version[1]} > 9 ];
+then
+	sudo sed -i "s/\".*\"/\"$LINUX_BRANCH\"/g" ./include/generated/utsrelease.h
+	sudo sed -i "s/.*/$LINUX_BRANCH/g" ./include/config/kernel.release
+fi
+
 # Build the uvc, accel and gyro modules
 KBASE=`pwd`
 cd drivers/media/usb/uvc
 sudo cp $KBASE/Module.symvers .
+
 echo -e "\e[32mCompiling uvc module\e[0m"
 sudo make -j -C $KBASE M=$KBASE/drivers/media/usb/uvc/ modules
 echo -e "\e[32mCompiling accelerometer and gyro modules\e[0m"
