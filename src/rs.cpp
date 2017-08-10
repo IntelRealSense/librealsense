@@ -654,14 +654,15 @@ int rs2_device_list_contains(const rs2_device_list* removed, const rs2_device* d
 
     for (auto rem : removed->list)
     {
-        if (dev->info->get_device_data() == rem.info->get_device_data())
+        // TODO: This is incapable of detecting playback devices
+        // Need to extend, if playback, compare filename or something
+        if (dev->info && dev->info->get_device_data() == rem.info->get_device_data())
         {
             return 1;
         }
     }
     return 0;
 }
-
 HANDLE_EXCEPTIONS_AND_RETURN(false, removed, dev)
 
 rs2_time_t rs2_get_frame_timestamp(const rs2_frame* frame_ref, rs2_error** error) try

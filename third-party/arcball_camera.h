@@ -106,7 +106,7 @@ void arcball_camera_update(
             target[2] - eye[2],
         };
         float to_target_len = sqrtf(to_target[0] * to_target[0] + to_target[1] * to_target[1] + to_target[2] * to_target[2]);
-        assert(to_target_len > 0.0001f);
+        assert(to_target_len > 1e-6);
     }
 
     // right click is held, then mouse movements implement rotation.
@@ -382,9 +382,9 @@ end_rotate:
     // if the zoom would get you too close, clamp it.
     if (!rclick_held)
     {
-        if (zoom_dist >= to_target_len - 0.001f)
+        if (zoom_dist >= to_target_len - 0.00001f)
         {
-            zoom_dist = to_target_len - 0.001f;
+            zoom_dist = to_target_len - 0.00001f;
         }
     }
 
