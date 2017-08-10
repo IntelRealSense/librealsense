@@ -4,8 +4,8 @@ Realsense Record and Playback
 
 Overview
 -------------
-In addition to streaming video and other data from devices and sensors, the realsense SDK provides the ability to record a live session of streaming to a file. Recorded files can later be loaded by the SDK and to create a device with "read-only" abilities of the recorded device ( we will explain what "read-only" abilities mean later on).
-The SDK is recording a single device to a single [rosbag file](http://wiki.ros.org/rosbag), using mostly standard ROS messages. This allows files recorded by the SDK to be played using any ROS tools \ application.
+In addition to streaming video and other data from devices and sensors, the realsense SDK provides the ability to record a live session of streaming to a file. The recorded files can later be loaded by the SDK and to create a device with "read-only" abilities of the recorded device ( we will explain what "read-only" abilities mean later on).
+The SDK is recording a single device to a single [rosbag file](http://wiki.ros.org/rosbag), using mostly standard ROS messages. This allows files recorded by the SDK to be replayed using any ROS tools \ application.
 
 
 ----------
@@ -27,8 +27,8 @@ if (devices.size() > 0)
 	//recorder "is a" device, so just use it like any other device now
 }
 ```
-A **recorder** has the same functionality as a "real" device, with additional control for recording, such as Pause and Resume.
-Pausing a recorder will cause it to stop writing new data to the file, in particular, frames and changes to extensions  (such as sensor options) will not appear in the recorded file. 
+A **recorder** has the same functionality as a "real" device, with additional control for recording, such as pausing and resuming record.
+Note that while the recorder is paused, changes to extensions will not be saved, even if you resume recording afterwards. For example, if you change the camera’s exposure level from 0 to 1 while recording is paused, then in playback, the exposure level will always show 0.
 After calling Resume on a paused recorder, it will resume writing data and changes to the file. 
 
 ----------
@@ -45,7 +45,7 @@ rs2::playback device = ctx.load_device("my_file_name.bag");
 //playback "is a" device, so just use it like any other device now
 ```
 The above code creates a playback device, which can be used is any device, but has the obvious limitation of only playing the recorded streams. Playback devices can be used to query information on the device and it sensors, and can be extended to which ever extension the "real" device could.
-A **playback** provides additional functionality such as Seek, Pause, Resume and RealTime playing.
+A **playback** provides additional functionalities such as Seek, Pause, Resume and RealTime playing.
 
 
 ------
@@ -54,12 +54,11 @@ A **playback** provides additional functionality such as Seek, Pause, Resume and
 ### Basics Terminology
 
 A **Device** is a container of Sensors with some correlation between them (e.g - all sensors are on a single board, sensors are mounted on a robot and share calibration information, etc.). A **Sensor** is a data streaming object, that provides one or more Streams.
-**Stream** is a representation of a single type of data, meaning that a stream contains one type of data that it provides. Streams are exposed to the user via frames that the Sensor raises These frames are made available sequentially over time. A Stream can be thought of as data items on a conveyor belt being packed into a frame one at a time and raised by the sensor.
+**Stream** is a sequence of data items of a single data type, which are ordered according to their time of creation or arrival. The Sensor provides the Streams frames to the user. 
 
- A **Stream** represents a single data type that is sequentially made available over time and is exposed via frames that the Sensor raises. A stream can be thought of as data items on a conveyor belt being packed into a frame one at a time, where each frame is delivered to the user via the sensor.
 We call the device's sensors and stream, the **topology** of the device. 
 
-Devices and Sensors can have **Extensions** that provide additional functionality. A **Snapshot** of an Extension is a snapshot of the data that is available by the extension at some point of time, it is a sort of "read-only" version of the extension. For example, say we have a `DigitalClockExtension`, that can set and show the time. If we take a snapshot of that extension at noon, then whenever we ask the snapshot to show the time it will show "12:00", and trying to set its time will fail.
+Devices and Sensors can have **Extensions** that provide additional functionalities. A **Snapshot** of an Extension is a snapshot of the data that is available by the extension at some point of time, it is a sort of "read-only" version of the extension. For example, say we have a `DigitalClockExtension`, that can set and show the time. If we take a snapshot of that extension at noon, then whenever we ask the snapshot to show the time it will show "12:00", and trying to set its time will fail.
 
 Finally, we will refer to a an actual implementation of devices and sensors as "live" or "real" devices and sensors.
 
@@ -99,7 +98,10 @@ The dependencies are:
 
 #### Topics
 
-The following table is depicts the topics that are supported by RealSense file format:
+The rosbag file requires messages to be associates with Topics
+> Topics are [named](http://wiki.ros.org/Names) buses over which [nodes](http://wiki.ros.org/Nodes) exchange [messages](http://wiki.ros.org/Messages). [[ROS Wiki\Topics]](http://wiki.ros.org/Topics)
+
+The following table depicts the Topics that are supported by RealSense file format:
 
 <table>
   <tr>
@@ -260,7 +262,7 @@ The following are the new messages created by the SDK:
   <tr>
     <td>encoding</td>
     <td>Stream's data format<br>
-    [Supported encoding are listed below](#supported-encoding)</td>
+    [Supported encodings are listed below](#supported-encoding)</td>
     <td>string</td>
   </tr>
 </table>
@@ -340,7 +342,7 @@ Each frames is stored to file with all of its additional information (such as me
 
 
 #### Recording Snapshots 
-Upon creation, the record device goes over all of the extensions of the real device and its sensors, and saves a snapshot of those extensions to the file. These snapshots will allow the playback device to recreate the topology of the recorded device, and will serve as the initial data of their extensions.
+Upon creation, the record device goes over all of the extensions of the real device and its sensors, and saves snapshots of those extensions to the file. These snapshots will allow the playback device to recreate the topology of the recorded device, and will serve as the initial data of their extensions.
 To allow record sensors to save changes to extensions' data over the life time of the program, when a user asks a record sensor for an extension, a record-able extension would be provided. It's worth mentioning that we expect extensions to provide this recordable version of themselves.
 A record-able version of an extension holds an action to perform whenever the extension's data changes. This action is provided by the record sensor, and will usually be the action of writing the extension's snapshot to file.
 
