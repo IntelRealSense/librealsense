@@ -381,8 +381,8 @@ namespace librealsense
 
                 std::shared_ptr<info_snapshot> sensor_info = read_info_snapshot(ros_topic::sensor_info_topic({ get_device_index(), sensor_index }));
                 sensor_extensions[RS2_EXTENSION_INFO] = sensor_info;
-
-                sensor_descriptions.emplace_back(sensor_extensions, streams_snapshots);
+                std::map<enum rs2_option, float> sensor_options = read_sensor_options(ros_topic::property_topic({ get_device_index(), sensor_index }));
+                sensor_descriptions.emplace_back(sensor_extensions, sensor_options, streams_snapshots);
             }
 
             return device_snapshot(device_extensions, sensor_descriptions);
@@ -503,7 +503,24 @@ namespace librealsense
             }
             return streams;
         }
+        std::map<enum rs2_option, float> read_sensor_options(const std::string& topic) const
+        {
+            rosbag::View sensor_options_view(m_file, rosbag::TopicQuery(topic));
+            std::map<enum rs2_option, float> options;
+            for (auto message_instance : sensor_options_view)
+            {
+                auto property_msg = message_instance.instantiate<diagnostic_msgs::KeyValue>();
+                if(property_msg == nullptr)
+                {
+                    throw io_exception(to_string() << "Expected KeyValue message but got: " << message_instance.getDataType() << "(Topic: " << message_instance.getTopic() << ")");
+                }
+                rs2_option id;
+                conversions::convert(property_msg->key, id);
+                options[id] = std::stof(property_msg->value);
 
+            }
+            return options;
+        }
         std::shared_ptr<options_container> read_options()
         {
             return nullptr;

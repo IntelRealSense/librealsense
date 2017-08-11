@@ -34,7 +34,7 @@ namespace librealsense
             m_bag.setCompression(rosbag::CompressionType::LZ4);
             write_file_version();
         }
-
+        
         void write_device_description(const librealsense::device_snapshot& device_description) override
         {
             for (auto&& device_extension_snapshot : device_description.get_device_extensions_snapshots().get_snapshots())
@@ -48,6 +48,7 @@ namespace librealsense
                 {
                     write_extension_snapshot(get_device_index(), sensor_index, get_static_file_info_timestamp(), sensor_extension_snapshot.first, sensor_extension_snapshot.second);
                 }
+                write_sensor_options(ros_topic::property_topic({ get_device_index(), sensor_index}), get_static_file_info_timestamp(), sensors_snapshot.get_options());
                 sensor_index++;
             }
         }
@@ -240,7 +241,17 @@ namespace librealsense
                 }
             }
         }
-       
+
+        void write_sensor_options(const std::string& topic, const device_serializer::nanoseconds& timestamp, const std::map<enum rs2_option, float>& options)
+        {
+            for (auto key_val : options)
+            {
+                diagnostic_msgs::KeyValue option_msg;
+                option_msg.key = rs2_option_to_string(key_val.first);
+                option_msg.value = std::to_string(key_val.second);
+                write_message(topic, timestamp, option_msg);
+            }
+        }
         template <typename T>
         void write_message(std::string const& topic, device_serializer::nanoseconds const& time, T const& msg)
         {
