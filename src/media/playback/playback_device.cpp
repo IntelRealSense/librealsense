@@ -58,7 +58,9 @@ std::map<uint32_t, std::shared_ptr<playback_sensor>> playback_device::create_pla
 
         sensor->stopped += [this](uint32_t id, bool invoke_required) -> void
         {
-            //stopped could be called by the user (when calling sensor.stop(), main thread) or from the reader_thread when reaching eof (which means invoke is not required)
+            //stopped could be called by the user (when calling sensor.stop(), main thread==invoke required) or from the reader_thread when 
+            // reaching eof, or some read error (which means invoke is not required)
+
             auto action = [this, id]()
             {
                 auto it = m_active_sensors.find(id);
@@ -115,12 +117,13 @@ playback_device::~playback_device()
         for (auto&& sensor : m_active_sensors)
         {
             if (sensor.second != nullptr)
-                sensor.second->stop(); //TODO: make sure this works with this dispatcher
+                sensor.second->stop(); //TODO: make sure this works with new dispatcher
         }
     });
     if((*m_read_thread)->flush() == false)
     {
         LOG_ERROR("Error - timeout waiting for flush, possible deadlock detected");
+        assert(0); //Detect this immediately in debug
     }
     (*m_read_thread)->stop();
 }
@@ -323,6 +326,7 @@ void playback_device::start()
 
 void playback_device::stop()
 {
+    //stop() is called from within the reading thread
     if (m_is_started == false)
         return; //nothing to do
 
@@ -367,7 +371,7 @@ void playback_device::do_loop(T action)
                 //NOTE: calling stop will remove the sensor from m_active_sensors
                 m_active_sensors[i]->stop(false);
             }
-            //After all sensors were stopped stop() is called and flags m_is_started as false
+            //After all sensors were stopped, stop() is called and flags m_is_started as false
             assert(m_is_started == false);
         }
 

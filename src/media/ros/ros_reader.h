@@ -122,7 +122,7 @@ namespace librealsense
 
         device_serializer::status read_frame(device_serializer::nanoseconds& timestamp, device_serializer::stream_identifier& stream_id, frame_holder& frame) override
         {
-            while(m_samples_itrator != m_samples_view->end())
+            while(m_samples_view != nullptr && m_samples_itrator != m_samples_view->end())
             {
                 rosbag::MessageInstance next_frame_msg = *m_samples_itrator;
                 ++m_samples_itrator;

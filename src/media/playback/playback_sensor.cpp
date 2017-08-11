@@ -73,7 +73,6 @@ void playback_sensor::close()
         }      
     }
     m_dispatchers.clear();
-    m_available_profiles.clear();
     closed(closed_streams);
 }
 

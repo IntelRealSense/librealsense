@@ -837,6 +837,7 @@ int main(int, char**) try
                     dev_model.stop_recording();
                     for (auto&& sub : dev_model.subdevices)
                     {
+                        //TODO: Fix case where sensor X recorded stream 0, then stoped it and then strated recording stream 1 (need 2 sensors for this to happen)
                         if (sub->is_selected_combination_supported())
                         {
                             auto profiles = sub->get_selected_profiles();
