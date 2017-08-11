@@ -32,12 +32,10 @@ The project requires two external dependencies, *glfw* and *libusb-1.0*. The Cma
 3. Library Build Process<br />
   *librealsense* employs CMake as a cross-platform build and project management system.
   * On Ubuntu 14.04, update your build toolchain to *gcc-5*:
-    ```shell
-sudo apt-get update
-sudo apt-get install gcc-5 g++-5
-
-sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-5 60 --slave /usr/bin/g++ g++ /usr/bin/g++-5
-```
+    * `sudo apt-get-repository ppa:ubuntu-toolchain-r/test`
+    * `sudo apt-get update`
+    * `sudo apt-get install gcc-5 g++-5`
+    * `sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-5 60 --slave /usr/bin/g++ g++ /usr/bin/g++-5`
 
   * Navigate to *librealsense* root directory and run `mkdir build && cd build`<br />
   * Run CMake:
