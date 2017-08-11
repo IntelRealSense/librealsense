@@ -85,11 +85,14 @@ elseif(COMPILER_SUPPORTS_CXX0X)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
 endif()
 
-find_package(OpenMP REQUIRED)
-if(OPENMP_FOUND)
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
+option(BUILD_WITH_OPENMP "Use OpenMP" ON)
+if(BUILD_WITH_OPENMP)
+    find_package(OpenMP REQUIRED)
+    if(OPENMP_FOUND)
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
+    endif()
 endif()
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/CMake)
@@ -178,6 +181,8 @@ set(REALSENSE_HPP
     include/librealsense/rs2_advanced_mode.h
     include/librealsense/rs2_advanced_mode.hpp
     include/librealsense/h/rs2_advanced_mode_command.h
+	
+	src/res/resource.h
 
     src/core/streaming.h
     src/core/debug.h
@@ -293,7 +298,10 @@ if(WIN32)
     source_group("Header Files\\API" FILES
         include/librealsense/rs2.hpp
         include/librealsense/rs2.h
-
+        CMake/realsense.def
+        )
+		
+	source_group("Header Files\\C Headers" FILES
         include/librealsense/h/rs2_types.h
         include/librealsense/h/rs2_context.h
         include/librealsense/h/rs2_device.h
@@ -304,6 +312,12 @@ if(WIN32)
         include/librealsense/h/rs2_sensor.h
         include/librealsense/h/rs2_internal.h
 
+        include/librealsense/rsutil2.h
+        include/librealsense/rs2_advanced_mode.h
+        include/librealsense/h/rs2_advanced_mode_command.h
+        )
+		
+	source_group("Header Files\\API\\C++ Headers" FILES
         include/librealsense/hpp/rs2_types.hpp
         include/librealsense/hpp/rs2_context.hpp
         include/librealsense/hpp/rs2_device.hpp
@@ -313,18 +327,19 @@ if(WIN32)
         include/librealsense/hpp/rs2_sensor.hpp
         include/librealsense/hpp/rs2_internal.hpp
 
-        include/librealsense/rsutil2.h
         include/librealsense/rsutil2.hpp
-        include/librealsense/rs2_advanced_mode.h
         include/librealsense/rs2_advanced_mode.hpp
-        include/librealsense/h/rs2_advanced_mode_command.h
-        CMake/realsense.def
         )
 
     source_group("Header Files\\Recorder" FILES
         third-party/sqlite/sqlite3.h
         src/mock/sql.h
         src/mock/recorder.h
+        )
+		
+	source_group("Source Files\\Recorder" FILES
+        third-party/sqlite/sqlite3.c
+		src/mock/sql.cpp
         )
 
     source_group("Source Files\\API" FILES
@@ -338,7 +353,7 @@ if(WIN32)
         src/media/playback/playback_device.h
         src/media/playback/playback_sensor.h
         )
-    source_group("Header Files\\Media\\Ros_Serializer" FILES
+    source_group("Header Files\\Media\\Ros Serializer" FILES
         src/media/ros/ros_reader.h
         src/media/ros/ros_writer.h
         src/media/ros/data_objects/pose.h
@@ -411,7 +426,6 @@ if(WIN32)
             string(REGEX REPLACE "/MD" "/MT" ${flag_var} "${${flag_var}}")
         endif(${flag_var} MATCHES "/MD")
     endforeach(flag_var)
-
 else()
 
 endif()
@@ -492,7 +506,19 @@ add_subdirectory(third-party/realsense-file)
 
 option(BUILD_SHARED_LIBS "Build shared library" ON)
 if(BUILD_SHARED_LIBS)
-    add_library(realsense2 SHARED ${REALSENSE_CPP} ${REALSENSE_HPP} ${REALSENSE_DEF})
+	if(WIN32)
+        add_library(realsense2 SHARED 
+			${REALSENSE_CPP} ${REALSENSE_HPP} ${REALSENSE_DEF}
+			src/res/resource.h
+            src/res/librealsense.rc)
+			
+		source_group("Resources" FILES
+			src/res/resource.h
+			src/res/librealsense.rc
+			)
+    else()
+        add_library(realsense2 SHARED ${REALSENSE_CPP} ${REALSENSE_HPP} ${REALSENSE_DEF})
+    endif()
 else()
     add_library(realsense2 STATIC ${REALSENSE_CPP} ${REALSENSE_HPP})
 endif()
