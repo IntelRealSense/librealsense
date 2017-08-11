@@ -113,6 +113,11 @@ namespace librealsense
                 if (video->get_width() == 1280 && video->get_height() == 720 && video->get_format() == RS2_FORMAT_Z16 && video->get_framerate() == 30)
                     video->make_default();
 
+                if (video->get_width() == 1280 && video->get_height() == 720
+                        && p->get_stream_type() == RS2_STREAM_INFRARED
+                        && video->get_format() == RS2_FORMAT_RGB8 && video->get_framerate() == 30)
+                    video->make_default();
+
                 // Register intrinsics
                 if (p->get_format() != RS2_FORMAT_Y16) // Y16 format indicate unrectified images, no intrinsics are available for these
                 {

@@ -138,11 +138,9 @@ set(REALSENSE_CPP
     src/win/win-hid.cpp
     src/win/win-backend.cpp
 
-    rs400/rs400_advanced_mode/src/rs2_advanced_mode.cpp
-    rs400/rs400_advanced_mode/src/presets.cpp
-    rs400/rs400_advanced_mode/src/json.hpp
-    rs400/rs400_advanced_mode/src/json_loader.hpp
-    rs400/rs400_advanced_mode/src/advanced_mode.cpp
+    src/ds5/advanced_mode/rs2_advanced_mode.cpp
+    src/ds5/advanced_mode/presets.cpp
+    src/ds5/advanced_mode/advanced_mode.cpp
 
     third-party/easyloggingpp/src/easylogging++.cc
     third-party/sqlite/sqlite3.c
@@ -187,7 +185,7 @@ set(REALSENSE_HPP
     include/librealsense/rs2_advanced_mode.hpp
     include/librealsense/h/rs2_advanced_mode_command.h
 	
-	src/res/resource.h
+    src/res/resource.h
 
     src/core/streaming.h
     src/core/debug.h
@@ -251,6 +249,9 @@ set(REALSENSE_HPP
     src/media/device_snapshot.h
     src/media/ros/ros_reader.h
     src/media/ros/ros_writer.h
+
+    src/ds5/advanced_mode/json_loader.hpp
+    src/ds5/advanced_mode/presets.h
 
     third-party/easyloggingpp/src/easylogging++.h
     third-party/sqlite/sqlite3.h
@@ -355,7 +356,7 @@ if(WIN32)
     source_group("Source Files\\API" FILES
         src/rs.cpp
         src/verify.c
-        rs400/rs400_advanced_mode/src/rs2_advanced_mode.cpp
+        src/ds5/advanced_mode/rs2_advanced_mode.cpp
         )
 
     source_group("Header Files\\Media" FILES
@@ -394,6 +395,17 @@ if(WIN32)
         src/ds5/ds5-active.cpp
         src/ivcam/sr300.cpp
         src/ivcam/ivcam-private.cpp
+        )
+
+    source_group("Source Files\\Devices\\Advanced Mode" FILES
+        src/ds5/advanced_mode/rs2_advanced_mode.cpp
+        src/ds5/advanced_mode/presets.cpp
+        src/ds5/advanced_mode/advanced_mode.cpp
+        )
+
+    source_group("Header Files\\Devices\\Advanced Mode" FILES
+        src/ds5/advanced_mode/json_loader.hpp
+        src/ds5/advanced_mode/presets.h
         )
 
     source_group("Header Files\\Devices" FILES

@@ -19,7 +19,7 @@
 #include "imgui-fonts-karla.hpp"
 #include "imgui-fonts-fontawesome.hpp"
 
-#include "realsense-ui/realsense-ui-advanced-mode.h"
+#include "realsense-ui-advanced-mode.h"
 
 inline ImVec4 from_rgba(uint8_t r, uint8_t g, uint8_t b, uint8_t a)
 {

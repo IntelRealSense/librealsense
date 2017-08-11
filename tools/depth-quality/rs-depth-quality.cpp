@@ -12,7 +12,7 @@
 #include <string>
 #include <cmath>
 #include <thread>
-#include "../common/realsense-ui/realsense-ui-advanced-mode.h"
+#include "../common/realsense-ui-advanced-mode.h"
 #include "model-views.h"
 
 using namespace rs2;
