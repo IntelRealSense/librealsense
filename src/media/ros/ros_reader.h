@@ -218,7 +218,13 @@ namespace librealsense
                 curr_time = sample_msg.getTime();
             }
             
+            auto currently_streaming = get_topics(m_samples_view);
+            m_samples_view = std::unique_ptr<rosbag::View>(new rosbag::View(m_file, FalseQuery()));
             m_samples_view->addQuery(m_file, StreamQuery(stream_id), curr_time);
+            for (auto topic : currently_streaming)
+            {
+                m_samples_view->addQuery(m_file, rosbag::TopicQuery(topic), curr_time);
+            }
             m_samples_itrator = m_samples_view->begin();
         }
 
@@ -238,11 +244,11 @@ namespace librealsense
                 rosbag::MessageInstance sample_msg = *m_samples_itrator;
                 curr_time = sample_msg.getTime();
             }
-            
+            auto topics = get_topics(m_samples_view);
             m_samples_view = std::unique_ptr<rosbag::View>(new rosbag::View(m_file,FalseQuery()));
-            for (auto topic : get_topics(m_samples_view))
+            for (auto topic : topics)
             {
-                bool should_topic_remain = topic.find(ros_topic::stream_full_prefix(stream_id)) != std::string::npos;
+                bool should_topic_remain = topic.find(ros_topic::stream_full_prefix(stream_id)) == std::string::npos;
                 if (should_topic_remain)
                 {
                     m_samples_view->addQuery(m_file, rosbag::TopicQuery(topic), curr_time);
@@ -323,15 +329,14 @@ namespace librealsense
                     total_md_size += static_cast<uint32_t>(size_of_data);
                 }
             }
-
+            additional_data.metadata_size = total_md_size;
             frame_interface* frame = m_frame_source.alloc_frame(RS2_EXTENSION_VIDEO_FRAME, msg->data.size(), additional_data, true);
             if (frame == nullptr)
             {
                 throw invalid_value_exception("Failed to allocate new frame");
             }
             librealsense::video_frame* video_frame = static_cast<librealsense::video_frame*>(frame);
-            video_frame->assign(msg->width, msg->height, msg->step, msg->step / msg->width / 8); //TODO: Ziv, is bpp bytes or bits per pixel?
-
+            video_frame->assign(msg->width, msg->height, msg->step, msg->step / msg->width * 8);
             rs2_format stream_format;
             conversions::convert(msg->encoding, stream_format);
             //attaching a temp stream to the frame. Playback sensor should assign the real stream 

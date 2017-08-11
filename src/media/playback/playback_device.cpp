@@ -369,7 +369,7 @@ void playback_device::do_loop(T action)
                     break;
 
                 //NOTE: calling stop will remove the sensor from m_active_sensors
-                m_active_sensors[i]->stop(false);
+                m_active_sensors.begin()->second->stop(false);
             }
             //After all sensors were stopped, stop() is called and flags m_is_started as false
             assert(m_is_started == false);
