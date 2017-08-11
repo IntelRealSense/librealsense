@@ -88,7 +88,7 @@ namespace librealsense
         {
             std_msgs::UInt32 msg;
             msg.data = get_file_version();
-            write_message(get_file_version_topic(), get_static_file_info_timestamp(), msg);
+            write_message(ros_topic::file_version_topic(), get_static_file_info_timestamp(), msg);
         }
 
         void write_video_frame(device_serializer::stream_identifier stream_id, const device_serializer::nanoseconds& timestamp, const frame_holder& frame)

@@ -346,7 +346,7 @@ namespace librealsense
 
         bool get_file_version_from_file(uint32_t& version) const
         {
-            rosbag::View view(m_file, rosbag::TopicQuery(get_file_version_topic()));
+            rosbag::View view(m_file, rosbag::TopicQuery(ros_topic::file_version_topic()));
             if (view.size() == 0)
             {
                 return false;
