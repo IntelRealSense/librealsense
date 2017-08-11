@@ -106,10 +106,11 @@ namespace librealsense
     class ros_reader: public device_serializer::reader
     {
     public:
-        ros_reader(const std::string& file) :
+        ros_reader(const std::string& file, const std::shared_ptr<context>& ctx) :
             m_total_duration(0),
             m_file_path(file),
-            m_frame_source(nullptr)
+            m_frame_source(ctx->get_time_service()),
+            m_context(ctx)
         {
             reset(); //Note: calling a virtual function inside c'tor, safe while base function is pure virtual
             m_total_duration = get_file_duration();
@@ -340,7 +341,7 @@ namespace librealsense
             rs2_format stream_format;
             conversions::convert(msg->encoding, stream_format);
             //attaching a temp stream to the frame. Playback sensor should assign the real stream 
-            frame->set_stream(std::make_shared<video_stream_profile>(nullptr, platform::stream_profile{}));
+            frame->set_stream(std::make_shared<video_stream_profile>(m_context, platform::stream_profile{}));
             frame->get_stream()->set_format(stream_format);
             frame->get_stream()->set_stream_index(stream_id.stream_index);
             frame->get_stream()->set_stream_type(stream_id.stream_type);
@@ -472,7 +473,7 @@ namespace librealsense
                         throw io_exception(to_string() << "Expected sensor_msgs::CameraInfo message but got " << video_stream_msg_ptr.getDataType() << "(Topic: " << video_stream_msg_ptr.getTopic() << ")");
                     }
 
-                    auto profile = std::make_shared<video_stream_profile>(nullptr, platform::stream_profile{ video_stream_msg->width ,video_stream_msg->height, fps, static_cast<uint32_t>(format) });
+                    auto profile = std::make_shared<video_stream_profile>(m_context, platform::stream_profile{ video_stream_msg->width ,video_stream_msg->height, fps, static_cast<uint32_t>(format) });
                     rs2_intrinsics intrinsics{};
                     intrinsics.height = video_stream_msg->height;
                     intrinsics.width = video_stream_msg->width;
@@ -547,6 +548,7 @@ namespace librealsense
         std::unique_ptr<rosbag::View>           m_samples_view;
         rosbag::View::iterator                  m_samples_itrator;
         std::shared_ptr<metadata_parser_map>    m_metadata_parser_map;
+        std::shared_ptr<context>                m_context;
     };
 
 

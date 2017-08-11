@@ -505,7 +505,7 @@ namespace librealsense
             //Already exists
             throw librealsense::invalid_value_exception(to_string() << "File \"" << file << "\" already loaded to context");
         }
-        auto playack_dev = std::make_shared<playback_device>(shared_from_this(), std::make_shared<ros_reader>(file));
+        auto playack_dev = std::make_shared<playback_device>(shared_from_this(), std::make_shared<ros_reader>(file, shared_from_this()));
         auto dinfo = std::make_shared<playback_device_info>(playack_dev);
         auto prev_playback_devices = _playback_devices;
         _playback_devices[file] = dinfo;
