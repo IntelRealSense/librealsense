@@ -34,7 +34,7 @@ namespace librealsense
             m_bag.setCompression(rosbag::CompressionType::LZ4);
             write_file_version();
         }
-
+        
         void write_device_description(const librealsense::device_snapshot& device_description) override
         {
             for (auto&& device_extension_snapshot : device_description.get_device_extensions_snapshots().get_snapshots())
@@ -48,6 +48,7 @@ namespace librealsense
                 {
                     write_extension_snapshot(get_device_index(), sensor_index, get_static_file_info_timestamp(), sensor_extension_snapshot.first, sensor_extension_snapshot.second);
                 }
+                write_sensor_options(ros_topic::property_topic({ get_device_index(), sensor_index}), get_static_file_info_timestamp(), sensors_snapshot.get_options());
                 sensor_index++;
             }
         }
@@ -88,7 +89,7 @@ namespace librealsense
         {
             std_msgs::UInt32 msg;
             msg.data = get_file_version();
-            write_message(get_file_version_topic(), get_static_file_info_timestamp(), msg);
+            write_message(ros_topic::file_version_topic(), get_static_file_info_timestamp(), msg);
         }
 
         void write_video_frame(device_serializer::stream_identifier stream_id, const device_serializer::nanoseconds& timestamp, const frame_holder& frame)
@@ -154,14 +155,21 @@ namespace librealsense
             sensor_msgs::CameraInfo camera_info_msg;
             camera_info_msg.width = profile->get_width();
             camera_info_msg.height = profile->get_height();
-            auto intrinsics = profile->get_intrinsics();
+            rs2_intrinsics intrinsics{};
+            try {
+                intrinsics = profile->get_intrinsics();
+            }
+            catch (...)
+            {
+                LOG_ERROR("Error trying to get intrinsc data for stream " << profile->get_stream_type() << ", " << profile->get_stream_index());
+            }
             camera_info_msg.K[0] = intrinsics.fx;
             camera_info_msg.K[2] = intrinsics.ppx;
             camera_info_msg.K[4] = intrinsics.fy;
             camera_info_msg.K[5] = intrinsics.ppy;
             camera_info_msg.K[8] = 1;
             camera_info_msg.D.assign(std::begin(intrinsics.coeffs), std::end(intrinsics.coeffs));
-            camera_info_msg.distortion_model = rs2_distortion_to_string(profile->get_intrinsics().model);
+            camera_info_msg.distortion_model = rs2_distortion_to_string(intrinsics.model);
             write_message(ros_topic::video_stream_info_topic({ sensor_id.device_index, sensor_id.sensor_index, profile->get_stream_type(), static_cast<uint32_t>(profile->get_stream_index()) }), timestamp, camera_info_msg);
         }
         
@@ -233,7 +241,17 @@ namespace librealsense
                 }
             }
         }
-       
+
+        void write_sensor_options(const std::string& topic, const device_serializer::nanoseconds& timestamp, const std::map<enum rs2_option, float>& options)
+        {
+            for (auto key_val : options)
+            {
+                diagnostic_msgs::KeyValue option_msg;
+                option_msg.key = rs2_option_to_string(key_val.first);
+                option_msg.value = std::to_string(key_val.second);
+                write_message(topic, timestamp, option_msg);
+            }
+        }
         template <typename T>
         void write_message(std::string const& topic, device_serializer::nanoseconds const& time, T const& msg)
         {

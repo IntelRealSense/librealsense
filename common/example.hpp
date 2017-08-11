@@ -161,6 +161,7 @@ namespace rs2
     struct mouse_info
     {
         float2 cursor;
+        float2 prev_cursor{ 0.f, 0.f };
         bool mouse_down = false;
         int mouse_wheel = 0;
     };
@@ -525,16 +526,22 @@ namespace rs2
     {
         GLuint texture;
         std::vector<uint8_t> rgb;
+        rs2::frame_queue last_queue;
+        mutable rs2::frame last;
 
     public:
-        rs2::frame last;
+        rs2::frame get_last_frame() const { 
+            last_queue.poll_for_frame(&last);
+            return last; 
+        }
+
         color_map* cm = &jet;
         bool equalize = true;
         float min_depth = 0.f;
         float max_depth = 16.f;
         rs2::colorizer colorizer;
 
-        texture_buffer() : texture(), colorizer(/*rs2::context().create_colorizer()*/) {}
+        texture_buffer() : last_queue(1), texture(), colorizer() {}
 
         GLuint get_gl_handle() const { return texture; }
 
@@ -633,7 +640,7 @@ namespace rs2
             glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
             glBindTexture(GL_TEXTURE_2D, 0);
 
-            last = frame;
+            last_queue.enqueue(frame);
         }
 
         static void draw_axis(float axis_size = 1.f, float axisWidth = 4.f)

@@ -9,7 +9,7 @@
 #include <functional>
 #include <cstring>
 
-#include "rapidxml/rapidxml.hpp"
+#include "../third-party/rapidxml/rapidxml.hpp"
 
 #define MAX_PARAMS 4
 

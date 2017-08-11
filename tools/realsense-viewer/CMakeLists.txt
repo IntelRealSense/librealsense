@@ -48,14 +48,22 @@ if(BUILD_GRAPHICAL_EXAMPLES)
     # config-ui
     if(WIN32)
         add_executable(realsense-viewer WIN32
-            ${RS_VIEWER_CPP})
+			${RS_VIEWER_CPP} ${CMAKE_CURRENT_SOURCE_DIR}/res/resource.h
+            ${RS_VIEWER_CPP} ${CMAKE_CURRENT_SOURCE_DIR}/res/realsense-viewer.rc)
+			
+		source_group("Resources" FILES
+			${CMAKE_CURRENT_SOURCE_DIR}/res/resource.h
+			${CMAKE_CURRENT_SOURCE_DIR}/res/realsense-viewer.rc
+			)
+		include_directories(realsense-viewer ../../third-party/imgui ../../common ../../third-party ${CMAKE_CURRENT_SOURCE_DIR}/res/)
     else()
         add_executable(realsense-viewer 
             ${RS_VIEWER_CPP})
+		include_directories(realsense-viewer ../../third-party/imgui ../../common ../../third-party)
     endif()
 
     target_link_libraries(realsense-viewer ${DEPENDENCIES} ${GTK3_LIBRARIES})
-    include_directories(realsense-viewer ../../third-party/imgui ../../common ../../third-party)
+    
     set_target_properties (realsense-viewer PROPERTIES
         FOLDER Tools
     )

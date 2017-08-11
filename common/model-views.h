@@ -5,6 +5,7 @@
 #include <librealsense/rs2.hpp>
 
 #include "example.hpp"
+#include "parser.hpp"
 
 #define GLFW_INCLUDE_GLU
 #include <GLFW/glfw3.h>
@@ -285,18 +286,20 @@ namespace rs2
         rect _normalized_zoom{0, 0, 1, 1};
         int color_map_idx = 1;
         bool show_stream_details = false;
+        
     };
 
     std::pair<std::string, std::string> get_device_name(const device& dev);
+
+    bool draw_combo_box(const std::string& id, const std::vector<std::string>& device_names, int& new_index);
 
     class device_model
     {
     public:
         void reset();
         explicit device_model(device& dev, std::string& error_message);
-        bool draw_combo_box(const std::vector<std::string>& device_names, int& new_index);
         void draw_device_details(device& dev, context& ctx);
-        void start_recording(device& dev, const std::string& path, std::string& error_message);
+        void start_recording(const std::string& path, std::string& error_message);
         void stop_recording();
         void pause_record();
         void resume_record();
@@ -309,6 +312,8 @@ namespace rs2
         bool get_curr_advanced_controls = true;
         device dev;
         std::string id;
+        bool is_recording = false;
+
     private:
         advanced_mode_control amc;
 
@@ -381,11 +386,93 @@ namespace rs2
         notification_model selected;
     };
 
+    std::string get_file_name(const std::string& path);
+
+    class async_pointclound_mapper
+    {
+    public:
+        async_pointclound_mapper(pointcloud pc) 
+            : pc(pc), keep_calculating_pointcloud(true),
+              resulting_3d_models(1), depth_frames_to_render(1),
+              t([this]() {render_loop(); })
+        {
+        }
+
+        ~async_pointclound_mapper() { stop(); }
+
+        void update_texture(frame f) { pc.map_to(f); }
+
+        void stop() 
+        {
+            if (keep_calculating_pointcloud)
+            {
+                keep_calculating_pointcloud = false;
+                t.join();
+            }
+        }
+
+        void push_frame(frame f)
+        {
+            depth_frames_to_render.enqueue(f);
+        }
+
+        points get_points()
+        {
+            frame f;
+            if (resulting_3d_models.poll_for_frame(&f))
+            {
+                model = f;
+            }
+            return model;
+        }
+
+    private:
+        void render_loop()
+        {
+            while (keep_calculating_pointcloud)
+            {
+                frame f;
+                if (depth_frames_to_render.poll_for_frame(&f))
+                {
+                    if (f.get_frame_number() == last_frame_number &&
+                        f.get_timestamp() <= last_timestamp &&
+                        f.get_profile().unique_id() == last_stream_id)
+                        continue;
+
+                    resulting_3d_models.enqueue(pc.calculate(f));
+
+                    last_frame_number = f.get_frame_number();
+                    last_timestamp = f.get_timestamp();
+                    last_stream_id = f.get_profile().unique_id();
+                }
+                // There is no practical reason to re-calculate the 3D model
+                // at higher frequency then 100 FPS
+                std::this_thread::sleep_for(std::chrono::milliseconds(10));
+            }
+        }
+
+        pointcloud pc;
+        points model;
+        std::atomic<bool> keep_calculating_pointcloud;
+        frame_queue depth_frames_to_render;
+        frame_queue resulting_3d_models;
+
+        std::thread t;
+
+        int last_frame_number = 0;
+        double last_timestamp = 0;
+        int last_stream_id = 0;
+    };
+
     class viewer_model
     {
     public:
-        viewer_model()
+        void reset_camera(float3 pos = { 0.0f, 0.0f, -1.5f });
+
+        viewer_model(context ctx)
+            : pc(ctx.create_pointcloud())
         {
+            reset_camera();
             rs2_error* e = nullptr;
             not_model.add_log(to_string() << "librealsense version: " << api_version_to_string(rs2_get_api_version(&e)) << "\n");
         }
@@ -403,19 +490,42 @@ namespace rs2
 
         void show_event_log(ImFont* font_14, float x, float y, float w, float h);
 
+        void show_3dviewer_header(ImFont* font, rs2::rect stream_rect, bool& paused);
+
+        void update_3d_camera(const rect& viewer_rect,
+                              const float2& cursor,
+                              const float2& old_cursor,
+                              float wheel);
+
+        void render_3d_view(const rect& view_rect);
+
         std::map<int, stream_model> streams;
         bool fullscreen = false;
         stream_model* selected_stream = nullptr;
 
-        points model_3d;
+        async_pointclound_mapper pc;
 
         notifications_model not_model;
         bool is_output_collapsed = false;
     private:
         std::map<int, rect> get_interpolated_layout(const std::map<int, rect>& l);
 
+        int selected_depth_source_uid = -1;
+        int selected_tex_source_uid = -1;
+
         streams_layout _layout;
         streams_layout _old_layout;
         std::chrono::high_resolution_clock::time_point _transition_start_time;
+
+        // 3D-Viewer state
+        float3 pos = { 0.0f, 0.0f, -0.5f };
+        float3 target = { 0.0f, 0.0f, 0.0f };
+        float3 up;
+        float view[16];
+        bool texture_wrapping_on = true;
+        GLint texture_border_mode = GL_CLAMP_TO_EDGE; // GL_CLAMP_TO_BORDER
     };
+
+    void export_to_ply(notifications_model& ns, points points, video_frame texture);
 }
+

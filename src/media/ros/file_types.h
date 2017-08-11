@@ -177,6 +177,41 @@ namespace librealsense
             return true;
         }
 
+        inline void convert(const std::string& source, rs2_option& target)
+        {
+            if(source == rs2_option_to_string(RS2_OPTION_BACKLIGHT_COMPENSATION   )) { target = RS2_OPTION_BACKLIGHT_COMPENSATION   ; return; }
+            if(source == rs2_option_to_string(RS2_OPTION_BRIGHTNESS               )) { target = RS2_OPTION_BRIGHTNESS               ; return; }
+            if(source == rs2_option_to_string(RS2_OPTION_CONTRAST                 )) { target = RS2_OPTION_CONTRAST                 ; return; }
+            if(source == rs2_option_to_string(RS2_OPTION_EXPOSURE                 )) { target = RS2_OPTION_EXPOSURE                 ; return; }
+            if(source == rs2_option_to_string(RS2_OPTION_GAIN                     )) { target = RS2_OPTION_GAIN                     ; return; }
+            if(source == rs2_option_to_string(RS2_OPTION_GAMMA                    )) { target = RS2_OPTION_GAMMA                    ; return; }
+            if(source == rs2_option_to_string(RS2_OPTION_HUE                      )) { target = RS2_OPTION_HUE                      ; return; }
+            if(source == rs2_option_to_string(RS2_OPTION_SATURATION               )) { target = RS2_OPTION_SATURATION               ; return; }
+            if(source == rs2_option_to_string(RS2_OPTION_SHARPNESS                )) { target = RS2_OPTION_SHARPNESS                ; return; }
+            if(source == rs2_option_to_string(RS2_OPTION_WHITE_BALANCE            )) { target = RS2_OPTION_WHITE_BALANCE            ; return; }
+            if(source == rs2_option_to_string(RS2_OPTION_ENABLE_AUTO_EXPOSURE     )) { target = RS2_OPTION_ENABLE_AUTO_EXPOSURE     ; return; }
+            if(source == rs2_option_to_string(RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE)) { target = RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE; return; }
+            if(source == rs2_option_to_string(RS2_OPTION_VISUAL_PRESET            )) { target = RS2_OPTION_VISUAL_PRESET            ; return; }
+            if(source == rs2_option_to_string(RS2_OPTION_LASER_POWER              )) { target = RS2_OPTION_LASER_POWER              ; return; }
+            if(source == rs2_option_to_string(RS2_OPTION_ACCURACY                 )) { target = RS2_OPTION_ACCURACY                 ; return; }
+            if(source == rs2_option_to_string(RS2_OPTION_MOTION_RANGE             )) { target = RS2_OPTION_MOTION_RANGE             ; return; }
+            if(source == rs2_option_to_string(RS2_OPTION_FILTER_OPTION            )) { target = RS2_OPTION_FILTER_OPTION            ; return; }
+            if(source == rs2_option_to_string(RS2_OPTION_CONFIDENCE_THRESHOLD     )) { target = RS2_OPTION_CONFIDENCE_THRESHOLD     ; return; }
+            if(source == rs2_option_to_string(RS2_OPTION_EMITTER_ENABLED          )) { target = RS2_OPTION_EMITTER_ENABLED          ; return; }
+            if(source == rs2_option_to_string(RS2_OPTION_FRAMES_QUEUE_SIZE        )) { target = RS2_OPTION_FRAMES_QUEUE_SIZE        ; return; }
+            if(source == rs2_option_to_string(RS2_OPTION_TOTAL_FRAME_DROPS        )) { target = RS2_OPTION_TOTAL_FRAME_DROPS        ; return; }
+            if(source == rs2_option_to_string(RS2_OPTION_AUTO_EXPOSURE_MODE       )) { target = RS2_OPTION_AUTO_EXPOSURE_MODE       ; return; }
+            if(source == rs2_option_to_string(RS2_OPTION_POWER_LINE_FREQUENCY     )) { target = RS2_OPTION_POWER_LINE_FREQUENCY     ; return; }
+            if(source == rs2_option_to_string(RS2_OPTION_ASIC_TEMPERATURE         )) { target = RS2_OPTION_ASIC_TEMPERATURE         ; return; }
+            if(source == rs2_option_to_string(RS2_OPTION_ERROR_POLLING_ENABLED    )) { target = RS2_OPTION_ERROR_POLLING_ENABLED    ; return; }
+            if(source == rs2_option_to_string(RS2_OPTION_PROJECTOR_TEMPERATURE    )) { target = RS2_OPTION_PROJECTOR_TEMPERATURE    ; return; }
+            if(source == rs2_option_to_string(RS2_OPTION_OUTPUT_TRIGGER_ENABLED   )) { target = RS2_OPTION_OUTPUT_TRIGGER_ENABLED   ; return; }
+            if(source == rs2_option_to_string(RS2_OPTION_MOTION_MODULE_TEMPERATURE)) { target = RS2_OPTION_MOTION_MODULE_TEMPERATURE; return; }
+            if(source == rs2_option_to_string(RS2_OPTION_DEPTH_UNITS              )) { target = RS2_OPTION_DEPTH_UNITS              ; return; }
+            if(source == rs2_option_to_string(RS2_OPTION_ENABLE_MOTION_CORRECTION )) { target = RS2_OPTION_ENABLE_MOTION_CORRECTION ; return; }
+            throw std::runtime_error(to_string() << "Failed to convert source: \"" << "\" to matching rs2_optin");
+        }
+
         inline void convert(const geometry_msgs::Transform& source, rs2_extrinsics& target)
         {
             throw not_implemented_exception("convertion from  geometry_msgs::Transform to rs2_extrinsics");
@@ -224,11 +259,6 @@ namespace librealsense
         }
 
         
-    }
-
-    inline std::string get_file_version_topic()
-    {
-        return "/FILE_VERSION";
     }
 
     constexpr uint32_t get_file_version()

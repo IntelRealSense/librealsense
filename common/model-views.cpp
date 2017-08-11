@@ -7,25 +7,37 @@
 
 #include <regex>
 
+
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include <stb_image_write.h>
+
+#define NOC_FILE_DIALOG_IMPLEMENTATION
+#include <noc_file_dialog.h>
+
+#define ARCBALL_CAMERA_IMPLEMENTATION
+#include <arcball_camera.h>
+
 void imgui_easy_theming(ImFont*& font_14, ImFont*& font_18)
 {
     ImGuiStyle& style = ImGui::GetStyle();
 
     ImGuiIO& io = ImGui::GetIO();
 
+    const auto OVERSAMPLE = 8;
+
     static const ImWchar icons_ranges[] = { 0xf000, 0xf3ff, 0 }; // will not be copied by AddFont* so keep in scope.
 
                                                                  // Load 18px size fonts
     {
         ImFontConfig config_words;
-        config_words.OversampleV = 8;
-        config_words.OversampleH = 8;
+        config_words.OversampleV = OVERSAMPLE;
+        config_words.OversampleH = OVERSAMPLE;
         font_18 = io.Fonts->AddFontFromMemoryCompressedTTF(karla_regular_compressed_data, karla_regular_compressed_size, 18.f, &config_words);
 
         ImFontConfig config_glyphs;
         config_glyphs.MergeMode = true;
-        config_glyphs.OversampleV = 8;
-        config_glyphs.OversampleH = 8;
+        config_glyphs.OversampleV = OVERSAMPLE;
+        config_glyphs.OversampleH = OVERSAMPLE;
         font_18 = io.Fonts->AddFontFromMemoryCompressedTTF(font_awesome_compressed_data,
             font_awesome_compressed_size, 18.f, &config_glyphs, icons_ranges);
     }
@@ -33,14 +45,14 @@ void imgui_easy_theming(ImFont*& font_14, ImFont*& font_18)
     // Load 14px size fonts
     {
         ImFontConfig config_words;
-        config_words.OversampleV = 8;
-        config_words.OversampleH = 8;
+        config_words.OversampleV = OVERSAMPLE;
+        config_words.OversampleH = OVERSAMPLE;
         font_14 = io.Fonts->AddFontFromMemoryCompressedTTF(karla_regular_compressed_data, karla_regular_compressed_size, 14.f);
 
         ImFontConfig config_glyphs;
         config_glyphs.MergeMode = true;
-        config_glyphs.OversampleV = 8;
-        config_glyphs.OversampleH = 8;
+        config_glyphs.OversampleV = OVERSAMPLE;
+        config_glyphs.OversampleH = OVERSAMPLE;
         font_14 = io.Fonts->AddFontFromMemoryCompressedTTF(font_awesome_compressed_data,
             font_awesome_compressed_size, 14.f, &config_glyphs, icons_ranges);
     }
@@ -75,6 +87,73 @@ void imgui_easy_theming(ImFont*& font_14, ImFont*& font_18)
 
 namespace rs2
 {
+    void export_to_ply(notifications_model& ns, points points, video_frame texture)
+    {
+        const char *ret;
+        ret = noc_file_dialog_open(NOC_FILE_DIALOG_SAVE, "Polygon File Format (PLY)\0*.ply\0", NULL, NULL);
+        if (!ret) return; // user cancelled dialog. Don't save image.
+        const std::string fname(ret);
+
+        std::thread([&ns, points, texture, fname]() {
+            std::string texfname(fname);
+            texfname += ".png";
+
+            const auto vertices = points.get_vertices();
+            const auto texcoords = points.get_texture_coordinates();
+            std::vector<vertex> new_vertices;
+            std::vector<texture_coordinate> new_texcoords;
+            new_vertices.reserve(points.size());
+            new_texcoords.reserve(points.size());
+
+            for (int i = 0; i < points.size(); ++i)
+                if (std::abs(vertices[i].x) >= 1e-6 || std::abs(vertices[i].y) >= 1e-6 || std::abs(vertices[i].z) >= 1e-6)
+                {
+                    new_vertices.push_back(vertices[i]);
+                    if (texture) new_texcoords.push_back(texcoords[i]);
+                }
+
+            std::ofstream out(fname);
+            out << "ply\n";
+            out << "format binary_little_endian 1.0\n";
+            out << "comment pointcloud saved from Realsense Viewer\n";
+            if (texture) out << "comment TextureFile " << get_file_name(texfname) << "\n";
+            out << "element vertex " << new_vertices.size() << "\n";
+            out << "property float" << sizeof(float) * 8 << " x\n";
+            out << "property float" << sizeof(float) * 8 << " y\n";
+            out << "property float" << sizeof(float) * 8 << " z\n";
+            if (texture)
+            {
+                out << "property float" << sizeof(float) * 8 << " u\n";
+                out << "property float" << sizeof(float) * 8 << " v\n";
+            }
+            out << "end_header\n";
+            out.close();
+
+            out.open(fname, std::ios_base::app | std::ios_base::binary);
+            for (int i = 0; i < new_vertices.size(); ++i)
+            {
+                // we assume little endian architecture on your device
+                out.write(reinterpret_cast<const char*>(&(new_vertices[i].x)), sizeof(float));
+                out.write(reinterpret_cast<const char*>(&(new_vertices[i].y)), sizeof(float));
+                out.write(reinterpret_cast<const char*>(&(new_vertices[i].z)), sizeof(float));
+                if (texture)
+                {
+                    out.write(reinterpret_cast<const char*>(&(new_texcoords[i].u)), sizeof(float));
+                    out.write(reinterpret_cast<const char*>(&(new_texcoords[i].v)), sizeof(float));
+                }
+            }
+
+            /* save texture to texfname */
+            if (texture) stbi_write_png(texfname.data(), texture.get_width(), texture.get_height(), texture.get_bytes_per_pixel(), texture.get_data(), texture.get_width() * texture.get_bytes_per_pixel());
+
+            ns.add_notification({ to_string() << "Finished saving 3D view " << (texture ? "to " : "without texture to ") << fname,
+                std::chrono::duration_cast<std::chrono::duration<double,std::micro>>(std::chrono::high_resolution_clock::now().time_since_epoch()).count(),
+                RS2_LOG_SEVERITY_INFO,
+                RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR });
+        }).detach();
+    }
+
+
     std::vector<const char*> get_string_pointers(const std::vector<std::string>& vec)
     {
         std::vector<const char*> res;
@@ -1159,9 +1238,59 @@ namespace rs2
         }
     }
 
-    void stream_model::show_stream_header(ImFont* font, rs2::rect stream_rect, viewer_model& viewer)
+    std::string get_file_name(const std::string& path)
     {
+        std::string file_name;
+        for (auto rit = path.rbegin(); rit != path.rend(); ++rit)
+        {
+            if (*rit == '\\' || *rit == '/')
+                break;
+            file_name += *rit;
+        }
+        std::reverse(file_name.begin(), file_name.end());
+        return file_name;
+    }
+
+    bool draw_combo_box(const std::string& id, const std::vector<std::string>& device_names, int& new_index)
+    {
+        std::vector<const char*>  device_names_chars = get_string_pointers(device_names);
+        return ImGui::Combo(id.c_str(), &new_index, device_names_chars.data(), static_cast<int>(device_names.size()));
+    }
+
+    void viewer_model::show_3dviewer_header(ImFont* font, rs2::rect stream_rect, bool& paused)
+    {
+        //frame texture_map;
+        //static auto last_frame_number = 0;
+        //for (auto&& s : streams)
+        //{
+        //    if (s.second.profile.stream_type() == RS2_STREAM_DEPTH && s.second.texture->last)
+        //    {
+        //        auto frame_number = s.second.texture->last.get_frame_number();
+
+        //        if (last_frame_number == frame_number) break;
+        //        last_frame_number = frame_number;
+
+        //        for (auto&& s : streams)
+        //        {
+        //            if (s.second.profile.stream_type() != RS2_STREAM_DEPTH && s.second.texture->last)
+        //            {
+        //                rendered_tex_id = s.second.texture->get_gl_handle();
+        //                texture_map = s.second.texture->last; // also save it for later
+        //                pc.map_to(texture_map);
+        //                break;
+        //            }
+        //        }
+
+        //        if (s.second.dev && !s.second.dev->is_paused())
+        //            depth_frames_to_render.enqueue(s.second.texture->last);
+        //        break;
+        //    }
+        //}
+
+        auto model = pc.get_points();
+
         const auto top_bar_height = 32.f;
+        const auto num_of_buttons = 3;
 
         auto flags = ImGuiWindowFlags_NoResize |
             ImGuiWindowFlags_NoMove |
@@ -1177,12 +1306,311 @@ namespace rs2
         ImGui::PushStyleColor(ImGuiCol_ButtonHovered, header_window_bg);
         ImGui::PushStyleColor(ImGuiCol_ButtonActive, header_window_bg);
         ImGui::PushStyleColor(ImGuiCol_WindowBg, header_window_bg);
+        ImGui::SetNextWindowPos({ stream_rect.x, stream_rect.y });
+        ImGui::SetNextWindowSize({ stream_rect.w, top_bar_height });
+        std::string label = to_string() << "header of 3dviewer";
+        ImGui::Begin(label.c_str(), nullptr, flags);
+
+        ImGui::SetCursorPos({ 9, 9 });
+        ImGui::Text("Depth Source:"); ImGui::SameLine();
+
+        int selected_depth_source = -1;
+        std::vector<std::string> depth_sources_str;
+        std::vector<int> depth_sources;
+        int i = 0;
+        for (auto&& s : streams)
+        {
+            if (s.second.is_stream_visible() && 
+                s.second.texture->get_last_frame() &&
+                s.second.profile.stream_type() == RS2_STREAM_DEPTH)
+            {
+                if (selected_depth_source_uid == -1)
+                {
+                    selected_depth_source_uid = s.second.profile.unique_id();
+                }
+                if (s.second.profile.unique_id() == selected_depth_source_uid)
+                {
+                    selected_depth_source = i;
+                }
+
+                depth_sources.push_back(s.second.profile.unique_id());
+
+                auto dev_name = s.second.dev ? s.second.dev->dev.get_info(RS2_CAMERA_INFO_NAME) : "Unknown";
+                auto stream_name = rs2_stream_to_string(s.second.profile.stream_type());
+
+                depth_sources_str.push_back(to_string() << dev_name << " " << stream_name);
+
+                i++;
+            }
+        }
+
+        ImGui::SetCursorPosY(7);
+        ImGui::PushItemWidth(190);
+        draw_combo_box("##Depth Source", depth_sources_str, selected_depth_source);
+        i = 0;
+        for (auto&& s : streams)
+        {
+            if (s.second.is_stream_visible() &&
+                s.second.texture->get_last_frame() &&
+                s.second.profile.stream_type() == RS2_STREAM_DEPTH)
+            {
+                if (i == selected_depth_source)
+                {
+                    selected_depth_source_uid = s.second.profile.unique_id();
+                }
+                i++;
+            }
+        }
+
+        ImGui::PopItemWidth();
+        ImGui::SameLine();
+
+        ImGui::SetCursorPosY(9);
+        ImGui::Text("Texture Source:"); ImGui::SameLine();
+
+        int selected_tex_source = 0;
+        std::vector<std::string> tex_sources_str;
+        std::vector<int> tex_sources;
+        i = 0;
+        for (auto&& s : streams)
+        {
+            if (s.second.is_stream_visible() &&
+                s.second.texture->get_last_frame() &&
+                s.second.profile.stream_type() != RS2_STREAM_DEPTH)
+            {
+                if (selected_tex_source_uid == -1)
+                {
+                    selected_tex_source_uid = s.second.profile.unique_id();
+                }
+                if (s.second.profile.unique_id() == selected_tex_source_uid)
+                {
+                    selected_tex_source = i;
+                }
+
+                tex_sources.push_back(s.second.profile.unique_id());
+
+                auto dev_name = s.second.dev ? s.second.dev->dev.get_info(RS2_CAMERA_INFO_NAME) : "Unknown";
+                auto stream_name = rs2_stream_to_string(s.second.profile.stream_type());
+
+                tex_sources_str.push_back(to_string() << dev_name << " " << stream_name);
+
+                i++;
+            }
+        }
+
+        ImGui::SetCursorPosY(7);
+        ImGui::PushItemWidth(190);
+        draw_combo_box("##Tex Source", tex_sources_str, selected_tex_source);
+
+        i = 0;
+        for (auto&& s : streams)
+        {
+            if (s.second.is_stream_visible() &&
+                s.second.texture->get_last_frame() &&
+                s.second.profile.stream_type() != RS2_STREAM_DEPTH)
+            {
+                if (i == selected_tex_source)
+                {
+                    selected_tex_source_uid = s.second.profile.unique_id();
+                }
+                i++;
+            }
+        }
+        ImGui::PopItemWidth();
+
+        //ImGui::SetCursorPosY(9);
+        //ImGui::Text("Viewport:"); ImGui::SameLine();
+        //ImGui::SetCursorPosY(7);
+
+        //ImGui::PushItemWidth(70);
+        //std::vector<std::string> viewports{ "Top", "Front", "Side" };
+        //auto selected_view = -1;
+        //if (draw_combo_box("viewport_combo", viewports, selected_view))
+        //{
+        //    if (selected_view == 0)
+        //    {
+        //        reset_camera({ 0.0f, 1.5f, 0.0f });
+        //    }
+        //    else if (selected_view == 1)
+        //    {
+        //        reset_camera({ 0.0f, 0.0f, -1.5f });
+        //    }
+        //    else if (selected_view == 2)
+        //    {
+        //        reset_camera({ -1.5f, 0.0f, -0.0f });
+        //    }
+        //}
+        //ImGui::PopItemWidth();
+
+        if (selected_depth_source_uid >= 0)
+            pc.push_frame(streams[selected_depth_source_uid].texture->get_last_frame());
+
+        frame tex;
+        if (selected_tex_source_uid >= 0)
+        {
+            tex = streams[selected_tex_source_uid].texture->get_last_frame();
+            pc.update_texture(tex);
+        }
+
+        ImGui::SetCursorPos({ stream_rect.w - 32 * num_of_buttons - 5, 0 });
+
+        if (paused)
+        {
+            ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
+            ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue);
+            label = to_string() << u8"\uf04b" << "##Resume 3d";
+            if (ImGui::Button(label.c_str(), { 24, top_bar_height }))
+            {
+                paused = false;
+                for (auto&& s : streams)
+                {
+                    if (s.second.dev) s.second.dev->resume();
+                }
+            }
+            if (ImGui::IsItemHovered())
+            {
+                ImGui::SetTooltip("Resume All");
+            }
+            ImGui::PopStyleColor(2);
+        }
+        else
+        {
+            label = to_string() << u8"\uf04c" << "##Pause 3d";
+            if (ImGui::Button(label.c_str(), { 24, top_bar_height }))
+            {
+                paused = true;
+                for (auto&& s : streams)
+                {
+                    if (s.second.dev) s.second.dev->pause();
+                }
+            }
+            if (ImGui::IsItemHovered())
+            {
+                ImGui::SetTooltip("Pause All");
+            }
+        }
+
+        ImGui::SameLine();
+
+        if (ImGui::Button(u8"\uf0c7", { 30, top_bar_height }))
+        {
+            export_to_ply(not_model, model, tex);
+        }
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip("Export 3D model to PLY format");
+
+        ImGui::SameLine();
+
+        if (ImGui::Button(u8"\uf021", { 30, top_bar_height }))
+        {
+            reset_camera();
+        }
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip("Reset View");
+
+        ImGui::End();
+        ImGui::PopStyleColor(6);
+        ImGui::PopStyleVar();
+
+        ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
+        ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, { 3, 3 });
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 5);
+
+        ImGui::PushStyleColor(ImGuiCol_Button, header_window_bg);
+        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, header_window_bg);
+        ImGui::PushStyleColor(ImGuiCol_ButtonActive, header_window_bg);
+        ImGui::PushStyleColor(ImGuiCol_WindowBg, from_rgba(0x1b, 0x21, 0x25, 200));
+        ImGui::SetNextWindowPos({ stream_rect.x + stream_rect.w - 255, stream_rect.y + top_bar_height + 5 });
+        ImGui::SetNextWindowSize({ 250, 60 });
+        ImGui::Begin("3D Info box", nullptr, flags);
+
+        ImGui::Columns(2, 0, false);
+        ImGui::SetColumnOffset(1, 100);
+
+        ImGui::Text("Rotate Camera:");
+        ImGui::NextColumn();
+        ImGui::Text("Left Mouse Button");
+        ImGui::NextColumn();
+
+        ImGui::Text("Pan:");
+        ImGui::NextColumn();
+        ImGui::Text("Middle Mouse Button");
+        ImGui::NextColumn();
+
+        ImGui::Text("Zoom In/Out:");
+        ImGui::NextColumn();
+        ImGui::Text("Mouse Wheel");
+        ImGui::NextColumn();
+
+        ImGui::Columns();
+
+        ImGui::End();
+        ImGui::PopStyleColor(6);
+        ImGui::PopStyleVar(2);
+
+
+        ImGui::PopFont();
+    }
+
+
+    void stream_model::show_stream_header(ImFont* font, rs2::rect stream_rect, viewer_model& viewer)
+    {
+        const auto top_bar_height = 32.f;
+        const auto num_of_buttons = 5;
+
+        auto flags = ImGuiWindowFlags_NoResize |
+            ImGuiWindowFlags_NoMove |
+            ImGuiWindowFlags_NoCollapse |
+            ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoBringToFrontOnFocus;
+
+        ImGui::PushFont(font);
+        ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
+        ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, { 0, 0 });
+
+        ImGui::PushStyleColor(ImGuiCol_Button, header_window_bg);
+        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, header_window_bg);
+        ImGui::PushStyleColor(ImGuiCol_ButtonActive, header_window_bg);
+        ImGui::PushStyleColor(ImGuiCol_WindowBg, header_window_bg);
         ImGui::SetNextWindowPos({ stream_rect.x, stream_rect.y - top_bar_height });
         ImGui::SetNextWindowSize({ stream_rect.w, top_bar_height });
         std::string label = to_string() << "Stream of " << profile.unique_id();
         ImGui::Begin(label.c_str(), nullptr, flags);
 
-        ImGui::SetCursorPosX(stream_rect.w - 32 * 5);
+        ImGui::SetCursorPos({ 9, 9 });
+
+        if (dev && dev->dev.supports(RS2_CAMERA_INFO_NAME) &&
+            dev->dev.supports(RS2_CAMERA_INFO_SERIAL_NUMBER) && 
+            dev->s.supports(RS2_CAMERA_INFO_NAME))
+        {
+            std::string dev_name = dev->dev.get_info(RS2_CAMERA_INFO_NAME);
+            std::string dev_serial = dev->dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER);
+            std::string sensor_name = dev->s.get_info(RS2_CAMERA_INFO_NAME);
+            std::string stream_name = rs2_stream_to_string(profile.stream_type());
+
+            const auto approx_char_width = 10;
+            if (stream_rect.w - 32 * num_of_buttons >= (dev_name.size() + dev_serial.size() + sensor_name.size() + stream_name.size()) * approx_char_width)
+                label = to_string() << dev_name << " S/N:" << dev_serial << " | " << sensor_name << ", " << stream_name << " stream";
+            else if (stream_rect.w - 32 * num_of_buttons >= (dev_name.size() + sensor_name.size() + stream_name.size()) * approx_char_width)
+                label = to_string() << dev_name << " | " << sensor_name << " " << stream_name << " stream";
+            else if (stream_rect.w - 32 * num_of_buttons >= (dev_name.size() + stream_name.size()) * approx_char_width)
+                label = to_string() << dev_name << " " << stream_name << " stream";
+            else if (stream_rect.w - 32 * num_of_buttons >= stream_name.size() * approx_char_width * 2)
+                label = to_string() << stream_name << " stream";
+            else
+                label = "";
+        }
+        else
+        {
+            label = to_string() << "Unknown " << rs2_stream_to_string(profile.stream_type()) << " stream";
+        }
+
+        ImGui::PushTextWrapPos(stream_rect.w - 32 * num_of_buttons - 5);
+        ImGui::Text("%s", label.c_str());
+        ImGui::PopTextWrapPos();
+
+        ImGui::SetCursorPos({ stream_rect.w - 32 * num_of_buttons, 0 });
 
         if (dev->is_paused())
         {
@@ -1214,7 +1642,26 @@ namespace rs2
         ImGui::SameLine();
 
         label = to_string() << u8"\uf030" << "##Snapshot " << profile.unique_id();
-        ImGui::Button(label.c_str(), { 24, top_bar_height });
+        if (ImGui::Button(label.c_str(), { 24, top_bar_height }))
+        {
+            auto ret = noc_file_dialog_open(NOC_FILE_DIALOG_SAVE, "Portable Network Graphics (PNG)\0*.png\0", NULL, NULL);
+
+            if (ret)
+            {
+                std::string filename = ret;
+                if (!ends_with(to_lower(filename), ".png")) filename += ".png";
+
+                auto frame = texture->get_last_frame().as<video_frame>();
+                if (frame)
+                {
+                    stbi_write_png(filename.data(), frame.get_width(), frame.get_height(), frame.get_bytes_per_pixel(), frame.get_data(), frame.get_width() * frame.get_bytes_per_pixel());
+
+                    viewer.not_model.add_notification({ to_string() << "Snapshot was saved to " << filename,
+                        0, RS2_LOG_SEVERITY_INFO,
+                        RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR });
+                }
+            }
+        }
         if (ImGui::IsItemHovered())
         {
             ImGui::SetTooltip("Save snapshot");
@@ -1222,10 +1669,32 @@ namespace rs2
         ImGui::SameLine();
 
         label = to_string() << u8"\uf05a" << "##Info " << profile.unique_id();
-        ImGui::Button(label.c_str(), { 24, top_bar_height });
-        if (ImGui::IsItemHovered())
+        if (show_stream_details)
         {
-            ImGui::SetTooltip("Show info overlay");
+            ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
+            ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue);
+
+            if (ImGui::Button(label.c_str(), { 24, top_bar_height }))
+            {
+                show_stream_details = false;
+            }
+            if (ImGui::IsItemHovered())
+            {
+                ImGui::SetTooltip("Hide stream info overlay");
+            }
+
+            ImGui::PopStyleColor(2);
+        }
+        else
+        {
+            if (ImGui::Button(label.c_str(), { 24, top_bar_height }))
+            {
+                show_stream_details = true;
+            }
+            if (ImGui::IsItemHovered())
+            {
+                ImGui::SetTooltip("Show stream info overlay");
+            }
         }
         ImGui::SameLine();
 
@@ -1271,113 +1740,86 @@ namespace rs2
             ImGui::SetTooltip("Stop this sensor");
         }
 
-        //if (model.streams[stream].show_stream_details)
-        //{
-        //    label = to_string() << rs2_stream_to_string(stream) << " "
-        //        << stream_size.x << "x" << stream_size.y << ", "
-        //        << rs2_format_to_string(model.streams[stream].format) << ", "
-        //        << "Frame# " << model.streams[stream].frame_number << ", "
-        //        << "FPS:";
-        //}
-        //else
-        //{
-        //    label = to_string() << rs2_stream_to_string(stream) << " (...)";
-        //}
-
-        //ImGui::Text("%s", label.c_str());
-        //model.streams[stream].show_stream_details = ImGui::IsItemHovered();
-
-        //if (model.streams[stream].show_stream_details)
-        //{
-        //    ImGui::SameLine();
-
-        //    label = to_string() << std::setprecision(2) << std::fixed << model.streams[stream].fps.get_fps();
-        //    ImGui::Text("%s", label.c_str());
-        //    if (ImGui::IsItemHovered())
-        //    {
-        //        ImGui::SetTooltip("FPS is calculated based on timestamps and not viewer time");
-        //    }
-        //}
-
-        //ImGui::SameLine((int)ImGui::GetWindowWidth() - 35);
-
-        //if (!layout.empty() && !model.fullscreen)
-        //{
-        //    if (ImGui::Button("[+]", { 26, 20 }))
-        //    {
-        //        model.fullscreen = true;
-        //        model.selected_stream = stream;
-        //    }
-        //    if (ImGui::IsItemHovered())
-        //    {
-        //        ImGui::SetTooltip("Maximize stream to full-screen");
-        //    }
-        //}
-        //else if (model.fullscreen)
-        //{
-        //    if (ImGui::Button("[-]", { 26, 20 }))
-        //    {
-        //        model.fullscreen = false;
-        //    }
-        //    if (ImGui::IsItemHovered())
-        //    {
-        //        ImGui::SetTooltip("Minimize stream to tile-view");
-        //    }
-        //}
-
-
-        //// Control metadata overlay widget
-        //ImGui::SameLine((int)ImGui::GetWindowWidth() - 140); // metadata GUI hint
-        //if (!layout.empty())
-        //{
-        //    if (model.streams[stream].metadata_displayed)
-        //    {
-        //        if (ImGui::Button("Hide Metadata", { 100, 20 }))
-        //            model.streams[stream].metadata_displayed = false;
-        //    }
-        //    else
-        //    {
-        //        if (ImGui::Button("Show Metadata", { 100, 20 }))
-        //            model.streams[stream].metadata_displayed = true;
-        //    }
-
-        //    if (ImGui::IsItemHovered())
-        //        ImGui::SetTooltip("Show per-frame metadata");
-        //}
-
-        //if (model.streams[stream].show_stream_details)
-        //{
-        //    label = to_string() << "Timestamp: " << std::fixed << std::setprecision(3) << model.streams[stream].timestamp
-        //        << ", Domain:";
-        //    ImGui::Text("%s", label.c_str());
-
-        //    ImGui::SameLine();
-        //    auto domain = model.streams[stream].timestamp_domain;
-        //    label = to_string() << rs2_timestamp_domain_to_string(domain);
-
-        //    if (domain == RS2_TIMESTAMP_DOMAIN_SYSTEM_TIME)
-        //    {
-        //        ImGui::PushStyleColor(ImGuiCol_Text, { 1.0f, 0.0f, 0.0f, 1.0f });
-        //        ImGui::Text("%s", label.c_str());
-        //        if (ImGui::IsItemHovered())
-        //        {
-        //            ImGui::SetTooltip("Hardware Timestamp unavailable! This is often an indication of inproperly applied Kernel patch.\nPlease refer to installation.md for mode information");
-        //        }
-        //        ImGui::PopStyleColor();
-        //    }
-        //    else
-        //    {
-        //        ImGui::Text("%s", label.c_str());
-        //        if (ImGui::IsItemHovered())
-        //        {
-        //            ImGui::SetTooltip("Specifies the clock-domain for the timestamp (hardware-clock / system-time)");
-        //        }
-        //    }
-        //}
 
         ImGui::End();
         ImGui::PopStyleColor(6);
         ImGui::PopStyleVar();
+
+        if (show_stream_details)
+        {
+            auto flags = ImGuiWindowFlags_NoResize |
+                ImGuiWindowFlags_NoMove |
+                ImGuiWindowFlags_NoCollapse |
+                ImGuiWindowFlags_NoTitleBar;
+
+            ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
+            ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
+            ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, { 3, 3 });
+            ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 5);
+
+            ImGui::PushStyleColor(ImGuiCol_Button, header_window_bg);
+            ImGui::PushStyleColor(ImGuiCol_ButtonHovered, header_window_bg);
+            ImGui::PushStyleColor(ImGuiCol_ButtonActive, header_window_bg);
+            ImGui::PushStyleColor(ImGuiCol_WindowBg, from_rgba(9, 11, 13, 100));
+            ImGui::SetNextWindowPos({ stream_rect.x + stream_rect.w - 255, stream_rect.y + 5 });
+            ImGui::SetNextWindowSize({ 250, 40 });
+            std::string label = to_string() << "Stream Info of " << profile.unique_id();
+            ImGui::Begin(label.c_str(), nullptr, flags);
+
+            label = to_string() << size.x << "x" << size.y << ", "
+                << rs2_format_to_string(profile.format()) << ", "
+                << "FPS:";
+            ImGui::Text("%s", label.c_str());
+            ImGui::SameLine();
+
+            label = to_string() << std::setprecision(2) << std::fixed << fps.get_fps();
+            ImGui::Text("%s", label.c_str());
+            if (ImGui::IsItemHovered())
+            {
+                ImGui::SetTooltip("FPS is calculated based on timestamps and not viewer time");
+            }
+            ImGui::SameLine();
+
+            label = to_string() << "Frame#" << frame_number;
+            ImGui::Text("%s", label.c_str());
+
+            ImGui::Columns(2, 0, false);
+            ImGui::SetColumnOffset(1, 100);
+            label = to_string() << "Timestamp: " << std::fixed << std::setprecision(3) << timestamp;
+            ImGui::Text("%s", label.c_str());
+            ImGui::NextColumn();
+
+            label = "Domain:";
+            ImGui::Text("%s", label.c_str());
+            ImGui::SameLine();
+
+            label = to_string() << rs2_timestamp_domain_to_string(timestamp_domain);
+
+            if (timestamp_domain == RS2_TIMESTAMP_DOMAIN_SYSTEM_TIME)
+            {
+                ImGui::PushStyleColor(ImGuiCol_Text, { 1.0f, 0.0f, 0.0f, 1.0f });
+                ImGui::Text("%s", label.c_str());
+                if (ImGui::IsItemHovered())
+                {
+                    ImGui::SetTooltip("Hardware Timestamp unavailable! This is often an indication of inproperly applied Kernel patch.\nPlease refer to installation.md for mode information");
+                }
+                ImGui::PopStyleColor();
+            }
+            else
+            {
+                ImGui::Text("%s", label.c_str());
+                if (ImGui::IsItemHovered())
+                {
+                    ImGui::SetTooltip("Specifies the clock-domain for the timestamp (hardware-clock / system-time)");
+                }
+            }
+
+            ImGui::Columns(1);
+
+            ImGui::End();
+            ImGui::PopStyleColor(6);
+            ImGui::PopStyleVar(2);
+        }
     }
 
     void stream_model::show_stream_footer(rect stream_rect, mouse_info& mouse)
@@ -1575,19 +2017,6 @@ namespace rs2
                 }
             });
         }
-    }
-
-    bool device_model::draw_combo_box(const std::vector<std::string>& device_names, int& new_index)
-    {
-        std::vector<const char*>  device_names_chars = get_string_pointers(device_names);
-
-        ImGui::PushItemWidth(-1);
-        if (ImGui::IsItemHovered())
-        {
-            ImGui::SetTooltip("%s", device_names_chars[new_index]);
-        }
-        return ImGui::Combo("device_model", &new_index, device_names_chars.data(), static_cast<int>(device_names.size()));
-        ImGui::PopItemWidth();
     }
 
     void device_model::draw_device_details(device& dev, context& ctx)
@@ -1882,13 +2311,158 @@ namespace rs2
         return get_interpolated_layout(results);
     }
 
+    void viewer_model::reset_camera(float3 p)
+    {
+        target = { 0.0f, 0.0f, 0.0f };
+        pos = p;
+
+        // initialize "up" to be tangent to the sphere!
+        // up = cross(cross(look, world_up), look)
+        {
+            float3 look = { target.x - pos.x, target.y - pos.y, target.z - pos.z };
+            look = look.normalize();
+
+            float world_up[3] = { 0.0f, 1.0f, 0.0f };
+
+            float across[3] = {
+                look.y * world_up[2] - look.z * world_up[1],
+                look.z * world_up[0] - look.x * world_up[2],
+                look.x * world_up[1] - look.y * world_up[0],
+            };
+
+            up.x = across[1] * look.z - across[2] * look.y;
+            up.y = across[2] * look.x - across[0] * look.z;
+            up.z = across[0] * look.y - across[1] * look.x;
+
+            float up_len = up.length();
+            up.x /= -up_len;
+            up.y /= -up_len;
+            up.z /= -up_len;
+        }
+    }
+
+    void viewer_model::render_3d_view(const rect& viewer_rect)
+    {
+        glViewport(viewer_rect.x, viewer_rect.y, viewer_rect.w, viewer_rect.h);
+
+        glClearColor(0, 0, 0, 1);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        glMatrixMode(GL_PROJECTION);
+        glPushMatrix();
+        glLoadIdentity();
+        gluPerspective(60, (float)viewer_rect.w / viewer_rect.h, 0.001f, 100.0f);
+
+        glMatrixMode(GL_MODELVIEW);
+        glPushMatrix();
+        glLoadMatrixf(view);
+
+        glDisable(GL_TEXTURE_2D);
+
+        glEnable(GL_DEPTH_TEST);
+
+        glLineWidth(1);
+        glBegin(GL_LINES);
+        glColor4f(0.4f, 0.4f, 0.4f, 1.f);
+
+        glTranslatef(0, 0, -1);
+
+        for (int i = 0; i <= 6; i++)
+        {
+            glVertex3f(i - 3, 1, 0);
+            glVertex3f(i - 3, 1, 6);
+            glVertex3f(-3, 1, i);
+            glVertex3f(3, 1, i);
+        }
+        glEnd();
+
+        texture_buffer::draw_axis(0.1, 1);
+
+        glColor4f(1.f, 1.f, 1.f, 1.f);
+
+        if (auto points = pc.get_points())
+        {
+            glPointSize((float)viewer_rect.w / points.get_profile().as<video_stream_profile>().width());
+
+            if (selected_tex_source_uid >= 0)
+            {
+                auto tex = streams[selected_tex_source_uid].texture->get_gl_handle();
+                glBindTexture(GL_TEXTURE_2D, tex);
+                glEnable(GL_TEXTURE_2D);
+
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, texture_border_mode);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, texture_border_mode);
+            }
+
+            //glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, tex_border_color);
+
+            glBegin(GL_POINTS);
+
+            auto vertices = points.get_vertices();
+            auto tex_coords = points.get_texture_coordinates();
+
+            for (int i = 0; i < points.size(); i++)
+            {
+                if (vertices[i].z)
+                {
+                    glVertex3fv(vertices[i]);
+                    glTexCoord2fv(tex_coords[i]);
+                }
+
+            }
+
+            glEnd();
+        }
+
+        glDisable(GL_DEPTH_TEST);
+
+        glPopMatrix();
+        glMatrixMode(GL_PROJECTION);
+        glPopMatrix();
+        glPopAttrib();
+
+
+        if (ImGui::IsKeyPressed('R') || ImGui::IsKeyPressed('r'))
+        {
+            reset_camera();
+        }
+    }
+
+    void viewer_model::update_3d_camera(const rect& viewer_rect, 
+                                        const float2& cursor, 
+                                        const float2& old_cursor,
+                                        float wheel)
+    {
+        auto now = std::chrono::high_resolution_clock::now();
+        static auto view_clock = std::chrono::high_resolution_clock::now();
+        auto sec_since_update = std::chrono::duration<double, std::milli>(now - view_clock).count() / 1000;
+        view_clock = now;
+
+        if (viewer_rect.contains(cursor))
+        {
+            arcball_camera_update(
+                (float*)&pos, (float*)&target, (float*)&up, view,
+                sec_since_update,
+                0.2f, // zoom per tick
+                -0.1f, // pan speed
+                3.0f, // rotation multiplier
+                viewer_rect.w, viewer_rect.h, // screen (window) size
+                old_cursor.x, cursor.x,
+                old_cursor.y, cursor.y,
+                ImGui::GetIO().MouseDown[2],
+                ImGui::GetIO().MouseDown[0],
+                wheel,
+                0);
+        }
+    }
+
     void viewer_model::upload_frame(frame&& f)
     {
         auto index = f.get_profile().unique_id();
         streams[index].upload_frame(std::move(f));
     }
 
-    void device_model::start_recording(device& dev, const std::string& path, std::string& error_message)
+    void device_model::start_recording(const std::string& path, std::string& error_message)
     {
         if (_recorder != nullptr)
         {
@@ -1917,6 +2491,8 @@ namespace rs2
 			subdevices[i]->fps_values_per_stream = live_subdevices[i]->fps_values_per_stream;
 			subdevices[i]->format_values = live_subdevices[i]->format_values;
 	    }
+
+        is_recording = true;
     }
 
     void device_model::stop_recording()
@@ -1926,6 +2502,7 @@ namespace rs2
         live_subdevices.clear();
         //this->streams.clear();
         _recorder.reset();
+        is_recording = false;
     }
 
     void device_model::pause_record()
