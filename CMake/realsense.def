@@ -133,6 +133,9 @@ EXPORTS
     rs2_get_stream_profile_size
     rs2_is_stream_profile_recommended
 
+    rs2_delete_stream_profile
+    rs2_clone_stream_profile
+
     rs2_allocate_synthetic_video_frame
     rs2_synthetic_frame_ready
     rs2_create_processing_block
@@ -193,3 +196,9 @@ EXPORTS
     rs2_playback_device_is_real_time
     rs2_playback_device_set_status_changed_callback
     rs2_playback_device_get_current_status
+
+    rs2_create_pipeline
+    rs2_start_pipeline_with_callback
+    rs2_start_pipeline
+    rs2_pipeline_wait_for_frames
+    rs2_delete_pipeline

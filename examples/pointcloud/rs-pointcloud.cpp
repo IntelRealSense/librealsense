@@ -176,7 +176,7 @@ int main(int argc, char * argv[])
             syncer syncer;
             stream.start(syncer);
 
-            texture_buffer mapped_tex;
+            texture mapped_tex;
             
 
             extrin = stream.get_extrinsics(RS2_STREAM_DEPTH, mapped);

@@ -2,6 +2,8 @@
 // Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 
 #include "../include/librealsense/rs2.hpp"
+
+#include "context.h"
 #include "colorizer.h"
 
 namespace librealsense
@@ -15,12 +17,17 @@ namespace librealsense
         }};
 
     colorizer::colorizer()
-        : processing_block(nullptr), _min(0.f), _max(16.f), _equalize(true), _map(jet)
+        : processing_block(nullptr), _min(0.f), _max(16.f), _equalize(true), _map(jet), _stream()
     {
         auto on_frame = [this](rs2::frame f, const rs2::frame_source& source)
         {
             auto process_frame = [this, &source](const rs2::frame f)
             {
+                {
+                    std::lock_guard<std::mutex> lock(_mutex);
+                    if (!_stream) _stream = std::make_shared<rs2::stream_profile>(f.get_profile().clone(RS2_STREAM_DEPTH, 0, RS2_FORMAT_RGB8));
+                }
+                
                 auto make_equalized_histogram = [this](const rs2::video_frame& depth, rs2::video_frame rgb)
                 {
                     const auto max_depth = 0x10000;
@@ -87,7 +94,7 @@ namespace librealsense
                 if (f.get_profile().stream_type() == RS2_STREAM_DEPTH)
                 {
                     auto vf = f.as<rs2::video_frame>();
-                    ret = source.allocate_video_frame(f.get_profile(), f, RS2_FORMAT_RGB8, 3, vf.get_width(), vf.get_height(), vf.get_width() * 3);
+                    ret = source.allocate_video_frame(*_stream, f, 3, vf.get_width(), vf.get_height(), vf.get_width() * 3);
                     if (_equalize) make_equalized_histogram(f, ret);
                     else make_value_cropped_frame(f, ret);
                 }

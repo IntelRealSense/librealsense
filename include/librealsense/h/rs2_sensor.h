@@ -274,7 +274,7 @@ void rs2_get_stream_profile_data(const rs2_stream_profile* mode, rs2_stream* str
 
 void rs2_set_stream_profile_data(rs2_stream_profile* mode, rs2_stream stream, int index, rs2_format format, rs2_error** error);
 
-rs2_stream_profile* rs2_clone_stream_profile(const rs2_stream_profile* mode, rs2_error** error);
+rs2_stream_profile* rs2_clone_stream_profile(const rs2_stream_profile* mode, rs2_stream stream, int stream_idx, rs2_format fmt, rs2_error** error);
 
 void rs2_delete_stream_profile(rs2_stream_profile* mode);
 

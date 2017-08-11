@@ -24,13 +24,10 @@ namespace rs2
         stream_profile clone(rs2_stream type, int index, rs2_format format) const
         {
             rs2_error* e = nullptr;
-            auto ref = rs2_clone_stream_profile(_profile, &e);
+            auto ref = rs2_clone_stream_profile(_profile, type, index, format, &e);
             error::handle(e);
             stream_profile res(ref);
             res._clone = std::shared_ptr<rs2_stream_profile>(ref, [](rs2_stream_profile* r) { rs2_delete_stream_profile(r); });
-
-            rs2_set_stream_profile_data(ref, type, index, format, &e);
-            error::handle(e);
 
             return res;
         }

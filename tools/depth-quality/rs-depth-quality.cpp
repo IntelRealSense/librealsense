@@ -3,7 +3,7 @@
 
 #include <librealsense/rs2.hpp>
 #include <librealsense/rsutil2.hpp>
-#include "example.hpp"
+#include "rendering.h"
 #include <imgui.h>
 #include "imgui_impl_glfw.h"
 #include <sstream>

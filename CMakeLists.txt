@@ -309,13 +309,14 @@ if(WIN32)
         CMake/realsense.def
         )
 		
-	source_group("Header Files\\C Headers" FILES
+	source_group("Header Files\\API\\C Headers" FILES
         include/librealsense/h/rs2_types.h
         include/librealsense/h/rs2_context.h
         include/librealsense/h/rs2_device.h
         include/librealsense/h/rs2_frame.h
         include/librealsense/h/rs2_option.h
         include/librealsense/h/rs2_processing.h
+		include/librealsense/h/rs2_pipeline.h
         include/librealsense/h/rs2_record_playback.h
         include/librealsense/h/rs2_sensor.h
         include/librealsense/h/rs2_internal.h
@@ -331,6 +332,7 @@ if(WIN32)
         include/librealsense/hpp/rs2_device.hpp
         include/librealsense/hpp/rs2_frame.hpp
         include/librealsense/hpp/rs2_processing.hpp
+		include/librealsense/hpp/rs2_pipeline.hpp
         include/librealsense/hpp/rs2_record_playback.hpp
         include/librealsense/hpp/rs2_sensor.hpp
         include/librealsense/hpp/rs2_internal.hpp

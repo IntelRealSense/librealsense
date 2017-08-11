@@ -17,9 +17,9 @@ elseif(COMPILER_SUPPORTS_CXX0X)
 endif()
 
 if(BUILD_GRAPHICAL_EXAMPLES)
-    add_executable(rs-capture rs-capture.cpp)
+    add_executable(rs-capture rs-capture.cpp ../example.hpp)
     target_link_libraries(rs-capture ${DEPENDENCIES})
-    include_directories(rs-capture ../../common ../../third-party/tclap/include)
+    include_directories(rs-capture ../ ../../third-party/tclap/include)
     set_target_properties (rs-capture PROPERTIES
         FOLDER "Examples"
     )

@@ -364,18 +364,6 @@ namespace rs2
             throw error("Requested index is out of range!");
         }
 
-//        frameset get_frames() const
-//        {
-//            frameset res;
-//            res.reserve(size());
-
-//            foreach([&res](frame f){
-//                res.emplace_back(std::move(f));
-//            });
-
-//            return std::move(res);
-//        }
-
     private:
         size_t _size;
     };
@@ -386,7 +374,6 @@ namespace rs2
 
         frame allocate_video_frame(const stream_profile& profile,
                                    const frame& original,
-                                   rs2_format new_format = RS2_FORMAT_ANY,
                                    int new_bpp = 0,
                                    int new_width = 0,
                                    int new_height = 0,
@@ -453,17 +440,15 @@ namespace rs2
         }
     };
 
-    class frame_set
+    class frameset
     {
     public:
-        frame_set():_frame(nullptr){}
+        frameset() : _frame(nullptr) { }
+        frameset(composite_frame f) : _frame(std::move(f)) {}
 
         unsigned int size() const
         {
-            if(!_frame)
-            {
-                return 0;
-            }
+            if (!_frame) return 0;
 
             auto comp = _frame.as<composite_frame>();
             if (comp)
@@ -472,105 +457,60 @@ namespace rs2
             }
         }
 
-
-        frame get_depth()
+        frame get(rs2_stream s) const
         {
-            frame res;
-            if(!_frame)
+            for (size_t i = 0; i < size(); i++)
             {
-                return res;
+                if (at(i).get_profile().stream_type() == s) return at(i);
             }
+            return{};
+        }
 
-            auto comp = _frame.as<composite_frame>();
-            if (comp)
-            {
-                for(auto i =0; i< comp.size(); i++)
-                {
-                    return comp[i].as<depth_frame>();
-                }
-            }
-            else
-            {
-                return _frame.as<depth_frame>();
+        depth_frame get_depth_frame() const
+        {
+            return get(RS2_STREAM_DEPTH);
+        }
 
+        video_frame get_color_frame()
+        {
+            auto res = get(RS2_STREAM_COLOR);
+            if (!res)
+            {
+                auto ir = get(RS2_STREAM_INFRARED);
+                if (ir && ir.get_profile().format() == RS2_FORMAT_RGB8)
+                    res = ir;
             }
             return res;
         }
 
-        frame get_color()
+        frame operator[](int index) const
         {
-            frame res;
-            if(!_frame)
-            {
-                return res;
-            }
-
-            auto comp = _frame.as<composite_frame>();
-            if (comp)
-            {
-                for(auto i =0; i< comp.size(); i++)
-                {
-                    if(comp[i].get_profile().stream_type() == RS2_STREAM_COLOR ||
-                            (comp[i].get_profile().stream_type() == RS2_STREAM_INFRARED && comp[i].get_profile().format() == RS2_FORMAT_RGB8))
-                        return comp[i];
-
-                }
-            }
-            else
-            {
-                if(_frame.get_profile().stream_type() == RS2_STREAM_COLOR ||
-                        (_frame.get_profile().stream_type() == RS2_STREAM_INFRARED && _frame.get_profile().format() == RS2_FORMAT_RGB8))
-                    return _frame;
-
-            }
-            return res;
+            return at(index);
         }
 
-        frame operator[](int index)
+        frame at(int index) const
         {
-            return get(index);
+            return _frame[index];
         }
 
-        frame get(int index)
-        {
-            auto comp = _frame.as<composite_frame>();
-            if (comp)
-            {
-                return comp[index];
-            }
-            else
-            {
-                if(index > 0)
-                    throw error("index out of range!");
-
-                return _frame;
-            }
-        }
         class iterator
         {
         public:
-            iterator(frame_set* owner, int index = 0):_owner(owner), _index(index){}
-            iterator& operator++() {++_index; return *this;}
-            bool operator==(const iterator& other)const {return _index == other._index;}
-            bool operator!=(const iterator& other)const {return !(*this == other);}
+            iterator(frameset* owner, int index = 0) : _owner(owner), _index(index) {}
+            iterator& operator++() { ++_index; return *this; }
+            bool operator==(const iterator& other) const { return _index == other._index; }
+            bool operator!=(const iterator& other) const { return !(*this == other); }
 
-            frame operator*(){return _owner->get(_index);}
-
+            frame operator*(){return _owner->at(_index);}
         private:
             int _index = 0;
-            frame_set* _owner;
+            frameset* _owner;
         };
 
         iterator begin(){return iterator(this);}
         iterator end(){return iterator(this, size());}
-
     private:
-        friend class frame_queue;
-        friend class pipeline;
-
-        frame_set(frame f):_frame(f){}
-        frame _frame;
-
+        composite_frame _frame;
     };
 
 }

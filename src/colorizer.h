@@ -8,6 +8,11 @@
 #include <map>
 #include <vector>
 
+namespace rs2
+{
+    class stream_profile;
+}
+
 namespace librealsense {
 
     class color_map
@@ -103,6 +108,7 @@ namespace librealsense {
         float _min, _max;
         bool _equalize;
         color_map _map;
+        std::mutex _mutex;
+        std::shared_ptr<rs2::stream_profile> _stream;
     };
-
 }

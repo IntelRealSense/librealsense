@@ -31,13 +31,13 @@ namespace rs2
             error::handle(e);
         }
 
-        frame_set wait_for_frames(unsigned int timeout_ms = 5000) const
+        frameset wait_for_frames(unsigned int timeout_ms = 5000) const
         {
             rs2_error* e = nullptr;
             frame f (rs2_pipeline_wait_for_frames(_pipeline.get(), timeout_ms, &e));
             error::handle(e);
 
-            return frame_set(f);
+            return frameset(f);
         }
 
     private:

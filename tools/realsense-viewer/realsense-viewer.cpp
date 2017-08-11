@@ -1,5 +1,4 @@
 #include <librealsense/rs2.hpp>
-#include "example.hpp"
 #include "model-views.h"
 
 #include <cstdarg>

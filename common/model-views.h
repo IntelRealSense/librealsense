@@ -4,7 +4,7 @@
 #pragma once
 #include <librealsense/rs2.hpp>
 
-#include "example.hpp"
+#include "rendering.h"
 #include "parser.hpp"
 
 #define GLFW_INCLUDE_GLU

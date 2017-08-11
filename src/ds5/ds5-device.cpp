@@ -109,8 +109,6 @@ namespace librealsense
                     assign_stream(_owner->_right_ir_stream, p);
                 }
                 auto video = dynamic_cast<video_stream_profile_interface*>(p.get());
-                if (video->get_width() == 640 && video->get_height() == 480)
-                    video->make_recommended();
 
                 if (video->get_width() == 1280 && video->get_height() == 720 && video->get_format() == RS2_FORMAT_Z16 && video->get_framerate() == 30)
                     video->make_default();

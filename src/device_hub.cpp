@@ -1,12 +1,13 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
-#include "device_hub.h"
 #include <librealsense/rs2.hpp>
+
+#include "device_hub.h"
 
 namespace librealsense
 {
-    #define devices_changed_callbacl rs2::devices_changed_callback<std::function<void(rs2::event_information& info)>>
+    typedef rs2::devices_changed_callback<std::function<void(rs2::event_information& info)>> hub_devices_changed_callback;
 
     device_hub::device_hub(context& ctx)
         : _ctx(ctx)
@@ -14,7 +15,7 @@ namespace librealsense
         _device_list = _ctx.query_devices();
 
 
-        auto cb = new devices_changed_callbacl([&](rs2::event_information& info)
+        auto cb = new hub_devices_changed_callback([&](rs2::event_information& info)
                    {
                        std::unique_lock<std::mutex> lock(_mutex);
                        _device_list = _ctx.query_devices();

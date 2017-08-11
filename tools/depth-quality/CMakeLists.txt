@@ -17,7 +17,7 @@ elseif(COMPILER_SUPPORTS_CXX0X)
 endif()
 
 if(BUILD_GRAPHICAL_EXAMPLES)
-    add_executable(rs-depth-quality rs-depth-quality.cpp ../../third-party/imgui/imgui.cpp ../../third-party/imgui/imgui_draw.cpp ../../third-party/imgui/imgui_impl_glfw.cpp ../../common/example.hpp)
+    add_executable(rs-depth-quality rs-depth-quality.cpp ../../third-party/imgui/imgui.cpp ../../third-party/imgui/imgui_draw.cpp ../../third-party/imgui/imgui_impl_glfw.cpp ../../common/rendering.h)
     target_link_libraries(rs-depth-quality ${DEPENDENCIES})
     include_directories(rs-depth-quality ../../common ../../third-party/tclap/include ../../third-party/imgui)
     set_target_properties (rs-depth-quality PROPERTIES

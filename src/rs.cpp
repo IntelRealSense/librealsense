@@ -390,6 +390,28 @@ void rs2_set_stream_profile_data(rs2_stream_profile* mode, rs2_stream stream, in
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, mode, stream, format)
 
+void rs2_delete_stream_profile(rs2_stream_profile* p) try
+{
+    VALIDATE_NOT_NULL(p);
+    delete p;
+}
+NOEXCEPT_RETURN(, p)
+
+rs2_stream_profile* rs2_clone_stream_profile(const rs2_stream_profile* mode, rs2_stream stream, int stream_idx, rs2_format fmt, rs2_error** error) try
+{
+    VALIDATE_NOT_NULL(mode);
+    VALIDATE_ENUM(stream);
+    VALIDATE_ENUM(fmt);
+
+    auto sp = mode->profile->clone();
+    sp->set_stream_type(stream);
+    sp->set_stream_index(stream_idx);
+    sp->set_format(fmt);
+
+    return new rs2_stream_profile{ sp.get(), sp };
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, mode, stream, stream_idx, fmt)
+
 const rs2_raw_data_buffer* rs2_send_and_receive_raw_data(rs2_device* device, void* raw_data_to_send, unsigned size_of_raw_data_to_send, rs2_error** error) try
 {
     VALIDATE_NOT_NULL(device);

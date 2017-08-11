@@ -13,7 +13,6 @@ struct rs2_source
 {
     librealsense::synthetic_source_interface* source;
 };
-class frame_source;
 
 namespace librealsense
 {

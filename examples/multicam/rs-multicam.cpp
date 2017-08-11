@@ -21,7 +21,7 @@ int main(int argc, char * argv[]) try
 {
     log_to_console(RS2_LOG_SEVERITY_WARN);
 
-    vector<texture_buffer> buffers;
+    vector<texture> buffers;
 
     context ctx; // Create librealsense context
     auto devices = ctx.query_devices(); // Query the list of connected RealSense devices

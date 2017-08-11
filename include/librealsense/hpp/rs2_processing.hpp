@@ -135,11 +135,6 @@ namespace rs2
             return{ frame_ref };
         }
 
-        frame_set wait_for_frames() const
-        {
-            return wait_for_frame();
-        }
-
         /**
         * poll if a new frame is available and dequeue if it is
         * \param[out] f - frame handle
@@ -153,17 +148,6 @@ namespace rs2
             error::handle(e);
             if (res) *f = { frame_ref };
             return res > 0;
-        }
-
-        bool poll_for_frames(frame_set* frames) const
-        {
-            frame f;
-            if (poll_for_frame(&f))
-            {
-                *frames = f;
-                return true;
-            }
-            return false;
         }
 
         void operator()(frame f) const
@@ -213,9 +197,9 @@ namespace rs2
         * \param[in] timeout_ms   Max time in milliseconds to wait until an exception will be thrown
         * \return Set of coherent frames
         */
-        frame_set wait_for_frames(unsigned int timeout_ms = 5000) const
+        frameset wait_for_frames(unsigned int timeout_ms = 5000) const
         {
-            return _results.wait_for_frames();
+            return _results.wait_for_frame();
         }
 
         /**
@@ -223,9 +207,15 @@ namespace rs2
         * \param[out] result      New coherent frame-set
         * \return true if new frame-set was stored to result
         */
-        bool poll_for_frames(frame_set* result) const
+        bool poll_for_frames(frameset* fs) const
         {
-            return _results.poll_for_frames(result);
+            frame result;
+            if (_results.poll_for_frame(&result))
+            {
+                *fs = frameset(result);
+                return true;
+            }
+            return false;
         }
 
         void operator()(frame f) const
@@ -254,7 +244,7 @@ namespace rs2
         }
 
 
-        video_frame colorize(frame depth)
+        video_frame colorize(frame depth) const
         {
             if(depth)
             {
@@ -263,15 +253,9 @@ namespace rs2
             }
             return depth;
         }
-        //void set_bounds(float min, float max)
-         //{
-         //    rs2_colorizer_set_bounds
-         //}
 
-         //void set_equalize(bool equalize)
-         //{
+        video_frame operator()(frame depth) const { return colorize(depth); }
 
-         //}
      private:
          std::shared_ptr<processing_block> _block;
          frame_queue _queue;

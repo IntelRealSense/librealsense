@@ -3,7 +3,6 @@
 
 #include <librealsense/rs2.hpp>
 #include <librealsense/rsutil2.hpp>
-#include "example.hpp"
 #include <chrono>
 #include <thread>
 #include <iostream>

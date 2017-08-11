@@ -152,9 +152,6 @@ namespace rs2
     class roi_sensor;
     class frame;
 
-
-    typedef std::vector<frame> frameset;
-
     class event_information;
 
     template<class T>

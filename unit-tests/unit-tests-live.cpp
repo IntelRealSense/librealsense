@@ -2480,7 +2480,7 @@ TEST_CASE("Sync start stop", "[live]") {
         syncer syncer;
         stream.start(syncer);
 
-        frame_set frames;
+        frameset frames;
         for(auto i=0; i<30; i++)
         {
             frames = syncer.wait_for_frames(500);
@@ -2489,7 +2489,7 @@ TEST_CASE("Sync start stop", "[live]") {
 
         stream.stop();
         config.disable_all();
-        frame_set old_frames;
+        frameset old_frames;
 
         config.close(stream);
 
@@ -2654,7 +2654,7 @@ struct device_requsets
     bool sync;
 };
 
-void validate(std::vector<frame_set> frames, device_requsets requsets)
+void validate(std::vector<frameset> frames, device_requsets requsets)
 {/*
     REQUIRE(frames.size() > 0);
 
@@ -2748,7 +2748,7 @@ TEST_CASE("Pipline", "[live]") {
         rs2::pipeline pipe(ctx);
         pipe.start();
 
-        std::vector<frame_set> frames;
+        std::vector<frameset> frames;
 
         for(auto i = 0; i<60; i++)
             pipe.wait_for_frames();

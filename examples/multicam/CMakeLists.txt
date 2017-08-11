@@ -18,8 +18,8 @@ endif()
 
 if(BUILD_GRAPHICAL_EXAMPLES)
     # multicam
-    add_executable(rs-multicam rs-multicam.cpp)
-    include_directories(rs-multicam ../../common)
+    add_executable(rs-multicam rs-multicam.cpp ../example.hpp)
+    include_directories(rs-multicam ../)
     target_link_libraries(rs-multicam ${DEPENDENCIES})
     set_target_properties (rs-multicam PROPERTIES
         FOLDER Examples
