@@ -48,9 +48,10 @@ namespace librealsense
     class sensor_snapshot
     {
     public:
-        sensor_snapshot(const snapshot_collection& sensor_extensions) : m_snapshots(sensor_extensions) {}
-        sensor_snapshot(const snapshot_collection& sensor_extensions, stream_profiles streams) :
+        sensor_snapshot(const snapshot_collection& sensor_extensions, const std::map<rs2_option, float>& options) : m_snapshots(sensor_extensions), m_options(options) {}
+        sensor_snapshot(const snapshot_collection& sensor_extensions, const std::map<rs2_option, float>& options, stream_profiles streams) :
             m_snapshots(sensor_extensions),
+            m_options(options),
             m_streams(streams)
         {
         }
@@ -62,9 +63,15 @@ namespace librealsense
         {
             return m_streams;
         }
+
+        std::map<rs2_option, float> get_options()
+        {
+            return m_options;
+        }
     private:
         snapshot_collection m_snapshots;
         stream_profiles m_streams;
+        std::map<rs2_option, float> m_options;
     };
     using device_extrinsics = std::map<std::tuple<size_t, rs2_stream, size_t, rs2_stream>, rs2_extrinsics>;
 

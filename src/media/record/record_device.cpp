@@ -79,7 +79,18 @@ void librealsense::record_device::write_header()
     {
         auto& sensor = m_device->get_sensor(j);
         auto sensor_extensions_snapshots = get_extensions_snapshots(&sensor);
-        sensors_snapshot.emplace_back(sensor_extensions_snapshots);
+        //TODO: hack to get some options written to file, this should be removed and done properly
+        std::map<rs2_option, float> options;
+        for (int i = 0; i < static_cast<int>(RS2_OPTION_COUNT); i++)
+        {
+            auto option_id = static_cast<rs2_option>(i);
+            if (sensor.supports_option(option_id))
+            {
+                auto& option = sensor.get_option(option_id);
+                options[option_id] = option.query();
+            }
+        }
+        sensors_snapshot.emplace_back(sensor_extensions_snapshots, options);
     }
 
     m_ros_writer->write_device_description({ device_extensions_md, sensors_snapshot });

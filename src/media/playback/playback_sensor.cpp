@@ -6,6 +6,30 @@
 #include <map>
 #include "types.h"
 #include "context.h"
+#include "ds5/ds5-options.h"
+
+class read_only_depth_scale_option : public depth_scale_option
+{
+    float m_value;
+public:
+    read_only_depth_scale_option(float value) : m_value(value){}
+    bool is_read_only() const override
+    {
+        return true;
+    }
+    void set(float value) override
+    {
+
+    }
+    float query() const override
+    {
+        return m_value;
+    }
+    option_range get_range() const override
+    {
+        return { m_value, m_value, 0, m_value};
+    }
+};
 playback_sensor::playback_sensor(const device_interface& parent_device, const sensor_snapshot& sensor_description, uint32_t sensor_id):
     m_sensor_description(sensor_description),
     m_sensor_id(sensor_id),
@@ -19,6 +43,12 @@ playback_sensor::playback_sensor(const device_interface& parent_device, const se
         //TODO:        m_parent_device.get_context()->register_extrinsics()
         m_available_profiles.push_back(profile);
         m_streams[device_serializer::stream_identifier{ 0,0, profile->get_stream_type(), static_cast<uint32_t>(profile->get_stream_index())}] = profile;
+    }
+    m_supported_options = m_sensor_description.get_options();
+    auto depth_scale_it = m_supported_options.find(RS2_OPTION_DEPTH_UNITS);
+    if(depth_scale_it != m_supported_options.end())
+    {
+        register_option(depth_scale_it->first, std::make_shared<read_only_depth_scale_option>(depth_scale_it->second));
     }
 }
 playback_sensor::~playback_sensor()
@@ -73,18 +103,21 @@ void playback_sensor::close()
         }      
     }
     m_dispatchers.clear();
-    m_available_profiles.clear();
     closed(closed_streams);
 }
 
 option& playback_sensor::get_option(rs2_option id)
 {
-    return std::dynamic_pointer_cast<librealsense::options_interface>(m_sensor_description.get_sensor_extensions_snapshots().get_snapshots()[RS2_EXTENSION_OPTIONS ])->get_option(id);
+    auto& opt = options_container::get_option(id);
+    return opt;
+    //return std::dynamic_pointer_cast<librealsense::options_interface>(m_sensor_description.get_sensor_extensions_snapshots().get_snapshots()[RS2_EXTENSION_OPTIONS ])->get_option(id);
 }
 
 const option& playback_sensor::get_option(rs2_option id) const
 {
-    return std::dynamic_pointer_cast<librealsense::options_interface>(m_sensor_description.get_sensor_extensions_snapshots().get_snapshots()[RS2_EXTENSION_OPTIONS ])->get_option(id);
+    auto& opt = options_container::get_option(id);
+    return opt;
+    //return std::dynamic_pointer_cast<librealsense::options_interface>(m_sensor_description.get_sensor_extensions_snapshots().get_snapshots()[RS2_EXTENSION_OPTIONS ])->get_option(id);
 }
 
 const std::string& playback_sensor::get_info(rs2_camera_info info) const
@@ -99,13 +132,15 @@ bool playback_sensor::supports_info(rs2_camera_info info) const
 
 bool playback_sensor::supports_option(rs2_option id) const
 {
-    auto snapshot = m_sensor_description.get_sensor_extensions_snapshots().find(RS2_EXTENSION_OPTIONS );
-    if (snapshot == nullptr)
-        return false;
-    auto option = std::dynamic_pointer_cast<librealsense::options_interface>(snapshot);
-    if (option == nullptr)
-        return false;
-    return option->supports_option(id);
+    bool supported = options_container::supports_option(id);
+    return supported;
+//    auto snapshot = m_sensor_description.get_sensor_extensions_snapshots().find(RS2_EXTENSION_OPTIONS );
+//    if (snapshot == nullptr)
+//        return false;
+//    auto option = std::dynamic_pointer_cast<librealsense::options_interface>(snapshot);
+//    if (option == nullptr)
+//        return false;
+//    return option->supports_option(id);
 }
 
 void playback_sensor::register_notifications_callback(notifications_callback_ptr callback)

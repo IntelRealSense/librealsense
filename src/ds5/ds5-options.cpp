@@ -348,7 +348,8 @@ namespace librealsense
                                  0.000001f, 0.001f };
         };
     }
-
+    //TODO: fix hack
+    depth_scale_option::depth_scale_option();
     void depth_scale_option::set(float value)
     {
         command cmd(ds::SET_ADV);
