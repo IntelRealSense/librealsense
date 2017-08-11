@@ -27,7 +27,7 @@ namespace librealsense
         signal<playback_sensor, uint32_t, bool> stopped;
         signal<playback_sensor, const std::vector<stream_filter>& > opened;
         signal<playback_sensor, const std::vector<stream_filter>& > closed;
-        
+        std::map<rs2_option, float> m_supported_options;
 
         playback_sensor(const device_interface& parent_device, const sensor_snapshot& sensor_description, uint32_t sensor_id);
         virtual ~playback_sensor();
@@ -37,9 +37,9 @@ namespace librealsense
         void close() override;
         option& get_option(rs2_option id) override;
         const option& get_option(rs2_option id) const override;
+        bool supports_option(rs2_option id) const override;
         const std::string& get_info(rs2_camera_info info) const override;
         bool supports_info(rs2_camera_info info) const override;
-        bool supports_option(rs2_option id) const override;
         void register_notifications_callback(notifications_callback_ptr callback) override;
         void start(frame_callback_ptr callback) override;
         void stop() override;

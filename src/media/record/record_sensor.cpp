@@ -152,9 +152,12 @@ bool librealsense::record_sensor::extend_to(rs2_extension extension_type, void**
     case RS2_EXTENSION_OPTIONS :*ext = this; return true;
     case RS2_EXTENSION_VIDEO :break;
     case RS2_EXTENSION_ROI :break;
-    case RS2_EXTENSION_UNKNOWN:
+    case RS2_EXTENSION_DEPTH_SENSOR: break;
+    case RS2_EXTENSION_ADVANCED_MODE: break;
+    case RS2_EXTENSION_PLAYBACK: break;
+    case RS2_EXTENSION_RECORD:break;
     case RS2_EXTENSION_COUNT :
-        //TODO: support all extensions
+
     default:
         throw invalid_value_exception(to_string() <<"extension_type " << extension_type << " is not supported");
     }
