@@ -23,7 +23,7 @@ The project requires two external dependencies, *glfw* and *libusb-1.0*. The Cma
     * Complete the boot, login and verify that the required kernel version (4.4.0-79 or 4.8.0-54 as of June 17th 2017) is in place with `uname -r`
 
 2. Install the packages required for *librealsense* build:
-  * *libusb-1.0* and *pkg-config*: `sudo apt-get install libusb-1.0-0-dev pkg-config libgtk-3-dev`.
+  * *libusb-1.0*, *pkg-config* and *libgtk-3*: `sudo apt-get install libusb-1.0-0-dev pkg-config libgtk-3-dev`.
 
   * *glfw3*:
     * For Ubuntu 16.04 install glfw3 via `sudo apt-get install libglfw3-dev`
@@ -31,6 +31,14 @@ The project requires two external dependencies, *glfw* and *libusb-1.0*. The Cma
 
 3. Library Build Process<br />
   *librealsense* employs CMake as a cross-platform build and project management system.
+  * On Ubuntu 14.04, update your build toolchain to *gcc-5*:
+    ```shell
+sudo apt-get update
+sudo apt-get install gcc-5 g++-5
+
+sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-5 60 --slave /usr/bin/g++ g++ /usr/bin/g++-5
+```
+
   * Navigate to *librealsense* root directory and run `mkdir build && cd build`<br />
   * Run CMake:
     * `cmake ../` - The default build is set to produce the core shared object and unit-tests binaries<br />

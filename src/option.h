@@ -12,6 +12,7 @@
 #include <chrono>
 #include <memory>
 #include <vector>
+#include <cmath>
 
 namespace librealsense
 {

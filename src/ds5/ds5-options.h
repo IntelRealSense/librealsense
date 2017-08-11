@@ -163,7 +163,7 @@ namespace librealsense
     public:
         depth_scale_option(hw_monitor& hwm);
         //TODO: remove:
-        depth_scale_option() :_hwm(hw_monitor(nullptr)) {}
+        depth_scale_option() :_hwm(*((hw_monitor*)(nullptr))) {}
         virtual ~depth_scale_option() = default;
         virtual void set(float value) override;
         virtual float query() const override;
