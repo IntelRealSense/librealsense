@@ -23,7 +23,7 @@ void imgui_easy_theming(ImFont*& font_14, ImFont*& font_18)
 
     ImGuiIO& io = ImGui::GetIO();
 
-    const auto OVERSAMPLE = 8;
+    const auto OVERSAMPLE = 1;
 
     static const ImWchar icons_ranges[] = { 0xf000, 0xf3ff, 0 }; // will not be copied by AddFont* so keep in scope.
 
