@@ -8,8 +8,6 @@ RealSense APIs is clustered into three categories, aimed at different usages:
 ## Low-Level Sensor API
 RealSense devices are composed from sensors. Some are commonplace, like a regular RGB camera, some are more exotic, like RS400 Stereo module or SR300 Structured-Light sensor:
 
-<p align="center"><img src="img/sensors.gif" width="400" height="200" /></p>
-
 Each sensor has its own power management and control. Standard sensors pass UVC / HID compliance and can be used without custom drivers. 
 
 Different sensors can be safely used from different applications and can only influence each other indirectly. 
