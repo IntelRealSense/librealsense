@@ -1,11 +1,10 @@
 # Linux Installation
 
-**Note:** Due to the USB 3.0 translation layer between native hardware and virtual machine, the *librealsense* team does not recommend or support installation in a VM.
+**Note:** Due to the USB 3.0 translation layer between native hardware and virtual machine, the *librealsense* team does not support installation in a VM. If you do choose to try it, we recommend using VMware Workstation Player, and not Oracle VirtualBox for proper emulation of the USB3 controller. 
 
 ## 3rd-party dependencies
 
-The project requires two external dependencies, *glfw* and *libusb-1.0*. The Cmake build environment additionally requires *pkg-config*.
-* **Note**  glfw3 is only required if you plan to build the example code, not for the *librealsense* core library.
+* **Note:** On Ubuntu 16.04 LTS, make sure you have git and cmake installed: `sudo apt-get install git cmake`
 
 **Important:** Several scripts below invoke `wget, git, add-apt-repository` which may be blocked by router settings or a firewall. Infrequently, apt-get mirrors or repositories may also timeout. For *librealsense* users behind an enterprise firewall, configuring the system-wide Ubuntu proxy generally resolves most timeout issues.
 
@@ -24,10 +23,11 @@ The project requires two external dependencies, *glfw* and *libusb-1.0*. The Cma
 
 2. Install the packages required for *librealsense* build:
   * *libusb-1.0*, *pkg-config* and *libgtk-3*: `sudo apt-get install libusb-1.0-0-dev pkg-config libgtk-3-dev`.
+  * **Note:** glfw3 and gtk is only required if you plan to build the example code, not for the *librealsense* core library.
 
   * *glfw3*:
-    * For Ubuntu 16.04 install glfw3 via `sudo apt-get install libglfw3-dev`
-    * For Ubuntu 14.04 use `./scripts/install_glfw3.sh`
+    * On Ubuntu 16.04 install glfw3 via `sudo apt-get install libglfw3-dev`
+    * On Ubuntu 14.04 or when running of Ubuntu 16.04 live-disk, please use `./scripts/install_glfw3.sh`
 
 3. Library Build Process<br />
   *librealsense* employs CMake as a cross-platform build and project management system.
@@ -50,6 +50,7 @@ The project requires two external dependencies, *glfw* and *libusb-1.0*. The Cma
   **Tip:** Use *`make -jX`* for parallel compilation, where *`X`* stands for the number of CPU cores available:<br />  `sudo make uninstall && make clean && make -j8 && sudo make install`<br />
   This enhancement will significantly improve build time. The side-effect, however, is that it may cause a low-end platform to hang randomly<br />
   **Note:** Linux build configuration is presently configured to use the V4L2 backend by default.<br />
+  **Note:** If you encounter the following error during compilation `gcc: internal compiler error` it might indicate that you do not have enough memory or swap space on your machine. Try closing memory consuming applications, and if you are running inside a VM increase available RAM to at least 2 GB.
 
 4. Install IDE (Optional):
     We use QtCreator as an IDE for Linux development on Ubuntu    
