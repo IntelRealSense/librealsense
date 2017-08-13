@@ -286,6 +286,8 @@ namespace librealsense
                 if (_mapped.get() != other_frame->get_stream().get())
                 {
                     _mapped = other_frame->get_stream();
+                    _mapped_intrinsics_ptr = nullptr;
+                    _extrinsics_ptr = nullptr;
                 }
 
                 if (!_mapped_intrinsics_ptr)
@@ -323,7 +325,20 @@ namespace librealsense
                 auto vid_frame = depth.as<rs2::video_frame>();
                 float2* tex_ptr = pframe->get_texture_coordinates();
 
-                if (_extrinsics_ptr && _mapped_intrinsics_ptr)
+                rs2_intrinsics mapped_intr;
+                rs2_extrinsics extr;
+                bool map_texture = false;
+                {
+                    std::lock_guard<std::mutex> lock(_mutex);
+                    if (_extrinsics_ptr && _mapped_intrinsics_ptr)
+                    {
+                        mapped_intr = *_mapped_intrinsics_ptr;
+                        extr = *_extrinsics_ptr;
+                        map_texture = true;
+                    }
+                }
+
+                if (map_texture)
                 {
                     for (int y = 0; y < vid_frame.get_height(); ++y)
                     {
@@ -331,8 +346,8 @@ namespace librealsense
                         {
                             if (points->z)
                             {
-                                auto trans = transform(_extrinsics_ptr, *points);
-                                auto tex_xy = project_to_texcoord(_mapped_intrinsics_ptr, trans);
+                                auto trans = transform(&extr, *points);
+                                auto tex_xy = project_to_texcoord(&mapped_intr, trans);
 
                                 *tex_ptr = tex_xy;
                             }
