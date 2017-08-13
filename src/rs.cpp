@@ -805,11 +805,11 @@ void rs2_delete_frame_queue(rs2_frame_queue* queue) try
 }
 NOEXCEPT_RETURN(, queue)
 
-rs2_frame* rs2_wait_for_frame(rs2_frame_queue* queue, rs2_error** error) try
+rs2_frame* rs2_wait_for_frame(rs2_frame_queue* queue, unsigned int timeout_ms, rs2_error** error) try
 {
     VALIDATE_NOT_NULL(queue);
     librealsense::frame_holder fh;
-    if (!queue->queue.dequeue(&fh))
+    if (!queue->queue.dequeue(&fh, timeout_ms))
     {
         throw std::runtime_error("Frame did not arrive in time!");
     }

@@ -4,8 +4,8 @@
 #ifndef LIBREALSENSE_RSUTIL2_HPP
 #define LIBREALSENSE_RSUTIL2_HPP
 
-#include <librealsense/rs2.hpp>
-#include <librealsense/rsutil2.h>
+#include "rs2.hpp"
+#include "rsutil2.h"
 
 #include <map>
 #include <mutex>
@@ -35,7 +35,7 @@ namespace rs2
                 rs2_stream stream;
                 int stream_index;
                 int width, height;
-                rs2_format format; 
+                rs2_format format;
                 int fps;
             };
 
@@ -46,13 +46,13 @@ namespace rs2
 
                 bool operator<(const index_type& other) const
                 {
-                    return std::make_pair(stream, index) < 
+                    return std::make_pair(stream, index) <
                         std::make_pair(other.stream, other.index);
                 }
 
                 bool operator==(const index_type& other) const
                 {
-                    return std::make_pair(stream, index) == 
+                    return std::make_pair(stream, index) ==
                         std::make_pair(other.stream, other.index);
                 }
             };
@@ -313,6 +313,19 @@ namespace rs2
                 return false;
             }
 
+           bool can_enable_stream(Dev dev, rs2_stream stream, int index, int width, int height, rs2_format format, int fps)
+           {
+               Config<Dev> c(*this);
+               c.enable_stream(stream, index, width, height, format, fps);
+               for (auto && kvp : c.map_streams(dev))
+
+                   if (kvp.second.stream_type() == stream && kvp.second.stream_index() == index)
+                       return true;
+
+               auto it = _requests.erase({stream, index});
+               return false;
+
+           }
             multistream open(Dev dev)
             {
                  auto mapping = map_streams(dev);
@@ -421,7 +434,7 @@ namespace rs2
                 return r;
             }
 
-            std::multimap<int, typename Dev::ProfileType> map_streams(Dev dev) const 
+            std::multimap<int, typename Dev::ProfileType> map_streams(Dev dev) const
             {
                 std::multimap<int, typename Dev::ProfileType> out;
                 std::set<index_type> satisfied_streams;
@@ -475,7 +488,7 @@ namespace rs2
                             default: throw std::runtime_error("Unknown preset selected");
                             }
 
-                            for (auto itr = profiles.rbegin(); itr != profiles.rend(); ++itr) 
+                            for (auto itr = profiles.rbegin(); itr != profiles.rend(); ++itr)
                             {
                                 if (itr->stream_type() == kvp.first.stream && itr->stream_index() == kvp.first.index) {
                                     return to_request(typename Dev::ProfileType(*itr));
@@ -508,7 +521,7 @@ namespace rs2
                                 }
                             }
                         }
-                            
+
                     }
                 }
 

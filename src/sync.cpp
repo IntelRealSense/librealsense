@@ -37,6 +37,7 @@ namespace librealsense
                 auto matched = composite->get_frame(i);
                 ss << matched->get_stream()->get_stream_type() << " " << matched->get_frame_number() << ", "<<std::fixed<< matched->get_frame_timestamp()<<" ";
             }
+
             LOG_WARNING(ss.str());
             env.matches.enqueue(std::move(f));
         });
@@ -71,9 +72,10 @@ namespace librealsense
         _callback(std::move(f), env);
     }
 
-    identity_matcher::identity_matcher(stream_id stream)
+    identity_matcher::identity_matcher(stream_id stream, rs2_stream stream_type)
     {
-        _stream = { stream };
+        _stream_id = { stream };
+        _stream_type = { stream_type };
     }
 
     void identity_matcher::dispatch(frame_holder f, syncronization_environment env)
@@ -83,9 +85,13 @@ namespace librealsense
 
     const std::vector<stream_id>& identity_matcher::get_streams() const
     {
-        return  _stream;
+        return  _stream_id;
     }
 
+    const std::vector<rs2_stream>& identity_matcher::get_streams_types() const
+    {
+        return  _stream_type;
+    }
     composite_matcher::composite_matcher(std::vector<std::shared_ptr<matcher>> matchers)
     {
         for (auto&& matcher : matchers)
@@ -98,6 +104,10 @@ namespace librealsense
                 });
                 _matchers[stream] = matcher;
                 _streams.push_back(stream);
+            }
+            for (auto&& stream : matcher->get_streams_types())
+            {
+                _streams_type.push_back(stream);
             }
         }
     }
@@ -115,21 +125,16 @@ namespace librealsense
         }
     }
 
-    void composite_matcher::dispatch(frame_holder f, syncronization_environment env)
-    {
-        auto matcher = find_matcher(f);
-        matcher->dispatch(std::move(f), env);
-    }
-
     std::shared_ptr<matcher> composite_matcher::find_matcher(const frame_holder& frame)
     {
         std::shared_ptr<matcher> matcher;
-        auto stream = frame.frame->get_stream()->get_unique_id();
+        auto stream_id = frame.frame->get_stream()->get_unique_id();
+        auto stream_type = frame.frame->get_stream()->get_stream_type();
 
         auto dev = get_device_from_frame(frame);
         if(dev)
         {
-            matcher = _matchers[stream];
+            matcher = _matchers[stream_id];
             if (!matcher)
             {
                 matcher = dev->create_matcher(frame);
@@ -147,23 +152,30 @@ namespace librealsense
                     }
                     _matchers[stream] = matcher;
                     _streams.push_back(stream);
+
                 }
+                for (auto stream : matcher->get_streams_types())
+                {
+                    _streams_type.push_back(stream);
+                }
+
             }
 
         }
         else
         {
-            matcher = _matchers[stream];
+            matcher = _matchers[stream_id];
             // We don't know what device this frame came from, so just store it under device NULL with ID matcher
             if (!matcher)
             {
-                if(_matchers[stream])
+                if(_matchers[stream_id])
                 {
-                    _frames_queue.erase(_matchers[stream].get());
+                    _frames_queue.erase(_matchers[stream_id].get());
                 }
-                _matchers[stream] = std::make_shared<identity_matcher>(stream);
-                _streams.push_back(stream);
-                matcher = _matchers[stream];
+                _matchers[stream_id] = std::make_shared<identity_matcher>(stream_id, stream_type);
+                _streams.push_back(stream_id);
+                _streams_type.push_back(stream_type);
+                matcher = _matchers[stream_id];
 
                 matcher->set_callback([&](frame_holder f, syncronization_environment env)
                 {
@@ -228,7 +240,6 @@ namespace librealsense
                 else if (is_smaller_than(*frames_arrived[i], *curr_sync))
                 {
 
-
                     old_frames = true;
                     synced_frames.clear();
                     synced_frames.push_back(frames_arrived_matchers[i]);
@@ -273,7 +284,31 @@ namespace librealsense
                     return f1->get_stream()->get_unique_id()> f2->get_stream()->get_unique_id();
                 });
 
+
+                std::stringstream s;
+                s<<"MATCHED: ";
+                for(auto&& f: match)
+                {
+                    auto composite = dynamic_cast<composite_frame*>(f.frame);
+                    if(composite)
+                    {
+                        for (int i = 0; i < composite->get_embedded_frames_count(); i++)
+                        {
+                            auto matched = composite->get_frame(i);
+                            s << matched->get_stream()->get_stream_type()<<" "<<matched->get_frame_timestamp()<<" ";
+                        }
+                    }
+                    else {
+                         s<<f->get_stream()->get_stream_type()<<" ";
+                    }
+                    s<<"\n";
+                    //std::cout<<s.str();
+                    LOG_DEBUG(s.str());
+
+                }
+
                 frame_holder composite = env.source->allocate_composite_frame(std::move(match));
+
 
                 _callback(std::move(composite), env);
             }
@@ -285,11 +320,23 @@ namespace librealsense
         return _streams;
     }
 
-    
+    const std::vector<rs2_stream>& composite_matcher::get_streams_types() const
+    {
+        return _streams_type;
+    }
 
     frame_number_composite_matcher::frame_number_composite_matcher(std::vector<std::shared_ptr<matcher>> matchers)
         :composite_matcher(matchers)
     {
+    }
+
+    void frame_number_composite_matcher::dispatch(frame_holder f, syncronization_environment env)
+    {
+        auto f1 = f.clone();
+        auto matcher = find_matcher(f);
+        _last_arrived[matcher.get()] =f->get_frame_number();
+        matcher->dispatch(std::move(f), env);
+        clean_dead_streams(f1);
     }
 
     bool frame_number_composite_matcher::are_equivalent(frame_holder& a, frame_holder& b)
@@ -300,6 +347,25 @@ namespace librealsense
     {
         return a->get_frame_number() < b->get_frame_number();
     }
+    void frame_number_composite_matcher::clean_dead_streams(frame_holder& f)
+    {
+        std::vector<stream_id> dead_matchers;
+        for(auto m: _matchers)
+        {
+            if(_last_arrived[m.second.get()] && (f->get_frame_number() - _last_arrived[m.second.get()]) > 5)
+            {
+                dead_matchers.push_back(m.first);
+            }
+        }
+
+        for(auto id: dead_matchers)
+        {
+            _frames_queue[_matchers[id].get()].clear();
+            _frames_queue.erase(_matchers[id].get());
+            _matchers.erase(id);
+        }
+    }
+
     bool frame_number_composite_matcher::skip_missing_stream(std::vector<matcher*> synced, matcher* missing)
     {
         frame_holder* synced_frame;
@@ -310,22 +376,6 @@ namespace librealsense
 
         if((*synced_frame)->get_frame_number() - next_expected > 4)
         {
-            _frames_queue.erase(missing);
-            std::vector<stream_id> old_matchers;
-
-            for(auto it = _matchers.begin(); it != _matchers.end(); ++it)
-            {
-                if(it->second.get() == missing)
-                {
-                    old_matchers.push_back(it->first);
-                }
-            }
-            std::for_each(old_matchers.begin(), old_matchers.end(), [&](stream_id id)
-            {
-                _matchers.erase(id);
-            });
-            LOG_INFO(missing << " matcher was removed");
-
             return true;
         }
         return false;
@@ -361,8 +411,12 @@ namespace librealsense
     }
 
     void timestamp_composite_matcher::dispatch(frame_holder f, syncronization_environment env)
-    {
-        composite_matcher::dispatch(std::move(f), env);
+    { 
+        auto matcher = find_matcher(f);
+        _last_arrived[matcher.get()] = std::chrono::duration<double, std::milli>(std::chrono::system_clock::now().time_since_epoch()).count();
+        matcher->dispatch(std::move(f), env);
+        clean_dead_streams(f);
+
     }
 
     void timestamp_composite_matcher::update_next_expected(const frame_holder & f)
@@ -374,6 +428,27 @@ namespace librealsense
 
         _next_expected[matcher.get()] = f.frame->get_frame_timestamp() + gap;
     }
+
+    void timestamp_composite_matcher::clean_dead_streams(frame_holder& f)
+    {
+        std::vector<stream_id> dead_matchers;
+        auto now = std::chrono::duration<double, std::milli>(std::chrono::system_clock::now().time_since_epoch()).count();
+        for(auto m: _matchers)
+        {
+            if(_last_arrived[m.second.get()] && (now - _last_arrived[m.second.get()]) > 500)
+            {
+                dead_matchers.push_back(m.first);
+            }
+        }
+
+        for(auto id: dead_matchers)
+        {
+            _frames_queue[_matchers[id].get()].clear();
+            _frames_queue.erase(_matchers[id].get());
+            _matchers.erase(id);
+        }
+    }
+
     bool timestamp_composite_matcher::skip_missing_stream(std::vector<matcher*> synced, matcher* missing)
     {
         frame_holder* synced_frame;
@@ -385,29 +460,9 @@ namespace librealsense
         //next expected of the missing stream didn't updated yet
         if((*synced_frame)->get_frame_timestamp()> next_expected)
         {
-            //remove matchers that are not relevant
-            if(((*synced_frame)->get_frame_timestamp()- next_expected) > 500)
-            {
-                _frames_queue.erase(missing);
-                std::vector<stream_id> old_matchers;
-
-                for(auto it = _matchers.begin(); it != _matchers.end(); ++it)
-                {
-                    if(it->second.get() == missing)
-                    {
-                        old_matchers.push_back(it->first);
-                    }
-                }
-                std::for_each(old_matchers.begin(), old_matchers.end(), [&](stream_id id)
-                {
-                    _matchers.erase(id);
-                });
-                LOG_INFO(missing << " matcher was removed");
-                return true;
-            }
-
             return false;
         }
+
         return !are_equivalent((*synced_frame)->get_frame_timestamp(), next_expected, (*synced_frame)->get_stream()->get_framerate());
     }
 
