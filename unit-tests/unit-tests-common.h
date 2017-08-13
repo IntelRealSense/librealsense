@@ -80,7 +80,7 @@ inline bool file_exists(const char* filename)
 
 inline bool make_context(const char* id, rs2::context* ctx)
 {
-    rs2::log_to_console(RS2_LOG_SEVERITY_INFO);
+    rs2::log_to_file(RS2_LOG_SEVERITY_DEBUG);
 
     static std::map<std::string, int> _counters;
 
@@ -125,7 +125,7 @@ inline bool make_context(const char* id, rs2::context* ctx)
     {
         if (record)
         {
-            *ctx = rs2::recording_context(base_filename, section, RS2_RECORDING_MODE_BLANK_FRAMES);
+            *ctx = rs2::recording_context(base_filename, section);
         }
         else if (playback)
         {

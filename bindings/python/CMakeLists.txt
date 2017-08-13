@@ -38,3 +38,4 @@ set(RAW_RS_HPP ../../src/backend.h ../../src/win/win-helpers.h ../../src/win/win
 pybind11_add_module(pybackend2 ${RAW_RS_CPP} ${RAW_RS_HPP})
 target_link_libraries(pybackend2 ${LIBUSB1_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
 set_target_properties(pybackend2 PROPERTIES FOLDER Bindings)
+include_directories(rs-pybackend2 ../../include)
