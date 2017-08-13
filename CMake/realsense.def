@@ -137,6 +137,7 @@ EXPORTS
     rs2_clone_stream_profile
 
     rs2_allocate_synthetic_video_frame
+    rs2_allocate_composite_frame
     rs2_synthetic_frame_ready
     rs2_create_processing_block
     rs2_start_processing

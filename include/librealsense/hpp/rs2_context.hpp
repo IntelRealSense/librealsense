@@ -136,7 +136,7 @@ namespace rs2
         /**
          * Creates a device from a RealSense file
          *
-         * On successful load, the device will be appended to the context and a devices_changed event would be triggered
+         * On successful load, the device will be appended to the context and a devices_changed event triggered
          * @param file  Path to a RealSense File
          * @return A playback device matching the given file
          */
