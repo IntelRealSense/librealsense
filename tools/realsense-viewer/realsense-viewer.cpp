@@ -495,7 +495,7 @@ int main(int, char**) try
 
                 pos = ImGui::GetCursorPos();
                 ImGui::PushStyleColor(ImGuiCol_Button, sensor_header_light_blue);
-                ImGui::Columns(2, "DeviceInfo", false);
+                //ImGui::Columns(2, "DeviceInfo", false);
                 ImGui::SetCursorPos({ 8, pos.y + 14 });
                 if (dev_model.is_recording)
                 {
@@ -518,10 +518,10 @@ int main(int, char**) try
 
                 label = to_string() << dev_model.dev.get_info(RS2_CAMERA_INFO_NAME);
                 ImGui::Text(label.c_str());
-                ImGui::NextColumn();
-                ImGui::SetCursorPos({ ImGui::GetCursorPosX(), pos.y + 14 });
-                label = to_string() << "S/N: " << (dev_model.dev.supports(RS2_CAMERA_INFO_SERIAL_NUMBER) ? dev_model.dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER) : "Unknown");
-                ImGui::Text(label.c_str());
+                //ImGui::NextColumn();
+//                ImGui::SetCursorPos({ ImGui::GetCursorPosX(), pos.y + 14 });
+//                label = to_string() << "S/N: " << (dev_model.dev.supports(RS2_CAMERA_INFO_SERIAL_NUMBER) ? dev_model.dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER) : "Unknown");
+//                ImGui::Text(label.c_str());
 
                 ImGui::Columns(1);
                 ImGui::SetCursorPos({ panel_width - 50, pos.y + 5 + (header_h - panel_y) / 2 });

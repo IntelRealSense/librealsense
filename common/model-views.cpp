@@ -47,7 +47,7 @@ void imgui_easy_theming(ImFont*& font_14, ImFont*& font_18)
         ImFontConfig config_words;
         config_words.OversampleV = OVERSAMPLE;
         config_words.OversampleH = OVERSAMPLE;
-        font_14 = io.Fonts->AddFontFromMemoryCompressedTTF(karla_regular_compressed_data, karla_regular_compressed_size, 16.f);
+        font_14 = io.Fonts->AddFontFromMemoryCompressedTTF(karla_regular_compressed_data, karla_regular_compressed_size, 15.f);
 
         ImFontConfig config_glyphs;
         config_glyphs.MergeMode = true;
@@ -62,7 +62,7 @@ void imgui_easy_theming(ImFont*& font_14, ImFont*& font_18)
 
     style.Colors[ImGuiCol_WindowBg] = dark_window_background;
     style.Colors[ImGuiCol_Border] = black;
-    style.Colors[ImGuiCol_BorderShadow] = black;
+    style.Colors[ImGuiCol_BorderShadow] = transparent;
     style.Colors[ImGuiCol_FrameBg] = dark_window_background;
     style.Colors[ImGuiCol_ScrollbarBg] = scrollbar_bg;
     style.Colors[ImGuiCol_ScrollbarGrab] = scrollbar_grab;
@@ -251,6 +251,7 @@ namespace rs2
                     std::string txt = to_string() << rs2_option_to_string(opt) << ":";
                     auto col_id = id + "columns";
                     ImGui::Columns(2, col_id.c_str(), false);
+                    ImGui::SetColumnOffset(1, 120);
                     ImGui::Text("%s", txt.c_str());
                     if (ImGui::IsItemHovered() && desc)
                     {
@@ -669,6 +670,7 @@ namespace rs2
         };
 
         ImGui::Columns(2, label.c_str(), false);
+        ImGui::SetColumnOffset(1, 135);
         // Draw combo-box with all resolution options for this device
         auto res_chars = get_string_pointers(resolutions);
         ImGui::Text("Resolution:");
@@ -1540,19 +1542,19 @@ namespace rs2
 
         ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
         ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
-        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, { 3, 3 });
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, { 5, 5 });
         ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 1);
 
         ImGui::PushStyleColor(ImGuiCol_Button, header_window_bg);
         ImGui::PushStyleColor(ImGuiCol_ButtonHovered, header_window_bg);
         ImGui::PushStyleColor(ImGuiCol_ButtonActive, header_window_bg);
         ImGui::PushStyleColor(ImGuiCol_WindowBg, from_rgba(0x1b, 0x21, 0x25, 200));
-        ImGui::SetNextWindowPos({ stream_rect.x + stream_rect.w - 255, stream_rect.y + top_bar_height + 5 });
-        ImGui::SetNextWindowSize({ 250, 60 });
+        ImGui::SetNextWindowPos({ stream_rect.x + stream_rect.w - 265, stream_rect.y + top_bar_height + 5 });
+        ImGui::SetNextWindowSize({ 260, 65 });
         ImGui::Begin("3D Info box", nullptr, flags);
 
         ImGui::Columns(2, 0, false);
-        ImGui::SetColumnOffset(1, 100);
+        ImGui::SetColumnOffset(1, 90);
 
         ImGui::Text("Rotate Camera:");
         ImGui::NextColumn();
@@ -1651,7 +1653,7 @@ namespace rs2
 
         ImGui::PushTextWrapPos(stream_rect.w - 32 * num_of_buttons - 5);
         ImGui::Text("%s", label.c_str());
-        if (ImGui::IsItemHovered())
+        if (tooltip != label && ImGui::IsItemHovered())
             ImGui::SetTooltip("%s", tooltip.c_str());
         ImGui::PopTextWrapPos();
 
