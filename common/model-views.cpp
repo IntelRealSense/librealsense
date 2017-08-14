@@ -136,7 +136,7 @@ namespace rs2
             out << "ply\n";
             out << "format binary_little_endian 1.0\n" /*"format ascii 1.0\n"*/;
             out << "comment pointcloud saved from Realsense Viewer\n";
-            if (texture) out << "comment TextureFile " << get_file_name(texfname) << "\n";
+            //if (texture) out << "comment TextureFile " << get_file_name(texfname) << "\n";
             out << "element vertex " << new_vertices.size() << "\n";
             out << "property float" << sizeof(float) * 8 << " x\n";
             out << "property float" << sizeof(float) * 8 << " y\n";
