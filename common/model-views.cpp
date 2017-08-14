@@ -1500,14 +1500,16 @@ namespace rs2
         //}
         //ImGui::PopItemWidth();
 
-        if (selected_depth_source_uid >= 0)
-            pc.push_frame(streams[selected_depth_source_uid].texture->get_last_frame());
+        if (selected_depth_source_uid >= 0){
+            auto depth = streams[selected_depth_source_uid].texture->get_last_frame();
+            if (depth) pc.push_frame(depth);
+        }
 
         frame tex;
         if (selected_tex_source_uid >= 0)
         {
             tex = streams[selected_tex_source_uid].texture->get_last_frame();
-            pc.update_texture(tex);
+            if (tex) pc.update_texture(tex);
         }
 
         ImGui::SetCursorPos({ stream_rect.w - 32 * num_of_buttons - 5, 0 });
@@ -1838,15 +1840,15 @@ namespace rs2
 
             ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
             ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
-            ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, { 3, 3 });
+            ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, { 5, 5 });
             ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 1);
 
             ImGui::PushStyleColor(ImGuiCol_Button, header_window_bg);
             ImGui::PushStyleColor(ImGuiCol_ButtonHovered, header_window_bg);
             ImGui::PushStyleColor(ImGuiCol_ButtonActive, header_window_bg);
             ImGui::PushStyleColor(ImGuiCol_WindowBg, from_rgba(9, 11, 13, 100));
-            ImGui::SetNextWindowPos({ stream_rect.x + stream_rect.w - 255, stream_rect.y + 5 });
-            ImGui::SetNextWindowSize({ 250, 40 });
+            ImGui::SetNextWindowPos({ stream_rect.x + stream_rect.w - 275, stream_rect.y + 5 });
+            ImGui::SetNextWindowSize({ 270, 45 });
             std::string label = to_string() << "Stream Info of " << profile.unique_id();
             ImGui::Begin(label.c_str(), nullptr, flags);
 
@@ -1868,14 +1870,10 @@ namespace rs2
             ImGui::Text("%s", label.c_str());
 
             ImGui::Columns(2, 0, false);
-            ImGui::SetColumnOffset(1, 100);
+            ImGui::SetColumnOffset(1, 160);
             label = to_string() << "Timestamp: " << std::fixed << std::setprecision(3) << timestamp;
             ImGui::Text("%s", label.c_str());
             ImGui::NextColumn();
-
-            label = "Domain:";
-            ImGui::Text("%s", label.c_str());
-            ImGui::SameLine();
 
             label = to_string() << rs2_timestamp_domain_to_string(timestamp_domain);
 
