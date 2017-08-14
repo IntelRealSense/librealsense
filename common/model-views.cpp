@@ -280,15 +280,18 @@ namespace rs2
                 {
                     std::string txt = to_string() << rs2_option_to_string(opt) << ":";
                     auto col_id = id + "columns";
-                    ImGui::Columns(2, col_id.c_str(), false);
-                    ImGui::SetColumnOffset(1, 120);
+                    //ImGui::Columns(2, col_id.c_str(), false);
+                    //ImGui::SetColumnOffset(1, 120);
+
+
+
                     ImGui::Text("%s", txt.c_str());
                     if (ImGui::IsItemHovered() && desc)
                     {
                         ImGui::SetTooltip("%s", desc);
                     }
 
-                    ImGui::NextColumn();
+                    ImGui::SameLine(); ImGui::SetCursorPosX(125);
 
                     ImGui::PushItemWidth(-1);
 
@@ -699,13 +702,16 @@ namespace rs2
                 ImGui::SetTooltip("Can't modify while streaming");
         };
 
-        ImGui::Columns(2, label.c_str(), false);
-        ImGui::SetColumnOffset(1, 135);
+        //ImGui::Columns(2, label.c_str(), false);
+        //ImGui::SetColumnOffset(1, 135);
+        auto col0 = ImGui::GetCursorPosX();
+        auto col1 = 135;
+
         // Draw combo-box with all resolution options for this device
         auto res_chars = get_string_pointers(resolutions);
         ImGui::Text("Resolution:");
         streaming_tooltip();
-        ImGui::NextColumn();
+        ImGui::SameLine(); ImGui::SetCursorPosX(col1);
 
         label = to_string() << "##" << dev.get_info(RS2_CAMERA_INFO_NAME)
             << s.get_info(RS2_CAMERA_INFO_NAME) << " resolution";
@@ -723,7 +729,7 @@ namespace rs2
             ImGui::PopStyleColor();
             ImGui::PopItemWidth();
         }
-        ImGui::NextColumn();
+        ImGui::SetCursorPosX(col0);
 
         // FPS
         if (show_single_fps_list)
@@ -731,7 +737,7 @@ namespace rs2
             auto fps_chars = get_string_pointers(shared_fpses);
             ImGui::Text("Frame Rate (FPS):");
             streaming_tooltip();
-            ImGui::NextColumn();
+            ImGui::SameLine(); ImGui::SetCursorPosX(col1);
 
             label = to_string() << "##" << dev.get_info(RS2_CAMERA_INFO_NAME)
                 << s.get_info(RS2_CAMERA_INFO_NAME) << " fps";
@@ -751,14 +757,14 @@ namespace rs2
                 ImGui::PopItemWidth();
             }
 
-            ImGui::NextColumn();
+            ImGui::SetCursorPosX(col0);
         }
 
         if (!streaming)
         {
             ImGui::Text("Available Streams:");
-            ImGui::NextColumn();
-            ImGui::NextColumn();
+//            ImGui::NextColumn();
+//            ImGui::NextColumn();
         }
 
         // Draw combo-box with all format options for current device
@@ -782,12 +788,12 @@ namespace rs2
                     label = to_string() << stream_display_names[f.first] << "##" << f.first;
                     ImGui::Checkbox(label.c_str(), &stream_enabled[f.first]);
                 }
-
-                ImGui::NextColumn();
             }
 
             if (stream_enabled[f.first])
             {
+                ImGui::SameLine(); ImGui::SetCursorPosX(col1);
+
                 //if (show_single_fps_list) ImGui::SameLine();
 
                 label = to_string() << "##" << dev.get_info(RS2_CAMERA_INFO_NAME)
@@ -798,7 +804,7 @@ namespace rs2
                 {
                     ImGui::Text("Format:");
                     streaming_tooltip();
-                    ImGui::NextColumn();
+                    ImGui::SameLine(); ImGui::SetCursorPosX(col1);
                 }
 
                 if (streaming)
@@ -815,8 +821,7 @@ namespace rs2
                     ImGui::PopStyleColor();
                     ImGui::PopItemWidth();
                 }
-                ImGui::NextColumn();
-
+                ImGui::SetCursorPosX(col0);
                 // FPS
                 // Draw combo-box with all FPS options for this device
                 if (!show_single_fps_list && !fpses_per_stream[f.first].empty() && stream_enabled[f.first])
@@ -824,7 +829,7 @@ namespace rs2
                     auto fps_chars = get_string_pointers(fpses_per_stream[f.first]);
                     ImGui::Text("Frame Rate (FPS):");
                     streaming_tooltip();
-                    ImGui::NextColumn();
+                    ImGui::SameLine(); ImGui::SetCursorPosX(col1);
 
                     label = to_string() << s.get_info(RS2_CAMERA_INFO_NAME)
                         << s.get_info(RS2_CAMERA_INFO_NAME)
@@ -844,12 +849,12 @@ namespace rs2
                         ImGui::PopStyleColor();
                         ImGui::PopItemWidth();
                     }
-                    ImGui::NextColumn();
+                    ImGui::SetCursorPosX(col0);
                 }
             }
             else
             {
-                ImGui::NextColumn();
+                //ImGui::NextColumn();
             }
 
             //if (streaming && rgb_rotation_btn && ImGui::Button("Flip Stream Orientation", ImVec2(160, 20)))
@@ -860,7 +865,7 @@ namespace rs2
             //}
         }
 
-        ImGui::Columns(1);
+        ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
     }
 
     bool subdevice_model::is_selected_combination_supported()
@@ -2699,14 +2704,14 @@ namespace rs2
                 if (!is_advanced_mode)
                 {
                     // TODO: Why are we showing the tab then??
-                    ImGui::TextColored(ImVec4{ 1.0f, 0.0f, 0.0f, 1.0f }, "Selected device does not offer\nany advanced settings");
+                    ImGui::TextColored(redish, "Selected device does not offer\nany advanced settings");
                 }
                 else
                 {
                     auto advanced = dev.as<advanced_mode>();
                     if (advanced.is_enabled())
                     {
-                        if (ImGui::Button("Disable Advanced Mode", ImVec2{ 180, 0 }))
+                        if (ImGui::Button("Disable Advanced Mode", ImVec2{ 226, 0 }))
                         {
                             //if (yes_no_dialog()) // TODO
                             //{
@@ -2722,7 +2727,7 @@ namespace rs2
                     }
                     else
                     {
-                        if (ImGui::Button("Enable Advanced Mode", ImVec2{ 180, 0 }))
+                        if (ImGui::Button("Enable Advanced Mode", ImVec2{ 226, 0 }))
                         {
                             //if (yes_no_dialog()) // TODO
                             //{
@@ -2734,13 +2739,13 @@ namespace rs2
                         {
                             ImGui::SetTooltip("Advanced mode is a persistent camera state unlocking calibration formats and depth generation controls\nYou can always reset the camera to factory defaults by disabling advanced mode");
                         }
-                        ImGui::TextColored(ImVec4{ 1.0f, 0.0f, 0.0f, 1.0f }, "Device is not in advanced mode!\nTo access advanced functionality\nclick \"Enable Advanced Mode\"");
+                        ImGui::TextColored(redish, "Device is not in advanced mode!\nTo access advanced functionality\nclick \"Enable Advanced Mode\"");
                     }
                 }
             }
             catch (...)
             {
-                // TODO
+                ImGui::TextColored(redish, "Couldn't fetch Advanced Mode settings");
             }
 
             ImGui::TreePop();

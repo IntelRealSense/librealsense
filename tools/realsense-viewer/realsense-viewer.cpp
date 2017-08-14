@@ -763,7 +763,7 @@ int main(int, char**) try
 
             auto pos = ImGui::GetCursorScreenPos();
             auto h = ImGui::GetWindowHeight();
-            if (h > pos.y)
+            if (h > pos.y - panel_y)
             {
                 ImGui::GetWindowDrawList()->AddLine({ pos.x,pos.y }, { pos.x + panel_width,pos.y }, ImColor(from_rgba(0, 0, 0, 0xff)));
                 ImRect bb(pos, ImVec2(pos.x + ImGui::GetContentRegionAvail().x, pos.y + ImGui::GetContentRegionAvail().y));
