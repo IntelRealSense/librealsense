@@ -1,40 +1,24 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2015 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2015-2017 Intel Corporation. All Rights Reserved.
 
-///////////////////
-// cpp-headless  //
-///////////////////
+#include <librealsense/rs2.hpp> // Include RealSense Cross Platform API
 
-// This sample captures 30 frames and writes the last frame to disk.
-// It can be useful for debugging an embedded system with no display.
+#include <fstream>              // File IO
+#include <iostream>             // Terminal IO
+#include <sstream>              // Stringstreams
 
-#include <librealsense/rs2.hpp>
-#include <librealsense/rsutil2.hpp>
-#include "example.hpp"
-
-#include <cstdio>
-#include <stdint.h>
-#include <vector>
-#include <limits>
-#include <iostream>
-#include <fstream>
-
+// 3rd party header for writing png files
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb_image_write.h"
-#include <sstream>
 
-using namespace rs2;
-using namespace std;
-
-
-void metadata_to_csv(const frame& frm, const std::string& filename)
+void metadata_to_csv(const rs2::frame& frm, const std::string& filename)
 {
-    ofstream    csv;
+    std::ofstream csv;
 
     csv.open(filename);
 
-    cout << "Writing metadata to " << filename << endl;
-    csv << "Stream," << rs2_stream_to_string(frm.get_stream_type()) << "\nMetadata Attribute,Value\n";
+//    std::cout << "Writing metadata to " << filename << endl;
+    csv << "Stream," << rs2_stream_to_string(frm.get_profile().stream_type()) << "\nMetadata Attribute,Value\n";
 
     // Record all the available metadata attributes
     for (size_t i = 0; i < RS2_FRAME_METADATA_COUNT; i++)
@@ -49,125 +33,57 @@ void metadata_to_csv(const frame& frm, const std::string& filename)
     csv.close();
 }
 
-
-int main()
+// This sample captures 30 frames and writes the last frame to disk.
+// It can be useful for debugging an embedded system with no display.
+int main(int argc, char * argv[]) try
 {
+    using namespace rs2;
+
     log_to_console(RS2_LOG_SEVERITY_WARN);
 
-    auto succeed = false;
+    // Declare depth colorizer for pretty visualization of depth data
+    colorizer color_map;
 
-    context ctx;
-    util::device_hub hub(ctx);
-    while(!succeed)
+    // Declare RealSense pipeline, encapsulating the actual device and sensors
+    pipeline pipe;
+    // Start streaming with default recommended configuration
+    pipe.start();
+
+    // Capture 30 frames to give autoexposure, etc. a chance to settle
+    for (auto i = 0; i < 30; ++i) pipe.wait_for_frames();
+    
+    // Wait for the next set of frames from the camera. Now that autoexposure, etc.
+    // has settled, we will write these to disk
+    for (auto&& frame : pipe.wait_for_frames())
     {
-        try
+        auto stream = frame.get_profile().stream_type();
+        if (frame.is<video_frame>())
         {
-            auto dev = hub.wait_for_device();
+            // The colorizer will color the depth frame
+            // but pass everything else through untouched
+            auto f = color_map.colorize(frame);
 
-            printf("\nUsing device 0, an %s\n", dev.get_info(RS2_CAMERA_INFO_NAME));
-            printf("    Serial number: %s\n", dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER));
-            printf("    Firmware version: %s\n", dev.get_info(RS2_CAMERA_INFO_FIRMWARE_VERSION));
+            // Write images to disk
+            std::stringstream png_file;
+            png_file << "rs-headless-output-" << rs2_stream_to_string(stream) << ".png";
+            stbi_write_png(png_file.str().c_str(), f.get_width(), f.get_height(),
+                           f.get_bytes_per_pixel(), f.get_data(), f.get_stride_in_bytes());
 
-            util::config config;
-            config.enable_all(preset::best_quality);
-            auto stream = config.open(dev);
-
-            syncer sync;
-            /* activate video streaming */
-            stream.start(sync);
-
-            /* Capture 30 frames to give autoexposure, etc. a chance to settle */
-
-            for (auto i = 0; i < 30; ++i)
-            {
-                auto set = sync.wait_for_frames();
-                if(set.size()==0)
-                {
-                    break;
-                }
-            }
-            if(!hub.is_connected(dev))
-                continue;
-
-            /* Retrieve data from all the enabled streams */
-            map<rs2_stream, frame> frames_by_stream;
-            for (auto&& frame : sync.wait_for_frames())
-            {
-                auto stream_type = frame.get_stream_type();
-                frames_by_stream[stream_type] = move(frame);
-            }
-
-            if(frames_by_stream.size()==0 && !hub.is_connected(dev))
-                continue;
-
-            succeed = true;
-
-            /* Store captured frames into current directory */
-            for (auto&& kvp : frames_by_stream)
-            {
-                auto stream_type = kvp.first;
-                auto& frame = kvp.second;
-
-                if (auto vid_frame = frame.as<video_frame>())
-                {
-                    stringstream ss;
-                    ss << "rs-headless-output-" << stream_type << ".png";
-
-                    cout << "Writing " << ss.str().data() << ", " << vid_frame.get_width() << " x " << vid_frame.get_height() << " pixels"   << endl;
-
-                    auto pixels = vid_frame.get_data();
-                    auto bpp = vid_frame.get_bytes_per_pixel();
-                    vector<uint8_t> coloredDepth;
-
-                    // Create nice color image from depth data
-                    if (stream_type == RS2_STREAM_DEPTH)
-                    {
-                        /* Transform Depth range map into color map */
-                        const auto depth_size = vid_frame.get_width() * vid_frame.get_height() * 3;
-                        coloredDepth.resize(depth_size);
-
-                        /* Encode depth data into color image */
-                        make_depth_histogram(classic, coloredDepth.data(),
-                                             static_cast<const uint16_t*>(vid_frame.get_data()),
-                                             vid_frame.get_width(), vid_frame.get_height(), true, 0, 0);
-
-                        pixels = coloredDepth.data();
-                        bpp = 3;
-                    }
-
-                    stbi_write_png(ss.str().data(),
-                                   vid_frame.get_width(), vid_frame.get_height(),
-                                   bpp,
-                                   pixels,
-                                   vid_frame.get_width() * bpp );
-
-                    /* Record per-frame metadata for UVC streams*/
-                    std::string metadata_file_name = rs2::to_string() << "cpp-headless-output-" << stream_type << "-metadata.csv";
-                    metadata_to_csv(frame, metadata_file_name);
-                }
-                else
-                {
-                    cout << "Skipping frame of stream " << rs2_stream_to_string(frame.get_stream_type()) << " because it is not a video frame...";
-                }
-            }
-
-            frames_by_stream.clear();
-
-
+            // Record per-frame metadata for UVC streams
+            std::stringstream csv_file;
+            csv_file << "rs-headless-output-" << rs2_stream_to_string(stream)
+                     << "-metadata.csv";
+            metadata_to_csv(f, csv_file.str());
         }
-        catch(const error & e)
-        {
-            cerr << "RealSense error calling " << e.get_failed_function() << "(" << e.get_failed_args() << "):\n    " << e.what() << endl;
-            return EXIT_FAILURE;
-        }
-        catch(const exception & e)
-        {
-            cerr << e.what() << endl;
-            return EXIT_FAILURE;
-        }
-
-        printf("wrote frames to current working directory.\n");
     }
-    EXIT_SUCCESS;
-}
 
+    return EXIT_SUCCESS;
+}
+catch(const rs2::error & e)
+{
+    std::cerr << "RealSense error calling " << e.get_failed_function() << "(" << e.get_failed_args() << "):\n    " << e.what() << std::endl;
+}
+catch(const std::exception & e)
+{
+    std::cerr << e.what() << std::endl;
+}

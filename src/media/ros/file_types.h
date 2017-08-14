@@ -11,8 +11,9 @@
 
 namespace librealsense
 {
-
-    namespace file_types
+    //TODO: Ziv, rename file to "file_format" and merge with topic.h
+    //Automate convert functions
+    namespace file_types 
     {
 
         /**
@@ -43,15 +44,6 @@ namespace librealsense
             jpeg = 4,
             png = 5
         };
-
-        /**
-        * @brief Stream extrinsics
-        */
-        struct stream_extrinsics
-        {
-            rs2_extrinsics extrinsics_data;     /**< Represents the extrinsics data*/
-            uint64_t reference_point_id;    /**< Unique identifier of the extrinsics reference point, used as a key to which different extinsics are calculated*/
-        };
     }
 
     namespace conversions
@@ -60,37 +52,23 @@ namespace librealsense
         {
             switch (source)
             {
-            case rs2_format::RS2_FORMAT_Z16:
-                target = sensor_msgs::image_encodings::MONO16; break;
-            case rs2_format::RS2_FORMAT_DISPARITY16:
-                target = file_types::additional_image_encodings::DISPARITY16; break;
-            case rs2_format::RS2_FORMAT_XYZ32F:
-                target = file_types::additional_image_encodings::XYZ32F; break;
-            case rs2_format::RS2_FORMAT_YUYV:
-                target = file_types::additional_image_encodings::YUYV; break;
-            case rs2_format::RS2_FORMAT_RGB8:
-                target = sensor_msgs::image_encodings::RGB8; break;
-            case rs2_format::RS2_FORMAT_BGR8:
-                target = sensor_msgs::image_encodings::BGR8; break;
-            case rs2_format::RS2_FORMAT_RGBA8:
-                target = sensor_msgs::image_encodings::RGBA8; break;
-            case rs2_format::RS2_FORMAT_BGRA8:
-                target = sensor_msgs::image_encodings::BGRA8; break;
-            case rs2_format::RS2_FORMAT_Y8:
-                target = sensor_msgs::image_encodings::TYPE_8UC1; break;
-            case rs2_format::RS2_FORMAT_Y16:
-                target = sensor_msgs::image_encodings::TYPE_16UC1; break;
-            case rs2_format::RS2_FORMAT_RAW8:
-                target = sensor_msgs::image_encodings::MONO8; break;
-            case rs2_format::RS2_FORMAT_RAW10:
-                target = file_types::additional_image_encodings::RAW10; break;
-            case rs2_format::RS2_FORMAT_RAW16:
-                target = file_types::additional_image_encodings::RAW16; break;
-            case rs2_format::RS2_FORMAT_UYVY:
-                target = sensor_msgs::image_encodings::YUV422; break;
-            case RS2_FORMAT_MOTION_RAW      : target = "RS2_FORMAT_MOTION_RAW"     ; break;
-            case RS2_FORMAT_MOTION_XYZ32F   : target = "RS2_FORMAT_MOTION_XYZ32F"  ; break;
-            case RS2_FORMAT_GPIO_RAW        : target = "RS2_FORMAT_GPIO_RAW"       ; break;
+            case rs2_format::RS2_FORMAT_Z16           :target = sensor_msgs::image_encodings::MONO16; break;
+            case rs2_format::RS2_FORMAT_DISPARITY16   :target = file_types::additional_image_encodings::DISPARITY16; break;
+            case rs2_format::RS2_FORMAT_XYZ32F        :target = file_types::additional_image_encodings::XYZ32F; break;
+            case rs2_format::RS2_FORMAT_YUYV          :target = file_types::additional_image_encodings::YUYV; break;
+            case rs2_format::RS2_FORMAT_RGB8          :target = sensor_msgs::image_encodings::RGB8; break;
+            case rs2_format::RS2_FORMAT_BGR8          :target = sensor_msgs::image_encodings::BGR8; break;
+            case rs2_format::RS2_FORMAT_RGBA8         :target = sensor_msgs::image_encodings::RGBA8; break;
+            case rs2_format::RS2_FORMAT_BGRA8         :target = sensor_msgs::image_encodings::BGRA8; break;
+            case rs2_format::RS2_FORMAT_Y8            :target = sensor_msgs::image_encodings::TYPE_8UC1; break;
+            case rs2_format::RS2_FORMAT_Y16           :target = sensor_msgs::image_encodings::TYPE_16UC1; break;
+            case rs2_format::RS2_FORMAT_RAW8          :target = sensor_msgs::image_encodings::MONO8; break;
+            case rs2_format::RS2_FORMAT_RAW10         :target = file_types::additional_image_encodings::RAW10; break;
+            case rs2_format::RS2_FORMAT_RAW16         :target = file_types::additional_image_encodings::RAW16; break;
+            case rs2_format::RS2_FORMAT_UYVY          :target = sensor_msgs::image_encodings::YUV422; break;
+            case RS2_FORMAT_MOTION_RAW                :target = "RS2_FORMAT_MOTION_RAW"     ; break;
+            case RS2_FORMAT_MOTION_XYZ32F             :target = "RS2_FORMAT_MOTION_XYZ32F"  ; break;
+            case RS2_FORMAT_GPIO_RAW                  :target = "RS2_FORMAT_GPIO_RAW"       ; break;
             default: throw std::runtime_error(std::string("Failed to convert librealsense format to matching image encoding (") + std::to_string(source) + std::string(")"));
             }
         }
@@ -163,14 +141,10 @@ namespace librealsense
         {
             switch (source)
             {
-            case file_types::h264:
-                target = "h264"; break;
-            case file_types::lz4:
-                target = "lz4"; break;
-            case file_types::jpeg:
-                target = "jpeg"; break;
-            case file_types::png:
-                target = "png"; break;
+            case file_types::h264:   target = "h264"; break;
+            case file_types::lz4:    target = "lz4"; break;
+            case file_types::jpeg:   target = "jpeg"; break;
+            case file_types::png:    target = "png"; break;
             default: throw std::runtime_error(std::string("Failed to convert librealsense compression_type to matching compression type(") + std::to_string(source) + std::string(")"));
                     
             }
