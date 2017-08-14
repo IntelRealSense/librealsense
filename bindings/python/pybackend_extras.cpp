@@ -4,14 +4,14 @@
 using namespace librealsense;
 
 #define STB_IMAGE_WRITE_IMPLEMENTATION
-#include "../examples/third_party/stb_image_write.h"
+#include "../../third-party/stb_image_write.h"
 
 // 123e4567-e89b-12d3-a456-426655440000
 namespace pybackend2 {
 
-    uvc::guid stoguid(std::string str)
+    platform::guid stoguid(std::string str)
     {
-        uvc::guid g;
+        platform::guid g;
         sscanf(str.c_str(), "%8" SCNx32"-%4" SCNx16"-%4" SCNx16"-%2" SCNx8"%2" SCNx8"-%2"
                             SCNx8"%2" SCNx8"%2" SCNx8"%2" SCNx8"%2" SCNx8"%2" SCNx8,
                &g.data1, &g.data2, &g.data3, g.data4, g.data4+1, g.data4+2,
