@@ -38,11 +38,8 @@ namespace librealsense
 
         sensor_interface& get_sensor(size_t i) override;
         size_t get_sensors_count() const override;
-        const std::string& get_info(rs2_camera_info info) const override;
-        bool supports_info(rs2_camera_info info) const override;
         const sensor_interface& get_sensor(size_t i) const override;
         void hardware_reset() override;
-
         bool extend_to(rs2_extension extension_type, void** ext) override;
         std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;
 
@@ -57,7 +54,7 @@ namespace librealsense
         const std::string& get_file_name() const;
         uint64_t get_position() const;
         signal<playback_device, rs2_playback_status> playback_status_changed;
-        platform::backend_device_group get_device_data() const override {return {}; } //ZIV: what to do?
+        platform::backend_device_group get_device_data() const override;
     private:
         void update_time_base(std::chrono::microseconds base_timestamp);
         std::chrono::microseconds calc_sleep_time(std::chrono::microseconds timestamp) const;
@@ -66,6 +63,8 @@ namespace librealsense
         void try_looping();
         template <typename T> void do_loop(T op);
         std::map<uint32_t, std::shared_ptr<playback_sensor>> create_playback_sensors(const device_snapshot& device_description);
+        void catch_up();
+        void register_device_info(const std::shared_ptr<info_interface>& shared);
     private:
         lazy<std::shared_ptr<dispatcher>> m_read_thread;
         std::shared_ptr<device_serializer::reader> m_reader;
@@ -80,7 +79,6 @@ namespace librealsense
         std::atomic_bool m_real_time;
         device_serializer::nanoseconds m_prev_timestamp;
         std::shared_ptr<context> m_context;
-        void catch_up();
     };
 
     MAP_EXTENSION(RS2_EXTENSION_PLAYBACK, playback_device);

@@ -26,7 +26,17 @@ playback_device::playback_device(std::shared_ptr<context> ctx, std::shared_ptr<d
 
     //Read header and build device from recorded device snapshot
     m_device_description = m_reader->query_device_description();
-
+    auto info_snapshot = m_device_description.get_device_extensions_snapshots().find(RS2_EXTENSION_INFO);
+    if(info_snapshot == nullptr)
+    {
+        throw io_exception("Recorded file does not contain device information");
+    }
+    auto info_api = As<info_interface>(info_snapshot);
+    if (info_api == nullptr)
+    {
+        throw invalid_value_exception("Failed to get info interface from device snapshots");
+    }
+    register_device_info(info_api);
     //Create playback sensor that simulate the recorded sensors
     m_sensors = create_playback_sensors(m_device_description);
 }
@@ -141,22 +151,6 @@ sensor_interface& playback_device::get_sensor(size_t i)
 size_t playback_device::get_sensors_count() const
 {
     return m_sensors.size();
-}
-
-const std::string& playback_device::get_info(rs2_camera_info info) const
-{
-    return std::dynamic_pointer_cast<librealsense::info_interface>(m_device_description.get_device_extensions_snapshots().get_snapshots()[RS2_EXTENSION_INFO ])->get_info(info);
-}
-
-bool playback_device::supports_info(rs2_camera_info info) const
-{
-    auto info_extension = m_device_description.get_device_extensions_snapshots().get_snapshots().at(RS2_EXTENSION_INFO );
-    auto info_api = std::dynamic_pointer_cast<librealsense::info_interface>(info_extension);
-    if(info_api == nullptr)
-    {
-        throw invalid_value_exception("Failed to get info interface");
-    }
-    return info_api->supports_info(info);
 }
 
 const sensor_interface& playback_device::get_sensor(size_t i) const
@@ -282,6 +276,11 @@ void playback_device::set_real_time(bool real_time)
 bool playback_device::is_real_time() const
 {
     return m_real_time;
+}
+
+platform::backend_device_group playback_device::get_device_data() const
+{
+    return {}; //ZIV: what to do?
 }
 
 void playback_device::update_time_base(std::chrono::microseconds base_timestamp)
@@ -465,4 +464,16 @@ uint64_t playback_device::get_position() const
 void playback_device::catch_up()
 {
     m_base_timestamp = std::chrono::microseconds(0);
+}
+
+void playback_device::register_device_info(const std::shared_ptr<info_interface>& info_api)
+{
+    for (int i = 0; i < RS2_CAMERA_INFO_COUNT; ++i)
+    {
+        rs2_camera_info info = static_cast<rs2_camera_info>(i);
+        if (info_api->supports_info(info))
+        {
+            register_info(info, info_api->get_info(info));
+        }
+    }
 }
