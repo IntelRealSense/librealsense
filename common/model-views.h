@@ -472,11 +472,11 @@ namespace rs2
         void show_3dviewer_header(ImFont* font, rs2::rect stream_rect, bool& paused);
 
         void update_3d_camera(const rect& viewer_rect,
-                              const float2& cursor,
-                              const float2& old_cursor,
-                              float wheel);
+                              mouse_info& mouse, bool force = false);
 
         void render_3d_view(const rect& view_rect);
+
+        void gc_streams();
 
         std::map<int, stream_model> streams;
         bool fullscreen = false;

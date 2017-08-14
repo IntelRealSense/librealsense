@@ -95,6 +95,7 @@ int main(int, char**) try
     {
         auto data = reinterpret_cast<user_data*>(glfwGetWindowUserPointer(w));
         data->mouse->mouse_wheel = yoffset;
+        data->mouse->ui_wheel += yoffset;
     });
 
     // TODO: Implement same logic as when doing this from GUI
@@ -207,7 +208,11 @@ int main(int, char**) try
                             for (auto&& dev : devs)
                                 if (get_device_name(dev_model.dev) == get_device_name(dev))
                                     still_around = true;
-                            if (!still_around) device_to_remove = &dev_model;
+                            if (!still_around) {
+                                for (auto&& s : dev_model.subdevices)
+                                    s->streaming = false;
+                                device_to_remove = &dev_model;
+                            }
                         }
                         if (device_to_remove)
                         {
@@ -228,6 +233,7 @@ int main(int, char**) try
                 }
             }
         }
+
         bool update_read_only_options = false;
         auto now = std::chrono::high_resolution_clock::now();
         auto duration = std::chrono::duration<double, std::milli>(now - last_time_point).count();
@@ -242,8 +248,20 @@ int main(int, char**) try
         int w, h;
         glfwGetWindowSize(window, &w, &h);
 
+
+        const float panel_width = 320.f;
+        const float panel_y = 44.f;
+        const float default_log_h = 80.f;
+
+        auto output_height = (viewer_model.is_output_collapsed ? default_log_h : 20);
+
+        rect viewer_rect = { panel_width, panel_y, w - panel_width, h - panel_y - output_height };
+
         glMatrixMode(GL_PROJECTION);
         glLoadIdentity();
+
+        ImGui::GetIO().MouseWheel = mouse.ui_wheel;
+        mouse.ui_wheel = 0.f;
 
         ImGui_ImplGlfw_NewFrame();
 
@@ -251,10 +269,6 @@ int main(int, char**) try
         auto flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove |
             ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar |
             ImGuiWindowFlags_NoSavedSettings;
-
-        const float panel_width = 320.f;
-        const float panel_y = 44.f;
-        const float default_log_h = 80.f;
 
         ImGui::SetNextWindowPos({ 0, 0 });
         ImGui::SetNextWindowSize({ panel_width, panel_y });
@@ -409,7 +423,11 @@ int main(int, char**) try
         ImGui::SetCursorPosX(w - panel_width - panel_y * 1);
         ImGui::PushStyleColor(ImGuiCol_Text, !is_3d_view ? grey : white);
         ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, !is_3d_view ? grey : white);
-        if (ImGui::Button("3D", { panel_y,panel_y })) is_3d_view = true;
+        if (ImGui::Button("3D", { panel_y,panel_y }))
+        {
+            is_3d_view = true;
+            viewer_model.update_3d_camera(viewer_rect, mouse, true);
+        }
         ImGui::PopStyleColor(3);
 
         ImGui::SameLine();
@@ -902,14 +920,14 @@ int main(int, char**) try
                 });
             }
 
+        viewer_model.gc_streams();
+
         // Rendering
         glViewport(0, 0,
             static_cast<int>(ImGui::GetIO().DisplaySize.x),
             static_cast<int>(ImGui::GetIO().DisplaySize.y));
         glClearColor(0,0,0,1);
         glClear(GL_COLOR_BUFFER_BIT);
-
-        auto output_height = (viewer_model.is_output_collapsed ? default_log_h : 20);
 
         if (!is_3d_view)
         {
@@ -950,16 +968,12 @@ int main(int, char**) try
         }
         else
         {
-
-            rect viewer_rect = { panel_width, panel_y, w - panel_width, h - panel_y - output_height };
-            
-            
             if (paused)
                 viewer_model.show_paused_icon(font_18, panel_width + 15, panel_y + 15 + 32, 0);
 
             viewer_model.show_3dviewer_header(font_14, viewer_rect, paused);
 
-            viewer_model.update_3d_camera(viewer_rect, mouse.cursor, mouse.prev_cursor, mouse.mouse_wheel);
+            viewer_model.update_3d_camera(viewer_rect, mouse);
 
             viewer_model.render_3d_view(viewer_rect);
 
@@ -991,7 +1005,6 @@ int main(int, char**) try
         ImGui::Render();
         glfwSwapBuffers(window);
         mouse.mouse_wheel = 0;
-        mouse.prev_cursor = mouse.cursor;
 
         // Yeild the CPU
         std::this_thread::sleep_for(std::chrono::milliseconds(10));

@@ -32,14 +32,14 @@ void imgui_easy_theming(ImFont*& font_14, ImFont*& font_18)
         ImFontConfig config_words;
         config_words.OversampleV = OVERSAMPLE;
         config_words.OversampleH = OVERSAMPLE;
-        font_18 = io.Fonts->AddFontFromMemoryCompressedTTF(karla_regular_compressed_data, karla_regular_compressed_size, 18.f, &config_words);
+        font_18 = io.Fonts->AddFontFromMemoryCompressedTTF(karla_regular_compressed_data, karla_regular_compressed_size, 20.f, &config_words);
 
         ImFontConfig config_glyphs;
         config_glyphs.MergeMode = true;
         config_glyphs.OversampleV = OVERSAMPLE;
         config_glyphs.OversampleH = OVERSAMPLE;
         font_18 = io.Fonts->AddFontFromMemoryCompressedTTF(font_awesome_compressed_data,
-            font_awesome_compressed_size, 18.f, &config_glyphs, icons_ranges);
+            font_awesome_compressed_size, 20.f, &config_glyphs, icons_ranges);
     }
 
     // Load 14px size fonts
@@ -47,14 +47,14 @@ void imgui_easy_theming(ImFont*& font_14, ImFont*& font_18)
         ImFontConfig config_words;
         config_words.OversampleV = OVERSAMPLE;
         config_words.OversampleH = OVERSAMPLE;
-        font_14 = io.Fonts->AddFontFromMemoryCompressedTTF(karla_regular_compressed_data, karla_regular_compressed_size, 14.f);
+        font_14 = io.Fonts->AddFontFromMemoryCompressedTTF(karla_regular_compressed_data, karla_regular_compressed_size, 16.f);
 
         ImFontConfig config_glyphs;
         config_glyphs.MergeMode = true;
         config_glyphs.OversampleV = OVERSAMPLE;
         config_glyphs.OversampleH = OVERSAMPLE;
         font_14 = io.Fonts->AddFontFromMemoryCompressedTTF(font_awesome_compressed_data,
-            font_awesome_compressed_size, 14.f, &config_glyphs, icons_ranges);
+            font_awesome_compressed_size, 16.f, &config_glyphs, icons_ranges);
     }
 
     style.WindowRounding = 0.0f;
@@ -1327,9 +1327,6 @@ namespace rs2
         std::string label = to_string() << "header of 3dviewer";
         ImGui::Begin(label.c_str(), nullptr, flags);
 
-        ImGui::SetCursorPos({ 9, 9 });
-        ImGui::Text("Depth Source:"); ImGui::SameLine();
-
         int selected_depth_source = -1;
         std::vector<std::string> depth_sources_str;
         std::vector<int> depth_sources;
@@ -1360,29 +1357,32 @@ namespace rs2
             }
         }
 
-        ImGui::SetCursorPosY(7);
-        ImGui::PushItemWidth(190);
-        draw_combo_box("##Depth Source", depth_sources_str, selected_depth_source);
-        i = 0;
-        for (auto&& s : streams)
+        if (depth_sources_str.size() > 0)
         {
-            if (s.second.is_stream_visible() &&
-                s.second.texture->get_last_frame() &&
-                s.second.profile.stream_type() == RS2_STREAM_DEPTH)
+            ImGui::SetCursorPos({ 7, 7 });
+            ImGui::Text("Depth Source:"); ImGui::SameLine();
+
+            ImGui::SetCursorPosY(7);
+            ImGui::PushItemWidth(190);
+            draw_combo_box("##Depth Source", depth_sources_str, selected_depth_source);
+            i = 0;
+            for (auto&& s : streams)
             {
-                if (i == selected_depth_source)
+                if (s.second.is_stream_visible() &&
+                    s.second.texture->get_last_frame() &&
+                    s.second.profile.stream_type() == RS2_STREAM_DEPTH)
                 {
-                    selected_depth_source_uid = s.second.profile.unique_id();
+                    if (i == selected_depth_source)
+                    {
+                        selected_depth_source_uid = s.second.profile.unique_id();
+                    }
+                    i++;
                 }
-                i++;
             }
+
+            ImGui::PopItemWidth();
+            ImGui::SameLine();
         }
-
-        ImGui::PopItemWidth();
-        ImGui::SameLine();
-
-        ImGui::SetCursorPosY(9);
-        ImGui::Text("Texture Source:"); ImGui::SameLine();
 
         int selected_tex_source = 0;
         std::vector<std::string> tex_sources_str;
@@ -1414,25 +1414,35 @@ namespace rs2
             }
         }
 
-        ImGui::SetCursorPosY(7);
-        ImGui::PushItemWidth(190);
-        draw_combo_box("##Tex Source", tex_sources_str, selected_tex_source);
-
-        i = 0;
-        for (auto&& s : streams)
+        // Only allow to change texture if we have something to put it on:
+        if (tex_sources_str.size() > 0 && depth_sources_str.size() > 0)
         {
-            if (s.second.is_stream_visible() &&
-                s.second.texture->get_last_frame() &&
-                s.second.profile.stream_type() != RS2_STREAM_DEPTH)
+            ImGui::SetCursorPosY(7);
+            ImGui::Text("Texture Source:"); ImGui::SameLine();
+
+
+            ImGui::SetCursorPosY(7);
+            ImGui::PushItemWidth(190);
+            draw_combo_box("##Tex Source", tex_sources_str, selected_tex_source);
+
+            i = 0;
+            for (auto&& s : streams)
             {
-                if (i == selected_tex_source)
+                if (s.second.is_stream_visible() &&
+                    s.second.texture->get_last_frame() &&
+                    s.second.profile.stream_type() != RS2_STREAM_DEPTH)
                 {
-                    selected_tex_source_uid = s.second.profile.unique_id();
+                    if (i == selected_tex_source)
+                    {
+                        selected_tex_source_uid = s.second.profile.unique_id();
+                    }
+                    i++;
                 }
-                i++;
             }
+            ImGui::PopItemWidth();
         }
-        ImGui::PopItemWidth();
+
+
 
         //ImGui::SetCursorPosY(9);
         //ImGui::Text("Viewport:"); ImGui::SameLine();
@@ -1569,6 +1579,19 @@ namespace rs2
         ImGui::PopFont();
     }
 
+    void viewer_model::gc_streams()
+    {
+        std::vector<int> streams_to_remove;
+        for (auto&& kvp : streams)
+        {
+            if (!kvp.second.is_stream_visible() &&
+                (!kvp.second.dev || (!kvp.second.dev->is_paused() && !kvp.second.dev->streaming)))
+                streams_to_remove.push_back(kvp.first);
+        }
+        for (auto&& i : streams_to_remove) {
+            streams.erase(i);
+        }
+    }
 
     void stream_model::show_stream_header(ImFont* font, rs2::rect stream_rect, viewer_model& viewer)
     {
@@ -1594,7 +1617,7 @@ namespace rs2
         std::string label = to_string() << "Stream of " << profile.unique_id();
         ImGui::Begin(label.c_str(), nullptr, flags);
 
-        ImGui::SetCursorPos({ 9, 9 });
+        ImGui::SetCursorPos({ 7, 7 });
 
         if (dev && dev->dev.supports(RS2_CAMERA_INFO_NAME) &&
             dev->dev.supports(RS2_CAMERA_INFO_SERIAL_NUMBER) && 
@@ -1605,7 +1628,7 @@ namespace rs2
             std::string sensor_name = dev->s.get_info(RS2_CAMERA_INFO_NAME);
             std::string stream_name = rs2_stream_to_string(profile.stream_type());
 
-            const auto approx_char_width = 10;
+            const auto approx_char_width = 12;
             if (stream_rect.w - 32 * num_of_buttons >= (dev_name.size() + dev_serial.size() + sensor_name.size() + stream_name.size()) * approx_char_width)
                 label = to_string() << dev_name << " S/N:" << dev_serial << " | " << sensor_name << ", " << stream_name << " stream";
             else if (stream_rect.w - 32 * num_of_buttons >= (dev_name.size() + sensor_name.size() + stream_name.size()) * approx_char_width)
@@ -2491,16 +2514,14 @@ namespace rs2
     }
 
     void viewer_model::update_3d_camera(const rect& viewer_rect, 
-                                        const float2& cursor, 
-                                        const float2& old_cursor,
-                                        float wheel)
+                                        mouse_info& mouse, bool force)
     {
         auto now = std::chrono::high_resolution_clock::now();
         static auto view_clock = std::chrono::high_resolution_clock::now();
         auto sec_since_update = std::chrono::duration<double, std::milli>(now - view_clock).count() / 1000;
         view_clock = now;
 
-        if (viewer_rect.contains(cursor))
+        if (viewer_rect.contains(mouse.cursor) || force)
         {
             arcball_camera_update(
                 (float*)&pos, (float*)&target, (float*)&up, view,
@@ -2509,13 +2530,15 @@ namespace rs2
                 -0.1f, // pan speed
                 3.0f, // rotation multiplier
                 viewer_rect.w, viewer_rect.h, // screen (window) size
-                old_cursor.x, cursor.x,
-                old_cursor.y, cursor.y,
+                mouse.prev_cursor.x, mouse.cursor.x,
+                mouse.prev_cursor.y, mouse.cursor.y,
                 ImGui::GetIO().MouseDown[2],
                 ImGui::GetIO().MouseDown[0],
-                wheel,
+                mouse.mouse_wheel,
                 0);
         }
+
+        mouse.prev_cursor = mouse.cursor;
     }
 
     void viewer_model::upload_frame(frame&& f)
