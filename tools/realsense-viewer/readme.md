@@ -1,5 +1,7 @@
 # Intel® RealSense™ Viewer
 
+<p align="center"><img src="res/realsense-viewer-backup.gif" /></p>
+
 ## Overview
 
 RealSense Viewer is the flagship tool providing access to most camera functionality through simple, cross-platform UI. 
@@ -8,8 +10,6 @@ The tool offers:
 * Exploring pointcloud data in realtime or by exporting to file
 * Recording RealSense data as well as playback of recorded files
 * Access to most camera specific controls, including 3D-generation ASIC registers when available
-
-<p align="center"><img src="res/realsense-viewer.gif" /></p>
 
 ## Implementation Notes
 
