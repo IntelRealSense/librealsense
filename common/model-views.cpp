@@ -1541,7 +1541,7 @@ namespace rs2
         ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
         ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, { 3, 3 });
-        ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 5);
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 1);
 
         ImGui::PushStyleColor(ImGuiCol_Button, header_window_bg);
         ImGui::PushStyleColor(ImGuiCol_ButtonHovered, header_window_bg);
@@ -1596,7 +1596,8 @@ namespace rs2
     void stream_model::show_stream_header(ImFont* font, rs2::rect stream_rect, viewer_model& viewer)
     {
         const auto top_bar_height = 32.f;
-        const auto num_of_buttons = 5;
+        auto num_of_buttons = 4;
+        if (viewer.streams.size() > 1) num_of_buttons++;
 
         auto flags = ImGuiWindowFlags_NoResize |
             ImGuiWindowFlags_NoMove |
@@ -1617,8 +1618,9 @@ namespace rs2
         std::string label = to_string() << "Stream of " << profile.unique_id();
         ImGui::Begin(label.c_str(), nullptr, flags);
 
-        ImGui::SetCursorPos({ 7, 7 });
+        ImGui::SetCursorPos({ 9, 7 });
 
+        std::string tooltip;
         if (dev && dev->dev.supports(RS2_CAMERA_INFO_NAME) &&
             dev->dev.supports(RS2_CAMERA_INFO_SERIAL_NUMBER) && 
             dev->s.supports(RS2_CAMERA_INFO_NAME))
@@ -1628,9 +1630,10 @@ namespace rs2
             std::string sensor_name = dev->s.get_info(RS2_CAMERA_INFO_NAME);
             std::string stream_name = rs2_stream_to_string(profile.stream_type());
 
+            tooltip = to_string() << dev_name << " S/N:" << dev_serial << " | " << sensor_name << ", " << stream_name << " stream";
             const auto approx_char_width = 12;
             if (stream_rect.w - 32 * num_of_buttons >= (dev_name.size() + dev_serial.size() + sensor_name.size() + stream_name.size()) * approx_char_width)
-                label = to_string() << dev_name << " S/N:" << dev_serial << " | " << sensor_name << ", " << stream_name << " stream";
+                label = tooltip;
             else if (stream_rect.w - 32 * num_of_buttons >= (dev_name.size() + sensor_name.size() + stream_name.size()) * approx_char_width)
                 label = to_string() << dev_name << " | " << sensor_name << " " << stream_name << " stream";
             else if (stream_rect.w - 32 * num_of_buttons >= (dev_name.size() + stream_name.size()) * approx_char_width)
@@ -1643,10 +1646,13 @@ namespace rs2
         else
         {
             label = to_string() << "Unknown " << rs2_stream_to_string(profile.stream_type()) << " stream";
+            tooltip = label;
         }
 
         ImGui::PushTextWrapPos(stream_rect.w - 32 * num_of_buttons - 5);
         ImGui::Text("%s", label.c_str());
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip("%s", tooltip.c_str());
         ImGui::PopTextWrapPos();
 
         ImGui::SetCursorPos({ stream_rect.w - 32 * num_of_buttons, 0 });
@@ -1737,36 +1743,43 @@ namespace rs2
         }
         ImGui::SameLine();
 
-        if (!viewer.fullscreen)
+        if (viewer.streams.size() > 1)
         {
-            label = to_string() << u8"\uf2d0" << "##Maximize " << profile.unique_id();
-
-            if (ImGui::Button(label.c_str(), { 24, top_bar_height }))
+            if (!viewer.fullscreen)
             {
-                viewer.fullscreen = true;
-                viewer.selected_stream = this;
-            }
-            if (ImGui::IsItemHovered())
-            {
-                ImGui::SetTooltip("Maximize stream to full-screen");
-            }
+                label = to_string() << u8"\uf2d0" << "##Maximize " << profile.unique_id();
 
-            ImGui::SameLine();
+                if (ImGui::Button(label.c_str(), { 24, top_bar_height }))
+                {
+                    viewer.fullscreen = true;
+                    viewer.selected_stream = this;
+                }
+                if (ImGui::IsItemHovered())
+                {
+                    ImGui::SetTooltip("Maximize stream to full-screen");
+                }
+
+                ImGui::SameLine();
+            }
+            else if (viewer.fullscreen)
+            {
+                label = to_string() << u8"\uf2d2" << "##Restore " << profile.unique_id();
+
+                if (ImGui::Button(label.c_str(), { 24, top_bar_height }))
+                {
+                    viewer.fullscreen = false;
+                }
+                if (ImGui::IsItemHovered())
+                {
+                    ImGui::SetTooltip("Restore tile view");
+                }
+
+                ImGui::SameLine();
+            }
         }
-        else if (viewer.fullscreen)
+        else
         {
-            label = to_string() << u8"\uf2d2" << "##Restore " << profile.unique_id();
-
-            if (ImGui::Button(label.c_str(), { 24, top_bar_height }))
-            {
-                viewer.fullscreen = false;
-            }
-            if (ImGui::IsItemHovered())
-            {
-                ImGui::SetTooltip("Restore tile view");
-            }
-
-            ImGui::SameLine();
+            viewer.fullscreen = false;
         }
 
         label = to_string() << u8"\uf00d" << "##Stop " << profile.unique_id();
@@ -1794,7 +1807,7 @@ namespace rs2
             ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
             ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
             ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, { 3, 3 });
-            ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 5);
+            ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 1);
 
             ImGui::PushStyleColor(ImGuiCol_Button, header_window_bg);
             ImGui::PushStyleColor(ImGuiCol_ButtonHovered, header_window_bg);
@@ -2195,7 +2208,7 @@ namespace rs2
         ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
         ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(3, 3));
-        ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 4);
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 1);
 
         // The list of errors the user asked not to show again:
         static std::set<std::string> errors_not_to_show;
@@ -2810,7 +2823,7 @@ namespace rs2
             ImGuiWindowFlags_NoMove |
             ImGuiWindowFlags_NoCollapse;
 
-        ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 5);
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 1);
 
         auto ms = get_age_in_ms() / MAX_LIFETIME_MS;
         auto t = smoothstep(static_cast<float>(ms), 0.7f, 1.0f);
@@ -2902,7 +2915,7 @@ namespace rs2
         ImGui::PushStyleColor(ImGuiCol_PopupBg, sensor_bg);
 
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(3, 3));
-        ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 4);
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 1);
 
         if (selected.message != "")
             ImGui::OpenPopup("Notification from Hardware");

@@ -283,7 +283,7 @@ int main(int, char**) try
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(5, 5));
         ImGui::SetNextWindowPos({ 0, panel_y });
 
-        if (ImGui::Button(u8"Add Source\t\t\t\t\t\t\t\t\t\t\t\t\t\t\uf055", { panel_width - 1, panel_y }))
+        if (ImGui::Button(u8"Add Source\t\t\t\t\t\t\t\t\t\t\t\t\uf0d7", { panel_width - 1, panel_y }))
             ImGui::OpenPopup("select");
 
         auto new_devices_count = device_names.size() + 1;
@@ -524,7 +524,7 @@ int main(int, char**) try
                 ImGui::Text(label.c_str());
 
                 ImGui::Columns(1);
-                ImGui::SetCursorPos({ panel_width - 45, pos.y + 11 + (header_h - panel_y) / 2 });
+                ImGui::SetCursorPos({ panel_width - 50, pos.y + 5 + (header_h - panel_y) / 2 });
 
                 ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
                 ImGui::PushStyleColor(ImGuiCol_PopupBg, almost_white_bg);
@@ -533,11 +533,13 @@ int main(int, char**) try
 
                 ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(5, 5));
 
+                ImGui::PushFont(font_18);
                 label = to_string() << "device_menu" << dev_model.id;
-                std::string settings_button_name = to_string() << u8"\uf013\uf0d7##" << dev_model.id;
+                std::string settings_button_name = to_string() << u8"\uf0c9##" << dev_model.id;
 
-                if (ImGui::Button(settings_button_name.c_str(), { 25,25 }))
+                if (ImGui::Button(settings_button_name.c_str(), { 33,35 }))
                     ImGui::OpenPopup(label.c_str());
+                ImGui::PopFont();
 
                 ImGui::PushFont(font_14);
 
@@ -778,7 +780,7 @@ int main(int, char**) try
                         static float t = 0.f;
                         t += 0.03f; // TODO: change to something more elegant
 
-                        ImGui::SetCursorPos({ windows_width - 32, model_to_y[sub.get()] + 3 });
+                        ImGui::SetCursorPos({ windows_width - 35, model_to_y[sub.get()] + 3 });
                         ImGui::PushFont(font_14);
                         if (sub.get() == dev_model.subdevices.begin()->get() && !anything_started)
                         {
