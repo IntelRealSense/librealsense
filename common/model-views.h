@@ -21,6 +21,7 @@
 
 #include "realsense-ui-advanced-mode.h"
 
+
 inline ImVec4 from_rgba(uint8_t r, uint8_t g, uint8_t b, uint8_t a)
 {
     return ImVec4(r / (float)255, g / (float)255, b / (float)255, a / (float)255);
@@ -374,6 +375,7 @@ namespace rs2
             std::lock_guard<std::mutex> lock(m);
             if (!line.size()) return;
             if (line[line.size() - 1] != '\n') line += "\n";
+            line = "- " + line;
             log.push_back(line);
         }
 

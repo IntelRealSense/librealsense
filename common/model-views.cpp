@@ -17,6 +17,7 @@
 #define ARCBALL_CAMERA_IMPLEMENTATION
 #include <arcball_camera.h>
 
+
 void imgui_easy_theming(ImFont*& font_14, ImFont*& font_18)
 {
     ImGuiStyle& style = ImGui::GetStyle();
@@ -2864,18 +2865,20 @@ namespace rs2
 
     void notifications_model::add_notification(const notification_data& n)
     {
-        std::lock_guard<std::mutex> lock(m); // need to protect the pending_notifications queue because the insertion of notifications
-                                             // done from the notifications callback and proccesing and removing of old notifications done from the main thread
+        {
+            std::lock_guard<std::mutex> lock(m); // need to protect the pending_notifications queue because the insertion of notifications
+                                                 // done from the notifications callback and proccesing and removing of old notifications done from the main thread
 
-        notification_model m(n);
-        m.index = index++;
-        m.timestamp = std::chrono::duration<double, std::milli>(std::chrono::system_clock::now().time_since_epoch()).count();
-        pending_notifications.push_back(m);
+            notification_model m(n);
+            m.index = index++;
+            m.timestamp = std::chrono::duration<double, std::milli>(std::chrono::system_clock::now().time_since_epoch()).count();
+            pending_notifications.push_back(m);
 
-        if (pending_notifications.size() > MAX_SIZE)
-            pending_notifications.erase(pending_notifications.begin());
+            if (pending_notifications.size() > MAX_SIZE)
+                pending_notifications.erase(pending_notifications.begin());
+        }
 
-        log.push_back(n.get_description());
+        add_log(n.get_description());
     }
 
     void notifications_model::draw(ImFont* font, int w, int h)
