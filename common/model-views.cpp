@@ -92,7 +92,7 @@ namespace rs2
     {
         const int w = texture.get_width(), h = texture.get_height();
         int x = std::min(std::max(int(texcoords.u*w + .5f), 0), w - 1);
-        int y = std::min(std::max(int(texcoords.v*h + .5f), 0., h - 1);
+        int y = std::min(std::max(int(texcoords.v*h + .5f), 0), h - 1);
         int idx = x*texture.get_bytes_per_pixel() + y*texture.get_stride_in_bytes();
         const auto texture_data = reinterpret_cast<const uint8_t*>(texture.get_data());
         return { texture_data[idx], texture_data[idx + 1], texture_data[idx + 2] };
@@ -2374,7 +2374,7 @@ namespace rs2
 
         ImGui::PushFont(font_18);
         ImGui::PushStyleColor(ImGuiCol_WindowBg, transparent);
-        ImGui::SetNextWindowPos({ x, y });
+        ImGui::SetNextWindowPos({ float(x), float(y) });
         ImGui::SetNextWindowSize({ 250.f, 50.f });
         ImGui::Begin("nostreaming_popup", nullptr, flags);
 
