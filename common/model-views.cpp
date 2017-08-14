@@ -95,7 +95,8 @@ namespace rs2
         int y = std::min(std::max(int(texcoords.v*h + .5f), 0), h - 1);
         int idx = x*texture.get_bytes_per_pixel() + y*texture.get_stride_in_bytes();
         const auto texture_data = reinterpret_cast<const uint8_t*>(texture.get_data());
-        return { texture_data[idx], texture_data[idx + 1], texture_data[idx + 2] };
+        return std::tuple<uint8_t, uint8_t, uint8_t>(
+                    texture_data[idx], texture_data[idx + 1], texture_data[idx + 2]);
     }
 
     void export_to_ply(notifications_model& ns, points points, video_frame texture)
