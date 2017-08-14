@@ -1,14 +1,15 @@
-# Intel® RealSense™ Cross Platform SDK
+<p align="center"><img src="doc/img/realsense.png" width="80%" /><br><br></p>
+
+-----------------
+
+Linux | Windows |
+-------- | ------------ |
+[![Build Status](https://travis-ci.org/IntelRealSense/librealsense.svg?branch=master)](https://travis-ci.org/IntelRealSense/librealsense) | [![Build status](https://ci.appveyor.com/api/projects/status/y9f8qcebnb9v41y4?svg=true)](https://ci.appveyor.com/project/ddiakopoulos/librealsense) |
+
+**Intel® RealSense™ Cross Platform SDK** is a cross-platform library (Linux, Windows, Mac) for working with Intel® RealSense™ depth cameras.
+Developer kits containing the necessary hardware to use this library are available for purchase at [this link](http://click.intel.com/realsense.html). 
 
 [Whats new?](./doc/rs400_support.md) - Summary of changes in librealsense2, including RS400 support, API changes and new functionality.
-
-Platform | Build Status |
--------- | ------------ |
-Linux and OS X | [![Build Status](https://travis-ci.org/IntelRealSense/librealsense.svg?branch=master)](https://travis-ci.org/IntelRealSense/librealsense) |
-Windows | [![Build status](https://ci.appveyor.com/api/projects/status/y9f8qcebnb9v41y4?svg=true)](https://ci.appveyor.com/project/ddiakopoulos/librealsense) |
-
-This project is a cross-platform library (Linux, Windows, Mac) for working with Intel® RealSense™ depth cameras.
-Developer kits containing the necessary hardware to use this library are available for purchase at [this link](http://click.intel.com/realsense.html). 
 
 ## Table of Contents
 * Installation Guides:

@@ -15,7 +15,7 @@ namespace pybackend2 {
 #define HW_MONITOR_COMMAND_SIZE 1000
 #define HW_MONITOR_BUFFER_SIZE 1024
 
-    uvc::guid stoguid(std::string);
+    platform::guid stoguid(std::string);
 
     std::vector<uint8_t> encode_command(command, uint32_t, uint32_t, uint32_t, uint32_t, std::vector<uint8_t>);
 }

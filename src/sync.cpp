@@ -414,6 +414,6 @@ namespace librealsense
     bool timestamp_composite_matcher::are_equivalent(double a, double b, int fps)
     {
         auto gap = 1000 / fps;
-        return std::abs(a - b )< (gap/2) ;
+        return abs(a - b) < (gap / 2) ;
     }
 }

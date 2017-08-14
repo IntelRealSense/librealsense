@@ -524,6 +524,58 @@ namespace librealsense
 
             if(!_is_capturing && !_callback)
             {
+                v4l2_fmtdesc pixel_format = {};
+                pixel_format.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+                while (ioctl(_fd, VIDIOC_ENUM_FMT, &pixel_format) == 0)
+                {
+                    v4l2_frmsizeenum frame_size = {};
+                    frame_size.pixel_format = pixel_format.pixelformat;
+
+                    uint32_t fourcc = (const big_endian<int> &)pixel_format.pixelformat;
+
+                    if (pixel_format.pixelformat == 0)
+                    {
+                        // Microsoft Depth GUIDs for R400 series are not yet recognized
+                        // by the Linux kernel, but they do not require a patch, since there
+                        // are "backup" Z16 and Y8 formats in place
+                        std::set<std::string> known_problematic_formats = {
+                            "00000050-0000-0010-8000-00aa003",
+                            "00000032-0000-0010-8000-00aa003",
+                        };
+
+                        if (std::find(known_problematic_formats.begin(),
+                                      known_problematic_formats.end(),
+                                      (const char*)pixel_format.description) ==
+                            known_problematic_formats.end())
+                        {
+                            const std::string s(to_string() << "!" << pixel_format.description);
+                            std::regex rgx("!([0-9a-f]+)-.*");
+                            std::smatch match;
+
+                            if (std::regex_search(s.begin(), s.end(), match, rgx))
+                            {
+                                std::stringstream ss;
+                                ss <<  match[1];
+                                int id;
+                                ss >> std::hex >> id;
+                                fourcc = (const big_endian<int> &)id;
+
+                                auto format_str = fourcc_to_string(id);
+
+                                if (fourcc == profile.format)
+                                {
+                                    throw linux_backend_exception(to_string() <<
+                                                                  "Requested pixel format is not natively supported by the Linux kernel and likely requires a patch for fourcc code " <<
+                                                                  format_str << "!\nAlternatively please upgrade to kernel 4.12 or later.");
+                                }
+
+                            }
+                        }
+                    }
+                    ++pixel_format.index;
+                }
+
+
                 v4l2_format fmt = {};
                 fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
                 fmt.fmt.pix.width       = profile.width;
@@ -559,10 +611,6 @@ namespace librealsense
                     else
                         throw linux_backend_exception("xioctl(VIDIOC_REQBUFS) failed");
                 }
-//                if(req.count < 2)
-//                {
-//                    throw linux_backend_exception(to_string() << "Insufficient buffer memory on " << _name);
-//                }
 
                 for(size_t i = 0; i < buffers; ++i)
                 {
