@@ -663,16 +663,25 @@ namespace rs2
         std::string label = to_string() << "Stream Selection Columns##" << dev.get_info(RS2_CAMERA_INFO_NAME)
             << s.get_info(RS2_CAMERA_INFO_NAME);
 
+        auto streaming_tooltip = [&](){
+            if (streaming && ImGui::IsItemHovered())
+                ImGui::SetTooltip("Can't modify while streaming");
+        };
+
         ImGui::Columns(2, label.c_str(), false);
         // Draw combo-box with all resolution options for this device
         auto res_chars = get_string_pointers(resolutions);
         ImGui::Text("Resolution:");
+        streaming_tooltip();
         ImGui::NextColumn();
 
         label = to_string() << "##" << dev.get_info(RS2_CAMERA_INFO_NAME)
             << s.get_info(RS2_CAMERA_INFO_NAME) << " resolution";
         if (streaming)
+        {
             ImGui::Text("%s", res_chars[selected_res_id]);
+            streaming_tooltip();
+        }
         else
         {
             ImGui::PushItemWidth(-1);
@@ -689,6 +698,7 @@ namespace rs2
         {
             auto fps_chars = get_string_pointers(shared_fpses);
             ImGui::Text("Frame Rate (FPS):");
+            streaming_tooltip();
             ImGui::NextColumn();
 
             label = to_string() << "##" << dev.get_info(RS2_CAMERA_INFO_NAME)
@@ -697,6 +707,7 @@ namespace rs2
             if (streaming)
             {
                 ImGui::Text("%s", fps_chars[selected_shared_fps_id]);
+                streaming_tooltip();
             }
             else
             {
@@ -732,6 +743,7 @@ namespace rs2
                 {
                     label = to_string() << stream_display_names[f.first] << (show_single_fps_list ? "" : " stream:");
                     ImGui::Text("%s", label.c_str());
+                    streaming_tooltip();
                 }
                 else
                 {
@@ -753,12 +765,14 @@ namespace rs2
                 if (!show_single_fps_list)
                 {
                     ImGui::Text("Format:");
+                    streaming_tooltip();
                     ImGui::NextColumn();
                 }
 
                 if (streaming)
                 {
                     ImGui::Text("%s", formats_chars[selected_format_id[f.first]]);
+                    streaming_tooltip();
                 }
                 else
                 {
@@ -777,6 +791,7 @@ namespace rs2
                 {
                     auto fps_chars = get_string_pointers(fpses_per_stream[f.first]);
                     ImGui::Text("Frame Rate (FPS):");
+                    streaming_tooltip();
                     ImGui::NextColumn();
 
                     label = to_string() << s.get_info(RS2_CAMERA_INFO_NAME)
@@ -786,6 +801,7 @@ namespace rs2
                     if (streaming)
                     {
                         ImGui::Text("%s", fps_chars[selected_fps_id[f.first]]);
+                        streaming_tooltip();
                     }
                     else
                     {
@@ -2234,6 +2250,30 @@ namespace rs2
         ImGui::End();
         ImGui::PopStyleColor();
         ImGui::PopFont();
+    }
+
+    void async_pointclound_mapper::render_loop()
+    {
+        while (keep_calculating_pointcloud)
+        {
+            frame f;
+            if (depth_frames_to_render.poll_for_frame(&f))
+            {
+                if (f.get_frame_number() == last_frame_number &&
+                    f.get_timestamp() <= last_timestamp &&
+                    f.get_profile().unique_id() == last_stream_id)
+                    continue;
+
+                resulting_3d_models.enqueue(pc.calculate(f));
+
+                last_frame_number = f.get_frame_number();
+                last_timestamp = f.get_timestamp();
+                last_stream_id = f.get_profile().unique_id();
+            }
+            // There is no practical reason to re-calculate the 3D model
+            // at higher frequency then 100 FPS
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        }
     }
 
     void viewer_model::show_no_stream_overlay(ImFont* font_18, int min_x, int min_y, int max_x, int max_y)

@@ -327,7 +327,7 @@ int main(int, char**) try
 
             if (new_devices_count > 1) ImGui::Separator();
 
-            if (ImGui::Selectable("Recording from File...", false, ImGuiSelectableFlags_SpanAllColumns))
+            if (ImGui::Selectable("Load Recorded Sequence", false, ImGuiSelectableFlags_SpanAllColumns))
             {
                 const char *ret;
                 ret = noc_file_dialog_open(NOC_FILE_DIALOG_OPEN,
@@ -992,6 +992,9 @@ int main(int, char**) try
         glfwSwapBuffers(window);
         mouse.mouse_wheel = 0;
         mouse.prev_cursor = mouse.cursor;
+
+        // Yeild the CPU
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
 
     // Stop calculating 3D model

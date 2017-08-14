@@ -427,29 +427,7 @@ namespace rs2
         }
 
     private:
-        void render_loop()
-        {
-            while (keep_calculating_pointcloud)
-            {
-                frame f;
-                if (depth_frames_to_render.poll_for_frame(&f))
-                {
-                    if (f.get_frame_number() == last_frame_number &&
-                        f.get_timestamp() <= last_timestamp &&
-                        f.get_profile().unique_id() == last_stream_id)
-                        continue;
-
-                    resulting_3d_models.enqueue(pc.calculate(f));
-
-                    last_frame_number = f.get_frame_number();
-                    last_timestamp = f.get_timestamp();
-                    last_stream_id = f.get_profile().unique_id();
-                }
-                // There is no practical reason to re-calculate the 3D model
-                // at higher frequency then 100 FPS
-                std::this_thread::sleep_for(std::chrono::milliseconds(10));
-            }
-        }
+        void render_loop();
 
         pointcloud pc;
         points model;
