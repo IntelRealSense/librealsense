@@ -89,9 +89,12 @@ namespace rs2
 {
     std::tuple<uint8_t, uint8_t, uint8_t> get_texcolor(video_frame texture, texture_coordinate texcoords)
     {
-        int idx = int(texcoords.u + .5f)*texture.get_bytes_per_pixel() + int(texcoords.v + .5)*texture.get_stride_in_bytes();
+        const int w = texture.get_width(), h = texture.get_height();
+        int x = std::min(std::max(int(texcoords.u*w + .5f), 0), w - 1);
+        int y = std::min(std::max(int(texcoords.v*h + .5f), 0., h - 1);
+        int idx = x*texture.get_bytes_per_pixel() + y*texture.get_stride_in_bytes();
         const auto texture_data = reinterpret_cast<const uint8_t*>(texture.get_data());
-        return{ texture_data[idx], texture_data[idx + 1], texture_data[idx + 2] };
+        return { texture_data[idx], texture_data[idx + 1], texture_data[idx + 2] };
     }
 
     void export_to_ply(notifications_model& ns, points points, video_frame texture)
@@ -122,14 +125,15 @@ namespace rs2
                     if (texture)
                     {
                         //new_texcoords.push_back(texcoords[i]);
-                        new_tex.push_back(get_texcolor(texture, texcoords[i]));
+                        auto color = get_texcolor(texture, texcoords[i]);
+                        new_tex.push_back(color);
                     }
 
                 }
 
             std::ofstream out(fname);
             out << "ply\n";
-            out << "format binary_little_endian 1.0\n";
+            out << "format binary_little_endian 1.0\n" /*"format ascii 1.0\n"*/;
             out << "comment pointcloud saved from Realsense Viewer\n";
             if (texture) out << "comment TextureFile " << get_file_name(texfname) << "\n";
             out << "element vertex " << new_vertices.size() << "\n";
@@ -154,6 +158,7 @@ namespace rs2
                 out.write(reinterpret_cast<const char*>(&(new_vertices[i].x)), sizeof(float));
                 out.write(reinterpret_cast<const char*>(&(new_vertices[i].y)), sizeof(float));
                 out.write(reinterpret_cast<const char*>(&(new_vertices[i].z)), sizeof(float));
+//                out << new_vertices[i].x << ' ' << new_vertices[i].y << ' ' << new_vertices[i].z;
                 if (texture)
                 {
                     //out.write(reinterpret_cast<const char*>(&(new_texcoords[i].u)), sizeof(float));
@@ -161,8 +166,9 @@ namespace rs2
                     out.write(reinterpret_cast<const char*>(&(std::get<0>(new_tex[i]))), sizeof(uint8_t));
                     out.write(reinterpret_cast<const char*>(&(std::get<1>(new_tex[i]))), sizeof(uint8_t));
                     out.write(reinterpret_cast<const char*>(&(std::get<2>(new_tex[i]))), sizeof(uint8_t));
-
+//                    out << std::hex << ' ' << std::get<0>(new_tex[i]) << ' ' << std::get<1>(new_tex[i]) << ' ' << std::get<2>(new_tex[i]);
                 }
+//                out << '\n';
             }
 
             /* save texture to texfname */
