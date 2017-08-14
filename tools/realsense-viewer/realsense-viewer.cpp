@@ -166,10 +166,22 @@ int main(int, char**) try
 
                     if (device_models.size() == 0 && list.size() > 0 && prev_size == 0)
                     {
-                        auto dev = list.front();
-                        auto model = device_model(dev, error_message);
-                        device_models.push_back(model);
-                        viewer_model.not_model.add_log(to_string() << model.dev.get_info(RS2_CAMERA_INFO_NAME) << " was selected as a default device");
+                        auto dev = [&](){
+                            for (size_t i = 0; i < list.size(); i++)
+                            {
+                                if (list[i].supports(RS2_CAMERA_INFO_NAME) &&
+                                    std::string(list[i].get_info(RS2_CAMERA_INFO_NAME)) != "Platform Camera")
+                                    return list[i];
+                            }
+                            return device();
+                        }();
+
+                        if (dev)
+                        {
+                            auto model = device_model(dev, error_message);
+                            device_models.push_back(model);
+                            viewer_model.not_model.add_log(to_string() << model.dev.get_info(RS2_CAMERA_INFO_NAME) << " was selected as a default device");
+                        }
                     }
 
                     devs.clear();
@@ -856,7 +868,7 @@ int main(int, char**) try
             ImRect bb(pos, ImVec2(pos.x + ImGui::GetContentRegionAvail().x, pos.y + ImGui::GetContentRegionAvail().y));
             ImGui::GetWindowDrawList()->AddRectFilled(bb.GetTL(), bb.GetBR(), ImColor(dark_window_background));
 
-            // Draw no device selected indicator
+            viewer_model.show_no_device_overlay(font_18, 50, panel_y + 50);
         }
 
         ImGui::End();
@@ -907,7 +919,7 @@ int main(int, char**) try
 
             auto layout = viewer_model.calc_layout(panel_width, panel_y, w - panel_width, (float)h - panel_y - output_height);
 
-            if (layout.size() == 0 && list.size() > 0)
+            if (layout.size() == 0 && device_models.size() > 0)
             {
                 viewer_model.show_no_stream_overlay(font_18, panel_width, panel_y, w, (float)h - output_height);
             }

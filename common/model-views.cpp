@@ -2258,6 +2258,28 @@ namespace rs2
         ImGui::PopFont();
     }
 
+    void viewer_model::show_no_device_overlay(ImFont* font_18, int x, int y)
+    {
+        auto flags = ImGuiWindowFlags_NoResize |
+            ImGuiWindowFlags_NoMove |
+            ImGuiWindowFlags_NoCollapse |
+            ImGuiWindowFlags_NoTitleBar;
+
+        ImGui::PushFont(font_18);
+        ImGui::PushStyleColor(ImGuiCol_WindowBg, transparent);
+        ImGui::SetNextWindowPos({ x, y });
+        ImGui::SetNextWindowSize({ 250.f, 50.f });
+        ImGui::Begin("nostreaming_popup", nullptr, flags);
+
+        ImGui::PushStyleColor(ImGuiCol_Text, sensor_header_light_blue);
+        ImGui::Text("Connect RealSense Camera\nor Add Source");
+        ImGui::PopStyleColor();
+
+        ImGui::End();
+        ImGui::PopStyleColor();
+        ImGui::PopFont();
+    }
+
     std::map<int, rect> viewer_model::calc_layout(float x0, float y0, float width, float height)
     {
         const int top_bar_height = 32;

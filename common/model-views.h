@@ -483,6 +483,7 @@ namespace rs2
         std::map<int, rect> calc_layout(float x0, float y0, float width, float height);
 
         void show_no_stream_overlay(ImFont* font, int min_x, int min_y, int max_x, int max_y);
+        void show_no_device_overlay(ImFont* font, int min_x, int min_y);
 
         void show_paused_icon(ImFont* font, int x, int y, int id);
 

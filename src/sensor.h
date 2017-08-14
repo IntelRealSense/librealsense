@@ -187,6 +187,7 @@ namespace librealsense
         }
 
         void register_pu(rs2_option id);
+        void try_register_pu(rs2_option id);
 
         void start(frame_callback_ptr callback) override;
 
