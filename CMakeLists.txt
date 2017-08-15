@@ -246,7 +246,6 @@ set(REALSENSE_HPP
     src/media/record/record_sensor.h
     src/media/playback/playback_device.h
     src/media/playback/playback_sensor.h
-    src/media/device_snapshot.h
     src/media/ros/ros_reader.h
     src/media/ros/ros_writer.h
 
