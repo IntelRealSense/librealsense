@@ -21,6 +21,7 @@
 
 #include "realsense-ui-advanced-mode.h"
 
+
 inline ImVec4 from_rgba(uint8_t r, uint8_t g, uint8_t b, uint8_t a)
 {
     return ImVec4(r / (float)255, g / (float)255, b / (float)255, a / (float)255);
@@ -374,6 +375,7 @@ namespace rs2
             std::lock_guard<std::mutex> lock(m);
             if (!line.size()) return;
             if (line[line.size() - 1] != '\n') line += "\n";
+            line = "- " + line;
             log.push_back(line);
         }
 
@@ -427,29 +429,7 @@ namespace rs2
         }
 
     private:
-        void render_loop()
-        {
-            while (keep_calculating_pointcloud)
-            {
-                frame f;
-                if (depth_frames_to_render.poll_for_frame(&f))
-                {
-                    if (f.get_frame_number() == last_frame_number &&
-                        f.get_timestamp() <= last_timestamp &&
-                        f.get_profile().unique_id() == last_stream_id)
-                        continue;
-
-                    resulting_3d_models.enqueue(pc.calculate(f));
-
-                    last_frame_number = f.get_frame_number();
-                    last_timestamp = f.get_timestamp();
-                    last_stream_id = f.get_profile().unique_id();
-                }
-                // There is no practical reason to re-calculate the 3D model
-                // at higher frequency then 100 FPS
-                std::this_thread::sleep_for(std::chrono::milliseconds(10));
-            }
-        }
+        void render_loop();
 
         pointcloud pc;
         points model;
@@ -483,6 +463,7 @@ namespace rs2
         std::map<int, rect> calc_layout(float x0, float y0, float width, float height);
 
         void show_no_stream_overlay(ImFont* font, int min_x, int min_y, int max_x, int max_y);
+        void show_no_device_overlay(ImFont* font, int min_x, int min_y);
 
         void show_paused_icon(ImFont* font, int x, int y, int id);
 
@@ -493,11 +474,11 @@ namespace rs2
         void show_3dviewer_header(ImFont* font, rs2::rect stream_rect, bool& paused);
 
         void update_3d_camera(const rect& viewer_rect,
-                              const float2& cursor,
-                              const float2& old_cursor,
-                              float wheel);
+                              mouse_info& mouse, bool force = false);
 
         void render_3d_view(const rect& view_rect);
+
+        void gc_streams();
 
         std::map<int, stream_model> streams;
         bool fullscreen = false;

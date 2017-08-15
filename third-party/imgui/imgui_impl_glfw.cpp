@@ -277,7 +277,7 @@ void ImGui_ImplGlfw_NewFrame()
         g_MousePressed[i] = false;
     }
 
-    io.MouseWheel = g_MouseWheel;
+    //io.MouseWheel = g_MouseWheel;
     g_MouseWheel = 0.0f;
 
     // Hide OS mouse cursor if ImGui is drawing it

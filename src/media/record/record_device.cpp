@@ -118,6 +118,7 @@ void librealsense::record_device::write_data(size_t sensor_index, librealsense::
     if (cached_data_size > MAX_CACHED_DATA_SIZE)
     {
         LOG_WARNING("Recorder reached maximum cache size, frame dropped");
+        on_error("Recorder reached maximum cache size, frame dropped");
         return;
     }
 

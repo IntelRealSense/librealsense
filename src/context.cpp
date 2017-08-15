@@ -128,17 +128,19 @@ namespace librealsense
             const std::vector<platform::uvc_device_info>& uvc_devices)
         {
             std::vector<std::shared_ptr<device_info>> list;
-            for (auto&& uvc : uvc_devices)
+            auto groups = group_devices_by_unique_id(uvc_devices);
+
+            for (auto&& g : groups)
             {
-                if (uvc.vid != VID_INTEL_CAMERA)
-                    list.push_back(std::make_shared<platform_camera_info>(ctx, uvc));
+                if (g.front().vid != VID_INTEL_CAMERA)
+                    list.push_back(std::make_shared<platform_camera_info>(ctx, g));
             }
             return list;
         }
 
         explicit platform_camera_info(std::shared_ptr<context> ctx,
-                                      platform::uvc_device_info uvc)
-            : device_info(ctx), _uvc(std::move(uvc)) {}
+                                      std::vector<platform::uvc_device_info> uvcs)
+            : device_info(ctx), _uvcs(std::move(uvcs)) {}
 
         platform::backend_device_group get_device_data() const override
         {
@@ -146,7 +148,7 @@ namespace librealsense
         }
 
     private:
-        platform::uvc_device_info _uvc;
+        std::vector<platform::uvc_device_info> _uvcs;
     };
 
     class platform_camera_sensor : public uvc_sensor
@@ -183,35 +185,43 @@ namespace librealsense
     class platform_camera : public device
     {
     public:
-        platform_camera(const std::shared_ptr<context>& ctx, const  platform::uvc_device_info uvc_info, const platform::backend_device_group& group)
+        platform_camera(const std::shared_ptr<context>& ctx,
+                        const std::vector<platform::uvc_device_info>& uvc_infos,
+                        const platform::backend_device_group& group
+
+                        )
             : device(ctx, group)
         {
-            auto uvc_device = ctx->get_backend().create_uvc_device(uvc_info);
-            auto color_ep = std::make_shared<platform_camera_sensor>(ctx, this, uvc_device, std::unique_ptr<ds5_timestamp_reader>(new ds5_timestamp_reader(ctx->get_time_service())));
+            std::vector<std::shared_ptr<platform::uvc_device>> devs;
+            for (auto&& info : uvc_infos)
+                devs.push_back(ctx->get_backend().create_uvc_device(info));
+            auto color_ep = std::make_shared<platform_camera_sensor>(ctx, this,
+                                                                     std::make_shared<platform::multi_pins_uvc_device>(devs),
+                                                                     std::unique_ptr<ds5_timestamp_reader>(new ds5_timestamp_reader(ctx->get_time_service())));
             add_sensor(color_ep);
 
             register_info(RS2_CAMERA_INFO_NAME, "Platform Camera");
-            std::string pid_str(to_string() << std::setfill('0') << std::setw(4) << std::hex << uvc_info.pid);
+            std::string pid_str(to_string() << std::setfill('0') << std::setw(4) << std::hex << uvc_infos.front().pid);
             std::transform(pid_str.begin(), pid_str.end(), pid_str.begin(), ::toupper);
 
-            register_info(RS2_CAMERA_INFO_SERIAL_NUMBER, uvc_info.unique_id);
-            register_info(RS2_CAMERA_INFO_LOCATION, uvc_info.device_path);
+            register_info(RS2_CAMERA_INFO_SERIAL_NUMBER, uvc_infos.front().unique_id);
+            register_info(RS2_CAMERA_INFO_LOCATION, uvc_infos.front().device_path);
             register_info(RS2_CAMERA_INFO_PRODUCT_ID, pid_str);
 
             color_ep->register_pixel_format(pf_yuy2);
             color_ep->register_pixel_format(pf_yuyv);
 
-            color_ep->register_pu(RS2_OPTION_BACKLIGHT_COMPENSATION);
-            color_ep->register_pu(RS2_OPTION_BRIGHTNESS);
-            color_ep->register_pu(RS2_OPTION_CONTRAST);
-            color_ep->register_pu(RS2_OPTION_EXPOSURE);
-            color_ep->register_pu(RS2_OPTION_GAMMA);
-            color_ep->register_pu(RS2_OPTION_HUE);
-            color_ep->register_pu(RS2_OPTION_SATURATION);
-            color_ep->register_pu(RS2_OPTION_SHARPNESS);
-            color_ep->register_pu(RS2_OPTION_WHITE_BALANCE);
-            color_ep->register_pu(RS2_OPTION_ENABLE_AUTO_EXPOSURE);
-            color_ep->register_pu(RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE);
+            color_ep->try_register_pu(RS2_OPTION_BACKLIGHT_COMPENSATION);
+            color_ep->try_register_pu(RS2_OPTION_BRIGHTNESS);
+            color_ep->try_register_pu(RS2_OPTION_CONTRAST);
+            color_ep->try_register_pu(RS2_OPTION_EXPOSURE);
+            color_ep->try_register_pu(RS2_OPTION_GAMMA);
+            color_ep->try_register_pu(RS2_OPTION_HUE);
+            color_ep->try_register_pu(RS2_OPTION_SATURATION);
+            color_ep->try_register_pu(RS2_OPTION_SHARPNESS);
+            color_ep->try_register_pu(RS2_OPTION_WHITE_BALANCE);
+            color_ep->try_register_pu(RS2_OPTION_ENABLE_AUTO_EXPOSURE);
+            color_ep->try_register_pu(RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE);
         }
 
         virtual rs2_intrinsics get_intrinsics(unsigned int subdevice, const stream_profile& profile) const
@@ -223,7 +233,7 @@ namespace librealsense
     std::shared_ptr<device_interface> platform_camera_info::create(std::shared_ptr<context> ctx) const
     {
         auto&& backend = ctx->get_backend();
-        return std::make_shared<platform_camera>(ctx, _uvc, this->get_device_data());
+        return std::make_shared<platform_camera>(ctx, _uvcs, this->get_device_data());
     }
 
     context::~context()

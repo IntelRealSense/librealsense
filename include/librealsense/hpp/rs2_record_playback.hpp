@@ -13,16 +13,6 @@ namespace rs2
     {
     public:
         playback(device d) : playback(d.get()) {}
-
-        playback(const std::string& file) :
-            m_file(file)
-        {
-            rs2_error* e = nullptr;
-            _dev = std::shared_ptr<rs2_device>(
-                rs2_create_playback_device(file.c_str(), &e),
-                rs2_delete_device);
-            rs2::error::handle(e);
-        }
         void pause()
         {
             rs2_error* e = nullptr;
@@ -114,8 +104,9 @@ namespace rs2
     class recorder : public device
     {
     public:
-        recorder(const std::string& file, rs2::device device) :
-            m_file(file)
+        recorder(device d) : recorder(d.get()) {}
+
+        recorder(const std::string& file, rs2::device device)
         {
             rs2_error* e = nullptr;
             _dev = std::shared_ptr<rs2_device>(
@@ -136,8 +127,16 @@ namespace rs2
             rs2_record_device_resume(_dev.get(), &e);
             error::handle(e);
         }
-    private:
-        std::string m_file;
+    protected:
+        explicit recorder(std::shared_ptr<rs2_device> dev) : device(dev)
+        {
+            rs2_error* e = nullptr;
+            if (rs2_is_device_extendable_to(_dev.get(), RS2_EXTENSION_RECORD, &e) == 0 && !e)
+            {
+                _dev = nullptr;
+            }
+            error::handle(e);
+        }
     };
 }
 #endif // LIBREALSENSE_RS2_RECORD_PLAYBACK_HPP

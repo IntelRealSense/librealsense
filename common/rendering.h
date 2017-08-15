@@ -164,6 +164,7 @@ namespace rs2
         float2 prev_cursor{ 0.f, 0.f };
         bool mouse_down = false;
         int mouse_wheel = 0;
+        float ui_wheel = 0.f;
     };
 
     template<typename T>
