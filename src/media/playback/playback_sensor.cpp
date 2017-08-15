@@ -209,7 +209,7 @@ void playback_sensor::register_sensor_streams(const stream_profiles& profiles)
     }
 }
 
-void playback_sensor::register_sensor_infos(const sensor_snapshot& sensor_snapshot)
+void playback_sensor::register_sensor_infos(const device_serializer::sensor_snapshot& sensor_snapshot)
 {
     auto info_snapshot = sensor_snapshot.get_sensor_extensions_snapshots().find(RS2_EXTENSION_INFO);
     if (info_snapshot == nullptr)

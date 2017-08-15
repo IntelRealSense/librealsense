@@ -45,7 +45,7 @@ namespace librealsense
         void flush_pending_frames();
     private:
         void register_sensor_streams(const stream_profiles& vector);
-        void register_sensor_infos(const sensor_snapshot& sensor_snapshot);
+        void register_sensor_infos(const device_serializer::sensor_snapshot& sensor_snapshot);
         void register_sensor_optiosn(const std::map<rs2_option, float>& options);
 
         frame_callback_ptr m_user_callback;
