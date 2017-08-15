@@ -164,7 +164,7 @@ namespace librealsense
             auto seek_time_as_rostime = ros::Time(seek_time_as_secs.count());
 
             auto enabled_streams_topics = get_topics(m_samples_view);
-            m_samples_view.reset(new rosbag::View(m_file));
+            m_samples_view.reset(new rosbag::View(m_file, FalseQuery()));
             for (auto topic : enabled_streams_topics)
             {
                 m_samples_view->addQuery(m_file, rosbag::TopicQuery(topic), seek_time_as_rostime);
@@ -289,7 +289,7 @@ namespace librealsense
             }
 
             frame_additional_data additional_data {};
-            std::chrono::duration<double, std::micro> timestamp_us(std::chrono::duration<double>(msg->header.stamp.toSec()));
+            std::chrono::duration<double, std::milli> timestamp_us(std::chrono::duration<double>(msg->header.stamp.toSec()));
             additional_data.timestamp = timestamp_us.count();
             additional_data.frame_number = msg->header.seq;
             additional_data.fisheye_ae_mode = false; //TODO: where should this come from?
@@ -569,8 +569,11 @@ namespace librealsense
         static std::vector<std::string> get_topics(std::unique_ptr<rosbag::View>& view)
         {
             std::vector<std::string> topics;
-            auto connections = view->getConnections();
-            auto x = std::transform(connections.begin(), connections.end(), std::back_inserter(topics), [](const rosbag::ConnectionInfo* connection) { return connection->topic; });
+            if(view != nullptr)
+            {
+                auto connections = view->getConnections();
+                std::transform(connections.begin(), connections.end(), std::back_inserter(topics), [](const rosbag::ConnectionInfo* connection) { return connection->topic; });
+            }
             return topics;
         }
 

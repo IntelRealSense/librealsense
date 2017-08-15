@@ -2648,6 +2648,198 @@ namespace rs2
         _recorder->resume();
     }
 
+    int device_model::draw_playback_controls(ImFont* font)
+    {
+        auto p = dev.as<playback>();
+        rs2_playback_status current_playback_status = p.current_status();
+
+        auto pos = ImGui::GetCursorScreenPos();
+        
+        ImGui::PushFont(font);
+
+        const int button_space = 150;
+        const float button_dim = 30.f;
+        bool buttons_disabled = current_playback_status == RS2_PLAYBACK_STATUS_STOPPED;
+        //////////////////// Step Backwards Button ////////////////////
+
+        std::string label = to_string() << u8"\uf048" << "##Step Backwards " << id;
+        
+        if (ImGui::ButtonEx(label.c_str(), { button_dim, button_dim }, buttons_disabled ? ImGuiButtonFlags_Disabled : 0))
+        {
+            //p.skip_frames(1);
+        }
+        
+
+        if (ImGui::IsItemHovered())
+        {
+            ImGui::SetTooltip("Step Backwards");
+        }
+        pos.x += button_space;
+        ImGui::SetCursorScreenPos(pos);
+        ImGui::SameLine();
+        //////////////////// Step Backwards Button ////////////////////
+
+
+        //////////////////// Stop Button////////////////////
+        label = to_string() << u8"\uf04d" << "##Stop Playback " << id;
+
+        if (ImGui::ButtonEx(label.c_str(), { button_dim, button_dim }, buttons_disabled ? ImGuiButtonFlags_Disabled : 0))
+        {
+            //p.stop();
+        }
+        if (ImGui::IsItemHovered())
+        {
+            ImGui::SetTooltip("Stop Playback");
+        }
+        pos.x += button_space;
+        ImGui::SetCursorScreenPos(pos);
+        ImGui::SameLine();
+        //////////////////// Stop Button ////////////////////
+
+
+
+        //////////////////// Pause/Play Button ////////////////////
+        if (current_playback_status == RS2_PLAYBACK_STATUS_PLAYING)
+        {
+            label = to_string() << u8"\uf04c" << "##Pause Playback " << id;
+            if (ImGui::ButtonEx(label.c_str(), { button_dim, button_dim }, buttons_disabled ? ImGuiButtonFlags_Disabled : 0))
+            {
+                p.pause();
+            }
+            if (ImGui::IsItemHovered())
+            {
+                ImGui::SetTooltip("Pause Playback");
+            }
+        }
+        else
+        {
+            label = to_string() << u8"\uf04b" << "##Resume Playback " << id;
+            if (ImGui::ButtonEx(label.c_str(), { button_dim, button_dim }, buttons_disabled ? ImGuiButtonFlags_Disabled : 0))
+            {
+                p.resume();
+            }
+            if (ImGui::IsItemHovered())
+            {
+                ImGui::SetTooltip("Resume Playback");
+            }
+        }
+        
+        pos.x += button_space;
+        ImGui::SetCursorScreenPos(pos);
+        ImGui::SameLine();
+        //////////////////// Pause/Play Button ////////////////////
+
+        
+
+
+        //////////////////// Step Forward Button ////////////////////
+        label = to_string() << u8"\uf051" << "##Step Forward " << id;
+        if (ImGui::ButtonEx(label.c_str(), { button_dim, button_dim }, buttons_disabled ? ImGuiButtonFlags_Disabled : 0))
+        {
+            //p.skip_frames(-1);
+        }
+        if (ImGui::IsItemHovered())
+        {
+            ImGui::SetTooltip("Step Forward");
+        }
+        pos.x += button_space;
+        ImGui::SetCursorScreenPos({ pos.x , pos.y + 5 });
+        ImGui::SameLine();
+        //////////////////// Step Forward Button ////////////////////
+
+
+
+
+        static int item = 2;
+        ImGui::PushItemWidth(100);
+        label = to_string() << "##" << id;
+        ImGui::Combo(label.c_str(), &item, "Speed: x0.25\0Speed: x0.5\0Speed: x1\0Speed: x1.5\0Speed: x2\0\0");
+        
+//        std::string speed_button_name = to_string() << u8"\uf107##" << id;
+//
+//        if (ImGui::Button(speed_button_name.c_str(), { button_dim,button_dim }))
+//            ImGui::OpenPopup(label.c_str());
+//
+//        if (ImGui::BeginPopup(label.c_str()))
+//        {
+//            ImGui::PushStyleColor(ImGuiCol_Text, dark_grey);
+//            if (ImGui::Selectable("0.25"))
+//            {
+//            }
+//            if (ImGui::Selectable("0.5"))
+//            {
+//            }
+//            if (ImGui::Selectable("1"))
+//            {
+//            }
+//            if (ImGui::Selectable("1.5"))
+//            {
+//            }
+//            if (ImGui::Selectable("2"))
+//            {
+//            }
+//            ImGui::PopStyleColor();
+//            ImGui::EndPopup();
+//        }
+
+        ImGui::PopFont();
+
+        return 35;
+    }
+
+    int device_model::draw_seek_bar()
+    {
+        auto p = dev.as<playback>();
+        rs2_playback_status current_playback_status = p.current_status();
+        int64_t playback_total_duration = p.get_duration().count();
+        auto progress = p.get_position();
+        double part = (1.0 * progress) / playback_total_duration;
+        seek_pos = static_cast<int>(std::max(0.0, std::min(part, 1.0)) * 100);
+
+        if (seek_pos != 0 && p.current_status() == RS2_PLAYBACK_STATUS_STOPPED)
+        {
+            seek_pos = 0;
+        }
+        int prev_seek_progress = seek_pos;
+
+        ImGui::PushItemWidth(-1);
+        std::string label1 = " ";
+        ImGui::SeekSlider(label1.c_str(), &seek_pos);
+        if (prev_seek_progress != seek_pos)
+        {
+            //Seek was dragged
+            auto duration_db = std::chrono::duration_cast<std::chrono::duration<double, std::nano>>(p.get_duration());
+            auto single_percent = duration_db.count() / 100;
+            auto seek_time = std::chrono::duration<double, std::nano>(seek_pos * single_percent);
+            p.seek(std::chrono::duration_cast<std::chrono::nanoseconds>(seek_time));
+        }
+
+        return 25;
+    }
+
+    int device_model::draw_playback_panel(ImFont* font)
+    {
+        ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, {20,0});
+        ImGui::PushStyleColor(ImGuiCol_Button, sensor_bg);
+        ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
+        ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
+        ImGui::PushStyleColor(ImGuiCol_PopupBg, almost_white_bg);
+        ImGui::PushStyleColor(ImGuiCol_HeaderHovered, from_rgba(0, 0xae, 0xff, 255));
+        ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
+
+
+        auto pos = ImGui::GetCursorScreenPos();
+        //ImGui::SetCursorScreenPos({ pos.x , pos.y });
+        auto controls_height = draw_playback_controls(font);
+
+        ImGui::SetCursorScreenPos({ pos.x + ImGui::GetContentRegionAvail().x / 8, pos.y + controls_height });
+        auto seek_bar_height = draw_seek_bar();
+        ImGui::PopStyleVar();
+        ImGui::PopStyleColor(6);
+        return controls_height + seek_bar_height;
+        
+    }
+
     std::vector<std::string> get_device_info(const device& dev, bool include_location)
     {
         std::vector<std::string> res;
