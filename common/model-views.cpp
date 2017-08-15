@@ -1937,9 +1937,13 @@ namespace rs2
             if (texture->try_pick(x, y, &val))
             {
                 ss << ", *p: 0x" << std::hex << val;
-                if (texture->get_last_frame().is<depth_frame>() && val > 0)
+            }
+
+            if (texture->get_last_frame().is<depth_frame>())
+            {
+                auto meters = texture->get_last_frame().as<depth_frame>().get_distance(x, y);
+                if (meters > 0)
                 {
-                    auto meters = texture->get_last_frame().as<depth_frame>().get_distance(x, y);
                     ss << std::dec << ", "
                         << std::setprecision(2) << meters << " meters";
                 }

@@ -841,7 +841,7 @@ namespace rs2
 
         bool try_pick(int x, int y, float* result)
         {
-            auto image = last.as<video_frame>();
+            auto image = get_last_frame().as<video_frame>();
             if (!image) return false;
 
             auto format = last.get_profile().format();

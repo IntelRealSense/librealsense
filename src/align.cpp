@@ -308,13 +308,17 @@ namespace librealsense
                 }
             };
 
-            auto process_depth_frame = [this](const rs2::frame& depth)
+            auto process_depth_frame = [this](const rs2::depth_frame& depth)
             {
                 frame_holder res = get_source().allocate_points(_stream, (frame_interface*)depth.get());
 
                 auto pframe = (points*)(res.frame);
 
-                auto points = depth_to_points((uint8_t*)pframe->get_vertices(), *_depth_intrinsics_ptr, (const uint16_t*)depth.get_data(), *_depth_units_ptr);
+                auto depth_data = (const uint16_t*)depth.get_data();
+                auto original_depth = ((depth_frame*)depth.get())->get_original_depth();
+                if (original_depth) depth_data = (const uint16_t*)original_depth->get_frame_data();
+
+                auto points = depth_to_points((uint8_t*)pframe->get_vertices(), *_depth_intrinsics_ptr, depth_data, *_depth_units_ptr);
 
                 auto vid_frame = depth.as<rs2::video_frame>();
                 float2* tex_ptr = pframe->get_texture_coordinates();

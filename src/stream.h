@@ -130,6 +130,8 @@ namespace librealsense
         {
             auto res = std::make_shared<video_stream_profile>(get_context().shared_from_this(), platform::stream_profile{});
             res->set_dims(get_width(), get_height());
+            std::function<rs2_intrinsics()> int_func = _calc_intrinsics;
+            res->set_intrinsics([int_func]() { return int_func(); });
             return res;
         }
 
