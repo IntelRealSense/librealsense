@@ -5,6 +5,9 @@
 #include "playback_device.h"
 #include "core/motion.h"
 #include "stream.h"
+#include "media/ros/ros_reader.h"
+
+using namespace device_serializer;
 
 playback_device::playback_device(std::shared_ptr<context> ctx, std::shared_ptr<device_serializer::reader> serializer) :
     m_context(ctx),
@@ -29,16 +32,32 @@ playback_device::playback_device(std::shared_ptr<context> ctx, std::shared_ptr<d
 
     //Create playback sensor that simulate the recorded sensors
     m_sensors = create_playback_sensors(m_device_description);
+
+    //Register extrinsics
+    for (auto e1 : m_device_description.get_extrinsics_map())
+    {
+        for (auto e2 : m_device_description.get_extrinsics_map())
+        {
+            auto p1 = get_stream(m_sensors, e1.first);
+            auto p2 = get_stream(m_sensors, e2.first);
+            rs2_extrinsics x = calc_extrinsic(e1.second, e2.second);
+            auto l = std::make_shared<lazy<rs2_extrinsics>>([x]()
+            {
+                return x;
+            });
+            m_extrinsics_fetchers.push_back(l);
+            m_context->register_extrinsics(*p1, *p2, l);
+        }
+    }
 }
 std::map<uint32_t, std::shared_ptr<playback_sensor>> playback_device::create_playback_sensors(const device_snapshot& device_description)
 {
-    uint32_t sensor_id = 0;
     std::map<uint32_t, std::shared_ptr<playback_sensor>> sensors;
     for (auto sensor_snapshot : device_description.get_sensors_snapshots())
     {
         //Each sensor will know its capabilities from the sensor_snapshot
-        auto sensor = std::make_shared<playback_sensor>(*this, sensor_snapshot, sensor_id);
-
+        auto sensor = std::make_shared<playback_sensor>(*this, sensor_snapshot);
+       
         sensor->started += [this](uint32_t id, frame_callback_ptr user_callback) -> void
         {
             (*m_read_thread)->invoke([this, id, user_callback](dispatcher::cancellable_timer c)
@@ -87,6 +106,7 @@ std::map<uint32_t, std::shared_ptr<playback_sensor>> playback_device::create_pla
         {
             (*m_read_thread)->invoke([this, filters](dispatcher::cancellable_timer c)
             {
+                //TODO: filter order is important for the reader, if more than 1 filter exists, the reader should enable streams according to the lowest timestamp available
                 for (auto filter : filters)
                 {
                     m_reader->enable_stream({get_device_index(), filter.sensor_index, filter.stream_type, filter.stream_index });
@@ -105,9 +125,33 @@ std::map<uint32_t, std::shared_ptr<playback_sensor>> playback_device::create_pla
             });
         };
 
-        sensors[sensor_id++] = sensor;
+        sensors[sensor_snapshot.get_sensor_index()] = sensor;
     }
     return sensors;
+}
+
+std::shared_ptr<stream_profile_interface> playback_device::get_stream(const std::map<unsigned, std::shared_ptr<playback_sensor>>& sensors_map, device_serializer::stream_identifier stream_id)
+{
+    for (auto sensor_pair : sensors_map)
+    {
+        if(sensor_pair.first == stream_id.sensor_index)
+        {
+            for (auto stream_profile : sensor_pair.second->get_stream_profiles())
+            {
+                if(stream_profile->get_stream_type() == stream_id.stream_type && stream_profile->get_stream_index() == stream_id.stream_index)
+                {
+                    return stream_profile;
+                }
+            }
+        }
+    }
+    throw invalid_value_exception("File contains extrinsics that do not map to an existing stream");
+}
+
+rs2_extrinsics playback_device::calc_extrinsic(const rs2_extrinsics& from, const rs2_extrinsics& to)
+{
+    //NOTE: Assuming here that recording is writing extrinsics between some reference point **to** the stream at hand
+    return from_pose(inverse(to_pose(from)) * to_pose(to));
 }
 
 playback_device::~playback_device()

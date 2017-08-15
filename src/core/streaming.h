@@ -107,7 +107,7 @@ namespace librealsense
     class sensor_interface : public virtual info_interface, public virtual options_interface
     {
     public:
-        virtual stream_profiles get_stream_profiles() = 0;
+        virtual stream_profiles get_stream_profiles() const = 0;
         virtual void open(const stream_profiles& requests) = 0;
         virtual void close() = 0;
 

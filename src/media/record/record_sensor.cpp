@@ -23,7 +23,7 @@ librealsense::record_sensor::~record_sensor()
 {
 }
 
-stream_profiles record_sensor::get_stream_profiles()
+stream_profiles record_sensor::get_stream_profiles() const
 {
     return m_sensor.get_stream_profiles();
 }
@@ -38,6 +38,7 @@ void librealsense::record_sensor::open(const stream_profiles& requests)
     {
         std::shared_ptr<stream_profile_interface> snapshot;
         request->create_snapshot(snapshot);
+        //TODO: handle non video profiles
         m_device_record_snapshot_handler(RS2_EXTENSION_VIDEO_PROFILE, std::dynamic_pointer_cast<extension_snapshot>(snapshot), [this](const std::string& err) { stop_with_error(err); });
     }
 }

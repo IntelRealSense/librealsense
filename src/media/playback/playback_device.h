@@ -65,11 +65,14 @@ namespace librealsense
         void stop();
         void try_looping();
         template <typename T> void do_loop(T op);
-        std::map<uint32_t, std::shared_ptr<playback_sensor>> create_playback_sensors(const device_snapshot& device_description);
+        std::map<uint32_t, std::shared_ptr<playback_sensor>> create_playback_sensors(const device_serializer::device_snapshot& device_description);
+        std::shared_ptr<stream_profile_interface> get_stream(const std::map<unsigned, std::shared_ptr<playback_sensor>>& sensors_map, device_serializer::stream_identifier stream_id);
+        rs2_extrinsics calc_extrinsic(const rs2_extrinsics& from, const rs2_extrinsics& to);
+        void catch_up();
     private:
         lazy<std::shared_ptr<dispatcher>> m_read_thread;
         std::shared_ptr<device_serializer::reader> m_reader;
-        device_snapshot m_device_description;
+        device_serializer::device_snapshot m_device_description;
         std::atomic_bool m_is_started;
         std::atomic_bool m_is_paused;
         std::chrono::high_resolution_clock::time_point m_base_sys_time; // !< System time when reading began (first frame was read)
@@ -80,10 +83,8 @@ namespace librealsense
         std::atomic_bool m_real_time;
         device_serializer::nanoseconds m_prev_timestamp;
         std::shared_ptr<context> m_context;
-        void catch_up();
+        std::vector<std::shared_ptr<lazy<rs2_extrinsics>>> m_extrinsics_fetchers;
     };
 
     MAP_EXTENSION(RS2_EXTENSION_PLAYBACK, playback_device);
 }
-
-

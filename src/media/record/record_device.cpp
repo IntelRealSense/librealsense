@@ -6,6 +6,7 @@
 #include <core/advanced_mode.h>
 #include "record_device.h"
 
+using namespace device_serializer;
 
 librealsense::record_device::record_device(std::shared_ptr<librealsense::device_interface> device,
                                       std::shared_ptr<librealsense::device_serializer::writer> serializer):
@@ -90,10 +91,10 @@ void librealsense::record_device::write_header()
                 options[option_id] = option.query();
             }
         }
-        sensors_snapshot.emplace_back(sensor_extensions_snapshots, options);
+        sensors_snapshot.emplace_back(static_cast<uint32_t>(j), sensor_extensions_snapshots, options);
     }
 
-    m_ros_writer->write_device_description({ device_extensions_md, sensors_snapshot });
+    m_ros_writer->write_device_description({ device_extensions_md, sensors_snapshot, {} });
 }
 
 //Returns the time relative to beginning of the recording
