@@ -23,12 +23,6 @@ namespace librealsense
         switch (value)
         {
         CASE(CUSTOM)
-        CASE(GENERIC_DEPTH)
-        CASE(GENERIC_ACCURATE_DEPTH)
-        CASE(GENERIC_DENSE_DEPTH)
-        CASE(GENERIC_SUPER_DENSE_DEPTH)
-        CASE(FLOOR_LOW)
-        CASE(3D_BODY_SCAN)
         CASE(INDOOR)
         CASE(OUTDOOR)
         CASE(HAND)
