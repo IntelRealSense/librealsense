@@ -66,7 +66,6 @@ public:
         show(r.adjust_ratio({ float(width), float(height) }));
     }
 
-private:
     void upload(const rs2::video_frame& frame)
     {
         if (!frame) return;
@@ -98,6 +97,9 @@ private:
         glBindTexture(GL_TEXTURE_2D, 0);
     }
 
+    GLuint get_gl_handle() { return gl_handle; }
+
+private:
     void show(const rect& r) const
     {
         if (!gl_handle)
@@ -164,6 +166,8 @@ public:
         glfwDestroyWindow(win);
         glfwTerminate();
     }
+
+    operator GLFWwindow*() { return win; }
 private:
     GLFWwindow* win;
     int _width, _height;
