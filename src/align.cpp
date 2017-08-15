@@ -230,7 +230,8 @@ namespace librealsense
           _depth_units_ptr(nullptr),
           _mapped_intrinsics_ptr(nullptr),
           _extrinsics_ptr(nullptr),
-          _mapped(nullptr)
+          _mapped(nullptr),
+          _depth_stream_uid(0)
     {
         auto on_frame = [this](rs2::frame f, const rs2::frame_source& source)
         {
@@ -238,6 +239,15 @@ namespace librealsense
             {
                 auto depth_frame = (frame_interface*)depth.get();
                 std::lock_guard<std::mutex> lock(_mutex);
+
+                if (!_stream.get() || _depth_stream_uid != depth_frame->get_stream()->get_unique_id())
+                {
+                    _stream = depth_frame->get_stream()->clone();
+                    _depth_stream_uid = depth_frame->get_stream()->get_unique_id();
+                    _stream->get_context().register_same_extrinsics(*_stream, *depth_frame->get_stream());
+                    _depth_intrinsics_ptr = nullptr;
+                    _depth_units_ptr = nullptr;
+                }
 
                 bool found_depth_intrinsics = false;
                 bool found_depth_units = false;
@@ -264,12 +274,6 @@ namespace librealsense
                 if (found_depth_units != found_depth_intrinsics)
                 {
                     throw wrong_api_call_sequence_exception("Received depth frame that doesn't provide either intrinsics or depth units!");
-                }
-
-                if (!_stream.get())
-                {
-                    _stream = depth_frame->get_stream()->clone();
-                    _stream->get_context().register_same_extrinsics(*_stream, *depth_frame->get_stream());
                 }
             };
 
