@@ -2753,7 +2753,21 @@ namespace rs2
         static int item = 2;
         ImGui::PushItemWidth(100);
         label = to_string() << "##" << id;
-        ImGui::Combo(label.c_str(), &item, "Speed: x0.25\0Speed: x0.5\0Speed: x1\0Speed: x1.5\0Speed: x2\0\0");
+        if(ImGui::Combo(label.c_str(), &item, "Speed: x0.25\0Speed: x0.5\0Speed: x1\0Speed: x1.5\0Speed: x2\0\0"))
+        {
+            float speed = 1;
+            switch (item)
+            {
+            case 0: speed = 0.25f; break;
+            case 1: speed = 0.5f; break;
+            case 2: speed = 1.0f; break;
+            case 3: speed = 1.5f; break;
+            case 4: speed = 2.0f; break;
+            default:
+                throw std::runtime_error(to_string() << "Speed #" << item << " is unhandled");
+            }
+            p.set_playback_speed(speed);
+        }
         
 //        std::string speed_button_name = to_string() << u8"\uf107##" << id;
 //
