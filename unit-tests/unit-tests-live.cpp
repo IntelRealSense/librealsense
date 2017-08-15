@@ -1177,74 +1177,12 @@ TEST_CASE("Error handling sanity", "[live]") {
 }
 
 TEST_CASE("Advanced Mode presets", "[live]") {
-    enum cam_type{
-        passive,
-        active,
-        awg
-    };
 
-    static std::map<cam_type, std::map<res_type, std::vector<rs2_rs400_visual_preset>>> presets =
-    {{passive, {{small_resolution, {{RS2_RS400_VISUAL_PRESET_GENERIC_DEPTH},
-                                    {RS2_RS400_VISUAL_PRESET_INDOOR},
-                                    {RS2_RS400_VISUAL_PRESET_OUTDOOR},
-                                    {RS2_RS400_VISUAL_PRESET_HAND},
-                                    {RS2_RS400_VISUAL_PRESET_SHORT_RANGE},
-                                    {RS2_RS400_VISUAL_PRESET_BOX}}},
-                {vga_resolution,   {{RS2_RS400_VISUAL_PRESET_GENERIC_DEPTH},
-                                    {RS2_RS400_VISUAL_PRESET_INDOOR},
-                                    {RS2_RS400_VISUAL_PRESET_OUTDOOR},
-                                    {RS2_RS400_VISUAL_PRESET_HAND},
-                                    {RS2_RS400_VISUAL_PRESET_SHORT_RANGE},
-                                    {RS2_RS400_VISUAL_PRESET_BOX}}},
-                {full_resolution,  {{RS2_RS400_VISUAL_PRESET_GENERIC_DEPTH},
-                                    {RS2_RS400_VISUAL_PRESET_INDOOR},
-                                    {RS2_RS400_VISUAL_PRESET_OUTDOOR},
-                                    {RS2_RS400_VISUAL_PRESET_HAND},
-                                    {RS2_RS400_VISUAL_PRESET_SHORT_RANGE},
-                                    {RS2_RS400_VISUAL_PRESET_BOX}}}}},
-     {active,  {{small_resolution, {{RS2_RS400_VISUAL_PRESET_GENERIC_DENSE_DEPTH},
-                                    {RS2_RS400_VISUAL_PRESET_FLOOR_LOW},
-                                    {RS2_RS400_VISUAL_PRESET_INDOOR},
-                                    {RS2_RS400_VISUAL_PRESET_OUTDOOR},
-                                    {RS2_RS400_VISUAL_PRESET_HAND},
-                                    {RS2_RS400_VISUAL_PRESET_SHORT_RANGE},
-                                    {RS2_RS400_VISUAL_PRESET_BOX}}},
-                {vga_resolution,   {{RS2_RS400_VISUAL_PRESET_GENERIC_DEPTH},
-                                    {RS2_RS400_VISUAL_PRESET_GENERIC_ACCURATE_DEPTH},
-                                    {RS2_RS400_VISUAL_PRESET_GENERIC_DENSE_DEPTH},
-                                    {RS2_RS400_VISUAL_PRESET_INDOOR},
-                                    {RS2_RS400_VISUAL_PRESET_OUTDOOR},
-                                    {RS2_RS400_VISUAL_PRESET_HAND},
-                                    {RS2_RS400_VISUAL_PRESET_SHORT_RANGE},
-                                    {RS2_RS400_VISUAL_PRESET_BOX}}},
-                {full_resolution,  {{RS2_RS400_VISUAL_PRESET_GENERIC_DENSE_DEPTH},
-                                    {RS2_RS400_VISUAL_PRESET_GENERIC_DEPTH},
-                                    {RS2_RS400_VISUAL_PRESET_GENERIC_ACCURATE_DEPTH},
-                                    {RS2_RS400_VISUAL_PRESET_GENERIC_SUPER_DENSE_DEPTH},
-                                    {RS2_RS400_VISUAL_PRESET_3D_BODY_SCAN},
-                                    {RS2_RS400_VISUAL_PRESET_INDOOR},
-                                    {RS2_RS400_VISUAL_PRESET_OUTDOOR},
-                                    {RS2_RS400_VISUAL_PRESET_HAND},
-                                    {RS2_RS400_VISUAL_PRESET_SHORT_RANGE},
-                                    {RS2_RS400_VISUAL_PRESET_BOX}}}}},
-     {awg,     {{small_resolution, {{RS2_RS400_VISUAL_PRESET_GENERIC_DENSE_DEPTH},
-                                    {RS2_RS400_VISUAL_PRESET_INDOOR},
-                                    {RS2_RS400_VISUAL_PRESET_OUTDOOR},
-                                    {RS2_RS400_VISUAL_PRESET_HAND},
-                                    {RS2_RS400_VISUAL_PRESET_SHORT_RANGE},
-                                    {RS2_RS400_VISUAL_PRESET_BOX}}},
-                {vga_resolution,   {{RS2_RS400_VISUAL_PRESET_GENERIC_DENSE_DEPTH},
-                                    {RS2_RS400_VISUAL_PRESET_INDOOR},
-                                    {RS2_RS400_VISUAL_PRESET_OUTDOOR},
-                                    {RS2_RS400_VISUAL_PRESET_HAND},
-                                    {RS2_RS400_VISUAL_PRESET_SHORT_RANGE},
-                                    {RS2_RS400_VISUAL_PRESET_BOX}}},
-                {full_resolution,  {{RS2_RS400_VISUAL_PRESET_GENERIC_DENSE_DEPTH},
-                                    {RS2_RS400_VISUAL_PRESET_INDOOR},
-                                    {RS2_RS400_VISUAL_PRESET_OUTDOOR},
-                                    {RS2_RS400_VISUAL_PRESET_HAND},
-                                    {RS2_RS400_VISUAL_PRESET_SHORT_RANGE},
-                                    {RS2_RS400_VISUAL_PRESET_BOX}}}}}};
+    static std::vector<rs2_rs400_visual_preset> presets = {{RS2_RS400_VISUAL_PRESET_INDOOR},
+                                                           {RS2_RS400_VISUAL_PRESET_OUTDOOR},
+                                                           {RS2_RS400_VISUAL_PRESET_HAND},
+                                                           {RS2_RS400_VISUAL_PRESET_SHORT_RANGE},
+                                                           {RS2_RS400_VISUAL_PRESET_BOX}};
 
     rs2::context ctx;
     if (make_context(SECTION_FROM_TEST_NAME, &ctx))
@@ -1275,30 +1213,12 @@ TEST_CASE("Advanced Mode presets", "[live]") {
                 }
             }
 
-            //auto rolling_shutter_cam = dynamic_cast<const ds5_rolling_shutter*>(&presets_sensor.get_device());
-            //auto active_cam = dynamic_cast<const ds5_active*>(&presets_sensor.get_device());
-            // TODO:
-            auto rolling_shutter_cam = true;
-            auto active_cam = true;
-
-            cam_type cam;
-            if (active_cam && rolling_shutter_cam)
-                cam = cam_type::active;
-            else if (rolling_shutter_cam)
-                cam = cam_type::passive;
-            else if (!rolling_shutter_cam)
-                cam = cam_type::awg;
-            else
-                throw("Unknown camera type.");
-
-
-            auto& presets_map = presets.at(cam);
-            for (auto& presets_by_res : presets_map)
+            for (auto res : {small_resolution, vga_resolution, full_resolution})
             {
-                std::vector<rs2::stream_profile> sp = {get_profile_by_resolution_type(presets_sensor, presets_by_res.first)};
+                std::vector<rs2::stream_profile> sp = {get_profile_by_resolution_type(presets_sensor, res)};
                 presets_sensor.open(sp);
                 presets_sensor.start([](rs2::frame){});
-                for (auto& preset : presets_by_res.second)
+                for (auto& preset : presets)
                 {
                     REQUIRE_NOTHROW(presets_sensor.set_option(RS2_OPTION_VISUAL_PRESET, preset));
                     float ret_preset;
