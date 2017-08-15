@@ -1259,7 +1259,7 @@ void rs2_record_device_resume(const rs2_device* device, rs2_error** error) try
 HANDLE_EXCEPTIONS_AND_RETURN(, device)
 
 rs2_frame* rs2_allocate_synthetic_video_frame(rs2_source* source, const rs2_stream_profile* new_stream, rs2_frame* original,
-    int new_bpp, int new_width, int new_height, int new_stride, rs2_error** error) try
+    int new_bpp, int new_width, int new_height, int new_stride, rs2_extension frame_type, rs2_error** error) try
 {
     VALIDATE_NOT_NULL(source);
     VALIDATE_NOT_NULL(original);
@@ -1268,9 +1268,9 @@ rs2_frame* rs2_allocate_synthetic_video_frame(rs2_source* source, const rs2_stre
     auto recovered_profile = std::dynamic_pointer_cast<stream_profile_interface>(new_stream->profile->shared_from_this());
 
     return (rs2_frame*)source->source->allocate_video_frame(recovered_profile,
-        (frame_interface*)original, new_bpp, new_width, new_height, new_stride);
+        (frame_interface*)original, new_bpp, new_width, new_height, new_stride, frame_type);
 }
-HANDLE_EXCEPTIONS_AND_RETURN(nullptr, source, new_stream, original, new_bpp, new_width, new_height, new_stride)
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, source, new_stream, original, new_bpp, new_width, new_height, new_stride, frame_type)
 
 void rs2_synthetic_frame_ready(rs2_source* source, rs2_frame* frame, rs2_error** error) try
 {

@@ -94,6 +94,7 @@ namespace librealsense
                 if (f.get_profile().stream_type() == RS2_STREAM_DEPTH)
                 {
                     auto vf = f.as<rs2::video_frame>();
+
                     ret = source.allocate_video_frame(*_stream, f, 3, vf.get_width(), vf.get_height(), vf.get_width() * 3);
                     if (_equalize) make_equalized_histogram(f, ret);
                     else make_value_cropped_frame(f, ret);

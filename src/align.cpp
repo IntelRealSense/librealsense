@@ -103,7 +103,8 @@ namespace librealsense
                                                             int new_bpp,
                                                             int new_width,
                                                             int new_height,
-                                                            int new_stride)
+                                                            int new_stride,
+                                                            rs2_extension frame_type)
     {
         video_frame* vf = nullptr;
 
@@ -153,7 +154,7 @@ namespace librealsense
             height = vf->get_height();
         }
 
-        auto res = _actual_source.alloc_frame(RS2_EXTENSION_VIDEO_FRAME, stride * height, data, true);
+        auto res = _actual_source.alloc_frame(frame_type, stride * height, data, true);
         if (!res) throw wrong_api_call_sequence_exception("Out of frame resources!");
         vf = static_cast<video_frame*>(res);
         vf->assign(width, height, stride, bpp);
