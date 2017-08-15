@@ -438,7 +438,7 @@ namespace rs2
 
     void viewer_model::draw_histogram_options(float depth_units, const subdevice_model& sensor)
     {
-        std::vector<int> depth_streams_ids;
+        /*std::vector<int> depth_streams_ids;
         for (auto&& s : streams)
         {
             if (s.second.dev.get() == &sensor && s.second.profile.stream_type() == RS2_STREAM_DEPTH)
@@ -487,7 +487,7 @@ namespace rs2
                     std::swap(streams[id].texture->max_depth, streams[id].texture->min_depth);
                 }
             }
-        }
+        }*/
     }
 
     subdevice_model::subdevice_model(device& dev, sensor& s, std::string& error_message)
@@ -2327,20 +2327,25 @@ namespace rs2
     {
         while (keep_calculating_pointcloud)
         {
-            frame f;
-            if (depth_frames_to_render.poll_for_frame(&f))
+            try
             {
-                if (f.get_frame_number() == last_frame_number &&
-                    f.get_timestamp() <= last_timestamp &&
-                    f.get_profile().unique_id() == last_stream_id)
-                    continue;
+                frame f;
+                if (depth_frames_to_render.poll_for_frame(&f))
+                {
+                    if (f.get_frame_number() == last_frame_number &&
+                        f.get_timestamp() <= last_timestamp &&
+                        f.get_profile().unique_id() == last_stream_id)
+                        continue;
 
-                resulting_3d_models.enqueue(pc.calculate(f));
+                    resulting_3d_models.enqueue(pc.calculate(f));
 
-                last_frame_number = f.get_frame_number();
-                last_timestamp = f.get_timestamp();
-                last_stream_id = f.get_profile().unique_id();
+                    last_frame_number = f.get_frame_number();
+                    last_timestamp = f.get_timestamp();
+                    last_stream_id = f.get_profile().unique_id();
+                }
             }
+            catch (...) {}
+
             // There is no practical reason to re-calculate the 3D model
             // at higher frequency then 100 FPS
             std::this_thread::sleep_for(std::chrono::milliseconds(10));

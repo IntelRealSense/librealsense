@@ -526,9 +526,9 @@ namespace rs2
     class texture_buffer
     {
         GLuint texture;
-        std::vector<uint8_t> rgb;
         rs2::frame_queue last_queue;
         mutable rs2::frame last;
+        colorizer colorize;
 
     public:
         rs2::frame get_last_frame() const { 
@@ -536,21 +536,18 @@ namespace rs2
             return last; 
         }
 
-        color_map* cm = &jet;
-        bool equalize = true;
-        float min_depth = 0.f;
-        float max_depth = 16.f;
-        rs2::colorizer colorizer;
-
-        texture_buffer() : last_queue(1), texture(), colorizer() {}
+        texture_buffer() : last_queue(1), texture(), colorize() {}
 
         GLuint get_gl_handle() const { return texture; }
 
-        void upload(const rs2::frame& frame)
+        void upload(rs2::frame frame)
         {
             // If the frame timestamp has changed since the last time show(...) was called, re-upload the texture
             if (!texture)
                 glGenTextures(1, &texture);
+
+            if (frame.is<depth_frame>())
+                frame = colorize(frame);
 
             int width = 0;
             int height = 0;
@@ -578,10 +575,7 @@ namespace rs2
                 throw std::runtime_error("not a valid format");
             case RS2_FORMAT_Z16:
             case RS2_FORMAT_DISPARITY16:
-                f = colorizer.colorize(frame);
-                ptr = reinterpret_cast<const uint8_t*>(f.get_data());
-                rgb = std::vector<uint8_t>(ptr, ptr + f.get_stride_in_bytes()*f.get_height());
-                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, rgb.data());
+                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_LUMINANCE, GL_UNSIGNED_SHORT, data);
                 break;
             case RS2_FORMAT_XYZ32F:
                 glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_FLOAT, data);
@@ -612,25 +606,25 @@ namespace rs2
             case RS2_FORMAT_GPIO_RAW:
                 glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE, width, height, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, data);
                 break;
-            case RS2_FORMAT_RAW10:
-            {
-                // Visualize Raw10 by performing a naive downsample. Each 2x2 block contains one red pixel, two green pixels, and one blue pixel, so combine them into a single RGB triple.
-                rgb.clear(); rgb.resize(width / 2 * height / 2 * 3);
-                auto out = rgb.data(); auto in0 = reinterpret_cast<const uint8_t *>(data), in1 = in0 + width * 5 / 4;
-                for (auto y = 0; y<height; y += 2)
-                {
-                    for (auto x = 0; x<width; x += 4)
-                    {
-                        *out++ = in0[0]; *out++ = (in0[1] + in1[0]) / 2; *out++ = in1[1]; // RGRG -> RGB RGB
-                        *out++ = in0[2]; *out++ = (in0[3] + in1[2]) / 2; *out++ = in1[3]; // GBGB
-                        in0 += 5; in1 += 5;
-                    }
-                    in0 = in1; in1 += width * 5 / 4;
-                }
-                glPixelStorei(GL_UNPACK_ROW_LENGTH, width / 2);        // Update row stride to reflect post-downsampling dimensions of the target texture
-                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width / 2, height / 2, 0, GL_RGB, GL_UNSIGNED_BYTE, rgb.data());
-            }
-            break;
+            //case RS2_FORMAT_RAW10:
+            //{
+            //    // Visualize Raw10 by performing a naive downsample. Each 2x2 block contains one red pixel, two green pixels, and one blue pixel, so combine them into a single RGB triple.
+            //    rgb.clear(); rgb.resize(width / 2 * height / 2 * 3);
+            //    auto out = rgb.data(); auto in0 = reinterpret_cast<const uint8_t *>(data), in1 = in0 + width * 5 / 4;
+            //    for (auto y = 0; y<height; y += 2)
+            //    {
+            //        for (auto x = 0; x<width; x += 4)
+            //        {
+            //            *out++ = in0[0]; *out++ = (in0[1] + in1[0]) / 2; *out++ = in1[1]; // RGRG -> RGB RGB
+            //            *out++ = in0[2]; *out++ = (in0[3] + in1[2]) / 2; *out++ = in1[3]; // GBGB
+            //            in0 += 5; in1 += 5;
+            //        }
+            //        in0 = in1; in1 += width * 5 / 4;
+            //    }
+            //    glPixelStorei(GL_UNPACK_ROW_LENGTH, width / 2);        // Update row stride to reflect post-downsampling dimensions of the target texture
+            //    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width / 2, height / 2, 0, GL_RGB, GL_UNSIGNED_BYTE, rgb.data());
+            //}
+            //break;
             default:
                 throw std::runtime_error("The requested format is not suported for rendering");
             }
