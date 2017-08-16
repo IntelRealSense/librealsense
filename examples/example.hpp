@@ -72,6 +72,7 @@ public:
 
         if (!gl_handle)
             glGenTextures(1, &gl_handle);
+        GLenum err = glGetError();
 
         auto format = frame.get_profile().format();
         width = frame.get_width();
@@ -99,7 +100,6 @@ public:
 
     GLuint get_gl_handle() { return gl_handle; }
 
-private:
     void show(const rect& r) const
     {
         if (!gl_handle)
@@ -118,7 +118,7 @@ private:
 
         draw_text(r.x + 15, r.y + 20, rs2_stream_to_string(stream));
     }
-
+private:
     GLuint gl_handle = 0;
     int width = 0;
     int height = 0;
