@@ -327,27 +327,29 @@ platform::backend_device_group playback_device::get_device_data() const
     return {}; //ZIV: what to do?
 }
 
-void playback_device::update_time_base(std::chrono::microseconds base_timestamp)
+void playback_device::update_time_base(device_serializer::nanoseconds base_timestamp)
 {
     m_base_sys_time = std::chrono::high_resolution_clock::now();
     m_base_timestamp = base_timestamp;
 }
 
-std::chrono::microseconds playback_device::calc_sleep_time(std::chrono::microseconds timestamp) const
+device_serializer::nanoseconds playback_device::calc_sleep_time(device_serializer::nanoseconds timestamp) const
 {
     //The time to sleep returned here equals to the difference between the file recording time
     // and the playback time.
     auto now = std::chrono::high_resolution_clock::now();
-    auto play_time = std::chrono::duration_cast<std::chrono::microseconds>(now - m_base_sys_time);
-    auto time_diff = timestamp - m_base_timestamp;
-    if (time_diff.count() < 0)
+    auto play_time = now - m_base_sys_time;
+    if(timestamp < m_base_timestamp)
     {
-        return std::chrono::microseconds(0);
+        assert(0);
     }
-
-    auto recorded_time = std::chrono::duration_cast<std::chrono::microseconds>(time_diff / m_sample_rate.load());//std::llround(static_cast<double>(time_diff.count()) / m_sample_rate);
-    auto sleep_time = (recorded_time - play_time);
-    return sleep_time;
+    auto time_diff = timestamp - m_base_timestamp;
+    auto recorded_time = std::chrono::duration_cast<device_serializer::nanoseconds>(time_diff / m_sample_rate.load());//std::llround(static_cast<double>(time_diff.count()) / m_sample_rate);
+    if(recorded_time < play_time)
+    {
+        return device_serializer::nanoseconds(0);
+    }
+    return (recorded_time - play_time);
 }
 
 void playback_device::start()
@@ -446,7 +448,6 @@ void playback_device::try_looping()
         //Read next data from the serializer, on success: 'obj' will be a valid object that came from
         // sensor number 'sensor_index' with a timestamp equal to 'timestamp'
         device_serializer::stream_identifier stream_id;
-        //TODO: change timestamp type to file_type::nanoseconds
         device_serializer::nanoseconds timestamp = device_serializer::nanoseconds::max();
         frame_holder frame;
         auto retval = m_reader->read_frame(timestamp, stream_id, frame);
@@ -460,28 +461,22 @@ void playback_device::try_looping()
         }
 
         m_prev_timestamp = timestamp;
-        auto timestamp_micros = std::chrono::duration_cast<std::chrono::microseconds>(timestamp);
         //Objects with timestamp of 0 are non streams.
         if (m_base_timestamp.count() == 0)
         {
             //As long as m_base_timestamp is 0, update it to object's timestamp.
             //Once a streaming object arrive, the base will change from 0
-            update_time_base(timestamp_micros);
+            update_time_base(timestamp);
         }
 
         //Calculate the duration for the reader to sleep (i.e wait for next frame)
-        auto sleep_time = calc_sleep_time(timestamp_micros);
+        auto sleep_time = calc_sleep_time(timestamp);
         if (sleep_time.count() > 0)
         {
             if (m_sample_rate > 0)
             {
-                std::this_thread::sleep_for(std::chrono::microseconds(sleep_time));
+                std::this_thread::sleep_for(sleep_time);
             }
-        }
-
-        if (sleep_time.count() < 0)
-        {
-            //TODO: we should probably jump forward here to align with the play time (frame will be dropped, blood will be shed...)
         }
 
         if (stream_id.device_index != get_device_index() || stream_id.sensor_index >= m_sensors.size())

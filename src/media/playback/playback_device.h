@@ -56,8 +56,8 @@ namespace librealsense
         signal<playback_device, rs2_playback_status> playback_status_changed;
         platform::backend_device_group get_device_data() const override;
     private:
-        void update_time_base(std::chrono::microseconds base_timestamp);
-        std::chrono::microseconds calc_sleep_time(std::chrono::microseconds timestamp) const;
+        void update_time_base(device_serializer::nanoseconds base_timestamp);
+        device_serializer::nanoseconds calc_sleep_time(device_serializer::nanoseconds  timestamp) const;
         void start();
         void stop();
         void try_looping();
@@ -74,7 +74,7 @@ namespace librealsense
         std::atomic_bool m_is_started;
         std::atomic_bool m_is_paused;
         std::chrono::high_resolution_clock::time_point m_base_sys_time; // !< System time when reading began (first frame was read)
-        std::chrono::microseconds m_base_timestamp; // !< Timestamp of the first frame that has a real timestamp (different than 0)
+        device_serializer::nanoseconds m_base_timestamp; // !< Timestamp of the first frame that has a real timestamp (different than 0)
         std::map<uint32_t, std::shared_ptr<playback_sensor>> m_sensors;
         std::map<uint32_t, std::shared_ptr<playback_sensor>> m_active_sensors;
         std::atomic<double> m_sample_rate;
