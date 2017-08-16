@@ -2657,6 +2657,179 @@ namespace rs2
         _recorder->resume();
     }
 
+    int device_model::draw_playback_controls(ImFont* font)
+    {
+        auto p = dev.as<playback>();
+        rs2_playback_status current_playback_status = p.current_status();
+        
+        ImGui::PushFont(font);
+        ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, { 20,0 });
+        //const int button_space = 150;
+        const float button_dim = 30.f;
+        bool buttons_disabled = current_playback_status == RS2_PLAYBACK_STATUS_STOPPED;
+        const bool supports_playback_stop = false; //TODO: Change once we support these features
+        const bool supports_playback_step = false;
+
+
+        //////////////////// Step Backwards Button ////////////////////
+        std::string label = to_string() << u8"\uf048" << "##Step Backwards " << id;
+        
+        if (ImGui::ButtonEx(label.c_str(), { button_dim, button_dim }, (!supports_playback_step || buttons_disabled) ? ImGuiButtonFlags_Disabled : 0))
+        {
+            //p.skip_frames(1);
+        }
+        
+
+        if (ImGui::IsItemHovered())
+        {
+            std::string tooltip = to_string() << "Step Backwards" << (buttons_disabled || supports_playback_step ? "" : "(Not available)");
+            ImGui::SetTooltip(tooltip.c_str());
+        }
+        ImGui::SameLine();
+        //////////////////// Step Backwards Button ////////////////////
+
+
+        //////////////////// Stop Button ////////////////////
+        label = to_string() << u8"\uf04d" << "##Stop Playback " << id;
+
+        if (ImGui::ButtonEx(label.c_str(), { button_dim, button_dim }, (!supports_playback_stop || buttons_disabled) ? ImGuiButtonFlags_Disabled : 0))
+        {
+            //p.stop();
+        }
+        if (ImGui::IsItemHovered())
+        {
+            std::string tooltip = to_string() << "Stop Playback" << (buttons_disabled || supports_playback_stop ? "" : "(Not available)");
+            ImGui::SetTooltip(tooltip.c_str());
+        }
+        ImGui::SameLine();
+        //////////////////// Stop Button ////////////////////
+
+
+
+        //////////////////// Pause/Play Button ////////////////////
+        if (current_playback_status == RS2_PLAYBACK_STATUS_PAUSED)
+        {
+            label = to_string() << u8"\uf04b" << "##Resume Playback " << id;
+            if (ImGui::ButtonEx(label.c_str(), { button_dim, button_dim }, buttons_disabled ? ImGuiButtonFlags_Disabled : 0))
+            {
+                p.resume();
+            }
+            if (ImGui::IsItemHovered())
+            {
+                ImGui::SetTooltip("Resume Playback");
+            }
+        }
+        else
+        {
+            label = to_string() << u8"\uf04c" << "##Pause Playback " << id;
+            if (ImGui::ButtonEx(label.c_str(), { button_dim, button_dim }, buttons_disabled ? ImGuiButtonFlags_Disabled : 0))
+            {
+                p.pause();
+            }
+            if (ImGui::IsItemHovered())
+            {
+                ImGui::SetTooltip("Pause Playback");
+            }
+        }
+        
+        ImGui::SameLine();
+        //////////////////// Pause/Play Button ////////////////////
+
+        
+
+
+        //////////////////// Step Forward Button ////////////////////
+        label = to_string() << u8"\uf051" << "##Step Forward " << id;
+        if (ImGui::ButtonEx(label.c_str(), { button_dim, button_dim }, (!supports_playback_step || buttons_disabled) ? ImGuiButtonFlags_Disabled : 0))
+        {
+            //p.skip_frames(-1);
+        }
+        if (ImGui::IsItemHovered())
+        {
+            std::string tooltip = to_string() << "Step Forward" << (buttons_disabled || supports_playback_step ? "" : "(Not available)");
+            ImGui::SetTooltip(tooltip.c_str());
+        }
+        ImGui::SameLine();
+        //////////////////// Step Forward Button ////////////////////
+
+
+        ImGui::PopStyleVar();
+
+        //////////////////// Speed combo box ////////////////////
+        auto pos = ImGui::GetCursorPos();
+        ImGui::SetCursorPos({ 200.0f, pos.y + 3 });
+        ImGui::PushItemWidth(100);
+        label = to_string() << "## " << id;
+        if(ImGui::Combo(label.c_str(), &playback_speed_index, "Speed: x0.25\0Speed: x0.5\0Speed: x1\0Speed: x1.5\0Speed: x2\0\0"))
+        {
+            float speed = 1;
+            switch (playback_speed_index)
+            {
+            case 0: speed = 0.25f; break;
+            case 1: speed = 0.5f; break;
+            case 2: speed = 1.0f; break;
+            case 3: speed = 1.5f; break;
+            case 4: speed = 2.0f; break;
+            default:
+                throw std::runtime_error(to_string() << "Speed #" << playback_speed_index << " is unhandled");
+            }
+            p.set_playback_speed(speed);
+        }
+        //////////////////// Speed combo box ////////////////////
+        ImGui::PopFont();
+
+        return 35;
+    }
+
+    int device_model::draw_seek_bar()
+    {
+        auto p = dev.as<playback>();
+        rs2_playback_status current_playback_status = p.current_status();
+        int64_t playback_total_duration = p.get_duration().count();
+        auto progress = p.get_position();
+        double part = (1.0 * progress) / playback_total_duration;
+        seek_pos = static_cast<int>(std::max(0.0, std::min(part, 1.0)) * 100);
+
+        if (seek_pos != 0 && p.current_status() == RS2_PLAYBACK_STATUS_STOPPED)
+        {
+            seek_pos = 0;
+        }
+        int prev_seek_progress = seek_pos;
+
+        ImGui::PushItemWidth(290.f);
+        std::string label1 = "## " + id;
+        ImGui::SeekSlider(label1.c_str(), &seek_pos);
+        if (prev_seek_progress != seek_pos)
+        {
+            //Seek was dragged
+            auto duration_db = std::chrono::duration_cast<std::chrono::duration<double, std::nano>>(p.get_duration());
+            auto single_percent = duration_db.count() / 100;
+            auto seek_time = std::chrono::duration<double, std::nano>(seek_pos * single_percent);
+            p.seek(std::chrono::duration_cast<std::chrono::nanoseconds>(seek_time));
+        }
+
+        return 25;
+    }
+
+    int device_model::draw_playback_panel(ImFont* font)
+    {
+        ImGui::PushStyleColor(ImGuiCol_Button, sensor_bg);
+        ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
+        ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
+        ImGui::PushStyleColor(ImGuiCol_PopupBg, almost_white_bg);
+        ImGui::PushStyleColor(ImGuiCol_HeaderHovered, from_rgba(0, 0xae, 0xff, 255));
+        ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
+
+
+        auto pos = ImGui::GetCursorPos();
+        auto controls_height = draw_playback_controls(font);
+        ImGui::SetCursorPos({ pos.x + 8, pos.y + controls_height });
+        auto seek_bar_height = draw_seek_bar();
+        ImGui::PopStyleColor(6);
+        return controls_height + seek_bar_height;
+        
+    }
+
     std::vector<std::string> get_device_info(const device& dev, bool include_location)
     {
         std::vector<std::string> res;

@@ -5537,15 +5537,23 @@ bool ImGui::ButtonEx(const char* label, const ImVec2& size_arg, ImGuiButtonFlags
     if (window->DC.ButtonRepeat) flags |= ImGuiButtonFlags_Repeat;
     bool hovered, held;
     bool pressed = ButtonBehavior(bb, id, &hovered, &held, flags);
+    bool button_disabled = flags & ImGuiButtonFlags_Disabled;
 
     // Render
     const ImU32 col = GetColorU32((hovered && held) ? ImGuiCol_ButtonActive : hovered ? ImGuiCol_ButtonHovered : ImGuiCol_Button);
     RenderFrame(bb.Min, bb.Max, col, true, style.FrameRounding);
-
+    
+    if(button_disabled)
+        PushStyleColor(ImGuiCol_Text, ImColor(GetColorU32({ 0.5f,0.5f,0.5f,1.f })));
+    
     if (hovered || held)
         PushStyleColor(ImGuiCol_Text, ImColor(GetColorU32(ImGuiCol_TextSelectedBg)));
+
     RenderTextClipped(bb.Min, bb.Max, label, NULL, &label_size, ImGuiAlign_Center | ImGuiAlign_VCenter);
     if (hovered || held)
+        PopStyleColor();
+
+    if (button_disabled)
         PopStyleColor();
 
     // Automatically close popups
@@ -6357,14 +6365,34 @@ float ImGui::RoundScalar(float value, int decimal_precision)
     return negative ? -value : value;
 }
 
-bool ImGui::SliderBehavior(const ImRect& frame_bb, ImGuiID id, float* v, float v_min, float v_max, float power, int decimal_precision, ImGuiSliderFlags flags)
+bool ImGui::SliderBehavior(const ImRect& frame_bb, ImGuiID id, float* v, float v_min, float v_max, float power, int decimal_precision, ImGuiSliderFlags flags, bool render_bg)
 {
     ImGuiContext& g = *GImGui;
     ImGuiWindow* window = GetCurrentWindow();
     const ImGuiStyle& style = g.Style;
 
-    // Draw frame
-    RenderFrame(frame_bb.Min, frame_bb.Max, GetColorU32(ImGuiCol_FrameBg), true, style.FrameRounding);
+    if (!render_bg)
+    {
+        // Draw frame
+        RenderFrame(frame_bb.Min, frame_bb.Max, GetColorU32(ImGuiCol_FrameBg), true, style.FrameRounding);
+    }
+    else
+    {
+        auto bb = frame_bb;
+        auto slider_height = bb.Max.y - bb.Min.y;
+        bb.Min.y = bb.Min.y + (slider_height / 3);
+        bb.Max.y = bb.Max.y - (slider_height / 3);
+        if (bb.Max.y - bb.Min.y < 1.0f)
+        {
+            bb.Min.y -= 0.5;
+            bb.Max.y += 0.5;
+        }
+        // Draw frame
+        RenderFrame(bb.Min, bb.Max, GetColorU32(ImGuiCol_FrameBg), false, 10.0f);
+        float grab_padding = 2.0f;
+        const ImVec2 fill_br = ImVec2(ImLerp(bb.Min.x, bb.Max.x - grab_padding, *v / 100), bb.Max.y);
+        RenderFrame(bb.Min, fill_br, ImGui::ColorConvertFloat4ToU32({ 0, 112.f / 255, 197.f / 255, 1 }), false, 10.0f);
+    }
 
     const bool is_non_linear = fabsf(power - 1.0f) > 0.0001f;
     const bool is_horizontal = (flags & ImGuiSliderFlags_Vertical) == 0;
@@ -6480,7 +6508,18 @@ bool ImGui::SliderBehavior(const ImRect& frame_bb, ImGuiID id, float* v, float v
         grab_bb = ImRect(ImVec2(grab_pos - grab_sz*0.5f, frame_bb.Min.y + grab_padding), ImVec2(grab_pos + grab_sz*0.5f, frame_bb.Max.y - grab_padding));
     else
         grab_bb = ImRect(ImVec2(frame_bb.Min.x + grab_padding, grab_pos - grab_sz*0.5f), ImVec2(frame_bb.Max.x - grab_padding, grab_pos + grab_sz*0.5f));
-    window->DrawList->AddRectFilled(grab_bb.Min, grab_bb.Max, GetColorU32(g.ActiveId == id ? ImGuiCol_SliderGrabActive : ImGuiCol_SliderGrab), style.GrabRounding);
+
+    if(render_bg)
+    {
+        float width = (grab_bb.Max.x - grab_bb.Min.x);
+        float height = (grab_bb.Max.y - grab_bb.Min.y);
+
+        window->DrawList->AddCircleFilled({ grab_bb.Max.x - (width / 2.0f) , grab_bb.Max.y - (height / 2.0f) }, height / 2.5f, GetColorU32(g.ActiveId == id ? ImGuiCol_SliderGrabActive : ImGuiCol_SliderGrab), 16);
+    }
+    else
+    {
+        window->DrawList->AddRectFilled(grab_bb.Min, grab_bb.Max, GetColorU32(g.ActiveId == id ? ImGuiCol_SliderGrabActive : ImGuiCol_SliderGrab), style.GrabRounding);
+    }
 
     return value_changed;
 }
@@ -6543,15 +6582,10 @@ bool ImGui::SliderFloat(const char* label, float* v, float v_min, float v_max, c
     if (start_text_input || (g.ActiveId == id && g.ScalarAsInputTextId == id))
         return InputScalarAsWidgetReplacement(frame_bb, label, ImGuiDataType_Float, v, id, decimal_precision);
 
-    if (render_bg)
-    {
-        const ImVec2 fill_br = ImVec2(ImLerp(frame_bb.Min.x, frame_bb.Max.x, *v / 100), frame_bb.Max.y);
-        RenderFrame(frame_bb.Min, fill_br, GetColorU32(ImGuiCol_PlotHistogram), false, style.FrameRounding);
-    }
     ItemSize(total_bb, style.FramePadding.y);
 
     // Actual slider behavior + render grab
-    const bool value_changed = SliderBehavior(frame_bb, id, v, v_min, v_max, power, decimal_precision);
+    const bool value_changed = SliderBehavior(frame_bb, id, v, v_min, v_max, power, decimal_precision, 0, render_bg);
 
     // Display value using user-provided display format so user can add prefix/suffix/decorations to the value.
     char value_buf[64];

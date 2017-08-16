@@ -65,6 +65,14 @@ namespace rs2
             rs2_playback_device_set_real_time(_dev.get(), (real_time ? 1 : 0), &e);
             error::handle(e);
         }
+        
+        void set_playback_speed(float speed) const
+        {
+            rs2_error* e = nullptr;
+            rs2_playback_device_set_playback_speed(_dev.get(), speed, &e);
+            error::handle(e);
+        }
+
         template <typename T>
         void set_status_changed_callback(T callback)
         {

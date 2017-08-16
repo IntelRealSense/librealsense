@@ -186,14 +186,49 @@ namespace librealsense
             throw std::runtime_error(to_string() << "Failed to convert source: \"" << "\" to matching rs2_optin");
         }
 
+        //rotation matrix is column major
+        //      m[3][3] <==> r[9]
+        //
+        //     [00, 01, 02] <==> [ r[0], r[3], r[6] ] 
+        // m = [10, 11, 12] <==> [ r[1], r[4], r[7] ]
+        //     [20, 21, 22] <==> [ r[2], r[5], r[8] ]
+        //
+
+        inline void quat2rot(const geometry_msgs::Transform::_rotation_type& q, float (&r)[9])
+        {
+            r[0] = 1 - 2 * q.y*q.y - 2 * q.z*q.z;  //  m00 = 1 - 2 * qy2 - 2 * qz2
+            r[3] = 2 * q.x*q.y - 2 * q.z*q.w;      //  m01 = 2 * qx*qy - 2 * qz*qw
+            r[6] = 2 * q.x*q.z + 2 * q.y*q.w;      //  m02 = 2 * qx*qz + 2 * qy*qw
+            r[1] = 2 * q.x*q.y + 2 * q.z*q.w;      //  m10 = 2 * qx*qy + 2 * qz*qw
+            r[4] = 1 - 2 * q.x*q.x - 2 * q.z*q.z;  //  m11 = 1 - 2 * qx2 - 2 * qz2
+            r[7] = 2 * q.y*q.z - 2 * q.x*q.w;      //  m12 = 2 * qy*qz - 2 * qx*qw
+            r[2] = 2 * q.x*q.z - 2 * q.y*q.w;      //  m20 = 2 * qx*qz - 2 * qy*qw
+            r[5] = 2 * q.y*q.z + 2 * q.x*q.w;      //  m21 = 2 * qy*qz + 2 * qx*qw
+            r[8] = 1 - 2 * q.x*q.x - 2 * q.y*q.y;  //  m22 = 1 - 2 * qx2 - 2 * qy2
+        }
+
+        inline void rot2quat(const float(&r)[9], geometry_msgs::Transform::_rotation_type& q)
+        {
+            q.w = sqrtf(1 + r[0] + r[4] + r[8]) / 2; // qw= sqrt(1 + m00 + m11 + m22) /2
+            q.x = (r[5] - r[7]) / (4 * q.w);         // qx = (m21 - m12)/( 4 *qw)
+            q.y = (r[6] - r[2]) / (4 * q.w);         // qy = (m02 - m20)/( 4 *qw)
+            q.z = (r[1] - r[3]) / (4 * q.w);         // qz = (m10 - m01)/( 4 *qw)
+        }
+
         inline void convert(const geometry_msgs::Transform& source, rs2_extrinsics& target)
         {
-            throw not_implemented_exception("convertion from  geometry_msgs::Transform to rs2_extrinsics");
+            target.translation[0] = source.translation.x;
+            target.translation[1] = source.translation.y;
+            target.translation[2] = source.translation.z;
+            quat2rot(source.rotation, target.rotation);
         }
 
         inline void convert(const rs2_extrinsics& source, geometry_msgs::Transform& target)
         {
-            throw not_implemented_exception("convertion from rs2_extrinsics to geometry_msgs::Transform");
+            target.translation.x = source.translation[0];
+            target.translation.y = source.translation[1];
+            target.translation.z = source.translation[2];
+            rot2quat(source.rotation, target.rotation);
         }
 
         inline void convert(const std::string& source, rs2_frame_metadata& target)

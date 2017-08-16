@@ -304,7 +304,7 @@ namespace rs2
         void stop_recording();
         void pause_record();
         void resume_record();
-
+        int draw_playback_panel(ImFont* font);
         void draw_advanced_mode_tab(device& dev, std::vector<std::string>& restarting_info);
 
         std::vector<std::shared_ptr<subdevice_model>> subdevices;
@@ -314,8 +314,12 @@ namespace rs2
         device dev;
         std::string id;
         bool is_recording = false;
+        int seek_pos = 0;
+        int playback_speed_index = 2;
 
     private:
+        int draw_seek_bar();
+        int draw_playback_controls(ImFont* font);
         advanced_mode_control amc;
 
         std::shared_ptr<recorder> _recorder;

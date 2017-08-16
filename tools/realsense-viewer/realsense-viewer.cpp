@@ -652,6 +652,7 @@ int main(int, char**) try
                 ImGui::SetCursorPos({ 33, pos.y + panel_y - 9 });
                 ImGui::PushStyleColor(ImGuiCol_Text, from_rgba(0xc3, 0xd5, 0xe5, 0xff));
 
+                int playback_control_panel_height = 0;
                 if (auto p = dev_model.dev.as<playback>())
                 {
                     auto full_path = p.file_name();
@@ -660,10 +661,14 @@ int main(int, char**) try
                     ImGui::Text("File: \"%s\"", filename.c_str());
                     if (ImGui::IsItemHovered())
                         ImGui::SetTooltip(full_path.c_str());
+
+                    auto playback_panel_pos = ImVec2{ 0, pos.y + panel_y + 18 };
+                    ImGui::SetCursorPos(playback_panel_pos);
+                    playback_panel_pos.y = dev_model.draw_playback_panel(font_14);
+                    playback_control_panel_height += playback_panel_pos.y;
                 }
 
-
-                ImGui::SetCursorPos({ 0, pos.y + header_h });
+                ImGui::SetCursorPos({ 0, pos.y + header_h + playback_control_panel_height });
                 ImGui::PopStyleColor(2);
                 ImGui::PopFont();
 
