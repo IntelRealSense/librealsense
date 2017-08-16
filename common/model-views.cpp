@@ -2652,12 +2652,10 @@ namespace rs2
     {
         auto p = dev.as<playback>();
         rs2_playback_status current_playback_status = p.current_status();
-
-        auto pos = ImGui::GetCursorScreenPos();
         
         ImGui::PushFont(font);
-
-        const int button_space = 150;
+        ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, { 20,0 });
+        //const int button_space = 150;
         const float button_dim = 30.f;
         bool buttons_disabled = current_playback_status == RS2_PLAYBACK_STATUS_STOPPED;
         const bool supports_playback_stop = false; //TODO: Change once we support these features
@@ -2678,8 +2676,6 @@ namespace rs2
             std::string tooltip = to_string() << "Step Backwards" << (buttons_disabled || supports_playback_step ? "" : "(Not available)");
             ImGui::SetTooltip(tooltip.c_str());
         }
-        pos.x += button_space;
-        ImGui::SetCursorScreenPos(pos);
         ImGui::SameLine();
         //////////////////// Step Backwards Button ////////////////////
 
@@ -2696,8 +2692,6 @@ namespace rs2
             std::string tooltip = to_string() << "Stop Playback" << (buttons_disabled || supports_playback_stop ? "" : "(Not available)");
             ImGui::SetTooltip(tooltip.c_str());
         }
-        pos.x += button_space;
-        ImGui::SetCursorScreenPos(pos);
         ImGui::SameLine();
         //////////////////// Stop Button ////////////////////
 
@@ -2729,8 +2723,6 @@ namespace rs2
             }
         }
         
-        pos.x += button_space;
-        ImGui::SetCursorScreenPos(pos);
         ImGui::SameLine();
         //////////////////// Pause/Play Button ////////////////////
 
@@ -2748,14 +2740,15 @@ namespace rs2
             std::string tooltip = to_string() << "Step Forward" << (buttons_disabled || supports_playback_step ? "" : "(Not available)");
             ImGui::SetTooltip(tooltip.c_str());
         }
-        pos.x += button_space;
-        ImGui::SetCursorScreenPos({ pos.x , pos.y + 5 });
         ImGui::SameLine();
         //////////////////// Step Forward Button ////////////////////
 
 
+        ImGui::PopStyleVar();
 
         //////////////////// Speed combo box ////////////////////
+        auto pos = ImGui::GetCursorPos();
+        ImGui::SetCursorPos({ 200.0f, pos.y + 3 });
         ImGui::PushItemWidth(100);
         label = to_string() << "## " << id;
         if(ImGui::Combo(label.c_str(), &playback_speed_index, "Speed: x0.25\0Speed: x0.5\0Speed: x1\0Speed: x1.5\0Speed: x2\0\0"))
@@ -2774,7 +2767,6 @@ namespace rs2
             p.set_playback_speed(speed);
         }
         //////////////////// Speed combo box ////////////////////
-
         ImGui::PopFont();
 
         return 35;
@@ -2795,7 +2787,7 @@ namespace rs2
         }
         int prev_seek_progress = seek_pos;
 
-        ImGui::PushItemWidth(-1);
+        ImGui::PushItemWidth(290.f);
         std::string label1 = "## " + id;
         ImGui::SeekSlider(label1.c_str(), &seek_pos);
         if (prev_seek_progress != seek_pos)
@@ -2812,7 +2804,6 @@ namespace rs2
 
     int device_model::draw_playback_panel(ImFont* font)
     {
-        ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, {20,0});
         ImGui::PushStyleColor(ImGuiCol_Button, sensor_bg);
         ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
         ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
@@ -2821,13 +2812,10 @@ namespace rs2
         ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
 
 
-        auto pos = ImGui::GetCursorScreenPos();
-        //ImGui::SetCursorScreenPos({ pos.x , pos.y });
+        auto pos = ImGui::GetCursorPos();
         auto controls_height = draw_playback_controls(font);
-
-        ImGui::SetCursorScreenPos({ pos.x + ImGui::GetContentRegionAvail().x / 8, pos.y + controls_height });
+        ImGui::SetCursorPos({ pos.x + 8, pos.y + controls_height });
         auto seek_bar_height = draw_seek_bar();
-        ImGui::PopStyleVar();
         ImGui::PopStyleColor(6);
         return controls_height + seek_bar_height;
         
