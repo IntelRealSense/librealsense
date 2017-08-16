@@ -1,109 +1,61 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2015 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2015-2017 Intel Corporation. All Rights Reserved.
 
-#include <librealsense/rs2.hpp>
-#include "example.hpp"
-#include <iostream>
+#include <librealsense/rs2.hpp> // Include RealSense Cross Platform API
+#include "example.hpp"          // Include short list of convenience functions for rendering
 
-#include <algorithm>
-#include <fstream>
+#include <algorithm>            // std::min, std::max
 
-struct state { double yaw, pitch, last_x, last_y; bool ml; float offset_x, offset_y; };
+// Struct for managing rotation of pointcloud view
+struct state { double yaw, pitch, last_x, last_y; bool ml; float offset_x, offset_y; GLuint tex_handle; };
 
-void register_glfw_callbacks(window& app);
+// Helper functions
+void register_glfw_callbacks(window& app, state& app_state);
+void draw_pointcloud(window& app, state& app_state, rs2::points& points);
 
 int main(int argc, char * argv[]) try
 {
-    using namespace rs2;
-
+    // Create a simple OpenGL window for rendering:
     window app(1280, 720, "RealSense Pointcloud Example");
-    state app_state = { 0, 0, 0, 0, false, 0, 0 };
+    // Construct an object to manage view state
+    state app_state = { 0, 0, 0, 0, false, 0, 0, 0 };
+    // register callbacks to allow manipulation of the pointcloud
+    register_glfw_callbacks(app, app_state);
 
-    glfwSetWindowUserPointer(app, &app_state);
-    register_glfw_callbacks(app);
-
-    pipeline pipe;
-
+    using namespace rs2;
+    // Declare pointcloud object, for calculating pointclouds and texture mappings
     pointcloud pc = rs2::context().create_pointcloud();
 
+    // Declare RealSense pipeline, encapsulating the actual device and sensors
+    pipeline pipe;
+    // Start streaming with default recommended configuration
     pipe.start();
 
-    texture mapped_tex;
-
-    GLint texture_border_mode = 0x812F; // GL_CLAMP_TO_EDGE
-    float tex_border_color[] = { 0.8f, 0.8f, 0.8f, 0.8f };
+    // We want the points object to be persistent so we can display the last cloud when a frame drops
     rs2::points points;
 
-    while (app)
+    while (app) // Application still alive?
     {
-        glPopMatrix();
-        glPushAttrib(GL_ALL_ATTRIB_BITS);
-
-        float width = app.width(), height = app.height();
-        glClearColor(52.0f / 255, 72.f / 255, 94.0f / 255, 1);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-        glMatrixMode(GL_PROJECTION);
-        glPushMatrix();
-        gluPerspective(60, width / height, 0.01f, 10.0f);
-
-        glMatrixMode(GL_MODELVIEW);
-        glPushMatrix();
-        gluLookAt(0, 0, 0, 0, 0, 1, 0, -1, 0);
-
-        glTranslatef(0, 0, +0.5f + app_state.offset_y*0.05f);
-        glRotated(app_state.pitch, 1, 0, 0);
-        glRotated(app_state.yaw, 0, 1, 0);
-        glTranslatef(0, 0, -0.5f);
-
-        glPointSize(width / 640);
-        glEnable(GL_DEPTH_TEST);
-        glEnable(GL_TEXTURE_2D);
-        glBindTexture(GL_TEXTURE_2D, mapped_tex.get_gl_handle());
-        glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, tex_border_color);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, texture_border_mode);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, texture_border_mode);
-        glBegin(GL_POINTS);
-
+        // Wait for the next set of frames from the camera
         auto frames = pipe.wait_for_frames();
-        if (frames.size())
+        if (auto color = frames.get_color_frame())
         {
-//            std::cout << "aha!" << std::endl;
-            if (auto color = frames.get_color_frame())
-            {
-//                std::cout << "color" << std::endl;
-                mapped_tex.upload(color);
-                pc.map_to(color);
-            }
-            if (auto depth = frames.get_depth_frame())
-            {
-//                std::cout << "depth" << std::endl;
-                points = pc.calculate(depth);
-            }
-
-            auto vertices = points.get_vertices();
-            auto tex_coords = points.get_texture_coordinates();
-
-            for (int i = 0; i < points.size(); i++)
-            {
-                if (vertices[i].z)
-                {
-                    glVertex3fv(vertices[i]);
-                    glTexCoord2fv(tex_coords[i]);
-                }
-            }
+            // Tell pointcloud object to map to this color frame
+            pc.map_to(color);
+            
+            // Upload the color frame to OpenGL
+            texture mapped_tex;
+            mapped_tex.upload(color);
+            app_state.tex_handle = mapped_tex.get_gl_handle();
         }
-        else
+        if (auto depth = frames.get_depth_frame())
         {
-            //std::cout << "oops" << std::endl;
+            // If we got a depth frame, generate the pointcloud and texture mappings
+            points = pc.calculate(depth);
         }
 
-        glEnd();
-        glPopMatrix();
-        glMatrixMode(GL_PROJECTION);
-        glPopMatrix();
-        glPopAttrib();
-        glPushMatrix();
+        // Draw the pointcloud
+        draw_pointcloud(app, app_state, points);
     }
 
     return EXIT_SUCCESS;
@@ -118,8 +70,10 @@ catch (const std::exception & e)
     std::cerr << e.what() << std::endl;
 }
 
-void register_glfw_callbacks(window& app)
+// Registers the state variable and callbacks with glfw to allow mouse control of the pointcloud
+void register_glfw_callbacks(window& app, state& app_state)
 {
+    glfwSetWindowUserPointer(app, &app_state);
     glfwSetMouseButtonCallback(app, [](GLFWwindow * win, int button, int action, int mods)
     {
         auto s = (state *)glfwGetWindowUserPointer(win);
@@ -162,4 +116,61 @@ void register_glfw_callbacks(window& app)
             }
         }
     });
+}
+
+// Handles all the OpenGL calls needed to display the point cloud
+void draw_pointcloud(window& app, state& app_state, rs2::points& points)
+{
+    // OpenGL commands that prep screen for the pointcloud
+    glPopMatrix();
+    glPushAttrib(GL_ALL_ATTRIB_BITS);
+
+    float width = app.width(), height = app.height();
+    glClearColor(52.0f / 255, 72.f / 255, 94.0f / 255, 1);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    glMatrixMode(GL_PROJECTION);
+    glPushMatrix();
+    gluPerspective(60, width / height, 0.01f, 10.0f);
+
+    glMatrixMode(GL_MODELVIEW);
+    glPushMatrix();
+    gluLookAt(0, 0, 0, 0, 0, 1, 0, -1, 0);
+
+    glTranslatef(0, 0, +0.5f + app_state.offset_y*0.05f);
+    glRotated(app_state.pitch, 1, 0, 0);
+    glRotated(app_state.yaw, 0, 1, 0);
+    glTranslatef(0, 0, -0.5f);
+
+    glPointSize(width / 640);
+    glEnable(GL_DEPTH_TEST);
+    glEnable(GL_TEXTURE_2D);
+    glBindTexture(GL_TEXTURE_2D, app_state.tex_handle);
+    float tex_border_color[] = { 0.8f, 0.8f, 0.8f, 0.8f };
+    glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, tex_border_color);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, 0x812F); // GL_CLAMP_TO_EDGE
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, 0x812F); // GL_CLAMP_TO_EDGE
+    glBegin(GL_POINTS);
+
+
+    /* this segment actually prints the pointcloud */
+    auto vertices = points.get_vertices();              // get vertices
+    auto tex_coords = points.get_texture_coordinates(); // and texture coordinates
+    for (int i = 0; i < points.size(); i++)
+    {
+        if (vertices[i].z)
+        {
+            // upload the point and texture coordinates only for points we have depth data for
+            glVertex3fv(vertices[i]);
+            glTexCoord2fv(tex_coords[i]);
+        }
+    }
+
+    // OpenGL cleanup
+    glEnd();
+    glPopMatrix();
+    glMatrixMode(GL_PROJECTION);
+    glPopMatrix();
+    glPopAttrib();
+    glPushMatrix();
 }
