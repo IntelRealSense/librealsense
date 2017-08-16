@@ -85,10 +85,17 @@ void librealsense::record_device::write_header()
         for (int i = 0; i < static_cast<int>(RS2_OPTION_COUNT); i++)
         {
             auto option_id = static_cast<rs2_option>(i);
-            if (sensor.supports_option(option_id))
+            try
             {
-                auto& option = sensor.get_option(option_id);
-                options[option_id] = option.query();
+                if (sensor.supports_option(option_id))
+                {
+                    auto& option = sensor.get_option(option_id);
+                    options[option_id] = option.query();
+                }
+            }
+            catch(std::exception& e)
+            {
+                LOG_WARNING("Failed to get option " << option_id << " for sensor #" << i << ". Exception: " << e.what());
             }
         }
         sensors_snapshot.emplace_back(static_cast<uint32_t>(j), sensor_extensions_snapshots, options);
