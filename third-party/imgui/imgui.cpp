@@ -5537,15 +5537,23 @@ bool ImGui::ButtonEx(const char* label, const ImVec2& size_arg, ImGuiButtonFlags
     if (window->DC.ButtonRepeat) flags |= ImGuiButtonFlags_Repeat;
     bool hovered, held;
     bool pressed = ButtonBehavior(bb, id, &hovered, &held, flags);
+    bool button_disabled = flags & ImGuiButtonFlags_Disabled;
 
     // Render
     const ImU32 col = GetColorU32((hovered && held) ? ImGuiCol_ButtonActive : hovered ? ImGuiCol_ButtonHovered : ImGuiCol_Button);
     RenderFrame(bb.Min, bb.Max, col, true, style.FrameRounding);
-
+    
+    if(button_disabled)
+        PushStyleColor(ImGuiCol_Text, ImColor(GetColorU32({ 0.5f,0.5f,0.5f,1.f })));
+    
     if (hovered || held)
         PushStyleColor(ImGuiCol_Text, ImColor(GetColorU32(ImGuiCol_TextSelectedBg)));
+
     RenderTextClipped(bb.Min, bb.Max, label, NULL, &label_size, ImGuiAlign_Center | ImGuiAlign_VCenter);
     if (hovered || held)
+        PopStyleColor();
+
+    if (button_disabled)
         PopStyleColor();
 
     // Automatically close popups

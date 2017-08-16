@@ -2660,11 +2660,14 @@ namespace rs2
         const int button_space = 150;
         const float button_dim = 30.f;
         bool buttons_disabled = current_playback_status == RS2_PLAYBACK_STATUS_STOPPED;
-        //////////////////// Step Backwards Button ////////////////////
+        const bool supports_playback_stop = false; //TODO: Change once we support these features
+        const bool supports_playback_step = false;
 
+
+        //////////////////// Step Backwards Button ////////////////////
         std::string label = to_string() << u8"\uf048" << "##Step Backwards " << id;
         
-        if (ImGui::ButtonEx(label.c_str(), { button_dim, button_dim }, buttons_disabled ? ImGuiButtonFlags_Disabled : 0))
+        if (ImGui::ButtonEx(label.c_str(), { button_dim, button_dim }, (!supports_playback_step || buttons_disabled) ? ImGuiButtonFlags_Disabled : 0))
         {
             //p.skip_frames(1);
         }
@@ -2672,7 +2675,8 @@ namespace rs2
 
         if (ImGui::IsItemHovered())
         {
-            ImGui::SetTooltip("Step Backwards");
+            std::string tooltip = to_string() << "Step Backwards" << (buttons_disabled || supports_playback_step ? "" : "(Not available)");
+            ImGui::SetTooltip(tooltip.c_str());
         }
         pos.x += button_space;
         ImGui::SetCursorScreenPos(pos);
@@ -2680,16 +2684,17 @@ namespace rs2
         //////////////////// Step Backwards Button ////////////////////
 
 
-        //////////////////// Stop Button////////////////////
+        //////////////////// Stop Button ////////////////////
         label = to_string() << u8"\uf04d" << "##Stop Playback " << id;
 
-        if (ImGui::ButtonEx(label.c_str(), { button_dim, button_dim }, buttons_disabled ? ImGuiButtonFlags_Disabled : 0))
+        if (ImGui::ButtonEx(label.c_str(), { button_dim, button_dim }, (!supports_playback_stop || buttons_disabled) ? ImGuiButtonFlags_Disabled : 0))
         {
             //p.stop();
         }
         if (ImGui::IsItemHovered())
         {
-            ImGui::SetTooltip("Stop Playback");
+            std::string tooltip = to_string() << "Stop Playback" << (buttons_disabled || supports_playback_stop ? "" : "(Not available)");
+            ImGui::SetTooltip(tooltip.c_str());
         }
         pos.x += button_space;
         ImGui::SetCursorScreenPos(pos);
@@ -2699,19 +2704,7 @@ namespace rs2
 
 
         //////////////////// Pause/Play Button ////////////////////
-        if (current_playback_status == RS2_PLAYBACK_STATUS_PLAYING)
-        {
-            label = to_string() << u8"\uf04c" << "##Pause Playback " << id;
-            if (ImGui::ButtonEx(label.c_str(), { button_dim, button_dim }, buttons_disabled ? ImGuiButtonFlags_Disabled : 0))
-            {
-                p.pause();
-            }
-            if (ImGui::IsItemHovered())
-            {
-                ImGui::SetTooltip("Pause Playback");
-            }
-        }
-        else
+        if (current_playback_status == RS2_PLAYBACK_STATUS_PAUSED)
         {
             label = to_string() << u8"\uf04b" << "##Resume Playback " << id;
             if (ImGui::ButtonEx(label.c_str(), { button_dim, button_dim }, buttons_disabled ? ImGuiButtonFlags_Disabled : 0))
@@ -2721,6 +2714,18 @@ namespace rs2
             if (ImGui::IsItemHovered())
             {
                 ImGui::SetTooltip("Resume Playback");
+            }
+        }
+        else
+        {
+            label = to_string() << u8"\uf04c" << "##Pause Playback " << id;
+            if (ImGui::ButtonEx(label.c_str(), { button_dim, button_dim }, buttons_disabled ? ImGuiButtonFlags_Disabled : 0))
+            {
+                p.pause();
+            }
+            if (ImGui::IsItemHovered())
+            {
+                ImGui::SetTooltip("Pause Playback");
             }
         }
         
@@ -2734,13 +2739,14 @@ namespace rs2
 
         //////////////////// Step Forward Button ////////////////////
         label = to_string() << u8"\uf051" << "##Step Forward " << id;
-        if (ImGui::ButtonEx(label.c_str(), { button_dim, button_dim }, buttons_disabled ? ImGuiButtonFlags_Disabled : 0))
+        if (ImGui::ButtonEx(label.c_str(), { button_dim, button_dim }, (!supports_playback_step || buttons_disabled) ? ImGuiButtonFlags_Disabled : 0))
         {
             //p.skip_frames(-1);
         }
         if (ImGui::IsItemHovered())
         {
-            ImGui::SetTooltip("Step Forward");
+            std::string tooltip = to_string() << "Step Forward" << (buttons_disabled || supports_playback_step ? "" : "(Not available)");
+            ImGui::SetTooltip(tooltip.c_str());
         }
         pos.x += button_space;
         ImGui::SetCursorScreenPos({ pos.x , pos.y + 5 });
@@ -2749,14 +2755,13 @@ namespace rs2
 
 
 
-
-        static int item = 2;
+        //////////////////// Speed combo box ////////////////////
         ImGui::PushItemWidth(100);
-        label = to_string() << "##" << id;
-        if(ImGui::Combo(label.c_str(), &item, "Speed: x0.25\0Speed: x0.5\0Speed: x1\0Speed: x1.5\0Speed: x2\0\0"))
+        label = to_string() << "## " << id;
+        if(ImGui::Combo(label.c_str(), &playback_speed_index, "Speed: x0.25\0Speed: x0.5\0Speed: x1\0Speed: x1.5\0Speed: x2\0\0"))
         {
             float speed = 1;
-            switch (item)
+            switch (playback_speed_index)
             {
             case 0: speed = 0.25f; break;
             case 1: speed = 0.5f; break;
@@ -2764,37 +2769,11 @@ namespace rs2
             case 3: speed = 1.5f; break;
             case 4: speed = 2.0f; break;
             default:
-                throw std::runtime_error(to_string() << "Speed #" << item << " is unhandled");
+                throw std::runtime_error(to_string() << "Speed #" << playback_speed_index << " is unhandled");
             }
             p.set_playback_speed(speed);
         }
-        
-//        std::string speed_button_name = to_string() << u8"\uf107##" << id;
-//
-//        if (ImGui::Button(speed_button_name.c_str(), { button_dim,button_dim }))
-//            ImGui::OpenPopup(label.c_str());
-//
-//        if (ImGui::BeginPopup(label.c_str()))
-//        {
-//            ImGui::PushStyleColor(ImGuiCol_Text, dark_grey);
-//            if (ImGui::Selectable("0.25"))
-//            {
-//            }
-//            if (ImGui::Selectable("0.5"))
-//            {
-//            }
-//            if (ImGui::Selectable("1"))
-//            {
-//            }
-//            if (ImGui::Selectable("1.5"))
-//            {
-//            }
-//            if (ImGui::Selectable("2"))
-//            {
-//            }
-//            ImGui::PopStyleColor();
-//            ImGui::EndPopup();
-//        }
+        //////////////////// Speed combo box ////////////////////
 
         ImGui::PopFont();
 
@@ -2817,7 +2796,7 @@ namespace rs2
         int prev_seek_progress = seek_pos;
 
         ImGui::PushItemWidth(-1);
-        std::string label1 = " ";
+        std::string label1 = "## " + id;
         ImGui::SeekSlider(label1.c_str(), &seek_pos);
         if (prev_seek_progress != seek_pos)
         {

@@ -315,6 +315,7 @@ namespace rs2
         std::string id;
         bool is_recording = false;
         int seek_pos = 0;
+        int playback_speed_index = 2;
 
     private:
         int draw_seek_bar();
