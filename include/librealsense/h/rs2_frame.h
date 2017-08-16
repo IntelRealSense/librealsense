@@ -170,7 +170,7 @@ const rs2_stream_profile* rs2_get_frame_stream_profile(const rs2_frame* frame, r
 int rs2_is_frame_extendable_to(const rs2_frame* frame, rs2_extension extension_type, rs2_error ** error);
 
 rs2_frame* rs2_allocate_synthetic_video_frame(rs2_source* source, const rs2_stream_profile* new_stream, rs2_frame* original,
-    int new_bpp, int new_width, int new_height, int new_stride, rs2_error** error);
+    int new_bpp, int new_width, int new_height, int new_stride, rs2_extension frame_type, rs2_error** error);
 
 rs2_frame* rs2_allocate_composite_frame(rs2_source* source, rs2_frame** frames, int count, rs2_error** error);
 

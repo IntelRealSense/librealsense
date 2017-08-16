@@ -568,35 +568,46 @@ int main(int, char**) try
 
                     if (auto adv = dev_model.dev.as<advanced_mode>())
                     {
-                        ImGui::Separator();
-
-                        if (ImGui::Selectable("Load Settings", false, ImGuiSelectableFlags_SpanAllColumns))
+                        try
                         {
-                            auto ret = noc_file_dialog_open(NOC_FILE_DIALOG_OPEN, "JavaScript Object Notation (JSON)\0*.json\0", NULL, NULL);
-                            if (ret)
-                            {
-                                std::ifstream t(ret);
-                                std::string str((std::istreambuf_iterator<char>(t)),
-                                                std::istreambuf_iterator<char>());
+                            ImGui::Separator();
 
-                                adv.load_json(str);
-                                dev_model.get_curr_advanced_controls = true;
+                            if (ImGui::Selectable("Load Settings", false, ImGuiSelectableFlags_SpanAllColumns))
+                            {
+                                auto ret = noc_file_dialog_open(NOC_FILE_DIALOG_OPEN, "JavaScript Object Notation (JSON)\0*.json\0", NULL, NULL);
+                                if (ret)
+                                {
+                                    std::ifstream t(ret);
+                                    std::string str((std::istreambuf_iterator<char>(t)),
+                                                    std::istreambuf_iterator<char>());
+
+                                    adv.load_json(str);
+                                    dev_model.get_curr_advanced_controls = true;
+                                }
+                            }
+
+                            if (ImGui::Selectable("Save Settings", false, ImGuiSelectableFlags_SpanAllColumns))
+                            {
+                                auto ret = noc_file_dialog_open(NOC_FILE_DIALOG_SAVE, "JavaScript Object Notation (JSON)\0*.json\0", NULL, NULL);
+
+                                if (ret)
+                                {
+                                    std::string filename = ret;
+                                    if (!ends_with(to_lower(filename), ".json")) filename += ".json";
+
+                                    std::ofstream out(filename);
+                                    out << adv.serialize_json();
+                                    out.close();
+                                }
                             }
                         }
-
-                        if (ImGui::Selectable("Save Settings", false, ImGuiSelectableFlags_SpanAllColumns))
+                        catch (const error& e)
                         {
-                            auto ret = noc_file_dialog_open(NOC_FILE_DIALOG_SAVE, "JavaScript Object Notation (JSON)\0*.json\0", NULL, NULL);
-
-                            if (ret)
-                            {
-                                std::string filename = ret;
-                                if (!ends_with(to_lower(filename), ".json")) filename += ".json";
-
-                                std::ofstream out(filename);
-                                out << adv.serialize_json();
-                                out.close();
-                            }
+                            error_message = error_to_string(e);
+                        }
+                        catch (const std::exception& e)
+                        {
+                            error_message = e.what();
                         }
                     }
 

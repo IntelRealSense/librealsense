@@ -377,11 +377,12 @@ namespace rs2
                                    int new_bpp = 0,
                                    int new_width = 0,
                                    int new_height = 0,
-                                   int new_stride = 0) const
+                                   int new_stride = 0,
+                                   rs2_extension frame_type = RS2_EXTENSION_VIDEO_FRAME) const
         {
             rs2_error* e = nullptr;
             auto result = rs2_allocate_synthetic_video_frame(_source, profile.get(),
-                original.get(), new_bpp, new_width, new_height, new_stride, &e);
+                original.get(), new_bpp, new_width, new_height, new_stride, frame_type, &e);
             error::handle(e);
             return result;
         }

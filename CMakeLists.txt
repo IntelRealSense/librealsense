@@ -604,7 +604,7 @@ else()
     install(CODE "execute_process(COMMAND ldconfig)")
 endif()
 
-option(BUILD_UNIT_TESTS "Build realsense unit tests." OFF) # TODO: Change back to ON
+option(BUILD_UNIT_TESTS "Build realsense unit tests." ON) 
 option(BUILD_EXAMPLES "Build realsense examples and tools." ON)
 option(ENFORCE_METADATA "Require WinSDK with Metadata support during compilation. Windows OS Only" OFF)
 option(BUILD_PYTHON_BINDINGS "Build Python bindings" OFF)

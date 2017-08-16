@@ -432,10 +432,6 @@ int main(int argc, char * argv[])
             });
 
             texture_buffer buffers[RS2_STREAM_COUNT];
-            buffers[RS2_STREAM_DEPTH].equalize = false;
-            buffers[RS2_STREAM_DEPTH].cm = &my_map;
-            buffers[RS2_STREAM_DEPTH].min_depth = 0.2 / dpt.get_depth_scale();
-            buffers[RS2_STREAM_DEPTH].max_depth = 1.5 / dpt.get_depth_scale();
 
             // Open a GLFW window
             glfwInit();

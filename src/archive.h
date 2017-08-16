@@ -229,7 +229,10 @@ namespace librealsense
 
         float get_distance(int x, int y) const
         {
-            uint64_t pixel;
+            if (_original)
+                return((depth_frame*)_original.frame)->get_distance(x, y);
+
+            uint64_t pixel = 0;
             switch (get_bpp()/8) // bits per pixel
             {
             case 1: pixel = get_frame_data()[y*get_width() + x];                                    break;
@@ -245,6 +248,19 @@ namespace librealsense
         float get_units() const { return *_depth_units; }
         void reset_units() { _depth_units = lazy<float>([this](){ return query_units(); }); }
 
+        const frame_interface* get_original_depth() const { return _original.frame; }
+
+        void set_original(frame_holder h)
+        {
+            _original = std::move(h);
+            attach_continuation(frame_continuation([this]() {
+                if (_original)
+                {
+                    _original = {};
+                }
+            }, get_frame_data()));
+        }
+
     private:
         float query_units() const
         {
@@ -256,6 +272,7 @@ namespace librealsense
         }
 
         lazy<float> _depth_units;
+        frame_holder _original;
     };
 
     MAP_EXTENSION(RS2_EXTENSION_DEPTH_FRAME, librealsense::depth_frame);
