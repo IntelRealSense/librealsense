@@ -25,8 +25,6 @@ rs2_context* rs2_create_context(int api_version, rs2_error** error);
 
 /**
 * \brief Frees the relevant context object.
-*
-* This action might invalidate \c rs2_device pointers created from this context.
 * \param[in] context Object that is no longer needed
 */
 void rs2_delete_context(rs2_context* context);
@@ -35,7 +33,7 @@ void rs2_delete_context(rs2_context* context);
 * return the time at specific time point
 * \param context     Object representing librealsense session
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
-* \return            the time at specific time point, in live and redord mode it will return the system time and in playback mode it will return the recorded time
+* \return            the time at specific time point, in live and record mode it will return the system time and in playback mode it will return the recorded time
 */
 rs2_time_t rs2_get_context_time(const rs2_context* context, rs2_error** error);
 
