@@ -27,7 +27,7 @@ namespace librealsense
                       snapshot_callback_t on_snapshot);
         virtual ~record_sensor();
 
-        stream_profiles get_stream_profiles() override;
+        stream_profiles get_stream_profiles() const override;
         void open(const stream_profiles& requests) override;
         void close() override;
         option& get_option(rs2_option id) override;

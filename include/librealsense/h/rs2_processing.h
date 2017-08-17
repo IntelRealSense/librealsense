@@ -93,7 +93,7 @@ void rs2_delete_frame_queue(rs2_frame_queue* queue);
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return frame handle to be released using rs2_release_frame
 */
-rs2_frame* rs2_wait_for_frame(rs2_frame_queue* queue, rs2_error** error);
+rs2_frame* rs2_wait_for_frame(rs2_frame_queue* queue, unsigned int timeout_ms, rs2_error** error);
 
 /**
 * poll if a new frame is available and dequeue if it is

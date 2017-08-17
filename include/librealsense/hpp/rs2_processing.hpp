@@ -127,10 +127,10 @@ namespace rs2
         * wait until new frame becomes available in the queue and dequeue it
         * \return frame handle to be released using rs2_release_frame
         */
-        frame wait_for_frame() const
+        frame wait_for_frame(unsigned int timeout_ms = 5000) const
         {
             rs2_error* e = nullptr;
-            auto frame_ref = rs2_wait_for_frame(_queue.get(), &e);
+            auto frame_ref = rs2_wait_for_frame(_queue.get(), timeout_ms, &e);
             error::handle(e);
             return{ frame_ref };
         }
@@ -199,7 +199,7 @@ namespace rs2
         */
         frameset wait_for_frames(unsigned int timeout_ms = 5000) const
         {
-            return composite_frame(_results.wait_for_frame());
+            return composite_frame(_results.wait_for_frame(timeout_ms));
         }
 
         /**

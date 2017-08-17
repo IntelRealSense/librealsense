@@ -568,35 +568,46 @@ int main(int, char**) try
 
                     if (auto adv = dev_model.dev.as<advanced_mode>())
                     {
-                        ImGui::Separator();
-
-                        if (ImGui::Selectable("Load Settings", false, ImGuiSelectableFlags_SpanAllColumns))
+                        try
                         {
-                            auto ret = noc_file_dialog_open(NOC_FILE_DIALOG_OPEN, "JavaScript Object Notation (JSON)\0*.json\0", NULL, NULL);
-                            if (ret)
-                            {
-                                std::ifstream t(ret);
-                                std::string str((std::istreambuf_iterator<char>(t)),
-                                                std::istreambuf_iterator<char>());
+                            ImGui::Separator();
 
-                                adv.load_json(str);
-                                dev_model.get_curr_advanced_controls = true;
+                            if (ImGui::Selectable("Load Settings", false, ImGuiSelectableFlags_SpanAllColumns))
+                            {
+                                auto ret = noc_file_dialog_open(NOC_FILE_DIALOG_OPEN, "JavaScript Object Notation (JSON)\0*.json\0", NULL, NULL);
+                                if (ret)
+                                {
+                                    std::ifstream t(ret);
+                                    std::string str((std::istreambuf_iterator<char>(t)),
+                                                    std::istreambuf_iterator<char>());
+
+                                    adv.load_json(str);
+                                    dev_model.get_curr_advanced_controls = true;
+                                }
+                            }
+
+                            if (ImGui::Selectable("Save Settings", false, ImGuiSelectableFlags_SpanAllColumns))
+                            {
+                                auto ret = noc_file_dialog_open(NOC_FILE_DIALOG_SAVE, "JavaScript Object Notation (JSON)\0*.json\0", NULL, NULL);
+
+                                if (ret)
+                                {
+                                    std::string filename = ret;
+                                    if (!ends_with(to_lower(filename), ".json")) filename += ".json";
+
+                                    std::ofstream out(filename);
+                                    out << adv.serialize_json();
+                                    out.close();
+                                }
                             }
                         }
-
-                        if (ImGui::Selectable("Save Settings", false, ImGuiSelectableFlags_SpanAllColumns))
+                        catch (const error& e)
                         {
-                            auto ret = noc_file_dialog_open(NOC_FILE_DIALOG_SAVE, "JavaScript Object Notation (JSON)\0*.json\0", NULL, NULL);
-
-                            if (ret)
-                            {
-                                std::string filename = ret;
-                                if (!ends_with(to_lower(filename), ".json")) filename += ".json";
-
-                                std::ofstream out(filename);
-                                out << adv.serialize_json();
-                                out.close();
-                            }
+                            error_message = error_to_string(e);
+                        }
+                        catch (const std::exception& e)
+                        {
+                            error_message = e.what();
                         }
                     }
 
@@ -641,6 +652,7 @@ int main(int, char**) try
                 ImGui::SetCursorPos({ 33, pos.y + panel_y - 9 });
                 ImGui::PushStyleColor(ImGuiCol_Text, from_rgba(0xc3, 0xd5, 0xe5, 0xff));
 
+                int playback_control_panel_height = 0;
                 if (auto p = dev_model.dev.as<playback>())
                 {
                     auto full_path = p.file_name();
@@ -649,10 +661,14 @@ int main(int, char**) try
                     ImGui::Text("File: \"%s\"", filename.c_str());
                     if (ImGui::IsItemHovered())
                         ImGui::SetTooltip(full_path.c_str());
+
+                    auto playback_panel_pos = ImVec2{ 0, pos.y + panel_y + 18 };
+                    ImGui::SetCursorPos(playback_panel_pos);
+                    playback_panel_pos.y = dev_model.draw_playback_panel(font_14);
+                    playback_control_panel_height += playback_panel_pos.y;
                 }
 
-
-                ImGui::SetCursorPos({ 0, pos.y + header_h });
+                ImGui::SetCursorPos({ 0, pos.y + header_h + playback_control_panel_height });
                 ImGui::PopStyleColor(2);
                 ImGui::PopFont();
 

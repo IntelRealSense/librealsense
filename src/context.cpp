@@ -449,6 +449,10 @@ namespace librealsense
                 auto dead_id = kvp.first;
                 for (auto&& edge : _extrinsics[dead_id])
                 {
+                    if(edge.first == dead_id)
+                    {
+                        continue;
+                    }
                     // First, delete any extrinsics going into the stream
                     _extrinsics[edge.first].erase(dead_id);
                     counter += 2;

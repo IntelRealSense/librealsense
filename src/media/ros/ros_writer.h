@@ -5,7 +5,6 @@
 
 #include <string>
 #include <memory>
-#include <media/device_snapshot.h>
 #include "core/debug.h"
 #include "core/serialization.h"
 #include "archive.h"
@@ -25,7 +24,9 @@
 
 namespace librealsense
 {
-    class ros_writer: public device_serializer::writer
+    using namespace device_serializer;
+
+    class ros_writer: public writer
     {
     public:
         explicit ros_writer(const std::string& file)
@@ -41,19 +42,18 @@ namespace librealsense
             {
                 write_extension_snapshot(get_device_index(), get_static_file_info_timestamp(), device_extension_snapshot.first, device_extension_snapshot.second);
             }
-            uint32_t sensor_index = 0;
+
             for (auto&& sensors_snapshot : device_description.get_sensors_snapshots())
             {
                 for (auto&& sensor_extension_snapshot : sensors_snapshot.get_sensor_extensions_snapshots().get_snapshots())
                 {
-                    write_extension_snapshot(get_device_index(), sensor_index, get_static_file_info_timestamp(), sensor_extension_snapshot.first, sensor_extension_snapshot.second);
+                    write_extension_snapshot(get_device_index(), sensors_snapshot.get_sensor_index(), get_static_file_info_timestamp(), sensor_extension_snapshot.first, sensor_extension_snapshot.second);
                 }
-                write_sensor_options(ros_topic::property_topic({ get_device_index(), sensor_index}), get_static_file_info_timestamp(), sensors_snapshot.get_options());
-                sensor_index++;
+                write_sensor_options(ros_topic::property_topic({ get_device_index(),  sensors_snapshot.get_sensor_index() }), get_static_file_info_timestamp(), sensors_snapshot.get_options());
             }
         }
 
-        void write_frame(const device_serializer::stream_identifier& stream_id, const device_serializer::nanoseconds& timestamp, frame_holder&& frame) override
+        void write_frame(const stream_identifier& stream_id, const nanoseconds& timestamp, frame_holder&& frame) override
         {
             if (Is<video_frame>(frame.frame))
             {
@@ -74,12 +74,12 @@ namespace librealsense
             }*/
         }
 
-        void write_snapshot(uint32_t device_index, const device_serializer::nanoseconds& timestamp, rs2_extension type, const std::shared_ptr<extension_snapshot > snapshot) override
+        void write_snapshot(uint32_t device_index, const nanoseconds& timestamp, rs2_extension type, const std::shared_ptr<extension_snapshot > snapshot) override
         {
             write_extension_snapshot(device_index, -1, timestamp, type, snapshot);
         }
         
-        void write_snapshot(const device_serializer::sensor_identifier& sensor_id, const device_serializer::nanoseconds& timestamp, rs2_extension type, const std::shared_ptr<extension_snapshot > snapshot) override
+        void write_snapshot(const sensor_identifier& sensor_id, const nanoseconds& timestamp, rs2_extension type, const std::shared_ptr<extension_snapshot > snapshot) override
         {
             write_extension_snapshot(sensor_id.device_index, sensor_id.sensor_index, timestamp, type, snapshot);
         }
@@ -92,7 +92,7 @@ namespace librealsense
             write_message(ros_topic::file_version_topic(), get_static_file_info_timestamp(), msg);
         }
 
-        void write_video_frame(device_serializer::stream_identifier stream_id, const device_serializer::nanoseconds& timestamp, const frame_holder& frame)
+        void write_video_frame(stream_identifier stream_id, const nanoseconds& timestamp, const frame_holder& frame)
         {
             sensor_msgs::Image image;
             auto vid_frame = dynamic_cast<librealsense::video_frame*>(frame.frame);
@@ -115,9 +115,30 @@ namespace librealsense
             write_message(image_topic, timestamp, image);
             
             write_image_metadata(stream_id, timestamp, vid_frame);
+            write_extrinsics(stream_id, frame);
         }
 
-        void write_image_metadata(const device_serializer::stream_identifier& stream_id, const device_serializer::nanoseconds& timestamp, video_frame* vid_frame)
+        void write_extrinsics(const stream_identifier& stream_id, const frame_holder& frame)
+        {
+            if(m_extrinsics_msgs.find(stream_id) != m_extrinsics_msgs.end())
+            {
+                return; //already wrote it
+            }
+            //Getting extrinsics from this frame's stream to the first stream of the first sensor of this device
+            //TODO: Change this method once we have sensors with groups of streams that do not share extrinsics (e.g only 1-2 and 3-4 only share extrinsics)
+            auto& dev = frame.frame->get_sensor()->get_device();
+            auto first_stream = dev.get_sensor(0).get_stream_profiles()[0];
+            rs2_extrinsics ext;
+            if (dev.get_context()->try_fetch_extrinsics(*first_stream, *frame.frame->get_stream(), &ext))
+            {
+                geometry_msgs::Transform tf_msg;
+                conversions::convert(ext, tf_msg);
+                write_message(ros_topic::stream_extrinsic_topic(stream_id), get_static_file_info_timestamp(), tf_msg);
+                m_extrinsics_msgs[stream_id] = tf_msg;
+            }
+        }
+
+        void write_image_metadata(const stream_identifier& stream_id, const nanoseconds& timestamp, video_frame* vid_frame)
         {
             auto metadata_topic = ros_topic::image_metadata_topic(stream_id);
             diagnostic_msgs::KeyValue system_time;
@@ -144,7 +165,7 @@ namespace librealsense
             }
         }
 
-        void write_streaming_info(device_serializer::nanoseconds timestamp, const device_serializer::sensor_identifier& sensor_id, std::shared_ptr<video_stream_profile_interface> profile)
+        void write_streaming_info(nanoseconds timestamp, const sensor_identifier& sensor_id, std::shared_ptr<video_stream_profile_interface> profile)
         {
             realsense_msgs::StreamInfo stream_info_msg;
             stream_info_msg.is_recommended = profile->is_recommended();
@@ -173,18 +194,18 @@ namespace librealsense
             write_message(ros_topic::video_stream_info_topic({ sensor_id.device_index, sensor_id.sensor_index, profile->get_stream_type(), static_cast<uint32_t>(profile->get_stream_index()) }), timestamp, camera_info_msg);
         }
         
-        void write_extension_snapshot(uint32_t device_id, const device_serializer::nanoseconds& timestamp, rs2_extension type, std::shared_ptr<librealsense::extension_snapshot> snapshot)
+        void write_extension_snapshot(uint32_t device_id, const nanoseconds& timestamp, rs2_extension type, std::shared_ptr<librealsense::extension_snapshot> snapshot)
         {
             const auto ignored = 0u;
             write_extension_snapshot(device_id, ignored, timestamp, type, snapshot, true);
         }
         
-        void write_extension_snapshot(uint32_t device_id, uint32_t sensor_id, const device_serializer::nanoseconds& timestamp, rs2_extension type, std::shared_ptr<librealsense::extension_snapshot> snapshot)
+        void write_extension_snapshot(uint32_t device_id, uint32_t sensor_id, const nanoseconds& timestamp, rs2_extension type, std::shared_ptr<librealsense::extension_snapshot> snapshot)
         {
             write_extension_snapshot(device_id, sensor_id, timestamp, type, snapshot, false);
         }
 
-        void write_extension_snapshot(uint32_t device_id, uint32_t sensor_id, const device_serializer::nanoseconds& timestamp, rs2_extension type, std::shared_ptr<librealsense::extension_snapshot> snapshot, bool is_device)
+        void write_extension_snapshot(uint32_t device_id, uint32_t sensor_id, const nanoseconds& timestamp, rs2_extension type, std::shared_ptr<librealsense::extension_snapshot> snapshot, bool is_device)
         {
             switch (type)
             {
@@ -227,7 +248,7 @@ namespace librealsense
             }
         }
 
-        void write_vendor_info(const std::string& topic, device_serializer::nanoseconds timestamp, std::shared_ptr<info_interface> info_snapshot)
+        void write_vendor_info(const std::string& topic, nanoseconds timestamp, std::shared_ptr<info_interface> info_snapshot)
         {
             for (uint32_t i = 0; i < static_cast<uint32_t>(RS2_CAMERA_INFO_COUNT); i++)
             {
@@ -242,7 +263,7 @@ namespace librealsense
             }
         }
 
-        void write_sensor_options(const std::string& topic, const device_serializer::nanoseconds& timestamp, const std::map<enum rs2_option, float>& options)
+        void write_sensor_options(const std::string& topic, const nanoseconds& timestamp, const std::map<enum rs2_option, float>& options)
         {
             for (auto key_val : options)
             {
@@ -253,7 +274,7 @@ namespace librealsense
             }
         }
         template <typename T>
-        void write_message(std::string const& topic, device_serializer::nanoseconds const& time, T const& msg)
+        void write_message(std::string const& topic, nanoseconds const& time, T const& msg)
         {
             try
             {
@@ -278,7 +299,7 @@ namespace librealsense
             int num = 1;
             return (*reinterpret_cast<char*>(&num) == 1) ? 0 : 1; //Little Endian: (char)0x0001 => 0x01, Big Endian: (char)0x0001 => 0x00,
         }
-
+        std::map<stream_identifier, geometry_msgs::Transform> m_extrinsics_msgs;
         std::string m_file_path;
         rosbag::Bag m_bag;
     };

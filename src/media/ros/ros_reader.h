@@ -6,7 +6,6 @@
 #include <mutex>
 #include <regex>
 #include <core/serialization.h>
-#include <media/device_snapshot.h>
 #include "rosbag/view.h"
 #include "file_types.h"
 #include "topic.h"
@@ -20,6 +19,8 @@
 
 namespace librealsense
 {
+    using namespace device_serializer;
+
     class md_constant_parser : public md_attribute_parser_base
     {
     public:
@@ -59,9 +60,11 @@ namespace librealsense
         }
         rs2_frame_metadata _type;
     };
+    
     class FalseQuery {
     public: bool operator()(rosbag::ConnectionInfo const* info) const { return false; }
     };
+    
     class RegexTopicQuery
     {
     public:
@@ -81,20 +84,23 @@ namespace librealsense
     private:
         std::regex _exp;
     };
+    
     class SensorInfoQuery : public RegexTopicQuery
     {
     public:
         SensorInfoQuery(uint32_t device_index) : RegexTopicQuery(to_string() << "/device_" << device_index << R"RRR(/sensor_(\d)+/info)RRR"){}
     };
+    
     class FrameQuery : public RegexTopicQuery
     {
     public:
         FrameQuery() : RegexTopicQuery(to_string() << R"RRR(/device_\d+/sensor_\d+/.*_\d+)RRR" << "/(" << data_msg_types() << ")/data") {}
     };
+    
     class StreamQuery : public RegexTopicQuery
     {
     public:   
-        StreamQuery(const device_serializer::stream_identifier& stream_id) : 
+        StreamQuery(const stream_identifier& stream_id) : 
                 RegexTopicQuery(to_string() << "/device_" << stream_id.device_index
                                             << "/sensor_" << stream_id.sensor_index
                                             << "/" << stream_id.stream_type << "_" << stream_id.stream_index
@@ -102,6 +108,7 @@ namespace librealsense
         {
         }
     };
+
 
     class ros_reader: public device_serializer::reader
     {
@@ -121,7 +128,7 @@ namespace librealsense
             return m_device_description;
         }
 
-        device_serializer::status read_frame(device_serializer::nanoseconds& timestamp, device_serializer::stream_identifier& stream_id, frame_holder& frame) override
+        status read_frame(nanoseconds& timestamp, stream_identifier& stream_id, frame_holder& frame) override
         {
             while(m_samples_view != nullptr && m_samples_itrator != m_samples_view->end())
             {
@@ -130,24 +137,24 @@ namespace librealsense
                 if (next_frame_msg.isType<sensor_msgs::Image>())
                 {
                     stream_id = ros_topic::get_stream_identifier(next_frame_msg.getTopic());
-                    timestamp = device_serializer::nanoseconds(next_frame_msg.getTime().toNSec());
+                    timestamp = nanoseconds(next_frame_msg.getTime().toNSec());
                     frame = read_image_from_message(next_frame_msg);
-                    return device_serializer::status::status_no_error;
+                    return status::status_no_error;
                 }
                 
                 if (next_frame_msg.isType<sensor_msgs::Imu>())
                 {
                     //stream_id = ros_topic::get_stream_identifier(next_frame_msg.getTopic());
-                    //timestamp = device_serializer::nanoseconds(next_frame_msg.getTime().toNSec());
+                    //timestamp = nanoseconds(next_frame_msg.getTime().toNSec());
                     //frame = create_motion_sample(sample_msg);
-                    return device_serializer::status::status_no_error;
+                    return status::status_no_error;
                 }
                 LOG_WARNING("Unknown frame type: " << next_frame_msg.getDataType() << "(Topic: " << next_frame_msg.getTopic() << ")");
             }
-            return device_serializer::status_file_eof;
+            return status_file_eof;
         }
 
-        void seek_to_time(const device_serializer::nanoseconds& seek_time) override
+        void seek_to_time(const nanoseconds& seek_time) override
         {
             if (seek_time > m_total_duration)
             {
@@ -157,7 +164,7 @@ namespace librealsense
             auto seek_time_as_rostime = ros::Time(seek_time_as_secs.count());
 
             auto enabled_streams_topics = get_topics(m_samples_view);
-            m_samples_view.reset(new rosbag::View(m_file));
+            m_samples_view.reset(new rosbag::View(m_file, FalseQuery()));
             for (auto topic : enabled_streams_topics)
             {
                 m_samples_view->addQuery(m_file, rosbag::TopicQuery(topic), seek_time_as_rostime);
@@ -165,7 +172,7 @@ namespace librealsense
             m_samples_itrator = m_samples_view->begin();           
         }
 
-        device_serializer::nanoseconds query_duration() const override
+        nanoseconds query_duration() const override
         {
             return m_total_duration;
         }
@@ -204,7 +211,7 @@ namespace librealsense
             m_device_description = read_device_description();
         }
 
-        virtual void enable_stream(const device_serializer::stream_identifier& stream_id) override
+        virtual void enable_stream(const stream_identifier& stream_id) override
         {
             ros::Time curr_time = ros::TIME_MIN;
             if(m_samples_view == nullptr)
@@ -229,7 +236,7 @@ namespace librealsense
             m_samples_itrator = m_samples_view->begin();
         }
 
-        virtual void disable_stream(const device_serializer::stream_identifier& stream_id) override
+        virtual void disable_stream(const stream_identifier& stream_id) override
         {
             if(m_samples_view == nullptr)
             {
@@ -263,13 +270,14 @@ namespace librealsense
         {
             return m_file_path;
         }
+
     private:
 
-        device_serializer::nanoseconds get_file_duration() const
+        nanoseconds get_file_duration() const
         {
             rosbag::View all_frames_view(m_file, FrameQuery());
             auto streaming_duration = all_frames_view.getEndTime() - all_frames_view.getBeginTime();
-            return device_serializer::nanoseconds(streaming_duration.toNSec());
+            return nanoseconds(streaming_duration.toNSec());
         }
 
         frame_holder read_image_from_message(const rosbag::MessageInstance &image_data) const
@@ -281,7 +289,7 @@ namespace librealsense
             }
 
             frame_additional_data additional_data {};
-            std::chrono::duration<double, std::micro> timestamp_us(std::chrono::duration<double>(msg->header.stamp.toSec()));
+            std::chrono::duration<double, std::milli> timestamp_us(std::chrono::duration<double>(msg->header.stamp.toSec()));
             additional_data.timestamp = timestamp_us.count();
             additional_data.frame_number = msg->header.seq;
             additional_data.fisheye_ae_mode = false; //TODO: where should this come from?
@@ -369,6 +377,25 @@ namespace librealsense
             return true;
         }
 
+        bool try_read_stream_extrinsic(const stream_identifier& stream_id, rs2_extrinsics& ext) const
+        {
+            //Find the first one and return it. Assuming that extrinsics does not change over time per stream.
+            auto topic = ros_topic::stream_extrinsic_topic(stream_id);
+            rosbag::View tf_view(m_file, rosbag::TopicQuery(topic));
+            if(tf_view.size() > 0)
+            {
+                auto msg = *tf_view.begin();
+                auto tf_msg = msg.instantiate<geometry_msgs::Transform>();
+                if(tf_msg == nullptr)
+                {
+                    throw io_exception(to_string() << "Expected KeyValue message but got " << msg.getDataType() << "(Topic: " << msg.getTopic() << ")");
+                }
+                conversions::convert(*tf_msg, ext);
+                return true;
+            }
+            return false;
+        }
+
         device_snapshot read_device_description() const
         {
             snapshot_collection device_extensions;
@@ -376,22 +403,29 @@ namespace librealsense
             std::shared_ptr<info_snapshot> info = read_info_snapshot(ros_topic::device_info_topic(get_device_index()));
             device_extensions[RS2_EXTENSION_INFO ] = info;
             std::vector<sensor_snapshot> sensor_descriptions;
-            uint32_t sensor_count = read_sensor_count(get_device_index());
-            for (uint32_t sensor_index = 0; sensor_index < sensor_count; sensor_index++)
+            auto sensor_indices = read_sensor_indices(get_device_index());
+            std::map<stream_identifier, rs2_extrinsics> extrinsics_map;
+            for (auto sensor_index : sensor_indices)
             {
                 snapshot_collection sensor_extensions;
                 auto streams_snapshots = read_stream_info(get_device_index(), sensor_index);
-                
-               /* std::shared_ptr<options_snapshot> options = options_container read_options();
-                sensor_extensions[RS2_EXTENSION_OPTIONS ] = options;*/
+                for (auto stream_profile : streams_snapshots)
+                {
+                    auto stream_id = stream_identifier{ get_device_index(), sensor_index, stream_profile->get_stream_type(), static_cast<uint32_t>(stream_profile->get_stream_index()) };
+                    rs2_extrinsics stream_extrinsic;
+                    if(try_read_stream_extrinsic(stream_id, stream_extrinsic))
+                    {
+                        extrinsics_map[stream_id] = stream_extrinsic;
+                    }
+                }
 
                 std::shared_ptr<info_snapshot> sensor_info = read_info_snapshot(ros_topic::sensor_info_topic({ get_device_index(), sensor_index }));
                 sensor_extensions[RS2_EXTENSION_INFO] = sensor_info;
                 std::map<enum rs2_option, float> sensor_options = read_sensor_options(ros_topic::property_topic({ get_device_index(), sensor_index }));
-                sensor_descriptions.emplace_back(sensor_extensions, sensor_options, streams_snapshots);
+                sensor_descriptions.emplace_back(sensor_index, sensor_extensions, sensor_options, streams_snapshots);
             }
-
-            return device_snapshot(device_extensions, sensor_descriptions);
+            
+            return device_snapshot(device_extensions, sensor_descriptions, extrinsics_map);
         }
 
         std::shared_ptr<info_snapshot> read_info_snapshot(const std::string& topic) const
@@ -420,7 +454,7 @@ namespace librealsense
             return std::make_shared<info_snapshot>(values);
         }
 
-        uint32_t read_sensor_count(uint32_t device_index) const
+        std::set<uint32_t> read_sensor_indices(uint32_t device_index) const
         {
             rosbag::View sensor_infos(m_file, SensorInfoQuery(device_index));
             std::set<uint32_t> sensor_indices;
@@ -433,7 +467,7 @@ namespace librealsense
                 }
                 sensor_indices.insert(static_cast<uint32_t>(ros_topic::get_sensor_index(sensor_info.getTopic())));
             }
-            return static_cast<uint32_t>(sensor_indices.size());
+            return sensor_indices;
         }
 
         stream_profiles read_stream_info(uint32_t device_index, uint32_t sensor_index) const
@@ -535,13 +569,16 @@ namespace librealsense
         static std::vector<std::string> get_topics(std::unique_ptr<rosbag::View>& view)
         {
             std::vector<std::string> topics;
-            auto connections = view->getConnections();
-            auto x = std::transform(connections.begin(), connections.end(), std::back_inserter(topics), [](const rosbag::ConnectionInfo* connection) { return connection->topic; });
+            if(view != nullptr)
+            {
+                auto connections = view->getConnections();
+                std::transform(connections.begin(), connections.end(), std::back_inserter(topics), [](const rosbag::ConnectionInfo* connection) { return connection->topic; });
+            }
             return topics;
         }
 
         device_snapshot                         m_device_description;
-        device_serializer::nanoseconds          m_total_duration;
+        nanoseconds                             m_total_duration;
         std::string                             m_file_path;
         librealsense::frame_source              m_frame_source;
         rosbag::Bag                             m_file;

@@ -22,7 +22,8 @@ namespace librealsense
                                               int new_bpp = 0,
                                               int new_width = 0,
                                               int new_height = 0,
-                                              int new_stride = 0) override;
+                                              int new_stride = 0,
+                                              rs2_extension frame_type = RS2_EXTENSION_VIDEO_FRAME) override;
 
         frame_interface* allocate_composite_frame(std::vector<frame_holder> frames) override;
 
@@ -77,5 +78,6 @@ namespace librealsense
         rs2_extrinsics          _extrinsics;
 
         std::shared_ptr<stream_profile_interface> _stream, _mapped;
+        int                     _depth_stream_uid;
     };
 }

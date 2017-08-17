@@ -209,7 +209,7 @@ int rs2_is_frame_extendable_to(const rs2_frame* frame, rs2_extension extension_t
 *                        memory for the frame is likely to be re-used from previous frame, but in lack of available frames in the pool will be allocated from the free store
 */
 rs2_frame* rs2_allocate_synthetic_video_frame(rs2_source* source, const rs2_stream_profile* new_stream, rs2_frame* original,
-    int new_bpp, int new_width, int new_height, int new_stride, rs2_error** error);
+    int new_bpp, int new_width, int new_height, int new_stride, rs2_extension frame_type, rs2_error** error);
 
 /**
 * Allocate new composite frame, aggregating a set of existing frames

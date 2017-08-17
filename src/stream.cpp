@@ -116,7 +116,9 @@ namespace librealsense
 
     std::shared_ptr<stream_profile_interface> stream_profile_base::clone() const
     {
-        return std::make_shared<stream_profile_base>(_ctx, get_backend_profile());
+        auto res = std::make_shared<stream_profile_base>(_ctx, get_backend_profile());
+        res->set_unique_id(_ctx->generate_stream_id());
+        return res;
     }
 
     rs2_stream_profile* stream_profile_base::get_c_wrapper() const
