@@ -1,357 +1,176 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2015 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2015-2017 Intel Corporation. All Rights Reserved.
 
-#include <librealsense/rs2.hpp>
-#include <librealsense/rsutil2.hpp>
-#include "example.hpp"
-#include <imgui.h>
-#include "imgui_impl_glfw.h"
+#include <librealsense/rs2.hpp> // Include RealSense Cross Platform API
+#include "example.hpp"          // Include short list of convenience functions for rendering
 
-#include <chrono>
-#include <vector>
-#include <sstream>
-#include <algorithm>
+#include <algorithm>            // std::min, std::max
 
-using namespace rs2;
-using namespace std;
+// Struct for managing rotation of pointcloud view
+struct state { double yaw, pitch, last_x, last_y; bool ml; float offset_x, offset_y; GLuint tex_handle; };
 
-inline void glVertex(const float3 & vertex) { glVertex3fv(&vertex.x); }
-inline void glTexCoord(const float2 & tex_coord) { glTexCoord2fv(&tex_coord.x); }
+// Helper functions
+void register_glfw_callbacks(window& app, state& app_state);
+void draw_pointcloud(window& app, state& app_state, rs2::points& points);
 
-struct state { double yaw, pitch, last_x, last_y; bool ml; float offset_x, offset_y; device * dev; };
-
-template<class MAP_DEPTH> void deproject_depth(float * points, const rs2_intrinsics & intrin, const uint16_t * depth, MAP_DEPTH map_depth)
+int main(int argc, char * argv[]) try
 {
-    for (int y = 0; y<intrin.height; ++y)
+    // Create a simple OpenGL window for rendering:
+    window app(1280, 720, "RealSense Pointcloud Example");
+    // Construct an object to manage view state
+    state app_state = { 0, 0, 0, 0, false, 0, 0, 0 };
+    // register callbacks to allow manipulation of the pointcloud
+    register_glfw_callbacks(app, app_state);
+
+    using namespace rs2;
+    // Declare pointcloud object, for calculating pointclouds and texture mappings
+    pointcloud pc = rs2::context().create_pointcloud();
+
+    // Declare RealSense pipeline, encapsulating the actual device and sensors
+    pipeline pipe;
+    // Start streaming with default recommended configuration
+    pipe.start();
+
+    // We want the points object to be persistent so we can display the last cloud when a frame drops
+    rs2::points points;
+
+    while (app) // Application still alive?
     {
-        for (int x = 0; x<intrin.width; ++x)
+        // Wait for the next set of frames from the camera
+        auto frames = pipe.wait_for_frames();
+        if (auto color = frames.get_color_frame())
         {
-            const float pixel[] = { (float)x, (float)y };
-            rs2_deproject_pixel_to_point(points, &intrin, pixel, map_depth(*depth++));
-            points += 3;
-        }
-    }
-}
-
-const float3 * depth_to_points(vector<uint8_t> &image, const rs2_intrinsics &depth_intrinsics, const uint16_t * depth_image, float depth_scale)
-{
-    image.resize(depth_intrinsics.width * depth_intrinsics.height * 12);
-
-    deproject_depth(reinterpret_cast<float *>(image.data()), depth_intrinsics, depth_image, [depth_scale](uint16_t z) { return depth_scale * z; });
-
-    return reinterpret_cast<float3 *>(image.data());
-}
-
-float3 transform(const rs2_extrinsics *extrin, const float3 &point) { float3 p = {}; rs2_transform_point_to_point(&p.x, extrin, &point.x); return p; }
-float2 project(const rs2_intrinsics *intrin, const float3 & point) { float2 pixel = {}; rs2_project_point_to_pixel(&pixel.x, intrin, &point.x); return pixel; }
-float2 pixel_to_texcoord(const rs2_intrinsics *intrin, const float2 & pixel) { return{ (pixel.x + 0.5f) / intrin->width, (pixel.y + 0.5f) / intrin->height }; }
-float2 project_to_texcoord(const rs2_intrinsics *intrin, const float3 & point) { return pixel_to_texcoord(intrin, project(intrin, point)); }
-
-struct texture_stream
-{
-    rs2_stream stream;
-    int index;
-    rs2_format format;
-    string title;
-};
-
-int main(int argc, char * argv[])
-{
-    log_to_console(RS2_LOG_SEVERITY_WARN);
-    //log_to_file(log_severity::debug, "librealsense.log");
-
-    auto finished = false;
-    auto hw_reset_enable = true;
-    auto rgb_flipflop_enable = false;
-    rs2_extrinsics extrin{};
-    rs2_intrinsics mapped_intrin{};
-
-
-    context ctx;
-
-    util::device_hub devs(ctx);
-
-    while (!finished)
-    {
-        GLFWwindow* win = nullptr;
-        try{
-            auto dev = devs.wait_for_device();
-            auto depth_camera = dev.first<depth_sensor>();
-            // Configure streams to run at 30 frames per second
-            util::config config;
-            config.enable_stream(RS2_STREAM_DEPTH, preset::best_quality);
-
-            std::vector<texture_stream> available_streams;
-            std::vector<const char*> stream_names;
-            int selected_stream = 0;
-
-            // try to open color stream, but fall back to IR if the camera doesn't support it
-            rs2_stream mapped;
-            if (config.can_enable_stream(dev, RS2_STREAM_FISHEYE, 0, 0, RS2_FORMAT_RAW8, 0))
-            {
-                available_streams.push_back({ RS2_STREAM_FISHEYE, 0, RS2_FORMAT_RAW8, "Fish-Eye" });
-            }
-            if (config.can_enable_stream(dev, RS2_STREAM_COLOR, 0, 0, RS2_FORMAT_RGB8, 0))
-            {
-                available_streams.push_back({ RS2_STREAM_COLOR, 0, RS2_FORMAT_RGB8, "Color" });
-            }
-            if (config.can_enable_stream(dev, RS2_STREAM_INFRARED, 0, 0, RS2_FORMAT_RGB8, 0))
-            {
-                available_streams.push_back({ RS2_STREAM_INFRARED, 0, RS2_FORMAT_RGB8, "Artifical Color" });
-            }
-            if (config.can_enable_stream(dev, RS2_STREAM_INFRARED, 0, 0, RS2_FORMAT_Y8, 0))
-            {
-                available_streams.push_back({ RS2_STREAM_INFRARED, 0, RS2_FORMAT_Y8, "Infrared" });
-            }
-            if (config.can_enable_stream(dev, RS2_STREAM_INFRARED, 2, 0, 0, RS2_FORMAT_Y8, 0))
-            {
-                available_streams.push_back({ RS2_STREAM_INFRARED, 2, RS2_FORMAT_Y8, "Infrared2" });
-            }
-
-            if (available_streams.size() == 0)
-            {
-                throw runtime_error("Couldn't configure camera for demo");
-            }
-
-            for (auto&& s : available_streams) stream_names.push_back(s.title.c_str());
-
-            auto&& selected = available_streams[selected_stream];
-            config.enable_stream(selected.stream, 640, 480, selected.format, 0);
-            mapped = selected.stream;
-            auto stream = config.open(dev);
-
-            state app_state = {0, 0, 0, 0, false, 0, 0, &dev};
-
-            glfwInit();
-            ostringstream ss; ss << "RealSense Point Cloud Example (" << dev.get_info(RS2_CAMERA_INFO_NAME) << ")";
-            win = glfwCreateWindow(1280, 720, ss.str().c_str(), 0, 0);
-            ImGui_ImplGlfw_Init(win, true);
-            glfwMakeContextCurrent(win);
-
-            glfwSetWindowUserPointer(win, &app_state);
-            glfwSetMouseButtonCallback(win, [](GLFWwindow * win, int button, int action, int mods)
-            {
-                auto s = (state *)glfwGetWindowUserPointer(win);
-                if(button == GLFW_MOUSE_BUTTON_LEFT) s->ml = action == GLFW_PRESS;
-            });
-
-            glfwSetScrollCallback(win, [](GLFWwindow * win, double xoffset, double yoffset)
-            {
-                auto s = (state *)glfwGetWindowUserPointer(win);
-                s->offset_x += static_cast<float>(xoffset);
-                s->offset_y += static_cast<float>(yoffset);
-            });
-
-            glfwSetCursorPosCallback(win, [](GLFWwindow * win, double x, double y)
-            {
-                auto s = (state *)glfwGetWindowUserPointer(win);
-                if(s->ml)
-                {
-                    s->yaw -= (x - s->last_x);
-                    s->yaw = max(s->yaw, -120.0);
-                    s->yaw = min(s->yaw, +120.0);
-                    s->pitch += (y - s->last_y);
-                    s->pitch = max(s->pitch, -80.0);
-                    s->pitch = min(s->pitch, +80.0);
-                }
-                s->last_x = x;
-                s->last_y = y;
-            });
-
-            glfwSetKeyCallback(win, [](GLFWwindow * win, int key, int scancode, int action, int mods)
-            {
-                auto s = (state *)glfwGetWindowUserPointer(win);
-
-                bool bext = false, bint = false, bloc= false;
-                if (0 == action) //on key release
-                {
-                    if (key == GLFW_KEY_SPACE)
-                    {
-                        s->yaw = s->pitch = 0; s->offset_x = s->offset_y = 0.0;
-                    }
-                }
-            });
-
-            pointcloud pc = ctx.create_pointcloud();
-            syncer syncer;
-            stream.start(syncer);
-
-            texture mapped_tex;
+            // Tell pointcloud object to map to this color frame
+            pc.map_to(color);
             
-
-            extrin = stream.get_extrinsics(RS2_STREAM_DEPTH, mapped);
-            mapped_intrin = stream.get_intrinsics(mapped);
-
-            const rs2_intrinsics depth_intrin = stream.get_intrinsics(RS2_STREAM_DEPTH);
-
-            bool rgb_rotation_btn = (val_in_range(std::string(dev.get_info(RS2_CAMERA_INFO_PRODUCT_ID)),
-                                { std::string("0AD3") ,std::string("0B07") }));
-
-            bool texture_wrapping_on = true;
-            GLint texture_border_mode = GL_CLAMP_TO_EDGE; // GL_CLAMP_TO_BORDER
-            float tex_border_color[] = { 0.8f, 0.8f, 0.8f, 0.8f };
-
-            while (devs.is_connected(dev) && !glfwWindowShouldClose(win))
-            {
-                glfwPollEvents();
-                ImGui_ImplGlfw_NewFrame();
-
-                auto frames = syncer.wait_for_frames(500000);
-                if (frames.size() == 0)
-                    continue;
-
-                glPushAttrib(GL_ALL_ATTRIB_BITS);
-
-                frame depth_frame, mapped_frame;
-
-                for (auto&& frame : frames)
-                {
-                    if (frame.get_profile().stream_type() == RS2_STREAM_DEPTH)
-                    {
-                        depth_frame = frame;
-                    }
-
-                    if (frame.get_profile().stream_type() == mapped)
-                    {
-                        mapped_tex.upload(frame);
-                        mapped_frame = frame;
-                    }
-                }
-
-                if (mapped_frame) pc.map_to(mapped_frame);
-
-                if (!depth_frame) continue;
-
-                auto points = pc.calculate(depth_frame);
-
-                int width, height;
-                glfwGetFramebufferSize(win, &width, &height);
-                glViewport(0, 0, width, height);
-                glClearColor(52.0f/255, 72.f/255, 94.0f/255.0f, 1);
-                glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-                glMatrixMode(GL_PROJECTION);
-                glPushMatrix();
-                gluPerspective(60, (float)width/height, 0.01f, 10.0f);
-
-                glMatrixMode(GL_MODELVIEW);
-                glPushMatrix();
-                gluLookAt(0,0,0, 0,0,1, 0,-1,0);
-
-                glTranslatef(0,0,+0.5f+ app_state.offset_y*0.05f);
-                glRotated(app_state.pitch, 1, 0, 0);
-                glRotated(app_state.yaw, 0, 1, 0);
-                glTranslatef(0,0,-0.5f);
-
-                glPointSize((float)width/640);
-                glEnable(GL_DEPTH_TEST);
-                glEnable(GL_TEXTURE_2D);
-                glBindTexture(GL_TEXTURE_2D, mapped_tex.get_gl_handle());
-                glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, tex_border_color);
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, texture_border_mode);
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, texture_border_mode);
-                glBegin(GL_POINTS);
-
-                auto vertices = points.get_vertices();
-                auto tex_coords = points.get_texture_coordinates();
-
-                for (int i = 0; i < points.size(); i++)
-                {
-                    if (vertices[i].z)
-                    {
-                        glVertex3fv(vertices[i]);
-                        glTexCoord2fv(tex_coords[i]);
-                    }
-
-                }
-
-                glEnd();
-                glPopMatrix();
-                glMatrixMode(GL_PROJECTION);
-                glPopMatrix();
-                glPopAttrib();
-
-                glfwGetWindowSize(win, &width, &height);
-
-                // Draw GUI:
-                ImGui::PushStyleColor(ImGuiCol_WindowBg, { 0, 0, 0, 0 });
-                ImGui::SetNextWindowPos({ 0, 0 });
-                ImGui::SetNextWindowSize({ 200.f, (float)height });
-                ImGui::Begin("Stream Selector", nullptr,
-                             ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize);
-
-                rs2_error* e = nullptr;
-                ImGui::Text("VERSION: %s", api_version_to_string(rs2_get_api_version(&e)).c_str());
-
-                ImGui::Text("Texture Source:");
-                ImGui::PushItemWidth(-1);
-                if (ImGui::Combo(" texture", &selected_stream, stream_names.data(), static_cast<int>(stream_names.size())))
-                {
-                    stream.stop();
-                    stream.close();
-                    auto&& selected = available_streams[selected_stream];
-                    util::config config;
-                    config.enable_stream(RS2_STREAM_DEPTH, preset::best_quality);
-                    config.enable_stream(selected.stream, 0, 0, selected.format, 0);
-                    mapped = selected.stream;
-                    stream = config.open(dev);
-                    stream.start(syncer);
-                    extrin = stream.get_extrinsics(RS2_STREAM_DEPTH, mapped);
-                    mapped_intrin = stream.get_intrinsics(mapped);
-                }
-                ImGui::PopItemWidth();
-                ImGui::Text("\nApplication Controls:");
-                ImGui::Text("Mouse Left: Rotate Viewport");
-                ImGui::Text("Mouse Scroll: Zoom in/out");
-                ImGui::Text("Space Key: Reset View");
-                if (ImGui::Checkbox("Texture wrapping", &texture_wrapping_on))
-                    texture_border_mode = texture_wrapping_on ? GL_CLAMP_TO_EDGE : GL_CLAMP_TO_BORDER;
-                if (ImGui::IsItemHovered())
-                    ImGui::SetTooltip("Control texture mapping outside of coverage area");
-                if ((rgb_rotation_btn) && ImGui::Button("Adjust RGB orientation", ImVec2(160, 20)))
-                {
-                    rotate_rgb_image(dev, mapped_intrin.width);
-                    if (ImGui::IsItemHovered())
-                        ImGui::SetTooltip("Rotate RGB Sensor 180 deg");
-                }
-
-                if (ImGui::ButtonEx("Reset Device", { 160, 20 }, hw_reset_enable ? 0 : ImGuiButtonFlags_Disabled))
-                {
-                    try
-                    {
-                        dev.hardware_reset();
-                    }
-                    catch (...)
-                    {
-                    }
-                }
-
-                ImGui::End();
-                ImGui::PopStyleColor();
-
-                ImGui::Render();
-                glfwSwapBuffers(win);
-            }
-            if (glfwWindowShouldClose(win))
-                finished = true;
+            // Upload the color frame to OpenGL
+            texture mapped_tex;
+            mapped_tex.upload(color);
+            app_state.tex_handle = mapped_tex.get_gl_handle();
         }
-        catch(const error & e)
-
+        if (auto depth = frames.get_depth_frame())
         {
-            cerr << "RealSense error calling " << e.get_failed_function() << "(" << e.get_failed_args() << "):\n    " << e.what() << endl;
-        }
-        catch(const exception & e)
-        {
-            cerr << e.what() << endl;
+            // If we got a depth frame, generate the pointcloud and texture mappings
+            points = pc.calculate(depth);
         }
 
-        if(win)
-        {
-            glfwDestroyWindow(win);
-        }
-        ImGui_ImplGlfw_Shutdown();
+        // Draw the pointcloud
+        draw_pointcloud(app, app_state, points);
     }
 
-    glfwTerminate();
     return EXIT_SUCCESS;
+}
+catch (const rs2::error & e)
+
+{
+    std::cerr << "RealSense error calling " << e.get_failed_function() << "(" << e.get_failed_args() << "):\n    " << e.what() << std::endl;
+}
+catch (const std::exception & e)
+{
+    std::cerr << e.what() << std::endl;
+}
+
+// Registers the state variable and callbacks with glfw to allow mouse control of the pointcloud
+void register_glfw_callbacks(window& app, state& app_state)
+{
+    glfwSetWindowUserPointer(app, &app_state);
+    glfwSetMouseButtonCallback(app, [](GLFWwindow * win, int button, int action, int mods)
+    {
+        auto s = (state *)glfwGetWindowUserPointer(win);
+        if (button == GLFW_MOUSE_BUTTON_LEFT) s->ml = action == GLFW_PRESS;
+    });
+
+    glfwSetScrollCallback(app, [](GLFWwindow * win, double xoffset, double yoffset)
+    {
+        auto s = (state *)glfwGetWindowUserPointer(win);
+        s->offset_x += static_cast<float>(xoffset);
+        s->offset_y += static_cast<float>(yoffset);
+    });
+
+    glfwSetCursorPosCallback(app, [](GLFWwindow * win, double x, double y)
+    {
+        auto s = (state *)glfwGetWindowUserPointer(win);
+        if (s->ml)
+        {
+            s->yaw -= (x - s->last_x);
+            s->yaw = std::max(s->yaw, -120.0);
+            s->yaw = std::min(s->yaw, +120.0);
+            s->pitch += (y - s->last_y);
+            s->pitch = std::max(s->pitch, -80.0);
+            s->pitch = std::min(s->pitch, +80.0);
+        }
+        s->last_x = x;
+        s->last_y = y;
+    });
+
+    glfwSetKeyCallback(app, [](GLFWwindow * win, int key, int scancode, int action, int mods)
+    {
+        auto s = (state *)glfwGetWindowUserPointer(win);
+
+        bool bext = false, bint = false, bloc = false;
+        if (0 == action) //on key release
+        {
+            if (key == GLFW_KEY_SPACE)
+            {
+                s->yaw = s->pitch = 0; s->offset_x = s->offset_y = 0.0;
+            }
+        }
+    });
+}
+
+// Handles all the OpenGL calls needed to display the point cloud
+void draw_pointcloud(window& app, state& app_state, rs2::points& points)
+{
+    // OpenGL commands that prep screen for the pointcloud
+    glPopMatrix();
+    glPushAttrib(GL_ALL_ATTRIB_BITS);
+
+    float width = app.width(), height = app.height();
+    glClearColor(52.0f / 255, 72.f / 255, 94.0f / 255, 1);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    glMatrixMode(GL_PROJECTION);
+    glPushMatrix();
+    gluPerspective(60, width / height, 0.01f, 10.0f);
+
+    glMatrixMode(GL_MODELVIEW);
+    glPushMatrix();
+    gluLookAt(0, 0, 0, 0, 0, 1, 0, -1, 0);
+
+    glTranslatef(0, 0, +0.5f + app_state.offset_y*0.05f);
+    glRotated(app_state.pitch, 1, 0, 0);
+    glRotated(app_state.yaw, 0, 1, 0);
+    glTranslatef(0, 0, -0.5f);
+
+    glPointSize(width / 640);
+    glEnable(GL_DEPTH_TEST);
+    glEnable(GL_TEXTURE_2D);
+    glBindTexture(GL_TEXTURE_2D, app_state.tex_handle);
+    float tex_border_color[] = { 0.8f, 0.8f, 0.8f, 0.8f };
+    glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, tex_border_color);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, 0x812F); // GL_CLAMP_TO_EDGE
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, 0x812F); // GL_CLAMP_TO_EDGE
+    glBegin(GL_POINTS);
+
+
+    /* this segment actually prints the pointcloud */
+    auto vertices = points.get_vertices();              // get vertices
+    auto tex_coords = points.get_texture_coordinates(); // and texture coordinates
+    for (int i = 0; i < points.size(); i++)
+    {
+        if (vertices[i].z)
+        {
+            // upload the point and texture coordinates only for points we have depth data for
+            glVertex3fv(vertices[i]);
+            glTexCoord2fv(tex_coords[i]);
+        }
+    }
+
+    // OpenGL cleanup
+    glEnd();
+    glPopMatrix();
+    glMatrixMode(GL_PROJECTION);
+    glPopMatrix();
+    glPopAttrib();
+    glPushMatrix();
 }

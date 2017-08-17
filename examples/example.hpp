@@ -66,13 +66,13 @@ public:
         show(r.adjust_ratio({ float(width), float(height) }));
     }
 
-private:
     void upload(const rs2::video_frame& frame)
     {
         if (!frame) return;
 
         if (!gl_handle)
             glGenTextures(1, &gl_handle);
+        GLenum err = glGetError();
 
         auto format = frame.get_profile().format();
         width = frame.get_width();
@@ -98,6 +98,8 @@ private:
         glBindTexture(GL_TEXTURE_2D, 0);
     }
 
+    GLuint get_gl_handle() { return gl_handle; }
+
     void show(const rect& r) const
     {
         if (!gl_handle)
@@ -116,7 +118,7 @@ private:
 
         draw_text(r.x + 15, r.y + 20, rs2_stream_to_string(stream));
     }
-
+private:
     GLuint gl_handle = 0;
     int width = 0;
     int height = 0;
@@ -164,6 +166,8 @@ public:
         glfwDestroyWindow(win);
         glfwTerminate();
     }
+
+    operator GLFWwindow*() { return win; }
 private:
     GLFWwindow* win;
     int _width, _height;
