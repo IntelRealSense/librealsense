@@ -1,7 +1,6 @@
 # API Architecture
 
-RealSense APIs are clustered into three groups.  
-Choose the API best suited to your needs:
+RealSense APIs are clustered into three groups. Choose the API best suited to your needs:
 
 1. [High-Level Computer-Vision Pipeline API](#high-level-pipeline-api)  
 The Pipeline API configures the Intel® RealSense™ device with the best recommended settings and manages hardware resources and threading.
@@ -26,11 +25,11 @@ The `pipeline` makes sure all synchronization and alignment requirements are met
 
 The Processing Block API provides the following tools to control threading, spatial & temporal synchronization and memory management:
 
-* **configure** the device for streaming using the `config` class
-* **marshal** frames from the OS callback thread to the main application using the safe `queue` implementation
-* **synchronize** any set of different asynchronous streams with respect to hardware timestamps using the `syncer` class
-* **align** streams to a single viewport, using the `align` class. You can also use your own calibration data to align devices that were not otherwise calibrated.
-* If you need to perform **processing** on the frame while benefiting from **librealsense** memory pooling, you can use the `processing` class.
+* **Configure** the device for streaming using the `config` class
+* **Marshal** frames from the OS callback thread to the main application using the safe `queue` implementation
+* **Synchronize** any set of different asynchronous streams with respect to hardware timestamps using the `syncer` class
+* **Align** streams to a common viewport, using the `align` class. You can also use your own calibration data to align devices that were not otherwise calibrated.
+* **Project** depth data into the 3D space using the `pointcloud` class. 
 
  Assembling these components lets you define a custom processing pipeline best suited to your needs.
 
