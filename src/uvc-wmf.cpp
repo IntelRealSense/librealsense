@@ -66,7 +66,10 @@ namespace rsimpl
         const uvc::guid FISHEYE_WIN_USB_DEVICE_GUID = { 0xC0B55A29, 0xD7B6, 0x436E, { 0xA6, 0xEF, 0x2E, 0x76, 0xED, 0x0A, 0xBC, 0xA5 } };
         // Translation of user-provided fourcc code into device supported one:           Note the Big-Endian notation
         const std::map<uint32_t, uint32_t> fourcc_map = { { 0x47524559, 0x59382020 },       /* 'GREY' => 'Y8  '. */
-                                                          { 0x70524141, 0x52573130 } };    /* 'RW10' => 'pRAA'. */
+                                                          { 0x59313020, 0x494e5649 },       /* 'Y10' => 'INVI  '. */
+                                                          { 0x50000000, 0x5a313620 },       /* 'Z16'  => 'D16 ' */
+                                                          { 0x5a313620, 0x494e565a },       /* 'Z16'  => 'INVZ ' */
+                                                          { 0x70524141, 0x52573130 } };     /* 'RW10' => 'pRAA'. */
 
         static std::string win_to_utf(const WCHAR * s)
         {
