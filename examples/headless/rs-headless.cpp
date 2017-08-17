@@ -18,15 +18,15 @@ void metadata_to_csv(const rs2::frame& frm, const std::string& filename);
 // It can be useful for debugging an embedded system with no display.
 int main(int argc, char * argv[]) try
 {
-    using namespace rs2;
+using namespace rs2;
 
-    // Declare depth colorizer for pretty visualization of depth data
-    colorizer color_map;
+// Declare depth colorizer for pretty visualization of depth data
+colorizer color_map;
 
-    // Declare RealSense pipeline, encapsulating the actual device and sensors
-    pipeline pipe;
-    // Start streaming with default recommended configuration
-    pipe.start();
+// Declare RealSense pipeline, encapsulating the actual device and sensors
+pipeline pipe;
+// Start streaming with default recommended configuration
+pipe.start();
 
     // Capture 30 frames to give autoexposure, etc. a chance to settle
     for (auto i = 0; i < 30; ++i) pipe.wait_for_frames();
@@ -40,13 +40,14 @@ int main(int argc, char * argv[]) try
         {
             auto stream = frame.get_profile().stream_type();
             // Use the colorizer to get an rgb image for the depth stream
-            if (stream == RS2_STREAM_DEPTH) vf = color_map(frame);
+            if (vf.is<depth_frame>()) vf = color_map(frame);
 
             // Write images to disk
             std::stringstream png_file;
             png_file << "rs-headless-output-" << vf.get_profile().stream_name() << ".png";
             stbi_write_png(png_file.str().c_str(), vf.get_width(), vf.get_height(),
                            vf.get_bytes_per_pixel(), vf.get_data(), vf.get_stride_in_bytes());
+            std::cout << "Saved " << png_file.str() << std::endl;
 
             // Record per-frame metadata for UVC streams
             std::stringstream csv_file;
