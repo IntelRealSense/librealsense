@@ -6,65 +6,64 @@ Linux | Windows |
 -------- | ------------ |
 [![Build Status](https://travis-ci.org/IntelRealSense/librealsense.svg?branch=master)](https://travis-ci.org/IntelRealSense/librealsense) | [![Build status](https://ci.appveyor.com/api/projects/status/y9f8qcebnb9v41y4?svg=true)](https://ci.appveyor.com/project/ddiakopoulos/librealsense) |
 
-**Intel® RealSense™ Cross Platform SDK** is a cross-platform library (Linux, Windows, Mac) for working with Intel® RealSense™ depth cameras.
-Developer kits containing the necessary hardware to use this library are available for purchase at [this link](http://click.intel.com/realsense.html). 
+## Overview
+**Intel® RealSense™ SDK 2.0** is a cross-platform library (Linux, Windows, Mac) for working with Intel® RealSense™ depth cameras (SR300 and the RS400 series).
+It allows streaming of depth, color and fisheye video, and provides intrinsic and extrinsic calibration information. The library also offers synthetic streams (pointcloud, depth aligned to color and vise-versa) and support for motion tracking. 
 
-[Whats new?](./doc/rs400_support.md) - Summary of changes in librealsense2, including RS400 support, API changes and new functionality.
+In addition, the SDK has a built-in support for recording a streaming session to a [rosbag](http://wiki.ros.org/rosbag) file, and playback of these files. 
 
-## Table of Contents
-* Installation Guides:
-  * [Linux](./doc/installation.md)
-  * [Windows](./doc/installation_windows.md)
-  * [Mac OS X](./doc/installation_osx.md)
-* [Useful Links](#useful-links)
-* [Documentation](#documentation)
-* [Functionality](#functionality)
-* [Compatible Devices](#compatible-devices)
-* [Compatible Platforms](#compatible-platforms)
-* [Integrations](#integrations)
-* [License](#license)
+The library aims to provide an easy to use API and tools for computer vision professionals, game developers and other Intel RealSense technology enthusiasts.
+
+We provide a C, C++, and [Python](./bindings/python) API.
+Developer kits containing the necessary hardware to use this library are available for purchase at [click.intel.com](http://click.intel.com/realsense.html).
 
 
-## Functionality
 
-1. Native streams: depth, color, infrared, fisheye, motion-tracking.
-2. Synthetic streams: depth aligned to color and vice versa, pointcloud.
-3. Intrinsic/extrinsic calibration information.
-4. Majority of hardware-specific functionality for individual camera generations (UVC XU controls).
-5. Multi-camera capture across heterogeneous camera architectures
 
-## Compatible Devices
+## Quick Start
 
-1. RealSense SR300
-2. RealSense RS400 series
+#### Step 1: Download and Install
+After installing the Intel RealSense SDK (on [Linux](./doc/distribution_linux.md) \ Windows \ OSX), and connecting the depth camera, you are ready to start writing your first application!
 
-## Compatible Platforms
+> In case of any issue during initial setup, or later, please first see our [FAQ & Troubleshooting](./doc) section. 
+> If you can't find an answer there, try searching our [Closed GitHub Issues](https://github.com/IntelRealSense/librealsense/issues?utf8=%E2%9C%93&q=is%3Aclosed) page,  [Community](https://communities.intel.com/community/tech/realsense) and [Support](https://www.intel.com/content/www/us/en/support/emerging-technologies/intel-realsense-technology.html) sites.
+> If none of the above helped, [open a new issue](https://github.com/IntelRealSense/librealsense/issues/new).
 
-The library is written in standards-conforming C++11 and relies only on the C89 ABI for its public interface. It is developed and tested on the following platforms:
+#### Step 2: Ready to hack!
 
-1. Ubuntu 14/16 LTS (GCC 4.9 toolchain)
-2. Windows 10 (Visual Studio 2015 Update 3)
-3. Mac OS X 10.7+ (Clang toolchain) **Temporarily unavailable**
+Our library offers a high level API for using Intel RealSense depth cameras (in addition to lower level ones).
+The following snippet shows how to start streaming frames and extracting the depth value of a pixel:
 
-## Hardware Requirements
-Developer kits containing the necessary hardware to use this library are available for purchase at [this link](http://click.intel.com/realsense.html). In addition, several consumer tablets and laptops with integrated cameras may also function, such as the [HP Spectre x2 with R200](http://store.hp.com/us/en/ContentView?storeId=10151&langId=-1&catalogId=10051&eSpotName=new-detachable).
+```cpp
+// Create a Pipeline, which serves as a top-level API for streaming and processing frames
+rs2::pipeline p;
 
-Developer kits **require** USB 3.0. RealSense™ cameras do not provide backwards compatibility with USB 2.0. Not all USB host chipsets are compatible with this library, although it has been validated with recent generations of the Intel Host Controller chipset. An exhaustive list of incompatible hardware is not presently provided. On x86, a Haswell or newer architecture is recommended.
+// Configure and start the pipeline
+p.start();
 
-For small-form factor usages, this library has been demonstrated to work on the following boards:
-  * [UP Board](http://www.up-board.org/kickstarter/up-intel-realsense-technology/)
-  * [Intel Joule](https://newsroom.intel.com/chip-shots/make-amazing-things-happen-iot-entrepreneurship-intel-joule/)
+while (true)
+{
+    // Block program until frames arrive
+    rs2::frameset frames = p.wait_for_frames(); 
+    
+    // Try to get a frame of a depth image
+    rs2::depth_frame depth = frames.get_depth_frame(); 
+    // The frameset might not contain a depth frame, if so continue until it does
+    if (!depth) continue;
 
-## Integrations
+    // Get the depth frame's dimensions
+    float frame_width = depth.get_width();
+    float frame_height = depth.get_height();
+    
+    // Query the distance from the camera to the object in the center of the image
+    float dist_to_center = depth.get_distance(frame_width / 2, frame_height / 2);
+    
+    // Print the distance 
+    std::cout << "The camera is facing an object " << std::fixed << dist_to_center << " meters away \r";
+}
+```
+For more information on the library, please follow our [examples](./examples), and read the [documentation](./doc) to learn more.
 
-The library has been integrated with a number of third-party components and operating systems. While most of these projects are not directly supported by the team, they are useful resources for users of this library.
-
-  * [Robotic Operating System](https://github.com/intel-ros/realsense) (Intel Supported; R200, F200, SR300 all supported)
-  * [Yocto / WindRiver Linux](https://github.com/IntelRealSense/meta-intel-librealsense)
-  * [Arch Linux](https://aur.archlinux.org/packages/librealsense/)
-
-Additional language bindings (experimental, community maintained):
-  * [Java (generated by JavaCPP)](https://github.com/poqudrof/javacpp-presets/tree/realsense-pull)
 
 ## License
 
