@@ -103,7 +103,8 @@ namespace librealsense
                                                             int new_bpp,
                                                             int new_width,
                                                             int new_height,
-                                                            int new_stride)
+                                                            int new_stride,
+                                                            rs2_extension frame_type)
     {
         video_frame* vf = nullptr;
 
@@ -153,7 +154,7 @@ namespace librealsense
             height = vf->get_height();
         }
 
-        auto res = _actual_source.alloc_frame(RS2_EXTENSION_VIDEO_FRAME, stride * height, data, true);
+        auto res = _actual_source.alloc_frame(frame_type, stride * height, data, true);
         if (!res) throw wrong_api_call_sequence_exception("Out of frame resources!");
         vf = static_cast<video_frame*>(res);
         vf->assign(width, height, stride, bpp);
@@ -230,7 +231,8 @@ namespace librealsense
           _depth_units_ptr(nullptr),
           _mapped_intrinsics_ptr(nullptr),
           _extrinsics_ptr(nullptr),
-          _mapped(nullptr)
+          _mapped(nullptr),
+          _depth_stream_uid(0)
     {
         auto on_frame = [this](rs2::frame f, const rs2::frame_source& source)
         {
@@ -238,6 +240,15 @@ namespace librealsense
             {
                 auto depth_frame = (frame_interface*)depth.get();
                 std::lock_guard<std::mutex> lock(_mutex);
+
+                if (!_stream.get() || _depth_stream_uid != depth_frame->get_stream()->get_unique_id())
+                {
+                    _stream = depth_frame->get_stream()->clone();
+                    _depth_stream_uid = depth_frame->get_stream()->get_unique_id();
+                    _stream->get_context().register_same_extrinsics(*_stream, *depth_frame->get_stream());
+                    _depth_intrinsics_ptr = nullptr;
+                    _depth_units_ptr = nullptr;
+                }
 
                 bool found_depth_intrinsics = false;
                 bool found_depth_units = false;
@@ -265,12 +276,6 @@ namespace librealsense
                 {
                     throw wrong_api_call_sequence_exception("Received depth frame that doesn't provide either intrinsics or depth units!");
                 }
-
-                if (!_stream.get())
-                {
-                    _stream = depth_frame->get_stream()->clone();
-                    _stream->get_context().register_same_extrinsics(*_stream, *depth_frame->get_stream());
-                }
             };
 
             auto inspect_other_frame = [this](const rs2::frame& other)
@@ -281,6 +286,8 @@ namespace librealsense
                 if (_mapped.get() != other_frame->get_stream().get())
                 {
                     _mapped = other_frame->get_stream();
+                    _mapped_intrinsics_ptr = nullptr;
+                    _extrinsics_ptr = nullptr;
                 }
 
                 if (!_mapped_intrinsics_ptr)
@@ -303,18 +310,35 @@ namespace librealsense
                 }
             };
 
-            auto process_depth_frame = [this](const rs2::frame& depth)
+            auto process_depth_frame = [this](const rs2::depth_frame& depth)
             {
                 frame_holder res = get_source().allocate_points(_stream, (frame_interface*)depth.get());
 
                 auto pframe = (points*)(res.frame);
 
-                auto points = depth_to_points((uint8_t*)pframe->get_vertices(), *_depth_intrinsics_ptr, (const uint16_t*)depth.get_data(), *_depth_units_ptr);
+                auto depth_data = (const uint16_t*)depth.get_data();
+                auto original_depth = ((depth_frame*)depth.get())->get_original_depth();
+                if (original_depth) depth_data = (const uint16_t*)original_depth->get_frame_data();
+
+                auto points = depth_to_points((uint8_t*)pframe->get_vertices(), *_depth_intrinsics_ptr, depth_data, *_depth_units_ptr);
 
                 auto vid_frame = depth.as<rs2::video_frame>();
                 float2* tex_ptr = pframe->get_texture_coordinates();
 
-                if (_extrinsics_ptr && _mapped_intrinsics_ptr)
+                rs2_intrinsics mapped_intr;
+                rs2_extrinsics extr;
+                bool map_texture = false;
+                {
+                    std::lock_guard<std::mutex> lock(_mutex);
+                    if (_extrinsics_ptr && _mapped_intrinsics_ptr)
+                    {
+                        mapped_intr = *_mapped_intrinsics_ptr;
+                        extr = *_extrinsics_ptr;
+                        map_texture = true;
+                    }
+                }
+
+                if (map_texture)
                 {
                     for (int y = 0; y < vid_frame.get_height(); ++y)
                     {
@@ -322,8 +346,8 @@ namespace librealsense
                         {
                             if (points->z)
                             {
-                                auto trans = transform(_extrinsics_ptr, *points);
-                                auto tex_xy = project_to_texcoord(_mapped_intrinsics_ptr, trans);
+                                auto trans = transform(&extr, *points);
+                                auto tex_xy = project_to_texcoord(&mapped_intr, trans);
 
                                 *tex_ptr = tex_xy;
                             }

@@ -151,6 +151,15 @@ void rs2_playback_device_set_status_changed_callback(const rs2_device* device, r
  */
 rs2_playback_status rs2_playback_device_get_current_status(const rs2_device* device, rs2_error** error);
 
+/**
+ * Set the playing speed
+ *
+ * \param[in] device A playback device
+ * \param[in] speed  Indicates a multiplication of the speed to play (e.g: 1 = normal, 0.5 twice as slow)
+ * \param[out] error     If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ */
+void rs2_playback_device_set_playback_speed(const rs2_device* device, float speed, rs2_error** error);
+
 #ifdef __cplusplus
 }
 #endif

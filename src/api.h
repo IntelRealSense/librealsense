@@ -71,7 +71,7 @@ namespace librealsense
             if (ext == nullptr) return nullptr;                                                 \
             else                                                                                \
             {                                                                                   \
-                if(!ext->extend_to(TypeToExtensionn<T>::value, (void**)p))                      \
+                if(!ext->extend_to(TypeToExtensionn<T>::value, (void**)&p))                      \
                     return nullptr;                                                             \
             }                                                                                   \
         }                                                                                       \

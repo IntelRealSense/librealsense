@@ -368,7 +368,6 @@ namespace librealsense
                             video->set_timestamp_domain(timestamp_domain);
                             dest.push_back(const_cast<byte*>(video->get_frame_data()));
                             frame->set_stream(request);
-                            if (stream_to_frame_types(output.first.type) == RS2_EXTENSION_DEPTH_FRAME) dynamic_cast<depth_frame*>(frame.frame)->reset_units();
                             refs.push_back(std::move(frame));
                         }
                         else
@@ -560,6 +559,26 @@ namespace librealsense
     void uvc_sensor::register_pu(rs2_option id)
     {
         register_option(id, std::make_shared<uvc_pu_option>(*this, id));
+    }
+
+    void uvc_sensor::try_register_pu(rs2_option id)
+    {
+        try
+        {
+            auto opt = std::make_shared<uvc_pu_option>(*this, id);
+            auto range = opt->get_range();
+            if (range.max <= range.min || range.step <= 0 || range.def < range.min || range.def > range.max) return;
+
+            auto val = opt->query();
+            if (val < range.min || val > range.max) return;
+            opt->set(val);
+
+            register_option(id, opt);
+        }
+        catch (...)
+        {
+            LOG_WARNING("Exception was thrown when inspecting properties of a sensor");
+        }
     }
 
     void sensor_base::register_metadata(rs2_frame_metadata metadata, std::shared_ptr<md_attribute_parser_base> metadata_parser) const

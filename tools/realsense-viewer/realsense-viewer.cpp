@@ -95,6 +95,7 @@ int main(int, char**) try
     {
         auto data = reinterpret_cast<user_data*>(glfwGetWindowUserPointer(w));
         data->mouse->mouse_wheel = yoffset;
+        data->mouse->ui_wheel += yoffset;
     });
 
     // TODO: Implement same logic as when doing this from GUI
@@ -166,10 +167,22 @@ int main(int, char**) try
 
                     if (device_models.size() == 0 && list.size() > 0 && prev_size == 0)
                     {
-                        auto dev = list.front();
-                        auto model = device_model(dev, error_message);
-                        device_models.push_back(model);
-                        viewer_model.not_model.add_log(to_string() << model.dev.get_info(RS2_CAMERA_INFO_NAME) << " was selected as a default device");
+                        auto dev = [&](){
+                            for (size_t i = 0; i < list.size(); i++)
+                            {
+                                if (list[i].supports(RS2_CAMERA_INFO_NAME) &&
+                                    std::string(list[i].get_info(RS2_CAMERA_INFO_NAME)) != "Platform Camera")
+                                    return list[i];
+                            }
+                            return device();
+                        }();
+
+                        if (dev)
+                        {
+                            auto model = device_model(dev, error_message);
+                            device_models.push_back(model);
+                            viewer_model.not_model.add_log(to_string() << model.dev.get_info(RS2_CAMERA_INFO_NAME) << " was selected as a default device");
+                        }
                     }
 
                     devs.clear();
@@ -195,7 +208,11 @@ int main(int, char**) try
                             for (auto&& dev : devs)
                                 if (get_device_name(dev_model.dev) == get_device_name(dev))
                                     still_around = true;
-                            if (!still_around) device_to_remove = &dev_model;
+                            if (!still_around) {
+                                for (auto&& s : dev_model.subdevices)
+                                    s->streaming = false;
+                                device_to_remove = &dev_model;
+                            }
                         }
                         if (device_to_remove)
                         {
@@ -216,6 +233,7 @@ int main(int, char**) try
                 }
             }
         }
+
         bool update_read_only_options = false;
         auto now = std::chrono::high_resolution_clock::now();
         auto duration = std::chrono::duration<double, std::milli>(now - last_time_point).count();
@@ -230,8 +248,20 @@ int main(int, char**) try
         int w, h;
         glfwGetWindowSize(window, &w, &h);
 
+
+        const float panel_width = 320.f;
+        const float panel_y = 44.f;
+        const float default_log_h = 80.f;
+
+        auto output_height = (viewer_model.is_output_collapsed ? default_log_h : 20);
+
+        rect viewer_rect = { panel_width, panel_y, w - panel_width, h - panel_y - output_height };
+
         glMatrixMode(GL_PROJECTION);
         glLoadIdentity();
+
+        ImGui::GetIO().MouseWheel = mouse.ui_wheel;
+        mouse.ui_wheel = 0.f;
 
         ImGui_ImplGlfw_NewFrame();
 
@@ -239,10 +269,6 @@ int main(int, char**) try
         auto flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove |
             ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar |
             ImGuiWindowFlags_NoSavedSettings;
-
-        const float panel_width = 320.f;
-        const float panel_y = 44.f;
-        const float default_log_h = 80.f;
 
         ImGui::SetNextWindowPos({ 0, 0 });
         ImGui::SetNextWindowSize({ panel_width, panel_y });
@@ -257,7 +283,7 @@ int main(int, char**) try
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(5, 5));
         ImGui::SetNextWindowPos({ 0, panel_y });
 
-        if (ImGui::Button(u8"Add Source\t\t\t\t\t\t\t\t\t\t\t\t\t\t\uf055", { panel_width - 1, panel_y }))
+        if (ImGui::Button(u8"Add Source\t\t\t\t\t\t\t\t\t\t\t\t\uf0d7", { panel_width - 1, panel_y }))
             ImGui::OpenPopup("select");
 
         auto new_devices_count = device_names.size() + 1;
@@ -315,7 +341,7 @@ int main(int, char**) try
 
             if (new_devices_count > 1) ImGui::Separator();
 
-            if (ImGui::Selectable("Recording from File...", false, ImGuiSelectableFlags_SpanAllColumns))
+            if (ImGui::Selectable("Load Recorded Sequence", false, ImGuiSelectableFlags_SpanAllColumns))
             {
                 const char *ret;
                 ret = noc_file_dialog_open(NOC_FILE_DIALOG_OPEN,
@@ -397,7 +423,11 @@ int main(int, char**) try
         ImGui::SetCursorPosX(w - panel_width - panel_y * 1);
         ImGui::PushStyleColor(ImGuiCol_Text, !is_3d_view ? grey : white);
         ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, !is_3d_view ? grey : white);
-        if (ImGui::Button("3D", { panel_y,panel_y })) is_3d_view = true;
+        if (ImGui::Button("3D", { panel_y,panel_y }))
+        {
+            is_3d_view = true;
+            viewer_model.update_3d_camera(viewer_rect, mouse, true);
+        }
         ImGui::PopStyleColor(3);
 
         ImGui::SameLine();
@@ -465,7 +495,7 @@ int main(int, char**) try
 
                 pos = ImGui::GetCursorPos();
                 ImGui::PushStyleColor(ImGuiCol_Button, sensor_header_light_blue);
-                ImGui::Columns(2, "DeviceInfo", false);
+                //ImGui::Columns(2, "DeviceInfo", false);
                 ImGui::SetCursorPos({ 8, pos.y + 14 });
                 if (dev_model.is_recording)
                 {
@@ -488,13 +518,13 @@ int main(int, char**) try
 
                 label = to_string() << dev_model.dev.get_info(RS2_CAMERA_INFO_NAME);
                 ImGui::Text(label.c_str());
-                ImGui::NextColumn();
-                ImGui::SetCursorPos({ ImGui::GetCursorPosX(), pos.y + 14 });
-                label = to_string() << "S/N: " << (dev_model.dev.supports(RS2_CAMERA_INFO_SERIAL_NUMBER) ? dev_model.dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER) : "Unknown");
-                ImGui::Text(label.c_str());
+                //ImGui::NextColumn();
+//                ImGui::SetCursorPos({ ImGui::GetCursorPosX(), pos.y + 14 });
+//                label = to_string() << "S/N: " << (dev_model.dev.supports(RS2_CAMERA_INFO_SERIAL_NUMBER) ? dev_model.dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER) : "Unknown");
+//                ImGui::Text(label.c_str());
 
                 ImGui::Columns(1);
-                ImGui::SetCursorPos({ panel_width - 45, pos.y + 11 + (header_h - panel_y) / 2 });
+                ImGui::SetCursorPos({ panel_width - 50, pos.y + 5 + (header_h - panel_y) / 2 });
 
                 ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
                 ImGui::PushStyleColor(ImGuiCol_PopupBg, almost_white_bg);
@@ -503,11 +533,13 @@ int main(int, char**) try
 
                 ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(5, 5));
 
+                ImGui::PushFont(font_18);
                 label = to_string() << "device_menu" << dev_model.id;
-                std::string settings_button_name = to_string() << u8"\uf013\uf0d7##" << dev_model.id;
+                std::string settings_button_name = to_string() << u8"\uf0c9##" << dev_model.id;
 
-                if (ImGui::Button(settings_button_name.c_str(), { 25,25 }))
+                if (ImGui::Button(settings_button_name.c_str(), { 33,35 }))
                     ImGui::OpenPopup(label.c_str());
+                ImGui::PopFont();
 
                 ImGui::PushFont(font_14);
 
@@ -518,53 +550,71 @@ int main(int, char**) try
                     {
 
                     }
-
                     if (!dev_model.is_recording &&
-                        !dev_model.dev.is<playback>() &&
-                        ImGui::Selectable("Record to File..."))
+                        !dev_model.dev.is<playback>())
                     {
-                        auto ret = noc_file_dialog_open(NOC_FILE_DIALOG_SAVE, "ROS-bag\0*.bag\0", NULL, NULL);
-
-                        if (ret)
+                        bool is_device_streaming = std::any_of(dev_model.subdevices.begin(), dev_model.subdevices.end(), [](const std::shared_ptr<subdevice_model>& s) { return s->streaming; });
+                        if (ImGui::Selectable("Record to File...", false, is_device_streaming ? ImGuiSelectableFlags_Disabled : 0))
                         {
-                            std::string filename = ret;
-                            if (!ends_with(to_lower(filename), ".bag")) filename += ".bag";
+                            auto ret = noc_file_dialog_open(NOC_FILE_DIALOG_SAVE, "ROS-bag\0*.bag\0", NULL, NULL);
 
-                            dev_model.start_recording(filename, error_message);
+                            if (ret)
+                            {
+                                std::string filename = ret;
+                                if (!ends_with(to_lower(filename), ".bag")) filename += ".bag";
+
+                                dev_model.start_recording(filename, error_message);
+                            }
+                        }
+                        if(is_device_streaming)
+                        {
+                            if (ImGui::IsItemHovered())
+                                ImGui::SetTooltip("Stop streaming to enable recording");
                         }
                     }
 
                     if (auto adv = dev_model.dev.as<advanced_mode>())
                     {
-                        ImGui::Separator();
-
-                        if (ImGui::Selectable("Load Settings", false, ImGuiSelectableFlags_SpanAllColumns))
+                        try
                         {
-                            auto ret = noc_file_dialog_open(NOC_FILE_DIALOG_OPEN, "JavaScript Object Notation (JSON)\0*.json\0", NULL, NULL);
-                            if (ret)
-                            {
-                                std::ifstream t(ret);
-                                std::string str((std::istreambuf_iterator<char>(t)),
-                                                std::istreambuf_iterator<char>());
+                            ImGui::Separator();
 
-                                adv.load_json(str);
-                                dev_model.get_curr_advanced_controls = true;
+                            if (ImGui::Selectable("Load Settings", false, ImGuiSelectableFlags_SpanAllColumns))
+                            {
+                                auto ret = noc_file_dialog_open(NOC_FILE_DIALOG_OPEN, "JavaScript Object Notation (JSON)\0*.json\0", NULL, NULL);
+                                if (ret)
+                                {
+                                    std::ifstream t(ret);
+                                    std::string str((std::istreambuf_iterator<char>(t)),
+                                                    std::istreambuf_iterator<char>());
+
+                                    adv.load_json(str);
+                                    dev_model.get_curr_advanced_controls = true;
+                                }
+                            }
+
+                            if (ImGui::Selectable("Save Settings", false, ImGuiSelectableFlags_SpanAllColumns))
+                            {
+                                auto ret = noc_file_dialog_open(NOC_FILE_DIALOG_SAVE, "JavaScript Object Notation (JSON)\0*.json\0", NULL, NULL);
+
+                                if (ret)
+                                {
+                                    std::string filename = ret;
+                                    if (!ends_with(to_lower(filename), ".json")) filename += ".json";
+
+                                    std::ofstream out(filename);
+                                    out << adv.serialize_json();
+                                    out.close();
+                                }
                             }
                         }
-
-                        if (ImGui::Selectable("Save Settings", false, ImGuiSelectableFlags_SpanAllColumns))
+                        catch (const error& e)
                         {
-                            auto ret = noc_file_dialog_open(NOC_FILE_DIALOG_SAVE, "JavaScript Object Notation (JSON)\0*.json\0", NULL, NULL);
-
-                            if (ret)
-                            {
-                                std::string filename = ret;
-                                if (!ends_with(to_lower(filename), ".json")) filename += ".json";
-
-                                std::ofstream out(filename);
-                                out << adv.serialize_json();
-                                out.close();
-                            }
+                            error_message = error_to_string(e);
+                        }
+                        catch (const std::exception& e)
+                        {
+                            error_message = e.what();
                         }
                     }
 
@@ -609,6 +659,7 @@ int main(int, char**) try
                 ImGui::SetCursorPos({ 33, pos.y + panel_y - 9 });
                 ImGui::PushStyleColor(ImGuiCol_Text, from_rgba(0xc3, 0xd5, 0xe5, 0xff));
 
+                int playback_control_panel_height = 0;
                 if (auto p = dev_model.dev.as<playback>())
                 {
                     auto full_path = p.file_name();
@@ -617,10 +668,14 @@ int main(int, char**) try
                     ImGui::Text("File: \"%s\"", filename.c_str());
                     if (ImGui::IsItemHovered())
                         ImGui::SetTooltip(full_path.c_str());
+
+                    auto playback_panel_pos = ImVec2{ 0, pos.y + panel_y + 18 };
+                    ImGui::SetCursorPos(playback_panel_pos);
+                    playback_panel_pos.y = dev_model.draw_playback_panel(font_14);
+                    playback_control_panel_height += playback_panel_pos.y;
                 }
 
-
-                ImGui::SetCursorPos({ 0, pos.y + header_h });
+                ImGui::SetCursorPos({ 0, pos.y + header_h + playback_control_panel_height });
                 ImGui::PopStyleColor(2);
                 ImGui::PopFont();
 
@@ -731,7 +786,7 @@ int main(int, char**) try
 
             auto pos = ImGui::GetCursorScreenPos();
             auto h = ImGui::GetWindowHeight();
-            if (h > pos.y)
+            if (h > pos.y - panel_y)
             {
                 ImGui::GetWindowDrawList()->AddLine({ pos.x,pos.y }, { pos.x + panel_width,pos.y }, ImColor(from_rgba(0, 0, 0, 0xff)));
                 ImRect bb(pos, ImVec2(pos.x + ImGui::GetContentRegionAvail().x, pos.y + ImGui::GetContentRegionAvail().y));
@@ -748,7 +803,7 @@ int main(int, char**) try
                         static float t = 0.f;
                         t += 0.03f; // TODO: change to something more elegant
 
-                        ImGui::SetCursorPos({ windows_width - 32, model_to_y[sub.get()] + 3 });
+                        ImGui::SetCursorPos({ windows_width - 35, model_to_y[sub.get()] + 3 });
                         ImGui::PushFont(font_14);
                         if (sub.get() == dev_model.subdevices.begin()->get() && !anything_started)
                         {
@@ -856,7 +911,7 @@ int main(int, char**) try
             ImRect bb(pos, ImVec2(pos.x + ImGui::GetContentRegionAvail().x, pos.y + ImGui::GetContentRegionAvail().y));
             ImGui::GetWindowDrawList()->AddRectFilled(bb.GetTL(), bb.GetBR(), ImColor(dark_window_background));
 
-            // Draw no device selected indicator
+            viewer_model.show_no_device_overlay(font_18, 50, panel_y + 50);
         }
 
         ImGui::End();
@@ -890,14 +945,14 @@ int main(int, char**) try
                 });
             }
 
+        viewer_model.gc_streams();
+
         // Rendering
         glViewport(0, 0,
             static_cast<int>(ImGui::GetIO().DisplaySize.x),
             static_cast<int>(ImGui::GetIO().DisplaySize.y));
         glClearColor(0,0,0,1);
         glClear(GL_COLOR_BUFFER_BIT);
-
-        auto output_height = (viewer_model.is_output_collapsed ? default_log_h : 20);
 
         if (!is_3d_view)
         {
@@ -907,7 +962,7 @@ int main(int, char**) try
 
             auto layout = viewer_model.calc_layout(panel_width, panel_y, w - panel_width, (float)h - panel_y - output_height);
 
-            if (layout.size() == 0 && list.size() > 0)
+            if (layout.size() == 0 && device_models.size() > 0)
             {
                 viewer_model.show_no_stream_overlay(font_18, panel_width, panel_y, w, (float)h - output_height);
             }
@@ -938,16 +993,12 @@ int main(int, char**) try
         }
         else
         {
-
-            rect viewer_rect = { panel_width, panel_y, w - panel_width, h - panel_y - output_height };
-            
-            
             if (paused)
                 viewer_model.show_paused_icon(font_18, panel_width + 15, panel_y + 15 + 32, 0);
 
             viewer_model.show_3dviewer_header(font_14, viewer_rect, paused);
 
-            viewer_model.update_3d_camera(viewer_rect, mouse.cursor, mouse.prev_cursor, mouse.mouse_wheel);
+            viewer_model.update_3d_camera(viewer_rect, mouse);
 
             viewer_model.render_3d_view(viewer_rect);
 
@@ -979,7 +1030,9 @@ int main(int, char**) try
         ImGui::Render();
         glfwSwapBuffers(window);
         mouse.mouse_wheel = 0;
-        mouse.prev_cursor = mouse.cursor;
+
+        // Yeild the CPU
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
 
     // Stop calculating 3D model

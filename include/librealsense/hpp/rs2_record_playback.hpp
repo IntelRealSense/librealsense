@@ -13,16 +13,6 @@ namespace rs2
     {
     public:
         playback(device d) : playback(d.get()) {}
-
-        playback(const std::string& file) :
-            m_file(file)
-        {
-            rs2_error* e = nullptr;
-            _dev = std::shared_ptr<rs2_device>(
-                rs2_create_playback_device(file.c_str(), &e),
-                rs2_delete_device);
-            rs2::error::handle(e);
-        }
         void pause()
         {
             rs2_error* e = nullptr;
@@ -75,6 +65,14 @@ namespace rs2
             rs2_playback_device_set_real_time(_dev.get(), (real_time ? 1 : 0), &e);
             error::handle(e);
         }
+        
+        void set_playback_speed(float speed) const
+        {
+            rs2_error* e = nullptr;
+            rs2_playback_device_set_playback_speed(_dev.get(), speed, &e);
+            error::handle(e);
+        }
+
         template <typename T>
         void set_status_changed_callback(T callback)
         {
@@ -114,8 +112,9 @@ namespace rs2
     class recorder : public device
     {
     public:
-        recorder(const std::string& file, rs2::device device) :
-            m_file(file)
+        recorder(device d) : recorder(d.get()) {}
+
+        recorder(const std::string& file, rs2::device device)
         {
             rs2_error* e = nullptr;
             _dev = std::shared_ptr<rs2_device>(
@@ -136,8 +135,16 @@ namespace rs2
             rs2_record_device_resume(_dev.get(), &e);
             error::handle(e);
         }
-    private:
-        std::string m_file;
+    protected:
+        explicit recorder(std::shared_ptr<rs2_device> dev) : device(dev)
+        {
+            rs2_error* e = nullptr;
+            if (rs2_is_device_extendable_to(_dev.get(), RS2_EXTENSION_RECORD, &e) == 0 && !e)
+            {
+                _dev = nullptr;
+            }
+            error::handle(e);
+        }
     };
 }
 #endif // LIBREALSENSE_RS2_RECORD_PLAYBACK_HPP

@@ -6,7 +6,11 @@ namespace librealsense
     std::shared_ptr<sensor_interface> frame::get_sensor() const
     {
         auto res = sensor.lock();
-        if (!res) return get_owner()->get_sensor();
+        if (!res)
+        {
+            auto archive = get_owner();
+            if (archive) return archive->get_sensor();
+        }
         return res;
     }
     void frame::set_sensor(std::shared_ptr<sensor_interface> s) { sensor = s;}

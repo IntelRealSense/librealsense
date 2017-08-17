@@ -347,6 +347,19 @@ int main(int argc, char * argv[])
 
     const auto margin = 15.f;
 
+
+    // Open a GLFW window
+    glfwInit();
+
+    bool options_invalidated = false;
+    std::string error_message;
+
+    win = glfwCreateWindow(1280, 720, "Depth Sanity", nullptr, nullptr);
+    glfwMakeContextCurrent(win);
+
+    ImGui_ImplGlfw_Init(win, true);
+
+
     while (!finished)
     {
         try
@@ -432,24 +445,6 @@ int main(int argc, char * argv[])
             });
 
             texture_buffer buffers[RS2_STREAM_COUNT];
-            buffers[RS2_STREAM_DEPTH].equalize = false;
-            buffers[RS2_STREAM_DEPTH].cm = &my_map;
-            buffers[RS2_STREAM_DEPTH].min_depth = 0.2 / dpt.get_depth_scale();
-            buffers[RS2_STREAM_DEPTH].max_depth = 1.5 / dpt.get_depth_scale();
-
-            // Open a GLFW window
-            glfwInit();
-            std::ostringstream ss;
-            ss << "Depth Sanity (" << dev.get_info(RS2_CAMERA_INFO_NAME) << ")";
-
-            bool options_invalidated = false;
-            std::string error_message;
-
-            win = glfwCreateWindow(1280, 720, ss.str().c_str(), nullptr, nullptr);
-            glfwMakeContextCurrent(win);
-
-
-            ImGui_ImplGlfw_Init(win, true);
 
             float roi_x_begin = default_width * (1.f / 3.f), roi_y_begin = default_height * (1.f / 3.f), roi_x_end = default_width * (2.f / 3.f), roi_y_end = default_height * (2.f / 3.f);
             region_of_interest roi{ roi_x_begin, roi_y_begin, roi_x_end, roi_y_end };

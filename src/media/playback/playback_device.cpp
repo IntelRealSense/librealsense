@@ -5,6 +5,9 @@
 #include "playback_device.h"
 #include "core/motion.h"
 #include "stream.h"
+#include "media/ros/ros_reader.h"
+
+using namespace device_serializer;
 
 playback_device::playback_device(std::shared_ptr<context> ctx, std::shared_ptr<device_serializer::reader> serializer) :
     m_context(ctx),
@@ -26,19 +29,45 @@ playback_device::playback_device(std::shared_ptr<context> ctx, std::shared_ptr<d
 
     //Read header and build device from recorded device snapshot
     m_device_description = m_reader->query_device_description();
-
+    auto info_snapshot = m_device_description.get_device_extensions_snapshots().find(RS2_EXTENSION_INFO);
+    if(info_snapshot == nullptr)
+    {
+        throw io_exception("Recorded file does not contain device information");
+    }
+    auto info_api = As<info_interface>(info_snapshot);
+    if (info_api == nullptr)
+    {
+        throw invalid_value_exception("Failed to get info interface from device snapshots");
+    }
+    register_device_info(info_api);
     //Create playback sensor that simulate the recorded sensors
     m_sensors = create_playback_sensors(m_device_description);
+
+    //Register extrinsics
+    for (auto e1 : m_device_description.get_extrinsics_map())
+    {
+        for (auto e2 : m_device_description.get_extrinsics_map())
+        {
+            auto p1 = get_stream(m_sensors, e1.first);
+            auto p2 = get_stream(m_sensors, e2.first);
+            rs2_extrinsics x = calc_extrinsic(e1.second, e2.second);
+            auto l = std::make_shared<lazy<rs2_extrinsics>>([x]()
+            {
+                return x;
+            });
+            m_extrinsics_fetchers.push_back(l);
+            m_context->register_extrinsics(*p1, *p2, l);
+        }
+    }
 }
 std::map<uint32_t, std::shared_ptr<playback_sensor>> playback_device::create_playback_sensors(const device_snapshot& device_description)
 {
-    uint32_t sensor_id = 0;
     std::map<uint32_t, std::shared_ptr<playback_sensor>> sensors;
     for (auto sensor_snapshot : device_description.get_sensors_snapshots())
     {
         //Each sensor will know its capabilities from the sensor_snapshot
-        auto sensor = std::make_shared<playback_sensor>(*this, sensor_snapshot, sensor_id);
-
+        auto sensor = std::make_shared<playback_sensor>(*this, sensor_snapshot);
+       
         sensor->started += [this](uint32_t id, frame_callback_ptr user_callback) -> void
         {
             (*m_read_thread)->invoke([this, id, user_callback](dispatcher::cancellable_timer c)
@@ -87,6 +116,7 @@ std::map<uint32_t, std::shared_ptr<playback_sensor>> playback_device::create_pla
         {
             (*m_read_thread)->invoke([this, filters](dispatcher::cancellable_timer c)
             {
+                //TODO: filter order is important for the reader, if more than 1 filter exists, the reader should enable streams according to the lowest timestamp available
                 for (auto filter : filters)
                 {
                     m_reader->enable_stream({get_device_index(), filter.sensor_index, filter.stream_type, filter.stream_index });
@@ -105,9 +135,33 @@ std::map<uint32_t, std::shared_ptr<playback_sensor>> playback_device::create_pla
             });
         };
 
-        sensors[sensor_id++] = sensor;
+        sensors[sensor_snapshot.get_sensor_index()] = sensor;
     }
     return sensors;
+}
+
+std::shared_ptr<stream_profile_interface> playback_device::get_stream(const std::map<unsigned, std::shared_ptr<playback_sensor>>& sensors_map, device_serializer::stream_identifier stream_id)
+{
+    for (auto sensor_pair : sensors_map)
+    {
+        if(sensor_pair.first == stream_id.sensor_index)
+        {
+            for (auto stream_profile : sensor_pair.second->get_stream_profiles())
+            {
+                if(stream_profile->get_stream_type() == stream_id.stream_type && stream_profile->get_stream_index() == stream_id.stream_index)
+                {
+                    return stream_profile;
+                }
+            }
+        }
+    }
+    throw invalid_value_exception("File contains extrinsics that do not map to an existing stream");
+}
+
+rs2_extrinsics playback_device::calc_extrinsic(const rs2_extrinsics& from, const rs2_extrinsics& to)
+{
+    //NOTE: Assuming here that recording is writing extrinsics between some reference point **to** the stream at hand
+    return from_pose(inverse(to_pose(from)) * to_pose(to));
 }
 
 playback_device::~playback_device()
@@ -141,22 +195,6 @@ sensor_interface& playback_device::get_sensor(size_t i)
 size_t playback_device::get_sensors_count() const
 {
     return m_sensors.size();
-}
-
-const std::string& playback_device::get_info(rs2_camera_info info) const
-{
-    return std::dynamic_pointer_cast<librealsense::info_interface>(m_device_description.get_device_extensions_snapshots().get_snapshots()[RS2_EXTENSION_INFO ])->get_info(info);
-}
-
-bool playback_device::supports_info(rs2_camera_info info) const
-{
-    auto info_extension = m_device_description.get_device_extensions_snapshots().get_snapshots().at(RS2_EXTENSION_INFO );
-    auto info_api = std::dynamic_pointer_cast<librealsense::info_interface>(info_extension);
-    if(info_api == nullptr)
-    {
-        throw invalid_value_exception("Failed to get info interface");
-    }
-    return info_api->supports_info(info);
 }
 
 const sensor_interface& playback_device::get_sensor(size_t i) const
@@ -284,27 +322,34 @@ bool playback_device::is_real_time() const
     return m_real_time;
 }
 
-void playback_device::update_time_base(std::chrono::microseconds base_timestamp)
+platform::backend_device_group playback_device::get_device_data() const
+{
+    return {}; //ZIV: what to do?
+}
+
+void playback_device::update_time_base(device_serializer::nanoseconds base_timestamp)
 {
     m_base_sys_time = std::chrono::high_resolution_clock::now();
     m_base_timestamp = base_timestamp;
 }
 
-std::chrono::microseconds playback_device::calc_sleep_time(std::chrono::microseconds timestamp) const
+device_serializer::nanoseconds playback_device::calc_sleep_time(device_serializer::nanoseconds timestamp) const
 {
     //The time to sleep returned here equals to the difference between the file recording time
     // and the playback time.
     auto now = std::chrono::high_resolution_clock::now();
-    auto play_time = std::chrono::duration_cast<std::chrono::microseconds>(now - m_base_sys_time);
-    auto time_diff = timestamp - m_base_timestamp;
-    if (time_diff.count() < 0)
+    auto play_time = now - m_base_sys_time;
+    if(timestamp < m_base_timestamp)
     {
-        return std::chrono::microseconds(0);
+        assert(0);
     }
-
-    auto recorded_time = std::chrono::duration_cast<std::chrono::microseconds>(time_diff / m_sample_rate.load());//std::llround(static_cast<double>(time_diff.count()) / m_sample_rate);
-    auto sleep_time = (recorded_time - play_time);
-    return sleep_time;
+    auto time_diff = timestamp - m_base_timestamp;
+    auto recorded_time = std::chrono::duration_cast<device_serializer::nanoseconds>(time_diff / m_sample_rate.load());//std::llround(static_cast<double>(time_diff.count()) / m_sample_rate);
+    if(recorded_time < play_time)
+    {
+        return device_serializer::nanoseconds(0);
+    }
+    return (recorded_time - play_time);
 }
 
 void playback_device::start()
@@ -403,7 +448,6 @@ void playback_device::try_looping()
         //Read next data from the serializer, on success: 'obj' will be a valid object that came from
         // sensor number 'sensor_index' with a timestamp equal to 'timestamp'
         device_serializer::stream_identifier stream_id;
-        //TODO: change timestamp type to file_type::nanoseconds
         device_serializer::nanoseconds timestamp = device_serializer::nanoseconds::max();
         frame_holder frame;
         auto retval = m_reader->read_frame(timestamp, stream_id, frame);
@@ -417,28 +461,22 @@ void playback_device::try_looping()
         }
 
         m_prev_timestamp = timestamp;
-        auto timestamp_micros = std::chrono::duration_cast<std::chrono::microseconds>(timestamp);
         //Objects with timestamp of 0 are non streams.
         if (m_base_timestamp.count() == 0)
         {
             //As long as m_base_timestamp is 0, update it to object's timestamp.
             //Once a streaming object arrive, the base will change from 0
-            update_time_base(timestamp_micros);
+            update_time_base(timestamp);
         }
 
         //Calculate the duration for the reader to sleep (i.e wait for next frame)
-        auto sleep_time = calc_sleep_time(timestamp_micros);
+        auto sleep_time = calc_sleep_time(timestamp);
         if (sleep_time.count() > 0)
         {
             if (m_sample_rate > 0)
             {
-                std::this_thread::sleep_for(std::chrono::microseconds(sleep_time));
+                std::this_thread::sleep_for(sleep_time);
             }
-        }
-
-        if (sleep_time.count() < 0)
-        {
-            //TODO: we should probably jump forward here to align with the play time (frame will be dropped, blood will be shed...)
         }
 
         if (stream_id.device_index != get_device_index() || stream_id.sensor_index >= m_sensors.size())
@@ -465,4 +503,16 @@ uint64_t playback_device::get_position() const
 void playback_device::catch_up()
 {
     m_base_timestamp = std::chrono::microseconds(0);
+}
+
+void playback_device::register_device_info(const std::shared_ptr<info_interface>& info_api)
+{
+    for (int i = 0; i < RS2_CAMERA_INFO_COUNT; ++i)
+    {
+        rs2_camera_info info = static_cast<rs2_camera_info>(i);
+        if (info_api->supports_info(info))
+        {
+            register_info(info, info_api->get_info(info));
+        }
+    }
 }

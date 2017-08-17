@@ -8,6 +8,7 @@
 #include "context.h"
 #include "ds5/ds5-options.h"
 
+//TODO: rename read_only_depth_scale_option to depth_scale_optio_snapshot and move it next to depth_scale_option class, have it derive from extension_snapshot
 class read_only_depth_scale_option : public depth_scale_option
 {
     float m_value;
@@ -30,32 +31,22 @@ public:
         return { m_value, m_value, 0, m_value};
     }
 };
-playback_sensor::playback_sensor(const device_interface& parent_device, const sensor_snapshot& sensor_description, uint32_t sensor_id):
-    m_sensor_description(sensor_description),
-    m_sensor_id(sensor_id),
-    m_is_started(false),
+playback_sensor::playback_sensor(const device_interface& parent_device, const device_serializer::sensor_snapshot& sensor_description):
     m_user_notification_callback(nullptr, [](rs2_notifications_callback* n) {}),
+    m_is_started(false),
+    m_sensor_description(sensor_description),
+    m_sensor_id(sensor_description.get_sensor_index()),
     m_parent_device(parent_device)
 {
-    for (auto profile: m_sensor_description.get_stream_profiles())
-    {    
-        profile->set_unique_id(m_parent_device.get_context()->generate_stream_id());
-        //TODO:        m_parent_device.get_context()->register_extrinsics()
-        m_available_profiles.push_back(profile);
-        m_streams[device_serializer::stream_identifier{ 0,0, profile->get_stream_type(), static_cast<uint32_t>(profile->get_stream_index())}] = profile;
-    }
-    m_supported_options = m_sensor_description.get_options();
-    auto depth_scale_it = m_supported_options.find(RS2_OPTION_DEPTH_UNITS);
-    if(depth_scale_it != m_supported_options.end())
-    {
-        register_option(depth_scale_it->first, std::make_shared<read_only_depth_scale_option>(depth_scale_it->second));
-    }
+    register_sensor_streams(m_sensor_description.get_stream_profiles());
+    register_sensor_infos(m_sensor_description);
+    register_sensor_options(m_sensor_description.get_options());
 }
 playback_sensor::~playback_sensor()
 {
 }
 
-stream_profiles playback_sensor::get_stream_profiles()
+stream_profiles playback_sensor::get_stream_profiles() const
 {
     return m_available_profiles;
 }
@@ -104,43 +95,6 @@ void playback_sensor::close()
     }
     m_dispatchers.clear();
     closed(closed_streams);
-}
-
-option& playback_sensor::get_option(rs2_option id)
-{
-    auto& opt = options_container::get_option(id);
-    return opt;
-    //return std::dynamic_pointer_cast<librealsense::options_interface>(m_sensor_description.get_sensor_extensions_snapshots().get_snapshots()[RS2_EXTENSION_OPTIONS ])->get_option(id);
-}
-
-const option& playback_sensor::get_option(rs2_option id) const
-{
-    auto& opt = options_container::get_option(id);
-    return opt;
-    //return std::dynamic_pointer_cast<librealsense::options_interface>(m_sensor_description.get_sensor_extensions_snapshots().get_snapshots()[RS2_EXTENSION_OPTIONS ])->get_option(id);
-}
-
-const std::string& playback_sensor::get_info(rs2_camera_info info) const
-{
-    return std::dynamic_pointer_cast<librealsense::info_interface>(m_sensor_description.get_sensor_extensions_snapshots().get_snapshots()[RS2_EXTENSION_INFO ])->get_info(info);
-}
-
-bool playback_sensor::supports_info(rs2_camera_info info) const
-{
-    return std::dynamic_pointer_cast<librealsense::info_interface>(m_sensor_description.get_sensor_extensions_snapshots().get_snapshots()[RS2_EXTENSION_INFO ])->supports_info(info);
-}
-
-bool playback_sensor::supports_option(rs2_option id) const
-{
-    bool supported = options_container::supports_option(id);
-    return supported;
-//    auto snapshot = m_sensor_description.get_sensor_extensions_snapshots().find(RS2_EXTENSION_OPTIONS );
-//    if (snapshot == nullptr)
-//        return false;
-//    auto option = std::dynamic_pointer_cast<librealsense::options_interface>(snapshot);
-//    if (option == nullptr)
-//        return false;
-//    return option->supports_option(id);
 }
 
 void playback_sensor::register_notifications_callback(notifications_callback_ptr callback)
@@ -192,6 +146,7 @@ bool playback_sensor::extend_to(rs2_extension extension_type, void** ext)
     case RS2_EXTENSION_ROI : return try_extend<roi_sensor_interface>(e, ext);;
     case RS2_EXTENSION_VIDEO_FRAME : return try_extend<video_frame>(e, ext);
  //TODO: RS2_EXTENSION_MOTION_FRAME : return try_extend<motion_frame>(e, ext);
+    case RS2_EXTENSION_DEPTH_SENSOR:  return try_extend<depth_sensor>(e, ext);
     case RS2_EXTENSION_COUNT :
         //[[fallthrough]];
     default:
@@ -214,9 +169,10 @@ void playback_sensor::handle_frame(frame_holder frame, bool is_real_time)
     }
     if(m_is_started)
     {
+        frame->get_owner()->set_sensor(shared_from_this());
         auto type = frame->get_stream()->get_stream_type();
         auto index = static_cast<uint32_t>(frame->get_stream()->get_stream_index());
-        frame->set_stream(m_streams[device_serializer::stream_identifier{ 0, 0, type, index }]);
+        frame->set_stream(m_streams[std::make_pair(type, index)]);
         frame->set_sensor(shared_from_this());
         auto stream_id = frame.frame->get_stream()->get_unique_id();
 		//TODO: remove this once filter is implemented (which will only read streams that were 'open'ed 
@@ -243,5 +199,46 @@ void playback_sensor::flush_pending_frames()
     for (auto&& dispatcher : m_dispatchers)
     {
         dispatcher.second->flush();
+    }
+}
+
+void playback_sensor::register_sensor_streams(const stream_profiles& profiles)
+{
+    for (auto profile : profiles)
+    {
+        profile->set_unique_id(m_parent_device.get_context()->generate_stream_id());
+        m_available_profiles.push_back(profile);
+        m_streams[std::make_pair(profile->get_stream_type(), static_cast<uint32_t>(profile->get_stream_index()))] = profile;
+    }
+}
+
+void playback_sensor::register_sensor_infos(const device_serializer::sensor_snapshot& sensor_snapshot)
+{
+    auto info_snapshot = sensor_snapshot.get_sensor_extensions_snapshots().find(RS2_EXTENSION_INFO);
+    if (info_snapshot == nullptr)
+    {
+        throw io_exception("Recorded file does not contain sensor information");
+    }
+    auto info_api = As<info_interface>(info_snapshot);
+    if (info_api == nullptr)
+    {
+        throw invalid_value_exception("Failed to get info interface from sensor snapshots");
+    }
+    for (int i = 0; i < RS2_CAMERA_INFO_COUNT; ++i)
+    {
+        rs2_camera_info info = static_cast<rs2_camera_info>(i);
+        if (info_api->supports_info(info))
+        {
+            register_info(info, info_api->get_info(info));
+        }
+    }
+}
+
+void playback_sensor::register_sensor_options(const std::map<rs2_option, float>& options)
+{
+    auto depth_scale_it = options.find(RS2_OPTION_DEPTH_UNITS);
+    if (depth_scale_it != options.end())
+    {
+        register_option(depth_scale_it->first, std::make_shared<read_only_depth_scale_option>(depth_scale_it->second));
     }
 }

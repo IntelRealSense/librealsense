@@ -37,7 +37,7 @@ namespace librealsense
 
         virtual stream_profiles init_stream_profiles() = 0;
 
-        stream_profiles get_stream_profiles() override
+        stream_profiles get_stream_profiles() const override
         {
             return *_profiles;
         }
@@ -187,6 +187,7 @@ namespace librealsense
         }
 
         void register_pu(rs2_option id);
+        void try_register_pu(rs2_option id);
 
         void start(frame_callback_ptr callback) override;
 

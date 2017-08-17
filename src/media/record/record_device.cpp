@@ -6,6 +6,7 @@
 #include <core/advanced_mode.h>
 #include "record_device.h"
 
+using namespace device_serializer;
 
 librealsense::record_device::record_device(std::shared_ptr<librealsense::device_interface> device,
                                       std::shared_ptr<librealsense::device_serializer::writer> serializer):
@@ -84,16 +85,23 @@ void librealsense::record_device::write_header()
         for (int i = 0; i < static_cast<int>(RS2_OPTION_COUNT); i++)
         {
             auto option_id = static_cast<rs2_option>(i);
-            if (sensor.supports_option(option_id))
+            try
             {
-                auto& option = sensor.get_option(option_id);
-                options[option_id] = option.query();
+                if (sensor.supports_option(option_id))
+                {
+                    auto& option = sensor.get_option(option_id);
+                    options[option_id] = option.query();
+                }
+            }
+            catch(std::exception& e)
+            {
+                LOG_WARNING("Failed to get option " << option_id << " for sensor #" << i << ". Exception: " << e.what());
             }
         }
-        sensors_snapshot.emplace_back(sensor_extensions_snapshots, options);
+        sensors_snapshot.emplace_back(static_cast<uint32_t>(j), sensor_extensions_snapshots, options);
     }
 
-    m_ros_writer->write_device_description({ device_extensions_md, sensors_snapshot });
+    m_ros_writer->write_device_description({ device_extensions_md, sensors_snapshot, {} });
 }
 
 //Returns the time relative to beginning of the recording
@@ -117,6 +125,7 @@ void librealsense::record_device::write_data(size_t sensor_index, librealsense::
     if (cached_data_size > MAX_CACHED_DATA_SIZE)
     {
         LOG_WARNING("Recorder reached maximum cache size, frame dropped");
+        on_error("Recorder reached maximum cache size, frame dropped");
         return;
     }
 
