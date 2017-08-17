@@ -28,6 +28,183 @@ using namespace pybind11::literals;
 
 PYBIND11_PLUGIN(NAME) {
     py::module m(SNAME, "Library for accessing Intel RealSenseTM cameras");
+    
+    class BufData {
+    public:
+        void *_ptr = nullptr;         // Pointer to the underlying storage
+        size_t _itemsize = 0;         // Size of individual items in bytes
+        std::string _format;          // For homogeneous buffers, this should be set to format_descriptor<T>::format()
+        size_t _ndim = 0;             // Number of dimensions
+        std::vector<size_t> _shape;   // Shape of the tensor (1 entry per dimension)
+        std::vector<size_t> _strides; // Number of entries between adjacent entries (for each per dimension)
+    public:
+        BufData(void *ptr, size_t itemsize, const std::string& format, size_t ndim, const std::vector<size_t> &shape, const std::vector<size_t> &strides)
+            : _ptr(ptr), _itemsize(itemsize), _format(format), _ndim(ndim), _shape(shape), _strides(strides) {}
+        BufData(void *ptr, size_t itemsize, const std::string &format, size_t size)
+            : BufData(ptr, itemsize, format, 1, std::vector<size_t> { size }, std::vector<size_t> { itemsize }) { }
+    };
+
+    py::class_<BufData> BufData_py(m, "BufData", py::buffer_protocol());
+    BufData_py.def_buffer([](BufData& self)
+    { return py::buffer_info(
+        self._ptr,
+        self._itemsize,
+        self._format,
+        self._ndim,
+        self._shape,
+        self._strides); }
+    );
+
+    /* enums, c-structs */
+    py::class_<rs2_extrinsics> extrinsics(m, "extrinsics");
+    extrinsics.def_property_readonly(BIND_RAW_ARRAY(rs2_extrinsics, rotation, float, 9))
+              .def_property_readonly(BIND_RAW_ARRAY(rs2_extrinsics, translation, float, 3))
+              .def("__repr__", [](const rs2_extrinsics &e){
+                  std::stringstream ss;
+                  ss << "( (" << e.rotation[0];
+                  for (int i=1; i<9; ++i) ss << ", " << e.rotation[i];
+                  ss << "), (" << e.translation[0];
+                  for (int i=1; i<3; ++i) ss << ", " << e.translation[i];
+                  ss << ") )";
+                  return ss.str();
+              });
+
+    py::enum_<rs2_camera_info> camera_info(m, "camera_info");
+    camera_info.value("name", RS2_CAMERA_INFO_NAME)
+               .value("serial_number", RS2_CAMERA_INFO_SERIAL_NUMBER)
+               .value("firmware_version", RS2_CAMERA_INFO_FIRMWARE_VERSION)
+               .value("location", RS2_CAMERA_INFO_LOCATION)
+               .value("debug_op_code", RS2_CAMERA_INFO_DEBUG_OP_CODE)
+               .value("advanced_mode", RS2_CAMERA_INFO_ADVANCED_MODE)
+               .value("product_id", RS2_CAMERA_INFO_PRODUCT_ID)
+               .value("camera_locked", RS2_CAMERA_INFO_CAMERA_LOCKED)
+               .value("count", RS2_CAMERA_INFO_COUNT);
+
+    py::enum_<rs2_frame_metadata> frame_metadata(m, "frame_metadata");
+    frame_metadata.value("frame counter", RS2_FRAME_METADATA_FRAME_COUNTER)
+                  .value("frame_timestamp", RS2_FRAME_METADATA_FRAME_TIMESTAMP)
+                  .value("sensor_timestamp", RS2_FRAME_METADATA_SENSOR_TIMESTAMP)
+                  .value("actual_exposure", RS2_FRAME_METADATA_ACTUAL_EXPOSURE)
+                  .value("gain_level", RS2_FRAME_METADATA_GAIN_LEVEL)
+                  .value("auto_exposure", RS2_FRAME_METADATA_AUTO_EXPOSURE)
+                  .value("white_balance", RS2_FRAME_METADATA_WHITE_BALANCE)
+                  .value("time_of_arrival", RS2_FRAME_METADATA_TIME_OF_ARRIVAL)
+                  .value("count", RS2_FRAME_METADATA_COUNT);
+
+    py::enum_<rs2_stream> stream(m, "stream");
+    stream.value("any", RS2_STREAM_ANY)
+        .value("depth", RS2_STREAM_DEPTH)
+        .value("color", RS2_STREAM_COLOR)
+        .value("infrared", RS2_STREAM_INFRARED)
+        .value("fisheye", RS2_STREAM_FISHEYE)
+        .value("gyro", RS2_STREAM_GYRO)
+        .value("accel", RS2_STREAM_ACCEL)
+        .value("gpio", RS2_STREAM_GPIO)
+        .value("count", RS2_STREAM_COUNT);
+
+    py::enum_<rs2_extension> extension(m, "extension");
+    extension.value("unknown", RS2_EXTENSION_UNKNOWN)
+             .value("video_frame", RS2_EXTENSION_VIDEO_FRAME)
+             .value("depth_frame", RS2_EXTENSION_DEPTH_FRAME)
+             .value("count", RS2_EXTENSION_COUNT);
+    
+    py::enum_<rs2_format> format(m, "format");
+    format.value("any", RS2_FORMAT_ANY)
+          .value("z16", RS2_FORMAT_Z16)
+          .value("disparity16", RS2_FORMAT_DISPARITY16)
+          .value("xyz32f", RS2_FORMAT_XYZ32F)
+          .value("yuyv", RS2_FORMAT_YUYV)
+          .value("rgb8", RS2_FORMAT_RGB8)
+          .value("bgr8", RS2_FORMAT_BGR8)
+          .value("rgba8", RS2_FORMAT_RGBA8)
+          .value("bgra8", RS2_FORMAT_BGRA8)
+          .value("y8", RS2_FORMAT_Y8)
+          .value("y16", RS2_FORMAT_Y16)
+          .value("raw10", RS2_FORMAT_RAW10)
+          .value("raw16", RS2_FORMAT_RAW16)
+          .value("raw8", RS2_FORMAT_RAW8)
+          .value("uyvy", RS2_FORMAT_UYVY)
+          .value("motion_raw", RS2_FORMAT_MOTION_RAW)
+          .value("motion_xyz32f", RS2_FORMAT_MOTION_XYZ32F)
+          .value("gpio_raw", RS2_FORMAT_GPIO_RAW)
+          .value("count", RS2_FORMAT_COUNT);
+    
+    py::class_<rs2_intrinsics> intrinsics(m, "intrinsics");
+    intrinsics.def_readonly("width", &rs2_intrinsics::width)
+              .def_readonly("height", &rs2_intrinsics::height)
+              .def_readonly("ppx", &rs2_intrinsics::ppx)
+              .def_readonly("ppy", &rs2_intrinsics::ppy)
+              .def_readonly("fx", &rs2_intrinsics::fx)
+              .def_readonly("fy", &rs2_intrinsics::fy)
+              .def_readonly("model", &rs2_intrinsics::model)
+              .def_property_readonly(BIND_RAW_ARRAY(rs2_intrinsics, coeffs, float, 5));
+
+    py::enum_<rs2_notification_category> notification_category(m, "notification_category");
+    notification_category.value("frames_timeout", rs2_notification_category::RS2_NOTIFICATION_CATEGORY_FRAMES_TIMEOUT)
+                         .value("frame_corrupted", rs2_notification_category::RS2_NOTIFICATION_CATEGORY_FRAME_CORRUPTED)
+                         .value("hardware_error", rs2_notification_category::RS2_NOTIFICATION_CATEGORY_HARDWARE_ERROR)
+                         .value("unknown_error", rs2_notification_category::RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR)
+                         .value("count", rs2_notification_category::RS2_NOTIFICATION_CATEGORY_COUNT);
+
+    py::enum_<rs2_log_severity> log_severity(m, "log_severity");
+    log_severity.value("debug", RS2_LOG_SEVERITY_DEBUG)
+                .value("info", RS2_LOG_SEVERITY_INFO)
+                .value("warn", RS2_LOG_SEVERITY_WARN)
+                .value("error", RS2_LOG_SEVERITY_ERROR)
+                .value("fatal", RS2_LOG_SEVERITY_FATAL)
+                .value("none", RS2_LOG_SEVERITY_NONE)
+                .value("count", RS2_LOG_SEVERITY_COUNT);
+
+    py::enum_<rs2_option> option(m, "option");
+    option.value("backlight_compensation", RS2_OPTION_BACKLIGHT_COMPENSATION)
+          .value("brightness", RS2_OPTION_BRIGHTNESS)
+          .value("contrast", RS2_OPTION_CONTRAST)
+          .value("exposure", RS2_OPTION_EXPOSURE)
+          .value("gain", RS2_OPTION_GAIN)
+          .value("gamma", RS2_OPTION_GAMMA)
+          .value("hue", RS2_OPTION_HUE)
+          .value("saturation", RS2_OPTION_SATURATION)
+          .value("sharpness", RS2_OPTION_SHARPNESS)
+          .value("white_balance", RS2_OPTION_WHITE_BALANCE)
+          .value("enable_auto_exposure", RS2_OPTION_ENABLE_AUTO_EXPOSURE)
+          .value("enable_auto_white_balance", RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE)
+          .value("visual_preset", RS2_OPTION_VISUAL_PRESET)
+          .value("laser_power", RS2_OPTION_LASER_POWER)
+          .value("accuracy", RS2_OPTION_ACCURACY)
+          .value("motion_range", RS2_OPTION_MOTION_RANGE)
+          .value("filter_option", RS2_OPTION_FILTER_OPTION)
+          .value("confidence_threshold", RS2_OPTION_CONFIDENCE_THRESHOLD)
+          .value("emitter_enabled", RS2_OPTION_EMITTER_ENABLED)
+          .value("frames_queue_size", RS2_OPTION_FRAMES_QUEUE_SIZE)
+          .value("total_frame_drops", RS2_OPTION_TOTAL_FRAME_DROPS)
+          .value("auto_exposure_mode", RS2_OPTION_AUTO_EXPOSURE_MODE)
+          .value("power_line_frequency", RS2_OPTION_POWER_LINE_FREQUENCY)
+          .value("asic_temperature", RS2_OPTION_ASIC_TEMPERATURE)
+          .value("error_polling_enabled", RS2_OPTION_ERROR_POLLING_ENABLED)
+          .value("projector_temperature", RS2_OPTION_PROJECTOR_TEMPERATURE)
+          .value("output_trigger_enabled", RS2_OPTION_OUTPUT_TRIGGER_ENABLED)
+          .value("motion_module_temperature", RS2_OPTION_MOTION_MODULE_TEMPERATURE)
+          .value("depth_units", RS2_OPTION_DEPTH_UNITS)
+          .value("enable_motion_correction", RS2_OPTION_ENABLE_MOTION_CORRECTION)
+          .value("count", RS2_OPTION_COUNT);
+
+    // Multi-dimensional c-array rs2_motion_device_instrinc::data causing trouble
+    //py::class_<rs2_motion_device_intrinsic> motion_device_inrinsic(m, "motion_device_intrinsic");
+    //motion_device_inrinsic.def_property_readonly(BIND_RAW_ARRAY(rs2_motion_device_intrinsic, noise_variances, float, 3))
+    //                      .def_property_readonly(BIND_RAW_ARRAY(rs2_motion_device_intrinsic, bias_variances, float, 3));
+
+    py::enum_<rs2_timestamp_domain> ts_domain(m, "timestamp_domain");
+    ts_domain.value("hardware_clock", RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK)
+             .value("system_time", RS2_TIMESTAMP_DOMAIN_SYSTEM_TIME)
+             .value("count", RS2_TIMESTAMP_DOMAIN_COUNT);
+
+    py::enum_<rs2_distortion> distortion(m, "distortion");
+    distortion.value("none", RS2_DISTORTION_NONE)
+              .value("modified_brown_conrady", RS2_DISTORTION_MODIFIED_BROWN_CONRADY)
+              .value("inverse_brown_conrady", RS2_DISTORTION_INVERSE_BROWN_CONRADY)
+              .value("ftheta", RS2_DISTORTION_FTHETA)
+              .value("brown_conrady", RS2_DISTORTION_BROWN_CONRADY)
+              .value("count", RS2_DISTORTION_COUNT);
 
     /* rs2_types.hpp */
     // TODO: error types
@@ -92,10 +269,9 @@ PYBIND11_PLUGIN(NAME) {
           .def("hardware_reset", &rs2::device::hardware_reset, "Send hardware reset request to the device")
           .def(py::init<>())
           .def("__nonzero__", &rs2::device::operator bool)
-          // TODO: downcasts. Which derived types should I be exposing to python?
           .def(BIND_DOWNCAST(device, debug_protocol))
-//          .def(BIND_DOWNCAST(device, playback))
-//          .def(BIND_DOWNCAST(device, recorder))
+          .def(BIND_DOWNCAST(device, playback))
+          .def(BIND_DOWNCAST(device, recorder))
           .def("__repr__", [](const rs2::device &self)
                {
                    std::stringstream ss;
@@ -144,32 +320,6 @@ PYBIND11_PLUGIN(NAME) {
                           "specific device was disconnected.", "dev"_a)
                      .def("get_new_devices", &rs2::event_information::get_new_devices, "Returns a "
                           "list of all newly connected devices");
-
-    class BufData {
-    public:
-        void *_ptr = nullptr;         // Pointer to the underlying storage
-        size_t _itemsize = 0;         // Size of individual items in bytes
-        std::string _format;          // For homogeneous buffers, this should be set to format_descriptor<T>::format()
-        size_t _ndim = 0;             // Number of dimensions
-        std::vector<size_t> _shape;   // Shape of the tensor (1 entry per dimension)
-        std::vector<size_t> _strides; // Number of entries between adjacent entries (for each per dimension)
-    public:
-        BufData(void *ptr, size_t itemsize, const std::string& format, size_t ndim, const std::vector<size_t> &shape, const std::vector<size_t> &strides)
-            : _ptr(ptr), _itemsize(itemsize), _format(format), _ndim(ndim), _shape(shape), _strides(strides) {}
-        BufData(void *ptr, size_t itemsize, const std::string &format, size_t size)
-            : BufData(ptr, itemsize, format, 1, std::vector<size_t> { size }, std::vector<size_t> { itemsize }) { }
-    };
-
-    py::class_<BufData> BufData_py(m, "BufData", py::buffer_protocol());
-    BufData_py.def_buffer([](BufData& self)
-    { return py::buffer_info(
-        self._ptr,
-        self._itemsize,
-        self._format,
-        self._ndim,
-        self._shape,
-        self._strides); }
-    );
 
     /* rs2_frame.hpp */
     py::class_<rs2::frame> frame(m, "frame");
@@ -229,7 +379,7 @@ PYBIND11_PLUGIN(NAME) {
                                 new (&instance) rs2::texture_coordinate{ u,v };
                            }, "u"_a, "v"_a);
 
-    py::class_<rs2::points> points(m, "points");
+    py::class_<rs2::points, rs2::frame> points(m, "points");
     points.def(py::init<>())
           .def(py::init<rs2::frame>())
           .def("get_vertices", [](rs2::points& self) -> BufData
@@ -244,7 +394,7 @@ PYBIND11_PLUGIN(NAME) {
                }, py::keep_alive<0, 1>())
           .def("size", &rs2::points::size);
 
-    py::class_<rs2::composite_frame> composite_frame(m, "composite_frame");
+    py::class_<rs2::composite_frame, rs2::frame> composite_frame(m, "composite_frame");
     composite_frame.def(py::init<rs2::frame>())
                    .def("first_or_default", &rs2::composite_frame::first_or_default, "s"_a)
                    .def("first", &rs2::composite_frame::first, "s"_a)
@@ -263,7 +413,7 @@ PYBIND11_PLUGIN(NAME) {
                      "frames"_a) // does anything special need to be done for the vector argument?
                 .def("frame_ready", &rs2::frame_source::frame_ready, "result"_a);
 
-    py::class_<rs2::depth_frame> depth_frame(m, "depth_frame");
+    py::class_<rs2::depth_frame, rs2::video_frame> depth_frame(m, "depth_frame");
     depth_frame.def(py::init<rs2::frame>())
                .def("get_distance", &rs2::depth_frame::get_distance, "x"_a, "y"_a);
 
@@ -298,12 +448,15 @@ PYBIND11_PLUGIN(NAME) {
                     "cross-platform synchronization primitive provided by librealsense to help "
                     "developers who are not using async APIs.")
                .def(py::init<>())
-               .def("wait_for_frame", &rs2::frame_queue::wait_for_frame, "Wait until a new frame "
-                    "becomes available in the queue and dequeue it.")
-               // TODO: find a pythonic way to expose this function
-               .def("poll_for_frame", &rs2::frame_queue::poll_for_frame, "Poll if a new frame is "
-                    "available and dequeue it if it is", "f"_a)
-               /*.def("__call__", &rs2::frame_queue::operator())*/;
+        .def("wait_for_frame", [](const rs2::frame_queue& self, unsigned int timeout_ms) { py::gil_scoped_release(); self.wait_for_frame(timeout_ms); }, "Wait until a new frame "
+                    "becomes available in the queue and dequeue it.", "timeout_ms"_a=5000)
+               .def("poll_for_frame", [](const rs2::frame_queue &self)
+                    {
+                        rs2::frame frame;
+                        self.poll_for_frame(&frame);
+                        return frame;
+                    }, "Poll if a new frame is available and dequeue it if it is")
+               .def("__call__", &rs2::frame_queue::operator());
 
     py::class_<rs2::pointcloud> pointcloud(m, "pointcloud");
     pointcloud.def("calculate", &rs2::pointcloud::calculate, "depth"_a)
@@ -313,9 +466,12 @@ PYBIND11_PLUGIN(NAME) {
     syncer.def(py::init<>())
           .def("wait_for_frames", &rs2::syncer::wait_for_frames, "Wait until a coherent set "
                "of frames becomes available", "timeout_ms"_a = 5000)
-           // TODO: find a pythonic way to expose this function
-          .def("poll_for_frames", &rs2::syncer::poll_for_frames, "Check if a coherent set of "
-               "frames is available", "frameset"_a)
+          .def("poll_for_frames", [](const rs2::syncer &self)
+               {
+                   rs2::frameset frames;
+                   self.poll_for_frames(&frames);
+                   return frames;
+               }, "Check if a coherent set of frames is available");
           /*.def("__call__", &rs2::syncer::operator(), "frame"_a)*/;
 
     py::class_<rs2::colorizer> colorizer(m, "colorizer");
@@ -326,7 +482,6 @@ PYBIND11_PLUGIN(NAME) {
     /* rs2_record_playback.hpp */
     py::class_<rs2::playback, rs2::device> playback(m, "playback");
     playback.def(py::init<rs2::device>(), "device"_a)
-//            .def(py::init<std::string>(), "filename"_a)
             .def("pause", &rs2::playback::pause)
             .def("resume", &rs2::playback::resume)
             .def("file_name", &rs2::playback::file_name)
@@ -359,13 +514,39 @@ PYBIND11_PLUGIN(NAME) {
                   .def("is_recommended", &rs2::stream_profile::is_recommended)
                   .def("size", &rs2::stream_profile::size)
                   .def("__nonzero__", &rs2::stream_profile::operator bool)
-                  .def("get_extrinsics_to", &rs2::stream_profile::get_extrinsics_to, "to"_a);
+                  .def("get_extrinsics_to", &rs2::stream_profile::get_extrinsics_to, "to"_a)
+                  .def("__repr__", [](const rs2::stream_profile& self)
+                       {
+                           std::stringstream ss;
+                           if (auto vf = self.as<rs2::video_stream_profile>())
+                           {
+                               ss << "<" SNAME ".video_stream_profile: "
+                                   << vf.stream_type() << "(" << vf.stream_index() << ") " << vf.width()
+                                   << "x" << vf.height() << " @ " << vf.fps() << "fps "
+                                   << vf.format() << ">";
+                           }
+                           else
+                           {
+                               ss << "<" SNAME ".stream_profile: " << self.stream_type() << "(" << self.stream_index()
+                                  << ") @ " << self.fps() << "fps " << self.format() << ">";
+                           }
+                           return ss.str();
+                       });
 
     py::class_<rs2::video_stream_profile, rs2::stream_profile> video_stream_profile(m, "video_stream_profile");
     video_stream_profile.def(py::init<const rs2::stream_profile&>(), "sp"_a)
                         .def("width", &rs2::video_stream_profile::width)
                         .def("height", &rs2::video_stream_profile::height)
-                        .def("get_intrinsics", &rs2::video_stream_profile::get_intrinsics);
+                        .def("get_intrinsics", &rs2::video_stream_profile::get_intrinsics)
+                        .def("__repr__", [](const rs2::video_stream_profile& self)
+                             {
+                                 std::stringstream ss;
+                                 ss << "<" SNAME ".video_stream_profile: "
+                                    << self.stream_type() << "(" << self.stream_index() << ") " << self.width()
+                                    << "x" << self.height() << " @ " << self.fps() << "fps "
+                                    << self.format() << ">";
+                                 return ss.str();
+                             });
 
     py::class_<rs2::notification> notification(m, "notification");
     notification.def(py::init<>())
@@ -390,9 +571,10 @@ PYBIND11_PLUGIN(NAME) {
           .def("open", (void (rs2::sensor::*)(const std::vector<rs2::stream_profile>&) const) &rs2::sensor::open,
                "Open subdevice for exclusive access, by committing to a composite configuration, specifying one or "
                "more stream profiles.", "profiles"_a)
-          .def("close", &rs2::sensor::close, "Close subdevice for exclusive access.")
+          .def("close", [](const rs2::sensor& self){ py::gil_scoped_release; self.close(); }, "Close subdevice for exclusive access.")
           .def("start", [](const rs2::sensor& self, std::function<void(rs2::frame)> callback)
                { self.start(callback); }, "Start passing frames into user provided callback.", "callback"_a)
+          .def("start", [](const rs2::sensor& self, rs2::frame_queue& queue) { self.start(queue); })
           .def("stop", &rs2::sensor::stop, "Stop streaming.")
           .def("is_option_read_only", &rs2::sensor::is_option_read_only, "Check if particular option "
                "is read only.", "option"_a)
@@ -431,190 +613,11 @@ PYBIND11_PLUGIN(NAME) {
     py::class_<rs2::pipeline> pipeline(m, "pipeline");
     pipeline.def(py::init<rs2::context>(), "ctx"_a = rs2::context())
             .def("start", &rs2::pipeline::start)
-            .def("wait_for_frames", &rs2::pipeline::wait_for_frames);
+            .def("wait_for_frames", &rs2::pipeline::wait_for_frames, "timeout_ms"_a = 5000);
 
-    //py::enum_<rs2_stream> stream(m, "stream");
-    //stream.value("any", RS2_STREAM_ANY)
-    //    .value("depth", RS2_STREAM_DEPTH)
-    //    .value("color", RS2_STREAM_COLOR)
-    //    .value("infrared", RS2_STREAM_INFRARED)
-    //    .value("infrared2", RS2_STREAM_INFRARED2)
-    //    .value("fisheye", RS2_STREAM_FISHEYE)
-    //    .value("gyro", RS2_STREAM_GYRO)
-    //    .value("accel", RS2_STREAM_ACCEL)
-    //    .value("count", RS2_STREAM_COUNT);
-    
-    //py::enum_<rs2_format> format(m, "format");
-    //format.value("any", RS2_FORMAT_ANY)
-    //      .value("z16", RS2_FORMAT_Z16)
-    //      .value("disparity16", RS2_FORMAT_DISPARITY16)
-    //      .value("xyz32f", RS2_FORMAT_XYZ32F)
-    //      .value("yuyv", RS2_FORMAT_YUYV)
-    //      .value("rgb8", RS2_FORMAT_RGB8)
-    //      .value("bgr8", RS2_FORMAT_BGR8)
-    //      .value("rgba8", RS2_FORMAT_RGBA8)
-    //      .value("bgra8", RS2_FORMAT_BGRA8)
-    //      .value("y8", RS2_FORMAT_Y8)
-    //      .value("y16", RS2_FORMAT_Y16)
-    //      .value("raw10", RS2_FORMAT_RAW10)
-    //      .value("raw16", RS2_FORMAT_RAW16)
-    //      .value("raw8", RS2_FORMAT_RAW8)
-    //      .value("uyvy", RS2_FORMAT_UYVY)
-    //      .value("motion_raw", RS2_FORMAT_MOTION_RAW)
-    //      .value("motion_xyz32f", RS2_FORMAT_MOTION_XYZ32F)
-    //      .value("count", RS2_FORMAT_COUNT);
-
-
-    
-
-
-//    // binds std::vector<rs2::stream_profile> in an opaque manner to prevent
-//    // expensive copies
-//    py::bind_vector<std::vector<rs2::stream_profile> >(m, "VectorStream_profile");
-
-
-//
-//    
-//     
-//    // Not binding frame_callback, templated
-//    
-
-//
-//    // Not binding frame_processor_callback, templated
-//
-//    
-//
-
-//
-//    // not binding notifications_callback, templated
-//
-//    // not binding devices_changed_callback, templated
-//
-
-
-    //py::enum_<rs2_notification_category> notification_category(m, "notification_category");
-    //notification_category.value("frames_timeout", rs2_notification_category::RS2_NOTIFICATION_CATEGORY_FRAMES_TIMEOUT)
-    //                     .value("frame_corrupted", rs2_notification_category::RS2_NOTIFICATION_CATEGORY_FRAME_CORRUPTED)
-    //                     .value("hardware_error", rs2_notification_category::RS2_NOTIFICATION_CATEGORY_HARDWARE_ERROR)
-    //                     .value("unknown_error", rs2_notification_category::RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR)
-    //                     .value("count", rs2_notification_category::RS2_NOTIFICATION_CATEGORY_COUNT);
-
-    //py::enum_<rs2_option> option(m, "option");
-    //option.value("backlight_compensation", RS2_OPTION_BACKLIGHT_COMPENSATION)
-    //      .value("brightness", RS2_OPTION_BRIGHTNESS)
-    //      .value("contrast", RS2_OPTION_CONTRAST)
-    //      .value("exposure", RS2_OPTION_EXPOSURE)
-    //      .value("gain", RS2_OPTION_GAIN)
-    //      .value("gamma", RS2_OPTION_GAMMA)
-    //      .value("hue", RS2_OPTION_HUE)
-    //      .value("saturation", RS2_OPTION_SATURATION)
-    //      .value("sharpness", RS2_OPTION_SHARPNESS)
-    //      .value("white_balance", RS2_OPTION_WHITE_BALANCE)
-    //      .value("enable_auto_exposure", RS2_OPTION_ENABLE_AUTO_EXPOSURE)
-    //      .value("enable_auto_white_balance", RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE)
-    //      .value("visual_preset", RS2_OPTION_VISUAL_PRESET)
-    //      .value("laser_power", RS2_OPTION_LASER_POWER)
-    //      .value("accuracy", RS2_OPTION_ACCURACY)
-    //      .value("motion_range", RS2_OPTION_MOTION_RANGE)
-    //      .value("filter_option", RS2_OPTION_FILTER_OPTION)
-    //      .value("confidence_threshold", RS2_OPTION_CONFIDENCE_THRESHOLD)
-    //      .value("emitter_enabled", RS2_OPTION_EMITTER_ENABLED)
-    //      .value("frames_queue_size", RS2_OPTION_FRAMES_QUEUE_SIZE)
-    //      .value("total_frame_drops", RS2_OPTION_TOTAL_FRAME_DROPS)
-    //      .value("auto_exposure_mode", RS2_OPTION_AUTO_EXPOSURE_MODE)
-    //      .value("power_line_frequency", RS2_OPTION_POWER_LINE_FREQUENCY)
-    //      .value("asic_temperature", RS2_OPTION_ASIC_TEMPERATURE)
-    //      .value("error_polling_enabled", RS2_OPTION_ERROR_POLLING_ENABLED)
-    //      .value("projector_temperature", RS2_OPTION_PROJECTOR_TEMPERATURE)
-    //      .value("output_trigger_enabled", RS2_OPTION_OUTPUT_TRIGGER_ENABLED)
-    //      .value("motion_module_temperature", RS2_OPTION_MOTION_MODULE_TEMPERATURE)
-    //      .value("depth_units", RS2_OPTION_DEPTH_UNITS)
-    //      .value("enable_motion_correction", RS2_OPTION_ENABLE_MOTION_CORRECTION)
-    //      .value("count", RS2_OPTION_COUNT);
-    
-    //py::enum_<rs2_distortion> distortion(m, "distortion");
-    //distortion.value("none", RS2_DISTORTION_NONE)
-    //          .value("modified_brown_conrady", RS2_DISTORTION_MODIFIED_BROWN_CONRADY)
-    //          .value("inverse_brown_conrady", RS2_DISTORTION_INVERSE_BROWN_CONRADY)
-    //          .value("ftheta", RS2_DISTORTION_FTHETA)
-    //          .value("brown_conrady", RS2_DISTORTION_BROWN_CONRADY)
-    //          .value("count", RS2_DISTORTION_COUNT);
-
-    //py::class_<rs2_intrinsics> intrinsics(m, "intrinsics");
-    //intrinsics.def_readonly("width", &rs2_intrinsics::width)
-    //          .def_readonly("height", &rs2_intrinsics::height)
-    //          .def_readonly("ppx", &rs2_intrinsics::ppx)
-    //          .def_readonly("ppy", &rs2_intrinsics::ppy)
-    //          .def_readonly("fx", &rs2_intrinsics::fx)
-    //          .def_readonly("fy", &rs2_intrinsics::fy)
-    //          .def_readonly("model", &rs2_intrinsics::model)
-    //          .def_property_readonly(BIND_RAW_ARRAY(rs2_intrinsics, coeffs, float, 5));
-    
-    //py::enum_<rs2_camera_info> camera_info(m, "camera_info");
-    //camera_info.value("device_name", RS2_CAMERA_INFO_DEVICE_NAME)
-    //           .value("module_name", RS2_CAMERA_INFO_MODULE_NAME)
-    //           .value("device_serial_number", RS2_CAMERA_INFO_DEVICE_SERIAL_NUMBER)
-    //           .value("camera_firmware_version", RS2_CAMERA_INFO_CAMERA_FIRMWARE_VERSION)
-    //           .value("device_location", RS2_CAMERA_INFO_DEVICE_LOCATION)
-    //           .value("device_debug_op_code", RS2_CAMERA_INFO_DEVICE_DEBUG_OP_CODE)
-    //           .value("advanced_mode", RS2_CAMERA_INFO_ADVANCED_MODE)
-    //           .value("count", RS2_CAMERA_INFO_COUNT);
-    
-    //py::class_<rs2_extrinsics> extrinsics(m, "extrinsics");
-    //extrinsics.def_property_readonly(BIND_RAW_ARRAY(rs2_extrinsics, rotation, float, 9))
-    //          .def_property_readonly(BIND_RAW_ARRAY(rs2_extrinsics, translation, float, 3))
-    //          .def("__repr__", [](const rs2_extrinsics &e){
-    //              std::stringstream ss;
-    //              ss << "( (" << e.rotation[0];
-    //              for (int i=1; i<9; ++i) ss << ", " << e.rotation[i];
-    //              ss << "), (" << e.translation[0];
-    //              for (int i=1; i<3; ++i) ss << ", " << e.translation[i];
-    //              ss << ") )";
-    //              return ss.str();
-    //          });
-
-    //py::enum_<rs2_timestamp_domain> ts_domain(m, "timestamp_domain");
-    //ts_domain.value("hardware_clock", RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK)
-    //         .value("system_time", RS2_TIMESTAMP_DOMAIN_SYSTEM_TIME)
-    //         .value("count", RS2_TIMESTAMP_DOMAIN_COUNT);
-    
-    //py::enum_<rs2_frame_metadata> frame_metadata(m, "frame_metadata");
-    //frame_metadata.value("frame counter", RS2_FRAME_METADATA_FRAME_COUNTER)
-    //              .value("frame_timestamp_usec", RS2_FRAME_METADATA_FRAME_TIMESTAMP)
-    //              .value("sensor_timestamp_usec", RS2_FRAME_METADATA_SENSOR_TIMESTAMP)
-    //              .value("actual_exposure_usec", RS2_FRAME_METADATA_ACTUAL_EXPOSURE)
-    //              .value("gain_level", RS2_FRAME_METADATA_GAIN_LEVEL)
-    //              .value("auto_exposure", RS2_FRAME_METADATA_AUTO_EXPOSURE)
-    //              .value("white_balance_temp_k", RS2_FRAME_METADATA_WHITE_BALANCE)
-    //              .value("count", RS2_FRAME_METADATA_COUNT);
-
-
-
-    //py::class_<rs2::syncer> syncer(m, "syncer");
-    //syncer.def("wait_for_frames", &rs2::syncer::wait_for_frames, "timeout_ms"_a=5000,
-    //           "Wait until a coherent set of frames becomes available.")
-    //      .def("poll_for_frames", [](const rs2::syncer &sync)
-    //            {
-    //                rs2::frameset frames;
-    //                sync.poll_for_frames(&frames);
-    //                return frames;
-    //            }, "Check if a coherent set of frames is available");
-
-   /* py::class_<rs2_motion_device_intrinsic> motion_device_inrinsic(m, "motion_device_intrinsic");
-    motion_device_inrinsic.def_property_readonly(BIND_RAW_ARRAY(rs2_motion_device_intrinsic, noise_variances, float, 3))
-                          .def_property_readonly(BIND_RAW_ARRAY(rs2_motion_device_intrinsic, bias_variances, float, 3));*/
-
-    //py::enum_<rs2_log_severity> log_severity(m, "log_severity");
-    //log_severity.value("debug", RS2_LOG_SEVERITY_DEBUG)
-    //            .value("info", RS2_LOG_SEVERITY_INFO)
-    //            .value("warn", RS2_LOG_SEVERITY_WARN)
-    //            .value("error", RS2_LOG_SEVERITY_ERROR)
-    //            .value("fatal", RS2_LOG_SEVERITY_FATAL)
-    //            .value("none", RS2_LOG_SEVERITY_NONE)
-    //            .value("count", RS2_LOG_SEVERITY_COUNT);
-
-    //m.def("log_to_console", &rs2::log_to_console, "min_severity"_a);
-    //m.def("log_to_file", &rs2::log_to_file, "min_severity"_a, "file_path"_a);
+    /* rs2.hpp */
+    m.def("log_to_console", &rs2::log_to_console, "min_severity"_a);
+    m.def("log_to_file", &rs2::log_to_file, "min_severity"_a, "file_path"_a);
     
     return m.ptr();
 }
