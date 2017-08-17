@@ -8,6 +8,7 @@
 #include "context.h"
 #include "ds5/ds5-options.h"
 
+//TODO: rename read_only_depth_scale_option to depth_scale_optio_snapshot and move it next to depth_scale_option class, have it derive from extension_snapshot
 class read_only_depth_scale_option : public depth_scale_option
 {
     float m_value;
@@ -39,7 +40,7 @@ playback_sensor::playback_sensor(const device_interface& parent_device, const de
 {
     register_sensor_streams(m_sensor_description.get_stream_profiles());
     register_sensor_infos(m_sensor_description);
-    register_sensor_optiosn(m_sensor_description.get_options());
+    register_sensor_options(m_sensor_description.get_options());
 }
 playback_sensor::~playback_sensor()
 {
@@ -145,6 +146,7 @@ bool playback_sensor::extend_to(rs2_extension extension_type, void** ext)
     case RS2_EXTENSION_ROI : return try_extend<roi_sensor_interface>(e, ext);;
     case RS2_EXTENSION_VIDEO_FRAME : return try_extend<video_frame>(e, ext);
  //TODO: RS2_EXTENSION_MOTION_FRAME : return try_extend<motion_frame>(e, ext);
+    case RS2_EXTENSION_DEPTH_SENSOR:  return try_extend<depth_sensor>(e, ext);
     case RS2_EXTENSION_COUNT :
         //[[fallthrough]];
     default:
@@ -167,6 +169,7 @@ void playback_sensor::handle_frame(frame_holder frame, bool is_real_time)
     }
     if(m_is_started)
     {
+        frame->get_owner()->set_sensor(shared_from_this());
         auto type = frame->get_stream()->get_stream_type();
         auto index = static_cast<uint32_t>(frame->get_stream()->get_stream_index());
         frame->set_stream(m_streams[std::make_pair(type, index)]);
@@ -231,7 +234,7 @@ void playback_sensor::register_sensor_infos(const device_serializer::sensor_snap
     }
 }
 
-void playback_sensor::register_sensor_optiosn(const std::map<rs2_option, float>& options)
+void playback_sensor::register_sensor_options(const std::map<rs2_option, float>& options)
 {
     auto depth_scale_it = options.find(RS2_OPTION_DEPTH_UNITS);
     if (depth_scale_it != options.end())

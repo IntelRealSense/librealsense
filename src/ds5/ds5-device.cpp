@@ -78,7 +78,7 @@ namespace librealsense
             std::shared_ptr<platform::uvc_device> uvc_device,
             std::unique_ptr<frame_timestamp_reader> timestamp_reader)
 
-        : uvc_sensor("Stereo Module", uvc_device, move(timestamp_reader), owner), _owner(owner)
+            : uvc_sensor("Stereo Module", uvc_device, move(timestamp_reader), owner), _owner(owner), _depth_units(0)
         {}
 
         rs2_intrinsics get_intrinsics(const stream_profile& profile) const override
@@ -88,7 +88,11 @@ namespace librealsense
                 ds::calibration_table_id::coefficients_table_id,
                 profile.width, profile.height);
         }
-
+        void open(const stream_profiles& requests) override
+        {
+            _depth_units = get_option(RS2_OPTION_DEPTH_UNITS).query();
+            uvc_sensor::open(requests);
+        }
         stream_profiles init_stream_profiles() override
         {
             auto results = uvc_sensor::init_stream_profiles();
@@ -132,9 +136,10 @@ namespace librealsense
             return results;
         }
 
-        float get_depth_scale() const override { return get_option(RS2_OPTION_DEPTH_UNITS).query(); }
+        float get_depth_scale() const override { return _depth_units; }
     private:
         const ds5_device* _owner;
+        float _depth_units;
     };
 
     bool ds5_device::is_camera_in_advanced_mode() const
