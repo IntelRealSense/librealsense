@@ -6,11 +6,11 @@ This sample demonstrates how to configure the camera for streaming in a textual 
 
 ## Expected Output
 The application should run for about a second and exit after saving PNG and CSV file to disk: 
-![expected output](expected_output.png)
+![expected output](expected_output.PNG)
 
 ## Code Overview 
 
-Similar to the [first tutorial](../rs-capture/) we including the Cross-Platform API:
+Similar to the [first tutorial](../capture/) we including the Cross-Platform API:
 ```cpp
 #include <librealsense/rs2.hpp> // Include RealSense Cross Platform API
 ```
