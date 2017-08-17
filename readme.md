@@ -13,47 +13,23 @@ Developer kits containing the necessary hardware to use this library are availab
 
 ## Quick Start
 
-After downloading and installing the  Intel® RealSense™ SDK (on [Linux]() \ [Windows]() \ [Os X]()), and connecting an [Intel® RealSense™ depth camera](), you are ready to start writing your first application!
+#### Step 1: Download and Install
+After installing the  Intel® RealSense™ SDK (on [Linux]() \ [Windows]() \ [Os X]()), and connecting an [Intel® RealSense™ depth camera](), you are ready to start writing your first application!
 
-#### First things first...
-Try running the SDK's Viewer application to make sure the library is installed \ compiled correctly and that the camera is properly installed as well.
-
-To do that, run the <img src="./tools/realsense-viewer/res/icon.ico" width="25" height="25" alt="realsense-viewer icon"> [realsense-viewer](./tools/realsense-viewer) tool (can be found under *&lt;installation path&gt;/tools/realsense-viewer.exe*).
-Next, choose a stream to play, and turn it on:
-<p align="center"><img src="./tools/realsense-viewer/res/realsense-viewer-backup.gif" alt="realsense-viewer gif"/></p>
-
-> In case of any issue during initial setup, or later, please first see our [FAQ & Troubleshooting]() section. 
+> :warning: In case of any issue during initial setup, or later, please first see our [FAQ & Troubleshooting]() section. 
 > If you can't find an answer there, try searching our [Closed GitHub Issues](https://github.com/IntelRealSense/librealsense/issues?utf8=%E2%9C%93&q=is%3Aclosed) page,  [Community](https://communities.intel.com/community/tech/realsense) and [Support](https://www.intel.com/content/www/us/en/support/emerging-technologies/intel-realsense-technology.html) sites.
-> If non of the above helped, or you're too lazy to search :wink:, [open a new issue](https://github.com/IntelRealSense/librealsense/issues/new).
+> If non of the above helped, [open a new issue](https://github.com/IntelRealSense/librealsense/issues/new).
 
-#### Ready to hack!
+#### Step 2: Ready to hack!
 
-Every Intel® RealSense™ SDK application should start by declaring a `rs2::context` object:
-
-```cpp
-//Create a context
-rs2::context ctx;
-```
-
-`rs2::context` is the highest level object in the SDK. It is the entry point for querying connected devices and loading recorded sequences. 
-We create an automatic (stack allocated) variable instance of the context since it is not required to be kept "alive", and after taking whatever we need from it, we can dispose of it.
-After creating the context we can create a `rs2::pipeline` object:
+Our library offers a high level API for using your device (in addition to some lower level ones).
+The following snippet shows how to start streaming frames and extracting the depth value of a pixel:
 
 ```cpp
-//Create a pipeline
+// Create a pipeline
 rs2::pipeline p = ctx.create_pipeline();
-```
-
-Pipeline serves as a top-level API for streaming and processing frames. It has a default configuration, optimized for the best tradeoff between stream's quality and performance, which allows you to start receiving frames without any boilerplate code: 
-
-```cpp
 // Configure and start the pipeline
 p.start();
-```
-
-Next, we have our "main" loop of the application. Every iteration we wait for the pipeline to fetch a synchronized set of frames, and using the depth frame we display the distance between the camera and the object in front of the center of the lens:
-
-```cpp
 while (true)
 {
     //Get a depth frame
@@ -72,12 +48,46 @@ while (true)
     if (dist_to_center > 2) break;
 }
 ```
+Please follow our [Tutorials and Examples](./examples), and read the [Documentation](./doc) to learn more.
 
-Voilà! 
-You now poses the power to measure distance of objects in an image. 
-Let your imagination go wild, see some of [our examples](./examples) and read the [documentation](./doc) to learn more, or see what other people are already doing with Intel® RealSense™ technologies:
+## Quick Start
 
-# &lt; Show off here... &gt;
+#### Step 1: Download and Install
+After installing the  Intel® RealSense™ SDK (on [Linux]() \ [Windows]() \ [Os X]()), and connecting an [Intel® RealSense™ depth camera](), you are ready to start writing your first application!
+
+> :warning: In case of any issue during initial setup, or later, please first see our [FAQ & Troubleshooting]() section. 
+> If you can't find an answer there, try searching our [Closed GitHub Issues](https://github.com/IntelRealSense/librealsense/issues?utf8=%E2%9C%93&q=is%3Aclosed) page,  [Community](https://communities.intel.com/community/tech/realsense) and [Support](https://www.intel.com/content/www/us/en/support/emerging-technologies/intel-realsense-technology.html) sites.
+> If non of the above helped, [open a new issue](https://github.com/IntelRealSense/librealsense/issues/new).
+
+#### Step 2: Ready to hack!
+
+Our library offers a high level API for using your device (in addition to some lower level ones).
+The following snippet shows how to start streaming frames and extracting the depth value of a pixel:
+
+```cpp
+// Create a pipeline
+rs2::pipeline p = ctx.create_pipeline();
+// Configure and start the pipeline
+p.start();
+while (true)
+{
+    //Get a depth frame
+    rs2::frameset frames = p.wait_for_frames(); //Block program until frames arrive
+    rs2::depth_frame depth = frames.get_depth_frame(); //Try to get a frame with depth image
+    if (!depth) continue;
+
+    // Query distance to the target:
+    rs2::point2d center_depth { depth.get_width(), depth.get_height() };
+    float dist_to_center = depth.get_distance(center_depth);
+    
+    std::cout << "You are pointing at an object " 
+		      << dist_to_center << " meters away from the camera\r";
+
+	//Stop if object gets too far
+    if (dist_to_center > 2) break;
+}
+```
+Please follow our [Tutorials and Examples](./examples), and read the [Documentation](./doc) to learn more.
 
 
 ## Table of Contents
