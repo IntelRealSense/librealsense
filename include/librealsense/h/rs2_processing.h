@@ -16,17 +16,61 @@ extern "C" {
 
 #include "rs2_types.h"
 
-rs2_processing_block* rs2_create_processing_block(rs2_context* ctx, rs2_frame_processor_callback* proc, rs2_error** error);
+/**
+* Creates Depth-Colorizer processing block that can be used to quickly visualize the depth data
+* This block will accept depth frames as input and replace them by depth frames with format RGB8
+* Non-depth frames are passed through
+* Further customization will be added soon (format, color-map, histogram equalization control)
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+rs2_processing_block* rs2_create_colorizer(rs2_error** error);
 
+/**
+* Creates Sync processing block. This block accepts arbitrary frames and output composite frames of best matches
+* Some frames may be released within the syncer if they are waiting for match for too long
+* Syncronization is done (mostly) based on timestamps so good hardware timestamps are a pre-condition
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
 rs2_processing_block* rs2_create_sync_processing_block(rs2_error** error);
 
+/**
+* Creates Point-Cloud processing block. This block accepts depth frames and outputs Points frames
+* In addition, given non-depth frame, the block will align texture coordinate to the non-depth stream
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+rs2_processing_block* rs2_create_pointcloud(rs2_context* ctx, rs2_error** error);
+
+/** 
+* This method creates new custom processing block. This lets the users pass frames between module boundaries for processing
+* This is an infrastructure function aimed at middleware developers, and also used by provided blocks such as sync, colorizer, etc.. 
+* \param ctx        RealSense context to query global parameters such as time
+* \param proc       Processing function to be applied to every frame entering the block
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return           new processing block, to be released by rs2_delete_processing_block
+*/
+rs2_processing_block* rs2_create_processing_block(rs2_context* ctx, rs2_frame_processor_callback* proc, rs2_error** error);
+
+/**
+* This method is used to direct the output from the processing block to some callback or sink object
+* \param[in] block          Processing block
+* \param[in] on_frame       Callback to be invoked every time the processing block calls frame_ready
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
 void rs2_start_processing(rs2_processing_block* block, rs2_frame_callback* on_frame, rs2_error** error);
 
+/**
+* This method is used to pass frame into a processing block
+* \param[in] block          Processing block
+* \param[in] frame          Frame to process, ownership is moved to the block object
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
 void rs2_process_frame(rs2_processing_block* block, rs2_frame* frame, rs2_error** error);
 
+/**
+* Deletes the processing block
+* \param[in] block          Processing block
+*/
 void rs2_delete_processing_block(rs2_processing_block* block);
-
-rs2_processing_block* rs2_create_pointcloud(rs2_context* ctx, rs2_error** error);
 
 /**
 * create frame queue. frame queues are the simplest x-platform synchronization primitive provided by librealsense
@@ -66,8 +110,6 @@ int rs2_poll_for_frame(rs2_frame_queue* queue, rs2_frame** output_frame, rs2_err
 * \param[in] queue the frame queue data structure
 */
 void rs2_enqueue_frame(const rs2_frame* frame, void* queue);
-
-rs2_processing_block* rs2_create_colorizer(rs2_error** error);
 
 #ifdef __cplusplus
 }

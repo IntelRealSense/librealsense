@@ -108,6 +108,12 @@ void rs2_delete_sensor(rs2_sensor* sensor);
 */
 rs2_sensor* rs2_create_sensor(const rs2_sensor_list* list, int index, rs2_error** error);
 
+/**
+* This is a helper function allowing the user to discover the device from one of its sensors
+* \param[in] sensor     Pointer to a sensor
+* \param[out] error     if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return               new device wrapper for the device of the sensor. Needs to be released by delete_device
+*/
 rs2_device* rs2_create_device_from_sensor(const rs2_sensor* sensor, rs2_error** error);
 
 /**
@@ -136,6 +142,11 @@ int rs2_supports_sensor_info(const rs2_sensor* sensor, rs2_camera_info info, rs2
  */
 int rs2_is_sensor_extendable_to(const rs2_sensor* sensor, rs2_extension extension, rs2_error** error);
 
+/** When called on a depth sensor, this method will return the number of meters represented by a single depth unit
+* \param[in] sensor      depth sensor
+* \param[out] error      if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return                the number of meters represented by a single depth unit
+*/
 float rs2_get_depth_scale(rs2_sensor* sensor, rs2_error** error);
 
 /**
@@ -163,7 +174,7 @@ void rs2_get_region_of_interest(const rs2_sensor* sensor, int* min_x, int* min_y
 /**
 * open subdevice for exclusive access, by committing to a configuration
 * \param[in] sensor relevant RealSense device
-* \param[in] profile TODO
+* \param[in] profile    stream profile that defines single stream configuration
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 */
 void rs2_open(rs2_sensor* device, const rs2_stream_profile* profile, rs2_error** error);
@@ -172,7 +183,7 @@ void rs2_open(rs2_sensor* device, const rs2_stream_profile* profile, rs2_error**
 * open subdevice for exclusive access, by committing to composite configuration, specifying one or more stream profiles
 * this method should be used for interdependent  streams, such as depth and infrared, that have to be configured together
 * \param[in] sensor relevant RealSense device
-TODO
+* \param[in] profiles  list of stream profiles discovered by get_stream_profiles
 * \param[in] count      number of simultaneous  stream profiles to configure
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 */
@@ -270,20 +281,79 @@ rs2_stream_profile_list* rs2_get_stream_profiles(rs2_sensor* device, rs2_error**
 */
 const rs2_stream_profile* rs2_get_stream_profile(const rs2_stream_profile_list* list, int index, rs2_error** error);
 
+/**
+* Extract common parameters of a stream profiles
+* \param[in] mode        input stream profile
+* \param[out] stream     stream type of the input profile
+* \param[out] format     binary data format of the input profile
+* \param[out] index      stream index the input profile in case there are multiple streams of the same type
+* \param[out] unique_id  identifier for the stream profile, unique within the application
+* \param[out] framerate  expected rate for data frames to arrive, meaning expected number of frames per second
+* \param[out] error      if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
 void rs2_get_stream_profile_data(const rs2_stream_profile* mode, rs2_stream* stream, rs2_format* format, int* index, int* unique_id, int* framerate, rs2_error** error);
 
+/**
+* Override some of the parameters of the stream profile
+* \param[in] mode        input stream profile
+* \param[in] stream      stream type for the profile
+* \param[in] format      binary data format of the profile
+* \param[in] index       stream index the profile in case there are multiple streams of the same type
+* \param[out] error      if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
 void rs2_set_stream_profile_data(rs2_stream_profile* mode, rs2_stream stream, int index, rs2_format format, rs2_error** error);
 
-rs2_stream_profile* rs2_clone_stream_profile(const rs2_stream_profile* mode, rs2_stream stream, int stream_idx, rs2_format fmt, rs2_error** error);
+/**
+* Creates a copy of stream profile, assigning new values to some of the feilds
+* \param[in] mode        input stream profile
+* \param[in] stream      stream type for the profile
+* \param[in] format      binary data format of the profile
+* \param[in] index       stream index the profile in case there are multiple streams of the same type
+* \param[out] error      if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return                new stream profile, must be deleted by rs2_delete_stream_profile
+*/
+rs2_stream_profile* rs2_clone_stream_profile(const rs2_stream_profile* mode, rs2_stream stream, int index, rs2_format format, rs2_error** error);
 
+/**
+* Delete stream profile allocated by rs2_clone_stream_profile
+* Should not be called on stream profiles returned by the device 
+* \param[in] mode        input stream profile
+*/
 void rs2_delete_stream_profile(rs2_stream_profile* mode);
 
+/**
+* Try to extend stream profile to an extension type
+* \param[in] mode        input stream profile
+* \param[in] type        extension type, for example RS2_EXTENSION_VIDEO_STREAM_PROFILE
+* \param[out] error      if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return                non-zero if profile is extendable to specified extension, zero otherwise
+*/
 int rs2_stream_profile_is(const rs2_stream_profile* mode, rs2_extension type, rs2_error** error);
 
+/**
+* When called on a video stream profile, will return the width and the height of the stream
+* \param[in] mode        input stream profile
+* \param[out] width      width in pixels of the video stream
+* \param[out] height     height in pixels of the video stream
+* \param[out] error      if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
 void rs2_get_video_stream_resolution(const rs2_stream_profile* from, int* width, int* height, rs2_error** error);
 
+/**
+* Returns the expected bandwidth in bytes per second for specific stream profile
+* \param[in] mode        input stream profile
+* \param[out] error      if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return                expected bandwidth in bytes per second for specific stream profile
+*/
 int rs2_get_stream_profile_size(const rs2_stream_profile* profile, rs2_error** error);
 
+/**
+* Returns non-zero if selected profile is recommended for the sensor
+* This is an optional hint we offer to suggest profiles with best performance-quality tradeof
+* \param[in] mode        input stream profile
+* \param[out] error      if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return                non-zero if selected profile is recommended for the sensor
+*/
 int rs2_is_stream_profile_recommended(const rs2_stream_profile* profile, rs2_error** error);
 
 /**
@@ -301,7 +371,9 @@ int rs2_get_stream_profiles_count(const rs2_stream_profile_list* list, rs2_error
 void rs2_delete_stream_profiles_list(rs2_stream_profile_list* list);
 
 /**
- * TODO
+ * \param[in] from          origin stream profile
+ * \param[in] to            target stream profile
+ * \param[out] extrin       extrinsics from origin to target
  * \param[out] error        if non-null, receives any error that occurs during this call, otherwise, errors are ignored
  */
 void rs2_get_extrinsics(const rs2_stream_profile* from,
@@ -309,8 +381,9 @@ void rs2_get_extrinsics(const rs2_stream_profile* from,
                         rs2_extrinsics* extrin, rs2_error** error);
 
 /**
- * returns the intrinsics of specific stream configuration
-   TODO
+ * When called on a video profile, returns the intrinsics of specific stream configuration
+ * \param[in] from          input stream profile
+ * \param[out] intrinsics   resulting intrinsics for the video profile
  * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
  */
 void rs2_get_video_stream_intrinsics(const rs2_stream_profile* from, rs2_intrinsics* intrinsics, rs2_error** error);

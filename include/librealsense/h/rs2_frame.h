@@ -152,12 +152,38 @@ void rs2_frame_add_ref(rs2_frame* frame, rs2_error ** error);
 */
 void rs2_release_frame(rs2_frame* frame);
 
+/**
+* When called on Points frame type, this method returns a pointer to an array of 3D vertices of the model
+* The coordinate system is: X right, Y up, Z away from the camera. Units: Meters
+* \param[in] frame       Points frame
+* \param[out] error      If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return                Pointer to an array of vertices, lifetime is managed by the frame
+*/
 rs2_vertex* rs2_get_frame_vertices(const rs2_frame* frame, rs2_error** error);
 
+/**
+* When called on Points frame type, this method returns a pointer to an array of texture coordinates per vertex
+* Each coordinate represent a (u,v) pair within [0,1] range, to be mapped to texture image
+* \param[in] frame       Points frame
+* \param[out] error      If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return                Pointer to an array of texture coordinates, lifetime is managed by the frame
+*/
 rs2_pixel* rs2_get_frame_texture_coordinates(const rs2_frame* frame, rs2_error** error);
 
+/**
+* When called on Points frame type, this method returns the number of vertices in the frame
+* \param[in] frame       Points frame
+* \param[out] error      If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return                Number of vertices
+*/
 int rs2_get_frame_points_count(const rs2_frame* frame, rs2_error** error);
 
+/**
+* Returns the stream profile that was used to start the stream of this frame
+* \param[in] frame       frame reference, owned by the user
+* \param[out] error      If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return                Pointer to the stream profile object, lifetime is managed elsewhere
+*/
 const rs2_stream_profile* rs2_get_frame_stream_profile(const rs2_frame* frame, rs2_error** error);
 
 /**
@@ -169,15 +195,57 @@ const rs2_stream_profile* rs2_get_frame_stream_profile(const rs2_frame* frame, r
 */
 int rs2_is_frame_extendable_to(const rs2_frame* frame, rs2_extension extension_type, rs2_error ** error);
 
+/**
+* Allocate new video frame using a frame-source provided form a processing block
+* \param[in] source      Frame pool to allocate the frame from
+* \param[in] new_stream  New stream profile to assign to newly created frame
+* \param[in] original    A reference frame that can be used to fill in auxilary information like format, width, height, bpp, stride (if applicable) 
+* \param[in] new_bpp     New value for bits per pixel for the allocated frame
+* \param[in] new_width   New value for width for the allocated frame
+* \param[in] new_height  New value for height for the allocated frame
+* \param[in] new stride  New value for stride in bytes for the allocated frame
+* \param[out] error      If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return                reference to a newly allocated frame, must be released with release_frame
+*                        memory for the frame is likely to be re-used from previous frame, but in lack of available frames in the pool will be allocated from the free store
+*/
 rs2_frame* rs2_allocate_synthetic_video_frame(rs2_source* source, const rs2_stream_profile* new_stream, rs2_frame* original,
     int new_bpp, int new_width, int new_height, int new_stride, rs2_extension frame_type, rs2_error** error);
 
+/**
+* Allocate new composite frame, aggregating a set of existing frames
+* \param[in] source      Frame pool to allocate the frame from
+* \param[in] frames      Array of existing frames
+* \param[in] count       Number of input frames
+* \param[out] error      If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return                reference to a newly allocated frame, must be released with release_frame
+*                        when composite frame gets released it will automatically release all of the input frames
+*/
 rs2_frame* rs2_allocate_composite_frame(rs2_source* source, rs2_frame** frames, int count, rs2_error** error);
 
+/**
+* Extract frame from within a composite frame
+* \param[in] composite   Composite frame
+* \param[in] index       Index of the frame to extract within the composite frame
+* \param[out] error      If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return                returns reference to a frame existing within the composite frame
+*                        If you wish to keep this frame after the composite is released, you need to call aquire_ref
+*                        Otherwise the resulting frame lifetime is bound by owning composite frame
+*/
 rs2_frame* rs2_extract_frame(rs2_frame* composite, int index, rs2_error** error);
 
+/**
+* Get number of frames embedded within a composite frame
+* \param[in] composite   Composite input frame
+* \param[out] error      If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return                Number of embedded frames
+*/
 int rs2_embedded_frames_count(rs2_frame* composite, rs2_error** error);
 
+/**
+* This method will dispatch frame callback on a frame
+* \param[in] source      Frame pool provided by the processing block
+* \param[in] frame       Frame to dispatch, frame ownership is passed to this function, so you don't have to call release_frame after it
+*/
 void rs2_synthetic_frame_ready(rs2_source* source, rs2_frame* frame, rs2_error** error);
 
 #ifdef __cplusplus
