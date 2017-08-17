@@ -5,6 +5,7 @@
 
 #include "device_hub.h"
 #include "sync.h"
+#include "config.h"
 
 namespace librealsense
 {
@@ -14,6 +15,9 @@ namespace librealsense
         pipeline(context& ctx);
         void start(frame_callback_ptr callback);
         void start();
+        void enable(rs2_stream stream, int index, uint32_t width, uint32_t height, rs2_format format, uint32_t framerate);
+        void disable_stream(rs2_stream stream);
+        void disable_all();
 
         frame_holder wait_for_frames(unsigned int timeout_ms = 5000);
         ~pipeline();
@@ -25,6 +29,9 @@ namespace librealsense
         syncer_proccess_unit _syncer;
         single_consumer_queue<frame_holder> _queue;
         std::vector<sensor_interface*> _sensors;
+        util::config _config;
+        util::config::multistream _multistream;
+        std::vector<stream_profile> _profiles;
     };
 
 }

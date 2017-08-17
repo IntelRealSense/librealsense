@@ -299,14 +299,14 @@ namespace librealsense
                         }
                     }
                     else {
-                         s<<f->get_stream()->get_stream_type()<<" ";
+                         s<<f->get_stream()->get_stream_type()<<" "<<(double)f->get_frame_timestamp()<<" ";
                     }
-                    s<<"\n";
-                    //std::cout<<s.str();
-                    LOG_DEBUG(s.str());
+
 
                 }
-
+                s<<"\n";
+                //std::cout<<s.str();
+                LOG_DEBUG(s.str());
                 frame_holder composite = env.source->allocate_composite_frame(std::move(match));
 
 

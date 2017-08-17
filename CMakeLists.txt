@@ -138,6 +138,7 @@ set(REALSENSE_CPP
     src/win/win-hid.cpp
     src/win/win-backend.cpp
 
+
     src/ds5/advanced_mode/rs2_advanced_mode.cpp
     src/ds5/advanced_mode/presets.cpp
     src/ds5/advanced_mode/advanced_mode.cpp
@@ -200,6 +201,7 @@ set(REALSENSE_HPP
 
     src/device_hub.h
     src/pipeline.h
+    src/config.h
     src/archive.h
     src/concurrency.h
     src/context.h
