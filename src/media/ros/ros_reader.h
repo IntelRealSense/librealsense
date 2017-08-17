@@ -339,7 +339,8 @@ namespace librealsense
                 }
             }
             additional_data.metadata_size = total_md_size;
-            frame_interface* frame = m_frame_source.alloc_frame(RS2_EXTENSION_VIDEO_FRAME, msg->data.size(), additional_data, true);
+            frame_interface* frame = m_frame_source.alloc_frame((stream_id.stream_type == RS2_STREAM_DEPTH) ? RS2_EXTENSION_DEPTH_FRAME : RS2_EXTENSION_VIDEO_FRAME,
+                                                                msg->data.size(), additional_data, true);
             if (frame == nullptr)
             {
                 throw invalid_value_exception("Failed to allocate new frame");
@@ -422,6 +423,11 @@ namespace librealsense
                 std::shared_ptr<info_snapshot> sensor_info = read_info_snapshot(ros_topic::sensor_info_topic({ get_device_index(), sensor_index }));
                 sensor_extensions[RS2_EXTENSION_INFO] = sensor_info;
                 std::map<enum rs2_option, float> sensor_options = read_sensor_options(ros_topic::property_topic({ get_device_index(), sensor_index }));
+                auto depth_scale_it = sensor_options.find(RS2_OPTION_DEPTH_UNITS);
+                if(depth_scale_it != sensor_options.end())
+                {
+                    sensor_extensions[RS2_EXTENSION_DEPTH_SENSOR] = std::make_shared<depth_sensor_snapshot>(depth_scale_it->second);
+                }
                 sensor_descriptions.emplace_back(sensor_index, sensor_extensions, sensor_options, streams_snapshots);
             }
             

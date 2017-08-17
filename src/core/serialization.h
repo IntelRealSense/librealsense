@@ -98,6 +98,11 @@ namespace librealsense
             {
                 return m_snapshots;
             }
+
+            snapshot_collection& get_sensor_extensions_snapshots()
+            {
+                return m_snapshots;
+            }
             stream_profiles get_stream_profiles() const
             {
                 return m_streams;

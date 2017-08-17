@@ -154,4 +154,26 @@ namespace librealsense
     };
 
     MAP_EXTENSION(RS2_EXTENSION_DEPTH_SENSOR, librealsense::depth_sensor);
+
+    class depth_sensor_snapshot : public depth_sensor, public extension_snapshot
+    {
+    public:
+        depth_sensor_snapshot(float depth_units) : m_depth_units(depth_units) {}
+        float get_depth_scale() const override
+        {
+            return m_depth_units;
+        }
+
+        void update(std::shared_ptr<extension_snapshot> ext) override
+        {
+            auto p = As<depth_sensor>(ext);
+            if (p == nullptr)
+            {
+                return;
+            }
+            m_depth_units = p->get_depth_scale();
+        }
+    private:
+        float m_depth_units;
+    };
 }
