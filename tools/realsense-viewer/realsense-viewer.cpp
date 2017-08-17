@@ -550,19 +550,26 @@ int main(int, char**) try
                     {
 
                     }
-
                     if (!dev_model.is_recording &&
-                        !dev_model.dev.is<playback>() &&
-                        ImGui::Selectable("Record to File..."))
+                        !dev_model.dev.is<playback>())
                     {
-                        auto ret = noc_file_dialog_open(NOC_FILE_DIALOG_SAVE, "ROS-bag\0*.bag\0", NULL, NULL);
-
-                        if (ret)
+                        bool is_device_streaming = std::any_of(dev_model.subdevices.begin(), dev_model.subdevices.end(), [](const std::shared_ptr<subdevice_model>& s) { return s->streaming; });
+                        if (ImGui::Selectable("Record to File...", false, is_device_streaming ? ImGuiSelectableFlags_Disabled : 0))
                         {
-                            std::string filename = ret;
-                            if (!ends_with(to_lower(filename), ".bag")) filename += ".bag";
+                            auto ret = noc_file_dialog_open(NOC_FILE_DIALOG_SAVE, "ROS-bag\0*.bag\0", NULL, NULL);
 
-                            dev_model.start_recording(filename, error_message);
+                            if (ret)
+                            {
+                                std::string filename = ret;
+                                if (!ends_with(to_lower(filename), ".bag")) filename += ".bag";
+
+                                dev_model.start_recording(filename, error_message);
+                            }
+                        }
+                        if(is_device_streaming)
+                        {
+                            if (ImGui::IsItemHovered())
+                                ImGui::SetTooltip("Stop streaming to enable recording");
                         }
                     }
 
