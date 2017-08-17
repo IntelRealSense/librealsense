@@ -244,41 +244,317 @@ TEST_CASE("extrinsic transformations are transitive", "[live]")
     }
 }
 
-TEST_CASE("check width and height of stream intrinsics", "[live]")
+void do_with_waiting_for_camera_connection(rs2::context ctx, device& dev, std::string serial, std::function<void()> operation)
 {
+    bool disconnected = false;
+    bool connected = false;
+    std::mutex m;
+    std::condition_variable cv;
+
+    ctx.set_devices_changed_callback([&](rs2::event_information info)
+    {
+        if(info.was_removed(dev))
+        {
+            std::unique_lock<std::mutex> lock(m);
+            disconnected = true;
+            cv.notify_all();
+        }
+        for(auto cam: info.get_new_devices())
+        {
+            if(serial == cam.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER))
+            {
+               std::unique_lock<std::mutex> lock(m);
+               connected = true;
+               dev = cam;
+               cv.notify_all();
+            }
+        }
+    });
+
+    operation();
+
+    std::unique_lock<std::mutex> lock(m);
+    REQUIRE(cv.wait_for(lock, std::chrono::seconds(5), [&](){return disconnected;}));
+    REQUIRE(cv.wait_for(lock, std::chrono::seconds(5), [&](){return connected;}));
+
+}
+
+TEST_CASE("Advanced Mode presets", "[live]") {
+
+
+    static std::map<res_type, std::vector<rs2_rs400_visual_preset>> presets =
+    {{small_resolution, {{RS2_RS400_VISUAL_PRESET_INDOOR},
+                         {RS2_RS400_VISUAL_PRESET_OUTDOOR},
+                         {RS2_RS400_VISUAL_PRESET_HAND},
+                         {RS2_RS400_VISUAL_PRESET_SHORT_RANGE},
+                         {RS2_RS400_VISUAL_PRESET_BOX}}}};
+//     {vga_resolution,   {{RS2_RS400_VISUAL_PRESET_INDOOR},
+//                         {RS2_RS400_VISUAL_PRESET_OUTDOOR},
+//                         {RS2_RS400_VISUAL_PRESET_HAND},
+//                         {RS2_RS400_VISUAL_PRESET_SHORT_RANGE},
+//                         {RS2_RS400_VISUAL_PRESET_BOX}}},
+//     {full_resolution,  {{RS2_RS400_VISUAL_PRESET_INDOOR},
+//                         {RS2_RS400_VISUAL_PRESET_OUTDOOR},
+//                         {RS2_RS400_VISUAL_PRESET_HAND},
+//                         {RS2_RS400_VISUAL_PRESET_SHORT_RANGE},
+//                         {RS2_RS400_VISUAL_PRESET_BOX}}}};
+
     rs2::context ctx;
     if (make_context(SECTION_FROM_TEST_NAME, &ctx))
     {
-        std::vector<sensor> list;
-        REQUIRE_NOTHROW(list = ctx.query_all_sensors());
+        device_list list;
+        REQUIRE_NOTHROW(list = ctx.query_devices());
         REQUIRE(list.size() > 0);
 
-        for (auto&& dev : list)
+        auto dev = list.front();
+
+        disable_sensitive_options_for(dev);
+
+        std::string serial;
+        REQUIRE_NOTHROW(serial = dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER));
+
+        if (dev.is<rs400::advanced_mode>())
         {
-            auto module_name = dev.get_info(RS2_CAMERA_INFO_NAME);
-            // TODO: if FE
-            std::vector<rs2::stream_profile> stream_profiles;
-            REQUIRE_NOTHROW(stream_profiles = dev.get_stream_profiles());
-            REQUIRE(stream_profiles.size() > 0);
+            auto advanced = dev.as<rs400::advanced_mode>();
 
-            // for each stream profile provided:
-            for (auto&& profile : stream_profiles)
+            if(!advanced.is_enabled())
             {
-                if (auto video = profile.as<video_stream_profile>())
+                do_with_waiting_for_camera_connection(ctx, dev, serial, [&]()
                 {
-                    rs2_intrinsics intrin;
-                    REQUIRE_NOTHROW(intrin = video.get_intrinsics());
+                    REQUIRE_NOTHROW(advanced.toggle_advanced_mode(true));
+                });
+            }
+            disable_sensitive_options_for(dev);
+            advanced = dev.as<rs400::advanced_mode>();
 
-                    // Intrinsic width/height must match width/height of streaming mode we requested
-                    REQUIRE(intrin.width == video.width());
-                    REQUIRE(intrin.height == video.height());
+            REQUIRE(advanced.is_enabled());
+            auto sensors = dev.query_sensors();
+
+            sensor presets_sensor;
+            for (sensor& elem : sensors)
+            {
+                auto supports = false;
+                REQUIRE_NOTHROW(supports = elem.supports(RS2_OPTION_VISUAL_PRESET));
+                if (supports)
+                {
+                    presets_sensor = elem;
+                    break;
                 }
             }
+
+
+            for (auto& presets_by_res : presets)
+            {
+                std::vector<rs2::stream_profile> sp = {get_profile_by_resolution_type(presets_sensor, presets_by_res.first)};
+                presets_sensor.open(sp);
+                presets_sensor.start([](rs2::frame){});
+                for (auto& preset : presets_by_res.second)
+                {
+                    CAPTURE(presets_by_res.first);
+                    CAPTURE(preset);
+                    REQUIRE_NOTHROW(presets_sensor.set_option(RS2_OPTION_VISUAL_PRESET, preset));
+                    float ret_preset;
+                    REQUIRE_NOTHROW(ret_preset = presets_sensor.get_option(RS2_OPTION_VISUAL_PRESET));
+                    REQUIRE(preset == (rs2_rs400_visual_preset)((int)ret_preset));
+                }
+                presets_sensor.stop();
+                presets_sensor.close();
+            }
+
+
+             do_with_waiting_for_camera_connection(ctx, dev, serial, [&]()
+             {
+                REQUIRE_NOTHROW(advanced.toggle_advanced_mode(false));
+             });
+             disable_sensitive_options_for(dev);
+
+             //REQUIRE(!advanced.is_enabled());
         }
     }
 }
 
-// break up
+TEST_CASE("Advanced Mode controls", "[live]") {
+    rs2::context ctx;
+    if (make_context(SECTION_FROM_TEST_NAME, &ctx))
+    {
+        device_list list;
+        REQUIRE_NOTHROW(list = ctx.query_devices());
+        REQUIRE(list.size() > 0);
+
+        auto dev = list.front();
+        disable_sensitive_options_for(dev);
+        auto info = dev.get_info(RS2_CAMERA_INFO_NAME);
+        CAPTURE(info);
+
+        std::string serial;
+
+        REQUIRE_NOTHROW(serial = dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER));
+        if (dev.is<rs400::advanced_mode>())
+        {
+            rs400::advanced_mode advanced = dev.as<rs400::advanced_mode>();
+            if(!advanced.is_enabled())
+            {
+                do_with_waiting_for_camera_connection(ctx, dev, serial, [&]()
+                {
+                    REQUIRE_NOTHROW(advanced.toggle_advanced_mode(true));
+                });
+            }
+            disable_sensitive_options_for(dev);
+            advanced = dev.as<rs400::advanced_mode>();
+
+            REQUIRE(advanced.is_enabled());
+            {
+            STDepthControlGroup ctrl_curr{};
+            REQUIRE_NOTHROW(ctrl_curr = advanced.get_depth_control(0));
+            STDepthControlGroup ctrl_min{};
+            REQUIRE_NOTHROW(ctrl_min = advanced.get_depth_control(1));
+            STDepthControlGroup ctrl_max{};
+            REQUIRE_NOTHROW(ctrl_max = advanced.get_depth_control(2));
+            REQUIRE_NOTHROW(advanced.set_depth_control(ctrl_min));
+            REQUIRE_NOTHROW(ctrl_curr = advanced.get_depth_control(0));
+            REQUIRE(ctrl_curr == ctrl_min);
+            }
+
+            {
+            STRsm ctrl_curr{};
+            REQUIRE_NOTHROW(ctrl_curr = advanced.get_rsm(0));
+            STRsm ctrl_min{};
+            REQUIRE_NOTHROW(ctrl_min = advanced.get_rsm(1));
+            STRsm ctrl_max{};
+            REQUIRE_NOTHROW(ctrl_max = advanced.get_rsm(2));
+            REQUIRE_NOTHROW(advanced.set_rsm(ctrl_min));
+            REQUIRE_NOTHROW(ctrl_curr = advanced.get_rsm(0));
+            REQUIRE(ctrl_curr == ctrl_min);
+            }
+
+            {
+            STRauSupportVectorControl ctrl_curr{};
+            REQUIRE_NOTHROW(ctrl_curr = advanced.get_rau_support_vector_control(0));
+            STRauSupportVectorControl ctrl_min{};
+            REQUIRE_NOTHROW(ctrl_min = advanced.get_rau_support_vector_control(1));
+            STRauSupportVectorControl ctrl_max{};
+            REQUIRE_NOTHROW(ctrl_max = advanced.get_rau_support_vector_control(2));
+            REQUIRE_NOTHROW(advanced.set_rau_support_vector_control(ctrl_min));
+            REQUIRE_NOTHROW(ctrl_curr = advanced.get_rau_support_vector_control(0));
+            REQUIRE(ctrl_curr == ctrl_min);
+            }
+
+            {
+            STColorControl ctrl_curr{};
+            REQUIRE_NOTHROW(ctrl_curr = advanced.get_color_control(0));
+            STColorControl ctrl_min{};
+            REQUIRE_NOTHROW(ctrl_min = advanced.get_color_control(1));
+            STColorControl ctrl_max{};
+            REQUIRE_NOTHROW(ctrl_max = advanced.get_color_control(2));
+            REQUIRE_NOTHROW(advanced.set_color_control(ctrl_min));
+            REQUIRE_NOTHROW(ctrl_curr = advanced.get_color_control(0));
+            REQUIRE(ctrl_curr == ctrl_min);
+            }
+
+            {
+            STRauColorThresholdsControl ctrl_curr{};
+            REQUIRE_NOTHROW(ctrl_curr = advanced.get_rau_thresholds_control(0));
+            STRauColorThresholdsControl ctrl_min{};
+            REQUIRE_NOTHROW(ctrl_min = advanced.get_rau_thresholds_control(1));
+            STRauColorThresholdsControl ctrl_max{};
+            REQUIRE_NOTHROW(ctrl_max = advanced.get_rau_thresholds_control(2));
+            REQUIRE_NOTHROW(advanced.set_rau_thresholds_control(ctrl_min));
+            REQUIRE_NOTHROW(ctrl_curr = advanced.get_rau_thresholds_control(0));
+            REQUIRE(ctrl_curr == ctrl_min);
+            }
+
+            {
+            STSloColorThresholdsControl ctrl_curr{};
+            REQUIRE_NOTHROW(ctrl_curr = advanced.get_slo_color_thresholds_control(0));
+            STSloColorThresholdsControl ctrl_min{};
+            REQUIRE_NOTHROW(ctrl_min = advanced.get_slo_color_thresholds_control(1));
+            STSloColorThresholdsControl ctrl_max{};
+            REQUIRE_NOTHROW(ctrl_max = advanced.get_slo_color_thresholds_control(2));
+            REQUIRE_NOTHROW(advanced.set_slo_color_thresholds_control(ctrl_min));
+            REQUIRE_NOTHROW(ctrl_curr = advanced.get_slo_color_thresholds_control(0));
+            REQUIRE(ctrl_curr == ctrl_min);
+            }
+
+            {
+            STSloPenaltyControl ctrl_curr{};
+            REQUIRE_NOTHROW(ctrl_curr = advanced.get_slo_penalty_control(0));
+            STSloPenaltyControl ctrl_min{};
+            REQUIRE_NOTHROW(ctrl_min = advanced.get_slo_penalty_control(1));
+            STSloPenaltyControl ctrl_max{};
+            REQUIRE_NOTHROW(ctrl_max = advanced.get_slo_penalty_control(2));
+            REQUIRE_NOTHROW(advanced.set_slo_penalty_control(ctrl_min));
+            REQUIRE_NOTHROW(ctrl_curr = advanced.get_slo_penalty_control(0));
+            REQUIRE(ctrl_curr == ctrl_min);
+            }
+
+            {
+            STHdad ctrl_curr1{};
+            REQUIRE_NOTHROW(ctrl_curr1 = advanced.get_hdad(0));
+            REQUIRE_NOTHROW(advanced.set_hdad(ctrl_curr1));
+            STHdad ctrl_curr2{};
+            REQUIRE_NOTHROW(ctrl_curr2 = advanced.get_hdad(0));
+            REQUIRE(ctrl_curr1 == ctrl_curr2);
+            }
+
+            {
+            STColorCorrection ctrl_curr{};
+            REQUIRE_NOTHROW(ctrl_curr = advanced.get_color_correction(0));
+            STColorCorrection ctrl_min{};
+            REQUIRE_NOTHROW(ctrl_min = advanced.get_color_correction(1));
+            STColorCorrection ctrl_max{};
+            REQUIRE_NOTHROW(ctrl_max = advanced.get_color_correction(2));
+            REQUIRE_NOTHROW(advanced.set_color_correction(ctrl_min));
+            REQUIRE_NOTHROW(ctrl_curr = advanced.get_color_correction(0));
+            REQUIRE(ctrl_curr == ctrl_min);
+            }
+
+            {
+            STAEControl ctrl_curr1{};
+            REQUIRE_NOTHROW(ctrl_curr1 = advanced.get_ae_control(0));
+            REQUIRE_NOTHROW(advanced.set_ae_control(ctrl_curr1));
+            STAEControl ctrl_curr2{};
+            REQUIRE_NOTHROW(ctrl_curr2 = advanced.get_ae_control(0));
+            REQUIRE(ctrl_curr1 == ctrl_curr2);
+            }
+
+            {
+            STDepthTableControl ctrl_curr{};
+            REQUIRE_NOTHROW(ctrl_curr = advanced.get_depth_table(0));
+            STDepthTableControl ctrl_min{};
+            REQUIRE_NOTHROW(ctrl_min = advanced.get_depth_table(1));
+            STDepthTableControl ctrl_max{};
+            REQUIRE_NOTHROW(ctrl_max = advanced.get_depth_table(2));
+            REQUIRE_NOTHROW(advanced.set_depth_table(ctrl_min));
+            REQUIRE_NOTHROW(ctrl_curr = advanced.get_depth_table(0));
+            REQUIRE(ctrl_curr == ctrl_min);
+            }
+
+            {
+            STCensusRadius ctrl_curr{};
+            REQUIRE_NOTHROW(ctrl_curr = advanced.get_census(0));
+            STCensusRadius ctrl_min{};
+            REQUIRE_NOTHROW(ctrl_min = advanced.get_census(1));
+            STCensusRadius ctrl_max{};
+            REQUIRE_NOTHROW(ctrl_max = advanced.get_census(2));
+            REQUIRE_NOTHROW(advanced.set_census(ctrl_min));
+            REQUIRE_NOTHROW(ctrl_curr = advanced.get_census(0));
+            REQUIRE(ctrl_curr == ctrl_min);
+            }
+
+            do_with_waiting_for_camera_connection(ctx, dev, serial, [&]()
+            {
+               REQUIRE_NOTHROW(advanced.toggle_advanced_mode(false));
+            });
+            disable_sensitive_options_for(dev);
+            advanced = dev.as<rs400::advanced_mode>();
+
+            REQUIRE(!advanced.is_enabled());
+        }
+    }
+}
+
+
+////// break up
 TEST_CASE("streaming modes sanity check", "[live]")
 {
     // Require at least one device to be plugged in
@@ -405,6 +681,72 @@ TEST_CASE("motion profiles sanity", "[live]")
                             REQUIRE(bias < 0.5);
                         }
                     }
+                }
+            }
+        }
+    }
+}
+
+
+TEST_CASE("check width and height of stream intrinsics", "[live]")
+{
+    rs2::context ctx;
+    if (make_context(SECTION_FROM_TEST_NAME, &ctx))
+    {
+        std::vector<device> devs;
+        REQUIRE_NOTHROW(devs = ctx.query_devices());
+
+        for (auto&& dev : devs)
+        {
+            disable_sensitive_options_for(dev);
+            std::string serial;
+            REQUIRE_NOTHROW(serial = dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER));
+            if (dev.is<rs400::advanced_mode>())
+            {
+                auto advanced = dev.as<rs400::advanced_mode>();
+
+                if(advanced.is_enabled())
+                {
+                    do_with_waiting_for_camera_connection(ctx, dev, serial, [&]()
+                    {
+                        REQUIRE_NOTHROW(advanced.toggle_advanced_mode(false));
+                    });
+                }
+                disable_sensitive_options_for(dev);
+                advanced = dev.as<rs400::advanced_mode>();
+
+                REQUIRE(advanced.is_enabled() == false);
+            }
+        }
+        std::vector<sensor> list;
+        REQUIRE_NOTHROW(list = ctx.query_all_sensors());
+        REQUIRE(list.size() > 0);
+
+        for (auto&& dev : list)
+        {
+            disable_sensitive_options_for(dev);
+            auto module_name = dev.get_info(RS2_CAMERA_INFO_NAME);
+            // TODO: if FE
+            std::vector<rs2::stream_profile> stream_profiles;
+            REQUIRE_NOTHROW(stream_profiles = dev.get_stream_profiles());
+            REQUIRE(stream_profiles.size() > 0);
+
+            // for each stream profile provided:
+            for (auto&& profile : stream_profiles)
+            {
+                if (auto video = profile.as<video_stream_profile>())
+                {
+                    rs2_intrinsics intrin;
+
+
+                    CAPTURE(video.width());
+                    CAPTURE(video.height());
+
+                    REQUIRE_NOTHROW(intrin = video.get_intrinsics());
+
+                    // Intrinsic width/height must match width/height of streaming mode we requested
+                    REQUIRE(intrin.width == video.width());
+                    REQUIRE(intrin.height == video.height());
                 }
             }
         }
@@ -843,7 +1185,7 @@ TEST_CASE("a single subdevice can only be opened once, different subdevices can 
 
 TEST_CASE("All suggested profiles can be opened", "[live]") {
 
-    // Require at least one device to be plugged in
+    //Require at least one device to be plugged in
     rs2::context ctx;
     if (make_context(SECTION_FROM_TEST_NAME, &ctx))
     {
@@ -911,11 +1253,11 @@ void metadata_verification(const std::vector<internal_frame_additional_data>& da
             }
         }
 
-        // Exposure time and gain values are greater than zero
-        if (data[i].frame_md.md_attributes[RS2_FRAME_METADATA_ACTUAL_EXPOSURE].first)
-            REQUIRE(data[i].frame_md.md_attributes[RS2_FRAME_METADATA_ACTUAL_EXPOSURE].second > 0);
-        if (data[i].frame_md.md_attributes[RS2_FRAME_METADATA_GAIN_LEVEL].first)
-            REQUIRE(data[i].frame_md.md_attributes[RS2_FRAME_METADATA_GAIN_LEVEL].second > 0);
+//        // Exposure time and gain values are greater than zero
+//        if (data[i].frame_md.md_attributes[RS2_FRAME_METADATA_ACTUAL_EXPOSURE].first)
+//            REQUIRE(data[i].frame_md.md_attributes[RS2_FRAME_METADATA_ACTUAL_EXPOSURE].second > 0);
+//        if (data[i].frame_md.md_attributes[RS2_FRAME_METADATA_GAIN_LEVEL].first)
+//            REQUIRE(data[i].frame_md.md_attributes[RS2_FRAME_METADATA_GAIN_LEVEL].second > 0);
     }
 }
 
@@ -1177,61 +1519,6 @@ TEST_CASE("Error handling sanity", "[live]") {
     }
 }
 
-TEST_CASE("Advanced Mode presets", "[live]") {
-
-    static std::vector<rs2_rs400_visual_preset> presets = {{RS2_RS400_VISUAL_PRESET_INDOOR},
-                                                           {RS2_RS400_VISUAL_PRESET_OUTDOOR},
-                                                           {RS2_RS400_VISUAL_PRESET_HAND},
-                                                           {RS2_RS400_VISUAL_PRESET_SHORT_RANGE},
-                                                           {RS2_RS400_VISUAL_PRESET_BOX}};
-
-    rs2::context ctx;
-    if (make_context(SECTION_FROM_TEST_NAME, &ctx))
-    {
-        device_list list;
-        REQUIRE_NOTHROW(list = ctx.query_devices());
-        REQUIRE(list.size() > 0);
-
-        auto dev = list.front();
-
-        auto info = dev.get_info(RS2_CAMERA_INFO_NAME);
-        CAPTURE(info);
-        if (dev.is<rs400::advanced_mode>())
-        {
-            auto advanced = dev.as<rs400::advanced_mode>();
-            REQUIRE(advanced.is_enabled());
-            auto sensors = dev.query_sensors();
-
-            sensor presets_sensor;
-            for (sensor& elem : sensors)
-            {
-                auto supports = false;
-                REQUIRE_NOTHROW(supports = elem.supports(RS2_OPTION_VISUAL_PRESET));
-                if (supports)
-                {
-                    presets_sensor = elem;
-                    break;
-                }
-            }
-
-            for (auto res : {small_resolution, vga_resolution, full_resolution})
-            {
-                std::vector<rs2::stream_profile> sp = {get_profile_by_resolution_type(presets_sensor, res)};
-                presets_sensor.open(sp);
-                presets_sensor.start([](rs2::frame){});
-                for (auto& preset : presets)
-                {
-                    REQUIRE_NOTHROW(presets_sensor.set_option(RS2_OPTION_VISUAL_PRESET, preset));
-                    float ret_preset;
-                    REQUIRE_NOTHROW(ret_preset = presets_sensor.get_option(RS2_OPTION_VISUAL_PRESET));
-                    REQUIRE(preset == (rs2_rs400_visual_preset)((int)ret_preset));
-                }
-                presets_sensor.stop();
-                presets_sensor.close();
-            }
-        }
-    }
-}
 
 TEST_CASE("Auto disabling control behavior", "[live]") {
     std::string SR300_PID = "0x0aa5";
@@ -1313,163 +1600,6 @@ TEST_CASE("Auto disabling control behavior", "[live]") {
     }
 }
 
-TEST_CASE("Advanced Mode controls", "[live]") {
-    rs2::context ctx;
-    if (make_context(SECTION_FROM_TEST_NAME, &ctx))
-    {
-        device_list list;
-        REQUIRE_NOTHROW(list = ctx.query_devices());
-        REQUIRE(list.size() > 0);
-
-        auto dev = list.front();
-
-        auto info = dev.get_info(RS2_CAMERA_INFO_NAME);
-        CAPTURE(info);
-        if (dev.is<rs400::advanced_mode>())
-        {
-            rs400::advanced_mode advanced = dev.as<rs400::advanced_mode>();
-            REQUIRE(advanced.is_enabled());
-
-            {
-            STDepthControlGroup ctrl_curr{};
-            REQUIRE_NOTHROW(ctrl_curr = advanced.get_depth_control(0));
-            STDepthControlGroup ctrl_min{};
-            REQUIRE_NOTHROW(ctrl_min = advanced.get_depth_control(1));
-            STDepthControlGroup ctrl_max{};
-            REQUIRE_NOTHROW(ctrl_max = advanced.get_depth_control(2));
-            REQUIRE_NOTHROW(advanced.set_depth_control(ctrl_min));
-            REQUIRE_NOTHROW(ctrl_curr = advanced.get_depth_control(0));
-            REQUIRE(ctrl_curr == ctrl_min);
-            }
-
-            {
-            STRsm ctrl_curr{};
-            REQUIRE_NOTHROW(ctrl_curr = advanced.get_rsm(0));
-            STRsm ctrl_min{};
-            REQUIRE_NOTHROW(ctrl_min = advanced.get_rsm(1));
-            STRsm ctrl_max{};
-            REQUIRE_NOTHROW(ctrl_max = advanced.get_rsm(2));
-            REQUIRE_NOTHROW(advanced.set_rsm(ctrl_min));
-            REQUIRE_NOTHROW(ctrl_curr = advanced.get_rsm(0));
-            REQUIRE(ctrl_curr == ctrl_min);
-            }
-
-            {
-            STRauSupportVectorControl ctrl_curr{};
-            REQUIRE_NOTHROW(ctrl_curr = advanced.get_rau_support_vector_control(0));
-            STRauSupportVectorControl ctrl_min{};
-            REQUIRE_NOTHROW(ctrl_min = advanced.get_rau_support_vector_control(1));
-            STRauSupportVectorControl ctrl_max{};
-            REQUIRE_NOTHROW(ctrl_max = advanced.get_rau_support_vector_control(2));
-            REQUIRE_NOTHROW(advanced.set_rau_support_vector_control(ctrl_min));
-            REQUIRE_NOTHROW(ctrl_curr = advanced.get_rau_support_vector_control(0));
-            REQUIRE(ctrl_curr == ctrl_min);
-            }
-
-            {
-            STColorControl ctrl_curr{};
-            REQUIRE_NOTHROW(ctrl_curr = advanced.get_color_control(0));
-            STColorControl ctrl_min{};
-            REQUIRE_NOTHROW(ctrl_min = advanced.get_color_control(1));
-            STColorControl ctrl_max{};
-            REQUIRE_NOTHROW(ctrl_max = advanced.get_color_control(2));
-            REQUIRE_NOTHROW(advanced.set_color_control(ctrl_min));
-            REQUIRE_NOTHROW(ctrl_curr = advanced.get_color_control(0));
-            REQUIRE(ctrl_curr == ctrl_min);
-            }
-
-            {
-            STRauColorThresholdsControl ctrl_curr{};
-            REQUIRE_NOTHROW(ctrl_curr = advanced.get_rau_thresholds_control(0));
-            STRauColorThresholdsControl ctrl_min{};
-            REQUIRE_NOTHROW(ctrl_min = advanced.get_rau_thresholds_control(1));
-            STRauColorThresholdsControl ctrl_max{};
-            REQUIRE_NOTHROW(ctrl_max = advanced.get_rau_thresholds_control(2));
-            REQUIRE_NOTHROW(advanced.set_rau_thresholds_control(ctrl_min));
-            REQUIRE_NOTHROW(ctrl_curr = advanced.get_rau_thresholds_control(0));
-            REQUIRE(ctrl_curr == ctrl_min);
-            }
-
-            {
-            STSloColorThresholdsControl ctrl_curr{};
-            REQUIRE_NOTHROW(ctrl_curr = advanced.get_slo_color_thresholds_control(0));
-            STSloColorThresholdsControl ctrl_min{};
-            REQUIRE_NOTHROW(ctrl_min = advanced.get_slo_color_thresholds_control(1));
-            STSloColorThresholdsControl ctrl_max{};
-            REQUIRE_NOTHROW(ctrl_max = advanced.get_slo_color_thresholds_control(2));
-            REQUIRE_NOTHROW(advanced.set_slo_color_thresholds_control(ctrl_min));
-            REQUIRE_NOTHROW(ctrl_curr = advanced.get_slo_color_thresholds_control(0));
-            REQUIRE(ctrl_curr == ctrl_min);
-            }
-
-            {
-            STSloPenaltyControl ctrl_curr{};
-            REQUIRE_NOTHROW(ctrl_curr = advanced.get_slo_penalty_control(0));
-            STSloPenaltyControl ctrl_min{};
-            REQUIRE_NOTHROW(ctrl_min = advanced.get_slo_penalty_control(1));
-            STSloPenaltyControl ctrl_max{};
-            REQUIRE_NOTHROW(ctrl_max = advanced.get_slo_penalty_control(2));
-            REQUIRE_NOTHROW(advanced.set_slo_penalty_control(ctrl_min));
-            REQUIRE_NOTHROW(ctrl_curr = advanced.get_slo_penalty_control(0));
-            REQUIRE(ctrl_curr == ctrl_min);
-            }
-
-            {
-            STHdad ctrl_curr1{};
-            REQUIRE_NOTHROW(ctrl_curr1 = advanced.get_hdad(0));
-            REQUIRE_NOTHROW(advanced.set_hdad(ctrl_curr1));
-            STHdad ctrl_curr2{};
-            REQUIRE_NOTHROW(ctrl_curr2 = advanced.get_hdad(0));
-            REQUIRE(ctrl_curr1 == ctrl_curr2);
-            }
-
-            {
-            STColorCorrection ctrl_curr{};
-            REQUIRE_NOTHROW(ctrl_curr = advanced.get_color_correction(0));
-            STColorCorrection ctrl_min{};
-            REQUIRE_NOTHROW(ctrl_min = advanced.get_color_correction(1));
-            STColorCorrection ctrl_max{};
-            REQUIRE_NOTHROW(ctrl_max = advanced.get_color_correction(2));
-            REQUIRE_NOTHROW(advanced.set_color_correction(ctrl_min));
-            REQUIRE_NOTHROW(ctrl_curr = advanced.get_color_correction(0));
-            REQUIRE(ctrl_curr == ctrl_min);
-            }
-
-            {
-            STAEControl ctrl_curr1{};
-            REQUIRE_NOTHROW(ctrl_curr1 = advanced.get_ae_control(0));
-            REQUIRE_NOTHROW(advanced.set_ae_control(ctrl_curr1));
-            STAEControl ctrl_curr2{};
-            REQUIRE_NOTHROW(ctrl_curr2 = advanced.get_ae_control(0));
-            REQUIRE(ctrl_curr1 == ctrl_curr2);
-            }
-
-            {
-            STDepthTableControl ctrl_curr{};
-            REQUIRE_NOTHROW(ctrl_curr = advanced.get_depth_table(0));
-            STDepthTableControl ctrl_min{};
-            REQUIRE_NOTHROW(ctrl_min = advanced.get_depth_table(1));
-            STDepthTableControl ctrl_max{};
-            REQUIRE_NOTHROW(ctrl_max = advanced.get_depth_table(2));
-            REQUIRE_NOTHROW(advanced.set_depth_table(ctrl_min));
-            REQUIRE_NOTHROW(ctrl_curr = advanced.get_depth_table(0));
-            REQUIRE(ctrl_curr == ctrl_min);
-            }
-
-            {
-            STCensusRadius ctrl_curr{};
-            REQUIRE_NOTHROW(ctrl_curr = advanced.get_census(0));
-            STCensusRadius ctrl_min{};
-            REQUIRE_NOTHROW(ctrl_min = advanced.get_census(1));
-            STCensusRadius ctrl_max{};
-            REQUIRE_NOTHROW(ctrl_max = advanced.get_census(2));
-            REQUIRE_NOTHROW(advanced.set_census(ctrl_min));
-            REQUIRE_NOTHROW(ctrl_curr = advanced.get_census(0));
-            REQUIRE(ctrl_curr == ctrl_min);
-            }
-        }
-    }
-}
 
 std::pair<std::shared_ptr<rs2::device>, std::weak_ptr<rs2::device>> make_device(device_list& list)
 {
@@ -2073,7 +2203,7 @@ TEST_CASE("Auto-complete feature works", "[offline][util::config]") {
     }
 }
 
-#include <librealsense/rsutil2.hpp>
+//#include <librealsense/rsutil2.hpp>
 
 std::vector<rs2::util::config::request_type> configure_all_supported_streams(rs2::device& dev, util::config& config , int width = 640,  int height = 480, int fps = 30)
 {
@@ -2515,17 +2645,13 @@ TEST_CASE("Sync connect disconnect", "[live]") {
                         }));
 
 
-        std::thread t([&]()
-        {
-            for(auto i=0; i<500; i++)
-            {
-                auto frames = syncer.wait_for_frames(10000);
-                REQUIRE(frames.size()>0);
-
-            }});
-
-
         for(auto i=0; i<5; i++)
+        {
+            auto frames = syncer.wait_for_frames(10000);
+            REQUIRE(frames.size()>0);
+
+        }
+
         {
             std::unique_lock<std::mutex> lock(m);
             disconnected = connected = false;
@@ -2536,22 +2662,33 @@ TEST_CASE("Sync connect disconnect", "[live]") {
             //Check that after reset the device gets connected back within reasonable period of time
             REQUIRE(cv.wait_for(lock, std::chrono::seconds(1000), [&]() {return connected; }));
             std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+        }
+
+        for(auto i=0; i<5; i++)
+        {
+            auto frames = syncer.wait_for_frames(10000);
+            REQUIRE(frames.size()>0);
 
         }
-        std::cout<<"t.join()\n";
-        t.join();
     }
 }
 
 struct profile
 {
     rs2_stream stream;
+    rs2_format format;
     int width;
     int height;
+    int index;
 
     bool operator==(const profile& other) const
     {
-        return stream == other.stream && width == other.width && height == other.height;
+        return stream == other.stream &&
+               (format == 0 || other.format== 0 || format == other.format) &&
+               (width  == 0 || other.width == 0 || width  == other.width)  &&
+               (height  == 0 || other.height == 0 || height == other.height )&&
+               (index  == 0 || other.index == 0 || index == other.index);
+
     }
 
     bool operator!=(const profile& other) const
@@ -2564,7 +2701,6 @@ struct profile
     }
 
 };
-
 struct device_requsets
 {
     std::vector<profile> streams;
@@ -2573,7 +2709,7 @@ struct device_requsets
 };
 
 void validate(std::vector<frameset> frames, device_requsets requsets)
-{/*
+{
     REQUIRE(frames.size() > 0);
 
     int successful = 0;
@@ -2596,7 +2732,7 @@ void validate(std::vector<frameset> frames, device_requsets requsets)
         {
             auto image = f.as<rs2::video_frame>();
 
-            stream_arrived.push_back({image.get_profile().stream_type(), image.get_width(), image.get_height()});
+            stream_arrived.push_back({image.get_profile().stream_type(), image.get_profile().format(), image.get_width(), image.get_height()});
             REQUIRE(image.get_profile().fps());
             timestamps.push_back(f.get_timestamp());
         }
@@ -2630,26 +2766,50 @@ void validate(std::vector<frameset> frames, device_requsets requsets)
         successful++;
 
     }
-    REQUIRE(successful > 1);*/
+    REQUIRE(successful > 0);
 }
 
-TEST_CASE("Pipeline", "[live]") {
 
+
+std::map<std::string, device_requsets> get_pipeline_default_configurations()
+{
     std::map<std::string, device_requsets> dev_requsets;
 
     dev_requsets["0B07"] =
     {
-        {{RS2_STREAM_DEPTH, 1280, 720}, {RS2_STREAM_COLOR, 1920, 1080}},
+        {{RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 1280, 720, 0}, {RS2_STREAM_COLOR, RS2_FORMAT_RGB8, 1920, 1080, 0}},
         30,
         true
     };
 
     dev_requsets["0AA5"] =
     {
-        {{RS2_STREAM_DEPTH, 640, 480}, {RS2_STREAM_COLOR, 1920, 1080}},
+
+        {{RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 640, 480, 0}, {RS2_STREAM_COLOR, RS2_FORMAT_RGB8, 1920, 1080, 0}},
         30,
         true
     };
+
+    dev_requsets["0AD4"] =
+    {
+        {{RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 1280, 720, 0}},
+        30,
+        true
+    };
+    dev_requsets["0AD1"] =
+    {
+        {{RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 1280, 720, 0}, {RS2_STREAM_INFRARED, RS2_FORMAT_RGB8, 1280, 720, 0}},
+        30,
+        true
+    };
+    return dev_requsets;
+}
+
+
+
+TEST_CASE("Pipeline start", "[live]") {
+
+    auto dev_requsets = get_pipeline_default_configurations();
 
     rs2::context ctx;
 
@@ -2658,13 +2818,157 @@ TEST_CASE("Pipeline", "[live]") {
         auto list = ctx.query_devices();
         REQUIRE(list.size());
         auto dev = list[0];
+        disable_sensitive_options_for(dev);
+
+        std::string PID;
+        REQUIRE_NOTHROW(PID = dev.get_info(RS2_CAMERA_INFO_PRODUCT_ID));
+
+        REQUIRE(dev_requsets[PID].streams.size()>0);
+
+        rs2::pipeline pipe(ctx);
+        REQUIRE_NOTHROW(pipe.start());
+
+        std::vector<frameset> frames;
+
+        for(auto i = 0; i<10; i++)
+            REQUIRE_NOTHROW(pipe.wait_for_frames(10000));
+
+
+        while(frames.size()<8)
+            REQUIRE_NOTHROW(frames.push_back(pipe.wait_for_frames(10000)));
+
+
+        validate(frames, dev_requsets[PID]);
+
+
+    }
+}
+
+std::map<std::string, device_requsets> get_custom_configurations()
+{
+    std::map<std::string, device_requsets> dev_requsets;
+
+    dev_requsets["0B07"] =
+    {
+        {{RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 640, 480, 0}, {RS2_STREAM_COLOR, RS2_FORMAT_RGB8, 1920, 1080, 0}},
+        30,
+        true
+    };
+
+    dev_requsets["0AA5"] =
+    {
+        {{RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 640, 240, 0}, {RS2_STREAM_INFRARED, RS2_FORMAT_Y8, 640, 240, 1}, {RS2_STREAM_COLOR, RS2_FORMAT_RGB8, 640, 480, 0}},
+        30,
+        true
+    };
+
+    dev_requsets["0AD4"] =
+    {
+        {{RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 1280, 720, 0}, {RS2_STREAM_INFRARED, RS2_FORMAT_Y8, 640, 480, 1}},
+        30,
+        true
+    };
+    dev_requsets["0AD1"] =
+    {
+        {{RS2_STREAM_DEPTH, RS2_FORMAT_Z16,  640, 480, 0}, {RS2_STREAM_INFRARED, RS2_FORMAT_RGB8, 1280, 720, 0}},
+        30,
+        true
+    };
+    return dev_requsets;
+}
+
+TEST_CASE("Pipeline enable stream", "[live]") {
+
+    auto dev_requsets = get_custom_configurations();
+
+    rs2::context ctx;
+    if (make_context(SECTION_FROM_TEST_NAME, &ctx))
+    {
+        auto list = ctx.query_devices();
+        REQUIRE(list.size());
+        auto dev = list[0];
+        disable_sensitive_options_for(dev);
+
+        std::string PID;
+        REQUIRE_NOTHROW(PID = dev.get_info(RS2_CAMERA_INFO_PRODUCT_ID));
+
+        REQUIRE(dev_requsets[PID].streams.size()>0);
+
+        rs2::pipeline pipe(ctx);
+
+
+        for(auto req: dev_requsets[PID].streams)
+            REQUIRE_NOTHROW(pipe.enable_stream(req.stream, req.index, req.width, req.height, req.format, dev_requsets[PID].fps));
+
+        REQUIRE_NOTHROW(pipe.start());
+
+        std::vector<frameset> frames;
+
+        for(auto i = 0; i<10; i++)
+            REQUIRE_NOTHROW(pipe.wait_for_frames(10000));
+
+
+        while(frames.size()<8)
+            REQUIRE_NOTHROW(frames.push_back(pipe.wait_for_frames(10000)));
+
+
+        validate(frames, dev_requsets[PID]);
+
+
+    }
+}
+TEST_CASE("Pipeline enable stream auto complete", "[live]") {
+
+    std::map<std::string, device_requsets> dev_requsets;
+
+    dev_requsets["0B07"] =
+    {
+        {{RS2_STREAM_DEPTH, RS2_FORMAT_ANY, 0, 0, 0}, {RS2_STREAM_COLOR, RS2_FORMAT_ANY, 0, 0, 0}},
+        30,
+        true
+    };
+
+    dev_requsets["0AA5"] =
+    {
+        {{RS2_STREAM_DEPTH, RS2_FORMAT_ANY, 0, 0, 0}, {RS2_STREAM_INFRARED, RS2_FORMAT_ANY, 0, 0, 1}, {RS2_STREAM_COLOR, RS2_FORMAT_RGB8, 0, 0, 0}},
+        30,
+        true
+    };
+
+    dev_requsets["0AD4"] =
+    {
+        {{RS2_STREAM_DEPTH, RS2_FORMAT_ANY, 0, 0, 0}},
+        30,
+        true
+    };
+    dev_requsets["0AD1"] =
+    {
+        {{RS2_STREAM_DEPTH, RS2_FORMAT_ANY, 0, 0, 0}, {RS2_STREAM_INFRARED, RS2_FORMAT_ANY, 0, 0, 0}},
+        30,
+        true
+    };
+    rs2::context ctx;
+
+    if (make_context(SECTION_FROM_TEST_NAME, &ctx))
+    {
+        auto list = ctx.query_devices();
+        REQUIRE(list.size());
+        auto dev = list[0];
+        disable_sensitive_options_for(dev);
 
         std::string PID = dev.get_info(RS2_CAMERA_INFO_PRODUCT_ID);
 
         REQUIRE(dev_requsets[PID].streams.size()>0);
 
         rs2::pipeline pipe(ctx);
-        pipe.start();
+
+
+
+        for(auto req: dev_requsets[PID].streams)
+            REQUIRE_NOTHROW(pipe.enable_stream(req.stream, req.index, req.width, req.height, req.format, dev_requsets[PID].fps));
+
+        REQUIRE_NOTHROW(pipe.start());
+
 
         std::vector<frameset> frames;
 
@@ -2672,12 +2976,103 @@ TEST_CASE("Pipeline", "[live]") {
             pipe.wait_for_frames();
 
 
-        while(frames.size()<10)
-            frames.push_back(pipe.wait_for_frames());
+
+        while(frames.size()<8)
+            REQUIRE_NOTHROW(frames.push_back(pipe.wait_for_frames(10000)));
 
 
         validate(frames, dev_requsets[PID]);
+    }
+}
+
+TEST_CASE("Pipeline disable_all", "[live]") {
+
+    auto not_default_configurations = get_custom_configurations();
+    auto default_configurations = get_pipeline_default_configurations();
+
+    rs2::context ctx;
+
+    if (make_context(SECTION_FROM_TEST_NAME, &ctx))
+    {
+        auto list = ctx.query_devices();
+        REQUIRE(list.size());
+        auto dev = list[0];
+        disable_sensitive_options_for(dev);
+
+        std::string PID;
+        REQUIRE_NOTHROW(PID = dev.get_info(RS2_CAMERA_INFO_PRODUCT_ID));
+
+        REQUIRE(not_default_configurations[PID].streams.size()>0);
+
+        rs2::pipeline pipe(ctx);
 
 
+        for(auto req: not_default_configurations[PID].streams)
+            REQUIRE_NOTHROW(pipe.enable_stream(req.stream, req.index, req.width, req.height, req.format, not_default_configurations[PID].fps));
+
+        REQUIRE_NOTHROW(pipe.disable_all());
+
+        REQUIRE_NOTHROW(pipe.start());
+
+        std::vector<frameset> frames;
+
+        for(auto i = 0; i<10; i++)
+            REQUIRE_NOTHROW(pipe.wait_for_frames(10000));
+
+
+        while(frames.size()<8)
+            REQUIRE_NOTHROW(frames.push_back(pipe.wait_for_frames(10000)));
+
+
+        validate(frames, default_configurations[PID]);
+    }
+}
+
+TEST_CASE("Pipeline disable stream", "[live]") {
+
+    auto configurations = get_custom_configurations();
+
+    rs2::context ctx;
+
+    if (make_context(SECTION_FROM_TEST_NAME, &ctx))
+    {
+        auto list = ctx.query_devices();
+        REQUIRE(list.size());
+        auto dev = list[0];
+        disable_sensitive_options_for(dev);
+
+        std::string PID;
+        REQUIRE_NOTHROW(PID = dev.get_info(RS2_CAMERA_INFO_PRODUCT_ID));
+
+        REQUIRE(configurations[PID].streams.size()>0);
+
+        rs2::pipeline pipe(ctx);
+
+
+        for(auto req: configurations[PID].streams)
+            REQUIRE_NOTHROW(pipe.enable_stream(req.stream, req.index, req.width, req.height, req.format, configurations[PID].fps));
+
+
+        auto stream_to_be_removed = configurations[PID].streams[configurations[PID].streams.size()-1].stream;
+        REQUIRE_NOTHROW(pipe.disable_stream(stream_to_be_removed));
+
+
+        auto& streams = configurations[PID].streams;
+        streams.erase(streams.end() -1 );
+
+
+        REQUIRE_NOTHROW(pipe.start());
+
+        std::vector<frameset> frames;
+
+        for(auto i = 0; i<10; i++)
+            REQUIRE_NOTHROW(pipe.wait_for_frames(10000));
+
+
+        while(frames.size()<8)
+            REQUIRE_NOTHROW(frames.push_back(pipe.wait_for_frames(10000)));
+
+
+        validate(frames, configurations[PID]);
     }
 }

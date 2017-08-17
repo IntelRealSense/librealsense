@@ -24,6 +24,9 @@ namespace rs2
             error::handle(e);
         }
 
+        /**
+        * Start streaming with default configuration or configuration commited by enable_stream
+        */
         void start()
         {
             rs2_error* e = nullptr;
@@ -31,6 +34,49 @@ namespace rs2
             error::handle(e);
         }
 
+        /**
+        * committing a configuration to the pipeline
+        * \param[in] stream    stream type
+        * \param[in] index     stream index
+        * \param[in] width     width
+        * \param[in] height    height
+        * \param[in] format    stream format
+        * \param[in] framerate    stream framerate
+        */
+        void enable_stream(rs2_stream stream, int index, int width, int height, rs2_format format, int framerate)
+        {
+            rs2_error* e = nullptr;
+            rs2_enable_stream_pipeline(_pipeline.get(), stream, index, width, height, format, framerate, &e);
+            error::handle(e);
+        }
+
+        /**
+        *  remove a configuration from the pipeline
+        * \param[in] stream    stream type
+        */
+        void disable_stream(rs2_stream stream)
+        {
+            rs2_error* e = nullptr;
+            rs2_disable_stream_pipeline(_pipeline.get(), stream, &e);
+            error::handle(e);
+        }
+
+        /**
+        *  remove all streams from the pipeline
+        * \param[in] stream    stream type
+        */
+        void disable_all()
+        {
+            rs2_error* e = nullptr;
+            rs2_disable_all_streams_pipeline(_pipeline.get(), &e);
+            error::handle(e);
+        }
+
+        /**
+        * wait until new frame becomes available
+        * \param[in] timeout_ms   Max time in milliseconds to wait until an exception will be thrown
+        * \return Set of coherent frames
+        */
         frameset wait_for_frames(unsigned int timeout_ms = 5000) const
         {
             rs2_error* e = nullptr;

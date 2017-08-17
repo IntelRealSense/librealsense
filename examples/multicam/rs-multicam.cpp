@@ -37,7 +37,7 @@ int main(int argc, char * argv[]) try
     });
 
     // Initial population of the device list
-    for (auto& dev : ctx.query_devices()) // Query the list of connected RealSense devices
+    for (auto&& dev : ctx.query_devices()) // Query the list of connected RealSense devices
         add_device(app_state, dev);
 
     while (app) // Application still alive?
@@ -99,7 +99,7 @@ void add_device(state& app_state, rs2::device& dev)
     app_state.frames.emplace(sn, dev_data{ dev, texture(), rs2::frame_queue(1) });
 
     // Start streaming. The callback processes depth frames and then stores them for displaying
-    s.start([&app_state, sn](rs2::frame& f) {
+    s.start([&app_state, sn](rs2::frame f) {
         std::lock_guard<std::mutex> lock(app_state.m);
         app_state.frames[sn].queue(app_state.depth_to_frame(f));
     });

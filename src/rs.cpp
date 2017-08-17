@@ -1317,6 +1317,30 @@ void rs2_start_pipeline(rs2_pipeline* pipe, rs2_error ** error) try
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, pipe)
 
+void rs2_enable_stream_pipeline(rs2_pipeline* pipe, rs2_stream stream, int index, int width, int height, rs2_format format, int framerate, rs2_error ** error) try
+{
+    VALIDATE_NOT_NULL(pipe);
+
+    pipe->pipe->enable(stream, index,  width,  height,  format, framerate);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, pipe)
+
+void rs2_disable_stream_pipeline(rs2_pipeline* pipe, rs2_stream stream, rs2_error ** error) try
+{
+    VALIDATE_NOT_NULL(pipe);
+
+    pipe->pipe->disable_stream(stream);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, pipe)
+
+void rs2_disable_all_streams_pipeline(rs2_pipeline* pipe, rs2_error ** error) try
+{
+    VALIDATE_NOT_NULL(pipe);
+
+    pipe->pipe->disable_all();
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, pipe)
+
 rs2_frame* rs2_pipeline_wait_for_frames(rs2_pipeline* pipe, unsigned int timeout_ms, rs2_error ** error) try
 {
     VALIDATE_NOT_NULL(pipe);
