@@ -1,4 +1,4 @@
-# Intel® RealSense™ Debug Tools
+# Debug Tools for Intel® RealSense™ Devices
 
 ## List of Tools:
 
