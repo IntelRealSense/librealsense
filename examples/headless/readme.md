@@ -67,7 +67,7 @@ for (size_t i = 0; i < RS2_FRAME_METADATA_COUNT; i++)
     if (frm.supports_frame_metadata((rs2_frame_metadata)i))
     {
         csv << rs2_frame_metadata_to_string((rs2_frame_metadata)i) << ","
-			<< frm.get_frame_metadata((rs2_frame_metadata)i) << "\n";
+            << frm.get_frame_metadata((rs2_frame_metadata)i) << "\n";
     }
 }
 ```
