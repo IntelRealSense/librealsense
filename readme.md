@@ -6,15 +6,19 @@ Linux | Windows |
 -------- | ------------ |
 [![Build Status](https://travis-ci.org/IntelRealSense/librealsense.svg?branch=master)](https://travis-ci.org/IntelRealSense/librealsense) | [![Build status](https://ci.appveyor.com/api/projects/status/y9f8qcebnb9v41y4?svg=true)](https://ci.appveyor.com/project/ddiakopoulos/librealsense) |
 
-**Intel® RealSense™ Cross Platform SDK** is a cross-platform library (Linux, Windows, Mac) for working with Intel® RealSense™ depth cameras (SR300 and RS4xx series).
-Developer kits containing the necessary hardware to use this library are available for purchase at [this link](http://click.intel.com/realsense.html). 
-
-
 ## Overview
+**Intel® RealSense™ Cross Platform SDK** is a cross-platform library (Linux, Windows, Mac) for working with Intel® RealSense™ depth cameras (SR300 and RS4xx series).
+It allows streaming of depth, color and fisheye video with intrinsic and extrinsic calibration information. The library also provides synthetic streams such as rectified images, depth aligned to color and vice versa, and supports for motion tracking devices. 
 
-This library aims to provide an easy to use API and tools for developers, computer vision professionals and other enthusiasts.
+In addition, the SDK has a built in support for recording a streaming session to a [Rosbag](http://wiki.ros.org/rosbag) file, and playback of these files. 
+
+The library aims to provide an easy to use API and tools for computer vision professionals, game developers and other Intel RealSense technology enthusiasts.
 
 We provide a [C](./include/librealsense/h), [C++](./include/librealsense/hpp), and [Python](./bindings/python) API.
+
+Developer kits containing the necessary hardware to use this library are available for purchase at [this link](http://click.intel.com/realsense.html).
+
+
 
 
 ## Quick Start
