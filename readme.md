@@ -56,7 +56,7 @@ while (true)
     float dist_to_center = depth.get_distance(frame_width / 2, frame_height / 2);
     
     // Print the distance 
-    std::cout << "The camera is facing an object " << dist_to_center << " meters away\r";
+    std::cout << "The camera is facing an object " << std::fixed << dist_to_center << " meters away \r";
 }
 ```
 For more information on the library, please follow our [examples](./examples), and read the [eocumentation](./doc) to learn more.
