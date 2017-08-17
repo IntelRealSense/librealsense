@@ -7,7 +7,7 @@
 #include <algorithm>            // std::min, std::max
 
 // Struct for managing rotation of pointcloud view
-struct state { double yaw, pitch, last_x, last_y; bool ml; float offset_x, offset_y; GLuint tex_handle; };
+struct state { double yaw, pitch, last_x, last_y; bool ml; float offset_x, offset_y; texture tex; };
 
 // Helper functions
 void register_glfw_callbacks(window& app, state& app_state);
@@ -25,14 +25,13 @@ int main(int argc, char * argv[]) try
     using namespace rs2;
     // Declare pointcloud object, for calculating pointclouds and texture mappings
     pointcloud pc = rs2::context().create_pointcloud();
+    // We want the points object to be persistent so we can display the last cloud when a frame drops
+    rs2::points points;
 
     // Declare RealSense pipeline, encapsulating the actual device and sensors
     pipeline pipe;
     // Start streaming with default recommended configuration
     pipe.start();
-
-    // We want the points object to be persistent so we can display the last cloud when a frame drops
-    rs2::points points;
 
     while (app) // Application still alive?
     {
@@ -42,11 +41,9 @@ int main(int argc, char * argv[]) try
         {
             // Tell pointcloud object to map to this color frame
             pc.map_to(color);
-            
+
             // Upload the color frame to OpenGL
-            texture mapped_tex;
-            mapped_tex.upload(color);
-            app_state.tex_handle = mapped_tex.get_gl_handle();
+            app_state.tex.upload(color);
         }
         if (auto depth = frames.get_depth_frame())
         {
@@ -145,7 +142,7 @@ void draw_pointcloud(window& app, state& app_state, rs2::points& points)
     glPointSize(width / 640);
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_TEXTURE_2D);
-    glBindTexture(GL_TEXTURE_2D, app_state.tex_handle);
+    glBindTexture(GL_TEXTURE_2D, app_state.tex.get_gl_handle());
     float tex_border_color[] = { 0.8f, 0.8f, 0.8f, 0.8f };
     glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, tex_border_color);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, 0x812F); // GL_CLAMP_TO_EDGE
