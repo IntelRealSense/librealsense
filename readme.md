@@ -50,44 +50,6 @@ while (true)
 ```
 Please follow our [Tutorials and Examples](./examples), and read the [Documentation](./doc) to learn more.
 
-## Quick Start
-
-#### Step 1: Download and Install
-After installing the  Intel® RealSense™ SDK (on [Linux]() \ [Windows]() \ [Os X]()), and connecting an [Intel® RealSense™ depth camera](), you are ready to start writing your first application!
-
-> :warning: In case of any issue during initial setup, or later, please first see our [FAQ & Troubleshooting]() section. 
-> If you can't find an answer there, try searching our [Closed GitHub Issues](https://github.com/IntelRealSense/librealsense/issues?utf8=%E2%9C%93&q=is%3Aclosed) page,  [Community](https://communities.intel.com/community/tech/realsense) and [Support](https://www.intel.com/content/www/us/en/support/emerging-technologies/intel-realsense-technology.html) sites.
-> If non of the above helped, [open a new issue](https://github.com/IntelRealSense/librealsense/issues/new).
-
-#### Step 2: Ready to hack!
-
-Our library offers a high level API for using your device (in addition to some lower level ones).
-The following snippet shows how to start streaming frames and extracting the depth value of a pixel:
-
-```cpp
-// Create a pipeline
-rs2::pipeline p = ctx.create_pipeline();
-// Configure and start the pipeline
-p.start();
-while (true)
-{
-    //Get a depth frame
-    rs2::frameset frames = p.wait_for_frames(); //Block program until frames arrive
-    rs2::depth_frame depth = frames.get_depth_frame(); //Try to get a frame with depth image
-    if (!depth) continue;
-
-    // Query distance to the target:
-    rs2::point2d center_depth { depth.get_width(), depth.get_height() };
-    float dist_to_center = depth.get_distance(center_depth);
-    
-    std::cout << "You are pointing at an object " 
-		      << dist_to_center << " meters away from the camera\r";
-
-	//Stop if object gets too far
-    if (dist_to_center > 2) break;
-}
-```
-Please follow our [Tutorials and Examples](./examples), and read the [Documentation](./doc) to learn more.
 
 
 ## Table of Contents
