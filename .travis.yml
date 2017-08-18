@@ -5,7 +5,7 @@ os:
 language: cpp
 
 sudo: required
-dist: trusty
+dist: xenial
 osx_image: xcode7
 
 before_install:
@@ -26,6 +26,7 @@ install:
       sudo apt-get install -qq build-essential xorg-dev libglu1-mesa-dev libglew-dev libglm-dev;
       sudo apt-get install -qq cmake;
       sudo apt-get install -qq libusb-1.0-0-dev ;
+	  sudo apt-get install -qq libusb-1.0-0-dev ;
 
       cmake --version;
 
@@ -43,6 +44,7 @@ script:
       cd build;
       cmake .. -DBUILD_EXAMPLES:BOOL=true;
       make;
+	  sudo make install
     fi
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
       xctool -workspace librealsense.xc/librealsense.xcworkspace -scheme librealsense ONLY_ACTIVE_ARCH=NO;
