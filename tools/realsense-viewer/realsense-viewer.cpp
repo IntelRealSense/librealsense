@@ -495,7 +495,6 @@ int main(int, char**) try
 
                 pos = ImGui::GetCursorPos();
                 ImGui::PushStyleColor(ImGuiCol_Button, sensor_header_light_blue);
-                //ImGui::Columns(2, "DeviceInfo", false);
                 ImGui::SetCursorPos({ 8, pos.y + 14 });
                 if (dev_model.is_recording)
                 {
@@ -518,10 +517,6 @@ int main(int, char**) try
 
                 label = to_string() << dev_model.dev.get_info(RS2_CAMERA_INFO_NAME);
                 ImGui::Text(label.c_str());
-                //ImGui::NextColumn();
-//                ImGui::SetCursorPos({ ImGui::GetCursorPosX(), pos.y + 14 });
-//                label = to_string() << "S/N: " << (dev_model.dev.supports(RS2_CAMERA_INFO_SERIAL_NUMBER) ? dev_model.dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER) : "Unknown");
-//                ImGui::Text(label.c_str());
 
                 ImGui::Columns(1);
                 ImGui::SetCursorPos({ panel_width - 50, pos.y + 5 + (header_h - panel_y) / 2 });
@@ -546,9 +541,13 @@ int main(int, char**) try
                 if (ImGui::BeginPopup(label.c_str()))
                 {
                     ImGui::PushStyleColor(ImGuiCol_Text, dark_grey);
-                    if (ImGui::Selectable("Show Device Details..."))
+                    if (!dev_model.show_device_info && ImGui::Selectable("Show Device Details..."))
                     {
-
+                        dev_model.show_device_info = true;
+                    }
+                    if (dev_model.show_device_info && ImGui::Selectable("Hide Device Details..."))
+                    {
+                        dev_model.show_device_info = false;
                     }
                     if (!dev_model.is_recording &&
                         !dev_model.dev.is<playback>())
@@ -676,6 +675,44 @@ int main(int, char**) try
                 }
 
                 ImGui::SetCursorPos({ 0, pos.y + header_h + playback_control_panel_height });
+                pos = ImGui::GetCursorPos();
+
+                int info_control_panel_height = 0;
+                if (dev_model.show_device_info)
+                {
+                    int line_h = 22;
+                    info_control_panel_height = dev_model.infos.size() * line_h + 5;
+
+                    const ImVec2 abs_pos = ImGui::GetCursorScreenPos();
+                    ImGui::GetWindowDrawList()->AddRectFilled(abs_pos,
+                        { abs_pos.x + panel_width, abs_pos.y + info_control_panel_height },
+                        ImColor(device_info_color));
+                    ImGui::GetWindowDrawList()->AddLine({ abs_pos.x, abs_pos.y - 1 },
+                    { abs_pos.x + panel_width, abs_pos.y - 1 },
+                        ImColor(black), 1.f);
+
+                    for (auto&& pair : dev_model.infos)
+                    {
+                        auto rc = ImGui::GetCursorPos();
+                        ImGui::SetCursorPos({ rc.x + 12, rc.y + 4 });
+                        ImGui::Text("%s:", pair.first.c_str()); ImGui::SameLine();
+                        
+                        ImGui::PushStyleColor(ImGuiCol_FrameBg, device_info_color);
+                        ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue);
+                        ImGui::PushStyleColor(ImGuiCol_Text, white);
+                        ImGui::SetCursorPos({ rc.x + 130, rc.y + 1 });
+                        label = to_string() << "##" << dev_model.id << " " << pair.first;
+                        ImGui::InputText(label.c_str(),
+                            (char*)pair.second.data(), 
+                            pair.second.size() + 1,
+                            ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_ReadOnly);
+                        ImGui::PopStyleColor(3);
+
+                        ImGui::SetCursorPos({ rc.x, rc.y + line_h });
+                    }
+                }
+
+                ImGui::SetCursorPos({ 0, pos.y + info_control_panel_height  });
                 ImGui::PopStyleColor(2);
                 ImGui::PopFont();
 
