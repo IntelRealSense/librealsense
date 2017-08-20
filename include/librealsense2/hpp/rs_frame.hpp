@@ -456,6 +456,7 @@ namespace rs2
             {
                 return comp.size();
             }
+            return 0;
         }
 
         frame get(rs2_stream s) const

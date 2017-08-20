@@ -35,7 +35,6 @@ typedef void (*rs2_playback_status_changed_callback_ptr)(rs2_playback_status);
  * \param[out] error     If non-null, receives any error that occurs during this call, otherwise, errors are ignored
  * \return A pointer to a device that records its data to file, or null in case of failure
  */
-
 rs2_device* rs2_create_record_device(const rs2_device* device, const char* file, rs2_error** error);
 
 /**
@@ -83,19 +82,20 @@ unsigned long long int rs2_playback_get_duration(const rs2_device* device, rs2_e
  * \param[in] time       The time point to which playback should seek, expressed in units of nanoseconds (zero value = start)
  * \param[out] error     If non-null, receives any error that occurs during this call, otherwise, errors are ignored
  */
-void rs2_playback_seek(const rs2_device* device, unsigned long long int time, rs2_error** error);
+void rs2_playback_seek(const rs2_device* device, long long int time, rs2_error** error);
 
 /**
  * Gets the current position of the playback in the file in terms of time. Units are expressed in nanoseconds
  * \param[in] device     A playback device
  * \param[out] error     If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ * \return Current position of the playback in the file in terms of time. Units are expressed in nanoseconds
  */
 unsigned long long int rs2_playback_get_position(const rs2_device* device, rs2_error** error);
 
 /**
  * Pauses the playback
  * Calling pause() in "Paused" status does nothing
- * If pause() is called while "Playing" or "Stopped", the playback will not play until resume() is called
+ * If pause() is called while playback status is "Playing" or "Stopped", the playback will not play until resume() is called
  * \param[in] device A playback device
  * \param[out] error     If non-null, receives any error that occurs during this call, otherwise, errors are ignored
  */
@@ -103,7 +103,7 @@ void rs2_playback_device_resume(const rs2_device* device, rs2_error** error);
 
 /**
  * Un-pauses the playback
- * Calling resume(), when in "Playing" or "Stopped" status, does nothing
+ * Calling resume() while playback status is "Playing" or "Stopped" does nothing
  * \param[in] device A playback device
  * \param[out] error     If non-null, receives any error that occurs during this call, otherwise, errors are ignored
  */
@@ -120,7 +120,6 @@ void rs2_playback_device_pause(const rs2_device* device, rs2_error** error);
  * \param[in] device A playback device
  * \param[in] real_time  Indicates if real time is requested, 0 means false, otherwise true
  * \param[out] error     If non-null, receives any error that occurs during this call, otherwise, errors are ignored
- * \return True on successfully setting the requested mode
  */
 void rs2_playback_device_set_real_time(const rs2_device* device, int real_time, rs2_error** error);
 
@@ -135,7 +134,7 @@ int rs2_playback_device_is_real_time(const rs2_device* device, rs2_error** error
 /**
  * Register to receive callback from playback device upon its status changes
  *
- * Callbacks are invoked from the reading thread, any heaving processing in the callback handler will affect
+ * Callbacks are invoked from the reading thread, any heavy processing in the callback handler will affect
  * the reading thread and may cause frame drops\ high latency
  * \param[in] device     A playback device
  * \param[in] callback   A callback handler that will be invoked when the playback status changes

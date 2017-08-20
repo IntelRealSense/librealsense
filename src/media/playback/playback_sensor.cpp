@@ -7,30 +7,8 @@
 #include "types.h"
 #include "context.h"
 #include "ds5/ds5-options.h"
+#include "media/ros/ros_reader.h"
 
-//TODO: rename read_only_depth_scale_option to depth_scale_optio_snapshot and move it next to depth_scale_option class, have it derive from extension_snapshot
-class read_only_depth_scale_option : public depth_scale_option
-{
-    float m_value;
-public:
-    read_only_depth_scale_option(float value) : m_value(value){}
-    bool is_read_only() const override
-    {
-        return true;
-    }
-    void set(float value) override
-    {
-
-    }
-    float query() const override
-    {
-        return m_value;
-    }
-    option_range get_range() const override
-    {
-        return { m_value, m_value, 0, m_value};
-    }
-};
 playback_sensor::playback_sensor(const device_interface& parent_device, const device_serializer::sensor_snapshot& sensor_description):
     m_user_notification_callback(nullptr, [](rs2_notifications_callback* n) {}),
     m_is_started(false),
@@ -236,9 +214,8 @@ void playback_sensor::register_sensor_infos(const device_serializer::sensor_snap
 
 void playback_sensor::register_sensor_options(const std::map<rs2_option, float>& options)
 {
-    auto depth_scale_it = options.find(RS2_OPTION_DEPTH_UNITS);
-    if (depth_scale_it != options.end())
+    for (auto option : options)
     {
-        register_option(depth_scale_it->first, std::make_shared<read_only_depth_scale_option>(depth_scale_it->second));
+        register_option(option.first, std::make_shared<read_only_playback_option>(option.first, option.second));
     }
 }

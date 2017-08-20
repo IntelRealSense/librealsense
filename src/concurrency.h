@@ -222,13 +222,22 @@ public:
         std::mutex m;
         std::condition_variable cv;
         bool invoked = false;
-        invoke([&](cancellable_timer t)
+        auto wait_sucess = std::make_shared<std::atomic_bool>(true);
+        invoke([&, wait_sucess](cancellable_timer t)
         {
-            invoked = true;
+            ///TODO: use _queue to flush, and implement properly
+            if (_was_stopped || !(*wait_sucess))
+                return;
+
+            {
+                std::lock_guard<std::mutex> locker(m);
+                invoked = true;
+            }
             cv.notify_one();
         });
         std::unique_lock<std::mutex> locker(m);
-        return cv.wait_for(locker, std::chrono::seconds(10), [&]() { return invoked || _was_stopped; });
+        *wait_sucess = cv.wait_for(locker, std::chrono::seconds(10), [&]() { return invoked || _was_stopped; });
+        return *wait_sucess;
     }
 private:
     friend cancellable_timer;

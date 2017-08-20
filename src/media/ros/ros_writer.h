@@ -9,18 +9,14 @@
 #include "core/serialization.h"
 #include "archive.h"
 #include "types.h"
-#include "media/ros/file_types.h"
 #include "stream.h"
-
-#include "file_types.h"
-#include "ros/exception.h"
 #include "rosbag/bag.h"
 #include "std_msgs/UInt32.h"
 #include "diagnostic_msgs/KeyValue.h"
-#include "topic.h"
 #include "sensor_msgs/Image.h"
 #include "realsense_msgs/StreamInfo.h"
 #include "sensor_msgs/CameraInfo.h"
+#include "ros_file_format.h"
 
 namespace librealsense
 {
@@ -101,7 +97,7 @@ namespace librealsense
             image.width = static_cast<uint32_t>(vid_frame->get_width());
             image.height = static_cast<uint32_t>(vid_frame->get_height());
             image.step = static_cast<uint32_t>(vid_frame->get_stride());
-            conversions::convert(vid_frame->get_stream()->get_format(), image.encoding);
+            convert(vid_frame->get_stream()->get_format(), image.encoding);
             image.is_bigendian = is_big_endian();
             auto size = vid_frame->get_stride() * vid_frame->get_height();
             auto p_data = vid_frame->get_frame_data();
@@ -132,8 +128,9 @@ namespace librealsense
             if (dev.get_context()->try_fetch_extrinsics(*first_stream, *frame.frame->get_stream(), &ext))
             {
                 geometry_msgs::Transform tf_msg;
-                conversions::convert(ext, tf_msg);
-                write_message(ros_topic::stream_extrinsic_topic(stream_id), get_static_file_info_timestamp(), tf_msg);
+                convert(ext, tf_msg);
+                uint32_t reference_id = 0; //TODO: get from device
+                write_message(ros_topic::stream_extrinsic_topic(stream_id, reference_id), get_static_file_info_timestamp(), tf_msg);
                 m_extrinsics_msgs[stream_id] = tf_msg;
             }
         }
@@ -169,7 +166,7 @@ namespace librealsense
         {
             realsense_msgs::StreamInfo stream_info_msg;
             stream_info_msg.is_recommended = profile->is_recommended();
-            conversions::convert(profile->get_format(), stream_info_msg.encoding);
+            convert(profile->get_format(), stream_info_msg.encoding);
             stream_info_msg.fps = profile->get_framerate();
             write_message(ros_topic::stream_info_topic({ sensor_id.device_index, sensor_id.sensor_index, profile->get_stream_type(), static_cast<uint32_t>(profile->get_stream_index()) }), timestamp, stream_info_msg);
 
