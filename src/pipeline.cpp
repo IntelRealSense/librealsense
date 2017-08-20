@@ -7,6 +7,7 @@
 
 namespace librealsense
 {
+    const int VID = 0x8086;
     template<class T>
     class internal_frame_callback : public rs2_frame_callback
     {
@@ -24,7 +25,7 @@ namespace librealsense
 
 
     pipeline::pipeline(context& ctx)
-        :_hub(ctx)
+        :_hub(ctx, VID)
     {
         _dev = _hub.wait_for_device();
 
@@ -149,12 +150,16 @@ namespace librealsense
 
     pipeline::~pipeline()
     {
-        for(auto sensor:_sensors)
+        try
         {
-            sensor->stop();
-            sensor->close();
+            for (auto sensor : _sensors)
+            {
+                sensor->stop();
+                sensor->close();
+            }
+            _multistream.stop();
+            _multistream.close();
         }
-        _multistream.stop();
-        _multistream.close();
+        catch (...) {}
     }
 }
