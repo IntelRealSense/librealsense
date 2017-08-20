@@ -2108,6 +2108,27 @@ namespace rs2
                 }
             });
         }
+
+        // Initialize static camera info:
+        for (auto i = 0; i < RS2_CAMERA_INFO_COUNT; i++)
+        {
+            auto info = static_cast<rs2_camera_info>(i);
+
+            try
+            {
+                if (dev.supports(info))
+                {
+                    auto value = dev.get_info(info);
+                    infos.push_back({ std::string(rs2_camera_info_to_string(info)), 
+                                      std::string(value) });
+                }
+            }
+            catch (...)
+            {
+                infos.push_back({ std::string(rs2_camera_info_to_string(info)),
+                                  std::string("???") });
+            }
+        }
     }
 
     void device_model::draw_device_details(device& dev, context& ctx)
@@ -2279,7 +2300,7 @@ namespace rs2
             ImGui::Text("RealSense error calling:");
             ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, regular_blue);
             ImGui::InputTextMultiline("error", const_cast<char*>(error_message.c_str()),
-                error_message.size() + 1, { 500,100 }, ImGuiInputTextFlags_AutoSelectAll);
+                error_message.size() + 1, { 500,100 }, ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_ReadOnly);
             ImGui::PopStyleColor();
 
             if (ImGui::Button("OK", ImVec2(120, 0)))
@@ -3149,7 +3170,7 @@ namespace rs2
             auto s = ss.str();
             ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, regular_blue);
             ImGui::InputTextMultiline("notification", const_cast<char*>(s.c_str()),
-                s.size() + 1, { 500,100 }, ImGuiInputTextFlags_AutoSelectAll);
+                s.size() + 1, { 500,100 }, ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_ReadOnly);
             ImGui::PopStyleColor();
 
             if (ImGui::Button("OK", ImVec2(120, 0)))
