@@ -1,29 +1,24 @@
-<p align="center"><img src="doc/img/realsense.png" width="80%" /><br><br></p>
+<p align="center"><img src="doc/img/realsense.png" width="70%" /><br><br></p>
 
 -----------------
 
 Linux | Windows |
 -------- | ------------ |
-[![Build Status](https://travis-ci.org/IntelRealSense/librealsense.svg?branch=master)](https://travis-ci.org/IntelRealSense/librealsense) | [![Build status](https://ci.appveyor.com/api/projects/status/y9f8qcebnb9v41y4?svg=true)](https://ci.appveyor.com/project/ddiakopoulos/librealsense) |
+[![Build Status](https://travis-ci.org/IntelRealSense/librealsense.svg?branch=master)](https://travis-ci.org/IntelRealSense/librealsense) | [![Build status](https://ci.appveyor.com/api/projects/status/y9f8qcebnb9v41y4?svg=true)](https://ci.appveyor.com/project/dorodnic/librealsense-s4xnv) |
 
 ## Overview
-**Intel® RealSense™ SDK 2.0** is a cross-platform library (Linux, Windows, Mac) for working with Intel® RealSense™ depth cameras (SR300 and the RS400 series).
-It allows streaming of depth, color and fisheye video, and provides intrinsic and extrinsic calibration information. The library also offers synthetic streams (pointcloud, depth aligned to color and vise-versa) and support for motion tracking. 
-
-In addition, the SDK has a built-in support for recording a streaming session to a [rosbag](http://wiki.ros.org/rosbag) file, and playback of these files. 
+**Intel® RealSense™ SDK 2.0** is a cross-platform library (Linux, Windows, Mac) for working with Intel® RealSense™ depth cameras (SR300 and the D400 series).
+It allows streaming of depth, color and fisheye video, and provides intrinsic and extrinsic calibration information. The library also offers synthetic streams (pointcloud, depth aligned to color and vise-versa) and support for motion tracking. In addition, the SDK has a built-in support for [record and playback](./src/media/readme.md). 
 
 The library aims to provide an easy to use API and tools for computer vision professionals, game developers and other Intel RealSense technology enthusiasts.
 
 We provide a C, C++, and [Python](./bindings/python) API.
 Developer kits containing the necessary hardware to use this library are available for purchase at [click.intel.com](http://click.intel.com/realsense.html).
 
-
-
-
 ## Quick Start
 
 #### Step 1: Download and Install
-After installing the Intel RealSense SDK (on [Linux](./doc/distribution_linux.md) \ Windows \ OSX), and connecting the depth camera, you are ready to start writing your first application!
+After installing the Intel RealSense SDK (on [Linux](./doc/distribution_linux.md) \ Windows \ OSX), and connecting the depth camera, you are ready to start writing your first application.
 
 > In case of any issue during initial setup, or later, please first see our [FAQ & Troubleshooting](./doc) section. 
 > If you can't find an answer there, try searching our [Closed GitHub Issues](https://github.com/IntelRealSense/librealsense/issues?utf8=%E2%9C%93&q=is%3Aclosed) page,  [Community](https://communities.intel.com/community/tech/realsense) and [Support](https://www.intel.com/content/www/us/en/support/emerging-technologies/intel-realsense-technology.html) sites.
@@ -52,14 +47,14 @@ while (true)
     if (!depth) continue;
 
     // Get the depth frame's dimensions
-    float frame_width = depth.get_width();
-    float frame_height = depth.get_height();
+    float width = depth.get_width();
+    float height = depth.get_height();
     
     // Query the distance from the camera to the object in the center of the image
-    float dist_to_center = depth.get_distance(frame_width / 2, frame_height / 2);
+    float dist_to_center = depth.get_distance(width / 2, height / 2);
     
     // Print the distance 
-    std::cout << "The camera is facing an object " << std::fixed << dist_to_center << " meters away \r";
+    std::cout << "The camera is facing an object " << dist_to_center << " meters away \r";
 }
 ```
 For more information on the library, please follow our [examples](./examples), and read the [documentation](./doc) to learn more.

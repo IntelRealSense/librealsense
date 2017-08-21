@@ -13,6 +13,10 @@ before_install:
       sudo add-apt-repository --yes ppa:ubuntu-toolchain-r/test;
       wget https://github.com/glfw/glfw/releases/download/3.1.1/glfw-3.1.1.zip;
       sudo apt-get update;
+      sudo apt-get-repository ppa:ubuntu-toolchain-r/test;
+      sudo apt-get update;
+      sudo apt-get install gcc-5 g++-5;
+      sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-5 60 --slave /usr/bin/g++ g++ /usr/bin/g++-5;
     fi
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
       brew uninstall xctool;
@@ -26,7 +30,7 @@ install:
       sudo apt-get install -qq build-essential xorg-dev libglu1-mesa-dev libglew-dev libglm-dev;
       sudo apt-get install -qq cmake;
       sudo apt-get install -qq libusb-1.0-0-dev ;
-	  sudo apt-get install -qq libusb-1.0-0-dev ;
+      sudo apt-get install -qq libgtk-3-dev ;
 
       cmake --version;
 
@@ -44,7 +48,7 @@ script:
       cd build;
       cmake .. -DBUILD_EXAMPLES:BOOL=true;
       make;
-	  sudo make install
+      sudo make install;
     fi
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
       xctool -workspace librealsense.xc/librealsense.xcworkspace -scheme librealsense ONLY_ACTIVE_ARCH=NO;
