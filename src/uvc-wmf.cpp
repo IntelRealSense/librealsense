@@ -64,12 +64,11 @@ namespace rsimpl
     {
         const auto FISHEYE_HWMONITOR_INTERFACE = 2;
         const uvc::guid FISHEYE_WIN_USB_DEVICE_GUID = { 0xC0B55A29, 0xD7B6, 0x436E, { 0xA6, 0xEF, 0x2E, 0x76, 0xED, 0x0A, 0xBC, 0xA5 } };
-        // Translation of user-provided fourcc code into device supported one:           Note the Big-Endian notation
-        const std::map<uint32_t, uint32_t> fourcc_map = { { 0x47524559, 0x59382020 },       /* 'GREY' => 'Y8  '. */
-                                                          { 0x59313020, 0x494e5649 },       /* 'Y10' => 'INVI  '. */
-                                                          { 0x50000000, 0x5a313620 },       /* 'Z16'  => 'D16 ' */
-                                                          { 0x5a313620, 0x494e565a },       /* 'Z16'  => 'INVZ ' */
-                                                          { 0x70524141, 0x52573130 } };     /* 'RW10' => 'pRAA'. */
+        // Translation of user-provided fourcc code into device-advertized:
+        const std::map<uint32_t, uint32_t> fourcc_map = { { 0x59382020, 0x47524559 },    /* 'Y8  '  as 'GREY' */
+                                                          { 0x494e5649, 0x59313020 },    /* 'INVI'  as 'Y10'  */
+                                                          { 0x494e565a, 0x5a313620 },    /* 'INVZ'  as 'Z16'  */
+                                                          { 0x52573130, 0x70524141 } };  /* 'pRAA'  as 'RW10' */
 
         static std::string win_to_utf(const WCHAR * s)
         {
@@ -799,8 +798,6 @@ namespace rsimpl
                 check("MFCreateSourceReaderFromMediaSource", MFCreateSourceReaderFromMediaSource(sub.get_media_source(), pAttributes, &sub.mf_source_reader));
             }
 
-            if (fourcc_map.count(fourcc))   fourcc = fourcc_map.at(fourcc);
-
             for (DWORD j = 0; ; j++)
             {
                 com_ptr<IMFMediaType> media_type;
@@ -813,7 +810,8 @@ namespace rsimpl
                 if(uvc_width != width || uvc_height != height) continue;
 
                 check("IMFMediaType::GetGUID", media_type->GetGUID(MF_MT_SUBTYPE, &subtype));
-                if(reinterpret_cast<const big_endian<uint32_t> &>(subtype.Data1) != fourcc) continue;
+                uint32_t device_fourcc = reinterpret_cast<const big_endian<uint32_t> &>(subtype.Data1);
+                if ((device_fourcc != fourcc) && (!fourcc_map.count(device_fourcc) || (fourcc != fourcc_map.at(device_fourcc)))) continue;
 
                 check("MFGetAttributeRatio", MFGetAttributeRatio(media_type, MF_MT_FRAME_RATE, &uvc_fps_num, &uvc_fps_denom));
                 if(uvc_fps_denom == 0) continue;
