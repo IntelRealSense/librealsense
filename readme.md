@@ -4,7 +4,7 @@
 
 Linux | Windows |
 -------- | ------------ |
-[![Build Status](https://travis-ci.org/IntelRealSense/librealsense.svg?branch=master)](https://travis-ci.org/IntelRealSense/librealsense) | [![Build status](https://ci.appveyor.com/api/projects/status/y9f8qcebnb9v41y4?svg=true)](https://ci.appveyor.com/project/dorodnic/librealsense-s4xnv) |
+[![Build Status](https://travis-ci.org/IntelRealSense/librealsense.svg?branch=development)](https://travis-ci.org/IntelRealSense/librealsense) | [![Build status](https://ci.appveyor.com/api/projects/status/6u04bgmpwfejpgo8?svg=true)](https://ci.appveyor.com/project/dorodnic/librealsense-s4xnv) |
 
 ## Overview
 **Intel® RealSense™ SDK 2.0** is a cross-platform library (Linux, Windows, Mac) for working with Intel® RealSense™ depth cameras (SR300 and the D400 series).
