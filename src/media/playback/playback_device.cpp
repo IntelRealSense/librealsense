@@ -112,26 +112,19 @@ std::map<uint32_t, std::shared_ptr<playback_sensor>> playback_device::create_pla
             }
         };
         
-        sensor->opened += [this](const std::vector<stream_filter>& filters) -> void
+        sensor->opened += [this](const std::vector<device_serializer::stream_identifier>& filters) -> void
         {
             (*m_read_thread)->invoke([this, filters](dispatcher::cancellable_timer c)
             {
-                //TODO: filter order is important for the reader, if more than 1 filter exists, the reader should enable streams according to the lowest timestamp available
-                for (auto filter : filters)
-                {
-                    m_reader->enable_stream({get_device_index(), filter.sensor_index, filter.stream_type, filter.stream_index });
-                }
+                m_reader->enable_stream(filters);
             });
         };
 
-        sensor->closed += [this](const std::vector<stream_filter>& filters) -> void
+        sensor->closed += [this](const std::vector<device_serializer::stream_identifier>& filters) -> void
         {
             (*m_read_thread)->invoke([this, filters](dispatcher::cancellable_timer c)
             {
-                for (auto filter : filters)
-                {
-                    m_reader->disable_stream({ get_device_index(), filter.sensor_index, filter.stream_type, filter.stream_index });
-                }
+                m_reader->disable_stream(filters);
             });
         };
 

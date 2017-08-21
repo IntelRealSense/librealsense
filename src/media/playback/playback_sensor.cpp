@@ -31,8 +31,8 @@ stream_profiles playback_sensor::get_stream_profiles() const
 
 void playback_sensor::open(const stream_profiles& requests)
 {
-	//Playback can only play the streams that were recorded. 
-	//Go over the requested profiles and see if they are available
+    //Playback can only play the streams that were recorded. 
+    //Go over the requested profiles and see if they are available
 
     for (auto&& r : requests)
     {
@@ -43,13 +43,13 @@ void playback_sensor::open(const stream_profiles& requests)
             throw std::runtime_error("Failed to open sensor, requested profile is not available");
         }
     }
-    std::vector<stream_filter> opened_streams;
-	//For each stream, create a dedicated dispatching thread
+    std::vector<device_serializer::stream_identifier> opened_streams;
+    //For each stream, create a dedicated dispatching thread
     for (auto&& profile : requests)
     {
         m_dispatchers.emplace(std::make_pair(profile->get_unique_id(), std::make_shared<dispatcher>(10))); //TODO: what size the queue should be?
         m_dispatchers[profile->get_unique_id()]->start();
-        stream_filter f{ m_sensor_id, profile->get_stream_type(), static_cast<uint32_t>(profile->get_stream_index()) };
+        device_serializer::stream_identifier f{ get_device_index(), m_sensor_id, profile->get_stream_type(), static_cast<uint32_t>(profile->get_stream_index()) };
         opened_streams.push_back(f);
     }
 
@@ -58,18 +58,17 @@ void playback_sensor::open(const stream_profiles& requests)
 
 void playback_sensor::close()
 {
-    std::vector<stream_filter> closed_streams;
+    std::vector<device_serializer::stream_identifier> closed_streams;
     for (auto dispatcher : m_dispatchers)
     {
         dispatcher.second->flush();
         for (auto available_profile : m_available_profiles)
         {
-            if(available_profile->get_unique_id() == dispatcher.first)
+            if (available_profile->get_unique_id() == dispatcher.first)
             {
-                stream_filter f{ m_sensor_id, available_profile->get_stream_type(), static_cast<uint32_t>(available_profile->get_stream_index()) };
-                closed_streams.push_back(f);
+                closed_streams.push_back({ get_device_index(), m_sensor_id, available_profile->get_stream_type(), static_cast<uint32_t>(available_profile->get_stream_index()) });
             }
-        }      
+        }
     }
     m_dispatchers.clear();
     closed(closed_streams);
