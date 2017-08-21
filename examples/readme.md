@@ -1,7 +1,10 @@
 # Intel® RealSense™ Sample Code
 
-Samples are intended to showcase useful capabilities of the library and the hardware while providing well documented reference code. For mode advacned usages you might also want to review the list of [Tools](../tools) we provide. 
+Samples are intended to showcase useful capabilities of the library and the hardware while providing well documented reference code. 
 
+For mode advanced usages you might also want to review the list of [Tools](../tools) we provide. 
+For detailed explanations and API documentation see our [Documentation](../doc) section 
+ 
 ## List of Samples:
 
 1. [Capture](./capture) - Shows how to syncronize and render multiple streams. 

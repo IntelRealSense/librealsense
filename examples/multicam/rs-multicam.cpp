@@ -18,6 +18,8 @@ struct state { std::mutex m; std::map<std::string, dev_data> frames; rs2::colori
 void add_device(state& app_state, rs2::device& dev);
 void remove_devices(state& app_state, const rs2::event_information& info);
 
+using namespace rs2;
+
 int main(int argc, char * argv[]) try
 {
     // Create a simple OpenGL window for rendering:
@@ -25,11 +27,11 @@ int main(int argc, char * argv[]) try
     // Construct an object to help track connected cameras
     state app_state;
 
-    using namespace rs2;
+    
     // Create librealsense context for managing devices
     context ctx;
     // Register callback for tracking which devices are currently connected
-    ctx.set_devices_changed_callback([&app_state](rs2::event_information& info){
+    ctx.set_devices_changed_callback([&app_state](event_information& info){
         remove_devices(app_state, info);
 
         for (auto&& dev : info.get_new_devices())
@@ -54,20 +56,21 @@ int main(int argc, char * argv[]) try
         int stream_no = 0;
         for (auto&& kvp : app_state.frames)
         {
+            auto&& device = kvp.second;
             // If we've gotten a new image from the device, upload that
-            rs2::frame f;
-            if (kvp.second.queue.poll_for_frame(&f))
-                kvp.second.tex.upload(f);
+            frame f;
+            if (device.queue.poll_for_frame(&f))
+                device.tex.upload(f);
 
             // Display the latest frame in the right position on screen
-            kvp.second.tex.show({ w*(stream_no%c), h*(stream_no / c), w, h });
+            device.tex.show({ w*(stream_no%c), h*(stream_no / c), w, h });
             ++stream_no;
         }
     }
 
     return EXIT_SUCCESS;
 }
-catch(const rs2::error & e)
+catch(const error & e)
 {
     std::cerr << "RealSense error calling " << e.get_failed_function() << "(" << e.get_failed_args() << "):\n    " << e.what() << std::endl;
     return EXIT_FAILURE;
