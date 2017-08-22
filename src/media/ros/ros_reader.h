@@ -303,24 +303,23 @@ namespace librealsense
             return true;
         }
 
-        bool try_read_stream_extrinsic(const stream_identifier& stream_id, rs2_extrinsics& ext) const
+        bool try_read_stream_extrinsic(const stream_identifier& stream_id, uint32_t& group_id, rs2_extrinsics& extrinsic) const
         {
-            //Find the first one and return it. Assuming that extrinsics does not change over time per stream.
-            uint32_t reference_id = 0; //TODO: read stream_extrinsic_topic without the reference id
-            auto topic = ros_topic::stream_extrinsic_topic(stream_id, reference_id);
-            rosbag::View tf_view(m_file, rosbag::TopicQuery(topic));
-            if(tf_view.size() > 0)
+            rosbag::View tf_view(m_file, ExtrinsicsQuery(stream_id));
+            if (tf_view.size() == 0)
             {
-                auto msg = *tf_view.begin();
-                auto tf_msg = msg.instantiate<geometry_msgs::Transform>();
-                if(tf_msg == nullptr)
-                {
-                    throw io_exception(to_string() << "Expected KeyValue message but got " << msg.getDataType() << "(Topic: " << msg.getTopic() << ")");
-                }
-                convert(*tf_msg, ext);
-                return true;
+                return false;
             }
-            return false;
+            assert(tf_view.size() == 1); //There should be 1 message per stream
+            auto msg = *tf_view.begin();
+            auto tf_msg = msg.instantiate<geometry_msgs::Transform>();
+            if (tf_msg == nullptr)
+            {
+                throw io_exception(to_string() << "Expected KeyValue message but got " << msg.getDataType() << "(Topic: " << msg.getTopic() << ")");
+            }
+            group_id = ros_topic::get_extrinsic_group_index(msg.getTopic());
+            convert(*tf_msg, extrinsic);
+            return true;
         }
 
         device_snapshot read_device_description() const
@@ -331,7 +330,7 @@ namespace librealsense
             device_extensions[RS2_EXTENSION_INFO ] = info;
             std::vector<sensor_snapshot> sensor_descriptions;
             auto sensor_indices = read_sensor_indices(get_device_index());
-            std::map<stream_identifier, rs2_extrinsics> extrinsics_map;
+            std::map<stream_identifier, std::pair<uint32_t, rs2_extrinsics>> extrinsics_map;
             for (auto sensor_index : sensor_indices)
             {
                 snapshot_collection sensor_extensions;
@@ -339,10 +338,11 @@ namespace librealsense
                 for (auto stream_profile : streams_snapshots)
                 {
                     auto stream_id = stream_identifier{ get_device_index(), sensor_index, stream_profile->get_stream_type(), static_cast<uint32_t>(stream_profile->get_stream_index()) };
+                    uint32_t reference_id;
                     rs2_extrinsics stream_extrinsic;
-                    if(try_read_stream_extrinsic(stream_id, stream_extrinsic))
+                    if(try_read_stream_extrinsic(stream_id, reference_id, stream_extrinsic))
                     {
-                        extrinsics_map[stream_id] = stream_extrinsic;
+                        extrinsics_map[stream_id] = std::make_pair(reference_id, stream_extrinsic);
                     }
                 }
 

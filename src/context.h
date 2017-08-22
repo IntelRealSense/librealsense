@@ -92,7 +92,7 @@ namespace librealsense
         }
         platform::backend_device_group get_device_data() const override
         {
-            return {}; //TODO: WTD?
+            return platform::backend_device_group({ platform::playback_device_info{ _dev->get_file_name() } });
         }
 
         std::shared_ptr<device_interface> create(std::shared_ptr<context>) const override

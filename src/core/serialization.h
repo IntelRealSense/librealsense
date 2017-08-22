@@ -128,7 +128,7 @@ namespace librealsense
         {
         public:
             device_snapshot() {}
-            device_snapshot(const snapshot_collection& device_extensios, const std::vector<sensor_snapshot>& sensors_snapshot, const std::map<stream_identifier, rs2_extrinsics>& extrinsics_map) :
+            device_snapshot(const snapshot_collection& device_extensios, const std::vector<sensor_snapshot>& sensors_snapshot, const std::map<stream_identifier, std::pair<uint32_t, rs2_extrinsics>>& extrinsics_map) :
                 m_device_snapshots(device_extensios),
                 m_sensors_snapshot(sensors_snapshot),
                 m_extrinsics_map(extrinsics_map)
@@ -143,14 +143,14 @@ namespace librealsense
             {
                 return m_device_snapshots;
             }
-            std::map<stream_identifier, rs2_extrinsics> get_extrinsics_map() const
+            std::map<stream_identifier, std::pair<uint32_t, rs2_extrinsics>> get_extrinsics_map() const
             {
                 return m_extrinsics_map;
             }
         private:
             snapshot_collection m_device_snapshots;
             std::vector<sensor_snapshot> m_sensors_snapshot;
-            std::map<stream_identifier, rs2_extrinsics> m_extrinsics_map;
+            std::map<stream_identifier, std::pair<uint32_t, rs2_extrinsics>> m_extrinsics_map;
         };
 
 

@@ -237,6 +237,13 @@ namespace librealsense
             return "image|imu";
         }
 
+        static std::string stream_prefix(const device_serializer::stream_identifier& stream_id)
+        {
+           return  to_string() << "/device_" << stream_id.device_index
+                               << "/sensor_" << stream_id.sensor_index
+                               << "/" << stream_id.stream_type << "_" << stream_id.stream_index;
+        }
+
     private:
         std::regex _exp;
     };
@@ -257,10 +264,17 @@ namespace librealsense
     {
     public:
         StreamQuery(const device_serializer::stream_identifier& stream_id) :
-            RegexTopicQuery(to_string() << "/device_" << stream_id.device_index
-                << "/sensor_" << stream_id.sensor_index
-                << "/" << stream_id.stream_type << "_" << stream_id.stream_index
+            RegexTopicQuery(to_string() << stream_prefix(stream_id)
                 << "/(" << RegexTopicQuery::data_msg_types() << ")/data")
+        {
+        }
+    };
+
+    class ExtrinsicsQuery : public RegexTopicQuery
+    {
+    public:
+        ExtrinsicsQuery(const device_serializer::stream_identifier& stream_id) :
+            RegexTopicQuery(to_string() << stream_prefix(stream_id) << "/tf")
         {
         }
     };
@@ -274,10 +288,12 @@ namespace librealsense
         {
             return get_id("device_", get<1>(topic));
         }
+
         static uint32_t get_sensor_index(const std::string& topic)
         {
             return get_id("sensor_", get<2>(topic));
         }
+
         static rs2_stream get_stream_type(const std::string& topic)
         {
             auto stream_with_id = get<3>(topic);
@@ -295,6 +311,11 @@ namespace librealsense
         static device_serializer::stream_identifier get_stream_identifier(const std::string& topic)
         {
             return device_serializer::stream_identifier{ get_device_index(topic),  get_sensor_index(topic),  get_stream_type(topic),  get_stream_index(topic) };
+        }
+
+        static uint32_t get_extrinsic_group_index(const std::string& topic)
+        {
+            return std::stoul(get<5>(topic));
         }
 
         static std::string file_version_topic()
@@ -381,7 +402,7 @@ namespace librealsense
             if (elements_iterator == index)
                 return value_copy;
 
-            throw std::out_of_range("Requeted index is out of bound");
+            throw std::out_of_range(to_string() << "Requeted index \"" << index << "\" is out of bound of topic: \"" << value << "\"");
         }
         static uint32_t get_id(const std::string& prefix, const std::string& str)
         {
