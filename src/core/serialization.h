@@ -187,6 +187,7 @@ namespace librealsense
             virtual void write_snapshot(const sensor_identifier& sensor_id, const nanoseconds& timestamp, rs2_extension type, const std::shared_ptr<extension_snapshot > snapshot) = 0;
             virtual ~writer() = default;
         };
+
         class reader
         {
         public:
@@ -196,8 +197,8 @@ namespace librealsense
             virtual void seek_to_time(const nanoseconds& time) = 0;
             virtual nanoseconds query_duration() const = 0;
             virtual void reset() = 0;
-            virtual void enable_stream(const device_serializer::stream_identifier& stream_id) = 0;
-            virtual void disable_stream(const device_serializer::stream_identifier& stream_id) = 0;
+            virtual void enable_stream(const std::vector<device_serializer::stream_identifier>& stream_ids) = 0;
+            virtual void disable_stream(const std::vector<device_serializer::stream_identifier>& stream_ids) = 0;
             virtual const std::string& get_file_name() const = 0;
         };
     }

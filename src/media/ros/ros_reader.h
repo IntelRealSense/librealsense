@@ -72,9 +72,11 @@ namespace librealsense
             auto seek_time_as_secs = std::chrono::duration_cast<std::chrono::duration<double>>(seek_time);
             auto seek_time_as_rostime = ros::Time(seek_time_as_secs.count());
 
-            auto enabled_streams_topics = get_topics(m_samples_view);
             m_samples_view.reset(new rosbag::View(m_file, FalseQuery()));
-            for (auto topic : enabled_streams_topics)
+            //Using cached topics here and not querying them (before reseting) since a previous call to seek 
+            // could have changed the view and some streams that should be streaming were dropped.
+            //E.g:  Recording Depth+Color, stopping Depth, starting IR, stopping IR and Color. Play IR+Depth: will play only depth, then only IR, then we seek to a point only IR was streaming, and then to 0.
+            for (auto topic : m_enabled_streams_topics)
             {
                 m_samples_view->addQuery(m_file, rosbag::TopicQuery(topic), seek_time_as_rostime);
             }
@@ -120,39 +122,48 @@ namespace librealsense
             m_device_description = read_device_description();
         }
 
-        virtual void enable_stream(const stream_identifier& stream_id) override
+        virtual void enable_stream(const std::vector<device_serializer::stream_identifier>& stream_ids) override
         {
-            ros::Time curr_time = ros::TIME_MIN;
-            if(m_samples_view == nullptr)
+            ros::Time start_time = ros::TIME_MIN;
+            if (m_samples_view == nullptr)
             {
                 m_samples_view = std::unique_ptr<rosbag::View>(new rosbag::View(m_file, FalseQuery()));
                 m_samples_itrator = m_samples_view->begin();
             }
-            
+
             if (m_samples_itrator != m_samples_view->end())
             {
                 rosbag::MessageInstance sample_msg = *m_samples_itrator;
-                curr_time = sample_msg.getTime();
+                start_time = sample_msg.getTime();
             }
-            
+
             auto currently_streaming = get_topics(m_samples_view);
+            //empty the view
             m_samples_view = std::unique_ptr<rosbag::View>(new rosbag::View(m_file, FalseQuery()));
-            m_samples_view->addQuery(m_file, StreamQuery(stream_id), curr_time);
+
+            for (auto&& stream_id : stream_ids)
+            {
+                //add new stream to view
+                m_samples_view->addQuery(m_file, StreamQuery(stream_id), start_time);
+            }
+
+            //add already existing streams
             for (auto topic : currently_streaming)
             {
-                m_samples_view->addQuery(m_file, rosbag::TopicQuery(topic), curr_time);
+                m_samples_view->addQuery(m_file, rosbag::TopicQuery(topic), start_time);
             }
             m_samples_itrator = m_samples_view->begin();
+            m_enabled_streams_topics = get_topics(m_samples_view);
         }
 
-        virtual void disable_stream(const stream_identifier& stream_id) override
+        virtual void disable_stream(const std::vector<device_serializer::stream_identifier>& stream_ids) override
         {
-            if(m_samples_view == nullptr)
+            if (m_samples_view == nullptr)
             {
                 return;
             }
             ros::Time curr_time;
-            if(m_samples_itrator == m_samples_view->end())
+            if (m_samples_itrator == m_samples_view->end())
             {
                 curr_time = m_samples_view->getEndTime();
             }
@@ -161,18 +172,23 @@ namespace librealsense
                 rosbag::MessageInstance sample_msg = *m_samples_itrator;
                 curr_time = sample_msg.getTime();
             }
-            auto topics = get_topics(m_samples_view);
-            m_samples_view = std::unique_ptr<rosbag::View>(new rosbag::View(m_file,FalseQuery()));
-            for (auto topic : topics)
+            auto currently_streaming = get_topics(m_samples_view);
+            m_samples_view = std::unique_ptr<rosbag::View>(new rosbag::View(m_file, FalseQuery()));
+            for (auto topic : currently_streaming)
             {
-                bool should_topic_remain = topic.find(ros_topic::stream_full_prefix(stream_id)) == std::string::npos;
+                //Find if this topic is one of the streams that should be disabled
+                auto it = std::find_if(stream_ids.begin(), stream_ids.end(), [&topic](const device_serializer::stream_identifier& s) {
+                    //return topic.starts_with(s);
+                    return topic.find(ros_topic::stream_full_prefix(s)) != std::string::npos;
+                });
+                bool should_topic_remain = (it == stream_ids.end());
                 if (should_topic_remain)
                 {
                     m_samples_view->addQuery(m_file, rosbag::TopicQuery(topic), curr_time);
                 }
             }
             m_samples_itrator = m_samples_view->begin();
-
+            m_enabled_streams_topics = get_topics(m_samples_view);
         }
 
         const std::string& get_file_name() const override
@@ -500,6 +516,7 @@ namespace librealsense
         rosbag::Bag                             m_file;
         std::unique_ptr<rosbag::View>           m_samples_view;
         rosbag::View::iterator                  m_samples_itrator;
+        std::vector<std::string>                m_enabled_streams_topics;
         std::shared_ptr<metadata_parser_map>    m_metadata_parser_map;
         std::shared_ptr<context>                m_context;
     };
