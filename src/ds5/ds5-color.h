@@ -4,6 +4,7 @@
 #pragma once
 
 #include "ds5-device.h"
+#include "stream.h"
 
 namespace librealsense
 {
@@ -28,4 +29,21 @@ namespace librealsense
         lazy<std::vector<uint8_t>> _color_calib_table_raw;
         std::shared_ptr<lazy<rs2_extrinsics>> _color_extrinsic;
     };
+
+    class ds5_color_sensor : public uvc_sensor, public video_sensor_interface
+    {
+    public:
+        explicit ds5_color_sensor(ds5_color* owner,
+            std::shared_ptr<platform::uvc_device> uvc_device,
+            std::unique_ptr<frame_timestamp_reader> timestamp_reader)
+            : uvc_sensor("RGB Camera", uvc_device, move(timestamp_reader), owner), _owner(owner)
+        {}
+
+        rs2_intrinsics get_intrinsics(const stream_profile& profile) const override;
+        stream_profiles init_stream_profiles() override;
+
+    private:
+        const ds5_color* _owner;
+    };
+
 }

@@ -373,6 +373,49 @@ TEST_CASE("Advanced Mode presets", "[live]") {
     }
 }
 
+TEST_CASE("Advanced Mode JSON", "[live]") {
+    rs2::context ctx;
+    if (make_context(SECTION_FROM_TEST_NAME, &ctx))
+    {
+        device_list list;
+        REQUIRE_NOTHROW(list = ctx.query_devices());
+        REQUIRE(list.size() > 0);
+
+        auto dev = list.front();
+
+        disable_sensitive_options_for(dev);
+
+        std::string serial;
+        REQUIRE_NOTHROW(serial = dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER));
+
+        if (dev.is<rs400::advanced_mode>())
+        {
+            auto advanced = dev.as<rs400::advanced_mode>();
+
+            if (!advanced.is_enabled())
+            {
+                do_with_waiting_for_camera_connection(ctx, dev, serial, [&]()
+                {
+                    REQUIRE_NOTHROW(advanced.toggle_advanced_mode(true));
+                });
+            }
+            disable_sensitive_options_for(dev);
+            advanced = dev.as<rs400::advanced_mode>();
+            std::string json1, json2;
+            REQUIRE_NOTHROW(json1 = advanced.serialize_json());
+            REQUIRE_NOTHROW(advanced.load_json(json1));
+            REQUIRE_NOTHROW(json2 = advanced.serialize_json());
+            REQUIRE_NOTHROW(json1 == json2);
+
+            do_with_waiting_for_camera_connection(ctx, dev, serial, [&]()
+            {
+                REQUIRE_NOTHROW(advanced.toggle_advanced_mode(false));
+            });
+            disable_sensitive_options_for(dev);
+        }
+    }
+}
+
 TEST_CASE("Advanced Mode controls", "[live]") {
     rs2::context ctx;
     if (make_context(SECTION_FROM_TEST_NAME, &ctx))
