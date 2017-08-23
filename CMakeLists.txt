@@ -593,7 +593,7 @@ option(ENFORCE_METADATA "Require WinSDK with Metadata support during compilation
 option(BUILD_PYTHON_BINDINGS "Build Python bindings" OFF)
 
 # This parameter is meant for disabling graphical examples when building for
-# headless targets.
+# save-to-disk targets.
 option(BUILD_GRAPHICAL_EXAMPLES "Build graphical examples and tools." ON)
 
 if((BUILD_EXAMPLES AND BUILD_GRAPHICAL_EXAMPLES) AND WIN32)
