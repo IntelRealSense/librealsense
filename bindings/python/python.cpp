@@ -12,8 +12,8 @@
 // makes std::function conversions work
 #include <pybind11/functional.h>
 
-#include "../include/librealsense/rs2.h"
-#include "../include/librealsense/rs2.hpp"
+#include "../include/librealsense2/rs.h"
+#include "../include/librealsense2/rs.hpp"
 
 #define NAME pyrealsense2
 #define SNAME "pyrealsense2"
@@ -571,7 +571,7 @@ PYBIND11_PLUGIN(NAME) {
           .def("open", (void (rs2::sensor::*)(const std::vector<rs2::stream_profile>&) const) &rs2::sensor::open,
                "Open subdevice for exclusive access, by committing to a composite configuration, specifying one or "
                "more stream profiles.", "profiles"_a)
-          .def("close", [](const rs2::sensor& self){ py::gil_scoped_release; self.close(); }, "Close subdevice for exclusive access.")
+          .def("close", [](const rs2::sensor& self){ py::gil_scoped_release lock; self.close(); }, "Close subdevice for exclusive access.")
           .def("start", [](const rs2::sensor& self, std::function<void(rs2::frame)> callback)
                { self.start(callback); }, "Start passing frames into user provided callback.", "callback"_a)
           .def("start", [](const rs2::sensor& self, rs2::frame_queue& queue) { self.start(queue); })

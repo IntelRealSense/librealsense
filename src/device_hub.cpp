@@ -1,24 +1,43 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
-#include <librealsense/rs2.hpp>
+#include <librealsense2/rs.hpp>
 
 #include "device_hub.h"
 
+
 namespace librealsense
 {
+    
     typedef rs2::devices_changed_callback<std::function<void(rs2::event_information& info)>> hub_devices_changed_callback;
 
-    device_hub::device_hub(context& ctx)
-        : _ctx(ctx)
+    std::vector<std::shared_ptr<device_info>> filter_by_vid(std::vector<std::shared_ptr<device_info>> devices , int vid)
     {
-        _device_list = _ctx.query_devices();
+        std::vector<std::shared_ptr<device_info>> result;
+        for (auto dev : devices)
+        {
+            auto data = dev->get_device_data();
+            for (auto uvc : data.uvc_devices)
+            {
+                if (uvc.vid == vid || vid == 0)
+                {
+                    result.push_back(dev);
+                    break;
+                }
+            }
+        }
+        return result;
+    }
 
+    device_hub::device_hub(context& ctx, int vid)
+        : _ctx(ctx), _vid(vid)
+    {
+        _device_list = filter_by_vid(_ctx.query_devices(), _vid);
 
         auto cb = new hub_devices_changed_callback([&](rs2::event_information& info)
                    {
                        std::unique_lock<std::mutex> lock(_mutex);
-                       _device_list = _ctx.query_devices();
+                       _device_list = filter_by_vid(_ctx.query_devices(), _vid);
 
                        // Current device will point to the first available device
                        _camera_index = 0;

@@ -2,7 +2,7 @@
 // Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 
 #pragma once
-#include <librealsense/rs2.hpp>
+#include <librealsense2/rs.hpp>
 
 #include "rendering.h"
 #include "parser.hpp"
@@ -57,6 +57,7 @@ static const ImVec4 button_color = from_rgba(0x2d, 0x37, 0x40, 0xff);
 static const ImVec4 header_window_bg = from_rgba(0x1b, 0x21, 0x25, 0xff);
 static const ImVec4 header_color = from_rgba(62, 77, 89, 255);
 static const ImVec4 title_color = from_rgba(27, 33, 38, 255);
+static const ImVec4 device_info_color = from_rgba(33, 40, 46, 255);
 
 void imgui_easy_theming(ImFont*& font_14, ImFont*& font_18);
 
@@ -316,7 +317,9 @@ namespace rs2
         bool is_recording = false;
         int seek_pos = 0;
         int playback_speed_index = 2;
+        bool show_device_info = false;
 
+        std::vector<std::pair<std::string, std::string>> infos;
     private:
         int draw_seek_bar();
         int draw_playback_controls(ImFont* font);

@@ -14,7 +14,7 @@ namespace librealsense
     class device_hub
     {
     public:
-        explicit device_hub(context& ctx);
+        explicit device_hub(context& ctx, int vid = 0);
 
         /**
          * If any device is connected return it, otherwise wait until next RealSense device connects.
@@ -27,12 +27,14 @@ namespace librealsense
         */
         bool is_connected(const device_interface& dev);
 
+
     private:
         context& _ctx;
         std::mutex _mutex;
         std::condition_variable _cv;
         std::vector<std::shared_ptr<device_info>> _device_list;
         int _camera_index = 0;
+        int _vid = 0;
     };
 }
 

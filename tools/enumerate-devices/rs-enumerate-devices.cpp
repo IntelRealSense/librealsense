@@ -1,11 +1,11 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
-#include <librealsense/rs2.hpp>
+#include <librealsense2/rs.hpp>
 #include <iostream>
 #include <iomanip>
 #include <map>
-#include <librealsense/rsutil2.hpp>
+#include <librealsense2/rsutil.hpp>
 
 #include "tclap/CmdLine.h"
 

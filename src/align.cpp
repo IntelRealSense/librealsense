@@ -1,8 +1,8 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
-#include "../include/librealsense/rs2.hpp"
-#include "../include/librealsense/rsutil2.h"
+#include "../include/librealsense2/rs.hpp"
+#include "../include/librealsense2/rsutil.h"
 
 #include "core/video.h"
 #include "align.h"
@@ -470,4 +470,3 @@ namespace librealsense
     //    set_processing_callback(std::shared_ptr<rs2_frame_processor_callback>(callback));
     //}
 }
-

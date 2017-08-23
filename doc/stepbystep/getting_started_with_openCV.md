@@ -8,8 +8,8 @@ Using the editor of your choise create BGR_sample.cpp and copy-paste the followi
 
 ```cpp
 // include the librealsense C++ header file
-#include <librealsense/rs2.hpp>
-#include <librealsense/rsutils2.hpp>
+#include <librealsense2/rs.hpp>
+#include <librealsense2/rsutils.hpp>
 
 // include OpenCV header file
 #include <opencv2/opencv.hpp>
@@ -70,8 +70,8 @@ Copy the following code snippet into IR_sample.cpp:
 
 ```cpp
 // include the librealsense C++ header file
-#include <librealsense/rs2.hpp>
-#include <librealsense/rsutils2.hpp>
+#include <librealsense2/rs.hpp>
+#include <librealsense2/rsutils.hpp>
 
 // include OpenCV header file
 #include <opencv2/opencv.hpp>

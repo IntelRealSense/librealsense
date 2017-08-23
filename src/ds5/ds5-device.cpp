@@ -213,8 +213,8 @@ namespace librealsense
 
         // Define Left-Right extrinsics calculation (lazy)
         _left_right_extrinsics = std::make_shared<lazy<rs2_extrinsics>>([this]()
-        {
-            rs2_extrinsics ext;
+        {            
+            rs2_extrinsics ext = identity_matrix();
             auto table = check_calib<coefficients_table>(*_coefficients_table_raw);
             ext.translation[0] = -0.001f * table->baseline;
             return ext;

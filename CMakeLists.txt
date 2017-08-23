@@ -19,7 +19,7 @@ endmacro()
 # for failures should these constants be modified in future      #
 ##################################################################
 function(assign_version_property VER_COMPONENT)
-    file(STRINGS "./include/librealsense/rs2.h" REALSENSE_VERSION_${VER_COMPONENT} REGEX "#define RS2_API_${VER_COMPONENT}_VERSION")
+    file(STRINGS "./include/librealsense2/rs.h" REALSENSE_VERSION_${VER_COMPONENT} REGEX "#define RS2_API_${VER_COMPONENT}_VERSION")
     separate_arguments(REALSENSE_VERSION_${VER_COMPONENT})
     list(GET REALSENSE_VERSION_${VER_COMPONENT} -1 tmp)
     if (tmp LESS 0)
@@ -139,7 +139,7 @@ set(REALSENSE_CPP
     src/win/win-backend.cpp
 
 
-    src/ds5/advanced_mode/rs2_advanced_mode.cpp
+    src/ds5/advanced_mode/rs_advanced_mode.cpp
     src/ds5/advanced_mode/presets.cpp
     src/ds5/advanced_mode/advanced_mode.cpp
 
@@ -156,35 +156,35 @@ set(REALSENSE_CPP
 )
 
 set(REALSENSE_HPP
-    include/librealsense/rs2.hpp
-    include/librealsense/rs2.h
+    include/librealsense2/rs.hpp
+    include/librealsense2/rs.h
 
-    include/librealsense/h/rs2_types.h
-    include/librealsense/h/rs2_context.h
-    include/librealsense/h/rs2_device.h
-    include/librealsense/h/rs2_frame.h
-    include/librealsense/h/rs2_option.h
-    include/librealsense/h/rs2_processing.h
-    include/librealsense/h/rs2_record_playback.h
-    include/librealsense/h/rs2_sensor.h
-    include/librealsense/h/rs2_internal.h
-    include/librealsense/h/rs2_pipeline.h
+    include/librealsense2/h/rs_types.h
+    include/librealsense2/h/rs_context.h
+    include/librealsense2/h/rs_device.h
+    include/librealsense2/h/rs_frame.h
+    include/librealsense2/h/rs_option.h
+    include/librealsense2/h/rs_processing.h
+    include/librealsense2/h/rs_record_playback.h
+    include/librealsense2/h/rs_sensor.h
+    include/librealsense2/h/rs_internal.h
+    include/librealsense2/h/rs_pipeline.h
 
-    include/librealsense/hpp/rs2_types.hpp
-    include/librealsense/hpp/rs2_context.hpp
-    include/librealsense/hpp/rs2_device.hpp
-    include/librealsense/hpp/rs2_frame.hpp
-    include/librealsense/hpp/rs2_processing.hpp
-    include/librealsense/hpp/rs2_record_playback.hpp
-    include/librealsense/hpp/rs2_sensor.hpp
-    include/librealsense/hpp/rs2_internal.hpp
-    include/librealsense/hpp/rs2_pipeline.hpp
+    include/librealsense2/hpp/rs_types.hpp
+    include/librealsense2/hpp/rs_context.hpp
+    include/librealsense2/hpp/rs_device.hpp
+    include/librealsense2/hpp/rs_frame.hpp
+    include/librealsense2/hpp/rs_processing.hpp
+    include/librealsense2/hpp/rs_record_playback.hpp
+    include/librealsense2/hpp/rs_sensor.hpp
+    include/librealsense2/hpp/rs_internal.hpp
+    include/librealsense2/hpp/rs_pipeline.hpp
 
-    include/librealsense/rsutil2.h
-    include/librealsense/rsutil2.hpp
-    include/librealsense/rs2_advanced_mode.h
-    include/librealsense/rs2_advanced_mode.hpp
-    include/librealsense/h/rs2_advanced_mode_command.h
+    include/librealsense2/rsutil.h
+    include/librealsense2/rsutil.hpp
+    include/librealsense2/rs_advanced_mode.h
+    include/librealsense2/rs_advanced_mode.hpp
+    include/librealsense2/h/rs_advanced_mode_command.h
 	
     src/res/resource.h
 
@@ -259,8 +259,7 @@ set(REALSENSE_HPP
     src/mock/sql.h
     src/mock/recorder.h
 
-    src/media/ros/file_types.h
-    src/media/ros/topic.h
+    src/media/ros/ros_file_format.h
 )
 
 # Add additional include directories to allow file to include rosbag headers
@@ -306,41 +305,36 @@ if(WIN32)
         src/backend.h)
 
     source_group("Header Files\\API" FILES
-        include/librealsense/rs2.hpp
-        include/librealsense/rs2.h
+        include/librealsense2/rs.hpp
+        include/librealsense2/rs.h
         CMake/realsense.def
         )
 		
 	source_group("Header Files\\API\\C Headers" FILES
-        include/librealsense/h/rs2_types.h
-        include/librealsense/h/rs2_context.h
-        include/librealsense/h/rs2_device.h
-        include/librealsense/h/rs2_frame.h
-        include/librealsense/h/rs2_option.h
-        include/librealsense/h/rs2_processing.h
-		include/librealsense/h/rs2_pipeline.h
-        include/librealsense/h/rs2_record_playback.h
-        include/librealsense/h/rs2_sensor.h
-        include/librealsense/h/rs2_internal.h
+        include/librealsense2/h/rs_context.h
+        include/librealsense2/h/rs_device.h
+        include/librealsense2/h/rs_frame.h
+        include/librealsense2/h/rs_option.h
+        include/librealsense2/h/rs_processing.h
+        include/librealsense2/h/rs_record_playback.h
+        include/librealsense2/h/rs_pipeline.h
+        include/librealsense2/h/rs_streaming.h
+        include/librealsense2/h/rs_internal.h
 
-        include/librealsense/rsutil2.h
-        include/librealsense/rs2_advanced_mode.h
-        include/librealsense/h/rs2_advanced_mode_command.h
+        include/librealsense2/rsutil.h
+        include/librealsense2/rs_advanced_mode.h
+        include/librealsense2/h/rs_advanced_mode_command.h
         )
 		
 	source_group("Header Files\\API\\C++ Headers" FILES
-        include/librealsense/hpp/rs2_types.hpp
-        include/librealsense/hpp/rs2_context.hpp
-        include/librealsense/hpp/rs2_device.hpp
-        include/librealsense/hpp/rs2_frame.hpp
-        include/librealsense/hpp/rs2_processing.hpp
-		include/librealsense/hpp/rs2_pipeline.hpp
-        include/librealsense/hpp/rs2_record_playback.hpp
-        include/librealsense/hpp/rs2_sensor.hpp
-        include/librealsense/hpp/rs2_internal.hpp
+        include/librealsense2/hpp/rs_record_playback.hpp
+        include/librealsense2/hpp/rs_sensor.hpp
+        include/librealsense2/hpp/rs_streaming.hpp
+        include/librealsense2/hpp/rs_internal.hpp
+		include/librealsense2/hpp/rs_pipeline.hpp
 
-        include/librealsense/rsutil2.hpp
-        include/librealsense/rs2_advanced_mode.hpp
+        include/librealsense2/rsutil.hpp
+        include/librealsense2/rs_advanced_mode.hpp
         )
 
     source_group("Header Files\\Recorder" FILES
@@ -357,7 +351,7 @@ if(WIN32)
     source_group("Source Files\\API" FILES
         src/rs.cpp
         src/verify.c
-        src/ds5/advanced_mode/rs2_advanced_mode.cpp
+        src/ds5/advanced_mode/rs_advanced_mode.cpp
         )
 
     source_group("Header Files\\Media" FILES
@@ -368,20 +362,7 @@ if(WIN32)
     source_group("Header Files\\Media\\Ros Serializer" FILES
         src/media/ros/ros_reader.h
         src/media/ros/ros_writer.h
-        src/media/ros/data_objects/pose.h
-        src/media/ros/data_objects/vendor_data.h
-        src/media/ros/data_objects/image.h
-        src/media/ros/data_objects/motion_stream_info.h
-        src/media/ros/data_objects/property.h
-        src/media/ros/data_objects/motion_sample.h
-        src/media/ros/data_objects/time_sample.h
-        src/media/ros/data_objects/compressed_image.h
-        src/media/ros/data_objects/occupancy_map.h
-        src/media/ros/data_objects/stream_data.h
-        src/media/ros/data_objects/image_stream_info.h
-        src/media/ros/file_types.h
-        src/media/ros/status.h
-        src/media/ros/topic.h
+        src/media/ros/ros_file_format.h
         )
 
     source_group("Source Files\\Devices" FILES
@@ -399,7 +380,7 @@ if(WIN32)
         )
 
     source_group("Source Files\\Devices\\Advanced Mode" FILES
-        src/ds5/advanced_mode/rs2_advanced_mode.cpp
+        src/ds5/advanced_mode/rs_advanced_mode.cpp
         src/ds5/advanced_mode/presets.cpp
         src/ds5/advanced_mode/advanced_mode.cpp
         )
@@ -580,7 +561,7 @@ if(${ROS_BUILD_TYPE})
         ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
     )
 
-    install(DIRECTORY ${PROJECT_SOURCE_DIR}/include/librealsense/
+    install(DIRECTORY ${PROJECT_SOURCE_DIR}/include/librealsense2/
         DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION})
 else()
     set(CMAKECONFIG_INSTALL_DIR "${CMAKE_INSTALL_LIBDIR}/cmake/realsense2")
@@ -592,7 +573,7 @@ else()
         ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
     )
 
-    install(DIRECTORY ${PROJECT_SOURCE_DIR}/include/librealsense DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+    install(DIRECTORY ${PROJECT_SOURCE_DIR}/include/librealsense2 DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 
     include(CMakePackageConfigHelpers)
     configure_package_config_file(CMake/realsense2Config.cmake.in realsense2Config.cmake

@@ -8,7 +8,7 @@ Whenever librealsense encounters failure of a system call it will record it as e
 
 If the operation was not issued by the user, but rather by one of the background threads, the exception **should never** reach the global signal handler of the process. Instead, it will be converted to `rs_notification` object, and sent to the user through the notifications callback.
 
-If the operation was issued by the user, `exception` object will be safely marshalled between module boundaries at `rs2.cpp` level, by converting it to `rs_error` object. This new object can be safely consumed by C program. If the application is using `rs2.hpp`, the C++ wrapper will convert `rs_error` object back to an exception object. This exception will always derive from `rs2::error` and `std::runtime_error` regardless of type of exception that caused it.
+If the operation was issued by the user, `exception` object will be safely marshalled between module boundaries at `rs.cpp` level, by converting it to `rs_error` object. This new object can be safely consumed by C program. If the application is using `rs.hpp`, the C++ wrapper will convert `rs_error` object back to an exception object. This exception will always derive from `rs2::error` and `std::runtime_error` regardless of type of exception that caused it.
 
 The user is safe to assume that:
 * All successful operations are completed without exceptions being in-use internally by the library.
@@ -22,7 +22,7 @@ While librealsense2 provides a mechanism to get notified and recover from camera
 The only case when an exception will be handled internally without notifying the user, is as part of object destruction flow. For example, when the `device` object is being destroyed we might get system call failures due to the device being disconnected. Any such errors will be documented in the log but not risen to the user to avoid throw-in-destructor problems.  
 
 ## Types of Errors
-In addition to string representation of what went wrong, librealsense exceptions also provide `get_failed_function` and `get_failed_args` methods to query failed function names and argument values respectively, and error type. `rs2.hpp` will automatically map error types into the following inheritance structure:
+In addition to string representation of what went wrong, librealsense exceptions also provide `get_failed_function` and `get_failed_args` methods to query failed function names and argument values respectively, and error type. `rs.hpp` will automatically map error types into the following inheritance structure:
 ```
 std::exception
 └── std::runtime_error

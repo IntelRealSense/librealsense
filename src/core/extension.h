@@ -2,7 +2,7 @@
 // Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 
 #pragma once
-#include "../../include/librealsense/h/rs2_types.h"
+#include "../../include/librealsense2/h/rs_types.h"
 #include <memory>
 #include <functional>
 

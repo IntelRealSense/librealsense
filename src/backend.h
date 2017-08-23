@@ -5,8 +5,8 @@
 #ifndef LIBREALSENSE_BACKEND_H
 #define LIBREALSENSE_BACKEND_H
 
-#include "../include/librealsense/h/rs2_types.h"     // Inherit all type definitions in the public API
-#include "../include/librealsense/h/rs2_option.h"
+#include "../include/librealsense2/h/rs_types.h"     // Inherit all type definitions in the public API
+#include "../include/librealsense2/h/rs_option.h"
 
 #include <memory>       // For shared_ptr
 #include <functional>   // For function

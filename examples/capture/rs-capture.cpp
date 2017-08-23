@@ -1,7 +1,7 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 
-#include <librealsense/rs2.hpp> // Include RealSense Cross Platform API
+#include <librealsense2/rs.hpp> // Include RealSense Cross Platform API
 #include "example.hpp"          // Include short list of convenience functions for rendering
 
 // Capture Example demonstrates how to 

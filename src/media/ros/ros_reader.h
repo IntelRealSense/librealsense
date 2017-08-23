@@ -7,109 +7,18 @@
 #include <regex>
 #include <core/serialization.h>
 #include "rosbag/view.h"
-#include "file_types.h"
-#include "topic.h"
 #include "sensor_msgs/Imu.h"
 #include "sensor_msgs/Image.h"
 #include "diagnostic_msgs/KeyValue.h"
 #include "std_msgs/UInt32.h"
-#include "file_types.h"
 #include "realsense_msgs/StreamInfo.h"
 #include "sensor_msgs/CameraInfo.h"
+#include "ros_file_format.h"
 
 namespace librealsense
 {
     using namespace device_serializer;
-
-    class md_constant_parser : public md_attribute_parser_base
-    {
-    public:
-        md_constant_parser(rs2_frame_metadata type) : _type(type) {}
-        rs2_metadata_t get(const frame& frm) const override
-        {
-            rs2_metadata_t v;
-            if (try_get(frm, v) == false)
-            {
-                throw invalid_value_exception("Frame does not support this type of metadata");
-            }
-            return v;
-        }
-        bool supports(const frame& frm) const override
-        {
-            rs2_metadata_t v;
-            return try_get(frm, v);
-        }
-    private:
-        bool try_get(const frame& frm, rs2_metadata_t& result) const
-        {
-            auto pair_size = (sizeof(rs2_frame_metadata) + sizeof(rs2_metadata_t));
-            const uint8_t* pos = frm.additional_data.metadata_blob.data();
-            while(pos <= frm.additional_data.metadata_blob.data() + frm.additional_data.metadata_blob.size())
-            {
-                const rs2_frame_metadata* type = reinterpret_cast<const rs2_frame_metadata*>(pos);
-                pos += sizeof(rs2_frame_metadata);
-                if (_type == *type)
-                {
-                    const rs2_metadata_t* value = reinterpret_cast<const rs2_metadata_t*>(pos);
-                    result = *value; 
-                    return true;
-                }
-                pos += sizeof(rs2_metadata_t);
-            }
-            return false;
-        }
-        rs2_frame_metadata _type;
-    };
     
-    class FalseQuery {
-    public: bool operator()(rosbag::ConnectionInfo const* info) const { return false; }
-    };
-    
-    class RegexTopicQuery
-    {
-    public:
-        RegexTopicQuery(std::string const& regexp) : _exp(regexp)
-        {}
-
-        bool operator()(rosbag::ConnectionInfo const* info) const
-        {
-            return std::regex_search(info->topic, _exp);
-        }
-
-        static std::string data_msg_types()
-        {
-            return "image|imu";
-        }
-        
-    private:
-        std::regex _exp;
-    };
-    
-    class SensorInfoQuery : public RegexTopicQuery
-    {
-    public:
-        SensorInfoQuery(uint32_t device_index) : RegexTopicQuery(to_string() << "/device_" << device_index << R"RRR(/sensor_(\d)+/info)RRR"){}
-    };
-    
-    class FrameQuery : public RegexTopicQuery
-    {
-    public:
-        FrameQuery() : RegexTopicQuery(to_string() << R"RRR(/device_\d+/sensor_\d+/.*_\d+)RRR" << "/(" << data_msg_types() << ")/data") {}
-    };
-    
-    class StreamQuery : public RegexTopicQuery
-    {
-    public:   
-        StreamQuery(const stream_identifier& stream_id) : 
-                RegexTopicQuery(to_string() << "/device_" << stream_id.device_index
-                                            << "/sensor_" << stream_id.sensor_index
-                                            << "/" << stream_id.stream_type << "_" << stream_id.stream_index
-                                            << "/(" << RegexTopicQuery::data_msg_types() << ")/data")
-        {
-        }
-    };
-
-
     class ros_reader: public device_serializer::reader
     {
     public:
@@ -163,9 +72,11 @@ namespace librealsense
             auto seek_time_as_secs = std::chrono::duration_cast<std::chrono::duration<double>>(seek_time);
             auto seek_time_as_rostime = ros::Time(seek_time_as_secs.count());
 
-            auto enabled_streams_topics = get_topics(m_samples_view);
             m_samples_view.reset(new rosbag::View(m_file, FalseQuery()));
-            for (auto topic : enabled_streams_topics)
+            //Using cached topics here and not querying them (before reseting) since a previous call to seek 
+            // could have changed the view and some streams that should be streaming were dropped.
+            //E.g:  Recording Depth+Color, stopping Depth, starting IR, stopping IR and Color. Play IR+Depth: will play only depth, then only IR, then we seek to a point only IR was streaming, and then to 0.
+            for (auto topic : m_enabled_streams_topics)
             {
                 m_samples_view->addQuery(m_file, rosbag::TopicQuery(topic), seek_time_as_rostime);
             }
@@ -211,39 +122,48 @@ namespace librealsense
             m_device_description = read_device_description();
         }
 
-        virtual void enable_stream(const stream_identifier& stream_id) override
+        virtual void enable_stream(const std::vector<device_serializer::stream_identifier>& stream_ids) override
         {
-            ros::Time curr_time = ros::TIME_MIN;
-            if(m_samples_view == nullptr)
+            ros::Time start_time = ros::TIME_MIN;
+            if (m_samples_view == nullptr)
             {
                 m_samples_view = std::unique_ptr<rosbag::View>(new rosbag::View(m_file, FalseQuery()));
                 m_samples_itrator = m_samples_view->begin();
             }
-            
+
             if (m_samples_itrator != m_samples_view->end())
             {
                 rosbag::MessageInstance sample_msg = *m_samples_itrator;
-                curr_time = sample_msg.getTime();
+                start_time = sample_msg.getTime();
             }
-            
+
             auto currently_streaming = get_topics(m_samples_view);
+            //empty the view
             m_samples_view = std::unique_ptr<rosbag::View>(new rosbag::View(m_file, FalseQuery()));
-            m_samples_view->addQuery(m_file, StreamQuery(stream_id), curr_time);
+
+            for (auto&& stream_id : stream_ids)
+            {
+                //add new stream to view
+                m_samples_view->addQuery(m_file, StreamQuery(stream_id), start_time);
+            }
+
+            //add already existing streams
             for (auto topic : currently_streaming)
             {
-                m_samples_view->addQuery(m_file, rosbag::TopicQuery(topic), curr_time);
+                m_samples_view->addQuery(m_file, rosbag::TopicQuery(topic), start_time);
             }
             m_samples_itrator = m_samples_view->begin();
+            m_enabled_streams_topics = get_topics(m_samples_view);
         }
 
-        virtual void disable_stream(const stream_identifier& stream_id) override
+        virtual void disable_stream(const std::vector<device_serializer::stream_identifier>& stream_ids) override
         {
-            if(m_samples_view == nullptr)
+            if (m_samples_view == nullptr)
             {
                 return;
             }
             ros::Time curr_time;
-            if(m_samples_itrator == m_samples_view->end())
+            if (m_samples_itrator == m_samples_view->end())
             {
                 curr_time = m_samples_view->getEndTime();
             }
@@ -252,18 +172,23 @@ namespace librealsense
                 rosbag::MessageInstance sample_msg = *m_samples_itrator;
                 curr_time = sample_msg.getTime();
             }
-            auto topics = get_topics(m_samples_view);
-            m_samples_view = std::unique_ptr<rosbag::View>(new rosbag::View(m_file,FalseQuery()));
-            for (auto topic : topics)
+            auto currently_streaming = get_topics(m_samples_view);
+            m_samples_view = std::unique_ptr<rosbag::View>(new rosbag::View(m_file, FalseQuery()));
+            for (auto topic : currently_streaming)
             {
-                bool should_topic_remain = topic.find(ros_topic::stream_full_prefix(stream_id)) == std::string::npos;
+                //Find if this topic is one of the streams that should be disabled
+                auto it = std::find_if(stream_ids.begin(), stream_ids.end(), [&topic](const device_serializer::stream_identifier& s) {
+                    //return topic.starts_with(s);
+                    return topic.find(ros_topic::stream_full_prefix(s)) != std::string::npos;
+                });
+                bool should_topic_remain = (it == stream_ids.end());
                 if (should_topic_remain)
                 {
                     m_samples_view->addQuery(m_file, rosbag::TopicQuery(topic), curr_time);
                 }
             }
             m_samples_itrator = m_samples_view->begin();
-
+            m_enabled_streams_topics = get_topics(m_samples_view);
         }
 
         const std::string& get_file_name() const override
@@ -307,7 +232,7 @@ namespace librealsense
                 }
                 if(key_val_msg->key == "timestamp_domain") //TODO: use constants
                 {
-                    conversions::convert(key_val_msg->value, additional_data.timestamp_domain);
+                    convert(key_val_msg->value, additional_data.timestamp_domain);
                 }
                 else if (key_val_msg->key == "system_time") //TODO: use constants
                 {
@@ -318,7 +243,7 @@ namespace librealsense
                     rs2_frame_metadata type;
                     try
                     {
-                        conversions::convert(key_val_msg->key, type);
+                        convert(key_val_msg->key, type);
                     }
                     catch(const std::exception& e)
                     {
@@ -348,7 +273,7 @@ namespace librealsense
             librealsense::video_frame* video_frame = static_cast<librealsense::video_frame*>(frame);
             video_frame->assign(msg->width, msg->height, msg->step, msg->step / msg->width * 8);
             rs2_format stream_format;
-            conversions::convert(msg->encoding, stream_format);
+            convert(msg->encoding, stream_format);
             //attaching a temp stream to the frame. Playback sensor should assign the real stream 
             frame->set_stream(std::make_shared<video_stream_profile>(m_context, platform::stream_profile{}));
             frame->get_stream()->set_format(stream_format);
@@ -381,7 +306,8 @@ namespace librealsense
         bool try_read_stream_extrinsic(const stream_identifier& stream_id, rs2_extrinsics& ext) const
         {
             //Find the first one and return it. Assuming that extrinsics does not change over time per stream.
-            auto topic = ros_topic::stream_extrinsic_topic(stream_id);
+            uint32_t reference_id = 0; //TODO: read stream_extrinsic_topic without the reference id
+            auto topic = ros_topic::stream_extrinsic_topic(stream_id, reference_id);
             rosbag::View tf_view(m_file, rosbag::TopicQuery(topic));
             if(tf_view.size() > 0)
             {
@@ -391,7 +317,7 @@ namespace librealsense
                 {
                     throw io_exception(to_string() << "Expected KeyValue message but got " << msg.getDataType() << "(Topic: " << msg.getTopic() << ")");
                 }
-                conversions::convert(*tf_msg, ext);
+                convert(*tf_msg, ext);
                 return true;
             }
             return false;
@@ -448,7 +374,7 @@ namespace librealsense
                 try
                 {
                     rs2_camera_info info;
-                    conversions::convert(info_msg->key, info);
+                    convert(info_msg->key, info);
                     values[info] = info_msg->value;
                 }
                 catch (const std::exception& e)
@@ -499,7 +425,7 @@ namespace librealsense
                 //auto is_recommended = stream_info_msg->is_recommended;
                 auto fps = stream_info_msg->fps;
                 rs2_format format;
-                conversions::convert(stream_info_msg->encoding, format);
+                convert(stream_info_msg->encoding, format);
 
                 auto video_stream_topic = ros_topic::video_stream_info_topic(stream_id);
                 rosbag::View video_stream_infos_view(m_file, rosbag::TopicQuery(video_stream_topic));
@@ -561,7 +487,7 @@ namespace librealsense
                     throw io_exception(to_string() << "Expected KeyValue message but got: " << message_instance.getDataType() << "(Topic: " << message_instance.getTopic() << ")");
                 }
                 rs2_option id;
-                conversions::convert(property_msg->key, id);
+                convert(property_msg->key, id);
                 options[id] = std::stof(property_msg->value);
 
             }
@@ -590,6 +516,7 @@ namespace librealsense
         rosbag::Bag                             m_file;
         std::unique_ptr<rosbag::View>           m_samples_view;
         rosbag::View::iterator                  m_samples_itrator;
+        std::vector<std::string>                m_enabled_streams_topics;
         std::shared_ptr<metadata_parser_map>    m_metadata_parser_map;
         std::shared_ptr<context>                m_context;
     };

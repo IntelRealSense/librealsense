@@ -13,7 +13,7 @@
 #include <iomanip>
 
 #include "../../../third-party/json.hpp"
-#include <librealsense/h/rs2_advanced_mode_command.h>
+#include <librealsense2/h/rs_advanced_mode_command.h>
 #include "types.h"
 #include "presets.h"
 
@@ -78,7 +78,7 @@ namespace librealsense
         bool was_set = false;
 
         virtual void load(const std::string& value) = 0;
-        virtual std::string save() const = 0;
+        virtual float save() const = 0;
     };
 
     template<class T, class S>
@@ -96,11 +96,9 @@ namespace librealsense
             strct->update = true;
         }
 
-        std::string save() const override
+        float save() const override
         {
-            std::stringstream ss;
-            ss << strct->vals[0].*field / scale;
-            return ss.str();
+            return strct->vals[0].*field / scale;
         }
     };
 
@@ -118,9 +116,9 @@ namespace librealsense
             strct->update = true;
         }
 
-        std::string save() const override
+        float save() const override
         {
-            return strct->vals[0].*field > 0 ? "0" : "1";
+            return strct->vals[0].*field;
         }
     };
 
@@ -145,7 +143,7 @@ namespace librealsense
 
     typedef std::map<std::string, std::shared_ptr<json_feild>> parsers_map;
 
-    inline parsers_map initialize_feild_parsers(preset_param_group& p)
+    inline parsers_map initialize_field_parsers(preset_param_group& p)
     {
         return {
             // Depth Control
@@ -163,7 +161,7 @@ namespace librealsense
             { "param-usersm", make_invert_feild(p.rsm, &STRsm::rsmBypass) },
             { "param-rsmdiffthreshold", make_feild(p.rsm, &STRsm::diffThresh) },
             { "param-rsmrauslodiffthreshold", make_feild(p.rsm, &STRsm::sloRauDiffThresh) },
-            { "param-rsmremovethreshold", make_feild(p.rsm, &STRsm::removeThresh) },
+            { "param-rsmremovethreshold", make_feild(p.rsm, &STRsm::removeThresh, 168) },
 
             // RAU Support Vector Control
             { "param-raumine", make_feild(p.rsvc, &STRauSupportVectorControl::minEast) },
@@ -183,9 +181,9 @@ namespace librealsense
             { "param-disableslorightcolor", make_feild(p.color_control, &STColorControl::disableSLORightColor) },
 
             // RAU Color Thresholds Control
-            { "param-regioncolorthresholdb", make_feild(p.rctc, &STRauColorThresholdsControl::rauDiffThresholdBlue) },
-            { "param-regioncolorthresholdg", make_feild(p.rctc, &STRauColorThresholdsControl::rauDiffThresholdGreen) },
-            { "param-regioncolorthresholdr", make_feild(p.rctc, &STRauColorThresholdsControl::rauDiffThresholdRed) },
+            { "param-regioncolorthresholdb", make_feild(p.rctc, &STRauColorThresholdsControl::rauDiffThresholdBlue, 1022) },
+            { "param-regioncolorthresholdg", make_feild(p.rctc, &STRauColorThresholdsControl::rauDiffThresholdGreen, 1022) },
+            { "param-regioncolorthresholdr", make_feild(p.rctc, &STRauColorThresholdsControl::rauDiffThresholdRed, 1022) },
 
             // SLO Color Thresholds Control
             { "param-scanlineedgetaub", make_feild(p.sctc, &STSloColorThresholdsControl::diffThresholdBlue) },
@@ -239,7 +237,7 @@ namespace librealsense
     inline std::vector<uint8_t> generate_json(const preset& in_preset)
     {
         preset_param_group p = in_preset;
-        auto fields = initialize_feild_parsers(p);
+        auto fields = initialize_field_parsers(p);
 
         json j;
         for (auto&& f : fields)
@@ -247,17 +245,15 @@ namespace librealsense
             j[f.first.c_str()] = f.second->save();
         }
 
-        auto str = j.dump();
+        auto str = j.dump(4);
         return std::vector<uint8_t>(str.begin(), str.end());
     }
-
-
 
     inline void update_structs(const std::string& content, preset& in_preset)
     {
         preset_param_group p = in_preset;
         json j = json::parse(content);
-        auto fields = initialize_feild_parsers(p);
+        auto fields = initialize_field_parsers(p);
 
         for (auto it = j.begin(); it != j.end(); ++it)
         {

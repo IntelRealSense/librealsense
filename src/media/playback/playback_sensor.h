@@ -13,8 +13,6 @@
 
 namespace librealsense
 {
-    using stream_filter = struct { uint32_t sensor_index; rs2_stream stream_type; uint32_t stream_index; };
-
     class playback_sensor : public sensor_interface,
         public extendable_interface,
         public info_container,    
@@ -25,8 +23,8 @@ namespace librealsense
         using frame_interface_callback_t = std::function<void(frame_holder)>;
         signal<playback_sensor, uint32_t, frame_callback_ptr> started;
         signal<playback_sensor, uint32_t, bool> stopped;
-        signal<playback_sensor, const std::vector<stream_filter>& > opened;
-        signal<playback_sensor, const std::vector<stream_filter>& > closed;
+        signal<playback_sensor, const std::vector<device_serializer::stream_identifier>& > opened;
+        signal<playback_sensor, const std::vector<device_serializer::stream_identifier>& > closed;
 
         playback_sensor(const device_interface& parent_device, const device_serializer::sensor_snapshot& sensor_description);
         virtual ~playback_sensor();

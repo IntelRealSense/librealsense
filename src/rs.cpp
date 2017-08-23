@@ -20,8 +20,6 @@
 #include "stream.h"
 
 #include "pipeline.h"
-#include "../include/librealsense/rs2.h"
-#include "../include/librealsense/h/rs2_internal.h"
 
 ////////////////////////
 // API implementation //
@@ -1162,9 +1160,10 @@ unsigned long long int rs2_playback_get_duration(const rs2_device* device, rs2_e
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, device)
 
-void rs2_playback_seek(const rs2_device* device, unsigned long long int time, rs2_error** error) try
+void rs2_playback_seek(const rs2_device* device, long long int time, rs2_error** error) try
 {
     VALIDATE_NOT_NULL(device);
+    VALIDATE_LE(0, time);
     auto playback = VALIDATE_INTERFACE(device->device, librealsense::playback_device);
     playback->seek_to_time(std::chrono::nanoseconds(time));
 }

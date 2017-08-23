@@ -4,7 +4,7 @@
 #define _USE_MATH_DEFINES
 #include <cmath>
 #include "image.h"
-//#include "../include/librealsense/rsutil.h" // For projection/deprojection logic
+//#include "../include/librealsense2/rsutil.h" // For projection/deprojection logic
 
 #ifdef __SSSE3__
 #include <tmmintrin.h> // For SSE3 intrinsic used in unpack_yuy2_sse
