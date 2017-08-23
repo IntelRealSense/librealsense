@@ -11,7 +11,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
 #set(CMAKE_VERBOSE_MAKEFILE on)
 
 # This parameter is meant for disabling graphical examples when building for
-# headless targets.
+# save-to-disk targets.
 option(BUILD_GRAPHICAL_EXAMPLES "Build graphical examples." ON)
 
 include(CheckCXXCompilerFlag)

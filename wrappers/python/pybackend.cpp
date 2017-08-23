@@ -30,7 +30,7 @@ using namespace pybackend2;
 PYBIND11_MAKE_OPAQUE(std::vector<uint8_t>)
 
 PYBIND11_PLUGIN(NAME) {
-    py::module m(SNAME, "Bindings for the backend of librealsense");
+    py::module m(SNAME, "Wrapper for the backend of librealsense");
 
     py::class_<platform::control_range> control_range(m, "control_range");
     control_range.def(py::init<>())

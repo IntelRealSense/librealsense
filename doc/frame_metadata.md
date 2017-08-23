@@ -74,8 +74,8 @@ Calling __*rs2_get_frame_metadata*__ without testing for attribute support may r
 
 
 ## Employing metadata attributes in demos
-The samples that demonstrate querying and retrieval of metadata are `rs-headless` and `rs-config-ui`.
- - `rs-headless` saves the metadata attributes available for each stream into a comma-separated text file. For instance, for the Depth stream the possible [output ](./metadata/cpp-headless-output-DEPTH-metadata.csv) is:  
+The samples that demonstrate querying and retrieval of metadata are `rs-save-to-disk` and `rs-config-ui`.
+ - `rs-save-to-disk` saves the metadata attributes available for each stream into a comma-separated text file. For instance, for the Depth stream the possible [output ](metadata/rs-save-to-disk-output-DEPTH-metadata.csv) is:  
 
 Stream |Depth
 :-----:|------:|

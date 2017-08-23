@@ -79,7 +79,7 @@ stream.start([](rs2::frame) {});
 
 ## New Functionality
 
-* **librealsense2** will be shipped with built-in [Python Bindings](../wrappers/python/) for easier integration.
+* **librealsense2** will be shipped with built-in [Python Wrapper](../wrappers/python/) for easier integration.
 * New [troubleshooting tools](../tools/) are now part of the package, including a tool for hardware-log collection.
 * **librealsense2** is capable of handling device disconnects and the discovery of new devices at runtime.
 * [Playback & Record](../src/media/readme.md) functionality is available out-of-the-box. 

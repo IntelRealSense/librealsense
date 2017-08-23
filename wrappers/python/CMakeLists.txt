@@ -3,7 +3,7 @@
 # ubuntu 16.04 LTS cmake version 3.5.1
 cmake_minimum_required(VERSION 2.8.3)
 
-project(RealsensePythonBindings)
+project(RealsensePythonWrappers)
 
 # Save the command line compile commands in the build output
 set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
@@ -27,7 +27,7 @@ add_subdirectory(third_party/pybind11)
 
 pybind11_add_module(pyrealsense2 python.cpp)
 target_link_libraries(pyrealsense2 ${DEPENDENCIES})
-set_target_properties(pyrealsense2 PROPERTIES FOLDER Bindings)
+set_target_properties(pyrealsense2 PROPERTIES FOLDER Wrappers)
 
 set(RAW_RS_CPP ../../src/backend.cpp ../../src/win/win-helpers.cpp ../../src/win/win-uvc.cpp pybackend_extras.cpp pybackend.cpp
            ../../src/win/win-usb.cpp ../../src/win/win-backend.cpp ../../src/linux/backend-v4l2.cpp ../../src/linux/backend-hid.cpp ../../src/types.cpp
@@ -37,5 +37,5 @@ set(RAW_RS_HPP ../../src/backend.h ../../src/win/win-helpers.h ../../src/win/win
            ../../src/types.h ../../third-party/easyloggingpp/src/easylogging++.h)
 pybind11_add_module(pybackend2 ${RAW_RS_CPP} ${RAW_RS_HPP})
 target_link_libraries(pybackend2 ${LIBUSB1_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
-set_target_properties(pybackend2 PROPERTIES FOLDER Bindings)
+set_target_properties(pybackend2 PROPERTIES FOLDER Wrappers)
 include_directories(rs-pybackend2 ../../include)

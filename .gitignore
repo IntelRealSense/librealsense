@@ -81,8 +81,6 @@ librealsense-log.txt
 *.list
 *.txt
 !CMakeLists.txt
-*.cmake
-!config.cmake
 *.json
 *.ini
 *.cxx
