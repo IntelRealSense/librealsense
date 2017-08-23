@@ -614,7 +614,7 @@ if (ENFORCE_METADATA)
 endif()
 
 if (BUILD_PYTHON_BINDINGS)
-  add_subdirectory(bindings/python)
+  add_subdirectory(wrappers/python)
 endif()
 
 # Check for unreferenced files

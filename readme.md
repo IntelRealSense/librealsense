@@ -12,7 +12,7 @@ It allows streaming of depth, color and fisheye video, and provides intrinsic an
 
 The library aims to provide an easy to use API and tools for computer vision professionals, game developers and other Intel RealSense technology enthusiasts.
 
-We provide a C, C++, and [Python](./bindings/python) API.
+We provide a C, C++, and [Python](./wrappers/python) API.
 Developer kits containing the necessary hardware to use this library are available for purchase at [click.intel.com](http://click.intel.com/realsense.html).
 
 ## Quick Start
