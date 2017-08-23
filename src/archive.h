@@ -191,7 +191,7 @@ namespace librealsense
             return first()->get_sensor();
         }
     };
-    
+
     MAP_EXTENSION(RS2_EXTENSION_COMPOSITE_FRAME, librealsense::composite_frame);
 
     class video_frame : public frame
@@ -217,7 +217,7 @@ namespace librealsense
     private:
         int _width, _height, _bpp, _stride;
     };
-    
+
     MAP_EXTENSION(RS2_EXTENSION_VIDEO_FRAME, librealsense::video_frame);
 
     class depth_frame : public video_frame
@@ -259,9 +259,9 @@ namespace librealsense
                 }
             }, get_frame_data()));
         }
-  
+
     private:
-        static float query_units(const std::shared_ptr<sensor_interface>& sensor) 
+        static float query_units(const std::shared_ptr<sensor_interface>& sensor)
         {
             if (sensor != nullptr)
             {

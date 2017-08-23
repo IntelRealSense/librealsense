@@ -344,19 +344,19 @@ namespace rs2
             auto count = size();
             for (size_t i = 0; i < count; i++)
             {
-                auto fref = rs2_extract_frame(get(), i, &e);
+                auto fref = rs2_extract_frame(get(), (int)i, &e);
                 error::handle(e);
 
                 action(frame(fref));
             }
         }
 
-        frame operator[](int index) const
+        frame operator[](size_t index) const
         {
             rs2_error* e = nullptr;
             if(index < size())
             {
-                 auto fref = rs2_extract_frame(get(), index, &e);
+                 auto fref = rs2_extract_frame(get(), (int)index, &e);
                  error::handle(e);
                  return frame(fref);
             }
@@ -447,7 +447,7 @@ namespace rs2
         frameset() : _frame(nullptr) { }
         frameset(composite_frame f) : _frame(std::move(f)) {}
 
-        unsigned int size() const
+        size_t size() const
         {
             if (!_frame) return 0;
 
@@ -485,12 +485,12 @@ namespace rs2
             return res;
         }
 
-        frame operator[](int index) const
+        frame operator[](size_t index) const
         {
             return at(index);
         }
 
-        frame at(int index) const
+        frame at(size_t index) const
         {
             return _frame[index];
         }
@@ -498,14 +498,14 @@ namespace rs2
         class iterator
         {
         public:
-            iterator(frameset* owner, int index = 0) : _owner(owner), _index(index) {}
+            iterator(frameset* owner, size_t index = 0) : _owner(owner), _index(index) {}
             iterator& operator++() { ++_index; return *this; }
             bool operator==(const iterator& other) const { return _index == other._index; }
             bool operator!=(const iterator& other) const { return !(*this == other); }
 
             frame operator*(){return _owner->at(_index);}
         private:
-            int _index = 0;
+            size_t _index = 0;
             frameset* _owner;
         };
 

@@ -74,7 +74,7 @@ namespace librealsense
     class ds5_depth_sensor : public uvc_sensor, public video_sensor_interface, public depth_sensor
     {
     public:
-        explicit ds5_depth_sensor(ds5_device* owner, 
+        explicit ds5_depth_sensor(ds5_device* owner,
             std::shared_ptr<platform::uvc_device> uvc_device,
             std::unique_ptr<frame_timestamp_reader> timestamp_reader)
 
@@ -188,7 +188,7 @@ namespace librealsense
                            const platform::backend_device_group& group)
         : device(ctx, group),
           _depth_stream(new stream(ctx, RS2_STREAM_DEPTH)),
-          _left_ir_stream(new stream(ctx, RS2_STREAM_INFRARED, 1)), 
+          _left_ir_stream(new stream(ctx, RS2_STREAM_INFRARED, 1)),
           _right_ir_stream(new stream(ctx, RS2_STREAM_INFRARED, 2)),
           _depth_device_idx(add_sensor(create_depth_device(ctx, group.uvc_devices)))
     {
@@ -213,7 +213,7 @@ namespace librealsense
 
         // Define Left-Right extrinsics calculation (lazy)
         _left_right_extrinsics = std::make_shared<lazy<rs2_extrinsics>>([this]()
-        {            
+        {
             rs2_extrinsics ext = identity_matrix();
             auto table = check_calib<coefficients_table>(*_coefficients_table_raw);
             ext.translation[0] = -0.001f * table->baseline;

@@ -199,7 +199,7 @@ int rs2_is_frame_extendable_to(const rs2_frame* frame, rs2_extension extension_t
 * Allocate new video frame using a frame-source provided form a processing block
 * \param[in] source      Frame pool to allocate the frame from
 * \param[in] new_stream  New stream profile to assign to newly created frame
-* \param[in] original    A reference frame that can be used to fill in auxilary information like format, width, height, bpp, stride (if applicable) 
+* \param[in] original    A reference frame that can be used to fill in auxilary information like format, width, height, bpp, stride (if applicable)
 * \param[in] new_bpp     New value for bits per pixel for the allocated frame
 * \param[in] new_width   New value for width for the allocated frame
 * \param[in] new_height  New value for height for the allocated frame

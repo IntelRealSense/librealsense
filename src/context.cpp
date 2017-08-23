@@ -75,7 +75,7 @@ namespace librealsense
        });
     }
 
-    
+
     class recovery_info : public device_info
     {
     public:

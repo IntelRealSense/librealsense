@@ -68,10 +68,10 @@ namespace librealsense
         // per requested profile, find all 4ccs that support that request.
         std::map<int, std::set<uint32_t>> legal_fourccs;
         auto profiles = get_stream_profiles();
-        for (auto&& r : requests) 
+        for (auto&& r : requests)
         {
             auto sp = to_profile(r.get());
-            for (auto&& mode : profiles) 
+            for (auto&& mode : profiles)
             {
                 if (auto backend_profile = dynamic_cast<backend_stream_profile*>(mode.get()))
                 {
@@ -213,7 +213,7 @@ namespace librealsense
                         profile->set_stream_index(output.first.index);
                         profile->set_format(output.second);
                         profile->set_framerate(p.fps);
-                        
+
                         results.insert(profile);
                     }
                 }
@@ -252,10 +252,10 @@ namespace librealsense
 
         // Sort the results to make sure that the user will receive predictable deterministic output from the API
         stream_profiles res{ begin(results), end(results) };
-        std::sort(res.begin(), res.end(), [](const std::shared_ptr<stream_profile_interface>& ap, 
+        std::sort(res.begin(), res.end(), [](const std::shared_ptr<stream_profile_interface>& ap,
                                              const std::shared_ptr<stream_profile_interface>& bp)
         {
-            auto a = to_profile(ap.get()); 
+            auto a = to_profile(ap.get());
             auto b = to_profile(bp.get());
 
             auto at = std::make_tuple(a.stream, a.width, a.height, a.fps, a.format);
@@ -310,7 +310,7 @@ namespace librealsense
 
                     if (!this->is_streaming())
                     {
-                        LOG_WARNING("Frame received with streaming inactive," 
+                        LOG_WARNING("Frame received with streaming inactive,"
                             << librealsense::get_string(mode.unpacker->outputs.front().first.type)
                             << mode.unpacker->outputs.front().first.index
                                 << ", Arrived," << std::fixed << system_time);
@@ -590,10 +590,10 @@ namespace librealsense
         _metadata_parsers.get()->insert(std::pair<rs2_frame_metadata, std::shared_ptr<md_attribute_parser_base>>(metadata, metadata_parser));
     }
 
-    hid_sensor::hid_sensor(std::shared_ptr<platform::hid_device> hid_device, std::unique_ptr<frame_timestamp_reader> hid_iio_timestamp_reader, 
-        std::unique_ptr<frame_timestamp_reader> custom_hid_timestamp_reader, 
-        std::map<rs2_stream, std::map<unsigned, unsigned>> fps_and_sampling_frequency_per_rs2_stream, 
-        std::vector<std::pair<std::string, stream_profile>> sensor_name_and_hid_profiles, 
+    hid_sensor::hid_sensor(std::shared_ptr<platform::hid_device> hid_device, std::unique_ptr<frame_timestamp_reader> hid_iio_timestamp_reader,
+        std::unique_ptr<frame_timestamp_reader> custom_hid_timestamp_reader,
+        std::map<rs2_stream, std::map<unsigned, unsigned>> fps_and_sampling_frequency_per_rs2_stream,
+        std::vector<std::pair<std::string, stream_profile>> sensor_name_and_hid_profiles,
         device* dev)
     : sensor_base("Motion Module", dev), _sensor_name_and_hid_profiles(sensor_name_and_hid_profiles),
       _fps_and_sampling_frequency_per_rs2_stream(fps_and_sampling_frequency_per_rs2_stream),
@@ -671,7 +671,7 @@ namespace librealsense
                 auto it = std::find_if(begin(map.unpacker->outputs), end(map.unpacker->outputs),
                                        [&](const std::pair<stream_descriptor, rs2_format>& pair)
                 {
-                    return pair.first.type == request->get_stream_type() && 
+                    return pair.first.type == request->get_stream_type() &&
                            pair.first.index == request->get_stream_index();
                 });
 
@@ -833,7 +833,7 @@ namespace librealsense
         _custom_hid_timestamp_reader->reset();
     }
 
-    std::vector<uint8_t> hid_sensor::get_custom_report_data(const std::string& custom_sensor_name, 
+    std::vector<uint8_t> hid_sensor::get_custom_report_data(const std::string& custom_sensor_name,
         const std::string& report_name, platform::custom_sensor_report_field report_field) const
     {
         return _hid_device->get_custom_report_data(custom_sensor_name, report_name, report_field);

@@ -304,7 +304,7 @@ namespace rs2
                     }
                     ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, { 1,1,1,1 });
 
-                    try 
+                    try
                     {
                         if (ImGui::Combo(id.c_str(), &selected, labels.data(),
                             static_cast<int>(labels.size())))
@@ -328,7 +328,7 @@ namespace rs2
                     ImGui::Columns(1);
                 }
 
-                
+
             }
 
             if (opt == RS2_OPTION_ENABLE_AUTO_EXPOSURE && dev->auto_exposure_enabled && dev->streaming)
@@ -491,7 +491,7 @@ namespace rs2
     }
 
     subdevice_model::subdevice_model(device& dev, sensor& s, std::string& error_message)
-        : s(s), dev(dev), streaming(false), 
+        : s(s), dev(dev), streaming(false),
           selected_shared_fps_id(0), _pause(false)
     {
         try
@@ -705,7 +705,7 @@ namespace rs2
         //ImGui::Columns(2, label.c_str(), false);
         //ImGui::SetColumnOffset(1, 135);
         auto col0 = ImGui::GetCursorPosX();
-        auto col1 = 135;
+        auto col1 = 135.f;
 
         // Draw combo-box with all resolution options for this device
         auto res_chars = get_string_pointers(resolutions);
@@ -892,16 +892,16 @@ namespace rs2
                 {
                     if (auto vid_prof = p.as<video_stream_profile>())
                     {
-                        if (vid_prof.width() == width && 
-                            vid_prof.height() == height && 
+                        if (vid_prof.width() == width &&
+                            vid_prof.height() == height &&
                             p.unique_id() == stream &&
-                            p.fps() == fps && 
+                            p.fps() == fps &&
                             p.format() == format)
                             results.push_back(p);
                     }
                     else
                     {
-                        if (p.fps() == fps && 
+                        if (p.fps() == fps &&
                             p.unique_id() == stream &&
                             p.format() == format)
                             results.push_back(p);
@@ -1370,7 +1370,7 @@ namespace rs2
         int i = 0;
         for (auto&& s : streams)
         {
-            if (s.second.is_stream_visible() && 
+            if (s.second.is_stream_visible() &&
                 s.second.texture->get_last_frame() &&
                 s.second.profile.stream_type() == RS2_STREAM_DEPTH)
             {
@@ -1661,7 +1661,7 @@ namespace rs2
 
         std::string tooltip;
         if (dev && dev->dev.supports(RS2_CAMERA_INFO_NAME) &&
-            dev->dev.supports(RS2_CAMERA_INFO_SERIAL_NUMBER) && 
+            dev->dev.supports(RS2_CAMERA_INFO_SERIAL_NUMBER) &&
             dev->s.supports(RS2_CAMERA_INFO_NAME))
         {
             std::string dev_name = dev->dev.get_info(RS2_CAMERA_INFO_NAME);
@@ -2119,7 +2119,7 @@ namespace rs2
                 if (dev.supports(info))
                 {
                     auto value = dev.get_info(info);
-                    infos.push_back({ std::string(rs2_camera_info_to_string(info)), 
+                    infos.push_back({ std::string(rs2_camera_info_to_string(info)),
                                       std::string(value) });
                 }
             }
@@ -2445,7 +2445,7 @@ namespace rs2
 
         if (fullscreen)
         {
-            results[stream_index[selected_stream]] = { static_cast<float>(x0), static_cast<float>(y0 + top_bar_height), 
+            results[stream_index[selected_stream]] = { static_cast<float>(x0), static_cast<float>(y0 + top_bar_height),
                                                        static_cast<float>(width), static_cast<float>(height - top_bar_height) };
         }
         else
@@ -2591,7 +2591,7 @@ namespace rs2
         }
     }
 
-    void viewer_model::update_3d_camera(const rect& viewer_rect, 
+    void viewer_model::update_3d_camera(const rect& viewer_rect,
                                         mouse_info& mouse, bool force)
     {
         auto now = std::chrono::high_resolution_clock::now();
@@ -2693,7 +2693,7 @@ namespace rs2
     {
         auto p = dev.as<playback>();
         rs2_playback_status current_playback_status = p.current_status();
-        
+
         ImGui::PushFont(font);
         ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, { 20,0 });
         //const int button_space = 150;
@@ -2705,17 +2705,17 @@ namespace rs2
 
         //////////////////// Step Backwards Button ////////////////////
         std::string label = to_string() << u8"\uf048" << "##Step Backwards " << id;
-        
+
         if (ImGui::ButtonEx(label.c_str(), { button_dim, button_dim }, (!supports_playback_step || buttons_disabled) ? ImGuiButtonFlags_Disabled : 0))
         {
             //p.skip_frames(1);
         }
-        
+
 
         if (ImGui::IsItemHovered())
         {
             std::string tooltip = to_string() << "Step Backwards" << (buttons_disabled || supports_playback_step ? "" : "(Not available)");
-            ImGui::SetTooltip(tooltip.c_str());
+            ImGui::SetTooltip("%s", tooltip.c_str());
         }
         ImGui::SameLine();
         //////////////////// Step Backwards Button ////////////////////
@@ -2731,7 +2731,7 @@ namespace rs2
         if (ImGui::IsItemHovered())
         {
             std::string tooltip = to_string() << "Stop Playback" << (buttons_disabled || supports_playback_stop ? "" : "(Not available)");
-            ImGui::SetTooltip(tooltip.c_str());
+            ImGui::SetTooltip("%s", tooltip.c_str());
         }
         ImGui::SameLine();
         //////////////////// Stop Button ////////////////////
@@ -2763,11 +2763,11 @@ namespace rs2
                 ImGui::SetTooltip("Pause Playback");
             }
         }
-        
+
         ImGui::SameLine();
         //////////////////// Pause/Play Button ////////////////////
 
-        
+
 
 
         //////////////////// Step Forward Button ////////////////////
@@ -2779,7 +2779,7 @@ namespace rs2
         if (ImGui::IsItemHovered())
         {
             std::string tooltip = to_string() << "Step Forward" << (buttons_disabled || supports_playback_step ? "" : "(Not available)");
-            ImGui::SetTooltip(tooltip.c_str());
+            ImGui::SetTooltip("%s", tooltip.c_str());
         }
         ImGui::SameLine();
         //////////////////// Step Forward Button ////////////////////
@@ -2859,7 +2859,7 @@ namespace rs2
         auto seek_bar_height = draw_seek_bar();
         ImGui::PopStyleColor(6);
         return controls_height + seek_bar_height;
-        
+
     }
 
     std::vector<std::string> get_device_info(const device& dev, bool include_location)
@@ -3175,8 +3175,8 @@ namespace rs2
             ImGui::Text("Received the following notification:");
             std::stringstream ss;
             ss  << "Timestamp: "
-                << std::fixed << selected.timestamp 
-                << "\nSeverity: " << selected.severity 
+                << std::fixed << selected.timestamp
+                << "\nSeverity: " << selected.severity
                 << "\nDescription: " << selected.message;
             auto s = ss.str();
             ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, regular_blue);

@@ -6,7 +6,7 @@
 #include "stream.h"
 
 librealsense::record_sensor::record_sensor(const device_interface& device,
-                                            sensor_interface& sensor, 
+                                            sensor_interface& sensor,
                                             frame_interface_callback_t on_frame,
                                             snapshot_callback_t on_snapshot) :
     m_device_record_snapshot_handler(on_snapshot),
@@ -86,7 +86,7 @@ void librealsense::record_sensor::register_notifications_callback(notifications_
     m_user_notification_callback = std::move(callback);
     std::unique_ptr<rs2_notifications_callback, void(*)(rs2_notifications_callback*)> cb(new notification_callback([&](rs2_notification* n)
     {
-        if(m_user_notification_callback) 
+        if(m_user_notification_callback)
             m_user_notification_callback->on_notification(n);
     }), [](rs2_notifications_callback* p) { p->release(); });
     m_sensor.register_notifications_callback(std::move(cb));
@@ -98,7 +98,7 @@ void librealsense::record_sensor::start(frame_callback_ptr callback)
     {
         return; //already started
     }
-    
+
     //TODO: Also handle case where live sensor is already streaming
 
     auto record_cb = [this, callback](frame_holder frame)

@@ -4,7 +4,7 @@
 #include <librealsense2/rs.hpp> // Include RealSense Cross Platform API
 #include "example.hpp"          // Include short list of convenience functions for rendering
 
-// Capture Example demonstrates how to 
+// Capture Example demonstrates how to
 // capture depth and color video streams and render them to the screen
 int main(int argc, char * argv[]) try
 {
@@ -19,7 +19,7 @@ int main(int argc, char * argv[]) try
     // Declare RealSense pipeline, encapsulating the actual device and sensors
     rs2::pipeline pipe;
     // Start streaming with default recommended configuration
-    pipe.start(); 
+    pipe.start();
 
     while(app) // Application still alive?
     {

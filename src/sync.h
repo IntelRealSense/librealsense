@@ -30,7 +30,7 @@ namespace librealsense
             if (!_is_locked) return;
             _mutex.unlock();
             _is_locked = false;
-            
+
         }
 
         ~sync_lock()
@@ -38,13 +38,13 @@ namespace librealsense
             if (_is_locked)
             {
                 _mutex.unlock();
-                
+
             }
         }
-        
+
     private:
         bool _is_locked = true;
-        
+
         std::mutex& _mutex;
     };
     //sync_lock::ref = 0;
