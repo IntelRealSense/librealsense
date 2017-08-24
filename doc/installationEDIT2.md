@@ -13,7 +13,7 @@ Intel® RealSense™ Linux Installation comprises the following phases:
 
 The RealSense™ installation requires two external dependencies: *glfw3* and *libusb-1.0*   
 In addition, the *Cmake* build environment requires *pkg-config*
-* **Note:** *glfw3* is required only if you plan to build the example code, not for the *librealsense* core library.
+**Note:** *glfw3* is required only if you plan to build the example code, not for the *librealsense* core library.
 
 **Important:** Several scripts below invoke `wget, git, add-apt-repository` which may be blocked by router settings or a firewall. Infrequently, *apt-get* mirrors or repositories may also timeout.  
 For *librealsense* users behind an enterprise firewall, configuring the system-wide Ubuntu proxy generally resolves most timeout issues.
