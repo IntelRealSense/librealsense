@@ -6,8 +6,9 @@
 
 #include <string>
 #include <map>
-#include <algorithm>                // std::ceil
+#include <algorithm>
 #include <mutex>                    // std::mutex, std::lock_guard
+#include <cmath>                    // std::ceil
 
 const std::string no_cammera_message = "No camera connected, please connect 1 or more";
 const std::string platform_camera_name = "Platform Camera";
