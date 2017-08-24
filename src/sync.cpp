@@ -308,9 +308,10 @@ namespace librealsense
                 //std::cout<<s.str();
                 LOG_DEBUG(s.str());
                 frame_holder composite = env.source->allocate_composite_frame(std::move(match));
-
-
-                _callback(std::move(composite), env);
+                if (composite.frame)
+                {
+                    _callback(std::move(composite), env);
+                }
             }
         } while (synced_frames.size() > 0);
     }

@@ -50,7 +50,7 @@ namespace librealsense
 
         synthetic_source_interface& get_source() override { return _source_wrapper; }
 
-        ~processing_block(){_source.flush();}
+        virtual ~processing_block(){_source.flush();}
     protected:
         frame_source _source;
         std::mutex _mutex;

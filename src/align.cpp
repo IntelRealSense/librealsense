@@ -201,8 +201,8 @@ namespace librealsense
             req_size += get_embeded_frames_size(f.frame);
 
         auto res = _actual_source.alloc_frame(RS2_EXTENSION_COMPOSITE_FRAME, req_size * sizeof(rs2_frame*), d, true);
-        if (!res)
-            throw wrong_api_call_sequence_exception("Out of frame resources!");
+        if (!res) return nullptr;
+
         auto cf = static_cast<composite_frame*>(res);
 
         auto frames = cf->get_frames();

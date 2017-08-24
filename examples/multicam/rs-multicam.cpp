@@ -2,7 +2,6 @@
 // Copyright(c) 2015-2017 Intel Corporation. All Rights Reserved.
 
 #include <librealsense2/rs.hpp>     // Include RealSense Cross Platform API
-#include <librealsense2/rsutil.hpp> // Include Config utility class
 #include "example.hpp"              // Include short list of convenience functions for rendering
 
 #include <string>
@@ -10,112 +9,191 @@
 #include <algorithm>                // std::ceil
 #include <mutex>                    // std::mutex, std::lock_guard
 
-// Structs for managing connected devices
-struct dev_data { rs2::device dev; texture tex; rs2::frame_queue queue; };
-struct state { std::mutex m; std::map<std::string, dev_data> frames; rs2::colorizer depth_to_frame; };
+const std::string no_cammera_message = "No camera connected, please connect 1 or more";
+const std::string platform_camera_name = "Platform Camera";
 
-// Helper functions
-void add_device(state& app_state, rs2::device& dev);
-void remove_devices(state& app_state, const rs2::event_information& info);
+class device_container
+{
+    // Helper struct per pipeline
+    struct view_port
+    {
+        std::map<int, rs2::frame> frames_per_stream;
+        rs2::colorizer colorize_frame;
+        texture tex;
+        rs2::pipeline pipe;
+    };
+
+public:
+
+    void enable_device(rs2::device dev)
+    {
+        std::string serial_number(dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER));
+        std::lock_guard<std::mutex> lock(_mutex);
+
+        if (_devices.find(serial_number) != _devices.end())
+        {
+            return; //already in
+        }
+
+        // Ignoring platform cameras (webcams, etc..)
+        if (platform_camera_name == dev.get_info(RS2_CAMERA_INFO_NAME))
+        {
+            return;
+        }
+        // Create a pipeline from the given device
+        rs2::pipeline p(dev);
+
+        // Hold it internally
+        _devices.emplace(serial_number, view_port{ {},{},{}, p });
+
+        // Start the pipeline with the default configuration
+        p.start();
+    }
+
+    void remove_devices(const rs2::event_information& info)
+    {
+        std::lock_guard<std::mutex> lock(_mutex);
+        // Go over the list of devices and check if it was disconnected
+        for (auto itr = _devices.begin(); itr != _devices.end(); ++itr)
+        {
+            if (info.was_removed(itr->second.pipe.get_device()))
+            {
+                _devices.erase(itr);
+            }
+        }
+    }
+    int device_count()
+    {
+        std::lock_guard<std::mutex> lock(_mutex);
+        return _devices.size();
+    }
+
+    int stream_count()
+    {
+        std::lock_guard<std::mutex> lock(_mutex);
+        int count = 0;
+        for (auto&& sn_to_dev : _devices)
+        {
+            for (auto&& stream : sn_to_dev.second.frames_per_stream)
+            {
+                if (stream.second)
+                {
+                    count++;
+                }
+            }
+        }
+        return count;
+    }
+
+    void poll_frames()
+    {
+        std::lock_guard<std::mutex> lock(_mutex);
+        // Go over all device
+        for (auto&& view : _devices)
+        {
+            // Ask each pipeline if there are new frames available
+            rs2::frame f;
+            if (view.second.pipe.poll_for_frame(&f))
+            {
+                if (auto frameset = f.as<rs2::composite_frame>())
+                {
+                    for (int i = 0; i < frameset.size(); i++)
+                    {
+                        rs2::frame new_frame = frameset[i];
+                        int stream_id = new_frame.get_profile().unique_id();
+                        view.second.frames_per_stream[stream_id] = view.second.colorize_frame(new_frame); //update view port with the new stream
+                    }
+                }
+            }
+        }
+    }
+    void render_textures(int cols, int rows, float view_width, float view_height)
+    {
+        std::lock_guard<std::mutex> lock(_mutex);
+        int stream_no = 0;
+        for (auto&& view : _devices)
+        {
+            // For each device get its frames
+            for (auto&& id_to_frame : view.second.frames_per_stream)
+            {
+                // If the frame is available
+                if (id_to_frame.second)
+                {
+                    view.second.tex.upload(id_to_frame.second);
+                }
+                rect frame_location{ view_width * (stream_no % cols), view_height * (stream_no / cols), view_width, view_height };
+                if (rs2::video_frame vid_frame = id_to_frame.second.as<rs2::video_frame>())
+                {
+                    rect adjuested = frame_location.adjust_ratio({ static_cast<float>(vid_frame.get_width())
+                                                                 , static_cast<float>(vid_frame.get_height()) });
+                    view.second.tex.show(adjuested);
+                    stream_no++;
+                }
+            }
+        }
+    }
+private:
+    std::mutex _mutex;
+    std::map<std::string, view_port> _devices;
+};
+
 
 int main(int argc, char * argv[]) try
 {
     // Create a simple OpenGL window for rendering:
     window app(1280, 960, "CPP Multi-Camera Example");
-    // Construct an object to help track connected cameras
-    state app_state;
 
-    
-    // Create librealsense context for managing devices
-    rs2::context ctx;
-    // Register callback for tracking which devices are currently connected
-    ctx.set_devices_changed_callback([&app_state](rs2::event_information& info){
-        remove_devices(app_state, info);
+    device_container connected_devices;
 
+    rs2::context ctx;    // Create librealsense context for managing devices
+
+                         // Register callback for tracking which devices are currently connected
+    ctx.set_devices_changed_callback([&](rs2::event_information& info)
+    {
+        connected_devices.remove_devices(info);
         for (auto&& dev : info.get_new_devices())
-            add_device(app_state, dev);
+        {
+            connected_devices.enable_device(dev);
+        }
     });
 
     // Initial population of the device list
     for (auto&& dev : ctx.query_devices()) // Query the list of connected RealSense devices
-        add_device(app_state, dev);
+    {
+        connected_devices.enable_device(dev);
+    }
 
     while (app) // Application still alive?
     {
-        // This app uses the device list asyncronously, so we need to lock it
-        std::lock_guard<std::mutex> lock(app_state.m);
-
-        // Calculate the size of each stream given stream count and window size
-        int c = std::ceil(std::sqrt(app_state.frames.size()));
-        int r = std::ceil(app_state.frames.size() / static_cast<float>(c));
-        float w = app.width()/c;
-        float h = app.height()/r;
-
-        int stream_no = 0;
-        for (auto&& kvp : app_state.frames)
+        connected_devices.poll_frames();
+        auto total_number_of_streams = connected_devices.stream_count();
+        if (total_number_of_streams == 0)
         {
-            auto&& device = kvp.second;
-            // If we've gotten a new image from the device, upload that
-            rs2::frame f;
-            if (device.queue.poll_for_frame(&f))
-                device.tex.upload(f);
-
-            // Display the latest frame in the right position on screen
-            device.tex.show({ w*(stream_no%c), h*(stream_no / c), w, h });
-            ++stream_no;
+            draw_text(std::max(0.f, (app.width() / 2) - no_cammera_message.length() * 3), app.height() / 2, no_cammera_message.c_str());
+            continue;
         }
+        if (connected_devices.device_count() == 1)
+        {
+            draw_text(0, 10, "Please connect another camera");
+        }
+        int cols = std::ceil(std::sqrt(total_number_of_streams));
+        int rows = std::ceil(total_number_of_streams / static_cast<float>(cols));
+
+        float view_width = (app.width() / cols);
+        float view_height = (app.height() / rows);
+
+        connected_devices.render_textures(cols, rows, view_width, view_height);
     }
 
     return EXIT_SUCCESS;
 }
-catch(const rs2::error & e)
+catch (const rs2::error & e)
 {
     std::cerr << "RealSense error calling " << e.get_failed_function() << "(" << e.get_failed_args() << "):\n    " << e.what() << std::endl;
     return EXIT_FAILURE;
 }
-catch(const std::exception & e)
+catch (const std::exception & e)
 {
     std::cerr << e.what() << std::endl;
     return EXIT_FAILURE;
-}
-
-// Helper function for adding new devices to the application
-void add_device(state& app_state, rs2::device& dev)
-{
-    // Create a config object to help configure how the device will stream
-    rs2::util::config c;
-
-    // Select depth if possible, default to color otherwise
-    if (c.can_enable_stream(dev, RS2_STREAM_DEPTH, rs2::preset::best_quality))
-        c.enable_stream(RS2_STREAM_DEPTH, rs2::preset::best_quality);
-    else
-        c.enable_stream(RS2_STREAM_COLOR, rs2::preset::best_quality);
-
-    // Open the device for streaming
-    auto s = c.open(dev);
-
-    // Register device in app state
-    std::string sn(dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER));
-    std::lock_guard<std::mutex> lock(app_state.m);
-    app_state.frames.emplace(sn, dev_data{ dev, texture(), rs2::frame_queue(1) });
-
-    // Start streaming. The callback processes depth frames and then stores them for displaying
-    s.start([&app_state, sn](rs2::frame f) {
-        std::lock_guard<std::mutex> lock(app_state.m);
-        app_state.frames[sn].queue(app_state.depth_to_frame(f));
-    });
-}
-
-// Helper function to remove disconnected devices from the application
-void remove_devices(state& app_state, const rs2::event_information& info)
-{
-    // app state is accessed asyncronously, so get a lock
-    std::lock_guard<std::mutex> lock(app_state.m);
-
-    auto itr = app_state.frames.begin();
-    while (itr != app_state.frames.end())
-        if (info.was_removed(itr->second.dev))
-            app_state.frames.erase(itr++);
-        else
-            ++itr;
 }
