@@ -41,10 +41,10 @@ For *librealsense* users behind an enterprise firewall, configuring the system-w
 ## Install librealsense
 1. Install the packages required for the **librealsense** build:  
 
-  1.1 **libusb-1.0** and **pkg-config**:  
+    1.1 **libusb-1.0** and **pkg-config**:  
    `sudo apt-get install libusb-1.0-0-dev pkg-config libgtk-3-dev`
 
-  1.2. **glfw3**:
+    1.2. **glfw3**:
     * For Ubuntu 16.04:   
     Install **glfw3** via `sudo apt-get install libglfw3-dev`  
 
@@ -53,19 +53,19 @@ For *librealsense* users behind an enterprise firewall, configuring the system-w
 2. Library Build Process:<br />
   **librealsense** employs **CMake** as a cross-platform build and project management system.  
 
-  2.1 Navigate to *librealsense* root directory and run `mkdir build && cd build`<br />  
+    2.1 Navigate to *librealsense* root directory and run `mkdir build && cd build`<br />  
 
-  2.2 Run **CMake**:
+    2.2 Run **CMake**:
     * `cmake ../` - The default build is set to produce the core shared object and unit-tests binaries<br /><br />
     * `cmake ../ -DBUILD_EXAMPLES=true` - Builds *librealsense* along with the demos and tutorials<br /><br />
     * `cmake ../ -DBUILD_EXAMPLES=true -DBUILD_GRAPHICAL_EXAMPLES=false` - For systems without OpenGL or X11 build only textual examples <br /> <br />  
 
    2.3 Recompile and Install **librealsense** binaries:<br />
-  * `sudo make uninstall && make clean && make && sudo make install`<br />
+    * `sudo make uninstall && make clean && make && sudo make install`<br />
   The shared object will be installed in `/usr/local/lib`, header files in `/usr/local/include`<br />
   The demos, tutorials and tests will be located in `/usr/local/bin`<br />   
 
-  *  **Tip:** Use *`make -jX`* for parallel compilation, where *`X`* stands for the number of CPU cores available:<br />  `sudo make uninstall && make clean && make -j8 && sudo make install`<br />
+    *  **Tip:** Use *`make -jX`* for parallel compilation, where *`X`* stands for the number of CPU cores available:<br />  `sudo make uninstall && make clean && make -j8 && sudo make install`<br />
   This enhancement will significantly improve build time. The side-effect, however, is that it may cause a low-end platform to hang randomly<br />  
   **Note:** Linux build configuration is currently configured to use the V4L2 backend by default.
   <br /> <br />      
