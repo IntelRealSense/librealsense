@@ -13,7 +13,8 @@ namespace rs2
 {
     class pipeline
     {
-    public:  
+    public:
+
         pipeline(context ctx = context())
             : _ctx(ctx)
         {
@@ -24,13 +25,64 @@ namespace rs2
             error::handle(e);
         }
 
+        pipeline(device dev)
+            : _ctx(context()), _dev(dev)
+        {
+            rs2_error* e = nullptr;
+            _pipeline = std::shared_ptr<rs2_pipeline>(
+                rs2_create_pipeline_with_device(_ctx._context.get(), _dev.get().get(), &e),
+                rs2_delete_pipeline);
+            error::handle(e);
+        }
+
+        /**
+        * Retrieved the device used by the pipeline
+        * \param[in] ctx   context
+        * \param[in] pipe  pipeline
+        * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+        * \return the device used by the pipeline
+        */
+        device get_device() const
+        {
+            rs2_error* e = nullptr;
+            std::shared_ptr<rs2_device> dev(
+                rs2_pipeline_get_device(_ctx._context.get(), _pipeline.get(), &e),
+                rs2_delete_device);
+
+            error::handle(e);
+
+            return device(dev);
+        }
+
         /**
         * Start streaming with default configuration or configuration commited by enable_stream
         */
-        void start()
+        void start() const
         {
             rs2_error* e = nullptr;
             rs2_start_pipeline(_pipeline.get(), &e);
+            error::handle(e);
+        }
+
+        /**
+        * Start passing frames into user provided callback
+        * \param[in] callback   Stream callback, can be any callable object accepting rs2::frame
+        */
+        template<class T>
+        void start(T callback) const
+        {
+            rs2_error* e = nullptr;
+            rs2_start_pipeline_with_callback_cpp(_pipeline.get(), new frame_callback<T>(std::move(callback)), &e);
+            error::handle(e);
+        }
+
+        /**
+        * Stop streaming
+        */
+        void stop() const
+        {
+            rs2_error* e = nullptr;
+            rs2_stop_pipeline(_pipeline.get(), &e);
             error::handle(e);
         }
 
@@ -43,7 +95,7 @@ namespace rs2
         * \param[in] format    stream format
         * \param[in] framerate    stream framerate
         */
-        void enable_stream(rs2_stream stream, int index, int width, int height, rs2_format format, int framerate)
+        void enable_stream(rs2_stream stream, int index, int width, int height, rs2_format format, int framerate) const
         {
             rs2_error* e = nullptr;
             rs2_enable_stream_pipeline(_pipeline.get(), stream, index, width, height, format, framerate, &e);
@@ -54,7 +106,7 @@ namespace rs2
         *  remove a configuration from the pipeline
         * \param[in] stream    stream type
         */
-        void disable_stream(rs2_stream stream)
+        void disable_stream(rs2_stream stream) const
         {
             rs2_error* e = nullptr;
             rs2_disable_stream_pipeline(_pipeline.get(), stream, &e);
@@ -65,7 +117,7 @@ namespace rs2
         *  remove all streams from the pipeline
         * \param[in] stream    stream type
         */
-        void disable_all()
+        void disable_all() const
         {
             rs2_error* e = nullptr;
             rs2_disable_all_streams_pipeline(_pipeline.get(), &e);
@@ -88,6 +140,7 @@ namespace rs2
 
     private:
         context _ctx;
+        device _dev;
         std::shared_ptr<rs2_pipeline> _pipeline;
     };
 }

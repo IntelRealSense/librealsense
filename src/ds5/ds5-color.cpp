@@ -16,7 +16,6 @@
 #include "ds5-private.h"
 #include "ds5-options.h"
 #include "ds5-timestamp.h"
-#include "stream.h"
 
 namespace librealsense
 {
@@ -39,53 +38,6 @@ namespace librealsense
 
         auto color_ep = create_color_device(ctx, color_devs_info);
     }
-
-    class ds5_color_sensor : public uvc_sensor, public video_sensor_interface
-    {
-    public:
-        explicit ds5_color_sensor(ds5_color* owner,
-            std::shared_ptr<platform::uvc_device> uvc_device,
-            std::unique_ptr<frame_timestamp_reader> timestamp_reader)
-            : uvc_sensor("RGB Camera", uvc_device, move(timestamp_reader), owner), _owner(owner)
-        {}
-
-        rs2_intrinsics get_intrinsics(const stream_profile& profile) const override
-        {
-            return get_intrinsic_by_resolution(
-                *_owner->_color_calib_table_raw,
-                ds::calibration_table_id::rgb_calibration_id,
-                profile.width, profile.height);
-        }
-
-        stream_profiles init_stream_profiles() override
-        {
-            auto results = uvc_sensor::init_stream_profiles();
-
-            for (auto p : results)
-            {
-                // Register stream types
-                if (p->get_stream_type() == RS2_STREAM_COLOR)
-                {
-                    assign_stream(_owner->_color_stream, p);
-                }
-
-                auto video = dynamic_cast<video_stream_profile_interface*>(p.get());
-                auto profile = to_profile(p.get());
-                video->set_intrinsics([profile, this]()
-                {
-                    return get_intrinsics(profile);
-                });
-
-                if (video->get_width() == 1920 && video->get_height() == 1080 && video->get_format() == RS2_FORMAT_RGB8 && video->get_framerate() == 15)
-                    video->make_default();
-            }
-
-            return results;
-        }
-
-    private:
-        const ds5_color* _owner;
-    };
 
     std::shared_ptr<uvc_sensor> ds5_color::create_color_device(std::shared_ptr<context> ctx,
         const std::vector<platform::uvc_device_info>& color_devices_info)
@@ -151,4 +103,37 @@ namespace librealsense
         return color_ep;
     }
 
+    rs2_intrinsics ds5_color_sensor::get_intrinsics(const stream_profile& profile) const
+    {
+        return get_intrinsic_by_resolution(
+            *_owner->_color_calib_table_raw,
+            ds::calibration_table_id::rgb_calibration_id,
+            profile.width, profile.height);
+    }
+
+    stream_profiles ds5_color_sensor::init_stream_profiles()
+    {
+        auto results = uvc_sensor::init_stream_profiles();
+
+        for (auto p : results)
+        {
+            // Register stream types
+            if (p->get_stream_type() == RS2_STREAM_COLOR)
+            {
+                assign_stream(_owner->_color_stream, p);
+            }
+
+            auto video = dynamic_cast<video_stream_profile_interface*>(p.get());
+            auto profile = to_profile(p.get());
+            video->set_intrinsics([profile, this]()
+            {
+                return get_intrinsics(profile);
+            });
+
+            if (video->get_width() == 1920 && video->get_height() == 1080 && video->get_format() == RS2_FORMAT_RGB8 && video->get_framerate() == 15)
+                video->make_default();
+        }
+
+        return results;
+    }
 }

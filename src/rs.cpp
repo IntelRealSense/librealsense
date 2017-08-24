@@ -1300,6 +1300,24 @@ rs2_pipeline* rs2_create_pipeline(rs2_context* ctx, rs2_error ** error) try
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, ctx)
 
+rs2_pipeline* rs2_create_pipeline_with_device(rs2_context* ctx, const rs2_device* dev, rs2_error ** error) try
+{
+    VALIDATE_NOT_NULL(ctx);
+
+    auto pipe = std::make_shared<librealsense::pipeline>(*ctx->ctx, dev->device);
+
+    return new rs2_pipeline{ pipe };
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, ctx, dev)
+
+rs2_device* rs2_pipeline_get_device(rs2_context* ctx, rs2_pipeline* pipe, rs2_error ** error)try
+{
+    VALIDATE_NOT_NULL(pipe);
+
+    return new rs2_device{ ctx->ctx, /*TODO: how does this affect the new device*/ nullptr, pipe->pipe->get_device()};
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, pipe)
+
 void rs2_start_pipeline_with_callback(rs2_pipeline* pipe, rs2_frame_callback* callback, rs2_error ** error) try
 {
     VALIDATE_NOT_NULL(pipe);
@@ -1315,6 +1333,31 @@ void rs2_start_pipeline(rs2_pipeline* pipe, rs2_error ** error) try
     pipe->pipe->start();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, pipe)
+
+void rs2_start_pipeline_with_callback_cpp( rs2_pipeline* pipe, rs2_frame_callback* callback, rs2_error** error) try
+{
+    VALIDATE_NOT_NULL(pipe);
+    VALIDATE_NOT_NULL(callback);
+    pipe->pipe->start({ callback, [](rs2_frame_callback* p) { p->release(); } });
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, pipe, callback)
+
+void rs2_start_pipeline_with_callback( rs2_pipeline* pipe,  rs2_frame_callback_ptr on_frame, void* user, rs2_error** error) try
+{
+    VALIDATE_NOT_NULL(pipe);
+    VALIDATE_NOT_NULL(on_frame);
+    librealsense::frame_callback_ptr callback(
+        new librealsense::frame_callback(on_frame, user));
+    pipe->pipe->start(move(callback));
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, pipe, on_frame, user)
+
+void rs2_stop_pipeline(rs2_pipeline* pipe, rs2_error ** error)
+{
+    VALIDATE_NOT_NULL(pipe);
+
+    pipe->pipe->stop();
+}
 
 void rs2_enable_stream_pipeline(rs2_pipeline* pipe, rs2_stream stream, int index, int width, int height, rs2_format format, int framerate, rs2_error ** error) try
 {
@@ -1339,6 +1382,7 @@ void rs2_disable_all_streams_pipeline(rs2_pipeline* pipe, rs2_error ** error) tr
     pipe->pipe->disable_all();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, pipe)
+
 
 rs2_frame* rs2_pipeline_wait_for_frames(rs2_pipeline* pipe, unsigned int timeout_ms, rs2_error ** error) try
 {

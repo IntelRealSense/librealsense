@@ -12,9 +12,11 @@ namespace librealsense
     class pipeline
     {
     public:
-        pipeline(context& ctx);
+        pipeline(context& ctx, std::shared_ptr<device_interface> dev = nullptr);
+        std::shared_ptr<device_interface> get_device();
         void start(frame_callback_ptr callback);
         void start();
+        void stop();
         void enable(rs2_stream stream, int index, uint32_t width, uint32_t height, rs2_format format, uint32_t framerate);
         void disable_stream(rs2_stream stream);
         void disable_all();
@@ -23,6 +25,7 @@ namespace librealsense
         ~pipeline();
 
      private:
+        std::recursive_mutex _mtx;
         std::shared_ptr<device_interface> _dev;
         device_hub _hub;
         frame_callback_ptr _callback;
