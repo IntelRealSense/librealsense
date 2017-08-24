@@ -120,19 +120,14 @@ namespace librealsense
             {
                 return; //already wrote it
             }
-            //Getting extrinsics from this frame's stream to the first stream of the first sensor of this device
-            //TODO: Change this method once we have sensors with groups of streams that do not share extrinsics (e.g only 1-2 and 3-4 only share extrinsics)
             auto& dev = frame.frame->get_sensor()->get_device();
-            auto first_stream = dev.get_sensor(0).get_stream_profiles()[0];
+            uint32_t reference_id = 0;
             rs2_extrinsics ext;
-            if (dev.get_context()->try_fetch_extrinsics(*first_stream, *frame.frame->get_stream(), &ext))
-            {
-                geometry_msgs::Transform tf_msg;
-                convert(ext, tf_msg);
-                uint32_t reference_id = 0; //TODO: get from device
-                write_message(ros_topic::stream_extrinsic_topic(stream_id, reference_id), get_static_file_info_timestamp(), tf_msg);
-                m_extrinsics_msgs[stream_id] = tf_msg;
-            }
+            std::tie(reference_id, ext) = dev.get_extrinsics(*frame.frame->get_stream());
+            geometry_msgs::Transform tf_msg;
+            convert(ext, tf_msg);
+            write_message(ros_topic::stream_extrinsic_topic(stream_id, reference_id), get_static_file_info_timestamp(), tf_msg);
+            m_extrinsics_msgs[stream_id] = tf_msg;
         }
 
         void write_image_metadata(const stream_identifier& stream_id, const nanoseconds& timestamp, video_frame* vid_frame)

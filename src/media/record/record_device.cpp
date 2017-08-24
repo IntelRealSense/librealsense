@@ -99,8 +99,8 @@ void librealsense::record_device::write_header()
         }
         sensors_snapshot.emplace_back(static_cast<uint32_t>(j), sensor_extensions_snapshots, options);
     }
-
-    m_ros_writer->write_device_description({ device_extensions_md, sensors_snapshot, {} });
+    
+    m_ros_writer->write_device_description({ device_extensions_md, sensors_snapshot, {/*extrinsics are written by ros_writer*/} });
 }
 
 //Returns the time relative to beginning of the recording
@@ -318,3 +318,9 @@ void record_device::stop_gracefully(to_string error_msg)
     }
 
 }
+
+std::pair<uint32_t, rs2_extrinsics> record_device::get_extrinsics(const stream_interface& stream) const
+{
+    return m_device->get_extrinsics(stream);
+}
+
