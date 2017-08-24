@@ -612,7 +612,18 @@ PYBIND11_PLUGIN(NAME) {
     /* rs2_pipeline.hpp */
     py::class_<rs2::pipeline> pipeline(m, "pipeline");
     pipeline.def(py::init<rs2::context>(), "ctx"_a = rs2::context())
-            .def("start", &rs2::pipeline::start)
+            .def(py::init<rs2::device>(), "dev"_a)
+            .def("get_device", &rs2::pipeline::get_device)
+            .def("start", (void (rs2::pipeline::*)()const) &rs2::pipeline::start)
+            .def("start", [](rs2::pipeline& self, std::function<void(rs2::frame)>& callback)
+                 {
+                     self.start(callback);
+                 }, "callback"_a)
+            .def("stop", &rs2::pipeline::stop)
+            .def("enable_stream" , &rs2::pipeline::enable_stream, "stream"_a, "index"_a,
+                 "width"_a, "height"_a, "format"_a, "framerate"_a)
+            .def("disable_stream", &rs2::pipeline::disable_stream, "stream"_a)
+            .def("disable_all", &rs2::pipeline::disable_all)
             .def("wait_for_frames", &rs2::pipeline::wait_for_frames, "timeout_ms"_a = 5000);
 
     /* rs2.hpp */

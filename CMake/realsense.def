@@ -200,8 +200,12 @@ EXPORTS
 	rs2_playback_device_set_playback_speed
 
     rs2_create_pipeline
+    rs2_create_pipeline_with_device
+    rs2_pipeline_get_device
     rs2_start_pipeline_with_callback
+    rs2_start_pipeline_with_callback_cpp
     rs2_start_pipeline
+    rs2_stop_pipeline
     rs2_enable_stream_pipeline
     rs2_disable_stream_pipeline
     rs2_disable_all_streams_pipeline

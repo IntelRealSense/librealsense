@@ -20,17 +20,25 @@ extern "C" {
 * create pipeline
 * \param[in]  ctx    context
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
-* \return            the requested sensor, should be released by rs2_delete_sensor
 */
 rs2_pipeline* rs2_create_pipeline(rs2_context* ctx, rs2_error ** error);
 
 /**
-* start streaming with default configuration or commited configuration
-* \param[in] pipe  pipeline
-* \param[in] on_frame function pointer to register as per-frame callback
+* create pipeline with the specified device
+* \param[in]  ctx    context
+* \param[in]  dev    device
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 */
-void rs2_start_pipeline_with_callback(rs2_pipeline* pipe, rs2_frame_callback* on_frame, rs2_error ** error);
+rs2_pipeline* rs2_create_pipeline_with_device(rs2_context* ctx, const rs2_device* dev, rs2_error ** error);
+
+/**
+* Retrieved the device used by the pipeline
+* \param[in] ctx   context
+* \param[in] pipe  pipeline
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return the device used by the pipeline
+*/
+rs2_device* rs2_pipeline_get_device(rs2_context* ctx, rs2_pipeline* pipe, rs2_error ** error);
 
 /**
 * start streaming with default configuration or commited configuration
@@ -39,6 +47,28 @@ void rs2_start_pipeline_with_callback(rs2_pipeline* pipe, rs2_frame_callback* on
 */
 void rs2_start_pipeline(rs2_pipeline* pipe, rs2_error ** error);
 
+/**
+* start streaming with default configuration or commited configuration and user callback
+* \param[in] pipe  pipeline
+* \param[in] on_frame function pointer to register as per-frame callback
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+void rs2_start_pipeline_with_callback( rs2_pipeline* pipe,  rs2_frame_callback_ptr on_frame, void* user, rs2_error** error);
+
+/**
+* start streaming with default configuration or commited configuration and user callback
+* \param[in] pipe  pipeline
+* \param[in] callback object created from c++ application. ownership over the callback object is moved into the relevant streaming lock
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+void rs2_start_pipeline_with_callback_cpp( rs2_pipeline* pipe, rs2_frame_callback* callback, rs2_error** error);
+
+/**
+* stop streaming will not change the pipeline configuration
+* \param[in] pipe  pipeline
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+void rs2_stop_pipeline(rs2_pipeline* pipe, rs2_error ** error);
 /**
 * committing a configuration to pipeline
 * \param[in] stream    stream type

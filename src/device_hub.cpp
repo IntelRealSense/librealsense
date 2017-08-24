@@ -36,62 +36,98 @@ namespace librealsense
 
         auto cb = new hub_devices_changed_callback([&](rs2::event_information& info)
                    {
-                       std::unique_lock<std::mutex> lock(_mutex);
-                       _device_list = filter_by_vid(_ctx.query_devices(), _vid);
+                        std::unique_lock<std::mutex> lock(_mutex);
 
-                       // Current device will point to the first available device
-                       _camera_index = 0;
-                       if (_device_list.size() > 0)
-                       {
+                        _device_list = filter_by_vid(_ctx.query_devices(), _vid);
+
+                        // Current device will point to the first available device
+                        _camera_index = 0;
+                        if (_device_list.size() > 0)
+                        {
                            _cv.notify_all();
-                       }
-                   });
+                        }
+                    });
 
         _ctx.set_devices_changed_callback({cb,  [](rs2_devices_changed_callback* p) { p->release(); }});
     }
+
+    std::shared_ptr<device_interface> device_hub::create_device(std::string serial)
+    {
+        for(auto i = 0; i< _device_list.size(); i++)
+        {
+
+            // user can switch the devices by calling to wait_for_device until he get the desire device
+            // _camera_index is the curr device that user want to work with
+
+            auto d = _device_list[ (_camera_index + i) % _device_list.size()];
+             auto dev = d->create_device();
+
+            if(serial.size() > 0 )
+            {
+                auto new_serial = dev->get_info(RS2_CAMERA_INFO_SERIAL_NUMBER);
+
+                if(serial == new_serial)
+                {
+                    _camera_index = ++_camera_index % _device_list.size();
+                    return dev;
+                }
+            }
+            else
+            {
+                 return dev;
+            }
+        }
+        return nullptr;
+    }
+
 
     /**
      * If any device is connected return it, otherwise wait until next RealSense device connects.
      * Calling this method multiple times will cycle through connected devices
      */
-    std::shared_ptr<device_interface> device_hub::wait_for_device()
+    std::shared_ptr<device_interface> device_hub::wait_for_device(unsigned int timeout_ms, device_interface* dev)
     {
+        std::string serial;
+
+        if(dev)
+        {
+            serial = dev->get_info(RS2_CAMERA_INFO_SERIAL_NUMBER);
+        }
+
         {
             std::unique_lock<std::mutex> lock(_mutex);
             // check if there is at least one device connected
-            if (_device_list.size() > 0)
+            if(_device_list.size()>0)
             {
-                // user can switch the devices by calling to wait_for_device until he get the desire device
-                // _camera_index is the curr device that user want to work with
-
-                auto dev = _device_list[_camera_index % _device_list.size()];
-                _camera_index = ++_camera_index % _device_list.size();
-                return dev->create_device();
-            }
-            else
-            {
-                std::cout<<"No device connected\n";
+                auto res = create_device(serial);
+                if(res)
+                    return res;
             }
         }
         // if there are no devices connected or something wrong happened while enumeration
         // wait for event of device connection
         // and do it until camera connected and succeed in its creation
-        while (true)
+
+        std::shared_ptr<device_interface> res;
+
+        std::unique_lock<std::mutex> lock(_mutex);
+
+        if(!_cv.wait_for(lock, std::chrono::milliseconds(timeout_ms), [&]()
         {
-            std::unique_lock<std::mutex> lock(_mutex);
-            if (_device_list.size() == 0)
+            res = nullptr;
+            if(_device_list.size()>0)
             {
-                _cv.wait_for(lock, std::chrono::hours(999999), [&]() {return _device_list.size()>0; });
+                res = create_device(serial);
             }
-            try
-            {
-                return  _device_list[0]->create_device();;
-            }
-            catch (...)
-            {
-                std::cout<<"Couldn't create the device\n";
-            }
+            return res != nullptr;
+
+        }))
+        {
+            throw std::runtime_error("No device connected");
         }
+
+        return res;
+
     }
 
     /**
