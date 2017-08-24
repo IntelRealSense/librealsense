@@ -24,13 +24,11 @@ We are using [nothings/stb](https://github.com/nothings/stb) to quickly save dat
 
 We start like the last time by defining depth colorizer and starting the pipeline:
 ```cpp
-using namespace rs2;
-
 // Declare depth colorizer for pretty visualization of depth data
-colorizer color_map;
+rs2::colorizer color_map;
 
 // Declare RealSense pipeline, encapsulating the actual device and sensors
-pipeline pipe;
+rs2::pipeline pipe;
 // Start streaming with default recommended configuration
 pipe.start();
 ```
@@ -44,13 +42,13 @@ for (auto i = 0; i < 30; ++i) pipe.wait_for_frames();
 Intel® RealSense™ devices are not limited to just video streaming, some can offer motion tracking and 6-DOF positioning. For this example we are only interested in video frames, however: 
 ```cpp
 // We can only save video frames as pngs, so we skip the rest
-if (auto vf = frame.as<video_frame>())
+if (auto vf = frame.as<rs2::video_frame>())
 ```
 
 To better visualize the depth data, we apply the colorizer on any incoming depth frames:
 ```cpp
 // Use the colorizer to get an rgb image for the depth stream
-if (vf.is<depth_frame>()) vf = color_map(frame);
+if (vf.is<rs2::depth_frame>()) vf = color_map(frame);
 ```
 
 Then we save frame data to PNG: 

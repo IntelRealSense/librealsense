@@ -18,15 +18,13 @@ void metadata_to_csv(const rs2::frame& frm, const std::string& filename);
 // It can be useful for debugging an embedded system with no display.
 int main(int argc, char * argv[]) try
 {
-using namespace rs2;
+    // Declare depth colorizer for pretty visualization of depth data
+    rs2::colorizer color_map;
 
-// Declare depth colorizer for pretty visualization of depth data
-colorizer color_map;
-
-// Declare RealSense pipeline, encapsulating the actual device and sensors
-pipeline pipe;
-// Start streaming with default recommended configuration
-pipe.start();
+    // Declare RealSense pipeline, encapsulating the actual device and sensors
+    rs2::pipeline pipe;
+    // Start streaming with default recommended configuration
+    pipe.start();
 
     // Capture 30 frames to give autoexposure, etc. a chance to settle
     for (auto i = 0; i < 30; ++i) pipe.wait_for_frames();
@@ -36,11 +34,11 @@ pipe.start();
     for (auto&& frame : pipe.wait_for_frames())
     {
         // We can only save video frames as pngs, so we skip the rest
-        if (auto vf = frame.as<video_frame>())
+        if (auto vf = frame.as<rs2::video_frame>())
         {
             auto stream = frame.get_profile().stream_type();
             // Use the colorizer to get an rgb image for the depth stream
-            if (vf.is<depth_frame>()) vf = color_map(frame);
+            if (vf.is<rs2::depth_frame>()) vf = color_map(frame);
 
             // Write images to disk
             std::stringstream png_file;
