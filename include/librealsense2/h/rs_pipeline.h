@@ -94,10 +94,20 @@ void rs2_disable_all_streams_pipeline(rs2_pipeline* pipe, rs2_error ** error);
 
 /**
 * wait until new frame becomes available
+* \param[in] pipe the pipeline
 * \param[in] timeout_ms   Max time in milliseconds to wait until an exception will be thrown
 * \return Set of coherent frames
 */
 rs2_frame* rs2_pipeline_wait_for_frames(rs2_pipeline* pipe, unsigned int timeout_ms, rs2_error ** error);
+
+/**
+* poll if a new frame is available and dequeue if it is
+* \param[in] pipe the pipeline
+* \param[out] output_frame frame handle to be released using rs2_release_frame
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return true if new frame was stored to output_frame
+*/
+int rs2_pipeline_poll_for_frames(rs2_pipeline* pipe, rs2_frame** output_frame, rs2_error ** error);
 
 /**
 * delete pipeline

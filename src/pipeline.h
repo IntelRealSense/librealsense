@@ -22,6 +22,7 @@ namespace librealsense
         void disable_all();
 
         frame_holder wait_for_frames(unsigned int timeout_ms = 5000);
+        bool poll_for_frames(frame_holder* frame);
         ~pipeline();
 
      private:

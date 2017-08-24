@@ -1395,6 +1395,22 @@ rs2_frame* rs2_pipeline_wait_for_frames(rs2_pipeline* pipe, unsigned int timeout
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, pipe)
 
+int rs2_pipeline_poll_for_frames(rs2_pipeline * pipe, rs2_frame** output_frame, rs2_error ** error) try
+{
+    VALIDATE_NOT_NULL(pipe);
+
+    librealsense::frame_holder fh;
+    if (pipe->pipe->poll_for_frames(&fh))
+    {
+        frame_interface* result = nullptr;
+        std::swap(result, fh.frame);
+        *output_frame = (rs2_frame*)result;
+        return true;
+    }
+    return false;
+}
+HANDLE_EXCEPTIONS_AND_RETURN(0, pipe, output_frame)
+
 void rs2_delete_pipeline(rs2_pipeline* pipe) try
 {
     VALIDATE_NOT_NULL(pipe);

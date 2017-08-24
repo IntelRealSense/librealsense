@@ -210,4 +210,5 @@ EXPORTS
     rs2_disable_stream_pipeline
     rs2_disable_all_streams_pipeline
     rs2_pipeline_wait_for_frames
+    rs2_pipeline_poll_for_frames
     rs2_delete_pipeline

@@ -2888,6 +2888,60 @@ TEST_CASE("Pipeline start", "[live]") {
     }
 }
 
+TEST_CASE("Pipeline poll", "[live]") {
+
+    auto dev_requsets = get_pipeline_default_configurations();
+
+    rs2::context ctx;
+
+    if (make_context(SECTION_FROM_TEST_NAME, &ctx))
+    {
+        auto list = ctx.query_devices();
+        REQUIRE(list.size());
+        rs2::pipeline pipe(ctx);
+        auto dev = pipe.get_device();
+        disable_sensitive_options_for(dev);
+
+        std::string PID;
+        REQUIRE_NOTHROW(PID = dev.get_info(RS2_CAMERA_INFO_PRODUCT_ID));
+
+        REQUIRE(dev_requsets[PID].streams.size()>0);
+
+        
+        REQUIRE_NOTHROW(pipe.start());
+
+        std::vector<frameset> frames;
+
+        frame f;
+        auto frame_num = 0;
+        while (frame_num < 30)
+        {
+            auto res = true;
+            REQUIRE_NOTHROW(res = pipe.poll_for_frame(&f));
+            if (res)
+                frame_num++;
+        }
+            
+
+
+        while (frames.size() < 8)
+        {
+            auto res = true;
+            REQUIRE_NOTHROW(res = pipe.poll_for_frame(&f));
+            if (res)
+            {
+                frames.push_back(frameset(f));
+            }
+        }
+           
+
+        REQUIRE_NOTHROW(pipe.stop());
+        validate(frames, dev_requsets[PID]);
+
+
+    }
+}
+
 TEST_CASE("Pipeline start with callback", "[live]") {
 
     auto dev_requsets = get_pipeline_default_configurations();

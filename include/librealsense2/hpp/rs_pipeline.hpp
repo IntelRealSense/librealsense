@@ -138,6 +138,20 @@ namespace rs2
             return frameset(f);
         }
 
+        /**
+        * poll if a new frame is available and dequeue if it is
+        * \param[out] f - frame handle
+        * \return true if new frame was stored to f
+        */
+        bool poll_for_frame(frame* f) const
+        {
+            rs2_error* e = nullptr;
+            rs2_frame* frame_ref = nullptr;
+            auto res = rs2_pipeline_poll_for_frames(_pipeline.get(), &frame_ref, &e);
+            error::handle(e);
+            if (res) *f = { frame_ref };
+            return res > 0;
+        }
     private:
         context _ctx;
         device _dev;

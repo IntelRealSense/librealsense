@@ -74,6 +74,7 @@ namespace librealsense
             }
             else
             {
+                _camera_index = ++_camera_index % _device_list.size();
                  return dev;
             }
         }

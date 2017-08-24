@@ -163,6 +163,15 @@ namespace librealsense
         }
     }
 
+    bool pipeline::poll_for_frames(frame_holder* frame)
+    {
+        if (_queue.try_dequeue(frame))
+        {
+            return true;
+        }
+        return false;
+    }
+
     pipeline::~pipeline()
     {     
         try
