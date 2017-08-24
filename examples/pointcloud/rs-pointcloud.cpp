@@ -26,14 +26,13 @@ int main(int argc, char * argv[]) try
     // register callbacks to allow manipulation of the pointcloud
     register_glfw_callbacks(app, app_state);
 
-    using namespace rs2;
     // Declare pointcloud object, for calculating pointclouds and texture mappings
-    pointcloud pc = rs2::context().create_pointcloud();
+    rs2::pointcloud pc = rs2::context().create_pointcloud();
     // We want the points object to be persistent so we can display the last cloud when a frame drops
     rs2::points points;
 
     // Declare RealSense pipeline, encapsulating the actual device and sensors
-    pipeline pipe;
+    rs2::pipeline pipe;
     // Start streaming with default recommended configuration
     pipe.start();
 
@@ -41,7 +40,7 @@ int main(int argc, char * argv[]) try
     {
         // Wait for the next set of frames from the camera
         auto frames = pipe.wait_for_frames();
-        if (auto color = frames.get_color_frame())
+        if (rs2::frame color = frames.get_color_frame())
         {
             // Tell pointcloud object to map to this color frame
             pc.map_to(color);
@@ -49,7 +48,7 @@ int main(int argc, char * argv[]) try
             // Upload the color frame to OpenGL
             app_state.tex.upload(color);
         }
-        if (auto depth = frames.get_depth_frame())
+        if (rs2::frame depth = frames.get_depth_frame())
         {
             // If we got a depth frame, generate the pointcloud and texture mappings
             points = pc.calculate(depth);
@@ -62,7 +61,6 @@ int main(int argc, char * argv[]) try
     return EXIT_SUCCESS;
 }
 catch (const rs2::error & e)
-
 {
     std::cerr << "RealSense error calling " << e.get_failed_function() << "(" << e.get_failed_args() << "):\n    " << e.what() << std::endl;
 }
