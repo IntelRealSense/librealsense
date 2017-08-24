@@ -41,10 +41,10 @@ For *librealsense* users behind an enterprise firewall, configuring the system-w
 ## Install librealsense
 1. Install the packages required for the **librealsense** build:  
 
-  a. **libusb-1.0** and **pkg-config**:  
+  1.1 **libusb-1.0** and **pkg-config**:  
    `sudo apt-get install libusb-1.0-0-dev pkg-config libgtk-3-dev`
 
-  b. **glfw3**:
+  1.2. **glfw3**:
     * For Ubuntu 16.04:   
     Install **glfw3** via `sudo apt-get install libglfw3-dev`  
 
