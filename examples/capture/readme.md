@@ -28,34 +28,29 @@ window app(1280, 720, "RealSense Capture Example");
 texture depth_image, color_image;
 ```
 
-Our C++ API resides under the `rs2` namespace:
-```cpp
-using namespace rs2;
-```
-
 Depth data is provided as 10-bit grayscale values, which is not very useful for visualization. To overcome this, we offer an API to convert this grayscale image to RGB:
 ```cpp
 // Declare depth colorizer for pretty visualization of depth data
-colorizer color_map; 
+rs2::colorizer color_map; 
 ```
 
 The API entry point for SDK is the `pipeline` class:
 ```cpp
 // Declare RealSense pipeline, encapsulating the actual device and sensors
-pipeline pipe;
+rs2::pipeline pipe;
 // Start streaming with default recommended configuration
 pipe.start(); 
 ```
 
 Next, we wait for the next set of frames, effectively blocking the program:
 ```cpp
-auto data = pipe.wait_for_frames(); // Wait for next set of frames from the camera
+rs2::frameset data = pipe.wait_for_frames(); // Wait for next set of frames from the camera
 ```
 
 Using the `frameset` object we look up the first depth frame in the set and the first color frame:
 ```cpp
-auto depth = color_map(data.get_depth_frame()); // Find and colorize the depth data
-auto color = data.get_color_frame();            // Find the color data
+rs2::frame depth = color_map(data.get_depth_frame()); // Find and colorize the depth data
+rs2::frame color = data.get_color_frame();            // Find the color data
 ```
 
 Finally, `texture` class from [example.hpp](../example.hpp) takes care of the rendering

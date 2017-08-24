@@ -18,8 +18,6 @@ struct state { std::mutex m; std::map<std::string, dev_data> frames; rs2::colori
 void add_device(state& app_state, rs2::device& dev);
 void remove_devices(state& app_state, const rs2::event_information& info);
 
-using namespace rs2;
-
 int main(int argc, char * argv[]) try
 {
     // Create a simple OpenGL window for rendering:
@@ -29,9 +27,9 @@ int main(int argc, char * argv[]) try
 
     
     // Create librealsense context for managing devices
-    context ctx;
+    rs2::context ctx;
     // Register callback for tracking which devices are currently connected
-    ctx.set_devices_changed_callback([&app_state](event_information& info){
+    ctx.set_devices_changed_callback([&app_state](rs2::event_information& info){
         remove_devices(app_state, info);
 
         for (auto&& dev : info.get_new_devices())
@@ -58,7 +56,7 @@ int main(int argc, char * argv[]) try
         {
             auto&& device = kvp.second;
             // If we've gotten a new image from the device, upload that
-            frame f;
+            rs2::frame f;
             if (device.queue.poll_for_frame(&f))
                 device.tex.upload(f);
 
@@ -70,7 +68,7 @@ int main(int argc, char * argv[]) try
 
     return EXIT_SUCCESS;
 }
-catch(const error & e)
+catch(const rs2::error & e)
 {
     std::cerr << "RealSense error calling " << e.get_failed_function() << "(" << e.get_failed_args() << "):\n    " << e.what() << std::endl;
     return EXIT_FAILURE;
