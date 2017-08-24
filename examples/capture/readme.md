@@ -28,7 +28,7 @@ window app(1280, 720, "RealSense Capture Example");
 texture depth_image, color_image;
 ```
 
-Depth data is provided as 10-bit grayscale values, which is not very useful for visualization. To overcome this, we offer an API to convert this grayscale image to RGB:
+Depth data is provided as 12-bit grayscale values, which is not very useful for visualization. To overcome this, we offer an API to convert this grayscale image to RGB:
 ```cpp
 // Declare depth colorizer for pretty visualization of depth data
 rs2::colorizer color_map; 
