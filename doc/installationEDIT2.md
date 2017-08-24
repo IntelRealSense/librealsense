@@ -1,6 +1,6 @@
 # Linux Installation
 
-Intel® RealSense™ Linux Installation comprises various phases:
+Intel® RealSense™ Linux Installation comprises the following phases:
 1. Verification of 3rd Party Dependencies  
 2. Updating Ubuntu, Linux OS
 3. Installing Intel® RealSense™ Packages  
