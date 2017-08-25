@@ -6,12 +6,15 @@
 #include "stream.h"
 #include "ds5/ds5-rolling-shutter.h"
 #include "json_loader.hpp"
+#include "ds5/ds5-color.h"
 
 namespace librealsense
 {
-    ds5_advanced_mode_base::ds5_advanced_mode_base(std::shared_ptr<hw_monitor> hwm, uvc_sensor& depth_sensor)
+    ds5_advanced_mode_base::ds5_advanced_mode_base(std::shared_ptr<hw_monitor> hwm,
+                                                   uvc_sensor& depth_sensor)
         : _hw_monitor(hwm),
-          _depth_sensor(depth_sensor)
+          _depth_sensor(depth_sensor),
+          _color_sensor(nullptr)
     {
         _enabled = [this](){
             auto results = send_receive(encode_command(ds::fw_cmd::UAMG));
@@ -25,6 +28,17 @@ namespace librealsense
                                                                                                  RS2_RS400_VISUAL_PRESET_COUNT - 1,
                                                                                                  1,
                                                                                                  RS2_RS400_VISUAL_PRESET_CUSTOM}));
+        _color_sensor = [this]() {
+            auto& dev = _depth_sensor.get_device();
+            for (size_t i = 0; i < dev.get_sensors_count(); ++i)
+            {
+                if (auto s = dynamic_cast<const ds5_color_sensor*>(&(dev.get_sensor(i))))
+                {
+                    return const_cast<ds5_color_sensor*>(s);
+                }
+            }
+            return (ds5_color_sensor*)nullptr;
+        };
     }
 
     bool ds5_advanced_mode_base::is_enabled() const
@@ -429,6 +443,161 @@ namespace librealsense
         *ptr = get<STCensusRadius>(advanced_mode_traits<STCensusRadius>::group, nullptr, mode);
     }
 
+    void ds5_advanced_mode_base::get_laser_power(laser_power_control* ptr) const
+    {
+        ptr->laser_power = _depth_sensor.get_option(RS2_OPTION_LASER_POWER).query();
+        ptr->was_set = true;
+    }
+
+    void ds5_advanced_mode_base::get_laser_state(laser_state_control* ptr) const
+    {
+        ptr->laser_state = static_cast<int>(_depth_sensor.get_option(RS2_OPTION_EMITTER_ENABLED).query());
+        ptr->was_set = true;
+    }
+
+    void ds5_advanced_mode_base::get_exposure(uvc_sensor& sensor, exposure_control* ptr) const
+    {
+        ptr->exposure = sensor.get_option(RS2_OPTION_EXPOSURE).query();
+        ptr->was_set = true;
+    }
+
+    void ds5_advanced_mode_base::get_auto_exposure(uvc_sensor& sensor, auto_exposure_control* ptr) const
+    {
+        ptr->auto_exposure = static_cast<int>(sensor.get_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE).query());
+        ptr->was_set = true;
+    }
+
+    void ds5_advanced_mode_base::get_depth_exposure(exposure_control* ptr) const
+    {
+        get_exposure(_depth_sensor, ptr);
+    }
+
+    void ds5_advanced_mode_base::get_depth_auto_exposure(auto_exposure_control* ptr) const
+    {
+        get_auto_exposure(_depth_sensor, ptr);
+    }
+
+    void ds5_advanced_mode_base::get_depth_gain(gain_control* ptr) const
+    {
+        ptr->gain = _depth_sensor.get_option(RS2_OPTION_GAIN).query();
+        ptr->was_set = true;
+    }
+
+    void ds5_advanced_mode_base::get_color_exposure(exposure_control* ptr) const
+    {
+        if (*_color_sensor)
+        {
+            get_exposure(*(*_color_sensor), ptr);
+        }
+    }
+
+    void ds5_advanced_mode_base::get_color_auto_exposure(auto_exposure_control* ptr) const
+    {
+        if (*_color_sensor)
+        {
+            get_auto_exposure(**_color_sensor, ptr);
+        }
+    }
+
+    void ds5_advanced_mode_base::get_color_backlight_compensation(backlight_compensation_control* ptr) const
+    {
+        if (*_color_sensor)
+        {
+            ptr->backlight_compensation = static_cast<int>((*_color_sensor)->get_option(RS2_OPTION_BACKLIGHT_COMPENSATION).query());
+            ptr->was_set = true;
+        }
+    }
+
+    void ds5_advanced_mode_base::get_color_brightness(brightness_control* ptr) const
+    {
+        if (*_color_sensor)
+        {
+            ptr->brightness = (*_color_sensor)->get_option(RS2_OPTION_BRIGHTNESS).query();
+            ptr->was_set = true;
+        }
+    }
+
+    void ds5_advanced_mode_base::get_color_contrast(contrast_control* ptr) const
+    {
+        if (*_color_sensor)
+        {
+            ptr->contrast = (*_color_sensor)->get_option(RS2_OPTION_CONTRAST).query();
+            ptr->was_set = true;
+        }
+    }
+
+    void ds5_advanced_mode_base::get_color_gain(gain_control* ptr) const
+    {
+        if (*_color_sensor)
+        {
+            ptr->gain = (*_color_sensor)->get_option(RS2_OPTION_GAIN).query();
+            ptr->was_set = true;
+        }
+    }
+
+    void ds5_advanced_mode_base::get_color_gamma(gamma_control* ptr) const
+    {
+        if (*_color_sensor)
+        {
+            ptr->gamma = (*_color_sensor)->get_option(RS2_OPTION_GAMMA).query();
+            ptr->was_set = true;
+        }
+    }
+
+    void ds5_advanced_mode_base::get_color_hue(hue_control* ptr) const
+    {
+        if (*_color_sensor)
+        {
+            ptr->hue = (*_color_sensor)->get_option(RS2_OPTION_HUE).query();
+            ptr->was_set = true;
+        }
+    }
+
+    void ds5_advanced_mode_base::get_color_saturation(saturation_control* ptr) const
+    {
+        if (*_color_sensor)
+        {
+            ptr->saturation = (*_color_sensor)->get_option(RS2_OPTION_SATURATION).query();
+            ptr->was_set = true;
+        }
+    }
+
+    void ds5_advanced_mode_base::get_color_sharpness(sharpness_control* ptr) const
+    {
+        if (*_color_sensor)
+        {
+            ptr->sharpness = (*_color_sensor)->get_option(RS2_OPTION_SHARPNESS).query();
+            ptr->was_set = true;
+        }
+    }
+
+    void ds5_advanced_mode_base::get_color_white_balance(white_balance_control* ptr) const
+    {
+        if (*_color_sensor)
+        {
+            ptr->white_balance = (*_color_sensor)->get_option(RS2_OPTION_WHITE_BALANCE).query();
+            ptr->was_set = true;
+        }
+    }
+
+    void ds5_advanced_mode_base::get_color_auto_white_balance(auto_white_balance_control* ptr) const
+    {
+        if (*_color_sensor)
+        {
+            ptr->auto_white_balance = static_cast<int>((*_color_sensor)->get_option(RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE).query());
+            ptr->was_set = true;
+        }
+    }
+
+    void ds5_advanced_mode_base::get_color_power_line_frequency(power_line_frequency_control* ptr) const
+    {
+        if (*_color_sensor)
+        {
+            ptr->power_line_frequency = static_cast<int>((*_color_sensor)->get_option(RS2_OPTION_POWER_LINE_FREQUENCY).query());
+            ptr->was_set = true;
+        }
+    }
+
     void ds5_advanced_mode_base::set_depth_control_group(const STDepthControlGroup& val)
     {
         set(val, advanced_mode_traits<STDepthControlGroup>::group);
@@ -489,6 +658,163 @@ namespace librealsense
         set(val, advanced_mode_traits<STCensusRadius>::group);
     }
 
+    void ds5_advanced_mode_base::set_laser_power(const laser_power_control& val)
+    {
+        if (val.was_set)
+            _depth_sensor.get_option(RS2_OPTION_LASER_POWER).set(val.laser_power);
+    }
+
+    void ds5_advanced_mode_base::set_laser_state(const laser_state_control& val)
+    {
+        if (val.was_set)
+            _depth_sensor.get_option(RS2_OPTION_EMITTER_ENABLED).set(val.laser_state);
+    }
+
+    void ds5_advanced_mode_base::set_exposure(uvc_sensor& sensor, const exposure_control& val)
+    {
+        sensor.get_option(RS2_OPTION_EXPOSURE).set(val.exposure);
+    }
+
+    void ds5_advanced_mode_base::set_auto_exposure(uvc_sensor& sensor, const auto_exposure_control& val)
+    {
+        sensor.get_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE).set(val.auto_exposure);
+    }
+
+    void ds5_advanced_mode_base::set_depth_exposure(const exposure_control& val)
+    {
+        if (val.was_set)
+            set_exposure(_depth_sensor, val);
+    }
+
+    void ds5_advanced_mode_base::set_depth_auto_exposure(const auto_exposure_control& val)
+    {
+        if (val.was_set)
+            set_auto_exposure(_depth_sensor, val);
+    }
+
+    void ds5_advanced_mode_base::set_depth_gain(const gain_control& val)
+    {
+        if (val.was_set)
+            _depth_sensor.get_option(RS2_OPTION_GAIN).set(val.gain);
+    }
+
+    void ds5_advanced_mode_base::set_color_exposure(const exposure_control& val)
+    {
+        if (val.was_set && !*_color_sensor)
+            throw invalid_value_exception("Can't set color_exposure value! Color sensor not found.");
+
+        if (val.was_set)
+            set_exposure(**_color_sensor, val);
+    }
+
+    void ds5_advanced_mode_base::set_color_auto_exposure(const auto_exposure_control& val)
+    {
+        if (val.was_set && !*_color_sensor)
+            throw invalid_value_exception("Can't set color_auto_exposure value! Color sensor not found.");
+
+        if (val.was_set)
+            set_auto_exposure(**_color_sensor, val);
+    }
+
+    void ds5_advanced_mode_base::set_color_backlight_compensation(const backlight_compensation_control& val)
+    {
+        if (val.was_set && !*_color_sensor)
+            throw invalid_value_exception("Can't set color_backlight_compensation value! Color sensor not found.");
+
+        if (val.was_set)
+            (*_color_sensor)->get_option(RS2_OPTION_BACKLIGHT_COMPENSATION).set(val.backlight_compensation);
+    }
+
+    void ds5_advanced_mode_base::set_color_brightness(const brightness_control& val)
+    {
+        if (val.was_set && !*_color_sensor)
+            throw invalid_value_exception("Can't set color_brightness value! Color sensor not found.");
+
+        if (val.was_set)
+            (*_color_sensor)->get_option(RS2_OPTION_BRIGHTNESS).set(val.brightness);
+    }
+
+    void ds5_advanced_mode_base::set_color_contrast(const contrast_control& val)
+    {
+        if (val.was_set && !*_color_sensor)
+            throw invalid_value_exception("Can't set color_contrast value! Color sensor not found.");
+
+        if (val.was_set)
+            (*_color_sensor)->get_option(RS2_OPTION_CONTRAST).set(val.contrast);
+    }
+
+    void ds5_advanced_mode_base::set_color_gain(const gain_control& val)
+    {
+        if (val.was_set && !*_color_sensor)
+            throw invalid_value_exception("Can't set color_gain value! Color sensor not found.");
+
+        if (val.was_set)
+            (*_color_sensor)->get_option(RS2_OPTION_GAIN).set(val.gain);
+    }
+
+    void ds5_advanced_mode_base::set_color_gamma(const gamma_control& val)
+    {
+        if (val.was_set && !*_color_sensor)
+            throw invalid_value_exception("Can't set color_gamma value! Color sensor not found.");
+
+        if (val.was_set)
+            (*_color_sensor)->get_option(RS2_OPTION_GAMMA).set(val.gamma);
+    }
+
+    void ds5_advanced_mode_base::set_color_hue(const hue_control& val)
+    {
+        if (val.was_set && !*_color_sensor)
+            throw invalid_value_exception("Can't set color_hue value! Color sensor not found.");
+
+        if (val.was_set)
+            (*_color_sensor)->get_option(RS2_OPTION_HUE).set(val.hue);
+    }
+
+    void ds5_advanced_mode_base::set_color_saturation(const saturation_control& val)
+    {
+        if (val.was_set && !*_color_sensor)
+            throw invalid_value_exception("Can't set color_saturation value! Color sensor not found.");
+
+        if (val.was_set)
+            (*_color_sensor)->get_option(RS2_OPTION_SATURATION).set(val.saturation);
+    }
+
+    void ds5_advanced_mode_base::set_color_sharpness(const sharpness_control& val)
+    {
+        if (val.was_set && !*_color_sensor)
+            throw invalid_value_exception("Can't set color_sharpness value! Color sensor not found.");
+
+        if (val.was_set)
+            (*_color_sensor)->get_option(RS2_OPTION_SHARPNESS).set(val.sharpness);
+    }
+
+    void ds5_advanced_mode_base::set_color_white_balance(const white_balance_control& val)
+    {
+        if (val.was_set && !*_color_sensor)
+            throw invalid_value_exception("Can't set color_white_balance value! Color sensor not found.");
+
+        if (val.was_set)
+            (*_color_sensor)->get_option(RS2_OPTION_WHITE_BALANCE).set(val.white_balance);
+    }
+
+    void ds5_advanced_mode_base::set_color_auto_white_balance(const auto_white_balance_control& val)
+    {
+        if (val.was_set && !*_color_sensor)
+            throw invalid_value_exception("Can't set color_auto_white_balance value! Color sensor not found.");
+
+        if (val.was_set)
+            (*_color_sensor)->get_option(RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE).set(val.auto_white_balance);
+    }
+
+    void ds5_advanced_mode_base::set_color_power_line_frequency(const power_line_frequency_control& val)
+    {
+        if (val.was_set && !*_color_sensor)
+            throw invalid_value_exception("Can't set color_power_line_frequency value! Color sensor not found.");
+
+        if (val.was_set)
+            (*_color_sensor)->get_option(RS2_OPTION_POWER_LINE_FREQUENCY).set(val.power_line_frequency);
+    }
+
     std::vector<uint8_t> ds5_advanced_mode_base::serialize_json() const
     {
         auto p = get_all();
@@ -517,6 +843,24 @@ namespace librealsense
         get_depth_table_control(&p.depth_table);
         get_ae_control(&p.ae);
         get_census_radius(&p.census);
+        get_laser_power(&p.laser_power);
+        get_laser_state(&p.laser_state);
+        get_depth_exposure(&p.depth_exposure);
+        get_depth_auto_exposure(&p.depth_auto_exposure);
+        get_depth_gain(&p.depth_gain);
+        get_color_exposure(&p.color_exposure);
+        get_color_auto_exposure(&p.color_auto_exposure);
+        get_color_backlight_compensation(&p.color_backlight_compensation);
+        get_color_brightness(&p.color_brightness);
+        get_color_contrast(&p.color_contrast);
+        get_color_gain(&p.color_gain);
+        get_color_gamma(&p.color_gamma);
+        get_color_hue(&p.color_hue);
+        get_color_saturation(&p.color_saturation);
+        get_color_sharpness(&p.color_sharpness);
+        get_color_white_balance(&p.color_white_balance);
+        get_color_auto_white_balance(&p.color_auto_white_balance);
+        get_color_power_line_frequency(&p.color_power_line_frequency);
         return p;
     }
 
@@ -534,6 +878,36 @@ namespace librealsense
         set_depth_table_control(p.depth_table);
         set_ae_control(p.ae);
         set_census_radius(p.census);
+
+        set_laser_state(p.laser_state);
+        if (p.laser_state.was_set && p.laser_state.laser_state == 1) // 1 - on
+            set_laser_power(p.laser_power);
+
+        set_depth_auto_exposure(p.depth_auto_exposure);
+        if (p.depth_auto_exposure.was_set && p.depth_auto_exposure.auto_exposure == 0)
+            set_depth_exposure(p.depth_exposure);
+
+        set_depth_gain(p.depth_gain);
+
+        set_color_auto_exposure(p.color_auto_exposure);
+        if (p.color_auto_exposure.was_set && p.color_auto_exposure.auto_exposure == 0)
+            set_color_exposure(p.color_exposure);
+
+        set_color_backlight_compensation(p.color_backlight_compensation);
+        set_color_brightness(p.color_brightness);
+        set_color_contrast(p.color_contrast);
+        set_color_gain(p.color_gain);
+        set_color_gamma(p.color_gamma);
+        set_color_hue(p.color_hue);
+        set_color_saturation(p.color_saturation);
+        set_color_sharpness(p.color_sharpness);
+
+        set_color_auto_white_balance(p.color_auto_white_balance);
+        if (p.color_auto_white_balance.was_set && p.color_auto_white_balance.auto_white_balance == 0)
+            set_color_white_balance(p.color_white_balance);
+
+        // TODO: Itay, check the issue of setting PWF to auto
+        //set_color_power_line_frequency(p.color_power_line_frequency);
     }
 
     std::vector<uint8_t> ds5_advanced_mode_base::send_receive(const std::vector<uint8_t>& input) const

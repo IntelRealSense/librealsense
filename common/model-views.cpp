@@ -2631,31 +2631,42 @@ namespace rs2
         {
             return; //already recording
         }
-        
-        _recorder = std::make_shared<recorder>(path, dev);
-        live_subdevices = subdevices;
-        subdevices.clear();
-        for (auto&& sub : _recorder->query_sensors())
-        {
-            auto model = std::make_shared<subdevice_model>(dev, sub, error_message);
-            subdevices.push_back(model);
-        }
-		assert(live_subdevices.size() == subdevices.size());
-	    for(int i=0; i< live_subdevices.size(); i++)
-	    {
-			//TODO: Ziv, change this
-			subdevices[i]->selected_res_id = live_subdevices[i]->selected_res_id;
-			subdevices[i]->selected_shared_fps_id = live_subdevices[i]->selected_shared_fps_id;
-			subdevices[i]->selected_format_id = live_subdevices[i]->selected_format_id;
-			subdevices[i]->show_single_fps_list = live_subdevices[i]->show_single_fps_list;
-			subdevices[i]->fpses_per_stream = live_subdevices[i]->fpses_per_stream;
-			subdevices[i]->selected_fps_id = live_subdevices[i]->selected_fps_id;
-			subdevices[i]->stream_enabled = live_subdevices[i]->stream_enabled;
-			subdevices[i]->fps_values_per_stream = live_subdevices[i]->fps_values_per_stream;
-			subdevices[i]->format_values = live_subdevices[i]->format_values;
-	    }
 
-        is_recording = true;
+        try
+        {
+            _recorder = std::make_shared<recorder>(path, dev);
+            std::vector<std::shared_ptr<subdevice_model>> record_sensors;
+            for (auto&& sub : _recorder->query_sensors())
+            {
+                auto model = std::make_shared<subdevice_model>(dev, sub, error_message);
+                record_sensors.push_back(model);
+            }
+            live_subdevices = subdevices;
+            subdevices.clear();
+            subdevices.swap(record_sensors);
+            for(int i=0; i< live_subdevices.size(); i++)
+            {
+                subdevices[i]->selected_res_id = live_subdevices[i]->selected_res_id;
+                subdevices[i]->selected_shared_fps_id = live_subdevices[i]->selected_shared_fps_id;
+                subdevices[i]->selected_format_id = live_subdevices[i]->selected_format_id;
+                subdevices[i]->show_single_fps_list = live_subdevices[i]->show_single_fps_list;
+                subdevices[i]->fpses_per_stream = live_subdevices[i]->fpses_per_stream;
+                subdevices[i]->selected_fps_id = live_subdevices[i]->selected_fps_id;
+                subdevices[i]->stream_enabled = live_subdevices[i]->stream_enabled;
+                subdevices[i]->fps_values_per_stream = live_subdevices[i]->fps_values_per_stream;
+                subdevices[i]->format_values = live_subdevices[i]->format_values;
+            }
+
+            is_recording = true;
+        }
+        catch (const rs2::error& e)
+        {
+            error_message = error_to_string(e);
+        }
+        catch (const std::exception& e)
+        {
+            error_message = e.what();
+        }
     }
 
     void device_model::stop_recording()

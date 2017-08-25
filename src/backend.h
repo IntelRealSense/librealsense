@@ -271,6 +271,22 @@ namespace librealsense
                 (a.device_path == b.device_path);
         }
 
+        struct playback_device_info
+        {
+            std::string file_path;
+
+            operator std::string()
+            {
+                return file_path;
+            }
+        };
+
+        inline bool operator==(const playback_device_info& a,
+            const playback_device_info& b)
+        {
+            return (a.file_path == b.file_path);
+        }
+
         struct hid_sensor
         {
             std::string name;
@@ -522,9 +538,12 @@ namespace librealsense
             backend_device_group(const std::vector<uvc_device_info>& uvc_devices, const std::vector<usb_device_info>& usb_devices)
                 :uvc_devices(uvc_devices), usb_devices(usb_devices) {}
 
+            backend_device_group(const std::vector<playback_device_info>& playback_devices) : playback_devices(playback_devices) {}
+
             std::vector<uvc_device_info> uvc_devices;
             std::vector<usb_device_info> usb_devices;
             std::vector<hid_device_info> hid_devices;
+            std::vector<playback_device_info> playback_devices;
 
             bool operator == (const backend_device_group& other)
             {
@@ -555,6 +574,14 @@ namespace librealsense
                     s += hid;
                     s += "\n\n";
                 }
+
+                s += playback_devices.size()>0 ? "playback devices: \n" : "";
+                for (auto playback_device : playback_devices)
+                {
+                    s += playback_device;
+                    s += "\n\n";
+                }
+
                 return s;
             }
         };

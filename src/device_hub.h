@@ -5,6 +5,7 @@
 
 #include "context.h"
 #include "device.h"
+#include <limits>
 
 namespace librealsense
 {
@@ -20,7 +21,7 @@ namespace librealsense
          * If any device is connected return it, otherwise wait until next RealSense device connects.
          * Calling this method multiple times will cycle through connected devices
          */
-        std::shared_ptr<device_interface> wait_for_device();
+        std::shared_ptr<device_interface> wait_for_device( unsigned int timeout_ms = std::numeric_limits<uint64_t>::max(), device_interface* dev = nullptr);
 
         /**
         * Checks if device is still connected
@@ -29,6 +30,7 @@ namespace librealsense
 
 
     private:
+        std::shared_ptr<device_interface> create_device(std::string serial = "");
         context& _ctx;
         std::mutex _mutex;
         std::condition_variable _cv;

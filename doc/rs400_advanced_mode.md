@@ -28,7 +28,7 @@ This application allows you to adjust various controls live and load existing pr
 
 ## Programming interface
 At the moment, RS400 advanced mode produces single library `rs400-advanced-mode` (.so / .dll) dependent on librealsense.
-This library provides C bindings for the various controls:
+This library provides C wrappers for the various controls:
 ```c
 #include <rs400_advanced_mode/rs400_advanced_mode.h>
 

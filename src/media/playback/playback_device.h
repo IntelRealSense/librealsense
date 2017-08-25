@@ -54,6 +54,8 @@ namespace librealsense
         uint64_t get_position() const;
         signal<playback_device, rs2_playback_status> playback_status_changed;
         platform::backend_device_group get_device_data() const override;
+        std::pair<uint32_t, rs2_extrinsics> get_extrinsics(const stream_interface& stream) const override;
+
     private:
         void update_time_base(device_serializer::nanoseconds base_timestamp);
         device_serializer::nanoseconds calc_sleep_time(device_serializer::nanoseconds  timestamp) const;
@@ -81,6 +83,8 @@ namespace librealsense
         device_serializer::nanoseconds m_prev_timestamp;
         std::shared_ptr<context> m_context;
         std::vector<std::shared_ptr<lazy<rs2_extrinsics>>> m_extrinsics_fetchers;
+        std::map<int, std::pair<uint32_t, rs2_extrinsics>> m_extrinsics_map;
+
     };
 
     MAP_EXTENSION(RS2_EXTENSION_PLAYBACK, playback_device);

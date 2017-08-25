@@ -15,12 +15,12 @@ We start by including Intel® RealSense™ Cross-Platform API. All but advanced 
 #include <librealsense2/rs.hpp> // Include RealSense Cross Platform API
 ```
 
-Next, we prepared a [very short helper library](../example.hpp) encapsulating OpenGL rendering and window management:
+Next, we include a [very short helper library](../example.hpp) for encapsulation of OpenGL rendering and window management:
 ```cpp
 #include "example.hpp"          // Include short list of convenience functions for rendering
 ```
 
-This header lets us easily open a new window and prepare textures for rendering. Texture class is designed to hold video frame data for rendering. 
+This header lets us easily open a new window and prepare textures for rendering. `texture` class is designed to hold video frame data for rendering. 
 ```cpp
 // Create a simple OpenGL window for rendering:
 window app(1280, 720, "RealSense Capture Example");
@@ -28,37 +28,32 @@ window app(1280, 720, "RealSense Capture Example");
 texture depth_image, color_image;
 ```
 
-We are going to use classes within the `rs2` namespace:
-```cpp
-using namespace rs2;
-```
-
-Depth data is provided as 10-bit grayscale values, not very useful for visualization. We offer API to convert this grayscale image to RGB:
+Depth data is provided as 12-bit grayscale values, which is not very useful for visualization. To overcome this, we offer an API to convert this grayscale image to RGB:
 ```cpp
 // Declare depth colorizer for pretty visualization of depth data
-colorizer color_map; 
+rs2::colorizer color_map; 
 ```
 
-**Pipeline** is the entry point to the SDK functionality:
+The API entry point for SDK is the `pipeline` class:
 ```cpp
 // Declare RealSense pipeline, encapsulating the actual device and sensors
-pipeline pipe;
+rs2::pipeline pipe;
 // Start streaming with default recommended configuration
 pipe.start(); 
 ```
 
-Next, we wait in a loop unit for the next set of frames:
+Next, we wait for the next set of frames, effectively blocking the program:
 ```cpp
-auto data = pipe.wait_for_frames(); // Wait for next set of frames from the camera
+rs2::frameset data = pipe.wait_for_frames(); // Wait for next set of frames from the camera
 ```
 
-Using helper functions on the **frameset** object we look up the first depth frame in the set and the first color frame:
+Using the `frameset` object we look up the first depth frame in the set and the first color frame:
 ```cpp
-auto depth = color_map(data.get_depth_frame()); // Find and colorize the depth data
-auto color = data.get_color_frame();            // Find the color data
+rs2::frame depth = color_map(data.get_depth_frame()); // Find and colorize the depth data
+rs2::frame color = data.get_color_frame();            // Find the color data
 ```
 
-**Texture** class from [example.hpp](../example.hpp) takes care of the rendering
+Finally, `texture` class from [example.hpp](../example.hpp) takes care of the rendering
 ```cpp
 // Render depth on to the first half of the screen and color on to the second
 depth_image.render(depth, { 0,               0, app.width() / 2, app.height() });

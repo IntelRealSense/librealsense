@@ -8,13 +8,14 @@ In addition to streaming video and other data from devices and sensors, the real
 The SDK is recording a single device to a single [rosbag file](http://wiki.ros.org/rosbag), using mostly standard ROS messages. This allows files recorded by the SDK to be replayed using any ROS tools \ application.
 
 
-----------
+Quick Start
+-------------
 
-#### Code Example: `rs2::recorder`
+#### `rs2::recorder`
 
-> :exclamation: If you are not familiar with the basic streaming examples, please follow them before moving on
+> :exclamation: If you are not familiar with the basic streaming [examples](../../examples), please follow them before moving on
 
-To enable recording on any device, simply create a **rs2::recorder** from it and provide a path to the desired output file:
+To enable recording of any device, simply create a **rs2::recorder** from it and provide a path to the desired output file:
 ```cpp
 //Create a context and get the first device
 rs2::context ctx;
@@ -27,12 +28,12 @@ if (devices.size() > 0)
 	//recorder "is a" device, so just use it like any other device now
 }
 ```
-A **recorder** has the same functionality as a "real" device, with additional control for recording, such as pausing and resuming record.
+A `recorder` has the same functionality as a "real" device, with additional control for recording, such as pausing and resuming record.
 
-----------
-#### Example: `rs2::playback`
 
-> :exclamation: If you are not familiar with the basic streaming examples, please follow them before moving on
+#### `rs2::playback`
+
+> :exclamation: If you are not familiar with the basic streaming [examples](../../examples), please follow them before moving on
 
 Recorded files can be loaded and used to create a playback device by simply loading a file to the context:
 ```cpp
@@ -42,14 +43,37 @@ rs2::context ctx;
 rs2::playback device = ctx.load_device("my_file_name.bag");
 //playback "is a" device, so just use it like any other device now
 ```
-The above code creates a playback device, which can be used is any device, but has the obvious limitation of only playing the recorded streams. Playback devices can be used to query information on the device and it sensors, and can be extended to which ever extension the "real" device could.
-A **playback** provides additional functionalities such as Seek, Pause, Resume and RealTime playing.
+The above code creates a playback device, which can be used as any device, but has the obvious limitation of only playing the recorded streams. 
+Playback devices can be used to query information on the device and it sensors, and can be extended to which ever extension the "real" device could.
+A `playback` provides additional functionalities such as seek, pause, resume and playback speed.
 
 
+
+Playback and Record in RealSense Viewer
+-------------
+
+Among its many features, the [RealSense Viewer](../../tools/realsense-viewer) allows recording a device, and loading a file to playback.
+
+To record a streaming session, simply click the "bars" icon next to the device name, choose "Record to File...", and select the destination for the file.
+
+![Recording a device](../../doc/img/record_screenshot.png)
+
+After choosing a file destination, a red dot will appear next to the device's name, indicating that it is recording.
+Starting a stream will save its frames to the file, and once all streams are stopped, recording will complete automatically.
+
+To replay a file, click "Add Source", choose "Load Recorded Sequence" and select the file you want to play.
+Once you select the file, the Viewer will automatically add it the the list of source, and a popup should appear stating that the file was loaded:
+
+![Loading Recorded Sequence](../../doc/img/playback_screenshot.png)
+>Notice that devices that were loaded from file have a "movie" icon next to their name.  
+
+After loading the file, you can start streaming its streams, view its controls (with the values at time of record), pause the playback, choose speed, and use the seek bar to navigate trough frames.
+
+
+Under the Hood
 ------
 
-
-### Basics Terminology
+#### Basics Terminology
 
 A **Device** is a container of Sensors with some correlation between them (e.g - all sensors are on a single board, sensors are mounted on a robot and share calibration information, etc.). A **Sensor** is a data streaming object, that provides one or more Streams.
 **Stream** is a sequence of data items of a single data type, which are ordered according to their time of creation or arrival. The Sensor provides the Streams frames to the user. 
@@ -60,9 +84,9 @@ Devices and Sensors can have **Extensions** that provide additional functionalit
 
 Finally, we will refer to a an actual implementation of devices and sensors as "live" or "real" devices and sensors.
 
-### Rosbag
+#### Rosbag
 
-#### Overview on ROSBAG file structure
+##### Overview on ROSBAG file structure
 
 The Rosbag file consists of data records, each data that is written to the file is represented by a topic that represents the data content, message that is the data definition, and capture time.
 Any topic can be coupled with any message, in our file each topic will be represented by a single message. However, we will have different topics with the same message such as property.  
@@ -82,7 +106,7 @@ The flow to find a message on topic “A”:
 - Access the chunk with the wanted connection, chunk info contains an offset to the paired chunk.
 - Access the message from the relevant index data.
 
-#### Dependencies
+##### Dependencies
 The SDK depends on ROS packages that are used for recording and playing the bag file.
 The dependencies are:
 - rosbag_storage
@@ -94,7 +118,7 @@ The dependencies are:
 
 > **Note:** The above dependencies are embedded into the source files, there is no need for additional installations.
 
-#### Topics
+##### Topics
 
 The rosbag file requires messages to be associates with Topics
 > Topics are [named](http://wiki.ros.org/Names) buses over which [nodes](http://wiki.ros.org/Nodes) exchange [messages](http://wiki.ros.org/Messages). [[ROS Wiki\Topics]](http://wiki.ros.org/Topics)
@@ -177,7 +201,7 @@ The following table depicts the Topics that are supported by RealSense file form
   <tr>
     <td>6DOF Data</td>
     <td>/device_&lt;device_id&gt;/sensor_&lt;sensor_id&gt;/&lt;stream_type&gt;_&lt;stream_id&gt;/6dof/data</td>
-    <td>realsense_msgs::6DoF</td>
+    <td>realsense_msgs::6DoF (TBD)</td>
     <td>Six DOF data</td>
   </tr>
   <tr>
@@ -212,9 +236,9 @@ The following table depicts the Topics that are supported by RealSense file form
   </tr>
   <tr>
     <td>Stream Exntrinsics</td>
-    <td>/device_&lt;device_id&gt;/sensor_&lt;sensor_id&gt;/&lt;stream_type&gt;_&lt;stream_id&gt;/tf</td>
+    <td>/device_&lt;device_id&gt;/sensor_&lt;sensor_id&gt;/&lt;stream_type&gt;_&lt;stream_id&gt;/tf/&lt;group_index&gt;</td>
     <td><a href="http://docs.ros.org/jade/api/geometry_msgs/html/msg/Transform.html">geometry_msgs/Transform Message</a></td>
-    <td>Extrinsic transformation between a specific stream to another</td>
+    <td>Extrinsic transformation between some point of reference (indexed by group_index) to the stream in the topic</td>
   </tr>
   <tr>
     <td>Additional Info</td>
@@ -224,22 +248,23 @@ The following table depicts the Topics that are supported by RealSense file form
   </tr>
 </table>
 
-#### Messages
+
+##### Messages
 ROS uses a simplified messages description language for describing the data values (aka messages) that ROS nodes publish. This description makes it easy for ROS tools to automatically generate source code for the message type in several target languages. Message descriptions are stored in .msg files.
 There are two parts to a .msg file: fields and constants. Fields are the data that is sent inside of the message. Constants define useful values that can be used to interpret those fields (e.g. enum-like constants for an integer value).
 
 --------------
 
-### RealSense Proprietary  Messages
+#### RealSense Proprietary  Messages
 
-In addition to the standard ROS messsages, the SDK writes additional proprietary messages (available in the 3rd party folder) for new data types that are recorded.
+In addition to the standard ROS messsages, the SDK writes additional proprietary messages (available in the [3rd party folder](../../third-party/realsense-file/rosbag/msgs/realsense_msgs)) for new data types that are recorded.
 The following are the new messages created by the SDK:
 
  - [realsense_msgs::StreamInfo](#stream-info)
  - [realsense_msgs::ImuIntrinsic](#motion-intrinsic)
 
 --------------
-#### **Stream Info**
+##### **Stream Info**
 
 <table>
   <tr>
@@ -265,13 +290,13 @@ The following are the new messages created by the SDK:
   </tr>
 </table>
 
-##### Supported Encoding
+###### Supported Encoding
 
 For video streams, the supported encoding types can be found at <a href="http://docs.ros.org/jade/api/sensor_msgs/html/namespacesensor__msgs_1_1image__encodings.html">ros documentation</a><br>
 
 --------------
 
-#### Motion Intrinsic
+##### Motion Intrinsic
 
 <table>
    <tbody>

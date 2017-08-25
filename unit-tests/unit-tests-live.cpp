@@ -373,6 +373,49 @@ TEST_CASE("Advanced Mode presets", "[live]") {
     }
 }
 
+TEST_CASE("Advanced Mode JSON", "[live]") {
+    rs2::context ctx;
+    if (make_context(SECTION_FROM_TEST_NAME, &ctx))
+    {
+        device_list list;
+        REQUIRE_NOTHROW(list = ctx.query_devices());
+        REQUIRE(list.size() > 0);
+
+        auto dev = list.front();
+
+        disable_sensitive_options_for(dev);
+
+        std::string serial;
+        REQUIRE_NOTHROW(serial = dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER));
+
+        if (dev.is<rs400::advanced_mode>())
+        {
+            auto advanced = dev.as<rs400::advanced_mode>();
+
+            if (!advanced.is_enabled())
+            {
+                do_with_waiting_for_camera_connection(ctx, dev, serial, [&]()
+                {
+                    REQUIRE_NOTHROW(advanced.toggle_advanced_mode(true));
+                });
+            }
+            disable_sensitive_options_for(dev);
+            advanced = dev.as<rs400::advanced_mode>();
+            std::string json1, json2;
+            REQUIRE_NOTHROW(json1 = advanced.serialize_json());
+            REQUIRE_NOTHROW(advanced.load_json(json1));
+            REQUIRE_NOTHROW(json2 = advanced.serialize_json());
+            REQUIRE_NOTHROW(json1 == json2);
+
+            do_with_waiting_for_camera_connection(ctx, dev, serial, [&]()
+            {
+                REQUIRE_NOTHROW(advanced.toggle_advanced_mode(false));
+            });
+            disable_sensitive_options_for(dev);
+        }
+    }
+}
+
 TEST_CASE("Advanced Mode controls", "[live]") {
     rs2::context ctx;
     if (make_context(SECTION_FROM_TEST_NAME, &ctx))
@@ -2701,14 +2744,14 @@ struct profile
     }
 
 };
-struct device_requsets
+struct device_profiles
 {
     std::vector<profile> streams;
     int fps;
     bool sync;
 };
 
-void validate(std::vector<frameset> frames, device_requsets requsets)
+void validate(std::vector<frameset> frames, device_profiles requsets)
 {
     REQUIRE(frames.size() > 0);
 
@@ -2771,9 +2814,9 @@ void validate(std::vector<frameset> frames, device_requsets requsets)
 
 
 
-std::map<std::string, device_requsets> get_pipeline_default_configurations()
+std::map<std::string, device_profiles> get_pipeline_default_configurations()
 {
-    std::map<std::string, device_requsets> dev_requsets;
+    std::map<std::string, device_profiles> dev_requsets;
 
     dev_requsets["0B07"] =
     {
@@ -2838,15 +2881,123 @@ TEST_CASE("Pipeline start", "[live]") {
             REQUIRE_NOTHROW(frames.push_back(pipe.wait_for_frames(10000)));
 
 
+        REQUIRE_NOTHROW(pipe.stop());
         validate(frames, dev_requsets[PID]);
 
 
     }
 }
 
-std::map<std::string, device_requsets> get_custom_configurations()
+TEST_CASE("Pipeline poll", "[live]") {
+
+    auto dev_requsets = get_pipeline_default_configurations();
+
+    rs2::context ctx;
+
+    if (make_context(SECTION_FROM_TEST_NAME, &ctx))
+    {
+        auto list = ctx.query_devices();
+        REQUIRE(list.size());
+        rs2::pipeline pipe(ctx);
+        auto dev = pipe.get_device();
+        disable_sensitive_options_for(dev);
+
+        std::string PID;
+        REQUIRE_NOTHROW(PID = dev.get_info(RS2_CAMERA_INFO_PRODUCT_ID));
+
+        REQUIRE(dev_requsets[PID].streams.size()>0);
+
+        
+        REQUIRE_NOTHROW(pipe.start());
+
+        std::vector<frameset> frames;
+
+        frame f;
+        auto frame_num = 0;
+        while (frame_num < 30)
+        {
+            auto res = true;
+            REQUIRE_NOTHROW(res = pipe.poll_for_frame(&f));
+            if (res)
+                frame_num++;
+        }
+            
+
+
+        while (frames.size() < 8)
+        {
+            auto res = true;
+            REQUIRE_NOTHROW(res = pipe.poll_for_frame(&f));
+            if (res)
+            {
+                frames.push_back(frameset(f));
+            }
+        }
+           
+
+        REQUIRE_NOTHROW(pipe.stop());
+        validate(frames, dev_requsets[PID]);
+
+
+    }
+}
+
+TEST_CASE("Pipeline start with callback", "[live]") {
+
+    auto dev_requsets = get_pipeline_default_configurations();
+
+    rs2::context ctx;
+
+    if (make_context(SECTION_FROM_TEST_NAME, &ctx))
+    {
+        std::condition_variable cv;
+        std::mutex m;
+
+        auto list = ctx.query_devices();
+        REQUIRE(list.size());
+        auto dev = list[0];
+        disable_sensitive_options_for(dev);
+
+        std::string PID;
+        REQUIRE_NOTHROW(PID = dev.get_info(RS2_CAMERA_INFO_PRODUCT_ID));
+
+        REQUIRE(dev_requsets[PID].streams.size()>0);
+
+        rs2::pipeline pipe(ctx);
+
+        std::vector<frameset> frames;
+
+
+        auto frames_num = 0;
+
+        REQUIRE_NOTHROW(pipe.start([&](frame f)
+        {
+            if(frames_num++ >10)
+            {
+                std::unique_lock<std::mutex> lock(m);
+
+                frames.push_back(frameset(f));
+                cv.notify_all();
+            }
+
+        }));
+
+
+
+        {
+            std::unique_lock<std::mutex> lock(m);
+            REQUIRE(cv.wait_for(lock, std::chrono::seconds(10000), [&](){return frames.size()>8;}));
+        }
+        pipe.stop();
+        validate(frames, dev_requsets[PID]);
+
+
+    }
+}
+
+std::map<std::string, device_profiles> get_custom_configurations()
 {
-    std::map<std::string, device_requsets> dev_requsets;
+    std::map<std::string, device_profiles> dev_requsets;
 
     dev_requsets["0B07"] =
     {
@@ -2912,6 +3063,7 @@ TEST_CASE("Pipeline enable stream", "[live]") {
             REQUIRE_NOTHROW(frames.push_back(pipe.wait_for_frames(10000)));
 
 
+        REQUIRE_NOTHROW(pipe.stop());
         validate(frames, dev_requsets[PID]);
 
 
@@ -2919,7 +3071,7 @@ TEST_CASE("Pipeline enable stream", "[live]") {
 }
 TEST_CASE("Pipeline enable stream auto complete", "[live]") {
 
-    std::map<std::string, device_requsets> dev_requsets;
+    std::map<std::string, device_profiles> dev_requsets;
 
     dev_requsets["0B07"] =
     {
@@ -2980,7 +3132,7 @@ TEST_CASE("Pipeline enable stream auto complete", "[live]") {
         while(frames.size()<8)
             REQUIRE_NOTHROW(frames.push_back(pipe.wait_for_frames(10000)));
 
-
+        REQUIRE_NOTHROW(pipe.stop());
         validate(frames, dev_requsets[PID]);
     }
 }
@@ -3024,6 +3176,7 @@ TEST_CASE("Pipeline disable_all", "[live]") {
             REQUIRE_NOTHROW(frames.push_back(pipe.wait_for_frames(10000)));
 
 
+        REQUIRE_NOTHROW(pipe.stop());
         validate(frames, default_configurations[PID]);
     }
 }
@@ -3072,7 +3225,128 @@ TEST_CASE("Pipeline disable stream", "[live]") {
         while(frames.size()<8)
             REQUIRE_NOTHROW(frames.push_back(pipe.wait_for_frames(10000)));
 
-
+        REQUIRE_NOTHROW(pipe.stop());
         validate(frames, configurations[PID]);
+    }
+}
+
+TEST_CASE("Pipeline with specific device", "[live]") {
+
+    auto configurations = get_custom_configurations();
+
+    rs2::context ctx;
+
+    if (make_context(SECTION_FROM_TEST_NAME, &ctx))
+    {
+        auto list = ctx.query_devices();
+        REQUIRE(list.size());
+        auto dev = list[0];
+        disable_sensitive_options_for(dev);
+
+        std::string serial, serial1;
+        REQUIRE_NOTHROW(serial = dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER));
+
+        rs2::pipeline pipe(dev);
+        REQUIRE_NOTHROW(dev = pipe.get_device());
+        REQUIRE_NOTHROW(serial1 = dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER));
+
+
+        CAPTURE(serial);
+        CAPTURE(serial1);
+        REQUIRE(serial1 == serial);
+
+    }
+}
+
+bool operator==(std::vector<profile> streams1, std::vector<profile> streams2)
+{
+    if(streams1.size() != streams2.size())
+        return false;
+
+    std::sort(streams1.begin(), streams1.end());
+    std::sort(streams2.begin(), streams2.end());
+
+    auto equals = true;
+    for( auto i =0; i< streams1.size(); i++)
+    {
+        if(streams1[i] != streams2[i])
+        {
+            equals = false;
+            break;
+        }
+    }
+    return equals;
+}
+
+TEST_CASE("Pipeline start stop", "[live]") {
+
+    auto configurations = get_custom_configurations();
+
+    rs2::context ctx;
+
+    if (make_context(SECTION_FROM_TEST_NAME, &ctx))
+    {
+        auto list = ctx.query_devices();
+        REQUIRE(list.size());
+        auto dev = list[0];
+        disable_sensitive_options_for(dev);
+
+        std::string PID;
+        REQUIRE_NOTHROW(PID = dev.get_info(RS2_CAMERA_INFO_PRODUCT_ID));
+
+        REQUIRE(configurations[PID].streams.size()>0);
+
+        rs2::pipeline pipe(ctx);
+
+
+        for(auto req: configurations[PID].streams)
+            REQUIRE_NOTHROW(pipe.enable_stream(req.stream, req.index, req.width, req.height, req.format, configurations[PID].fps));
+
+        auto& streams = configurations[PID].streams;
+
+        REQUIRE_NOTHROW(pipe.start());
+
+        std::vector<device_profiles> frames;
+
+        for(auto i = 0; i<10; i++)
+            REQUIRE_NOTHROW(pipe.wait_for_frames(10000));
+
+
+         REQUIRE_NOTHROW(pipe.stop());
+         REQUIRE_NOTHROW(pipe.start());
+
+         for(auto i = 0; i<20; i++)
+             REQUIRE_NOTHROW(pipe.wait_for_frames(10000));
+
+         std::vector<profile> profiles;
+         auto equals = 0;
+         for(auto i = 0; i<30; i++)
+         {
+             frameset frame;
+             REQUIRE_NOTHROW(frame = pipe.wait_for_frames(10000));
+             REQUIRE(frame.size()>0);
+
+             for(auto f:frame)
+             {
+                 auto profile = f.get_profile();
+                 auto video_profile = profile.as<video_stream_profile>();
+
+                 profiles.push_back({profile.stream_type(),
+                                         profile.format(),
+                                         video_profile.width(),
+                                         video_profile.height(),
+                                         video_profile.stream_index()});
+
+
+
+
+             }
+             if(profiles == streams)
+                 equals++;
+             profiles.clear();
+         }
+
+        REQUIRE_NOTHROW(pipe.stop());
+        REQUIRE(equals > 30*0.25);
     }
 }

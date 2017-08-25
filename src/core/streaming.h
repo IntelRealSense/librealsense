@@ -142,6 +142,8 @@ namespace librealsense
 
         virtual platform::backend_device_group get_device_data() const = 0;
 
+        virtual std::pair<uint32_t, rs2_extrinsics> get_extrinsics(const stream_interface& stream) const = 0;
+
         virtual ~device_interface() = default;
 
     };

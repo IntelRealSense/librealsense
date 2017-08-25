@@ -7,13 +7,16 @@ Linux | Windows |
 [![Build Status](https://travis-ci.org/IntelRealSense/librealsense.svg?branch=development)](https://travis-ci.org/IntelRealSense/librealsense) | [![Build status](https://ci.appveyor.com/api/projects/status/6u04bgmpwfejpgo8?svg=true)](https://ci.appveyor.com/project/dorodnic/librealsense-s4xnv) |
 
 ## Overview
-**Intel® RealSense™ SDK 2.0** is a cross-platform library (Linux, Windows, Mac) for working with Intel® RealSense™ depth cameras (SR300 and the D400 series).
-It allows streaming of depth, color and fisheye video, and provides intrinsic and extrinsic calibration information. The library also offers synthetic streams (pointcloud, depth aligned to color and vise-versa) and support for motion tracking. In addition, the SDK has a built-in support for [record and playback](./src/media/readme.md). 
+**Intel® RealSense™ SDK 2.0** is a cross-platform library (Linux, Windows, Mac) for working with Intel® RealSense™ depth cameras (SR300 and the RS400 series).
 
-The library aims to provide an easy to use API and tools for computer vision professionals, game developers and other Intel RealSense technology enthusiasts.
+> For Intel® RealSense™ F200, R200 and ZR300 devices, please refer to the [latest legacy release](https://github.com/IntelRealSense/librealsense/tree/v1.12.1).
+ 
+The SDK allows depth, color and fisheye streaming, and provides intrinsic and extrinsic calibration information. 
+The library also offers synthetic streams (pointcloud, depth aligned to color and vise-versa), motion tracking, and a built-in support for [record and playback](./src/media/readme.md) of streaming sessions.
 
-We provide a C, C++, and [Python](./bindings/python) API.
-Developer kits containing the necessary hardware to use this library are available for purchase at [click.intel.com](http://click.intel.com/realsense.html).
+The library aims to provide an easy to use API and tools for computer vision professionals, robotics programmers, game developers, and other Intel RealSense technology enthusiasts.
+
+We provide a C, C++, and [Python](./wrappers/python) API.
 
 ## Quick Start
 
@@ -59,7 +62,8 @@ while (true)
 ```
 For more information on the library, please follow our [examples](./examples), and read the [documentation](./doc) to learn more.
 
+## Contributing
+In order to contribute to Intel RealSense SDK, please follow our [contribution guidelines](CONTRIBUTING.md).
 
 ## License
-
-This project is licensed under the Apache License, Version 2.0 - see the [LICENSE](LICENSE) file for details
+This project is licensed under the [Apache License, Version 2.0](LICENSE).

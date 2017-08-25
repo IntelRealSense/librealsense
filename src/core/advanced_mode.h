@@ -32,6 +32,8 @@ EtAdvancedModeRegGroup;
 
 namespace librealsense
 {
+    class ds5_color_sensor;
+
     template<class T>
     struct advanced_mode_traits;
 
@@ -100,7 +102,8 @@ namespace librealsense
     class ds5_advanced_mode_base : public ds5_advanced_mode_interface
     {
     public:
-        explicit ds5_advanced_mode_base(std::shared_ptr<hw_monitor> hwm, uvc_sensor& depth_sensor);
+        explicit ds5_advanced_mode_base(std::shared_ptr<hw_monitor> hwm,
+                                        uvc_sensor& depth_sensor);
         virtual ~ds5_advanced_mode_base() = default;
 
         bool is_enabled() const override;
@@ -138,8 +141,52 @@ namespace librealsense
         void load_json(const std::string& json_content);
 
     private:
+        void set_exposure(uvc_sensor& sensor, const exposure_control& val);
+        void set_auto_exposure(uvc_sensor& sensor, const auto_exposure_control& val);
+        void get_exposure(uvc_sensor& sensor, exposure_control* ptr) const;
+        void get_auto_exposure(uvc_sensor& sensor, auto_exposure_control* ptr) const;
+
+        void get_laser_power(laser_power_control* ptr) const;
+        void get_laser_state(laser_state_control* ptr) const;
+        void get_depth_exposure(exposure_control* ptr) const;
+        void get_depth_auto_exposure(auto_exposure_control* ptr) const;
+        void get_depth_gain(gain_control* ptr) const;
+        void get_color_exposure(exposure_control* ptr) const;
+        void get_color_auto_exposure(auto_exposure_control* ptr) const;
+        void get_color_backlight_compensation(backlight_compensation_control* ptr) const;
+        void get_color_brightness(brightness_control* ptr) const;
+        void get_color_contrast(contrast_control* ptr) const;
+        void get_color_gain(gain_control* ptr) const;
+        void get_color_gamma(gamma_control* ptr) const;
+        void get_color_hue(hue_control* ptr) const;
+        void get_color_saturation(saturation_control* ptr) const;
+        void get_color_sharpness(sharpness_control* ptr) const;
+        void get_color_white_balance(white_balance_control* ptr) const;
+        void get_color_auto_white_balance(auto_white_balance_control* ptr) const;
+        void get_color_power_line_frequency(power_line_frequency_control* ptr) const;
+
+        void set_laser_power(const laser_power_control& val);
+        void set_laser_state(const laser_state_control& val);
+        void set_depth_exposure(const exposure_control& val);
+        void set_depth_auto_exposure(const auto_exposure_control& val);
+        void set_depth_gain(const gain_control& val);
+        void set_color_exposure(const exposure_control& val);
+        void set_color_auto_exposure(const auto_exposure_control& val);
+        void set_color_backlight_compensation(const backlight_compensation_control& val);
+        void set_color_brightness(const brightness_control& val);
+        void set_color_contrast(const contrast_control& val);
+        void set_color_gain(const gain_control& val);
+        void set_color_gamma(const gamma_control& val);
+        void set_color_hue(const hue_control& val);
+        void set_color_saturation(const saturation_control& val);
+        void set_color_sharpness(const sharpness_control& val);
+        void set_color_white_balance(const white_balance_control& val);
+        void set_color_auto_white_balance(const auto_white_balance_control& val);
+        void set_color_power_line_frequency(const power_line_frequency_control& val);
+
         std::shared_ptr<hw_monitor> _hw_monitor;
         uvc_sensor& _depth_sensor;
+        lazy<ds5_color_sensor*> _color_sensor;
         lazy<bool> _enabled;
 
         enum res_type{

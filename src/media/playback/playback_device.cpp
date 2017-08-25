@@ -48,15 +48,23 @@ playback_device::playback_device(std::shared_ptr<context> ctx, std::shared_ptr<d
     {
         for (auto e2 : m_device_description.get_extrinsics_map())
         {
+            if (e1.second.first != e2.second.first)
+            {
+                //Not under the same extrinsics group
+                continue;
+            }
+
             auto p1 = get_stream(m_sensors, e1.first);
             auto p2 = get_stream(m_sensors, e2.first);
-            rs2_extrinsics x = calc_extrinsic(e1.second, e2.second);
-            auto l = std::make_shared<lazy<rs2_extrinsics>>([x]()
+            rs2_extrinsics x = calc_extrinsic(e1.second.second, e2.second.second);
+            auto extrinsic_fetcher = std::make_shared<lazy<rs2_extrinsics>>([x]()
             {
                 return x;
             });
-            m_extrinsics_fetchers.push_back(l);
-            m_context->register_extrinsics(*p1, *p2, l);
+            m_extrinsics_map[p1->get_unique_id()] = e1.second;
+            m_extrinsics_map[p2->get_unique_id()] = e2.second;
+            m_context->register_extrinsics(*p1, *p2, extrinsic_fetcher);
+            m_extrinsics_fetchers.push_back(extrinsic_fetcher);  //Caching the lazy<rs2_extrinsics> since context holds weak_ptr
         }
     }
 }
@@ -112,26 +120,19 @@ std::map<uint32_t, std::shared_ptr<playback_sensor>> playback_device::create_pla
             }
         };
         
-        sensor->opened += [this](const std::vector<stream_filter>& filters) -> void
+        sensor->opened += [this](const std::vector<device_serializer::stream_identifier>& filters) -> void
         {
             (*m_read_thread)->invoke([this, filters](dispatcher::cancellable_timer c)
             {
-                //TODO: filter order is important for the reader, if more than 1 filter exists, the reader should enable streams according to the lowest timestamp available
-                for (auto filter : filters)
-                {
-                    m_reader->enable_stream({get_device_index(), filter.sensor_index, filter.stream_type, filter.stream_index });
-                }
+                m_reader->enable_stream(filters);
             });
         };
 
-        sensor->closed += [this](const std::vector<stream_filter>& filters) -> void
+        sensor->closed += [this](const std::vector<device_serializer::stream_identifier>& filters) -> void
         {
             (*m_read_thread)->invoke([this, filters](dispatcher::cancellable_timer c)
             {
-                for (auto filter : filters)
-                {
-                    m_reader->disable_stream({ get_device_index(), filter.sensor_index, filter.stream_type, filter.stream_index });
-                }
+                m_reader->disable_stream(filters);
             });
         };
 
@@ -160,7 +161,7 @@ std::shared_ptr<stream_profile_interface> playback_device::get_stream(const std:
 
 rs2_extrinsics playback_device::calc_extrinsic(const rs2_extrinsics& from, const rs2_extrinsics& to)
 {
-    //NOTE: Assuming here that recording is writing extrinsics between some reference point **to** the stream at hand
+    //NOTE: Assuming here that recording is writing extrinsics **from** some reference point **to** the stream at hand
     return from_pose(inverse(to_pose(from)) * to_pose(to));
 }
 
@@ -324,9 +325,12 @@ bool playback_device::is_real_time() const
 
 platform::backend_device_group playback_device::get_device_data() const
 {
-    return {}; //ZIV: what to do?
+    return {};
 }
-
+std::pair<uint32_t, rs2_extrinsics> playback_device::get_extrinsics(const stream_interface& stream) const
+{
+    return m_extrinsics_map.at(stream.get_unique_id());
+}
 void playback_device::update_time_base(device_serializer::nanoseconds base_timestamp)
 {
     m_base_sys_time = std::chrono::high_resolution_clock::now();

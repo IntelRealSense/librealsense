@@ -374,10 +374,17 @@ namespace librealsense
         ctx->register_extrinsics(*_depth_stream, *_fisheye_stream, _depth_to_fisheye);
         ctx->register_extrinsics(*_fisheye_stream, *_accel_stream, _fisheye_to_imu);
 
+        register_stream_to_extrinsic_group(*_fisheye_stream, 0);
+        register_stream_to_extrinsic_group(*_accel_stream, 0);
+
         // Make sure all MM streams are positioned with the same extrinsics
         ctx->register_same_extrinsics(*_accel_stream, *_gyro_stream);
+        register_stream_to_extrinsic_group(*_gyro_stream, 0);
         for (auto i = 0; i < 4; i++)
+        {
             ctx->register_same_extrinsics(*_accel_stream, *_gpio_streams[i]);
+            register_stream_to_extrinsic_group(*_gpio_streams[i], 0);
+        }
 
         // Add hid endpoint
         auto hid_ep = create_hid_device(ctx, group.hid_devices, _fw_version);
