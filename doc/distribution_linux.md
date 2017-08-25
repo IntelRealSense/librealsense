@@ -18,8 +18,10 @@ It is recommended to backup `/etc/apt/sources.list.d/realsense-public.list` file
   Reconnect the Intel RealSense depth camera and run: `realsense-viewer`  
 
 - Developers shall install additional packages:  
-`sudo apt-get install realsense-sdk-dev`  
-`sudo apt-get install realsense-sdk-dbg`  
+  `sudo apt-get install realsense-sdk-dev`  
+  `sudo apt-get install realsense-sdk-dbg`  
+  With `dev` package installed, you can compile an application with **librealsense** using `g++ -std=c++11 filename.cpp -lrealsense2` or an IDE of your choice. 
+
 
   Complete the installation by performing  
   `reboot`   
