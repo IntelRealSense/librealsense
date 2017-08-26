@@ -21,11 +21,11 @@ For *librealsense* users behind an enterprise firewall, configuring the system-w
 **Note:** Linux build configuration is currently configured to use the **V4L2 Backend** by default. See *Video4Linux(V4L2) Backend Preparation* below.
 
 ## Update Ubuntu to the latest stable version
-* Update Ubuntu distribution, including getting the latest stable kernel  
-    1. `sudo apt-get update && sudo apt-get upgrade && sudo apt-get dist-upgrade`<br />
+Update Ubuntu distribution, including getting the latest stable kernel  
+1. `sudo apt-get update && sudo apt-get upgrade && sudo apt-get dist-upgrade`<br />
 
-    **Note:** On stock Ubuntu 14 LTS systems, with Kernel prior version to 4.4.0-04, the basic *apt-get upgrade* command is not sufficient to bring the distribution to the latest recommended baseline. On these systems use:  
-    `sudo apt-get install --install-recommends linux-generic-lts-xenial xserver-xorg-core-lts-xenial xserver-xorg-lts-xenial xserver-xorg-video-all-lts-xenial xserver-xorg-input-all-lts-xenial libwayland-egl1-mesa-lts-xenial `<br />
+**Note:** On stock Ubuntu 14 LTS systems, with Kernel prior version to 4.4.0-04, the basic *apt-get upgrade* command is not sufficient to bring the distribution to the latest recommended baseline. On these systems use:  
+`sudo apt-get install --install-recommends linux-generic-lts-xenial xserver-xorg-core-lts-xenial xserver-xorg-lts-xenial xserver-xorg-video-all-lts-xenial xserver-xorg-input-all-lts-xenial libwayland-egl1-mesa-lts-xenial `<br />
 
     2. Check the kernel version using `uname -r` and note the exact Kernel version being installed (4.4.0-XX or 4.8.0-XX).<br />
 
