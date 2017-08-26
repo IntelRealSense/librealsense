@@ -39,6 +39,8 @@ Update Ubuntu distribution, including getting the latest stable kernel
     5. Complete the boot, login, and verify that the required kernel version (4.4.0-79 or 4.8.0-54 as of June 17th 2017) is in place with `uname -r`
 
 ## Install librealsense
+Install Intel® RealSense™ Cross Platform API (**librealsense**).
+
 1. Install the packages required for the **librealsense** build:  
 
     1.1 **libusb-1.0** and **pkg-config**:  
