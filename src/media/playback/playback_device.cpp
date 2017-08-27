@@ -23,7 +23,7 @@ playback_device::playback_device(std::shared_ptr<context> ctx, std::shared_ptr<d
         throw invalid_value_exception("null serializer");
     }
 
-    //serializer->reset();  
+    //serializer->reset();
     m_reader = serializer;
     (*m_read_thread)->start();
 
@@ -75,7 +75,7 @@ std::map<uint32_t, std::shared_ptr<playback_sensor>> playback_device::create_pla
     {
         //Each sensor will know its capabilities from the sensor_snapshot
         auto sensor = std::make_shared<playback_sensor>(*this, sensor_snapshot);
-       
+
         sensor->started += [this](uint32_t id, frame_callback_ptr user_callback) -> void
         {
             (*m_read_thread)->invoke([this, id, user_callback](dispatcher::cancellable_timer c)
@@ -95,7 +95,7 @@ std::map<uint32_t, std::shared_ptr<playback_sensor>> playback_device::create_pla
 
         sensor->stopped += [this](uint32_t id, bool invoke_required) -> void
         {
-            //stopped could be called by the user (when calling sensor.stop(), main thread==invoke required) or from the reader_thread when 
+            //stopped could be called by the user (when calling sensor.stop(), main thread==invoke required) or from the reader_thread when
             // reaching eof, or some read error (which means invoke is not required)
 
             auto action = [this, id]()
@@ -119,7 +119,7 @@ std::map<uint32_t, std::shared_ptr<playback_sensor>> playback_device::create_pla
                 action();
             }
         };
-        
+
         sensor->opened += [this](const std::vector<device_serializer::stream_identifier>& filters) -> void
         {
             (*m_read_thread)->invoke([this, filters](dispatcher::cancellable_timer c)

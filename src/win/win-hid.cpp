@@ -7,6 +7,10 @@
 #error At least Visual Studio 2013 Update 4 is required to compile this backend
 #endif
 
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+
 #include "../types.h"
 #include "win-hid.h"
 #include "win-helpers.h"

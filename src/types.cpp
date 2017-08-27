@@ -105,7 +105,7 @@ namespace librealsense
         }
         #undef CASE
     }
-        
+
     const char* get_string(rs2_stream value)
     {
         #define CASE(X) STRCASE(STREAM, X)
@@ -167,7 +167,7 @@ namespace librealsense
         }
         #undef CASE
     }
-    
+
     const char* get_string(rs2_playback_status value)
     {
 #define CASE(X) STRCASE(PLAYBACK_STATUS, X)

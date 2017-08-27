@@ -27,7 +27,7 @@ namespace librealsense
     };
 
     /**
-     * Extensions' snapshots implementations are expected to derive from this class in addition to the actual extensions' 
+     * Extensions' snapshots implementations are expected to derive from this class in addition to the actual extensions'
      * interfaces. Extensions are not expected to derive from this class.
      */
     class extension_snapshot

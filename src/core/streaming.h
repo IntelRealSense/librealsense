@@ -80,7 +80,7 @@ namespace librealsense
 
         virtual void set_timestamp_domain(rs2_timestamp_domain timestamp_domain) = 0;
         virtual rs2_time_t get_frame_system_time() const = 0;
-        
+
         virtual std::shared_ptr<stream_profile_interface> get_stream() const = 0;
         virtual void set_stream(std::shared_ptr<stream_profile_interface> sp) = 0;
 

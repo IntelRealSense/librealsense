@@ -98,7 +98,7 @@ namespace librealsense
         return nullptr;
     }
 
-    frame_interface* synthetic_source::allocate_video_frame(std::shared_ptr<stream_profile_interface> stream, 
+    frame_interface* synthetic_source::allocate_video_frame(std::shared_ptr<stream_profile_interface> stream,
                                                             frame_interface* original,
                                                             int new_bpp,
                                                             int new_width,

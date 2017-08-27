@@ -352,7 +352,7 @@ TEST_CASE("Advanced Mode presets", "[live]") {
                 {
                     CAPTURE(presets_by_res.first);
                     CAPTURE(preset);
-                    REQUIRE_NOTHROW(presets_sensor.set_option(RS2_OPTION_VISUAL_PRESET, preset));
+                    REQUIRE_NOTHROW(presets_sensor.set_option(RS2_OPTION_VISUAL_PRESET, (float)preset));
                     float ret_preset;
                     REQUIRE_NOTHROW(ret_preset = presets_sensor.get_option(RS2_OPTION_VISUAL_PRESET));
                     REQUIRE(preset == (rs2_rs400_visual_preset)((int)ret_preset));
@@ -1612,7 +1612,7 @@ TEST_CASE("Auto disabling control behavior", "[live]") {
             {
                 SECTION("Disable emitter when setting a value")
                 {
-                    for (auto elem : {0, 2})
+                    for (auto elem : {0.f, 2.f})
                     {
                         REQUIRE_NOTHROW(subdevice.set_option(RS2_OPTION_EMITTER_ENABLED, elem));
                         REQUIRE_NOTHROW(range = subdevice.get_option_range(RS2_OPTION_LASER_POWER));

@@ -33,7 +33,7 @@ namespace rs400
         bool is_enabled() const
         {
             rs2_error* e = nullptr;
-            int enabled;
+            int enabled=0;
             rs2_is_enabled(_dev.get(), &enabled, &e);
             rs2::error::handle(e);
 

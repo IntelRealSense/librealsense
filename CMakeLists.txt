@@ -185,7 +185,7 @@ set(REALSENSE_HPP
     include/librealsense2/rs_advanced_mode.h
     include/librealsense2/rs_advanced_mode.hpp
     include/librealsense2/h/rs_advanced_mode_command.h
-	
+
     src/res/resource.h
 
     src/core/streaming.h
@@ -309,8 +309,8 @@ if(WIN32)
         include/librealsense2/rs.h
         CMake/realsense.def
         )
-		
-	source_group("Header Files\\API\\C Headers" FILES
+
+    source_group("Header Files\\API\\C Headers" FILES
         include/librealsense2/h/rs_context.h
         include/librealsense2/h/rs_device.h
         include/librealsense2/h/rs_frame.h
@@ -325,13 +325,13 @@ if(WIN32)
         include/librealsense2/rs_advanced_mode.h
         include/librealsense2/h/rs_advanced_mode_command.h
         )
-		
-	source_group("Header Files\\API\\C++ Headers" FILES
+
+    source_group("Header Files\\API\\C++ Headers" FILES
         include/librealsense2/hpp/rs_record_playback.hpp
         include/librealsense2/hpp/rs_sensor.hpp
         include/librealsense2/hpp/rs_streaming.hpp
         include/librealsense2/hpp/rs_internal.hpp
-		include/librealsense2/hpp/rs_pipeline.hpp
+    include/librealsense2/hpp/rs_pipeline.hpp
 
         include/librealsense2/rsutil.hpp
         include/librealsense2/rs_advanced_mode.hpp
@@ -342,10 +342,10 @@ if(WIN32)
         src/mock/sql.h
         src/mock/recorder.h
         )
-		
-	source_group("Source Files\\Recorder" FILES
+
+    source_group("Source Files\\Recorder" FILES
         third-party/sqlite/sqlite3.c
-		src/mock/sql.cpp
+    src/mock/sql.cpp
         )
 
     source_group("Source Files\\API" FILES
@@ -517,16 +517,16 @@ add_subdirectory(third-party/realsense-file)
 
 option(BUILD_SHARED_LIBS "Build shared library" ON)
 if(BUILD_SHARED_LIBS)
-	if(WIN32)
-        add_library(realsense2 SHARED 
-			${REALSENSE_CPP} ${REALSENSE_HPP} ${REALSENSE_DEF}
-			src/res/resource.h
+    if(WIN32)
+        add_library(realsense2 SHARED
+            ${REALSENSE_CPP} ${REALSENSE_HPP} ${REALSENSE_DEF}
+            src/res/resource.h
             src/res/librealsense.rc)
-			
-		source_group("Resources" FILES
-			src/res/resource.h
-			src/res/librealsense.rc
-			)
+
+        source_group("Resources" FILES
+        src/res/resource.h
+        src/res/librealsense.rc
+        )
     else()
         add_library(realsense2 SHARED ${REALSENSE_CPP} ${REALSENSE_HPP} ${REALSENSE_DEF})
     endif()
@@ -587,7 +587,7 @@ else()
     install(CODE "execute_process(COMMAND ldconfig)")
 endif()
 
-option(BUILD_UNIT_TESTS "Build realsense unit tests." ON) 
+option(BUILD_UNIT_TESTS "Build realsense unit tests." ON)
 option(BUILD_EXAMPLES "Build realsense examples and tools." ON)
 option(ENFORCE_METADATA "Require WinSDK with Metadata support during compilation. Windows OS Only" OFF)
 option(BUILD_PYTHON_BINDINGS "Build Python bindings" OFF)

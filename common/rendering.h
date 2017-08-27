@@ -531,9 +531,9 @@ namespace rs2
         colorizer colorize;
 
     public:
-        rs2::frame get_last_frame() const { 
+        rs2::frame get_last_frame() const {
             last_queue.poll_for_frame(&last);
-            return last; 
+            return last;
         }
 
         texture_buffer() : last_queue(1), texture(), colorize() {}
@@ -567,8 +567,6 @@ namespace rs2
             glBindTexture(GL_TEXTURE_2D, texture);
             stride = stride == 0 ? width : stride;
             //glPixelStorei(GL_UNPACK_ROW_LENGTH, stride);
-            rs2:video_frame f(nullptr);
-            const uint8_t* ptr;
             switch (format)
             {
             case RS2_FORMAT_ANY:

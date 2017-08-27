@@ -7,10 +7,10 @@
 #include <algorithm>            // std::min, std::max
 
 // Struct for managing rotation of pointcloud view
-struct state { 
+struct state {
     state() : yaw(0.0), pitch(0.0), last_x(0.0), last_y(0.0),
         ml(false), offset_x(0.0f), offset_y(0.0f), tex() {}
-    double yaw, pitch, last_x, last_y; bool ml; float offset_x, offset_y; texture tex; 
+    double yaw, pitch, last_x, last_y; bool ml; float offset_x, offset_y; texture tex;
 };
 
 // Helper functions

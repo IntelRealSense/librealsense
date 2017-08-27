@@ -349,7 +349,7 @@ HANDLE_EXCEPTIONS_AND_RETURN(, from, width, height)
 int rs2_get_stream_profile_size(const rs2_stream_profile* profile, rs2_error** error) try
 {
     VALIDATE_NOT_NULL(profile);
-    return profile->profile->get_size();
+    return static_cast<int>(profile->profile->get_size());
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, profile)
 
@@ -1240,7 +1240,7 @@ rs2_device* rs2_create_record_device(const rs2_device* device, const char* file,
 {
     VALIDATE_NOT_NULL(device);
     VALIDATE_NOT_NULL(file);
-    
+
     return new rs2_device( {
         device->ctx,
         device->info,
