@@ -388,6 +388,17 @@ namespace librealsense
         _next_expected[matcher.get()] = f.frame->get_frame_number()+1;
     }
 
+    std::pair<double, double> extract_timestamps(frame_holder & a, frame_holder & b)
+    {
+        if (a->get_frame_timestamp_domain() == b->get_frame_timestamp_domain())
+            return{ a->get_frame_timestamp(), b->get_frame_timestamp() };
+        else
+        {
+            return{ a->get_frame_metadata(RS2_FRAME_METADATA_TIME_OF_ARRIVAL), 
+                    b->get_frame_metadata(RS2_FRAME_METADATA_TIME_OF_ARRIVAL) };
+        }
+    }
+
     timestamp_composite_matcher::timestamp_composite_matcher(std::vector<std::shared_ptr<matcher>> matchers)
         :composite_matcher(matchers)
     {
@@ -399,7 +410,9 @@ namespace librealsense
 
         auto min_fps = std::min(a_fps, b_fps);
 
-        return  are_equivalent(a->get_frame_timestamp(), b->get_frame_timestamp(), min_fps);
+        auto ts = extract_timestamps(a, b);
+
+        return  are_equivalent(ts.first, ts.second, min_fps);
     }
 
     bool timestamp_composite_matcher::is_smaller_than(frame_holder & a, frame_holder & b)
@@ -408,7 +421,10 @@ namespace librealsense
         {
             return false;
         }
-        return  a->get_frame_timestamp() < b->get_frame_timestamp();
+
+        auto ts = extract_timestamps(a, b);
+
+        return ts.first < ts.second;
     }
 
     void timestamp_composite_matcher::dispatch(frame_holder f, syncronization_environment env)
@@ -417,7 +433,6 @@ namespace librealsense
         _last_arrived[matcher.get()] = std::chrono::duration<double, std::milli>(std::chrono::system_clock::now().time_since_epoch()).count();
         matcher->dispatch(std::move(f), env);
         clean_dead_streams(f);
-
     }
 
     void timestamp_composite_matcher::update_next_expected(const frame_holder & f)
@@ -459,7 +474,7 @@ namespace librealsense
         auto next_expected = _next_expected[missing];
 
         //next expected of the missing stream didn't updated yet
-        if((*synced_frame)->get_frame_timestamp()> next_expected)
+        if((*synced_frame)->get_frame_timestamp() > next_expected)
         {
             return false;
         }
