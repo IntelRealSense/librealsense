@@ -12,7 +12,7 @@
 * To build documentation locally from sources, on Ubuntu run the following commands:
   * `sudo apt-get install doxygen`
   * `doxygen doc/doxygen/doxyfile`
-* [Frame Management](frame_lifetime.md) - Frame Memory Management, Threading Model and Syncronization
+* [Frame Management](frame_lifetime.md) - Frame Memory Management, Threading Model and Synchronization
 * [Frame Metadata](frame_metadata.md) - support for frame-metadata attributes
 * [Getting Started](stepbystep/getting_started_with_openCV.md) - Getting started with OpenCV
 * [Troubleshooting](troubleshooting.md) - Useful tips when debugging issues related to the camera

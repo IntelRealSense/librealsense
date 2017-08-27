@@ -4,7 +4,7 @@
 
 In this demo, you will acquire color frame from the RealSense camera and display it using OpenCV.
 Before you start, make sure you have librealsense and OpenCV installed and working properly on your system.
-Using the editor of your choise create BGR_sample.cpp and copy-paste the following code-snippet:
+Using the editor of your choice create BGR_sample.cpp and copy-paste the following code-snippet:
 
 ```cpp
 // include the librealsense C++ header file
