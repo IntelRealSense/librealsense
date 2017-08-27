@@ -79,6 +79,17 @@ namespace librealsense
               ds5_advanced_mode_base(ds5_device::_hw_monitor, get_depth_sensor())  {}
     };
 
+    // PWG
+    class rs420_device : public ds5_device, public ds5_advanced_mode_base
+    {
+    public:
+        rs420_device(std::shared_ptr<context> ctx,
+            const platform::backend_device_group& group)
+            : device(ctx, group),
+              ds5_device(ctx, group),
+              ds5_advanced_mode_base(ds5_device::_hw_monitor, get_depth_sensor()) {}
+    };
+
     // AWG
     class rs430_device : public ds5_active, public ds5_advanced_mode_base
     {
@@ -159,7 +170,7 @@ namespace librealsense
         case RS415_PID:
             return std::make_shared<rs415_device>(ctx, group);
         case RS420_PID:
-            return std::make_shared<ds5_device>(ctx, group);
+            return std::make_shared<rs420_device>(ctx, group);
         case RS420_MM_PID:
             return std::make_shared<rs420_mm_device>(ctx, group);
         case RS430_PID:
