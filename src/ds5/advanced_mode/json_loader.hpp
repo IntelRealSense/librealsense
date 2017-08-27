@@ -206,7 +206,7 @@ namespace librealsense
     }
 
     template<class T, class S>
-    std::shared_ptr<json_field> make_string_field(T& strct, S T::group_type::* field, std::map<std::string, float> values)
+    std::shared_ptr<json_field> make_string_field(T& strct, S T::group_type::* field, const std::map<std::string, float>& values)
     {
         std::shared_ptr<json_string_struct_field<T, S>> f(new json_string_struct_field<T, S>(values));
         f->field = field;
@@ -243,19 +243,19 @@ namespace librealsense
     }
 
     template <typename T>
-    void update_preset_control(T control, param_group<T> param)
+    void update_preset_control(T& preset_control, const param_group<T>& param)
     {
         if (param.update)
-            control = param.vals[0];
+            preset_control = param.vals[0];
     }
 
     template <typename T>
-    void update_preset_camera_control(T control, param_group<T> param)
+    void update_preset_camera_control(T& camera_control, const param_group<T>& param)
     {
         if (param.update)
         {
-            control = param.vals[0];
-            control.was_set = true;
+            camera_control = param.vals[0];
+            camera_control.was_set = true;
         }
     }
 
