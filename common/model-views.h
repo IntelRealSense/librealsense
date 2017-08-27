@@ -77,7 +77,7 @@ namespace rs2
            const std::pair<T, std::string>& rhs) {
             return lhs.first < rhs.first;
         });
-        
+
         for (size_t i = 0; i < vec.size(); i++)
         {
             vec[i] = pairs[i].first;
@@ -171,7 +171,7 @@ namespace rs2
         bool draw_option(rs2_option opt, bool update_read_only_options,
                          std::string& error_message, notifications_model& model);
 
-       
+
         bool is_paused() const;
         void pause();
         void resume();
@@ -243,7 +243,7 @@ namespace rs2
     inline bool ends_with(const std::string& s, const std::string& suffix)
     {
         auto i = s.rbegin(), j = suffix.rbegin();
-        for (; i != s.rend() && j != suffix.rend() && *i == *j; 
+        for (; i != s.rend() && j != suffix.rend() && *i == *j;
             i++, j++);
         return j == suffix.rend();
     }
@@ -263,7 +263,7 @@ namespace rs2
 
         void show_stream_footer(rect stream_rect, mouse_info& mouse);
         void show_stream_header(ImFont* font, rs2::rect stream_rect, viewer_model& viewer);
-        
+
         rect layout;
         std::unique_ptr<texture_buffer> texture;
         float2 size;
@@ -288,7 +288,7 @@ namespace rs2
         rect _normalized_zoom{0, 0, 1, 1};
         int color_map_idx = 1;
         bool show_stream_details = false;
-        
+
     };
 
     std::pair<std::string, std::string> get_device_name(const device& dev);
@@ -309,7 +309,7 @@ namespace rs2
         void draw_advanced_mode_tab(device& dev, std::vector<std::string>& restarting_info);
 
         std::vector<std::shared_ptr<subdevice_model>> subdevices;
-        
+
         bool metadata_supported = false;
         bool get_curr_advanced_controls = true;
         device dev;
@@ -369,11 +369,11 @@ namespace rs2
         void add_notification(const notification_data& n);
         void draw(ImFont* font, int w, int h);
 
-        std::string get_log() 
+        std::string get_log()
         {
             std::string result;
             std::lock_guard<std::mutex> lock(m);
-            for (auto&& l : log) std::copy(l.begin(), l.end(), std::back_inserter(result)); 
+            for (auto&& l : log) std::copy(l.begin(), l.end(), std::back_inserter(result));
             return result;
         }
 
@@ -400,7 +400,7 @@ namespace rs2
     class async_pointclound_mapper
     {
     public:
-        async_pointclound_mapper(pointcloud pc) 
+        async_pointclound_mapper(pointcloud pc)
             : pc(pc), keep_calculating_pointcloud(true),
               resulting_3d_models(1), depth_frames_to_render(1),
               t([this]() {render_loop(); })
@@ -411,7 +411,7 @@ namespace rs2
 
         void update_texture(frame f) { pc.map_to(f); }
 
-        void stop() 
+        void stop()
         {
             if (keep_calculating_pointcloud)
             {

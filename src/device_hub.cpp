@@ -8,7 +8,7 @@
 
 namespace librealsense
 {
-    
+
     typedef rs2::devices_changed_callback<std::function<void(rs2::event_information& info)>> hub_devices_changed_callback;
 
     std::vector<std::shared_ptr<device_info>> filter_by_vid(std::vector<std::shared_ptr<device_info>> devices , int vid)
@@ -135,7 +135,7 @@ namespace librealsense
     * Checks if device is still connected
     */
     bool device_hub::is_connected(const device_interface& dev)
-    { 
+    {
         try
         {
             std::unique_lock<std::mutex> lock(_mutex);

@@ -104,7 +104,7 @@ plane plane_from_points(const std::vector<float3> points)
 
     float3 sum = { 0,0,0 };
     for (auto point : points) sum = sum + point;
-    
+
     float3 centroid = sum / points.size();
 
     double xx = 0, xy = 0, xz = 0, yy = 0, yz = 0, zz = 0;
@@ -158,7 +158,7 @@ metrics calculate_plane_metrics(const std::vector<float3>& points, plane p, floa
     {
         distances.push_back(std::abs(p.a*point.x + p.b*point.y + p.c*point.z + p.d) * 1000);
     }
-    
+
     std::sort(distances.begin(), distances.end());
     int n_outliers = distances.size() * (outlier_crop / 100);
     auto begin = distances.begin() + n_outliers, end = distances.end() - n_outliers;
@@ -310,7 +310,7 @@ void visualize(img_metrics stats, int w, int h, bool plane)
     /*ImGui::Begin(s.c_str(), nullptr,
         ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize);*/
 
-        
+
     /*if (ImGui::IsItemHovered())
         ImGui::SetTooltip(s.c_str());*/
 
@@ -333,7 +333,7 @@ int main(int argc, char * argv[])
     PlotMetric out_plot("OUTLIERS", 0, 100, { 180, 50 }, "%");
 
     context ctx;
-    
+
     util::device_hub hub(ctx);
 
     auto finished = false;
@@ -377,7 +377,7 @@ int main(int argc, char * argv[])
             option_data exposure(dpt, RS2_OPTION_EXPOSURE);
             option_data emitter(dpt, RS2_OPTION_EMITTER_ENABLED, true);
             option_data laser(dpt, RS2_OPTION_LASER_POWER);
-            
+
 
             auto modes = dpt.get_stream_profiles();
             for (auto&& profile : modes)
@@ -461,7 +461,7 @@ int main(int argc, char * argv[])
                     if (stream_type == RS2_STREAM_DEPTH)
                     {
                         auto stats = analyze_depth_image(f, units, &current_frame_intrinsics, roi);
-                        
+
                         std::lock_guard<std::mutex> lock(m);
                         latest_stat = stats;
                         //cout << "Average distance is : " << latest_stat.avg_dist << endl;
@@ -473,12 +473,12 @@ int main(int argc, char * argv[])
 
             while (hub.is_connected(dev) && !glfwWindowShouldClose(win))
             {
-                
+
                 int w, h;
                 glfwGetFramebufferSize(win, &w, &h);
 
                 auto index = 0;
-                
+
 
                 // Wait for new images
                 glfwPollEvents();
@@ -764,7 +764,7 @@ int main(int argc, char * argv[])
                 finished = true;
 
             t.join();
-            
+
         }
         catch (const error & e)
         {

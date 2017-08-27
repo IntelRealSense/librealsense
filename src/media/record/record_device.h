@@ -33,7 +33,7 @@ namespace librealsense
         void hardware_reset() override;
 
 
-		bool extend_to(rs2_extension extension_type, void** ext) override;
+        bool extend_to(rs2_extension extension_type, void** ext) override;
         virtual std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;
 
         void pause_recording();
@@ -71,5 +71,3 @@ namespace librealsense
 
     MAP_EXTENSION(RS2_EXTENSION_RECORD, record_device);
 }
-
-

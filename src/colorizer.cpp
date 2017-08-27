@@ -32,7 +32,7 @@ namespace librealsense
                         ctx.register_same_extrinsics(*_stream->get()->profile, *f.get_profile().get()->profile);
                     }
                 }
-                
+
                 auto make_equalized_histogram = [this](const rs2::video_frame& depth, rs2::video_frame rgb)
                 {
                     const auto max_depth = 0x10000;
@@ -95,7 +95,7 @@ namespace librealsense
                     }
                 };
                 rs2::frame ret = f;
-                
+
                 if (f.get_profile().stream_type() == RS2_STREAM_DEPTH)
                 {
                     auto vf = f.as<rs2::video_frame>();

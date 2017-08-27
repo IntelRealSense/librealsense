@@ -33,37 +33,37 @@ endif()
 
 if(BUILD_GRAPHICAL_EXAMPLES)
 
-    set(RS_VIEWER_CPP 
-            realsense-viewer.cpp 
-            ../../third-party/imgui/imgui.cpp 
-            ../../third-party/imgui/imgui_draw.cpp 
-            ../../third-party/imgui/imgui_impl_glfw.cpp 
+    set(RS_VIEWER_CPP
+            realsense-viewer.cpp
+            ../../third-party/imgui/imgui.cpp
+            ../../third-party/imgui/imgui_draw.cpp
+            ../../third-party/imgui/imgui_impl_glfw.cpp
             ../../third-party/imgui/imgui-fonts-karla.hpp
             ../../third-party/imgui/imgui-fonts-fontawesome.hpp
-            ../../common/rendering.h 
-            ../../common/model-views.h 
+            ../../common/rendering.h
+            ../../common/model-views.h
             ../../common/model-views.cpp
         )
 
     # config-ui
     if(WIN32)
         add_executable(realsense-viewer WIN32
-			${RS_VIEWER_CPP} ${CMAKE_CURRENT_SOURCE_DIR}/res/resource.h
-            ${RS_VIEWER_CPP} ${CMAKE_CURRENT_SOURCE_DIR}/res/realsense-viewer.rc)
-			
-		source_group("Resources" FILES
-			${CMAKE_CURRENT_SOURCE_DIR}/res/resource.h
-			${CMAKE_CURRENT_SOURCE_DIR}/res/realsense-viewer.rc
-			)
-		include_directories(realsense-viewer ../../third-party/imgui ../../common ../../third-party ${CMAKE_CURRENT_SOURCE_DIR}/res/)
+                ${RS_VIEWER_CPP} ${CMAKE_CURRENT_SOURCE_DIR}/res/resource.h
+                ${RS_VIEWER_CPP} ${CMAKE_CURRENT_SOURCE_DIR}/res/realsense-viewer.rc)
+
+        source_group("Resources" FILES
+                ${CMAKE_CURRENT_SOURCE_DIR}/res/resource.h
+                ${CMAKE_CURRENT_SOURCE_DIR}/res/realsense-viewer.rc)
+
+        include_directories(realsense-viewer ../../third-party/imgui ../../common ../../third-party ${CMAKE_CURRENT_SOURCE_DIR}/res/)
     else()
-        add_executable(realsense-viewer 
-            ${RS_VIEWER_CPP})
-		include_directories(realsense-viewer ../../third-party/imgui ../../common ../../third-party)
+        add_executable(realsense-viewer
+                ${RS_VIEWER_CPP})
+        include_directories(realsense-viewer ../../third-party/imgui ../../common ../../third-party)
     endif()
 
     target_link_libraries(realsense-viewer ${DEPENDENCIES} ${GTK3_LIBRARIES})
-    
+
     set_target_properties (realsense-viewer PROPERTIES
         FOLDER Tools
     )
@@ -77,4 +77,3 @@ if(BUILD_GRAPHICAL_EXAMPLES)
         ${CMAKE_INSTALL_PREFIX}/bin
     )
 endif()
-

@@ -245,7 +245,7 @@ int main(int, char**) try
         bool update_read_only_options = false;
         auto now = std::chrono::high_resolution_clock::now();
         auto duration = std::chrono::duration<double, std::milli>(now - last_time_point).count();
-        
+
         if (duration >= 6000)
         {
             update_read_only_options = true;
@@ -370,7 +370,7 @@ int main(int, char**) try
                             {
                                 if (status == RS2_PLAYBACK_STATUS_STOPPED)
                                 {
-                                    auto it = std::find_if(device_models.begin(), device_models.end(), 
+                                    auto it = std::find_if(device_models.begin(), device_models.end(),
                                         [&](const device_model& dm) {
                                         if (auto p = dm.dev.as<playback>())
                                             return p.file_name() == filename;
@@ -398,7 +398,7 @@ int main(int, char**) try
                 }
             }
             ImGui::NextColumn();
-            ImGui::Text("");
+            ImGui::Text("%s","");
             ImGui::NextColumn();
 
             ImGui::PopStyleColor();
@@ -520,23 +520,23 @@ int main(int, char**) try
                 {
                     ImGui::PushStyleColor(ImGuiCol_Text, redish);
                     label = to_string() << u8"\uf111";
-                    ImGui::Text(label.c_str());
+                    ImGui::Text("%s", label.c_str());
                     ImGui::PopStyleColor();
                 }
                 else if (dev_model.dev.is<playback>())
                 {
                     label = to_string() << u8" \uf008";
-                    ImGui::Text(label.c_str());
+                    ImGui::Text("%s", label.c_str());
                 }
                 else
                 {
                     label = to_string() << u8" \uf03d";
-                    ImGui::Text(label.c_str());
+                    ImGui::Text("%s", label.c_str());
                 }
                 ImGui::SameLine();
 
                 label = to_string() << dev_model.dev.get_info(RS2_CAMERA_INFO_NAME);
-                ImGui::Text(label.c_str());
+                ImGui::Text("%s", label.c_str());
 
                 ImGui::Columns(1);
                 ImGui::SetCursorPos({ panel_width - 50, pos.y + 5 + (header_h - panel_y) / 2 });
@@ -686,7 +686,7 @@ int main(int, char**) try
 
                     ImGui::Text("File: \"%s\"", filename.c_str());
                     if (ImGui::IsItemHovered())
-                        ImGui::SetTooltip(full_path.c_str());
+                        ImGui::SetTooltip("%s", full_path.c_str());
 
                     auto playback_panel_pos = ImVec2{ 0, pos.y + panel_y + 18 };
                     ImGui::SetCursorPos(playback_panel_pos);
@@ -716,14 +716,14 @@ int main(int, char**) try
                         auto rc = ImGui::GetCursorPos();
                         ImGui::SetCursorPos({ rc.x + 12, rc.y + 4 });
                         ImGui::Text("%s:", pair.first.c_str()); ImGui::SameLine();
-                        
+
                         ImGui::PushStyleColor(ImGuiCol_FrameBg, device_info_color);
                         ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue);
                         ImGui::PushStyleColor(ImGuiCol_Text, white);
                         ImGui::SetCursorPos({ rc.x + 130, rc.y + 1 });
                         label = to_string() << "##" << dev_model.id << " " << pair.first;
                         ImGui::InputText(label.c_str(),
-                            (char*)pair.second.data(), 
+                            (char*)pair.second.data(),
                             pair.second.size() + 1,
                             ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_ReadOnly);
                         ImGui::PopStyleColor(3);
@@ -824,7 +824,7 @@ int main(int, char**) try
                 ImGui::PopStyleColor(2);
                 ImGui::PopFont();
 
-                
+
             }
 
             if (device_to_remove)
@@ -960,7 +960,7 @@ int main(int, char**) try
                     }
                 }
             }
-            
+
         }
         else
         {
@@ -1016,11 +1016,11 @@ int main(int, char**) try
             glLoadIdentity();
             glOrtho(0, w, h, 0, -1, +1);
 
-            auto layout = viewer_model.calc_layout(panel_width, panel_y, w - panel_width, (float)h - panel_y - output_height);
+            auto layout = viewer_model.calc_layout(panel_width, panel_y, w - panel_width, h - panel_y - output_height);
 
             if (layout.size() == 0 && device_models.size() > 0)
             {
-                viewer_model.show_no_stream_overlay(font_18, panel_width, panel_y, w, (float)h - output_height);
+                viewer_model.show_no_stream_overlay(font_18, panel_width, panel_y, w, h - output_height);
             }
 
             for (auto &&kvp : layout)

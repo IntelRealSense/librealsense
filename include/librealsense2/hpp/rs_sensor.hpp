@@ -80,7 +80,7 @@ namespace rs2
             rs2_get_stream_profile_data(_profile, &_type, &_format, &_index, &_uid, &_framerate, &e);
             error::handle(e);
 
-            _recommended = rs2_is_stream_profile_recommended(_profile, &e);
+            _recommended = !!(rs2_is_stream_profile_recommended(_profile, &e));
             error::handle(e);
 
             _size = rs2_get_stream_profile_size(_profile, &e);

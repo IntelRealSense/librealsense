@@ -217,7 +217,7 @@ namespace librealsense
     };
 
     class FalseQuery {
-    public: 
+    public:
         bool operator()(rosbag::ConnectionInfo const* info) const { return false; }
     };
 
