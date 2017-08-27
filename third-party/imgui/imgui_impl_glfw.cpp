@@ -238,7 +238,7 @@ void ImGui_ImplGlfw_Shutdown()
     ImGui::Shutdown();
 }
 
-void ImGui_ImplGlfw_NewFrame()
+void ImGui_ImplGlfw_NewFrame(float scale_factor)
 {
     if (!g_FontTexture)
         ImGui_ImplGlfw_CreateDeviceObjects();
@@ -249,6 +249,8 @@ void ImGui_ImplGlfw_NewFrame()
     int w, h;
     int display_w, display_h;
     glfwGetWindowSize(g_Window, &w, &h);
+    w = w / scale_factor;
+    h = h / scale_factor;
     glfwGetFramebufferSize(g_Window, &display_w, &display_h);
     io.DisplaySize = ImVec2((float)w, (float)h);
     io.DisplayFramebufferScale = ImVec2(w > 0 ? ((float)display_w / w) : 0, h > 0 ? ((float)display_h / h) : 0);
@@ -264,7 +266,7 @@ void ImGui_ImplGlfw_NewFrame()
     {
         double mouse_x, mouse_y;
         glfwGetCursorPos(g_Window, &mouse_x, &mouse_y);
-        io.MousePos = ImVec2((float)mouse_x, (float)mouse_y);   // Mouse position in screen coordinates (set to -1,-1 if no mouse / on another screen, etc.)
+        io.MousePos = ImVec2((float)mouse_x / scale_factor, (float)mouse_y / scale_factor);   // Mouse position in screen coordinates (set to -1,-1 if no mouse / on another screen, etc.)
     }
     else
     {

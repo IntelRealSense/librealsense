@@ -2504,9 +2504,10 @@ namespace rs2
         }
     }
 
-    void viewer_model::render_3d_view(const rect& viewer_rect)
+    void viewer_model::render_3d_view(const rect& viewer_rect, float scale_factor)
     {
-        glViewport(viewer_rect.x, viewer_rect.y, viewer_rect.w, viewer_rect.h);
+        glViewport(viewer_rect.x * scale_factor, viewer_rect.y * scale_factor, 
+                   viewer_rect.w * scale_factor, viewer_rect.h * scale_factor);
 
         glClearColor(0, 0, 0, 1);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);

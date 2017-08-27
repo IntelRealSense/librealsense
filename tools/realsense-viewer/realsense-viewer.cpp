@@ -28,6 +28,7 @@ struct user_data
     mouse_info* mouse = nullptr;
     context ctx;
     viewer_model* model = nullptr;
+    float scale_factor = 1.f;
 };
 
 int main(int, char**) try
@@ -84,7 +85,7 @@ int main(int, char**) try
     glfwSetCursorPosCallback(window, [](GLFWwindow* w, double cx, double cy)
     {
         auto data = reinterpret_cast<user_data*>(glfwGetWindowUserPointer(w));
-        data->mouse->cursor = { (float)cx, (float)cy };
+        data->mouse->cursor = { (float)cx / data->scale_factor, (float)cy / data->scale_factor };
     });
     glfwSetMouseButtonCallback(window, [](GLFWwindow* w, int button, int action, int mods)
     {
@@ -97,6 +98,13 @@ int main(int, char**) try
         data->mouse->mouse_wheel = yoffset;
         data->mouse->ui_wheel += yoffset;
     });
+
+    auto primary = glfwGetPrimaryMonitor();
+    const auto mode = glfwGetVideoMode(primary);
+    int widthMM, heightMM;
+    glfwGetMonitorPhysicalSize(primary, &widthMM, &heightMM);
+    const double dpi = mode->width / (widthMM / 25.4);
+    std::cout << dpi;
 
     // TODO: Implement same logic as when doing this from GUI
     //glfwSetDropCallback(window, [](GLFWwindow* w, int count, const char** paths)
@@ -247,7 +255,8 @@ int main(int, char**) try
         glfwPollEvents();
         int w, h;
         glfwGetWindowSize(window, &w, &h);
-
+        w = w / data.scale_factor;
+        h = h / data.scale_factor;
 
         const float panel_width = 320.f;
         const float panel_y = 44.f;
@@ -263,7 +272,7 @@ int main(int, char**) try
         ImGui::GetIO().MouseWheel = mouse.ui_wheel;
         mouse.ui_wheel = 0.f;
 
-        ImGui_ImplGlfw_NewFrame();
+        ImGui_ImplGlfw_NewFrame(data.scale_factor);
 
         // Flags for pop-up window - no window resize, move or collaps
         auto flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove |
@@ -414,6 +423,17 @@ int main(int, char**) try
         ImGui::Begin("Toolbar Panel", nullptr, flags);
 
         ImGui::PushStyleColor(ImGuiCol_Border, black);
+
+        ImGui::SetCursorPosX(w - panel_width - panel_y * 3.f);
+        ImGui::PushStyleColor(ImGuiCol_Text, (data.scale_factor < 1.5) ? grey : white);
+        ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, is_3d_view ? grey : white);
+        if (ImGui::Button((data.scale_factor < 1.5) ? u8"\uf00e" : u8"\uf010", { panel_y,panel_y }))
+        {
+            data.scale_factor = (data.scale_factor < 1.5) ? 2.f : 1.f;
+        }
+        ImGui::PopStyleColor(2);
+        ImGui::SameLine();
+
         ImGui::SetCursorPosX(w - panel_width - panel_y * 2);
         ImGui::PushStyleColor(ImGuiCol_Text, is_3d_view ? grey : white);
         ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, is_3d_view ? grey : white);
@@ -986,14 +1006,13 @@ int main(int, char**) try
 
         // Rendering
         glViewport(0, 0,
-            static_cast<int>(ImGui::GetIO().DisplaySize.x),
-            static_cast<int>(ImGui::GetIO().DisplaySize.y));
+            static_cast<int>(ImGui::GetIO().DisplaySize.x * data.scale_factor),
+            static_cast<int>(ImGui::GetIO().DisplaySize.y * data.scale_factor));
         glClearColor(0,0,0,1);
         glClear(GL_COLOR_BUFFER_BIT);
 
         if (!is_3d_view)
         {
-            glfwGetWindowSize(window, &w, &h);
             glLoadIdentity();
             glOrtho(0, w, h, 0, -1, +1);
 
@@ -1037,7 +1056,7 @@ int main(int, char**) try
 
             viewer_model.update_3d_camera(viewer_rect, mouse);
 
-            viewer_model.render_3d_view(viewer_rect);
+            viewer_model.render_3d_view(viewer_rect, data.scale_factor);
 
         }
 
