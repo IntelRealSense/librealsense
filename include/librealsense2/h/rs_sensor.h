@@ -316,7 +316,7 @@ rs2_stream_profile* rs2_clone_stream_profile(const rs2_stream_profile* mode, rs2
 
 /**
 * Delete stream profile allocated by rs2_clone_stream_profile
-* Should not be called on stream profiles returned by the device 
+* Should not be called on stream profiles returned by the device
 * \param[in] mode        input stream profile
 */
 void rs2_delete_stream_profile(rs2_stream_profile* mode);

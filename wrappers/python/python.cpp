@@ -28,7 +28,7 @@ using namespace pybind11::literals;
 
 PYBIND11_PLUGIN(NAME) {
     py::module m(SNAME, "Library for accessing Intel RealSenseTM cameras");
-    
+
     class BufData {
     public:
         void *_ptr = nullptr;         // Pointer to the underlying storage
@@ -107,7 +107,7 @@ PYBIND11_PLUGIN(NAME) {
              .value("video_frame", RS2_EXTENSION_VIDEO_FRAME)
              .value("depth_frame", RS2_EXTENSION_DEPTH_FRAME)
              .value("count", RS2_EXTENSION_COUNT);
-    
+
     py::enum_<rs2_format> format(m, "format");
     format.value("any", RS2_FORMAT_ANY)
           .value("z16", RS2_FORMAT_Z16)
@@ -128,7 +128,7 @@ PYBIND11_PLUGIN(NAME) {
           .value("motion_xyz32f", RS2_FORMAT_MOTION_XYZ32F)
           .value("gpio_raw", RS2_FORMAT_GPIO_RAW)
           .value("count", RS2_FORMAT_COUNT);
-    
+
     py::class_<rs2_intrinsics> intrinsics(m, "intrinsics");
     intrinsics.def_readonly("width", &rs2_intrinsics::width)
               .def_readonly("height", &rs2_intrinsics::height)
@@ -224,7 +224,7 @@ PYBIND11_PLUGIN(NAME) {
                         << "/" << self.step << " [" << self.def << "]>";
                     return ss.str();
                 });
-    
+
     py::class_<rs2::region_of_interest> region_of_interest(m, "region_of_interest");
     region_of_interest.def_readwrite("min_x", &rs2::region_of_interest::min_x)
                         .def_readwrite("min_y", &rs2::region_of_interest::min_y)
@@ -256,7 +256,7 @@ PYBIND11_PLUGIN(NAME) {
                 "On successful load, the device will be appended to the context and a devices_changed event triggered."
                 "filename"_a)
            .def("unload_device", &rs2::context::unload_device, "filename"_a);
-    
+
     /* rs2_device.hpp */
     py::class_<rs2::device> device(m, "device");
     device.def("query_sensors", &rs2::device::query_sensors, "Returns the list of adjacent devices, "
@@ -280,7 +280,7 @@ PYBIND11_PLUGIN(NAME) {
                       << ")>";
                    return ss.str();
                });
-    
+
     py::class_<rs2::debug_protocol> debug_protocol(m, "debug_protocol");
     debug_protocol.def(py::init<rs2::device>())
                   .def("send_and_receive_raw_data", &rs2::debug_protocol::send_and_receive_raw_data,
@@ -312,7 +312,7 @@ PYBIND11_PLUGIN(NAME) {
                    })
                .def("front", &rs2::device_list::front)
                .def("back", &rs2::device_list::back);
-    
+
     // Not binding status_changed_callback, templated
 
     py::class_<rs2::event_information> event_information(m, "event_information");
@@ -406,7 +406,7 @@ PYBIND11_PLUGIN(NAME) {
                    .def("__getitem__", &rs2::composite_frame::operator[]);
 
     py::class_<rs2::frame_source> frame_source(m, "frame_source");
-    frame_source.def("allocate_video_frame", &rs2::frame_source::allocate_video_frame, 
+    frame_source.def("allocate_video_frame", &rs2::frame_source::allocate_video_frame,
                      "profile"_a, "original"_a, "new_bpp"_a=0, "new_width"_a=0,
                      "new_height"_a=0, "new_stride"_a=0, "frame_type"_a=RS2_EXTENSION_VIDEO_FRAME)
                 .def("allocate_composite_frame", &rs2::frame_source::allocate_composite_frame,
@@ -430,7 +430,7 @@ PYBIND11_PLUGIN(NAME) {
                  {
                      return py::make_iterator(self.begin(), self.end());
                  }, py::keep_alive<0, 1>());
-            
+
     /* rs2_processing.hpp */
     // Not binding frame_processor_callback, templated
     py::class_<rs2::processing_block> processing_block(m, "processing_block");
@@ -629,6 +629,6 @@ PYBIND11_PLUGIN(NAME) {
     /* rs2.hpp */
     m.def("log_to_console", &rs2::log_to_console, "min_severity"_a);
     m.def("log_to_file", &rs2::log_to_file, "min_severity"_a, "file_path"_a);
-    
+
     return m.ptr();
 }

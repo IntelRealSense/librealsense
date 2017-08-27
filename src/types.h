@@ -9,10 +9,6 @@
 #ifndef LIBREALSENSE_TYPES_H
 #define LIBREALSENSE_TYPES_H
 
-#ifndef NOMINMAX
-#define NOMINMAX
-#endif
-
 #include "../include/librealsense2/hpp/rs_types.hpp"
 
 #include <stdint.h>
@@ -325,7 +321,7 @@ namespace librealsense
                 if(str == get_string(v)) { res = v; return true; }   \
             }                                                        \
             return false;                                            \
-        }     
+        }
 
     RS2_ENUM_HELPERS(rs2_stream, STREAM)
     RS2_ENUM_HELPERS(rs2_format, FORMAT)
@@ -369,8 +365,8 @@ namespace librealsense
     {
         pose r;
         for (int i = 0; i < 3; i++) r.position[i] = a.translation[i];
-        for (int j = 0; j < 3; j++) 
-            for (int i = 0; i < 3; i++) 
+        for (int j = 0; j < 3; j++)
+            for (int i = 0; i < 3; i++)
                 r.orientation(i, j) = a.rotation[j * 3 + i];
         return r;
     }
@@ -378,17 +374,17 @@ namespace librealsense
     {
         rs2_extrinsics r;
         for (int i = 0; i < 3; i++) r.translation[i] = a.position[i];
-        for (int j = 0; j < 3; j++) 
-            for (int i = 0; i < 3; i++) 
+        for (int j = 0; j < 3; j++)
+            for (int i = 0; i < 3; i++)
                 r.rotation[j * 3 + i] = a.orientation(i, j);
         return r;
     }
-    inline rs2_extrinsics identity_matrix() { 
+    inline rs2_extrinsics identity_matrix() {
         rs2_extrinsics r;
         // Do it the silly way to avoid infite warnings about the dangers of memset
         for (int i = 0; i < 3; i++) r.translation[i] = 0.f;
-        for (int j = 0; j < 3; j++) 
-            for (int i = 0; i < 3; i++) 
+        for (int j = 0; j < 3; j++)
+            for (int i = 0; i < 3; i++)
                 r.rotation[j * 3 + i] = (i == j) ? 1.f : 0.f;
         return r;
     }
@@ -647,7 +643,7 @@ namespace librealsense
         arithmetic_wraparound() :
             last_input(std::numeric_limits<T>::lowest()), accumulated(0) {
             static_assert(
-                (std::is_arithmetic<T>::value) && 
+                (std::is_arithmetic<T>::value) &&
                 (std::is_arithmetic<S>::value) &&
                 (std::numeric_limits<T>::max() < std::numeric_limits<S>::max()) &&
                 (std::numeric_limits<T>::lowest() >= std::numeric_limits<S>::lowest())

@@ -21,11 +21,11 @@ namespace librealsense
     public:
         virtual ~synthetic_source_interface() = default;
 
-        virtual frame_interface* allocate_video_frame(std::shared_ptr<stream_profile_interface> stream, 
+        virtual frame_interface* allocate_video_frame(std::shared_ptr<stream_profile_interface> stream,
                                                       frame_interface* original,
                                                       int new_bpp = 0,
-                                                      int new_width = 0, 
-                                                      int new_height = 0, 
+                                                      int new_width = 0,
+                                                      int new_height = 0,
                                                       int new_stride = 0,
                                                       rs2_extension frame_type = RS2_EXTENSION_VIDEO_FRAME) = 0;
 

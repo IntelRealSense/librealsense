@@ -197,7 +197,7 @@ namespace rs2
         bool contains(const device& dev) const
         {
             rs2_error* e = nullptr;
-            auto res = rs2_device_list_contains(_list.get(), dev.get().get(), &e);
+            auto res = !!(rs2_device_list_contains(_list.get(), dev.get().get(), &e));
             error::handle(e);
             return res;
         }

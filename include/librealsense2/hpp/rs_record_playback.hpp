@@ -38,8 +38,8 @@ namespace rs2
         }
 
         /**
-         * Retrieves the name of the playback file 
-         * \return Name of the playback file 
+         * Retrieves the name of the playback file
+         * \return Name of the playback file
          */
         std::string file_name() const
         {
@@ -110,7 +110,7 @@ namespace rs2
             rs2_playback_device_set_real_time(_dev.get(), (real_time ? 1 : 0), &e);
             error::handle(e);
         }
-        
+
         /**
         * Set the playing speed
         * \param[in] speed  Indicates a multiplication of the speed to play (e.g: 1 = normal, 0.5 twice as slow)

@@ -29,7 +29,7 @@ namespace librealsense
         _matcher.set_callback([this](frame_holder f, syncronization_environment env)
         {
 
-            std::stringstream ss; 
+            std::stringstream ss;
             ss << "SYNCED: ";
             auto composite = dynamic_cast<composite_frame*>(f.frame);
             for (int i = 0; i < composite->get_embedded_frames_count(); i++)
@@ -79,8 +79,8 @@ namespace librealsense
     }
 
     void identity_matcher::dispatch(frame_holder f, syncronization_environment env)
-    { 
-        sync(std::move(f), env); 
+    {
+        sync(std::move(f), env);
     }
 
     const std::vector<stream_id>& identity_matcher::get_streams() const
@@ -191,7 +191,7 @@ namespace librealsense
     {
         auto matcher = find_matcher(f);
         _frames_queue[matcher.get()].enqueue(std::move(f));
-        
+
         std::vector<frame_holder*> frames_arrived;
         std::vector<librealsense::matcher*> frames_arrived_matchers;
         std::vector<librealsense::matcher*> synced_frames;
@@ -385,7 +385,7 @@ namespace librealsense
     void frame_number_composite_matcher::update_next_expected(const frame_holder& f)
     {
         auto matcher = find_matcher(f);
-        _next_expected[matcher.get()] = f.frame->get_frame_number()+1;
+        _next_expected[matcher.get()] = f.frame->get_frame_number()+1.;
     }
 
     timestamp_composite_matcher::timestamp_composite_matcher(std::vector<std::shared_ptr<matcher>> matchers)
@@ -412,7 +412,7 @@ namespace librealsense
     }
 
     void timestamp_composite_matcher::dispatch(frame_holder f, syncronization_environment env)
-    { 
+    {
         auto matcher = find_matcher(f);
         _last_arrived[matcher.get()] = std::chrono::duration<double, std::milli>(std::chrono::system_clock::now().time_since_epoch()).count();
         matcher->dispatch(std::move(f), env);

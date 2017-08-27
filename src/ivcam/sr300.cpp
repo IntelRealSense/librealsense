@@ -183,8 +183,8 @@ namespace librealsense
             : device(ctx, group), _depth_device_idx(add_sensor(create_depth_device(ctx, depth))),
               _color_device_idx(add_sensor(create_color_device(ctx, color))),
               _hw_monitor(std::make_shared<hw_monitor>(std::make_shared<locked_transfer>(ctx->get_backend().create_usb_device(hwm_device), get_depth_sensor()))),
-              _depth_stream(new stream(ctx, RS2_STREAM_DEPTH)), 
-              _ir_stream(new stream(ctx, RS2_STREAM_INFRARED)), 
+              _depth_stream(new stream(ctx, RS2_STREAM_DEPTH)),
+              _ir_stream(new stream(ctx, RS2_STREAM_INFRARED)),
               _color_stream(new stream(ctx, RS2_STREAM_COLOR))
     {
         using namespace ivcam;
@@ -256,7 +256,7 @@ namespace librealsense
         {
             if (!one_time_note)
             {
-                LOG_WARNING("UVC metadata payloads are not available for stream " 
+                LOG_WARNING("UVC metadata payloads are not available for stream "
                     << std::hex << mode.pf->fourcc << std::dec << (mode.profile.format)
                     << ". Please refer to installation chapter for details.");
                 one_time_note = true;

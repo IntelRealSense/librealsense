@@ -208,7 +208,7 @@ PYBIND11_PLUGIN(NAME) {
 
     py::class_<platform::retry_controls_work_around, std::shared_ptr<platform::retry_controls_work_around>> retry_controls_work_around(m, "retry_controls_work_around");
     retry_controls_work_around.def(py::init<std::shared_ptr<platform::uvc_device>>())
-        .def("probe_and_commit", 
+        .def("probe_and_commit",
             [](platform::retry_controls_work_around& dev, const platform::stream_profile& profile,
                 std::function<void(const platform::stream_profile&, const platform::frame_object&)> callback) {
         dev.probe_and_commit(profile, false, [=](const platform::stream_profile& p,
@@ -220,7 +220,7 @@ PYBIND11_PLUGIN(NAME) {
             }
             , "profile"_a, "callback"_a)
         .def("stream_on", [](platform::retry_controls_work_around& dev) {
-                dev.stream_on([](const notification& n) 
+                dev.stream_on([](const notification& n)
                 {
                 });
             })
@@ -239,16 +239,16 @@ PYBIND11_PLUGIN(NAME) {
                 std::vector<uint8_t> data(l.size());
                 for (int i = 0; i < l.size(); ++i)
                     data[i] = l[i].cast<uint8_t>();
-                dev.set_xu(xu, ctrl, data.data(), data.size());
+                dev.set_xu(xu, ctrl, data.data(), (int)data.size());
             }, "xu"_a, "ctrl"_a, "data"_a)
         .def("set_xu", [](platform::retry_controls_work_around &dev, const platform::extension_unit &xu, uint8_t ctrl, std::vector<uint8_t> &data)
             {
-                dev.set_xu(xu, ctrl, data.data(), data.size());
+                dev.set_xu(xu, ctrl, data.data(), (int)data.size());
             }, "xu"_a, "ctrl"_a, "data"_a)
         .def("get_xu", [](const platform::retry_controls_work_around &dev, const platform::extension_unit &xu, uint8_t ctrl, size_t len)
             {
                 std::vector<uint8_t> data(len);
-                dev.get_xu(xu, ctrl, data.data(), len);
+                dev.get_xu(xu, ctrl, data.data(), (int)len);
                 py::list ret(len);
                 for (size_t i = 0; i < len; ++i)
                     ret[i] = data[i];
