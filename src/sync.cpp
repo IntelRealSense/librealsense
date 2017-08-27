@@ -443,6 +443,7 @@ namespace librealsense
         auto matcher = find_matcher(f);
 
         _next_expected[matcher.get()] = f.frame->get_frame_timestamp() + gap;
+        _next_expected_domain[matcher.get()] = f.frame->get_frame_timestamp_domain();
     }
 
     void timestamp_composite_matcher::clean_dead_streams(frame_holder& f)
@@ -472,6 +473,15 @@ namespace librealsense
         _frames_queue[synced[0]].peek(&synced_frame);
 
         auto next_expected = _next_expected[missing];
+
+        auto it = _next_expected_domain.find(missing);
+        if (it != _next_expected_domain.end())
+        {
+            if (it->second != (*synced_frame)->get_frame_timestamp_domain())
+            {
+                return false;
+            }
+        }
 
         //next expected of the missing stream didn't updated yet
         if((*synced_frame)->get_frame_timestamp() > next_expected)

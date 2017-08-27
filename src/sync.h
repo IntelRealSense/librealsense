@@ -115,7 +115,7 @@ namespace librealsense
         std::map<matcher*, single_consumer_queue<frame_holder>> _frames_queue;
         std::map<stream_id, std::shared_ptr<matcher>> _matchers;
         std::map<matcher*, double> _next_expected;
-
+        std::map<matcher*, rs2_timestamp_domain> _next_expected_domain;
     };
 
     class frame_number_composite_matcher : public composite_matcher
