@@ -19,6 +19,7 @@
 #include <vector>
 #include <fstream>
 #include <array>
+#include "../src/types.h"
 
 // noexcept is not accepted by Visual Studio 2013 yet, but noexcept(false) is require on throwing destructors on gcc and clang
 // It is normally advisable not to throw in a destructor, however, this usage is safe for require_error/require_no_error because
@@ -535,46 +536,22 @@ inline void test_option(rs2::sensor &device, rs2_option option, std::initializer
     REQUIRE(device.get_option(option) == first_value);
 }
 
-enum res_type{
-    small_resolution,
-    vga_resolution,
-    full_resolution
-};
-
-inline bool try_get_res_type(uint32_t width, uint32_t height, res_type& res)
-{
-    if (width == 640 && height == 480)
-    {
-        res = res_type::vga_resolution;
-        return true;
-    }
-    else if (width < 640 && height < 480)
-    {
-        res = res_type::small_resolution;
-        return true;
-    }
-    else if (width > 640 && height > 480)
-    {
-        res = res_type::full_resolution;
-        return true;
-    }
-
-    return false;
-}
-
 inline rs2::stream_profile get_profile_by_resolution_type(rs2::sensor& s, res_type res)
 {
     auto sp = s.get_stream_profiles();
+    int width = 0, height = 0;
     for (auto&& p : sp)
     {
-        res_type out_res;
         if (auto video = p.as<rs2::video_stream_profile>())
-            if (try_get_res_type(video.width(), video.height(), out_res) &&
-                (res == out_res))
-            {
+        {
+            width = video.width();
+            height = video.height();
+            if (res = get_res_type(width, height))
                 return p;
-            }
+        }
     }
-    throw std::runtime_error("Stream profile not found!");
+    std::stringstream ss;
+    ss << "stream profile for " << width << "," << height << " resolution is not supported!";
+    throw std::runtime_error(ss.str());
 }
 #endif

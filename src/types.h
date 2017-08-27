@@ -1419,5 +1419,20 @@ std::vector<std::shared_ptr<T>> subtract_sets(const std::vector<std::shared_ptr<
     return results;
 }
 
+    enum res_type {
+        low_resolution,
+        medium_resolution,
+        high_resolution
+    };
+
+    inline res_type get_res_type(uint32_t width, uint32_t height)
+    {
+        if (width == 640)
+            return res_type::medium_resolution;
+        else if (width < 640)
+            return res_type::low_resolution;
+
+        return res_type::high_resolution;
+    }
 
 #endif
