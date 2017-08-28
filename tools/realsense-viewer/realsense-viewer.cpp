@@ -39,8 +39,11 @@ int main(int, char**) try
     rs2_error* e = nullptr;
     std::string title = to_string() << "RealSense Viewer v" << api_version_to_string(rs2_get_api_version(&e));
 
+    auto primary = glfwGetPrimaryMonitor();
+    const auto mode = glfwGetVideoMode(primary);
+
     // Create GUI Windows
-    auto window = glfwCreateWindow(1280, 720, title.c_str(), nullptr, nullptr);
+    auto window = glfwCreateWindow(int(mode->width * 0.7f), int(mode->height * 0.7f), title.c_str(), nullptr, nullptr);
     glfwMakeContextCurrent(window);
     ImGui_ImplGlfw_Init(window, true);
 
@@ -98,13 +101,6 @@ int main(int, char**) try
         data->mouse->mouse_wheel = yoffset;
         data->mouse->ui_wheel += yoffset;
     });
-
-    auto primary = glfwGetPrimaryMonitor();
-    const auto mode = glfwGetVideoMode(primary);
-    int widthMM, heightMM;
-    glfwGetMonitorPhysicalSize(primary, &widthMM, &heightMM);
-    const double dpi = mode->width / (widthMM / 25.4);
-    std::cout << dpi;
 
     // TODO: Implement same logic as when doing this from GUI
     //glfwSetDropCallback(window, [](GLFWwindow* w, int count, const char** paths)
@@ -429,7 +425,7 @@ int main(int, char**) try
         ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, is_3d_view ? grey : white);
         if (ImGui::Button((data.scale_factor < 1.5) ? u8"\uf00e" : u8"\uf010", { panel_y,panel_y }))
         {
-            data.scale_factor = (data.scale_factor < 1.5) ? 2.f : 1.f;
+            data.scale_factor = (data.scale_factor < 1.5) ? 2.2f : 1.f;
         }
         ImGui::PopStyleColor(2);
         ImGui::SameLine();
