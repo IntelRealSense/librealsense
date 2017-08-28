@@ -483,7 +483,7 @@ namespace rs2
         void update_3d_camera(const rect& viewer_rect,
                               mouse_info& mouse, bool force = false);
 
-        void render_3d_view(const rect& view_rect);
+        void render_3d_view(const rect& view_rect, float scale_factor);
 
         void gc_streams();
 

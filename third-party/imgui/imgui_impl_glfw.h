@@ -14,7 +14,7 @@ struct GLFWwindow;
 
 IMGUI_API bool        ImGui_ImplGlfw_Init(GLFWwindow* window, bool install_callbacks);
 IMGUI_API void        ImGui_ImplGlfw_Shutdown();
-IMGUI_API void        ImGui_ImplGlfw_NewFrame();
+IMGUI_API void        ImGui_ImplGlfw_NewFrame(float scale_factor);
 
 // Use if you want to reset your rendering device without losing ImGui state.
 IMGUI_API void        ImGui_ImplGlfw_InvalidateDeviceObjects();
